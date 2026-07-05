@@ -100,7 +100,7 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **
 
 **MQTT**
 
-- Subscribe to a broker to receive mesh traffic over the internet; **AES-128/256-CTR** decryption (16- or 32-byte channel PSKs), automatic RF deduplication, **cross-transport chat dedup** (when the same message arrives on MQTT and RF within ~10 minutes, one bubble is kept and the transport badge upgrades to **both**), **10-minute reconnect delay after failed attempts** (recovers faster on connack timeout), and an **active node cache** that periodically refreshes presence information so MQTT-only and RF+MQTT nodes stay visible even when your radio is offline
+- Subscribe to a broker to receive mesh traffic over the internet; **AES-128/256-CTR** decryption (16- or 32-byte channel PSKs), automatic RF deduplication, **cross-transport chat dedup** (when the same message arrives on MQTT and RF within ~10 minutes, one bubble is kept and the transport badge upgrades to **both**), **exponential MQTT reconnect backoff** (60s base, capped at 45 minutes; faster retry on connack timeout), and an **active node cache** that periodically refreshes presence information so MQTT-only and RF+MQTT nodes stay visible even when your radio is offline
 - **Channel PSKs** on the Connection tab: base64 keys per line (optional `ChannelName=base64` for MQTT-only channels); multiple keys per channel name are supported; LongFast default is always tried; keys from the Radio tab sync automatically when the radio is connected (custom named keys are not overwritten by the default public PSK on sync)
 - **MQTT-only chat identity**: when sending without a connected radio, outbound `from` uses your last known RF node id when available, otherwise a stable per-install virtual id (persisted in app settings)
 - **Enable TLS (mqtts / wss)** toggle for private brokers (not only port 8883/443); optional **Allow insecure TLS** for self-signed or non–public CA chains
@@ -118,7 +118,7 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **
 
 **Security**
 
-- **Meshtastic — Security (PKI)** tab (between Telemetry and App): admin / PKI key management; backup, restore, regenerate, and apply keys and related toggles from the device.
+- **Meshtastic — Security (PKI)** tab (between Telemetry and **TAK**): admin / PKI key management; backup, restore, regenerate, and apply keys and related toggles from the device.
 - **MeshCore — Security** tab (partial): per-node **key backup / restore** (full public + private pair), sign data, export/import private key. Meshtastic PKI admin sections are hidden (`hasSecurityPanel` is true for both protocols; capabilities differ).
 - **DM / device key backup / restore:** **Backup Keys** encrypts the connected **local** radio’s **public and private keys** into a **per-node** slot (`localStorage`, OS keychain via `safeStorage`). Meshtastic indexes by `nodeNum`; MeshCore by `nodeId`. Backing up a second radio does **not** overwrite the first. **Restore Keys** applies the archive for the connected node; **Restore from backup…** picks any archived entry (factory reset / node id change). Hidden for remote configure targets. See [Key backup and cryptography](docs/key-backup-and-crypto.md) (includes **backing up before moving Meshtastic nodes to MeshCore**).
 - **PKC remote node administration** (Meshtastic, firmware 2.5+): **Configure node** selector on Radio, Modules, Security, and Administration tabs to edit another node’s settings through your connected local radio; **Configure node remotely** from node detail when a per-node admin key is saved; **Copy** public key in Security for one-time trust setup. Paste a remote node’s admin public key in node detail (base64, `base64:…`, or 64-char hex). PKI uses the mesh NodeDB key when present, with stored admin-key fallback. Requires a **connected local Meshtastic radio** — MQTT-only sessions cannot administer remote nodes.
@@ -224,7 +224,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 
 ### MeshCore Features
 
-MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher in the header to bring MeshCore into view; the other sessions stay connected in the background. **Meshtastic** shows **16** sidebar tabs (including **Administration**, **Security**, **TAK**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **16** tabs (**TAK** is hidden; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** uses its own sidebar set (Connection, Nomad Network, Peers, Network, Admin, Chat, Topology, Diagnostics, etc.). **Stats**, **Sniffer**, **RF**, and **Graph** are available in Meshtastic and MeshCore modes.
+MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher in the header to bring MeshCore into view; the other sessions stay connected in the background. **Meshtastic** shows **16** sidebar tabs (including **Administration**, **Security**, **TAK**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **16** tabs (**TAK** is hidden; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** shows **11** tabs (Connection, Nomad Network, Peers, Network, Admin, Chat, Topology, Diagnostics, **Stats**, **Sniffer**, App, etc.). **Stats** and **Sniffer** are available in all three protocols; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
 
 - **Transmit queue**: header badge (with tooltip) when the connected radio reports outbound queue depth (STATS).
 
@@ -232,7 +232,7 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 
 - Contact list with advert-based positions, contact types (Chat, Repeater, Room), and GPS coordinates persisted to SQLite; contacts seed from DB on reconnect as a fallback cache
 - **Favorite / pin**: persisted per contact in SQLite (`meshcore_contacts.favorited`)
-- **Contact groups**: protocol-neutral; create and manage groups from the **Nodes** toolbar; Meshtastic has built-in groups (**GPS**, **RF+MQTT**); filter the list by group; **Room** contacts excluded from user groups by default
+- **Contact groups**: protocol-neutral; create and manage groups from the **Contacts** tab toolbar (Meshtastic: **Nodes** tab); Meshtastic has built-in groups (**GPS**, **RF+MQTT**); filter the list by group; **Room** contacts excluded from user groups by default
 - **Import Contacts**: **Nodes** tab: bulk **JSON nickname import** to pre-fill contact names (not on the Repeaters panel)
 - **Refresh Contacts**: pull the full contact list from the device on demand
 - **Show Public Keys**: toggle to display full public keys under contact names
@@ -282,7 +282,7 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 
 - Battery voltage from device `selfInfo`; per-packet signal telemetry (SNR/RSSI) from RF event 0x88; visible in the Telemetry tab
 - **Environment charts** (temperature, humidity, barometric pressure, etc.) in the Telemetry tab when pulled Cayenne LPP data is available; same panel as Meshtastic environment telemetry
-- **Raw Packet Log** (**Sniffer** tab): **MeshCore:** real-time virtualized log of RF packets from the `LOG_RX_DATA` push event (0x88), with route type, payload type, hop count, SNR, RSSI, optional resolved node name, and expandable raw hex; **Meshtastic:** log of received mesh packets (protobuf) with port/type, RF vs MQTT, SNR, RSSI, node name, and expandable hex; filter by type, name, or hex; **Clear** resets the log; ring-buffer capped at **2,500** entries per protocol
+- **Raw Packet Log** (**Sniffer** tab): **MeshCore:** real-time virtualized log of RF packets from the `LOG_RX_DATA` push event (0x88), with route type, payload type, hop count, SNR, RSSI, optional resolved node name, and expandable raw hex; **Meshtastic:** log of received mesh packets (protobuf) with port/type, RF vs MQTT, SNR, RSSI, node name, and expandable hex; **Reticulum:** sidecar wire packets via WebSocket/`GET /api/v1/packets` (see [docs/reticulum.md](docs/reticulum.md)); filter by type, name, or hex; **Clear** resets the log; ring-buffer capped at **2,500** entries per protocol
 
 **Device Control**
 

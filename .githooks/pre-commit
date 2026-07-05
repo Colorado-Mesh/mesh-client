@@ -59,8 +59,10 @@ if [ -s "$STAGED_LIST" ]; then
     done < "$MARKDOWN_LIST"
   fi
 
-  pnpm dedupe || fail 'pnpm dedupe'
-  git add pnpm-lock.yaml || fail 'git add pnpm-lock.yaml'
+  if [ "$deps_changed" -eq 1 ]; then
+    pnpm dedupe || fail 'pnpm dedupe'
+    git add pnpm-lock.yaml || fail 'git add pnpm-lock.yaml'
+  fi
 
   # Re-stage only originally-staged files (not new ones created by format)
   while IFS= read -r f || [ -n "$f" ]; do
@@ -70,8 +72,10 @@ if [ -s "$STAGED_LIST" ]; then
   done < "$STAGED_LIST"
 fi
 
-pnpm run i18n:auto-translate || fail 'pnpm run i18n:auto-translate'
-git add src/renderer/locales/ || fail 'git add (i18n locales)'
+if grep -q 'src/renderer/locales/en/translation.json' "$STAGED_LIST" 2> /dev/null; then
+  pnpm run i18n:auto-translate || fail 'pnpm run i18n:auto-translate'
+  git add src/renderer/locales/ || fail 'git add (i18n locales)'
+fi
 
 pnpm run lint || fail 'pnpm run lint'
 pnpm run typecheck || fail 'pnpm run typecheck'
@@ -88,9 +92,22 @@ pnpm run check:url-hostname-sanitization || fail 'pnpm run check:url-hostname-sa
 pnpm run check:xss-patterns || fail 'pnpm run check:xss-patterns'
 pnpm run check:protocol-string-gates || fail 'pnpm run check:protocol-string-gates'
 pnpm run check:log-panel-filter || fail 'pnpm run check:log-panel-filter'
-pnpm run check:i18n || fail 'pnpm run check:i18n'
+if grep -q 'src/renderer/locales/en/translation.json' "$STAGED_LIST" 2> /dev/null; then
+  pnpm run check:i18n || fail 'pnpm run check:i18n'
+else
+  pnpm run check:i18n:branch || fail 'pnpm run check:i18n:branch'
+fi
 pnpm run check:licenses || fail 'pnpm run check:licenses'
 pnpm audit --audit-level=high || fail 'pnpm audit --audit-level=high'
-actionlint || fail 'actionlint'
-yamllint -f github -s . || fail 'yamllint'
-pnpm run test:run -- --bail 1 || fail 'pnpm run test:run'
+if grep -qE '^\.github/workflows/' "$STAGED_LIST" 2> /dev/null; then
+  actionlint || fail 'actionlint'
+fi
+if grep -qE '\.(ya?ml)$' "$STAGED_LIST" 2> /dev/null; then
+  yamllint -f github -s . || fail 'yamllint'
+fi
+# Run affected tests; full suite when test infra or shared contracts change
+if grep -qE '^(vitest\.(config|harness)|src/shared/|src/preload/|src/renderer/vitest\.(setup|electronApiMock)|package\.json|pnpm-lock\.yaml)' "$STAGED_LIST" 2> /dev/null; then
+  pnpm run test:run -- --bail 1 || fail 'pnpm run test:run'
+else
+  pnpm run test:run -- --changed HEAD --bail 1 || fail 'pnpm run test:run'
+fi

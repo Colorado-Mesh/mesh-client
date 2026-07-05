@@ -7,9 +7,8 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 import {
-  computeVitestMaxWorkers,
-  NODE_WORKER_CPU_RATIO,
-  RENDERER_UI_CPU_RATIO,
+  resolveVitestProjectGroupOrder,
+  resolveVitestProjectMaxWorkers,
   VITEST_CORE_DEPS,
   VITEST_SERVER_INLINE_DEPS,
 } from './vitest.harness';
@@ -17,8 +16,17 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const srcAlias = { '@': resolve(__dirname, 'src') };
 const cpuCount = os.cpus().length;
-const rendererUiWorkers = computeVitestMaxWorkers(cpuCount, RENDERER_UI_CPU_RATIO);
-const nodeWorkers = computeVitestMaxWorkers(cpuCount, NODE_WORKER_CPU_RATIO);
+
+/** Per-project CI shards skip global thresholds; merge job enforces them on combined coverage. */
+const coverageThresholds =
+  process.env.VITEST_COVERAGE_SHARD === '1'
+    ? undefined
+    : {
+        lines: 54,
+        functions: 52,
+        branches: 46,
+        statements: 52,
+      };
 
 /** Pure renderer unit tests — no RTL, no window, no setup stubs */
 const RENDERER_LOGIC_INCLUDE = [
@@ -56,6 +64,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/hooks/usePowerRecovery.test.ts',
   'src/renderer/hooks/useProtocolConnection.test.ts',
   'src/renderer/hooks/useProtocolFacade.test.ts',
+  'src/renderer/hooks/useProtocolMqttSettings.test.ts',
   'src/renderer/hooks/useSendMessage.test.ts',
   'src/renderer/hooks/useSyncFormFromConfig.test.ts',
   'src/renderer/hooks/meshcore/meshcoreHookPreamble.reconcile.test.ts',
@@ -104,6 +113,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/meshcoreStoreDedup.test.ts',
   'src/renderer/lib/meshcoreDirectMessageDecode.test.ts',
   'src/renderer/lib/mqttAutoLaunch.test.ts',
+  'src/renderer/lib/mqttSettingsStorage.test.ts',
   'src/renderer/lib/protocols/meshcore/MeshCoreTransport.serial-writable.test.ts',
   'src/renderer/lib/reduceMotionPreference.test.ts',
   'src/renderer/lib/rfReconnectHelper.test.ts',
@@ -200,10 +210,10 @@ export default defineConfig({
           include: ['src/renderer/**/*.test.{ts,tsx}'],
           exclude: RENDERER_UI_EXCLUDE,
           pool: 'forks',
-          maxWorkers: rendererUiWorkers,
+          maxWorkers: resolveVitestProjectMaxWorkers('renderer-ui', cpuCount),
           isolate: true,
           fileParallelism: true,
-          sequence: { groupOrder: 0 },
+          sequence: { groupOrder: resolveVitestProjectGroupOrder('renderer-ui') },
         },
         resolve: {
           alias: srcAlias,
@@ -218,10 +228,10 @@ export default defineConfig({
           // RENDERER_LOGIC_LIB_GLOB in include matches all lib tests; exclude routes jsdom cases to renderer-ui.
           exclude: RENDERER_LOGIC_EXCLUDE,
           pool: 'threads',
-          maxWorkers: nodeWorkers,
+          maxWorkers: resolveVitestProjectMaxWorkers('renderer-logic', cpuCount),
           isolate: true,
           fileParallelism: true,
-          sequence: { groupOrder: 1 },
+          sequence: { groupOrder: resolveVitestProjectGroupOrder('renderer-logic') },
         },
         resolve: {
           alias: srcAlias,
@@ -240,10 +250,10 @@ export default defineConfig({
             'vitest.harness.test.ts',
           ],
           pool: 'forks',
-          maxWorkers: nodeWorkers,
+          maxWorkers: resolveVitestProjectMaxWorkers('main', cpuCount),
           isolate: true,
           fileParallelism: true,
-          sequence: { groupOrder: 1 },
+          sequence: { groupOrder: resolveVitestProjectGroupOrder('main') },
         },
         resolve: {
           alias: srcAlias,
@@ -253,6 +263,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text-summary', 'lcov', 'cobertura'],
+      reportOnFailure: true,
       include: ['src/main/**', 'src/preload/**', 'src/shared/**', 'src/renderer/**'],
       exclude: [
         '**/*.test.{ts,tsx,mjs}',
@@ -262,12 +273,7 @@ export default defineConfig({
         'src/renderer/vitest.setup.ts',
         'src/renderer/vitest.electronApiMock.ts',
       ],
-      thresholds: {
-        lines: 54,
-        functions: 52,
-        branches: 46,
-        statements: 52,
-      },
+      thresholds: coverageThresholds,
     },
   },
   resolve: {

@@ -8,7 +8,7 @@ export {
   MS_PER_SECOND,
 } from '../../shared/timeConstants';
 
-/** MeshCore Ping (`tracePath`) end-to-end cap (queue wait + radio); matches `useMeshCore` `withTimeout`. */
+/** MeshCore Ping (`tracePath`) end-to-end cap (queue wait + radio); see `MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS`. */
 export const MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS = 180_000;
 
 /**
@@ -154,6 +154,13 @@ export const MESHCORE_STATS_POLL_MS = 30_000;
 
 /** Safety-net poll for queued waiting messages when event 131 may have been missed. */
 export const MESHCORE_WAITING_MESSAGES_POLL_MS = 5 * MS_PER_MINUTE;
+/** Max wait for companion `getWaitingMessages` / `syncNextMessage` drain (empty queue should finish quickly). */
+export const MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS = 60_000;
+/** Yield the event loop while ingesting queued companion messages. */
+export const MESHCORE_WAITING_MESSAGES_BATCH_YIELD = 25;
+
+/** One retry delay after USB serial open failure during auto-connect (MeshCore + Meshtastic). */
+export const RF_SERIAL_OPEN_RETRY_DELAY_MS = 2_000;
 
 /** Minimum spacing between mesh TX operations used by room sync (login counts as TX). */
 export const MESHCORE_ROOM_SYNC_MIN_MESH_TX_SPACING_MS = 60_000;

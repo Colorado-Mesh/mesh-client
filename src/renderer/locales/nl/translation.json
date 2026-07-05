@@ -1,4 +1,14 @@
 {
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Fabrieksreset",
+      "hint": "Wist identiteit, contacten en berichten uit de zijspanstapel. Interfaceconfiguratie blijft behouden.",
+      "button": "Stapelgegevens opnieuw instellen",
+      "confirmTitle": "Reticulum stack resetten?",
+      "confirmBody": "Hiermee worden identiteit, contacten en lokale berichten uit het zijspan verwijderd. Uw interfaceconfiguratiebestand wordt bewaard.",
+      "confirm": "Opnieuw instellen"
+    }
+  },
   "app": {
     "loadingPanel": "Laadpaneel",
     "loadingDialog": "Dialoogvenster laden",
@@ -317,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "Positiegeschiedenis automatisch opschonen bij opstarten, ouder dan {{days}} dagen",
     "capTotalNodesCountAria": "Beperk het totale aantal knooppunten, behoud de nieuwste {{count}} knooppunten",
     "limitMessagesLoadedCountAria": "Beperk het aantal geladen berichten {{count}} berichten",
-    "capStoredMessagesCountAria": "Beperk opgeslagen berichten, bewaar de nieuwste {{count}} berichten"
+    "capStoredMessagesCountAria": "Beperk opgeslagen berichten, bewaar de nieuwste {{count}} berichten",
+    "maxDistanceAria": "Maximale afstand: {{value}}",
+    "unitAria": "Eenheid: {{unit}}"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -430,7 +442,6 @@
     "emptyNoDmMessages": "Nog geen berichten met {{name}}.",
     "emptyNoMessagesYet": "Nog geen berichten. Stuur er een of wacht op inkomende berichten.",
     "emptyConnectFirst": "Maak verbinding met een apparaat om te chatten.",
-    "waitingMessagesBadge": "{{count}} bericht(en) in de wachtrij van de radio synchroniseren...",
     "waitingMessagesSyncNow": "Synchroniseer nu",
     "jumpToUnread": "Ga naar Ongelezen",
     "jumpToLatest": "Spring naar de laatste",
@@ -489,7 +500,10 @@
       "pkiFailed": "PKI-codering mislukt voor dit bericht.",
       "noChannel": "Geen kanaal beschikbaar om dit bericht te routeren.",
       "timeout": "Er is een time-out opgetreden op de radio."
-    }
+    },
+    "waitingMessagesQueued": "{{count}} bericht(en) in de wachtrij op de radio",
+    "waitingMessagesSyncProgress": "{{processed}} / {{total}} synchroniseren vanaf radio...",
+    "waitingMessagesSyncProgressIndeterminate": "Berichten in de wachtrij van de radio worden gesynchroniseerd..."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -1262,6 +1276,25 @@
     "rssiDbm": "RSSI {{rssi}} dBm",
     "snrDb": "SNR {{snr}} dB"
   },
+  "diagnosticsPing": {
+    "title": "Continue ping",
+    "reticulumHint": "Voert ping (RTT) en padsonde (hops) uit op elk interval terwijl de stapel draait.",
+    "hashLabel": "Bestemmingshash",
+    "hashPlaceholder": "Bestemmingshash van 32 tekens...",
+    "hashAria": "Bestemmingshash naar ping",
+    "intervalLabel": "Interval(len)",
+    "intervalAria": "Seconden tussen pingpogingen",
+    "start": "Beginnen",
+    "stop": "Stop",
+    "runOnce": "Eenmaal pingen",
+    "colSeq": "#",
+    "colRtt": "project voor regionale technologieoverdracht",
+    "colHops": "Hop",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Mislukt: {{error}}"
+  },
   "errorBoundary": {
     "title": "Er is iets misgegaan",
     "unexpectedError": "Er is een onverwachte fout opgetreden",
@@ -1383,6 +1416,25 @@
     "wifiStationSuccess": "Stationmodus opgeslagen. Start het bord opnieuw op, zoek vervolgens het IP-adres (display, router DHCP of Read config) en voeg tcp://… toe aan de → verbindingsinterfaces.",
     "wifiConfigEmpty": "Geen configuratiegegevens geretourneerd.",
     "wifiNetmaskPlaceholder": "255.255.255.0"
+  },
+  "identityVault": {
+    "title": "Identiteitskluis",
+    "hint": "Versleutel een lokale kopie van je identiteitsback-up met een kluiswachtwoordcode. Ontgrendel om toegang te krijgen tot beschermde identiteitsbewerkingen.",
+    "passcode": "Toegangscode kluis",
+    "confirmPasscode": "Toegangscode bevestigen",
+    "setPasscode": "Schakel kluis in",
+    "unlock": "Ontgrendel kluis",
+    "lock": "Kluis vergrendelen",
+    "statusNotConfigured": "Niet geconfigureerd",
+    "statusLocked": "Vastgezet",
+    "statusUnlocked": "Ontgrendeld",
+    "passcodeTooShort": "De toegangscode moet uit minimaal 4 tekens bestaan.",
+    "passcodeMismatch": "Ingevoerde toegangscodes komen niet overeen.",
+    "setSuccess": "Toegangscode kluis opgeslagen.",
+    "setFailed": "Kan kluistoegangscode niet opslaan.",
+    "unlockSuccess": "Kluis ontgrendeld",
+    "unlockFailed": "Onjuiste toegangscode of kluisfout.",
+    "lockSuccess": "Kluis vergrendeld."
   },
   "logAnalyzeModal": {
     "title": "Loganalyse",
@@ -1549,6 +1601,60 @@
     "extraRfReceptions": "extra RF-ontvangst",
     "originatorPacket": "pakket",
     "originatorPackets": "pakketten"
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "Stel het beheerderswachtwoord van de repeater in of wijzig dit via het paneel Repeaters (alleen sessie).",
+      "connectionFailed": "Verbinding mislukt",
+      "notConnected": "Niet verbonden met apparaat",
+      "nodeNotFound": "Knooppunt niet gevonden (geen coderingssleutel)",
+      "authenticationFailed": "Authenticatie mislukt",
+      "requestFailed": "Mislukt: {{detail}}",
+      "requestTimedOut": "Time-out voor verzoek (tot ~{{seconds}}s)",
+      "requestTimedOutApprox": "Time-out voor verzoek (~{{seconds}}s)",
+      "pingNoRoute": "Nog geen route van de radio - multi-hop trace heeft een gesynchroniseerd pad nodig. Wacht op contactupdates of maak opnieuw verbinding.",
+      "bleNoDetails": "BLE-verbinding mislukt (geen foutdetails van apparaat). Probeer het opnieuw of gebruik Serieel/USB.",
+      "bleAlreadyInProgress": "Er is al een Bluetooth-verbinding actief. Wacht tot het klaar is of probeer in plaats daarvan Serieel/USB.",
+      "bleMissingServices": "Apparaat ondersteunt het MeshCore BLE-protocol niet. Zorg ervoor dat het apparaat MeshCore-firmware gebruikt.",
+      "blePeripheralInUse": "Dit apparaat is al verbonden via Meshtastic BLE. Koppel deze eerst los voordat u verbinding maakt als MeshCore.",
+      "bleTimeoutWebBtHandshake": "Time-out voor MeshCore-handshake (Web Bluetooth). Mogelijk heeft de radio eerst een pincode nodig die is gekoppeld aan Linux: gebruik Apparaat verwijderen en opnieuw koppelen en voer de pincode in die op het apparaat wordt weergegeven, of koppel met bluetoothctl en tik vervolgens opnieuw op Verbinden.",
+      "bleTimeoutWebBt": "Er is een time-out opgetreden in de Bluetooth-verbinding tijdens het openen van MeshCore via Web Bluetooth. Probeer het opnieuw, houd het apparaat wakker, schakel de BLE op de radio uit en weer in, of gebruik Serieel/TCP.",
+      "bleTimeoutHandshake": "Bluetooth verbonden, maar de handshake van het MeshCore-protocol is niet voltooid voordat de verbinding werd verbroken/time-out. Probeer het opnieuw, houd het apparaat wakker en in de buurt, schakel BLE uit en weer in, of gebruik Serieel/TCP.",
+      "bleTimeoutNoble": "Er is een time-out opgetreden in de Bluetooth-verbinding tijdens het openen van MeshCore via Noble IPC. Probeer het opnieuw, schakel BLE op het apparaat uit of gebruik Serieel/TCP.",
+      "roomPost": {
+        "badState": "Kamerpost afgewezen (niet ingelogd op de radio). Meld u af, log opnieuw in en probeer het opnieuw.",
+        "illegalArg": "Kamerpost afgewezen (ongeldig berichtformaat).",
+        "notFound": "Kamerpost afgewezen (kamercontact niet gevonden op de radio).",
+        "unsupportedCmd": "Kamerpost afgewezen (niet-ondersteund berichttype op de radio). Log in op de kamer en probeer het opnieuw.",
+        "default": "Kamerpost afgewezen door de radio. Meld u af, log opnieuw in en probeer het opnieuw.",
+        "timeout": "Er is een time-out opgetreden in de kamerpost tijdens het wachten op de radio. Controleer het bereik of probeer het opnieuw."
+      },
+      "roomLogin": {
+        "noRoute": "Geen route naar deze roomserver. Traceer het knooppunt vanaf de kaart of wacht op padadvertenties en probeer het vervolgens opnieuw.",
+        "pathSyncFailed": "Kon de route niet programmeren op uw radio voordat u zich aanmeldde. Sluit het apparaat opnieuw aan en probeer het opnieuw.",
+        "pathSyncFailedDetail": "Kon de route niet programmeren op uw radio voordat u zich aanmeldde. Sluit het apparaat opnieuw aan en probeer het opnieuw.{{detail}}",
+        "rejectedBlankGuest": "Inloggen voor kamer afgewezen. Gebruik Doorgaan met alleen-lezen voor een blanco gastwachtwoord, of probeer gastwachtwoord \"hallo\".",
+        "rejectedDefaultGuest": "Inloggen voor kamer afgewezen. Als deze server geen gastwachtwoord heeft, gebruik dan Doorgaan met alleen-lezen in plaats van Inloggen. Controleer anders het gast- of beheerderswachtwoord.",
+        "rejectedCheckPassword": "Inloggen voor kamer afgewezen. Controleer het gast- of beheerderswachtwoord voor deze kamerserver.",
+        "timedOutBlankGuest": "Er is een time-out opgetreden voor het inloggen op de kamer. Gebruik Doorgaan met alleen-lezen voor een blanco gastwachtwoord, of probeer gastwachtwoord \"hallo\".",
+        "timedOutDefaultGuest": "Er is een time-out opgetreden voor het inloggen op de kamer. Als deze server geen gastwachtwoord heeft, gebruik dan Doorgaan met alleen-lezen in plaats van Inloggen.",
+        "timedOut": "Er is een time-out opgetreden voor het inloggen op de kamer. De kamer is mogelijk buiten bereik of reageert niet.",
+        "failed": "Inloggen in de kamer is mislukt"
+      },
+      "roomLogout": {
+        "timedOut": "Room logout timed out. De kamer is mogelijk buiten bereik of reageert niet.",
+        "rejected": "Uitloggen van kamer geweigerd via de radio.",
+        "failed": "Kon de kamer niet verlaten"
+      },
+      "repeaterRpcInProgress": "Er is al een aanvraag voor deze repeater in behandeling"
+    },
+    "mqttHints": {
+      "notAuthorized": "Controleer v1_ gebruikersnaam, tokenhandtekening en JWT-doelgroep versus makelaar; zie docs/letsmesh-mqtt-auth.md. Gebruik Aangepast om indien nodig een door de operator uitgegeven token te plakken.",
+      "network": "Controleer netwerk, DNS, firewall en VPN.",
+      "connackTimeout": "Als u geen eerdere regel 'clientfout' ziet, loopt de TLS/WebSocket-handshake mogelijk vast (probeer een ander netwerk; de app geeft de voorkeur aan IPv4 voor WSS).",
+      "subscribeFailed": "De makelaar kan een wildcard-abonnement op dit onderwerp weigeren; berichten kunnen nog steeds binnenkomen als de makelaar dit toestaat.",
+      "keepalive": "De server reageert niet meer op MQTT-pings (time-out bij inactiviteit, netwerkuitval of makelaar heeft de sessie gesloten). Maak opnieuw verbinding of controleer uw link."
+    }
   },
   "meshcoreContactSettings": {
     "allContactsCleared": "Alle contacten gewist.",
@@ -2006,6 +2112,31 @@
       }
     }
   },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Stapelinstellingen",
+      "enableTransport": "Transport inschakelen (route voor andere peers)",
+      "shareInstance": "Deel Reticulum-instantie",
+      "logLevel": "Logniveau",
+      "save": "Bewaar stapelinstellingen",
+      "saveFailed": "Kan stapelinstellingen niet opslaan."
+    },
+    "reticulumConfigImport": {
+      "title": "Importeer Reticulum-configuratie",
+      "hint": "Plak een configuratiebestand in rnsd-stijl of importeer vanaf schijf. Voeg interfaceblokken toe/bijwerken op naam; vervangen overschrijft alle interfaces.",
+      "pasteLabel": "Inhoud van configuratiebestand",
+      "fromFile": "Importeren uit bestand…",
+      "fromSystem": "Systeemstandaard importeren",
+      "merge": "Import samenvoegen",
+      "replace": "Vervang interfaces",
+      "confirmTitle": "Importeer Reticulum-configuratie",
+      "confirmMerge": "Geïmporteerde interfaces samenvoegen met de huidige configuratie?",
+      "confirmReplace": "Alle interfaces vervangen door de geïmporteerde configuratie? Dit kan niet ongedaan worden gemaakt.",
+      "confirm": "Importeren"
+    },
+    "reticulumConfigImportFailed": "Configuratie-import mislukt.",
+    "reticulumConfigNotFound": "Geen systeem-Reticulum-configuratie gevonden op standaardpaden."
+  },
   "nodeDetailModal": {
     "removeFromFavorites": "Verwijderen uit favorieten",
     "addToFavorites": "Toevoegen aan favorieten",
@@ -2359,7 +2490,9 @@
     "urlBarAria": "Adres van de nomadenpagina",
     "back": "Rug",
     "forward": "Vooruit",
-    "invalidUrl": "Ongeldig Nomad-paginaadres"
+    "invalidUrl": "Ongeldig Nomad-paginaadres",
+    "collapseNodeList": "Knooppuntenlijst samenvouwen",
+    "expandNodeList": "Knooppuntenlijst uitvouwen"
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",
@@ -3185,6 +3318,20 @@
     "clearAnnouncesDone": "Aankondigingen gewist.",
     "clearAnnouncesFailed": "Kan aankondigingen niet wissen."
   },
+  "reticulumIdentitySwitcher": {
+    "label": "huidige identiteit",
+    "active": "Actieve identiteit: {{name}}",
+    "activeBadge": "actief"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Avatar-pictogram",
+    "iconNameAria": "Peer-avatarpictogram",
+    "iconCircle": "Cirkel",
+    "iconStar": "Ster",
+    "iconHeart": "Hart",
+    "iconShield": "Afscherming",
+    "iconUser": "Gebruiker"
+  },
   "reticulumPropagation": {
     "preferred": "Voorkeur",
     "setPreferred": "Voorkeur instellen",
@@ -3214,6 +3361,17 @@
     "autoSyncOption24h": "Elke 24 uur",
     "lastSynced": "Laatst gesynchroniseerd: {{time}}",
     "lastRefreshed": "Laatst bijgewerkt {{time}}"
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "voortplantingsmodus",
+    "modeAria": "Voortplantingssynchronisatiemodus",
+    "modeAuto": "Auto",
+    "modeManual": "Handmatig",
+    "modeOff": "Off",
+    "sync": "Synchroniseren",
+    "syncAria": "Voortplantingsberichten synchroniseren",
+    "cancelSync": "Annuleren",
+    "cancelSyncAria": "Voortplantingssynchronisatie annuleren"
   },
   "reticulumTopology": {
     "title": "Netwerktopologie",
@@ -3620,156 +3778,43 @@
     "menuToastAvailableBody": "Versie {{version}} is beschikbaar.",
     "menuToastErrorTitle": "Updatecontrole mislukt"
   },
-  "diagnosticsPing": {
-    "title": "Continue ping",
-    "reticulumHint": "Voert ping (RTT) en padsonde (hops) uit op elk interval terwijl de stapel draait.",
-    "hashLabel": "Bestemmingshash",
-    "hashPlaceholder": "Bestemmingshash van 32 tekens...",
-    "hashAria": "Bestemmingshash naar ping",
-    "intervalLabel": "Interval(len)",
-    "intervalAria": "Seconden tussen pingpogingen",
-    "start": "Beginnen",
-    "stop": "Stop",
-    "runOnce": "Eenmaal pingen",
-    "colSeq": "#",
-    "colRtt": "project voor regionale technologieoverdracht",
-    "colHops": "Hop",
-    "colStatus": "Status",
-    "rttMs": "{{ms}} ms",
-    "statusOk": "OK",
-    "statusFailed": "Mislukt: {{error}}"
+  "messageStatusBadge": {
+    "queuedTooltip": "In wachtrij — wordt verzonden wanneer er verbinding is",
+    "queuedLabel": "In wachtrij geplaatst",
+    "blockedDefault": "Geblokkeerd — geen versleutelingssleutel beschikbaar",
+    "blockedLabel": "Geblokkeerd",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "Wifi",
+    "transportBt": "BT)",
+    "noAck": "geen ACK",
+    "sending": "Versturen...",
+    "delivered": "Geleverd",
+    "posted": "Geboekt",
+    "failedPost": "Publiceren mislukt",
+    "noAckTooltip": "Geen ACK (bericht kan nog steeds zijn uitgezonden; geen ander knooppunt binnen bereik om te bevestigen)",
+    "failed": "Mislukt",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Toestel"
   },
-  "reticulumIdentitySwitcher": {
-    "label": "huidige identiteit",
-    "active": "Actieve identiteit: {{name}}",
-    "activeBadge": "actief"
-  },
-  "identityVault": {
-    "title": "Identiteitskluis",
-    "hint": "Versleutel een lokale kopie van je identiteitsback-up met een kluiswachtwoordcode. Ontgrendel om toegang te krijgen tot beschermde identiteitsbewerkingen.",
-    "passcode": "Toegangscode kluis",
-    "confirmPasscode": "Toegangscode bevestigen",
-    "setPasscode": "Schakel kluis in",
-    "unlock": "Ontgrendel kluis",
-    "lock": "Kluis vergrendelen",
-    "statusNotConfigured": "Niet geconfigureerd",
-    "statusLocked": "Vastgezet",
-    "statusUnlocked": "Ontgrendeld",
-    "passcodeTooShort": "De toegangscode moet uit minimaal 4 tekens bestaan.",
-    "passcodeMismatch": "Ingevoerde toegangscodes komen niet overeen.",
-    "setSuccess": "Toegangscode kluis opgeslagen.",
-    "setFailed": "Kan kluistoegangscode niet opslaan.",
-    "unlockSuccess": "Kluis ontgrendeld",
-    "unlockFailed": "Onjuiste toegangscode of kluisfout.",
-    "lockSuccess": "Kluis vergrendeld."
-  },
-  "reticulumPropagationHeader": {
-    "modeLabel": "voortplantingsmodus",
-    "modeAria": "Voortplantingssynchronisatiemodus",
-    "modeAuto": "Auto",
-    "modeManual": "Handmatig",
-    "modeOff": "Off",
-    "sync": "Synchroniseren",
-    "syncAria": "Voortplantingsberichten synchroniseren",
-    "cancelSync": "Annuleren",
-    "cancelSyncAria": "Voortplantingssynchronisatie annuleren"
-  },
-  "reticulumProfileIcon": {
-    "iconName": "Avatar-pictogram",
-    "iconNameAria": "Peer-avatarpictogram",
-    "iconCircle": "Cirkel",
-    "iconStar": "Ster",
-    "iconHeart": "Hart",
-    "iconShield": "Afscherming",
-    "iconUser": "Gebruiker"
-  },
-  "networkPanel": {
-    "reticulumStackSettings": {
-      "title": "Stapelinstellingen",
-      "enableTransport": "Transport inschakelen (route voor andere peers)",
-      "shareInstance": "Deel Reticulum-instantie",
-      "logLevel": "Logniveau",
-      "save": "Bewaar stapelinstellingen",
-      "saveFailed": "Kan stapelinstellingen niet opslaan."
-    },
-    "reticulumConfigImport": {
-      "title": "Importeer Reticulum-configuratie",
-      "hint": "Plak een configuratiebestand in rnsd-stijl of importeer vanaf schijf. Voeg interfaceblokken toe/bijwerken op naam; vervangen overschrijft alle interfaces.",
-      "pasteLabel": "Inhoud van configuratiebestand",
-      "fromFile": "Importeren uit bestand…",
-      "fromSystem": "Systeemstandaard importeren",
-      "merge": "Import samenvoegen",
-      "replace": "Vervang interfaces",
-      "confirmTitle": "Importeer Reticulum-configuratie",
-      "confirmMerge": "Geïmporteerde interfaces samenvoegen met de huidige configuratie?",
-      "confirmReplace": "Alle interfaces vervangen door de geïmporteerde configuratie? Dit kan niet ongedaan worden gemaakt.",
-      "confirm": "Importeren"
-    },
-    "reticulumConfigImportFailed": "Configuratie-import mislukt.",
-    "reticulumConfigNotFound": "Geen systeem-Reticulum-configuratie gevonden op standaardpaden."
-  },
-  "adminPanel": {
-    "reticulumFactoryReset": {
-      "title": "Fabrieksreset",
-      "hint": "Wist identiteit, contacten en berichten uit de zijspanstapel. Interfaceconfiguratie blijft behouden.",
-      "button": "Stapelgegevens opnieuw instellen",
-      "confirmTitle": "Reticulum stack resetten?",
-      "confirmBody": "Hiermee worden identiteit, contacten en lokale berichten uit het zijspan verwijderd. Uw interfaceconfiguratiebestand wordt bewaard.",
-      "confirm": "Opnieuw instellen"
-    }
-  },
-  "meshcore": {
-    "errors": {
-      "repeaterAuthHint": "Stel het beheerderswachtwoord van de repeater in of wijzig dit via het paneel Repeaters (alleen sessie).",
-      "connectionFailed": "Verbinding mislukt",
-      "notConnected": "Niet verbonden met apparaat",
-      "nodeNotFound": "Knooppunt niet gevonden (geen coderingssleutel)",
-      "authenticationFailed": "Authenticatie mislukt",
-      "requestFailed": "Mislukt: {{detail}}",
-      "requestTimedOut": "Time-out voor verzoek (tot ~{{seconds}}s)",
-      "requestTimedOutApprox": "Time-out voor verzoek (~{{seconds}}s)",
-      "pingNoRoute": "Nog geen route van de radio - multi-hop trace heeft een gesynchroniseerd pad nodig. Wacht op contactupdates of maak opnieuw verbinding.",
-      "bleNoDetails": "BLE-verbinding mislukt (geen foutdetails van apparaat). Probeer het opnieuw of gebruik Serieel/USB.",
-      "bleAlreadyInProgress": "Er is al een Bluetooth-verbinding actief. Wacht tot het klaar is of probeer in plaats daarvan Serieel/USB.",
-      "bleMissingServices": "Apparaat ondersteunt het MeshCore BLE-protocol niet. Zorg ervoor dat het apparaat MeshCore-firmware gebruikt.",
-      "blePeripheralInUse": "Dit apparaat is al verbonden via Meshtastic BLE. Koppel deze eerst los voordat u verbinding maakt als MeshCore.",
-      "bleTimeoutWebBtHandshake": "Time-out voor MeshCore-handshake (Web Bluetooth). Mogelijk heeft de radio eerst een pincode nodig die is gekoppeld aan Linux: gebruik Apparaat verwijderen en opnieuw koppelen en voer de pincode in die op het apparaat wordt weergegeven, of koppel met bluetoothctl en tik vervolgens opnieuw op Verbinden.",
-      "bleTimeoutWebBt": "Er is een time-out opgetreden in de Bluetooth-verbinding tijdens het openen van MeshCore via Web Bluetooth. Probeer het opnieuw, houd het apparaat wakker, schakel de BLE op de radio uit en weer in, of gebruik Serieel/TCP.",
-      "bleTimeoutHandshake": "Bluetooth verbonden, maar de handshake van het MeshCore-protocol is niet voltooid voordat de verbinding werd verbroken/time-out. Probeer het opnieuw, houd het apparaat wakker en in de buurt, schakel BLE uit en weer in, of gebruik Serieel/TCP.",
-      "bleTimeoutNoble": "Er is een time-out opgetreden in de Bluetooth-verbinding tijdens het openen van MeshCore via Noble IPC. Probeer het opnieuw, schakel BLE op het apparaat uit of gebruik Serieel/TCP.",
-      "roomPost": {
-        "badState": "Kamerpost afgewezen (niet ingelogd op de radio). Meld u af, log opnieuw in en probeer het opnieuw.",
-        "illegalArg": "Kamerpost afgewezen (ongeldig berichtformaat).",
-        "notFound": "Kamerpost afgewezen (kamercontact niet gevonden op de radio).",
-        "unsupportedCmd": "Kamerpost afgewezen (niet-ondersteund berichttype op de radio). Log in op de kamer en probeer het opnieuw.",
-        "default": "Kamerpost afgewezen door de radio. Meld u af, log opnieuw in en probeer het opnieuw.",
-        "timeout": "Er is een time-out opgetreden in de kamerpost tijdens het wachten op de radio. Controleer het bereik of probeer het opnieuw."
-      },
-      "roomLogin": {
-        "noRoute": "Geen route naar deze roomserver. Traceer het knooppunt vanaf de kaart of wacht op padadvertenties en probeer het vervolgens opnieuw.",
-        "pathSyncFailed": "Kon de route niet programmeren op uw radio voordat u zich aanmeldde. Sluit het apparaat opnieuw aan en probeer het opnieuw.",
-        "pathSyncFailedDetail": "Kon de route niet programmeren op uw radio voordat u zich aanmeldde. Sluit het apparaat opnieuw aan en probeer het opnieuw.{{detail}}",
-        "rejectedBlankGuest": "Inloggen voor kamer afgewezen. Gebruik Doorgaan met alleen-lezen voor een blanco gastwachtwoord, of probeer gastwachtwoord \"hallo\".",
-        "rejectedDefaultGuest": "Inloggen voor kamer afgewezen. Als deze server geen gastwachtwoord heeft, gebruik dan Doorgaan met alleen-lezen in plaats van Inloggen. Controleer anders het gast- of beheerderswachtwoord.",
-        "rejectedCheckPassword": "Inloggen voor kamer afgewezen. Controleer het gast- of beheerderswachtwoord voor deze kamerserver.",
-        "timedOutBlankGuest": "Er is een time-out opgetreden voor het inloggen op de kamer. Gebruik Doorgaan met alleen-lezen voor een blanco gastwachtwoord, of probeer gastwachtwoord \"hallo\".",
-        "timedOutDefaultGuest": "Er is een time-out opgetreden voor het inloggen op de kamer. Als deze server geen gastwachtwoord heeft, gebruik dan Doorgaan met alleen-lezen in plaats van Inloggen.",
-        "timedOut": "Er is een time-out opgetreden voor het inloggen op de kamer. De kamer is mogelijk buiten bereik of reageert niet.",
-        "failed": "Inloggen in de kamer is mislukt"
-      },
-      "roomLogout": {
-        "timedOut": "Room logout timed out. De kamer is mogelijk buiten bereik of reageert niet.",
-        "rejected": "Uitloggen van kamer geweigerd via de radio.",
-        "failed": "Kon de kamer niet verlaten"
-      },
-      "repeaterRpcInProgress": "Er is al een aanvraag voor deze repeater in behandeling"
-    },
-    "mqttHints": {
-      "notAuthorized": "Controleer v1_ gebruikersnaam, tokenhandtekening en JWT-doelgroep versus makelaar; zie docs/letsmesh-mqtt-auth.md. Gebruik Aangepast om indien nodig een door de operator uitgegeven token te plakken.",
-      "network": "Controleer netwerk, DNS, firewall en VPN.",
-      "connackTimeout": "Als u geen eerdere regel 'clientfout' ziet, loopt de TLS/WebSocket-handshake mogelijk vast (probeer een ander netwerk; de app geeft de voorkeur aan IPv4 voor WSS).",
-      "subscribeFailed": "De makelaar kan een wildcard-abonnement op dit onderwerp weigeren; berichten kunnen nog steeds binnenkomen als de makelaar dit toestaat.",
-      "keepalive": "De server reageert niet meer op MQTT-pings (time-out bij inactiviteit, netwerkuitval of makelaar heeft de sessie gesloten). Maak opnieuw verbinding of controleer uw link."
-    }
+  "bootSequence": {
+    "booting": "Opstarten mesh stack...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Kanalen scannen... {{count}}",
+    "meshtasticScanningChannels": "Geconfigureerde kanalen scannen...",
+    "databaseNodes_one": "Database: {{count}} knooppunt gesynchroniseerd",
+    "databaseNodes_other": "Database: {{count}} knooppunten gesynchroniseerd",
+    "syncingDatabase": "Netwerkdatabase wordt gesynchroniseerd...",
+    "interfaceReady": "{{iface}} interface gereed",
+    "freqMhz": "Freq: {{mhz}} MHz",
+    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
+    "configuringRadio": "Radioparameters configureren...",
+    "contacts_one": "Contacten: {{count}} contact geladen",
+    "contacts_other": "Contacten: {{count}} contacten geladen",
+    "loadingContacts": "Contactendatabase wordt geladen...",
+    "routes_one": "Routes: {{count}} knooppunt in mesh",
+    "routes_other": "Routes: {{count}} knooppunten in mesh",
+    "routesEstablished": "Routes vastgesteld",
+    "meshActive": "Mesh netwerk actief"
   }
 }

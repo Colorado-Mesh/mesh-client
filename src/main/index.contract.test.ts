@@ -239,6 +239,13 @@ describe('MQTT IPC handlers (source contract)', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:powerResume'");
     expect(INDEX_SOURCE).toContain("ipcMain.handle('mqtt:powerSuspend'");
   });
+
+  it('registers renderer heartbeat IPC for post-resume hang detection', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('app:rendererHeartbeat'");
+    expect(INDEX_SOURCE).toContain(
+      'renderer unresponsive after system resume (no heartbeat within 30s)',
+    );
+  });
 });
 
 describe('Reticulum sidecar IPC handlers (source contract)', () => {

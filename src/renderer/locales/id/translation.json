@@ -1,4 +1,14 @@
 {
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Reset pabrik",
+      "hint": "Menghapus identitas, kontak, dan pesan dari tumpukan sespan. Konfigurasi antarmuka dipertahankan.",
+      "button": "Setel ulang data tumpukan",
+      "confirmTitle": "Setel ulang stack Reticulum?",
+      "confirmBody": "Tindakan ini menghapus identitas, kontak, dan pesan lokal dari sespan. File konfigurasi antarmuka Anda disimpan.",
+      "confirm": "Mengatur ulang"
+    }
+  },
   "app": {
     "loadingPanel": "Memuat panel",
     "loadingDialog": "Memuat dialog",
@@ -317,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "Pangkas riwayat posisi secara otomatis saat startup, lebih lama dari {{days}} hari",
     "capTotalNodesCountAria": "Batasi total node, pertahankan node {{count}} terbaru",
     "limitMessagesLoadedCountAria": "Batasi pesan yang dimuat {{count}} pesan",
-    "capStoredMessagesCountAria": "Batasi pesan yang disimpan, simpan pesan {{count}} terbaru"
+    "capStoredMessagesCountAria": "Batasi pesan yang disimpan, simpan pesan {{count}} terbaru",
+    "maxDistanceAria": "Jarak maksimum: {{value}}",
+    "unitAria": "Unit: {{unit}}"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -430,7 +442,6 @@
     "emptyNoDmMessages": "Belum ada pesan dengan {{name}}.",
     "emptyNoMessagesYet": "Belum ada pesan. Kirim pesan atau tunggu pesan masuk.",
     "emptyConnectFirst": "Sambungkan ke perangkat untuk mulai mengobrol.",
-    "waitingMessagesBadge": "Menyinkronkan pesan antrian {{count}} dari radio…",
     "waitingMessagesSyncNow": "Sinkronkan sekarang",
     "jumpToUnread": "Langsung ke Belum Dibaca",
     "jumpToLatest": "Langsung ke Terbaru",
@@ -489,7 +500,10 @@
       "pkiFailed": "Enkripsi PKI gagal untuk pesan ini.",
       "noChannel": "Tidak ada saluran yang tersedia untuk merutekan pesan ini.",
       "timeout": "Waktu pesan habis di radio."
-    }
+    },
+    "waitingMessagesQueued": "{{count}} antrean pesan di radio",
+    "waitingMessagesSyncProgress": "Menyinkronkan {{processed}} / {{total}} dari radio…",
+    "waitingMessagesSyncProgressIndeterminate": "Menyinkronkan pesan antrian dari radio…"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -1262,6 +1276,25 @@
     "rssiDbm": "RSSI {{rssi}} dBm",
     "snrDb": "SNR {{snr}} dB"
   },
+  "diagnosticsPing": {
+    "title": "Ping berkelanjutan",
+    "reticulumHint": "Menjalankan ping (RTT) dan probe jalur (hop) pada setiap interval saat tumpukan sedang berjalan.",
+    "hashLabel": "Hash tujuan",
+    "hashPlaceholder": "Hash tujuan 32 karakter…",
+    "hashAria": "Hash tujuan ke ping",
+    "intervalLabel": "Interval",
+    "intervalAria": "Detik antara upaya ping",
+    "start": "Mulai",
+    "stop": "Berhenti",
+    "runOnce": "Ping sekali",
+    "colSeq": "#",
+    "colRtt": "RTT",
+    "colHops": "Hop",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Gagal: {{error}}"
+  },
   "errorBoundary": {
     "title": "Ada yang tidak beres",
     "unexpectedError": "Terjadi kesalahan yang tidak terduga",
@@ -1383,6 +1416,25 @@
     "wifiStationSuccess": "Mode stasiun disimpan. Reboot papan, lalu temukan IP - nya (display, router DHCP, atau Read config) dan tambahkan tcp ://… pada Connection → Interfaces.",
     "wifiConfigEmpty": "Tidak ada data konfigurasi yang dikembalikan.",
     "wifiNetmaskPlaceholder": "255.255.255.0"
+  },
+  "identityVault": {
+    "title": "Kubah identitas",
+    "hint": "Enkripsi salinan lokal cadangan identitas Anda dengan kode sandi brankas. Buka kunci untuk mengakses operasi identitas yang dilindungi.",
+    "passcode": "Kode sandi brankas",
+    "confirmPasscode": "Konfirmasi kode sandi",
+    "setPasscode": "Aktifkan brankas",
+    "unlock": "Buka kunci brankas",
+    "lock": "Kunci brankas",
+    "statusNotConfigured": "Tidak terkonfigurasi",
+    "statusLocked": "Terkunci",
+    "statusUnlocked": "Tidak terkunci",
+    "passcodeTooShort": "Kode sandi harus setidaknya 4 karakter.",
+    "passcodeMismatch": "Kode sandi tidak cocok.",
+    "setSuccess": "Kode sandi brankas disimpan.",
+    "setFailed": "Tidak dapat menyimpan kode sandi brankas.",
+    "unlockSuccess": "Lemari besi tidak terkunci.",
+    "unlockFailed": "Kesalahan kode sandi atau brankas yang salah.",
+    "lockSuccess": "Kubah terkunci."
   },
   "logAnalyzeModal": {
     "title": "Analisis Log",
@@ -1549,6 +1601,60 @@
     "extraRfReceptions": "penerimaan RF tambahan",
     "originatorPacket": "paket",
     "originatorPackets": "paket"
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "Atur atau ubah kata sandi admin repeater dari panel Repeater (hanya sesi).",
+      "connectionFailed": "Koneksi gagal",
+      "notConnected": "Tidak terhubung ke perangkat",
+      "nodeNotFound": "Node tidak ditemukan (tidak ada kunci enkripsi)",
+      "authenticationFailed": "Otentikasi gagal",
+      "requestFailed": "Gagal: {{detail}}",
+      "requestTimedOut": "Waktu permintaan habis (hingga ~{{seconds}}s)",
+      "requestTimedOutApprox": "Waktu permintaan habis (~{{seconds}}s)",
+      "pingNoRoute": "Belum ada rute dari radio — pelacakan multi-hop memerlukan jalur yang disinkronkan. Tunggu pembaruan kontak atau sambungkan kembali.",
+      "bleNoDetails": "Koneksi BLE gagal (tidak ada detail kesalahan dari perangkat). Coba lagi atau gunakan Serial/USB.",
+      "bleAlreadyInProgress": "Koneksi Bluetooth sedang berlangsung. Tunggu hingga selesai atau coba Serial/USB saja.",
+      "bleMissingServices": "Perangkat tidak mendukung protokol MeshCore BLE. Pastikan perangkat menjalankan firmware MeshCore.",
+      "blePeripheralInUse": "Perangkat ini sudah terhubung melalui Meshtastic BLE. Putuskan sambungan terlebih dahulu sebelum menghubungkan sebagai MeshCore.",
+      "bleTimeoutWebBtHandshake": "Waktu jabat tangan MeshCore habis (Web Bluetooth). Radio mungkin memerlukan PIN yang dipasangkan dengan Linux terlebih dahulu: gunakan Hapus & Pasangkan Ulang Perangkat dan masukkan PIN yang ditampilkan pada perangkat, atau pasangkan dengan bluetoothctl, lalu ketuk Hubungkan lagi.",
+      "bleTimeoutWebBt": "Koneksi Bluetooth habis waktu saat membuka MeshCore melalui Web Bluetooth. Coba lagi, biarkan perangkat tetap aktif, matikan BLE di radio, atau gunakan Serial/TCP.",
+      "bleTimeoutHandshake": "Bluetooth terhubung tetapi jabat tangan protokol MeshCore tidak selesai sebelum pemutusan/batas waktu. Coba lagi, jaga agar perangkat tetap aktif dan berada di dekatnya, nyalakan BLE, atau gunakan Serial/TCP.",
+      "bleTimeoutNoble": "Koneksi Bluetooth habis waktu saat membuka MeshCore melalui Noble IPC. Coba lagi, matikan BLE pada perangkat, atau gunakan Serial/TCP.",
+      "roomPost": {
+        "badState": "Postingan ruangan ditolak (tidak login di radio). Keluar, masuk lagi, lalu coba lagi.",
+        "illegalArg": "Postingan ruangan ditolak (format pesan tidak valid).",
+        "notFound": "Postingan ruangan ditolak (kontak ruangan tidak ditemukan di radio).",
+        "unsupportedCmd": "Postingan ruangan ditolak (jenis pesan di radio tidak didukung). Masuk ke ruangan, lalu coba lagi.",
+        "default": "Postingan kamar ditolak oleh radio. Keluar, masuk lagi, lalu coba lagi.",
+        "timeout": "Waktu posting kamar habis menunggu radio. Periksa jangkauan atau coba lagi."
+      },
+      "roomLogin": {
+        "noRoute": "Tidak ada rute ke server ruangan ini. Lacak simpul dari peta atau tunggu iklan jalur, lalu coba lagi.",
+        "pathSyncFailed": "Tidak dapat memprogram rute di radio Anda sebelum login. Hubungkan kembali perangkat dan coba lagi.",
+        "pathSyncFailedDetail": "Tidak dapat memprogram rute di radio Anda sebelum login. Hubungkan kembali perangkat dan coba lagi.{{detail}}",
+        "rejectedBlankGuest": "Login ruangan ditolak. Gunakan Lanjutkan hanya-baca untuk kata sandi tamu kosong, atau coba kata sandi tamu \"halo\".",
+        "rejectedDefaultGuest": "Login ruangan ditolak. Jika server ini tidak memiliki kata sandi tamu, gunakan Lanjutkan hanya baca, bukan Login. Jika tidak, periksa kata sandi tamu atau admin.",
+        "rejectedCheckPassword": "Login ruangan ditolak. Periksa kata sandi tamu atau admin untuk server ruangan ini.",
+        "timedOutBlankGuest": "Waktu masuk ruangan habis. Gunakan Lanjutkan hanya-baca untuk kata sandi tamu kosong, atau coba kata sandi tamu \"halo\".",
+        "timedOutDefaultGuest": "Waktu masuk ruangan habis. Jika server ini tidak memiliki kata sandi tamu, gunakan Lanjutkan hanya baca, bukan Login.",
+        "timedOut": "Waktu masuk ruangan habis. Ruangan mungkin berada di luar jangkauan atau tidak merespons.",
+        "failed": "Gagal masuk ke ruang"
+      },
+      "roomLogout": {
+        "timedOut": "Waktu keluar ruangan telah habis. Ruangan mungkin berada di luar jangkauan atau tidak merespons.",
+        "rejected": "Logout ruangan ditolak oleh radio.",
+        "failed": "Tidak bisa meninggalkan ruangan"
+      },
+      "repeaterRpcInProgress": "Permintaan untuk repeater ini sedang dalam proses"
+    },
+    "mqttHints": {
+      "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker; lihat dokumen/letsmesh-mqtt-auth.md. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",
+      "network": "Periksa jaringan, DNS, firewall, dan VPN.",
+      "connackTimeout": "Jika Anda tidak melihat baris “kesalahan klien” sebelumnya, jabat tangan TLS/WebSocket mungkin terhenti (coba jaringan lain; aplikasi lebih memilih IPv4 untuk WSS).",
+      "subscribeFailed": "Broker mungkin menolak berlangganan wildcard pada topik ini; pesan mungkin masih sampai jika broker mengizinkannya.",
+      "keepalive": "Server berhenti merespons ping MQTT (waktu tunggu habis, jaringan terputus, atau broker menutup sesi). Hubungkan kembali atau periksa tautan Anda."
+    }
   },
   "meshcoreContactSettings": {
     "allContactsCleared": "Semua kontak dihapus.",
@@ -2006,6 +2112,31 @@
       }
     }
   },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Pengaturan tumpukan",
+      "enableTransport": "Aktifkan transportasi (rute untuk rekan lain)",
+      "shareInstance": "Bagikan instance Reticulum",
+      "logLevel": "tingkat log",
+      "save": "Simpan pengaturan tumpukan",
+      "saveFailed": "Gagal menyimpan pengaturan tumpukan."
+    },
+    "reticulumConfigImport": {
+      "title": "Impor config Reticulum",
+      "hint": "Tempel file konfigurasi bergaya rnsd atau impor dari disk. Gabungkan penambahan/perbarui blok antarmuka berdasarkan nama; replace menimpa semua antarmuka.",
+      "pasteLabel": "Konfigurasi isi file",
+      "fromFile": "Impor dari file…",
+      "fromSystem": "Impor default sistem",
+      "merge": "Gabungkan impor",
+      "replace": "Ganti antarmuka",
+      "confirmTitle": "Impor config Reticulum",
+      "confirmMerge": "Gabungkan antarmuka yang diimpor ke dalam konfigurasi saat ini?",
+      "confirmReplace": "Ganti semua antarmuka dengan konfigurasi yang diimpor? Hal ini tidak dapat dibatalkan.",
+      "confirm": "Impor"
+    },
+    "reticulumConfigImportFailed": "Impor konfigurasi gagal.",
+    "reticulumConfigNotFound": "Config Reticulum sistem tidak ditemukan di path default."
+  },
   "nodeDetailModal": {
     "removeFromFavorites": "Hapus dari favorit",
     "addToFavorites": "Tambahkan ke favorit",
@@ -2359,7 +2490,9 @@
     "urlBarAria": "Alamat halaman pengembara",
     "back": "Kembali",
     "forward": "Maju",
-    "invalidUrl": "Alamat halaman Nomad tidak valid"
+    "invalidUrl": "Alamat halaman Nomad tidak valid",
+    "collapseNodeList": "Ciutkan daftar simpul",
+    "expandNodeList": "Perluas daftar simpul"
   },
   "packetDistribution": {
     "overallDistribution": "Distribusi Keseluruhan",
@@ -3185,6 +3318,20 @@
     "clearAnnouncesDone": "Pengumuman dihapus.",
     "clearAnnouncesFailed": "Gagal menghapus pengumuman."
   },
+  "reticulumIdentitySwitcher": {
+    "label": "Identitas aktif",
+    "active": "Identitas aktif: {{name}}",
+    "activeBadge": "aktif"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Ikon avatar",
+    "iconNameAria": "Ikon avatar sejawat",
+    "iconCircle": "Lingkaran",
+    "iconStar": "Star",
+    "iconHeart": "Hati",
+    "iconShield": "Perisai",
+    "iconUser": "Pengguna"
+  },
   "reticulumPropagation": {
     "preferred": "Disukai",
     "setPreferred": "Atur pilihan",
@@ -3214,6 +3361,17 @@
     "autoSyncOption24h": "Setiap 24 jam",
     "lastSynced": "Terakhir disinkronkan: {{time}}",
     "lastRefreshed": "Terakhir diperbarui {{time}}"
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Mode propagasi",
+    "modeAria": "Mode sinkronisasi propagasi",
+    "modeAuto": "Otomatis",
+    "modeManual": "Panduan",
+    "modeOff": "Tidak aktif",
+    "sync": "Sinkronkan",
+    "syncAria": "Sinkronkan pesan propagasi",
+    "cancelSync": "Batal",
+    "cancelSyncAria": "Batalkan sinkronisasi propagasi"
   },
   "reticulumTopology": {
     "title": "Topologi jaringan",
@@ -3620,156 +3778,43 @@
     "menuToastAvailableBody": "Versi {{version}} tersedia.",
     "menuToastErrorTitle": "Pemeriksaan pembaruan gagal"
   },
-  "diagnosticsPing": {
-    "title": "Ping berkelanjutan",
-    "reticulumHint": "Menjalankan ping (RTT) dan probe jalur (hop) pada setiap interval saat tumpukan sedang berjalan.",
-    "hashLabel": "Hash tujuan",
-    "hashPlaceholder": "Hash tujuan 32 karakter…",
-    "hashAria": "Hash tujuan ke ping",
-    "intervalLabel": "Interval",
-    "intervalAria": "Detik antara upaya ping",
-    "start": "Mulai",
-    "stop": "Berhenti",
-    "runOnce": "Ping sekali",
-    "colSeq": "#",
-    "colRtt": "RTT",
-    "colHops": "Hop",
-    "colStatus": "Status",
-    "rttMs": "{{ms}} ms",
-    "statusOk": "OK",
-    "statusFailed": "Gagal: {{error}}"
+  "messageStatusBadge": {
+    "queuedTooltip": "Diantrekan — akan dikirim saat terhubung",
+    "queuedLabel": "Diantrekan",
+    "blockedDefault": "Diblokir — tidak ada kunci enkripsi yang tersedia",
+    "blockedLabel": "Diblokir",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WiFi",
+    "transportBt": "BT",
+    "noAck": "tidak ada ack",
+    "sending": "Mengirim...",
+    "delivered": "Terkirim",
+    "posted": "Diposting",
+    "failedPost": "Gagal Memposting",
+    "noAckTooltip": "Tidak ada ack (pesan mungkin masih disiarkan; tidak ada simpul lain dalam jangkauan untuk dikenali)",
+    "failed": "Gagal",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Perangkat"
   },
-  "reticulumIdentitySwitcher": {
-    "label": "Identitas aktif",
-    "active": "Identitas aktif: {{name}}",
-    "activeBadge": "aktif"
-  },
-  "identityVault": {
-    "title": "Kubah identitas",
-    "hint": "Enkripsi salinan lokal cadangan identitas Anda dengan kode sandi brankas. Buka kunci untuk mengakses operasi identitas yang dilindungi.",
-    "passcode": "Kode sandi brankas",
-    "confirmPasscode": "Konfirmasi kode sandi",
-    "setPasscode": "Aktifkan brankas",
-    "unlock": "Buka kunci brankas",
-    "lock": "Kunci brankas",
-    "statusNotConfigured": "Tidak terkonfigurasi",
-    "statusLocked": "Terkunci",
-    "statusUnlocked": "Tidak terkunci",
-    "passcodeTooShort": "Kode sandi harus setidaknya 4 karakter.",
-    "passcodeMismatch": "Kode sandi tidak cocok.",
-    "setSuccess": "Kode sandi brankas disimpan.",
-    "setFailed": "Tidak dapat menyimpan kode sandi brankas.",
-    "unlockSuccess": "Lemari besi tidak terkunci.",
-    "unlockFailed": "Kesalahan kode sandi atau brankas yang salah.",
-    "lockSuccess": "Kubah terkunci."
-  },
-  "reticulumPropagationHeader": {
-    "modeLabel": "Mode propagasi",
-    "modeAria": "Mode sinkronisasi propagasi",
-    "modeAuto": "Otomatis",
-    "modeManual": "Panduan",
-    "modeOff": "Tidak aktif",
-    "sync": "Sinkronkan",
-    "syncAria": "Sinkronkan pesan propagasi",
-    "cancelSync": "Batal",
-    "cancelSyncAria": "Batalkan sinkronisasi propagasi"
-  },
-  "reticulumProfileIcon": {
-    "iconName": "Ikon avatar",
-    "iconNameAria": "Ikon avatar sejawat",
-    "iconCircle": "Lingkaran",
-    "iconStar": "Star",
-    "iconHeart": "Hati",
-    "iconShield": "Perisai",
-    "iconUser": "Pengguna"
-  },
-  "networkPanel": {
-    "reticulumStackSettings": {
-      "title": "Pengaturan tumpukan",
-      "enableTransport": "Aktifkan transportasi (rute untuk rekan lain)",
-      "shareInstance": "Bagikan instance Reticulum",
-      "logLevel": "tingkat log",
-      "save": "Simpan pengaturan tumpukan",
-      "saveFailed": "Gagal menyimpan pengaturan tumpukan."
-    },
-    "reticulumConfigImport": {
-      "title": "Impor config Reticulum",
-      "hint": "Tempel file konfigurasi bergaya rnsd atau impor dari disk. Gabungkan penambahan/perbarui blok antarmuka berdasarkan nama; replace menimpa semua antarmuka.",
-      "pasteLabel": "Konfigurasi isi file",
-      "fromFile": "Impor dari file…",
-      "fromSystem": "Impor default sistem",
-      "merge": "Gabungkan impor",
-      "replace": "Ganti antarmuka",
-      "confirmTitle": "Impor config Reticulum",
-      "confirmMerge": "Gabungkan antarmuka yang diimpor ke dalam konfigurasi saat ini?",
-      "confirmReplace": "Ganti semua antarmuka dengan konfigurasi yang diimpor? Hal ini tidak dapat dibatalkan.",
-      "confirm": "Impor"
-    },
-    "reticulumConfigImportFailed": "Impor konfigurasi gagal.",
-    "reticulumConfigNotFound": "Config Reticulum sistem tidak ditemukan di path default."
-  },
-  "adminPanel": {
-    "reticulumFactoryReset": {
-      "title": "Reset pabrik",
-      "hint": "Menghapus identitas, kontak, dan pesan dari tumpukan sespan. Konfigurasi antarmuka dipertahankan.",
-      "button": "Setel ulang data tumpukan",
-      "confirmTitle": "Setel ulang stack Reticulum?",
-      "confirmBody": "Tindakan ini menghapus identitas, kontak, dan pesan lokal dari sespan. File konfigurasi antarmuka Anda disimpan.",
-      "confirm": "Mengatur ulang"
-    }
-  },
-  "meshcore": {
-    "errors": {
-      "repeaterAuthHint": "Atur atau ubah kata sandi admin repeater dari panel Repeater (hanya sesi).",
-      "connectionFailed": "Koneksi gagal",
-      "notConnected": "Tidak terhubung ke perangkat",
-      "nodeNotFound": "Node tidak ditemukan (tidak ada kunci enkripsi)",
-      "authenticationFailed": "Otentikasi gagal",
-      "requestFailed": "Gagal: {{detail}}",
-      "requestTimedOut": "Waktu permintaan habis (hingga ~{{seconds}}s)",
-      "requestTimedOutApprox": "Waktu permintaan habis (~{{seconds}}s)",
-      "pingNoRoute": "Belum ada rute dari radio — pelacakan multi-hop memerlukan jalur yang disinkronkan. Tunggu pembaruan kontak atau sambungkan kembali.",
-      "bleNoDetails": "Koneksi BLE gagal (tidak ada detail kesalahan dari perangkat). Coba lagi atau gunakan Serial/USB.",
-      "bleAlreadyInProgress": "Koneksi Bluetooth sedang berlangsung. Tunggu hingga selesai atau coba Serial/USB saja.",
-      "bleMissingServices": "Perangkat tidak mendukung protokol MeshCore BLE. Pastikan perangkat menjalankan firmware MeshCore.",
-      "blePeripheralInUse": "Perangkat ini sudah terhubung melalui Meshtastic BLE. Putuskan sambungan terlebih dahulu sebelum menghubungkan sebagai MeshCore.",
-      "bleTimeoutWebBtHandshake": "Waktu jabat tangan MeshCore habis (Web Bluetooth). Radio mungkin memerlukan PIN yang dipasangkan dengan Linux terlebih dahulu: gunakan Hapus & Pasangkan Ulang Perangkat dan masukkan PIN yang ditampilkan pada perangkat, atau pasangkan dengan bluetoothctl, lalu ketuk Hubungkan lagi.",
-      "bleTimeoutWebBt": "Koneksi Bluetooth habis waktu saat membuka MeshCore melalui Web Bluetooth. Coba lagi, biarkan perangkat tetap aktif, matikan BLE di radio, atau gunakan Serial/TCP.",
-      "bleTimeoutHandshake": "Bluetooth terhubung tetapi jabat tangan protokol MeshCore tidak selesai sebelum pemutusan/batas waktu. Coba lagi, jaga agar perangkat tetap aktif dan berada di dekatnya, nyalakan BLE, atau gunakan Serial/TCP.",
-      "bleTimeoutNoble": "Koneksi Bluetooth habis waktu saat membuka MeshCore melalui Noble IPC. Coba lagi, matikan BLE pada perangkat, atau gunakan Serial/TCP.",
-      "roomPost": {
-        "badState": "Postingan ruangan ditolak (tidak login di radio). Keluar, masuk lagi, lalu coba lagi.",
-        "illegalArg": "Postingan ruangan ditolak (format pesan tidak valid).",
-        "notFound": "Postingan ruangan ditolak (kontak ruangan tidak ditemukan di radio).",
-        "unsupportedCmd": "Postingan ruangan ditolak (jenis pesan di radio tidak didukung). Masuk ke ruangan, lalu coba lagi.",
-        "default": "Postingan kamar ditolak oleh radio. Keluar, masuk lagi, lalu coba lagi.",
-        "timeout": "Waktu posting kamar habis menunggu radio. Periksa jangkauan atau coba lagi."
-      },
-      "roomLogin": {
-        "noRoute": "Tidak ada rute ke server ruangan ini. Lacak simpul dari peta atau tunggu iklan jalur, lalu coba lagi.",
-        "pathSyncFailed": "Tidak dapat memprogram rute di radio Anda sebelum login. Hubungkan kembali perangkat dan coba lagi.",
-        "pathSyncFailedDetail": "Tidak dapat memprogram rute di radio Anda sebelum login. Hubungkan kembali perangkat dan coba lagi.{{detail}}",
-        "rejectedBlankGuest": "Login ruangan ditolak. Gunakan Lanjutkan hanya-baca untuk kata sandi tamu kosong, atau coba kata sandi tamu \"halo\".",
-        "rejectedDefaultGuest": "Login ruangan ditolak. Jika server ini tidak memiliki kata sandi tamu, gunakan Lanjutkan hanya baca, bukan Login. Jika tidak, periksa kata sandi tamu atau admin.",
-        "rejectedCheckPassword": "Login ruangan ditolak. Periksa kata sandi tamu atau admin untuk server ruangan ini.",
-        "timedOutBlankGuest": "Waktu masuk ruangan habis. Gunakan Lanjutkan hanya-baca untuk kata sandi tamu kosong, atau coba kata sandi tamu \"halo\".",
-        "timedOutDefaultGuest": "Waktu masuk ruangan habis. Jika server ini tidak memiliki kata sandi tamu, gunakan Lanjutkan hanya baca, bukan Login.",
-        "timedOut": "Waktu masuk ruangan habis. Ruangan mungkin berada di luar jangkauan atau tidak merespons.",
-        "failed": "Gagal masuk ke ruang"
-      },
-      "roomLogout": {
-        "timedOut": "Waktu keluar ruangan telah habis. Ruangan mungkin berada di luar jangkauan atau tidak merespons.",
-        "rejected": "Logout ruangan ditolak oleh radio.",
-        "failed": "Tidak bisa meninggalkan ruangan"
-      },
-      "repeaterRpcInProgress": "Permintaan untuk repeater ini sedang dalam proses"
-    },
-    "mqttHints": {
-      "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker; lihat dokumen/letsmesh-mqtt-auth.md. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",
-      "network": "Periksa jaringan, DNS, firewall, dan VPN.",
-      "connackTimeout": "Jika Anda tidak melihat baris “kesalahan klien” sebelumnya, jabat tangan TLS/WebSocket mungkin terhenti (coba jaringan lain; aplikasi lebih memilih IPv4 untuk WSS).",
-      "subscribeFailed": "Broker mungkin menolak berlangganan wildcard pada topik ini; pesan mungkin masih sampai jika broker mengizinkannya.",
-      "keepalive": "Server berhenti merespons ping MQTT (waktu tunggu habis, jaringan terputus, atau broker menutup sesi). Hubungkan kembali atau periksa tautan Anda."
-    }
+  "bootSequence": {
+    "booting": "Booting mesh stack...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Memindai saluran... {{count}}",
+    "meshtasticScanningChannels": "Memindai saluran yang dikonfigurasi...",
+    "databaseNodes_one": "Database: {{count}} node disinkronkan",
+    "databaseNodes_other": "Database: {{count}} node disinkronkan",
+    "syncingDatabase": "Menyinkronkan basis data mesh...",
+    "interfaceReady": "{{iface}} antarmuka siap",
+    "freqMhz": "Freq: {{mhz}} MHz",
+    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
+    "configuringRadio": "Mengkonfigurasi parameter radio...",
+    "contacts_one": "Kontak: {{count}} kontak dimuat",
+    "contacts_other": "Kontak: {{count}} kontak dimuat",
+    "loadingContacts": "Memuat basis data kontak...",
+    "routes_one": "Rute: {{count}} simpul di mesh",
+    "routes_other": "Rute: {{count}} node dalam mesh",
+    "routesEstablished": "Rute ditetapkan",
+    "meshActive": "Jaringan mesh aktif"
   }
 }

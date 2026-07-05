@@ -3,6 +3,7 @@ dist
 build
 out
 coverage
+.vitest-reports
 
 # Dependencies
 node_modules

@@ -476,6 +476,10 @@ Not installed by pnpm (install separately when needed):
 
 Worker counts are derived in [`vitest.harness.ts`](../vitest.harness.ts) via `computeVitestMaxWorkers(cpuCount, ratio)`: jsdom workers use `RENDERER_UI_CPU_RATIO` because they are memory-heavy; node workers use `NODE_WORKER_CPU_RATIO`. Both pools floor at `MIN_VITEST_WORKERS` (currently 2) and cap effective CPU count at `MAX_VITEST_CPU_COUNT` (32). When tuning worker allocation, change those constants in the harness (not this doc). Shared Vite dependency inline lists (`VITEST_CORE_DEPS`, `VITEST_SERVER_INLINE_DEPS`) also live there — add new deps to the harness when tests need them inlined.
 
+By default all three Vitest projects run in **parallel** (`groupOrder: 0`). On memory-constrained hosts, set `VITEST_SEQUENTIAL_PROJECTS=1` to run `renderer-ui` first, then `renderer-logic` + `main` together (legacy behavior).
+
+CI runs coverage in three parallel jobs (`renderer-ui`, `renderer-logic`, `main`) and merges blob reports via `pnpm run test:coverage:merge` (see [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml)).
+
 Monolithic protocol runtimes (`useMeshtasticRuntime`, `useMeshcoreRuntime`) also use **source contract tests** (read `.ts` files and assert wiring strings) where full `renderHook` integration would require heavy BLE/MQTT mocking; see `*.reconnect*.test.ts` beside those runtimes.
 
 #### Browser dev without Electron
@@ -495,8 +499,11 @@ pnpm run check:i18n
 
 Other useful commands:
 
-- `pnpm test` (watch mode)
+- `pnpm test` (watch mode — reruns only changed test files)
+- `pnpm run test:changed` (one-shot tests affected by edits vs `HEAD`)
+- `pnpm run test:ui` / `test:logic` / `test:main` (single Vitest project)
 - `pnpm run test:coverage` (CI coverage report; used by `act:tests:native`)
+- `pnpm run test:coverage:merge` (merge sharded CI blob reports locally)
 - `pnpm run test:verbose` (verbose failures)
 - `pnpm run check:i18n:branch` (i18n quality on branch-diff keys only)
 - `pnpm run i18n:auto-translate` (fill missing keys)
@@ -532,21 +539,21 @@ This generates `dist-electron/main/meta.json`. Upload this file to [esbuild's on
 
 ### 6) Git hooks and pre-commit behavior
 
-After `pnpm install`, repo hooks are enabled via `core.hooksPath` (see the `prepare` script in `package.json`). The pre-commit hook runs on every commit. **Expect commits to take 2+ minutes** — do not interrupt the hook chain.
+After `pnpm install`, repo hooks are enabled via `core.hooksPath` (see the `prepare` script in `package.json`). The pre-commit hook runs on every commit. Typical commits (without English locale or infra changes) run **affected tests only** (`vitest run --changed HEAD`); lint and typecheck still run on the full tree.
 
 Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-commit)):
 
 1. If `package.json` or `pnpm-lock.yaml` is staged: `pnpm install --frozen-lockfile`
 2. Prettier on **staged** files only (not whole-tree `pnpm run format` unless you run it manually)
 3. markdownlint-cli2 on staged `.md` files only (not full `pnpm run lint:md` unless you run it manually)
-4. When any files were staged: `pnpm dedupe`, re-stage `pnpm-lock.yaml`, then re-stage the originally staged paths
-5. `pnpm run i18n:auto-translate` (incremental vs `HEAD` English, not `--all`) and re-stage `src/renderer/locales/` — see [Internationalization](#9-internationalization-i18n)
+4. When `package.json` or `pnpm-lock.yaml` is staged: `pnpm dedupe`, re-stage `pnpm-lock.yaml`, then re-stage the originally staged paths
+5. When `src/renderer/locales/en/translation.json` is staged: `pnpm run i18n:auto-translate` (incremental vs `HEAD` English, not `--all`) and re-stage `src/renderer/locales/` — see [Internationalization](#9-internationalization-i18n)
 6. `pnpm run lint`
 7. `pnpm run typecheck`
-8. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:i18n` (missing keys, unused English keys, and locale quality rules), `check:licenses`
+8. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:i18n` when English locale is staged else `check:i18n:branch`, `check:licenses`
 9. `pnpm audit --audit-level=high`
-10. `actionlint`, `yamllint`
-11. `pnpm run test:run -- --bail 1`
+10. `actionlint` when `.github/workflows/*` is staged; `yamllint` when any `*.yaml` / `*.yml` is staged
+11. `pnpm run test:run -- --changed HEAD --bail 1` (full suite when vitest config, shared/preload, vitest setup mocks, or dependency manifests change)
 
 Install hook dependencies via [Helper scripts](#8-helper-scripts-auto-install-where-possible) (`setup:actionlint`, yamllint via pip/brew/apt).
 

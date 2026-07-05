@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   applyMeshcoreAdvertEvent128,
@@ -6,6 +6,8 @@ import {
 } from '@/renderer/lib/meshcore/meshcoreAdvertEventApply';
 import { pubkeyToNodeId } from '@/renderer/lib/meshcoreUtils';
 import type { MeshNode } from '@/renderer/lib/types';
+
+import { resetMeshcoreProcessWaitingMessagesSync } from './meshcoreWaitingMessagesSyncState';
 
 function makePubKey(seed: number): Uint8Array {
   const key = new Uint8Array(32);
@@ -29,6 +31,24 @@ function minimalNode(
     ...overrides,
   };
 }
+
+describe('resetMeshcoreProcessWaitingMessagesSync', () => {
+  it('clears waiting-message sync UI state', () => {
+    const setWaitingMessagesCount = vi.fn();
+    const setWaitingMessagesSyncActive = vi.fn();
+    const setWaitingMessagesSyncProgress = vi.fn();
+
+    resetMeshcoreProcessWaitingMessagesSync(
+      setWaitingMessagesCount,
+      setWaitingMessagesSyncActive,
+      setWaitingMessagesSyncProgress,
+    );
+
+    expect(setWaitingMessagesCount).toHaveBeenCalledWith(0);
+    expect(setWaitingMessagesSyncActive).toHaveBeenCalledWith(false);
+    expect(setWaitingMessagesSyncProgress).toHaveBeenCalledWith(null);
+  });
+});
 
 describe('applyMeshcoreAdvertEvent128', () => {
   it('inserts a new contact and returns insert persist metadata', () => {

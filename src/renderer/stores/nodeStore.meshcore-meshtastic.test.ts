@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import {
-  syncMeshcoreNodesMapToIdentityStore,
-  syncMeshtasticNodesMapToIdentityStore,
-} from '../lib/hydrateIdentityStoresFromDb';
+import { syncNodesMapToIdentityStore } from '../lib/hydrateIdentityStoresFromDb';
 import { meshcoreProtocol } from '../lib/protocols/MeshCoreProtocol';
 import { meshtasticProtocol } from '../lib/protocols/MeshtasticProtocol';
 import type { MeshNode } from '../lib/types';
@@ -90,7 +87,7 @@ describe('nodeStore MeshCore / Meshtastic last-heard', () => {
     expect(useNodeStore.getState().nodes[ID_MC][0xdef].hwModel).toBe('Chat');
   });
 
-  it('syncMeshcoreNodesMapToIdentityStore does not wipe store longName from sparse runtime rows', () => {
+  it('syncNodesMapToIdentityStore does not wipe store longName from sparse MeshCore runtime rows', () => {
     upsertNode(ID_MC, { nodeId: 0x1234, longName: 'NVON Repeater', hwModel: 'Repeater' });
     const sparseRuntime = new Map<number, MeshNode>([
       [
@@ -111,7 +108,7 @@ describe('nodeStore MeshCore / Meshtastic last-heard', () => {
         },
       ],
     ]);
-    syncMeshcoreNodesMapToIdentityStore(ID_MC, sparseRuntime);
+    syncNodesMapToIdentityStore(ID_MC, sparseRuntime);
     expect(useNodeStore.getState().nodes[ID_MC][0x1234].longName).toBe('NVON Repeater');
     expect(useNodeStore.getState().nodes[ID_MC][0x1234].hwModel).toBe('Repeater');
   });
@@ -137,7 +134,7 @@ describe('nodeStore MeshCore / Meshtastic last-heard', () => {
     expect(useNodeStore.getState().nodes[ID_MT][nodeId].longName).toBe('Real Name');
   });
 
-  it('syncMeshtasticNodesMapToIdentityStore does not wipe store longName from stub runtime rows', () => {
+  it('syncNodesMapToIdentityStore does not wipe store longName from stub Meshtastic runtime rows', () => {
     upsertNode(ID_MT, {
       nodeId: 649425065,
       longName: 'NV0N QTH https:/coloradomesh.org',
@@ -162,7 +159,7 @@ describe('nodeStore MeshCore / Meshtastic last-heard', () => {
         },
       ],
     ]);
-    syncMeshtasticNodesMapToIdentityStore(ID_MT, stubRuntime);
+    syncNodesMapToIdentityStore(ID_MT, stubRuntime);
     expect(useNodeStore.getState().nodes[ID_MT][649425065].longName).toBe(
       'NV0N QTH https:/coloradomesh.org',
     );

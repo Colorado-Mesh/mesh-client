@@ -18,8 +18,14 @@ import type {
 } from '../../lib/types';
 import type { PendingDmAckEntry } from './meshcoreHookPreamble';
 
+export interface ProcessWaitingMessagesOptions {
+  /** When false, drain the radio queue without the ChatPanel sync spinner (proactive/periodic). */
+  showSyncBanner?: boolean;
+}
+
 export interface MeshcoreLegacyConnEventsCtx {
   meshcoreIdentityIdRef: RefObject<string | null>;
+  meshcoreDriverConnectedRef: RefObject<boolean>;
   connRef: RefObject<MeshCoreConnection | null>;
   lastPacketLogAtRef: RefObject<number>;
   lastPacketLogPublishFailureLogAtRef: RefObject<number>;
@@ -35,7 +41,9 @@ export interface MeshcoreLegacyConnEventsCtx {
   nodesRef: RefObject<Map<number, MeshNode>>;
   outPathMapRef: RefObject<Map<number, Uint8Array>>;
   pendingAcksRef: RefObject<Map<number, PendingDmAckEntry>>;
-  processWaitingMessagesRef: RefObject<(() => Promise<void>) | null>;
+  processWaitingMessagesRef: RefObject<
+    ((options?: ProcessWaitingMessagesOptions) => Promise<void>) | null
+  >;
   pubKeyMapRef: RefObject<Map<number, Uint8Array>>;
   pubKeyPrefixMapRef: RefObject<Map<string, number>>;
   rawPacketsRef: RefObject<RxPacketEntry[]>;
@@ -63,6 +71,11 @@ export interface MeshcoreLegacyConnEventsCtx {
   setSignalTelemetry: Dispatch<SetStateAction<TelemetryPoint[]>>;
   setState: Dispatch<SetStateAction<DeviceState>>;
   setWaitingMessagesCount: Dispatch<SetStateAction<number>>;
+  setWaitingMessagesSyncActive: Dispatch<SetStateAction<boolean>>;
+  setWaitingMessagesSyncProgress: Dispatch<
+    SetStateAction<{ processed: number; total: number } | null>
+  >;
+  addMessagesBatch: (msgs: ChatMessage[]) => void;
   addMessage: (msg: ChatMessage) => void;
   addCliHistoryEntry: (nodeId: number, entry: CliHistoryEntry) => void;
   teardownMeshcoreConnEventListeners: (opts?: { driverDisconnect?: boolean }) => void;

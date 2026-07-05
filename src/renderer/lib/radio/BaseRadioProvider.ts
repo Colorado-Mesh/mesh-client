@@ -125,7 +125,7 @@ export interface ProtocolCapabilities {
   hasReticulumNetworkPanel: boolean;
   /** Reticulum: LXMF file/image attachments in chat */
   hasLxmfAttachments: boolean;
-  /** Reticulum: RNode firmware flasher on Radio tab */
+  /** Reticulum: RNode firmware flasher on Admin tab (ReticulumAdminPanel) */
   hasRNodeFlasher: boolean;
   /** Reticulum: dedicated Peers list panel on tab 2 */
   hasReticulumPeersList: boolean;

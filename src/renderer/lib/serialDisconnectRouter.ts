@@ -1,27 +1,34 @@
 import { serialPortMatchesPersistedIdentity } from './serialPortRecovery';
+import type { MeshProtocol } from './types';
 
 export interface SerialDisconnectTarget {
   isSerialConnected: () => boolean;
   onDisconnected: () => void;
 }
 
-let meshtasticSerialDisconnectTarget: SerialDisconnectTarget | null = null;
-let meshcoreSerialDisconnectTarget: SerialDisconnectTarget | null = null;
+const serialDisconnectTargets = new Map<MeshProtocol, SerialDisconnectTarget | null>();
 
 /** Debounce duplicate per-port + global service disconnect notifications. */
 let lastSerialDisconnectNotifyAt = 0;
 const SERIAL_DISCONNECT_DEBOUNCE_MS = 500;
 
+export function registerSerialDisconnectTarget(
+  protocol: MeshProtocol,
+  target: SerialDisconnectTarget | null,
+): void {
+  serialDisconnectTargets.set(protocol, target);
+}
+
 export function registerMeshtasticSerialDisconnectTarget(
   target: SerialDisconnectTarget | null,
 ): void {
-  meshtasticSerialDisconnectTarget = target;
+  registerSerialDisconnectTarget('meshtastic', target);
 }
 
 export function registerMeshcoreSerialDisconnectTarget(
   target: SerialDisconnectTarget | null,
 ): void {
-  meshcoreSerialDisconnectTarget = target;
+  registerSerialDisconnectTarget('meshcore', target);
 }
 
 export function routeSerialServiceDisconnect(port: SerialPort): void {
@@ -30,13 +37,14 @@ export function routeSerialServiceDisconnect(port: SerialPort): void {
   if (now - lastSerialDisconnectNotifyAt < SERIAL_DISCONNECT_DEBOUNCE_MS) return;
 
   let notified = false;
-  const tryNotify = (target: SerialDisconnectTarget | null) => {
+  const tryNotify = (target: SerialDisconnectTarget | null | undefined) => {
     if (notified || !target?.isSerialConnected()) return;
     notified = true;
     lastSerialDisconnectNotifyAt = now;
     target.onDisconnected();
   };
 
-  tryNotify(meshtasticSerialDisconnectTarget);
-  tryNotify(meshcoreSerialDisconnectTarget);
+  for (const target of serialDisconnectTargets.values()) {
+    tryNotify(target);
+  }
 }

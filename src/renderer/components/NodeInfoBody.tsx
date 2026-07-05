@@ -426,7 +426,7 @@ export default function NodeInfoBody({
         )
       ) : (
         <div className="flex items-center justify-between border-b border-gray-700/50 py-2">
-          <span className="text-muted text-sm">Battery</span>
+          <span className="text-muted text-sm">{t('nodeInfoBody.battery')}</span>
           <div className="flex items-center gap-2">
             {node.battery > 0 && (
               <div className="bg-secondary-dark h-2 w-16 overflow-hidden rounded-full">

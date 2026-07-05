@@ -126,9 +126,18 @@ describe('diagnosticsStore analysis timers', () => {
     expect(vi.getTimerCount()).toBe(1);
   });
 
-  it('runReanalysis clears LoRa diagnostic rows for Reticulum', () => {
+  it('runReanalysis clears LoRa diagnostic rows for Reticulum but keeps native reticulum rows', () => {
     vi.useFakeTimers();
     const store = useDiagnosticsStore.getState();
+    const reticulumRow = {
+      kind: 'rf' as const,
+      id: 'rf:0:reticulum/rns-not-ready',
+      nodeId: 0,
+      condition: 'reticulum/rns-not-ready',
+      cause: 'RNS stack is not ready',
+      severity: 'warning' as const,
+      detectedAt: Date.now(),
+    };
     useDiagnosticsStore.setState({
       diagnosticRows: [
         {
@@ -140,12 +149,13 @@ describe('diagnosticsStore analysis timers', () => {
           description: 'stale routing row',
           detectedAt: Date.now(),
         },
+        reticulumRow,
       ],
       diagnosticRowsRestoredAt: Date.now(),
     });
     store.runReanalysis(() => new Map(), 0, RETICULUM_CAPABILITIES);
     vi.advanceTimersByTime(2000);
-    expect(useDiagnosticsStore.getState().diagnosticRows).toEqual([]);
+    expect(useDiagnosticsStore.getState().diagnosticRows).toEqual([reticulumRow]);
     expect(useDiagnosticsStore.getState().diagnosticRowsRestoredAt).toBeNull();
   });
 

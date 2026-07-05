@@ -64,7 +64,10 @@ import {
   attachMeshcoreLegacyConnEvents,
   syncMeshcoreDmAckToMessageStore,
 } from '../hooks/meshcore/meshcoreLegacyConnEvents';
-import type { MeshcoreLegacyConnEventsCtx } from '../hooks/meshcore/meshcoreLegacyConnEventsCtx';
+import type {
+  MeshcoreLegacyConnEventsCtx,
+  ProcessWaitingMessagesOptions,
+} from '../hooks/meshcore/meshcoreLegacyConnEventsCtx';
 import { openMeshCoreTransport } from '../hooks/openMeshCoreTransport';
 import {
   getAppSettingsRaw,
@@ -75,6 +78,7 @@ import {
   classifyMeshcoreBleTimeoutStage,
   MESHCORE_SETUP_ABORT_MESSAGE,
 } from '../lib/bleConnectErrors';
+import { verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
@@ -83,7 +87,7 @@ import { hasStoredStaticGps, readStoredStaticGps, resolveOurPosition } from '../
 import {
   loadMeshcoreMessagesForHydration,
   loadMeshcoreSavedHopRowsForHydration,
-  syncMeshcoreNodesMapToIdentityStore,
+  syncNodesMapToIdentityStore,
 } from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
@@ -320,6 +324,7 @@ import {
   MESHCORE_WAITING_MESSAGES_POLL_MS,
   meshcoreRepeaterRpcTimeoutMs,
   POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS,
+  RF_SERIAL_OPEN_RETRY_DELAY_MS,
 } from '../lib/timeConstants';
 import type {
   ChatMessage,
@@ -361,19 +366,6 @@ export type {
 export type { CliHistoryEntry } from '../lib/repeaterCommandService';
 
 const MESHCORE_MAX_RECONNECT_ATTEMPTS = 5;
-
-async function verifyMeshcoreRfLink(rfType: 'ble' | 'serial' | 'tcp'): Promise<boolean> {
-  if (rfType !== 'ble') return true;
-  if (typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('linux')) {
-    return true;
-  }
-  try {
-    return await window.electronAPI.isNobleBleConnected('meshcore');
-  } catch {
-    // catch-no-log-ok Noble IPC may fail during teardown; treat as dead link
-    return false;
-  }
-}
 
 export function useMeshcoreRuntime() {
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
@@ -434,6 +426,11 @@ export function useMeshcoreRuntime() {
   const [mqttStatus, setMqttStatus] = useState<MQTTStatus>('disconnected');
   const [mqttConnectionLoss, setMqttConnectionLoss] = useState(false);
   const [waitingMessagesCount, setWaitingMessagesCount] = useState(0);
+  const [waitingMessagesSyncActive, setWaitingMessagesSyncActive] = useState(false);
+  const [waitingMessagesSyncProgress, setWaitingMessagesSyncProgress] = useState<{
+    processed: number;
+    total: number;
+  } | null>(null);
   const mqttStatusRef = useRef<MQTTStatus>('disconnected');
 
   const connRef = useRef<MeshCoreConnection | null>(null);
@@ -528,7 +525,9 @@ export function useMeshcoreRuntime() {
   /** Periodic poll for waiting messages when event 131 may have been missed. */
   const meshcoreWaitingMessagesPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   /** Stable ref to the current connection's processWaitingMessages fn (set by setupEventListeners). */
-  const processWaitingMessagesRef = useRef<(() => Promise<void>) | null>(null);
+  const processWaitingMessagesRef = useRef<
+    ((options?: ProcessWaitingMessagesOptions) => Promise<void>) | null
+  >(null);
   /** Previous txAirSecs value for calculating channel utilization delta. */
   const prevTxAirSecsRef = useRef<number | null>(null);
   /** Previous timestamp for calculating channel utilization delta. */
@@ -737,7 +736,7 @@ export function useMeshcoreRuntime() {
     const storeId =
       meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current ?? null;
     if (!storeId) return;
-    syncMeshcoreNodesMapToIdentityStore(storeId, nodes);
+    syncNodesMapToIdentityStore(storeId, nodes);
   }, [nodes, meshcoreIdentityId]);
 
   useEffect(() => {
@@ -895,7 +894,7 @@ export function useMeshcoreRuntime() {
         meshcorePendingDriverIdentityRef.current ??
         getOfflineIdentityIdForProtocol('meshcore');
       if (storeId) {
-        syncMeshcoreNodesMapToIdentityStore(storeId, mergedInitial);
+        syncNodesMapToIdentityStore(storeId, mergedInitial);
       }
       if (opts?.hydrateMessages && mapped.length > 0) {
         setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
@@ -1033,6 +1032,63 @@ export function useMeshcoreRuntime() {
       }
     }
     return storeId ? result.canonicalId : undefined;
+  }, []);
+
+  const addMessagesBatch = useCallback((batch: ChatMessage[]) => {
+    if (batch.length === 0) return;
+    const storeId = meshcoreIdentityIdRef.current;
+    const uiMessages: ChatMessage[] = [];
+    for (const msg of batch) {
+      if (storeId) {
+        const result = upsertMeshcoreMessageWithDedup(storeId, msg);
+        if (result.inserted || result.storeUpdated) {
+          uiMessages.push(result.message);
+          const skipSendingRoomPersist =
+            result.message.status === 'sending' && isMeshcoreRoomChatMessage(result.message);
+          if (!skipSendingRoomPersist) {
+            void window.electronAPI.db
+              .saveMeshcoreMessage(messageToDbRow(result.message))
+              .catch((e: unknown) => {
+                console.warn(
+                  '[useMeshcoreRuntime] saveMeshcoreMessage (batch) error ' + errLikeToLogString(e),
+                );
+              });
+          }
+        }
+      } else {
+        uiMessages.push(msg);
+      }
+    }
+    if (uiMessages.length === 0) return;
+    flushSync(() => {
+      setMessages((prev) => {
+        let next = prev;
+        for (const msg of uiMessages) {
+          const incomingKey = meshcoreMessageDedupeKey(msg);
+          const exactDup = next.some((m) => meshcoreMessageDedupeKey(m) === incomingKey);
+          if (exactDup) {
+            if (storeId) {
+              next = next.map((m) =>
+                meshcoreMessageDedupeKey(m) === incomingKey
+                  ? { ...m, receivedVia: msg.receivedVia ?? m.receivedVia }
+                  : m,
+              );
+            }
+            continue;
+          }
+          const crossTransportDup = findMeshcoreCrossTransportDuplicate(next, msg);
+          if (crossTransportDup) {
+            const { messages: merged, matched } = upgradeMeshcoreCrossTransportMessage(next, msg);
+            if (matched) {
+              next = merged;
+              continue;
+            }
+          }
+          next = trimChatMessagesToMax([...next, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
+        }
+        return next;
+      });
+    });
   }, []);
 
   useEffect(() => {
@@ -1347,7 +1403,7 @@ export function useMeshcoreRuntime() {
       nodesRef.current = mergedForStore;
       setNodes(mergedForStore);
       const storeId = resolveMeshcoreStoreIdentityId();
-      if (storeId) syncMeshcoreNodesMapToIdentityStore(storeId, mergedForStore);
+      if (storeId) syncNodesMapToIdentityStore(storeId, mergedForStore);
     },
     [resolveMeshcoreStoreIdentityId],
   );
@@ -1535,6 +1591,7 @@ export function useMeshcoreRuntime() {
   const meshcoreLegacyConnEventsCtx = useMemo<MeshcoreLegacyConnEventsCtx>(
     () => ({
       meshcoreIdentityIdRef,
+      meshcoreDriverConnectedRef,
       connRef,
       lastPacketLogAtRef,
       lastPacketLogPublishFailureLogAtRef,
@@ -1568,7 +1625,10 @@ export function useMeshcoreRuntime() {
       setSignalTelemetry,
       setState,
       setWaitingMessagesCount,
+      setWaitingMessagesSyncActive,
+      setWaitingMessagesSyncProgress,
       addMessage,
+      addMessagesBatch,
       addCliHistoryEntry,
       teardownMeshcoreConnEventListeners,
       meshcorePreviousNodesBaselineForBuild,
@@ -1577,6 +1637,7 @@ export function useMeshcoreRuntime() {
     }),
     [
       addMessage,
+      addMessagesBatch,
       addCliHistoryEntry,
       teardownMeshcoreConnEventListeners,
       meshcorePreviousNodesBaselineForBuild,
@@ -2092,23 +2153,20 @@ export function useMeshcoreRuntime() {
       }
       maybeAutoLaunchMeshcoreMqttAfterIdentity();
 
-      // Proactively fetch any messages that queued while disconnected.
-      // Mirrors what event 131 does, but covers reconnects where the event was missed.
-      try {
-        await processWaitingMessagesRef.current?.();
-      } catch (e) {
+      // Proactively fetch any messages that queued while disconnected (no Chat banner).
+      void processWaitingMessagesRef.current?.({ showSyncBanner: false }).catch((e: unknown) => {
         console.warn(
           '[useMeshcoreRuntime] initConn: proactive getWaitingMessages failed ' +
             errLikeToLogString(e),
         );
-      }
+      });
 
       // Periodic safety-net poll in case the device never re-sends event 131.
       if (meshcoreWaitingMessagesPollRef.current)
         clearInterval(meshcoreWaitingMessagesPollRef.current);
       meshcoreWaitingMessagesPollRef.current = setInterval(() => {
         if (!meshcoreHookMountedRef.current) return;
-        void processWaitingMessagesRef.current?.().catch((e: unknown) => {
+        void processWaitingMessagesRef.current?.({ showSyncBanner: false }).catch((e: unknown) => {
           console.warn(
             '[useMeshcoreRuntime] periodic getWaitingMessages failed ' + errLikeToLogString(e),
           );
@@ -2149,8 +2207,13 @@ export function useMeshcoreRuntime() {
         meshcoreDriverConnectedRef.current = false;
         meshcorePendingDriverIdentityRef.current = null;
         teardownMeshcoreConnEventListeners({
-          driverDisconnect: true,
+          driverDisconnect: false,
           driverIdentityId: driverIdentity,
+        });
+        await connectionDriver.disconnect(driverIdentity).catch((e: unknown) => {
+          console.debug(
+            '[useMeshcoreRuntime] prepareRfConnect driver disconnect ' + errLikeToLogString(e),
+          );
         });
       } else if (staleConn) {
         teardownMeshcoreConnEventListeners({ driverDisconnect: false });
@@ -2407,7 +2470,7 @@ export function useMeshcoreRuntime() {
       if (meshcoreReconnectGenerationRef.current !== generation) {
         throw new Error('MeshCore reconnect superseded during attach');
       }
-      if (!(await verifyMeshcoreRfLink(params.rfType))) {
+      if (!(await verifyNobleBleRfLink(params.rfType, 'meshcore'))) {
         throw new Error('RF link lost after MeshCore reconnect attach');
       }
       console.debug(
@@ -2692,7 +2755,7 @@ export function useMeshcoreRuntime() {
       if (type === 'serial') {
         await prepareRfConnect('serial');
         let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
-        try {
+        const attachSerialSession = async () => {
           opened = await openMeshCoreTransport('serial', {
             portSignature: lastSerialPortId,
           });
@@ -2705,6 +2768,27 @@ export function useMeshcoreRuntime() {
           meshcoreExplicitDisconnectRef.current = false;
           meshcoreReconnectAttemptRef.current = 0;
           meshcoreIsReconnectingRef.current = false;
+        };
+        try {
+          try {
+            await attachSerialSession();
+          } catch (firstErr) {
+            const firstSetupAbort =
+              firstErr instanceof DOMException &&
+              firstErr.name === 'AbortError' &&
+              firstErr.message === MESHCORE_SETUP_ABORT_MESSAGE;
+            if (firstSetupAbort || opened) {
+              throw firstErr;
+            }
+            console.debug(
+              '[useMeshcoreRuntime] connectAutomatic serial open failed — retrying once',
+            );
+            await new Promise<void>((resolve) => {
+              setTimeout(resolve, RF_SERIAL_OPEN_RETRY_DELAY_MS);
+            });
+            opened = undefined;
+            await attachSerialSession();
+          }
         } catch (err) {
           const isSetupAbort =
             err instanceof DOMException &&
@@ -4245,7 +4329,12 @@ export function useMeshcoreRuntime() {
           ? MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS
           : MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
         'meshcoreRoomLoginRouteResolve',
-      ).catch(() => undefined);
+      ).catch((e: unknown) => {
+        console.debug(
+          '[useMeshcoreRuntime] meshcoreRoomLoginRouteResolve ' + errLikeToLogString(e),
+        );
+        return undefined;
+      });
       if (resolved && resolved.length > 0) {
         outPathMapRef.current.set(nodeId, resolved);
       }
@@ -5273,7 +5362,7 @@ export function useMeshcoreRuntime() {
         }
         const storeId = meshcoreIdentityIdRef.current;
         if (storeId) {
-          syncMeshcoreNodesMapToIdentityStore(storeId, next);
+          syncNodesMapToIdentityStore(storeId, next);
         }
         return next;
       });
@@ -5709,6 +5798,10 @@ export function useMeshcoreRuntime() {
     }
   }, []);
 
+  const syncWaitingMessages = useCallback(async (): Promise<void> => {
+    await processWaitingMessagesRef.current?.({ showSyncBanner: true });
+  }, []);
+
   const syncNextMessage = useCallback(async (): Promise<unknown> => {
     const conn = connRef.current;
     if (!conn) return null;
@@ -5873,7 +5966,7 @@ export function useMeshcoreRuntime() {
       });
       const storeId = resolveMeshcoreStoreIdentityId();
       if (storeId && nextMap) {
-        syncMeshcoreNodesMapToIdentityStore(storeId, nextMap);
+        syncNodesMapToIdentityStore(storeId, nextMap);
       }
     } catch (e) {
       console.warn('[useMeshcoreRuntime] refreshNodesFromDb error ' + errLikeToLogString(e));
@@ -6095,6 +6188,8 @@ export function useMeshcoreRuntime() {
       mqttStatus,
       mqttConnectionLoss,
       waitingMessagesCount,
+      waitingMessagesSyncActive,
+      waitingMessagesSyncProgress,
       selfNodeId: state.myNodeNum,
       identityId: meshcoreIdentityId,
       getNodes,
@@ -6166,6 +6261,7 @@ export function useMeshcoreRuntime() {
       importPrivateKey,
       ensureMeshcoreMqttIdentity,
       getWaitingMessages,
+      syncWaitingMessages,
       syncNextMessage,
       getRemoteAdminKeyForNode,
       setRemoteAdminKeyForNode,
@@ -6239,6 +6335,8 @@ export function useMeshcoreRuntime() {
       mqttStatus,
       mqttConnectionLoss,
       waitingMessagesCount,
+      waitingMessagesSyncActive,
+      waitingMessagesSyncProgress,
       queueStatus,
       telemetry,
       signalTelemetry,
@@ -6275,6 +6373,7 @@ export function useMeshcoreRuntime() {
       importPrivateKey,
       ensureMeshcoreMqttIdentity,
       getWaitingMessages,
+      syncWaitingMessages,
       syncNextMessage,
       getRemoteAdminKeyForNode,
       setRemoteAdminKeyForNode,

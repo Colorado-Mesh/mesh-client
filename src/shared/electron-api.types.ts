@@ -791,6 +791,9 @@ export interface ElectronAPI {
   /** Spellchecker context-menu pick — syncs React-controlled inputs after replaceMisspelling. */
   onSpellcheckReplace: (cb: (payload: SpellcheckReplacePayload) => void) => () => void;
 
+  /** Renderer liveness ping for post-resume hang detection (main log only). */
+  sendRendererHeartbeat: (payload?: { ts: number }) => Promise<void>;
+
   // ─── MeshCore TCP bridge ─────────────────────────────────────────────────────
   meshcore: {
     tcp: {

@@ -116,16 +116,15 @@ Adding a cross-boundary feature:
 
 **Pre-commit hook order:**
 
-1. `pnpm run format` on **staged** files only (Prettier via pre-commit; not whole-tree unless run manually)
-2. markdownlint on **staged** `.md` files (not full `lint:md` unless run manually)
-3. Re-stage staged files
-4. `pnpm run i18n:auto-translate`: fills missing translation keys; re-stages `src/renderer/locales/`
-5. `pnpm run lint`
-6. `pnpm run typecheck`
-7. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:i18n`, `check:licenses`
-8. `pnpm audit --audit-level=high`
-9. `actionlint`, `yamllint`
-10. `pnpm run test:run`
+1. If `package.json` or `pnpm-lock.yaml` is staged: `pnpm install --frozen-lockfile`
+2. Prettier on **staged** files only
+3. markdownlint on **staged** `.md` files only
+4. When dependency manifests staged: `pnpm dedupe`, re-stage lockfile and originally staged paths
+5. When `en/translation.json` is staged: `pnpm run i18n:auto-translate` and re-stage `src/renderer/locales/`
+6. `pnpm run lint`, `pnpm run typecheck`, full `check:*` chain (`check:i18n` when English locale staged, else `check:i18n:branch`)
+7. `pnpm audit --audit-level=high`
+8. `actionlint` when workflows staged; `yamllint` when YAML staged
+9. `pnpm run test:run -- --changed HEAD --bail 1` (full suite when vitest/shared/preload/setup mocks or deps change)
 
 Before PR: `pnpm run lint`, `typecheck`, `test:run`, plus any relevant `check:*`.
 
@@ -233,7 +232,7 @@ Meshtastic: `mqtt-manager.ts` (AES-128/256-CTR, Meshtastic nonce layout, channel
 
 ### UI
 
-Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanels.ts` + capabilities. Stores: module defaults; persist vs SQLite IPC as elsewhere.
+Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanels.ts` + capabilities. Tab visibility: `src/renderer/lib/tabSlotIds.ts` (`TAB_SLOT_IDS`) → `src/renderer/lib/appTabMappings.ts` (`TAB_CAPABILITY_REQUIREMENTS`, `computeTabMappings()` in `App.tsx`). Stores: module defaults; persist vs SQLite IPC as elsewhere.
 
 ### i18n / Localization
 

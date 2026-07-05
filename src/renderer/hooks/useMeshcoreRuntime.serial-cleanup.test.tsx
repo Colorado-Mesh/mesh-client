@@ -195,6 +195,41 @@ describe('useMeshcoreRuntime serial cleanup', () => {
     consoleWarnSpy.mockRestore();
   });
 
+  it('connectAutomatic retries serial open once after failure', async () => {
+    vi.useFakeTimers();
+    try {
+      const port = makeMockSerialPort('auto-port');
+      Object.defineProperty(navigator, 'serial', {
+        configurable: true,
+        value: {
+          getPorts: vi.fn().mockResolvedValue([port]),
+        },
+      });
+      serialConnGetSelfInfoMock.mockReset();
+      serialConnGetSelfInfoMock.mockRejectedValue(new Error('open failed'));
+
+      const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { result } = renderHook(() => useMeshcoreRuntime());
+
+      const connectPromise = result.current.connectAutomatic('serial', undefined, 'auto-port');
+      const rejectionHandled = expect(connectPromise).rejects.toThrow('open failed');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2_000);
+      });
+      await rejectionHandled;
+
+      expect(serialConnGetSelfInfoMock).toHaveBeenCalledTimes(2);
+      expect(debugSpy).toHaveBeenCalledWith(
+        '[useMeshcoreRuntime] connectAutomatic serial open failed — retrying once',
+      );
+      debugSpy.mockRestore();
+      warnSpy.mockRestore();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('connectAutomatic closes raw port even when connection close throws', async () => {
     const port = makeMockSerialPort('auto-port');
     Object.defineProperty(navigator, 'serial', {
@@ -213,7 +248,7 @@ describe('useMeshcoreRuntime serial cleanup', () => {
       }),
     ).rejects.toThrow('serial init failed');
 
-    expect(serialConnCloseMock).toHaveBeenCalledTimes(1);
+    expect(serialConnCloseMock).toHaveBeenCalledTimes(2);
     expect(result.current.state.status).toBe('disconnected');
   });
 

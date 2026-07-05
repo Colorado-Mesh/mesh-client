@@ -96,6 +96,7 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
     return (
       entry.source.includes('meshcore') ||
       entry.message.includes('[useMeshcoreRuntime]') ||
+      entry.message.includes('[meshcoreLegacyConnEvents]') ||
       entry.message.includes('[MeshCore MQTT]') ||
       entry.message.includes('[BLE:meshcore]') ||
       entry.message.includes('[IpcNobleConnection:meshcore]')
@@ -123,6 +124,7 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
     entry.message.includes('[useMeshtasticRuntime]') ||
     entry.message.includes('[iMeshDevice]') ||
     entry.message.includes('[useMeshcoreRuntime]') ||
+    entry.message.includes('[meshcoreLegacyConnEvents]') ||
     entry.message.includes('[useReticulumRuntime]') ||
     entry.message.includes('[TransportNobleIpc]') ||
     entry.message.includes('[MeshCore MQTT]') ||

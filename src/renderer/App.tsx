@@ -94,6 +94,7 @@ import {
   useProtocolDisconnect,
 } from './hooks/useProtocolConnection';
 import { useProtocolFacade } from './hooks/useProtocolFacade';
+import { useRendererHeartbeat } from './hooks/useRendererHeartbeat';
 import type { useReticulumPanelActions } from './hooks/useReticulumPanelActions';
 import { useSendMessage } from './hooks/useSendMessage';
 import { useSerialServiceListeners } from './hooks/useSerialServiceListeners';
@@ -126,6 +127,7 @@ import {
 import { protocolRecord, selectByProtocol } from './lib/appProtocolSelect';
 import { getAppSettingsRaw } from './lib/appSettingsStorage';
 import {
+  APP_PANEL_INDEX,
   computeTabMappings,
   findFilteredTabIndexForPanel,
   MAP_TAB_PANEL_INDEX,
@@ -681,6 +683,7 @@ function AppContent() {
       },
     },
   });
+  useRendererHeartbeat();
   useSerialServiceListeners();
   useSpellcheckReplaceSync();
 
@@ -1601,6 +1604,8 @@ function AppContent() {
 
   const [chatTabVisited, setChatTabVisited] = useState(false);
   const [roomsTabVisited, setRoomsTabVisited] = useState(false);
+  const [nomadTabVisited, setNomadTabVisited] = useState(false);
+  const [appTabVisited, setAppTabVisited] = useState(false);
   const [chatPanelFreeze, setChatPanelFreeze] = useState<{
     messages: typeof activeRuntime.messages;
     channels: typeof chatChannels;
@@ -1635,6 +1640,7 @@ function AppContent() {
     setChatTabVisited(false);
     setChatPanelFreeze(null);
     setRoomsTabVisited(false);
+    setAppTabVisited(false);
     prevPanelIndexForChatFreezeRef.current = activePanelIndex;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- protocol-only reset; capture current panel for ref sync
   }, [protocol]);
@@ -1645,6 +1651,20 @@ function AppContent() {
       setRoomsTabVisited(true);
     }
   }, [activePanelIndex, capabilities.hasRoomServersPanel]);
+
+  useEffect(() => {
+    if (activePanelIndex === NOMAD_NETWORK_PANEL_INDEX) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- track Nomad tab visit for keep-alive mount
+      setNomadTabVisited(true);
+    }
+  }, [activePanelIndex]);
+
+  useEffect(() => {
+    if (activePanelIndex === APP_PANEL_INDEX) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- track App tab visit for lazy mount
+      setAppTabVisited(true);
+    }
+  }, [activePanelIndex]);
 
   const isChatPanelFrozen = chatTabVisited && activePanelIndex !== 1;
   const freeze = chatPanelFreeze;
@@ -2582,8 +2602,18 @@ function AppContent() {
                             }
                             onSyncWaitingMessages={
                               capabilities.hasCompanionContactManagementConfig
-                                ? () => void meshcoreRuntime.getWaitingMessages()
+                                ? () => void meshcoreRuntime.syncWaitingMessages()
                                 : undefined
+                            }
+                            waitingMessagesSyncActive={
+                              capabilities.hasCompanionContactManagementConfig
+                                ? meshcoreRuntime.waitingMessagesSyncActive
+                                : false
+                            }
+                            waitingMessagesSyncProgress={
+                              capabilities.hasCompanionContactManagementConfig
+                                ? meshcoreRuntime.waitingMessagesSyncProgress
+                                : null
                             }
                           />
                         </Suspense>
@@ -2596,14 +2626,27 @@ function AppContent() {
                       hidden={activePanelIndex !== NOMAD_NETWORK_PANEL_INDEX}
                       className="h-full w-full min-w-0"
                     >
-                      {activePanelIndex === NOMAD_NETWORK_PANEL_INDEX &&
-                      capabilities.hasNomadNetworkPanel ? (
+                      {(activePanelIndex === NOMAD_NETWORK_PANEL_INDEX || nomadTabVisited) && (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            <NomadNetworkPanel onOpenDm={handleOpenReticulumDmByHash} />
+                            <div
+                              className="h-full w-full min-w-0"
+                              hidden={
+                                activePanelIndex !== NOMAD_NETWORK_PANEL_INDEX ||
+                                !capabilities.hasNomadNetworkPanel
+                              }
+                            >
+                              <NomadNetworkPanel
+                                isActive={
+                                  activePanelIndex === NOMAD_NETWORK_PANEL_INDEX &&
+                                  capabilities.hasNomadNetworkPanel
+                                }
+                                onOpenDm={handleOpenReticulumDmByHash}
+                              />
+                            </div>
                           </Suspense>
                         </ErrorBoundary>
-                      ) : null}
+                      )}
                     </div>
                     <div
                       id="panel-3"
@@ -3256,75 +3299,80 @@ function AppContent() {
                       id="panel-12"
                       role="tabpanel"
                       aria-labelledby="tab-11"
-                      hidden={activePanelIndex !== 12}
+                      hidden={activePanelIndex !== APP_PANEL_INDEX}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 12 ? (
+                      {(activePanelIndex === APP_PANEL_INDEX || appTabVisited) && (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            <AppPanel
-                              protocol={protocol}
-                              logPanelVisible={logPanelVisible}
-                              onLogPanelVisibleChange={(visible) => {
-                                setLogPanelVisible(visible);
-                                try {
-                                  localStorage.setItem(
-                                    LOG_PANEL_VISIBLE_KEY,
-                                    visible ? 'true' : 'false',
-                                  );
-                                } catch (e) {
-                                  console.debug(
-                                    '[App] persist logPanelVisible ' + errLikeToLogString(e),
-                                  );
+                            <div
+                              className="h-full w-full min-w-0"
+                              hidden={activePanelIndex !== APP_PANEL_INDEX}
+                            >
+                              <AppPanel
+                                protocol={protocol}
+                                logPanelVisible={logPanelVisible}
+                                onLogPanelVisibleChange={(visible) => {
+                                  setLogPanelVisible(visible);
+                                  try {
+                                    localStorage.setItem(
+                                      LOG_PANEL_VISIBLE_KEY,
+                                      visible ? 'true' : 'false',
+                                    );
+                                  } catch (e) {
+                                    console.debug(
+                                      '[App] persist logPanelVisible ' + errLikeToLogString(e),
+                                    );
+                                  }
+                                }}
+                                nodeCount={nodesForUi.size}
+                                myNodeNum={activeRuntime.state.myNodeNum}
+                                messageCount={activeUiMessages.length}
+                                channels={activeRuntime.channels}
+                                onLocationFilterChange={handleLocationFilterChange}
+                                ourPosition={activeRuntime.ourPosition}
+                                onRefreshGps={
+                                  capabilities.hasFullPositionConfig
+                                    ? meshtasticPanelActions.refreshOurPosition
+                                    : undefined
                                 }
-                              }}
-                              nodes={nodesForUi}
-                              messageCount={activeUiMessages.length}
-                              channels={activeRuntime.channels}
-                              myNodeNum={activeRuntime.state.myNodeNum}
-                              onLocationFilterChange={handleLocationFilterChange}
-                              ourPosition={activeRuntime.ourPosition}
-                              onRefreshGps={
-                                capabilities.hasFullPositionConfig
-                                  ? meshtasticPanelActions.refreshOurPosition
-                                  : undefined
-                              }
-                              gpsLoading={activeRuntime.gpsLoading}
-                              onGpsIntervalChange={activeRuntime.updateGpsInterval}
-                              onNodesPruned={refreshNodesFromDb}
-                              onMessagesPruned={refreshMessagesFromDb}
-                              onClearMeshcoreRepeaters={
-                                capabilities.modulesTabUsesRepeatersLabel
-                                  ? meshcorePanelActions.clearAllRepeaters
-                                  : undefined
-                              }
-                              onAutoFloodAdvertIntervalChange={setAutoFloodAdvertIntervalHours}
-                              onAutoFloodAdvertTypeChange={setAutoFloodAdvertType}
-                              onChatCompactModeChange={handleChatCompactModeChange}
-                              deviceReportedPathHashMode={
-                                capabilities.modulesTabUsesRepeatersLabel
-                                  ? (meshcoreRuntime.state.pathHashMode ?? null)
-                                  : null
-                              }
-                              isMeshcoreRadioConnected={
-                                capabilities.modulesTabUsesRepeatersLabel &&
-                                (meshcoreRuntime.state.status === 'connected' ||
-                                  meshcoreRuntime.state.status === 'configured')
-                              }
-                              onApplyMeshcorePathHashMode={
-                                capabilities.modulesTabUsesRepeatersLabel
-                                  ? meshcorePanelActions.applyMeshcorePathHashMode
-                                  : undefined
-                              }
-                              reticulumIdentityId={reticulumIdentityId}
-                              reticulumSidecarReady={
-                                reticulumRuntime.state.status !== 'disconnected'
-                              }
-                              reticulumControlsDisabled={!isConnectedOrOperational}
-                            />
+                                gpsLoading={activeRuntime.gpsLoading}
+                                onGpsIntervalChange={activeRuntime.updateGpsInterval}
+                                onNodesPruned={refreshNodesFromDb}
+                                onMessagesPruned={refreshMessagesFromDb}
+                                onClearMeshcoreRepeaters={
+                                  capabilities.modulesTabUsesRepeatersLabel
+                                    ? meshcorePanelActions.clearAllRepeaters
+                                    : undefined
+                                }
+                                onAutoFloodAdvertIntervalChange={setAutoFloodAdvertIntervalHours}
+                                onAutoFloodAdvertTypeChange={setAutoFloodAdvertType}
+                                onChatCompactModeChange={handleChatCompactModeChange}
+                                deviceReportedPathHashMode={
+                                  capabilities.modulesTabUsesRepeatersLabel
+                                    ? (meshcoreRuntime.state.pathHashMode ?? null)
+                                    : null
+                                }
+                                isMeshcoreRadioConnected={
+                                  capabilities.modulesTabUsesRepeatersLabel &&
+                                  (meshcoreRuntime.state.status === 'connected' ||
+                                    meshcoreRuntime.state.status === 'configured')
+                                }
+                                onApplyMeshcorePathHashMode={
+                                  capabilities.modulesTabUsesRepeatersLabel
+                                    ? meshcorePanelActions.applyMeshcorePathHashMode
+                                    : undefined
+                                }
+                                reticulumIdentityId={reticulumIdentityId}
+                                reticulumSidecarReady={
+                                  reticulumRuntime.state.status !== 'disconnected'
+                                }
+                                reticulumControlsDisabled={!isConnectedOrOperational}
+                              />
+                            </div>
                           </Suspense>
                         </ErrorBoundary>
-                      ) : null}
+                      )}
                     </div>
                     <div
                       id="panel-13"

@@ -1,7 +1,10 @@
+import { ChevronLeft, ChevronRight, PARENT_HOVER_ATTR } from 'lucide-react-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
+import { ICON_MD } from '@/renderer/lib/icons/iconClass';
+import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import {
   DEFAULT_NOMAD_NODE_PAGE_PATH,
   isNomadMicronPage,
@@ -37,6 +40,18 @@ interface LoadNodePageOptions {
 /** Cap displayed page size to avoid renderer stress on huge Micron pages. */
 const MAX_NOMAD_PAGE_DISPLAY_CHARS = MAX_NOMAD_PAGE_CACHE_CHARS;
 
+const NOMAD_NODE_LIST_COLLAPSED_STORAGE_KEY = 'mesh-client:nomadNodeListCollapsed';
+
+function nomadCollapsedLabel(displayName: string | null | undefined, hash: string): string {
+  const name = displayName?.trim();
+  if (name) {
+    const words = name.split(/\s+/).filter(Boolean);
+    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  }
+  return hash.slice(0, 2).toUpperCase();
+}
+
 function formatNomadUrlBar(hash: string, path: string): string {
   return `${hash}:${path}`;
 }
@@ -61,10 +76,126 @@ function matchesSearch(node: NomadNodeRow, query: string): boolean {
   return name.includes(q) || hash.includes(q);
 }
 
+function NomadCollapsedNodeItem({
+  node,
+  isSelected,
+  openNodeLabel,
+  onOpenNode,
+}: {
+  node: NomadNodeRow;
+  isSelected: boolean;
+  openNodeLabel: string;
+  onOpenNode: (hash: string) => void;
+}) {
+  const label = node.display_name ?? node.destination_hash.slice(0, 16);
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      {...{ [PARENT_HOVER_ATTR]: '' }}
+      onClick={() => {
+        onOpenNode(node.destination_hash);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpenNode(node.destination_hash);
+        }
+      }}
+      className={`w-full cursor-pointer border-b border-gray-800 text-left transition-colors hover:bg-gray-800/60 ${
+        isSelected
+          ? 'border-bright-green bg-sidebar-active-bg border-l-2 px-1 py-1.5'
+          : 'border-l-2 border-transparent px-1 py-1.5'
+      }`}
+      title={label}
+      aria-label={openNodeLabel}
+    >
+      <div className="relative flex flex-col items-center gap-0.5">
+        <span
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[10px] leading-none font-semibold ${
+            isSelected ? 'text-bright-green bg-gray-800' : 'bg-gray-800/80 text-gray-200'
+          }`}
+          aria-hidden
+        >
+          {nomadCollapsedLabel(node.display_name, node.destination_hash)}
+        </span>
+        <span className={node.favorited ? 'text-yellow-400' : 'text-gray-500'} aria-hidden>
+          ★
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function NomadExpandedNodeItem({
+  node,
+  isSelected,
+  openNodeLabel,
+  toggleFavoriteLabel,
+  onOpenNode,
+  onToggleFavorite,
+  formatHash,
+  hopsAwayLabel,
+  lastSeenLabel,
+}: {
+  node: NomadNodeRow;
+  isSelected: boolean;
+  openNodeLabel: string;
+  toggleFavoriteLabel: string;
+  onOpenNode: (hash: string) => void;
+  onToggleFavorite: (hash: string, favorited: boolean) => void;
+  formatHash: (hash: string) => string;
+  hopsAwayLabel: string | null;
+  lastSeenLabel: string | null;
+}) {
+  const label = node.display_name ?? node.destination_hash.slice(0, 16);
+
+  return (
+    <div
+      className={`mx-2 mb-2 rounded border px-3 py-2 text-sm last:mb-0 ${
+        isSelected ? 'border-bright-green/60 bg-slate-800/80' : 'border-gray-700/60'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <button
+          type="button"
+          className="min-w-0 flex-1 text-left"
+          aria-label={openNodeLabel}
+          onClick={() => {
+            onOpenNode(node.destination_hash);
+          }}
+        >
+          <div className="truncate font-medium text-gray-100">{label}</div>
+          <div className="text-muted truncate font-mono text-xs">
+            {formatHash(node.destination_hash)}
+          </div>
+          <div className="text-muted mt-1 flex flex-wrap gap-x-2 text-xs">
+            {hopsAwayLabel ? <span>{hopsAwayLabel}</span> : null}
+            {lastSeenLabel ? <span>{lastSeenLabel}</span> : null}
+          </div>
+        </button>
+        <button
+          type="button"
+          className={node.favorited ? 'text-yellow-400' : 'text-gray-500'}
+          aria-label={toggleFavoriteLabel}
+          onClick={() => {
+            onToggleFavorite(node.destination_hash, !node.favorited);
+          }}
+        >
+          ★
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function NomadNetworkPanel({
   onOpenDm,
+  isActive = true,
 }: {
   onOpenDm?: (destinationHash: string) => void;
+  isActive?: boolean;
 }) {
   const { t } = useTranslation();
   const nodes = useNomadNetworkStore((s) => s.nodes);
@@ -75,7 +206,7 @@ export default function NomadNetworkPanel({
   const fetchNomadFile = useNomadNetworkStore((s) => s.fetchNomadFile);
   const toggleFavorite = useNomadNetworkStore((s) => s.toggleFavorite);
 
-  const [activeTab, setActiveTab] = useState<NomadListTab>('announces');
+  const [activeTab, setActiveTab] = useState<NomadListTab>('favourites');
   const [searchQuery, setSearchQuery] = useState('');
   const [sidecarRunning, setSidecarRunning] = useState(false);
   const [selectedHash, setSelectedHash] = useState<string | null>(null);
@@ -90,14 +221,25 @@ export default function NomadNetworkPanel({
   const [pageError, setPageError] = useState<string | null>(null);
   const [fileDownloading, setFileDownloading] = useState(false);
   const [fileDownloadError, setFileDownloadError] = useState<string | null>(null);
+  const [nodeListCollapsed, setNodeListCollapsed] = useState(
+    () => localStorage.getItem(NOMAD_NODE_LIST_COLLAPSED_STORAGE_KEY) === 'true',
+  );
   const pageRequestSeqRef = useRef(0);
   const fileDownloadInFlightRef = useRef(false);
   const mountedRef = useRef(true);
   const historyIndexRef = useRef(-1);
+  const listCollapseTrigger = useParentIconTrigger();
 
   useEffect(() => {
     historyIndexRef.current = historyIndex;
   }, [historyIndex]);
+
+  useEffect(() => {
+    if (isActive && selectedHash == null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset list tab when panel becomes visible without a page open
+      setActiveTab('favourites');
+    }
+  }, [isActive, selectedHash]);
 
   const pushHistoryEntry = useCallback((hash: string, path: string) => {
     const normalizedPath = normalizeNomadPagePath(path);
@@ -287,8 +429,31 @@ export default function NomadNetworkPanel({
     setHistoryStack([]);
     historyIndexRef.current = -1;
     setHistoryIndex(-1);
+    setActiveTab('favourites');
     clearNomadPageCache();
   }, []);
+
+  const handleNodeListToggle = useCallback(() => {
+    setNodeListCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(NOMAD_NODE_LIST_COLLAPSED_STORAGE_KEY, String(next));
+      return next;
+    });
+  }, []);
+
+  const handleOpenNode = useCallback(
+    (hash: string) => {
+      void loadNodePage(hash, DEFAULT_NOMAD_NODE_PAGE_PATH);
+    },
+    [loadNodePage],
+  );
+
+  const handleToggleFavorite = useCallback(
+    (hash: string, favorited: boolean) => {
+      void toggleFavorite(hash, favorited);
+    },
+    [toggleFavorite],
+  );
 
   const searchPlaceholder =
     activeTab === 'favourites'
@@ -297,6 +462,10 @@ export default function NomadNetworkPanel({
 
   const emptyKey =
     activeTab === 'favourites' ? 'nomadNetwork.emptyFavourites' : 'nomadNetwork.emptyAnnounces';
+
+  const activeTabCount = activeTab === 'favourites' ? favouritesCount : allRows.length;
+  const activeTabLabel =
+    activeTab === 'favourites' ? t('nomadNetwork.favourites') : t('nomadNetwork.announces');
 
   const showStartStackBanner = !sidecarRunning && lastRefreshAt == null && allRows.length === 0;
 
@@ -327,112 +496,148 @@ export default function NomadNetworkPanel({
         </p>
       ) : null}
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-row">
-        <div className="flex min-h-0 min-w-0 flex-col lg:w-[22rem] lg:shrink-0 lg:border-r lg:border-gray-700 lg:pr-3">
-          <div className="mb-3 flex gap-4 border-b border-gray-700 text-sm">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'favourites'}
-              className={`border-b-2 pb-2 ${
-                activeTab === 'favourites'
-                  ? 'border-bright-green text-bright-green'
-                  : 'text-muted border-transparent'
-              }`}
-              onClick={() => {
-                setActiveTab('favourites');
-              }}
-            >
-              {t('nomadNetwork.favourites')}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'announces'}
-              className={`border-b-2 pb-2 ${
-                activeTab === 'announces'
-                  ? 'border-bright-green text-bright-green'
-                  : 'text-muted border-transparent'
-              }`}
-              onClick={() => {
-                setActiveTab('announces');
-              }}
-            >
-              {t('nomadNetwork.announces')}
-            </button>
-          </div>
+      <div className="flex min-h-0 flex-1 gap-3">
+        <div
+          className={`bg-secondary-dark flex min-h-0 shrink-0 flex-col overflow-hidden rounded-lg border border-gray-700 transition-[width] duration-300 ${
+            nodeListCollapsed ? 'w-16' : 'w-72'
+          }`}
+        >
+          {!nodeListCollapsed && (
+            <div className="flex items-center gap-2 border-b border-gray-700 px-3 py-2">
+              <span className="min-w-0 flex-1 text-sm font-medium text-gray-200">
+                {activeTabLabel} <span className="text-gray-500">({activeTabCount})</span>
+              </span>
+            </div>
+          )}
 
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-            }}
-            placeholder={searchPlaceholder}
-            aria-label={searchPlaceholder}
-            className="mb-3 w-full rounded border border-gray-600 bg-slate-900 px-3 py-2 text-sm text-gray-200"
-          />
+          {!nodeListCollapsed && (
+            <>
+              <div className="mb-0 flex gap-4 border-b border-gray-700 px-3 text-sm">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'favourites'}
+                  className={`border-b-2 pb-2 ${
+                    activeTab === 'favourites'
+                      ? 'border-bright-green text-bright-green'
+                      : 'text-muted border-transparent'
+                  }`}
+                  onClick={() => {
+                    setActiveTab('favourites');
+                  }}
+                >
+                  {t('nomadNetwork.favourites')}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'announces'}
+                  className={`border-b-2 pb-2 ${
+                    activeTab === 'announces'
+                      ? 'border-bright-green text-bright-green'
+                      : 'text-muted border-transparent'
+                  }`}
+                  onClick={() => {
+                    setActiveTab('announces');
+                  }}
+                >
+                  {t('nomadNetwork.announces')}
+                </button>
+              </div>
 
-          {filteredRows.length === 0 ? (
-            <p className="text-muted text-sm">{t(emptyKey)}</p>
-          ) : (
-            <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto text-sm">
-              {filteredRows.map((node) => {
+              <div className="px-3 pt-3">
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                  }}
+                  placeholder={searchPlaceholder}
+                  aria-label={searchPlaceholder}
+                  className="mb-3 w-full rounded border border-gray-600 bg-slate-900 px-3 py-2 text-sm text-gray-200"
+                />
+              </div>
+            </>
+          )}
+
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {!nodeListCollapsed && filteredRows.length === 0 ? (
+              <p className="text-muted px-3 pb-3 text-sm">{t(emptyKey)}</p>
+            ) : (
+              filteredRows.map((node) => {
                 const isSelected =
                   selectedHash?.toLowerCase() === node.destination_hash.toLowerCase();
                 const label = node.display_name ?? node.destination_hash.slice(0, 16);
+                const openNodeLabel = t('nomadNetwork.openNode', { name: label });
+
+                if (nodeListCollapsed) {
+                  return (
+                    <NomadCollapsedNodeItem
+                      key={node.destination_hash}
+                      node={node}
+                      isSelected={isSelected}
+                      openNodeLabel={openNodeLabel}
+                      onOpenNode={handleOpenNode}
+                    />
+                  );
+                }
+
                 return (
-                  <li
+                  <NomadExpandedNodeItem
                     key={node.destination_hash}
-                    className={`rounded border px-3 py-2 ${
-                      isSelected ? 'border-bright-green/60 bg-slate-800/80' : 'border-gray-700/60'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <button
-                        type="button"
-                        className="min-w-0 flex-1 text-left"
-                        aria-label={t('nomadNetwork.openNode', { name: label })}
-                        onClick={() => {
-                          void loadNodePage(node.destination_hash, DEFAULT_NOMAD_NODE_PAGE_PATH);
-                        }}
-                      >
-                        <div className="truncate font-medium text-gray-100">{label}</div>
-                        <div className="text-muted truncate font-mono text-xs">
-                          {formatNomadHash(node.destination_hash)}
-                        </div>
-                        <div className="text-muted mt-1 flex flex-wrap gap-x-2 text-xs">
-                          {node.hops != null ? (
-                            <span>{t('nomadNetwork.hopsAway', { count: node.hops })}</span>
-                          ) : null}
-                          {node.last_seen ? (
-                            <span>
-                              {t('nomadNetwork.lastSeen', {
-                                time: formatRelativeOrIsoDate(node.last_seen * 1000, t),
-                              })}
-                            </span>
-                          ) : null}
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        className={node.favorited ? 'text-yellow-400' : 'text-gray-500'}
-                        aria-label={t('nomadNetwork.toggleFavorite')}
-                        onClick={() => {
-                          void toggleFavorite(node.destination_hash, !node.favorited);
-                        }}
-                      >
-                        ★
-                      </button>
-                    </div>
-                  </li>
+                    node={node}
+                    isSelected={isSelected}
+                    openNodeLabel={openNodeLabel}
+                    toggleFavoriteLabel={t('nomadNetwork.toggleFavorite')}
+                    onOpenNode={handleOpenNode}
+                    onToggleFavorite={handleToggleFavorite}
+                    formatHash={formatNomadHash}
+                    hopsAwayLabel={
+                      node.hops != null ? t('nomadNetwork.hopsAway', { count: node.hops }) : null
+                    }
+                    lastSeenLabel={
+                      node.last_seen
+                        ? t('nomadNetwork.lastSeen', {
+                            time: formatRelativeOrIsoDate(node.last_seen * 1000, t),
+                          })
+                        : null
+                    }
+                  />
                 );
-              })}
-            </ul>
-          )}
+              })
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleNodeListToggle}
+            aria-expanded={!nodeListCollapsed}
+            aria-label={
+              nodeListCollapsed
+                ? t('nomadNetwork.expandNodeList')
+                : t('nomadNetwork.collapseNodeList')
+            }
+            className="text-muted hover:text-bright-green mx-2 mt-auto mb-2 flex shrink-0 items-center justify-center rounded-sm border border-gray-700 py-2 transition-colors hover:border-gray-600"
+          >
+            {nodeListCollapsed ? (
+              <ChevronRight
+                aria-hidden
+                className={ICON_MD}
+                trigger={listCollapseTrigger}
+                size={16}
+              />
+            ) : (
+              <ChevronLeft
+                aria-hidden
+                className={ICON_MD}
+                trigger={listCollapseTrigger}
+                size={16}
+              />
+            )}
+          </button>
         </div>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-gray-700/60 bg-slate-950/40">
+        <div className="bg-secondary-dark flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-700">
           {!selectedNode ? (
             <p className="text-muted m-auto max-w-sm p-6 text-center text-sm">
               {t('nomadNetwork.selectNode')}

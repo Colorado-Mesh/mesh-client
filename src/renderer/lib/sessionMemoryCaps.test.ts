@@ -1,8 +1,23 @@
 import { describe, expect, it } from 'vitest';
 
-import { trimArrayTail, trimMapToMaxSize, trimMapToMaxSizeKeeping } from './sessionMemoryCaps';
+import {
+  LARGE_MESH_NODE_THRESHOLD,
+  MAX_DIAGNOSTICS_TRACKED_NODES,
+  MAX_MESH_ENTITY_CAP,
+  MAX_RETICULUM_IDENTITY_DESTINATIONS,
+  trimArrayTail,
+  trimMapToMaxSize,
+  trimMapToMaxSizeKeeping,
+} from './sessionMemoryCaps';
 
 describe('sessionMemoryCaps', () => {
+  it('aligns product caps at 10k', () => {
+    expect(MAX_MESH_ENTITY_CAP).toBe(10_000);
+    expect(MAX_DIAGNOSTICS_TRACKED_NODES).toBe(MAX_MESH_ENTITY_CAP);
+    expect(MAX_RETICULUM_IDENTITY_DESTINATIONS).toBe(MAX_MESH_ENTITY_CAP);
+    expect(LARGE_MESH_NODE_THRESHOLD).toBe(2000);
+  });
+
   it('trimArrayTail keeps newest entries', () => {
     expect(trimArrayTail([1, 2, 3, 4, 5], 3)).toEqual([3, 4, 5]);
   });

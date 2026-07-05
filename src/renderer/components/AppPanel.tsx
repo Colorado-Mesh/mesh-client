@@ -17,6 +17,7 @@ import {
 import { formatCoordPair } from '../lib/coordUtils';
 import { DEFAULT_APP_SETTINGS_SHARED } from '../lib/defaultAppSettings';
 import type { OurPosition } from '../lib/gpsSource';
+import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import {
   DEFAULT_MESSAGE_RETENTION,
   fetchMessageRetention,
@@ -29,6 +30,7 @@ import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { writeReduceMotion } from '../lib/reduceMotionPreference';
+import { nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
 import {
   applyThemeColors,
   DEFAULT_THEME_COLORS,
@@ -42,6 +44,7 @@ import {
 import type { MeshNode, MeshProtocol } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { useNodeStore } from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { HelpTooltip } from './HelpTooltip';
 import { ReticulumAppPanelSection } from './ReticulumAppPanelSection';
@@ -79,6 +82,13 @@ const NODE_PRUNE_ACTIONS: DangerActionId[] = [
 ];
 
 const MESSAGE_PRUNE_ACTIONS: DangerActionId[] = ['clearMessages', 'clearAllData'];
+
+function readNodesMapForProtocol(protocol: MeshProtocol): Map<number, MeshNode> {
+  const identityId = getIdentityIdForProtocol(protocol);
+  if (!identityId) return new Map();
+  const byId = useNodeStore.getState().nodes[identityId] ?? {};
+  return nodeRecordsToMeshNodeMap(Object.values(byId));
+}
 
 const DANGER_ACTION_LABEL_KEY: Record<DangerActionId, string> = {
   resetDiagnostics: 'appPanel.resetDiagnostics',
@@ -217,7 +227,9 @@ interface Props {
   protocol: MeshProtocol;
   logPanelVisible?: boolean;
   onLogPanelVisibleChange?: (visible: boolean) => void;
-  nodes: Map<number, MeshNode>;
+  nodes?: Map<number, MeshNode>;
+  /** Live node count for display; danger-zone scans read the store on click. */
+  nodeCount: number;
   messageCount: number;
   channels: { index: number; name: string }[];
   myNodeNum: number | null;
@@ -255,7 +267,8 @@ export default function AppPanel({
   protocol,
   logPanelVisible = false,
   onLogPanelVisibleChange,
-  nodes,
+  nodes: nodesProp,
+  nodeCount,
   messageCount,
   channels,
   myNodeNum,
@@ -286,6 +299,16 @@ export default function AppPanel({
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const { addToast } = useToast();
   const { t } = useTranslation();
+  const resolveNodes = useCallback(
+    (): Map<number, MeshNode> => nodesProp ?? readNodesMapForProtocol(protocol),
+    [nodesProp, protocol],
+  );
+  const homeNodeFromStore = useNodeStore((s) => {
+    if (myNodeNum == null) return null;
+    const identityId = getIdentityIdForProtocol(protocol);
+    if (!identityId) return null;
+    return s.nodes[identityId]?.[myNodeNum] ?? null;
+  });
   const clearDiagnostics = useDiagnosticsStore((s) => s.clearDiagnostics);
   const showPaths = usePositionHistoryStore((s) => s.showPaths);
   const setShowPaths = usePositionHistoryStore((s) => s.setShowPaths);
@@ -894,7 +917,7 @@ export default function AppPanel({
                 updateSetting('distanceFilterMax', Math.max(1, parseInt(e.target.value) || 1));
               }}
               disabled={!settings.distanceFilterEnabled}
-              aria-label={`Max distance: ${settings.distanceFilterMax}`}
+              aria-label={t('appPanel.maxDistanceAria', { value: settings.distanceFilterMax })}
               className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
             />
             <label htmlFor="apppanel-distance-unit" className="text-sm text-gray-300">
@@ -907,7 +930,12 @@ export default function AppPanel({
                 updateSetting('distanceUnit', e.target.value as 'miles' | 'km');
               }}
               disabled={!settings.distanceFilterEnabled}
-              aria-label={`Unit: ${settings.distanceUnit}`}
+              aria-label={t('appPanel.unitAria', {
+                unit:
+                  settings.distanceUnit === 'km'
+                    ? t('appPanel.distanceUnitKm')
+                    : t('appPanel.distanceUnitMiles'),
+              })}
               className="bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
             >
               <option value="miles">{t('appPanel.distanceUnitMiles')}</option>
@@ -916,12 +944,11 @@ export default function AppPanel({
           </div>
           {settings.distanceFilterEnabled &&
             (() => {
-              const homeNode = myNodeNum != null ? nodes.get(myNodeNum) : undefined;
               const homeHasLocation =
-                homeNode?.latitude != null &&
-                homeNode.latitude !== 0 &&
-                homeNode.longitude != null &&
-                homeNode.longitude !== 0;
+                homeNodeFromStore?.latitude != null &&
+                homeNodeFromStore.latitude !== 0 &&
+                homeNodeFromStore.longitude != null &&
+                homeNodeFromStore.longitude !== 0;
               return !homeHasLocation ? (
                 <p className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-1.5 text-xs text-yellow-300">
                   {t('appPanel.noGpsFix')}
@@ -1217,11 +1244,12 @@ export default function AppPanel({
                 id="apppanel-meshcore-contact-cap-count"
                 type="number"
                 min={1}
+                max={10000}
                 value={settings.meshcoreContactCapCount}
                 onChange={(e) => {
                   updateSetting(
                     'meshcoreContactCapCount',
-                    Math.max(1, parseInt(e.target.value) || 1),
+                    Math.max(1, Math.min(10000, parseInt(e.target.value) || 1)),
                   );
                 }}
                 disabled={!settings.meshcoreContactCapEnabled}
@@ -1881,7 +1909,7 @@ export default function AppPanel({
                 type="button"
                 aria-label={t('appPanel.pruneNoFixNodes')}
                 onClick={() => {
-                  const zeroIslandNodes = Array.from(nodes.values()).filter(
+                  const zeroIslandNodes = Array.from(resolveNodes().values()).filter(
                     (n) => Math.abs(n.latitude ?? 0) < 0.5 && Math.abs(n.longitude ?? 0) < 0.5,
                   );
                   if (zeroIslandNodes.length === 0) {
@@ -1916,6 +1944,7 @@ export default function AppPanel({
                 type="button"
                 aria-label={t('appPanel.pruneDistantNodes')}
                 onClick={() => {
+                  const nodes = resolveNodes();
                   const homeNode = myNodeNum != null ? nodes.get(myNodeNum) : undefined;
                   const homeLat = homeNode?.latitude ?? ourPosition?.lat;
                   const homeLon = homeNode?.longitude ?? ourPosition?.lon;
@@ -1969,7 +1998,7 @@ export default function AppPanel({
                 type="button"
                 aria-label={t('appPanel.pruneOfflineNodes')}
                 onClick={() => {
-                  const offlineNodes = Array.from(nodes.values()).filter(
+                  const offlineNodes = Array.from(resolveNodes().values()).filter(
                     (n) =>
                       n.node_id !== myNodeNum &&
                       !n.favorited &&
@@ -2011,13 +2040,13 @@ export default function AppPanel({
               </button>
               <button
                 type="button"
-                aria-label={t('appPanel.clearAllNodesButton', { count: nodes.size })}
+                aria-label={t('appPanel.clearAllNodesButton', { count: nodeCount })}
                 onClick={() => {
                   executeWithConfirmation({
                     actionId: 'clearNodes',
-                    title: t('appPanel.clearAllNodesButton', { count: nodes.size }),
-                    message: t('appPanel.clearNodesConfirm', { count: nodes.size }),
-                    confirmLabel: t('appPanel.clearNodesConfirmLabel', { count: nodes.size }),
+                    title: t('appPanel.clearAllNodesButton', { count: nodeCount }),
+                    message: t('appPanel.clearNodesConfirm', { count: nodeCount }),
+                    confirmLabel: t('appPanel.clearNodesConfirmLabel', { count: nodeCount }),
                     danger: true,
                     action: async () => {
                       await window.electronAPI.db.clearNodes();
@@ -2026,7 +2055,7 @@ export default function AppPanel({
                 }}
                 className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
               >
-                {t('appPanel.clearAllNodesButton', { count: nodes.size })}
+                {t('appPanel.clearAllNodesButton', { count: nodeCount })}
               </button>
 
               {/* MeshCore contacts cleanup */}

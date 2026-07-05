@@ -1,4 +1,14 @@
 {
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Fabrika ayarlarına sıfırlama",
+      "hint": "Sepet yığınındaki kimliği, kişileri ve mesajları temizler. Arayüz yapılandırması korunur.",
+      "button": "Yığın verilerini sıfırla",
+      "confirmTitle": "Reticulum stack sıfırlansın mı?",
+      "confirmBody": "Bu, sepetteki kimliği, kişileri ve yerel mesajları kaldırır. Arayüz yapılandırma dosyanız tutulur.",
+      "confirm": "Sıfırla"
+    }
+  },
   "app": {
     "loadingPanel": "Yükleme paneli",
     "loadingDialog": "Yükleme iletişim kutusu",
@@ -317,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "Başlangıçta konum geçmişini otomatik olarak buda, {{days}} günden eski",
     "capTotalNodesCountAria": "Toplam düğüm sayısını sınırlayın, en yeni {{count}} düğümleri koruyun",
     "limitMessagesLoadedCountAria": "Yüklenen mesajları sınırla {{count}} mesajları",
-    "capStoredMessagesCountAria": "Saklanan mesajları sınırlandırın, en yeni {{count}} mesajlarını saklayın"
+    "capStoredMessagesCountAria": "Saklanan mesajları sınırlandırın, en yeni {{count}} mesajlarını saklayın",
+    "maxDistanceAria": "Maksimum mesafe: {{value}}",
+    "unitAria": "Birim: {{unit}}"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -430,7 +442,6 @@
     "emptyNoDmMessages": "{{name}} ile henüz mesaj yok.",
     "emptyNoMessagesYet": "Henüz mesaj yok. Bir mesaj gönderin veya gelen mesajları bekleyin.",
     "emptyConnectFirst": "Sohbete başlamak için bir cihaza bağlanın.",
-    "waitingMessagesBadge": "Telsizden {{count}} sıraya alınmış mesaj(lar) senkronize ediliyor…",
     "waitingMessagesSyncNow": "Şimdi senkronize et",
     "jumpToUnread": "Okunmamışlara Atla",
     "jumpToLatest": "En Yeniye Atla",
@@ -489,7 +500,10 @@
       "pkiFailed": "Bu mesaj için PKI şifrelemesi başarısız oldu.",
       "noChannel": "Bu mesajı yönlendirmek için kullanılabilir kanal yok.",
       "timeout": "Mesaj radyoda zaman aşımına uğradı."
-    }
+    },
+    "waitingMessagesQueued": "{{count}} radyoda kuyrukta bekleyen mesaj(lar)",
+    "waitingMessagesSyncProgress": "{{processed}} / {{total}} radyodan senkronize ediliyor…",
+    "waitingMessagesSyncProgressIndeterminate": "Kuyruktaki mesajlar radyodan senkronize ediliyor…"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -1262,6 +1276,25 @@
     "rssiDbm": "RSSI {{rssi}} dBm",
     "snrDb": "SNR {{snr}} dB"
   },
+  "diagnosticsPing": {
+    "title": "Sürekli ping",
+    "reticulumHint": "Yığın çalışırken her aralıkta ping (RTT) ve yol probunu (atlama) çalıştırır.",
+    "hashLabel": "Hedef hash",
+    "hashPlaceholder": "32 karakterlik hedef hash…",
+    "hashAria": "Hedef hash'ten ping'e",
+    "intervalLabel": "Aralık (lar)",
+    "intervalAria": "Ping denemeleri arasındaki saniye",
+    "start": "Başla",
+    "stop": "Durdurma",
+    "runOnce": "Bir kez ping yap",
+    "colSeq": "#",
+    "colRtt": "RTT",
+    "colHops": "Şerbetçi otu",
+    "colStatus": "Durum",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "Tamam",
+    "statusFailed": "Başarısız: {{error}}"
+  },
   "errorBoundary": {
     "title": "Bir şeyler ters gitti",
     "unexpectedError": "Beklenmeyen bir hata oluştu",
@@ -1383,6 +1416,25 @@
     "wifiStationSuccess": "İstasyon modu kaydedildi. Kartı yeniden başlatın, ardından IP'sini (ekran, yönlendirici DHCP veya Read config) bulun ve → Bağlantı Arabirimlerine tcp ://… ekleyin.",
     "wifiConfigEmpty": "Yapılandırma verisi döndürülmedi.",
     "wifiNetmaskPlaceholder": "255.255.255.0"
+  },
+  "identityVault": {
+    "title": "Kimlik kasası",
+    "hint": "Kimlik yedeklemenizin yerel bir kopyasını kasa şifresi ile şifreleyin. Korunan kimlik işlemlerine erişmek için kilidini açın.",
+    "passcode": "Kasa şifresi",
+    "confirmPasscode": "Şifreni onayla",
+    "setPasscode": "Kasayı etkinleştir",
+    "unlock": "Kasanın kilidini aç",
+    "lock": "Kasayı kilitle",
+    "statusNotConfigured": "Yapılandırılmamış",
+    "statusLocked": "Kilitli",
+    "statusUnlocked": "Kilidi açıldı",
+    "passcodeTooShort": "Şifre en az 4 karakterden oluşmalıdır.",
+    "passcodeMismatch": "Şifreler eşleşmiyor.",
+    "setSuccess": "Kasa şifresi kaydedildi.",
+    "setFailed": "Kasa şifresi kaydedilemedi.",
+    "unlockSuccess": "Kasa açıldı",
+    "unlockFailed": "Yanlış şifre veya kasa hatası.",
+    "lockSuccess": "Kasa kilitlendi."
   },
   "logAnalyzeModal": {
     "title": "Günlük Analizi",
@@ -1549,6 +1601,60 @@
     "extraRfReceptions": "ekstra RF alımları",
     "originatorPacket": "paket",
     "originatorPackets": "paketler"
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "Tekrarlayıcı yönetici şifresini Tekrarlayıcılar panelinden ayarlayın veya değiştirin (yalnızca oturum).",
+      "connectionFailed": "Bağlantı başarısız oldu",
+      "notConnected": "Cihaza bağlı değil",
+      "nodeNotFound": "Düğüm bulunamadı (şifreleme anahtarı yok)",
+      "authenticationFailed": "Kimlik doğrulama başarısız oldu",
+      "requestFailed": "Başarısız: {{detail}}",
+      "requestTimedOut": "İstek zaman aşımına uğradı (en fazla ~{{seconds}}s)",
+      "requestTimedOutApprox": "İstek zaman aşımına uğradı (~{{seconds}}s)",
+      "pingNoRoute": "Henüz radyodan rota yok; çok atlamalı izlemenin senkronize bir yola ihtiyacı var. Kişi güncellemelerini bekleyin veya yeniden bağlanın.",
+      "bleNoDetails": "BLE bağlantısı başarısız oldu (cihazda hata ayrıntıları yok). Tekrar deneyin veya Seri/USB kullanın.",
+      "bleAlreadyInProgress": "Bluetooth bağlantısı zaten devam ediyor. Bitmesini bekleyin veya bunun yerine Seri/USB'yi deneyin.",
+      "bleMissingServices": "Cihaz MeshCore BLE protokolünü desteklemiyor. Cihazın MeshCore ürün yazılımını çalıştırdığından emin olun.",
+      "blePeripheralInUse": "Bu cihaz zaten Meshtastic BLE aracılığıyla bağlı. MeshCore olarak bağlanmadan önce ilk olarak bağlantısını kesin.",
+      "bleTimeoutWebBtHandshake": "MeshCore anlaşması zaman aşımına uğradı (Web Bluetooth). Telsizin öncelikle Linux ile eşleştirilmiş bir PIN'e ihtiyacı olabilir: Cihazı Kaldır ve Yeniden Eşleştir'i kullanın ve cihazda gösterilen PIN'i girin veya bluetoothctl ile eşleştirin ve ardından tekrar Bağlan'a dokunun.",
+      "bleTimeoutWebBt": "MeshCore'u Web Bluetooth üzerinden açarken Bluetooth bağlantısı zaman aşımına uğradı. Tekrar deneyin, cihazı uyanık tutun, radyoda BLE'yi kapatıp açın veya Seri/TCP'yi kullanın.",
+      "bleTimeoutHandshake": "Bluetooth bağlandı ancak MeshCore protokolü anlaşması bağlantı kesmeden/zaman aşımına uğramadan tamamlanmadı. Tekrar deneyin, cihazı uyanık ve yakında tutun, BLE'yi kapatıp açın veya Seri/TCP'yi kullanın.",
+      "bleTimeoutNoble": "Noble IPC üzerinden MeshCore açılırken Bluetooth bağlantısı zaman aşımına uğradı. Yeniden deneyin, cihazdaki BLE'yi kapatıp açın veya Seri/TCP'yi kullanın.",
+      "roomPost": {
+        "badState": "Oda mesajı reddedildi (radyoda oturum açılmadı). Oturumu kapatın, tekrar oturum açın ve yeniden deneyin.",
+        "illegalArg": "Oda gönderimi reddedildi (geçersiz mesaj biçimi).",
+        "notFound": "Oda mesajı reddedildi (radyoda oda iletişim bilgisi bulunamadı).",
+        "unsupportedCmd": "Oda gönderisi reddedildi (radyoda desteklenmeyen mesaj türü). Odada oturum açın ve yeniden deneyin.",
+        "default": "Oda yazısı radyo tarafından reddedildi. Oturumu kapatın, tekrar oturum açın ve yeniden deneyin.",
+        "timeout": "Oda gönderisi radyo beklenirken zaman aşımına uğradı. Aralığı kontrol edin veya tekrar deneyin."
+      },
+      "roomLogin": {
+        "noRoute": "Bu oda sunucusuna giden yol yok. Düğümü haritadan takip edin veya yol reklamlarını bekleyin, ardından tekrar deneyin.",
+        "pathSyncFailed": "Oturum açmadan önce radyonuzda rota programlanamadı. Cihazı tekrar bağlayın ve tekrar deneyin.",
+        "pathSyncFailedDetail": "Oturum açmadan önce radyonuzda rota programlanamadı. Cihazı yeniden bağlayın ve tekrar deneyin.{{detail}}",
+        "rejectedBlankGuest": "Oda girişi reddedildi. Boş konuk parolası için Salt okunur devam et seçeneğini kullanın veya konuk parolası \"merhaba\"yı deneyin.",
+        "rejectedDefaultGuest": "Oda girişi reddedildi. Bu sunucunun konuk parolası yoksa Oturum Açma yerine Salt okunura devam et seçeneğini kullanın. Aksi halde misafir veya yönetici şifresini kontrol edin.",
+        "rejectedCheckPassword": "Oda girişi reddedildi. Bu oda sunucusunun misafir veya yönetici şifresini kontrol edin.",
+        "timedOutBlankGuest": "Odaya giriş zaman aşımına uğradı. Boş konuk parolası için Salt okunur devam et seçeneğini kullanın veya konuk parolası \"merhaba\"yı deneyin.",
+        "timedOutDefaultGuest": "Odaya giriş zaman aşımına uğradı. Bu sunucunun konuk parolası yoksa Oturum Açma yerine Salt okunura devam et seçeneğini kullanın.",
+        "timedOut": "Odaya giriş zaman aşımına uğradı. Oda kapsama alanı dışında olabilir veya yanıt vermiyor olabilir.",
+        "failed": "Oda girişi başarısız oldu"
+      },
+      "roomLogout": {
+        "timedOut": "Odadan çıkış zaman aşımına uğradı. Oda kapsama alanı dışında olabilir veya yanıt vermiyor olabilir.",
+        "rejected": "Odadan çıkış radyo tarafından reddedildi.",
+        "failed": "Odadan çıkılamadı"
+      },
+      "repeaterRpcInProgress": "Bu tekrarlayıcı için bir istek zaten devam ediyor"
+    },
+    "mqttHints": {
+      "notAuthorized": "v1_ kullanıcı adını, belirteç imzasını ve JWT hedef kitlesi ile aracının karşılaştırmasını doğrulayın; docs/letsmesh-mqtt-auth.md'ye bakın. Gerekirse operatör tarafından verilen belirteci yapıştırmak için Özel'i kullanın.",
+      "network": "Ağı, DNS'yi, güvenlik duvarını ve VPN'yi kontrol edin.",
+      "connackTimeout": "Önceden bir \"istemci hatası\" satırı görmüyorsanız TLS/WebSocket anlaşması duruyor olabilir (başka bir ağ deneyin; uygulama, WSS için IPv4'ü tercih ediyor).",
+      "subscribeFailed": "Broker bu konuda joker karakter aboneliğini reddedebilir; aracı izin verirse mesajlar yine de gelebilir.",
+      "keepalive": "Sunucu, MQTT ping'lerine yanıt vermeyi durdurdu (boşta kalma zaman aşımı, ağ kesintisi veya aracı oturumu kapattı). Bağlantınızı yeniden bağlayın veya kontrol edin."
+    }
   },
   "meshcoreContactSettings": {
     "allContactsCleared": "Tüm kişiler temizlendi.",
@@ -2006,6 +2112,31 @@
       }
     }
   },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Yığın ayarları",
+      "enableTransport": "Aktarımı etkinleştir (diğer eşler için rota)",
+      "shareInstance": "Reticulum örneğini paylaşın",
+      "logLevel": "Günlük düzeyi",
+      "save": "Yığın ayarlarını kaydet",
+      "saveFailed": "Yığın ayarları kaydedilemedi."
+    },
+    "reticulumConfigImport": {
+      "title": "Reticulum yapılandırmasını içe aktar",
+      "hint": "Rnsd tarzı bir yapılandırma dosyası yapıştırın veya diskten içe aktarın. Birleştirme, arayüz bloklarını ada göre ekler/günceller; değiştir tüm arayüzlerin üzerine yazar.",
+      "pasteLabel": "Yapılandırma dosyası içerikleri",
+      "fromFile": "Dosyadan içe aktar…",
+      "fromSystem": "Sistem varsayılanını içe aktar",
+      "merge": "İçe aktarmayı birleştir",
+      "replace": "Arayüzleri değiştirin",
+      "confirmTitle": "Reticulum yapılandırmasını içe aktar",
+      "confirmMerge": "İçe aktarılan arayüzler mevcut yapılandırmayla birleştirilsin mi?",
+      "confirmReplace": "Tüm arayüzler içe aktarılan yapılandırmayla değiştirilsin mi? Bu geri alınamaz.",
+      "confirm": "İçe aktarmak"
+    },
+    "reticulumConfigImportFailed": "Yapılandırma içe aktarımı başarısız oldu.",
+    "reticulumConfigNotFound": "Varsayılan yollarda sistem Reticulum yapılandırması bulunamadı."
+  },
   "nodeDetailModal": {
     "removeFromFavorites": "Favorilerden kaldır",
     "addToFavorites": "Favorilere ekle",
@@ -2359,7 +2490,9 @@
     "urlBarAria": "Göçebe sayfa adresi",
     "back": "Geri",
     "forward": "İleri",
-    "invalidUrl": "Geçersiz Göçebe sayfa adresi"
+    "invalidUrl": "Geçersiz Göçebe sayfa adresi",
+    "collapseNodeList": "Düğüm listesini daralt",
+    "expandNodeList": "Düğüm listesini genişlet"
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",
@@ -3185,6 +3318,20 @@
     "clearAnnouncesDone": "Anonslar temizlendi.",
     "clearAnnouncesFailed": "Duyurular temizlenemedi."
   },
+  "reticulumIdentitySwitcher": {
+    "label": "Aktif kimlik",
+    "active": "Aktif kimlik: {{name}}",
+    "activeBadge": "aktif"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Avatar Görünümü",
+    "iconNameAria": "Avatar Görünümü",
+    "iconCircle": "Yuvarlak",
+    "iconStar": "Yıldız",
+    "iconHeart": "Kalp",
+    "iconShield": "Koruma",
+    "iconUser": "Kullanıcı"
+  },
   "reticulumPropagation": {
     "preferred": "Tercih ettiğiniz SMS Ağ Geçidini seçin.",
     "setPreferred": "Tercih edilenleri belirleyin",
@@ -3214,6 +3361,17 @@
     "autoSyncOption24h": "Her 24 saatte bir",
     "lastSynced": "Son senkronizasyon: {{time}}",
     "lastRefreshed": "Son güncelleme {{time}}"
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Yayılma modu",
+    "modeAria": "Yayılma senkronizasyon modu",
+    "modeAuto": "Otomatik",
+    "modeManual": "Manuel",
+    "modeOff": "Kapalı",
+    "sync": "Senkronizasyon",
+    "syncAria": "Yayılma mesajlarını senkronize et",
+    "cancelSync": "İptal",
+    "cancelSyncAria": "Yayılma senkronizasyonunu iptal et"
   },
   "reticulumTopology": {
     "title": "Ağ topolojisi",
@@ -3620,156 +3778,43 @@
     "menuToastAvailableBody": "{{version}} sürümü mevcut.",
     "menuToastErrorTitle": "Güncelleme kontrolü başarısız oldu"
   },
-  "diagnosticsPing": {
-    "title": "Sürekli ping",
-    "reticulumHint": "Yığın çalışırken her aralıkta ping (RTT) ve yol probunu (atlama) çalıştırır.",
-    "hashLabel": "Hedef hash",
-    "hashPlaceholder": "32 karakterlik hedef hash…",
-    "hashAria": "Hedef hash'ten ping'e",
-    "intervalLabel": "Aralık (lar)",
-    "intervalAria": "Ping denemeleri arasındaki saniye",
-    "start": "Başla",
-    "stop": "Durdurma",
-    "runOnce": "Bir kez ping yap",
-    "colSeq": "#",
-    "colRtt": "RTT",
-    "colHops": "Şerbetçi otu",
-    "colStatus": "Durum",
-    "rttMs": "{{ms}} ms",
-    "statusOk": "Tamam",
-    "statusFailed": "Başarısız: {{error}}"
+  "messageStatusBadge": {
+    "queuedTooltip": "Sıraya alındı — bağlandığında gönderilecek",
+    "queuedLabel": "Sırada Sırada",
+    "blockedDefault": "Engellendi — şifreleme anahtarı mevcut değil",
+    "blockedLabel": "Engellendi",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WiFi",
+    "transportBt": "TÖ",
+    "noAck": "aCK yok",
+    "sending": "Gönderiliyor...",
+    "delivered": "Teslim Edildi",
+    "posted": "Gönderildi",
+    "failedPost": "Gönderilemedi",
+    "noAckTooltip": "ACK yok (mesaj hala yayınlanmış olabilir; onaylanacak başka bir düğüm yok)",
+    "failed": "Başarısız",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Cihaz"
   },
-  "reticulumIdentitySwitcher": {
-    "label": "Aktif kimlik",
-    "active": "Aktif kimlik: {{name}}",
-    "activeBadge": "aktif"
-  },
-  "identityVault": {
-    "title": "Kimlik kasası",
-    "hint": "Kimlik yedeklemenizin yerel bir kopyasını kasa şifresi ile şifreleyin. Korunan kimlik işlemlerine erişmek için kilidini açın.",
-    "passcode": "Kasa şifresi",
-    "confirmPasscode": "Şifreni onayla",
-    "setPasscode": "Kasayı etkinleştir",
-    "unlock": "Kasanın kilidini aç",
-    "lock": "Kasayı kilitle",
-    "statusNotConfigured": "Yapılandırılmamış",
-    "statusLocked": "Kilitli",
-    "statusUnlocked": "Kilidi açıldı",
-    "passcodeTooShort": "Şifre en az 4 karakterden oluşmalıdır.",
-    "passcodeMismatch": "Şifreler eşleşmiyor.",
-    "setSuccess": "Kasa şifresi kaydedildi.",
-    "setFailed": "Kasa şifresi kaydedilemedi.",
-    "unlockSuccess": "Kasa açıldı",
-    "unlockFailed": "Yanlış şifre veya kasa hatası.",
-    "lockSuccess": "Kasa kilitlendi."
-  },
-  "reticulumPropagationHeader": {
-    "modeLabel": "Yayılma modu",
-    "modeAria": "Yayılma senkronizasyon modu",
-    "modeAuto": "Otomatik",
-    "modeManual": "Manuel",
-    "modeOff": "Kapalı",
-    "sync": "Senkronizasyon",
-    "syncAria": "Yayılma mesajlarını senkronize et",
-    "cancelSync": "İptal",
-    "cancelSyncAria": "Yayılma senkronizasyonunu iptal et"
-  },
-  "reticulumProfileIcon": {
-    "iconName": "Avatar Görünümü",
-    "iconNameAria": "Avatar Görünümü",
-    "iconCircle": "Yuvarlak",
-    "iconStar": "Yıldız",
-    "iconHeart": "Kalp",
-    "iconShield": "Koruma",
-    "iconUser": "Kullanıcı"
-  },
-  "networkPanel": {
-    "reticulumStackSettings": {
-      "title": "Yığın ayarları",
-      "enableTransport": "Aktarımı etkinleştir (diğer eşler için rota)",
-      "shareInstance": "Reticulum örneğini paylaşın",
-      "logLevel": "Günlük düzeyi",
-      "save": "Yığın ayarlarını kaydet",
-      "saveFailed": "Yığın ayarları kaydedilemedi."
-    },
-    "reticulumConfigImport": {
-      "title": "Reticulum yapılandırmasını içe aktar",
-      "hint": "Rnsd tarzı bir yapılandırma dosyası yapıştırın veya diskten içe aktarın. Birleştirme, arayüz bloklarını ada göre ekler/günceller; değiştir tüm arayüzlerin üzerine yazar.",
-      "pasteLabel": "Yapılandırma dosyası içerikleri",
-      "fromFile": "Dosyadan içe aktar…",
-      "fromSystem": "Sistem varsayılanını içe aktar",
-      "merge": "İçe aktarmayı birleştir",
-      "replace": "Arayüzleri değiştirin",
-      "confirmTitle": "Reticulum yapılandırmasını içe aktar",
-      "confirmMerge": "İçe aktarılan arayüzler mevcut yapılandırmayla birleştirilsin mi?",
-      "confirmReplace": "Tüm arayüzler içe aktarılan yapılandırmayla değiştirilsin mi? Bu geri alınamaz.",
-      "confirm": "İçe aktarmak"
-    },
-    "reticulumConfigImportFailed": "Yapılandırma içe aktarımı başarısız oldu.",
-    "reticulumConfigNotFound": "Varsayılan yollarda sistem Reticulum yapılandırması bulunamadı."
-  },
-  "adminPanel": {
-    "reticulumFactoryReset": {
-      "title": "Fabrika ayarlarına sıfırlama",
-      "hint": "Sepet yığınındaki kimliği, kişileri ve mesajları temizler. Arayüz yapılandırması korunur.",
-      "button": "Yığın verilerini sıfırla",
-      "confirmTitle": "Reticulum stack sıfırlansın mı?",
-      "confirmBody": "Bu, sepetteki kimliği, kişileri ve yerel mesajları kaldırır. Arayüz yapılandırma dosyanız tutulur.",
-      "confirm": "Sıfırla"
-    }
-  },
-  "meshcore": {
-    "errors": {
-      "repeaterAuthHint": "Tekrarlayıcı yönetici şifresini Tekrarlayıcılar panelinden ayarlayın veya değiştirin (yalnızca oturum).",
-      "connectionFailed": "Bağlantı başarısız oldu",
-      "notConnected": "Cihaza bağlı değil",
-      "nodeNotFound": "Düğüm bulunamadı (şifreleme anahtarı yok)",
-      "authenticationFailed": "Kimlik doğrulama başarısız oldu",
-      "requestFailed": "Başarısız: {{detail}}",
-      "requestTimedOut": "İstek zaman aşımına uğradı (en fazla ~{{seconds}}s)",
-      "requestTimedOutApprox": "İstek zaman aşımına uğradı (~{{seconds}}s)",
-      "pingNoRoute": "Henüz radyodan rota yok; çok atlamalı izlemenin senkronize bir yola ihtiyacı var. Kişi güncellemelerini bekleyin veya yeniden bağlanın.",
-      "bleNoDetails": "BLE bağlantısı başarısız oldu (cihazda hata ayrıntıları yok). Tekrar deneyin veya Seri/USB kullanın.",
-      "bleAlreadyInProgress": "Bluetooth bağlantısı zaten devam ediyor. Bitmesini bekleyin veya bunun yerine Seri/USB'yi deneyin.",
-      "bleMissingServices": "Cihaz MeshCore BLE protokolünü desteklemiyor. Cihazın MeshCore ürün yazılımını çalıştırdığından emin olun.",
-      "blePeripheralInUse": "Bu cihaz zaten Meshtastic BLE aracılığıyla bağlı. MeshCore olarak bağlanmadan önce ilk olarak bağlantısını kesin.",
-      "bleTimeoutWebBtHandshake": "MeshCore anlaşması zaman aşımına uğradı (Web Bluetooth). Telsizin öncelikle Linux ile eşleştirilmiş bir PIN'e ihtiyacı olabilir: Cihazı Kaldır ve Yeniden Eşleştir'i kullanın ve cihazda gösterilen PIN'i girin veya bluetoothctl ile eşleştirin ve ardından tekrar Bağlan'a dokunun.",
-      "bleTimeoutWebBt": "MeshCore'u Web Bluetooth üzerinden açarken Bluetooth bağlantısı zaman aşımına uğradı. Tekrar deneyin, cihazı uyanık tutun, radyoda BLE'yi kapatıp açın veya Seri/TCP'yi kullanın.",
-      "bleTimeoutHandshake": "Bluetooth bağlandı ancak MeshCore protokolü anlaşması bağlantı kesmeden/zaman aşımına uğramadan tamamlanmadı. Tekrar deneyin, cihazı uyanık ve yakında tutun, BLE'yi kapatıp açın veya Seri/TCP'yi kullanın.",
-      "bleTimeoutNoble": "Noble IPC üzerinden MeshCore açılırken Bluetooth bağlantısı zaman aşımına uğradı. Yeniden deneyin, cihazdaki BLE'yi kapatıp açın veya Seri/TCP'yi kullanın.",
-      "roomPost": {
-        "badState": "Oda mesajı reddedildi (radyoda oturum açılmadı). Oturumu kapatın, tekrar oturum açın ve yeniden deneyin.",
-        "illegalArg": "Oda gönderimi reddedildi (geçersiz mesaj biçimi).",
-        "notFound": "Oda mesajı reddedildi (radyoda oda iletişim bilgisi bulunamadı).",
-        "unsupportedCmd": "Oda gönderisi reddedildi (radyoda desteklenmeyen mesaj türü). Odada oturum açın ve yeniden deneyin.",
-        "default": "Oda yazısı radyo tarafından reddedildi. Oturumu kapatın, tekrar oturum açın ve yeniden deneyin.",
-        "timeout": "Oda gönderisi radyo beklenirken zaman aşımına uğradı. Aralığı kontrol edin veya tekrar deneyin."
-      },
-      "roomLogin": {
-        "noRoute": "Bu oda sunucusuna giden yol yok. Düğümü haritadan takip edin veya yol reklamlarını bekleyin, ardından tekrar deneyin.",
-        "pathSyncFailed": "Oturum açmadan önce radyonuzda rota programlanamadı. Cihazı tekrar bağlayın ve tekrar deneyin.",
-        "pathSyncFailedDetail": "Oturum açmadan önce radyonuzda rota programlanamadı. Cihazı yeniden bağlayın ve tekrar deneyin.{{detail}}",
-        "rejectedBlankGuest": "Oda girişi reddedildi. Boş konuk parolası için Salt okunur devam et seçeneğini kullanın veya konuk parolası \"merhaba\"yı deneyin.",
-        "rejectedDefaultGuest": "Oda girişi reddedildi. Bu sunucunun konuk parolası yoksa Oturum Açma yerine Salt okunura devam et seçeneğini kullanın. Aksi halde misafir veya yönetici şifresini kontrol edin.",
-        "rejectedCheckPassword": "Oda girişi reddedildi. Bu oda sunucusunun misafir veya yönetici şifresini kontrol edin.",
-        "timedOutBlankGuest": "Odaya giriş zaman aşımına uğradı. Boş konuk parolası için Salt okunur devam et seçeneğini kullanın veya konuk parolası \"merhaba\"yı deneyin.",
-        "timedOutDefaultGuest": "Odaya giriş zaman aşımına uğradı. Bu sunucunun konuk parolası yoksa Oturum Açma yerine Salt okunura devam et seçeneğini kullanın.",
-        "timedOut": "Odaya giriş zaman aşımına uğradı. Oda kapsama alanı dışında olabilir veya yanıt vermiyor olabilir.",
-        "failed": "Oda girişi başarısız oldu"
-      },
-      "roomLogout": {
-        "timedOut": "Odadan çıkış zaman aşımına uğradı. Oda kapsama alanı dışında olabilir veya yanıt vermiyor olabilir.",
-        "rejected": "Odadan çıkış radyo tarafından reddedildi.",
-        "failed": "Odadan çıkılamadı"
-      },
-      "repeaterRpcInProgress": "Bu tekrarlayıcı için bir istek zaten devam ediyor"
-    },
-    "mqttHints": {
-      "notAuthorized": "v1_ kullanıcı adını, belirteç imzasını ve JWT hedef kitlesi ile aracının karşılaştırmasını doğrulayın; docs/letsmesh-mqtt-auth.md'ye bakın. Gerekirse operatör tarafından verilen belirteci yapıştırmak için Özel'i kullanın.",
-      "network": "Ağı, DNS'yi, güvenlik duvarını ve VPN'yi kontrol edin.",
-      "connackTimeout": "Önceden bir \"istemci hatası\" satırı görmüyorsanız TLS/WebSocket anlaşması duruyor olabilir (başka bir ağ deneyin; uygulama, WSS için IPv4'ü tercih ediyor).",
-      "subscribeFailed": "Broker bu konuda joker karakter aboneliğini reddedebilir; aracı izin verirse mesajlar yine de gelebilir.",
-      "keepalive": "Sunucu, MQTT ping'lerine yanıt vermeyi durdurdu (boşta kalma zaman aşımı, ağ kesintisi veya aracı oturumu kapattı). Bağlantınızı yeniden bağlayın veya kontrol edin."
-    }
+  "bootSequence": {
+    "booting": "Örgü yığını önyükleniyor...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Kanallar taranıyor... {{count}}",
+    "meshtasticScanningChannels": "Yapılandırılmış kanallar taranıyor...",
+    "databaseNodes_one": "Veritabanı: {{count}} düğüm senkronize edildi",
+    "databaseNodes_other": "Veritabanı: {{count}} düğüm senkronize edildi",
+    "syncingDatabase": "Mesh veritabanı senkronize ediliyor...",
+    "interfaceReady": "{{iface}} arayüz hazır",
+    "freqMhz": "Frekans: {{mhz}} MHz",
+    "freqMhzBw": "Frekans: {{mhz}} MHz | BW: {{bw}} kHz",
+    "configuringRadio": "Radyo parametreleri yapılandırılıyor...",
+    "contacts_one": "İletişim: {{count}} kişi yüklendi",
+    "contacts_other": "Kişiler: {{count}} kişi yüklendi",
+    "loadingContacts": "Kişi veritabanı yükleniyor...",
+    "routes_one": "Güzergahlar: {{count}} mesh düğüm",
+    "routes_other": "Rotalar: {{count}} mesh içindeki düğümler",
+    "routesEstablished": "Belirlenen rotalar",
+    "meshActive": "Mesh ağı etkin"
   }
 }

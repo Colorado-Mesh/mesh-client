@@ -149,7 +149,9 @@ export class ConnectionDriver {
       try {
         info = await protocol.discoverSelf(handle);
       } catch (err) {
-        await protocol.destroyDevice(handle).catch(() => {});
+        await protocol.destroyDevice(handle).catch((e: unknown) => {
+          console.debug('[ConnectionDriver] destroy after discoverSelf failure ' + String(e));
+        });
         if (createdProvisional) removeIdentityFromStore(identityId);
         throw err;
       }

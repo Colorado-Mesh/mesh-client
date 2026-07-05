@@ -12,6 +12,7 @@ import {
   messageRecordToChatMessage,
   nodeRecordsToMeshNodeMap,
   nodeRecordToMeshNode,
+  resetNodeRecordsToMeshNodeMapCacheForTests,
   reticulumDbRowToMessageRecord,
 } from './storeRecordAdapters';
 import type { ChatMessage, MeshNode } from './types';
@@ -136,6 +137,23 @@ describe('store record adapters (merge precedence)', () => {
     expect(merged.get(9)?.long_name).toBe('Legacy');
     expect(merged.get(9)?.hw_model).toBe('T-Beam');
     expect(merged.get(9)?.last_heard).toBe(200);
+  });
+
+  it('nodeRecordsToMeshNodeMap reuses map reference when records unchanged', () => {
+    resetNodeRecordsToMeshNodeMapCacheForTests();
+    const records: NodeRecord[] = [
+      { nodeId: 1, longName: 'Alpha', lastHeardAt: 100 },
+      { nodeId: 2, longName: 'Beta', lastHeardAt: 200 },
+    ];
+    const first = nodeRecordsToMeshNodeMap(records);
+    const second = nodeRecordsToMeshNodeMap([...records]);
+    expect(second).toBe(first);
+    const third = nodeRecordsToMeshNodeMap([
+      ...records,
+      { nodeId: 2, longName: 'Beta', lastHeardAt: 201 },
+    ]);
+    expect(third).not.toBe(first);
+    expect(third.get(2)?.last_heard).toBe(201);
   });
 
   it('legacy-only message not in store list stays out of store-derived array', () => {

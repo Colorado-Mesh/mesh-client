@@ -846,6 +846,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('power:resume', handler);
     return () => ipcRenderer.off('power:resume', handler);
   },
+  sendRendererHeartbeat: (payload?: { ts: number }) =>
+    ipcRenderer.invoke('app:rendererHeartbeat', payload),
   onSpellcheckReplace: (cb: (payload: SpellcheckReplacePayload) => void) => {
     const handler = (_: unknown, payload: SpellcheckReplacePayload) => {
       cb(payload);

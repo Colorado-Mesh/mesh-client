@@ -7,6 +7,7 @@ import {
   pickInclusiveOneLinerKey,
 } from '@/renderer/lib/signalPulseSplashUtils';
 
+import i18n from '../lib/i18n';
 import type { IdentityId, MeshProtocol } from '../lib/types';
 import { useConnectionStore } from '../stores/connectionStore';
 import { useDeviceStore } from '../stores/deviceStore';
@@ -55,7 +56,7 @@ export function buildBootLines(protocol: MeshProtocol, identityId: IdentityId | 
   const selfInfo = device?.meshcoreSelfInfo;
 
   const lines: BootLine[] = [];
-  lines.push({ prefix: '[ OK ]  ', message: 'Booting mesh stack...' });
+  lines.push({ prefix: '[ OK ]  ', message: i18n.t('bootSequence.booting') });
 
   const ifaceLabel =
     connType === 'ble'
@@ -69,75 +70,83 @@ export function buildBootLines(protocol: MeshProtocol, identityId: IdentityId | 
   if (protocol === 'meshtastic') {
     lines.push({
       prefix: '[ OK ]  ',
-      message: `LoRa: ${hwModel ?? 'radio interface'}`,
+      message: i18n.t('bootSequence.meshtasticLora', { model: hwModel ?? 'radio interface' }),
     });
 
     if (channelCount > 0) {
       lines.push({
         prefix: '[ OK ]  ',
-        message: `Scanning channels... ${channelCount}`,
+        message: i18n.t('bootSequence.meshtasticScanningChannelsCount', { count: channelCount }),
       });
     } else {
       lines.push({
         prefix: '[ OK ]  ',
-        message: 'Scanning configured channels...',
+        message: i18n.t('bootSequence.meshtasticScanningChannels'),
       });
     }
 
     if (nodeCount > 0) {
       lines.push({
         prefix: '[ OK ]  ',
-        message: `Database: ${nodeCount} ${nodeCount === 1 ? 'node' : 'nodes'} synced`,
+        message: i18n.t('bootSequence.databaseNodes', { count: nodeCount }),
       });
     } else {
       lines.push({
         prefix: '[ OK ]  ',
-        message: 'Syncing mesh database...',
+        message: i18n.t('bootSequence.syncingDatabase'),
       });
     }
   } else {
     lines.push({
       prefix: '[ OK ]  ',
-      message: `${ifaceLabel} interface ready`,
+      message: i18n.t('bootSequence.interfaceReady', { iface: ifaceLabel }),
     });
 
     if (selfInfo) {
       const freqMhz = (selfInfo.radioFreq / 1_000_000).toFixed(0);
-      const bwPart =
-        selfInfo.radioBw != null ? ` | BW: ${(selfInfo.radioBw / 1000).toFixed(0)} kHz` : '';
-      lines.push({
-        prefix: '[ OK ]  ',
-        message: `Freq: ${freqMhz} MHz${bwPart}`,
-      });
+      if (selfInfo.radioBw != null) {
+        lines.push({
+          prefix: '[ OK ]  ',
+          message: i18n.t('bootSequence.freqMhzBw', {
+            mhz: freqMhz,
+            bw: (selfInfo.radioBw / 1000).toFixed(0),
+          }),
+        });
+      } else {
+        lines.push({
+          prefix: '[ OK ]  ',
+          message: i18n.t('bootSequence.freqMhz', { mhz: freqMhz }),
+        });
+      }
     } else {
       lines.push({
         prefix: '[ OK ]  ',
-        message: 'Configuring radio parameters...',
+        message: i18n.t('bootSequence.configuringRadio'),
       });
     }
 
     if (contactCount > 0) {
       lines.push({
         prefix: '[ OK ]  ',
-        message: `Contacts: ${contactCount} ${contactCount === 1 ? 'contact' : 'contacts'} loaded`,
+        message: i18n.t('bootSequence.contacts', { count: contactCount }),
       });
     } else {
       lines.push({
         prefix: '[ OK ]  ',
-        message: 'Loading contact database...',
+        message: i18n.t('bootSequence.loadingContacts'),
       });
     }
 
     if (nodeCount > 0) {
       lines.push({
         prefix: '[ OK ]  ',
-        message: `Routes: ${nodeCount} node${nodeCount !== 1 ? 's' : ''} in mesh`,
+        message: i18n.t('bootSequence.routes', { count: nodeCount }),
       });
     }
   }
 
-  lines.push({ prefix: '[ OK ]  ', message: 'Routes established' });
-  lines.push({ prefix: '[ OK ]  ', message: 'Mesh network active' });
+  lines.push({ prefix: '[ OK ]  ', message: i18n.t('bootSequence.routesEstablished') });
+  lines.push({ prefix: '[ OK ]  ', message: i18n.t('bootSequence.meshActive') });
 
   return lines;
 }

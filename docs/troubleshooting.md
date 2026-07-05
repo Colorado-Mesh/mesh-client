@@ -483,6 +483,7 @@ After the lid closes or the Mac sleeps, mesh-client pauses reconnect backoff and
 - **Dual-protocol BLE (Meshtastic + MeshCore):** After wake, connect **MeshCore first**, then Meshtastic, if auto-reconnect does not restore both within ~30 seconds. Concurrent Noble scans from both tabs can block recovery.
 - **BLE stack stuck after wake** (`unknown peripheral`, `connectAsync timed out`, `peripheral not found` in the app log): **Quit mesh-client fully** (Cmd+Q), toggle **Bluetooth off → on** in System Settings (or power-cycle the radios), reopen the app, wait ~5 seconds, then use **Connect** on the Connection tab.
 - **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
+- **Renderer hung after wake:** If the log shows `[main] System resumed` followed by `[main] renderer unresponsive after system resume (no heartbeat within 30s)` and **no** `[usePowerRecovery]` lines, the renderer event loop was already dead before wake recovery ran. **Quit mesh-client fully** and relaunch — do not rely on Disconnect alone.
 
 ### Windows sleep / wake and auto-reconnect
 
@@ -494,6 +495,7 @@ After sleep or hibernate, mesh-client uses the same resume path as macOS: reconn
 - **MeshCore pairing after wake:** If BLE appears connected but the MeshCore handshake or GATT notify never completes, confirm the radio is **paired in Settings → Bluetooth & devices** before using **Connect** in mesh-client (MeshCore requires OS-level pairing on Windows).
 - **BLE stuck after wake** (`connectAsync timed out`, `peripheral not found`, or GATT notify watchdog messages in the app log): **Exit mesh-client fully**, toggle **Bluetooth off → on** in **Settings → Bluetooth & devices** (or disable/enable the adapter in **Device Manager**), wait a few seconds, reopen the app, then use **Connect**. If disconnects persist, update the Bluetooth driver in Device Manager.
 - **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
+- **Renderer hung after wake:** Same as macOS — if you see `[main] renderer unresponsive after system resume (no heartbeat within 30s)` without `[usePowerRecovery]` logs, quit fully and relaunch.
 
 **Linux Web Bluetooth:** Manual reconnect from the connection banner still requires a user gesture (Connect / picker). Linux does not use Noble IPC; see **Linux-specific** under [BLE known issues](#ble-known-issues) above for pairing and adapter reset steps.
 
@@ -502,8 +504,8 @@ After sleep or hibernate, mesh-client uses the same resume path as macOS: reconn
 If mesh-client stays open for **days** on a busy mesh (especially **MeshCore BLE-only** with hundreds of repeaters):
 
 - **Restart the app every 1–2 days** to limit main-process uptime (reduces risk of native BLE / V8 edge cases after ~72h).
-- **MeshCore:** enable **contact cap** (~500) and **auto-prune by age** in App settings; avoid bulk repeater status/neighbors refresh when not needed.
-- **Meshtastic:** enable **node cap** and **auto-prune** in App settings.
+- **MeshCore:** default contact cap is **10,000** (App settings); enable **auto-prune by age** if you want SQLite trimmed below that. Avoid bulk repeater status/neighbors refresh when not needed.
+- **Meshtastic:** default node cap is **10,000**; enable **auto-prune** in App settings as needed.
 - **Reticulum:** restart the sidecar/stack periodically on always-on nodes; message retention prunes run at startup and every 6 hours while the app is open.
 - If the app crashes, save **`~/Library/Logs/DiagnosticReports/Mesh-client-*.ips`** (macOS) before relaunching. Main-process crashes often show `EXC_BREAKPOINT` during a timer/GC; include the `.ips` and exported log when reporting.
 
@@ -530,12 +532,13 @@ After **24 hours** of uptime, the main process logs periodic **long-session heal
 
 ### MQTT keeps disconnecting
 
-**Cause**: Wireless interference, broker downtime, or token issues (LetsMesh/Colorado Mesh).
+**Cause**: Wireless interference, broker downtime, token issues (LetsMesh/Colorado Mesh), or normal reconnect backoff after a failed attempt.
 
 **Fix**:
 
 - Check your WiFi/signal strength
 - Verify the broker is online
+- Expect **exponential reconnect backoff** (60s base, capped at 45 minutes per `src/shared/mqttReconnectSchedule.ts`); connack timeouts retry faster (~250ms)
 - For LetsMesh/Colorado Mesh: mesh-client refreshes JWT automatically when MeshCore identity is already cached (including after a successful MeshCore radio session). If you never imported identity and have not connected a MeshCore radio yet, import under **Radio** or use **Custom** credentials; if refresh still fails, try re-importing MeshCore config JSON to replace a corrupt cache
 - Enable debug logs to see the disconnect reason
 
@@ -643,7 +646,8 @@ Startup maintenance can delete stale MeshCore contacts by age. Important details
 
 **Common causes**:
 
-- **500+ repeaters** in the contact book — the Repeaters tab renders a large table; prefer **Nodes → search** for a specific repeater when you have a dense mesh.
+- **Large contact/repeater lists (1,000+)** — list tabs virtualize rows, but USB serial still serializes companion RPCs; prefer **Nodes → search** for one repeater instead of scrolling the full Repeaters table.
+- **Queued public messages (Sync now)** — draining a large MsgWaiting backlog runs in the background; use **Sync now** in Chat and wait for the progress banner to finish before switching tabs during heavy sync.
 - **Multi-hop repeater RPCs** (Neighbors, Status, telemetry) share one serialized USB serial queue. Retrying rapidly or querying distant repeaters (8+ hops) can block the link for tens of seconds.
 
 **Fix**:
@@ -847,7 +851,7 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 ### Reticulum sidecar stops during dev (Vite HMR)
 
-**Symptoms**: After saving a file in `pnpm run dev`, many `[ReticulumIPC] proxyGet failed: Reticulum sidecar is not running` lines appear; Nomad/Propagation/Radio panels fail until you restart the stack.
+**Symptoms**: After saving a file in `pnpm run dev`, many `[ReticulumIPC] proxyGet failed: Reticulum sidecar is not running` lines appear; Nomad Network / Network (propagation, identity) panels fail until you restart the stack.
 
 **Cause**: Hot module reload remounted the Reticulum runtime, which previously called `reticulum:stop` on every unmount.
 

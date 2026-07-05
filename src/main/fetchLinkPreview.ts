@@ -1,3 +1,13 @@
+import dns from 'node:dns/promises';
+
+import {
+  isLinkLocalIpv6,
+  isLocalConnectHost,
+  isLoopbackHost,
+  isPrivateNetworkHost,
+  isUniqueLocalIpv6,
+  stripConnectHostBrackets,
+} from '../shared/connectHost';
 import { sanitizeLogMessage } from './sanitize-log-message';
 
 export const LINK_PREVIEW_FETCH_TIMEOUT_MS = 10_000;
@@ -39,6 +49,32 @@ export function clearLinkPreviewCachesForTests(): void {
 
 export function isBlockedHostname(hostname: string): boolean {
   return LINK_PREVIEW_BLOCKED_HOSTNAMES.has(hostname.toLowerCase()) || isIpv4Literal(hostname);
+}
+
+/** Block hostnames that resolve to loopback, RFC1918, ULA, or link-local targets (SSRF guard). */
+export async function isBlockedHostnameResolved(hostname: string): Promise<boolean> {
+  const bare = stripConnectHostBrackets(hostname.trim()).toLowerCase();
+  if (isBlockedHostname(bare)) return true;
+  if (isLoopbackHost(bare) || isLocalConnectHost(bare)) return true;
+  if (isPrivateNetworkHost(bare) || isUniqueLocalIpv6(bare) || isLinkLocalIpv6(bare)) return true;
+
+  // IP literals already handled above; resolve DNS for hostnames.
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(bare) || bare.includes(':')) {
+    return false;
+  }
+
+  try {
+    const { address } = await dns.lookup(bare, { verbatim: true });
+    return (
+      isLoopbackHost(address) ||
+      isPrivateNetworkHost(address) ||
+      isUniqueLocalIpv6(address) ||
+      isLinkLocalIpv6(address)
+    );
+  } catch {
+    // catch-no-log-ok DNS failure — fail closed for preview fetch
+    return true;
+  }
 }
 
 export function shouldProxyPreviewImageUrl(imageUrl: string): boolean {
@@ -178,7 +214,7 @@ async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewM
     return null;
   }
   if (!['http:', 'https:'].includes(url.protocol)) return null;
-  if (isBlockedHostname(url.hostname)) return null;
+  if (await isBlockedHostnameResolved(url.hostname)) return null;
 
   try {
     const response = await fetch(urlString, {

@@ -1,4 +1,14 @@
 {
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "恢复出厂设置",
+      "hint": "从 sidecar 堆栈中清除身份、联系人和消息。接口配置被保留。",
+      "button": "重置堆栈数据",
+      "confirmTitle": "重置 Reticulum stack？",
+      "confirmBody": "这将从 sidecar 中删除身份、联系人和本地消息。您的接口配置文件将被保留。",
+      "confirm": "重置"
+    }
+  },
   "app": {
     "loadingPanel": "加载面板",
     "loadingDialog": "正在加载对话框",
@@ -317,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "启动时自动修剪仓位历史记录，早于 {{days}} 天",
     "capTotalNodesCountAria": "限制节点总数，保留最新的 {{count}} 节点",
     "limitMessagesLoadedCountAria": "限制加载的消息 {{count}} 消息",
-    "capStoredMessagesCountAria": "限制存储的消息，保留最新的 {{count}} 消息"
+    "capStoredMessagesCountAria": "限制存储的消息，保留最新的 {{count}} 消息",
+    "maxDistanceAria": "最大距离： {{value}}",
+    "unitAria": "单位： {{unit}}"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -430,7 +442,6 @@
     "emptyNoDmMessages": "暂无与 {{name}} 的消息。",
     "emptyNoMessagesYet": "还没有消息。发送消息或等待传入消息。",
     "emptyConnectFirst": "连接到设备以开始聊天。",
-    "waitingMessagesBadge": "正在同步来自无线电的{{count}}队列消息…",
     "waitingMessagesSyncNow": "立即同步",
     "jumpToUnread": "跳至未读",
     "jumpToLatest": "跳到最新",
@@ -489,7 +500,10 @@
       "pkiFailed": "此邮件的PKI加密失败。",
       "noChannel": "没有可用于路由此消息的渠道。",
       "timeout": "收音机消息超时。"
-    }
+    },
+    "waitingMessagesQueued": "{{count}}在无线电上排队的消息",
+    "waitingMessagesSyncProgress": "正在从收音机同步{{processed}}/{{total}} …",
+    "waitingMessagesSyncProgressIndeterminate": "正在同步来自无线电的排队消息……"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -1262,6 +1276,25 @@
     "rssiDbm": "RSSI {{rssi}} dBm",
     "snrDb": "信噪比{{snr}}分贝"
   },
+  "diagnosticsPing": {
+    "title": "持续ping",
+    "reticulumHint": "在堆栈运行时，在每个间隔上运行ping （ RTT ）和路径探测（跳数）。",
+    "hashLabel": "目的IP哈希",
+    "hashPlaceholder": "32个字符的目的地哈希…",
+    "hashAria": "要ping的目标哈希",
+    "intervalLabel": "间隔",
+    "intervalAria": "Ping尝试之间的秒数",
+    "start": "启动",
+    "stop": "停止",
+    "runOnce": "Ping一次",
+    "colSeq": "#",
+    "colRtt": "往返时延",
+    "colHops": "跳数",
+    "colStatus": "状态",
+    "rttMs": "{{ms}}毫秒",
+    "statusOk": "确认",
+    "statusFailed": "失败： {{error}}"
+  },
   "errorBoundary": {
     "title": "出了点问题",
     "unexpectedError": "发生意外错误",
@@ -1383,6 +1416,25 @@
     "wifiStationSuccess": "工作站模式已保存。重新启动主板，然后查找其IP （显示器、路由器DHCP或读取配置） ，并在连接→接口上添加tcp://…。",
     "wifiConfigEmpty": "未返回配置数据。",
     "wifiNetmaskPlaceholder": "255.255.255.0"
+  },
+  "identityVault": {
+    "title": "身份保管库",
+    "hint": "使用保管库密码加密身份备份的本地副本。解锁以访问受保护的身份操作。",
+    "passcode": "保管库密码",
+    "confirmPasscode": "确认密码",
+    "setPasscode": "启用保管库",
+    "unlock": "解锁保管库",
+    "lock": "锁定保管库",
+    "statusNotConfigured": "未配置",
+    "statusLocked": "已锁定",
+    "statusUnlocked": "已经解锁",
+    "passcodeTooShort": "必须至少为4个字符",
+    "passcodeMismatch": "密码不匹配。",
+    "setSuccess": "Vault密码已保存。",
+    "setFailed": "无法保存保管库密码。",
+    "unlockSuccess": "避难所已解锁。",
+    "unlockFailed": "密码或保管库错误。",
+    "lockSuccess": "密室已锁定。"
   },
   "logAnalyzeModal": {
     "title": "日志分析",
@@ -1549,6 +1601,60 @@
     "extraRfReceptions": "额外的射频接收",
     "originatorPacket": "包",
     "originatorPackets": "数据包"
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "从中继器面板设置或更改中继器管理员密码（仅限会话）。",
+      "connectionFailed": "连接失败",
+      "notConnected": "未连接到设备",
+      "nodeNotFound": "未找到节点（无加密密钥）",
+      "authenticationFailed": "认证失败",
+      "requestFailed": "失败：{{detail}}",
+      "requestTimedOut": "请求超时（最多~{{seconds}}s）",
+      "requestTimedOutApprox": "请求超时 (~{{seconds}}s)",
+      "pingNoRoute": "还没有来自无线电的路由 - 多跳跟踪需要同步路径。等待联系人更新或重新连接。",
+      "bleNoDetails": "BLE 连接失败（设备没有错误详细信息）。再试一次或使用串行/USB。",
+      "bleAlreadyInProgress": "蓝牙连接已在进行中。等待它完成或尝试串行/USB。",
+      "bleMissingServices": "设备不支持 MeshCore BLE 协议。确保设备正在运行 MeshCore 固件。",
+      "blePeripheralInUse": "该设备已通过 Meshtastic BLE 连接。在作为 MeshCore 连接之前先断开它。",
+      "bleTimeoutWebBtHandshake": "MeshCore 握手超时（网络蓝牙）。无线电可能需要首先与 Linux 配对的 PI​​N：使用“删除并重新配对设备”并输入设备上显示的 PIN，或与 bluetoothctl 配对，然后再次点击“连接”。",
+      "bleTimeoutWebBt": "通过网络蓝牙打开 MeshCore 时蓝牙连接超时。重试、保持设备唤醒、重新启动无线电上的 BLE，或使用串行/TCP。",
+      "bleTimeoutHandshake": "蓝牙已连接，但在断开/超时之前 MeshCore 协议握手未完成。重试、保持设备处于唤醒状态并在附近、重新启动 BLE 或使用串行/TCP。",
+      "bleTimeoutNoble": "通过 Noble IPC 打开 MeshCore 时蓝牙连接超时。重试、重新启动设备上的 BLE，或使用串行/TCP。",
+      "roomPost": {
+        "badState": "房间帖子被拒绝（未登录收音机）。注销，重新登录，然后重试。",
+        "illegalArg": "房间帖子被拒绝（消息格式无效）。",
+        "notFound": "房间帖子被拒绝（在收音机上找不到房间联系方式）。",
+        "unsupportedCmd": "房间帖子被拒绝（无线电上不支持的消息类型）。登录房间，然后重试。",
+        "default": "房间帖子被无线电拒绝。注销，重新登录，然后重试。",
+        "timeout": "房间帖子等待广播超时。检查范围或重试。"
+      },
+      "roomLogin": {
+        "noRoute": "没有到该房间服务器的路由。从地图上追踪节点或等待路径广告，然后重试。",
+        "pathSyncFailed": "登录前无法在对讲机上编程路线。重新连接设备并重试。",
+        "pathSyncFailedDetail": "登录前无法在对讲机上编程路线。重新连接设备并重试.{{detail}}",
+        "rejectedBlankGuest": "房间登录被拒绝。对空白访客密码使用“继续只读”，或尝试访客密码“hello”。",
+        "rejectedDefaultGuest": "房间登录被拒绝。如果该服务器没有访客密码，请使用“继续只读”而不是“登录”。否则请检查访客或管理员密码。",
+        "rejectedCheckPassword": "房间登录被拒绝。检查该房间服务器的访客或管理员密码。",
+        "timedOutBlankGuest": "房间登录超时。对空白访客密码使用“继续只读”，或尝试访客密码“hello”。",
+        "timedOutDefaultGuest": "房间登录超时。如果该服务器没有访客密码，请使用“继续只读”而不是“登录”。",
+        "timedOut": "房间登录超时。房间可能超出范围或没有响应。",
+        "failed": "房间登录失败"
+      },
+      "roomLogout": {
+        "timedOut": "房间注销超时。房间可能超出范围或没有响应。",
+        "rejected": "房间注销被无线电拒绝。",
+        "failed": "无法离开房间"
+      },
+      "repeaterRpcInProgress": "对此转发器的请求已在进行中"
+    },
+    "mqttHints": {
+      "notAuthorized": "验证 v1_ 用户名、令牌签名和 JWT 受众与经纪人；请参阅 docs/letsmesh-mqtt-auth.md。如果需要，使用自定义粘贴操作员颁发的令牌。",
+      "network": "检查网络、DNS、防火墙和 VPN。",
+      "connackTimeout": "如果您之前没有看到“客户端错误”行，则 TLS/WebSocket 握手可能会停止（尝试另一个网络；应用程序更喜欢使用 IPv4 作为 WSS）。",
+      "subscribeFailed": "经纪商可能会拒绝通配符订阅该主题；如果代理允许，消息仍然可能到达。",
+      "keepalive": "服务器停止响应 MQTT ping（空闲超时、网络中断或代理关闭会话）。重新连接或检查您的链接。"
+    }
   },
   "meshcoreContactSettings": {
     "allContactsCleared": "所有联系人均已清除。",
@@ -2006,6 +2112,31 @@
       }
     }
   },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "堆栈设置",
+      "enableTransport": "启用传输（其他对等点的路由）",
+      "shareInstance": "共享 Reticulum 实例",
+      "logLevel": "日志级别",
+      "save": "保存堆栈设置",
+      "saveFailed": "无法保存堆栈设置。"
+    },
+    "reticulumConfigImport": {
+      "title": "导入 Reticulum config",
+      "hint": "粘贴 rnsd 样式的配置文件或从磁盘导入。合并按名称添加/更新接口块；替换覆盖所有接口。",
+      "pasteLabel": "配置文件内容",
+      "fromFile": "从文件导入...",
+      "fromSystem": "导入系统默认值",
+      "merge": "合并导入",
+      "replace": "更换接口",
+      "confirmTitle": "导入 Reticulum config",
+      "confirmMerge": "将导入的接口合并到当前配置中？",
+      "confirmReplace": "用导入的配置替换所有接口？此操作无法撤消。",
+      "confirm": "进口"
+    },
+    "reticulumConfigImportFailed": "配置导入失败。",
+    "reticulumConfigNotFound": "在默认路径中未找到系统 Reticulum 配置。"
+  },
   "nodeDetailModal": {
     "removeFromFavorites": "从收藏夹中移除",
     "addToFavorites": "添加到收藏夹",
@@ -2359,7 +2490,9 @@
     "urlBarAria": "游牧页面地址",
     "back": "后退",
     "forward": "向前",
-    "invalidUrl": "Nomad 页面地址无效"
+    "invalidUrl": "Nomad 页面地址无效",
+    "collapseNodeList": "折叠节点列表",
+    "expandNodeList": "展开节点列表"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",
@@ -3185,6 +3318,20 @@
     "clearAnnouncesDone": "宣布已清除。",
     "clearAnnouncesFailed": "清除公告失败。"
   },
+  "reticulumIdentitySwitcher": {
+    "label": "有效身份",
+    "active": "有效身份： {{name}}",
+    "activeBadge": "活跃"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "阿凡达图标",
+    "iconNameAria": "阿凡达图标",
+    "iconCircle": "圈型",
+    "iconStar": "星",
+    "iconHeart": "倾心点",
+    "iconShield": "防护罩",
+    "iconUser": "用户"
+  },
   "reticulumPropagation": {
     "preferred": "首选",
     "setPreferred": "设置首选图",
@@ -3214,6 +3361,17 @@
     "autoSyncOption24h": "每24小时一次",
     "lastSynced": "上次同步：{{time}}",
     "lastRefreshed": "最后更新{{time}}"
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "传播模式",
+    "modeAria": "传播同步模式",
+    "modeAuto": "推荐加点",
+    "modeManual": "说明书",
+    "modeOff": "关闭",
+    "sync": "同步",
+    "syncAria": "同步传播消息",
+    "cancelSync": "取消推荐",
+    "cancelSyncAria": "取消传播同步"
   },
   "reticulumTopology": {
     "title": "网络拓扑图",
@@ -3620,156 +3778,43 @@
     "menuToastAvailableBody": "版本 {{version}} 可用。",
     "menuToastErrorTitle": "更新检查失败"
   },
-  "diagnosticsPing": {
-    "title": "持续ping",
-    "reticulumHint": "在堆栈运行时，在每个间隔上运行ping （ RTT ）和路径探测（跳数）。",
-    "hashLabel": "目的IP哈希",
-    "hashPlaceholder": "32个字符的目的地哈希…",
-    "hashAria": "要ping的目标哈希",
-    "intervalLabel": "间隔",
-    "intervalAria": "Ping尝试之间的秒数",
-    "start": "启动",
-    "stop": "停止",
-    "runOnce": "Ping一次",
-    "colSeq": "#",
-    "colRtt": "往返时延",
-    "colHops": "跳数",
-    "colStatus": "状态",
-    "rttMs": "{{ms}}毫秒",
-    "statusOk": "确认",
-    "statusFailed": "失败： {{error}}"
+  "messageStatusBadge": {
+    "queuedTooltip": "已排队—连接后将发送",
+    "queuedLabel": "已在队列中",
+    "blockedDefault": "已拦截—没有可用的加密密钥",
+    "blockedLabel": "封锁",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WiFi",
+    "transportBt": "铜级",
+    "noAck": "no ACK",
+    "sending": "发送中…",
+    "delivered": "已交付",
+    "posted": "已发布",
+    "failedPost": "发布失败",
+    "noAckTooltip": "无确认（消息可能仍已广播；范围内没有其他节点需要确认）",
+    "failed": "失败",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "设备"
   },
-  "reticulumIdentitySwitcher": {
-    "label": "有效身份",
-    "active": "有效身份： {{name}}",
-    "activeBadge": "活跃"
-  },
-  "identityVault": {
-    "title": "身份保管库",
-    "hint": "使用保管库密码加密身份备份的本地副本。解锁以访问受保护的身份操作。",
-    "passcode": "保管库密码",
-    "confirmPasscode": "确认密码",
-    "setPasscode": "启用保管库",
-    "unlock": "解锁保管库",
-    "lock": "锁定保管库",
-    "statusNotConfigured": "未配置",
-    "statusLocked": "已锁定",
-    "statusUnlocked": "已经解锁",
-    "passcodeTooShort": "必须至少为4个字符",
-    "passcodeMismatch": "密码不匹配。",
-    "setSuccess": "Vault密码已保存。",
-    "setFailed": "无法保存保管库密码。",
-    "unlockSuccess": "避难所已解锁。",
-    "unlockFailed": "密码或保管库错误。",
-    "lockSuccess": "密室已锁定。"
-  },
-  "reticulumPropagationHeader": {
-    "modeLabel": "传播模式",
-    "modeAria": "传播同步模式",
-    "modeAuto": "推荐加点",
-    "modeManual": "说明书",
-    "modeOff": "关闭",
-    "sync": "同步",
-    "syncAria": "同步传播消息",
-    "cancelSync": "取消推荐",
-    "cancelSyncAria": "取消传播同步"
-  },
-  "reticulumProfileIcon": {
-    "iconName": "阿凡达图标",
-    "iconNameAria": "阿凡达图标",
-    "iconCircle": "圈型",
-    "iconStar": "星",
-    "iconHeart": "倾心点",
-    "iconShield": "防护罩",
-    "iconUser": "用户"
-  },
-  "networkPanel": {
-    "reticulumStackSettings": {
-      "title": "堆栈设置",
-      "enableTransport": "启用传输（其他对等点的路由）",
-      "shareInstance": "共享 Reticulum 实例",
-      "logLevel": "日志级别",
-      "save": "保存堆栈设置",
-      "saveFailed": "无法保存堆栈设置。"
-    },
-    "reticulumConfigImport": {
-      "title": "导入 Reticulum config",
-      "hint": "粘贴 rnsd 样式的配置文件或从磁盘导入。合并按名称添加/更新接口块；替换覆盖所有接口。",
-      "pasteLabel": "配置文件内容",
-      "fromFile": "从文件导入...",
-      "fromSystem": "导入系统默认值",
-      "merge": "合并导入",
-      "replace": "更换接口",
-      "confirmTitle": "导入 Reticulum config",
-      "confirmMerge": "将导入的接口合并到当前配置中？",
-      "confirmReplace": "用导入的配置替换所有接口？此操作无法撤消。",
-      "confirm": "进口"
-    },
-    "reticulumConfigImportFailed": "配置导入失败。",
-    "reticulumConfigNotFound": "在默认路径中未找到系统 Reticulum 配置。"
-  },
-  "adminPanel": {
-    "reticulumFactoryReset": {
-      "title": "恢复出厂设置",
-      "hint": "从 sidecar 堆栈中清除身份、联系人和消息。接口配置被保留。",
-      "button": "重置堆栈数据",
-      "confirmTitle": "重置 Reticulum stack？",
-      "confirmBody": "这将从 sidecar 中删除身份、联系人和本地消息。您的接口配置文件将被保留。",
-      "confirm": "重置"
-    }
-  },
-  "meshcore": {
-    "errors": {
-      "repeaterAuthHint": "从中继器面板设置或更改中继器管理员密码（仅限会话）。",
-      "connectionFailed": "连接失败",
-      "notConnected": "未连接到设备",
-      "nodeNotFound": "未找到节点（无加密密钥）",
-      "authenticationFailed": "认证失败",
-      "requestFailed": "失败：{{detail}}",
-      "requestTimedOut": "请求超时（最多~{{seconds}}s）",
-      "requestTimedOutApprox": "请求超时 (~{{seconds}}s)",
-      "pingNoRoute": "还没有来自无线电的路由 - 多跳跟踪需要同步路径。等待联系人更新或重新连接。",
-      "bleNoDetails": "BLE 连接失败（设备没有错误详细信息）。再试一次或使用串行/USB。",
-      "bleAlreadyInProgress": "蓝牙连接已在进行中。等待它完成或尝试串行/USB。",
-      "bleMissingServices": "设备不支持 MeshCore BLE 协议。确保设备正在运行 MeshCore 固件。",
-      "blePeripheralInUse": "该设备已通过 Meshtastic BLE 连接。在作为 MeshCore 连接之前先断开它。",
-      "bleTimeoutWebBtHandshake": "MeshCore 握手超时（网络蓝牙）。无线电可能需要首先与 Linux 配对的 PI​​N：使用“删除并重新配对设备”并输入设备上显示的 PIN，或与 bluetoothctl 配对，然后再次点击“连接”。",
-      "bleTimeoutWebBt": "通过网络蓝牙打开 MeshCore 时蓝牙连接超时。重试、保持设备唤醒、重新启动无线电上的 BLE，或使用串行/TCP。",
-      "bleTimeoutHandshake": "蓝牙已连接，但在断开/超时之前 MeshCore 协议握手未完成。重试、保持设备处于唤醒状态并在附近、重新启动 BLE 或使用串行/TCP。",
-      "bleTimeoutNoble": "通过 Noble IPC 打开 MeshCore 时蓝牙连接超时。重试、重新启动设备上的 BLE，或使用串行/TCP。",
-      "roomPost": {
-        "badState": "房间帖子被拒绝（未登录收音机）。注销，重新登录，然后重试。",
-        "illegalArg": "房间帖子被拒绝（消息格式无效）。",
-        "notFound": "房间帖子被拒绝（在收音机上找不到房间联系方式）。",
-        "unsupportedCmd": "房间帖子被拒绝（无线电上不支持的消息类型）。登录房间，然后重试。",
-        "default": "房间帖子被无线电拒绝。注销，重新登录，然后重试。",
-        "timeout": "房间帖子等待广播超时。检查范围或重试。"
-      },
-      "roomLogin": {
-        "noRoute": "没有到该房间服务器的路由。从地图上追踪节点或等待路径广告，然后重试。",
-        "pathSyncFailed": "登录前无法在对讲机上编程路线。重新连接设备并重试。",
-        "pathSyncFailedDetail": "登录前无法在对讲机上编程路线。重新连接设备并重试.{{detail}}",
-        "rejectedBlankGuest": "房间登录被拒绝。对空白访客密码使用“继续只读”，或尝试访客密码“hello”。",
-        "rejectedDefaultGuest": "房间登录被拒绝。如果该服务器没有访客密码，请使用“继续只读”而不是“登录”。否则请检查访客或管理员密码。",
-        "rejectedCheckPassword": "房间登录被拒绝。检查该房间服务器的访客或管理员密码。",
-        "timedOutBlankGuest": "房间登录超时。对空白访客密码使用“继续只读”，或尝试访客密码“hello”。",
-        "timedOutDefaultGuest": "房间登录超时。如果该服务器没有访客密码，请使用“继续只读”而不是“登录”。",
-        "timedOut": "房间登录超时。房间可能超出范围或没有响应。",
-        "failed": "房间登录失败"
-      },
-      "roomLogout": {
-        "timedOut": "房间注销超时。房间可能超出范围或没有响应。",
-        "rejected": "房间注销被无线电拒绝。",
-        "failed": "无法离开房间"
-      },
-      "repeaterRpcInProgress": "对此转发器的请求已在进行中"
-    },
-    "mqttHints": {
-      "notAuthorized": "验证 v1_ 用户名、令牌签名和 JWT 受众与经纪人；请参阅 docs/letsmesh-mqtt-auth.md。如果需要，使用自定义粘贴操作员颁发的令牌。",
-      "network": "检查网络、DNS、防火墙和 VPN。",
-      "connackTimeout": "如果您之前没有看到“客户端错误”行，则 TLS/WebSocket 握手可能会停止（尝试另一个网络；应用程序更喜欢使用 IPv4 作为 WSS）。",
-      "subscribeFailed": "经纪商可能会拒绝通配符订阅该主题；如果代理允许，消息仍然可能到达。",
-      "keepalive": "服务器停止响应 MQTT ping（空闲超时、网络中断或代理关闭会话）。重新连接或检查您的链接。"
-    }
+  "bootSequence": {
+    "booting": "正在引导网格堆栈...",
+    "meshtasticLora": "LoRa ： {{model}}",
+    "meshtasticScanningChannelsCount": "正在扫描通道…… {{count}}",
+    "meshtasticScanningChannels": "正在扫描已配置的频道...",
+    "databaseNodes_one": "数据库： {{count}}节点已同步",
+    "databaseNodes_other": "数据库： {{count}}节点已同步",
+    "syncingDatabase": "正在同步网格数据库...",
+    "interfaceReady": "{{iface}}接口就绪",
+    "freqMhz": "频率： {{mhz}} MHz",
+    "freqMhzBw": "频率： {{mhz}} MHz |黑白： {{bw}} kHz",
+    "configuringRadio": "正在配置无线电参数...",
+    "contacts_one": "联系人： {{count}}联系人已加载",
+    "contacts_other": "联系人： {{count}}个联系人已加载",
+    "loadingContacts": "正在加载联系人数据库...",
+    "routes_one": "路由：网格中的{{count}}节点",
+    "routes_other": "路由：网格中的{{count}}节点",
+    "routesEstablished": "已建立路线",
+    "meshActive": "网络启用"
   }
 }

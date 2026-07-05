@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   filterMissingKeysToTranslate,
+  mapWithConcurrency,
+  nextDelayAfterRateLimit,
+  resolveTranslateConcurrency,
+  resolveTranslateDelayMs,
   restorePlaceholders,
   sanitizeLocaleTranslationJsonFileBodyForDisk,
   setDeepLocaleValue,
@@ -127,6 +131,52 @@ describe('filterMissingKeysToTranslate', () => {
     });
     // Pure technical/brand terms — none should be re-translated
     expect(result).toEqual([]);
+  });
+});
+
+describe('resolveTranslateDelayMs', () => {
+  it('defaults to 300ms without LibreTranslate', () => {
+    expect(resolveTranslateDelayMs('', undefined)).toBe(300);
+  });
+
+  it('defaults to 0 with LibreTranslate when env unset', () => {
+    expect(resolveTranslateDelayMs('http://localhost:5000', undefined)).toBe(0);
+  });
+
+  it('honors I18N_TRANSLATE_DELAY_MS override', () => {
+    expect(resolveTranslateDelayMs('', '150')).toBe(150);
+    expect(resolveTranslateDelayMs('http://localhost:5000', '0')).toBe(0);
+  });
+});
+
+describe('resolveTranslateConcurrency', () => {
+  it('defaults to 1 without LibreTranslate', () => {
+    expect(resolveTranslateConcurrency('', undefined)).toBe(1);
+  });
+
+  it('defaults to 3 with LibreTranslate when env unset', () => {
+    expect(resolveTranslateConcurrency('http://localhost:5000', undefined)).toBe(3);
+  });
+
+  it('honors I18N_TRANSLATE_CONCURRENCY override', () => {
+    expect(resolveTranslateConcurrency('', '2')).toBe(2);
+  });
+});
+
+describe('nextDelayAfterRateLimit', () => {
+  it('doubles delay up to cap', () => {
+    expect(nextDelayAfterRateLimit(300)).toBe(600);
+    expect(nextDelayAfterRateLimit(4000)).toBe(5000);
+  });
+});
+
+describe('mapWithConcurrency', () => {
+  it('runs all items with bounded parallelism', async () => {
+    const order = [];
+    await mapWithConcurrency(['a', 'b', 'c', 'd'], 2, async (item) => {
+      order.push(item);
+    });
+    expect(order.sort()).toEqual(['a', 'b', 'c', 'd']);
   });
 });
 

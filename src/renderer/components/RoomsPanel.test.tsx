@@ -481,7 +481,7 @@ describe('RoomsPanel', () => {
       myNodeNum: 0x100,
       connectionType: 'ble',
     });
-    expect(screen.getByText(/BT/)).toBeInTheDocument();
+    expect(screen.getByText(/messageStatusBadge\.transportBt/)).toBeInTheDocument();
   });
 
   it('shows leave in progress while onLeaveRoom is pending', async () => {

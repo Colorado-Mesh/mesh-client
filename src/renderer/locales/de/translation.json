@@ -1,4 +1,14 @@
 {
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Werksreset",
+      "hint": "Löscht Identität, Kontakte und Nachrichten aus dem Sidecar-Stack. Die Schnittstellenkonfiguration bleibt erhalten.",
+      "button": "Stapeldaten zurücksetzen",
+      "confirmTitle": "Reticulum-Stapel zurücksetzen?",
+      "confirmBody": "Dadurch werden Identität, Kontakte und lokale Nachrichten aus dem Sidecar entfernt. Ihre Schnittstellenkonfigurationsdatei bleibt erhalten.",
+      "confirm": "Zurücksetzen"
+    }
+  },
   "app": {
     "loadingPanel": "Das Panel wird geladen...",
     "loadingDialog": "Dialogfeld wird geladen",
@@ -317,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "Positionsverlauf beim Start automatisch bereinigen, älter als {{days}} Tage",
     "capTotalNodesCountAria": "Begrenzen Sie die Gesamtzahl der Knoten und behalten Sie die neuesten {{count}}-Knoten bei",
     "limitMessagesLoadedCountAria": "Begrenzen Sie die Anzahl der geladenen Nachrichten: {{count}} Nachrichten",
-    "capStoredMessagesCountAria": "Gespeicherte Nachrichten begrenzen, neueste {{count}}-Nachrichten behalten"
+    "capStoredMessagesCountAria": "Gespeicherte Nachrichten begrenzen, neueste {{count}}-Nachrichten behalten",
+    "maxDistanceAria": "Max. Entfernung: {{value}}",
+    "unitAria": "Einheit: {{unit}}"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -430,7 +442,6 @@
     "emptyNoDmMessages": "Noch keine Nachrichten mit {{name}}.",
     "emptyNoMessagesYet": "Noch keine Nachrichten. Senden Sie eine oder warten Sie auf eingehende Nachrichten.",
     "emptyConnectFirst": "Verbinden Sie sich mit einem Gerät, um mit dem Chatten zu beginnen.",
-    "waitingMessagesBadge": "{{count}} Nachricht(en) aus der Warteschlange vom Funkgerät werden synchronisiert...",
     "waitingMessagesSyncNow": "Jetzt synchronisieren",
     "jumpToUnread": "Gehe zu Ungelesen",
     "jumpToLatest": "Zum neuesten Stand springen",
@@ -489,7 +500,10 @@
       "pkiFailed": "PKI-Verschlüsselung für diese Nachricht fehlgeschlagen.",
       "noChannel": "Kein Kanal verfügbar, um diese Nachricht weiterzuleiten.",
       "timeout": "Zeitüberschreitung der Nachricht im Funkgerät."
-    }
+    },
+    "waitingMessagesQueued": "{{count}} in der Warteschlange stehende Nachricht(en) im Funk",
+    "waitingMessagesSyncProgress": "{{processed}}/{{total}} wird vom Funkgerät synchronisiert...",
+    "waitingMessagesSyncProgressIndeterminate": "In die Warteschlange gestellte Nachrichten vom Funkgerät werden synchronisiert..."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -1262,6 +1276,25 @@
     "rssiDbm": "RSSI {{rssi}} dBm",
     "snrDb": "SNR {{snr}} dB"
   },
+  "diagnosticsPing": {
+    "title": "Kontinuierlicher Ping",
+    "reticulumHint": "Führt Ping (RTT) und Pfadsonde (Hops) in jedem Intervall aus, während der Stack läuft.",
+    "hashLabel": "Ziel-Hash",
+    "hashPlaceholder": "32-stelliger Ziel-Hash...",
+    "hashAria": "Ziel-Hash zu Ping",
+    "intervalLabel": "Intervall (s)",
+    "intervalAria": "Sekunden zwischen Ping-Versuchen",
+    "start": "Start",
+    "stop": "Stop",
+    "runOnce": "Einmal pingen",
+    "colSeq": "es",
+    "colRtt": "Hirnatrophische Hyperammonämie",
+    "colHops": "Hops",
+    "colStatus": "Status",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "i.O.",
+    "statusFailed": "Fehlgeschlagen: {{error}}"
+  },
   "errorBoundary": {
     "title": "Etwas ist schief gelaufen",
     "unexpectedError": "Es ist ein unerwarteter Fehler aufgetreten",
@@ -1383,6 +1416,25 @@
     "wifiStationSuccess": "Stationsmodus gespeichert. Starten Sie die Platine neu, suchen Sie dann ihre IP (Display, Router-DHCP oder Lesekonfiguration) und fügen Sie tcp://… auf den Verbindungsschnittstellen → hinzu.",
     "wifiConfigEmpty": "Es wurden keine Konfigurationsdaten zurückgegeben.",
     "wifiNetmaskPlaceholder": "255.255.255.0"
+  },
+  "identityVault": {
+    "title": "Identitätstresor",
+    "hint": "Verschlüsseln Sie eine lokale Kopie Ihrer Identitätssicherung mit einem Tresor-Passcode. Freischalten, um auf geschützte Identitätsvorgänge zuzugreifen.",
+    "passcode": "Tresor-Passcode",
+    "confirmPasscode": "Passcode bestätigen",
+    "setPasscode": "Vault aktivieren",
+    "unlock": "Öffne die Gruft!",
+    "lock": "Tresor sperren",
+    "statusNotConfigured": "Nicht konfiguriert",
+    "statusLocked": "Gesperrt",
+    "statusUnlocked": "freigeschaltet",
+    "passcodeTooShort": "Muss mindestens aus 4 Zeichen bestehen",
+    "passcodeMismatch": "Passwörter stimmen nicht überein",
+    "setSuccess": "Tresor-Passcode gespeichert.",
+    "setFailed": "Tresor-Passcode konnte nicht gespeichert werden.",
+    "unlockSuccess": "Tresor freigeschaltet.",
+    "unlockFailed": "Falscher Passcode oder Tresorfehler.",
+    "lockSuccess": "Tresor gesperrt."
   },
   "logAnalyzeModal": {
     "title": "Protokollanalyse",
@@ -1549,6 +1601,60 @@
     "extraRfReceptions": "zusätzliche HF-Empfänge",
     "originatorPacket": "Paket",
     "originatorPackets": "Pakete"
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "Legen Sie das Repeater-Administratorkennwort im Repeater-Bereich fest oder ändern Sie es (nur Sitzung).",
+      "connectionFailed": "Verbindung fehlgeschlagen",
+      "notConnected": "Nicht mit dem Gerät verbunden",
+      "nodeNotFound": "Knoten nicht gefunden (kein Verschlüsselungsschlüssel)",
+      "authenticationFailed": "Authentifizierung fehlgeschlagen",
+      "requestFailed": "Fehlgeschlagen: {{detail}}",
+      "requestTimedOut": "Zeitüberschreitung bei der Anfrage (bis zu ~{{seconds}}s)",
+      "requestTimedOutApprox": "Zeitüberschreitung der Anfrage (~{{seconds}}s)",
+      "pingNoRoute": "Noch keine Route vom Funk – Multi-Hop-Trace benötigt einen synchronisierten Pfad. Warten Sie auf Kontaktaktualisierungen oder stellen Sie die Verbindung erneut her.",
+      "bleNoDetails": "BLE-Verbindung fehlgeschlagen (keine Fehlerdetails vom Gerät). Versuchen Sie es erneut oder verwenden Sie Seriell/USB.",
+      "bleAlreadyInProgress": "Bluetooth-Verbindung bereits im Gange. Warten Sie, bis der Vorgang abgeschlossen ist, oder versuchen Sie es stattdessen mit Seriell/USB.",
+      "bleMissingServices": "Das Gerät unterstützt das MeshCore BLE-Protokoll nicht. Stellen Sie sicher, dass auf dem Gerät die MeshCore-Firmware ausgeführt wird.",
+      "blePeripheralInUse": "Dieses Gerät ist bereits über Meshtastic BLE verbunden. Trennen Sie es zuerst, bevor Sie es als MeshCore verbinden.",
+      "bleTimeoutWebBtHandshake": "Zeitüberschreitung beim MeshCore-Handshake (Web-Bluetooth). Das Radio benötigt möglicherweise zuerst eine mit Linux gekoppelte PIN: Verwenden Sie „Gerät entfernen und erneut koppeln“ und geben Sie die auf dem Gerät angezeigte PIN ein, oder koppeln Sie es mit „bluetoothctl“ und tippen Sie dann erneut auf „Verbinden“.",
+      "bleTimeoutWebBt": "Beim Öffnen von MeshCore über Web-Bluetooth ist eine Zeitüberschreitung der Bluetooth-Verbindung aufgetreten. Versuchen Sie es erneut, lassen Sie das Gerät aktiv, schalten Sie BLE am Funkgerät aus und wieder ein oder verwenden Sie Seriell/TCP.",
+      "bleTimeoutHandshake": "Bluetooth-Verbindung hergestellt, aber der MeshCore-Protokoll-Handshake wurde vor der Trennung/Zeitüberschreitung nicht abgeschlossen. Versuchen Sie es noch einmal, lassen Sie das Gerät aktiv und in der Nähe, schalten Sie BLE aus und wieder ein oder verwenden Sie Seriell/TCP.",
+      "bleTimeoutNoble": "Beim Öffnen von MeshCore über Noble IPC kam es zu einer Zeitüberschreitung der Bluetooth-Verbindung. Versuchen Sie es erneut, schalten Sie BLE auf dem Gerät aus und wieder ein oder verwenden Sie Seriell/TCP.",
+      "roomPost": {
+        "badState": "Raumbeitrag abgelehnt (nicht am Radio eingeloggt). Melden Sie sich ab, melden Sie sich erneut an und versuchen Sie es erneut.",
+        "illegalArg": "Raumbeitrag abgelehnt (ungültiges Nachrichtenformat).",
+        "notFound": "Raumbeitrag abgelehnt (Raumkontakt im Radio nicht gefunden).",
+        "unsupportedCmd": "Raumbeitrag abgelehnt (nicht unterstützter Nachrichtentyp im Radio). Melden Sie sich im Raum an und versuchen Sie es erneut.",
+        "default": "Zimmerpost vom Radio abgelehnt. Melden Sie sich ab, melden Sie sich erneut an und versuchen Sie es erneut.",
+        "timeout": "Beim Warten auf das Radio ist die Zeit für den Zimmerposten abgelaufen. Überprüfen Sie die Reichweite oder versuchen Sie es erneut."
+      },
+      "roomLogin": {
+        "noRoute": "Keine Route zu diesem Raumserver. Verfolgen Sie den Knoten auf der Karte oder warten Sie auf Pfadanzeigen und versuchen Sie es dann erneut.",
+        "pathSyncFailed": "Die Route konnte vor der Anmeldung nicht auf Ihrem Radio programmiert werden. Schließen Sie das Gerät erneut an und versuchen Sie es erneut.",
+        "pathSyncFailedDetail": "Die Route konnte vor der Anmeldung nicht auf Ihrem Radio programmiert werden. Schließen Sie das Gerät erneut an und versuchen Sie es erneut.{{detail}}",
+        "rejectedBlankGuest": "Raumanmeldung abgelehnt. Verwenden Sie „Weiter lesen“ für ein leeres Gastpasswort oder versuchen Sie es mit dem Gastpasswort „Hallo“.",
+        "rejectedDefaultGuest": "Raumanmeldung abgelehnt. Wenn dieser Server kein Gastpasswort hat, verwenden Sie „Weiter lesen“ anstelle von „Anmelden“. Überprüfen Sie andernfalls das Gast- oder Admin-Passwort.",
+        "rejectedCheckPassword": "Raumanmeldung abgelehnt. Überprüfen Sie das Gast- oder Administratorkennwort für diesen Raumserver.",
+        "timedOutBlankGuest": "Zeitüberschreitung bei der Raumanmeldung. Verwenden Sie „Weiter lesen“ für ein leeres Gastpasswort oder versuchen Sie es mit dem Gastpasswort „Hallo“.",
+        "timedOutDefaultGuest": "Zeitüberschreitung bei der Raumanmeldung. Wenn dieser Server kein Gastpasswort hat, verwenden Sie „Weiter lesen“ anstelle von „Anmelden“.",
+        "timedOut": "Zeitüberschreitung bei der Raumanmeldung. Der Raum befindet sich möglicherweise außerhalb der Reichweite oder reagiert nicht.",
+        "failed": "Die Raumanmeldung ist fehlgeschlagen"
+      },
+      "roomLogout": {
+        "timedOut": "Zeitüberschreitung beim Abmelden des Raums. Der Raum befindet sich möglicherweise außerhalb der Reichweite oder reagiert nicht.",
+        "rejected": "Raumabmeldung per Funk abgelehnt.",
+        "failed": "Konnte den Raum nicht verlassen"
+      },
+      "repeaterRpcInProgress": "Eine Anfrage für diesen Repeater ist bereits in Bearbeitung"
+    },
+    "mqttHints": {
+      "notAuthorized": "Überprüfen Sie v1_-Benutzernamen, Token-Signatur und JWT-Zielgruppe im Vergleich zum Broker. siehe docs/letsmesh-mqtt-auth.md. Verwenden Sie „Benutzerdefiniert“, um bei Bedarf ein vom Bediener ausgestelltes Token einzufügen.",
+      "network": "Überprüfen Sie Netzwerk, DNS, Firewall und VPN.",
+      "connackTimeout": "Wenn Sie keine vorherige „Client-Fehler“-Zeile sehen, verzögert sich möglicherweise der TLS/WebSocket-Handshake (versuchen Sie es mit einem anderen Netzwerk; die App bevorzugt IPv4 für WSS).",
+      "subscribeFailed": "Der Broker kann das Wildcard-Abonnement zu diesem Thema verweigern. Es können weiterhin Nachrichten eingehen, wenn der Broker dies zulässt.",
+      "keepalive": "Der Server reagiert nicht mehr auf MQTT-Pings (Leerlaufzeitüberschreitung, Netzwerkausfall oder Broker hat die Sitzung geschlossen). Stellen Sie die Verbindung erneut her oder überprüfen Sie Ihren Link."
+    }
   },
   "meshcoreContactSettings": {
     "allContactsCleared": "Alle Kontakte gelöscht.",
@@ -2006,6 +2112,31 @@
       }
     }
   },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Stack-Einstellungen",
+      "enableTransport": "Transport aktivieren (Route für andere Peers)",
+      "shareInstance": "Teilen Sie die Reticulum-Instanz",
+      "logLevel": "Protokollebene",
+      "save": "Stapeleinstellungen speichern",
+      "saveFailed": "Stapeleinstellungen konnten nicht gespeichert werden."
+    },
+    "reticulumConfigImport": {
+      "title": "Reticulum-Konfiguration importieren",
+      "hint": "Fügen Sie eine Konfigurationsdatei im RNSD-Stil ein oder importieren Sie sie von der Festplatte. Durch Zusammenführen werden Schnittstellenblöcke nach Namen hinzugefügt/aktualisiert. Ersetzen überschreibt alle Schnittstellen.",
+      "pasteLabel": "Inhalt der Konfigurationsdatei",
+      "fromFile": "Aus Datei importieren…",
+      "fromSystem": "Systemstandard importieren",
+      "merge": "Import zusammenführen",
+      "replace": "Ersetzen Sie Schnittstellen",
+      "confirmTitle": "Reticulum-Konfiguration importieren",
+      "confirmMerge": "Importierte Schnittstellen in die aktuelle Konfiguration einbinden?",
+      "confirmReplace": "Alle Schnittstellen durch die importierte Konfiguration ersetzen? Dies kann nicht rückgängig gemacht werden.",
+      "confirm": "Importieren"
+    },
+    "reticulumConfigImportFailed": "Konfigurationsimport fehlgeschlagen.",
+    "reticulumConfigNotFound": "In den Standardpfaden wurde keine System-Reticulum-Konfiguration gefunden."
+  },
   "nodeDetailModal": {
     "removeFromFavorites": "Aus Favoriten-Liste entfernen",
     "addToFavorites": "Zu Favoriten hinzufügen",
@@ -2359,7 +2490,9 @@
     "urlBarAria": "Nomad-Seitenadresse",
     "back": "Zurück",
     "forward": "Nach vorne",
-    "invalidUrl": "Ungültige Nomad-Seitenadresse"
+    "invalidUrl": "Ungültige Nomad-Seitenadresse",
+    "collapseNodeList": "Knotenliste einklappen",
+    "expandNodeList": "Knotenliste erweitern"
   },
   "packetDistribution": {
     "overallDistribution": "Gesamtverteilung",
@@ -3185,6 +3318,20 @@
     "clearAnnouncesDone": "Ansagen gelöscht.",
     "clearAnnouncesFailed": "Ansagen konnten nicht gelöscht werden."
   },
+  "reticulumIdentitySwitcher": {
+    "label": "Aktive Identität",
+    "active": "Aktive Identität: {{name}}",
+    "activeBadge": "aktiv"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "\"Avatar-Symbol\",",
+    "iconNameAria": "Peer-Avatar-Symbol",
+    "iconCircle": "Kreis",
+    "iconStar": "Stern",
+    "iconHeart": "Herz",
+    "iconShield": "Schild",
+    "iconUser": "Nutzer"
+  },
   "reticulumPropagation": {
     "preferred": "Vorzugsweise",
     "setPreferred": "Bevorzugte festlegen",
@@ -3214,6 +3361,17 @@
     "autoSyncOption24h": "Alle 24 Stunden",
     "lastSynced": "Zuletzt synchronisiert: {{time}}",
     "lastRefreshed": "Letzte Aktualisierung {{time}}"
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "Ausbreitungsmodus",
+    "modeAria": "Ausbreitungssynchronisationsmodus",
+    "modeAuto": "Automatisch",
+    "modeManual": "Hand",
+    "modeOff": "Aus",
+    "sync": "Sync",
+    "syncAria": "Ausbreitungsnachrichten synchronisieren",
+    "cancelSync": "Abbrechen",
+    "cancelSyncAria": "Ausbreitungssynchronisation abbrechen"
   },
   "reticulumTopology": {
     "title": "Netzwerk-Topologie",
@@ -3620,156 +3778,43 @@
     "menuToastAvailableBody": "Version {{version}} liegt vor.",
     "menuToastErrorTitle": "Update-Prüfung fehlgeschlagen"
   },
-  "diagnosticsPing": {
-    "title": "Kontinuierlicher Ping",
-    "reticulumHint": "Führt Ping (RTT) und Pfadsonde (Hops) in jedem Intervall aus, während der Stack läuft.",
-    "hashLabel": "Ziel-Hash",
-    "hashPlaceholder": "32-stelliger Ziel-Hash...",
-    "hashAria": "Ziel-Hash zu Ping",
-    "intervalLabel": "Intervall (s)",
-    "intervalAria": "Sekunden zwischen Ping-Versuchen",
-    "start": "Start",
-    "stop": "Stop",
-    "runOnce": "Einmal pingen",
-    "colSeq": "es",
-    "colRtt": "Hirnatrophische Hyperammonämie",
-    "colHops": "Hops",
-    "colStatus": "Status",
-    "rttMs": "{{ms}} ms",
-    "statusOk": "i.O.",
-    "statusFailed": "Fehlgeschlagen: {{error}}"
+  "messageStatusBadge": {
+    "queuedTooltip": "In der Warteschlange — sendet, wenn eine Verbindung besteht",
+    "queuedLabel": "In Warteschlange",
+    "blockedDefault": "Gesperrt — kein Verschlüsselungsschlüssel verfügbar",
+    "blockedLabel": "Blockiert",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WiFi",
+    "transportBt": "BT",
+    "noAck": "kein ACK",
+    "sending": "Senden…",
+    "delivered": "Übermittelt",
+    "posted": "am",
+    "failedPost": "Nicht veröffentlicht",
+    "noAckTooltip": "Kein ACK (Nachricht darf noch gesendet worden sein; kein anderer Knoten in Reichweite zu quittieren)",
+    "failed": "Nicht bestanden",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Vorrichtung"
   },
-  "reticulumIdentitySwitcher": {
-    "label": "Aktive Identität",
-    "active": "Aktive Identität: {{name}}",
-    "activeBadge": "aktiv"
-  },
-  "identityVault": {
-    "title": "Identitätstresor",
-    "hint": "Verschlüsseln Sie eine lokale Kopie Ihrer Identitätssicherung mit einem Tresor-Passcode. Freischalten, um auf geschützte Identitätsvorgänge zuzugreifen.",
-    "passcode": "Tresor-Passcode",
-    "confirmPasscode": "Passcode bestätigen",
-    "setPasscode": "Vault aktivieren",
-    "unlock": "Öffne die Gruft!",
-    "lock": "Tresor sperren",
-    "statusNotConfigured": "Nicht konfiguriert",
-    "statusLocked": "Gesperrt",
-    "statusUnlocked": "freigeschaltet",
-    "passcodeTooShort": "Muss mindestens aus 4 Zeichen bestehen",
-    "passcodeMismatch": "Passwörter stimmen nicht überein",
-    "setSuccess": "Tresor-Passcode gespeichert.",
-    "setFailed": "Tresor-Passcode konnte nicht gespeichert werden.",
-    "unlockSuccess": "Tresor freigeschaltet.",
-    "unlockFailed": "Falscher Passcode oder Tresorfehler.",
-    "lockSuccess": "Tresor gesperrt."
-  },
-  "reticulumPropagationHeader": {
-    "modeLabel": "Ausbreitungsmodus",
-    "modeAria": "Ausbreitungssynchronisationsmodus",
-    "modeAuto": "Automatisch",
-    "modeManual": "Hand",
-    "modeOff": "Aus",
-    "sync": "Sync",
-    "syncAria": "Ausbreitungsnachrichten synchronisieren",
-    "cancelSync": "Abbrechen",
-    "cancelSyncAria": "Ausbreitungssynchronisation abbrechen"
-  },
-  "reticulumProfileIcon": {
-    "iconName": "\"Avatar-Symbol\",",
-    "iconNameAria": "Peer-Avatar-Symbol",
-    "iconCircle": "Kreis",
-    "iconStar": "Stern",
-    "iconHeart": "Herz",
-    "iconShield": "Schild",
-    "iconUser": "Nutzer"
-  },
-  "networkPanel": {
-    "reticulumStackSettings": {
-      "title": "Stack-Einstellungen",
-      "enableTransport": "Transport aktivieren (Route für andere Peers)",
-      "shareInstance": "Teilen Sie die Reticulum-Instanz",
-      "logLevel": "Protokollebene",
-      "save": "Stapeleinstellungen speichern",
-      "saveFailed": "Stapeleinstellungen konnten nicht gespeichert werden."
-    },
-    "reticulumConfigImport": {
-      "title": "Reticulum-Konfiguration importieren",
-      "hint": "Fügen Sie eine Konfigurationsdatei im RNSD-Stil ein oder importieren Sie sie von der Festplatte. Durch Zusammenführen werden Schnittstellenblöcke nach Namen hinzugefügt/aktualisiert. Ersetzen überschreibt alle Schnittstellen.",
-      "pasteLabel": "Inhalt der Konfigurationsdatei",
-      "fromFile": "Aus Datei importieren…",
-      "fromSystem": "Systemstandard importieren",
-      "merge": "Import zusammenführen",
-      "replace": "Ersetzen Sie Schnittstellen",
-      "confirmTitle": "Reticulum-Konfiguration importieren",
-      "confirmMerge": "Importierte Schnittstellen in die aktuelle Konfiguration einbinden?",
-      "confirmReplace": "Alle Schnittstellen durch die importierte Konfiguration ersetzen? Dies kann nicht rückgängig gemacht werden.",
-      "confirm": "Importieren"
-    },
-    "reticulumConfigImportFailed": "Konfigurationsimport fehlgeschlagen.",
-    "reticulumConfigNotFound": "In den Standardpfaden wurde keine System-Reticulum-Konfiguration gefunden."
-  },
-  "adminPanel": {
-    "reticulumFactoryReset": {
-      "title": "Werksreset",
-      "hint": "Löscht Identität, Kontakte und Nachrichten aus dem Sidecar-Stack. Die Schnittstellenkonfiguration bleibt erhalten.",
-      "button": "Stapeldaten zurücksetzen",
-      "confirmTitle": "Reticulum-Stapel zurücksetzen?",
-      "confirmBody": "Dadurch werden Identität, Kontakte und lokale Nachrichten aus dem Sidecar entfernt. Ihre Schnittstellenkonfigurationsdatei bleibt erhalten.",
-      "confirm": "Zurücksetzen"
-    }
-  },
-  "meshcore": {
-    "errors": {
-      "repeaterAuthHint": "Legen Sie das Repeater-Administratorkennwort im Repeater-Bereich fest oder ändern Sie es (nur Sitzung).",
-      "connectionFailed": "Verbindung fehlgeschlagen",
-      "notConnected": "Nicht mit dem Gerät verbunden",
-      "nodeNotFound": "Knoten nicht gefunden (kein Verschlüsselungsschlüssel)",
-      "authenticationFailed": "Authentifizierung fehlgeschlagen",
-      "requestFailed": "Fehlgeschlagen: {{detail}}",
-      "requestTimedOut": "Zeitüberschreitung bei der Anfrage (bis zu ~{{seconds}}s)",
-      "requestTimedOutApprox": "Zeitüberschreitung der Anfrage (~{{seconds}}s)",
-      "pingNoRoute": "Noch keine Route vom Funk – Multi-Hop-Trace benötigt einen synchronisierten Pfad. Warten Sie auf Kontaktaktualisierungen oder stellen Sie die Verbindung erneut her.",
-      "bleNoDetails": "BLE-Verbindung fehlgeschlagen (keine Fehlerdetails vom Gerät). Versuchen Sie es erneut oder verwenden Sie Seriell/USB.",
-      "bleAlreadyInProgress": "Bluetooth-Verbindung bereits im Gange. Warten Sie, bis der Vorgang abgeschlossen ist, oder versuchen Sie es stattdessen mit Seriell/USB.",
-      "bleMissingServices": "Das Gerät unterstützt das MeshCore BLE-Protokoll nicht. Stellen Sie sicher, dass auf dem Gerät die MeshCore-Firmware ausgeführt wird.",
-      "blePeripheralInUse": "Dieses Gerät ist bereits über Meshtastic BLE verbunden. Trennen Sie es zuerst, bevor Sie es als MeshCore verbinden.",
-      "bleTimeoutWebBtHandshake": "Zeitüberschreitung beim MeshCore-Handshake (Web-Bluetooth). Das Radio benötigt möglicherweise zuerst eine mit Linux gekoppelte PIN: Verwenden Sie „Gerät entfernen und erneut koppeln“ und geben Sie die auf dem Gerät angezeigte PIN ein, oder koppeln Sie es mit „bluetoothctl“ und tippen Sie dann erneut auf „Verbinden“.",
-      "bleTimeoutWebBt": "Beim Öffnen von MeshCore über Web-Bluetooth ist eine Zeitüberschreitung der Bluetooth-Verbindung aufgetreten. Versuchen Sie es erneut, lassen Sie das Gerät aktiv, schalten Sie BLE am Funkgerät aus und wieder ein oder verwenden Sie Seriell/TCP.",
-      "bleTimeoutHandshake": "Bluetooth-Verbindung hergestellt, aber der MeshCore-Protokoll-Handshake wurde vor der Trennung/Zeitüberschreitung nicht abgeschlossen. Versuchen Sie es noch einmal, lassen Sie das Gerät aktiv und in der Nähe, schalten Sie BLE aus und wieder ein oder verwenden Sie Seriell/TCP.",
-      "bleTimeoutNoble": "Beim Öffnen von MeshCore über Noble IPC kam es zu einer Zeitüberschreitung der Bluetooth-Verbindung. Versuchen Sie es erneut, schalten Sie BLE auf dem Gerät aus und wieder ein oder verwenden Sie Seriell/TCP.",
-      "roomPost": {
-        "badState": "Raumbeitrag abgelehnt (nicht am Radio eingeloggt). Melden Sie sich ab, melden Sie sich erneut an und versuchen Sie es erneut.",
-        "illegalArg": "Raumbeitrag abgelehnt (ungültiges Nachrichtenformat).",
-        "notFound": "Raumbeitrag abgelehnt (Raumkontakt im Radio nicht gefunden).",
-        "unsupportedCmd": "Raumbeitrag abgelehnt (nicht unterstützter Nachrichtentyp im Radio). Melden Sie sich im Raum an und versuchen Sie es erneut.",
-        "default": "Zimmerpost vom Radio abgelehnt. Melden Sie sich ab, melden Sie sich erneut an und versuchen Sie es erneut.",
-        "timeout": "Beim Warten auf das Radio ist die Zeit für den Zimmerposten abgelaufen. Überprüfen Sie die Reichweite oder versuchen Sie es erneut."
-      },
-      "roomLogin": {
-        "noRoute": "Keine Route zu diesem Raumserver. Verfolgen Sie den Knoten auf der Karte oder warten Sie auf Pfadanzeigen und versuchen Sie es dann erneut.",
-        "pathSyncFailed": "Die Route konnte vor der Anmeldung nicht auf Ihrem Radio programmiert werden. Schließen Sie das Gerät erneut an und versuchen Sie es erneut.",
-        "pathSyncFailedDetail": "Die Route konnte vor der Anmeldung nicht auf Ihrem Radio programmiert werden. Schließen Sie das Gerät erneut an und versuchen Sie es erneut.{{detail}}",
-        "rejectedBlankGuest": "Raumanmeldung abgelehnt. Verwenden Sie „Weiter lesen“ für ein leeres Gastpasswort oder versuchen Sie es mit dem Gastpasswort „Hallo“.",
-        "rejectedDefaultGuest": "Raumanmeldung abgelehnt. Wenn dieser Server kein Gastpasswort hat, verwenden Sie „Weiter lesen“ anstelle von „Anmelden“. Überprüfen Sie andernfalls das Gast- oder Admin-Passwort.",
-        "rejectedCheckPassword": "Raumanmeldung abgelehnt. Überprüfen Sie das Gast- oder Administratorkennwort für diesen Raumserver.",
-        "timedOutBlankGuest": "Zeitüberschreitung bei der Raumanmeldung. Verwenden Sie „Weiter lesen“ für ein leeres Gastpasswort oder versuchen Sie es mit dem Gastpasswort „Hallo“.",
-        "timedOutDefaultGuest": "Zeitüberschreitung bei der Raumanmeldung. Wenn dieser Server kein Gastpasswort hat, verwenden Sie „Weiter lesen“ anstelle von „Anmelden“.",
-        "timedOut": "Zeitüberschreitung bei der Raumanmeldung. Der Raum befindet sich möglicherweise außerhalb der Reichweite oder reagiert nicht.",
-        "failed": "Die Raumanmeldung ist fehlgeschlagen"
-      },
-      "roomLogout": {
-        "timedOut": "Zeitüberschreitung beim Abmelden des Raums. Der Raum befindet sich möglicherweise außerhalb der Reichweite oder reagiert nicht.",
-        "rejected": "Raumabmeldung per Funk abgelehnt.",
-        "failed": "Konnte den Raum nicht verlassen"
-      },
-      "repeaterRpcInProgress": "Eine Anfrage für diesen Repeater ist bereits in Bearbeitung"
-    },
-    "mqttHints": {
-      "notAuthorized": "Überprüfen Sie v1_-Benutzernamen, Token-Signatur und JWT-Zielgruppe im Vergleich zum Broker. siehe docs/letsmesh-mqtt-auth.md. Verwenden Sie „Benutzerdefiniert“, um bei Bedarf ein vom Bediener ausgestelltes Token einzufügen.",
-      "network": "Überprüfen Sie Netzwerk, DNS, Firewall und VPN.",
-      "connackTimeout": "Wenn Sie keine vorherige „Client-Fehler“-Zeile sehen, verzögert sich möglicherweise der TLS/WebSocket-Handshake (versuchen Sie es mit einem anderen Netzwerk; die App bevorzugt IPv4 für WSS).",
-      "subscribeFailed": "Der Broker kann das Wildcard-Abonnement zu diesem Thema verweigern. Es können weiterhin Nachrichten eingehen, wenn der Broker dies zulässt.",
-      "keepalive": "Der Server reagiert nicht mehr auf MQTT-Pings (Leerlaufzeitüberschreitung, Netzwerkausfall oder Broker hat die Sitzung geschlossen). Stellen Sie die Verbindung erneut her oder überprüfen Sie Ihren Link."
-    }
+  "bootSequence": {
+    "booting": "Mesh-Stack wird gestartet...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Kanäle werden gescannt... {{count}}",
+    "meshtasticScanningChannels": "Konfigurierte Kanäle werden gescannt...",
+    "databaseNodes_one": "Datenbank: {{count}} Knoten synchronisiert",
+    "databaseNodes_other": "Datenbank: {{count}} Knoten synchronisiert",
+    "syncingDatabase": "Mesh-Datenbank wird synchronisiert...",
+    "interfaceReady": "{{iface}} schnittstellenfertig",
+    "freqMhz": "Frequenz: {{mhz}} MHz",
+    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
+    "configuringRadio": "Funkparameter werden konfiguriert...",
+    "contacts_one": "Kontakte: {{count}} Kontakt geladen",
+    "contacts_other": "Kontakte: {{count}} Kontakte geladen",
+    "loadingContacts": "Kontaktdatenbank wird geladen...",
+    "routes_one": "Routen: {{count}} Knoten im Netz",
+    "routes_other": "Routen: {{count}} Knoten im Netz",
+    "routesEstablished": "Etablierte Routen",
+    "meshActive": "Netzwerk aktiv"
   }
 }

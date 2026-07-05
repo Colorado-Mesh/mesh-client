@@ -21,6 +21,7 @@ node_modules/
 release/
 test-results/
 coverage/
+.vitest-reports/
 .context-os
 .rtk
 .githooks/bin/

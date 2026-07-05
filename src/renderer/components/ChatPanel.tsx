@@ -425,6 +425,9 @@ export interface ChatPanelProps {
   /** MeshCore MsgWaiting drain — messages queued on device. */
   waitingMessagesCount?: number;
   onSyncWaitingMessages?: () => void;
+  /** MeshCore waiting-message sync in progress (Sync now). */
+  waitingMessagesSyncActive?: boolean;
+  waitingMessagesSyncProgress?: { processed: number; total: number } | null;
   /** Reticulum LXMF: DM-only chat (no channel pills). */
   dmOnlyChat?: boolean;
   /** Reticulum LXMF delivery status badge on outbound/inbound messages. */
@@ -464,6 +467,8 @@ function ChatPanel({
   onFetchStoreForwardHistory,
   waitingMessagesCount = 0,
   onSyncWaitingMessages,
+  waitingMessagesSyncActive = false,
+  waitingMessagesSyncProgress = null,
   dmOnlyChat = false,
   showLxmfDeliveryStatus = false,
   showLxmfAttachmentLine = false,
@@ -1800,15 +1805,38 @@ function ChatPanel({
         </div>
       </div>
 
-      {protocol === 'meshcore' && waitingMessagesCount > 0 && (
-        <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-1.5 text-xs text-amber-200">
-          <span>{t('chatPanel.waitingMessagesBadge', { count: waitingMessagesCount })}</span>
+      {protocol === 'meshcore' && (waitingMessagesCount > 0 || waitingMessagesSyncActive) && (
+        <div
+          className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-1.5 text-xs text-amber-200"
+          role="status"
+          aria-busy={waitingMessagesSyncActive || undefined}
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            {waitingMessagesSyncActive ? (
+              <>
+                <span
+                  className="inline-block h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-amber-400 border-t-transparent"
+                  aria-hidden
+                />
+                {waitingMessagesSyncProgress && waitingMessagesSyncProgress.total > 0
+                  ? t('chatPanel.waitingMessagesSyncProgress', {
+                      processed: waitingMessagesSyncProgress.processed,
+                      total: waitingMessagesSyncProgress.total,
+                    })
+                  : t('chatPanel.waitingMessagesSyncProgressIndeterminate')}
+              </>
+            ) : (
+              t('chatPanel.waitingMessagesQueued', { count: waitingMessagesCount })
+            )}
+          </span>
           {onSyncWaitingMessages && (
             <button
               type="button"
               onClick={onSyncWaitingMessages}
-              className="rounded border border-amber-600/60 px-2 py-0.5 text-[10px] font-medium hover:bg-amber-800/40"
+              disabled={waitingMessagesSyncActive}
+              className="rounded border border-amber-600/60 px-2 py-0.5 text-[10px] font-medium hover:bg-amber-800/40 disabled:cursor-not-allowed disabled:opacity-50"
               aria-label={t('chatPanel.waitingMessagesSyncNow')}
+              aria-busy={waitingMessagesSyncActive || undefined}
             >
               {t('chatPanel.waitingMessagesSyncNow')}
             </button>

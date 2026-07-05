@@ -1,4 +1,14 @@
 {
+  "adminPanel": {
+    "reticulumFactoryReset": {
+      "title": "Restablecimiento de fábrica",
+      "hint": "Borra identidades, contactos y mensajes de la pila del sidecar. Se conserva la configuración de la interfaz.",
+      "button": "Restablecer datos de la pila",
+      "confirmTitle": "¿Restablecer stack Reticulum?",
+      "confirmBody": "Esto elimina la identidad, los contactos y los mensajes locales del sidecar. Se conserva el archivo de configuración de su interfaz.",
+      "confirm": "Reiniciar"
+    }
+  },
   "app": {
     "loadingPanel": "Panel de carga",
     "loadingDialog": "Cargando diálogo",
@@ -317,7 +327,9 @@
     "autoPrunePositionHistoryDaysAria": "Historial de posición de poda automática al inicio, anterior a {{days}} días",
     "capTotalNodesCountAria": "Limitar el total de nodos, mantener los nodos {{count}} más nuevos",
     "limitMessagesLoadedCountAria": "Limitar mensajes cargados {{count}} mensajes",
-    "capStoredMessagesCountAria": "Limitar los mensajes almacenados, conservar los mensajes {{count}} más recientes"
+    "capStoredMessagesCountAria": "Limitar los mensajes almacenados, conservar los mensajes {{count}} más recientes",
+    "maxDistanceAria": "Distancia máxima: {{value}}",
+    "unitAria": "Unidad: {{unit}}"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -430,7 +442,6 @@
     "emptyNoDmMessages": "Todavía no hay mensajes con {{name}}.",
     "emptyNoMessagesYet": "Aún no hay mensajes. Envíe uno o espere los mensajes entrantes.",
     "emptyConnectFirst": "Conéctate a un dispositivo para empezar a chatear.",
-    "waitingMessagesBadge": "Sincronizando {{count}} mensajes en cola de radio...",
     "waitingMessagesSyncNow": "Sincronizar ahora",
     "jumpToUnread": "Saltar a no leído",
     "jumpToLatest": "Saltar a lo último",
@@ -489,7 +500,10 @@
       "pkiFailed": "El cifrado PKI ha fallado para este mensaje.",
       "noChannel": "No hay ningún canal disponible para enrutar este mensaje.",
       "timeout": "El mensaje ha caducado en la radio."
-    }
+    },
+    "waitingMessagesQueued": "{{count}} mensajes en cola en la radio",
+    "waitingMessagesSyncProgress": "Sincronizando {{processed}} / {{total}} desde la radio...",
+    "waitingMessagesSyncProgressIndeterminate": "Sincronizando mensajes en cola de radio..."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -1262,6 +1276,25 @@
     "rssiDbm": "RSSI {{rssi}} dBm",
     "snrDb": "SNR {{snr}} dB"
   },
+  "diagnosticsPing": {
+    "title": "Ping continuo",
+    "reticulumHint": "Ejecuta ping (RTT) y sonda de ruta (saltos) en cada intervalo mientras la pila se está ejecutando.",
+    "hashLabel": "Hash de destino",
+    "hashPlaceholder": "Hash de destino de 32 caracteres...",
+    "hashAria": "Hash de destino para hacer ping",
+    "intervalLabel": "intervalo de tiempo (en segundos)",
+    "intervalAria": "Segundos entre intentos de ping",
+    "start": "Comienzo",
+    "stop": "Parada",
+    "runOnce": "Hacer ping una vez",
+    "colSeq": "N.º",
+    "colRtt": "RTT",
+    "colHops": "Saltos",
+    "colStatus": "Sincronizar el estado de confirmación de la reserva con el pedido Woo correspondiente",
+    "rttMs": "{{ms}} ms",
+    "statusOk": "OK",
+    "statusFailed": "Error: {{error}}"
+  },
   "errorBoundary": {
     "title": "algo salió mal",
     "unexpectedError": "Ocurrió un error inesperado",
@@ -1383,6 +1416,25 @@
     "wifiStationSuccess": "Modo de estación guardado. Reinicie la placa, luego busque su IP (pantalla, enrutador DHCP o configuración de lectura) y agregue tcp://... en las → interfaces de conexión.",
     "wifiConfigEmpty": "No se han devuelto datos de configuración.",
     "wifiNetmaskPlaceholder": "255.255.255.0"
+  },
+  "identityVault": {
+    "title": "Repositorio de Identidades",
+    "hint": "Cifre una copia local de su copia de seguridad de identidad con un código de acceso de bóveda. Desbloquear para acceder a operaciones de identidad protegidas.",
+    "passcode": "Código de acceso a la bóveda",
+    "confirmPasscode": "Confirma tu código de acceso",
+    "setPasscode": "Habilitar entorno de seguridad",
+    "unlock": "Desbloquear bóveda",
+    "lock": "Bloquear bóveda",
+    "statusNotConfigured": "Sin configurar",
+    "statusLocked": "Bloqueado",
+    "statusUnlocked": "Desbloqueado",
+    "passcodeTooShort": "debe tener al menos 4 caracteres",
+    "passcodeMismatch": "Los códigos de acceso no coinciden.",
+    "setSuccess": "Código de acceso de bóveda guardado.",
+    "setFailed": "No se ha podido guardar el código de acceso de la bóveda.",
+    "unlockSuccess": "Bóveda desbloqueada.",
+    "unlockFailed": "Código de acceso incorrecto o error de bóveda.",
+    "lockSuccess": "Bóveda bloqueada."
   },
   "logAnalyzeModal": {
     "title": "Análisis de registros",
@@ -1549,6 +1601,60 @@
     "extraRfReceptions": "recepciones de RF adicionales",
     "originatorPacket": "paquete",
     "originatorPackets": "paquetes"
+  },
+  "meshcore": {
+    "errors": {
+      "repeaterAuthHint": "Establezca o cambie la contraseña de administrador del repetidor desde el panel de Repetidores (solo sesión).",
+      "connectionFailed": "La conexión falló",
+      "notConnected": "No conectado al dispositivo",
+      "nodeNotFound": "Nodo no encontrado (sin clave de cifrado)",
+      "authenticationFailed": "Error de autenticación",
+      "requestFailed": "Error: {{detail}}",
+      "requestTimedOut": "Se agotó el tiempo de espera de la solicitud (hasta ~{{seconds}}s)",
+      "requestTimedOutApprox": "Se agotó el tiempo de espera de la solicitud (~{{seconds}}s)",
+      "pingNoRoute": "Aún no hay ruta desde la radio: el rastreo de múltiples saltos necesita una ruta sincronizada. Espere las actualizaciones de contactos o vuelva a conectarse.",
+      "bleNoDetails": "Error en la conexión BLE (no hay detalles de error del dispositivo). Inténtelo de nuevo o utilice Serial/USB.",
+      "bleAlreadyInProgress": "La conexión Bluetooth ya está en curso. Espere a que termine o pruebe con Serial/USB.",
+      "bleMissingServices": "El dispositivo no es compatible con el protocolo MeshCore BLE. Asegúrese de que el dispositivo esté ejecutando el firmware MeshCore.",
+      "blePeripheralInUse": "Este dispositivo ya está conectado a través de Meshtastic BLE. Desconéctelo primero antes de conectarse como MeshCore.",
+      "bleTimeoutWebBtHandshake": "Se agotó el tiempo de espera del protocolo de enlace MeshCore (Web Bluetooth). Es posible que la radio necesite un PIN emparejado con Linux primero: use Quitar y volver a emparejar dispositivo e ingrese el PIN que se muestra en el dispositivo, o empareje con bluetoothctl, luego toque Conectar nuevamente.",
+      "bleTimeoutWebBt": "Se agotó el tiempo de espera de la conexión Bluetooth al abrir MeshCore a través de Web Bluetooth. Vuelva a intentarlo, mantenga el dispositivo activo, reinicie BLE en la radio o use Serial/TCP.",
+      "bleTimeoutHandshake": "Bluetooth conectado pero el protocolo de enlace del protocolo MeshCore no se completó antes de la desconexión/tiempo de espera. Vuelva a intentarlo, mantenga el dispositivo activo y cerca, reinicie BLE o use Serial/TCP.",
+      "bleTimeoutNoble": "Se agotó el tiempo de espera de la conexión Bluetooth al abrir MeshCore a través de Noble IPC. Vuelva a intentarlo, apague y encienda BLE en el dispositivo o use Serial/TCP.",
+      "roomPost": {
+        "badState": "Publicación en la sala rechazada (no está conectado a la radio). Cierre sesión, inicie sesión nuevamente y vuelva a intentarlo.",
+        "illegalArg": "Publicación de sala rechazada (formato de mensaje no válido).",
+        "notFound": "Publicación de la sala rechazada (el contacto de la sala no se encuentra en la radio).",
+        "unsupportedCmd": "Publicación en sala rechazada (tipo de mensaje no admitido en la radio). Inicie sesión en la sala y vuelva a intentarlo.",
+        "default": "Publicación de la habitación rechazada por la radio. Cierre sesión, inicie sesión nuevamente y vuelva a intentarlo.",
+        "timeout": "Se agotó el tiempo de espera de la publicación de la sala esperando la radio. Verifique el rango o inténtelo nuevamente."
+      },
+      "roomLogin": {
+        "noRoute": "No hay ruta al servidor de esta sala. Rastrea el nodo desde el mapa o espera a que aparezcan anuncios de ruta y vuelve a intentarlo.",
+        "pathSyncFailed": "No se pudo programar la ruta en su radio antes de iniciar sesión. Vuelva a conectar el dispositivo e inténtelo de nuevo.",
+        "pathSyncFailedDetail": "No se pudo programar la ruta en su radio antes de iniciar sesión. Vuelva a conectar el dispositivo y vuelva a intentarlo.{{detail}}",
+        "rejectedBlankGuest": "Inicio de sesión rechazado. Utilice Continuar como solo lectura para la contraseña de invitado en blanco o pruebe con la contraseña de invitado \"hola\".",
+        "rejectedDefaultGuest": "Inicio de sesión rechazado. Si este servidor no tiene contraseña de invitado, utilice Continuar como solo lectura en lugar de Iniciar sesión. De lo contrario, verifique la contraseña de invitado o administrador.",
+        "rejectedCheckPassword": "Inicio de sesión rechazado. Verifique la contraseña de invitado o administrador para este servidor de sala.",
+        "timedOutBlankGuest": "Se agotó el tiempo de inicio de sesión en la sala. Utilice Continuar como solo lectura para la contraseña de invitado en blanco o pruebe con la contraseña de invitado \"hola\".",
+        "timedOutDefaultGuest": "Se agotó el tiempo de inicio de sesión en la sala. Si este servidor no tiene contraseña de invitado, utilice Continuar como solo lectura en lugar de Iniciar sesión.",
+        "timedOut": "Se agotó el tiempo de inicio de sesión en la sala. Es posible que la habitación esté fuera de alcance o no responda.",
+        "failed": "Error al iniciar sesión en la sala"
+      },
+      "roomLogout": {
+        "timedOut": "Se agotó el tiempo de cierre de sesión de la sala. Es posible que la habitación esté fuera de alcance o no responda.",
+        "rejected": "Cierre de sesión de sala rechazado por radio.",
+        "failed": "No se pudo salir de la habitación"
+      },
+      "repeaterRpcInProgress": "Ya hay una solicitud en curso para este repetidor."
+    },
+    "mqttHints": {
+      "notAuthorized": "Verifique v1_ nombre de usuario, firma del token y audiencia JWT versus corredor; consulte docs/letsmesh-mqtt-auth.md. Utilice Personalizado para pegar un token emitido por el operador si es necesario.",
+      "network": "Verifique la red, DNS, firewall y VPN.",
+      "connackTimeout": "Si no ve ninguna línea anterior de \"error del cliente\", es posible que el protocolo de enlace TLS/WebSocket se esté deteniendo (pruebe con otra red; la aplicación prefiere IPv4 para WSS).",
+      "subscribeFailed": "El corredor puede denegar la suscripción comodín sobre este tema; Es posible que aún lleguen mensajes si el corredor lo permite.",
+      "keepalive": "El servidor dejó de responder a los pings de MQTT (tiempo de espera de inactividad, caída de la red o el agente cerró la sesión). Vuelva a conectarse o verifique su enlace."
+    }
   },
   "meshcoreContactSettings": {
     "allContactsCleared": "Todos los contactos borrados.",
@@ -2006,6 +2112,31 @@
       }
     }
   },
+  "networkPanel": {
+    "reticulumStackSettings": {
+      "title": "Configuración de pila",
+      "enableTransport": "Habilitar transporte (ruta para otros pares)",
+      "shareInstance": "Compartir instancia Reticulum",
+      "logLevel": "Nivel de registro",
+      "save": "Guardar configuración de pila",
+      "saveFailed": "No se pudo guardar la configuración de la pila."
+    },
+    "reticulumConfigImport": {
+      "title": "Importar config Reticulum",
+      "hint": "Pegue un archivo de configuración estilo rnsd o importe desde el disco. Fusionar agrega/actualiza bloques de interfaz por nombre; reemplazar sobrescribe todas las interfaces.",
+      "pasteLabel": "Contenido del archivo de configuración",
+      "fromFile": "Importar desde archivo…",
+      "fromSystem": "Importar valor predeterminado del sistema",
+      "merge": "Importación de fusión",
+      "replace": "Reemplazar interfaces",
+      "confirmTitle": "Importar config Reticulum",
+      "confirmMerge": "¿Fusionar interfaces importadas en la configuración actual?",
+      "confirmReplace": "¿Reemplazar todas las interfaces con la configuración importada? Esto no se puede deshacer.",
+      "confirm": "Importar"
+    },
+    "reticulumConfigImportFailed": "Error al importar la configuración.",
+    "reticulumConfigNotFound": "No se encontró ninguna configuración de Reticulum del sistema en las rutas predeterminadas."
+  },
   "nodeDetailModal": {
     "removeFromFavorites": "Eliminar de favoritos",
     "addToFavorites": "Añadir a favoritos",
@@ -2359,7 +2490,9 @@
     "urlBarAria": "Dirección de la página nómada",
     "back": "Atrás",
     "forward": "Adelante",
-    "invalidUrl": "Dirección de página de Nomad no válida"
+    "invalidUrl": "Dirección de página de Nomad no válida",
+    "collapseNodeList": "Contraer lista de nodos",
+    "expandNodeList": "Expandir lista de nodos"
   },
   "packetDistribution": {
     "overallDistribution": "Distribución general",
@@ -3185,6 +3318,20 @@
     "clearAnnouncesDone": "Anuncios borrados.",
     "clearAnnouncesFailed": "No se han podido borrar los anuncios."
   },
+  "reticulumIdentitySwitcher": {
+    "label": "Identidad del activo:",
+    "active": "Identidad activa: {{name}}",
+    "activeBadge": "activo"
+  },
+  "reticulumProfileIcon": {
+    "iconName": "Icono del Avatar",
+    "iconNameAria": "Icono del Avatar",
+    "iconCircle": "Círculo",
+    "iconStar": "Estrella",
+    "iconHeart": "Corazón",
+    "iconShield": "Escudo",
+    "iconUser": "Usuario"
+  },
   "reticulumPropagation": {
     "preferred": "Preferido",
     "setPreferred": "Establecer preferido",
@@ -3214,6 +3361,17 @@
     "autoSyncOption24h": "Cada 24 horas",
     "lastSynced": "Última sincronización: {{time}}",
     "lastRefreshed": "Última actualización {{time}}"
+  },
+  "reticulumPropagationHeader": {
+    "modeLabel": "modo de propagación",
+    "modeAria": "Modo de sincronización de propagación",
+    "modeAuto": "Automático",
+    "modeManual": "Manual",
+    "modeOff": "Apagado",
+    "sync": "Sincronizar",
+    "syncAria": "Sincronizar mensajes de propagación",
+    "cancelSync": "Cancelar",
+    "cancelSyncAria": "Cancelar sincronización de propagación"
   },
   "reticulumTopology": {
     "title": "Topología de red",
@@ -3620,156 +3778,43 @@
     "menuToastAvailableBody": "La versión {{version}} está disponible.",
     "menuToastErrorTitle": "Error en la comprobación de actualizaciones"
   },
-  "diagnosticsPing": {
-    "title": "Ping continuo",
-    "reticulumHint": "Ejecuta ping (RTT) y sonda de ruta (saltos) en cada intervalo mientras la pila se está ejecutando.",
-    "hashLabel": "Hash de destino",
-    "hashPlaceholder": "Hash de destino de 32 caracteres...",
-    "hashAria": "Hash de destino para hacer ping",
-    "intervalLabel": "intervalo de tiempo (en segundos)",
-    "intervalAria": "Segundos entre intentos de ping",
-    "start": "Comienzo",
-    "stop": "Parada",
-    "runOnce": "Hacer ping una vez",
-    "colSeq": "N.º",
-    "colRtt": "RTT",
-    "colHops": "Saltos",
-    "colStatus": "Sincronizar el estado de confirmación de la reserva con el pedido Woo correspondiente",
-    "rttMs": "{{ms}} ms",
-    "statusOk": "OK",
-    "statusFailed": "Error: {{error}}"
+  "messageStatusBadge": {
+    "queuedTooltip": "En cola: se enviará cuando esté conectado",
+    "queuedLabel": "En cola",
+    "blockedDefault": "Bloqueado: no hay clave de cifrado disponible",
+    "blockedLabel": "Bloqueado",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WIFI",
+    "transportBt": "BT",
+    "noAck": "sin ACK",
+    "sending": "Enviando",
+    "delivered": "Entregado",
+    "posted": "Publicado",
+    "failedPost": "Fallo al publicar",
+    "noAckTooltip": "Sin ACK (es posible que el mensaje aún se haya transmitido; no hay otro nodo en el rango para reconocer)",
+    "failed": "Error",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Dispositivo"
   },
-  "reticulumIdentitySwitcher": {
-    "label": "Identidad del activo:",
-    "active": "Identidad activa: {{name}}",
-    "activeBadge": "activo"
-  },
-  "identityVault": {
-    "title": "Repositorio de Identidades",
-    "hint": "Cifre una copia local de su copia de seguridad de identidad con un código de acceso de bóveda. Desbloquear para acceder a operaciones de identidad protegidas.",
-    "passcode": "Código de acceso a la bóveda",
-    "confirmPasscode": "Confirma tu código de acceso",
-    "setPasscode": "Habilitar entorno de seguridad",
-    "unlock": "Desbloquear bóveda",
-    "lock": "Bloquear bóveda",
-    "statusNotConfigured": "Sin configurar",
-    "statusLocked": "Bloqueado",
-    "statusUnlocked": "Desbloqueado",
-    "passcodeTooShort": "debe tener al menos 4 caracteres",
-    "passcodeMismatch": "Los códigos de acceso no coinciden.",
-    "setSuccess": "Código de acceso de bóveda guardado.",
-    "setFailed": "No se ha podido guardar el código de acceso de la bóveda.",
-    "unlockSuccess": "Bóveda desbloqueada.",
-    "unlockFailed": "Código de acceso incorrecto o error de bóveda.",
-    "lockSuccess": "Bóveda bloqueada."
-  },
-  "reticulumPropagationHeader": {
-    "modeLabel": "modo de propagación",
-    "modeAria": "Modo de sincronización de propagación",
-    "modeAuto": "Automático",
-    "modeManual": "Manual",
-    "modeOff": "Apagado",
-    "sync": "Sincronizar",
-    "syncAria": "Sincronizar mensajes de propagación",
-    "cancelSync": "Cancelar",
-    "cancelSyncAria": "Cancelar sincronización de propagación"
-  },
-  "reticulumProfileIcon": {
-    "iconName": "Icono del Avatar",
-    "iconNameAria": "Icono del Avatar",
-    "iconCircle": "Círculo",
-    "iconStar": "Estrella",
-    "iconHeart": "Corazón",
-    "iconShield": "Escudo",
-    "iconUser": "Usuario"
-  },
-  "networkPanel": {
-    "reticulumStackSettings": {
-      "title": "Configuración de pila",
-      "enableTransport": "Habilitar transporte (ruta para otros pares)",
-      "shareInstance": "Compartir instancia Reticulum",
-      "logLevel": "Nivel de registro",
-      "save": "Guardar configuración de pila",
-      "saveFailed": "No se pudo guardar la configuración de la pila."
-    },
-    "reticulumConfigImport": {
-      "title": "Importar config Reticulum",
-      "hint": "Pegue un archivo de configuración estilo rnsd o importe desde el disco. Fusionar agrega/actualiza bloques de interfaz por nombre; reemplazar sobrescribe todas las interfaces.",
-      "pasteLabel": "Contenido del archivo de configuración",
-      "fromFile": "Importar desde archivo…",
-      "fromSystem": "Importar valor predeterminado del sistema",
-      "merge": "Importación de fusión",
-      "replace": "Reemplazar interfaces",
-      "confirmTitle": "Importar config Reticulum",
-      "confirmMerge": "¿Fusionar interfaces importadas en la configuración actual?",
-      "confirmReplace": "¿Reemplazar todas las interfaces con la configuración importada? Esto no se puede deshacer.",
-      "confirm": "Importar"
-    },
-    "reticulumConfigImportFailed": "Error al importar la configuración.",
-    "reticulumConfigNotFound": "No se encontró ninguna configuración de Reticulum del sistema en las rutas predeterminadas."
-  },
-  "adminPanel": {
-    "reticulumFactoryReset": {
-      "title": "Restablecimiento de fábrica",
-      "hint": "Borra identidades, contactos y mensajes de la pila del sidecar. Se conserva la configuración de la interfaz.",
-      "button": "Restablecer datos de la pila",
-      "confirmTitle": "¿Restablecer stack Reticulum?",
-      "confirmBody": "Esto elimina la identidad, los contactos y los mensajes locales del sidecar. Se conserva el archivo de configuración de su interfaz.",
-      "confirm": "Reiniciar"
-    }
-  },
-  "meshcore": {
-    "errors": {
-      "repeaterAuthHint": "Establezca o cambie la contraseña de administrador del repetidor desde el panel de Repetidores (solo sesión).",
-      "connectionFailed": "La conexión falló",
-      "notConnected": "No conectado al dispositivo",
-      "nodeNotFound": "Nodo no encontrado (sin clave de cifrado)",
-      "authenticationFailed": "Error de autenticación",
-      "requestFailed": "Error: {{detail}}",
-      "requestTimedOut": "Se agotó el tiempo de espera de la solicitud (hasta ~{{seconds}}s)",
-      "requestTimedOutApprox": "Se agotó el tiempo de espera de la solicitud (~{{seconds}}s)",
-      "pingNoRoute": "Aún no hay ruta desde la radio: el rastreo de múltiples saltos necesita una ruta sincronizada. Espere las actualizaciones de contactos o vuelva a conectarse.",
-      "bleNoDetails": "Error en la conexión BLE (no hay detalles de error del dispositivo). Inténtelo de nuevo o utilice Serial/USB.",
-      "bleAlreadyInProgress": "La conexión Bluetooth ya está en curso. Espere a que termine o pruebe con Serial/USB.",
-      "bleMissingServices": "El dispositivo no es compatible con el protocolo MeshCore BLE. Asegúrese de que el dispositivo esté ejecutando el firmware MeshCore.",
-      "blePeripheralInUse": "Este dispositivo ya está conectado a través de Meshtastic BLE. Desconéctelo primero antes de conectarse como MeshCore.",
-      "bleTimeoutWebBtHandshake": "Se agotó el tiempo de espera del protocolo de enlace MeshCore (Web Bluetooth). Es posible que la radio necesite un PIN emparejado con Linux primero: use Quitar y volver a emparejar dispositivo e ingrese el PIN que se muestra en el dispositivo, o empareje con bluetoothctl, luego toque Conectar nuevamente.",
-      "bleTimeoutWebBt": "Se agotó el tiempo de espera de la conexión Bluetooth al abrir MeshCore a través de Web Bluetooth. Vuelva a intentarlo, mantenga el dispositivo activo, reinicie BLE en la radio o use Serial/TCP.",
-      "bleTimeoutHandshake": "Bluetooth conectado pero el protocolo de enlace del protocolo MeshCore no se completó antes de la desconexión/tiempo de espera. Vuelva a intentarlo, mantenga el dispositivo activo y cerca, reinicie BLE o use Serial/TCP.",
-      "bleTimeoutNoble": "Se agotó el tiempo de espera de la conexión Bluetooth al abrir MeshCore a través de Noble IPC. Vuelva a intentarlo, apague y encienda BLE en el dispositivo o use Serial/TCP.",
-      "roomPost": {
-        "badState": "Publicación en la sala rechazada (no está conectado a la radio). Cierre sesión, inicie sesión nuevamente y vuelva a intentarlo.",
-        "illegalArg": "Publicación de sala rechazada (formato de mensaje no válido).",
-        "notFound": "Publicación de la sala rechazada (el contacto de la sala no se encuentra en la radio).",
-        "unsupportedCmd": "Publicación en sala rechazada (tipo de mensaje no admitido en la radio). Inicie sesión en la sala y vuelva a intentarlo.",
-        "default": "Publicación de la habitación rechazada por la radio. Cierre sesión, inicie sesión nuevamente y vuelva a intentarlo.",
-        "timeout": "Se agotó el tiempo de espera de la publicación de la sala esperando la radio. Verifique el rango o inténtelo nuevamente."
-      },
-      "roomLogin": {
-        "noRoute": "No hay ruta al servidor de esta sala. Rastrea el nodo desde el mapa o espera a que aparezcan anuncios de ruta y vuelve a intentarlo.",
-        "pathSyncFailed": "No se pudo programar la ruta en su radio antes de iniciar sesión. Vuelva a conectar el dispositivo e inténtelo de nuevo.",
-        "pathSyncFailedDetail": "No se pudo programar la ruta en su radio antes de iniciar sesión. Vuelva a conectar el dispositivo y vuelva a intentarlo.{{detail}}",
-        "rejectedBlankGuest": "Inicio de sesión rechazado. Utilice Continuar como solo lectura para la contraseña de invitado en blanco o pruebe con la contraseña de invitado \"hola\".",
-        "rejectedDefaultGuest": "Inicio de sesión rechazado. Si este servidor no tiene contraseña de invitado, utilice Continuar como solo lectura en lugar de Iniciar sesión. De lo contrario, verifique la contraseña de invitado o administrador.",
-        "rejectedCheckPassword": "Inicio de sesión rechazado. Verifique la contraseña de invitado o administrador para este servidor de sala.",
-        "timedOutBlankGuest": "Se agotó el tiempo de inicio de sesión en la sala. Utilice Continuar como solo lectura para la contraseña de invitado en blanco o pruebe con la contraseña de invitado \"hola\".",
-        "timedOutDefaultGuest": "Se agotó el tiempo de inicio de sesión en la sala. Si este servidor no tiene contraseña de invitado, utilice Continuar como solo lectura en lugar de Iniciar sesión.",
-        "timedOut": "Se agotó el tiempo de inicio de sesión en la sala. Es posible que la habitación esté fuera de alcance o no responda.",
-        "failed": "Error al iniciar sesión en la sala"
-      },
-      "roomLogout": {
-        "timedOut": "Se agotó el tiempo de cierre de sesión de la sala. Es posible que la habitación esté fuera de alcance o no responda.",
-        "rejected": "Cierre de sesión de sala rechazado por radio.",
-        "failed": "No se pudo salir de la habitación"
-      },
-      "repeaterRpcInProgress": "Ya hay una solicitud en curso para este repetidor."
-    },
-    "mqttHints": {
-      "notAuthorized": "Verifique v1_ nombre de usuario, firma del token y audiencia JWT versus corredor; consulte docs/letsmesh-mqtt-auth.md. Utilice Personalizado para pegar un token emitido por el operador si es necesario.",
-      "network": "Verifique la red, DNS, firewall y VPN.",
-      "connackTimeout": "Si no ve ninguna línea anterior de \"error del cliente\", es posible que el protocolo de enlace TLS/WebSocket se esté deteniendo (pruebe con otra red; la aplicación prefiere IPv4 para WSS).",
-      "subscribeFailed": "El corredor puede denegar la suscripción comodín sobre este tema; Es posible que aún lleguen mensajes si el corredor lo permite.",
-      "keepalive": "El servidor dejó de responder a los pings de MQTT (tiempo de espera de inactividad, caída de la red o el agente cerró la sesión). Vuelva a conectarse o verifique su enlace."
-    }
+  "bootSequence": {
+    "booting": "Arrancando pila de malla...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Escaneando canales... {{count}}",
+    "meshtasticScanningChannels": "Escaneando canales configurados...",
+    "databaseNodes_one": "Base de datos: {{count}} nodo sincronizado",
+    "databaseNodes_other": "Base de datos: {{count}} nodos sincronizados",
+    "syncingDatabase": "Sincronizando base de datos de malla...",
+    "interfaceReady": "{{iface}} interfaz lista",
+    "freqMhz": "Freq: {{mhz}} MHz",
+    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
+    "configuringRadio": "Configurando parámetros de radio...",
+    "contacts_one": "Contactos: {{count}} contacto cargado",
+    "contacts_other": "Contactos: {{count}} contactos cargados",
+    "loadingContacts": "Cargando base de datos de contactos...",
+    "routes_one": "Rutas: {{count}} nodo en malla",
+    "routes_other": "Rutas: nodos {{count}} en malla",
+    "routesEstablished": "Rutas establecidas",
+    "meshActive": "Red Activa"
   }
 }

@@ -147,3 +147,60 @@ export function filterMissingKeysToTranslate(enKeys, existingFlat, addedEnglishK
     return addedEnglishKeysSet.has(k);
   });
 }
+
+const DEFAULT_TRANSLATE_DELAY_MS = 300;
+const DEFAULT_LT_CONCURRENCY = 3;
+const MAX_TRANSLATE_DELAY_MS = 5000;
+const MAX_TRANSLATE_CONCURRENCY = 10;
+
+/**
+ * @param {string | undefined} ltUrl
+ * @param {string | undefined} envDelayMs
+ */
+export function resolveTranslateDelayMs(ltUrl, envDelayMs) {
+  if (envDelayMs !== undefined && envDelayMs !== '') {
+    const parsed = Number(envDelayMs);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_TRANSLATE_DELAY_MS;
+  }
+  return ltUrl ? 0 : DEFAULT_TRANSLATE_DELAY_MS;
+}
+
+/**
+ * @param {string | undefined} ltUrl
+ * @param {string | undefined} envConcurrency
+ */
+export function resolveTranslateConcurrency(ltUrl, envConcurrency) {
+  if (envConcurrency !== undefined && envConcurrency !== '') {
+    const parsed = Number(envConcurrency);
+    if (Number.isFinite(parsed) && parsed >= 1) {
+      return Math.min(MAX_TRANSLATE_CONCURRENCY, Math.floor(parsed));
+    }
+  }
+  return ltUrl ? DEFAULT_LT_CONCURRENCY : 1;
+}
+
+/** Increase delay after Google/MyMemory rate-limit responses (cap at MAX_TRANSLATE_DELAY_MS). */
+export function nextDelayAfterRateLimit(currentDelayMs) {
+  const base = Math.max(currentDelayMs, DEFAULT_TRANSLATE_DELAY_MS);
+  return Math.min(MAX_TRANSLATE_DELAY_MS, base * 2);
+}
+
+/**
+ * Run async jobs with bounded concurrency.
+ * @template T
+ * @param {T[]} items
+ * @param {number} concurrency
+ * @param {(item: T, index: number) => Promise<void>} worker
+ */
+export async function mapWithConcurrency(items, concurrency, worker) {
+  const limit = Math.max(1, concurrency);
+  let nextIndex = 0;
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      await worker(items[index], index);
+    }
+  });
+  await Promise.all(runners);
+}

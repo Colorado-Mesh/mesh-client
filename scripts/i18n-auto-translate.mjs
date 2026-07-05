@@ -14,6 +14,10 @@
  *   LIBRETRANSLATE_URL=https://lt.example.com LIBRETRANSLATE_KEY=xxx node scripts/i18n-auto-translate.mjs
  *   MYMEMORY_EMAIL=you@example.com node scripts/i18n-auto-translate.mjs
  *
+ * Throttling (optional env):
+ *   I18N_TRANSLATE_DELAY_MS — ms after each successful call (default 300; 0 when LIBRETRANSLATE_URL set)
+ *   I18N_TRANSLATE_CONCURRENCY — parallel jobs per locale (default 1; default 3 with LibreTranslate)
+ *
  * By default (with git), only keys that are new in en/translation.json vs HEAD are translated
  * for each locale. Use --all or I18N_TRANSLATE_ALL=1 to backfill every key missing from a locale.
  * Use --audit to additionally retranslate any key whose locale value is still identical to English.
@@ -27,6 +31,10 @@ import { fileURLToPath } from 'node:url';
 
 import {
   filterMissingKeysToTranslate,
+  mapWithConcurrency,
+  nextDelayAfterRateLimit,
+  resolveTranslateConcurrency,
+  resolveTranslateDelayMs,
   restorePlaceholders,
   sanitizeLocaleTranslationJsonFileBodyForDisk,
   setDeepLocaleValue,
@@ -35,6 +43,8 @@ import {
 
 /** RFC 6585 / IANA: Too Many Requests (avoid hardcoded status literals for static analysis). */
 const HTTP_STATUS_TOO_MANY_REQUESTS = http2Constants.HTTP_STATUS_TOO_MANY_REQUESTS;
+/** RFC 7231: Service Unavailable — common on unofficial Google translate endpoint. */
+const HTTP_STATUS_SERVICE_UNAVAILABLE = http2Constants.HTTP_STATUS_SERVICE_UNAVAILABLE;
 const MYMEMORY_RATE_LIMIT_CODE = 'MYMEMORY_RATE_LIMIT';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -100,6 +110,23 @@ function readJsonFromGit(refPath) {
 
 // Small delay to be kind to free APIs
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+let translateDelayMs = resolveTranslateDelayMs(LT_URL, process.env.I18N_TRANSLATE_DELAY_MS);
+const translateConcurrency = resolveTranslateConcurrency(
+  LT_URL,
+  process.env.I18N_TRANSLATE_CONCURRENCY,
+);
+
+function noteRateLimitBackoff(provider, status) {
+  translateDelayMs = nextDelayAfterRateLimit(translateDelayMs);
+  console.warn(`  ${provider} rate limit (${status}); delay now ${translateDelayMs}ms`);
+}
+
+async function throttleAfterSuccess() {
+  if (translateDelayMs > 0) {
+    await sleep(translateDelayMs);
+  }
+}
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 15_000) {
   const controller = new AbortController();
@@ -193,11 +220,19 @@ async function translateGoogle(text, targetGoogle) {
   });
   const url = `https://translate.googleapis.com/translate_a/single?${params.toString()}`;
   let lastErr;
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 5; attempt++) {
     if (attempt > 0) {
-      await sleep(500 * attempt);
+      await sleep(Math.min(30_000, 500 * 2 ** attempt));
     }
     const res = await fetchWithTimeout(url);
+    if (
+      res.status === HTTP_STATUS_TOO_MANY_REQUESTS ||
+      res.status === HTTP_STATUS_SERVICE_UNAVAILABLE
+    ) {
+      noteRateLimitBackoff('Google', res.status);
+      lastErr = new Error(`GoogleTranslate ${res.status}`);
+      continue;
+    }
     if (!res.ok) {
       lastErr = new Error(`GoogleTranslate ${res.status}`);
       continue;
@@ -323,7 +358,8 @@ async function main() {
   const apiTag = LT_URL ? `LibreTranslate ${LT_URL}` : 'MyMemory→Google';
   console.log(
     `${apiTag} · ${shortRunMode(translateAllGaps, hasGitBaseline, auditIdentical)} · ` +
-      `${localeRunTotal}/${LANG_CODES.length} locales · ${totalScheduledJobs} jobs`,
+      `${localeRunTotal}/${LANG_CODES.length} locales · ${totalScheduledJobs} jobs · ` +
+      `delay ${translateDelayMs}ms · concurrency ${translateConcurrency}`,
   );
   if (!translateAllGaps && !hasGitBaseline) {
     console.warn('No HEAD:en baseline — not incremental.');
@@ -382,7 +418,7 @@ async function main() {
     const truncateKey = (k) => (k.length > 64 ? `${k.slice(0, 61)}…` : k);
 
     let localeJobDone = 0;
-    for (const key of keysToTranslate) {
+    await mapWithConcurrency(keysToTranslate, translateConcurrency, async (key) => {
       const englishValue = enFlat[key];
       try {
         const translated = await translate(englishValue, lang);
@@ -397,14 +433,14 @@ async function main() {
         ) {
           console.log(`  [${lang.dir}] ${localeJobDone}/${workTotal} · ${truncateKey(key)}`);
         }
-        await sleep(300);
+        await throttleAfterSuccess();
       } catch (err) {
         console.error(
           `  Failed to machine-translate one missing string — locale ${lang.dir}, key "${key}": ${err.message}`,
         );
         failed++;
       }
-    }
+    });
     if (failed > 0) {
       anyKeysFailed = true;
       console.error(

@@ -131,4 +131,24 @@ describe('useMeshtasticRuntime post-reboot recovery', () => {
     expect(disconnectSpy).not.toHaveBeenCalled();
     expect(result.current.state.status).toBe('disconnected');
   });
+
+  it('connectAutomatic retries serial open once after failure', async () => {
+    connectSpy
+      .mockRejectedValueOnce(new Error('serial busy'))
+      .mockResolvedValueOnce('identity-test');
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const { result } = renderHook(() => useMeshtasticRuntime());
+
+    const connectPromise = act(async () => {
+      await result.current.connectAutomatic('serial', undefined, 'port-abc');
+    });
+    await vi.advanceTimersByTimeAsync(2_000);
+    await connectPromise;
+
+    expect(connectSpy).toHaveBeenCalledTimes(2);
+    expect(debugSpy).toHaveBeenCalledWith(
+      '[useMeshtasticRuntime] connectAutomatic serial open failed — retrying once',
+    );
+    debugSpy.mockRestore();
+  });
 });
