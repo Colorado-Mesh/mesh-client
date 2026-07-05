@@ -24,6 +24,20 @@ export function resolveVitestProjectGroupOrder(
   return 0;
 }
 
+/** Max worker count for a Vitest project given host CPU count and env toggles. */
+export function resolveVitestProjectMaxWorkers(
+  projectName: 'renderer-ui' | 'renderer-logic' | 'main',
+  cpuCount: number,
+): number {
+  const rendererUiWorkers = computeVitestMaxWorkers(cpuCount, RENDERER_UI_CPU_RATIO);
+  const nodeWorkers = computeVitestMaxWorkers(cpuCount, NODE_WORKER_CPU_RATIO);
+  if (process.env.VITEST_SEQUENTIAL_PROJECTS === '1') {
+    return projectName === 'renderer-ui' ? rendererUiWorkers : nodeWorkers;
+  }
+  // Vitest requires equal maxWorkers among projects that share sequence.groupOrder.
+  return rendererUiWorkers;
+}
+
 function isFinitePositive(value: number): boolean {
   return Number.isFinite(value) && value > 0;
 }

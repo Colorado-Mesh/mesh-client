@@ -7,6 +7,7 @@ import {
   NODE_WORKER_CPU_RATIO,
   RENDERER_UI_CPU_RATIO,
   resolveVitestProjectGroupOrder,
+  resolveVitestProjectMaxWorkers,
   VITEST_CORE_DEPS,
   VITEST_SERVER_INLINE_DEPS,
 } from './vitest.harness';
@@ -94,6 +95,38 @@ describe('vitest.harness', () => {
       expect(resolveVitestProjectGroupOrder('renderer-ui')).toBe(0);
       expect(resolveVitestProjectGroupOrder('renderer-logic')).toBe(1);
       expect(resolveVitestProjectGroupOrder('main')).toBe(1);
+    } finally {
+      if (prev === undefined) {
+        Reflect.deleteProperty(process.env, 'VITEST_SEQUENTIAL_PROJECTS');
+      } else {
+        process.env.VITEST_SEQUENTIAL_PROJECTS = prev;
+      }
+    }
+  });
+
+  it('resolveVitestProjectMaxWorkers uses renderer-ui pool size for all projects in parallel mode', () => {
+    const prev = process.env.VITEST_SEQUENTIAL_PROJECTS;
+    Reflect.deleteProperty(process.env, 'VITEST_SEQUENTIAL_PROJECTS');
+    try {
+      const uiWorkers = resolveVitestProjectMaxWorkers('renderer-ui', 8);
+      expect(resolveVitestProjectMaxWorkers('renderer-logic', 8)).toBe(uiWorkers);
+      expect(resolveVitestProjectMaxWorkers('main', 8)).toBe(uiWorkers);
+    } finally {
+      if (prev === undefined) {
+        Reflect.deleteProperty(process.env, 'VITEST_SEQUENTIAL_PROJECTS');
+      } else {
+        process.env.VITEST_SEQUENTIAL_PROJECTS = prev;
+      }
+    }
+  });
+
+  it('resolveVitestProjectMaxWorkers uses node pool size for logic/main when VITEST_SEQUENTIAL_PROJECTS=1', () => {
+    const prev = process.env.VITEST_SEQUENTIAL_PROJECTS;
+    process.env.VITEST_SEQUENTIAL_PROJECTS = '1';
+    try {
+      expect(resolveVitestProjectMaxWorkers('renderer-ui', 8)).toBe(4);
+      expect(resolveVitestProjectMaxWorkers('renderer-logic', 8)).toBe(6);
+      expect(resolveVitestProjectMaxWorkers('main', 8)).toBe(6);
     } finally {
       if (prev === undefined) {
         Reflect.deleteProperty(process.env, 'VITEST_SEQUENTIAL_PROJECTS');

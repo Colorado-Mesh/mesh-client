@@ -7,10 +7,8 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 import {
-  computeVitestMaxWorkers,
-  NODE_WORKER_CPU_RATIO,
-  RENDERER_UI_CPU_RATIO,
   resolveVitestProjectGroupOrder,
+  resolveVitestProjectMaxWorkers,
   VITEST_CORE_DEPS,
   VITEST_SERVER_INLINE_DEPS,
 } from './vitest.harness';
@@ -18,16 +16,6 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const srcAlias = { '@': resolve(__dirname, 'src') };
 const cpuCount = os.cpus().length;
-const rendererUiWorkers = computeVitestMaxWorkers(cpuCount, RENDERER_UI_CPU_RATIO);
-const nodeWorkers = computeVitestMaxWorkers(cpuCount, NODE_WORKER_CPU_RATIO);
-const vitestSequentialProjects = process.env.VITEST_SEQUENTIAL_PROJECTS === '1';
-/** Vitest requires equal maxWorkers among projects that share sequence.groupOrder. */
-const parallelProjectMaxWorkers = rendererUiWorkers;
-const rendererUiMaxWorkers = vitestSequentialProjects
-  ? rendererUiWorkers
-  : parallelProjectMaxWorkers;
-const rendererLogicMaxWorkers = vitestSequentialProjects ? nodeWorkers : parallelProjectMaxWorkers;
-const mainMaxWorkers = vitestSequentialProjects ? nodeWorkers : parallelProjectMaxWorkers;
 
 /** Per-project CI shards skip global thresholds; merge job enforces them on combined coverage. */
 const coverageThresholds =
@@ -222,7 +210,7 @@ export default defineConfig({
           include: ['src/renderer/**/*.test.{ts,tsx}'],
           exclude: RENDERER_UI_EXCLUDE,
           pool: 'forks',
-          maxWorkers: rendererUiMaxWorkers,
+          maxWorkers: resolveVitestProjectMaxWorkers('renderer-ui', cpuCount),
           isolate: true,
           fileParallelism: true,
           sequence: { groupOrder: resolveVitestProjectGroupOrder('renderer-ui') },
@@ -240,7 +228,7 @@ export default defineConfig({
           // RENDERER_LOGIC_LIB_GLOB in include matches all lib tests; exclude routes jsdom cases to renderer-ui.
           exclude: RENDERER_LOGIC_EXCLUDE,
           pool: 'threads',
-          maxWorkers: rendererLogicMaxWorkers,
+          maxWorkers: resolveVitestProjectMaxWorkers('renderer-logic', cpuCount),
           isolate: true,
           fileParallelism: true,
           sequence: { groupOrder: resolveVitestProjectGroupOrder('renderer-logic') },
@@ -262,7 +250,7 @@ export default defineConfig({
             'vitest.harness.test.ts',
           ],
           pool: 'forks',
-          maxWorkers: mainMaxWorkers,
+          maxWorkers: resolveVitestProjectMaxWorkers('main', cpuCount),
           isolate: true,
           fileParallelism: true,
           sequence: { groupOrder: resolveVitestProjectGroupOrder('main') },
