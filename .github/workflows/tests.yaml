@@ -12,7 +12,54 @@ on:
 
 jobs:
   tests:
-    name: Unit Tests
+    name: Coverage (${{ matrix.project }})
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [renderer-ui, renderer-logic, main]
+    env:
+      VITEST_COVERAGE_SHARD: '1'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run coverage (${{ matrix.project }})
+        run: >-
+          pnpm run test:coverage
+          -- --project ${{ matrix.project }}
+          --reporter=blob
+          --outputFile.blob=.vitest-reports/blob-${{ matrix.project }}.json
+          --coverage.clean=false
+
+      - name: Upload blob report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: vitest-blob-${{ matrix.project }}
+          path: .vitest-reports/*
+          include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: error
+
+  merge-reports:
+    name: Merge coverage
+    needs: tests
+    if: always() && !cancelled() && needs.tests.result != 'cancelled'
     permissions:
       contents: read
       code-quality: write
@@ -33,8 +80,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run coverage
-        run: pnpm run test:coverage
+      - name: Download blob reports
+        uses: actions/download-artifact@v7
+        with:
+          path: .vitest-reports
+          pattern: vitest-blob-*
+          merge-multiple: true
+
+      - name: Merge coverage reports
+        run: pnpm run test:coverage:merge
 
       - name: Upload coverage report to GitHub
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository

@@ -40,13 +40,11 @@ All steps must pass before a PR can be merged.
 
 Runs on every push and pull request to `main`:
 
-1. Checkout code
-2. Setup pnpm
-3. Setup Node 22
-4. Install dependencies
-5. Run coverage (`pnpm run test:coverage`)
-6. Upload Cobertura coverage to GitHub Code Coverage (non-fork PRs / pushes)
-7. Upload test results artifact (retained 7 days)
+1. Checkout code, setup pnpm + Node 22, install dependencies
+2. **Parallel matrix** — coverage per Vitest project (`renderer-ui`, `renderer-logic`, `main`) with blob reporter (`VITEST_COVERAGE_SHARD=1` skips per-shard threshold checks)
+3. **Merge job** — downloads blob artifacts, runs `pnpm run test:coverage:merge` (enforces global coverage thresholds)
+4. Upload Cobertura coverage to GitHub Code Coverage (non-fork PRs / pushes)
+5. Upload merged test results artifact (retained 7 days)
 
 Test results are available as a downloadable artifact from the workflow run.
 
@@ -219,11 +217,11 @@ Branch protection is configured to require these checks before merging.
 The pre-commit hook (`.githooks/pre-commit`) runs checks beyond what GitHub Actions runs directly:
 
 - **Staged-file** Prettier + markdownlint (not a full-tree `pnpm run format` / `lint:md`)
-- `pnpm dedupe` when any files are staged
-- `pnpm run i18n:auto-translate` (fills new English keys vs `HEAD`) + re-stages locales
-- `pnpm run lint`, `typecheck`, and the full `check:*` chain (including `check:i18n`, `check:electron-security`, `check:flatpak`, `check:db-migrations`, `check:ipc-contract`, `check:silent-catches`, `check:xss-patterns`, and others)
-- `pnpm audit --audit-level=high`, `actionlint`, `yamllint`
-- `pnpm run test:run -- --bail 1`
+- `pnpm dedupe` when dependency manifests are staged
+- `pnpm run i18n:auto-translate` when `en/translation.json` is staged (fills new English keys vs `HEAD`) + re-stages locales
+- `pnpm run lint`, `typecheck`, and the full `check:*` chain (`check:i18n` when English locale staged, else `check:i18n:branch`)
+- `pnpm audit --audit-level=high`; `actionlint` / `yamllint` only when relevant files are staged
+- `pnpm run test:run -- --changed HEAD --bail 1` (full suite when vitest config, shared/preload, vitest setup mocks, or dependency manifests change)
 
 CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage tests. i18n quality is enforced locally via pre-commit and indirectly in CI through Vitest (`locale-quality.test.ts`).
 

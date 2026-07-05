@@ -10,6 +10,20 @@ export const NODE_WORKER_CPU_RATIO = 0.75;
 /** Effective CPU count cap so worker pools stay bounded on many-core hosts. */
 export const MAX_VITEST_CPU_COUNT = 32;
 
+/**
+ * Vitest project groupOrder for multi-project runs.
+ * Default: all projects in group 0 (parallel). Set VITEST_SEQUENTIAL_PROJECTS=1 to run
+ * renderer-ui first, then renderer-logic + main (lower peak memory on constrained hosts).
+ */
+export function resolveVitestProjectGroupOrder(
+  projectName: 'renderer-ui' | 'renderer-logic' | 'main',
+): number {
+  if (process.env.VITEST_SEQUENTIAL_PROJECTS === '1') {
+    return projectName === 'renderer-ui' ? 0 : 1;
+  }
+  return 0;
+}
+
 function isFinitePositive(value: number): boolean {
   return Number.isFinite(value) && value > 0;
 }
