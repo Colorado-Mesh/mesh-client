@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { runMeshcoreRepeaterLogin } from './meshcoreRepeaterLoginRpc';
 import {
+  MC_PUSH_LOGIN_FAIL,
   MC_PUSH_LOGIN_SUCCESS,
   MC_PUSH_STATUS_RESPONSE,
   MC_PUSH_TELEMETRY_RESPONSE,
@@ -76,6 +77,37 @@ describe('runMeshcoreRepeaterLogin', () => {
       pubKeyPrefix: pubKey.subarray(0, 6),
       permissions: 1,
     });
+  });
+
+  it('succeeds when matching LoginFail arrives before LoginSuccess (meshcore.js ignores LoginFail)', async () => {
+    const conn = createMockConn();
+    const pubKey = makePubKey(0xab);
+
+    const loginPromise = runMeshcoreRepeaterLogin(conn, pubKey, 'secret');
+    await Promise.resolve();
+
+    conn.emit(MC_RESP_SENT, { estTimeout: 500 });
+    conn.emit(MC_PUSH_LOGIN_FAIL, { pubKeyPrefix: pubKey.subarray(0, 6) });
+    conn.emit(MC_PUSH_LOGIN_SUCCESS, { pubKeyPrefix: pubKey.subarray(0, 6), permissions: 1 });
+
+    await expect(loginPromise).resolves.toMatchObject({
+      pubKeyPrefix: pubKey.subarray(0, 6),
+      permissions: 1,
+    });
+  });
+
+  it('rejects as timeout after matching LoginFail without LoginSuccess', async () => {
+    const conn = createMockConn();
+    const pubKey = makePubKey(0xcd);
+
+    const loginPromise = runMeshcoreRepeaterLogin(conn, pubKey, 'bad');
+    await Promise.resolve();
+
+    conn.emit(MC_RESP_SENT, { estTimeout: 100 });
+    conn.emit(MC_PUSH_LOGIN_FAIL, { pubKeyPrefix: pubKey.subarray(0, 6) });
+    vi.advanceTimersByTime(100 + 10_000);
+
+    await expect(loginPromise).rejects.toThrow(/^timeout$/i);
   });
 });
 

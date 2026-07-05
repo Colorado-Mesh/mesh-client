@@ -1,4 +1,5 @@
 import {
+  MC_CMD_SEND_BINARY_REQ,
   MC_CMD_SEND_LOGIN,
   MC_CMD_SEND_STATUS_REQ,
   MC_CMD_SEND_TELEMETRY_REQ,
@@ -16,9 +17,11 @@ export interface MeshcoreRadioConnection {
 export type MeshcoreRepeaterRpcConnection = MeshcoreRadioConnection;
 
 export {
+  MC_CMD_SEND_BINARY_REQ,
   MC_CMD_SEND_LOGIN,
   MC_CMD_SEND_STATUS_REQ,
   MC_CMD_SEND_TELEMETRY_REQ,
+  MC_PUSH_BINARY_RESPONSE,
   MC_PUSH_LOGIN_FAIL,
   MC_PUSH_LOGIN_SUCCESS,
   MC_PUSH_STATUS_RESPONSE,
@@ -130,6 +133,20 @@ export function buildSendTelemetryReqFrame(publicKey: Uint8Array): Uint8Array {
   const frame = new Uint8Array(1 + 3 + 32);
   frame[0] = MC_CMD_SEND_TELEMETRY_REQ;
   frame.set(publicKey, 4);
+  return frame;
+}
+
+export function buildSendBinaryReqFrame(
+  publicKey: Uint8Array,
+  requestCodeAndParams: Uint8Array,
+): Uint8Array {
+  if (publicKey.length !== 32) {
+    throw new Error('Binary request requires a 32-byte public key');
+  }
+  const frame = new Uint8Array(1 + 32 + requestCodeAndParams.length);
+  frame[0] = MC_CMD_SEND_BINARY_REQ;
+  frame.set(publicKey, 1);
+  frame.set(requestCodeAndParams, 33);
   return frame;
 }
 

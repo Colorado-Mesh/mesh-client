@@ -3316,7 +3316,8 @@
     "neighborsLastFailedTooltip": "Última solicitud de vecinos fallida: {{error}}",
     "telemetryLastFailedTooltip": "Última solicitud de sensor fallida: {{error}}",
     "cliLastFailedTooltip": "Último comando CLI fallido: {{error}}",
-    "telemetryError": "Error del sensor: {{error}}"
+    "telemetryError": "Error del sensor: {{error}}",
+    "neighborsFailedToast": "Vecinos fallidos: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anuncio (segundos)",

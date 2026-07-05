@@ -467,6 +467,12 @@ export default function RepeatersPanel({
       setExpandedNeighbors((prev) => new Set([...prev, nodeId]));
     } catch (e) {
       console.warn('[RepeatersPanel] requestNeighbors error ' + errLikeToLogString(e));
+      addToast(
+        t('repeatersPanel.neighborsFailedToast', {
+          message: e instanceof Error ? e.message : String(e),
+        }),
+        'error',
+      );
     }
   };
 

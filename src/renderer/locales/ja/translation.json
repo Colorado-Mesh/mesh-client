@@ -3316,7 +3316,8 @@
     "neighborsLastFailedTooltip": "前回の近隣住民リクエストは失敗しました： {{error}}",
     "telemetryLastFailedTooltip": "前回のセンサーリクエストに失敗しました： {{error}}",
     "cliLastFailedTooltip": "最後のCLIコマンドが失敗しました： {{error}}",
-    "telemetryError": "センサーエラー： {{error}}"
+    "telemetryError": "センサーエラー： {{error}}",
+    "neighborsFailedToast": "Neighbors failed: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",

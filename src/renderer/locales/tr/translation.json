@@ -3316,7 +3316,8 @@
     "neighborsLastFailedTooltip": "Son komşu isteği başarısız oldu: {{error}}",
     "telemetryLastFailedTooltip": "Son sensör isteği başarısız oldu: {{error}}",
     "cliLastFailedTooltip": "Son CLI komutu başarısız oldu: {{error}}",
-    "telemetryError": "Sensör hatası: {{error}}"
+    "telemetryError": "Sensör hatası: {{error}}",
+    "neighborsFailedToast": "Komşular başarısız oldu: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Anons aralığı (saniye)",

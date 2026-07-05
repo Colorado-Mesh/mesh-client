@@ -39,6 +39,14 @@ describe('meshcoreMessageI18n', () => {
     expect(isDiagnosticTextI18n(ref) && ref.key).toBe('meshcore.errors.requestTimedOutApprox');
   });
 
+  it('meshcoreRepeaterRpcErrorMessage maps trace-idle timeout to timedOutApprox key', () => {
+    const ref = meshcoreRepeaterRpcErrorMessage('timeout waiting for trace', 120_000);
+    expect(isDiagnosticTextI18n(ref) && ref.key).toBe('meshcore.errors.requestTimedOutApprox');
+    if (isDiagnosticTextI18n(ref)) {
+      expect(ref.params?.seconds).toBe(120);
+    }
+  });
+
   it('meshcoreStoredUserMessage round-trips prefixed refs', () => {
     const stored = meshcoreStoredUserMessage(MESHCORE_ERR_AUTH_FAILED);
     expect(stored.startsWith('\x1eMC_I18N:')).toBe(true);

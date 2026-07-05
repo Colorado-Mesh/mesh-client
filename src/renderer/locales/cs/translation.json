@@ -3316,7 +3316,8 @@
     "neighborsLastFailedTooltip": "Poslední žádost sousedů se nezdařila: {{error}}",
     "telemetryLastFailedTooltip": "Poslední požadavek senzoru se nezdařil: {{error}}",
     "cliLastFailedTooltip": "Poslední příkaz CLI se nezdařil: {{error}}",
-    "telemetryError": "Chyba snímače: {{error}}"
+    "telemetryError": "Chyba snímače: {{error}}",
+    "neighborsFailedToast": "Sousedé selhali: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",

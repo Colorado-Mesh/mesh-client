@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as meshcoreTracePathMultiplex from './meshcoreTracePathMultiplex';
 import {
+  logMeshcoreWaitingMessagesDrainError,
   markMeshcoreCompanionTx,
   resetMeshcoreWaitingMessagesDrainSchedule,
   resetMeshcoreWaitingMessagesDrainState,
@@ -10,6 +12,7 @@ import {
 } from './meshcoreWaitingMessagesDrain';
 import {
   MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS,
+  MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS,
   MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
   MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS,
@@ -91,6 +94,52 @@ describe('scheduleMeshcoreWaitingMessagesDrain', () => {
     await Promise.resolve();
 
     expect(drain).not.toHaveBeenCalled();
+  });
+
+  it('defers drain while a trace awaits TraceData, then retries', async () => {
+    let traceInFlight = true;
+    const inFlightSpy = vi
+      .spyOn(meshcoreTracePathMultiplex, 'meshcoreTraceResponsesInFlightCount')
+      .mockImplementation(() => (traceInFlight ? 1 : 0));
+
+    const drain = vi.fn().mockResolvedValue(undefined);
+    scheduleMeshcoreWaitingMessagesDrain(drain);
+    vi.advanceTimersByTime(MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(drain).not.toHaveBeenCalled();
+
+    traceInFlight = false;
+    vi.advanceTimersByTime(MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS);
+    vi.advanceTimersByTime(MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS);
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(drain).toHaveBeenCalledTimes(1);
+    inFlightSpy.mockRestore();
+  });
+});
+
+describe('logMeshcoreWaitingMessagesDrainError', () => {
+  it('logs silent timeouts at debug', () => {
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    logMeshcoreWaitingMessagesDrainError(
+      'initConn drain',
+      new Error('timed out after 15000ms'),
+      false,
+    );
+    expect(debugSpy).toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
+    debugSpy.mockRestore();
+    warnSpy.mockRestore();
+  });
+
+  it('logs manual sync failures at warn', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    logMeshcoreWaitingMessagesDrainError('manual sync', new Error('timed out after 60000ms'), true);
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 });
 

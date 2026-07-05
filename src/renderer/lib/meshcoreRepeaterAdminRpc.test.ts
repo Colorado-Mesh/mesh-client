@@ -13,10 +13,10 @@ import { meshcoreRepeaterRpcTimeoutMs } from './timeConstants';
  * Ping/trace uses hashed path bytes; 0-hop may escalate to full pubkey on direct retry only.
  */
 describe('meshcore repeater admin RPC contracts', () => {
-  it('0-hop status/telemetry use hop-scaled RPC timeout (30s base)', () => {
-    expect(meshcoreRepeaterRpcTimeoutMs(0)).toBe(30_000);
+  it('0-hop status/telemetry use flat 120s repeater RPC timeout', () => {
     expect(MESHCORE_STATUS_TIMEOUT_MS).toBe(120_000);
     expect(MESHCORE_TELEMETRY_TIMEOUT_MS).toBe(120_000);
+    expect(meshcoreRepeaterRpcTimeoutMs(0)).toBe(30_000);
   });
 
   it('neighbors uses the legacy 120s flat timeout (not hop-scaled 30s)', () => {

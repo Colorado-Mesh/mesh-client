@@ -8,6 +8,7 @@ export const MC_PUSH_LOGIN_SUCCESS = 0x85;
 export const MC_PUSH_LOGIN_FAIL = 0x86;
 export const MC_PUSH_STATUS_RESPONSE = 0x87;
 export const MC_PUSH_TELEMETRY_RESPONSE = 0x8b;
+export const MC_PUSH_BINARY_RESPONSE = 0x8c;
 
 /** meshcore.js CommandCodes */
 export const MC_CMD_SEND_TXT_MSG = 2;
@@ -15,3 +16,4 @@ export const MC_CMD_SEND_LOGIN = 26;
 export const MC_CMD_SEND_STATUS_REQ = 27;
 export const MC_CMD_LOGOUT = 29;
 export const MC_CMD_SEND_TELEMETRY_REQ = 39;
+export const MC_CMD_SEND_BINARY_REQ = 50;

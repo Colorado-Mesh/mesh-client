@@ -3316,7 +3316,8 @@
     "neighborsLastFailedTooltip": "Permohonan tetangga terakhir gagal: {{error}}",
     "telemetryLastFailedTooltip": "Permintaan sensor terakhir gagal: {{error}}",
     "cliLastFailedTooltip": "Perintah CLI terakhir gagal: {{error}}",
-    "telemetryError": "Kesalahan sensor: {{error}}"
+    "telemetryError": "Kesalahan sensor: {{error}}",
+    "neighborsFailedToast": "Tetangga gagal: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",

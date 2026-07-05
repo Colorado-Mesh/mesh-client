@@ -11,19 +11,27 @@ import {
   pubKeyPrefixesEqual,
   unknownToError,
 } from './meshcoreRepeaterRpcCommon';
+import {
+  type MeshcoreRepeaterRunSerialized,
+  runMeshcoreRepeaterQueuedSend,
+} from './meshcoreRepeaterRpcQueuedSend';
 
 /** Default extra timeout added to radio estTimeout for repeater admin login. */
 export const MESHCORE_REPEATER_LOGIN_EXTRA_TIMEOUT_MS = 10_000;
 
 /**
  * Resilient repeater admin login: keeps listening for LoginSuccess until prefix matches or timeout.
- * Replaces meshcore.js `login()` which uses `once(LoginSuccess)` and drops mismatched pushes.
+ * Matches meshcore.js `login()` — LoginFail is not an immediate reject (companion may emit it
+ * before a later LoginSuccess on congested links). Timeout after LoginFail is reported as timeout,
+ * not wrong password (LoginFail alone is not proof of bad credentials on busy links).
  */
 export function runMeshcoreRepeaterLogin(
   conn: MeshcoreRadioConnection,
   contactPublicKey: Uint8Array,
   password: string,
   extraTimeoutMs: number = MESHCORE_REPEATER_LOGIN_EXTRA_TIMEOUT_MS,
+  runSerialized?: MeshcoreRepeaterRunSerialized,
+  beforeSend?: () => Promise<void>,
 ): Promise<MeshcoreRepeaterLoginResponse> {
   const expectedPrefix = contactPublicKey.subarray(0, 6);
 
@@ -83,17 +91,22 @@ export function runMeshcoreRepeaterLogin(
         );
         return;
       }
-      fail(new Error('repeater login rejected (wrong password or ACL denied)'));
+      console.debug(
+        `[meshcoreRepeaterLoginRpc] LoginFail prefix=${prefixToHex(prefix)} (waiting for possible LoginSuccess)`,
+      );
+    };
+
+    const armResponseTimeout = (estTimeoutMs: number): void => {
+      responseTimeoutId = setTimeout(() => {
+        fail('timeout');
+      }, estTimeoutMs + extraTimeoutMs);
     };
 
     const onSent = (response: unknown): void => {
       conn.off(MC_RESP_SENT, onSent);
       conn.off(MC_RESP_ERR, onErr);
       const r = response as { estTimeout?: number };
-      const estTimeout = (r.estTimeout ?? 0) + extraTimeoutMs;
-      responseTimeoutId = setTimeout(() => {
-        fail('timeout');
-      }, estTimeout);
+      armResponseTimeout(r.estTimeout ?? 0);
     };
 
     const onErr = (): void => {
@@ -102,13 +115,23 @@ export function runMeshcoreRepeaterLogin(
 
     conn.on(MC_PUSH_LOGIN_SUCCESS, onLoginSuccess);
     conn.on(MC_PUSH_LOGIN_FAIL, onLoginFail);
+
+    const sendLogin = (): Promise<void> =>
+      conn.sendToRadioFrame(buildSendLoginFrame(contactPublicKey, password));
+
+    if (runSerialized) {
+      void runMeshcoreRepeaterQueuedSend(conn, runSerialized, sendLogin, beforeSend)
+        .then(({ estTimeoutMs }) => {
+          armResponseTimeout(estTimeoutMs);
+        })
+        .catch(fail);
+      return;
+    }
+
     conn.on(MC_RESP_SENT, onSent);
     conn.on(MC_RESP_ERR, onErr);
-
-    void conn
-      .sendToRadioFrame(buildSendLoginFrame(contactPublicKey, password))
-      .catch((err: unknown) => {
-        fail(err);
-      });
+    void sendLogin().catch((err: unknown) => {
+      fail(err);
+    });
   });
 }

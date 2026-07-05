@@ -10,6 +10,8 @@ export {
 
 /** MeshCore Ping (`tracePath`) end-to-end cap (queue wait + radio); see `MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS`. */
 export const MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS = 180_000;
+/** Max wait for admin RPCs while a same-node ping RPC (incl. 0-hop direct retry) is still running. */
+export const MESHCORE_REPEATER_PING_SETTLE_MAX_MS = 2 * MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS;
 
 /**
  * Max wait for `RESP_CODE_SENT` after `CMD_SEND_TRACE_PATH`. If the companion never acks, the
@@ -157,11 +159,13 @@ export const MESHCORE_WAITING_MESSAGES_POLL_MS = 5 * MS_PER_MINUTE;
 /** Max wait for manual Chat Sync now when a MsgWaiting backlog is confirmed. */
 export const MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS = 60_000;
 /** Fail-fast timeout for silent auto-drains (event 131, connect, poll). */
-export const MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS = 15 * MS_PER_SECOND;
+export const MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS = 45 * MS_PER_SECOND;
 /** Coalesce rapid MsgWaiting (131) pushes into one drain. */
 export const MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS = 1_500;
 /** Defer auto-drain after companion TX so syncNextMessage is not issued mid-send. */
 export const MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS = 2 * MS_PER_SECOND;
+/** Retry silent auto-drain when a ping/trace still awaits TraceData on the companion link. */
+export const MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS = 3 * MS_PER_SECOND;
 /** Yield the event loop while ingesting queued companion messages. */
 export const MESHCORE_WAITING_MESSAGES_BATCH_YIELD = 25;
 

@@ -406,6 +406,8 @@ export async function meshcoreRoomTryAdminLogin(
   });
 }
 
+import type { MeshcoreRepeaterRunSerialized } from './meshcoreRepeaterRpcQueuedSend';
+
 /** Repeater admin login or room server admin login depending on contact type. */
 export type MeshcoreRemoteServerLoginConn = MeshcoreRepeaterLoginConn;
 
@@ -414,11 +416,12 @@ export async function meshcoreTryRemoteServerLogin(
   nodeId: number,
   pubKey: Uint8Array,
   hwModel: string | undefined,
+  runSerialized?: MeshcoreRepeaterRunSerialized,
 ): Promise<void> {
   if (hwModel === 'Room') {
     await meshcoreRoomTryAdminLogin(conn, nodeId, pubKey);
     return;
   }
-  const login = await meshcoreRepeaterTryLogin(conn, pubKey, nodeId);
+  const login = await meshcoreRepeaterTryLogin(conn, pubKey, nodeId, runSerialized);
   assertMeshcoreRepeaterLoginOk(login);
 }

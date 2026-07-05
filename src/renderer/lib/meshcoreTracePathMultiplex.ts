@@ -32,14 +32,23 @@ interface PendingTrace {
 /** TraceData responses in flight (send passed the companion queue; radio may still be tracing). */
 let traceResponsesInFlight = 0;
 
+/** Traces registered in the multiplex pending map (includes pre-SENT and awaiting TraceData). */
+let tracePendingRouteCount = 0;
+
 /** Count of traces awaiting TraceData after the companion accepted SendTracePath. */
 export function meshcoreTraceResponsesInFlightCount(): number {
   return traceResponsesInFlight;
 }
 
+/** Pending trace routes not yet settled (queued send, awaiting SENT, or awaiting TraceData). */
+export function meshcoreTracePendingRouteCount(): number {
+  return tracePendingRouteCount;
+}
+
 /** @internal Test hook */
 export function resetMeshcoreTraceResponsesInFlightForTests(): void {
   traceResponsesInFlight = 0;
+  tracePendingRouteCount = 0;
 }
 
 function incrementTraceResponsesInFlight(): void {
@@ -184,13 +193,20 @@ function unknownToError(e: unknown, fallback: string): Error {
  * (via `runSerialized`), while multiple traces can wait for `TraceData` at the same time; responses
  * are matched by the 32-bit tag (same as meshcore.js `tracePath`, but shared `TraceData` listener).
  */
-export function runMeshcoreTracePathMultiplexed(
+export interface MeshcoreTracePathHandle {
+  promise: Promise<MeshcoreTracePathResult>;
+  /** Drop pending TraceData wait and release admin-RF idle counters (e.g. outer withTimeout). */
+  cancel: (reason?: string) => void;
+}
+
+export function startMeshcoreTracePathMultiplexed(
   conn: MeshcoreTracePathConnection,
   path: Uint8Array,
   extraTimeoutMillis: number,
   runSerialized: <T>(fn: () => Promise<T>) => Promise<T>,
-): Promise<MeshcoreTracePathResult> {
-  return new Promise((resolve, reject) => {
+): MeshcoreTracePathHandle {
+  let cancelFn: ((reason?: string) => void) | undefined;
+  const promise = new Promise<MeshcoreTracePathResult>((resolve, reject) => {
     let tag = randomTraceTag();
     const state = getMuxState(conn);
     while (state.pendingByTag.has(tag)) {
@@ -212,7 +228,12 @@ export function runMeshcoreTracePathMultiplexed(
       if (traceTimeoutId !== undefined) clearTimeout(traceTimeoutId);
       releaseAwaitingResponse();
       state.pendingByTag.delete(tag);
+      tracePendingRouteCount = Math.max(0, tracePendingRouteCount - 1);
       reject(unknownToError(e, 'trace failed'));
+    };
+
+    cancelFn = (reason = 'cancelled') => {
+      fail(new Error(reason));
     };
 
     const succeed = (r: MeshcoreTracePathResult) => {
@@ -221,6 +242,7 @@ export function runMeshcoreTracePathMultiplexed(
       if (traceTimeoutId !== undefined) clearTimeout(traceTimeoutId);
       releaseAwaitingResponse();
       state.pendingByTag.delete(tag);
+      tracePendingRouteCount = Math.max(0, tracePendingRouteCount - 1);
       resolve(r);
     };
 
@@ -229,6 +251,7 @@ export function runMeshcoreTracePathMultiplexed(
       reject: fail,
     };
     state.pendingByTag.set(tag, pending);
+    tracePendingRouteCount += 1;
 
     void runSerialized(async () => {
       try {
@@ -280,4 +303,17 @@ export function runMeshcoreTracePathMultiplexed(
       }
     }).catch(fail);
   });
+  return {
+    promise,
+    cancel: (reason?: string) => cancelFn?.(reason),
+  };
+}
+
+export function runMeshcoreTracePathMultiplexed(
+  conn: MeshcoreTracePathConnection,
+  path: Uint8Array,
+  extraTimeoutMillis: number,
+  runSerialized: <T>(fn: () => Promise<T>) => Promise<T>,
+): Promise<MeshcoreTracePathResult> {
+  return startMeshcoreTracePathMultiplexed(conn, path, extraTimeoutMillis, runSerialized).promise;
 }

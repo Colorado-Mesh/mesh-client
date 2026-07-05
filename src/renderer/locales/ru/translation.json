@@ -3316,7 +3316,8 @@
     "neighborsLastFailedTooltip": "Последний запрос соседей не удался: {{error}}",
     "telemetryLastFailedTooltip": "Не удалось выполнить последний запрос датчика: {{error}}",
     "cliLastFailedTooltip": "Не удалось выполнить последнюю команду CLI: {{error}}",
-    "telemetryError": "Ошибка датчика: {{error}}"
+    "telemetryError": "Ошибка датчика: {{error}}",
+    "neighborsFailedToast": "Ошибка соседей: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Объявить интервал (секунды)",

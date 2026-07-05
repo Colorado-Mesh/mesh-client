@@ -7,13 +7,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { pubkeyToNodeId } from '../lib/meshcoreUtils';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 
-const { runMeshcoreTracePathMultiplexedMock } = vi.hoisted(() => ({
-  runMeshcoreTracePathMultiplexedMock: vi.fn(),
+const { startMeshcoreTracePathMultiplexedMock } = vi.hoisted(() => ({
+  startMeshcoreTracePathMultiplexedMock: vi.fn(),
 }));
 vi.mock('../lib/meshcoreTracePathMultiplex', async (importOriginal) => {
   const actual = await importOriginal();
   return Object.assign({}, actual, {
-    runMeshcoreTracePathMultiplexed: runMeshcoreTracePathMultiplexedMock,
+    startMeshcoreTracePathMultiplexed: (...args: unknown[]) => {
+      const promise = startMeshcoreTracePathMultiplexedMock(...args);
+      return {
+        promise,
+        cancel: vi.fn(),
+      };
+    },
   });
 });
 import {
@@ -269,7 +275,7 @@ describe('useMeshcoreRuntime refreshNodesFromDb hop preservation', () => {
 describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
   beforeEach(() => {
     resetMeshcoreRuntimeElectronMocks();
-    runMeshcoreTracePathMultiplexedMock.mockResolvedValue({
+    startMeshcoreTracePathMultiplexedMock.mockResolvedValue({
       pathLen: 2,
       pathHashes: [1, 2],
       pathSnrs: [4, 8],
@@ -361,7 +367,7 @@ describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
 describe('useMeshcoreRuntime traceRoute path outcome attribution', () => {
   beforeEach(() => {
     resetMeshcoreRuntimeElectronMocks();
-    runMeshcoreTracePathMultiplexedMock.mockResolvedValue({
+    startMeshcoreTracePathMultiplexedMock.mockResolvedValue({
       pathLen: 2,
       pathHashes: [1, 2],
       pathSnrs: [4, 8],
@@ -436,7 +442,7 @@ describe('useMeshcoreRuntime traceRoute path outcome attribution', () => {
   });
 
   it('records failure outcome for traceRoute errors on the used path hash', async () => {
-    runMeshcoreTracePathMultiplexedMock.mockRejectedValueOnce(new Error('trace timeout'));
+    startMeshcoreTracePathMultiplexedMock.mockRejectedValueOnce(new Error('trace timeout'));
     const dbOutcomeSpy = vi.spyOn(window.electronAPI.db, 'recordMeshcorePathOutcome');
     const pathBytes = [0x11, 0x22];
     const pathHash = computePathHash(pathBytes);

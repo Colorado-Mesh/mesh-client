@@ -3330,6 +3330,7 @@
     "waitForPingBeforeStatus": "Waiting for in-progress ping to finish before status request.",
     "statusFailedToast": "Status failed: {{message}}",
     "pingFailedToast": "Ping failed: {{message}}",
+    "neighborsFailedToast": "Neighbors failed: {{message}}",
     "removeFailedToast": "Remove failed: {{message}}",
     "actionErrorCli": "CLI: {{error}}",
     "snrFromStatusTooltip": "SNR from repeater status",

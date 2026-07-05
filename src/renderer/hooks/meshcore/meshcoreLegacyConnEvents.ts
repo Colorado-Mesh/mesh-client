@@ -63,6 +63,8 @@ import {
   pubkeyToNodeId,
 } from '../../lib/meshcoreUtils';
 import {
+  isMeshcoreCompanionDrainDeferred,
+  logMeshcoreWaitingMessagesDrainError,
   resetMeshcoreWaitingMessagesDrainSchedule,
   scheduleMeshcoreWaitingMessagesDrain,
   shouldActivateWaitingMessagesBanner,
@@ -601,6 +603,16 @@ export function attachMeshcoreLegacyConnEvents(
       return getMeshcoreProcessWaitingMessagesInFlight()!;
     }
     const showSyncBanner = options?.showSyncBanner !== false;
+    if (!showSyncBanner && isMeshcoreCompanionDrainDeferred()) {
+      scheduleMeshcoreWaitingMessagesDrain(
+        () =>
+          processWaitingMessages(options).catch((e: unknown) => {
+            logMeshcoreWaitingMessagesDrainError('getWaitingMessages error', e, false);
+          }),
+        { isMounted: () => meshcoreHookMountedRef.current },
+      );
+      return Promise.resolve();
+    }
     const inFlight = (async () => {
       const startedAt = Date.now();
       let bannerActive = false;
@@ -826,8 +838,9 @@ export function attachMeshcoreLegacyConnEvents(
         try {
           await processWaitingMessages({ showSyncBanner: false });
         } catch (e) {
+          // catch-no-log-ok logMeshcoreWaitingMessagesDrainError handles logging
           const errMsg = errLikeToLogString(e);
-          console.warn('[useMeshcoreRuntime] getWaitingMessages error ' + errMsg);
+          logMeshcoreWaitingMessagesDrainError('getWaitingMessages error', e, false);
           if (errMsg.includes('timed out')) {
             return;
           }

@@ -10,6 +10,10 @@ import {
   pubKeyPrefixesEqual,
   unknownToError,
 } from './meshcoreRepeaterRpcCommon';
+import {
+  type MeshcoreRepeaterRunSerialized,
+  runMeshcoreRepeaterQueuedSend,
+} from './meshcoreRepeaterRpcQueuedSend';
 
 /**
  * Resilient telemetry request: keeps listening for TelemetryResponse until prefix matches or timeout.
@@ -19,6 +23,8 @@ export function runMeshcoreRepeaterTelemetryRequest(
   conn: MeshcoreRadioConnection,
   contactPublicKey: Uint8Array,
   extraTimeoutMs: number,
+  runSerialized?: MeshcoreRepeaterRunSerialized,
+  beforeSend?: () => Promise<void>,
 ): Promise<MeshcoreRepeaterTelemetryPush> {
   const expectedPrefix = contactPublicKey.subarray(0, 6);
 
@@ -67,14 +73,17 @@ export function runMeshcoreRepeaterTelemetryRequest(
       succeed(r);
     };
 
+    const armResponseTimeout = (estTimeoutMs: number): void => {
+      responseTimeoutId = setTimeout(() => {
+        fail('timeout');
+      }, estTimeoutMs + extraTimeoutMs);
+    };
+
     const onSent = (response: unknown): void => {
       conn.off(MC_RESP_SENT, onSent);
       conn.off(MC_RESP_ERR, onErr);
       const r = response as { estTimeout?: number };
-      const estTimeout = (r.estTimeout ?? 0) + extraTimeoutMs;
-      responseTimeoutId = setTimeout(() => {
-        fail('timeout');
-      }, estTimeout);
+      armResponseTimeout(r.estTimeout ?? 0);
     };
 
     const onErr = (): void => {
@@ -82,6 +91,21 @@ export function runMeshcoreRepeaterTelemetryRequest(
     };
 
     conn.on(MC_PUSH_TELEMETRY_RESPONSE, onTelemetryResponsePush);
+
+    if (runSerialized) {
+      void runMeshcoreRepeaterQueuedSend(
+        conn,
+        runSerialized,
+        () => conn.sendToRadioFrame(buildSendTelemetryReqFrame(contactPublicKey)),
+        beforeSend,
+      )
+        .then(({ estTimeoutMs }) => {
+          armResponseTimeout(estTimeoutMs);
+        })
+        .catch(fail);
+      return;
+    }
+
     conn.on(MC_RESP_SENT, onSent);
     conn.on(MC_RESP_ERR, onErr);
 

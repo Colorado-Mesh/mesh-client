@@ -1,8 +1,11 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
+import { MESHCORE_TELEMETRY_TIMEOUT_MS } from '../hooks/meshcore/meshcoreHookPreamble';
 import { getMeshcoreRepeaterCredential } from './meshcoreRepeaterCredentialStorage';
 import { runMeshcoreRepeaterLogin } from './meshcoreRepeaterLoginRpc';
 import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
+import type { MeshcoreRepeaterRunSerialized } from './meshcoreRepeaterRpcQueuedSend';
+import { awaitMeshcoreRepeaterAdminRfIdle } from './meshcoreTraceRadioIdle';
 
 /** Minimal connection surface for repeater admin login RPC. */
 export type MeshcoreRepeaterLoginConn = MeshcoreRadioConnection;
@@ -72,15 +75,39 @@ export async function meshcoreRepeaterTryLogin(
   conn: MeshcoreRepeaterLoginConn,
   pubKey: Uint8Array,
   nodeId: number,
+  runSerialized?: MeshcoreRepeaterRunSerialized,
+  extraTimeoutMs: number = MESHCORE_TELEMETRY_TIMEOUT_MS,
 ): Promise<MeshcoreRepeaterTryLoginResult> {
   const { password, fromPersisted } = resolveRepeaterPassword(nodeId);
   if (!password) {
     return { attempted: false, ok: true, fromPersisted: false };
   }
+  const attempt = async (): Promise<void> => {
+    await runMeshcoreRepeaterLogin(
+      conn,
+      pubKey,
+      password,
+      extraTimeoutMs,
+      runSerialized,
+      runSerialized ? awaitMeshcoreRepeaterAdminRfIdle : undefined,
+    );
+  };
   try {
-    await runMeshcoreRepeaterLogin(conn, pubKey, password);
+    await attempt();
     return { attempted: true, ok: true, fromPersisted };
   } catch (e) {
+    const msg = errLikeToLogString(e).toLowerCase();
+    if (msg.includes('timeout') || msg.includes('timed out')) {
+      try {
+        await attempt();
+        return { attempted: true, ok: true, fromPersisted };
+      } catch (retryErr) {
+        console.warn(
+          '[meshcoreRepeaterSession] repeater login retry failed ' + errLikeToLogString(retryErr),
+        );
+        return { attempted: true, ok: false, fromPersisted, error: retryErr };
+      }
+    }
     console.warn(
       '[meshcoreRepeaterSession] repeater login failed (continuing) ' + errLikeToLogString(e),
     );

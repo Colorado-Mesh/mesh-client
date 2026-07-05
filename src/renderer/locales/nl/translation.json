@@ -3316,7 +3316,8 @@
     "neighborsLastFailedTooltip": "Verzoek laatste buren mislukt: {{error}}",
     "telemetryLastFailedTooltip": "Laatste sensorverzoek mislukt: {{error}}",
     "cliLastFailedTooltip": "Laatste CLI-opdracht mislukt: {{error}}",
-    "telemetryError": "Sensorfout: {{error}}"
+    "telemetryError": "Sensorfout: {{error}}",
+    "neighborsFailedToast": "Buren mislukt: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",

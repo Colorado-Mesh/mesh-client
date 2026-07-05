@@ -2,8 +2,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { setMeshcoreRepeaterCredential } from './meshcoreRepeaterCredentialStorage';
+import { MESHCORE_REPEATER_LOGIN_EXTRA_TIMEOUT_MS } from './meshcoreRepeaterLoginRpc';
 import type { MeshcoreRadioConnection } from './meshcoreRepeaterRpcCommon';
-import { MC_PUSH_LOGIN_SUCCESS, MC_RESP_SENT } from './meshcoreRepeaterRpcCommon';
+import {
+  MC_PUSH_LOGIN_FAIL,
+  MC_PUSH_LOGIN_SUCCESS,
+  MC_RESP_ERR,
+  MC_RESP_SENT,
+} from './meshcoreRepeaterRpcCommon';
 import {
   assertMeshcoreRepeaterLoginOk,
   clearAllMeshcoreRepeaterEphemeralPasswords,
@@ -99,14 +105,46 @@ describe('meshcoreRepeaterTryLogin', () => {
     expect(result.fromPersisted).toBe(false);
   });
 
-  it('assertMeshcoreRepeaterLoginOk throws auth failure for rejected login', async () => {
+  it('assertMeshcoreRepeaterLoginOk maps login timeout-after-LoginFail to timeout (not auth)', async () => {
+    vi.useFakeTimers();
+    try {
+      const conn = createMockConn();
+      const pubKey = new Uint8Array(32);
+      pubKey[0] = 0x77;
+      setMeshcoreRepeaterEphemeralPassword(0x77, 'bad');
+      const loginPromise = meshcoreRepeaterTryLogin(
+        conn,
+        pubKey,
+        0x77,
+        undefined,
+        MESHCORE_REPEATER_LOGIN_EXTRA_TIMEOUT_MS,
+      );
+      const failAttempt = async (): Promise<void> => {
+        await Promise.resolve();
+        conn.emit(MC_RESP_SENT, { estTimeout: 100 });
+        conn.emit(MC_PUSH_LOGIN_FAIL, { pubKeyPrefix: pubKey.subarray(0, 6) });
+        vi.advanceTimersByTime(100 + MESHCORE_REPEATER_LOGIN_EXTRA_TIMEOUT_MS);
+        await Promise.resolve();
+      };
+      await failAttempt();
+      await failAttempt();
+      const result = await loginPromise;
+      expect(() => {
+        assertMeshcoreRepeaterLoginOk(result);
+      }).toThrow(/^timeout$/i);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('assertMeshcoreRepeaterLoginOk throws auth failure for radio-rejected login', async () => {
     const conn = createMockConn();
     const pubKey = new Uint8Array(32);
-    setMeshcoreRepeaterEphemeralPassword(0x77, 'bad');
-    const loginPromise = meshcoreRepeaterTryLogin(conn, pubKey, 0x77);
-    conn.emit(MC_RESP_SENT, { estTimeout: 100 });
-    const { MC_PUSH_LOGIN_FAIL } = await import('./meshcoreRepeaterRpcCommon');
-    conn.emit(MC_PUSH_LOGIN_FAIL, { pubKeyPrefix: pubKey.subarray(0, 6) });
+    pubKey[0] = 0x88;
+    setMeshcoreRepeaterEphemeralPassword(0x88, 'bad');
+    const loginPromise = meshcoreRepeaterTryLogin(conn, pubKey, 0x88);
+    await Promise.resolve();
+    conn.emit(MC_RESP_ERR);
     const result = await loginPromise;
     expect(() => {
       assertMeshcoreRepeaterLoginOk(result);

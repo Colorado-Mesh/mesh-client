@@ -129,6 +129,20 @@ describe('RepeatersPanel', () => {
     expect(mockAddToast).toHaveBeenCalledWith(expect.stringContaining('radio timeout'), 'error');
   });
 
+  it('shows error toast when requestNeighbors fails', async () => {
+    const props = makeBaseProps();
+    props.onRequestNeighbors = vi.fn().mockRejectedValue(new Error('neighbors timeout'));
+
+    render(<RepeatersPanel {...props} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Repeater neighbors' }));
+
+    expect(warnSpy).toHaveBeenCalled();
+    expect(mockAddToast).toHaveBeenCalledWith(
+      expect.stringContaining('neighbors timeout'),
+      'error',
+    );
+  });
+
   it('shows error toast when ping fails', async () => {
     const props = makeBaseProps();
     props.onPing = vi.fn().mockRejectedValue(new Error('ping timeout'));
