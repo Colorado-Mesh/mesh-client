@@ -15,6 +15,7 @@ import { tmpdir } from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { findAppArchive } from './find-nsis-app-archive.mjs';
+import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -94,8 +95,8 @@ function dumpDir(logLabel, dirPath, maxDepth = 1) {
   list(dirPath, '  ', 0);
 }
 
-/** @param {string} installerPath @param {string} outDir */
-function probe7zExtract(installerPath, outDir) {
+/** @param {string} installerPath @param {string} outDir @param {'x64' | 'arm64'} arch */
+function probe7zExtract(installerPath, outDir, arch) {
   if (process.platform !== 'win32') {
     console.debug('[test-win-nsis-install] Skipping --probe-7z (not Windows)');
     return;
@@ -131,8 +132,14 @@ function probe7zExtract(installerPath, outDir) {
 
   const exePath = path.join(archiveDir, APP_EXE);
   assertExe(`7z probe ${APP_EXE}`, exePath);
+  assertBundledReticulumSidecarInBundle({
+    label: `7z probe ${arch} Reticulum sidecar`,
+    platform: 'win32',
+    bundleRoot: archiveDir,
+    fail,
+  });
   console.debug(
-    `[test-win-nsis-install] OK — ${APP_EXE} present after 7z probe (${appArchiveName})`,
+    `[test-win-nsis-install] OK — ${APP_EXE} + Reticulum sidecar present after 7z probe (${appArchiveName})`,
   );
 }
 
@@ -151,7 +158,7 @@ function main(arch, probe7z) {
   }
 
   if (probe7z) {
-    probe7zExtract(installerPath, path.join(tmpdir(), 'mesh-client-7z-probe'));
+    probe7zExtract(installerPath, path.join(tmpdir(), 'mesh-client-7z-probe'), arch);
   }
 
   const localAppData = process.env.LOCALAPPDATA;
@@ -186,7 +193,15 @@ function main(arch, probe7z) {
   }
 
   assertExe(`installed ${APP_EXE}`, exePath);
-  console.debug(`[test-win-nsis-install] OK — ${arch} NSIS install left ${exePath}`);
+  assertBundledReticulumSidecarInBundle({
+    label: `installed ${arch} Reticulum sidecar`,
+    platform: 'win32',
+    bundleRoot: instDir,
+    fail,
+  });
+  console.debug(
+    `[test-win-nsis-install] OK — ${arch} NSIS install left ${exePath} with bundled Reticulum sidecar`,
+  );
 }
 
 const args = process.argv.slice(2);

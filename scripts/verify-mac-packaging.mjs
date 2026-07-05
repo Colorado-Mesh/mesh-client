@@ -8,6 +8,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -83,6 +84,12 @@ function main() {
       const bundleName = path.basename(bundle);
       assertMinSize(`macOS launcher in ${bundleName}`, launcherPath, MIN_LAUNCHER_BYTES);
       assertMinSize(`Electron Framework in ${bundleName}`, frameworkPath, MIN_FRAMEWORK_BYTES);
+      assertBundledReticulumSidecarInBundle({
+        label: `bundled Reticulum sidecar in ${bundleName}`,
+        platform: 'darwin',
+        bundleRoot: bundle,
+        fail,
+      });
       validatedBundle = true;
       break;
     }

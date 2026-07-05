@@ -378,6 +378,7 @@ export const RETICULUM_CONNECTION_PANEL_LEAF_KEYS = new Set([
   'reticulumNetworkUnknown',
   'reticulumNetworkDisabled',
   'reticulumSidecarMissing',
+  'reticulumSidecarBundledMissing',
   'reticulumSidecarCargoMissing',
   'reticulumSidecarStartFailed',
 ]);

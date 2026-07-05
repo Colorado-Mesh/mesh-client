@@ -962,7 +962,8 @@
       "txQueueDrops": "{{name}}: paquetes salientes descartados ({{count}} en cola)",
       "txQueueDropsHint": "Por lo general, es causada por una interfaz TCP muerta que aún está habilitada. Deshabilite los concentradores inalcanzables para detener el desbordamiento de la cola.",
       "suppressed": "{{count}} líneas de registro de sidecar similares suprimidas recientemente."
-    }
+    },
+    "reticulumSidecarBundledMissing": "A esta instalación le falta el sidecar Reticulum incluido. Actualice a una versión más reciente o informe el problema: la compilación desde el código fuente no está disponible en instalaciones empaquetadas."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",

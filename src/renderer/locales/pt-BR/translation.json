@@ -962,7 +962,8 @@
       "txQueueDrops": "{{name}}: pacotes de saída descartados ({{count}} na fila)",
       "txQueueDropsHint": "Geralmente causado por uma interface TCP inativa ainda ativada. Desative os hubs inacessíveis para interromper o estouro da fila.",
       "suppressed": "{{count}} linhas de registro de sidecar semelhantes foram suprimidas recentemente."
-    }
+    },
+    "reticulumSidecarBundledMissing": "Esta instalação não contém o sidecar Reticulum incluído. Atualize para uma versão mais recente ou relate o problema – a compilação a partir do código-fonte não está disponível em instalações empacotadas."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",

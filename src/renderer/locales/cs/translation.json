@@ -962,7 +962,8 @@
       "txQueueDrops": "{{name}}: odchozí pakety byly vyhozeny ({{count}} ve frontě)",
       "txQueueDropsHint": "Obvykle je to způsobeno stále povoleným mrtvým rozhraním TCP. Zakažte nedosažitelné rozbočovače pro zastavení přetečení fronty.",
       "suppressed": "{{count}} podobné řádky protokolu postranního vozíku byly nedávno potlačeny."
-    }
+    },
+    "reticulumSidecarBundledMissing": "V této instalaci chybí přibalený postranní vozík Reticulum. Upgradujte na novější verzi nebo nahlaste problém – sestavení ze zdroje není v balených instalacích k dispozici."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

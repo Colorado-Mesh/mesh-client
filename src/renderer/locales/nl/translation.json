@@ -962,7 +962,8 @@
       "txQueueDrops": "{{name}}: uitgaande pakketten verwijderd ({{count}} in de wachtrij)",
       "txQueueDropsHint": "Meestal veroorzaakt door een dode TCP-interface die nog steeds is ingeschakeld. Schakel onbereikbare hubs uit om wachtrijoverloop te stoppen.",
       "suppressed": "{{count}} vergelijkbare zijspanlogregels die onlangs zijn onderdrukt."
-    }
+    },
+    "reticulumSidecarBundledMissing": "Bij deze installatie ontbreekt het gebundelde Reticulum-zijspan. Upgrade naar een nieuwere release of rapporteer het probleem: bouwen vanaf de broncode is niet beschikbaar in pakketinstallaties."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

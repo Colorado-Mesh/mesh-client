@@ -10,6 +10,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -31,6 +32,12 @@ function assertExe(label, filePath) {
     );
     process.exit(1);
   }
+}
+
+/** @param {string} msg */
+function fail(msg) {
+  console.error(`[verify-win-packaging] ${msg}`);
+  process.exit(1);
 }
 
 function readVersion() {
@@ -80,6 +87,18 @@ function main() {
 
   assertExe('x64 unpacked app', path.join(releaseDir, 'win-unpacked', APP_EXE));
   assertExe('arm64 unpacked app', path.join(releaseDir, 'win-arm64-unpacked', APP_EXE));
+  assertBundledReticulumSidecarInBundle({
+    label: 'x64 bundled Reticulum sidecar',
+    platform: 'win32',
+    bundleRoot: path.join(releaseDir, 'win-unpacked'),
+    fail,
+  });
+  assertBundledReticulumSidecarInBundle({
+    label: 'arm64 bundled Reticulum sidecar',
+    platform: 'win32',
+    bundleRoot: path.join(releaseDir, 'win-arm64-unpacked'),
+    fail,
+  });
 
   const installers = collectSetupInstallers(version);
   assertExe('x64 NSIS installer', path.join(releaseDir, installers.x64));

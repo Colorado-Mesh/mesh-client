@@ -17,6 +17,7 @@ publish:
   repo: mesh-client
   # Keep GitHub Releases as drafts until a maintainer publishes manually.
   releaseType: draft
+beforePack: scripts/electron-builder-before-pack.mjs
 extraResources:
   - from: resources/icons/win/colorado-mesh.ico
     to: colorado-mesh.ico

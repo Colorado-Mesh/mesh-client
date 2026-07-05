@@ -22,10 +22,16 @@ jobs:
         include:
           - os: macos-latest
             build_script: pnpm run dist:mac:publish
+            sidecar_platform: darwin
+            rust_targets: aarch64-apple-darwin
           - os: ubuntu-latest
             build_script: pnpm run dist:linux:publish
+            sidecar_platform: linux
+            rust_targets: x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu
           - os: windows-latest
             build_script: pnpm run dist:win:publish
+            sidecar_platform: win32
+            rust_targets: x86_64-pc-windows-msvc,aarch64-pc-windows-msvc
 
     steps:
       - name: Checkout code
@@ -42,7 +48,29 @@ jobs:
 
       - name: Install Linux build dependencies
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y libudev-dev rpm
+        run: |
+          sudo dpkg --add-architecture arm64
+          sudo apt-get update
+          sudo apt-get install -y \
+            libudev-dev \
+            rpm \
+            libdbus-1-dev \
+            libdbus-1-dev:arm64 \
+            pkg-config \
+            gcc-aarch64-linux-gnu
+
+      - name: Install Rust toolchain for Reticulum sidecar
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          targets: ${{ matrix.rust_targets }}
+
+      - name: Build Reticulum sidecar for Electron packaging
+        env:
+          WORKSPACE_ROOT: ${{ github.workspace }}/..
+        run: node scripts/build-reticulum-sidecar-release.mjs --platform ${{ matrix.sidecar_platform }}
+
+      - name: Verify staged Reticulum sidecars
+        run: node scripts/verify-reticulum-sidecar-staged.mjs --platform ${{ matrix.sidecar_platform }}
 
       - name: Validate Windows build runner
         if: contains(matrix.build_script, 'dist:win') && matrix.os != 'windows-latest'
@@ -125,7 +153,7 @@ jobs:
           - os: ubuntu-latest
             label: Linux packaging
             artifact: mesh-client-linux-${{ github.sha }}
-            smoke_run: node scripts/verify-linux-packaging.mjs
+            smoke_run: node scripts/verify-linux-packaging.mjs && node scripts/test-linux-appimage-reticulum-sidecar.mjs
           - os: windows-latest
             label: x64 NSIS install
             artifact: mesh-client-windows-${{ github.sha }}

@@ -962,7 +962,8 @@
       "txQueueDrops": "{{name}} ：出站数据包已丢弃（ {{count}}已排队）",
       "txQueueDropsHint": "通常是由死TCP接口仍处于启用状态引起的。禁用无法访问的集线器以停止队列溢出。",
       "suppressed": "{{count}}最近取消了类似的侧车日志行。"
-    }
+    },
+    "reticulumSidecarBundledMissing": "此安装缺少捆绑的 Reticulum sidecar。升级到较新的版本或报告问题 - 在打包安装中无法从源代码构建。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",

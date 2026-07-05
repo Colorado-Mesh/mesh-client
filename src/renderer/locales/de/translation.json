@@ -962,7 +962,8 @@
       "txQueueDrops": "{{name}}: ausgehende Pakete abgelegt ({{count}} in der Warteschlange)",
       "txQueueDropsHint": "In der Regel verursacht durch eine tote TCP-Schnittstelle, die immer noch aktiviert ist. Deaktivieren Sie nicht erreichbare Hubs, um den Warteschlangenüberlauf zu stoppen.",
       "suppressed": "{{count}} ähnliche Sidecar-Log-Linien wurden kürzlich unterdrückt."
-    }
+    },
+    "reticulumSidecarBundledMissing": "Bei dieser Installation fehlt der mitgelieferte Reticulum-Sidecar. Führen Sie ein Upgrade auf eine neuere Version durch oder melden Sie das Problem – das Erstellen aus dem Quellcode ist bei Paketinstallationen nicht verfügbar."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",

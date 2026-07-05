@@ -107,10 +107,12 @@ Each job runs `pnpm install --frozen-lockfile`, `pnpm run rebuild`, then publish
 
 After builds finish, **`packaging-smoke`** runs on:
 
-- macOS — `verify-mac-packaging.mjs`
-- Linux — `verify-linux-packaging.mjs`
-- Windows x64 — NSIS install smoke test
-- **`windows-11-arm`** — arm64 NSIS install smoke test (Windows on ARM)
+- macOS — `verify-mac-packaging.mjs` (includes bundled Reticulum sidecar in `.app`)
+- Linux — `verify-linux-packaging.mjs` plus `test-linux-appimage-reticulum-sidecar.mjs` (extracts x64/arm64 AppImages and asserts sidecar)
+- Windows x64 — NSIS install smoke test (`test-win-nsis-install.mjs`, asserts sidecar after install)
+- **`windows-11-arm`** — arm64 NSIS install smoke test with 7z probe (asserts sidecar inside installer payload and after install)
+
+Build jobs also run `verify-reticulum-sidecar-staged.mjs` after staging sidecars and before `electron-builder`.
 
 ### `flatpak.yaml` (Build Flatpak)
 
@@ -123,7 +125,9 @@ Both tag-triggered workflows must complete before the release is fully populated
 ### Reticulum sidecar in installers
 
 - **Flatpak:** sidecar is built in CI and embedded under `resources/reticulum-sidecar/` before `flatpak-builder` runs.
-- **macOS / Linux / Windows:** `electron-builder.yml` copies `resources/reticulum-sidecar/` into the app bundle. Packaged Reticulum requires the platform `mesh-client-reticulum` binary in that folder at build time. Dev builds use `reticulum-sidecar/target/debug/` instead — see [Reticulum sidecar (optional)](development-environment.md#reticulum-sidecar-optional).
+- **macOS / Linux / Windows (Electron):** `release.yaml` / `build.yaml` run `scripts/build-reticulum-sidecar-release.mjs` per platform before `dist:*`, staging per-arch binaries under `resources/reticulum-sidecar/staged/`. The `beforePack` hook in [`electron-builder.yml`](../electron-builder.yml) copies the correct `mesh-client-reticulum` binary into each installer (Windows x64 + arm64, Linux x64 + arm64, macOS arm64). Packaging verify scripts assert the sidecar is present in unpacked bundles.
+- **Releases before this pipeline shipped** may show “Reticulum sidecar not built” in packaged installs — upgrade to a release that includes the sidecar or use Flatpak on Linux.
+- **Dev builds** use `reticulum-sidecar/target/debug/` instead — see [Reticulum sidecar (optional)](development-environment.md#reticulum-sidecar-optional).
 
 ---
 

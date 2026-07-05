@@ -962,7 +962,8 @@
       "txQueueDrops": "{{name}}: paket keluar dijatuhkan (antrean {{count}})",
       "txQueueDropsHint": "Biasanya disebabkan oleh antarmuka TCP mati yang masih diaktifkan. Nonaktifkan hub yang tidak dapat dijangkau untuk menghentikan overflow antrean.",
       "suppressed": "{{count}} garis log sespan serupa baru - baru ini ditekan."
-    }
+    },
+    "reticulumSidecarBundledMissing": "Instalasi ini tidak memiliki sespan Reticulum yang dibundel. Tingkatkan versi ke rilis yang lebih baru atau laporkan masalahnya — pembuatan dari sumber tidak tersedia dalam paket instalasi."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

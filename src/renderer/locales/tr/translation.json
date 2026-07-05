@@ -962,7 +962,8 @@
       "txQueueDrops": "{{name}}: giden paketler düştü ({{count}} kuyruğa alındı)",
       "txQueueDropsHint": "Genellikle ölü bir TCP arayüzü hala etkindir. Kuyruk taşmasını durdurmak için erişilemeyen hub'ları devre dışı bırakın.",
       "suppressed": "{{count}} benzer sepet günlük satırları yakın zamanda bastırıldı."
-    }
+    },
+    "reticulumSidecarBundledMissing": "Bu kurulumda birlikte verilen Reticulum sepeti eksik. Daha yeni bir sürüme yükseltin veya sorunu bildirin; kaynaktan derleme, paketli kurulumlarda mevcut değildir."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

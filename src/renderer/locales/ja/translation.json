@@ -962,7 +962,8 @@
       "txQueueDrops": "{{name}} ：送信パケットがドロップされました（ {{count}}がキューに入れられました）",
       "txQueueDropsHint": "通常は、デッドTCPインターフェイスがまだ有効になっていることが原因です。キューオーバーフローを停止するには、到達不能なハブを無効にします。",
       "suppressed": "{{count}}類似のサイドカーログ行は最近抑制されました。"
-    }
+    },
+    "reticulumSidecarBundledMissing": "このインストールには、バンドルされている Reticulum サイドカーがありません。新しいリリースにアップグレードするか、問題を報告してください。パッケージ化されたインストールではソースからのビルドは利用できません。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

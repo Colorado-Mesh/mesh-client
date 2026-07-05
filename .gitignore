@@ -29,3 +29,6 @@ flatpak/generated-sources.json
 
 # Rust reticulum sidecar (cargo build output)
 reticulum-sidecar/target/
+resources/reticulum-sidecar/staged/
+resources/reticulum-sidecar/mesh-client-reticulum
+resources/reticulum-sidecar/mesh-client-reticulum.exe

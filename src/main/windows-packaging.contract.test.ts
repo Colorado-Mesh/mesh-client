@@ -85,6 +85,7 @@ describe('Windows packaging (contract)', () => {
 
   it('disables universal NSIS, includes post-install guard, and verifies split Windows installers', () => {
     const yml = readFileSync(join(REPO_ROOT, 'electron-builder.yml'), 'utf-8');
+    expect(yml).toMatch(/beforePack:\s*scripts\/electron-builder-before-pack\.mjs/);
     expect(yml).toMatch(/nsis:\s*\n\s*buildUniversalInstaller:\s*false/);
     expect(yml).toMatch(/useZip:\s*true/);
     expect(yml).toMatch(/differentialPackage:\s*false/);
@@ -100,6 +101,8 @@ describe('Windows packaging (contract)', () => {
     );
     expect(verifyScript).toContain('win-arm64-unpacked');
     expect(verifyScript).toContain('-arm64.exe');
+    expect(verifyScript).toContain('reticulum-sidecar');
+    expect(verifyScript).toContain('assertBundledReticulumSidecarInBundle');
     expect(verifyScript).not.toContain('resedit');
   });
 
@@ -125,6 +128,7 @@ describe('Windows packaging (contract)', () => {
     );
     expect(installScript).toContain('--arch x64');
     expect(installScript).toContain('--probe-7z');
+    expect(installScript).toContain('assertBundledReticulumSidecarInBundle');
     expect(installScript).toContain('/LOG=');
     expect(installScript).toContain('find-nsis-app-archive.mjs');
 
@@ -229,6 +233,8 @@ describe('Windows packaging (contract)', () => {
       expect(workflow).toContain('label: Linux packaging');
       expect(workflow).toContain('node scripts/verify-mac-packaging.mjs');
       expect(workflow).toContain('node scripts/verify-linux-packaging.mjs');
+      expect(workflow).toContain('node scripts/test-linux-appimage-reticulum-sidecar.mjs');
+      expect(workflow).toContain('verify-reticulum-sidecar-staged.mjs');
       expect(workflow).toContain('release/mac*/**/Mesh-client.app/**');
     }
   });

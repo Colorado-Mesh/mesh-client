@@ -962,7 +962,8 @@
       "txQueueDrops": "{{name}}: 아웃바운드 패킷이 삭제됨 ({{count}} 대기 중)",
       "txQueueDropsHint": "일반적으로 죽은 TCP 인터페이스가 여전히 활성화되어 있기 때문에 발생합니다. 연결할 수 없는 허브를 비활성화하여 대기열 오버플로를 중지합니다.",
       "suppressed": "{{count}} 최근 유사한 사이드카 로그 라인이 억제되었습니다."
-    }
+    },
+    "reticulumSidecarBundledMissing": "이 설치에는 번들로 제공되는 Reticulum 사이드카가 없습니다. 최신 릴리스로 업그레이드하거나 문제를 보고하세요. 패키지 설치에서는 소스에서 빌드할 수 없습니다."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",

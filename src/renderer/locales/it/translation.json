@@ -962,7 +962,8 @@
       "txQueueDrops": "{{name}}: pacchetti in uscita scartati ({{count}} in coda)",
       "txQueueDropsHint": "Di solito causato da un'interfaccia TCP morta ancora abilitata. Disabilita gli hub non raggiungibili per interrompere l'overflow della coda.",
       "suppressed": "{{count}} righe di registro sidecar simili soppresse di recente."
-    }
+    },
+    "reticulumSidecarBundledMissing": "In questa installazione manca il sidecar Reticulum in bundle. Esegui l'upgrade a una versione più recente o segnala il problema: la creazione dal codice sorgente non è disponibile nelle installazioni in pacchetto."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",

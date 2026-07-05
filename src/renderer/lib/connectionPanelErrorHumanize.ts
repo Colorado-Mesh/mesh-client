@@ -252,6 +252,9 @@ export function humanizeReticulumSidecarError(err: unknown, t: TFunction): strin
   ) {
     return t('connectionPanel.reticulumSidecarPatchMissing');
   }
+  if (msg.includes('RETICULUM_SIDECAR_BUNDLED_MISSING')) {
+    return t('connectionPanel.reticulumSidecarBundledMissing');
+  }
   if (
     msg.includes('RETICULUM_SIDECAR') ||
     msg.includes('sidecar binary not found') ||
