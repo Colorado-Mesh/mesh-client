@@ -292,6 +292,9 @@ export function createElectronAPIMock(): ElectronAPI {
       pickUploadFile: vi.fn().mockResolvedValue(null),
       saveDownloadFile: vi.fn().mockResolvedValue({ success: false }),
     },
+    support: {
+      exportBundle: vi.fn().mockResolvedValue(null),
+    },
     log: {
       getPath: vi.fn().mockResolvedValue('/tmp/test.log'),
       getRecentLines: vi.fn().mockResolvedValue([]),

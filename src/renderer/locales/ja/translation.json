@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "読み込まれるメッセージを制限する {{count}} メッセージ",
     "capStoredMessagesCountAria": "保存されたメッセージを制限し、最新の {{count}} メッセージを保持します",
     "maxDistanceAria": "最大距離： {{value}}",
-    "unitAria": "単位： {{unit}}"
+    "unitAria": "単位： {{unit}}",
+    "supportSection": "サポート/バグレポート",
+    "supportSectionDesc": "ワンクリック エクスポートにより、問題を報告するときにデバッグ スナップショット、ログ ファイル、データベースを個別に収集する必要がなくなります。",
+    "exportForGitHub": "GitHub のサポート バンドルをエクスポートする",
+    "exportForGitHubButton": "GitHub 用にエクスポート",
+    "exportForGitHubDesc": "デバッグ スナップショットとログ ファイルが 1 つの zip に含まれています。 GitHub のパブリックな問題に安全に添付できます。",
+    "exportForDeveloper": "開発者向けのサポート バンドルをエクスポートする",
+    "exportForDeveloperButton": "開発者向けのエクスポート",
+    "exportForDeveloperWarning": "保存されたパスワード (MeshCore ルームの資格情報、MQTT 設定など) が含まれる可能性のある完全なデータベースが含まれます。このバンドルはメンテナとのみ非公開で共有し、公開 GitHub では決して共有しません。",
+    "exportSupportBundleFailed": "サポート バンドルをエクスポートできませんでした: {{message}}"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",

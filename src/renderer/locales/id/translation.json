@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "Batasi pesan yang dimuat {{count}} pesan",
     "capStoredMessagesCountAria": "Batasi pesan yang disimpan, simpan pesan {{count}} terbaru",
     "maxDistanceAria": "Jarak maksimum: {{value}}",
-    "unitAria": "Satuan: {{unit}}"
+    "unitAria": "Satuan: {{unit}}",
+    "supportSection": "Dukungan / Laporan Bug",
+    "supportSectionDesc": "Ekspor sekali klik menggantikan pengumpulan snapshot debug, file log, dan database secara terpisah saat melaporkan masalah.",
+    "exportForGitHub": "Ekspor paket dukungan untuk GitHub",
+    "exportForGitHubButton": "Ekspor untuk GitHub",
+    "exportForGitHubDesc": "Termasuk snapshot debug dan file log dalam satu zip. Aman untuk dilampirkan ke masalah GitHub publik.",
+    "exportForDeveloper": "Ekspor paket dukungan untuk pengembang",
+    "exportForDeveloperButton": "Ekspor untuk Pengembang",
+    "exportForDeveloperWarning": "Termasuk database lengkap Anda, yang mungkin berisi kata sandi yang disimpan (kredensial ruang MeshCore, pengaturan MQTT, dll.). Bagikan bundel ini secara pribadi hanya kepada pengelola — jangan pernah di GitHub publik.",
+    "exportSupportBundleFailed": "Tidak dapat mengekspor paket dukungan: {{message}}"
   },
   "aria": {
     "closeDialog": "Tutup dialog",

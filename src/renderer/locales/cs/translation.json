@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "Omezit počet načtených zpráv: {{count}} zpráv",
     "capStoredMessagesCountAria": "Uzavřít uložené zprávy, ponechat nejnovější {{count}} zprávy",
     "maxDistanceAria": "Maximální vzdálenost: {{value}}",
-    "unitAria": "Jednotka: {{unit}}"
+    "unitAria": "Jednotka: {{unit}}",
+    "supportSection": "Podpora / Hlášení chyb",
+    "supportSectionDesc": "Exporty na jedno kliknutí nahrazují samostatné shromažďování snímku ladění, souboru protokolu a databáze při hlášení problémů.",
+    "exportForGitHub": "Exportujte balíček podpory pro GitHub",
+    "exportForGitHubButton": "Export pro GitHub",
+    "exportForGitHubDesc": "Zahrnuje snímek ladění a soubory protokolu v jednom zipu. Bezpečné připojení k veřejným problémům GitHub.",
+    "exportForDeveloper": "Balíček podpory exportu pro vývojáře",
+    "exportForDeveloperButton": "Export pro vývojáře",
+    "exportForDeveloperWarning": "Zahrnuje vaši úplnou databázi, která může obsahovat uložená hesla (přihlašovací údaje místnosti MeshCore, nastavení MQTT atd.). Sdílejte tento balíček soukromě pouze se správci – nikdy na veřejném GitHub.",
+    "exportSupportBundleFailed": "Nelze exportovat balíček podpory: {{message}}"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

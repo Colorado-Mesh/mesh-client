@@ -251,3 +251,58 @@ describe('AppPanel: MeshCore Open wire toggle', () => {
     });
   });
 });
+
+describe('AppPanel: support bundle exports', () => {
+  const defaultProps = {
+    nodeCount: 0,
+    messageCount: 0,
+    channels: [] as { index: number; name: string }[],
+    myNodeNum: null as number | null,
+    onLocationFilterChange: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.mocked(window.electronAPI.support.exportBundle).mockReset();
+    vi.mocked(window.electronAPI.support.exportBundle).mockResolvedValue(
+      '/tmp/mesh-client-github-report.zip',
+    );
+  });
+
+  it('invokes support.exportBundle with github mode', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} protocol="meshtastic" />
+      </ToastProvider>,
+    );
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /Export support bundle for GitHub/i }),
+    );
+
+    await waitFor(() => {
+      expect(window.electronAPI.support.exportBundle).toHaveBeenCalledWith(
+        'github',
+        expect.stringContaining('"capturedAt"'),
+      );
+    });
+  });
+
+  it('invokes support.exportBundle with developer mode', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} protocol="meshtastic" />
+      </ToastProvider>,
+    );
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /Export support bundle for developer/i }),
+    );
+
+    await waitFor(() => {
+      expect(window.electronAPI.support.exportBundle).toHaveBeenCalledWith(
+        'developer',
+        expect.stringContaining('"capturedAt"'),
+      );
+    });
+  });
+});

@@ -28,11 +28,24 @@ Start here for log analysis, bug reports, and general connection debugging.
 
 Open the **Log** panel (right rail), enable **debug** if needed, reproduce the problem, then click **Analyze**. The app scans recent buffered log lines for patterns (BLE, serial, TCP, MQTT, handshake timeouts, etc.) and lists **suggested next steps**. This complements export/delete: use it before filing an issue so you have concrete log context. Analysis is **heuristic**; treat recommendations as hints, not guarantees.
 
-### Reporting bugs: **Copy Debug Snapshot** (App tab)
+### Reporting bugs: **Export for GitHub** (App tab)
 
-For Chat, unread badges, or “connected but UI looks stale” reports, use **App → Data Management → Copy Debug Snapshot** before opening a GitHub issue. The button copies a JSON support bundle to the clipboard (via Electron clipboard IPC, not the browser API).
+Before opening a GitHub issue, use **App → Support / Bug reports → Export for GitHub**. This writes one zip with the debug snapshot JSON and application log file(s) — the same artifacts maintainers previously asked for in three separate steps.
 
-**What to read first (ignore misleading `offline-*` ids):**
+**Do not attach Export for Developer or `mesh-client.db` to public GitHub issues.** The developer bundle includes your SQLite database, which may contain **saved passwords** (MeshCore room/repeater credentials, MQTT settings, etc.). Use **Export for Developer** only when a maintainer asks for it and share via a **private channel** (email, Discord DM, etc.).
+
+Works on macOS, Windows, Linux (.deb / .rpm / AppImage), and Flatpak. Local data paths:
+
+| Install                   | Log / DB location                                            |
+| ------------------------- | ------------------------------------------------------------ |
+| macOS                     | `~/Library/Application Support/mesh-client/`                 |
+| Windows                   | `%APPDATA%\mesh-client\`                                     |
+| Linux (native / AppImage) | `~/.config/mesh-client/`                                     |
+| Flatpak                   | `~/.var/app/org.coloradomesh.MeshClient/config/mesh-client/` |
+
+**Copy Debug Snapshot** (clipboard JSON) and **Log → Export** remain available under Data Management and the Log panel.
+
+**What to read first in `debug-snapshot.json` (ignore misleading `offline-*` ids):**
 
 | Field                                    | Healthy connected example | Meaning                           |
 | ---------------------------------------- | ------------------------- | --------------------------------- |
@@ -53,7 +66,7 @@ The top-level **`legend`** explains that ids like `offline-meshcore` are **inter
 
 **Automatic warning codes** in `warnings[]`: `identitySplit`, `staleResolvedBucket`, `chatPanelFrozen`, `connectedNoPrimaryMessages`, `windowHiddenOnChat`.
 
-Attach the JSON (redact `myNodeNum` if you prefer) alongside **Log → Export** when possible.
+Attach the GitHub report zip (or paste `debug-snapshot.json` from it; redact `myNodeNum` if you prefer). Do **not** attach the developer bundle or `mesh-client.db` to this public issue.
 
 ## Development and building
 

@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next';
 
 import { copyDebugSnapshotToClipboard } from '@/renderer/lib/debugSnapshot';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { exportSupportBundleToDisk } from '@/renderer/lib/exportSupportBundle';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { parseDatabaseSchemaTooNewFromMessage } from '@/shared/databaseSchemaTooNew';
+import type { SupportBundleMode } from '@/shared/support-bundle.types';
 
 import type { LocationFilter } from '../App';
 import {
@@ -297,6 +299,9 @@ export default function AppPanel({
     localStorage.setItem('mesh-client:notifMuted', soundNotifEnabled ? '0' : '1');
   }, [soundNotifEnabled]);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [supportBundleExporting, setSupportBundleExporting] = useState<SupportBundleMode | null>(
+    null,
+  );
   const { addToast } = useToast();
   const { t } = useTranslation();
   const resolveNodes = useCallback(
@@ -345,6 +350,31 @@ export default function AppPanel({
       return next;
     });
   }, []);
+
+  const handleExportSupportBundle = useCallback(
+    async (mode: SupportBundleMode) => {
+      if (supportBundleExporting) return;
+      setSupportBundleExporting(mode);
+      try {
+        console.debug('[AppPanel] exportSupportBundle', mode);
+        const exportPath = await exportSupportBundleToDisk(mode);
+        if (exportPath) {
+          addToast(t('appPanel.exportedTo', { path: exportPath }), 'success');
+        }
+      } catch (err) {
+        console.warn('[AppPanel] support bundle export failed ' + errLikeToLogString(err));
+        addToast(
+          t('appPanel.exportSupportBundleFailed', {
+            message: err instanceof Error ? err.message : t('appPanel.unknownError'),
+          }),
+          'error',
+        );
+      } finally {
+        setSupportBundleExporting(null);
+      }
+    },
+    [supportBundleExporting, addToast, t],
+  );
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -1519,6 +1549,42 @@ export default function AppPanel({
               <HelpTooltip text={t('appPanel.storeForwardAutoFetchHistoryHint')} />
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Support / Bug reports */}
+      <div className="space-y-3">
+        <h3 className="text-muted text-sm font-medium">{t('appPanel.supportSection')}</h3>
+        <p className="text-muted text-xs">{t('appPanel.supportSectionDesc')}</p>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div className="space-y-2">
+            <button
+              type="button"
+              aria-label={t('appPanel.exportForGitHub')}
+              disabled={supportBundleExporting !== null}
+              onClick={() => void handleExportSupportBundle('github')}
+              className="bg-readable-green hover:bg-readable-green/90 w-full rounded-lg px-4 py-3 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {supportBundleExporting === 'github'
+                ? t('common.loading')
+                : t('appPanel.exportForGitHubButton')}
+            </button>
+            <p className="text-muted text-xs">{t('appPanel.exportForGitHubDesc')}</p>
+          </div>
+          <div className="space-y-2">
+            <button
+              type="button"
+              aria-label={t('appPanel.exportForDeveloper')}
+              disabled={supportBundleExporting !== null}
+              onClick={() => void handleExportSupportBundle('developer')}
+              className="bg-secondary-dark w-full rounded-lg px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {supportBundleExporting === 'developer'
+                ? t('common.loading')
+                : t('appPanel.exportForDeveloperButton')}
+            </button>
+            <p className="text-xs text-amber-300">{t('appPanel.exportForDeveloperWarning')}</p>
+          </div>
         </div>
       </div>
 

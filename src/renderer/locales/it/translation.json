@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "Limita i messaggi caricati {{count}} messaggi",
     "capStoredMessagesCountAria": "Limita i messaggi memorizzati, mantieni i messaggi {{count}} più recenti",
     "maxDistanceAria": "Distanza max: {{value}}",
-    "unitAria": "Unità: {{unit}}"
+    "unitAria": "Unità: {{unit}}",
+    "supportSection": "Supporto/Segnalazioni sui bug",
+    "supportSectionDesc": "Le esportazioni con un clic sostituiscono la raccolta separata di snapshot di debug, file di registro e database durante la segnalazione dei problemi.",
+    "exportForGitHub": "Esporta pacchetto di supporto per GitHub",
+    "exportForGitHubButton": "Esporta per GitHub",
+    "exportForGitHubDesc": "Include snapshot di debug e file di registro in un unico zip. Sicuro da allegare ai problemi pubblici di GitHub.",
+    "exportForDeveloper": "Esporta pacchetto di supporto per sviluppatore",
+    "exportForDeveloperButton": "Esporta per sviluppatore",
+    "exportForDeveloperWarning": "Include il database completo, che può contenere password salvate (credenziali della sala MeshCore, impostazioni MQTT, ecc.). Condividi questo pacchetto in privato solo con i manutentori, mai su GitHub pubblico.",
+    "exportSupportBundleFailed": "Impossibile esportare il pacchetto di supporto: {{message}}"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

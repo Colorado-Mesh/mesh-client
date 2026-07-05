@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "Beperk het aantal geladen berichten {{count}} berichten",
     "capStoredMessagesCountAria": "Beperk opgeslagen berichten, bewaar de nieuwste {{count}} berichten",
     "maxDistanceAria": "Maximale afstand: {{value}}",
-    "unitAria": "Eenheid: {{unit}}"
+    "unitAria": "Eenheid: {{unit}}",
+    "supportSection": "Ondersteuning / Bugrapporten",
+    "supportSectionDesc": "Exporteren met één klik vervangt het afzonderlijk verzamelen van de debug-snapshot, het logbestand en de database bij het melden van problemen.",
+    "exportForGitHub": "Ondersteuningsbundel voor GitHub exporteren",
+    "exportForGitHubButton": "Exporteren voor GitHub",
+    "exportForGitHubDesc": "Inclusief debug-snapshot en logbestanden in één zip. Veilig om toe te voegen aan openbare GitHub-problemen.",
+    "exportForDeveloper": "Ondersteuningsbundel exporteren voor ontwikkelaar",
+    "exportForDeveloperButton": "Exporteren voor ontwikkelaar",
+    "exportForDeveloperWarning": "Omvat uw volledige database, die mogelijk opgeslagen wachtwoorden bevat (MeshCore-ruimtegegevens, MQTT-instellingen, enz.). Deel deze bundel alleen privé met beheerders, nooit op openbare GitHub.",
+    "exportSupportBundleFailed": "Kan ondersteuningsbundel niet exporteren: {{message}}"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

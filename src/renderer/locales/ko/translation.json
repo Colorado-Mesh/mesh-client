@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "{{count}} 메시지 로드 제한",
     "capStoredMessagesCountAria": "저장된 메시지를 제한하고 최신 {{count}} 메시지를 유지하세요.",
     "maxDistanceAria": "최대 거리: {{value}}",
-    "unitAria": "단위: {{unit}}"
+    "unitAria": "단위: {{unit}}",
+    "supportSection": "지원/버그 보고서",
+    "supportSectionDesc": "원클릭 내보내기는 문제 보고 시 디버그 스냅샷, 로그 파일 및 데이터베이스를 별도로 수집하는 것을 대체합니다.",
+    "exportForGitHub": "GitHub용 지원 번들 내보내기",
+    "exportForGitHubButton": "GitHub용으로 내보내기",
+    "exportForGitHubDesc": "하나의 zip에 디버그 스냅샷과 로그 파일이 포함되어 있습니다. 공개 GitHub 문제에 첨부해도 안전합니다.",
+    "exportForDeveloper": "개발자용 지원 번들 내보내기",
+    "exportForDeveloperButton": "개발자용으로 내보내기",
+    "exportForDeveloperWarning": "저장된 비밀번호(MeshCore 룸 자격 증명, MQTT 설정 등)가 포함될 수 있는 전체 데이터베이스를 포함합니다. 이 번들을 관리자에게만 비공개로 공유하세요. 공개 GitHub에서는 절대 공유하지 마세요.",
+    "exportSupportBundleFailed": "지원 번들을 내보낼 수 없습니다: {{message}}"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "限制加载的消息 {{count}} 消息",
     "capStoredMessagesCountAria": "限制存储的消息，保留最新的 {{count}} 消息",
     "maxDistanceAria": "最大距离： {{value}}",
-    "unitAria": "单位： {{unit}}"
+    "unitAria": "单位： {{unit}}",
+    "supportSection": "支持/错误报告",
+    "supportSectionDesc": "一键导出取代了报告问题时单独收集调试快照、日志文件和数据库。",
+    "exportForGitHub": "导出 GitHub 的支持包",
+    "exportForGitHubButton": "导出至 GitHub",
+    "exportForGitHubDesc": "在一个 zip 中包含调试快照和日志文件。可以安全地附加到公共 GitHub 问题。",
+    "exportForDeveloper": "为开发人员导出支持包",
+    "exportForDeveloperButton": "为开发者导出",
+    "exportForDeveloperWarning": "包括您的完整数据库，其中可能包含保存的密码（MeshCore 房间凭据、MQTT 设置等）。仅与维护者私下共享此捆绑包 - 切勿在公共 GitHub 上共享。",
+    "exportSupportBundleFailed": "无法导出支持包：{{message}}"
   },
   "aria": {
     "closeDialog": "关闭对话框",
