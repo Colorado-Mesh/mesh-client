@@ -27,6 +27,7 @@ const rendererUiMaxWorkers = vitestSequentialProjects
   ? rendererUiWorkers
   : parallelProjectMaxWorkers;
 const rendererLogicMaxWorkers = vitestSequentialProjects ? nodeWorkers : parallelProjectMaxWorkers;
+const mainMaxWorkers = vitestSequentialProjects ? nodeWorkers : parallelProjectMaxWorkers;
 
 /** Per-project CI shards skip global thresholds; merge job enforces them on combined coverage. */
 const coverageThresholds =
@@ -261,7 +262,7 @@ export default defineConfig({
             'vitest.harness.test.ts',
           ],
           pool: 'forks',
-          maxWorkers: rendererLogicMaxWorkers,
+          maxWorkers: mainMaxWorkers,
           isolate: true,
           fileParallelism: true,
           sequence: { groupOrder: resolveVitestProjectGroupOrder('main') },
