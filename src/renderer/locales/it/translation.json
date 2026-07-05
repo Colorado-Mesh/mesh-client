@@ -2165,7 +2165,8 @@
       "dataSize": "Dimensione dei dati",
       "dataSizeBytes": "{{count}} byte",
       "rawDataHex": "Dati grezzi (esadecimali)"
-    }
+    },
+    "neighborsHopTooFar": "I vicini non sono disponibili per i ripetitori {{hops}}+ saltano via sulla seriale USB"
   },
   "nodeInfoBody": {
     "longName": "Nome lungo",
@@ -2342,7 +2343,6 @@
     "hopsAway_other": "{{count}} salta via",
     "openNode": "Sfoglia {{name}}",
     "pagePath": "Percorso della pagina",
-    "pagePathAria": "Percorso della pagina nomade",
     "homePage": "Pagina iniziale",
     "reloadPage": "Ricarica la pagina",
     "closeViewer": "Chiudi il visualizzatore di pagine",
@@ -2355,7 +2355,11 @@
     "fileDownloadFailed": "Impossibile scaricare il file: {{error}}",
     "fileDownloadInProgress": "È già in corso il download di un file.",
     "sendMessage": "Messaggio",
-    "sendMessageAria": "Invia messaggio a {{name}}"
+    "sendMessageAria": "Invia messaggio a {{name}}",
+    "urlBarAria": "Indirizzo della pagina nomade",
+    "back": "Indietro",
+    "forward": "Inoltrare",
+    "invalidUrl": "Indirizzo della pagina Nomad non valido"
   },
   "packetDistribution": {
     "overallDistribution": "Distribuzione complessiva",
@@ -3169,7 +3173,8 @@
     "telemetryGps": "GPS: {{coords}}{{alt}}",
     "telemetryGpsAlt": "alt {{altitude}}m",
     "cliSend": "Inviare",
-    "cliQuick": "Presto:"
+    "cliQuick": "Presto:",
+    "neighborsHopTooFar": "I vicini non sono disponibili per i ripetitori {{hops}}+ saltano via sulla seriale USB"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervallo annunci (secondi)",
@@ -3756,7 +3761,8 @@
         "timedOut": "Timeout della disconnessione dalla sala. La stanza potrebbe essere fuori portata o non rispondere.",
         "rejected": "Logout dalla sala rifiutato via radio.",
         "failed": "Impossibile lasciare la stanza"
-      }
+      },
+      "repeaterRpcInProgress": "Una richiesta per questo ripetitore è già in corso"
     },
     "mqttHints": {
       "notAuthorized": "Verifica il nome utente v1_, la firma del token e il pubblico JWT rispetto al broker; vedere docs/letsmesh-mqtt-auth.md. Se necessario, utilizza Personalizzato per incollare un token emesso dall'operatore.",

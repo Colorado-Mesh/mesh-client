@@ -9,7 +9,7 @@ These requirements apply to all platforms.
 ### 1) Required software
 
 - Git
-- Node.js **22.13.0+** and pnpm **10+** (`package.json` `engines`; repository configuration enforces engine checks so `pnpm install` fails on version mismatch)
+- Node.js **22.13.0+** and pnpm **10+** (`package.json` `engines`; the repo pins **`packageManager`** to a specific pnpm release — use [Corepack](https://nodejs.org/api/corepack.html) or install a matching pnpm 10.x). `pnpm install` fails on engine mismatch.
 - [CI](https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/ci.yaml) uses Node 22
 - Python 3 + `pip` (needed for MkDocs documentation build and yamllint)
 
@@ -168,10 +168,17 @@ pnpm run dist:linux
 pnpm run dist:win
 
 # Quality checks
+pnpm run check:environment
 pnpm run test:run
+pnpm run test:coverage
 pnpm run lint
 pnpm run typecheck
 pnpm run format:check
+pnpm run check:i18n
+
+# Maintenance
+pnpm run update
+pnpm run clean
 
 # Reticulum sidecar (optional; requires Rust)
 pnpm run reticulum:sidecar:build
@@ -185,7 +192,7 @@ pnpm run docs:serve
 
 ### All Scripts Reference
 
-Complete reference of all pnpm scripts in `package.json`, organized by category.
+Complete reference of all pnpm scripts in [`package.json`](../package.json), organized by category.
 
 #### Build
 
@@ -202,24 +209,26 @@ Complete reference of all pnpm scripts in `package.json`, organized by category.
 
 #### Run
 
-| Script              | Description                                                                         |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| `dev`               | Hot-reload dev mode: builds main/preload in watch mode + Vite dev server + Electron |
-| `start`             | Production-like local start: runs `build` then launches Electron                    |
-| `electron:open`     | Launch Electron (requires prior build)                                              |
-| `trace-deprecation` | Run with Node deprecation traces enabled                                            |
+| Script              | Description                                                                       |
+| ------------------- | --------------------------------------------------------------------------------- |
+| `dev`               | Hot-reload dev mode: main/preload watch + Vite dev server + Electron              |
+| `start`             | Production-like local start: `build` then Electron with security warnings enabled |
+| `electron:open`     | Launch Electron (requires prior build)                                            |
+| `trace-deprecation` | Run with Node `--trace-deprecation` enabled                                       |
 
 #### Package (distributables)
 
-| Script               | Description                                      |
-| -------------------- | ------------------------------------------------ |
-| `dist`               | Build for current platform                       |
-| `dist:mac`           | Build macOS .dmg + .zip → `release/`             |
-| `dist:mac:publish`   | Build macOS and upload to release server         |
-| `dist:linux`         | Build Linux .AppImage + .deb + .rpm → `release/` |
-| `dist:linux:publish` | Build Linux and upload to release server         |
-| `dist:win`           | Build Windows .exe installer → `release/`        |
-| `dist:win:publish`   | Build Windows and upload to release server       |
+| Script               | Description                                                                  |
+| -------------------- | ---------------------------------------------------------------------------- |
+| `dist`               | Build for current platform → `release/`                                      |
+| `dist:mac`           | Build macOS .dmg + .zip + verify packaging (`verify-mac-packaging.mjs`)      |
+| `dist:mac:publish`   | Build macOS and upload to release server                                     |
+| `dist:linux`         | Build Linux x64 + arm64 (.AppImage, .deb, .rpm) + verify packaging           |
+| `dist:linux:publish` | Build Linux and upload to release server                                     |
+| `dist:win`           | Build Windows .exe installer (hoisted install workaround) + verify packaging |
+| `dist:win:publish`   | Build Windows and upload to release server                                   |
+
+`dist:mac`, `dist:linux`, and `predist` run `dedupe:dist` before packaging. `dist:win` uses `scripts/dist-win-hoisted-install.mjs` and restores `node_modules` afterward.
 
 #### Building a Flatpak (Linux)
 
@@ -315,36 +324,51 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 #### Test
 
-| Script         | Description                   |
-| -------------- | ----------------------------- |
-| `test`         | Run tests in watch mode       |
-| `test:run`     | Run tests once (CI mode)      |
-| `test:verbose` | Run tests with verbose output |
+| Script          | Description                            |
+| --------------- | -------------------------------------- |
+| `test`          | Run tests in watch mode (Vitest)       |
+| `test:run`      | Run tests once (CI mode)               |
+| `test:coverage` | Run tests once with V8 coverage report |
+| `test:verbose`  | Run tests with verbose output          |
 
 #### Lint / Format
 
-| Script         | Description                            |
-| -------------- | -------------------------------------- |
-| `lint`         | Run ESLint (type-aware)                |
-| `lint:fix`     | Run ESLint with auto-fix               |
-| `lint:md`      | Run markdownlint-cli2 on all .md files |
-| `format`       | Format all code via Prettier           |
-| `format:check` | Check formatting without fixing        |
+| Script         | Description                                        |
+| -------------- | -------------------------------------------------- |
+| `lint`         | Run ESLint (type-aware, zero warnings)             |
+| `lint:fix`     | Run ESLint with auto-fix                           |
+| `lint:md`      | Run markdownlint-cli2 on all `.md` files           |
+| `format`       | Format all code via Prettier + sort `package.json` |
+| `format:check` | Check formatting without fixing                    |
 
 #### Typecheck
 
-| Script      | Description                               |
-| ----------- | ----------------------------------------- |
-| `typecheck` | TypeScript check: renderer + main process |
+| Script                    | Description                                        |
+| ------------------------- | -------------------------------------------------- |
+| `typecheck`               | TypeScript check: renderer + main process          |
+| `typecheck:strict-shared` | Strict TypeScript check for shared/renderer subset |
 
-#### Quality Checks
+#### Quality checks
 
-| Script                | Description                                                 |
-| --------------------- | ----------------------------------------------------------- |
-| `check:log-injection` | Detect unsanitized user data in log calls                   |
-| `check:db-migrations` | Verify SQLite migrations are valid                          |
-| `check:i18n`          | Verify all UI strings have English keys and locale coverage |
-| `check:ipc-contract`  | Verify IPC channel contracts between main/preload/renderer  |
+| Script                            | Description                                                   |
+| --------------------------------- | ------------------------------------------------------------- |
+| `check:codeql-extensions`         | Verify CodeQL extension allowlist for custom queries          |
+| `check:console-log`               | Fail on bare `console.log` in production paths                |
+| `check:db-migrations`             | Verify SQLite migrations are valid                            |
+| `check:electron-security`         | Verify Electron security settings (CSP, sandbox, etc.)        |
+| `check:environment`               | Verify local dev prerequisites (run after clone)              |
+| `check:flatpak`                   | Lint Flatpak manifest and wrapper scripts                     |
+| `check:i18n`                      | Verify English keys, unused keys, and locale quality rules    |
+| `check:i18n:branch`               | Run i18n quality checks on keys new/changed vs `HEAD` only    |
+| `check:ipc-contract`              | Verify IPC channel contracts between main/preload/renderer    |
+| `check:licenses`                  | Summarize dependency licenses (`license-checker-rseidelsohn`) |
+| `check:log-injection`             | Detect unsanitized user data in log calls                     |
+| `check:log-panel-filter`          | Verify log panel filter wiring                                |
+| `check:log-service-sinks`         | Verify log service sink configuration                         |
+| `check:protocol-string-gates`     | Enforce protocol capability gates over string compares        |
+| `check:silent-catches`            | Detect empty or unlogged catch blocks                         |
+| `check:url-hostname-sanitization` | Verify URL hostname sanitization helpers                      |
+| `check:xss-patterns`              | Detect risky DOM/HTML sink patterns                           |
 
 #### Documentation
 
@@ -354,41 +378,51 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `docs:build`   | Build static docs to `site/`        |
 | `docs:serve`   | Serve docs locally with live reload |
 
-#### Setup / Helpers
+#### CI (act)
+
+| Script                   | Description                                             |
+| ------------------------ | ------------------------------------------------------- |
+| `act:ci`                 | Run Linux CI workflow via act + Docker (container mode) |
+| `act:ci:native`          | Run CI checks on the host (no Docker)                   |
+| `act:tests`              | Run tests workflow via act + Docker                     |
+| `act:tests:native`       | Run `test:coverage` on the host                         |
+| `act:pr`                 | Run `act:ci` then `act:tests` (container)               |
+| `act:pr:native`          | Run native CI + tests on the host                       |
+| `act:build:linux`        | Run `build.yaml` ubuntu leg via act + Docker            |
+| `act:build:linux:native` | Run `dist:linux` on the host                            |
+| `act:reticulum`          | Reticulum sidecar Linux jobs via act                    |
+| `act:reticulum:native`   | Reticulum sidecar stub `cargo test` / build on the host |
+| `act:flatpak`            | Flatpak x86_64 workflow via act (slow; privileged)      |
+| `act:pull-images`        | Pre-pull Docker images for act (container mode)         |
+| `act:list`               | List container and native act targets                   |
+
+#### Setup / helpers
 
 | Script                    | Description                                                |
 | ------------------------- | ---------------------------------------------------------- |
-| `act:ci`                  | Run Linux CI workflow via act + Docker (container mode)    |
-| `act:ci:native`           | Run CI checks on the host (no Docker)                      |
-| `act:tests`               | Run tests workflow via act + Docker                        |
-| `act:tests:native`        | Run `test:coverage` on the host                            |
-| `act:pr`                  | Run `act:ci` then `act:tests` (container)                  |
-| `act:pr:native`           | Run native CI + tests on the host                          |
-| `act:build:linux`         | Run `build.yaml` ubuntu leg via act                        |
-| `act:build:linux:native`  | Run `dist:linux` on the host                               |
-| `act:reticulum`           | Reticulum sidecar Linux jobs via act                       |
-| `act:reticulum:native`    | Reticulum sidecar stub `cargo test` / build on the host    |
-| `act:flatpak`             | Flatpak x86_64 workflow via act (slow; privileged)         |
-| `act:pull-images`         | Pre-pull Docker images for act (container mode)            |
-| `act:list`                | List container and native act targets                      |
-| `check:environment`       | Verify local dev prerequisites (run after clone)           |
+| `clean`                   | Remove `dist-electron`, `dist`, and `node_modules`         |
+| `dedupe:dist`             | Dedupe dependency tree before packaging (`predist` hook)   |
+| `i18n:auto-translate`     | Machine-translate missing locale keys (MyMemory default)   |
+| `i18n:prune-unused`       | Remove orphaned translation keys from locale files         |
+| `rebuild`                 | Rebuild native Node modules for Electron                   |
+| `release`                 | Maintainer release script (`scripts/release.sh`)           |
+| `reticulum:sidecar:build` | Build debug `mesh-client-reticulum` (requires `cargo`)     |
+| `reticulum:sidecar:dev`   | Run sidecar standalone on `127.0.0.1:19437`                |
 | `setup:actionlint`        | Install actionlint for GitHub workflow linting             |
 | `setup:build-deps`        | Install native build dependencies                          |
 | `setup:dialout`           | Add user to dialout group for serial port access (Linux)   |
-| `i18n:auto-translate`     | Machine-translate missing keys via MyMemory                |
-| `rebuild`                 | Rebuild native Node modules for Electron                   |
-| `reticulum:sidecar:build` | Build debug `mesh-client-reticulum` (requires `cargo`)     |
-| `reticulum:sidecar:dev`   | Run sidecar standalone on `127.0.0.1:19437`                |
 | `update`                  | Update pnpm deps, Rust toolchain (rustup), rebuild sidecar |
 
 #### Lifecycle (automatic)
 
-| Script        | Description                            |
-| ------------- | -------------------------------------- |
-| `preinstall`  | Enforce pnpm as package manager        |
-| `postinstall` | Rebuild native modules + apply patches |
-| `prepare`     | Enable git hooks                       |
-| `predist`     | Dedupe packages before packaging       |
+| Script        | Description                                                   |
+| ------------- | ------------------------------------------------------------- |
+| `preinstall`  | Enforce pnpm as package manager (`only-allow pnpm`)           |
+| `postinstall` | Rebuild native Node modules for Electron + apply pnpm patches |
+| `prepare`     | Enable git hooks (`core.hooksPath = .githooks`)               |
+| `predist`     | Run `dedupe:dist` before `dist` packaging                     |
+
+`postinstall` runs `scripts/rebuild-native.mjs` for Electron native addons and applies `pnpm.patchedDependencies` (Meshtastic JSR transports, MeshCore, Noble, `readable-stream`, `usb`, etc.). When bumping patched packages, update hashes under `patches/` and keep `WATCH_ENTRIES` in `scripts/update.sh` in sync — see [AGENTS.md](../AGENTS.md#6-commands--ci-checks).
 
 ### Dependabot dependency updates
 
@@ -417,12 +451,10 @@ This section is the project test harness setup.
 
 Installed via `pnpm install` (from `package.json`):
 
-- `vitest` and renderer/main test dependencies
-- `eslint`
-- `typescript`
-- `prettier`
-- `prettier-plugin-sh`
-- `markdownlint-cli2`
+- `vitest`, `@vitest/coverage-v8`, and renderer/main test dependencies
+- `eslint`, `typescript`, `typescript-eslint`
+- `prettier`, `prettier-plugin-sh`, `prettier-plugin-tailwindcss`
+- `markdownlint-cli2`, `vitest-axe`
 
 Not installed by pnpm (install separately when needed):
 
@@ -461,11 +493,16 @@ pnpm run format:check
 pnpm run check:i18n
 ```
 
-Other useful test commands:
+Other useful commands:
 
 - `pnpm test` (watch mode)
+- `pnpm run test:coverage` (CI coverage report; used by `act:tests:native`)
 - `pnpm run test:verbose` (verbose failures)
+- `pnpm run check:i18n:branch` (i18n quality on branch-diff keys only)
 - `pnpm run i18n:auto-translate` (fill missing keys)
+- `pnpm run i18n:prune-unused -- --write` (drop orphaned locale keys)
+
+The pre-commit hook runs the full `check:*` suite — see [Git hooks](#6-git-hooks-and-pre-commit-behavior).
 
 ### 5) Building a distributable
 
@@ -495,15 +532,31 @@ This generates `dist-electron/main/meta.json`. Upload this file to [esbuild's on
 
 ### 6) Git hooks and pre-commit behavior
 
-After `pnpm install`, repo hooks are enabled via `core.hooksPath` and pre-commit runs checks (format, lint, typecheck, audit, actionlint, tests).
+After `pnpm install`, repo hooks are enabled via `core.hooksPath` (see the `prepare` script in `package.json`). The pre-commit hook runs on every commit. **Expect commits to take 2+ minutes** — do not interrupt the hook chain.
 
-Emergency bypass is available:
+Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-commit)):
+
+1. If `package.json` or `pnpm-lock.yaml` is staged: `pnpm install --frozen-lockfile`
+2. Prettier on **staged** files only (not whole-tree `pnpm run format` unless you run it manually)
+3. markdownlint-cli2 on staged `.md` files only (not full `pnpm run lint:md` unless you run it manually)
+4. When any files were staged: `pnpm dedupe`, re-stage `pnpm-lock.yaml`, then re-stage the originally staged paths
+5. `pnpm run i18n:auto-translate` (incremental vs `HEAD` English, not `--all`) and re-stage `src/renderer/locales/` — see [Internationalization](#9-internationalization-i18n)
+6. `pnpm run lint`
+7. `pnpm run typecheck`
+8. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:i18n` (missing keys, unused English keys, and locale quality rules), `check:licenses`
+9. `pnpm audit --audit-level=high`
+10. `actionlint`, `yamllint`
+11. `pnpm run test:run -- --bail 1`
+
+Install hook dependencies via [Helper scripts](#8-helper-scripts-auto-install-where-possible) (`setup:actionlint`, yamllint via pip/brew/apt).
+
+Emergency bypass (temporary only):
 
 ```bash
 git commit --no-verify
 ```
 
-Use this only as a temporary escape hatch, then run the skipped checks manually as soon as possible.
+Run any skipped checks manually as soon as possible.
 
 ### 7) CI workflow tooling (optional but recommended)
 
@@ -563,14 +616,15 @@ These scripts try to install optional tooling automatically. If they fail (for e
 
 The app uses `i18next` for localization. English is the source of truth.
 
-- **Locale files**: `src/renderer/locales/{en,es,...}/translation.json`
+- **Locale files**: `src/renderer/locales/{en,es,uk,de,zh,pt-BR,fr,it,pl,cs,ja,ru,nl,ko,tr,id}/translation.json`
 - **Adding strings**:
   1. Add the new key and English value to `src/renderer/locales/en/translation.json`.
   2. Use the `t('key.name')` hook in React components.
   3. Run `pnpm run i18n:auto-translate` to machine-translate the new key into other supported languages.
   4. Run `pnpm run check:i18n` to verify all keys are valid and accounted for.
+- **Removing strings**: delete the English key, then run `pnpm run i18n:prune-unused -- --write` (or remove manually from every locale).
 
-Auto-translation uses MyMemory by default. Incremental translations (new keys only) run automatically during the git pre-commit hook. Use `pnpm run i18n:auto-translate --all` to force a full re-scan of all missing keys.
+Auto-translation uses MyMemory by default. Incremental translations (new keys only) run automatically during the git pre-commit hook. Use `pnpm run i18n:auto-translate --all` to force a full re-scan of all missing keys. Use `pnpm run check:i18n:branch` before large doc-only PRs to lint keys changed vs `HEAD` without the full unused-key pass.
 
 ### 10) Optional editor/tooling
 

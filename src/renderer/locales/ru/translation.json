@@ -2165,7 +2165,8 @@
       "dataSize": "Размер данных",
       "dataSizeBytes": "{{count}} байт",
       "rawDataHex": "Необработанные данные (шестнадцатеричный)"
-    }
+    },
+    "neighborsHopTooFar": "Соседи недоступны для повторителей {{hops}}+ переключается по последовательному порту USB"
   },
   "nodeInfoBody": {
     "longName": "Длинное имя",
@@ -2342,7 +2343,6 @@
     "hopsAway_other": "{{count}} упрыгивает",
     "openNode": "Просмотр {{name}}",
     "pagePath": "Путь к странице",
-    "pagePathAria": "Путь к странице Nomad",
     "homePage": "Домашняя страница",
     "reloadPage": "Обновить страницу",
     "closeViewer": "Закрыть просмотрщик страниц",
@@ -2355,7 +2355,11 @@
     "fileDownloadFailed": "Не удалось загрузить файл: {{error}}.",
     "fileDownloadInProgress": "Загрузка файла уже идет.",
     "sendMessage": "Сообщение",
-    "sendMessageAria": "Отправить сообщение {{name}}"
+    "sendMessageAria": "Отправить сообщение {{name}}",
+    "urlBarAria": "Адрес страницы кочевника",
+    "back": "Назад",
+    "forward": "Вперед",
+    "invalidUrl": "Неверный адрес страницы Nomad"
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",
@@ -3169,7 +3173,8 @@
     "telemetryGps": "GPS: {{coords}}{{alt}}",
     "telemetryGpsAlt": "альтернативный {{altitude}}m",
     "cliSend": "Отправлять",
-    "cliQuick": "Быстрый:"
+    "cliQuick": "Быстрый:",
+    "neighborsHopTooFar": "Соседи недоступны для повторителей {{hops}}+ переключается по последовательному порту USB"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Объявить интервал (секунды)",
@@ -3756,7 +3761,8 @@
         "timedOut": "Время выхода из комнаты истекло. Возможно, комната находится вне зоны действия или не отвечает.",
         "rejected": "Выход из комнаты отклонен по радио.",
         "failed": "Не мог покинуть комнату"
-      }
+      },
+      "repeaterRpcInProgress": "Запрос на этот ретранслятор уже обрабатывается"
     },
     "mqttHints": {
       "notAuthorized": "Проверьте имя пользователя v1_, подпись токена и аудиторию JWT по сравнению с брокером; см. документы/letsmesh-mqtt-auth.md. При необходимости используйте Custom, чтобы вставить токен, выданный оператором.",

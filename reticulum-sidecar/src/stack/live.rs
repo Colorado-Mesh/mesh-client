@@ -27,6 +27,7 @@ use super::StackHandle;
 use super::config;
 use super::local_rnode_primary;
 use super::nomad_file::nomad_file_name_from_path;
+use super::nomad_request_payload::nomad_page_request_payload;
 use super::nomad_timeouts;
 use super::packet_log::{emit_wire_packet_event, wire_packet_from_tap, PacketLogBuffer};
 use super::persistence::PersistedState;
@@ -333,6 +334,7 @@ impl LiveBridge {
         hash_hex: &str,
         identity_hash_hex: Option<&str>,
         path: &str,
+        data_b64: Option<&str>,
         interfaces: &[InterfaceRow],
     ) -> serde_json::Value {
         let remote_hash = match parse_hash16(identity_hash_hex.unwrap_or(hash_hex)) {
@@ -343,13 +345,14 @@ impl LiveBridge {
         };
         let hops = self.hops_to_destination(hash_hex).await.unwrap_or(8);
         let timeout_secs = nomad_timeouts::nomad_page_timeout_secs_for_interfaces(interfaces, hops);
+        let payload = nomad_page_request_payload(data_b64);
         let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
         match client
             .query(
                 remote_hash,
                 NOMAD_NODE_ASPECT,
                 path,
-                Vec::new(),
+                payload,
                 hops,
                 Duration::from_secs(timeout_secs),
             )

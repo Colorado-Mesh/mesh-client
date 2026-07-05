@@ -2,11 +2,11 @@
 
 Reticulum is a **shipped third protocol** in mesh-client (amber header pill). It runs alongside Meshtastic and MeshCore in the same Electron app: switch tabs without stopping the other stacks.
 
-The MIT TypeScript UI talks to an **AGPL Rust sidecar** (`mesh-client-reticulum`) over localhost HTTP/WebSocket via `electronAPI.reticulum`. LXMF chat history and contacts persist in the main-process SQLite database. Packaged releases bundle the sidecar binary; see [License](license.md) and [Credits — bundled binaries](credits.md#bundled-binaries).
+The MIT TypeScript UI talks to an **AGPL Rust sidecar** (`mesh-client-reticulum`) over localhost HTTP/WebSocket via `electronAPI.reticulum`. LXMF chat history and contacts persist in the main-process SQLite database. **Flatpak** releases always bundle the sidecar; **macOS / Linux / Windows** installers include it when `resources/reticulum-sidecar/` is populated at packaging time (see [Release Process — Reticulum sidecar](release-process.md#reticulum-sidecar-in-installers)). See [License](license.md) and [Credits — bundled binaries](credits.md#bundled-binaries).
 
 **Primary interop:** [Ratspeak](https://github.com/ratspeak/Ratspeak) peers on [rsReticulum](https://github.com/ratspeak/rsReticulum) / [rsLXMF](https://github.com/ratspeak/rsLXMF).
 
-Related docs: [README — Reticulum Features](../README.md#reticulum-features), [Sidecar IPC contract](reticulum-sidecar-ipc.md), [Development — Reticulum sidecar](development-environment.md#reticulum-sidecar-optional), [Troubleshooting — Reticulum](troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out).
+Related docs: [README — Reticulum Features](../README.md#reticulum-features), [Sidecar IPC contract](reticulum-sidecar-ipc.md), [Development — Reticulum sidecar](development-environment.md#reticulum-sidecar-optional), [Troubleshooting — Reticulum](troubleshooting.md#reticulum).
 
 ---
 
@@ -16,7 +16,7 @@ Related docs: [README — Reticulum Features](../README.md#reticulum-features), 
 2. **Connection** → **Start stack** (optional **Auto-start** for next launch).
 3. **Network** → generate or import your LXMF identity (stack must be running).
 4. **Connection → Interfaces** → add and enable transports (TCP hub, Auto, or RNode over USB / BLE / Wi‑Fi).
-5. **Chat** → LXMF direct messages. **Peers** and **Topology** for path-table visibility. **Nomad Network** for announce favourites.
+5. **Chat** → LXMF direct messages. **Peers** and **Topology** for path-table visibility. **Nomad Network** → browse announced nodes (Micron pages, back/forward, session cache).
 
 After changing interfaces on a live network, **restart the stack** so RNS picks up transport changes.
 
@@ -33,8 +33,8 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 | Delivery        | Direct when destination is in path table; propagated (PN) via preferred propagation node when offline                                                                           |
 | Peers           | RNS path table + LXMF contacts (Peers tab sub-tabs); probe and peer detail modal                                                                                                |
 | Topology        | Best-effort graph from path-table next hops (not a full multi-hop trace)                                                                                                        |
-| Nomad Network   | Favourites / announces list (MeshChat-style search and favourite toggle)                                                                                                        |
-| Propagation     | Preferred node, per-node sync, optional local propagation inbox                                                                                                                 |
+| Nomad Network   | Favourites / announces list; Micron (.mu) browser with in-page navigation, back/forward, session page cache, `/file/` downloads, source toggle, and lxmf:// DM links            |
+| Propagation     | Preferred node, per-node **Sync messages**, optional **local propagation inbox**, configurable **auto-sync interval**                                                           |
 | Diagnostics     | Reticulum-native interface / path / LXMF health and config audit (`reticulum/*` rows only on this tab; LoRa Hop Goblins and foreign-LoRa tables are Meshtastic/MeshCore-scoped) |
 | Admin           | RNode firmware flasher (Web Serial), stack factory reset                                                                                                                        |
 | Sniffer / Stats | Reticulum packet log tab (`rawPacketLog.reticulum.*`)                                                                                                                           |
@@ -46,20 +46,22 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 
 ## Sidebar tabs
 
-| Tab             | Role                                                                                                     |
-| --------------- | -------------------------------------------------------------------------------------------------------- |
-| Connection      | Stack start/stop, auto-start, interfaces CRUD, interface health                                          |
-| Chat            | LXMF DMs (only chat mode for Reticulum)                                                                  |
-| Nomad Network   | Favourites and announces                                                                                 |
-| Peers           | Path-table peers and LXMF contacts                                                                       |
-| Network         | Identity, stack settings, announces, propagation, config import/export, identity vault                   |
-| Admin           | RNode firmware flasher; factory reset (danger zone)                                                      |
-| Diagnostics     | Reticulum runtime rows + interface config audit/repair; LoRa routing/RF and foreign-LoRa findings hidden |
-| Topology        | Path-table graph (BFS layout; `via_hash` next-hop edges)                                                 |
-| Stats / Sniffer | Packet log views                                                                                         |
-| App             | Shared app settings, DB tools, appearance                                                                |
+| Tab             | Role                                                                                                                                        |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Connection      | Stack start/stop, auto-start, interfaces CRUD, interface health, **Pick device** (serial / BLE)                                             |
+| Chat            | LXMF DMs (only chat mode for Reticulum)                                                                                                     |
+| Nomad Network   | Favourites, announces, and Micron page browser (navigation, cache, file downloads)                                                          |
+| Peers           | Path-table peers and LXMF contacts (sidebar label **Peers**; Meshtastic/MeshCore use **Nodes**)                                             |
+| Network         | Identity, stack settings, announces, propagation, config import/export, identity vault (sidebar label **Network**; LoRa tabs use **Radio**) |
+| Admin           | RNode firmware flasher; factory reset (danger zone)                                                                                         |
+| Diagnostics     | Reticulum runtime rows + interface config audit/repair; LoRa routing/RF and foreign-LoRa findings hidden                                    |
+| Topology        | Path-table graph (BFS layout; `via_hash` next-hop edges)                                                                                    |
+| Stats / Sniffer | Packet log views (`rawPacketLog.reticulum.*`)                                                                                               |
+| App             | Shared app settings, DB tools, appearance (includes **Log panel** toggle)                                                                   |
 
-Hidden tabs (Meshtastic/MeshCore only): Map, Modules, Rooms, Telemetry, Security, TAK, RF, Graph.
+Hidden tabs (Meshtastic/MeshCore only): Map, Modules/Repeaters, Rooms, Telemetry, Security, TAK, RF, Graph.
+
+The **Log panel** (right rail, toggled from **App → Log panel**) is shared across protocols; on Reticulum it shows sidecar and local-interface lines tagged for filtering.
 
 ---
 
@@ -90,24 +92,33 @@ The renderer **must not** call the sidecar URL directly (sandbox). All HTTP/WS g
 
 ---
 
-## Interfaces (Connection tab)
+## Interface management (Connection tab)
 
 Config lives under `userData/reticulum/config/` (rnsd INI). The Connection tab supports add, edit, enable/disable, and delete:
 
-| Action           | Sidecar API                      |
-| ---------------- | -------------------------------- |
-| Add              | `POST /api/v1/interfaces`        |
-| Edit             | `PUT /api/v1/interfaces/{id}`    |
-| Enable / disable | `POST …/enable` or `…/disable`   |
-| Delete           | `DELETE /api/v1/interfaces/{id}` |
+| Action            | Sidecar API                                                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Add               | `POST /api/v1/interfaces`                                                                                                                        |
+| Edit              | `PUT /api/v1/interfaces/{id}`                                                                                                                    |
+| Enable / disable  | `POST …/enable` or `…/disable`                                                                                                                   |
+| Delete            | `DELETE /api/v1/interfaces/{id}`                                                                                                                 |
+| Set primary RNode | `POST /api/v1/interfaces/primary-local-rnode` `{ id }` when **two or more** enabled local RNode paths are active (USB serial, BLE, or local TCP) |
 
 **Fields by type**
 
 - **All:** display name
-- **TCP client:** host, port (mesh hub — default port **4242**)
-- **RNode:** USB serial, **Bluetooth** (`ble://…`), or **Wi‑Fi** (`tcp://host[:7633]`, default **7633**), LoRa preset, callsign — **Pick device** for serial/BLE; Wi‑Fi uses host + port fields
+- **TCP client:** host, port (mesh hub — default port **4242**); IPv6 literals use brackets: `[2001:db8::1]:4242`
+- **RNode:** USB serial, **Bluetooth** (`ble://…`), or **Wi‑Fi** (`tcp://host[:7633]`, default **7633**), LoRa preset, callsign
 - **BLE Peer mesh:** optional seed peer addresses
 - **Auto:** name only (link-local discovery)
+
+**Pick device** opens a modal for serial or BLE selection:
+
+- **Serial:** lists `GET /api/v1/serial/ports` with refresh; manual path entry supported
+- **BLE RNode / BLE Peer:** runs `GET /api/v1/ble/scan` with `mode=rnode` or `mode=peer` (8 s timeout); rescans after Noble/btleplug settle when Meshtastic/MeshCore also use BLE
+- Sidecar exposes `GET /api/v1/ble/availability` for permission / adapter state
+
+When multiple enabled local RNode interfaces are connected, the interface list shows which row is **primary**; use **Set as primary** to reorder via `primary-local-rnode` (see [Sidecar IPC](reticulum-sidecar-ipc.md)).
 
 **RNode Wi‑Fi:** stays type **RNode** with `port = tcp://host:7633`. Do **not** use the TCP Client type for RNode Wi‑Fi. Provision Wi‑Fi over USB from **Admin → Wi‑Fi** (or RNode AP bootstrap) before adding the interface. Packaged sidecars include `rns-rnode-tcp`. See [RNode over Wi-Fi](#rnode-over-wi-fi) below.
 
@@ -130,10 +141,11 @@ Config lives under `userData/reticulum/config/` (rnsd INI). The Connection tab s
 ## Network tab
 
 - **Identity:** generate, import mnemonic, export with passphrase, display name
+- **Multiple identities:** when the sidecar reports more than one row from `GET /api/v1/identities`, the **Identity switcher** dropdown calls `POST /api/v1/identities/switch` (stack restart may be required)
 - **Identity vault:** optional passcode (minimum 8 characters) to encrypt secrets in the main process; unlock is rate-limited
 - **Stack settings:** `enable_transport`, `share_instance`, `loglevel` via `PUT /api/v1/stack/settings` (UI merge-reads so `announce_interval_sec` is not cleared accidentally)
 - **Announces:** interval (`announce_interval_sec`, 0–86400) and **Clear announces** (`DELETE /api/v1/announces`) — live networks may repopulate the path table on the next peer refresh
-- **Propagation:** preferred node for offline DMs, per-node **Sync messages**, optional **local propagation inbox**, add remote nodes by 32-character hash
+- **Propagation:** preferred node for offline DMs, per-node **Sync messages**, add remote propagation nodes by 32-character hash, optional **local propagation inbox**, **auto-sync interval** (`auto_sync_interval_sec`; `0` disables periodic sync)
 
 ---
 
@@ -232,7 +244,7 @@ pnpm run reticulum:sidecar:build
 
 When sibling checkouts `../rsReticulum` and `../rsLXMF` exist, the build script applies required patches and compiles with **`rns-stack,rns-ble,rns-rnode-tcp`** (live path table, BLE, RNode USB/Wi‑Fi). Without siblings, Cargo builds the **stub** stack (file-backed API for UI/tests — not for real mesh I/O).
 
-**Electron dev:** **Start stack** auto-runs `cargo build` when the debug binary is missing, stale, or stub-only while siblings exist. First compile can take several minutes — pre-build with the command above.
+**Electron dev:** **Start stack** auto-runs `cargo build` when the debug binary is missing, when `reticulum-sidecar/src/**/*.rs` or `Cargo.toml` is newer than the binary, or when a stub binary is present but full-stack siblings exist. First compile can take several minutes — pre-build with the command above.
 
 **Run sidecar alone:**
 

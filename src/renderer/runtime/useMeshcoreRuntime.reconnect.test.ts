@@ -33,10 +33,17 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).not.toContain('RF link not ready before MeshCore reconnect open');
   });
 
+  it('marks everConfigured after successful initConn so auto-connect can reconnect', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /meshcoreRoomReconnectSyncRef\.current\(\);[\s\S]{0,80}meshcoreEverConfiguredRef\.current = true/,
+    );
+  });
+
   it('exports power suspend/resume handlers wired to reconnect', () => {
     expect(RUNTIME_SOURCE).toContain('onPowerSuspend');
     expect(RUNTIME_SOURCE).toContain('onPowerResume');
     expect(RUNTIME_SOURCE).toContain('handleMeshcoreConnectionLostRef.current()');
+    expect(RUNTIME_SOURCE).toContain('power resume — triggering reconnect');
     expect(RUNTIME_SOURCE).toContain('power resume — resetting reconnect budget');
     expect(RUNTIME_SOURCE).toContain('rehydrateMeshcoreConnectionParamsFromStorage');
     expect(RUNTIME_SOURCE).toContain('Noble BLE disconnected');

@@ -2165,7 +2165,8 @@
       "dataSize": "Rozmiar danych",
       "dataSizeBytes": "{{count}} bajtów",
       "rawDataHex": "Surowe dane (szesnastkowo)"
-    }
+    },
+    "neighborsHopTooFar": "Sąsiedzi niedostępni dla przemienników {{hops}}+ przeskakuje przez port szeregowy USB"
   },
   "nodeInfoBody": {
     "longName": "Długie imię",
@@ -2342,7 +2343,6 @@
     "hopsAway_other": "{{count}} odskakuje",
     "openNode": "Przeglądaj {{name}}",
     "pagePath": "Ścieżka strony",
-    "pagePathAria": "Ścieżka strony Nomada",
     "homePage": "Strona główna",
     "reloadPage": "Załaduj ponownie stronę",
     "closeViewer": "Zamknij przeglądarkę stron",
@@ -2355,7 +2355,11 @@
     "fileDownloadFailed": "Nie udało się pobrać pliku: {{error}}",
     "fileDownloadInProgress": "Pobieranie pliku już trwa.",
     "sendMessage": "Wiadomość",
-    "sendMessageAria": "Wyślij wiadomość do {{name}}"
+    "sendMessageAria": "Wyślij wiadomość do {{name}}",
+    "urlBarAria": "Adres strony Nomada",
+    "back": "Z powrotem",
+    "forward": "Do przodu",
+    "invalidUrl": "Nieprawidłowy adres strony Nomada"
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",
@@ -3169,7 +3173,8 @@
     "telemetryGps": "GPS: {{coords}}{{alt}}",
     "telemetryGpsAlt": "alt {{altitude}}m",
     "cliSend": "Wysłać",
-    "cliQuick": "Szybki:"
+    "cliQuick": "Szybki:",
+    "neighborsHopTooFar": "Sąsiedzi niedostępni dla przemienników {{hops}}+ przeskakuje przez port szeregowy USB"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",
@@ -3756,7 +3761,8 @@
         "timedOut": "Upłynął limit czasu wylogowania z pokoju. Pokój może być poza zasięgiem lub nie odpowiadać.",
         "rejected": "Wylogowanie z pokoju odrzucone przez radio.",
         "failed": "Nie można było opuścić pokoju"
-      }
+      },
+      "repeaterRpcInProgress": "Żądanie dotyczące tego wzmacniaka jest już w toku"
     },
     "mqttHints": {
       "notAuthorized": "Zweryfikuj nazwę użytkownika v1_, podpis tokena i odbiorców JWT w porównaniu z brokerem; zobacz dokumentacja/letsmesh-mqtt-auth.md. W razie potrzeby użyj opcji Niestandardowy, aby wkleić token wydany przez operatora.",

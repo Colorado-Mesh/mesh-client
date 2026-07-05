@@ -118,7 +118,7 @@ Outbound tapbacks use [`formatMeshcoreWireTapbackPrefix`](../src/renderer/lib/me
 | **Meshtastic**   | Unaffected — protobuf tapbacks (`replyId` + emoji flag), not MeshCore text lines.                                                                                                                                                                                                                                                                    |
 | **Dedup**        | mesh-client merges tapback RF/MQTT echoes ([`meshcoreStoreDedup.ts`](../src/renderer/lib/meshcoreStoreDedup.ts), 60 s window). Default outbound uses keyless `@[Name] …`; Open compat may send keyed/`r:`/`g:` wire on the same channel.                                                                                                             |
 
-Inbound: parse `r:HASH:INDEX` (MeshCore Open), keyed `@[Name#key] body` or emoji, and keyless `@[Name] body` / emoji from other clients. See [troubleshooting.md — MeshCore duplicate chat messages](troubleshooting.md#meshcore-duplicate-chat-messages).
+Inbound: parse `r:HASH:INDEX` (MeshCore Open), keyed `@[Name#key] body` or emoji, and keyless `@[Name] body` / emoji from other clients. See [troubleshooting.md — MeshCore reply misquote / duplicate chat messages](troubleshooting.md#meshcore-reply-misquote--duplicate-chat-messages).
 
 ## MeshCore MQTT JSON envelope (v1)
 

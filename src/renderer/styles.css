@@ -320,3 +320,10 @@ html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-off .cm-waterma
     color: rgb(95 130 125 / 0.92);
   }
 }
+
+/* Nomad Micron pages: monospace + optional locally installed Nerd Fonts for alignment. */
+.nomad-micron-page {
+  font-family:
+    'JetBrainsMono Nerd Font', 'FiraCode Nerd Font', 'Hack Nerd Font', ui-monospace, SFMono-Regular,
+    Menlo, Monaco, Consolas, monospace;
+}

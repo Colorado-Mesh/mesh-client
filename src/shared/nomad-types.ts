@@ -16,6 +16,9 @@ export interface NomadPageResponse {
   error?: string;
 }
 
+/** NomadNet link request field map (`field_*` / `var_*` keys). */
+export type NomadPageRequestData = Record<string, string>;
+
 export interface NomadFileResponse {
   ok: boolean;
   file_name?: string;

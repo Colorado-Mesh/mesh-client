@@ -1,8 +1,12 @@
 # Contributing to Mesh Client
 
-Thank you for your interest in contributing. See [docs/development-environment.md](docs/development-environment.md) for setup.
+Thank you for your interest in contributing.
 
-**Where conventions live:** [AGENTS.md](AGENTS.md) is self-contained for AI assistants (code style, testing, architecture, and security all inlined). **This file** covers human setup, hooks, and PR flow.
+| Topic                                                         | Document                                                           |
+| ------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Clone, prerequisites, commands, test harness, git hooks, i18n | [docs/development-environment.md](docs/development-environment.md) |
+| Code style, testing, architecture, security (AI assistants)   | [AGENTS.md](AGENTS.md)                                             |
+| PR flow and contribution expectations                         | **This file**                                                      |
 
 ## Code style & standards
 
@@ -15,49 +19,18 @@ Thank you for your interest in contributing. See [docs/development-environment.m
 
 ## Testing protocols
 
+See [Test harness setup and local quality checks](docs/development-environment.md#4-test-harness-setup-and-local-quality-checks) for Vitest projects, pre-PR commands, and browser dev stub behavior.
+
 - Renderer: jsdom (`src/renderer/**/*.test.{ts,tsx}`). Main: node (`src/main/**/*.test.ts`).
 - Mock console before spying logged errors (e.g. `vi.spyOn(console, 'warn').mockImplementation(() => {})`; use `beforeEach` when shared).
 - Update `src/main/index.contract.test.ts` when CSP, build config, IPC limits, or log filters change.
 - Accessibility: vitest-axe in component tests; see **Accessibility / axe** in [AGENTS.md](AGENTS.md#5-testing).
 
-## Quick Commands
-
-```bash
-node scripts/check-environment.mjs # before pnpm install (fresh clone)
-pnpm install
-pnpm run check:environment # after install
-pnpm run dev               # Development mode
-pnpm run build             # Production build
-pnpm run lint              # ESLint
-pnpm run test:run          # Run tests
-pnpm run update            # Update all deps, with update warnings for @meshtastic/core and @liamcottle/meshcore.js
-```
-
-## Pre-commit Hook
-
-Before each commit, the hook runs (order matters):
-
-1. `pnpm run format`: Prettier writes fixes (staged files only)
-2. `pnpm run lint:md`: Markdown fixes (staged `.md` files only)
-3. `pnpm dedupe` when dependency manifests are staged (updates `pnpm-lock.yaml`)
-4. Re-stage staged files
-5. `pnpm run i18n:auto-translate` (incremental vs `HEAD` English, not `--all`) and re-stage `src/renderer/locales/`
-6. `pnpm run lint`
-7. `pnpm run typecheck`
-8. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:i18n` (missing keys, **unused English keys**, and `scripts/check-i18n-quality.mjs` locale rules), `check:licenses`
-9. `pnpm audit --audit-level=high`
-10. `actionlint`, `yamllint`
-11. `pnpm run test:run`
-
-MyMemory uses **`info@coloradomesh.org`** as the default contact for the higher free quota unless **`MYMEMORY_EMAIL`** is set — see [AGENTS.md](AGENTS.md) (i18n / Localization).
-
-Skip in emergency: `git commit --no-verify`.
-
-## PR Process
+## PR process
 
 1. Describe your changes and what you tested
 2. Update docs if needed
-3. Run the checks you need before review (at minimum what the pre-commit hook runs, especially `pnpm run lint` and `pnpm run test:run`)
+3. Run the checks you need before review — at minimum the [local quality checks](docs/development-environment.md#4-test-harness-setup-and-local-quality-checks) and what the [pre-commit hook](docs/development-environment.md#6-git-hooks-and-pre-commit-behavior) runs
 4. Keep PR scope tight
 5. A maintainer will review
 

@@ -2165,7 +2165,8 @@
       "dataSize": "데이터 크기",
       "dataSizeBytes": "{{count}}바이트",
       "rawDataHex": "원시 데이터(16진수)"
-    }
+    },
+    "neighborsHopTooFar": "리피터에 사용할 수 없는 이웃 {{hops}}+ USB 직렬로 홉 이동"
   },
   "nodeInfoBody": {
     "longName": "긴 이름",
@@ -2342,7 +2343,6 @@
     "hopsAway_other": "{{count}} 깡충깡충 뛰다",
     "openNode": "{{name}} 찾아보기",
     "pagePath": "페이지 경로",
-    "pagePathAria": "노매드 페이지 경로",
     "homePage": "홈페이지",
     "reloadPage": "페이지 새로고침",
     "closeViewer": "페이지 뷰어 닫기",
@@ -2355,7 +2355,11 @@
     "fileDownloadFailed": "파일 다운로드 실패: {{error}}",
     "fileDownloadInProgress": "파일 다운로드가 이미 진행 중입니다.",
     "sendMessage": "메시지",
-    "sendMessageAria": "{{name}}에 메시지 보내기"
+    "sendMessageAria": "{{name}}에 메시지 보내기",
+    "urlBarAria": "노마드 페이지 주소",
+    "back": "뒤쪽에",
+    "forward": "앞으로",
+    "invalidUrl": "잘못된 Nomad 페이지 주소"
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",
@@ -3169,7 +3173,8 @@
     "telemetryGps": "GPS: {{coords}}{{alt}}",
     "telemetryGpsAlt": "대체 {{altitude}}m",
     "cliSend": "보내다",
-    "cliQuick": "빠른:"
+    "cliQuick": "빠른:",
+    "neighborsHopTooFar": "리피터에 사용할 수 없는 이웃 {{hops}}+ USB 직렬로 홉 이동"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",
@@ -3756,7 +3761,8 @@
         "timedOut": "회의실 로그아웃 시간이 초과되었습니다. 방이 범위를 벗어났거나 응답하지 않을 수 있습니다.",
         "rejected": "무선으로 룸 로그아웃이 거부되었습니다.",
         "failed": "회의실에서 나갈 수 없습니다."
-      }
+      },
+      "repeaterRpcInProgress": "이 중계기에 대한 요청이 이미 진행 중입니다."
     },
     "mqttHints": {
       "notAuthorized": "v1_ 사용자 이름, 토큰 서명, JWT 대상 및 브로커를 확인하세요. docs/letsmesh-mqtt-auth.md를 참조하세요. 필요한 경우 사용자 지정을 사용하여 운영자가 발급한 토큰을 붙여넣습니다.",

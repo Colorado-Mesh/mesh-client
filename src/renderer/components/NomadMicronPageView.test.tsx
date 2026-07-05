@@ -69,4 +69,26 @@ describe('NomadMicronPageView', () => {
     expect(onOpenDm).toHaveBeenCalledWith(LXMF_HASH);
     expect(onNavigate).not.toHaveBeenCalled();
   });
+
+  it('submits Micron form field values on link click', () => {
+    const onNavigate = vi.fn();
+    const markup = ['`Search:`', '`<20|q`>`', '`[Go`:/page/results.mu`q|mode=search|*]`'].join(
+      '\n',
+    );
+    render(<NomadMicronPageView {...defaultProps} onNavigate={onNavigate} content={markup} />);
+    const textInput = document.querySelector<HTMLInputElement>('input[name="q"]');
+    expect(textInput).not.toBeNull();
+    if (textInput) textInput.value = 'mesh';
+    const link = document.querySelector<HTMLElement>('[data-action="openNode"]');
+    expect(link).not.toBeNull();
+    fireEvent.click(link!);
+    expect(onNavigate).toHaveBeenCalledWith(
+      defaultProps.selectedHash,
+      '/page/results.mu',
+      expect.objectContaining({
+        field_q: 'mesh',
+        var_mode: 'search',
+      }),
+    );
+  });
 });

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 import {
+  buildNomadLinkRequest,
   isExternalHttpUrl,
   isNomadFilePath,
   mountNomadMicronHtml,
@@ -16,7 +17,7 @@ interface NomadMicronPageViewProps {
   content: string;
   defaultPagePath: string;
   selectedHash: string;
-  onNavigate: (hash: string, path: string) => void;
+  onNavigate: (hash: string, path: string, requestData?: Record<string, string>) => void;
   onDownloadFile: (hash: string, path: string) => void;
   onOpenDm?: (destinationHash: string) => void;
 }
@@ -32,7 +33,7 @@ export default function NomadMicronPageView({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleNomadLink = useCallback(
-    (destination: string) => {
+    (destination: string, dataFieldsAttr?: string | null) => {
       if (isExternalHttpUrl(destination)) {
         window.open(destination, '_blank', 'noopener,noreferrer');
         return;
@@ -44,7 +45,13 @@ export default function NomadMicronPageView({
         return;
       }
 
-      const parsed = parseNomadNetworkLinkUrl(destination, defaultPagePath);
+      const { destination: linkDest, requestData } = buildNomadLinkRequest(
+        destination,
+        dataFieldsAttr,
+        containerRef.current,
+      );
+
+      const parsed = parseNomadNetworkLinkUrl(linkDest, defaultPagePath);
       if (!parsed) return;
 
       const hash = parsed.destination_hash ?? selectedHash;
@@ -52,7 +59,7 @@ export default function NomadMicronPageView({
         onDownloadFile(hash, parsed.path);
         return;
       }
-      onNavigate(hash, parsed.path);
+      onNavigate(hash, parsed.path, Object.keys(requestData).length > 0 ? requestData : undefined);
     },
     [defaultPagePath, onDownloadFile, onNavigate, onOpenDm, selectedHash],
   );
@@ -74,7 +81,8 @@ export default function NomadMicronPageView({
         const lxmfSource = [href, title].find((v) => v && isReticulumLxmfLink(v));
         const destination = (lxmfSource ?? dataDestination) || href;
         if (!destination) return;
-        handleNomadLink(destination);
+        const dataFields = element.getAttribute('data-fields');
+        handleNomadLink(destination, dataFields);
       };
       element.addEventListener('click', onActivate);
       cleanups.push(() => {
@@ -89,7 +97,7 @@ export default function NomadMicronPageView({
   return (
     <div
       ref={containerRef}
-      className="nomad-micron-page text-sm leading-relaxed text-gray-200 [&_a]:text-amber-400 [&_a]:underline [&_a:hover]:text-amber-300 [&_hr]:my-3 [&_hr]:border-gray-600"
+      className="nomad-micron-page text-sm leading-snug text-gray-200 [&_a]:text-amber-400 [&_a]:underline [&_a:hover]:text-amber-300 [&_hr]:my-3 [&_hr]:border-gray-600 [&_input]:rounded [&_input]:border [&_input]:border-gray-600 [&_input]:bg-slate-900 [&_input]:px-1 [&_input]:text-gray-200"
     />
   );
 }

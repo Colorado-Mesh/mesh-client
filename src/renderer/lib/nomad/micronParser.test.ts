@@ -2,11 +2,15 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildNomadLinkRequest,
+  collectNomadFormFieldValues,
   isNomadFilePath,
   isNomadMicronPage,
   mountNomadMicronHtml,
+  parseNomadLinkFieldsSpec,
   parseNomadNetworkLinkUrl,
   renderNomadMicronPage,
+  splitNomadLinkDestination,
 } from './micronParser';
 
 describe('renderNomadMicronPage', () => {
@@ -95,5 +99,60 @@ describe('isNomadMicronPage', () => {
     expect(isNomadMicronPage('micron', '/page/index.mu')).toBe(true);
     expect(isNomadMicronPage(undefined, '/page/index.mu')).toBe(true);
     expect(isNomadMicronPage('text/plain', '/file/readme.txt')).toBe(false);
+  });
+});
+
+describe('parseNomadLinkFieldsSpec', () => {
+  it('parses named fields, submit-all, and request vars', () => {
+    expect(parseNomadLinkFieldsSpec('q|mode=search')).toEqual({
+      fieldNames: ['q'],
+      requestVars: { mode: 'search' },
+    });
+    expect(parseNomadLinkFieldsSpec('*')).toEqual({
+      fieldNames: '*',
+      requestVars: {},
+    });
+  });
+});
+
+describe('collectNomadFormFieldValues', () => {
+  it('collects text, checkbox, and radio values with field_ prefix', () => {
+    const container = document.createElement('div');
+    container.innerHTML = [
+      '<input name="q" value="hello">',
+      '<input type="checkbox" name="agree" value="yes" checked>',
+      '<input type="radio" name="pick" value="a">',
+      '<input type="radio" name="pick" value="b" checked>',
+    ].join('');
+    const values = collectNomadFormFieldValues(container, {
+      fieldNames: '*',
+      requestVars: { mode: 'search' },
+    });
+    expect(values).toEqual({
+      var_mode: 'search',
+      field_q: 'hello',
+      field_agree: 'yes',
+      field_pick: 'b',
+    });
+  });
+});
+
+describe('buildNomadLinkRequest', () => {
+  it('strips embedded backtick vars and collects named fields', () => {
+    const container = document.createElement('div');
+    container.innerHTML = '<input name="q" value="mesh">';
+    const result = buildNomadLinkRequest(':/page/search.mu`mode=results', 'q', container);
+    expect(result.destination).toBe(':/page/search.mu');
+    expect(result.requestData).toEqual({
+      var_mode: 'results',
+      field_q: 'mesh',
+    });
+  });
+
+  it('splits destination with splitNomadLinkDestination', () => {
+    expect(splitNomadLinkDestination(':/page/foo.mu`a=1|b=2')).toEqual({
+      baseDestination: ':/page/foo.mu',
+      embeddedFieldsSpec: 'a=1|b=2',
+    });
   });
 });

@@ -2165,7 +2165,8 @@
       "dataSize": "数据大小",
       "dataSizeBytes": "{{count}} 字节",
       "rawDataHex": "原始数据（十六进制）"
-    }
+    },
+    "neighborsHopTooFar": "邻居无法使用中继器 {{hops}}+ 通过 USB 串行跳远"
   },
   "nodeInfoBody": {
     "longName": "长名称",
@@ -2342,7 +2343,6 @@
     "hopsAway_other": "{{count}} 跳开",
     "openNode": "浏览{{name}}",
     "pagePath": "页面路径",
-    "pagePathAria": "游牧页面路径",
     "homePage": "主页",
     "reloadPage": "重新加载页面",
     "closeViewer": "关闭页面查看器",
@@ -2355,7 +2355,11 @@
     "fileDownloadFailed": "下载文件失败：{{error}}",
     "fileDownloadInProgress": "文件下载已在进行中。",
     "sendMessage": "信息",
-    "sendMessageAria": "发送消息至 {{name}}"
+    "sendMessageAria": "发送消息至 {{name}}",
+    "urlBarAria": "游牧页面地址",
+    "back": "后退",
+    "forward": "向前",
+    "invalidUrl": "Nomad 页面地址无效"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",
@@ -3169,7 +3173,8 @@
     "telemetryGps": "GPS：{{coords}}{{alt}}",
     "telemetryGpsAlt": "替代 {{altitude}}m",
     "cliSend": "发送",
-    "cliQuick": "快的："
+    "cliQuick": "快的：",
+    "neighborsHopTooFar": "邻居无法使用中继器 {{hops}}+ 通过 USB 串行跳远"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",
@@ -3756,7 +3761,8 @@
         "timedOut": "房间注销超时。房间可能超出范围或没有响应。",
         "rejected": "房间注销被无线电拒绝。",
         "failed": "无法离开房间"
-      }
+      },
+      "repeaterRpcInProgress": "对此转发器的请求已在进行中"
     },
     "mqttHints": {
       "notAuthorized": "验证 v1_ 用户名、令牌签名和 JWT 受众与经纪人；请参阅 docs/letsmesh-mqtt-auth.md。如果需要，使用自定义粘贴操作员颁发的令牌。",

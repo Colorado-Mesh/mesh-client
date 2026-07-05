@@ -8,6 +8,29 @@ import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore
 import RepeatersPanel from './RepeatersPanel';
 
 const mockAddToast = vi.fn();
+const VIRTUALIZER_VISIBLE_CAP = 3;
+
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: (opts: Record<string, unknown> & { count: number; enabled?: boolean }) => {
+    const enabled = opts.enabled !== false;
+    const total = opts.count;
+    const visible = enabled && total > 100 ? Math.min(total, VIRTUALIZER_VISIBLE_CAP) : total;
+    return {
+      getVirtualItems: () =>
+        Array.from({ length: visible }, (_, index) => ({
+          index,
+          start: index * 48,
+          end: (index + 1) * 48,
+          size: 48,
+          key: index,
+          lane: 0,
+        })),
+      getTotalSize: () => total * 48,
+      measureElement: vi.fn(),
+      measure: vi.fn(),
+    };
+  },
+}));
 
 vi.mock('./Toast', () => ({
   useToast: () => ({
@@ -264,29 +287,42 @@ describe('RepeatersPanel', () => {
     expect(dbOutcomeSpy).toHaveBeenCalledWith(repeater.node_id, pathHash, true, undefined);
   });
 
-  it('loads reliability from DB via ensureBestPathLoaded fallback on mount', async () => {
-    vi.spyOn(window.electronAPI.db, 'getMeshcorePathHistory').mockResolvedValue([
-      {
-        id: 1,
-        node_id: repeater.node_id,
-        path_hash: 'bb',
-        hop_count: 1,
-        path_bytes: '[187]',
-        was_flood_discovery: 0,
-        success_count: 3,
-        failure_count: 1,
-        trip_time_ms: 0,
-        route_weight: 1,
-        last_success_ts: null,
-        created_at: 1,
-        updated_at: 2,
-      },
-    ]);
-
-    render(<RepeatersPanel {...makeBaseProps()} />);
-
+  it('loads getMeshcoreContacts only once on mount when nodes grow', async () => {
+    const contactsSpy = vi.spyOn(window.electronAPI.db, 'getMeshcoreContacts');
+    const props = makeBaseProps();
+    const { rerender } = render(<RepeatersPanel {...props} />);
     await waitFor(() => {
-      expect(screen.getByText('75%')).toBeInTheDocument();
+      expect(contactsSpy).toHaveBeenCalledTimes(1);
     });
+
+    const moreNodes = new Map(props.nodes);
+    moreNodes.set(0xdef, mockRepeaterNode(0xdef));
+    rerender(<RepeatersPanel {...props} nodes={moreNodes} />);
+    expect(contactsSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('virtualizes large repeater lists to a small DOM window', () => {
+    const nodes = new Map<number, MeshNode>();
+    for (let i = 0; i < 150; i++) {
+      nodes.set(i, mockRepeaterNodeWithFavorited(i, false));
+    }
+    render(<RepeatersPanel {...makeBaseProps()} nodes={nodes} />);
+
+    const nameLinks = screen
+      .getAllByRole('button')
+      .filter((b) => b.className.includes('underline'));
+    expect(nameLinks.length).toBe(VIRTUALIZER_VISIBLE_CAP);
+  });
+
+  it('disables neighbors for repeaters at or beyond hop threshold', () => {
+    const far = { ...repeater, hops_away: 10 };
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[far.node_id, far]])}
+        onRequestNeighbors={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Repeater neighbors' })).toBeDisabled();
   });
 });

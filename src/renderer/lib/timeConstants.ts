@@ -202,3 +202,24 @@ export const MESHCORE_BLE_DEVICE_QUERY_TIMEOUT_MS = 8_000;
 
 /** Exponential backoff cap for RF auto-reconnect (2s × 2^attempt, max this value). */
 export const MESHCORE_MAX_RECONNECT_DELAY_MS = 32_000;
+
+/** Hop-scaled timeout base for repeater status / telemetry / neighbors RPCs (USB serial queue). */
+export const MESHCORE_REPEATER_RPC_TIMEOUT_BASE_MS = 30_000;
+
+/** Per-hop increment for repeater RPC timeout. */
+export const MESHCORE_REPEATER_RPC_TIMEOUT_PER_HOP_MS = 5_000;
+
+/** Hard cap for hop-scaled repeater RPC timeout (below legacy 120s flat). */
+export const MESHCORE_REPEATER_RPC_TIMEOUT_CAP_MS = 90_000;
+
+/**
+ * Timeout for serialized repeater RPCs (status, telemetry, neighbors) scaled by hop count.
+ * Trace/ping keeps separate longer caps.
+ */
+export function meshcoreRepeaterRpcTimeoutMs(hopsAway?: number | null): number {
+  const hops =
+    hopsAway != null && Number.isFinite(hopsAway) ? Math.max(0, Math.trunc(hopsAway)) : 0;
+  const scaled =
+    MESHCORE_REPEATER_RPC_TIMEOUT_BASE_MS + hops * MESHCORE_REPEATER_RPC_TIMEOUT_PER_HOP_MS;
+  return Math.min(MESHCORE_REPEATER_RPC_TIMEOUT_CAP_MS, scaled);
+}

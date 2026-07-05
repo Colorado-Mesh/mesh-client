@@ -2165,7 +2165,8 @@
       "dataSize": "Gegevensgrootte",
       "dataSizeBytes": "{{count}} bytes",
       "rawDataHex": "Ruwe gegevens (hexadecimaal)"
-    }
+    },
+    "neighborsHopTooFar": "Buren niet beschikbaar voor repeaters {{hops}}+ springt weg op USB-serieel"
   },
   "nodeInfoBody": {
     "longName": "Lange naam",
@@ -2342,7 +2343,6 @@
     "hopsAway_other": "{{count}} springt weg",
     "openNode": "Blader door {{name}}",
     "pagePath": "Paginapad",
-    "pagePathAria": "Nomadenpaginapad",
     "homePage": "Startpagina",
     "reloadPage": "Pagina opnieuw laden",
     "closeViewer": "Paginaviewer sluiten",
@@ -2355,7 +2355,11 @@
     "fileDownloadFailed": "Kan bestand niet downloaden: {{error}}",
     "fileDownloadInProgress": "Er wordt al een bestand gedownload.",
     "sendMessage": "Bericht",
-    "sendMessageAria": "Stuur bericht naar {{name}}"
+    "sendMessageAria": "Stuur bericht naar {{name}}",
+    "urlBarAria": "Adres van de nomadenpagina",
+    "back": "Rug",
+    "forward": "Vooruit",
+    "invalidUrl": "Ongeldig Nomad-paginaadres"
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",
@@ -3169,7 +3173,8 @@
     "telemetryGps": "GPS: {{coords}}{{alt}}",
     "telemetryGpsAlt": "alt {{altitude}}m",
     "cliSend": "Versturen",
-    "cliQuick": "Snel:"
+    "cliQuick": "Snel:",
+    "neighborsHopTooFar": "Buren niet beschikbaar voor repeaters {{hops}}+ springt weg op USB-serieel"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",
@@ -3756,7 +3761,8 @@
         "timedOut": "Room logout timed out. De kamer is mogelijk buiten bereik of reageert niet.",
         "rejected": "Uitloggen van kamer geweigerd via de radio.",
         "failed": "Kon de kamer niet verlaten"
-      }
+      },
+      "repeaterRpcInProgress": "Er is al een aanvraag voor deze repeater in behandeling"
     },
     "mqttHints": {
       "notAuthorized": "Controleer v1_ gebruikersnaam, tokenhandtekening en JWT-doelgroep versus makelaar; zie docs/letsmesh-mqtt-auth.md. Gebruik Aangepast om indien nodig een door de operator uitgegeven token te plakken.",
