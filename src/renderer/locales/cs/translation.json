@@ -2359,7 +2359,9 @@
     "urlBarAria": "Adresa stránky Nomád",
     "back": "Zadní",
     "forward": "Vpřed",
-    "invalidUrl": "Neplatná adresa stránky Nomad"
+    "invalidUrl": "Neplatná adresa stránky Nomad",
+    "collapseNodeList": "Sbalit seznam uzlů",
+    "expandNodeList": "Rozbalit seznam uzlů"
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",

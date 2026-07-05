@@ -2359,7 +2359,9 @@
     "urlBarAria": "노마드 페이지 주소",
     "back": "뒤쪽에",
     "forward": "앞으로",
-    "invalidUrl": "잘못된 Nomad 페이지 주소"
+    "invalidUrl": "잘못된 Nomad 페이지 주소",
+    "collapseNodeList": "노드 목록 축소",
+    "expandNodeList": "노드 목록 펼치기"
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",

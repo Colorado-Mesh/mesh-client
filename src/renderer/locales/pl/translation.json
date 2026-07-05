@@ -2359,7 +2359,9 @@
     "urlBarAria": "Adres strony Nomada",
     "back": "Z powrotem",
     "forward": "Do przodu",
-    "invalidUrl": "Nieprawidłowy adres strony Nomada"
+    "invalidUrl": "Nieprawidłowy adres strony Nomada",
+    "collapseNodeList": "Zwiń listę węzłów",
+    "expandNodeList": "Rozwiń listę węzłów"
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",

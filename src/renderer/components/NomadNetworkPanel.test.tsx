@@ -397,4 +397,52 @@ describe('NomadNetworkPanel', () => {
     );
     expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('hello');
   });
+
+  it('collapses node list and persists preference', async () => {
+    localStorage.removeItem('mesh-client:nomadNodeListCollapsed');
+    const user = userEvent.setup();
+    render(<NomadNetworkPanel />);
+
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+    await user.click(screen.getByLabelText('nomadNetwork.collapseNodeList'));
+
+    expect(localStorage.getItem('mesh-client:nomadNodeListCollapsed')).toBe('true');
+    expect(screen.getByLabelText('nomadNetwork.expandNodeList')).toBeInTheDocument();
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'nomadNetwork.favourites' })).not.toBeInTheDocument();
+    expect(screen.getByText('TT')).toBeInTheDocument();
+    expect(screen.getByLabelText('nomadNetwork.openNode')).toBeInTheDocument();
+  });
+
+  it('opens a node from the collapsed node list', async () => {
+    localStorage.setItem('mesh-client:nomadNodeListCollapsed', 'true');
+    const user = userEvent.setup();
+    const fetchNomadPage = vi.fn().mockResolvedValue({
+      ok: true,
+      content: '`!Collapsed browse:`!',
+      content_type: 'micron',
+    });
+    useNomadNetworkStore.setState({
+      fetchNomadPage,
+      nodes: new Map([
+        [
+          'abc1234567890',
+          {
+            destination_hash: 'abc1234567890',
+            display_name: 'TOPICS! The Nomad Forum',
+            favorited: true,
+          },
+        ],
+      ]),
+    });
+
+    render(<NomadNetworkPanel />);
+    await user.click(screen.getByLabelText('nomadNetwork.openNode'));
+
+    await waitFor(() => {
+      expect(document.querySelector('.nomad-micron-page')?.textContent).toContain(
+        'Collapsed browse',
+      );
+    });
+  });
 });

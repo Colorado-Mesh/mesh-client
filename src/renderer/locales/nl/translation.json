@@ -2359,7 +2359,9 @@
     "urlBarAria": "Adres van de nomadenpagina",
     "back": "Rug",
     "forward": "Vooruit",
-    "invalidUrl": "Ongeldig Nomad-paginaadres"
+    "invalidUrl": "Ongeldig Nomad-paginaadres",
+    "collapseNodeList": "Knooppuntenlijst samenvouwen",
+    "expandNodeList": "Knooppuntenlijst uitvouwen"
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",

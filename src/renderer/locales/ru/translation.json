@@ -2359,7 +2359,9 @@
     "urlBarAria": "Адрес страницы кочевника",
     "back": "Назад",
     "forward": "Вперед",
-    "invalidUrl": "Неверный адрес страницы Nomad"
+    "invalidUrl": "Неверный адрес страницы Nomad",
+    "collapseNodeList": "Свернуть список узлов",
+    "expandNodeList": "Развернуть список узлов"
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",

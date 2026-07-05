@@ -2359,7 +2359,9 @@
     "urlBarAria": "Indirizzo della pagina nomade",
     "back": "Indietro",
     "forward": "Inoltrare",
-    "invalidUrl": "Indirizzo della pagina Nomad non valido"
+    "invalidUrl": "Indirizzo della pagina Nomad non valido",
+    "collapseNodeList": "Comprimi l'elenco dei nodi",
+    "expandNodeList": "Espandi elenco nodi"
   },
   "packetDistribution": {
     "overallDistribution": "Distribuzione complessiva",

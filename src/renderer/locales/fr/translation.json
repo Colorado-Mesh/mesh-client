@@ -2359,7 +2359,9 @@
     "urlBarAria": "Adresse de la page nomade",
     "back": "Dos",
     "forward": "Avant",
-    "invalidUrl": "Adresse de la page Nomad invalide"
+    "invalidUrl": "Adresse de la page Nomad invalide",
+    "collapseNodeList": "Réduire la liste des nœuds",
+    "expandNodeList": "Développer la liste des nœuds"
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",

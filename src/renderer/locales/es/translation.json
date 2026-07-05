@@ -2359,7 +2359,9 @@
     "urlBarAria": "Dirección de la página nómada",
     "back": "Atrás",
     "forward": "Adelante",
-    "invalidUrl": "Dirección de página de Nomad no válida"
+    "invalidUrl": "Dirección de página de Nomad no válida",
+    "collapseNodeList": "Contraer lista de nodos",
+    "expandNodeList": "Expandir lista de nodos"
   },
   "packetDistribution": {
     "overallDistribution": "Distribución general",

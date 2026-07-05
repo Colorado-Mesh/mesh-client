@@ -2359,7 +2359,9 @@
     "urlBarAria": "游牧页面地址",
     "back": "后退",
     "forward": "向前",
-    "invalidUrl": "Nomad 页面地址无效"
+    "invalidUrl": "Nomad 页面地址无效",
+    "collapseNodeList": "折叠节点列表",
+    "expandNodeList": "展开节点列表"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",

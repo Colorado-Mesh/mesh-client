@@ -2359,7 +2359,9 @@
     "urlBarAria": "Göçebe sayfa adresi",
     "back": "Geri",
     "forward": "İleri",
-    "invalidUrl": "Geçersiz Göçebe sayfa adresi"
+    "invalidUrl": "Geçersiz Göçebe sayfa adresi",
+    "collapseNodeList": "Düğüm listesini daralt",
+    "expandNodeList": "Düğüm listesini genişlet"
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",

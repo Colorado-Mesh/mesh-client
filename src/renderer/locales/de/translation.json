@@ -2359,7 +2359,9 @@
     "urlBarAria": "Nomad-Seitenadresse",
     "back": "Zurück",
     "forward": "Nach vorne",
-    "invalidUrl": "Ungültige Nomad-Seitenadresse"
+    "invalidUrl": "Ungültige Nomad-Seitenadresse",
+    "collapseNodeList": "Knotenliste einklappen",
+    "expandNodeList": "Knotenliste erweitern"
   },
   "packetDistribution": {
     "overallDistribution": "Gesamtverteilung",

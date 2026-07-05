@@ -2331,7 +2331,9 @@
     "fileDownloadFailed": "Failed to download file: {{error}}",
     "fileDownloadInProgress": "A file download is already in progress.",
     "sendMessage": "Message",
-    "sendMessageAria": "Send message to {{name}}"
+    "sendMessageAria": "Send message to {{name}}",
+    "collapseNodeList": "Collapse node list",
+    "expandNodeList": "Expand node list"
   },
   "packetDistribution": {
     "overallDistribution": "Overall Distribution",

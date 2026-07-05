@@ -2359,7 +2359,9 @@
     "urlBarAria": "ノマドページのアドレス",
     "back": "戻る",
     "forward": "フォワード",
-    "invalidUrl": "Nomad ページのアドレスが無効です"
+    "invalidUrl": "Nomad ページのアドレスが無効です",
+    "collapseNodeList": "ノードリストを折りたたむ",
+    "expandNodeList": "ノードリストを展開"
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",

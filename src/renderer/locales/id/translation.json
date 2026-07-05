@@ -2359,7 +2359,9 @@
     "urlBarAria": "Alamat halaman pengembara",
     "back": "Kembali",
     "forward": "Maju",
-    "invalidUrl": "Alamat halaman Nomad tidak valid"
+    "invalidUrl": "Alamat halaman Nomad tidak valid",
+    "collapseNodeList": "Ciutkan daftar simpul",
+    "expandNodeList": "Perluas daftar simpul"
   },
   "packetDistribution": {
     "overallDistribution": "Distribusi Keseluruhan",

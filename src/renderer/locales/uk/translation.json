@@ -2359,7 +2359,9 @@
     "urlBarAria": "Адреса сторінки Nomad",
     "back": "Назад",
     "forward": "вперед",
-    "invalidUrl": "Недійсна адреса сторінки Nomad"
+    "invalidUrl": "Недійсна адреса сторінки Nomad",
+    "collapseNodeList": "Згорнути список вузлів",
+    "expandNodeList": "Розгорнути список вузлів"
   },
   "packetDistribution": {
     "overallDistribution": "Загальний розподіл",
