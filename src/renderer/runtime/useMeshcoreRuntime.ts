@@ -1682,6 +1682,7 @@ export function useMeshcoreRuntime() {
       teardownMeshcoreConnEventListeners,
       meshcorePreviousNodesBaselineForBuild,
       handleConnectionLostRef: handleMeshcoreConnectionLostRef,
+      meshcoreExplicitDisconnectRef,
       bumpLastDataReceived: bumpMeshcoreLastDataReceived,
     }),
     [
@@ -2380,6 +2381,12 @@ export function useMeshcoreRuntime() {
   const finalizeDriverDisconnect = useCallback(
     async (opts?: { disconnectDriver?: boolean }) => {
       const disconnectDriver = opts?.disconnectDriver !== false;
+      meshcoreExplicitDisconnectRef.current = true;
+      meshcoreEverConfiguredRef.current = false;
+      meshcoreConnectionParamsRef.current = null;
+      meshcoreIsReconnectingRef.current = false;
+      meshcoreReconnectAttemptRef.current = 0;
+      meshcoreReconnectGenerationRef.current += 1;
       meshcoreSetupGenerationRef.current += 1;
       const ackEntries = new Set(pendingAcksRef.current.values());
       for (const e of ackEntries) {
@@ -2591,6 +2598,10 @@ export function useMeshcoreRuntime() {
   attemptMeshcoreReconnectRef.current = attemptMeshcoreReconnect;
 
   const handleMeshcoreConnectionLost = useCallback(() => {
+    if (meshcoreExplicitDisconnectRef.current) {
+      console.debug('[useMeshcoreRuntime] skip reconnect (user disconnect)');
+      return;
+    }
     if (
       !meshcoreEverConfiguredRef.current &&
       meshcoreReconnectAttemptRef.current === 0 &&
@@ -2921,12 +2932,6 @@ export function useMeshcoreRuntime() {
   );
 
   const disconnect = useCallback(async () => {
-    meshcoreExplicitDisconnectRef.current = true;
-    meshcoreEverConfiguredRef.current = false;
-    meshcoreConnectionParamsRef.current = null;
-    meshcoreIsReconnectingRef.current = false;
-    meshcoreReconnectAttemptRef.current = 0;
-    meshcoreReconnectGenerationRef.current += 1;
     await finalizeDriverDisconnect({ disconnectDriver: true });
   }, [finalizeDriverDisconnect]);
 

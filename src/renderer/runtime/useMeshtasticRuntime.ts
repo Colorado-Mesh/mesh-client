@@ -2230,6 +2230,7 @@ export function useMeshtasticRuntime() {
       cleanupSubscriptions();
       stopWatchdog();
       stopGpsInterval();
+      meshtasticExplicitDisconnectRef.current = true;
       isReconnectingRef.current = false;
       reconnectAttemptRef.current = 0;
       reconnectGenerationRef.current++;
