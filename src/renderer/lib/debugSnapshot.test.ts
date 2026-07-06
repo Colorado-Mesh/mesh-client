@@ -13,8 +13,10 @@ import { lastReadStorageKey } from './chatPanelProtocolStorage';
 import {
   analyzeDebugSnapshot,
   buildDebugSnapshot,
+  buildDebugSnapshotAsync,
   copyDebugSnapshotToClipboard,
   DEBUG_SNAPSHOT_ID_LEGEND,
+  type DebugReticulumSnapshot,
   type DebugSnapshot,
 } from './debugSnapshot';
 import {
@@ -26,6 +28,7 @@ import {
   ensureOfflineProtocolIdentities,
   OFFLINE_MESHCORE_IDENTITY_ID,
   OFFLINE_MESHTASTIC_IDENTITY_ID,
+  OFFLINE_RETICULUM_IDENTITY_ID,
 } from './offlineProtocolIdentities';
 import { meshcoreProtocol } from './protocols/MeshCoreProtocol';
 import { MESH_PROTOCOL_STORAGE_KEY } from './storedMeshProtocol';
@@ -63,6 +66,25 @@ function makeBucketOverrides(
   };
 }
 
+function makeReticulumSnapshot(
+  overrides: Partial<DebugReticulumSnapshot> = {},
+): DebugReticulumSnapshot {
+  const bucket = makeBucketOverrides({
+    hydrationSlotId: OFFLINE_RETICULUM_IDENTITY_ID,
+    connectIdentityId: OFFLINE_RETICULUM_IDENTITY_ID,
+    uiStoreIdentityId: OFFLINE_RETICULUM_IDENTITY_ID,
+    ...(overrides.bucket ?? {}),
+  });
+  return {
+    bucket,
+    sidecar: { running: false, port: 0, pid: null },
+    stack: null,
+    diagnosticRows: [],
+    fetchErrors: {},
+    ...overrides,
+  };
+}
+
 function makeSyntheticSnapshot(overrides: Partial<DebugSnapshot> = {}): DebugSnapshot {
   const ui = {
     activePanelIndex: 0,
@@ -82,6 +104,7 @@ function makeSyntheticSnapshot(overrides: Partial<DebugSnapshot> = {}): DebugSna
     uiStoreIdentityId: OFFLINE_MESHTASTIC_IDENTITY_ID,
     ...(overrides.meshtastic ?? {}),
   });
+  const reticulum = makeReticulumSnapshot(overrides.reticulum ?? {});
   const base: Omit<DebugSnapshot, 'warnings'> = {
     capturedAt: '2026-06-19T16:00:00.000Z',
     legend: DEBUG_SNAPSHOT_ID_LEGEND,
@@ -100,6 +123,13 @@ function makeSyntheticSnapshot(overrides: Partial<DebugSnapshot> = {}): DebugSna
         mqttConnected: meshcore.mqttConnected,
         uiStoreIdentityId: meshcore.uiStoreIdentityId,
       },
+      reticulum: {
+        sessionState: reticulum.bucket.sessionState,
+        liveSession: reticulum.bucket.liveSession,
+        rfTransportConnected: reticulum.bucket.rfTransportConnected,
+        mqttConnected: reticulum.bucket.mqttConnected,
+        uiStoreIdentityId: reticulum.bucket.uiStoreIdentityId,
+      },
     },
     activeTab: {
       protocol: 'meshcore',
@@ -113,6 +143,7 @@ function makeSyntheticSnapshot(overrides: Partial<DebugSnapshot> = {}): DebugSna
     ui,
     meshtastic,
     meshcore,
+    reticulum,
     ...overrides,
   };
   return { ...base, warnings: analyzeDebugSnapshot(base) };
@@ -161,7 +192,21 @@ describe('buildDebugSnapshot', () => {
     expect(snap.meshtastic.hydrationSlotIsLiveSession).toBe(false);
     expect(snap.meshtastic.hydrationSlotMessageCount).toBe(snap.meshtastic.connectMessageCount);
     expect(snap.meshcore.hydrationSlotMessageCount).toBe(snap.meshcore.connectMessageCount);
+    expect(snap.reticulum.bucket.hydrationSlotId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
+    expect(snap.reticulum.sidecar.running).toBe(false);
+    expect(snap.reticulum.stack).toBeNull();
     expect(snap.warnings).toEqual([]);
+  });
+
+  it('uses activeProtocol from ui context for activeTab including reticulum', () => {
+    ensureOfflineProtocolIdentities();
+    setDebugSnapshotUiContext({ activeProtocol: 'reticulum' });
+
+    const snap = buildDebugSnapshot();
+
+    expect(snap.activeTab.protocol).toBe('reticulum');
+    expect(snap.activeTab.uiStoreIdentityId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
+    expect(snap.sessionSummary.reticulum.uiStoreIdentityId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
   });
 
   it('includes resolved and primary identity bucket counts when connected', () => {
@@ -206,6 +251,7 @@ describe('buildDebugSnapshot', () => {
   it('reports live session when hydration slot id is reused on connect', () => {
     ensureOfflineProtocolIdentities();
     localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'meshcore');
+    setDebugSnapshotUiContext({ activeProtocol: 'meshcore' });
     addTransport(OFFLINE_MESHCORE_IDENTITY_ID, {
       transportId: 't1',
       type: 'ble',
@@ -427,6 +473,19 @@ describe('analyzeDebugSnapshot', () => {
     expect(snap.warnings.some((w) => w.code === 'connectedNoPrimaryMessages')).toBe(true);
   });
 
+  it('flags sidecarNotRunning when identity is configured but sidecar is down', () => {
+    const snap = makeSyntheticSnapshot({
+      reticulum: makeReticulumSnapshot({
+        sidecar: { running: false, port: 0, pid: null, lastError: 'health poll timeout' },
+        stack: {
+          identityStatus: { configured: true, identity_hash: 'aa', lxmf_hash: 'bb' },
+        },
+      }),
+    });
+
+    expect(snap.warnings.some((w) => w.code === 'sidecarNotRunning')).toBe(true);
+  });
+
   it('flags windowHiddenOnChat', () => {
     const snap = makeSyntheticSnapshot({
       windowHidden: true,
@@ -443,6 +502,34 @@ describe('analyzeDebugSnapshot', () => {
     });
 
     expect(snap.warnings.some((w) => w.code === 'windowHiddenOnChat')).toBe(true);
+  });
+});
+
+describe('buildDebugSnapshotAsync', () => {
+  beforeEach(() => {
+    useIdentityStore.setState({ identities: {}, activeIdentityId: null });
+    resetDebugSnapshotUiContext();
+    vi.mocked(window.electronAPI.reticulum.getStatus).mockReset();
+    vi.mocked(window.electronAPI.reticulum.proxyGet).mockReset();
+  });
+
+  it('includes live sidecar stack payload when running', async () => {
+    ensureOfflineProtocolIdentities();
+    vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
+      running: true,
+      port: 19437,
+      pid: 7,
+    });
+    vi.mocked(window.electronAPI.reticulum.proxyGet).mockResolvedValue({
+      status: 'ok',
+      rns_ready: true,
+      lxmf_ready: false,
+    });
+
+    const snap = await buildDebugSnapshotAsync();
+
+    expect(snap.reticulum.sidecar.running).toBe(true);
+    expect(snap.reticulum.stack?.status).toMatchObject({ rns_ready: true });
   });
 });
 

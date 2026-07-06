@@ -1376,4 +1376,50 @@ txpower = 17
         assert_eq!(row.frequency, Some(915_000_000));
         let _ = fs::remove_dir_all(&dir);
     }
+
+    #[test]
+    fn add_interface_respects_enabled_false() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"[reticulum]
+share_instance = Yes
+
+[logging]
+loglevel = 4
+
+[interfaces]
+"#,
+        )
+        .unwrap();
+
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "tcp".into(),
+                name: Some("RNS Testnet".into()),
+                enabled: Some(false),
+                host: Some("reticulum.betweentheborders.com".into()),
+                port: Some(4242),
+                preset: None,
+                serial_port: None,
+                frequency: None,
+                bandwidth: None,
+                txpower: None,
+                spreading_factor: None,
+                coding_rate: None,
+                callsign: None,
+                id_interval: None,
+                mode: None,
+                seed_addresses: vec![],
+            },
+        )
+        .unwrap();
+
+        assert!(!row.enabled);
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("interface_enabled = No"));
+        let _ = fs::remove_dir_all(&dir);
+    }
 }

@@ -464,7 +464,6 @@ describe('ReticulumInterfacesPanel', () => {
       screen.queryByText('connectionPanel.reticulumInterfaces.primaryLocalSummary'),
     ).not.toBeInTheDocument();
   });
-
   it('adds all default hub presets disabled when none are configured', async () => {
     const user = userEvent.setup();
     const proxyPost = vi.fn().mockResolvedValue({ ok: true });

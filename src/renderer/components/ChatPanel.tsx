@@ -131,7 +131,6 @@ import { useReticulumPropagationStore } from '../stores/reticulumPropagationStor
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
-import { MeshcoreWaitingMessagesBanner } from './MeshcoreWaitingMessagesBanner';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { ReticulumAttachmentLine } from './ReticulumAttachmentLine';
 import { ReticulumMessageStatusBadge } from './ReticulumMessageStatusBadge';
@@ -423,16 +422,6 @@ export interface ChatPanelProps {
   compactMode?: boolean;
   /** Meshtastic RF: request Store & Forward chat history from the router. */
   onFetchStoreForwardHistory?: () => Promise<RequestStoreForwardHistoryResult>;
-  /** MeshCore MsgWaiting drain — messages queued on device. */
-  waitingMessagesCount?: number;
-  onSyncWaitingMessages?: () => void;
-  /** MeshCore waiting-message sync in progress (Sync now). */
-  waitingMessagesSyncActive?: boolean;
-  waitingMessagesSyncProgress?: { processed: number; total: number } | null;
-  /** MeshCore silent auto-drain in flight (event 131 / connect proactive). */
-  waitingMessagesSilentDrainActive?: boolean;
-  /** MeshCore drain scheduled but deferred (trace/repeater RPC busy). */
-  waitingMessagesDrainDeferred?: boolean;
   /** Reticulum LXMF: DM-only chat (no channel pills). */
   dmOnlyChat?: boolean;
   /** Reticulum LXMF delivery status badge on outbound/inbound messages. */
@@ -470,12 +459,6 @@ function ChatPanel({
   outerScrollMetricsRootRef,
   compactMode = false,
   onFetchStoreForwardHistory,
-  waitingMessagesCount = 0,
-  onSyncWaitingMessages,
-  waitingMessagesSyncActive = false,
-  waitingMessagesSyncProgress = null,
-  waitingMessagesSilentDrainActive = false,
-  waitingMessagesDrainDeferred = false,
   dmOnlyChat = false,
   showLxmfDeliveryStatus = false,
   showLxmfAttachmentLine = false,
@@ -1811,19 +1794,6 @@ function ChatPanel({
           </ChatToolbarTooltipButton>
         </div>
       </div>
-
-      {protocol === 'meshcore' && (
-        <MeshcoreWaitingMessagesBanner
-          className="mb-2"
-          waitingMessagesCount={waitingMessagesCount}
-          waitingMessagesSyncActive={waitingMessagesSyncActive}
-          waitingMessagesSyncProgress={waitingMessagesSyncProgress}
-          waitingMessagesSilentDrainActive={waitingMessagesSilentDrainActive}
-          waitingMessagesDrainDeferred={waitingMessagesDrainDeferred}
-          connectionType={connectionType}
-          onSyncWaitingMessages={onSyncWaitingMessages}
-        />
-      )}
 
       {protocol === 'reticulum' && reticulumPropagationSync.active && (
         <div

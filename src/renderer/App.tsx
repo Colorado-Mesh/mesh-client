@@ -68,6 +68,7 @@ import { GlobalInstantTooltip } from './components/GlobalInstantTooltip';
 import { HelpTooltip } from './components/HelpTooltip';
 import { InactiveProtocolNotifier } from './components/InactiveProtocolNotifier';
 import LanguageSelector from './components/LanguageSelector';
+import { MeshcoreWaitingMessagesHeaderIndicator } from './components/MeshcoreWaitingMessagesHeaderIndicator';
 import { ProtocolSwitcher } from './components/ProtocolSwitcher';
 import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
 import Sidebar from './components/Sidebar';
@@ -2340,6 +2341,19 @@ function AppContent() {
                     })}
                   </span>
                 )}
+              {protocol === 'meshcore' && capabilities.hasCompanionContactManagementConfig && (
+                <MeshcoreWaitingMessagesHeaderIndicator
+                  waitingMessagesCount={meshcoreRuntime.waitingMessagesCount}
+                  waitingMessagesSyncActive={meshcoreRuntime.waitingMessagesSyncActive}
+                  waitingMessagesSyncProgress={meshcoreRuntime.waitingMessagesSyncProgress}
+                  waitingMessagesSilentDrainActive={
+                    meshcoreRuntime.waitingMessagesSilentDrainActive
+                  }
+                  waitingMessagesDrainDeferred={meshcoreRuntime.waitingMessagesDrainDeferred}
+                  connectionType={activeConnectionView.state.connectionType}
+                  onSync={() => void handleMeshcoreSyncWaitingMessages()}
+                />
+              )}
               {/* Queue status badge: 0–10 used = green, 11–14 = yellow, 15–16 = red */}
               {queueShowBadge && activeQueue && (
                 <HelpTooltip
@@ -2589,36 +2603,6 @@ function AppContent() {
                                       manual: true,
                                     })
                                 : undefined
-                            }
-                            waitingMessagesCount={
-                              capabilities.hasCompanionContactManagementConfig
-                                ? meshcoreRuntime.waitingMessagesCount
-                                : 0
-                            }
-                            onSyncWaitingMessages={
-                              capabilities.hasCompanionContactManagementConfig
-                                ? () => void handleMeshcoreSyncWaitingMessages()
-                                : undefined
-                            }
-                            waitingMessagesSyncActive={
-                              capabilities.hasCompanionContactManagementConfig
-                                ? meshcoreRuntime.waitingMessagesSyncActive
-                                : false
-                            }
-                            waitingMessagesSyncProgress={
-                              capabilities.hasCompanionContactManagementConfig
-                                ? meshcoreRuntime.waitingMessagesSyncProgress
-                                : null
-                            }
-                            waitingMessagesSilentDrainActive={
-                              capabilities.hasCompanionContactManagementConfig
-                                ? meshcoreRuntime.waitingMessagesSilentDrainActive
-                                : false
-                            }
-                            waitingMessagesDrainDeferred={
-                              capabilities.hasCompanionContactManagementConfig
-                                ? meshcoreRuntime.waitingMessagesDrainDeferred
-                                : false
                             }
                           />
                         </Suspense>
@@ -3191,22 +3175,6 @@ function AppContent() {
                                 scrollToTopRef={scrollToTopRoomsRef}
                                 outerScrollMetricsRootRef={mainViewportRef}
                                 compactMode={chatCompactMode}
-                                waitingMessagesCount={meshcoreRuntime.waitingMessagesCount}
-                                onSyncWaitingMessages={() =>
-                                  void handleMeshcoreSyncWaitingMessages()
-                                }
-                                waitingMessagesSyncActive={
-                                  meshcoreRuntime.waitingMessagesSyncActive
-                                }
-                                waitingMessagesSyncProgress={
-                                  meshcoreRuntime.waitingMessagesSyncProgress
-                                }
-                                waitingMessagesSilentDrainActive={
-                                  meshcoreRuntime.waitingMessagesSilentDrainActive
-                                }
-                                waitingMessagesDrainDeferred={
-                                  meshcoreRuntime.waitingMessagesDrainDeferred
-                                }
                               />
                             </div>
                           </Suspense>

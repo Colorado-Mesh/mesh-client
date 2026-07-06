@@ -6,11 +6,68 @@ import path from 'path';
 import type { SupportBundleMode } from '../shared/support-bundle.types';
 import { exportDatabase } from './database';
 import { flushLogBeforeQuit, getLogPath } from './log-service';
+import { readUtf8FileBounded } from './reticulum-config-read';
 
 export type { SupportBundleMode };
 
 const MAX_DEBUG_SNAPSHOT_JSON_BYTES = 5 * 1024 * 1024;
 const LOG_BACKUP_FILENAME = 'mesh-client.log.1';
+const RETICULUM_CONFIG_REL = path.join('config', 'config');
+const RETICULUM_STACK_REL = path.join('storage', 'mesh_client_stack.json');
+
+export interface ReticulumDeveloperArtifacts {
+  config?: Buffer;
+  stackJson?: Buffer;
+}
+
+/** Strip identity mnemonic from stack JSON before developer bundle export (defense in depth). */
+export function redactMnemonicFromStackJson(raw: string): string {
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const identity = parsed.identity;
+    if (identity && typeof identity === 'object' && !Array.isArray(identity)) {
+      const identityObj = identity as Record<string, unknown>;
+      if ('mnemonic' in identityObj) {
+        delete identityObj.mnemonic;
+      }
+    }
+    return JSON.stringify(parsed, null, 2);
+  } catch {
+    // catch-no-log-ok invalid stack JSON — return raw for maintainer triage
+    return raw;
+  }
+}
+
+function reticulumUserDataDir(): string {
+  return path.join(app.getPath('userData'), 'reticulum');
+}
+
+/** Read bounded Reticulum sidecar files for developer-only support bundles. */
+export function readReticulumDeveloperArtifacts(): ReticulumDeveloperArtifacts {
+  const root = reticulumUserDataDir();
+  const artifacts: ReticulumDeveloperArtifacts = {};
+
+  const configPath = path.join(root, RETICULUM_CONFIG_REL);
+  if (fs.existsSync(configPath)) {
+    try {
+      artifacts.config = Buffer.from(readUtf8FileBounded(configPath), 'utf8');
+    } catch {
+      // catch-no-log-ok skip oversized or unreadable rnsd config
+    }
+  }
+
+  const stackPath = path.join(root, RETICULUM_STACK_REL);
+  if (fs.existsSync(stackPath)) {
+    try {
+      const redacted = redactMnemonicFromStackJson(readUtf8FileBounded(stackPath));
+      artifacts.stackJson = Buffer.from(redacted, 'utf8');
+    } catch {
+      // catch-no-log-ok skip oversized or unreadable stack state
+    }
+  }
+
+  return artifacts;
+}
 
 export function validateDebugSnapshotJson(debugSnapshotJson: string): Record<string, unknown> {
   if (debugSnapshotJson.length > MAX_DEBUG_SNAPSHOT_JSON_BYTES) {
@@ -57,13 +114,16 @@ function buildReadme(mode: SupportBundleMode): string {
 This zip is safe to attach to public GitHub issues.
 
 Contents:
-  debug-snapshot.json  — UI/session state for triage
+  debug-snapshot.json  — UI/session state for triage (Meshtastic, MeshCore, Reticulum sidecar)
   mesh-client.log      — Application log (current session)
   mesh-client.log.1    — Rotated log backup (if present)
   manifest.json        — App version and platform metadata
   README.txt           — This file
 
-For deeper triage that requires your local database, a maintainer may ask you to
+Reticulum sidecar health, interface audit, and identity hashes are in debug-snapshot.json
+when the stack was running at export time. [ReticulumSidecar] lines appear in the logs.
+
+For deeper triage that requires your local database or rnsd config, a maintainer may ask you to
 export "Export for Developer" separately and share it via a private channel only.
 `;
   }
@@ -77,12 +137,14 @@ settings, and similar secrets). Share this bundle only with maintainers via a
 private channel (email, Discord DM, etc.) when they request it.
 
 Contents:
-  debug-snapshot.json  — UI/session state for triage
-  mesh-client.db       — SQLite database backup (contains secrets)
-  mesh-client.log      — Application log (current session)
-  mesh-client.log.1    — Rotated log backup (if present)
-  manifest.json        — App version and platform metadata
-  README.txt           — This file
+  debug-snapshot.json           — UI/session state for triage (includes Reticulum sidecar snapshot)
+  mesh-client.db                — SQLite database backup (contains secrets)
+  reticulum/config              — rnsd interface config (if present)
+  reticulum/mesh_client_stack.json — Sidecar stack state, mnemonic redacted (if present)
+  mesh-client.log               — Application log (current session)
+  mesh-client.log.1             — Rotated log backup (if present)
+  manifest.json                 — App version and platform metadata
+  README.txt                    — This file
 `;
 }
 
@@ -155,6 +217,14 @@ export async function buildSupportBundleZip(
       zip.file('mesh-client.db', await fs.promises.readFile(tempDbPath));
     } finally {
       await fs.promises.rm(tempDbPath, { force: true });
+    }
+
+    const reticulumArtifacts = readReticulumDeveloperArtifacts();
+    if (reticulumArtifacts.config) {
+      zip.file('reticulum/config', reticulumArtifacts.config);
+    }
+    if (reticulumArtifacts.stackJson) {
+      zip.file('reticulum/mesh_client_stack.json', reticulumArtifacts.stackJson);
     }
   }
 
