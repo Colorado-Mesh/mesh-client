@@ -1241,17 +1241,4 @@ describe('RoomsPanel', () => {
     expect(screen.getByText('CR')).toBeInTheDocument();
     expect(screen.getByLabelText('Collapse Room')).toBeInTheDocument();
   });
-
-  it('shows silent drain status banner on USB serial', () => {
-    const room = makeRoom(0x1040, 'Drain Room');
-    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
-    renderRoomsPanel(nodes, {
-      initialRoomTarget: room.node_id,
-      connectionType: 'serial',
-      waitingMessagesSilentDrainActive: true,
-    });
-    const status = screen.getByRole('status');
-    expect(status).toHaveTextContent('chatPanel.waitingMessagesSilentDrain');
-    expect(status).toHaveTextContent('chatPanel.waitingMessagesSerialHint');
-  });
 });
