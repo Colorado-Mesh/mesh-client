@@ -131,6 +131,41 @@ describe('ReticulumPeerListPanel', () => {
     expect(screen.getByText('peerListPanel.emptyContacts')).toBeInTheDocument();
   });
 
+  it('does not show path-table peers on contacts tab when LXMF contacts are empty', async () => {
+    useReticulumPeerStore.setState({ contacts: new Map() });
+    const contactNodes = new Map([
+      [
+        0xabc123,
+        {
+          node_id: 0xabc123,
+          reticulum_destination_hash: 'abc123',
+          long_name: 'Path Table Peer',
+          short_name: 'Pat',
+          hw_model: 'Reticulum',
+          snr: 0,
+          battery: 0,
+          last_heard: Date.now(),
+          latitude: null,
+          longitude: null,
+          favorited: false,
+          source: 'rf' as const,
+        },
+      ],
+    ]);
+    const user = userEvent.setup();
+    render(
+      <ReticulumPeerListPanel
+        isConnected={false}
+        onPeerClick={vi.fn()}
+        onSendMessage={vi.fn()}
+        contactNodes={contactNodes}
+      />,
+    );
+    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabContacts' }));
+    expect(screen.getByText('peerListPanel.emptyContacts')).toBeInTheDocument();
+    expect(screen.queryByText('Path Table Peer')).not.toBeInTheDocument();
+  });
+
   it('filters peers by search query', async () => {
     const user = userEvent.setup();
     render(
