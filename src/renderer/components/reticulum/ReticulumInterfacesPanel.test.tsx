@@ -486,7 +486,7 @@ describe('ReticulumInterfacesPanel', () => {
     });
     expect(proxyPost).toHaveBeenNthCalledWith(2, '/api/v1/interfaces', {
       type: 'tcp',
-      name: 'dude.eth',
+      name: 'Ratspeak',
       host: 'rns.ratspeak.org',
       port: 4242,
       enabled: false,
@@ -494,7 +494,7 @@ describe('ReticulumInterfacesPanel', () => {
     expect(defaultProps.onRefresh).toHaveBeenCalled();
   });
 
-  it('skips testnet when already configured and adds only dude.eth hub', async () => {
+  it('skips testnet when already configured and adds only Ratspeak hub', async () => {
     const user = userEvent.setup();
     const proxyPost = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.reticulum.proxyPost = proxyPost;
@@ -527,7 +527,7 @@ describe('ReticulumInterfacesPanel', () => {
     });
     expect(proxyPost).toHaveBeenCalledWith('/api/v1/interfaces', {
       type: 'tcp',
-      name: 'dude.eth',
+      name: 'Ratspeak',
       host: 'rns.ratspeak.org',
       port: 4242,
       enabled: false,

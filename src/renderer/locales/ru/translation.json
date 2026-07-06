@@ -883,10 +883,10 @@
       "setPrimarySuccess": "Первичный локальный RNode обновлен.",
       "setPrimaryFailed": "Не удалось установить первичный локальный RNode.",
       "defaultHubsLabel": "Концентраторы по умолчанию",
-      "addDefaultHubs": "Добавление концентраторов TESTNET и dude.eth",
+      "addDefaultHubs": "Добавление концентраторов TESTNET и Ratspeak",
       "addDefaultHubsAria": "Добавить концентраторы Reticulum TESTNET и Ratspeak TCP по умолчанию в отключенном состоянии",
       "addDefaultHubsSuccess": "Добавлен (-ы) {{added}} концентратор(-ы) по умолчанию. {{skipped}} уже настроен.",
-      "addDefaultHubsAllPresent": "Концентраторы TESTNET и dude.eth по умолчанию уже настроены.",
+      "addDefaultHubsAllPresent": "Концентраторы TESTNET и Ratspeak по умолчанию уже настроены.",
       "addDefaultHubsFailed": "Не удалось добавить концентраторы по умолчанию."
     },
     "reticulumPeers": {

@@ -883,10 +883,10 @@
       "setPrimarySuccess": "RNode lokal utama diperbarui.",
       "setPrimaryFailed": "Gagal mengatur RNode lokal utama.",
       "defaultHubsLabel": "Hub default",
-      "addDefaultHubs": "Tambahkan hub TESTNET dan dude.eth",
+      "addDefaultHubs": "Tambahkan hub TESTNET dan Ratspeak",
       "addDefaultHubsAria": "Tambahkan hub TCP Reticulum TESTNET dan Ratspeak default dalam keadaan dinonaktifkan",
       "addDefaultHubsSuccess": "Menambahkan hub default {{added}}. {{skipped}} sudah dikonfigurasi.",
-      "addDefaultHubsAllPresent": "Hub TESTNET dan dude.eth default sudah dikonfigurasi.",
+      "addDefaultHubsAllPresent": "Hub TESTNET dan Ratspeak default sudah dikonfigurasi.",
       "addDefaultHubsFailed": "Gagal menambahkan hub default."
     },
     "reticulumPeers": {

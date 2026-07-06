@@ -2,7 +2,7 @@ import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulu
 import { stripConnectHostBrackets } from '@/shared/connectHost';
 
 export interface ReticulumDefaultTcpHub {
-  id: 'testnet' | 'dudeEth';
+  id: 'testnet' | 'ratspeak';
   name: string;
   host: string;
   port: number;
@@ -16,8 +16,8 @@ export const RETICULUM_DEFAULT_TCP_HUBS: readonly ReticulumDefaultTcpHub[] = [
     port: 4242,
   },
   {
-    id: 'dudeEth',
-    name: 'dude.eth',
+    id: 'ratspeak',
+    name: 'Ratspeak',
     host: 'rns.ratspeak.org',
     port: 4242,
   },

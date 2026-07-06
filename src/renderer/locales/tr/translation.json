@@ -883,10 +883,10 @@
       "setPrimarySuccess": "Birincil yerel RNode güncellendi.",
       "setPrimaryFailed": "Birincil yerel RNode ayarlanamadı.",
       "defaultHubsLabel": "Varsayılan hub'lar",
-      "addDefaultHubs": "Testnet ve dude.eth hub'ları ekleyin",
+      "addDefaultHubs": "Testnet ve Ratspeak hub'ları ekleyin",
       "addDefaultHubsAria": "Devre dışı durumda varsayılan Reticulum testnet ve Ratspeak TCP hub'ları ekleyin",
       "addDefaultHubsSuccess": "{{added}} varsayılan hub(lar) eklendi. {{skipped}} zaten yapılandırılmış.",
-      "addDefaultHubsAllPresent": "Varsayılan TESTNET ve dude.eth hub'ları zaten yapılandırılmış.",
+      "addDefaultHubsAllPresent": "Varsayılan TESTNET ve Ratspeak hub'ları zaten yapılandırılmış.",
       "addDefaultHubsFailed": "Varsayılan hub'lar eklenemedi."
     },
     "reticulumPeers": {

@@ -883,10 +883,10 @@
       "setPrimarySuccess": "RNode locale primario aggiornato.",
       "setPrimaryFailed": "Impossibile impostare l'RNode locale primario.",
       "defaultHubsLabel": "Hub predefiniti",
-      "addDefaultHubs": "Aggiungi hub TESTNET e dude.eth",
+      "addDefaultHubs": "Aggiungi hub TESTNET e Ratspeak",
       "addDefaultHubsAria": "Aggiungere gli hub Reticulum TESTNET e Ratspeak TCP predefiniti in uno stato disabilitato",
       "addDefaultHubsSuccess": "Aggiunti {{added}} hub predefiniti. {{skipped}} già configurato.",
-      "addDefaultHubsAllPresent": "Gli hub TESTNET e dude.eth predefiniti sono già configurati.",
+      "addDefaultHubsAllPresent": "Gli hub TESTNET e Ratspeak predefiniti sono già configurati.",
       "addDefaultHubsFailed": "Impossibile aggiungere hub predefiniti."
     },
     "reticulumPeers": {

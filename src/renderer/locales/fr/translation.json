@@ -883,10 +883,10 @@
       "setPrimarySuccess": "RNode local principal mis à jour.",
       "setPrimaryFailed": "Impossible de définir le RNode local principal.",
       "defaultHubsLabel": "Moyeux par défaut",
-      "addDefaultHubs": "Ajouter des hubs TESTNET et dude.eth",
+      "addDefaultHubs": "Ajouter des hubs TESTNET et Ratspeak",
       "addDefaultHubsAria": "Ajouter des concentrateurs TCP Reticulum TESTNET et Ratspeak par défaut dans un état désactivé",
       "addDefaultHubsSuccess": "Ajout du ou des concentrateurs par défaut {{added}}. {{skipped}} déjà configuré.",
-      "addDefaultHubsAllPresent": "Les hubs TESTNET et dude.eth par défaut sont déjà configurés.",
+      "addDefaultHubsAllPresent": "Les hubs TESTNET et Ratspeak par défaut sont déjà configurés.",
       "addDefaultHubsFailed": "Impossible d'ajouter des concentrateurs par défaut."
     },
     "reticulumPeers": {

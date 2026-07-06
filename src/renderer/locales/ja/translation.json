@@ -883,10 +883,10 @@
       "setPrimarySuccess": "プライマリローカルRNodeが更新されました。",
       "setPrimaryFailed": "プライマリローカルRNodeの設定に失敗しました。",
       "defaultHubsLabel": "デフォルトのハブ",
-      "addDefaultHubs": "TESTNETとdude.ethハブを追加する",
+      "addDefaultHubs": "TESTNETとRatspeakハブを追加する",
       "addDefaultHubsAria": "無効状態のデフォルトのReticulum TESTNETとRatspeak TCPハブを追加する",
       "addDefaultHubsSuccess": "{{added}}デフォルトのハブを追加しました。{{skipped}}はすでに設定されています。",
-      "addDefaultHubsAllPresent": "既定のTESTNETとdude.ethハブはすでに構成されています。",
+      "addDefaultHubsAllPresent": "既定のTESTNETとRatspeakハブはすでに構成されています。",
       "addDefaultHubsFailed": "デフォルトのハブを追加できませんでした。"
     },
     "reticulumPeers": {

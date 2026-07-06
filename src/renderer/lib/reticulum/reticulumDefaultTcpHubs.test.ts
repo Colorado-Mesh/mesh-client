@@ -31,7 +31,7 @@ describe('reticulumDefaultTcpHubs', () => {
   });
 
   it('lists only hubs not already configured', () => {
-    const dudeEth = RETICULUM_DEFAULT_TCP_HUBS[1];
+    const ratspeak = RETICULUM_DEFAULT_TCP_HUBS[1];
     const missing = listMissingDefaultTcpHubs([
       {
         type: 'tcp',
@@ -39,7 +39,7 @@ describe('reticulumDefaultTcpHubs', () => {
         port: 4242,
       },
     ]);
-    expect(missing).toEqual([dudeEth]);
+    expect(missing).toEqual([ratspeak]);
     expect(listMissingDefaultTcpHubs([])).toEqual([...RETICULUM_DEFAULT_TCP_HUBS]);
     expect(
       listMissingDefaultTcpHubs([
@@ -53,7 +53,7 @@ describe('reticulumDefaultTcpHubs', () => {
     const hub = RETICULUM_DEFAULT_TCP_HUBS[1];
     expect(buildDefaultTcpHubAddRequest(hub)).toEqual({
       type: 'tcp',
-      name: 'dude.eth',
+      name: 'Ratspeak',
       host: 'rns.ratspeak.org',
       port: 4242,
       enabled: false,
