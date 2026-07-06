@@ -2,15 +2,15 @@
 <component type="desktop-application">
   <id>org.coloradomesh.MeshClient</id>
   <name>Mesh Client</name>
-  <summary>Meshtastic and MeshCore radio network client</summary>
+  <summary>Meshtastic, MeshCore, and Reticulum mesh network client</summary>
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
   <description>
     <p>
-      Mesh Client is a desktop application for communicating with Meshtastic
-      and MeshCore radio mesh networks via Bluetooth LE, USB serial, and MQTT.
+      Mesh Client is a desktop application for communicating with Meshtastic,
+      MeshCore, and Reticulum mesh networks via Bluetooth LE, USB serial, and MQTT.
       It supports diagnostics, channel management, node mapping, and direct
-      messaging across both protocols simultaneously.
+      messaging across all three protocols simultaneously.
     </p>
   </description>
   <launchable type="desktop-id">org.coloradomesh.MeshClient.desktop</launchable>

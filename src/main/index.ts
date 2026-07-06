@@ -26,6 +26,7 @@ import { pathToFileURL } from 'url';
 import zlib from 'zlib';
 
 import type { MQTTSettings } from '../renderer/lib/types';
+import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
 import { formatHostForSocket } from '../shared/connectHost';
 import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
 import {
@@ -1104,7 +1105,7 @@ function applyAboutPanelOptions(): void {
   const credits = [
     `Version ${version}`,
     '',
-    'Cross-platform Electron desktop client for Meshtastic, MeshCore, and Reticulum on macOS, Linux, and Windows with multi-language support, BLE, USB serial, Wi‑Fi/TCP, MQTT, local SQLite history, and routing diagnostics.',
+    APP_ABOUT_TAGLINE,
     '',
     'Reticulum support uses a bundled AGPL-3.0 sidecar (mesh-client-reticulum). See docs/reticulum.md and docs/license.md.',
     '',

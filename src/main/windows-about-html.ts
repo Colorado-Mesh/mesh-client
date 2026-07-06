@@ -3,6 +3,8 @@
  * path can crash the process; this HTML is loaded in a sandboxed BrowserWindow instead.
  */
 
+import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
+
 const ABOUT_URL_WEBSITE = 'https://coloradomesh.org/';
 const ABOUT_URL_GITHUB = 'https://github.com/Colorado-Mesh/mesh-client';
 const ABOUT_URL_DISCORD = 'https://discord.com/invite/McChKR5NpS';
@@ -44,7 +46,7 @@ export function buildWindowsAboutDocumentHtml(appName: string, version: string):
 </style></head><body>
   <h1>${title}</h1>
   <div class="ver">Version ${ver}</div>
-  <p>Cross-platform Electron desktop client for Meshtastic and MeshCore on macOS, Linux, and Windows with multi-language support, BLE, USB serial, Wi-Fi/TCP, MQTT, local SQLite history, and routing diagnostics.</p>
+  <p>${escapeHtmlText(APP_ABOUT_TAGLINE)}</p>
   <p>License: MIT &middot; Author: Colorado Mesh</p>
   <div class="actions" role="group" aria-label="About actions">
     <button type="button" class="close-btn" onclick="window.close()" aria-label="Close About window">Close</button>
