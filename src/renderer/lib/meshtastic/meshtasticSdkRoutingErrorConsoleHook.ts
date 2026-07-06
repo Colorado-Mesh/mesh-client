@@ -1,4 +1,7 @@
-import { parseMeshtasticSdkRoutingErrorLog } from './meshtasticSdkRoutingErrorLog';
+import {
+  parseMeshtasticSdkQueueRejection,
+  parseMeshtasticSdkRoutingErrorLog,
+} from './meshtasticSdkRoutingErrorLog';
 
 function routingErrorLogFromConsoleArgs(args: unknown[]): string | null {
   for (const arg of args) {
@@ -38,5 +41,23 @@ export function installMeshtasticSdkRoutingErrorConsoleHook(
   return () => {
     console.error = priorError;
     console.warn = priorWarn;
+  };
+}
+
+/**
+ * Swallow unhandled `@meshtastic/core` queue rejections (`{ id, error }`) after applying
+ * outbound chat failure state when a matching row exists.
+ */
+export function installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(
+  onQueueRejection: (reason: unknown) => void,
+): () => void {
+  const handler = (event: PromiseRejectionEvent) => {
+    if (!parseMeshtasticSdkQueueRejection(event.reason)) return;
+    onQueueRejection(event.reason);
+    event.preventDefault();
+  };
+  window.addEventListener('unhandledrejection', handler);
+  return () => {
+    window.removeEventListener('unhandledrejection', handler);
   };
 }

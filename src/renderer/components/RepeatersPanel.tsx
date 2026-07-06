@@ -21,6 +21,7 @@ import {
 } from '../lib/meshcore/meshcoreMessageI18n';
 import type { MeshcoreRepeaterRpcPendingMap } from '../lib/meshcoreRepeaterAdminPending';
 import { isRepeaterAdminRpcPending } from '../lib/meshcoreRepeaterAdminPending';
+import { isMeshcoreRepeaterCliDangerCommand } from '../lib/meshcoreRepeaterCliDanger';
 import { listMeshcoreRepeaterCredentialNodeIds } from '../lib/meshcoreRepeaterCredentialStorage';
 import { forgetMeshcoreRepeaterSavedSecret } from '../lib/meshcoreRepeaterSavedSecrets';
 import { meshcoreTracePathLenToHops } from '../lib/meshcoreUtils';
@@ -36,6 +37,7 @@ import type { MeshNode } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
+import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import { MeshcoreRepeaterSavedPasswordIndicator } from './MeshcoreRepeaterPasswordControls';
 import { formatSecondsAgo } from './NodeInfoBody';
@@ -64,7 +66,7 @@ interface Props {
   meshcoreTelemetry?: Map<number, MeshCoreNodeTelemetry>;
   meshcoreTelemetryErrors?: Map<number, string>;
   onSelectRepeater?: (node: MeshNode) => void;
-  onSendCliCommand?: (nodeId: number, command: string, useSavedPath: boolean) => Promise<string>;
+  onSendCliCommand?: (nodeId: number, command: string) => Promise<string>;
   meshcoreCliHistories?: Map<number, CliHistoryEntry[]>;
   meshcoreCliErrors?: Map<number, string>;
   onClearCliHistory?: (nodeId: number) => void;
@@ -284,7 +286,10 @@ export default function RepeatersPanel({
   const [expandedPath, setExpandedPath] = useState<Set<number>>(new Set());
   const [expandedCli, setExpandedCli] = useState<Set<number>>(new Set());
   const [cliInputValues, setCliInputValues] = useState<Map<number, string>>(new Map());
-  const [cliUseSavedPath, setCliUseSavedPath] = useState<Map<number, boolean>>(new Map());
+  const [cliDangerConfirm, setCliDangerConfirm] = useState<{
+    nodeId: number;
+    command: string;
+  } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [meshcoreContactsDb, setMeshcoreContactsDb] = useState<
     Map<
@@ -540,7 +545,22 @@ export default function RepeatersPanel({
     });
   };
 
-  const handleCliCommand = async (nodeId: number, command: string) => {
+  const ensureCliRoutePrimed = async (nodeId: number): Promise<boolean> => {
+    if (meshcoreTraceResults.get(nodeId) != null) return true;
+    const hops = nodes.get(nodeId)?.hops_away ?? 0;
+    if (hops <= 0) return true;
+    addToast(t('repeatersPanel.cliAutoPingToast'), 'info');
+    try {
+      await onPing(nodeId);
+      return true;
+    } catch (e) {
+      console.warn('[RepeatersPanel] CLI auto-ping failed ' + errLikeToLogString(e));
+      addToast(t('repeatersPanel.cliAutoPingFailed'), 'error');
+      return false;
+    }
+  };
+
+  const runCliCommand = async (nodeId: number, command: string) => {
     if (!onSendCliCommand || !command.trim()) return;
     const node = nodes.get(nodeId);
     const auth = await ensureRepeaterAuth(
@@ -550,12 +570,21 @@ export default function RepeatersPanel({
     );
     if (!auth.ok) return;
     if (auth.saved) refreshStoredRepeaters();
-    const useSavedPath = cliUseSavedPath.get(nodeId) ?? false;
+    if (!(await ensureCliRoutePrimed(nodeId))) return;
     try {
-      await onSendCliCommand(nodeId, command.trim(), useSavedPath);
+      await onSendCliCommand(nodeId, command.trim());
     } catch (e) {
       console.warn('[RepeatersPanel] CLI command error ' + errLikeToLogString(e));
     }
+  };
+
+  const handleCliCommand = async (nodeId: number, command: string) => {
+    if (!command.trim()) return;
+    if (isMeshcoreRepeaterCliDangerCommand(command)) {
+      setCliDangerConfirm({ nodeId, command: command.trim() });
+      return;
+    }
+    await runCliCommand(nodeId, command);
   };
 
   const handleCliQuickCommand = async (nodeId: number, command: string) => {
@@ -565,15 +594,6 @@ export default function RepeatersPanel({
       return n;
     });
     await handleCliCommand(nodeId, command);
-  };
-
-  const toggleCliRoutingMode = (nodeId: number) => {
-    setCliUseSavedPath((prev) => {
-      const n = new Map(prev);
-      const current = prev.get(nodeId) ?? false;
-      n.set(nodeId, !current);
-      return n;
-    });
   };
 
   const handleCliClear = (nodeId: number) => {
@@ -761,7 +781,11 @@ export default function RepeatersPanel({
                   );
                   const cliHistory = meshcoreCliHistories?.get(node.node_id) ?? [];
                   const cliErrorRaw = meshcoreCliErrors?.get(node.node_id);
-                  const cliUseAutoPath = cliUseSavedPath.get(node.node_id) ?? false;
+                  const cliHopCount =
+                    traceResult != null
+                      ? meshcoreTracePathLenToHops(traceResult.pathLen)
+                      : (node.hops_away ?? 0);
+                  const showCliMultiHopHint = cliHopCount > 0 && traceResult == null;
                   const neighborErrorRaw = meshcoreNeighborErrors?.get(node.node_id);
                   const statusErrorText = statusErrorRaw
                     ? translateMeshcoreUserMessage(t, statusErrorRaw)
@@ -1430,18 +1454,12 @@ export default function RepeatersPanel({
                                   );
                                 })}
                               </div>
+                              {showCliMultiHopHint ? (
+                                <p className="text-xs text-amber-400/90">
+                                  {t('repeatersPanel.cliMultiHopHint')}
+                                </p>
+                              ) : null}
                               <div className="flex items-center gap-3">
-                                <label className="flex items-center gap-1 text-xs text-gray-400">
-                                  <input
-                                    type="checkbox"
-                                    checked={cliUseAutoPath}
-                                    onChange={() => {
-                                      toggleCliRoutingMode(node.node_id);
-                                    }}
-                                    className="h-3 w-3"
-                                  />
-                                  <span>{t('repeatersPanel.useSavedPath')}</span>
-                                </label>
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1499,6 +1517,24 @@ export default function RepeatersPanel({
         )}
       </div>
       {RemoteAuthModal}
+      {cliDangerConfirm ? (
+        <ConfirmModal
+          title={t('repeatersPanel.cliDangerConfirmTitle')}
+          message={t('repeatersPanel.cliDangerConfirmMessage', {
+            command: cliDangerConfirm.command,
+          })}
+          confirmLabel={t('repeatersPanel.cliDangerConfirmAction')}
+          danger
+          onCancel={() => {
+            setCliDangerConfirm(null);
+          }}
+          onConfirm={() => {
+            const pending = cliDangerConfirm;
+            setCliDangerConfirm(null);
+            void runCliCommand(pending.nodeId, pending.command);
+          }}
+        />
+      ) : null}
     </>
   );
 }

@@ -229,7 +229,7 @@ describe('RepeatersPanel', () => {
     await userEvent.type(input, '  name  ');
     await userEvent.click(screen.getByRole('button', { name: /Send/i }));
 
-    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name', false);
+    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name');
   });
 
   it('calls onSendCliCommand when a quick command button is clicked', async () => {
@@ -240,7 +240,7 @@ describe('RepeatersPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
     await userEvent.click(screen.getByRole('button', { name: 'name' }));
 
-    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name', false);
+    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name');
   });
 
   it('calls onSendCliCommand for set path.hash.mode quick command', async () => {
@@ -250,7 +250,125 @@ describe('RepeatersPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
     await userEvent.click(screen.getByRole('button', { name: 'Set path hash mode 2-byte' }));
 
-    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'set path.hash.mode 1', false);
+    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'set path.hash.mode 1');
+  });
+
+  it('requires confirmation before sending destructive CLI commands', async () => {
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(<RepeatersPanel {...makeBaseProps()} onSendCliCommand={onSendCliCommand} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    const input = screen.getByRole('textbox', { name: 'CLI command input' });
+    await userEvent.type(input, 'reboot');
+    await userEvent.click(screen.getByRole('button', { name: /Send/i }));
+
+    expect(onSendCliCommand).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Run command' }));
+    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'reboot');
+  });
+
+  it('auto-pings before CLI on multi-hop repeaters without a trace this session', async () => {
+    const multiHop = { ...repeater, hops_away: 2 };
+    const onPing = vi.fn().mockResolvedValue(undefined);
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[multiHop.node_id, multiHop]])}
+        onPing={onPing}
+        onSendCliCommand={onSendCliCommand}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await userEvent.click(screen.getByRole('button', { name: 'name' }));
+
+    await waitFor(() => {
+      expect(onPing).toHaveBeenCalledWith(multiHop.node_id);
+      expect(onSendCliCommand).toHaveBeenCalledWith(multiHop.node_id, 'name');
+    });
+    expect(onPing.mock.invocationCallOrder[0]).toBeLessThan(
+      onSendCliCommand.mock.invocationCallOrder[0],
+    );
+    expect(mockAddToast).toHaveBeenCalledWith('Establishing route with Ping before CLI…', 'info');
+  });
+
+  it('skips auto-ping before CLI for 0-hop repeaters', async () => {
+    const onPing = vi.fn().mockResolvedValue(undefined);
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(
+      <RepeatersPanel {...makeBaseProps()} onPing={onPing} onSendCliCommand={onSendCliCommand} />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await userEvent.click(screen.getByRole('button', { name: 'name' }));
+
+    await waitFor(() => {
+      expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name');
+    });
+    expect(onPing).not.toHaveBeenCalled();
+    expect(mockAddToast).not.toHaveBeenCalledWith(
+      'Establishing route with Ping before CLI…',
+      'info',
+    );
+  });
+
+  it('skips auto-ping before CLI when a trace exists this session', async () => {
+    const multiHop = { ...repeater, hops_away: 2 };
+    const onPing = vi.fn().mockResolvedValue(undefined);
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    const meshcoreTraceResults = new Map([
+      [multiHop.node_id, { pathLen: 2, pathHashes: [0xaa], pathSnrs: [1], lastSnr: 1, tag: 0 }],
+    ]);
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[multiHop.node_id, multiHop]])}
+        meshcoreTraceResults={meshcoreTraceResults}
+        onPing={onPing}
+        onSendCliCommand={onSendCliCommand}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await userEvent.click(screen.getByRole('button', { name: 'name' }));
+
+    await waitFor(() => {
+      expect(onSendCliCommand).toHaveBeenCalledWith(multiHop.node_id, 'name');
+    });
+    expect(onPing).not.toHaveBeenCalled();
+    expect(mockAddToast).not.toHaveBeenCalledWith(
+      'Establishing route with Ping before CLI…',
+      'info',
+    );
+  });
+
+  it('aborts CLI when auto-ping fails on multi-hop repeaters', async () => {
+    const multiHop = { ...repeater, hops_away: 2 };
+    const onPing = vi.fn().mockRejectedValue(new Error('ping timeout'));
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[multiHop.node_id, multiHop]])}
+        onPing={onPing}
+        onSendCliCommand={onSendCliCommand}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await userEvent.click(screen.getByRole('button', { name: 'name' }));
+
+    await waitFor(() => {
+      expect(onPing).toHaveBeenCalledWith(multiHop.node_id);
+      expect(mockAddToast).toHaveBeenCalledWith(
+        'Ping failed; run Ping manually before retrying CLI on multi-hop repeaters.',
+        'error',
+      );
+    });
+    expect(onSendCliCommand).not.toHaveBeenCalled();
   });
 
   it('pins favorited repeaters above non-favorites', () => {

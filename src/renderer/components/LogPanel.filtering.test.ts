@@ -71,6 +71,15 @@ describe('isDeviceEntry — Meshtastic protocol', () => {
     );
   });
 
+  it('classifies [meshtasticSdkRoutingErrorLog] as Meshtastic device entry', () => {
+    expect(
+      isDeviceEntry(
+        entry('main', '[meshtasticSdkRoutingErrorLog] SDK queue rejection 42 3'),
+        'meshtastic',
+      ),
+    ).toBe(true);
+  });
+
   it('does NOT classify MeshCore source as Meshtastic device entry', () => {
     expect(isDeviceEntry(entry('meshcore', 'meshcore message'), 'meshtastic')).toBe(false);
   });

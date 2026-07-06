@@ -188,6 +188,7 @@ import {
   type MeshcoreRadioContactPathSnapshot,
   meshcoreSnapshotContactPathFromContacts,
 } from '../lib/meshcoreRadioContactPath';
+import { waitForMeshcoreRadioSentAck } from '../lib/meshcoreRadioSentWait';
 import {
   type MeshcoreRepeaterRpcPendingMap,
   setRepeaterAdminRpcPending,
@@ -325,7 +326,9 @@ import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentitie
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { reactionGlyphFromPicker } from '../lib/reactions';
 import {
+  calculateRepeaterCliTimeout,
   type CliHistoryEntry,
+  computeRepeaterCliHopCount,
   createRepeaterCommandService,
   type RepeaterCommandService,
 } from '../lib/repeaterCommandService';
@@ -4425,7 +4428,7 @@ export function useMeshcoreRuntime() {
   );
 
   const sendRepeaterCliCommand = useCallback(
-    async (nodeId: number, command: string, useSavedPath = false): Promise<string> => {
+    async (nodeId: number, command: string): Promise<string> => {
       setMeshcoreRepeaterRpcPending((prev) =>
         setRepeaterAdminRpcPending(prev, nodeId, 'cli', true),
       );
@@ -4457,22 +4460,33 @@ export function useMeshcoreRuntime() {
         const service = repeaterCommandServiceRef.current ?? createRepeaterCommandService();
         repeaterCommandServiceRef.current ??= service;
 
-        const path: Uint8Array[] = useSavedPath
-          ? (() => {
-              const trace = meshcoreTraceResults.get(nodeId);
-              const snrs = trace?.pathSnrs;
-              if (!trace || !Array.isArray(snrs) || snrs.length === 0) return [];
-              return snrs.map(() => pubKey);
-            })()
-          : [];
-
         try {
-          return await repeaterRemoteRpcRef.current(async () => {
+          return await runMeshcoreRepeaterRpcOnce('cli', nodeId, async () => {
             const conn = resolveMeshcoreConn();
             if (!conn) {
               throw new Error(MESHCORE_ERR_NOT_CONNECTED);
             }
-            const { token, promise } = service.registerPendingCommand(command, path);
+
+            await awaitMeshcoreRepeaterPingSettleForNode(nodeId);
+            await meshcoreTryRemoteServerLogin(
+              conn,
+              nodeId,
+              pubKey,
+              nodesRef.current.get(nodeId)?.hw_model,
+              repeaterRemoteRpcRef.current,
+            );
+
+            const node = nodesRef.current.get(nodeId);
+            const trace = meshcoreTraceResults.get(nodeId);
+            const hopCount = computeRepeaterCliHopCount(
+              node?.hops_away,
+              trace != null ? meshcoreTracePathLenToHops(trace.pathLen) : null,
+            );
+            const timeoutMs = calculateRepeaterCliTimeout(hopCount, command.length);
+            const { token, promise } = service.registerPendingCommand(command, [], {
+              timeoutMs,
+              senderNodeId: nodeId,
+            });
             const commandWithToken = service.formatCommandWithToken(command, token);
 
             addCliHistoryEntry(nodeId, {
@@ -4481,14 +4495,17 @@ export function useMeshcoreRuntime() {
               timestamp: Date.now(),
             });
 
-            await meshcoreTryRemoteServerLogin(
-              conn,
-              nodeId,
-              pubKey,
-              nodesRef.current.get(nodeId)?.hw_model,
-            );
-            await conn.sendTextMessage(pubKey, commandWithToken, MESHCORE_TXT_TYPE_CLI_DATA);
-            markMeshcoreCompanionTx();
+            await repeaterRemoteRpcRef.current(async () => {
+              await awaitMeshcoreRepeaterAdminRfIdle();
+              await waitForMeshcoreRadioSentAck(
+                conn,
+                async () => {
+                  await conn.sendTextMessage(pubKey, commandWithToken, MESHCORE_TXT_TYPE_CLI_DATA);
+                },
+                { rejectErrMsg: 'radio rejected repeater CLI command' },
+              );
+              markMeshcoreCompanionTx();
+            });
 
             const response = await promise;
             addCliHistoryEntry(nodeId, {
@@ -5248,7 +5265,7 @@ export function useMeshcoreRuntime() {
     async (nodeId: number, command: string): Promise<string> => {
       const node = nodesRef.current.get(nodeId);
       if (node?.hw_model !== 'Room') {
-        return sendRepeaterCliCommand(nodeId, command, false);
+        return sendRepeaterCliCommand(nodeId, command);
       }
       const pubKey = pubKeyMapRef.current.get(nodeId);
       if (!pubKey) {
@@ -5267,7 +5284,7 @@ export function useMeshcoreRuntime() {
           throw new Error('Room admin login required');
         }
       }
-      return sendRepeaterCliCommand(nodeId, command, false);
+      return sendRepeaterCliCommand(nodeId, command);
     },
     [resolveRoomLoginHopsForNode, sendRepeaterCliCommand],
   );

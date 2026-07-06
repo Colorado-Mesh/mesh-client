@@ -13,10 +13,15 @@ vi.mock('@/renderer/stores/messageStore', () => ({
 
 import { updateMessageStatus } from '@/renderer/stores/messageStore';
 
-import { installMeshtasticSdkRoutingErrorConsoleHook } from './meshtasticSdkRoutingErrorConsoleHook';
+import {
+  installMeshtasticSdkRoutingErrorConsoleHook,
+  installMeshtasticSdkRoutingErrorUnhandledRejectionHandler,
+} from './meshtasticSdkRoutingErrorConsoleHook';
 import {
   applyMeshtasticOutboundRoutingErrorFromLog,
+  applyMeshtasticOutboundRoutingErrorFromRejection,
   chatRoutingErrorKeyForSdkErrorName,
+  parseMeshtasticSdkQueueRejection,
   parseMeshtasticSdkRoutingErrorLog,
 } from './meshtasticSdkRoutingErrorLog';
 
@@ -179,6 +184,48 @@ describe('meshtasticSdkRoutingErrorLog', () => {
     expect(applied).toBe(true);
     expect(setMessages).toHaveBeenCalledTimes(1);
   });
+
+  it('parses SDK queue rejections with id or packetId', () => {
+    expect(parseMeshtasticSdkQueueRejection({ id: 397127051, error: 3 })).toEqual({
+      packetId: 397127051,
+      errorName: 'TIMEOUT',
+    });
+    expect(parseMeshtasticSdkQueueRejection({ packetId: 42, error: 8 })).toEqual({
+      packetId: 42,
+      errorName: 'NO_RESPONSE',
+    });
+    expect(parseMeshtasticSdkQueueRejection({ id: 1, error: 'TIMEOUT' })).toBeNull();
+    expect(parseMeshtasticSdkQueueRejection('timeout')).toBeNull();
+  });
+
+  it('marks matching outbound message failed from queue rejection', () => {
+    const messagesRef = {
+      current: [
+        {
+          id: 1,
+          sender_id: 42,
+          sender_name: 'Me',
+          packetId: 397127051,
+          payload: 'hello',
+          status: 'sending' as const,
+          channel: 0,
+          timestamp: Date.now(),
+        },
+      ],
+    };
+    const setMessages = vi.fn();
+    const applied = applyMeshtasticOutboundRoutingErrorFromRejection(
+      { id: 397127051, error: 3 },
+      {
+        myNodeNum: 42,
+        identityId: null,
+        messagesRef,
+        setMessages,
+      },
+    );
+    expect(applied).toBe(true);
+    expect(setMessages).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('installMeshtasticSdkRoutingErrorConsoleHook', () => {
@@ -206,5 +253,48 @@ describe('installMeshtasticSdkRoutingErrorConsoleHook', () => {
     console.warn('[meshcoreRepeaterSession] repeater login failed (continuing) timeout');
     restore();
     expect(onRoutingErrorLog).not.toHaveBeenCalled();
+  });
+});
+
+describe('installMeshtasticSdkRoutingErrorUnhandledRejectionHandler', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      electronAPI: {
+        db: { updateMessageStatus: vi.fn().mockResolvedValue(undefined) },
+      },
+    });
+  });
+
+  it('calls onQueueRejection and preventDefault for SDK queue rejections', () => {
+    const onQueueRejection = vi.fn();
+    const restore = installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(onQueueRejection);
+    const handler = vi.mocked(window.addEventListener).mock.calls[0]?.[1] as (event: {
+      reason: unknown;
+      preventDefault: () => void;
+    }) => void;
+    const reason = { id: 397127051, error: 3 };
+    const preventDefault = vi.fn();
+    handler({ reason, preventDefault });
+    expect(onQueueRejection).toHaveBeenCalledWith(reason);
+    expect(preventDefault).toHaveBeenCalled();
+    restore();
+    expect(window.removeEventListener).toHaveBeenCalledWith('unhandledrejection', handler);
+  });
+
+  it('ignores unrelated unhandled rejections', () => {
+    const onQueueRejection = vi.fn();
+    const restore = installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(onQueueRejection);
+    const handler = vi.mocked(window.addEventListener).mock.calls[0]?.[1] as (event: {
+      reason: unknown;
+      preventDefault: () => void;
+    }) => void;
+    const reason = new Error('network down');
+    const preventDefault = vi.fn();
+    handler({ reason, preventDefault });
+    expect(onQueueRejection).not.toHaveBeenCalled();
+    expect(preventDefault).not.toHaveBeenCalled();
+    restore();
   });
 });

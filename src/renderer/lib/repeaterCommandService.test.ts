@@ -76,34 +76,36 @@ describe('RepeaterCommandService', () => {
       expect(timeout).toBe(30000);
     });
 
-    it('should return dynamic timeout when it exceeds minimum', () => {
-      const timeoutWithHops = service.calculateTimeout([
-        new Uint8Array(32),
-        new Uint8Array(32),
-        new Uint8Array(32),
-        new Uint8Array(32),
-        new Uint8Array(32),
-        new Uint8Array(32),
-        new Uint8Array(32),
-        new Uint8Array(32),
-        new Uint8Array(32),
-        new Uint8Array(32),
-        new Uint8Array(32),
-        new Uint8Array(32),
-        new Uint8Array(32),
-        new Uint8Array(32),
-        new Uint8Array(32),
-        new Uint8Array(32),
-        new Uint8Array(32),
-      ]); // 17 hops = 30000 + 17*2000 = 64000
-      expect(timeoutWithHops).toBe(64000);
+    it('should cap hop-scaled timeout at 120s', () => {
+      const timeoutWithHops = service.calculateTimeout(
+        Array.from({ length: 46 }, () => new Uint8Array(32)),
+      );
+      expect(timeoutWithHops).toBe(120_000);
     });
 
-    it('should include message size in dynamic timeout', () => {
+    it('should include message size in dynamic timeout below cap', () => {
       const smallTimeout = service.calculateTimeout([], 100);
       const largeTimeout = service.calculateTimeout([], 100000);
       expect(smallTimeout).toBe(30100);
-      expect(largeTimeout).toBe(130000);
+      expect(largeTimeout).toBe(120_000);
+    });
+  });
+
+  describe('calculateRepeaterCliTimeout', () => {
+    it('scales with hop count and caps at 120s', async () => {
+      const { calculateRepeaterCliTimeout } = await import('./repeaterCommandService');
+      expect(calculateRepeaterCliTimeout(0)).toBe(30_000);
+      expect(calculateRepeaterCliTimeout(3)).toBe(36_000);
+      expect(calculateRepeaterCliTimeout(50)).toBe(120_000);
+    });
+  });
+
+  describe('computeRepeaterCliHopCount', () => {
+    it('prefers trace hop count over hopsAway', async () => {
+      const { computeRepeaterCliHopCount } = await import('./repeaterCommandService');
+      expect(computeRepeaterCliHopCount(2, 1)).toBe(1);
+      expect(computeRepeaterCliHopCount(null, 3)).toBe(3);
+      expect(computeRepeaterCliHopCount(2, null)).toBe(2);
     });
   });
 
@@ -137,13 +139,28 @@ describe('RepeaterCommandService', () => {
   describe('handleResponse', () => {
     it('should resolve pending command when response token matches', async () => {
       const pubKey = new Uint8Array(32);
-      const { token, promise } = service.registerPendingCommand('test', [pubKey]);
+      const { token, promise } = service.registerPendingCommand('test', [pubKey], {
+        senderNodeId: 42,
+      });
 
-      const handled = service.handleResponse(`${token}|OK`);
+      const handled = service.handleResponse(`${token}|OK`, 42);
       expect(handled).toBe(true);
 
       const response = await promise;
       expect(response).toBe('OK');
+    });
+
+    it('rejects response when sender node id does not match', () => {
+      const { token } = service.registerPendingCommand('cmd', [], { senderNodeId: 42 });
+      const handled = service.handleResponse(`${token}|OK`, 99);
+      expect(handled).toBe(false);
+      expect(service.hasPendingCommand(token)).toBe(true);
+    });
+
+    it('still matches when sender id is unknown (0)', async () => {
+      const { token, promise } = service.registerPendingCommand('cmd', [], { senderNodeId: 42 });
+      service.handleResponse(`${token}|OK`, 0);
+      await expect(promise).resolves.toBe('OK');
     });
 
     it('should strip token from response body', async () => {

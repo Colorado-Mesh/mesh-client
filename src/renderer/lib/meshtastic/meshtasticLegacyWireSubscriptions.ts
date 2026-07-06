@@ -97,8 +97,14 @@ import { recordMeshtasticClientNotification } from './meshtasticClientNotificati
 import { pushMeshtasticTransportSideEffectUnsubs } from './meshtasticLegacyDeviceEvents';
 import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraConfig';
 import type { MeshtasticMqttClientProxyBridge } from './meshtasticMqttClientProxy';
-import { installMeshtasticSdkRoutingErrorConsoleHook } from './meshtasticSdkRoutingErrorConsoleHook';
-import { applyMeshtasticOutboundRoutingErrorFromLog } from './meshtasticSdkRoutingErrorLog';
+import {
+  installMeshtasticSdkRoutingErrorConsoleHook,
+  installMeshtasticSdkRoutingErrorUnhandledRejectionHandler,
+} from './meshtasticSdkRoutingErrorConsoleHook';
+import {
+  applyMeshtasticOutboundRoutingErrorFromLog,
+  applyMeshtasticOutboundRoutingErrorFromRejection,
+} from './meshtasticSdkRoutingErrorLog';
 
 const MAX_TELEMETRY_POINTS = 50;
 const BROADCAST_ADDR = 0xffffffff;
@@ -1879,6 +1885,21 @@ export function attachMeshtasticLegacyWireSubscriptions(
     });
   };
 
+  const applySdkRoutingErrorFromRejection = (reason: unknown): void => {
+    const uiApplied = applyMeshtasticOutboundRoutingErrorFromRejection(reason, {
+      myNodeNum: myNodeNumRef.current,
+      identityId: meshtasticIdentityIdRef.current,
+      messagesRef,
+      setMessages,
+      tempIdToWirePacketId: ackMeshPacketIdByTempIdRef.current,
+    });
+    if (!uiApplied) {
+      const parsed = reason as { id?: number; packetId?: number; error?: number };
+      const packetId = parsed.id ?? parsed.packetId;
+      console.debug('[meshtasticSdkRoutingErrorLog] SDK queue rejection', packetId, parsed.error);
+    }
+  };
+
   // Device logs → deviceStore via protocol; legacy handler only for foreign LoRa parsing.
   const unsubLog = device.events.onLogRecord.subscribe((record) => {
     applyMeshtasticForeignLoraFromLog(record.message);
@@ -1896,6 +1917,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
 
   unsubscribesRef.current.push(
     installMeshtasticSdkRoutingErrorConsoleHook(applySdkRoutingErrorFromLog),
+    installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(applySdkRoutingErrorFromRejection),
   );
 
   // Neighbor info → nodeStore via protocol ingress.

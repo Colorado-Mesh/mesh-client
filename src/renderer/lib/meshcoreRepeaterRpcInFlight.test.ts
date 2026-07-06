@@ -8,6 +8,19 @@ import {
 import * as traceMultiplex from './meshcoreTracePathMultiplex';
 
 describe('runMeshcoreRepeaterRpcOnce', () => {
+  it('returns the same promise for duplicate cli requests on one node', async () => {
+    resetMeshcoreRepeaterRpcInFlightForTests();
+    const fn = vi.fn(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+      return 'cli-ok';
+    });
+    const first = runMeshcoreRepeaterRpcOnce('cli', 42, fn);
+    const second = runMeshcoreRepeaterRpcOnce('cli', 42, fn);
+    expect(second).toBe(first);
+    await expect(first).resolves.toBe('cli-ok');
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
   it('returns the same promise for duplicate neighbors requests on one node', async () => {
     resetMeshcoreRepeaterRpcInFlightForTests();
     const fn = vi.fn(async () => {

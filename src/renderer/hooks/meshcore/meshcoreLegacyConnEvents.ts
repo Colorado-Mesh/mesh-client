@@ -850,7 +850,7 @@ export function attachMeshcoreLegacyConnEvents(
     if (d.txtType === 1) {
       const service = repeaterCommandServiceRef.current;
       if (service) {
-        const handled = service.handleResponse(d.text);
+        const handled = service.handleResponse(d.text, senderId);
         if (handled) {
           return;
         }
