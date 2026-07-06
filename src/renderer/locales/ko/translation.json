@@ -3339,7 +3339,9 @@
     "cliNoCommandsYet": "아직 명령이 없습니다.",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}m"
+    "uptimeMinutes": "{{minutes}}m",
+    "rememberPasswordSaveFailed": "재시작을 위해 리피터 암호를 저장할 수 없습니다. 이 세션에서만 작동합니다.",
+    "telemetryFailedToast": "원격 측정 실패: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",
@@ -3847,6 +3849,11 @@
     "routes_one": "경로: {{count}} 메시의 노드",
     "routes_other": "경로: 메시의 {{count}} 노드",
     "routesEstablished": "설정된 노선",
-    "meshActive": "네트워크 활성"
+    "meshActive": "네트워크 활성",
+    "transportBle": "BLE",
+    "transportSerial": "시리얼",
+    "transportHttp": "HTTP",
+    "transportRadio": "무전",
+    "radioInterfaceFallback": "라디오 인터페이스"
   }
 }

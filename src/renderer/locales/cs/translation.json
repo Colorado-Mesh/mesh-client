@@ -3339,7 +3339,9 @@
     "cliNoCommandsYet": "Zatím žádné příkazy",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}m"
+    "uptimeMinutes": "{{minutes}}m",
+    "rememberPasswordSaveFailed": "Nelze uložit heslo opakovače pro restartování. Bude to fungovat pouze pro tuto relaci.",
+    "telemetryFailedToast": "Telemetrie selhala: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",
@@ -3847,6 +3849,11 @@
     "routes_one": "Trasy: Uzel {{count}} v síti",
     "routes_other": "Trasy: {{count}} uzly v síti",
     "routesEstablished": "Trasy vytvořeny",
-    "meshActive": "Síť Mesh aktivní"
+    "meshActive": "Síť Mesh aktivní",
+    "transportBle": "BLE",
+    "transportSerial": "Sériový",
+    "transportHttp": "Hypertext Transfer Protocol",
+    "transportRadio": "Rádio",
+    "radioInterfaceFallback": "rádiové rozhraní"
   }
 }

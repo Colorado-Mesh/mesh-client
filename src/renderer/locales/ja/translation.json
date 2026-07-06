@@ -3339,7 +3339,9 @@
     "cliNoCommandsYet": "まだコマンドがありません",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}分"
+    "uptimeMinutes": "{{minutes}}分",
+    "rememberPasswordSaveFailed": "再起動用のリピーターパスワードを保存できませんでした。このセッションでのみ機能します。",
+    "telemetryFailedToast": "テレメトリに失敗しました： {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",
@@ -3847,6 +3849,11 @@
     "routes_one": "ルート：メッシュ内の{{count}}ノード",
     "routes_other": "ルート：メッシュ内の{{count}}ノード",
     "routesEstablished": "ルートが確立されました",
-    "meshActive": "サイトネットワークで有効"
+    "meshActive": "サイトネットワークで有効",
+    "transportBle": "BLE",
+    "transportSerial": "シリアル",
+    "transportHttp": "HTTP",
+    "transportRadio": "通信機",
+    "radioInterfaceFallback": "無線インターフェース"
   }
 }

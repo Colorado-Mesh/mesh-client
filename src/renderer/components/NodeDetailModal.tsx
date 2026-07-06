@@ -27,10 +27,6 @@ import type {
   MeshCoreRepeaterStatus,
 } from '../lib/meshcore/meshcoreHookTypes';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
-import {
-  forgetMeshcoreRepeaterSavedSecret,
-  getMeshcoreRepeaterSavedSecretsSummary,
-} from '../lib/meshcoreRepeaterSavedSecrets';
 import { meshcoreGetRoomSession, meshcoreIsRoomLoggedIn } from '../lib/meshcoreRoomSession';
 import {
   MESHCORE_CHAT_STUB_ID_MAX,
@@ -51,6 +47,7 @@ import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { useWatchedNodesStore } from '../stores/watchedNodesStore';
 import { HelpTooltip } from './HelpTooltip';
+import { MeshcoreRepeaterPasswordControls } from './MeshcoreRepeaterPasswordControls';
 import NodeInfoBody, { formatSecondsAgo } from './NodeInfoBody';
 import SnrIndicator from './SnrIndicator';
 
@@ -750,7 +747,7 @@ export default function NodeDetailModal({
               />
 
               {protocol === 'meshcore' && !isOurNode && node.hw_model === 'Repeater' && (
-                <RepeaterSavedPasswordControls
+                <MeshcoreRepeaterPasswordControls
                   nodeId={node.node_id}
                   nodeName={node.long_name}
                   secretsEpoch={repeaterSecretsEpoch}
@@ -1985,79 +1982,5 @@ export default function NodeDetailModal({
       {RemoteAuthModal}
       {RoomAuthModal}
     </>
-  );
-}
-
-function RepeaterSavedPasswordControls({
-  nodeId,
-  nodeName,
-  secretsEpoch,
-  onPromptPassword,
-  onSecretsChanged,
-  onStatusMessage,
-}: {
-  nodeId: number;
-  nodeName: string;
-  secretsEpoch: number;
-  onPromptPassword: (
-    nodeId: number,
-    repeaterName: string,
-  ) => Promise<{ ok: boolean; saved?: boolean }>;
-  onSecretsChanged: () => void;
-  onStatusMessage: (message: string | null) => void;
-}) {
-  const { t } = useTranslation();
-  void secretsEpoch;
-  const summary = getMeshcoreRepeaterSavedSecretsSummary(nodeId);
-
-  return (
-    <div className="mt-3 space-y-2 rounded-lg border border-gray-700 bg-gray-950/40 p-3 text-xs">
-      {summary.hasCredential ? (
-        <p className="flex items-center gap-1.5 text-gray-400">
-          <span className="text-sky-400" aria-hidden>
-            🔑
-          </span>
-          {t('repeatersPanel.passwordSavedIndicator')}
-        </p>
-      ) : null}
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            void onPromptPassword(nodeId, nodeName).then((auth) => {
-              if (auth.ok && auth.saved) {
-                onSecretsChanged();
-                onStatusMessage(t('repeatersPanel.passwordSaved'));
-              }
-            });
-          }}
-          className="rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-200 hover:bg-gray-700"
-          aria-label={
-            summary.hasCredential
-              ? t('repeatersPanel.changePassword')
-              : t('repeatersPanel.savePassword')
-          }
-        >
-          {summary.hasCredential
-            ? t('repeatersPanel.changePassword')
-            : t('repeatersPanel.savePassword')}
-        </button>
-        {summary.hasCredential ? (
-          <button
-            type="button"
-            onClick={() => {
-              void forgetMeshcoreRepeaterSavedSecret(nodeId).then(() => {
-                onSecretsChanged();
-                onStatusMessage(t('repeatersPanel.passwordForgotten'));
-              });
-            }}
-            className="rounded border border-red-900/50 bg-red-950/40 px-2 py-1 text-xs text-red-300 hover:bg-red-900/30"
-            aria-label={t('repeatersPanel.forgetPasswordAria')}
-          >
-            {t('repeatersPanel.forgetPassword')}
-          </button>
-        ) : null}
-      </div>
-    </div>
   );
 }

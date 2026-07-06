@@ -3339,7 +3339,9 @@
     "cliNoCommandsYet": "Aún no hay comandos",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}m"
+    "uptimeMinutes": "{{minutes}}m",
+    "rememberPasswordSaveFailed": "No se ha podido guardar la contraseña del repetidor para reiniciar. Funcionará solo para esta sesión.",
+    "telemetryFailedToast": "Error de telemetría: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anuncio (segundos)",
@@ -3847,6 +3849,11 @@
     "routes_one": "Rutas: {{count}} nodo en malla",
     "routes_other": "Rutas: nodos {{count}} en malla",
     "routesEstablished": "Rutas establecidas",
-    "meshActive": "Red Activa"
+    "meshActive": "Red Activa",
+    "transportBle": "B",
+    "transportSerial": "Número de serie",
+    "transportHttp": "HTTP",
+    "transportRadio": "Radio",
+    "radioInterfaceFallback": "interfaz aérea"
   }
 }

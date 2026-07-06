@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS = 30_000;
+import {
+  createRendererHeartbeatWatchdog,
+  RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS,
+} from './rendererHeartbeatWatchdog';
 
-describe('renderer resume heartbeat watchdog', () => {
+describe('createRendererHeartbeatWatchdog', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -12,31 +15,37 @@ describe('renderer resume heartbeat watchdog', () => {
   });
 
   it('warns when no heartbeat arrives within 30s after resume', async () => {
-    const lastRendererHeartbeatAt = 0;
-    let rendererResumeWatchdogTimer: ReturnType<typeof setTimeout> | null = null;
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.fn();
+    const watchdog = createRendererHeartbeatWatchdog(warn);
 
-    const clearRendererResumeWatchdog = () => {
-      if (rendererResumeWatchdogTimer) {
-        clearTimeout(rendererResumeWatchdogTimer);
-        rendererResumeWatchdogTimer = null;
-      }
-    };
-
-    const startRendererResumeWatchdog = () => {
-      clearRendererResumeWatchdog();
-      const resumeAt = Date.now();
-      rendererResumeWatchdogTimer = setTimeout(() => {
-        rendererResumeWatchdogTimer = null;
-        if (lastRendererHeartbeatAt >= resumeAt) return;
-        console.warn('[main] renderer unresponsive after system resume (no heartbeat within 30s)');
-      }, RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS);
-    };
-
-    startRendererResumeWatchdog();
+    watchdog.startResumeWatchdog();
     await vi.advanceTimersByTimeAsync(RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS);
+
     expect(warn).toHaveBeenCalledWith(
       '[main] renderer unresponsive after system resume (no heartbeat within 30s)',
     );
+  });
+
+  it('does not warn when heartbeat arrives after resume', async () => {
+    const warn = vi.fn();
+    const watchdog = createRendererHeartbeatWatchdog(warn);
+
+    watchdog.startResumeWatchdog();
+    await vi.advanceTimersByTimeAsync(5_000);
+    watchdog.recordHeartbeat();
+    await vi.advanceTimersByTimeAsync(RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS);
+
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('clears pending watchdog on heartbeat without resume', async () => {
+    const warn = vi.fn();
+    const watchdog = createRendererHeartbeatWatchdog(warn);
+
+    watchdog.startResumeWatchdog();
+    watchdog.recordHeartbeat();
+    await vi.advanceTimersByTimeAsync(RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS);
+
+    expect(warn).not.toHaveBeenCalled();
   });
 });

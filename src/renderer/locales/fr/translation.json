@@ -3339,7 +3339,9 @@
     "cliNoCommandsYet": "Aucune commande pour l'instant",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}m"
+    "uptimeMinutes": "{{minutes}}m",
+    "rememberPasswordSaveFailed": "Impossible d'enregistrer le mot de passe du répéteur pour les redémarrages. Cela ne fonctionnera que pour cette session.",
+    "telemetryFailedToast": "Échec de la télémétrie : {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalle d'annonce (secondes)",
@@ -3847,6 +3849,11 @@
     "routes_one": "Routes : nœud {{count}} dans le maillage",
     "routes_other": "Itinéraires : {{count}} nœuds dans le maillage",
     "routesEstablished": "Itinéraires établis",
-    "meshActive": "Actif sur le réseau"
+    "meshActive": "Actif sur le réseau",
+    "transportBle": "BLE",
+    "transportSerial": "Numéro de Série",
+    "transportHttp": "HTTP",
+    "transportRadio": "Radio",
+    "radioInterfaceFallback": "interface sur le trajet radioélectrique"
   }
 }

@@ -3339,7 +3339,9 @@
     "cliNoCommandsYet": "Nie ma jeszcze żadnych poleceń",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}m"
+    "uptimeMinutes": "{{minutes}}m",
+    "rememberPasswordSaveFailed": "Nie można zapisać hasła powtarzacza do ponownego uruchomienia. Będzie działać tylko dla tej sesji.",
+    "telemetryFailedToast": "Telemetria nie powiodła się: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",
@@ -3847,6 +3849,11 @@
     "routes_one": "Trasy: węzeł {{count}} w siatce",
     "routes_other": "Trasy: węzły {{count}} w siatce",
     "routesEstablished": "Ustalone trasy",
-    "meshActive": "Aktywna sieć siatkowa"
+    "meshActive": "Aktywna sieć siatkowa",
+    "transportBle": "WE",
+    "transportSerial": "Seryjny",
+    "transportHttp": "HTTP",
+    "transportRadio": "Radio",
+    "radioInterfaceFallback": "interfejs radiowy"
   }
 }

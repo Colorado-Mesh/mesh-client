@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { isValidHttpHostname } from './httpHostValidation';
 
 const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
+const SUPPORT_BUNDLE_SOURCE = readFileSync(join(__dirname, 'support-bundle.ts'), 'utf-8');
 const TAK_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/tak-handlers.ts'), 'utf-8');
 const GPS_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/gps-handlers.ts'), 'utf-8');
 
@@ -249,14 +250,24 @@ describe('privileged IPC sender validation (source contract)', () => {
     'mqtt:connect',
     'mqtt:disconnect',
     'mqtt:publish',
+    'mqtt:publishProxy',
+    'mqtt:publishMeshcore',
+    'mqtt:publishMeshcorePacketLog',
     'storage:encrypt',
     'storage:decrypt',
     'http:write',
     'http:disconnect',
     'meshcore:tcp-connect',
     'meshcore:tcp-write',
+    'meshcore:tcp-disconnect',
     'noble-ble-connect',
+    'noble-ble-disconnect',
+    'notify:message',
     'chat:outbox:add',
+    'chat:outbox:remove',
+    'db:saveNode',
+    'db:saveNodePath',
+    'support:exportBundle',
   ] as const;
 
   it.each(privilegedChannels)('%s calls assertIpcSender or validateIpcSender', (channel) => {
@@ -292,6 +303,21 @@ describe('privileged IPC sender validation (source contract)', () => {
 
   it('chat:export caps message array length', () => {
     expect(INDEX_SOURCE).toContain('CHAT_EXPORT_MAX_MESSAGES');
+  });
+
+  it('support:exportBundle validates mode and snapshot size', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('support:exportBundle'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1200);
+    expect(body).toContain('validateIpcSender(event)');
+    expect(body).toContain('isSupportBundleMode');
+    expect(body).toContain('buildSupportBundleZip');
+    expect(SUPPORT_BUNDLE_SOURCE).toContain('MAX_DEBUG_SNAPSHOT_JSON_BYTES');
+  });
+
+  it('appSettings allows meshcore repeater credential prefix', () => {
+    expect(INDEX_SOURCE).toContain('meshcoreRepeaterCredential:');
+    expect(INDEX_SOURCE).toContain('appSettingsMaxValueLengthForKey');
   });
 });
 

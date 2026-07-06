@@ -140,6 +140,11 @@ export function meshcoreRepeaterAdminRpcErrorBudgetMs(
   return rpcTimeoutMs;
 }
 
+export function meshcoreRepeaterAdminErrorMessage(t: TFunction, e: unknown): string {
+  const raw = e instanceof Error ? e.message : String(e);
+  return translateMeshcoreUserMessage(t, raw);
+}
+
 export function meshcoreRepeaterRpcErrorMessage(
   errMsg: string,
   timeoutMs: number,

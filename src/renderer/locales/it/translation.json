@@ -3339,7 +3339,9 @@
     "cliNoCommandsYet": "Nessun comando ancora",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}m"
+    "uptimeMinutes": "{{minutes}}m",
+    "rememberPasswordSaveFailed": "Impossibile salvare la password del ripetitore per il riavvio. Funzionerà solo per questa sessione.",
+    "telemetryFailedToast": "Telemetria non riuscita: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervallo annunci (secondi)",
@@ -3847,6 +3849,11 @@
     "routes_one": "Percorsi: nodo {{count}} in mesh",
     "routes_other": "Percorsi: nodi {{count}} in mesh",
     "routesEstablished": "Itinerari impostati",
-    "meshActive": "Rete mesh attiva"
+    "meshActive": "Rete mesh attiva",
+    "transportBle": "BLE",
+    "transportSerial": "Serial",
+    "transportHttp": "HTTP",
+    "transportRadio": "Radio",
+    "radioInterfaceFallback": "Data Radio interface (Interfaccia sistema dati via radio)"
   }
 }

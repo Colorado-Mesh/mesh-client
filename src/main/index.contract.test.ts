@@ -123,6 +123,7 @@ describe('Persistent app settings IPC (source contract)', () => {
     expect(INDEX_SOURCE).toContain('meshcoreRoomSync:');
     expect(INDEX_SOURCE).toContain('meshcoreRoomLastPost:');
     expect(INDEX_SOURCE).toContain('meshcoreRoomCredential:');
+    expect(INDEX_SOURCE).toContain('meshcoreRepeaterCredential:');
     expect(INDEX_SOURCE).toContain('isAppSettingsKeyAllowed');
   });
 
@@ -242,9 +243,14 @@ describe('MQTT IPC handlers (source contract)', () => {
 
   it('registers renderer heartbeat IPC for post-resume hang detection', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('app:rendererHeartbeat'");
-    expect(INDEX_SOURCE).toContain(
-      'renderer unresponsive after system resume (no heartbeat within 30s)',
-    );
+    expect(INDEX_SOURCE).toContain('createRendererHeartbeatWatchdog');
+    expect(INDEX_SOURCE).toContain('rendererHeartbeatWatchdog.recordHeartbeat');
+    expect(INDEX_SOURCE).toContain('rendererHeartbeatWatchdog.startResumeWatchdog');
+  });
+
+  it('registers support bundle export IPC', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('support:exportBundle'");
+    expect(INDEX_SOURCE).toContain('buildSupportBundleZip');
   });
 });
 

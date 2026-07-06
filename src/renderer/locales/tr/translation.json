@@ -3339,7 +3339,9 @@
     "cliNoCommandsYet": "Henüz komut yok",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}m"
+    "uptimeMinutes": "{{minutes}}m",
+    "rememberPasswordSaveFailed": "Tekrarlayıcı parolası yeniden başlatmalar için kaydedilemedi. Yalnızca bu oturum için çalışacaktır.",
+    "telemetryFailedToast": "Telemetri başarısız oldu: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Anons aralığı (saniye)",
@@ -3847,6 +3849,11 @@
     "routes_one": "Güzergahlar: {{count}} mesh düğüm",
     "routes_other": "Rotalar: {{count}} mesh içindeki düğümler",
     "routesEstablished": "Belirlenen rotalar",
-    "meshActive": "Mesh ağı etkin"
+    "meshActive": "Mesh ağı etkin",
+    "transportBle": "BLE:",
+    "transportSerial": "Seri",
+    "transportHttp": "HTTP",
+    "transportRadio": "Radyo",
+    "radioInterfaceFallback": "radyo arayüzü"
   }
 }

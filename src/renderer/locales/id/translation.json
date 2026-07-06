@@ -3339,7 +3339,9 @@
     "cliNoCommandsYet": "Belum ada perintah",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}m"
+    "uptimeMinutes": "{{minutes}}m",
+    "rememberPasswordSaveFailed": "Tidak dapat menyimpan kata sandi pengulang untuk memulai ulang. Ini hanya akan berfungsi untuk sesi ini.",
+    "telemetryFailedToast": "Telemetri gagal: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",
@@ -3847,6 +3849,11 @@
     "routes_one": "Rute: {{count}} simpul di mesh",
     "routes_other": "Rute: {{count}} node dalam mesh",
     "routesEstablished": "Rute ditetapkan",
-    "meshActive": "Jaringan mesh aktif"
+    "meshActive": "Jaringan mesh aktif",
+    "transportBle": "mampu",
+    "transportSerial": "Serial",
+    "transportHttp": "HTTP",
+    "transportRadio": "Radio",
+    "radioInterfaceFallback": "antarmuka radio"
   }
 }

@@ -3339,7 +3339,9 @@
     "cliNoCommandsYet": "Noch keine Befehle",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}m"
+    "uptimeMinutes": "{{minutes}}m",
+    "rememberPasswordSaveFailed": "Wiederholer-Passwort für Neustarts konnte nicht gespeichert werden. Es funktioniert nur für diese Sitzung.",
+    "telemetryFailedToast": "Telemetrie fehlgeschlagen: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Ankündigungsintervall (Sekunden)",
@@ -3847,6 +3849,11 @@
     "routes_one": "Routen: {{count}} Knoten im Netz",
     "routes_other": "Routen: {{count}} Knoten im Netz",
     "routesEstablished": "Etablierte Routen",
-    "meshActive": "Netzwerk aktiv"
+    "meshActive": "Netzwerk aktiv",
+    "transportBle": "BLE",
+    "transportSerial": "Serie",
+    "transportHttp": "HTTP",
+    "transportRadio": "Radio",
+    "radioInterfaceFallback": "Funkschnittstelle"
   }
 }

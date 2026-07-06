@@ -114,6 +114,7 @@ import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { MQTTManager, parsePsk } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
+import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
 import { assertReticulumAttachmentPathJailed } from './reticulum-attachment-path';
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
 import {
@@ -290,27 +291,7 @@ function isAnyMqttConnected(): boolean {
 }
 
 let mainWindow: BrowserWindow | null = null;
-const RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS = 30_000;
-let lastRendererHeartbeatAt = 0;
-let rendererResumeWatchdogTimer: ReturnType<typeof setTimeout> | null = null;
-
-function clearRendererResumeWatchdog(): void {
-  if (rendererResumeWatchdogTimer) {
-    clearTimeout(rendererResumeWatchdogTimer);
-    rendererResumeWatchdogTimer = null;
-  }
-}
-
-function startRendererResumeWatchdog(): void {
-  clearRendererResumeWatchdog();
-  const resumeAt = Date.now();
-  rendererResumeWatchdogTimer = setTimeout(() => {
-    rendererResumeWatchdogTimer = null;
-    if (lastRendererHeartbeatAt >= resumeAt) return;
-    console.warn('[main] renderer unresponsive after system resume (no heartbeat within 30s)');
-  }, RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS);
-  rendererResumeWatchdogTimer.unref?.();
-}
+const rendererHeartbeatWatchdog = createRendererHeartbeatWatchdog();
 /** Win32 About: native About panel can hard-crash; use a small HTML BrowserWindow instead (#406). */
 let windowsAboutWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -3328,6 +3309,8 @@ const MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX = 'meshtasticRemoteAdminKey:';
 const MESHCORE_ROOM_SYNC_SETTING_PREFIX = 'meshcoreRoomSync:';
 const MESHCORE_ROOM_LAST_POST_SETTING_PREFIX = 'meshcoreRoomLastPost:';
 const MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX = 'meshcoreRoomCredential:';
+/** MeshCore Repeaters tab — must match renderer meshcoreRepeaterCredentialStorage. */
+const MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX = 'meshcoreRepeaterCredential:';
 
 function isAppSettingsKeyAllowed(key: string): boolean {
   return (
@@ -3335,14 +3318,24 @@ function isAppSettingsKeyAllowed(key: string): boolean {
     key.startsWith(MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX) ||
     key.startsWith(MESHCORE_ROOM_SYNC_SETTING_PREFIX) ||
     key.startsWith(MESHCORE_ROOM_LAST_POST_SETTING_PREFIX) ||
-    key.startsWith(MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX)
+    key.startsWith(MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX) ||
+    key.startsWith(MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX)
   );
+}
+
+function appSettingsMaxValueLengthForKey(key: string): number {
+  if (
+    key.startsWith(MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX) ||
+    key.startsWith(MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX)
+  ) {
+    return 512;
+  }
+  return APP_SETTINGS_MAX_VALUE_LENGTH;
 }
 
 ipcMain.handle('app:rendererHeartbeat', (_event, payload?: { ts?: number }) => {
   if (!mainWindow) return;
-  lastRendererHeartbeatAt = typeof payload?.ts === 'number' ? payload.ts : Date.now();
-  clearRendererResumeWatchdog();
+  rendererHeartbeatWatchdog.recordHeartbeat(payload?.ts);
 });
 
 ipcMain.handle('appSettings:get', () => {
@@ -3374,8 +3367,9 @@ ipcMain.handle('appSettings:set', (event, key: unknown, value: unknown) => {
   if (typeof key !== 'string' || !isAppSettingsKeyAllowed(key)) {
     throw new Error('appSettings:set: key not allowed');
   }
-  if (typeof value !== 'string' || value.length > APP_SETTINGS_MAX_VALUE_LENGTH) {
-    throw new Error('appSettings:set: value must be a string under 256 chars');
+  const maxValueLength = appSettingsMaxValueLengthForKey(key);
+  if (typeof value !== 'string' || value.length > maxValueLength) {
+    throw new Error(`appSettings:set: value must be a string under ${maxValueLength} chars`);
   }
   try {
     const result = getDatabase()
@@ -5892,14 +5886,14 @@ void app.whenReady().then(() => {
     // ─── Power monitor: notify renderer on suspend/resume ──────────
     powerMonitor.on('suspend', () => {
       console.debug('[main] System suspending');
-      clearRendererResumeWatchdog();
+      rendererHeartbeatWatchdog.clearResumeWatchdog();
       mqttManager.handlePowerSuspend();
       meshcoreMqttAdapter.handlePowerSuspend();
       mainWindow?.webContents.send('power:suspend');
     });
     powerMonitor.on('resume', () => {
       console.debug('[main] System resumed');
-      startRendererResumeWatchdog();
+      rendererHeartbeatWatchdog.startResumeWatchdog();
       mainWindow?.webContents.send('power:resume');
     });
   } catch (error) {

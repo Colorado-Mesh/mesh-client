@@ -162,7 +162,7 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **
 - **Localization**: 16 languages via static JSON bundles; fully offline — see [Localization & Languages](docs/localization.md)
 - **Accessibility**: modal focus trap, screen reader labels, reduce-motion toggle — see [Accessibility Checklist](docs/accessibility-checklist.md)
 - **Log panel**: live stream, **Analyze** heuristics, export/delete; Reticulum sidecar lines tagged `[ReticulumSidecar]`
-- **SQLite persistence**: protocol-scoped history and settings; DB export/import/clear in the App tab
+- **SQLite persistence**: protocol-scoped history and settings; DB export/import/clear in the App tab; **Export for GitHub** (zip: debug snapshot + logs) and **Export for Developer** (includes full SQLite — share privately only)
 - **Updates & tray**: footer update status; system tray unread badge when the window is backgrounded
 
 ### Shared RF features (Meshtastic & MeshCore)
@@ -267,6 +267,8 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 **Repeaters**
 
 - **Repeaters panel** (MeshCore-only tab): list repeaters with on-demand status (noise floor, RSSI/SNR, packet counts, air time, uptime, TX queue); **Path** column shows a per-hop SNR sparkline from the last trace (last trace/path hop data is also stored in local SQLite so sparklines can survive app restarts); per-row **Neighbors** expands an inline neighbor list (same query as node detail)
+- **Per-repeater admin passwords**: optional **Remember** saves credentials per repeater in SQLite (`meshcoreRepeaterCredential:<nodeId>`); collapsible **Saved passwords** list with per-repeater Forget
+- **Waiting-message drain**: amber status strip on Chat/Rooms during serial companion backlog drain; **Sync now** for manual catch-up
 - **Repeater CLI**: per-repeater expandable **CLI** interface; command input with Enter to send, scrollable command/response history, Up/Down arrow history navigation, quick-command bar (get name, get radio, neighbors, version, …), flood vs. auto (saved path) routing toggle; responses are correlated to commands via 2-character hex prefix tokens; configurable retries with dynamic timeout
 - **Remote session authentication (optional)**: Password may be required for **CLI** and some **telemetry** paths when firmware ACL demands it. **Status** and **Neighbors** use pubkey-framed companion commands and typically work without login on direct (0-hop) repeaters; the auth modal offers “Continue without password.” Saved passwords persist when **Remember** is checked. Admin RPCs share a serialized companion queue — expect up to ~2 minutes blocked while a ping or multi-hop request runs.
 - **Panel toolbar**: **Reboot Device** (shown when the device supports the command); **Send Advert** and **Sync Clock** moved to Radio panel Device Actions section
@@ -323,7 +325,7 @@ Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGP
 
 - **Peers** tab: RNS path-table peers and LXMF contacts (separate sub-tabs); path probe and peer detail modal
 - **Topology** tab: best-effort graph from the RNS path table (next-hop edges, BFS layout)
-- **Nomad Network** tab: favourites / announces list (MeshChat-style search and favourite toggle)
+- **Nomad Network** tab: collapsible favourites/announces list (default **Favourites** sub-tab); panel lazy-mounts after first visit and keeps browse state across tab switches (`mesh-client:nomadNodeListCollapsed` for sidebar width)
 
 **Admin & hardware**
 

@@ -577,6 +577,7 @@ const diagnosticsDebounce = {
   fullReanalysisTimer: null as ReturnType<typeof setTimeout> | null,
   pendingAnalyses: new Map<number, { node: MeshNode; homeNode: MeshNode | null }>(),
 };
+let diagnosticsReanalysisGeneration = 0;
 
 function capDiagnosticsNodeMaps<
   T extends {
@@ -1325,11 +1326,13 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
     diagnosticsDebounce.pendingAnalyses.clear();
     if (diagnosticsDebounce.fullReanalysisTimer)
       clearTimeout(diagnosticsDebounce.fullReanalysisTimer);
+    const generation = ++diagnosticsReanalysisGeneration;
     const nodes = getNodes();
     const reanalysisDelayMs =
       nodes.size > LARGE_MESH_NODE_THRESHOLD ? LARGE_MESH_DIAGNOSTICS_REANALYSIS_DELAY_MS : 2000;
     diagnosticsDebounce.fullReanalysisTimer = setTimeout(() => {
       diagnosticsDebounce.fullReanalysisTimer = null;
+      if (generation !== diagnosticsReanalysisGeneration) return;
       if (capabilities?.hasHopCount === false) {
         set((state) => ({
           diagnosticRows: state.diagnosticRows.filter(isReticulumDiagnosticRow),
@@ -1393,6 +1396,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
           else newAnomalies.delete(nodeId);
         },
         () => {
+          if (generation !== diagnosticsReanalysisGeneration) return;
           let diagnosticRows = replaceRoutingRowsFromMap(state.diagnosticRows, newAnomalies);
           const preserveRestoredRf = restoredAt != null;
           const selfNode = nodes.get(myNodeNum);
@@ -1469,6 +1473,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
               }
             },
             () => {
+              if (generation !== diagnosticsReanalysisGeneration) return;
               const now = Date.now();
               diagnosticRows = pruneDiagnosticRowsByAge(
                 diagnosticRows,

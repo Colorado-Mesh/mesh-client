@@ -19,6 +19,11 @@ export interface MeshcoreRepeaterPrefixPushRequestOpts<T> {
   runSerialized?: MeshcoreRepeaterRunSerialized;
   beforeSend?: () => Promise<void>;
   pushEvent: number;
+  /** Optional extra push listeners (e.g. LoginFail while waiting for LoginSuccess). */
+  auxiliaryPushEvents?: {
+    event: number;
+    onMatchedPrefix: (response: unknown) => void;
+  }[];
   logTag: string;
   buildFrame: () => Uint8Array;
   parseMatchedPush: (response: unknown) => T;
@@ -37,6 +42,7 @@ export function runMeshcoreRepeaterPrefixPushRequest<T>(
   return new Promise((resolve, reject) => {
     let settled = false;
     let responseTimeoutId: ReturnType<typeof setTimeout> | undefined;
+    const auxHandlers = new Map<number, (response: unknown) => void>();
 
     const cleanup = (): void => {
       if (responseTimeoutId !== undefined) {
@@ -46,6 +52,9 @@ export function runMeshcoreRepeaterPrefixPushRequest<T>(
       opts.conn.off(MC_RESP_SENT, onSent);
       opts.conn.off(MC_RESP_ERR, onErr);
       opts.conn.off(opts.pushEvent, onPush);
+      for (const aux of opts.auxiliaryPushEvents ?? []) {
+        opts.conn.off(aux.event, auxHandlers.get(aux.event)!);
+      }
     };
 
     const fail = (e: unknown): void => {
@@ -102,6 +111,23 @@ export function runMeshcoreRepeaterPrefixPushRequest<T>(
     };
 
     opts.conn.on(opts.pushEvent, onPush);
+
+    for (const aux of opts.auxiliaryPushEvents ?? []) {
+      const handler = (response: unknown): void => {
+        const r = response as { pubKeyPrefix?: unknown };
+        const prefix = normalizePubKeyPrefix(r.pubKeyPrefix);
+        if (!prefix) return;
+        if (!pubKeyPrefixesEqual(expectedPrefix, prefix)) {
+          console.debug(
+            `[${opts.logTag}] auxiliary prefix mismatch expected=${prefixToHex(expectedPrefix)} got=${prefixToHex(prefix)}`,
+          );
+          return;
+        }
+        aux.onMatchedPrefix(response);
+      };
+      auxHandlers.set(aux.event, handler);
+      opts.conn.on(aux.event, handler);
+    }
 
     if (opts.runSerialized) {
       void runMeshcoreRepeaterQueuedSend(

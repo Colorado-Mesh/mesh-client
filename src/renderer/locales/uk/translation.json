@@ -3339,7 +3339,9 @@
     "cliNoCommandsYet": "Команд ще немає",
     "uptimeDaysHours": "{{days}}д {{hours}}год",
     "uptimeHoursMinutes": "{{hours}}год {{minutes}}хв",
-    "uptimeMinutes": "{{minutes}}м"
+    "uptimeMinutes": "{{minutes}}м",
+    "rememberPasswordSaveFailed": "Не вдалося зберегти пароль повторювача для перезапуску. Він працюватиме лише для цієї сесії.",
+    "telemetryFailedToast": "Помилка телеметрії: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Інтервал оголошення (секунди)",
@@ -3847,6 +3849,11 @@
     "routes_one": "Маршрути: {{count}} вузол у сітці",
     "routes_other": "Маршрути: {{count}} вузлів у сітці",
     "routesEstablished": "Встановлені маршрути",
-    "meshActive": "Мережева мережа активна"
+    "meshActive": "Мережева мережа активна",
+    "transportBle": "BLE",
+    "transportSerial": "Серійний",
+    "transportHttp": "HTTP",
+    "transportRadio": "Радіо",
+    "radioInterfaceFallback": "радіоінтерфейс"
   }
 }
