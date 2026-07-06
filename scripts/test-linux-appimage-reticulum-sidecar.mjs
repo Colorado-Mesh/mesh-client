@@ -5,9 +5,9 @@
  * Works when packaging-smoke artifacts include AppImages but not linux-unpacked dirs.
  */
 import { spawnSync } from 'child_process';
-import { existsSync, readdirSync, readFileSync, rmSync, statSync } from 'fs';
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'fs';
 import { tmpdir } from 'os';
-import path from 'path';
+import path, { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
 
@@ -26,9 +26,17 @@ function isArm64Name(name) {
   return /arm64|aarch64/i.test(name);
 }
 
+/** Prepare a clean extract directory for AppImage --appimage-extract (spawnSync needs existing cwd). */
+export function prepareAppImageExtractDir(extractDir) {
+  rmSync(extractDir, { recursive: true, force: true });
+  mkdirSync(extractDir, { recursive: true });
+}
+
 /** @param {string} appImagePath @param {string} extractDir */
 function extractAppImage(appImagePath, extractDir) {
-  rmSync(extractDir, { recursive: true, force: true });
+  prepareAppImageExtractDir(extractDir);
+  // Artifact downloads may drop +x on AppImages.
+  chmodSync(appImagePath, 0o755);
   const result = spawnSync(appImagePath, ['--appimage-extract'], {
     cwd: extractDir,
     stdio: 'inherit',
@@ -109,9 +117,13 @@ function main() {
   );
 }
 
-try {
-  main();
-} catch (e) {
-  console.error('[test-linux-appimage-reticulum-sidecar] Unexpected error:', e);
-  process.exit(1);
+const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isMain) {
+  try {
+    main();
+  } catch (e) {
+    console.error('[test-linux-appimage-reticulum-sidecar] Unexpected error:', e);
+    process.exit(1);
+  }
 }
