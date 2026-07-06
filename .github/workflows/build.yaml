@@ -46,8 +46,7 @@ jobs:
       - name: Install Linux build dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
-          sudo dpkg --add-architecture arm64
-          sudo apt-get update
+          bash scripts/ci-setup-linux-arm64-apt.sh
           sudo apt-get install -y \
             libudev-dev \
             libnss3 \
