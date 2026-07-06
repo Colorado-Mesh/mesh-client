@@ -881,7 +881,13 @@
       "setPrimaryLocal": "Встановити в якості первинного",
       "setPrimaryLocalAria": "Встановити {{name}} як основний локальний RNode",
       "setPrimarySuccess": "Первинний локальний RNode оновлено.",
-      "setPrimaryFailed": "Не вдалося встановити основний локальний RNode."
+      "setPrimaryFailed": "Не вдалося встановити основний локальний RNode.",
+      "defaultHubsLabel": "Концентратори за замовчуванням",
+      "addDefaultHubs": "Додати концентратори TESTNET і dude.eth",
+      "addDefaultHubsAria": "Додати концентратори Reticulum TESTNET та Ratspeak TCP за замовчуванням у вимкненому стані",
+      "addDefaultHubsSuccess": "Додано {{added}} концентратор(и) за замовчуванням. {{skipped}} вже налаштовано.",
+      "addDefaultHubsAllPresent": "Концентратори TESTNET і dude.eth за замовчуванням вже налаштовані.",
+      "addDefaultHubsFailed": "Не вдалося додати концентратори за умовчанням."
     },
     "reticulumPeers": {
       "hops": "Hops",

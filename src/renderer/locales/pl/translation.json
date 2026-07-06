@@ -881,7 +881,13 @@
       "setPrimaryLocal": "Ustaw jako podstawowy",
       "setPrimaryLocalAria": "Ustaw {{name}} jako główny lokalny RNode",
       "setPrimarySuccess": "Zaktualizowano główny lokalny RNode.",
-      "setPrimaryFailed": "Nie udało się ustawić głównego lokalnego RNode."
+      "setPrimaryFailed": "Nie udało się ustawić głównego lokalnego RNode.",
+      "defaultHubsLabel": "Domyślne huby",
+      "addDefaultHubs": "Dodaj piasty TESTNET i dude.eth",
+      "addDefaultHubsAria": "Dodaj domyślne koncentratory TCP Reticulum TESTNET i Ratspeak w stanie wyłączonym",
+      "addDefaultHubsSuccess": "Dodano domyślne koncentratory: {{added}}. {{skipped}} jest już skonfigurowany.",
+      "addDefaultHubsAllPresent": "Domyślne koncentratory TESTNET i dude.eth są już skonfigurowane.",
+      "addDefaultHubsFailed": "Nie udało się dodać domyślnych koncentratorów."
     },
     "reticulumPeers": {
       "hops": "Hops",

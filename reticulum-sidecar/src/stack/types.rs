@@ -103,6 +103,8 @@ pub struct AddInterfaceRequest {
     #[serde(rename = "type")]
     pub iface_type: String,
     pub name: Option<String>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
     pub host: Option<String>,
     pub port: Option<u16>,
     pub preset: Option<String>,

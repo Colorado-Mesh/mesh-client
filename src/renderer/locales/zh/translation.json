@@ -881,7 +881,13 @@
       "setPrimaryLocal": "设为主要",
       "setPrimaryLocalAria": "将{{name}}设置为主要本地RNode",
       "setPrimarySuccess": "主本地RNode已更新。",
-      "setPrimaryFailed": "设置主本地RNode失败。"
+      "setPrimaryFailed": "设置主本地RNode失败。",
+      "defaultHubsLabel": "默认集线器",
+      "addDefaultHubs": "添加TESTNET和dude.eth集线器",
+      "addDefaultHubsAria": "添加处于禁用状态的默认Reticulum TESTNET和Ratspeak TCP集线器",
+      "addDefaultHubsSuccess": "已添加{{added}}个默认集线器。{{skipped}}已配置。",
+      "addDefaultHubsAllPresent": "已配置默认TESTNET和dude.eth集线器。",
+      "addDefaultHubsFailed": "添加默认集线器失败。"
     },
     "reticulumPeers": {
       "hops": "Hops",
