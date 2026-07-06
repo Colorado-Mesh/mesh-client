@@ -881,7 +881,15 @@
       "setPrimaryLocal": "Tetapkan sebagai utama",
       "setPrimaryLocalAria": "Tetapkan {{name}} sebagai RNode lokal utama",
       "setPrimarySuccess": "RNode lokal utama diperbarui.",
-      "setPrimaryFailed": "Gagal mengatur RNode lokal utama."
+      "setPrimaryFailed": "Gagal mengatur RNode lokal utama.",
+      "defaultHubsLabel": "Hub default",
+      "addDefaultHubs": "Tambahkan hub testnet dan Ratspeak",
+      "addDefaultHubsAria": "Tambahkan hub Reticulum testnet dan Ratspeak default dalam keadaan dinonaktifkan",
+      "addDefaultHubsSuccess": "Menambahkan hub default {{added}}. {{skipped}} sudah dikonfigurasi.",
+      "addDefaultHubsAllPresent": "Hub testnet dan Ratspeak default sudah dikonfigurasi.",
+      "addDefaultHubsFailed": "Gagal menambahkan hub default.",
+      "identityNotConfigured": "Siapkan identitas Reticulum di tab Jaringan terlebih dahulu — buat atau impor frasa pemulihan.",
+      "identityRequiredHint": "Konfigurasikan identitas Reticulum pada tab Jaringan sebelum menambahkan antarmuka."
     },
     "reticulumPeers": {
       "hops": "Hops",

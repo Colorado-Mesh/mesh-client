@@ -881,7 +881,15 @@
       "setPrimaryLocal": "Establecer como primario",
       "setPrimaryLocalAria": "Establecer {{name}} como RNode local principal",
       "setPrimarySuccess": "RNode local primario actualizado.",
-      "setPrimaryFailed": "No se ha podido establecer el RNode local principal."
+      "setPrimaryFailed": "No se ha podido establecer el RNode local principal.",
+      "defaultHubsLabel": "Hubs predeterminados",
+      "addDefaultHubs": "Añadir centros de testnet y Ratspeak",
+      "addDefaultHubsAria": "Añadir Reticulum testnet predeterminado y concentradores Ratspeak en un estado deshabilitado",
+      "addDefaultHubsSuccess": "Se han añadido {{added}} centros predeterminados. {{skipped}} ya está configurado.",
+      "addDefaultHubsAllPresent": "Los hubs predeterminados de testnet y Ratspeak ya están configurados.",
+      "addDefaultHubsFailed": "No se han podido añadir los concentradores predeterminados.",
+      "identityNotConfigured": "Configure primero una identidad de Reticulum en la pestaña Red: genere o importe una frase de recuperación.",
+      "identityRequiredHint": "Configure una identidad de Reticulum en la pestaña Red antes de añadir interfaces."
     },
     "reticulumPeers": {
       "hops": "Hops",

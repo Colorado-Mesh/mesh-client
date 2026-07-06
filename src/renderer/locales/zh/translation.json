@@ -881,7 +881,15 @@
       "setPrimaryLocal": "设为主要",
       "setPrimaryLocalAria": "将{{name}}设置为主要本地RNode",
       "setPrimarySuccess": "主本地RNode已更新。",
-      "setPrimaryFailed": "设置主本地RNode失败。"
+      "setPrimaryFailed": "设置主本地RNode失败。",
+      "defaultHubsLabel": "默认集线器",
+      "addDefaultHubs": "添加测试网和Ratspeak集线器",
+      "addDefaultHubsAria": "添加处于禁用状态的默认Reticulum测试网和Ratspeak集线器",
+      "addDefaultHubsSuccess": "已添加{{added}}个默认集线器。{{skipped}}已配置。",
+      "addDefaultHubsAllPresent": "默认测试网和Ratspeak集线器已配置。",
+      "addDefaultHubsFailed": "添加默认集线器失败。",
+      "identityNotConfigured": "请先在“网络”选项卡上设置 Reticulum 身份 — 生成或导入恢复短语。",
+      "identityRequiredHint": "在添加接口之前，请先在“网络”选项卡上配置 Reticulum 身份。"
     },
     "reticulumPeers": {
       "hops": "Hops",

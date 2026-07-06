@@ -237,6 +237,18 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
             block.get("target_host").map(str::to_string),
             block.get("target_port").and_then(|p| p.parse::<u16>().ok()),
         )
+    } else if iface_type == "i2p" {
+        (
+            block.get("peers").map(|peers| {
+                peers
+                    .split(',')
+                    .map(str::trim)
+                    .find(|p| !p.is_empty())
+                    .unwrap_or(peers)
+                    .to_string()
+            }),
+            None,
+        )
     } else {
         (None, None)
     };
@@ -309,6 +321,12 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
         }
     }
 
+    if row.iface_type == "i2p" {
+        if let Some(host) = &row.host {
+            block.set("peers", host);
+        }
+    }
+
     if row.iface_type == "rnode" {
         write_rnode_radio_fields(&mut block, row);
     }
@@ -369,12 +387,13 @@ pub fn add_interface_to_config(
         .clone()
         .unwrap_or_else(|| format!("{}-{}", req.iface_type, &id[..8]));
 
+    let enabled = req.enabled.unwrap_or(true);
     let mut row = InterfaceRow {
         id: interface_id_from_name(&name),
         name,
         iface_type: req.iface_type.clone(),
-        enabled: true,
-        status: "pending".into(),
+        enabled,
+        status: if enabled { "pending".into() } else { "down".into() },
         host: req.host.clone(),
         port: req.port,
         preset: req.preset.clone(),
@@ -1057,6 +1076,27 @@ port = /dev/ttyACM0
         assert_eq!(kiss_block.get("port"), Some("/dev/ttyUSB1"));
         let multi_block = interface_row_to_block(multi);
         assert_eq!(multi_block.get("port"), Some("/dev/ttyACM0"));
+    }
+
+    #[test]
+    fn i2p_peers_round_trip() {
+        let peer = "g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p";
+        let content = format!(
+            r#"
+[interfaces]
+[[RNS Testnet I2P Hub A]]
+type = I2PInterface
+enabled = No
+peers = {peer}
+"#
+        );
+        let parsed = parse_config(&content).unwrap();
+        let rows = interfaces_from_parsed(&parsed);
+        let i2p = rows.iter().find(|r| r.iface_type == "i2p").unwrap();
+        assert!(!i2p.enabled);
+        assert_eq!(i2p.host.as_deref(), Some(peer));
+        let block = interface_row_to_block(i2p);
+        assert_eq!(block.get("peers"), Some(peer));
     }
 
     #[test]

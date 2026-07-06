@@ -2,6 +2,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  buildDefaultHubAddRequest,
+  RETICULUM_DEFAULT_HUB_PRESETS,
+} from '@/renderer/lib/reticulum/reticulumDefaultHubPresets';
 import type {
   ReticulumInterfaceRow,
   ReticulumSerialPortOption,
@@ -459,5 +463,126 @@ describe('ReticulumInterfacesPanel', () => {
     expect(
       screen.queryByText('connectionPanel.reticulumInterfaces.primaryLocalSummary'),
     ).not.toBeInTheDocument();
+  });
+
+  it('adds all default hub presets disabled when none are configured', async () => {
+    const user = userEvent.setup();
+    const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyPost = proxyPost;
+
+    render(<ReticulumInterfacesPanel {...defaultProps} />);
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(proxyPost).toHaveBeenCalledTimes(RETICULUM_DEFAULT_HUB_PRESETS.length);
+    });
+    for (const preset of RETICULUM_DEFAULT_HUB_PRESETS) {
+      expect(proxyPost).toHaveBeenCalledWith(
+        '/api/v1/interfaces',
+        buildDefaultHubAddRequest(preset),
+      );
+    }
+    expect(defaultProps.onRefresh).toHaveBeenCalled();
+  });
+
+  it('skips configured presets and adds only missing hubs', async () => {
+    const user = userEvent.setup();
+    const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyPost = proxyPost;
+
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'dublin',
+            name: 'RNS Testnet Dublin',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: 'dublin.connect.reticulum.network',
+            port: 4965,
+          },
+          {
+            id: 'btb',
+            name: 'RNS Testnet BetweenTheBorders',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: 'reticulum.betweentheborders.com',
+            port: 4242,
+          },
+          {
+            id: 'us-east',
+            name: 'RNS_Transport_US-East',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: '45.77.109.86',
+            port: 4965,
+          },
+          {
+            id: 'i2p',
+            name: 'RNS Testnet I2P Hub A',
+            type: 'i2p',
+            enabled: false,
+            status: 'down',
+            host: 'g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p',
+          },
+        ]}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(proxyPost).toHaveBeenCalledTimes(1);
+    });
+    expect(proxyPost).toHaveBeenCalledWith(
+      '/api/v1/interfaces',
+      buildDefaultHubAddRequest(RETICULUM_DEFAULT_HUB_PRESETS[4]),
+    );
+  });
+
+  it('shows identity hint and disables default hubs when identity is not configured', () => {
+    render(<ReticulumInterfacesPanel {...defaultProps} identityConfigured={false} />);
+
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.identityRequiredHint'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
+      }),
+    ).toBeDisabled();
+  });
+
+  it('humanizes identity-not-configured sidecar error when adding default hubs', async () => {
+    const user = userEvent.setup();
+    window.electronAPI.reticulum.proxyPost = vi
+      .fn()
+      .mockResolvedValue({ ok: false, error: 'identity not configured' });
+
+    render(<ReticulumInterfacesPanel {...defaultProps} />);
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
+      }),
+    );
+
+    expect(
+      await screen.findByText('connectionPanel.reticulumInterfaces.identityNotConfigured'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('identity not configured')).not.toBeInTheDocument();
   });
 });

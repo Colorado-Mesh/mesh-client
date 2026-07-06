@@ -881,7 +881,15 @@
       "setPrimaryLocal": "Birincil olarak Ata",
       "setPrimaryLocalAria": "{{name}} öğesini birincil yerel RNode olarak ayarlayın",
       "setPrimarySuccess": "Birincil yerel RNode güncellendi.",
-      "setPrimaryFailed": "Birincil yerel RNode ayarlanamadı."
+      "setPrimaryFailed": "Birincil yerel RNode ayarlanamadı.",
+      "defaultHubsLabel": "Varsayılan hub'lar",
+      "addDefaultHubs": "Testnet ve Ratspeak hub'ları ekleyin",
+      "addDefaultHubsAria": "Devre dışı durumda varsayılan Reticulum test ağı ve Ratspeak hub'ları ekleyin",
+      "addDefaultHubsSuccess": "{{added}} varsayılan hub(lar) eklendi. {{skipped}} zaten yapılandırılmış.",
+      "addDefaultHubsAllPresent": "Varsayılan test ağı ve Ratspeak hub'ları zaten yapılandırılmıştır.",
+      "addDefaultHubsFailed": "Varsayılan hub'lar eklenemedi.",
+      "identityNotConfigured": "Önce Ağ sekmesinde bir Reticulum kimliği oluşturun — bir kurtarma ifadesi oluşturun veya içe aktarın.",
+      "identityRequiredHint": "Arayüz eklemeden önce Ağ sekmesinde bir Reticulum kimliği yapılandırın."
     },
     "reticulumPeers": {
       "hops": "Hops",

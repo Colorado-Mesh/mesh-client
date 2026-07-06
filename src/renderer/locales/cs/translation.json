@@ -881,7 +881,15 @@
       "setPrimaryLocal": "Nastavit jako primární",
       "setPrimaryLocalAria": "Nastavit {{name}} jako primární místní RNode",
       "setPrimarySuccess": "Primární místní RNode aktualizován.",
-      "setPrimaryFailed": "Nastavení primárního místního RNode se nezdařilo."
+      "setPrimaryFailed": "Nastavení primárního místního RNode se nezdařilo.",
+      "defaultHubsLabel": "Výchozí rozbočovače",
+      "addDefaultHubs": "Přidat rozbočovače testnet a Ratspeak",
+      "addDefaultHubsAria": "Přidat výchozí testovací síť Reticulum a rozbočovače Ratspeak v zakázaném stavu",
+      "addDefaultHubsSuccess": "Přidáno {{added}} výchozí rozbočovač(rozbočovače). {{skipped}} je již nakonfigurován.",
+      "addDefaultHubsAllPresent": "Výchozí rozbočovače testnet a Ratspeak jsou již nakonfigurovány.",
+      "addDefaultHubsFailed": "Přidání výchozích center se nezdařilo.",
+      "identityNotConfigured": "Nejprve nastavte identitu Reticulum na kartě Síť — vygenerujte nebo importujte frázi pro obnovení.",
+      "identityRequiredHint": "Před přidáním rozhraní nakonfigurujte identitu Reticulum na kartě Síť."
     },
     "reticulumPeers": {
       "hops": "Hops",
