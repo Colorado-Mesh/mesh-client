@@ -514,8 +514,9 @@
     "waitingMessagesSyncProgress": "Synchronizowanie {{processed}} / {{total}} z radiem…",
     "waitingMessagesSyncProgressIndeterminate": "Synchronizowanie wiadomości w kolejce z radia…",
     "waitingMessagesSilentDrain": "Pobieram wiadomości oczekujące w kolejce w radiu…",
-    "waitingMessagesDrainDeferred": "Synchronizacja wiadomości została wstrzymana, gdy radio jest zajęte (admin/trace)…",
-    "waitingMessagesSerialHint": "Port szeregowy USB obsługuje jedno polecenie na raz; wiadomości mogą docierać w małych partiach."
+    "waitingMessagesDrainDeferred": "Synchronizacja wiadomości została wstrzymana, gdy radio jest zajęte (administrator/śledzenie)…",
+    "waitingMessagesSerialHint": "Port szeregowy USB obsługuje jedno polecenie na raz; wiadomości mogą docierać w małych partiach.",
+    "waitingMessagesSyncFailed": "Nie udało się zsynchronizować wiadomości w kolejce: {{message}}"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -975,7 +976,7 @@
       "txQueueDropsHint": "Zwykle spowodowane przez nadal włączony martwy interfejs TCP. Wyłącz niedostępne koncentratory, aby zatrzymać przepełnienie kolejki.",
       "suppressed": "Ostatnio zablokowano podobne wiersze dziennika wózka bocznego {{count}}."
     },
-    "reticulumSidecarBundledMissing": "W tej instalacji brakuje dołączonego wózka bocznego Reticulum. Uaktualnij do nowszej wersji lub zgłoś problem — budowanie ze źródła nie jest możliwe w przypadku instalacji pakietowych."
+    "reticulumSidecarBundledMissing": "W tej instalacji brakuje dołączonego sidecar Reticulum. Uaktualnij do nowszej wersji lub zgłoś problem — budowanie ze źródła nie jest możliwe w przypadku instalacji pakietowych."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",

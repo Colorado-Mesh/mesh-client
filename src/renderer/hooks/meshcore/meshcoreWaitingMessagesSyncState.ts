@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from 'react';
 
 let processWaitingMessagesInFlight: Promise<void> | null = null;
 let processWaitingMessagesFollowUpRequested = false;
+let processWaitingMessagesManualFollowUpRequested = false;
 
 export function getMeshcoreProcessWaitingMessagesInFlight(): Promise<void> | null {
   return processWaitingMessagesInFlight;
@@ -24,8 +25,22 @@ export function takeMeshcoreWaitingMessagesFollowUp(): boolean {
   return requested;
 }
 
+/** Request one follow-up manual sync (Sync now) after the current in-flight drain settles. */
+export function requestMeshcoreWaitingMessagesManualFollowUp(): void {
+  if (processWaitingMessagesInFlight) {
+    processWaitingMessagesManualFollowUpRequested = true;
+  }
+}
+
+export function takeMeshcoreWaitingMessagesManualFollowUp(): boolean {
+  const requested = processWaitingMessagesManualFollowUpRequested;
+  processWaitingMessagesManualFollowUpRequested = false;
+  return requested;
+}
+
 export function clearMeshcoreWaitingMessagesFollowUp(): void {
   processWaitingMessagesFollowUpRequested = false;
+  processWaitingMessagesManualFollowUpRequested = false;
 }
 
 /** Clear module in-flight guard and Chat waiting-message UI (disconnect / listener teardown). */
@@ -40,6 +55,7 @@ export function resetMeshcoreProcessWaitingMessagesSync(
 ): void {
   processWaitingMessagesInFlight = null;
   processWaitingMessagesFollowUpRequested = false;
+  processWaitingMessagesManualFollowUpRequested = false;
   setWaitingMessagesCount(0);
   setWaitingMessagesSyncActive(false);
   setWaitingMessagesSyncProgress(null);

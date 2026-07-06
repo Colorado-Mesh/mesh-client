@@ -131,6 +131,7 @@ import { useReticulumPropagationStore } from '../stores/reticulumPropagationStor
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
+import { MeshcoreWaitingMessagesBanner } from './MeshcoreWaitingMessagesBanner';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { ReticulumAttachmentLine } from './ReticulumAttachmentLine';
 import { ReticulumMessageStatusBadge } from './ReticulumMessageStatusBadge';
@@ -1811,60 +1812,18 @@ function ChatPanel({
         </div>
       </div>
 
-      {protocol === 'meshcore' &&
-        (waitingMessagesCount > 0 ||
-          waitingMessagesSyncActive ||
-          waitingMessagesSilentDrainActive ||
-          waitingMessagesDrainDeferred) && (
-          <div
-            className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-1.5 text-xs text-amber-200"
-            role="status"
-            aria-busy={waitingMessagesSyncActive || waitingMessagesSilentDrainActive || undefined}
-          >
-            <span className="flex min-w-0 flex-col gap-0.5">
-              <span className="flex min-w-0 items-center gap-2">
-                {waitingMessagesSyncActive || waitingMessagesSilentDrainActive ? (
-                  <>
-                    <span
-                      className="inline-block h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-amber-400 border-t-transparent"
-                      aria-hidden
-                    />
-                    {waitingMessagesSyncActive
-                      ? waitingMessagesSyncProgress && waitingMessagesSyncProgress.total > 0
-                        ? t('chatPanel.waitingMessagesSyncProgress', {
-                            processed: waitingMessagesSyncProgress.processed,
-                            total: waitingMessagesSyncProgress.total,
-                          })
-                        : t('chatPanel.waitingMessagesSyncProgressIndeterminate')
-                      : t('chatPanel.waitingMessagesSilentDrain')}
-                  </>
-                ) : waitingMessagesDrainDeferred ? (
-                  t('chatPanel.waitingMessagesDrainDeferred')
-                ) : (
-                  t('chatPanel.waitingMessagesQueued', { count: waitingMessagesCount })
-                )}
-              </span>
-              {(waitingMessagesSilentDrainActive || waitingMessagesDrainDeferred) &&
-                connectionType === 'serial' && (
-                  <span className="text-muted text-[10px]">
-                    {t('chatPanel.waitingMessagesSerialHint')}
-                  </span>
-                )}
-            </span>
-            {onSyncWaitingMessages && (
-              <button
-                type="button"
-                onClick={onSyncWaitingMessages}
-                disabled={waitingMessagesSyncActive}
-                className="rounded border border-amber-600/60 px-2 py-0.5 text-[10px] font-medium hover:bg-amber-800/40 disabled:cursor-not-allowed disabled:opacity-50"
-                aria-label={t('chatPanel.waitingMessagesSyncNow')}
-                aria-busy={waitingMessagesSyncActive || undefined}
-              >
-                {t('chatPanel.waitingMessagesSyncNow')}
-              </button>
-            )}
-          </div>
-        )}
+      {protocol === 'meshcore' && (
+        <MeshcoreWaitingMessagesBanner
+          className="mb-2"
+          waitingMessagesCount={waitingMessagesCount}
+          waitingMessagesSyncActive={waitingMessagesSyncActive}
+          waitingMessagesSyncProgress={waitingMessagesSyncProgress}
+          waitingMessagesSilentDrainActive={waitingMessagesSilentDrainActive}
+          waitingMessagesDrainDeferred={waitingMessagesDrainDeferred}
+          connectionType={connectionType}
+          onSyncWaitingMessages={onSyncWaitingMessages}
+        />
+      )}
 
       {protocol === 'reticulum' && reticulumPropagationSync.active && (
         <div

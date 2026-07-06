@@ -515,7 +515,8 @@
     "waitingMessagesSyncProgressIndeterminate": "Menyinkronkan pesan antrian dari radio…",
     "waitingMessagesSilentDrain": "Mengambil pesan yang antri di radio…",
     "waitingMessagesDrainDeferred": "Sinkronisasi pesan dijeda saat radio sedang sibuk (admin/pelacakan)…",
-    "waitingMessagesSerialHint": "Serial USB menangani satu perintah dalam satu waktu; pesan mungkin tiba dalam jumlah kecil."
+    "waitingMessagesSerialHint": "Serial USB menangani satu perintah dalam satu waktu; pesan mungkin tiba dalam jumlah kecil.",
+    "waitingMessagesSyncFailed": "Gagal menyinkronkan pesan antrean: {{message}}"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

@@ -72,7 +72,7 @@ import { ProtocolSwitcher } from './components/ProtocolSwitcher';
 import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
 import Sidebar from './components/Sidebar';
 import { LinkIcon } from './components/SignalBars';
-import { ToastProvider } from './components/Toast';
+import { ToastProvider, useToast } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
 import { useActiveMeshIdentity } from './hooks/useActiveMeshIdentity';
 import { useAllProtocolPanelActions } from './hooks/useAllProtocolPanelActions';
@@ -427,13 +427,16 @@ export default function App() {
   );
   return (
     <ProtocolRuntimeProvider value={runtimeMap}>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </ProtocolRuntimeProvider>
   );
 }
 
 function AppContent() {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const runtimes = useAllRuntimes();
   const meshtasticRuntime = runtimes.meshtastic as unknown as MeshtasticRuntime;
   const meshcoreRuntime = runtimes.meshcore as unknown as MeshcoreRuntime;
@@ -1668,6 +1671,21 @@ function AppContent() {
     meshcoreRuntime.waitingMessagesDrainDeferred,
   ]);
 
+  const syncWaitingMessages = meshcoreRuntime.syncWaitingMessages;
+  const handleMeshcoreSyncWaitingMessages = useCallback(async () => {
+    try {
+      await syncWaitingMessages();
+    } catch (err: unknown) {
+      console.warn('[App] syncWaitingMessages failed ' + errLikeToLogString(err));
+      addToast(
+        t('chatPanel.waitingMessagesSyncFailed', {
+          message: err instanceof Error ? err.message : t('appPanel.unknownError'),
+        }),
+        'error',
+      );
+    }
+  }, [syncWaitingMessages, addToast, t]);
+
   const handleDmTargetConsumed = useCallback(() => {
     setPendingDmTarget(null);
   }, []);
@@ -2156,7 +2174,7 @@ function AppContent() {
   const deviceStatusText = `${deviceStatusLabel}${activeConnectionView.state.connectionType ? ` (${activeConnectionView.state.connectionType.toUpperCase()})` : ''}`;
 
   return (
-    <ToastProvider>
+    <>
       <GlobalInstantTooltip />
       {/* Global assertive live region for critical announcements */}
       <div aria-live="assertive" aria-atomic="true" className="sr-only" id="app-announcer" />
@@ -2579,7 +2597,7 @@ function AppContent() {
                             }
                             onSyncWaitingMessages={
                               capabilities.hasCompanionContactManagementConfig
-                                ? () => void meshcoreRuntime.syncWaitingMessages()
+                                ? () => void handleMeshcoreSyncWaitingMessages()
                                 : undefined
                             }
                             waitingMessagesSyncActive={
@@ -3175,7 +3193,7 @@ function AppContent() {
                                 compactMode={chatCompactMode}
                                 waitingMessagesCount={meshcoreRuntime.waitingMessagesCount}
                                 onSyncWaitingMessages={() =>
-                                  void meshcoreRuntime.syncWaitingMessages()
+                                  void handleMeshcoreSyncWaitingMessages()
                                 }
                                 waitingMessagesSyncActive={
                                   meshcoreRuntime.waitingMessagesSyncActive
@@ -3873,7 +3891,7 @@ function AppContent() {
           />
         </Suspense>
       )}
-    </ToastProvider>
+    </>
   );
 }
 

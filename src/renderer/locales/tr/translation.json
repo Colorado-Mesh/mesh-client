@@ -515,7 +515,8 @@
     "waitingMessagesSyncProgressIndeterminate": "Kuyruktaki mesajlar radyodan senkronize ediliyor…",
     "waitingMessagesSilentDrain": "Radyoda sıraya alınan mesajlar getiriliyor…",
     "waitingMessagesDrainDeferred": "Telsiz meşgulken mesaj senkronizasyonu duraklatıldı (yönetici/izleme)…",
-    "waitingMessagesSerialHint": "USB seri, aynı anda bir komutu işler; mesajlar küçük gruplar halinde gelebilir."
+    "waitingMessagesSerialHint": "USB seri, aynı anda bir komutu işler; mesajlar küçük gruplar halinde gelebilir.",
+    "waitingMessagesSyncFailed": "Sıraya alınan iletiler senkronize edilemedi: {{message}}"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -975,7 +976,7 @@
       "txQueueDropsHint": "Genellikle ölü bir TCP arayüzü hala etkindir. Kuyruk taşmasını durdurmak için erişilemeyen hub'ları devre dışı bırakın.",
       "suppressed": "{{count}} benzer sepet günlük satırları yakın zamanda bastırıldı."
     },
-    "reticulumSidecarBundledMissing": "Bu kurulumda birlikte verilen Reticulum sepeti eksik. Daha yeni bir sürüme yükseltin veya sorunu bildirin; kaynaktan derleme, paketli kurulumlarda mevcut değildir."
+    "reticulumSidecarBundledMissing": "Bu kurulumda birlikte verilen Reticulum sidecar eksik. Daha yeni bir sürüme yükseltin veya sorunu bildirin; kaynaktan derleme, paketli kurulumlarda mevcut değildir."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

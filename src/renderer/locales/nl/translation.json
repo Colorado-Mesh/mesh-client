@@ -513,9 +513,10 @@
     "waitingMessagesQueued": "{{count}} bericht(en) in de wachtrij op de radio",
     "waitingMessagesSyncProgress": "{{processed}} / {{total}} synchroniseren vanaf radio...",
     "waitingMessagesSyncProgressIndeterminate": "Berichten in de wachtrij van de radio worden gesynchroniseerd...",
-    "waitingMessagesSilentDrain": "Berichten ophalen die in de wachtrij staan ​​op de radio…",
-    "waitingMessagesDrainDeferred": "Berichtensynchronisatie gepauzeerd terwijl de radio bezet is (admin/trace)…",
-    "waitingMessagesSerialHint": "USB-serieel verwerkt één opdracht tegelijk; berichten kunnen in kleine batches aankomen."
+    "waitingMessagesSilentDrain": "Berichten ophalen die in de wachtrij staan op de radio…",
+    "waitingMessagesDrainDeferred": "Berichtensynchronisatie gepauzeerd terwijl de radio bezet is (beheer/trace)…",
+    "waitingMessagesSerialHint": "USB-serieel verwerkt één opdracht tegelijk; berichten kunnen in kleine batches aankomen.",
+    "waitingMessagesSyncFailed": "Kan berichten in de wachtrij niet synchroniseren: {{message}}"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -975,7 +976,7 @@
       "txQueueDropsHint": "Meestal veroorzaakt door een dode TCP-interface die nog steeds is ingeschakeld. Schakel onbereikbare hubs uit om wachtrijoverloop te stoppen.",
       "suppressed": "{{count}} vergelijkbare zijspanlogregels die onlangs zijn onderdrukt."
     },
-    "reticulumSidecarBundledMissing": "Bij deze installatie ontbreekt het gebundelde Reticulum-zijspan. Upgrade naar een nieuwere release of rapporteer het probleem: bouwen vanaf de broncode is niet beschikbaar in pakketinstallaties."
+    "reticulumSidecarBundledMissing": "Bij deze installatie ontbreekt het gebundelde Reticulum sidecar. Upgrade naar een nieuwere release of rapporteer het probleem: bouwen vanaf de broncode is niet beschikbaar in pakketinstallaties."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

@@ -107,9 +107,11 @@ import type {
 import {
   getMeshcoreProcessWaitingMessagesInFlight,
   requestMeshcoreWaitingMessagesFollowUp,
+  requestMeshcoreWaitingMessagesManualFollowUp,
   resetMeshcoreProcessWaitingMessagesSync,
   setMeshcoreProcessWaitingMessagesInFlight,
   takeMeshcoreWaitingMessagesFollowUp,
+  takeMeshcoreWaitingMessagesManualFollowUp,
 } from './meshcoreWaitingMessagesSyncState';
 
 export type { ProcessWaitingMessagesOptions } from './meshcoreLegacyConnEventsCtx';
@@ -616,10 +618,14 @@ export function attachMeshcoreLegacyConnEvents(
   };
 
   const maybeChainWaitingMessageFollowUp = () => {
-    if (!takeMeshcoreWaitingMessagesFollowUp() || !meshcoreHookMountedRef.current) return;
+    if (!meshcoreHookMountedRef.current) return;
+    const manual = takeMeshcoreWaitingMessagesManualFollowUp();
+    const silent = takeMeshcoreWaitingMessagesFollowUp();
+    if (!manual && !silent) return;
+    const showSyncBanner = manual;
     scheduleSilentWaitingMessageDrain(() =>
-      processWaitingMessages({ showSyncBanner: false }).catch((e: unknown) => {
-        logMeshcoreWaitingMessagesDrainError('getWaitingMessages error', e, false);
+      processWaitingMessages({ showSyncBanner }).catch((e: unknown) => {
+        logMeshcoreWaitingMessagesDrainError('getWaitingMessages error', e, showSyncBanner);
       }),
     );
   };
@@ -639,7 +645,11 @@ export function attachMeshcoreLegacyConnEvents(
   // Push: message waiting — event 0x83 = 131; fetch all queued messages
   const processWaitingMessages = async (options?: ProcessWaitingMessagesOptions) => {
     if (getMeshcoreProcessWaitingMessagesInFlight()) {
-      requestMeshcoreWaitingMessagesFollowUp();
+      if (options?.showSyncBanner !== false) {
+        requestMeshcoreWaitingMessagesManualFollowUp();
+      } else {
+        requestMeshcoreWaitingMessagesFollowUp();
+      }
       console.debug('[useMeshcoreRuntime] processWaitingMessages skipped (in flight)');
       return getMeshcoreProcessWaitingMessagesInFlight()!;
     }
@@ -673,25 +683,37 @@ export function attachMeshcoreLegacyConnEvents(
         }
       };
 
+      let syncTotal = 0;
+      let silentDrainUiActive = false;
+
       const ingestItem = async (item: ReturnType<typeof normalizeMeshcoreWaitingMessageItem>) => {
         if (!item) return;
-        const result = processMeshcoreWaitingMessageItem(
-          item,
-          buildWaitingMessageItemDeps(workingNodes),
-        );
-        if (result.nodesDirty) nodesDirty = true;
-        if (result.pendingMessages.length > 0) {
-          pendingMessages.push(...result.pendingMessages);
-        }
-        processed += 1;
-        flushBatch();
-        if (bannerActive) {
-          setWaitingMessagesSyncProgress({ processed, total: processed });
+        try {
+          const result = processMeshcoreWaitingMessageItem(
+            item,
+            buildWaitingMessageItemDeps(workingNodes),
+          );
+          if (result.nodesDirty) nodesDirty = true;
+          if (result.pendingMessages.length > 0) {
+            pendingMessages.push(...result.pendingMessages);
+          }
+          processed += 1;
+          flushBatch();
+          if (bannerActive) {
+            setWaitingMessagesSyncProgress({ processed, total: syncTotal });
+          }
+        } catch (e: unknown) {
+          console.warn(
+            '[useMeshcoreRuntime] processWaitingMessages ingest error ' + errLikeToLogString(e),
+          );
         }
         await yieldToEventLoop();
       };
 
-      setWaitingMessagesSilentDrainActive(true);
+      if (!showSyncBanner) {
+        setWaitingMessagesSilentDrainActive(true);
+        silentDrainUiActive = true;
+      }
       try {
         if (showSyncBanner) {
           const msgs = await withTimeout(
@@ -702,6 +724,7 @@ export function attachMeshcoreLegacyConnEvents(
           if (!meshcoreHookMountedRef.current) return;
           const arr = normalizeMeshcoreWaitingMessageBatch(msgs);
           const total = arr.length;
+          syncTotal = total;
           if (shouldActivateWaitingMessagesBanner(showSyncBanner, total)) {
             bannerActive = true;
             setWaitingMessagesSyncActive(true);
@@ -731,6 +754,7 @@ export function attachMeshcoreLegacyConnEvents(
           console.debug('[useMeshcoreRuntime] processWaitingMessages start (incremental)', {
             showSyncBanner,
           });
+          let silentDrainExhaustedCap = false;
           for (let i = 0; i < MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN; i += 1) {
             if (!meshcoreHookMountedRef.current) break;
             const raw = await withTimeout(
@@ -741,6 +765,12 @@ export function attachMeshcoreLegacyConnEvents(
             const item = normalizeMeshcoreWaitingMessageItem(raw);
             if (!item) break;
             await ingestItem(item);
+            if (i === MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN - 1) {
+              silentDrainExhaustedCap = true;
+            }
+          }
+          if (silentDrainExhaustedCap) {
+            requestMeshcoreWaitingMessagesFollowUp();
           }
           flushBatch();
         }
@@ -750,7 +780,9 @@ export function attachMeshcoreLegacyConnEvents(
           showSyncBanner,
         });
       } finally {
-        setWaitingMessagesSilentDrainActive(false);
+        if (silentDrainUiActive) {
+          setWaitingMessagesSilentDrainActive(false);
+        }
         if (bannerActive) {
           setWaitingMessagesCount(0);
           setWaitingMessagesSyncActive(false);
@@ -781,7 +813,12 @@ export function attachMeshcoreLegacyConnEvents(
             setTimeout(resolve, 2_000);
           });
           if (!meshcoreHookMountedRef.current) return;
-          await processWaitingMessages({ showSyncBanner: false });
+          try {
+            await processWaitingMessages({ showSyncBanner: false });
+          } catch (retryErr: unknown) {
+            // catch-no-log-ok logMeshcoreWaitingMessagesDrainError handles logging
+            logMeshcoreWaitingMessagesDrainError('getWaitingMessages error', retryErr, false);
+          }
         }
       },
       {

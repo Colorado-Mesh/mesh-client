@@ -28,4 +28,24 @@ describe('normalizeMeshcoreWaitingMessageItem', () => {
     expect(normalizeMeshcoreWaitingMessageBatch(batch)).toHaveLength(2);
     expect(normalizeMeshcoreWaitingMessageItem(batch)).toEqual(batch[0]);
   });
+
+  it('filters invalid entries from batch arrays', () => {
+    const batch = [null, {}, { channelMessage: { channelIdx: 0, senderTimestamp: 1, text: 'ok' } }];
+    expect(normalizeMeshcoreWaitingMessageBatch(batch)).toHaveLength(1);
+  });
+
+  it('normalizes a single contact message from syncNextMessage', () => {
+    const item = {
+      contactMessage: {
+        pubKeyPrefix: new Uint8Array([1, 2, 3, 4]),
+        text: 'dm',
+        senderTimestamp: 1_700_000_000,
+      },
+    };
+    expect(normalizeMeshcoreWaitingMessageItem(item)).toEqual(item);
+  });
+
+  it('treats invalid objects as empty for queue-empty check', () => {
+    expect(isMeshcoreWaitingQueueEmpty({})).toBe(true);
+  });
 });

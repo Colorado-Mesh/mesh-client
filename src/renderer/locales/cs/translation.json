@@ -514,8 +514,9 @@
     "waitingMessagesSyncProgress": "Synchronizace {{processed}} / {{total}} z rádia…",
     "waitingMessagesSyncProgressIndeterminate": "Synchronizace zpráv ve frontě z rádia...",
     "waitingMessagesSilentDrain": "Načítání zpráv ve frontě v rádiu…",
-    "waitingMessagesDrainDeferred": "Synchronizace zpráv byla pozastavena, když je rádio zaneprázdněné (admin/trace)…",
-    "waitingMessagesSerialHint": "Sériové rozhraní USB zpracovává jeden příkaz najednou; zprávy mohou dorazit v malých dávkách."
+    "waitingMessagesDrainDeferred": "Synchronizace zpráv byla pozastavena, když je rádio zaneprázdněné (správce/sledování)…",
+    "waitingMessagesSerialHint": "Sériové rozhraní USB zpracovává jeden příkaz najednou; zprávy mohou dorazit v malých dávkách.",
+    "waitingMessagesSyncFailed": "Synchronizace zpráv ve frontě se nezdařila: {{message}}"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -975,7 +976,7 @@
       "txQueueDropsHint": "Obvykle je to způsobeno stále povoleným mrtvým rozhraním TCP. Zakažte nedosažitelné rozbočovače pro zastavení přetečení fronty.",
       "suppressed": "{{count}} podobné řádky protokolu postranního vozíku byly nedávno potlačeny."
     },
-    "reticulumSidecarBundledMissing": "V této instalaci chybí přibalený postranní vozík Reticulum. Upgradujte na novější verzi nebo nahlaste problém – sestavení ze zdroje není v balených instalacích k dispozici."
+    "reticulumSidecarBundledMissing": "V této instalaci chybí přibalený Reticulum sidecar. Upgradujte na novější verzi nebo nahlaste problém – sestavení ze zdroje není v balených instalacích k dispozici."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

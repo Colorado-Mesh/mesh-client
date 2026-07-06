@@ -62,9 +62,10 @@ The top-level **`legend`** explains that ids like `offline-meshcore` are **inter
 - `connectIdentityId` — connected radio/MQTT identity.
 - `uiStoreIdentityId` — bucket Chat and Nodes read from.
 - `identitySplit: true` while transport is connected — **suspicious** (live ingress and UI may disagree).
-- `ui.chatPanelFrozen` + `frozenMessageCount` lagging `liveResolvedMessageCount` — Chat list may be frozen while messages still arrive.
+- `ui.chatPanelFrozen` + `frozenMessageCount` lagging `liveResolvedMessageCount` — **legacy builds only** (Chat freeze removed in newer releases); still useful when analyzing snapshots from older versions.
+- `ui.waitingMessagesSilentDrainActive` / `ui.waitingMessagesDrainDeferred` — MeshCore incremental drain in progress or paused behind admin/trace (serial may show small batches).
 
-**Automatic warning codes** in `warnings[]`: `identitySplit`, `staleResolvedBucket`, `chatPanelFrozen`, `connectedNoPrimaryMessages`, `windowHiddenOnChat`.
+**Automatic warning codes** in `warnings[]`: `identitySplit`, `staleResolvedBucket`, `chatPanelFrozen` (legacy builds), `connectedNoPrimaryMessages`, `windowHiddenOnChat`.
 
 Attach the GitHub report zip (or paste `debug-snapshot.json` from it; redact `myNodeNum` if you prefer). Do **not** attach the developer bundle or `mesh-client.db` to this public issue.
 
@@ -969,7 +970,7 @@ Live packets were written to the **connected identity** store bucket while Chat 
 
 1. Update to a build that includes the identity-bucket fix (merge on connect, stricter offline fallback, reactive identity resolution).
 2. **Disconnect and reconnect**, or quit and reopen the app so offline slices merge into the connected identity.
-3. If Chat is still stale: **App → Copy Debug Snapshot** and attach to your issue; check `warnings` and `sessionSummary`.
+3. If Chat is still stale: use **App → Support / Bug reports → Export for GitHub** and attach the zip to your issue; check `warnings` and `sessionSummary` in `debug-snapshot.json`.
 4. As a last resort before clearing data: **App → Export Database**, then try **Import (merge)** after updating — do not downgrade the app after migrations.
 
 This is **not** SQLite corruption when messages persist in the DB during the stuck window; it was a UI store routing mismatch.
@@ -1010,7 +1011,7 @@ Chat and Rooms show an **amber strip** while silent auto-drain runs ("Fetching m
 1. Pause repeater **Status / Neighbors / ping** while monitoring live chat on serial.
 2. Prefer **BLE** or **TCP** when available for lower-latency chat.
 3. If drains stall, **Disconnect → Connect** or quit and reopen after repeated timeouts in the log.
-4. Use **Sync now** in Chat for a large backlog (determinate progress banner).
+4. Use **Sync now** in **Chat** or **Rooms** for a large backlog (determinate progress banner).
 
 ### Chat or Rooms: scroll jumps when switching tabs
 
@@ -1042,7 +1043,7 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 **Fix**
 
 - Update to the latest release and **restart once** so idempotent startup repairs run (`db-schema-sync`).
-- If the list is still wrong, export the DB, note your app version, and file an issue with **Copy Debug Snapshot** + **Log → Export**.
+- If the list is still wrong, export the DB, note your app version, and file an issue with **Export for GitHub** (or **Copy Debug Snapshot** for a quick paste) + **Log → Export**.
 
 ### Chat notification sounds when the window is minimized
 

@@ -515,7 +515,8 @@
     "waitingMessagesSyncProgressIndeterminate": "Sincronizzazione dei messaggi in coda dalla radio...",
     "waitingMessagesSilentDrain": "Recupero dei messaggi in coda alla radio…",
     "waitingMessagesDrainDeferred": "Sincronizzazione dei messaggi in pausa mentre la radio è occupata (amministrazione/traccia)...",
-    "waitingMessagesSerialHint": "La seriale USB gestisce un comando alla volta; i messaggi possono arrivare in piccoli lotti."
+    "waitingMessagesSerialHint": "La seriale USB gestisce un comando alla volta; i messaggi possono arrivare in piccoli lotti.",
+    "waitingMessagesSyncFailed": "Impossibile sincronizzare i messaggi in coda: {{message}}"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

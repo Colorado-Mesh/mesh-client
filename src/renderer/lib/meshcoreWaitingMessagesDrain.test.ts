@@ -153,7 +153,9 @@ describe('scheduleMeshcoreWaitingMessagesDrain', () => {
 
   it('notifies onDeferredChange while waiting on congested companion work', async () => {
     const onDeferredChange = vi.fn();
-    vi.spyOn(meshcoreTracePathMultiplex, 'meshcoreTraceResponsesInFlightCount').mockReturnValue(1);
+    const inFlightSpy = vi
+      .spyOn(meshcoreTracePathMultiplex, 'meshcoreTraceResponsesInFlightCount')
+      .mockReturnValue(1);
 
     const drain = vi.fn().mockResolvedValue(undefined);
     scheduleMeshcoreWaitingMessagesDrain(drain, { onDeferredChange });
@@ -163,6 +165,7 @@ describe('scheduleMeshcoreWaitingMessagesDrain', () => {
 
     expect(onDeferredChange).toHaveBeenCalledWith(true);
     expect(drain).not.toHaveBeenCalled();
+    inFlightSpy.mockRestore();
   });
 });
 

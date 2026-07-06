@@ -515,7 +515,8 @@
     "waitingMessagesSyncProgressIndeterminate": "In die Warteschlange gestellte Nachrichten vom Funkgerät werden synchronisiert...",
     "waitingMessagesSilentDrain": "Nachrichten aus der Warteschlange im Radio werden abgerufen …",
     "waitingMessagesDrainDeferred": "Nachrichtensynchronisierung angehalten, während das Funkgerät beschäftigt ist (Administrator/Trace)…",
-    "waitingMessagesSerialHint": "USB seriell verarbeitet jeweils einen Befehl; Nachrichten können in kleinen Mengen eingehen."
+    "waitingMessagesSerialHint": "USB seriell verarbeitet jeweils einen Befehl; Nachrichten können in kleinen Mengen eingehen.",
+    "waitingMessagesSyncFailed": "Nachrichten in der Warteschlange konnten nicht synchronisiert werden: {{message}}"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

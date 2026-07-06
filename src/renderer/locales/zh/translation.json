@@ -515,7 +515,8 @@
     "waitingMessagesSyncProgressIndeterminate": "正在同步来自无线电的排队消息……",
     "waitingMessagesSilentDrain": "正在获取无线电中排队的消息...",
     "waitingMessagesDrainDeferred": "无线电繁忙时消息同步暂停（管理/跟踪）...",
-    "waitingMessagesSerialHint": "USB串行一次处理一个命令；消息可能会小批量到达。"
+    "waitingMessagesSerialHint": "USB串行一次处理一个命令；消息可能会小批量到达。",
+    "waitingMessagesSyncFailed": "无法同步排队消息：{{message}}"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

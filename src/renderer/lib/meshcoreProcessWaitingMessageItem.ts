@@ -92,8 +92,13 @@ export function processMeshcoreWaitingMessageItem(
             deps.logTransportLineAsDevice,
           );
           roomDispatched = true;
+          void setMeshcoreRoomLastPostAt(senderId, postTs);
+        } else {
+          console.warn(
+            '[useMeshcoreRuntime] event 131: room post skipped (no identityId)',
+            senderId,
+          );
         }
-        void setMeshcoreRoomLastPostAt(senderId, postTs);
       } else {
         const { authorId, payload } = meshcoreRoomPostBodyFromWire(
           d.text,
