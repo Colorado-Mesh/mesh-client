@@ -83,6 +83,15 @@ describe('redactMnemonicFromStackJson', () => {
     expect(redacted.identity.mnemonic).toBeUndefined();
     expect(redacted.identity.identity_hash).toBe('aa');
   });
+
+  it('fails closed on invalid JSON instead of returning raw stack text', () => {
+    const redacted = JSON.parse(redactMnemonicFromStackJson('{"identity":{"mnemonic":"leak"')) as {
+      error?: string;
+      identity?: { mnemonic?: string };
+    };
+    expect(redacted.error).toBe('stack_json_redaction_failed');
+    expect(redacted.identity?.mnemonic).toBeUndefined();
+  });
 });
 
 describe('readReticulumDeveloperArtifacts', () => {

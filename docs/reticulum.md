@@ -15,7 +15,7 @@ Related docs: [README — Reticulum Features](../README.md#reticulum-features), 
 1. Select the **Reticulum** pill (amber) in the header.
 2. **Connection** → **Start stack** (optional **Auto-start** for next launch).
 3. **Network** → generate or import your LXMF identity (stack must be running).
-4. **Connection → Interfaces** → add and enable transports (TCP hub, Auto, or RNode over USB / BLE / Wi‑Fi).
+4. **Connection → Interfaces** → add and enable transports (TCP hub, I2P, Auto, or RNode over USB / BLE / Wi‑Fi). Use **Add testnet and Ratspeak hubs** to install official bootstrap presets (disabled by default) after identity is configured.
 5. **Chat** → LXMF direct messages. **Peers** and **Topology** for path-table visibility. **Nomad Network** → browse announced nodes (Micron pages, back/forward, session cache).
 
 After changing interfaces on a live network, **restart the stack** so RNS picks up transport changes.
@@ -27,7 +27,7 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 | Area            | Shipped behavior                                                                                                                                                                                                                                     |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Stack lifecycle | Start / stop / auto-start; disconnect & quit                                                                                                                                                                                                         |
-| Interfaces      | TCP client, Auto discovery, RNode (USB serial, `ble://…`, Wi‑Fi `tcp://host:7633`)                                                                                                                                                                   |
+| Interfaces      | TCP client, I2P (`peers`), Auto discovery, RNode (USB serial, `ble://…`, Wi‑Fi `tcp://host:7633`); default hub presets (testnet + Ratspeak, added disabled)                                                                                          |
 | Identity        | Generate / import mnemonic; display name; encrypted export; **identity vault** passcode on Network tab                                                                                                                                               |
 | LXMF chat       | DM-only text, reactions, file attachments, voice clips (~60 s)                                                                                                                                                                                       |
 | Delivery        | Direct when destination is in path table; propagated (PN) via preferred propagation node when offline                                                                                                                                                |
@@ -62,6 +62,20 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 Hidden tabs (Meshtastic/MeshCore only): Map, Modules/Repeaters, Rooms, Telemetry, Security, TAK, RF, Graph.
 
 The **Log panel** (right rail, toggled from **App → Log panel**) is shared across protocols; on Reticulum it shows sidecar and local-interface lines tagged for filtering.
+
+### Default hub presets
+
+**Connection → Interfaces** offers **Add testnet and Ratspeak hubs** when official bootstrap entries from [`reticulumDefaultHubPresets.ts`](../src/renderer/lib/reticulum/reticulumDefaultHubPresets.ts) are missing. Presets are added **disabled** so you can enable them after review:
+
+| Preset                        | Type | Host                                                           |
+| ----------------------------- | ---- | -------------------------------------------------------------- |
+| RNS Testnet Dublin            | TCP  | `dublin.connect.reticulum.network:4965`                        |
+| RNS Testnet BetweenTheBorders | TCP  | `reticulum.betweentheborders.com:4242`                         |
+| RNS_Transport_US-East         | TCP  | `45.77.109.86:4965`                                            |
+| RNS Testnet I2P Hub A         | I2P  | `g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p` |
+| Ratspeak                      | TCP  | `rns.ratspeak.org:4242`                                        |
+
+Configure a Reticulum identity on the **Network** tab before adding interfaces; the panel disables interface actions until identity is ready.
 
 ---
 

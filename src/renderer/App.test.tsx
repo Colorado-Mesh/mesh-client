@@ -778,6 +778,23 @@ describe('App accessibility', () => {
     );
   });
 
+  it('shows waiting-message indicator on Meshtastic tab when MeshCore has queued messages', async () => {
+    getStoredMeshProtocolMock.mockReturnValue('meshtastic');
+    useMeshCoreMock.mockReturnValue({
+      ...createMeshCoreMock(),
+      waitingMessagesCount: 2,
+      syncWaitingMessages: vi.fn().mockResolvedValue(undefined),
+    });
+
+    renderApp();
+
+    expect(
+      await screen.findByRole('button', {
+        name: /2 queued message\(s\) on radio.*Sync now/i,
+      }),
+    ).toBeInTheDocument();
+  });
+
   it('keeps MeshCore node detail remote-admin props protocol-gated after node click', async () => {
     getStoredMeshProtocolMock.mockReturnValue('meshcore');
     const meshtasticRuntime = createDeviceMock();

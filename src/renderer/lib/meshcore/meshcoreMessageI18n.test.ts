@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -6,6 +7,7 @@ import {
   MESHCORE_ERR_AUTH_FAILED,
   MESHCORE_REPEATER_AUTH_HINT_KEY,
   meshcoreAppendRepeaterAuthHint,
+  meshcoreRepeaterAdminErrorMessage,
   meshcoreRepeaterAdminRpcErrorBudgetMs,
   meshcoreRepeaterRpcErrorMessage,
   meshcoreStoredUserMessage,
@@ -52,6 +54,15 @@ describe('meshcoreMessageI18n', () => {
     expect(meshcoreRepeaterAdminRpcErrorBudgetMs('timeout waiting for ping', 120_000)).toBe(
       360_000,
     );
+  });
+
+  it('meshcoreRepeaterAdminErrorMessage translates i18n keys', () => {
+    const t = ((key: string) =>
+      key === 'meshcore.errors.notConnected' ? 'Not connected' : key) as TFunction;
+    expect(meshcoreRepeaterAdminErrorMessage(t, new Error('meshcore.errors.notConnected'))).toBe(
+      'Not connected',
+    );
+    expect(meshcoreRepeaterAdminErrorMessage(t, 'plain failure')).toBe('plain failure');
   });
 
   it('meshcoreStoredUserMessage round-trips prefixed refs', () => {

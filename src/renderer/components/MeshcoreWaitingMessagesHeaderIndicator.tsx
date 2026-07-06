@@ -78,7 +78,7 @@ export function MeshcoreWaitingMessagesHeaderIndicator({
 
   if (clickable) {
     return (
-      <HelpTooltip text={statusText} className="shrink-0">
+      <HelpTooltip text={statusText} className="shrink-0" nonFocusableWrapper>
         <button
           type="button"
           onClick={onSync}

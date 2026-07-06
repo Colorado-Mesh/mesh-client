@@ -252,7 +252,14 @@ export function ReticulumInterfacesPanel({
       try {
         const res = await setReticulumPrimaryLocalSerialInterface(id);
         if (!res.ok) {
-          addToast(res.error ?? t('connectionPanel.reticulumInterfaces.setPrimaryFailed'), 'error');
+          addToast(
+            humanizeReticulumInterfaceApiError(
+              res.error,
+              t,
+              'connectionPanel.reticulumInterfaces.setPrimaryFailed',
+            ),
+            'error',
+          );
           return;
         }
         addToast(t('connectionPanel.reticulumInterfaces.setPrimarySuccess'), 'success');
@@ -260,7 +267,13 @@ export function ReticulumInterfacesPanel({
         await onRefresh();
       } catch (e) {
         // catch-no-log-ok set-primary failure surfaced via interfaceError toast area
-        setInterfaceError(errLikeToLogString(e));
+        setInterfaceError(
+          humanizeReticulumInterfaceApiError(
+            errLikeToLogString(e),
+            t,
+            'connectionPanel.reticulumInterfaces.setPrimaryFailed',
+          ),
+        );
       }
     },
     [addToast, onRefresh, sidecarApiReady, t],
@@ -400,10 +413,12 @@ export function ReticulumInterfacesPanel({
       if (added > 0) {
         await onRefresh();
         setRestartStackHint(true);
-        addToast(
-          t('connectionPanel.reticulumInterfaces.addDefaultHubsSuccess', { added, skipped }),
-          'success',
-        );
+        if (added === missing.length) {
+          addToast(
+            t('connectionPanel.reticulumInterfaces.addDefaultHubsSuccess', { added, skipped }),
+            'success',
+          );
+        }
       }
     } catch (e) {
       setInterfaceError(

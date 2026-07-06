@@ -3858,8 +3858,8 @@
     "routes_other": "Rute: {{count}} node dalam mesh",
     "routesEstablished": "Rute ditetapkan",
     "meshActive": "Jaringan mesh aktif",
-    "transportBle": "mampu",
-    "transportSerial": "Serial",
+    "transportBle": "BLE",
+    "transportSerial": "Port seri",
     "transportHttp": "HTTP",
     "transportRadio": "Radio",
     "radioInterfaceFallback": "antarmuka radio"

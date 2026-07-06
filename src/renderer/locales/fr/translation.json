@@ -882,7 +882,7 @@
       "setPrimaryLocalAria": "Définir {{name}} comme RNode local principal",
       "setPrimarySuccess": "RNode local principal mis à jour.",
       "setPrimaryFailed": "Impossible de définir le RNode local principal.",
-      "defaultHubsLabel": "Moyeux par défaut",
+      "defaultHubsLabel": "Hubs par défaut",
       "addDefaultHubs": "Ajouter des hubs testnet et Ratspeak",
       "addDefaultHubsAria": "Ajouter des hubs Reticulum testnet et Ratspeak par défaut dans un état désactivé",
       "addDefaultHubsSuccess": "Ajout du ou des concentrateurs par défaut {{added}}. {{skipped}} déjà configuré.",
@@ -3859,9 +3859,9 @@
     "routesEstablished": "Itinéraires établis",
     "meshActive": "Actif sur le réseau",
     "transportBle": "BLE",
-    "transportSerial": "Numéro de Série",
+    "transportSerial": "Série",
     "transportHttp": "HTTP",
     "transportRadio": "Radio",
-    "radioInterfaceFallback": "interface sur le trajet radioélectrique"
+    "radioInterfaceFallback": "interface radio"
   }
 }

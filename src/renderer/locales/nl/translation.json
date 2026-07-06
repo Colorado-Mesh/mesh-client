@@ -3860,8 +3860,8 @@
     "meshActive": "Mesh netwerk actief",
     "transportBle": "BLE",
     "transportSerial": "Serieel",
-    "transportHttp": "HTTP-modus",
+    "transportHttp": "HTTP",
     "transportRadio": "Radio",
-    "radioInterfaceFallback": "ether-interface"
+    "radioInterfaceFallback": "radio-interface"
   }
 }

@@ -439,6 +439,59 @@ export function reticulumRequiresTranslation(flatKey, leafKey, enVal) {
 /** MT mistranslates UI Disable as parallax / unrelated accessibility jargon. */
 export const RETICULUM_DISABLE_PARALLAX_RE = /parallax/i;
 
+/** Boot sequence transport labels — short connection-type names, not serial numbers or broadcast stations. */
+export const BOOT_SEQUENCE_TRANSPORT_PREFIX = 'bootSequence.transport';
+export const BOOT_SEQUENCE_RADIO_FALLBACK_KEY = 'bootSequence.radioInterfaceFallback';
+
+export const BOOT_SEQUENCE_TRANSPORT_FALSE_FRIENDS = {
+  fr: [
+    {
+      re: /num[ée]ro de s[ée]rie/i,
+      hint: 'bootSequence.transportSerial is Serial transport, not serial number',
+    },
+    { re: /\bmoyeux\b/i, hint: 'network hub wording, not wheel/axle "moyeux"' },
+  ],
+  es: [
+    {
+      re: /n[úu]mero de serie/i,
+      hint: 'bootSequence.transportSerial is Serial transport, not serial number',
+    },
+  ],
+  ru: [
+    {
+      re: /заводск/i,
+      hint: 'bootSequence.transportSerial is Serial transport, not factory default',
+    },
+  ],
+  de: [
+    {
+      re: /^Serie$/i,
+      hint: 'bootSequence.transportSerial should be "Seriell" (serial port), not TV series',
+    },
+  ],
+  zh: [
+    { re: /广播电台/, hint: 'bootSequence.transportRadio is RF transport, not broadcast station' },
+  ],
+  it: [
+    {
+      re: /Data Radio interface/i,
+      hint: 'bootSequence.radioInterfaceFallback must not mix English and Italian',
+    },
+  ],
+  nl: [
+    {
+      re: /ether-interface/i,
+      hint: 'bootSequence.radioInterfaceFallback is RF interface, not Ethernet',
+    },
+  ],
+};
+
+export const RETICULUM_DEFAULT_HUB_KEYS = [
+  'connectionPanel.reticulumInterfaces.defaultHubsLabel',
+  'connectionPanel.reticulumInterfaces.addDefaultHubs',
+  'connectionPanel.reticulumInterfaces.addDefaultHubsFailed',
+];
+
 /** MT mistranslates network Host as recording venue / unrelated nouns. */
 export const RETICULUM_HOST_FALSE_FRIEND_RES = [
   {
@@ -2921,6 +2974,47 @@ function checkMeshcorePathHashIssues(ctx) {
   return issues;
 }
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkBootSequenceTransportIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (flatKey.startsWith(BOOT_SEQUENCE_TRANSPORT_PREFIX)) {
+    issues.push(...protectedProtocolTokenIssues(enVal, val));
+    for (const { re, hint } of BOOT_SEQUENCE_TRANSPORT_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(hint);
+      }
+    }
+  }
+  if (flatKey === BOOT_SEQUENCE_RADIO_FALLBACK_KEY) {
+    for (const { re, hint } of BOOT_SEQUENCE_TRANSPORT_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(hint);
+      }
+    }
+  }
+  return issues;
+}
+
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkReticulumDefaultHubKeyIssues(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
+  if (!RETICULUM_DEFAULT_HUB_KEYS.includes(flatKey)) {
+    return issues;
+  }
+  if (/\bmoyeux\b/i.test(val)) {
+    issues.push('reticulum default hub copy must not use wheel/axle "moyeux"');
+  }
+  return issues;
+}
+
 const LOCALE_STRING_QUALITY_CHECKS = [
   checkCatEncodingAndMeshtasticIssues,
   checkMustTranslateAndFormFieldIssues,
@@ -2941,6 +3035,8 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkMeshcoreReactionAndConnectionIssues,
   checkMeshcorePathHashIssues,
   checkReticulumRuntimeAndRoutingPortIssues,
+  checkBootSequenceTransportIssues,
+  checkReticulumDefaultHubKeyIssues,
 ];
 
 /**
@@ -2988,6 +3084,29 @@ export function nodeListPanelConnectionCrossKeyIssues(locale, localeFlat) {
     issues.push(
       'connectedViaRfAndMqtt* uses "Połączony" — match mqttConnectedTooltip impersonal "Połączono"',
     );
+  }
+  return issues;
+}
+
+/**
+ * Cross-key checks for Reticulum default hub preset terminology.
+ *
+ * @param {Record<string, string>} localeFlat
+ * @returns {string[]} Human-readable issue descriptions (empty if OK).
+ */
+export function reticulumDefaultHubsCrossKeyIssues(localeFlat) {
+  const issues = [];
+  const values = RETICULUM_DEFAULT_HUB_KEYS.map((key) => localeFlat[key]).filter(
+    (v) => typeof v === 'string' && v.length > 0,
+  );
+  if (values.length < 2) return issues;
+
+  const hasHub = values.some((v) => /\bhub/i.test(v));
+  const hasKoncentrator = values.some((v) =>
+    /koncentrator|concentrador|centro\b|moyeux|rozboč/i.test(v),
+  );
+  if (hasHub && hasKoncentrator) {
+    issues.push('reticulumInterfaces default hub keys mix hub and concentrator terminology');
   }
   return issues;
 }

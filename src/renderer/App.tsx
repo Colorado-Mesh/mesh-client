@@ -53,6 +53,7 @@ import {
 import { persistMeshcoreSelfNodeId } from '@/renderer/lib/meshcoreLastSelfNodeId';
 import { resolveMeshcoreOwnNodeIdSet } from '@/renderer/lib/meshcoreOwnNodeIds';
 import { totalRoomsUnreadCount } from '@/renderer/lib/meshcoreRoomsUnread';
+import { meshcoreWaitingMessagesVisible } from '@/renderer/lib/meshcoreWaitingMessagesStatusText';
 import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
 import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
@@ -1658,10 +1659,8 @@ function AppContent() {
       frozenMessageCount: null,
       liveResolvedMessageCount,
       activeProtocol: protocol,
-      waitingMessagesSilentDrainActive:
-        protocol === 'meshcore' ? meshcoreRuntime.waitingMessagesSilentDrainActive : false,
-      waitingMessagesDrainDeferred:
-        protocol === 'meshcore' ? meshcoreRuntime.waitingMessagesDrainDeferred : false,
+      waitingMessagesSilentDrainActive: meshcoreRuntime.waitingMessagesSilentDrainActive,
+      waitingMessagesDrainDeferred: meshcoreRuntime.waitingMessagesDrainDeferred,
     });
   }, [
     activePanelIndex,
@@ -1686,6 +1685,29 @@ function AppContent() {
       );
     }
   }, [syncWaitingMessages, addToast, t]);
+
+  const meshcoreWaitingMessagesInput = useMemo(
+    () => ({
+      waitingMessagesCount: meshcoreRuntime.waitingMessagesCount,
+      waitingMessagesSyncActive: meshcoreRuntime.waitingMessagesSyncActive,
+      waitingMessagesSyncProgress: meshcoreRuntime.waitingMessagesSyncProgress,
+      waitingMessagesSilentDrainActive: meshcoreRuntime.waitingMessagesSilentDrainActive,
+      waitingMessagesDrainDeferred: meshcoreRuntime.waitingMessagesDrainDeferred,
+      connectionType: meshcoreConnectionView.state.connectionType,
+    }),
+    [
+      meshcoreRuntime.waitingMessagesCount,
+      meshcoreRuntime.waitingMessagesSyncActive,
+      meshcoreRuntime.waitingMessagesSyncProgress,
+      meshcoreRuntime.waitingMessagesSilentDrainActive,
+      meshcoreRuntime.waitingMessagesDrainDeferred,
+      meshcoreConnectionView.state.connectionType,
+    ],
+  );
+
+  const showMeshcoreWaitingMessagesIndicator =
+    meshcoreCapabilities.hasCompanionContactManagementConfig &&
+    meshcoreWaitingMessagesVisible(meshcoreWaitingMessagesInput);
 
   const handleDmTargetConsumed = useCallback(() => {
     setPendingDmTarget(null);
@@ -2341,16 +2363,20 @@ function AppContent() {
                     })}
                   </span>
                 )}
-              {protocol === 'meshcore' && capabilities.hasCompanionContactManagementConfig && (
+              {showMeshcoreWaitingMessagesIndicator && (
                 <MeshcoreWaitingMessagesHeaderIndicator
-                  waitingMessagesCount={meshcoreRuntime.waitingMessagesCount}
-                  waitingMessagesSyncActive={meshcoreRuntime.waitingMessagesSyncActive}
-                  waitingMessagesSyncProgress={meshcoreRuntime.waitingMessagesSyncProgress}
-                  waitingMessagesSilentDrainActive={
-                    meshcoreRuntime.waitingMessagesSilentDrainActive
+                  waitingMessagesCount={meshcoreWaitingMessagesInput.waitingMessagesCount}
+                  waitingMessagesSyncActive={meshcoreWaitingMessagesInput.waitingMessagesSyncActive}
+                  waitingMessagesSyncProgress={
+                    meshcoreWaitingMessagesInput.waitingMessagesSyncProgress
                   }
-                  waitingMessagesDrainDeferred={meshcoreRuntime.waitingMessagesDrainDeferred}
-                  connectionType={activeConnectionView.state.connectionType}
+                  waitingMessagesSilentDrainActive={
+                    meshcoreWaitingMessagesInput.waitingMessagesSilentDrainActive
+                  }
+                  waitingMessagesDrainDeferred={
+                    meshcoreWaitingMessagesInput.waitingMessagesDrainDeferred
+                  }
+                  connectionType={meshcoreWaitingMessagesInput.connectionType}
                   onSync={() => void handleMeshcoreSyncWaitingMessages()}
                 />
               )}

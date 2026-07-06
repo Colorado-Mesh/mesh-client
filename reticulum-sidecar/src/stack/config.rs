@@ -239,14 +239,11 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         )
     } else if iface_type == "i2p" {
         (
-            block.get("peers").map(|peers| {
-                peers
-                    .split(',')
-                    .map(str::trim)
-                    .find(|p| !p.is_empty())
-                    .unwrap_or(peers)
-                    .to_string()
-            }),
+            block
+                .get("peers")
+                .map(str::trim)
+                .filter(|peers| !peers.is_empty())
+                .map(str::to_string),
             None,
         )
     } else {
@@ -1097,6 +1094,28 @@ peers = {peer}
         assert_eq!(i2p.host.as_deref(), Some(peer));
         let block = interface_row_to_block(i2p);
         assert_eq!(block.get("peers"), Some(peer));
+    }
+
+    #[test]
+    fn i2p_multi_peer_round_trip() {
+        let peer_a = "g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p";
+        let peer_b = "abc123def456.b32.i2p";
+        let peers = format!("{peer_a}, {peer_b}");
+        let content = format!(
+            r#"
+[interfaces]
+[[RNS Testnet I2P Hub Multi]]
+type = I2PInterface
+enabled = No
+peers = {peers}
+"#
+        );
+        let parsed = parse_config(&content).unwrap();
+        let rows = interfaces_from_parsed(&parsed);
+        let i2p = rows.iter().find(|r| r.iface_type == "i2p").unwrap();
+        assert_eq!(i2p.host.as_deref(), Some(peers.as_str()));
+        let block = interface_row_to_block(i2p);
+        assert_eq!(block.get("peers"), Some(peers.as_str()));
     }
 
     #[test]

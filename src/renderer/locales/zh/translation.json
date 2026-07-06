@@ -3861,7 +3861,7 @@
     "transportBle": "BLE",
     "transportSerial": "Serial 串行",
     "transportHttp": "HTTP",
-    "transportRadio": "广播电台",
+    "transportRadio": "射频",
     "radioInterfaceFallback": "无线电接口"
   }
 }
