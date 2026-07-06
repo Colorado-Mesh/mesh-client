@@ -883,11 +883,13 @@
       "setPrimarySuccess": "RNode local principal mis à jour.",
       "setPrimaryFailed": "Impossible de définir le RNode local principal.",
       "defaultHubsLabel": "Moyeux par défaut",
-      "addDefaultHubs": "Ajouter des hubs TESTNET et Ratspeak",
-      "addDefaultHubsAria": "Ajouter des concentrateurs TCP Reticulum TESTNET et Ratspeak par défaut dans un état désactivé",
+      "addDefaultHubs": "Ajouter des hubs testnet et Ratspeak",
+      "addDefaultHubsAria": "Ajouter des hubs Reticulum testnet et Ratspeak par défaut dans un état désactivé",
       "addDefaultHubsSuccess": "Ajout du ou des concentrateurs par défaut {{added}}. {{skipped}} déjà configuré.",
-      "addDefaultHubsAllPresent": "Les hubs TESTNET et Ratspeak par défaut sont déjà configurés.",
-      "addDefaultHubsFailed": "Impossible d'ajouter des concentrateurs par défaut."
+      "addDefaultHubsAllPresent": "Les hubs testnet et Ratspeak par défaut sont déjà configurés.",
+      "addDefaultHubsFailed": "Impossible d'ajouter des concentrateurs par défaut.",
+      "identityNotConfigured": "Configurez d'abord une identité Reticulum dans l'onglet Réseau — générez ou importez une phrase de récupération.",
+      "identityRequiredHint": "Configurez une identité Reticulum dans l'onglet Réseau avant d'ajouter des interfaces."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3345,7 +3347,9 @@
     "cliNoCommandsYet": "Aucune commande pour l'instant",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}m"
+    "uptimeMinutes": "{{minutes}}m",
+    "rememberPasswordSaveFailed": "Impossible d'enregistrer le mot de passe du répéteur pour les redémarrages. Cela ne fonctionnera que pour cette session.",
+    "telemetryFailedToast": "Échec de la télémétrie : {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalle d'annonce (secondes)",
@@ -3853,6 +3857,11 @@
     "routes_one": "Routes : nœud {{count}} dans le maillage",
     "routes_other": "Itinéraires : {{count}} nœuds dans le maillage",
     "routesEstablished": "Itinéraires établis",
-    "meshActive": "Actif sur le réseau"
+    "meshActive": "Actif sur le réseau",
+    "transportBle": "BLE",
+    "transportSerial": "Numéro de Série",
+    "transportHttp": "HTTP",
+    "transportRadio": "Radio",
+    "radioInterfaceFallback": "interface sur le trajet radioélectrique"
   }
 }

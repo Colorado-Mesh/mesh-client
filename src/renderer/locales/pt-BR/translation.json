@@ -883,11 +883,13 @@
       "setPrimarySuccess": "RNode local primário atualizado.",
       "setPrimaryFailed": "Falha ao definir o RNode local primário.",
       "defaultHubsLabel": "Hubs padrão",
-      "addDefaultHubs": "Adicionar hubs TESTNET e Ratspeak",
-      "addDefaultHubsAria": "Adicionar cubos TCP Reticulum TESTNET e Ratspeak padrão em um estado desativado",
+      "addDefaultHubs": "Adicionar hubs testnet e Ratspeak",
+      "addDefaultHubsAria": "Adicione testnet Reticulum padrão e hubs Ratspeak em estado desativado",
       "addDefaultHubsSuccess": "Adicionado (s) {{added}} hub(s) padrão (s). {{skipped}} já configurado.",
-      "addDefaultHubsAllPresent": "Os hubs padrão TESTNET e Ratspeak já estão configurados.",
-      "addDefaultHubsFailed": "Falha ao adicionar hubs padrão."
+      "addDefaultHubsAllPresent": "Os hubs de testnet e Ratspeak padrão já estão configurados.",
+      "addDefaultHubsFailed": "Falha ao adicionar hubs padrão.",
+      "identityNotConfigured": "Configure uma identidade Reticulum na guia Rede primeiro — gere ou importe uma frase de recuperação.",
+      "identityRequiredHint": "Configure uma identidade Reticulum na guia Rede antes de adicionar interfaces."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3345,7 +3347,9 @@
     "cliNoCommandsYet": "Nenhum comando ainda",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}m"
+    "uptimeMinutes": "{{minutes}}m",
+    "rememberPasswordSaveFailed": "Não foi possível salvar a senha do repetidor para reinicializações. Funcionará apenas para esta sessão.",
+    "telemetryFailedToast": "Falha na telemetria: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anúncio (segundos)",
@@ -3853,6 +3857,11 @@
     "routes_one": "Rotas: nó {{count}} na malha",
     "routes_other": "Rotas: {{count}} nós na malha",
     "routesEstablished": "Rotas estabelecidas",
-    "meshActive": "Ativo na Rede"
+    "meshActive": "Ativo na Rede",
+    "transportBle": "BLE",
+    "transportSerial": "Série",
+    "transportHttp": "HTTP",
+    "transportRadio": "Rádio",
+    "radioInterfaceFallback": "a interface de rádio"
   }
 }

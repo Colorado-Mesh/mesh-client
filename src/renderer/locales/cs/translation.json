@@ -883,11 +883,13 @@
       "setPrimarySuccess": "Primární místní RNode aktualizován.",
       "setPrimaryFailed": "Nastavení primárního místního RNode se nezdařilo.",
       "defaultHubsLabel": "Výchozí rozbočovače",
-      "addDefaultHubs": "Přidejte rozbočovače TESTNET a Ratspeak",
-      "addDefaultHubsAria": "Přidat výchozí Reticulum TESTNET a Ratspeak TCP rozbočovače v zakázaném stavu",
+      "addDefaultHubs": "Přidat rozbočovače testnet a Ratspeak",
+      "addDefaultHubsAria": "Přidat výchozí testovací síť Reticulum a rozbočovače Ratspeak v zakázaném stavu",
       "addDefaultHubsSuccess": "Přidáno {{added}} výchozí rozbočovač(rozbočovače). {{skipped}} je již nakonfigurován.",
-      "addDefaultHubsAllPresent": "Výchozí rozbočovače TESTNET a Ratspeak jsou již nakonfigurovány.",
-      "addDefaultHubsFailed": "Přidání výchozích center se nezdařilo."
+      "addDefaultHubsAllPresent": "Výchozí rozbočovače testnet a Ratspeak jsou již nakonfigurovány.",
+      "addDefaultHubsFailed": "Přidání výchozích center se nezdařilo.",
+      "identityNotConfigured": "Nejprve nastavte identitu Reticulum na kartě Síť — vygenerujte nebo importujte frázi pro obnovení.",
+      "identityRequiredHint": "Před přidáním rozhraní nakonfigurujte identitu Reticulum na kartě Síť."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3345,7 +3347,9 @@
     "cliNoCommandsYet": "Zatím žádné příkazy",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}m"
+    "uptimeMinutes": "{{minutes}}m",
+    "rememberPasswordSaveFailed": "Nelze uložit heslo opakovače pro restartování. Bude to fungovat pouze pro tuto relaci.",
+    "telemetryFailedToast": "Telemetrie selhala: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",
@@ -3853,6 +3857,11 @@
     "routes_one": "Trasy: Uzel {{count}} v síti",
     "routes_other": "Trasy: {{count}} uzly v síti",
     "routesEstablished": "Trasy vytvořeny",
-    "meshActive": "Síť Mesh aktivní"
+    "meshActive": "Síť Mesh aktivní",
+    "transportBle": "BLE",
+    "transportSerial": "Sériový",
+    "transportHttp": "Hypertext Transfer Protocol",
+    "transportRadio": "Rádio",
+    "radioInterfaceFallback": "rádiové rozhraní"
   }
 }

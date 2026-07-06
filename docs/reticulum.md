@@ -24,21 +24,21 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 
 ## What is included
 
-| Area            | Shipped behavior                                                                                                                                                                |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Stack lifecycle | Start / stop / auto-start; disconnect & quit                                                                                                                                    |
-| Interfaces      | TCP client, Auto discovery, RNode (USB serial, `ble://…`, Wi‑Fi `tcp://host:7633`)                                                                                              |
-| Identity        | Generate / import mnemonic; display name; encrypted export; **identity vault** passcode on Network tab                                                                          |
-| LXMF chat       | DM-only text, reactions, file attachments, voice clips (~60 s)                                                                                                                  |
-| Delivery        | Direct when destination is in path table; propagated (PN) via preferred propagation node when offline                                                                           |
-| Peers           | RNS path table + LXMF contacts (Peers tab sub-tabs); probe and peer detail modal                                                                                                |
-| Topology        | Best-effort graph from path-table next hops (not a full multi-hop trace)                                                                                                        |
-| Nomad Network   | Favourites / announces list; Micron (.mu) browser with in-page navigation, back/forward, session page cache, `/file/` downloads, source toggle, and lxmf:// DM links            |
-| Propagation     | Preferred node, per-node **Sync messages**, optional **local propagation inbox**, configurable **auto-sync interval**                                                           |
-| Diagnostics     | Reticulum-native interface / path / LXMF health and config audit (`reticulum/*` rows only on this tab; LoRa Hop Goblins and foreign-LoRa tables are Meshtastic/MeshCore-scoped) |
-| Admin           | RNode firmware flasher (Web Serial), stack factory reset                                                                                                                        |
-| Sniffer / Stats | Reticulum packet log tab (`rawPacketLog.reticulum.*`)                                                                                                                           |
-| Coexistence     | BLE on a **different** MAC from Meshtastic/MeshCore; scan mutex only                                                                                                            |
+| Area            | Shipped behavior                                                                                                                                                                                                                                     |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stack lifecycle | Start / stop / auto-start; disconnect & quit                                                                                                                                                                                                         |
+| Interfaces      | TCP client, Auto discovery, RNode (USB serial, `ble://…`, Wi‑Fi `tcp://host:7633`)                                                                                                                                                                   |
+| Identity        | Generate / import mnemonic; display name; encrypted export; **identity vault** passcode on Network tab                                                                                                                                               |
+| LXMF chat       | DM-only text, reactions, file attachments, voice clips (~60 s)                                                                                                                                                                                       |
+| Delivery        | Direct when destination is in path table; propagated (PN) via preferred propagation node when offline                                                                                                                                                |
+| Peers           | RNS path table + LXMF contacts (Peers tab sub-tabs); probe and peer detail modal                                                                                                                                                                     |
+| Topology        | Best-effort graph from path-table next hops (not a full multi-hop trace)                                                                                                                                                                             |
+| Nomad Network   | Favourites / announces list (collapsible sidebar, default Favourites sub-tab); lazy-mount after first visit; Micron (.mu) browser with in-page navigation, back/forward, session page cache, `/file/` downloads, source toggle, and lxmf:// DM links |
+| Propagation     | Preferred node, per-node **Sync messages**, optional **local propagation inbox**, configurable **auto-sync interval**                                                                                                                                |
+| Diagnostics     | Reticulum-native interface / path / LXMF health and config audit (`reticulum/*` rows only on this tab; LoRa Hop Goblins and foreign-LoRa tables are Meshtastic/MeshCore-scoped)                                                                      |
+| Admin           | RNode firmware flasher (Web Serial), stack factory reset                                                                                                                                                                                             |
+| Sniffer / Stats | Reticulum packet log tab (`rawPacketLog.reticulum.*`)                                                                                                                                                                                                |
+| Coexistence     | BLE on a **different** MAC from Meshtastic/MeshCore; scan mutex only                                                                                                                                                                                 |
 
 **Not in Reticulum mode:** Meshtastic/MeshCore-style RF channel chat, MQTT broker card, LoRa map, Rooms BBS, TAK, Meshtastic PKI Security tab, Hop Goblins routing diagnostics.
 

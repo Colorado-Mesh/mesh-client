@@ -9,6 +9,8 @@ import { setMeshcoreRepeaterEphemeralSecret } from '@/renderer/lib/meshcoreRepea
 import { meshcoreRepeaterHasResolvablePassword } from '@/renderer/lib/meshcoreRepeaterSession';
 import { Z_NESTED_AUTH_OVERLAY } from '@/renderer/lib/modalZIndex';
 
+import { useToast } from '../components/Toast';
+
 export interface RepeaterAuthResult {
   ok: boolean;
   saved?: boolean;
@@ -66,6 +68,7 @@ function RepeaterRemoteAuthFields({
 
 export function useMeshcoreRepeaterRemoteAuth() {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [pending, setPending] = useState<PendingRepeaterAuth | null>(null);
   const resolverRef = useRef<((result: RepeaterAuthResult) => void) | null>(null);
@@ -114,6 +117,7 @@ export function useMeshcoreRepeaterRemoteAuth() {
           saved = true;
         } catch {
           // catch-no-log-ok meshcoreRepeaterCredentialStorage already logs persist failures
+          addToast(t('repeatersPanel.rememberPasswordSaveFailed'), 'error');
         }
       }
       resolverRef.current?.({ ok: true, saved });
@@ -121,7 +125,7 @@ export function useMeshcoreRepeaterRemoteAuth() {
       setModalOpen(false);
       setPending(null);
     },
-    [],
+    [addToast, t],
   );
 
   const openAuthModal = useCallback(
@@ -242,6 +246,7 @@ function ModalAuthBody({
           onChange={(e) => {
             setRememberPassword(e.target.checked);
           }}
+          aria-label={t('repeatersPanel.rememberPassword')}
         />
         {t('repeatersPanel.rememberPassword')}
       </label>
@@ -250,6 +255,7 @@ function ModalAuthBody({
           type="button"
           onClick={onCancel}
           className="rounded border border-gray-600 bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-gray-700"
+          aria-label={cancelLabel}
         >
           {cancelLabel}
         </button>
@@ -257,6 +263,7 @@ function ModalAuthBody({
           type="button"
           onClick={onSkip}
           className="rounded border border-gray-600 bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-200 hover:bg-gray-600"
+          aria-label={skipLabel}
         >
           {skipLabel}
         </button>
@@ -264,6 +271,7 @@ function ModalAuthBody({
           type="button"
           onClick={submitPassword}
           className="bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 rounded border px-3 py-1.5 text-xs font-medium"
+          aria-label={continueLabel}
         >
           {continueLabel}
         </button>

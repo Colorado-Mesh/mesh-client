@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Mesh Client
-Comment=Meshtastic and MeshCore radio network client
+Comment=Meshtastic, MeshCore, and Reticulum mesh network client
 Exec=mesh-client %U
 Icon=org.coloradomesh.MeshClient
 Type=Application

@@ -738,6 +738,11 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 - **Admin password** working while guest/read-only fails usually means the guest password on the server does not match what the client sent, or ACL denies read-only login.
 - If the room **changed its password** and mesh-client keeps trying to log in, open the **Rooms** tab: expand **Saved passwords** in the sidebar (or use the login overlay for the selected room). Use **Stop auto-login** to stop connect-time retries while keeping the old password stored, or **Forget saved password** to clear the stored guest/admin password and turn off auto-login and auto-sync. After a wrong-password failure, auto-login is turned off automatically until you log in again with **Remember password** or re-enable it.
 
+**MeshCore repeater saved passwords**:
+
+- Per-repeater admin passwords are stored in SQLite as `meshcoreRepeaterCredential:<nodeId>` when you check **Remember** on the repeater auth dialog. Open **Repeaters** → expand **Saved repeater passwords** to **Forget** a stale entry, or use **Change password** / **Save password** on the node detail modal for a single repeater.
+- If **Remember** fails silently, the password still works for the current session (ephemeral secret) but will not survive restart — check the app log for `appSettings:set` errors and retry after updating mesh-client.
+
 **Room post fails with "unsupported on this firmware"**:
 
 - The **companion radio** only accepts **`TXT_TYPE_PLAIN` (0)** for outbound `CMD_SEND_TXT_MSG`. mesh-client sends plain UTF-8 post text after a successful room login. **`TXT_TYPE_SIGNED_PLAIN` (2)** is for **inbound** room-server pushes (author prefix in the wire body); using it for outbound posts returns `ERR_CODE_UNSUPPORTED_CMD` (1). Log out and log in again, then post from the **Rooms** tab while connected over BLE/serial/TCP.

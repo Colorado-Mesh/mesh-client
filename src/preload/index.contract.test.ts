@@ -20,6 +20,7 @@ const EXPECTED_TOP_LEVEL_KEYS = [
   'tak',
   'chat',
   'log',
+  'support',
 ];
 
 describe('preload bridge contract', () => {
@@ -41,5 +42,12 @@ describe('preload bridge contract', () => {
 
   it('preload invokes chat export IPC', () => {
     expect(PRELOAD_SOURCE).toContain("'chat:export'");
+  });
+
+  it('preload invokes renderer heartbeat and support export IPC', () => {
+    expect(PRELOAD_SOURCE).toContain("'app:rendererHeartbeat'");
+    expect(PRELOAD_SOURCE).toContain("'support:exportBundle'");
+    expect(TYPES_SOURCE).toContain('exportBundle');
+    expect(TYPES_SOURCE).toContain('sendRendererHeartbeat');
   });
 });

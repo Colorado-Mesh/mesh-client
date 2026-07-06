@@ -883,11 +883,13 @@
       "setPrimarySuccess": "Первичный локальный RNode обновлен.",
       "setPrimaryFailed": "Не удалось установить первичный локальный RNode.",
       "defaultHubsLabel": "Концентраторы по умолчанию",
-      "addDefaultHubs": "Добавление концентраторов TESTNET и Ratspeak",
-      "addDefaultHubsAria": "Добавить концентраторы Reticulum TESTNET и Ratspeak TCP по умолчанию в отключенном состоянии",
+      "addDefaultHubs": "Добавьте тестовую сеть и концентраторы Ratspeak",
+      "addDefaultHubsAria": "Добавьте тестовую сеть Reticulum по умолчанию и концентраторы Ratspeak в отключенное состояние",
       "addDefaultHubsSuccess": "Добавлен (-ы) {{added}} концентратор(-ы) по умолчанию. {{skipped}} уже настроен.",
-      "addDefaultHubsAllPresent": "Концентраторы TESTNET и Ratspeak по умолчанию уже настроены.",
-      "addDefaultHubsFailed": "Не удалось добавить концентраторы по умолчанию."
+      "addDefaultHubsAllPresent": "Концентраторы Testnet и Ratspeak по умолчанию уже настроены.",
+      "addDefaultHubsFailed": "Не удалось добавить концентраторы по умолчанию.",
+      "identityNotConfigured": "Сначала настройте идентификатор Reticulum на вкладке Network (Сеть) — создайте или импортируйте фразу восстановления.",
+      "identityRequiredHint": "Настройте идентификатор Reticulum на вкладке Network (Сеть) перед добавлением интерфейсов."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3345,7 +3347,9 @@
     "cliNoCommandsYet": "Команд пока нет",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}м"
+    "uptimeMinutes": "{{minutes}}м",
+    "rememberPasswordSaveFailed": "Не удалось сохранить пароль повторителя для перезапуска. Он будет работать только для этой сессии.",
+    "telemetryFailedToast": "Сбой телеметрии: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Объявить интервал (секунды)",
@@ -3853,6 +3857,11 @@
     "routes_one": "Маршруты: {{count}} узел в сетке",
     "routes_other": "Маршруты: {{count}} узлов в сетке",
     "routesEstablished": "Установленные маршруты",
-    "meshActive": "Сеть активна"
+    "meshActive": "Сеть активна",
+    "transportBle": "BLE",
+    "transportSerial": "Заводской",
+    "transportHttp": "HTTP",
+    "transportRadio": "Радиосвязь",
+    "radioInterfaceFallback": "радиоинтерфейс"
   }
 }

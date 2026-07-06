@@ -883,11 +883,13 @@
       "setPrimarySuccess": "Primärer lokaler RNode aktualisiert.",
       "setPrimaryFailed": "Fehler beim Festlegen des primären lokalen RNode.",
       "defaultHubsLabel": "Standard-Hubs",
-      "addDefaultHubs": "Hinzufügen von TESTNET- und Ratspeak-Hubs",
-      "addDefaultHubsAria": "Standard-TCP-Hubs für Reticulum TESTNET und Ratspeak in einem deaktivierten Zustand hinzufügen",
+      "addDefaultHubs": "Hinzufügen von Testnet- und Ratspeak-Hubs",
+      "addDefaultHubsAria": "Fügen Sie standardmäßige Reticulum-Testnet- und Ratspeak-Hubs in einem deaktivierten Zustand hinzu",
       "addDefaultHubsSuccess": "{{added}} Standard-Hub (s) hinzugefügt. {{skipped}} bereits konfiguriert.",
-      "addDefaultHubsAllPresent": "Standardmäßige TESTNET- und Ratspeak-Hubs sind bereits konfiguriert.",
-      "addDefaultHubsFailed": "Standard-Hubs konnten nicht hinzugefügt werden."
+      "addDefaultHubsAllPresent": "Standard-Testnet- und Ratspeak-Hubs sind bereits konfiguriert.",
+      "addDefaultHubsFailed": "Standard-Hubs konnten nicht hinzugefügt werden.",
+      "identityNotConfigured": "Richten Sie zuerst eine Reticulum-Identität auf der Registerkarte Netzwerk ein — generieren oder importieren Sie eine Wiederherstellungsphrase.",
+      "identityRequiredHint": "Konfigurieren Sie eine Reticulum-Identität auf der Registerkarte Netzwerk, bevor Sie Schnittstellen hinzufügen."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3345,7 +3347,9 @@
     "cliNoCommandsYet": "Noch keine Befehle",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}m"
+    "uptimeMinutes": "{{minutes}}m",
+    "rememberPasswordSaveFailed": "Wiederholer-Passwort für Neustarts konnte nicht gespeichert werden. Es funktioniert nur für diese Sitzung.",
+    "telemetryFailedToast": "Telemetrie fehlgeschlagen: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Ankündigungsintervall (Sekunden)",
@@ -3853,6 +3857,11 @@
     "routes_one": "Routen: {{count}} Knoten im Netz",
     "routes_other": "Routen: {{count}} Knoten im Netz",
     "routesEstablished": "Etablierte Routen",
-    "meshActive": "Netzwerk aktiv"
+    "meshActive": "Netzwerk aktiv",
+    "transportBle": "BLE",
+    "transportSerial": "Serie",
+    "transportHttp": "HTTP",
+    "transportRadio": "Radio",
+    "radioInterfaceFallback": "Funkschnittstelle"
   }
 }

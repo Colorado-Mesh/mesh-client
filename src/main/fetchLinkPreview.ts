@@ -86,7 +86,7 @@ export function shouldProxyPreviewImageUrl(imageUrl: string): boolean {
   }
 }
 
-function isAllowedHttpsImageUrl(imageUrl: string): boolean {
+async function isAllowedHttpsImageUrl(imageUrl: string): Promise<boolean> {
   let parsed: URL;
   try {
     parsed = new URL(imageUrl);
@@ -95,7 +95,7 @@ function isAllowedHttpsImageUrl(imageUrl: string): boolean {
     return false;
   }
   if (parsed.protocol !== 'https:') return false;
-  return !isBlockedHostname(parsed.hostname);
+  return !(await isBlockedHostnameResolved(parsed.hostname));
 }
 
 async function readResponseBodyUpTo(
@@ -130,7 +130,7 @@ async function fetchImageResponseWithRedirectGuard(
   imageUrl: string,
   redirectCount = 0,
 ): Promise<Response | null> {
-  if (!isAllowedHttpsImageUrl(imageUrl)) return null;
+  if (!(await isAllowedHttpsImageUrl(imageUrl))) return null;
   if (redirectCount > LINK_PREVIEW_IMAGE_MAX_REDIRECTS) return null;
 
   const response = await fetch(imageUrl, {
@@ -157,7 +157,7 @@ async function fetchImageResponseWithRedirectGuard(
 }
 
 async function fetchPreviewImageAsDataUrl(imageUrl: string): Promise<string | undefined> {
-  if (!isAllowedHttpsImageUrl(imageUrl)) return undefined;
+  if (!(await isAllowedHttpsImageUrl(imageUrl))) return undefined;
 
   const now = Date.now();
   const cached = imageCache.get(imageUrl);

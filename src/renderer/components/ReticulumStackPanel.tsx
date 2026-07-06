@@ -38,6 +38,7 @@ export function ReticulumStackPanel({
     sidecarStatus,
     sidecarUiRunning,
     sidecarApiReady,
+    identity,
     autoStart,
     handleAutoStartChange,
     notifyManualStackStop,
@@ -163,6 +164,7 @@ export function ReticulumStackPanel({
             <ReticulumInterfacesPanel
               sidecarApiReady={sidecarApiReady}
               connecting={connecting}
+              identityConfigured={identity?.configured === true}
               interfaces={interfaces}
               serialPorts={serialPorts}
               serialPortPaths={serialPortPaths}

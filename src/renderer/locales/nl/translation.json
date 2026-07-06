@@ -883,11 +883,13 @@
       "setPrimarySuccess": "Primaire lokale RNode bijgewerkt.",
       "setPrimaryFailed": "Kan primaire lokale RNode niet instellen.",
       "defaultHubsLabel": "Standaardhubs",
-      "addDefaultHubs": "Voeg TESTNET- en Ratspeak-hubs toe",
-      "addDefaultHubsAria": "Voeg standaard Reticulum TESTNET- en Ratspeak TCP-hubs toe in een uitgeschakelde status",
+      "addDefaultHubs": "Voeg testnet en Ratspeak hubs toe",
+      "addDefaultHubsAria": "Voeg standaard Reticulum-testnet en Ratspeak-hubs toe in een uitgeschakelde toestand",
       "addDefaultHubsSuccess": "{{added}} standaardhub (s) toegevoegd. {{skipped}} is al geconfigureerd.",
-      "addDefaultHubsAllPresent": "Standaard TESTNET- en Ratspeak-hubs zijn al geconfigureerd.",
-      "addDefaultHubsFailed": "Kan standaardhubs niet toevoegen."
+      "addDefaultHubsAllPresent": "Standaard testnet en Ratspeak-hubs zijn al geconfigureerd.",
+      "addDefaultHubsFailed": "Kan standaardhubs niet toevoegen.",
+      "identityNotConfigured": "Stel eerst een Reticulum-identiteit in op het tabblad Netwerk — genereer of importeer een herstelzin.",
+      "identityRequiredHint": "Configureer een Reticulum-identiteit op het tabblad Netwerk voordat u interfaces toevoegt."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3345,7 +3347,9 @@
     "cliNoCommandsYet": "Nog geen opdrachten",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}m"
+    "uptimeMinutes": "{{minutes}}m",
+    "rememberPasswordSaveFailed": "Kon repeaterwachtwoord niet opslaan voor herstarten. Het werkt alleen voor deze sessie.",
+    "telemetryFailedToast": "Telemetrie mislukt: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",
@@ -3853,6 +3857,11 @@
     "routes_one": "Routes: {{count}} knooppunt in mesh",
     "routes_other": "Routes: {{count}} knooppunten in mesh",
     "routesEstablished": "Routes vastgesteld",
-    "meshActive": "Mesh netwerk actief"
+    "meshActive": "Mesh netwerk actief",
+    "transportBle": "BLE",
+    "transportSerial": "Serieel",
+    "transportHttp": "HTTP-modus",
+    "transportRadio": "Radio",
+    "radioInterfaceFallback": "ether-interface"
   }
 }

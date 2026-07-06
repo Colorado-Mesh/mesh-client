@@ -883,11 +883,13 @@
       "setPrimarySuccess": "Zaktualizowano główny lokalny RNode.",
       "setPrimaryFailed": "Nie udało się ustawić głównego lokalnego RNode.",
       "defaultHubsLabel": "Domyślne huby",
-      "addDefaultHubs": "Dodaj piasty TESTNET i Ratspeak",
-      "addDefaultHubsAria": "Dodaj domyślne koncentratory TCP Reticulum TESTNET i Ratspeak w stanie wyłączonym",
+      "addDefaultHubs": "Dodaj koncentratory testnet i Ratspeak",
+      "addDefaultHubsAria": "Dodaj domyślne koncentratory Reticulum testnet i Ratspeak w stanie wyłączonym",
       "addDefaultHubsSuccess": "Dodano domyślne koncentratory: {{added}}. {{skipped}} jest już skonfigurowany.",
-      "addDefaultHubsAllPresent": "Domyślne koncentratory TESTNET i Ratspeak są już skonfigurowane.",
-      "addDefaultHubsFailed": "Nie udało się dodać domyślnych koncentratorów."
+      "addDefaultHubsAllPresent": "Domyślne koncentratory testnet i Ratspeak są już skonfigurowane.",
+      "addDefaultHubsFailed": "Nie udało się dodać domyślnych koncentratorów.",
+      "identityNotConfigured": "Skonfiguruj najpierw tożsamość Reticulum na karcie Sieć — wygeneruj lub zaimportuj frazę odzyskiwania.",
+      "identityRequiredHint": "Skonfiguruj tożsamość Reticulum na karcie Sieć przed dodaniem interfejsów."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3345,7 +3347,9 @@
     "cliNoCommandsYet": "Nie ma jeszcze żadnych poleceń",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}m"
+    "uptimeMinutes": "{{minutes}}m",
+    "rememberPasswordSaveFailed": "Nie można zapisać hasła powtarzacza do ponownego uruchomienia. Będzie działać tylko dla tej sesji.",
+    "telemetryFailedToast": "Telemetria nie powiodła się: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",
@@ -3853,6 +3857,11 @@
     "routes_one": "Trasy: węzeł {{count}} w siatce",
     "routes_other": "Trasy: węzły {{count}} w siatce",
     "routesEstablished": "Ustalone trasy",
-    "meshActive": "Aktywna sieć siatkowa"
+    "meshActive": "Aktywna sieć siatkowa",
+    "transportBle": "WE",
+    "transportSerial": "Seryjny",
+    "transportHttp": "HTTP",
+    "transportRadio": "Radio",
+    "radioInterfaceFallback": "interfejs radiowy"
   }
 }

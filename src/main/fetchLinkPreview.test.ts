@@ -245,6 +245,41 @@ describe('fetchLinkPreview', () => {
     });
   });
 
+  it('blocks proxied image fetch when og:image hostname resolves to private IPv4', async () => {
+    const pageHtml = [
+      `<meta property="og:title" content="DNS trap">`,
+      `<meta property="og:image" content="https://opengraph.githubassets.com/abc/trap.png">`,
+    ].join('\n');
+    mockFetch.mockImplementation((input: string | URL | Request) => {
+      const host = fetchRequestHostname(input);
+      if (host === 'opengraph.githubassets.com') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers({ 'content-type': 'image/png' }),
+          body: new ReadableStream<Uint8Array>({
+            start(c) {
+              c.enqueue(Uint8Array.from([0x89, 0x50, 0x4e, 0x47]));
+              c.close();
+            },
+          }),
+        } as unknown as Response);
+      }
+      return Promise.resolve(makeStreamResponse(pageHtml));
+    });
+    mockDnsLookup.mockImplementation((hostname: string) => {
+      if (hostname === 'opengraph.githubassets.com') {
+        return Promise.resolve({ address: '10.0.0.8', family: 4 });
+      }
+      return Promise.resolve({ address: '93.184.216.34', family: 4 });
+    });
+
+    const result = await fetchLinkPreview('https://example.com/page');
+    expect(result?.title).toBe('DNS trap');
+    expect(result?.image).toBeUndefined();
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
   it('blocks proxied image fetch when redirect targets a private host', async () => {
     const pageHtml = [
       `<meta property="og:title" content="Redirect trap">`,

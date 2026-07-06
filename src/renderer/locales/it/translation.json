@@ -883,11 +883,13 @@
       "setPrimarySuccess": "RNode locale primario aggiornato.",
       "setPrimaryFailed": "Impossibile impostare l'RNode locale primario.",
       "defaultHubsLabel": "Hub predefiniti",
-      "addDefaultHubs": "Aggiungi hub TESTNET e Ratspeak",
-      "addDefaultHubsAria": "Aggiungere gli hub Reticulum TESTNET e Ratspeak TCP predefiniti in uno stato disabilitato",
+      "addDefaultHubs": "Aggiungi hub testnet e Ratspeak",
+      "addDefaultHubsAria": "Aggiungi testnet Reticulum e hub Ratspeak predefiniti in stato disabilitato",
       "addDefaultHubsSuccess": "Aggiunti {{added}} hub predefiniti. {{skipped}} già configurato.",
-      "addDefaultHubsAllPresent": "Gli hub TESTNET e Ratspeak predefiniti sono già configurati.",
-      "addDefaultHubsFailed": "Impossibile aggiungere hub predefiniti."
+      "addDefaultHubsAllPresent": "Gli hub testnet e Ratspeak predefiniti sono già configurati.",
+      "addDefaultHubsFailed": "Impossibile aggiungere hub predefiniti.",
+      "identityNotConfigured": "Imposta prima un'identità Reticulum nella scheda Rete — genera o importa una frase di ripristino.",
+      "identityRequiredHint": "Configura un'identità Reticulum nella scheda Rete prima di aggiungere interfacce."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3345,7 +3347,9 @@
     "cliNoCommandsYet": "Nessun comando ancora",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}m"
+    "uptimeMinutes": "{{minutes}}m",
+    "rememberPasswordSaveFailed": "Impossibile salvare la password del ripetitore per il riavvio. Funzionerà solo per questa sessione.",
+    "telemetryFailedToast": "Telemetria non riuscita: {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervallo annunci (secondi)",
@@ -3853,6 +3857,11 @@
     "routes_one": "Percorsi: nodo {{count}} in mesh",
     "routes_other": "Percorsi: nodi {{count}} in mesh",
     "routesEstablished": "Itinerari impostati",
-    "meshActive": "Rete mesh attiva"
+    "meshActive": "Rete mesh attiva",
+    "transportBle": "BLE",
+    "transportSerial": "Serial",
+    "transportHttp": "HTTP",
+    "transportRadio": "Radio",
+    "radioInterfaceFallback": "Data Radio interface (Interfaccia sistema dati via radio)"
   }
 }

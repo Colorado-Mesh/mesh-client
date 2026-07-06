@@ -246,3 +246,22 @@ CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage 
 - Verify `docs/requirements.txt` dependencies are valid
 - Check MkDocs configuration in `mkdocs.yml`
 - Ensure all referenced doc files exist
+
+---
+
+## Packaging smoke builds (`build.yaml` / `release.yaml`)
+
+Linux arm64 cross-builds on Ubuntu 24.04 runners use `scripts/ci-setup-linux-arm64-apt.sh` before `dpkg --add-architecture arm64`.
+
+Reticulum sidecar staging before `electron-builder`:
+
+- `scripts/build-reticulum-sidecar-release.mjs` — compile/copy sidecar per target OS/arch
+- `scripts/verify-reticulum-sidecar-staged.mjs` — size/assert checks
+- `scripts/electron-builder-before-pack.mjs` — copy into `resources/reticulum-sidecar/`
+
+Post-build smoke tests:
+
+- `scripts/test-linux-appimage-reticulum-sidecar.mjs` — x64 uses `--appimage-extract`; arm64 on x64 runners uses `unsquashfs` for cross-arch extract
+- `scripts/test-win-nsis-install.mjs` — NSIS + 7z sidecar probe on WoA
+
+Local packaging parity: see [development-environment.md](development-environment.md#reticulum-sidecar-optional).

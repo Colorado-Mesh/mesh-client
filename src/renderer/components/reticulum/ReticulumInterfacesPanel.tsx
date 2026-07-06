@@ -16,10 +16,11 @@ import {
   type ReticulumConfigRepairKind,
 } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import {
-  buildDefaultTcpHubAddRequest,
-  listMissingDefaultTcpHubs,
-  RETICULUM_DEFAULT_TCP_HUBS,
-} from '@/renderer/lib/reticulum/reticulumDefaultTcpHubs';
+  buildDefaultHubAddRequest,
+  listMissingDefaultHubPresets,
+  RETICULUM_DEFAULT_HUB_PRESETS,
+} from '@/renderer/lib/reticulum/reticulumDefaultHubPresets';
+import { humanizeReticulumInterfaceApiError } from '@/renderer/lib/reticulum/reticulumInterfaceApiError';
 import { getReticulumInterfaceHelp } from '@/renderer/lib/reticulum/reticulumInterfaceHelp';
 import {
   formatReticulumInterfaceRowSummary,
@@ -114,6 +115,7 @@ type ReticulumIfaceUiType =
 export interface ReticulumInterfacesPanelProps {
   sidecarApiReady: boolean;
   connecting: boolean;
+  identityConfigured?: boolean;
   interfaces: ReticulumInterfaceRow[];
   serialPorts: ReticulumSerialPortOption[];
   serialPortPaths: string[];
@@ -126,6 +128,7 @@ export interface ReticulumInterfacesPanelProps {
 export function ReticulumInterfacesPanel({
   sidecarApiReady,
   connecting,
+  identityConfigured = true,
   interfaces,
   serialPorts,
   serialPortPaths,
@@ -340,7 +343,13 @@ export function ReticulumInterfacesPanel({
         error?: string;
       };
       if (res?.ok === false) {
-        setInterfaceError(res.error ?? t('connectionPanel.reticulumInterfaces.addFailed'));
+        setInterfaceError(
+          humanizeReticulumInterfaceApiError(
+            res.error,
+            t,
+            'connectionPanel.reticulumInterfaces.addFailed',
+          ),
+        );
         return;
       }
       await onRefresh();
@@ -349,14 +358,20 @@ export function ReticulumInterfacesPanel({
       }
     } catch (e) {
       // catch-no-log-ok: interface add failure shown via interfaceError
-      setInterfaceError(errLikeToLogString(e));
+      setInterfaceError(
+        humanizeReticulumInterfaceApiError(
+          errLikeToLogString(e),
+          t,
+          'connectionPanel.reticulumInterfaces.addFailed',
+        ),
+      );
     }
   };
 
-  const handleAddDefaultTcpHubs = async () => {
+  const handleAddDefaultHubPresets = async () => {
     setInterfaceError(null);
-    const missing = listMissingDefaultTcpHubs(interfaces);
-    const skipped = RETICULUM_DEFAULT_TCP_HUBS.length - missing.length;
+    const missing = listMissingDefaultHubPresets(interfaces);
+    const skipped = RETICULUM_DEFAULT_HUB_PRESETS.length - missing.length;
     if (missing.length === 0) {
       addToast(t('connectionPanel.reticulumInterfaces.addDefaultHubsAllPresent'), 'info');
       return;
@@ -364,16 +379,20 @@ export function ReticulumInterfacesPanel({
     setAddingDefaultHubs(true);
     let added = 0;
     try {
-      for (const hub of missing) {
+      for (const preset of missing) {
         const res = (await window.electronAPI.reticulum.proxyPost(
           '/api/v1/interfaces',
-          buildDefaultTcpHubAddRequest(hub),
+          buildDefaultHubAddRequest(preset),
         )) as { ok?: boolean; error?: string };
         if (res?.ok === false) {
           setInterfaceError(
-            res.error ?? t('connectionPanel.reticulumInterfaces.addDefaultHubsFailed'),
+            humanizeReticulumInterfaceApiError(
+              res.error,
+              t,
+              'connectionPanel.reticulumInterfaces.addDefaultHubsFailed',
+            ),
           );
-          console.debug('[ReticulumInterfacesPanel] add default hub failed', hub.id, res.error);
+          console.debug('[ReticulumInterfacesPanel] add default hub failed', preset.id, res.error);
           break;
         }
         added += 1;
@@ -388,7 +407,11 @@ export function ReticulumInterfacesPanel({
       }
     } catch (e) {
       setInterfaceError(
-        errLikeToLogString(e) || t('connectionPanel.reticulumInterfaces.addDefaultHubsFailed'),
+        humanizeReticulumInterfaceApiError(
+          errLikeToLogString(e),
+          t,
+          'connectionPanel.reticulumInterfaces.addDefaultHubsFailed',
+        ),
       );
       console.debug('[ReticulumInterfacesPanel] add default hubs', e);
     } finally {
@@ -405,7 +428,13 @@ export function ReticulumInterfacesPanel({
         error?: string;
       };
       if (res?.ok === false) {
-        setInterfaceError(res.error ?? t('connectionPanel.reticulumInterfaces.toggleFailed'));
+        setInterfaceError(
+          humanizeReticulumInterfaceApiError(
+            res.error,
+            t,
+            'connectionPanel.reticulumInterfaces.toggleFailed',
+          ),
+        );
         return;
       }
       await onRefresh();
@@ -414,7 +443,13 @@ export function ReticulumInterfacesPanel({
       }
     } catch (e) {
       // catch-no-log-ok: interface toggle failure shown via interfaceError
-      setInterfaceError(errLikeToLogString(e));
+      setInterfaceError(
+        humanizeReticulumInterfaceApiError(
+          errLikeToLogString(e),
+          t,
+          'connectionPanel.reticulumInterfaces.toggleFailed',
+        ),
+      );
     }
   };
 
@@ -426,7 +461,13 @@ export function ReticulumInterfacesPanel({
         error?: string;
       };
       if (res?.ok === false) {
-        setInterfaceError(res.error ?? t('connectionPanel.reticulumInterfaces.deleteFailed'));
+        setInterfaceError(
+          humanizeReticulumInterfaceApiError(
+            res.error,
+            t,
+            'connectionPanel.reticulumInterfaces.deleteFailed',
+          ),
+        );
         return;
       }
       setPendingDeleteInterface(null);
@@ -437,7 +478,13 @@ export function ReticulumInterfacesPanel({
       await restartStackForInterfaceChange();
     } catch (e) {
       // catch-no-log-ok: delete failure shown via interfaceError
-      setInterfaceError(errLikeToLogString(e));
+      setInterfaceError(
+        humanizeReticulumInterfaceApiError(
+          errLikeToLogString(e),
+          t,
+          'connectionPanel.reticulumInterfaces.deleteFailed',
+        ),
+      );
     }
   };
 
@@ -464,7 +511,13 @@ export function ReticulumInterfacesPanel({
         patch,
       )) as { ok?: boolean; error?: string };
       if (res?.ok === false) {
-        setInterfaceError(res.error ?? t('connectionPanel.reticulumInterfaces.editFailed'));
+        setInterfaceError(
+          humanizeReticulumInterfaceApiError(
+            res.error,
+            t,
+            'connectionPanel.reticulumInterfaces.editFailed',
+          ),
+        );
         return;
       }
       setEditingInterface(null);
@@ -474,11 +527,17 @@ export function ReticulumInterfacesPanel({
       }
     } catch (e) {
       // catch-no-log-ok: edit failure shown via interfaceError
-      setInterfaceError(errLikeToLogString(e));
+      setInterfaceError(
+        humanizeReticulumInterfaceApiError(
+          errLikeToLogString(e),
+          t,
+          'connectionPanel.reticulumInterfaces.editFailed',
+        ),
+      );
     }
   };
 
-  const actionsDisabled = !sidecarApiReady || connecting;
+  const actionsDisabled = !sidecarApiReady || connecting || !identityConfigured;
   const defaultHubsDisabled = actionsDisabled || addingDefaultHubs;
 
   return (
@@ -557,10 +616,11 @@ export function ReticulumInterfacesPanel({
         onSetPrimaryLocalSerial={(id) => {
           void handleSetPrimaryLocalSerial(id);
         }}
+        identityConfigured={identityConfigured}
         addingDefaultHubs={addingDefaultHubs}
         defaultHubsDisabled={defaultHubsDisabled}
         onAddDefaultHubs={() => {
-          void handleAddDefaultTcpHubs();
+          void handleAddDefaultHubPresets();
         }}
       />
       {pendingDeleteInterface ? (
@@ -1049,6 +1109,7 @@ function InterfacesSection({
   onAuditRepair,
   onAuditDisable,
   onSetPrimaryLocalSerial,
+  identityConfigured,
   addingDefaultHubs,
   defaultHubsDisabled,
   onAddDefaultHubs,
@@ -1096,6 +1157,7 @@ function InterfacesSection({
   onAuditRepair: (kind: ReticulumConfigRepairKind) => void;
   onAuditDisable: (id: string) => Promise<void>;
   onSetPrimaryLocalSerial: (id: string) => void;
+  identityConfigured: boolean;
   addingDefaultHubs: boolean;
   defaultHubsDisabled: boolean;
   onAddDefaultHubs: () => void;
@@ -1152,6 +1214,11 @@ function InterfacesSection({
           <p id="reticulum-default-hubs" className="text-muted text-xs">
             {t('connectionPanel.reticulumInterfaces.defaultHubsLabel')}
           </p>
+          {!identityConfigured ? (
+            <p className="text-xs text-amber-300" role="status">
+              {t('connectionPanel.reticulumInterfaces.identityRequiredHint')}
+            </p>
+          ) : null}
           <button
             type="button"
             disabled={defaultHubsDisabled}

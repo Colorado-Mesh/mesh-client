@@ -883,11 +883,13 @@
       "setPrimarySuccess": "プライマリローカルRNodeが更新されました。",
       "setPrimaryFailed": "プライマリローカルRNodeの設定に失敗しました。",
       "defaultHubsLabel": "デフォルトのハブ",
-      "addDefaultHubs": "TESTNETとRatspeakハブを追加する",
-      "addDefaultHubsAria": "無効状態のデフォルトのReticulum TESTNETとRatspeak TCPハブを追加する",
+      "addDefaultHubs": "テストネットとRatspeakハブを追加する",
+      "addDefaultHubsAria": "無効状態のデフォルトのReticulumテストネットとRatspeakハブを追加する",
       "addDefaultHubsSuccess": "{{added}}デフォルトのハブを追加しました。{{skipped}}はすでに設定されています。",
-      "addDefaultHubsAllPresent": "既定のTESTNETとRatspeakハブはすでに構成されています。",
-      "addDefaultHubsFailed": "デフォルトのハブを追加できませんでした。"
+      "addDefaultHubsAllPresent": "デフォルトのテストネットとRatspeakハブはすでに設定されています。",
+      "addDefaultHubsFailed": "デフォルトのハブを追加できませんでした。",
+      "identityNotConfigured": "最初に[ネットワーク]タブでReticulum IDを設定します。リカバリフレーズを生成またはインポートします。",
+      "identityRequiredHint": "インターフェースを追加する前に、[ネットワーク]タブでReticulumアイデンティティを設定します。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3345,7 +3347,9 @@
     "cliNoCommandsYet": "まだコマンドがありません",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}分"
+    "uptimeMinutes": "{{minutes}}分",
+    "rememberPasswordSaveFailed": "再起動用のリピーターパスワードを保存できませんでした。このセッションでのみ機能します。",
+    "telemetryFailedToast": "テレメトリに失敗しました： {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",
@@ -3853,6 +3857,11 @@
     "routes_one": "ルート：メッシュ内の{{count}}ノード",
     "routes_other": "ルート：メッシュ内の{{count}}ノード",
     "routesEstablished": "ルートが確立されました",
-    "meshActive": "サイトネットワークで有効"
+    "meshActive": "サイトネットワークで有効",
+    "transportBle": "BLE",
+    "transportSerial": "シリアル",
+    "transportHttp": "HTTP",
+    "transportRadio": "通信機",
+    "radioInterfaceFallback": "無線インターフェース"
   }
 }

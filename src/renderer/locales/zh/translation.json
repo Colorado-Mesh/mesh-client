@@ -883,11 +883,13 @@
       "setPrimarySuccess": "主本地RNode已更新。",
       "setPrimaryFailed": "设置主本地RNode失败。",
       "defaultHubsLabel": "默认集线器",
-      "addDefaultHubs": "添加TESTNET和Ratspeak集线器",
-      "addDefaultHubsAria": "添加处于禁用状态的默认Reticulum TESTNET和Ratspeak TCP集线器",
+      "addDefaultHubs": "添加测试网和Ratspeak集线器",
+      "addDefaultHubsAria": "添加处于禁用状态的默认Reticulum测试网和Ratspeak集线器",
       "addDefaultHubsSuccess": "已添加{{added}}个默认集线器。{{skipped}}已配置。",
-      "addDefaultHubsAllPresent": "已配置默认TESTNET和Ratspeak集线器。",
-      "addDefaultHubsFailed": "添加默认集线器失败。"
+      "addDefaultHubsAllPresent": "默认测试网和Ratspeak集线器已配置。",
+      "addDefaultHubsFailed": "添加默认集线器失败。",
+      "identityNotConfigured": "请先在“网络”选项卡上设置 Reticulum 身份 — 生成或导入恢复短语。",
+      "identityRequiredHint": "在添加接口之前，请先在“网络”选项卡上配置 Reticulum 身份。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3345,7 +3347,9 @@
     "cliNoCommandsYet": "还没有命令",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
-    "uptimeMinutes": "{{minutes}}米"
+    "uptimeMinutes": "{{minutes}}米",
+    "rememberPasswordSaveFailed": "无法保存中继器密码以重新启动。它仅适用于此会话。",
+    "telemetryFailedToast": "遥测失败： {{message}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",
@@ -3853,6 +3857,11 @@
     "routes_one": "路由：网格中的{{count}}节点",
     "routes_other": "路由：网格中的{{count}}节点",
     "routesEstablished": "已建立路线",
-    "meshActive": "网络启用"
+    "meshActive": "网络启用",
+    "transportBle": "BLE",
+    "transportSerial": "Serial 串行",
+    "transportHttp": "HTTP",
+    "transportRadio": "广播电台",
+    "radioInterfaceFallback": "无线电接口"
   }
 }

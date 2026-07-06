@@ -15,7 +15,10 @@ import type {
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
 } from '../lib/meshcore/meshcoreHookTypes';
-import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
+import {
+  meshcoreRepeaterAdminErrorMessage,
+  translateMeshcoreUserMessage,
+} from '../lib/meshcore/meshcoreMessageI18n';
 import type { MeshcoreRepeaterRpcPendingMap } from '../lib/meshcoreRepeaterAdminPending';
 import { isRepeaterAdminRpcPending } from '../lib/meshcoreRepeaterAdminPending';
 import { listMeshcoreRepeaterCredentialNodeIds } from '../lib/meshcoreRepeaterCredentialStorage';
@@ -34,6 +37,7 @@ import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
 import { HelpTooltip } from './HelpTooltip';
+import { MeshcoreRepeaterSavedPasswordIndicator } from './MeshcoreRepeaterPasswordControls';
 import { formatSecondsAgo } from './NodeInfoBody';
 import SnrIndicator from './SnrIndicator';
 import { useToast } from './Toast';
@@ -119,9 +123,31 @@ function formatUptime(t: TFunction, secs: number | undefined): string {
   return t('repeatersPanel.uptimeMinutes', { minutes: mins });
 }
 
-function meshcoreErrorToastMessage(t: TFunction, e: unknown): string {
-  const raw = e instanceof Error ? e.message : String(e);
-  return translateMeshcoreUserMessage(t, raw);
+async function runRepeaterAdminAction(
+  t: TFunction,
+  nodeId: number,
+  nodes: Map<number, MeshNode>,
+  orphanLabel: (nodeId: number) => string,
+  ensureRepeaterAuth: (
+    nodeId: number,
+    repeaterName: string,
+  ) => Promise<{ ok: boolean; saved?: boolean }>,
+  refreshStoredRepeaters: () => void,
+  action: () => Promise<void>,
+  toastKey: string,
+  logTag: string,
+  addToast: (message: string, type: 'error') => void,
+): Promise<void> {
+  const node = nodes.get(nodeId);
+  const auth = await ensureRepeaterAuth(nodeId, node?.long_name ?? orphanLabel(nodeId));
+  if (!auth.ok) return;
+  if (auth.saved) refreshStoredRepeaters();
+  try {
+    await action();
+  } catch (e) {
+    console.warn(`[RepeatersPanel] ${logTag} ` + errLikeToLogString(e));
+    addToast(t(toastKey, { message: meshcoreRepeaterAdminErrorMessage(t, e) }), 'error');
+  }
 }
 
 interface SignalPoint {
@@ -388,25 +414,18 @@ export default function RepeatersPanel({
   };
 
   const handleStatus = async (nodeId: number) => {
-    const node = nodes.get(nodeId);
-    const auth = await ensureRepeaterAuth(
+    await runRepeaterAdminAction(
+      t,
       nodeId,
-      node?.long_name ??
-        t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: nodeId.toString(16) }),
+      nodes,
+      (id) => t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: id.toString(16) }),
+      ensureRepeaterAuth,
+      refreshStoredRepeaters,
+      () => onRequestRepeaterStatus(nodeId),
+      'repeatersPanel.statusFailedToast',
+      'requestRepeaterStatus error',
+      addToast,
     );
-    if (!auth.ok) return;
-    if (auth.saved) refreshStoredRepeaters();
-    try {
-      await onRequestRepeaterStatus(nodeId);
-    } catch (e) {
-      console.warn('[RepeatersPanel] requestRepeaterStatus error ' + errLikeToLogString(e));
-      addToast(
-        t('repeatersPanel.statusFailedToast', {
-          message: meshcoreErrorToastMessage(t, e),
-        }),
-        'error',
-      );
-    }
   };
 
   const handlePing = async (nodeId: number) => {
@@ -416,7 +435,7 @@ export default function RepeatersPanel({
       console.warn('[RepeatersPanel] ping error ' + errLikeToLogString(e));
       addToast(
         t('repeatersPanel.pingFailedToast', {
-          message: meshcoreErrorToastMessage(t, e),
+          message: meshcoreRepeaterAdminErrorMessage(t, e),
         }),
         'error',
       );
@@ -436,7 +455,7 @@ export default function RepeatersPanel({
       console.warn('[RepeatersPanel] deleteRepeater failed:', e instanceof Error ? e.message : e);
       addToast(
         t('repeatersPanel.removeFailedToast', {
-          message: meshcoreErrorToastMessage(t, e),
+          message: meshcoreRepeaterAdminErrorMessage(t, e),
         }),
         'error',
       );
@@ -460,29 +479,24 @@ export default function RepeatersPanel({
       });
       return;
     }
-    const auth = await ensureRepeaterAuth(
+    await runRepeaterAdminAction(
+      t,
       nodeId,
-      node?.long_name ??
-        t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: nodeId.toString(16) }),
+      nodes,
+      (id) => t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: id.toString(16) }),
+      ensureRepeaterAuth,
+      refreshStoredRepeaters,
+      async () => {
+        await onRequestNeighbors?.(nodeId);
+        setExpandedNeighbors((prev) => new Set([...prev, nodeId]));
+      },
+      'repeatersPanel.neighborsFailedToast',
+      'requestNeighbors error',
+      addToast,
     );
-    if (!auth.ok) return;
-    if (auth.saved) refreshStoredRepeaters();
-    try {
-      await onRequestNeighbors?.(nodeId);
-      setExpandedNeighbors((prev) => new Set([...prev, nodeId]));
-    } catch (e) {
-      console.warn('[RepeatersPanel] requestNeighbors error ' + errLikeToLogString(e));
-      addToast(
-        t('repeatersPanel.neighborsFailedToast', {
-          message: meshcoreErrorToastMessage(t, e),
-        }),
-        'error',
-      );
-    }
   };
 
   const handleTelemetry = async (nodeId: number) => {
-    const node = nodes.get(nodeId);
     if (expandedTelemetry.has(nodeId)) {
       setExpandedTelemetry((prev) => {
         const n = new Set(prev);
@@ -491,25 +505,21 @@ export default function RepeatersPanel({
       });
       return;
     }
-    const auth = await ensureRepeaterAuth(
+    await runRepeaterAdminAction(
+      t,
       nodeId,
-      node?.long_name ??
-        t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: nodeId.toString(16) }),
+      nodes,
+      (id) => t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: id.toString(16) }),
+      ensureRepeaterAuth,
+      refreshStoredRepeaters,
+      async () => {
+        await onRequestTelemetry?.(nodeId);
+        setExpandedTelemetry((prev) => new Set([...prev, nodeId]));
+      },
+      'repeatersPanel.telemetryFailedToast',
+      'requestTelemetry error',
+      addToast,
     );
-    if (!auth.ok) return;
-    if (auth.saved) refreshStoredRepeaters();
-    try {
-      await onRequestTelemetry?.(nodeId);
-      setExpandedTelemetry((prev) => new Set([...prev, nodeId]));
-    } catch (e) {
-      console.warn('[RepeatersPanel] requestTelemetry error ' + errLikeToLogString(e));
-      addToast(
-        t('nodeDetailModal.telemetryFailed', {
-          message: meshcoreErrorToastMessage(t, e),
-        }),
-        'error',
-      );
-    }
   };
 
   const togglePath = (nodeId: number) => {
@@ -854,13 +864,7 @@ export default function RepeatersPanel({
                               {node.long_name}
                             </button>
                             {storedRepeaterIds.has(node.node_id) ? (
-                              <span
-                                className="text-sky-400/90"
-                                title={t('repeatersPanel.passwordSavedIndicator')}
-                                aria-label={t('repeatersPanel.passwordSavedIndicator')}
-                              >
-                                🔑
-                              </span>
+                              <MeshcoreRepeaterSavedPasswordIndicator />
                             ) : null}
                           </span>
                         </td>

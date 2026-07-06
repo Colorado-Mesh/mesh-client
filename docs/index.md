@@ -1,6 +1,6 @@
 # Mesh-Client
 
-Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, and **Reticulum (LXMF)** on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi‑Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, and **16-language UI**.
+Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, and **Reticulum (LXMF)** on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi-Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, and **16-language UI**.
 
 This page is the docs landing view. The full repository README (badges, feature reference, usage) lives on [GitHub](https://github.com/Colorado-Mesh/mesh-client/blob/main/README.md).
 
