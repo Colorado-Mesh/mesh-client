@@ -6,9 +6,10 @@ import type {
   ReticulumSidecarStartOptions,
   ReticulumSidecarStatus,
 } from './reticulum-types';
+import type { SupportBundleMode } from './support-bundle.types';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from './tak-types';
 
-export type { MeshProtocol };
+export type { MeshProtocol, SupportBundleMode };
 
 export type { MeshNode, MQTTSettings, MQTTStatus };
 
@@ -880,6 +881,11 @@ export interface ElectronAPI {
     unlock: (passcode: string) => Promise<IdentityVaultActionResult>;
     lock: () => Promise<IdentityVaultActionResult>;
     status: () => Promise<IdentityVaultStatus>;
+  };
+
+  // ─── Support / bug-report bundles ───────────────────────────────────────────
+  support: {
+    exportBundle: (mode: SupportBundleMode, debugSnapshotJson: string) => Promise<string | null>;
   };
 
   // ─── Log panel ───────────────────────────────────────────────────────────────

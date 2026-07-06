@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "Limitar mensajes cargados {{count}} mensajes",
     "capStoredMessagesCountAria": "Limitar los mensajes almacenados, conservar los mensajes {{count}} más recientes",
     "maxDistanceAria": "Distancia máxima: {{value}}",
-    "unitAria": "Unidad: {{unit}}"
+    "unitAria": "Unidad: {{unit}}",
+    "supportSection": "Soporte / Informes de errores",
+    "supportSectionDesc": "Las exportaciones con un solo clic reemplazan la recopilación de la instantánea de depuración, el archivo de registro y la base de datos por separado al informar problemas.",
+    "exportForGitHub": "Paquete de soporte de exportación para GitHub",
+    "exportForGitHubButton": "Exportar para GitHub",
+    "exportForGitHubDesc": "Incluye instantáneas de depuración y archivos de registro en un solo zip. Es seguro adjuntarlo a problemas públicos de GitHub.",
+    "exportForDeveloper": "Paquete de soporte de exportación para desarrolladores",
+    "exportForDeveloperButton": "Exportar para desarrollador",
+    "exportForDeveloperWarning": "Incluye su base de datos completa, que puede contener contraseñas guardadas (credenciales de sala MeshCore, configuración de MQTT, etc.). Comparta este paquete de forma privada solo con los mantenedores, nunca en GitHub público.",
+    "exportSupportBundleFailed": "No se pudo exportar el paquete de soporte: {{message}}"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -503,7 +512,11 @@
     },
     "waitingMessagesQueued": "{{count}} mensajes en cola en la radio",
     "waitingMessagesSyncProgress": "Sincronizando {{processed}} / {{total}} desde la radio...",
-    "waitingMessagesSyncProgressIndeterminate": "Sincronizando mensajes en cola de radio..."
+    "waitingMessagesSyncProgressIndeterminate": "Sincronizando mensajes en cola de radio...",
+    "waitingMessagesSilentDrain": "Recuperando mensajes en cola en la radio...",
+    "waitingMessagesDrainDeferred": "Sincronización de mensajes en pausa mientras la radio está ocupada (administrador/rastreo)...",
+    "waitingMessagesSerialHint": "El USB serial maneja un comando a la vez; Los mensajes pueden llegar en pequeños lotes.",
+    "waitingMessagesSyncFailed": "No se pudieron sincronizar los mensajes en cola: {{message}}"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -962,7 +975,8 @@
       "txQueueDrops": "{{name}}: paquetes salientes descartados ({{count}} en cola)",
       "txQueueDropsHint": "Por lo general, es causada por una interfaz TCP muerta que aún está habilitada. Deshabilite los concentradores inalcanzables para detener el desbordamiento de la cola.",
       "suppressed": "{{count}} líneas de registro de sidecar similares suprimidas recientemente."
-    }
+    },
+    "reticulumSidecarBundledMissing": "A esta instalación le falta el sidecar Reticulum incluido. Actualice a una versión más reciente o informe el problema: la compilación desde el código fuente no está disponible en instalaciones empaquetadas."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",

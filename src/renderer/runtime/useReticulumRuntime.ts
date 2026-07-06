@@ -54,11 +54,7 @@ import {
   reticulumDbRowToMessageRecord,
 } from '@/renderer/lib/storeRecordAdapters';
 import { reticulumHashForNodeId } from '@/renderer/stores/reticulumPeerStore';
-import type {
-  ReticulumContact,
-  ReticulumSidecarEvent,
-  ReticulumWirePacketRow,
-} from '@/shared/reticulum-types';
+import type { ReticulumSidecarEvent, ReticulumWirePacketRow } from '@/shared/reticulum-types';
 import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
@@ -162,33 +158,39 @@ export function useReticulumRuntime(): ProtocolRuntime {
     [identityId, selfNodeId],
   );
 
-  const applyPeerNodesFromStore = useCallback(() => {
+  const applyContactNodesFromStore = useCallback(() => {
     if (!identityId) return;
     const dismissed = useReticulumPeerStore.getState().dismissedContactHashes;
-    const peers = useReticulumPeerStore.getState().peers;
+    const contacts = useReticulumPeerStore.getState().contacts;
     const records = [];
-    for (const peer of peers.values()) {
-      const hash = peer.destination_hash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+    const keepNodeIds = new Set<number>();
+    if (selfNodeId != null) keepNodeIds.add(selfNodeId);
+
+    for (const contact of contacts.values()) {
+      const hash = contact.destination_hash.replace(/[^0-9a-f]/gi, '').toLowerCase();
       if (dismissed.has(hash)) continue;
-      const contact = peer as ReticulumContact;
-      records.push(
-        reticulumContactToNodeRecord({
-          destination_hash: peer.destination_hash,
-          display_name: peer.custom_display_name ?? peer.display_name ?? null,
-          last_heard: contact.last_heard ?? peer.last_seen ?? 0,
-          hops: peer.hops ?? null,
-          interface: peer.interface ?? null,
-          favorited: Boolean(peer.favorited),
+      records.push(reticulumContactToNodeRecord(contact));
+      keepNodeIds.add(reticulumHashToNodeId(contact.destination_hash));
+    }
+
+    // Drop path-table peers previously synced into nodeStore; keep self + LXMF contacts only.
+    useNodeStore.setState((s) => {
+      const prior = s.nodes[identityId] ?? {};
+      const next = Object.fromEntries(
+        Object.entries(prior).filter(([key, rec]) => {
+          const nodeId = Number(key);
+          return !rec.reticulumDestinationHash || keepNodeIds.has(nodeId);
         }),
       );
-    }
+      return { nodes: { ...s.nodes, [identityId]: next } };
+    });
     upsertNodeRecordsForIdentity(identityId, records);
-  }, [identityId]);
+  }, [identityId, selfNodeId]);
 
   const refreshContactsFromSidecar = useCallback(async () => {
     await refreshReticulumPeersFromSidecar();
-    applyPeerNodesFromStore();
-  }, [applyPeerNodesFromStore]);
+    applyContactNodesFromStore();
+  }, [applyContactNodesFromStore]);
 
   const syncSelfNodeFromIdentityStatus = useCallback(
     (lxmfHash: string, displayName: string | null) => {

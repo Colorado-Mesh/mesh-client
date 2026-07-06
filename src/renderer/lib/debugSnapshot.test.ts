@@ -71,6 +71,8 @@ function makeSyntheticSnapshot(overrides: Partial<DebugSnapshot> = {}): DebugSna
     frozenMessageCount: null,
     liveResolvedMessageCount: 0,
     activeProtocol: 'meshcore' as const,
+    waitingMessagesSilentDrainActive: false,
+    waitingMessagesDrainDeferred: false,
     ...overrides.ui,
   };
   const meshcore = makeBucketOverrides(overrides.meshcore ?? {});
@@ -402,6 +404,8 @@ describe('analyzeDebugSnapshot', () => {
         frozenMessageCount: 10,
         liveResolvedMessageCount: 25,
         activeProtocol: 'meshcore',
+        waitingMessagesSilentDrainActive: false,
+        waitingMessagesDrainDeferred: false,
       },
     });
 
@@ -433,6 +437,8 @@ describe('analyzeDebugSnapshot', () => {
         frozenMessageCount: null,
         liveResolvedMessageCount: 0,
         activeProtocol: 'meshtastic',
+        waitingMessagesSilentDrainActive: false,
+        waitingMessagesDrainDeferred: false,
       },
     });
 

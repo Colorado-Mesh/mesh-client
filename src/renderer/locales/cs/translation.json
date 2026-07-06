@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "Omezit počet načtených zpráv: {{count}} zpráv",
     "capStoredMessagesCountAria": "Uzavřít uložené zprávy, ponechat nejnovější {{count}} zprávy",
     "maxDistanceAria": "Maximální vzdálenost: {{value}}",
-    "unitAria": "Jednotka: {{unit}}"
+    "unitAria": "Jednotka: {{unit}}",
+    "supportSection": "Podpora / Hlášení chyb",
+    "supportSectionDesc": "Exporty na jedno kliknutí nahrazují samostatné shromažďování snímku ladění, souboru protokolu a databáze při hlášení problémů.",
+    "exportForGitHub": "Exportujte balíček podpory pro GitHub",
+    "exportForGitHubButton": "Export pro GitHub",
+    "exportForGitHubDesc": "Zahrnuje snímek ladění a soubory protokolu v jednom zipu. Bezpečné připojení k veřejným problémům GitHub.",
+    "exportForDeveloper": "Balíček podpory exportu pro vývojáře",
+    "exportForDeveloperButton": "Export pro vývojáře",
+    "exportForDeveloperWarning": "Zahrnuje vaši úplnou databázi, která může obsahovat uložená hesla (přihlašovací údaje místnosti MeshCore, nastavení MQTT atd.). Sdílejte tento balíček soukromě pouze se správci – nikdy na veřejném GitHub.",
+    "exportSupportBundleFailed": "Nelze exportovat balíček podpory: {{message}}"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -503,7 +512,11 @@
     },
     "waitingMessagesQueued": "{{count}} zprávy ve frontě v rádiu",
     "waitingMessagesSyncProgress": "Synchronizace {{processed}} / {{total}} z rádia…",
-    "waitingMessagesSyncProgressIndeterminate": "Synchronizace zpráv ve frontě z rádia..."
+    "waitingMessagesSyncProgressIndeterminate": "Synchronizace zpráv ve frontě z rádia...",
+    "waitingMessagesSilentDrain": "Načítání zpráv ve frontě v rádiu…",
+    "waitingMessagesDrainDeferred": "Synchronizace zpráv byla pozastavena, když je rádio zaneprázdněné (správce/sledování)…",
+    "waitingMessagesSerialHint": "Sériové rozhraní USB zpracovává jeden příkaz najednou; zprávy mohou dorazit v malých dávkách.",
+    "waitingMessagesSyncFailed": "Synchronizace zpráv ve frontě se nezdařila: {{message}}"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -962,7 +975,8 @@
       "txQueueDrops": "{{name}}: odchozí pakety byly vyhozeny ({{count}} ve frontě)",
       "txQueueDropsHint": "Obvykle je to způsobeno stále povoleným mrtvým rozhraním TCP. Zakažte nedosažitelné rozbočovače pro zastavení přetečení fronty.",
       "suppressed": "{{count}} podobné řádky protokolu postranního vozíku byly nedávno potlačeny."
-    }
+    },
+    "reticulumSidecarBundledMissing": "V této instalaci chybí přibalený Reticulum sidecar. Upgradujte na novější verzi nebo nahlaste problém – sestavení ze zdroje není v balených instalacích k dispozici."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

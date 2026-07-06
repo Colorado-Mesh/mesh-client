@@ -250,6 +250,9 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       pickUploadFile: async () => null,
       saveDownloadFile: async () => ({ success: false }),
     },
+    support: {
+      exportBundle: async () => null,
+    },
     log: {
       getPath: async () => '/tmp/dev-browser.log',
       getRecentLines: async () => [],

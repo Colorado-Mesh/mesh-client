@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "Beperk het aantal geladen berichten {{count}} berichten",
     "capStoredMessagesCountAria": "Beperk opgeslagen berichten, bewaar de nieuwste {{count}} berichten",
     "maxDistanceAria": "Maximale afstand: {{value}}",
-    "unitAria": "Eenheid: {{unit}}"
+    "unitAria": "Eenheid: {{unit}}",
+    "supportSection": "Ondersteuning / Bugrapporten",
+    "supportSectionDesc": "Exporteren met één klik vervangt het afzonderlijk verzamelen van de debug-snapshot, het logbestand en de database bij het melden van problemen.",
+    "exportForGitHub": "Ondersteuningsbundel voor GitHub exporteren",
+    "exportForGitHubButton": "Exporteren voor GitHub",
+    "exportForGitHubDesc": "Inclusief debug-snapshot en logbestanden in één zip. Veilig om toe te voegen aan openbare GitHub-problemen.",
+    "exportForDeveloper": "Ondersteuningsbundel exporteren voor ontwikkelaar",
+    "exportForDeveloperButton": "Exporteren voor ontwikkelaar",
+    "exportForDeveloperWarning": "Omvat uw volledige database, die mogelijk opgeslagen wachtwoorden bevat (MeshCore-ruimtegegevens, MQTT-instellingen, enz.). Deel deze bundel alleen privé met beheerders, nooit op openbare GitHub.",
+    "exportSupportBundleFailed": "Kan ondersteuningsbundel niet exporteren: {{message}}"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -503,7 +512,11 @@
     },
     "waitingMessagesQueued": "{{count}} bericht(en) in de wachtrij op de radio",
     "waitingMessagesSyncProgress": "{{processed}} / {{total}} synchroniseren vanaf radio...",
-    "waitingMessagesSyncProgressIndeterminate": "Berichten in de wachtrij van de radio worden gesynchroniseerd..."
+    "waitingMessagesSyncProgressIndeterminate": "Berichten in de wachtrij van de radio worden gesynchroniseerd...",
+    "waitingMessagesSilentDrain": "Berichten ophalen die in de wachtrij staan op de radio…",
+    "waitingMessagesDrainDeferred": "Berichtensynchronisatie gepauzeerd terwijl de radio bezet is (beheer/trace)…",
+    "waitingMessagesSerialHint": "USB-serieel verwerkt één opdracht tegelijk; berichten kunnen in kleine batches aankomen.",
+    "waitingMessagesSyncFailed": "Kan berichten in de wachtrij niet synchroniseren: {{message}}"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -962,7 +975,8 @@
       "txQueueDrops": "{{name}}: uitgaande pakketten verwijderd ({{count}} in de wachtrij)",
       "txQueueDropsHint": "Meestal veroorzaakt door een dode TCP-interface die nog steeds is ingeschakeld. Schakel onbereikbare hubs uit om wachtrijoverloop te stoppen.",
       "suppressed": "{{count}} vergelijkbare zijspanlogregels die onlangs zijn onderdrukt."
-    }
+    },
+    "reticulumSidecarBundledMissing": "Bij deze installatie ontbreekt het gebundelde Reticulum sidecar. Upgrade naar een nieuwere release of rapporteer het probleem: bouwen vanaf de broncode is niet beschikbaar in pakketinstallaties."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

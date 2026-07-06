@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "Yüklenen mesajları sınırla {{count}} mesajları",
     "capStoredMessagesCountAria": "Saklanan mesajları sınırlandırın, en yeni {{count}} mesajlarını saklayın",
     "maxDistanceAria": "Maksimum mesafe: {{value}}",
-    "unitAria": "Birim: {{unit}}"
+    "unitAria": "Birim: {{unit}}",
+    "supportSection": "Destek / Hata raporları",
+    "supportSectionDesc": "Tek tıklamayla dışa aktarmalar, sorunları bildirirken hata ayıklama anlık görüntüsünü, günlük dosyasını ve veritabanını ayrı ayrı toplamanın yerini alır.",
+    "exportForGitHub": "GitHub için destek paketini dışa aktar",
+    "exportForGitHubButton": "GitHub için dışa aktarma",
+    "exportForGitHubDesc": "Hata ayıklama anlık görüntüsünü ve günlük dosyalarını tek bir zip dosyasında içerir. Herkese açık GitHub sorunlarına eklemek güvenlidir.",
+    "exportForDeveloper": "Geliştirici için destek paketini dışa aktarın",
+    "exportForDeveloperButton": "Geliştirici için Dışa Aktarma",
+    "exportForDeveloperWarning": "Kaydedilmiş şifreleri (MeshCore oda kimlik bilgileri, MQTT ayarları vb.) içerebilecek tam veritabanınızı içerir. Bu paketi yalnızca bakımcılarla özel olarak paylaşın; asla herkese açık GitHub'da paylaşmayın.",
+    "exportSupportBundleFailed": "Destek paketi dışa aktarılamadı: {{message}}"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -503,7 +512,11 @@
     },
     "waitingMessagesQueued": "{{count}} radyoda kuyrukta bekleyen mesaj(lar)",
     "waitingMessagesSyncProgress": "{{processed}} / {{total}} radyodan senkronize ediliyor…",
-    "waitingMessagesSyncProgressIndeterminate": "Kuyruktaki mesajlar radyodan senkronize ediliyor…"
+    "waitingMessagesSyncProgressIndeterminate": "Kuyruktaki mesajlar radyodan senkronize ediliyor…",
+    "waitingMessagesSilentDrain": "Radyoda sıraya alınan mesajlar getiriliyor…",
+    "waitingMessagesDrainDeferred": "Telsiz meşgulken mesaj senkronizasyonu duraklatıldı (yönetici/izleme)…",
+    "waitingMessagesSerialHint": "USB seri, aynı anda bir komutu işler; mesajlar küçük gruplar halinde gelebilir.",
+    "waitingMessagesSyncFailed": "Sıraya alınan iletiler senkronize edilemedi: {{message}}"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -962,7 +975,8 @@
       "txQueueDrops": "{{name}}: giden paketler düştü ({{count}} kuyruğa alındı)",
       "txQueueDropsHint": "Genellikle ölü bir TCP arayüzü hala etkindir. Kuyruk taşmasını durdurmak için erişilemeyen hub'ları devre dışı bırakın.",
       "suppressed": "{{count}} benzer sepet günlük satırları yakın zamanda bastırıldı."
-    }
+    },
+    "reticulumSidecarBundledMissing": "Bu kurulumda birlikte verilen Reticulum sidecar eksik. Daha yeni bir sürüme yükseltin veya sorunu bildirin; kaynaktan derleme, paketli kurulumlarda mevcut değildir."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

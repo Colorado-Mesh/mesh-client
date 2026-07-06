@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "Обмеження завантажених повідомлень: {{count}} повідомлень",
     "capStoredMessagesCountAria": "Обмежити збережені повідомлення, зберегти найновіші {{count}} повідомлення",
     "maxDistanceAria": "Максимальна відстань: {{value}}",
-    "unitAria": "Одиниця: {{unit}}"
+    "unitAria": "Одиниця: {{unit}}",
+    "supportSection": "Підтримка/звіти про помилки",
+    "supportSectionDesc": "Експорт одним клацанням миші замінює збирання знімка налагодження, файлу журналу та бази даних окремо під час звітування про проблеми.",
+    "exportForGitHub": "Експорт пакета підтримки для GitHub",
+    "exportForGitHubButton": "Експорт для GitHub",
+    "exportForGitHubDesc": "Містить знімок налагодження та файли журналу в одному архіві. Безпечно додавати до загальнодоступних проблем GitHub.",
+    "exportForDeveloper": "Експорт пакета підтримки для розробника",
+    "exportForDeveloperButton": "Експорт для розробника",
+    "exportForDeveloperWarning": "Включає вашу повну базу даних, яка може містити збережені паролі (облікові дані кімнати MeshCore, налаштування MQTT тощо). Поділіться цим набором приватно лише з супроводжуючими — ніколи на публічному GitHub.",
+    "exportSupportBundleFailed": "Не вдалося експортувати пакет підтримки: {{message}}"
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -503,7 +512,11 @@
     },
     "waitingMessagesQueued": "{{count}} повідомлення в черзі на радіо",
     "waitingMessagesSyncProgress": "Синхронізація {{processed}} / {{total}} з радіо…",
-    "waitingMessagesSyncProgressIndeterminate": "Синхронізація чергових повідомлень з радіо…"
+    "waitingMessagesSyncProgressIndeterminate": "Синхронізація чергових повідомлень з радіо…",
+    "waitingMessagesSilentDrain": "Отримання повідомлень із черги на радіо…",
+    "waitingMessagesDrainDeferred": "Синхронізацію повідомлень призупинено, коли радіостанція зайнята (адмін/трасування)…",
+    "waitingMessagesSerialHint": "Послідовний USB обробляє одну команду за раз; повідомлення можуть надходити невеликими партіями.",
+    "waitingMessagesSyncFailed": "Не вдалося синхронізувати повідомлення в черзі: {{message}}"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -962,7 +975,8 @@
       "txQueueDrops": "{{name}}: вихідні пакети скинуто ({{count}} в черзі)",
       "txQueueDropsHint": "Зазвичай це викликано тим, що непрацездатний інтерфейс TCP все ще увімкнено. Вимкніть недоступні концентратори, щоб зупинити переповнення черги.",
       "suppressed": "{{count}} аналогічні лінії журналу коляски нещодавно придушено."
-    }
+    },
+    "reticulumSidecarBundledMissing": "У цій інсталяції відсутній Reticulum sidecar. Оновіть до новішого випуску або повідомте про проблему — збірка з вихідного коду недоступна в пакетних встановленнях."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",

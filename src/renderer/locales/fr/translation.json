@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "Limiter les messages chargés {{count}} messages",
     "capStoredMessagesCountAria": "Limiter les messages stockés, conserver les messages {{count}} les plus récents",
     "maxDistanceAria": "Distance max. : {{value}}",
-    "unitAria": "Unité : {{unit}}"
+    "unitAria": "Unité : {{unit}}",
+    "supportSection": "Assistance / Rapports de bugs",
+    "supportSectionDesc": "Les exportations en un clic remplacent la collecte séparée de l'instantané de débogage, du fichier journal et de la base de données lors du signalement des problèmes.",
+    "exportForGitHub": "Pack de support d'exportation pour GitHub",
+    "exportForGitHubButton": "Exporter pour GitHub",
+    "exportForGitHubDesc": "Inclut un instantané de débogage et des fichiers journaux dans un seul zip. Attachement sécurisé aux problèmes publics GitHub.",
+    "exportForDeveloper": "Offre groupée de support à l'exportation pour les développeurs",
+    "exportForDeveloperButton": "Exporter pour le développeur",
+    "exportForDeveloperWarning": "Inclut votre base de données complète, qui peut contenir des mots de passe enregistrés (identifiants de salle MeshCore, paramètres MQTT, etc.). Partagez ce bundle en privé avec les responsables uniquement – ​​jamais sur GitHub public.",
+    "exportSupportBundleFailed": "Impossible d'exporter le pack de support : {{message}}"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -503,7 +512,11 @@
     },
     "waitingMessagesQueued": "{{count}} message(s) en file d'attente à la radio",
     "waitingMessagesSyncProgress": "Synchronisation de {{processed}} / {{total}} à partir de la radio…",
-    "waitingMessagesSyncProgressIndeterminate": "Synchronisation des messages en file d'attente à partir de la radio…"
+    "waitingMessagesSyncProgressIndeterminate": "Synchronisation des messages en file d'attente à partir de la radio…",
+    "waitingMessagesSilentDrain": "Récupération des messages en file d'attente à la radio…",
+    "waitingMessagesDrainDeferred": "Synchronisation des messages interrompue pendant que la radio est occupée (administration/trace)…",
+    "waitingMessagesSerialHint": "La série USB gère une commande à la fois ; les messages peuvent arriver par petits lots.",
+    "waitingMessagesSyncFailed": "Échec de la synchronisation des messages en file d'attente : {{message}}"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -962,7 +975,8 @@
       "txQueueDrops": "{{name}} : paquets sortants abandonnés ({{count}} en file d'attente)",
       "txQueueDropsHint": "Généralement causé par une interface TCP morte toujours activée. Désactivez les concentrateurs inaccessibles pour arrêter le débordement de la file d'attente.",
       "suppressed": "{{count}} lignes de bûches de side-car similaires supprimées récemment."
-    }
+    },
+    "reticulumSidecarBundledMissing": "Cette installation ne dispose pas du side-car Reticulum fourni. Effectuez une mise à niveau vers une version plus récente ou signalez le problème : la création à partir des sources n'est pas disponible dans les installations packagées."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",

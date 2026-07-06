@@ -26,11 +26,11 @@ Steps to reproduce the behavior:
 A clear and concise description of what you expected to happen.
 
 **Screenshots**
-If applicable, add screenshots to help explain your problem as well as the App->Copy Debug Snapshot paste (remove any secrets if any).
+If applicable, add screenshots to help explain your problem.
 
 **Desktop (please complete the following information):**
 
-- OS: [e.g. macOS 14, Windows 11, Ubuntu 24.04]
+- OS: [e.g. macOS 14, Windows 11, Ubuntu 24.04, Flatpak]
 - App version: [e.g. 5.0.1]
 
 **Connection type (check all that apply):**
@@ -43,10 +43,11 @@ If applicable, add screenshots to help explain your problem as well as the App->
 **Steps already tried**
 Describe any troubleshooting steps you've already attempted.
 
-**Logs**
-If applicable, paste relevant log output from the Log panel or main process terminal. For sensitive data, attach as a file or redact the content.
+**Diagnostic bundle**
 
-For Chat, unread badge, or “connected but UI stale” issues, also paste the JSON from **App → Copy Debug Snapshot** (see [Troubleshooting — Copy Debug Snapshot](https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md#reporting-bugs-copy-debug-snapshot-app-tab)). Redact `myNodeNum` if you prefer.
+Attach the zip from **App → Support / Bug reports → Export for GitHub** (includes debug snapshot + logs). See [Troubleshooting — Reporting bugs](https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md#reporting-bugs-export-for-github-app-tab).
+
+**Do not** attach **Export for Developer** or `mesh-client.db` to this public issue — the database may contain saved passwords. Share the developer bundle only via a private channel if a maintainer requests it.
 
 **Additional context**
 Add any other context about the problem here.

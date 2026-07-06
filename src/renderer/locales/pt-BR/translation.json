@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "Limitar mensagens carregadas {{count}} mensagens",
     "capStoredMessagesCountAria": "Limite as mensagens armazenadas, mantenha as mensagens {{count}} mais recentes",
     "maxDistanceAria": "Distância máxima: {{value}}",
-    "unitAria": "Unidade: {{unit}}"
+    "unitAria": "Unidade: {{unit}}",
+    "supportSection": "Relatórios de suporte/bug",
+    "supportSectionDesc": "As exportações com um clique substituem a coleta separada do instantâneo de depuração, do arquivo de log e do banco de dados ao relatar problemas.",
+    "exportForGitHub": "Exportar pacote de suporte para GitHub",
+    "exportForGitHubButton": "Exportar para GitHub",
+    "exportForGitHubDesc": "Inclui instantâneo de depuração e arquivos de log em um zip. É seguro anexar a problemas públicos do GitHub.",
+    "exportForDeveloper": "Exportar pacote de suporte para desenvolvedor",
+    "exportForDeveloperButton": "Exportar para desenvolvedor",
+    "exportForDeveloperWarning": "Inclui seu banco de dados completo, que pode conter senhas salvas (credenciais de sala MeshCore, configurações MQTT, etc.). Compartilhe este pacote de forma privada apenas com os mantenedores — nunca no GitHub público.",
+    "exportSupportBundleFailed": "Não foi possível exportar o pacote de suporte: {{message}}"
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -503,7 +512,11 @@
     },
     "waitingMessagesQueued": "{{count}} mensagem(ões) na fila no rádio",
     "waitingMessagesSyncProgress": "Sincronizando {{processed}} / {{total}} do rádio...",
-    "waitingMessagesSyncProgressIndeterminate": "Sincronizando mensagens na fila do rádio..."
+    "waitingMessagesSyncProgressIndeterminate": "Sincronizando mensagens na fila do rádio...",
+    "waitingMessagesSilentDrain": "Buscando mensagens enfileiradas no rádio…",
+    "waitingMessagesDrainDeferred": "Sincronização de mensagens pausada enquanto o rádio está ocupado (administração/rastreamento)…",
+    "waitingMessagesSerialHint": "A serial USB lida com um comando por vez; as mensagens podem chegar em pequenos lotes.",
+    "waitingMessagesSyncFailed": "Falha ao sincronizar mensagens na fila: {{message}}"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -962,7 +975,8 @@
       "txQueueDrops": "{{name}}: pacotes de saída descartados ({{count}} na fila)",
       "txQueueDropsHint": "Geralmente causado por uma interface TCP inativa ainda ativada. Desative os hubs inacessíveis para interromper o estouro da fila.",
       "suppressed": "{{count}} linhas de registro de sidecar semelhantes foram suprimidas recentemente."
-    }
+    },
+    "reticulumSidecarBundledMissing": "Esta instalação não contém o sidecar Reticulum incluído. Atualize para uma versão mais recente ou relate o problema – a compilação a partir do código-fonte não está disponível em instalações empacotadas."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",

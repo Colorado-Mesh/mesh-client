@@ -76,7 +76,7 @@ Also useful:
   - [Diagnostics](diagnostics.md) — LoRa routing/RF (Meshtastic & MeshCore), foreign LoRa overhear (Meshtastic tab), Reticulum interface audit; protocol-scoped row filtering
   - [Key backup and cryptography](key-backup-and-crypto.md) (per-node full key pair backup; MT → MC migration)
   - [Troubleshooting](troubleshooting.md)
-  - Copy Debug Snapshot / stuck Chat — [Troubleshooting](troubleshooting.md#reporting-bugs-copy-debug-snapshot-app-tab)
+  - Export for GitHub / stuck Chat — [Troubleshooting](troubleshooting.md#reporting-bugs-export-for-github-app-tab)
   - [Localization & Languages](localization.md)
   - [Meshtastic: mesh vs local client telemetry](meshtastic-telemetry-local-client.md)
 - **Project**

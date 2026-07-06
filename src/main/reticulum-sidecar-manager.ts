@@ -173,7 +173,9 @@ export class ReticulumSidecarManager extends EventEmitter {
       throw new Error(msg);
     }
     if (!fs.existsSync(binary)) {
-      const msg = `Reticulum sidecar binary not found: ${binary}. Run \`pnpm run reticulum:sidecar:build\` from the repo root (requires Rust).`;
+      const msg = app.isPackaged
+        ? `RETICULUM_SIDECAR_BUNDLED_MISSING: packaged sidecar binary not found at ${binary}`
+        : `Reticulum sidecar binary not found: ${binary}. Run \`pnpm run reticulum:sidecar:build\` from the repo root (requires Rust).`;
       this._status = { running: false, port: 0, pid: null, lastError: msg };
       throw new Error(msg);
     }

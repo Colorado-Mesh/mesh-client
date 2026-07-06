@@ -8,6 +8,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -98,6 +99,22 @@ function main() {
 
   for (const name of [x64Deb, arm64Deb, x64Rpm, arm64Rpm]) {
     assertMinSize(name, path.join(releaseDir, name), MIN_DEB_RPM_BYTES);
+  }
+
+  for (const [label, dirName] of [
+    ['x64', 'linux-unpacked'],
+    ['arm64', 'linux-arm64-unpacked'],
+  ]) {
+    const bundleRoot = path.join(releaseDir, dirName);
+    if (!existsSync(bundleRoot)) {
+      continue;
+    }
+    assertBundledReticulumSidecarInBundle({
+      label: `${label} bundled Reticulum sidecar`,
+      platform: 'linux',
+      bundleRoot,
+      fail,
+    });
   }
 
   const version = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf-8')).version;

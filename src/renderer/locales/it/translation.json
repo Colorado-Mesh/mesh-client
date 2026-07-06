@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "Limita i messaggi caricati {{count}} messaggi",
     "capStoredMessagesCountAria": "Limita i messaggi memorizzati, mantieni i messaggi {{count}} più recenti",
     "maxDistanceAria": "Distanza max: {{value}}",
-    "unitAria": "Unità: {{unit}}"
+    "unitAria": "Unità: {{unit}}",
+    "supportSection": "Supporto/Segnalazioni sui bug",
+    "supportSectionDesc": "Le esportazioni con un clic sostituiscono la raccolta separata di snapshot di debug, file di registro e database durante la segnalazione dei problemi.",
+    "exportForGitHub": "Esporta pacchetto di supporto per GitHub",
+    "exportForGitHubButton": "Esporta per GitHub",
+    "exportForGitHubDesc": "Include snapshot di debug e file di registro in un unico zip. Sicuro da allegare ai problemi pubblici di GitHub.",
+    "exportForDeveloper": "Esporta pacchetto di supporto per sviluppatore",
+    "exportForDeveloperButton": "Esporta per sviluppatore",
+    "exportForDeveloperWarning": "Include il database completo, che può contenere password salvate (credenziali della sala MeshCore, impostazioni MQTT, ecc.). Condividi questo pacchetto in privato solo con i manutentori, mai su GitHub pubblico.",
+    "exportSupportBundleFailed": "Impossibile esportare il pacchetto di supporto: {{message}}"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -503,7 +512,11 @@
     },
     "waitingMessagesQueued": "{{count}} messaggio/i in coda alla radio",
     "waitingMessagesSyncProgress": "Sincronizzazione di {{processed}} / {{total}} dalla radio...",
-    "waitingMessagesSyncProgressIndeterminate": "Sincronizzazione dei messaggi in coda dalla radio..."
+    "waitingMessagesSyncProgressIndeterminate": "Sincronizzazione dei messaggi in coda dalla radio...",
+    "waitingMessagesSilentDrain": "Recupero dei messaggi in coda alla radio…",
+    "waitingMessagesDrainDeferred": "Sincronizzazione dei messaggi in pausa mentre la radio è occupata (amministrazione/traccia)...",
+    "waitingMessagesSerialHint": "La seriale USB gestisce un comando alla volta; i messaggi possono arrivare in piccoli lotti.",
+    "waitingMessagesSyncFailed": "Impossibile sincronizzare i messaggi in coda: {{message}}"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -962,7 +975,8 @@
       "txQueueDrops": "{{name}}: pacchetti in uscita scartati ({{count}} in coda)",
       "txQueueDropsHint": "Di solito causato da un'interfaccia TCP morta ancora abilitata. Disabilita gli hub non raggiungibili per interrompere l'overflow della coda.",
       "suppressed": "{{count}} righe di registro sidecar simili soppresse di recente."
-    }
+    },
+    "reticulumSidecarBundledMissing": "In questa installazione manca il sidecar Reticulum in bundle. Esegui l'upgrade a una versione più recente o segnala il problema: la creazione dal codice sorgente non è disponibile nelle installazioni in pacchetto."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",

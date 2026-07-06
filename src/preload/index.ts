@@ -1036,6 +1036,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }>,
   },
 
+  // ─── Support / bug-report bundles ────────────────────────────────
+  support: {
+    exportBundle: (mode: 'github' | 'developer', debugSnapshotJson: string) =>
+      ipcRenderer.invoke('support:exportBundle', mode, debugSnapshotJson),
+  },
+
   // ─── Log panel ───────────────────────────────────────────────────
   log: {
     getPath: (): Promise<string> => ipcRenderer.invoke('log:getPath'),

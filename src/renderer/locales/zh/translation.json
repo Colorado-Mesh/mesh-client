@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "限制加载的消息 {{count}} 消息",
     "capStoredMessagesCountAria": "限制存储的消息，保留最新的 {{count}} 消息",
     "maxDistanceAria": "最大距离： {{value}}",
-    "unitAria": "单位： {{unit}}"
+    "unitAria": "单位： {{unit}}",
+    "supportSection": "支持/错误报告",
+    "supportSectionDesc": "一键导出取代了报告问题时单独收集调试快照、日志文件和数据库。",
+    "exportForGitHub": "导出 GitHub 的支持包",
+    "exportForGitHubButton": "导出至 GitHub",
+    "exportForGitHubDesc": "在一个 zip 中包含调试快照和日志文件。可以安全地附加到公共 GitHub 问题。",
+    "exportForDeveloper": "为开发人员导出支持包",
+    "exportForDeveloperButton": "为开发者导出",
+    "exportForDeveloperWarning": "包括您的完整数据库，其中可能包含保存的密码（MeshCore 房间凭据、MQTT 设置等）。仅与维护者私下共享此捆绑包 - 切勿在公共 GitHub 上共享。",
+    "exportSupportBundleFailed": "无法导出支持包：{{message}}"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -503,7 +512,11 @@
     },
     "waitingMessagesQueued": "{{count}}在无线电上排队的消息",
     "waitingMessagesSyncProgress": "正在从收音机同步{{processed}}/{{total}} …",
-    "waitingMessagesSyncProgressIndeterminate": "正在同步来自无线电的排队消息……"
+    "waitingMessagesSyncProgressIndeterminate": "正在同步来自无线电的排队消息……",
+    "waitingMessagesSilentDrain": "正在获取无线电中排队的消息...",
+    "waitingMessagesDrainDeferred": "无线电繁忙时消息同步暂停（管理/跟踪）...",
+    "waitingMessagesSerialHint": "USB串行一次处理一个命令；消息可能会小批量到达。",
+    "waitingMessagesSyncFailed": "无法同步排队消息：{{message}}"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -962,7 +975,8 @@
       "txQueueDrops": "{{name}} ：出站数据包已丢弃（ {{count}}已排队）",
       "txQueueDropsHint": "通常是由死TCP接口仍处于启用状态引起的。禁用无法访问的集线器以停止队列溢出。",
       "suppressed": "{{count}}最近取消了类似的侧车日志行。"
-    }
+    },
+    "reticulumSidecarBundledMissing": "此安装缺少捆绑的 Reticulum sidecar。升级到较新的版本或报告问题 - 在打包安装中无法从源代码构建。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",

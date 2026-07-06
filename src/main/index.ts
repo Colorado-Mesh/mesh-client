@@ -116,6 +116,11 @@ import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
 import { assertReticulumAttachmentPathJailed } from './reticulum-attachment-path';
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
+import {
+  buildSupportBundleZip,
+  defaultSupportBundleFilename,
+  isSupportBundleMode,
+} from './support-bundle';
 import type { TakServerManager } from './tak-server-manager';
 import { getCheckNowFromMenu, initUpdater } from './updater';
 import { assertIpcSender, validateIpcSender } from './validate-ipc-sender';
@@ -4302,6 +4307,42 @@ ipcMain.handle('log:export', async (event) => {
   } catch (err) {
     console.error(
       '[IPC] log:export failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('support:exportBundle', async (event, mode: unknown, debugSnapshotJson: unknown) => {
+  if (!validateIpcSender(event)) {
+    throw new Error('IPC sender validation failed');
+  }
+  if (!isSupportBundleMode(mode)) {
+    throw new Error('support:exportBundle: invalid mode');
+  }
+  if (typeof debugSnapshotJson !== 'string') {
+    throw new Error('support:exportBundle: debugSnapshotJson must be a string');
+  }
+  try {
+    if (mode === 'developer' && !getDbForIpc('support:exportBundle')) return null;
+    if (!mainWindow) return null;
+    const title =
+      mode === 'github'
+        ? 'Export support bundle for GitHub'
+        : 'Export support bundle for developer';
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title,
+      defaultPath: defaultSupportBundleFilename(mode),
+      filters: [{ name: 'ZIP archive', extensions: ['zip'] }],
+    });
+    if (!result.canceled && result.filePath) {
+      await buildSupportBundleZip(result.filePath, mode, debugSnapshotJson);
+      return result.filePath;
+    }
+    return null;
+  } catch (err) {
+    console.error(
+      '[IPC] support:exportBundle failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;

@@ -28,11 +28,24 @@ Start here for log analysis, bug reports, and general connection debugging.
 
 Open the **Log** panel (right rail), enable **debug** if needed, reproduce the problem, then click **Analyze**. The app scans recent buffered log lines for patterns (BLE, serial, TCP, MQTT, handshake timeouts, etc.) and lists **suggested next steps**. This complements export/delete: use it before filing an issue so you have concrete log context. Analysis is **heuristic**; treat recommendations as hints, not guarantees.
 
-### Reporting bugs: **Copy Debug Snapshot** (App tab)
+### Reporting bugs: **Export for GitHub** (App tab)
 
-For Chat, unread badges, or “connected but UI looks stale” reports, use **App → Data Management → Copy Debug Snapshot** before opening a GitHub issue. The button copies a JSON support bundle to the clipboard (via Electron clipboard IPC, not the browser API).
+Before opening a GitHub issue, use **App → Support / Bug reports → Export for GitHub**. This writes one zip with the debug snapshot JSON and application log file(s) — the same artifacts maintainers previously asked for in three separate steps.
 
-**What to read first (ignore misleading `offline-*` ids):**
+**Do not attach Export for Developer or `mesh-client.db` to public GitHub issues.** The developer bundle includes your SQLite database, which may contain **saved passwords** (MeshCore room/repeater credentials, MQTT settings, etc.). Use **Export for Developer** only when a maintainer asks for it and share via a **private channel** (email, Discord DM, etc.).
+
+Works on macOS, Windows, Linux (.deb / .rpm / AppImage), and Flatpak. Local data paths:
+
+| Install                   | Log / DB location                                            |
+| ------------------------- | ------------------------------------------------------------ |
+| macOS                     | `~/Library/Application Support/mesh-client/`                 |
+| Windows                   | `%APPDATA%\mesh-client\`                                     |
+| Linux (native / AppImage) | `~/.config/mesh-client/`                                     |
+| Flatpak                   | `~/.var/app/org.coloradomesh.MeshClient/config/mesh-client/` |
+
+**Copy Debug Snapshot** (clipboard JSON) and **Log → Export** remain available under Data Management and the Log panel.
+
+**What to read first in `debug-snapshot.json` (ignore misleading `offline-*` ids):**
 
 | Field                                    | Healthy connected example | Meaning                           |
 | ---------------------------------------- | ------------------------- | --------------------------------- |
@@ -49,11 +62,12 @@ The top-level **`legend`** explains that ids like `offline-meshcore` are **inter
 - `connectIdentityId` — connected radio/MQTT identity.
 - `uiStoreIdentityId` — bucket Chat and Nodes read from.
 - `identitySplit: true` while transport is connected — **suspicious** (live ingress and UI may disagree).
-- `ui.chatPanelFrozen` + `frozenMessageCount` lagging `liveResolvedMessageCount` — Chat list may be frozen while messages still arrive.
+- `ui.chatPanelFrozen` + `frozenMessageCount` lagging `liveResolvedMessageCount` — **legacy builds only** (Chat freeze removed in newer releases); still useful when analyzing snapshots from older versions.
+- `ui.waitingMessagesSilentDrainActive` / `ui.waitingMessagesDrainDeferred` — MeshCore incremental drain in progress or paused behind admin/trace (serial may show small batches).
 
-**Automatic warning codes** in `warnings[]`: `identitySplit`, `staleResolvedBucket`, `chatPanelFrozen`, `connectedNoPrimaryMessages`, `windowHiddenOnChat`.
+**Automatic warning codes** in `warnings[]`: `identitySplit`, `staleResolvedBucket`, `chatPanelFrozen` (legacy builds), `connectedNoPrimaryMessages`, `windowHiddenOnChat`.
 
-Attach the JSON (redact `myNodeNum` if you prefer) alongside **Log → Export** when possible.
+Attach the GitHub report zip (or paste `debug-snapshot.json` from it; redact `myNodeNum` if you prefer). Do **not** attach the developer bundle or `mesh-client.db` to this public issue.
 
 ## Development and building
 
@@ -647,7 +661,7 @@ Startup maintenance can delete stale MeshCore contacts by age. Important details
 **Common causes**:
 
 - **Large contact/repeater lists (1,000+)** — list tabs virtualize rows, but USB serial still serializes companion RPCs; prefer **Nodes → search** for one repeater instead of scrolling the full Repeaters table.
-- **Queued public messages (Sync now)** — MsgWaiting backlog is drained **silently in the background** after connect and when the radio pushes event 131 (including after you send). The amber progress banner appears only when you click **Sync now** in Chat and the radio confirms a non-empty queue. Large backlogs may take a minute on manual sync; wait for the progress banner to finish before switching tabs during heavy sync.
+- **Queued public messages (Sync now)** — MsgWaiting backlog is drained **incrementally in the background** after connect and when the radio pushes event 131 (including after you send). Chat and Rooms show an **amber status strip** while silent auto-drain runs or when drain is deferred behind repeater admin/trace work. The determinate progress banner appears when you click **Sync now** and the radio confirms a non-empty queue. Large backlogs may take a minute on manual sync; wait for the progress banner to finish before switching tabs during heavy sync.
 - **Multi-hop repeater RPCs** (Neighbors, Status, telemetry) share one serialized USB serial queue. Retrying rapidly or querying distant repeaters (8+ hops) can block the link for up to **120 seconds** per request; queued pings up to **180s** each.
 - **Concurrent Ping + Status** — MeshCore allows only **one traceroute at a time** on the RF link; multiple pings are queued serially. Status/Neighbors/Sensors wait for an in-progress ping to finish before using the companion queue (see [Serialized traceroutes](meshcore-meshtastic-parity.md#serialized-traceroutes-protocol-requirement)).
 
@@ -790,9 +804,10 @@ AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, and RNode Wi‑Fi
 0. **Identity wizard**: click **Start stack** at the top of the Reticulum Connection panel before generating or importing a mnemonic. The sidecar must be running for `reticulum:proxyGet` / `proxyPost` identity routes.
 1. **Dev — binary missing**: build once from repo root: `pnpm run reticulum:sidecar:build` (requires [Rust](https://rustup.rs/); see [development-environment.md](development-environment.md#reticulum-sidecar-optional)). Electron **Start stack** can auto-run `cargo build` on first click, but you need `cargo` on `PATH`. Error text `sidecar binary not found` means `reticulum-sidecar/target/debug/mesh-client-reticulum` does not exist yet.
 2. **Dev — run / health**: `pnpm run reticulum:sidecar:dev` or confirm `curl http://127.0.0.1:19437/api/v1/status` after **Start stack**.
-3. **Packaged app**: confirm `mesh-client-reticulum` exists under the app resources (`reticulum-sidecar/` beside the executable). WoA needs the ARM64 sidecar artifact, not x64.
-4. **macOS Gatekeeper**: unsigned local sidecar builds may need `xattr -cr` on the binary or ad-hoc signing for dev.
-5. **Port conflict**: sidecar picks an ephemeral port; stale processes under `~/Library/Application Support/mesh-client/reticulum/` are rare — quit the app fully and retry.
+3. **Packaged app — sidecar missing from installer**: older Electron releases (before CI bundled the sidecar) ship without `mesh-client-reticulum` under `resources/reticulum-sidecar/`; the UI shows a message about a missing bundled sidecar — **upgrade to a newer release** (or use Flatpak on Linux). WoA needs the **arm64** installer (`Mesh-client Setup {version}-arm64.exe`) with an **arm64** sidecar inside, not the x64 binary.
+4. **Packaged app — verify install**: confirm `mesh-client-reticulum` (or `.exe` on Windows) exists under the app resources (`reticulum-sidecar/` beside the executable).
+5. **macOS Gatekeeper**: unsigned local sidecar builds may need `xattr -cr` on the binary or ad-hoc signing for dev.
+6. **Port conflict**: sidecar picks an ephemeral port; stale processes under `~/Library/Application Support/mesh-client/reticulum/` are rare — quit the app fully and retry.
 
 Keep Rust current with `pnpm run update` (runs `rustup update` and rebuilds the sidecar when `cargo` is available).
 
@@ -955,10 +970,48 @@ Live packets were written to the **connected identity** store bucket while Chat 
 
 1. Update to a build that includes the identity-bucket fix (merge on connect, stricter offline fallback, reactive identity resolution).
 2. **Disconnect and reconnect**, or quit and reopen the app so offline slices merge into the connected identity.
-3. If Chat is still stale: **App → Copy Debug Snapshot** and attach to your issue; check `warnings` and `sessionSummary`.
+3. If Chat is still stale: use **App → Support / Bug reports → Export for GitHub** and attach the zip to your issue; check `warnings` and `sessionSummary` in `debug-snapshot.json`.
 4. As a last resort before clearing data: **App → Export Database**, then try **Import (merge)** after updating — do not downgrade the app after migrations.
 
 This is **not** SQLite corruption when messages persist in the DB during the stuck window; it was a UI store routing mismatch.
+
+### Chat freeze burst: unread badges move but list jumps when opening Chat (fixed in newer builds)
+
+**Symptoms**
+
+- While on **Connection**, **Nodes**, or **Log**, sidebar unread badges update for new traffic.
+- Opening **Chat** shows several missed messages at once ("flood in"), even though RF/MQTT delivery was fine on another radio.
+
+**Cause (5.20.x and earlier)**
+
+Chat used a freeze-on-leave snapshot: `messagesForUnread` stayed live for badges, but the scroll list kept a stale snapshot until you returned to Chat.
+
+**Fix**
+
+- Update to a build that passes **live** messages to Chat at all times (`ChatPanel` `isActive` guards prevent scroll/read side effects while hidden).
+- **Workaround on older builds:** stay on the **Chat** tab while monitoring live traffic.
+
+### MeshCore USB serial: messages arrive in batches (waiting-queue drain)
+
+**Symptoms**
+
+- On **USB serial**, inbound MeshCore messages may appear several at a time after a short delay, even while **Chat** or **Rooms** is active.
+- **Log → debug** may show repeated `getWaitingMessages timed out` or `processWaitingMessages skipped (in flight)`.
+
+**Cause**
+
+The companion radio queues public messages behind a **single serialized USB serial lane** shared with repeater admin, init RPCs, and MsgWaiting drains. Older builds bulk-fetched the whole queue before updating the UI.
+
+**In-app status**
+
+Chat and Rooms show an **amber strip** while silent auto-drain runs ("Fetching messages queued on the radio…") or when drain is **deferred** behind admin/trace work. On serial, a hint explains that messages may arrive in small batches.
+
+**Fix / workaround**
+
+1. Pause repeater **Status / Neighbors / ping** while monitoring live chat on serial.
+2. Prefer **BLE** or **TCP** when available for lower-latency chat.
+3. If drains stall, **Disconnect → Connect** or quit and reopen after repeated timeouts in the log.
+4. Use **Sync now** in **Chat** or **Rooms** for a large backlog (determinate progress banner).
 
 ### Chat or Rooms: scroll jumps when switching tabs
 
@@ -990,7 +1043,7 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 **Fix**
 
 - Update to the latest release and **restart once** so idempotent startup repairs run (`db-schema-sync`).
-- If the list is still wrong, export the DB, note your app version, and file an issue with **Copy Debug Snapshot** + **Log → Export**.
+- If the list is still wrong, export the DB, note your app version, and file an issue with **Export for GitHub** (or **Copy Debug Snapshot** for a quick paste) + **Log → Export**.
 
 ### Chat notification sounds when the window is minimized
 

@@ -1,10 +1,12 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
+import { meshcoreCompanionRepeaterRfBusy } from './meshcoreRepeaterRpcInFlight';
 import { meshcoreTraceResponsesInFlightCount } from './meshcoreTracePathMultiplex';
 import {
   MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS,
   MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS,
   MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
+  MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS,
 } from './timeConstants';
@@ -33,10 +35,19 @@ export function resetMeshcoreWaitingMessagesDrainSchedule(): void {
   }
 }
 
-export function waitingMessagesDrainTimeoutMs(showSyncBanner: boolean): number {
-  return showSyncBanner
-    ? MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS
-    : MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS;
+export type MeshcoreCompanionTransport = 'ble' | 'serial' | 'tcp' | null | undefined;
+
+export function waitingMessagesDrainTimeoutMs(
+  showSyncBanner: boolean,
+  connectionType?: MeshcoreCompanionTransport,
+): number {
+  if (showSyncBanner) {
+    return MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS;
+  }
+  if (connectionType === 'serial') {
+    return MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS;
+  }
+  return MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS;
 }
 
 export function shouldActivateWaitingMessagesBanner(
@@ -46,9 +57,9 @@ export function shouldActivateWaitingMessagesBanner(
   return showSyncBanner && total > 0;
 }
 
-/** True when a trace is awaiting TraceData — companion getWaitingMessages will likely stall. */
+/** True when companion admin/trace work will likely stall getWaitingMessages / syncNextMessage. */
 export function isMeshcoreCompanionDrainDeferred(): boolean {
-  return meshcoreTraceResponsesInFlightCount() > 0;
+  return meshcoreTraceResponsesInFlightCount() > 0 || meshcoreCompanionRepeaterRfBusy();
 }
 
 /** Silent auto-drain timeouts during BLE congestion are expected — log at debug, not warn. */
@@ -70,6 +81,7 @@ export function logMeshcoreWaitingMessagesDrainError(
 
 export interface ScheduleMeshcoreWaitingMessagesDrainOptions {
   isMounted?: () => boolean;
+  onDeferredChange?: (deferred: boolean) => void;
 }
 
 /**
@@ -94,15 +106,18 @@ export function scheduleMeshcoreWaitingMessagesDrain(
         });
       }
       if (options?.isMounted && !options.isMounted()) {
+        options?.onDeferredChange?.(false);
         return;
       }
       if (isMeshcoreCompanionDrainDeferred()) {
+        options?.onDeferredChange?.(true);
         debounceTimer = setTimeout(() => {
           debounceTimer = null;
           scheduleMeshcoreWaitingMessagesDrain(drain, options);
         }, MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS);
         return;
       }
+      options?.onDeferredChange?.(false);
       await drain();
     })();
   }, MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS);

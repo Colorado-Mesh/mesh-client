@@ -117,7 +117,6 @@ export default function ReticulumPeerListPanel({
   const contacts = useReticulumPeerStore((s) => s.contacts);
   const peerAppearanceByHash = useReticulumPeerStore((s) => s.peerAppearanceByHash);
   const hydratePeerAppearancesFromDb = useReticulumPeerStore((s) => s.hydratePeerAppearancesFromDb);
-  const dismissedContactHashes = useReticulumPeerStore((s) => s.dismissedContactHashes);
   const isContact = useReticulumPeerStore((s) => s.isContact);
 
   const handleToggleFavorite = useCallback(
@@ -189,43 +188,14 @@ export default function ReticulumPeerListPanel({
       return [...all.values()];
     }
     if (activeTab === 'contacts') {
-      let rows: ReticulumPeer[];
-      if (contactNodes && contactNodes.size > 0) {
-        rows = [];
-        for (const node of contactNodes.values()) {
-          const hash = node.reticulum_destination_hash;
-          if (!hash) continue;
-          const normalized = hash.replace(/[^0-9a-f]/gi, '').toLowerCase();
-          if (dismissedContactHashes.has(normalized)) continue;
-          const fromStore = contacts.get(hash) ?? peers.get(hash);
-          rows.push(
-            fromStore ?? {
-              destination_hash: hash,
-              display_name: node.long_name ?? null,
-              favorited: node.favorited,
-              hops: node.hops_away ?? null,
-              last_seen: node.last_heard ?? null,
-            },
-          );
-        }
-      } else {
-        rows = [...contacts.values()];
-      }
+      let rows = [...contacts.values()];
       if (selectedGroupId != null && groupMemberIds?.size) {
         rows = rows.filter((c) => groupMemberIds.has(reticulumHashToNodeId(c.destination_hash)));
       }
       return rows;
     }
     return [...peers.values()];
-  }, [
-    activeTab,
-    contactNodes,
-    contacts,
-    peers,
-    selectedGroupId,
-    groupMemberIds,
-    dismissedContactHashes,
-  ]);
+  }, [activeTab, contacts, peers, selectedGroupId, groupMemberIds]);
 
   const filteredRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();

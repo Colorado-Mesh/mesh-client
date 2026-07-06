@@ -256,6 +256,15 @@ describe('humanizeReticulumSidecarError', () => {
     ).toBe('connectionPanel.reticulumSidecarMissing');
   });
 
+  it('maps missing packaged sidecar to upgrade hint', () => {
+    expect(
+      humanizeReticulumSidecarError(
+        new Error('RETICULUM_SIDECAR_BUNDLED_MISSING: packaged sidecar binary not found'),
+        t,
+      ),
+    ).toBe('connectionPanel.reticulumSidecarBundledMissing');
+  });
+
   it('maps missing cargo to rustup hint', () => {
     expect(
       humanizeReticulumSidecarError(new Error('RETICULUM_CARGO_MISSING: cargo not found'), t),

@@ -329,7 +329,16 @@
     "limitMessagesLoadedCountAria": "Begrenzen Sie die Anzahl der geladenen Nachrichten: {{count}} Nachrichten",
     "capStoredMessagesCountAria": "Gespeicherte Nachrichten begrenzen, neueste {{count}}-Nachrichten behalten",
     "maxDistanceAria": "Max. Entfernung: {{value}}",
-    "unitAria": "Einheit: {{unit}}"
+    "unitAria": "Einheit: {{unit}}",
+    "supportSection": "Support / Fehlerberichte",
+    "supportSectionDesc": "Ein-Klick-Exporte ersetzen das separate Sammeln des Debug-Snapshots, der Protokolldatei und der Datenbank beim Melden von Problemen.",
+    "exportForGitHub": "Supportpaket für GitHub exportieren",
+    "exportForGitHubButton": "Export für GitHub",
+    "exportForGitHubDesc": "Enthält Debug-Snapshot und Protokolldateien in einer ZIP-Datei. Kann sicher an öffentliche GitHub-Probleme angehängt werden.",
+    "exportForDeveloper": "Supportpaket für Entwickler exportieren",
+    "exportForDeveloperButton": "Export für Entwickler",
+    "exportForDeveloperWarning": "Beinhaltet Ihre vollständige Datenbank, die möglicherweise gespeicherte Passwörter (MeshCore-Raumanmeldeinformationen, MQTT-Einstellungen usw.) enthält. Teilen Sie dieses Paket nur privat mit Betreuern – niemals auf dem öffentlichen GitHub.",
+    "exportSupportBundleFailed": "Support-Paket konnte nicht exportiert werden: {{message}}"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -503,7 +512,11 @@
     },
     "waitingMessagesQueued": "{{count}} in der Warteschlange stehende Nachricht(en) im Funk",
     "waitingMessagesSyncProgress": "{{processed}}/{{total}} wird vom Funkgerät synchronisiert...",
-    "waitingMessagesSyncProgressIndeterminate": "In die Warteschlange gestellte Nachrichten vom Funkgerät werden synchronisiert..."
+    "waitingMessagesSyncProgressIndeterminate": "In die Warteschlange gestellte Nachrichten vom Funkgerät werden synchronisiert...",
+    "waitingMessagesSilentDrain": "Nachrichten aus der Warteschlange im Radio werden abgerufen …",
+    "waitingMessagesDrainDeferred": "Nachrichtensynchronisierung angehalten, während das Funkgerät beschäftigt ist (Administrator/Trace)…",
+    "waitingMessagesSerialHint": "USB seriell verarbeitet jeweils einen Befehl; Nachrichten können in kleinen Mengen eingehen.",
+    "waitingMessagesSyncFailed": "Nachrichten in der Warteschlange konnten nicht synchronisiert werden: {{message}}"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -962,7 +975,8 @@
       "txQueueDrops": "{{name}}: ausgehende Pakete abgelegt ({{count}} in der Warteschlange)",
       "txQueueDropsHint": "In der Regel verursacht durch eine tote TCP-Schnittstelle, die immer noch aktiviert ist. Deaktivieren Sie nicht erreichbare Hubs, um den Warteschlangenüberlauf zu stoppen.",
       "suppressed": "{{count}} ähnliche Sidecar-Log-Linien wurden kürzlich unterdrückt."
-    }
+    },
+    "reticulumSidecarBundledMissing": "Bei dieser Installation fehlt der mitgelieferte Reticulum-Sidecar. Führen Sie ein Upgrade auf eine neuere Version durch oder melden Sie das Problem – das Erstellen aus dem Quellcode ist bei Paketinstallationen nicht verfügbar."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",

@@ -3,7 +3,6 @@ import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 import { withTimeout } from '@/shared/withTimeout';
 
 import { parseMeshCoreRfPacket } from '../../../shared/meshcoreRfPacketParse';
-import { packetRouter } from '../../lib/drivers/PacketRouter';
 import {
   classifyPayload,
   classifyProximity,
@@ -31,7 +30,7 @@ import {
   meshcoreCoerceRadioRxFrame,
   parseAutoaddConfigResponse,
 } from '../../lib/meshcoreContactAutoAdd';
-import { dispatchMeshcoreWaitingContactMessage } from '../../lib/meshcoreDirectMessageDecode';
+import { processMeshcoreWaitingMessageItem } from '../../lib/meshcoreProcessWaitingMessageItem';
 import {
   MESHCORE_CHAT_CORRELATE_WINDOW_MS,
   meshcoreCorrelateOrSynthesizeChatEntry,
@@ -63,6 +62,10 @@ import {
   pubkeyToNodeId,
 } from '../../lib/meshcoreUtils';
 import {
+  normalizeMeshcoreWaitingMessageBatch,
+  normalizeMeshcoreWaitingMessageItem,
+} from '../../lib/meshcoreWaitingMessageItem';
+import {
   isMeshcoreCompanionDrainDeferred,
   logMeshcoreWaitingMessagesDrainError,
   resetMeshcoreWaitingMessagesDrainSchedule,
@@ -79,6 +82,8 @@ import { MAX_RAW_PACKET_LOG_ENTRIES } from '../../lib/rawPacketLogConstants';
 import { getStoredMeshProtocol } from '../../lib/storedMeshProtocol';
 import {
   MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS,
+  MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN,
+  MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_BATCH_YIELD,
 } from '../../lib/timeConstants';
 import type { ChatMessage, IdentityId, MeshNode, TelemetryPoint } from '../../lib/types';
@@ -101,8 +106,12 @@ import type {
 } from './meshcoreLegacyConnEventsCtx';
 import {
   getMeshcoreProcessWaitingMessagesInFlight,
+  requestMeshcoreWaitingMessagesFollowUp,
+  requestMeshcoreWaitingMessagesManualFollowUp,
   resetMeshcoreProcessWaitingMessagesSync,
   setMeshcoreProcessWaitingMessagesInFlight,
+  takeMeshcoreWaitingMessagesFollowUp,
+  takeMeshcoreWaitingMessagesManualFollowUp,
 } from './meshcoreWaitingMessagesSyncState';
 
 export type { ProcessWaitingMessagesOptions } from './meshcoreLegacyConnEventsCtx';
@@ -169,6 +178,7 @@ export function attachMeshcoreLegacyConnEvents(
     meshcorePathUpdatePendingRef,
     meshcoreSessionPathUpdatedNodeIdsRef,
     meshcoreWaitingMessagesPollRef,
+    meshcoreConnectTypeRef,
     messagesRef,
     mqttStatusRef,
     myNodeNumRef,
@@ -196,6 +206,8 @@ export function attachMeshcoreLegacyConnEvents(
     setWaitingMessagesCount,
     setWaitingMessagesSyncActive,
     setWaitingMessagesSyncProgress,
+    setWaitingMessagesSilentDrainActive,
+    setWaitingMessagesDrainDeferred,
     addMessage,
     addMessagesBatch,
     addCliHistoryEntry,
@@ -596,23 +608,61 @@ export function attachMeshcoreLegacyConnEvents(
       });
   });
 
+  const waitingMessageDrainScheduleOptions = {
+    isMounted: () => meshcoreHookMountedRef.current,
+    onDeferredChange: setWaitingMessagesDrainDeferred,
+  };
+
+  const scheduleSilentWaitingMessageDrain = (drain: () => Promise<void>) => {
+    scheduleMeshcoreWaitingMessagesDrain(drain, waitingMessageDrainScheduleOptions);
+  };
+
+  const maybeChainWaitingMessageFollowUp = () => {
+    if (!meshcoreHookMountedRef.current) return;
+    const manual = takeMeshcoreWaitingMessagesManualFollowUp();
+    const silent = takeMeshcoreWaitingMessagesFollowUp();
+    if (!manual && !silent) return;
+    const showSyncBanner = manual;
+    scheduleSilentWaitingMessageDrain(() =>
+      processWaitingMessages({ showSyncBanner }).catch((e: unknown) => {
+        logMeshcoreWaitingMessagesDrainError('getWaitingMessages error', e, showSyncBanner);
+      }),
+    );
+  };
+
+  const buildWaitingMessageItemDeps = (
+    workingNodes: Map<number, MeshNode>,
+  ): Parameters<typeof processMeshcoreWaitingMessageItem>[1] => ({
+    workingNodes,
+    pubKeyPrefixMap: pubKeyPrefixMapRef.current,
+    myNodeNum: myNodeNumRef.current || 0,
+    meshcoreIdentityId: meshcoreIdentityIdRef.current,
+    legacyOwnsRoomPosts,
+    storePriorForBatch: storePriorForIngest,
+    logTransportLineAsDevice,
+  });
+
   // Push: message waiting — event 0x83 = 131; fetch all queued messages
   const processWaitingMessages = async (options?: ProcessWaitingMessagesOptions) => {
     if (getMeshcoreProcessWaitingMessagesInFlight()) {
+      if (options?.showSyncBanner !== false) {
+        requestMeshcoreWaitingMessagesManualFollowUp();
+      } else {
+        requestMeshcoreWaitingMessagesFollowUp();
+      }
       console.debug('[useMeshcoreRuntime] processWaitingMessages skipped (in flight)');
       return getMeshcoreProcessWaitingMessagesInFlight()!;
     }
     const showSyncBanner = options?.showSyncBanner !== false;
     if (!showSyncBanner && isMeshcoreCompanionDrainDeferred()) {
-      scheduleMeshcoreWaitingMessagesDrain(
-        () =>
-          processWaitingMessages(options).catch((e: unknown) => {
-            logMeshcoreWaitingMessagesDrainError('getWaitingMessages error', e, false);
-          }),
-        { isMounted: () => meshcoreHookMountedRef.current },
+      scheduleSilentWaitingMessageDrain(() =>
+        processWaitingMessages(options).catch((e: unknown) => {
+          logMeshcoreWaitingMessagesDrainError('getWaitingMessages error', e, false);
+        }),
       );
       return Promise.resolve();
     }
+    const connectionType = meshcoreConnectTypeRef.current;
     const inFlight = (async () => {
       const startedAt = Date.now();
       let bannerActive = false;
@@ -620,7 +670,6 @@ export function attachMeshcoreLegacyConnEvents(
       let pendingMessages: ChatMessage[] = [];
       const workingNodes = new Map(nodesRef.current);
       let nodesDirty = false;
-      const storePriorForBatch = storePriorForIngest;
 
       const flushBatch = () => {
         if (pendingMessages.length > 0) {
@@ -634,198 +683,113 @@ export function attachMeshcoreLegacyConnEvents(
         }
       };
 
-      try {
-        const msgs = await withTimeout(
-          conn.getWaitingMessages(),
-          waitingMessagesDrainTimeoutMs(showSyncBanner),
-          'MeshCore getWaitingMessages',
-        );
-        if (!meshcoreHookMountedRef.current) return;
-        const arr = msgs as {
-          contactMessage?: {
-            pubKeyPrefix: Uint8Array;
-            senderTimestamp: number;
-            text: string;
-            txtType?: number;
-          };
-          channelMessage?: { channelIdx: number; senderTimestamp: number; text: string };
-        }[];
-        const total = arr.length;
-        if (shouldActivateWaitingMessagesBanner(showSyncBanner, total)) {
-          bannerActive = true;
-          setWaitingMessagesSyncActive(true);
-          setWaitingMessagesSyncProgress(null);
-          setWaitingMessagesCount(total);
-          setWaitingMessagesSyncProgress({ processed: 0, total });
-        } else if (showSyncBanner && total === 0) {
-          console.debug('[useMeshcoreRuntime] processWaitingMessages empty queue (manual sync)');
-          return;
+      let syncTotal = 0;
+      let silentDrainUiActive = false;
+
+      const ingestItem = async (item: ReturnType<typeof normalizeMeshcoreWaitingMessageItem>) => {
+        if (!item) return;
+        try {
+          const result = processMeshcoreWaitingMessageItem(
+            item,
+            buildWaitingMessageItemDeps(workingNodes),
+          );
+          if (result.nodesDirty) nodesDirty = true;
+          if (result.pendingMessages.length > 0) {
+            pendingMessages.push(...result.pendingMessages);
+          }
+          processed += 1;
+          flushBatch();
+          if (bannerActive) {
+            setWaitingMessagesSyncProgress({ processed, total: syncTotal });
+          }
+        } catch (e: unknown) {
+          console.warn(
+            '[useMeshcoreRuntime] processWaitingMessages ingest error ' + errLikeToLogString(e),
+          );
         }
-        console.debug('[useMeshcoreRuntime] processWaitingMessages start', {
-          count: total,
+        await yieldToEventLoop();
+      };
+
+      if (!showSyncBanner) {
+        setWaitingMessagesSilentDrainActive(true);
+        silentDrainUiActive = true;
+      }
+      try {
+        if (showSyncBanner) {
+          const msgs = await withTimeout(
+            conn.getWaitingMessages(),
+            waitingMessagesDrainTimeoutMs(true, connectionType),
+            'MeshCore getWaitingMessages',
+          );
+          if (!meshcoreHookMountedRef.current) return;
+          const arr = normalizeMeshcoreWaitingMessageBatch(msgs);
+          const total = arr.length;
+          syncTotal = total;
+          if (shouldActivateWaitingMessagesBanner(showSyncBanner, total)) {
+            bannerActive = true;
+            setWaitingMessagesSyncActive(true);
+            setWaitingMessagesSyncProgress(null);
+            setWaitingMessagesCount(total);
+            setWaitingMessagesSyncProgress({ processed: 0, total });
+          } else if (total === 0) {
+            console.debug('[useMeshcoreRuntime] processWaitingMessages empty queue (manual sync)');
+            return;
+          }
+          console.debug('[useMeshcoreRuntime] processWaitingMessages start', {
+            count: total,
+            showSyncBanner,
+          });
+          for (const m of arr) {
+            if (!meshcoreHookMountedRef.current) break;
+            await ingestItem(m);
+            if (
+              processed % MESHCORE_WAITING_MESSAGES_BATCH_YIELD === 0 ||
+              pendingMessages.length >= MESHCORE_WAITING_MESSAGES_BATCH_YIELD
+            ) {
+              flushBatch();
+            }
+          }
+          flushBatch();
+        } else {
+          console.debug('[useMeshcoreRuntime] processWaitingMessages start (incremental)', {
+            showSyncBanner,
+          });
+          let silentDrainExhaustedCap = false;
+          for (let i = 0; i < MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN; i += 1) {
+            if (!meshcoreHookMountedRef.current) break;
+            const raw = await withTimeout(
+              conn.syncNextMessage(),
+              MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS,
+              'MeshCore syncNextMessage',
+            );
+            const item = normalizeMeshcoreWaitingMessageItem(raw);
+            if (!item) break;
+            await ingestItem(item);
+            if (i === MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN - 1) {
+              silentDrainExhaustedCap = true;
+            }
+          }
+          if (silentDrainExhaustedCap) {
+            requestMeshcoreWaitingMessagesFollowUp();
+          }
+          flushBatch();
+        }
+        console.debug('[useMeshcoreRuntime] processWaitingMessages done', {
+          count: processed,
+          durationMs: Date.now() - startedAt,
           showSyncBanner,
         });
-
-        for (const m of arr) {
-          if (!meshcoreHookMountedRef.current) break;
-          if (m.contactMessage) {
-            const d = m.contactMessage;
-            const prefix = Array.from(d.pubKeyPrefix)
-              .map((b) => b.toString(16).padStart(2, '0'))
-              .join('');
-            const senderId = pubKeyPrefixMapRef.current.get(prefix) ?? 0;
-            if (senderId === 0) {
-              console.warn(
-                '[useMeshcoreRuntime] event 131: unknown pubKeyPrefix in queued DM, sender will be 0',
-                prefix,
-              );
-            }
-            const sender = workingNodes.get(senderId);
-            if (senderId !== 0) {
-              const existing = workingNodes.get(senderId);
-              if (existing) {
-                workingNodes.set(senderId, {
-                  ...existing,
-                  last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
-                });
-                nodesDirty = true;
-              }
-            }
-            if (isMeshcoreTransportStatusChatLine(d.text)) {
-              logTransportLineAsDevice(d.text);
-            } else if (sender?.hw_model === 'Room') {
-              const postTs = effectiveMessageTimestampMs(d.senderTimestamp * 1000);
-              if (!legacyOwnsRoomPosts()) {
-                const identityId = meshcoreIdentityIdRef.current;
-                if (identityId) {
-                  const roomNodeIds = new Set<number>();
-                  for (const [nodeId, node] of workingNodes) {
-                    if (node.hw_model === 'Room') roomNodeIds.add(nodeId);
-                  }
-                  dispatchMeshcoreWaitingContactMessage(
-                    identityId,
-                    {
-                      pubKeyPrefix: d.pubKeyPrefix,
-                      text: d.text,
-                      senderTimestamp: d.senderTimestamp,
-                      ...(d.txtType != null ? { txtType: d.txtType } : {}),
-                    },
-                    pubKeyPrefixMapRef.current,
-                    roomNodeIds,
-                    (event, id) => {
-                      packetRouter.dispatch(event, id);
-                    },
-                    logTransportLineAsDevice,
-                  );
-                }
-                void setMeshcoreRoomLastPostAt(senderId, postTs);
-              } else {
-                const { authorId, payload } = meshcoreRoomPostBodyFromWire(
-                  d.text,
-                  d.txtType,
-                  pubKeyPrefixMapRef.current,
-                  { isKnownRoomNode: true },
-                );
-                const authorNode = authorId !== 0 ? workingNodes.get(authorId) : undefined;
-                const authorName =
-                  authorNode?.long_name ??
-                  (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
-                pendingMessages.push(
-                  buildMeshcoreRoomIncomingMessage({
-                    rawText: payload,
-                    roomServerId: senderId,
-                    authorId: authorId !== 0 ? authorId : myNodeNumRef.current || 0,
-                    authorName,
-                    timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
-                    receivedVia: 'rf',
-                  }),
-                );
-              }
-            } else {
-              pendingMessages.push({
-                ...parseMeshcoreDmIncomingFromThread(storePriorForBatch(), {
-                  rawText: d.text,
-                  senderId,
-                  displayName: sender?.long_name ?? `Node-${senderId.toString(16).toUpperCase()}`,
-                  timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
-                  receivedVia: 'rf',
-                  peerNodeId: senderId,
-                  myNodeId: myNodeNumRef.current || 0,
-                  to: myNodeNumRef.current || undefined,
-                }),
-                isHistory: true,
-              });
-            }
-          }
-          if (m.channelMessage) {
-            const d = m.channelMessage;
-            if (isMeshcoreTransportStatusChatLine(d.text)) {
-              logTransportLineAsDevice(d.text);
-            } else {
-              const resolved = resolveMeshcoreChannelMessageSender({
-                rawText: d.text,
-                nodes: workingNodes,
-              });
-              if (resolved.senderId !== 0) {
-                const existing = workingNodes.get(resolved.senderId);
-                workingNodes.set(
-                  resolved.senderId,
-                  existing
-                    ? meshcoreMergeChannelDisplayNameOntoNode(
-                        {
-                          ...existing,
-                          last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
-                        },
-                        resolved.displayName,
-                      )
-                    : minimalMeshcoreChatNode(
-                        resolved.senderId,
-                        resolved.displayName,
-                        d.senderTimestamp,
-                        'rf',
-                      ),
-                );
-                nodesDirty = true;
-              }
-              pendingMessages.push({
-                ...parseMeshcoreChannelIncomingFromThread(storePriorForBatch(), {
-                  rawText: d.text,
-                  senderId: resolved.senderId,
-                  displayName: resolved.displayName,
-                  channel: d.channelIdx,
-                  timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
-                  receivedVia: 'rf',
-                }),
-                isHistory: true,
-              });
-            }
-          }
-
-          processed += 1;
-          if (
-            processed % MESHCORE_WAITING_MESSAGES_BATCH_YIELD === 0 ||
-            pendingMessages.length >= MESHCORE_WAITING_MESSAGES_BATCH_YIELD
-          ) {
-            flushBatch();
-            if (bannerActive) {
-              setWaitingMessagesSyncProgress({ processed, total });
-            }
-            await yieldToEventLoop();
-          }
-        }
-
-        flushBatch();
-        console.debug('[useMeshcoreRuntime] processWaitingMessages done', {
-          count: total,
-          durationMs: Date.now() - startedAt,
-        });
       } finally {
+        if (silentDrainUiActive) {
+          setWaitingMessagesSilentDrainActive(false);
+        }
         if (bannerActive) {
           setWaitingMessagesCount(0);
           setWaitingMessagesSyncActive(false);
           setWaitingMessagesSyncProgress(null);
         }
         setMeshcoreProcessWaitingMessagesInFlight(null);
+        maybeChainWaitingMessageFollowUp();
       }
     })();
     setMeshcoreProcessWaitingMessagesInFlight(inFlight);
@@ -849,10 +813,18 @@ export function attachMeshcoreLegacyConnEvents(
             setTimeout(resolve, 2_000);
           });
           if (!meshcoreHookMountedRef.current) return;
-          await processWaitingMessages({ showSyncBanner: false });
+          try {
+            await processWaitingMessages({ showSyncBanner: false });
+          } catch (retryErr: unknown) {
+            // catch-no-log-ok logMeshcoreWaitingMessagesDrainError handles logging
+            logMeshcoreWaitingMessagesDrainError('getWaitingMessages error', retryErr, false);
+          }
         }
       },
-      { isMounted: () => meshcoreHookMountedRef.current },
+      {
+        isMounted: () => meshcoreHookMountedRef.current,
+        onDeferredChange: setWaitingMessagesDrainDeferred,
+      },
     );
   });
 
@@ -1513,6 +1485,8 @@ export function attachMeshcoreLegacyConnEvents(
         setWaitingMessagesCount,
         setWaitingMessagesSyncActive,
         setWaitingMessagesSyncProgress,
+        setWaitingMessagesSilentDrainActive,
+        setWaitingMessagesDrainDeferred,
       );
       resetMeshcoreWaitingMessagesDrainSchedule();
       if (staleConn && !usedDriverConnect) {
@@ -1540,6 +1514,8 @@ export function attachMeshcoreLegacyConnEvents(
       setWaitingMessagesCount,
       setWaitingMessagesSyncActive,
       setWaitingMessagesSyncProgress,
+      setWaitingMessagesSilentDrainActive,
+      setWaitingMessagesDrainDeferred,
     );
     resetMeshcoreWaitingMessagesDrainSchedule();
     processWaitingMessagesRef.current = null;

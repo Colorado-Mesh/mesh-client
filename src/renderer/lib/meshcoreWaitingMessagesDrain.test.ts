@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as meshcoreRepeaterRpcInFlight from './meshcoreRepeaterRpcInFlight';
 import * as meshcoreTracePathMultiplex from './meshcoreTracePathMultiplex';
 import {
+  isMeshcoreCompanionDrainDeferred,
   logMeshcoreWaitingMessagesDrainError,
   markMeshcoreCompanionTx,
   resetMeshcoreWaitingMessagesDrainSchedule,
@@ -14,6 +16,7 @@ import {
   MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS,
   MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS,
   MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
+  MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS,
 } from './timeConstants';
@@ -21,6 +24,12 @@ import {
 describe('waitingMessagesDrainTimeoutMs', () => {
   it('uses the silent timeout for auto-drains', () => {
     expect(waitingMessagesDrainTimeoutMs(false)).toBe(MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS);
+  });
+
+  it('uses a shorter silent timeout for USB serial auto-drains', () => {
+    expect(waitingMessagesDrainTimeoutMs(false, 'serial')).toBe(
+      MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS,
+    );
   });
 
   it('uses the manual sync timeout for Chat Sync now', () => {
@@ -117,6 +126,56 @@ describe('scheduleMeshcoreWaitingMessagesDrain', () => {
     await Promise.resolve();
     expect(drain).toHaveBeenCalledTimes(1);
     inFlightSpy.mockRestore();
+  });
+
+  it('defers drain while repeater admin RPC is busy, then retries', async () => {
+    let repeaterBusy = true;
+    const busySpy = vi
+      .spyOn(meshcoreRepeaterRpcInFlight, 'meshcoreCompanionRepeaterRfBusy')
+      .mockImplementation(() => repeaterBusy);
+
+    const drain = vi.fn().mockResolvedValue(undefined);
+    scheduleMeshcoreWaitingMessagesDrain(drain);
+    vi.advanceTimersByTime(MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(drain).not.toHaveBeenCalled();
+
+    repeaterBusy = false;
+    vi.advanceTimersByTime(MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS);
+    vi.advanceTimersByTime(MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS);
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(drain).toHaveBeenCalledTimes(1);
+    busySpy.mockRestore();
+  });
+
+  it('notifies onDeferredChange while waiting on congested companion work', async () => {
+    const onDeferredChange = vi.fn();
+    const inFlightSpy = vi
+      .spyOn(meshcoreTracePathMultiplex, 'meshcoreTraceResponsesInFlightCount')
+      .mockReturnValue(1);
+
+    const drain = vi.fn().mockResolvedValue(undefined);
+    scheduleMeshcoreWaitingMessagesDrain(drain, { onDeferredChange });
+    vi.advanceTimersByTime(MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(onDeferredChange).toHaveBeenCalledWith(true);
+    expect(drain).not.toHaveBeenCalled();
+    inFlightSpy.mockRestore();
+  });
+});
+
+describe('isMeshcoreCompanionDrainDeferred', () => {
+  it('returns true when repeater admin RPC is in flight', () => {
+    const busySpy = vi
+      .spyOn(meshcoreRepeaterRpcInFlight, 'meshcoreCompanionRepeaterRfBusy')
+      .mockReturnValue(true);
+    expect(isMeshcoreCompanionDrainDeferred()).toBe(true);
+    busySpy.mockRestore();
   });
 });
 
