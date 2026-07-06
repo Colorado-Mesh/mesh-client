@@ -124,6 +124,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/reticulum/useReticulumSidecarApi.test.ts',
   'src/renderer/lib/reticulum/useReticulumInterfaceSnapshot.test.ts',
   'src/renderer/lib/reticulum/reticulumAttachmentCache.test.ts',
+  'src/renderer/lib/reticulum/reticulumDiagnosticSnapshot.test.ts',
   'src/renderer/components/NomadMicronPageView.test.tsx',
   'src/renderer/lib/serialPortSignature.test.ts',
   'src/renderer/lib/startupDbPrune.test.ts',
