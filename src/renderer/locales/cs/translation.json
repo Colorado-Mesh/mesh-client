@@ -3860,7 +3860,7 @@
     "meshActive": "Síť Mesh aktivní",
     "transportBle": "BLE",
     "transportSerial": "Sériový",
-    "transportHttp": "Hypertext Transfer Protocol",
+    "transportHttp": "HTTP",
     "transportRadio": "Rádio",
     "radioInterfaceFallback": "rádiové rozhraní"
   }

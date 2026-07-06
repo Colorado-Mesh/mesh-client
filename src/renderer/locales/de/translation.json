@@ -3859,7 +3859,7 @@
     "routesEstablished": "Etablierte Routen",
     "meshActive": "Netzwerk aktiv",
     "transportBle": "BLE",
-    "transportSerial": "Serie",
+    "transportSerial": "Seriell",
     "transportHttp": "HTTP",
     "transportRadio": "Radio",
     "radioInterfaceFallback": "Funkschnittstelle"

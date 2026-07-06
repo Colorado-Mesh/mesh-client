@@ -3334,12 +3334,16 @@ function appSettingsMaxValueLengthForKey(key: string): number {
   return APP_SETTINGS_MAX_VALUE_LENGTH;
 }
 
-ipcMain.handle('app:rendererHeartbeat', (_event, payload?: { ts?: number }) => {
+ipcMain.handle('app:rendererHeartbeat', (event, payload?: { ts?: number }) => {
+  if (!validateIpcSender(event)) return;
   if (!mainWindow) return;
   rendererHeartbeatWatchdog.recordHeartbeat(payload?.ts);
 });
 
-ipcMain.handle('appSettings:get', () => {
+ipcMain.handle('appSettings:get', (event) => {
+  if (!validateIpcSender(event)) {
+    throw new Error('IPC sender validation failed');
+  }
   try {
     const rows = getDatabase().prepareOnce('SELECT key, value FROM app_settings').all() as {
       key: string;

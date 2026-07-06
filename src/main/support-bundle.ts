@@ -33,8 +33,8 @@ export function redactMnemonicFromStackJson(raw: string): string {
     }
     return JSON.stringify(parsed, null, 2);
   } catch {
-    // catch-no-log-ok invalid stack JSON — return raw for maintainer triage
-    return raw;
+    // catch-no-log-ok invalid stack JSON — fail closed; never return raw mnemonic-bearing text
+    return JSON.stringify({ error: 'stack_json_redaction_failed' });
   }
 }
 

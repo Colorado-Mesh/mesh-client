@@ -3859,7 +3859,7 @@
     "routesEstablished": "Установленные маршруты",
     "meshActive": "Сеть активна",
     "transportBle": "BLE",
-    "transportSerial": "Заводской",
+    "transportSerial": "Serial",
     "transportHttp": "HTTP",
     "transportRadio": "Радиосвязь",
     "radioInterfaceFallback": "радиоинтерфейс"

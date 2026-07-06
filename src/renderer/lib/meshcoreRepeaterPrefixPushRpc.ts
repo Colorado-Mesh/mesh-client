@@ -94,6 +94,7 @@ export function runMeshcoreRepeaterPrefixPushRequest<T>(
     };
 
     const armResponseTimeout = (estTimeoutMs: number): void => {
+      if (settled) return;
       responseTimeoutId = setTimeout(() => {
         fail('timeout');
       }, estTimeoutMs + opts.extraTimeoutMs);
@@ -137,6 +138,7 @@ export function runMeshcoreRepeaterPrefixPushRequest<T>(
         opts.beforeSend,
       )
         .then(({ estTimeoutMs }) => {
+          if (settled) return;
           armResponseTimeout(estTimeoutMs);
         })
         .catch(fail);

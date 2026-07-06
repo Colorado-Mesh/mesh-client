@@ -230,18 +230,43 @@ describe('fetchLinkPreview', () => {
     expect(result?.title).toBe('Plain Title');
   });
 
-  it('parses description and image', async () => {
+  it('proxies https og:image URLs as data URLs in main (SSRF guard)', async () => {
     const html = [
       `<meta property="og:title" content="Title">`,
       `<meta property="og:description" content="Desc text">`,
       `<meta property="og:image" content="https://example.com/img.png">`,
     ].join('\n');
-    mockFetch.mockResolvedValue(makeStreamResponse(html));
+    const pngBytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47]);
+    mockFetch.mockImplementation((input: string | URL | Request) => {
+      const host = fetchRequestHostname(input);
+      const href =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      let path = '';
+      try {
+        path = new URL(href).pathname;
+      } catch {
+        // catch-no-log-ok test mock may receive partial URLs
+      }
+      if (host === 'example.com' && path.endsWith('/img.png')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers({ 'content-type': 'image/png' }),
+          body: new ReadableStream<Uint8Array>({
+            start(c) {
+              c.enqueue(pngBytes);
+              c.close();
+            },
+          }),
+        } as unknown as Response);
+      }
+      return Promise.resolve(makeStreamResponse(html));
+    });
     const result = await fetchLinkPreview('https://example.com');
     expect(result).toEqual({
       title: 'Title',
       description: 'Desc text',
-      image: 'https://example.com/img.png',
+      image: expect.stringMatching(/^data:image\/png;base64,/),
     });
   });
 

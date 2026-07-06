@@ -221,6 +221,21 @@ describe('diagnosticsStore analysis timers', () => {
     expect(state.diagnosticRowsRestoredAt).toBeNull();
   });
 
+  it('runReanalysis clears pending large-mesh timer when superseded', () => {
+    const store = useDiagnosticsStore.getState();
+    const largeMap = new Map<number, MeshNode>();
+    largeMap.set(1, sampleNode(1));
+    for (let i = 2; i <= 2002; i++) {
+      largeMap.set(i, sampleNode(i));
+    }
+    store.runReanalysis(() => largeMap, 1);
+    expect(vi.getTimerCount()).toBe(1);
+    store.runReanalysis(() => new Map([[2, sampleNode(2)]]), 1);
+    expect(vi.getTimerCount()).toBe(1);
+    vi.advanceTimersByTime(10_000);
+    vi.runAllTimers();
+  });
+
   it('clearDiagnostics cancels both pending analysis timers', () => {
     const store = useDiagnosticsStore.getState();
     store.processNodeUpdate(sampleNode(1), null);

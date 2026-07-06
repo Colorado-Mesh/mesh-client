@@ -3862,6 +3862,6 @@
     "transportSerial": "Serial",
     "transportHttp": "HTTP",
     "transportRadio": "Radio",
-    "radioInterfaceFallback": "Data Radio interface (Interfaccia sistema dati via radio)"
+    "radioInterfaceFallback": "interfaccia radio"
   }
 }

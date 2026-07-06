@@ -63,7 +63,7 @@ The top-level **`legend`** explains that ids like `offline-meshcore` are **inter
 - `uiStoreIdentityId` — bucket Chat and Nodes read from.
 - `identitySplit: true` while transport is connected — **suspicious** (live ingress and UI may disagree).
 - `ui.chatPanelFrozen` + `frozenMessageCount` lagging `liveResolvedMessageCount` — **legacy builds only** (Chat freeze removed in newer releases); still useful when analyzing snapshots from older versions.
-- `ui.waitingMessagesSilentDrainActive` / `ui.waitingMessagesDrainDeferred` — MeshCore incremental drain in progress or paused behind admin/trace (serial may show small batches).
+- `ui.waitingMessagesSilentDrainActive` / `ui.waitingMessagesDrainDeferred` — MeshCore incremental drain in progress or paused behind admin/trace (serial may show small batches). UI: **header status indicator** (visible on any protocol tab when MeshCore has queued messages), not Chat/Rooms panel strips.
 
 **Automatic warning codes** in `warnings[]`: `identitySplit`, `staleResolvedBucket`, `chatPanelFrozen` (legacy builds), `connectedNoPrimaryMessages`, `windowHiddenOnChat`, `sidecarNotRunning` (Reticulum stack expected but sidecar process down).
 
@@ -670,7 +670,7 @@ Startup maintenance can delete stale MeshCore contacts by age. Important details
 **Common causes**:
 
 - **Large contact/repeater lists (1,000+)** — list tabs virtualize rows, but USB serial still serializes companion RPCs; prefer **Nodes → search** for one repeater instead of scrolling the full Repeaters table.
-- **Queued public messages (Sync now)** — MsgWaiting backlog is drained **incrementally in the background** after connect and when the radio pushes event 131 (including after you send). Chat and Rooms show an **amber status strip** while silent auto-drain runs or when drain is deferred behind repeater admin/trace work. The determinate progress banner appears when you click **Sync now** and the radio confirms a non-empty queue. Large backlogs may take a minute on manual sync; wait for the progress banner to finish before switching tabs during heavy sync.
+- **Queued public messages (Sync now)** — MsgWaiting backlog is drained **incrementally in the background** after connect and when the radio pushes event 131 (including after you send). The **header status indicator** (visible on any protocol tab when MeshCore has queued messages) shows silent auto-drain or deferred drain behind repeater admin/trace work. The determinate progress state appears when you click **Sync now** and the radio confirms a non-empty queue. Large backlogs may take a minute on manual sync; wait for the indicator to finish before switching tabs during heavy sync.
 - **Multi-hop repeater RPCs** (Neighbors, Status, telemetry) share one serialized USB serial queue. Retrying rapidly or querying distant repeaters (8+ hops) can block the link for up to **120 seconds** per request; queued pings up to **180s** each.
 - **Concurrent Ping + Status** — MeshCore allows only **one traceroute at a time** on the RF link; multiple pings are queued serially. Status/Neighbors/Sensors wait for an in-progress ping to finish before using the companion queue (see [Serialized traceroutes](meshcore-meshtastic-parity.md#serialized-traceroutes-protocol-requirement)).
 
@@ -1025,7 +1025,7 @@ Chat and Rooms show an **amber strip** while silent auto-drain runs ("Fetching m
 1. Pause repeater **Status / Neighbors / ping** while monitoring live chat on serial.
 2. Prefer **BLE** or **TCP** when available for lower-latency chat.
 3. If drains stall, **Disconnect → Connect** or quit and reopen after repeated timeouts in the log.
-4. Use **Sync now** in **Chat** or **Rooms** for a large backlog (determinate progress banner).
+4. Use **Sync now** from the **header waiting-messages indicator** for a large backlog (determinate progress in the header tooltip/status).
 
 ### Chat or Rooms: scroll jumps when switching tabs
 

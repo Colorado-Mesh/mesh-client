@@ -265,6 +265,10 @@ describe('privileged IPC sender validation (source contract)', () => {
     'notify:message',
     'chat:outbox:add',
     'chat:outbox:remove',
+    'chat:fetchLinkPreview',
+    'appSettings:get',
+    'appSettings:set',
+    'app:rendererHeartbeat',
     'db:saveNode',
     'db:saveNodePath',
     'support:exportBundle',
@@ -318,6 +322,20 @@ describe('privileged IPC sender validation (source contract)', () => {
   it('appSettings allows meshcore repeater credential prefix', () => {
     expect(INDEX_SOURCE).toContain('meshcoreRepeaterCredential:');
     expect(INDEX_SOURCE).toContain('appSettingsMaxValueLengthForKey');
+  });
+
+  it('appSettings:get validates IPC sender', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('appSettings:get'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
+    expect(body).toContain('validateIpcSender(event)');
+  });
+
+  it('app:rendererHeartbeat validates IPC sender', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('app:rendererHeartbeat'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
+    expect(body).toContain('validateIpcSender(event)');
   });
 });
 

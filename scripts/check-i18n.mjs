@@ -51,6 +51,7 @@ import {
   localeStringQualityIssues,
   protectedBrandIssues,
   nodeListPanelConnectionCrossKeyIssues,
+  reticulumDefaultHubsCrossKeyIssues,
   roomsSavedPasswordsCrossKeyIssues,
   roomsSidebarMarkerCrossKeyIssues,
 } from './check-i18n-quality.mjs';
@@ -478,6 +479,12 @@ for (const dir of localeDirs) {
       );
       errors++;
     }
+  }
+
+  for (const issue of reticulumDefaultHubsCrossKeyIssues(localeFlat)) {
+    if (branchEnglishKeys) continue;
+    console.error(`Locale quality in "${dir}" (reticulum default hubs): ${issue}.`);
+    errors++;
   }
 
   for (const issue of roomsSavedPasswordsCrossKeyIssues(localeFlat, en)) {

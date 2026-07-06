@@ -253,7 +253,7 @@ async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewM
       /<meta\s+content="([^"]+)"\s+property="og:image"/i.exec(html)?.[1];
     let image = ogImage?.trim().startsWith('https://') ? ogImage.trim() : undefined;
 
-    if (image && shouldProxyPreviewImageUrl(image)) {
+    if (image) {
       image = await fetchPreviewImageAsDataUrl(image);
     }
 
