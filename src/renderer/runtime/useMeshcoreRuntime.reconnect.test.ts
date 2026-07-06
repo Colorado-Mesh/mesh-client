@@ -4,6 +4,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { extractUseCallbackBody } from '../lib/sourceContractTestHelpers';
+
 const RUNTIME_SOURCE = readFileSync(join(__dirname, '../runtime/useMeshcoreRuntime.ts'), 'utf-8');
 const CONN_EVENTS_SOURCE = readFileSync(
   join(__dirname, '../hooks/meshcore/meshcoreLegacyConnEvents.ts'),
@@ -72,10 +74,53 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
   });
 });
 
+describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
+  it('finalizeDriverDisconnect clears reconnect session before teardown', () => {
+    const finalizeBody = extractUseCallbackBody(RUNTIME_SOURCE, 'finalizeDriverDisconnect');
+    expect(finalizeBody.length).toBeGreaterThan(0);
+    expect(finalizeBody).toContain('meshcoreExplicitDisconnectRef.current = true');
+    expect(finalizeBody).toContain('meshcoreConnectionParamsRef.current = null');
+    expect(finalizeBody).toContain('meshcoreIsReconnectingRef.current = false');
+    expect(finalizeBody).toContain('meshcoreReconnectAttemptRef.current = 0');
+    expect(finalizeBody).toContain('meshcoreReconnectGenerationRef.current += 1');
+    expect(finalizeBody).toContain('meshcoreEverConfiguredRef.current = false');
+    const teardownIndex = finalizeBody.indexOf('teardownMeshcoreConnEventListeners');
+    const explicitIndex = finalizeBody.indexOf('meshcoreExplicitDisconnectRef.current = true');
+    expect(explicitIndex).toBeGreaterThanOrEqual(0);
+    expect(teardownIndex).toBeGreaterThan(explicitIndex);
+  });
+
+  it('disconnect delegates to finalizeDriverDisconnect (Connection panel path)', () => {
+    const disconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'disconnect');
+    expect(disconnectBody).toContain('finalizeDriverDisconnect({ disconnectDriver: true })');
+    expect(disconnectBody).not.toContain('meshcoreConnectionParamsRef.current = null');
+  });
+
+  it('handleMeshcoreConnectionLost returns early on explicit user disconnect', () => {
+    const lostBody = extractUseCallbackBody(RUNTIME_SOURCE, 'handleMeshcoreConnectionLost');
+    expect(lostBody).toMatch(
+      /if \(meshcoreExplicitDisconnectRef\.current\) \{[\s\S]*?skip reconnect \(user disconnect\)/,
+    );
+  });
+
+  it('attemptMeshcoreReconnect returns when connection params are cleared', () => {
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toMatch(
+      /if \(!params\) \{[\s\S]*?meshcoreIsReconnectingRef\.current = false/,
+    );
+  });
+});
+
 describe('meshcoreLegacyConnEvents disconnected handler (regression)', () => {
   it('triggers handleConnectionLost when an operational session drops', () => {
     expect(CONN_EVENTS_SOURCE).toMatch(
       /onMeshcoreConn\('disconnected'[\s\S]{0,2000}handleConnectionLostRef\.current\(\)/,
+    );
+  });
+
+  it('skips handleConnectionLost on explicit user disconnect', () => {
+    expect(CONN_EVENTS_SOURCE).toMatch(
+      /if \(shouldReconnect && !meshcoreExplicitDisconnectRef\.current\)/,
     );
   });
 

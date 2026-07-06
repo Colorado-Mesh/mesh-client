@@ -214,6 +214,7 @@ export function attachMeshcoreLegacyConnEvents(
     teardownMeshcoreConnEventListeners,
     meshcorePreviousNodesBaselineForBuild,
     handleConnectionLostRef,
+    meshcoreExplicitDisconnectRef,
     bumpLastDataReceived,
   } = ctx;
 
@@ -1494,7 +1495,7 @@ export function attachMeshcoreLegacyConnEvents(
           console.debug('[meshcoreLegacyConnEvents] stale conn close ' + errLikeToLogString(e));
         });
       }
-      if (shouldReconnect) {
+      if (shouldReconnect && !meshcoreExplicitDisconnectRef.current) {
         handleConnectionLostRef.current();
       }
     });

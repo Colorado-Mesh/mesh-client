@@ -82,3 +82,39 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     );
   });
 });
+
+describe('useMeshtasticRuntime manual disconnect must not auto-reconnect', () => {
+  it('finalizeDriverDisconnect clears reconnect session before driver teardown', () => {
+    const finalizeBody = extractUseCallbackBody(SOURCE, 'finalizeDriverDisconnect');
+    expect(finalizeBody.length).toBeGreaterThan(0);
+    expect(finalizeBody).toContain('meshtasticExplicitDisconnectRef.current = true');
+    expect(finalizeBody).toContain('connectionParamsRef.current = null');
+    expect(finalizeBody).toContain('isReconnectingRef.current = false');
+    expect(finalizeBody).toContain('reconnectAttemptRef.current = 0');
+    expect(finalizeBody).toContain('reconnectGenerationRef.current++');
+    const driverIndex = finalizeBody.indexOf('connectionDriver.disconnect');
+    const explicitIndex = finalizeBody.indexOf('meshtasticExplicitDisconnectRef.current = true');
+    expect(explicitIndex).toBeGreaterThanOrEqual(0);
+    if (driverIndex >= 0) {
+      expect(driverIndex).toBeGreaterThan(explicitIndex);
+    }
+  });
+
+  it('attemptReconnect returns when connection params are cleared', () => {
+    const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
+    expect(reconnectBody).toMatch(/if \(!params\) \{[\s\S]*?isReconnectingRef\.current = false/);
+  });
+
+  it('Noble BLE disconnect handler respects explicit user disconnect before rehydrate', () => {
+    expect(SOURCE).toMatch(
+      /onNobleBleDisconnected[\s\S]*?meshtasticExplicitDisconnectRef\.current[\s\S]*?skip reconnect \(user disconnect\)/,
+    );
+  });
+
+  it('onPowerResume skips reconnect after explicit user disconnect', () => {
+    const resumeBody = extractUseCallbackBody(SOURCE, 'onPowerResume');
+    expect(resumeBody).toMatch(
+      /meshtasticExplicitDisconnectRef\.current[\s\S]*?skip reconnect \(user disconnect\)/,
+    );
+  });
+});
