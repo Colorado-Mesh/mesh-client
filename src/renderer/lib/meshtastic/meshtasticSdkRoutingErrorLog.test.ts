@@ -229,7 +229,21 @@ describe('meshtasticSdkRoutingErrorLog', () => {
 });
 
 describe('installMeshtasticSdkRoutingErrorConsoleHook', () => {
-  it('forwards SDK routing errors from console.error', () => {
+  let priorErrorSpy: ReturnType<typeof vi.spyOn>;
+  let priorWarnSpy: ReturnType<typeof vi.spyOn>;
+  let debugSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    priorErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    priorWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('forwards SDK routing errors from console.error at debug level', () => {
     const onRoutingErrorLog = vi.fn();
     const restore = installMeshtasticSdkRoutingErrorConsoleHook(onRoutingErrorLog);
     console.error('Error received for packet 645488536: PKI_SEND_FAIL_PUBLIC_KEY');
@@ -237,14 +251,34 @@ describe('installMeshtasticSdkRoutingErrorConsoleHook', () => {
     expect(onRoutingErrorLog).toHaveBeenCalledWith(
       'Error received for packet 645488536: PKI_SEND_FAIL_PUBLIC_KEY',
     );
+    expect(debugSpy).toHaveBeenCalledWith(
+      '[Meshtastic] SDK routing failure:',
+      'Error received for packet 645488536: PKI_SEND_FAIL_PUBLIC_KEY',
+    );
+    expect(priorErrorSpy).not.toHaveBeenCalled();
   });
 
-  it('forwards SDK packet timeout lines from console.warn', () => {
+  it('forwards SDK packet timeout lines from console.warn at debug level', () => {
     const onRoutingErrorLog = vi.fn();
     const restore = installMeshtasticSdkRoutingErrorConsoleHook(onRoutingErrorLog);
     console.warn('Packet 711859058 of type packet timed out');
     restore();
     expect(onRoutingErrorLog).toHaveBeenCalledWith('Packet 711859058 of type packet timed out');
+    expect(debugSpy).toHaveBeenCalledWith(
+      '[Meshtastic] SDK routing failure:',
+      'Packet 711859058 of type packet timed out',
+    );
+    expect(priorWarnSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not intercept unrelated console.error messages', () => {
+    const onRoutingErrorLog = vi.fn();
+    const restore = installMeshtasticSdkRoutingErrorConsoleHook(onRoutingErrorLog);
+    console.error('Something else failed');
+    restore();
+    expect(onRoutingErrorLog).not.toHaveBeenCalled();
+    expect(debugSpy).not.toHaveBeenCalled();
+    expect(priorErrorSpy).toHaveBeenCalledWith('Something else failed');
   });
 
   it('does not intercept unrelated console.warn messages', () => {
@@ -253,6 +287,10 @@ describe('installMeshtasticSdkRoutingErrorConsoleHook', () => {
     console.warn('[meshcoreRepeaterSession] repeater login failed (continuing) timeout');
     restore();
     expect(onRoutingErrorLog).not.toHaveBeenCalled();
+    expect(debugSpy).not.toHaveBeenCalled();
+    expect(priorWarnSpy).toHaveBeenCalledWith(
+      '[meshcoreRepeaterSession] repeater login failed (continuing) timeout',
+    );
   });
 });
 

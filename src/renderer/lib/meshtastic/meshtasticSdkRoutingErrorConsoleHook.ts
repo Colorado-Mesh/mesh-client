@@ -24,18 +24,21 @@ export function installMeshtasticSdkRoutingErrorConsoleHook(
   const priorError = console.error;
   const priorWarn = console.warn;
 
-  const dispatch = (args: unknown[]) => {
+  const handleConsoleRoutingLog = (args: unknown[]): boolean => {
     const line = routingErrorLogFromConsoleArgs(args);
-    if (line) onRoutingErrorLog(line);
+    if (!line) return false;
+    console.debug('[Meshtastic] SDK routing failure:', line);
+    onRoutingErrorLog(line);
+    return true;
   };
 
   console.error = (...args: unknown[]) => {
+    if (handleConsoleRoutingLog(args)) return;
     priorError.apply(console, args);
-    dispatch(args);
   };
   console.warn = (...args: unknown[]) => {
+    if (handleConsoleRoutingLog(args)) return;
     priorWarn.apply(console, args);
-    dispatch(args);
   };
 
   return () => {
