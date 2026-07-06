@@ -88,11 +88,11 @@ describe('redactMnemonicFromStackJson', () => {
 describe('readReticulumDeveloperArtifacts', () => {
   let userDataDir: string;
 
-  beforeEach(() => {
-    userDataDir = path.join(os.tmpdir(), `mesh-reticulum-artifacts-${Date.now()}`);
+  beforeEach(async () => {
+    userDataDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mesh-reticulum-artifacts-'));
     vi.mocked(app.getPath).mockImplementation((key: string) => {
       if (key === 'userData') return userDataDir;
-      if (key === 'temp') return path.join(os.tmpdir(), 'mesh-client-support-test-temp');
+      if (key === 'temp') return path.join(userDataDir, 'temp');
       return userDataDir;
     });
   });
