@@ -171,6 +171,10 @@ jobs:
           name: ${{ matrix.artifact }}
           path: release
 
+      - name: Install squashfs-tools (cross-arch AppImage extract)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y squashfs-tools
+
       - name: Run packaging smoke test
         run: ${{ matrix.smoke_run }}
 
