@@ -460,4 +460,77 @@ describe('ReticulumInterfacesPanel', () => {
       screen.queryByText('connectionPanel.reticulumInterfaces.primaryLocalSummary'),
     ).not.toBeInTheDocument();
   });
+
+  it('adds default tcp hubs disabled when none are configured', async () => {
+    const user = userEvent.setup();
+    const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyPost = proxyPost;
+
+    render(<ReticulumInterfacesPanel {...defaultProps} />);
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(proxyPost).toHaveBeenCalledTimes(2);
+    });
+    expect(proxyPost).toHaveBeenNthCalledWith(1, '/api/v1/interfaces', {
+      type: 'tcp',
+      name: 'RNS Testnet',
+      host: 'reticulum.betweentheborders.com',
+      port: 4242,
+      enabled: false,
+    });
+    expect(proxyPost).toHaveBeenNthCalledWith(2, '/api/v1/interfaces', {
+      type: 'tcp',
+      name: 'Ratspeak',
+      host: 'rns.ratspeak.org',
+      port: 4242,
+      enabled: false,
+    });
+    expect(defaultProps.onRefresh).toHaveBeenCalled();
+  });
+
+  it('skips testnet when already configured and adds only Ratspeak hub', async () => {
+    const user = userEvent.setup();
+    const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyPost = proxyPost;
+
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'testnet',
+            name: 'RNS Testnet BetweenTheBorders',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: 'reticulum.betweentheborders.com',
+            port: 4242,
+          },
+        ]}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(proxyPost).toHaveBeenCalledTimes(1);
+    });
+    expect(proxyPost).toHaveBeenCalledWith('/api/v1/interfaces', {
+      type: 'tcp',
+      name: 'Ratspeak',
+      host: 'rns.ratspeak.org',
+      port: 4242,
+      enabled: false,
+    });
+  });
 });

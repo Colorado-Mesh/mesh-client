@@ -881,7 +881,13 @@
       "setPrimaryLocal": "主として設定する",
       "setPrimaryLocalAria": "{{name}}をプライマリローカルRNodeとして設定",
       "setPrimarySuccess": "プライマリローカルRNodeが更新されました。",
-      "setPrimaryFailed": "プライマリローカルRNodeの設定に失敗しました。"
+      "setPrimaryFailed": "プライマリローカルRNodeの設定に失敗しました。",
+      "defaultHubsLabel": "デフォルトのハブ",
+      "addDefaultHubs": "TESTNETとRatspeakハブを追加する",
+      "addDefaultHubsAria": "無効状態のデフォルトのReticulum TESTNETとRatspeak TCPハブを追加する",
+      "addDefaultHubsSuccess": "{{added}}デフォルトのハブを追加しました。{{skipped}}はすでに設定されています。",
+      "addDefaultHubsAllPresent": "既定のTESTNETとRatspeakハブはすでに構成されています。",
+      "addDefaultHubsFailed": "デフォルトのハブを追加できませんでした。"
     },
     "reticulumPeers": {
       "hops": "Hops",

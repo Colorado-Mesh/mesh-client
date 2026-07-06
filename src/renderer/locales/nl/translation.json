@@ -881,7 +881,13 @@
       "setPrimaryLocal": "Instellen als belangrijkste",
       "setPrimaryLocalAria": "Stel {{name}} in als primaire lokale RNode",
       "setPrimarySuccess": "Primaire lokale RNode bijgewerkt.",
-      "setPrimaryFailed": "Kan primaire lokale RNode niet instellen."
+      "setPrimaryFailed": "Kan primaire lokale RNode niet instellen.",
+      "defaultHubsLabel": "Standaardhubs",
+      "addDefaultHubs": "Voeg TESTNET- en Ratspeak-hubs toe",
+      "addDefaultHubsAria": "Voeg standaard Reticulum TESTNET- en Ratspeak TCP-hubs toe in een uitgeschakelde status",
+      "addDefaultHubsSuccess": "{{added}} standaardhub (s) toegevoegd. {{skipped}} is al geconfigureerd.",
+      "addDefaultHubsAllPresent": "Standaard TESTNET- en Ratspeak-hubs zijn al geconfigureerd.",
+      "addDefaultHubsFailed": "Kan standaardhubs niet toevoegen."
     },
     "reticulumPeers": {
       "hops": "Hops",

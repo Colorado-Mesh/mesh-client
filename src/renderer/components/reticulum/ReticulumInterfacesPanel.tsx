@@ -15,6 +15,11 @@ import {
   type ReticulumConfigAuditIssue,
   type ReticulumConfigRepairKind,
 } from '@/renderer/lib/reticulum/reticulumConfigAudit';
+import {
+  buildDefaultTcpHubAddRequest,
+  listMissingDefaultTcpHubs,
+  RETICULUM_DEFAULT_TCP_HUBS,
+} from '@/renderer/lib/reticulum/reticulumDefaultTcpHubs';
 import { getReticulumInterfaceHelp } from '@/renderer/lib/reticulum/reticulumInterfaceHelp';
 import {
   formatReticulumInterfaceRowSummary,
@@ -160,6 +165,7 @@ export function ReticulumInterfacesPanel({
   } | null>(null);
   const [editingInterface, setEditingInterface] = useState<ReticulumInterfaceRow | null>(null);
   const [restartStackHint, setRestartStackHint] = useState(false);
+  const [addingDefaultHubs, setAddingDefaultHubs] = useState(false);
 
   useEffect(() => {
     if (!sidecarApiReady) {
@@ -347,6 +353,49 @@ export function ReticulumInterfacesPanel({
     }
   };
 
+  const handleAddDefaultTcpHubs = async () => {
+    setInterfaceError(null);
+    const missing = listMissingDefaultTcpHubs(interfaces);
+    const skipped = RETICULUM_DEFAULT_TCP_HUBS.length - missing.length;
+    if (missing.length === 0) {
+      addToast(t('connectionPanel.reticulumInterfaces.addDefaultHubsAllPresent'), 'info');
+      return;
+    }
+    setAddingDefaultHubs(true);
+    let added = 0;
+    try {
+      for (const hub of missing) {
+        const res = (await window.electronAPI.reticulum.proxyPost(
+          '/api/v1/interfaces',
+          buildDefaultTcpHubAddRequest(hub),
+        )) as { ok?: boolean; error?: string };
+        if (res?.ok === false) {
+          setInterfaceError(
+            res.error ?? t('connectionPanel.reticulumInterfaces.addDefaultHubsFailed'),
+          );
+          console.debug('[ReticulumInterfacesPanel] add default hub failed', hub.id, res.error);
+          break;
+        }
+        added += 1;
+      }
+      if (added > 0) {
+        await onRefresh();
+        setRestartStackHint(true);
+        addToast(
+          t('connectionPanel.reticulumInterfaces.addDefaultHubsSuccess', { added, skipped }),
+          'success',
+        );
+      }
+    } catch (e) {
+      setInterfaceError(
+        errLikeToLogString(e) || t('connectionPanel.reticulumInterfaces.addDefaultHubsFailed'),
+      );
+      console.debug('[ReticulumInterfacesPanel] add default hubs', e);
+    } finally {
+      setAddingDefaultHubs(false);
+    }
+  };
+
   const toggleInterface = async (id: string, enabled: boolean, ifaceTypeName?: string) => {
     setInterfaceError(null);
     try {
@@ -430,6 +479,7 @@ export function ReticulumInterfacesPanel({
   };
 
   const actionsDisabled = !sidecarApiReady || connecting;
+  const defaultHubsDisabled = actionsDisabled || addingDefaultHubs;
 
   return (
     <div className="space-y-2">
@@ -506,6 +556,11 @@ export function ReticulumInterfacesPanel({
         }}
         onSetPrimaryLocalSerial={(id) => {
           void handleSetPrimaryLocalSerial(id);
+        }}
+        addingDefaultHubs={addingDefaultHubs}
+        defaultHubsDisabled={defaultHubsDisabled}
+        onAddDefaultHubs={() => {
+          void handleAddDefaultTcpHubs();
         }}
       />
       {pendingDeleteInterface ? (
@@ -994,6 +1049,9 @@ function InterfacesSection({
   onAuditRepair,
   onAuditDisable,
   onSetPrimaryLocalSerial,
+  addingDefaultHubs,
+  defaultHubsDisabled,
+  onAddDefaultHubs,
 }: {
   interfaces: ReticulumInterfaceRow[];
   osSerialPortPaths: string[];
@@ -1038,6 +1096,9 @@ function InterfacesSection({
   onAuditRepair: (kind: ReticulumConfigRepairKind) => void;
   onAuditDisable: (id: string) => Promise<void>;
   onSetPrimaryLocalSerial: (id: string) => void;
+  addingDefaultHubs: boolean;
+  defaultHubsDisabled: boolean;
+  onAddDefaultHubs: () => void;
 }) {
   const { t } = useTranslation();
   const purposeIconTrigger = useIconTrigger();
@@ -1087,6 +1148,22 @@ function InterfacesSection({
         <DetailsChevron />
       </summary>
       <div className="space-y-3 px-3 pb-3">
+        <div className="space-y-1">
+          <p id="reticulum-default-hubs" className="text-muted text-xs">
+            {t('connectionPanel.reticulumInterfaces.defaultHubsLabel')}
+          </p>
+          <button
+            type="button"
+            disabled={defaultHubsDisabled}
+            onClick={onAddDefaultHubs}
+            className="rounded border border-amber-600/70 bg-amber-950/20 px-3 py-1.5 text-xs font-medium text-amber-200 transition-colors hover:bg-amber-950/40 disabled:opacity-40"
+            aria-label={t('connectionPanel.reticulumInterfaces.addDefaultHubsAria')}
+          >
+            {addingDefaultHubs
+              ? t('common.loading')
+              : t('connectionPanel.reticulumInterfaces.addDefaultHubs')}
+          </button>
+        </div>
         <div className="flex flex-wrap items-end gap-2">
           <label className="text-xs text-gray-400">
             {t('connectionPanel.reticulumInterfaces.type')}
