@@ -9,6 +9,7 @@ import {
   chmodSync,
   closeSync,
   existsSync,
+  fstatSync,
   mkdirSync,
   openSync,
   readSync,
@@ -109,9 +110,9 @@ export function findSquashfsOffset(appImagePath) {
 
   const CHUNK_BYTES = 4 * 1024 * 1024;
   const overlap = SQUASHFS_MAGIC.length - 1;
-  const { size } = statSync(appImagePath);
   const fd = openSync(appImagePath, 'r');
   try {
+    const { size } = fstatSync(fd);
     let pos = 0;
     /** @type {Buffer} */
     let prevTail = Buffer.alloc(0);
