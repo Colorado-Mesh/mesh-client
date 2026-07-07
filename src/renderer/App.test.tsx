@@ -353,7 +353,7 @@ vi.mock('./lazyModals', () => ({
 }));
 
 vi.mock('./lib/appSettingsStorage', () => ({
-  getAppSettingsRaw: vi.fn().mockReturnValue({}),
+  getAppSettingsRaw: vi.fn().mockReturnValue(null),
 }));
 
 vi.mock('./lib/firmwareCheck', () => ({
