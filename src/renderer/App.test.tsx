@@ -795,6 +795,29 @@ describe('App accessibility', () => {
     ).toBeInTheDocument();
   });
 
+  it('hides deferred waiting-message indicator on Meshtastic tab during MeshCore admin/trace', () => {
+    getStoredMeshProtocolMock.mockReturnValue('meshtastic');
+    useMeshCoreMock.mockReturnValue({
+      ...createMeshCoreMock(),
+      waitingMessagesCount: 0,
+      waitingMessagesDrainDeferred: true,
+      syncWaitingMessages: vi.fn().mockResolvedValue(undefined),
+    });
+
+    renderApp();
+
+    expect(
+      screen.queryByRole('status', {
+        name: /Message sync paused while the radio is busy/i,
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: /queued message\(s\) on radio/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
   it('keeps MeshCore node detail remote-admin props protocol-gated after node click', async () => {
     getStoredMeshProtocolMock.mockReturnValue('meshcore');
     const meshtasticRuntime = createDeviceMock();

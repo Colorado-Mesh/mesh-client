@@ -76,6 +76,21 @@ export function meshcoreWaitingMessagesVisible(input: MeshcoreWaitingMessagesSta
   );
 }
 
+export function meshcoreWaitingMessagesVisibleForProtocol(
+  input: MeshcoreWaitingMessagesStatusInput,
+  activeProtocol: 'meshtastic' | 'meshcore' | 'reticulum',
+): boolean {
+  if (!meshcoreWaitingMessagesVisible(input)) return false;
+  if (
+    activeProtocol !== 'meshcore' &&
+    input.waitingMessagesDrainDeferred &&
+    !meshcoreWaitingMessagesSyncBusy(input)
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export function meshcoreWaitingMessagesSyncBusy(
   input: MeshcoreWaitingMessagesStatusInput,
 ): boolean {

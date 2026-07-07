@@ -53,7 +53,7 @@ import {
 import { persistMeshcoreSelfNodeId } from '@/renderer/lib/meshcoreLastSelfNodeId';
 import { resolveMeshcoreOwnNodeIdSet } from '@/renderer/lib/meshcoreOwnNodeIds';
 import { totalRoomsUnreadCount } from '@/renderer/lib/meshcoreRoomsUnread';
-import { meshcoreWaitingMessagesVisible } from '@/renderer/lib/meshcoreWaitingMessagesStatusText';
+import { meshcoreWaitingMessagesVisibleForProtocol } from '@/renderer/lib/meshcoreWaitingMessagesStatusText';
 import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
 import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
@@ -1707,7 +1707,7 @@ function AppContent() {
 
   const showMeshcoreWaitingMessagesIndicator =
     meshcoreCapabilities.hasCompanionContactManagementConfig &&
-    meshcoreWaitingMessagesVisible(meshcoreWaitingMessagesInput);
+    meshcoreWaitingMessagesVisibleForProtocol(meshcoreWaitingMessagesInput, protocol);
 
   const handleDmTargetConsumed = useCallback(() => {
     setPendingDmTarget(null);
