@@ -197,6 +197,12 @@ Follow [Semantic Versioning](https://semver.org/):
 
 - Confirm the workflow job has `contents: write`
 - Publishing uses `GITHUB_TOKEN` as `GH_TOKEN`; forked or restricted workflows may lack upload permission
+- **404 uploading to `/releases/{id}/assets`:** parallel `dist:*:publish` jobs raced and created duplicate draft releases. Re-run the failed release workflow after merging the `prepare-github-release` gate (or delete orphan drafts and re-run). Do not PATCH release `tag_name` via API while CI is uploading — that orphans in-flight upload targets.
+
+### Duplicate draft releases for one tag
+
+- Caused by concurrent electron-builder publish before the shared draft exists. `release.yaml` now runs `scripts/ci-ensure-github-draft-release.mjs` once before the macOS/Linux/Windows matrix.
+- To recover on a broken tag: delete orphan draft releases in GitHub → Releases, keep the draft that has the most assets (or none), re-run **Build/Release Electron App** on the tag.
 
 ### Tag already exists
 
