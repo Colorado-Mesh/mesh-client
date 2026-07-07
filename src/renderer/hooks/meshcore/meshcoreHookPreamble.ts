@@ -172,8 +172,24 @@ export function messageToDbRow(
 export const MESHCORE_INIT_TIMEOUT_MS = 60_000;
 /** Companion Ok/Err for `sendFloodAdvert` — meshcore.js has no internal timeout. */
 export const MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS = 25_000;
-/** Max time to wait for PathUpdated (129) after a flood advert when priming trace route. */
-export const MESHCORE_TRACE_PRIME_WAIT_MS = 12_000;
+/** Base wait for PathUpdated (129) after a flood advert when priming trace route. */
+export const MESHCORE_TRACE_PRIME_WAIT_BASE_MS = 15_000;
+/** Per-hop add-on for {@link computeMeshcoreTracePrimeWaitMs}. */
+export const MESHCORE_TRACE_PRIME_WAIT_PER_HOP_MS = 5_000;
+/** Cap for a single PathUpdated wait during trace route priming. */
+export const MESHCORE_TRACE_PRIME_WAIT_CAP_MS = 45_000;
+/** Max flood-advert priming rounds before trace/ping or no-route fast-fail. */
+export const MESHCORE_TRACE_PRIME_MAX_ROUNDS = 2;
+
+/** Hop-scaled PathUpdated wait after flood advert when priming multi-hop trace routes. */
+export function computeMeshcoreTracePrimeWaitMs(hopsAway?: number | null): number {
+  const hops =
+    hopsAway != null && Number.isFinite(hopsAway) ? Math.max(0, Math.trunc(hopsAway)) : 0;
+  return Math.min(
+    MESHCORE_TRACE_PRIME_WAIT_CAP_MS,
+    MESHCORE_TRACE_PRIME_WAIT_BASE_MS + hops * MESHCORE_TRACE_PRIME_WAIT_PER_HOP_MS,
+  );
+}
 
 /** Shown when multi-hop trace cannot run until the radio reports a route; UI auto-clears after {@link MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS}. */
 export const MESHCORE_PING_NO_ROUTE_ERROR_MSG = 'meshcore.errors.pingNoRoute';

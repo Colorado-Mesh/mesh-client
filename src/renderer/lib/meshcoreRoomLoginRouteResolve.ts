@@ -1,8 +1,3 @@
-import {
-  MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
-  MESHCORE_TRACE_PRIME_WAIT_MS,
-  waitForMeshcorePath129ForNode,
-} from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
 import { withTimeout } from '@/shared/withTimeout';
 
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
@@ -10,6 +5,7 @@ import {
   type MeshcoreTracePathConnection,
   runMeshcoreTracePathMultiplexed,
 } from './meshcoreTracePathMultiplex';
+import { primeMeshcoreTraceRoute } from './meshcoreTraceRoutePrime';
 import {
   meshcoreSliceContactOutPathForTrace,
   meshcoreTraceResultToOutPathBytes,
@@ -132,26 +128,18 @@ export async function resolveMeshcoreRoomLoginRouteBytes(
   }
 
   if (opts.allowPrime !== false) {
-    try {
-      await withTimeout(
-        conn.sendFloodAdvert(),
-        MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
-        'meshcoreRoomLoginRoutePrimeFloodAdvert',
-      );
-    } catch {
-      // catch-no-log-ok flood advert is best-effort before path wait
-    }
-
-    await waitForMeshcorePath129ForNode(conn, nodeId, MESHCORE_TRACE_PRIME_WAIT_MS);
-
-    try {
-      const contactsPrime = await conn.getContacts();
-      const primed = pathFromContacts(contactsPrime, nodeId);
-      if (primed && primed.length > 1) return primed;
-      if (primed && primed.length > 0) path = primed;
-    } catch {
-      // catch-no-log-ok post-prime getContacts optional
-    }
+    const outPathMapRef = new Map<number, Uint8Array>();
+    if (path) outPathMapRef.set(nodeId, path);
+    const primed = await primeMeshcoreTraceRoute({
+      conn,
+      nodeId,
+      pubKey: opts.pubKey,
+      hopsAway: opts.loginHopsAway,
+      outPathMapRef,
+      existingPath: path,
+    });
+    if (primed.path && primed.path.length > 1) return primed.path;
+    if (primed.path && primed.path.length > 0) path = primed.path;
   }
 
   if (path && path.length > 1) return path;

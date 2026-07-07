@@ -44,7 +44,6 @@ import {
   MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
   MESHCORE_STATUS_TIMEOUT_MS,
   MESHCORE_TELEMETRY_TIMEOUT_MS,
-  MESHCORE_TRACE_PRIME_WAIT_MS,
   MESHCORE_TRACE_TIMEOUT_MS,
   meshcoreContactRawFromDevice,
   meshcoreDmAckKeyU32,
@@ -61,7 +60,6 @@ import {
   resolveMeshcoreNodePubKey,
   serializeErrorLike,
   upgradeMeshcoreCrossTransportMessage,
-  waitForMeshcorePath129ForNode,
 } from '../hooks/meshcore/meshcoreHookPreamble';
 import {
   attachMeshcoreLegacyConnEvents,
@@ -274,6 +272,7 @@ import {
   awaitMeshcoreRepeaterAdminRfIdle,
   awaitMeshcoreRepeaterPingSettleForNode,
 } from '../lib/meshcoreTraceRadioIdle';
+import { primeMeshcoreTraceRoute } from '../lib/meshcoreTraceRoutePrime';
 import {
   coerceMeshcoreExportPrivateKeyResult,
   CONTACT_TYPE_LABELS,
@@ -3804,39 +3803,19 @@ export function useMeshcoreRuntime() {
             }
             const needsRoutePrime = tracePlan.needsRoutePrime;
             if (needsRoutePrime) {
-              try {
-                await withTimeout(
-                  conn.sendFloodAdvert(),
-                  MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
-                  'meshcoreTracePrimeFloodAdvert',
-                );
-              } catch (e: unknown) {
-                console.warn(
-                  '[useMeshcoreRuntime] traceRoute prime: sendFloodAdvert failed ' +
-                    errLikeToLogString(e),
-                );
+              const primed = await primeMeshcoreTraceRoute({
+                conn,
+                nodeId,
+                pubKey,
+                hopsAway,
+                outPathMapRef: outPathMapRef.current,
+                existingPath: routeStoredPath,
+              });
+              if (primed.radioContactPathLen != null) {
+                radioContactPathLen = primed.radioContactPathLen;
               }
-              await waitForMeshcorePath129ForNode(conn, nodeId, MESHCORE_TRACE_PRIME_WAIT_MS);
-              try {
-                const contactsRawPrime = await conn.getContacts();
-                const contactsPrime = contactsRawPrime.map(meshcoreContactRawFromDevice);
-                const snapPrime = meshcoreSnapshotContactPathFromContacts(
-                  nodeId,
-                  contactsPrime,
-                  routeStoredPath,
-                );
-                if (snapPrime.radioContactPathLen != null) {
-                  radioContactPathLen = snapPrime.radioContactPathLen;
-                }
-                if (snapPrime.path && snapPrime.path.length > 0) {
-                  outPathMapRef.current.set(nodeId, snapPrime.path);
-                  routeStoredPath = snapPrime.path;
-                }
-              } catch (e: unknown) {
-                console.warn(
-                  '[useMeshcoreRuntime] traceRoute post-prime getContacts failed ' +
-                    errLikeToLogString(e),
-                );
+              if (primed.path && primed.path.length > 0) {
+                routeStoredPath = primed.path;
               }
               if (!routeStoredPath || routeStoredPath.length <= 1) {
                 try {

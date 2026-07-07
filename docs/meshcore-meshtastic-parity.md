@@ -89,6 +89,8 @@ mesh-client enforces this in two layers:
 
 **Practical guidance:** Run **one ping at a time** when possible; let it finish (Hops column updates) before starting Status on the same repeater. Queued pings may take up to **180s** each (including 0-hop direct retry). Status/Neighbors/Telemetry use **120s** flat timeouts.
 
+**Multi-hop route priming:** When outbound path bytes are missing but the UI shows multi-hop, ping/trace runs up to **two** flood-advert priming rounds before `SendTracePath`. Each round registers a PathUpdated (129) listener **before** sending the advert, then waits hop-scaled time (`15s + 5s × hops`, capped at 45s per round). One-way contacts may still time out with no TraceData — see [troubleshooting.md](troubleshooting.md#meshcore-trace-route-or-ping-trace-times-out).
+
 **Repeater admin RPC wire shape:** Status and Telemetry use pubkey-framed companion commands (`meshcoreRepeaterStatusRpc.ts`, `meshcoreRepeaterTelemetryRpc.ts`). Neighbors uses `runMeshcoreRepeaterBinaryRequest` with queued send. Login is optional for CLI/telemetry when a password is saved; Status/Neighbors typically work without login on direct (0-hop) repeaters.
 
 Implementation reference: `runMeshcoreTracePathMultiplexed` in [`meshcoreTracePathMultiplex.ts`](../src/renderer/lib/meshcoreTracePathMultiplex.ts), `traceRoute` in [`useMeshcoreRuntime.ts`](../src/renderer/runtime/useMeshcoreRuntime.ts).

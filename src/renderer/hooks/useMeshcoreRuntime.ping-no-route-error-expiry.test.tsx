@@ -23,8 +23,10 @@ vi.mock('../lib/meshcoreTracePathMultiplex', async (importOriginal) => {
   });
 });
 import {
+  computeMeshcoreTracePrimeWaitMs,
   MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS,
   MESHCORE_PING_NO_ROUTE_ERROR_MSG,
+  MESHCORE_TRACE_PRIME_MAX_ROUNDS,
   meshcorePingNoRouteErrorExpiryUpdate,
 } from '../hooks/meshcore/meshcoreHookPreamble';
 import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
@@ -46,8 +48,9 @@ const REMOTE_PUBKEY_HEX = Array.from(REMOTE_PUBKEY)
 const SELF_PUBKEY = new Uint8Array(32).fill(0xab);
 const MY_NODE_ID = pubkeyToNodeId(SELF_PUBKEY);
 
-/** Matches {@link MESHCORE_TRACE_PRIME_WAIT_MS} in useMeshcoreRuntime.ts — wait after flood advert for PathUpdated. */
-const TRACE_PRIME_WAIT_MS = 12_000;
+/** Hop-scaled wait per priming round for a 2-hop target (see computeMeshcoreTracePrimeWaitMs). */
+const TRACE_PRIME_WAIT_MS_PER_ROUND = computeMeshcoreTracePrimeWaitMs(2);
+const TRACE_PRIME_TOTAL_WAIT_MS = TRACE_PRIME_WAIT_MS_PER_ROUND * MESHCORE_TRACE_PRIME_MAX_ROUNDS;
 
 vi.mock('@liamcottle/meshcore.js', () => {
   class MockWebSerialConnection {
@@ -345,7 +348,7 @@ describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
     let tracePromise: Promise<void>;
     await act(async () => {
       tracePromise = result.current.traceRoute(REMOTE_NODE_ID);
-      await vi.advanceTimersByTimeAsync(TRACE_PRIME_WAIT_MS);
+      await vi.advanceTimersByTimeAsync(TRACE_PRIME_TOTAL_WAIT_MS);
     });
 
     await act(async () => {
