@@ -412,9 +412,9 @@ describe('useMeshcoreRuntime traceRoute path outcome attribution', () => {
 
   it('records success outcome for traceRoute on the used path hash', async () => {
     const dbOutcomeSpy = vi.spyOn(window.electronAPI.db, 'recordMeshcorePathOutcome');
-    const pathBytes = [0x11, 0x22];
+    const pathBytes = [0x11, 0x22, 0x33];
     const pathHash = computePathHash(pathBytes);
-    usePathHistoryStore.getState().recordPathUpdated(REMOTE_NODE_ID, pathBytes, 1, false);
+    usePathHistoryStore.getState().recordPathUpdated(REMOTE_NODE_ID, pathBytes, 2, false);
 
     const port = makeMockSerialPort();
     Object.defineProperty(navigator, 'serial', {
@@ -452,9 +452,9 @@ describe('useMeshcoreRuntime traceRoute path outcome attribution', () => {
   it('records failure outcome for traceRoute errors on the used path hash', async () => {
     startMeshcoreTracePathMultiplexedMock.mockRejectedValueOnce(new Error('trace timeout'));
     const dbOutcomeSpy = vi.spyOn(window.electronAPI.db, 'recordMeshcorePathOutcome');
-    const pathBytes = [0x11, 0x22];
+    const pathBytes = [0x11, 0x22, 0x33];
     const pathHash = computePathHash(pathBytes);
-    usePathHistoryStore.getState().recordPathUpdated(REMOTE_NODE_ID, pathBytes, 1, false);
+    usePathHistoryStore.getState().recordPathUpdated(REMOTE_NODE_ID, pathBytes, 2, false);
 
     const port = makeMockSerialPort();
     Object.defineProperty(navigator, 'serial', {

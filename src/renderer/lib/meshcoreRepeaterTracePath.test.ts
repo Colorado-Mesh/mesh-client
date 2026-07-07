@@ -48,6 +48,17 @@ describe('meshcoreIsUsableTraceStoredPath', () => {
     const oddPath = Uint8Array.from({ length: 32 }, (_, i) => i);
     expect(meshcoreIsUsableTraceStoredPath(oddPath, 1, pubKey)).toBe(false);
   });
+
+  it('rejects path segments shorter than hop count + 1', () => {
+    expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11, 0x22]), 1, pubKey)).toBe(true);
+    expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11, 0x22]), 2, pubKey)).toBe(false);
+    expect(meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11, 0x22, 0x33]), 3, pubKey)).toBe(
+      false,
+    );
+    expect(
+      meshcoreIsUsableTraceStoredPath(new Uint8Array([0x11, 0x22, 0x33, 0x44]), 3, pubKey),
+    ).toBe(true);
+  });
 });
 
 describe('planMeshcoreRepeaterTraceRoute', () => {

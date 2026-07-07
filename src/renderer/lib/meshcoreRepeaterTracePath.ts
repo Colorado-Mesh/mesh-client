@@ -29,7 +29,8 @@ export function meshcoreIsUsableTraceStoredPath(
     return hops === 0;
   }
   if (hops >= 1 && path.length === pubKey.length) return false;
-  if (hops >= 1 && path.length < 2) return false;
+  // Hash-segment count must cover hop count (1-hop → 2 bytes, 3-hop → 4 bytes, …).
+  if (hops >= 1 && path.length < hops + 1) return false;
   return true;
 }
 

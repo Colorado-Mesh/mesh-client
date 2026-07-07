@@ -180,6 +180,8 @@ export const MESHCORE_TRACE_PRIME_WAIT_PER_HOP_MS = 5_000;
 export const MESHCORE_TRACE_PRIME_WAIT_CAP_MS = 45_000;
 /** Max flood-advert priming rounds before trace/ping or no-route fast-fail. */
 export const MESHCORE_TRACE_PRIME_MAX_ROUNDS = 2;
+/** Post-prime `getContacts` slack for passive strategy aggregate timeout (BLE can be slow). */
+export const MESHCORE_TRACE_PRIME_CONTACT_REFRESH_MS = 20_000;
 
 /** Worst-case aggregate timeout for {@link primeMeshcoreTraceRoute} (all rounds). */
 export function computeMeshcoreTracePrimeAggregateTimeoutMs(
@@ -189,7 +191,9 @@ export function computeMeshcoreTracePrimeAggregateTimeoutMs(
 ): number {
   const waitMs = computeMeshcoreTracePrimeWaitMs(hopsAway);
   if (strategy === 'none') return 0;
-  if (strategy === 'passive') return waitMs + 5_000;
+  if (strategy === 'passive') {
+    return waitMs + MESHCORE_TRACE_PRIME_CONTACT_REFRESH_MS;
+  }
   return maxRounds * (MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS + waitMs) + 5_000;
 }
 

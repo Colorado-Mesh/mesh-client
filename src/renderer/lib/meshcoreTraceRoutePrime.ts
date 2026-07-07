@@ -2,6 +2,7 @@ import {
   computeMeshcoreTracePrimeAggregateTimeoutMs,
   computeMeshcoreTracePrimeWaitMs,
   MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
+  MESHCORE_TRACE_PRIME_CONTACT_REFRESH_MS,
   MESHCORE_TRACE_PRIME_MAX_ROUNDS,
   meshcoreContactRawFromDevice,
   waitForMeshcorePath129ForNode,
@@ -58,7 +59,11 @@ async function refreshPathAfterPrimeRound(
   outPathMapRef: Map<number, Uint8Array>,
 ): Promise<MeshcoreRadioContactPathSnapshot> {
   try {
-    const contactsRaw = await conn.getContacts();
+    const contactsRaw = await withTimeout(
+      conn.getContacts(),
+      MESHCORE_TRACE_PRIME_CONTACT_REFRESH_MS,
+      'meshcoreTracePrimeGetContacts',
+    );
     const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
     const snap = meshcoreSnapshotContactPathFromContacts(nodeId, contacts, existingPath);
     if (snap.path && snap.path.length > 0) {
@@ -209,7 +214,8 @@ export async function primeMeshcoreTraceRoute(opts: {
       'meshcoreTraceRoutePrimeAggregate',
     );
   } catch (e: unknown) {
-    console.warn('[meshcoreTraceRoutePrime] aggregate timeout ' + errLikeToLogString(e));
+    // catch-no-log-ok expected when aggregate or getContacts times out during priming
+    console.debug('[meshcoreTraceRoutePrime] aggregate timeout ' + errLikeToLogString(e));
     const fromMap = opts.outPathMapRef.get(opts.nodeId);
     return {
       path: fromMap ?? opts.existingPath,
