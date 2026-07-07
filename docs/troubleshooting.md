@@ -63,7 +63,8 @@ The top-level **`legend`** explains that ids like `offline-meshcore` are **inter
 - `uiStoreIdentityId` — bucket Chat and Nodes read from.
 - `identitySplit: true` while transport is connected — **suspicious** (live ingress and UI may disagree).
 - `ui.chatPanelFrozen` + `frozenMessageCount` lagging `liveResolvedMessageCount` — **legacy builds only** (Chat freeze removed in newer releases); still useful when analyzing snapshots from older versions.
-- `ui.waitingMessagesSilentDrainActive` / `ui.waitingMessagesDrainDeferred` — MeshCore incremental drain in progress or paused behind admin/trace (serial may show small batches). UI: **header status indicator** (visible on any protocol tab when MeshCore has queued messages), not Chat/Rooms panel strips.
+- `ui.waitingMessagesSilentDrainActive` / `ui.waitingMessagesDrainDeferred` — MeshCore incremental drain in progress or paused behind admin/trace (serial may show small batches). UI: **header status indicator** (queued backlog and active sync visible on any protocol tab; **paused** admin/trace state only on the MeshCore tab), not Chat/Rooms panel strips.
+- `meshcoreContactPathDiagnostics` — redacted MeshCore contact rows with `pubKeyPrefixHex` (12 hex chars), `hopsAway`, and best known `bestPathBytes` / `bestPathHopCount` from SQLite path history (useful for ping/no-route reports).
 
 **Automatic warning codes** in `warnings[]`: `identitySplit`, `staleResolvedBucket`, `chatPanelFrozen` (legacy builds), `connectedNoPrimaryMessages`, `windowHiddenOnChat`, `sidecarNotRunning` (Reticulum stack expected but sidecar process down).
 
@@ -670,7 +671,7 @@ Startup maintenance can delete stale MeshCore contacts by age. Important details
 **Common causes**:
 
 - **Large contact/repeater lists (1,000+)** — list tabs virtualize rows, but USB serial still serializes companion RPCs; prefer **Nodes → search** for one repeater instead of scrolling the full Repeaters table.
-- **Queued public messages (Sync now)** — MsgWaiting backlog is drained **incrementally in the background** after connect and when the radio pushes event 131 (including after you send). The **header status indicator** (visible on any protocol tab when MeshCore has queued messages) shows silent auto-drain or deferred drain behind repeater admin/trace work. The determinate progress state appears when you click **Sync now** and the radio confirms a non-empty queue. Large backlogs may take a minute on manual sync; wait for the indicator to finish before switching tabs during heavy sync.
+- **Queued public messages (Sync now)** — MsgWaiting backlog is drained **incrementally in the background** after connect and when the radio pushes event 131 (including after you send). The **header status indicator** (queued backlog and active sync on any protocol tab; **paused/deferred** state only on the MeshCore tab) shows silent auto-drain or deferred drain behind repeater admin/trace work. The determinate progress state appears when you click **Sync now** and the radio confirms a non-empty queue. Large backlogs may take a minute on manual sync; wait for the indicator to finish before switching tabs during heavy sync.
 - **Multi-hop repeater RPCs** (Neighbors, Status, telemetry) share one serialized USB serial queue. Retrying rapidly or querying distant repeaters (8+ hops) can block the link for up to **120 seconds** per request; queued pings up to **180s** each.
 - **Concurrent Ping + Status** — MeshCore allows only **one traceroute at a time** on the RF link; multiple pings are queued serially. Status/Neighbors/Sensors wait for an in-progress ping to finish before using the companion queue (see [Serialized traceroutes](meshcore-meshtastic-parity.md#serialized-traceroutes-protocol-requirement)).
 
@@ -734,13 +735,13 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 - When the room server **guest password is empty**, use **Continue read-only** on the Rooms login overlay. That sends **zero password bytes** (same as the official Android app). **Login** with an empty guest field is disabled; it would send the default **`hello`** password instead.
 - When the server **does** configure a guest password, enter that value in the guest field and click **Login** (some communities use **`hello`**).
-- Logs showing push **`0x86`** (frame 134) mean **LoginFail** (wrong password or ACL denied). Current builds fail fast with a clear message instead of waiting the full timeout.
+- Logs showing push **`0x86`** (frame 134) mean **LoginFail** (wrong password or ACL denied). **Room login** rejects immediately on a prefix-matched LoginFail. **Repeater admin login** keeps waiting for a possible LoginSuccess (meshcore.js behavior on congested links); timeout after LoginFail alone is reported as timeout, not wrong password.
 - **Admin password** working while guest/read-only fails usually means the guest password on the server does not match what the client sent, or ACL denies read-only login.
 - If the room **changed its password** and mesh-client keeps trying to log in, open the **Rooms** tab: expand **Saved passwords** in the sidebar (or use the login overlay for the selected room). Use **Stop auto-login** to stop connect-time retries while keeping the old password stored, or **Forget saved password** to clear the stored guest/admin password and turn off auto-login and auto-sync. After a wrong-password failure, auto-login is turned off automatically until you log in again with **Remember password** or re-enable it.
 
 **MeshCore repeater saved passwords**:
 
-- Per-repeater admin passwords are stored in SQLite as `meshcoreRepeaterCredential:<nodeId>` when you check **Remember** on the repeater auth dialog. Open **Repeaters** → expand **Saved repeater passwords** to **Forget** a stale entry, or use **Change password** / **Save password** on the node detail modal for a single repeater.
+- Per-repeater admin passwords are stored in SQLite as `meshcoreRepeaterCredential:<nodeId>` when you check **Remember** on the repeater auth dialog. Open **Repeaters** → expand **Saved repeater passwords** (sidebar label) to **Forget** a stale entry, or use **Change password** / **Save password** on the node detail modal for a single repeater.
 - If **Remember** fails silently, the password still works for the current session (ephemeral secret) but will not survive restart — check the app log for `appSettings:set` errors and retry after updating mesh-client.
 
 **Room post fails with "unsupported on this firmware"**:
@@ -803,7 +804,9 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **Parallel pings**: MeshCore does **not** allow parallel traceroutes on one radio. mesh-client queues them, but two back-to-back pings can take up to **180s** each (including 0-hop direct-retry). **Status/Neighbors/Telemetry** use **120s** timeouts and wait for the active trace (TraceData) and same-node ping wrapper to finish first. Prefer **one ping at a time** when troubleshooting. See [meshcore-meshtastic-parity.md — Serialized traceroutes](meshcore-meshtastic-parity.md#serialized-traceroutes-protocol-requirement).
 
-**Fix**: When possible, exchange contact adds so the remote node lists you as a contact. If you cannot add them (or they never add you), treat the timeout as expected, not a Mesh-Client defect when the radio never returns a result.
+**Multi-hop route priming / no route**: When outbound path bytes are missing but the UI shows multi-hop, ping/trace first waits passively for PathUpdated (129) and contact refresh (**15s + 5s × hops**, capped at **45s**). For **2+ hops**, if that still yields no usable hash-segment path, mesh-client may run up to **two** flood-advert priming rounds before `SendTracePath` (listener registered **before** each advert). **1-hop** targets may use a synthesized `[relayPrefix, destPrefix]` path when a direct 0-hop repeater is known. If priming and synthesis still fail, ping may fail fast with **No route from radio yet** instead of waiting the full trace timeout. One-way contacts may still time out with no TraceData after priming.
+
+**Fix**: When possible, exchange contact adds so the remote node lists you as a contact. If you cannot add them (or they never add you), treat the timeout as expected, not a Mesh-Client defect when the radio never returns a result. For multi-hop repeaters, wait for contact/path updates or run **Ping trace** once before CLI (Repeaters panel auto-pings on first multi-hop CLI when no trace exists this session).
 
 ## Reticulum
 
@@ -928,7 +931,7 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 **Checks**:
 
 1. **Stack running**: start the sidecar from **Connection → Start stack** before editing interfaces. Identity routes on the Network tab also require a live sidecar (`reticulum:proxyGet` / `proxyPut` / `proxyDelete`).
-2. **Edit validation**: name is required; TCP needs a reachable host and valid port; RNode needs a serial port path when adding (edit can update preset/callsign without re-plugging).
+2. **Edit validation**: name is required; TCP needs a reachable host and valid port; RNode needs a serial port path when adding (edit can update preset/callsign without re-plugging). **I2P** peers must be comma-separated `.b32.i2p` hostnames (max **512** characters); inline errors: `i2pPeersRequired`, `i2pPeersInvalid`, `i2pPeersTooLong`.
 3. **Delete**: confirm in the modal; if the interface id changed after config import, refresh by stopping and restarting the stack.
 4. **Logs**: filter Device logs for `[ReticulumIPC]` or `[ReticulumSidecar]`; sidecar returns `{ ok: false, error }` for parse or unknown-interface failures.
 
@@ -1018,7 +1021,7 @@ The companion radio queues public messages behind a **single serialized USB seri
 
 **In-app status**
 
-Chat and Rooms show an **amber strip** while silent auto-drain runs ("Fetching messages queued on the radio…") or when drain is **deferred** behind admin/trace work. On serial, a hint explains that messages may arrive in small batches.
+The **header status indicator** (queued backlog and active sync on any protocol tab; **paused/deferred** state only on the MeshCore tab) shows silent auto-drain or deferred drain behind admin/trace work. On serial, messages may arrive in small batches without a Chat/Rooms panel banner.
 
 **Fix / workaround**
 

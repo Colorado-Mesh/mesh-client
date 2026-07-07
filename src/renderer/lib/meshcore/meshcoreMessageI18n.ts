@@ -33,7 +33,11 @@ export function isDiagnosticTextI18n(msg: MeshcoreUserMessage): msg is Diagnosti
 }
 
 export function isMeshcoreI18nKey(msg: string): boolean {
-  return msg.startsWith('meshcore.') || msg.startsWith('connectionPanel.humanize.meshcore.');
+  return (
+    msg.startsWith('meshcore.') ||
+    msg.startsWith('connectionPanel.humanize.meshcore.') ||
+    msg.startsWith('repeatersPanel.')
+  );
 }
 
 export function meshcoreUserMessageKey(ref: MeshcoreUserMessage): string | null {
@@ -149,6 +153,13 @@ export function meshcoreRepeaterRpcErrorMessage(
   errMsg: string,
   timeoutMs: number,
 ): MeshcoreUserMessage {
+  const deserialized = deserializeMeshcoreUserMessage(errMsg);
+  if (isDiagnosticTextI18n(deserialized)) {
+    return deserialized;
+  }
+  if (typeof deserialized === 'string' && isMeshcoreI18nKey(deserialized)) {
+    return deserialized;
+  }
   const lower = errMsg.toLowerCase();
   if (lower.includes('timeout') || lower.includes('timed out')) {
     return {

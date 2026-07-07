@@ -133,7 +133,7 @@ const TRACE_TIMEOUT_MS = 30_000;
 interface Props {
   nodes: Map<number, MeshNode>;
   myNodeNum: number;
-  onTraceRoute: (nodeNum: number) => Promise<void>;
+  onTraceRoute: (nodeNum: number) => Promise<boolean | undefined>;
   isConnected: boolean;
   traceRouteResults: Map<number, { route: number[]; from: number; timestamp: number }>;
   getFullNodeLabel: (nodeNum: number) => string;

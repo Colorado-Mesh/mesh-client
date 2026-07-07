@@ -374,10 +374,43 @@ fn write_rnode_radio_fields(block: &mut IniBlock, row: &InterfaceRow) {
     }
 }
 
+const I2P_PEERS_MAX_LEN: usize = 512;
+
+fn validate_i2p_peers(peers: &str) -> Result<(), String> {
+    let trimmed = peers.trim();
+    if trimmed.is_empty() {
+        return Err("i2p peers required".into());
+    }
+    if trimmed.len() > I2P_PEERS_MAX_LEN {
+        return Err("i2p peers too long".into());
+    }
+    if trimmed.contains('\n') || trimmed.contains('\r') || trimmed.contains('\0') {
+        return Err("invalid i2p peers".into());
+    }
+    for entry in trimmed.split(',').map(str::trim).filter(|s| !s.is_empty()) {
+        let lower = entry.to_ascii_lowercase();
+        if lower.len() != 56 || !lower.ends_with(".b32.i2p") {
+            return Err("invalid i2p peer address".into());
+        }
+        let hash = &lower[..52];
+        if !hash.chars().all(|c| matches!(c, 'a'..='z' | '2'..='7')) {
+            return Err("invalid i2p peer address".into());
+        }
+    }
+    Ok(())
+}
+
 pub fn add_interface_to_config(
     config_dir: &Path,
     req: &AddInterfaceRequest,
 ) -> Result<InterfaceRow, String> {
+    if req.iface_type == "i2p" {
+        if let Some(ref host) = req.host {
+            validate_i2p_peers(host)?;
+        } else {
+            return Err("i2p peers required".into());
+        }
+    }
     let id = Uuid::new_v4().to_string();
     let name = req
         .name
@@ -451,6 +484,11 @@ pub fn update_interface_in_config(
         row.status = if v { "up" } else { "down" }.into();
     }
     if patch.host.is_some() {
+        if row.iface_type == "i2p" {
+            if let Some(ref host) = patch.host {
+                validate_i2p_peers(host)?;
+            }
+        }
         row.host = patch.host.clone();
     }
     if patch.port.is_some() {
@@ -495,6 +533,10 @@ pub fn update_interface_in_config(
         crate::stack::rf_profiles::force_apply_profile_defaults_to_row(&mut row);
     } else {
         apply_preset_defaults(&mut row);
+    }
+
+    if row.iface_type == "i2p" {
+        validate_i2p_peers(row.host.as_deref().unwrap_or(""))?;
     }
 
     parsed.interfaces[idx] = interface_row_to_block(&row);

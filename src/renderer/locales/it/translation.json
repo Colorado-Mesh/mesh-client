@@ -359,6 +359,31 @@
     "percentCharging": "Batteria {{percent}} percento, in carica",
     "percent": "Batteria {{percent}} percento"
   },
+  "bootSequence": {
+    "booting": "Avvio dello stack di mesh in corso...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Scansione canali... {{count}}",
+    "meshtasticScanningChannels": "Scansione dei canali configurati in corso...",
+    "databaseNodes_one": "Database: {{count}} nodo sincronizzato",
+    "databaseNodes_other": "Database: {{count}} nodi sincronizzati",
+    "syncingDatabase": "Sincronizzazione del database mesh in corso...",
+    "interfaceReady": "{{iface}} interfaccia pronta",
+    "freqMhz": "Frequenza: {{mhz}} MHz",
+    "freqMhzBw": "Frequenza: {{mhz}} MHz | BW: {{bw}} kHz",
+    "configuringRadio": "Configurazione dei parametri radio in corso...",
+    "contacts_one": "Contatti: {{count}} contatto caricato",
+    "contacts_other": "Contatti: {{count}} contatti caricati",
+    "loadingContacts": "Caricamento database contatti in corso...",
+    "routes_one": "Percorsi: nodo {{count}} in mesh",
+    "routes_other": "Percorsi: nodi {{count}} in mesh",
+    "routesEstablished": "Itinerari impostati",
+    "meshActive": "Rete mesh attiva",
+    "transportBle": "BLE",
+    "transportSerial": "Serial",
+    "transportHttp": "HTTP",
+    "transportRadio": "Radio",
+    "radioInterfaceFallback": "interfaccia radio"
+  },
   "channelUtilization": {
     "title": "Utilizzo del canale",
     "noData": "Non sono ancora disponibili dati sull'utilizzo del canale",
@@ -889,7 +914,10 @@
       "addDefaultHubsAllPresent": "Gli hub testnet e Ratspeak predefiniti sono già configurati.",
       "addDefaultHubsFailed": "Impossibile aggiungere hub predefiniti.",
       "identityNotConfigured": "Imposta prima un'identità Reticulum nella scheda Rete — genera o importa una frase di ripristino.",
-      "identityRequiredHint": "Configura un'identità Reticulum nella scheda Rete prima di aggiungere interfacce."
+      "identityRequiredHint": "Configura un'identità Reticulum nella scheda Rete prima di aggiungere interfacce.",
+      "i2pPeersRequired": "Inserisci almeno un indirizzo peer I2P.",
+      "i2pPeersTooLong": "L'elenco peer I2P è troppo lungo (max {{max}} caratteri).",
+      "i2pPeersInvalid": "I peer I2P devono essere indirizzi .b32.i2p separati da virgole senza interruzioni di riga."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1668,7 +1696,9 @@
         "rejected": "Logout dalla sala rifiutato via radio.",
         "failed": "Impossibile lasciare la stanza"
       },
-      "repeaterRpcInProgress": "Una richiesta per questo ripetitore è già in corso"
+      "repeaterRpcInProgress": "Una richiesta per questo ripetitore è già in corso",
+      "cliDangerNotConfirmed": "I comandi CLI distruttivi richiedono la conferma nel pannello Ripetitori.",
+      "pingFailed": "Ping non eseguito correttamente!"
     },
     "mqttHints": {
       "notAuthorized": "Verifica il nome utente v1_, la firma del token e il pubblico JWT rispetto al broker; vedere docs/letsmesh-mqtt-auth.md. Se necessario, utilizza Personalizzato per incollare un token emesso dall'operatore.",
@@ -1734,6 +1764,25 @@
     "applyButton": "Applicare la privacy della telemetria",
     "contactCount_one": "{{count}} contatto",
     "contactCount_other": "{{count}} contatti"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "In coda — verrà inviato quando connesso",
+    "queuedLabel": "In coda",
+    "blockedDefault": "Bloccato — nessuna chiave di crittografia disponibile",
+    "blockedLabel": "Bloccati",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WiFi",
+    "transportBt": "BT",
+    "noAck": "nessun ACK",
+    "sending": "Invio in corso…",
+    "delivered": "Consegnato",
+    "posted": "Pubblicato",
+    "failedPost": "Impossibile inviare",
+    "noAckTooltip": "Nessun ACK (il messaggio potrebbe essere ancora stato trasmesso; nessun altro nodo nel raggio d'azione da riconoscere)",
+    "failed": "Non riuscito",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Dispositivo"
   },
   "modulePanel": {
     "sectionSent": "{{name}} inviato. Il dispositivo potrebbe riavviarsi brevemente.",
@@ -3258,7 +3307,6 @@
     "heardPrefix": "Sentito:",
     "noLppData": "Nessun dato del sensore LPP in questa risposta.",
     "enterCommand": "Inserisci il comando...",
-    "useSavedPath": "Utilizza il percorso salvato",
     "searchRepeatersPlaceholder": "Cerca ripetitori...",
     "openCliInterface": "Apri l'interfaccia CLI",
     "sensorLppButton": "Sensore (LPP)",
@@ -3349,7 +3397,14 @@
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
     "uptimeMinutes": "{{minutes}}m",
     "rememberPasswordSaveFailed": "Impossibile salvare la password del ripetitore per il riavvio. Funzionerà solo per questa sessione.",
-    "telemetryFailedToast": "Telemetria non riuscita: {{message}}"
+    "telemetryFailedToast": "Telemetria non riuscita: {{message}}",
+    "cliMultiHopHint": "La CLI multi-hop è più affidabile dopo una traccia di ping riuscita. Il primo comando CLI su un ripetitore multi-hop esegue Ping automaticamente quando non esiste una trace in questa sessione. Se i comandi scadono, esegui prima Ping o controlla la sincronizzazione dell'orologio compagno nell'app MeshCore.",
+    "cliDangerConfirmTitle": "Eseguire il comando CLI distruttivo?",
+    "cliDangerConfirmMessage": "Questo comando può riavviare, cancellare o ripristinare in fabbrica il ripetitore: \"{{command}}\". Continua solo se intendi apportare questa modifica.",
+    "cliDangerConfirmAction": "Esegui comando",
+    "cliAutoPingToast": "Stabilire il percorso con Ping prima di CLI...",
+    "cliAutoPingFailed": "Ping non riuscito; eseguire Ping manualmente prima di riprovare CLI su ripetitori multi-hop.",
+    "cliCommandTooLong": "Il comando CLI è troppo lungo (max {{max}} caratteri)."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervallo annunci (secondi)",
@@ -3819,49 +3874,5 @@
     "menuToastAvailableTitle": "Aggiornamento disponibile",
     "menuToastAvailableBody": "È disponibile la versione {{version}}.",
     "menuToastErrorTitle": "Controllo aggiornamento non riuscito"
-  },
-  "messageStatusBadge": {
-    "queuedTooltip": "In coda — verrà inviato quando connesso",
-    "queuedLabel": "In coda",
-    "blockedDefault": "Bloccato — nessuna chiave di crittografia disponibile",
-    "blockedLabel": "Bloccati",
-    "transportMqtt": "MQTT",
-    "transportUsb": "USB",
-    "transportWifi": "WiFi",
-    "transportBt": "BT",
-    "noAck": "nessun ACK",
-    "sending": "Invio in corso…",
-    "delivered": "Consegnato",
-    "posted": "Pubblicato",
-    "failedPost": "Impossibile inviare",
-    "noAckTooltip": "Nessun ACK (il messaggio potrebbe essere ancora stato trasmesso; nessun altro nodo nel raggio d'azione da riconoscere)",
-    "failed": "Non riuscito",
-    "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "Dispositivo"
-  },
-  "bootSequence": {
-    "booting": "Avvio dello stack di mesh in corso...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Scansione canali... {{count}}",
-    "meshtasticScanningChannels": "Scansione dei canali configurati in corso...",
-    "databaseNodes_one": "Database: {{count}} nodo sincronizzato",
-    "databaseNodes_other": "Database: {{count}} nodi sincronizzati",
-    "syncingDatabase": "Sincronizzazione del database mesh in corso...",
-    "interfaceReady": "{{iface}} interfaccia pronta",
-    "freqMhz": "Frequenza: {{mhz}} MHz",
-    "freqMhzBw": "Frequenza: {{mhz}} MHz | BW: {{bw}} kHz",
-    "configuringRadio": "Configurazione dei parametri radio in corso...",
-    "contacts_one": "Contatti: {{count}} contatto caricato",
-    "contacts_other": "Contatti: {{count}} contatti caricati",
-    "loadingContacts": "Caricamento database contatti in corso...",
-    "routes_one": "Percorsi: nodo {{count}} in mesh",
-    "routes_other": "Percorsi: nodi {{count}} in mesh",
-    "routesEstablished": "Itinerari impostati",
-    "meshActive": "Rete mesh attiva",
-    "transportBle": "BLE",
-    "transportSerial": "Serial",
-    "transportHttp": "HTTP",
-    "transportRadio": "Radio",
-    "radioInterfaceFallback": "interfaccia radio"
   }
 }

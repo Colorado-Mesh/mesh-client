@@ -291,6 +291,15 @@ for (const file of files) {
         errors++;
       }
     }
+    const hardcodedMeshcoreDetail = line.match(
+      /t\(\s*['"]meshcore\.errors\.requestFailed['"]\s*,\s*\{[^}]*detail:\s*['"]([^'"]+)['"]/,
+    );
+    if (hardcodedMeshcoreDetail && !file.includes('.test.')) {
+      console.error(
+        `Hardcoded English detail in meshcore.errors.requestFailed at ${relative(join(__dirname, '..'), file)}:${idx + 1} — use a dedicated i18n key (detail: "${hardcodedMeshcoreDetail[1]}")`,
+      );
+      errors++;
+    }
   });
 }
 

@@ -359,6 +359,31 @@
     "percentCharging": "Аккумулятор {{percent}} процентов, зарядка",
     "percent": "Батарея {{percent}} процентов"
   },
+  "bootSequence": {
+    "booting": "Загрузка стека сеток...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Сканирование каналов... {{count}}",
+    "meshtasticScanningChannels": "Сканирование настроенных каналов...",
+    "databaseNodes_one": "База данных: синхронизирован узел {{count}}",
+    "databaseNodes_other": "База данных: синхронизировано {{count}} узлов",
+    "syncingDatabase": "Синхронизация базы данных сети...",
+    "interfaceReady": "{{iface}} интерфейс готов",
+    "freqMhz": "Частота: {{mhz}} МГц",
+    "freqMhzBw": "Частота: {{mhz}} МГц | BW: {{bw}} кГц",
+    "configuringRadio": "Настройка радиопараметров...",
+    "contacts_one": "Контакты: {{count}} контакт загружен",
+    "contacts_other": "Контакты: {{count}} контакты загружены",
+    "loadingContacts": "Загрузка базы данных контактов...",
+    "routes_one": "Маршруты: {{count}} узел в сетке",
+    "routes_other": "Маршруты: {{count}} узлов в сетке",
+    "routesEstablished": "Установленные маршруты",
+    "meshActive": "Сеть активна",
+    "transportBle": "BLE",
+    "transportSerial": "Serial",
+    "transportHttp": "HTTP",
+    "transportRadio": "Радиосвязь",
+    "radioInterfaceFallback": "радиоинтерфейс"
+  },
   "channelUtilization": {
     "title": "Использование канала",
     "noData": "Данные об использовании канала пока отсутствуют",
@@ -889,7 +914,10 @@
       "addDefaultHubsAllPresent": "Концентраторы Testnet и Ratspeak по умолчанию уже настроены.",
       "addDefaultHubsFailed": "Не удалось добавить концентраторы по умолчанию.",
       "identityNotConfigured": "Сначала настройте идентификатор Reticulum на вкладке Network (Сеть) — создайте или импортируйте фразу восстановления.",
-      "identityRequiredHint": "Настройте идентификатор Reticulum на вкладке Network (Сеть) перед добавлением интерфейсов."
+      "identityRequiredHint": "Настройте идентификатор Reticulum на вкладке Network (Сеть) перед добавлением интерфейсов.",
+      "i2pPeersRequired": "Введите хотя бы один одноранговый адрес I2P.",
+      "i2pPeersTooLong": "Список одноранговых узлов I2P слишком длинный (макс. {{max}} символов).",
+      "i2pPeersInvalid": "Одноранговые узлы I2P должны быть адресами .b32.i2p, разделенными запятыми, без разрывов строк."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1668,7 +1696,9 @@
         "rejected": "Выход из комнаты отклонен по радио.",
         "failed": "Не мог покинуть комнату"
       },
-      "repeaterRpcInProgress": "Запрос на этот ретранслятор уже обрабатывается"
+      "repeaterRpcInProgress": "Запрос на этот ретранслятор уже обрабатывается",
+      "cliDangerNotConfirmed": "Деструктивные команды CLI требуют подтверждения на панели повторителей.",
+      "pingFailed": "Comment"
     },
     "mqttHints": {
       "notAuthorized": "Проверьте имя пользователя v1_, подпись токена и аудиторию JWT по сравнению с брокером; см. документы/letsmesh-mqtt-auth.md. При необходимости используйте Custom, чтобы вставить токен, выданный оператором.",
@@ -1734,6 +1764,25 @@
     "applyButton": "Применить конфиденциальность телеметрии",
     "contactCount_one": "{{count}} контакт",
     "contactCount_other": "{{count}} контакты"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "В очереди — отправит при подключении",
+    "queuedLabel": "В очереди",
+    "blockedDefault": "Заблокировано — нет ключа шифрования",
+    "blockedLabel": "Заблокирован",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB-",
+    "transportWifi": "Wi-Fi",
+    "transportBt": "БТ",
+    "noAck": "нет ACK",
+    "sending": "отправка…",
+    "delivered": "Доставлено",
+    "posted": "Размещено",
+    "failedPost": "Не удалось опубликовать",
+    "noAckTooltip": "Нет ACK (сообщение, возможно, все еще было передано; нет другого узла в диапазоне для подтверждения)",
+    "failed": "Не удалось",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Устройство"
   },
   "modulePanel": {
     "sectionSent": "{{name}} отправлено. Устройство может ненадолго перезагрузиться.",
@@ -3258,7 +3307,6 @@
     "heardPrefix": "Слышал:",
     "noLppData": "В этом ответе нет данных датчика LPP.",
     "enterCommand": "Введите команду...",
-    "useSavedPath": "Использовать сохраненный путь",
     "searchRepeatersPlaceholder": "Поиск ретрансляторов…",
     "openCliInterface": "Открытый интерфейс командной строки",
     "sensorLppButton": "Датчик (ЛПП)",
@@ -3349,7 +3397,14 @@
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
     "uptimeMinutes": "{{minutes}}м",
     "rememberPasswordSaveFailed": "Не удалось сохранить пароль повторителя для перезапуска. Он будет работать только для этой сессии.",
-    "telemetryFailedToast": "Сбой телеметрии: {{message}}"
+    "telemetryFailedToast": "Сбой телеметрии: {{message}}",
+    "cliMultiHopHint": "Многоузловой интерфейс командной строки более надежен после успешной трассировки Ping. Первая CLI-команда на multi-hop ретрансляторе автоматически запускает Ping, если в этой сессии нет trace. Если тайм-аут команд, сначала запустите Ping или проверьте синхронизацию часов в приложении MeshCore.",
+    "cliDangerConfirmTitle": "Выполнить деструктивную команду CLI?",
+    "cliDangerConfirmMessage": "Эта команда может перезагрузить, стереть или сбросить на заводские настройки повторитель: \"{{command}}\". Продолжайте, только если вы планируете это изменение.",
+    "cliDangerConfirmAction": "Выполнить команду",
+    "cliAutoPingToast": "Создание маршрута с помощью Ping перед CLI...",
+    "cliAutoPingFailed": "Не удалось выполнить Ping; запустите Ping вручную, прежде чем повторить попытку CLI на многоузловых повторителях.",
+    "cliCommandTooLong": "Слишком длинная команда CLI (максимум {{max}} символов)."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Объявить интервал (секунды)",
@@ -3819,49 +3874,5 @@
     "menuToastAvailableTitle": "Доступны обновления",
     "menuToastAvailableBody": "Доступна версия {{version}}.",
     "menuToastErrorTitle": "Не удалось выполнить проверку на наличие обновлений службы"
-  },
-  "messageStatusBadge": {
-    "queuedTooltip": "В очереди — отправит при подключении",
-    "queuedLabel": "В очереди",
-    "blockedDefault": "Заблокировано — нет ключа шифрования",
-    "blockedLabel": "Заблокирован",
-    "transportMqtt": "MQTT",
-    "transportUsb": "USB-",
-    "transportWifi": "Wi-Fi",
-    "transportBt": "БТ",
-    "noAck": "нет ACK",
-    "sending": "отправка…",
-    "delivered": "Доставлено",
-    "posted": "Размещено",
-    "failedPost": "Не удалось опубликовать",
-    "noAckTooltip": "Нет ACK (сообщение, возможно, все еще было передано; нет другого узла в диапазоне для подтверждения)",
-    "failed": "Не удалось",
-    "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "Устройство"
-  },
-  "bootSequence": {
-    "booting": "Загрузка стека сеток...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Сканирование каналов... {{count}}",
-    "meshtasticScanningChannels": "Сканирование настроенных каналов...",
-    "databaseNodes_one": "База данных: синхронизирован узел {{count}}",
-    "databaseNodes_other": "База данных: синхронизировано {{count}} узлов",
-    "syncingDatabase": "Синхронизация базы данных сети...",
-    "interfaceReady": "{{iface}} интерфейс готов",
-    "freqMhz": "Частота: {{mhz}} МГц",
-    "freqMhzBw": "Частота: {{mhz}} МГц | BW: {{bw}} кГц",
-    "configuringRadio": "Настройка радиопараметров...",
-    "contacts_one": "Контакты: {{count}} контакт загружен",
-    "contacts_other": "Контакты: {{count}} контакты загружены",
-    "loadingContacts": "Загрузка базы данных контактов...",
-    "routes_one": "Маршруты: {{count}} узел в сетке",
-    "routes_other": "Маршруты: {{count}} узлов в сетке",
-    "routesEstablished": "Установленные маршруты",
-    "meshActive": "Сеть активна",
-    "transportBle": "BLE",
-    "transportSerial": "Serial",
-    "transportHttp": "HTTP",
-    "transportRadio": "Радиосвязь",
-    "radioInterfaceFallback": "радиоинтерфейс"
   }
 }

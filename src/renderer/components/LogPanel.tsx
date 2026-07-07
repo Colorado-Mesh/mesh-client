@@ -89,7 +89,8 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
       entry.message.includes('[NobleBleManager]') ||
       entry.message.includes('[BLE:') ||
       entry.message.includes('[BLE:meshcore]') ||
-      entry.message.includes('[IpcNobleConnection:meshtastic]')
+      entry.message.includes('[IpcNobleConnection:meshtastic]') ||
+      entry.message.includes('[meshtasticSdkRoutingErrorLog]')
     );
   }
   if (protocol === 'meshcore') {

@@ -60,7 +60,7 @@ interface NodeDetailModalProps {
   node: MeshNode | null;
   onClose: () => void;
   onRequestPosition?: (nodeNum: number) => Promise<void>;
-  onTraceRoute?: (nodeNum: number) => Promise<void>;
+  onTraceRoute?: (nodeNum: number) => Promise<boolean | undefined>;
   traceRouteHops?: string[];
   onDeleteNode?: (nodeNum: number) => Promise<void>;
   onMessageNode?: (nodeNum: number) => void;

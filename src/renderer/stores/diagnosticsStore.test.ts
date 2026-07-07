@@ -236,6 +236,45 @@ describe('diagnosticsStore analysis timers', () => {
     vi.runAllTimers();
   });
 
+  it('superseded runReanalysis generation does not mutate diagnostic rows', () => {
+    const store = useDiagnosticsStore.getState();
+    useDiagnosticsStore.setState({
+      diagnosticRows: [
+        {
+          kind: 'routing',
+          id: 'routing:stale-marker',
+          nodeId: 99,
+          type: 'bad_route',
+          severity: 'warning',
+          description: 'stale marker row',
+          detectedAt: Date.now(),
+        },
+      ],
+      diagnosticRowsRestoredAt: null,
+    });
+
+    const largeMap = new Map<number, MeshNode>();
+    for (let i = 1; i <= 2001; i++) {
+      largeMap.set(i, sampleNode(i));
+    }
+    store.runReanalysis(() => largeMap, 1);
+    store.runReanalysis(() => new Map([[2, sampleNode(2)]]), 1);
+
+    vi.advanceTimersByTime(2_001);
+    vi.runOnlyPendingTimers();
+    const rowsAfterLatest = useDiagnosticsStore.getState().diagnosticRows;
+    const markerAfterLatest = rowsAfterLatest.some((r) => r.id === 'routing:stale-marker');
+
+    vi.advanceTimersByTime(10_000);
+    vi.runOnlyPendingTimers();
+    const rowsAfterStaleWindow = useDiagnosticsStore.getState().diagnosticRows;
+
+    expect(markerAfterLatest).toBe(
+      rowsAfterStaleWindow.some((r) => r.id === 'routing:stale-marker'),
+    );
+    expect(rowsAfterStaleWindow).toEqual(rowsAfterLatest);
+  });
+
   it('clearDiagnostics cancels both pending analysis timers', () => {
     const store = useDiagnosticsStore.getState();
     store.processNodeUpdate(sampleNode(1), null);

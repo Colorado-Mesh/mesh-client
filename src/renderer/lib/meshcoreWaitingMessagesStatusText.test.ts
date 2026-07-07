@@ -6,6 +6,7 @@ import {
   meshcoreWaitingMessagesStatusText,
   meshcoreWaitingMessagesSyncBusy,
   meshcoreWaitingMessagesVisible,
+  meshcoreWaitingMessagesVisibleForProtocol,
 } from './meshcoreWaitingMessagesStatusText';
 
 const baseInput: MeshcoreWaitingMessagesStatusInput = {
@@ -94,5 +95,36 @@ describe('meshcoreWaitingMessagesStatusText', () => {
     };
     expect(meshcoreWaitingMessagesClickableSync(input)).toBe(true);
     expect(meshcoreWaitingMessagesStatusText(t, input)).toBe('4 queued Sync now');
+  });
+});
+
+describe('meshcoreWaitingMessagesVisibleForProtocol', () => {
+  it('hides deferred-only state off the MeshCore tab', () => {
+    const input: MeshcoreWaitingMessagesStatusInput = {
+      ...baseInput,
+      waitingMessagesDrainDeferred: true,
+    };
+    expect(meshcoreWaitingMessagesVisible(input)).toBe(true);
+    expect(meshcoreWaitingMessagesVisibleForProtocol(input, 'meshcore')).toBe(true);
+    expect(meshcoreWaitingMessagesVisibleForProtocol(input, 'meshtastic')).toBe(false);
+    expect(meshcoreWaitingMessagesVisibleForProtocol(input, 'reticulum')).toBe(false);
+  });
+
+  it('keeps queued backlog visible cross-tab', () => {
+    const input: MeshcoreWaitingMessagesStatusInput = {
+      ...baseInput,
+      waitingMessagesCount: 2,
+    };
+    expect(meshcoreWaitingMessagesVisibleForProtocol(input, 'meshtastic')).toBe(true);
+    expect(meshcoreWaitingMessagesVisibleForProtocol(input, 'meshcore')).toBe(true);
+  });
+
+  it('keeps active sync visible cross-tab', () => {
+    const input: MeshcoreWaitingMessagesStatusInput = {
+      ...baseInput,
+      waitingMessagesSilentDrainActive: true,
+    };
+    expect(meshcoreWaitingMessagesVisibleForProtocol(input, 'meshtastic')).toBe(true);
+    expect(meshcoreWaitingMessagesVisibleForProtocol(input, 'meshcore')).toBe(true);
   });
 });

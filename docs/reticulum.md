@@ -122,6 +122,7 @@ Config lives under `userData/reticulum/config/` (rnsd INI). The Connection tab s
 
 - **All:** display name
 - **TCP client:** host, port (mesh hub — default port **4242**); IPv6 literals use brackets: `[2001:db8::1]:4242`
+- **I2P:** comma-separated peer hostnames (`.b32.i2p` addresses, e.g. `{52-base32-chars}.b32.i2p`); max **512** characters total; validated in UI and sidecar before write
 - **RNode:** USB serial, **Bluetooth** (`ble://…`), or **Wi‑Fi** (`tcp://host[:7633]`, default **7633**), LoRa preset, callsign
 - **BLE Peer mesh:** optional seed peer addresses
 - **Auto:** name only (link-local discovery)

@@ -359,6 +359,31 @@
     "percentCharging": "Batterij {{percent}} procent, bezig met opladen",
     "percent": "Batterij {{percent}} procent"
   },
+  "bootSequence": {
+    "booting": "Opstarten mesh stack...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Kanalen scannen... {{count}}",
+    "meshtasticScanningChannels": "Geconfigureerde kanalen scannen...",
+    "databaseNodes_one": "Database: {{count}} knooppunt gesynchroniseerd",
+    "databaseNodes_other": "Database: {{count}} knooppunten gesynchroniseerd",
+    "syncingDatabase": "Netwerkdatabase wordt gesynchroniseerd...",
+    "interfaceReady": "{{iface}} interface gereed",
+    "freqMhz": "Freq: {{mhz}} MHz",
+    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
+    "configuringRadio": "Radioparameters configureren...",
+    "contacts_one": "Contacten: {{count}} contact geladen",
+    "contacts_other": "Contacten: {{count}} contacten geladen",
+    "loadingContacts": "Contactendatabase wordt geladen...",
+    "routes_one": "Routes: {{count}} knooppunt in mesh",
+    "routes_other": "Routes: {{count}} knooppunten in mesh",
+    "routesEstablished": "Routes vastgesteld",
+    "meshActive": "Mesh netwerk actief",
+    "transportBle": "BLE",
+    "transportSerial": "Serieel",
+    "transportHttp": "HTTP",
+    "transportRadio": "Radio",
+    "radioInterfaceFallback": "radio-interface"
+  },
   "channelUtilization": {
     "title": "Kanaalgebruik",
     "noData": "Nog geen kanaalgebruiksgegevens beschikbaar",
@@ -889,7 +914,10 @@
       "addDefaultHubsAllPresent": "Standaard testnet en Ratspeak-hubs zijn al geconfigureerd.",
       "addDefaultHubsFailed": "Kan standaardhubs niet toevoegen.",
       "identityNotConfigured": "Stel eerst een Reticulum-identiteit in op het tabblad Netwerk — genereer of importeer een herstelzin.",
-      "identityRequiredHint": "Configureer een Reticulum-identiteit op het tabblad Netwerk voordat u interfaces toevoegt."
+      "identityRequiredHint": "Configureer een Reticulum-identiteit op het tabblad Netwerk voordat u interfaces toevoegt.",
+      "i2pPeersRequired": "Voer ten minste één I2P-peeradres in.",
+      "i2pPeersTooLong": "De I2P-peerlijst is te lang (max. {{max}} tekens).",
+      "i2pPeersInvalid": "I2P-peers moeten door komma's gescheiden .b32.i2p-adressen zijn zonder regeleinden."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1668,7 +1696,9 @@
         "rejected": "Uitloggen van kamer geweigerd via de radio.",
         "failed": "Kon de kamer niet verlaten"
       },
-      "repeaterRpcInProgress": "Er is al een aanvraag voor deze repeater in behandeling"
+      "repeaterRpcInProgress": "Er is al een aanvraag voor deze repeater in behandeling",
+      "cliDangerNotConfirmed": "Destructieve CLI-opdrachten moeten worden bevestigd in het paneel Herhalers.",
+      "pingFailed": "Ping mislukt"
     },
     "mqttHints": {
       "notAuthorized": "Controleer v1_ gebruikersnaam, tokenhandtekening en JWT-doelgroep versus makelaar; zie docs/letsmesh-mqtt-auth.md. Gebruik Aangepast om indien nodig een door de operator uitgegeven token te plakken.",
@@ -1734,6 +1764,25 @@
     "applyButton": "Pas telemetrieprivacy toe",
     "contactCount_one": "{{count}} contactpersoon",
     "contactCount_other": "{{count}} contacten"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "In wachtrij — wordt verzonden wanneer er verbinding is",
+    "queuedLabel": "In wachtrij geplaatst",
+    "blockedDefault": "Geblokkeerd — geen versleutelingssleutel beschikbaar",
+    "blockedLabel": "Geblokkeerd",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "Wifi",
+    "transportBt": "BT)",
+    "noAck": "geen ACK",
+    "sending": "Versturen...",
+    "delivered": "Geleverd",
+    "posted": "Geboekt",
+    "failedPost": "Publiceren mislukt",
+    "noAckTooltip": "Geen ACK (bericht kan nog steeds zijn uitgezonden; geen ander knooppunt binnen bereik om te bevestigen)",
+    "failed": "Mislukt",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Toestel"
   },
   "modulePanel": {
     "sectionSent": "{{name}} verzonden. Het apparaat kan kortstondig opnieuw opstarten.",
@@ -3258,7 +3307,6 @@
     "heardPrefix": "Gehoord:",
     "noLppData": "Geen LPP-sensorgegevens in dit antwoord.",
     "enterCommand": "Voer opdracht in...",
-    "useSavedPath": "Gebruik opgeslagen pad",
     "searchRepeatersPlaceholder": "Zoek repeaters...",
     "openCliInterface": "Open de CLI-interface",
     "sensorLppButton": "Sensor (LPP)",
@@ -3349,7 +3397,14 @@
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
     "uptimeMinutes": "{{minutes}}m",
     "rememberPasswordSaveFailed": "Kon repeaterwachtwoord niet opslaan voor herstarten. Het werkt alleen voor deze sessie.",
-    "telemetryFailedToast": "Telemetrie mislukt: {{message}}"
+    "telemetryFailedToast": "Telemetrie mislukt: {{message}}",
+    "cliMultiHopHint": "Multi-hop CLI is betrouwbaarder na een succesvolle Ping-trace. Het eerste CLI-commando op een multi-hop repeater voert Ping automatisch uit wanneer er geen trace in deze sessie bestaat. Als de opdrachten een time-out hebben, voer je eerst Ping uit of controleer je de synchronisatie van de bijbehorende klok in de MeshCore-app.",
+    "cliDangerConfirmTitle": "Destructieve CLI-opdracht uitvoeren?",
+    "cliDangerConfirmMessage": "Dit commando kan de repeater opnieuw opstarten, wissen of in de fabriek opnieuw instellen: \"{{command}}\". Ga alleen verder als u van plan bent deze wijziging door te voeren.",
+    "cliDangerConfirmAction": "Opdracht uitvoeren",
+    "cliAutoPingToast": "Route vaststellen met Ping vóór CLI...",
+    "cliAutoPingFailed": "Ping mislukt; voer Ping handmatig uit voordat u CLI opnieuw probeert op multi-hop repeaters.",
+    "cliCommandTooLong": "CLI-opdracht is te lang (max {{max}} tekens)."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",
@@ -3819,49 +3874,5 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "Versie {{version}} is beschikbaar.",
     "menuToastErrorTitle": "Updatecontrole mislukt"
-  },
-  "messageStatusBadge": {
-    "queuedTooltip": "In wachtrij — wordt verzonden wanneer er verbinding is",
-    "queuedLabel": "In wachtrij geplaatst",
-    "blockedDefault": "Geblokkeerd — geen versleutelingssleutel beschikbaar",
-    "blockedLabel": "Geblokkeerd",
-    "transportMqtt": "MQTT",
-    "transportUsb": "USB",
-    "transportWifi": "Wifi",
-    "transportBt": "BT)",
-    "noAck": "geen ACK",
-    "sending": "Versturen...",
-    "delivered": "Geleverd",
-    "posted": "Geboekt",
-    "failedPost": "Publiceren mislukt",
-    "noAckTooltip": "Geen ACK (bericht kan nog steeds zijn uitgezonden; geen ander knooppunt binnen bereik om te bevestigen)",
-    "failed": "Mislukt",
-    "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "Toestel"
-  },
-  "bootSequence": {
-    "booting": "Opstarten mesh stack...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Kanalen scannen... {{count}}",
-    "meshtasticScanningChannels": "Geconfigureerde kanalen scannen...",
-    "databaseNodes_one": "Database: {{count}} knooppunt gesynchroniseerd",
-    "databaseNodes_other": "Database: {{count}} knooppunten gesynchroniseerd",
-    "syncingDatabase": "Netwerkdatabase wordt gesynchroniseerd...",
-    "interfaceReady": "{{iface}} interface gereed",
-    "freqMhz": "Freq: {{mhz}} MHz",
-    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
-    "configuringRadio": "Radioparameters configureren...",
-    "contacts_one": "Contacten: {{count}} contact geladen",
-    "contacts_other": "Contacten: {{count}} contacten geladen",
-    "loadingContacts": "Contactendatabase wordt geladen...",
-    "routes_one": "Routes: {{count}} knooppunt in mesh",
-    "routes_other": "Routes: {{count}} knooppunten in mesh",
-    "routesEstablished": "Routes vastgesteld",
-    "meshActive": "Mesh netwerk actief",
-    "transportBle": "BLE",
-    "transportSerial": "Serieel",
-    "transportHttp": "HTTP",
-    "transportRadio": "Radio",
-    "radioInterfaceFallback": "radio-interface"
   }
 }

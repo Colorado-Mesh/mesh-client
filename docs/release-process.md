@@ -108,7 +108,7 @@ Each job runs `pnpm install --frozen-lockfile`, `pnpm run rebuild`, then publish
 After builds finish, **`packaging-smoke`** runs on:
 
 - macOS — `verify-mac-packaging.mjs` (includes bundled Reticulum sidecar in `.app`)
-- Linux — `verify-linux-packaging.mjs` plus `test-linux-appimage-reticulum-sidecar.mjs` (extracts x64/arm64 AppImages and asserts sidecar)
+- Linux — `verify-linux-packaging.mjs` plus `test-linux-appimage-reticulum-sidecar.mjs` (extracts x64/arm64 AppImages and asserts sidecar). **`verify-linux-packaging.mjs`** also asserts each `.deb` **Description** field is ASCII-only (no mojibake `??`) via `dpkg-deb -f` — non-ASCII control metadata breaks some package managers and mirrors.
 - Windows x64 — NSIS install smoke test (`test-win-nsis-install.mjs`, asserts sidecar after install)
 - **`windows-11-arm`** — arm64 NSIS install smoke test with 7z probe (asserts sidecar inside installer payload and after install)
 

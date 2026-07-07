@@ -359,6 +359,31 @@
     "percentCharging": "Akku {{percent}} Prozent, Laden",
     "percent": "Batterie {{percent}} Prozent"
   },
+  "bootSequence": {
+    "booting": "Mesh-Stack wird gestartet...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Kanäle werden gescannt... {{count}}",
+    "meshtasticScanningChannels": "Konfigurierte Kanäle werden gescannt...",
+    "databaseNodes_one": "Datenbank: {{count}} Knoten synchronisiert",
+    "databaseNodes_other": "Datenbank: {{count}} Knoten synchronisiert",
+    "syncingDatabase": "Mesh-Datenbank wird synchronisiert...",
+    "interfaceReady": "{{iface}} schnittstellenfertig",
+    "freqMhz": "Frequenz: {{mhz}} MHz",
+    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
+    "configuringRadio": "Funkparameter werden konfiguriert...",
+    "contacts_one": "Kontakte: {{count}} Kontakt geladen",
+    "contacts_other": "Kontakte: {{count}} Kontakte geladen",
+    "loadingContacts": "Kontaktdatenbank wird geladen...",
+    "routes_one": "Routen: {{count}} Knoten im Netz",
+    "routes_other": "Routen: {{count}} Knoten im Netz",
+    "routesEstablished": "Etablierte Routen",
+    "meshActive": "Netzwerk aktiv",
+    "transportBle": "BLE",
+    "transportSerial": "Seriell",
+    "transportHttp": "HTTP",
+    "transportRadio": "Radio",
+    "radioInterfaceFallback": "Funkschnittstelle"
+  },
   "channelUtilization": {
     "title": "Kanalauslastung",
     "noData": "Noch keine Kanalauslastungsdaten verfügbar",
@@ -889,7 +914,10 @@
       "addDefaultHubsAllPresent": "Standard-Testnet- und Ratspeak-Hubs sind bereits konfiguriert.",
       "addDefaultHubsFailed": "Standard-Hubs konnten nicht hinzugefügt werden.",
       "identityNotConfigured": "Richten Sie zuerst eine Reticulum-Identität auf der Registerkarte Netzwerk ein — generieren oder importieren Sie eine Wiederherstellungsphrase.",
-      "identityRequiredHint": "Konfigurieren Sie eine Reticulum-Identität auf der Registerkarte Netzwerk, bevor Sie Schnittstellen hinzufügen."
+      "identityRequiredHint": "Konfigurieren Sie eine Reticulum-Identität auf der Registerkarte Netzwerk, bevor Sie Schnittstellen hinzufügen.",
+      "i2pPeersRequired": "Geben Sie mindestens eine I2P-Peer-Adresse ein.",
+      "i2pPeersTooLong": "Die I2P-Peer-Liste ist zu lang (max. {{max}} Zeichen).",
+      "i2pPeersInvalid": "I2P-Peers müssen kommagetrennte .b32.i2p-Adressen ohne Zeilenumbrüche sein."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1668,7 +1696,9 @@
         "rejected": "Raumabmeldung per Funk abgelehnt.",
         "failed": "Konnte den Raum nicht verlassen"
       },
-      "repeaterRpcInProgress": "Eine Anfrage für diesen Repeater ist bereits in Bearbeitung"
+      "repeaterRpcInProgress": "Eine Anfrage für diesen Repeater ist bereits in Bearbeitung",
+      "cliDangerNotConfirmed": "Destruktive CLI-Befehle müssen im Repeater-Panel bestätigt werden.",
+      "pingFailed": "Ping fehlgeschlagenComment"
     },
     "mqttHints": {
       "notAuthorized": "Überprüfen Sie v1_-Benutzernamen, Token-Signatur und JWT-Zielgruppe im Vergleich zum Broker. siehe docs/letsmesh-mqtt-auth.md. Verwenden Sie „Benutzerdefiniert“, um bei Bedarf ein vom Bediener ausgestelltes Token einzufügen.",
@@ -1734,6 +1764,25 @@
     "applyButton": "Telemetrie-Datenschutz anwenden",
     "contactCount_one": "{{count}} Kontakt",
     "contactCount_other": "{{count}} Kontakte"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "In der Warteschlange — sendet, wenn eine Verbindung besteht",
+    "queuedLabel": "In Warteschlange",
+    "blockedDefault": "Gesperrt — kein Verschlüsselungsschlüssel verfügbar",
+    "blockedLabel": "Blockiert",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WiFi",
+    "transportBt": "BT",
+    "noAck": "kein ACK",
+    "sending": "Senden…",
+    "delivered": "Übermittelt",
+    "posted": "am",
+    "failedPost": "Nicht veröffentlicht",
+    "noAckTooltip": "Kein ACK (Nachricht darf noch gesendet worden sein; kein anderer Knoten in Reichweite zu quittieren)",
+    "failed": "Nicht bestanden",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Vorrichtung"
   },
   "modulePanel": {
     "sectionSent": "{{name}} gesendet. Das Gerät kann kurzzeitig neu gestartet werden.",
@@ -3258,7 +3307,6 @@
     "heardPrefix": "Gehört:",
     "noLppData": "In dieser Antwort sind keine LPP-Sensordaten enthalten.",
     "enterCommand": "Befehl eingeben...",
-    "useSavedPath": "Gespeicherten Pfad verwenden",
     "searchRepeatersPlaceholder": "Suche nach Repeatern…",
     "openCliInterface": "Öffnen Sie die CLI-Schnittstelle",
     "sensorLppButton": "Sensor (LPP)",
@@ -3348,8 +3396,15 @@
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
     "uptimeMinutes": "{{minutes}}m",
-    "rememberPasswordSaveFailed": "Wiederholer-Passwort für Neustarts konnte nicht gespeichert werden. Es funktioniert nur für diese Sitzung.",
-    "telemetryFailedToast": "Telemetrie fehlgeschlagen: {{message}}"
+    "rememberPasswordSaveFailed": "Repeater-Passwort für Neustarts konnte nicht gespeichert werden. Es funktioniert nur für diese Sitzung.",
+    "telemetryFailedToast": "Telemetrie fehlgeschlagen: {{message}}",
+    "cliMultiHopHint": "Multi-Hop-CLI ist nach einer erfolgreichen Ping-Verfolgung zuverlässiger. Beim ersten CLI-Befehl an einem Multi-Hop-Repeater wird Ping automatisch ausgeführt, wenn in dieser Sitzung noch keine Trace existiert. Wenn Befehle eine Zeitüberschreitung haben, führen Sie zuerst Ping aus oder überprüfen Sie die Synchronisierung der Begleituhr in der MeshCore-App.",
+    "cliDangerConfirmTitle": "Zerstörerischen CLI-Befehl ausführen?",
+    "cliDangerConfirmMessage": "Dieser Befehl kann den Repeater neu starten, löschen oder auf die Werkseinstellungen zurücksetzen: \"{{command}}\". Fahren Sie nur fort, wenn Sie diese Änderung beabsichtigen.",
+    "cliDangerConfirmAction": "Befehl ausführen",
+    "cliAutoPingToast": "Route mit Ping vor CLI wird festgelegt...",
+    "cliAutoPingFailed": "Ping fehlgeschlagen; führen Sie Ping manuell aus, bevor Sie CLI bei Multi-Hop-Repeatern erneut versuchen.",
+    "cliCommandTooLong": "Der CLI-Befehl ist zu lang (max. {{max}} Zeichen)."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Ankündigungsintervall (Sekunden)",
@@ -3819,49 +3874,5 @@
     "menuToastAvailableTitle": "Update verfügbar",
     "menuToastAvailableBody": "Version {{version}} liegt vor.",
     "menuToastErrorTitle": "Update-Prüfung fehlgeschlagen"
-  },
-  "messageStatusBadge": {
-    "queuedTooltip": "In der Warteschlange — sendet, wenn eine Verbindung besteht",
-    "queuedLabel": "In Warteschlange",
-    "blockedDefault": "Gesperrt — kein Verschlüsselungsschlüssel verfügbar",
-    "blockedLabel": "Blockiert",
-    "transportMqtt": "MQTT",
-    "transportUsb": "USB",
-    "transportWifi": "WiFi",
-    "transportBt": "BT",
-    "noAck": "kein ACK",
-    "sending": "Senden…",
-    "delivered": "Übermittelt",
-    "posted": "am",
-    "failedPost": "Nicht veröffentlicht",
-    "noAckTooltip": "Kein ACK (Nachricht darf noch gesendet worden sein; kein anderer Knoten in Reichweite zu quittieren)",
-    "failed": "Nicht bestanden",
-    "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "Vorrichtung"
-  },
-  "bootSequence": {
-    "booting": "Mesh-Stack wird gestartet...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Kanäle werden gescannt... {{count}}",
-    "meshtasticScanningChannels": "Konfigurierte Kanäle werden gescannt...",
-    "databaseNodes_one": "Datenbank: {{count}} Knoten synchronisiert",
-    "databaseNodes_other": "Datenbank: {{count}} Knoten synchronisiert",
-    "syncingDatabase": "Mesh-Datenbank wird synchronisiert...",
-    "interfaceReady": "{{iface}} schnittstellenfertig",
-    "freqMhz": "Frequenz: {{mhz}} MHz",
-    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
-    "configuringRadio": "Funkparameter werden konfiguriert...",
-    "contacts_one": "Kontakte: {{count}} Kontakt geladen",
-    "contacts_other": "Kontakte: {{count}} Kontakte geladen",
-    "loadingContacts": "Kontaktdatenbank wird geladen...",
-    "routes_one": "Routen: {{count}} Knoten im Netz",
-    "routes_other": "Routen: {{count}} Knoten im Netz",
-    "routesEstablished": "Etablierte Routen",
-    "meshActive": "Netzwerk aktiv",
-    "transportBle": "BLE",
-    "transportSerial": "Seriell",
-    "transportHttp": "HTTP",
-    "transportRadio": "Radio",
-    "radioInterfaceFallback": "Funkschnittstelle"
   }
 }

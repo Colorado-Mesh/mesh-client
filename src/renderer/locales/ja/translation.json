@@ -359,6 +359,31 @@
     "percentCharging": "バッテリー {{percent}} パーセント、充電中",
     "percent": "バッテリー {{percent}} パーセント"
   },
+  "bootSequence": {
+    "booting": "メッシュスタックを起動しています...",
+    "meshtasticLora": "LoRa ： {{model}}",
+    "meshtasticScanningChannelsCount": "チャンネルをスキャンしています... {{count}}",
+    "meshtasticScanningChannels": "設定されたチャンネルをスキャンしています...",
+    "databaseNodes_one": "データベース： {{count}}ノードが同期されました",
+    "databaseNodes_other": "データベース： {{count}}ノードが同期されました",
+    "syncingDatabase": "メッシュデータベースを同期しています...",
+    "interfaceReady": "{{iface}}インターフェース準備完了",
+    "freqMhz": "周波数： {{mhz}} MHz",
+    "freqMhzBw": "周波数： {{mhz}} MHz | BW ： {{bw}} kHz",
+    "configuringRadio": "無線パラメータを設定しています...",
+    "contacts_one": "連絡先： {{count}}連絡先が読み込まれました",
+    "contacts_other": "Contacts: {{count}}件の連絡先が読み込まれました",
+    "loadingContacts": "連絡先データベースを読み込んでいます...",
+    "routes_one": "ルート：メッシュ内の{{count}}ノード",
+    "routes_other": "ルート：メッシュ内の{{count}}ノード",
+    "routesEstablished": "ルートが確立されました",
+    "meshActive": "サイトネットワークで有効",
+    "transportBle": "BLE",
+    "transportSerial": "シリアル",
+    "transportHttp": "HTTP",
+    "transportRadio": "通信機",
+    "radioInterfaceFallback": "無線インターフェース"
+  },
   "channelUtilization": {
     "title": "チャネル使用率",
     "noData": "利用可能なチャネル使用率データはまだありません",
@@ -889,7 +914,10 @@
       "addDefaultHubsAllPresent": "デフォルトのテストネットとRatspeakハブはすでに設定されています。",
       "addDefaultHubsFailed": "デフォルトのハブを追加できませんでした。",
       "identityNotConfigured": "最初に[ネットワーク]タブでReticulum IDを設定します。リカバリフレーズを生成またはインポートします。",
-      "identityRequiredHint": "インターフェースを追加する前に、[ネットワーク]タブでReticulumアイデンティティを設定します。"
+      "identityRequiredHint": "インターフェースを追加する前に、[ネットワーク]タブでReticulumアイデンティティを設定します。",
+      "i2pPeersRequired": "少なくとも1つのI2Pピアアドレスを入力してください。",
+      "i2pPeersTooLong": "I2Pピアリストが長すぎます（最大{{max}}文字）。",
+      "i2pPeersInvalid": "I2Pピアは、改行のないカンマ区切りの.b32.i2pアドレスでなければなりません。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1668,7 +1696,9 @@
         "rejected": "ルームのログアウトが無線によって拒否されました。",
         "failed": "部屋から出られませんでした"
       },
-      "repeaterRpcInProgress": "このリピーターに対するリクエストはすでに進行中です"
+      "repeaterRpcInProgress": "このリピーターに対するリクエストはすでに進行中です",
+      "cliDangerNotConfirmed": "破壊的なCLIコマンドは、リピーターパネルで確認する必要があります。",
+      "pingFailed": "Ping 失敗Comment"
     },
     "mqttHints": {
       "notAuthorized": "v1_ ユーザー名、トークン署名、JWT オーディエンスとブローカーを検証します。 docs/letsmesh-mqtt-auth.md を参照してください。必要に応じて、カスタムを使用してオペレーター発行のトークンを貼り付けます。",
@@ -1734,6 +1764,25 @@
     "applyButton": "テレメトリーのプライバシーを適用する",
     "contactCount_one": "{{count}} 連絡先",
     "contactCount_other": "{{count}} の連絡先"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "待機中—接続時に送信されます",
+    "queuedLabel": "待機リストに追加済み",
+    "blockedDefault": "ブロック済み—利用可能な暗号化キーがありません",
+    "blockedLabel": "ブロック済",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WiFi",
+    "transportBt": "BT",
+    "noAck": "aCKなし",
+    "sending": "送信中・・・",
+    "delivered": "配達済み",
+    "posted": "投稿",
+    "failedPost": "投稿に失敗しました",
+    "noAckTooltip": "ACKなし（メッセージはまだブロードキャストされている可能性があります。確認応答する範囲内の他のノードはありません）",
+    "failed": "失敗しました",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "デバイス"
   },
   "modulePanel": {
     "sectionSent": "{{name}} が送信されました。デバイスが短時間再起動する場合があります。",
@@ -3258,7 +3307,6 @@
     "heardPrefix": "聞いた：",
     "noLppData": "この応答には LPP センサー データがありません。",
     "enterCommand": "コマンドを入力してください...",
-    "useSavedPath": "保存されたパスを使用する",
     "searchRepeatersPlaceholder": "リピーターを検索…",
     "openCliInterface": "CLI インターフェイスを開く",
     "sensorLppButton": "センサー（LPP）",
@@ -3349,7 +3397,14 @@
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
     "uptimeMinutes": "{{minutes}}分",
     "rememberPasswordSaveFailed": "再起動用のリピーターパスワードを保存できませんでした。このセッションでのみ機能します。",
-    "telemetryFailedToast": "テレメトリに失敗しました： {{message}}"
+    "telemetryFailedToast": "テレメトリに失敗しました： {{message}}",
+    "cliMultiHopHint": "マルチホップCLIは、Pingトレースが成功した後、より信頼性が高くなります。このセッションにtraceがない場合、マルチホップリピーターへの最初のCLIコマンドはPingを自動的に実行します。コマンドがタイムアウトした場合は、まずPingを実行するか、MeshCoreアプリでコンパニオンクロック同期を確認してください。",
+    "cliDangerConfirmTitle": "破壊的なCLIコマンドを実行しますか？",
+    "cliDangerConfirmMessage": "このコマンドは、リピーターを再起動、消去、または工場出荷時にリセットする場合があります：\" {{command}} \"。この変更を意図している場合にのみ続行してください。",
+    "cliDangerConfirmAction": "コマンドを実行",
+    "cliAutoPingToast": "CLIの前にPingでルートを確立しています...",
+    "cliAutoPingFailed": "Pingに失敗しました。マルチホップリピーターでCLIを再試行する前に、手動でPingを実行してください。",
+    "cliCommandTooLong": "CLIコマンドが長すぎます（最大{{max}}文字）。"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",
@@ -3819,49 +3874,5 @@
     "menuToastAvailableTitle": "利用可能なアップデート",
     "menuToastAvailableBody": "バージョン{{version}}が利用できます。",
     "menuToastErrorTitle": "アップデートチェックに失敗しました"
-  },
-  "messageStatusBadge": {
-    "queuedTooltip": "待機中—接続時に送信されます",
-    "queuedLabel": "待機リストに追加済み",
-    "blockedDefault": "ブロック済み—利用可能な暗号化キーがありません",
-    "blockedLabel": "ブロック済",
-    "transportMqtt": "MQTT",
-    "transportUsb": "USB",
-    "transportWifi": "WiFi",
-    "transportBt": "BT",
-    "noAck": "aCKなし",
-    "sending": "送信中・・・",
-    "delivered": "配達済み",
-    "posted": "投稿",
-    "failedPost": "投稿に失敗しました",
-    "noAckTooltip": "ACKなし（メッセージはまだブロードキャストされている可能性があります。確認応答する範囲内の他のノードはありません）",
-    "failed": "失敗しました",
-    "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "デバイス"
-  },
-  "bootSequence": {
-    "booting": "メッシュスタックを起動しています...",
-    "meshtasticLora": "LoRa ： {{model}}",
-    "meshtasticScanningChannelsCount": "チャンネルをスキャンしています... {{count}}",
-    "meshtasticScanningChannels": "設定されたチャンネルをスキャンしています...",
-    "databaseNodes_one": "データベース： {{count}}ノードが同期されました",
-    "databaseNodes_other": "データベース： {{count}}ノードが同期されました",
-    "syncingDatabase": "メッシュデータベースを同期しています...",
-    "interfaceReady": "{{iface}}インターフェース準備完了",
-    "freqMhz": "周波数： {{mhz}} MHz",
-    "freqMhzBw": "周波数： {{mhz}} MHz | BW ： {{bw}} kHz",
-    "configuringRadio": "無線パラメータを設定しています...",
-    "contacts_one": "連絡先： {{count}}連絡先が読み込まれました",
-    "contacts_other": "Contacts: {{count}}件の連絡先が読み込まれました",
-    "loadingContacts": "連絡先データベースを読み込んでいます...",
-    "routes_one": "ルート：メッシュ内の{{count}}ノード",
-    "routes_other": "ルート：メッシュ内の{{count}}ノード",
-    "routesEstablished": "ルートが確立されました",
-    "meshActive": "サイトネットワークで有効",
-    "transportBle": "BLE",
-    "transportSerial": "シリアル",
-    "transportHttp": "HTTP",
-    "transportRadio": "通信機",
-    "radioInterfaceFallback": "無線インターフェース"
   }
 }

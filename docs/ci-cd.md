@@ -62,6 +62,8 @@ Triggered by pushing a version tag (e.g., `v1.2.3`):
 3. Installs Linux build dependencies (`libudev-dev`, `rpm`)
 4. Publishes artifacts to GitHub Releases
 
+Linux packaging smoke (`verify-linux-packaging.mjs`) asserts `.deb` **Description** metadata is ASCII-only. See [Release Process](release-process.md).
+
 See [Release Process](release-process.md) for the maintainer workflow.
 
 ---
@@ -251,7 +253,7 @@ CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage 
 
 ## Packaging smoke builds (`build.yaml` / `release.yaml`)
 
-Linux arm64 cross-builds on Ubuntu 24.04 runners use `scripts/ci-setup-linux-arm64-apt.sh` before `dpkg --add-architecture arm64`.
+Linux arm64 cross-builds on Ubuntu 24.04 runners use `scripts/ci-setup-linux-arm64-apt.sh` before `dpkg --add-architecture arm64`. The script pins `Architectures: amd64` only on deb822 stanzas in `ubuntu.sources` that lack an `Architectures` field, writes arm64 ports mirrors as deb822 `arm64.sources` (not legacy `.list`), and is idempotent across workflow re-runs.
 
 Reticulum sidecar staging before `electron-builder`:
 

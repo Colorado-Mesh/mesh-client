@@ -21,6 +21,7 @@ import {
 } from '../lib/meshcore/meshcoreMessageI18n';
 import type { MeshcoreRepeaterRpcPendingMap } from '../lib/meshcoreRepeaterAdminPending';
 import { isRepeaterAdminRpcPending } from '../lib/meshcoreRepeaterAdminPending';
+import { isMeshcoreRepeaterCliDangerCommand } from '../lib/meshcoreRepeaterCliDanger';
 import { listMeshcoreRepeaterCredentialNodeIds } from '../lib/meshcoreRepeaterCredentialStorage';
 import { forgetMeshcoreRepeaterSavedSecret } from '../lib/meshcoreRepeaterSavedSecrets';
 import { meshcoreTracePathLenToHops } from '../lib/meshcoreUtils';
@@ -36,6 +37,7 @@ import type { MeshNode } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
+import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import { MeshcoreRepeaterSavedPasswordIndicator } from './MeshcoreRepeaterPasswordControls';
 import { formatSecondsAgo } from './NodeInfoBody';
@@ -54,7 +56,7 @@ interface Props {
   /** Survives panel unmount — in-flight status/ping/neighbors/telemetry/CLI RPCs. */
   meshcoreRepeaterRpcPending?: MeshcoreRepeaterRpcPendingMap;
   onRequestRepeaterStatus: (nodeId: number) => Promise<void>;
-  onPing: (nodeId: number) => Promise<void>;
+  onPing: (nodeId: number) => Promise<boolean | undefined>;
   onDeleteRepeater: (nodeId: number) => Promise<void>;
   isConnected: boolean;
   onRequestNeighbors?: (nodeId: number) => Promise<void>;
@@ -64,7 +66,11 @@ interface Props {
   meshcoreTelemetry?: Map<number, MeshCoreNodeTelemetry>;
   meshcoreTelemetryErrors?: Map<number, string>;
   onSelectRepeater?: (node: MeshNode) => void;
-  onSendCliCommand?: (nodeId: number, command: string, useSavedPath: boolean) => Promise<string>;
+  onSendCliCommand?: (
+    nodeId: number,
+    command: string,
+    opts?: { confirmedDanger?: boolean },
+  ) => Promise<string>;
   meshcoreCliHistories?: Map<number, CliHistoryEntry[]>;
   meshcoreCliErrors?: Map<number, string>;
   onClearCliHistory?: (nodeId: number) => void;
@@ -284,7 +290,10 @@ export default function RepeatersPanel({
   const [expandedPath, setExpandedPath] = useState<Set<number>>(new Set());
   const [expandedCli, setExpandedCli] = useState<Set<number>>(new Set());
   const [cliInputValues, setCliInputValues] = useState<Map<number, string>>(new Map());
-  const [cliUseSavedPath, setCliUseSavedPath] = useState<Map<number, boolean>>(new Map());
+  const [cliDangerConfirm, setCliDangerConfirm] = useState<{
+    nodeId: number;
+    command: string;
+  } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [meshcoreContactsDb, setMeshcoreContactsDb] = useState<
     Map<
@@ -430,7 +439,14 @@ export default function RepeatersPanel({
 
   const handlePing = async (nodeId: number) => {
     try {
-      await onPing(nodeId);
+      const ok = await onPing(nodeId);
+      if (ok === false) {
+        const raw = meshcorePingErrors?.get(nodeId);
+        const message = raw
+          ? translateMeshcoreUserMessage(t, raw)
+          : t('meshcore.errors.pingFailed');
+        addToast(t('repeatersPanel.pingFailedToast', { message }), 'error');
+      }
     } catch (e) {
       console.warn('[RepeatersPanel] ping error ' + errLikeToLogString(e));
       addToast(
@@ -540,7 +556,32 @@ export default function RepeatersPanel({
     });
   };
 
-  const handleCliCommand = async (nodeId: number, command: string) => {
+  const ensureCliRoutePrimed = async (nodeId: number): Promise<boolean> => {
+    if (meshcoreTraceResults.get(nodeId) != null) return true;
+    const hops = nodes.get(nodeId)?.hops_away ?? 0;
+    if (hops <= 0) return true;
+    addToast(t('repeatersPanel.cliAutoPingToast'), 'info');
+    try {
+      const pingOk = await onPing(nodeId);
+      if (pingOk === false) {
+        addToast(t('repeatersPanel.cliAutoPingFailed'), 'error');
+        return false;
+      }
+      if (meshcoreTraceResults.get(nodeId) != null || pingOk === true) return true;
+      addToast(t('repeatersPanel.cliAutoPingFailed'), 'error');
+      return false;
+    } catch (e) {
+      console.warn('[RepeatersPanel] CLI auto-ping failed ' + errLikeToLogString(e));
+      addToast(t('repeatersPanel.cliAutoPingFailed'), 'error');
+      return false;
+    }
+  };
+
+  const runCliCommand = async (
+    nodeId: number,
+    command: string,
+    opts?: { confirmedDanger?: boolean },
+  ) => {
     if (!onSendCliCommand || !command.trim()) return;
     const node = nodes.get(nodeId);
     const auth = await ensureRepeaterAuth(
@@ -550,12 +591,21 @@ export default function RepeatersPanel({
     );
     if (!auth.ok) return;
     if (auth.saved) refreshStoredRepeaters();
-    const useSavedPath = cliUseSavedPath.get(nodeId) ?? false;
+    if (!(await ensureCliRoutePrimed(nodeId))) return;
     try {
-      await onSendCliCommand(nodeId, command.trim(), useSavedPath);
+      await onSendCliCommand(nodeId, command.trim(), opts);
     } catch (e) {
       console.warn('[RepeatersPanel] CLI command error ' + errLikeToLogString(e));
     }
+  };
+
+  const handleCliCommand = async (nodeId: number, command: string) => {
+    if (!command.trim()) return;
+    if (isMeshcoreRepeaterCliDangerCommand(command)) {
+      setCliDangerConfirm({ nodeId, command: command.trim() });
+      return;
+    }
+    await runCliCommand(nodeId, command);
   };
 
   const handleCliQuickCommand = async (nodeId: number, command: string) => {
@@ -565,15 +615,6 @@ export default function RepeatersPanel({
       return n;
     });
     await handleCliCommand(nodeId, command);
-  };
-
-  const toggleCliRoutingMode = (nodeId: number) => {
-    setCliUseSavedPath((prev) => {
-      const n = new Map(prev);
-      const current = prev.get(nodeId) ?? false;
-      n.set(nodeId, !current);
-      return n;
-    });
   };
 
   const handleCliClear = (nodeId: number) => {
@@ -761,7 +802,11 @@ export default function RepeatersPanel({
                   );
                   const cliHistory = meshcoreCliHistories?.get(node.node_id) ?? [];
                   const cliErrorRaw = meshcoreCliErrors?.get(node.node_id);
-                  const cliUseAutoPath = cliUseSavedPath.get(node.node_id) ?? false;
+                  const cliHopCount =
+                    traceResult != null
+                      ? meshcoreTracePathLenToHops(traceResult.pathLen)
+                      : (node.hops_away ?? 0);
+                  const showCliMultiHopHint = cliHopCount > 0 && traceResult == null;
                   const neighborErrorRaw = meshcoreNeighborErrors?.get(node.node_id);
                   const statusErrorText = statusErrorRaw
                     ? translateMeshcoreUserMessage(t, statusErrorRaw)
@@ -914,7 +959,31 @@ export default function RepeatersPanel({
                         <td className="py-2 pr-4">{reliabilityText}</td>
                         <td className="py-2">
                           <div className="flex flex-wrap gap-1">
-                            {pingHardDisabled && pingBlockReason ? (
+                            {pingErrorText ? (
+                              <HelpTooltip
+                                text={t('repeatersPanel.pingLastFailedTooltip', {
+                                  error: pingErrorText,
+                                })}
+                              >
+                                <span className="inline-flex">
+                                  <button
+                                    type="button"
+                                    onClick={() => void handlePing(node.node_id)}
+                                    disabled={!isConnected || isPingLoading}
+                                    aria-label={t('repeatersPanel.pingError', {
+                                      error: pingErrorText,
+                                    })}
+                                    className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60 disabled:opacity-40"
+                                  >
+                                    {isPingLoading ? (
+                                      <span className="inline-block h-3 w-3 animate-spin rounded-full border border-red-400 border-t-transparent" />
+                                    ) : (
+                                      t('repeatersPanel.buttonErrorShort')
+                                    )}
+                                  </button>
+                                </span>
+                              </HelpTooltip>
+                            ) : pingHardDisabled && pingBlockReason ? (
                               <HelpTooltip text={pingBlockReason}>
                                 <span className="inline-flex">
                                   <button
@@ -942,26 +1011,6 @@ export default function RepeatersPanel({
                                   </button>
                                 </span>
                               </HelpTooltip>
-                            ) : pingErrorText ? (
-                              <HelpTooltip
-                                text={t('repeatersPanel.pingLastFailedTooltip', {
-                                  error: pingErrorText,
-                                })}
-                              >
-                                <span className="inline-flex">
-                                  <button
-                                    type="button"
-                                    onClick={() => void handlePing(node.node_id)}
-                                    disabled={!isConnected}
-                                    aria-label={t('repeatersPanel.pingError', {
-                                      error: pingErrorText,
-                                    })}
-                                    className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60 disabled:opacity-40"
-                                  >
-                                    {t('repeatersPanel.buttonErrorShort')}
-                                  </button>
-                                </span>
-                              </HelpTooltip>
                             ) : (
                               <button
                                 type="button"
@@ -976,6 +1025,11 @@ export default function RepeatersPanel({
                                 )}
                               </button>
                             )}
+                            {pingErrorText ? (
+                              <span className="basis-full text-[10px] leading-snug text-red-400">
+                                {pingErrorText}
+                              </span>
+                            ) : null}
                             {statusErrorText && !isStatusLoading ? (
                               <HelpTooltip
                                 text={t('repeatersPanel.statusLastFailedTooltip', {
@@ -1430,18 +1484,12 @@ export default function RepeatersPanel({
                                   );
                                 })}
                               </div>
+                              {showCliMultiHopHint ? (
+                                <p className="text-xs text-amber-400/90">
+                                  {t('repeatersPanel.cliMultiHopHint')}
+                                </p>
+                              ) : null}
                               <div className="flex items-center gap-3">
-                                <label className="flex items-center gap-1 text-xs text-gray-400">
-                                  <input
-                                    type="checkbox"
-                                    checked={cliUseAutoPath}
-                                    onChange={() => {
-                                      toggleCliRoutingMode(node.node_id);
-                                    }}
-                                    className="h-3 w-3"
-                                  />
-                                  <span>{t('repeatersPanel.useSavedPath')}</span>
-                                </label>
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1499,6 +1547,24 @@ export default function RepeatersPanel({
         )}
       </div>
       {RemoteAuthModal}
+      {cliDangerConfirm ? (
+        <ConfirmModal
+          title={t('repeatersPanel.cliDangerConfirmTitle')}
+          message={t('repeatersPanel.cliDangerConfirmMessage', {
+            command: cliDangerConfirm.command,
+          })}
+          confirmLabel={t('repeatersPanel.cliDangerConfirmAction')}
+          danger
+          onCancel={() => {
+            setCliDangerConfirm(null);
+          }}
+          onConfirm={() => {
+            const pending = cliDangerConfirm;
+            setCliDangerConfirm(null);
+            void runCliCommand(pending.nodeId, pending.command, { confirmedDanger: true });
+          }}
+        />
+      ) : null}
     </>
   );
 }

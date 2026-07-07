@@ -359,6 +359,31 @@
     "percentCharging": "Batterie {{percent}} pour cent, en charge",
     "percent": "Batterie {{percent}} pour cent"
   },
+  "bootSequence": {
+    "booting": "Démarrage de la pile de mailles...",
+    "meshtasticLora": "LoRa : {{model}}",
+    "meshtasticScanningChannelsCount": "Numérisation des canaux... {{count}}",
+    "meshtasticScanningChannels": "Analyse des canaux configurés...",
+    "databaseNodes_one": "Base de données : {{count}} nœud synchronisé",
+    "databaseNodes_other": "Base de données : {{count}} nœuds synchronisés",
+    "syncingDatabase": "Synchronisation de la base de données maillée...",
+    "interfaceReady": "{{iface}} interface prête",
+    "freqMhz": "Fréquence : {{mhz}} MHz",
+    "freqMhzBw": "Freq : {{mhz}} MHz | BW : {{bw}} kHz",
+    "configuringRadio": "Configuration des paramètres radio...",
+    "contacts_one": "Contacts : {{count}} contact chargé",
+    "contacts_other": "Contacts : {{count}} contacts chargés",
+    "loadingContacts": "Chargement de la base de données de contacts...",
+    "routes_one": "Routes : nœud {{count}} dans le maillage",
+    "routes_other": "Itinéraires : {{count}} nœuds dans le maillage",
+    "routesEstablished": "Itinéraires établis",
+    "meshActive": "Actif sur le réseau",
+    "transportBle": "BLE",
+    "transportSerial": "Port série",
+    "transportHttp": "HTTP",
+    "transportRadio": "Radio",
+    "radioInterfaceFallback": "interface radio"
+  },
   "channelUtilization": {
     "title": "Utilisation des canaux",
     "noData": "Aucune donnée d'utilisation de canal disponible pour le moment",
@@ -889,7 +914,10 @@
       "addDefaultHubsAllPresent": "Les hubs testnet et Ratspeak par défaut sont déjà configurés.",
       "addDefaultHubsFailed": "Impossible d'ajouter des concentrateurs par défaut.",
       "identityNotConfigured": "Configurez d'abord une identité Reticulum dans l'onglet Réseau — générez ou importez une phrase de récupération.",
-      "identityRequiredHint": "Configurez une identité Reticulum dans l'onglet Réseau avant d'ajouter des interfaces."
+      "identityRequiredHint": "Configurez une identité Reticulum dans l'onglet Réseau avant d'ajouter des interfaces.",
+      "i2pPeersRequired": "Saisissez au moins une adresse d'homologue I2P.",
+      "i2pPeersTooLong": "La liste des pairs I2P est trop longue (maximum {{max}} caractères).",
+      "i2pPeersInvalid": "Les homologues I2P doivent être des adresses .b32.i2p séparées par des virgules sans saut de ligne."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1668,7 +1696,9 @@
         "rejected": "Déconnexion de la salle refusée par radio.",
         "failed": "Impossible de quitter la chambre"
       },
-      "repeaterRpcInProgress": "Une demande pour ce répéteur est déjà en cours"
+      "repeaterRpcInProgress": "Une demande pour ce répéteur est déjà en cours",
+      "cliDangerNotConfirmed": "Les commandes CLI destructives nécessitent une confirmation dans le panneau Répéteurs.",
+      "pingFailed": "Échec de la réponseComment"
     },
     "mqttHints": {
       "notAuthorized": "Vérifiez le nom d'utilisateur v1_, la signature du jeton et l'audience JWT par rapport au courtier ; voir docs/letsmesh-mqtt-auth.md. Utilisez Personnalisé pour coller un jeton émis par l'opérateur si nécessaire.",
@@ -1734,6 +1764,25 @@
     "applyButton": "Appliquer la confidentialité de la télémétrie",
     "contactCount_one": "{{count}} contact",
     "contactCount_other": "Contacts {{count}}"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "En file d'attente — enverra lorsqu'il sera connecté",
+    "queuedLabel": "En file d'attente",
+    "blockedDefault": "Bloqué — aucune clé de chiffrement disponible",
+    "blockedLabel": "Bloqué",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "Wi-Fi",
+    "transportBt": "BT",
+    "noAck": "no ACK",
+    "sending": "Envoi en cours...",
+    "delivered": "Livré",
+    "posted": "Posté",
+    "failedPost": "Échec de publication",
+    "noAckTooltip": "Aucun ACK (le message peut encore avoir été diffusé ; aucun autre nœud à portée pour accuser réception)",
+    "failed": "Échec",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Dispositif"
   },
   "modulePanel": {
     "sectionSent": "{{name}} envoyé. L'appareil peut redémarrer brièvement.",
@@ -3258,7 +3307,6 @@
     "heardPrefix": "Entendu:",
     "noLppData": "Aucune donnée du capteur LPP dans cette réponse.",
     "enterCommand": "Entrez la commande...",
-    "useSavedPath": "Utiliser le chemin enregistré",
     "searchRepeatersPlaceholder": "Rechercher des répéteurs…",
     "openCliInterface": "Interface CLI ouverte",
     "sensorLppButton": "Capteur (LPP)",
@@ -3349,7 +3397,14 @@
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
     "uptimeMinutes": "{{minutes}}m",
     "rememberPasswordSaveFailed": "Impossible d'enregistrer le mot de passe du répéteur pour les redémarrages. Cela ne fonctionnera que pour cette session.",
-    "telemetryFailedToast": "Échec de la télémétrie : {{message}}"
+    "telemetryFailedToast": "Échec de la télémétrie : {{message}}",
+    "cliMultiHopHint": "La CLI multi-sauts est plus fiable après une trace Ping réussie. La première commande CLI sur un répéteur multi-sauts exécute Ping automatiquement lorsqu'aucune trace n'existe dans cette session. Si les commandes expirent, exécutez d'abord Ping ou vérifiez la synchronisation de l'horloge compagnon dans l'application MeshCore.",
+    "cliDangerConfirmTitle": "Exécuter la commande CLI destructive ?",
+    "cliDangerConfirmMessage": "Cette commande peut redémarrer, effacer ou réinitialiser en usine le répéteur : « {{command}} ». Continuez uniquement si vous avez l'intention de ce changement.",
+    "cliDangerConfirmAction": "Exécuter la commande",
+    "cliAutoPingToast": "Établissement de l'itinéraire avec Ping avant CLI…",
+    "cliAutoPingFailed": "Échec du ping ; exécutez le ping manuellement avant de réessayer la CLI sur les répéteurs à sauts multiples.",
+    "cliCommandTooLong": "La commande CLI est trop longue (max {{max}} caractères)."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalle d'annonce (secondes)",
@@ -3819,49 +3874,5 @@
     "menuToastAvailableTitle": "mise à jour disponible",
     "menuToastAvailableBody": "La version {{version}} est disponible.",
     "menuToastErrorTitle": "Échec de la vérification de"
-  },
-  "messageStatusBadge": {
-    "queuedTooltip": "En file d'attente — enverra lorsqu'il sera connecté",
-    "queuedLabel": "En file d'attente",
-    "blockedDefault": "Bloqué — aucune clé de chiffrement disponible",
-    "blockedLabel": "Bloqué",
-    "transportMqtt": "MQTT",
-    "transportUsb": "USB",
-    "transportWifi": "Wi-Fi",
-    "transportBt": "BT",
-    "noAck": "no ACK",
-    "sending": "Envoi en cours...",
-    "delivered": "Livré",
-    "posted": "Posté",
-    "failedPost": "Échec de publication",
-    "noAckTooltip": "Aucun ACK (le message peut encore avoir été diffusé ; aucun autre nœud à portée pour accuser réception)",
-    "failed": "Échec",
-    "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "Dispositif"
-  },
-  "bootSequence": {
-    "booting": "Démarrage de la pile de mailles...",
-    "meshtasticLora": "LoRa : {{model}}",
-    "meshtasticScanningChannelsCount": "Numérisation des canaux... {{count}}",
-    "meshtasticScanningChannels": "Analyse des canaux configurés...",
-    "databaseNodes_one": "Base de données : {{count}} nœud synchronisé",
-    "databaseNodes_other": "Base de données : {{count}} nœuds synchronisés",
-    "syncingDatabase": "Synchronisation de la base de données maillée...",
-    "interfaceReady": "{{iface}} interface prête",
-    "freqMhz": "Fréquence : {{mhz}} MHz",
-    "freqMhzBw": "Freq : {{mhz}} MHz | BW : {{bw}} kHz",
-    "configuringRadio": "Configuration des paramètres radio...",
-    "contacts_one": "Contacts : {{count}} contact chargé",
-    "contacts_other": "Contacts : {{count}} contacts chargés",
-    "loadingContacts": "Chargement de la base de données de contacts...",
-    "routes_one": "Routes : nœud {{count}} dans le maillage",
-    "routes_other": "Itinéraires : {{count}} nœuds dans le maillage",
-    "routesEstablished": "Itinéraires établis",
-    "meshActive": "Actif sur le réseau",
-    "transportBle": "BLE",
-    "transportSerial": "Série",
-    "transportHttp": "HTTP",
-    "transportRadio": "Radio",
-    "radioInterfaceFallback": "interface radio"
   }
 }

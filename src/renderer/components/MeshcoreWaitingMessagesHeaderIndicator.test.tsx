@@ -42,7 +42,7 @@ describe('MeshcoreWaitingMessagesHeaderIndicator', () => {
   });
 
   it('shows deferred status without spinner', () => {
-    render(
+    const { container } = render(
       <MeshcoreWaitingMessagesHeaderIndicator
         waitingMessagesCount={1}
         waitingMessagesSyncActive={false}
@@ -57,6 +57,7 @@ describe('MeshcoreWaitingMessagesHeaderIndicator', () => {
       'aria-label',
       expect.stringMatching(/Message sync paused while the radio is busy/i),
     );
+    expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('shows sync progress during manual sync', () => {

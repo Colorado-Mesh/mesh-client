@@ -7,6 +7,8 @@ import { messageRecordsToChatMessages } from '@/renderer/lib/storeRecordAdapters
 import type { ChatMessage } from '@/renderer/lib/types';
 import { updateMessageStatus, useMessageStore } from '@/renderer/stores/messageStore';
 
+import { meshtasticRoutingErrorName } from './meshtasticApplyErrorMessage';
+
 const SDK_ROUTING_ERROR_RE = /Error received for packet (\d+): ([A-Z0-9_]+)/;
 const SDK_PACKET_TIMEOUT_RE = /Packet (\d+) of type \w+ timed out/;
 const FALLBACK_SENDING_WINDOW_MS = 90_000;
@@ -34,6 +36,22 @@ export function parseMeshtasticSdkRoutingErrorLog(
     };
   }
   return null;
+}
+
+/** Parse `@meshtastic/core` queue.js rejections: `{ id, error }` or `{ packetId, error }`. */
+export function parseMeshtasticSdkQueueRejection(
+  reason: unknown,
+): MeshtasticSdkRoutingErrorLog | null {
+  if (typeof reason !== 'object' || reason === null) return null;
+  const r = reason as { id?: unknown; packetId?: unknown; error?: unknown };
+  if (typeof r.error !== 'number') return null;
+  const wireId =
+    typeof r.id === 'number' ? r.id : typeof r.packetId === 'number' ? r.packetId : null;
+  if (wireId == null) return null;
+  return {
+    packetId: wireId,
+    errorName: meshtasticRoutingErrorName(r.error),
+  };
 }
 
 export function chatRoutingErrorKeyForSdkErrorName(errorName: string): string | null {
@@ -139,15 +157,11 @@ function resolveStoreMessageId(target: ChatMessage, wirePacketId: number): strin
   return resolveMeshtasticOutboundStoreKey(packetId >>> 0, String(packetId));
 }
 
-/** Apply SDK console routing errors to outbound chat rows (async post-send failures). */
-export function applyMeshtasticOutboundRoutingErrorFromLog(
-  message: string,
+/** Apply parsed SDK routing error to outbound chat rows (async post-send failures). */
+export function applyMeshtasticOutboundRoutingError(
+  parsed: MeshtasticSdkRoutingErrorLog,
   ctx: ApplyMeshtasticOutboundRoutingErrorContext,
 ): boolean {
-  const parsed = parseMeshtasticSdkRoutingErrorLog(message);
-  if (!parsed) {
-    return false;
-  }
   const i18nKey = chatRoutingErrorKeyForSdkErrorName(parsed.errorName);
   if (!i18nKey) {
     return false;
@@ -181,4 +195,28 @@ export function applyMeshtasticOutboundRoutingErrorFromLog(
       );
     });
   return true;
+}
+
+/** Apply SDK console routing errors to outbound chat rows (async post-send failures). */
+export function applyMeshtasticOutboundRoutingErrorFromLog(
+  message: string,
+  ctx: ApplyMeshtasticOutboundRoutingErrorContext,
+): boolean {
+  const parsed = parseMeshtasticSdkRoutingErrorLog(message);
+  if (!parsed) {
+    return false;
+  }
+  return applyMeshtasticOutboundRoutingError(parsed, ctx);
+}
+
+/** Apply SDK queue promise rejections (`queue.js` timeout / routing errors). */
+export function applyMeshtasticOutboundRoutingErrorFromRejection(
+  reason: unknown,
+  ctx: ApplyMeshtasticOutboundRoutingErrorContext,
+): boolean {
+  const parsed = parseMeshtasticSdkQueueRejection(reason);
+  if (!parsed) {
+    return false;
+  }
+  return applyMeshtasticOutboundRoutingError(parsed, ctx);
 }

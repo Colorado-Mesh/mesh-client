@@ -359,6 +359,31 @@
     "percentCharging": "Baterie {{percent}} procent, nabíjí se",
     "percent": "Baterie {{percent}} procent"
   },
+  "bootSequence": {
+    "booting": "Zaváděcí síťový zásobník...",
+    "meshtasticLora": "LoRa: {{model}}",
+    "meshtasticScanningChannelsCount": "Skenování kanálů... {{count}}",
+    "meshtasticScanningChannels": "Skenování nakonfigurovaných kanálů...",
+    "databaseNodes_one": "Databáze: {{count}} uzel synchronizován",
+    "databaseNodes_other": "Databáze: {{count}} uzly synchronizovány",
+    "syncingDatabase": "Synchronizuje se síťová databáze...",
+    "interfaceReady": "{{iface}} rozhraní připraveno",
+    "freqMhz": "Frekvence: {{mhz}} MHz",
+    "freqMhzBw": "Frekvence: {{mhz}} MHz | ČB: {{bw}} kHz",
+    "configuringRadio": "Konfigurace parametrů rádia...",
+    "contacts_one": "Kontakty: {{count}} kontakt načten",
+    "contacts_other": "Kontakty: {{count}} načteny kontakty",
+    "loadingContacts": "Načítání databáze kontaktů...",
+    "routes_one": "Trasy: Uzel {{count}} v síti",
+    "routes_other": "Trasy: {{count}} uzly v síti",
+    "routesEstablished": "Trasy vytvořeny",
+    "meshActive": "Síť Mesh aktivní",
+    "transportBle": "BLE",
+    "transportSerial": "Sériový",
+    "transportHttp": "HTTP",
+    "transportRadio": "Rádio",
+    "radioInterfaceFallback": "rádiové rozhraní"
+  },
   "channelUtilization": {
     "title": "Využití kanálu",
     "noData": "Zatím nejsou k dispozici žádné údaje o využití kanálu",
@@ -887,9 +912,12 @@
       "addDefaultHubsAria": "Přidat výchozí testovací síť Reticulum a rozbočovače Ratspeak v zakázaném stavu",
       "addDefaultHubsSuccess": "Přidáno {{added}} výchozí rozbočovač(rozbočovače). {{skipped}} je již nakonfigurován.",
       "addDefaultHubsAllPresent": "Výchozí rozbočovače testnet a Ratspeak jsou již nakonfigurovány.",
-      "addDefaultHubsFailed": "Přidání výchozích center se nezdařilo.",
+      "addDefaultHubsFailed": "Přidání výchozích rozbočovačů se nezdařilo.",
       "identityNotConfigured": "Nejprve nastavte identitu Reticulum na kartě Síť — vygenerujte nebo importujte frázi pro obnovení.",
-      "identityRequiredHint": "Před přidáním rozhraní nakonfigurujte identitu Reticulum na kartě Síť."
+      "identityRequiredHint": "Před přidáním rozhraní nakonfigurujte identitu Reticulum na kartě Síť.",
+      "i2pPeersRequired": "Zadejte alespoň jednu I2P peer adresu.",
+      "i2pPeersTooLong": "Seznam protějšků I2P je příliš dlouhý (max. {{max}} znaků).",
+      "i2pPeersInvalid": "Protějšky I2P musí být adresy .b32.i2p oddělené čárkami bez přerušení řádků."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1668,7 +1696,9 @@
         "rejected": "Odhlášení z místnosti bylo rádiem odmítnuto.",
         "failed": "Nelze opustit místnost"
       },
-      "repeaterRpcInProgress": "Žádost o tento opakovač již probíhá"
+      "repeaterRpcInProgress": "Žádost o tento opakovač již probíhá",
+      "cliDangerNotConfirmed": "Destruktivní příkazy CLI vyžadují potvrzení na panelu Opakovače.",
+      "pingFailed": "Ping selhalComment"
     },
     "mqttHints": {
       "notAuthorized": "Ověřte uživatelské jméno v1_, podpis tokenu a publikum JWT vs. makléř; viz docs/letsmesh-mqtt-auth.md. V případě potřeby použijte Vlastní k vložení tokenu vydaného operátorem.",
@@ -1734,6 +1764,25 @@
     "applyButton": "Použít soukromí telemetrie",
     "contactCount_one": "{{count}} kontakt",
     "contactCount_other": "{{count}} kontaktů"
+  },
+  "messageStatusBadge": {
+    "queuedTooltip": "Ve frontě — bude odesláno po připojení",
+    "queuedLabel": "Ve frontě",
+    "blockedDefault": "Blokováno — šifrovací klíč není k dispozici",
+    "blockedLabel": "Blokován",
+    "transportMqtt": "MQTT",
+    "transportUsb": "USB",
+    "transportWifi": "WiFi",
+    "transportBt": "BT",
+    "noAck": "ne ACK",
+    "sending": "Odesílání...",
+    "delivered": "Dodané",
+    "posted": "Zveřejněno",
+    "failedPost": "Zveřejnění se nezdařilo",
+    "noAckTooltip": "Žádný ACK (zpráva mohla být stále vysílána; žádný jiný uzel v dosahu k potvrzení)",
+    "failed": "Nezdařilo se",
+    "tooltipPrefixMqtt": "MQTT",
+    "tooltipPrefixDevice": "Zařízení"
   },
   "modulePanel": {
     "sectionSent": "{{name}} odesláno. Zařízení se může krátce restartovat.",
@@ -3258,7 +3307,6 @@
     "heardPrefix": "Slyšel:",
     "noLppData": "V této odpovědi nejsou žádná data senzoru LPP.",
     "enterCommand": "Zadejte příkaz...",
-    "useSavedPath": "Použít uloženou cestu",
     "searchRepeatersPlaceholder": "Hledat opakovače…",
     "openCliInterface": "Otevřete rozhraní CLI",
     "sensorLppButton": "Senzor (LPP)",
@@ -3349,7 +3397,14 @@
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
     "uptimeMinutes": "{{minutes}}m",
     "rememberPasswordSaveFailed": "Nelze uložit heslo opakovače pro restartování. Bude to fungovat pouze pro tuto relaci.",
-    "telemetryFailedToast": "Telemetrie selhala: {{message}}"
+    "telemetryFailedToast": "Telemetrie selhala: {{message}}",
+    "cliMultiHopHint": "Multi-hop CLI je spolehlivější po úspěšné stopě Ping. První CLI příkaz na multi-hop repeateru automaticky spustí Ping, pokud v této relaci neexistuje trace. Pokud příkazy vyprší, spusťte nejprve Ping nebo zkontrolujte synchronizaci doprovodných hodin v aplikaci MeshCore.",
+    "cliDangerConfirmTitle": "Spustit destruktivní příkaz CLI?",
+    "cliDangerConfirmMessage": "Tento příkaz může restartovat, vymazat nebo obnovit tovární nastavení opakovače: „{{command}}“. Pokračujte pouze v případě, že tuto změnu zamýšlíte.",
+    "cliDangerConfirmAction": "Spustit příkaz",
+    "cliAutoPingToast": "Vytvoření trasy s Ping před CLI...",
+    "cliAutoPingFailed": "Ping se nezdařil; spusťte Ping ručně před opakováním CLI na opakovačích multi-hop.",
+    "cliCommandTooLong": "Příkaz CLI je příliš dlouhý (max {{max}} znaků)."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",
@@ -3819,49 +3874,5 @@
     "menuToastAvailableTitle": "Aktualizace k dispozici",
     "menuToastAvailableBody": "Verze {{version}} je k dispozici.",
     "menuToastErrorTitle": "Kontrola aktualizace se nezdařila"
-  },
-  "messageStatusBadge": {
-    "queuedTooltip": "Ve frontě — bude odesláno po připojení",
-    "queuedLabel": "Ve frontě",
-    "blockedDefault": "Blokováno — šifrovací klíč není k dispozici",
-    "blockedLabel": "Blokován",
-    "transportMqtt": "MQTT",
-    "transportUsb": "USB",
-    "transportWifi": "WiFi",
-    "transportBt": "BT",
-    "noAck": "ne ACK",
-    "sending": "Odesílání...",
-    "delivered": "Dodané",
-    "posted": "Zveřejněno",
-    "failedPost": "Zveřejnění se nezdařilo",
-    "noAckTooltip": "Žádný ACK (zpráva mohla být stále vysílána; žádný jiný uzel v dosahu k potvrzení)",
-    "failed": "Nezdařilo se",
-    "tooltipPrefixMqtt": "MQTT",
-    "tooltipPrefixDevice": "Zařízení"
-  },
-  "bootSequence": {
-    "booting": "Zaváděcí síťový zásobník...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Skenování kanálů... {{count}}",
-    "meshtasticScanningChannels": "Skenování nakonfigurovaných kanálů...",
-    "databaseNodes_one": "Databáze: {{count}} uzel synchronizován",
-    "databaseNodes_other": "Databáze: {{count}} uzly synchronizovány",
-    "syncingDatabase": "Synchronizuje se síťová databáze...",
-    "interfaceReady": "{{iface}} rozhraní připraveno",
-    "freqMhz": "Frekvence: {{mhz}} MHz",
-    "freqMhzBw": "Frekvence: {{mhz}} MHz | ČB: {{bw}} kHz",
-    "configuringRadio": "Konfigurace parametrů rádia...",
-    "contacts_one": "Kontakty: {{count}} kontakt načten",
-    "contacts_other": "Kontakty: {{count}} načteny kontakty",
-    "loadingContacts": "Načítání databáze kontaktů...",
-    "routes_one": "Trasy: Uzel {{count}} v síti",
-    "routes_other": "Trasy: {{count}} uzly v síti",
-    "routesEstablished": "Trasy vytvořeny",
-    "meshActive": "Síť Mesh aktivní",
-    "transportBle": "BLE",
-    "transportSerial": "Sériový",
-    "transportHttp": "HTTP",
-    "transportRadio": "Rádio",
-    "radioInterfaceFallback": "rádiové rozhraní"
   }
 }
