@@ -915,9 +915,9 @@
       "addDefaultHubsFailed": "デフォルトのハブを追加できませんでした。",
       "identityNotConfigured": "最初に[ネットワーク]タブでReticulum IDを設定します。リカバリフレーズを生成またはインポートします。",
       "identityRequiredHint": "インターフェースを追加する前に、[ネットワーク]タブでReticulumアイデンティティを設定します。",
-      "i2pPeersRequired": "少なくとも1つのI 2 Pピアアドレスを入力してください。",
-      "i2pPeersTooLong": "I 2 Pピアリストが長すぎます（最大{{max}}文字）。",
-      "i2pPeersInvalid": "I 2 Pピアは、改行のないカンマ区切りの.b32.i2pアドレスでなければなりません。"
+      "i2pPeersRequired": "少なくとも1つのI2Pピアアドレスを入力してください。",
+      "i2pPeersTooLong": "I2Pピアリストが長すぎます（最大{{max}}文字）。",
+      "i2pPeersInvalid": "I2Pピアは、改行のないカンマ区切りの.b32.i2pアドレスでなければなりません。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3400,7 +3400,7 @@
     "cliMultiHopHint": "マルチホップCLIは、Pingトレースが成功した後、より信頼性が高くなります。このセッションにtraceがない場合、マルチホップリピーターへの最初のCLIコマンドはPingを自動的に実行します。コマンドがタイムアウトした場合は、まずPingを実行するか、MeshCoreアプリでコンパニオンクロック同期を確認してください。",
     "cliDangerConfirmTitle": "破壊的なCLIコマンドを実行しますか？",
     "cliDangerConfirmMessage": "このコマンドは、リピーターを再起動、消去、または工場出荷時にリセットする場合があります：\" {{command}} \"。この変更を意図している場合にのみ続行してください。",
-    "cliDangerConfirmAction": "プログラムを実行",
+    "cliDangerConfirmAction": "コマンドを実行",
     "cliAutoPingToast": "CLIの前にPingでルートを確立しています...",
     "cliAutoPingFailed": "Pingに失敗しました。マルチホップリピーターでCLIを再試行する前に、手動でPingを実行してください。",
     "cliCommandTooLong": "CLIコマンドが長すぎます（最大{{max}}文字）。"

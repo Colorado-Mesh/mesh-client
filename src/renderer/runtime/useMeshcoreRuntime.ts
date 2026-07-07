@@ -203,6 +203,7 @@ import { runMeshcoreRepeaterStatusRequest } from '../lib/meshcoreRepeaterStatusR
 import { runMeshcoreRepeaterTelemetryRequest } from '../lib/meshcoreRepeaterTelemetryRpc';
 import {
   computeMeshcoreTracePrimeStrategy,
+  meshcoreCanSynthesizeTracePath,
   meshcoreDirectRepeaterRelayPubKeys,
   meshcoreIsUsableTraceStoredPath,
   meshcoreShouldAbortMultiHopPingNoRoute,
@@ -277,7 +278,7 @@ import {
   awaitMeshcoreRepeaterAdminRfIdle,
   awaitMeshcoreRepeaterPingSettleForNode,
 } from '../lib/meshcoreTraceRadioIdle';
-import { primeMeshcoreTraceRoute } from '../lib/meshcoreTraceRoutePrime';
+import { primeMeshcoreTraceRouteWithFallback } from '../lib/meshcoreTraceRoutePrime';
 import {
   coerceMeshcoreExportPrivateKeyResult,
   CONTACT_TYPE_LABELS,
@@ -3738,7 +3739,7 @@ export function useMeshcoreRuntime() {
   );
 
   const traceRoute = useCallback(
-    async (nodeId: number) => {
+    async (nodeId: number): Promise<boolean> => {
       setMeshcoreRepeaterRpcPending((prev) =>
         setRepeaterAdminRpcPending(prev, nodeId, 'ping', true),
       );
@@ -3753,7 +3754,7 @@ export function useMeshcoreRuntime() {
               next.set(nodeId, MESHCORE_ERR_NODE_NOT_FOUND);
               return next;
             });
-            return;
+            return false;
           }
           if (!connAtEntry) {
             clearMeshcorePingNoRouteExpiryTimer(nodeId);
@@ -3762,7 +3763,7 @@ export function useMeshcoreRuntime() {
               next.set(nodeId, MESHCORE_ERR_NOT_CONNECTED);
               return next;
             });
-            return;
+            return false;
           }
           clearMeshcorePingNoRouteExpiryTimer(nodeId);
           setMeshcorePingErrors((prev) => {
@@ -3777,6 +3778,9 @@ export function useMeshcoreRuntime() {
             if (!conn) {
               throw new Error(MESHCORE_ERR_NOT_CONNECTED);
             }
+            const setupGen = meshcoreSetupGenerationRef.current;
+            const isTraceAborted = (): boolean =>
+              meshcoreSetupGenerationRef.current !== setupGen || resolveMeshcoreConn() !== conn;
             const hopsAway = nodesRef.current.get(nodeId)?.hops_away;
             let storedPath = outPathMapRef.current.get(nodeId);
             if (storedPath && !meshcoreIsUsableTraceStoredPath(storedPath, hopsAway, pubKey)) {
@@ -3818,14 +3822,13 @@ export function useMeshcoreRuntime() {
               pubKeyMapRef.current,
               nodeId,
             );
-            const hopsForSynth = hopsAway ?? 0;
             const partialDestPath = routeStoredPath ?? outPathMapRef.current.get(nodeId);
-            const canSynthesizePath =
-              (hopsForSynth === 1 && relayKeysForSynth.length > 0) ||
-              (hopsForSynth === 2 &&
-                relayKeysForSynth.length > 0 &&
-                partialDestPath?.length === 2 &&
-                meshcoreIsUsableTraceStoredPath(partialDestPath, 1, pubKey));
+            const canSynthesizePath = meshcoreCanSynthesizeTracePath({
+              hopsAway,
+              relayKeysForSynth,
+              partialDestPath,
+              destPubKey: pubKey,
+            });
             const primeStrategy = computeMeshcoreTracePrimeStrategy({
               needsRoutePrime: tracePlan.needsRoutePrime,
               pathTooShort: tracePlan.pathTooShort,
@@ -3834,40 +3837,27 @@ export function useMeshcoreRuntime() {
               canSynthesizePath,
             });
             if (tracePlan.needsRoutePrime && primeStrategy !== 'none') {
-              const runPrime = async (strategy: typeof primeStrategy) =>
-                primeMeshcoreTraceRoute({
-                  conn,
-                  nodeId,
-                  pubKey,
-                  hopsAway,
-                  outPathMapRef: outPathMapRef.current,
-                  existingPath: routeStoredPath,
-                  strategy,
-                });
-
-              let primed = await runPrime(primeStrategy);
+              const primed = await primeMeshcoreTraceRouteWithFallback({
+                conn,
+                nodeId,
+                pubKey,
+                hopsAway,
+                outPathMapRef: outPathMapRef.current,
+                existingPath: routeStoredPath,
+                initialStrategy: primeStrategy,
+                isAborted: isTraceAborted,
+                floodWhen: (metrics, hops) =>
+                  primeStrategy === 'passive' &&
+                  !metrics?.usableAfterPrime &&
+                  (hops ?? 0) >= 2 &&
+                  !canSynthesizePath,
+              });
+              if (isTraceAborted()) return false;
               if (primed.metrics) {
                 console.debug(
                   '[useMeshcoreRuntime] traceRoute prime metrics ' +
                     formatStructuredLogDetail(primed.metrics as unknown as Record<string, unknown>),
                 );
-              }
-              if (
-                primeStrategy === 'passive' &&
-                !primed.metrics?.usableAfterPrime &&
-                hopsForSynth >= 2 &&
-                !canSynthesizePath
-              ) {
-                const flooded = await runPrime('flood');
-                if (flooded.metrics) {
-                  console.debug(
-                    '[useMeshcoreRuntime] traceRoute flood prime fallback metrics ' +
-                      formatStructuredLogDetail(
-                        flooded.metrics as unknown as Record<string, unknown>,
-                      ),
-                  );
-                }
-                primed = flooded;
               }
               if (primed.radioContactPathLen != null) {
                 radioContactPathLen = primed.radioContactPathLen;
@@ -3948,7 +3938,7 @@ export function useMeshcoreRuntime() {
                 meshcorePingNoRouteExpiryTimersRef.current.delete(nodeId);
               }, MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS);
               meshcorePingNoRouteExpiryTimersRef.current.set(nodeId, tid);
-              return;
+              return false;
             }
             const attemptPathBytes = Array.from(outPath);
             tracePathHash =
@@ -4073,6 +4063,7 @@ export function useMeshcoreRuntime() {
               next.delete(nodeId);
               return next;
             });
+            return true;
           } catch (e: unknown) {
             const failedHops = nodesRef.current.get(nodeId)?.hops_away;
             if ((failedHops ?? 0) >= 1) {
@@ -4099,6 +4090,7 @@ export function useMeshcoreRuntime() {
               return next;
             });
             console.warn('[useMeshcoreRuntime] traceRoute error ' + errLikeToLogString(e));
+            return false;
           }
         });
       } finally {
@@ -4503,10 +4495,15 @@ export function useMeshcoreRuntime() {
       try {
         const trimmed = command.trim();
         if (trimmed.length > REPEATER_CLI_MAX_COMMAND_LENGTH) {
-          throw new Error('repeatersPanel.cliCommandTooLong');
+          throw new Error(
+            serializeMeshcoreUserMessage({
+              key: 'repeatersPanel.cliCommandTooLong',
+              params: { max: REPEATER_CLI_MAX_COMMAND_LENGTH },
+            }),
+          );
         }
         if (isMeshcoreRepeaterCliDangerCommand(trimmed) && !opts?.confirmedDanger) {
-          throw new Error('meshcore.errors.cliDangerNotConfirmed');
+          throw new Error(serializeMeshcoreUserMessage('meshcore.errors.cliDangerNotConfirmed'));
         }
         const pubKey = pubKeyMapRef.current.get(nodeId);
         if (!pubKey) {

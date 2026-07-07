@@ -13,6 +13,7 @@ import {
 import { sanitizeLogMessage } from './sanitize-log-message';
 
 export const LINK_PREVIEW_FETCH_TIMEOUT_MS = 10_000;
+export const LINK_PREVIEW_DNS_LOOKUP_TIMEOUT_MS = 3_000;
 export const LINK_PREVIEW_MAX_HTML_BYTES = 65_536;
 export const LINK_PREVIEW_CACHE_TTL_MS = 15 * 60 * 1000;
 export const LINK_PREVIEW_IMAGE_MAX_BYTES = 262_144;
@@ -31,12 +32,43 @@ function evictOldestCacheEntry<K, V>(cache: Map<K, V>, maxEntries: number): void
   }
 }
 
+async function withInflightDedup<K, T>(
+  map: Map<K, Promise<T>>,
+  key: K,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const existing = map.get(key);
+  if (existing) return existing;
+  const promise = fn().finally(() => {
+    map.delete(key);
+  });
+  map.set(key, promise);
+  return promise;
+}
+
+async function lookupHostname(hostname: string): Promise<string> {
+  const { address } = await Promise.race([
+    dns.lookup(hostname, { verbatim: true }),
+    new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('dns lookup timeout'));
+      }, LINK_PREVIEW_DNS_LOOKUP_TIMEOUT_MS);
+    }),
+  ]);
+  return address;
+}
+
+function defaultConnectPort(url: URL): number {
+  if (url.port) return Number(url.port);
+  return url.protocol === 'http:' ? 80 : 443;
+}
+
 async function fetchWithResolvedHost(urlString: string, init: RequestInit): Promise<Response> {
   const url = new URL(urlString);
   if (await isBlockedHostnameResolved(url.hostname)) {
     throw new Error('blocked hostname');
   }
-  const { address } = await dns.lookup(url.hostname, { verbatim: true });
+  const address = await lookupHostname(url.hostname);
   if (
     isLoopbackHost(address) ||
     isPrivateNetworkHost(address) ||
@@ -48,7 +80,7 @@ async function fetchWithResolvedHost(urlString: string, init: RequestInit): Prom
   const agent = new Agent({
     connect: {
       host: address,
-      port: url.port ? Number(url.port) : 443,
+      port: defaultConnectPort(url),
       servername: url.hostname,
     },
   });
@@ -112,7 +144,7 @@ export async function isBlockedHostnameResolved(hostname: string): Promise<boole
   }
 
   try {
-    const { address } = await dns.lookup(bare, { verbatim: true });
+    const address = await lookupHostname(bare);
     return (
       isLoopbackHost(address) ||
       isPrivateNetworkHost(address) ||
@@ -213,10 +245,7 @@ async function fetchPreviewImageAsDataUrl(imageUrl: string): Promise<string | un
     return cached.value ?? undefined;
   }
 
-  const inflight = imageInFlight.get(imageUrl);
-  if (inflight) return inflight;
-
-  const promise = (async (): Promise<string | undefined> => {
+  return withInflightDedup(imageInFlight, imageUrl, async (): Promise<string | undefined> => {
     try {
       const response = await fetchImageResponseWithRedirectGuard(imageUrl);
       if (!response?.ok) {
@@ -249,13 +278,8 @@ async function fetchPreviewImageAsDataUrl(imageUrl: string): Promise<string | un
         expires: now + LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS,
       });
       return undefined;
-    } finally {
-      imageInFlight.delete(imageUrl);
     }
-  })();
-
-  imageInFlight.set(imageUrl, promise);
-  return promise;
+  });
 }
 
 export interface LinkPreviewMetadata {
@@ -333,20 +357,14 @@ export async function fetchLinkPreview(urlString: string): Promise<LinkPreviewMe
     return cached.value;
   }
 
-  const inflight = previewInFlight.get(urlString);
-  if (inflight) return inflight;
-
-  const promise = (async (): Promise<LinkPreviewMetadata | null> => {
-    try {
+  return withInflightDedup(
+    previewInFlight,
+    urlString,
+    async (): Promise<LinkPreviewMetadata | null> => {
       const value = await fetchLinkPreviewUncached(urlString);
       evictOldestCacheEntry(previewCache, LINK_PREVIEW_MAX_CACHE_ENTRIES);
       previewCache.set(urlString, { value, expires: Date.now() + LINK_PREVIEW_CACHE_TTL_MS });
       return value;
-    } finally {
-      previewInFlight.delete(urlString);
-    }
-  })();
-
-  previewInFlight.set(urlString, promise);
-  return promise;
+    },
+  );
 }

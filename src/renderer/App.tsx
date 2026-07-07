@@ -3419,8 +3419,11 @@ function AppContent() {
                                 capabilities.prefersDeviceOwnerLongNameInHeader
                                   ? meshcorePanelActions.traceRoute
                                   : capabilities.hasChannelConfig
-                                    ? meshtasticPanelActions.traceRoute
-                                    : async () => {}
+                                    ? async (nodeNum: number) => {
+                                        await meshtasticPanelActions.traceRoute(nodeNum);
+                                        return undefined;
+                                      }
+                                    : () => Promise.resolve(undefined)
                               }
                               isConnected={isOperational}
                               traceRouteResults={activeRuntime.traceRouteResults}
@@ -3724,7 +3727,10 @@ function AppContent() {
               detailModalCapabilities.hasTraceRoute
                 ? detailModalProtocol === 'meshcore'
                   ? meshcorePanelActions.traceRoute
-                  : meshtasticPanelActions.traceRoute
+                  : async (nodeNum: number) => {
+                      await meshtasticPanelActions.traceRoute(nodeNum);
+                      return undefined;
+                    }
                 : undefined
             }
             traceRouteHops={traceRouteHops}

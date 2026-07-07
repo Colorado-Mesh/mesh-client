@@ -110,7 +110,7 @@ export function meshcoreShouldAbortMultiHopPingNoRoute(
   if (!pathTooShort) return false;
   if (radioSaysMultiHop) return true;
   const hops = hopsAway ?? 0;
-  return uiSaysMultiHop && hops >= 2;
+  return uiSaysMultiHop && hops >= 1;
 }
 
 /** Whether route priming should run before trace/ping. */
@@ -125,9 +125,27 @@ export function computeMeshcoreTracePrimeStrategy(opts: {
   if (opts.skipPrime || !opts.needsRoutePrime || !opts.pathTooShort) return 'none';
   if (opts.hasUsableStoredPath) return 'none';
   if (opts.canSynthesizePath) return 'none';
+  if (opts.hopsAway == null) return 'passive';
   const hops = opts.hopsAway ?? 0;
   if (hops >= 1) return 'passive';
   return 'none';
+}
+
+/** Whether evidence-backed path synthesis can skip route priming. */
+export function meshcoreCanSynthesizeTracePath(opts: {
+  hopsAway: number | null | undefined;
+  relayKeysForSynth: readonly Uint8Array[];
+  partialDestPath: Uint8Array | undefined;
+  destPubKey: Uint8Array;
+}): boolean {
+  const hopsForSynth = opts.hopsAway ?? 0;
+  return (
+    (hopsForSynth === 1 && opts.relayKeysForSynth.length > 0) ||
+    (hopsForSynth === 2 &&
+      opts.relayKeysForSynth.length > 0 &&
+      opts.partialDestPath?.length === 2 &&
+      meshcoreIsUsableTraceStoredPath(opts.partialDestPath, 1, opts.destPubKey))
+  );
 }
 
 /** Build 1-byte-hash-mode path [relayPrefix, destPrefix] for a single known direct repeater relay. */

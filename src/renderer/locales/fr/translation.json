@@ -3397,7 +3397,7 @@
     "uptimeMinutes": "{{minutes}}m",
     "rememberPasswordSaveFailed": "Impossible d'enregistrer le mot de passe du répéteur pour les redémarrages. Cela ne fonctionnera que pour cette session.",
     "telemetryFailedToast": "Échec de la télémétrie : {{message}}",
-    "cliMultiHopHint": "La CLI multi-sauts est plus fiable après une traçabilité Ping réussie. La première commande CLI sur un répéteur multi-sauts exécute Ping automatiquement lorsqu'aucune trace n'existe dans cette session. Si les commandes expirent, exécutez d'abord Ping ou vérifiez la synchronisation de l'horloge compagnon dans l'application MeshCore.",
+    "cliMultiHopHint": "La CLI multi-sauts est plus fiable après une trace Ping réussie. La première commande CLI sur un répéteur multi-sauts exécute Ping automatiquement lorsqu'aucune trace n'existe dans cette session. Si les commandes expirent, exécutez d'abord Ping ou vérifiez la synchronisation de l'horloge compagnon dans l'application MeshCore.",
     "cliDangerConfirmTitle": "Exécuter la commande CLI destructive ?",
     "cliDangerConfirmMessage": "Cette commande peut redémarrer, effacer ou réinitialiser en usine le répéteur : « {{command}} ». Continuez uniquement si vous avez l'intention de ce changement.",
     "cliDangerConfirmAction": "Exécuter la commande",

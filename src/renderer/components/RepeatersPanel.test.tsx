@@ -277,7 +277,7 @@ describe('RepeatersPanel', () => {
 
   it('auto-pings before CLI on multi-hop repeaters without a trace this session', async () => {
     const multiHop = { ...repeater, hops_away: 2 };
-    const onPing = vi.fn().mockResolvedValue(undefined);
+    const onPing = vi.fn().mockResolvedValue(true);
     const onSendCliCommand = vi.fn().mockResolvedValue('ok');
     render(
       <RepeatersPanel
@@ -375,6 +375,50 @@ describe('RepeatersPanel', () => {
       );
     });
     expect(onSendCliCommand).not.toHaveBeenCalled();
+  });
+
+  it('aborts CLI when auto-ping resolves without trace result (pingNoRoute)', async () => {
+    const multiHop = { ...repeater, hops_away: 2 };
+    const onPing = vi.fn().mockResolvedValue(false);
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[multiHop.node_id, multiHop]])}
+        onPing={onPing}
+        onSendCliCommand={onSendCliCommand}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await userEvent.click(screen.getByRole('button', { name: 'name' }));
+
+    await waitFor(() => {
+      expect(onPing).toHaveBeenCalledWith(multiHop.node_id);
+      expect(mockAddToast).toHaveBeenCalledWith(
+        'Ping failed; run Ping manually before retrying CLI on multi-hop repeaters.',
+        'error',
+      );
+    });
+    expect(onSendCliCommand).not.toHaveBeenCalled();
+  });
+
+  it('shows cliMultiHopHint for multi-hop repeaters without a trace this session', async () => {
+    const multiHop = { ...repeater, hops_away: 2 };
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={new Map([[multiHop.node_id, multiHop]])}
+        meshcoreTraceResults={new Map()}
+        onSendCliCommand={vi.fn().mockResolvedValue('ok')}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+
+    expect(
+      screen.getByText(/Multi-hop CLI is more reliable after a successful Ping trace/i),
+    ).toBeInTheDocument();
   });
 
   it('pins favorited repeaters above non-favorites', () => {

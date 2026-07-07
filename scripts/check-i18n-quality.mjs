@@ -514,6 +514,12 @@ export function repeatersCliAutoPingSentencePresent(val) {
 /** Known false friends for destructive CLI confirm button label. */
 export const REPEATERS_CLI_DANGER_CONFIRM_FALSE_FRIENDS = {
   es: [{ re: /Reproducir sonido/i, hint: 'confirm button must mean run command, not play sound' }],
+  fr: [
+    {
+      re: /traçabilité/i,
+      hint: 'cliMultiHopHint must use trace/route wording, not supply-chain traçabilité',
+    },
+  ],
   tr: [{ re: /çok sekmeli/i, hint: 'cliMultiHopHint must mean multi-hop, not multi-tab' }],
 };
 

@@ -168,17 +168,6 @@ export class RepeaterCommandService {
       return false;
     }
 
-    if (
-      (senderId == null || senderId === 0) &&
-      pending.senderNodeId !== 0 &&
-      this.pendingCommands.size > 1
-    ) {
-      console.debug(
-        '[repeaterCommandService] drop ambiguous CLI response (unknown sender, multiple pending)',
-      );
-      return false;
-    }
-
     clearTimeout(pending.timerId);
     this.pendingCommands.delete(token);
     pending.resolve(body);

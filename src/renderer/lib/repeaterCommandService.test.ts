@@ -163,15 +163,14 @@ describe('RepeaterCommandService', () => {
       await expect(promise).resolves.toBe('OK');
     });
 
-    it('drops ambiguous response when sender id is 0 and multiple pending', () => {
+    it('matches by token when sender id is 0 and multiple pending', async () => {
       const first = service.registerPendingCommand('cmd1', [], { senderNodeId: 42 });
       const second = service.registerPendingCommand('cmd2', [], { senderNodeId: 43 });
-      first.promise.catch(() => {});
       second.promise.catch(() => {});
 
       const handled = service.handleResponse(`${first.token}|OK`, 0);
-      expect(handled).toBe(false);
-      expect(service.hasPendingCommand(first.token)).toBe(true);
+      expect(handled).toBe(true);
+      await expect(first.promise).resolves.toBe('OK');
       expect(service.hasPendingCommand(second.token)).toBe(true);
     });
 

@@ -64,6 +64,8 @@ const MY_NODE_ID = pubkeyToNodeId(SELF_PUBKEY);
 
 const TRACE_PRIME_WAIT_MS_PER_ROUND = computeMeshcoreTracePrimeWaitMs(1);
 const TRACE_PRIME_TOTAL_WAIT_MS = TRACE_PRIME_WAIT_MS_PER_ROUND * MESHCORE_TRACE_PRIME_MAX_ROUNDS;
+/** Passive 1-hop priming uses a single PathUpdated wait (not {@link MESHCORE_TRACE_PRIME_MAX_ROUNDS}). */
+const ONE_HOP_PASSIVE_PRIME_MS = TRACE_PRIME_WAIT_MS_PER_ROUND;
 
 function makeRadioContact(pubKey: Uint8Array, advName: string) {
   return {
@@ -353,7 +355,7 @@ describe('useMeshcoreRuntime traceRoute one-hop path synthesis', () => {
 
     vi.useFakeTimers();
 
-    let tracePromise: Promise<void>;
+    let tracePromise: Promise<boolean>;
     await act(async () => {
       tracePromise = result.current.traceRoute(REMOTE_NODE_ID);
       await vi.advanceTimersByTimeAsync(TRACE_PRIME_TOTAL_WAIT_MS);
@@ -371,7 +373,7 @@ describe('useMeshcoreRuntime traceRoute one-hop path synthesis', () => {
     expect(tracePathArg).toEqual(new Uint8Array([RELAY_PUBKEY[0], REMOTE_PUBKEY[0]]));
   });
 
-  it('falls back to destination 1-byte prefix when no 0-hop repeater relay is known', async () => {
+  it('fast-fails pingNoRoute when no 0-hop repeater relay is known for 1-hop', async () => {
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([
       makeRepeaterContactRow({
         nodeId: REMOTE_NODE_ID,
@@ -387,18 +389,22 @@ describe('useMeshcoreRuntime traceRoute one-hop path synthesis', () => {
 
     vi.useFakeTimers();
 
-    let tracePromise: Promise<void>;
+    let tracePromise: Promise<boolean>;
     await act(async () => {
       tracePromise = result.current.traceRoute(REMOTE_NODE_ID);
-      await vi.advanceTimersByTimeAsync(TRACE_PRIME_TOTAL_WAIT_MS);
+      // Advance only the passive prime wait — advancing TRACE_PRIME_TOTAL_WAIT_MS also
+      // fires the 20s pingNoRoute display expiry and clears meshcorePingErrors.
+      await vi.advanceTimersByTimeAsync(ONE_HOP_PASSIVE_PRIME_MS);
     });
 
     await act(async () => {
-      await tracePromise!;
+      const ok = await tracePromise!;
+      expect(ok).toBe(false);
     });
 
-    expect(startMeshcoreTracePathMultiplexedMock).toHaveBeenCalled();
-    const tracePathArg = startMeshcoreTracePathMultiplexedMock.mock.calls[0]?.[1] as Uint8Array;
-    expect(tracePathArg).toEqual(new Uint8Array([REMOTE_PUBKEY[0]]));
+    expect(result.current.meshcorePingErrors.get(REMOTE_NODE_ID)).toBe(
+      MESHCORE_PING_NO_ROUTE_ERROR_MSG,
+    );
+    expect(startMeshcoreTracePathMultiplexedMock).not.toHaveBeenCalled();
   });
 });

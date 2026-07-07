@@ -131,8 +131,8 @@ describe('meshcoreShouldAbortMultiHopPingNoRoute', () => {
     expect(meshcoreShouldAbortMultiHopPingNoRoute(true, 1, true, true)).toBe(true);
   });
 
-  it('does not abort for UI-only 1-hop (allows probe/synthesized trace)', () => {
-    expect(meshcoreShouldAbortMultiHopPingNoRoute(true, 1, true, false)).toBe(false);
+  it('aborts for UI 1-hop without path when radio does not confirm multi-hop', () => {
+    expect(meshcoreShouldAbortMultiHopPingNoRoute(true, 1, true, false)).toBe(true);
   });
 
   it('aborts for 2+ UI hops without path', () => {
@@ -179,6 +179,18 @@ describe('computeMeshcoreTracePrimeStrategy', () => {
         needsRoutePrime: true,
         pathTooShort: true,
         hopsAway: 2,
+        hasUsableStoredPath: false,
+        canSynthesizePath: false,
+      }),
+    ).toBe('passive');
+  });
+
+  it('returns passive for unknown hopsAway when path is missing', () => {
+    expect(
+      computeMeshcoreTracePrimeStrategy({
+        needsRoutePrime: true,
+        pathTooShort: true,
+        hopsAway: null,
         hasUsableStoredPath: false,
         canSynthesizePath: false,
       }),

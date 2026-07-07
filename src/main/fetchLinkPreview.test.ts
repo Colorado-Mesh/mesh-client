@@ -1,6 +1,10 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const { agentConnectOpts } = vi.hoisted(() => ({
+  agentConnectOpts: [] as { port?: number }[],
+}));
+
 vi.mock('node:dns/promises', () => ({
   default: {
     lookup: vi.fn(),
@@ -10,6 +14,9 @@ vi.mock('node:dns/promises', () => ({
 
 vi.mock('undici', () => {
   class MockAgent {
+    constructor(opts: { connect?: { port?: number } }) {
+      if (opts.connect) agentConnectOpts.push(opts.connect);
+    }
     close = vi.fn().mockResolvedValue(undefined);
   }
   return {
@@ -43,6 +50,7 @@ beforeEach(() => {
   mockFetch.mockReset();
   mockDnsLookup.mockReset();
   mockDnsLookup.mockResolvedValue({ address: '93.184.216.34', family: 4 });
+  agentConnectOpts.length = 0;
 });
 
 afterEach(() => {
@@ -463,5 +471,37 @@ describe('fetchLinkPreview', () => {
       '[chat] fetchLinkPreview error:',
       expect.stringContaining('network failure'),
     );
+  });
+
+  it('uses port 80 for http URLs without explicit port', async () => {
+    const html = `<meta property="og:title" content="HTTP Title">`;
+    mockFetch.mockResolvedValue(makeStreamResponse(html));
+    await fetchLinkPreview('http://example.com/page');
+    expect(agentConnectOpts.some((opts) => opts.port === 80)).toBe(true);
+  });
+
+  it('deduplicates concurrent preview fetches for the same URL', async () => {
+    const html = `<meta property="og:title" content="Deduped">`;
+    mockFetch.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(() => {
+            resolve(makeStreamResponse(html));
+          }, 20);
+        }),
+    );
+    const [a, b] = await Promise.all([
+      fetchLinkPreview('https://example.com/dedup'),
+      fetchLinkPreview('https://example.com/dedup'),
+    ]);
+    expect(a?.title).toBe('Deduped');
+    expect(b?.title).toBe('Deduped');
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns null when resolved address is private for HTML fetch', async () => {
+    mockDnsLookup.mockResolvedValue({ address: '10.0.0.5', family: 4 });
+    expect(await fetchLinkPreview('https://metadata.example.internal/page')).toBeNull();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });

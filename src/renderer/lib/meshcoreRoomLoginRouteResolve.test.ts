@@ -121,7 +121,7 @@ describe('resolveMeshcoreRoomLoginRouteBytes', () => {
 
   it('uses flood prime when contacts have no usable multi-hop path', async () => {
     const primedPath = new Uint8Array([0xaa, 0xbb]);
-    const primeSpy = vi.spyOn(tracePrime, 'primeMeshcoreTraceRoute').mockResolvedValue({
+    const primeSpy = vi.spyOn(tracePrime, 'primeMeshcoreTraceRouteWithFallback').mockResolvedValue({
       path: primedPath,
       radioContactPathLen: 2,
     });
@@ -141,14 +141,55 @@ describe('resolveMeshcoreRoomLoginRouteBytes', () => {
         nodeId,
         pubKey,
         hopsAway: 2,
+        initialStrategy: 'passive',
       }),
     );
     expect(result).toEqual(primedPath);
   });
 
+  it('escalates passive prime to flood when loginHopsAway >= 2 and passive fails', async () => {
+    const primeSpy = vi.spyOn(tracePrime, 'primeMeshcoreTraceRouteWithFallback').mockResolvedValue({
+      path: new Uint8Array([0xaa, 0xbb]),
+      radioContactPathLen: 2,
+    });
+    const conn = baseConn({
+      getContacts: vi.fn(() => Promise.resolve([])),
+    });
+
+    await resolveMeshcoreRoomLoginRouteBytes(conn, nodeId, {
+      pubKey,
+      loginHopsAway: 2,
+      allowPrime: true,
+    });
+
+    expect(primeSpy).toHaveBeenCalledTimes(1);
+    const floodWhen = primeSpy.mock.calls[0]?.[0]?.floodWhen;
+    expect(floodWhen?.({ usableAfterPrime: false } as never, 2)).toBe(true);
+    expect(floodWhen?.({ usableAfterPrime: true } as never, 2)).toBe(false);
+    expect(floodWhen?.({ usableAfterPrime: false } as never, 1)).toBe(false);
+  });
+
+  it('returns pathFromHistory without getContacts or prime', async () => {
+    const historyPath = new Uint8Array([0x44, 0x55]);
+    const primeSpy = vi.spyOn(tracePrime, 'primeMeshcoreTraceRouteWithFallback');
+    const conn = baseConn({
+      getContacts: vi.fn(() => Promise.resolve([])),
+    });
+
+    const result = await resolveMeshcoreRoomLoginRouteBytes(conn, nodeId, {
+      pubKey,
+      loginHopsAway: 2,
+      pathFromHistory: historyPath,
+    });
+
+    expect(result).toEqual(historyPath);
+    expect(conn.getContacts).not.toHaveBeenCalled();
+    expect(primeSpy).not.toHaveBeenCalled();
+  });
+
   it('swallows getContacts failure and may still prime', async () => {
     const primedPath = new Uint8Array([0xde, 0xef]);
-    const primeSpy = vi.spyOn(tracePrime, 'primeMeshcoreTraceRoute').mockResolvedValue({
+    const primeSpy = vi.spyOn(tracePrime, 'primeMeshcoreTraceRouteWithFallback').mockResolvedValue({
       path: primedPath,
       radioContactPathLen: null,
     });

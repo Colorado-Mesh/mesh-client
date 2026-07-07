@@ -92,6 +92,7 @@ async function primeMeshcoreTraceRouteInner(opts: {
   existingPath?: Uint8Array;
   maxRounds?: number;
   strategy?: MeshcoreTracePrimeStrategy;
+  isAborted?: () => boolean;
 }): Promise<MeshcoreTraceRoutePrimeResult> {
   const strategy = opts.strategy ?? 'passive';
   if (strategy === 'none') {
@@ -118,7 +119,26 @@ async function primeMeshcoreTraceRouteInner(opts: {
   let roundsRun = 0;
 
   for (let round = 0; round < maxRounds; round++) {
+    if (opts.isAborted?.()) break;
     roundsRun = round + 1;
+    if (strategy === 'passive') {
+      const preSnap = await refreshPathAfterPrimeRound(
+        opts.conn,
+        opts.nodeId,
+        routeStoredPath,
+        opts.outPathMapRef,
+      );
+      if (opts.isAborted?.()) break;
+      if (preSnap.radioContactPathLen != null) {
+        radioContactPathLen = preSnap.radioContactPathLen;
+      }
+      if (preSnap.path && preSnap.path.length > 0) {
+        routeStoredPath = preSnap.path;
+      }
+      if (isUsablePrimedPath(routeStoredPath, opts.hopsAway, opts.pubKey)) {
+        break;
+      }
+    }
     const path129Wait = waitForMeshcorePath129ForNode(opts.conn, opts.nodeId, waitMs);
     if (strategy === 'flood') {
       try {
@@ -133,6 +153,7 @@ async function primeMeshcoreTraceRouteInner(opts: {
       }
     }
     const got129 = await path129Wait;
+    if (opts.isAborted?.()) break;
     if (got129) path129Received = true;
 
     const snap = await refreshPathAfterPrimeRound(
@@ -196,6 +217,7 @@ export async function primeMeshcoreTraceRoute(opts: {
   existingPath?: Uint8Array;
   maxRounds?: number;
   strategy?: MeshcoreTracePrimeStrategy;
+  isAborted?: () => boolean;
 }): Promise<MeshcoreTraceRoutePrimeResult> {
   const strategy = opts.strategy ?? 'passive';
   if (strategy === 'none') {
@@ -207,9 +229,28 @@ export async function primeMeshcoreTraceRoute(opts: {
     maxRounds,
     strategy,
   );
+  const partialMetrics: MeshcoreTraceRoutePrimeMetrics = {
+    strategy,
+    rounds: 0,
+    path129Received: false,
+    floodAdvertsSent: 0,
+    postPathLen: opts.existingPath?.length ?? 0,
+    usableAfterPrime: false,
+  };
   try {
     return await withTimeout(
-      primeMeshcoreTraceRouteInner({ ...opts, strategy, maxRounds }),
+      primeMeshcoreTraceRouteInner({
+        ...opts,
+        strategy,
+        maxRounds,
+        isAborted: () => {
+          if (opts.isAborted?.()) return true;
+          return false;
+        },
+      }).then((result) => {
+        if (result.metrics) Object.assign(partialMetrics, result.metrics);
+        return result;
+      }),
       aggregateMs,
       'meshcoreTraceRoutePrimeAggregate',
     );
@@ -221,10 +262,7 @@ export async function primeMeshcoreTraceRoute(opts: {
       path: fromMap ?? opts.existingPath,
       radioContactPathLen: null,
       metrics: {
-        strategy,
-        rounds: maxRounds,
-        path129Received: false,
-        floodAdvertsSent: 0,
+        ...partialMetrics,
         postPathLen: (fromMap ?? opts.existingPath)?.length ?? 0,
         usableAfterPrime: isUsablePrimedPath(
           fromMap ?? opts.existingPath,
@@ -234,4 +272,47 @@ export async function primeMeshcoreTraceRoute(opts: {
       },
     };
   }
+}
+
+/** Passive route priming with optional flood fallback when the first round fails. */
+export async function primeMeshcoreTraceRouteWithFallback(opts: {
+  conn: MeshcoreTraceRoutePrimeConn;
+  nodeId: number;
+  pubKey: Uint8Array;
+  hopsAway?: number | null;
+  outPathMapRef: Map<number, Uint8Array>;
+  existingPath?: Uint8Array;
+  initialStrategy: MeshcoreTracePrimeStrategy;
+  floodWhen?: (
+    metrics: MeshcoreTraceRoutePrimeMetrics | undefined,
+    hopsAway: number | null | undefined,
+  ) => boolean;
+  isAborted?: () => boolean;
+}): Promise<MeshcoreTraceRoutePrimeResult> {
+  if (opts.isAborted?.()) {
+    return { path: opts.existingPath, radioContactPathLen: null };
+  }
+  const primed = await primeMeshcoreTraceRoute({
+    conn: opts.conn,
+    nodeId: opts.nodeId,
+    pubKey: opts.pubKey,
+    hopsAway: opts.hopsAway,
+    outPathMapRef: opts.outPathMapRef,
+    existingPath: opts.existingPath,
+    strategy: opts.initialStrategy,
+    isAborted: opts.isAborted,
+  });
+  if (opts.isAborted?.()) return primed;
+  if (!opts.floodWhen?.(primed.metrics, opts.hopsAway)) return primed;
+  const flooded = await primeMeshcoreTraceRoute({
+    conn: opts.conn,
+    nodeId: opts.nodeId,
+    pubKey: opts.pubKey,
+    hopsAway: opts.hopsAway,
+    outPathMapRef: opts.outPathMapRef,
+    existingPath: primed.path ?? opts.existingPath,
+    strategy: 'flood',
+    isAborted: opts.isAborted,
+  });
+  return flooded;
 }

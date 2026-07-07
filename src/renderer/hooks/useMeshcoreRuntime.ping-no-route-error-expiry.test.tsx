@@ -348,7 +348,7 @@ describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
 
     vi.useFakeTimers();
 
-    let tracePromise: Promise<void>;
+    let tracePromise: Promise<boolean>;
     await act(async () => {
       tracePromise = result.current.traceRoute(REMOTE_NODE_ID);
       await vi.advanceTimersByTimeAsync(TRACE_PRIME_TOTAL_WAIT_MS);

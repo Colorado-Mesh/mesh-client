@@ -19,7 +19,7 @@ function routingErrorLogFromConsoleArgs(args: unknown[]): string | null {
 
 /** Tap console.error/warn for SDK queue routing failures (timeouts use warn in queue.js). */
 export function installMeshtasticSdkRoutingErrorConsoleHook(
-  onRoutingErrorLog: (message: string) => void,
+  onRoutingErrorLog: (message: string) => boolean,
 ): () => void {
   const priorError = console.error;
   const priorWarn = console.warn;
@@ -27,9 +27,12 @@ export function installMeshtasticSdkRoutingErrorConsoleHook(
   const handleConsoleRoutingLog = (args: unknown[]): boolean => {
     const line = routingErrorLogFromConsoleArgs(args);
     if (!line) return false;
-    console.debug('[Meshtastic] SDK routing failure:', line);
-    onRoutingErrorLog(line);
-    return true;
+    const applied = onRoutingErrorLog(line);
+    if (applied) {
+      console.debug('[Meshtastic] SDK routing failure:', line);
+      return true;
+    }
+    return false;
   };
 
   console.error = (...args: unknown[]) => {

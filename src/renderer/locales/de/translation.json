@@ -917,7 +917,7 @@
       "identityRequiredHint": "Konfigurieren Sie eine Reticulum-Identität auf der Registerkarte Netzwerk, bevor Sie Schnittstellen hinzufügen.",
       "i2pPeersRequired": "Geben Sie mindestens eine I2P-Peer-Adresse ein.",
       "i2pPeersTooLong": "Die I2P-Peer-Liste ist zu lang (max. {{max}} Zeichen).",
-      "i2pPeersInvalid": "I2P-Peers müssen durch Kommas getrennt sein .b32.i2p-Adressen ohne Zeilenumbrüche."
+      "i2pPeersInvalid": "I2P-Peers müssen kommagetrennte .b32.i2p-Adressen ohne Zeilenumbrüche sein."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1697,7 +1697,7 @@
         "failed": "Konnte den Raum nicht verlassen"
       },
       "repeaterRpcInProgress": "Eine Anfrage für diesen Repeater ist bereits in Bearbeitung",
-      "cliDangerNotConfirmed": "Destruktive CLI-Befehle müssen im Repeater-Panel bestätigt werden."
+      "cliDangerNotConfirmed": "Destruktive CLI-Befehle müssen im Wiederholer-Panel bestätigt werden."
     },
     "mqttHints": {
       "notAuthorized": "Überprüfen Sie v1_-Benutzernamen, Token-Signatur und JWT-Zielgruppe im Vergleich zum Broker. siehe docs/letsmesh-mqtt-auth.md. Verwenden Sie „Benutzerdefiniert“, um bei Bedarf ein vom Bediener ausgestelltes Token einzufügen.",

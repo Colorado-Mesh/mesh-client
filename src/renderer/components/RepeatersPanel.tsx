@@ -56,7 +56,7 @@ interface Props {
   /** Survives panel unmount — in-flight status/ping/neighbors/telemetry/CLI RPCs. */
   meshcoreRepeaterRpcPending?: MeshcoreRepeaterRpcPendingMap;
   onRequestRepeaterStatus: (nodeId: number) => Promise<void>;
-  onPing: (nodeId: number) => Promise<void>;
+  onPing: (nodeId: number) => Promise<boolean | undefined>;
   onDeleteRepeater: (nodeId: number) => Promise<void>;
   isConnected: boolean;
   onRequestNeighbors?: (nodeId: number) => Promise<void>;
@@ -555,8 +555,14 @@ export default function RepeatersPanel({
     if (hops <= 0) return true;
     addToast(t('repeatersPanel.cliAutoPingToast'), 'info');
     try {
-      await onPing(nodeId);
-      return true;
+      const pingOk = await onPing(nodeId);
+      if (pingOk === false) {
+        addToast(t('repeatersPanel.cliAutoPingFailed'), 'error');
+        return false;
+      }
+      if (meshcoreTraceResults.get(nodeId) != null || pingOk === true) return true;
+      addToast(t('repeatersPanel.cliAutoPingFailed'), 'error');
+      return false;
     } catch (e) {
       console.warn('[RepeatersPanel] CLI auto-ping failed ' + errLikeToLogString(e));
       addToast(t('repeatersPanel.cliAutoPingFailed'), 'error');

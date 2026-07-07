@@ -6,7 +6,7 @@ import {
   type MeshcoreTracePathConnection,
   runMeshcoreTracePathMultiplexed,
 } from './meshcoreTracePathMultiplex';
-import { primeMeshcoreTraceRoute } from './meshcoreTraceRoutePrime';
+import { primeMeshcoreTraceRouteWithFallback } from './meshcoreTraceRoutePrime';
 import { meshcoreTraceResultToOutPathBytes } from './meshcoreUtils';
 import {
   MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
@@ -101,7 +101,7 @@ export async function resolveMeshcoreRoomLoginRouteBytes(
     if (fromRadio && fromRadio.length > 1) return fromRadio;
     if (fromRadio && fromRadio.length > 0) path = fromRadio;
   } catch {
-    // catch-no-log-ok getContacts optional during login path resolve
+    console.debug('[meshcoreRoomLoginRouteResolve] getContacts failed during path resolve');
   }
 
   if (path && path.length > 1) return path;
@@ -113,30 +113,18 @@ export async function resolveMeshcoreRoomLoginRouteBytes(
   if (opts.allowPrime !== false) {
     const outPathMapRef = new Map<number, Uint8Array>();
     if (path) outPathMapRef.set(nodeId, path);
-    const primed = await primeMeshcoreTraceRoute({
+    const primed = await primeMeshcoreTraceRouteWithFallback({
       conn,
       nodeId,
       pubKey: opts.pubKey,
       hopsAway: opts.loginHopsAway,
       outPathMapRef,
       existingPath: path,
-      strategy: 'passive',
+      initialStrategy: 'passive',
+      floodWhen: (metrics, hops) => !metrics?.usableAfterPrime && (hops ?? 0) >= 2,
     });
     if (primed.path && primed.path.length > 1) return primed.path;
     if (primed.path && primed.path.length > 0) path = primed.path;
-    if (!primed.metrics?.usableAfterPrime && opts.loginHopsAway >= 2) {
-      const flooded = await primeMeshcoreTraceRoute({
-        conn,
-        nodeId,
-        pubKey: opts.pubKey,
-        hopsAway: opts.loginHopsAway,
-        outPathMapRef,
-        existingPath: path,
-        strategy: 'flood',
-      });
-      if (flooded.path && flooded.path.length > 1) return flooded.path;
-      if (flooded.path && flooded.path.length > 0) path = flooded.path;
-    }
   }
 
   if (path && path.length > 1) return path;
@@ -152,5 +140,8 @@ export async function resolveMeshcoreRoomLoginRouteBytes(
     if (traced && traced.length > 1) return traced;
   }
 
+  if (opts.loginHopsAway >= 1) {
+    return path && path.length > 1 ? path : undefined;
+  }
   return path && path.length > 0 ? path : undefined;
 }

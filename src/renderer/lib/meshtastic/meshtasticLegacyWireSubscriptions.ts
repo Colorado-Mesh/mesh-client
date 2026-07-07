@@ -1875,8 +1875,8 @@ export function attachMeshtasticLegacyWireSubscriptions(
 
   // Queue status → connectionStore via MeshtasticProtocol + PacketRouter (no legacy handler).
 
-  const applySdkRoutingErrorFromLog = (logMessage: string): void => {
-    applyMeshtasticOutboundRoutingErrorFromLog(logMessage, {
+  const applySdkRoutingErrorFromLog = (logMessage: string): boolean => {
+    return applyMeshtasticOutboundRoutingErrorFromLog(logMessage, {
       myNodeNum: myNodeNumRef.current,
       identityId: meshtasticIdentityIdRef.current,
       messagesRef,
