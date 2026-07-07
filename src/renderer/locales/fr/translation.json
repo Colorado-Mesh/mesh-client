@@ -379,7 +379,7 @@
     "routesEstablished": "Itinéraires établis",
     "meshActive": "Actif sur le réseau",
     "transportBle": "BLE",
-    "transportSerial": "Série",
+    "transportSerial": "Port série",
     "transportHttp": "HTTP",
     "transportRadio": "Radio",
     "radioInterfaceFallback": "interface radio"
@@ -914,7 +914,10 @@
       "addDefaultHubsAllPresent": "Les hubs testnet et Ratspeak par défaut sont déjà configurés.",
       "addDefaultHubsFailed": "Impossible d'ajouter des concentrateurs par défaut.",
       "identityNotConfigured": "Configurez d'abord une identité Reticulum dans l'onglet Réseau — générez ou importez une phrase de récupération.",
-      "identityRequiredHint": "Configurez une identité Reticulum dans l'onglet Réseau avant d'ajouter des interfaces."
+      "identityRequiredHint": "Configurez une identité Reticulum dans l'onglet Réseau avant d'ajouter des interfaces.",
+      "i2pPeersRequired": "Saisissez au moins une adresse d'homologue I2P.",
+      "i2pPeersTooLong": "La liste des pairs I2P est trop longue (maximum {{max}} caractères).",
+      "i2pPeersInvalid": "Les homologues I2P doivent être des adresses .b32.i2p séparées par des virgules sans saut de ligne."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1693,7 +1696,8 @@
         "rejected": "Déconnexion de la salle refusée par radio.",
         "failed": "Impossible de quitter la chambre"
       },
-      "repeaterRpcInProgress": "Une demande pour ce répéteur est déjà en cours"
+      "repeaterRpcInProgress": "Une demande pour ce répéteur est déjà en cours",
+      "cliDangerNotConfirmed": "Les commandes CLI destructives nécessitent une confirmation dans le panneau Répéteurs."
     },
     "mqttHints": {
       "notAuthorized": "Vérifiez le nom d'utilisateur v1_, la signature du jeton et l'audience JWT par rapport au courtier ; voir docs/letsmesh-mqtt-auth.md. Utilisez Personnalisé pour coller un jeton émis par l'opérateur si nécessaire.",
@@ -3393,12 +3397,13 @@
     "uptimeMinutes": "{{minutes}}m",
     "rememberPasswordSaveFailed": "Impossible d'enregistrer le mot de passe du répéteur pour les redémarrages. Cela ne fonctionnera que pour cette session.",
     "telemetryFailedToast": "Échec de la télémétrie : {{message}}",
-    "cliMultiHopHint": "La CLI multi-sauts est plus fiable après une traçabilité Ping réussie. Si les commandes expirent, exécutez d'abord Ping ou vérifiez la synchronisation de l'horloge compagnon dans l'application MeshCore.",
+    "cliMultiHopHint": "La CLI multi-sauts est plus fiable après une traçabilité Ping réussie. La première commande CLI sur un répéteur multi-sauts exécute Ping automatiquement lorsqu'aucune trace n'existe dans cette session. Si les commandes expirent, exécutez d'abord Ping ou vérifiez la synchronisation de l'horloge compagnon dans l'application MeshCore.",
     "cliDangerConfirmTitle": "Exécuter la commande CLI destructive ?",
     "cliDangerConfirmMessage": "Cette commande peut redémarrer, effacer ou réinitialiser en usine le répéteur : « {{command}} ». Continuez uniquement si vous avez l'intention de ce changement.",
     "cliDangerConfirmAction": "Exécuter la commande",
     "cliAutoPingToast": "Établissement de l'itinéraire avec Ping avant CLI…",
-    "cliAutoPingFailed": "Échec du ping ; exécutez le ping manuellement avant de réessayer la CLI sur les répéteurs à sauts multiples."
+    "cliAutoPingFailed": "Échec du ping ; exécutez le ping manuellement avant de réessayer la CLI sur les répéteurs à sauts multiples.",
+    "cliCommandTooLong": "La commande CLI est trop longue (max {{max}} caractères)."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalle d'annonce (secondes)",

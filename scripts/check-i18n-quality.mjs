@@ -450,23 +450,31 @@ export const BOOT_SEQUENCE_TRANSPORT_FALSE_FRIENDS = {
       hint: 'bootSequence.transportSerial is Serial transport, not serial number',
     },
     { re: /\bmoyeux\b/i, hint: 'network hub wording, not wheel/axle "moyeux"' },
-  ],
-  es: [
     {
-      re: /n[úu]mero de serie/i,
-      hint: 'bootSequence.transportSerial is Serial transport, not serial number',
-    },
-  ],
-  ru: [
-    {
-      re: /заводск/i,
-      hint: 'bootSequence.transportSerial is Serial transport, not factory default',
+      re: /^Série$/i,
+      hint: 'bootSequence.transportSerial should be "Port série" (serial port), not TV series',
     },
   ],
   de: [
     {
       re: /^Serie$/i,
       hint: 'bootSequence.transportSerial should be "Seriell" (serial port), not TV series',
+    },
+  ],
+  es: [
+    {
+      re: /n[úu]mero de serie/i,
+      hint: 'bootSequence.transportSerial is Serial transport, not serial number',
+    },
+    {
+      re: /interfaz a[ée]rea/i,
+      hint: 'bootSequence.radioInterfaceFallback is RF/radio interface, not aerial interface',
+    },
+  ],
+  ru: [
+    {
+      re: /заводск/i,
+      hint: 'bootSequence.transportSerial is Serial transport, not factory default',
     },
   ],
   zh: [
@@ -491,6 +499,23 @@ export const RETICULUM_DEFAULT_HUB_KEYS = [
   'connectionPanel.reticulumInterfaces.addDefaultHubs',
   'connectionPanel.reticulumInterfaces.addDefaultHubsFailed',
 ];
+
+/** Repeaters panel CLI hint must mention automatic pre-ping on multi-hop (middle sentence often dropped by MT). */
+export const REPEATERS_CLI_MULTI_HOP_HINT_KEY = 'repeatersPanel.cliMultiHopHint';
+export const REPEATERS_CLI_DANGER_CONFIRM_ACTION_KEY = 'repeatersPanel.cliDangerConfirmAction';
+export const REPEATERS_CLI_DANGER_CONFIRM_ACTION_EN = 'Run command';
+
+/** Locale-specific markers that the auto-ping middle sentence was translated (not exhaustive MT output). */
+export function repeatersCliAutoPingSentencePresent(val) {
+  if (!/Ping/i.test(val)) return false;
+  return /autom[aáàâä]t|automatic|自动|自動|자동|otomatik|otomatis|автоматич|автомат/i.test(val);
+}
+
+/** Known false friends for destructive CLI confirm button label. */
+export const REPEATERS_CLI_DANGER_CONFIRM_FALSE_FRIENDS = {
+  es: [{ re: /Reproducir sonido/i, hint: 'confirm button must mean run command, not play sound' }],
+  tr: [{ re: /çok sekmeli/i, hint: 'cliMultiHopHint must mean multi-hop, not multi-tab' }],
+};
 
 /** MT mistranslates network Host as recording venue / unrelated nouns. */
 export const RETICULUM_HOST_FALSE_FRIEND_RES = [
@@ -3015,6 +3040,39 @@ function checkReticulumDefaultHubKeyIssues(ctx) {
   return issues;
 }
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkRepeatersCliIssues(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
+  if (flatKey === REPEATERS_CLI_MULTI_HOP_HINT_KEY && locale !== 'en') {
+    if (!repeatersCliAutoPingSentencePresent(val)) {
+      issues.push('cliMultiHopHint must mention automatic Ping before first multi-hop CLI');
+    }
+    for (const { re, hint } of REPEATERS_CLI_DANGER_CONFIRM_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(hint);
+      }
+    }
+  }
+  if (flatKey === REPEATERS_CLI_DANGER_CONFIRM_ACTION_KEY) {
+    if (locale !== 'en' && val.trim() === REPEATERS_CLI_DANGER_CONFIRM_ACTION_EN) {
+      issues.push('cliDangerConfirmAction must be translated, not left as English');
+    }
+    for (const { re, hint } of REPEATERS_CLI_DANGER_CONFIRM_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(hint);
+      }
+    }
+  }
+  if (flatKey === 'bootSequence.transportBle' && locale === 'tr' && /BLE\s*:/i.test(val)) {
+    issues.push('bootSequence.transportBle must not include trailing colon');
+  }
+  return issues;
+}
+
 const LOCALE_STRING_QUALITY_CHECKS = [
   checkCatEncodingAndMeshtasticIssues,
   checkMustTranslateAndFormFieldIssues,
@@ -3037,6 +3095,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkReticulumRuntimeAndRoutingPortIssues,
   checkBootSequenceTransportIssues,
   checkReticulumDefaultHubKeyIssues,
+  checkRepeatersCliIssues,
 ];
 
 /**

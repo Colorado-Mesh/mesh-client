@@ -734,13 +734,13 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 - When the room server **guest password is empty**, use **Continue read-only** on the Rooms login overlay. That sends **zero password bytes** (same as the official Android app). **Login** with an empty guest field is disabled; it would send the default **`hello`** password instead.
 - When the server **does** configure a guest password, enter that value in the guest field and click **Login** (some communities use **`hello`**).
-- Logs showing push **`0x86`** (frame 134) mean **LoginFail** (wrong password or ACL denied). Current builds fail fast with a clear message instead of waiting the full timeout.
+- Logs showing push **`0x86`** (frame 134) mean **LoginFail** (wrong password or ACL denied). **Room login** rejects immediately on a prefix-matched LoginFail. **Repeater admin login** keeps waiting for a possible LoginSuccess (meshcore.js behavior on congested links); timeout after LoginFail alone is reported as timeout, not wrong password.
 - **Admin password** working while guest/read-only fails usually means the guest password on the server does not match what the client sent, or ACL denies read-only login.
 - If the room **changed its password** and mesh-client keeps trying to log in, open the **Rooms** tab: expand **Saved passwords** in the sidebar (or use the login overlay for the selected room). Use **Stop auto-login** to stop connect-time retries while keeping the old password stored, or **Forget saved password** to clear the stored guest/admin password and turn off auto-login and auto-sync. After a wrong-password failure, auto-login is turned off automatically until you log in again with **Remember password** or re-enable it.
 
 **MeshCore repeater saved passwords**:
 
-- Per-repeater admin passwords are stored in SQLite as `meshcoreRepeaterCredential:<nodeId>` when you check **Remember** on the repeater auth dialog. Open **Repeaters** → expand **Saved repeater passwords** to **Forget** a stale entry, or use **Change password** / **Save password** on the node detail modal for a single repeater.
+- Per-repeater admin passwords are stored in SQLite as `meshcoreRepeaterCredential:<nodeId>` when you check **Remember** on the repeater auth dialog. Open **Repeaters** → expand **Saved repeater passwords** (sidebar label) to **Forget** a stale entry, or use **Change password** / **Save password** on the node detail modal for a single repeater.
 - If **Remember** fails silently, the password still works for the current session (ephemeral secret) but will not survive restart — check the app log for `appSettings:set` errors and retry after updating mesh-client.
 
 **Room post fails with "unsupported on this firmware"**:
@@ -803,7 +803,9 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **Parallel pings**: MeshCore does **not** allow parallel traceroutes on one radio. mesh-client queues them, but two back-to-back pings can take up to **180s** each (including 0-hop direct-retry). **Status/Neighbors/Telemetry** use **120s** timeouts and wait for the active trace (TraceData) and same-node ping wrapper to finish first. Prefer **one ping at a time** when troubleshooting. See [meshcore-meshtastic-parity.md — Serialized traceroutes](meshcore-meshtastic-parity.md#serialized-traceroutes-protocol-requirement).
 
-**Fix**: When possible, exchange contact adds so the remote node lists you as a contact. If you cannot add them (or they never add you), treat the timeout as expected, not a Mesh-Client defect when the radio never returns a result.
+**Multi-hop route priming / no route**: When outbound path bytes are missing but the UI shows multi-hop, ping/trace runs up to **two** flood-advert priming rounds before `SendTracePath` (PathUpdated listener registered **before** each advert, then hop-scaled wait: **15s + 5s × hops**, capped at **45s** per round). If priming still yields no usable hash-segment path, ping may fail fast with **No route from radio yet** instead of waiting the full trace timeout. One-way contacts may still time out with no TraceData after priming.
+
+**Fix**: When possible, exchange contact adds so the remote node lists you as a contact. If you cannot add them (or they never add you), treat the timeout as expected, not a Mesh-Client defect when the radio never returns a result. For multi-hop repeaters, wait for contact/path updates or run **Ping trace** once before CLI (Repeaters panel auto-pings on first multi-hop CLI when no trace exists this session).
 
 ## Reticulum
 
@@ -1018,7 +1020,7 @@ The companion radio queues public messages behind a **single serialized USB seri
 
 **In-app status**
 
-Chat and Rooms show an **amber strip** while silent auto-drain runs ("Fetching messages queued on the radio…") or when drain is **deferred** behind admin/trace work. On serial, a hint explains that messages may arrive in small batches.
+The **header status indicator** (visible on any protocol tab when MeshCore has queued messages) shows silent auto-drain or deferred drain behind admin/trace work. On serial, messages may arrive in small batches without a Chat/Rooms panel banner.
 
 **Fix / workaround**
 

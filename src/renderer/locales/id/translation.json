@@ -914,7 +914,10 @@
       "addDefaultHubsAllPresent": "Hub testnet dan Ratspeak default sudah dikonfigurasi.",
       "addDefaultHubsFailed": "Gagal menambahkan hub default.",
       "identityNotConfigured": "Siapkan identitas Reticulum di tab Jaringan terlebih dahulu — buat atau impor frasa pemulihan.",
-      "identityRequiredHint": "Konfigurasikan identitas Reticulum pada tab Jaringan sebelum menambahkan antarmuka."
+      "identityRequiredHint": "Konfigurasikan identitas Reticulum pada tab Jaringan sebelum menambahkan antarmuka.",
+      "i2pPeersRequired": "Masukkan setidaknya satu alamat rekan I2P.",
+      "i2pPeersTooLong": "Daftar rekan I2P terlalu panjang (maks {{max}} karakter).",
+      "i2pPeersInvalid": "Rekan I2P harus berupa alamat .b32.i2p yang dipisahkan koma tanpa jeda baris."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1693,7 +1696,8 @@
         "rejected": "Logout ruangan ditolak oleh radio.",
         "failed": "Tidak bisa meninggalkan ruangan"
       },
-      "repeaterRpcInProgress": "Permintaan untuk repeater ini sedang dalam proses"
+      "repeaterRpcInProgress": "Permintaan untuk repeater ini sedang dalam proses",
+      "cliDangerNotConfirmed": "Perintah CLI yang merusak memerlukan konfirmasi di panel Repeater."
     },
     "mqttHints": {
       "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker; lihat dokumen/letsmesh-mqtt-auth.md. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",
@@ -3393,12 +3397,13 @@
     "uptimeMinutes": "{{minutes}}m",
     "rememberPasswordSaveFailed": "Tidak dapat menyimpan kata sandi pengulang untuk memulai ulang. Ini hanya akan berfungsi untuk sesi ini.",
     "telemetryFailedToast": "Telemetri gagal: {{message}}",
-    "cliMultiHopHint": "Multi - hop CLI lebih dapat diandalkan setelah jejak Ping yang sukses. Jika waktu perintah habis, jalankan Ping terlebih dahulu atau periksa sinkronisasi jam pendamping di aplikasi MeshCore.",
+    "cliMultiHopHint": "Multi-hop CLI lebih andal setelah jejak Ping berhasil. Perintah CLI pertama pada repeater multi-hop menjalankan Ping otomatis ketika tidak ada trace pada sesi ini. Jika perintah habis waktu, jalankan Ping terlebih dahulu atau periksa sinkronisasi jam pendamping di aplikasi MeshCore.",
     "cliDangerConfirmTitle": "Jalankan perintah CLI yang merusak?",
     "cliDangerConfirmMessage": "Perintah ini dapat memulai ulang, menghapus, atau mengatur ulang repeater: \"{{command}} \". Lanjutkan hanya jika Anda menginginkan perubahan ini.",
     "cliDangerConfirmAction": "Jalankan perintah",
     "cliAutoPingToast": "Menetapkan rute dengan Ping sebelum CLI…",
-    "cliAutoPingFailed": "Ping gagal; jalankan Ping secara manual sebelum mencoba kembali CLI pada repeater multi - hop."
+    "cliAutoPingFailed": "Ping gagal; jalankan Ping secara manual sebelum mencoba kembali CLI pada repeater multi - hop.",
+    "cliCommandTooLong": "Perintah CLI terlalu panjang (maks {{max}} karakter)."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",

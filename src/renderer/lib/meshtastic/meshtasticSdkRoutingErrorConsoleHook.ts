@@ -52,12 +52,12 @@ export function installMeshtasticSdkRoutingErrorConsoleHook(
  * outbound chat failure state when a matching row exists.
  */
 export function installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(
-  onQueueRejection: (reason: unknown) => void,
+  onQueueRejection: (reason: unknown) => boolean,
 ): () => void {
   const handler = (event: PromiseRejectionEvent) => {
     if (!parseMeshtasticSdkQueueRejection(event.reason)) return;
-    onQueueRejection(event.reason);
-    event.preventDefault();
+    const applied = onQueueRejection(event.reason);
+    if (applied) event.preventDefault();
   };
   window.addEventListener('unhandledrejection', handler);
   return () => {

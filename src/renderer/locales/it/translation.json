@@ -914,7 +914,10 @@
       "addDefaultHubsAllPresent": "Gli hub testnet e Ratspeak predefiniti sono già configurati.",
       "addDefaultHubsFailed": "Impossibile aggiungere hub predefiniti.",
       "identityNotConfigured": "Imposta prima un'identità Reticulum nella scheda Rete — genera o importa una frase di ripristino.",
-      "identityRequiredHint": "Configura un'identità Reticulum nella scheda Rete prima di aggiungere interfacce."
+      "identityRequiredHint": "Configura un'identità Reticulum nella scheda Rete prima di aggiungere interfacce.",
+      "i2pPeersRequired": "Inserisci almeno un indirizzo peer I2P.",
+      "i2pPeersTooLong": "L'elenco peer I2P è troppo lungo (max {{max}} caratteri).",
+      "i2pPeersInvalid": "I peer I2P devono essere indirizzi .b32.i2p separati da virgole senza interruzioni di riga."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1693,7 +1696,8 @@
         "rejected": "Logout dalla sala rifiutato via radio.",
         "failed": "Impossibile lasciare la stanza"
       },
-      "repeaterRpcInProgress": "Una richiesta per questo ripetitore è già in corso"
+      "repeaterRpcInProgress": "Una richiesta per questo ripetitore è già in corso",
+      "cliDangerNotConfirmed": "I comandi CLI distruttivi richiedono la conferma nel pannello Ripetitori."
     },
     "mqttHints": {
       "notAuthorized": "Verifica il nome utente v1_, la firma del token e il pubblico JWT rispetto al broker; vedere docs/letsmesh-mqtt-auth.md. Se necessario, utilizza Personalizzato per incollare un token emesso dall'operatore.",
@@ -3393,12 +3397,13 @@
     "uptimeMinutes": "{{minutes}}m",
     "rememberPasswordSaveFailed": "Impossibile salvare la password del ripetitore per il riavvio. Funzionerà solo per questa sessione.",
     "telemetryFailedToast": "Telemetria non riuscita: {{message}}",
-    "cliMultiHopHint": "La CLI multi-hop è più affidabile dopo una traccia di ping riuscita. Se i comandi scadono, esegui prima Ping o controlla la sincronizzazione dell'orologio compagno nell'app MeshCore.",
+    "cliMultiHopHint": "La CLI multi-hop è più affidabile dopo una traccia di ping riuscita. Il primo comando CLI su un ripetitore multi-hop esegue Ping automaticamente quando non esiste una trace in questa sessione. Se i comandi scadono, esegui prima Ping o controlla la sincronizzazione dell'orologio compagno nell'app MeshCore.",
     "cliDangerConfirmTitle": "Eseguire il comando CLI distruttivo?",
     "cliDangerConfirmMessage": "Questo comando può riavviare, cancellare o ripristinare in fabbrica il ripetitore: \"{{command}}\". Continua solo se intendi apportare questa modifica.",
     "cliDangerConfirmAction": "Comando Esegui",
     "cliAutoPingToast": "Stabilire il percorso con Ping prima di CLI...",
-    "cliAutoPingFailed": "Ping non riuscito; eseguire Ping manualmente prima di riprovare CLI su ripetitori multi-hop."
+    "cliAutoPingFailed": "Ping non riuscito; eseguire Ping manualmente prima di riprovare CLI su ripetitori multi-hop.",
+    "cliCommandTooLong": "Il comando CLI è troppo lungo (max {{max}} caratteri)."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervallo annunci (secondi)",

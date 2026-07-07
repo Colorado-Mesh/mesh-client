@@ -914,7 +914,10 @@
       "addDefaultHubsAllPresent": "Standaard testnet en Ratspeak-hubs zijn al geconfigureerd.",
       "addDefaultHubsFailed": "Kan standaardhubs niet toevoegen.",
       "identityNotConfigured": "Stel eerst een Reticulum-identiteit in op het tabblad Netwerk — genereer of importeer een herstelzin.",
-      "identityRequiredHint": "Configureer een Reticulum-identiteit op het tabblad Netwerk voordat u interfaces toevoegt."
+      "identityRequiredHint": "Configureer een Reticulum-identiteit op het tabblad Netwerk voordat u interfaces toevoegt.",
+      "i2pPeersRequired": "Voer ten minste één I2P-peeradres in.",
+      "i2pPeersTooLong": "De I2P-peerlijst is te lang (max. {{max}} tekens).",
+      "i2pPeersInvalid": "I2P-peers moeten door komma's gescheiden .b32.i2p-adressen zijn zonder regeleinden."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1693,7 +1696,8 @@
         "rejected": "Uitloggen van kamer geweigerd via de radio.",
         "failed": "Kon de kamer niet verlaten"
       },
-      "repeaterRpcInProgress": "Er is al een aanvraag voor deze repeater in behandeling"
+      "repeaterRpcInProgress": "Er is al een aanvraag voor deze repeater in behandeling",
+      "cliDangerNotConfirmed": "Destructieve CLI-opdrachten moeten worden bevestigd in het deelvenster Repeaters."
     },
     "mqttHints": {
       "notAuthorized": "Controleer v1_ gebruikersnaam, tokenhandtekening en JWT-doelgroep versus makelaar; zie docs/letsmesh-mqtt-auth.md. Gebruik Aangepast om indien nodig een door de operator uitgegeven token te plakken.",
@@ -3393,12 +3397,13 @@
     "uptimeMinutes": "{{minutes}}m",
     "rememberPasswordSaveFailed": "Kon repeaterwachtwoord niet opslaan voor herstarten. Het werkt alleen voor deze sessie.",
     "telemetryFailedToast": "Telemetrie mislukt: {{message}}",
-    "cliMultiHopHint": "Multi-hop CLI is betrouwbaarder na een succesvolle Ping-trace. Als de opdrachten een time-out hebben, voer je eerst Ping uit of controleer je de synchronisatie van de bijbehorende klok in de MeshCore-app.",
+    "cliMultiHopHint": "Multi-hop CLI is betrouwbaarder na een succesvolle Ping-trace. Het eerste CLI-commando op een multi-hop repeater voert Ping automatisch uit wanneer er geen trace in deze sessie bestaat. Als de opdrachten een time-out hebben, voer je eerst Ping uit of controleer je de synchronisatie van de bijbehorende klok in de MeshCore-app.",
     "cliDangerConfirmTitle": "Destructieve CLI-opdracht uitvoeren?",
     "cliDangerConfirmMessage": "Dit commando kan de repeater opnieuw opstarten, wissen of in de fabriek opnieuw instellen: \"{{command}}\". Ga alleen verder als u van plan bent deze wijziging door te voeren.",
     "cliDangerConfirmAction": "Opdracht uitvoeren",
     "cliAutoPingToast": "Route vaststellen met Ping vóór CLI...",
-    "cliAutoPingFailed": "Ping mislukt; voer Ping handmatig uit voordat u CLI opnieuw probeert op multi-hop repeaters."
+    "cliAutoPingFailed": "Ping mislukt; voer Ping handmatig uit voordat u CLI opnieuw probeert op multi-hop repeaters.",
+    "cliCommandTooLong": "CLI-opdracht is te lang (max {{max}} tekens)."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",

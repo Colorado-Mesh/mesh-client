@@ -1,4 +1,5 @@
 import {
+  computeMeshcoreTracePrimeAggregateTimeoutMs,
   computeMeshcoreTracePrimeWaitMs,
   MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
   MESHCORE_TRACE_PRIME_MAX_ROUNDS,
@@ -62,13 +63,7 @@ async function refreshPathAfterPrimeRound(
   }
 }
 
-/**
- * Flood-advert route priming for multi-hop trace/ping.
- *
- * Failure point: PathUpdated never arrives — caller may fast-fail or proceed with short path.
- * Fallback: path history in caller; room login may run active trace after this helper.
- */
-export async function primeMeshcoreTraceRoute(opts: {
+async function primeMeshcoreTraceRouteInner(opts: {
   conn: MeshcoreTraceRoutePrimeConn;
   nodeId: number;
   pubKey: Uint8Array;
@@ -123,4 +118,37 @@ export async function primeMeshcoreTraceRoute(opts: {
   }
 
   return { path: routeStoredPath, radioContactPathLen };
+}
+
+/**
+ * Flood-advert route priming for multi-hop trace/ping.
+ *
+ * Failure point: PathUpdated never arrives — caller may fast-fail or proceed with short path.
+ * Fallback: path history in caller; room login may run active trace after this helper.
+ */
+export async function primeMeshcoreTraceRoute(opts: {
+  conn: MeshcoreTraceRoutePrimeConn;
+  nodeId: number;
+  pubKey: Uint8Array;
+  hopsAway?: number | null;
+  outPathMapRef: Map<number, Uint8Array>;
+  existingPath?: Uint8Array;
+  maxRounds?: number;
+}): Promise<MeshcoreTraceRoutePrimeResult> {
+  const maxRounds = opts.maxRounds ?? MESHCORE_TRACE_PRIME_MAX_ROUNDS;
+  const aggregateMs = computeMeshcoreTracePrimeAggregateTimeoutMs(opts.hopsAway, maxRounds);
+  try {
+    return await withTimeout(
+      primeMeshcoreTraceRouteInner(opts),
+      aggregateMs,
+      'meshcoreTraceRoutePrimeAggregate',
+    );
+  } catch (e: unknown) {
+    console.warn('[meshcoreTraceRoutePrime] aggregate timeout ' + errLikeToLogString(e));
+    const fromMap = opts.outPathMapRef.get(opts.nodeId);
+    return {
+      path: fromMap ?? opts.existingPath,
+      radioContactPathLen: null,
+    };
+  }
 }

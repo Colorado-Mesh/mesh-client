@@ -2,11 +2,11 @@ import { meshcoreUnpackPathLenByte } from '@/shared/meshcorePathHash';
 import { withTimeout } from '@/shared/withTimeout';
 
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
+import { meshcoreContactOutPathBytesForTrace } from './meshcoreRadioContactPath';
 import {
   CONTACT_TYPE_LABELS,
   MESHCORE_COORD_SCALE,
   meshcoreContactTypeFromHwModel,
-  meshcoreSliceContactOutPathForTrace,
   pubkeyToNodeId,
 } from './meshcoreUtils';
 import { MESHCORE_ROOM_LOGIN_PATH_SYNC_TIMEOUT_MS } from './timeConstants';
@@ -86,11 +86,7 @@ function findRadioContact(
 
 /** Same trimming rules as hop inference when firmware reports outPathLen 0 but buffer has route bytes. */
 function pathBytesFromRadioContact(contact: MeshCoreContactRaw): Uint8Array {
-  let path = meshcoreSliceContactOutPathForTrace(contact.outPath, contact.outPathLen);
-  if (path.length <= 1 && contact.outPathLen === 0) {
-    path = meshcoreSliceContactOutPathForTrace(contact.outPath, undefined);
-  }
-  return path;
+  return meshcoreContactOutPathBytesForTrace(contact);
 }
 
 function buildContactFromNode(

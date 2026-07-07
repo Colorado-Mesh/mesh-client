@@ -1885,7 +1885,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
     });
   };
 
-  const applySdkRoutingErrorFromRejection = (reason: unknown): void => {
+  const applySdkRoutingErrorFromRejection = (reason: unknown): boolean => {
     const uiApplied = applyMeshtasticOutboundRoutingErrorFromRejection(reason, {
       myNodeNum: myNodeNumRef.current,
       identityId: meshtasticIdentityIdRef.current,
@@ -1898,6 +1898,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
       const packetId = parsed.id ?? parsed.packetId;
       console.debug('[meshtasticSdkRoutingErrorLog] SDK queue rejection', packetId, parsed.error);
     }
+    return uiApplied;
   };
 
   // Device logs → deviceStore via protocol; legacy handler only for foreign LoRa parsing.

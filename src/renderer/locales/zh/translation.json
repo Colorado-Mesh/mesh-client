@@ -914,7 +914,10 @@
       "addDefaultHubsAllPresent": "默认测试网和Ratspeak集线器已配置。",
       "addDefaultHubsFailed": "添加默认集线器失败。",
       "identityNotConfigured": "请先在“网络”选项卡上设置 Reticulum 身份 — 生成或导入恢复短语。",
-      "identityRequiredHint": "在添加接口之前，请先在“网络”选项卡上配置 Reticulum 身份。"
+      "identityRequiredHint": "在添加接口之前，请先在“网络”选项卡上配置 Reticulum 身份。",
+      "i2pPeersRequired": "输入至少一个I2P对等地址。",
+      "i2pPeersTooLong": "I2P对等列表太长（最多{{max}}个字符）。",
+      "i2pPeersInvalid": "I2P对等项必须是逗号分隔的.b32.i2p地址，没有换行符。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1693,7 +1696,8 @@
         "rejected": "房间注销被无线电拒绝。",
         "failed": "无法离开房间"
       },
-      "repeaterRpcInProgress": "对此转发器的请求已在进行中"
+      "repeaterRpcInProgress": "对此转发器的请求已在进行中",
+      "cliDangerNotConfirmed": "破坏性CLI命令需要在Repeaters （中继器）面板中确认。"
     },
     "mqttHints": {
       "notAuthorized": "验证 v1_ 用户名、令牌签名和 JWT 受众与经纪人；请参阅 docs/letsmesh-mqtt-auth.md。如果需要，使用自定义粘贴操作员颁发的令牌。",
@@ -3393,12 +3397,13 @@
     "uptimeMinutes": "{{minutes}}米",
     "rememberPasswordSaveFailed": "无法保存中继器密码以重新启动。它仅适用于此会话。",
     "telemetryFailedToast": "遥测失败： {{message}}",
-    "cliMultiHopHint": "成功进行Ping跟踪后，多跳CLI更可靠。如果命令超时，请先运行Ping或在MeshCore应用中检查配套时钟同步。",
+    "cliMultiHopHint": "成功进行Ping跟踪后，多跳CLI更可靠。当本会话尚无trace时，多跳中继器上的第一条CLI命令会自动运行Ping。如果命令超时，请先运行Ping或在MeshCore应用中检查配套时钟同步。",
     "cliDangerConfirmTitle": "运行破坏性CLI命令？",
     "cliDangerConfirmMessage": "此命令可能会重新启动、擦除或出厂重置中继器： “{{command}}”。仅当您打算进行此更改时才继续。",
     "cliDangerConfirmAction": "运行命令",
     "cliAutoPingToast": "在CLI之前使用Ping建立路由…",
-    "cliAutoPingFailed": "Ping失败；在多跳中继器上重试CLI之前手动运行Ping。"
+    "cliAutoPingFailed": "Ping失败；在多跳中继器上重试CLI之前手动运行Ping。",
+    "cliCommandTooLong": "CLI命令太长（最多{{max}}个字符）。"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",

@@ -1,16 +1,13 @@
 import { withTimeout } from '@/shared/withTimeout';
 
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
+import { meshcoreSnapshotContactPathFromContacts } from './meshcoreRadioContactPath';
 import {
   type MeshcoreTracePathConnection,
   runMeshcoreTracePathMultiplexed,
 } from './meshcoreTracePathMultiplex';
 import { primeMeshcoreTraceRoute } from './meshcoreTraceRoutePrime';
-import {
-  meshcoreSliceContactOutPathForTrace,
-  meshcoreTraceResultToOutPathBytes,
-  pubkeyToNodeId,
-} from './meshcoreUtils';
+import { meshcoreTraceResultToOutPathBytes } from './meshcoreUtils';
 import {
   MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
@@ -23,20 +20,6 @@ export interface MeshcoreRoomLoginRouteResolveConn {
   off(event: string | number, cb: (...args: unknown[]) => void): void;
   once?(event: string | number, cb: (...args: unknown[]) => void): void;
   sendCommandSendTracePath?(tag: number, auth: number, path: Uint8Array): Promise<void>;
-}
-
-function pathFromContacts(contacts: MeshCoreContactRaw[], nodeId: number): Uint8Array | undefined {
-  for (const contact of contacts) {
-    if (pubkeyToNodeId(contact.publicKey) !== nodeId) continue;
-    let slice = meshcoreSliceContactOutPathForTrace(contact.outPath, contact.outPathLen);
-    if (slice.length <= 1 && contact.outPathLen === 0) {
-      slice = meshcoreSliceContactOutPathForTrace(contact.outPath, undefined);
-    }
-    if (slice.length > 1) return slice;
-    if (slice.length > 0) return slice;
-    return undefined;
-  }
-  return undefined;
 }
 
 async function traceRouteForRoomLogin(
@@ -114,7 +97,7 @@ export async function resolveMeshcoreRoomLoginRouteBytes(
 
   try {
     const contacts = await conn.getContacts();
-    const fromRadio = pathFromContacts(contacts, nodeId);
+    const fromRadio = meshcoreSnapshotContactPathFromContacts(nodeId, contacts).path;
     if (fromRadio && fromRadio.length > 1) return fromRadio;
     if (fromRadio && fromRadio.length > 0) path = fromRadio;
   } catch {

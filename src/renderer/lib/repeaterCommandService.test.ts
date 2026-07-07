@@ -157,10 +157,22 @@ describe('RepeaterCommandService', () => {
       expect(service.hasPendingCommand(token)).toBe(true);
     });
 
-    it('still matches when sender id is unknown (0)', async () => {
+    it('still matches when sender id is unknown (0) and only one pending', async () => {
       const { token, promise } = service.registerPendingCommand('cmd', [], { senderNodeId: 42 });
       service.handleResponse(`${token}|OK`, 0);
       await expect(promise).resolves.toBe('OK');
+    });
+
+    it('drops ambiguous response when sender id is 0 and multiple pending', () => {
+      const first = service.registerPendingCommand('cmd1', [], { senderNodeId: 42 });
+      const second = service.registerPendingCommand('cmd2', [], { senderNodeId: 43 });
+      first.promise.catch(() => {});
+      second.promise.catch(() => {});
+
+      const handled = service.handleResponse(`${first.token}|OK`, 0);
+      expect(handled).toBe(false);
+      expect(service.hasPendingCommand(first.token)).toBe(true);
+      expect(service.hasPendingCommand(second.token)).toBe(true);
     });
 
     it('should strip token from response body', async () => {

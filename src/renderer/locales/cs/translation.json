@@ -914,7 +914,10 @@
       "addDefaultHubsAllPresent": "Výchozí rozbočovače testnet a Ratspeak jsou již nakonfigurovány.",
       "addDefaultHubsFailed": "Přidání výchozích center se nezdařilo.",
       "identityNotConfigured": "Nejprve nastavte identitu Reticulum na kartě Síť — vygenerujte nebo importujte frázi pro obnovení.",
-      "identityRequiredHint": "Před přidáním rozhraní nakonfigurujte identitu Reticulum na kartě Síť."
+      "identityRequiredHint": "Před přidáním rozhraní nakonfigurujte identitu Reticulum na kartě Síť.",
+      "i2pPeersRequired": "Zadejte alespoň jednu I2P peer adresu.",
+      "i2pPeersTooLong": "Seznam protějšků I2P je příliš dlouhý (max. {{max}} znaků).",
+      "i2pPeersInvalid": "Protějšky I2P musí být adresy .b32.i2p oddělené čárkami bez přerušení řádků."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1693,7 +1696,8 @@
         "rejected": "Odhlášení z místnosti bylo rádiem odmítnuto.",
         "failed": "Nelze opustit místnost"
       },
-      "repeaterRpcInProgress": "Žádost o tento opakovač již probíhá"
+      "repeaterRpcInProgress": "Žádost o tento opakovač již probíhá",
+      "cliDangerNotConfirmed": "Destruktivní příkazy CLI vyžadují potvrzení na panelu Opakovače."
     },
     "mqttHints": {
       "notAuthorized": "Ověřte uživatelské jméno v1_, podpis tokenu a publikum JWT vs. makléř; viz docs/letsmesh-mqtt-auth.md. V případě potřeby použijte Vlastní k vložení tokenu vydaného operátorem.",
@@ -3393,12 +3397,13 @@
     "uptimeMinutes": "{{minutes}}m",
     "rememberPasswordSaveFailed": "Nelze uložit heslo opakovače pro restartování. Bude to fungovat pouze pro tuto relaci.",
     "telemetryFailedToast": "Telemetrie selhala: {{message}}",
-    "cliMultiHopHint": "Multi-hop CLI je spolehlivější po úspěšné stopě Ping. Pokud příkazy vyprší, spusťte nejprve Ping nebo zkontrolujte synchronizaci doprovodných hodin v aplikaci MeshCore.",
+    "cliMultiHopHint": "Multi-hop CLI je spolehlivější po úspěšné stopě Ping. První CLI příkaz na multi-hop repeateru automaticky spustí Ping, pokud v této relaci neexistuje trace. Pokud příkazy vyprší, spusťte nejprve Ping nebo zkontrolujte synchronizaci doprovodných hodin v aplikaci MeshCore.",
     "cliDangerConfirmTitle": "Spustit destruktivní příkaz CLI?",
     "cliDangerConfirmMessage": "Tento příkaz může restartovat, vymazat nebo obnovit tovární nastavení opakovače: „{{command}}“. Pokračujte pouze v případě, že tuto změnu zamýšlíte.",
-    "cliDangerConfirmAction": "Run Command",
+    "cliDangerConfirmAction": "Spustit příkaz",
     "cliAutoPingToast": "Vytvoření trasy s Ping před CLI...",
-    "cliAutoPingFailed": "Ping se nezdařil; spusťte Ping ručně před opakováním CLI na opakovačích multi-hop."
+    "cliAutoPingFailed": "Ping se nezdařil; spusťte Ping ručně před opakováním CLI na opakovačích multi-hop.",
+    "cliCommandTooLong": "Příkaz CLI je příliš dlouhý (max {{max}} znaků)."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",

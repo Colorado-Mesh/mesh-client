@@ -382,7 +382,7 @@
     "transportSerial": "Serial",
     "transportHttp": "HTTP",
     "transportRadio": "Radio",
-    "radioInterfaceFallback": "interfaz aérea"
+    "radioInterfaceFallback": "interfaz de radio"
   },
   "channelUtilization": {
     "title": "Utilización del canal.",
@@ -914,7 +914,10 @@
       "addDefaultHubsAllPresent": "Los hubs predeterminados de testnet y Ratspeak ya están configurados.",
       "addDefaultHubsFailed": "No se han podido añadir los hubs predeterminados.",
       "identityNotConfigured": "Configure primero una identidad de Reticulum en la pestaña Red: genere o importe una frase de recuperación.",
-      "identityRequiredHint": "Configure una identidad de Reticulum en la pestaña Red antes de añadir interfaces."
+      "identityRequiredHint": "Configure una identidad de Reticulum en la pestaña Red antes de añadir interfaces.",
+      "i2pPeersRequired": "Introduzca al menos una dirección de pares I2P.",
+      "i2pPeersTooLong": "La lista de pares I2P es demasiado larga (máx. {{max}} caracteres).",
+      "i2pPeersInvalid": "Los pares I2P deben ser direcciones .b32.i2p separadas por comas sin saltos de línea."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1693,7 +1696,8 @@
         "rejected": "Cierre de sesión de sala rechazado por radio.",
         "failed": "No se pudo salir de la habitación"
       },
-      "repeaterRpcInProgress": "Ya hay una solicitud en curso para este repetidor."
+      "repeaterRpcInProgress": "Ya hay una solicitud en curso para este repetidor.",
+      "cliDangerNotConfirmed": "Los comandos CLI destructivos requieren confirmación en el panel Repetidores."
     },
     "mqttHints": {
       "notAuthorized": "Verifique v1_ nombre de usuario, firma del token y audiencia JWT versus corredor; consulte docs/letsmesh-mqtt-auth.md. Utilice Personalizado para pegar un token emitido por el operador si es necesario.",
@@ -3393,12 +3397,13 @@
     "uptimeMinutes": "{{minutes}}m",
     "rememberPasswordSaveFailed": "No se ha podido guardar la contraseña del repetidor para reiniciar. Funcionará solo para esta sesión.",
     "telemetryFailedToast": "Error de telemetría: {{message}}",
-    "cliMultiHopHint": "La CLI multisalto es más fiable después de un rastreo Ping exitoso. Si se agota el tiempo de espera de los comandos, ejecute primero Ping o verifique la sincronización del reloj complementario en la aplicación MeshCore.",
+    "cliMultiHopHint": "La CLI multisalto es más fiable después de un rastreo Ping exitoso. El primer comando CLI en un repetidor multisalto ejecuta Ping automáticamente cuando no hay trace en esta sesión. Si se agota el tiempo de espera de los comandos, ejecute primero Ping o verifique la sincronización del reloj complementario en la aplicación MeshCore.",
     "cliDangerConfirmTitle": "¿Ejecutar comando CLI destructivo?",
     "cliDangerConfirmMessage": "Este comando puede reiniciar, borrar o restablecer de fábrica el repetidor: \"{{command}}\". Continúe solo si tiene la intención de realizar este cambio.",
-    "cliDangerConfirmAction": "Reproducir sonido",
+    "cliDangerConfirmAction": "Ejecutar comando",
     "cliAutoPingToast": "Estableciendo ruta con Ping antes de CLI...",
-    "cliAutoPingFailed": "Error de ping; ejecute Ping manualmente antes de volver a intentar CLI en repetidores multi-salto."
+    "cliAutoPingFailed": "Error de ping; ejecute Ping manualmente antes de volver a intentar CLI en repetidores multi-salto.",
+    "cliCommandTooLong": "El comando CLI es demasiado largo (máx. {{max}} caracteres)."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anuncio (segundos)",

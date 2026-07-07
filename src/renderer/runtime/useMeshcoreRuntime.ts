@@ -192,6 +192,7 @@ import {
   setRepeaterAdminRpcPending,
 } from '../lib/meshcoreRepeaterAdminPending';
 import { runMeshcoreRepeaterBinaryRequest } from '../lib/meshcoreRepeaterBinaryRequestRpc';
+import { isMeshcoreRepeaterCliDangerCommand } from '../lib/meshcoreRepeaterCliDanger';
 import {
   meshcoreCompanionRepeaterRfBusy,
   resetMeshcoreRepeaterRpcInFlightOnDisconnect,
@@ -329,6 +330,7 @@ import {
   type CliHistoryEntry,
   computeRepeaterCliHopCount,
   createRepeaterCommandService,
+  REPEATER_CLI_MAX_COMMAND_LENGTH,
   type RepeaterCommandService,
 } from '../lib/repeaterCommandService';
 import { createRepeaterRemoteRpcQueue } from '../lib/repeaterRemoteRpcQueue';
@@ -2303,6 +2305,9 @@ export function useMeshcoreRuntime() {
         serialNeedsReselect: false,
       });
       if (type === 'ble') bleConnectInProgressRef.current = true;
+      meshcoreExplicitDisconnectRef.current = false;
+      meshcoreReconnectAttemptRef.current = 0;
+      meshcoreIsReconnectingRef.current = false;
     },
     [teardownMeshcoreConnEventListeners],
   );
@@ -2475,6 +2480,10 @@ export function useMeshcoreRuntime() {
   const attemptMeshcoreReconnect = useCallback(async () => {
     const params = meshcoreConnectionParamsRef.current;
     if (!params) {
+      meshcoreIsReconnectingRef.current = false;
+      return;
+    }
+    if (meshcoreExplicitDisconnectRef.current) {
       meshcoreIsReconnectingRef.current = false;
       return;
     }
@@ -4407,11 +4416,22 @@ export function useMeshcoreRuntime() {
   );
 
   const sendRepeaterCliCommand = useCallback(
-    async (nodeId: number, command: string): Promise<string> => {
+    async (
+      nodeId: number,
+      command: string,
+      opts?: { confirmedDanger?: boolean },
+    ): Promise<string> => {
       setMeshcoreRepeaterRpcPending((prev) =>
         setRepeaterAdminRpcPending(prev, nodeId, 'cli', true),
       );
       try {
+        const trimmed = command.trim();
+        if (trimmed.length > REPEATER_CLI_MAX_COMMAND_LENGTH) {
+          throw new Error('repeatersPanel.cliCommandTooLong');
+        }
+        if (isMeshcoreRepeaterCliDangerCommand(trimmed) && !opts?.confirmedDanger) {
+          throw new Error('meshcore.errors.cliDangerNotConfirmed');
+        }
         const pubKey = pubKeyMapRef.current.get(nodeId);
         if (!pubKey) {
           setMeshcoreCliErrors((prev) => {
@@ -4461,16 +4481,16 @@ export function useMeshcoreRuntime() {
               node?.hops_away,
               trace != null ? meshcoreTracePathLenToHops(trace.pathLen) : null,
             );
-            const timeoutMs = calculateRepeaterCliTimeout(hopCount, command.length);
-            const { token, promise } = service.registerPendingCommand(command, [], {
+            const timeoutMs = calculateRepeaterCliTimeout(hopCount, trimmed.length);
+            const { token, promise } = service.registerPendingCommand(trimmed, [], {
               timeoutMs,
               senderNodeId: nodeId,
             });
-            const commandWithToken = service.formatCommandWithToken(command, token);
+            const commandWithToken = service.formatCommandWithToken(trimmed, token);
 
             addCliHistoryEntry(nodeId, {
               type: 'sent',
-              text: command,
+              text: trimmed,
               timestamp: Date.now(),
             });
 

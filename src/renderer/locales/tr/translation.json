@@ -378,7 +378,7 @@
     "routes_other": "Rotalar: {{count}} mesh içindeki düğümler",
     "routesEstablished": "Belirlenen rotalar",
     "meshActive": "Mesh ağı etkin",
-    "transportBle": "BLE:",
+    "transportBle": "BLE",
     "transportSerial": "Seri",
     "transportHttp": "HTTP",
     "transportRadio": "Radyo",
@@ -914,7 +914,10 @@
       "addDefaultHubsAllPresent": "Varsayılan test ağı ve Ratspeak hub'ları zaten yapılandırılmıştır.",
       "addDefaultHubsFailed": "Varsayılan hub'lar eklenemedi.",
       "identityNotConfigured": "Önce Ağ sekmesinde bir Reticulum kimliği oluşturun — bir kurtarma ifadesi oluşturun veya içe aktarın.",
-      "identityRequiredHint": "Arayüz eklemeden önce Ağ sekmesinde bir Reticulum kimliği yapılandırın."
+      "identityRequiredHint": "Arayüz eklemeden önce Ağ sekmesinde bir Reticulum kimliği yapılandırın.",
+      "i2pPeersRequired": "En az bir I2P eş adresi girin.",
+      "i2pPeersTooLong": "I2P eş listesi çok uzun (maks. {{max}} karakter).",
+      "i2pPeersInvalid": "I2P eşleri, satır sonu olmayan, virgülle ayrılmış .b32.i2p adresleri olmalıdır."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1693,7 +1696,8 @@
         "rejected": "Odadan çıkış radyo tarafından reddedildi.",
         "failed": "Odadan çıkılamadı"
       },
-      "repeaterRpcInProgress": "Bu tekrarlayıcı için bir istek zaten devam ediyor"
+      "repeaterRpcInProgress": "Bu tekrarlayıcı için bir istek zaten devam ediyor",
+      "cliDangerNotConfirmed": "Yıkıcı CLI komutları Tekrarlayıcılar panelinde onay gerektirir."
     },
     "mqttHints": {
       "notAuthorized": "v1_ kullanıcı adını, belirteç imzasını ve JWT hedef kitlesi ile aracının karşılaştırmasını doğrulayın; docs/letsmesh-mqtt-auth.md'ye bakın. Gerekirse operatör tarafından verilen belirteci yapıştırmak için Özel'i kullanın.",
@@ -3393,12 +3397,13 @@
     "uptimeMinutes": "{{minutes}}m",
     "rememberPasswordSaveFailed": "Tekrarlayıcı parolası yeniden başlatmalar için kaydedilemedi. Yalnızca bu oturum için çalışacaktır.",
     "telemetryFailedToast": "Telemetri başarısız oldu: {{message}}",
-    "cliMultiHopHint": "Çok sekmeli CLI, başarılı bir Ping izlemesinden sonra daha güvenilirdir. Komutlar zaman aşımına uğrarsa, önce Ping'i çalıştırın veya MeshCore uygulamasında eşlik eden saat senkronizasyonunu kontrol edin.",
+    "cliMultiHopHint": "Çok atlama CLI, başarılı bir Ping izlemesinden sonra daha güvenilirdir. Bu oturumda trace yoksa, çok atlama tekrarlayıcıda ilk CLI komutu otomatik olarak Ping çalıştırır. Komutlar zaman aşımına uğrarsa, önce Ping'i çalıştırın veya MeshCore uygulamasında eşlik eden saat senkronizasyonunu kontrol edin.",
     "cliDangerConfirmTitle": "Yıkıcı CLI komutu çalıştırılsın mı?",
     "cliDangerConfirmMessage": "Bu komut, yineleyiciyi yeniden başlatabilir, silebilir veya fabrika ayarlarına sıfırlayabilir: \"{{command}} \". Yalnızca bu değişikliği niyet ediyorsanız devam edin.",
     "cliDangerConfirmAction": "Komut çalıştır",
     "cliAutoPingToast": "CLI öncesi Ping ile rota oluşturuluyor…",
-    "cliAutoPingFailed": "Ping başarısız oldu; çok sekmeli tekrarlayıcılarda CLI'yi yeniden denemeden önce Ping'i manuel olarak çalıştırın."
+    "cliAutoPingFailed": "Ping başarısız oldu; çok sekmeli tekrarlayıcılarda CLI'yi yeniden denemeden önce Ping'i manuel olarak çalıştırın.",
+    "cliCommandTooLong": "CLI komutu çok uzun (en fazla {{max}} karakter)."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Anons aralığı (saniye)",

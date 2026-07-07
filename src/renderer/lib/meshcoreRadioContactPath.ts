@@ -8,6 +8,18 @@ export interface MeshcoreRadioContactPathSnapshot {
   radioContactFound: boolean;
 }
 
+/** Slice contact outPath for trace/ping, including outPathLen===0 fallback. */
+export function meshcoreContactOutPathBytesForTrace(contact: MeshCoreContactRaw): Uint8Array {
+  let slice = meshcoreSliceContactOutPathForTrace(contact.outPath, contact.outPathLen);
+  if (slice.length <= 1 && contact.outPathLen === 0) {
+    slice = meshcoreSliceContactOutPathForTrace(contact.outPath, undefined);
+  }
+  if (meshcoreStoredPathLooksLikeFullPubKey(slice, contact.publicKey)) {
+    return new Uint8Array(0);
+  }
+  return slice;
+}
+
 /** Resolve outbound path bytes from companion contact list for repeater RPC / trace. */
 export function meshcoreSnapshotContactPathFromContacts(
   nodeId: number,
@@ -24,13 +36,7 @@ export function meshcoreSnapshotContactPathFromContacts(
     if (typeof contact.outPathLen === 'number' && Number.isFinite(contact.outPathLen)) {
       radioContactPathLen = contact.outPathLen;
     }
-    let slice = meshcoreSliceContactOutPathForTrace(contact.outPath, contact.outPathLen);
-    if (slice.length <= 1 && contact.outPathLen === 0) {
-      slice = meshcoreSliceContactOutPathForTrace(contact.outPath, undefined);
-    }
-    if (meshcoreStoredPathLooksLikeFullPubKey(slice, contact.publicKey)) {
-      slice = new Uint8Array(0);
-    }
+    const slice = meshcoreContactOutPathBytesForTrace(contact);
     if (slice.length > 0) {
       path = slice;
     }

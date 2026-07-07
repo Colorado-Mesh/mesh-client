@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/renderer/lib/i18n', () => ({
   default: { t: (key: string) => key },
@@ -185,6 +185,76 @@ describe('meshtasticSdkRoutingErrorLog', () => {
     expect(setMessages).toHaveBeenCalledTimes(1);
   });
 
+  it('returns false for unknown SDK routing error names', () => {
+    expect(chatRoutingErrorKeyForSdkErrorName('UNKNOWN_ROUTING_ERROR')).toBeNull();
+    const messagesRef = {
+      current: [
+        {
+          id: 1,
+          sender_id: 42,
+          sender_name: 'Me',
+          packetId: 669520633,
+          payload: 'hello',
+          status: 'sending' as const,
+          channel: 0,
+          timestamp: Date.now(),
+        },
+      ],
+    };
+    const setMessages = vi.fn();
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      'Error received for packet 669520633: UNKNOWN_ROUTING_ERROR',
+      {
+        myNodeNum: 42,
+        identityId: null,
+        messagesRef,
+        setMessages,
+      },
+    );
+    expect(applied).toBe(false);
+    expect(setMessages).not.toHaveBeenCalled();
+  });
+
+  it('does not apply when two recent sending outbounds are ambiguous', () => {
+    const now = Date.now();
+    const messagesRef = {
+      current: [
+        {
+          id: 1,
+          sender_id: 42,
+          sender_name: 'Me',
+          packetId: 111,
+          payload: 'first',
+          status: 'sending' as const,
+          channel: 0,
+          timestamp: now,
+        },
+        {
+          id: 2,
+          sender_id: 42,
+          sender_name: 'Me',
+          packetId: 222,
+          payload: 'second',
+          status: 'sending' as const,
+          channel: 0,
+          timestamp: now - 1000,
+        },
+      ],
+    };
+    const setMessages = vi.fn();
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      'Error received for packet 669520633: PKI_SEND_FAIL_PUBLIC_KEY',
+      {
+        myNodeNum: 42,
+        identityId: null,
+        messagesRef,
+        setMessages,
+      },
+    );
+    expect(applied).toBe(false);
+    expect(setMessages).not.toHaveBeenCalled();
+  });
+
   it('parses SDK queue rejections with id or packetId', () => {
     expect(parseMeshtasticSdkQueueRejection({ id: 397127051, error: 3 })).toEqual({
       packetId: 397127051,
@@ -305,8 +375,8 @@ describe('installMeshtasticSdkRoutingErrorUnhandledRejectionHandler', () => {
     });
   });
 
-  it('calls onQueueRejection and preventDefault for SDK queue rejections', () => {
-    const onQueueRejection = vi.fn();
+  it('calls onQueueRejection and preventDefault when handler returns true', () => {
+    const onQueueRejection = vi.fn().mockReturnValue(true);
     const restore = installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(onQueueRejection);
     const handler = vi.mocked(window.addEventListener).mock.calls[0]?.[1] as (event: {
       reason: unknown;
@@ -319,6 +389,21 @@ describe('installMeshtasticSdkRoutingErrorUnhandledRejectionHandler', () => {
     expect(preventDefault).toHaveBeenCalled();
     restore();
     expect(window.removeEventListener).toHaveBeenCalledWith('unhandledrejection', handler);
+  });
+
+  it('does not preventDefault when handler returns false', () => {
+    const onQueueRejection = vi.fn().mockReturnValue(false);
+    const restore = installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(onQueueRejection);
+    const handler = vi.mocked(window.addEventListener).mock.calls[0]?.[1] as (event: {
+      reason: unknown;
+      preventDefault: () => void;
+    }) => void;
+    const reason = { id: 397127051, error: 3 };
+    const preventDefault = vi.fn();
+    handler({ reason, preventDefault });
+    expect(onQueueRejection).toHaveBeenCalledWith(reason);
+    expect(preventDefault).not.toHaveBeenCalled();
+    restore();
   });
 
   it('ignores unrelated unhandled rejections', () => {

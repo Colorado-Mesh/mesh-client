@@ -1,4 +1,13 @@
 export const RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS = 30_000;
+const RENDERER_HEARTBEAT_TS_PAST_SLACK_MS = 60_000;
+const RENDERER_HEARTBEAT_TS_FUTURE_SLACK_MS = 5_000;
+
+function clampRendererHeartbeatTs(ts: number | undefined, now = Date.now()): number {
+  if (ts == null || !Number.isFinite(ts)) return now;
+  const minTs = now - RENDERER_HEARTBEAT_TS_PAST_SLACK_MS;
+  const maxTs = now + RENDERER_HEARTBEAT_TS_FUTURE_SLACK_MS;
+  return Math.min(Math.max(ts, minTs), maxTs);
+}
 
 export interface RendererHeartbeatWatchdog {
   recordHeartbeat: (ts?: number) => void;
@@ -20,7 +29,7 @@ export function createRendererHeartbeatWatchdog(
   };
 
   const recordHeartbeat = (ts?: number): void => {
-    lastRendererHeartbeatAt = typeof ts === 'number' ? ts : Date.now();
+    lastRendererHeartbeatAt = clampRendererHeartbeatTs(ts);
     clearResumeWatchdog();
   };
 

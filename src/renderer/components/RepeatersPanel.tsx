@@ -66,7 +66,11 @@ interface Props {
   meshcoreTelemetry?: Map<number, MeshCoreNodeTelemetry>;
   meshcoreTelemetryErrors?: Map<number, string>;
   onSelectRepeater?: (node: MeshNode) => void;
-  onSendCliCommand?: (nodeId: number, command: string) => Promise<string>;
+  onSendCliCommand?: (
+    nodeId: number,
+    command: string,
+    opts?: { confirmedDanger?: boolean },
+  ) => Promise<string>;
   meshcoreCliHistories?: Map<number, CliHistoryEntry[]>;
   meshcoreCliErrors?: Map<number, string>;
   onClearCliHistory?: (nodeId: number) => void;
@@ -560,7 +564,11 @@ export default function RepeatersPanel({
     }
   };
 
-  const runCliCommand = async (nodeId: number, command: string) => {
+  const runCliCommand = async (
+    nodeId: number,
+    command: string,
+    opts?: { confirmedDanger?: boolean },
+  ) => {
     if (!onSendCliCommand || !command.trim()) return;
     const node = nodes.get(nodeId);
     const auth = await ensureRepeaterAuth(
@@ -572,7 +580,7 @@ export default function RepeatersPanel({
     if (auth.saved) refreshStoredRepeaters();
     if (!(await ensureCliRoutePrimed(nodeId))) return;
     try {
-      await onSendCliCommand(nodeId, command.trim());
+      await onSendCliCommand(nodeId, command.trim(), opts);
     } catch (e) {
       console.warn('[RepeatersPanel] CLI command error ' + errLikeToLogString(e));
     }
@@ -1531,7 +1539,7 @@ export default function RepeatersPanel({
           onConfirm={() => {
             const pending = cliDangerConfirm;
             setCliDangerConfirm(null);
-            void runCliCommand(pending.nodeId, pending.command);
+            void runCliCommand(pending.nodeId, pending.command, { confirmedDanger: true });
           }}
         />
       ) : null}

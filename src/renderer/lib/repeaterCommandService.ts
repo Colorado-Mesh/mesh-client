@@ -31,6 +31,8 @@ export const REPEATER_CLI_BASE_TIMEOUT_MS = 30_000;
 export const REPEATER_CLI_PER_HOP_TIMEOUT_MS = 2_000;
 /** Align multi-hop CLI ceiling with flat admin RPC timeouts. */
 export const REPEATER_CLI_MAX_TIMEOUT_MS = 120_000;
+/** Max repeater CLI command length before send (align with credential IPC limit). */
+export const REPEATER_CLI_MAX_COMMAND_LENGTH = 512;
 
 const DEFAULT_TIMEOUT_MS = REPEATER_CLI_BASE_TIMEOUT_MS;
 const MAX_RETRIES = 5;
@@ -163,6 +165,17 @@ export class RepeaterCommandService {
       pending.senderNodeId !== 0 &&
       pending.senderNodeId !== senderId
     ) {
+      return false;
+    }
+
+    if (
+      (senderId == null || senderId === 0) &&
+      pending.senderNodeId !== 0 &&
+      this.pendingCommands.size > 1
+    ) {
+      console.debug(
+        '[repeaterCommandService] drop ambiguous CLI response (unknown sender, multiple pending)',
+      );
       return false;
     }
 

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  computeMeshcoreTracePrimeAggregateTimeoutMs,
   computeMeshcoreTracePrimeWaitMs,
   MESHCORE_TRACE_PRIME_MAX_ROUNDS,
   MESHCORE_TRACE_PRIME_WAIT_BASE_MS,
@@ -8,10 +9,8 @@ import {
   MESHCORE_TRACE_PRIME_WAIT_PER_HOP_MS,
 } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
 
-import {
-  type MeshcoreTraceRoutePrimeConn,
-  primeMeshcoreTraceRoute,
-} from './meshcoreTraceRoutePrime';
+import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
+import { primeMeshcoreTraceRoute } from './meshcoreTraceRoutePrime';
 import { pubkeyToNodeId } from './meshcoreUtils';
 
 const REMOTE_PUBKEY = (() => {
@@ -93,6 +92,12 @@ describe('primeMeshcoreTraceRoute', () => {
             publicKey: REMOTE_PUBKEY,
             outPath: usablePath,
             outPathLen: 2,
+            type: 2,
+            advName: 'RPT',
+            lastAdvert: 1,
+            advLat: 0,
+            advLon: 0,
+            flags: 0,
           },
         ]),
       ),
@@ -100,7 +105,7 @@ describe('primeMeshcoreTraceRoute', () => {
 
     const outPathMapRef = new Map<number, Uint8Array>();
     const resultPromise = primeMeshcoreTraceRoute({
-      conn: conn as unknown as MeshcoreTraceRoutePrimeConn,
+      conn: conn,
       nodeId: REMOTE_NODE_ID,
       pubKey: REMOTE_PUBKEY,
       hopsAway: 2,
@@ -183,5 +188,184 @@ describe('primeMeshcoreTraceRoute', () => {
 
     expect(result.path).toBeUndefined();
     expect(conn.sendFloodAdvert).toHaveBeenCalledTimes(MESHCORE_TRACE_PRIME_MAX_ROUNDS);
+  });
+
+  it('continues to round 2 when sendFloodAdvert rejects on the first round', async () => {
+    let floodRound = 0;
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      sendFloodAdvert: vi.fn(() => {
+        floodRound += 1;
+        if (floodRound === 1) {
+          return Promise.reject(new Error('flood rejected'));
+        }
+        return Promise.resolve(undefined);
+      }),
+      getContacts: vi.fn(() => Promise.resolve([])),
+    };
+
+    const outPathMapRef = new Map<number, Uint8Array>();
+    const waitMs = computeMeshcoreTracePrimeWaitMs(2);
+    const resultPromise = primeMeshcoreTraceRoute({
+      conn: conn,
+      nodeId: REMOTE_NODE_ID,
+      pubKey: REMOTE_PUBKEY,
+      hopsAway: 2,
+      outPathMapRef,
+      maxRounds: MESHCORE_TRACE_PRIME_MAX_ROUNDS,
+    });
+
+    await vi.advanceTimersByTimeAsync(waitMs * MESHCORE_TRACE_PRIME_MAX_ROUNDS);
+    await resultPromise;
+
+    expect(conn.sendFloodAdvert).toHaveBeenCalledTimes(MESHCORE_TRACE_PRIME_MAX_ROUNDS);
+  });
+
+  it('falls back to outPathMapRef when getContacts throws', async () => {
+    const usablePath = new Uint8Array([0x11, 0x22, 0x33]);
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      sendFloodAdvert: vi.fn(() => Promise.resolve(undefined)),
+      getContacts: vi.fn(() => Promise.reject(new Error('radio busy'))),
+    };
+
+    const outPathMapRef = new Map<number, Uint8Array>([[REMOTE_NODE_ID, usablePath]]);
+    const resultPromise = primeMeshcoreTraceRoute({
+      conn: conn,
+      nodeId: REMOTE_NODE_ID,
+      pubKey: REMOTE_PUBKEY,
+      hopsAway: 2,
+      outPathMapRef,
+      maxRounds: 1,
+    });
+
+    await vi.runOnlyPendingTimersAsync();
+    const result = await resultPromise;
+
+    expect(result.path).toEqual(usablePath);
+    expect(conn.getContacts).toHaveBeenCalledTimes(1);
+  });
+
+  it('continues promptly when PathUpdated 129 arrives during wait', async () => {
+    const listeners = new Map<number, Set<(...args: unknown[]) => void>>();
+    const usablePath = new Uint8Array([0x11, 0x22]);
+    const waitMs = computeMeshcoreTracePrimeWaitMs(2);
+
+    const conn = {
+      on: vi.fn((event: number, cb: (...args: unknown[]) => void) => {
+        const set = listeners.get(event) ?? new Set();
+        set.add(cb);
+        listeners.set(event, set);
+      }),
+      off: vi.fn((event: number, cb: (...args: unknown[]) => void) => {
+        listeners.get(event)?.delete(cb);
+      }),
+      sendFloodAdvert: vi.fn(() => {
+        listeners.get(129)?.forEach((cb) => {
+          cb({ publicKey: REMOTE_PUBKEY });
+        });
+        return Promise.resolve(undefined);
+      }),
+      getContacts: vi.fn(() =>
+        Promise.resolve([
+          {
+            publicKey: REMOTE_PUBKEY,
+            outPath: new Uint8Array([0x11, 0x22, 0, 0]),
+            outPathLen: 1,
+            type: 2,
+            advName: 'RPT',
+            lastAdvert: 1,
+            advLat: 0,
+            advLon: 0,
+            flags: 0,
+          },
+        ]),
+      ),
+    };
+
+    const outPathMapRef = new Map<number, Uint8Array>();
+    const resultPromise = primeMeshcoreTraceRoute({
+      conn: conn,
+      nodeId: REMOTE_NODE_ID,
+      pubKey: REMOTE_PUBKEY,
+      hopsAway: 2,
+      outPathMapRef,
+      maxRounds: 1,
+    });
+
+    await vi.runOnlyPendingTimersAsync();
+    const result = await resultPromise;
+
+    expect(result.path).toEqual(usablePath);
+    expect(vi.getTimerCount()).toBe(0);
+    expect(waitMs).toBeGreaterThan(0);
+  });
+
+  it('propagates radioContactPathLen from matching contact', async () => {
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      sendFloodAdvert: vi.fn(() => Promise.resolve(undefined)),
+      getContacts: vi.fn(() =>
+        Promise.resolve([
+          {
+            publicKey: REMOTE_PUBKEY,
+            outPath: new Uint8Array([0x11, 0x22, 0, 0]),
+            outPathLen: 1,
+            type: 2,
+            advName: 'RPT',
+            lastAdvert: 1,
+            advLat: 0,
+            advLon: 0,
+            flags: 0,
+          },
+        ]),
+      ),
+    };
+
+    const outPathMapRef = new Map<number, Uint8Array>();
+    const resultPromise = primeMeshcoreTraceRoute({
+      conn: conn,
+      nodeId: REMOTE_NODE_ID,
+      pubKey: REMOTE_PUBKEY,
+      hopsAway: 2,
+      outPathMapRef,
+      maxRounds: 1,
+    });
+
+    await vi.runOnlyPendingTimersAsync();
+    const result = await resultPromise;
+
+    expect(result.radioContactPathLen).toBe(1);
+    expect(result.path).toEqual(new Uint8Array([0x11, 0x22]));
+  });
+
+  it('returns map path when aggregate timeout fires', async () => {
+    const aggregateMs = computeMeshcoreTracePrimeAggregateTimeoutMs(2, 1);
+    const mapPath = new Uint8Array([0x11, 0x22]);
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      sendFloodAdvert: vi.fn(() => Promise.resolve(undefined)),
+      getContacts: vi.fn((): Promise<MeshCoreContactRaw[]> => new Promise(() => {})),
+    };
+
+    const outPathMapRef = new Map<number, Uint8Array>([[REMOTE_NODE_ID, mapPath]]);
+    const resultPromise = primeMeshcoreTraceRoute({
+      conn: conn,
+      nodeId: REMOTE_NODE_ID,
+      pubKey: REMOTE_PUBKEY,
+      hopsAway: 2,
+      outPathMapRef,
+      maxRounds: 1,
+    });
+
+    await vi.advanceTimersByTimeAsync(aggregateMs + 1);
+    const result = await resultPromise;
+
+    expect(result.path).toEqual(mapPath);
+    expect(result.radioContactPathLen).toBeNull();
   });
 });

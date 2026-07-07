@@ -181,6 +181,15 @@ export const MESHCORE_TRACE_PRIME_WAIT_CAP_MS = 45_000;
 /** Max flood-advert priming rounds before trace/ping or no-route fast-fail. */
 export const MESHCORE_TRACE_PRIME_MAX_ROUNDS = 2;
 
+/** Worst-case aggregate timeout for {@link primeMeshcoreTraceRoute} (all rounds). */
+export function computeMeshcoreTracePrimeAggregateTimeoutMs(
+  hopsAway?: number | null,
+  maxRounds = MESHCORE_TRACE_PRIME_MAX_ROUNDS,
+): number {
+  const waitMs = computeMeshcoreTracePrimeWaitMs(hopsAway);
+  return maxRounds * (MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS + waitMs) + 5_000;
+}
+
 /** Hop-scaled PathUpdated wait after flood advert when priming multi-hop trace routes. */
 export function computeMeshcoreTracePrimeWaitMs(hopsAway?: number | null): number {
   const hops =

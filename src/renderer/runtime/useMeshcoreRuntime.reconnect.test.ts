@@ -109,6 +109,13 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
       /if \(!params\) \{[\s\S]*?meshcoreIsReconnectingRef\.current = false/,
     );
   });
+
+  it('attemptMeshcoreReconnect returns early on explicit user disconnect', () => {
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toMatch(
+      /if \(meshcoreExplicitDisconnectRef\.current\) \{[\s\S]*?meshcoreIsReconnectingRef\.current = false/,
+    );
+  });
 });
 
 describe('meshcoreLegacyConnEvents disconnected handler (regression)', () => {
@@ -144,5 +151,12 @@ describe('useMeshcoreRuntime prepareRfConnect driver teardown (regression)', () 
     expect(RUNTIME_SOURCE).toMatch(
       /prepareRfConnect[\s\S]{0,2500}await connectionDriver\.disconnect\(driverIdentity\)/,
     );
+  });
+
+  it('clears explicit-disconnect and reconnect refs when starting a new connect (Meshtastic parity)', () => {
+    const prepareBody = extractUseCallbackBody(RUNTIME_SOURCE, 'prepareRfConnect');
+    expect(prepareBody).toContain('meshcoreExplicitDisconnectRef.current = false');
+    expect(prepareBody).toContain('meshcoreReconnectAttemptRef.current = 0');
+    expect(prepareBody).toContain('meshcoreIsReconnectingRef.current = false');
   });
 });

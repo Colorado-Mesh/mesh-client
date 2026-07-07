@@ -914,7 +914,10 @@
       "addDefaultHubsAllPresent": "Domyślne huby testnet i Ratspeak są już skonfigurowane.",
       "addDefaultHubsFailed": "Nie udało się dodać domyślnych hubów.",
       "identityNotConfigured": "Skonfiguruj najpierw tożsamość Reticulum na karcie Sieć — wygeneruj lub zaimportuj frazę odzyskiwania.",
-      "identityRequiredHint": "Skonfiguruj tożsamość Reticulum na karcie Sieć przed dodaniem interfejsów."
+      "identityRequiredHint": "Skonfiguruj tożsamość Reticulum na karcie Sieć przed dodaniem interfejsów.",
+      "i2pPeersRequired": "Wprowadź co najmniej jeden adres równorzędny I2P.",
+      "i2pPeersTooLong": "Lista partnerów I2P jest zbyt długa (maks. {{max}} znaków).",
+      "i2pPeersInvalid": "Peery I2P muszą być adresami oddzielonymi przecinkami .b32.i2p bez podziałów wierszy."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1693,7 +1696,8 @@
         "rejected": "Wylogowanie z pokoju odrzucone przez radio.",
         "failed": "Nie można było opuścić pokoju"
       },
-      "repeaterRpcInProgress": "Żądanie dotyczące tego wzmacniaka jest już w toku"
+      "repeaterRpcInProgress": "Żądanie dotyczące tego wzmacniaka jest już w toku",
+      "cliDangerNotConfirmed": "Niszczące polecenia CLI wymagają potwierdzenia w panelu Repeaters."
     },
     "mqttHints": {
       "notAuthorized": "Zweryfikuj nazwę użytkownika v1_, podpis tokena i odbiorców JWT w porównaniu z brokerem; zobacz dokumentacja/letsmesh-mqtt-auth.md. W razie potrzeby użyj opcji Niestandardowy, aby wkleić token wydany przez operatora.",
@@ -3393,12 +3397,13 @@
     "uptimeMinutes": "{{minutes}}m",
     "rememberPasswordSaveFailed": "Nie można zapisać hasła powtarzacza do ponownego uruchomienia. Będzie działać tylko dla tej sesji.",
     "telemetryFailedToast": "Telemetria nie powiodła się: {{message}}",
-    "cliMultiHopHint": "Interfejs CLI wielokrotnych przeskoków jest bardziej niezawodny po udanym śledzeniu pingów. Jeśli polecenia przekroczą limit czasu, najpierw uruchom Ping lub sprawdź synchronizację zegara towarzyszącego w aplikacji MeshCore.",
+    "cliMultiHopHint": "Interfejs CLI wielokrotnych przeskoków jest bardziej niezawodny po udanym śledzeniu pingów. Pierwsze polecenie CLI na repeaterze multi-hop automatycznie uruchamia Ping, gdy w tej sesji nie ma trace. Jeśli polecenia przekroczą limit czasu, najpierw uruchom Ping lub sprawdź synchronizację zegara towarzyszącego w aplikacji MeshCore.",
     "cliDangerConfirmTitle": "Uruchomić destrukcyjne polecenie CLI?",
     "cliDangerConfirmMessage": "To polecenie może zrestartować, usunąć lub zresetować fabrycznie przemiennik: \"{{command}}\". Kontynuuj tylko wtedy, gdy zamierzasz wprowadzić tę zmianę.",
     "cliDangerConfirmAction": "Uruchom polecenie",
     "cliAutoPingToast": "Ustalanie trasy za pomocą polecenia ping przed CLI…",
-    "cliAutoPingFailed": "Ping nie powiódł się; uruchom Ping ręcznie przed ponowną próbą CLI na repeaterach wielokrotnych przeskoków."
+    "cliAutoPingFailed": "Ping nie powiódł się; uruchom Ping ręcznie przed ponowną próbą CLI na repeaterach wielokrotnych przeskoków.",
+    "cliCommandTooLong": "Polecenie CLI jest zbyt długie (maks. {{max}} znaków)."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",

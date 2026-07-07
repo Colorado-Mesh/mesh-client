@@ -10,6 +10,7 @@ import { extractUseCallbackBody } from './sourceContractTestHelpers';
 
 const RUNTIME_SOURCE = readFileSync(join(__dirname, '../runtime/useMeshcoreRuntime.ts'), 'utf-8');
 const IN_FLIGHT_SOURCE = readFileSync(join(__dirname, 'meshcoreRepeaterRpcInFlight.ts'), 'utf-8');
+const REPEATER_CMD_SOURCE = readFileSync(join(__dirname, 'repeaterCommandService.ts'), 'utf-8');
 
 describe('meshcore repeater CLI working state', () => {
   it('serializes CLI per repeater node via runMeshcoreRepeaterRpcOnce', () => {
@@ -34,5 +35,24 @@ describe('meshcore repeater CLI working state', () => {
     const responseWaitIdx = cliBody.indexOf('const response = await promise');
     expect(sendSlotStart).toBeGreaterThan(-1);
     expect(responseWaitIdx).toBeGreaterThan(sendSlotEnd);
+  });
+
+  it('rejects CLI commands longer than REPEATER_CLI_MAX_COMMAND_LENGTH before send', () => {
+    expect(REPEATER_CMD_SOURCE).toContain('export const REPEATER_CLI_MAX_COMMAND_LENGTH = 512');
+    const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
+    expect(cliBody).toContain('REPEATER_CLI_MAX_COMMAND_LENGTH');
+    expect(cliBody).toContain('repeatersPanel.cliCommandTooLong');
+  });
+
+  it('requires confirmedDanger for dangerous CLI commands', () => {
+    const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
+    expect(cliBody).toContain('isMeshcoreRepeaterCliDangerCommand');
+    expect(cliBody).toContain('confirmedDanger');
+    expect(cliBody).toContain('meshcore.errors.cliDangerNotConfirmed');
+  });
+
+  it('registers pending CLI with senderNodeId for response matching', () => {
+    const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
+    expect(cliBody).toContain('senderNodeId: nodeId');
   });
 });

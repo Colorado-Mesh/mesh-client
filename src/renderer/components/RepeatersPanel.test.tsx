@@ -229,7 +229,7 @@ describe('RepeatersPanel', () => {
     await userEvent.type(input, '  name  ');
     await userEvent.click(screen.getByRole('button', { name: /Send/i }));
 
-    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name');
+    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name', undefined);
   });
 
   it('calls onSendCliCommand when a quick command button is clicked', async () => {
@@ -240,7 +240,7 @@ describe('RepeatersPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
     await userEvent.click(screen.getByRole('button', { name: 'name' }));
 
-    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name');
+    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name', undefined);
   });
 
   it('calls onSendCliCommand for set path.hash.mode quick command', async () => {
@@ -250,7 +250,11 @@ describe('RepeatersPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
     await userEvent.click(screen.getByRole('button', { name: 'Set path hash mode 2-byte' }));
 
-    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'set path.hash.mode 1');
+    expect(onSendCliCommand).toHaveBeenCalledWith(
+      repeater.node_id,
+      'set path.hash.mode 1',
+      undefined,
+    );
   });
 
   it('requires confirmation before sending destructive CLI commands', async () => {
@@ -266,7 +270,9 @@ describe('RepeatersPanel', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Run command' }));
-    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'reboot');
+    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'reboot', {
+      confirmedDanger: true,
+    });
   });
 
   it('auto-pings before CLI on multi-hop repeaters without a trace this session', async () => {
@@ -287,7 +293,7 @@ describe('RepeatersPanel', () => {
 
     await waitFor(() => {
       expect(onPing).toHaveBeenCalledWith(multiHop.node_id);
-      expect(onSendCliCommand).toHaveBeenCalledWith(multiHop.node_id, 'name');
+      expect(onSendCliCommand).toHaveBeenCalledWith(multiHop.node_id, 'name', undefined);
     });
     expect(onPing.mock.invocationCallOrder[0]).toBeLessThan(
       onSendCliCommand.mock.invocationCallOrder[0],
@@ -306,7 +312,7 @@ describe('RepeatersPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: 'name' }));
 
     await waitFor(() => {
-      expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name');
+      expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name', undefined);
     });
     expect(onPing).not.toHaveBeenCalled();
     expect(mockAddToast).not.toHaveBeenCalledWith(
@@ -336,7 +342,7 @@ describe('RepeatersPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: 'name' }));
 
     await waitFor(() => {
-      expect(onSendCliCommand).toHaveBeenCalledWith(multiHop.node_id, 'name');
+      expect(onSendCliCommand).toHaveBeenCalledWith(multiHop.node_id, 'name', undefined);
     });
     expect(onPing).not.toHaveBeenCalled();
     expect(mockAddToast).not.toHaveBeenCalledWith(

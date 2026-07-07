@@ -1,5 +1,7 @@
 import dns from 'node:dns/promises';
 
+import { Agent, fetch as undiciFetch } from 'undici';
+
 import {
   isLinkLocalIpv6,
   isLocalConnectHost,
@@ -18,6 +20,48 @@ export const LINK_PREVIEW_IMAGE_FETCH_TIMEOUT_MS = 10_000;
 /** After a failed image fetch (e.g. 429), do not retry until this elapses. */
 export const LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS = 5 * 60 * 1000;
 const LINK_PREVIEW_IMAGE_MAX_REDIRECTS = 5;
+const LINK_PREVIEW_MAX_CACHE_ENTRIES = 256;
+const LINK_PREVIEW_MAX_IMAGE_CACHE_ENTRIES = 128;
+
+function evictOldestCacheEntry<K, V>(cache: Map<K, V>, maxEntries: number): void {
+  while (cache.size >= maxEntries) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+}
+
+async function fetchWithResolvedHost(urlString: string, init: RequestInit): Promise<Response> {
+  const url = new URL(urlString);
+  if (await isBlockedHostnameResolved(url.hostname)) {
+    throw new Error('blocked hostname');
+  }
+  const { address } = await dns.lookup(url.hostname, { verbatim: true });
+  if (
+    isLoopbackHost(address) ||
+    isPrivateNetworkHost(address) ||
+    isUniqueLocalIpv6(address) ||
+    isLinkLocalIpv6(address)
+  ) {
+    throw new Error('blocked resolved address');
+  }
+  const agent = new Agent({
+    connect: {
+      host: address,
+      port: url.port ? Number(url.port) : 443,
+      servername: url.hostname,
+    },
+  });
+  try {
+    const response = await undiciFetch(urlString, {
+      ...init,
+      dispatcher: agent,
+    } as Parameters<typeof undiciFetch>[1]);
+    return response as unknown as Response;
+  } finally {
+    await agent.close();
+  }
+}
 
 function isIpv4Literal(hostname: string): boolean {
   const parts = hostname.split('.');
@@ -41,10 +85,14 @@ interface TimedCacheEntry<T> {
 
 const previewCache = new Map<string, TimedCacheEntry<LinkPreviewMetadata | null>>();
 const imageCache = new Map<string, TimedCacheEntry<string | null>>();
+const previewInFlight = new Map<string, Promise<LinkPreviewMetadata | null>>();
+const imageInFlight = new Map<string, Promise<string | undefined>>();
 
 export function clearLinkPreviewCachesForTests(): void {
   previewCache.clear();
   imageCache.clear();
+  previewInFlight.clear();
+  imageInFlight.clear();
 }
 
 export function isBlockedHostname(hostname: string): boolean {
@@ -133,7 +181,7 @@ async function fetchImageResponseWithRedirectGuard(
   if (!(await isAllowedHttpsImageUrl(imageUrl))) return null;
   if (redirectCount > LINK_PREVIEW_IMAGE_MAX_REDIRECTS) return null;
 
-  const response = await fetch(imageUrl, {
+  const response = await fetchWithResolvedHost(imageUrl, {
     method: 'GET',
     headers: { Accept: 'image/*' },
     redirect: 'manual',
@@ -165,38 +213,49 @@ async function fetchPreviewImageAsDataUrl(imageUrl: string): Promise<string | un
     return cached.value ?? undefined;
   }
 
-  try {
-    const response = await fetchImageResponseWithRedirectGuard(imageUrl);
-    if (!response?.ok) {
+  const inflight = imageInFlight.get(imageUrl);
+  if (inflight) return inflight;
+
+  const promise = (async (): Promise<string | undefined> => {
+    try {
+      const response = await fetchImageResponseWithRedirectGuard(imageUrl);
+      if (!response?.ok) {
+        imageCache.set(imageUrl, {
+          value: null,
+          expires: now + LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS,
+        });
+        return undefined;
+      }
+      const contentType = response.headers.get('content-type') ?? '';
+      if (!contentType.startsWith('image/')) return undefined;
+
+      const reader = response.body?.getReader();
+      if (!reader) return undefined;
+      const bytes = await readResponseBodyUpTo(reader, LINK_PREVIEW_IMAGE_MAX_BYTES);
+      if (!bytes) return undefined;
+
+      const mime = contentType.split(';')[0]?.trim() || 'image/jpeg';
+      const dataUrl = `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`;
+      evictOldestCacheEntry(imageCache, LINK_PREVIEW_MAX_IMAGE_CACHE_ENTRIES);
+      imageCache.set(imageUrl, { value: dataUrl, expires: now + LINK_PREVIEW_CACHE_TTL_MS });
+      return dataUrl;
+    } catch (err) {
+      console.debug(
+        '[chat] fetchLinkPreview image error:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
       imageCache.set(imageUrl, {
         value: null,
         expires: now + LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS,
       });
       return undefined;
+    } finally {
+      imageInFlight.delete(imageUrl);
     }
-    const contentType = response.headers.get('content-type') ?? '';
-    if (!contentType.startsWith('image/')) return undefined;
+  })();
 
-    const reader = response.body?.getReader();
-    if (!reader) return undefined;
-    const bytes = await readResponseBodyUpTo(reader, LINK_PREVIEW_IMAGE_MAX_BYTES);
-    if (!bytes) return undefined;
-
-    const mime = contentType.split(';')[0]?.trim() || 'image/jpeg';
-    const dataUrl = `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`;
-    imageCache.set(imageUrl, { value: dataUrl, expires: now + LINK_PREVIEW_CACHE_TTL_MS });
-    return dataUrl;
-  } catch (err) {
-    console.debug(
-      '[chat] fetchLinkPreview image error:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    imageCache.set(imageUrl, {
-      value: null,
-      expires: now + LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS,
-    });
-    return undefined;
-  }
+  imageInFlight.set(imageUrl, promise);
+  return promise;
 }
 
 export interface LinkPreviewMetadata {
@@ -217,7 +276,7 @@ async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewM
   if (await isBlockedHostnameResolved(url.hostname)) return null;
 
   try {
-    const response = await fetch(urlString, {
+    const response = await fetchWithResolvedHost(urlString, {
       method: 'GET',
       redirect: 'manual',
       headers: { Accept: 'text/html' },
@@ -274,7 +333,20 @@ export async function fetchLinkPreview(urlString: string): Promise<LinkPreviewMe
     return cached.value;
   }
 
-  const value = await fetchLinkPreviewUncached(urlString);
-  previewCache.set(urlString, { value, expires: now + LINK_PREVIEW_CACHE_TTL_MS });
-  return value;
+  const inflight = previewInFlight.get(urlString);
+  if (inflight) return inflight;
+
+  const promise = (async (): Promise<LinkPreviewMetadata | null> => {
+    try {
+      const value = await fetchLinkPreviewUncached(urlString);
+      evictOldestCacheEntry(previewCache, LINK_PREVIEW_MAX_CACHE_ENTRIES);
+      previewCache.set(urlString, { value, expires: Date.now() + LINK_PREVIEW_CACHE_TTL_MS });
+      return value;
+    } finally {
+      previewInFlight.delete(urlString);
+    }
+  })();
+
+  previewInFlight.set(urlString, promise);
+  return promise;
 }

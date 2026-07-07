@@ -20,6 +20,10 @@ import {
   listMissingDefaultHubPresets,
   RETICULUM_DEFAULT_HUB_PRESETS,
 } from '@/renderer/lib/reticulum/reticulumDefaultHubPresets';
+import {
+  RETICULUM_I2P_PEERS_MAX_LENGTH,
+  validateReticulumI2pPeers,
+} from '@/renderer/lib/reticulum/reticulumI2pPeerValidation';
 import { humanizeReticulumInterfaceApiError } from '@/renderer/lib/reticulum/reticulumInterfaceApiError';
 import { getReticulumInterfaceHelp } from '@/renderer/lib/reticulum/reticulumInterfaceHelp';
 import {
@@ -318,6 +322,11 @@ export function ReticulumInterfacesPanel({
           }
           body.host = normalizeReticulumConnectHost(ifaceHost);
         } else {
+          const i2pErrorKey = validateReticulumI2pPeers(ifaceHost);
+          if (i2pErrorKey) {
+            setInterfaceError(t(i2pErrorKey, { max: RETICULUM_I2P_PEERS_MAX_LENGTH }));
+            return;
+          }
           body.host = ifaceHost.trim();
         }
         if (ifaceType !== 'i2p') {
@@ -511,6 +520,12 @@ export function ReticulumInterfacesPanel({
     if (patchType === 'tcp' || patchType === 'udp') {
       if (reticulumConnectHostIsInvalid(patchHost)) {
         setInterfaceError(t('connectionPanel.reticulumInterfaces.invalidHost'));
+        return;
+      }
+    } else if (patchType === 'i2p') {
+      const i2pErrorKey = validateReticulumI2pPeers(patchHost);
+      if (i2pErrorKey) {
+        setInterfaceError(t(i2pErrorKey, { max: RETICULUM_I2P_PEERS_MAX_LENGTH }));
         return;
       }
     } else if (patchType === 'rnode' && isReticulumTcpRnodeSerialPort(patchSerialPort)) {
