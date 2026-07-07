@@ -14,6 +14,10 @@ import {
   resolveIdentityIdForProtocol,
   resolvePrimaryIdentityIdForProtocol,
 } from './identityByProtocol';
+import {
+  fetchMeshcoreContactPathDiagnostics,
+  type MeshcoreContactPathDiagnosticRow,
+} from './meshcoreContactPathDiagnostics';
 import { effectiveMessageTimestampMs, isUnreasonablyFutureMessageTimestampMs } from './nodeStatus';
 import { getOfflineIdentityIdForProtocol } from './offlineProtocolIdentities';
 import { parseStoredJson } from './parseStoredJson';
@@ -138,6 +142,8 @@ export interface DebugSnapshot {
   meshtastic: DebugIdentityBucketSnapshot;
   meshcore: DebugIdentityBucketSnapshot;
   reticulum: DebugReticulumSnapshot;
+  /** MeshCore SQLite contact hops + best path history bytes (redacted pubkeys). */
+  meshcoreContactPathDiagnostics?: MeshcoreContactPathDiagnosticRow[];
   warnings: DebugSnapshotWarning[];
 }
 
@@ -557,8 +563,10 @@ export function buildDebugSnapshot(): DebugSnapshot {
 export async function buildDebugSnapshotAsync(): Promise<DebugSnapshot> {
   const reticulumSidecar = await fetchReticulumDiagnosticSnapshot();
   const base = buildDebugSnapshotBase(reticulumSidecar);
+  const meshcoreContactPathDiagnostics = await fetchMeshcoreContactPathDiagnostics();
   return {
     ...base,
+    meshcoreContactPathDiagnostics,
     warnings: analyzeDebugSnapshot(base),
   };
 }

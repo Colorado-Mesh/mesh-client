@@ -1,6 +1,11 @@
+import { meshcorePubkeyPathPrefix } from '../../shared/meshcorePathHash';
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
 import { meshcoreStoredPathLooksLikeFullPubKey } from './meshcoreRepeaterTracePath';
-import { meshcoreSliceContactOutPathForTrace, pubkeyToNodeId } from './meshcoreUtils';
+import {
+  MESHCORE_OUT_PATH_LEN_MAX,
+  meshcoreSliceContactOutPathForTrace,
+  pubkeyToNodeId,
+} from './meshcoreUtils';
 
 export interface MeshcoreRadioContactPathSnapshot {
   path: Uint8Array | undefined;
@@ -15,6 +20,12 @@ export function meshcoreContactOutPathBytesForTrace(contact: MeshCoreContactRaw)
     slice = meshcoreSliceContactOutPathForTrace(contact.outPath, undefined);
   }
   if (meshcoreStoredPathLooksLikeFullPubKey(slice, contact.publicKey)) {
+    const len = contact.outPathLen;
+    const radioSaysMultiHop =
+      len != null && Number.isFinite(len) && len >= 1 && len <= MESHCORE_OUT_PATH_LEN_MAX;
+    if (radioSaysMultiHop) {
+      return meshcorePubkeyPathPrefix(contact.publicKey, 1);
+    }
     return new Uint8Array(0);
   }
   return slice;

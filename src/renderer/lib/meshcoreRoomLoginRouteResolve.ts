@@ -120,9 +120,23 @@ export async function resolveMeshcoreRoomLoginRouteBytes(
       hopsAway: opts.loginHopsAway,
       outPathMapRef,
       existingPath: path,
+      strategy: 'passive',
     });
     if (primed.path && primed.path.length > 1) return primed.path;
     if (primed.path && primed.path.length > 0) path = primed.path;
+    if (!primed.metrics?.usableAfterPrime && opts.loginHopsAway >= 2) {
+      const flooded = await primeMeshcoreTraceRoute({
+        conn,
+        nodeId,
+        pubKey: opts.pubKey,
+        hopsAway: opts.loginHopsAway,
+        outPathMapRef,
+        existingPath: path,
+        strategy: 'flood',
+      });
+      if (flooded.path && flooded.path.length > 1) return flooded.path;
+      if (flooded.path && flooded.path.length > 0) path = flooded.path;
+    }
   }
 
   if (path && path.length > 1) return path;

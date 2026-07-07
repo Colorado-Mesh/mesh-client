@@ -48,9 +48,10 @@ const REMOTE_PUBKEY_HEX = Array.from(REMOTE_PUBKEY)
 const SELF_PUBKEY = new Uint8Array(32).fill(0xab);
 const MY_NODE_ID = pubkeyToNodeId(SELF_PUBKEY);
 
-/** Hop-scaled wait per priming round for a 2-hop target (see computeMeshcoreTracePrimeWaitMs). */
-const TRACE_PRIME_WAIT_MS_PER_ROUND = computeMeshcoreTracePrimeWaitMs(2);
-const TRACE_PRIME_TOTAL_WAIT_MS = TRACE_PRIME_WAIT_MS_PER_ROUND * MESHCORE_TRACE_PRIME_MAX_ROUNDS;
+/** Hop-scaled PathUpdated waits: passive round + flood fallback rounds (excludes expiry window). */
+const TRACE_PRIME_TOTAL_WAIT_MS =
+  computeMeshcoreTracePrimeWaitMs(2) +
+  computeMeshcoreTracePrimeWaitMs(2) * MESHCORE_TRACE_PRIME_MAX_ROUNDS;
 
 vi.mock('@liamcottle/meshcore.js', () => {
   class MockWebSerialConnection {
@@ -278,6 +279,8 @@ describe('useMeshcoreRuntime refreshNodesFromDb hop preservation', () => {
 describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
   beforeEach(() => {
     resetMeshcoreRuntimeElectronMocks();
+    vi.mocked(window.electronAPI.db.getMeshcorePathHistory).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getAllMeshcorePathHistory).mockResolvedValue([]);
     startMeshcoreTracePathMultiplexedMock.mockResolvedValue({
       pathLen: 2,
       pathHashes: [1, 2],
@@ -370,6 +373,8 @@ describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
 describe('useMeshcoreRuntime traceRoute path outcome attribution', () => {
   beforeEach(() => {
     resetMeshcoreRuntimeElectronMocks();
+    vi.mocked(window.electronAPI.db.getMeshcorePathHistory).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getAllMeshcorePathHistory).mockResolvedValue([]);
     startMeshcoreTracePathMultiplexedMock.mockResolvedValue({
       pathLen: 2,
       pathHashes: [1, 2],

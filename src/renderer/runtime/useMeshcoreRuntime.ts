@@ -183,6 +183,7 @@ import {
   setMeshcorePathHashModeOnRadio,
 } from '../lib/meshcorePathHashMode';
 import {
+  meshcoreContactOutPathBytesForTrace,
   type MeshcoreRadioContactPathSnapshot,
   meshcoreSnapshotContactPathFromContacts,
 } from '../lib/meshcoreRadioContactPath';
@@ -201,12 +202,13 @@ import {
 import { runMeshcoreRepeaterStatusRequest } from '../lib/meshcoreRepeaterStatusRpc';
 import { runMeshcoreRepeaterTelemetryRequest } from '../lib/meshcoreRepeaterTelemetryRpc';
 import {
+  computeMeshcoreTracePrimeStrategy,
   meshcoreDirectRepeaterRelayPubKeys,
   meshcoreIsUsableTraceStoredPath,
   meshcoreShouldAbortMultiHopPingNoRoute,
-  meshcoreSynthesizeOneHopTracePath,
   meshcoreTraceDirectRetryEligible,
   planMeshcoreRepeaterTraceRoute,
+  resolveMeshcoreTraceOutPathSeed,
 } from '../lib/meshcoreRepeaterTracePath';
 import { resolveMeshcoreActiveConnection } from '../lib/meshcoreResolveActiveConnection';
 import {
@@ -298,7 +300,6 @@ import {
   meshcoreMinimalNodeFromAdvertEvent,
   meshcoreRemoveContactErrorMessage,
   meshcoreScaledAdvLatLonToDeg,
-  meshcoreSliceContactOutPathForTrace,
   meshcoreSyntheticPlaceholderPubKeyHex,
   meshcoreTelemetryGpsAltitudeMeters,
   meshcoreTracePathLenToHops,
@@ -1283,7 +1284,7 @@ export function useMeshcoreRuntime() {
           prevSnap.get(base.node_id)?.last_heard,
         );
         const prevNode = prevSnap.get(base.node_id);
-        const slicedPath = meshcoreSliceContactOutPathForTrace(contact.outPath, contact.outPathLen);
+        const slicedPath = meshcoreContactOutPathBytesForTrace(contact);
         const effectivePrevHops = prevNode?.hops_away ?? savedHopsByNodeId.get(base.node_id);
         const hopsAway = meshcoreMergeContactHopsAwayFromPrevious(
           base.hops_away,
@@ -3812,16 +3813,62 @@ export function useMeshcoreRuntime() {
             if (routeStoredPath && routeStoredPath.length > 1) {
               outPathMapRef.current.set(nodeId, routeStoredPath);
             }
-            const needsRoutePrime = tracePlan.needsRoutePrime;
-            if (needsRoutePrime) {
-              const primed = await primeMeshcoreTraceRoute({
-                conn,
-                nodeId,
-                pubKey,
-                hopsAway,
-                outPathMapRef: outPathMapRef.current,
-                existingPath: routeStoredPath,
-              });
+            const relayKeysForSynth = meshcoreDirectRepeaterRelayPubKeys(
+              nodesRef.current,
+              pubKeyMapRef.current,
+              nodeId,
+            );
+            const hopsForSynth = hopsAway ?? 0;
+            const partialDestPath = routeStoredPath ?? outPathMapRef.current.get(nodeId);
+            const canSynthesizePath =
+              (hopsForSynth === 1 && relayKeysForSynth.length > 0) ||
+              (hopsForSynth === 2 &&
+                relayKeysForSynth.length > 0 &&
+                partialDestPath?.length === 2 &&
+                meshcoreIsUsableTraceStoredPath(partialDestPath, 1, pubKey));
+            const primeStrategy = computeMeshcoreTracePrimeStrategy({
+              needsRoutePrime: tracePlan.needsRoutePrime,
+              pathTooShort: tracePlan.pathTooShort,
+              hopsAway,
+              hasUsableStoredPath: Boolean(routeStoredPath && routeStoredPath.length > 1),
+              canSynthesizePath,
+            });
+            if (tracePlan.needsRoutePrime && primeStrategy !== 'none') {
+              const runPrime = async (strategy: typeof primeStrategy) =>
+                primeMeshcoreTraceRoute({
+                  conn,
+                  nodeId,
+                  pubKey,
+                  hopsAway,
+                  outPathMapRef: outPathMapRef.current,
+                  existingPath: routeStoredPath,
+                  strategy,
+                });
+
+              let primed = await runPrime(primeStrategy);
+              if (primed.metrics) {
+                console.debug(
+                  '[useMeshcoreRuntime] traceRoute prime metrics ' +
+                    formatStructuredLogDetail(primed.metrics as unknown as Record<string, unknown>),
+                );
+              }
+              if (
+                primeStrategy === 'passive' &&
+                !primed.metrics?.usableAfterPrime &&
+                hopsForSynth >= 2 &&
+                !canSynthesizePath
+              ) {
+                const flooded = await runPrime('flood');
+                if (flooded.metrics) {
+                  console.debug(
+                    '[useMeshcoreRuntime] traceRoute flood prime fallback metrics ' +
+                      formatStructuredLogDetail(
+                        flooded.metrics as unknown as Record<string, unknown>,
+                      ),
+                  );
+                }
+                primed = flooded;
+              }
               if (primed.radioContactPathLen != null) {
                 radioContactPathLen = primed.radioContactPathLen;
               }
@@ -3852,15 +3899,43 @@ export function useMeshcoreRuntime() {
             });
             const uiSaysMultiHop = tracePlan.uiSaysMultiHop;
             const radioSaysMultiHop = tracePlan.radioSaysMultiHop;
-            const pathTooShortAfterSynth = tracePlan.pathTooShort;
+            const pathResolved = resolveMeshcoreTraceOutPathSeed({
+              tracePlan,
+              pubKey,
+              hopsAway,
+              nodeId,
+              nodes: nodesRef.current,
+              pubKeyByNodeId: pubKeyMapRef.current,
+              pathByNodeId: outPathMapRef.current,
+            });
+            const outPath = pathResolved.outPath;
+            const hasResolvedPath =
+              pathResolved.composed || meshcoreIsUsableTraceStoredPath(outPath, hopsAway, pubKey);
+            if (pathResolved.composed) {
+              outPathMapRef.current.set(nodeId, outPath);
+              console.debug(
+                `[useMeshcoreRuntime] traceRoute: using synthesized multi-hop path for node ${nodeId} (${outPath.length} bytes)`,
+              );
+            }
             if (
               meshcoreShouldAbortMultiHopPingNoRoute(
-                pathTooShortAfterSynth,
+                tracePlan.pathTooShort,
                 hopsAway,
                 uiSaysMultiHop,
                 radioSaysMultiHop,
+                hasResolvedPath,
               )
             ) {
+              console.debug(
+                '[useMeshcoreRuntime] traceRoute pingNoRoute ' +
+                  formatStructuredLogDetail({
+                    nodeId,
+                    hopsAway: hopsAway ?? null,
+                    radioContactPathLen,
+                    pathLen: outPath.length,
+                    primeStrategy,
+                  }),
+              );
               clearMeshcorePingNoRouteExpiryTimer(nodeId);
               setMeshcorePingErrors((prev) => {
                 const next = new Map(prev);
@@ -3874,21 +3949,6 @@ export function useMeshcoreRuntime() {
               }, MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS);
               meshcorePingNoRouteExpiryTimersRef.current.set(nodeId, tid);
               return;
-            }
-            let outPath = tracePlan.outPathSeed;
-            if (pathTooShortAfterSynth && !radioSaysMultiHop && (hopsAway ?? 0) === 1) {
-              const relayKeys = meshcoreDirectRepeaterRelayPubKeys(
-                nodesRef.current,
-                pubKeyMapRef.current,
-                nodeId,
-              );
-              const synthesized = meshcoreSynthesizeOneHopTracePath(pubKey, relayKeys);
-              if (synthesized) {
-                outPath = synthesized;
-                console.debug(
-                  `[useMeshcoreRuntime] traceRoute: using synthesized one-hop path via direct relay for node ${nodeId}`,
-                );
-              }
             }
             const attemptPathBytes = Array.from(outPath);
             tracePathHash =

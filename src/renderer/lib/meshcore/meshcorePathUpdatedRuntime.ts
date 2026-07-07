@@ -2,11 +2,8 @@ import { meshcoreContactRawFromDevice } from '../../hooks/meshcore/meshcoreHookP
 import { usePathHistoryStore } from '../../stores/pathHistoryStore';
 import { errLikeToLogString } from '../errLikeToLogString';
 import type { MeshCoreConnection } from '../meshcore/meshcoreHookTypes';
-import {
-  meshcoreInferHopsFromOutPath,
-  meshcoreSliceContactOutPathForTrace,
-  pubkeyToNodeId,
-} from '../meshcoreUtils';
+import { meshcoreContactOutPathBytesForTrace } from '../meshcoreRadioContactPath';
+import { meshcoreInferHopsFromOutPath, pubkeyToNodeId } from '../meshcoreUtils';
 
 /**
  * Refresh outPath bytes for one contact after path-updated (129) so trace/ping can proceed.
@@ -26,7 +23,7 @@ export async function refreshMeshcoreOutPathAfterPathUpdated(
     for (const contact of contacts) {
       const cNodeId = pubkeyToNodeId(contact.publicKey);
       if (cNodeId !== nodeId) continue;
-      const sliced = meshcoreSliceContactOutPathForTrace(contact.outPath, contact.outPathLen);
+      const sliced = meshcoreContactOutPathBytesForTrace(contact);
       if (sliced.length > 0) {
         outPathMapRef.set(cNodeId, sliced);
         const pathBytes = Array.from(sliced);

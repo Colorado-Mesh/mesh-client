@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  computeMeshcoreTracePrimeStrategy,
   meshcoreDirectRepeaterRelayPubKeys,
   meshcoreIsUsableTraceStoredPath,
   meshcoreShouldAbortMultiHopPingNoRoute,
   meshcoreStoredPathLooksLikeFullPubKey,
+  meshcoreSynthesizeMultiHopTracePath,
   meshcoreSynthesizeOneHopTracePath,
   meshcoreTraceDirectRetryEligible,
   planMeshcoreRepeaterTraceRoute,
+  resolveMeshcoreTraceOutPathSeed,
 } from './meshcoreRepeaterTracePath';
 
 function makePubKey(firstByte = 0xab): Uint8Array {
@@ -124,6 +127,10 @@ describe('meshcoreShouldAbortMultiHopPingNoRoute', () => {
   it('aborts for 2+ UI hops without path', () => {
     expect(meshcoreShouldAbortMultiHopPingNoRoute(true, 2, true, false)).toBe(true);
   });
+
+  it('does not abort when a resolved path exists despite pathTooShort plan', () => {
+    expect(meshcoreShouldAbortMultiHopPingNoRoute(true, 2, true, true, true)).toBe(false);
+  });
 });
 
 describe('meshcoreSynthesizeOneHopTracePath', () => {
@@ -151,5 +158,87 @@ describe('meshcoreDirectRepeaterRelayPubKeys', () => {
       [3, new Uint8Array(32)],
     ]);
     expect(meshcoreDirectRepeaterRelayPubKeys(nodes, pubKeys, 99)).toEqual([relayKey]);
+  });
+});
+
+describe('computeMeshcoreTracePrimeStrategy', () => {
+  it('returns passive for multi-hop missing path', () => {
+    expect(
+      computeMeshcoreTracePrimeStrategy({
+        needsRoutePrime: true,
+        pathTooShort: true,
+        hopsAway: 2,
+        hasUsableStoredPath: false,
+        canSynthesizePath: false,
+      }),
+    ).toBe('passive');
+  });
+
+  it('skips prime when synthesis or stored path is available', () => {
+    expect(
+      computeMeshcoreTracePrimeStrategy({
+        needsRoutePrime: true,
+        pathTooShort: true,
+        hopsAway: 1,
+        hasUsableStoredPath: false,
+        canSynthesizePath: true,
+      }),
+    ).toBe('none');
+  });
+});
+
+describe('meshcoreSynthesizeMultiHopTracePath', () => {
+  it('composes 3-byte path for 2-hop when relay and 2-byte stored path exist', () => {
+    const relayKey = new Uint8Array(32);
+    relayKey[0] = 0x06;
+    const dest = makePubKey(0x3d);
+    const destId = 99;
+    const nodes = new Map([[1, { hops_away: 0, hw_model: 'Repeater' }]]);
+    const pubKeys = new Map([
+      [1, relayKey],
+      [destId, dest],
+    ]);
+    const pathByNode = new Map([[destId, new Uint8Array([0x11, 0x3d])]]);
+    expect(
+      meshcoreSynthesizeMultiHopTracePath({
+        destPubKey: dest,
+        hopsAway: 2,
+        nodes,
+        pubKeyByNodeId: pubKeys,
+        excludeNodeId: destId,
+        pathByNodeId: pathByNode,
+      }),
+    ).toEqual(new Uint8Array([0x06, 0x11, 0x3d]));
+  });
+});
+
+describe('resolveMeshcoreTraceOutPathSeed', () => {
+  it('returns synthesized path when plan is too short', () => {
+    const relayKey = new Uint8Array(32);
+    relayKey[0] = 0x06;
+    const dest = makePubKey(0x3d);
+    const destId = 42;
+    const plan = planMeshcoreRepeaterTraceRoute({
+      storedPath: undefined,
+      hopsAway: 1,
+      pubKey: dest,
+      radioContactPathLen: null,
+    });
+    const nodes = new Map([[1, { hops_away: 0, hw_model: 'Repeater' }]]);
+    const pubKeys = new Map([
+      [1, relayKey],
+      [destId, dest],
+    ]);
+    const resolved = resolveMeshcoreTraceOutPathSeed({
+      tracePlan: plan,
+      pubKey: dest,
+      hopsAway: 1,
+      nodeId: destId,
+      nodes,
+      pubKeyByNodeId: pubKeys,
+      pathByNodeId: new Map(),
+    });
+    expect(resolved.composed).toBe(true);
+    expect(resolved.outPath).toEqual(new Uint8Array([0x06, 0x3d]));
   });
 });

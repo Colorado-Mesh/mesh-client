@@ -31,6 +31,7 @@ import {
   parseAutoaddConfigResponse,
 } from '../../lib/meshcoreContactAutoAdd';
 import { processMeshcoreWaitingMessageItem } from '../../lib/meshcoreProcessWaitingMessageItem';
+import { meshcoreContactOutPathBytesForTrace } from '../../lib/meshcoreRadioContactPath';
 import {
   MESHCORE_CHAT_CORRELATE_WINDOW_MS,
   meshcoreCorrelateOrSynthesizeChatEntry,
@@ -56,7 +57,6 @@ import {
   meshcoreInferHopsFromOutPath,
   meshcoreMergeChannelDisplayNameOntoNode,
   meshcoreMergeContactHopsAwayFromPrevious,
-  meshcoreSliceContactOutPathForTrace,
   meshcoreSyntheticPlaceholderPubKeyHex,
   minimalMeshcoreChatNode,
   pubkeyToNodeId,
@@ -420,7 +420,7 @@ export function attachMeshcoreLegacyConnEvents(
         for (const contact of contacts) {
           const cNodeId = pubkeyToNodeId(contact.publicKey);
           if (cNodeId !== nodeId) continue;
-          const sliced = meshcoreSliceContactOutPathForTrace(contact.outPath, contact.outPathLen);
+          const sliced = meshcoreContactOutPathBytesForTrace(contact);
           if (sliced.length > 0) {
             outPathMapRef.current.set(cNodeId, sliced);
             const pathBytes = Array.from(sliced);
@@ -461,7 +461,7 @@ export function attachMeshcoreLegacyConnEvents(
           for (const contact of contacts) {
             const cNodeId = pubkeyToNodeId(contact.publicKey);
             if (!pendingIds.has(cNodeId)) continue;
-            const sliced = meshcoreSliceContactOutPathForTrace(contact.outPath, contact.outPathLen);
+            const sliced = meshcoreContactOutPathBytesForTrace(contact);
             const pathBytes = sliced.length > 0 ? Array.from(sliced) : [];
             if (pathBytes.length > 0) {
               const hops = newNodes.get(cNodeId)?.hops_away ?? 0;
@@ -569,10 +569,7 @@ export function attachMeshcoreLegacyConnEvents(
     const d = meshcoreContactRawFromDevice(data as MeshCoreContactRaw);
     const node = meshcoreContactToMeshNode(d);
     pubKeyMapRef.current.set(node.node_id, d.publicKey);
-    outPathMapRef.current.set(
-      node.node_id,
-      meshcoreSliceContactOutPathForTrace(d.outPath, d.outPathLen),
-    );
+    outPathMapRef.current.set(node.node_id, meshcoreContactOutPathBytesForTrace(d));
     const prefix = Array.from(d.publicKey.slice(0, 6))
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');

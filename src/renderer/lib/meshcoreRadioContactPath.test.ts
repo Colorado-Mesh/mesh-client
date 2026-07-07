@@ -113,7 +113,20 @@ describe('meshcoreContactOutPathBytesForTrace', () => {
     ).toEqual(new Uint8Array([0xab]));
   });
 
-  it('returns empty bytes when outPath is the full destination pubkey', () => {
+  it('falls back to dest prefix when outPath is full pubkey but radio reports multi-hop', () => {
+    const fullKey = Uint8Array.from({ length: 32 }, (_, i) => (i + 1) & 0xff);
+    expect(
+      meshcoreContactOutPathBytesForTrace(
+        contact({
+          publicKey: fullKey,
+          outPath: new Uint8Array(fullKey),
+          outPathLen: 31,
+        }),
+      ),
+    ).toEqual(new Uint8Array([fullKey[0]]));
+  });
+
+  it('returns empty bytes when outPath is the full destination pubkey without multi-hop len', () => {
     const fullKey = Uint8Array.from({ length: 32 }, (_, i) => (i + 1) & 0xff);
     expect(
       meshcoreContactOutPathBytesForTrace(

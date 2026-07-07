@@ -71,6 +71,7 @@ describe('primeMeshcoreTraceRoute', () => {
       hopsAway: 2,
       outPathMapRef,
       maxRounds: 1,
+      strategy: 'flood',
     });
 
     await vi.runOnlyPendingTimersAsync();
@@ -111,6 +112,7 @@ describe('primeMeshcoreTraceRoute', () => {
       hopsAway: 2,
       outPathMapRef,
       maxRounds: MESHCORE_TRACE_PRIME_MAX_ROUNDS,
+      strategy: 'flood',
     });
 
     await vi.runOnlyPendingTimersAsync();
@@ -156,6 +158,7 @@ describe('primeMeshcoreTraceRoute', () => {
       hopsAway: 2,
       outPathMapRef,
       maxRounds: 1,
+      strategy: 'flood',
     });
 
     await vi.runOnlyPendingTimersAsync();
@@ -181,6 +184,7 @@ describe('primeMeshcoreTraceRoute', () => {
       hopsAway: 2,
       outPathMapRef,
       maxRounds: MESHCORE_TRACE_PRIME_MAX_ROUNDS,
+      strategy: 'flood',
     });
 
     await vi.advanceTimersByTimeAsync(waitMs * MESHCORE_TRACE_PRIME_MAX_ROUNDS);
@@ -214,6 +218,7 @@ describe('primeMeshcoreTraceRoute', () => {
       hopsAway: 2,
       outPathMapRef,
       maxRounds: MESHCORE_TRACE_PRIME_MAX_ROUNDS,
+      strategy: 'flood',
     });
 
     await vi.advanceTimersByTimeAsync(waitMs * MESHCORE_TRACE_PRIME_MAX_ROUNDS);
@@ -342,8 +347,30 @@ describe('primeMeshcoreTraceRoute', () => {
     expect(result.path).toEqual(new Uint8Array([0x11, 0x22]));
   });
 
+  it('passive strategy waits for 129 without sendFloodAdvert', async () => {
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      sendFloodAdvert: vi.fn(() => Promise.resolve(undefined)),
+      getContacts: vi.fn(() => Promise.resolve([])),
+    };
+    const outPathMapRef = new Map<number, Uint8Array>();
+    const resultPromise = primeMeshcoreTraceRoute({
+      conn,
+      nodeId: REMOTE_NODE_ID,
+      pubKey: REMOTE_PUBKEY,
+      hopsAway: 2,
+      outPathMapRef,
+      strategy: 'passive',
+    });
+    await vi.runOnlyPendingTimersAsync();
+    const result = await resultPromise;
+    expect(conn.sendFloodAdvert).not.toHaveBeenCalled();
+    expect(result.metrics?.strategy).toBe('passive');
+  });
+
   it('returns map path when aggregate timeout fires', async () => {
-    const aggregateMs = computeMeshcoreTracePrimeAggregateTimeoutMs(2, 1);
+    const aggregateMs = computeMeshcoreTracePrimeAggregateTimeoutMs(2, 1, 'flood');
     const mapPath = new Uint8Array([0x11, 0x22]);
     const conn = {
       on: vi.fn(),
@@ -360,6 +387,7 @@ describe('primeMeshcoreTraceRoute', () => {
       hopsAway: 2,
       outPathMapRef,
       maxRounds: 1,
+      strategy: 'flood',
     });
 
     await vi.advanceTimersByTimeAsync(aggregateMs + 1);

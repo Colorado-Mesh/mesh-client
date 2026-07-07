@@ -14,7 +14,12 @@ import {
   type MeshcoreRadioContactPathSnapshot,
   meshcoreSnapshotContactPathFromContacts,
 } from './meshcoreRadioContactPath';
-import { meshcoreIsUsableTraceStoredPath } from './meshcoreRepeaterTracePath';
+import {
+  meshcoreIsUsableTraceStoredPath,
+  type MeshcoreTracePrimeStrategy,
+} from './meshcoreRepeaterTracePath';
+
+export type { MeshcoreTracePrimeStrategy };
 
 export interface MeshcoreTraceRoutePrimeConn {
   getContacts(): Promise<MeshCoreContactRaw[]>;
@@ -23,9 +28,19 @@ export interface MeshcoreTraceRoutePrimeConn {
   off(event: string | number, cb: (...args: unknown[]) => void): void;
 }
 
+export interface MeshcoreTraceRoutePrimeMetrics {
+  strategy: MeshcoreTracePrimeStrategy;
+  rounds: number;
+  path129Received: boolean;
+  floodAdvertsSent: number;
+  postPathLen: number;
+  usableAfterPrime: boolean;
+}
+
 export interface MeshcoreTraceRoutePrimeResult {
   path: Uint8Array | undefined;
   radioContactPathLen: number | null;
+  metrics?: MeshcoreTraceRoutePrimeMetrics;
 }
 
 function isUsablePrimedPath(
@@ -71,24 +86,49 @@ async function primeMeshcoreTraceRouteInner(opts: {
   outPathMapRef: Map<number, Uint8Array>;
   existingPath?: Uint8Array;
   maxRounds?: number;
+  strategy?: MeshcoreTracePrimeStrategy;
 }): Promise<MeshcoreTraceRoutePrimeResult> {
-  const maxRounds = opts.maxRounds ?? MESHCORE_TRACE_PRIME_MAX_ROUNDS;
+  const strategy = opts.strategy ?? 'passive';
+  if (strategy === 'none') {
+    return {
+      path: opts.existingPath,
+      radioContactPathLen: null,
+      metrics: {
+        strategy,
+        rounds: 0,
+        path129Received: false,
+        floodAdvertsSent: 0,
+        postPathLen: opts.existingPath?.length ?? 0,
+        usableAfterPrime: isUsablePrimedPath(opts.existingPath, opts.hopsAway, opts.pubKey),
+      },
+    };
+  }
+
+  const maxRounds = strategy === 'flood' ? (opts.maxRounds ?? MESHCORE_TRACE_PRIME_MAX_ROUNDS) : 1;
   const waitMs = computeMeshcoreTracePrimeWaitMs(opts.hopsAway);
   let routeStoredPath = opts.existingPath;
   let radioContactPathLen: number | null = null;
+  let path129Received = false;
+  let floodAdvertsSent = 0;
+  let roundsRun = 0;
 
   for (let round = 0; round < maxRounds; round++) {
+    roundsRun = round + 1;
     const path129Wait = waitForMeshcorePath129ForNode(opts.conn, opts.nodeId, waitMs);
-    try {
-      await withTimeout(
-        opts.conn.sendFloodAdvert(),
-        MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
-        'meshcoreTraceRoutePrimeFloodAdvert',
-      );
-    } catch (e: unknown) {
-      console.warn('[meshcoreTraceRoutePrime] sendFloodAdvert failed ' + errLikeToLogString(e));
+    if (strategy === 'flood') {
+      try {
+        await withTimeout(
+          opts.conn.sendFloodAdvert(),
+          MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
+          'meshcoreTraceRoutePrimeFloodAdvert',
+        );
+        floodAdvertsSent += 1;
+      } catch (e: unknown) {
+        console.warn('[meshcoreTraceRoutePrime] sendFloodAdvert failed ' + errLikeToLogString(e));
+      }
     }
-    await path129Wait;
+    const got129 = await path129Wait;
+    if (got129) path129Received = true;
 
     const snap = await refreshPathAfterPrimeRound(
       opts.conn,
@@ -115,13 +155,29 @@ async function primeMeshcoreTraceRouteInner(opts: {
     if (isUsablePrimedPath(routeStoredPath, opts.hopsAway, opts.pubKey)) {
       break;
     }
+
+    if (strategy === 'passive') {
+      break;
+    }
   }
 
-  return { path: routeStoredPath, radioContactPathLen };
+  const usableAfterPrime = isUsablePrimedPath(routeStoredPath, opts.hopsAway, opts.pubKey);
+  return {
+    path: routeStoredPath,
+    radioContactPathLen,
+    metrics: {
+      strategy,
+      rounds: roundsRun,
+      path129Received,
+      floodAdvertsSent,
+      postPathLen: routeStoredPath?.length ?? 0,
+      usableAfterPrime,
+    },
+  };
 }
 
 /**
- * Flood-advert route priming for multi-hop trace/ping.
+ * PathUpdated wait (+ optional flood advert) before trace/ping.
  *
  * Failure point: PathUpdated never arrives — caller may fast-fail or proceed with short path.
  * Fallback: path history in caller; room login may run active trace after this helper.
@@ -134,12 +190,21 @@ export async function primeMeshcoreTraceRoute(opts: {
   outPathMapRef: Map<number, Uint8Array>;
   existingPath?: Uint8Array;
   maxRounds?: number;
+  strategy?: MeshcoreTracePrimeStrategy;
 }): Promise<MeshcoreTraceRoutePrimeResult> {
-  const maxRounds = opts.maxRounds ?? MESHCORE_TRACE_PRIME_MAX_ROUNDS;
-  const aggregateMs = computeMeshcoreTracePrimeAggregateTimeoutMs(opts.hopsAway, maxRounds);
+  const strategy = opts.strategy ?? 'passive';
+  if (strategy === 'none') {
+    return primeMeshcoreTraceRouteInner({ ...opts, strategy });
+  }
+  const maxRounds = strategy === 'flood' ? (opts.maxRounds ?? MESHCORE_TRACE_PRIME_MAX_ROUNDS) : 1;
+  const aggregateMs = computeMeshcoreTracePrimeAggregateTimeoutMs(
+    opts.hopsAway,
+    maxRounds,
+    strategy,
+  );
   try {
     return await withTimeout(
-      primeMeshcoreTraceRouteInner(opts),
+      primeMeshcoreTraceRouteInner({ ...opts, strategy, maxRounds }),
       aggregateMs,
       'meshcoreTraceRoutePrimeAggregate',
     );
@@ -149,6 +214,18 @@ export async function primeMeshcoreTraceRoute(opts: {
     return {
       path: fromMap ?? opts.existingPath,
       radioContactPathLen: null,
+      metrics: {
+        strategy,
+        rounds: maxRounds,
+        path129Received: false,
+        floodAdvertsSent: 0,
+        postPathLen: (fromMap ?? opts.existingPath)?.length ?? 0,
+        usableAfterPrime: isUsablePrimedPath(
+          fromMap ?? opts.existingPath,
+          opts.hopsAway,
+          opts.pubKey,
+        ),
+      },
     };
   }
 }

@@ -185,8 +185,11 @@ export const MESHCORE_TRACE_PRIME_MAX_ROUNDS = 2;
 export function computeMeshcoreTracePrimeAggregateTimeoutMs(
   hopsAway?: number | null,
   maxRounds = MESHCORE_TRACE_PRIME_MAX_ROUNDS,
+  strategy: 'none' | 'passive' | 'flood' = 'flood',
 ): number {
   const waitMs = computeMeshcoreTracePrimeWaitMs(hopsAway);
+  if (strategy === 'none') return 0;
+  if (strategy === 'passive') return waitMs + 5_000;
   return maxRounds * (MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS + waitMs) + 5_000;
 }
 

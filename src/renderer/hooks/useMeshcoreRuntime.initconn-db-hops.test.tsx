@@ -71,8 +71,8 @@ vi.mock('@liamcottle/meshcore.js', () => {
         advLat: 0,
         advLon: 0,
         flags: 0,
-        outPathLen: 1,
-        outPath: new Uint8Array([REMOTE_PUBKEY[0], REMOTE_PUBKEY[1]]),
+        outPathLen: 0,
+        outPath: new Uint8Array([REMOTE_PUBKEY[0], 0, 0]),
       },
     ]);
     getChannels = vi.fn().mockResolvedValue([]);
@@ -260,7 +260,7 @@ describe('useMeshcoreRuntime initConn merges DB hops at first connect', () => {
       expect(result.current.state.status).toBe('configured');
     });
 
-    // Simulate a live contact advertisement arriving after connect with outPathLen=1 (direct, inferred=0).
+    // Simulate a live contact advertisement arriving after connect with outPathLen=0 (direct, inferred=0).
     // Before the fix, this overwrote hops_away=4 with 0 in both memory and DB.
     const liveContactPayload = {
       publicKey: REMOTE_PUBKEY,
@@ -270,8 +270,8 @@ describe('useMeshcoreRuntime initConn merges DB hops at first connect', () => {
       advLat: 0,
       advLon: 0,
       flags: 0,
-      outPathLen: 1,
-      outPath: new Uint8Array([REMOTE_PUBKEY[0], REMOTE_PUBKEY[1]]),
+      outPathLen: 0,
+      outPath: new Uint8Array([REMOTE_PUBKEY[0], 0, 0]),
     };
     capturedConn?.emit(138, liveContactPayload);
 
