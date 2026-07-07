@@ -444,7 +444,7 @@ export default function RepeatersPanel({
         const raw = meshcorePingErrors?.get(nodeId);
         const message = raw
           ? translateMeshcoreUserMessage(t, raw)
-          : t('meshcore.errors.requestFailed', { detail: 'ping failed' });
+          : t('meshcore.errors.pingFailed');
         addToast(t('repeatersPanel.pingFailedToast', { message }), 'error');
       }
     } catch (e) {

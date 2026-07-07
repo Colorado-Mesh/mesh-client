@@ -115,6 +115,26 @@ export function meshcoreShouldAbortMultiHopPingNoRoute(
   return uiSaysMultiHop && hops >= 1;
 }
 
+/** Whether ping should fast-fail with pingNoRoute after route priming and path resolution. */
+export function evaluateMeshcorePingRouteAbort(opts: {
+  floodPrimeExhausted: boolean;
+  pathResolvedComposed: boolean;
+  pathTooShort: boolean;
+  hopsAway: number | null | undefined;
+  uiSaysMultiHop: boolean;
+  radioSaysMultiHop: boolean;
+  hasResolvedPath: boolean;
+}): boolean {
+  if (opts.floodPrimeExhausted && !opts.pathResolvedComposed) return true;
+  return meshcoreShouldAbortMultiHopPingNoRoute(
+    opts.pathTooShort,
+    opts.hopsAway,
+    opts.uiSaysMultiHop,
+    opts.radioSaysMultiHop,
+    opts.hasResolvedPath,
+  );
+}
+
 /** Whether route priming should run before trace/ping. */
 export function computeMeshcoreTracePrimeStrategy(opts: {
   needsRoutePrime: boolean;

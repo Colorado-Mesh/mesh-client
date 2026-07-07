@@ -69,7 +69,7 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
 
   it('fast-fails ping when flood prime exhausts even if stale path history exists', () => {
     expect(RUNTIME_SOURCE).toMatch(
-      /const shouldAbortPing =[\s\S]*?floodPrimeExhausted && !pathResolved\.composed[\s\S]*?meshcoreShouldAbortMultiHopPingNoRoute/,
+      /const shouldAbortPing = evaluateMeshcorePingRouteAbort\(\{[\s\S]*?floodPrimeExhausted[\s\S]*?pathResolvedComposed: pathResolved\.composed/,
     );
     expect(RUNTIME_SOURCE).toMatch(
       /radioContactPathLen != null &&[\s\S]*?radioContactPathLen >= 0[\s\S]*?ensureBestPathLoaded\(nodeId\)/,

@@ -1697,7 +1697,8 @@
         "failed": "Odadan çıkılamadı"
       },
       "repeaterRpcInProgress": "Bu tekrarlayıcı için bir istek zaten devam ediyor",
-      "cliDangerNotConfirmed": "Yıkıcı CLI komutları Tekrarlayıcılar panelinde onay gerektirir."
+      "cliDangerNotConfirmed": "Yıkıcı CLI komutları Tekrarlayıcılar panelinde onay gerektirir.",
+      "pingFailed": "Ping başarısız olduComment"
     },
     "mqttHints": {
       "notAuthorized": "v1_ kullanıcı adını, belirteç imzasını ve JWT hedef kitlesi ile aracının karşılaştırmasını doğrulayın; docs/letsmesh-mqtt-auth.md'ye bakın. Gerekirse operatör tarafından verilen belirteci yapıştırmak için Özel'i kullanın.",
@@ -3402,7 +3403,7 @@
     "cliDangerConfirmMessage": "Bu komut, yineleyiciyi yeniden başlatabilir, silebilir veya fabrika ayarlarına sıfırlayabilir: \"{{command}} \". Yalnızca bu değişikliği niyet ediyorsanız devam edin.",
     "cliDangerConfirmAction": "Komut çalıştır",
     "cliAutoPingToast": "CLI öncesi Ping ile rota oluşturuluyor…",
-    "cliAutoPingFailed": "Ping başarısız oldu; çok sekmeli tekrarlayıcılarda CLI'yi yeniden denemeden önce Ping'i manuel olarak çalıştırın.",
+    "cliAutoPingFailed": "Ping başarısız oldu; çok atlama tekrarlayıcılarda CLI'yi yeniden denemeden önce Ping'i manuel olarak çalıştırın.",
     "cliCommandTooLong": "CLI komutu çok uzun (en fazla {{max}} karakter)."
   },
   "reticulumIdentity": {

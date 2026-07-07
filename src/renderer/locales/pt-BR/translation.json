@@ -379,7 +379,7 @@
     "routesEstablished": "Rotas estabelecidas",
     "meshActive": "Ativo na Rede",
     "transportBle": "BLE",
-    "transportSerial": "Série",
+    "transportSerial": "Porta serial",
     "transportHttp": "HTTP",
     "transportRadio": "Rádio",
     "radioInterfaceFallback": "a interface de rádio"
@@ -1697,7 +1697,8 @@
         "failed": "Não foi possível sair do quarto"
       },
       "repeaterRpcInProgress": "Uma solicitação para este repetidor já está em andamento",
-      "cliDangerNotConfirmed": "Comandos CLI destrutivos requerem confirmação no painel Repetidores."
+      "cliDangerNotConfirmed": "Comandos CLI destrutivos requerem confirmação no painel Repetidores.",
+      "pingFailed": "Falha no ping"
     },
     "mqttHints": {
       "notAuthorized": "Verifique o nome de usuário v1_, assinatura de token e público JWT versus corretor; consulte documentos/letsmesh-mqtt-auth.md. Use Personalizado para colar um token emitido pelo operador, se necessário.",

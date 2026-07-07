@@ -1697,7 +1697,8 @@
         "failed": "部屋から出られませんでした"
       },
       "repeaterRpcInProgress": "このリピーターに対するリクエストはすでに進行中です",
-      "cliDangerNotConfirmed": "破壊的なCLIコマンドは、リピーターパネルで確認する必要があります。"
+      "cliDangerNotConfirmed": "破壊的なCLIコマンドは、リピーターパネルで確認する必要があります。",
+      "pingFailed": "Ping 失敗Comment"
     },
     "mqttHints": {
       "notAuthorized": "v1_ ユーザー名、トークン署名、JWT オーディエンスとブローカーを検証します。 docs/letsmesh-mqtt-auth.md を参照してください。必要に応じて、カスタムを使用してオペレーター発行のトークンを貼り付けます。",

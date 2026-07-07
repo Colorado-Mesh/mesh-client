@@ -1697,7 +1697,8 @@
         "failed": "Impossible de quitter la chambre"
       },
       "repeaterRpcInProgress": "Une demande pour ce répéteur est déjà en cours",
-      "cliDangerNotConfirmed": "Les commandes CLI destructives nécessitent une confirmation dans le panneau Répéteurs."
+      "cliDangerNotConfirmed": "Les commandes CLI destructives nécessitent une confirmation dans le panneau Répéteurs.",
+      "pingFailed": "Échec de la réponseComment"
     },
     "mqttHints": {
       "notAuthorized": "Vérifiez le nom d'utilisateur v1_, la signature du jeton et l'audience JWT par rapport au courtier ; voir docs/letsmesh-mqtt-auth.md. Utilisez Personnalisé pour coller un jeton émis par l'opérateur si nécessaire.",

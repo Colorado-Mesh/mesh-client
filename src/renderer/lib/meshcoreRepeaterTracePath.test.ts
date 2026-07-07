@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   computeMeshcoreTracePrimeStrategy,
+  evaluateMeshcorePingRouteAbort,
   meshcoreDirectRepeaterRelayPubKeys,
   meshcoreIsUsableTraceStoredPath,
   meshcoreShouldAbortMultiHopPingNoRoute,
@@ -276,5 +277,35 @@ describe('resolveMeshcoreTraceOutPathSeed', () => {
     });
     expect(resolved.composed).toBe(true);
     expect(resolved.outPath).toEqual(new Uint8Array([0x06, 0x3d]));
+  });
+});
+
+describe('evaluateMeshcorePingRouteAbort', () => {
+  it('aborts when flood priming is exhausted without composed path', () => {
+    expect(
+      evaluateMeshcorePingRouteAbort({
+        floodPrimeExhausted: true,
+        pathResolvedComposed: false,
+        pathTooShort: false,
+        hopsAway: 2,
+        uiSaysMultiHop: false,
+        radioSaysMultiHop: false,
+        hasResolvedPath: false,
+      }),
+    ).toBe(true);
+  });
+
+  it('delegates to meshcoreShouldAbortMultiHopPingNoRoute when flood not exhausted', () => {
+    expect(
+      evaluateMeshcorePingRouteAbort({
+        floodPrimeExhausted: false,
+        pathResolvedComposed: false,
+        pathTooShort: true,
+        hopsAway: 2,
+        uiSaysMultiHop: true,
+        radioSaysMultiHop: false,
+        hasResolvedPath: false,
+      }),
+    ).toBe(true);
   });
 });

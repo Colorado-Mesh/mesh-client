@@ -461,6 +461,12 @@ export const BOOT_SEQUENCE_TRANSPORT_FALSE_FRIENDS = {
       hint: 'bootSequence.transportSerial should be "Seriell" (serial port), not TV series',
     },
   ],
+  'pt-BR': [
+    {
+      re: /^Série$/i,
+      hint: 'bootSequence.transportSerial should be serial port (e.g. "Porta serial"), not TV series',
+    },
+  ],
   es: [
     {
       re: /n[úu]mero de serie/i,
@@ -502,6 +508,7 @@ export const RETICULUM_DEFAULT_HUB_KEYS = [
 
 /** Repeaters panel CLI hint must mention automatic pre-ping on multi-hop (middle sentence often dropped by MT). */
 export const REPEATERS_CLI_MULTI_HOP_HINT_KEY = 'repeatersPanel.cliMultiHopHint';
+export const REPEATERS_CLI_AUTO_PING_FAILED_KEY = 'repeatersPanel.cliAutoPingFailed';
 export const REPEATERS_CLI_DANGER_CONFIRM_ACTION_KEY = 'repeatersPanel.cliDangerConfirmAction';
 export const REPEATERS_CLI_DANGER_CONFIRM_ACTION_EN = 'Run command';
 
@@ -3063,6 +3070,13 @@ function checkRepeatersCliIssues(ctx) {
       }
     }
   }
+  if (flatKey === REPEATERS_CLI_AUTO_PING_FAILED_KEY && locale !== 'en') {
+    for (const { re, hint } of REPEATERS_CLI_DANGER_CONFIRM_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(hint);
+      }
+    }
+  }
   if (flatKey === REPEATERS_CLI_DANGER_CONFIRM_ACTION_KEY) {
     if (locale !== 'en' && val.trim() === REPEATERS_CLI_DANGER_CONFIRM_ACTION_EN) {
       issues.push('cliDangerConfirmAction must be translated, not left as English');
@@ -3172,6 +3186,11 @@ export function reticulumDefaultHubsCrossKeyIssues(localeFlat) {
   );
   if (hasHub && hasKoncentrator) {
     issues.push('reticulumInterfaces default hub keys mix hub and concentrator terminology');
+  }
+  const hasRozboc = values.some((v) => /rozboč/i.test(v));
+  const hasCenterHub = values.some((v) => /\bcenter\b/i.test(v));
+  if (hasRozboc && hasCenterHub) {
+    issues.push('reticulumInterfaces default hub keys mix rozbočovače and center terminology');
   }
   return issues;
 }

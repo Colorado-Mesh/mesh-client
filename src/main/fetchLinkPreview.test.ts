@@ -51,6 +51,7 @@ beforeEach(() => {
   mockDnsLookup.mockReset();
   mockDnsLookup.mockResolvedValue({ address: '93.184.216.34', family: 4 });
   agentConnectOpts.length = 0;
+  clearLinkPreviewCachesForTests();
 });
 
 afterEach(() => {

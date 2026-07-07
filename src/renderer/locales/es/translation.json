@@ -1697,7 +1697,8 @@
         "failed": "No se pudo salir de la habitación"
       },
       "repeaterRpcInProgress": "Ya hay una solicitud en curso para este repetidor.",
-      "cliDangerNotConfirmed": "Los comandos CLI destructivos requieren confirmación en el panel de repetidores."
+      "cliDangerNotConfirmed": "Los comandos CLI destructivos requieren confirmación en el panel de repetidores.",
+      "pingFailed": "Falló la orden pingComment"
     },
     "mqttHints": {
       "notAuthorized": "Verifique v1_ nombre de usuario, firma del token y audiencia JWT versus corredor; consulte docs/letsmesh-mqtt-auth.md. Utilice Personalizado para pegar un token emitido por el operador si es necesario.",

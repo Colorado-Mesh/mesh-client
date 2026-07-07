@@ -1697,7 +1697,8 @@
         "failed": "Impossibile lasciare la stanza"
       },
       "repeaterRpcInProgress": "Una richiesta per questo ripetitore è già in corso",
-      "cliDangerNotConfirmed": "I comandi CLI distruttivi richiedono la conferma nel pannello Ripetitori."
+      "cliDangerNotConfirmed": "I comandi CLI distruttivi richiedono la conferma nel pannello Ripetitori.",
+      "pingFailed": "Ping non eseguito correttamente!"
     },
     "mqttHints": {
       "notAuthorized": "Verifica il nome utente v1_, la firma del token e il pubblico JWT rispetto al broker; vedere docs/letsmesh-mqtt-auth.md. Se necessario, utilizza Personalizzato per incollare un token emesso dall'operatore.",
@@ -3400,7 +3401,7 @@
     "cliMultiHopHint": "La CLI multi-hop è più affidabile dopo una traccia di ping riuscita. Il primo comando CLI su un ripetitore multi-hop esegue Ping automaticamente quando non esiste una trace in questa sessione. Se i comandi scadono, esegui prima Ping o controlla la sincronizzazione dell'orologio compagno nell'app MeshCore.",
     "cliDangerConfirmTitle": "Eseguire il comando CLI distruttivo?",
     "cliDangerConfirmMessage": "Questo comando può riavviare, cancellare o ripristinare in fabbrica il ripetitore: \"{{command}}\". Continua solo se intendi apportare questa modifica.",
-    "cliDangerConfirmAction": "Comando Esegui",
+    "cliDangerConfirmAction": "Esegui comando",
     "cliAutoPingToast": "Stabilire il percorso con Ping prima di CLI...",
     "cliAutoPingFailed": "Ping non riuscito; eseguire Ping manualmente prima di riprovare CLI su ripetitori multi-hop.",
     "cliCommandTooLong": "Il comando CLI è troppo lungo (max {{max}} caratteri)."

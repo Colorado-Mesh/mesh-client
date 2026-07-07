@@ -1697,7 +1697,8 @@
         "failed": "Nie można było opuścić pokoju"
       },
       "repeaterRpcInProgress": "Żądanie dotyczące tego wzmacniaka jest już w toku",
-      "cliDangerNotConfirmed": "Niszczące polecenia CLI wymagają potwierdzenia w panelu Przemienniki."
+      "cliDangerNotConfirmed": "Niszczące polecenia CLI wymagają potwierdzenia w panelu Przemienniki.",
+      "pingFailed": "PING nie powiódł się"
     },
     "mqttHints": {
       "notAuthorized": "Zweryfikuj nazwę użytkownika v1_, podpis tokena i odbiorców JWT w porównaniu z brokerem; zobacz dokumentacja/letsmesh-mqtt-auth.md. W razie potrzeby użyj opcji Niestandardowy, aby wkleić token wydany przez operatora.",

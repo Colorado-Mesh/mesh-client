@@ -1697,7 +1697,8 @@
         "failed": "Konnte den Raum nicht verlassen"
       },
       "repeaterRpcInProgress": "Eine Anfrage für diesen Repeater ist bereits in Bearbeitung",
-      "cliDangerNotConfirmed": "Destruktive CLI-Befehle müssen im Wiederholer-Panel bestätigt werden."
+      "cliDangerNotConfirmed": "Destruktive CLI-Befehle müssen im Repeater-Panel bestätigt werden.",
+      "pingFailed": "Ping fehlgeschlagenComment"
     },
     "mqttHints": {
       "notAuthorized": "Überprüfen Sie v1_-Benutzernamen, Token-Signatur und JWT-Zielgruppe im Vergleich zum Broker. siehe docs/letsmesh-mqtt-auth.md. Verwenden Sie „Benutzerdefiniert“, um bei Bedarf ein vom Bediener ausgestelltes Token einzufügen.",
@@ -3395,7 +3396,7 @@
     "uptimeDaysHours": "{{days}}d {{hours}}h",
     "uptimeHoursMinutes": "{{hours}}h {{minutes}}m",
     "uptimeMinutes": "{{minutes}}m",
-    "rememberPasswordSaveFailed": "Wiederholer-Passwort für Neustarts konnte nicht gespeichert werden. Es funktioniert nur für diese Sitzung.",
+    "rememberPasswordSaveFailed": "Repeater-Passwort für Neustarts konnte nicht gespeichert werden. Es funktioniert nur für diese Sitzung.",
     "telemetryFailedToast": "Telemetrie fehlgeschlagen: {{message}}",
     "cliMultiHopHint": "Multi-Hop-CLI ist nach einer erfolgreichen Ping-Verfolgung zuverlässiger. Beim ersten CLI-Befehl an einem Multi-Hop-Repeater wird Ping automatisch ausgeführt, wenn in dieser Sitzung noch keine Trace existiert. Wenn Befehle eine Zeitüberschreitung haben, führen Sie zuerst Ping aus oder überprüfen Sie die Synchronisierung der Begleituhr in der MeshCore-App.",
     "cliDangerConfirmTitle": "Zerstörerischen CLI-Befehl ausführen?",

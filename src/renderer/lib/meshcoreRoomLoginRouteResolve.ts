@@ -6,7 +6,10 @@ import {
   type MeshcoreTracePathConnection,
   runMeshcoreTracePathMultiplexed,
 } from './meshcoreTracePathMultiplex';
-import { primeMeshcoreTraceRouteWithFallback } from './meshcoreTraceRoutePrime';
+import {
+  meshcoreTracePrimeFloodWhenForRoomLogin,
+  primeMeshcoreTraceRouteWithFallback,
+} from './meshcoreTraceRoutePrime';
 import { meshcoreTraceResultToOutPathBytes } from './meshcoreUtils';
 import {
   MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
@@ -121,7 +124,7 @@ export async function resolveMeshcoreRoomLoginRouteBytes(
       outPathMapRef,
       existingPath: path,
       initialStrategy: 'passive',
-      floodWhen: (metrics, hops) => !metrics?.usableAfterPrime && (hops ?? 0) >= 2,
+      floodWhen: meshcoreTracePrimeFloodWhenForRoomLogin,
     });
     if (primed.path && primed.path.length > 1) return primed.path;
     if (primed.path && primed.path.length > 0) path = primed.path;

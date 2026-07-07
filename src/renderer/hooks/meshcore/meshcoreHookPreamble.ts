@@ -249,31 +249,45 @@ export function formatStructuredLogDetail(detail: Record<string, unknown>): stri
 }
 
 /** Wait for companion push 0x81 (129 PathUpdated) for a specific node's pubkey. */
+export interface MeshcorePath129WaitHandle {
+  promise: Promise<boolean>;
+  cancel: () => void;
+}
+
 export function waitForMeshcorePath129ForNode(
   conn: Pick<MeshCoreConnection, 'on' | 'off'>,
   nodeId: number,
   timeoutMs: number,
-): Promise<boolean> {
-  return new Promise((resolve) => {
-    let settled = false;
-    const finish = (ok: boolean) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(t);
-      conn.off(129, on129);
-      resolve(ok);
-    };
-    const on129 = (data: unknown) => {
-      const d = data as { publicKey?: Uint8Array };
-      if (d.publicKey?.length !== 32) return;
-      if (pubkeyToNodeId(d.publicKey) !== nodeId) return;
-      finish(true);
-    };
-    const t = setTimeout(() => {
+): MeshcorePath129WaitHandle {
+  let settled = false;
+  let resolvePromise: (ok: boolean) => void = () => {};
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const on129 = (data: unknown) => {
+    const d = data as { publicKey?: Uint8Array };
+    if (d.publicKey?.length !== 32) return;
+    if (pubkeyToNodeId(d.publicKey) !== nodeId) return;
+    finish(true);
+  };
+  const finish = (ok: boolean) => {
+    if (settled) return;
+    settled = true;
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+    conn.off(129, on129);
+    resolvePromise(ok);
+  };
+  const promise = new Promise<boolean>((resolve) => {
+    resolvePromise = resolve;
+    timeoutId = setTimeout(() => {
       finish(false);
     }, timeoutMs);
     conn.on(129, on129);
   });
+  return {
+    promise,
+    cancel: () => {
+      finish(false);
+    },
+  };
 }
 export const MANUAL_CONTACTS_KEY = 'mesh-client:meshcoreManualContacts';
 

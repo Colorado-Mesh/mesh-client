@@ -31,7 +31,10 @@ export async function fetchMeshcoreContactPathDiagnostics(): Promise<
       window.electronAPI.db.getMeshcoreContacts() as Promise<MeshcoreContactDbRow[]>,
       window.electronAPI.db.getAllMeshcorePathHistory?.() ?? Promise.resolve([]),
     ]);
-    const bestByNode = new Map<number, { pathBytes: number[]; hopCount: number | null }>();
+    const bestByNode = new Map<
+      number,
+      { pathBytes: number[]; hopCount: number | null; successCount: number }
+    >();
     for (const row of pathRows as {
       node_id: number;
       path_bytes: string;
@@ -46,10 +49,16 @@ export async function fetchMeshcoreContactPathDiagnostics(): Promise<
         // catch-no-log-ok malformed path_bytes
       }
       const existing = bestByNode.get(row.node_id);
-      if (!existing || row.success_count > 0 || pathBytes.length > existing.pathBytes.length) {
+      if (
+        !existing ||
+        row.success_count > existing.successCount ||
+        (row.success_count === existing.successCount &&
+          pathBytes.length > existing.pathBytes.length)
+      ) {
         bestByNode.set(row.node_id, {
           pathBytes,
           hopCount: row.hop_count ?? null,
+          successCount: row.success_count,
         });
       }
     }

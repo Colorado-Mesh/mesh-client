@@ -57,13 +57,30 @@ async function refreshPathAfterPrimeRound(
   nodeId: number,
   existingPath: Uint8Array | undefined,
   outPathMapRef: Map<number, Uint8Array>,
+  isAborted?: () => boolean,
 ): Promise<MeshcoreRadioContactPathSnapshot> {
+  if (isAborted?.()) {
+    const fromMap = outPathMapRef.get(nodeId);
+    return {
+      path: fromMap ?? existingPath,
+      radioContactPathLen: null,
+      radioContactFound: fromMap != null,
+    };
+  }
   try {
     const contactsRaw = await withTimeout(
       conn.getContacts(),
       MESHCORE_TRACE_PRIME_CONTACT_REFRESH_MS,
       'meshcoreTracePrimeGetContacts',
     );
+    if (isAborted?.()) {
+      const fromMap = outPathMapRef.get(nodeId);
+      return {
+        path: fromMap ?? existingPath,
+        radioContactPathLen: null,
+        radioContactFound: fromMap != null,
+      };
+    }
     const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
     const snap = meshcoreSnapshotContactPathFromContacts(nodeId, contacts, existingPath);
     if (snap.path && snap.path.length > 0) {
@@ -121,69 +138,77 @@ async function primeMeshcoreTraceRouteInner(opts: {
   for (let round = 0; round < maxRounds; round++) {
     if (opts.isAborted?.()) break;
     roundsRun = round + 1;
-    if (strategy === 'passive') {
-      const preSnap = await refreshPathAfterPrimeRound(
+    const path129Handle = waitForMeshcorePath129ForNode(opts.conn, opts.nodeId, waitMs);
+    try {
+      if (strategy === 'passive') {
+        const preSnap = await refreshPathAfterPrimeRound(
+          opts.conn,
+          opts.nodeId,
+          routeStoredPath,
+          opts.outPathMapRef,
+          opts.isAborted,
+        );
+        if (opts.isAborted?.()) break;
+        if (preSnap.radioContactPathLen != null) {
+          radioContactPathLen = preSnap.radioContactPathLen;
+        }
+        if (preSnap.path && preSnap.path.length > 0) {
+          routeStoredPath = preSnap.path;
+        }
+        if (isUsablePrimedPath(routeStoredPath, opts.hopsAway, opts.pubKey)) {
+          break;
+        }
+      }
+      if (strategy === 'flood') {
+        try {
+          await withTimeout(
+            opts.conn.sendFloodAdvert(),
+            MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
+            'meshcoreTraceRoutePrimeFloodAdvert',
+          );
+          floodAdvertsSent += 1;
+        } catch (e: unknown) {
+          console.warn('[meshcoreTraceRoutePrime] sendFloodAdvert failed ' + errLikeToLogString(e));
+        }
+      }
+      if (opts.isAborted?.()) break;
+      const got129 = await path129Handle.promise;
+      if (opts.isAborted?.()) break;
+      if (got129) path129Received = true;
+
+      const snap = await refreshPathAfterPrimeRound(
         opts.conn,
         opts.nodeId,
         routeStoredPath,
         opts.outPathMapRef,
+        opts.isAborted,
       );
       if (opts.isAborted?.()) break;
-      if (preSnap.radioContactPathLen != null) {
-        radioContactPathLen = preSnap.radioContactPathLen;
+      if (snap.radioContactPathLen != null) {
+        radioContactPathLen = snap.radioContactPathLen;
       }
-      if (preSnap.path && preSnap.path.length > 0) {
-        routeStoredPath = preSnap.path;
+      if (snap.path && snap.path.length > 0) {
+        routeStoredPath = snap.path;
       }
+
+      const fromMap = opts.outPathMapRef.get(opts.nodeId);
+      if (
+        fromMap &&
+        fromMap.length > 0 &&
+        (!routeStoredPath || fromMap.length > routeStoredPath.length)
+      ) {
+        routeStoredPath = fromMap;
+      }
+
       if (isUsablePrimedPath(routeStoredPath, opts.hopsAway, opts.pubKey)) {
         break;
       }
-    }
-    const path129Wait = waitForMeshcorePath129ForNode(opts.conn, opts.nodeId, waitMs);
-    if (strategy === 'flood') {
-      try {
-        await withTimeout(
-          opts.conn.sendFloodAdvert(),
-          MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
-          'meshcoreTraceRoutePrimeFloodAdvert',
-        );
-        floodAdvertsSent += 1;
-      } catch (e: unknown) {
-        console.warn('[meshcoreTraceRoutePrime] sendFloodAdvert failed ' + errLikeToLogString(e));
+
+      if (strategy === 'passive') {
+        break;
       }
-    }
-    const got129 = await path129Wait;
-    if (opts.isAborted?.()) break;
-    if (got129) path129Received = true;
-
-    const snap = await refreshPathAfterPrimeRound(
-      opts.conn,
-      opts.nodeId,
-      routeStoredPath,
-      opts.outPathMapRef,
-    );
-    if (snap.radioContactPathLen != null) {
-      radioContactPathLen = snap.radioContactPathLen;
-    }
-    if (snap.path && snap.path.length > 0) {
-      routeStoredPath = snap.path;
-    }
-
-    const fromMap = opts.outPathMapRef.get(opts.nodeId);
-    if (
-      fromMap &&
-      fromMap.length > 0 &&
-      (!routeStoredPath || fromMap.length > routeStoredPath.length)
-    ) {
-      routeStoredPath = fromMap;
-    }
-
-    if (isUsablePrimedPath(routeStoredPath, opts.hopsAway, opts.pubKey)) {
-      break;
-    }
-
-    if (strategy === 'passive') {
-      break;
+    } finally {
+      path129Handle.cancel();
     }
   }
 
@@ -237,16 +262,15 @@ export async function primeMeshcoreTraceRoute(opts: {
     postPathLen: opts.existingPath?.length ?? 0,
     usableAfterPrime: false,
   };
+  let aggregateTimedOut = false;
+  const isAborted = (): boolean => aggregateTimedOut || (opts.isAborted?.() ?? false);
   try {
     return await withTimeout(
       primeMeshcoreTraceRouteInner({
         ...opts,
         strategy,
         maxRounds,
-        isAborted: () => {
-          if (opts.isAborted?.()) return true;
-          return false;
-        },
+        isAborted,
       }).then((result) => {
         if (result.metrics) Object.assign(partialMetrics, result.metrics);
         return result;
@@ -255,6 +279,7 @@ export async function primeMeshcoreTraceRoute(opts: {
       'meshcoreTraceRoutePrimeAggregate',
     );
   } catch (e: unknown) {
+    aggregateTimedOut = true;
     // catch-no-log-ok expected when aggregate or getContacts times out during priming
     console.debug('[meshcoreTraceRoutePrime] aggregate timeout ' + errLikeToLogString(e));
     const fromMap = opts.outPathMapRef.get(opts.nodeId);
@@ -304,7 +329,7 @@ export async function primeMeshcoreTraceRouteWithFallback(opts: {
   });
   if (opts.isAborted?.()) return primed;
   const runFlood = opts.floodWhen?.(primed.metrics, opts.hopsAway) ?? false;
-  if (!runFlood) return primed;
+  if (!runFlood || opts.isAborted?.()) return primed;
   const flooded = await primeMeshcoreTraceRoute({
     conn: opts.conn,
     nodeId: opts.nodeId,
@@ -316,4 +341,26 @@ export async function primeMeshcoreTraceRouteWithFallback(opts: {
     isAborted: opts.isAborted,
   });
   return flooded;
+}
+
+/** Flood escalation when passive ping priming did not receive PathUpdated (129). */
+export function meshcoreTracePrimeFloodWhenForPing(
+  metrics: MeshcoreTraceRoutePrimeMetrics | undefined,
+  hopsAway: number | null | undefined,
+  canSynthesizePath: boolean,
+  primeStrategy: MeshcoreTracePrimeStrategy = 'passive',
+): boolean {
+  if (primeStrategy !== 'passive' || metrics?.usableAfterPrime) return false;
+  const h = hopsAway ?? 0;
+  if (h >= 2) return !canSynthesizePath;
+  if (h === 1) return metrics?.path129Received === false;
+  return false;
+}
+
+/** Flood escalation when room login passive priming did not yield a usable path. */
+export function meshcoreTracePrimeFloodWhenForRoomLogin(
+  metrics: MeshcoreTraceRoutePrimeMetrics | undefined,
+  hopsAway: number | null | undefined,
+): boolean {
+  return metrics?.usableAfterPrime === false && (hopsAway ?? 0) >= 2;
 }

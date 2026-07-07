@@ -11,7 +11,12 @@ import {
 } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
 
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
-import { primeMeshcoreTraceRoute } from './meshcoreTraceRoutePrime';
+import {
+  meshcoreTracePrimeFloodWhenForPing,
+  meshcoreTracePrimeFloodWhenForRoomLogin,
+  primeMeshcoreTraceRoute,
+  primeMeshcoreTraceRouteWithFallback,
+} from './meshcoreTraceRoutePrime';
 import { pubkeyToNodeId } from './meshcoreUtils';
 
 const REMOTE_PUBKEY = (() => {
@@ -383,6 +388,46 @@ describe('primeMeshcoreTraceRoute', () => {
     expect(result.metrics?.strategy).toBe('passive');
   });
 
+  it('passive strategy registers PathUpdated listener before getContacts', async () => {
+    const callOrder: string[] = [];
+    const listeners = new Map<number, Set<(...args: unknown[]) => void>>();
+
+    const conn = {
+      on: vi.fn((event: number, cb: (...args: unknown[]) => void) => {
+        if (event === 129) {
+          callOrder.push('on129');
+          const set = listeners.get(129) ?? new Set();
+          set.add(cb);
+          listeners.set(129, set);
+        }
+      }),
+      off: vi.fn((event: number, cb: (...args: unknown[]) => void) => {
+        listeners.get(event)?.delete(cb);
+      }),
+      sendFloodAdvert: vi.fn(() => Promise.resolve(undefined)),
+      getContacts: vi.fn(() => {
+        callOrder.push('getContacts');
+        return Promise.resolve([]);
+      }),
+    };
+
+    const outPathMapRef = new Map<number, Uint8Array>();
+    const resultPromise = primeMeshcoreTraceRoute({
+      conn,
+      nodeId: REMOTE_NODE_ID,
+      pubKey: REMOTE_PUBKEY,
+      hopsAway: 2,
+      outPathMapRef,
+      strategy: 'passive',
+    });
+
+    await vi.runOnlyPendingTimersAsync();
+    await resultPromise;
+
+    expect(callOrder.indexOf('on129')).toBeLessThan(callOrder.indexOf('getContacts'));
+    expect(conn.sendFloodAdvert).not.toHaveBeenCalled();
+  });
+
   it('returns map path when aggregate timeout fires', async () => {
     const aggregateMs = computeMeshcoreTracePrimeAggregateTimeoutMs(2, 1, 'flood');
     const mapPath = new Uint8Array([0x11, 0x22]);
@@ -409,5 +454,156 @@ describe('primeMeshcoreTraceRoute', () => {
 
     expect(result.path).toEqual(mapPath);
     expect(result.radioContactPathLen).toBeNull();
+  });
+});
+
+describe('primeMeshcoreTraceRouteWithFallback', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function createPassiveConn() {
+    return {
+      on: vi.fn(),
+      off: vi.fn(),
+      sendFloodAdvert: vi.fn(() => Promise.resolve(undefined)),
+      getContacts: vi.fn(() => Promise.resolve([])),
+    };
+  }
+
+  it('skips flood round when floodWhen returns false', async () => {
+    const conn = createPassiveConn();
+    const outPathMapRef = new Map<number, Uint8Array>();
+    const resultPromise = primeMeshcoreTraceRouteWithFallback({
+      conn,
+      nodeId: REMOTE_NODE_ID,
+      pubKey: REMOTE_PUBKEY,
+      hopsAway: 2,
+      outPathMapRef,
+      initialStrategy: 'passive',
+      floodWhen: () => false,
+    });
+    await vi.runOnlyPendingTimersAsync();
+    await resultPromise;
+    expect(conn.sendFloodAdvert).not.toHaveBeenCalled();
+  });
+
+  it('runs flood round when floodWhen returns true', async () => {
+    const conn = createPassiveConn();
+    const outPathMapRef = new Map<number, Uint8Array>();
+    const resultPromise = primeMeshcoreTraceRouteWithFallback({
+      conn,
+      nodeId: REMOTE_NODE_ID,
+      pubKey: REMOTE_PUBKEY,
+      hopsAway: 2,
+      outPathMapRef,
+      initialStrategy: 'passive',
+      floodWhen: () => true,
+    });
+    const passiveAgg = computeMeshcoreTracePrimeAggregateTimeoutMs(2, 1, 'passive');
+    const floodAgg = computeMeshcoreTracePrimeAggregateTimeoutMs(
+      2,
+      MESHCORE_TRACE_PRIME_MAX_ROUNDS,
+      'flood',
+    );
+    await vi.advanceTimersByTimeAsync(passiveAgg + floodAgg + 1);
+    const result = await resultPromise;
+    expect(conn.sendFloodAdvert).toHaveBeenCalled();
+    expect(result.metrics?.strategy).toBe('flood');
+  });
+
+  it('returns early when isAborted before flood escalation', async () => {
+    const conn = createPassiveConn();
+    const outPathMapRef = new Map<number, Uint8Array>();
+    let abortAfterPassive = false;
+    const resultPromise = primeMeshcoreTraceRouteWithFallback({
+      conn,
+      nodeId: REMOTE_NODE_ID,
+      pubKey: REMOTE_PUBKEY,
+      hopsAway: 2,
+      outPathMapRef,
+      initialStrategy: 'passive',
+      floodWhen: () => {
+        abortAfterPassive = true;
+        return true;
+      },
+      isAborted: () => abortAfterPassive,
+    });
+    await vi.runOnlyPendingTimersAsync();
+    const result = await resultPromise;
+    expect(conn.sendFloodAdvert).not.toHaveBeenCalled();
+    expect(result.metrics?.strategy).toBe('passive');
+  });
+
+  it('carries primed path into flood round as existingPath', async () => {
+    const usablePath = new Uint8Array([0x11, 0x22]);
+    const conn = {
+      on: vi.fn(),
+      off: vi.fn(),
+      sendFloodAdvert: vi.fn(() => Promise.resolve(undefined)),
+      getContacts: vi.fn(() =>
+        Promise.resolve([
+          {
+            publicKey: REMOTE_PUBKEY,
+            outPath: usablePath,
+            outPathLen: 2,
+            type: 2,
+            advName: 'RPT',
+            lastAdvert: 1,
+            advLat: 0,
+            advLon: 0,
+            flags: 0,
+          },
+        ]),
+      ),
+    };
+    const outPathMapRef = new Map<number, Uint8Array>();
+    const resultPromise = primeMeshcoreTraceRouteWithFallback({
+      conn,
+      nodeId: REMOTE_NODE_ID,
+      pubKey: REMOTE_PUBKEY,
+      hopsAway: 2,
+      outPathMapRef,
+      initialStrategy: 'passive',
+      floodWhen: () => false,
+    });
+    await vi.runOnlyPendingTimersAsync();
+    const result = await resultPromise;
+    expect(result.path).toEqual(usablePath);
+  });
+});
+
+describe('meshcoreTracePrimeFloodWhen helpers', () => {
+  it('meshcoreTracePrimeFloodWhenForPing escalates 1-hop when 129 missing', () => {
+    expect(
+      meshcoreTracePrimeFloodWhenForPing({ path129Received: false } as never, 1, false, 'passive'),
+    ).toBe(true);
+    expect(
+      meshcoreTracePrimeFloodWhenForPing({ path129Received: true } as never, 1, false, 'passive'),
+    ).toBe(false);
+    expect(
+      meshcoreTracePrimeFloodWhenForPing({ path129Received: false } as never, 1, false, 'flood'),
+    ).toBe(false);
+  });
+
+  it('meshcoreTracePrimeFloodWhenForPing escalates 2-hop when synthesis unavailable', () => {
+    expect(meshcoreTracePrimeFloodWhenForPing(undefined, 2, false)).toBe(true);
+    expect(meshcoreTracePrimeFloodWhenForPing(undefined, 2, true)).toBe(false);
+  });
+
+  it('meshcoreTracePrimeFloodWhenForRoomLogin escalates when unusable after prime on 2+ hops', () => {
+    expect(meshcoreTracePrimeFloodWhenForRoomLogin({ usableAfterPrime: false } as never, 2)).toBe(
+      true,
+    );
+    expect(meshcoreTracePrimeFloodWhenForRoomLogin({ usableAfterPrime: true } as never, 2)).toBe(
+      false,
+    );
+    expect(meshcoreTracePrimeFloodWhenForRoomLogin({ usableAfterPrime: false } as never, 1)).toBe(
+      false,
+    );
   });
 });

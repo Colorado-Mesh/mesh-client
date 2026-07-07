@@ -201,10 +201,10 @@ import { runMeshcoreRepeaterStatusRequest } from '../lib/meshcoreRepeaterStatusR
 import { runMeshcoreRepeaterTelemetryRequest } from '../lib/meshcoreRepeaterTelemetryRpc';
 import {
   computeMeshcoreTracePrimeStrategy,
+  evaluateMeshcorePingRouteAbort,
   meshcoreCanSynthesizeTracePath,
   meshcoreDirectRepeaterRelayPubKeys,
   meshcoreIsUsableTraceStoredPath,
-  meshcoreShouldAbortMultiHopPingNoRoute,
   meshcoreTraceDirectRetryEligible,
   planMeshcoreRepeaterTraceRoute,
   resolveMeshcoreTraceOutPathSeed,
@@ -277,6 +277,7 @@ import {
   awaitMeshcoreRepeaterPingSettleForNode,
 } from '../lib/meshcoreTraceRadioIdle';
 import {
+  meshcoreTracePrimeFloodWhenForPing,
   type MeshcoreTraceRoutePrimeMetrics,
   primeMeshcoreTraceRouteWithFallback,
 } from '../lib/meshcoreTraceRoutePrime';
@@ -3877,13 +3878,13 @@ export function useMeshcoreRuntime() {
                 existingPath: routeStoredPath,
                 initialStrategy: primeStrategy,
                 isAborted: isTraceAborted,
-                floodWhen: (metrics, hops) => {
-                  if (primeStrategy !== 'passive' || metrics?.usableAfterPrime) return false;
-                  const h = hops ?? 0;
-                  if (h >= 2) return !canSynthesizePath;
-                  // 1-hop: passive often needs a flood advert to register PathUpdated before synthesis.
-                  return h === 1 && !metrics?.path129Received;
-                },
+                floodWhen: (metrics, hops) =>
+                  meshcoreTracePrimeFloodWhenForPing(
+                    metrics,
+                    hops,
+                    canSynthesizePath,
+                    primeStrategy,
+                  ),
               });
               routePrimeMetrics = primed.metrics;
               if (isTraceAborted()) return false;
@@ -3947,15 +3948,15 @@ export function useMeshcoreRuntime() {
               (pathResolved.composed ||
                 Boolean(tracePlan.storedPath) ||
                 (routePrimeRan && !floodPrimeExhausted));
-            const shouldAbortPing =
-              (floodPrimeExhausted && !pathResolved.composed) ||
-              meshcoreShouldAbortMultiHopPingNoRoute(
-                tracePlan.pathTooShort,
-                hopsAway,
-                uiSaysMultiHop,
-                radioSaysMultiHop,
-                hasResolvedPath,
-              );
+            const shouldAbortPing = evaluateMeshcorePingRouteAbort({
+              floodPrimeExhausted,
+              pathResolvedComposed: pathResolved.composed,
+              pathTooShort: tracePlan.pathTooShort,
+              hopsAway,
+              uiSaysMultiHop,
+              radioSaysMultiHop,
+              hasResolvedPath,
+            });
             if (pathResolved.composed) {
               outPathMapRef.current.set(nodeId, outPath);
               console.debug(

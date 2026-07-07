@@ -1664,6 +1664,7 @@
       "requestTimedOut": "Request timed out (up to ~{{seconds}}s)",
       "requestTimedOutApprox": "Request timed out (~{{seconds}}s)",
       "pingNoRoute": "No route from radio yet — multi-hop trace needs a synced path. Wait for contact updates or reconnect.",
+      "pingFailed": "Ping failed",
       "cliDangerNotConfirmed": "Destructive CLI commands require confirmation in the Repeaters panel.",
       "bleNoDetails": "BLE connection failed (no error details from device). Try again or use Serial/USB.",
       "bleAlreadyInProgress": "Bluetooth connection already in progress. Wait for it to finish or try Serial/USB instead.",

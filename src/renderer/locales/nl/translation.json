@@ -1697,7 +1697,8 @@
         "failed": "Kon de kamer niet verlaten"
       },
       "repeaterRpcInProgress": "Er is al een aanvraag voor deze repeater in behandeling",
-      "cliDangerNotConfirmed": "Destructieve CLI-opdrachten moeten worden bevestigd in het paneel Herhalers."
+      "cliDangerNotConfirmed": "Destructieve CLI-opdrachten moeten worden bevestigd in het paneel Herhalers.",
+      "pingFailed": "Ping mislukt"
     },
     "mqttHints": {
       "notAuthorized": "Controleer v1_ gebruikersnaam, tokenhandtekening en JWT-doelgroep versus makelaar; zie docs/letsmesh-mqtt-auth.md. Gebruik Aangepast om indien nodig een door de operator uitgegeven token te plakken.",

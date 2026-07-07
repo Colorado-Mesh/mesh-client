@@ -535,6 +535,10 @@ pub fn update_interface_in_config(
         apply_preset_defaults(&mut row);
     }
 
+    if row.iface_type == "i2p" {
+        validate_i2p_peers(row.host.as_deref().unwrap_or(""))?;
+    }
+
     parsed.interfaces[idx] = interface_row_to_block(&row);
     write_config(config_dir, &serialize_config(&parsed))?;
     Ok(row)

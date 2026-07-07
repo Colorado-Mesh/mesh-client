@@ -912,7 +912,7 @@
       "addDefaultHubsAria": "Přidat výchozí testovací síť Reticulum a rozbočovače Ratspeak v zakázaném stavu",
       "addDefaultHubsSuccess": "Přidáno {{added}} výchozí rozbočovač(rozbočovače). {{skipped}} je již nakonfigurován.",
       "addDefaultHubsAllPresent": "Výchozí rozbočovače testnet a Ratspeak jsou již nakonfigurovány.",
-      "addDefaultHubsFailed": "Přidání výchozích center se nezdařilo.",
+      "addDefaultHubsFailed": "Přidání výchozích rozbočovačů se nezdařilo.",
       "identityNotConfigured": "Nejprve nastavte identitu Reticulum na kartě Síť — vygenerujte nebo importujte frázi pro obnovení.",
       "identityRequiredHint": "Před přidáním rozhraní nakonfigurujte identitu Reticulum na kartě Síť.",
       "i2pPeersRequired": "Zadejte alespoň jednu I2P peer adresu.",
@@ -1697,7 +1697,8 @@
         "failed": "Nelze opustit místnost"
       },
       "repeaterRpcInProgress": "Žádost o tento opakovač již probíhá",
-      "cliDangerNotConfirmed": "Destruktivní příkazy CLI vyžadují potvrzení na panelu Opakovače."
+      "cliDangerNotConfirmed": "Destruktivní příkazy CLI vyžadují potvrzení na panelu Opakovače.",
+      "pingFailed": "Ping selhalComment"
     },
     "mqttHints": {
       "notAuthorized": "Ověřte uživatelské jméno v1_, podpis tokenu a publikum JWT vs. makléř; viz docs/letsmesh-mqtt-auth.md. V případě potřeby použijte Vlastní k vložení tokenu vydaného operátorem.",

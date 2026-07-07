@@ -1697,7 +1697,8 @@
         "failed": "Tidak bisa meninggalkan ruangan"
       },
       "repeaterRpcInProgress": "Permintaan untuk repeater ini sedang dalam proses",
-      "cliDangerNotConfirmed": "Perintah CLI yang merusak memerlukan konfirmasi di panel Repeater."
+      "cliDangerNotConfirmed": "Perintah CLI yang merusak memerlukan konfirmasi di panel Repeater.",
+      "pingFailed": "Ping gagal"
     },
     "mqttHints": {
       "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker; lihat dokumen/letsmesh-mqtt-auth.md. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",

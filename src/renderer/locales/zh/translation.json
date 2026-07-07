@@ -1697,7 +1697,8 @@
         "failed": "无法离开房间"
       },
       "repeaterRpcInProgress": "对此转发器的请求已在进行中",
-      "cliDangerNotConfirmed": "破坏性CLI命令需要在Repeaters （中继器）面板中确认。"
+      "cliDangerNotConfirmed": "破坏性CLI命令需要在Repeaters （中继器）面板中确认。",
+      "pingFailed": "Ping失败"
     },
     "mqttHints": {
       "notAuthorized": "验证 v1_ 用户名、令牌签名和 JWT 受众与经纪人；请参阅 docs/letsmesh-mqtt-auth.md。如果需要，使用自定义粘贴操作员颁发的令牌。",

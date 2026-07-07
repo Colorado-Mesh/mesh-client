@@ -47,14 +47,48 @@ async function withInflightDedup<K, T>(
 }
 
 async function lookupHostname(hostname: string): Promise<string> {
-  const { address } = await Promise.race([
-    dns.lookup(hostname, { verbatim: true }),
-    new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        reject(new Error('dns lookup timeout'));
-      }, LINK_PREVIEW_DNS_LOOKUP_TIMEOUT_MS);
-    }),
-  ]);
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const { address } = await Promise.race([
+      dns.lookup(hostname, { verbatim: true }),
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error('dns lookup timeout'));
+        }, LINK_PREVIEW_DNS_LOOKUP_TIMEOUT_MS);
+      }),
+    ]);
+    return address;
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+  }
+}
+
+/** Single DNS resolution used for both block checks and pinned connect (avoids lookup TOCTOU). */
+async function resolvePinnedPreviewAddress(hostname: string): Promise<string> {
+  const bare = stripConnectHostBrackets(hostname.trim()).toLowerCase();
+  if (isBlockedHostname(bare)) {
+    throw new Error('blocked hostname');
+  }
+  if (isLoopbackHost(bare) || isLocalConnectHost(bare)) {
+    throw new Error('blocked hostname');
+  }
+  if (isPrivateNetworkHost(bare) || isUniqueLocalIpv6(bare) || isLinkLocalIpv6(bare)) {
+    throw new Error('blocked hostname');
+  }
+
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(bare) || bare.includes(':')) {
+    return bare;
+  }
+
+  const address = await lookupHostname(bare);
+  if (
+    isLoopbackHost(address) ||
+    isPrivateNetworkHost(address) ||
+    isUniqueLocalIpv6(address) ||
+    isLinkLocalIpv6(address)
+  ) {
+    throw new Error('blocked resolved address');
+  }
   return address;
 }
 
@@ -65,18 +99,7 @@ function defaultConnectPort(url: URL): number {
 
 async function fetchWithResolvedHost(urlString: string, init: RequestInit): Promise<Response> {
   const url = new URL(urlString);
-  if (await isBlockedHostnameResolved(url.hostname)) {
-    throw new Error('blocked hostname');
-  }
-  const address = await lookupHostname(url.hostname);
-  if (
-    isLoopbackHost(address) ||
-    isPrivateNetworkHost(address) ||
-    isUniqueLocalIpv6(address) ||
-    isLinkLocalIpv6(address)
-  ) {
-    throw new Error('blocked resolved address');
-  }
+  const address = await resolvePinnedPreviewAddress(url.hostname);
   const agent = new Agent({
     connect: {
       host: address,
@@ -133,26 +156,11 @@ export function isBlockedHostname(hostname: string): boolean {
 
 /** Block hostnames that resolve to loopback, RFC1918, ULA, or link-local targets (SSRF guard). */
 export async function isBlockedHostnameResolved(hostname: string): Promise<boolean> {
-  const bare = stripConnectHostBrackets(hostname.trim()).toLowerCase();
-  if (isBlockedHostname(bare)) return true;
-  if (isLoopbackHost(bare) || isLocalConnectHost(bare)) return true;
-  if (isPrivateNetworkHost(bare) || isUniqueLocalIpv6(bare) || isLinkLocalIpv6(bare)) return true;
-
-  // IP literals already handled above; resolve DNS for hostnames.
-  if (/^\d+\.\d+\.\d+\.\d+$/.test(bare) || bare.includes(':')) {
-    return false;
-  }
-
   try {
-    const address = await lookupHostname(bare);
-    return (
-      isLoopbackHost(address) ||
-      isPrivateNetworkHost(address) ||
-      isUniqueLocalIpv6(address) ||
-      isLinkLocalIpv6(address)
-    );
+    await resolvePinnedPreviewAddress(hostname);
+    return false;
   } catch {
-    // catch-no-log-ok DNS failure — fail closed for preview fetch
+    // catch-no-log-ok DNS failure or blocked target — fail closed for preview fetch
     return true;
   }
 }
