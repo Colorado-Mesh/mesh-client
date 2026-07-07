@@ -201,8 +201,10 @@ import {
 import { runMeshcoreRepeaterStatusRequest } from '../lib/meshcoreRepeaterStatusRpc';
 import { runMeshcoreRepeaterTelemetryRequest } from '../lib/meshcoreRepeaterTelemetryRpc';
 import {
+  meshcoreDirectRepeaterRelayPubKeys,
   meshcoreIsUsableTraceStoredPath,
   meshcoreShouldAbortMultiHopPingNoRoute,
+  meshcoreSynthesizeOneHopTracePath,
   meshcoreTraceDirectRetryEligible,
   planMeshcoreRepeaterTraceRoute,
 } from '../lib/meshcoreRepeaterTracePath';
@@ -3873,7 +3875,21 @@ export function useMeshcoreRuntime() {
               meshcorePingNoRouteExpiryTimersRef.current.set(nodeId, tid);
               return;
             }
-            const outPath = tracePlan.outPathSeed;
+            let outPath = tracePlan.outPathSeed;
+            if (pathTooShortAfterSynth && !radioSaysMultiHop && (hopsAway ?? 0) === 1) {
+              const relayKeys = meshcoreDirectRepeaterRelayPubKeys(
+                nodesRef.current,
+                pubKeyMapRef.current,
+                nodeId,
+              );
+              const synthesized = meshcoreSynthesizeOneHopTracePath(pubKey, relayKeys);
+              if (synthesized) {
+                outPath = synthesized;
+                console.debug(
+                  `[useMeshcoreRuntime] traceRoute: using synthesized one-hop path via direct relay for node ${nodeId}`,
+                );
+              }
+            }
             const attemptPathBytes = Array.from(outPath);
             tracePathHash =
               attemptPathBytes.length > 0 ? computePathHash(attemptPathBytes) : undefined;
