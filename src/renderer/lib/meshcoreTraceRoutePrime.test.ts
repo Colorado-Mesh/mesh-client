@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   computeMeshcoreTracePrimeAggregateTimeoutMs,
   computeMeshcoreTracePrimeWaitMs,
+  MESHCORE_TRACE_PRIME_CONTACT_REFRESH_MS,
   MESHCORE_TRACE_PRIME_MAX_ROUNDS,
   MESHCORE_TRACE_PRIME_WAIT_BASE_MS,
   MESHCORE_TRACE_PRIME_WAIT_CAP_MS,
@@ -28,6 +29,19 @@ describe('computeMeshcoreTracePrimeWaitMs', () => {
       MESHCORE_TRACE_PRIME_WAIT_BASE_MS + 2 * MESHCORE_TRACE_PRIME_WAIT_PER_HOP_MS,
     );
     expect(computeMeshcoreTracePrimeWaitMs(10)).toBe(MESHCORE_TRACE_PRIME_WAIT_CAP_MS);
+  });
+});
+
+describe('computeMeshcoreTracePrimeAggregateTimeoutMs', () => {
+  it('passive strategy covers pre/post getContacts plus PathUpdated wait', () => {
+    const wait1 = computeMeshcoreTracePrimeWaitMs(1);
+    expect(computeMeshcoreTracePrimeAggregateTimeoutMs(1, 1, 'passive')).toBe(
+      2 * MESHCORE_TRACE_PRIME_CONTACT_REFRESH_MS + wait1,
+    );
+    const wait3 = computeMeshcoreTracePrimeWaitMs(3);
+    expect(computeMeshcoreTracePrimeAggregateTimeoutMs(3, 1, 'passive')).toBe(
+      2 * MESHCORE_TRACE_PRIME_CONTACT_REFRESH_MS + wait3,
+    );
   });
 });
 

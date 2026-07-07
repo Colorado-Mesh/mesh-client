@@ -192,7 +192,8 @@ export function computeMeshcoreTracePrimeAggregateTimeoutMs(
   const waitMs = computeMeshcoreTracePrimeWaitMs(hopsAway);
   if (strategy === 'none') return 0;
   if (strategy === 'passive') {
-    return waitMs + MESHCORE_TRACE_PRIME_CONTACT_REFRESH_MS;
+    // Pre-round getContacts + PathUpdated wait + post-round getContacts (each contact refresh may use full slack).
+    return 2 * MESHCORE_TRACE_PRIME_CONTACT_REFRESH_MS + waitMs;
   }
   return maxRounds * (MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS + waitMs) + 5_000;
 }
@@ -207,7 +208,7 @@ export function computeMeshcoreTracePrimeWaitMs(hopsAway?: number | null): numbe
   );
 }
 
-/** Shown when multi-hop trace cannot run until the radio reports a route; UI auto-clears after {@link MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS}. */
+/** Shown when multi-hop trace cannot run until the radio reports a route; cleared on the next ping attempt. */
 export const MESHCORE_PING_NO_ROUTE_ERROR_MSG = 'meshcore.errors.pingNoRoute';
 export const MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS = 20_000;
 

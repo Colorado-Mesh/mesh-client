@@ -181,6 +181,26 @@ describe('RepeatersPanel', () => {
     expect(screen.queryByText(/MC_I18N:/)).not.toBeInTheDocument();
   });
 
+  it('shows a toast when ping resolves false with a stored meshcore error', async () => {
+    const props = makeBaseProps();
+    props.onPing = vi.fn().mockResolvedValue(false);
+    props.meshcorePingErrors = new Map([
+      [repeater.node_id, meshcoreStoredUserMessage('meshcore.errors.pingNoRoute')],
+    ]);
+    render(<RepeatersPanel {...props} />);
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /Ping error:.*No route from radio yet/i }),
+    );
+
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith(
+        expect.stringContaining('No route from radio yet'),
+        'error',
+      );
+    });
+  });
+
   it('requires a confirmation click before deleting a repeater', async () => {
     const props = makeBaseProps();
     render(<RepeatersPanel {...props} />);

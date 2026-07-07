@@ -59,7 +59,9 @@ export function planMeshcoreRepeaterTraceRoute(opts: {
     (!storedPath || storedPath.length <= 1) &&
     opts.pathFromHistory &&
     meshcoreIsUsableTraceStoredPath(opts.pathFromHistory, opts.hopsAway, opts.pubKey) &&
-    opts.pathFromHistory.length > 1
+    opts.pathFromHistory.length > 1 &&
+    opts.radioContactPathLen != null &&
+    opts.radioContactPathLen >= 0
   ) {
     storedPath = opts.pathFromHistory;
   }
@@ -122,9 +124,9 @@ export function computeMeshcoreTracePrimeStrategy(opts: {
   canSynthesizePath: boolean;
   skipPrime?: boolean;
 }): MeshcoreTracePrimeStrategy {
+  void opts.canSynthesizePath;
   if (opts.skipPrime || !opts.needsRoutePrime || !opts.pathTooShort) return 'none';
   if (opts.hasUsableStoredPath) return 'none';
-  if (opts.canSynthesizePath) return 'none';
   if (opts.hopsAway == null) return 'passive';
   const hops = opts.hopsAway ?? 0;
   if (hops >= 1) return 'passive';

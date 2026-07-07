@@ -54,6 +54,28 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toContain('POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS');
   });
 
+  it('defers Noble disconnect only before a live session exists', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /bleConnectInProgressRef\.current &&[\s\S]*?!meshcoreDriverConnectedRef\.current &&[\s\S]*?!connRef\.current/,
+    );
+  });
+
+  it('reconnects when stored session exists before everConfigured (HMR/stale runtime)', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /Connection lost with stored session before everConfigured — reconnecting/,
+    );
+    expect(RUNTIME_SOURCE).toMatch(/traceRoute: no live conn — scheduling reconnect/);
+  });
+
+  it('fast-fails ping when flood prime exhausts even if stale path history exists', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /const shouldAbortPing =[\s\S]*?floodPrimeExhausted && !pathResolved\.composed[\s\S]*?meshcoreShouldAbortMultiHopPingNoRoute/,
+    );
+    expect(RUNTIME_SOURCE).toMatch(
+      /radioContactPathLen != null &&[\s\S]*?radioContactPathLen >= 0[\s\S]*?ensureBestPathLoaded\(nodeId\)/,
+    );
+  });
+
   it('clears bleConnectInProgressRef after auto-reconnect attempts', () => {
     expect(RUNTIME_SOURCE).toMatch(
       /attemptMeshcoreReconnect[\s\S]{0,4000}finally \{[\s\S]*?bleConnectInProgressRef\.current = false/,

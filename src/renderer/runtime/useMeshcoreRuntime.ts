@@ -37,7 +37,6 @@ import {
   MESHCORE_DM_ACK_TIMEOUT_MIN_MS,
   MESHCORE_INIT_TIMEOUT_MS,
   MESHCORE_NEIGHBORS_TIMEOUT_MS,
-  MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS,
   MESHCORE_PING_NO_ROUTE_ERROR_MSG,
   MESHCORE_RESPONSE_DEVICE_INFO,
   MESHCORE_ROOM_MESSAGE_CHANNEL,
@@ -50,7 +49,6 @@ import {
   meshcoreFullPubKeyBytesFromContactDbHex,
   meshcoreMessageDedupeKey,
   meshcorePendingDmAckMapKeys,
-  meshcorePingNoRouteErrorExpiryUpdate,
   meshcoreTraceRouteRejectReason,
   messageToDbRow,
   normalizeMeshCoreError,
@@ -278,7 +276,10 @@ import {
   awaitMeshcoreRepeaterAdminRfIdle,
   awaitMeshcoreRepeaterPingSettleForNode,
 } from '../lib/meshcoreTraceRadioIdle';
-import { primeMeshcoreTraceRouteWithFallback } from '../lib/meshcoreTraceRoutePrime';
+import {
+  type MeshcoreTraceRoutePrimeMetrics,
+  primeMeshcoreTraceRouteWithFallback,
+} from '../lib/meshcoreTraceRoutePrime';
 import {
   coerceMeshcoreExportPrivateKeyResult,
   CONTACT_TYPE_LABELS,
@@ -579,7 +580,7 @@ export function useMeshcoreRuntime() {
   const prevStatsTimestampRef = useRef<number | null>(null);
   /** Periodic poll for local radio stats ({@link MESHCORE_STATS_POLL_MS}). */
   const meshcoreStatsPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  /** Auto-expire {@link MESHCORE_PING_NO_ROUTE_ERROR_MSG} after {@link MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS}. */
+  /** Clears pending no-route expiry timers when a new ping starts (legacy; errors persist until next ping). */
   const meshcorePingNoRouteExpiryTimersRef = useRef<Map<number, number>>(new Map());
 
   const clearMeshcorePingNoRouteExpiryTimer = useCallback((nodeId: number) => {
@@ -1706,7 +1707,11 @@ export function useMeshcoreRuntime() {
   useEffect(() => {
     return window.electronAPI.onNobleBleDisconnected((sessionId) => {
       if (sessionId !== 'meshcore') return;
-      if (bleConnectInProgressRef.current && !meshcoreDriverConnectedRef.current) {
+      if (
+        bleConnectInProgressRef.current &&
+        !meshcoreDriverConnectedRef.current &&
+        !connRef.current
+      ) {
         meshcoreDeferredReconnectRef.current = true;
         console.debug(
           '[useMeshcoreRuntime] Noble BLE disconnected — defer reconnect until connect settles',
@@ -2622,10 +2627,19 @@ export function useMeshcoreRuntime() {
       meshcoreReconnectAttemptRef.current === 0 &&
       !meshcoreIsReconnectingRef.current
     ) {
+      const hasStoredSession =
+        meshcoreConnectionParamsRef.current != null ||
+        rehydrateMeshcoreConnectionParamsFromStorage() != null;
+      if (!hasStoredSession) {
+        console.debug(
+          '[useMeshcoreRuntime] Connection lost before first configure — skip reconnect (auto-connect owns retry)',
+        );
+        return;
+      }
+      meshcoreConnectionParamsRef.current ??= rehydrateMeshcoreConnectionParamsFromStorage();
       console.debug(
-        '[useMeshcoreRuntime] Connection lost before first configure — skip reconnect (auto-connect owns retry)',
+        '[useMeshcoreRuntime] Connection lost with stored session before everConfigured — reconnecting',
       );
-      return;
     }
     if (!meshcoreConnectionParamsRef.current) {
       if (meshcoreExplicitDisconnectRef.current) return;
@@ -3757,6 +3771,20 @@ export function useMeshcoreRuntime() {
             return false;
           }
           if (!connAtEntry) {
+            const rehydrated =
+              meshcoreConnectionParamsRef.current ?? rehydrateMeshcoreConnectionParamsFromStorage();
+            if (rehydrated && !meshcoreConnectionParamsRef.current) {
+              meshcoreConnectionParamsRef.current = rehydrated;
+            }
+            if (rehydrated && !meshcoreExplicitDisconnectRef.current) {
+              setState((s) => ({ ...s, connectionLoss: true }));
+              if (!meshcoreIsReconnectingRef.current) {
+                console.debug(
+                  '[useMeshcoreRuntime] traceRoute: no live conn — scheduling reconnect',
+                );
+                queueMicrotask(() => handleMeshcoreConnectionLostRef.current());
+              }
+            }
             clearMeshcorePingNoRouteExpiryTimer(nodeId);
             setMeshcorePingErrors((prev) => {
               const next = new Map(prev);
@@ -3836,7 +3864,10 @@ export function useMeshcoreRuntime() {
               hasUsableStoredPath: Boolean(routeStoredPath && routeStoredPath.length > 1),
               canSynthesizePath,
             });
+            let routePrimeRan = false;
+            let routePrimeMetrics: MeshcoreTraceRoutePrimeMetrics | undefined;
             if (tracePlan.needsRoutePrime && primeStrategy !== 'none') {
+              routePrimeRan = true;
               const primed = await primeMeshcoreTraceRouteWithFallback({
                 conn,
                 nodeId,
@@ -3846,12 +3877,15 @@ export function useMeshcoreRuntime() {
                 existingPath: routeStoredPath,
                 initialStrategy: primeStrategy,
                 isAborted: isTraceAborted,
-                floodWhen: (metrics, hops) =>
-                  primeStrategy === 'passive' &&
-                  !metrics?.usableAfterPrime &&
-                  (hops ?? 0) >= 2 &&
-                  !canSynthesizePath,
+                floodWhen: (metrics, hops) => {
+                  if (primeStrategy !== 'passive' || metrics?.usableAfterPrime) return false;
+                  const h = hops ?? 0;
+                  if (h >= 2) return !canSynthesizePath;
+                  // 1-hop: passive often needs a flood advert to register PathUpdated before synthesis.
+                  return h === 1 && !metrics?.path129Received;
+                },
               });
+              routePrimeMetrics = primed.metrics;
               if (isTraceAborted()) return false;
               if (primed.metrics) {
                 console.debug(
@@ -3865,7 +3899,11 @@ export function useMeshcoreRuntime() {
               if (primed.path && primed.path.length > 0) {
                 routeStoredPath = primed.path;
               }
-              if (!routeStoredPath || routeStoredPath.length <= 1) {
+              if (
+                (!routeStoredPath || routeStoredPath.length <= 1) &&
+                radioContactPathLen != null &&
+                radioContactPathLen >= 0
+              ) {
                 try {
                   const selPrime = await usePathHistoryStore
                     .getState()
@@ -3899,23 +3937,32 @@ export function useMeshcoreRuntime() {
               pathByNodeId: outPathMapRef.current,
             });
             const outPath = pathResolved.outPath;
+            const floodPrimeExhausted =
+              routePrimeRan &&
+              routePrimeMetrics?.strategy === 'flood' &&
+              !routePrimeMetrics.usableAfterPrime &&
+              !routePrimeMetrics.path129Received;
             const hasResolvedPath =
-              pathResolved.composed || meshcoreIsUsableTraceStoredPath(outPath, hopsAway, pubKey);
-            if (pathResolved.composed) {
-              outPathMapRef.current.set(nodeId, outPath);
-              console.debug(
-                `[useMeshcoreRuntime] traceRoute: using synthesized multi-hop path for node ${nodeId} (${outPath.length} bytes)`,
-              );
-            }
-            if (
+              meshcoreIsUsableTraceStoredPath(outPath, hopsAway, pubKey) &&
+              (pathResolved.composed ||
+                Boolean(tracePlan.storedPath) ||
+                (routePrimeRan && !floodPrimeExhausted));
+            const shouldAbortPing =
+              (floodPrimeExhausted && !pathResolved.composed) ||
               meshcoreShouldAbortMultiHopPingNoRoute(
                 tracePlan.pathTooShort,
                 hopsAway,
                 uiSaysMultiHop,
                 radioSaysMultiHop,
                 hasResolvedPath,
-              )
-            ) {
+              );
+            if (pathResolved.composed) {
+              outPathMapRef.current.set(nodeId, outPath);
+              console.debug(
+                `[useMeshcoreRuntime] traceRoute: using synthesized multi-hop path for node ${nodeId} (${outPath.length} bytes)`,
+              );
+            }
+            if (shouldAbortPing) {
               console.debug(
                 '[useMeshcoreRuntime] traceRoute pingNoRoute ' +
                   formatStructuredLogDetail({
@@ -3932,12 +3979,6 @@ export function useMeshcoreRuntime() {
                 next.set(nodeId, MESHCORE_PING_NO_ROUTE_ERROR_MSG);
                 return next;
               });
-              const tid = window.setTimeout(() => {
-                if (!meshcoreHookMountedRef.current) return;
-                setMeshcorePingErrors((prev) => meshcorePingNoRouteErrorExpiryUpdate(prev, nodeId));
-                meshcorePingNoRouteExpiryTimersRef.current.delete(nodeId);
-              }, MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS);
-              meshcorePingNoRouteExpiryTimersRef.current.set(nodeId, tid);
               return false;
             }
             const attemptPathBytes = Array.from(outPath);

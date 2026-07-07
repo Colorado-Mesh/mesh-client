@@ -439,7 +439,14 @@ export default function RepeatersPanel({
 
   const handlePing = async (nodeId: number) => {
     try {
-      await onPing(nodeId);
+      const ok = await onPing(nodeId);
+      if (ok === false) {
+        const raw = meshcorePingErrors?.get(nodeId);
+        const message = raw
+          ? translateMeshcoreUserMessage(t, raw)
+          : t('meshcore.errors.requestFailed', { detail: 'ping failed' });
+        addToast(t('repeatersPanel.pingFailedToast', { message }), 'error');
+      }
     } catch (e) {
       console.warn('[RepeatersPanel] ping error ' + errLikeToLogString(e));
       addToast(
@@ -952,7 +959,31 @@ export default function RepeatersPanel({
                         <td className="py-2 pr-4">{reliabilityText}</td>
                         <td className="py-2">
                           <div className="flex flex-wrap gap-1">
-                            {pingHardDisabled && pingBlockReason ? (
+                            {pingErrorText ? (
+                              <HelpTooltip
+                                text={t('repeatersPanel.pingLastFailedTooltip', {
+                                  error: pingErrorText,
+                                })}
+                              >
+                                <span className="inline-flex">
+                                  <button
+                                    type="button"
+                                    onClick={() => void handlePing(node.node_id)}
+                                    disabled={!isConnected || isPingLoading}
+                                    aria-label={t('repeatersPanel.pingError', {
+                                      error: pingErrorText,
+                                    })}
+                                    className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60 disabled:opacity-40"
+                                  >
+                                    {isPingLoading ? (
+                                      <span className="inline-block h-3 w-3 animate-spin rounded-full border border-red-400 border-t-transparent" />
+                                    ) : (
+                                      t('repeatersPanel.buttonErrorShort')
+                                    )}
+                                  </button>
+                                </span>
+                              </HelpTooltip>
+                            ) : pingHardDisabled && pingBlockReason ? (
                               <HelpTooltip text={pingBlockReason}>
                                 <span className="inline-flex">
                                   <button
@@ -980,26 +1011,6 @@ export default function RepeatersPanel({
                                   </button>
                                 </span>
                               </HelpTooltip>
-                            ) : pingErrorText ? (
-                              <HelpTooltip
-                                text={t('repeatersPanel.pingLastFailedTooltip', {
-                                  error: pingErrorText,
-                                })}
-                              >
-                                <span className="inline-flex">
-                                  <button
-                                    type="button"
-                                    onClick={() => void handlePing(node.node_id)}
-                                    disabled={!isConnected}
-                                    aria-label={t('repeatersPanel.pingError', {
-                                      error: pingErrorText,
-                                    })}
-                                    className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60 disabled:opacity-40"
-                                  >
-                                    {t('repeatersPanel.buttonErrorShort')}
-                                  </button>
-                                </span>
-                              </HelpTooltip>
                             ) : (
                               <button
                                 type="button"
@@ -1014,6 +1025,11 @@ export default function RepeatersPanel({
                                 )}
                               </button>
                             )}
+                            {pingErrorText ? (
+                              <span className="basis-full text-[10px] leading-snug text-red-400">
+                                {pingErrorText}
+                              </span>
+                            ) : null}
                             {statusErrorText && !isStatusLoading ? (
                               <HelpTooltip
                                 text={t('repeatersPanel.statusLastFailedTooltip', {

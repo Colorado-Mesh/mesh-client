@@ -103,18 +103,31 @@ describe('planMeshcoreRepeaterTraceRoute', () => {
     expect(plan.outPathSeed).toEqual(relayPath);
   });
 
-  it('1-hop: prefers path history when map holds invalid full pubkey', () => {
+  it('1-hop: prefers path history when map holds invalid full pubkey and radio confirms route', () => {
     const historyPath = new Uint8Array([0xaa, 0xbb]);
     const plan = planMeshcoreRepeaterTraceRoute({
       storedPath: new Uint8Array(pubKey),
       hopsAway: 1,
       pubKey,
-      radioContactPathLen: null,
+      radioContactPathLen: 1,
       pathFromHistory: historyPath,
     });
     expect(plan.storedPath).toEqual(historyPath);
     expect(plan.needsRoutePrime).toBe(false);
     expect(plan.outPathSeed).toEqual(historyPath);
+  });
+
+  it('1-hop: ignores path history when radio reports no outbound path', () => {
+    const historyPath = new Uint8Array([0xaa, 0xbb]);
+    const plan = planMeshcoreRepeaterTraceRoute({
+      storedPath: undefined,
+      hopsAway: 1,
+      pubKey,
+      radioContactPathLen: -1,
+      pathFromHistory: historyPath,
+    });
+    expect(plan.storedPath).toBeUndefined();
+    expect(plan.needsRoutePrime).toBe(true);
   });
 });
 
@@ -197,7 +210,7 @@ describe('computeMeshcoreTracePrimeStrategy', () => {
     ).toBe('passive');
   });
 
-  it('skips prime when synthesis or stored path is available', () => {
+  it('still passive when synthesis is available but radio path is missing', () => {
     expect(
       computeMeshcoreTracePrimeStrategy({
         needsRoutePrime: true,
@@ -206,7 +219,7 @@ describe('computeMeshcoreTracePrimeStrategy', () => {
         hasUsableStoredPath: false,
         canSynthesizePath: true,
       }),
-    ).toBe('none');
+    ).toBe('passive');
   });
 });
 

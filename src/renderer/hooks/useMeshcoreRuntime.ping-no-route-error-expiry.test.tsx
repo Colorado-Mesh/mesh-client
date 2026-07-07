@@ -1,5 +1,5 @@
 /**
- * MeshCore ping error: “no route” message auto-expires after {@link MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS}.
+ * MeshCore ping error: “no route” message persists until the next ping attempt.
  */
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,8 +7,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { pubkeyToNodeId } from '../lib/meshcoreUtils';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 
-const { startMeshcoreTracePathMultiplexedMock } = vi.hoisted(() => ({
+const { startMeshcoreTracePathMultiplexedMock, getContactsMock } = vi.hoisted(() => ({
   startMeshcoreTracePathMultiplexedMock: vi.fn(),
+  getContactsMock: vi.fn().mockResolvedValue([]),
 }));
 vi.mock('../lib/meshcoreTracePathMultiplex', async (importOriginal) => {
   const actual = await importOriginal();
@@ -86,7 +87,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
     }
     close = vi.fn().mockResolvedValue(undefined);
     getSelfInfo = getSelfInfoMock;
-    getContacts = vi.fn().mockResolvedValue([]);
+    getContacts = getContactsMock;
     getChannels = vi.fn().mockResolvedValue([]);
     deviceQuery = vi.fn().mockResolvedValue({
       firmwareVer: 1,
@@ -320,7 +321,7 @@ describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
     vi.useRealTimers();
   });
 
-  it('clears the no-route ping error after the display duration (fake timers)', async () => {
+  it('keeps the no-route ping error until the next ping attempt', async () => {
     const port = makeMockSerialPort();
     Object.defineProperty(navigator, 'serial', {
       configurable: true,
@@ -366,7 +367,9 @@ describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
       await vi.advanceTimersByTimeAsync(MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS);
     });
 
-    expect(result.current.meshcorePingErrors.has(REMOTE_NODE_ID)).toBe(false);
+    expect(result.current.meshcorePingErrors.get(REMOTE_NODE_ID)).toBe(
+      MESHCORE_PING_NO_ROUTE_ERROR_MSG,
+    );
   });
 });
 
@@ -375,6 +378,19 @@ describe('useMeshcoreRuntime traceRoute path outcome attribution', () => {
     resetMeshcoreRuntimeElectronMocks();
     vi.mocked(window.electronAPI.db.getMeshcorePathHistory).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getAllMeshcorePathHistory).mockResolvedValue([]);
+    getContactsMock.mockReset();
+    getContactsMock.mockResolvedValue([
+      {
+        publicKey: REMOTE_PUBKEY,
+        advName: 'RemotePeer',
+        type: 1,
+        lastAdvert: 1_700_000_000,
+        advLat: 0,
+        advLon: 0,
+        outPath: new Uint8Array([0x11, 0x22, 0x33]),
+        outPathLen: 2,
+      },
+    ]);
     startMeshcoreTracePathMultiplexedMock.mockResolvedValue({
       pathLen: 2,
       pathHashes: [1, 2],

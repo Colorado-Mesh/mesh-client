@@ -28,7 +28,7 @@ vi.mock('../lib/meshcoreTracePathMultiplex', async (importOriginal) => {
   });
 });
 import {
-  computeMeshcoreTracePrimeWaitMs,
+  computeMeshcoreTracePrimeAggregateTimeoutMs,
   MESHCORE_PING_NO_ROUTE_ERROR_MSG,
   MESHCORE_TRACE_PRIME_MAX_ROUNDS,
 } from '../hooks/meshcore/meshcoreHookPreamble';
@@ -62,10 +62,14 @@ const REMOTE_PUBKEY_HEX = Array.from(REMOTE_PUBKEY)
 const SELF_PUBKEY = new Uint8Array(32).fill(0xab);
 const MY_NODE_ID = pubkeyToNodeId(SELF_PUBKEY);
 
-const TRACE_PRIME_WAIT_MS_PER_ROUND = computeMeshcoreTracePrimeWaitMs(1);
-const TRACE_PRIME_TOTAL_WAIT_MS = TRACE_PRIME_WAIT_MS_PER_ROUND * MESHCORE_TRACE_PRIME_MAX_ROUNDS;
-/** Passive 1-hop priming uses a single PathUpdated wait (not {@link MESHCORE_TRACE_PRIME_MAX_ROUNDS}). */
-const ONE_HOP_PASSIVE_PRIME_MS = TRACE_PRIME_WAIT_MS_PER_ROUND;
+const ONE_HOP_PASSIVE_AGGREGATE_MS = computeMeshcoreTracePrimeAggregateTimeoutMs(1, 1, 'passive');
+const ONE_HOP_FLOOD_AGGREGATE_MS = computeMeshcoreTracePrimeAggregateTimeoutMs(
+  1,
+  MESHCORE_TRACE_PRIME_MAX_ROUNDS,
+  'flood',
+);
+/** Passive priming plus optional 1-hop flood fallback when no PathUpdated (129). */
+const ONE_HOP_FULL_PRIME_MS = ONE_HOP_PASSIVE_AGGREGATE_MS + ONE_HOP_FLOOD_AGGREGATE_MS;
 
 function makeRadioContact(pubKey: Uint8Array, advName: string) {
   return {
@@ -358,7 +362,7 @@ describe('useMeshcoreRuntime traceRoute one-hop path synthesis', () => {
     let tracePromise: Promise<boolean>;
     await act(async () => {
       tracePromise = result.current.traceRoute(REMOTE_NODE_ID);
-      await vi.advanceTimersByTimeAsync(TRACE_PRIME_TOTAL_WAIT_MS);
+      await vi.advanceTimersByTimeAsync(ONE_HOP_FULL_PRIME_MS);
     });
 
     await act(async () => {
@@ -392,9 +396,7 @@ describe('useMeshcoreRuntime traceRoute one-hop path synthesis', () => {
     let tracePromise: Promise<boolean>;
     await act(async () => {
       tracePromise = result.current.traceRoute(REMOTE_NODE_ID);
-      // Advance only the passive prime wait — advancing TRACE_PRIME_TOTAL_WAIT_MS also
-      // fires the 20s pingNoRoute display expiry and clears meshcorePingErrors.
-      await vi.advanceTimersByTimeAsync(ONE_HOP_PASSIVE_PRIME_MS);
+      await vi.advanceTimersByTimeAsync(ONE_HOP_FULL_PRIME_MS);
     });
 
     await act(async () => {

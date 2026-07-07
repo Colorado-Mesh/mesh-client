@@ -303,7 +303,8 @@ export async function primeMeshcoreTraceRouteWithFallback(opts: {
     isAborted: opts.isAborted,
   });
   if (opts.isAborted?.()) return primed;
-  if (!opts.floodWhen?.(primed.metrics, opts.hopsAway)) return primed;
+  const runFlood = opts.floodWhen?.(primed.metrics, opts.hopsAway) ?? false;
+  if (!runFlood) return primed;
   const flooded = await primeMeshcoreTraceRoute({
     conn: opts.conn,
     nodeId: opts.nodeId,
