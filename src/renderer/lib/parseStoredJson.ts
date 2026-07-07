@@ -7,6 +7,10 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- T is for caller inference only
 export function parseStoredJson<T>(raw: string | null, context: string): T | null {
   if (raw == null || raw === '') return null;
+  if (typeof raw !== 'string') {
+    console.warn(`[parseStoredJson] ${context} failed expected string, got ${typeof raw}`);
+    return null;
+  }
   try {
     return JSON.parse(raw) as T;
   } catch (e) {
