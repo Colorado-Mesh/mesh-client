@@ -9,8 +9,28 @@ on:
       - 'v*'
   workflow_dispatch:
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  prepare-github-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Ensure draft GitHub release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/ci-ensure-github-draft-release.mjs
+
   release:
+    needs: prepare-github-release
+    if: ${{ !cancelled() && needs.prepare-github-release.result != 'failure' }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:

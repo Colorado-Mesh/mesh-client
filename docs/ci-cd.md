@@ -54,13 +54,14 @@ Test results are available as a downloadable artifact from the workflow run.
 
 Triggered by pushing a version tag (e.g., `v1.2.3`):
 
-1. Builds for all three platforms in parallel:
+1. **`prepare-github-release`** — creates a single draft GitHub release for the tag (prevents parallel electron-builder jobs from creating duplicate drafts and 404 asset uploads)
+2. Builds for all three platforms in parallel:
    - `macos-latest` → `pnpm run dist:mac:publish`
    - `ubuntu-latest` → `pnpm run dist:linux:publish`
    - `windows-latest` → `pnpm run dist:win:publish`
-2. Rebuilds native dependencies (`pnpm run rebuild`)
-3. Installs Linux build dependencies (`libudev-dev`, `rpm`)
-4. Publishes artifacts to GitHub Releases
+3. Rebuilds native dependencies (`pnpm run rebuild`)
+4. Installs Linux build dependencies (`libudev-dev`, `rpm`)
+5. Publishes artifacts to GitHub Releases
 
 Linux packaging smoke (`verify-linux-packaging.mjs`) asserts `.deb` **Description** metadata is ASCII-only. See [Release Process](release-process.md).
 
