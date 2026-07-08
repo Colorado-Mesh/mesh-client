@@ -195,6 +195,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          # Pin to workflow SHA — tag ref may move mid-run (e.g. recovery retag) and
+          # actions/checkout@v6 fails integrity check against github.sha.
+          ref: ${{ github.sha }}
 
       - name: Download build artifact
         uses: actions/download-artifact@v7
