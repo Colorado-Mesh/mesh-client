@@ -128,6 +128,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       getClientId: async () => '',
       getCachedNodes: async () => [],
       updateChannelKeys: noopAsync,
+      updateTopicPrefix: noopAsync,
       publish: async () => 1,
       publishProxy: noopAsync,
       publishNodeInfo: async () => 1,

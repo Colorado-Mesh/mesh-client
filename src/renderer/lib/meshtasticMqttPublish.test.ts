@@ -34,9 +34,20 @@ describe('resolveMeshtasticMqttChannelName', () => {
     ).toBe('LongFast');
   });
 
-  it('returns empty string for unnamed secondary (skip MQTT publish)', () => {
+  it('falls back to LongFast for unnamed default-public secondary', () => {
     expect(
       resolveMeshtasticMqttChannelName({ index: 1, name: '', role: 2, psk: new Uint8Array([1]) }),
+    ).toBe('LongFast');
+  });
+
+  it('returns empty string for unnamed secondary with non-default PSK (skip MQTT publish)', () => {
+    expect(
+      resolveMeshtasticMqttChannelName({
+        index: 1,
+        name: '',
+        role: 2,
+        psk: new Uint8Array(16).fill(9),
+      }),
     ).toBe('');
   });
 });
@@ -229,6 +240,20 @@ describe('meshtasticMqttChannelKeyEntries', () => {
     const entries = meshtasticMqttChannelKeyEntries([
       { index: 1, name: 'LongFast', role: 2, psk: new Uint8Array([1]) },
       { index: 0, name: 'Private', role: 1, psk: new Uint8Array(16).fill(9) },
+    ]);
+    expect(entries).toHaveLength(2);
+    expect(entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'LongFast', index: 1, pskBase64: 'AQ==' }),
+        expect.objectContaining({ name: 'Private', index: 0 }),
+      ]),
+    );
+  });
+
+  it('includes unnamed default-public LongFast at configured index for mqtt topic mapping', () => {
+    const entries = meshtasticMqttChannelKeyEntries([
+      { index: 0, name: 'Private', role: 1, psk: new Uint8Array(16).fill(9) },
+      { index: 1, name: '', role: 2, psk: new Uint8Array([1]) },
     ]);
     expect(entries).toHaveLength(2);
     expect(entries).toEqual(

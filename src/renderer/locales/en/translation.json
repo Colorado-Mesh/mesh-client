@@ -661,6 +661,7 @@
       "meshcoreDefault": "MESHCORE/[Country]/[State], e.g. MESHCORE/US/CO"
     },
     "topicPrefixPlaceholder": "msh/US/",
+    "radioMqttRootDivergesWarning": "Radio MQTT root topic is {{radioRoot}} but this panel subscribes to {{appPrefix}}. Match the radio to limit nationwide node traffic — update Topic Prefix and reconnect MQTT.",
     "maxRetries": "Max Retries",
     "maxRetriesHelp": {
       "meshtastic": "Reconnect attempts (1–{{max}}) before giving up.",
