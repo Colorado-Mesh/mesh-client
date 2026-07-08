@@ -202,7 +202,11 @@ async function readResponseBodyUpTo(
       total += slice.length;
     }
   } finally {
-    void reader.cancel();
+    try {
+      await reader.cancel();
+    } catch {
+      // catch-no-log-ok: stream may already be aborted when AbortSignal.timeout fires
+    }
   }
   if (total === 0) return null;
   const merged = new Uint8Array(total);
