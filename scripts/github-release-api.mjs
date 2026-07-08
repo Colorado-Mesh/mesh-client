@@ -236,29 +236,132 @@ export async function uploadReleaseAsset(releaseId, fileName, bytes, token) {
 
 /**
  * Delete empty duplicate draft releases for a tag. Returns the canonical release, if any.
+ * @deprecated Prefer normalizeDraftReleasesForTag, which also merges duplicates that hold assets.
  */
 export async function dedupeEmptyDraftReleases(tag, token, log = console.debug) {
+  return normalizeDraftReleasesForTag(tag, token, { log });
+}
+
+export async function downloadReleaseAsset(assetId, token) {
+  const response = await fetch(`${API_ROOT}/releases/assets/${assetId}`, {
+    headers: {
+      Accept: 'application/octet-stream',
+      Authorization: `Bearer ${token}`,
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+    redirect: 'follow',
+  });
+  if (!response.ok) {
+    fail(`Download release asset ${assetId} failed (${response.status})`);
+  }
+  return new Uint8Array(await response.arrayBuffer());
+}
+
+export async function consolidateReleases({ tag, token, targetCommitish, log = console.debug }) {
+  const releases = await listReleasesForTag(tag, token);
+  if (releases.length === 0) {
+    fail(`No releases found for ${tag}`);
+  }
+  if (releases.length === 1) {
+    log(`[github-release] Single release ${releases[0].id} — nothing to merge`);
+    return releases[0];
+  }
+
+  const keeper = pickCanonicalRelease(releases);
+  const keeperAssetNames = new Set((keeper.assets ?? []).map((asset) => asset.name));
+  let bestBody = keeper.body ?? '';
+  let moved = 0;
+
+  log(
+    `[github-release] Canonical release ${keeper.id} (${keeperAssetNames.size} assets); ` +
+      `${releases.length - 1} duplicate(s) to merge/delete`,
+  );
+
+  for (const release of releases) {
+    if (release.id === keeper.id) {
+      continue;
+    }
+
+    if ((release.body?.length ?? 0) > bestBody.length) {
+      bestBody = release.body;
+    }
+
+    for (const asset of release.assets ?? []) {
+      if (keeperAssetNames.has(asset.name)) {
+        log(
+          `[github-release] Skipping duplicate asset name ${asset.name} on release ${release.id}`,
+        );
+        await deleteReleaseAsset(asset.id, token);
+        continue;
+      }
+
+      log(`[github-release] Moving ${asset.name} from release ${release.id} → ${keeper.id}`);
+      const bytes = await downloadReleaseAsset(asset.id, token);
+      await uploadReleaseAsset(keeper.id, asset.name, bytes, token);
+      await deleteReleaseAsset(asset.id, token);
+      keeperAssetNames.add(asset.name);
+      moved += 1;
+    }
+
+    await deleteRelease(release.id, token);
+    log(`[github-release] Deleted duplicate release ${release.id} for ${tag}`);
+  }
+
+  const patch = {
+    tag_name: tag,
+    name: versionFromTag(tag),
+    draft: true,
+  };
+  if (targetCommitish) {
+    patch.target_commitish = targetCommitish;
+  }
+  if (bestBody && bestBody !== keeper.body) {
+    patch.body = bestBody;
+  }
+
+  const updated = await patchRelease(keeper.id, token, patch);
+  log(
+    `[github-release] Consolidated ${tag} — release ${updated.id} has ${updated.assets?.length ?? keeperAssetNames.size} assets (moved ${moved})`,
+  );
+  return updated;
+}
+
+/**
+ * Ensure at most one draft release exists for a tag. Merges split assets when parallel
+ * publish jobs forked duplicate drafts (including untagged-e* names matched by release name).
+ */
+export async function normalizeDraftReleasesForTag(
+  tag,
+  token,
+  { targetCommitish, log = console.debug } = {},
+) {
   const releases = await listReleasesForTag(tag, token);
   if (releases.length === 0) {
     return null;
   }
 
-  const keeper = pickCanonicalRelease(releases);
-  for (const release of releases) {
-    if (release.id === keeper.id) {
-      continue;
-    }
-    if ((release.assets?.length ?? 0) > 0) {
-      fail(
-        `Duplicate draft release ${release.id} for ${tag} still has ${release.assets.length} asset(s). ` +
-          'Run scripts/consolidate-github-release-duplicates.mjs before re-running CI.',
-      );
-    }
-    await deleteRelease(release.id, token);
-    log(`[github-release] Deleted empty duplicate release ${release.id} for ${tag}`);
+  if (releases.length > 1) {
+    return consolidateReleases({ tag, token, targetCommitish, log });
   }
 
-  return keeper;
+  const release = releases[0];
+  const patch = {};
+  if (release.tag_name !== tag) {
+    patch.tag_name = tag;
+    patch.name = versionFromTag(tag);
+    patch.draft = true;
+  }
+  if (targetCommitish && release.target_commitish !== targetCommitish) {
+    patch.target_commitish = targetCommitish;
+    patch.draft = true;
+  }
+  if (Object.keys(patch).length === 0) {
+    return release;
+  }
+
+  const updated = await patchRelease(release.id, token, patch);
+  log(`[github-release] Repaired release ${updated.id} metadata for ${tag}`);
+  return updated;
 }
 
 export async function ensureGithubDraftRelease({
@@ -267,16 +370,8 @@ export async function ensureGithubDraftRelease({
   targetCommitish,
   log = console.debug,
 }) {
-  let keeper = await dedupeEmptyDraftReleases(tag, token, log);
+  let keeper = await normalizeDraftReleasesForTag(tag, token, { targetCommitish, log });
   if (keeper) {
-    if (targetCommitish && keeper.target_commitish !== targetCommitish) {
-      keeper = await patchRelease(keeper.id, token, {
-        tag_name: tag,
-        target_commitish: targetCommitish,
-        draft: true,
-      });
-      log(`[ci-ensure-github-draft-release] Repaired target_commitish on release ${keeper.id}`);
-    }
     log(`[ci-ensure-github-draft-release] Using release ${keeper.id} for ${tag}`);
     return keeper;
   }

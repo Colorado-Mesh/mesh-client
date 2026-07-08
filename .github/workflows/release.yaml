@@ -179,9 +179,33 @@ jobs:
             release/win-x64-unpacked/**/*
           retention-days: 30
 
+  finalize-github-release:
+    name: Consolidate draft release assets
+    needs: release
+    if: ${{ !cancelled() && needs.release.result != 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Resolve release tag from package.json
+        id: release_tag
+        run: echo "value=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Consolidate duplicate draft releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_SHA: ${{ github.sha }}
+          RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
+        run: node scripts/ci-ensure-github-draft-release.mjs
+
   packaging-smoke:
     name: Smoke test ${{ matrix.label }}
-    needs: release
+    needs: [release, finalize-github-release]
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
