@@ -474,6 +474,38 @@ describe('fetchLinkPreview', () => {
     );
   });
 
+  it('returns null without unhandled rejection when body read times out', async () => {
+    const timeoutErr = new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+    const stream = new ReadableStream<Uint8Array>({
+      pull() {
+        return Promise.reject(timeoutErr);
+      },
+      cancel() {
+        return Promise.reject(timeoutErr);
+      },
+    });
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'text/html' }),
+        body: stream,
+      }),
+    );
+
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => {
+      unhandled.push(reason);
+    };
+    process.on('unhandledRejection', onUnhandled);
+    try {
+      expect(await fetchLinkPreview('https://example.com/slow')).toBeNull();
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
+  });
+
   it('uses port 80 for http URLs without explicit port', async () => {
     const html = `<meta property="og:title" content="HTTP Title">`;
     mockFetch.mockResolvedValue(makeStreamResponse(html));
