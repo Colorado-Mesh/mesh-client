@@ -30,6 +30,7 @@ import {
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import { clampTcpPort, parseTcpPortFromString } from '@/shared/tcpPort';
 
+import { useActiveMeshIdentity } from '../hooks/useActiveMeshIdentity';
 import { useNobleBleConnectMutexWait } from '../hooks/useNobleBleConnectMutexWait';
 import {
   flushPendingMqttSave,
@@ -66,6 +67,11 @@ import {
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
 import { meshcoreMqttUserFacingHint } from '../lib/meshcoreMqttUserHint';
 import {
+  meshtasticMqttTopicPrefixesDiverge,
+  meshtasticRadioMqttRootFromModuleConfigs,
+  normalizeMeshtasticMqttTopicPrefix,
+} from '../lib/meshtastic/meshtasticMqttTopicPrefixOverlay';
+import {
   formatChannelPskInput,
   parseChannelPskInput,
   validateChannelPskEntries,
@@ -92,6 +98,7 @@ import type {
   NobleBleDevice,
   SerialPortInfo,
 } from '../lib/types';
+import { useDeviceStore } from '../stores/deviceStore';
 import ConnectionBatteryGauge from './ConnectionBatteryGauge';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 import { HelpTooltip } from './HelpTooltip';
@@ -562,6 +569,19 @@ export default function ConnectionPanel({
   const activeMqttSettings = protocol === 'meshcore' ? meshcoreMqttSettings : mqttSettings;
   const setActiveMqttSettings = protocol === 'meshcore' ? setMeshcoreMqttSettings : setMqttSettings;
   const activeMqttTls = mqttUsesTls(activeMqttSettings);
+  const { focusedIdentityId } = useActiveMeshIdentity(protocol);
+  const radioModuleConfigs = useDeviceStore((s) =>
+    protocol === 'meshtastic' && focusedIdentityId
+      ? (s.devices[focusedIdentityId]?.moduleConfigs ?? null)
+      : null,
+  );
+  const radioMqttRoot =
+    protocol === 'meshtastic' && state.status === 'configured' && radioModuleConfigs
+      ? meshtasticRadioMqttRootFromModuleConfigs(radioModuleConfigs)
+      : null;
+  const radioMqttRootDiverges =
+    radioMqttRoot != null &&
+    meshtasticMqttTopicPrefixesDiverge(activeMqttSettings.topicPrefix, radioMqttRoot);
 
   const updateMqtt = <K extends keyof MQTTSettings>(
     key: K,
@@ -2499,6 +2519,14 @@ export default function ConnectionPanel({
               className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
               placeholder={t('connectionPanel.topicPrefixPlaceholder')}
             />
+            {radioMqttRootDiverges ? (
+              <p className="text-xs text-amber-400" role="status">
+                {t('connectionPanel.radioMqttRootDivergesWarning', {
+                  radioRoot: radioMqttRoot,
+                  appPrefix: normalizeMeshtasticMqttTopicPrefix(activeMqttSettings.topicPrefix),
+                })}
+              </p>
+            ) : null}
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">

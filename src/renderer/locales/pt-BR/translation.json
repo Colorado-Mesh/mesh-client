@@ -1012,7 +1012,8 @@
       "txQueueDropsHint": "Geralmente causado por uma interface TCP inativa ainda ativada. Desative os hubs inacessíveis para interromper o estouro da fila.",
       "suppressed": "{{count}} linhas de registro de sidecar semelhantes foram suprimidas recentemente."
     },
-    "reticulumSidecarBundledMissing": "Esta instalação não contém o sidecar Reticulum incluído. Atualize para uma versão mais recente ou relate o problema – a compilação a partir do código-fonte não está disponível em instalações empacotadas."
+    "reticulumSidecarBundledMissing": "Esta instalação não contém o sidecar Reticulum incluído. Atualize para uma versão mais recente ou relate o problema – a compilação a partir do código-fonte não está disponível em instalações empacotadas.",
+    "radioMqttRootDivergesWarning": "O tópico raiz do MQTT de rádio é {{radioRoot}}, mas este painel assina {{appPrefix}}. Combine o rádio para limitar o tráfego de nós em todo o país — atualize o Prefixo do Tópico e reconecte o MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",

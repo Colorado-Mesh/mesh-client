@@ -38,6 +38,7 @@ import {
   resolveMeshtasticMqttPublishFieldsForChannel,
   type ResolveMeshtasticMqttPublishOptions,
 } from '@/renderer/lib/meshtasticMqttPublish';
+import { readMeshtasticMqttSettingsFromStorage } from '@/renderer/lib/meshtasticMqttSettingsStorage';
 import {
   type ApplyChannelSetResult,
   channelNameExists,
@@ -102,6 +103,11 @@ import {
   isMeshtasticMqttProxyActive,
   mqttSettingsFromMeshtasticModuleConfig,
 } from '../lib/meshtastic/meshtasticMqttModuleSettings';
+import {
+  meshtasticMqttTopicPrefixesDiverge,
+  meshtasticRadioMqttRootFromModuleConfigs,
+  overlayMeshtasticMqttTopicPrefixForRadio,
+} from '../lib/meshtastic/meshtasticMqttTopicPrefixOverlay';
 import {
   meshtasticXmodemDownload,
   meshtasticXmodemUpload,
@@ -592,6 +598,36 @@ export function useMeshtasticRuntime() {
   useEffect(() => {
     pushMqttChannelKeys();
   }, [channelConfigs, mqttStatus, pushMqttChannelKeys]);
+
+  const overlayMqttTopicPrefixFromRadioRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (mqttStatus !== 'connected') {
+      overlayMqttTopicPrefixFromRadioRef.current = null;
+    }
+  }, [mqttStatus]);
+
+  useEffect(() => {
+    if (state.status !== 'configured') return;
+    if (isMeshtasticMqttProxyActive(moduleConfigs)) return;
+    if (mqttStatusRef.current !== 'connected') return;
+
+    const radioRoot = meshtasticRadioMqttRootFromModuleConfigs(moduleConfigs);
+    if (!radioRoot) return;
+
+    const appSettings = readMeshtasticMqttSettingsFromStorage();
+    if (!meshtasticMqttTopicPrefixesDiverge(appSettings.topicPrefix, radioRoot)) return;
+
+    const overlay = overlayMeshtasticMqttTopicPrefixForRadio(appSettings.topicPrefix, radioRoot);
+    if (overlayMqttTopicPrefixFromRadioRef.current === overlay) return;
+    overlayMqttTopicPrefixFromRadioRef.current = overlay;
+
+    if (overlay === appSettings.topicPrefix.trim()) return;
+
+    void window.electronAPI.mqtt.updateTopicPrefix({ topicPrefix: overlay }).catch((e: unknown) => {
+      console.warn('[useMeshtasticRuntime] mqtt.updateTopicPrefix failed ' + errLikeToLogString(e));
+    });
+  }, [moduleConfigs, state.status]);
 
   // ─── Packet dedup helper (shared by RF and MQTT handlers) ──────
   const isDuplicate = useCallback((senderId: number, packetId: number): boolean => {

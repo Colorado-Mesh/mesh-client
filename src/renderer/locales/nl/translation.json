@@ -1012,7 +1012,8 @@
       "txQueueDropsHint": "Meestal veroorzaakt door een dode TCP-interface die nog steeds is ingeschakeld. Schakel onbereikbare hubs uit om wachtrijoverloop te stoppen.",
       "suppressed": "{{count}} vergelijkbare zijspanlogregels die onlangs zijn onderdrukt."
     },
-    "reticulumSidecarBundledMissing": "Bij deze installatie ontbreekt het gebundelde Reticulum sidecar. Upgrade naar een nieuwere release of rapporteer het probleem: bouwen vanaf de broncode is niet beschikbaar in pakketinstallaties."
+    "reticulumSidecarBundledMissing": "Bij deze installatie ontbreekt het gebundelde Reticulum sidecar. Upgrade naar een nieuwere release of rapporteer het probleem: bouwen vanaf de broncode is niet beschikbaar in pakketinstallaties.",
+    "radioMqttRootDivergesWarning": "Radio MQTT-hoofdonderwerp is {{radioRoot}}, maar dit paneel is geabonneerd op {{appPrefix}}. Koppel de radio om landelijk knooppuntverkeer te beperken — werk het onderwerpvoorvoegsel bij en sluit MQTT opnieuw aan."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

@@ -823,6 +823,15 @@ function validateMqttUpdateChannelKeysArgs(args: unknown): void {
   }
 }
 
+function validateMqttUpdateTopicPrefixArgs(args: unknown): void {
+  if (!args || typeof args !== 'object')
+    throw new Error('mqtt:updateTopicPrefix: args must be an object');
+  const a = args as Record<string, unknown>;
+  if (typeof a.topicPrefix !== 'string')
+    throw new Error('mqtt:updateTopicPrefix: topicPrefix must be a string');
+  if (a.topicPrefix.length > 128) throw new Error('mqtt:updateTopicPrefix: topicPrefix too long');
+}
+
 function validateMqttPublishArgs(args: unknown): void {
   if (!args || typeof args !== 'object') throw new Error('mqtt:publish: args must be an object');
   const a = args as Record<string, unknown>;
@@ -2919,6 +2928,20 @@ ipcMain.handle('mqtt:updateChannelKeys', (_event, args) => {
   } catch (err) {
     console.error(
       '[IPC] mqtt:updateChannelKeys failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+ipcMain.handle('mqtt:updateTopicPrefix', (_event, args) => {
+  try {
+    console.debug('[IPC] mqtt:updateTopicPrefix');
+    validateMqttUpdateTopicPrefixArgs(args);
+    const a = args as { topicPrefix: string };
+    mqttManager.updateTopicPrefix(a.topicPrefix);
+  } catch (err) {
+    console.error(
+      '[IPC] mqtt:updateTopicPrefix failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;

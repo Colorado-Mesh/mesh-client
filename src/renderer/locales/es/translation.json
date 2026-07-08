@@ -1012,7 +1012,8 @@
       "txQueueDropsHint": "Por lo general, es causada por una interfaz TCP muerta que aún está habilitada. Deshabilite los concentradores inalcanzables para detener el desbordamiento de la cola.",
       "suppressed": "{{count}} líneas de registro de sidecar similares suprimidas recientemente."
     },
-    "reticulumSidecarBundledMissing": "A esta instalación le falta el sidecar Reticulum incluido. Actualice a una versión más reciente o informe el problema: la compilación desde el código fuente no está disponible en instalaciones empaquetadas."
+    "reticulumSidecarBundledMissing": "A esta instalación le falta el sidecar Reticulum incluido. Actualice a una versión más reciente o informe el problema: la compilación desde el código fuente no está disponible en instalaciones empaquetadas.",
+    "radioMqttRootDivergesWarning": "El tema raíz de MQTT de radio es {{radioRoot}}, pero este panel se suscribe a {{appPrefix}}. Haga coincidir la radio para limitar el tráfico de nodos a nivel nacional: actualice el prefijo del tema y vuelva a conectar MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",

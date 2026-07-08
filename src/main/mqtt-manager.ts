@@ -295,6 +295,8 @@ export class MQTTManager extends EventEmitter {
   private keepaliveRescheduleTimer: ReturnType<typeof setInterval> | null = null;
   private sampledDebugLogs = new Map<string, SampledDebugLogState>();
   private badEnvelopeSignatures = new Map<string, number>(); // signature -> expiry timestamp
+  /** Last wildcard topic subscribed (`{prefix}#`); cleared on disconnect. */
+  private subscribedWildcardTopic: string | null = null;
   private static MAX_SAMPLED_LOGS = 1000;
   /** Wall time at start of last `_doConnect` (CONNACK timing in connect logs). */
   private meshtasticConnectT0 = 0;
@@ -444,6 +446,74 @@ export class MQTTManager extends EventEmitter {
     return 0;
   }
 
+  private wildcardSubscribeTopicForPrefix(topicPrefix: string): string {
+    const prefix = topicPrefix.endsWith('/') ? topicPrefix : `${topicPrefix}/`;
+    return `${prefix}#`;
+  }
+
+  private subscribeWildcardTopic(topic: string): void {
+    if (!this.client?.connected) return;
+    if (this.subscribedWildcardTopic === topic) return;
+    const previous = this.subscribedWildcardTopic;
+    this.subscribedWildcardTopic = topic;
+    const doSubscribe = () => {
+      if (!this.client?.connected) return;
+      this.client.subscribe(topic, (err) => {
+        if (err) {
+          const isCascade =
+            err.message.toLowerCase().includes('connection closed') ||
+            err.message.toLowerCase().includes('connection reset');
+          if (isCascade) {
+            console.warn(
+              '[Meshtastic MQTT] Subscribe interrupted (will retry on reconnect):',
+              sanitizeLogMessage(err.message),
+            );
+          } else {
+            console.error('[Meshtastic MQTT] Subscribe failed:', sanitizeLogMessage(err.message)); // log-filter-ok Meshtastic MQTT logs → App log panel
+            this.setError(`Subscribe failed: ${err.message}`);
+          }
+        } else {
+          this.retryCount = 0;
+          console.debug('[Meshtastic MQTT] Subscribed to', topic); // log-filter-ok Meshtastic MQTT logs → App log panel
+        }
+      });
+    };
+    if (previous && previous !== topic) {
+      this.client.unsubscribe(previous, (err) => {
+        if (err) {
+          console.warn(
+            '[Meshtastic MQTT] Unsubscribe failed before resubscribe:',
+            sanitizeLogMessage(err.message),
+          );
+        }
+        doSubscribe();
+      });
+      return;
+    }
+    doSubscribe();
+  }
+
+  /** Live-session overlay: resubscribe when radio mqtt.root is more specific than Connection panel prefix. */
+  updateTopicPrefix(topicPrefix: string): void {
+    if (!this.currentSettings) return;
+    if (/[+#]/.test(topicPrefix)) {
+      throw new Error(
+        `MQTT topicPrefix must not contain wildcard characters '+' or '#': ${topicPrefix}`,
+      );
+    }
+    const trimmed = topicPrefix.trim();
+    if (!trimmed) return;
+    const nextTopic = this.wildcardSubscribeTopicForPrefix(trimmed);
+    if (
+      this.wildcardSubscribeTopicForPrefix(this.currentSettings.topicPrefix) === nextTopic &&
+      this.subscribedWildcardTopic === nextTopic
+    ) {
+      return;
+    }
+    this.currentSettings = { ...this.currentSettings, topicPrefix: trimmed };
+    this.subscribeWildcardTopic(nextTopic);
+  }
+
   private clearConnectAckTimer(): void {
     if (this.connectAckTimer) {
       clearTimeout(this.connectAckTimer);
@@ -575,33 +645,8 @@ export class MQTTManager extends EventEmitter {
       // Guard: only subscribe if still connected
       if (!this.client?.connected) return;
 
-      // Normalize prefix: ensure it ends with "/" before appending the wildcard
-      const prefix = settings.topicPrefix.endsWith('/')
-        ? settings.topicPrefix
-        : `${settings.topicPrefix}/`;
-      const topic = `${prefix}#`;
-      this.client.subscribe(topic, (err) => {
-        if (err) {
-          // "Connection closed" is a cascade from a network reset — not fatal,
-          // the client will reconnect and resubscribe automatically.
-          const isCascade =
-            err.message.toLowerCase().includes('connection closed') ||
-            err.message.toLowerCase().includes('connection reset');
-          if (isCascade) {
-            console.warn(
-              '[Meshtastic MQTT] Subscribe interrupted (will retry on reconnect):',
-              sanitizeLogMessage(err.message),
-            );
-          } else {
-            console.error('[Meshtastic MQTT] Subscribe failed:', sanitizeLogMessage(err.message)); // log-filter-ok Meshtastic MQTT logs → App log panel
-            this.setError(`Subscribe failed: ${err.message}`);
-          }
-        } else {
-          // Only reset retry count after a fully stable connection + subscribe
-          this.retryCount = 0;
-          console.debug('[Meshtastic MQTT] Subscribed to', topic); // log-filter-ok Meshtastic MQTT logs → App log panel
-        }
-      });
+      const topic = this.wildcardSubscribeTopicForPrefix(settings.topicPrefix);
+      this.subscribeWildcardTopic(topic);
 
       if (settings.useWebSocket) {
         this.clearWssPing();
@@ -1088,6 +1133,7 @@ export class MQTTManager extends EventEmitter {
     }
     this.clearWssPing();
     this.clearKeepaliveReschedule();
+    this.subscribedWildcardTopic = null;
     this.currentSettings = null;
     this.retryCount = 0;
     if (this.client) {

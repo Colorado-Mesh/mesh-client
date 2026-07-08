@@ -1619,6 +1619,76 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
     expect((messages[0] as { channel: number }).channel).toBe(1);
   });
 
+  it('attributes LongFast topic to slot 1 from renderer unnamed default-public entry shape', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+
+    // Shape emitted by meshtasticMqttChannelKeyEntries when slot 1 has empty name + AQ== PSK.
+    manager.updateChannelKeys([
+      { name: 'Private', pskBase64: Buffer.alloc(16, 9).toString('base64'), index: 0 },
+      { name: 'LongFast', pskBase64: 'AQ==', index: 1 },
+    ]);
+
+    const nodeId = 0x11223366;
+    const packetId = 0x00000035;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('unnamed longfast slot 1'),
+      }),
+    );
+    const payload = buildEnvelope({ nodeId, packetId, dataBytes, psk: DEFAULT_PSK });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/CO/2/e/LongFast/!11223366', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(1);
+  });
+
+  it('resubscribes to a more specific topic prefix without reconnecting', () => {
+    const manager = new MQTTManager();
+    const mockClient = {
+      on: vi.fn(),
+      end: vi.fn(),
+      removeAllListeners: vi.fn(),
+      connected: true,
+      subscribe: vi.fn((_topic: string, cb: (err: Error | null) => void) => {
+        cb(null);
+      }),
+      unsubscribe: vi.fn((_topic: string, cb: () => void) => {
+        cb();
+      }),
+      publish: vi.fn(),
+    };
+    (manager as any).client = mockClient;
+    (manager as any).currentSettings = {
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/US/',
+      autoLaunch: false,
+    };
+    (manager as any).subscribedWildcardTopic = 'msh/US/#';
+
+    manager.updateTopicPrefix('msh/US/CO');
+
+    expect(mockClient.unsubscribe).toHaveBeenCalledWith('msh/US/#', expect.any(Function));
+    expect(mockClient.subscribe).toHaveBeenCalledWith('msh/US/CO/#', expect.any(Function));
+    expect((manager as any).currentSettings.topicPrefix).toBe('msh/US/CO');
+  });
+
   it('attributes unknown topic channel names to channel 0', () => {
     const manager = new MQTTManager();
     (manager as any)._doConnect = () => {};

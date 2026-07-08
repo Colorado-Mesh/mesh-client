@@ -455,6 +455,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getCachedNodes: () => ipcRenderer.invoke('mqtt:getCachedNodes'),
     updateChannelKeys: (args: { entries: { name: string; pskBase64: string; index?: number }[] }) =>
       ipcRenderer.invoke('mqtt:updateChannelKeys', args),
+    updateTopicPrefix: (args: { topicPrefix: string }) =>
+      ipcRenderer.invoke('mqtt:updateTopicPrefix', args),
     publish: (args: {
       text: string;
       from: number;

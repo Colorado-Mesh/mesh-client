@@ -1012,7 +1012,8 @@
       "txQueueDropsHint": "Di solito causato da un'interfaccia TCP morta ancora abilitata. Disabilita gli hub non raggiungibili per interrompere l'overflow della coda.",
       "suppressed": "{{count}} righe di registro sidecar simili soppresse di recente."
     },
-    "reticulumSidecarBundledMissing": "In questa installazione manca il sidecar Reticulum in bundle. Esegui l'upgrade a una versione più recente o segnala il problema: la creazione dal codice sorgente non è disponibile nelle installazioni in pacchetto."
+    "reticulumSidecarBundledMissing": "In questa installazione manca il sidecar Reticulum in bundle. Esegui l'upgrade a una versione più recente o segnala il problema: la creazione dal codice sorgente non è disponibile nelle installazioni in pacchetto.",
+    "radioMqttRootDivergesWarning": "L'argomento principale di Radio MQTT è {{radioRoot}}, ma questo panel si iscrive a {{appPrefix}}. Abbina la radio per limitare il traffico dei nodi a livello nazionale: aggiorna il prefisso dell'argomento e ricollega MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",

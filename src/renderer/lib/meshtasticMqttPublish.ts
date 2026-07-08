@@ -36,13 +36,14 @@ export interface ResolveMeshtasticMqttPublishOptions {
   preferManualOverRadio?: boolean;
 }
 
-/** MQTT topic channel name: configured name, or LongFast for unnamed primary. Unnamed secondary returns empty (skip MQTT). */
+/** MQTT topic channel name: configured name, LongFast for unnamed primary, or unnamed default-public at any slot. */
 export function resolveMeshtasticMqttChannelName(
   chCfg: MeshtasticChannelConfigForMqtt | undefined,
 ): string {
   const trimmed = chCfg?.name?.trim();
   if (trimmed) return trimmed;
   if (chCfg?.index === 0) return 'LongFast';
+  if (chCfg && isMeshtasticDefaultPublicPsk(chCfg.psk)) return 'LongFast';
   return '';
 }
 

@@ -573,6 +573,7 @@ export interface ElectronAPI {
     updateChannelKeys: (args: {
       entries: { name: string; pskBase64: string; index?: number }[];
     }) => Promise<void>;
+    updateTopicPrefix: (args: { topicPrefix: string }) => Promise<void>;
     publish: (args: {
       text: string;
       from: number;

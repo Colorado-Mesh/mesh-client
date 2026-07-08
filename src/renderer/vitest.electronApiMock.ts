@@ -143,6 +143,7 @@ export function createElectronAPIMock(): ElectronAPI {
       getClientId: vi.fn().mockResolvedValue(''),
       getCachedNodes: vi.fn().mockResolvedValue([]),
       updateChannelKeys: vi.fn().mockResolvedValue(undefined),
+      updateTopicPrefix: vi.fn().mockResolvedValue(undefined),
       publish: vi.fn().mockResolvedValue(1),
       publishProxy: vi.fn().mockResolvedValue(undefined),
       publishNodeInfo: vi.fn().mockResolvedValue(1),

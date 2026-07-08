@@ -1012,7 +1012,8 @@
       "txQueueDropsHint": "Obvykle je to způsobeno stále povoleným mrtvým rozhraním TCP. Zakažte nedosažitelné rozbočovače pro zastavení přetečení fronty.",
       "suppressed": "{{count}} podobné řádky protokolu postranního vozíku byly nedávno potlačeny."
     },
-    "reticulumSidecarBundledMissing": "V této instalaci chybí přibalený Reticulum sidecar. Upgradujte na novější verzi nebo nahlaste problém – sestavení ze zdroje není v balených instalacích k dispozici."
+    "reticulumSidecarBundledMissing": "V této instalaci chybí přibalený Reticulum sidecar. Upgradujte na novější verzi nebo nahlaste problém – sestavení ze zdroje není v balených instalacích k dispozici.",
+    "radioMqttRootDivergesWarning": "Kořenové téma rádia MQTT je {{radioRoot}}, ale tento panel odebírá {{appPrefix}}. Přizpůsobením rádia omezíte celostátní provoz uzlů — aktualizujte předponu tématu a znovu připojte MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

@@ -1012,7 +1012,8 @@
       "txQueueDropsHint": "Généralement causé par une interface TCP morte toujours activée. Désactivez les concentrateurs inaccessibles pour arrêter le débordement de la file d'attente.",
       "suppressed": "{{count}} lignes de bûches de side-car similaires supprimées récemment."
     },
-    "reticulumSidecarBundledMissing": "Cette installation ne dispose pas du side-car Reticulum fourni. Effectuez une mise à niveau vers une version plus récente ou signalez le problème : la création à partir des sources n'est pas disponible dans les installations packagées."
+    "reticulumSidecarBundledMissing": "Cette installation ne dispose pas du side-car Reticulum fourni. Effectuez une mise à niveau vers une version plus récente ou signalez le problème : la création à partir des sources n'est pas disponible dans les installations packagées.",
+    "radioMqttRootDivergesWarning": "Le sujet racine du MQTT radio est {{radioRoot}}, mais ce panneau est abonné à {{appPrefix}}. Faites correspondre la radio pour limiter le trafic des nœuds à l'échelle nationale — mettez à jour le préfixe du sujet et reconnectez le MQTT."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",
