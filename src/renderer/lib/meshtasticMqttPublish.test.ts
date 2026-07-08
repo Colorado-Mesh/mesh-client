@@ -210,9 +210,23 @@ describe('meshtasticMqttChannelKeyEntries', () => {
     expect(entries).toEqual([expect.objectContaining({ name: 'HamNet', index: 2 })]);
   });
 
-  it('skips default public single-byte PSK (AQ==)', () => {
+  it('includes default public LongFast at configured index for mqtt topic mapping', () => {
     const entries = meshtasticMqttChannelKeyEntries([
-      { index: 0, name: 'LongFast', role: 1, psk: new Uint8Array([1]) },
+      { index: 1, name: 'LongFast', role: 2, psk: new Uint8Array([1]) },
+      { index: 0, name: 'Private', role: 1, psk: new Uint8Array(16).fill(9) },
+    ]);
+    expect(entries).toHaveLength(2);
+    expect(entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'LongFast', index: 1, pskBase64: 'AQ==' }),
+        expect.objectContaining({ name: 'Private', index: 0 }),
+      ]),
+    );
+  });
+
+  it('skips empty PSK channels', () => {
+    const entries = meshtasticMqttChannelKeyEntries([
+      { index: 0, name: 'Empty', role: 1, psk: new Uint8Array(0) },
       { index: 1, name: 'Private', role: 2, psk: new Uint8Array(16).fill(9) },
     ]);
     expect(entries).toHaveLength(1);

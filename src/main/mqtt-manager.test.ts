@@ -1293,6 +1293,45 @@ describe('updateChannelKeys', () => {
     expect(byName.get('LongFast')?.equals(CUSTOM_PSK)).toBe(true);
   });
 
+  it('records LongFast index when radio sync pushes default public PSK', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+      channelPsks: [`LongFast=${CUSTOM_PSK.toString('base64')}`],
+    });
+
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 1 }]);
+
+    const byName: Map<string, Buffer> = (manager as any).channelKeysByName;
+    expect(byName.get('LongFast')?.equals(CUSTOM_PSK)).toBe(true);
+    const nameToIndex: Map<string, number> = (manager as any).channelNameToIndex;
+    expect(nameToIndex.get('LongFast')).toBe(1);
+  });
+
+  it('stores LongFast index mapping from default public radio sync', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 1 }]);
+
+    const nameToIndex: Map<string, number> = (manager as any).channelNameToIndex;
+    expect(nameToIndex.get('LongFast')).toBe(1);
+  });
+
   it('preserves manual Garber PSK when radio sync pushes a different key', () => {
     const manager = new MQTTManager();
     (manager as any)._doConnect = () => {};
@@ -1545,6 +1584,39 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
 
     expect(messages).toHaveLength(1);
     expect((messages[0] as { channel: number }).channel).toBe(0);
+  });
+
+  it('attributes LongFast topic to configured non-zero slot', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 1 }]);
+
+    const nodeId = 0x11223355;
+    const packetId = 0x00000034;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('hello longfast slot 1'),
+      }),
+    );
+    const payload = buildEnvelope({ nodeId, packetId, dataBytes, psk: DEFAULT_PSK });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!11223355', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(1);
   });
 
   it('attributes unknown topic channel names to channel 0', () => {
