@@ -8,6 +8,12 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Platforms to build (all, mac, linux, win, or comma-separated)'
+        required: false
+        default: all
+        type: string
 
 concurrency:
   group: release-${{ github.ref }}
@@ -29,8 +35,24 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
         run: node scripts/ci-ensure-github-draft-release.mjs
 
-  release:
+  resolve-release-matrix:
     needs: prepare-github-release
+    if: ${{ !cancelled() && needs.prepare-github-release.result != 'failure' }}
+    runs-on: ubuntu-latest
+    outputs:
+      include: ${{ steps.matrix.outputs.include }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Resolve release matrix
+        id: matrix
+        env:
+          RELEASE_PLATFORMS: ${{ github.event_name == 'workflow_dispatch' && inputs.platforms || 'all' }}
+        run: echo "include=$(node scripts/resolve-release-matrix.mjs)" >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: [prepare-github-release, resolve-release-matrix]
     if: ${{ !cancelled() && needs.prepare-github-release.result != 'failure' }}
     runs-on: ${{ matrix.os }}
     defaults:
@@ -40,19 +62,7 @@ jobs:
       contents: write
     strategy:
       matrix:
-        include:
-          - os: macos-latest
-            build_script: pnpm run dist:mac:publish
-            sidecar_platform: darwin
-            rust_targets: aarch64-apple-darwin
-          - os: ubuntu-latest
-            build_script: pnpm run dist:linux:publish
-            sidecar_platform: linux
-            rust_targets: x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu
-          - os: windows-latest
-            build_script: pnpm run dist:win:publish
-            sidecar_platform: win32
-            rust_targets: x86_64-pc-windows-msvc,aarch64-pc-windows-msvc
+        include: ${{ fromJSON(needs.resolve-release-matrix.outputs.include) }}
 
     steps:
       - name: Checkout code
