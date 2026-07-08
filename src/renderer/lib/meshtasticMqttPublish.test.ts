@@ -14,7 +14,7 @@ import {
 } from './meshtasticMqttPublish';
 
 const KEY_AES256 = 'AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=';
-const KEY_B = 'AAAAAAAAAAAAAAAAAAAAAA==';
+const KEY_AES128_ZEROS = 'AAAAAAAAAAAAAAAAAAAAAA==';
 
 describe('resolveMeshtasticMqttChannelName', () => {
   it('uses configured channel name when set', () => {
@@ -115,9 +115,13 @@ describe('resolveMeshtasticMqttPublishFieldsForChannel', () => {
   });
 
   it('uses @index manual entry for secondary channel', () => {
-    const fields = resolveMeshtasticMqttPublishFieldsForChannel(3, [], [`Garber@3=${KEY_B}`]);
+    const fields = resolveMeshtasticMqttPublishFieldsForChannel(
+      3,
+      [],
+      [`Garber@3=${KEY_AES128_ZEROS}`],
+    );
     expect(fields.channelName).toBe('Garber');
-    expect(fields.pskBase64).toBe(KEY_B);
+    expect(fields.pskBase64).toBe(KEY_AES128_ZEROS);
   });
 
   it('returns empty channel name for unnamed secondary channel without manual entry', () => {
@@ -145,12 +149,23 @@ describe('buildMeshtasticMqttOnlyChannelState', () => {
   it('builds two channel tabs from @index manual lines', () => {
     const state = buildMeshtasticMqttOnlyChannelState([
       `LongFast@0=${KEY_AES256}`,
-      `TGIFMESH@1=${KEY_B}`,
+      `TGIFMESH@1=${KEY_AES128_ZEROS}`,
     ]);
     expect(state.channels).toHaveLength(2);
     expect(state.channels.map((c) => c.index)).toEqual([0, 1]);
     expect(state.channelConfigs[0]?.psk.length).toBe(32);
     expect(state.channelConfigs[1]?.name).toBe('TGIFMESH');
+  });
+
+  it('populates channel 0 from a bare PSK alongside named secondary entries', () => {
+    const state = buildMeshtasticMqttOnlyChannelState([`HamNet@1=${KEY_AES256}`, KEY_AES256]);
+    expect(state.channels.map((c) => c.index)).toEqual([0, 1]);
+    const primary = state.channelConfigs.find((c) => c.index === 0);
+    expect(primary?.name).toBe('LongFast');
+    expect(primary?.role).toBe(1);
+    expect(primary?.psk.length).toBe(32);
+    const secondary = state.channelConfigs.find((c) => c.index === 1);
+    expect(secondary?.name).toBe('HamNet');
   });
 });
 
@@ -171,9 +186,9 @@ describe('loadMeshtasticMqttManualChannelPsks', () => {
   it('reads channelPsks from mesh-client:mqttSettings', () => {
     localStorage.setItem(
       'mesh-client:mqttSettings',
-      JSON.stringify({ channelPsks: [`HamNet=${KEY_B}`] }),
+      JSON.stringify({ channelPsks: [`HamNet=${KEY_AES128_ZEROS}`] }),
     );
-    expect(loadMeshtasticMqttManualChannelPsks()).toEqual([`HamNet=${KEY_B}`]);
+    expect(loadMeshtasticMqttManualChannelPsks()).toEqual([`HamNet=${KEY_AES128_ZEROS}`]);
   });
 
   it('recovers channelPsks from mesh-client:mqttSettings:meshcore after legacy migration', () => {
@@ -181,10 +196,10 @@ describe('loadMeshtasticMqttManualChannelPsks', () => {
       'mesh-client:mqttSettings:meshcore',
       JSON.stringify({
         topicPrefix: 'meshcore/DEN',
-        channelPsks: [`LongFast@0=${KEY_B}`],
+        channelPsks: [`LongFast@0=${KEY_AES128_ZEROS}`],
       }),
     );
-    expect(loadMeshtasticMqttManualChannelPsks()).toEqual([`LongFast@0=${KEY_B}`]);
+    expect(loadMeshtasticMqttManualChannelPsks()).toEqual([`LongFast@0=${KEY_AES128_ZEROS}`]);
   });
 
   it('returns empty array when unset', () => {
