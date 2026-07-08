@@ -3,6 +3,9 @@
  * Shared GitHub release helpers for CI ensure + manual consolidation.
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
+
 export const OWNER = 'Colorado-Mesh';
 export const REPO = 'mesh-client';
 export const API_ROOT = `https://api.github.com/repos/${OWNER}/${REPO}`;
@@ -16,7 +19,25 @@ export function fail(message) {
   process.exit(1);
 }
 
-export function resolveTag(argv, env) {
+export function resolveTagFromPackageVersion(cwd = process.cwd()) {
+  const pkgPath = path.join(cwd, 'package.json');
+  if (!fs.existsSync(pkgPath)) {
+    fail('package.json not found for release tag resolution');
+  }
+  let pkg;
+  try {
+    pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    fail(`Failed to parse package.json for release tag resolution: ${detail}`);
+  }
+  if (typeof pkg.version !== 'string' || !pkg.version) {
+    fail('package.json is missing a valid "version" field for release tag resolution');
+  }
+  return `v${pkg.version}`;
+}
+
+export function resolveTag(argv, env, { cwd = process.cwd() } = {}) {
   const flagIndex = argv.indexOf('--tag');
   if (flagIndex >= 0 && argv[flagIndex + 1]) {
     return argv[flagIndex + 1];
@@ -25,7 +46,12 @@ export function resolveTag(argv, env) {
   if (ref.startsWith('refs/tags/')) {
     return ref.slice('refs/tags/'.length);
   }
-  fail('Missing tag: pass --tag vX.Y.Z or run on a refs/tags/v* workflow ref');
+  if (env.GITHUB_EVENT_NAME === 'workflow_dispatch') {
+    return resolveTagFromPackageVersion(cwd);
+  }
+  fail(
+    'Missing tag: pass --tag vX.Y.Z, run on a refs/tags/v* workflow ref, or use workflow_dispatch',
+  );
 }
 
 export function authToken(env) {

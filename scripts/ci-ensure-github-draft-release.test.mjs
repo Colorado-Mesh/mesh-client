@@ -4,6 +4,8 @@ import {
   ensureGithubDraftRelease,
   listReleasesForTag,
   pickCanonicalRelease,
+  resolveTag,
+  resolveTagFromPackageVersion,
 } from './github-release-api.mjs';
 
 const TAG = 'v5.21.0';
@@ -11,6 +13,22 @@ const TAG = 'v5.21.0';
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+});
+
+describe('resolveTagFromPackageVersion', () => {
+  it('returns v-prefixed tag from package.json version', () => {
+    expect(resolveTagFromPackageVersion(process.cwd())).toMatch(/^v\d+\.\d+\.\d+/);
+  });
+});
+
+describe('resolveTag', () => {
+  it('uses package.json version on workflow_dispatch', () => {
+    const tag = resolveTag([], {
+      GITHUB_REF: 'refs/heads/main',
+      GITHUB_EVENT_NAME: 'workflow_dispatch',
+    });
+    expect(tag).toBe(resolveTagFromPackageVersion(process.cwd()));
+  });
 });
 
 describe('pickCanonicalRelease', () => {
