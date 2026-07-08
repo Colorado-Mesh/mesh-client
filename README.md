@@ -549,4 +549,4 @@ MIT; see [LICENSE](LICENSE)
 
 ## Credits
 
-See [Credits](docs/credits.md). Created by **[Joey (NV0N)](https://github.com/rinchen)** & **[dude.eth](https://github.com/defidude)**. Based on the [original Mac client](https://github.com/Colorado-Mesh/meshtastic_mac_client). Part of **[Colorado Mesh](https://github.com/Colorado-Mesh/mesh-client)**.
+See [Credits](docs/credits.md).
