@@ -201,8 +201,9 @@ Follow [Semantic Versioning](https://semver.org/):
 
 ### Duplicate draft releases for one tag
 
-- Caused by concurrent electron-builder publish before the shared draft exists. `release.yaml` now runs `scripts/ci-ensure-github-draft-release.mjs` once before the macOS/Linux/Windows matrix.
-- To recover on a broken tag: delete orphan draft releases in GitHub → Releases, keep the draft that has the most assets (or none), re-run **Build/Release Electron App** on the tag.
+- Caused when GitHub’s `GET /releases/tags/{tag}` returns **404** while multiple draft releases share the same `tag_name` — parallel `dist:*:publish` jobs each create another draft. `release.yaml` runs `scripts/ci-ensure-github-draft-release.mjs` first (list + delete empty duplicates + set `target_commitish`).
+- **Assets spread across duplicates:** run `node scripts/consolidate-github-release-duplicates.mjs --tag vX.Y.Z` (requires `GH_TOKEN`), then re-run the release workflow for any missing platform artifacts.
+- To recover on a broken tag: consolidate duplicates, keep the draft with merged assets, re-run **Build/Release Electron App** on the tag.
 
 ### Tag already exists
 

@@ -166,6 +166,7 @@ jobs:
       - name: Ensure draft GitHub release exists
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_SHA: ${{ github.sha }}
         run: node scripts/ci-ensure-github-draft-release.mjs
 
       - name: Attach Flatpak to release
