@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  assertSafeReleaseTag,
   dedupeEmptyDraftReleases,
   ensureGithubDraftRelease,
   listReleasesForTag,
   pickCanonicalRelease,
   resolveTag,
-  resolveTagFromPackageVersion,
 } from './github-release-api.mjs';
 
 const TAG = 'v5.21.0';
@@ -15,19 +15,28 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('resolveTagFromPackageVersion', () => {
-  it('returns v-prefixed tag from package.json version', () => {
-    expect(resolveTagFromPackageVersion(process.cwd())).toMatch(/^v\d+\.\d+\.\d+/);
+describe('assertSafeReleaseTag', () => {
+  it('accepts v-prefixed semver tags', () => {
+    expect(assertSafeReleaseTag('v5.21.0')).toBe('v5.21.0');
+  });
+
+  it('rejects malformed tags', () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined);
+    assertSafeReleaseTag('v5.21.0-evil/../../../etc/passwd');
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockRestore();
   });
 });
 
 describe('resolveTag', () => {
-  it('uses package.json version on workflow_dispatch', () => {
-    const tag = resolveTag([], {
-      GITHUB_REF: 'refs/heads/main',
-      GITHUB_EVENT_NAME: 'workflow_dispatch',
-    });
-    expect(tag).toBe(resolveTagFromPackageVersion(process.cwd()));
+  it('uses RELEASE_TAG when set', () => {
+    const tag = resolveTag([], { RELEASE_TAG: 'v5.21.0' });
+    expect(tag).toBe('v5.21.0');
+  });
+
+  it('uses refs/tags ref on tag push', () => {
+    const tag = resolveTag([], { GITHUB_REF: 'refs/tags/v5.21.0' });
+    expect(tag).toBe('v5.21.0');
   });
 });
 
