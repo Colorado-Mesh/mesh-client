@@ -238,7 +238,9 @@ export function meshtasticMqttChannelKeyEntries(
     if (ch.role === MESHTASTIC_CHANNEL_ROLE.DISABLED) continue;
     const name = resolveMeshtasticMqttChannelName(ch);
     if (!name) continue;
-    if (!isNonTrivialMeshtasticChannelPsk(ch.psk)) continue;
+    if (!isNonTrivialMeshtasticChannelPsk(ch.psk) && !isMeshtasticDefaultPublicPsk(ch.psk)) {
+      continue;
+    }
     entries.push({ name, pskBase64: pskToBase64(ch.psk), index: ch.index });
   }
   return entries;

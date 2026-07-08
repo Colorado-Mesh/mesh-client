@@ -334,10 +334,20 @@ export class MQTTManager extends EventEmitter {
       this.channelNameToIndex.delete(name);
     }
     this.radioChannelKeyNames.clear();
+    const radioTopicIndices = new Map<string, number>();
     for (const entry of entries) {
       const name = entry.name.trim();
       const psk = parsePsk(entry.pskBase64);
       if (!name || !psk) continue;
+      if (entry.index !== undefined && Number.isInteger(entry.index)) {
+        const idx = entry.index >>> 0;
+        if (idx <= 7) {
+          radioTopicIndices.set(name, idx);
+          if (!this.manualChannelKeyNames.has(name)) {
+            this.channelNameToIndex.set(name, idx);
+          }
+        }
+      }
       if (this.manualChannelKeyNames.has(name)) continue;
       const existing = this.channelKeysByName.get(name);
       if (
@@ -349,12 +359,18 @@ export class MQTTManager extends EventEmitter {
       }
       this.channelKeysByName.set(name, psk);
       this.radioChannelKeyNames.add(name);
-      if (entry.index !== undefined && Number.isInteger(entry.index)) {
-        const idx = entry.index >>> 0;
-        if (idx <= 7) this.channelNameToIndex.set(name, idx);
-      }
     }
     this.applyManualChannelPskLines(this.manualChannelPskLines);
+    for (const [name, idx] of radioTopicIndices) {
+      if (!this.manualChannelKeyNames.has(name)) continue;
+      const manualHasExplicitIndex = this.manualChannelPskLines.some((line) => {
+        const parsed = parseChannelPskLine(line);
+        return parsed?.name === name && parsed.index !== undefined;
+      });
+      if (!manualHasExplicitIndex) {
+        this.channelNameToIndex.set(name, idx);
+      }
+    }
     this.rebuildAllDecryptKeys();
   }
 
