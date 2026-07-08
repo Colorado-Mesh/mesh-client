@@ -86,7 +86,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       getMeshcoreContactCount: async () => 0,
       deleteMeshcoreContactsWithoutPubkey: async () => ({ deleted: 0, excludedStubCount: 0 }),
       offloadAllMeshcoreContacts: async () => 0,
-      getMeshcoreContactById: async () => undefined,
+      getMeshcoreContactById: async () => null,
       updateMeshcoreContactNickname: noopAsync,
       updateMeshcoreContactFavorited: noopAsync,
       savePositionHistory: noopAsync,
@@ -171,11 +171,6 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
     cancelBluetoothPairing: noop,
     resetBlePairingRetryCount: noop,
     clearSessionData: noopAsync,
-    getLinuxBleCapabilityStatus: async () => ({
-      platform: 'other' as const,
-      hasCapNetRaw: false,
-      detail: 'browser dev stub',
-    }),
     getGpsFix: async () => ({ lat: 0, lon: 0, source: 'ip' as const }),
     update: {
       check: noopAsync,
