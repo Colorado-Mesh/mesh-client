@@ -54,8 +54,8 @@ Test results are available as a downloadable artifact from the workflow run.
 
 Triggered by pushing a version tag (e.g., `v1.2.3`):
 
-1. **`prepare-github-release`** — creates a single draft GitHub release for the tag (prevents parallel electron-builder jobs from creating duplicate drafts and 404 asset uploads)
-2. Builds for all three platforms in parallel:
+1. **`prepare-github-release`** — creates a single draft GitHub release for the tag (prevents parallel electron-builder jobs from creating duplicate drafts and 404 asset uploads). On `workflow_dispatch`, the tag is resolved in the workflow from `package.json` and passed as `RELEASE_TAG` (not read inside the release API script — avoids CodeQL `js/file-access-to-http`).
+2. Builds for all three platforms in parallel (or a filtered subset on `workflow_dispatch`):
    - `macos-latest` → `pnpm run dist:mac:publish`
    - `ubuntu-latest` → `pnpm run dist:linux:publish`
    - `windows-latest` → `pnpm run dist:win:publish`

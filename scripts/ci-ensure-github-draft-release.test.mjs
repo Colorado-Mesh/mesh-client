@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  assertSafeReleaseTag,
   dedupeEmptyDraftReleases,
   ensureGithubDraftRelease,
   listReleasesForTag,
   pickCanonicalRelease,
+  resolveTag,
 } from './github-release-api.mjs';
 
 const TAG = 'v5.21.0';
@@ -11,6 +13,31 @@ const TAG = 'v5.21.0';
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+});
+
+describe('assertSafeReleaseTag', () => {
+  it('accepts v-prefixed semver tags', () => {
+    expect(assertSafeReleaseTag('v5.21.0')).toBe('v5.21.0');
+  });
+
+  it('rejects malformed tags', () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined);
+    assertSafeReleaseTag('v5.21.0-evil/../../../etc/passwd');
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockRestore();
+  });
+});
+
+describe('resolveTag', () => {
+  it('uses RELEASE_TAG when set', () => {
+    const tag = resolveTag([], { RELEASE_TAG: 'v5.21.0' });
+    expect(tag).toBe('v5.21.0');
+  });
+
+  it('uses refs/tags ref on tag push', () => {
+    const tag = resolveTag([], { GITHUB_REF: 'refs/tags/v5.21.0' });
+    expect(tag).toBe('v5.21.0');
+  });
 });
 
 describe('pickCanonicalRelease', () => {

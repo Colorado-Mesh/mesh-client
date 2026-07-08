@@ -7,6 +7,9 @@ export const OWNER = 'Colorado-Mesh';
 export const REPO = 'mesh-client';
 export const API_ROOT = `https://api.github.com/repos/${OWNER}/${REPO}`;
 
+/** Release tags must be vX.Y.Z — validated before any GitHub API call (CodeQL file-access-to-http). */
+export const SAFE_RELEASE_TAG_RE = /^v\d+\.\d+\.\d+$/;
+
 export function versionFromTag(tag) {
   return tag.startsWith('v') ? tag.slice(1) : tag;
 }
@@ -16,16 +19,27 @@ export function fail(message) {
   process.exit(1);
 }
 
+export function assertSafeReleaseTag(tag) {
+  if (typeof tag !== 'string' || !SAFE_RELEASE_TAG_RE.test(tag)) {
+    fail(`Release tag must match vX.Y.Z (got ${JSON.stringify(tag)})`);
+  }
+  return tag;
+}
+
 export function resolveTag(argv, env) {
   const flagIndex = argv.indexOf('--tag');
   if (flagIndex >= 0 && argv[flagIndex + 1]) {
-    return argv[flagIndex + 1];
+    return assertSafeReleaseTag(argv[flagIndex + 1]);
+  }
+  const fromEnv = env.RELEASE_TAG;
+  if (typeof fromEnv === 'string' && fromEnv) {
+    return assertSafeReleaseTag(fromEnv);
   }
   const ref = env.GITHUB_REF ?? '';
   if (ref.startsWith('refs/tags/')) {
-    return ref.slice('refs/tags/'.length);
+    return assertSafeReleaseTag(ref.slice('refs/tags/'.length));
   }
-  fail('Missing tag: pass --tag vX.Y.Z or run on a refs/tags/v* workflow ref');
+  fail('Missing tag: pass --tag vX.Y.Z, set RELEASE_TAG, or run on a refs/tags/v* workflow ref');
 }
 
 export function authToken(env) {
@@ -73,6 +87,7 @@ export function releaseMatchesTag(release, tag) {
 }
 
 export async function listReleasesForTag(tag, token) {
+  assertSafeReleaseTag(tag);
   const matches = [];
   for (let page = 1; page <= 5; page += 1) {
     const { response, json } = await githubRequest(`/releases?per_page=100&page=${page}`, {
