@@ -152,7 +152,7 @@ export function buildMeshtasticMqttOnlyChannelState(
     });
   }
 
-  const barePsk = channels.length === 0 ? firstBareManualPsk(lines) : undefined;
+  const barePsk = !channels.some((c) => c.index === 0) ? firstBareManualPsk(lines) : undefined;
   if (barePsk) {
     channels.push({ index: 0, name: 'LongFast' });
     channelConfigs.push({
