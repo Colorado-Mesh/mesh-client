@@ -45,6 +45,8 @@ jobs:
     needs: prepare-github-release
     if: ${{ !cancelled() && needs.prepare-github-release.result != 'failure' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       include: ${{ steps.matrix.outputs.include }}
     steps:
