@@ -91,6 +91,7 @@
     "prepare": "git config core.hooksPath .githooks",
     "rebuild": "node scripts/rebuild-native.mjs",
     "release": "bash scripts/release.sh",
+    "sync:flatpak-electron": "node scripts/sync-flatpak-electron.mjs",
     "reticulum:sidecar:build": "bash scripts/ensure-rsReticulum-patches.sh && cd reticulum-sidecar && cargo build --features rns-stack,rns-ble,rns-rnode-tcp",
     "reticulum:sidecar:dev": "bash scripts/ensure-rsReticulum-patches.sh && cd reticulum-sidecar && cargo run --features rns-stack,rns-ble,rns-rnode-tcp -- --headless --port 19437",
     "setup:actionlint": "node scripts/install-actionlint.mjs",

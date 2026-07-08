@@ -36,12 +36,13 @@ The release script (`scripts/release.sh`) is the supported maintainer path. It:
 
 1. Verifies you are on `main` and pulls latest
 2. Runs **`pnpm update`** and **`pnpm dedupe`** (updates lockfile before the bump)
-3. Auto-detects **patch / minor / major** from [Conventional Commits](https://www.conventionalcommits.org/) since the last tag (or accept an explicit bump — see below)
-4. Runs **pre-flight validation** (format, lint, typecheck, security `check:*`, dedupe check, audit, actionlint, yamllint, tests)
-5. Prints **copy-paste release notes** grouped by feat/fix/other/breaking
-6. Bumps `package.json` via `pnpm version`
-7. Prepends a `<release>` entry to `flatpak/org.coloradomesh.MeshClient.metainfo.xml`
-8. Commits, creates an annotated tag, and pushes **commit + tag** to `origin`
+3. Syncs **`org.coloradomesh.MeshClient.yml`** Electron vendored archives to match `package.json` (`node scripts/sync-flatpak-electron.mjs`)
+4. Auto-detects **patch / minor / major** from [Conventional Commits](https://www.conventionalcommits.org/) since the last tag (or accept an explicit bump — see below)
+5. Runs **pre-flight validation** (format, lint, typecheck, security `check:*`, **`check:flatpak`**, dedupe check, audit, actionlint, yamllint, tests)
+6. Prints **copy-paste release notes** grouped by feat/fix/other/breaking
+7. Bumps `package.json` via `pnpm version`
+8. Prepends a `<release>` entry to `flatpak/org.coloradomesh.MeshClient.metainfo.xml`
+9. Commits, creates an annotated tag, and pushes **commit + tag** to `origin`
 
 ```bash
 git checkout main
@@ -82,7 +83,8 @@ Only if `pnpm run release` cannot be used:
 
 ```bash
 # Edit package.json version, then:
-git add package.json pnpm-lock.yaml
+git add package.json pnpm-lock.yaml org.coloradomesh.MeshClient.yml
+# If electron changed: node scripts/sync-flatpak-electron.mjs
 # Add a <release version="…" date="YYYY-MM-DD"/> entry to flatpak/org.coloradomesh.MeshClient.metainfo.xml
 git add flatpak/org.coloradomesh.MeshClient.metainfo.xml
 git commit -m "chore: release vX.Y.Z"
