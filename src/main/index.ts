@@ -2134,11 +2134,26 @@ ipcMain.handle('bluetooth-unpair', async (_event, macAddress: unknown) => {
 });
 
 // ─── IPC: Start BLE scan (Linux) ─────────────────────────────────────
+const BLUETOOTH_START_SCAN_TIMEOUT_MS = 15_000;
+
 ipcMain.handle('bluetooth-start-scan', async () => {
   console.debug('[IPC] bluetooth-start-scan');
   return new Promise<void>((resolve, reject) => {
     const proc = spawn('bluetoothctl', ['scan', 'on']);
+    let settled = false;
+
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        proc.kill();
+        reject(new Error('bluetooth-start-scan: timed out after 15 s'));
+      }
+    }, BLUETOOTH_START_SCAN_TIMEOUT_MS);
+
     proc.on('close', (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
       if (code === 0) {
         console.debug('[IPC] bluetooth-start-scan success');
         resolve();
@@ -2148,6 +2163,9 @@ ipcMain.handle('bluetooth-start-scan', async () => {
       }
     });
     proc.on('error', (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
       console.warn(
         '[IPC] bluetooth-start-scan error:',
         sanitizeLogMessage(err?.message ?? String(err)),
@@ -4916,7 +4934,7 @@ ipcMain.handle('meshcore:openJsonFile', async () => {
       properties: ['openFile'],
     });
     if (result.canceled || result.filePaths.length === 0) return null;
-    const raw = fs.readFileSync(result.filePaths[0], 'utf-8');
+    const raw = await fs.promises.readFile(result.filePaths[0], 'utf-8');
     if (raw.length > 5 * 1024 * 1024) throw new Error('File too large (max 5 MB)');
     return raw;
   } catch (err) {

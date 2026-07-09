@@ -1586,7 +1586,10 @@ export class MQTTManager extends EventEmitter {
       sender_id: nodeId,
       sender_name: formatMeshtasticNodeId(nodeId),
       payload: text,
-      channel: typeof json.channel === 'number' ? json.channel : 0,
+      channel: this.resolveMqttInboundTextChannelIndex(
+        typeof json.channel === 'number' ? json.channel : 0,
+        topic,
+      ),
       timestamp: typeof json.timestamp === 'number' ? json.timestamp * 1000 : Date.now(),
       packetId,
       from_mqtt: true,

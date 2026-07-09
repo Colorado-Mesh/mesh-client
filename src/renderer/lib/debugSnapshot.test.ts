@@ -211,6 +211,9 @@ describe('buildDebugSnapshot', () => {
     expect(snap.reticulum.bucket.hydrationSlotId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
     expect(snap.reticulum.sidecar.running).toBe(false);
     expect(snap.reticulum.stack).toBeNull();
+    expect(snap.meshtastic.channelPills).toEqual([]);
+    expect(snap.meshtastic.channelConfigsSummary).toEqual([]);
+    expect(snap.meshtastic.mqttChannelKeyEntryCount).toBeNull();
     expect(snap.warnings).toEqual([]);
   });
 

@@ -66,6 +66,12 @@ The top-level **`legend`** explains that ids like `offline-meshcore` are **inter
 - `ui.waitingMessagesSilentDrainActive` / `ui.waitingMessagesDrainDeferred` — MeshCore incremental drain in progress or paused behind admin/trace (serial may show small batches). UI: **header status indicator** (queued backlog visible on any protocol tab; **active sync spinner and paused/deferred** state only on the MeshCore tab), not Chat/Rooms panel strips.
 - `meshcoreContactPathDiagnostics` — redacted MeshCore contact rows with `pubKeyPrefixHex` (12 hex chars), `hopsAway`, and best known `bestPathBytes` / `bestPathHopCount` from SQLite path history (useful for ping/no-route reports).
 
+**Meshtastic-only extension** (under `meshtastic` bucket):
+
+- `channelPills` — UI channel index + name (runtime channel pills).
+- `channelConfigsSummary` — index, name, role, `uplinkEnabled`, `isDefaultPublicPsk` (no PSK material).
+- `mqttChannelKeyEntryCount` — count of synced MQTT channel keys from radio config; `null` when empty.
+
 **Automatic warning codes** in `warnings[]`: `identitySplit`, `staleResolvedBucket`, `chatPanelFrozen` (legacy builds), `connectedNoPrimaryMessages`, `windowHiddenOnChat`, `sidecarNotRunning` (Reticulum stack expected but sidecar process down).
 
 **Reticulum-only fields** (under `reticulum`):

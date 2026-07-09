@@ -178,6 +178,7 @@ For ham or private MQTT brokers (typically **Custom** preset), the Connection ta
 - **MQTT-only sender id**: [`meshtasticMqttIdentity.ts`](../src/renderer/lib/meshtasticMqttIdentity.ts) uses last RF `myNodeNum` when known, else a stable virtual id for chat/MQTT publish without a radio.
 - **Enable TLS (mqtts / wss)**: explicit TLS toggle via [`mqttTls.ts`](../src/renderer/lib/mqttTls.ts) (port 8883/443 no longer required to imply TLS). **Allow insecure TLS** for self-signed or non–public CA chains.
 - **Per-channel uplink**: outbound RF → MQTT uses each channel’s name and PSK via [`meshtasticMqttPublish.ts`](../src/renderer/lib/meshtasticMqttPublish.ts).
+- **Inbound text channel**: MQTT downlink text uses authoritative `MeshPacket.channel` (clamped 0–7) in [`mqtt-manager.ts`](../src/main/mqtt-manager.ts); topic name is diagnostic/fallback only (sampled log when it disagrees with the packet field).
 
 ## MeshCore MQTT network presets
 

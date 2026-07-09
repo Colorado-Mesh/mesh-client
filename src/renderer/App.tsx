@@ -39,7 +39,10 @@ import {
   computeReticulumChatUnread,
   totalUnreadCount,
 } from '@/renderer/lib/chatUnreadCounts';
-import { setDebugSnapshotMeshtasticContext } from '@/renderer/lib/debugSnapshotMeshtasticContext';
+import {
+  buildDebugSnapshotMeshtasticContextFromRuntime,
+  setDebugSnapshotMeshtasticContext,
+} from '@/renderer/lib/debugSnapshotMeshtasticContext';
 import { setDebugSnapshotUiContext } from '@/renderer/lib/debugSnapshotUiContext';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
@@ -56,12 +59,10 @@ import { resolveMeshcoreOwnNodeIdSet } from '@/renderer/lib/meshcoreOwnNodeIds';
 import { totalRoomsUnreadCount } from '@/renderer/lib/meshcoreRoomsUnread';
 import { meshcoreWaitingMessagesVisibleForProtocol } from '@/renderer/lib/meshcoreWaitingMessagesStatusText';
 import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
-import { meshtasticMqttChannelKeyEntries } from '@/renderer/lib/meshtasticMqttPublish';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
 import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
-import { isMeshtasticDefaultPublicPsk } from '@/shared/meshtasticDefaultPublicPsk';
 
 import BootSequence from './components/BootSequence';
 import ChannelUtilizationChart from './components/ChannelUtilizationChart';
@@ -1675,19 +1676,12 @@ function AppContent() {
   ]);
 
   useEffect(() => {
-    const configs = meshtasticRuntime.channelConfigs;
-    const keyEntries = meshtasticMqttChannelKeyEntries(configs);
-    setDebugSnapshotMeshtasticContext({
-      channelPills: meshtasticRuntime.channels.map((c) => ({ index: c.index, name: c.name })),
-      channelConfigsSummary: configs.map((c) => ({
-        index: c.index,
-        name: c.name,
-        role: c.role,
-        uplinkEnabled: c.uplinkEnabled ?? false,
-        isDefaultPublicPsk: isMeshtasticDefaultPublicPsk(c.psk),
-      })),
-      mqttChannelKeyEntryCount: keyEntries.length > 0 ? keyEntries.length : null,
-    });
+    setDebugSnapshotMeshtasticContext(
+      buildDebugSnapshotMeshtasticContextFromRuntime(
+        meshtasticRuntime.channels,
+        meshtasticRuntime.channelConfigs,
+      ),
+    );
   }, [meshtasticRuntime.channels, meshtasticRuntime.channelConfigs]);
 
   const syncWaitingMessages = meshcoreRuntime.syncWaitingMessages;
