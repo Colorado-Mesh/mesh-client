@@ -152,8 +152,8 @@ const RENDERER_LOGIC_EXCLUDE = [
 const RENDERER_LOGIC_LIB_GLOB = 'src/renderer/lib/**/*.test.ts';
 
 /** Lib tests that need jsdom/setup — excluded from renderer-logic, routed to renderer-ui */
-const RENDERER_LOGIC_LIB_UI_FALLBACK = RENDERER_LOGIC_EXCLUDE.filter((f) =>
-  f.startsWith('src/renderer/lib/'),
+const RENDERER_LOGIC_LIB_UI_FALLBACK = new Set(
+  RENDERER_LOGIC_EXCLUDE.filter((f) => f.startsWith('src/renderer/lib/')),
 );
 
 function collectRendererLibTestFiles(): string[] {
@@ -175,7 +175,7 @@ function collectRendererLibTestFiles(): string[] {
 
 /** Pure lib unit tests owned by renderer-logic; borderline files run in renderer-ui instead */
 const RENDERER_LOGIC_LIB_NODE_ONLY = collectRendererLibTestFiles().filter(
-  (f) => !RENDERER_LOGIC_LIB_UI_FALLBACK.includes(f),
+  (f) => !RENDERER_LOGIC_LIB_UI_FALLBACK.has(f),
 );
 
 /** renderer-ui skips tests that run in renderer-logic (node), not borderline jsdom lib tests */
