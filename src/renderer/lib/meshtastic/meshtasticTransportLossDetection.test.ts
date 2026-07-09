@@ -1,6 +1,7 @@
 import type { MeshDevice } from '@meshtastic/core';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { ConnectionType } from '../types';
 import {
   attachMeshtasticTransportLossWatch,
   createSerializedWritableStream,
@@ -91,5 +92,43 @@ describe('meshtasticTransportLossDetection', () => {
     await expect(writer.write(new Uint8Array([1]))).rejects.toMatchObject({
       name: 'InvalidStateError',
     });
+  });
+
+  it('serializes concurrent getWriter calls for HTTP transport (regression)', async () => {
+    // Meshtastic HTTP connect: MeshDevice's own Queue.processQueue() holds a writer
+    // lock for the whole queue drain; a concurrent NODEINFO/GetMetadata retry calling
+    // getWriter() on the same raw stream throws "WritableStream is locked" and the
+    // write is silently dropped, leaving sent messages unacknowledged.
+    let innerWriteCount = 0;
+    const inner = new WritableStream<Uint8Array>({
+      async write() {
+        innerWriteCount++;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      },
+    });
+    const device = {
+      transport: { toDevice: inner },
+    } as unknown as MeshDevice;
+
+    attachMeshtasticTransportLossWatch(device, 'http', vi.fn());
+
+    const w1 = device.transport.toDevice.getWriter();
+    const w2 = device.transport.toDevice.getWriter();
+    await Promise.all([w1.write(new Uint8Array([1])), w2.write(new Uint8Array([2]))]);
+    w1.releaseLock();
+    w2.releaseLock();
+
+    expect(innerWriteCount).toBe(2);
+  });
+
+  it('does not wrap toDevice for unsupported connection types', () => {
+    const inner = new WritableStream<Uint8Array>({ write: vi.fn() });
+    const device = {
+      transport: { toDevice: inner },
+    } as unknown as MeshDevice;
+
+    attachMeshtasticTransportLossWatch(device, 'reticulum' as unknown as ConnectionType, vi.fn());
+
+    expect(device.transport.toDevice).toBe(inner);
   });
 });
