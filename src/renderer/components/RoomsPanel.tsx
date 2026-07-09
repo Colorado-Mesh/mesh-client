@@ -154,7 +154,7 @@ interface Props {
   messages: ChatMessage[];
   myNodeNum: number;
   isConnected: boolean;
-  connectionType?: 'ble' | 'serial' | 'http' | null;
+  connectionType?: 'ble' | 'serial' | 'http' | 'tcp' | null;
   /** True when the Rooms tab panel is visible (for mark-read while viewing). */
   isActive?: boolean;
   initialRoomTarget?: number | null;

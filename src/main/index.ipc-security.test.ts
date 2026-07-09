@@ -206,6 +206,28 @@ describe('meshcore:tcp-connect hostname validation (source contract)', () => {
   });
 });
 
+// ─── meshtastic:tcp-connect hostname validation ──────────────────────
+
+describe('meshtastic:tcp-connect hostname validation (source contract)', () => {
+  it('calls validateHttpHost in the meshtastic:tcp-connect handler', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 600);
+    expect(handlerBody).toContain('validateHttpHost(');
+  });
+
+  it('normalizes bracketed IPv6 before net.Socket.connect', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 800);
+    expect(handlerBody).toContain('formatHostForSocket(');
+  });
+
+  it('uses an independent socket ref from meshcore:tcp-connect', () => {
+    expect(INDEX_SOURCE).toContain('let meshtasticTcpSocket: net.Socket | null = null;');
+  });
+});
+
 // ─── IPC sender validation (gps / tak) ──────────────────────────────
 
 describe('GPS/TAK IPC sender validation (source contract)', () => {
@@ -296,6 +318,9 @@ describe('privileged IPC sender validation (source contract)', () => {
     'meshcore:tcp-connect',
     'meshcore:tcp-write',
     'meshcore:tcp-disconnect',
+    'meshtastic:tcp-connect',
+    'meshtastic:tcp-write',
+    'meshtastic:tcp-disconnect',
     'noble-ble-connect',
     'noble-ble-disconnect',
     'notify:message',
@@ -331,6 +356,13 @@ describe('privileged IPC sender validation (source contract)', () => {
     expect(INDEX_SOURCE).toContain('MESHCORE_TCP_CONNECT_TIMEOUT_MS');
     expect(INDEX_SOURCE).toMatch(
       /meshcore:tcp-connect[\s\S]{0,1200}meshcore:tcp-connect: connection timeout/,
+    );
+  });
+
+  it('meshtastic tcp-connect uses connect timeout', () => {
+    expect(INDEX_SOURCE).toContain('MESHTASTIC_TCP_CONNECT_TIMEOUT_MS');
+    expect(INDEX_SOURCE).toMatch(
+      /meshtastic:tcp-connect[\s\S]{0,1200}meshtastic:tcp-connect: connection timeout/,
     );
   });
 

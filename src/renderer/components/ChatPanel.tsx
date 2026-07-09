@@ -404,7 +404,7 @@ export interface ChatPanelProps {
   onNodeClick: (nodeNum: number) => void;
   isConnected: boolean;
   isMqttOnly?: boolean;
-  connectionType?: 'ble' | 'serial' | 'http' | null;
+  connectionType?: 'ble' | 'serial' | 'http' | 'tcp' | null;
   nodes: Map<number, MeshNode>;
   initialDmTarget?: number | null;
   onDmTargetConsumed?: () => void;

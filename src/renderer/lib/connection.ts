@@ -2,7 +2,7 @@ import { MeshDevice } from '@meshtastic/core';
 import { TransportWebSerial } from '@meshtastic/transport-web-serial';
 
 import { isPairingRelatedError } from '@/shared/blePairingError';
-import { formatHostForUrl, parseConnectHostPort } from '@/shared/connectHost';
+import { formatHostForSocket, formatHostForUrl, parseConnectHostPort } from '@/shared/connectHost';
 
 import { isMainProcessBleTimeoutMessage } from './bleConnectErrors';
 import {
@@ -25,11 +25,16 @@ import {
 } from './serialPortSignature';
 import { TransportHttpIpc } from './transportHttpIpc';
 import { TransportNobleIpc } from './transportNobleIpc';
+import { TransportTcpIpc } from './transportTcpIpc';
 import { TransportWebBluetoothIpc } from './transportWebBluetoothIpc';
 import type { ConnectionType, NobleBleSessionId } from './types';
 
 // HTTP base connection: timeouts and retries to avoid hanging on slow mDNS or flaky networks.
 const HTTP_CONNECT_TIMEOUT_MS = 15_000;
+/** Meshtastic native TCP streaming API (port 4403) connect timeout. */
+const TCP_CONNECT_TIMEOUT_MS = 15_000;
+/** Default port for Meshtastic's native TCP streaming API. */
+const MESHTASTIC_TCP_DEFAULT_PORT = 4403;
 const BLE_CONNECT_MAX_ATTEMPTS = 2;
 const BLE_CONNECT_RETRY_DELAY_MS = 1_500;
 
@@ -350,6 +355,30 @@ export async function createConnection(
       return new MeshDevice(transport);
     }
 
+    case 'tcp': {
+      if (!httpAddress) throw new Error('TCP address required');
+      const { host, port } = parseConnectHostPort(httpAddress.trim(), MESHTASTIC_TCP_DEFAULT_PORT);
+      const socketHost = formatHostForSocket(host);
+      console.debug(`[connection] createConnection: tcp address=${socketHost}:${port}`);
+      const transport = new TransportTcpIpc(socketHost, port);
+      const connectPromise = transport.connect();
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => {
+          reject(
+            new Error(
+              `Connection to ${socketHost}:${port} timed out after ${TCP_CONNECT_TIMEOUT_MS / 1000}s`,
+            ),
+          );
+        }, TCP_CONNECT_TIMEOUT_MS),
+      );
+      await Promise.race([connectPromise, timeoutPromise]);
+      logMeshtasticDeviceConnection(
+        `transport=tcp stack=meshtastic host=${socketHost} port=${port}`,
+      );
+      assertTransportReadyForMeshDevice(transport, 'Meshtastic TCP');
+      return new MeshDevice(transport);
+    }
+
     default:
       throw new Error(`Unknown connection type: ${type}`);
   }
@@ -486,6 +515,20 @@ async function closeMeshtasticTransportStreamsBestEffort(
     );
   }
   await cancelMeshtasticFromDeviceBestEffort(transport);
+  // device.disconnect() (SDK) can throw before reaching its own `await this.transport.disconnect()`
+  // call (e.g. a race with an in-flight queue write/heartbeat) — ensure the underlying HTTP
+  // polling interval / TCP socket is still torn down rather than left orphaned until the next
+  // connect's defensive cleanup runs. Harmless no-op if already disconnected.
+  const transportDisconnect = (transport as { disconnect?: () => Promise<void> })?.disconnect;
+  if (typeof transportDisconnect === 'function') {
+    try {
+      await transportDisconnect.call(transport);
+    } catch (e) {
+      console.debug(
+        `[connection] safeDisconnect transport.disconnect ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  }
 }
 
 export async function safeDisconnect(device: MeshDevice): Promise<void> {

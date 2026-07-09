@@ -1013,7 +1013,12 @@
       "suppressed": "Ostatnio zablokowano podobne wiersze dziennika wózka bocznego {{count}}."
     },
     "reticulumSidecarBundledMissing": "W tej instalacji brakuje dołączonego sidecar Reticulum. Uaktualnij do nowszej wersji lub zgłoś problem — budowanie ze źródła nie jest możliwe w przypadku instalacji pakietowych.",
-    "radioMqttRootDivergesWarning": "Główny temat radia MQTT to {{radioRoot}}, ale ten panel subskrybuje {{appPrefix}}. Dopasuj radio, aby ograniczyć ogólnokrajowy ruch w węzłach — zaktualizuj prefiks tematu i ponownie połącz MQTT."
+    "radioMqttRootDivergesWarning": "Główny temat radia MQTT to {{radioRoot}}, ale ten panel subskrybuje {{appPrefix}}. Dopasuj radio, aby ograniczyć ogólnokrajowy ruch w węzłach — zaktualizuj prefiks tematu i ponownie połącz MQTT.",
+    "wifiTcp": "WiFi/TCP (szybkie)",
+    "tcpAddressPlaceholder": "meshtastic.local:4403, 192.168.1.x:4403 lub [fd00::1]:4403",
+    "tcpAddressHint": "Wprowadź nazwę hosta lub adres IP; port domyślnie 4403, jeśli został pominięty",
+    "hintMeshtasticTcp1": "Wprowadź adres IP lub nazwę hosta węzła Meshtastic podłączonego do Wi-Fi z włączonym protokołem TCP (domyślny port 4403). Znacznie szybszy niż WiFi/HTTP w przypadku dużych baz danych węzłów.",
+    "hintMeshtasticTcp2": "Jeśli połączenie jest zawodne (np. z meshtastic.local), spróbuj zamiast tego adresu IP urządzenia — mDNS na pulpicie może być błędny."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",

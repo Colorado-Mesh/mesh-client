@@ -1013,7 +1013,12 @@
       "suppressed": "{{count}} podobné řádky protokolu postranního vozíku byly nedávno potlačeny."
     },
     "reticulumSidecarBundledMissing": "V této instalaci chybí přibalený Reticulum sidecar. Upgradujte na novější verzi nebo nahlaste problém – sestavení ze zdroje není v balených instalacích k dispozici.",
-    "radioMqttRootDivergesWarning": "Kořenové téma rádia MQTT je {{radioRoot}}, ale tento panel odebírá {{appPrefix}}. Přizpůsobením rádia omezíte celostátní provoz uzlů — aktualizujte předponu tématu a znovu připojte MQTT."
+    "radioMqttRootDivergesWarning": "Kořenové téma rádia MQTT je {{radioRoot}}, ale tento panel odebírá {{appPrefix}}. Přizpůsobením rádia omezíte celostátní provoz uzlů — aktualizujte předponu tématu a znovu připojte MQTT.",
+    "wifiTcp": "WiFi/TCP (rychlé)",
+    "tcpAddressPlaceholder": "meshtastic.local:4403, 192.168.1.x:4403, nebo [fd00::1]:4403",
+    "tcpAddressHint": "Zadejte název hostitele nebo IP adresu; výchozí port je 4403, pokud je vynechán",
+    "hintMeshtasticTcp1": "Zadejte IP adresu nebo název hostitele uzlu Meshtastic připojeného k Wi-Fi s povoleným TCP (výchozí port 4403). Mnohem rychlejší než WiFi/http pro velké uzlové databáze.",
+    "hintMeshtasticTcp2": "Pokud je připojení nespolehlivé (např. s meshtastic.local), zkuste místo toho IP adresu zařízení — desktop mDNS může být šupinatý."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

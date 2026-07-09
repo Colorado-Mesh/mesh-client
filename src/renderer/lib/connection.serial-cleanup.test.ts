@@ -142,6 +142,30 @@ describe('connection serial cleanup', () => {
     expect(port.close).toHaveBeenCalledTimes(1);
   });
 
+  it('safeDisconnect falls back to transport.disconnect() when device.disconnect() throws (HTTP/TCP regression)', async () => {
+    // Regression: MeshDevice.disconnect() can throw before reaching its own
+    // `await this.transport.disconnect()` call (e.g. "Cannot cancel a locked stream").
+    // For HTTP/TCP transports there is no explicit fallback teardown (unlike serial's
+    // closeSerialPortIfOpen below), so the underlying polling interval / TCP socket was
+    // left orphaned until the next connect's defensive cleanup. safeDisconnect must call
+    // transport.disconnect() itself in that case.
+    const transportDisconnect = vi.fn().mockResolvedValue(undefined);
+    const device = {
+      disconnect: vi.fn().mockRejectedValue(new Error('Cannot cancel a locked stream')),
+      complete: vi.fn(),
+      transport: {
+        toDevice: new WritableStream(),
+        fromDevice: new ReadableStream(),
+        disconnect: transportDisconnect,
+      },
+    } as unknown as MeshDevice;
+
+    await safeDisconnect(device);
+
+    expect(transportDisconnect).toHaveBeenCalledTimes(1);
+    expect(device.complete).toHaveBeenCalledTimes(1);
+  });
+
   it('safeDisconnect treats undefined transport close as benign during disconnect', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const device = {

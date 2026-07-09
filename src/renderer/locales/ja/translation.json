@@ -1013,7 +1013,12 @@
       "suppressed": "{{count}}類似のサイドカーログ行は最近抑制されました。"
     },
     "reticulumSidecarBundledMissing": "このインストールには、バンドルされている Reticulum サイドカーがありません。新しいリリースにアップグレードするか、問題を報告してください。パッケージ化されたインストールではソースからのビルドは利用できません。",
-    "radioMqttRootDivergesWarning": "ラジオMQTTルートトピックは{{radioRoot}}ですが、このパネルは{{appPrefix}}に加入しています。全国のノードトラフィックを制限するために無線を一致させます—トピックプレフィックスを更新し、MQTTを再接続します。"
+    "radioMqttRootDivergesWarning": "ラジオMQTTルートトピックは{{radioRoot}}ですが、このパネルは{{appPrefix}}に加入しています。全国のノードトラフィックを制限するために無線を一致させます—トピックプレフィックスを更新し、MQTTを再接続します。",
+    "wifiTcp": "Wi - Fi/TCP （高速）",
+    "tcpAddressPlaceholder": "meshtastic.local: 4403、192.168.1.x: 4403、または[fd 00:: 1]: 4403",
+    "tcpAddressHint": "ホスト名またはIPアドレスを入力します。省略した場合、ポートはデフォルトで4403になります",
+    "hintMeshtasticTcp1": "TCPが有効になっているWiFi接続されたMeshtasticノードのIPアドレスまたはホスト名を入力します（デフォルトポート4403 ）。大規模なノードデータベースでは、WiFi/HTTPよりもはるかに高速です。",
+    "hintMeshtasticTcp2": "接続が信頼できない場合（ meshtastic.localなど）は、代わりにデバイスのIPアドレスを試してみてください。デスクトップのmDNSが不安定な場合があります。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

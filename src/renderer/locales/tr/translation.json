@@ -1013,7 +1013,12 @@
       "suppressed": "{{count}} benzer sepet günlük satırları yakın zamanda bastırıldı."
     },
     "reticulumSidecarBundledMissing": "Bu kurulumda birlikte verilen Reticulum sidecar eksik. Daha yeni bir sürüme yükseltin veya sorunu bildirin; kaynaktan derleme, paketli kurulumlarda mevcut değildir.",
-    "radioMqttRootDivergesWarning": "Radyo MQTT kök konusu {{radioRoot}} 'dır, ancak bu panel {{appPrefix}}' e abone olur. Ülke çapındaki düğüm trafiğini sınırlamak için radyoyu eşleştirin — Konu Önekini güncelleyin ve MQTT'yi yeniden bağlayın."
+    "radioMqttRootDivergesWarning": "Radyo MQTT kök konusu {{radioRoot}} 'dır, ancak bu panel {{appPrefix}}' e abone olur. Ülke çapındaki düğüm trafiğini sınırlamak için radyoyu eşleştirin — Konu Önekini güncelleyin ve MQTT'yi yeniden bağlayın.",
+    "wifiTcp": "WiFi/TCP (hızlı)",
+    "tcpAddressPlaceholder": "meshtastic.local:4403, 192.168.1.x:4403 veya [fd00::1]: 4403",
+    "tcpAddressHint": "Ana bilgisayar adını veya IP adresini girin; bağlantı noktası atlanırsa varsayılan olarak 4403 'tür",
+    "hintMeshtasticTcp1": "TCP etkinleştirilmiş bir WiFi bağlantılı Meshtastic düğümünün IP adresini veya ana bilgisayar adını girin (varsayılan bağlantı noktası 4403). Büyük düğüm veritabanları için WiFi/http'den çok daha hızlı.",
+    "hintMeshtasticTcp2": "Bağlantı güvenilir değilse (örneğin meshtastic.local ile), bunun yerine cihazın IP adresini deneyin — masaüstü mDNS zayıf olabilir."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

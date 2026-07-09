@@ -817,6 +817,17 @@ export interface ElectronAPI {
     onData: (cb: (bytes: Uint8Array) => void) => () => void;
   };
 
+  // ─── Meshtastic TCP bridge ────────────────────────────────────────────────────
+  meshtastic: {
+    tcp: {
+      connect: (host: string, port: number) => Promise<void>;
+      write: (bytes: number[]) => Promise<void>;
+      disconnect: () => Promise<void>;
+      onData: (cb: (bytes: Uint8Array) => void) => () => void;
+      onDisconnected: (cb: () => void) => () => void;
+    };
+  };
+
   // ─── Chat export ─────────────────────────────────────────────────────────────
   chat: {
     export: (messages: ChatExportMessage[]) => Promise<{ success: boolean; path?: string }>;

@@ -14,6 +14,7 @@ vi.mock('lucide-react-motion', async (importOriginal) => {
     Bluetooth: MockIcon,
     Cpu: MockIcon,
     Radio: MockIcon,
+    Wifi: MockIcon,
     Globe: MockIcon,
   };
 });
@@ -35,6 +36,11 @@ describe('connectionIcons', () => {
 
   it('renders http transport icon', () => {
     renderWithMotion(<ConnectionIcon type="http" />);
+    expect(screen.getByTestId('mock-icon')).toBeInTheDocument();
+  });
+
+  it('renders tcp transport icon', () => {
+    renderWithMotion(<ConnectionIcon type="tcp" />);
     expect(screen.getByTestId('mock-icon')).toBeInTheDocument();
   });
 
