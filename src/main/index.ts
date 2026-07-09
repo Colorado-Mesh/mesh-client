@@ -27,7 +27,7 @@ import zlib from 'zlib';
 
 import type { MQTTSettings } from '../renderer/lib/types';
 import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
-import { formatHostForSocket } from '../shared/connectHost';
+import { formatHostForSocket, parseConnectHostPort } from '../shared/connectHost';
 import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
 import {
   sanitizeMeshcoreAdvLatLonForDb,
@@ -5695,7 +5695,11 @@ function validateHttpHost(host: unknown): asserts host is string {
   if (typeof host !== 'string' || host.length === 0 || host.length > MAX_HOST_LENGTH) {
     throw new Error('Invalid host');
   }
-  if (!isValidHttpHostname(host)) {
+  // http:preflight/http:connect pass an authority string with a port already
+  // appended (formatHostForUrl); meshcore:tcp-connect passes a bare host.
+  // Strip a trailing port before validating so both call sites work.
+  const bareHost = parseConnectHostPort(host, 0).host;
+  if (!isValidHttpHostname(bareHost)) {
     throw new Error('Invalid host format');
   }
 }
