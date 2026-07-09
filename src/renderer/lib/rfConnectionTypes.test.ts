@@ -19,6 +19,10 @@ describe('rfConnectionTransportOpts', () => {
       type: 'http',
       httpAddress: 'host:4403',
     });
+    expect(rfConnectionTransportOpts('tcp', { httpAddress: 'host:4403' })).toEqual({
+      type: 'tcp',
+      httpAddress: 'host:4403',
+    });
   });
 });
 
@@ -30,5 +34,14 @@ describe('protocolTransportParams', () => {
         httpAddress: '127.0.0.1:4403',
       }),
     ).toEqual({ type: 'http', host: '127.0.0.1:4403' });
+  });
+
+  it('maps discriminated tcp opts to meshtastic transport params', () => {
+    expect(
+      protocolTransportParams('meshtastic', {
+        type: 'tcp',
+        httpAddress: '192.168.200.4:4403',
+      }),
+    ).toEqual({ type: 'tcp', host: '192.168.200.4:4403' });
   });
 });

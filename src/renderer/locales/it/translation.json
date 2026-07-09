@@ -1013,7 +1013,12 @@
       "suppressed": "{{count}} righe di registro sidecar simili soppresse di recente."
     },
     "reticulumSidecarBundledMissing": "In questa installazione manca il sidecar Reticulum in bundle. Esegui l'upgrade a una versione più recente o segnala il problema: la creazione dal codice sorgente non è disponibile nelle installazioni in pacchetto.",
-    "radioMqttRootDivergesWarning": "L'argomento principale di Radio MQTT è {{radioRoot}}, ma questo panel si iscrive a {{appPrefix}}. Abbina la radio per limitare il traffico dei nodi a livello nazionale: aggiorna il prefisso dell'argomento e ricollega MQTT."
+    "radioMqttRootDivergesWarning": "L'argomento principale di Radio MQTT è {{radioRoot}}, ma questo panel si iscrive a {{appPrefix}}. Abbina la radio per limitare il traffico dei nodi a livello nazionale: aggiorna il prefisso dell'argomento e ricollega MQTT.",
+    "wifiTcp": "WiFi/TCP (veloce)",
+    "tcpAddressPlaceholder": "meshtastic.local:4403, 192.168.1.x:4403, o [fd00::1]:4403",
+    "tcpAddressHint": "Inserisci nome host o indirizzo IP; il valore predefinito della porta è 4403 se omesso",
+    "hintMeshtasticTcp1": "Immettere l'indirizzo IP o il nome host di un nodo Meshtastic connesso al WiFi con TCP abilitato (porta predefinita 4403). Molto più veloce di WiFi/HTTP per database di nodi di grandi dimensioni.",
+    "hintMeshtasticTcp2": "Se la connessione non è affidabile (ad esempio con meshtastic.local), prova invece l'indirizzo IP del dispositivo: il desktop mDNS può essere traballante."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",

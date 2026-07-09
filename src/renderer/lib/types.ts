@@ -11,7 +11,7 @@ export { isMeshProtocol, REGISTERED_MESH_PROTOCOLS };
 
 export type { TAKClientInfo, TAKServerStatus, TAKSettings };
 
-export type ConnectionType = 'ble' | 'serial' | 'http';
+export type ConnectionType = 'ble' | 'serial' | 'http' | 'tcp';
 
 /** All transports the ConnectionDriver can manage. Superset of `ConnectionType`. */
 export type TransportType = 'ble' | 'serial' | 'http' | 'tcp' | 'mqtt';

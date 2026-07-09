@@ -80,4 +80,21 @@ describe('pushMeshtasticTransportSideEffectUnsubs', () => {
     expect(device.setHeartbeatInterval).not.toHaveBeenCalled();
     expect(unsubs).toHaveLength(1);
   });
+
+  it('attaches serialized transport and heartbeat for TCP', () => {
+    const device = mockDevice();
+    pushMeshtasticTransportSideEffectUnsubs(
+      device,
+      'tcp',
+      (unsub) => unsubs.push(unsub),
+      onTransportLost,
+    );
+
+    expect(window.electronAPI.onNobleBleDisconnected).not.toHaveBeenCalled();
+    // TCP is a persistent duplex link like serial/BLE, not a polling link like HTTP,
+    // so it gets both the serialized-writer wrap and heartbeat.
+    expect(attachMeshtasticTransportLossWatch).toHaveBeenCalledWith(device, 'tcp', onTransportLost);
+    expect(device.setHeartbeatInterval).toHaveBeenCalledWith(60_000);
+    expect(unsubs).toHaveLength(1);
+  });
 });

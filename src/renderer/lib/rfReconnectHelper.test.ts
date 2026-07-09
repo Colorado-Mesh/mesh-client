@@ -12,6 +12,7 @@ describe('reconnectRfFromLastConnection', () => {
     connectBleDirect: vi.fn().mockResolvedValue(undefined),
     connectSerialAutomatic: vi.fn().mockResolvedValue(undefined),
     connectHttp: vi.fn().mockResolvedValue(undefined),
+    connectTcp: vi.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(() => {
@@ -47,6 +48,22 @@ describe('reconnectRfFromLastConnection', () => {
     );
     await reconnectRfFromLastConnection('meshcore', 'http', handlers);
     expect(handlers.connectHttp).toHaveBeenCalledWith('meshcore.local:9000');
+  });
+
+  it('reconnects Meshtastic TCP using stored address', async () => {
+    localStorage.setItem(
+      STORAGE_KEY('meshtastic'),
+      JSON.stringify({ type: 'tcp', httpAddress: '192.168.200.4:4403' }),
+    );
+    await reconnectRfFromLastConnection('meshtastic', 'tcp', handlers);
+    expect(handlers.connectTcp).toHaveBeenCalledWith('192.168.200.4:4403');
+  });
+
+  it('throws when reconnecting Meshtastic TCP with no stored address', async () => {
+    localStorage.setItem(STORAGE_KEY('meshtastic'), JSON.stringify({ type: 'tcp' }));
+    await expect(reconnectRfFromLastConnection('meshtastic', 'tcp', handlers)).rejects.toThrow(
+      /missing TCP address/,
+    );
   });
 
   it('on Linux uses direct BLE connect (Web Bluetooth user gesture path)', async () => {

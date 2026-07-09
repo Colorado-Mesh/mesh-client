@@ -124,7 +124,7 @@ function createLossAwareWritableStream(
  * Detect serial unplug (`disconnect` event) and immediate write failures such as
  * `NetworkError: The device has been lost` after a firmware reboot. Also serializes
  * concurrent SDK `getWriter()` calls (queue, NODEINFO/GetMetadata retries, heartbeat)
- * on serial, BLE, and HTTP transports so overlapping writes do not throw
+ * on serial, BLE, HTTP, and TCP transports so overlapping writes do not throw
  * `WritableStream is locked` and get silently dropped.
  */
 export function attachMeshtasticTransportLossWatch(
@@ -132,7 +132,7 @@ export function attachMeshtasticTransportLossWatch(
   type: ConnectionType,
   onConnectionLost: () => void,
 ): () => void {
-  if (type !== 'serial' && type !== 'ble' && type !== 'http') {
+  if (type !== 'serial' && type !== 'ble' && type !== 'http' && type !== 'tcp') {
     return () => {};
   }
 

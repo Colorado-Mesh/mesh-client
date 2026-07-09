@@ -351,6 +351,10 @@ export default function ConnectionPanel({
     const last = loadLastConnection(protocol);
     return last?.type === 'http' && last.httpAddress ? last.httpAddress : 'meshtastic.local';
   });
+  const [tcpAddress, setTcpAddress] = useState(() => {
+    const last = loadLastConnection(protocol);
+    return last?.type === 'tcp' && last.httpAddress ? last.httpAddress : 'meshtastic.local:4403';
+  });
   const [tcpHost, setTcpHost] = useState(() => {
     const last = loadLastConnection(protocol);
     if (last?.type === 'http' && last.httpAddress && protocol === 'meshcore') {
@@ -378,7 +382,12 @@ export default function ConnectionPanel({
   const pinPromptSeenSinceRePairRef = useRef(false);
   const [pinCountdown, setPinCountdown] = useState<number | null>(null);
   const pinCountdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const activeHostAddress = protocol === 'meshcore' ? `${tcpHost}:${tcpPort}` : httpAddress;
+  const activeHostAddress =
+    protocol === 'meshcore'
+      ? `${tcpHost}:${tcpPort}`
+      : connectionType === 'tcp'
+        ? tcpAddress
+        : httpAddress;
 
   // ─── MQTT settings state ───────────────────────────────────────
   const [mqttSettings, setMqttSettings] = useState<MQTTSettings>(loadMqttSettings);
@@ -727,7 +736,7 @@ export default function ConnectionPanel({
       // Persist connection details for next startup
       if (state.connectionType) {
         const conn: LastConnection = { type: state.connectionType };
-        if (state.connectionType === 'http') {
+        if (state.connectionType === 'http' || state.connectionType === 'tcp') {
           conn.httpAddress = activeHostAddress;
         } else if (state.connectionType === 'ble') {
           const bleId = loadLastBleDevice(protocol);
@@ -1160,6 +1169,8 @@ export default function ConnectionPanel({
       console.debug('[ConnectionPanel] handleConnect', connectionType, activeHostAddress);
       if (connectionType === 'http') {
         await onConnect('http', activeHostAddress);
+      } else if (connectionType === 'tcp') {
+        await onConnect('tcp', activeHostAddress);
       } else {
         await onConnect('serial');
       }
@@ -1168,7 +1179,7 @@ export default function ConnectionPanel({
       let errorMsg: string;
       if (connectionType === 'serial') {
         errorMsg = humanizeSerialError(err, t);
-      } else if (connectionType === 'http') {
+      } else if (connectionType === 'http' || connectionType === 'tcp') {
         errorMsg = humanizeHttpError(activeHostAddress, err, t);
       } else {
         errorMsg = err instanceof Error ? err.message : t('connectionPanel.error.connectionFailed');
@@ -1625,6 +1636,21 @@ export default function ConnectionPanel({
         setConnecting(false);
         setConnectionStage('');
       });
+    } else if (lastConnection.type === 'tcp') {
+      const addr = lastConnection.httpAddress ?? tcpAddress;
+      setTcpAddress(addr);
+      setConnectionType('tcp');
+      setConnecting(true);
+      setBleDevices([]);
+      setSerialPorts([]);
+      setShowBlePicker(false);
+      setShowSerialPicker(false);
+      setConnectionStage('connectionPanel.stagePleaseWait');
+      onConnect('tcp', addr).catch((err: unknown) => {
+        setError(humanizeHttpError(addr, err, t));
+        setConnecting(false);
+        setConnectionStage('');
+      });
     } else if (lastConnection.type === 'serial') {
       isAutoConnectingRef.current = true;
       setIsAutoConnecting(true);
@@ -1639,7 +1665,17 @@ export default function ConnectionPanel({
         setConnectionStage('');
       });
     }
-  }, [lastConnection, onConnect, onAutoConnect, httpAddress, protocol, tcpHost, isLinux, t]);
+  }, [
+    lastConnection,
+    onConnect,
+    onAutoConnect,
+    httpAddress,
+    tcpAddress,
+    protocol,
+    tcpHost,
+    isLinux,
+    t,
+  ]);
 
   const isConnected =
     state.status === 'connected' ||
@@ -3028,7 +3064,7 @@ export default function ConnectionPanel({
                 aria-labelledby="connection-type-legend"
                 className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
               >
-                {(['ble', 'serial', 'http'] as const).map((type) => (
+                {(['ble', 'serial', 'http', 'tcp'] as const).map((type) => (
                   <button
                     key={type}
                     type="button"
@@ -3048,6 +3084,7 @@ export default function ConnectionPanel({
                     {type === 'ble' && t('connectionPanel.bluetooth')}
                     {type === 'serial' && t('connectionPanel.usbSerial')}
                     {type === 'http' && t('connectionPanel.wifiHttp')}
+                    {type === 'tcp' && t('connectionPanel.wifiTcp')}
                   </button>
                 ))}
               </div>
@@ -3104,6 +3141,25 @@ export default function ConnectionPanel({
               {navigator.userAgent.toLowerCase().includes('windows') && (
                 <p className="text-xs text-yellow-400">{t('connectionPanel.windowsMdnsNote')}</p>
               )}
+            </div>
+          )}
+          {connectionType === 'tcp' && protocol === 'meshtastic' && (
+            <div className="space-y-1">
+              <label htmlFor="connection-meshtastic-tcp-host" className="text-muted text-xs">
+                {t('connectionPanel.deviceAddress')}
+              </label>
+              <input
+                id="connection-meshtastic-tcp-host"
+                type="text"
+                value={tcpAddress}
+                onChange={(e) => {
+                  setTcpAddress(e.target.value);
+                }}
+                placeholder={t('connectionPanel.tcpAddressPlaceholder')}
+                className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
+                autoComplete="off"
+              />
+              <p className="text-muted text-xs">{t('connectionPanel.tcpAddressHint')}</p>
             </div>
           )}
           {connectionType === 'http' && protocol === 'meshcore' && (
@@ -3180,6 +3236,12 @@ export default function ConnectionPanel({
                 <p>{t('connectionPanel.hintMeshtasticHttp2')}</p>
               </>
             )}
+            {connectionType === 'tcp' && protocol === 'meshtastic' && (
+              <>
+                <p>{t('connectionPanel.hintMeshtasticTcp1')}</p>
+                <p>{t('connectionPanel.hintMeshtasticTcp2')}</p>
+              </>
+            )}
             {connectionType === 'http' && protocol === 'meshcore' && (
               <p>{t('connectionPanel.hintMeshcoreHttp')}</p>
             )}
@@ -3193,7 +3255,8 @@ export default function ConnectionPanel({
               disabled={
                 connecting ||
                 state.status === 'connecting' ||
-                (connectionType === 'http' && !activeHostAddress.trim())
+                ((connectionType === 'http' || connectionType === 'tcp') &&
+                  !activeHostAddress.trim())
               }
               className="bg-readable-green hover:bg-readable-green/90 w-full rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
