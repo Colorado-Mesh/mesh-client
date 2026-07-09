@@ -949,6 +949,8 @@ export function attachMeshcoreLegacyConnEvents(
         routeTypeString: null,
         payloadTypeString: 'TXT_MSG',
         hopCount: 0,
+        pathBytes: [],
+        pathHashSizeBytes: 1,
         fromNodeId: resolvedSenderId,
         messageFingerprintHex: null,
         transportScopeCode: null,
@@ -1062,6 +1064,8 @@ export function attachMeshcoreLegacyConnEvents(
         routeTypeString: null,
         payloadTypeString: 'GRP_TXT',
         hopCount: 0,
+        pathBytes: [],
+        pathHashSizeBytes: 1,
         fromNodeId: resolved.senderId || null,
         messageFingerprintHex: null,
         transportScopeCode: null,
@@ -1141,6 +1145,8 @@ export function attachMeshcoreLegacyConnEvents(
       let routeTypeString: string | null = null;
       let payloadTypeString: string | null = null;
       let hopCount = 0;
+      let pathBytes: number[] = [];
+      let pathHashSizeBytes: 1 | 2 | 3 = 1;
       let fromNodeId: number | null = null;
       let messageFingerprintHex: string | null = null;
       let transportScopeCode: number | null = null;
@@ -1157,6 +1163,8 @@ export function attachMeshcoreLegacyConnEvents(
         routeTypeString = parsed.routeTypeString;
         payloadTypeString = parsed.payloadTypeString;
         hopCount = parsed.hopCount;
+        pathBytes = parsed.pathBytes;
+        pathHashSizeBytes = parsed.pathHashSizeBytes;
         messageFingerprintHex = parsed.messageFingerprintHex;
         if (parsed.transportCodes) {
           transportScopeCode = parsed.transportCodes[0];
@@ -1192,6 +1200,8 @@ export function attachMeshcoreLegacyConnEvents(
           routeTypeString = fb.routeTypeString;
           payloadTypeString = fb.payloadTypeString;
           hopCount = fb.hopCount;
+          pathBytes = fb.pathBytes;
+          pathHashSizeBytes = fb.pathHashSizeBytes;
           if (fb.fromNodeId != null) fromNodeId = fb.fromNodeId;
         }
       }
@@ -1264,6 +1274,8 @@ export function attachMeshcoreLegacyConnEvents(
         routeTypeString,
         payloadTypeString,
         hopCount,
+        pathBytes,
+        pathHashSizeBytes,
         fromNodeId,
         messageFingerprintHex,
         transportScopeCode,

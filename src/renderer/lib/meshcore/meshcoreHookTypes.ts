@@ -277,6 +277,10 @@ export interface RxPacketEntry {
   routeTypeString: string | null;
   payloadTypeString: string | null;
   hopCount: number;
+  /** On-air path hash bytes after the path_length byte (empty when parse failed). */
+  pathBytes: number[];
+  /** Hash width per hop segment (1–3 bytes) from the path_length byte. */
+  pathHashSizeBytes: 1 | 2 | 3;
   /** Resolved when Meshtastic frame or MeshCore payload prefix matches a known contact */
   fromNodeId: number | null;
   /** CRC-32 fingerprint (8 hex chars), same as optional DB `rx_packet_fingerprint` on messages */
