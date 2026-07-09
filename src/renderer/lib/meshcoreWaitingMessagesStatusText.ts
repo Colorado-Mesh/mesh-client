@@ -81,12 +81,13 @@ export function meshcoreWaitingMessagesVisibleForProtocol(
   activeProtocol: 'meshtastic' | 'meshcore' | 'reticulum',
 ): boolean {
   if (!meshcoreWaitingMessagesVisible(input)) return false;
-  if (
-    activeProtocol !== 'meshcore' &&
-    input.waitingMessagesDrainDeferred &&
-    !meshcoreWaitingMessagesSyncBusy(input)
-  ) {
-    return false;
+  if (activeProtocol !== 'meshcore') {
+    if (meshcoreWaitingMessagesSyncBusy(input)) {
+      return false;
+    }
+    if (input.waitingMessagesDrainDeferred) {
+      return false;
+    }
   }
   return true;
 }
