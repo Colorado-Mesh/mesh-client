@@ -59,7 +59,7 @@ describe('pushMeshtasticTransportSideEffectUnsubs', () => {
     expect(unsubs).toHaveLength(1);
   });
 
-  it('skips transport loss watch and heartbeat for HTTP', () => {
+  it('attaches serialized transport but skips heartbeat for HTTP', () => {
     const device = mockDevice();
     pushMeshtasticTransportSideEffectUnsubs(
       device,
@@ -69,8 +69,15 @@ describe('pushMeshtasticTransportSideEffectUnsubs', () => {
     );
 
     expect(window.electronAPI.onNobleBleDisconnected).not.toHaveBeenCalled();
-    expect(attachMeshtasticTransportLossWatch).not.toHaveBeenCalled();
+    // Regression: HTTP's toDevice must be serialized too, or concurrent SDK
+    // getWriter() calls (queue vs. NODEINFO/GetMetadata retries) throw
+    // "WritableStream is locked" and silently drop outbound writes/sends.
+    expect(attachMeshtasticTransportLossWatch).toHaveBeenCalledWith(
+      device,
+      'http',
+      onTransportLost,
+    );
     expect(device.setHeartbeatInterval).not.toHaveBeenCalled();
-    expect(unsubs).toHaveLength(0);
+    expect(unsubs).toHaveLength(1);
   });
 });
