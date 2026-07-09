@@ -67,14 +67,16 @@ function buildEnvelope(options: {
   dataBytes: Uint8Array;
   psk: Buffer;
   channelName?: string;
+  /** MeshPacket.channel RF slot (0–7); authoritative for inbound ingest. */
+  channel?: number;
 }): Buffer {
-  const { nodeId, packetId, dataBytes, psk, channelName = 'LongFast' } = options;
+  const { nodeId, packetId, dataBytes, psk, channelName = 'LongFast', channel = 0 } = options;
   const encrypted = encrypt(dataBytes, packetId, nodeId, psk);
   const packet = create(MeshPacketSchema, {
     from: nodeId,
     to: 0xffffffff,
     id: packetId,
-    channel: 0,
+    channel,
     payloadVariant: { case: 'encrypted', value: encrypted },
   });
   const gatewayId = `!${nodeId.toString(16).padStart(8, '0')}`;
@@ -92,16 +94,26 @@ function buildDecodedEnvelope(options: {
   packetId: number;
   dataBytes: Uint8Array;
   channelName?: string;
+  /** MeshPacket.channel RF slot (0–7); authoritative for inbound ingest. */
+  channel?: number;
   hopStart?: number;
   hopLimit?: number;
 }): Buffer {
-  const { nodeId, packetId, dataBytes, channelName = 'LongFast', hopStart, hopLimit } = options;
+  const {
+    nodeId,
+    packetId,
+    dataBytes,
+    channelName = 'LongFast',
+    channel = 0,
+    hopStart,
+    hopLimit,
+  } = options;
   const data = fromBinary(DataSchema, dataBytes);
   const packet = create(MeshPacketSchema, {
     from: nodeId,
     to: 0xffffffff,
     id: packetId,
-    channel: 0,
+    channel,
     payloadVariant: {
       case: 'decoded',
       value: data,
@@ -1524,7 +1536,7 @@ describe('publish — decrypt round-trip (explicit PSK)', () => {
 });
 
 describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
-  it('attributes encrypted text to mapped channel index from topic name', () => {
+  it('attributes encrypted text to MeshPacket.channel when topic map matches', () => {
     const manager = new MQTTManager();
     (manager as any)._doConnect = () => {};
     manager.connect({
@@ -1555,6 +1567,7 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
       dataBytes,
       psk: CUSTOM_PSK,
       channelName: 'HamPrivate',
+      channel: 2,
     });
 
     const messages: unknown[] = [];
@@ -1565,7 +1578,7 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
     expect((messages[0] as { channel: number }).channel).toBe(2);
   });
 
-  it('attributes LongFast topic to channel 0 when no index map entry', () => {
+  it('attributes LongFast topic to channel 0 when packet channel is 0 and no index map', () => {
     const manager = new MQTTManager();
     const nodeId = 0x11223355;
     const packetId = 0x00000032;
@@ -1586,7 +1599,7 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
     expect((messages[0] as { channel: number }).channel).toBe(0);
   });
 
-  it('attributes LongFast topic to configured non-zero slot', () => {
+  it('attributes LongFast on configured non-zero slot via MeshPacket.channel', () => {
     const manager = new MQTTManager();
     (manager as any)._doConnect = () => {};
     manager.connect({
@@ -1609,7 +1622,7 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
         payload: new TextEncoder().encode('hello longfast slot 1'),
       }),
     );
-    const payload = buildEnvelope({ nodeId, packetId, dataBytes, psk: DEFAULT_PSK });
+    const payload = buildEnvelope({ nodeId, packetId, dataBytes, psk: DEFAULT_PSK, channel: 1 });
 
     const messages: unknown[] = [];
     manager.on('message', (m) => messages.push(m));
@@ -1617,6 +1630,159 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
 
     expect(messages).toHaveLength(1);
     expect((messages[0] as { channel: number }).channel).toBe(1);
+  });
+
+  it('prefers MeshPacket.channel over LongFast topic fallback when index map is missing', () => {
+    const manager = new MQTTManager();
+    const nodeId = 0x11223377;
+    const packetId = 0x00000036;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('packet channel 1 no map'),
+      }),
+    );
+    const payload = buildEnvelope({ nodeId, packetId, dataBytes, psk: DEFAULT_PSK, channel: 1 });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!11223377', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(1);
+  });
+
+  it('prefers MeshPacket.channel when topic map would attribute LongFast to channel 0', () => {
+    const manager = new MQTTManager();
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 0 }]);
+
+    const nodeId = 0x11223388;
+    const packetId = 0x00000037;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('packet wins over topic map'),
+      }),
+    );
+    const payload = buildEnvelope({ nodeId, packetId, dataBytes, psk: DEFAULT_PSK, channel: 1 });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!11223388', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(1);
+    expect(
+      debugSpy.mock.calls.some(
+        (call) =>
+          typeof call[0] === 'string' &&
+          call[0].includes('TEXT channel from packet (1) differs from topic map (0)'),
+      ),
+    ).toBe(true);
+    debugSpy.mockRestore();
+  });
+
+  it('clamps MeshPacket.channel above 7 to slot 7', () => {
+    const manager = new MQTTManager();
+    const nodeId = 0x112233aa;
+    const packetId = 0x00000039;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('channel clamp high'),
+      }),
+    );
+    const payload = buildEnvelope({
+      nodeId,
+      packetId,
+      dataBytes,
+      psk: DEFAULT_PSK,
+      channel: 8,
+    });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!112233aa', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(7);
+  });
+
+  it('clamps negative JSON text channel via unsigned coercion to slot 7', () => {
+    const manager = new MQTTManager();
+    const nodeId = 0x112233ab;
+    const json = {
+      type: 'text',
+      from: nodeId,
+      channel: -1,
+      text: 'json channel clamp negative',
+    };
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage(
+      'msh/US/2/json/LongFast/!112233ab',
+      Buffer.from(JSON.stringify(json)),
+    );
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(7);
+  });
+
+  it('attributes omitted MeshPacket.channel to slot 0 on LongFast topic', () => {
+    const manager = new MQTTManager();
+    const nodeId = 0x112233ac;
+    const packetId = 0x0000003b;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('gateway omitted channel field'),
+      }),
+    );
+    const payload = buildEnvelope({ nodeId, packetId, dataBytes, psk: DEFAULT_PSK, channel: 0 });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!112233ac', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(0);
+  });
+
+  it('attributes decoded MQTT text to MeshPacket.channel', () => {
+    const manager = new MQTTManager();
+    const nodeId = 0x11223399;
+    const packetId = 0x00000038;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('decoded on channel 2'),
+      }),
+    );
+    const payload = buildDecodedEnvelope({ nodeId, packetId, dataBytes, channel: 2 });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!11223399', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(2);
   });
 
   it('attributes LongFast topic to slot 1 from renderer unnamed default-public entry shape', () => {
@@ -1646,7 +1812,7 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
         payload: new TextEncoder().encode('unnamed longfast slot 1'),
       }),
     );
-    const payload = buildEnvelope({ nodeId, packetId, dataBytes, psk: DEFAULT_PSK });
+    const payload = buildEnvelope({ nodeId, packetId, dataBytes, psk: DEFAULT_PSK, channel: 1 });
 
     const messages: unknown[] = [];
     manager.on('message', (m) => messages.push(m));
@@ -1689,7 +1855,7 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
     expect((manager as any).currentSettings.topicPrefix).toBe('msh/US/CO');
   });
 
-  it('attributes unknown topic channel names to channel 0', () => {
+  it('attributes unknown topic channel names to packet channel 0 when map has no index', () => {
     const manager = new MQTTManager();
     (manager as any)._doConnect = () => {};
     manager.connect({

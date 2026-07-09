@@ -39,6 +39,10 @@ import {
   computeReticulumChatUnread,
   totalUnreadCount,
 } from '@/renderer/lib/chatUnreadCounts';
+import {
+  buildDebugSnapshotMeshtasticContextFromRuntime,
+  setDebugSnapshotMeshtasticContext,
+} from '@/renderer/lib/debugSnapshotMeshtasticContext';
 import { setDebugSnapshotUiContext } from '@/renderer/lib/debugSnapshotUiContext';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
@@ -1670,6 +1674,15 @@ function AppContent() {
     meshcoreRuntime.waitingMessagesSilentDrainActive,
     meshcoreRuntime.waitingMessagesDrainDeferred,
   ]);
+
+  useEffect(() => {
+    setDebugSnapshotMeshtasticContext(
+      buildDebugSnapshotMeshtasticContextFromRuntime(
+        meshtasticRuntime.channels,
+        meshtasticRuntime.channelConfigs,
+      ),
+    );
+  }, [meshtasticRuntime.channels, meshtasticRuntime.channelConfigs]);
 
   const syncWaitingMessages = meshcoreRuntime.syncWaitingMessages;
   const handleMeshcoreSyncWaitingMessages = useCallback(async () => {

@@ -20,6 +20,10 @@ import {
   type DebugSnapshot,
 } from './debugSnapshot';
 import {
+  resetDebugSnapshotMeshtasticContext,
+  setDebugSnapshotMeshtasticContext,
+} from './debugSnapshotMeshtasticContext';
+import {
   getDebugSnapshotUiContext,
   resetDebugSnapshotUiContext,
   setDebugSnapshotUiContext,
@@ -66,6 +70,22 @@ function makeBucketOverrides(
   };
 }
 
+function makeMeshtasticBucketOverrides(
+  overrides: Partial<DebugSnapshot['meshtastic']> = {},
+): DebugSnapshot['meshtastic'] {
+  return {
+    ...makeBucketOverrides({
+      hydrationSlotId: OFFLINE_MESHTASTIC_IDENTITY_ID,
+      connectIdentityId: OFFLINE_MESHTASTIC_IDENTITY_ID,
+      uiStoreIdentityId: OFFLINE_MESHTASTIC_IDENTITY_ID,
+      ...overrides,
+    }),
+    channelPills: overrides.channelPills ?? [],
+    channelConfigsSummary: overrides.channelConfigsSummary ?? [],
+    mqttChannelKeyEntryCount: overrides.mqttChannelKeyEntryCount ?? null,
+  };
+}
+
 function makeReticulumSnapshot(
   overrides: Partial<DebugReticulumSnapshot> = {},
 ): DebugReticulumSnapshot {
@@ -98,12 +118,7 @@ function makeSyntheticSnapshot(overrides: Partial<DebugSnapshot> = {}): DebugSna
     ...overrides.ui,
   };
   const meshcore = makeBucketOverrides(overrides.meshcore ?? {});
-  const meshtastic = makeBucketOverrides({
-    hydrationSlotId: OFFLINE_MESHTASTIC_IDENTITY_ID,
-    connectIdentityId: OFFLINE_MESHTASTIC_IDENTITY_ID,
-    uiStoreIdentityId: OFFLINE_MESHTASTIC_IDENTITY_ID,
-    ...(overrides.meshtastic ?? {}),
-  });
+  const meshtastic = makeMeshtasticBucketOverrides(overrides.meshtastic ?? {});
   const reticulum = makeReticulumSnapshot(overrides.reticulum ?? {});
   const base: Omit<DebugSnapshot, 'warnings'> = {
     capturedAt: '2026-06-19T16:00:00.000Z',
@@ -156,6 +171,7 @@ describe('buildDebugSnapshot', () => {
     useNodeStore.setState({ nodes: {} });
     useConnectionStore.setState({ connections: {} });
     resetDebugSnapshotUiContext();
+    resetDebugSnapshotMeshtasticContext();
     localStorage.clear();
   });
 
@@ -195,7 +211,47 @@ describe('buildDebugSnapshot', () => {
     expect(snap.reticulum.bucket.hydrationSlotId).toBe(OFFLINE_RETICULUM_IDENTITY_ID);
     expect(snap.reticulum.sidecar.running).toBe(false);
     expect(snap.reticulum.stack).toBeNull();
+    expect(snap.meshtastic.channelPills).toEqual([]);
+    expect(snap.meshtastic.channelConfigsSummary).toEqual([]);
+    expect(snap.meshtastic.mqttChannelKeyEntryCount).toBeNull();
     expect(snap.warnings).toEqual([]);
+  });
+
+  it('includes Meshtastic channel pills and config summary from debug context', () => {
+    ensureOfflineProtocolIdentities();
+    setDebugSnapshotMeshtasticContext({
+      channelPills: [
+        { index: 0, name: 'Private' },
+        { index: 1, name: 'LongFast' },
+      ],
+      channelConfigsSummary: [
+        {
+          index: 0,
+          name: 'Private',
+          role: 1,
+          uplinkEnabled: false,
+          isDefaultPublicPsk: false,
+        },
+        {
+          index: 1,
+          name: '',
+          role: 2,
+          uplinkEnabled: true,
+          isDefaultPublicPsk: true,
+        },
+      ],
+      mqttChannelKeyEntryCount: 2,
+    });
+
+    const snap = buildDebugSnapshot();
+
+    expect(snap.meshtastic.channelPills).toEqual([
+      { index: 0, name: 'Private' },
+      { index: 1, name: 'LongFast' },
+    ]);
+    expect(snap.meshtastic.channelConfigsSummary).toHaveLength(2);
+    expect(snap.meshtastic.channelConfigsSummary[1]?.isDefaultPublicPsk).toBe(true);
+    expect(snap.meshtastic.mqttChannelKeyEntryCount).toBe(2);
   });
 
   it('uses activeProtocol from ui context for activeTab including reticulum', () => {

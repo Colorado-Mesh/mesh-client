@@ -446,6 +446,28 @@ export class MQTTManager extends EventEmitter {
     return 0;
   }
 
+  /** MeshPacket.channel is 0–7 on the wire; clamp for ingest when protobuf omits or sends garbage. */
+  private clampMeshtasticRfChannel(channel: number | undefined): number {
+    if (channel == null || !Number.isFinite(channel)) return 0;
+    const idx = channel >>> 0;
+    return idx <= 7 ? idx : 7;
+  }
+
+  /** Prefer authoritative MeshPacket.channel; log when topic name map disagrees (sampled). */
+  private resolveMqttInboundTextChannelIndex(rfChannel: number, topic?: string): number {
+    const channelIndex = this.clampMeshtasticRfChannel(rfChannel);
+    if (topic !== undefined) {
+      const topicIndex = this.resolveChannelIndexFromTopic(topic);
+      if (topicIndex !== channelIndex) {
+        this.logSampledDebug(
+          `mqtt-channel-topic-mismatch:${topicIndex}:${channelIndex}`,
+          `[Meshtastic MQTT] TEXT channel from packet (${channelIndex}) differs from topic map (${topicIndex}); using packet channel | topic=${sanitizeLogMessage(topic)}`,
+        );
+      }
+    }
+    return channelIndex;
+  }
+
   private wildcardSubscribeTopicForPrefix(topicPrefix: string): string {
     const prefix = topicPrefix.endsWith('/') ? topicPrefix : `${topicPrefix}/`;
     return `${prefix}#`;
@@ -1378,18 +1400,19 @@ export class MQTTManager extends EventEmitter {
     const hopsAway = hopStart > 0 && hopLimit <= hopStart ? hopStart - hopLimit : undefined;
 
     const payloadCase = packet.payloadVariant?.case;
+    const rfChannel = this.clampMeshtasticRfChannel(packet.channel);
 
     if (payloadCase === 'decoded') {
       const decoded = packet.payloadVariant.value as {
         portnum?: (typeof PortNum)[keyof typeof PortNum];
         payload?: Uint8Array;
       };
-      this.handleDecoded(nodeId, packetId, decoded, hopsAway);
+      this.handleDecoded(nodeId, packetId, decoded, hopsAway, rfChannel, topic);
     } else if (payloadCase === 'encrypted') {
       const encrypted = packet.payloadVariant.value;
       const decodedData = this.tryDecryptAllKeys(encrypted, packetId, nodeId);
       if (decodedData) {
-        this.handleDecoded(nodeId, packetId, decodedData, hopsAway, topic);
+        this.handleDecoded(nodeId, packetId, decodedData, hopsAway, rfChannel, topic);
       }
     }
   }
@@ -1563,7 +1586,10 @@ export class MQTTManager extends EventEmitter {
       sender_id: nodeId,
       sender_name: formatMeshtasticNodeId(nodeId),
       payload: text,
-      channel: typeof json.channel === 'number' ? json.channel : 0,
+      channel: this.resolveMqttInboundTextChannelIndex(
+        typeof json.channel === 'number' ? json.channel : 0,
+        topic,
+      ),
       timestamp: typeof json.timestamp === 'number' ? json.timestamp * 1000 : Date.now(),
       packetId,
       from_mqtt: true,
@@ -1715,7 +1741,8 @@ export class MQTTManager extends EventEmitter {
       emoji?: number;
       replyId?: number;
     },
-    hopsAway?: number,
+    hopsAway: number | undefined,
+    rfChannel: number,
     topic?: string,
   ): void {
     const portnum = data.portnum ?? PortNum.UNKNOWN_APP;
@@ -1832,7 +1859,7 @@ export class MQTTManager extends EventEmitter {
           sender_id: nodeId,
           sender_name: formatMeshtasticNodeId(nodeId),
           payload: resolved.text,
-          channel: topic !== undefined ? this.resolveChannelIndexFromTopic(topic) : 0,
+          channel: this.resolveMqttInboundTextChannelIndex(rfChannel, topic),
           timestamp: Date.now(),
           packetId,
           from_mqtt: true,

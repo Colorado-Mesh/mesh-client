@@ -382,4 +382,16 @@ describe('Native Electron call guards (source contract)', () => {
     );
     expect(INDEX_SOURCE).toContain('clipboard.writeText(text)');
   });
+
+  it('bounds bluetooth-start-scan with a 15 s timeout', () => {
+    expect(INDEX_SOURCE).toContain('BLUETOOTH_START_SCAN_TIMEOUT_MS = 15_000');
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('bluetooth-start-scan'");
+    expect(INDEX_SOURCE).toContain('bluetooth-start-scan: timed out after 15 s');
+  });
+
+  it('reads meshcore import JSON via fs.promises.readFile', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('meshcore:openJsonFile'[\s\S]*?fs\.promises\.readFile/,
+    );
+  });
 });

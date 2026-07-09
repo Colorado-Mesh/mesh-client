@@ -5,9 +5,12 @@ import path from 'path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+  assertSafeElectronSemverVersion,
   buildElectronArchiveSourcesYaml,
   parseElectronSha256s,
+  sanitizeFlatpakElectronManifestYamlForDisk,
   syncFlatpakElectronManifest,
+  validateElectronSha256ByZipArch,
 } from './sync-flatpak-electron.mjs';
 
 const FIXTURE_SHASUMS = `512f4e0574dc5800c612ea904e854f602f36ac57cade971a0a2b239bfaa19e52 *electron-v41.10.1-linux-x64.zip
@@ -30,6 +33,43 @@ const SAMPLE_MANIFEST = `      - type: file
         only-arches: [aarch64]`;
 
 describe('sync-flatpak-electron.mjs', () => {
+  it('assertSafeElectronSemverVersion accepts X.Y.Z', () => {
+    expect(assertSafeElectronSemverVersion('41.10.1')).toBe('41.10.1');
+  });
+
+  it('assertSafeElectronSemverVersion rejects unsafe version strings', () => {
+    expect(() => assertSafeElectronSemverVersion('41.10.1-evil')).toThrow(/X\.Y\.Z/);
+    expect(() => assertSafeElectronSemverVersion('../../../etc/passwd')).toThrow(/X\.Y\.Z/);
+    expect(() => assertSafeElectronSemverVersion('')).toThrow(/X\.Y\.Z/);
+  });
+
+  it('validateElectronSha256ByZipArch rejects short or non-hex checksums', () => {
+    const valid = parseElectronSha256s(FIXTURE_SHASUMS, '41.10.1');
+    expect(validateElectronSha256ByZipArch(valid, '41.10.1')).toEqual(valid);
+    expect(() =>
+      validateElectronSha256ByZipArch({ x64: 'abc', arm64: valid.arm64 }, '41.10.1'),
+    ).toThrow(/linux-x64 checksum/);
+    expect(() =>
+      validateElectronSha256ByZipArch({ x64: valid.x64, arm64: 'not-hex' }, '41.10.1'),
+    ).toThrow(/linux-arm64 checksum/);
+  });
+
+  it('sanitizeFlatpakElectronManifestYamlForDisk rejects yaml missing validated checksums', () => {
+    const sha256ByZipArch = parseElectronSha256s(FIXTURE_SHASUMS, '41.10.1');
+    const next = syncFlatpakElectronManifest(SAMPLE_MANIFEST, '41.10.1', sha256ByZipArch);
+    expect(sanitizeFlatpakElectronManifestYamlForDisk(next, '41.10.1', sha256ByZipArch)).toBe(next);
+    expect(() =>
+      sanitizeFlatpakElectronManifestYamlForDisk(next, '41.10.0', sha256ByZipArch),
+    ).toThrow(/Electron archive URLs/);
+    expect(() =>
+      sanitizeFlatpakElectronManifestYamlForDisk(
+        next.replace(sha256ByZipArch.x64, '0'.repeat(64)),
+        '41.10.1',
+        sha256ByZipArch,
+      ),
+    ).toThrow(/validated Electron archive checksums/);
+  });
+
   it('parses linux x64 and arm64 checksums for a release', () => {
     expect(parseElectronSha256s(FIXTURE_SHASUMS, '41.10.1')).toEqual({
       x64: '512f4e0574dc5800c612ea904e854f602f36ac57cade971a0a2b239bfaa19e52',

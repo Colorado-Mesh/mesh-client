@@ -66,6 +66,12 @@ The top-level **`legend`** explains that ids like `offline-meshcore` are **inter
 - `ui.waitingMessagesSilentDrainActive` / `ui.waitingMessagesDrainDeferred` — MeshCore incremental drain in progress or paused behind admin/trace (serial may show small batches). UI: **header status indicator** (queued backlog visible on any protocol tab; **active sync spinner and paused/deferred** state only on the MeshCore tab), not Chat/Rooms panel strips.
 - `meshcoreContactPathDiagnostics` — redacted MeshCore contact rows with `pubKeyPrefixHex` (12 hex chars), `hopsAway`, and best known `bestPathBytes` / `bestPathHopCount` from SQLite path history (useful for ping/no-route reports).
 
+**Meshtastic-only extension** (under `meshtastic` bucket):
+
+- `channelPills` — UI channel index + name (runtime channel pills).
+- `channelConfigsSummary` — index, name, role, `uplinkEnabled`, `isDefaultPublicPsk` (no PSK material).
+- `mqttChannelKeyEntryCount` — count of synced MQTT channel keys from radio config; `null` when empty.
+
 **Automatic warning codes** in `warnings[]`: `identitySplit`, `staleResolvedBucket`, `chatPanelFrozen` (legacy builds), `connectedNoPrimaryMessages`, `windowHiddenOnChat`, `sidecarNotRunning` (Reticulum stack expected but sidecar process down).
 
 **Reticulum-only fields** (under `reticulum`):
@@ -952,6 +958,25 @@ For bulk fixes, use Network **Config import** (merge) instead of hand-editing in
 See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 
 ## Chat, nodes, and notifications
+
+### Meshtastic: inbound messages on the wrong channel tab
+
+**Symptoms**
+
+- Public mesh traffic appears under your **primary/private** Chat channel pill instead of the configured public slot (often channel 1).
+- The same message may appear on two channel tabs when heard over **RF** (correct slot) and **MQTT** (wrong slot).
+- Other Meshtastic clients (phone app, radio UI) show the message on the expected channel.
+
+**Cause**
+
+MQTT ingest historically mapped inbound text to a channel index from the topic name (`LongFast`, regional names) instead of the authoritative `MeshPacket.channel` field in the ServiceEnvelope. When the topic map was stale or incomplete (unnamed default-public on slot 1, delayed channel-key sync), traffic was attributed to channel 0.
+
+**Fix**
+
+1. Update to a build that prefers `MeshPacket.channel` for MQTT text ingest.
+2. Connect the radio so channel keys sync to MQTT (`mqtt:updateChannelKeys` in logs after configure).
+3. On **Export for Developer** / **Copy Debug Snapshot**, check `meshtastic.channelPills`, `meshtastic.channelConfigsSummary`, and `meshtastic.mqttChannelKeyEntryCount` — slot 1 with empty name and `isDefaultPublicPsk: true` is the common Colorado-mesh layout.
+4. When reporting, note whether mis-filed messages are **MQTT-only**, **RF-only**, or **both**, and attach a Radio tab screenshot of channel names + slot indices.
 
 ### Phantom chat unread on channels not on the radio
 
