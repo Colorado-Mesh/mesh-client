@@ -56,6 +56,8 @@ export interface MeshtasticRawPacketEntry {
   portLabel: string;
   viaMqtt: boolean;
   isLocal?: boolean;
+  /** RF hop count (hopStart − hopLimit); undefined for MQTT or undecodable packets. */
+  hopsAway?: number;
 }
 
 /** Reticulum RNS wire frame from sidecar packet tap. */

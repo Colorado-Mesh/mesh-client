@@ -97,6 +97,7 @@ import { recordMeshtasticClientNotification } from './meshtasticClientNotificati
 import { pushMeshtasticTransportSideEffectUnsubs } from './meshtasticLegacyDeviceEvents';
 import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraConfig';
 import type { MeshtasticMqttClientProxyBridge } from './meshtasticMqttClientProxy';
+import { parseMeshtasticRawPacketExpand } from './meshtasticRawPacketExpand';
 import {
   installMeshtasticSdkRoutingErrorConsoleHook,
   installMeshtasticSdkRoutingErrorUnhandledRejectionHandler,
@@ -1533,6 +1534,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
       try {
         const raw = toBinary(Mesh.MeshPacketSchema, packet as never);
         const portLabel = meshtasticRawPacketPortLabel(packet);
+        const expanded = parseMeshtasticRawPacketExpand(raw, { viaMqtt: mp.viaMqtt === true });
         const entry: MeshtasticRawPacketEntry = {
           ts: Date.now(),
           snr: mp.rxSnr ?? 0,
@@ -1542,6 +1544,7 @@ export function attachMeshtasticLegacyWireSubscriptions(
           portLabel,
           viaMqtt: mp.viaMqtt === true,
           isLocal: mp.from === myNodeNumRef.current && !mp.viaMqtt && portLabel === 'TELEMETRY_APP',
+          hopsAway: expanded.ok ? expanded.hopsAway : undefined,
         };
         setRawPackets((prev) => {
           const next = [...prev, entry];

@@ -1146,6 +1146,37 @@ function AppContent() {
     (id: number) => nodeLabelForRawPacket(nodesForUi.get(id), id, protocol),
     [nodesForUi, protocol],
   );
+  const rawPacketGetNodeHwModel = useCallback(
+    (id: number) => nodesForUi.get(id)?.hw_model,
+    [nodesForUi],
+  );
+  const meshcoreSnifferPubKeyByNodeId = useMemo(() => {
+    const m = new Map<number, Uint8Array>();
+    const addHex = (nodeId: number, hex: string | undefined) => {
+      if (hex?.length !== 64) return;
+      const bytes = new Uint8Array(32);
+      for (let i = 0; i < 32; i++) {
+        bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+      }
+      m.set(nodeId, bytes);
+    };
+    for (const [id, node] of meshcoreUiNodes) {
+      addHex(id, node.public_key_hex);
+    }
+    const self = meshcoreRuntime.selfInfo;
+    if (self?.publicKey?.length === 32) {
+      m.set(pubkeyToNodeId(self.publicKey), self.publicKey);
+    }
+    return m;
+  }, [meshcoreUiNodes, meshcoreRuntime.selfInfo]);
+  const meshcoreSnifferPathCandidates = useMemo(
+    () =>
+      Array.from(meshcoreUiNodes.values()).map((n) => ({
+        node_id: n.node_id,
+        last_heard: n.last_heard ?? 0,
+      })),
+    [meshcoreUiNodes],
+  );
   const meshcorePublicKeyHexByNodeId = useMemo(() => {
     const m = new Map<number, string>();
     if (!meshcoreCapabilities.hasContactImportExport) return m;
@@ -3529,7 +3560,11 @@ function AppContent() {
                                   packets={meshcoreRuntime.rawPackets}
                                   onClear={meshcorePanelActions.clearRawPackets}
                                   getNodeLabel={rawPacketGetNodeLabel}
+                                  getNodeHwModel={rawPacketGetNodeHwModel}
+                                  pubKeyByNodeId={meshcoreSnifferPubKeyByNodeId}
+                                  pathCandidates={meshcoreSnifferPathCandidates}
                                   onNodeClick={setSelectedNodeId}
+                                  onPing={meshcorePanelActions.traceRoute}
                                   floodScopeHashtag={meshcoreFloodScopeHashtag}
                                 />
                               ) : (

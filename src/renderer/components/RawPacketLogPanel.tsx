@@ -4,11 +4,12 @@
  */
 /* eslint-disable react-hooks/incompatible-library */
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ArrowDown } from 'lucide-react-motion';
+import { ArrowDown, ArrowUp, Play } from 'lucide-react-motion';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatLogTimeOfDay } from '../../shared/formatLogTimestamp';
+import type { NodeHashCandidate } from '../../shared/meshcoreNodeHash';
 import {
   meshCoreTransportCodeMatchesRegion,
   parseMeshCoreRfPacket,
@@ -24,12 +25,14 @@ import {
   createStableChatMeasureElement,
   VIRTUALIZER_SCROLL_END_THRESHOLD,
 } from '../lib/chatScrollUtils';
+import { formatRawPacketRelativeTime } from '../lib/formatRawPacketRelativeTime';
 import type { RxPacketEntry } from '../lib/meshcore/meshcoreHookTypes';
 import { normalizeMeshcoreFloodScopeHashtag } from '../lib/meshcoreFloodScope';
 import {
   formatMeshtasticRawPacketExpandDebugLine,
   parseMeshtasticRawPacketExpand,
 } from '../lib/meshtastic/meshtasticRawPacketExpand';
+import { getNodeTypeIcon } from '../lib/nodeIcons';
 import {
   meshcoreRawPacketSenderColumnText,
   reticulumDestinationColumnText,
@@ -39,8 +42,18 @@ import {
   rawPacketVirtualizerKey,
   type ReticulumRawPacketEntry,
 } from '../lib/rawPacketLogConstants';
+import {
+  DEFAULT_RAW_PACKET_SORT,
+  type RawPacketSortColumn,
+  type RawPacketSortDirection,
+  type RawPacketSortState,
+  sortMeshcorePackets,
+  sortMeshtasticPackets,
+  sortReticulumPackets,
+} from '../lib/rawPacketLogSort';
 import { registerReticulumDestinationHash, reticulumHashToNodeId } from '../lib/reticulum/destHash';
 import { formatReticulumWireEnumLabel } from '../lib/reticulum/reticulumRawPacketLog';
+import { RawPacketPathChain } from './RawPacketPathChain';
 
 const ROUTE_LABEL: Record<string, string> = {
   FLOOD: 'FLOOD',
@@ -51,6 +64,178 @@ const ROUTE_LABEL: Record<string, string> = {
 
 /** Sender column: Meshtastic long names can be ~36 chars; flex so the row shares space without a 120px cap. */
 const RAW_PACKET_NAME_COL = 'min-w-0 flex-1 max-w-[min(28rem,50vw)]';
+
+const MESHCORE_ROUTE_BAR: Record<string, string> = {
+  FLOOD: 'border-l-blue-500',
+  TRANSPORT_FLOOD: 'border-l-blue-400',
+  DIRECT: 'border-l-green-500',
+  TRANSPORT_DIRECT: 'border-l-green-400',
+};
+
+const MESHCORE_PAYLOAD_BADGE: Record<string, string> = {
+  ADVERT: 'bg-green-900/60 text-green-300',
+  TXT_MSG: 'bg-amber-900/50 text-amber-200',
+  GRP_TXT: 'bg-yellow-900/50 text-yellow-200',
+  REQ_RESP: 'bg-purple-900/50 text-purple-200',
+  TRACE: 'bg-cyan-900/50 text-cyan-200',
+};
+
+function meshcoreRouteBarClass(route: string | null): string {
+  if (!route) return 'border-l-gray-700';
+  return MESHCORE_ROUTE_BAR[route] ?? 'border-l-gray-600';
+}
+
+function meshcoreRouteBarTooltip(route: string | null, t: (key: string) => string): string {
+  if (route === 'FLOOD' || route === 'TRANSPORT_FLOOD') {
+    return t('rawPacketLog.routeBarFloodTooltip');
+  }
+  if (route === 'DIRECT' || route === 'TRANSPORT_DIRECT') {
+    return t('rawPacketLog.routeBarDirectTooltip');
+  }
+  return t('rawPacketLog.routeBarUnknownTooltip');
+}
+
+function meshcorePayloadBadgeClass(payload: string | null): string {
+  if (!payload) return 'bg-gray-700 text-gray-400';
+  return MESHCORE_PAYLOAD_BADGE[payload] ?? 'bg-slate-700 text-slate-200';
+}
+
+function meshtasticPortBadgeClass(portLabel: string): string {
+  if (portLabel.includes('TEXT')) return 'bg-amber-900/50 text-amber-200';
+  if (portLabel.includes('TELEMETRY')) return 'bg-cyan-900/50 text-cyan-200';
+  if (portLabel.includes('POSITION')) return 'bg-green-900/50 text-green-300';
+  return 'bg-slate-700 text-slate-200';
+}
+
+function PacketTypeBadge({
+  label,
+  className,
+  tooltip,
+}: {
+  label: string;
+  className: string;
+  tooltip?: string;
+}) {
+  return (
+    <span
+      className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold ${className}`}
+      title={tooltip ?? label}
+    >
+      {label}
+    </span>
+  );
+}
+
+function meshcoreDeviceTypeTooltip(
+  hwModel: string | undefined,
+  t: (key: string) => string,
+): string {
+  if (hwModel === 'Repeater') return t('rawPacketLog.deviceTypeRepeaterTooltip');
+  if (hwModel === 'Room') return t('rawPacketLog.deviceTypeRoomTooltip');
+  if (hwModel === 'Sensor') return t('rawPacketLog.deviceTypeSensorTooltip');
+  if (hwModel === 'Chat') return t('rawPacketLog.deviceTypeChatTooltip');
+  return '';
+}
+
+function MeshcoreNodeTypeIcon({
+  hwModel,
+  tooltip,
+}: {
+  hwModel: string | undefined;
+  tooltip: string;
+}) {
+  const path = hwModel ? getNodeTypeIcon(hwModel) : null;
+  if (!path || !tooltip) return null;
+  return (
+    <span title={tooltip} className="inline-flex shrink-0">
+      <svg
+        aria-hidden
+        className="h-3.5 w-3.5 text-cyan-300/80"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <path d={path} />
+      </svg>
+    </span>
+  );
+}
+
+function ColumnHeaderLabel({ label, tooltip }: { label: string; tooltip: string }) {
+  return (
+    <span className="text-muted" title={tooltip}>
+      {label}
+    </span>
+  );
+}
+
+function SortableColumnHeader({
+  label,
+  column,
+  sort,
+  onSort,
+  className = '',
+  tooltip,
+}: {
+  label: string;
+  column: RawPacketSortColumn;
+  sort: RawPacketSortState;
+  onSort: (column: RawPacketSortColumn) => void;
+  className?: string;
+  tooltip: string;
+}) {
+  const { t } = useTranslation();
+  const active = sort.column === column;
+  const directionLabel = active
+    ? sort.direction === 'asc'
+      ? t('rawPacketLog.sortAscending')
+      : t('rawPacketLog.sortDescending')
+    : t('rawPacketLog.sortAscending');
+  const title = active
+    ? t('rawPacketLog.sortColumnActiveTooltip', { column: label, direction: directionLabel })
+    : tooltip;
+  return (
+    <button
+      type="button"
+      className={`text-muted hover:text-gray-300 ${active ? 'text-gray-200' : ''} ${className}`}
+      aria-label={t('rawPacketLog.sortByColumn', { column: label })}
+      title={title}
+      onClick={() => {
+        onSort(column);
+      }}
+    >
+      {label}
+      {active ? (sort.direction === 'asc' ? ' ↑' : ' ↓') : ''}
+    </button>
+  );
+}
+
+function FilterChip({
+  label,
+  active,
+  onToggle,
+  tooltip,
+}: {
+  label: string;
+  active: boolean;
+  onToggle: () => void;
+  tooltip: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      title={tooltip}
+      onClick={onToggle}
+      className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors ${
+        active
+          ? 'border-cyan-600/70 bg-cyan-950/60 text-cyan-200'
+          : 'border-gray-600 bg-slate-800 text-gray-400 hover:border-gray-500 hover:text-gray-300'
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
 
 function formatReticulumDestinationLabel(
   destinationHash: string | null | undefined,
@@ -383,10 +568,19 @@ function ReticulumRow({
   const dirLabel =
     p.direction === 'tx' ? t('rawPacketLog.reticulum.tx') : t('rawPacketLog.reticulum.rx');
   const destinationLabel = formatReticulumDestinationLabel(p.destinationHash, getNodeLabel);
+  const relativeTime = formatRawPacketRelativeTime(p.ts, t);
+  const absoluteTime = formatTs(p.ts);
+  const directionTooltip =
+    p.direction === 'tx'
+      ? t('rawPacketLog.filterChipTxTooltip')
+      : t('rawPacketLog.filterChipRxTooltip');
   return (
     <>
-      <span className="text-muted w-[90px] shrink-0 text-[10px] tabular-nums">
-        {formatTs(p.ts)}
+      <span
+        className="text-muted w-[72px] shrink-0 text-[10px] tabular-nums"
+        title={t('rawPacketLog.timeRowTooltip', { relative: relativeTime, absolute: absoluteTime })}
+      >
+        {relativeTime}
       </span>
       <span
         className={`w-9 shrink-0 rounded px-1 text-center text-[10px] ${
@@ -394,12 +588,32 @@ function ReticulumRow({
             ? 'bg-blue-900/60 text-blue-200'
             : 'bg-emerald-900/60 text-emerald-200'
         }`}
+        title={directionTooltip}
       >
         {dirLabel}
       </span>
-      <span className="min-w-0 flex-1 truncate text-gray-200">
-        {typeLabel} · {p.interfaceName}
+      <PacketTypeBadge
+        label={typeLabel}
+        className="min-w-0 flex-1 truncate bg-slate-700 text-slate-200"
+        tooltip={t('rawPacketLog.payloadTypeTooltip', { type: typeLabel })}
+      />
+      <span
+        className="text-muted min-w-0 flex-1 truncate text-[10px]"
+        title={t('rawPacketLog.colDetailsTooltip')}
+      >
+        {p.interfaceName}
         {destinationLabel ? ` · ${destinationLabel}` : ''}
+      </span>
+      <span
+        className="text-muted w-[88px] shrink-0 text-right text-[10px] tabular-nums"
+        title={
+          p.snr != null && p.rssi != null
+            ? t('rawPacketLog.snrRowTooltip', { snr: p.snr.toFixed(1), rssi: p.rssi })
+            : t('rawPacketLog.colSnrTooltip')
+        }
+      >
+        {p.snr != null ? p.snr.toFixed(1) : t('common.emDash')}
+        {p.rssi != null ? ` / ${p.rssi}` : ''}
       </span>
     </>
   );
@@ -411,6 +625,10 @@ interface MeshcoreProps {
   onClear: () => void;
   getNodeLabel: (nodeId: number) => string;
   onNodeClick?: (nodeId: number) => void;
+  onPing?: (nodeId: number) => Promise<boolean | undefined>;
+  getNodeHwModel?: (nodeId: number) => string | undefined;
+  pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
+  pathCandidates?: readonly NodeHashCandidate[];
   /** Configured flood-scope hashtag for transport code region match hints. */
   floodScopeHashtag?: string;
 }
@@ -435,9 +653,15 @@ type Props = MeshcoreProps | MeshtasticProps | ReticulumProps;
 export default function RawPacketLogPanel(props: Props) {
   const { variant, packets, onClear, getNodeLabel } = props;
   const onNodeClick = variant === 'reticulum' ? undefined : props.onNodeClick;
+  const onPing = variant === 'meshcore' ? props.onPing : undefined;
+  const getNodeHwModel = variant === 'meshcore' ? props.getNodeHwModel : undefined;
+  const pubKeyByNodeId = variant === 'meshcore' ? props.pubKeyByNodeId : undefined;
+  const pathCandidates = variant === 'meshcore' ? props.pathCandidates : undefined;
   const floodScopeHashtag = variant === 'meshcore' ? props.floodScopeHashtag : undefined;
   const { t } = useTranslation();
   const [filter, setFilter] = useState('');
+  const [activeChips, setActiveChips] = useState<Set<string>>(() => new Set());
+  const [sort, setSort] = useState<RawPacketSortState>(DEFAULT_RAW_PACKET_SORT);
   const [expandedRowKey, setExpandedRowKey] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   /** Snapshot taken at pause time so ring-buffer eviction does not mutate the frozen view. */
@@ -469,62 +693,223 @@ export default function RawPacketLogPanel(props: Props) {
     return count;
   }, [isPaused, pausedPackets, packets]);
 
+  const toggleChip = useCallback((chip: string) => {
+    setActiveChips((prev) => {
+      const next = new Set(prev);
+      if (next.has(chip)) next.delete(chip);
+      else next.add(chip);
+      return next;
+    });
+    setExpandedRowKey(null);
+  }, []);
+
+  const handleSortColumn = useCallback((column: RawPacketSortColumn) => {
+    setSort((prev) => {
+      if (prev.column === column) {
+        const direction: RawPacketSortDirection = prev.direction === 'asc' ? 'desc' : 'asc';
+        return { column, direction };
+      }
+      return { column, direction: column === 'time' ? 'asc' : 'desc' };
+    });
+  }, []);
+
+  const meshcoreChipDefs = useMemo(
+    () => [
+      {
+        id: 'ADVERT',
+        label: t('rawPacketLog.filterChipAdvert'),
+        tooltip: t('rawPacketLog.filterChipAdvertTooltip'),
+      },
+      {
+        id: 'TXT_MSG',
+        label: t('rawPacketLog.filterChipTxtMsg'),
+        tooltip: t('rawPacketLog.filterChipTxtMsgTooltip'),
+      },
+      {
+        id: 'GRP_TXT',
+        label: t('rawPacketLog.filterChipGrpTxt'),
+        tooltip: t('rawPacketLog.filterChipGrpTxtTooltip'),
+      },
+      {
+        id: 'FLOOD',
+        label: t('rawPacketLog.filterChipFlood'),
+        tooltip: t('rawPacketLog.filterChipFloodTooltip'),
+      },
+      {
+        id: 'DIRECT',
+        label: t('rawPacketLog.filterChipDirect'),
+        tooltip: t('rawPacketLog.filterChipDirectTooltip'),
+      },
+    ],
+    [t],
+  );
+
+  const meshtasticChipDefs = useMemo(
+    () => [
+      {
+        id: 'rf',
+        label: t('rawPacketLog.filterChipRf'),
+        tooltip: t('rawPacketLog.filterChipRfTooltip'),
+      },
+      {
+        id: 'mqtt',
+        label: t('rawPacketLog.filterChipMqtt'),
+        tooltip: t('rawPacketLog.filterChipMqttTooltip'),
+      },
+      {
+        id: 'local',
+        label: t('rawPacketLog.filterChipLocal'),
+        tooltip: t('rawPacketLog.filterChipLocalTooltip'),
+      },
+    ],
+    [t],
+  );
+
+  const reticulumChipDefs = useMemo(
+    () => [
+      {
+        id: 'rx',
+        label: t('rawPacketLog.filterChipRx'),
+        tooltip: t('rawPacketLog.filterChipRxTooltip'),
+      },
+      {
+        id: 'tx',
+        label: t('rawPacketLog.filterChipTx'),
+        tooltip: t('rawPacketLog.filterChipTxTooltip'),
+      },
+    ],
+    [t],
+  );
+
+  const chipDefs =
+    variant === 'meshcore'
+      ? meshcoreChipDefs
+      : variant === 'reticulum'
+        ? reticulumChipDefs
+        : meshtasticChipDefs;
+
+  const matchesMeshcoreChips = useCallback(
+    (p: RxPacketEntry) => {
+      if (activeChips.size === 0) return true;
+      for (const chip of activeChips) {
+        if (chip === 'FLOOD' || chip === 'DIRECT') {
+          if (p.routeTypeString === chip || p.routeTypeString === `TRANSPORT_${chip}`) return true;
+        } else if (p.payloadTypeString === chip) {
+          return true;
+        }
+      }
+      return false;
+    },
+    [activeChips],
+  );
+
+  const matchesMeshtasticChips = useCallback(
+    (p: MeshtasticRawPacketEntry) => {
+      if (activeChips.size === 0) return true;
+      for (const chip of activeChips) {
+        if (chip === 'rf' && !p.viaMqtt && !p.isLocal) return true;
+        if (chip === 'mqtt' && p.viaMqtt) return true;
+        if (chip === 'local' && p.isLocal) return true;
+      }
+      return false;
+    },
+    [activeChips],
+  );
+
+  const matchesReticulumChips = useCallback(
+    (p: ReticulumRawPacketEntry) => {
+      if (activeChips.size === 0) return true;
+      return activeChips.has(p.direction);
+    },
+    [activeChips],
+  );
+
   const filtered = useMemo(() => {
     const q = filter.trim().toUpperCase();
     const f = filter.trim().toLowerCase();
 
     if (variant === 'meshcore') {
       const list = isPaused && pausedPackets != null ? (pausedPackets as RxPacketEntry[]) : packets;
-      if (!filter.trim()) return list;
-      return list.filter(
-        (p) =>
-          (p.routeTypeString ?? '').includes(q) ||
-          (p.payloadTypeString ?? '').includes(q) ||
-          (p.messageFingerprintHex ?? '').toUpperCase().includes(q) ||
-          (p.advertName ?? '').toUpperCase().includes(q) ||
-          (p.transportScopeCode != null && String(p.transportScopeCode).includes(f)) ||
-          (p.transportReturnCode != null && String(p.transportReturnCode).includes(f)) ||
-          toHex(p.raw).includes(f) ||
-          (p.fromNodeId != null &&
-            meshcoreRawPacketSenderColumnText(p.fromNodeId, getNodeLabel)
-              .toUpperCase()
-              .includes(q)),
-      );
+      let rows = list;
+      if (filter.trim()) {
+        rows = rows.filter(
+          (p) =>
+            (p.routeTypeString ?? '').includes(q) ||
+            (p.payloadTypeString ?? '').includes(q) ||
+            (p.messageFingerprintHex ?? '').toUpperCase().includes(q) ||
+            (p.advertName ?? '').toUpperCase().includes(q) ||
+            (p.transportScopeCode != null && String(p.transportScopeCode).includes(f)) ||
+            (p.transportReturnCode != null && String(p.transportReturnCode).includes(f)) ||
+            toHex(p.raw).includes(f) ||
+            (p.fromNodeId != null &&
+              meshcoreRawPacketSenderColumnText(p.fromNodeId, getNodeLabel)
+                .toUpperCase()
+                .includes(q)),
+        );
+      }
+      if (activeChips.size > 0) {
+        rows = rows.filter(matchesMeshcoreChips);
+      }
+      return sortMeshcorePackets(rows, sort);
     }
     if (variant === 'reticulum') {
       const list =
         isPaused && pausedPackets != null ? (pausedPackets as ReticulumRawPacketEntry[]) : packets;
-      if (!filter.trim()) return list;
-      return list.filter((p) => {
-        const destinationLabel = formatReticulumDestinationLabel(p.destinationHash, getNodeLabel);
-        if (p.destinationHash) {
-          registerReticulumDestinationHash(
-            reticulumHashToNodeId(p.destinationHash),
-            p.destinationHash,
+      let rows = list;
+      if (filter.trim()) {
+        rows = rows.filter((p) => {
+          const destinationLabel = formatReticulumDestinationLabel(p.destinationHash, getNodeLabel);
+          if (p.destinationHash) {
+            registerReticulumDestinationHash(
+              reticulumHashToNodeId(p.destinationHash),
+              p.destinationHash,
+            );
+          }
+          return (
+            p.interfaceName.toLowerCase().includes(f) ||
+            (p.packetType ?? '').toLowerCase().includes(f) ||
+            (p.destinationHash ?? '').toLowerCase().includes(f) ||
+            (destinationLabel ?? '').toLowerCase().includes(f) ||
+            p.direction.includes(f) ||
+            toHex(p.raw).includes(f)
           );
-        }
-        return (
-          p.interfaceName.toLowerCase().includes(f) ||
-          (p.packetType ?? '').toLowerCase().includes(f) ||
-          (p.destinationHash ?? '').toLowerCase().includes(f) ||
-          (destinationLabel ?? '').toLowerCase().includes(f) ||
-          p.direction.includes(f) ||
-          toHex(p.raw).includes(f)
-        );
-      });
+        });
+      }
+      if (activeChips.size > 0) {
+        rows = rows.filter(matchesReticulumChips);
+      }
+      return sortReticulumPackets(rows, sort);
     }
     const list =
       isPaused && pausedPackets != null ? (pausedPackets as MeshtasticRawPacketEntry[]) : packets;
-    if (!filter.trim()) return list;
-    return list.filter(
-      (p) =>
-        (p.portLabel ?? '').includes(q) ||
-        toHex(p.raw).includes(f) ||
-        (p.viaMqtt && 'mqtt'.includes(f)) ||
-        (p.isLocal && 'local'.includes(f)) ||
-        (p.fromNodeId != null && getNodeLabel(p.fromNodeId).toUpperCase().includes(q)),
-    );
-  }, [packets, pausedPackets, isPaused, filter, variant, getNodeLabel]);
+    let rows = list;
+    if (filter.trim()) {
+      rows = rows.filter(
+        (p) =>
+          (p.portLabel ?? '').includes(q) ||
+          toHex(p.raw).includes(f) ||
+          (p.viaMqtt && 'mqtt'.includes(f)) ||
+          (p.isLocal && 'local'.includes(f)) ||
+          (p.fromNodeId != null && getNodeLabel(p.fromNodeId).toUpperCase().includes(q)),
+      );
+    }
+    if (activeChips.size > 0) {
+      rows = rows.filter(matchesMeshtasticChips);
+    }
+    return sortMeshtasticPackets(rows, sort);
+  }, [
+    packets,
+    pausedPackets,
+    isPaused,
+    filter,
+    variant,
+    getNodeLabel,
+    activeChips,
+    sort,
+    matchesMeshcoreChips,
+    matchesMeshtasticChips,
+    matchesReticulumChips,
+  ]);
 
   const expandedIndex = useMemo(() => {
     if (!expandedRowKey) return -1;
@@ -707,6 +1092,114 @@ export default function RawPacketLogPanel(props: Props) {
         </button>
       </div>
 
+      <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-gray-700/80 px-3 py-1.5">
+        {chipDefs.map((chip) => (
+          <FilterChip
+            key={chip.id}
+            label={chip.label}
+            tooltip={chip.tooltip}
+            active={activeChips.has(chip.id)}
+            onToggle={() => {
+              toggleChip(chip.id);
+            }}
+          />
+        ))}
+      </div>
+
+      {packets.length > 0 && filtered.length > 0 ? (
+        <div className="text-muted flex shrink-0 items-center gap-2 border-b border-gray-700/80 px-3 py-1 text-[10px] font-medium tracking-wide uppercase">
+          <span className="w-14 shrink-0" title={t('rawPacketLog.colActionsTooltip')} aria-hidden />
+          <SortableColumnHeader
+            label={t('rawPacketLog.colTime')}
+            column="time"
+            sort={sort}
+            onSort={handleSortColumn}
+            className="w-[72px] shrink-0 text-left"
+            tooltip={t('rawPacketLog.colTimeTooltip')}
+          />
+          {variant === 'meshcore' ? (
+            <>
+              <SortableColumnHeader
+                label={t('rawPacketLog.colHb')}
+                column="hops"
+                sort={sort}
+                onSort={handleSortColumn}
+                className="w-8 shrink-0 text-center"
+                tooltip={t('rawPacketLog.colHbTooltip')}
+              />
+              <SortableColumnHeader
+                label={t('rawPacketLog.colType')}
+                column="type"
+                sort={sort}
+                onSort={handleSortColumn}
+                className="w-[72px] shrink-0"
+                tooltip={t('rawPacketLog.colTypeTooltip')}
+              />
+              <span className="min-w-[8rem] flex-1">
+                <ColumnHeaderLabel
+                  label={t('rawPacketLog.colPath')}
+                  tooltip={t('rawPacketLog.colPathTooltip')}
+                />
+              </span>
+              <span className={`${RAW_PACKET_NAME_COL} shrink-0`}>
+                <ColumnHeaderLabel
+                  label={t('rawPacketLog.colDetails')}
+                  tooltip={t('rawPacketLog.colDetailsTooltip')}
+                />
+              </span>
+            </>
+          ) : variant === 'meshtastic' ? (
+            <>
+              <span className={`${RAW_PACKET_NAME_COL} shrink-0`}>
+                <ColumnHeaderLabel
+                  label={t('rawPacketLog.colDetails')}
+                  tooltip={t('rawPacketLog.colDetailsTooltip')}
+                />
+              </span>
+              <SortableColumnHeader
+                label={t('rawPacketLog.colType')}
+                column="type"
+                sort={sort}
+                onSort={handleSortColumn}
+                className="w-[100px] shrink-0"
+                tooltip={t('rawPacketLog.colTypeTooltip')}
+              />
+              <SortableColumnHeader
+                label={t('rawPacketLog.colHb')}
+                column="hops"
+                sort={sort}
+                onSort={handleSortColumn}
+                className="w-8 shrink-0 text-center"
+                tooltip={t('rawPacketLog.colHbTooltip')}
+              />
+            </>
+          ) : (
+            <>
+              <ColumnHeaderLabel
+                label={t('rawPacketLog.reticulum.direction')}
+                tooltip={t('rawPacketLog.colDirectionTooltip')}
+              />
+              <SortableColumnHeader
+                label={t('rawPacketLog.colType')}
+                column="type"
+                sort={sort}
+                onSort={handleSortColumn}
+                className="min-w-0 flex-1"
+                tooltip={t('rawPacketLog.colTypeTooltip')}
+              />
+            </>
+          )}
+          <SortableColumnHeader
+            label={t('rawPacketLog.colSnr')}
+            column="snr"
+            sort={sort}
+            onSort={handleSortColumn}
+            className="w-[88px] shrink-0 text-right"
+            tooltip={t('rawPacketLog.colSnrTooltip')}
+          />
+        </div>
+      ) : null}
+
       {packets.length === 0 ? (
         <div className="text-muted flex flex-1 items-center justify-center text-xs">
           {t('rawPacketLog.emptyWaiting')}
@@ -752,24 +1245,98 @@ export default function RawPacketLogPanel(props: Props) {
                   setExpandedRowKey(isExpanded || !rowKey ? null : rowKey);
                 };
 
+                const meshcoreRow =
+                  variant === 'meshcore' ? (filtered as RxPacketEntry[])[vi.index] : null;
+
                 return (
                   <div
                     key={vi.key}
                     data-index={vi.index}
                     ref={virtualizer.measureElement}
-                    className="absolute top-0 left-0 w-full border-b border-gray-800"
+                    className={`absolute top-0 left-0 w-full border-b border-gray-800 ${
+                      variant === 'meshcore'
+                        ? `border-l-2 ${meshcoreRouteBarClass(meshcoreRow?.routeTypeString ?? null)}`
+                        : ''
+                    }`}
+                    title={
+                      variant === 'meshcore'
+                        ? meshcoreRouteBarTooltip(meshcoreRow?.routeTypeString ?? null, t)
+                        : undefined
+                    }
                     style={{ transform: `translateY(${vi.start}px)` }}
                   >
                     <div className="flex w-full items-start">
+                      <div className="flex w-14 shrink-0 items-center justify-end gap-0.5 py-1.5 pr-1">
+                        {variant === 'meshcore' &&
+                        onPing &&
+                        (filtered as RxPacketEntry[])[vi.index]?.fromNodeId != null ? (
+                          <button
+                            type="button"
+                            className="rounded p-0.5 text-blue-300/80 hover:bg-slate-700 hover:text-blue-200"
+                            aria-label={t('rawPacketLog.pingTraceNode', {
+                              name: meshcoreRawPacketSenderColumnText(
+                                (filtered as RxPacketEntry[])[vi.index].fromNodeId!,
+                                getNodeLabel,
+                              ),
+                            })}
+                            title={t('rawPacketLog.pingTraceNodeTooltip', {
+                              name: meshcoreRawPacketSenderColumnText(
+                                (filtered as RxPacketEntry[])[vi.index].fromNodeId!,
+                                getNodeLabel,
+                              ),
+                            })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const nodeId = (filtered as RxPacketEntry[])[vi.index].fromNodeId;
+                              if (nodeId != null) void onPing(nodeId);
+                            }}
+                          >
+                            <Play aria-hidden className="h-3 w-3" size={12} />
+                          </button>
+                        ) : null}
+                        {onNodeClick &&
+                        (variant === 'meshcore' || variant === 'meshtastic') &&
+                        (filtered as RxPacketEntry[] | MeshtasticRawPacketEntry[])[vi.index]
+                          ?.fromNodeId != null ? (
+                          <button
+                            type="button"
+                            className="rounded p-0.5 text-gray-400 hover:bg-slate-700 hover:text-gray-200"
+                            aria-label={t('rawPacketLog.jumpToNode', {
+                              name: getNodeLabel(
+                                (filtered as RxPacketEntry[] | MeshtasticRawPacketEntry[])[vi.index]
+                                  .fromNodeId!,
+                              ),
+                            })}
+                            title={t('rawPacketLog.jumpToNodeTooltip', {
+                              name: getNodeLabel(
+                                (filtered as RxPacketEntry[] | MeshtasticRawPacketEntry[])[vi.index]
+                                  .fromNodeId!,
+                              ),
+                            })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const nodeId = (
+                                filtered as RxPacketEntry[] | MeshtasticRawPacketEntry[]
+                              )[vi.index].fromNodeId;
+                              if (nodeId != null) onNodeClick(nodeId);
+                            }}
+                          >
+                            <ArrowUp aria-hidden className="h-3 w-3" size={12} />
+                          </button>
+                        ) : null}
+                      </div>
                       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- row expands hex on click; node name uses inner button + stopPropagation */}
                       <div
-                        className="flex min-w-0 flex-1 cursor-pointer items-start gap-2 px-3 py-1.5 text-left hover:bg-slate-800/60"
+                        className="flex min-w-0 flex-1 cursor-pointer items-start gap-2 px-2 py-1.5 text-left hover:bg-slate-800/60"
                         onClick={toggleExpand}
                       >
                         {variant === 'meshcore' ? (
                           <MeshcoreRow
                             p={(filtered as RxPacketEntry[])[vi.index]}
                             getNodeLabel={getNodeLabel}
+                            getNodeHwModel={getNodeHwModel}
+                            pubKeyByNodeId={pubKeyByNodeId}
+                            pathCandidates={pathCandidates}
                             onNodeClick={onNodeClick}
                           />
                         ) : variant === 'reticulum' ? (
@@ -785,7 +1352,10 @@ export default function RawPacketLogPanel(props: Props) {
                           />
                         )}
                       </div>
-                      <span className="text-muted shrink-0 px-3 py-1.5 text-[10px]">
+                      <span
+                        className="text-muted shrink-0 px-3 py-1.5 text-[10px]"
+                        title={t('rawPacketLog.byteLengthTooltip', { bytes: byteLen })}
+                      >
                         {byteLen}B
                       </span>
                     </div>
@@ -838,10 +1408,16 @@ export default function RawPacketLogPanel(props: Props) {
 function MeshcoreRow({
   p,
   getNodeLabel,
+  getNodeHwModel,
+  pubKeyByNodeId,
+  pathCandidates,
   onNodeClick,
 }: {
   p: RxPacketEntry;
   getNodeLabel: (nodeId: number) => string;
+  getNodeHwModel?: (nodeId: number) => string | undefined;
+  pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
+  pathCandidates?: readonly NodeHashCandidate[];
   onNodeClick?: (nodeId: number) => void;
 }) {
   const { t } = useTranslation();
@@ -850,10 +1426,15 @@ function MeshcoreRow({
   const payloadLabel = p.payloadTypeString ?? '?';
   const senderLine =
     p.fromNodeId != null ? meshcoreRawPacketSenderColumnText(p.fromNodeId, getNodeLabel) : null;
+  const hwModel = p.fromNodeId != null ? getNodeHwModel?.(p.fromNodeId) : undefined;
+  const deviceTooltip = meshcoreDeviceTypeTooltip(hwModel, t);
+  const relativeTime = formatRawPacketRelativeTime(p.ts, t);
+  const absoluteTime = formatTs(p.ts);
   const name =
     p.fromNodeId != null ? (
       onNodeClick ? (
-        <div className={RAW_PACKET_NAME_COL}>
+        <div className={`${RAW_PACKET_NAME_COL} flex min-w-0 items-center gap-1`}>
+          <MeshcoreNodeTypeIcon hwModel={hwModel} tooltip={deviceTooltip} />
           <button
             type="button"
             className="block w-full min-w-0 truncate text-left text-cyan-200/90 underline-offset-2 hover:underline"
@@ -869,40 +1450,65 @@ function MeshcoreRow({
         </div>
       ) : (
         <span
-          className={`${RAW_PACKET_NAME_COL} truncate text-cyan-200/90`}
+          className={`${RAW_PACKET_NAME_COL} flex min-w-0 items-center gap-1 truncate text-cyan-200/90`}
           title={senderLine ?? undefined}
         >
+          <MeshcoreNodeTypeIcon hwModel={hwModel} tooltip={deviceTooltip} />
           {senderLine}
         </span>
       )
     ) : (
-      <span className="text-muted shrink-0">—</span>
+      <span className="text-muted shrink-0">{t('common.emDash')}</span>
     );
   return (
     <>
-      <span className="text-muted w-[90px] shrink-0 text-[10px]">{formatTs(p.ts)}</span>
-      {name}
       <span
-        className={`w-[72px] shrink-0 rounded px-1 text-[10px] font-semibold ${
+        className="text-muted w-[72px] shrink-0 text-[10px] tabular-nums"
+        title={t('rawPacketLog.timeRowTooltip', { relative: relativeTime, absolute: absoluteTime })}
+      >
+        {relativeTime}
+      </span>
+      <span
+        className="w-8 shrink-0 text-center text-[10px] text-gray-300 tabular-nums"
+        title={
+          p.hopCount > 0
+            ? t('rawPacketLog.hbRowTooltip', { count: p.hopCount })
+            : t('rawPacketLog.hbRowAbsentTooltip')
+        }
+      >
+        {p.hopCount > 0 ? p.hopCount : t('common.emDash')}
+      </span>
+      <PacketTypeBadge
+        label={payloadLabel}
+        className={meshcorePayloadBadgeClass(payloadLabel)}
+        tooltip={t('rawPacketLog.payloadTypeTooltip', { type: payloadLabel })}
+      />
+      <span
+        className={`hidden w-[52px] shrink-0 rounded px-1 text-[10px] font-semibold sm:inline ${
           p.routeTypeString === 'FLOOD' || p.routeTypeString === 'TRANSPORT_FLOOD'
             ? 'bg-blue-900/50 text-blue-300'
             : p.routeTypeString === 'DIRECT' || p.routeTypeString === 'TRANSPORT_DIRECT'
               ? 'bg-green-900/50 text-green-300'
               : 'bg-gray-700 text-gray-400'
         }`}
+        title={t('rawPacketLog.routeBadgeTooltip', { route: routeLabel })}
       >
         {routeLabel}
       </span>
-      <span className="w-[80px] shrink-0 text-yellow-300/80">{payloadLabel}</span>
-      <span className="text-muted min-w-0 flex-1">
-        {p.hopCount > 0 ? `hops=${p.hopCount} ` : ''}
-        SNR={p.snr.toFixed(1)} RSSI={p.rssi}
-        {p.transportScopeCode != null && p.transportReturnCode != null
-          ? ` · tc=${p.transportScopeCode}/${p.transportReturnCode}`
-          : ''}
-        {p.advertName
-          ? ` · ${p.advertName.length > 36 ? `${p.advertName.slice(0, 36)}…` : p.advertName}`
-          : ''}
+      <RawPacketPathChain
+        pathBytes={p.pathBytes}
+        hashSizeBytes={p.pathHashSizeBytes}
+        getNodeLabel={getNodeLabel}
+        pubKeyByNodeId={pubKeyByNodeId}
+        pathCandidates={pathCandidates}
+        className="min-w-[6rem] flex-1"
+      />
+      {name}
+      <span
+        className="text-muted w-[88px] shrink-0 text-right text-[10px] tabular-nums"
+        title={t('rawPacketLog.snrRowTooltip', { snr: p.snr.toFixed(1), rssi: p.rssi })}
+      >
+        {p.snr.toFixed(1)} / {p.rssi}
       </span>
     </>
   );
@@ -919,6 +1525,20 @@ function MeshtasticRow({
 }) {
   const { t } = useTranslation();
   const label = p.fromNodeId != null ? getNodeLabel(p.fromNodeId) : null;
+  const relativeTime = formatRawPacketRelativeTime(p.ts, t);
+  const absoluteTime = formatTs(p.ts);
+  const transportLabel = p.isLocal ? 'LOCAL' : p.viaMqtt ? 'MQTT' : 'RF';
+  const transportTooltip = p.isLocal
+    ? t('rawPacketLog.transportBadgeLocalTooltip')
+    : p.viaMqtt
+      ? t('rawPacketLog.transportBadgeMqttTooltip')
+      : t('rawPacketLog.transportBadgeRfTooltip');
+  const hopsDisplay =
+    p.hopsAway != null && !p.viaMqtt
+      ? String(p.hopsAway)
+      : p.viaMqtt
+        ? t('common.emDash')
+        : t('rawPacketLog.meshtasticHopsAbsent');
   const name =
     p.fromNodeId != null ? (
       onNodeClick ? (
@@ -945,28 +1565,51 @@ function MeshtasticRow({
         </span>
       )
     ) : (
-      <span className="text-muted shrink-0">—</span>
+      <span className="text-muted shrink-0">{t('common.emDash')}</span>
     );
   return (
     <>
-      <span className="text-muted w-[90px] shrink-0 text-[10px]">{formatTs(p.ts)}</span>
-      {name}
-      <span className="w-[100px] shrink-0 truncate text-amber-200/90" title={p.portLabel}>
-        {p.portLabel}
-      </span>
       <span
-        className={`w-[52px] shrink-0 rounded px-1 text-[10px] font-semibold ${
+        className="text-muted w-[72px] shrink-0 text-[10px] tabular-nums"
+        title={t('rawPacketLog.timeRowTooltip', { relative: relativeTime, absolute: absoluteTime })}
+      >
+        {relativeTime}
+      </span>
+      {name}
+      <PacketTypeBadge
+        label={p.portLabel}
+        className={meshtasticPortBadgeClass(p.portLabel)}
+        tooltip={t('rawPacketLog.portLabelTooltip', { port: p.portLabel })}
+      />
+      <span
+        className={`w-[52px] shrink-0 rounded px-1 text-center text-[10px] font-semibold ${
           p.isLocal
             ? 'bg-blue-900/50 text-blue-300'
             : p.viaMqtt
               ? 'bg-purple-900/50 text-purple-200'
               : 'bg-slate-700 text-slate-200'
         }`}
+        title={transportTooltip}
       >
-        {p.isLocal ? 'LOCAL' : p.viaMqtt ? 'MQTT' : 'RF'}
+        {transportLabel}
       </span>
-      <span className="text-muted min-w-0 flex-1">
-        SNR={p.snr.toFixed(1)} RSSI={p.rssi}
+      <span
+        className="w-8 shrink-0 text-center text-[10px] text-gray-300 tabular-nums"
+        title={
+          p.hopsAway != null && !p.viaMqtt
+            ? t('rawPacketLog.hbRowTooltip', { count: p.hopsAway })
+            : p.viaMqtt
+              ? t('rawPacketLog.hbMqttAbsentTooltip')
+              : t('rawPacketLog.hbRowAbsentTooltip')
+        }
+      >
+        {hopsDisplay}
+      </span>
+      <span
+        className="text-muted min-w-0 flex-1 text-right text-[10px] tabular-nums"
+        title={t('rawPacketLog.snrRowTooltip', { snr: p.snr.toFixed(1), rssi: p.rssi })}
+      >
+        {p.snr.toFixed(1)} / {p.rssi}
       </span>
     </>
   );
