@@ -9,6 +9,11 @@ import {
   loadPersistedLastReadInitial,
 } from './chatPanelProtocolStorage';
 import { computeChannelUnreadCounts, filterRegularChatMessages } from './chatUnreadCounts';
+import {
+  type DebugSnapshotMeshtasticChannelConfigSummary,
+  type DebugSnapshotMeshtasticChannelPill,
+  getDebugSnapshotMeshtasticContext,
+} from './debugSnapshotMeshtasticContext';
 import { getDebugSnapshotUiContext } from './debugSnapshotUiContext';
 import {
   resolveIdentityIdForProtocol,
@@ -95,6 +100,13 @@ export interface DebugIdentityBucketSnapshot {
   connection: DebugConnectionSnapshot | null;
 }
 
+/** Meshtastic bucket adds channel layout for inbound/outbound channel triage (no PSK). */
+export interface DebugMeshtasticBucketSnapshot extends DebugIdentityBucketSnapshot {
+  channelPills: DebugSnapshotMeshtasticChannelPill[];
+  channelConfigsSummary: DebugSnapshotMeshtasticChannelConfigSummary[];
+  mqttChannelKeyEntryCount: number | null;
+}
+
 export interface DebugChannelLastReadTriageRow {
   viewKey: string;
   channelIndex: number;
@@ -139,7 +151,7 @@ export interface DebugSnapshot {
   storedProtocol: MeshProtocol;
   windowHidden: boolean;
   ui: ReturnType<typeof getDebugSnapshotUiContext>;
-  meshtastic: DebugIdentityBucketSnapshot;
+  meshtastic: DebugMeshtasticBucketSnapshot;
   meshcore: DebugIdentityBucketSnapshot;
   reticulum: DebugReticulumSnapshot;
   /** MeshCore SQLite contact hops + best path history bytes (redacted pubkeys). */
@@ -487,10 +499,21 @@ function activeTabSummaryForProtocol(
   };
 }
 
+function buildMeshtasticBucketSnapshot(): DebugMeshtasticBucketSnapshot {
+  const base = buildProtocolBucketSnapshot('meshtastic');
+  const channelCtx = getDebugSnapshotMeshtasticContext();
+  return {
+    ...base,
+    channelPills: channelCtx.channelPills,
+    channelConfigsSummary: channelCtx.channelConfigsSummary,
+    mqttChannelKeyEntryCount: channelCtx.mqttChannelKeyEntryCount,
+  };
+}
+
 function buildDebugSnapshotBase(
   reticulumSidecar: ReticulumDiagnosticSidecarSnapshot,
 ): Omit<DebugSnapshot, 'warnings'> {
-  const meshtastic = buildProtocolBucketSnapshot('meshtastic');
+  const meshtastic = buildMeshtasticBucketSnapshot();
   const meshcore = buildProtocolBucketSnapshot('meshcore');
   const reticulum = buildReticulumSnapshot(reticulumSidecar);
   const ui = getDebugSnapshotUiContext();
