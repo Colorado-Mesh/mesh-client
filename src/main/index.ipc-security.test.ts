@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 
+import { formatHostForUrl, parseConnectHostPort } from '../shared/connectHost';
 import { isValidHttpHostname } from './httpHostValidation';
 
 const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
@@ -15,7 +16,7 @@ const GPS_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/gps-handlers.ts'), 'utf
 describe('validateHttpHost (source contract)', () => {
   it('uses isValidHttpHostname from httpHostValidation', () => {
     expect(INDEX_SOURCE).toContain("import { isValidHttpHostname } from './httpHostValidation'");
-    expect(INDEX_SOURCE).toContain('isValidHttpHostname(host)');
+    expect(INDEX_SOURCE).toContain('isValidHttpHostname(bareHost)');
   });
 
   it('calls validateHttpHost in http:preflight handler', () => {
@@ -50,6 +51,41 @@ describe('validateHttpHost (source contract)', () => {
     expect(isValidHttpHostname('::1')).toBe(true);
     expect(isValidHttpHostname('[::1]')).toBe(true);
     expect(isValidHttpHostname('fd00::1')).toBe(true);
+  });
+
+  it('strips a trailing port via parseConnectHostPort before calling isValidHttpHostname', () => {
+    // http:preflight/http:connect are called with an authority string that always
+    // has a port appended (connection.ts: formatHostForUrl(host, port)), even for
+    // a bare IP with no port typed. isValidHttpHostname alone rejects that string
+    // because it looks like an unbracketed (and invalid) IPv6 literal.
+    const bodyIdx = INDEX_SOURCE.indexOf('function validateHttpHost(');
+    expect(bodyIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(bodyIdx, bodyIdx + 500);
+    expect(body).toContain('parseConnectHostPort(host, 0).host');
+  });
+
+  it('regression: recovers a validatable host from formatHostForUrl output (connection.ts http case)', () => {
+    const urlHost = formatHostForUrl('192.168.1.50', 80);
+    expect(urlHost).toBe('192.168.1.50:80');
+
+    // Without the fix, validateHttpHost would call isValidHttpHostname directly
+    // on this authority string, which fails.
+    expect(isValidHttpHostname(urlHost)).toBe(false);
+
+    // The fix strips the port first, recovering a validatable bare host.
+    expect(isValidHttpHostname(parseConnectHostPort(urlHost, 0).host)).toBe(true);
+  });
+
+  it('regression: IPv6 authority from formatHostForUrl also validates after stripping the port', () => {
+    const urlHost = formatHostForUrl('fd00::1', 4403);
+    expect(urlHost).toBe('[fd00::1]:4403');
+    expect(isValidHttpHostname(urlHost)).toBe(false);
+    expect(isValidHttpHostname(parseConnectHostPort(urlHost, 0).host)).toBe(true);
+  });
+
+  it('still validates a bare host with no port, as used by meshcore:tcp-connect', () => {
+    expect(parseConnectHostPort('fd00::1', 0).host).toBe('fd00::1');
+    expect(isValidHttpHostname(parseConnectHostPort('fd00::1', 0).host)).toBe(true);
   });
 });
 
