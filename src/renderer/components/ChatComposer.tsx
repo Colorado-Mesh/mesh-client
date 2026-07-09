@@ -49,7 +49,7 @@ export interface ChatComposerProps {
   protocol: MeshProtocol;
   viewKey: string;
   isConnected: boolean;
-  connectionType?: 'ble' | 'serial' | 'http' | null;
+  connectionType?: 'ble' | 'serial' | 'http' | 'tcp' | null;
   isMqttOnly?: boolean;
   /** When false, disconnected sends fail instead of queueing (room posts). Default true. */
   allowOutbox?: boolean;

@@ -750,6 +750,7 @@ export function useMeshtasticRuntime() {
       case 'ble':
         return { stale: BLE_STALE_THRESHOLD_MS, dead: BLE_DEAD_THRESHOLD_MS };
       case 'serial':
+      case 'tcp':
         return { stale: SERIAL_STALE_THRESHOLD_MS, dead: SERIAL_DEAD_THRESHOLD_MS };
       case 'http':
         return { stale: HTTP_STALE_THRESHOLD_MS, dead: HTTP_DEAD_THRESHOLD_MS };
@@ -1683,7 +1684,10 @@ export function useMeshtasticRuntime() {
           transportOpts.type === 'serial'
             ? (transportOpts.lastSerialPortId ?? undefined)
             : undefined,
-        host: transportOpts.type === 'http' ? transportOpts.httpAddress : undefined,
+        host:
+          transportOpts.type === 'http' || transportOpts.type === 'tcp'
+            ? transportOpts.httpAddress
+            : undefined,
       });
       const identityId = await connectionDriver.connect('meshtastic', params);
       meshtasticDriverConnectedRef.current = true;

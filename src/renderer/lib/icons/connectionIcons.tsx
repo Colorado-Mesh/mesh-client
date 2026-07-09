@@ -1,9 +1,9 @@
-import { Bluetooth, Cpu, Globe, Radio } from 'lucide-react-motion';
+import { Bluetooth, Cpu, Globe, Radio, Wifi } from 'lucide-react-motion';
 
 import { ICON_LG } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
-export type ConnectionTransportType = 'ble' | 'serial' | 'http';
+export type ConnectionTransportType = 'ble' | 'serial' | 'http' | 'tcp';
 
 type IconTrigger = 'hover' | 'parent-hover' | 'manual';
 
@@ -25,6 +25,8 @@ export function ConnectionIcon({
       return <Cpu {...p} />;
     case 'http':
       return <Radio {...p} />;
+    case 'tcp':
+      return <Wifi {...p} />;
     default:
       return null;
   }

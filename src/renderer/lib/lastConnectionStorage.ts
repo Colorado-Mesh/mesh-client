@@ -39,7 +39,7 @@ export function resolveLastBlePeripheralId(protocol: MeshProtocol): string | und
   return last?.bleDeviceId ?? loadLastBleDeviceId(protocol) ?? undefined;
 }
 
-/** Meshtastic HTTP or MeshCore TCP host (stored as `http` connection type). */
+/** Meshtastic HTTP/TCP or MeshCore TCP host (stored as `http`/`tcp` connection type). */
 export function resolveLastHttpAddress(protocol: MeshProtocol): string | undefined {
   const last = loadLastConnection(protocol);
   const addr = last?.httpAddress?.trim();
@@ -95,6 +95,8 @@ export function buildMeshcoreConnectionParamsFromLastConnection(
     if (!httpAddress) return null;
     return { rfType: 'tcp', httpAddress, serialPort: null };
   }
+  // `last.type === 'tcp'` can only be persisted by the Meshtastic tab; MeshCore has no
+  // such connection type (it reuses `'http'` for its own TCP mode), so fall through to null.
   return null;
 }
 
@@ -123,6 +125,11 @@ export function buildMeshtasticConnectionParamsFromLastConnection(
     const httpAddress = last.httpAddress?.trim();
     if (!httpAddress) return null;
     return { type: 'http', httpAddress, serialPort: null };
+  }
+  if (last.type === 'tcp') {
+    const httpAddress = last.httpAddress?.trim();
+    if (!httpAddress) return null;
+    return { type: 'tcp', httpAddress, serialPort: null };
   }
   return null;
 }

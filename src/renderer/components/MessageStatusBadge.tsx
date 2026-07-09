@@ -6,7 +6,7 @@ import { translateMeshcoreUserMessage } from '@/renderer/lib/meshcore/meshcoreMe
 export interface MessageStatusBadgeProps {
   status: 'sending' | 'acked' | 'failed' | 'queued' | 'blocked';
   transport: 'device' | 'mqtt' | 'outbox';
-  connectionType?: 'ble' | 'serial' | 'http' | null;
+  connectionType?: 'ble' | 'serial' | 'http' | 'tcp' | null;
   error?: string;
   /** Room BBS posts ack on companion SENT, not mesh hop ACK. */
   context?: 'dm' | 'room';
@@ -62,7 +62,7 @@ export function MessageStatusBadge({
       ? t('messageStatusBadge.transportMqtt')
       : connectionType === 'serial'
         ? t('messageStatusBadge.transportUsb')
-        : connectionType === 'http'
+        : connectionType === 'http' || connectionType === 'tcp'
           ? t('messageStatusBadge.transportWifi')
           : t('messageStatusBadge.transportBt');
   const failedReason =

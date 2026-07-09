@@ -3501,6 +3501,17 @@ ipcMain.handle('app:quit', async (event) => {
       }
       meshcoreTcpSocket = null;
     }
+    if (meshtasticTcpSocket) {
+      try {
+        meshtasticTcpSocket.destroy();
+      } catch (err) {
+        console.debug(
+          '[IPC] app:quit TCP socket destroy (ignored):',
+          err instanceof Error ? err.message : err,
+        ); // log-injection-ok internal Node.js socket error during cleanup
+      }
+      meshtasticTcpSocket = null;
+    }
     stopPowerSaveBlocker();
 
     nobleBleManager.releaseNobleProcessHandles();
@@ -5692,6 +5703,114 @@ ipcMain.handle('meshcore:tcp-disconnect', (event) => {
   }
 });
 
+// ─── Meshtastic TCP bridge ──────────────────────────────────────────
+// Independent from meshcoreTcpSocket: Meshtastic and MeshCore may be
+// connected simultaneously, each over its own transport.
+let meshtasticTcpSocket: net.Socket | null = null;
+
+ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => {
+  assertIpcSender(event, 'meshtastic:tcp-connect');
+  return new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const p = port;
+    if (!Number.isInteger(p) || p < 1 || p > 65535) {
+      reject(new Error('Invalid port'));
+      return;
+    }
+    try {
+      validateHttpHost(host);
+    } catch (err) {
+      // catch-no-log-ok validation error forwarded to promise reject
+      reject(err instanceof Error ? err : new Error(String(err)));
+      return;
+    }
+    if (meshtasticTcpSocket) {
+      meshtasticTcpSocket.destroy();
+      meshtasticTcpSocket = null;
+    }
+    const socketHost = formatHostForSocket(host);
+    const socket = new net.Socket();
+    meshtasticTcpSocket = socket;
+    const connectTimeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      if (meshtasticTcpSocket === socket) meshtasticTcpSocket = null;
+      reject(new Error('meshtastic:tcp-connect: connection timeout'));
+    }, MESHTASTIC_TCP_CONNECT_TIMEOUT_MS);
+    socket.connect(p, socketHost, () => {
+      clearTimeout(connectTimeout);
+      console.debug('[IPC] meshtastic:tcp-connect connected to', sanitizeLogMessage(socketHost), p);
+      logDeviceConnection(
+        `transport=tcp stack=meshtastic host=${sanitizeLogMessage(socketHost)} port=${p}`,
+      );
+      if (!settled) {
+        settled = true;
+        resolve();
+      }
+    });
+    socket.on('data', (data) => {
+      const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
+      mainWindow?.webContents.send('meshtastic:tcp-data', new Uint8Array(chunk));
+    });
+    socket.on('close', (hadError) => {
+      clearTimeout(connectTimeout);
+      console.debug('[IPC] meshtastic:tcp socket closed', hadError ? '(hadError)' : '(clean)');
+      mainWindow?.webContents.send('meshtastic:tcp-disconnected');
+      if (meshtasticTcpSocket === socket) meshtasticTcpSocket = null;
+    });
+    socket.on('error', (err) => {
+      clearTimeout(connectTimeout);
+      console.error('[IPC] meshtastic:tcp-connect error:', sanitizeLogMessage(err.message));
+      if (!settled) {
+        settled = true;
+        reject(err);
+      }
+      if (meshtasticTcpSocket === socket) meshtasticTcpSocket = null;
+    });
+  });
+});
+
+ipcMain.handle('meshtastic:tcp-write', (event, bytes: number[]) => {
+  assertIpcSender(event, 'meshtastic:tcp-write');
+  if (!Array.isArray(bytes) || bytes.length > MESHTASTIC_TCP_WRITE_MAX_BYTES) {
+    return Promise.reject(
+      new Error(
+        `meshtastic:tcp-write: invalid or oversized payload (max ${MESHTASTIC_TCP_WRITE_MAX_BYTES} bytes)`,
+      ),
+    );
+  }
+  // Validate each element is a valid byte value so Uint8Array coercion is not silently lossy.
+  if (!bytes.every((b) => Number.isInteger(b) && b >= 0 && b <= 255)) {
+    return Promise.reject(new Error('meshtastic:tcp-write: byte values must be integers 0-255'));
+  }
+  if (!meshtasticTcpSocket) {
+    const msg = 'meshtastic:tcp-write: no active socket';
+    console.warn(`[IPC] ${msg}`);
+    return Promise.reject(new Error(msg));
+  }
+  const sock = meshtasticTcpSocket;
+  return new Promise<void>((resolve, reject) => {
+    sock.write(new Uint8Array(bytes), (err) => {
+      if (err) {
+        console.error('[IPC] meshtastic:tcp-write error:', sanitizeLogMessage(err.message));
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+});
+
+ipcMain.handle('meshtastic:tcp-disconnect', (event) => {
+  assertIpcSender(event, 'meshtastic:tcp-disconnect');
+  if (meshtasticTcpSocket) {
+    console.debug('[IPC] meshtastic:tcp-disconnect');
+    meshtasticTcpSocket.destroy();
+    meshtasticTcpSocket = null;
+  }
+});
+
 // ─── Meshtastic HTTP bridge ─────────────────────────────────────────
 let httpDevice: {
   host: string;
@@ -5703,6 +5822,9 @@ let httpDevice: {
 const HTTP_FETCH_INTERVAL_MS = 3000;
 const HTTP_FETCH_TIMEOUT_MS = 10_000;
 const MESHCORE_TCP_CONNECT_TIMEOUT_MS = 20_000;
+const MESHTASTIC_TCP_CONNECT_TIMEOUT_MS = 20_000;
+/** Max Meshtastic TCP toRadio write payload (aligned with meshcore:tcp-write cap). */
+const MESHTASTIC_TCP_WRITE_MAX_BYTES = 256 * 1024;
 const CHAT_EXPORT_MAX_MESSAGES = 10_000;
 const DB_SAVE_NODE_PATH_MAX_BYTES = 16 * 1024;
 /** Max Meshtastic HTTP toRadio payload (aligned with meshcore:tcp-write cap). */
@@ -6053,6 +6175,17 @@ app.on('will-quit', () => {
       ); // log-injection-ok internal Node.js socket error during cleanup
     }
     meshcoreTcpSocket = null;
+  }
+  if (meshtasticTcpSocket) {
+    try {
+      meshtasticTcpSocket.destroy();
+    } catch (err) {
+      console.debug(
+        '[main] TCP socket destroy during will-quit (ignored):',
+        err instanceof Error ? err.message : err,
+      ); // log-injection-ok internal Node.js socket error during cleanup
+    }
+    meshtasticTcpSocket = null;
   }
   stopPowerSaveBlocker();
   nobleBleManager.releaseNobleProcessHandles();

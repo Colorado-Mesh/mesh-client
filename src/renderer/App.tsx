@@ -2102,6 +2102,7 @@ function AppContent() {
                 serialPortId,
               ),
             connectHttp: (httpAddress) => protocolConnect(protocol, 'http', httpAddress),
+            connectTcp: (httpAddress) => protocolConnect(protocol, 'tcp', httpAddress),
           })
             .catch((err: unknown) => {
               logRfReconnectFailure('[App] handleReconnect failed', err);

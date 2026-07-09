@@ -1013,7 +1013,12 @@
       "suppressed": "{{count}} vergelijkbare zijspanlogregels die onlangs zijn onderdrukt."
     },
     "reticulumSidecarBundledMissing": "Bij deze installatie ontbreekt het gebundelde Reticulum sidecar. Upgrade naar een nieuwere release of rapporteer het probleem: bouwen vanaf de broncode is niet beschikbaar in pakketinstallaties.",
-    "radioMqttRootDivergesWarning": "Radio MQTT-hoofdonderwerp is {{radioRoot}}, maar dit paneel is geabonneerd op {{appPrefix}}. Koppel de radio om landelijk knooppuntverkeer te beperken — werk het onderwerpvoorvoegsel bij en sluit MQTT opnieuw aan."
+    "radioMqttRootDivergesWarning": "Radio MQTT-hoofdonderwerp is {{radioRoot}}, maar dit paneel is geabonneerd op {{appPrefix}}. Koppel de radio om landelijk knooppuntverkeer te beperken — werk het onderwerpvoorvoegsel bij en sluit MQTT opnieuw aan.",
+    "wifiTcp": "WiFi/TCP (snel)",
+    "tcpAddressPlaceholder": "meshtastic.local:4403, 192.168.1.x:4403, of [fd00::1]:4403",
+    "tcpAddressHint": "Voer hostnaam of IP-adres in; poort staat standaard op 4403 indien weggelaten",
+    "hintMeshtasticTcp1": "Voer het IP-adres of de hostnaam in van een Meshtastic-knooppunt met WiFi-verbinding met TCP ingeschakeld (standaardpoort 4403). Veel sneller dan WiFi/HTTP voor grote node databases.",
+    "hintMeshtasticTcp2": "Als de verbinding onbetrouwbaar is (bijv. met meshtastic.local), probeer dan in plaats daarvan het IP-adres van het apparaat — desktop mDNS kan schilferig zijn."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

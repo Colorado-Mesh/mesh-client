@@ -900,6 +900,30 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
   },
 
+  // ─── Meshtastic TCP bridge ────────────────────────────────────────
+  meshtastic: {
+    tcp: {
+      connect: (host: string, port: number): Promise<void> =>
+        ipcRenderer.invoke('meshtastic:tcp-connect', host, port),
+      write: (bytes: number[]): Promise<void> => ipcRenderer.invoke('meshtastic:tcp-write', bytes),
+      disconnect: (): Promise<void> => ipcRenderer.invoke('meshtastic:tcp-disconnect'),
+      onData: (cb: (bytes: Uint8Array) => void): (() => void) => {
+        const handler = (_: unknown, bytes: Uint8Array) => {
+          cb(bytes);
+        };
+        ipcRenderer.on('meshtastic:tcp-data', handler);
+        return () => ipcRenderer.off('meshtastic:tcp-data', handler);
+      },
+      onDisconnected: (cb: () => void): (() => void) => {
+        const handler = () => {
+          cb();
+        };
+        ipcRenderer.on('meshtastic:tcp-disconnected', handler);
+        return () => ipcRenderer.off('meshtastic:tcp-disconnected', handler);
+      },
+    },
+  },
+
   // ─── TAK server ──────────────────────────────────────────────────
   tak: {
     start: (settings: TAKSettings): Promise<void> => ipcRenderer.invoke('tak:start', settings),

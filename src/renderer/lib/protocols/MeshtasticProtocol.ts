@@ -91,6 +91,8 @@ export class MeshtasticProtocol implements Protocol {
         return createConnection('serial');
       case 'http':
         return createConnection('http', params.host);
+      case 'tcp':
+        return createConnection('tcp', params.host);
       default:
         throw new UnsupportedOperation(`meshtastic transport: ${params.type}`);
     }
@@ -217,6 +219,8 @@ export class MeshtasticProtocol implements Protocol {
         return `meshtastic:serial:${params.portSignature ?? 'unknown'}`;
       case 'http':
         return `meshtastic:http:${params.host}`;
+      case 'tcp':
+        return `meshtastic:tcp:${params.host}`;
       default:
         throw new UnsupportedOperation(`meshtastic signature for ${params.type}`);
     }

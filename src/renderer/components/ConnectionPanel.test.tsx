@@ -776,6 +776,32 @@ describe('ConnectionPanel exit actions', () => {
     });
   });
 
+  it('connects via TCP with typed address', async () => {
+    const user = userEvent.setup();
+    const onConnect = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('radio', { name: /wifi\/tcp/i }));
+    const hostInput = within(radioCard as HTMLElement).getByLabelText(/device address/i);
+    fireEvent.change(hostInput, { target: { value: '192.168.200.4' } });
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    await waitFor(() => {
+      expect(onConnect).toHaveBeenCalledWith('tcp', '192.168.200.4');
+    });
+  });
+
   it('shows Disconnect & Quit on disconnected view when MQTT is connected', () => {
     render(
       <ConnectionPanel

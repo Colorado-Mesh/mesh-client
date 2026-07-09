@@ -27,6 +27,6 @@ export function protocolTransportParams(
   return meshtasticTransportParams(opts.type, {
     peripheralId: opts.type === 'ble' ? opts.blePeripheralId : undefined,
     portSignature: opts.type === 'serial' ? (opts.lastSerialPortId ?? undefined) : undefined,
-    host: opts.type === 'http' ? opts.httpAddress : undefined,
+    host: opts.type === 'http' || opts.type === 'tcp' ? opts.httpAddress : undefined,
   });
 }

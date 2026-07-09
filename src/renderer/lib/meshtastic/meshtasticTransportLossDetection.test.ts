@@ -121,6 +121,31 @@ describe('meshtasticTransportLossDetection', () => {
     expect(innerWriteCount).toBe(2);
   });
 
+  it('serializes concurrent getWriter calls for TCP transport (regression)', async () => {
+    // Same SDK-level concurrency hazard as HTTP applies to Meshtastic's native TCP
+    // streaming transport (port 4403) — it's yet another Types.Transport implementation.
+    let innerWriteCount = 0;
+    const inner = new WritableStream<Uint8Array>({
+      async write() {
+        innerWriteCount++;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      },
+    });
+    const device = {
+      transport: { toDevice: inner },
+    } as unknown as MeshDevice;
+
+    attachMeshtasticTransportLossWatch(device, 'tcp', vi.fn());
+
+    const w1 = device.transport.toDevice.getWriter();
+    const w2 = device.transport.toDevice.getWriter();
+    await Promise.all([w1.write(new Uint8Array([1])), w2.write(new Uint8Array([2]))]);
+    w1.releaseLock();
+    w2.releaseLock();
+
+    expect(innerWriteCount).toBe(2);
+  });
+
   it('does not wrap toDevice for unsupported connection types', () => {
     const inner = new WritableStream<Uint8Array>({ write: vi.fn() });
     const device = {

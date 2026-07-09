@@ -243,6 +243,15 @@ export function createElectronAPIMock(): ElectronAPI {
       disconnect: vi.fn().mockResolvedValue(undefined),
       onData: vi.fn().mockReturnValue(() => {}),
     },
+    meshtastic: {
+      tcp: {
+        connect: vi.fn().mockResolvedValue(undefined),
+        write: vi.fn().mockResolvedValue(undefined),
+        disconnect: vi.fn().mockResolvedValue(undefined),
+        onData: vi.fn().mockReturnValue(() => {}),
+        onDisconnected: vi.fn().mockReturnValue(() => {}),
+      },
+    },
     chat: {
       export: vi.fn().mockResolvedValue({ success: false }),
       saveReticulumAttachment: vi.fn().mockResolvedValue({ success: false }),
