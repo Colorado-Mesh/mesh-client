@@ -119,12 +119,20 @@ describe('meshcoreWaitingMessagesVisibleForProtocol', () => {
     expect(meshcoreWaitingMessagesVisibleForProtocol(input, 'meshcore')).toBe(true);
   });
 
-  it('keeps active sync visible cross-tab', () => {
-    const input: MeshcoreWaitingMessagesStatusInput = {
+  it('hides active sync off the MeshCore tab', () => {
+    const silentDrain: MeshcoreWaitingMessagesStatusInput = {
       ...baseInput,
       waitingMessagesSilentDrainActive: true,
     };
-    expect(meshcoreWaitingMessagesVisibleForProtocol(input, 'meshtastic')).toBe(true);
-    expect(meshcoreWaitingMessagesVisibleForProtocol(input, 'meshcore')).toBe(true);
+    expect(meshcoreWaitingMessagesVisibleForProtocol(silentDrain, 'meshcore')).toBe(true);
+    expect(meshcoreWaitingMessagesVisibleForProtocol(silentDrain, 'meshtastic')).toBe(false);
+    expect(meshcoreWaitingMessagesVisibleForProtocol(silentDrain, 'reticulum')).toBe(false);
+
+    const manualSync: MeshcoreWaitingMessagesStatusInput = {
+      ...baseInput,
+      waitingMessagesSyncActive: true,
+    };
+    expect(meshcoreWaitingMessagesVisibleForProtocol(manualSync, 'meshcore')).toBe(true);
+    expect(meshcoreWaitingMessagesVisibleForProtocol(manualSync, 'meshtastic')).toBe(false);
   });
 });
