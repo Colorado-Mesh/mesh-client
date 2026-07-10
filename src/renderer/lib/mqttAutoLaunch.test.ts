@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { MESHCORE_ENC_PK_KEY, MESHCORE_IDENTITY_STORAGE_KEY } from './letsMeshJwt';
 import { MESHTASTIC_MQTT_SETTINGS_KEY } from './meshtasticMqttSettingsStorage';
 import { tryAutoLaunchMqtt } from './mqttAutoLaunch';
 
@@ -69,13 +70,11 @@ describe('tryAutoLaunchMqtt', () => {
 
 describe('shouldAutoLaunchMeshcoreMqttAtStartup', () => {
   const MESHCORE_KEY = 'mesh-client:mqttSettings:meshcore';
-  const IDENTITY_KEY = 'mesh-client:meshcoreIdentity';
-  const ENC_PK_KEY = 'mesh-client:meshcoreIdentityEncPK';
 
   afterEach(() => {
     localStorage.removeItem(MESHCORE_KEY);
-    localStorage.removeItem(IDENTITY_KEY);
-    localStorage.removeItem(ENC_PK_KEY);
+    localStorage.removeItem(MESHCORE_IDENTITY_STORAGE_KEY);
+    localStorage.removeItem(MESHCORE_ENC_PK_KEY);
   });
 
   it('defers JWT broker auto-launch until private key is cached', async () => {
@@ -91,8 +90,29 @@ describe('shouldAutoLaunchMeshcoreMqttAtStartup', () => {
     );
     expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(false);
 
-    localStorage.setItem(IDENTITY_KEY, JSON.stringify({ public_key: [1, 2] }));
-    localStorage.setItem(ENC_PK_KEY, 'enc');
+    localStorage.setItem(MESHCORE_IDENTITY_STORAGE_KEY, JSON.stringify({ public_key: [1, 2] }));
+    localStorage.setItem(MESHCORE_ENC_PK_KEY, 'enc');
     expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(true);
+  });
+
+  it('returns false when autoLaunch is disabled even if identity keys are present', async () => {
+    const { shouldAutoLaunchMeshcoreMqttAtStartup } = await import('./mqttAutoLaunch');
+    localStorage.setItem(
+      MESHCORE_KEY,
+      JSON.stringify({
+        server: 'mqtt.meshcore.coloradomesh.org',
+        port: 443,
+        autoLaunch: false,
+        useWebSocket: true,
+      }),
+    );
+    localStorage.setItem(MESHCORE_IDENTITY_STORAGE_KEY, JSON.stringify({ public_key: [1, 2] }));
+    localStorage.setItem(MESHCORE_ENC_PK_KEY, 'enc');
+    expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(false);
+  });
+
+  it('returns false when meshcore MQTT settings are absent', async () => {
+    const { shouldAutoLaunchMeshcoreMqttAtStartup } = await import('./mqttAutoLaunch');
+    expect(shouldAutoLaunchMeshcoreMqttAtStartup()).toBe(false);
   });
 });

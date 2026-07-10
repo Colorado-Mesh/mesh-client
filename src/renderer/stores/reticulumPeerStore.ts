@@ -460,8 +460,8 @@ export function reticulumHashForNodeId(nodeId: number): string | null {
     registerReticulumDestinationHash(nodeId, nodeRecord.reticulumDestinationHash);
     return nodeRecord.reticulumDestinationHash;
   }
-  const { peers, contacts } = useReticulumPeerStore.getState();
-  for (const row of [...peers.values(), ...contacts.values()]) {
+  const { peers } = useReticulumPeerStore.getState();
+  for (const row of peers.values()) {
     const hash = row.destination_hash;
     if (reticulumHashToNodeId(hash) === nodeId) {
       registerReticulumDestinationHash(nodeId, hash);
