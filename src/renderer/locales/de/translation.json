@@ -917,7 +917,10 @@
       "identityRequiredHint": "Konfigurieren Sie eine Reticulum-Identität auf der Registerkarte Netzwerk, bevor Sie Schnittstellen hinzufügen.",
       "i2pPeersRequired": "Geben Sie mindestens eine I2P-Peer-Adresse ein.",
       "i2pPeersTooLong": "Die I2P-Peer-Liste ist zu lang (max. {{max}} Zeichen).",
-      "i2pPeersInvalid": "I2P-Peers müssen kommagetrennte .b32.i2p-Adressen ohne Zeilenumbrüche sein."
+      "i2pPeersInvalid": "I2P-Peers müssen kommagetrennte .b32.i2p-Adressen ohne Zeilenumbrüche sein.",
+      "rnodePresetRequired": "Wählen Sie eine RNode RF-Voreinstellung (Frequenz- und LoRa-Parameter sind erforderlich).",
+      "callsignPlaceholder": "NV0N",
+      "callsignRequired": "Geben Sie Ihr Amateurfunkrufzeichen für diesen RNode ein."
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -559,6 +559,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     acquireScan: (owner: BleScanOwner) => ipcRenderer.invoke('bleCoexistence:acquireScan', owner),
     releaseScan: (owner: BleScanOwner) => ipcRenderer.invoke('bleCoexistence:releaseScan', owner),
     pauseNobleScan: () => ipcRenderer.invoke('bleCoexistence:pauseNobleScan'),
+    suspendNobleForReticulumBleConnect: () =>
+      ipcRenderer.invoke('bleCoexistence:suspendNobleForReticulumBleConnect'),
   },
 
   // ─── Noble BLE ──────────────────────────────────────────────────

@@ -917,7 +917,10 @@
       "identityRequiredHint": "인터페이스를 추가하기 전에 네트워크 탭에서 Reticulum ID를 구성하십시오.",
       "i2pPeersRequired": "하나 이상의 I2P 피어 주소를 입력하십시오.",
       "i2pPeersTooLong": "I2P 피어 목록이 너무 깁니다 (최대 {{max}} 자).",
-      "i2pPeersInvalid": "I2P 피어는 줄 바꿈 없이 쉼표로 구분된 .b32.i2p 주소여야 합니다."
+      "i2pPeersInvalid": "I2P 피어는 줄 바꿈 없이 쉼표로 구분된 .b32.i2p 주소여야 합니다.",
+      "rnodePresetRequired": "RNode RF 사전 설정을 선택하십시오 (주파수 및 LoRa 매개 변수가 필요함).",
+      "callsignPlaceholder": "NV0N",
+      "callsignRequired": "이 RNode에 대한 아마추어-라디오 콜사인을 입력하십시오."
     },
     "reticulumPeers": {
       "hops": "Hops",

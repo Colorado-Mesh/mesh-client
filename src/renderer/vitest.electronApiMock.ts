@@ -333,6 +333,9 @@ export function createElectronAPIMock(): ElectronAPI {
       acquireScan: vi.fn().mockResolvedValue({ connections: [], scanOwner: 'reticulum' }),
       releaseScan: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
       pauseNobleScan: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
+      suspendNobleForReticulumBleConnect: vi
+        .fn()
+        .mockResolvedValue({ connections: [], scanOwner: null }),
     },
     reticulum: {
       start: vi.fn().mockResolvedValue({ running: true, port: 19437, pid: 1 }),

@@ -917,7 +917,10 @@
       "identityRequiredHint": "Configure uma identidade Reticulum na guia Rede antes de adicionar interfaces.",
       "i2pPeersRequired": "Insira pelo menos um endereço de par I2P.",
       "i2pPeersTooLong": "A lista de pares I2P é muito longa (máx. {{max}} caracteres).",
-      "i2pPeersInvalid": "Os pares I2P devem ser endereços .b32.i2p separados por vírgulas sem quebras de linha."
+      "i2pPeersInvalid": "Os pares I2P devem ser endereços .b32.i2p separados por vírgulas sem quebras de linha.",
+      "rnodePresetRequired": "Escolha uma predefinição RNode RF (são necessários parâmetros de frequência e LoRa).",
+      "callsignPlaceholder": "NV0N",
+      "callsignRequired": "Digite seu indicativo de rádio amador para este RNode."
     },
     "reticulumPeers": {
       "hops": "Hops",

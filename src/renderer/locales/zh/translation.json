@@ -917,7 +917,10 @@
       "identityRequiredHint": "在添加接口之前，请先在“网络”选项卡上配置 Reticulum 身份。",
       "i2pPeersRequired": "输入至少一个I2P对等地址。",
       "i2pPeersTooLong": "I2P对等列表太长（最多{{max}}个字符）。",
-      "i2pPeersInvalid": "I2P对等项必须是逗号分隔的.b32.i2p地址，没有换行符。"
+      "i2pPeersInvalid": "I2P对等项必须是逗号分隔的.b32.i2p地址，没有换行符。",
+      "rnodePresetRequired": "选择RNode RF预设（频率和LoRa参数是必需的）。",
+      "callsignPlaceholder": "NV0N",
+      "callsignRequired": "输入此RNode的业余无线电呼号。"
     },
     "reticulumPeers": {
       "hops": "Hops",

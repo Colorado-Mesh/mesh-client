@@ -3,7 +3,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useNowMs } from '@/renderer/hooks/useNowMs';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { syncReticulumBleRegistry } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
+import {
+  isReticulumBleRnodeInterfaceRow,
+  isReticulumBleRnodeOnline,
+  prepareReticulumBleRnodeConnect,
+  releaseReticulumBleRnodeConnect,
+  syncReticulumBleRegistry,
+} from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
 import type { ReticulumLocalInterfaceHealthOptions } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import { logReticulumLocalInterfaceHealthChanges } from '@/renderer/lib/reticulum/reticulumLocalInterfaceLogging';
 import {
@@ -58,6 +64,7 @@ export function useReticulumInterfaceSnapshot({
   >(null);
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burstCancelRef = useRef<(() => void) | null>(null);
+  const bleNobleYieldActiveRef = useRef(false);
 
   const nowMs = useNowMs(bleConnectGraceExpiresAt > 0, bleConnectGraceExpiresAt > 0 ? 1_000 : 0);
   const healthOptions = useMemo((): ReticulumLocalInterfaceHealthOptions | undefined => {
@@ -180,6 +187,39 @@ export function useReticulumInterfaceSnapshot({
       }
     };
   }, [sidecarApiReady, pollActive, healthOptions]);
+
+  useEffect(() => {
+    if (!sidecarApiReady || bleConnectGraceExpiresAt <= 0 || nowMs <= 0) {
+      return;
+    }
+    const hasEnabledBleRnode = interfaces.some(
+      (row) => row.enabled && isReticulumBleRnodeInterfaceRow(row),
+    );
+    const hasOfflineBleRnode = interfaces.some(
+      (row) =>
+        row.enabled &&
+        isReticulumBleRnodeInterfaceRow(row) &&
+        row.status.toLowerCase() !== 'up' &&
+        row.status.toLowerCase() !== 'online',
+    );
+    if (hasOfflineBleRnode && !bleNobleYieldActiveRef.current) {
+      void (async () => {
+        const state = await window.electronAPI.bleCoexistence.getState();
+        if (state.scanOwner === 'reticulum') {
+          bleNobleYieldActiveRef.current = true;
+          return;
+        }
+        bleNobleYieldActiveRef.current = true;
+        await prepareReticulumBleRnodeConnect();
+      })();
+    }
+    const bleRnodeOnline = interfaces.some((row) => isReticulumBleRnodeOnline(row));
+    const graceExpired = nowMs >= bleConnectGraceExpiresAt;
+    if (bleNobleYieldActiveRef.current && (!hasEnabledBleRnode || bleRnodeOnline || graceExpired)) {
+      bleNobleYieldActiveRef.current = false;
+      void releaseReticulumBleRnodeConnect();
+    }
+  }, [sidecarApiReady, interfaces, bleConnectGraceExpiresAt, nowMs]);
 
   return {
     interfaces,

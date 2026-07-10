@@ -917,7 +917,10 @@
       "identityRequiredHint": "Налаштуйте ідентифікатор Reticulum на вкладці Network (Мережа) перед додаванням інтерфейсів.",
       "i2pPeersRequired": "Введіть принаймні одну адресу вузла I2P.",
       "i2pPeersTooLong": "Список вузлів I2P задовгий (макс. {{max}} символів).",
-      "i2pPeersInvalid": "Вузли I2P повинні бути адресами, розділеними комами .b32.i2p, без розривів рядків."
+      "i2pPeersInvalid": "Вузли I2P повинні бути адресами, розділеними комами .b32.i2p, без розривів рядків.",
+      "rnodePresetRequired": "Виберіть RNode RF preset (необхідні параметри частоти та LoRa).",
+      "callsignPlaceholder": "NV0N",
+      "callsignRequired": "Введіть свій радіоаматорський позивний для цього RNode."
     },
     "reticulumPeers": {
       "hops": "Hops",

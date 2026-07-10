@@ -664,6 +664,7 @@ export interface ElectronAPI {
     acquireScan: (owner: BleScanOwner) => Promise<BleCoexistenceState>;
     releaseScan: (owner: BleScanOwner) => Promise<BleCoexistenceState>;
     pauseNobleScan: () => Promise<BleCoexistenceState>;
+    suspendNobleForReticulumBleConnect: () => Promise<BleCoexistenceState>;
   };
 
   // ─── Noble BLE ───────────────────────────────────────────────────────────────

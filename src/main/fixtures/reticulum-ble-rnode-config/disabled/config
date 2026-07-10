@@ -1,0 +1,4 @@
+[[rnode-off]]
+type = RNodeInterface
+enabled = No
+port = ble://eccf2847-e1fd-3f5f-0811-064db1639a3d

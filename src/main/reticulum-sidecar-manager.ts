@@ -13,7 +13,9 @@ import type {
 } from '../shared/reticulum-types';
 import { RETICULUM_PROXY_MAX_BODY_BYTES } from '../shared/reticulumProxyLimits';
 import { MS_PER_SECOND } from '../shared/timeConstants';
+import { bleCoexistenceCoordinator } from './ble-coexistence-coordinator';
 import { sanitizeLogMessage } from './log-service';
+import { reticulumConfigDirHasEnabledBleRnode } from './reticulum-ble-rnode-config';
 import { assertReticulumProxyPath, reticulumProxyGetTimeoutMs } from './reticulum-proxy-path';
 import { ensureDevSidecarBinary, resolveSidecarBinaryPath } from './reticulum-sidecar-path';
 import { ReticulumSidecarAutoBeaconTracker } from './reticulumSidecarAutoBeaconTracker';
@@ -26,6 +28,8 @@ import {
 const HEALTH_POLL_INTERVAL_MS = 250;
 const HEALTH_POLL_TIMEOUT_MS = 30 * MS_PER_SECOND;
 const STOP_GRACE_MS = 5 * MS_PER_SECOND;
+/** After yielding Noble BLE, allow CoreBluetooth/btleplug to settle before sidecar connect. */
+const RETICULUM_BLE_RNODE_NOBLE_SETTLE_MS = 500;
 
 function sidecarChildEnv(): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {
@@ -162,6 +166,12 @@ export class ReticulumSidecarManager extends EventEmitter {
     const storageDir = this.reticulumUserDir('storage');
     fs.mkdirSync(configDir, { recursive: true });
     fs.mkdirSync(storageDir, { recursive: true });
+
+    const needsBleRnodeNobleYield = reticulumConfigDirHasEnabledBleRnode(configDir);
+    if (needsBleRnodeNobleYield) {
+      await bleCoexistenceCoordinator.suspendNobleForReticulumBleConnect();
+      await new Promise((r) => setTimeout(r, RETICULUM_BLE_RNODE_NOBLE_SETTLE_MS));
+    }
 
     const port = await findFreePort();
     const binary = this.resolveBinaryPath();

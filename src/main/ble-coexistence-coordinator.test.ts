@@ -53,4 +53,26 @@ describe('BleCoexistenceCoordinator', () => {
     expect(noble.resumeScanningAfterExternalScan).toHaveBeenCalled();
     expect(coordinator.getState().scanOwner).toBeNull();
   });
+
+  it('suspendNobleForReticulumBleConnect acquires reticulum scan and disconnects noble sessions on darwin', async () => {
+    const noble = {
+      pauseScanningForExternalScan: vi.fn().mockResolvedValue(undefined),
+      resumeScanningAfterExternalScan: vi.fn().mockResolvedValue(undefined),
+      disconnectAllSessions: vi.fn().mockResolvedValue(undefined),
+    };
+    const coordinator = new BleCoexistenceCoordinator();
+    coordinator.setNobleManager(noble as never);
+
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
+
+    try {
+      await coordinator.suspendNobleForReticulumBleConnect();
+      expect(coordinator.getState().scanOwner).toBe('reticulum');
+      expect(noble.pauseScanningForExternalScan).toHaveBeenCalled();
+      expect(noble.disconnectAllSessions).toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+    }
+  });
 });

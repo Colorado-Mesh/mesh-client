@@ -276,6 +276,7 @@ describe('ReticulumInterfacesPanel', () => {
       screen.getByLabelText('connectionPanel.reticulumInterfaces.rnodeWifiHost'),
       '192.168.1.10',
     );
+    await user.type(screen.getByLabelText('connectionPanel.reticulumInterfaces.callsign'), 'NV0N');
     await user.click(
       screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.add' }),
     );
@@ -284,7 +285,14 @@ describe('ReticulumInterfacesPanel', () => {
       expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith('/api/v1/interfaces', {
         type: 'rnode',
         serial_port: 'tcp://192.168.1.10',
-        preset: null,
+        preset: 'rnode_us',
+        frequency: 914875000,
+        bandwidth: 125000,
+        spreading_factor: 8,
+        coding_rate: 5,
+        txpower: 17,
+        callsign: 'NV0N',
+        name: '192.168.1.10',
       });
     });
   });

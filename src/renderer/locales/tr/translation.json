@@ -917,7 +917,10 @@
       "identityRequiredHint": "Arayüz eklemeden önce Ağ sekmesinde bir Reticulum kimliği yapılandırın.",
       "i2pPeersRequired": "En az bir I2P eş adresi girin.",
       "i2pPeersTooLong": "I2P eş listesi çok uzun (maks. {{max}} karakter).",
-      "i2pPeersInvalid": "I2P eşleri, satır sonu olmayan, virgülle ayrılmış .b32.i2p adresleri olmalıdır."
+      "i2pPeersInvalid": "I2P eşleri, satır sonu olmayan, virgülle ayrılmış .b32.i2p adresleri olmalıdır.",
+      "rnodePresetRequired": "Bir RNode RF ön ayarı seçin (frekans ve LoRa parametreleri gereklidir).",
+      "callsignPlaceholder": "NV0N",
+      "callsignRequired": "Bu RNode için amatör radyo çağrı işaretinizi girin."
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -6,7 +6,9 @@ import {
   isBleScanBusyErrorMessage,
   normalizeBleMac,
   parseBleMacFromReticulumSerialPort,
+  prepareReticulumBleRnodeConnect,
   registerReticulumBleMac,
+  releaseReticulumBleRnodeConnect,
   releaseReticulumBleScan,
   unregisterReticulumBleMac,
 } from './reticulumBleAdapterLease';
@@ -17,7 +19,9 @@ export {
   isBlePeripheralConflictErrorMessage,
   isBleScanBusyErrorMessage,
   parseBleMacFromReticulumSerialPort,
+  prepareReticulumBleRnodeConnect,
   registerReticulumBleMac,
+  releaseReticulumBleRnodeConnect,
   releaseReticulumBleScan,
   unregisterReticulumBleMac,
 };
@@ -29,14 +33,28 @@ export interface ReticulumInterfaceBleRow {
   seed_addresses?: string[] | null;
 }
 
-export function isReticulumBleInterfaceRow(row: ReticulumInterfaceBleRow): boolean {
+export function isReticulumBleRnodeInterfaceRow(row: ReticulumInterfaceBleRow): boolean {
   const normalized = row.type.toLowerCase();
-  if (normalized === 'ble_peer' || normalized.includes('blepeer')) return true;
   return (
-    normalized === 'rnode' &&
+    (normalized === 'rnode' || normalized === 'rnodeinterface') &&
     typeof row.serial_port === 'string' &&
     row.serial_port.startsWith('ble://')
   );
+}
+
+export function isReticulumBleRnodeOnline(
+  row: ReticulumInterfaceBleRow & { status?: string },
+): boolean {
+  const status = row.status?.toLowerCase() ?? '';
+  return (
+    row.enabled && isReticulumBleRnodeInterfaceRow(row) && (status === 'up' || status === 'online')
+  );
+}
+
+export function isReticulumBleInterfaceRow(row: ReticulumInterfaceBleRow): boolean {
+  const normalized = row.type.toLowerCase();
+  if (normalized === 'ble_peer' || normalized.includes('blepeer')) return true;
+  return isReticulumBleRnodeInterfaceRow(row);
 }
 
 export function hasEnabledReticulumBleInterface(
