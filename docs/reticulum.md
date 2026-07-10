@@ -91,7 +91,19 @@ The **Map** tab shows **local** RMAP v4 discovery data — interfaces your stack
 
 **Publish (appear on maps):** Network → **RMAP v4 discovery** or per-interface RMAP toggles on Connection. Requires App → GPS coordinates for map markers. LoRa-only stacks need an enabled TCP hub (for example `rmap.world:4242`) so discovery announces reach the wider network — see config audit `rmap_no_tcp_hub`.
 
-**Consume (Map tab):** Sidecar sets `discover_interfaces = Yes` in rnsd config on bootstrap so the stack listens for discovery announces. Markers show GPS when coordinates were included in the announce; interfaces without coords appear in the sidebar list only. **Reachable** badges join discovery rows with the RNS path table (Peers tab).
+**Consume (Map tab):** Sidecar sets `discover_interfaces = Yes` in rnsd config on bootstrap so the stack listens for discovery announces. Markers show GPS when coordinates were included in the announce; interfaces without coords appear in the sidebar list only. **Reachable** badges join discovery rows with the RNS path table (Peers tab) by matching `transport_id` against peer `destination_hash` or `via_hash`.
+
+**UI:** Leaflet map with 280px sidebar list; filter pills (All, LoRa, Backbone, I2P, TCP, Other); basemap switcher and Locate Me (App GPS); manual Refresh; marker click opens peer detail when the node is in the path table. List row click flies to coordinates at zoom 14.
+
+**Refresh model:** Map tab polls `GET /api/v1/rmap/discovered` every **30s** while mounted; sidecar also pushes WebSocket `rmap.discovery` every **10s** when the discovery fingerprint changes (runtime updates store even when Map tab is hidden).
+
+**Publish settings (Network → RMAP v4 discovery):** announce interval **60–1440 min** (default **360**); optional height (meters) and `reachable_on` (max 256 chars). LoRa/BLE publish auto-enables `enable_transport` and the **`rmap.world:4242`** hub. Stack restart confirm after enabling publish.
+
+**Performance / memory:** Renderer mirrors discovery rows in `reticulumDiscoveryMapStore` (in-memory only; capped at **2,000** newest rows with client-side 7-day `last_heard` eviction). Peer store capped at **10,000** entries on refresh. Leaflet uses `preferCanvas`; tile layer `keepBuffer={1}`. No marker clustering — typical scale is bounded by sidecar TTL. Stores clear on disconnect and unexpected sidecar stop.
+
+**Config audit kinds:** `rmap_missing_coordinates`, `rmap_no_tcp_hub`, `rmap_transport_disabled`, `rmap_i2p_not_connectable`.
+
+**Implementation:** `ReticulumMapPanel.tsx`, `reticulumDiscoveryMapStore.ts`, `reticulumDiscoveryMapLayout.ts`, `reticulumRmapDiscovery.ts`, `useReticulumRuntime.ts` (WS `rmap.discovery`).
 
 **Related panels:** **Topology** = logical hops (no geography); **Peers** = path table; **Map** = geographic discovery + reachability.
 

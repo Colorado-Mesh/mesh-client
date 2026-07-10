@@ -879,7 +879,8 @@
       "openGlobalMapAria": "Open RMAP v4 global map on rmap.world",
       "needsSync": "{{count}} enabled local interface(s) need RMAP discovery sync",
       "noPublishTargets": "No enabled RMAP-capable interfaces to publish on RMAP.",
-      "syncSuccess": "RMAP discovery synced to interface."
+      "syncSuccess": "RMAP discovery synced to interface.",
+      "syncFailed": "RMAP discovery sync failed."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3582,7 +3583,9 @@
     "gpsRequiredBody": "RMAP map markers need latitude and longitude. Set static coordinates under App → GPS / Location, then try again.",
     "openAppGps": "Open App GPS settings",
     "applySuccess": "RMAP discovery settings applied.",
+    "applyPartialSuccess": "RMAP settings applied to {{applied}} of {{total}} interfaces.",
     "disableSuccess": "RMAP publishing disabled on local interfaces.",
+    "disablePartialSuccess": "RMAP publishing disabled on {{applied}} of {{total}} interfaces.",
     "applyFailed": "Failed to apply RMAP settings: {{error}}",
     "noPublishTargets": "No enabled RMAP-capable interfaces. Enable an RNode, KISS, BLE peer, I2P, UDP, or pipe interface first.",
     "restartTitle": "Restart Reticulum stack?",

@@ -1037,7 +1037,8 @@
       "noPublishTargets": "Нет включенных локальных интерфейсов для публикации на RMAP.",
       "syncSuccess": "Обнаружение RMAP синхронизировано с интерфейсом.",
       "openGlobalMap": "Глобальная карта",
-      "openGlobalMapAria": "Открыть глобальную карту RMAP v4 на rmap.world"
+      "openGlobalMapAria": "Открыть глобальную карту RMAP v4 на rmap.world",
+      "syncFailed": "Ошибка синхронизации обнаружения RMAP."
     }
   },
   "contactGroupsModal": {
@@ -3575,7 +3576,7 @@
     "heightMeters": "Высота над уровнем моря (м, опционально)",
     "reachableOn": "Доступно на (имя хоста или скрипт, необязательно)",
     "helpLink": "Руководство RMAP",
-    "gpsRequiredTitle": "Sono necessarie le coordinate GPS",
+    "gpsRequiredTitle": "Требуются GPS-координаты",
     "gpsRequiredBody": "Маркерам карты RMAP нужны широта и долгота. Установите статические координаты в разделе → GPS приложения/ Местоположение, а затем повторите попытку.",
     "openAppGps": "Открыть настройки приложения",
     "applySuccess": "Применены параметры обнаружения RMAP.",
@@ -3593,7 +3594,9 @@
     },
     "hint": "Применяет discoverable=yes и App GPS-координаты ко всем включенным интерфейсам с поддержкой RMAP (RNode, KISS, BLE peer, I2P, UDP, pipe). Используйте переключатели RMAP для каждого интерфейса на подключении для точного управления. Пути LoRa также обеспечивают транспорт и хаб rmap.world.",
     "openGlobalMap": "Глобальная карта",
-    "openGlobalMapAria": "Открыть глобальную карту RMAP v4 на rmap.world"
+    "openGlobalMapAria": "Открыть глобальную карту RMAP v4 на rmap.world",
+    "applyPartialSuccess": "Настройки RMAP применены к интерфейсам {{applied}} из {{total}}.",
+    "disablePartialSuccess": "Публикация RMAP отключена на {{applied}} из {{total}} интерфейсов."
   },
   "reticulumTopology": {
     "title": "Топология сети",

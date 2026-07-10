@@ -1,4 +1,5 @@
 import { getAppSettingsRaw, mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { readStoredStaticGps } from '@/renderer/lib/gpsSource';
 import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
 import {
@@ -377,9 +378,15 @@ export interface ApplyReticulumRmapDiscoveryArgs {
   stackSettings: { enable_transport: boolean; share_instance: boolean; loglevel: number };
 }
 
+export interface RmapBatchApplyResult {
+  applied: number;
+  total: number;
+  errors: string[];
+}
+
 export async function applyReticulumRmapDiscovery(
   args: ApplyReticulumRmapDiscoveryArgs,
-): Promise<void> {
+): Promise<RmapBatchApplyResult> {
   const coords = resolveRmapCoordinates();
   if (!coords) {
     throw new ReticulumRmapGpsRequiredError();
@@ -398,29 +405,50 @@ export async function applyReticulumRmapDiscovery(
     throw new ReticulumRmapValidationError('no_publish_targets');
   }
 
+  const errors: string[] = [];
+  let applied = 0;
+
   const needsTransportBridge = targets.some(isReticulumRmapLoRaDiscoveryRow);
   if (needsTransportBridge && !args.stackSettings.enable_transport) {
-    await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
-      ...args.stackSettings,
-      enable_transport: true,
-    });
+    try {
+      await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
+        ...args.stackSettings,
+        enable_transport: true,
+      });
+    } catch (e) {
+      // catch-no-log-ok partial apply — surfaced via RmapBatchApplyResult.errors
+      errors.push(errLikeToLogString(e));
+    }
   }
 
   for (const row of targets) {
-    const patch = buildRmapDiscoveryPatch(row, {
-      coords,
-      discoveryName: args.discoveryName,
-      announceIntervalMin,
-      heightMeters: args.heightMeters,
-      reachableOn: reachable || null,
-      discoverable: true,
-    });
-    await window.electronAPI.reticulum.proxyPut(`/api/v1/interfaces/${row.id}`, patch);
+    try {
+      const patch = buildRmapDiscoveryPatch(row, {
+        coords,
+        discoveryName: args.discoveryName,
+        announceIntervalMin,
+        heightMeters: args.heightMeters,
+        reachableOn: reachable || null,
+        discoverable: true,
+      });
+      await window.electronAPI.reticulum.proxyPut(`/api/v1/interfaces/${row.id}`, patch);
+      applied++;
+    } catch (e) {
+      // catch-no-log-ok partial apply — surfaced via RmapBatchApplyResult.errors
+      errors.push(errLikeToLogString(e));
+    }
   }
 
   if (needsTransportBridge) {
-    await ensureRmapWorldHubEnabled(args.interfaces);
+    try {
+      await ensureRmapWorldHubEnabled(args.interfaces);
+    } catch (e) {
+      // catch-no-log-ok partial apply — surfaced via RmapBatchApplyResult.errors
+      errors.push(errLikeToLogString(e));
+    }
   }
+
+  return { applied, total: targets.length, errors };
 }
 
 export interface SetReticulumRmapDiscoverableArgs {
@@ -490,11 +518,19 @@ export async function setReticulumRmapDiscoverableForInterface(
 
 export async function disableReticulumRmapDiscovery(
   interfaces: readonly ReticulumInterfaceRow[],
-): Promise<void> {
+): Promise<RmapBatchApplyResult> {
   const patch = buildRmapDisablePatch();
-  for (const row of listReticulumRmapDiscoveryCapable(interfaces)) {
-    if (row.discoverable) {
+  const targets = listReticulumRmapDiscoveryCapable(interfaces).filter((row) => row.discoverable);
+  const errors: string[] = [];
+  let applied = 0;
+  for (const row of targets) {
+    try {
       await window.electronAPI.reticulum.proxyPut(`/api/v1/interfaces/${row.id}`, patch);
+      applied++;
+    } catch (e) {
+      // catch-no-log-ok partial disable — surfaced via RmapBatchApplyResult.errors
+      errors.push(errLikeToLogString(e));
     }
   }
+  return { applied, total: targets.length, errors };
 }

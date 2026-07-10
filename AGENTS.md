@@ -138,7 +138,9 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 
 - **Sidecar:** `reticulum-sidecar/` (AGPL Rust binary `mesh-client-reticulum`); dev: `pnpm run reticulum:sidecar:dev`
 - **IPC:** `reticulum:*` main handlers (`proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete`, config file read/import dialog); renderer uses `electronAPI.reticulum` proxy (no direct localhost from sandbox)
-- **Panels:** `ReticulumStackPanel` (Connection — stack lifecycle, interfaces), `ReticulumNetworkPanel` (Network — identity, stack/announce settings, propagation, config import), `ReticulumAdminPanel` (Admin — RNode flasher, factory reset), `ReticulumPeerListPanel` (Peers), `NomadNetworkPanel` (Nomad Network)
+- **Panels:** `ReticulumStackPanel` (Connection — stack lifecycle, interfaces), `ReticulumNetworkPanel` (Network — identity, stack/announce settings, propagation, config import), `ReticulumMapPanel` (Map — RMAP v4 discovery), `ReticulumRmapDiscoveryControls` / `ReticulumRmapConnectionStatus` (RMAP publish), `ReticulumAdminPanel` (Admin — RNode flasher, factory reset), `ReticulumPeerListPanel` (Peers), `NomadNetworkPanel` (Nomad Network)
+- **Stores/lib:** `reticulumDiscoveryMapStore.ts`, `reticulumRmapDiscovery.ts`, `reticulumDiscoveryMapLayout.ts`; WS event `rmap.discovery` in `useReticulumRuntime`
+- **Gating:** `hasReticulumDiscoveryMap` (Map tab); `hasReticulumInterfaceConfig` / `hasReticulumNetworkPanel` / `ProtocolCapabilities`
 - **Runtime:** `useReticulumRuntime`, `reticulumSession.ts`, `reticulumIngest.ts`; connect starts sidecar, not `ConnectionDriver` RF
 - **Diagnostics:** `ReticulumDiagnosticEngine.ts` (Reticulum-native rows; no LoRa hop-goblin semantics)
 - **No Noble/MQTT** for Reticulum tab; gate UI with `hasReticulumInterfaceConfig` / `hasReticulumNetworkPanel` / `ProtocolCapabilities`

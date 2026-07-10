@@ -8,6 +8,8 @@ export type RmapInterfaceFilter = 'all' | 'rnode' | 'i2p' | 'tcp' | 'backbone' |
 
 export interface ReticulumMapMarkerRow extends ReticulumRmapDiscoveredWireRow {
   reachable: boolean;
+  /** Resolved destination_hash for peer detail modal; null when heard-only. */
+  peerDetailHash: string | null;
 }
 
 export interface ReticulumMapLayout {
@@ -57,6 +59,28 @@ function peerTransportIds(peers: ReticulumPeerWireRow[]): Set<string> {
   return out;
 }
 
+/** Resolve transport_id to a path-table destination_hash for peer detail modal. */
+export function resolveRmapPeerDetailHash(
+  transportId: string,
+  peers: ReticulumPeerWireRow[],
+): string | null {
+  const tid = transportId.trim().toLowerCase();
+  if (!tid) return null;
+  for (const peer of peers) {
+    const dest = peer.destination_hash?.trim().toLowerCase();
+    if (dest && dest === tid) {
+      return dest;
+    }
+  }
+  for (const peer of peers) {
+    const via = peer.via_hash?.trim().toLowerCase();
+    if (via && via === tid) {
+      return via;
+    }
+  }
+  return null;
+}
+
 export function joinRmapDiscoveryWithPeers(
   discovered: ReticulumRmapDiscoveredWireRow[],
   peers: ReticulumPeerWireRow[],
@@ -65,6 +89,7 @@ export function joinRmapDiscoveryWithPeers(
   const enriched: ReticulumMapMarkerRow[] = discovered.map((row) => ({
     ...row,
     reachable: reachableIds.has(row.transport_id.trim().toLowerCase()),
+    peerDetailHash: resolveRmapPeerDetailHash(row.transport_id, peers),
   }));
 
   const markers: ReticulumMapMarkerRow[] = [];

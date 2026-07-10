@@ -5,6 +5,7 @@ import {
   MAX_DIAGNOSTICS_TRACKED_NODES,
   MAX_MESH_ENTITY_CAP,
   MAX_RETICULUM_IDENTITY_DESTINATIONS,
+  MAX_RMAP_DISCOVERED_ROWS,
   trimArrayTail,
   trimMapToMaxSize,
   trimMapToMaxSizeKeeping,
@@ -15,6 +16,7 @@ describe('sessionMemoryCaps', () => {
     expect(MAX_MESH_ENTITY_CAP).toBe(10_000);
     expect(MAX_DIAGNOSTICS_TRACKED_NODES).toBe(MAX_MESH_ENTITY_CAP);
     expect(MAX_RETICULUM_IDENTITY_DESTINATIONS).toBe(MAX_MESH_ENTITY_CAP);
+    expect(MAX_RMAP_DISCOVERED_ROWS).toBe(2_000);
     expect(LARGE_MESH_NODE_THRESHOLD).toBe(2000);
   });
 

@@ -1037,7 +1037,8 @@
       "noPublishTargets": "No hay interfaces locales habilitadas para publicar en RMAP.",
       "syncSuccess": "Descubrimiento de RMAP sincronizado con la interfaz.",
       "openGlobalMap": "Mapa mundial",
-      "openGlobalMapAria": "Abra el mapa global de RMAP v4 en rmap.world"
+      "openGlobalMapAria": "Abra el mapa global de RMAP v4 en rmap.world",
+      "syncFailed": "Error de sincronización de descubrimiento de RMAP."
     }
   },
   "contactGroupsModal": {
@@ -3593,7 +3594,9 @@
     },
     "hint": "Aplica discoverable=yes y las coordenadas GPS de App a todas las interfaces habilitadas para RMAP (RNode, KISS, BLE peer, I2P, UDP, pipe). Use los conmutadores RMAP por interfaz en Conexión para un control fino. Las rutas LoRa también habilitan transporte y el hub rmap.world.",
     "openGlobalMap": "Mapa mundial",
-    "openGlobalMapAria": "Abra el mapa global de RMAP v4 en rmap.world"
+    "openGlobalMapAria": "Abra el mapa global de RMAP v4 en rmap.world",
+    "applyPartialSuccess": "Configuración de RMAP aplicada a las interfaces {{applied}} de {{total}}.",
+    "disablePartialSuccess": "Publicación RMAP deshabilitada en las interfaces {{applied}} de {{total}}."
   },
   "reticulumTopology": {
     "title": "Topología de red",

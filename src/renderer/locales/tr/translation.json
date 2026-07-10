@@ -1037,7 +1037,8 @@
       "noPublishTargets": "RMAP'te yayınlanacak etkinleştirilmiş yerel arayüz yok.",
       "syncSuccess": "RMAP keşfi arayüzle senkronize edildi.",
       "openGlobalMap": "Küresel harita",
-      "openGlobalMapAria": "RMAP v4 global haritasını rmap.world'de açın"
+      "openGlobalMapAria": "RMAP v4 global haritasını rmap.world'de açın",
+      "syncFailed": "RMAP keşif senkronizasyonu başarısız oldu."
     }
   },
   "contactGroupsModal": {
@@ -3593,7 +3594,9 @@
     },
     "hint": "Etkinleştirilmiş tüm RMAP özellikli arayüzlere (RNode, KISS, BLE peer, I2P, UDP, pipe) bulunabilir=evet ve Uygulama GPS koordinatlarını uygular. İnce kontrol için Bağlantı üzerindeki arayüz başına RMAP geçişlerini kullanın. LoRa yolları ayrıca ulaşımı ve rmap.world hub'ını etkinleştirir.",
     "openGlobalMap": "Küresel haritayı aç",
-    "openGlobalMapAria": "RMAP v4 global haritasını rmap.world'de açın"
+    "openGlobalMapAria": "RMAP v4 global haritasını rmap.world'de açın",
+    "applyPartialSuccess": "{{total}} arabirimlerinin {{applied}} öğesine uygulanan RMAP ayarları.",
+    "disablePartialSuccess": "{{total}} arayüzlerinin {{applied}} üzerinde RMAP yayınlama devre dışı bırakıldı."
   },
   "reticulumTopology": {
     "title": "Ağ topolojisi",

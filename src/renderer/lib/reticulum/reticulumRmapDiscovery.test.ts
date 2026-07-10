@@ -161,12 +161,15 @@ describe('reticulumRmapDiscovery', () => {
       loglevel: 4,
     });
 
-    await applyReticulumRmapDiscovery({
+    const result = await applyReticulumRmapDiscovery({
       interfaces: [row({ id: 'r', type: 'rnode', serial_port: '/dev/ttyUSB0' })],
       announceIntervalMin: 60,
       discoveryName: 'Test',
       stackSettings: { enable_transport: false, share_instance: true, loglevel: 4 },
     });
+
+    expect(result.applied).toBe(1);
+    expect(result.errors).toEqual([]);
 
     expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith('/api/v1/stack/settings', {
       enable_transport: true,

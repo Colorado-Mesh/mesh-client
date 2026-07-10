@@ -1037,7 +1037,8 @@
       "noPublishTargets": "Aucune interface locale activée pour publier sur RMAP.",
       "syncSuccess": "Découverte RMAP synchronisée à l'interface.",
       "openGlobalMap": "Carte mondiale",
-      "openGlobalMapAria": "Ouvrez la carte globale RMAP v4 sur rmap.world"
+      "openGlobalMapAria": "Ouvrez la carte globale RMAP v4 sur rmap.world",
+      "syncFailed": "Échec de la synchronisation de la découverte RMAP."
     }
   },
   "contactGroupsModal": {
@@ -3593,7 +3594,9 @@
     },
     "hint": "Applique discoverable=yes et Appliquer les coordonnées GPS à toutes les interfaces compatibles RMAP activées (RNode, KISS, ble peer, I2P, UDP, pipe). Utilisez les bascules RMAP par interface sur la connexion pour un contrôle fin. Les chemins LoRa permettent également le transport et le hub rmap.world.",
     "openGlobalMap": "Carte mondiale",
-    "openGlobalMapAria": "Ouvrez la carte globale RMAP v4 sur rmap.world"
+    "openGlobalMapAria": "Ouvrez la carte globale RMAP v4 sur rmap.world",
+    "applyPartialSuccess": "Paramètres RMAP appliqués à {{applied}} des interfaces {{total}}.",
+    "disablePartialSuccess": "Publication RMAP désactivée sur {{applied}} des interfaces {{total}}."
   },
   "reticulumTopology": {
     "title": "Topologie de réseau",
@@ -4007,21 +4010,21 @@
     "openGlobalMapAria": "Ouvrez la carte globale RMAP v4 sur rmap.world",
     "openPublishSettings": "Paramètres de publication",
     "openPublishSettingsAria": "Ouvrir les paramètres de publication RMAP de Reticulum Network",
-    "refresh": "Renouvellement",
+    "refresh": "Actualiser",
     "refreshAria": "Actualiser la carte de découverte",
-    "refreshFailed": "Impossible d'actualiser la carte de découverte : {{error}}",
+    "refreshFailed": "Impossible d'actualiser la carte de découverte : {{error}}",
     "countSummary": "{{markers}} sur la carte · {{list}} liste uniquement",
     "listTitle": "Interfaces découvertes",
     "selfMarker": "Position GPS de votre application",
-    "reachable": "Lexique de la théorie des graphes",
+    "reachable": "Joignable",
     "heardOnly": "Entendu seulement (pas dans la table des chemins)",
     "noCoords": "Pas de GPS",
     "lastHeard": "Dernière audition {{time}}",
-    "openNodeAria": "Ouvrir les détails de {{name}}",
+    "openNodeAria": "Afficher {{name}} sur la carte",
     "filter": {
       "all": "Tous",
       "rnode": "LoRa",
-      "backbone": "Colonne vertébrale",
+      "backbone": "Backbone",
       "i2p": "-I2P",
       "tcp": "TCP",
       "other": "Autre"

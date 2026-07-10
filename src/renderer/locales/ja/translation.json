@@ -1037,7 +1037,8 @@
       "noPublishTargets": "RMAPに公開する有効なローカルインターフェイスはありません。",
       "syncSuccess": "RMAP検出がインターフェイスに同期されました。",
       "openGlobalMap": "グローバル マップの種類",
-      "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く"
+      "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く",
+      "syncFailed": "RMAP検出の同期に失敗しました。"
     }
   },
   "contactGroupsModal": {
@@ -3593,7 +3594,9 @@
     },
     "hint": "すべての有効なRMAP対応インターフェイス（ RNode、KISS、BLEピア、I 2 P、UDP、パイプ）にdiscoverable = yesとApp GPS座標を適用します。インターフェースごとのRMAPトグルを接続で使用して、細かい制御を行います。LoRaパスは、トランスポートとrmap.worldハブも有効にします。",
     "openGlobalMap": "グローバルマップを開く",
-    "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く"
+    "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く",
+    "applyPartialSuccess": "RMAP設定は、{{total}}インターフェイスの{{applied}}に適用されます。",
+    "disablePartialSuccess": "RMAPの公開は、{{total}}インターフェイスの{{applied}}で無効になっています。"
   },
   "reticulumTopology": {
     "title": "ネットワーク・トポロジー",
@@ -4003,7 +4006,7 @@
   "reticulumMap": {
     "title": "ディスカバリーマップ",
     "subtitle": "スタックで聞こえるRMAP v 4インターフェイスのオプトイン（ローカルビュー）",
-    "openGlobalMap": "グローバル マップの種類",
+    "openGlobalMap": "グローバルマップ",
     "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く",
     "openPublishSettings": "公開設定",
     "openPublishSettingsAria": "Reticulum Network RMAP公開設定を開く",
@@ -4014,14 +4017,14 @@
     "listTitle": "検出されたインターフェース",
     "selfMarker": "アプリのGPS位置",
     "reachable": "到達可能",
-    "heardOnly": "HEARD ONLY (NOT IN PATH TABLE)",
+    "heardOnly": "聴取のみ（パステーブルに未登録）",
     "noCoords": "GPSなし",
     "lastHeard": "最後に聞いたのは{{time}}",
-    "openNodeAria": "{{name}}の詳細を開く",
+    "openNodeAria": "地図で{{name}}を表示",
     "filter": {
       "all": "すべて",
       "rnode": "LoRa",
-      "backbone": "椎骨",
+      "backbone": "Backbone",
       "i2p": "I 2 P",
       "tcp": "TCP",
       "other": "その他"

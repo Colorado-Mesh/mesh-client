@@ -72,23 +72,27 @@ The Connection tab UI edits a subset: **name** for all types; **host** / **port*
 
 ### Peers, topology, and propagation
 
-| Method | Path                                 | Body / notes                  | Response                                                                                                                       |
-| ------ | ------------------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| GET    | `/api/v1/peers`                      |                               | `{ peers: [] }` — live path table when `rns-stack` enabled                                                                     |
-| POST   | `/api/v1/peers/{hash}/path`          |                               | `{ ok }` — emits `peers_updated` WS on success                                                                                 |
-| POST   | `/api/v1/peers/{hash}/probe`         |                               | `{ ok, hops? }` live; `{ ok, mode, hash }` stub — emits `peers_updated` on success                                             |
-| POST   | `/api/v1/ping`                       | `{ destination_hash }`        | `{ ok, rtt_ms? }`                                                                                                              |
-| GET    | `/api/v1/topology`                   |                               | `{ nodes, edges }` — `via_hash` is the immediate RNS next hop (transport id); sidecar infers `self → relay` when needed        |
-| GET    | `/api/v1/rmap/discovered`            |                               | `{ discovered: RmapDiscoveredWireRow[] }` — local RMAP v4 heard interfaces (7-day TTL eviction in rsReticulum DiscoveryStore)  |
-| GET    | `/api/v1/packets`                    | `?limit=500` (1–2500)         | `{ packets: [] }` — recent wire tap ring buffer                                                                                |
-| DELETE | `/api/v1/packets`                    |                               | `{ ok }` — clear wire tap buffer                                                                                               |
-| GET    | `/api/v1/propagation`                |                               | `{ propagation, preferred_id, auto_sync_interval_sec }` — `local-prop` rows include `message_count`, `storage_bytes` when live |
-| POST   | `/api/v1/propagation/add`            | `{ destination_hash, name? }` | `{ ok, node }` — add a remote propagation node by hash                                                                         |
-| POST   | `/api/v1/propagation/{id}/enable`    |                               | `{ ok }`                                                                                                                       |
-| POST   | `/api/v1/propagation/{id}/disable`   |                               | `{ ok }`                                                                                                                       |
-| POST   | `/api/v1/propagation/{id}/preferred` |                               | `{ ok }`                                                                                                                       |
-| POST   | `/api/v1/propagation/sync`           |                               | `{ ok }`                                                                                                                       |
-| POST   | `/api/v1/propagation/sync/cancel`    |                               | `{ ok }`                                                                                                                       |
+| Method | Path                         | Body / notes           | Response                                                                                                                      |
+| ------ | ---------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/peers`              |                        | `{ peers: [] }` — live path table when `rns-stack` enabled                                                                    |
+| POST   | `/api/v1/peers/{hash}/path`  |                        | `{ ok }` — emits `peers_updated` WS on success                                                                                |
+| POST   | `/api/v1/peers/{hash}/probe` |                        | `{ ok, hops? }` live; `{ ok, mode, hash }` stub — emits `peers_updated` on success                                            |
+| POST   | `/api/v1/ping`               | `{ destination_hash }` | `{ ok, rtt_ms? }`                                                                                                             |
+| GET    | `/api/v1/topology`           |                        | `{ nodes, edges }` — `via_hash` is the immediate RNS next hop (transport id); sidecar infers `self → relay` when needed       |
+| GET    | `/api/v1/rmap/discovered`    |                        | `{ discovered: RmapDiscoveredWireRow[] }` — local RMAP v4 heard interfaces (7-day TTL eviction in rsReticulum DiscoveryStore) |
+
+**`RmapDiscoveredWireRow` fields** (see `src/shared/reticulum-types.ts`): `discovery_hash`, `transport_id`, `discovery_name`, `interface_type`, `latitude`, `longitude`, `height`, `transport_enabled`, `reachable_on`, LoRa RF fields (`frequency`, `bandwidth`, `spreading_factor`, …), `hops`, `stamp_value`, `discovered`, `last_heard`, `heard_count`, `status` (`available`/`stale`/`unknown`), `has_coordinates`. Renderer caps at 2,000 newest rows with client-side TTL eviction.
+
+**WS `rmap.discovery`:** sidecar polls DiscoveryStore every **10s**; emits full `{ discovered: [...] }` snapshot when JSON fingerprint changes. Stub builds return `{ discovered: [] }`.
+| GET | `/api/v1/packets` | `?limit=500` (1–2500) | `{ packets: [] }` — recent wire tap ring buffer |
+| DELETE | `/api/v1/packets` | | `{ ok }` — clear wire tap buffer |
+| GET | `/api/v1/propagation` | | `{ propagation, preferred_id, auto_sync_interval_sec }` — `local-prop` rows include `message_count`, `storage_bytes` when live |
+| POST | `/api/v1/propagation/add` | `{ destination_hash, name? }` | `{ ok, node }` — add a remote propagation node by hash |
+| POST | `/api/v1/propagation/{id}/enable` | | `{ ok }` |
+| POST | `/api/v1/propagation/{id}/disable` | | `{ ok }` |
+| POST | `/api/v1/propagation/{id}/preferred` | | `{ ok }` |
+| POST | `/api/v1/propagation/sync` | | `{ ok }` |
+| POST | `/api/v1/propagation/sync/cancel` | | `{ ok }` |
 
 ### Nomad Network
 

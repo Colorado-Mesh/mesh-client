@@ -1037,7 +1037,8 @@
       "noPublishTargets": "Nenhuma interface local habilitada para publicar no RMAP.",
       "syncSuccess": "Descoberta de RMAP sincronizada com a interface.",
       "openGlobalMap": "mapa global",
-      "openGlobalMapAria": "Abra o mapa global do RMAP v4 em rmap.world"
+      "openGlobalMapAria": "Abra o mapa global do RMAP v4 em rmap.world",
+      "syncFailed": "Falha na sincronização de descoberta de RMAP."
     }
   },
   "contactGroupsModal": {
@@ -3593,7 +3594,9 @@
     },
     "hint": "Aplica descobrível=sim e as coordenadas GPS do aplicativo a todas as interfaces habilitadas para RMAP (RNode, KISS, BLE peer, I2P, UDP, pipe). Use alternâncias RMAP por interface na Conexão para controle fino. Os caminhos LoRa também permitem o transporte e o hub rmap.world.",
     "openGlobalMap": "Abrir mapa global",
-    "openGlobalMapAria": "Abra o mapa global do RMAP v4 em rmap.world"
+    "openGlobalMapAria": "Abra o mapa global do RMAP v4 em rmap.world",
+    "applyPartialSuccess": "Configurações de RMAP aplicadas às interfaces {{applied}} de {{total}}.",
+    "disablePartialSuccess": "Publicação RMAP desativada nas interfaces {{applied}} de {{total}}."
   },
   "reticulumTopology": {
     "title": "Topologia de rede",
@@ -4013,7 +4016,7 @@
     "countSummary": "{{markers}} no mapa · {{list}} apenas na lista",
     "listTitle": "Interfaces descobertas",
     "selfMarker": "Posição GPS da sua aplicação",
-    "reachable": "Reachable",
+    "reachable": "Alcançável",
     "heardOnly": "Apenas ouvido (não na tabela de caminho)",
     "noCoords": "Sem GPS",
     "lastHeard": "Ouvido pela última vez {{time}}",

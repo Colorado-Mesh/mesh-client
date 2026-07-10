@@ -1037,7 +1037,8 @@
       "noPublishTargets": "Nessuna interfaccia locale abilitata da pubblicare su RMAP.",
       "syncSuccess": "Individuazione RMAP sincronizzata con l'interfaccia.",
       "openGlobalMap": "È un attributo globale?",
-      "openGlobalMapAria": "Apri la mappa globale RMAP v4 su rmap.world"
+      "openGlobalMapAria": "Apri la mappa globale RMAP v4 su rmap.world",
+      "syncFailed": "Sincronizzazione rilevamento RMAP non riuscita."
     }
   },
   "contactGroupsModal": {
@@ -3593,7 +3594,9 @@
     },
     "hint": "Applica le coordinate rilevabili=sì e GPS dell'app a tutte le interfacce abilitate RMAP (RNode, KISS, BLE peer, I2P, UDP, pipe). Utilizzare RMAP per interfaccia per attivare la connessione per un controllo preciso. I percorsi LoRa consentono anche il trasporto e l'hub rmap.world.",
     "openGlobalMap": "Apri la mappa globale",
-    "openGlobalMapAria": "Apri la mappa globale RMAP v4 su rmap.world"
+    "openGlobalMapAria": "Apri la mappa globale RMAP v4 su rmap.world",
+    "applyPartialSuccess": "Impostazioni RMAP applicate alle interfacce {{applied}} di {{total}}.",
+    "disablePartialSuccess": "Pubblicazione RMAP disabilitata sulle interfacce {{applied}} di {{total}}."
   },
   "reticulumTopology": {
     "title": "Topologia di rete.",
