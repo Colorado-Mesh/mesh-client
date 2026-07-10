@@ -865,6 +865,17 @@
         "legacy": "Legacy presets"
       }
     },
+    "reticulumRmap": {
+      "publishing": "RMAP v4: publishing on {{count}} interface(s)",
+      "notPublishing": "RMAP v4: not publishing",
+      "openSettings": "Network settings",
+      "openSettingsAria": "Open RMAP discovery settings on Network tab",
+      "needsSync": "{{count}} enabled local interface(s) need RMAP discovery sync",
+      "noPublishTargets": "No enabled local interfaces to publish on RMAP.",
+      "syncSuccess": "RMAP discovery synced to interface.",
+      "badgePublished": "RMAP",
+      "badgeNeedsSync": "RMAP sync"
+    },
     "reticulumPeers": {
       "hops": "Hops",
       "actions": "Actions",

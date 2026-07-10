@@ -1022,7 +1022,18 @@
     "tcpAddressHint": "Voer hostnaam of IP-adres in; poort staat standaard op 4403 indien weggelaten",
     "hintMeshtasticTcp1": "Voer het IP-adres of de hostnaam in van een Meshtastic-knooppunt met WiFi-verbinding met TCP ingeschakeld (standaardpoort 4403). Veel sneller dan WiFi/HTTP voor grote node databases.",
     "hintMeshtasticTcp2": "Als de verbinding onbetrouwbaar is (bijv. met meshtastic.local), probeer dan in plaats daarvan het IP-adres van het apparaat — desktop mDNS kan schilferig zijn.",
-    "channelPsksMqttOnlyIndexHint": "Zonder radioverbinding worden inkomende MQTT-berichten per kanaalnaam naar chattabbladen gerouteerd. Gebruik ChannelName@index=base64 zodat elke naam naar de juiste sleuf wijst — bijvoorbeeld LongFast@1=AQ== wanneer uw openbare meshkanaal sleuf 1 is (Colorado-mesh-stijl). LongFast zonder @ wijst naar sleuf 0."
+    "channelPsksMqttOnlyIndexHint": "Zonder radioverbinding worden inkomende MQTT-berichten per kanaalnaam naar chattabbladen gerouteerd. Gebruik ChannelName@index=base64 zodat elke naam naar de juiste sleuf wijst — bijvoorbeeld LongFast@1=AQ== wanneer uw openbare meshkanaal sleuf 1 is (Colorado-mesh-stijl). LongFast zonder @ wijst naar sleuf 0.",
+    "reticulumRmap": {
+      "publishing": "RMAP v4: publiceren op {{count}} interface(s)",
+      "notPublishing": "RMAP v4: niet publiceren",
+      "openSettings": "Netwerk instellingen",
+      "openSettingsAria": "Open RMAP-detectie-instellingen op het tabblad Netwerk",
+      "needsSync": "{{count}} ingeschakelde lokale interface(s) hebben RMAP-detectiesynchronisatie nodig",
+      "noPublishTargets": "Geen ingeschakelde lokale interfaces om op RMAP te publiceren.",
+      "syncSuccess": "RMAP-detectie gesynchroniseerd met interface.",
+      "badgePublished": "RMAP",
+      "badgeNeedsSync": "RMAP-synchronisatie"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

@@ -1022,7 +1022,18 @@
     "tcpAddressHint": "Masukkan nama host atau alamat IP; port default ke 4403 jika dihilangkan",
     "hintMeshtasticTcp1": "Masukkan alamat IP atau nama host dari node Meshtastic yang terhubung dengan WiFi dengan TCP diaktifkan (port default 4403). Jauh lebih cepat daripada WiFi/HTTP untuk basis data simpul besar.",
     "hintMeshtasticTcp2": "Jika koneksi tidak dapat diandalkan (misalnya dengan meshtastic.local), coba alamat IP perangkat sebagai gantinya — mDNS desktop dapat terkelupas.",
-    "channelPsksMqttOnlyIndexHint": "Tanpa radio terhubung, pesan MQTT masuk diarahkan ke tab obrolan berdasarkan nama saluran. Gunakan ChannelName@index=base64 agar setiap nama memetakan ke slot yang benar — misalnya LongFast@1=AQ== ketika saluran mesh publik Anda adalah slot 1 (gaya Colorado mesh). LongFast tanpa @ memetakan ke slot 0."
+    "channelPsksMqttOnlyIndexHint": "Tanpa radio terhubung, pesan MQTT masuk diarahkan ke tab obrolan berdasarkan nama saluran. Gunakan ChannelName@index=base64 agar setiap nama memetakan ke slot yang benar — misalnya LongFast@1=AQ== ketika saluran mesh publik Anda adalah slot 1 (gaya Colorado mesh). LongFast tanpa @ memetakan ke slot 0.",
+    "reticulumRmap": {
+      "publishing": "RMAP v4: memublikasikan di antarmuka {{count}}",
+      "notPublishing": "RMAP v4: tidak memublikasikan",
+      "openSettings": "Pengaturan Jaringan",
+      "openSettingsAria": "Buka pengaturan penemuan RMAP di tab Jaringan",
+      "needsSync": "{{count}} antarmuka lokal yang diaktifkan memerlukan sinkronisasi penemuan RMAP",
+      "noPublishTargets": "Tidak ada antarmuka lokal yang diaktifkan untuk dipublikasikan di RMAP.",
+      "syncSuccess": "Penemuan RMAP disinkronkan ke antarmuka.",
+      "badgePublished": "RMAP",
+      "badgeNeedsSync": "Sinkronisasi RMAP"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

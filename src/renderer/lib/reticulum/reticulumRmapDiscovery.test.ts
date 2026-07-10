@@ -8,11 +8,16 @@ import {
   buildRmapDiscoveryPatch,
   clampRmapAnnounceIntervalMin,
   disableReticulumRmapDiscovery,
+  isReticulumRmapDiscoverableRow,
+  isReticulumRmapNeedsSyncRow,
   isReticulumRmapPublishTarget,
   listReticulumRmapPublishTargets,
+  maybeSyncReticulumRmapAfterInterfaceEnable,
   readRmapPublishState,
+  readRmapUiPrefs,
   resolveRmapCoordinates,
   ReticulumRmapGpsRequiredError,
+  summarizeRmapPublishStatus,
   validateRmapReachableOn,
 } from '@/renderer/lib/reticulum/reticulumRmapDiscovery';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
@@ -178,6 +183,69 @@ describe('reticulumRmapDiscovery', () => {
     expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledTimes(1);
     expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith('/api/v1/interfaces/r', {
       discoverable: false,
+    });
+  });
+
+  it('summarizeRmapPublishStatus counts discoverable and needs-sync targets', () => {
+    const interfaces = [
+      row({ id: 'r1', type: 'rnode', serial_port: '/dev/ttyUSB0', discoverable: true }),
+      row({ id: 'r2', type: 'ble_peer', discoverable: false }),
+      row({ id: 't', type: 'tcp', host: 'rmap.world', port: 4242 }),
+    ];
+    expect(summarizeRmapPublishStatus(interfaces)).toEqual({
+      publishing: true,
+      discoverableCount: 1,
+      publishTargetCount: 2,
+      needsSyncCount: 1,
+    });
+  });
+
+  it('isReticulumRmapNeedsSyncRow when publishing globally but row missing discoverable', () => {
+    const interfaces = [
+      row({ id: 'r1', type: 'rnode', serial_port: '/dev/ttyUSB0', discoverable: true }),
+      row({ id: 'r2', type: 'ble_peer', discoverable: false }),
+    ];
+    expect(isReticulumRmapNeedsSyncRow(interfaces[1], interfaces)).toBe(true);
+    expect(isReticulumRmapDiscoverableRow(interfaces[0])).toBe(true);
+  });
+
+  it('maybeSyncReticulumRmapAfterInterfaceEnable patches when RMAP is on', async () => {
+    localStorage.setItem(
+      GPS_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ staticLat: 40, staticLon: -105 }),
+    );
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockResolvedValue({
+      interfaces: [
+        row({ id: 'r1', type: 'rnode', serial_port: '/dev/ttyUSB0', discoverable: true }),
+        row({ id: 'r2', type: 'ble_peer', discoverable: false }),
+      ],
+    });
+    window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({});
+    const synced = await maybeSyncReticulumRmapAfterInterfaceEnable('r2', {
+      discoveryName: 'Node',
+    });
+    expect(synced).toBe(true);
+    expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
+      '/api/v1/interfaces/r2',
+      expect.objectContaining({ discoverable: true, latitude: 40 }),
+    );
+  });
+
+  it('maybeSyncReticulumRmapAfterInterfaceEnable skips when RMAP is off', async () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockResolvedValue({
+      interfaces: [row({ id: 'r2', type: 'ble_peer', discoverable: false })],
+    });
+    window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({});
+    const synced = await maybeSyncReticulumRmapAfterInterfaceEnable('r2', {});
+    expect(synced).toBe(false);
+    expect(window.electronAPI.reticulum.proxyPut).not.toHaveBeenCalled();
+  });
+
+  it('readRmapUiPrefs uses defaults when unset', () => {
+    expect(readRmapUiPrefs()).toEqual({
+      announceIntervalMin: 360,
+      reachableOn: '',
+      heightMeters: null,
     });
   });
 });

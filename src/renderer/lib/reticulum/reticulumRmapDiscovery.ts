@@ -1,10 +1,12 @@
-import { mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
+import { getAppSettingsRaw, mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
 import { readStoredStaticGps } from '@/renderer/lib/gpsSource';
+import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
 import {
   buildDefaultHubAddRequest,
   RETICULUM_RMAP_WORLD_HUB_PRESET,
   reticulumInterfaceMatchesHubPreset,
 } from '@/renderer/lib/reticulum/reticulumDefaultHubPresets';
+import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import { isValidConnectHost } from '@/shared/connectHost';
 import { isValidLatLon } from '@/shared/geoCoords';
@@ -118,6 +120,134 @@ export function listReticulumRmapPublishTargets(
 
 export function readRmapPublishState(interfaces: readonly ReticulumInterfaceRow[]): boolean {
   return listReticulumRmapPublishTargets(interfaces).some((row) => row.discoverable === true);
+}
+
+export interface RmapUiPrefs {
+  announceIntervalMin: number;
+  reachableOn: string;
+  heightMeters: number | null;
+}
+
+export function readRmapUiPrefs(): RmapUiPrefs {
+  const parsed = parseStoredJson<Record<string, unknown>>(
+    getAppSettingsRaw(),
+    'reticulumRmapDiscovery readRmapUiPrefs',
+  );
+  const announceRaw = parsed?.[RMAP_SETTINGS_KEYS.announceIntervalMin];
+  const heightRaw = parsed?.[RMAP_SETTINGS_KEYS.heightMeters];
+  let heightMeters: number | null = null;
+  if (heightRaw != null) {
+    const parsedHeight = Number(heightRaw);
+    if (Number.isFinite(parsedHeight) && parsedHeight >= 0) {
+      heightMeters = Math.round(parsedHeight);
+    }
+  }
+  return {
+    announceIntervalMin:
+      announceRaw != null
+        ? clampRmapAnnounceIntervalMin(Number(announceRaw))
+        : RMAP_ANNOUNCE_INTERVAL_DEFAULT_MIN,
+    reachableOn:
+      typeof parsed?.[RMAP_SETTINGS_KEYS.reachableOn] === 'string'
+        ? (parsed[RMAP_SETTINGS_KEYS.reachableOn] as string)
+        : '',
+    heightMeters,
+  };
+}
+
+export interface RmapPublishStatusSummary {
+  publishing: boolean;
+  discoverableCount: number;
+  publishTargetCount: number;
+  needsSyncCount: number;
+}
+
+export function summarizeRmapPublishStatus(
+  interfaces: readonly ReticulumInterfaceRow[],
+): RmapPublishStatusSummary {
+  const targets = listReticulumRmapPublishTargets(interfaces);
+  const discoverableTargets = targets.filter((row) => row.discoverable === true);
+  const publishing = discoverableTargets.length > 0;
+  return {
+    publishing,
+    discoverableCount: discoverableTargets.length,
+    publishTargetCount: targets.length,
+    needsSyncCount: publishing ? targets.filter((row) => row.discoverable !== true).length : 0,
+  };
+}
+
+export function isReticulumRmapDiscoverableRow(
+  iface: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port' | 'discoverable'>,
+): boolean {
+  return iface.discoverable === true && isReticulumRmapPublishTarget(iface);
+}
+
+export function isReticulumRmapNeedsSyncRow(
+  iface: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port' | 'discoverable'>,
+  interfaces: readonly ReticulumInterfaceRow[],
+): boolean {
+  return (
+    readRmapPublishState(interfaces) &&
+    isReticulumRmapPublishTarget(iface) &&
+    iface.discoverable !== true
+  );
+}
+
+async function fetchReticulumInterfaceRows(): Promise<ReticulumInterfaceRow[]> {
+  invalidateReticulumInterfacesCache();
+  const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/interfaces')) as {
+    interfaces?: ReticulumInterfaceRow[];
+  };
+  return body.interfaces ?? [];
+}
+
+export async function syncReticulumRmapDiscoveryToInterface(
+  iface: ReticulumInterfaceRow,
+  opts: { discoveryName?: string | null },
+): Promise<boolean> {
+  if (!iface.enabled || !isReticulumRmapPublishTarget(iface) || iface.discoverable === true) {
+    return false;
+  }
+  const coords = resolveRmapCoordinates();
+  if (!coords) {
+    console.debug('[reticulumRmapDiscovery] sync skipped: GPS missing');
+    return false;
+  }
+  const prefs = readRmapUiPrefs();
+  const reachable = prefs.reachableOn.trim();
+  if (reachable) {
+    const err = validateRmapReachableOn(reachable);
+    if (err) {
+      console.debug('[reticulumRmapDiscovery] sync skipped: invalid reachable_on');
+      return false;
+    }
+  }
+  const patch = buildRmapDiscoveryPatch(iface, {
+    coords,
+    discoveryName: opts.discoveryName,
+    announceIntervalMin: prefs.announceIntervalMin,
+    heightMeters: prefs.heightMeters,
+    reachableOn: reachable || null,
+    discoverable: true,
+  });
+  await window.electronAPI.reticulum.proxyPut(`/api/v1/interfaces/${iface.id}`, patch);
+  return true;
+}
+
+/** When RMAP publish is on, patch discovery onto a newly enabled publish-target interface. */
+export async function maybeSyncReticulumRmapAfterInterfaceEnable(
+  interfaceId: string,
+  opts: { discoveryName?: string | null },
+): Promise<boolean> {
+  const interfaces = await fetchReticulumInterfaceRows();
+  if (!readRmapPublishState(interfaces)) {
+    return false;
+  }
+  const iface = interfaces.find((row) => row.id === interfaceId);
+  if (!iface) {
+    return false;
+  }
+  return syncReticulumRmapDiscoveryToInterface(iface, opts);
 }
 
 export function resolveRmapCoordinates(): RmapCoordinates | null {

@@ -1022,7 +1022,18 @@
     "tcpAddressHint": "호스트 이름 또는 IP 주소를 입력하십시오. 생략할 경우 포트 기본값은 4403입니다.",
     "hintMeshtasticTcp1": "TCP가 활성화된 Wi-Fi 연결 Meshtastic 노드의 IP 주소 또는 호스트 이름을 입력합니다 (기본 포트 4403). 대규모 노드 데이터베이스의 경우 WiFi/HTTP보다 훨씬 빠릅니다.",
     "hintMeshtasticTcp2": "연결이 불안정하면 (예: meshtastic.local) 장치의 IP 주소를 사용해 보십시오. 데스크톱 mDNS가 깨질 수 있습니다.",
-    "channelPsksMqttOnlyIndexHint": "무선이 연결되지 않은 경우 수신 MQTT 메시지는 채널 이름별로 채팅 탭으로 라우팅됩니다. ChannelName@index=base64를 사용해 각 이름을 올바른 슬롯에 매핑하세요 — 예: 공개 mesh 채널이 슬롯 1일 때(Colorado mesh 스타일) LongFast@1=AQ==. @ 없는 LongFast는 슬롯 0에 매핑됩니다."
+    "channelPsksMqttOnlyIndexHint": "무선이 연결되지 않은 경우 수신 MQTT 메시지는 채널 이름별로 채팅 탭으로 라우팅됩니다. ChannelName@index=base64를 사용해 각 이름을 올바른 슬롯에 매핑하세요 — 예: 공개 mesh 채널이 슬롯 1일 때(Colorado mesh 스타일) LongFast@1=AQ==. @ 없는 LongFast는 슬롯 0에 매핑됩니다.",
+    "reticulumRmap": {
+      "publishing": "RMAP v4: {{count}} 인터페이스에 게시",
+      "notPublishing": "RMAP v4: 게시되지 않음",
+      "openSettings": "네트워크 설정",
+      "openSettingsAria": "네트워크 탭에서 RMAP 검색 설정 열기",
+      "needsSync": "{{count}} 활성화된 로컬 인터페이스에는 RMAP 검색 동기화 필요",
+      "noPublishTargets": "RMAP에 게시할 수 있는 로컬 인터페이스가 없습니다.",
+      "syncSuccess": "RMAP 검색이 인터페이스에 동기화되었습니다.",
+      "badgePublished": "RMAP",
+      "badgeNeedsSync": "RMAP 동기화"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",

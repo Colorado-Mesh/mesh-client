@@ -1022,7 +1022,18 @@
     "tcpAddressHint": "ホスト名またはIPアドレスを入力します。省略した場合、ポートはデフォルトで4403になります",
     "hintMeshtasticTcp1": "TCPが有効になっているWiFi接続されたMeshtasticノードのIPアドレスまたはホスト名を入力します（デフォルトポート4403 ）。大規模なノードデータベースでは、WiFi/HTTPよりもはるかに高速です。",
     "hintMeshtasticTcp2": "接続が信頼できない場合（ meshtastic.localなど）は、代わりにデバイスのIPアドレスを試してみてください。デスクトップのmDNSが不安定な場合があります。",
-    "channelPsksMqttOnlyIndexHint": "無線が未接続のとき、受信 MQTT メッセージはチャネル名でチャットタブに振り分けられます。ChannelName@index=base64 を使い、各名前を正しいスロットに対応させます — 例: 公開 mesh チャネルがスロット 1 のとき（Colorado mesh 方式）は LongFast@1=AQ==。LongFast に @ がない場合はスロット 0 です。"
+    "channelPsksMqttOnlyIndexHint": "無線が未接続のとき、受信 MQTT メッセージはチャネル名でチャットタブに振り分けられます。ChannelName@index=base64 を使い、各名前を正しいスロットに対応させます — 例: 公開 mesh チャネルがスロット 1 のとき（Colorado mesh 方式）は LongFast@1=AQ==。LongFast に @ がない場合はスロット 0 です。",
+    "reticulumRmap": {
+      "publishing": "RMAP v 4 ： {{count}}インターフェースでの公開",
+      "notPublishing": "RMAP v 4 ：公開されていません",
+      "openSettings": "ネットワーク設定",
+      "openSettingsAria": "[ネットワーク]タブでRMAP検出設定を開く",
+      "needsSync": "{{count}}有効なローカルインターフェースにはRMAP検出の同期が必要です",
+      "noPublishTargets": "RMAPに公開する有効なローカルインターフェイスはありません。",
+      "syncSuccess": "RMAP検出がインターフェイスに同期されました。",
+      "badgePublished": "RMAP",
+      "badgeNeedsSync": "RMAP同期"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

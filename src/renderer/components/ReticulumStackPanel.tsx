@@ -14,6 +14,7 @@ import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 import { ReticulumInterfacesPanel } from './reticulum/ReticulumInterfacesPanel';
 import { ReticulumLocalInterfaceAlertsBlock } from './ReticulumLocalInterfaceAlertsBlock';
 import { ReticulumLocalInterfaceConnectingBlock } from './ReticulumLocalInterfaceConnectingBlock';
+import { ReticulumRmapConnectionStatus } from './ReticulumRmapConnectionStatus';
 import { ReticulumSidecarIssueAlertsBlock } from './ReticulumSidecarIssueAlertsBlock';
 
 export interface ReticulumStackPanelProps {
@@ -21,6 +22,7 @@ export interface ReticulumStackPanelProps {
   stackError?: string | null;
   onStartStack: () => Promise<void>;
   onStopStack: () => Promise<void>;
+  onOpenReticulumRmapSettings?: () => void;
 }
 
 /** Connection tab: stack lifecycle, interface CRUD, and local interface health. */
@@ -29,6 +31,7 @@ export function ReticulumStackPanel({
   stackError,
   onStartStack,
   onStopStack,
+  onOpenReticulumRmapSettings,
 }: ReticulumStackPanelProps) {
   const { t } = useTranslation();
   const [restartError, setRestartError] = useState<string | null>(null);
@@ -161,10 +164,16 @@ export function ReticulumStackPanel({
               }}
               onRestartStack={handleRestartStack}
             />
+            <ReticulumRmapConnectionStatus
+              interfaces={interfaces}
+              sidecarApiReady={sidecarApiReady}
+              onOpenRmapSettings={onOpenReticulumRmapSettings}
+            />
             <ReticulumInterfacesPanel
               sidecarApiReady={sidecarApiReady}
               connecting={connecting}
               identityConfigured={identity?.configured === true}
+              identityDisplayName={identity?.display_name ?? null}
               interfaces={interfaces}
               serialPorts={serialPorts}
               serialPortPaths={serialPortPaths}

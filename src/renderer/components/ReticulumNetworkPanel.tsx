@@ -397,7 +397,7 @@ export function ReticulumNetworkPanel({
       </ReticulumCollapsibleSection>
 
       {identityReady && sidecarApiReady ? (
-        <ReticulumCollapsibleSection title={t('reticulumRmapDiscovery.sectionTitle')} defaultOpen>
+        <ReticulumCollapsibleSection title={t('reticulumRmapDiscovery.sectionTitle')}>
           <ReticulumRmapDiscoveryControls
             disabled={connecting}
             sidecarApiReady={sidecarApiReady}

@@ -1022,7 +1022,18 @@
     "tcpAddressHint": "Geben Sie den Hostnamen oder die IP-Adresse ein; der Port wird standardmäßig auf 4403 gesetzt, wenn er ausgelassen wird",
     "hintMeshtasticTcp1": "Geben Sie die IP-Adresse oder den Hostnamen eines über WLAN verbundenen Meshtastic-Knotens mit aktiviertem TCP ein (Standardport 4403). Viel schneller als WiFi/HTTP für große Knoten-Datenbanken.",
     "hintMeshtasticTcp2": "Wenn die Verbindung unzuverlässig ist (z. B. mit meshtastic.local), versuchen Sie stattdessen die IP-Adresse des Geräts — Desktop-mDNS kann flockig sein.",
-    "channelPsksMqttOnlyIndexHint": "Ohne Funkverbindung werden eingehende MQTT-Nachrichten nach Kanalnamen an Chat-Registerkarten weitergeleitet. Verwenden Sie ChannelName@index=base64, damit jeder Name dem richtigen Slot zugeordnet wird — zum Beispiel LongFast@1=AQ==, wenn Ihr öffentlicher Mesh-Kanal Slot 1 ist (Colorado-Mesh-Stil). LongFast ohne @ wird Slot 0 zugeordnet."
+    "channelPsksMqttOnlyIndexHint": "Ohne Funkverbindung werden eingehende MQTT-Nachrichten nach Kanalnamen an Chat-Registerkarten weitergeleitet. Verwenden Sie ChannelName@index=base64, damit jeder Name dem richtigen Slot zugeordnet wird — zum Beispiel LongFast@1=AQ==, wenn Ihr öffentlicher Mesh-Kanal Slot 1 ist (Colorado-Mesh-Stil). LongFast ohne @ wird Slot 0 zugeordnet.",
+    "reticulumRmap": {
+      "publishing": "RMAP v4: Veröffentlichung auf {{count}} Schnittstelle(n)",
+      "notPublishing": "RMAP v4: nicht veröffentlich",
+      "openSettings": "Netzwerkeinstellungen",
+      "openSettingsAria": "Öffnen Sie die RMAP-Erkennungseinstellungen auf der Registerkarte Netzwerk",
+      "needsSync": "{{count}} aktivierte lokale Schnittstelle(n) benötigen RMAP Discovery Sync",
+      "noPublishTargets": "Keine aktivierten lokalen Schnittstellen zum Veröffentlichen auf RMAP.",
+      "syncSuccess": "RMAP-Erkennung mit Schnittstelle synchronisiert.",
+      "badgePublished": "RMAP",
+      "badgeNeedsSync": "RMAP-Synchronisierung"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",

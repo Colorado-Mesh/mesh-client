@@ -44,6 +44,11 @@ import {
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import { setReticulumPrimaryLocalSerialInterface } from '@/renderer/lib/reticulum/reticulumLocalRnodePrimary';
 import {
+  isReticulumRmapDiscoverableRow,
+  isReticulumRmapNeedsSyncRow,
+  maybeSyncReticulumRmapAfterInterfaceEnable,
+} from '@/renderer/lib/reticulum/reticulumRmapDiscovery';
+import {
   buildReticulumRnodeTcpPort,
   isReticulumTcpRnodeSerialPort,
   parseReticulumRnodeTcpPort,
@@ -125,6 +130,7 @@ export interface ReticulumInterfacesPanelProps {
   sidecarApiReady: boolean;
   connecting: boolean;
   identityConfigured?: boolean;
+  identityDisplayName?: string | null;
   interfaces: ReticulumInterfaceRow[];
   serialPorts: ReticulumSerialPortOption[];
   serialPortPaths: string[];
@@ -138,6 +144,7 @@ export function ReticulumInterfacesPanel({
   sidecarApiReady,
   connecting,
   identityConfigured = true,
+  identityDisplayName = null,
   interfaces,
   serialPorts,
   serialPortPaths,
@@ -427,6 +434,7 @@ export function ReticulumInterfacesPanel({
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/interfaces', body)) as {
         ok?: boolean;
         error?: string;
+        interface?: ReticulumInterfaceRow;
       };
       if (res?.ok === false) {
         setInterfaceError(
@@ -439,6 +447,9 @@ export function ReticulumInterfacesPanel({
         return;
       }
       await onRefresh();
+      if (res.interface?.id) {
+        await syncRmapAfterInterfaceChange(res.interface.id);
+      }
       if (reticulumInterfaceChangeRequiresStackRestart(ifaceType)) {
         await restartStackForInterfaceChange();
       }
@@ -530,6 +541,9 @@ export function ReticulumInterfacesPanel({
         return;
       }
       await onRefresh();
+      if (enabled) {
+        await syncRmapAfterInterfaceChange(id);
+      }
       if (enabled && ifaceTypeName && reticulumInterfaceChangeRequiresStackRestart(ifaceTypeName)) {
         await restartStackForInterfaceChange();
       }
@@ -637,6 +651,24 @@ export function ReticulumInterfacesPanel({
 
   const actionsDisabled = !sidecarApiReady || connecting || !identityConfigured;
   const defaultHubsDisabled = actionsDisabled || addingDefaultHubs;
+
+  const syncRmapAfterInterfaceChange = useCallback(
+    async (interfaceId: string) => {
+      try {
+        const synced = await maybeSyncReticulumRmapAfterInterfaceEnable(interfaceId, {
+          discoveryName: identityDisplayName,
+        });
+        if (synced) {
+          addToast(t('connectionPanel.reticulumRmap.syncSuccess'), 'success');
+          setRestartStackHint(true);
+          await onRefresh();
+        }
+      } catch (e) {
+        console.debug('[ReticulumInterfacesPanel] rmap sync ' + errLikeToLogString(e));
+      }
+    },
+    [addToast, identityDisplayName, onRefresh, t],
+  );
 
   return (
     <div className="space-y-2">
@@ -1717,6 +1749,15 @@ function InterfacesSection({
                       {isPrimaryRow ? (
                         <span className="text-readable-green text-[10px] tracking-wide uppercase">
                           {t('connectionPanel.reticulumInterfaces.primaryLocalBadge')}
+                        </span>
+                      ) : null}
+                      {isReticulumRmapDiscoverableRow(iface) ? (
+                        <span className="bg-readable-green rounded px-1 py-0.5 text-[10px] tracking-wide text-white uppercase">
+                          {t('connectionPanel.reticulumRmap.badgePublished')}
+                        </span>
+                      ) : isReticulumRmapNeedsSyncRow(iface, interfaces) ? (
+                        <span className="rounded bg-amber-700/80 px-1 py-0.5 text-[10px] tracking-wide text-white uppercase">
+                          {t('connectionPanel.reticulumRmap.badgeNeedsSync')}
                         </span>
                       ) : null}
                     </span>

@@ -1022,7 +1022,18 @@
     "tcpAddressHint": "Introduzca el nombre de host o la dirección IP; el puerto predeterminado es 4403 si se omite",
     "hintMeshtasticTcp1": "Introduzca la dirección IP o el nombre de host de un nodo Meshtastic conectado a Wi-Fi con TCP habilitado (puerto predeterminado 4403). Mucho más rápido que WiFi/HTTP para grandes bases de datos de nodos.",
     "hintMeshtasticTcp2": "Si la conexión no es fiable (por ejemplo, con meshtastic.local), pruebe la dirección IP del dispositivo en su lugar: el mDNS de escritorio puede ser escamoso.",
-    "channelPsksMqttOnlyIndexHint": "Sin radio conectada, los mensajes MQTT entrantes se enrutan a las pestañas de chat por nombre de canal. Use ChannelName@index=base64 para que cada nombre se asigne a la ranura correcta; por ejemplo LongFast@1=AQ== cuando su canal mesh público es la ranura 1 (estilo Colorado mesh). LongFast sin @ se asigna a la ranura 0."
+    "channelPsksMqttOnlyIndexHint": "Sin radio conectada, los mensajes MQTT entrantes se enrutan a las pestañas de chat por nombre de canal. Use ChannelName@index=base64 para que cada nombre se asigne a la ranura correcta; por ejemplo LongFast@1=AQ== cuando su canal mesh público es la ranura 1 (estilo Colorado mesh). LongFast sin @ se asigna a la ranura 0.",
+    "reticulumRmap": {
+      "publishing": "RMAP v4: publicación en {{count}} interfaz(es)",
+      "notPublishing": "RMAP v4: no publicar",
+      "openSettings": "Preferencias de red",
+      "openSettingsAria": "Abrir la configuración de detección de RMAP en la pestaña Red",
+      "needsSync": "{{count}} interfaz(es) local (es) habilitada (s) necesita (n) la sincronización de descubrimiento RMAP",
+      "noPublishTargets": "No hay interfaces locales habilitadas para publicar en RMAP.",
+      "syncSuccess": "Descubrimiento de RMAP sincronizado con la interfaz.",
+      "badgePublished": "RMAP",
+      "badgeNeedsSync": "Sincronización RMAP"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",

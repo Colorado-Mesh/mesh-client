@@ -2601,6 +2601,12 @@ function AppContent() {
                             onStartReticulumStack={() =>
                               reticulumConnection.connectAutomatic('http')
                             }
+                            onOpenReticulumRmapSettings={() => {
+                              const networkTabIdx = tabSlotIds.indexOf('Radio');
+                              if (networkTabIdx >= 0) {
+                                setActiveTab(networkTabIdx);
+                              }
+                            }}
                           />
                         </div>
                       </Suspense>
