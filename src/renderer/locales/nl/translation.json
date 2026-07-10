@@ -992,7 +992,7 @@
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh heeft WebSocket op poort 443 en server mqtt-us-v1.letsmesh.net of mqtt-eu-v1.letsmesh.net nodig. Gebruik Regio (VS/EU) of schakel over naar Aangepast voor andere makelaars.",
-      "coloradomesh": "Colorado Mesh heeft WebSocket nodig op poort 1883 met TLS ingeschakeld, server mqtt.meshcore.coloradomesh.org, pad /ws. Reset de preset of schakel over naar Aangepast voor andere makelaars.",
+      "coloradomesh": "Colorado Mesh heeft WebSocket nodig op poort 443 met TLS ingeschakeld, server mqtt.meshcore.coloradomesh.org, pad /ws. Reset de preset of schakel over naar Aangepast voor andere makelaars.",
       "meshmapper": "MeshMapper heeft WebSocket op poort 443 en server mqtt.meshmapper.cc nodig. Reset de preset of schakel over naar Aangepast voor andere makelaars."
     },
     "meshcoreMqttIdentity": {

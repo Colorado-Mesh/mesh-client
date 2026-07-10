@@ -992,7 +992,7 @@
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh에는 포트 443 및 서버 mqtt-us-v1.letsmesh.net 또는 mqtt-eu-v1.letsmesh.net에 WebSocket이 필요합니다. 지역(US/EU)을 사용하거나 다른 브로커의 경우 사용자 정의로 전환하세요.",
-      "coloradomesh": "Colorado Mesh는 TLS가 활성화된 포트 1883, 서버 mqtt.meshcore.coloradomesh.org, 경로 /ws에 WebSocket이 필요합니다. 다른 브로커의 경우 사전 설정을 재설정하거나 사용자 정의로 전환하세요.",
+      "coloradomesh": "Colorado Mesh는 TLS가 활성화된 포트 443, 서버 mqtt.meshcore.coloradomesh.org, 경로 /ws에 WebSocket이 필요합니다. 다른 브로커의 경우 사전 설정을 재설정하거나 사용자 정의로 전환하세요.",
       "meshmapper": "MeshMapper에는 포트 443 및 서버 mqtt.meshmapper.cc에 WebSocket이 필요합니다. 다른 브로커의 경우 사전 설정을 재설정하거나 사용자 정의로 전환하세요."
     },
     "meshcoreMqttIdentity": {

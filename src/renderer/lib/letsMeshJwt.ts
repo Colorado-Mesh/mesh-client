@@ -19,7 +19,7 @@ export const LETSMESH_HOST_US = 'mqtt-us-v1.letsmesh.net';
 export const LETSMESH_HOST_EU = 'mqtt-eu-v1.letsmesh.net';
 /** MeshMapper broker (WebSocket TLS on 443). */
 export const MESHMAPPER_HOST = 'mqtt.meshmapper.cc';
-/** Colorado Mesh broker (WebSocket, TLS enabled, port 1883). */
+/** Colorado Mesh broker (WebSocket TLS on 443). */
 export const COLORADO_MESH_HOST = 'mqtt.meshcore.coloradomesh.org';
 
 /** @deprecated Use {@link LETSMESH_HOST_US} */

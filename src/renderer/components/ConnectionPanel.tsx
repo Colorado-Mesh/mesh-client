@@ -2260,7 +2260,7 @@ export default function ConnectionPanel({
                         setMeshcoreMqttSettings((prev) => ({
                           ...prev,
                           server: COLORADO_MESH_HOST,
-                          port: 1883,
+                          port: 443,
                           topicPrefix: 'meshcore/DEN',
                           useWebSocket: true,
                           tlsEnabled: true,
