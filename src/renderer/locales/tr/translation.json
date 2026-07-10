@@ -910,7 +910,7 @@
       "defaultHubsLabel": "Varsayılan hub'lar",
       "addDefaultHubs": "Testnet ve Ratspeak hub'ları ekleyin",
       "addDefaultHubsAria": "Devre dışı durumda varsayılan Reticulum test ağı ve Ratspeak hub'ları ekleyin",
-      "addDefaultHubsSuccess": "{{added}} varsayılan hub(lar) eklendi. {{skipped}} zaten yapılandırılmış.",
+      "addDefaultHubsSuccess": "{{added}} eklendi, {{repaired}} düzeltildi. {{skipped}} zaten yapılandırılmış.",
       "addDefaultHubsAllPresent": "Varsayılan test ağı ve Ratspeak hub'ları zaten yapılandırılmıştır.",
       "addDefaultHubsFailed": "Varsayılan hub'lar eklenemedi.",
       "identityNotConfigured": "Önce Ağ sekmesinde bir Reticulum kimliği oluşturun — bir kurtarma ifadesi oluşturun veya içe aktarın.",

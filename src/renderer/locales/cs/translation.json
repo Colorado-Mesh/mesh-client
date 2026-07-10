@@ -910,7 +910,7 @@
       "defaultHubsLabel": "Výchozí rozbočovače",
       "addDefaultHubs": "Přidat rozbočovače testnet a Ratspeak",
       "addDefaultHubsAria": "Přidat výchozí testovací síť Reticulum a rozbočovače Ratspeak v zakázaném stavu",
-      "addDefaultHubsSuccess": "Přidáno {{added}} výchozí rozbočovač(rozbočovače). {{skipped}} je již nakonfigurován.",
+      "addDefaultHubsSuccess": "Přidáno {{added}}, opraveno {{repaired}}. {{skipped}} je již nakonfigurováno.",
       "addDefaultHubsAllPresent": "Výchozí rozbočovače testnet a Ratspeak jsou již nakonfigurovány.",
       "addDefaultHubsFailed": "Přidání výchozích rozbočovačů se nezdařilo.",
       "identityNotConfigured": "Nejprve nastavte identitu Reticulum na kartě Síť — vygenerujte nebo importujte frázi pro obnovení.",

@@ -910,7 +910,7 @@
       "defaultHubsLabel": "Концентраторы по умолчанию",
       "addDefaultHubs": "Добавьте тестовую сеть и концентраторы Ratspeak",
       "addDefaultHubsAria": "Добавьте тестовую сеть Reticulum по умолчанию и концентраторы Ratspeak в отключенное состояние",
-      "addDefaultHubsSuccess": "Добавлен (-ы) {{added}} концентратор(-ы) по умолчанию. {{skipped}} уже настроен.",
+      "addDefaultHubsSuccess": "Добавлено {{added}}, исправлено {{repaired}}. {{skipped}} уже настроено.",
       "addDefaultHubsAllPresent": "Концентраторы Testnet и Ratspeak по умолчанию уже настроены.",
       "addDefaultHubsFailed": "Не удалось добавить концентраторы по умолчанию.",
       "identityNotConfigured": "Сначала настройте идентификатор Reticulum на вкладке Network (Сеть) — создайте или импортируйте фразу восстановления.",

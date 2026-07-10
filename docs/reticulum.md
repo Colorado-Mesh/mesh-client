@@ -15,7 +15,7 @@ Related docs: [README — Reticulum Features](../README.md#reticulum-features), 
 1. Select the **Reticulum** pill (amber) in the header.
 2. **Connection** → **Start stack** (optional **Auto-start** for next launch).
 3. **Network** → generate or import your LXMF identity (stack must be running).
-4. **Connection → Interfaces** → add and enable transports (TCP hub, I2P, Auto, or RNode over USB / BLE / Wi‑Fi). Use **Add testnet and Ratspeak hubs** to install official bootstrap presets (disabled by default) after identity is configured.
+4. **Connection → Interfaces** → add and enable transports (TCP hub, I2P, Auto, or RNode over USB / BLE / Wi‑Fi). Use **Add default network hubs** to sync official bootstrap presets (testnet, Ratspeak, and RMAP World — adds missing rows disabled, repairs mismatched endpoints, skips correct ones) after identity is configured.
 5. **Chat** → LXMF direct messages. **Peers** and **Topology** for path-table visibility. **Nomad Network** → browse announced nodes (Micron pages, back/forward, session cache).
 
 After changing interfaces on a live network, **restart the stack** so RNS picks up transport changes.
@@ -27,7 +27,7 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 | Area            | Shipped behavior                                                                                                                                                                                                                                     |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Stack lifecycle | Start / stop / auto-start; disconnect & quit                                                                                                                                                                                                         |
-| Interfaces      | TCP client, I2P (`peers`), Auto discovery, RNode (USB serial, `ble://…`, Wi‑Fi `tcp://host:7633`); default hub presets (testnet + Ratspeak, added disabled)                                                                                          |
+| Interfaces      | TCP client, I2P (`peers`), Auto discovery, RNode (USB serial, `ble://…`, Wi‑Fi `tcp://host:7633`); default hub presets (testnet + Ratspeak + RMAP World, added disabled; button syncs/repairs by endpoint)                                           |
 | Identity        | Generate / import mnemonic; display name; encrypted export; **identity vault** passcode on Network tab                                                                                                                                               |
 | LXMF chat       | DM-only text, reactions, file attachments, voice clips (~60 s)                                                                                                                                                                                       |
 | Delivery        | Direct when destination is in path table; propagated (PN) via preferred propagation node when offline                                                                                                                                                |
@@ -65,7 +65,7 @@ The **Log panel** (right rail, toggled from **App → Log panel**) is shared acr
 
 ### Default hub presets
 
-**Connection → Interfaces** offers **Add testnet and Ratspeak hubs** when official bootstrap entries from [`reticulumDefaultHubPresets.ts`](../src/renderer/lib/reticulum/reticulumDefaultHubPresets.ts) are missing. Presets are added **disabled** so you can enable them after review:
+**Connection → Interfaces** offers **Add default network hubs** to sync official bootstrap entries from [`reticulumDefaultHubPresets.ts`](../src/renderer/lib/reticulum/reticulumDefaultHubPresets.ts). New presets are added **disabled** so you can enable them after review. On repeat clicks the button **skips** rows that already match the preset, **repairs** rows that match the same TCP host+port or I2P peer but have wrong name/type/host formatting (does not change `enabled`), and **adds** any missing presets:
 
 | Preset                        | Type | Host                                                           |
 | ----------------------------- | ---- | -------------------------------------------------------------- |

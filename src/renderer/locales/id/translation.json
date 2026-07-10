@@ -910,7 +910,7 @@
       "defaultHubsLabel": "Hub default",
       "addDefaultHubs": "Tambahkan hub testnet dan Ratspeak",
       "addDefaultHubsAria": "Tambahkan hub Reticulum testnet dan Ratspeak default dalam keadaan dinonaktifkan",
-      "addDefaultHubsSuccess": "Menambahkan hub default {{added}}. {{skipped}} sudah dikonfigurasi.",
+      "addDefaultHubsSuccess": "Menambahkan {{added}}, memperbaiki {{repaired}}. {{skipped}} sudah dikonfigurasi.",
       "addDefaultHubsAllPresent": "Hub testnet dan Ratspeak default sudah dikonfigurasi.",
       "addDefaultHubsFailed": "Gagal menambahkan hub default.",
       "identityNotConfigured": "Siapkan identitas Reticulum di tab Jaringan terlebih dahulu — buat atau impor frasa pemulihan.",

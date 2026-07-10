@@ -492,6 +492,8 @@ fn apply_discovery_patch(row: &mut InterfaceRow, patch: &UpdateInterfacePatch) -
     Ok(())
 }
 
+const I2P_B32_SUFFIX: &str = ".b32.i2p";
+
 fn validate_i2p_peers(peers: &str) -> Result<(), String> {
     let trimmed = peers.trim();
     if trimmed.is_empty() {
@@ -505,11 +507,11 @@ fn validate_i2p_peers(peers: &str) -> Result<(), String> {
     }
     for entry in trimmed.split(',').map(str::trim).filter(|s| !s.is_empty()) {
         let lower = entry.to_ascii_lowercase();
-        if lower.len() != 56 || !lower.ends_with(".b32.i2p") {
+        if !lower.ends_with(I2P_B32_SUFFIX) {
             return Err("invalid i2p peer address".into());
         }
-        let hash = &lower[..52];
-        if !hash.chars().all(|c| matches!(c, 'a'..='z' | '2'..='7')) {
+        let hash = &lower[..lower.len() - I2P_B32_SUFFIX.len()];
+        if hash.len() != 52 || !hash.chars().all(|c| matches!(c, 'a'..='z' | '2'..='7')) {
             return Err("invalid i2p peer address".into());
         }
     }
@@ -1605,6 +1607,46 @@ loglevel = 4
         assert!(!row.enabled);
         let content = read_config(&dir).unwrap();
         assert!(content.contains("interface_enabled = No"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn add_i2p_interface_accepts_official_testnet_b32_peer() {
+        let dir = std::env::temp_dir().join(format!(
+            "mesh-client-reticulum-i2p-add-{}",
+            uuid::Uuid::new_v4()
+        ));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"
+[reticulum]
+enable_transport = Yes
+share_instance = Yes
+
+[logging]
+loglevel = 4
+
+[interfaces]
+"#,
+        )
+        .unwrap();
+
+        let peer = "g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p";
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "i2p".into(),
+                name: Some("RNS Testnet I2P Hub A".into()),
+                enabled: Some(false),
+                host: Some(peer.into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(row.iface_type, "i2p");
+        assert_eq!(row.host.as_deref(), Some(peer));
         let _ = fs::remove_dir_all(&dir);
     }
 

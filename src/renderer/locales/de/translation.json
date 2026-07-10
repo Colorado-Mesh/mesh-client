@@ -910,7 +910,7 @@
       "defaultHubsLabel": "Standard-Hubs",
       "addDefaultHubs": "Hinzufügen von Testnet- und Ratspeak-Hubs",
       "addDefaultHubsAria": "Fügen Sie standardmäßige Reticulum-Testnet- und Ratspeak-Hubs in einem deaktivierten Zustand hinzu",
-      "addDefaultHubsSuccess": "{{added}} Standard-Hub (s) hinzugefügt. {{skipped}} bereits konfiguriert.",
+      "addDefaultHubsSuccess": "{{added}} hinzugefügt, {{repaired}} korrigiert. {{skipped}} bereits konfiguriert.",
       "addDefaultHubsAllPresent": "Standard-Testnet- und Ratspeak-Hubs sind bereits konfiguriert.",
       "addDefaultHubsFailed": "Standard-Hubs konnten nicht hinzugefügt werden.",
       "identityNotConfigured": "Richten Sie zuerst eine Reticulum-Identität auf der Registerkarte Netzwerk ein — generieren oder importieren Sie eine Wiederherstellungsphrase.",

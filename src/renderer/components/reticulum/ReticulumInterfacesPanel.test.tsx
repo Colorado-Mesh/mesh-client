@@ -562,6 +562,185 @@ describe('ReticulumInterfacesPanel', () => {
       '/api/v1/interfaces',
       buildDefaultHubAddRequest(RETICULUM_DEFAULT_HUB_PRESETS[5]),
     );
+    expect(window.electronAPI.reticulum.proxyPut).not.toHaveBeenCalled();
+  });
+
+  it('repairs misnamed endpoint matches and adds missing hubs', async () => {
+    const user = userEvent.setup();
+    const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+    const proxyPut = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyPost = proxyPost;
+    window.electronAPI.reticulum.proxyPut = proxyPut;
+
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'dublin',
+            name: 'Custom Dublin',
+            type: 'tcp',
+            enabled: true,
+            status: 'down',
+            host: 'dublin.connect.reticulum.network',
+            port: 4965,
+          },
+          {
+            id: 'btb',
+            name: 'RNS Testnet BetweenTheBorders',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: 'reticulum.betweentheborders.com',
+            port: 4242,
+          },
+          {
+            id: 'us-east',
+            name: 'RNS_Transport_US-East',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: '45.77.109.86',
+            port: 4965,
+          },
+          {
+            id: 'i2p',
+            name: 'RNS Testnet I2P Hub A',
+            type: 'i2p',
+            enabled: false,
+            status: 'down',
+            host: 'g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p',
+          },
+        ]}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(proxyPut).toHaveBeenCalledTimes(1);
+      expect(proxyPost).toHaveBeenCalledTimes(2);
+    });
+    expect(proxyPut).toHaveBeenCalledWith('/api/v1/interfaces/dublin', {
+      name: 'RNS Testnet Dublin',
+    });
+    expect(proxyPost).not.toHaveBeenCalledWith(
+      '/api/v1/interfaces',
+      buildDefaultHubAddRequest(RETICULUM_DEFAULT_HUB_PRESETS[0]),
+    );
+    expect(defaultProps.onRefresh).toHaveBeenCalled();
+  });
+
+  it('repairs only when all endpoints exist but a preset name is wrong', async () => {
+    const user = userEvent.setup();
+    const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+    const proxyPut = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyPost = proxyPost;
+    window.electronAPI.reticulum.proxyPut = proxyPut;
+    const onRefresh = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        onRefresh={onRefresh}
+        interfaces={RETICULUM_DEFAULT_HUB_PRESETS.map((preset, index) => ({
+          id: `hub-${index}`,
+          name: index === 0 ? 'Wrong Dublin Name' : preset.name,
+          type: preset.type,
+          enabled: false,
+          status: 'down',
+          host: preset.host,
+          port: preset.port,
+        }))}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(proxyPut).toHaveBeenCalledTimes(1);
+    });
+    expect(proxyPost).not.toHaveBeenCalled();
+    expect(onRefresh).toHaveBeenCalled();
+  });
+
+  it('does nothing when all default hubs are fully configured', async () => {
+    const user = userEvent.setup();
+    const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+    const proxyPut = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyPost = proxyPost;
+    window.electronAPI.reticulum.proxyPut = proxyPut;
+    const onRefresh = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        onRefresh={onRefresh}
+        interfaces={RETICULUM_DEFAULT_HUB_PRESETS.map((preset, index) => ({
+          id: `hub-${index}`,
+          name: preset.name,
+          type: preset.type,
+          enabled: false,
+          status: 'down',
+          host: preset.host,
+          port: preset.port,
+        }))}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
+      }),
+    );
+
+    expect(proxyPost).not.toHaveBeenCalled();
+    expect(proxyPut).not.toHaveBeenCalled();
+    expect(onRefresh).not.toHaveBeenCalled();
+  });
+
+  it('continues sync when default hub repair fails', async () => {
+    const user = userEvent.setup();
+    const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+    const proxyPut = vi.fn().mockResolvedValue({ ok: false, error: 'repair failed' });
+    window.electronAPI.reticulum.proxyPost = proxyPost;
+    window.electronAPI.reticulum.proxyPut = proxyPut;
+
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'dublin',
+            name: 'Custom Dublin',
+            type: 'tcp',
+            enabled: false,
+            status: 'down',
+            host: 'dublin.connect.reticulum.network',
+            port: 4965,
+          },
+        ]}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(proxyPut).toHaveBeenCalledTimes(1);
+      expect(proxyPost).toHaveBeenCalled();
+    });
   });
 
   it('shows identity hint and disables default hubs when identity is not configured', () => {

@@ -910,7 +910,7 @@
       "defaultHubsLabel": "기본 허브",
       "addDefaultHubs": "테스트넷 및 Ratspeak 허브 추가",
       "addDefaultHubsAria": "비활성화 상태에서 기본 Reticulum 테스트넷 및 Ratspeak 허브 추가",
-      "addDefaultHubsSuccess": "{{added}} 기본 허브가 추가되었습니다. {{skipped}} 이 (가) 이미 구성되었습니다.",
+      "addDefaultHubsSuccess": "{{added}}개 추가, {{repaired}}개 수정. {{skipped}}개는 이미 구성됨.",
       "addDefaultHubsAllPresent": "기본 테스트넷과 Ratspeak 허브가 이미 구성되어 있습니다.",
       "addDefaultHubsFailed": "기본 허브를 추가하지 못했습니다.",
       "identityNotConfigured": "먼저 네트워크 탭에서 Reticulum ID를 설정하고 복구 구문을 생성하거나 가져옵니다.",

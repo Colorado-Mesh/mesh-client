@@ -17,9 +17,8 @@ import {
   type ReticulumConfigRepairKind,
 } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import {
-  buildDefaultHubAddRequest,
-  listMissingDefaultHubPresets,
-  RETICULUM_DEFAULT_HUB_PRESETS,
+  applyDefaultHubPresetsSync,
+  planDefaultHubPresetsSync,
 } from '@/renderer/lib/reticulum/reticulumDefaultHubPresets';
 import {
   RETICULUM_I2P_PEERS_MAX_LENGTH,
@@ -477,40 +476,36 @@ export function ReticulumInterfacesPanel({
 
   const handleAddDefaultHubPresets = async () => {
     setInterfaceError(null);
-    const missing = listMissingDefaultHubPresets(interfaces);
-    const skipped = RETICULUM_DEFAULT_HUB_PRESETS.length - missing.length;
-    if (missing.length === 0) {
+    const plan = planDefaultHubPresetsSync(interfaces);
+    if (plan.add.length === 0 && plan.repair.length === 0) {
       addToast(t('connectionPanel.reticulumInterfaces.addDefaultHubsAllPresent'), 'info');
       return;
     }
     setAddingDefaultHubs(true);
-    let added = 0;
     try {
-      for (const preset of missing) {
-        const res = (await window.electronAPI.reticulum.proxyPost(
-          '/api/v1/interfaces',
-          buildDefaultHubAddRequest(preset),
-        )) as { ok?: boolean; error?: string };
-        if (res?.ok === false) {
+      const { result } = await applyDefaultHubPresetsSync(interfaces, window.electronAPI.reticulum);
+      const changed = result.added + result.repaired;
+      if (changed > 0) {
+        await onRefresh();
+        setRestartStackHint(true);
+        addToast(
+          t('connectionPanel.reticulumInterfaces.addDefaultHubsSuccess', {
+            added: result.added,
+            repaired: result.repaired,
+            skipped: result.skipped,
+          }),
+          'success',
+        );
+      }
+      if (result.failed.length > 0) {
+        const lastFailure = result.failed.at(-1);
+        if (lastFailure) {
           setInterfaceError(
             humanizeReticulumInterfaceApiError(
-              res.error,
+              lastFailure.error,
               t,
               'connectionPanel.reticulumInterfaces.addDefaultHubsFailed',
             ),
-          );
-          console.debug('[ReticulumInterfacesPanel] add default hub failed', preset.id, res.error);
-          break;
-        }
-        added += 1;
-      }
-      if (added > 0) {
-        await onRefresh();
-        setRestartStackHint(true);
-        if (added === missing.length) {
-          addToast(
-            t('connectionPanel.reticulumInterfaces.addDefaultHubsSuccess', { added, skipped }),
-            'success',
           );
         }
       }

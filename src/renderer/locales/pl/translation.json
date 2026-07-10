@@ -910,7 +910,7 @@
       "defaultHubsLabel": "Domyślne huby",
       "addDefaultHubs": "Dodaj huby testnet i Ratspeak",
       "addDefaultHubsAria": "Dodaj domyślne huby Reticulum testnet i Ratspeak w stanie wyłączonym",
-      "addDefaultHubsSuccess": "Dodano domyślne huby: {{added}}. {{skipped}} jest już skonfigurowany.",
+      "addDefaultHubsSuccess": "Dodano {{added}}, poprawiono {{repaired}}. {{skipped}} już skonfigurowane.",
       "addDefaultHubsAllPresent": "Domyślne huby testnet i Ratspeak są już skonfigurowane.",
       "addDefaultHubsFailed": "Nie udało się dodać domyślnych hubów.",
       "identityNotConfigured": "Skonfiguruj najpierw tożsamość Reticulum na karcie Sieć — wygeneruj lub zaimportuj frazę odzyskiwania.",

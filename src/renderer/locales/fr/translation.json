@@ -910,7 +910,7 @@
       "defaultHubsLabel": "Hubs par défaut",
       "addDefaultHubs": "Ajouter des hubs testnet et Ratspeak",
       "addDefaultHubsAria": "Ajouter des hubs Reticulum testnet et Ratspeak par défaut dans un état désactivé",
-      "addDefaultHubsSuccess": "Ajout du ou des concentrateurs par défaut {{added}}. {{skipped}} déjà configuré.",
+      "addDefaultHubsSuccess": "Ajoutés {{added}}, corrigés {{repaired}}. {{skipped}} déjà configuré.",
       "addDefaultHubsAllPresent": "Les hubs testnet et Ratspeak par défaut sont déjà configurés.",
       "addDefaultHubsFailed": "Impossible d'ajouter des concentrateurs par défaut.",
       "identityNotConfigured": "Configurez d'abord une identité Reticulum dans l'onglet Réseau — générez ou importez une phrase de récupération.",

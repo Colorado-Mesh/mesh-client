@@ -910,7 +910,7 @@
       "defaultHubsLabel": "Hubs predeterminados",
       "addDefaultHubs": "Añadir hubs testnet y Ratspeak",
       "addDefaultHubsAria": "Añadir hubs predeterminados de Reticulum testnet y Ratspeak en estado deshabilitado",
-      "addDefaultHubsSuccess": "Se han añadido {{added}} hubs predeterminados. {{skipped}} ya está configurado.",
+      "addDefaultHubsSuccess": "Añadidos {{added}}, corregidos {{repaired}}. {{skipped}} ya configurado.",
       "addDefaultHubsAllPresent": "Los hubs predeterminados de testnet y Ratspeak ya están configurados.",
       "addDefaultHubsFailed": "No se han podido añadir los hubs predeterminados.",
       "identityNotConfigured": "Configure primero una identidad de Reticulum en la pestaña Red: genere o importe una frase de recuperación.",
