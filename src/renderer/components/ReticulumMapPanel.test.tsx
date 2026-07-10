@@ -37,6 +37,15 @@ vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
   isReticulumSidecarRunning: vi.fn().mockResolvedValue(true),
 }));
 
+vi.mock('@/renderer/components/map/leafletMapControls', () => ({
+  ensureMapStyles: vi.fn(),
+  LocateMeControl: () => null,
+  MapBasemapControl: () => <div data-testid="map-basemap-control" />,
+  MapResizeInvalidator: () => null,
+  MapViewportSaver: () => null,
+  flyMapToBounds: vi.fn(),
+}));
+
 vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
   useReticulumPeerStore: (selector: (s: { peers: Map<string, unknown> }) => unknown) =>
     selector({ peers: new Map() }),
@@ -50,12 +59,18 @@ describe('ReticulumMapPanel', () => {
   it('shows empty state when stack is off', () => {
     render(<ReticulumMapPanel stackConfigured={false} />);
     expect(screen.getByText('reticulumMap.empty.stackOff')).toBeInTheDocument();
+    expect(screen.getByTestId('map-container')).toBeInTheDocument();
   });
 
   it('renders global map link', () => {
     render(<ReticulumMapPanel stackConfigured={false} />);
     const link = screen.getByRole('link', { name: 'reticulumMap.openGlobalMapAria' });
     expect(link).toHaveAttribute('href', 'https://rmap.world/');
+  });
+
+  it('renders basemap controls with the map', () => {
+    render(<ReticulumMapPanel stackConfigured={false} />);
+    expect(screen.getByTestId('map-basemap-control')).toBeInTheDocument();
   });
 
   it('renders markers when discoveries exist', () => {

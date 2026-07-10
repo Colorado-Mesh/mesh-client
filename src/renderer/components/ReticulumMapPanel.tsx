@@ -1,10 +1,20 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+import 'leaflet/dist/leaflet.css';
+
 import L from 'leaflet';
 import { ExternalLink, Globe, MapPin, RefreshCw } from 'lucide-react-motion';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 
+import {
+  ensureMapStyles,
+  flyMapToBounds,
+  LocateMeControl,
+  MapBasemapControl,
+  MapResizeInvalidator,
+  MapViewportSaver,
+} from '@/renderer/components/map/leafletMapControls';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { readStoredStaticGps } from '@/renderer/lib/gpsSource';
 import {
@@ -23,36 +33,38 @@ import {
   isReticulumSidecarRunning,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
+import { useMapViewportStore } from '@/renderer/stores/mapViewportStore';
 import { useReticulumDiscoveryMapStore } from '@/renderer/stores/reticulumDiscoveryMapStore';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 
 const REFRESH_MS = 30_000;
+const DEFAULT_CENTER: [number, number] = [20, 0];
+const DEFAULT_ZOOM = 2;
 
 function FitBoundsOnMarkers({
   markers,
   selfLat,
   selfLon,
+  shouldFitOnMount,
 }: {
   markers: { latitude: number; longitude: number }[];
   selfLat?: number | null;
   selfLon?: number | null;
+  shouldFitOnMount: boolean;
 }) {
   const map = useMap();
+  const hasPerformedInitialFitRef = useRef(false);
+
   useEffect(() => {
+    if (!shouldFitOnMount || hasPerformedInitialFitRef.current) return;
+    hasPerformedInitialFitRef.current = true;
     const points: L.LatLngExpression[] = markers.map((m) => [m.latitude, m.longitude]);
     if (selfLat != null && selfLon != null) {
       points.push([selfLat, selfLon]);
     }
-    if (points.length === 0) {
-      map.setView([20, 0], 2);
-      return;
-    }
-    if (points.length === 1) {
-      map.setView(points[0], 8);
-      return;
-    }
-    map.fitBounds(L.latLngBounds(points), { padding: [48, 48], maxZoom: 12 });
-  }, [map, markers, selfLat, selfLon]);
+    flyMapToBounds(map, points);
+  }, [map, markers, selfLat, selfLon, shouldFitOnMount]);
+
   return null;
 }
 
@@ -96,6 +108,7 @@ export default function ReticulumMapPanel({
   const basemapId = useMapLayerStore((s) => s.basemapId);
   const basemap = MAP_BASEMAPS[basemapId] ?? MAP_BASEMAPS[DEFAULT_MAP_BASEMAP_ID];
   const overlayColors = getMapOverlayColors(basemap.isDark);
+  const savedViewport = useMapViewportStore((s) => s.viewport);
 
   const discovered = useReticulumDiscoveryMapStore((s) => s.discovered);
   const loading = useReticulumDiscoveryMapStore((s) => s.loading);
@@ -108,6 +121,30 @@ export default function ReticulumMapPanel({
   const [refreshError, setRefreshError] = useState<string | null>(null);
 
   const selfCoords = readStoredStaticGps();
+
+  const [initialViewport] = useState(() => ({
+    center: savedViewport?.center ?? DEFAULT_CENTER,
+    zoom: savedViewport?.zoom ?? DEFAULT_ZOOM,
+  }));
+
+  useEffect(() => {
+    ensureMapStyles();
+  }, []);
+
+  const locateMe = useCallback(async () => {
+    const coords = readStoredStaticGps();
+    if (coords) {
+      return { lat: coords.lat, lon: coords.lon };
+    }
+    const result = await window.electronAPI.getGpsFix();
+    if ('status' in result && result.status === 'error') {
+      return null;
+    }
+    if (!('lat' in result) || !('lon' in result)) {
+      return null;
+    }
+    return { lat: result.lat, lon: result.lon };
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!stackConfigured) {
@@ -162,8 +199,17 @@ export default function ReticulumMapPanel({
         ? 'filterEmpty'
         : null;
 
+  const hasMapPositions =
+    filteredMarkers.length > 0 || selfCoords != null || filteredListOnly.length > 0;
+  const shouldFitOnMount = savedViewport == null && filteredMarkers.length > 0;
+
+  const reachableCount = useMemo(
+    () => [...filteredMarkers, ...filteredListOnly].filter((row) => row.reachable).length,
+    [filteredListOnly, filteredMarkers],
+  );
+
   return (
-    <div className="flex h-full min-h-[420px] flex-col gap-3">
+    <div className="flex h-full min-h-[500px] flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2 px-1">
         <div>
           <h2 className="text-lg font-semibold text-slate-100">{t('reticulumMap.title')}</h2>
@@ -237,95 +283,137 @@ export default function ReticulumMapPanel({
         </p>
       ) : null}
 
-      {emptyReason ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-700 bg-slate-900/40 p-6 text-center">
-          <MapPin className="h-8 w-8 text-slate-500" aria-hidden />
-          <p className="text-sm text-slate-300">{t(`reticulumMap.empty.${emptyReason}`)}</p>
-          {emptyReason === 'noDiscoveries' ? (
-            <p className="max-w-md text-xs text-slate-500">{t('reticulumMap.empty.hint')}</p>
-          ) : null}
-          {emptyReason === 'stackOff' && onOpenRmapSettings ? (
-            <button
-              type="button"
-              className="text-xs text-cyan-400 underline"
-              onClick={onOpenRmapSettings}
-            >
-              {t('reticulumMap.openPublishSettings')}
-            </button>
-          ) : null}
-          {!selfCoords && onOpenAppGpsSettings ? (
-            <button
-              type="button"
-              className="text-xs text-cyan-400 underline"
-              onClick={onOpenAppGpsSettings}
-            >
-              {t('reticulumRmapDiscovery.openAppGps')}
-            </button>
-          ) : null}
-        </div>
-      ) : (
-        <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[1fr_280px]">
-          <div className="relative min-h-[320px] overflow-hidden rounded-lg border border-slate-700">
-            <MapContainer
-              center={[20, 0]}
-              zoom={2}
-              className="leaflet-container h-full min-h-[320px] w-full"
-              scrollWheelZoom
-            >
-              <TileLayer url={basemap.url} attribution={basemap.attribution} />
-              <FitBoundsOnMarkers
-                markers={filteredMarkers}
-                selfLat={selfCoords?.lat}
-                selfLon={selfCoords?.lon}
-              />
-              {selfCoords ? (
-                <Marker
-                  position={[selfCoords.lat, selfCoords.lon]}
-                  icon={buildMarkerIcon(overlayColors.online)}
-                >
-                  <Popup>{t('reticulumMap.selfMarker')}</Popup>
-                </Marker>
-              ) : null}
-              {filteredMarkers.map((row) => (
-                <Marker
-                  key={row.discovery_hash}
-                  position={[row.latitude, row.longitude]}
-                  icon={buildMarkerIcon(markerColor(row.status, row.reachable, basemap.isDark))}
-                  eventHandlers={{
-                    click: () => onPeerClick?.(row.transport_id),
-                  }}
-                >
-                  <Popup>
-                    <div className="text-sm">
-                      <div className="font-semibold">{row.discovery_name}</div>
-                      <div className="text-xs">{row.interface_type}</div>
-                      {row.reachable ? (
-                        <div className="mt-1 text-xs text-green-700">
-                          {t('reticulumMap.reachable')}
-                        </div>
-                      ) : (
-                        <div className="mt-1 text-xs text-slate-600">
-                          {t('reticulumMap.heardOnly')}
-                        </div>
-                      )}
-                      <div className="mt-1 text-xs text-slate-600">
-                        {t('reticulumMap.lastHeard', {
-                          time: new Date(row.last_heard * 1000).toLocaleString(),
-                        })}
-                      </div>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
+      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[1fr_280px]">
+        <div
+          className="relative min-h-[420px] overflow-hidden rounded-lg border border-gray-700/50"
+          aria-label={t('reticulumMap.title')}
+        >
+          <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">
+            <div className="bg-deep-black/80 flex items-center gap-3 rounded-lg border border-gray-700 px-3 py-1.5 text-xs backdrop-blur-sm">
+              <span className="flex items-center gap-1 text-slate-200">
+                <span
+                  className="inline-block h-2 w-2 rounded-full"
+                  style={{ backgroundColor: overlayColors.online }}
+                />
+                {reachableCount}
+              </span>
+              <span className="flex items-center gap-1 text-slate-200">
+                <span
+                  className="inline-block h-2 w-2 rounded-full"
+                  style={{ backgroundColor: overlayColors.stale }}
+                />
+                {filteredMarkers.length + filteredListOnly.length - reachableCount}
+              </span>
+            </div>
+            <MapBasemapControl />
           </div>
 
-          <aside className="flex max-h-[420px] flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-900/50">
-            <h3 className="border-b border-slate-700 px-3 py-2 text-xs font-semibold tracking-wide text-slate-400 uppercase">
-              {t('reticulumMap.listTitle')}
-            </h3>
-            <ul className="min-h-0 flex-1 overflow-y-auto text-sm">
-              {[...filteredMarkers, ...filteredListOnly].map((row) => (
+          <MapContainer
+            center={initialViewport.center}
+            zoom={initialViewport.zoom}
+            className="absolute inset-0"
+            preferCanvas
+            scrollWheelZoom
+          >
+            <TileLayer
+              key={basemapId}
+              url={basemap.url}
+              attribution={basemap.attribution}
+              keepBuffer={1}
+              updateWhenIdle
+            />
+            <MapResizeInvalidator active />
+            <MapViewportSaver hasAnyPositions={hasMapPositions} />
+            <LocateMeControl onLocateMe={locateMe} />
+            <FitBoundsOnMarkers
+              markers={filteredMarkers}
+              selfLat={selfCoords?.lat}
+              selfLon={selfCoords?.lon}
+              shouldFitOnMount={shouldFitOnMount}
+            />
+            {selfCoords ? (
+              <Marker
+                position={[selfCoords.lat, selfCoords.lon]}
+                icon={buildMarkerIcon(overlayColors.online)}
+              >
+                <Popup>{t('reticulumMap.selfMarker')}</Popup>
+              </Marker>
+            ) : null}
+            {filteredMarkers.map((row) => (
+              <Marker
+                key={row.discovery_hash}
+                position={[row.latitude, row.longitude]}
+                icon={buildMarkerIcon(markerColor(row.status, row.reachable, basemap.isDark))}
+                eventHandlers={{
+                  click: () => onPeerClick?.(row.transport_id),
+                }}
+              >
+                <Popup>
+                  <div className="text-sm">
+                    <div className="font-semibold">{row.discovery_name}</div>
+                    <div className="text-xs">{row.interface_type}</div>
+                    {row.reachable ? (
+                      <div className="mt-1 text-xs text-green-700">
+                        {t('reticulumMap.reachable')}
+                      </div>
+                    ) : (
+                      <div className="mt-1 text-xs text-slate-600">
+                        {t('reticulumMap.heardOnly')}
+                      </div>
+                    )}
+                    <div className="mt-1 text-xs text-slate-600">
+                      {t('reticulumMap.lastHeard', {
+                        time: new Date(row.last_heard * 1000).toLocaleString(),
+                      })}
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+
+          {emptyReason ? (
+            <div className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center bg-slate-950/40 p-6">
+              <div className="pointer-events-auto max-w-md rounded-lg border border-dashed border-slate-700 bg-slate-900/90 p-6 text-center">
+                <MapPin className="mx-auto h-8 w-8 text-slate-500" aria-hidden />
+                <p className="mt-2 text-sm text-slate-300">
+                  {t(`reticulumMap.empty.${emptyReason}`)}
+                </p>
+                {emptyReason === 'noDiscoveries' ? (
+                  <p className="mt-2 text-xs text-slate-500">{t('reticulumMap.empty.hint')}</p>
+                ) : null}
+                {emptyReason === 'stackOff' && onOpenRmapSettings ? (
+                  <button
+                    type="button"
+                    className="mt-3 text-xs text-cyan-400 underline"
+                    onClick={onOpenRmapSettings}
+                  >
+                    {t('reticulumMap.openPublishSettings')}
+                  </button>
+                ) : null}
+                {!selfCoords && onOpenAppGpsSettings ? (
+                  <button
+                    type="button"
+                    className="mt-3 text-xs text-cyan-400 underline"
+                    onClick={onOpenAppGpsSettings}
+                  >
+                    {t('reticulumRmapDiscovery.openAppGps')}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <aside className="flex max-h-[420px] flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-900/50 lg:max-h-none">
+          <h3 className="border-b border-slate-700 px-3 py-2 text-xs font-semibold tracking-wide text-slate-400 uppercase">
+            {t('reticulumMap.listTitle')}
+          </h3>
+          <ul className="min-h-0 flex-1 overflow-y-auto text-sm">
+            {[...filteredMarkers, ...filteredListOnly].length === 0 ? (
+              <li className="px-3 py-4 text-xs text-slate-500">{t('reticulumMap.empty.hint')}</li>
+            ) : (
+              [...filteredMarkers, ...filteredListOnly].map((row) => (
                 <li
                   key={row.discovery_hash}
                   className="border-b border-slate-800 px-3 py-2 last:border-b-0"
@@ -361,11 +449,11 @@ export default function ReticulumMapPanel({
                     </div>
                   </button>
                 </li>
-              ))}
-            </ul>
-          </aside>
-        </div>
-      )}
+              ))
+            )}
+          </ul>
+        </aside>
+      </div>
     </div>
   );
 }
