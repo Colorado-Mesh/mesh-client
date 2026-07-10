@@ -1018,7 +1018,8 @@
     "tcpAddressPlaceholder": "meshtastic.local:4403, 192.168.1.x:4403, o [fd00::1]:4403",
     "tcpAddressHint": "Inserisci nome host o indirizzo IP; il valore predefinito della porta è 4403 se omesso",
     "hintMeshtasticTcp1": "Immettere l'indirizzo IP o il nome host di un nodo Meshtastic connesso al WiFi con TCP abilitato (porta predefinita 4403). Molto più veloce di WiFi/HTTP per database di nodi di grandi dimensioni.",
-    "hintMeshtasticTcp2": "Se la connessione non è affidabile (ad esempio con meshtastic.local), prova invece l'indirizzo IP del dispositivo: il desktop mDNS può essere traballante."
+    "hintMeshtasticTcp2": "Se la connessione non è affidabile (ad esempio con meshtastic.local), prova invece l'indirizzo IP del dispositivo: il desktop mDNS può essere traballante.",
+    "channelPsksMqttOnlyIndexHint": "Senza una radio connessa, i messaggi MQTT in entrata vengono indirizzati alle schede della chat in base al nome del canale. Usa ChannelName@index=base64 in modo che ogni nome corrisponda allo slot corretto, ad esempio LongFast@1=AQ== quando il tuo canale mesh pubblico è lo slot 1 (stile Colorado-mesh). LongFast senza @ mappe allo slot 0."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",

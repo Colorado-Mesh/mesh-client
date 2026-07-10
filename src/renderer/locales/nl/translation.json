@@ -1018,7 +1018,8 @@
     "tcpAddressPlaceholder": "meshtastic.local:4403, 192.168.1.x:4403, of [fd00::1]:4403",
     "tcpAddressHint": "Voer hostnaam of IP-adres in; poort staat standaard op 4403 indien weggelaten",
     "hintMeshtasticTcp1": "Voer het IP-adres of de hostnaam in van een Meshtastic-knooppunt met WiFi-verbinding met TCP ingeschakeld (standaardpoort 4403). Veel sneller dan WiFi/HTTP voor grote node databases.",
-    "hintMeshtasticTcp2": "Als de verbinding onbetrouwbaar is (bijv. met meshtastic.local), probeer dan in plaats daarvan het IP-adres van het apparaat — desktop mDNS kan schilferig zijn."
+    "hintMeshtasticTcp2": "Als de verbinding onbetrouwbaar is (bijv. met meshtastic.local), probeer dan in plaats daarvan het IP-adres van het apparaat — desktop mDNS kan schilferig zijn.",
+    "channelPsksMqttOnlyIndexHint": "Zonder radioverbinding, inkomende MQTT-berichten route naar chattabbladen op kanaalnaam. Gebruik ChannelName@index=base64 zodat elke naam naar de juiste sleuf wijst — bijvoorbeeld LongFast@1=AQ== wanneer uw openbare maaskanaal sleuf 1 is (Colorado-mesh-stijl). LongFast zonder @ maps naar sleuf 0."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

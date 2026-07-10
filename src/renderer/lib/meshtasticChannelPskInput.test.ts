@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   formatChannelPskInput,
+  manualChannelPsksDeclareSlotIndices,
   parseChannelPskInput,
   parseManualChannelPublishEntries,
   parseManualChannelPublishEntry,
@@ -130,5 +131,22 @@ describe('parseManualChannelPublishEntries', () => {
     expect(entries).toHaveLength(2);
     expect(entries[0]?.name).toBe('HamNet');
     expect(entries[1]?.index).toBe(0);
+  });
+});
+
+describe('manualChannelPsksDeclareSlotIndices', () => {
+  it('returns false when no named lines declare @index', () => {
+    expect(manualChannelPsksDeclareSlotIndices([KEY_A, `HamNet=${KEY_B}`])).toBe(false);
+  });
+
+  it('returns true when any named line includes @index', () => {
+    expect(manualChannelPsksDeclareSlotIndices([`LongFast@1=${KEY_B}`])).toBe(true);
+    expect(
+      manualChannelPsksDeclareSlotIndices([`HamNet=${KEY_B}`, `LongFast@0=${KEY_AES256}`]),
+    ).toBe(true);
+  });
+
+  it('returns false for empty input', () => {
+    expect(manualChannelPsksDeclareSlotIndices([])).toBe(false);
   });
 });

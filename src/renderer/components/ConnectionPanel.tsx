@@ -73,6 +73,7 @@ import {
 } from '../lib/meshtastic/meshtasticMqttTopicPrefixOverlay';
 import {
   formatChannelPskInput,
+  manualChannelPsksDeclareSlotIndices,
   parseChannelPskInput,
   validateChannelPskEntries,
 } from '../lib/meshtasticChannelPskInput';
@@ -591,6 +592,10 @@ export default function ConnectionPanel({
   const radioMqttRootDiverges =
     radioMqttRoot != null &&
     meshtasticMqttTopicPrefixesDiverge(activeMqttSettings.topicPrefix, radioMqttRoot);
+  const showMqttOnlyChannelPskIndexHint =
+    protocol === 'meshtastic' &&
+    state.status !== 'configured' &&
+    !manualChannelPsksDeclareSlotIndices(parseChannelPskInput(channelPskDraft));
 
   const updateMqtt = <K extends keyof MQTTSettings>(
     key: K,
@@ -2621,6 +2626,11 @@ export default function ConnectionPanel({
               {channelPskWarn && (
                 <p className="text-xs text-amber-300/90" role="status">
                   {channelPskWarn}
+                </p>
+              )}
+              {showMqttOnlyChannelPskIndexHint && (
+                <p className="text-xs text-amber-300/90" role="status">
+                  {t('connectionPanel.channelPsksMqttOnlyIndexHint')}
                 </p>
               )}
               <p className="text-muted text-xs">

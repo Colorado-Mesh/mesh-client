@@ -1018,7 +1018,8 @@
     "tcpAddressPlaceholder": "meshtastic.local:4403, 192.168.1.x:4403 veya [fd00::1]: 4403",
     "tcpAddressHint": "Ana bilgisayar adını veya IP adresini girin; bağlantı noktası atlanırsa varsayılan olarak 4403 'tür",
     "hintMeshtasticTcp1": "TCP etkinleştirilmiş bir WiFi bağlantılı Meshtastic düğümünün IP adresini veya ana bilgisayar adını girin (varsayılan bağlantı noktası 4403). Büyük düğüm veritabanları için WiFi/http'den çok daha hızlı.",
-    "hintMeshtasticTcp2": "Bağlantı güvenilir değilse (örneğin meshtastic.local ile), bunun yerine cihazın IP adresini deneyin — masaüstü mDNS zayıf olabilir."
+    "hintMeshtasticTcp2": "Bağlantı güvenilir değilse (örneğin meshtastic.local ile), bunun yerine cihazın IP adresini deneyin — masaüstü mDNS zayıf olabilir.",
+    "channelPsksMqttOnlyIndexHint": "Radyo bağlı olmadan, gelen MQTT mesajları kanal adına göre sohbet sekmelerine yönlendirilir. ChannelName@index=base64 kullanın, böylece her ad doğru yuvaya eşleşir — örneğin LongFast @1=AQ== genel ağ kanalınız yuva 1 olduğunda (Colorado - mesh stili). 0. yuvaya @ haritalar olmadan LongFast."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

@@ -1018,7 +1018,8 @@
     "tcpAddressPlaceholder": "meshtastic.local:4403, 192.168.1.x:4403, nebo [fd00::1]:4403",
     "tcpAddressHint": "Zadejte název hostitele nebo IP adresu; výchozí port je 4403, pokud je vynechán",
     "hintMeshtasticTcp1": "Zadejte IP adresu nebo název hostitele uzlu Meshtastic připojeného k Wi-Fi s povoleným TCP (výchozí port 4403). Mnohem rychlejší než WiFi/http pro velké uzlové databáze.",
-    "hintMeshtasticTcp2": "Pokud je připojení nespolehlivé (např. s meshtastic.local), zkuste místo toho IP adresu zařízení — desktop mDNS může být šupinatý."
+    "hintMeshtasticTcp2": "Pokud je připojení nespolehlivé (např. s meshtastic.local), zkuste místo toho IP adresu zařízení — desktop mDNS může být šupinatý.",
+    "channelPsksMqttOnlyIndexHint": "Bez připojeného rádia směřují příchozí zprávy MQTT na karty chatu podle názvu kanálu. Použijte ChannelName@index=base64, aby se každý název mapoval na správný slot — například LongFast @1=AQ = =, když je váš veřejný síťový kanál slot 1 (styl sítě Colorado). LongFast bez @ maps na slot 0."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

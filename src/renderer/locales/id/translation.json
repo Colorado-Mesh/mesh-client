@@ -1018,7 +1018,8 @@
     "tcpAddressPlaceholder": "meshtastic.local:4403, 192.168.1.x:4403, atau [fd00::1]:4403",
     "tcpAddressHint": "Masukkan nama host atau alamat IP; port default ke 4403 jika dihilangkan",
     "hintMeshtasticTcp1": "Masukkan alamat IP atau nama host dari node Meshtastic yang terhubung dengan WiFi dengan TCP diaktifkan (port default 4403). Jauh lebih cepat daripada WiFi/HTTP untuk basis data simpul besar.",
-    "hintMeshtasticTcp2": "Jika koneksi tidak dapat diandalkan (misalnya dengan meshtastic.local), coba alamat IP perangkat sebagai gantinya — mDNS desktop dapat terkelupas."
+    "hintMeshtasticTcp2": "Jika koneksi tidak dapat diandalkan (misalnya dengan meshtastic.local), coba alamat IP perangkat sebagai gantinya — mDNS desktop dapat terkelupas.",
+    "channelPsksMqttOnlyIndexHint": "Tanpa radio yang terhubung, rute pesan MQTT masuk ke tab obrolan berdasarkan nama saluran. Gunakan ChannelName@index=base64 sehingga setiap nama dipetakan ke slot yang benar — misalnya LongFast @1=AQ== ketika saluran mesh publik Anda adalah slot 1 (gaya Colorado - mesh). LongFast tanpa @ maps ke slot 0."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

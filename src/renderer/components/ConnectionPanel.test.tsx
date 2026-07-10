@@ -1583,6 +1583,44 @@ describe('ConnectionPanel MQTT channel PSKs', () => {
       expect(screen.queryByText(/Each key must decode to 16 bytes/)).not.toBeInTheDocument();
     });
   });
+
+  it('shows MQTT-only @index hint when no radio is configured and no @index lines', () => {
+    renderMeshtasticMqtt();
+
+    expect(
+      screen.getByText(/Without a radio connected, inbound MQTT messages route to chat tabs/i),
+    ).toBeInTheDocument();
+  });
+
+  it('hides MQTT-only @index hint when draft includes ChannelName@index', async () => {
+    renderMeshtasticMqtt();
+
+    const textarea = document.getElementById('mqtt-channel-psks') as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: `LongFast@1=${KEY_B}` } });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText(/Without a radio connected, inbound MQTT messages route to chat tabs/i),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it('hides MQTT-only @index hint when radio is configured', () => {
+    render(
+      <ConnectionPanel
+        state={configuredState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    expect(
+      screen.queryByText(/Without a radio connected, inbound MQTT messages route to chat tabs/i),
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe('ConnectionPanel LetsMesh username sync', () => {

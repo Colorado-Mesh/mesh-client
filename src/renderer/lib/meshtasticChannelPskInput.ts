@@ -69,3 +69,8 @@ export function parseManualChannelPublishEntries(lines: string[]): ManualChannel
   }
   return entries;
 }
+
+/** True when any named manual PSK line includes an explicit @index slot. */
+export function manualChannelPsksDeclareSlotIndices(lines: string[]): boolean {
+  return parseManualChannelPublishEntries(lines).some((e) => e.index !== undefined);
+}

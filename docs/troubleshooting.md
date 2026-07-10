@@ -969,14 +969,17 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 
 **Cause**
 
-MQTT ingest historically mapped inbound text to a channel index from the topic name (`LongFast`, regional names) instead of the authoritative `MeshPacket.channel` field in the ServiceEnvelope. When the topic map was stale or incomplete (unnamed default-public on slot 1, delayed channel-key sync), traffic was attributed to channel 0.
+MQTT ingest must map inbound text to the **receiver's** local channel slot using the MQTT topic channel name (`LongFast`, regional names, etc.) via `channelNameToIndex`. `MeshPacket.channel` in the ServiceEnvelope is the **sender's** local RF slot and must not drive attribution — remote gateways often use a different slot layout (e.g. LongFast on slot 1 while you use slot 0).
+
+Mis-filed messages also occur when `channelNameToIndex` is stale or incomplete: unnamed default-public on slot 1 without radio sync, MQTT-only without `ChannelName@index=` manual PSK lines, or delayed `mqtt:updateChannelKeys` after connect.
 
 **Fix**
 
-1. Update to a build that prefers `MeshPacket.channel` for MQTT text ingest.
-2. Connect the radio so channel keys sync to MQTT (`mqtt:updateChannelKeys` in logs after configure).
-3. On **Export for Developer** / **Copy Debug Snapshot**, check `meshtastic.channelPills`, `meshtastic.channelConfigsSummary`, and `meshtastic.mqttChannelKeyEntryCount` — slot 1 with empty name and `isDefaultPublicPsk: true` is the common Colorado-mesh layout.
-4. When reporting, note whether mis-filed messages are **MQTT-only**, **RF-only**, or **both**, and attach a Radio tab screenshot of channel names + slot indices.
+1. Update to a build that prefers the **topic channel name** for MQTT text ingest (sampled log `mqtt-channel-topic-mismatch:*` when topic index disagrees with packet channel).
+2. Connect the radio so channel keys and slot indexes sync to MQTT (`mqtt:updateChannelKeys` in logs after configure).
+3. **MQTT-only (no radio):** add `ChannelName@index=base64` lines in Connection → Channel PSKs (e.g. `LongFast@1=AQ==` for Colorado-mesh slot-1 public). The Connection panel shows an inline hint when no radio is configured and no `@index` lines are present.
+4. On **Export for Developer** / **Copy Debug Snapshot**, check `meshtastic.channelPills`, `meshtastic.channelConfigsSummary`, and `meshtastic.mqttChannelKeyEntryCount` — slot 1 with empty name and `isDefaultPublicPsk: true` is the common Colorado-mesh layout.
+5. When reporting, note whether mis-filed messages are **MQTT-only**, **RF-only**, or **both**, and attach a Radio tab screenshot of channel names + slot indices.
 
 ### Phantom chat unread on channels not on the radio
 

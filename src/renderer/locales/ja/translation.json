@@ -1018,7 +1018,8 @@
     "tcpAddressPlaceholder": "meshtastic.local: 4403、192.168.1.x: 4403、または[fd 00:: 1]: 4403",
     "tcpAddressHint": "ホスト名またはIPアドレスを入力します。省略した場合、ポートはデフォルトで4403になります",
     "hintMeshtasticTcp1": "TCPが有効になっているWiFi接続されたMeshtasticノードのIPアドレスまたはホスト名を入力します（デフォルトポート4403 ）。大規模なノードデータベースでは、WiFi/HTTPよりもはるかに高速です。",
-    "hintMeshtasticTcp2": "接続が信頼できない場合（ meshtastic.localなど）は、代わりにデバイスのIPアドレスを試してみてください。デスクトップのmDNSが不安定な場合があります。"
+    "hintMeshtasticTcp2": "接続が信頼できない場合（ meshtastic.localなど）は、代わりにデバイスのIPアドレスを試してみてください。デスクトップのmDNSが不安定な場合があります。",
+    "channelPsksMqttOnlyIndexHint": "無線が接続されていない場合、受信MQTTメッセージはチャネル名ごとにチャットタブにルーティングされます。各名前が正しいスロットにマッピングされるように、ChannelName @ index = base 64を使用します。たとえば、パブリックメッシュチャンネルがスロット1 （コロラドメッシュスタイル）の場合、LongFast @ 1 = AQ ==などです。スロット0に@ mapsなしのLongFast。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

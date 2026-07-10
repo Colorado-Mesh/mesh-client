@@ -228,7 +228,7 @@ Do **not** reintroduce Meshtastic-only startup gates, child-before-parent init, 
 
 ### MQTT
 
-Meshtastic: `mqtt-manager.ts` (AES-128/256-CTR, Meshtastic nonce layout, channel keys, protobuf, dedup); inbound **TEXT_MESSAGE** ingest prefers authoritative `MeshPacket.channel` (clamped 0–7) over topic-name mapping — topic disagreements are sampled-logged (`mqtt-channel-topic-mismatch:*`); `meshtasticMqttPublish.ts`; `meshtasticChannelPskInput.ts` + `src/shared/meshtasticChannelPskLine.ts`; `meshtasticMqttSettingsStorage.ts`; `meshtasticMqttIdentity.ts` (MQTT-only `from`); `mqtt-broker-client-id.ts`. MeshCore: `meshcore-mqtt-adapter.ts` (JSON v1); LetsMesh JWT `letsMeshJwt.ts`.
+Meshtastic: `mqtt-manager.ts` (AES-128/256-CTR, Meshtastic nonce layout, channel keys, protobuf, dedup); inbound **TEXT_MESSAGE** ingest prefers **topic channel name** → `channelNameToIndex` (receiver-local slot); `MeshPacket.channel` is fallback when topic absent — sampled log when they disagree (`mqtt-channel-topic-mismatch:*`); Connection panel **Channel PSKs** `ChannelName@index=` for MQTT-only slot mapping; `meshtasticMqttPublish.ts`; `meshtasticChannelPskInput.ts` + `src/shared/meshtasticChannelPskLine.ts`; `meshtasticMqttSettingsStorage.ts`; `meshtasticMqttIdentity.ts` (MQTT-only `from`); `mqtt-broker-client-id.ts`. MeshCore: `meshcore-mqtt-adapter.ts` (JSON v1); LetsMesh JWT `letsMeshJwt.ts`.
 
 ### UI
 

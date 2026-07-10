@@ -1018,7 +1018,8 @@
     "tcpAddressPlaceholder": "meshtastic.local: 4403、192.168.1.x: 4403或[fd00:: 1]: 4403",
     "tcpAddressHint": "输入主机名或IP地址；如果省略，端口默认为4403",
     "hintMeshtasticTcp1": "输入启用TCP （默认端口4403 ）的WiFi连接的Meshtastic节点的IP地址或主机名。对于大型节点数据库，比WiFi/HTTP快得多。",
-    "hintMeshtasticTcp2": "如果连接不可靠（例如使用meshtastic.local ） ，请尝试使用设备的IP地址—桌面mDNS可能不稳定。"
+    "hintMeshtasticTcp2": "如果连接不可靠（例如使用meshtastic.local ） ，请尝试使用设备的IP地址—桌面mDNS可能不稳定。",
+    "channelPsksMqttOnlyIndexHint": "如果没有无线电连接，入站MQTT消息将按频道名称路由到聊天选项卡。使用ChannelName @ index = base64 ，以便每个名称映射到正确的插槽—例如，当您的公共网格通道是插槽1 （科罗拉多网格样式）时， LongFast @ 1 = AQ = =。LongFast没有@映射到插槽0。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",

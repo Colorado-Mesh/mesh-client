@@ -1018,7 +1018,8 @@
     "tcpAddressPlaceholder": "meshtastic.local: 4403, 192.168.1.x: 4403 또는 [fd00:: 1]: 4403",
     "tcpAddressHint": "호스트 이름 또는 IP 주소를 입력하십시오. 생략할 경우 포트 기본값은 4403입니다.",
     "hintMeshtasticTcp1": "TCP가 활성화된 Wi-Fi 연결 Meshtastic 노드의 IP 주소 또는 호스트 이름을 입력합니다 (기본 포트 4403). 대규모 노드 데이터베이스의 경우 WiFi/HTTP보다 훨씬 빠릅니다.",
-    "hintMeshtasticTcp2": "연결이 불안정하면 (예: meshtastic.local) 장치의 IP 주소를 사용해 보십시오. 데스크톱 mDNS가 깨질 수 있습니다."
+    "hintMeshtasticTcp2": "연결이 불안정하면 (예: meshtastic.local) 장치의 IP 주소를 사용해 보십시오. 데스크톱 mDNS가 깨질 수 있습니다.",
+    "channelPsksMqttOnlyIndexHint": "라디오가 연결되어 있지 않으면 인바운드 MQTT 메시지가 채널 이름으로 채팅 탭으로 라우팅됩니다. 각 이름이 올바른 슬롯에 매핑되도록 ChannelName @ index = base64를 사용하십시오 (예: 공개 메시 채널이 슬롯 1 (콜로라도 메시 스타일) 인 경우 LongFast @ 1 = AQ = =). 슬롯 0에 @ maps 없이 LongFast."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",

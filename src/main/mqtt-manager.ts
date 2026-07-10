@@ -453,19 +453,20 @@ export class MQTTManager extends EventEmitter {
     return idx <= 7 ? idx : 7;
   }
 
-  /** Prefer authoritative MeshPacket.channel; log when topic name map disagrees (sampled). */
+  /** Prefer topic channel name (maps to receiver's local slot); fall back to MeshPacket.channel. */
   private resolveMqttInboundTextChannelIndex(rfChannel: number, topic?: string): number {
-    const channelIndex = this.clampMeshtasticRfChannel(rfChannel);
     if (topic !== undefined) {
       const topicIndex = this.resolveChannelIndexFromTopic(topic);
-      if (topicIndex !== channelIndex) {
+      const packetIndex = this.clampMeshtasticRfChannel(rfChannel);
+      if (topicIndex !== packetIndex) {
         this.logSampledDebug(
-          `mqtt-channel-topic-mismatch:${topicIndex}:${channelIndex}`,
-          `[Meshtastic MQTT] TEXT channel from packet (${channelIndex}) differs from topic map (${topicIndex}); using packet channel | topic=${sanitizeLogMessage(topic)}`,
+          `mqtt-channel-topic-mismatch:${topicIndex}:${packetIndex}`,
+          `[Meshtastic MQTT] TEXT topic channel (${topicIndex}) differs from packet channel (${packetIndex}); using topic channel | topic=${sanitizeLogMessage(topic)}`,
         );
       }
+      return topicIndex;
     }
-    return channelIndex;
+    return this.clampMeshtasticRfChannel(rfChannel);
   }
 
   private wildcardSubscribeTopicForPrefix(topicPrefix: string): string {
