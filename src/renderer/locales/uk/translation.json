@@ -1037,7 +1037,8 @@
       "noPublishTargets": "Немає увімкнених локальних інтерфейсів для публікації на RMAP.",
       "syncSuccess": "Виявлення RMAP синхронізовано з інтерфейсом.",
       "openGlobalMap": "Глобальна карта",
-      "openGlobalMapAria": "Відкрити глобальну карту RMAP v4 на rmap.world"
+      "openGlobalMapAria": "Відкрити глобальну карту RMAP v4 на rmap.world",
+      "syncFailed": "Не вдалося синхронізувати виявлення RMAP."
     }
   },
   "contactGroupsModal": {
@@ -3593,7 +3594,9 @@
     },
     "hint": "Застосовує detectable=yes та App GPS-координати до всіх увімкнених інтерфейсів з підтримкою RMAP (RNode, KISS, BLE peer, I2P, UDP, pipe). Використовуйте перемикачі RMAP для кожного інтерфейсу підключення для точного керування. Шляхи LoRa також забезпечують транспорт і хаб rmap.world.",
     "openGlobalMap": "Відкрити глобальну карту",
-    "openGlobalMapAria": "Відкрити глобальну карту RMAP v4 на rmap.world"
+    "openGlobalMapAria": "Відкрити глобальну карту RMAP v4 на rmap.world",
+    "applyPartialSuccess": "Налаштування RMAP застосовуються до інтерфейсів {{applied}} з {{total}}.",
+    "disablePartialSuccess": "Видання RMAP вимкнено на {{applied}} з {{total}} інтерфейсів."
   },
   "reticulumTopology": {
     "title": "Топологія мережі",

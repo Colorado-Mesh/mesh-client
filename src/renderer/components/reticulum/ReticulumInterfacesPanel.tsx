@@ -665,6 +665,7 @@ export function ReticulumInterfacesPanel({
           await onRefresh();
         }
       } catch (e) {
+        addToast(t('connectionPanel.reticulumRmap.syncFailed'), 'error');
         console.debug('[ReticulumInterfacesPanel] rmap sync ' + errLikeToLogString(e));
       }
     },

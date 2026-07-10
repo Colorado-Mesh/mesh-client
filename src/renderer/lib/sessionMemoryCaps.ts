@@ -8,6 +8,8 @@ export const MAX_MESHCORE_CLI_HISTORY_ENTRIES = 50;
 export const MAX_MESHTASTIC_TRACE_ROUTE_RESULTS = 100;
 export const MAX_DIAGNOSTICS_TRACKED_NODES = MAX_MESH_ENTITY_CAP;
 export const MAX_RETICULUM_IDENTITY_DESTINATIONS = MAX_MESH_ENTITY_CAP;
+/** In-memory cap for RMAP discovery rows mirrored from the sidecar DiscoveryStore. */
+export const MAX_RMAP_DISCOVERED_ROWS = 2_000;
 export const LARGE_MESH_NODE_THRESHOLD = 2000;
 export const LARGE_MESH_DIAGNOSTICS_REANALYSIS_DELAY_MS = 10_000;
 export const SESSION_DB_PRUNE_INTERVAL_MS = 6 * 60 * 60 * 1000;

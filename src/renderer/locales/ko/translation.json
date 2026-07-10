@@ -1037,7 +1037,8 @@
       "noPublishTargets": "RMAP에 게시할 수 있는 로컬 인터페이스가 없습니다.",
       "syncSuccess": "RMAP 검색이 인터페이스에 동기화되었습니다.",
       "openGlobalMap": "글로벌 맵",
-      "openGlobalMapAria": "Rmap.world에서 RMAP v4 글로벌 맵 열기"
+      "openGlobalMapAria": "Rmap.world에서 RMAP v4 글로벌 맵 열기",
+      "syncFailed": "RMAP 검색 동기화에 실패했습니다."
     }
   },
   "contactGroupsModal": {
@@ -3593,7 +3594,9 @@
     },
     "hint": "검색 가능 = 예 및 앱 GPS 좌표를 활성화된 모든 RMAP 가능 인터페이스 (RNode, KISS, BLE 피어, I2P, UDP, 파이프) 에 적용합니다. 미세 제어를 위해 Connection에서 인터페이스별 RMAP 토글을 사용하십시오. LoRa 경로는 또한 전송 및 rmap.world 허브를 활성화합니다.",
     "openGlobalMap": "전역 지도 열기",
-    "openGlobalMapAria": "Rmap.world에서 RMAP v4 글로벌 맵 열기"
+    "openGlobalMapAria": "Rmap.world에서 RMAP v4 글로벌 맵 열기",
+    "applyPartialSuccess": "{{total}} 인터페이스의 {{applied}}에 RMAP 설정이 적용되었습니다.",
+    "disablePartialSuccess": "{{total}} 인터페이스 중 {{applied}}에서 RMAP 게시가 비활성화되었습니다."
   },
   "reticulumTopology": {
     "title": "네트워크 토폴로지",

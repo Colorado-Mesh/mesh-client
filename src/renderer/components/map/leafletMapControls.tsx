@@ -12,6 +12,7 @@ import { useMapViewportStore } from '@/renderer/stores/mapViewportStore';
 import { useToast } from '../Toast';
 
 const MAP_STYLE_ID = 'map-styles';
+const LORA_MAP_STYLE_ID = 'map-lora-panel-styles';
 
 /** Shared Leaflet control styles (locate button) for Meshtastic/MeshCore/Reticulum maps. */
 export function ensureMapStyles(): void {
@@ -37,6 +38,62 @@ export function ensureMapStyles(): void {
     }
     .leaflet-locate-control a.locating {
       color: #3b82f6;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+/** LoRa map panel styles (anomaly halos, dark node popups) — Meshtastic/MeshCore MapPanel only. */
+export function ensureLoRaMapPanelStyles(): void {
+  ensureMapStyles();
+  if (document.getElementById(LORA_MAP_STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = LORA_MAP_STYLE_ID;
+  style.textContent = `
+    @keyframes anomaly-pulse {
+      0%, 100% { opacity: 0.75; }
+      50%       { opacity: 0.15; }
+    }
+    .anomaly-halo-warning {
+      animation: anomaly-pulse 2s ease-in-out infinite;
+      pointer-events: none !important;
+    }
+    .anomaly-halo-error {
+      animation: anomaly-pulse 1.4s ease-in-out infinite;
+      pointer-events: none !important;
+    }
+    html[data-reduce-motion='true'] .anomaly-halo-warning,
+    html[data-reduce-motion='true'] .anomaly-halo-error {
+      animation: none !important;
+      opacity: 0.75 !important;
+    }
+    .leaflet-popup.map-node-popup .leaflet-popup-content-wrapper {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #e5e7eb;
+      border-radius: 0.75rem;
+      padding: 0;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    }
+    .leaflet-popup.map-node-popup .leaflet-popup-content {
+      margin: 0;
+      min-width: 280px;
+      max-width: 340px;
+      max-height: 70vh;
+      overflow: hidden;
+    }
+    .leaflet-popup.map-node-popup .leaflet-popup-content > div {
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .leaflet-popup.map-node-popup .leaflet-popup-tip {
+      background: #0f172a;
+    }
+    .leaflet-popup.map-node-popup .leaflet-popup-close-button {
+      color: #9ca3af !important;
+    }
+    .leaflet-popup.map-node-popup .leaflet-popup-close-button:hover {
+      color: #e5e7eb !important;
     }
   `;
   document.head.appendChild(style);

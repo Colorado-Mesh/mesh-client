@@ -18,6 +18,7 @@ vi.stubGlobal('window', {
 import {
   fetchReticulumIdentityStatus,
   fetchReticulumInterfaces,
+  fetchReticulumRmapDiscovered,
   formatReticulumPeerProbeToast,
   isReticulumSidecar404Error,
   isReticulumSidecarNotRunningError,
@@ -85,6 +86,33 @@ describe('reticulumSidecarReads', () => {
     await expect(fetchReticulumInterfaces()).resolves.toHaveLength(1);
     await expect(fetchReticulumInterfaces()).resolves.toHaveLength(1);
     expect(proxyGet).toHaveBeenCalledTimes(1);
+  });
+
+  it('fetchReticulumRmapDiscovered returns empty when sidecar is down', async () => {
+    getStatus.mockResolvedValue({ running: false, port: 0, pid: null });
+    await expect(fetchReticulumRmapDiscovered()).resolves.toEqual([]);
+    expect(proxyGet).not.toHaveBeenCalled();
+  });
+
+  it('fetchReticulumRmapDiscovered returns discovered rows on success', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyGet.mockResolvedValue({
+      discovered: [{ discovery_hash: 'abc', transport_id: 'aa'.repeat(16), last_heard: 1 }],
+    });
+    await expect(fetchReticulumRmapDiscovered()).resolves.toHaveLength(1);
+    expect(proxyGet).toHaveBeenCalledWith('/api/v1/rmap/discovered');
+  });
+
+  it('fetchReticulumRmapDiscovered throws on unexpected proxy errors', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyGet.mockRejectedValue(new Error('sidecar timeout'));
+    await expect(fetchReticulumRmapDiscovered()).rejects.toThrow('sidecar timeout');
+  });
+
+  it('fetchReticulumRmapDiscovered returns empty on expected proxy errors', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyGet.mockRejectedValue(new Error('Reticulum sidecar is not running'));
+    await expect(fetchReticulumRmapDiscovered()).resolves.toEqual([]);
   });
 
   it('requestReticulumPeerPath parses ok response', async () => {

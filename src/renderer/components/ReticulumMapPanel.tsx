@@ -104,7 +104,7 @@ function buildMarkerIcon(color: string): L.DivIcon {
 
 export interface ReticulumMapPanelProps {
   stackConfigured: boolean;
-  onPeerClick?: (transportId: string) => void;
+  onPeerClick?: (peerHash: string) => void;
   onOpenRmapSettings?: () => void;
   onOpenAppGpsSettings?: () => void;
 }
@@ -134,6 +134,7 @@ export default function ReticulumMapPanel({
   const [selectedHash, setSelectedHash] = useState<string | null>(null);
   const [showScrollTopButton, setShowScrollTopButton] = useState(false);
   const listScrollRef = useRef<HTMLUListElement>(null);
+  const refreshGenerationRef = useRef(0);
 
   const selfCoords = readStoredStaticGps();
 
@@ -166,21 +167,27 @@ export default function ReticulumMapPanel({
       clearDiscovered();
       return;
     }
+    const generation = ++refreshGenerationRef.current;
     setLoading(true);
     setRefreshError(null);
     try {
       const running = await isReticulumSidecarRunning();
+      if (generation !== refreshGenerationRef.current) return;
       if (!running) {
         clearDiscovered();
         return;
       }
       const rows = await fetchReticulumRmapDiscovered();
+      if (generation !== refreshGenerationRef.current) return;
       setDiscovered(rows);
     } catch (e) {
+      if (generation !== refreshGenerationRef.current) return;
       setRefreshError(errLikeToLogString(e));
       console.debug('[ReticulumMapPanel] refresh ' + errLikeToLogString(e));
     } finally {
-      setLoading(false);
+      if (generation === refreshGenerationRef.current) {
+        setLoading(false);
+      }
     }
   }, [clearDiscovered, setDiscovered, setLoading, stackConfigured]);
 
@@ -399,7 +406,11 @@ export default function ReticulumMapPanel({
                 position={[row.latitude, row.longitude]}
                 icon={buildMarkerIcon(markerColor(row.reachable, basemap.isDark))}
                 eventHandlers={{
-                  click: () => onPeerClick?.(row.transport_id),
+                  click: () => {
+                    if (row.peerDetailHash) {
+                      onPeerClick?.(row.peerDetailHash);
+                    }
+                  },
                 }}
               >
                 <Popup>

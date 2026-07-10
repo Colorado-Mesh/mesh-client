@@ -4,12 +4,15 @@ import {
   haversineDistanceMeters,
   joinRmapDiscoveryWithPeers,
   matchesRmapInterfaceFilter,
+  resolveRmapPeerDetailHash,
   rmapLoRaParamsMatch,
 } from '@/renderer/lib/reticulum/reticulumDiscoveryMapLayout';
 import type {
   ReticulumPeerWireRow,
   ReticulumRmapDiscoveredWireRow,
 } from '@/shared/reticulum-types';
+
+const nowHeard = () => Math.floor(Date.now() / 1000);
 
 function sampleRow(
   partial: Partial<ReticulumRmapDiscoveredWireRow> = {},
@@ -26,7 +29,7 @@ function sampleRow(
     hops: 1,
     stamp_value: 14,
     discovered: 1,
-    last_heard: 2,
+    last_heard: nowHeard(),
     heard_count: 1,
     status: 'available',
     has_coordinates: true,
@@ -41,6 +44,21 @@ describe('reticulumDiscoveryMapLayout', () => {
     const layout = joinRmapDiscoveryWithPeers(discovered, peers);
     expect(layout.markers).toHaveLength(1);
     expect(layout.markers[0]?.reachable).toBe(true);
+    expect(layout.markers[0]?.peerDetailHash).toBe('deadbeef'.repeat(4));
+  });
+
+  it('resolveRmapPeerDetailHash matches via_hash when destination differs', () => {
+    const transportId = 'cafebabe'.repeat(4);
+    const peers: ReticulumPeerWireRow[] = [
+      { destination_hash: 'deadbeef'.repeat(4), via_hash: transportId, hops: 2 },
+    ];
+    expect(resolveRmapPeerDetailHash(transportId, peers)).toBe(transportId);
+  });
+
+  it('joinRmapDiscoveryWithPeers leaves peerDetailHash null for heard-only rows', () => {
+    const discovered = [sampleRow({ transport_id: 'unknown'.repeat(4) })];
+    const layout = joinRmapDiscoveryWithPeers(discovered, []);
+    expect(layout.markers[0]?.peerDetailHash).toBeNull();
   });
 
   it('joinRmapDiscoveryWithPeers splits list-only rows without coords', () => {

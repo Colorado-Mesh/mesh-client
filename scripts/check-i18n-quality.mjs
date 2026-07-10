@@ -3191,6 +3191,91 @@ function checkRepeatersCliIssues(ctx) {
   return issues;
 }
 
+const RETICULUM_MAP_REACHABLE_KEY = 'reticulumMap.reachable';
+const RETICULUM_MAP_HEARD_ONLY_KEY = 'reticulumMap.heardOnly';
+const RETICULUM_MAP_OPEN_GLOBAL_KEY = 'reticulumMap.openGlobalMap';
+const RETICULUM_MAP_OPEN_NODE_ARIA_KEY = 'reticulumMap.openNodeAria';
+const RETICULUM_MAP_FILTER_BACKBONE_KEY = 'reticulumMap.filter.backbone';
+
+const RETICULUM_MAP_REACHABLE_FALSE_FRIENDS = [
+  {
+    re: /lexique de la théorie des graphes/i,
+    hint: 'use network-reachable wording, not graph theory',
+  },
+  { re: /^greifbar\.?$/i, hint: 'use "Erreichbar", not affordable Greifbar' },
+  { re: /^reachable$/i, hint: 'translate reachable for network path table' },
+];
+
+const RETICULUM_MAP_BACKBONE_FALSE_FRIENDS = [
+  { re: /colonne vertébrale/i, hint: 'use network backbone, not spine/anatomy' },
+  { re: /^椎骨$/i, hint: 'use Backbone or network backbone, not vertebra' },
+];
+
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkReticulumMapIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith('reticulumMap.') && !flatKey.startsWith('reticulumRmapDiscovery.')) {
+    return issues;
+  }
+
+  if (flatKey === RETICULUM_MAP_OPEN_GLOBAL_KEY && /^\[.*\?]$/.test(val)) {
+    issues.push('reticulumMap.openGlobalMap must not use CAT […?] placeholder');
+  }
+
+  if (flatKey === RETICULUM_MAP_REACHABLE_KEY && locale !== 'en') {
+    if (val === enVal) {
+      issues.push('reticulumMap.reachable must be translated');
+    }
+    for (const { re, hint } of RETICULUM_MAP_REACHABLE_FALSE_FRIENDS) {
+      if (re.test(val)) {
+        issues.push(`reticulumMap.reachable false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (flatKey === RETICULUM_MAP_HEARD_ONLY_KEY && locale !== 'en' && val === enVal) {
+    issues.push('reticulumMap.heardOnly must be translated');
+  }
+
+  if (
+    flatKey === RETICULUM_MAP_OPEN_NODE_ARIA_KEY &&
+    enVal.includes('{{name}}') &&
+    locale !== 'en'
+  ) {
+    for (const { re, hint } of [
+      { re: /détails de \{\{name\}\}/i, hint: 'use show-on-map wording, not open details' },
+      { re: /details für \{\{name\}\}/i, hint: 'use show-on-map wording, not open details' },
+      { re: /\{\{name\}\}の詳細/i, hint: 'use show-on-map wording, not open details' },
+    ]) {
+      if (re.test(val)) {
+        issues.push(`reticulumMap.openNodeAria false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (flatKey === RETICULUM_MAP_FILTER_BACKBONE_KEY) {
+    for (const { re, hint } of RETICULUM_MAP_BACKBONE_FALSE_FRIENDS) {
+      if (re.test(val)) {
+        issues.push(`reticulumMap.filter.backbone false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    flatKey === 'reticulumRmapDiscovery.gpsRequiredTitle' &&
+    locale === 'ru' &&
+    /sono necessarie/i.test(val)
+  ) {
+    issues.push('reticulumRmapDiscovery.gpsRequiredTitle must be Russian, not Italian');
+  }
+
+  return issues;
+}
+
 const LOCALE_STRING_QUALITY_CHECKS = [
   checkCatEncodingAndMeshtasticIssues,
   checkMustTranslateAndFormFieldIssues,
@@ -3214,6 +3299,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkBootSequenceTransportIssues,
   checkReticulumDefaultHubKeyIssues,
   checkRepeatersCliIssues,
+  checkReticulumMapIssues,
 ];
 
 /**

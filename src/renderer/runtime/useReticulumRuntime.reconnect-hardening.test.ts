@@ -57,3 +57,19 @@ describe('useReticulumRuntime manual disconnect must not auto-reconnect', () => 
     );
   });
 });
+
+describe('useReticulumRuntime RMAP discovery map', () => {
+  it('routes rmap.discovery WS events through setDiscovered', () => {
+    expect(SOURCE).toMatch(/evt\.type === 'rmap\.discovery'[\s\S]*?setDiscovered\(p\.discovered\)/);
+  });
+
+  it('clears discovery map and peer store on disconnect and sidecar stop', () => {
+    expect(SOURCE).toContain('useReticulumDiscoveryMapStore.getState().clear()');
+    expect(SOURCE).toContain('useReticulumPeerStore.getState().clearPeers()');
+    const tearDownRe =
+      /const tearDownFromSidecarStop = useCallback\([\s\S]*?\}, \[syncConnectionStore\]\);/;
+    const tearDownBody = tearDownRe.exec(SOURCE)?.[0];
+    expect(tearDownBody).toMatch(/useReticulumDiscoveryMapStore\.getState\(\)\.clear\(\)/);
+    expect(tearDownBody).toMatch(/useReticulumPeerStore\.getState\(\)\.clearPeers\(\)/);
+  });
+});

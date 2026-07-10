@@ -16,12 +16,29 @@ import { useReticulumDiscoveryMapStore } from '@/renderer/stores/reticulumDiscov
 
 const flyToMock = vi.fn();
 
-const { mapContainerMock, markerMock } = vi.hoisted(() => ({
-  mapContainerMock: vi.fn(({ children }: { children: React.ReactNode }) => (
-    <div data-testid="map-container">{children}</div>
-  )),
-  markerMock: vi.fn(() => null),
-}));
+const {
+  mapContainerMock,
+  markerMock,
+  fetchReticulumRmapDiscoveredMock,
+  peerStoreState,
+  markerLastPropsRef,
+} = vi.hoisted(() => {
+  const markerLastPropsRef = {
+    current: undefined as { eventHandlers?: { click?: () => void } } | undefined,
+  };
+  return {
+    mapContainerMock: vi.fn(({ children }: { children: React.ReactNode }) => (
+      <div data-testid="map-container">{children}</div>
+    )),
+    markerMock: vi.fn((props: { eventHandlers?: { click?: () => void } }) => {
+      markerLastPropsRef.current = props;
+      return null;
+    }),
+    fetchReticulumRmapDiscoveredMock: vi.fn().mockResolvedValue([]),
+    peerStoreState: { peers: new Map<string, unknown>() },
+    markerLastPropsRef,
+  };
+});
 
 vi.mock('react-leaflet', () => ({
   MapContainer: mapContainerMock,
@@ -36,7 +53,7 @@ vi.mock('react-leaflet', () => ({
 }));
 
 vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
-  fetchReticulumRmapDiscovered: vi.fn().mockResolvedValue([]),
+  fetchReticulumRmapDiscovered: fetchReticulumRmapDiscoveredMock,
   isReticulumSidecarRunning: vi.fn().mockResolvedValue(true),
 }));
 
@@ -51,13 +68,18 @@ vi.mock('@/renderer/components/map/leafletMapControls', () => ({
 
 vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
   useReticulumPeerStore: (selector: (s: { peers: Map<string, unknown> }) => unknown) =>
-    selector({ peers: new Map() }),
+    selector(peerStoreState),
 }));
 
 describe('ReticulumMapPanel', () => {
   beforeEach(() => {
     useReticulumDiscoveryMapStore.getState().clear();
+    peerStoreState.peers = new Map();
     flyToMock.mockClear();
+    markerMock.mockClear();
+    markerLastPropsRef.current = undefined;
+    fetchReticulumRmapDiscoveredMock.mockReset();
+    fetchReticulumRmapDiscoveredMock.mockResolvedValue([]);
   });
 
   it('shows empty state when stack is off', () => {
@@ -91,7 +113,7 @@ describe('ReticulumMapPanel', () => {
         hops: 1,
         stamp_value: 14,
         discovered: 1,
-        last_heard: 2,
+        last_heard: Math.floor(Date.now() / 1000),
         heard_count: 1,
         status: 'available',
         has_coordinates: true,
@@ -116,7 +138,7 @@ describe('ReticulumMapPanel', () => {
         hops: 1,
         stamp_value: 14,
         discovered: 1,
-        last_heard: 2,
+        last_heard: Math.floor(Date.now() / 1000),
         heard_count: 1,
         status: 'available',
         has_coordinates: true,
@@ -145,7 +167,7 @@ describe('ReticulumMapPanel', () => {
         hops: 1,
         stamp_value: 14,
         discovered: 1,
-        last_heard: 2,
+        last_heard: Math.floor(Date.now() / 1000),
         heard_count: 1,
         status: 'available',
         has_coordinates: true,
@@ -156,6 +178,62 @@ describe('ReticulumMapPanel', () => {
     Object.defineProperty(list, 'scrollTop', { value: 400, configurable: true });
     fireEvent.scroll(list);
     expect(screen.getByRole('button', { name: 'aria.backToTop' })).toBeInTheDocument();
+  });
+
+  it('shows refresh error without clearing existing discoveries', async () => {
+    useReticulumDiscoveryMapStore.getState().setDiscovered([
+      {
+        discovery_hash: 'abc',
+        transport_id: 'aa'.repeat(16),
+        discovery_name: 'LoRa Node',
+        interface_type: 'RNodeInterface',
+        latitude: 40,
+        longitude: -105,
+        height: 0,
+        transport_enabled: true,
+        hops: 1,
+        stamp_value: 14,
+        discovered: 1,
+        last_heard: Math.floor(Date.now() / 1000),
+        heard_count: 1,
+        status: 'available',
+        has_coordinates: true,
+      },
+    ]);
+    fetchReticulumRmapDiscoveredMock.mockRejectedValue(new Error('sidecar timeout'));
+    render(<ReticulumMapPanel stackConfigured={true} />);
+    expect(await screen.findByText(/reticulumMap\.refreshFailed/)).toBeInTheDocument();
+    expect(screen.getByText('LoRa Node')).toBeInTheDocument();
+  });
+
+  it('calls onPeerClick with peerDetailHash when marker is clicked', () => {
+    const onPeerClick = vi.fn();
+    const transportId = 'deadbeef'.repeat(4);
+    peerStoreState.peers = new Map([
+      [transportId, { destination_hash: transportId, hops: 1, last_seen: 1 }],
+    ]);
+    useReticulumDiscoveryMapStore.getState().setDiscovered([
+      {
+        discovery_hash: 'abc',
+        transport_id: transportId,
+        discovery_name: 'LoRa Node',
+        interface_type: 'RNodeInterface',
+        latitude: 40,
+        longitude: -105,
+        height: 0,
+        transport_enabled: true,
+        hops: 1,
+        stamp_value: 14,
+        discovered: 1,
+        last_heard: Math.floor(Date.now() / 1000),
+        heard_count: 1,
+        status: 'available',
+        has_coordinates: true,
+      },
+    ]);
+    render(<ReticulumMapPanel stackConfigured={true} onPeerClick={onPeerClick} />);
+    markerLastPropsRef.current?.eventHandlers?.click?.();
+    expect(onPeerClick).toHaveBeenCalledWith(transportId);
   });
 
   it('has no serious axe violations on filter pills', async () => {
@@ -172,7 +250,7 @@ describe('ReticulumMapPanel', () => {
         hops: 1,
         stamp_value: 14,
         discovered: 1,
-        last_heard: 2,
+        last_heard: Math.floor(Date.now() / 1000),
         heard_count: 1,
         status: 'available',
         has_coordinates: true,

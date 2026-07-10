@@ -149,10 +149,11 @@ export async function fetchReticulumRmapDiscovered(): Promise<ReticulumRmapDisco
     };
     return Array.isArray(body.discovered) ? body.discovered : [];
   } catch (e) {
-    if (!isReticulumSidecarExpectedProxyError(e)) {
-      console.debug('[reticulumSidecarReads] rmap discovered ' + errLikeToLogString(e));
+    if (isReticulumSidecarExpectedProxyError(e)) {
+      return [];
     }
-    return [];
+    console.debug('[reticulumSidecarReads] rmap discovered ' + errLikeToLogString(e));
+    throw e instanceof Error ? e : new Error(String(e));
   }
 }
 

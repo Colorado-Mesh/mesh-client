@@ -54,11 +54,7 @@ import {
   reticulumDbRowToMessageRecord,
 } from '@/renderer/lib/storeRecordAdapters';
 import { reticulumHashForNodeId } from '@/renderer/stores/reticulumPeerStore';
-import type {
-  ReticulumRmapDiscoveredWireRow,
-  ReticulumSidecarEvent,
-  ReticulumWirePacketRow,
-} from '@/shared/reticulum-types';
+import type { ReticulumSidecarEvent, ReticulumWirePacketRow } from '@/shared/reticulum-types';
 import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
@@ -411,9 +407,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (evt.type === 'rmap.discovery' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { discovered?: unknown };
         if (Array.isArray(p.discovered)) {
-          useReticulumDiscoveryMapStore
-            .getState()
-            .setDiscovered(p.discovered as ReticulumRmapDiscoveredWireRow[]);
+          useReticulumDiscoveryMapStore.getState().setDiscovered(p.discovered);
         }
       }
       if (evt.type === 'nomadnetwork.node') {
@@ -463,6 +457,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
     setSelfLxmfHash(null);
     rawPacketAppenderRef.current?.clearPending();
     setRawPackets([]);
+    useReticulumDiscoveryMapStore.getState().clear();
+    useReticulumPeerStore.getState().clearPeers();
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);
@@ -572,6 +568,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     rawPacketAppenderRef.current?.clearPending();
     setRawPackets([]);
     useReticulumDiscoveryMapStore.getState().clear();
+    useReticulumPeerStore.getState().clearPeers();
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);

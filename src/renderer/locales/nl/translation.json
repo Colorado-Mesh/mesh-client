@@ -1037,7 +1037,8 @@
       "noPublishTargets": "Geen ingeschakelde lokale interfaces om op RMAP te publiceren.",
       "syncSuccess": "RMAP-detectie gesynchroniseerd met interface.",
       "openGlobalMap": "Wereldkaart",
-      "openGlobalMapAria": "Open RMAP v4 globale kaart op rmap.world"
+      "openGlobalMapAria": "Open RMAP v4 globale kaart op rmap.world",
+      "syncFailed": "Synchronisatie van RMAP-detectie mislukt."
     }
   },
   "contactGroupsModal": {
@@ -3593,7 +3594,9 @@
     },
     "hint": "Is detecteerbaar=ja en past GPS-coördinaten toe op alle ingeschakelde RMAP-compatibele interfaces (RNode, KISS, BLE-peer, I2P, UDP, pipe). Gebruik per interface RMAP-schakelaars op Verbinding voor FINE-besturing. LoRa-paden maken ook transport en de rmap.world-hub mogelijk.",
     "openGlobalMap": "Globale kaart openen",
-    "openGlobalMapAria": "Open RMAP v4 globale kaart op rmap.world"
+    "openGlobalMapAria": "Open RMAP v4 globale kaart op rmap.world",
+    "applyPartialSuccess": "RMAP-instellingen toegepast op {{applied}} van {{total}} interfaces.",
+    "disablePartialSuccess": "RMAP-publicatie uitgeschakeld op {{applied}} van {{total}} interfaces."
   },
   "reticulumTopology": {
     "title": "Netwerktopologie",

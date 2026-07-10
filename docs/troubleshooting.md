@@ -956,6 +956,10 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 4. **Missing GPS in announce** — nodes without latitude/longitude appear in the list panel only (no map marker).
 5. **Global coverage** — the in-app map shows **heard** opt-in nodes only; use **Global map** (rmap.world) for worldwide view.
 6. **`discover_interfaces`** — sidecar enables `discover_interfaces = Yes` on bootstrap; restart the stack after upgrading if the Map tab stays empty on an old config.
+7. **Stub sidecar** — dev builds without `rns-stack` return an empty discovered list.
+8. **Filter empty** — interface-type filter pills may exclude all rows; try **All**.
+9. **Refresh errors** — transient sidecar errors show inline `refreshFailed` without clearing last-good markers.
+10. **No publish-capable interface** — Auto and outbound TCP client types cannot publish RMAP discovery.
 
 ### Reticulum interface add/edit/delete fails
 

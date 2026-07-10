@@ -141,7 +141,7 @@ export function ReticulumRmapDiscoveryControls({
           '/api/v1/stack/settings',
         )) as Record<string, unknown>;
         const heightParsed = heightMeters.trim() ? Number(heightMeters) : null;
-        await applyReticulumRmapDiscovery({
+        const result = await applyReticulumRmapDiscovery({
           interfaces,
           discoveryName: identityDisplayName,
           announceIntervalMin,
@@ -152,12 +152,40 @@ export function ReticulumRmapDiscoveryControls({
           reachableOn: reachableOn.trim() || null,
           stackSettings: parseStackSettings(stackRaw),
         });
-        addToast(t('reticulumRmapDiscovery.applySuccess'), 'success');
+        if (result.errors.length > 0) {
+          if (result.applied === 0) {
+            addToast(t('reticulumRmapDiscovery.applyFailed', { error: result.errors[0] }), 'error');
+            return;
+          }
+          addToast(
+            t('reticulumRmapDiscovery.applyPartialSuccess', {
+              applied: result.applied,
+              total: result.total,
+            }),
+            'warning',
+          );
+        } else {
+          addToast(t('reticulumRmapDiscovery.applySuccess'), 'success');
+        }
         setPublishOn(true);
         setShowRestartConfirm(true);
       } else {
-        await disableReticulumRmapDiscovery(interfaces);
-        addToast(t('reticulumRmapDiscovery.disableSuccess'), 'success');
+        const result = await disableReticulumRmapDiscovery(interfaces);
+        if (result.errors.length > 0) {
+          if (result.applied === 0) {
+            addToast(t('reticulumRmapDiscovery.applyFailed', { error: result.errors[0] }), 'error');
+            return;
+          }
+          addToast(
+            t('reticulumRmapDiscovery.disablePartialSuccess', {
+              applied: result.applied,
+              total: result.total,
+            }),
+            'warning',
+          );
+        } else {
+          addToast(t('reticulumRmapDiscovery.disableSuccess'), 'success');
+        }
         setPublishOn(false);
         setShowRestartConfirm(true);
       }

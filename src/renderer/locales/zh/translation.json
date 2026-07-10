@@ -1037,7 +1037,8 @@
       "noPublishTargets": "没有启用要在RMAP上发布的本地接口。",
       "syncSuccess": "RMAP发现已同步到接口。",
       "openGlobalMap": "全球测绘",
-      "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图"
+      "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图",
+      "syncFailed": "RMAP发现同步失败。"
     }
   },
   "contactGroupsModal": {
@@ -3593,7 +3594,9 @@
     },
     "hint": "将discoverable = yes和应用GPS坐标应用于所有启用的支持RMAP的接口（ RNode、KISS、BLE对等点、I2P、UDP、管道）。使用连接上的每个接口RMAP切换进行精细控制。LoRa路径还支持传输和rmap.world集线器。",
     "openGlobalMap": "全球测绘",
-    "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图"
+    "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图",
+    "applyPartialSuccess": "RMAP设置已应用于{{applied}}/{{total}}接口。",
+    "disablePartialSuccess": "在{{applied}}/{{total}}接口上禁用RMAP发布。"
   },
   "reticulumTopology": {
     "title": "网络拓扑图",

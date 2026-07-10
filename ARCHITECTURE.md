@@ -31,7 +31,7 @@ Path alias `@/*` maps to `src/*` (see `tsconfig.json`).
 
 ## Multi-protocol (Meshtastic + MeshCore + Reticulum)
 
-All three stacks can run at once: independent sessions, header switcher for focus (green / cyan / amber), inactive protocols stay connected, per-protocol unread badges. Meshtastic and MeshCore use `ConnectionDriver` for RF/MQTT; Reticulum uses the AGPL sidecar (`useReticulumRuntime`, no Noble/MQTT on that tab). Capabilities differ (e.g. Meshtastic: full Security PKI/Modules/TAK; MeshCore: partial Security backup/restore, Repeaters, **Rooms** BBS; Reticulum: LXMF DMs, propagation, RNode flasher, Topology). Sidebar tab slots are fixed in `src/renderer/lib/tabSlotIds.ts`; visibility is computed in `src/renderer/lib/appTabMappings.ts` (`computeTabMappings()` consumed from `App.tsx`); **Rooms** requires `hasRoomServersPanel`, Reticulum panels gate on `hasReticulumNetworkPanel` / `hasReticulumInterfaceConfig`, **Security**/`TAK` require capability flags (~16 visible tabs per LoRa protocol; MeshCore hides TAK; Reticulum hides LoRa-specific tabs).
+All three stacks can run at once: independent sessions, header switcher for focus (green / cyan / amber), inactive protocols stay connected, per-protocol unread badges. Meshtastic and MeshCore use `ConnectionDriver` for RF/MQTT; Reticulum uses the AGPL sidecar (`useReticulumRuntime`, no Noble/MQTT on that tab). Capabilities differ (e.g. Meshtastic: full Security PKI/Modules/TAK; MeshCore: partial Security backup/restore, Repeaters, **Rooms** BBS; Reticulum: LXMF DMs, propagation, RNode flasher, **Map** (RMAP v4 discovery), Topology). Sidebar tab slots are fixed in `src/renderer/lib/tabSlotIds.ts`; visibility is computed in `src/renderer/lib/appTabMappings.ts` (`computeTabMappings()` consumed from `App.tsx`); **Rooms** requires `hasRoomServersPanel`, Reticulum panels gate on `hasReticulumNetworkPanel` / `hasReticulumInterfaceConfig` / `hasReticulumDiscoveryMap`, **Security**/`TAK` require capability flags (~16 visible tabs per LoRa protocol; MeshCore hides TAK; Reticulum hides LoRa-specific tabs).
 
 **Feature gating:** use `ProtocolCapabilities` via `useRadioProvider(protocol)` from `src/renderer/lib/radio/providerFactory.ts`; do not branch on raw `protocol === 'meshcore'` strings.
 
@@ -80,7 +80,7 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 
 - **Meshtastic:** `runtime/useMeshtasticRuntime.ts`, `lib/protocols/MeshtasticProtocol.ts`, `lib/connection.ts` (`createConnection`).
 - **MeshCore:** `runtime/useMeshcoreRuntime.ts`, `lib/protocols/MeshCoreProtocol.ts`, `@liamcottle/meshcore.js`.
-- **Reticulum:** `runtime/useReticulumRuntime.ts`, `lib/reticulum/reticulumSession.ts`, `reticulum-sidecar/` (AGPL `mesh-client-reticulum`); IPC `reticulum:*` in main; docs [docs/reticulum.md](docs/reticulum.md), [docs/reticulum-sidecar-ipc.md](docs/reticulum-sidecar-ipc.md).
+- **Reticulum:** `runtime/useReticulumRuntime.ts`, `lib/reticulum/reticulumSession.ts`, `components/ReticulumMapPanel.tsx`, `stores/reticulumDiscoveryMapStore.ts`, `reticulum-sidecar/` (AGPL `mesh-client-reticulum`); IPC `reticulum:*` in main; RMAP map data: sidecar `DiscoveryStore` → REST/WS → store → join `reticulumPeerStore` for reachability; docs [docs/reticulum.md](docs/reticulum.md), [docs/reticulum-sidecar-ipc.md](docs/reticulum-sidecar-ipc.md).
 
 ### Database
 
