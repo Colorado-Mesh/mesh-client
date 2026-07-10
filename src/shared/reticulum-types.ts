@@ -110,3 +110,32 @@ export interface ReticulumContactWireRow {
   last_heard?: number | null;
   favorited?: boolean;
 }
+
+/** Sidecar wire row for GET /api/v1/rmap/discovered and WS `rmap.discovery`. */
+export interface ReticulumRmapDiscoveredWireRow {
+  discovery_hash: string;
+  transport_id: string;
+  discovery_name: string;
+  interface_type: string;
+  latitude: number;
+  longitude: number;
+  height: number;
+  transport_enabled: boolean;
+  reachable_on?: string | null;
+  port?: number | null;
+  frequency?: number | null;
+  bandwidth?: number | null;
+  spreading_factor?: number | null;
+  coding_rate?: number | null;
+  modulation?: string | null;
+  channel?: number | null;
+  hops: number;
+  stamp_value: number;
+  discovered: number;
+  last_heard: number;
+  heard_count: number;
+  status: string;
+  has_coordinates: boolean;
+  /** Set by renderer when joined with path-table peers. */
+  reachable?: boolean;
+}

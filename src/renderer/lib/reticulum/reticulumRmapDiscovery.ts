@@ -11,6 +11,8 @@ import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulu
 import { isValidConnectHost } from '@/shared/connectHost';
 import { isValidLatLon } from '@/shared/geoCoords';
 
+export const RMAP_GLOBAL_MAP_URL = 'https://rmap.world/';
+
 export const RMAP_ANNOUNCE_INTERVAL_DEFAULT_MIN = 360;
 export const RMAP_ANNOUNCE_INTERVAL_MIN_MIN = 60;
 export const RMAP_ANNOUNCE_INTERVAL_MIN_MAX = 1440;

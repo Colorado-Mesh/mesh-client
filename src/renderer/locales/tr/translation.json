@@ -1035,7 +1035,9 @@
       "openSettingsAria": "Ağ sekmesinde RMAP keşif ayarlarını aç",
       "needsSync": "{{count}} etkin yerel arabirim(ler) in RMAP keşif senkronizasyonuna ihtiyacı var",
       "noPublishTargets": "RMAP'te yayınlanacak etkinleştirilmiş yerel arayüz yok.",
-      "syncSuccess": "RMAP keşfi arayüzle senkronize edildi."
+      "syncSuccess": "RMAP keşfi arayüzle senkronize edildi.",
+      "openGlobalMap": "Küresel harita",
+      "openGlobalMapAria": "RMAP v4 global haritasını rmap.world'de açın"
     }
   },
   "contactGroupsModal": {
@@ -3589,7 +3591,9 @@
       "invalidHost": "Tarihinde erişilebilen için geçersiz ana bilgisayar adı.",
       "tooLong": "Değerde ulaşılabilirlik çok uzun."
     },
-    "hint": "Etkinleştirilmiş tüm RMAP özellikli arayüzlere (RNode, KISS, BLE peer, I2P, UDP, pipe) bulunabilir=evet ve Uygulama GPS koordinatlarını uygular. İnce kontrol için Bağlantı üzerindeki arayüz başına RMAP geçişlerini kullanın. LoRa yolları ayrıca ulaşımı ve rmap.world hub'ını etkinleştirir."
+    "hint": "Etkinleştirilmiş tüm RMAP özellikli arayüzlere (RNode, KISS, BLE peer, I2P, UDP, pipe) bulunabilir=evet ve Uygulama GPS koordinatlarını uygular. İnce kontrol için Bağlantı üzerindeki arayüz başına RMAP geçişlerini kullanın. LoRa yolları ayrıca ulaşımı ve rmap.world hub'ını etkinleştirir.",
+    "openGlobalMap": "Küresel haritayı aç",
+    "openGlobalMapAria": "RMAP v4 global haritasını rmap.world'de açın"
   },
   "reticulumTopology": {
     "title": "Ağ topolojisi",
@@ -3995,5 +3999,43 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "{{version}} sürümü mevcut.",
     "menuToastErrorTitle": "Güncelleme kontrolü başarısız oldu"
+  },
+  "reticulumMap": {
+    "title": "Keşif haritası",
+    "subtitle": "Yığınınız tarafından duyulan RMAP v4 arayüzlerini etkinleştirme (yerel görünüm)",
+    "openGlobalMap": "Küresel harita",
+    "openGlobalMapAria": "RMAP v4 global haritasını rmap.world'de açın",
+    "openPublishSettings": "Yayın Ayarları",
+    "openPublishSettingsAria": "Reticulum Network RMAP yayınlama ayarlarını aç",
+    "refresh": "Yenile",
+    "refreshAria": "Keşif haritasını yenile",
+    "refreshFailed": "Keşif haritası yenilenemedi: {{error}}",
+    "countSummary": "Haritada {{markers}} · Yalnızca {{list}} listesi",
+    "listTitle": "Keşfedilen arayüzler",
+    "selfMarker": "Uygulama GPS konumunuz",
+    "reachable": "Ulaşılabilir",
+    "heardOnly": "Sadece duydum (yol tablosunda değil)",
+    "noCoords": "GPS yok",
+    "lastHeard": "Son duyma {{time}}",
+    "openNodeAria": "{{name}} için ayrıntıları aç",
+    "filter": {
+      "all": "Tümü",
+      "rnode": "LoRa",
+      "backbone": "Omurga",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "Diğer"
+    },
+    "status": {
+      "available": "Fresh",
+      "unknown": "Bilinmiyor",
+      "stale": "bayat"
+    },
+    "empty": {
+      "stackOff": "RMAP keşif duyurularını duymak için Reticulum yığınını başlatın.",
+      "noDiscoveries": "Henüz hiçbir RMAP keşif arayüzü duyulmadı.",
+      "filterEmpty": "Bu filtreyle eşleşen arabirim yok.",
+      "hint": "Düğümler yalnızca operatörler bulunabilir=evet'i etkinleştirdiğinde görünür. LoRa yolları, duyuruları aktarmak için bir TCP hub'ına (örneğin rmap.world:4242) ihtiyaç duyar. Dünya çapında kapsama alanı için küresel harita bağlantısını kullanın."
+    }
   }
 }

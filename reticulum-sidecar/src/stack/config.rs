@@ -1142,6 +1142,18 @@ fn write_block_section(out: &mut String, section: &str, block: &IniBlock) {
     }
 }
 
+/// Ensure RNS listens for `rnstransport.discovery.interface` announces (RMAP v4 map ingest).
+pub fn ensure_discover_interfaces_enabled(config_dir: &Path) -> Result<bool, String> {
+    let content = read_config(config_dir)?;
+    let mut parsed = parse_config(&content)?;
+    if parsed.reticulum.get_bool("discover_interfaces") == Some(true) {
+        return Ok(false);
+    }
+    parsed.reticulum.set("discover_interfaces", "Yes");
+    write_config(config_dir, &serialize_config(&parsed))?;
+    Ok(true)
+}
+
 fn default_config_content() -> String {
     serialize_config(&ParsedConfig {
         reticulum: {
@@ -1149,6 +1161,7 @@ fn default_config_content() -> String {
             b.set("enable_transport", "No");
             b.set("share_instance", "Yes");
             b.set("instance_name", "default");
+            b.set("discover_interfaces", "Yes");
             b
         },
         logging: {
@@ -1748,5 +1761,24 @@ longitude = -105.0
         assert!(validate_lat_lon(40.0, -105.0).is_ok());
         assert!(validate_lat_lon(91.0, 0.0).is_err());
         assert!(validate_lat_lon(0.0, 181.0).is_err());
+    }
+
+    #[test]
+    fn ensure_discover_interfaces_enabled_sets_yes_when_missing() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"[reticulum]
+enable_transport = No
+share_instance = Yes
+"#,
+        )
+        .unwrap();
+        assert!(ensure_discover_interfaces_enabled(&dir).unwrap());
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("discover_interfaces = Yes"));
+        assert!(!ensure_discover_interfaces_enabled(&dir).unwrap());
+        let _ = fs::remove_dir_all(&dir);
     }
 }

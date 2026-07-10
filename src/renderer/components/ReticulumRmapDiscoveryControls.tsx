@@ -17,6 +17,7 @@ import {
   ReticulumRmapGpsRequiredError,
   ReticulumRmapValidationError,
   RMAP_ANNOUNCE_INTERVAL_DEFAULT_MIN,
+  RMAP_GLOBAL_MAP_URL,
   RMAP_SETTINGS_KEYS,
   validateRmapReachableOn,
 } from '@/renderer/lib/reticulum/reticulumRmapDiscovery';
@@ -207,15 +208,27 @@ export function ReticulumRmapDiscoveryControls({
             />
             <span>{t('reticulumRmapDiscovery.publishToggle')}</span>
           </label>
-          <a
-            href="https://rmap.world/info.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-amber-300 hover:text-amber-200"
-          >
-            {t('reticulumRmapDiscovery.helpLink')}
-            <ExternalLink className="h-3 w-3" aria-hidden />
-          </a>
+          <div className="flex flex-wrap items-center gap-3">
+            <a
+              href={RMAP_GLOBAL_MAP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-cyan-300 hover:text-cyan-200"
+              aria-label={t('reticulumRmapDiscovery.openGlobalMapAria')}
+            >
+              {t('reticulumRmapDiscovery.openGlobalMap')}
+              <ExternalLink className="h-3 w-3" aria-hidden />
+            </a>
+            <a
+              href="https://rmap.world/info.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-amber-300 hover:text-amber-200"
+            >
+              {t('reticulumRmapDiscovery.helpLink')}
+              <ExternalLink className="h-3 w-3" aria-hidden />
+            </a>
+          </div>
         </div>
         <p className="text-muted text-xs">{t('reticulumRmapDiscovery.hint')}</p>
         {coords ? (

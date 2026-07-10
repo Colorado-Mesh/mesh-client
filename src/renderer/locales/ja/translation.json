@@ -1035,7 +1035,9 @@
       "openSettingsAria": "[ネットワーク]タブでRMAP検出設定を開く",
       "needsSync": "{{count}}有効なローカルインターフェースにはRMAP検出の同期が必要です",
       "noPublishTargets": "RMAPに公開する有効なローカルインターフェイスはありません。",
-      "syncSuccess": "RMAP検出がインターフェイスに同期されました。"
+      "syncSuccess": "RMAP検出がインターフェイスに同期されました。",
+      "openGlobalMap": "グローバル マップの種類",
+      "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く"
     }
   },
   "contactGroupsModal": {
@@ -3589,7 +3591,9 @@
       "invalidHost": "に到達可能なホスト名が無効です。",
       "tooLong": "値で到達可能な時間が長すぎます。"
     },
-    "hint": "すべての有効なRMAP対応インターフェイス（ RNode、KISS、BLEピア、I 2 P、UDP、パイプ）にdiscoverable = yesとApp GPS座標を適用します。インターフェースごとのRMAPトグルを接続で使用して、細かい制御を行います。LoRaパスは、トランスポートとrmap.worldハブも有効にします。"
+    "hint": "すべての有効なRMAP対応インターフェイス（ RNode、KISS、BLEピア、I 2 P、UDP、パイプ）にdiscoverable = yesとApp GPS座標を適用します。インターフェースごとのRMAPトグルを接続で使用して、細かい制御を行います。LoRaパスは、トランスポートとrmap.worldハブも有効にします。",
+    "openGlobalMap": "グローバルマップを開く",
+    "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く"
   },
   "reticulumTopology": {
     "title": "ネットワーク・トポロジー",
@@ -3995,5 +3999,43 @@
     "menuToastAvailableTitle": "利用可能なアップデート",
     "menuToastAvailableBody": "バージョン{{version}}が利用できます。",
     "menuToastErrorTitle": "アップデートチェックに失敗しました"
+  },
+  "reticulumMap": {
+    "title": "ディスカバリーマップ",
+    "subtitle": "スタックで聞こえるRMAP v 4インターフェイスのオプトイン（ローカルビュー）",
+    "openGlobalMap": "グローバル マップの種類",
+    "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く",
+    "openPublishSettings": "公開設定",
+    "openPublishSettingsAria": "Reticulum Network RMAP公開設定を開く",
+    "refresh": "再表示",
+    "refreshAria": "ディスカバリーマップの更新",
+    "refreshFailed": "ディスカバリーマップを更新できませんでした： {{error}}",
+    "countSummary": "{{markers}}地図上· {{list}}リストのみ",
+    "listTitle": "検出されたインターフェース",
+    "selfMarker": "アプリのGPS位置",
+    "reachable": "到達可能",
+    "heardOnly": "HEARD ONLY (NOT IN PATH TABLE)",
+    "noCoords": "GPSなし",
+    "lastHeard": "最後に聞いたのは{{time}}",
+    "openNodeAria": "{{name}}の詳細を開く",
+    "filter": {
+      "all": "すべて",
+      "rnode": "LoRa",
+      "backbone": "椎骨",
+      "i2p": "I 2 P",
+      "tcp": "TCP",
+      "other": "その他"
+    },
+    "status": {
+      "available": "フレッシュ（Fresh）",
+      "unknown": "不明",
+      "stale": "期限失効"
+    },
+    "empty": {
+      "stackOff": "Reticulumスタックを起動して、RMAP検出のアナウンスを聞きます。",
+      "noDiscoveries": "RMAP検出インターフェースはまだ聴取されていません。",
+      "filterEmpty": "このフィルターに一致するインターフェースはありません。",
+      "hint": "ノードは、オペレータがdiscoverable = yesを有効にした場合にのみ表示されます。LoRaパスは、アナウンスをリレーするためにTCPハブ（例えば、rmap.world: 4242 ）を必要とする。全世界をカバーするには、グローバルマップリンクを使用してください。"
+    }
   }
 }

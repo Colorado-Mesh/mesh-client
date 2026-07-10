@@ -76,6 +76,9 @@ describe('ReticulumRmapDiscoveryControls', () => {
     expect(screen.getByLabelText('reticulumRmapDiscovery.heightMeters')).toBeInTheDocument();
     expect(screen.getByLabelText('reticulumRmapDiscovery.reachableOn')).toBeInTheDocument();
     expect(screen.getByText('reticulumRmapDiscovery.helpLink')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'reticulumRmapDiscovery.openGlobalMapAria' }),
+    ).toHaveAttribute('href', 'https://rmap.world/');
   });
 
   it('shows GPS warning and blocks apply when coordinates missing', async () => {

@@ -40,6 +40,9 @@ describe('ReticulumRmapConnectionStatus', () => {
       screen.getByRole('button', { name: 'connectionPanel.reticulumRmap.openSettingsAria:{}' }),
     );
     expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole('link', { name: 'connectionPanel.reticulumRmap.openGlobalMapAria:{}' }),
+    ).toHaveAttribute('href', 'https://rmap.world/');
   });
 
   it('shows publishing count and needs-sync warning', () => {

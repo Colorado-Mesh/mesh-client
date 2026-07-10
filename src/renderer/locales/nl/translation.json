@@ -1035,7 +1035,9 @@
       "openSettingsAria": "Open RMAP-detectie-instellingen op het tabblad Netwerk",
       "needsSync": "{{count}} ingeschakelde lokale interface(s) hebben RMAP-detectiesynchronisatie nodig",
       "noPublishTargets": "Geen ingeschakelde lokale interfaces om op RMAP te publiceren.",
-      "syncSuccess": "RMAP-detectie gesynchroniseerd met interface."
+      "syncSuccess": "RMAP-detectie gesynchroniseerd met interface.",
+      "openGlobalMap": "Wereldkaart",
+      "openGlobalMapAria": "Open RMAP v4 globale kaart op rmap.world"
     }
   },
   "contactGroupsModal": {
@@ -3589,7 +3591,9 @@
       "invalidHost": "Ongeldige hostnaam voor bereikbaar op.",
       "tooLong": "Bereikbaar op waarde is te lang."
     },
-    "hint": "Is detecteerbaar=ja en past GPS-coördinaten toe op alle ingeschakelde RMAP-compatibele interfaces (RNode, KISS, BLE-peer, I2P, UDP, pipe). Gebruik per interface RMAP-schakelaars op Verbinding voor FINE-besturing. LoRa-paden maken ook transport en de rmap.world-hub mogelijk."
+    "hint": "Is detecteerbaar=ja en past GPS-coördinaten toe op alle ingeschakelde RMAP-compatibele interfaces (RNode, KISS, BLE-peer, I2P, UDP, pipe). Gebruik per interface RMAP-schakelaars op Verbinding voor FINE-besturing. LoRa-paden maken ook transport en de rmap.world-hub mogelijk.",
+    "openGlobalMap": "Globale kaart openen",
+    "openGlobalMapAria": "Open RMAP v4 globale kaart op rmap.world"
   },
   "reticulumTopology": {
     "title": "Netwerktopologie",
@@ -3995,5 +3999,43 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "Versie {{version}} is beschikbaar.",
     "menuToastErrorTitle": "Updatecontrole mislukt"
+  },
+  "reticulumMap": {
+    "title": "Ontdekkingskaart",
+    "subtitle": "Opt-in RMAP v4 interfaces gehoord door uw stack (lokale weergave)",
+    "openGlobalMap": "Wereldkaart",
+    "openGlobalMapAria": "Open RMAP v4 globale kaart op rmap.world",
+    "openPublishSettings": "ClassiPress instellingen",
+    "openPublishSettingsAria": "Open Reticulum Network RMAP-publicatie-instellingen",
+    "refresh": "Vernieuwen",
+    "refreshAria": "Ontdekkingskaart vernieuwen",
+    "refreshFailed": "Kan ontdekkingskaart niet vernieuwen: {{error}}",
+    "countSummary": "{{markers}} alleen op kaart · {{list}} list",
+    "listTitle": "Ontdekte interfaces",
+    "selfMarker": "GPS-positie van uw app",
+    "reachable": "bereikbaar",
+    "heardOnly": "Alleen gehoord (niet in padtabel)",
+    "noCoords": "Geen GPS",
+    "lastHeard": "Laatst gehoord {{time}}",
+    "openNodeAria": "Open gegevens voor {{name}}",
+    "filter": {
+      "all": "All",
+      "rnode": "LoRa",
+      "backbone": "Ruggengraat",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "Overig"
+    },
+    "status": {
+      "available": "vers",
+      "unknown": "Onbekend",
+      "stale": "muf"
+    },
+    "empty": {
+      "stackOff": "Start de Reticulum-stack om RMAP-detectieaankondigingen te horen.",
+      "noDiscoveries": "Nog geen RMAP-detectie-interfaces gehoord.",
+      "filterEmpty": "Er komen geen interfaces overeen met dit filter.",
+      "hint": "Knooppunten worden alleen weergegeven wanneer operators detecteerbaar inschakelen =ja. LoRa-paden hebben een TCP-hub nodig (bijvoorbeeld rmap.world:4242) om aankondigingen door te geven. Gebruik de wereldwijde kaartlink voor wereldwijde dekking."
+    }
   }
 }

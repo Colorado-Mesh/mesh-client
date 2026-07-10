@@ -1035,7 +1035,9 @@
       "openSettingsAria": "Buka pengaturan penemuan RMAP di tab Jaringan",
       "needsSync": "{{count}} antarmuka lokal yang diaktifkan memerlukan sinkronisasi penemuan RMAP",
       "noPublishTargets": "Tidak ada antarmuka lokal yang diaktifkan untuk dipublikasikan di RMAP.",
-      "syncSuccess": "Penemuan RMAP disinkronkan ke antarmuka."
+      "syncSuccess": "Penemuan RMAP disinkronkan ke antarmuka.",
+      "openGlobalMap": "Peta global",
+      "openGlobalMapAria": "Buka peta global RMAP v4 di rmap.world"
     }
   },
   "contactGroupsModal": {
@@ -3589,7 +3591,9 @@
       "invalidHost": "Nama host tidak valid untuk dapat dihubungi pada.",
       "tooLong": "Nilai Reachable on terlalu panjang."
     },
-    "hint": "Menerapkan koordinat GPS Discoverable=yes dan App ke semua antarmuka berkemampuan RMAP yang diaktifkan (RNode, KISS, BLE peer, I2P, UDP, pipe). Gunakan sakelar RMAP per antarmuka pada Koneksi untuk kontrol yang baik. Jalur LoRa juga memungkinkan transportasi dan hub rmap.world."
+    "hint": "Menerapkan koordinat GPS Discoverable=yes dan App ke semua antarmuka berkemampuan RMAP yang diaktifkan (RNode, KISS, BLE peer, I2P, UDP, pipe). Gunakan sakelar RMAP per antarmuka pada Koneksi untuk kontrol yang baik. Jalur LoRa juga memungkinkan transportasi dan hub rmap.world.",
+    "openGlobalMap": "Buka peta global",
+    "openGlobalMapAria": "Buka peta global RMAP v4 di rmap.world"
   },
   "reticulumTopology": {
     "title": "Topologi jaringan",
@@ -3995,5 +3999,43 @@
     "menuToastAvailableTitle": "Pembaruan tersedia",
     "menuToastAvailableBody": "Versi {{version}} tersedia.",
     "menuToastErrorTitle": "Pemeriksaan pembaruan gagal"
+  },
+  "reticulumMap": {
+    "title": "Peta penemuan",
+    "subtitle": "Antarmuka RMAP v4 ikut serta yang didengar oleh tumpukan Anda (tampilan lokal)",
+    "openGlobalMap": "Peta global",
+    "openGlobalMapAria": "Buka peta global RMAP v4 di rmap.world",
+    "openPublishSettings": "Pengaturan publikasi RMAP",
+    "openPublishSettingsAria": "Buka pengaturan publikasi RMAP Jaringan Reticulum",
+    "refresh": "Perbarui",
+    "refreshAria": "Segarkan peta penemuan",
+    "refreshFailed": "Tidak dapat menyegarkan peta penemuan: {{error}}",
+    "countSummary": "{{markers}} di peta · {{list}} daftar saja",
+    "listTitle": "Antarmuka yang ditemukan",
+    "selfMarker": "Posisi GPS Aplikasi Anda",
+    "reachable": "Mudah dijangkau",
+    "heardOnly": "Hanya terdengar (tidak dalam tabel jalur)",
+    "noCoords": "Tidak ada GPS",
+    "lastHeard": "Terakhir didengar {{time}}",
+    "openNodeAria": "Buka detail untuk {{name}}",
+    "filter": {
+      "all": "Semua",
+      "rnode": "LoRa",
+      "backbone": "Backbone",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "Lainnya"
+    },
+    "status": {
+      "available": "Segar",
+      "unknown": "Tidak Diketahui",
+      "stale": "Basi"
+    },
+    "empty": {
+      "stackOff": "Mulai tumpukan Reticulum untuk mendengar pengumuman penemuan RMAP.",
+      "noDiscoveries": "Belum ada antarmuka penemuan RMAP yang terdengar.",
+      "filterEmpty": "Tidak ada antarmuka yang cocok dengan filter ini.",
+      "hint": "Node hanya muncul ketika operator mengaktifkan discoverable=yes. Jalur LoRa membutuhkan hub TCP (misalnya rmap.world:4242) untuk menyampaikan pengumuman. Untuk cakupan di seluruh dunia, gunakan tautan peta global."
+    }
   }
 }

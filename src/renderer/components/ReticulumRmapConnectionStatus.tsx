@@ -1,7 +1,10 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { summarizeRmapPublishStatus } from '@/renderer/lib/reticulum/reticulumRmapDiscovery';
+import {
+  RMAP_GLOBAL_MAP_URL,
+  summarizeRmapPublishStatus,
+} from '@/renderer/lib/reticulum/reticulumRmapDiscovery';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 
 export interface ReticulumRmapConnectionStatusProps {
@@ -43,6 +46,15 @@ export function ReticulumRmapConnectionStatus({
             {t('connectionPanel.reticulumRmap.openSettings')}
           </button>
         ) : null}
+        <a
+          href={RMAP_GLOBAL_MAP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-cyan-300 hover:text-cyan-200 hover:underline"
+          aria-label={t('connectionPanel.reticulumRmap.openGlobalMapAria')}
+        >
+          {t('connectionPanel.reticulumRmap.openGlobalMap')}
+        </a>
       </div>
       {summary.needsSyncCount > 0 ? (
         <p className="mt-1 text-amber-300">

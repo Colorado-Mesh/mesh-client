@@ -17,6 +17,13 @@ import { TAB_SLOT_IDS } from './tabSlotIds';
 const identityT = ((key: string) => key) as TFunction;
 
 describe('computeTabMappings', () => {
+  it('shows Map tab for Reticulum via hasReticulumDiscoveryMap', () => {
+    const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
+    const mapPanelIndex = TAB_SLOT_IDS.indexOf('Map');
+    expect(RETICULUM_CAPABILITIES.hasReticulumDiscoveryMap).toBe(true);
+    expect(tabs.tabIndexToPanelIndex).toContain(mapPanelIndex);
+  });
+
   it('shows Radio tab but not Graph for Reticulum', () => {
     const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
     const radioPanelIndex = TAB_SLOT_IDS.indexOf('Radio');

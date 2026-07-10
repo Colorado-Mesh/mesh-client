@@ -1035,7 +1035,9 @@
       "openSettingsAria": "Öffnen Sie die RMAP-Erkennungseinstellungen auf der Registerkarte Netzwerk",
       "needsSync": "{{count}} aktivierte lokale Schnittstelle(n) benötigen RMAP Discovery Sync",
       "noPublishTargets": "Keine aktivierten lokalen Schnittstellen zum Veröffentlichen auf RMAP.",
-      "syncSuccess": "RMAP-Erkennung mit Schnittstelle synchronisiert."
+      "syncSuccess": "RMAP-Erkennung mit Schnittstelle synchronisiert.",
+      "openGlobalMap": "[Globale Karte?]",
+      "openGlobalMapAria": "RMAP v4 Global Map auf rmap.world öffnen"
     }
   },
   "contactGroupsModal": {
@@ -3589,7 +3591,9 @@
       "invalidHost": "Ungültiger Hostname für erreichbar am.",
       "tooLong": "Der erreichbare Wert ist zu lang."
     },
-    "hint": "Wendet discoverable=yes und App GPS-Koordinaten auf alle aktivierten RMAP-fähigen Schnittstellen (RNode, KISS, BLE Peer, I2P, UDP, Pipe) an. Verwenden Sie RMAP-Schalter pro Schnittstelle für die Verbindung zur Feinsteuerung. LoRa-Pfade ermöglichen auch den Transport und den Hub rmap.world."
+    "hint": "Wendet discoverable=yes und App GPS-Koordinaten auf alle aktivierten RMAP-fähigen Schnittstellen (RNode, KISS, BLE Peer, I2P, UDP, Pipe) an. Verwenden Sie RMAP-Schalter pro Schnittstelle für die Verbindung zur Feinsteuerung. LoRa-Pfade ermöglichen auch den Transport und den Hub rmap.world.",
+    "openGlobalMap": "Globale Karte öffnen",
+    "openGlobalMapAria": "RMAP v4 Global Map auf rmap.world öffnen"
   },
   "reticulumTopology": {
     "title": "Netzwerk-Topologie",
@@ -3995,5 +3999,43 @@
     "menuToastAvailableTitle": "Update verfügbar",
     "menuToastAvailableBody": "Version {{version}} liegt vor.",
     "menuToastErrorTitle": "Update-Prüfung fehlgeschlagen"
+  },
+  "reticulumMap": {
+    "title": "Entdeckungskarte",
+    "subtitle": "Opt-in RMAP v4-Schnittstellen, die von Ihrem Stack gehört werden (lokale Ansicht)",
+    "openGlobalMap": "[Globale Karte?]",
+    "openGlobalMapAria": "RMAP v4 Global Map auf rmap.world öffnen",
+    "openPublishSettings": "Veröffentlichungs-Einstellungen",
+    "openPublishSettingsAria": "RMAP-Veröffentlichungseinstellungen des Reticulum-Netzwerks öffnen",
+    "refresh": "Aktualisieren",
+    "refreshAria": "Entdeckungskarte aktualisieren",
+    "refreshFailed": "Entdeckungskarte konnte nicht aktualisiert werden: {{error}}",
+    "countSummary": "{{markers}} auf der Karte · Nur {{list}} Liste",
+    "listTitle": "Entdeckte Schnittstellen",
+    "selfMarker": "Ihre App-GPS-Position",
+    "reachable": "Greifbar.",
+    "heardOnly": "Nur gehört (nicht in der Pfad-Tabelle)",
+    "noCoords": "Kein GPS",
+    "lastHeard": "Zuletzt gehört {{time}}",
+    "openNodeAria": "Offene Details für {{name}}",
+    "filter": {
+      "all": "Alle",
+      "rnode": "LoRa",
+      "backbone": "Backbone",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "Sonstige"
+    },
+    "status": {
+      "available": "Frisch",
+      "unknown": "Unbekannt",
+      "stale": "a"
+    },
+    "empty": {
+      "stackOff": "Starten Sie den Reticulum-Stack, um RMAP-Discovery-Ankündigungen zu hören.",
+      "noDiscoveries": "Noch keine RMAP-Erkennungsschnittstellen zu hören.",
+      "filterEmpty": "Keine Schnittstellen entsprechen diesem Filter.",
+      "hint": "Knoten werden nur angezeigt, wenn die Bediener die Option \"auffindbar\" = \"ja\" aktivieren. LoRa-Pfade benötigen einen TCP-Hub (zum Beispiel rmap.world:4242), um Ansagen weiterzuleiten. Für eine weltweite Abdeckung verwenden Sie den globalen Kartenlink."
+    }
   }
 }

@@ -1035,7 +1035,9 @@
       "openSettingsAria": "Otevřít nastavení zjišťování RMAP na kartě Síť",
       "needsSync": "{{count}} povolená místní rozhraní vyžadují synchronizaci zjišťování RMAP",
       "noPublishTargets": "Žádná povolená místní rozhraní pro publikování v RMAP.",
-      "syncSuccess": "Zjištění RMAP synchronizováno s rozhraním."
+      "syncSuccess": "Zjištění RMAP synchronizováno s rozhraním.",
+      "openGlobalMap": "Globální mapa",
+      "openGlobalMapAria": "Otevřete globální mapu RMAP v4 na rmap.world"
     }
   },
   "contactGroupsModal": {
@@ -3589,7 +3591,9 @@
       "invalidHost": "Neplatné jméno hostitele pro dosažitelné dne.",
       "tooLong": "Dosažitelná hodnota je příliš dlouhá."
     },
-    "hint": "Aplikuje zjistitelné=ano a GPS souřadnice aplikace na všechna povolená rozhraní podporující RMAP (RNode, KISS, ble peer, I2P, UDP, Pipe). Použijte přepínače RMAP na připojení pro jemné ovládání. Cesty LoRa také umožňují dopravu a rozbočovač rmap.world."
+    "hint": "Aplikuje zjistitelné=ano a GPS souřadnice aplikace na všechna povolená rozhraní podporující RMAP (RNode, KISS, ble peer, I2P, UDP, Pipe). Použijte přepínače RMAP na připojení pro jemné ovládání. Cesty LoRa také umožňují dopravu a rozbočovač rmap.world.",
+    "openGlobalMap": "Otevřít globální mapu",
+    "openGlobalMapAria": "Otevřete globální mapu RMAP v4 na rmap.world"
   },
   "reticulumTopology": {
     "title": "topologie sítě",
@@ -3995,5 +3999,43 @@
     "menuToastAvailableTitle": "Aktualizace k dispozici",
     "menuToastAvailableBody": "Verze {{version}} je k dispozici.",
     "menuToastErrorTitle": "Kontrola aktualizace se nezdařila"
+  },
+  "reticulumMap": {
+    "title": "Mapa objevů",
+    "subtitle": "Přihlaste rozhraní RMAP v4 slyšená vaším zásobníkem (místní zobrazení)",
+    "openGlobalMap": "Globální mapa",
+    "openGlobalMapAria": "Otevřete globální mapu RMAP v4 na rmap.world",
+    "openPublishSettings": "Nastavení publikování RMAP",
+    "openPublishSettingsAria": "Otevřít nastavení publikování RMAP sítě Reticulum",
+    "refresh": "Obnovit",
+    "refreshAria": "Obnovit mapu objevů",
+    "refreshFailed": "Nepodařilo se obnovit mapu zjišťování: {{error}}",
+    "countSummary": "{{markers}} pouze na mapě · {{list}} seznamu",
+    "listTitle": "Objevená rozhraní",
+    "selfMarker": "Vaše GPS pozice v aplikaci",
+    "reachable": "Dosažitelné",
+    "heardOnly": "Pouze slyšeno (ne v tabulce cest)",
+    "noCoords": "Žádná GPS",
+    "lastHeard": "Naposledy slyšeno {{time}}",
+    "openNodeAria": "Otevřít podrobnosti pro {{name}}",
+    "filter": {
+      "all": "Vše",
+      "rnode": "LoRa",
+      "backbone": "Páteř",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "Jiný zdroj"
+    },
+    "status": {
+      "available": "Čerstvé",
+      "unknown": "Neznámo",
+      "stale": "Staré"
+    },
+    "empty": {
+      "stackOff": "Spusťte zásobník Reticulum, abyste slyšeli oznámení o objevení RMAP.",
+      "noDiscoveries": "Dosud nebylo slyšeno žádné rozhraní pro zjišťování RMAP.",
+      "filterEmpty": "Tomuto filtru neodpovídají žádná rozhraní.",
+      "hint": "Uzly se zobrazují pouze tehdy, když operátoři povolují rozpoznatelnost =ano. Cesty LoRa potřebují TCP hub (například rmap.world:4242) pro přenos oznámení. Pro celosvětové pokrytí použij globální odkaz na mapu."
+    }
   }
 }

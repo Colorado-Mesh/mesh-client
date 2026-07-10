@@ -121,6 +121,7 @@ import {
   RawPacketLogPanel,
   RepeatersPanel,
   ReticulumAdminPanel,
+  ReticulumMapPanel,
   ReticulumNetworkPanel,
   ReticulumPeerListPanel,
   ReticulumTopologyPanel,
@@ -2827,33 +2828,54 @@ function AppContent() {
                       {activePanelIndex === 4 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            <MapPanel
-                              nodes={nodesForUi}
-                              myNodeNum={activeRuntime.selfNodeId}
-                              locationFilter={locationFilter}
-                              ourPosition={activeRuntime.ourPosition}
-                              onLocateMe={
-                                capabilities.hasFullPositionConfig
-                                  ? () =>
-                                      meshtasticPanelActions
-                                        .refreshOurPosition()
-                                        .then((p) => (p ? { lat: p.lat, lon: p.lon } : null))
-                                  : undefined
-                              }
-                              waypoints={activeRuntime.waypoints}
-                              onSendWaypoint={
-                                capabilities.hasFullPositionConfig
-                                  ? meshtasticPanelActions.sendWaypoint
-                                  : undefined
-                              }
-                              onDeleteWaypoint={
-                                capabilities.hasFullPositionConfig
-                                  ? meshtasticPanelActions.deleteWaypoint
-                                  : undefined
-                              }
-                              onNodeClick={setSelectedNodeId}
-                              protocol={protocol}
-                            />
+                            {protocol === 'reticulum' && capabilities.hasReticulumDiscoveryMap ? (
+                              <ReticulumMapPanel
+                                stackConfigured={reticulumConnection.state.status === 'configured'}
+                                onPeerClick={setSelectedPeerHash}
+                                onOpenRmapSettings={() => {
+                                  const networkTabIdx = tabSlotIds.indexOf('Radio');
+                                  if (networkTabIdx >= 0) {
+                                    setActiveTab(networkTabIdx);
+                                  }
+                                }}
+                                onOpenAppGpsSettings={() => {
+                                  const appTabIdx = tabSlotIds.indexOf('App');
+                                  if (appTabIdx >= 0) {
+                                    setAppTabVisited(true);
+                                    setActiveTab(appTabIdx);
+                                  }
+                                }}
+                              />
+                            ) : capabilities.hasFullPositionConfig ||
+                              capabilities.nodeListTabUsesContactsLabel ? (
+                              <MapPanel
+                                nodes={nodesForUi}
+                                myNodeNum={activeRuntime.selfNodeId}
+                                locationFilter={locationFilter}
+                                ourPosition={activeRuntime.ourPosition}
+                                onLocateMe={
+                                  capabilities.hasFullPositionConfig
+                                    ? () =>
+                                        meshtasticPanelActions
+                                          .refreshOurPosition()
+                                          .then((p) => (p ? { lat: p.lat, lon: p.lon } : null))
+                                    : undefined
+                                }
+                                waypoints={activeRuntime.waypoints}
+                                onSendWaypoint={
+                                  capabilities.hasFullPositionConfig
+                                    ? meshtasticPanelActions.sendWaypoint
+                                    : undefined
+                                }
+                                onDeleteWaypoint={
+                                  capabilities.hasFullPositionConfig
+                                    ? meshtasticPanelActions.deleteWaypoint
+                                    : undefined
+                                }
+                                onNodeClick={setSelectedNodeId}
+                                protocol={protocol}
+                              />
+                            ) : null}
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}

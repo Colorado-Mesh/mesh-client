@@ -5,6 +5,7 @@ import {
   registerReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
+import type { ReticulumRmapDiscoveredWireRow } from '@/shared/reticulum-types';
 
 export interface ReticulumIdentityStatus {
   configured: boolean;
@@ -132,6 +133,24 @@ export async function fetchReticulumInterfaces(): Promise<ReticulumSidecarInterf
     }
     if (cachedReticulumInterfaces.length > 0) {
       return cachedReticulumInterfaces;
+    }
+    return [];
+  }
+}
+
+/** Fetch RMAP v4 discovered interfaces heard by the local stack. */
+export async function fetchReticulumRmapDiscovered(): Promise<ReticulumRmapDiscoveredWireRow[]> {
+  if (!(await isReticulumSidecarRunning())) {
+    return [];
+  }
+  try {
+    const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/rmap/discovered')) as {
+      discovered?: ReticulumRmapDiscoveredWireRow[];
+    };
+    return Array.isArray(body.discovered) ? body.discovered : [];
+  } catch (e) {
+    if (!isReticulumSidecarExpectedProxyError(e)) {
+      console.debug('[reticulumSidecarReads] rmap discovered ' + errLikeToLogString(e));
     }
     return [];
   }

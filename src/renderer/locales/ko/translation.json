@@ -1035,7 +1035,9 @@
       "openSettingsAria": "네트워크 탭에서 RMAP 검색 설정 열기",
       "needsSync": "{{count}} 활성화된 로컬 인터페이스에는 RMAP 검색 동기화 필요",
       "noPublishTargets": "RMAP에 게시할 수 있는 로컬 인터페이스가 없습니다.",
-      "syncSuccess": "RMAP 검색이 인터페이스에 동기화되었습니다."
+      "syncSuccess": "RMAP 검색이 인터페이스에 동기화되었습니다.",
+      "openGlobalMap": "글로벌 맵",
+      "openGlobalMapAria": "Rmap.world에서 RMAP v4 글로벌 맵 열기"
     }
   },
   "contactGroupsModal": {
@@ -3589,7 +3591,9 @@
       "invalidHost": "에 연결할 수 있는 호스트 이름이 잘못되었습니다.",
       "tooLong": "값에 도달할 수 있는 시간이 너무 깁니다."
     },
-    "hint": "검색 가능 = 예 및 앱 GPS 좌표를 활성화된 모든 RMAP 가능 인터페이스 (RNode, KISS, BLE 피어, I2P, UDP, 파이프) 에 적용합니다. 미세 제어를 위해 Connection에서 인터페이스별 RMAP 토글을 사용하십시오. LoRa 경로는 또한 전송 및 rmap.world 허브를 활성화합니다."
+    "hint": "검색 가능 = 예 및 앱 GPS 좌표를 활성화된 모든 RMAP 가능 인터페이스 (RNode, KISS, BLE 피어, I2P, UDP, 파이프) 에 적용합니다. 미세 제어를 위해 Connection에서 인터페이스별 RMAP 토글을 사용하십시오. LoRa 경로는 또한 전송 및 rmap.world 허브를 활성화합니다.",
+    "openGlobalMap": "전역 지도 열기",
+    "openGlobalMapAria": "Rmap.world에서 RMAP v4 글로벌 맵 열기"
   },
   "reticulumTopology": {
     "title": "네트워크 토폴로지",
@@ -3995,5 +3999,43 @@
     "menuToastAvailableTitle": "업데이트 사용 가능",
     "menuToastAvailableBody": "{{version}} 버전을 사용할 수 있습니다.",
     "menuToastErrorTitle": "자동 업데이트 확인에 실패했습니다!"
+  },
+  "reticulumMap": {
+    "title": "디스커버리 맵",
+    "subtitle": "스택에서 들리는 옵트인 RMAP v4 인터페이스 (로컬 보기)",
+    "openGlobalMap": "글로벌 맵",
+    "openGlobalMapAria": "Rmap.world에서 RMAP v4 글로벌 맵 열기",
+    "openPublishSettings": "발행 설정",
+    "openPublishSettingsAria": "Reticulum Network RMAP 게시 설정 열기",
+    "refresh": "새로 고침",
+    "refreshAria": "발견 맵 새로 고침",
+    "refreshFailed": "디스커버리 맵을 새로 고칠 수 없음: {{error}}",
+    "countSummary": "{{markers}} 지도에 표시 · {{list}} 목록만 표시",
+    "listTitle": "발견된 인터페이스",
+    "selfMarker": "앱 GPS 위치",
+    "reachable": "그래프 이론 용어사전",
+    "heardOnly": "들은 것만 (PATH 테이블에 없음)",
+    "noCoords": "GPS 없음",
+    "lastHeard": "마지막 음성 안내 {{time}}",
+    "openNodeAria": "{{name}} 님의 세부 정보 열기",
+    "filter": {
+      "all": "All",
+      "rnode": "LoRa",
+      "backbone": "백본",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "기타"
+    },
+    "status": {
+      "available": "Fresh",
+      "unknown": "미상",
+      "stale": "오래됨"
+    },
+    "empty": {
+      "stackOff": "RMAP 검색 발표를 들으려면 Reticulum 스택을 시작하십시오.",
+      "noDiscoveries": "아직 RMAP 검색 인터페이스가 들리지 않았습니다.",
+      "filterEmpty": "이 필터와 일치하는 인터페이스가 없습니다.",
+      "hint": "노드는 작업자가 검색 가능 = 예 를 사용하도록 설정한 경우에만 나타납니다. LoRa 경로는 알림을 릴레이하려면 TCP 허브 (예: rmap.world: 4242) 가 필요합니다. 전 세계에 적용하려면 전 세계 지도 링크를 사용하세요."
+    }
   }
 }

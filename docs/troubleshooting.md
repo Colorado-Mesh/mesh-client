@@ -946,6 +946,17 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 **Fix**: Generate or import identity with the stack running; restart the stack after identity changes. Compare `GET /api/v1/identity/status` with your Ratspeak identity file.
 
+### Reticulum Map empty or no markers
+
+**Symptoms**: Map tab shows empty state, sidebar list only, or no markers despite peers on the Peers tab.
+
+1. **Stack not running** — start the stack from Connection; Map ingest requires live `rns-stack`.
+2. **No discovery announces heard yet** — only interfaces with `discoverable=yes` appear. Wait for transport propagation; default re-announce interval can be hours.
+3. **LoRa without TCP hub** — Diagnostics / config audit may show `rmap_no_tcp_hub`. Enable `rmap.world:4242` or another TCP hub and restart the stack.
+4. **Missing GPS in announce** — nodes without latitude/longitude appear in the list panel only (no map marker).
+5. **Global coverage** — the in-app map shows **heard** opt-in nodes only; use **Global map** (rmap.world) for worldwide view.
+6. **`discover_interfaces`** — sidecar enables `discover_interfaces = Yes` on bootstrap; restart the stack after upgrading if the Map tab stays empty on an old config.
+
 ### Reticulum interface add/edit/delete fails
 
 **Symptoms**: Connection tab **Add interface**, **Edit**, or **Delete** shows an inline error; interface list does not refresh.

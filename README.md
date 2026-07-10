@@ -215,6 +215,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 - **Show on map** from the node list pin or node detail; switches to the Map tab and flies to that node
 - **Position trail**: persisted path overlay (configurable 1 h – 7 days); survives restarts via SQLite; toggle and window size in App tab; wipe via Danger Zone
 - Auto-refresh at configurable intervals; manual static position entry; send your position back to your device
+- **Reticulum Map tab** uses RMAP v4 discovery (opt-in heard interfaces), not Meshtastic/MeshCore node positions — see [Reticulum Features](#reticulum-features)
 
 **Telemetry**
 
@@ -224,7 +225,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 
 ### MeshCore Features
 
-MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher in the header to bring MeshCore into view; the other sessions stay connected in the background. **Meshtastic** shows **16** sidebar tabs (including **Administration**, **Security**, **TAK**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **16** tabs (**TAK** is hidden; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** shows **11** tabs (Connection, Nomad Network, Peers, Network, Admin, Chat, Topology, Diagnostics, **Stats**, **Sniffer**, App, etc.). **Stats** and **Sniffer** are available in all three protocols; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
+MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher in the header to bring MeshCore into view; the other sessions stay connected in the background. **Meshtastic** shows **16** sidebar tabs (including **Administration**, **Security**, **TAK**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **16** tabs (**TAK** is hidden; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** shows **12** tabs (Connection, Nomad Network, Peers, Network, Admin, Chat, **Map**, Topology, Diagnostics, **Stats**, **Sniffer**, App, etc.). **Stats** and **Sniffer** are available in all three protocols; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
 
 - **Transmit queue**: header badge (with tooltip) when the connected radio reports outbound queue depth (STATS).
 
@@ -324,6 +325,7 @@ Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGP
 **Peers, topology, Nomad Network**
 
 - **Peers** tab: RNS path-table peers and LXMF contacts (separate sub-tabs); path probe and peer detail modal
+- **Map** tab: local RMAP v4 discovery map (Leaflet + OSM basemaps; heard opt-in interfaces with GPS); **Global map** link to [rmap.world](https://rmap.world/)
 - **Topology** tab: best-effort graph from the RNS path table (next-hop edges, BFS layout)
 - **Nomad Network** tab: collapsible favourites/announces list (default **Favourites** sub-tab); panel lazy-mounts after first visit and keeps browse state across tab switches (`mesh-client:nomadNodeListCollapsed` for sidebar width)
 
@@ -497,19 +499,19 @@ Sidecar dev build: `pnpm run reticulum:sidecar:build` ([Rust](https://rustup.rs/
 
 ### Tech Stack
 
-| Component    | Technology                                                                                                                                           |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Desktop      | Electron                                                                                                                                             |
-| UI           | React 19 + TypeScript 6 + Zustand                                                                                                                    |
-| Styling      | Tailwind CSS v4                                                                                                                                      |
-| Localization | i18next + react-i18next; 16 languages; static JSON bundles                                                                                           |
-| Meshtastic   | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via @stoprocent/noble (macOS/Windows) and Web Bluetooth (Linux)                   |
-| MeshCore     | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                                                                                  |
-| Reticulum    | `mesh-client-reticulum` sidecar (Rust, rsReticulum/rsLXMF); `reticulum:*` IPC proxy; LXMF in SQLite (`reticulum_messages`, `reticulum_destinations`) |
-| Maps         | Leaflet + OpenStreetMap (Meshtastic/MeshCore); Reticulum **Topology** from RNS path table                                                            |
-| Charts       | Recharts                                                                                                                                             |
-| Database     | SQLite (node:sqlite built-in, via db-compat.ts shim)                                                                                                 |
-| Build        | esbuild + Vite + electron-builder + Flatpak (freedesktop 24.08, Electron2 BaseApp) + optional `cargo` sidecar                                        |
+| Component    | Technology                                                                                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop      | Electron                                                                                                                                                      |
+| UI           | React 19 + TypeScript 6 + Zustand                                                                                                                             |
+| Styling      | Tailwind CSS v4                                                                                                                                               |
+| Localization | i18next + react-i18next; 16 languages; static JSON bundles                                                                                                    |
+| Meshtastic   | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via @stoprocent/noble (macOS/Windows) and Web Bluetooth (Linux)                            |
+| MeshCore     | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                                                                                           |
+| Reticulum    | `mesh-client-reticulum` sidecar (Rust, rsReticulum/rsLXMF); `reticulum:*` IPC proxy; LXMF in SQLite (`reticulum_messages`, `reticulum_destinations`)          |
+| Maps         | Leaflet + OpenStreetMap (Meshtastic/MeshCore node positions; Reticulum **Map** = local RMAP v4 discovery + link to rmap.world; **Topology** = RNS path graph) |
+| Charts       | Recharts                                                                                                                                                      |
+| Database     | SQLite (node:sqlite built-in, via db-compat.ts shim)                                                                                                          |
+| Build        | esbuild + Vite + electron-builder + Flatpak (freedesktop 24.08, Electron2 BaseApp) + optional `cargo` sidecar                                                 |
 
 ### Architecture
 

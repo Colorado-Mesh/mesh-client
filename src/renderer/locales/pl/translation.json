@@ -1035,7 +1035,9 @@
       "openSettingsAria": "Otwórz ustawienia wykrywania RMAP na karcie Sieć",
       "needsSync": "Interfejsy lokalne z włączoną funkcją {{count}} wymagają synchronizacji wykrywania RMAP",
       "noPublishTargets": "Brak włączonych interfejsów lokalnych do publikowania w RMAP.",
-      "syncSuccess": "Wykrywanie RMAP zsynchronizowane z interfejsem."
+      "syncSuccess": "Wykrywanie RMAP zsynchronizowane z interfejsem.",
+      "openGlobalMap": "Mapa globalna",
+      "openGlobalMapAria": "Otwórz globalną mapę RMAP v4 na rmap.world"
     }
   },
   "contactGroupsModal": {
@@ -3589,7 +3591,9 @@
       "invalidHost": "Nieprawidłowa nazwa hosta dla dostępnego dnia.",
       "tooLong": "Wartość osiągalna jest zbyt długa."
     },
-    "hint": "Stosuje wykrywalne=tak i App współrzędne GPS do wszystkich włączonych interfejsów obsługujących RMAP (RNode, KISS, BLE peer, I2P, UDP, Pipe). Użyj przełączników RMAP dla każdego interfejsu w Połączeniu, aby uzyskać dokładną kontrolę. Ścieżki LoRa umożliwiają również transport i hub rmap.world."
+    "hint": "Stosuje wykrywalne=tak i App współrzędne GPS do wszystkich włączonych interfejsów obsługujących RMAP (RNode, KISS, BLE peer, I2P, UDP, Pipe). Użyj przełączników RMAP dla każdego interfejsu w Połączeniu, aby uzyskać dokładną kontrolę. Ścieżki LoRa umożliwiają również transport i hub rmap.world.",
+    "openGlobalMap": "Otwórz mapę globalną",
+    "openGlobalMapAria": "Otwórz globalną mapę RMAP v4 na rmap.world"
   },
   "reticulumTopology": {
     "title": "Topologia sieci",
@@ -3995,5 +3999,43 @@
     "menuToastAvailableTitle": "Dostępna jest aktualizacja",
     "menuToastAvailableBody": "Wersja {{version}} jest dostępna.",
     "menuToastErrorTitle": "Kontrola aktualizacji nie powiodła się"
+  },
+  "reticulumMap": {
+    "title": "Mapa odkrycia",
+    "subtitle": "Interfejsy Opt-in RMAP v4 słyszalne przez Twój stos (widok lokalny)",
+    "openGlobalMap": "Mapa globalna",
+    "openGlobalMapAria": "Otwórz globalną mapę RMAP v4 na rmap.world",
+    "openPublishSettings": "Ustawienia Publikacji ogłoszeń",
+    "openPublishSettingsAria": "Otwórz ustawienia publikowania RMAP sieci Reticulum",
+    "refresh": "Odśwież",
+    "refreshAria": "Odśwież mapę wykrywania",
+    "refreshFailed": "Nie można odświeżyć mapy wykrywania: {{error}}",
+    "countSummary": "{{markers}} na mapie · Tylko lista {{list}}",
+    "listTitle": "Odkryte interfejsy",
+    "selfMarker": "Pozycja GPS w Twojej aplikacji",
+    "reachable": "Osiągalny",
+    "heardOnly": "Tylko słyszalne (nie w tabeli ścieżek)",
+    "noCoords": "No GPS",
+    "lastHeard": "Ostatnio słyszane: {{time}}",
+    "openNodeAria": "Otwórz szczegóły dla {{name}}",
+    "filter": {
+      "all": "Wszystko",
+      "rnode": "LoRa:",
+      "backbone": "Backbone",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "Inne"
+    },
+    "status": {
+      "available": "Świeże",
+      "unknown": "Nieznany",
+      "stale": "Nadpsute"
+    },
+    "empty": {
+      "stackOff": "Uruchom stos Reticulum, aby usłyszeć zapowiedź odkrycia RMAP.",
+      "noDiscoveries": "Nie słychać jeszcze interfejsów wykrywania RMAP.",
+      "filterEmpty": "Żaden interfejs nie pasuje do tego filtra.",
+      "hint": "Węzły pojawiają się tylko wtedy, gdy operatorzy włączają wykrywalne=tak. Ścieżki LoRa wymagają koncentratora TCP (na przykład rmap.world:4242) do przekazywania komunikatów. Aby uzyskać dostęp do danych na całym świecie, skorzystaj z łącza do globalnej mapy."
+    }
   }
 }

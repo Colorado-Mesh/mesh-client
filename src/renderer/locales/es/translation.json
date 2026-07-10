@@ -1035,7 +1035,9 @@
       "openSettingsAria": "Abrir la configuración de detección de RMAP en la pestaña Red",
       "needsSync": "{{count}} interfaz(es) local (es) habilitada (s) necesita (n) la sincronización de descubrimiento RMAP",
       "noPublishTargets": "No hay interfaces locales habilitadas para publicar en RMAP.",
-      "syncSuccess": "Descubrimiento de RMAP sincronizado con la interfaz."
+      "syncSuccess": "Descubrimiento de RMAP sincronizado con la interfaz.",
+      "openGlobalMap": "Mapa mundial",
+      "openGlobalMapAria": "Abra el mapa global de RMAP v4 en rmap.world"
     }
   },
   "contactGroupsModal": {
@@ -3589,7 +3591,9 @@
       "invalidHost": "Nombre de host no válido para estar disponible el.",
       "tooLong": "El valor alcanzable es demasiado largo."
     },
-    "hint": "Aplica discoverable=yes y las coordenadas GPS de App a todas las interfaces habilitadas para RMAP (RNode, KISS, BLE peer, I2P, UDP, pipe). Use los conmutadores RMAP por interfaz en Conexión para un control fino. Las rutas LoRa también habilitan transporte y el hub rmap.world."
+    "hint": "Aplica discoverable=yes y las coordenadas GPS de App a todas las interfaces habilitadas para RMAP (RNode, KISS, BLE peer, I2P, UDP, pipe). Use los conmutadores RMAP por interfaz en Conexión para un control fino. Las rutas LoRa también habilitan transporte y el hub rmap.world.",
+    "openGlobalMap": "Mapa mundial",
+    "openGlobalMapAria": "Abra el mapa global de RMAP v4 en rmap.world"
   },
   "reticulumTopology": {
     "title": "Topología de red",
@@ -3995,5 +3999,43 @@
     "menuToastAvailableTitle": "Actualización disponible",
     "menuToastAvailableBody": "La versión {{version}} está disponible.",
     "menuToastErrorTitle": "Error en la comprobación de actualizaciones"
+  },
+  "reticulumMap": {
+    "title": "Mapa de descubrimiento",
+    "subtitle": "Optar por interfaces RMAP v4 escuchadas por su pila (vista local)",
+    "openGlobalMap": "Mapa mundial",
+    "openGlobalMapAria": "Abra el mapa global de RMAP v4 en rmap.world",
+    "openPublishSettings": "Ajustes de publicación",
+    "openPublishSettingsAria": "Abrir la configuración de publicación RMAP de la red Reticulum",
+    "refresh": "Actualizar",
+    "refreshAria": "Actualizar mapa de descubrimiento",
+    "refreshFailed": "No se ha podido actualizar el mapa de descubrimiento: {{error}}",
+    "countSummary": "{{markers}} en el mapa · {{list}} solo lista",
+    "listTitle": "Interfaces descubiertas",
+    "selfMarker": "Posición GPS de tu aplicación",
+    "reachable": "Accesible",
+    "heardOnly": "Escuchado solamente (no en la tabla de ruta)",
+    "noCoords": "sin GPS.",
+    "lastHeard": "Escuchado por última vez {{time}}",
+    "openNodeAria": "Abrí la información de {{name}}",
+    "filter": {
+      "all": "Todos",
+      "rnode": "LoRa",
+      "backbone": "Cadena principal",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "Otros"
+    },
+    "status": {
+      "available": "Fresco",
+      "unknown": "Desconocido",
+      "stale": "(Rancio)"
+    },
+    "empty": {
+      "stackOff": "Inicie la pila Reticulum para escuchar los anuncios de descubrimiento de RMAP.",
+      "noDiscoveries": "Aún no se han escuchado interfaces de descubrimiento RMAP.",
+      "filterEmpty": "No hay interfaces que coincidan con este filtro.",
+      "hint": "Los nodos aparecen solo cuando los operadores habilitan discoverable=yes. Las rutas LoRa necesitan un concentrador TCP (por ejemplo, rmap.world:4242) para retransmitir anuncios. Para una cobertura mundial, utilice el enlace del mapa global."
+    }
   }
 }

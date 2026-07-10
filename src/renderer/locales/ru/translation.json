@@ -1035,7 +1035,9 @@
       "openSettingsAria": "Откройте настройки обнаружения RMAP на вкладке Сеть",
       "needsSync": "{{count}} включенные локальные интерфейсы требуют синхронизации обнаружения RMAP",
       "noPublishTargets": "Нет включенных локальных интерфейсов для публикации на RMAP.",
-      "syncSuccess": "Обнаружение RMAP синхронизировано с интерфейсом."
+      "syncSuccess": "Обнаружение RMAP синхронизировано с интерфейсом.",
+      "openGlobalMap": "Глобальная карта",
+      "openGlobalMapAria": "Открыть глобальную карту RMAP v4 на rmap.world"
     }
   },
   "contactGroupsModal": {
@@ -3589,7 +3591,9 @@
       "invalidHost": "Недопустимое имя хоста, доступного на.",
       "tooLong": "Достижимое значение слишком длинное."
     },
-    "hint": "Применяет discoverable=yes и App GPS-координаты ко всем включенным интерфейсам с поддержкой RMAP (RNode, KISS, BLE peer, I2P, UDP, pipe). Используйте переключатели RMAP для каждого интерфейса на подключении для точного управления. Пути LoRa также обеспечивают транспорт и хаб rmap.world."
+    "hint": "Применяет discoverable=yes и App GPS-координаты ко всем включенным интерфейсам с поддержкой RMAP (RNode, KISS, BLE peer, I2P, UDP, pipe). Используйте переключатели RMAP для каждого интерфейса на подключении для точного управления. Пути LoRa также обеспечивают транспорт и хаб rmap.world.",
+    "openGlobalMap": "Глобальная карта",
+    "openGlobalMapAria": "Открыть глобальную карту RMAP v4 на rmap.world"
   },
   "reticulumTopology": {
     "title": "Топология сети",
@@ -3995,5 +3999,43 @@
     "menuToastAvailableTitle": "Доступны обновления",
     "menuToastAvailableBody": "Доступна версия {{version}}.",
     "menuToastErrorTitle": "Не удалось выполнить проверку на наличие обновлений службы"
+  },
+  "reticulumMap": {
+    "title": "Карта открытий",
+    "subtitle": "Согласованные интерфейсы RMAP v4, услышанные вашим стеком (локальное представление)",
+    "openGlobalMap": "Глобальная карта",
+    "openGlobalMapAria": "Открыть глобальную карту RMAP v4 на rmap.world",
+    "openPublishSettings": "Настройки Публикации",
+    "openPublishSettingsAria": "Настройки публикации Open Reticulum Network RMAP",
+    "refresh": "Обновление",
+    "refreshAria": "Обновить карту обнаружения",
+    "refreshFailed": "Не удалось обновить карту обнаружения: {{error}}",
+    "countSummary": "{{markers}} на карте · Только список {{list}}",
+    "listTitle": "Обнаруженные интерфейсы",
+    "selfMarker": "Позиция GPS вашего приложения",
+    "reachable": "Словарь терминов теории графов",
+    "heardOnly": "Только услышанные (не в таблице путей)",
+    "noCoords": "Нет GPS.",
+    "lastHeard": "Последнее прослушивание: {{time}}",
+    "openNodeAria": "Открыть сведения о {{name}}",
+    "filter": {
+      "all": "Все",
+      "rnode": "LoRa",
+      "backbone": "Backbone",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "Прочее"
+    },
+    "status": {
+      "available": "Fresh",
+      "unknown": "Неизвестно",
+      "stale": "Устарело"
+    },
+    "empty": {
+      "stackOff": "Запустите стек Reticulum, чтобы прослушать объявления об обнаружении RMAP.",
+      "noDiscoveries": "Интерфейсы обнаружения RMAP еще не прослушаны.",
+      "filterEmpty": "Нет интерфейсов, соответствующих этому фильтру.",
+      "hint": "Узлы появляются только тогда, когда операторы включают discoverable=yes. Пути LoRa нуждаются в концентраторе TCP (например, rmap.world:4242) для ретрансляции объявлений. Для глобального охвата воспользуйтесь ссылкой на глобальную карту."
+    }
   }
 }

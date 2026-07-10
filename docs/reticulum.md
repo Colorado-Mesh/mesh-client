@@ -33,6 +33,7 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 | Delivery        | Direct when destination is in path table; propagated (PN) via preferred propagation node when offline                                                                                                                                                |
 | Peers           | RNS path table + LXMF contacts (Peers tab sub-tabs); probe and peer detail modal                                                                                                                                                                     |
 | Topology        | Best-effort graph from path-table next hops (not a full multi-hop trace)                                                                                                                                                                             |
+| Map             | Local RMAP v4 discovery map (heard opt-in interfaces with GPS); link to rmap.world for global view                                                                                                                                                   |
 | Nomad Network   | Favourites / announces list (collapsible sidebar, default Favourites sub-tab); lazy-mount after first visit; Micron (.mu) browser with in-page navigation, back/forward, session page cache, `/file/` downloads, source toggle, and lxmf:// DM links |
 | Propagation     | Preferred node, per-node **Sync messages**, optional **local propagation inbox**, configurable **auto-sync interval**                                                                                                                                |
 | Diagnostics     | Reticulum-native interface / path / LXMF health and config audit (`reticulum/*` rows only on this tab; LoRa Hop Goblins and foreign-LoRa tables are Meshtastic/MeshCore-scoped)                                                                      |
@@ -40,7 +41,7 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 | Sniffer / Stats | Reticulum packet log tab (`rawPacketLog.reticulum.*`)                                                                                                                                                                                                |
 | Coexistence     | BLE on a **different** MAC from Meshtastic/MeshCore; scan mutex only                                                                                                                                                                                 |
 
-**Not in Reticulum mode:** Meshtastic/MeshCore-style RF channel chat, MQTT broker card, LoRa map, Rooms BBS, TAK, Meshtastic PKI Security tab, Hop Goblins routing diagnostics.
+**Not in Reticulum mode:** Meshtastic/MeshCore-style RF channel chat, MQTT broker card, Meshtastic/MeshCore LoRa node position map, Rooms BBS, TAK, Meshtastic PKI Security tab, Hop Goblins routing diagnostics.
 
 ---
 
@@ -56,10 +57,11 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 | Admin           | RNode firmware flasher; factory reset (danger zone)                                                                                         |
 | Diagnostics     | Reticulum runtime rows + interface config audit/repair; LoRa routing/RF and foreign-LoRa findings hidden                                    |
 | Topology        | Path-table graph (BFS layout; `via_hash` next-hop edges)                                                                                    |
+| Map             | RMAP v4 discovery map (local heard interfaces + path-table reachability overlay)                                                            |
 | Stats / Sniffer | Packet log views (`rawPacketLog.reticulum.*`)                                                                                               |
 | App             | Shared app settings, DB tools, appearance (includes **Log panel** toggle)                                                                   |
 
-Hidden tabs (Meshtastic/MeshCore only): Map, Modules/Repeaters, Rooms, Telemetry, Security, TAK, RF, Graph.
+Hidden tabs (Meshtastic/MeshCore only): Modules/Repeaters, Rooms, Telemetry, Security, TAK, RF, Graph.
 
 The **Log panel** (right rail, toggled from **App → Log panel**) is shared across protocols; on Reticulum it shows sidecar and local-interface lines tagged for filtering.
 
@@ -77,6 +79,21 @@ The **Log panel** (right rail, toggled from **App → Log panel**) is shared acr
 | RMAP World                    | TCP  | `rmap.world:4242`                                              |
 
 Configure a Reticulum identity on the **Network** tab before adding interfaces; the panel disables interface actions until identity is ready.
+
+### RMAP v4 discovery map
+
+The **Map** tab shows **local** RMAP v4 discovery data — interfaces your stack has heard on aspect `rnstransport.discovery.interface`. This is distinct from Meshtastic/MeshCore node position maps:
+
+| View                      | Source                                                                                                                  |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Map tab (local)**       | rsReticulum `DiscoveryStore` via `GET /api/v1/rmap/discovered`; refreshed on a timer and via WebSocket `rmap.discovery` |
+| **Global map (external)** | [rmap.world](https://rmap.world/) — link in Map tab and Network → RMAP controls                                         |
+
+**Publish (appear on maps):** Network → **RMAP v4 discovery** or per-interface RMAP toggles on Connection. Requires App → GPS coordinates for map markers. LoRa-only stacks need an enabled TCP hub (for example `rmap.world:4242`) so discovery announces reach the wider network — see config audit `rmap_no_tcp_hub`.
+
+**Consume (Map tab):** Sidecar sets `discover_interfaces = Yes` in rnsd config on bootstrap so the stack listens for discovery announces. Markers show GPS when coordinates were included in the announce; interfaces without coords appear in the sidebar list only. **Reachable** badges join discovery rows with the RNS path table (Peers tab).
+
+**Related panels:** **Topology** = logical hops (no geography); **Peers** = path table; **Map** = geographic discovery + reachability.
 
 ---
 
