@@ -125,21 +125,16 @@ impl LiveBridge {
             }
         });
 
-        let identity_path = config_dir.join("identity");
+        let identity_path = crate::stack::identity_apply::identity_file_path(&config_dir);
         let identity_configured = inner.read().await.identity.configured;
         let identity = if identity_path.exists() {
-            Identity::from_file(&identity_path).map_err(|e| format!("load identity: {e}"))?
+            rns_identity::identity::Identity::from_file(&identity_path)
+                .map_err(|e| format!("load identity: {e}"))?
         } else if identity_configured {
-            Identity::new()
+            return Err("identity file missing; re-import or generate identity".into());
         } else {
             return Err("identity not configured for live stack".into());
         };
-
-        if !identity_path.exists() {
-            identity
-                .to_file(&identity_path)
-                .map_err(|e| format!("save identity: {e}"))?;
-        }
 
         const LXMF_APP: &str = "lxmf.delivery";
         let lxmf_dest_hash =

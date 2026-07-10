@@ -804,7 +804,25 @@
       "failed": "Nastavení identity selhalo",
       "export": "Exportovat zálohu",
       "exportPassphrase": "Záložní přístupová fráze",
-      "exportPassphraseRequired": "Před exportem zadejte záložní přístupovou frázi."
+      "exportPassphraseRequired": "Před exportem zadejte záložní přístupovou frázi.",
+      "importBackupLabel": "Importujte záložní JSON",
+      "importBackup": "Importujte zálohu",
+      "importBackupHint": "Obnoví pouze zobrazovaný název a metadata hash. Identita sítě vyžaduje váš soubor soukromého klíče nebo frázi pro obnovení.",
+      "importPrivateKeyLabel": "Importovat soukromý klíč",
+      "importPrivateKey": "Importovat soukromý klíč",
+      "importPrivateKeyFromFile": "Ze souboru",
+      "importPrivateKeyHint": "64bajtový soukromý klíč RNS: X25519 tajný (32 B) + Ed25519 seed (32 B) jako 128znakový hex nebo base64.",
+      "replaceIdentitySection": "Nahradit identitu",
+      "replaceIdentityHint": "Import nové identity nahradí vaše aktuální klíče a restartuje zásobník.",
+      "replaceIdentityConfirmTitle": "Nahradit identitu Reticulum?",
+      "replaceIdentityConfirmMessage": "To nahradí vaše aktuální klíče identity a restartuje zásobník Reticulum. Uložená metadata se již nemusí shodovat, pokud neimportujete odpovídající soukromý klíč.",
+      "replaceIdentityConfirmAction": "Nahradit identitu",
+      "invalidMnemonic": "Neplatná fráze pro obnovení — zadejte 12 platných anglických slov BIP-39.",
+      "invalidPrivateKeyLength": "Soubor soukromého klíče musí mít přesně 64 bajtů.",
+      "identityAlreadyConfigured": "Identita je již nakonfigurována. Chcete-li importovat nový, potvrďte nahrazení.",
+      "identityFileMissing": "Chybí soubor klíče identity. Znovu importujte svůj soukromý klíč nebo frázi pro obnovení.",
+      "backupHashMismatch": "Záložní hodnoty hash neodpovídají souboru klíče identity na disku.",
+      "importPrivateKeyRequiresStack": "Import soukromého klíče vyžaduje kompletní sestavení zásobníku Reticulum."
     },
     "reticulumInterfaces": {
       "title": "Rozhraní",
@@ -3511,11 +3529,6 @@
     "announceSaveSidecarStopped": "Před uložením nastavení oznamování spusťte zásobník Reticulum.",
     "clearAnnouncesDone": "Oznámení vymazána.",
     "clearAnnouncesFailed": "Nepodařilo se vymazat oznámení."
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "Aktivní identita",
-    "active": "Aktivní identita: {{name}}",
-    "activeBadge": "aktivní"
   },
   "reticulumProfileIcon": {
     "iconName": "Ikona avatara",

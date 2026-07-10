@@ -804,7 +804,25 @@
       "failed": "Identitätseinstellung fehlgeschlagen",
       "export": "Sicherungskopie",
       "exportPassphrase": "Backup-Passphrase",
-      "exportPassphraseRequired": "Geben Sie vor dem Exportieren eine Backup-Passphrase ein."
+      "exportPassphraseRequired": "Geben Sie vor dem Exportieren eine Backup-Passphrase ein.",
+      "importBackupLabel": "Backup-JSON importieren",
+      "importBackup": "Backup importieren",
+      "importBackupHint": "Stellt nur den Anzeigenamen und die Hash-Metadaten wieder her. Für die Netzwerkidentität ist Ihre private Schlüsseldatei oder Wiederherstellungsphrase erforderlich.",
+      "importPrivateKeyLabel": "Privaten Schlüssel importieren",
+      "importPrivateKey": "Privaten Schlüssel importieren",
+      "importPrivateKeyFromFile": "Aus Datei",
+      "importPrivateKeyHint": "64-Byte-RNS-Privatschlüssel: X25519-Geheimnis (32 B) + Ed25519-Seed (32 B) als 128-Zeichen-Hex oder Base64.",
+      "replaceIdentitySection": "Identität ersetzen",
+      "replaceIdentityHint": "Durch das Importieren einer neuen Identität werden Ihre aktuellen Schlüssel ersetzt und der Stapel neu gestartet.",
+      "replaceIdentityConfirmTitle": "Reticulum-Identität ersetzen?",
+      "replaceIdentityConfirmMessage": "Dadurch werden Ihre aktuellen Identitätsschlüssel ersetzt und der Reticulum-Stack neu gestartet. Gespeicherte Metadaten stimmen möglicherweise nicht mehr überein, es sei denn, Sie importieren den passenden privaten Schlüssel.",
+      "replaceIdentityConfirmAction": "Identität ersetzen",
+      "invalidMnemonic": "Ungültiger Wiederherstellungssatz: Geben Sie 12 gültige englische BIP-39-Wörter ein.",
+      "invalidPrivateKeyLength": "Die private Schlüsseldatei muss genau 64 Byte groß sein.",
+      "identityAlreadyConfigured": "Eine Identität ist bereits konfiguriert. Bestätigen Sie das Ersetzen, um ein neues zu importieren.",
+      "identityFileMissing": "Die Identitätsschlüsseldatei fehlt. Importieren Sie Ihren privaten Schlüssel oder Ihre Wiederherstellungsphrase erneut.",
+      "backupHashMismatch": "Backup-Hashes stimmen nicht mit der Identitätsschlüsseldatei auf der Festplatte überein.",
+      "importPrivateKeyRequiresStack": "Für den Import eines privaten Schlüssels ist ein vollständiger Reticulum-Stack-Build erforderlich."
     },
     "reticulumInterfaces": {
       "title": "Schnittstellen",
@@ -3511,11 +3529,6 @@
     "announceSaveSidecarStopped": "Starten Sie den Reticulum-Stapel, bevor Sie die Ankündigungseinstellungen speichern.",
     "clearAnnouncesDone": "Ansagen gelöscht.",
     "clearAnnouncesFailed": "Ansagen konnten nicht gelöscht werden."
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "Aktive Identität",
-    "active": "Aktive Identität: {{name}}",
-    "activeBadge": "aktiv"
   },
   "reticulumProfileIcon": {
     "iconName": "\"Avatar-Symbol\",",

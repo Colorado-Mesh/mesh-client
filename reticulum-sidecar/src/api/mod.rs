@@ -31,6 +31,14 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             post(identity::identity_generate),
         )
         .route("/api/v1/identity/import", post(identity::identity_import))
+        .route(
+            "/api/v1/identity/import-backup",
+            post(identity::identity_import_backup),
+        )
+        .route(
+            "/api/v1/identity/import-private",
+            post(identity::identity_import_private),
+        )
         .route("/api/v1/identity/export", post(identity::identity_export))
         .route(
             "/api/v1/identity/display-name",

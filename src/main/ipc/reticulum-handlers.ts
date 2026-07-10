@@ -7,6 +7,7 @@ import {
   readFirstExistingConfig,
   showReticulumConfigImportDialog,
 } from '../reticulum-config-paths';
+import { showReticulumIdentityImportDialog } from '../reticulum-identity-import';
 import type { ReticulumSidecarManager } from '../reticulum-sidecar-manager';
 import { assertIpcSender } from '../validate-ipc-sender';
 
@@ -128,6 +129,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   ipcMain.handle('reticulum:showConfigImportDialog', async (event) => {
     assertIpcSender(event, 'reticulum:showConfigImportDialog');
     return showReticulumConfigImportDialog();
+  });
+
+  ipcMain.handle('reticulum:showIdentityImportDialog', async (event) => {
+    assertIpcSender(event, 'reticulum:showIdentityImportDialog');
+    return showReticulumIdentityImportDialog();
   });
 }
 

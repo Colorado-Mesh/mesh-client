@@ -804,7 +804,25 @@
       "failed": "Configurazione dell'identità non riuscita",
       "export": "Esporta backup",
       "exportPassphrase": "Passphrase di backup",
-      "exportPassphraseRequired": "Inserisci una passphrase di backup prima dell'esportazione."
+      "exportPassphraseRequired": "Inserisci una passphrase di backup prima dell'esportazione.",
+      "importBackupLabel": "Importa JSON di backup",
+      "importBackup": "Importa backup",
+      "importBackupHint": "Ripristina solo il nome visualizzato e i metadati hash. L'identità di rete richiede il file della chiave privata o la frase di ripristino.",
+      "importPrivateKeyLabel": "Importa chiave privata",
+      "importPrivateKey": "Importa chiave privata",
+      "importPrivateKeyFromFile": "Dal fascicolo",
+      "importPrivateKeyHint": "Chiave privata RNS da 64 byte: segreto X25519 (32 B) + seme Ed25519 (32 B) come esadecimale o base64 di 128 caratteri.",
+      "replaceIdentitySection": "Sostituisci identità",
+      "replaceIdentityHint": "L'importazione di una nuova identità sostituisce le chiavi attuali e riavvia lo stack.",
+      "replaceIdentityConfirmTitle": "Sostituire l'identità Reticulum?",
+      "replaceIdentityConfirmMessage": "Questo sostituisce le chiavi di identità attuali e riavvia lo stack Reticulum. I metadati salvati potrebbero non corrispondere più a meno che non importi la chiave privata corrispondente.",
+      "replaceIdentityConfirmAction": "Sostituisci identità",
+      "invalidMnemonic": "Frase di recupero non valida: inserisci 12 parole inglesi BIP-39 valide.",
+      "invalidPrivateKeyLength": "Il file della chiave privata deve contenere esattamente 64 byte.",
+      "identityAlreadyConfigured": "Un'identità è già configurata. Conferma la sostituzione per importarne uno nuovo.",
+      "identityFileMissing": "Manca il file della chiave di identità. Reimporta la chiave privata o la frase di ripristino.",
+      "backupHashMismatch": "Gli hash di backup non corrispondono al file della chiave di identità sul disco.",
+      "importPrivateKeyRequiresStack": "L'importazione della chiave privata richiede la creazione completa dello stack Reticulum."
     },
     "reticulumInterfaces": {
       "title": "interfacce",
@@ -3511,11 +3529,6 @@
     "announceSaveSidecarStopped": "Avviare lo stack Reticulum prima di salvare le impostazioni di annuncio.",
     "clearAnnouncesDone": "Annunci liquidati.",
     "clearAnnouncesFailed": "Impossibile cancellare gli annunci."
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "Identità attiva",
-    "active": "Identità attiva: {{name}}",
-    "activeBadge": "attiva"
   },
   "reticulumProfileIcon": {
     "iconName": "icona avatar",

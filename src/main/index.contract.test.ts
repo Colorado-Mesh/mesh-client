@@ -277,6 +277,9 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     expect(RETICULUM_HANDLERS_SOURCE).toContain(
       "ipcMain.handle('reticulum:showConfigImportDialog'",
     );
+    expect(RETICULUM_HANDLERS_SOURCE).toContain(
+      "ipcMain.handle('reticulum:showIdentityImportDialog'",
+    );
     expect(INDEX_SOURCE).toContain('registerReticulumDbIpcHandlers');
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:getReticulumMessages'");
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:saveReticulumMessage'");

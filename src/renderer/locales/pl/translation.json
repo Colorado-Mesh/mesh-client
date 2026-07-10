@@ -804,7 +804,25 @@
       "failed": "Konfiguracja tożsamości nie powiodła się",
       "export": "Kopia zapasowa eksportu",
       "exportPassphrase": "Hasło zapasowe",
-      "exportPassphraseRequired": "Wprowadź hasło zapasowe przed eksportem."
+      "exportPassphraseRequired": "Wprowadź hasło zapasowe przed eksportem.",
+      "importBackupLabel": "Importuj kopię zapasową JSON",
+      "importBackup": "Importuj kopię zapasową",
+      "importBackupHint": "Przywraca tylko nazwę wyświetlaną i metadane skrótu. Tożsamość sieciowa wymaga pliku klucza prywatnego lub frazy odzyskiwania.",
+      "importPrivateKeyLabel": "Importuj klucz prywatny",
+      "importPrivateKey": "Importuj klucz prywatny",
+      "importPrivateKeyFromFile": "Z pliku",
+      "importPrivateKeyHint": "64-bajtowy klucz prywatny RNS: sekret X25519 (32 B) + ziarno Ed25519 (32 B) jako 128-znakowy kod szesnastkowy lub base64.",
+      "replaceIdentitySection": "Zastąp tożsamość",
+      "replaceIdentityHint": "Importowanie nowej tożsamości zastępuje bieżące klucze i ponownie uruchamia stos.",
+      "replaceIdentityConfirmTitle": "Zamienić tożsamość Reticulum?",
+      "replaceIdentityConfirmMessage": "Zastępuje to Twoje obecne klucze tożsamości i ponownie uruchamia stos Reticulum. Zapisane metadane mogą już nie być zgodne, chyba że zaimportujesz pasujący klucz prywatny.",
+      "replaceIdentityConfirmAction": "Zastąp tożsamość",
+      "invalidMnemonic": "Nieprawidłowa fraza odzyskiwania — wprowadź 12 prawidłowych angielskich słów BIP-39.",
+      "invalidPrivateKeyLength": "Plik klucza prywatnego musi mieć dokładnie 64 bajty.",
+      "identityAlreadyConfigured": "Tożsamość jest już skonfigurowana. Potwierdź wymianę, aby zaimportować nowy.",
+      "identityFileMissing": "Brak pliku klucza tożsamości. Zaimportuj ponownie swój klucz prywatny lub frazę odzyskiwania.",
+      "backupHashMismatch": "Skróty kopii zapasowych nie odpowiadają plikowi klucza tożsamości na dysku.",
+      "importPrivateKeyRequiresStack": "Import klucza prywatnego wymaga pełnej kompilacji stosu Reticulum."
     },
     "reticulumInterfaces": {
       "title": "Interfejsy",
@@ -3511,11 +3529,6 @@
     "announceSaveSidecarStopped": "Uruchom stos Reticulum przed zapisaniem ustawień zapowiedzi.",
     "clearAnnouncesDone": "Ogłoszenia wyczyszczone.",
     "clearAnnouncesFailed": "Nie udało się wyczyścić ogłoszeń."
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "Tożsamość aktywna",
-    "active": "Aktywna tożsamość: {{name}}",
-    "activeBadge": "aktywne"
   },
   "reticulumProfileIcon": {
     "iconName": "Ikona awatara",

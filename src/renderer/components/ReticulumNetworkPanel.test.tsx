@@ -81,4 +81,36 @@ describe('ReticulumNetworkPanel', () => {
       });
     });
   });
+
+  it('renders private key and backup import controls when identity is configured', async () => {
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+    expect(
+      await screen.findByLabelText('connectionPanel.reticulumIdentity.importPrivateKeyLabel'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('connectionPanel.reticulumIdentity.importBackupLabel'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumIdentity.replaceIdentitySection'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows replace confirm when importing private key over existing identity', async () => {
+    const user = userEvent.setup();
+    window.electronAPI.reticulum.proxyPost = vi.fn().mockResolvedValue({
+      ok: false,
+      error: 'identity_already_configured',
+    });
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    const textarea = await screen.findByLabelText(
+      'connectionPanel.reticulumIdentity.importPrivateKeyLabel',
+    );
+    await user.type(textarea, 'aa'.repeat(64));
+    await user.click(screen.getByText('connectionPanel.reticulumIdentity.importPrivateKey'));
+
+    expect(
+      await screen.findByText('connectionPanel.reticulumIdentity.replaceIdentityConfirmTitle'),
+    ).toBeInTheDocument();
+  });
 });

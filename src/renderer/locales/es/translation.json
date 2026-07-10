@@ -804,7 +804,25 @@
       "failed": "Error en la configuración de la identidad",
       "export": "Exportar copia de seguridad",
       "exportPassphrase": "Frase de contraseña de copia de seguridad",
-      "exportPassphraseRequired": "Introduzca una contraseña de copia de seguridad antes de exportar."
+      "exportPassphraseRequired": "Introduzca una contraseña de copia de seguridad antes de exportar.",
+      "importBackupLabel": "Importar copia de seguridad JSON",
+      "importBackup": "Importar copia de seguridad",
+      "importBackupHint": "Restaura solo el nombre para mostrar y los metadatos hash. La identidad de la red requiere su archivo de clave privada o frase de recuperación.",
+      "importPrivateKeyLabel": "Importar clave privada",
+      "importPrivateKey": "Importar clave privada",
+      "importPrivateKeyFromFile": "Desde archivo",
+      "importPrivateKeyHint": "Clave privada RNS de 64 bytes: secreto X25519 (32 B) + semilla Ed25519 (32 B) como hexadecimal de 128 caracteres o base64.",
+      "replaceIdentitySection": "Reemplazar identidad",
+      "replaceIdentityHint": "Importar una nueva identidad reemplaza sus claves actuales y reinicia la pila.",
+      "replaceIdentityConfirmTitle": "¿Reemplazar la identidad de Reticulum?",
+      "replaceIdentityConfirmMessage": "Esto reemplaza sus claves de identidad actuales y reinicia la pila de Reticulum. Es posible que los metadatos guardados ya no coincidan a menos que importe la clave privada coincidente.",
+      "replaceIdentityConfirmAction": "Reemplazar identidad",
+      "invalidMnemonic": "Frase de recuperación no válida: ingrese 12 palabras en inglés BIP-39 válidas.",
+      "invalidPrivateKeyLength": "El archivo de clave privada debe tener exactamente 64 bytes.",
+      "identityAlreadyConfigured": "Ya hay una identidad configurada. Confirme el reemplazo para importar uno nuevo.",
+      "identityFileMissing": "Falta el archivo de clave de identidad. Vuelva a importar su clave privada o frase de recuperación.",
+      "backupHashMismatch": "Los hash de la copia de seguridad no coinciden con el archivo de clave de identidad en el disco.",
+      "importPrivateKeyRequiresStack": "La importación de claves privadas requiere una compilación completa de la pila de Reticulum."
     },
     "reticulumInterfaces": {
       "title": "Interfaces",
@@ -3511,11 +3529,6 @@
     "announceSaveSidecarStopped": "Inicie la pila Reticulum antes de guardar la configuración del anuncio.",
     "clearAnnouncesDone": "Anuncios borrados.",
     "clearAnnouncesFailed": "No se han podido borrar los anuncios."
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "Identidad del activo:",
-    "active": "Identidad activa: {{name}}",
-    "activeBadge": "activo"
   },
   "reticulumProfileIcon": {
     "iconName": "Icono del Avatar",

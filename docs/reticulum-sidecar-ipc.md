@@ -17,13 +17,15 @@ Electron main validates proxy paths: must start with `/api/v1/` (no `..` segment
 
 ### Identity
 
-| Method | Path                            | Body / notes                  | Response                                                  |
-| ------ | ------------------------------- | ----------------------------- | --------------------------------------------------------- |
-| GET    | `/api/v1/identity/status`       |                               | `{ configured, identity_hash, lxmf_hash, display_name? }` |
-| POST   | `/api/v1/identity/generate`     | `{ display_name? }`           | `{ ok, mnemonic?, identity_hash, lxmf_hash }`             |
-| POST   | `/api/v1/identity/import`       | `{ mnemonic, display_name? }` | `{ ok, identity_hash, lxmf_hash }`                        |
-| POST   | `/api/v1/identity/export`       | `{ passphrase }`              | `{ ok, backup? }`                                         |
-| POST   | `/api/v1/identity/display-name` | `{ display_name }`            | `{ ok }`                                                  |
+| Method | Path                              | Body / notes                                       | Response                                                  |
+| ------ | --------------------------------- | -------------------------------------------------- | --------------------------------------------------------- |
+| GET    | `/api/v1/identity/status`         |                                                    | `{ configured, identity_hash, lxmf_hash, display_name? }` |
+| POST   | `/api/v1/identity/generate`       | `{ display_name?, replace? }`                      | `{ ok, mnemonic?, identity_hash, lxmf_hash }`             |
+| POST   | `/api/v1/identity/import`         | `{ mnemonic, display_name?, replace? }`            | `{ ok, identity_hash, lxmf_hash }`                        |
+| POST   | `/api/v1/identity/import-backup`  | `{ backup, passphrase?, display_name?, replace? }` | `{ ok, identity_hash, lxmf_hash, metadata_only? }`        |
+| POST   | `/api/v1/identity/import-private` | `{ private_key, display_name?, replace? }`         | `{ ok, identity_hash, lxmf_hash }`                        |
+| POST   | `/api/v1/identity/export`         | `{ passphrase }`                                   | `{ ok, backup? }`                                         |
+| POST   | `/api/v1/identity/display-name`   | `{ display_name }`                                 | `{ ok }`                                                  |
 
 ### Interfaces
 

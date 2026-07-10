@@ -22,6 +22,13 @@ export interface IdentityVaultActionResult {
   ok: boolean;
   error?: string;
 }
+
+export interface ReticulumIdentityImportDialogResult {
+  path: string | null;
+  contentBase64: string | null;
+  byteLength: number | null;
+  error: 'invalid_private_key_length' | 'read_failed' | null;
+}
 //
 // Rules for maintaining this file:
 // - Every method here must have a matching ipcMain.handle/on in src/main/index.ts
@@ -884,6 +891,7 @@ export interface ElectronAPI {
     proxyDelete: (apiPath: string) => Promise<unknown>;
     readDefaultConfigFile: () => Promise<{ path: string | null; content: string | null }>;
     showConfigImportDialog: () => Promise<{ path: string | null; content: string | null }>;
+    showIdentityImportDialog: () => Promise<ReticulumIdentityImportDialogResult>;
     onEvent: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
     onStatus: (cb: (status: ReticulumSidecarStatus) => void) => () => void;
   };

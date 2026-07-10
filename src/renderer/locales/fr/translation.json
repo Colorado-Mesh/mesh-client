@@ -804,7 +804,25 @@
       "failed": "Échec de la configuration de l'identité",
       "export": "Exporter les sauvegardes",
       "exportPassphrase": "Phrase de passe de sauvegarde",
-      "exportPassphraseRequired": "Saisissez une phrase de passe de sauvegarde avant l'exportation."
+      "exportPassphraseRequired": "Saisissez une phrase de passe de sauvegarde avant l'exportation.",
+      "importBackupLabel": "Importer le JSON de sauvegarde",
+      "importBackup": "Importer une sauvegarde",
+      "importBackupHint": "Restaure uniquement le nom d’affichage et les métadonnées de hachage. L'identité du réseau nécessite votre fichier de clé privée ou votre phrase de récupération.",
+      "importPrivateKeyLabel": "Importer la clé privée",
+      "importPrivateKey": "Importer la clé privée",
+      "importPrivateKeyFromFile": "À partir du fichier",
+      "importPrivateKeyHint": "Clé privée RNS de 64 octets : secret X25519 (32 B) + graine Ed25519 (32 B) au format hexadécimal ou base64 de 128 caractères.",
+      "replaceIdentitySection": "Remplacer l'identité",
+      "replaceIdentityHint": "L'importation d'une nouvelle identité remplace vos clés actuelles et redémarre la pile.",
+      "replaceIdentityConfirmTitle": "Remplacer l'identité Reticulum ?",
+      "replaceIdentityConfirmMessage": "Cela remplace vos clés d'identité actuelles et redémarre la pile Reticulum. Les métadonnées enregistrées peuvent ne plus correspondre, sauf si vous importez la clé privée correspondante.",
+      "replaceIdentityConfirmAction": "Remplacer l'identité",
+      "invalidMnemonic": "Phrase de récupération non valide : saisissez 12 mots anglais BIP-39 valides.",
+      "invalidPrivateKeyLength": "Le fichier de clé privée doit faire exactement 64 octets.",
+      "identityAlreadyConfigured": "Une identité est déjà configurée. Confirmez le remplacement pour en importer un nouveau.",
+      "identityFileMissing": "Le fichier de clé d'identité est manquant. Réimportez votre clé privée ou votre phrase de récupération.",
+      "backupHashMismatch": "Les hachages de sauvegarde ne correspondent pas au fichier de clé d'identité sur le disque.",
+      "importPrivateKeyRequiresStack": "L’importation de clé privée nécessite une construction complète de la pile Reticulum."
     },
     "reticulumInterfaces": {
       "title": "Interfaces",
@@ -3511,11 +3529,6 @@
     "announceSaveSidecarStopped": "Démarrez la pile Reticulum avant d'enregistrer les paramètres d'annonce.",
     "clearAnnouncesDone": "Annonces effacées.",
     "clearAnnouncesFailed": "Échec de l'effacement des annonces."
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "identité actuelle",
-    "active": "Identité active : {{name}}",
-    "activeBadge": "active"
   },
   "reticulumProfileIcon": {
     "iconName": "Avatar",
