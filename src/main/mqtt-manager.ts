@@ -108,6 +108,21 @@ export function parseChannelPskLine(
   return psk ? { psk } : null;
 }
 
+const MESHTASTIC_MQTT_TOPIC_CHANNEL_MARKERS = ['/2/e/', '/2/json/'] as const;
+
+/** Extract channel name from `.../2/e/{channelName}/...` or `.../2/json/{channelName}/...`. */
+export function parseMeshtasticMqttTopicChannelName(topic: string): string | undefined {
+  for (const marker of MESHTASTIC_MQTT_TOPIC_CHANNEL_MARKERS) {
+    const idx = topic.indexOf(marker);
+    if (idx === -1) continue;
+    const rest = topic.slice(idx + marker.length);
+    const slash = rest.indexOf('/');
+    const channelName = slash === -1 ? rest : rest.slice(0, slash);
+    if (channelName.length > 0) return channelName;
+  }
+  return undefined;
+}
+
 /** Extract MQTT encrypted topic channel name from `.../2/e/{channelName}/{gatewayId}`. */
 export function parseMeshtasticMqttEncryptedTopicChannelName(topic: string): string | undefined {
   const marker = '/2/e/';
@@ -433,9 +448,9 @@ export class MQTTManager extends EventEmitter {
     return this.channelKeysByName.get(channelName) ?? DEFAULT_PSK;
   }
 
-  private resolveChannelIndexFromTopic(topic: string): number {
-    const channelName = parseMeshtasticMqttEncryptedTopicChannelName(topic);
-    if (!channelName) return 0;
+  private resolveChannelIndexFromTopic(topic: string): number | undefined {
+    const channelName = parseMeshtasticMqttTopicChannelName(topic);
+    if (!channelName) return undefined;
     const mapped = this.channelNameToIndex.get(channelName);
     if (mapped !== undefined) return mapped;
     if (channelName === 'LongFast') return 0;
@@ -453,19 +468,23 @@ export class MQTTManager extends EventEmitter {
     return idx <= 7 ? idx : 7;
   }
 
-  /** Prefer authoritative MeshPacket.channel; log when topic name map disagrees (sampled). */
+  /** Prefer topic channel name (maps to receiver's local slot); fall back to MeshPacket.channel. */
   private resolveMqttInboundTextChannelIndex(rfChannel: number, topic?: string): number {
-    const channelIndex = this.clampMeshtasticRfChannel(rfChannel);
     if (topic !== undefined) {
       const topicIndex = this.resolveChannelIndexFromTopic(topic);
-      if (topicIndex !== channelIndex) {
-        this.logSampledDebug(
-          `mqtt-channel-topic-mismatch:${topicIndex}:${channelIndex}`,
-          `[Meshtastic MQTT] TEXT channel from packet (${channelIndex}) differs from topic map (${topicIndex}); using packet channel | topic=${sanitizeLogMessage(topic)}`,
-        );
+      if (topicIndex !== undefined) {
+        const packetIndex = this.clampMeshtasticRfChannel(rfChannel);
+        if (topicIndex !== packetIndex) {
+          this.logSampledDebug(
+            `mqtt-channel-topic-mismatch:${topicIndex}:${packetIndex}`,
+            `[Meshtastic MQTT] TEXT topic channel (${topicIndex}) differs from packet channel (${packetIndex}); using topic channel | topic=${sanitizeLogMessage(topic)}`,
+          );
+        }
+        return topicIndex;
       }
+      return this.clampMeshtasticRfChannel(rfChannel);
     }
-    return channelIndex;
+    return this.clampMeshtasticRfChannel(rfChannel);
   }
 
   private wildcardSubscribeTopicForPrefix(topicPrefix: string): string {

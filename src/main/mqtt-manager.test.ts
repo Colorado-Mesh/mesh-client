@@ -16,6 +16,7 @@ import {
   parseChannelPskLine,
   parseMeshtasticMqttEncryptedTopicChannelName,
   parseMeshtasticMqttEncryptedTopicGatewayId,
+  parseMeshtasticMqttTopicChannelName,
   parsePsk,
   portNumEnumToProtoName,
   prepareMqttProtobufBytes,
@@ -67,7 +68,7 @@ function buildEnvelope(options: {
   dataBytes: Uint8Array;
   psk: Buffer;
   channelName?: string;
-  /** MeshPacket.channel RF slot (0–7); authoritative for inbound ingest. */
+  /** MeshPacket.channel RF slot (0–7) on the wire. */
   channel?: number;
 }): Buffer {
   const { nodeId, packetId, dataBytes, psk, channelName = 'LongFast', channel = 0 } = options;
@@ -94,7 +95,7 @@ function buildDecodedEnvelope(options: {
   packetId: number;
   dataBytes: Uint8Array;
   channelName?: string;
-  /** MeshPacket.channel RF slot (0–7); authoritative for inbound ingest. */
+  /** MeshPacket.channel RF slot (0–7) on the wire. */
   channel?: number;
   hopStart?: number;
   hopLimit?: number;
@@ -241,6 +242,24 @@ describe('parseMeshtasticMqttEncryptedTopicChannelName', () => {
     expect(
       parseMeshtasticMqttEncryptedTopicChannelName('msh/US/CO/2/json/LongFast/!698524e8'),
     ).toBeUndefined();
+  });
+});
+
+describe('parseMeshtasticMqttTopicChannelName', () => {
+  it('extracts channel name from encrypted MQTT topic', () => {
+    expect(parseMeshtasticMqttTopicChannelName('msh/US/CO/2/e/LongFast/!835bb187')).toBe(
+      'LongFast',
+    );
+  });
+
+  it('extracts channel name from JSON MQTT topic', () => {
+    expect(parseMeshtasticMqttTopicChannelName('msh/US/CO/2/json/Private/!698524e8')).toBe(
+      'Private',
+    );
+  });
+
+  it('returns undefined when topic has no channel segment', () => {
+    expect(parseMeshtasticMqttTopicChannelName('msh/US/CO/2/status/!698524e8')).toBeUndefined();
   });
 });
 
@@ -1536,7 +1555,7 @@ describe('publish — decrypt round-trip (explicit PSK)', () => {
 });
 
 describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
-  it('attributes encrypted text to MeshPacket.channel when topic map matches', () => {
+  it('attributes encrypted text to topic channel when topic map matches packet', () => {
     const manager = new MQTTManager();
     (manager as any)._doConnect = () => {};
     manager.connect({
@@ -1599,7 +1618,7 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
     expect((messages[0] as { channel: number }).channel).toBe(0);
   });
 
-  it('attributes LongFast on configured non-zero slot via MeshPacket.channel', () => {
+  it('attributes LongFast on configured non-zero slot via topic channel map', () => {
     const manager = new MQTTManager();
     (manager as any)._doConnect = () => {};
     manager.connect({
@@ -1632,7 +1651,7 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
     expect((messages[0] as { channel: number }).channel).toBe(1);
   });
 
-  it('prefers MeshPacket.channel over LongFast topic fallback when index map is missing', () => {
+  it('uses topic LongFast fallback when no index map even when packet channel is 1', () => {
     const manager = new MQTTManager();
     const nodeId = 0x11223377;
     const packetId = 0x00000036;
@@ -1650,10 +1669,10 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
     (manager as any).onMessage('msh/US/2/e/LongFast/!11223377', payload);
 
     expect(messages).toHaveLength(1);
-    expect((messages[0] as { channel: number }).channel).toBe(1);
+    expect((messages[0] as { channel: number }).channel).toBe(0);
   });
 
-  it('prefers MeshPacket.channel when topic map would attribute LongFast to channel 0', () => {
+  it('uses topic LongFast channel 0 when packet channel disagrees', () => {
     const manager = new MQTTManager();
     const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
     (manager as any)._doConnect = () => {};
@@ -1674,7 +1693,7 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
       DataSchema,
       create(DataSchema, {
         portnum: PortNum.TEXT_MESSAGE_APP,
-        payload: new TextEncoder().encode('packet wins over topic map'),
+        payload: new TextEncoder().encode('topic wins over packet channel'),
       }),
     );
     const payload = buildEnvelope({ nodeId, packetId, dataBytes, psk: DEFAULT_PSK, channel: 1 });
@@ -1684,18 +1703,18 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
     (manager as any).onMessage('msh/US/2/e/LongFast/!11223388', payload);
 
     expect(messages).toHaveLength(1);
-    expect((messages[0] as { channel: number }).channel).toBe(1);
+    expect((messages[0] as { channel: number }).channel).toBe(0);
     expect(
       debugSpy.mock.calls.some(
         (call) =>
           typeof call[0] === 'string' &&
-          call[0].includes('TEXT channel from packet (1) differs from topic map (0)'),
+          call[0].includes('TEXT topic channel (0) differs from packet channel (1)'),
       ),
     ).toBe(true);
     debugSpy.mockRestore();
   });
 
-  it('clamps MeshPacket.channel above 7 to slot 7', () => {
+  it('attributes LongFast topic to slot 0 when packet channel exceeds 7', () => {
     const manager = new MQTTManager();
     const nodeId = 0x112233aa;
     const packetId = 0x00000039;
@@ -1719,10 +1738,10 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
     (manager as any).onMessage('msh/US/2/e/LongFast/!112233aa', payload);
 
     expect(messages).toHaveLength(1);
-    expect((messages[0] as { channel: number }).channel).toBe(7);
+    expect((messages[0] as { channel: number }).channel).toBe(0);
   });
 
-  it('clamps negative JSON text channel via unsigned coercion to slot 7', () => {
+  it('attributes LongFast JSON text to topic channel 0 when json channel is negative', () => {
     const manager = new MQTTManager();
     const nodeId = 0x112233ab;
     const json = {
@@ -1740,7 +1759,57 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
     );
 
     expect(messages).toHaveLength(1);
-    expect((messages[0] as { channel: number }).channel).toBe(7);
+    expect((messages[0] as { channel: number }).channel).toBe(0);
+  });
+
+  it('uses JSON topic LongFast channel 1 when json.channel is 0 (Colorado regression)', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 1 }]);
+
+    const nodeId = 0x112233cd;
+    const json = {
+      type: 'text',
+      from: nodeId,
+      channel: 0,
+      text: 'json topic slot 1',
+    };
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage(
+      'msh/US/2/json/LongFast/!112233cd',
+      Buffer.from(JSON.stringify(json)),
+    );
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(1);
+  });
+
+  it('falls back to json.channel when topic has no parseable channel segment', () => {
+    const manager = new MQTTManager();
+    const nodeId = 0x112233ce;
+    const json = {
+      type: 'text',
+      from: nodeId,
+      channel: 2,
+      text: 'non-standard topic channel fallback',
+    };
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/CO/2/status/!112233ce', Buffer.from(JSON.stringify(json)));
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(2);
   });
 
   it('attributes omitted MeshPacket.channel to slot 0 on LongFast topic', () => {
@@ -1764,7 +1833,7 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
     expect((messages[0] as { channel: number }).channel).toBe(0);
   });
 
-  it('attributes decoded MQTT text to MeshPacket.channel', () => {
+  it('attributes decoded MQTT text to topic channel', () => {
     const manager = new MQTTManager();
     const nodeId = 0x11223399;
     const packetId = 0x00000038;
@@ -1782,7 +1851,91 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
     (manager as any).onMessage('msh/US/2/e/LongFast/!11223399', payload);
 
     expect(messages).toHaveLength(1);
-    expect((messages[0] as { channel: number }).channel).toBe(2);
+    expect((messages[0] as { channel: number }).channel).toBe(0);
+  });
+
+  it('uses topic LongFast channel 0 when gateway packet channel is 1 (regression)', () => {
+    const manager = new MQTTManager();
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 0 }]);
+
+    const nodeId = 0x112233bb;
+    const packetId = 0x0000003c;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('gateway slot 1 user slot 0'),
+      }),
+    );
+    const payload = buildEnvelope({ nodeId, packetId, dataBytes, psk: DEFAULT_PSK, channel: 1 });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!112233bb', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(0);
+    expect(
+      debugSpy.mock.calls.some(
+        (call) =>
+          typeof call[0] === 'string' &&
+          call[0].includes('TEXT topic channel (0) differs from packet channel (1)'),
+      ),
+    ).toBe(true);
+    debugSpy.mockRestore();
+  });
+
+  it('uses topic LongFast channel 1 when gateway packet channel is 0 (Colorado regression)', () => {
+    const manager = new MQTTManager();
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 1 }]);
+
+    const nodeId = 0x112233cc;
+    const packetId = 0x0000003d;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('gateway slot 0 user slot 1'),
+      }),
+    );
+    const payload = buildEnvelope({ nodeId, packetId, dataBytes, psk: DEFAULT_PSK, channel: 0 });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/2/e/LongFast/!112233cc', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(1);
+    expect(
+      debugSpy.mock.calls.some(
+        (call) =>
+          typeof call[0] === 'string' &&
+          call[0].includes('TEXT topic channel (1) differs from packet channel (0)'),
+      ),
+    ).toBe(true);
+    debugSpy.mockRestore();
   });
 
   it('attributes LongFast topic to slot 1 from renderer unnamed default-public entry shape', () => {

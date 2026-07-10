@@ -94,7 +94,8 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 
 ### MQTT
 
-- **Meshtastic:** `mqtt-manager.ts` (AES-128/256-CTR with Meshtastic nonce layout, channel key map, protobuf ingest, dedup); `meshtasticMqttPublish.ts` (per-channel uplink name/PSK); `meshtasticChannelPskInput.ts` + `src/shared/meshtasticChannelPskLine.ts` (Connection tab PSK lines); `meshtasticMqttSettingsStorage.ts` (manual key persistence/recovery); `meshtasticMqttIdentity.ts` (MQTT-only outbound `from`: last RF node id vs virtual id); `mqtt-broker-client-id.ts` (stable broker clientId in `app_settings`). Renderer TLS: `mqttTls.ts`.
+- **Meshtastic:** `mqtt-manager.ts` (AES-128/256-CTR with Meshtastic nonce layout, channel key map, protobuf ingest, dedup); inbound MQTT text prefers topic channel name (`/2/e/` and `/2/json/`) mapped through `channelNameToIndex` (receiver-local slot); `meshtasticMqttPublish.ts` (per-channel uplink name/PSK); `meshtasticChannelPskInput.ts` + `src/shared/meshtasticChannelPskLine.ts` (Connection tab PSK lines, including `ChannelName@index=base64`); `meshtasticMqttSettingsStorage.ts` (manual key persistence/recovery); `meshtasticMqttIdentity.ts` (MQTT-only outbound `from`: last RF node id vs virtual id); `mqtt-broker-client-id.ts` (stable broker clientId in `app_settings`). Renderer TLS: `mqttTls.ts`.
+- **Meshtastic WiFi/TCP (fast):** `TransportTcpIpc` + main-process `meshtastic:tcp-*` IPC (`net.Socket`, port **4403**, native framing); `connection.ts` `case 'tcp'`.
 - **PKC remote admin (Meshtastic, local radio required):** `meshtasticRemoteAdmin.ts`, `meshtasticRemoteAdminSnapshot.ts` (tab-scoped partial fetch), `meshtasticRemoteAdminKeyStorage.ts` (per-node keys in `app_settings`), `ConfigureNodeSelector.tsx`; serialized with S&F via `meshtasticBacklogUtils.ts` (`remoteAdminReadsActiveCount`).
 - **MeshCore:** `meshcore-mqtt-adapter.ts` (JSON v1 envelope); LetsMesh JWT in `letsMeshJwt.ts`.
 

@@ -678,6 +678,7 @@
     "channelPsksInvalidLength": "Each key must decode to 16 bytes (AES-128) or 32 bytes (AES-256).",
     "channelPsksInvalidBase64": "Invalid base64 on a channel PSK line.",
     "channelPsksPrivateUplinkNote": "Channel uplink is AES-PSK encrypted on /2/e/ (no JSON mirror for private keys). Broker monitors may still log decrypt failures for PKI/DM traffic between other nodes — that is normal and unrelated to channel PSKs here.",
+    "channelPsksMqttOnlyIndexHint": "Without a radio connected, inbound MQTT messages route to chat tabs by channel name. Use ChannelName@index=base64 so each name maps to the correct slot — for example LongFast@1=AQ== when your public mesh channel is slot 1 (Colorado-mesh style). LongFast without @ maps to slot 0.",
     "mqttTlsEnabled": "Enable TLS (mqtts / wss)",
     "mqttTlsInsecure": "Allow insecure TLS (self-signed certificate). Off by default — only enable if your broker uses a non-public CA.",
     "autoConnect": "Auto-connect on application start",

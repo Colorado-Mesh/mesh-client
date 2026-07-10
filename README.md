@@ -81,11 +81,11 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **protocol switcher** (Meshtastic green, MeshCore cyan, Reticulum amber) to focus a tab; the other sessions stay connected in the background.
 
-| Protocol   | Transport focus                               | Deep-dive doc                                                                          |
-| ---------- | --------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Meshtastic | BLE, USB serial, HTTP, MQTT (protobuf)        | Sections below + [diagnostics](docs/diagnostics.md)                                    |
-| MeshCore   | BLE, USB serial, TCP, MQTT (JSON v1)          | Below + [parity doc](docs/meshcore-meshtastic-parity.md)                               |
-| Reticulum  | Sidecar stack: TCP, Auto, RNode USB/BLE/Wi‑Fi | [docs/reticulum.md](docs/reticulum.md) + [IPC contract](docs/reticulum-sidecar-ipc.md) |
+| Protocol   | Transport focus                                    | Deep-dive doc                                                                          |
+| ---------- | -------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Meshtastic | BLE, USB serial, HTTP, TCP (4403), MQTT (protobuf) | Sections below + [diagnostics](docs/diagnostics.md)                                    |
+| MeshCore   | BLE, USB serial, TCP, MQTT (JSON v1)               | Below + [parity doc](docs/meshcore-meshtastic-parity.md)                               |
+| Reticulum  | Sidecar stack: TCP, Auto, RNode USB/BLE/Wi‑Fi      | [docs/reticulum.md](docs/reticulum.md) + [IPC contract](docs/reticulum-sidecar-ipc.md) |
 
 ### Meshtastic Features
 
@@ -101,7 +101,7 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **
 **MQTT**
 
 - Subscribe to a broker to receive mesh traffic over the internet; **AES-128/256-CTR** decryption (16- or 32-byte channel PSKs), automatic RF deduplication, **cross-transport chat dedup** (when the same message arrives on MQTT and RF within ~10 minutes, one bubble is kept and the transport badge upgrades to **both**), **exponential MQTT reconnect backoff** (60s base, capped at 45 minutes; faster retry on connack timeout), and an **active node cache** that periodically refreshes presence information so MQTT-only and RF+MQTT nodes stay visible even when your radio is offline
-- **Channel PSKs** on the Connection tab: base64 keys per line (optional `ChannelName=base64` for MQTT-only channels); multiple keys per channel name are supported; LongFast default is always tried; keys from the Radio tab sync automatically when the radio is connected (custom named keys are not overwritten by the default public PSK on sync)
+- **Channel PSKs** on the Connection tab: base64 keys per line (`ChannelName=base64` or `ChannelName@index=base64` when your local slot differs from the MQTT topic name); multiple keys per channel name are supported; LongFast default is always tried; keys from the Radio tab sync automatically when the radio is connected (custom named keys are not overwritten by the default public PSK on sync). Inbound MQTT text is attributed using the **topic channel name** (receiver-local slot), not the sender's `MeshPacket.channel`
 - **MQTT-only chat identity**: when sending without a connected radio, outbound `from` uses your last known RF node id when available, otherwise a stable per-install virtual id (persisted in app settings)
 - **Enable TLS (mqtts / wss)** toggle for private brokers (not only port 8883/443); optional **Allow insecure TLS** for self-signed or non–public CA chains
 - **Per-channel MQTT uplink** (RF → MQTT) uses each channel’s real name and PSK when publishing
@@ -173,7 +173,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 
 - **Bluetooth LE**: pair wirelessly; on macOS/Windows, startup auto-reconnect can run without a user gesture (Noble backend). On Linux, Web Bluetooth requires user gesture and picker selection. **Reticulum** BLE (RNode / BLE Peer interfaces) uses the sidecar `btleplug` stack and may coexist on a **different** MAC while Meshtastic/MeshCore use Noble/Web Bluetooth — see [Reticulum BLE coexistence](docs/reticulum.md#interface-management-connection-tab).
 - **USB Serial**: plug in via USB; auto-reconnects silently on startup (saved port signature matches the same physical device across re-enumeration)
-- **WiFi / HTTP / TCP**: connect to network-enabled nodes; saves last address for quick reconnect
+- **WiFi / HTTP / TCP**: Meshtastic offers **WiFi/HTTP** (REST, one packet per request) and **WiFi/TCP (fast)** (native binary streaming on port **4403**, same framing as USB serial — much faster NodeDB sync on large networks); MeshCore uses TCP on port **5000** by default; saves last address for quick reconnect
 - **Dual LoRa mode**: Meshtastic and MeshCore stay connected while you switch views; per-protocol unread badges; passive toasts on background traffic
 - **Connection status in header**: device, MQTT, and TAK indicators pulse **red** after an unexpected disconnect; manual stop/disconnect stays gray; in-progress connect keeps yellow
 
@@ -284,7 +284,7 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 
 - Battery voltage from device `selfInfo`; per-packet signal telemetry (SNR/RSSI) from RF event 0x88; visible in the Telemetry tab
 - **Environment charts** (temperature, humidity, barometric pressure, etc.) in the Telemetry tab when pulled Cayenne LPP data is available; same panel as Meshtastic environment telemetry
-- **Raw Packet Log** (**Sniffer** tab): **MeshCore:** real-time virtualized log of RF packets from the `LOG_RX_DATA` push event (0x88), with route type, payload type, hop count, SNR, RSSI, optional resolved node name, and expandable raw hex; **Meshtastic:** log of received mesh packets (protobuf) with port/type, RF vs MQTT, SNR, RSSI, node name, and expandable hex; **Reticulum:** sidecar wire packets via WebSocket/`GET /api/v1/packets` (see [docs/reticulum.md](docs/reticulum.md)); filter by type, name, or hex; **Clear** resets the log; ring-buffer capped at **2,500** entries per protocol
+- **Raw Packet Log** (**Sniffer** tab): virtualized log (ring-buffer capped at **2,500** entries per protocol) with **sortable columns**, **relative timestamps**, **quick-filter chips**, and expandable hex. **MeshCore:** on-air **path hash chains**, hop count, route-type color bars, device-type icons, ping/trace from row actions; **Meshtastic:** transport badges (RF/MQTT), collapsed hop count; **Reticulum:** sidecar wire packets via WebSocket/`GET /api/v1/packets` (see [docs/reticulum.md](docs/reticulum.md)); filter by type, name, or hex; **Clear** resets the buffer
 
 **Device Control**
 
@@ -426,7 +426,7 @@ All three protocols can run at the same time. Use the **Meshtastic / MeshCore / 
 1. Power on your Meshtastic device
 2. Put it in Bluetooth pairing mode (if connecting via BLE)
 3. Open Mesh-Client and go to the **Connection** tab, ensure **Meshtastic** is selected
-4. Select your connection type (Bluetooth / USB Serial / WiFi / MQTT)
+4. Select your connection type (Bluetooth / USB Serial / WiFi/HTTP / WiFi/TCP (fast) / MQTT)
 5. Click **Connect** and select your device from the picker
 6. Wait for status to show **Configured**; you're connected
 
@@ -469,13 +469,13 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 
 ### Connection Types
 
-**Meshtastic** supports all four transport types:
+**Meshtastic** supports BLE, USB serial, WiFi/HTTP, WiFi/TCP (fast, port 4403), and MQTT:
 
-| Platform | Bluetooth | Serial | HTTP | MQTT |
-| -------- | --------- | ------ | ---- | ---- |
-| macOS    | Yes       | Yes    | Yes  | Yes  |
-| Windows  | Yes       | Yes    | Yes  | Yes  |
-| Linux    | Yes       | Yes    | Yes  | Yes  |
+| Platform | Bluetooth | Serial | HTTP | TCP (4403) | MQTT |
+| -------- | --------- | ------ | ---- | ---------- | ---- |
+| macOS    | Yes       | Yes    | Yes  | Yes        | Yes  |
+| Windows  | Yes       | Yes    | Yes  | Yes        | Yes  |
+| Linux    | Yes       | Yes    | Yes  | Yes        | Yes  |
 
 **MeshCore** supports BLE, Web Serial, TCP, and optional MQTT (broker JSON v1 adapter):
 

@@ -588,4 +588,33 @@ describe('RawPacketLogPanel meshtastic expanded details', () => {
     expect(screen.queryByText('ADVERT', { selector: 'span' })).not.toBeInTheDocument();
     expect(screen.getByText('TXT_MSG', { selector: 'span' })).toBeInTheDocument();
   });
+
+  it('reorders MeshCore rows when HB column header is clicked', () => {
+    const lowHop = { ...meshcorePacket('aabb', 'ADVERT'), hopCount: 1, ts: 1_710_000_000_001 };
+    const highHop = {
+      ...meshcorePacket('ccdd', 'TXT_MSG'),
+      hopCount: 3,
+      ts: 1_710_000_000_002,
+      pathBytes: [],
+    };
+    render(
+      <RawPacketLogPanel
+        variant="meshcore"
+        packets={[lowHop, highHop]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    const rowLabel = (label: string) =>
+      screen.getAllByText(label).find((el) => el.tagName === 'SPAN' && !el.closest('button'));
+
+    fireEvent.click(screen.getByRole('button', { name: /Sort by HB/i }));
+
+    const highRow = rowLabel('TXT_MSG');
+    const lowRow = rowLabel('ADVERT');
+    expect(highRow).toBeDefined();
+    expect(lowRow).toBeDefined();
+    expect(highRow!.compareDocumentPosition(lowRow!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
 });

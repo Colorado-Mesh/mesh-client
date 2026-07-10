@@ -500,6 +500,22 @@ Alternatively, enter the device's **IP address** directly instead of its `.local
 
 IPv6 addresses work for Meshtastic Wi‑Fi, MeshCore TCP, and Reticulum RNode Wi‑Fi. Use bracket form when a port is included: `[fe80::1]:4403` or `[fd00::1]:7633`. Bare IPv6 (e.g. `::1` or `fd00::1`) is accepted; the app normalizes bracket form for HTTP URLs automatically.
 
+### Meshtastic: WiFi/TCP (fast) vs WiFi/HTTP
+
+**WiFi/TCP (fast)** on the Connection tab uses Meshtastic's native binary streaming protocol on port **4403** (same `0x94 0xc3` framing as USB serial). Use it when the node exposes TCP and you need fast NodeDB sync — configure typically completes in about a second on large networks instead of 40–60+ seconds over HTTP REST (one packet per request).
+
+**WiFi/HTTP** remains the fallback when TCP is unavailable on the firmware.
+
+**Symptoms suggesting TCP:** HTTP connect succeeds but status stays on **Connecting** or **Configuring** for a long time with a large NodeDB (~250 nodes).
+
+**Address examples:** `192.168.1.10:4403`, `meshtastic.local:4403`, `[fd00::1]:4403`.
+
+### Meshtastic HTTP fails immediately with "Invalid host format"
+
+**Cause:** Builds before v5.21.x validated the hostname incorrectly when the address included a port (`192.168.1.10:443`), rejecting every HTTP connect.
+
+**Fix:** Upgrade to v5.21.2 or later. As a workaround on older builds, omit the port when the app default applies.
+
 Local/private targets include RFC1918 IPv4 (`10.x`, `172.16–31.x`, `192.168.x`), RFC4193 ULA (`fd00::/8`), link-local IPv6 (`fe80::/10`), loopback, and `.local` mDNS names.
 
 ## Sleep, wake, and long-running sessions
@@ -969,14 +985,17 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 
 **Cause**
 
-MQTT ingest historically mapped inbound text to a channel index from the topic name (`LongFast`, regional names) instead of the authoritative `MeshPacket.channel` field in the ServiceEnvelope. When the topic map was stale or incomplete (unnamed default-public on slot 1, delayed channel-key sync), traffic was attributed to channel 0.
+MQTT ingest must map inbound text to the **receiver's** local channel slot using the MQTT topic channel name (`LongFast`, regional names, etc.) via `channelNameToIndex`. `MeshPacket.channel` in the ServiceEnvelope is the **sender's** local RF slot and must not drive attribution — remote gateways often use a different slot layout (e.g. LongFast on slot 1 while you use slot 0).
+
+Mis-filed messages also occur when `channelNameToIndex` is stale or incomplete: unnamed default-public on slot 1 without radio sync, MQTT-only without `ChannelName@index=` manual PSK lines, or delayed `mqtt:updateChannelKeys` after connect.
 
 **Fix**
 
-1. Update to a build that prefers `MeshPacket.channel` for MQTT text ingest.
-2. Connect the radio so channel keys sync to MQTT (`mqtt:updateChannelKeys` in logs after configure).
-3. On **Export for Developer** / **Copy Debug Snapshot**, check `meshtastic.channelPills`, `meshtastic.channelConfigsSummary`, and `meshtastic.mqttChannelKeyEntryCount` — slot 1 with empty name and `isDefaultPublicPsk: true` is the common Colorado-mesh layout.
-4. When reporting, note whether mis-filed messages are **MQTT-only**, **RF-only**, or **both**, and attach a Radio tab screenshot of channel names + slot indices.
+1. Update to a build that prefers the **topic channel name** for MQTT text ingest (sampled log `mqtt-channel-topic-mismatch:*` when topic index disagrees with packet channel).
+2. Connect the radio so channel keys and slot indexes sync to MQTT (`mqtt:updateChannelKeys` in logs after configure).
+3. **MQTT-only (no radio):** add `ChannelName@index=base64` lines in Connection → Channel PSKs (e.g. `LongFast@1=AQ==` for Colorado-mesh slot-1 public). The Connection panel shows an inline hint when no radio is configured and no `@index` lines are present.
+4. On **Export for Developer** / **Copy Debug Snapshot**, check `meshtastic.channelPills`, `meshtastic.channelConfigsSummary`, and `meshtastic.mqttChannelKeyEntryCount` — slot 1 with empty name and `isDefaultPublicPsk: true` is the common Colorado-mesh layout.
+5. When reporting, note whether mis-filed messages are **MQTT-only**, **RF-only**, or **both**, and attach a Radio tab screenshot of channel names + slot indices.
 
 ### Phantom chat unread on channels not on the radio
 

@@ -89,6 +89,38 @@ describe('validateHttpHost (source contract)', () => {
   });
 });
 
+// ─── meshtastic:tcp-write byte element validation ───────────────────
+
+describe('meshtastic:tcp-write byte validation (source contract)', () => {
+  it('validates individual byte elements in addition to array length', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-write'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 600);
+    expect(handlerBody).toContain('Number.isInteger(b)');
+    expect(handlerBody).toContain('b >= 0');
+    expect(handlerBody).toContain('b <= 255');
+  });
+
+  it('defines a 256 KB cap on meshtastic tcp-write payloads', () => {
+    expect(INDEX_SOURCE).toContain('const MESHTASTIC_TCP_WRITE_MAX_BYTES = 256 * 1024');
+  });
+
+  it('rejects connect when port is out of range', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
+    expect(handlerBody).toContain('p < 1');
+    expect(handlerBody).toContain('p > 65535');
+  });
+
+  it('destroys prior socket before opening a new meshtastic tcp connection', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1200);
+    expect(handlerBody).toContain('meshtasticTcpSocket.destroy()');
+  });
+});
+
 // ─── meshcore:tcp-write byte element validation ──────────────────────
 
 describe('meshcore:tcp-write byte validation (source contract)', () => {

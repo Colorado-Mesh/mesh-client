@@ -134,6 +134,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/themeColors.test.ts',
   'src/renderer/lib/transport/TransportManager.test.ts',
   'src/renderer/lib/transportTcpIpc.test.ts',
+  'src/renderer/lib/connection.tcp.test.ts',
   'src/renderer/lib/webbluetooth-ble-manager.test.ts',
   'src/renderer/lib/writeClipboardText.test.ts',
   'src/renderer/runtime/useMeshcoreRuntime.favorited-identity.test.ts',
