@@ -9,14 +9,16 @@ import {
   clampRmapAnnounceIntervalMin,
   disableReticulumRmapDiscovery,
   isReticulumRmapDiscoverableRow,
+  isReticulumRmapDiscoveryCapable,
+  isReticulumRmapLoRaDiscoveryRow,
   isReticulumRmapNeedsSyncRow,
-  isReticulumRmapPublishTarget,
-  listReticulumRmapPublishTargets,
+  listReticulumRmapDiscoveryCapable,
   maybeSyncReticulumRmapAfterInterfaceEnable,
   readRmapPublishState,
   readRmapUiPrefs,
   resolveRmapCoordinates,
   ReticulumRmapGpsRequiredError,
+  setReticulumRmapDiscoverableForInterface,
   summarizeRmapPublishStatus,
   validateRmapReachableOn,
 } from '@/renderer/lib/reticulum/reticulumRmapDiscovery';
@@ -52,18 +54,25 @@ describe('reticulumRmapDiscovery', () => {
     window.electronAPI = createElectronAPIMock();
   });
 
-  it('classifies publish targets and excludes tcp/auto hubs', () => {
+  it('classifies discovery-capable types and excludes tcp/auto hubs', () => {
     expect(
-      isReticulumRmapPublishTarget(row({ id: 'r', type: 'rnode', serial_port: '/dev/ttyUSB0' })),
+      isReticulumRmapDiscoveryCapable(row({ id: 'r', type: 'rnode', serial_port: '/dev/ttyUSB0' })),
     ).toBe(true);
-    expect(isReticulumRmapPublishTarget(row({ id: 'b', type: 'ble_peer' }))).toBe(true);
-    expect(isReticulumRmapPublishTarget(row({ id: 'i', type: 'i2p' }))).toBe(true);
     expect(
-      isReticulumRmapPublishTarget(row({ id: 't', type: 'tcp', host: 'rmap.world', port: 4242 })),
+      isReticulumRmapDiscoveryCapable(row({ id: 'k', type: 'kiss', serial_port: '/dev/kiss' })),
+    ).toBe(true);
+    expect(isReticulumRmapDiscoveryCapable(row({ id: 'b', type: 'ble_peer' }))).toBe(true);
+    expect(isReticulumRmapDiscoveryCapable(row({ id: 'i', type: 'i2p' }))).toBe(true);
+    expect(isReticulumRmapDiscoveryCapable(row({ id: 'u', type: 'udp' }))).toBe(true);
+    expect(isReticulumRmapDiscoveryCapable(row({ id: 'p', type: 'pipe' }))).toBe(true);
+    expect(
+      isReticulumRmapDiscoveryCapable(
+        row({ id: 't', type: 'tcp', host: 'rmap.world', port: 4242 }),
+      ),
     ).toBe(false);
-    expect(isReticulumRmapPublishTarget(row({ id: 'a', type: 'auto' }))).toBe(false);
+    expect(isReticulumRmapDiscoveryCapable(row({ id: 'a', type: 'auto' }))).toBe(false);
     expect(
-      isReticulumRmapPublishTarget(
+      isReticulumRmapDiscoveryCapable(
         row({ id: 'r', type: 'rnode', enabled: false, serial_port: '/dev/ttyUSB0' }),
       ),
     ).toBe(false);
@@ -111,7 +120,7 @@ describe('reticulumRmapDiscovery', () => {
       row({ id: 't', type: 'tcp', host: 'rmap.world', port: 4242, discoverable: false }),
     ];
     expect(readRmapPublishState(interfaces)).toBe(true);
-    expect(listReticulumRmapPublishTargets(interfaces)).toHaveLength(1);
+    expect(listReticulumRmapDiscoveryCapable(interfaces)).toHaveLength(1);
   });
 
   it('clampRmapAnnounceIntervalMin enforces bounds', () => {
@@ -247,5 +256,48 @@ describe('reticulumRmapDiscovery', () => {
       reachableOn: '',
       heightMeters: null,
     });
+  });
+
+  it('setReticulumRmapDiscoverableForInterface enables I2P without rmap.world hub', async () => {
+    localStorage.setItem(
+      GPS_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ staticLat: 48.8, staticLon: 2.3 }),
+    );
+    window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({});
+    window.electronAPI.reticulum.proxyPost = vi.fn();
+    await setReticulumRmapDiscoverableForInterface(row({ id: 'i2p-1', type: 'i2p' }), true, {
+      interfaces: [],
+      stackSettings: { enable_transport: false, share_instance: true, loglevel: 4 },
+    });
+    expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
+      '/api/v1/interfaces/i2p-1',
+      expect.objectContaining({ discoverable: true, connectable: true }),
+    );
+    expect(window.electronAPI.reticulum.proxyPost).not.toHaveBeenCalled();
+  });
+
+  it('setReticulumRmapDiscoverableForInterface enables LoRa row and rmap.world hub', async () => {
+    localStorage.setItem(
+      GPS_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ staticLat: 40, staticLon: -105 }),
+    );
+    window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({});
+    window.electronAPI.reticulum.proxyPost = vi.fn().mockResolvedValue({ id: 'hub-new' });
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockResolvedValue({});
+    await setReticulumRmapDiscoverableForInterface(
+      row({ id: 'r1', type: 'rnode', serial_port: '/dev/ttyUSB0' }),
+      true,
+      {
+        interfaces: [],
+        stackSettings: { enable_transport: false, share_instance: true, loglevel: 4 },
+      },
+    );
+    expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith('/api/v1/stack/settings', {
+      enable_transport: true,
+      share_instance: true,
+      loglevel: 4,
+    });
+    expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalled();
+    expect(isReticulumRmapLoRaDiscoveryRow(row({ id: 'r1', type: 'rnode' }))).toBe(true);
   });
 });

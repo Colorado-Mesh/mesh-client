@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "I2P 피어는 줄 바꿈 없이 쉼표로 구분된 .b32.i2p 주소여야 합니다.",
       "rnodePresetRequired": "RNode RF 사전 설정을 선택하십시오 (주파수 및 LoRa 매개 변수가 필요함).",
       "callsignPlaceholder": "NV0N",
-      "callsignRequired": "이 RNode에 대한 아마추어-라디오 콜사인을 입력하십시오."
+      "callsignRequired": "이 RNode에 대한 아마추어-라디오 콜사인을 입력하십시오.",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "RMAP v4에 {{name}} 게시",
+      "rmapEnableSuccess": "{{name}} 에서 RMAP 검색이 활성화되었습니다.",
+      "rmapDisableSuccess": "{{name}} 에서 RMAP 검색이 비활성화되었습니다.",
+      "rmapToggleFailed": "{{name}} 에 대한 RMAP 변경 실패: {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1030,9 +1035,7 @@
       "openSettingsAria": "네트워크 탭에서 RMAP 검색 설정 열기",
       "needsSync": "{{count}} 활성화된 로컬 인터페이스에는 RMAP 검색 동기화 필요",
       "noPublishTargets": "RMAP에 게시할 수 있는 로컬 인터페이스가 없습니다.",
-      "syncSuccess": "RMAP 검색이 인터페이스에 동기화되었습니다.",
-      "badgePublished": "RMAP",
-      "badgeNeedsSync": "RMAP 동기화"
+      "syncSuccess": "RMAP 검색이 인터페이스에 동기화되었습니다."
     }
   },
   "contactGroupsModal": {
@@ -3561,6 +3564,33 @@
     "cancelSync": "취소",
     "cancelSyncAria": "전파 동기화 취소"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v4 검색",
+    "publishToggle": "RMAP v4에 게시",
+    "coordsStatus": "지도 좌표: {{lat}}, {{lon}} (앱 → GPS/위치에서)",
+    "gpsMissingWarning": "RMAP에 게시하기 전에 앱 → GPS/위치에서 정적 GPS를 설정하십시오.",
+    "announceIntervalMin": "발표 간격 (분)",
+    "heightMeters": "해발 높이 (m, 선택 사항)",
+    "reachableOn": "연결 가능 (호스트 이름 또는 스크립트, 선택 사항)",
+    "helpLink": "RMAP 가이드",
+    "gpsRequiredTitle": "GPS 좌표 필요",
+    "gpsRequiredBody": "RMAP 지도 마커에는 위도와 경도가 필요합니다. 앱 → GPS/위치에서 정적 좌표를 설정한 다음 다시 시도하세요.",
+    "openAppGps": "앱 GPS 설정 열기",
+    "applySuccess": "RMAP 검색 설정이 적용되었습니다.",
+    "disableSuccess": "로컬 인터페이스에서 RMAP 게시가 비활성화되었습니다.",
+    "applyFailed": "RMAP 설정을 적용하지 못했습니다: {{error}}",
+    "noPublishTargets": "게시할 로컬 인터페이스가 활성화되지 않았습니다. 먼저 RNode, BLE 피어 또는 I2P 인터페이스를 활성화합니다.",
+    "restartTitle": "Reticulum 스택을 다시 시작하시겠습니까?",
+    "restartBody": "인터페이스 및 전송 변경 사항을 적용하려면 스택을 다시 시작해야 합니다.",
+    "restartConfirm": "지금 재시작",
+    "restartFailed": "스택 재시작 실패: {{error}}",
+    "reachableOnError": {
+      "invalid": "값에 유효하지 않은 도달 가능.",
+      "invalidHost": "에 연결할 수 있는 호스트 이름이 잘못되었습니다.",
+      "tooLong": "값에 도달할 수 있는 시간이 너무 깁니다."
+    },
+    "hint": "검색 가능 = 예 및 앱 GPS 좌표를 활성화된 모든 RMAP 가능 인터페이스 (RNode, KISS, BLE 피어, I2P, UDP, 파이프) 에 적용합니다. 미세 제어를 위해 Connection에서 인터페이스별 RMAP 토글을 사용하십시오. LoRa 경로는 또한 전송 및 rmap.world 허브를 활성화합니다."
+  },
   "reticulumTopology": {
     "title": "네트워크 토폴로지",
     "self": "나",
@@ -3965,32 +3995,5 @@
     "menuToastAvailableTitle": "업데이트 사용 가능",
     "menuToastAvailableBody": "{{version}} 버전을 사용할 수 있습니다.",
     "menuToastErrorTitle": "자동 업데이트 확인에 실패했습니다!"
-  },
-  "reticulumRmapDiscovery": {
-    "sectionTitle": "RMAP v4 검색",
-    "publishToggle": "RMAP v4에 게시",
-    "hint": "검색 가능 = 예 및 앱 GPS 좌표를 활성화된 로컬 인터페이스 (RNode, BLE, I2P) 에 적용합니다. rmap.world 전송 허브를 추가하고 활성화합니다.",
-    "coordsStatus": "지도 좌표: {{lat}}, {{lon}} (앱 → GPS/위치에서)",
-    "gpsMissingWarning": "RMAP에 게시하기 전에 앱 → GPS/위치에서 정적 GPS를 설정하십시오.",
-    "announceIntervalMin": "발표 간격 (분)",
-    "heightMeters": "해발 높이 (m, 선택 사항)",
-    "reachableOn": "연결 가능 (호스트 이름 또는 스크립트, 선택 사항)",
-    "helpLink": "RMAP 가이드",
-    "gpsRequiredTitle": "GPS 좌표 필요",
-    "gpsRequiredBody": "RMAP 지도 마커에는 위도와 경도가 필요합니다. 앱 → GPS/위치에서 정적 좌표를 설정한 다음 다시 시도하세요.",
-    "openAppGps": "앱 GPS 설정 열기",
-    "applySuccess": "RMAP 검색 설정이 적용되었습니다.",
-    "disableSuccess": "로컬 인터페이스에서 RMAP 게시가 비활성화되었습니다.",
-    "applyFailed": "RMAP 설정을 적용하지 못했습니다: {{error}}",
-    "noPublishTargets": "게시할 로컬 인터페이스가 활성화되지 않았습니다. 먼저 RNode, BLE 피어 또는 I2P 인터페이스를 활성화합니다.",
-    "restartTitle": "Reticulum 스택을 다시 시작하시겠습니까?",
-    "restartBody": "인터페이스 및 전송 변경 사항을 적용하려면 스택을 다시 시작해야 합니다.",
-    "restartConfirm": "지금 재시작",
-    "restartFailed": "스택 재시작 실패: {{error}}",
-    "reachableOnError": {
-      "invalid": "값에 유효하지 않은 도달 가능.",
-      "invalidHost": "에 연결할 수 있는 호스트 이름이 잘못되었습니다.",
-      "tooLong": "값에 도달할 수 있는 시간이 너무 깁니다."
-    }
   }
 }

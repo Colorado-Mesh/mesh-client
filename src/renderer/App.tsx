@@ -2607,6 +2607,13 @@ function AppContent() {
                                 setActiveTab(networkTabIdx);
                               }
                             }}
+                            onOpenAppGpsSettings={() => {
+                              const appTabIdx = tabSlotIds.indexOf('App');
+                              if (appTabIdx >= 0) {
+                                setAppTabVisited(true);
+                                setActiveTab(appTabIdx);
+                              }
+                            }}
                           />
                         </div>
                       </Suspense>

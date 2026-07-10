@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "I2Pピアは、改行のないカンマ区切りの.b32.i2pアドレスでなければなりません。",
       "rnodePresetRequired": "RNode RFプリセットを選択します（周波数とLoRaパラメータが必要です）。",
       "callsignPlaceholder": "NV 0 N",
-      "callsignRequired": "このRNodeのアマチュア無線コールサインを入力します。"
+      "callsignRequired": "このRNodeのアマチュア無線コールサインを入力します。",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "{{name}}をRMAP v 4に公開する",
+      "rmapEnableSuccess": "{{name}}でRMAP検出が有効になりました。",
+      "rmapDisableSuccess": "{{name}}でRMAP検出が無効になりました。",
+      "rmapToggleFailed": "{{name}}のRMAP変更に失敗しました: {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1030,9 +1035,7 @@
       "openSettingsAria": "[ネットワーク]タブでRMAP検出設定を開く",
       "needsSync": "{{count}}有効なローカルインターフェースにはRMAP検出の同期が必要です",
       "noPublishTargets": "RMAPに公開する有効なローカルインターフェイスはありません。",
-      "syncSuccess": "RMAP検出がインターフェイスに同期されました。",
-      "badgePublished": "RMAP",
-      "badgeNeedsSync": "RMAP同期"
+      "syncSuccess": "RMAP検出がインターフェイスに同期されました。"
     }
   },
   "contactGroupsModal": {
@@ -3561,6 +3564,33 @@
     "cancelSync": "取り消す",
     "cancelSyncAria": "伝播の同期をキャンセル"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v 4検出",
+    "publishToggle": "RMAP v 4で公開",
+    "coordsStatus": "地図の座標： {{lat}}、{{lon}} （アプリの→GPS/位置情報より）",
+    "gpsMissingWarning": "RMAPで公開する前に、アプリの→GPS/位置で静的GPSを設定します。",
+    "announceIntervalMin": "アナウンス間隔（分）",
+    "heightMeters": "海抜の高さ（ m、オプション）",
+    "reachableOn": "アクセス可能（ホスト名またはスクリプト、オプション）",
+    "helpLink": "RMAPガイド",
+    "gpsRequiredTitle": "GPS座標が必要です",
+    "gpsRequiredBody": "RMAPマップマーカーには、緯度と経度が必要です。アプリの→GPS/位置情報で静的座標を設定してから、もう一度お試しください。",
+    "openAppGps": "アプリのGPS設定を開く",
+    "applySuccess": "RMAP検出設定が適用されました。",
+    "disableSuccess": "ローカルインターフェイスでRMAP発行が無効になっています。",
+    "applyFailed": "RMAP設定の適用に失敗しました： {{error}}",
+    "noPublishTargets": "公開する有効なローカルインターフェイスがありません。最初にRNode、BLEピア、またはI 2 Pインターフェイスを有効にします。",
+    "restartTitle": "Reticulumスタックを再起動しますか？",
+    "restartBody": "インターフェースとトランスポートの変更を有効にするには、スタックの再起動が必要です。",
+    "restartConfirm": "今すぐ再起動",
+    "restartFailed": "スタックの再起動に失敗しました： {{error}}",
+    "reachableOnError": {
+      "invalid": "値に無効な到達可能です。",
+      "invalidHost": "に到達可能なホスト名が無効です。",
+      "tooLong": "値で到達可能な時間が長すぎます。"
+    },
+    "hint": "すべての有効なRMAP対応インターフェイス（ RNode、KISS、BLEピア、I 2 P、UDP、パイプ）にdiscoverable = yesとApp GPS座標を適用します。インターフェースごとのRMAPトグルを接続で使用して、細かい制御を行います。LoRaパスは、トランスポートとrmap.worldハブも有効にします。"
+  },
   "reticulumTopology": {
     "title": "ネットワーク・トポロジー",
     "self": "あなたは",
@@ -3965,32 +3995,5 @@
     "menuToastAvailableTitle": "利用可能なアップデート",
     "menuToastAvailableBody": "バージョン{{version}}が利用できます。",
     "menuToastErrorTitle": "アップデートチェックに失敗しました"
-  },
-  "reticulumRmapDiscovery": {
-    "sectionTitle": "RMAP v 4検出",
-    "publishToggle": "RMAP v 4で公開",
-    "hint": "Discoverable = yesとアプリのGPS座標を有効なローカルインターフェイス（ RNode、BLE、I 2 P ）に適用します。rmap.worldトランスポートハブを追加して有効にします。",
-    "coordsStatus": "地図の座標： {{lat}}、{{lon}} （アプリの→GPS/位置情報より）",
-    "gpsMissingWarning": "RMAPで公開する前に、アプリの→GPS/位置で静的GPSを設定します。",
-    "announceIntervalMin": "アナウンス間隔（分）",
-    "heightMeters": "海抜の高さ（ m、オプション）",
-    "reachableOn": "アクセス可能（ホスト名またはスクリプト、オプション）",
-    "helpLink": "RMAPガイド",
-    "gpsRequiredTitle": "GPS座標が必要です",
-    "gpsRequiredBody": "RMAPマップマーカーには、緯度と経度が必要です。アプリの→GPS/位置情報で静的座標を設定してから、もう一度お試しください。",
-    "openAppGps": "アプリのGPS設定を開く",
-    "applySuccess": "RMAP検出設定が適用されました。",
-    "disableSuccess": "ローカルインターフェイスでRMAP発行が無効になっています。",
-    "applyFailed": "RMAP設定の適用に失敗しました： {{error}}",
-    "noPublishTargets": "公開する有効なローカルインターフェイスがありません。最初にRNode、BLEピア、またはI 2 Pインターフェイスを有効にします。",
-    "restartTitle": "Reticulumスタックを再起動しますか？",
-    "restartBody": "インターフェースとトランスポートの変更を有効にするには、スタックの再起動が必要です。",
-    "restartConfirm": "今すぐ再起動",
-    "restartFailed": "スタックの再起動に失敗しました： {{error}}",
-    "reachableOnError": {
-      "invalid": "値に無効な到達可能です。",
-      "invalidHost": "に到達可能なホスト名が無効です。",
-      "tooLong": "値で到達可能な時間が長すぎます。"
-    }
   }
 }

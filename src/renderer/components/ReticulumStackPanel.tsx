@@ -23,6 +23,7 @@ export interface ReticulumStackPanelProps {
   onStartStack: () => Promise<void>;
   onStopStack: () => Promise<void>;
   onOpenReticulumRmapSettings?: () => void;
+  onOpenAppGpsSettings?: () => void;
 }
 
 /** Connection tab: stack lifecycle, interface CRUD, and local interface health. */
@@ -32,6 +33,7 @@ export function ReticulumStackPanel({
   onStartStack,
   onStopStack,
   onOpenReticulumRmapSettings,
+  onOpenAppGpsSettings,
 }: ReticulumStackPanelProps) {
   const { t } = useTranslation();
   const [restartError, setRestartError] = useState<string | null>(null);
@@ -174,6 +176,7 @@ export function ReticulumStackPanel({
               connecting={connecting}
               identityConfigured={identity?.configured === true}
               identityDisplayName={identity?.display_name ?? null}
+              onOpenAppGpsSettings={onOpenAppGpsSettings}
               interfaces={interfaces}
               serialPorts={serialPorts}
               serialPortPaths={serialPortPaths}

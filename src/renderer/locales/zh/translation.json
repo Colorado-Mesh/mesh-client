@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "I2P对等项必须是逗号分隔的.b32.i2p地址，没有换行符。",
       "rnodePresetRequired": "选择RNode RF预设（频率和LoRa参数是必需的）。",
       "callsignPlaceholder": "NV0N",
-      "callsignRequired": "输入此RNode的业余无线电呼号。"
+      "callsignRequired": "输入此RNode的业余无线电呼号。",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "在RMAP v4上发布{{name}}",
+      "rmapEnableSuccess": "RMAP发现已于{{name}}启用。",
+      "rmapDisableSuccess": "RMAP发现在{{name}}被禁用。",
+      "rmapToggleFailed": "{{name}}的RMAP更改失败： {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1030,9 +1035,7 @@
       "openSettingsAria": "在“网络”选项卡上打开RMAP发现设置",
       "needsSync": "{{count}}启用的本地接口需要RMAP发现同步",
       "noPublishTargets": "没有启用要在RMAP上发布的本地接口。",
-      "syncSuccess": "RMAP发现已同步到接口。",
-      "badgePublished": "RMAP",
-      "badgeNeedsSync": "RMAP同步"
+      "syncSuccess": "RMAP发现已同步到接口。"
     }
   },
   "contactGroupsModal": {
@@ -3561,6 +3564,33 @@
     "cancelSync": "取消推荐",
     "cancelSyncAria": "取消传播同步"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v4发现",
+    "publishToggle": "在RMAP v4上发布",
+    "coordsStatus": "地图坐标： {{lat}}、{{lon}} （来自App → GPS/位置）",
+    "gpsMissingWarning": "在RMAP上发布之前，在应用→GPS/位置中设置静态GPS。",
+    "announceIntervalMin": "公告间隔（分钟）",
+    "heightMeters": "海拔高度（米，可选）",
+    "reachableOn": "可访问（主机名或脚本，可选）",
+    "helpLink": "RMAP指南",
+    "gpsRequiredTitle": "需要GPS坐标",
+    "gpsRequiredBody": "RMAP地图标记需要纬度和经度。在应用→GPS/位置下设置静态坐标，然后重试。",
+    "openAppGps": "打开应用GPS设置",
+    "applySuccess": "已应用RMAP发现设置。",
+    "disableSuccess": "在本地接口上禁用RMAP发布。",
+    "applyFailed": "无法应用RMAP设置： {{error}}",
+    "noPublishTargets": "没有已启用的本地接口可发布。首先启用RNode、BLE对等体或I2P接口。",
+    "restartTitle": "重新启动Reticulum堆栈？",
+    "restartBody": "接口和传输更改需要堆栈重新启动才能生效。",
+    "restartConfirm": "现在重启",
+    "restartFailed": "堆栈重启失败： {{error}}",
+    "reachableOnError": {
+      "invalid": "值上的可访问性无效。",
+      "invalidHost": "上可访问的主机名无效。",
+      "tooLong": "可触及的值太长。"
+    },
+    "hint": "将discoverable = yes和应用GPS坐标应用于所有启用的支持RMAP的接口（ RNode、KISS、BLE对等点、I2P、UDP、管道）。使用连接上的每个接口RMAP切换进行精细控制。LoRa路径还支持传输和rmap.world集线器。"
+  },
   "reticulumTopology": {
     "title": "网络拓扑图",
     "self": "你",
@@ -3965,32 +3995,5 @@
     "menuToastAvailableTitle": "更新可用",
     "menuToastAvailableBody": "版本 {{version}} 可用。",
     "menuToastErrorTitle": "更新检查失败"
-  },
-  "reticulumRmapDiscovery": {
-    "sectionTitle": "RMAP v4发现",
-    "publishToggle": "在RMAP v4上发布",
-    "hint": "将discoverable = yes和您的应用GPS坐标应用于启用的本地接口（ RNode、BLE、I2P ）。添加并启用rmap.world传输中心。",
-    "coordsStatus": "地图坐标： {{lat}}、{{lon}} （来自App → GPS/位置）",
-    "gpsMissingWarning": "在RMAP上发布之前，在应用→GPS/位置中设置静态GPS。",
-    "announceIntervalMin": "公告间隔（分钟）",
-    "heightMeters": "海拔高度（米，可选）",
-    "reachableOn": "可访问（主机名或脚本，可选）",
-    "helpLink": "RMAP指南",
-    "gpsRequiredTitle": "需要GPS坐标",
-    "gpsRequiredBody": "RMAP地图标记需要纬度和经度。在应用→GPS/位置下设置静态坐标，然后重试。",
-    "openAppGps": "打开应用GPS设置",
-    "applySuccess": "已应用RMAP发现设置。",
-    "disableSuccess": "在本地接口上禁用RMAP发布。",
-    "applyFailed": "无法应用RMAP设置： {{error}}",
-    "noPublishTargets": "没有已启用的本地接口可发布。首先启用RNode、BLE对等体或I2P接口。",
-    "restartTitle": "重新启动Reticulum堆栈？",
-    "restartBody": "接口和传输更改需要堆栈重新启动才能生效。",
-    "restartConfirm": "现在重启",
-    "restartFailed": "堆栈重启失败： {{error}}",
-    "reachableOnError": {
-      "invalid": "值上的可访问性无效。",
-      "invalidHost": "上可访问的主机名无效。",
-      "tooLong": "可触及的值太长。"
-    }
   }
 }

@@ -44,9 +44,12 @@ import {
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import { setReticulumPrimaryLocalSerialInterface } from '@/renderer/lib/reticulum/reticulumLocalRnodePrimary';
 import {
-  isReticulumRmapDiscoverableRow,
-  isReticulumRmapNeedsSyncRow,
+  isReticulumRmapDiscoveryCapable,
   maybeSyncReticulumRmapAfterInterfaceEnable,
+  resolveRmapCoordinates,
+  ReticulumRmapGpsRequiredError,
+  ReticulumRmapValidationError,
+  setReticulumRmapDiscoverableForInterface,
 } from '@/renderer/lib/reticulum/reticulumRmapDiscovery';
 import {
   buildReticulumRnodeTcpPort,
@@ -131,6 +134,7 @@ export interface ReticulumInterfacesPanelProps {
   connecting: boolean;
   identityConfigured?: boolean;
   identityDisplayName?: string | null;
+  onOpenAppGpsSettings?: () => void;
   interfaces: ReticulumInterfaceRow[];
   serialPorts: ReticulumSerialPortOption[];
   serialPortPaths: string[];
@@ -145,6 +149,7 @@ export function ReticulumInterfacesPanel({
   connecting,
   identityConfigured = true,
   identityDisplayName = null,
+  onOpenAppGpsSettings,
   interfaces,
   serialPorts,
   serialPortPaths,
@@ -188,6 +193,7 @@ export function ReticulumInterfacesPanel({
   const [editingInterface, setEditingInterface] = useState<ReticulumInterfaceRow | null>(null);
   const [restartStackHint, setRestartStackHint] = useState(false);
   const [addingDefaultHubs, setAddingDefaultHubs] = useState(false);
+  const [rmapToggleBusyId, setRmapToggleBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!sidecarApiReady) {
@@ -670,6 +676,69 @@ export function ReticulumInterfacesPanel({
     [addToast, identityDisplayName, onRefresh, t],
   );
 
+  const parseStackSettings = (raw: Record<string, unknown>) => ({
+    enable_transport: Boolean(raw.enable_transport),
+    share_instance: raw.share_instance !== false,
+    loglevel: typeof raw.loglevel === 'number' ? raw.loglevel : Number(raw.loglevel) || 4,
+  });
+
+  const handleToggleRmapDiscoverable = useCallback(
+    async (iface: ReticulumInterfaceRow) => {
+      const enable = iface.discoverable !== true;
+      if (enable && !resolveRmapCoordinates()) {
+        addToast(t('reticulumRmapDiscovery.gpsMissingWarning'), 'error');
+        onOpenAppGpsSettings?.();
+        return;
+      }
+      setRmapToggleBusyId(iface.id);
+      try {
+        const stackRaw = (await window.electronAPI.reticulum.proxyGet(
+          '/api/v1/stack/settings',
+        )) as Record<string, unknown>;
+        await setReticulumRmapDiscoverableForInterface(iface, enable, {
+          discoveryName: identityDisplayName,
+          interfaces,
+          stackSettings: parseStackSettings(stackRaw),
+        });
+        addToast(
+          enable
+            ? t('connectionPanel.reticulumInterfaces.rmapEnableSuccess', { name: iface.name })
+            : t('connectionPanel.reticulumInterfaces.rmapDisableSuccess', { name: iface.name }),
+          'success',
+        );
+        setRestartStackHint(true);
+        await onRefresh();
+      } catch (e) {
+        if (e instanceof ReticulumRmapGpsRequiredError) {
+          addToast(t('reticulumRmapDiscovery.gpsMissingWarning'), 'error');
+          onOpenAppGpsSettings?.();
+          return;
+        }
+        if (e instanceof ReticulumRmapValidationError) {
+          addToast(
+            t('connectionPanel.reticulumInterfaces.rmapToggleFailed', {
+              name: iface.name,
+              error: e.message,
+            }),
+            'error',
+          );
+          return;
+        }
+        addToast(
+          t('connectionPanel.reticulumInterfaces.rmapToggleFailed', {
+            name: iface.name,
+            error: errLikeToLogString(e),
+          }),
+          'error',
+        );
+        console.warn('[ReticulumInterfacesPanel] rmap toggle ' + errLikeToLogString(e));
+      } finally {
+        setRmapToggleBusyId(null);
+      }
+    },
+    [addToast, identityDisplayName, interfaces, onOpenAppGpsSettings, onRefresh, t],
+  );
+
   return (
     <div className="space-y-2">
       {interfaceError ? (
@@ -754,6 +823,10 @@ export function ReticulumInterfacesPanel({
         defaultHubsDisabled={defaultHubsDisabled}
         onAddDefaultHubs={() => {
           void handleAddDefaultHubPresets();
+        }}
+        rmapToggleBusyId={rmapToggleBusyId}
+        onToggleRmapDiscoverable={(iface) => {
+          void handleToggleRmapDiscoverable(iface);
         }}
       />
       {pendingDeleteInterface ? (
@@ -1302,6 +1375,8 @@ function InterfacesSection({
   addingDefaultHubs,
   defaultHubsDisabled,
   onAddDefaultHubs,
+  rmapToggleBusyId,
+  onToggleRmapDiscoverable,
 }: {
   interfaces: ReticulumInterfaceRow[];
   osSerialPortPaths: string[];
@@ -1353,6 +1428,8 @@ function InterfacesSection({
   addingDefaultHubs: boolean;
   defaultHubsDisabled: boolean;
   onAddDefaultHubs: () => void;
+  rmapToggleBusyId: string | null;
+  onToggleRmapDiscoverable: (iface: ReticulumInterfaceRow) => void;
 }) {
   const { t } = useTranslation();
   const purposeIconTrigger = useIconTrigger();
@@ -1751,15 +1828,6 @@ function InterfacesSection({
                           {t('connectionPanel.reticulumInterfaces.primaryLocalBadge')}
                         </span>
                       ) : null}
-                      {isReticulumRmapDiscoverableRow(iface) ? (
-                        <span className="bg-readable-green rounded px-1 py-0.5 text-[10px] tracking-wide text-white uppercase">
-                          {t('connectionPanel.reticulumRmap.badgePublished')}
-                        </span>
-                      ) : isReticulumRmapNeedsSyncRow(iface, interfaces) ? (
-                        <span className="rounded bg-amber-700/80 px-1 py-0.5 text-[10px] tracking-wide text-white uppercase">
-                          {t('connectionPanel.reticulumRmap.badgeNeedsSync')}
-                        </span>
-                      ) : null}
                     </span>
                     {rowReason ? (
                       <span className="mt-0.5 block text-xs text-red-300/90">{rowReason}</span>
@@ -1822,6 +1890,23 @@ function InterfacesSection({
                       >
                         {t('connectionPanel.reticulumInterfaces.auditDisable')}
                       </button>
+                    ) : null}
+                    {isReticulumRmapDiscoveryCapable(iface) && !help.isSystemManaged ? (
+                      <label className="flex cursor-pointer items-center gap-1 text-xs text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={iface.discoverable === true}
+                          disabled={actionsDisabled || rmapToggleBusyId === iface.id}
+                          aria-label={t(
+                            'connectionPanel.reticulumInterfaces.rmapDiscoverableAria',
+                            { name: iface.name },
+                          )}
+                          onChange={() => {
+                            onToggleRmapDiscoverable(iface);
+                          }}
+                        />
+                        {t('connectionPanel.reticulumInterfaces.rmapDiscoverableShort')}
+                      </label>
                     ) : null}
                     {!help.isSystemManaged ? (
                       <button

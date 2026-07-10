@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "I2P-peers moeten door komma's gescheiden .b32.i2p-adressen zijn zonder regeleinden.",
       "rnodePresetRequired": "Kies een RNode RF-voorinstelling (frequentie- en LoRa-parameters zijn vereist).",
       "callsignPlaceholder": "NV0N",
-      "callsignRequired": "Voer uw roepnaam voor amateurradio in voor deze RNode."
+      "callsignRequired": "Voer uw roepnaam voor amateurradio in voor deze RNode.",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "Publiceer {{name}} op RMAP v4",
+      "rmapEnableSuccess": "RMAP-detectie ingeschakeld op {{name}}.",
+      "rmapDisableSuccess": "RMAP-detectie uitgeschakeld op {{name}}.",
+      "rmapToggleFailed": "RMAP-wijziging mislukt voor {{name}}: {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1030,9 +1035,7 @@
       "openSettingsAria": "Open RMAP-detectie-instellingen op het tabblad Netwerk",
       "needsSync": "{{count}} ingeschakelde lokale interface(s) hebben RMAP-detectiesynchronisatie nodig",
       "noPublishTargets": "Geen ingeschakelde lokale interfaces om op RMAP te publiceren.",
-      "syncSuccess": "RMAP-detectie gesynchroniseerd met interface.",
-      "badgePublished": "RMAP",
-      "badgeNeedsSync": "RMAP-synchronisatie"
+      "syncSuccess": "RMAP-detectie gesynchroniseerd met interface."
     }
   },
   "contactGroupsModal": {
@@ -3561,6 +3564,33 @@
     "cancelSync": "Annuleren",
     "cancelSyncAria": "Voortplantingssynchronisatie annuleren"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v4-detectie",
+    "publishToggle": "Publiceren op RMAP v4",
+    "coordsStatus": "Kaartcoördinaten: {{lat}}, {{lon}} (vanaf → GPS / locatie van app)",
+    "gpsMissingWarning": "Stel statische GPS in in App → GPS / Locatie voordat u publiceert op RMAP.",
+    "announceIntervalMin": "Aankondigingsinterval (minuten)",
+    "heightMeters": "Hoogte boven zeeniveau (m, optioneel)",
+    "reachableOn": "Bereikbaar op (hostnaam of script, optioneel)",
+    "helpLink": "RMAP-gids",
+    "gpsRequiredTitle": "GPS-coördinaten zijn vereist",
+    "gpsRequiredBody": "RMAP-kaartmarkeringen hebben breedte- en lengtegraad nodig. Stel statische coördinaten in onder → GPS / locatie van de app en probeer het opnieuw.",
+    "openAppGps": "Open de GPS-instellingen van de app",
+    "applySuccess": "RMAP-detectie-instellingen toegepast.",
+    "disableSuccess": "RMAP-publicatie uitgeschakeld op lokale interfaces.",
+    "applyFailed": "Kan RMAP-instellingen niet toepassen: {{error}}",
+    "noPublishTargets": "Geen ingeschakelde lokale interfaces om te publiceren. Schakel eerst een RNode-, BLE-peer- of I2P-interface in.",
+    "restartTitle": "Reticulum-stack herstarten?",
+    "restartBody": "Interface- en transportwijzigingen vereisen een herstart van de stapel om van kracht te worden.",
+    "restartConfirm": "Opnieuw opstarten",
+    "restartFailed": "Het herstarten van de stapel is mislukt: {{error}}",
+    "reachableOnError": {
+      "invalid": "Ongeldig bereikbaar op waarde.",
+      "invalidHost": "Ongeldige hostnaam voor bereikbaar op.",
+      "tooLong": "Bereikbaar op waarde is te lang."
+    },
+    "hint": "Is detecteerbaar=ja en past GPS-coördinaten toe op alle ingeschakelde RMAP-compatibele interfaces (RNode, KISS, BLE-peer, I2P, UDP, pipe). Gebruik per interface RMAP-schakelaars op Verbinding voor FINE-besturing. LoRa-paden maken ook transport en de rmap.world-hub mogelijk."
+  },
   "reticulumTopology": {
     "title": "Netwerktopologie",
     "self": "Jij",
@@ -3965,32 +3995,5 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "Versie {{version}} is beschikbaar.",
     "menuToastErrorTitle": "Updatecontrole mislukt"
-  },
-  "reticulumRmapDiscovery": {
-    "sectionTitle": "RMAP v4-detectie",
-    "publishToggle": "Publiceren op RMAP v4",
-    "hint": "Van toepassing op detecteerbare=ja en uw app GPS-coördinaten op ingeschakelde lokale interfaces (RNode, BLE, I2P). Voegt de rmap.world-transporthub toe en schakelt deze in.",
-    "coordsStatus": "Kaartcoördinaten: {{lat}}, {{lon}} (vanaf → GPS / locatie van app)",
-    "gpsMissingWarning": "Stel statische GPS in in App → GPS / Locatie voordat u publiceert op RMAP.",
-    "announceIntervalMin": "Aankondigingsinterval (minuten)",
-    "heightMeters": "Hoogte boven zeeniveau (m, optioneel)",
-    "reachableOn": "Bereikbaar op (hostnaam of script, optioneel)",
-    "helpLink": "RMAP-gids",
-    "gpsRequiredTitle": "GPS-coördinaten zijn vereist",
-    "gpsRequiredBody": "RMAP-kaartmarkeringen hebben breedte- en lengtegraad nodig. Stel statische coördinaten in onder → GPS / locatie van de app en probeer het opnieuw.",
-    "openAppGps": "Open de GPS-instellingen van de app",
-    "applySuccess": "RMAP-detectie-instellingen toegepast.",
-    "disableSuccess": "RMAP-publicatie uitgeschakeld op lokale interfaces.",
-    "applyFailed": "Kan RMAP-instellingen niet toepassen: {{error}}",
-    "noPublishTargets": "Geen ingeschakelde lokale interfaces om te publiceren. Schakel eerst een RNode-, BLE-peer- of I2P-interface in.",
-    "restartTitle": "Reticulum-stack herstarten?",
-    "restartBody": "Interface- en transportwijzigingen vereisen een herstart van de stapel om van kracht te worden.",
-    "restartConfirm": "Opnieuw opstarten",
-    "restartFailed": "Het herstarten van de stapel is mislukt: {{error}}",
-    "reachableOnError": {
-      "invalid": "Ongeldig bereikbaar op waarde.",
-      "invalidHost": "Ongeldige hostnaam voor bereikbaar op.",
-      "tooLong": "Bereikbaar op waarde is te lang."
-    }
   }
 }

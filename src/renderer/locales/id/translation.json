@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "Rekan I2P harus berupa alamat .b32.i2p yang dipisahkan koma tanpa jeda baris.",
       "rnodePresetRequired": "Pilih preset RF RNode (diperlukan parameter frekuensi dan LoRa).",
       "callsignPlaceholder": "NV0N",
-      "callsignRequired": "Masukkan callsign radio amatir Anda untuk RNode ini."
+      "callsignRequired": "Masukkan callsign radio amatir Anda untuk RNode ini.",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "Publikasikan {{name}} pada RMAP v4",
+      "rmapEnableSuccess": "Penemuan RMAP diaktifkan pada {{name}}.",
+      "rmapDisableSuccess": "Penemuan RMAP dinonaktifkan pada {{name}}.",
+      "rmapToggleFailed": "Perubahan RMAP gagal untuk {{name}}: {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1030,9 +1035,7 @@
       "openSettingsAria": "Buka pengaturan penemuan RMAP di tab Jaringan",
       "needsSync": "{{count}} antarmuka lokal yang diaktifkan memerlukan sinkronisasi penemuan RMAP",
       "noPublishTargets": "Tidak ada antarmuka lokal yang diaktifkan untuk dipublikasikan di RMAP.",
-      "syncSuccess": "Penemuan RMAP disinkronkan ke antarmuka.",
-      "badgePublished": "RMAP",
-      "badgeNeedsSync": "Sinkronisasi RMAP"
+      "syncSuccess": "Penemuan RMAP disinkronkan ke antarmuka."
     }
   },
   "contactGroupsModal": {
@@ -3561,6 +3564,33 @@
     "cancelSync": "Batal",
     "cancelSyncAria": "Batalkan sinkronisasi propagasi"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "Penemuan RMAP v4",
+    "publishToggle": "Publikasikan di RMAP v4",
+    "coordsStatus": "Koordinat peta: {{lat}}, {{lon}} (dari → GPS / Lokasi Aplikasi)",
+    "gpsMissingWarning": "Atur GPS statis di Aplikasi → GPS / Lokasi sebelum dipublikasikan di RMAP.",
+    "announceIntervalMin": "Interval pengumuman (menit)",
+    "heightMeters": "Tinggi di atas permukaan laut (m, opsional)",
+    "reachableOn": "Dapat dijangkau pada (nama host atau skrip, opsional)",
+    "helpLink": "Panduan RMAP",
+    "gpsRequiredTitle": "Koordinat GPS diperlukan",
+    "gpsRequiredBody": "Penanda peta RMAP membutuhkan garis lintang dan bujur. Atur koordinat statis di bawah → GPS Aplikasi/ Lokasi, lalu coba lagi.",
+    "openAppGps": "Buka pengaturan GPS Aplikasi",
+    "applySuccess": "Pengaturan penemuan RMAP diterapkan.",
+    "disableSuccess": "Penerbitan RMAP dinonaktifkan pada antarmuka lokal.",
+    "applyFailed": "Gagal menerapkan pengaturan RMAP: {{error}}",
+    "noPublishTargets": "Tidak ada antarmuka lokal yang diaktifkan untuk dipublikasikan. Aktifkan antarmuka RNode, BLE peer, atau I2P terlebih dahulu.",
+    "restartTitle": "Mulai ulang stack Reticulum?",
+    "restartBody": "Perubahan antarmuka dan transportasi memerlukan pengaktifan ulang tumpukan untuk diterapkan.",
+    "restartConfirm": "Mulai ulang sekarang",
+    "restartFailed": "Gagal memulai ulang tumpukan: {{error}}",
+    "reachableOnError": {
+      "invalid": "Nilai dapat dijangkau tidak valid.",
+      "invalidHost": "Nama host tidak valid untuk dapat dihubungi pada.",
+      "tooLong": "Nilai Reachable on terlalu panjang."
+    },
+    "hint": "Menerapkan koordinat GPS Discoverable=yes dan App ke semua antarmuka berkemampuan RMAP yang diaktifkan (RNode, KISS, BLE peer, I2P, UDP, pipe). Gunakan sakelar RMAP per antarmuka pada Koneksi untuk kontrol yang baik. Jalur LoRa juga memungkinkan transportasi dan hub rmap.world."
+  },
   "reticulumTopology": {
     "title": "Topologi jaringan",
     "self": "Kau",
@@ -3965,32 +3995,5 @@
     "menuToastAvailableTitle": "Pembaruan tersedia",
     "menuToastAvailableBody": "Versi {{version}} tersedia.",
     "menuToastErrorTitle": "Pemeriksaan pembaruan gagal"
-  },
-  "reticulumRmapDiscovery": {
-    "sectionTitle": "Penemuan RMAP v4",
-    "publishToggle": "Publikasikan di RMAP v4",
-    "hint": "Menerapkan discoverable=yes dan koordinat GPS Aplikasi Anda ke antarmuka lokal yang diaktifkan (RNode, BLE, I2P). Menambahkan dan mengaktifkan hub transportasi rmap.world.",
-    "coordsStatus": "Koordinat peta: {{lat}}, {{lon}} (dari → GPS / Lokasi Aplikasi)",
-    "gpsMissingWarning": "Atur GPS statis di Aplikasi → GPS / Lokasi sebelum dipublikasikan di RMAP.",
-    "announceIntervalMin": "Interval pengumuman (menit)",
-    "heightMeters": "Tinggi di atas permukaan laut (m, opsional)",
-    "reachableOn": "Dapat dijangkau pada (nama host atau skrip, opsional)",
-    "helpLink": "Panduan RMAP",
-    "gpsRequiredTitle": "Koordinat GPS diperlukan",
-    "gpsRequiredBody": "Penanda peta RMAP membutuhkan garis lintang dan bujur. Atur koordinat statis di bawah → GPS Aplikasi/ Lokasi, lalu coba lagi.",
-    "openAppGps": "Buka pengaturan GPS Aplikasi",
-    "applySuccess": "Pengaturan penemuan RMAP diterapkan.",
-    "disableSuccess": "Penerbitan RMAP dinonaktifkan pada antarmuka lokal.",
-    "applyFailed": "Gagal menerapkan pengaturan RMAP: {{error}}",
-    "noPublishTargets": "Tidak ada antarmuka lokal yang diaktifkan untuk dipublikasikan. Aktifkan antarmuka RNode, BLE peer, atau I2P terlebih dahulu.",
-    "restartTitle": "Mulai ulang stack Reticulum?",
-    "restartBody": "Perubahan antarmuka dan transportasi memerlukan pengaktifan ulang tumpukan untuk diterapkan.",
-    "restartConfirm": "Mulai ulang sekarang",
-    "restartFailed": "Gagal memulai ulang tumpukan: {{error}}",
-    "reachableOnError": {
-      "invalid": "Nilai dapat dijangkau tidak valid.",
-      "invalidHost": "Nama host tidak valid untuk dapat dihubungi pada.",
-      "tooLong": "Nilai Reachable on terlalu panjang."
-    }
   }
 }

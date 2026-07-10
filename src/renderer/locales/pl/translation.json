@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "Peery I2P muszą być adresami oddzielonymi przecinkami .b32.i2p bez podziałów wierszy.",
       "rnodePresetRequired": "Wybierz ustawienie wstępne RNode RF (wymagane są parametry częstotliwości i LoRa).",
       "callsignPlaceholder": "NV0N",
-      "callsignRequired": "Wprowadź swój znak wywoławczy radia amatorskiego dla tego RNode."
+      "callsignRequired": "Wprowadź swój znak wywoławczy radia amatorskiego dla tego RNode.",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "Opublikuj {{name}} na RMAP v4",
+      "rmapEnableSuccess": "Wykrywanie RMAP włączone w dniu {{name}}.",
+      "rmapDisableSuccess": "Wykrywanie RMAP wyłączone w dniu {{name}}.",
+      "rmapToggleFailed": "Zmiana RMAP nie powiodła się dla {{name}}: {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1030,9 +1035,7 @@
       "openSettingsAria": "Otwórz ustawienia wykrywania RMAP na karcie Sieć",
       "needsSync": "Interfejsy lokalne z włączoną funkcją {{count}} wymagają synchronizacji wykrywania RMAP",
       "noPublishTargets": "Brak włączonych interfejsów lokalnych do publikowania w RMAP.",
-      "syncSuccess": "Wykrywanie RMAP zsynchronizowane z interfejsem.",
-      "badgePublished": "RMAP",
-      "badgeNeedsSync": "Synchronizacja RMAP"
+      "syncSuccess": "Wykrywanie RMAP zsynchronizowane z interfejsem."
     }
   },
   "contactGroupsModal": {
@@ -3561,6 +3564,33 @@
     "cancelSync": "Anuluj",
     "cancelSyncAria": "Anuluj synchronizację propagacji"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "Wykrywanie RMAP v4",
+    "publishToggle": "Publikacja na RMAP v4",
+    "coordsStatus": "Współrzędne mapy: {{lat}}, {{lon}} (z aplikacji → GPS / Lokalizacja)",
+    "gpsMissingWarning": "Ustaw statyczny GPS w aplikacji → GPS / Location przed opublikowaniem na RMAP.",
+    "announceIntervalMin": "Interwał zapowiedzi (minuty)",
+    "heightMeters": "Wysokość nad poziomem morza (m, opcjonalnie)",
+    "reachableOn": "Dostępny na (nazwa hosta lub skrypt, opcjonalnie)",
+    "helpLink": "Prowadnica RMAP",
+    "gpsRequiredTitle": "Wymagane współrzędne GPS",
+    "gpsRequiredBody": "Znaczniki mapy RMAP wymagają szerokości i długości geograficznej. Ustaw współrzędne statyczne w aplikacji → GPS / Lokalizacja, a następnie spróbuj ponownie.",
+    "openAppGps": "Otwórz ustawienia GPS aplikacji",
+    "applySuccess": "Zastosowano ustawienia wykrywania RMAP.",
+    "disableSuccess": "Publikowanie RMAP wyłączone na lokalnych interfejsach.",
+    "applyFailed": "Nie udało się zastosować ustawień RMAP: {{error}}",
+    "noPublishTargets": "Brak włączonych lokalnych interfejsów do opublikowania. Najpierw włącz interfejs RNode, BLE peer lub I2P.",
+    "restartTitle": "Zrestartować stos Reticulum?",
+    "restartBody": "Zmiany interfejsu i transportu wymagają ponownego uruchomienia stosu.",
+    "restartConfirm": "Uruchom ponownie teraz",
+    "restartFailed": "Ponowne uruchomienie stosu nie powiodło się: {{error}}",
+    "reachableOnError": {
+      "invalid": "Nieprawidłowy osiągalny na wartości.",
+      "invalidHost": "Nieprawidłowa nazwa hosta dla dostępnego dnia.",
+      "tooLong": "Wartość osiągalna jest zbyt długa."
+    },
+    "hint": "Stosuje wykrywalne=tak i App współrzędne GPS do wszystkich włączonych interfejsów obsługujących RMAP (RNode, KISS, BLE peer, I2P, UDP, Pipe). Użyj przełączników RMAP dla każdego interfejsu w Połączeniu, aby uzyskać dokładną kontrolę. Ścieżki LoRa umożliwiają również transport i hub rmap.world."
+  },
   "reticulumTopology": {
     "title": "Topologia sieci",
     "self": "Ty",
@@ -3965,32 +3995,5 @@
     "menuToastAvailableTitle": "Dostępna jest aktualizacja",
     "menuToastAvailableBody": "Wersja {{version}} jest dostępna.",
     "menuToastErrorTitle": "Kontrola aktualizacji nie powiodła się"
-  },
-  "reticulumRmapDiscovery": {
-    "sectionTitle": "Wykrywanie RMAP v4",
-    "publishToggle": "Publikacja na RMAP v4",
-    "hint": "Stosuje wykrywalne=tak i współrzędne GPS Twojej aplikacji do włączonych interfejsów lokalnych (RNode, BLE, I2P). Dodaje i włącza węzeł transportowy rmap.world.",
-    "coordsStatus": "Współrzędne mapy: {{lat}}, {{lon}} (z aplikacji → GPS / Lokalizacja)",
-    "gpsMissingWarning": "Ustaw statyczny GPS w aplikacji → GPS / Location przed opublikowaniem na RMAP.",
-    "announceIntervalMin": "Interwał zapowiedzi (minuty)",
-    "heightMeters": "Wysokość nad poziomem morza (m, opcjonalnie)",
-    "reachableOn": "Dostępny na (nazwa hosta lub skrypt, opcjonalnie)",
-    "helpLink": "Prowadnica RMAP",
-    "gpsRequiredTitle": "Wymagane współrzędne GPS",
-    "gpsRequiredBody": "Znaczniki mapy RMAP wymagają szerokości i długości geograficznej. Ustaw współrzędne statyczne w aplikacji → GPS / Lokalizacja, a następnie spróbuj ponownie.",
-    "openAppGps": "Otwórz ustawienia GPS aplikacji",
-    "applySuccess": "Zastosowano ustawienia wykrywania RMAP.",
-    "disableSuccess": "Publikowanie RMAP wyłączone na lokalnych interfejsach.",
-    "applyFailed": "Nie udało się zastosować ustawień RMAP: {{error}}",
-    "noPublishTargets": "Brak włączonych lokalnych interfejsów do opublikowania. Najpierw włącz interfejs RNode, BLE peer lub I2P.",
-    "restartTitle": "Zrestartować stos Reticulum?",
-    "restartBody": "Zmiany interfejsu i transportu wymagają ponownego uruchomienia stosu.",
-    "restartConfirm": "Uruchom ponownie teraz",
-    "restartFailed": "Ponowne uruchomienie stosu nie powiodło się: {{error}}",
-    "reachableOnError": {
-      "invalid": "Nieprawidłowy osiągalny na wartości.",
-      "invalidHost": "Nieprawidłowa nazwa hosta dla dostępnego dnia.",
-      "tooLong": "Wartość osiągalna jest zbyt długa."
-    }
   }
 }

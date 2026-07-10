@@ -10,7 +10,6 @@ import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/ret
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import { isValidConnectHost } from '@/shared/connectHost';
 import { isValidLatLon } from '@/shared/geoCoords';
-import { isReticulumLocallyConnectedSerialInterface } from '@/shared/reticulumLocalRnodePrimary';
 
 export const RMAP_ANNOUNCE_INTERVAL_DEFAULT_MIN = 360;
 export const RMAP_ANNOUNCE_INTERVAL_MIN_MIN = 60;
@@ -90,36 +89,53 @@ export function validateRmapReachableOn(value: string): string | null {
   return null;
 }
 
-/** Enabled local RNode/BLE/KISS or I2P — excludes outbound TCP/auto hubs. */
-export function isReticulumRmapPublishTarget(
+/** Interface types mesh-client can mark discoverable for RMAP v4 (see rmap.world/info.html). */
+const RMAP_DISCOVERY_EXCLUDED_TYPES = new Set(['auto', 'tcp']);
+
+/**
+ * Enabled interfaces that support per-interface discoverable=yes in rnsd config.
+ * Excludes Auto (LAN) and outbound TCP client hubs — Scenario A server/backbone
+ * interfaces are not CRUD-managed in mesh-client today.
+ */
+export function isReticulumRmapDiscoveryCapable(
   row: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port'>,
 ): boolean {
   if (!row.enabled) {
     return false;
   }
   const type = row.type.trim().toLowerCase();
-  if (type === 'i2p') {
+  if (RMAP_DISCOVERY_EXCLUDED_TYPES.has(type)) {
+    return false;
+  }
+  if (type === 'i2p' || type === 'ble_peer' || type === 'pipe' || type === 'udp') {
     return true;
   }
-  if (type === 'ble_peer') {
-    return true;
+  if (type === 'kiss' || type === 'rnode_multi' || type === 'rnode') {
+    return Boolean(row.serial_port?.trim());
   }
-  return isReticulumLocallyConnectedSerialInterface({
-    id: '',
-    type: row.type,
-    enabled: row.enabled,
-    serial_port: row.serial_port,
-  });
+  return false;
 }
 
-export function listReticulumRmapPublishTargets(
+/** @deprecated Prefer isReticulumRmapDiscoveryCapable */
+export const isReticulumRmapPublishTarget = isReticulumRmapDiscoveryCapable;
+
+export function listReticulumRmapDiscoveryCapable(
   interfaces: readonly ReticulumInterfaceRow[],
 ): ReticulumInterfaceRow[] {
-  return interfaces.filter(isReticulumRmapPublishTarget);
+  return interfaces.filter(isReticulumRmapDiscoveryCapable);
 }
 
+/** @deprecated Prefer listReticulumRmapDiscoveryCapable */
+export const listReticulumRmapPublishTargets = listReticulumRmapDiscoveryCapable;
+
 export function readRmapPublishState(interfaces: readonly ReticulumInterfaceRow[]): boolean {
-  return listReticulumRmapPublishTargets(interfaces).some((row) => row.discoverable === true);
+  return listReticulumRmapDiscoveryCapable(interfaces).some((row) => row.discoverable === true);
+}
+
+/** LoRa/BLE paths that need a TCP transport bridge to reach RMAP (Scenario B). */
+export function isReticulumRmapLoRaDiscoveryRow(row: Pick<ReticulumInterfaceRow, 'type'>): boolean {
+  const type = row.type.trim().toLowerCase();
+  return type === 'rnode' || type === 'kiss' || type === 'rnode_multi' || type === 'ble_peer';
 }
 
 export interface RmapUiPrefs {
@@ -165,7 +181,7 @@ export interface RmapPublishStatusSummary {
 export function summarizeRmapPublishStatus(
   interfaces: readonly ReticulumInterfaceRow[],
 ): RmapPublishStatusSummary {
-  const targets = listReticulumRmapPublishTargets(interfaces);
+  const targets = listReticulumRmapDiscoveryCapable(interfaces);
   const discoverableTargets = targets.filter((row) => row.discoverable === true);
   const publishing = discoverableTargets.length > 0;
   return {
@@ -179,7 +195,7 @@ export function summarizeRmapPublishStatus(
 export function isReticulumRmapDiscoverableRow(
   iface: Pick<ReticulumInterfaceRow, 'type' | 'enabled' | 'serial_port' | 'discoverable'>,
 ): boolean {
-  return iface.discoverable === true && isReticulumRmapPublishTarget(iface);
+  return iface.discoverable === true && isReticulumRmapDiscoveryCapable(iface);
 }
 
 export function isReticulumRmapNeedsSyncRow(
@@ -188,7 +204,7 @@ export function isReticulumRmapNeedsSyncRow(
 ): boolean {
   return (
     readRmapPublishState(interfaces) &&
-    isReticulumRmapPublishTarget(iface) &&
+    isReticulumRmapDiscoveryCapable(iface) &&
     iface.discoverable !== true
   );
 }
@@ -205,7 +221,7 @@ export async function syncReticulumRmapDiscoveryToInterface(
   iface: ReticulumInterfaceRow,
   opts: { discoveryName?: string | null },
 ): Promise<boolean> {
-  if (!iface.enabled || !isReticulumRmapPublishTarget(iface) || iface.discoverable === true) {
+  if (!iface.enabled || !isReticulumRmapDiscoveryCapable(iface) || iface.discoverable === true) {
     return false;
   }
   const coords = resolveRmapCoordinates();
@@ -375,12 +391,13 @@ export async function applyReticulumRmapDiscovery(
   }
 
   const announceIntervalMin = clampRmapAnnounceIntervalMin(args.announceIntervalMin);
-  const targets = listReticulumRmapPublishTargets(args.interfaces);
+  const targets = listReticulumRmapDiscoveryCapable(args.interfaces);
   if (targets.length === 0) {
     throw new ReticulumRmapValidationError('no_publish_targets');
   }
 
-  if (!args.stackSettings.enable_transport) {
+  const needsTransportBridge = targets.some(isReticulumRmapLoRaDiscoveryRow);
+  if (needsTransportBridge && !args.stackSettings.enable_transport) {
     await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
       ...args.stackSettings,
       enable_transport: true,
@@ -399,14 +416,81 @@ export async function applyReticulumRmapDiscovery(
     await window.electronAPI.reticulum.proxyPut(`/api/v1/interfaces/${row.id}`, patch);
   }
 
-  await ensureRmapWorldHubEnabled(args.interfaces);
+  if (needsTransportBridge) {
+    await ensureRmapWorldHubEnabled(args.interfaces);
+  }
+}
+
+export interface SetReticulumRmapDiscoverableArgs {
+  discoveryName?: string | null;
+  announceIntervalMin?: number;
+  heightMeters?: number | null;
+  reachableOn?: string | null;
+  interfaces: readonly ReticulumInterfaceRow[];
+  stackSettings: { enable_transport: boolean; share_instance: boolean; loglevel: number };
+}
+
+/** Enable or disable RMAP discovery on a single capable interface. */
+export async function setReticulumRmapDiscoverableForInterface(
+  iface: ReticulumInterfaceRow,
+  enable: boolean,
+  args: SetReticulumRmapDiscoverableArgs,
+): Promise<void> {
+  if (!isReticulumRmapDiscoveryCapable(iface)) {
+    throw new ReticulumRmapValidationError('not_capable');
+  }
+  if (!enable) {
+    await window.electronAPI.reticulum.proxyPut(
+      `/api/v1/interfaces/${iface.id}`,
+      buildRmapDisablePatch(),
+    );
+    return;
+  }
+
+  const coords = resolveRmapCoordinates();
+  if (!coords) {
+    throw new ReticulumRmapGpsRequiredError();
+  }
+
+  const prefs = readRmapUiPrefs();
+  const announceIntervalMin = clampRmapAnnounceIntervalMin(
+    args.announceIntervalMin ?? prefs.announceIntervalMin,
+  );
+  const heightMeters = args.heightMeters ?? prefs.heightMeters;
+  const reachable = (args.reachableOn ?? prefs.reachableOn).trim();
+  if (reachable) {
+    const err = validateRmapReachableOn(reachable);
+    if (err) {
+      throw new ReticulumRmapValidationError(err);
+    }
+  }
+
+  if (isReticulumRmapLoRaDiscoveryRow(iface)) {
+    if (!args.stackSettings.enable_transport) {
+      await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
+        ...args.stackSettings,
+        enable_transport: true,
+      });
+    }
+    await ensureRmapWorldHubEnabled(args.interfaces);
+  }
+
+  const patch = buildRmapDiscoveryPatch(iface, {
+    coords,
+    discoveryName: args.discoveryName,
+    announceIntervalMin,
+    heightMeters,
+    reachableOn: reachable || null,
+    discoverable: true,
+  });
+  await window.electronAPI.reticulum.proxyPut(`/api/v1/interfaces/${iface.id}`, patch);
 }
 
 export async function disableReticulumRmapDiscovery(
   interfaces: readonly ReticulumInterfaceRow[],
 ): Promise<void> {
   const patch = buildRmapDisablePatch();
-  for (const row of listReticulumRmapPublishTargets(interfaces)) {
+  for (const row of listReticulumRmapDiscoveryCapable(interfaces)) {
     if (row.discoverable) {
       await window.electronAPI.reticulum.proxyPut(`/api/v1/interfaces/${row.id}`, patch);
     }

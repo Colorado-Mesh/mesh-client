@@ -849,6 +849,11 @@
       "auditRepairSuccess": "Config repair applied.",
       "auditRepairFailed": "Config repair failed.",
       "auditRepairNoChanges": "No config changes were needed for this repair.",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "Publish {{name}} on RMAP v4",
+      "rmapEnableSuccess": "RMAP discovery enabled on {{name}}.",
+      "rmapDisableSuccess": "RMAP discovery disabled on {{name}}.",
+      "rmapToggleFailed": "RMAP change failed for {{name}}: {{error}}",
       "purpose": {
         "auto": "Local LAN multicast discovery — finds other Reticulum nodes on the same Wi-Fi or subnet.",
         "sharedInstance": "Localhost TCP server when Share instance is on — lets other apps on this machine use this stack.",
@@ -871,10 +876,8 @@
       "openSettings": "Network settings",
       "openSettingsAria": "Open RMAP discovery settings on Network tab",
       "needsSync": "{{count}} enabled local interface(s) need RMAP discovery sync",
-      "noPublishTargets": "No enabled local interfaces to publish on RMAP.",
-      "syncSuccess": "RMAP discovery synced to interface.",
-      "badgePublished": "RMAP",
-      "badgeNeedsSync": "RMAP sync"
+      "noPublishTargets": "No enabled RMAP-capable interfaces to publish on RMAP.",
+      "syncSuccess": "RMAP discovery synced to interface."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3506,33 +3509,6 @@
     "clearAnnouncesDone": "Announces cleared.",
     "clearAnnouncesFailed": "Failed to clear announces."
   },
-  "reticulumRmapDiscovery": {
-    "sectionTitle": "RMAP v4 discovery",
-    "publishToggle": "Publish on RMAP v4",
-    "hint": "Applies discoverable=yes and your App GPS coordinates to enabled local interfaces (RNode, BLE, I2P). Adds and enables the rmap.world transport hub.",
-    "coordsStatus": "Map coordinates: {{lat}}, {{lon}} (from App → GPS / Location)",
-    "gpsMissingWarning": "Set static GPS in App → GPS / Location before publishing on RMAP.",
-    "announceIntervalMin": "Announce interval (minutes)",
-    "heightMeters": "Height above sea level (m, optional)",
-    "reachableOn": "Reachable on (hostname or script, optional)",
-    "helpLink": "RMAP guide",
-    "gpsRequiredTitle": "GPS coordinates required",
-    "gpsRequiredBody": "RMAP map markers need latitude and longitude. Set static coordinates under App → GPS / Location, then try again.",
-    "openAppGps": "Open App GPS settings",
-    "applySuccess": "RMAP discovery settings applied.",
-    "disableSuccess": "RMAP publishing disabled on local interfaces.",
-    "applyFailed": "Failed to apply RMAP settings: {{error}}",
-    "noPublishTargets": "No enabled local interfaces to publish. Enable an RNode, BLE peer, or I2P interface first.",
-    "restartTitle": "Restart Reticulum stack?",
-    "restartBody": "Interface and transport changes require a stack restart to take effect.",
-    "restartConfirm": "Restart now",
-    "restartFailed": "Stack restart failed: {{error}}",
-    "reachableOnError": {
-      "invalid": "Invalid reachable on value.",
-      "invalidHost": "Invalid hostname for reachable on.",
-      "tooLong": "Reachable on value is too long."
-    }
-  },
   "reticulumIdentitySwitcher": {
     "label": "Active identity",
     "active": "Active identity: {{name}}",
@@ -3587,6 +3563,33 @@
     "syncAria": "Sync propagation messages",
     "cancelSync": "Cancel",
     "cancelSyncAria": "Cancel propagation sync"
+  },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v4 discovery",
+    "publishToggle": "Publish on RMAP v4",
+    "hint": "Applies discoverable=yes and App GPS coordinates to all enabled RMAP-capable interfaces (RNode, KISS, BLE peer, I2P, UDP, pipe). Use per-interface RMAP toggles on Connection for fine control. LoRa paths also enable transport and the rmap.world hub.",
+    "coordsStatus": "Map coordinates: {{lat}}, {{lon}} (from App → GPS / Location)",
+    "gpsMissingWarning": "Set static GPS in App → GPS / Location before publishing on RMAP.",
+    "announceIntervalMin": "Announce interval (minutes)",
+    "heightMeters": "Height above sea level (m, optional)",
+    "reachableOn": "Reachable on (hostname or script, optional)",
+    "helpLink": "RMAP guide",
+    "gpsRequiredTitle": "GPS coordinates required",
+    "gpsRequiredBody": "RMAP map markers need latitude and longitude. Set static coordinates under App → GPS / Location, then try again.",
+    "openAppGps": "Open App GPS settings",
+    "applySuccess": "RMAP discovery settings applied.",
+    "disableSuccess": "RMAP publishing disabled on local interfaces.",
+    "applyFailed": "Failed to apply RMAP settings: {{error}}",
+    "noPublishTargets": "No enabled RMAP-capable interfaces. Enable an RNode, KISS, BLE peer, I2P, UDP, or pipe interface first.",
+    "restartTitle": "Restart Reticulum stack?",
+    "restartBody": "Interface and transport changes require a stack restart to take effect.",
+    "restartConfirm": "Restart now",
+    "restartFailed": "Stack restart failed: {{error}}",
+    "reachableOnError": {
+      "invalid": "Invalid reachable on value.",
+      "invalidHost": "Invalid hostname for reachable on.",
+      "tooLong": "Reachable on value is too long."
+    }
   },
   "reticulumTopology": {
     "title": "Network topology",

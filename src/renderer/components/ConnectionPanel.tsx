@@ -322,6 +322,8 @@ interface Props {
   onStartReticulumStack?: () => Promise<void>;
   /** Reticulum: open Network tab RMAP discovery settings. */
   onOpenReticulumRmapSettings?: () => void;
+  /** Reticulum: open App tab GPS settings for RMAP coordinates. */
+  onOpenAppGpsSettings?: () => void;
 }
 
 export default function ConnectionPanel({
@@ -339,6 +341,7 @@ export default function ConnectionPanel({
   ensureMeshcoreMqttIdentity,
   onStartReticulumStack,
   onOpenReticulumRmapSettings,
+  onOpenAppGpsSettings,
 }: Props) {
   const { t } = useTranslation();
   const capabilities = useRadioProvider(protocol);
@@ -2776,6 +2779,7 @@ export default function ConnectionPanel({
           connecting={state.status === 'connecting'}
           stackError={reticulumStackError}
           onOpenReticulumRmapSettings={onOpenReticulumRmapSettings}
+          onOpenAppGpsSettings={onOpenAppGpsSettings}
           onStartStack={async () => {
             setReticulumStackError(null);
             try {

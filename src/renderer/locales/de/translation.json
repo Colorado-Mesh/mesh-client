@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "I2P-Peers müssen kommagetrennte .b32.i2p-Adressen ohne Zeilenumbrüche sein.",
       "rnodePresetRequired": "Wählen Sie eine RNode RF-Voreinstellung (Frequenz- und LoRa-Parameter sind erforderlich).",
       "callsignPlaceholder": "NV0N",
-      "callsignRequired": "Geben Sie Ihr Amateurfunkrufzeichen für diesen RNode ein."
+      "callsignRequired": "Geben Sie Ihr Amateurfunkrufzeichen für diesen RNode ein.",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "{{name}} auf RMAP v4 veröffentlichen",
+      "rmapEnableSuccess": "RMAP-Erkennung auf {{name}} aktiviert.",
+      "rmapDisableSuccess": "RMAP-Erkennung am {{name}} deaktiviert.",
+      "rmapToggleFailed": "RMAP-Änderung für {{name}} fehlgeschlagen: {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1030,9 +1035,7 @@
       "openSettingsAria": "Öffnen Sie die RMAP-Erkennungseinstellungen auf der Registerkarte Netzwerk",
       "needsSync": "{{count}} aktivierte lokale Schnittstelle(n) benötigen RMAP Discovery Sync",
       "noPublishTargets": "Keine aktivierten lokalen Schnittstellen zum Veröffentlichen auf RMAP.",
-      "syncSuccess": "RMAP-Erkennung mit Schnittstelle synchronisiert.",
-      "badgePublished": "RMAP",
-      "badgeNeedsSync": "RMAP-Synchronisierung"
+      "syncSuccess": "RMAP-Erkennung mit Schnittstelle synchronisiert."
     }
   },
   "contactGroupsModal": {
@@ -3561,6 +3564,33 @@
     "cancelSync": "Abbrechen",
     "cancelSyncAria": "Ausbreitungssynchronisation abbrechen"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v4 Entdeckung",
+    "publishToggle": "Auf RMAP v4 veröffentlichen",
+    "coordsStatus": "Kartenkoordinaten: {{lat}}, {{lon}} (von App → GPS / Standort)",
+    "gpsMissingWarning": "Stellen Sie statisches GPS in App → GPS / Standort ein, bevor Sie es auf RMAP veröffentlichen.",
+    "announceIntervalMin": "Ankündigungsintervall (Minuten)",
+    "heightMeters": "Höhe über dem Meeresspiegel (m, optional)",
+    "reachableOn": "Erreichbar unter (Hostname oder Skript, optional)",
+    "helpLink": "RMAP-Leitfaden",
+    "gpsRequiredTitle": "GPS-Koordinaten erforderlich",
+    "gpsRequiredBody": "RMAP-Kartenmarkierungen benötigen Breitengrad und Längengrad. Legen Sie statische Koordinaten unter App → GPS / Standort fest und versuchen Sie es erneut.",
+    "openAppGps": "App-GPS-Einstellungen öffnen",
+    "applySuccess": "RMAP-Erkennungseinstellungen angewendet.",
+    "disableSuccess": "RMAP-Publishing auf lokalen Schnittstellen deaktiviert.",
+    "applyFailed": "RMAP-Einstellungen konnten nicht angewendet werden: {{error}}",
+    "noPublishTargets": "Keine aktivierten lokalen Schnittstellen zum Veröffentlichen. Aktivieren Sie zuerst eine RNode-, BLE-Peer- oder I2P-Schnittstelle.",
+    "restartTitle": "Reticulum-Stapel neu starten?",
+    "restartBody": "Schnittstellen- und Transportänderungen erfordern einen Neustart des Stapels, um wirksam zu werden.",
+    "restartConfirm": "Jetzt neu starten",
+    "restartFailed": "Stack-Neustart fehlgeschlagen: {{error}}",
+    "reachableOnError": {
+      "invalid": "Ungültiger erreichbarer Wert.",
+      "invalidHost": "Ungültiger Hostname für erreichbar am.",
+      "tooLong": "Der erreichbare Wert ist zu lang."
+    },
+    "hint": "Wendet discoverable=yes und App GPS-Koordinaten auf alle aktivierten RMAP-fähigen Schnittstellen (RNode, KISS, BLE Peer, I2P, UDP, Pipe) an. Verwenden Sie RMAP-Schalter pro Schnittstelle für die Verbindung zur Feinsteuerung. LoRa-Pfade ermöglichen auch den Transport und den Hub rmap.world."
+  },
   "reticulumTopology": {
     "title": "Netzwerk-Topologie",
     "self": "Du",
@@ -3965,32 +3995,5 @@
     "menuToastAvailableTitle": "Update verfügbar",
     "menuToastAvailableBody": "Version {{version}} liegt vor.",
     "menuToastErrorTitle": "Update-Prüfung fehlgeschlagen"
-  },
-  "reticulumRmapDiscovery": {
-    "sectionTitle": "RMAP v4 Entdeckung",
-    "publishToggle": "Auf RMAP v4 veröffentlichen",
-    "hint": "Wendet auffindbar=ja und Ihre App-GPS-Koordinaten auf aktivierte lokale Schnittstellen (RNode, BLE, I2P) an. Fügt den rmap.world-Transportknoten hinzu und aktiviert ihn.",
-    "coordsStatus": "Kartenkoordinaten: {{lat}}, {{lon}} (von App → GPS / Standort)",
-    "gpsMissingWarning": "Stellen Sie statisches GPS in App → GPS / Standort ein, bevor Sie es auf RMAP veröffentlichen.",
-    "announceIntervalMin": "Ankündigungsintervall (Minuten)",
-    "heightMeters": "Höhe über dem Meeresspiegel (m, optional)",
-    "reachableOn": "Erreichbar unter (Hostname oder Skript, optional)",
-    "helpLink": "RMAP-Leitfaden",
-    "gpsRequiredTitle": "GPS-Koordinaten erforderlich",
-    "gpsRequiredBody": "RMAP-Kartenmarkierungen benötigen Breitengrad und Längengrad. Legen Sie statische Koordinaten unter App → GPS / Standort fest und versuchen Sie es erneut.",
-    "openAppGps": "App-GPS-Einstellungen öffnen",
-    "applySuccess": "RMAP-Erkennungseinstellungen angewendet.",
-    "disableSuccess": "RMAP-Publishing auf lokalen Schnittstellen deaktiviert.",
-    "applyFailed": "RMAP-Einstellungen konnten nicht angewendet werden: {{error}}",
-    "noPublishTargets": "Keine aktivierten lokalen Schnittstellen zum Veröffentlichen. Aktivieren Sie zuerst eine RNode-, BLE-Peer- oder I2P-Schnittstelle.",
-    "restartTitle": "Reticulum-Stapel neu starten?",
-    "restartBody": "Schnittstellen- und Transportänderungen erfordern einen Neustart des Stapels, um wirksam zu werden.",
-    "restartConfirm": "Jetzt neu starten",
-    "restartFailed": "Stack-Neustart fehlgeschlagen: {{error}}",
-    "reachableOnError": {
-      "invalid": "Ungültiger erreichbarer Wert.",
-      "invalidHost": "Ungültiger Hostname für erreichbar am.",
-      "tooLong": "Der erreichbare Wert ist zu lang."
-    }
   }
 }

@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "I2P eşleri, satır sonu olmayan, virgülle ayrılmış .b32.i2p adresleri olmalıdır.",
       "rnodePresetRequired": "Bir RNode RF ön ayarı seçin (frekans ve LoRa parametreleri gereklidir).",
       "callsignPlaceholder": "NV0N",
-      "callsignRequired": "Bu RNode için amatör radyo çağrı işaretinizi girin."
+      "callsignRequired": "Bu RNode için amatör radyo çağrı işaretinizi girin.",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "{{name}} öğesini RMAP v4 'te yayınlayın",
+      "rmapEnableSuccess": "RMAP keşfi {{name}} tarihinde etkinleştirildi.",
+      "rmapDisableSuccess": "RMAP keşfi {{name}} tarihinde devre dışı bırakıldı.",
+      "rmapToggleFailed": "{{name}} için RMAP değişikliği başarısız oldu: {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1030,9 +1035,7 @@
       "openSettingsAria": "Ağ sekmesinde RMAP keşif ayarlarını aç",
       "needsSync": "{{count}} etkin yerel arabirim(ler) in RMAP keşif senkronizasyonuna ihtiyacı var",
       "noPublishTargets": "RMAP'te yayınlanacak etkinleştirilmiş yerel arayüz yok.",
-      "syncSuccess": "RMAP keşfi arayüzle senkronize edildi.",
-      "badgePublished": "RMAP",
-      "badgeNeedsSync": "RMAP senkronizasyonu"
+      "syncSuccess": "RMAP keşfi arayüzle senkronize edildi."
     }
   },
   "contactGroupsModal": {
@@ -3561,6 +3564,33 @@
     "cancelSync": "İptal",
     "cancelSyncAria": "Yayılma senkronizasyonunu iptal et"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v4 keşfi",
+    "publishToggle": "RMAP v4 'te yayınla",
+    "coordsStatus": "Harita koordinatları: {{lat}}, {{lon}} (Uygulama → GPS / Konum'dan)",
+    "gpsMissingWarning": "RMAP'te yayınlamadan önce Uygulama → GPS / Konum'da statik GPS'i ayarlayın.",
+    "announceIntervalMin": "Anons aralığı (dakika)",
+    "heightMeters": "Deniz Seviyesinden Yükseklik (m)",
+    "reachableOn": "Erişilebilir (ana bilgisayar adı veya komut dosyası, isteğe bağlı)",
+    "helpLink": "RMAP Kılavuzu",
+    "gpsRequiredTitle": "GPS koordinatları gerekli",
+    "gpsRequiredBody": "RMAP harita işaretleyicileri enlem ve boylam gerektirir. Uygulama → GPS / Konum altında statik koordinatları ayarlayın, ardından tekrar deneyin.",
+    "openAppGps": "Uygulama GPS ayarlarını aç",
+    "applySuccess": "RMAP keşif ayarları uygulandı.",
+    "disableSuccess": "Yerel arayüzlerde RMAP yayınlama devre dışı bırakıldı.",
+    "applyFailed": "RMAP ayarları uygulanamadı: {{error}}",
+    "noPublishTargets": "Yayınlanacak etkinleştirilmiş yerel arabirim yok. Önce bir RNode, BLE eş veya I2P arayüzünü etkinleştirin.",
+    "restartTitle": "Reticulum seti yeniden başlatılsın mı?",
+    "restartBody": "Arayüz ve taşıma değişikliklerinin etkili olması için yığının yeniden başlatılması gerekir.",
+    "restartConfirm": "Şimdi Yeniden Başlat",
+    "restartFailed": "Yığın yeniden başlatılamadı: {{error}}",
+    "reachableOnError": {
+      "invalid": "Değerde geçersiz erişilebilir.",
+      "invalidHost": "Tarihinde erişilebilen için geçersiz ana bilgisayar adı.",
+      "tooLong": "Değerde ulaşılabilirlik çok uzun."
+    },
+    "hint": "Etkinleştirilmiş tüm RMAP özellikli arayüzlere (RNode, KISS, BLE peer, I2P, UDP, pipe) bulunabilir=evet ve Uygulama GPS koordinatlarını uygular. İnce kontrol için Bağlantı üzerindeki arayüz başına RMAP geçişlerini kullanın. LoRa yolları ayrıca ulaşımı ve rmap.world hub'ını etkinleştirir."
+  },
   "reticulumTopology": {
     "title": "Ağ topolojisi",
     "self": "Sen",
@@ -3965,32 +3995,5 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "{{version}} sürümü mevcut.",
     "menuToastErrorTitle": "Güncelleme kontrolü başarısız oldu"
-  },
-  "reticulumRmapDiscovery": {
-    "sectionTitle": "RMAP v4 keşfi",
-    "publishToggle": "RMAP v4 'te yayınla",
-    "hint": "Keşfedilebilir=evet ve Uygulamanızın GPS koordinatlarını etkinleştirilen yerel arayüzlere (RNode, BLE, I2P) uygular. rmap.world aktarım merkezini ekler ve etkinleştirir.",
-    "coordsStatus": "Harita koordinatları: {{lat}}, {{lon}} (Uygulama → GPS / Konum'dan)",
-    "gpsMissingWarning": "RMAP'te yayınlamadan önce Uygulama → GPS / Konum'da statik GPS'i ayarlayın.",
-    "announceIntervalMin": "Anons aralığı (dakika)",
-    "heightMeters": "Deniz Seviyesinden Yükseklik (m)",
-    "reachableOn": "Erişilebilir (ana bilgisayar adı veya komut dosyası, isteğe bağlı)",
-    "helpLink": "RMAP Kılavuzu",
-    "gpsRequiredTitle": "GPS koordinatları gerekli",
-    "gpsRequiredBody": "RMAP harita işaretleyicileri enlem ve boylam gerektirir. Uygulama → GPS / Konum altında statik koordinatları ayarlayın, ardından tekrar deneyin.",
-    "openAppGps": "Uygulama GPS ayarlarını aç",
-    "applySuccess": "RMAP keşif ayarları uygulandı.",
-    "disableSuccess": "Yerel arayüzlerde RMAP yayınlama devre dışı bırakıldı.",
-    "applyFailed": "RMAP ayarları uygulanamadı: {{error}}",
-    "noPublishTargets": "Yayınlanacak etkinleştirilmiş yerel arabirim yok. Önce bir RNode, BLE eş veya I2P arayüzünü etkinleştirin.",
-    "restartTitle": "Reticulum seti yeniden başlatılsın mı?",
-    "restartBody": "Arayüz ve taşıma değişikliklerinin etkili olması için yığının yeniden başlatılması gerekir.",
-    "restartConfirm": "Şimdi Yeniden Başlat",
-    "restartFailed": "Yığın yeniden başlatılamadı: {{error}}",
-    "reachableOnError": {
-      "invalid": "Değerde geçersiz erişilebilir.",
-      "invalidHost": "Tarihinde erişilebilen için geçersiz ana bilgisayar adı.",
-      "tooLong": "Değerde ulaşılabilirlik çok uzun."
-    }
   }
 }
