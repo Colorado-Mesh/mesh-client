@@ -436,7 +436,7 @@ On the **Reticulum** protocol tab, the **Diagnostics** panel includes a **Reticu
 | `missing_auto_interface`                    | No enabled `AutoInterface` (LAN discovery off)                        | **Add Auto interface**                                      |
 | `missing_shared_instance`                   | `share_instance = Yes` but `SharedInstanceServer` not up              | **Restart stack**                                           |
 
-The Connection tab **Interfaces** list shows the same audit hints per row (amber/red subtext) with **Repair** / **Disable** shortcuts. **SharedInstanceServer** is runtime-only (created when **Share instance** is on) — it shows a **Runtime** badge and cannot be edited or deleted from config.
+The Connection tab **Interfaces** list shows the same audit hints per row (amber/red subtext) with **Repair** / **Disable** shortcuts. **SharedInstanceServer** is runtime-only (created when **Share instance** is on) — it shows a **Runtime** badge and cannot be edited or deleted from config. The `runtime_only_interface` audit note is intentionally omitted from the Diagnostics panel (expected state, not a fault); misconfiguration is reported via `missing_shared_instance` or `shared_instance_unexpected` instead.
 
 Sidecar APIs: `GET /api/v1/config/audit`, `POST /api/v1/config/repair` (see [`reticulum-sidecar-ipc.md`](reticulum-sidecar-ipc.md)).
 

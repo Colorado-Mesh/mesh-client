@@ -160,6 +160,29 @@ describe('ReticulumDiagnosticEngine', () => {
     ).toBe(true);
   });
 
+  it('omits runtime_only_interface audit notes from diagnostic rows', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 0 },
+      {
+        auditIssues: [
+          {
+            kind: 'runtime_only_interface',
+            severity: 'info',
+            interface_id: 'shared',
+            interface_name: 'SharedInstanceServer',
+            message: 'Runtime shared-instance server (not in config)',
+          },
+        ],
+      },
+    );
+    expect(
+      rows.some(
+        (r): r is RfDiagnosticRow =>
+          r.kind === 'rf' && r.condition === 'reticulum/audit/runtime_only_interface',
+      ),
+    ).toBe(false);
+  });
+
   it('adds auto-beacon diagnostic rows from sidecar alert', () => {
     const physical = buildReticulumDiagnosticRows(
       { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 0 },
