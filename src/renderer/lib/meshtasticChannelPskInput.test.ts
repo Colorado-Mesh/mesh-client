@@ -78,6 +78,11 @@ describe('validateChannelPskEntries', () => {
     expect(validateChannelPskEntries([twentyBytes])).toBe('invalidLength');
   });
 
+  it('rejects decoded keys shorter than 16 bytes', () => {
+    const fifteenBytes = btoa(String.fromCharCode(...new Uint8Array(15).fill(2)));
+    expect(validateChannelPskEntries([`HamNet=${fifteenBytes}`])).toBe('invalidLength');
+  });
+
   it('returns ok for empty list', () => {
     expect(validateChannelPskEntries([])).toBe('ok');
   });
@@ -111,6 +116,11 @@ describe('parseManualChannelPublishEntry', () => {
   it('returns null for invalid AES key length', () => {
     const twentyBytes = btoa(String.fromCharCode(...Array.from({ length: 20 }, () => 0xab)));
     expect(parseManualChannelPublishEntry(`HamNet=${twentyBytes}`)).toBeNull();
+  });
+
+  it('returns null for keys shorter than 16 bytes', () => {
+    const oneByte = btoa(String.fromCharCode(0x01));
+    expect(parseManualChannelPublishEntry(`HamNet=${oneByte}`)).toBeNull();
   });
 
   it('parses reporter LongFast@0 key as 32-byte AES-256', () => {

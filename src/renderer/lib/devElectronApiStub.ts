@@ -228,6 +228,15 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       disconnect: noopAsync,
       onData: noopUnsub,
     },
+    meshtastic: {
+      tcp: {
+        connect: noopAsync,
+        write: noopAsync,
+        disconnect: noopAsync,
+        onData: noopUnsub,
+        onDisconnected: noopUnsub,
+      },
+    },
     chat: {
       export: async () => ({ success: false }),
       saveReticulumAttachment: async () => ({ success: false }),
@@ -291,6 +300,12 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       showConfigImportDialog: async () => ({ path: null, content: null }),
       onEvent: noopUnsub,
       onStatus: noopUnsub,
+    },
+    vault: {
+      setPasscode: async () => ({ ok: true }),
+      unlock: async () => ({ ok: true }),
+      lock: async () => ({ ok: true }),
+      status: async () => ({ configured: false, unlocked: false }),
     },
   } as unknown as typeof window.electronAPI;
 }
