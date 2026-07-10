@@ -910,7 +910,7 @@
       "defaultHubsLabel": "Hubs padrão",
       "addDefaultHubs": "Adicionar hubs testnet e Ratspeak",
       "addDefaultHubsAria": "Adicione testnet Reticulum padrão e hubs Ratspeak em estado desativado",
-      "addDefaultHubsSuccess": "Adicionado (s) {{added}} hub(s) padrão (s). {{skipped}} já configurado.",
+      "addDefaultHubsSuccess": "Adicionados {{added}}, corrigidos {{repaired}}. {{skipped}} já configurados.",
       "addDefaultHubsAllPresent": "Os hubs de testnet e Ratspeak padrão já estão configurados.",
       "addDefaultHubsFailed": "Falha ao adicionar hubs padrão.",
       "identityNotConfigured": "Configure uma identidade Reticulum na guia Rede primeiro — gere ou importe uma frase de recuperação.",
@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "Os pares I2P devem ser endereços .b32.i2p separados por vírgulas sem quebras de linha.",
       "rnodePresetRequired": "Escolha uma predefinição RNode RF (são necessários parâmetros de frequência e LoRa).",
       "callsignPlaceholder": "NV0N",
-      "callsignRequired": "Digite seu indicativo de rádio amador para este RNode."
+      "callsignRequired": "Digite seu indicativo de rádio amador para este RNode.",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "Publicar {{name}} no RMAP v4",
+      "rmapEnableSuccess": "Descoberta de RMAP ativada em {{name}}.",
+      "rmapDisableSuccess": "Descoberta de RMAP desativada em {{name}}.",
+      "rmapToggleFailed": "Falha na alteração do RMAP para {{name}}: {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1022,7 +1027,18 @@
     "tcpAddressHint": "Insira o nome do host ou endereço IP; a porta padrão é 4403 se omitida",
     "hintMeshtasticTcp1": "Digite o endereço IP ou o nome de host de um nó Meshtastic conectado por Wi-Fi com TCP ativado (porta padrão 4403). Muito mais rápido do que WiFi/HTTP para grandes bancos de dados de nós.",
     "hintMeshtasticTcp2": "Se a conexão não for confiável (por exemplo, com meshtastic.local), tente o endereço IP do dispositivo — o mDNS da área de trabalho pode ser instável.",
-    "channelPsksMqttOnlyIndexHint": "Sem rádio conectado, mensagens MQTT de entrada são encaminhadas às abas de chat pelo nome do canal. Use ChannelName@index=base64 para que cada nome mapeie para o slot correto — por exemplo LongFast@1=AQ== quando seu canal mesh público for o slot 1 (estilo Colorado mesh). LongFast sem @ mapeia para o slot 0."
+    "channelPsksMqttOnlyIndexHint": "Sem rádio conectado, mensagens MQTT de entrada são encaminhadas às abas de chat pelo nome do canal. Use ChannelName@index=base64 para que cada nome mapeie para o slot correto — por exemplo LongFast@1=AQ== quando seu canal mesh público for o slot 1 (estilo Colorado mesh). LongFast sem @ mapeia para o slot 0.",
+    "reticulumRmap": {
+      "publishing": "RMAP v4: publicação na (s) interface(s) {{count}}",
+      "notPublishing": "RMAP v4: sem publicação",
+      "openSettings": "Configurações de rede",
+      "openSettingsAria": "Abra as configurações de descoberta do RMAP na guia Rede",
+      "needsSync": "{{count}} interface(s) local (is) ativada (s) precisa (m) de sincronização de descoberta de R",
+      "noPublishTargets": "Nenhuma interface local habilitada para publicar no RMAP.",
+      "syncSuccess": "Descoberta de RMAP sincronizada com a interface.",
+      "openGlobalMap": "mapa global",
+      "openGlobalMapAria": "Abra o mapa global do RMAP v4 em rmap.world"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",
@@ -1302,7 +1318,11 @@
         "auto_interface_down": "AutoInterface \"{{name}}\" está habilitado, mas inativo.",
         "missing_shared_instance": "A instância de compartilhamento está ativada, mas o SharedInstanceServer não está ativo.",
         "shared_instance_unexpected": "SharedInstanceServer está ativo, mas share_instance está desativado.",
-        "runtime_only_interface": "\"{{name}}\" é apenas em tempo de execução (não armazenado na configuração)."
+        "runtime_only_interface": "\"{{name}}\" é apenas em tempo de execução (não armazenado na configuração).",
+        "rmap_missing_coordinates": "A interface \"{{name}}\" é detectável, mas faltam coordenadas válidas do mapa.",
+        "rmap_no_tcp_hub": "RNode local detectável não tem hub de cliente TCP habilitado para acessibilidade à Internet.",
+        "rmap_transport_disabled": "As interfaces detectáveis estão configuradas, mas o modo de transporte está desligado.",
+        "rmap_i2p_not_connectable": "A interface I2P \"{{name}}\" é detectável, mas conectável não é sim."
       },
       "runtime": {
         "rnsNotReady": "A pilha RNS não está pronta",
@@ -3546,6 +3566,35 @@
     "cancelSync": "Cancelar",
     "cancelSyncAria": "Cancelar sincronização de propagação"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "Descoberta do RMAP v4",
+    "publishToggle": "Publicar no RMAP v4",
+    "coordsStatus": "Coordenadas do mapa: {{lat}}, {{lon}} (a partir do → GPS da aplicação/ localização)",
+    "gpsMissingWarning": "Defina o GPS estático no aplicativo → GPS / Localização antes de publicar no RMAP.",
+    "announceIntervalMin": "Intervalo de anúncio (minutos)",
+    "heightMeters": "Altura acima do nível do mar (m, opcional)",
+    "reachableOn": "Acessível em (nome do host ou script, opcional)",
+    "helpLink": "Guia RMAP",
+    "gpsRequiredTitle": "Coordenadas GPS necessárias",
+    "gpsRequiredBody": "Os marcadores de mapa RMAP precisam de latitude e longitude. Defina as coordenadas estáticas no aplicativo → GPS / Localização e tente novamente.",
+    "openAppGps": "Abrir configurações do aplicativo",
+    "applySuccess": "Configurações de descoberta de RMAP aplicadas.",
+    "disableSuccess": "Publicação RMAP desativada em interfaces locais.",
+    "applyFailed": "Falha ao aplicar as configurações de RMAP: {{error}}",
+    "noPublishTargets": "Nenhuma interface local habilitada para publicação. Habilite uma interface RNode, BLE peer ou I2P primeiro.",
+    "restartTitle": "Reiniciar a pilha Reticulum?",
+    "restartBody": "As alterações de interface e transporte exigem uma reinicialização da pilha para entrar em vigor.",
+    "restartConfirm": "Reiniciar agora",
+    "restartFailed": "Falha ao reiniciar a pilha: {{error}}",
+    "reachableOnError": {
+      "invalid": "Valor alcançável inválido.",
+      "invalidHost": "Nome de anfitrião inválido para contactável em.",
+      "tooLong": "O valor alcançável é muito longo."
+    },
+    "hint": "Aplica descobrível=sim e as coordenadas GPS do aplicativo a todas as interfaces habilitadas para RMAP (RNode, KISS, BLE peer, I2P, UDP, pipe). Use alternâncias RMAP por interface na Conexão para controle fino. Os caminhos LoRa também permitem o transporte e o hub rmap.world.",
+    "openGlobalMap": "Abrir mapa global",
+    "openGlobalMapAria": "Abra o mapa global do RMAP v4 em rmap.world"
+  },
   "reticulumTopology": {
     "title": "Topologia de rede",
     "self": "Você",
@@ -3950,5 +3999,38 @@
     "menuToastAvailableTitle": "Atualização disponível",
     "menuToastAvailableBody": "A versão {{version}} está disponível.",
     "menuToastErrorTitle": "verificação de atualização falhou"
+  },
+  "reticulumMap": {
+    "title": "Mapa de descoberta",
+    "subtitle": "Interfaces RMAP v4 opt-in ouvidas pela sua pilha (visualização local)",
+    "openGlobalMap": "mapa global",
+    "openGlobalMapAria": "Abra o mapa global do RMAP v4 em rmap.world",
+    "openPublishSettings": "Configurações de Publicação",
+    "openPublishSettingsAria": "Abrir configurações de publicação do RMAP da Reticulum Network",
+    "refresh": "Atualizar",
+    "refreshAria": "Atualizar mapa de descoberta",
+    "refreshFailed": "Não foi possível atualizar o mapa de descoberta: {{error}}",
+    "countSummary": "{{markers}} no mapa · {{list}} apenas na lista",
+    "listTitle": "Interfaces descobertas",
+    "selfMarker": "Posição GPS da sua aplicação",
+    "reachable": "Reachable",
+    "heardOnly": "Apenas ouvido (não na tabela de caminho)",
+    "noCoords": "Sem GPS",
+    "lastHeard": "Ouvido pela última vez {{time}}",
+    "openNodeAria": "Abrir informações para {{name}}",
+    "filter": {
+      "all": "Todos",
+      "rnode": "LoRa",
+      "backbone": "Espinha dorsal",
+      "i2p": "i2P",
+      "tcp": "TCP",
+      "other": "Outros"
+    },
+    "empty": {
+      "stackOff": "Inicie a pilha Reticulum para ouvir os anúncios de descoberta do RMAP.",
+      "noDiscoveries": "Nenhuma interface de descoberta RMAP ouvida ainda.",
+      "filterEmpty": "Nenhuma interface corresponde a este filtro.",
+      "hint": "Os nós aparecem apenas quando os operadores ativam detectable=yes. Os caminhos LoRa precisam de um hub TCP (por exemplo, rmap.world:4242) para retransmitir anúncios. Para cobertura mundial, use o link do mapa global."
+    }
   }
 }

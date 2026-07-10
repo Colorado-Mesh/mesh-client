@@ -910,7 +910,7 @@
       "defaultHubsLabel": "Domyślne huby",
       "addDefaultHubs": "Dodaj huby testnet i Ratspeak",
       "addDefaultHubsAria": "Dodaj domyślne huby Reticulum testnet i Ratspeak w stanie wyłączonym",
-      "addDefaultHubsSuccess": "Dodano domyślne huby: {{added}}. {{skipped}} jest już skonfigurowany.",
+      "addDefaultHubsSuccess": "Dodano {{added}}, poprawiono {{repaired}}. {{skipped}} już skonfigurowane.",
       "addDefaultHubsAllPresent": "Domyślne huby testnet i Ratspeak są już skonfigurowane.",
       "addDefaultHubsFailed": "Nie udało się dodać domyślnych hubów.",
       "identityNotConfigured": "Skonfiguruj najpierw tożsamość Reticulum na karcie Sieć — wygeneruj lub zaimportuj frazę odzyskiwania.",
@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "Peery I2P muszą być adresami oddzielonymi przecinkami .b32.i2p bez podziałów wierszy.",
       "rnodePresetRequired": "Wybierz ustawienie wstępne RNode RF (wymagane są parametry częstotliwości i LoRa).",
       "callsignPlaceholder": "NV0N",
-      "callsignRequired": "Wprowadź swój znak wywoławczy radia amatorskiego dla tego RNode."
+      "callsignRequired": "Wprowadź swój znak wywoławczy radia amatorskiego dla tego RNode.",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "Opublikuj {{name}} na RMAP v4",
+      "rmapEnableSuccess": "Wykrywanie RMAP włączone w dniu {{name}}.",
+      "rmapDisableSuccess": "Wykrywanie RMAP wyłączone w dniu {{name}}.",
+      "rmapToggleFailed": "Zmiana RMAP nie powiodła się dla {{name}}: {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1022,7 +1027,18 @@
     "tcpAddressHint": "Wprowadź nazwę hosta lub adres IP; port domyślnie 4403, jeśli został pominięty",
     "hintMeshtasticTcp1": "Wprowadź adres IP lub nazwę hosta węzła Meshtastic podłączonego do Wi-Fi z włączonym protokołem TCP (domyślny port 4403). Znacznie szybszy niż WiFi/HTTP w przypadku dużych baz danych węzłów.",
     "hintMeshtasticTcp2": "Jeśli połączenie jest zawodne (np. z meshtastic.local), spróbuj zamiast tego adresu IP urządzenia — mDNS na pulpicie może być błędny.",
-    "channelPsksMqttOnlyIndexHint": "Bez podłączonego radia przychodzące wiadomości MQTT są kierowane do kart czatu według nazwy kanału. Użyj ChannelName@index=base64, aby każda nazwa odpowiadała właściwemu slotowi — na przykład LongFast@1=AQ==, gdy Twój publiczny kanał mesh to slot 1 (styl Colorado mesh). LongFast bez @ odpowiada slotowi 0."
+    "channelPsksMqttOnlyIndexHint": "Bez podłączonego radia przychodzące wiadomości MQTT są kierowane do kart czatu według nazwy kanału. Użyj ChannelName@index=base64, aby każda nazwa odpowiadała właściwemu slotowi — na przykład LongFast@1=AQ==, gdy Twój publiczny kanał mesh to slot 1 (styl Colorado mesh). LongFast bez @ odpowiada slotowi 0.",
+    "reticulumRmap": {
+      "publishing": "RMAP v4: publikowanie na interfejsach {{count}}",
+      "notPublishing": "RMAP v4: nieopublikowany",
+      "openSettings": "Ustawienia sieci",
+      "openSettingsAria": "Otwórz ustawienia wykrywania RMAP na karcie Sieć",
+      "needsSync": "Interfejsy lokalne z włączoną funkcją {{count}} wymagają synchronizacji wykrywania RMAP",
+      "noPublishTargets": "Brak włączonych interfejsów lokalnych do publikowania w RMAP.",
+      "syncSuccess": "Wykrywanie RMAP zsynchronizowane z interfejsem.",
+      "openGlobalMap": "Mapa globalna",
+      "openGlobalMapAria": "Otwórz globalną mapę RMAP v4 na rmap.world"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",
@@ -1302,7 +1318,11 @@
         "auto_interface_down": "AutoInterfejs „{{name}}” jest włączony, ale wyłączony.",
         "missing_shared_instance": "Instancja udostępniania jest włączona, ale serwer SharedInstanceServer nie działa.",
         "shared_instance_unexpected": "SharedInstanceServer jest aktywny, ale share_instance jest wyłączony.",
-        "runtime_only_interface": "„{{name}}” jest przeznaczony tylko do środowiska wykonawczego (nie jest przechowywany w konfiguracji)."
+        "runtime_only_interface": "„{{name}}” jest przeznaczony tylko do środowiska wykonawczego (nie jest przechowywany w konfiguracji).",
+        "rmap_missing_coordinates": "Interfejs „{{name}}” jest wykrywalny, ale brakuje prawidłowych współrzędnych mapy.",
+        "rmap_no_tcp_hub": "Wykrywalny lokalny RNode nie ma włączonego węzła klienta TCP dla dostępności internetowej.",
+        "rmap_transport_disabled": "Wykrywalne interfejsy są skonfigurowane, ale tryb transportu jest wyłączony.",
+        "rmap_i2p_not_connectable": "Interfejs I2P „{{name}}” można wykryć, ale nie można go podłączyć."
       },
       "runtime": {
         "rnsNotReady": "Stos RNS nie jest gotowy",
@@ -3546,6 +3566,35 @@
     "cancelSync": "Anuluj",
     "cancelSyncAria": "Anuluj synchronizację propagacji"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "Wykrywanie RMAP v4",
+    "publishToggle": "Publikacja na RMAP v4",
+    "coordsStatus": "Współrzędne mapy: {{lat}}, {{lon}} (z aplikacji → GPS / Lokalizacja)",
+    "gpsMissingWarning": "Ustaw statyczny GPS w aplikacji → GPS / Location przed opublikowaniem na RMAP.",
+    "announceIntervalMin": "Interwał zapowiedzi (minuty)",
+    "heightMeters": "Wysokość nad poziomem morza (m, opcjonalnie)",
+    "reachableOn": "Dostępny na (nazwa hosta lub skrypt, opcjonalnie)",
+    "helpLink": "Prowadnica RMAP",
+    "gpsRequiredTitle": "Wymagane współrzędne GPS",
+    "gpsRequiredBody": "Znaczniki mapy RMAP wymagają szerokości i długości geograficznej. Ustaw współrzędne statyczne w aplikacji → GPS / Lokalizacja, a następnie spróbuj ponownie.",
+    "openAppGps": "Otwórz ustawienia GPS aplikacji",
+    "applySuccess": "Zastosowano ustawienia wykrywania RMAP.",
+    "disableSuccess": "Publikowanie RMAP wyłączone na lokalnych interfejsach.",
+    "applyFailed": "Nie udało się zastosować ustawień RMAP: {{error}}",
+    "noPublishTargets": "Brak włączonych lokalnych interfejsów do opublikowania. Najpierw włącz interfejs RNode, BLE peer lub I2P.",
+    "restartTitle": "Zrestartować stos Reticulum?",
+    "restartBody": "Zmiany interfejsu i transportu wymagają ponownego uruchomienia stosu.",
+    "restartConfirm": "Uruchom ponownie teraz",
+    "restartFailed": "Ponowne uruchomienie stosu nie powiodło się: {{error}}",
+    "reachableOnError": {
+      "invalid": "Nieprawidłowy osiągalny na wartości.",
+      "invalidHost": "Nieprawidłowa nazwa hosta dla dostępnego dnia.",
+      "tooLong": "Wartość osiągalna jest zbyt długa."
+    },
+    "hint": "Stosuje wykrywalne=tak i App współrzędne GPS do wszystkich włączonych interfejsów obsługujących RMAP (RNode, KISS, BLE peer, I2P, UDP, Pipe). Użyj przełączników RMAP dla każdego interfejsu w Połączeniu, aby uzyskać dokładną kontrolę. Ścieżki LoRa umożliwiają również transport i hub rmap.world.",
+    "openGlobalMap": "Otwórz mapę globalną",
+    "openGlobalMapAria": "Otwórz globalną mapę RMAP v4 na rmap.world"
+  },
   "reticulumTopology": {
     "title": "Topologia sieci",
     "self": "Ty",
@@ -3950,5 +3999,38 @@
     "menuToastAvailableTitle": "Dostępna jest aktualizacja",
     "menuToastAvailableBody": "Wersja {{version}} jest dostępna.",
     "menuToastErrorTitle": "Kontrola aktualizacji nie powiodła się"
+  },
+  "reticulumMap": {
+    "title": "Mapa odkrycia",
+    "subtitle": "Interfejsy Opt-in RMAP v4 słyszalne przez Twój stos (widok lokalny)",
+    "openGlobalMap": "Mapa globalna",
+    "openGlobalMapAria": "Otwórz globalną mapę RMAP v4 na rmap.world",
+    "openPublishSettings": "Ustawienia Publikacji ogłoszeń",
+    "openPublishSettingsAria": "Otwórz ustawienia publikowania RMAP sieci Reticulum",
+    "refresh": "Odśwież",
+    "refreshAria": "Odśwież mapę wykrywania",
+    "refreshFailed": "Nie można odświeżyć mapy wykrywania: {{error}}",
+    "countSummary": "{{markers}} na mapie · Tylko lista {{list}}",
+    "listTitle": "Odkryte interfejsy",
+    "selfMarker": "Pozycja GPS w Twojej aplikacji",
+    "reachable": "Osiągalny",
+    "heardOnly": "Tylko słyszalne (nie w tabeli ścieżek)",
+    "noCoords": "No GPS",
+    "lastHeard": "Ostatnio słyszane: {{time}}",
+    "openNodeAria": "Otwórz szczegóły dla {{name}}",
+    "filter": {
+      "all": "Wszystko",
+      "rnode": "LoRa:",
+      "backbone": "Backbone",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "Inne"
+    },
+    "empty": {
+      "stackOff": "Uruchom stos Reticulum, aby usłyszeć zapowiedź odkrycia RMAP.",
+      "noDiscoveries": "Nie słychać jeszcze interfejsów wykrywania RMAP.",
+      "filterEmpty": "Żaden interfejs nie pasuje do tego filtra.",
+      "hint": "Węzły pojawiają się tylko wtedy, gdy operatorzy włączają wykrywalne=tak. Ścieżki LoRa wymagają koncentratora TCP (na przykład rmap.world:4242) do przekazywania komunikatów. Aby uzyskać dostęp do danych na całym świecie, skorzystaj z łącza do globalnej mapy."
+    }
   }
 }

@@ -11,6 +11,7 @@ mod nomad_request_payload;
 mod nomad_timeouts;
 mod packet_log;
 mod persistence;
+mod rmap_discovery;
 mod topology;
 mod types;
 mod via;
@@ -55,6 +56,10 @@ impl StackHandle {
             }
         }
 
+        if let Err(e) = config::ensure_discover_interfaces_enabled(&config_dir) {
+            tracing::warn!("failed to enable discover_interfaces in config: {e}");
+        }
+
         if let Err(e) = config::repair_rnode_radio_fields_in_config(&config_dir) {
             tracing::warn!("failed to repair RNode radio fields in config: {e}");
         }
@@ -93,7 +98,7 @@ impl StackHandle {
             config_dir,
             storage_dir,
             inner,
-            event_tx,
+            event_tx: event_tx.clone(),
             packet_log,
             live,
         };
@@ -113,6 +118,7 @@ impl StackHandle {
                 handle.storage_dir.clone(),
             );
             live.register_lxmf_identity_announce_handler();
+            live.register_rmap_discovery_watcher(event_tx.clone());
         }
         handle.emit_stats().await;
         handle
@@ -656,6 +662,16 @@ impl StackHandle {
         let rtt_ms = started.elapsed().as_millis() as u64;
         let ok = probe.get("ok").and_then(|v| v.as_bool()).unwrap_or(false);
         Ok(serde_json::json!({ "ok": ok, "rtt_ms": rtt_ms }))
+    }
+
+    pub async fn list_rmap_discovered(&self) -> Vec<rmap_discovery::RmapDiscoveredWireRow> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.fetch_rmap_discovered().await;
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        let _ = self;
+        Vec::new()
     }
 
     pub async fn topology_snapshot(&self) -> serde_json::Value {

@@ -47,6 +47,25 @@ describe('ReticulumNetworkPanel', () => {
     expect(screen.queryByText('adminPanel.reticulumFactoryReset.title')).not.toBeInTheDocument();
   });
 
+  it('renders RMAP discovery section when sidecar is ready', async () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/stack/settings') {
+        return Promise.resolve({
+          enable_transport: true,
+          share_instance: true,
+          loglevel: 3,
+          announce_interval_sec: 600,
+        });
+      }
+      if (path === '/api/v1/interfaces') {
+        return Promise.resolve({ interfaces: [] });
+      }
+      return Promise.resolve({});
+    });
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+    expect(await screen.findByText('reticulumRmapDiscovery.sectionTitle')).toBeInTheDocument();
+  });
+
   it('preserves announce_interval_sec when saving stack settings', async () => {
     const user = userEvent.setup();
     render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);

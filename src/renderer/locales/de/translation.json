@@ -910,7 +910,7 @@
       "defaultHubsLabel": "Standard-Hubs",
       "addDefaultHubs": "Hinzufügen von Testnet- und Ratspeak-Hubs",
       "addDefaultHubsAria": "Fügen Sie standardmäßige Reticulum-Testnet- und Ratspeak-Hubs in einem deaktivierten Zustand hinzu",
-      "addDefaultHubsSuccess": "{{added}} Standard-Hub (s) hinzugefügt. {{skipped}} bereits konfiguriert.",
+      "addDefaultHubsSuccess": "{{added}} hinzugefügt, {{repaired}} korrigiert. {{skipped}} bereits konfiguriert.",
       "addDefaultHubsAllPresent": "Standard-Testnet- und Ratspeak-Hubs sind bereits konfiguriert.",
       "addDefaultHubsFailed": "Standard-Hubs konnten nicht hinzugefügt werden.",
       "identityNotConfigured": "Richten Sie zuerst eine Reticulum-Identität auf der Registerkarte Netzwerk ein — generieren oder importieren Sie eine Wiederherstellungsphrase.",
@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "I2P-Peers müssen kommagetrennte .b32.i2p-Adressen ohne Zeilenumbrüche sein.",
       "rnodePresetRequired": "Wählen Sie eine RNode RF-Voreinstellung (Frequenz- und LoRa-Parameter sind erforderlich).",
       "callsignPlaceholder": "NV0N",
-      "callsignRequired": "Geben Sie Ihr Amateurfunkrufzeichen für diesen RNode ein."
+      "callsignRequired": "Geben Sie Ihr Amateurfunkrufzeichen für diesen RNode ein.",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "{{name}} auf RMAP v4 veröffentlichen",
+      "rmapEnableSuccess": "RMAP-Erkennung auf {{name}} aktiviert.",
+      "rmapDisableSuccess": "RMAP-Erkennung am {{name}} deaktiviert.",
+      "rmapToggleFailed": "RMAP-Änderung für {{name}} fehlgeschlagen: {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1022,7 +1027,18 @@
     "tcpAddressHint": "Geben Sie den Hostnamen oder die IP-Adresse ein; der Port wird standardmäßig auf 4403 gesetzt, wenn er ausgelassen wird",
     "hintMeshtasticTcp1": "Geben Sie die IP-Adresse oder den Hostnamen eines über WLAN verbundenen Meshtastic-Knotens mit aktiviertem TCP ein (Standardport 4403). Viel schneller als WiFi/HTTP für große Knoten-Datenbanken.",
     "hintMeshtasticTcp2": "Wenn die Verbindung unzuverlässig ist (z. B. mit meshtastic.local), versuchen Sie stattdessen die IP-Adresse des Geräts — Desktop-mDNS kann flockig sein.",
-    "channelPsksMqttOnlyIndexHint": "Ohne Funkverbindung werden eingehende MQTT-Nachrichten nach Kanalnamen an Chat-Registerkarten weitergeleitet. Verwenden Sie ChannelName@index=base64, damit jeder Name dem richtigen Slot zugeordnet wird — zum Beispiel LongFast@1=AQ==, wenn Ihr öffentlicher Mesh-Kanal Slot 1 ist (Colorado-Mesh-Stil). LongFast ohne @ wird Slot 0 zugeordnet."
+    "channelPsksMqttOnlyIndexHint": "Ohne Funkverbindung werden eingehende MQTT-Nachrichten nach Kanalnamen an Chat-Registerkarten weitergeleitet. Verwenden Sie ChannelName@index=base64, damit jeder Name dem richtigen Slot zugeordnet wird — zum Beispiel LongFast@1=AQ==, wenn Ihr öffentlicher Mesh-Kanal Slot 1 ist (Colorado-Mesh-Stil). LongFast ohne @ wird Slot 0 zugeordnet.",
+    "reticulumRmap": {
+      "publishing": "RMAP v4: Veröffentlichung auf {{count}} Schnittstelle(n)",
+      "notPublishing": "RMAP v4: nicht veröffentlich",
+      "openSettings": "Netzwerkeinstellungen",
+      "openSettingsAria": "Öffnen Sie die RMAP-Erkennungseinstellungen auf der Registerkarte Netzwerk",
+      "needsSync": "{{count}} aktivierte lokale Schnittstelle(n) benötigen RMAP Discovery Sync",
+      "noPublishTargets": "Keine aktivierten lokalen Schnittstellen zum Veröffentlichen auf RMAP.",
+      "syncSuccess": "RMAP-Erkennung mit Schnittstelle synchronisiert.",
+      "openGlobalMap": "[Globale Karte?]",
+      "openGlobalMapAria": "RMAP v4 Global Map auf rmap.world öffnen"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",
@@ -1302,7 +1318,11 @@
         "auto_interface_down": "AutoInterface „{{name}}“ ist aktiviert, aber nicht verfügbar.",
         "missing_shared_instance": "Die Share-Instanz ist aktiviert, aber SharedInstanceServer ist nicht aktiv.",
         "shared_instance_unexpected": "SharedInstanceServer ist aktiv, aber share_instance ist ausgeschaltet.",
-        "runtime_only_interface": "„{{name}}“ ist nur zur Laufzeit gültig (wird nicht in der Konfiguration gespeichert)."
+        "runtime_only_interface": "„{{name}}“ ist nur zur Laufzeit gültig (wird nicht in der Konfiguration gespeichert).",
+        "rmap_missing_coordinates": "Schnittstelle „{{name}}“ ist auffindbar, aber es fehlen gültige Kartenkoordinaten.",
+        "rmap_no_tcp_hub": "Der auffindbare lokale RNode hat keinen aktivierten TCP-Client-Hub für die Internet-Erreichbarkeit.",
+        "rmap_transport_disabled": "Erkennbare Schnittstellen sind konfiguriert, aber der Transportmodus ist ausgeschaltet.",
+        "rmap_i2p_not_connectable": "Die I2P-Schnittstelle \"{{name}}\" ist auffindbar, aber anschließbar ist nicht ja."
       },
       "runtime": {
         "rnsNotReady": "Der RNS-Stack ist nicht bereit",
@@ -3546,6 +3566,35 @@
     "cancelSync": "Abbrechen",
     "cancelSyncAria": "Ausbreitungssynchronisation abbrechen"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v4 Entdeckung",
+    "publishToggle": "Auf RMAP v4 veröffentlichen",
+    "coordsStatus": "Kartenkoordinaten: {{lat}}, {{lon}} (von App → GPS / Standort)",
+    "gpsMissingWarning": "Stellen Sie statisches GPS in App → GPS / Standort ein, bevor Sie es auf RMAP veröffentlichen.",
+    "announceIntervalMin": "Ankündigungsintervall (Minuten)",
+    "heightMeters": "Höhe über dem Meeresspiegel (m, optional)",
+    "reachableOn": "Erreichbar unter (Hostname oder Skript, optional)",
+    "helpLink": "RMAP-Leitfaden",
+    "gpsRequiredTitle": "GPS-Koordinaten erforderlich",
+    "gpsRequiredBody": "RMAP-Kartenmarkierungen benötigen Breitengrad und Längengrad. Legen Sie statische Koordinaten unter App → GPS / Standort fest und versuchen Sie es erneut.",
+    "openAppGps": "App-GPS-Einstellungen öffnen",
+    "applySuccess": "RMAP-Erkennungseinstellungen angewendet.",
+    "disableSuccess": "RMAP-Publishing auf lokalen Schnittstellen deaktiviert.",
+    "applyFailed": "RMAP-Einstellungen konnten nicht angewendet werden: {{error}}",
+    "noPublishTargets": "Keine aktivierten lokalen Schnittstellen zum Veröffentlichen. Aktivieren Sie zuerst eine RNode-, BLE-Peer- oder I2P-Schnittstelle.",
+    "restartTitle": "Reticulum-Stapel neu starten?",
+    "restartBody": "Schnittstellen- und Transportänderungen erfordern einen Neustart des Stapels, um wirksam zu werden.",
+    "restartConfirm": "Jetzt neu starten",
+    "restartFailed": "Stack-Neustart fehlgeschlagen: {{error}}",
+    "reachableOnError": {
+      "invalid": "Ungültiger erreichbarer Wert.",
+      "invalidHost": "Ungültiger Hostname für erreichbar am.",
+      "tooLong": "Der erreichbare Wert ist zu lang."
+    },
+    "hint": "Wendet discoverable=yes und App GPS-Koordinaten auf alle aktivierten RMAP-fähigen Schnittstellen (RNode, KISS, BLE Peer, I2P, UDP, Pipe) an. Verwenden Sie RMAP-Schalter pro Schnittstelle für die Verbindung zur Feinsteuerung. LoRa-Pfade ermöglichen auch den Transport und den Hub rmap.world.",
+    "openGlobalMap": "Globale Karte öffnen",
+    "openGlobalMapAria": "RMAP v4 Global Map auf rmap.world öffnen"
+  },
   "reticulumTopology": {
     "title": "Netzwerk-Topologie",
     "self": "Du",
@@ -3950,5 +3999,38 @@
     "menuToastAvailableTitle": "Update verfügbar",
     "menuToastAvailableBody": "Version {{version}} liegt vor.",
     "menuToastErrorTitle": "Update-Prüfung fehlgeschlagen"
+  },
+  "reticulumMap": {
+    "title": "Entdeckungskarte",
+    "subtitle": "Opt-in RMAP v4-Schnittstellen, die von Ihrem Stack gehört werden (lokale Ansicht)",
+    "openGlobalMap": "[Globale Karte?]",
+    "openGlobalMapAria": "RMAP v4 Global Map auf rmap.world öffnen",
+    "openPublishSettings": "Veröffentlichungs-Einstellungen",
+    "openPublishSettingsAria": "RMAP-Veröffentlichungseinstellungen des Reticulum-Netzwerks öffnen",
+    "refresh": "Aktualisieren",
+    "refreshAria": "Entdeckungskarte aktualisieren",
+    "refreshFailed": "Entdeckungskarte konnte nicht aktualisiert werden: {{error}}",
+    "countSummary": "{{markers}} auf der Karte · Nur {{list}} Liste",
+    "listTitle": "Entdeckte Schnittstellen",
+    "selfMarker": "Ihre App-GPS-Position",
+    "reachable": "Greifbar.",
+    "heardOnly": "Nur gehört (nicht in der Pfad-Tabelle)",
+    "noCoords": "Kein GPS",
+    "lastHeard": "Zuletzt gehört {{time}}",
+    "openNodeAria": "Offene Details für {{name}}",
+    "filter": {
+      "all": "Alle",
+      "rnode": "LoRa",
+      "backbone": "Backbone",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "Sonstige"
+    },
+    "empty": {
+      "stackOff": "Starten Sie den Reticulum-Stack, um RMAP-Discovery-Ankündigungen zu hören.",
+      "noDiscoveries": "Noch keine RMAP-Erkennungsschnittstellen zu hören.",
+      "filterEmpty": "Keine Schnittstellen entsprechen diesem Filter.",
+      "hint": "Knoten werden nur angezeigt, wenn die Bediener die Option \"auffindbar\" = \"ja\" aktivieren. LoRa-Pfade benötigen einen TCP-Hub (zum Beispiel rmap.world:4242), um Ansagen weiterzuleiten. Für eine weltweite Abdeckung verwenden Sie den globalen Kartenlink."
+    }
   }
 }

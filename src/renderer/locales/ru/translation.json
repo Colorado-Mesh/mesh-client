@@ -910,7 +910,7 @@
       "defaultHubsLabel": "Концентраторы по умолчанию",
       "addDefaultHubs": "Добавьте тестовую сеть и концентраторы Ratspeak",
       "addDefaultHubsAria": "Добавьте тестовую сеть Reticulum по умолчанию и концентраторы Ratspeak в отключенное состояние",
-      "addDefaultHubsSuccess": "Добавлен (-ы) {{added}} концентратор(-ы) по умолчанию. {{skipped}} уже настроен.",
+      "addDefaultHubsSuccess": "Добавлено {{added}}, исправлено {{repaired}}. {{skipped}} уже настроено.",
       "addDefaultHubsAllPresent": "Концентраторы Testnet и Ratspeak по умолчанию уже настроены.",
       "addDefaultHubsFailed": "Не удалось добавить концентраторы по умолчанию.",
       "identityNotConfigured": "Сначала настройте идентификатор Reticulum на вкладке Network (Сеть) — создайте или импортируйте фразу восстановления.",
@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "Одноранговые узлы I2P должны быть адресами .b32.i2p, разделенными запятыми, без разрывов строк.",
       "rnodePresetRequired": "Выберите предустановку RNode RF (требуются частота и параметры LoRa).",
       "callsignPlaceholder": "NV0N",
-      "callsignRequired": "Введите позывной радиолюбителя для этого RNode."
+      "callsignRequired": "Введите позывной радиолюбителя для этого RNode.",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "Опубликовать {{name}} на RMAP v4",
+      "rmapEnableSuccess": "Обнаружение RMAP включено {{name}}.",
+      "rmapDisableSuccess": "Обнаружение RMAP отключено {{name}}.",
+      "rmapToggleFailed": "Ошибка изменения RMAP для {{name}}: {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1022,7 +1027,18 @@
     "tcpAddressHint": "Введите имя хоста или IP-адрес; порт по умолчанию равен 4403, если не указано",
     "hintMeshtasticTcp1": "Введите IP-адрес или имя хоста подключенного к Wi-Fi узла Meshtastic с включенным TCP (порт по умолчанию 4403). Гораздо быстрее, чем WiFi/HTTP для больших баз данных узлов.",
     "hintMeshtasticTcp2": "Если соединение ненадежное (например, с meshtastic.local), попробуйте вместо этого использовать IP-адрес устройства — mDNS настольного компьютера может быть ненадежным.",
-    "channelPsksMqttOnlyIndexHint": "Без радио входящие сообщения MQTT направляются на вкладки чата по имени канала. Используйте ChannelName@index=base64, чтобы каждое имя соответствовало правильному слоту — например LongFast@1=AQ==, когда ваш публичный mesh-канал — слот 1 (стиль Colorado mesh). LongFast без @ соответствует слоту 0."
+    "channelPsksMqttOnlyIndexHint": "Без радио входящие сообщения MQTT направляются на вкладки чата по имени канала. Используйте ChannelName@index=base64, чтобы каждое имя соответствовало правильному слоту — например LongFast@1=AQ==, когда ваш публичный mesh-канал — слот 1 (стиль Colorado mesh). LongFast без @ соответствует слоту 0.",
+    "reticulumRmap": {
+      "publishing": "RMAP v4: публикация на {{count}} интерфейсе(ах)",
+      "notPublishing": "RMAP v4: не публикуется",
+      "openSettings": "Настройки сети",
+      "openSettingsAria": "Откройте настройки обнаружения RMAP на вкладке Сеть",
+      "needsSync": "{{count}} включенные локальные интерфейсы требуют синхронизации обнаружения RMAP",
+      "noPublishTargets": "Нет включенных локальных интерфейсов для публикации на RMAP.",
+      "syncSuccess": "Обнаружение RMAP синхронизировано с интерфейсом.",
+      "openGlobalMap": "Глобальная карта",
+      "openGlobalMapAria": "Открыть глобальную карту RMAP v4 на rmap.world"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",
@@ -1302,7 +1318,11 @@
         "auto_interface_down": "Автоинтерфейс «{{name}}» включен, но не работает.",
         "missing_shared_instance": "Экземпляр общего ресурса включен, но SharedInstanceServer не работает.",
         "shared_instance_unexpected": "SharedInstanceServer активен, но ресурс Share_instance отключен.",
-        "runtime_only_interface": "«{{name}}» используется только во время выполнения (не хранится в конфигурации)."
+        "runtime_only_interface": "«{{name}}» используется только во время выполнения (не хранится в конфигурации).",
+        "rmap_missing_coordinates": "Интерфейс \"{{name}}\" обнаруживается, но отсутствуют действительные координаты карты.",
+        "rmap_no_tcp_hub": "Обнаруживаемый локальный RNode не имеет включенного клиентского концентратора TCP для доступа в Интернет.",
+        "rmap_transport_disabled": "Обнаруживаемые интерфейсы настроены, но режим транспортировки выключен.",
+        "rmap_i2p_not_connectable": "Интерфейс I2P \"{{name}}\" обнаруживается, но не подключается."
       },
       "runtime": {
         "rnsNotReady": "Стек RNS не готов",
@@ -3546,6 +3566,35 @@
     "cancelSync": "Отмена",
     "cancelSyncAria": "Отмена синхронизации распространения"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "Обнаружение RMAP v4",
+    "publishToggle": "Опубликовать на RMAP v4",
+    "coordsStatus": "Координаты карты: {{lat}}, {{lon}} (из приложения → GPS / Location)",
+    "gpsMissingWarning": "Установите статический GPS в приложении → GPS / Местоположение перед публикацией на RMAP.",
+    "announceIntervalMin": "Объявить интервал (минуты)",
+    "heightMeters": "Высота над уровнем моря (м, опционально)",
+    "reachableOn": "Доступно на (имя хоста или скрипт, необязательно)",
+    "helpLink": "Руководство RMAP",
+    "gpsRequiredTitle": "Sono necessarie le coordinate GPS",
+    "gpsRequiredBody": "Маркерам карты RMAP нужны широта и долгота. Установите статические координаты в разделе → GPS приложения/ Местоположение, а затем повторите попытку.",
+    "openAppGps": "Открыть настройки приложения",
+    "applySuccess": "Применены параметры обнаружения RMAP.",
+    "disableSuccess": "Публикация RMAP отключена на локальных интерфейсах.",
+    "applyFailed": "Не удалось применить настройки RMAP: {{error}}",
+    "noPublishTargets": "Нет включенных локальных интерфейсов для публикации. Сначала включите интерфейс RNode, BLE peer или I2P.",
+    "restartTitle": "Перезапустить стек Reticulum?",
+    "restartBody": "Изменения интерфейса и транспортировки требуют перезапуска стека для вступления в силу.",
+    "restartConfirm": "Перезапустить сейчас",
+    "restartFailed": "Сбой перезапуска стека: {{error}}",
+    "reachableOnError": {
+      "invalid": "Недопустимое значение, доступное для значения.",
+      "invalidHost": "Недопустимое имя хоста, доступного на.",
+      "tooLong": "Достижимое значение слишком длинное."
+    },
+    "hint": "Применяет discoverable=yes и App GPS-координаты ко всем включенным интерфейсам с поддержкой RMAP (RNode, KISS, BLE peer, I2P, UDP, pipe). Используйте переключатели RMAP для каждого интерфейса на подключении для точного управления. Пути LoRa также обеспечивают транспорт и хаб rmap.world.",
+    "openGlobalMap": "Глобальная карта",
+    "openGlobalMapAria": "Открыть глобальную карту RMAP v4 на rmap.world"
+  },
   "reticulumTopology": {
     "title": "Топология сети",
     "self": "Вы",
@@ -3950,5 +3999,38 @@
     "menuToastAvailableTitle": "Доступны обновления",
     "menuToastAvailableBody": "Доступна версия {{version}}.",
     "menuToastErrorTitle": "Не удалось выполнить проверку на наличие обновлений службы"
+  },
+  "reticulumMap": {
+    "title": "Карта открытий",
+    "subtitle": "Согласованные интерфейсы RMAP v4, услышанные вашим стеком (локальное представление)",
+    "openGlobalMap": "Глобальная карта",
+    "openGlobalMapAria": "Открыть глобальную карту RMAP v4 на rmap.world",
+    "openPublishSettings": "Настройки Публикации",
+    "openPublishSettingsAria": "Настройки публикации Open Reticulum Network RMAP",
+    "refresh": "Обновление",
+    "refreshAria": "Обновить карту обнаружения",
+    "refreshFailed": "Не удалось обновить карту обнаружения: {{error}}",
+    "countSummary": "{{markers}} на карте · Только список {{list}}",
+    "listTitle": "Обнаруженные интерфейсы",
+    "selfMarker": "Позиция GPS вашего приложения",
+    "reachable": "Словарь терминов теории графов",
+    "heardOnly": "Только услышанные (не в таблице путей)",
+    "noCoords": "Нет GPS.",
+    "lastHeard": "Последнее прослушивание: {{time}}",
+    "openNodeAria": "Открыть сведения о {{name}}",
+    "filter": {
+      "all": "Все",
+      "rnode": "LoRa",
+      "backbone": "Backbone",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "Прочее"
+    },
+    "empty": {
+      "stackOff": "Запустите стек Reticulum, чтобы прослушать объявления об обнаружении RMAP.",
+      "noDiscoveries": "Интерфейсы обнаружения RMAP еще не прослушаны.",
+      "filterEmpty": "Нет интерфейсов, соответствующих этому фильтру.",
+      "hint": "Узлы появляются только тогда, когда операторы включают discoverable=yes. Пути LoRa нуждаются в концентраторе TCP (например, rmap.world:4242) для ретрансляции объявлений. Для глобального охвата воспользуйтесь ссылкой на глобальную карту."
+    }
   }
 }

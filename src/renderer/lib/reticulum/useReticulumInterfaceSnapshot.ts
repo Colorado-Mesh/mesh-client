@@ -37,6 +37,14 @@ export interface ReticulumInterfaceRow {
   callsign?: string | null;
   preset?: string | null;
   seed_addresses?: string[];
+  discoverable?: boolean | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  height?: number | null;
+  discovery_name?: string | null;
+  announce_interval_min?: number | null;
+  connectable?: boolean | null;
+  reachable_on?: string | null;
 }
 
 export interface ReticulumSerialPortOption {

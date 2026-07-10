@@ -297,6 +297,14 @@ mod tests {
             id_interval: None,
             mode: None,
             seed_addresses: Vec::new(),
+            discoverable: None,
+            latitude: None,
+            longitude: None,
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
         }
     }
 

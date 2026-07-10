@@ -6,6 +6,7 @@ mod interfaces;
 mod lxmf;
 mod nomad;
 mod propagation;
+mod rmap;
 mod status;
 mod system;
 mod ws;
@@ -85,6 +86,7 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/peers/{hash}/probe", post(lxmf::peer_probe))
         .route("/api/v1/ping", post(lxmf::ping))
         .route("/api/v1/topology", get(system::topology))
+        .route("/api/v1/rmap/discovered", get(rmap::list_rmap_discovered))
         .route("/api/v1/packets", get(system::list_packets).delete(system::clear_packets))
         .route("/api/v1/announces", delete(system::clear_announces))
         .route("/api/v1/propagation", get(propagation::list_propagation))

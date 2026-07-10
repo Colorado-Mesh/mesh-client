@@ -910,7 +910,7 @@
       "defaultHubsLabel": "デフォルトのハブ",
       "addDefaultHubs": "テストネットとRatspeakハブを追加する",
       "addDefaultHubsAria": "無効状態のデフォルトのReticulumテストネットとRatspeakハブを追加する",
-      "addDefaultHubsSuccess": "{{added}}デフォルトのハブを追加しました。{{skipped}}はすでに設定されています。",
+      "addDefaultHubsSuccess": "{{added}}件追加、{{repaired}}件修正。{{skipped}}件は既に設定済み。",
       "addDefaultHubsAllPresent": "デフォルトのテストネットとRatspeakハブはすでに設定されています。",
       "addDefaultHubsFailed": "デフォルトのハブを追加できませんでした。",
       "identityNotConfigured": "最初に[ネットワーク]タブでReticulum IDを設定します。リカバリフレーズを生成またはインポートします。",
@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "I2Pピアは、改行のないカンマ区切りの.b32.i2pアドレスでなければなりません。",
       "rnodePresetRequired": "RNode RFプリセットを選択します（周波数とLoRaパラメータが必要です）。",
       "callsignPlaceholder": "NV 0 N",
-      "callsignRequired": "このRNodeのアマチュア無線コールサインを入力します。"
+      "callsignRequired": "このRNodeのアマチュア無線コールサインを入力します。",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "{{name}}をRMAP v 4に公開する",
+      "rmapEnableSuccess": "{{name}}でRMAP検出が有効になりました。",
+      "rmapDisableSuccess": "{{name}}でRMAP検出が無効になりました。",
+      "rmapToggleFailed": "{{name}}のRMAP変更に失敗しました: {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1022,7 +1027,18 @@
     "tcpAddressHint": "ホスト名またはIPアドレスを入力します。省略した場合、ポートはデフォルトで4403になります",
     "hintMeshtasticTcp1": "TCPが有効になっているWiFi接続されたMeshtasticノードのIPアドレスまたはホスト名を入力します（デフォルトポート4403 ）。大規模なノードデータベースでは、WiFi/HTTPよりもはるかに高速です。",
     "hintMeshtasticTcp2": "接続が信頼できない場合（ meshtastic.localなど）は、代わりにデバイスのIPアドレスを試してみてください。デスクトップのmDNSが不安定な場合があります。",
-    "channelPsksMqttOnlyIndexHint": "無線が未接続のとき、受信 MQTT メッセージはチャネル名でチャットタブに振り分けられます。ChannelName@index=base64 を使い、各名前を正しいスロットに対応させます — 例: 公開 mesh チャネルがスロット 1 のとき（Colorado mesh 方式）は LongFast@1=AQ==。LongFast に @ がない場合はスロット 0 です。"
+    "channelPsksMqttOnlyIndexHint": "無線が未接続のとき、受信 MQTT メッセージはチャネル名でチャットタブに振り分けられます。ChannelName@index=base64 を使い、各名前を正しいスロットに対応させます — 例: 公開 mesh チャネルがスロット 1 のとき（Colorado mesh 方式）は LongFast@1=AQ==。LongFast に @ がない場合はスロット 0 です。",
+    "reticulumRmap": {
+      "publishing": "RMAP v 4 ： {{count}}インターフェースでの公開",
+      "notPublishing": "RMAP v 4 ：公開されていません",
+      "openSettings": "ネットワーク設定",
+      "openSettingsAria": "[ネットワーク]タブでRMAP検出設定を開く",
+      "needsSync": "{{count}}有効なローカルインターフェースにはRMAP検出の同期が必要です",
+      "noPublishTargets": "RMAPに公開する有効なローカルインターフェイスはありません。",
+      "syncSuccess": "RMAP検出がインターフェイスに同期されました。",
+      "openGlobalMap": "グローバル マップの種類",
+      "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -1302,7 +1318,11 @@
         "auto_interface_down": "AutoInterface \"{{name}}\" は有効ですが、ダウンしています。",
         "missing_shared_instance": "共有インスタンスはオンですが、SharedInstanceServer が起動していません。",
         "shared_instance_unexpected": "SharedInstanceServer はライブですが、share_instance はオフです。",
-        "runtime_only_interface": "「{{name}}」は実行時のみです (構成には保存されません)。"
+        "runtime_only_interface": "「{{name}}」は実行時のみです (構成には保存されません)。",
+        "rmap_missing_coordinates": "インターフェース「{{name}}」は検出可能ですが、有効なマップ座標がありません。",
+        "rmap_no_tcp_hub": "検出可能なローカルRNodeには、インターネット到達可能性のために有効なTCPクライアントハブがありません。",
+        "rmap_transport_disabled": "検出可能なインターフェイスが設定されていますが、トランスポートモードはオフです。",
+        "rmap_i2p_not_connectable": "I 2 Pインターフェース「{{name}}」は検出可能ですが、接続可能ではありません。"
       },
       "runtime": {
         "rnsNotReady": "RNS スタックの準備ができていません",
@@ -3546,6 +3566,35 @@
     "cancelSync": "取り消す",
     "cancelSyncAria": "伝播の同期をキャンセル"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v 4検出",
+    "publishToggle": "RMAP v 4で公開",
+    "coordsStatus": "地図の座標： {{lat}}、{{lon}} （アプリの→GPS/位置情報より）",
+    "gpsMissingWarning": "RMAPで公開する前に、アプリの→GPS/位置で静的GPSを設定します。",
+    "announceIntervalMin": "アナウンス間隔（分）",
+    "heightMeters": "海抜の高さ（ m、オプション）",
+    "reachableOn": "アクセス可能（ホスト名またはスクリプト、オプション）",
+    "helpLink": "RMAPガイド",
+    "gpsRequiredTitle": "GPS座標が必要です",
+    "gpsRequiredBody": "RMAPマップマーカーには、緯度と経度が必要です。アプリの→GPS/位置情報で静的座標を設定してから、もう一度お試しください。",
+    "openAppGps": "アプリのGPS設定を開く",
+    "applySuccess": "RMAP検出設定が適用されました。",
+    "disableSuccess": "ローカルインターフェイスでRMAP発行が無効になっています。",
+    "applyFailed": "RMAP設定の適用に失敗しました： {{error}}",
+    "noPublishTargets": "公開する有効なローカルインターフェイスがありません。最初にRNode、BLEピア、またはI 2 Pインターフェイスを有効にします。",
+    "restartTitle": "Reticulumスタックを再起動しますか？",
+    "restartBody": "インターフェースとトランスポートの変更を有効にするには、スタックの再起動が必要です。",
+    "restartConfirm": "今すぐ再起動",
+    "restartFailed": "スタックの再起動に失敗しました： {{error}}",
+    "reachableOnError": {
+      "invalid": "値に無効な到達可能です。",
+      "invalidHost": "に到達可能なホスト名が無効です。",
+      "tooLong": "値で到達可能な時間が長すぎます。"
+    },
+    "hint": "すべての有効なRMAP対応インターフェイス（ RNode、KISS、BLEピア、I 2 P、UDP、パイプ）にdiscoverable = yesとApp GPS座標を適用します。インターフェースごとのRMAPトグルを接続で使用して、細かい制御を行います。LoRaパスは、トランスポートとrmap.worldハブも有効にします。",
+    "openGlobalMap": "グローバルマップを開く",
+    "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く"
+  },
   "reticulumTopology": {
     "title": "ネットワーク・トポロジー",
     "self": "あなたは",
@@ -3950,5 +3999,38 @@
     "menuToastAvailableTitle": "利用可能なアップデート",
     "menuToastAvailableBody": "バージョン{{version}}が利用できます。",
     "menuToastErrorTitle": "アップデートチェックに失敗しました"
+  },
+  "reticulumMap": {
+    "title": "ディスカバリーマップ",
+    "subtitle": "スタックで聞こえるRMAP v 4インターフェイスのオプトイン（ローカルビュー）",
+    "openGlobalMap": "グローバル マップの種類",
+    "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く",
+    "openPublishSettings": "公開設定",
+    "openPublishSettingsAria": "Reticulum Network RMAP公開設定を開く",
+    "refresh": "再表示",
+    "refreshAria": "ディスカバリーマップの更新",
+    "refreshFailed": "ディスカバリーマップを更新できませんでした： {{error}}",
+    "countSummary": "{{markers}}地図上· {{list}}リストのみ",
+    "listTitle": "検出されたインターフェース",
+    "selfMarker": "アプリのGPS位置",
+    "reachable": "到達可能",
+    "heardOnly": "HEARD ONLY (NOT IN PATH TABLE)",
+    "noCoords": "GPSなし",
+    "lastHeard": "最後に聞いたのは{{time}}",
+    "openNodeAria": "{{name}}の詳細を開く",
+    "filter": {
+      "all": "すべて",
+      "rnode": "LoRa",
+      "backbone": "椎骨",
+      "i2p": "I 2 P",
+      "tcp": "TCP",
+      "other": "その他"
+    },
+    "empty": {
+      "stackOff": "Reticulumスタックを起動して、RMAP検出のアナウンスを聞きます。",
+      "noDiscoveries": "RMAP検出インターフェースはまだ聴取されていません。",
+      "filterEmpty": "このフィルターに一致するインターフェースはありません。",
+      "hint": "ノードは、オペレータがdiscoverable = yesを有効にした場合にのみ表示されます。LoRaパスは、アナウンスをリレーするためにTCPハブ（例えば、rmap.world: 4242 ）を必要とする。全世界をカバーするには、グローバルマップリンクを使用してください。"
+    }
   }
 }

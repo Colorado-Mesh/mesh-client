@@ -910,7 +910,7 @@
       "defaultHubsLabel": "Standaardhubs",
       "addDefaultHubs": "Voeg testnet en Ratspeak hubs toe",
       "addDefaultHubsAria": "Voeg standaard Reticulum-testnet en Ratspeak-hubs toe in een uitgeschakelde toestand",
-      "addDefaultHubsSuccess": "{{added}} standaardhub (s) toegevoegd. {{skipped}} is al geconfigureerd.",
+      "addDefaultHubsSuccess": "{{added}} toegevoegd, {{repaired}} gecorrigeerd. {{skipped}} al geconfigureerd.",
       "addDefaultHubsAllPresent": "Standaard testnet en Ratspeak-hubs zijn al geconfigureerd.",
       "addDefaultHubsFailed": "Kan standaardhubs niet toevoegen.",
       "identityNotConfigured": "Stel eerst een Reticulum-identiteit in op het tabblad Netwerk — genereer of importeer een herstelzin.",
@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "I2P-peers moeten door komma's gescheiden .b32.i2p-adressen zijn zonder regeleinden.",
       "rnodePresetRequired": "Kies een RNode RF-voorinstelling (frequentie- en LoRa-parameters zijn vereist).",
       "callsignPlaceholder": "NV0N",
-      "callsignRequired": "Voer uw roepnaam voor amateurradio in voor deze RNode."
+      "callsignRequired": "Voer uw roepnaam voor amateurradio in voor deze RNode.",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "Publiceer {{name}} op RMAP v4",
+      "rmapEnableSuccess": "RMAP-detectie ingeschakeld op {{name}}.",
+      "rmapDisableSuccess": "RMAP-detectie uitgeschakeld op {{name}}.",
+      "rmapToggleFailed": "RMAP-wijziging mislukt voor {{name}}: {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1022,7 +1027,18 @@
     "tcpAddressHint": "Voer hostnaam of IP-adres in; poort staat standaard op 4403 indien weggelaten",
     "hintMeshtasticTcp1": "Voer het IP-adres of de hostnaam in van een Meshtastic-knooppunt met WiFi-verbinding met TCP ingeschakeld (standaardpoort 4403). Veel sneller dan WiFi/HTTP voor grote node databases.",
     "hintMeshtasticTcp2": "Als de verbinding onbetrouwbaar is (bijv. met meshtastic.local), probeer dan in plaats daarvan het IP-adres van het apparaat — desktop mDNS kan schilferig zijn.",
-    "channelPsksMqttOnlyIndexHint": "Zonder radioverbinding worden inkomende MQTT-berichten per kanaalnaam naar chattabbladen gerouteerd. Gebruik ChannelName@index=base64 zodat elke naam naar de juiste sleuf wijst — bijvoorbeeld LongFast@1=AQ== wanneer uw openbare meshkanaal sleuf 1 is (Colorado-mesh-stijl). LongFast zonder @ wijst naar sleuf 0."
+    "channelPsksMqttOnlyIndexHint": "Zonder radioverbinding worden inkomende MQTT-berichten per kanaalnaam naar chattabbladen gerouteerd. Gebruik ChannelName@index=base64 zodat elke naam naar de juiste sleuf wijst — bijvoorbeeld LongFast@1=AQ== wanneer uw openbare meshkanaal sleuf 1 is (Colorado-mesh-stijl). LongFast zonder @ wijst naar sleuf 0.",
+    "reticulumRmap": {
+      "publishing": "RMAP v4: publiceren op {{count}} interface(s)",
+      "notPublishing": "RMAP v4: niet publiceren",
+      "openSettings": "Netwerk instellingen",
+      "openSettingsAria": "Open RMAP-detectie-instellingen op het tabblad Netwerk",
+      "needsSync": "{{count}} ingeschakelde lokale interface(s) hebben RMAP-detectiesynchronisatie nodig",
+      "noPublishTargets": "Geen ingeschakelde lokale interfaces om op RMAP te publiceren.",
+      "syncSuccess": "RMAP-detectie gesynchroniseerd met interface.",
+      "openGlobalMap": "Wereldkaart",
+      "openGlobalMapAria": "Open RMAP v4 globale kaart op rmap.world"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -1302,7 +1318,11 @@
         "auto_interface_down": "AutoInterface \"{{name}}\" is ingeschakeld maar uitgeschakeld.",
         "missing_shared_instance": "Share-instantie is ingeschakeld, maar SharedInstanceServer is niet actief.",
         "shared_instance_unexpected": "SharedInstanceServer is live, maar share_instance is uitgeschakeld.",
-        "runtime_only_interface": "\"{{name}}\" is alleen runtime (niet opgeslagen in de configuratie)."
+        "runtime_only_interface": "\"{{name}}\" is alleen runtime (niet opgeslagen in de configuratie).",
+        "rmap_missing_coordinates": "Interface \"{{name}}\" is detecteerbaar, maar er ontbreken geldige kaartcoördinaten.",
+        "rmap_no_tcp_hub": "Ontdekbare lokale RNode heeft geen ingeschakelde TCP-clienthub voor internetbereikbaarheid.",
+        "rmap_transport_disabled": "Ontdekbare interfaces zijn geconfigureerd, maar de transportmodus is uitgeschakeld.",
+        "rmap_i2p_not_connectable": "I2P-interface \"{{name}}\" is detecteerbaar, maar aansluitbaar is niet ja."
       },
       "runtime": {
         "rnsNotReady": "RNS-stack is niet gereed",
@@ -3546,6 +3566,35 @@
     "cancelSync": "Annuleren",
     "cancelSyncAria": "Voortplantingssynchronisatie annuleren"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v4-detectie",
+    "publishToggle": "Publiceren op RMAP v4",
+    "coordsStatus": "Kaartcoördinaten: {{lat}}, {{lon}} (vanaf → GPS / locatie van app)",
+    "gpsMissingWarning": "Stel statische GPS in in App → GPS / Locatie voordat u publiceert op RMAP.",
+    "announceIntervalMin": "Aankondigingsinterval (minuten)",
+    "heightMeters": "Hoogte boven zeeniveau (m, optioneel)",
+    "reachableOn": "Bereikbaar op (hostnaam of script, optioneel)",
+    "helpLink": "RMAP-gids",
+    "gpsRequiredTitle": "GPS-coördinaten zijn vereist",
+    "gpsRequiredBody": "RMAP-kaartmarkeringen hebben breedte- en lengtegraad nodig. Stel statische coördinaten in onder → GPS / locatie van de app en probeer het opnieuw.",
+    "openAppGps": "Open de GPS-instellingen van de app",
+    "applySuccess": "RMAP-detectie-instellingen toegepast.",
+    "disableSuccess": "RMAP-publicatie uitgeschakeld op lokale interfaces.",
+    "applyFailed": "Kan RMAP-instellingen niet toepassen: {{error}}",
+    "noPublishTargets": "Geen ingeschakelde lokale interfaces om te publiceren. Schakel eerst een RNode-, BLE-peer- of I2P-interface in.",
+    "restartTitle": "Reticulum-stack herstarten?",
+    "restartBody": "Interface- en transportwijzigingen vereisen een herstart van de stapel om van kracht te worden.",
+    "restartConfirm": "Opnieuw opstarten",
+    "restartFailed": "Het herstarten van de stapel is mislukt: {{error}}",
+    "reachableOnError": {
+      "invalid": "Ongeldig bereikbaar op waarde.",
+      "invalidHost": "Ongeldige hostnaam voor bereikbaar op.",
+      "tooLong": "Bereikbaar op waarde is te lang."
+    },
+    "hint": "Is detecteerbaar=ja en past GPS-coördinaten toe op alle ingeschakelde RMAP-compatibele interfaces (RNode, KISS, BLE-peer, I2P, UDP, pipe). Gebruik per interface RMAP-schakelaars op Verbinding voor FINE-besturing. LoRa-paden maken ook transport en de rmap.world-hub mogelijk.",
+    "openGlobalMap": "Globale kaart openen",
+    "openGlobalMapAria": "Open RMAP v4 globale kaart op rmap.world"
+  },
   "reticulumTopology": {
     "title": "Netwerktopologie",
     "self": "Jij",
@@ -3950,5 +3999,38 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "Versie {{version}} is beschikbaar.",
     "menuToastErrorTitle": "Updatecontrole mislukt"
+  },
+  "reticulumMap": {
+    "title": "Ontdekkingskaart",
+    "subtitle": "Opt-in RMAP v4 interfaces gehoord door uw stack (lokale weergave)",
+    "openGlobalMap": "Wereldkaart",
+    "openGlobalMapAria": "Open RMAP v4 globale kaart op rmap.world",
+    "openPublishSettings": "ClassiPress instellingen",
+    "openPublishSettingsAria": "Open Reticulum Network RMAP-publicatie-instellingen",
+    "refresh": "Vernieuwen",
+    "refreshAria": "Ontdekkingskaart vernieuwen",
+    "refreshFailed": "Kan ontdekkingskaart niet vernieuwen: {{error}}",
+    "countSummary": "{{markers}} alleen op kaart · {{list}} list",
+    "listTitle": "Ontdekte interfaces",
+    "selfMarker": "GPS-positie van uw app",
+    "reachable": "bereikbaar",
+    "heardOnly": "Alleen gehoord (niet in padtabel)",
+    "noCoords": "Geen GPS",
+    "lastHeard": "Laatst gehoord {{time}}",
+    "openNodeAria": "Open gegevens voor {{name}}",
+    "filter": {
+      "all": "All",
+      "rnode": "LoRa",
+      "backbone": "Ruggengraat",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "Overig"
+    },
+    "empty": {
+      "stackOff": "Start de Reticulum-stack om RMAP-detectieaankondigingen te horen.",
+      "noDiscoveries": "Nog geen RMAP-detectie-interfaces gehoord.",
+      "filterEmpty": "Er komen geen interfaces overeen met dit filter.",
+      "hint": "Knooppunten worden alleen weergegeven wanneer operators detecteerbaar inschakelen =ja. LoRa-paden hebben een TCP-hub nodig (bijvoorbeeld rmap.world:4242) om aankondigingen door te geven. Gebruik de wereldwijde kaartlink voor wereldwijde dekking."
+    }
   }
 }

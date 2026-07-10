@@ -4,7 +4,6 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 import L from 'leaflet';
-import { Crosshair, PARENT_HOVER_ATTR } from 'lucide-react-motion';
 import {
   Fragment,
   memo,
@@ -16,20 +15,8 @@ import {
   useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Circle,
-  CircleMarker,
-  MapContainer,
-  Marker,
-  Polyline,
-  Popup,
-  TileLayer,
-  useMap,
-} from 'react-leaflet';
+import { Circle, MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
-
-import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import type { LocationFilter } from '../App';
 import {
@@ -58,7 +45,7 @@ import { useMapLayerStore } from '../stores/mapLayerStore';
 import { useMapViewportStore } from '../stores/mapViewportStore';
 import { getWeightedPaths, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
-import { useToast } from './Toast';
+import { LocateMeControl } from './map/leafletMapControls';
 
 const WAYPOINT_MARKER_ICON = L.divIcon({
   className: '',
@@ -500,89 +487,7 @@ function ViewportSaver({ hasAnyPositions }: { hasAnyPositions: boolean }) {
   return null;
 }
 
-// ─── LocateMeControl ──────────────────────────────────────────────────────────
-
-function LocateMeControl({
-  onLocateMe,
-}: {
-  onLocateMe?: () => Promise<{ lat: number; lon: number } | null>;
-}) {
-  const map = useMap();
-  const [loading, setLoading] = useState(false);
-  const [locatedPos, setLocatedPos] = useState<[number, number] | null>(null);
-  const { addToast } = useToast();
-  const { t } = useTranslation();
-  const locateTrigger = useParentIconTrigger();
-
-  const handleLocate = async () => {
-    setLoading(true);
-    try {
-      if (onLocateMe) {
-        const pos = await onLocateMe();
-        if (pos) {
-          const coords: [number, number] = [pos.lat, pos.lon];
-          setLocatedPos(coords);
-          map.flyTo(coords, 16);
-        } else {
-          addToast(t('mapPanel.locationUnavailable'), 'error');
-        }
-        return;
-      }
-      const result = await window.electronAPI.getGpsFix();
-      if ('status' in result && result.status === 'error') {
-        addToast(result.message, 'error');
-        return;
-      }
-      if (!('lat' in result) || !('lon' in result)) {
-        addToast(t('mapPanel.locationRequestFailed'), 'error');
-        return;
-      }
-      const coords: [number, number] = [result.lat, result.lon];
-      setLocatedPos(coords);
-      map.flyTo(coords, 16);
-    } catch (e) {
-      console.error('[LocateMeControl] getGpsFix failed: ' + errLikeToLogString(e));
-      addToast(t('mapPanel.locationRequestFailed'), 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <>
-      <div className="leaflet-top leaflet-left" style={{ pointerEvents: 'none' }}>
-        <div
-          className="leaflet-control leaflet-bar leaflet-locate-control"
-          style={{ marginTop: '80px', pointerEvents: 'auto' }}
-        >
-          <button
-            type="button"
-            title={t('mapPanel.showMyLocation')}
-            aria-label={t('mapPanel.showMyLocation')}
-            aria-busy={loading}
-            {...{ [PARENT_HOVER_ATTR]: '' }}
-            className={`leaflet-bar-part cursor-pointer border-0 bg-white p-0 ${loading ? 'locating' : ''}`}
-            onClick={handleLocate}
-          >
-            <Crosshair
-              aria-hidden
-              className="h-4 w-4 text-gray-700"
-              trigger={locateTrigger}
-              size={16}
-            />
-          </button>
-        </div>
-      </div>
-      {locatedPos && (
-        <CircleMarker
-          center={locatedPos}
-          radius={8}
-          pathOptions={{ color: '#ffffff', fillColor: '#3b82f6', fillOpacity: 1, weight: 2 }}
-        />
-      )}
-    </>
-  );
-}
+// ─── PathPolyline ─────────────────────────────────────────────────────────────
 
 function PathPolyline({
   nodeId,

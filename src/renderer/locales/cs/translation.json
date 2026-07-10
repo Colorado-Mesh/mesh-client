@@ -910,7 +910,7 @@
       "defaultHubsLabel": "Výchozí rozbočovače",
       "addDefaultHubs": "Přidat rozbočovače testnet a Ratspeak",
       "addDefaultHubsAria": "Přidat výchozí testovací síť Reticulum a rozbočovače Ratspeak v zakázaném stavu",
-      "addDefaultHubsSuccess": "Přidáno {{added}} výchozí rozbočovač(rozbočovače). {{skipped}} je již nakonfigurován.",
+      "addDefaultHubsSuccess": "Přidáno {{added}}, opraveno {{repaired}}. {{skipped}} je již nakonfigurováno.",
       "addDefaultHubsAllPresent": "Výchozí rozbočovače testnet a Ratspeak jsou již nakonfigurovány.",
       "addDefaultHubsFailed": "Přidání výchozích rozbočovačů se nezdařilo.",
       "identityNotConfigured": "Nejprve nastavte identitu Reticulum na kartě Síť — vygenerujte nebo importujte frázi pro obnovení.",
@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "Protějšky I2P musí být adresy .b32.i2p oddělené čárkami bez přerušení řádků.",
       "rnodePresetRequired": "Vyberte předvolbu RNode RF (jsou vyžadovány parametry frekvence a LoRa).",
       "callsignPlaceholder": "NV0N",
-      "callsignRequired": "Zadejte amatérskou rádiovou volací značku pro tento RNode."
+      "callsignRequired": "Zadejte amatérskou rádiovou volací značku pro tento RNode.",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "Zveřejnit {{name}} na RMAP v4",
+      "rmapEnableSuccess": "Zjišťování RMAP povoleno dne {{name}}.",
+      "rmapDisableSuccess": "Zjišťování RMAP zakázáno dne {{name}}.",
+      "rmapToggleFailed": "Změna RMAP se nezdařila pro {{name}}: {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1022,7 +1027,18 @@
     "tcpAddressHint": "Zadejte název hostitele nebo IP adresu; výchozí port je 4403, pokud je vynechán",
     "hintMeshtasticTcp1": "Zadejte IP adresu nebo název hostitele uzlu Meshtastic připojeného k Wi-Fi s povoleným TCP (výchozí port 4403). Mnohem rychlejší než WiFi/http pro velké uzlové databáze.",
     "hintMeshtasticTcp2": "Pokud je připojení nespolehlivé (např. s meshtastic.local), zkuste místo toho IP adresu zařízení — desktop mDNS může být šupinatý.",
-    "channelPsksMqttOnlyIndexHint": "Bez připojeného rádia směřují příchozí zprávy MQTT na karty chatu podle názvu kanálu. Použijte ChannelName@index=base64, aby se každý název mapoval na správný slot — například LongFast@1=AQ==, když je váš veřejný mesh kanál slot 1 (styl Colorado mesh). LongFast bez @ odpovídá slotu 0."
+    "channelPsksMqttOnlyIndexHint": "Bez připojeného rádia směřují příchozí zprávy MQTT na karty chatu podle názvu kanálu. Použijte ChannelName@index=base64, aby se každý název mapoval na správný slot — například LongFast@1=AQ==, když je váš veřejný mesh kanál slot 1 (styl Colorado mesh). LongFast bez @ odpovídá slotu 0.",
+    "reticulumRmap": {
+      "publishing": "RMAP v4: publikování na rozhraní {{count}}",
+      "notPublishing": "RMAP v4: nezveřejňuje se",
+      "openSettings": "Nastavení sítě",
+      "openSettingsAria": "Otevřít nastavení zjišťování RMAP na kartě Síť",
+      "needsSync": "{{count}} povolená místní rozhraní vyžadují synchronizaci zjišťování RMAP",
+      "noPublishTargets": "Žádná povolená místní rozhraní pro publikování v RMAP.",
+      "syncSuccess": "Zjištění RMAP synchronizováno s rozhraním.",
+      "openGlobalMap": "Globální mapa",
+      "openGlobalMapAria": "Otevřete globální mapu RMAP v4 na rmap.world"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -1302,7 +1318,11 @@
         "auto_interface_down": "Automatické rozhraní „{{name}}“ je povoleno, ale nefunguje.",
         "missing_shared_instance": "Sdílená instance je zapnutá, ale SharedInstanceServer není aktivní.",
         "shared_instance_unexpected": "SharedInstanceServer je aktivní, ale share_instance je vypnutá.",
-        "runtime_only_interface": "„{{name}}“ je pouze runtime (není uloženo v konfiguraci)."
+        "runtime_only_interface": "„{{name}}“ je pouze runtime (není uloženo v konfiguraci).",
+        "rmap_missing_coordinates": "Rozhraní „{{name}}“ je zjistitelné, ale chybí platné souřadnice mapy.",
+        "rmap_no_tcp_hub": "Detekovatelný místní RNode nemá aktivované TCP klientské centrum pro dostupnost internetu.",
+        "rmap_transport_disabled": "Detekovatelná rozhraní jsou nakonfigurována, ale režim přenosu je vypnutý.",
+        "rmap_i2p_not_connectable": "Rozhraní I2P „{{name}}“ je zjistitelné, ale připojitelné není ano."
       },
       "runtime": {
         "rnsNotReady": "Zásobník RNS není připraven",
@@ -3546,6 +3566,35 @@
     "cancelSync": "Zrušit",
     "cancelSyncAria": "Zrušit synchronizaci propagace"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "Objevení RMAP v4",
+    "publishToggle": "Zveřejnit na RMAP v4",
+    "coordsStatus": "Souřadnice mapy: {{lat}}, {{lon}} (z aplikace → GPS / Umístění)",
+    "gpsMissingWarning": "Před zveřejněním na RMAP nastavte v aplikaci → GPS / Location statickou GPS.",
+    "announceIntervalMin": "Interval oznámení (minuty)",
+    "heightMeters": "Výška nad hladinou moře (m, volitelně)",
+    "reachableOn": "K dispozici na (název hostitele nebo skript, volitelné)",
+    "helpLink": "Průvodce RMAP",
+    "gpsRequiredTitle": "Vyžadovány souřadnice GPS",
+    "gpsRequiredBody": "Značky mapy RMAP potřebují zeměpisnou šířku a délku. Nastavte statické souřadnice v → GPS / poloze aplikace a zkuste to znovu.",
+    "openAppGps": "Otevřít nastavení aplikace",
+    "applySuccess": "Bylo použito nastavení zjišťování RMAP.",
+    "disableSuccess": "Publikování RMAP je zakázáno na místních rozhraních.",
+    "applyFailed": "Nepodařilo se použít nastavení RMAP: {{error}}",
+    "noPublishTargets": "Žádná povolená místní rozhraní k publikování. Nejprve povolte rozhraní RNode, ble peer nebo I2P.",
+    "restartTitle": "Restartovat Reticulum stack?",
+    "restartBody": "Změny rozhraní a přepravy vyžadují restart zásobníku, aby se projevily.",
+    "restartConfirm": "Restartovat nyní",
+    "restartFailed": "Restart zásobníku se nezdařil: {{error}}",
+    "reachableOnError": {
+      "invalid": "Neplatná dosažitelná hodnota.",
+      "invalidHost": "Neplatné jméno hostitele pro dosažitelné dne.",
+      "tooLong": "Dosažitelná hodnota je příliš dlouhá."
+    },
+    "hint": "Aplikuje zjistitelné=ano a GPS souřadnice aplikace na všechna povolená rozhraní podporující RMAP (RNode, KISS, ble peer, I2P, UDP, Pipe). Použijte přepínače RMAP na připojení pro jemné ovládání. Cesty LoRa také umožňují dopravu a rozbočovač rmap.world.",
+    "openGlobalMap": "Otevřít globální mapu",
+    "openGlobalMapAria": "Otevřete globální mapu RMAP v4 na rmap.world"
+  },
   "reticulumTopology": {
     "title": "topologie sítě",
     "self": "Vy",
@@ -3950,5 +3999,38 @@
     "menuToastAvailableTitle": "Aktualizace k dispozici",
     "menuToastAvailableBody": "Verze {{version}} je k dispozici.",
     "menuToastErrorTitle": "Kontrola aktualizace se nezdařila"
+  },
+  "reticulumMap": {
+    "title": "Mapa objevů",
+    "subtitle": "Přihlaste rozhraní RMAP v4 slyšená vaším zásobníkem (místní zobrazení)",
+    "openGlobalMap": "Globální mapa",
+    "openGlobalMapAria": "Otevřete globální mapu RMAP v4 na rmap.world",
+    "openPublishSettings": "Nastavení publikování RMAP",
+    "openPublishSettingsAria": "Otevřít nastavení publikování RMAP sítě Reticulum",
+    "refresh": "Obnovit",
+    "refreshAria": "Obnovit mapu objevů",
+    "refreshFailed": "Nepodařilo se obnovit mapu zjišťování: {{error}}",
+    "countSummary": "{{markers}} pouze na mapě · {{list}} seznamu",
+    "listTitle": "Objevená rozhraní",
+    "selfMarker": "Vaše GPS pozice v aplikaci",
+    "reachable": "Dosažitelné",
+    "heardOnly": "Pouze slyšeno (ne v tabulce cest)",
+    "noCoords": "Žádná GPS",
+    "lastHeard": "Naposledy slyšeno {{time}}",
+    "openNodeAria": "Otevřít podrobnosti pro {{name}}",
+    "filter": {
+      "all": "Vše",
+      "rnode": "LoRa",
+      "backbone": "Páteř",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "Jiný zdroj"
+    },
+    "empty": {
+      "stackOff": "Spusťte zásobník Reticulum, abyste slyšeli oznámení o objevení RMAP.",
+      "noDiscoveries": "Dosud nebylo slyšeno žádné rozhraní pro zjišťování RMAP.",
+      "filterEmpty": "Tomuto filtru neodpovídají žádná rozhraní.",
+      "hint": "Uzly se zobrazují pouze tehdy, když operátoři povolují rozpoznatelnost =ano. Cesty LoRa potřebují TCP hub (například rmap.world:4242) pro přenos oznámení. Pro celosvětové pokrytí použij globální odkaz na mapu."
+    }
   }
 }

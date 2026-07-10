@@ -910,7 +910,7 @@
       "defaultHubsLabel": "기본 허브",
       "addDefaultHubs": "테스트넷 및 Ratspeak 허브 추가",
       "addDefaultHubsAria": "비활성화 상태에서 기본 Reticulum 테스트넷 및 Ratspeak 허브 추가",
-      "addDefaultHubsSuccess": "{{added}} 기본 허브가 추가되었습니다. {{skipped}} 이 (가) 이미 구성되었습니다.",
+      "addDefaultHubsSuccess": "{{added}}개 추가, {{repaired}}개 수정. {{skipped}}개는 이미 구성됨.",
       "addDefaultHubsAllPresent": "기본 테스트넷과 Ratspeak 허브가 이미 구성되어 있습니다.",
       "addDefaultHubsFailed": "기본 허브를 추가하지 못했습니다.",
       "identityNotConfigured": "먼저 네트워크 탭에서 Reticulum ID를 설정하고 복구 구문을 생성하거나 가져옵니다.",
@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "I2P 피어는 줄 바꿈 없이 쉼표로 구분된 .b32.i2p 주소여야 합니다.",
       "rnodePresetRequired": "RNode RF 사전 설정을 선택하십시오 (주파수 및 LoRa 매개 변수가 필요함).",
       "callsignPlaceholder": "NV0N",
-      "callsignRequired": "이 RNode에 대한 아마추어-라디오 콜사인을 입력하십시오."
+      "callsignRequired": "이 RNode에 대한 아마추어-라디오 콜사인을 입력하십시오.",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "RMAP v4에 {{name}} 게시",
+      "rmapEnableSuccess": "{{name}} 에서 RMAP 검색이 활성화되었습니다.",
+      "rmapDisableSuccess": "{{name}} 에서 RMAP 검색이 비활성화되었습니다.",
+      "rmapToggleFailed": "{{name}} 에 대한 RMAP 변경 실패: {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1022,7 +1027,18 @@
     "tcpAddressHint": "호스트 이름 또는 IP 주소를 입력하십시오. 생략할 경우 포트 기본값은 4403입니다.",
     "hintMeshtasticTcp1": "TCP가 활성화된 Wi-Fi 연결 Meshtastic 노드의 IP 주소 또는 호스트 이름을 입력합니다 (기본 포트 4403). 대규모 노드 데이터베이스의 경우 WiFi/HTTP보다 훨씬 빠릅니다.",
     "hintMeshtasticTcp2": "연결이 불안정하면 (예: meshtastic.local) 장치의 IP 주소를 사용해 보십시오. 데스크톱 mDNS가 깨질 수 있습니다.",
-    "channelPsksMqttOnlyIndexHint": "무선이 연결되지 않은 경우 수신 MQTT 메시지는 채널 이름별로 채팅 탭으로 라우팅됩니다. ChannelName@index=base64를 사용해 각 이름을 올바른 슬롯에 매핑하세요 — 예: 공개 mesh 채널이 슬롯 1일 때(Colorado mesh 스타일) LongFast@1=AQ==. @ 없는 LongFast는 슬롯 0에 매핑됩니다."
+    "channelPsksMqttOnlyIndexHint": "무선이 연결되지 않은 경우 수신 MQTT 메시지는 채널 이름별로 채팅 탭으로 라우팅됩니다. ChannelName@index=base64를 사용해 각 이름을 올바른 슬롯에 매핑하세요 — 예: 공개 mesh 채널이 슬롯 1일 때(Colorado mesh 스타일) LongFast@1=AQ==. @ 없는 LongFast는 슬롯 0에 매핑됩니다.",
+    "reticulumRmap": {
+      "publishing": "RMAP v4: {{count}} 인터페이스에 게시",
+      "notPublishing": "RMAP v4: 게시되지 않음",
+      "openSettings": "네트워크 설정",
+      "openSettingsAria": "네트워크 탭에서 RMAP 검색 설정 열기",
+      "needsSync": "{{count}} 활성화된 로컬 인터페이스에는 RMAP 검색 동기화 필요",
+      "noPublishTargets": "RMAP에 게시할 수 있는 로컬 인터페이스가 없습니다.",
+      "syncSuccess": "RMAP 검색이 인터페이스에 동기화되었습니다.",
+      "openGlobalMap": "글로벌 맵",
+      "openGlobalMapAria": "Rmap.world에서 RMAP v4 글로벌 맵 열기"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -1302,7 +1318,11 @@
         "auto_interface_down": "AutoInterface \"{{name}}\"이(가) 활성화되었지만 작동 중지되었습니다.",
         "missing_shared_instance": "공유 인스턴스가 켜져 있지만 SharedInstanceServer가 작동하지 않습니다.",
         "shared_instance_unexpected": "SharedInstanceServer가 활성화되어 있지만 share_instance가 꺼져 있습니다.",
-        "runtime_only_interface": "\"{{name}}\"은 런타임 전용입니다(구성에 저장되지 않음)."
+        "runtime_only_interface": "\"{{name}}\"은 런타임 전용입니다(구성에 저장되지 않음).",
+        "rmap_missing_coordinates": "인터페이스 \"{{name}}\" 을 (를) 검색할 수 있지만 유효한 지도 좌표가 누락되었습니다.",
+        "rmap_no_tcp_hub": "검색 가능한 로컬 RNode에는 인터넷에 연결할 수 있는 TCP 클라이언트 허브가 없습니다.",
+        "rmap_transport_disabled": "검색 가능한 인터페이스가 구성되었지만 전송 모드가 꺼져 있습니다.",
+        "rmap_i2p_not_connectable": "I2P 인터페이스 \"{{name}}\" 는 검색 가능하지만 연결 가능은 예가 아닙니다."
       },
       "runtime": {
         "rnsNotReady": "RNS 스택이 준비되지 않았습니다.",
@@ -3546,6 +3566,35 @@
     "cancelSync": "취소",
     "cancelSyncAria": "전파 동기화 취소"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v4 검색",
+    "publishToggle": "RMAP v4에 게시",
+    "coordsStatus": "지도 좌표: {{lat}}, {{lon}} (앱 → GPS/위치에서)",
+    "gpsMissingWarning": "RMAP에 게시하기 전에 앱 → GPS/위치에서 정적 GPS를 설정하십시오.",
+    "announceIntervalMin": "발표 간격 (분)",
+    "heightMeters": "해발 높이 (m, 선택 사항)",
+    "reachableOn": "연결 가능 (호스트 이름 또는 스크립트, 선택 사항)",
+    "helpLink": "RMAP 가이드",
+    "gpsRequiredTitle": "GPS 좌표 필요",
+    "gpsRequiredBody": "RMAP 지도 마커에는 위도와 경도가 필요합니다. 앱 → GPS/위치에서 정적 좌표를 설정한 다음 다시 시도하세요.",
+    "openAppGps": "앱 GPS 설정 열기",
+    "applySuccess": "RMAP 검색 설정이 적용되었습니다.",
+    "disableSuccess": "로컬 인터페이스에서 RMAP 게시가 비활성화되었습니다.",
+    "applyFailed": "RMAP 설정을 적용하지 못했습니다: {{error}}",
+    "noPublishTargets": "게시할 로컬 인터페이스가 활성화되지 않았습니다. 먼저 RNode, BLE 피어 또는 I2P 인터페이스를 활성화합니다.",
+    "restartTitle": "Reticulum 스택을 다시 시작하시겠습니까?",
+    "restartBody": "인터페이스 및 전송 변경 사항을 적용하려면 스택을 다시 시작해야 합니다.",
+    "restartConfirm": "지금 재시작",
+    "restartFailed": "스택 재시작 실패: {{error}}",
+    "reachableOnError": {
+      "invalid": "값에 유효하지 않은 도달 가능.",
+      "invalidHost": "에 연결할 수 있는 호스트 이름이 잘못되었습니다.",
+      "tooLong": "값에 도달할 수 있는 시간이 너무 깁니다."
+    },
+    "hint": "검색 가능 = 예 및 앱 GPS 좌표를 활성화된 모든 RMAP 가능 인터페이스 (RNode, KISS, BLE 피어, I2P, UDP, 파이프) 에 적용합니다. 미세 제어를 위해 Connection에서 인터페이스별 RMAP 토글을 사용하십시오. LoRa 경로는 또한 전송 및 rmap.world 허브를 활성화합니다.",
+    "openGlobalMap": "전역 지도 열기",
+    "openGlobalMapAria": "Rmap.world에서 RMAP v4 글로벌 맵 열기"
+  },
   "reticulumTopology": {
     "title": "네트워크 토폴로지",
     "self": "나",
@@ -3950,5 +3999,38 @@
     "menuToastAvailableTitle": "업데이트 사용 가능",
     "menuToastAvailableBody": "{{version}} 버전을 사용할 수 있습니다.",
     "menuToastErrorTitle": "자동 업데이트 확인에 실패했습니다!"
+  },
+  "reticulumMap": {
+    "title": "디스커버리 맵",
+    "subtitle": "스택에서 들리는 옵트인 RMAP v4 인터페이스 (로컬 보기)",
+    "openGlobalMap": "글로벌 맵",
+    "openGlobalMapAria": "Rmap.world에서 RMAP v4 글로벌 맵 열기",
+    "openPublishSettings": "발행 설정",
+    "openPublishSettingsAria": "Reticulum Network RMAP 게시 설정 열기",
+    "refresh": "새로 고침",
+    "refreshAria": "발견 맵 새로 고침",
+    "refreshFailed": "디스커버리 맵을 새로 고칠 수 없음: {{error}}",
+    "countSummary": "{{markers}} 지도에 표시 · {{list}} 목록만 표시",
+    "listTitle": "발견된 인터페이스",
+    "selfMarker": "앱 GPS 위치",
+    "reachable": "그래프 이론 용어사전",
+    "heardOnly": "들은 것만 (PATH 테이블에 없음)",
+    "noCoords": "GPS 없음",
+    "lastHeard": "마지막 음성 안내 {{time}}",
+    "openNodeAria": "{{name}} 님의 세부 정보 열기",
+    "filter": {
+      "all": "All",
+      "rnode": "LoRa",
+      "backbone": "백본",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "기타"
+    },
+    "empty": {
+      "stackOff": "RMAP 검색 발표를 들으려면 Reticulum 스택을 시작하십시오.",
+      "noDiscoveries": "아직 RMAP 검색 인터페이스가 들리지 않았습니다.",
+      "filterEmpty": "이 필터와 일치하는 인터페이스가 없습니다.",
+      "hint": "노드는 작업자가 검색 가능 = 예 를 사용하도록 설정한 경우에만 나타납니다. LoRa 경로는 알림을 릴레이하려면 TCP 허브 (예: rmap.world: 4242) 가 필요합니다. 전 세계에 적용하려면 전 세계 지도 링크를 사용하세요."
+    }
   }
 }

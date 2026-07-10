@@ -754,10 +754,10 @@
       "type": "Type",
       "add": "Add interface",
       "defaultHubsLabel": "Default hubs",
-      "addDefaultHubs": "Add testnet and Ratspeak hubs",
-      "addDefaultHubsAria": "Add default Reticulum testnet and Ratspeak hubs in a disabled state",
-      "addDefaultHubsSuccess": "Added {{added}} default hub(s). {{skipped}} already configured.",
-      "addDefaultHubsAllPresent": "Default testnet and Ratspeak hubs are already configured.",
+      "addDefaultHubs": "Add default network hubs",
+      "addDefaultHubsAria": "Sync default Reticulum testnet, Ratspeak, and RMAP World hubs (add missing, repair mismatched, skip correct)",
+      "addDefaultHubsSuccess": "Added {{added}}, corrected {{repaired}}. {{skipped}} already configured.",
+      "addDefaultHubsAllPresent": "Default testnet, Ratspeak, and RMAP World hubs are already configured.",
       "addDefaultHubsFailed": "Failed to add default hubs.",
       "identityNotConfigured": "Set up a Reticulum identity on the Network tab first — generate or import a recovery phrase.",
       "identityRequiredHint": "Configure a Reticulum identity on the Network tab before adding interfaces.",
@@ -849,6 +849,11 @@
       "auditRepairSuccess": "Config repair applied.",
       "auditRepairFailed": "Config repair failed.",
       "auditRepairNoChanges": "No config changes were needed for this repair.",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "Publish {{name}} on RMAP v4",
+      "rmapEnableSuccess": "RMAP discovery enabled on {{name}}.",
+      "rmapDisableSuccess": "RMAP discovery disabled on {{name}}.",
+      "rmapToggleFailed": "RMAP change failed for {{name}}: {{error}}",
       "purpose": {
         "auto": "Local LAN multicast discovery — finds other Reticulum nodes on the same Wi-Fi or subnet.",
         "sharedInstance": "Localhost TCP server when Share instance is on — lets other apps on this machine use this stack.",
@@ -864,6 +869,17 @@
         "fallback": "Global fallback",
         "legacy": "Legacy presets"
       }
+    },
+    "reticulumRmap": {
+      "publishing": "RMAP v4: publishing on {{count}} interface(s)",
+      "notPublishing": "RMAP v4: not publishing",
+      "openSettings": "Network settings",
+      "openSettingsAria": "Open RMAP discovery settings on Network tab",
+      "openGlobalMap": "Global map",
+      "openGlobalMapAria": "Open RMAP v4 global map on rmap.world",
+      "needsSync": "{{count}} enabled local interface(s) need RMAP discovery sync",
+      "noPublishTargets": "No enabled RMAP-capable interfaces to publish on RMAP.",
+      "syncSuccess": "RMAP discovery synced to interface."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1332,7 +1348,11 @@
         "auto_interface_down": "AutoInterface \"{{name}}\" is enabled but down.",
         "missing_shared_instance": "Share instance is on but SharedInstanceServer is not up.",
         "shared_instance_unexpected": "SharedInstanceServer is live but share_instance is off.",
-        "runtime_only_interface": "\"{{name}}\" is runtime-only (not stored in config)."
+        "runtime_only_interface": "\"{{name}}\" is runtime-only (not stored in config).",
+        "rmap_missing_coordinates": "Interface \"{{name}}\" is discoverable but missing valid map coordinates.",
+        "rmap_no_tcp_hub": "Discoverable local RNode has no enabled TCP client hub for internet reachability.",
+        "rmap_transport_disabled": "Discoverable interfaces are configured but transport mode is off.",
+        "rmap_i2p_not_connectable": "I2P interface \"{{name}}\" is discoverable but connectable is not yes."
       }
     }
   },
@@ -3545,6 +3565,68 @@
     "syncAria": "Sync propagation messages",
     "cancelSync": "Cancel",
     "cancelSyncAria": "Cancel propagation sync"
+  },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v4 discovery",
+    "publishToggle": "Publish on RMAP v4",
+    "hint": "Applies discoverable=yes and App GPS coordinates to all enabled RMAP-capable interfaces (RNode, KISS, BLE peer, I2P, UDP, pipe). Use per-interface RMAP toggles on Connection for fine control. LoRa paths also enable transport and the rmap.world hub.",
+    "coordsStatus": "Map coordinates: {{lat}}, {{lon}} (from App → GPS / Location)",
+    "gpsMissingWarning": "Set static GPS in App → GPS / Location before publishing on RMAP.",
+    "announceIntervalMin": "Announce interval (minutes)",
+    "heightMeters": "Height above sea level (m, optional)",
+    "reachableOn": "Reachable on (hostname or script, optional)",
+    "helpLink": "RMAP guide",
+    "openGlobalMap": "Open global map",
+    "openGlobalMapAria": "Open RMAP v4 global map on rmap.world",
+    "gpsRequiredTitle": "GPS coordinates required",
+    "gpsRequiredBody": "RMAP map markers need latitude and longitude. Set static coordinates under App → GPS / Location, then try again.",
+    "openAppGps": "Open App GPS settings",
+    "applySuccess": "RMAP discovery settings applied.",
+    "disableSuccess": "RMAP publishing disabled on local interfaces.",
+    "applyFailed": "Failed to apply RMAP settings: {{error}}",
+    "noPublishTargets": "No enabled RMAP-capable interfaces. Enable an RNode, KISS, BLE peer, I2P, UDP, or pipe interface first.",
+    "restartTitle": "Restart Reticulum stack?",
+    "restartBody": "Interface and transport changes require a stack restart to take effect.",
+    "restartConfirm": "Restart now",
+    "restartFailed": "Stack restart failed: {{error}}",
+    "reachableOnError": {
+      "invalid": "Invalid reachable on value.",
+      "invalidHost": "Invalid hostname for reachable on.",
+      "tooLong": "Reachable on value is too long."
+    }
+  },
+  "reticulumMap": {
+    "title": "Discovery map",
+    "subtitle": "Opt-in RMAP v4 interfaces heard by your stack (local view)",
+    "openGlobalMap": "Global map",
+    "openGlobalMapAria": "Open RMAP v4 global map on rmap.world",
+    "openPublishSettings": "RMAP publish settings",
+    "openPublishSettingsAria": "Open Reticulum Network RMAP publish settings",
+    "refresh": "Refresh",
+    "refreshAria": "Refresh discovery map",
+    "refreshFailed": "Could not refresh discovery map: {{error}}",
+    "countSummary": "{{markers}} on map · {{list}} list only",
+    "listTitle": "Discovered interfaces",
+    "selfMarker": "Your App GPS position",
+    "reachable": "Reachable",
+    "heardOnly": "Heard only (not in path table)",
+    "noCoords": "No GPS",
+    "lastHeard": "Last heard {{time}}",
+    "openNodeAria": "Show {{name}} on map",
+    "filter": {
+      "all": "All",
+      "rnode": "LoRa",
+      "backbone": "Backbone",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "Other"
+    },
+    "empty": {
+      "stackOff": "Start the Reticulum stack to hear RMAP discovery announces.",
+      "noDiscoveries": "No RMAP discovery interfaces heard yet.",
+      "filterEmpty": "No interfaces match this filter.",
+      "hint": "Nodes appear only when operators enable discoverable=yes. LoRa paths need a TCP hub (for example rmap.world:4242) to relay announces. For worldwide coverage, use the global map link."
+    }
   },
   "reticulumTopology": {
     "title": "Network topology",

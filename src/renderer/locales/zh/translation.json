@@ -910,7 +910,7 @@
       "defaultHubsLabel": "默认集线器",
       "addDefaultHubs": "添加测试网和Ratspeak集线器",
       "addDefaultHubsAria": "添加处于禁用状态的默认Reticulum测试网和Ratspeak集线器",
-      "addDefaultHubsSuccess": "已添加{{added}}个默认集线器。{{skipped}}已配置。",
+      "addDefaultHubsSuccess": "已添加 {{added}} 个，已修正 {{repaired}} 个。{{skipped}} 个已配置。",
       "addDefaultHubsAllPresent": "默认测试网和Ratspeak集线器已配置。",
       "addDefaultHubsFailed": "添加默认集线器失败。",
       "identityNotConfigured": "请先在“网络”选项卡上设置 Reticulum 身份 — 生成或导入恢复短语。",
@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "I2P对等项必须是逗号分隔的.b32.i2p地址，没有换行符。",
       "rnodePresetRequired": "选择RNode RF预设（频率和LoRa参数是必需的）。",
       "callsignPlaceholder": "NV0N",
-      "callsignRequired": "输入此RNode的业余无线电呼号。"
+      "callsignRequired": "输入此RNode的业余无线电呼号。",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "在RMAP v4上发布{{name}}",
+      "rmapEnableSuccess": "RMAP发现已于{{name}}启用。",
+      "rmapDisableSuccess": "RMAP发现在{{name}}被禁用。",
+      "rmapToggleFailed": "{{name}}的RMAP更改失败： {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1022,7 +1027,18 @@
     "tcpAddressHint": "输入主机名或IP地址；如果省略，端口默认为4403",
     "hintMeshtasticTcp1": "输入启用TCP （默认端口4403 ）的WiFi连接的Meshtastic节点的IP地址或主机名。对于大型节点数据库，比WiFi/HTTP快得多。",
     "hintMeshtasticTcp2": "如果连接不可靠（例如使用meshtastic.local ） ，请尝试使用设备的IP地址—桌面mDNS可能不稳定。",
-    "channelPsksMqttOnlyIndexHint": "未连接电台时，入站 MQTT 消息按频道名称路由到聊天标签页。使用 ChannelName@index=base64，使每个名称映射到正确的槽位 — 例如当您的公共 mesh 频道为槽位 1 时（Colorado mesh 风格）使用 LongFast@1=AQ==。不带 @ 的 LongFast 映射到槽位 0。"
+    "channelPsksMqttOnlyIndexHint": "未连接电台时，入站 MQTT 消息按频道名称路由到聊天标签页。使用 ChannelName@index=base64，使每个名称映射到正确的槽位 — 例如当您的公共 mesh 频道为槽位 1 时（Colorado mesh 风格）使用 LongFast@1=AQ==。不带 @ 的 LongFast 映射到槽位 0。",
+    "reticulumRmap": {
+      "publishing": "RMAP v4 ：在{{count}}界面上发布",
+      "notPublishing": "RMAP v4 ：未发布",
+      "openSettings": "网络设置",
+      "openSettingsAria": "在“网络”选项卡上打开RMAP发现设置",
+      "needsSync": "{{count}}启用的本地接口需要RMAP发现同步",
+      "noPublishTargets": "没有启用要在RMAP上发布的本地接口。",
+      "syncSuccess": "RMAP发现已同步到接口。",
+      "openGlobalMap": "全球测绘",
+      "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -1302,7 +1318,11 @@
         "auto_interface_down": "自动接口“{{name}}”已启用但已关闭。",
         "missing_shared_instance": "共享实例已开启，但 SharedInstanceServer 未启动。",
         "shared_instance_unexpected": "SharedInstanceServer 已启用，但 share_instance 已关闭。",
-        "runtime_only_interface": "“{{name}}”仅是运行时的（不存储在配置中）。"
+        "runtime_only_interface": "“{{name}}”仅是运行时的（不存储在配置中）。",
+        "rmap_missing_coordinates": "接口“{{name}}”是可发现的，但缺少有效的地图坐标。",
+        "rmap_no_tcp_hub": "可发现的本地RNode没有启用TCP客户端集线器以实现互联网可访问性。",
+        "rmap_transport_disabled": "已配置可发现的接口，但传输模式已关闭。",
+        "rmap_i2p_not_connectable": "I2P接口“{{name}}”是可发现的，但不是可连接的。"
       },
       "runtime": {
         "rnsNotReady": "RNS 堆栈尚未准备好",
@@ -3546,6 +3566,35 @@
     "cancelSync": "取消推荐",
     "cancelSyncAria": "取消传播同步"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v4发现",
+    "publishToggle": "在RMAP v4上发布",
+    "coordsStatus": "地图坐标： {{lat}}、{{lon}} （来自App → GPS/位置）",
+    "gpsMissingWarning": "在RMAP上发布之前，在应用→GPS/位置中设置静态GPS。",
+    "announceIntervalMin": "公告间隔（分钟）",
+    "heightMeters": "海拔高度（米，可选）",
+    "reachableOn": "可访问（主机名或脚本，可选）",
+    "helpLink": "RMAP指南",
+    "gpsRequiredTitle": "需要GPS坐标",
+    "gpsRequiredBody": "RMAP地图标记需要纬度和经度。在应用→GPS/位置下设置静态坐标，然后重试。",
+    "openAppGps": "打开应用GPS设置",
+    "applySuccess": "已应用RMAP发现设置。",
+    "disableSuccess": "在本地接口上禁用RMAP发布。",
+    "applyFailed": "无法应用RMAP设置： {{error}}",
+    "noPublishTargets": "没有已启用的本地接口可发布。首先启用RNode、BLE对等体或I2P接口。",
+    "restartTitle": "重新启动Reticulum堆栈？",
+    "restartBody": "接口和传输更改需要堆栈重新启动才能生效。",
+    "restartConfirm": "现在重启",
+    "restartFailed": "堆栈重启失败： {{error}}",
+    "reachableOnError": {
+      "invalid": "值上的可访问性无效。",
+      "invalidHost": "上可访问的主机名无效。",
+      "tooLong": "可触及的值太长。"
+    },
+    "hint": "将discoverable = yes和应用GPS坐标应用于所有启用的支持RMAP的接口（ RNode、KISS、BLE对等点、I2P、UDP、管道）。使用连接上的每个接口RMAP切换进行精细控制。LoRa路径还支持传输和rmap.world集线器。",
+    "openGlobalMap": "全球测绘",
+    "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图"
+  },
   "reticulumTopology": {
     "title": "网络拓扑图",
     "self": "你",
@@ -3950,5 +3999,38 @@
     "menuToastAvailableTitle": "更新可用",
     "menuToastAvailableBody": "版本 {{version}} 可用。",
     "menuToastErrorTitle": "更新检查失败"
+  },
+  "reticulumMap": {
+    "title": "探索地图",
+    "subtitle": "选择加入堆栈听到的RMAP v4接口（本地视图）",
+    "openGlobalMap": "全球测绘",
+    "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图",
+    "openPublishSettings": "发布设置",
+    "openPublishSettingsAria": "打开 Reticulum Network RMAP 发布设置",
+    "refresh": "重新整理",
+    "refreshAria": "刷新发现地图",
+    "refreshFailed": "无法刷新发现地图： {{error}}",
+    "countSummary": "地图上的{{markers}} ·仅限{{list}}列表",
+    "listTitle": "发现的接口",
+    "selfMarker": "您的应用GPS位置",
+    "reachable": "实得",
+    "heardOnly": "仅听到（不在路径表中）",
+    "noCoords": "未找到 GPS",
+    "lastHeard": "最后一次听到{{time}}",
+    "openNodeAria": "打开{{name}}的详细信息",
+    "filter": {
+      "all": "所有食谱",
+      "rnode": "LoRa",
+      "backbone": "脊骨",
+      "i2p": "I2P",
+      "tcp": "TCP药水",
+      "other": "其他"
+    },
+    "empty": {
+      "stackOff": "启动Reticulum堆栈以收听RMAP发现通知。",
+      "noDiscoveries": "尚未听到RMAP发现接口。",
+      "filterEmpty": "没有与此筛选器匹配的接口。",
+      "hint": "只有当操作员启用discoverable = yes时，节点才会出现。LoRa路径需要TCP集线器（例如rmap.world: 4242 ）来中继通告。如需覆盖全球，请使用全球地图链接。"
+    }
   }
 }

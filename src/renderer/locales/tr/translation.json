@@ -910,7 +910,7 @@
       "defaultHubsLabel": "Varsayılan hub'lar",
       "addDefaultHubs": "Testnet ve Ratspeak hub'ları ekleyin",
       "addDefaultHubsAria": "Devre dışı durumda varsayılan Reticulum test ağı ve Ratspeak hub'ları ekleyin",
-      "addDefaultHubsSuccess": "{{added}} varsayılan hub(lar) eklendi. {{skipped}} zaten yapılandırılmış.",
+      "addDefaultHubsSuccess": "{{added}} eklendi, {{repaired}} düzeltildi. {{skipped}} zaten yapılandırılmış.",
       "addDefaultHubsAllPresent": "Varsayılan test ağı ve Ratspeak hub'ları zaten yapılandırılmıştır.",
       "addDefaultHubsFailed": "Varsayılan hub'lar eklenemedi.",
       "identityNotConfigured": "Önce Ağ sekmesinde bir Reticulum kimliği oluşturun — bir kurtarma ifadesi oluşturun veya içe aktarın.",
@@ -920,7 +920,12 @@
       "i2pPeersInvalid": "I2P eşleri, satır sonu olmayan, virgülle ayrılmış .b32.i2p adresleri olmalıdır.",
       "rnodePresetRequired": "Bir RNode RF ön ayarı seçin (frekans ve LoRa parametreleri gereklidir).",
       "callsignPlaceholder": "NV0N",
-      "callsignRequired": "Bu RNode için amatör radyo çağrı işaretinizi girin."
+      "callsignRequired": "Bu RNode için amatör radyo çağrı işaretinizi girin.",
+      "rmapDiscoverableShort": "RMAP",
+      "rmapDiscoverableAria": "{{name}} öğesini RMAP v4 'te yayınlayın",
+      "rmapEnableSuccess": "RMAP keşfi {{name}} tarihinde etkinleştirildi.",
+      "rmapDisableSuccess": "RMAP keşfi {{name}} tarihinde devre dışı bırakıldı.",
+      "rmapToggleFailed": "{{name}} için RMAP değişikliği başarısız oldu: {{error}}"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1022,7 +1027,18 @@
     "tcpAddressHint": "Ana bilgisayar adını veya IP adresini girin; bağlantı noktası atlanırsa varsayılan olarak 4403 'tür",
     "hintMeshtasticTcp1": "TCP etkinleştirilmiş bir WiFi bağlantılı Meshtastic düğümünün IP adresini veya ana bilgisayar adını girin (varsayılan bağlantı noktası 4403). Büyük düğüm veritabanları için WiFi/http'den çok daha hızlı.",
     "hintMeshtasticTcp2": "Bağlantı güvenilir değilse (örneğin meshtastic.local ile), bunun yerine cihazın IP adresini deneyin — masaüstü mDNS zayıf olabilir.",
-    "channelPsksMqttOnlyIndexHint": "Radyo bağlı değilken gelen MQTT mesajları kanal adına göre sohbet sekmelerine yönlendirilir. Her adın doğru yuvaya eşlenmesi için ChannelName@index=base64 kullanın — örneğin genel mesh kanalınız yuva 1 ise (Colorado mesh stili) LongFast@1=AQ==. @ olmadan LongFast yuva 0'a eşlenir."
+    "channelPsksMqttOnlyIndexHint": "Radyo bağlı değilken gelen MQTT mesajları kanal adına göre sohbet sekmelerine yönlendirilir. Her adın doğru yuvaya eşlenmesi için ChannelName@index=base64 kullanın — örneğin genel mesh kanalınız yuva 1 ise (Colorado mesh stili) LongFast@1=AQ==. @ olmadan LongFast yuva 0'a eşlenir.",
+    "reticulumRmap": {
+      "publishing": "RMAP v4: {{count}} arayüzlerinde yayınlama",
+      "notPublishing": "RMAP v4: yayınlanmıyor",
+      "openSettings": "Sosyal Ağ Ayarları",
+      "openSettingsAria": "Ağ sekmesinde RMAP keşif ayarlarını aç",
+      "needsSync": "{{count}} etkin yerel arabirim(ler) in RMAP keşif senkronizasyonuna ihtiyacı var",
+      "noPublishTargets": "RMAP'te yayınlanacak etkinleştirilmiş yerel arayüz yok.",
+      "syncSuccess": "RMAP keşfi arayüzle senkronize edildi.",
+      "openGlobalMap": "Küresel harita",
+      "openGlobalMapAria": "RMAP v4 global haritasını rmap.world'de açın"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -1302,7 +1318,11 @@
         "auto_interface_down": "Otomatik Arayüz \"{{name}}\" etkin ancak çalışmıyor.",
         "missing_shared_instance": "Paylaşım örneği açık ancak SharedInstanceServer çalışmıyor.",
         "shared_instance_unexpected": "SharedInstanceServer yayında ancak share_instance kapalı.",
-        "runtime_only_interface": "\"{{name}}\" yalnızca çalışma zamanıdır (yapılandırmada saklanmaz)."
+        "runtime_only_interface": "\"{{name}}\" yalnızca çalışma zamanıdır (yapılandırmada saklanmaz).",
+        "rmap_missing_coordinates": "\"{{name}}\" arayüzü bulunabilir ancak geçerli harita koordinatları eksik.",
+        "rmap_no_tcp_hub": "Bulunabilir yerel RNode'un internet erişilebilirliği için etkinleştirilmiş bir TCP istemci merkezi yoktur.",
+        "rmap_transport_disabled": "Bulunabilir arayüzler yapılandırılmış ancak taşıma modu kapalı.",
+        "rmap_i2p_not_connectable": "\"{{name}}\" I2P arayüzü keşfedilebilir ancak bağlanılabilir evet değildir."
       },
       "runtime": {
         "rnsNotReady": "RNS yığını hazır değil",
@@ -3546,6 +3566,35 @@
     "cancelSync": "İptal",
     "cancelSyncAria": "Yayılma senkronizasyonunu iptal et"
   },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v4 keşfi",
+    "publishToggle": "RMAP v4 'te yayınla",
+    "coordsStatus": "Harita koordinatları: {{lat}}, {{lon}} (Uygulama → GPS / Konum'dan)",
+    "gpsMissingWarning": "RMAP'te yayınlamadan önce Uygulama → GPS / Konum'da statik GPS'i ayarlayın.",
+    "announceIntervalMin": "Anons aralığı (dakika)",
+    "heightMeters": "Deniz Seviyesinden Yükseklik (m)",
+    "reachableOn": "Erişilebilir (ana bilgisayar adı veya komut dosyası, isteğe bağlı)",
+    "helpLink": "RMAP Kılavuzu",
+    "gpsRequiredTitle": "GPS koordinatları gerekli",
+    "gpsRequiredBody": "RMAP harita işaretleyicileri enlem ve boylam gerektirir. Uygulama → GPS / Konum altında statik koordinatları ayarlayın, ardından tekrar deneyin.",
+    "openAppGps": "Uygulama GPS ayarlarını aç",
+    "applySuccess": "RMAP keşif ayarları uygulandı.",
+    "disableSuccess": "Yerel arayüzlerde RMAP yayınlama devre dışı bırakıldı.",
+    "applyFailed": "RMAP ayarları uygulanamadı: {{error}}",
+    "noPublishTargets": "Yayınlanacak etkinleştirilmiş yerel arabirim yok. Önce bir RNode, BLE eş veya I2P arayüzünü etkinleştirin.",
+    "restartTitle": "Reticulum seti yeniden başlatılsın mı?",
+    "restartBody": "Arayüz ve taşıma değişikliklerinin etkili olması için yığının yeniden başlatılması gerekir.",
+    "restartConfirm": "Şimdi Yeniden Başlat",
+    "restartFailed": "Yığın yeniden başlatılamadı: {{error}}",
+    "reachableOnError": {
+      "invalid": "Değerde geçersiz erişilebilir.",
+      "invalidHost": "Tarihinde erişilebilen için geçersiz ana bilgisayar adı.",
+      "tooLong": "Değerde ulaşılabilirlik çok uzun."
+    },
+    "hint": "Etkinleştirilmiş tüm RMAP özellikli arayüzlere (RNode, KISS, BLE peer, I2P, UDP, pipe) bulunabilir=evet ve Uygulama GPS koordinatlarını uygular. İnce kontrol için Bağlantı üzerindeki arayüz başına RMAP geçişlerini kullanın. LoRa yolları ayrıca ulaşımı ve rmap.world hub'ını etkinleştirir.",
+    "openGlobalMap": "Küresel haritayı aç",
+    "openGlobalMapAria": "RMAP v4 global haritasını rmap.world'de açın"
+  },
   "reticulumTopology": {
     "title": "Ağ topolojisi",
     "self": "Sen",
@@ -3950,5 +3999,38 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "{{version}} sürümü mevcut.",
     "menuToastErrorTitle": "Güncelleme kontrolü başarısız oldu"
+  },
+  "reticulumMap": {
+    "title": "Keşif haritası",
+    "subtitle": "Yığınınız tarafından duyulan RMAP v4 arayüzlerini etkinleştirme (yerel görünüm)",
+    "openGlobalMap": "Küresel harita",
+    "openGlobalMapAria": "RMAP v4 global haritasını rmap.world'de açın",
+    "openPublishSettings": "Yayın Ayarları",
+    "openPublishSettingsAria": "Reticulum Network RMAP yayınlama ayarlarını aç",
+    "refresh": "Yenile",
+    "refreshAria": "Keşif haritasını yenile",
+    "refreshFailed": "Keşif haritası yenilenemedi: {{error}}",
+    "countSummary": "Haritada {{markers}} · Yalnızca {{list}} listesi",
+    "listTitle": "Keşfedilen arayüzler",
+    "selfMarker": "Uygulama GPS konumunuz",
+    "reachable": "Ulaşılabilir",
+    "heardOnly": "Sadece duydum (yol tablosunda değil)",
+    "noCoords": "GPS yok",
+    "lastHeard": "Son duyma {{time}}",
+    "openNodeAria": "{{name}} için ayrıntıları aç",
+    "filter": {
+      "all": "Tümü",
+      "rnode": "LoRa",
+      "backbone": "Omurga",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "Diğer"
+    },
+    "empty": {
+      "stackOff": "RMAP keşif duyurularını duymak için Reticulum yığınını başlatın.",
+      "noDiscoveries": "Henüz hiçbir RMAP keşif arayüzü duyulmadı.",
+      "filterEmpty": "Bu filtreyle eşleşen arabirim yok.",
+      "hint": "Düğümler yalnızca operatörler bulunabilir=evet'i etkinleştirdiğinde görünür. LoRa yolları, duyuruları aktarmak için bir TCP hub'ına (örneğin rmap.world:4242) ihtiyaç duyar. Dünya çapında kapsama alanı için küresel harita bağlantısını kullanın."
+    }
   }
 }
