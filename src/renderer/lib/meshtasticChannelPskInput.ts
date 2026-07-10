@@ -37,7 +37,7 @@ export function validateChannelPskEntries(lines: string[]): ChannelPskValidation
   for (const line of lines) {
     try {
       const raw = decodeChannelPskBase64(line);
-      if (raw.length === 16 || raw.length === 32 || raw.length < 16) continue;
+      if (raw.length === 16 || raw.length === 32) continue;
       return 'invalidLength';
     } catch {
       // catch-no-log-ok invalid base64 on blur — user-facing warning only
@@ -53,7 +53,7 @@ export function parseManualChannelPublishEntry(line: string): ManualChannelPubli
   if (split?.kind !== 'named') return null;
   try {
     const psk = decodePskBase64(split.b64);
-    if (psk.length !== 16 && psk.length !== 32 && psk.length >= 16) return null;
+    if (psk.length !== 16 && psk.length !== 32) return null;
     return { name: split.name, index: split.index, psk };
   } catch {
     // catch-no-log-ok invalid base64 on a named publish line — skip entry

@@ -22,7 +22,8 @@ vi.mock('../lib/connection', () => ({
 
 const VIRTUAL_ID = 0x0b2f75f3;
 const REAL_ID = 0x88cb6530;
-const MQTT_PSK_LINE = 'LongFast@0=AQ==';
+/** Valid 16-byte AES-128 manual PSK line for MQTT-only publish in tests. */
+const MQTT_PSK_LINE = 'LongFast@0=AAAAAAAAAAAAAAAAAAAAAA==';
 
 type MqttStatusHandler = (args: { status: string; protocol: string }) => void;
 type MyNodeInfoHandler = (info: { myNodeNum: number }) => void;
