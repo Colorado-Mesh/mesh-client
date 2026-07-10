@@ -6,6 +6,7 @@ import { I18nextProvider } from 'react-i18next';
 
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
+import { runConnectionPanelStorageMigrations } from './lib/connectionPanelStorageMigrations';
 import { installDevElectronApiStubIfNeeded } from './lib/devElectronApiStub';
 import i18n from './lib/i18n';
 import { IconMotionProvider } from './lib/icons/iconMotionContext';
@@ -30,6 +31,7 @@ void (async () => {
 
   initReduceMotionDefaultIfAbsent();
   syncReduceMotionDatasetFromStorage();
+  runConnectionPanelStorageMigrations();
 
   createRoot(document.getElementById('root')!).render(
     <I18nextProvider i18n={i18n}>

@@ -804,7 +804,25 @@
       "failed": "Penyiapan identitas gagal",
       "export": "Ekspor cadangan",
       "exportPassphrase": "Frasa sandi cadangan",
-      "exportPassphraseRequired": "Masukkan frasa sandi cadangan sebelum mengekspor."
+      "exportPassphraseRequired": "Masukkan frasa sandi cadangan sebelum mengekspor.",
+      "importBackupLabel": "Impor JSON cadangan",
+      "importBackup": "Impor cadangan",
+      "importBackupHint": "Mengembalikan nama tampilan dan metadata hash saja. Identitas jaringan memerlukan file kunci pribadi atau frase pemulihan Anda.",
+      "importPrivateKeyLabel": "Impor kunci pribadi",
+      "importPrivateKey": "Impor kunci pribadi",
+      "importPrivateKeyFromFile": "Dari berkas",
+      "importPrivateKeyHint": "Kunci pribadi RNS 64-byte: Rahasia X25519 (32 B) + seed Ed25519 (32 B) sebagai hex atau base64 128 karakter.",
+      "replaceIdentitySection": "Ganti identitas",
+      "replaceIdentityHint": "Mengimpor identitas baru akan menggantikan kunci Anda saat ini dan memulai ulang tumpukan.",
+      "replaceIdentityConfirmTitle": "Ganti identitas Reticulum?",
+      "replaceIdentityConfirmMessage": "Ini menggantikan kunci identitas Anda saat ini dan memulai ulang stack Reticulum. Metadata yang disimpan mungkin tidak lagi cocok kecuali Anda mengimpor kunci pribadi yang cocok.",
+      "replaceIdentityConfirmAction": "Ganti identitas",
+      "invalidMnemonic": "Frasa pemulihan tidak valid — masukkan 12 kata bahasa Inggris BIP-39 yang valid.",
+      "invalidPrivateKeyLength": "File kunci pribadi harus berukuran tepat 64 byte.",
+      "identityAlreadyConfigured": "Identitas sudah dikonfigurasi. Konfirmasikan penggantian untuk mengimpor yang baru.",
+      "identityFileMissing": "File kunci identitas tidak ada. Impor ulang kunci pribadi atau frase pemulihan Anda.",
+      "backupHashMismatch": "Hash cadangan tidak cocok dengan file kunci identitas pada disk.",
+      "importPrivateKeyRequiresStack": "Impor kunci pribadi memerlukan build stack Reticulum penuh."
     },
     "reticulumInterfaces": {
       "title": "Interface",
@@ -3511,11 +3529,6 @@
     "announceSaveSidecarStopped": "Mulai tumpukan Reticulum sebelum menyimpan pengaturan pengumuman.",
     "clearAnnouncesDone": "Pengumuman dihapus.",
     "clearAnnouncesFailed": "Gagal menghapus pengumuman."
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "Identitas aktif",
-    "active": "Identitas aktif: {{name}}",
-    "activeBadge": "aktif"
   },
   "reticulumProfileIcon": {
     "iconName": "Ikon avatar",

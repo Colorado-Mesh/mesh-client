@@ -14,6 +14,7 @@ import type {
   OutboxEntry,
   OutboxEntryInput,
   OutboxStatus,
+  ReticulumIdentityImportDialogResult,
   SerialPort,
   SpellcheckReplacePayload,
   UpdateCheckingPayload,
@@ -978,6 +979,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('reticulum:readDefaultConfigFile'),
     showConfigImportDialog: (): Promise<{ path: string | null; content: string | null }> =>
       ipcRenderer.invoke('reticulum:showConfigImportDialog'),
+    showIdentityImportDialog: (): Promise<ReticulumIdentityImportDialogResult> =>
+      ipcRenderer.invoke('reticulum:showIdentityImportDialog'),
     onEvent: (cb: (event: ReticulumSidecarEvent) => void): (() => void) => {
       const handler = (_: unknown, event: ReticulumSidecarEvent) => {
         cb(event);

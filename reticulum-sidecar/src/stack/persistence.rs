@@ -42,7 +42,7 @@ impl PersistedState {
         Self::default_empty()
     }
 
-    fn default_empty() -> Self {
+    pub(crate) fn default_empty() -> Self {
         Self {
             identity: StackIdentity::default(),
             interfaces: Vec::new(),
@@ -130,53 +130,6 @@ impl PersistedState {
             .as_secs()
     }
 
-    fn random_hash() -> String {
-        format!("{:032x}", Uuid::new_v4().as_u128())
-    }
-
-    pub fn generate_identity(
-        &mut self,
-        display_name: Option<String>,
-    ) -> Result<StackIdentity, String> {
-        let identity_hash = Self::random_hash();
-        let lxmf_hash = Self::random_hash();
-        let mnemonic = generate_mnemonic_12();
-        self.identity = StackIdentity {
-            configured: true,
-            identity_hash,
-            lxmf_hash,
-            display_name,
-            mnemonic: Some(mnemonic),
-        };
-        self.rns_ready = true;
-        self.lxmf_ready = true;
-        self.sync_local_propagation_hash();
-        Ok(self.identity.clone())
-    }
-
-    pub fn import_identity_mnemonic(
-        &mut self,
-        mnemonic: &str,
-        display_name: Option<String>,
-    ) -> Result<StackIdentity, String> {
-        let words: Vec<&str> = mnemonic.split_whitespace().collect();
-        if words.len() != 12 {
-            return Err("mnemonic must be 12 words".into());
-        }
-        let identity_hash = format!("{:032x}", stable_hash(mnemonic));
-        let lxmf_hash = format!("{:032x}", stable_hash(&format!("lxmf:{mnemonic}")));
-        self.identity = StackIdentity {
-            configured: true,
-            identity_hash,
-            lxmf_hash,
-            display_name,
-            mnemonic: Some(mnemonic.to_string()),
-        };
-        self.rns_ready = true;
-        self.lxmf_ready = true;
-        self.sync_local_propagation_hash();
-        Ok(self.identity.clone())
-    }
 
     pub fn export_identity_backup(&self, passphrase: &str) -> Result<serde_json::Value, String> {
         if !self.identity.configured {
@@ -522,29 +475,6 @@ pub(crate) fn stable_hash(s: &str) -> u128 {
         h = h.wrapping_mul(0x100000001b3);
     }
     h
-}
-
-fn generate_mnemonic_12() -> String {
-    const WORDS: &[&str] = &[
-        "alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel", "india",
-        "juliet", "kilo", "lima", "mike", "november", "oscar", "papa", "quebec", "romeo", "sierra",
-        "tango", "uniform", "victor", "whiskey", "xray", "yankee", "zulu",
-    ];
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-    let seed = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
-    let mut picked = Vec::new();
-    for i in 0..12 {
-        let mut hasher = DefaultHasher::new();
-        seed.hash(&mut hasher);
-        i.hash(&mut hasher);
-        let idx = (hasher.finish() as usize) % WORDS.len();
-        picked.push(WORDS[idx]);
-    }
-    picked.join(" ")
 }
 
 impl serde::Serialize for PersistedState {

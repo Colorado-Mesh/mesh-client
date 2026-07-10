@@ -804,7 +804,25 @@
       "failed": "Identiteitsinstelling mislukt",
       "export": "Back-up exporteren",
       "exportPassphrase": "Back-up wachtwoordzin",
-      "exportPassphraseRequired": "Voer een back-upwachtzin in voordat u exporteert."
+      "exportPassphraseRequired": "Voer een back-upwachtzin in voordat u exporteert.",
+      "importBackupLabel": "Back-up-JSON importeren",
+      "importBackup": "Back-up importeren",
+      "importBackupHint": "Herstelt alleen de weergavenaam en hash-metagegevens. Voor de netwerkidentiteit is uw persoonlijke sleutelbestand of herstelzin vereist.",
+      "importPrivateKeyLabel": "Privésleutel importeren",
+      "importPrivateKey": "Privésleutel importeren",
+      "importPrivateKeyFromFile": "Uit bestand",
+      "importPrivateKeyHint": "64-byte RNS-privésleutel: X25519 geheim (32 B) + Ed25519 zaad (32 B) als hexadecimale code van 128 tekens of base64.",
+      "replaceIdentitySection": "Vervang identiteit",
+      "replaceIdentityHint": "Als u een nieuwe identiteit importeert, worden uw huidige sleutels vervangen en wordt de stapel opnieuw gestart.",
+      "replaceIdentityConfirmTitle": "Reticulum-identiteit vervangen?",
+      "replaceIdentityConfirmMessage": "Dit vervangt uw huidige identiteitssleutels en start de Reticulum-stack opnieuw. Opgeslagen metagegevens komen mogelijk niet meer overeen, tenzij u de overeenkomende privésleutel importeert.",
+      "replaceIdentityConfirmAction": "Vervang identiteit",
+      "invalidMnemonic": "Ongeldige herstelzin: voer 12 geldige BIP-39 Engelse woorden in.",
+      "invalidPrivateKeyLength": "Het privésleutelbestand moet precies 64 bytes groot zijn.",
+      "identityAlreadyConfigured": "Er is al een identiteit geconfigureerd. Bevestig vervangen om een ​​nieuwe te importeren.",
+      "identityFileMissing": "Identiteitssleutelbestand ontbreekt. Importeer uw privésleutel of herstelzin opnieuw.",
+      "backupHashMismatch": "Back-up-hashes komen niet overeen met het identiteitssleutelbestand op schijf.",
+      "importPrivateKeyRequiresStack": "Voor het importeren van privésleutels is een volledige Reticulum-stack-build vereist."
     },
     "reticulumInterfaces": {
       "title": "Raakvlakken",
@@ -3511,11 +3529,6 @@
     "announceSaveSidecarStopped": "Start de Reticulum-stack voordat u de aankondigingsinstellingen opslaat.",
     "clearAnnouncesDone": "Aankondigingen gewist.",
     "clearAnnouncesFailed": "Kan aankondigingen niet wissen."
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "huidige identiteit",
-    "active": "Actieve identiteit: {{name}}",
-    "activeBadge": "actief"
   },
   "reticulumProfileIcon": {
     "iconName": "Avatar-pictogram",

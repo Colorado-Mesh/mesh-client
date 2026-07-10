@@ -804,7 +804,25 @@
       "failed": "Falha na configuração de identidade",
       "export": "Exportar backup",
       "exportPassphrase": "Senha de backup",
-      "exportPassphraseRequired": "Insira uma senha de backup antes de exportar."
+      "exportPassphraseRequired": "Insira uma senha de backup antes de exportar.",
+      "importBackupLabel": "Importar JSON de backup",
+      "importBackup": "Importar backup",
+      "importBackupHint": "Restaura apenas o nome de exibição e os metadados de hash. A identidade de rede requer seu arquivo de chave privada ou frase de recuperação.",
+      "importPrivateKeyLabel": "Importar chave privada",
+      "importPrivateKey": "Importar chave privada",
+      "importPrivateKeyFromFile": "Do arquivo",
+      "importPrivateKeyHint": "Chave privada RNS de 64 bytes: segredo X25519 (32 B) + semente Ed25519 (32 B) como hexadecimal de 128 caracteres ou base64.",
+      "replaceIdentitySection": "Substituir identidade",
+      "replaceIdentityHint": "A importação de uma nova identidade substitui as chaves atuais e reinicia a pilha.",
+      "replaceIdentityConfirmTitle": "Substituir a identidade Reticulum?",
+      "replaceIdentityConfirmMessage": "Isso substitui suas chaves de identidade atuais e reinicia a pilha do Reticulum. Os metadados salvos podem não corresponder mais, a menos que você importe a chave privada correspondente.",
+      "replaceIdentityConfirmAction": "Substituir identidade",
+      "invalidMnemonic": "Frase de recuperação inválida — insira 12 palavras válidas em inglês BIP-39.",
+      "invalidPrivateKeyLength": "O arquivo de chave privada deve ter exatamente 64 bytes.",
+      "identityAlreadyConfigured": "Uma identidade já está configurada. Confirme a substituição para importar um novo.",
+      "identityFileMissing": "O arquivo de chave de identidade está ausente. Importe novamente sua chave privada ou frase de recuperação.",
+      "backupHashMismatch": "Os hashes de backup não correspondem ao arquivo de chave de identidade no disco.",
+      "importPrivateKeyRequiresStack": "A importação de chave privada requer uma construção completa da pilha Reticulum."
     },
     "reticulumInterfaces": {
       "title": "Interfaces",
@@ -3511,11 +3529,6 @@
     "announceSaveSidecarStopped": "Inicie a pilha Reticulum antes de salvar as configurações de anúncio.",
     "clearAnnouncesDone": "Anúncios liberados.",
     "clearAnnouncesFailed": "Falha ao limpar anúncios."
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "identidade ativa",
-    "active": "Identidade ativa: {{name}}",
-    "activeBadge": "Ativo"
   },
   "reticulumProfileIcon": {
     "iconName": "Ícone de avatar",

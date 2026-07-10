@@ -804,7 +804,25 @@
       "failed": "Не вдалося встановити ідентичність",
       "export": "Експортувати резервну ко",
       "exportPassphrase": "Резервна парольна фраза",
-      "exportPassphraseRequired": "Введіть резервну парольну фразу перед експортом."
+      "exportPassphraseRequired": "Введіть резервну парольну фразу перед експортом.",
+      "importBackupLabel": "Імпорт резервної копії JSON",
+      "importBackup": "Імпорт резервної копії",
+      "importBackupHint": "Відновлює лише відображуване ім’я та хеш-метадані. Для ідентифікації мережі потрібен ваш файл приватного ключа або фраза відновлення.",
+      "importPrivateKeyLabel": "Імпорт закритого ключа",
+      "importPrivateKey": "Імпорт закритого ключа",
+      "importPrivateKeyFromFile": "З файлу",
+      "importPrivateKeyHint": "64-байтовий секретний ключ RNS: секрет X25519 (32 B) + початкове значення Ed25519 (32 B) як 128-символьний шістнадцятковий або base64.",
+      "replaceIdentitySection": "Замінити ідентифікатор",
+      "replaceIdentityHint": "Імпортування нового ідентифікатора замінює поточні ключі та перезапускає стек.",
+      "replaceIdentityConfirmTitle": "Замінити ідентичність Reticulum?",
+      "replaceIdentityConfirmMessage": "Це замінить ваші поточні ключі ідентифікації та перезапустить стек Reticulum. Збережені метадані можуть більше не збігатися, якщо ви не імпортуєте відповідний закритий ключ.",
+      "replaceIdentityConfirmAction": "Замінити ідентифікатор",
+      "invalidMnemonic": "Недійсна фраза відновлення — введіть 12 дійсних англійських слів BIP-39.",
+      "invalidPrivateKeyLength": "Файл закритого ключа має мати рівно 64 байти.",
+      "identityAlreadyConfigured": "Ідентичність уже налаштована. Підтвердьте заміну, щоб імпортувати новий.",
+      "identityFileMissing": "Файл ключа ідентифікації відсутній. Повторно імпортуйте свій закритий ключ або фразу відновлення.",
+      "backupHashMismatch": "Резервні хеші не збігаються з файлом ключа ідентифікації на диску.",
+      "importPrivateKeyRequiresStack": "Для імпорту закритого ключа потрібен повний стек Reticulum."
     },
     "reticulumInterfaces": {
       "title": "Інтерфейси",
@@ -3511,11 +3529,6 @@
     "announceSaveSidecarStopped": "Запустіть стек Reticulum перед збереженням налаштувань оголошення.",
     "clearAnnouncesDone": "Оголошення очищено.",
     "clearAnnouncesFailed": "Не вдалося очистити оголошення."
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "Активна ідентифікація",
-    "active": "Активна особа: {{name}}",
-    "activeBadge": "виконавець дії"
   },
   "reticulumProfileIcon": {
     "iconName": "Значок аватара",

@@ -78,9 +78,13 @@ describe('validateChannelPskEntries', () => {
     expect(validateChannelPskEntries([twentyBytes])).toBe('invalidLength');
   });
 
-  it('rejects decoded keys shorter than 16 bytes', () => {
+  it('rejects decoded keys shorter than 16 bytes on named lines', () => {
     const fifteenBytes = btoa(String.fromCharCode(...new Uint8Array(15).fill(2)));
     expect(validateChannelPskEntries([`HamNet=${fifteenBytes}`])).toBe('invalidLength');
+  });
+
+  it('accepts 1-byte default public PSK on named lines', () => {
+    expect(validateChannelPskEntries(['LongFast=AQ=='])).toBe('ok');
   });
 
   it('returns ok for empty list', () => {

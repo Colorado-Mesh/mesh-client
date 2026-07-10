@@ -53,18 +53,17 @@ import {
   validateLetsMeshPresetConnect,
 } from '../lib/letsMeshConnectionGuards';
 import {
-  COLORADO_MESH_HOST,
   generateLetsMeshAuthToken,
   LETSMESH_HOST_EU,
   LETSMESH_HOST_US,
   letsMeshMqttUsernameFromIdentity,
   meshcoreIdentityHasFullKeyPair,
   meshcoreIdentityHasPrivateKey,
-  MESHMAPPER_HOST,
   readMeshcoreIdentity,
   readMeshcoreIdentityAsync,
 } from '../lib/letsMeshJwt';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
+import { applyMeshcoreMqttPreset, type MeshcoreMqttPreset } from '../lib/meshcoreMqttPresets';
 import { meshcoreMqttUserFacingHint } from '../lib/meshcoreMqttUserHint';
 import {
   meshtasticMqttTopicPrefixesDiverge,
@@ -415,9 +414,7 @@ export default function ConnectionPanel({
   mqttSettingsRef.current = mqttSettings;
   const meshcoreMqttSettingsRef = useRef(meshcoreMqttSettings);
   meshcoreMqttSettingsRef.current = meshcoreMqttSettings;
-  const [meshcorePreset, setMeshcorePreset] = useState<
-    'letsmesh' | 'coloradomesh' | 'meshmapper' | 'ripple' | 'custom'
-  >(() => {
+  const [meshcorePreset, setMeshcorePreset] = useState<MeshcoreMqttPreset>(() => {
     const saved = localStorage.getItem('mesh-client:mqttPreset:meshcore');
     if (
       saved === 'letsmesh' ||
@@ -2247,60 +2244,15 @@ export default function ConnectionPanel({
                     type="button"
                     onClick={() => {
                       setMeshcorePreset(id);
-                      if (id === 'letsmesh') {
-                        const fromIdentity =
-                          letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
-                        setMeshcoreMqttSettings((prev) => ({
-                          ...prev,
-                          server: LETSMESH_HOST_US,
-                          port: 443,
-                          topicPrefix: 'meshcore/test',
-                          useWebSocket: true,
-                          keepalive: 30,
-                          username: fromIdentity || prev.username,
-                          password: '',
-                        }));
-                      } else if (id === 'coloradomesh') {
-                        const fromIdentity =
-                          letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
-                        setMeshcoreMqttSettings((prev) => ({
-                          ...prev,
-                          server: COLORADO_MESH_HOST,
-                          port: 443,
-                          topicPrefix: 'meshcore/DEN',
-                          useWebSocket: true,
-                          tlsEnabled: true,
-                          wsPath: '/ws',
-                          keepalive: 30,
-                          username: fromIdentity || prev.username,
-                          password: '',
-                        }));
-                      } else if (id === 'meshmapper') {
-                        const fromIdentity =
-                          letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
-                        setMeshcoreMqttSettings((prev) => ({
-                          ...prev,
-                          server: MESHMAPPER_HOST,
-                          port: 443,
-                          topicPrefix: 'meshcore/test',
-                          useWebSocket: true,
-                          keepalive: 30,
-                          username: fromIdentity || prev.username,
-                          password: '',
-                        }));
-                      } else if (id === 'ripple') {
+                      if (id === 'custom') return;
+                      if (id === 'ripple') {
                         if (!window.confirm(t('connectionPanel.ripplePresetConfirm'))) return;
-                        setMeshcoreMqttSettings((prev) => ({
-                          ...prev,
-                          server: 'mqtt.ripplenetworks.com.au',
-                          port: 8883,
-                          username: 'nswmesh',
-                          password: 'nswmesh',
-                          topicPrefix: 'meshcore',
-                          tlsInsecure: true,
-                          useWebSocket: false,
-                        }));
                       }
+                      const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                      setMeshcoreMqttSettings((prev) => ({
+                        ...applyMeshcoreMqttPreset(id, prev),
+                        username: fromIdentity || prev.username,
+                      }));
                     }}
                     className={`flex-1 rounded border px-2 py-1.5 text-xs font-medium transition-colors ${
                       meshcorePreset === id

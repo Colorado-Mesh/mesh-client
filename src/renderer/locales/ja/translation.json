@@ -804,7 +804,25 @@
       "failed": "IDの設定に失敗しました",
       "export": "バックアップをエクスポート",
       "exportPassphrase": "バックアップパスフレーズ",
-      "exportPassphraseRequired": "エクスポートする前にバックアップパスフレーズを入力してください。"
+      "exportPassphraseRequired": "エクスポートする前にバックアップパスフレーズを入力してください。",
+      "importBackupLabel": "バックアップ JSON をインポートする",
+      "importBackup": "バックアップのインポート",
+      "importBackupHint": "表示名とハッシュ メタデータのみを復元します。ネットワーク ID には秘密キー ファイルまたは回復フレーズが必要です。",
+      "importPrivateKeyLabel": "秘密キーをインポートする",
+      "importPrivateKey": "秘密キーをインポートする",
+      "importPrivateKeyFromFile": "ファイルから",
+      "importPrivateKeyHint": "64 バイトの RNS 秘密キー: X25519 シークレット (32 B) + Ed25519 シード (32 B) (128 文字の 16 進数または Base64 として)。",
+      "replaceIdentitySection": "ID を置き換える",
+      "replaceIdentityHint": "新しい ID をインポートすると、現在のキーが置き換えられ、スタックが再起動されます。",
+      "replaceIdentityConfirmTitle": "Reticulum のアイデンティティを置き換えますか?",
+      "replaceIdentityConfirmMessage": "これにより、現在の ID キーが置き換えられ、Reticulum スタックが再起動されます。一致する秘密キーをインポートしない限り、保存されたメタデータは一致しなくなる可能性があります。",
+      "replaceIdentityConfirmAction": "ID を置き換える",
+      "invalidMnemonic": "無効なリカバリ フレーズ — 有効な BIP-39 英単語を 12 文字入力してください。",
+      "invalidPrivateKeyLength": "秘密キー ファイルは正確に 64 バイトである必要があります。",
+      "identityAlreadyConfigured": "ID はすでに構成されています。新しいものをインポートするには、置換を確認します。",
+      "identityFileMissing": "ID キー ファイルがありません。秘密キーまたは回復フレーズを再インポートします。",
+      "backupHashMismatch": "バックアップ ハッシュがディスク上の ID キー ファイルと一致しません。",
+      "importPrivateKeyRequiresStack": "秘密キーのインポートには、完全な Reticulum スタックのビルドが必要です。"
     },
     "reticulumInterfaces": {
       "title": "インターフェース",
@@ -3511,11 +3529,6 @@
     "announceSaveSidecarStopped": "アナウンス設定を保存する前に、Reticulumスタックを起動します。",
     "clearAnnouncesDone": "クリアをお知らせします。",
     "clearAnnouncesFailed": "アナウンスをクリアできませんでした。"
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "アクティブなアイデンティティ",
-    "active": "アクティブアイデンティティ： {{name}}",
-    "activeBadge": "活動中"
   },
   "reticulumProfileIcon": {
     "iconName": "プレイヤーアイコンを見る",

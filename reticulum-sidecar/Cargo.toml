@@ -17,9 +17,10 @@ rns-stack = [
     "dep:rns-runtime",
     "dep:lxmf-core",
     "dep:rns-identity",
+    "dep:rns-ratkey",
     "dep:rns-transport",
-    "dep:hex",
     "dep:rmpv",
+    "dep:tempfile",
 ]
 rns-serial = ["rns-runtime/serial"]
 rns-ble = ["rns-runtime/ble", "dep:rns-interface", "rns-interface/ble"]
@@ -37,7 +38,8 @@ tower-http = { version = "0.6", features = ["cors"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1", features = ["v4"] }
-hex = { version = "0.4", optional = true }
+hex = "0.4"
+tempfile = { version = "3", optional = true }
 rmpv = { version = "1", optional = true }
 
 base64 = "0.22"
@@ -52,6 +54,11 @@ features = ["serial"]
 [dependencies.rns-identity]
 package = "rns-identity"
 path = "../../rsReticulum/crates/rns-identity"
+optional = true
+
+[dependencies.rns-ratkey]
+package = "rns-ratkey"
+path = "../../rsReticulum/crates/rns-ratkey"
 optional = true
 
 [dependencies.rns-transport]

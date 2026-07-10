@@ -804,7 +804,25 @@
       "failed": "身份设置失败",
       "export": "导出备份",
       "exportPassphrase": "备份密码",
-      "exportPassphraseRequired": "在导出前输入备用密码。"
+      "exportPassphraseRequired": "在导出前输入备用密码。",
+      "importBackupLabel": "导入备份 JSON",
+      "importBackup": "导入备份",
+      "importBackupHint": "仅恢复显示名称和哈希元数据。网络身份需要您的私钥文件或恢复短语。",
+      "importPrivateKeyLabel": "导入私钥",
+      "importPrivateKey": "导入私钥",
+      "importPrivateKeyFromFile": "来自文件",
+      "importPrivateKeyHint": "64 字节 RNS 私钥：X25519 秘密 (32 B) + Ed25519 种子 (32 B) 作为 128 字符十六进制或 base64。",
+      "replaceIdentitySection": "更换身份",
+      "replaceIdentityHint": "导入新身份将替换您当前的密钥并重新启动堆栈。",
+      "replaceIdentityConfirmTitle": "替换 Reticulum 身份？",
+      "replaceIdentityConfirmMessage": "这将替换您当前的身份密钥并重新启动 Reticulum 堆栈。除非您导入匹配的私钥，否则保存的元数据可能不再匹配。",
+      "replaceIdentityConfirmAction": "更换身份",
+      "invalidMnemonic": "恢复短语无效 — 输入 12 个有效的 BIP-39 英语单词。",
+      "invalidPrivateKeyLength": "私钥文件必须正好是 64 字节。",
+      "identityAlreadyConfigured": "身份已配置。确认替换以导入新的。",
+      "identityFileMissing": "身份密钥文件丢失。重新导入您的私钥或恢复短语。",
+      "backupHashMismatch": "备份哈希与磁盘上的身份密钥文件不匹配。",
+      "importPrivateKeyRequiresStack": "私钥导入需要完整的 Reticulum 堆栈构建。"
     },
     "reticulumInterfaces": {
       "title": "接口",
@@ -3511,11 +3529,6 @@
     "announceSaveSidecarStopped": "在保存公告设置之前启动Reticulum堆栈。",
     "clearAnnouncesDone": "宣布已清除。",
     "clearAnnouncesFailed": "清除公告失败。"
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "有效身份",
-    "active": "有效身份： {{name}}",
-    "activeBadge": "活跃"
   },
   "reticulumProfileIcon": {
     "iconName": "阿凡达图标",

@@ -804,7 +804,25 @@
       "failed": "Kimlik kurulumu başarısız oldu",
       "export": "Yedeklemeyi dışa aktar",
       "exportPassphrase": "Yedekleme parolası",
-      "exportPassphraseRequired": "Dışa aktarmadan önce bir yedek parola girin."
+      "exportPassphraseRequired": "Dışa aktarmadan önce bir yedek parola girin.",
+      "importBackupLabel": "Yedek JSON'u içe aktar",
+      "importBackup": "Yedeği içe aktar",
+      "importBackupHint": "Yalnızca görünen adı ve karma meta verilerini geri yükler. Ağ kimliği, özel anahtar dosyanızı veya kurtarma ifadenizi gerektirir.",
+      "importPrivateKeyLabel": "Özel anahtarı içe aktar",
+      "importPrivateKey": "Özel anahtarı içe aktar",
+      "importPrivateKeyFromFile": "Dosyadan",
+      "importPrivateKeyHint": "64 baytlık RNS özel anahtarı: X25519 gizli (32 B) + Ed25519 tohum (32 B), 128 karakterlik hex veya base64 olarak.",
+      "replaceIdentitySection": "Kimliği değiştir",
+      "replaceIdentityHint": "Yeni bir kimliğin içe aktarılması mevcut anahtarlarınızın yerini alır ve yığını yeniden başlatır.",
+      "replaceIdentityConfirmTitle": "Reticulum kimliği değiştirilsin mi?",
+      "replaceIdentityConfirmMessage": "Bu, mevcut kimlik anahtarlarınızın yerini alır ve Reticulum yığınını yeniden başlatır. Eşleşen özel anahtarı içe aktarmadığınız sürece kayıtlı meta veriler artık eşleşmeyebilir.",
+      "replaceIdentityConfirmAction": "Kimliği değiştir",
+      "invalidMnemonic": "Geçersiz kurtarma ifadesi — 12 geçerli BIP-39 İngilizce kelime girin.",
+      "invalidPrivateKeyLength": "Özel anahtar dosyası tam olarak 64 bayt olmalıdır.",
+      "identityAlreadyConfigured": "Bir kimlik zaten yapılandırılmıştır. Yenisini içe aktarmak için değiştirmeyi onaylayın.",
+      "identityFileMissing": "Kimlik anahtarı dosyası eksik. Özel anahtarınızı veya kurtarma ifadenizi yeniden içe aktarın.",
+      "backupHashMismatch": "Yedekleme karmaları diskteki kimlik anahtarı dosyasıyla eşleşmiyor.",
+      "importPrivateKeyRequiresStack": "Özel anahtarın içe aktarılması, tam bir Reticulum yığını yapısı gerektirir."
     },
     "reticulumInterfaces": {
       "title": "Ara birimler",
@@ -3511,11 +3529,6 @@
     "announceSaveSidecarStopped": "Duyuru ayarlarını kaydetmeden önce Reticulum yığınını başlat.",
     "clearAnnouncesDone": "Anonslar temizlendi.",
     "clearAnnouncesFailed": "Duyurular temizlenemedi."
-  },
-  "reticulumIdentitySwitcher": {
-    "label": "Aktif kimlik",
-    "active": "Aktif kimlik: {{name}}",
-    "activeBadge": "aktif"
   },
   "reticulumProfileIcon": {
     "iconName": "Avatar Görünümü",
