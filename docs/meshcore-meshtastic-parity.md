@@ -174,7 +174,7 @@ Topic prefix defaults to `msh/US/`; users can edit fields after choosing a prese
 
 For ham or private MQTT brokers (typically **Custom** preset), the Connection tab adds:
 
-- **Channel PSKs**: AES-128 (16-byte) or AES-256 (32-byte) base64 keys, one per line; optional `ChannelName=base64` for MQTT-only channels (multiple lines per name allowed). LongFast default is always tried. Keys from the Radio tab sync when the radio is connected; custom named keys are preserved when sync would only send the default public PSK. Line parsing: [`meshtasticChannelPskLine.ts`](../src/shared/meshtasticChannelPskLine.ts).
+- **Channel PSKs**: AES-128 (16-byte) or AES-256 (32-byte) base64 keys, one per line; optional `ChannelName=base64` or `ChannelName@index=base64` for MQTT-only channels when your local slot differs from the topic name (multiple lines per name allowed). LongFast default is always tried. Keys from the Radio tab sync when the radio is connected; custom named keys are preserved when sync would only send the default public PSK. Line parsing: [`meshtasticChannelPskLine.ts`](../src/shared/meshtasticChannelPskLine.ts).
 - **MQTT-only sender id**: [`meshtasticMqttIdentity.ts`](../src/renderer/lib/meshtasticMqttIdentity.ts) uses last RF `myNodeNum` when known, else a stable virtual id for chat/MQTT publish without a radio.
 - **Enable TLS (mqtts / wss)**: explicit TLS toggle via [`mqttTls.ts`](../src/renderer/lib/mqttTls.ts) (port 8883/443 no longer required to imply TLS). **Allow insecure TLS** for self-signed or non–public CA chains.
 - **Per-channel uplink**: outbound RF → MQTT uses each channel’s name and PSK via [`meshtasticMqttPublish.ts`](../src/renderer/lib/meshtasticMqttPublish.ts).

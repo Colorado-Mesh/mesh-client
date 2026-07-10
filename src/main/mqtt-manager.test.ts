@@ -16,6 +16,7 @@ import {
   parseChannelPskLine,
   parseMeshtasticMqttEncryptedTopicChannelName,
   parseMeshtasticMqttEncryptedTopicGatewayId,
+  parseMeshtasticMqttTopicChannelName,
   parsePsk,
   portNumEnumToProtoName,
   prepareMqttProtobufBytes,
@@ -241,6 +242,24 @@ describe('parseMeshtasticMqttEncryptedTopicChannelName', () => {
     expect(
       parseMeshtasticMqttEncryptedTopicChannelName('msh/US/CO/2/json/LongFast/!698524e8'),
     ).toBeUndefined();
+  });
+});
+
+describe('parseMeshtasticMqttTopicChannelName', () => {
+  it('extracts channel name from encrypted MQTT topic', () => {
+    expect(parseMeshtasticMqttTopicChannelName('msh/US/CO/2/e/LongFast/!835bb187')).toBe(
+      'LongFast',
+    );
+  });
+
+  it('extracts channel name from JSON MQTT topic', () => {
+    expect(parseMeshtasticMqttTopicChannelName('msh/US/CO/2/json/Private/!698524e8')).toBe(
+      'Private',
+    );
+  });
+
+  it('returns undefined when topic has no channel segment', () => {
+    expect(parseMeshtasticMqttTopicChannelName('msh/US/CO/2/status/!698524e8')).toBeUndefined();
   });
 });
 
@@ -1741,6 +1760,56 @@ describe('onMessage — encrypted TEXT_MESSAGE channel attribution', () => {
 
     expect(messages).toHaveLength(1);
     expect((messages[0] as { channel: number }).channel).toBe(0);
+  });
+
+  it('uses JSON topic LongFast channel 1 when json.channel is 0 (Colorado regression)', () => {
+    const manager = new MQTTManager();
+    (manager as any)._doConnect = () => {};
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 1 }]);
+
+    const nodeId = 0x112233cd;
+    const json = {
+      type: 'text',
+      from: nodeId,
+      channel: 0,
+      text: 'json topic slot 1',
+    };
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage(
+      'msh/US/2/json/LongFast/!112233cd',
+      Buffer.from(JSON.stringify(json)),
+    );
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(1);
+  });
+
+  it('falls back to json.channel when topic has no parseable channel segment', () => {
+    const manager = new MQTTManager();
+    const nodeId = 0x112233ce;
+    const json = {
+      type: 'text',
+      from: nodeId,
+      channel: 2,
+      text: 'non-standard topic channel fallback',
+    };
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    (manager as any).onMessage('msh/US/CO/2/status/!112233ce', Buffer.from(JSON.stringify(json)));
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(2);
   });
 
   it('attributes omitted MeshPacket.channel to slot 0 on LongFast topic', () => {

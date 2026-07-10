@@ -141,6 +141,8 @@ export const MESH_ADVERT_COMMERCIAL_CHECK_LEAF_KEYS = new Set([
   'floodAdvertTypeZeroHop',
   'zeroHopAdvertButton',
   'zeroHopAdvertSent',
+  'filterChipAdvert',
+  'filterChipAdvertTooltip',
 ]);
 
 export function isMeshAdvertCommercialCheckKey(flatKey) {
@@ -256,6 +258,79 @@ export const RAW_PACKET_LOG_SHORT_LABEL_KEYS = new Set([
   'payloadLabel',
   'transportHeading',
 ]);
+
+/** Sniffer quick-filter chips — protocol tokens must match English verbatim. */
+export const RAW_PACKET_LOG_FILTER_CHIP_VERBATIM_LEAF_KEYS = new Set([
+  'filterChipAdvert',
+  'filterChipTxtMsg',
+  'filterChipGrpTxt',
+  'filterChipFlood',
+  'filterChipDirect',
+  'filterChipRf',
+  'filterChipMqtt',
+  'filterChipLocal',
+  'filterChipRx',
+  'filterChipTx',
+]);
+
+/** MQTT-only channel PSK hint — wire literals must not be corrupted by auto-translate. */
+export const CHANNEL_PSK_MQTT_ONLY_INDEX_HINT_KEY = 'connectionPanel.channelPsksMqttOnlyIndexHint';
+
+const CHANNEL_PSK_MQTT_ONLY_INDEX_HINT_LITERALS = ['ChannelName@index=base64', 'LongFast@1=AQ=='];
+
+/** Sniffer hop-count tooltips — must use routing hop terms, not jump/leap false friends. */
+export const RAW_PACKET_LOG_HOP_COUNT_TOOLTIP_LEAF_KEYS = new Set(['colHbTooltip', 'hbRowTooltip']);
+
+const RAW_PACKET_LOG_HOP_JUMP_FALSE_FRIENDS = {
+  es: [{ re: /\bsaltos\b/i, hint: 'use routing hop count, not jump "saltos"' }],
+  ru: [{ re: /\bпрыжок/i, hint: 'use routing хоп term, not jump "прыжок"' }],
+  de: [{ re: /\bSprunganzahl\b/i, hint: 'use Hop Count, not jump "Sprunganzahl"' }],
+};
+
+/** Flood-routing filter tooltips — must not use natural-disaster flood wording. */
+export const RAW_PACKET_LOG_FLOOD_ROUTING_LEAF_KEYS = new Set([
+  'filterChipFlood',
+  'filterChipFloodTooltip',
+]);
+
+const RAW_PACKET_LOG_FLOOD_ROUTING_FALSE_FRIENDS = {
+  de: [{ re: /\bHochwasser\b/i, hint: 'use flood-routing "Flood", not water "Hochwasser"' }],
+  nl: [
+    { re: /\bOPSTAL\b/i, hint: 'preserve FLOOD protocol token, not barn "OPSTAL"' },
+    { re: /\bOVERSTROMING\b/i, hint: 'use flood-routing FLOOD, not disaster "overstroming"' },
+  ],
+  zh: [{ re: /洪水/, hint: 'preserve FLOOD protocol token, not natural flood 洪水' }],
+  ja: [{ re: /洪水/, hint: 'preserve FLOOD protocol token, not natural flood 洪水' }],
+  ko: [{ re: /홍수/, hint: 'preserve FLOOD protocol token, not natural flood 홍수' }],
+  ru: [{ re: /ПОГРУЖЕНИЕ/i, hint: 'preserve FLOOD protocol token, not diving "погружение"' }],
+  id: [{ re: /T_FROID/i, hint: 'preserve T_FLOOD token, not French "T_FROID"' }],
+  pl: [{ re: /\bPowódź\b/i, hint: 'preserve FLOOD protocol token, not disaster "powódź"' }],
+  uk: [{ re: /\bПовінь\b/i, hint: 'preserve FLOOD protocol token, not disaster "повінь"' }],
+  tr: [{ re: /\bTAŞKIN\b/i, hint: 'preserve FLOOD protocol token, not disaster "taşkın"' }],
+  'pt-BR': [{ re: /\bINUNDAÇÃO\b/i, hint: 'preserve FLOOD protocol token, not disaster' }],
+};
+
+/**
+ * @param {string} val
+ * @returns {string[]}
+ */
+export function channelPsksMqttOnlyIndexHintIssues(val) {
+  const issues = [];
+  for (const literal of CHANNEL_PSK_MQTT_ONLY_INDEX_HINT_LITERALS) {
+    if (!val.includes(literal)) {
+      issues.push(
+        `channelPsksMqttOnlyIndexHint must preserve wire literal ${JSON.stringify(literal)}`,
+      );
+    }
+  }
+  if (/AQ\s+=\s+=/i.test(val)) {
+    issues.push('channelPsksMqttOnlyIndexHint has spaced wire-format corruption');
+  }
+  if (/ChannelName\s+@/i.test(val) || /\bbase\s+64\b/i.test(val) || /LongFast\s+@/i.test(val)) {
+    issues.push('channelPsksMqttOnlyIndexHint must keep ChannelName@index=base64 without spaces');
+  }
+  return issues;
+}
 
 /** Flasher UI when no USB serial ports are enumerated. */
 export const FLASHER_NO_SERIAL_PORTS_KEYS = new Set([
@@ -2217,6 +2292,25 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
 
   if (flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) {
     const packetLeaf = flatKey.split('.').pop() ?? flatKey;
+    if (RAW_PACKET_LOG_FILTER_CHIP_VERBATIM_LEAF_KEYS.has(packetLeaf) && val !== enVal) {
+      issues.push(
+        `rawPacketLog ${packetLeaf} must stay verbatim "${enVal}" (protocol filter chip)`,
+      );
+    }
+    if (RAW_PACKET_LOG_HOP_COUNT_TOOLTIP_LEAF_KEYS.has(packetLeaf)) {
+      for (const { re, hint } of RAW_PACKET_LOG_HOP_JUMP_FALSE_FRIENDS[locale] ?? []) {
+        if (re.test(val)) {
+          issues.push(`rawPacketLog hop tooltip false friend: ${hint}`);
+        }
+      }
+    }
+    if (RAW_PACKET_LOG_FLOOD_ROUTING_LEAF_KEYS.has(packetLeaf)) {
+      for (const { re, hint } of RAW_PACKET_LOG_FLOOD_ROUTING_FALSE_FRIENDS[locale] ?? []) {
+        if (re.test(val)) {
+          issues.push(`rawPacketLog flood-routing false friend: ${hint}`);
+        }
+      }
+    }
     if (RAW_PACKET_LOG_SHORT_LABEL_KEYS.has(packetLeaf)) {
       if (CAT_DOT_PADDING_RE.test(val)) {
         issues.push('rawPacketLog short label has CAT dot-padding garbage — use a concise label');
@@ -2287,6 +2381,10 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
       }
     }
   }
+  if (flatKey === CHANNEL_PSK_MQTT_ONLY_INDEX_HINT_KEY) {
+    issues.push(...channelPsksMqttOnlyIndexHintIssues(val));
+  }
+
   return issues;
 }
 

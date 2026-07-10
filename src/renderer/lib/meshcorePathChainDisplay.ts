@@ -1,6 +1,5 @@
 import type { NodeHashCandidate } from '../../shared/meshcoreNodeHash';
 import {
-  type MeshcorePathHashMode,
   meshcoreResolveNodeFromPathPrefix,
   meshcoreSplitPathHashSegments,
 } from '../../shared/meshcorePathHash';
@@ -43,20 +42,4 @@ export function buildMeshcorePathChainSegments(
       resolvedLabel: resolvedNodeId != null ? getNodeLabel(resolvedNodeId) : null,
     };
   });
-}
-
-/** Compact arrow chain for sniffer PATH column, e.g. `80 → 5D → 07`. */
-export function formatMeshcorePathChainArrow(
-  segments: readonly MeshcorePathChainSegment[],
-): string {
-  if (segments.length === 0) return '';
-  return segments
-    .map((s) => (s.resolvedLabel ? `${s.hex} (${s.resolvedLabel})` : s.hex))
-    .join(' → ');
-}
-
-export function meshcorePathHashModeFromSize(hashSizeBytes: 1 | 2 | 3): MeshcorePathHashMode {
-  if (hashSizeBytes === 2) return 1;
-  if (hashSizeBytes === 3) return 2;
-  return 0;
 }

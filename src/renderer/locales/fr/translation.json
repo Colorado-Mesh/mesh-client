@@ -1019,7 +1019,7 @@
     "tcpAddressHint": "Entrez le nom d'hôte ou l'adresse IP ; le port par défaut est 4403 s'il est omis",
     "hintMeshtasticTcp1": "Entrez l'adresse IP ou le nom d'hôte d'un nœud Meshtastic connecté au WiFi avec TCP activé (port par défaut 4403). Beaucoup plus rapide que le WiFi/HTTP pour les grandes bases de données de nœuds.",
     "hintMeshtasticTcp2": "Si la connexion n'est pas fiable (par exemple avec meshtastic.local), essayez plutôt l'adresse IP de l'appareil — le mDNS de bureau peut être floconneux.",
-    "channelPsksMqttOnlyIndexHint": "Sans radio connectée, les messages MQTT entrants sont acheminés vers les onglets de discussion par nom de canal. Utilisez ChannelName@index=base64 pour que chaque nom corresponde au bon emplacement — par exemple LongFast@1=AQ== lorsque votre canal maillé public est l'emplacement 1 (style Colorado-mesh). LongFast sans @ maps vers l'emplacement 0."
+    "channelPsksMqttOnlyIndexHint": "Sans radio connectée, les messages MQTT entrants sont acheminés vers les onglets de discussion par nom de canal. Utilisez ChannelName@index=base64 pour que chaque nom corresponde au bon emplacement — par exemple LongFast@1=AQ== lorsque votre canal maillé public est l'emplacement 1 (style Colorado-mesh). LongFast sans @ correspond à l'emplacement 0."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",
@@ -3270,7 +3270,7 @@
     "pausedPending": "{{count}} nouveau pendant la pause",
     "jumpToLatest": "Aller à la dernière",
     "colTime": "Heure",
-    "colHb": "[Hb]",
+    "colHb": "HB",
     "colType": "Type",
     "colPath": "Chemin",
     "colDetails": "Détails",
@@ -3302,10 +3302,10 @@
     "colDirectionTooltip": "Si la trame a été reçue ou transmise.",
     "colActionsTooltip": "Détails du ping/trace ou du nœud ouvert.",
     "sortColumnActiveTooltip": "Trié par {{column}} ({{direction}}). Cliquez pour inverser.",
-    "filterChipAdvertTooltip": "Afficher uniquement les paquets de publicité de nœud (PUBLICITÉ)",
+    "filterChipAdvertTooltip": "Afficher uniquement les paquets d’annonce de nœud (ADVERT)",
     "filterChipTxtMsgTooltip": "Afficher uniquement les messages texte directs (TXT_MSG)",
     "filterChipGrpTxtTooltip": "Afficher uniquement le texte du groupe/canal (GRP_TXT)",
-    "filterChipFloodTooltip": "Afficher les paquets acheminés par INONDATION (FLOOD / T_FLOOD)",
+    "filterChipFloodTooltip": "Afficher les paquets routés en flood (FLOOD / T_FLOOD)",
     "filterChipDirectTooltip": "Afficher les paquets acheminés DIRECTEMENT (DIRECT / T_DIRECT)",
     "filterChipRfTooltip": "Afficher les paquets reçus sur RF uniquement",
     "filterChipMqttTooltip": "Afficher uniquement les paquets reçus via la passerelle MQTT",

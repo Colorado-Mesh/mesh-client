@@ -500,6 +500,22 @@ Alternatively, enter the device's **IP address** directly instead of its `.local
 
 IPv6 addresses work for Meshtastic Wi‑Fi, MeshCore TCP, and Reticulum RNode Wi‑Fi. Use bracket form when a port is included: `[fe80::1]:4403` or `[fd00::1]:7633`. Bare IPv6 (e.g. `::1` or `fd00::1`) is accepted; the app normalizes bracket form for HTTP URLs automatically.
 
+### Meshtastic: WiFi/TCP (fast) vs WiFi/HTTP
+
+**WiFi/TCP (fast)** on the Connection tab uses Meshtastic's native binary streaming protocol on port **4403** (same `0x94 0xc3` framing as USB serial). Use it when the node exposes TCP and you need fast NodeDB sync — configure typically completes in about a second on large networks instead of 40–60+ seconds over HTTP REST (one packet per request).
+
+**WiFi/HTTP** remains the fallback when TCP is unavailable on the firmware.
+
+**Symptoms suggesting TCP:** HTTP connect succeeds but status stays on **Connecting** or **Configuring** for a long time with a large NodeDB (~250 nodes).
+
+**Address examples:** `192.168.1.10:4403`, `meshtastic.local:4403`, `[fd00::1]:4403`.
+
+### Meshtastic HTTP fails immediately with "Invalid host format"
+
+**Cause:** Builds before v5.21.x validated the hostname incorrectly when the address included a port (`192.168.1.10:443`), rejecting every HTTP connect.
+
+**Fix:** Upgrade to v5.21.2 or later. As a workaround on older builds, omit the port when the app default applies.
+
 Local/private targets include RFC1918 IPv4 (`10.x`, `172.16–31.x`, `192.168.x`), RFC4193 ULA (`fd00::/8`), link-local IPv6 (`fe80::/10`), loopback, and `.local` mDNS names.
 
 ## Sleep, wake, and long-running sessions
