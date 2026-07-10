@@ -4026,11 +4026,6 @@
       "tcp": "TCP",
       "other": "Прочее"
     },
-    "status": {
-      "available": "Fresh",
-      "unknown": "Неизвестно",
-      "stale": "Устарело"
-    },
     "empty": {
       "stackOff": "Запустите стек Reticulum, чтобы прослушать объявления об обнаружении RMAP.",
       "noDiscoveries": "Интерфейсы обнаружения RMAP еще не прослушаны.",

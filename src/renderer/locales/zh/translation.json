@@ -4026,11 +4026,6 @@
       "tcp": "TCP药水",
       "other": "其他"
     },
-    "status": {
-      "available": "新鲜",
-      "unknown": "未知",
-      "stale": "陈旧"
-    },
     "empty": {
       "stackOff": "启动Reticulum堆栈以收听RMAP发现通知。",
       "noDiscoveries": "尚未听到RMAP发现接口。",

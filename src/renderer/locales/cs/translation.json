@@ -4026,11 +4026,6 @@
       "tcp": "TCP",
       "other": "Jiný zdroj"
     },
-    "status": {
-      "available": "Čerstvé",
-      "unknown": "Neznámo",
-      "stale": "Staré"
-    },
     "empty": {
       "stackOff": "Spusťte zásobník Reticulum, abyste slyšeli oznámení o objevení RMAP.",
       "noDiscoveries": "Dosud nebylo slyšeno žádné rozhraní pro zjišťování RMAP.",

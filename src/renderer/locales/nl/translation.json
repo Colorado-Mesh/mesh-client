@@ -4026,11 +4026,6 @@
       "tcp": "TCP",
       "other": "Overig"
     },
-    "status": {
-      "available": "vers",
-      "unknown": "Onbekend",
-      "stale": "muf"
-    },
     "empty": {
       "stackOff": "Start de Reticulum-stack om RMAP-detectieaankondigingen te horen.",
       "noDiscoveries": "Nog geen RMAP-detectie-interfaces gehoord.",

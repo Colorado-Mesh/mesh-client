@@ -4026,11 +4026,6 @@
       "tcp": "TCP",
       "other": "その他"
     },
-    "status": {
-      "available": "フレッシュ（Fresh）",
-      "unknown": "不明",
-      "stale": "期限失効"
-    },
     "empty": {
       "stackOff": "Reticulumスタックを起動して、RMAP検出のアナウンスを聞きます。",
       "noDiscoveries": "RMAP検出インターフェースはまだ聴取されていません。",

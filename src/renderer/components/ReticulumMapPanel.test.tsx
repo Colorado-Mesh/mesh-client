@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -13,6 +13,8 @@ vi.mock('react-i18next', () => ({
 import ReticulumMapPanel from '@/renderer/components/ReticulumMapPanel';
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { useReticulumDiscoveryMapStore } from '@/renderer/stores/reticulumDiscoveryMapStore';
+
+const flyToMock = vi.fn();
 
 const { mapContainerMock, markerMock } = vi.hoisted(() => ({
   mapContainerMock: vi.fn(({ children }: { children: React.ReactNode }) => (
@@ -29,6 +31,7 @@ vi.mock('react-leaflet', () => ({
   useMap: () => ({
     setView: vi.fn(),
     fitBounds: vi.fn(),
+    flyTo: flyToMock,
   }),
 }));
 
@@ -54,6 +57,7 @@ vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
 describe('ReticulumMapPanel', () => {
   beforeEach(() => {
     useReticulumDiscoveryMapStore.getState().clear();
+    flyToMock.mockClear();
   });
 
   it('shows empty state when stack is off', () => {
@@ -96,6 +100,62 @@ describe('ReticulumMapPanel', () => {
     render(<ReticulumMapPanel stackConfigured={true} />);
     expect(screen.getByTestId('map-container')).toBeInTheDocument();
     expect(screen.getByText('LoRa Node')).toBeInTheDocument();
+  });
+
+  it('flies the map when a coord-known list row is clicked', () => {
+    useReticulumDiscoveryMapStore.getState().setDiscovered([
+      {
+        discovery_hash: 'abc',
+        transport_id: 'aa'.repeat(16),
+        discovery_name: 'LoRa Node',
+        interface_type: 'RNodeInterface',
+        latitude: 40,
+        longitude: -105,
+        height: 0,
+        transport_enabled: true,
+        hops: 1,
+        stamp_value: 14,
+        discovered: 1,
+        last_heard: 2,
+        heard_count: 1,
+        status: 'available',
+        has_coordinates: true,
+      },
+    ]);
+    render(<ReticulumMapPanel stackConfigured={true} />);
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'reticulumMap.openNodeAria:{"name":"LoRa Node"}',
+      }),
+    );
+    expect(flyToMock).toHaveBeenCalledWith([40, -105], 14, { duration: 0.5 });
+  });
+
+  it('shows scroll-to-top after the discovery list scrolls down', () => {
+    useReticulumDiscoveryMapStore.getState().setDiscovered(
+      Array.from({ length: 40 }, (_, index) => ({
+        discovery_hash: `hash-${index}`,
+        transport_id: index.toString(16).padStart(2, '0').repeat(16),
+        discovery_name: `Node ${index}`,
+        interface_type: 'RNodeInterface',
+        latitude: 40 + index * 0.01,
+        longitude: -105,
+        height: 0,
+        transport_enabled: true,
+        hops: 1,
+        stamp_value: 14,
+        discovered: 1,
+        last_heard: 2,
+        heard_count: 1,
+        status: 'available',
+        has_coordinates: true,
+      })),
+    );
+    render(<ReticulumMapPanel stackConfigured={true} />);
+    const list = screen.getByRole('list');
+    Object.defineProperty(list, 'scrollTop', { value: 400, configurable: true });
+    fireEvent.scroll(list);
+    expect(screen.getByRole('button', { name: 'aria.backToTop' })).toBeInTheDocument();
   });
 
   it('has no serious axe violations on filter pills', async () => {

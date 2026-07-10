@@ -4026,11 +4026,6 @@
       "tcp": "TCP",
       "other": "Inne"
     },
-    "status": {
-      "available": "Świeże",
-      "unknown": "Nieznany",
-      "stale": "Nadpsute"
-    },
     "empty": {
       "stackOff": "Uruchom stos Reticulum, aby usłyszeć zapowiedź odkrycia RMAP.",
       "noDiscoveries": "Nie słychać jeszcze interfejsów wykrywania RMAP.",

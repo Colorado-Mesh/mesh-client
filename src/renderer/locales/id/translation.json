@@ -4026,11 +4026,6 @@
       "tcp": "TCP",
       "other": "Lainnya"
     },
-    "status": {
-      "available": "Segar",
-      "unknown": "Tidak Diketahui",
-      "stale": "Basi"
-    },
     "empty": {
       "stackOff": "Mulai tumpukan Reticulum untuk mendengar pengumuman penemuan RMAP.",
       "noDiscoveries": "Belum ada antarmuka penemuan RMAP yang terdengar.",

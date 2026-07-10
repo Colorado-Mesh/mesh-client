@@ -3612,7 +3612,7 @@
     "heardOnly": "Heard only (not in path table)",
     "noCoords": "No GPS",
     "lastHeard": "Last heard {{time}}",
-    "openNodeAria": "Open details for {{name}}",
+    "openNodeAria": "Show {{name}} on map",
     "filter": {
       "all": "All",
       "rnode": "LoRa",
@@ -3620,11 +3620,6 @@
       "i2p": "I2P",
       "tcp": "TCP",
       "other": "Other"
-    },
-    "status": {
-      "available": "Fresh",
-      "unknown": "Unknown",
-      "stale": "Stale"
     },
     "empty": {
       "stackOff": "Start the Reticulum stack to hear RMAP discovery announces.",

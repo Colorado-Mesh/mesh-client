@@ -4026,11 +4026,6 @@
       "tcp": "TCP",
       "other": "Autre"
     },
-    "status": {
-      "available": "Fresh",
-      "unknown": "Inconnu",
-      "stale": "goût de vieux"
-    },
     "empty": {
       "stackOff": "Démarrez la pile Reticulum pour entendre les annonces de découverte du RMAP.",
       "noDiscoveries": "Aucune interface de découverte RMAP n'a encore été entendue.",

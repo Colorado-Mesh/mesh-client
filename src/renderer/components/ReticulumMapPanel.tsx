@@ -15,6 +15,7 @@ import {
   MapResizeInvalidator,
   MapViewportSaver,
 } from '@/renderer/components/map/leafletMapControls';
+import { CHAT_SCROLL_END_THRESHOLD } from '@/renderer/lib/chatScrollUtils';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { readStoredStaticGps } from '@/renderer/lib/gpsSource';
 import {
@@ -25,6 +26,7 @@ import {
 import {
   joinRmapDiscoveryWithPeers,
   matchesRmapInterfaceFilter,
+  type ReticulumMapMarkerRow,
   type RmapInterfaceFilter,
 } from '@/renderer/lib/reticulum/reticulumDiscoveryMapLayout';
 import { RMAP_GLOBAL_MAP_URL } from '@/renderer/lib/reticulum/reticulumRmapDiscovery';
@@ -40,6 +42,24 @@ import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
 const REFRESH_MS = 30_000;
 const DEFAULT_CENTER: [number, number] = [20, 0];
 const DEFAULT_ZOOM = 2;
+const LIST_FLY_ZOOM = 14;
+
+interface MapFlyTarget {
+  lat: number;
+  lon: number;
+  zoom: number;
+  token: number;
+}
+
+function MapFlyToController({ target }: { target: MapFlyTarget | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!target) return;
+    if (!Number.isFinite(target.lat) || !Number.isFinite(target.lon)) return;
+    map.flyTo([target.lat, target.lon], target.zoom, { duration: 0.5 });
+  }, [map, target]);
+  return null;
+}
 
 function FitBoundsOnMarkers({
   markers,
@@ -68,18 +88,9 @@ function FitBoundsOnMarkers({
   return null;
 }
 
-function markerColor(status: string, reachable: boolean, isDark: boolean): string {
+function markerColor(reachable: boolean, isDark: boolean): string {
   const colors = getMapOverlayColors(isDark);
-  if (reachable) {
-    return colors.online;
-  }
-  if (status === 'stale') {
-    return colors.stale;
-  }
-  if (status === 'available') {
-    return isDark ? '#38bdf8' : '#0369a1';
-  }
-  return colors.offline;
+  return reachable ? colors.online : colors.offline;
 }
 
 function buildMarkerIcon(color: string): L.DivIcon {
@@ -119,6 +130,10 @@ export default function ReticulumMapPanel({
   const peers = useReticulumPeerStore((s) => s.peers);
   const [filter, setFilter] = useState<RmapInterfaceFilter>('all');
   const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [flyTarget, setFlyTarget] = useState<MapFlyTarget | null>(null);
+  const [selectedHash, setSelectedHash] = useState<string | null>(null);
+  const [showScrollTopButton, setShowScrollTopButton] = useState(false);
+  const listScrollRef = useRef<HTMLUListElement>(null);
 
   const selfCoords = readStoredStaticGps();
 
@@ -191,6 +206,40 @@ export default function ReticulumMapPanel({
     [filter, layout.listOnly],
   );
 
+  const listRows = useMemo(
+    () =>
+      [...filteredMarkers, ...filteredListOnly].sort((a, b) =>
+        a.discovery_name.localeCompare(b.discovery_name),
+      ),
+    [filteredListOnly, filteredMarkers],
+  );
+
+  const handleListItemClick = useCallback((row: ReticulumMapMarkerRow) => {
+    setSelectedHash(row.discovery_hash);
+    const hasCoords =
+      row.has_coordinates &&
+      Number.isFinite(row.latitude) &&
+      Number.isFinite(row.longitude) &&
+      !(row.latitude === 0 && row.longitude === 0);
+    if (hasCoords) {
+      setFlyTarget({
+        lat: row.latitude,
+        lon: row.longitude,
+        zoom: LIST_FLY_ZOOM,
+        token: Date.now(),
+      });
+    }
+  }, []);
+
+  const updateListScrollTopButton = useCallback(() => {
+    const scrollTop = listScrollRef.current?.scrollTop ?? 0;
+    setShowScrollTopButton(scrollTop > CHAT_SCROLL_END_THRESHOLD);
+  }, []);
+
+  const scrollListToTop = useCallback(() => {
+    listScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const emptyReason = !stackConfigured
     ? 'stackOff'
     : discovered.length === 0
@@ -203,10 +252,8 @@ export default function ReticulumMapPanel({
     filteredMarkers.length > 0 || selfCoords != null || filteredListOnly.length > 0;
   const shouldFitOnMount = savedViewport == null && filteredMarkers.length > 0;
 
-  const reachableCount = useMemo(
-    () => [...filteredMarkers, ...filteredListOnly].filter((row) => row.reachable).length,
-    [filteredListOnly, filteredMarkers],
-  );
+  const reachableCount = useMemo(() => listRows.filter((row) => row.reachable).length, [listRows]);
+  const heardOnlyCount = listRows.length - reachableCount;
 
   return (
     <div className="flex h-full min-h-[500px] flex-col gap-3">
@@ -290,19 +337,25 @@ export default function ReticulumMapPanel({
         >
           <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">
             <div className="bg-deep-black/80 flex items-center gap-3 rounded-lg border border-gray-700 px-3 py-1.5 text-xs backdrop-blur-sm">
-              <span className="flex items-center gap-1 text-slate-200">
+              <span
+                className="flex items-center gap-1 text-slate-200"
+                title={t('reticulumMap.reachable')}
+              >
                 <span
                   className="inline-block h-2 w-2 rounded-full"
                   style={{ backgroundColor: overlayColors.online }}
                 />
                 {reachableCount}
               </span>
-              <span className="flex items-center gap-1 text-slate-200">
+              <span
+                className="flex items-center gap-1 text-slate-200"
+                title={t('reticulumMap.heardOnly')}
+              >
                 <span
                   className="inline-block h-2 w-2 rounded-full"
-                  style={{ backgroundColor: overlayColors.stale }}
+                  style={{ backgroundColor: overlayColors.offline }}
                 />
-                {filteredMarkers.length + filteredListOnly.length - reachableCount}
+                {heardOnlyCount}
               </span>
             </div>
             <MapBasemapControl />
@@ -325,6 +378,7 @@ export default function ReticulumMapPanel({
             <MapResizeInvalidator active />
             <MapViewportSaver hasAnyPositions={hasMapPositions} />
             <LocateMeControl onLocateMe={locateMe} />
+            <MapFlyToController target={flyTarget} />
             <FitBoundsOnMarkers
               markers={filteredMarkers}
               selfLat={selfCoords?.lat}
@@ -343,7 +397,7 @@ export default function ReticulumMapPanel({
               <Marker
                 key={row.discovery_hash}
                 position={[row.latitude, row.longitude]}
-                icon={buildMarkerIcon(markerColor(row.status, row.reachable, basemap.isDark))}
+                icon={buildMarkerIcon(markerColor(row.reachable, basemap.isDark))}
                 eventHandlers={{
                   click: () => onPeerClick?.(row.transport_id),
                 }}
@@ -405,53 +459,74 @@ export default function ReticulumMapPanel({
           ) : null}
         </div>
 
-        <aside className="flex max-h-[420px] flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-900/50 lg:max-h-none">
-          <h3 className="border-b border-slate-700 px-3 py-2 text-xs font-semibold tracking-wide text-slate-400 uppercase">
+        <aside className="relative flex min-h-0 flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-900/50">
+          <h3 className="shrink-0 border-b border-slate-700 px-2 py-1.5 text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
             {t('reticulumMap.listTitle')}
           </h3>
-          <ul className="min-h-0 flex-1 overflow-y-auto text-sm">
-            {[...filteredMarkers, ...filteredListOnly].length === 0 ? (
-              <li className="px-3 py-4 text-xs text-slate-500">{t('reticulumMap.empty.hint')}</li>
+          <ul
+            ref={listScrollRef}
+            onScroll={updateListScrollTopButton}
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+          >
+            {listRows.length === 0 ? (
+              <li className="px-2 py-3 text-[11px] text-slate-500">
+                {t('reticulumMap.empty.hint')}
+              </li>
             ) : (
-              [...filteredMarkers, ...filteredListOnly].map((row) => (
-                <li
-                  key={row.discovery_hash}
-                  className="border-b border-slate-800 px-3 py-2 last:border-b-0"
-                >
-                  <button
-                    type="button"
-                    className="w-full text-left"
-                    onClick={() => onPeerClick?.(row.transport_id)}
-                    aria-label={t('reticulumMap.openNodeAria', { name: row.discovery_name })}
+              listRows.map((row) => {
+                const hasCoords =
+                  row.has_coordinates &&
+                  Number.isFinite(row.latitude) &&
+                  Number.isFinite(row.longitude) &&
+                  !(row.latitude === 0 && row.longitude === 0);
+                const isSelected = selectedHash === row.discovery_hash;
+                return (
+                  <li
+                    key={row.discovery_hash}
+                    className="border-b border-slate-800/80 last:border-b-0"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate font-medium text-slate-100">
-                        {row.discovery_name}
-                      </span>
-                      <span
-                        className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                          row.status === 'available'
-                            ? 'bg-green-700 text-white'
-                            : row.status === 'stale'
-                              ? 'bg-violet-700 text-white'
-                              : 'bg-slate-600 text-white'
-                        }`}
-                      >
-                        {t(`reticulumMap.status.${row.status}`, {
-                          defaultValue: row.status,
-                        })}
-                      </span>
-                    </div>
-                    <div className="mt-0.5 truncate text-xs text-slate-400">
-                      {row.interface_type}
-                      {row.reachable ? ` · ${t('reticulumMap.reachable')}` : ''}
-                      {!row.has_coordinates ? ` · ${t('reticulumMap.noCoords')}` : ''}
-                    </div>
-                  </button>
-                </li>
-              ))
+                    <button
+                      type="button"
+                      className={`w-full px-2 py-1 text-left transition-colors hover:bg-slate-800/70 ${
+                        isSelected ? 'bg-slate-800/90' : ''
+                      }`}
+                      onClick={() => {
+                        handleListItemClick(row);
+                      }}
+                      aria-label={t('reticulumMap.openNodeAria', { name: row.discovery_name })}
+                      aria-current={isSelected ? 'true' : undefined}
+                    >
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <span
+                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                            row.reachable ? 'bg-brand-green' : 'bg-slate-500'
+                          }`}
+                          aria-hidden
+                        />
+                        <span className="truncate text-xs font-medium text-slate-100">
+                          {row.discovery_name}
+                        </span>
+                      </div>
+                      <div className="truncate pl-3 text-[10px] leading-tight text-slate-500">
+                        {row.interface_type}
+                        {!hasCoords ? ` · ${t('reticulumMap.noCoords')}` : ''}
+                      </div>
+                    </button>
+                  </li>
+                );
+              })
             )}
           </ul>
+          {showScrollTopButton ? (
+            <button
+              type="button"
+              onClick={scrollListToTop}
+              className="bg-secondary-dark absolute top-9 right-2 z-10 rounded-full border border-gray-600 px-2.5 py-1 text-[10px] font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
+              aria-label={t('aria.backToTop')}
+            >
+              {t('app.scrollToTop')}
+            </button>
+          ) : null}
         </aside>
       </div>
     </div>

@@ -4026,11 +4026,6 @@
       "tcp": "TCP",
       "other": "Diğer"
     },
-    "status": {
-      "available": "Fresh",
-      "unknown": "Bilinmiyor",
-      "stale": "bayat"
-    },
     "empty": {
       "stackOff": "RMAP keşif duyurularını duymak için Reticulum yığınını başlatın.",
       "noDiscoveries": "Henüz hiçbir RMAP keşif arayüzü duyulmadı.",

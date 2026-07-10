@@ -4026,11 +4026,6 @@
       "tcp": "TCP",
       "other": "Sonstige"
     },
-    "status": {
-      "available": "Frisch",
-      "unknown": "Unbekannt",
-      "stale": "a"
-    },
     "empty": {
       "stackOff": "Starten Sie den Reticulum-Stack, um RMAP-Discovery-Ankündigungen zu hören.",
       "noDiscoveries": "Noch keine RMAP-Erkennungsschnittstellen zu hören.",

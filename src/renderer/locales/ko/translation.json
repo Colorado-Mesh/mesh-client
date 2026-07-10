@@ -4026,11 +4026,6 @@
       "tcp": "TCP",
       "other": "기타"
     },
-    "status": {
-      "available": "Fresh",
-      "unknown": "미상",
-      "stale": "오래됨"
-    },
     "empty": {
       "stackOff": "RMAP 검색 발표를 들으려면 Reticulum 스택을 시작하십시오.",
       "noDiscoveries": "아직 RMAP 검색 인터페이스가 들리지 않았습니다.",
