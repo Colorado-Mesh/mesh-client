@@ -74,6 +74,7 @@ The **Log panel** (right rail, toggled from **App → Log panel**) is shared acr
 | RNS_Transport_US-East         | TCP  | `45.77.109.86:4965`                                            |
 | RNS Testnet I2P Hub A         | I2P  | `g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p` |
 | Ratspeak                      | TCP  | `rns.ratspeak.org:4242`                                        |
+| RMAP World                    | TCP  | `rmap.world:4242`                                              |
 
 Configure a Reticulum identity on the **Network** tab before adding interfaces; the panel disables interface actions until identity is ready.
 

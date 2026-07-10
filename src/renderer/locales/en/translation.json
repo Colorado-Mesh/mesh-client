@@ -1332,7 +1332,11 @@
         "auto_interface_down": "AutoInterface \"{{name}}\" is enabled but down.",
         "missing_shared_instance": "Share instance is on but SharedInstanceServer is not up.",
         "shared_instance_unexpected": "SharedInstanceServer is live but share_instance is off.",
-        "runtime_only_interface": "\"{{name}}\" is runtime-only (not stored in config)."
+        "runtime_only_interface": "\"{{name}}\" is runtime-only (not stored in config).",
+        "rmap_missing_coordinates": "Interface \"{{name}}\" is discoverable but missing valid map coordinates.",
+        "rmap_no_tcp_hub": "Discoverable local RNode has no enabled TCP client hub for internet reachability.",
+        "rmap_transport_disabled": "Discoverable interfaces are configured but transport mode is off.",
+        "rmap_i2p_not_connectable": "I2P interface \"{{name}}\" is discoverable but connectable is not yes."
       }
     }
   },
@@ -3490,6 +3494,33 @@
     "clearAnnounces": "Clear announces",
     "clearAnnouncesDone": "Announces cleared.",
     "clearAnnouncesFailed": "Failed to clear announces."
+  },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v4 discovery",
+    "publishToggle": "Publish on RMAP v4",
+    "hint": "Applies discoverable=yes and your App GPS coordinates to enabled local interfaces (RNode, BLE, I2P). Adds and enables the rmap.world transport hub.",
+    "coordsStatus": "Map coordinates: {{lat}}, {{lon}} (from App → GPS / Location)",
+    "gpsMissingWarning": "Set static GPS in App → GPS / Location before publishing on RMAP.",
+    "announceIntervalMin": "Announce interval (minutes)",
+    "heightMeters": "Height above sea level (m, optional)",
+    "reachableOn": "Reachable on (hostname or script, optional)",
+    "helpLink": "RMAP guide",
+    "gpsRequiredTitle": "GPS coordinates required",
+    "gpsRequiredBody": "RMAP map markers need latitude and longitude. Set static coordinates under App → GPS / Location, then try again.",
+    "openAppGps": "Open App GPS settings",
+    "applySuccess": "RMAP discovery settings applied.",
+    "disableSuccess": "RMAP publishing disabled on local interfaces.",
+    "applyFailed": "Failed to apply RMAP settings: {{error}}",
+    "noPublishTargets": "No enabled local interfaces to publish. Enable an RNode, BLE peer, or I2P interface first.",
+    "restartTitle": "Restart Reticulum stack?",
+    "restartBody": "Interface and transport changes require a stack restart to take effect.",
+    "restartConfirm": "Restart now",
+    "restartFailed": "Stack restart failed: {{error}}",
+    "reachableOnError": {
+      "invalid": "Invalid reachable on value.",
+      "invalidHost": "Invalid hostname for reachable on.",
+      "tooLong": "Reachable on value is too long."
+    }
   },
   "reticulumIdentitySwitcher": {
     "label": "Active identity",

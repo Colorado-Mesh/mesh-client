@@ -1302,7 +1302,11 @@
         "auto_interface_down": "La interfaz automática \"{{name}}\" está habilitada pero inactiva.",
         "missing_shared_instance": "La instancia compartida está activada pero SharedInstanceServer no está activo.",
         "shared_instance_unexpected": "SharedInstanceServer está activo pero share_instance está desactivado.",
-        "runtime_only_interface": "\"{{name}}\" es solo de tiempo de ejecución (no almacenado en la configuración)."
+        "runtime_only_interface": "\"{{name}}\" es solo de tiempo de ejecución (no almacenado en la configuración).",
+        "rmap_missing_coordinates": "La interfaz \"{{name}}\" se puede descubrir pero faltan coordenadas de mapa válidas.",
+        "rmap_no_tcp_hub": "El RNode local detectable no tiene un concentrador de clientes TCP habilitado para la accesibilidad a Internet.",
+        "rmap_transport_disabled": "Las interfaces detectables están configuradas, pero el modo de transporte está desactivado.",
+        "rmap_i2p_not_connectable": "La interfaz I2P \"{{name}}\" es detectable pero no es conectable."
       },
       "runtime": {
         "rnsNotReady": "La pila RNS no está lista",
@@ -3950,5 +3954,32 @@
     "menuToastAvailableTitle": "Actualización disponible",
     "menuToastAvailableBody": "La versión {{version}} está disponible.",
     "menuToastErrorTitle": "Error en la comprobación de actualizaciones"
+  },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "Descubrimiento de RMAP v4",
+    "publishToggle": "Publicar en RMAP v4",
+    "hint": "Aplica discoverable=yes y las coordenadas GPS de su aplicación a las interfaces locales habilitadas (RNode, ble, I2P). Añade y habilita el centro de transporte rmap.world.",
+    "coordsStatus": "Coordenadas del mapa: {{lat}}, {{lon}} (desde la aplicación → GPS / Ubicación)",
+    "gpsMissingWarning": "Configure el GPS estático en App → GPS / Location antes de publicar en RMAP.",
+    "announceIntervalMin": "Intervalo de anuncio (minutos)",
+    "heightMeters": "Altura sobre el nivel del mar (m, opcional)",
+    "reachableOn": "Accesible en (nombre de host o script, opcional)",
+    "helpLink": "Guía RMAP",
+    "gpsRequiredTitle": "Se requieren coordenadas GPS",
+    "gpsRequiredBody": "Los marcadores de mapa RMAP necesitan latitud y longitud. Establezca las coordenadas estáticas en App → GPS / Location, luego inténtelo de nuevo.",
+    "openAppGps": "Abrir la configuración del GPS de la aplicación",
+    "applySuccess": "Configuración de descubrimiento de RMAP aplicada.",
+    "disableSuccess": "Publicación RMAP deshabilitada en interfaces locales.",
+    "applyFailed": "Error al aplicar la configuración de RMAP: {{error}}",
+    "noPublishTargets": "No hay interfaces locales habilitadas para publicar. Habilite primero una interfaz RNode, ble peer o I2P.",
+    "restartTitle": "¿Reiniciar la pila Reticulum?",
+    "restartBody": "Los cambios en la interfaz y el transporte requieren un reinicio de la pila para que surta efecto.",
+    "restartConfirm": "Reiniciar ahora",
+    "restartFailed": "Error al reiniciar la pila: {{error}}",
+    "reachableOnError": {
+      "invalid": "No válido accesible en el valor.",
+      "invalidHost": "Nombre de host no válido para estar disponible el.",
+      "tooLong": "El valor alcanzable es demasiado largo."
+    }
   }
 }

@@ -552,11 +552,15 @@ describe('ReticulumInterfacesPanel', () => {
     );
 
     await waitFor(() => {
-      expect(proxyPost).toHaveBeenCalledTimes(1);
+      expect(proxyPost).toHaveBeenCalledTimes(2);
     });
     expect(proxyPost).toHaveBeenCalledWith(
       '/api/v1/interfaces',
       buildDefaultHubAddRequest(RETICULUM_DEFAULT_HUB_PRESETS[4]),
+    );
+    expect(proxyPost).toHaveBeenCalledWith(
+      '/api/v1/interfaces',
+      buildDefaultHubAddRequest(RETICULUM_DEFAULT_HUB_PRESETS[5]),
     );
   });
 

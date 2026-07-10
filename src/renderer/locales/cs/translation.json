@@ -1302,7 +1302,11 @@
         "auto_interface_down": "Automatické rozhraní „{{name}}“ je povoleno, ale nefunguje.",
         "missing_shared_instance": "Sdílená instance je zapnutá, ale SharedInstanceServer není aktivní.",
         "shared_instance_unexpected": "SharedInstanceServer je aktivní, ale share_instance je vypnutá.",
-        "runtime_only_interface": "„{{name}}“ je pouze runtime (není uloženo v konfiguraci)."
+        "runtime_only_interface": "„{{name}}“ je pouze runtime (není uloženo v konfiguraci).",
+        "rmap_missing_coordinates": "Rozhraní „{{name}}“ je zjistitelné, ale chybí platné souřadnice mapy.",
+        "rmap_no_tcp_hub": "Detekovatelný místní RNode nemá aktivované TCP klientské centrum pro dostupnost internetu.",
+        "rmap_transport_disabled": "Detekovatelná rozhraní jsou nakonfigurována, ale režim přenosu je vypnutý.",
+        "rmap_i2p_not_connectable": "Rozhraní I2P „{{name}}“ je zjistitelné, ale připojitelné není ano."
       },
       "runtime": {
         "rnsNotReady": "Zásobník RNS není připraven",
@@ -3950,5 +3954,32 @@
     "menuToastAvailableTitle": "Aktualizace k dispozici",
     "menuToastAvailableBody": "Verze {{version}} je k dispozici.",
     "menuToastErrorTitle": "Kontrola aktualizace se nezdařila"
+  },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "Objevení RMAP v4",
+    "publishToggle": "Zveřejnit na RMAP v4",
+    "hint": "Platí pro zjistitelné=ano a GPS souřadnice vaší aplikace pro povolená místní rozhraní (RNode, ble, I2P). Přidává a povoluje dopravní uzel rmap.world.",
+    "coordsStatus": "Souřadnice mapy: {{lat}}, {{lon}} (z aplikace → GPS / Umístění)",
+    "gpsMissingWarning": "Před zveřejněním na RMAP nastavte v aplikaci → GPS / Location statickou GPS.",
+    "announceIntervalMin": "Interval oznámení (minuty)",
+    "heightMeters": "Výška nad hladinou moře (m, volitelně)",
+    "reachableOn": "K dispozici na (název hostitele nebo skript, volitelné)",
+    "helpLink": "Průvodce RMAP",
+    "gpsRequiredTitle": "Vyžadovány souřadnice GPS",
+    "gpsRequiredBody": "Značky mapy RMAP potřebují zeměpisnou šířku a délku. Nastavte statické souřadnice v → GPS / poloze aplikace a zkuste to znovu.",
+    "openAppGps": "Otevřít nastavení aplikace",
+    "applySuccess": "Bylo použito nastavení zjišťování RMAP.",
+    "disableSuccess": "Publikování RMAP je zakázáno na místních rozhraních.",
+    "applyFailed": "Nepodařilo se použít nastavení RMAP: {{error}}",
+    "noPublishTargets": "Žádná povolená místní rozhraní k publikování. Nejprve povolte rozhraní RNode, ble peer nebo I2P.",
+    "restartTitle": "Restartovat Reticulum stack?",
+    "restartBody": "Změny rozhraní a přepravy vyžadují restart zásobníku, aby se projevily.",
+    "restartConfirm": "Restartovat nyní",
+    "restartFailed": "Restart zásobníku se nezdařil: {{error}}",
+    "reachableOnError": {
+      "invalid": "Neplatná dosažitelná hodnota.",
+      "invalidHost": "Neplatné jméno hostitele pro dosažitelné dne.",
+      "tooLong": "Dosažitelná hodnota je příliš dlouhá."
+    }
   }
 }

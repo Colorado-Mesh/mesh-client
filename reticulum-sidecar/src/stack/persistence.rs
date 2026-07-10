@@ -256,6 +256,14 @@ impl PersistedState {
             id_interval: req.id_interval,
             mode: req.mode,
             seed_addresses: req.seed_addresses,
+            discoverable: req.discoverable,
+            latitude: req.latitude,
+            longitude: req.longitude,
+            height: req.height,
+            discovery_name: req.discovery_name,
+            announce_interval_min: req.announce_interval_min,
+            connectable: req.connectable,
+            reachable_on: req.reachable_on,
         };
         self.interfaces.push(row.clone());
         self.rns_ready = true;

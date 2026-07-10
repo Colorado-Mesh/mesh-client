@@ -1302,7 +1302,11 @@
         "auto_interface_down": "自动接口“{{name}}”已启用但已关闭。",
         "missing_shared_instance": "共享实例已开启，但 SharedInstanceServer 未启动。",
         "shared_instance_unexpected": "SharedInstanceServer 已启用，但 share_instance 已关闭。",
-        "runtime_only_interface": "“{{name}}”仅是运行时的（不存储在配置中）。"
+        "runtime_only_interface": "“{{name}}”仅是运行时的（不存储在配置中）。",
+        "rmap_missing_coordinates": "接口“{{name}}”是可发现的，但缺少有效的地图坐标。",
+        "rmap_no_tcp_hub": "可发现的本地RNode没有启用TCP客户端集线器以实现互联网可访问性。",
+        "rmap_transport_disabled": "已配置可发现的接口，但传输模式已关闭。",
+        "rmap_i2p_not_connectable": "I2P接口“{{name}}”是可发现的，但不是可连接的。"
       },
       "runtime": {
         "rnsNotReady": "RNS 堆栈尚未准备好",
@@ -3950,5 +3954,32 @@
     "menuToastAvailableTitle": "更新可用",
     "menuToastAvailableBody": "版本 {{version}} 可用。",
     "menuToastErrorTitle": "更新检查失败"
+  },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v4发现",
+    "publishToggle": "在RMAP v4上发布",
+    "hint": "将discoverable = yes和您的应用GPS坐标应用于启用的本地接口（ RNode、BLE、I2P ）。添加并启用rmap.world传输中心。",
+    "coordsStatus": "地图坐标： {{lat}}、{{lon}} （来自App → GPS/位置）",
+    "gpsMissingWarning": "在RMAP上发布之前，在应用→GPS/位置中设置静态GPS。",
+    "announceIntervalMin": "公告间隔（分钟）",
+    "heightMeters": "海拔高度（米，可选）",
+    "reachableOn": "可访问（主机名或脚本，可选）",
+    "helpLink": "RMAP指南",
+    "gpsRequiredTitle": "需要GPS坐标",
+    "gpsRequiredBody": "RMAP地图标记需要纬度和经度。在应用→GPS/位置下设置静态坐标，然后重试。",
+    "openAppGps": "打开应用GPS设置",
+    "applySuccess": "已应用RMAP发现设置。",
+    "disableSuccess": "在本地接口上禁用RMAP发布。",
+    "applyFailed": "无法应用RMAP设置： {{error}}",
+    "noPublishTargets": "没有已启用的本地接口可发布。首先启用RNode、BLE对等体或I2P接口。",
+    "restartTitle": "重新启动Reticulum堆栈？",
+    "restartBody": "接口和传输更改需要堆栈重新启动才能生效。",
+    "restartConfirm": "现在重启",
+    "restartFailed": "堆栈重启失败： {{error}}",
+    "reachableOnError": {
+      "invalid": "值上的可访问性无效。",
+      "invalidHost": "上可访问的主机名无效。",
+      "tooLong": "可触及的值太长。"
+    }
   }
 }

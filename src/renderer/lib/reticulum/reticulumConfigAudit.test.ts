@@ -69,4 +69,27 @@ describe('reticulumConfigAudit', () => {
     expect(row?.reticulumRepairKind).toBe('disable');
     expect(row?.causeI18n?.key).toBe('diagnosticsPanel.reticulum.audit.tcp_unreachable');
   });
+
+  it.each([
+    'rmap_missing_coordinates',
+    'rmap_no_tcp_hub',
+    'rmap_transport_disabled',
+    'rmap_i2p_not_connectable',
+  ] as const)('auditIssuesToDiagnosticRows maps %s i18n key', (kind) => {
+    const rows = auditIssuesToDiagnosticRows(
+      [
+        {
+          kind,
+          severity: 'warning',
+          interface_id: 'iface-1',
+          interface_name: 'Test',
+          message: 'msg',
+          repair_kind: 'edit',
+        },
+      ],
+      1,
+    );
+    const row = rows[0] as RfDiagnosticRow;
+    expect(row?.causeI18n?.key).toBe(`diagnosticsPanel.reticulum.audit.${kind}`);
+  });
 });

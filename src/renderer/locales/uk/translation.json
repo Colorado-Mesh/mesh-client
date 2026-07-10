@@ -1302,7 +1302,11 @@
         "auto_interface_down": "Автоінтерфейс \"{{name}}\" увімкнено, але не працює.",
         "missing_shared_instance": "Спільний екземпляр увімкнено, але SharedInstanceServer не працює.",
         "shared_instance_unexpected": "SharedInstanceServer працює, але share_instance вимкнено.",
-        "runtime_only_interface": "\"{{name}}\" лише для виконання (не зберігається в конфігурації)."
+        "runtime_only_interface": "\"{{name}}\" лише для виконання (не зберігається в конфігурації).",
+        "rmap_missing_coordinates": "Інтерфейс \"{{name}}\" можна виявити, але відсутні дійсні координати карти.",
+        "rmap_no_tcp_hub": "Локальний вузол Discoverable RNode не має ввімкненого клієнтського концентратора TCP для доступу до Інтернету.",
+        "rmap_transport_disabled": "Інтерфейси, які можна виявити, налаштовані, але режим транспортування вимкнено.",
+        "rmap_i2p_not_connectable": "Інтерфейс I2P \"{{name}}\" можна виявити, але неможливо підключити."
       },
       "runtime": {
         "rnsNotReady": "Стек RNS не готовий",
@@ -3950,5 +3954,32 @@
     "menuToastAvailableTitle": "Доступне оновлення",
     "menuToastAvailableBody": "Доступна версія {{version}}.",
     "menuToastErrorTitle": "Помилка перевірки оновлення"
+  },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "Виявлення RMAP v4",
+    "publishToggle": "Опублікувати на RMAP v4",
+    "hint": "Застосовує discoverable=yes та GPS-координати вашого додатка до увімкнених локальних інтерфейсів (RNode, BLE, I2P). Додає та вмикає транспортний вузол rmap.world.",
+    "coordsStatus": "Координати карти: {{lat}}, {{lon}} (від App → GPS / Location)",
+    "gpsMissingWarning": "Встановіть статичний GPS у додатку → GPS / Місцезнаходження перед публікацією на RMAP.",
+    "announceIntervalMin": "Інтервал оголошення (хвилини)",
+    "heightMeters": "Висота над рівнем моря (м, необов'язково)",
+    "reachableOn": "Доступно на (ім'я хосту або скрипт, необов'язково)",
+    "helpLink": "Посібник RMAP",
+    "gpsRequiredTitle": "Потрібні GPS-координати",
+    "gpsRequiredBody": "Маркерам карти RMAP потрібні широта та довгота. Встановіть статичні координати в розділі → GPS додатка/ Місцезнаходження, а потім повторіть спробу.",
+    "openAppGps": "Відкриття налаштувань програми",
+    "applySuccess": "Застосовано параметри виявлення RMAP.",
+    "disableSuccess": "Публікацію RMAP вимкнено на локальних інтерфейсах.",
+    "applyFailed": "Не вдалося застосувати налаштування RMAP: {{error}}",
+    "noPublishTargets": "Немає увімкнених локальних інтерфейсів для публікації. Спочатку увімкніть інтерфейс RNode, BLE або I2P.",
+    "restartTitle": "Перезапустити стек Reticulum?",
+    "restartBody": "Зміни інтерфейсу та транспортування вимагають перезапуску стека для набуття чинності.",
+    "restartConfirm": "Перезапустити зараз",
+    "restartFailed": "Помилка перезапуску стека: {{error}}",
+    "reachableOnError": {
+      "invalid": "Недійсне значення для значення.",
+      "invalidHost": "Недійсне ім'я хосту для reachable_on.",
+      "tooLong": "Доступне значення занадто довго."
+    }
   }
 }

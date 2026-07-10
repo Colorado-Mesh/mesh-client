@@ -51,7 +51,19 @@ export const RETICULUM_DEFAULT_HUB_PRESETS: readonly ReticulumDefaultHubPreset[]
     port: 4242,
     group: 'interop',
   },
+  {
+    id: 'rmap-world',
+    name: 'RMAP World',
+    type: 'tcp',
+    host: 'rmap.world',
+    port: 4242,
+    group: 'interop',
+  },
 ];
+
+export const RETICULUM_RMAP_WORLD_HUB_PRESET = RETICULUM_DEFAULT_HUB_PRESETS.find(
+  (preset) => preset.id === 'rmap-world',
+)!;
 
 function normalizeTcpHubHost(host: string): string {
   return stripConnectHostBrackets(host.trim()).toLowerCase();

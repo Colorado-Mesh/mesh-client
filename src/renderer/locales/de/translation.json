@@ -1302,7 +1302,11 @@
         "auto_interface_down": "AutoInterface „{{name}}“ ist aktiviert, aber nicht verfügbar.",
         "missing_shared_instance": "Die Share-Instanz ist aktiviert, aber SharedInstanceServer ist nicht aktiv.",
         "shared_instance_unexpected": "SharedInstanceServer ist aktiv, aber share_instance ist ausgeschaltet.",
-        "runtime_only_interface": "„{{name}}“ ist nur zur Laufzeit gültig (wird nicht in der Konfiguration gespeichert)."
+        "runtime_only_interface": "„{{name}}“ ist nur zur Laufzeit gültig (wird nicht in der Konfiguration gespeichert).",
+        "rmap_missing_coordinates": "Schnittstelle „{{name}}“ ist auffindbar, aber es fehlen gültige Kartenkoordinaten.",
+        "rmap_no_tcp_hub": "Der auffindbare lokale RNode hat keinen aktivierten TCP-Client-Hub für die Internet-Erreichbarkeit.",
+        "rmap_transport_disabled": "Erkennbare Schnittstellen sind konfiguriert, aber der Transportmodus ist ausgeschaltet.",
+        "rmap_i2p_not_connectable": "Die I2P-Schnittstelle \"{{name}}\" ist auffindbar, aber anschließbar ist nicht ja."
       },
       "runtime": {
         "rnsNotReady": "Der RNS-Stack ist nicht bereit",
@@ -3950,5 +3954,32 @@
     "menuToastAvailableTitle": "Update verfügbar",
     "menuToastAvailableBody": "Version {{version}} liegt vor.",
     "menuToastErrorTitle": "Update-Prüfung fehlgeschlagen"
+  },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v4 Entdeckung",
+    "publishToggle": "Auf RMAP v4 veröffentlichen",
+    "hint": "Wendet auffindbar=ja und Ihre App-GPS-Koordinaten auf aktivierte lokale Schnittstellen (RNode, BLE, I2P) an. Fügt den rmap.world-Transportknoten hinzu und aktiviert ihn.",
+    "coordsStatus": "Kartenkoordinaten: {{lat}}, {{lon}} (von App → GPS / Standort)",
+    "gpsMissingWarning": "Stellen Sie statisches GPS in App → GPS / Standort ein, bevor Sie es auf RMAP veröffentlichen.",
+    "announceIntervalMin": "Ankündigungsintervall (Minuten)",
+    "heightMeters": "Höhe über dem Meeresspiegel (m, optional)",
+    "reachableOn": "Erreichbar unter (Hostname oder Skript, optional)",
+    "helpLink": "RMAP-Leitfaden",
+    "gpsRequiredTitle": "GPS-Koordinaten erforderlich",
+    "gpsRequiredBody": "RMAP-Kartenmarkierungen benötigen Breitengrad und Längengrad. Legen Sie statische Koordinaten unter App → GPS / Standort fest und versuchen Sie es erneut.",
+    "openAppGps": "App-GPS-Einstellungen öffnen",
+    "applySuccess": "RMAP-Erkennungseinstellungen angewendet.",
+    "disableSuccess": "RMAP-Publishing auf lokalen Schnittstellen deaktiviert.",
+    "applyFailed": "RMAP-Einstellungen konnten nicht angewendet werden: {{error}}",
+    "noPublishTargets": "Keine aktivierten lokalen Schnittstellen zum Veröffentlichen. Aktivieren Sie zuerst eine RNode-, BLE-Peer- oder I2P-Schnittstelle.",
+    "restartTitle": "Reticulum-Stapel neu starten?",
+    "restartBody": "Schnittstellen- und Transportänderungen erfordern einen Neustart des Stapels, um wirksam zu werden.",
+    "restartConfirm": "Jetzt neu starten",
+    "restartFailed": "Stack-Neustart fehlgeschlagen: {{error}}",
+    "reachableOnError": {
+      "invalid": "Ungültiger erreichbarer Wert.",
+      "invalidHost": "Ungültiger Hostname für erreichbar am.",
+      "tooLong": "Der erreichbare Wert ist zu lang."
+    }
   }
 }

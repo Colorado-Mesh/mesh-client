@@ -1302,7 +1302,11 @@
         "auto_interface_down": "Автоинтерфейс «{{name}}» включен, но не работает.",
         "missing_shared_instance": "Экземпляр общего ресурса включен, но SharedInstanceServer не работает.",
         "shared_instance_unexpected": "SharedInstanceServer активен, но ресурс Share_instance отключен.",
-        "runtime_only_interface": "«{{name}}» используется только во время выполнения (не хранится в конфигурации)."
+        "runtime_only_interface": "«{{name}}» используется только во время выполнения (не хранится в конфигурации).",
+        "rmap_missing_coordinates": "Интерфейс \"{{name}}\" обнаруживается, но отсутствуют действительные координаты карты.",
+        "rmap_no_tcp_hub": "Обнаруживаемый локальный RNode не имеет включенного клиентского концентратора TCP для доступа в Интернет.",
+        "rmap_transport_disabled": "Обнаруживаемые интерфейсы настроены, но режим транспортировки выключен.",
+        "rmap_i2p_not_connectable": "Интерфейс I2P \"{{name}}\" обнаруживается, но не подключается."
       },
       "runtime": {
         "rnsNotReady": "Стек RNS не готов",
@@ -3950,5 +3954,32 @@
     "menuToastAvailableTitle": "Доступны обновления",
     "menuToastAvailableBody": "Доступна версия {{version}}.",
     "menuToastErrorTitle": "Не удалось выполнить проверку на наличие обновлений службы"
+  },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "Обнаружение RMAP v4",
+    "publishToggle": "Опубликовать на RMAP v4",
+    "hint": "Применяет discoverable=yes и координаты GPS вашего приложения к включенным локальным интерфейсам (RNode, BLE, I2P). Добавляет и включает транспортный узел rmap.world.",
+    "coordsStatus": "Координаты карты: {{lat}}, {{lon}} (из приложения → GPS / Location)",
+    "gpsMissingWarning": "Установите статический GPS в приложении → GPS / Местоположение перед публикацией на RMAP.",
+    "announceIntervalMin": "Объявить интервал (минуты)",
+    "heightMeters": "Высота над уровнем моря (м, опционально)",
+    "reachableOn": "Доступно на (имя хоста или скрипт, необязательно)",
+    "helpLink": "Руководство RMAP",
+    "gpsRequiredTitle": "Sono necessarie le coordinate GPS",
+    "gpsRequiredBody": "Маркерам карты RMAP нужны широта и долгота. Установите статические координаты в разделе → GPS приложения/ Местоположение, а затем повторите попытку.",
+    "openAppGps": "Открыть настройки приложения",
+    "applySuccess": "Применены параметры обнаружения RMAP.",
+    "disableSuccess": "Публикация RMAP отключена на локальных интерфейсах.",
+    "applyFailed": "Не удалось применить настройки RMAP: {{error}}",
+    "noPublishTargets": "Нет включенных локальных интерфейсов для публикации. Сначала включите интерфейс RNode, BLE peer или I2P.",
+    "restartTitle": "Перезапустить стек Reticulum?",
+    "restartBody": "Изменения интерфейса и транспортировки требуют перезапуска стека для вступления в силу.",
+    "restartConfirm": "Перезапустить сейчас",
+    "restartFailed": "Сбой перезапуска стека: {{error}}",
+    "reachableOnError": {
+      "invalid": "Недопустимое значение, доступное для значения.",
+      "invalidHost": "Недопустимое имя хоста, доступного на.",
+      "tooLong": "Достижимое значение слишком длинное."
+    }
   }
 }

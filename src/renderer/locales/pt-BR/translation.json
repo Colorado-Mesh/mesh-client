@@ -1302,7 +1302,11 @@
         "auto_interface_down": "AutoInterface \"{{name}}\" está habilitado, mas inativo.",
         "missing_shared_instance": "A instância de compartilhamento está ativada, mas o SharedInstanceServer não está ativo.",
         "shared_instance_unexpected": "SharedInstanceServer está ativo, mas share_instance está desativado.",
-        "runtime_only_interface": "\"{{name}}\" é apenas em tempo de execução (não armazenado na configuração)."
+        "runtime_only_interface": "\"{{name}}\" é apenas em tempo de execução (não armazenado na configuração).",
+        "rmap_missing_coordinates": "A interface \"{{name}}\" é detectável, mas faltam coordenadas válidas do mapa.",
+        "rmap_no_tcp_hub": "RNode local detectável não tem hub de cliente TCP habilitado para acessibilidade à Internet.",
+        "rmap_transport_disabled": "As interfaces detectáveis estão configuradas, mas o modo de transporte está desligado.",
+        "rmap_i2p_not_connectable": "A interface I2P \"{{name}}\" é detectável, mas conectável não é sim."
       },
       "runtime": {
         "rnsNotReady": "A pilha RNS não está pronta",
@@ -3950,5 +3954,32 @@
     "menuToastAvailableTitle": "Atualização disponível",
     "menuToastAvailableBody": "A versão {{version}} está disponível.",
     "menuToastErrorTitle": "verificação de atualização falhou"
+  },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "Descoberta do RMAP v4",
+    "publishToggle": "Publicar no RMAP v4",
+    "hint": "Aplica-se detectável=sim e seu aplicativo GPS coordena as interfaces locais ativadas (RNode, BLE, I2P). Adiciona e ativa o hub de transporte rmap.world.",
+    "coordsStatus": "Coordenadas do mapa: {{lat}}, {{lon}} (a partir do → GPS da aplicação/ localização)",
+    "gpsMissingWarning": "Defina o GPS estático no aplicativo → GPS / Localização antes de publicar no RMAP.",
+    "announceIntervalMin": "Intervalo de anúncio (minutos)",
+    "heightMeters": "Altura acima do nível do mar (m, opcional)",
+    "reachableOn": "Acessível em (nome do host ou script, opcional)",
+    "helpLink": "Guia RMAP",
+    "gpsRequiredTitle": "Coordenadas GPS necessárias",
+    "gpsRequiredBody": "Os marcadores de mapa RMAP precisam de latitude e longitude. Defina as coordenadas estáticas no aplicativo → GPS / Localização e tente novamente.",
+    "openAppGps": "Abrir configurações do aplicativo",
+    "applySuccess": "Configurações de descoberta de RMAP aplicadas.",
+    "disableSuccess": "Publicação RMAP desativada em interfaces locais.",
+    "applyFailed": "Falha ao aplicar as configurações de RMAP: {{error}}",
+    "noPublishTargets": "Nenhuma interface local habilitada para publicação. Habilite uma interface RNode, BLE peer ou I2P primeiro.",
+    "restartTitle": "Reiniciar a pilha Reticulum?",
+    "restartBody": "As alterações de interface e transporte exigem uma reinicialização da pilha para entrar em vigor.",
+    "restartConfirm": "Reiniciar agora",
+    "restartFailed": "Falha ao reiniciar a pilha: {{error}}",
+    "reachableOnError": {
+      "invalid": "Valor alcançável inválido.",
+      "invalidHost": "Nome de anfitrião inválido para contactável em.",
+      "tooLong": "O valor alcançável é muito longo."
+    }
   }
 }

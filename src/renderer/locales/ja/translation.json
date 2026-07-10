@@ -1302,7 +1302,11 @@
         "auto_interface_down": "AutoInterface \"{{name}}\" は有効ですが、ダウンしています。",
         "missing_shared_instance": "共有インスタンスはオンですが、SharedInstanceServer が起動していません。",
         "shared_instance_unexpected": "SharedInstanceServer はライブですが、share_instance はオフです。",
-        "runtime_only_interface": "「{{name}}」は実行時のみです (構成には保存されません)。"
+        "runtime_only_interface": "「{{name}}」は実行時のみです (構成には保存されません)。",
+        "rmap_missing_coordinates": "インターフェース「{{name}}」は検出可能ですが、有効なマップ座標がありません。",
+        "rmap_no_tcp_hub": "検出可能なローカルRNodeには、インターネット到達可能性のために有効なTCPクライアントハブがありません。",
+        "rmap_transport_disabled": "検出可能なインターフェイスが設定されていますが、トランスポートモードはオフです。",
+        "rmap_i2p_not_connectable": "I 2 Pインターフェース「{{name}}」は検出可能ですが、接続可能ではありません。"
       },
       "runtime": {
         "rnsNotReady": "RNS スタックの準備ができていません",
@@ -3950,5 +3954,32 @@
     "menuToastAvailableTitle": "利用可能なアップデート",
     "menuToastAvailableBody": "バージョン{{version}}が利用できます。",
     "menuToastErrorTitle": "アップデートチェックに失敗しました"
+  },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v 4検出",
+    "publishToggle": "RMAP v 4で公開",
+    "hint": "Discoverable = yesとアプリのGPS座標を有効なローカルインターフェイス（ RNode、BLE、I 2 P ）に適用します。rmap.worldトランスポートハブを追加して有効にします。",
+    "coordsStatus": "地図の座標： {{lat}}、{{lon}} （アプリの→GPS/位置情報より）",
+    "gpsMissingWarning": "RMAPで公開する前に、アプリの→GPS/位置で静的GPSを設定します。",
+    "announceIntervalMin": "アナウンス間隔（分）",
+    "heightMeters": "海抜の高さ（ m、オプション）",
+    "reachableOn": "アクセス可能（ホスト名またはスクリプト、オプション）",
+    "helpLink": "RMAPガイド",
+    "gpsRequiredTitle": "GPS座標が必要です",
+    "gpsRequiredBody": "RMAPマップマーカーには、緯度と経度が必要です。アプリの→GPS/位置情報で静的座標を設定してから、もう一度お試しください。",
+    "openAppGps": "アプリのGPS設定を開く",
+    "applySuccess": "RMAP検出設定が適用されました。",
+    "disableSuccess": "ローカルインターフェイスでRMAP発行が無効になっています。",
+    "applyFailed": "RMAP設定の適用に失敗しました： {{error}}",
+    "noPublishTargets": "公開する有効なローカルインターフェイスがありません。最初にRNode、BLEピア、またはI 2 Pインターフェイスを有効にします。",
+    "restartTitle": "Reticulumスタックを再起動しますか？",
+    "restartBody": "インターフェースとトランスポートの変更を有効にするには、スタックの再起動が必要です。",
+    "restartConfirm": "今すぐ再起動",
+    "restartFailed": "スタックの再起動に失敗しました： {{error}}",
+    "reachableOnError": {
+      "invalid": "値に無効な到達可能です。",
+      "invalidHost": "に到達可能なホスト名が無効です。",
+      "tooLong": "値で到達可能な時間が長すぎます。"
+    }
   }
 }

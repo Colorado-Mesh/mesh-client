@@ -17,6 +17,7 @@ import { IdentityVaultPanel } from './IdentityVaultPanel';
 import { ReticulumAnnounceControls } from './ReticulumAnnounceControls';
 import { ReticulumIdentitySwitcher } from './ReticulumIdentitySwitcher';
 import ReticulumPropagationSection from './ReticulumPropagationSection';
+import { ReticulumRmapDiscoveryControls } from './ReticulumRmapDiscoveryControls';
 
 function ReticulumCollapsibleSection({
   title,
@@ -50,10 +51,15 @@ function ReticulumCollapsibleSection({
 export interface ReticulumNetworkPanelProps {
   connecting: boolean;
   onStartStack: () => Promise<void>;
+  onOpenAppGpsSettings?: () => void;
 }
 
 /** Network tab: identity, stack settings, propagation, config import. */
-export function ReticulumNetworkPanel({ connecting, onStartStack }: ReticulumNetworkPanelProps) {
+export function ReticulumNetworkPanel({
+  connecting,
+  onStartStack,
+  onOpenAppGpsSettings,
+}: ReticulumNetworkPanelProps) {
   const { t } = useTranslation();
   const sidecarEventRef = useRef<(evt: ReticulumSidecarEvent) => void>(() => {});
 
@@ -389,6 +395,17 @@ export function ReticulumNetworkPanel({ connecting, onStartStack }: ReticulumNet
           <ReticulumAnnounceControls disabled={!sidecarApiReady} />
         ) : null}
       </ReticulumCollapsibleSection>
+
+      {identityReady && sidecarApiReady ? (
+        <ReticulumCollapsibleSection title={t('reticulumRmapDiscovery.sectionTitle')} defaultOpen>
+          <ReticulumRmapDiscoveryControls
+            disabled={connecting}
+            sidecarApiReady={sidecarApiReady}
+            identityDisplayName={identity?.display_name ?? displayName}
+            onOpenAppGpsSettings={onOpenAppGpsSettings}
+          />
+        </ReticulumCollapsibleSection>
+      ) : null}
 
       {sidecarApiReady ? (
         <>

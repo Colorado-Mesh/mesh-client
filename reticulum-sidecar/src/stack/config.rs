@@ -292,6 +292,16 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         id_interval: block.get("id_interval").and_then(|v| v.parse().ok()),
         mode: block.get("mode").map(str::to_string),
         seed_addresses,
+        discoverable: block.get_bool("discoverable"),
+        latitude: block.get("latitude").and_then(|v| v.parse().ok()),
+        longitude: block.get("longitude").and_then(|v| v.parse().ok()),
+        height: block.get("height").and_then(|v| v.parse().ok()),
+        discovery_name: block.get("discovery_name").map(str::to_string),
+        announce_interval_min: block
+            .get("announce_interval")
+            .and_then(|v| v.parse().ok()),
+        connectable: block.get_bool("connectable"),
+        reachable_on: block.get("reachable_on").map(str::to_string),
     })
 }
 
@@ -338,7 +348,36 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
         block.set("seed_addresses", &row.seed_addresses.join(","));
     }
 
+    write_discovery_fields(&mut block, row);
+
     block
+}
+
+fn write_discovery_fields(block: &mut IniBlock, row: &InterfaceRow) {
+    if let Some(v) = row.discoverable {
+        block.set("discoverable", &bool_to_ini(v));
+    }
+    if let Some(v) = row.latitude {
+        block.set("latitude", &v.to_string());
+    }
+    if let Some(v) = row.longitude {
+        block.set("longitude", &v.to_string());
+    }
+    if let Some(v) = row.height {
+        block.set("height", &v.to_string());
+    }
+    if let Some(v) = &row.discovery_name {
+        block.set("discovery_name", v);
+    }
+    if let Some(v) = row.announce_interval_min {
+        block.set("announce_interval", &v.to_string());
+    }
+    if let Some(v) = row.connectable {
+        block.set("connectable", &bool_to_ini(v));
+    }
+    if let Some(v) = &row.reachable_on {
+        block.set("reachable_on", v);
+    }
 }
 
 fn write_rnode_radio_fields(block: &mut IniBlock, row: &InterfaceRow) {
@@ -375,6 +414,83 @@ fn write_rnode_radio_fields(block: &mut IniBlock, row: &InterfaceRow) {
 }
 
 const I2P_PEERS_MAX_LEN: usize = 512;
+const REACHABLE_ON_MAX_LEN: usize = 256;
+
+pub fn validate_lat_lon(lat: f64, lon: f64) -> Result<(), String> {
+    if !lat.is_finite() || lat < -90.0 || lat > 90.0 {
+        return Err("invalid latitude".into());
+    }
+    if !lon.is_finite() || lon < -180.0 || lon > 180.0 {
+        return Err("invalid longitude".into());
+    }
+    Ok(())
+}
+
+pub fn validate_reachable_on(value: &str) -> Result<(), String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err("reachable_on required".into());
+    }
+    if trimmed.len() > REACHABLE_ON_MAX_LEN {
+        return Err("reachable_on too long".into());
+    }
+    if trimmed.contains('\n') || trimmed.contains('\r') || trimmed.contains('\0') {
+        return Err("invalid reachable_on".into());
+    }
+    Ok(())
+}
+
+fn apply_discovery_patch(row: &mut InterfaceRow, patch: &UpdateInterfacePatch) -> Result<(), String> {
+    if patch.discoverable.is_some() {
+        row.discoverable = patch.discoverable;
+    }
+    if patch.latitude.is_some() {
+        if let Some(lat) = patch.latitude {
+            if let Some(lon) = patch.longitude.or(row.longitude) {
+                validate_lat_lon(lat, lon)?;
+            } else if row.longitude.is_none() {
+                validate_lat_lon(lat, 0.0)?;
+            }
+        }
+        row.latitude = patch.latitude;
+    }
+    if patch.longitude.is_some() {
+        if let Some(lon) = patch.longitude {
+            if let Some(lat) = patch.latitude.or(row.latitude) {
+                validate_lat_lon(lat, lon)?;
+            } else if row.latitude.is_none() {
+                validate_lat_lon(0.0, lon)?;
+            }
+        }
+        row.longitude = patch.longitude;
+    }
+    if patch.height.is_some() {
+        row.height = patch.height;
+    }
+    if patch.discovery_name.is_some() {
+        row.discovery_name = patch.discovery_name.clone();
+    }
+    if patch.announce_interval_min.is_some() {
+        row.announce_interval_min = patch.announce_interval_min;
+    }
+    if patch.connectable.is_some() {
+        row.connectable = patch.connectable;
+    }
+    if patch.reachable_on.is_some() {
+        if let Some(ref value) = patch.reachable_on {
+            if !value.trim().is_empty() {
+                validate_reachable_on(value)?;
+            }
+        }
+        row.reachable_on = patch.reachable_on.clone();
+    }
+    if row.discoverable == Some(true) {
+        if let (Some(lat), Some(lon)) = (row.latitude, row.longitude) {
+            validate_lat_lon(lat, lon)?;
+        }
+    }
+    Ok(())
+}
 
 fn validate_i2p_peers(peers: &str) -> Result<(), String> {
     let trimmed = peers.trim();
@@ -437,6 +553,14 @@ pub fn add_interface_to_config(
         id_interval: req.id_interval,
         mode: req.mode.clone(),
         seed_addresses: req.seed_addresses.clone(),
+        discoverable: req.discoverable,
+        latitude: req.latitude,
+        longitude: req.longitude,
+        height: req.height,
+        discovery_name: req.discovery_name.clone(),
+        announce_interval_min: req.announce_interval_min,
+        connectable: req.connectable,
+        reachable_on: req.reachable_on.clone(),
     };
 
     apply_preset_defaults(&mut row);
@@ -527,6 +651,8 @@ pub fn update_interface_in_config(
     if patch.seed_addresses.is_some() {
         row.seed_addresses = patch.seed_addresses.clone().unwrap_or_default();
     }
+
+    apply_discovery_patch(&mut row, patch)?;
 
     let preset_changed = patch.preset.is_some() && patch.preset != preset_before;
     if preset_changed {
@@ -621,6 +747,14 @@ pub struct UpdateInterfacePatch {
     pub id_interval: Option<u32>,
     pub mode: Option<String>,
     pub seed_addresses: Option<Vec<String>>,
+    pub discoverable: Option<bool>,
+    pub latitude: Option<f64>,
+    pub longitude: Option<f64>,
+    pub height: Option<u32>,
+    pub discovery_name: Option<String>,
+    pub announce_interval_min: Option<u32>,
+    pub connectable: Option<bool>,
+    pub reachable_on: Option<String>,
 }
 
 /// Expand `preset` into concrete radio fields on disk when INI rows are incomplete.
@@ -1463,17 +1597,7 @@ loglevel = 4
                 enabled: Some(false),
                 host: Some("reticulum.betweentheborders.com".into()),
                 port: Some(4242),
-                preset: None,
-                serial_port: None,
-                frequency: None,
-                bandwidth: None,
-                txpower: None,
-                spreading_factor: None,
-                coding_rate: None,
-                callsign: None,
-                id_interval: None,
-                mode: None,
-                seed_addresses: vec![],
+                ..Default::default()
             },
         )
         .unwrap();
@@ -1482,5 +1606,105 @@ loglevel = 4
         let content = read_config(&dir).unwrap();
         assert!(content.contains("interface_enabled = No"));
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn discovery_fields_round_trip_rnode_and_i2p() {
+        let content = r#"
+[interfaces]
+[[LoRa Node]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+discoverable = Yes
+latitude = 39.7392
+longitude = -104.9903
+height = 1600
+discovery_name = My Node
+announce_interval = 120
+reachable_on = mesh.example.com
+
+[[I2P Node]]
+type = I2PInterface
+enabled = Yes
+peers = g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p
+connectable = Yes
+discoverable = Yes
+latitude = 48.8566
+longitude = 2.3522
+"#;
+        let parsed = parse_config(content).unwrap();
+        let rows = interfaces_from_parsed(&parsed);
+        let rnode = rows.iter().find(|r| r.iface_type == "rnode").unwrap();
+        assert_eq!(rnode.discoverable, Some(true));
+        assert_eq!(rnode.latitude, Some(39.7392));
+        assert_eq!(rnode.longitude, Some(-104.9903));
+        assert_eq!(rnode.height, Some(1600));
+        assert_eq!(rnode.discovery_name.as_deref(), Some("My Node"));
+        assert_eq!(rnode.announce_interval_min, Some(120));
+        assert_eq!(rnode.reachable_on.as_deref(), Some("mesh.example.com"));
+
+        let i2p = rows.iter().find(|r| r.iface_type == "i2p").unwrap();
+        assert_eq!(i2p.connectable, Some(true));
+        assert_eq!(i2p.discoverable, Some(true));
+
+        let serialized = serialize_config(&parsed);
+        let reparsed = parse_config(&serialized).unwrap();
+        let rows2 = interfaces_from_parsed(&reparsed);
+        assert_eq!(rows2.len(), 2);
+        let rnode2 = rows2.iter().find(|r| r.iface_type == "rnode").unwrap();
+        assert_eq!(rnode2.discoverable, Some(true));
+        assert_eq!(rnode2.announce_interval_min, Some(120));
+    }
+
+    #[test]
+    fn update_interface_preserves_discovery_when_patch_enabled_only() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"
+[interfaces]
+[[LoRa Node]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+"#,
+        )
+        .unwrap();
+
+        let row = update_interface_in_config(
+            &dir,
+            "lo-ra-node",
+            &UpdateInterfacePatch {
+                enabled: Some(true),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(row.discoverable, Some(true));
+        assert_eq!(row.latitude, Some(40.0));
+
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("discoverable = Yes"));
+        assert!(content.contains("latitude = 40"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn validate_reachable_on_rejects_newlines() {
+        assert!(validate_reachable_on("host.example.com").is_ok());
+        assert!(validate_reachable_on("/usr/local/bin/my-ip.sh").is_ok());
+        assert!(validate_reachable_on("bad\nhost").is_err());
+    }
+
+    #[test]
+    fn validate_lat_lon_rejects_out_of_range() {
+        assert!(validate_lat_lon(40.0, -105.0).is_ok());
+        assert!(validate_lat_lon(91.0, 0.0).is_err());
+        assert!(validate_lat_lon(0.0, 181.0).is_err());
     }
 }

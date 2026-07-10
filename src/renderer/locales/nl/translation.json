@@ -1302,7 +1302,11 @@
         "auto_interface_down": "AutoInterface \"{{name}}\" is ingeschakeld maar uitgeschakeld.",
         "missing_shared_instance": "Share-instantie is ingeschakeld, maar SharedInstanceServer is niet actief.",
         "shared_instance_unexpected": "SharedInstanceServer is live, maar share_instance is uitgeschakeld.",
-        "runtime_only_interface": "\"{{name}}\" is alleen runtime (niet opgeslagen in de configuratie)."
+        "runtime_only_interface": "\"{{name}}\" is alleen runtime (niet opgeslagen in de configuratie).",
+        "rmap_missing_coordinates": "Interface \"{{name}}\" is detecteerbaar, maar er ontbreken geldige kaartcoördinaten.",
+        "rmap_no_tcp_hub": "Ontdekbare lokale RNode heeft geen ingeschakelde TCP-clienthub voor internetbereikbaarheid.",
+        "rmap_transport_disabled": "Ontdekbare interfaces zijn geconfigureerd, maar de transportmodus is uitgeschakeld.",
+        "rmap_i2p_not_connectable": "I2P-interface \"{{name}}\" is detecteerbaar, maar aansluitbaar is niet ja."
       },
       "runtime": {
         "rnsNotReady": "RNS-stack is niet gereed",
@@ -3950,5 +3954,32 @@
     "menuToastAvailableTitle": "Güncelleme uygun",
     "menuToastAvailableBody": "Versie {{version}} is beschikbaar.",
     "menuToastErrorTitle": "Updatecontrole mislukt"
+  },
+  "reticulumRmapDiscovery": {
+    "sectionTitle": "RMAP v4-detectie",
+    "publishToggle": "Publiceren op RMAP v4",
+    "hint": "Van toepassing op detecteerbare=ja en uw app GPS-coördinaten op ingeschakelde lokale interfaces (RNode, BLE, I2P). Voegt de rmap.world-transporthub toe en schakelt deze in.",
+    "coordsStatus": "Kaartcoördinaten: {{lat}}, {{lon}} (vanaf → GPS / locatie van app)",
+    "gpsMissingWarning": "Stel statische GPS in in App → GPS / Locatie voordat u publiceert op RMAP.",
+    "announceIntervalMin": "Aankondigingsinterval (minuten)",
+    "heightMeters": "Hoogte boven zeeniveau (m, optioneel)",
+    "reachableOn": "Bereikbaar op (hostnaam of script, optioneel)",
+    "helpLink": "RMAP-gids",
+    "gpsRequiredTitle": "GPS-coördinaten zijn vereist",
+    "gpsRequiredBody": "RMAP-kaartmarkeringen hebben breedte- en lengtegraad nodig. Stel statische coördinaten in onder → GPS / locatie van de app en probeer het opnieuw.",
+    "openAppGps": "Open de GPS-instellingen van de app",
+    "applySuccess": "RMAP-detectie-instellingen toegepast.",
+    "disableSuccess": "RMAP-publicatie uitgeschakeld op lokale interfaces.",
+    "applyFailed": "Kan RMAP-instellingen niet toepassen: {{error}}",
+    "noPublishTargets": "Geen ingeschakelde lokale interfaces om te publiceren. Schakel eerst een RNode-, BLE-peer- of I2P-interface in.",
+    "restartTitle": "Reticulum-stack herstarten?",
+    "restartBody": "Interface- en transportwijzigingen vereisen een herstart van de stapel om van kracht te worden.",
+    "restartConfirm": "Opnieuw opstarten",
+    "restartFailed": "Het herstarten van de stapel is mislukt: {{error}}",
+    "reachableOnError": {
+      "invalid": "Ongeldig bereikbaar op waarde.",
+      "invalidHost": "Ongeldige hostnaam voor bereikbaar op.",
+      "tooLong": "Bereikbaar op waarde is te lang."
+    }
   }
 }

@@ -2859,6 +2859,13 @@ function AppContent() {
                               <ReticulumNetworkPanel
                                 connecting={reticulumConnectionView.state.status === 'connecting'}
                                 onStartStack={() => reticulumConnection.connectAutomatic('http')}
+                                onOpenAppGpsSettings={() => {
+                                  const appTabIdx = tabSlotIds.indexOf('App');
+                                  if (appTabIdx >= 0) {
+                                    setAppTabVisited(true);
+                                    setActiveTab(appTabIdx);
+                                  }
+                                }}
                               />
                             ) : (
                               <>
