@@ -70,6 +70,31 @@ describe('reticulumConfigAudit', () => {
     expect(row?.causeI18n?.key).toBe('diagnosticsPanel.reticulum.audit.tcp_unreachable');
   });
 
+  it('auditIssuesToDiagnosticRows excludes expected runtime-only interface notes', () => {
+    const rows = auditIssuesToDiagnosticRows(
+      [
+        {
+          kind: 'runtime_only_interface',
+          severity: 'info',
+          interface_id: 'shared-instance',
+          interface_name: 'SharedInstanceServer',
+          message: 'Runtime shared-instance server (not in config)',
+        },
+        {
+          kind: 'missing_shared_instance',
+          severity: 'warning',
+          interface_name: 'SharedInstanceServer',
+          message: 'share_instance is on but SharedInstanceServer is not up',
+          repair_kind: 'restart_stack',
+        },
+      ],
+      1,
+    );
+    expect(rows).toHaveLength(1);
+    const row = rows[0] as RfDiagnosticRow;
+    expect(row?.condition).toBe('reticulum/audit/missing_shared_instance');
+  });
+
   it.each([
     'rmap_missing_coordinates',
     'rmap_no_tcp_hub',
