@@ -2624,6 +2624,11 @@ ipcMain.handle('bleCoexistence:pauseNobleScan', async (event) => {
   await bleCoexistenceCoordinator.pauseNobleScan();
   return bleCoexistenceCoordinator.getState();
 });
+ipcMain.handle('bleCoexistence:suspendNobleForReticulumBleConnect', async (event) => {
+  assertIpcSender(event, 'bleCoexistence:suspendNobleForReticulumBleConnect');
+  await bleCoexistenceCoordinator.suspendNobleForReticulumBleConnect();
+  return bleCoexistenceCoordinator.getState();
+});
 
 ipcMain.handle('noble-ble-start-scan', async (event, sessionId: unknown) => {
   assertIpcSender(event, 'noble-ble-start-scan');

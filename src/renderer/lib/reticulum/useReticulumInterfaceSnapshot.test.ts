@@ -1,10 +1,21 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  isReticulumBleRnodeInterfaceRow,
+  isReticulumBleRnodeOnline,
+  prepareReticulumBleRnodeConnect,
+  releaseReticulumBleRnodeConnect,
+} from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
+
 import { useReticulumInterfaceSnapshot } from './useReticulumInterfaceSnapshot';
 
 vi.mock('@/renderer/lib/reticulum/reticulumBleAdapterConflict', () => ({
   syncReticulumBleRegistry: vi.fn().mockResolvedValue(undefined),
+  isReticulumBleRnodeInterfaceRow: vi.fn().mockReturnValue(false),
+  isReticulumBleRnodeOnline: vi.fn().mockReturnValue(false),
+  prepareReticulumBleRnodeConnect: vi.fn().mockResolvedValue(true),
+  releaseReticulumBleRnodeConnect: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/renderer/lib/reticulum/reticulumLocalInterfaceLogging', () => ({
@@ -109,6 +120,96 @@ describe('useReticulumInterfaceSnapshot', () => {
       expect(vi.mocked(window.electronAPI.reticulum.proxyGet).mock.calls.length).toBeGreaterThan(
         callsBefore,
       );
+    });
+  });
+});
+
+const BLE_RNODE_ROW = {
+  id: 'ble-rnode',
+  name: 'BLE RNode',
+  type: 'rnode',
+  enabled: true,
+  status: 'down',
+  serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+};
+
+describe('useReticulumInterfaceSnapshot Noble BLE yield', () => {
+  beforeEach(() => {
+    vi.mocked(isReticulumBleRnodeInterfaceRow).mockImplementation(
+      (row) =>
+        (row.type === 'rnode' || row.type === 'rnodeinterface') &&
+        typeof row.serial_port === 'string' &&
+        row.serial_port.startsWith('ble://'),
+    );
+    vi.mocked(isReticulumBleRnodeOnline).mockImplementation((row) => {
+      const status = row.status?.toLowerCase() ?? '';
+      return status === 'up' || status === 'online';
+    });
+    vi.mocked(prepareReticulumBleRnodeConnect).mockClear();
+    vi.mocked(releaseReticulumBleRnodeConnect).mockClear();
+    vi.mocked(window.electronAPI.bleCoexistence.getState).mockResolvedValue({
+      connections: [],
+      scanOwner: null,
+    });
+    vi.mocked(window.electronAPI.reticulum.proxyGet).mockImplementation((path: string) => {
+      if (path === '/api/v1/interfaces') {
+        return Promise.resolve({ interfaces: [BLE_RNODE_ROW] });
+      }
+      if (path === '/api/v1/serial/ports') {
+        return Promise.resolve({ ports: [] });
+      }
+      return Promise.resolve({});
+    });
+  });
+
+  it('prepares Noble yield when offline BLE RNode is present', async () => {
+    renderHook(() => useReticulumInterfaceSnapshot({ sidecarApiReady: true, pollActive: false }));
+
+    await waitFor(() => {
+      expect(prepareReticulumBleRnodeConnect).toHaveBeenCalled();
+    });
+  });
+
+  it('skips prepare when reticulum already holds the Noble scan lock', async () => {
+    vi.mocked(window.electronAPI.bleCoexistence.getState).mockResolvedValue({
+      connections: [],
+      scanOwner: 'reticulum',
+    });
+
+    renderHook(() => useReticulumInterfaceSnapshot({ sidecarApiReady: true, pollActive: false }));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalled();
+    });
+
+    expect(prepareReticulumBleRnodeConnect).not.toHaveBeenCalled();
+  });
+
+  it('releases Noble yield when BLE RNode comes online', async () => {
+    const { result } = renderHook(() =>
+      useReticulumInterfaceSnapshot({ sidecarApiReady: true, pollActive: false }),
+    );
+
+    await waitFor(() => {
+      expect(prepareReticulumBleRnodeConnect).toHaveBeenCalled();
+    });
+
+    vi.mocked(window.electronAPI.reticulum.proxyGet).mockImplementation((path: string) => {
+      if (path === '/api/v1/interfaces') {
+        return Promise.resolve({ interfaces: [{ ...BLE_RNODE_ROW, status: 'up' }] });
+      }
+      if (path === '/api/v1/serial/ports') {
+        return Promise.resolve({ ports: [] });
+      }
+      return Promise.resolve({});
+    });
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    await waitFor(() => {
+      expect(releaseReticulumBleRnodeConnect).toHaveBeenCalled();
     });
   });
 });

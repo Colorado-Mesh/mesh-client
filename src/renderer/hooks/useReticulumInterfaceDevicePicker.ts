@@ -21,10 +21,15 @@ export interface ReticulumPickerDevice {
   kind?: string;
 }
 
+export interface ReticulumDevicePickerSelection {
+  value: string;
+  deviceName?: string;
+}
+
 export interface ReticulumDevicePickerRequest {
   mode: ReticulumDevicePickerMode;
   sidecarReady: boolean;
-  onSelect: (value: string) => void;
+  onSelect: (selection: ReticulumDevicePickerSelection) => void;
 }
 
 const BLE_SCAN_INTERFACE_SETTLE_MS = 400;
@@ -81,7 +86,9 @@ export function useReticulumInterfaceDevicePicker() {
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [manualPath, setManualPath] = useState('');
-  const [onSelectRef, setOnSelectRef] = useState<((value: string) => void) | null>(null);
+  const [onSelectRef, setOnSelectRef] = useState<
+    ((selection: ReticulumDevicePickerSelection) => void) | null
+  >(null);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -178,8 +185,8 @@ export function useReticulumInterfaceDevicePicker() {
   );
 
   const selectDevice = useCallback(
-    (value: string) => {
-      onSelectRef?.(value);
+    (selection: ReticulumDevicePickerSelection) => {
+      onSelectRef?.(selection);
       close();
     },
     [close, onSelectRef],

@@ -917,7 +917,10 @@
       "identityRequiredHint": "Configureer een Reticulum-identiteit op het tabblad Netwerk voordat u interfaces toevoegt.",
       "i2pPeersRequired": "Voer ten minste één I2P-peeradres in.",
       "i2pPeersTooLong": "De I2P-peerlijst is te lang (max. {{max}} tekens).",
-      "i2pPeersInvalid": "I2P-peers moeten door komma's gescheiden .b32.i2p-adressen zijn zonder regeleinden."
+      "i2pPeersInvalid": "I2P-peers moeten door komma's gescheiden .b32.i2p-adressen zijn zonder regeleinden.",
+      "rnodePresetRequired": "Kies een RNode RF-voorinstelling (frequentie- en LoRa-parameters zijn vereist).",
+      "callsignPlaceholder": "NV0N",
+      "callsignRequired": "Voer uw roepnaam voor amateurradio in voor deze RNode."
     },
     "reticulumPeers": {
       "hops": "Hops",

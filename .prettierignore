@@ -21,6 +21,7 @@ patches/
 *.metainfo.xml
 resources/win/*.xml
 *.nsh
+src/main/fixtures/reticulum-ble-rnode-config/
 
 # CodeQL MaD — Prettier line-wrap breaks yamllint indentation for barrier tuples
 .github/codeql/extensions/**/*.yml

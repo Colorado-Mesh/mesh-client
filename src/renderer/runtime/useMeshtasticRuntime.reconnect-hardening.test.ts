@@ -76,6 +76,18 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     );
   });
 
+  it('skips Noble yield nudge when Meshtastic is configured and connected', () => {
+    expect(SOURCE).toMatch(
+      /onNobleYieldReleased[\s\S]*?meshtasticDriverConnectedRef\.current && deviceConfiguredRef\.current[\s\S]*?return;/,
+    );
+  });
+
+  it('skips Noble yield nudge when reconnect is already in progress', () => {
+    expect(SOURCE).toMatch(
+      /onNobleYieldReleased[\s\S]*?isReconnectingRef\.current[\s\S]*?skip nudge \(reconnect in progress\)/,
+    );
+  });
+
   it('guards attachRfSession configure against reconnect generation supersession', () => {
     expect(SOURCE).toMatch(
       /attachRfSession[\s\S]{0,3500}reconnectGenerationRef\.current !== generation[\s\S]{0,200}Attach superseded during configure/,

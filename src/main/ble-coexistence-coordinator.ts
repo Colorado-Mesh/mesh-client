@@ -120,6 +120,17 @@ export class BleCoexistenceCoordinator {
   async pauseNobleScan(): Promise<void> {
     await this.acquireScan('reticulum');
   }
+
+  /**
+   * Yield CoreBluetooth to the Reticulum sidecar (btleplug) for BLE RNode connect.
+   * macOS cannot reliably pair/connect via btleplug while Noble holds GATT sessions.
+   */
+  async suspendNobleForReticulumBleConnect(): Promise<void> {
+    await this.acquireScan('reticulum');
+    if (this.nobleManager && (process.platform === 'darwin' || process.platform === 'win32')) {
+      await this.nobleManager.disconnectAllSessions();
+    }
+  }
 }
 
 export const bleCoexistenceCoordinator = new BleCoexistenceCoordinator();

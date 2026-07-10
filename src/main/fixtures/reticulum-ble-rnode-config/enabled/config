@@ -1,0 +1,5 @@
+[[rnode-aba97820]]
+type = RNodeInterface
+enabled = Yes
+port = ble://eccf2847-e1fd-3f5f-0811-064db1639a3d
+frequency = 914875000

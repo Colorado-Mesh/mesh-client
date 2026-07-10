@@ -41,6 +41,33 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     );
   });
 
+  it('prepareRfConnect preserves reconnect state when requested', () => {
+    const prepareBody = extractUseCallbackBody(RUNTIME_SOURCE, 'prepareRfConnect');
+    expect(prepareBody).toContain('preserveReconnectState');
+    expect(prepareBody).toMatch(
+      /if \(!opts\?\.preserveReconnectState\) \{[\s\S]*?meshcoreIsReconnectingRef\.current = false/,
+    );
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toContain('preserveReconnectState: true');
+  });
+
+  it('listens for Noble BLE adapter poweredOn to restart reconnect', () => {
+    expect(RUNTIME_SOURCE).toContain('onNobleBleAdapterState');
+    expect(RUNTIME_SOURCE).toContain('BLE adapter poweredOn');
+  });
+
+  it('skips Noble yield nudge when MeshCore is already connected', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /onNobleYieldReleased[\s\S]*?meshcoreDriverConnectedRef\.current \|\| connRef\.current[\s\S]*?return;/,
+    );
+  });
+
+  it('skips Noble yield nudge when reconnect is already in progress', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /onNobleYieldReleased[\s\S]*?meshcoreIsReconnectingRef\.current \|\| bleConnectInProgressRef\.current[\s\S]*?skip nudge \(reconnect in progress\)/,
+    );
+  });
+
   it('exports power suspend/resume handlers wired to reconnect', () => {
     expect(RUNTIME_SOURCE).toContain('onPowerSuspend');
     expect(RUNTIME_SOURCE).toContain('onPowerResume');

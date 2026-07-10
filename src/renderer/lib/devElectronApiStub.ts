@@ -277,6 +277,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       acquireScan: async () => ({ connections: [], scanOwner: null }),
       releaseScan: async () => ({ connections: [], scanOwner: null }),
       pauseNobleScan: async () => ({ connections: [], scanOwner: null }),
+      suspendNobleForReticulumBleConnect: async () => ({ connections: [], scanOwner: null }),
     },
     reticulum: {
       start: async () => ({ running: false, port: 0, pid: null }),

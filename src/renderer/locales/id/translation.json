@@ -917,7 +917,10 @@
       "identityRequiredHint": "Konfigurasikan identitas Reticulum pada tab Jaringan sebelum menambahkan antarmuka.",
       "i2pPeersRequired": "Masukkan setidaknya satu alamat rekan I2P.",
       "i2pPeersTooLong": "Daftar rekan I2P terlalu panjang (maks {{max}} karakter).",
-      "i2pPeersInvalid": "Rekan I2P harus berupa alamat .b32.i2p yang dipisahkan koma tanpa jeda baris."
+      "i2pPeersInvalid": "Rekan I2P harus berupa alamat .b32.i2p yang dipisahkan koma tanpa jeda baris.",
+      "rnodePresetRequired": "Pilih preset RF RNode (diperlukan parameter frekuensi dan LoRa).",
+      "callsignPlaceholder": "NV0N",
+      "callsignRequired": "Masukkan callsign radio amatir Anda untuk RNode ini."
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import type {
   ReticulumDevicePickerMode,
+  ReticulumDevicePickerSelection,
   ReticulumPickerDevice,
 } from '@/renderer/hooks/useReticulumInterfaceDevicePicker';
 import { ConnectionIcon } from '@/renderer/lib/icons/connectionIcons';
@@ -17,7 +18,7 @@ export interface ReticulumInterfaceDevicePickerModalProps {
   scanError: string | null;
   manualPath: string;
   onManualPathChange: (value: string) => void;
-  onSelect: (value: string) => void;
+  onSelect: (selection: ReticulumDevicePickerSelection) => void;
   onCancel: () => void;
   onRefreshSerial: () => void;
   onRescanBle: () => void;
@@ -131,7 +132,7 @@ export function ReticulumInterfaceDevicePickerModal({
                     className="mt-3 rounded bg-amber-700 px-3 py-1.5 text-sm text-white hover:bg-amber-600"
                     aria-label={t('connectionPanel.reticulumInterfaces.useManualPort')}
                     onClick={() => {
-                      onSelect(manualPath.trim());
+                      onSelect({ value: manualPath.trim(), deviceName: manualPath.trim() });
                     }}
                   >
                     {t('connectionPanel.reticulumInterfaces.useManualPort')}
@@ -145,7 +146,10 @@ export function ReticulumInterfaceDevicePickerModal({
                   type="button"
                   aria-label={port.label ?? port.path}
                   onClick={() => {
-                    onSelect(port.path);
+                    onSelect({
+                      value: port.path,
+                      deviceName: port.label?.trim() || port.path,
+                    });
                   }}
                   className="hover:bg-secondary-dark w-full border-b border-gray-700 px-4 py-3 text-left transition-colors last:border-b-0"
                 >
@@ -185,7 +189,7 @@ export function ReticulumInterfaceDevicePickerModal({
                     address: device.address,
                   })}
                   onClick={() => {
-                    onSelect(value);
+                    onSelect({ value, deviceName: displayName });
                   }}
                   className="hover:bg-secondary-dark w-full border-b border-gray-700 px-4 py-3 text-left transition-colors last:border-b-0"
                 >

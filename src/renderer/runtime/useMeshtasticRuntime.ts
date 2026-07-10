@@ -39,6 +39,7 @@ import {
   type ResolveMeshtasticMqttPublishOptions,
 } from '@/renderer/lib/meshtasticMqttPublish';
 import { readMeshtasticMqttSettingsFromStorage } from '@/renderer/lib/meshtasticMqttSettingsStorage';
+import { NOBLE_BLE_YIELD_RELEASED_EVENT } from '@/renderer/lib/nobleBleYieldReleased';
 import {
   type ApplyChannelSetResult,
   channelNameExists,
@@ -2085,6 +2086,32 @@ export function useMeshtasticRuntime() {
       console.warn('[useMeshtasticRuntime] Noble BLE disconnected');
       handleConnectionLostRef.current();
     });
+  }, []);
+
+  useEffect(() => {
+    const onNobleYieldReleased = () => {
+      if (connectionParamsRef.current?.type !== 'ble') return;
+      if (meshtasticExplicitDisconnectRef.current) return;
+      if (meshtasticDriverConnectedRef.current && deviceConfiguredRef.current) {
+        return;
+      }
+      if (isReconnectingRef.current) {
+        console.debug(
+          '[useMeshtasticRuntime] Noble BLE yield released — skip nudge (reconnect in progress)',
+        );
+        return;
+      }
+      console.debug(
+        '[useMeshtasticRuntime] Noble BLE yield released — nudging Meshtastic reconnect',
+      );
+      reconnectAttemptRef.current = 0;
+      isReconnectingRef.current = false;
+      handleConnectionLostRef.current();
+    };
+    window.addEventListener(NOBLE_BLE_YIELD_RELEASED_EVENT, onNobleYieldReleased);
+    return () => {
+      window.removeEventListener(NOBLE_BLE_YIELD_RELEASED_EVENT, onNobleYieldReleased);
+    };
   }, []);
 
   // Keep the ref in sync

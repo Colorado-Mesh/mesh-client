@@ -917,7 +917,10 @@
       "identityRequiredHint": "インターフェースを追加する前に、[ネットワーク]タブでReticulumアイデンティティを設定します。",
       "i2pPeersRequired": "少なくとも1つのI2Pピアアドレスを入力してください。",
       "i2pPeersTooLong": "I2Pピアリストが長すぎます（最大{{max}}文字）。",
-      "i2pPeersInvalid": "I2Pピアは、改行のないカンマ区切りの.b32.i2pアドレスでなければなりません。"
+      "i2pPeersInvalid": "I2Pピアは、改行のないカンマ区切りの.b32.i2pアドレスでなければなりません。",
+      "rnodePresetRequired": "RNode RFプリセットを選択します（周波数とLoRaパラメータが必要です）。",
+      "callsignPlaceholder": "NV 0 N",
+      "callsignRequired": "このRNodeのアマチュア無線コールサインを入力します。"
     },
     "reticulumPeers": {
       "hops": "Hops",

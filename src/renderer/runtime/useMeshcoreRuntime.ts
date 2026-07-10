@@ -12,6 +12,7 @@ import {
   type MeshcoreOffloadFromRadioOptions,
   throwIfMeshcoreOffloadAborted,
 } from '@/renderer/lib/meshcoreOffload';
+import { NOBLE_BLE_YIELD_RELEASED_EVENT } from '@/renderer/lib/nobleBleYieldReleased';
 
 import {
   isMeshcorePathHashMode,
@@ -1706,6 +1707,35 @@ export function useMeshcoreRuntime() {
   );
 
   useEffect(() => {
+    return window.electronAPI.onNobleBleAdapterState((state) => {
+      if (state !== 'poweredOn') return;
+      if (meshcoreConnectionParamsRef.current?.rfType !== 'ble') {
+        const rehydrated = rehydrateMeshcoreConnectionParamsFromStorage();
+        if (rehydrated?.rfType !== 'ble') return;
+        meshcoreConnectionParamsRef.current = rehydrated;
+      }
+      if (meshcoreExplicitDisconnectRef.current) {
+        console.debug(
+          '[useMeshcoreRuntime] BLE adapter poweredOn — skip reconnect (user disconnect)',
+        );
+        return;
+      }
+      console.debug('[useMeshcoreRuntime] BLE adapter poweredOn — resetting reconnect budget');
+      meshcoreReconnectAttemptRef.current = 0;
+      meshcoreReconnectGenerationRef.current += 1;
+      meshcoreIsReconnectingRef.current = false;
+      bleConnectInProgressRef.current = false;
+      void (async () => {
+        if (isRendererNobleBlePlatform()) {
+          await awaitDualNobleBleMeshtasticSettle(POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS);
+        }
+        if (meshcoreExplicitDisconnectRef.current) return;
+        handleMeshcoreConnectionLostRef.current();
+      })();
+    });
+  }, []);
+
+  useEffect(() => {
     return window.electronAPI.onNobleBleDisconnected((sessionId) => {
       if (sessionId !== 'meshcore') return;
       if (
@@ -1741,6 +1771,30 @@ export function useMeshcoreRuntime() {
       console.warn('[useMeshcoreRuntime] Noble BLE disconnected');
       handleMeshcoreConnectionLostRef.current();
     });
+  }, []);
+
+  useEffect(() => {
+    const onNobleYieldReleased = () => {
+      if (meshcoreConnectionParamsRef.current?.rfType !== 'ble') return;
+      if (meshcoreExplicitDisconnectRef.current) return;
+      if (meshcoreDriverConnectedRef.current || connRef.current) {
+        return;
+      }
+      if (meshcoreIsReconnectingRef.current || bleConnectInProgressRef.current) {
+        console.debug(
+          '[useMeshcoreRuntime] Noble BLE yield released — skip nudge (reconnect in progress)',
+        );
+        return;
+      }
+      console.debug('[useMeshcoreRuntime] Noble BLE yield released — nudging MeshCore reconnect');
+      meshcoreReconnectAttemptRef.current = 0;
+      meshcoreIsReconnectingRef.current = false;
+      handleMeshcoreConnectionLostRef.current();
+    };
+    window.addEventListener(NOBLE_BLE_YIELD_RELEASED_EVENT, onNobleYieldReleased);
+    return () => {
+      window.removeEventListener(NOBLE_BLE_YIELD_RELEASED_EVENT, onNobleYieldReleased);
+    };
   }, []);
 
   const setupEventListeners = useCallback(
@@ -2276,7 +2330,10 @@ export function useMeshcoreRuntime() {
   );
 
   const prepareRfConnect = useCallback(
-    async (type: 'ble' | 'serial' | 'tcp'): Promise<void> => {
+    async (
+      type: 'ble' | 'serial' | 'tcp',
+      opts?: { preserveReconnectState?: boolean },
+    ): Promise<void> => {
       if (type === 'ble' && bleConnectInProgressRef.current) {
         console.debug('[useMeshcoreRuntime] prepareRfConnect BLE superseding in-flight connect');
         meshcoreSetupGenerationRef.current += 1;
@@ -2316,8 +2373,10 @@ export function useMeshcoreRuntime() {
       });
       if (type === 'ble') bleConnectInProgressRef.current = true;
       meshcoreExplicitDisconnectRef.current = false;
-      meshcoreReconnectAttemptRef.current = 0;
-      meshcoreIsReconnectingRef.current = false;
+      if (!opts?.preserveReconnectState) {
+        meshcoreReconnectAttemptRef.current = 0;
+        meshcoreIsReconnectingRef.current = false;
+      }
     },
     [teardownMeshcoreConnEventListeners],
   );
@@ -2559,7 +2618,7 @@ export function useMeshcoreRuntime() {
     let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
     const isBleReconnect = params.rfType === 'ble';
     const runReconnect = async () => {
-      await prepareRfConnect(params.rfType);
+      await prepareRfConnect(params.rfType, { preserveReconnectState: true });
       opened =
         isBleReconnect && isRendererNobleBlePlatform()
           ? await withNobleBleConnectMutex('meshcore', () =>
@@ -2608,6 +2667,7 @@ export function useMeshcoreRuntime() {
         `[useMeshcoreRuntime] Reconnect attempt ${meshcoreReconnectAttemptRef.current} failed: ` +
           errLikeToLogString(err),
       );
+      meshcoreIsReconnectingRef.current = true;
       void attemptMeshcoreReconnectRef.current();
     } finally {
       if (isBleReconnect) {
