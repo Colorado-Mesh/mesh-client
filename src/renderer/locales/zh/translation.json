@@ -992,7 +992,7 @@
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh 需要端口 443 上的 WebSocket 和服务器 mqtt-us-v1.letsmesh.net 或 mqtt-eu-v1.letsmesh.net。使用区域（美国/欧盟），或切换到其他经纪商的自定义。",
-      "coloradomesh": "Colorado Mesh 需要端口 1883 上的 WebSocket 且启用了 TLS，服务器 mqtt.meshcore.coloradomesh.org，路径 /ws。重置预设或切换到其他经纪商的自定义。",
+      "coloradomesh": "Colorado Mesh 需要端口 443 上的 WebSocket 且启用了 TLS，服务器 mqtt.meshcore.coloradomesh.org，路径 /ws。重置预设或切换到其他经纪商的自定义。",
       "meshmapper": "MeshMapper 需要端口 443 上的 WebSocket 和服务器 mqtt.meshmapper.cc。重置预设或切换到其他经纪商的自定义。"
     },
     "meshcoreMqttIdentity": {

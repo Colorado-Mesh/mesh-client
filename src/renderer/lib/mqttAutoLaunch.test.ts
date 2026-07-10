@@ -84,7 +84,7 @@ describe('shouldAutoLaunchMeshcoreMqttAtStartup', () => {
       MESHCORE_KEY,
       JSON.stringify({
         server: 'mqtt.meshcore.coloradomesh.org',
-        port: 1883,
+        port: 443,
         autoLaunch: true,
         useWebSocket: true,
       }),

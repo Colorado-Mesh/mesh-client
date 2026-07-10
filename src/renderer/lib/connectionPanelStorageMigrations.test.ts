@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  COLORADO_MESH_PORT_MIGRATION_KEY,
   LEGACY_MQTT_SETTINGS_KEY,
   MESHCORE_MQTT_SETTINGS_KEY,
   MESHCORE_TOPIC_IATA_MIGRATION_KEY,
@@ -84,6 +85,22 @@ describe('runConnectionPanelStorageMigrations', () => {
   it('sets migration marker even when meshcore settings are absent', () => {
     runConnectionPanelStorageMigrations();
     expect(localStorage.getItem(MESHCORE_TOPIC_IATA_MIGRATION_KEY)).toBe('1');
+  });
+
+  it('migrates Colorado Mesh port from 1883 to 443', () => {
+    localStorage.setItem(
+      MESHCORE_MQTT_SETTINGS_KEY,
+      JSON.stringify({ server: COLORADO_MESH_HOST, topicPrefix: 'meshcore/DEN', port: 1883 }),
+    );
+    localStorage.setItem(MESHCORE_TOPIC_IATA_MIGRATION_KEY, '1');
+
+    runConnectionPanelStorageMigrations();
+
+    const parsed = JSON.parse(localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY) ?? '{}') as {
+      port?: number;
+    };
+    expect(parsed.port).toBe(443);
+    expect(localStorage.getItem(COLORADO_MESH_PORT_MIGRATION_KEY)).toBe('1');
   });
 
   it('is idempotent on second call', () => {

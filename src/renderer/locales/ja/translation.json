@@ -992,7 +992,7 @@
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh には、ポート 443 とサーバー mqtt-us-v1.letsmesh.net または mqtt-eu-v1.letsmesh.net 上の WebSocket が必要です。地域 (US/EU) を使用するか、他のブローカーの場合はカスタムに切り替えてください。",
-      "coloradomesh": "Colorado Mesh には、TLS が有効になっているポート 1883、サーバー mqtt.meshcore.coloradomesh.org、パス /ws の WebSocket が必要です。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。",
+      "coloradomesh": "Colorado Mesh には、TLS が有効になっているポート 443、サーバー mqtt.meshcore.coloradomesh.org、パス /ws の WebSocket が必要です。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。",
       "meshmapper": "MeshMapper には、ポート 443 とサーバー mqtt.meshmapper.cc 上の WebSocket が必要です。プリセットをリセットするか、他のブローカーの場合はカスタムに切り替えます。"
     },
     "meshcoreMqttIdentity": {

@@ -992,7 +992,7 @@
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh benötigt WebSocket auf Port 443 und den Server mqtt-us-v1.letsmesh.net oder mqtt-eu-v1.letsmesh.net. Verwenden Sie die Region (USA/EU) oder wechseln Sie für andere Broker zu „Benutzerdefiniert“.",
-      "coloradomesh": "Colorado Mesh benötigt WebSocket auf Port 1883 mit aktiviertem TLS, Server mqtt.meshcore.coloradomesh.org, Pfad /ws. Setzen Sie die Voreinstellung zurück oder wechseln Sie für andere Broker zu „Benutzerdefiniert“.",
+      "coloradomesh": "Colorado Mesh benötigt WebSocket auf Port 443 mit aktiviertem TLS, Server mqtt.meshcore.coloradomesh.org, Pfad /ws. Setzen Sie die Voreinstellung zurück oder wechseln Sie für andere Broker zu „Benutzerdefiniert“.",
       "meshmapper": "MeshMapper benötigt WebSocket auf Port 443 und den Server mqtt.meshmapper.cc. Setzen Sie die Voreinstellung zurück oder wechseln Sie für andere Broker zu „Benutzerdefiniert“."
     },
     "meshcoreMqttIdentity": {

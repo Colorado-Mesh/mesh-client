@@ -992,7 +992,7 @@
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh memerlukan WebSocket pada port 443 dan server mqtt-us-v1.letsmesh.net atau mqtt-eu-v1.letsmesh.net. Gunakan Wilayah (AS/UE), atau beralih ke Kustom untuk broker lain.",
-      "coloradomesh": "Colorado Mesh memerlukan WebSocket pada port 1883 dengan TLS diaktifkan, server mqtt.meshcore.coloradomesh.org, jalur /ws. Reset preset atau alihkan ke Custom untuk broker lain.",
+      "coloradomesh": "Colorado Mesh memerlukan WebSocket pada port 443 dengan TLS diaktifkan, server mqtt.meshcore.coloradomesh.org, jalur /ws. Reset preset atau alihkan ke Custom untuk broker lain.",
       "meshmapper": "MeshMapper membutuhkan WebSocket pada port 443 dan server mqtt.meshmapper.cc. Reset preset atau alihkan ke Custom untuk broker lain."
     },
     "meshcoreMqttIdentity": {

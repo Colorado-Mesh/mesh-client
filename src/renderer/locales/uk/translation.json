@@ -992,7 +992,7 @@
     },
     "meshcorePresetDeviation": {
       "letsmesh": "LetsMesh потребує WebSocket на порту 443 і сервері mqtt-us-v1.letsmesh.net або mqtt-eu-v1.letsmesh.net. Використовуйте регіон (США/ЄС) або перейдіть на спеціальний для інших брокерів.",
-      "coloradomesh": "Colorado Mesh потребує WebSocket на порту 1883 із увімкненим TLS, сервер mqtt.meshcore.coloradomesh.org, шлях /ws. Скиньте попередні налаштування або перейдіть на Custom для інших брокерів.",
+      "coloradomesh": "Colorado Mesh потребує WebSocket на порту 443 із увімкненим TLS, сервер mqtt.meshcore.coloradomesh.org, шлях /ws. Скиньте попередні налаштування або перейдіть на Custom для інших брокерів.",
       "meshmapper": "MeshMapper потребує WebSocket на порту 443 і сервері mqtt.meshmapper.cc. Скиньте попередні налаштування або перейдіть на Custom для інших брокерів."
     },
     "meshcoreMqttIdentity": {

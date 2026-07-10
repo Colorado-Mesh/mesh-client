@@ -938,7 +938,7 @@ describe('_doConnect — WebSocket scheme', () => {
 
   it('uses ws:// for port 1883 (plaintext MQTT port, no TLS)', () => {
     new MQTTManager().connect({
-      server: 'mqtt.meshcore.coloradomesh.org',
+      server: 'broker.example.com',
       port: 1883,
       username: '',
       password: '',
@@ -1064,10 +1064,10 @@ describe('_doConnect — WebSocket scheme', () => {
     ).toBe('mqtts');
   });
 
-  it('uses wss:// when tlsEnabled is true on port 1883', () => {
+  it('uses wss:// when tlsEnabled is true on port 443', () => {
     new MQTTManager().connect({
       server: 'mqtt.meshcore.coloradomesh.org',
-      port: 1883,
+      port: 443,
       username: '',
       password: '',
       topicPrefix: 'meshcore',
@@ -1085,7 +1085,7 @@ describe('_doConnect — WebSocket scheme', () => {
   it('uses custom wsPath when provided', () => {
     new MQTTManager().connect({
       server: 'mqtt.meshcore.coloradomesh.org',
-      port: 1883,
+      port: 443,
       username: '',
       password: '',
       topicPrefix: 'meshcore',
