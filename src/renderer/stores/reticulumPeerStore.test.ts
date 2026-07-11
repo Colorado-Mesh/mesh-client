@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ReticulumContact } from '@/shared/reticulum-types';
+
 import {
   capReticulumPeerMaps,
   mergeReticulumPeerMaps,
@@ -64,6 +66,40 @@ describe('mergeReticulumPeerMaps', () => {
     expect(contacts.get('def456')?.last_heard).toBe(1000);
     expect(peers.has('def456')).toBe(true);
   });
+
+  it('reflects contact fields on the merged peer entry and applies SQLite overlay to contacts', () => {
+    const { peers, contacts } = mergeReticulumPeerMaps(
+      [],
+      [
+        {
+          destination_hash: 'def456',
+          display_name: 'Contact B',
+          last_heard: 1000,
+          hops: 1,
+        },
+      ],
+      [
+        {
+          destination_hash: 'def456',
+          display_name: 'Saved Contact',
+          favorited: 1,
+        },
+      ],
+    );
+
+    const contact = contacts.get('def456');
+    expect(contact?.last_heard).toBe(1000);
+    expect(contact?.hops).toBe(1);
+    expect(contact?.favorited).toBe(true);
+    expect(contact?.custom_display_name).toBe('Saved Contact');
+
+    const peer = peers.get('def456') as ReticulumContact | undefined;
+    expect(peer?.last_heard).toBe(1000);
+    expect(peer?.hops).toBe(1);
+    expect(peer?.favorited).toBe(true);
+    expect(peer?.custom_display_name).toBe('Saved Contact');
+    expect(peer?.display_name).toBe('Contact B');
+  });
 });
 
 describe('reticulumPeerStore', () => {
@@ -108,6 +144,22 @@ describe('reticulumPeerStore', () => {
     expect(useReticulumPeerStore.getState().isContact('peeronly')).toBe(false);
     expect(useReticulumPeerStore.getState().isContact('CONTACT1')).toBe(true);
     expect(useReticulumPeerStore.getState().isContact('NONEXISTENT')).toBe(false);
+  });
+
+  it('getPeer normalizes hash case like isContact', () => {
+    useReticulumPeerStore
+      .getState()
+      .replacePeers([{ destination_hash: 'abc123', display_name: 'Peer A', hops: 2 }]);
+    useReticulumPeerStore
+      .getState()
+      .replaceContacts([{ destination_hash: 'contact1', last_heard: 100, display_name: 'LXMF' }]);
+
+    expect(useReticulumPeerStore.getState().getPeer('ABC123')?.display_name).toBe('Peer A');
+    expect(useReticulumPeerStore.getState().getPeer('CONTACT1')?.display_name).toBe('LXMF');
+    const contactPeer = useReticulumPeerStore.getState().getPeer('contact1') as
+      ReticulumContact | undefined;
+    expect(contactPeer?.last_heard).toBe(100);
+    expect(useReticulumPeerStore.getState().getPeer('missing')).toBeUndefined();
   });
 
   it('clearPeers empties peers and contacts', () => {

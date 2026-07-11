@@ -612,7 +612,8 @@
     "reconnect": "Erneut verbinden",
     "reconnectingAttempt": "Wiederverbinden… Versuch {{attempt}}/{{max}}",
     "serialReselect": "USB-Seriellverbindung unterbrochen — wählen Sie Ihr Gerät erneut aus",
-    "serialReselectAction": "Serielle Schnittstelle auswählen"
+    "serialReselectAction": "Serielle Schnittstelle auswählen",
+    "statusRegion": "Verbindungsstatus"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Max. MQTT-Wiederverbindungsversuche",

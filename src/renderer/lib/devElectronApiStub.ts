@@ -147,7 +147,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
     onNobleBleDisconnected: noopUnsub,
     onNobleBleConnectAborted: noopUnsub,
     onNobleBleFromRadio: noopUnsub,
-    startNobleBleScanning: noopAsync,
+    startNobleBleScanning: async () => ({ ok: true as const }),
     stopNobleBleScanning: noopAsync,
     connectNobleBle: async () => ({ ok: true }),
     disconnectNobleBle: noopAsync,

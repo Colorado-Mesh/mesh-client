@@ -612,7 +612,8 @@
     "reconnect": "재접속",
     "reconnectingAttempt": "다시 연결 중… 시도 {{attempt}}/{{max}}",
     "serialReselect": "USB 직렬 연결 끊김 — 장치를 다시 선택하십시오",
-    "serialReselectAction": "직렬 포트 선택"
+    "serialReselectAction": "직렬 포트 선택",
+    "statusRegion": "연결 상태"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "최대 MQTT 재연결 시도",

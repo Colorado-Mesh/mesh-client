@@ -67,7 +67,9 @@ import {
 } from '../../lib/meshcoreWaitingMessageItem';
 import {
   isMeshcoreCompanionDrainDeferred,
+  isMeshcoreSyncNextMessageTimeoutError,
   logMeshcoreWaitingMessagesDrainError,
+  markMeshcoreMsgWaitingEvent,
   resetMeshcoreWaitingMessagesDrainSchedule,
   scheduleMeshcoreWaitingMessagesDrain,
   shouldActivateWaitingMessagesBanner,
@@ -755,11 +757,19 @@ export function attachMeshcoreLegacyConnEvents(
           let silentDrainExhaustedCap = false;
           for (let i = 0; i < MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN; i += 1) {
             if (!meshcoreHookMountedRef.current) break;
-            const raw = await withTimeout(
-              conn.syncNextMessage(),
-              MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS,
-              'MeshCore syncNextMessage',
-            );
+            let raw: unknown;
+            try {
+              raw = await withTimeout(
+                conn.syncNextMessage(),
+                MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS,
+                'MeshCore syncNextMessage',
+              );
+            } catch (e: unknown) {
+              if (isMeshcoreSyncNextMessageTimeoutError(e)) {
+                break;
+              }
+              throw e;
+            }
             const item = normalizeMeshcoreWaitingMessageItem(raw);
             if (!item) break;
             await ingestItem(item);
@@ -795,6 +805,7 @@ export function attachMeshcoreLegacyConnEvents(
   };
   processWaitingMessagesRef.current = processWaitingMessages;
   onMeshcoreConn(131, () => {
+    markMeshcoreMsgWaitingEvent();
     scheduleMeshcoreWaitingMessagesDrain(
       async () => {
         try {

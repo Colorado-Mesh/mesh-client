@@ -162,7 +162,7 @@ export function createElectronAPIMock(): ElectronAPI {
     onNobleBleDisconnected: vi.fn().mockReturnValue(() => {}),
     onNobleBleConnectAborted: vi.fn().mockReturnValue(() => {}),
     onNobleBleFromRadio: vi.fn().mockReturnValue(() => {}),
-    startNobleBleScanning: vi.fn().mockResolvedValue(undefined),
+    startNobleBleScanning: vi.fn().mockResolvedValue({ ok: true }),
     stopNobleBleScanning: vi.fn().mockResolvedValue(undefined),
     connectNobleBle: vi.fn().mockResolvedValue({ ok: true }),
     disconnectNobleBle: vi.fn().mockResolvedValue(undefined),

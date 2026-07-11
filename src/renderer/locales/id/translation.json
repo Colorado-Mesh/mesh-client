@@ -612,7 +612,8 @@
     "reconnect": "Sambung ulang",
     "reconnectingAttempt": "Menghubungkan kembali… upaya {{attempt}}/{{max}}",
     "serialReselect": "Koneksi serial USB terputus — pilih perangkat Anda lagi",
-    "serialReselectAction": "Pilih port serial"
+    "serialReselectAction": "Pilih port serial",
+    "statusRegion": "Status Koneksi"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "Upaya penyambungan kembali MQTT maks",

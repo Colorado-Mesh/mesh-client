@@ -38,7 +38,7 @@ import {
   loadProtocolMqttSettings,
   persistMqttSettingsIfChanged,
 } from '../hooks/useProtocolMqttSettings';
-import { reconnectBleWithScan } from '../lib/bleReconnectHelper';
+import { reconnectBleWithScan, startNobleBleScanningWithRetry } from '../lib/bleReconnectHelper';
 import {
   humanizeBleError,
   humanizeHttpError,
@@ -1162,7 +1162,7 @@ export default function ConnectionPanel({
       // Reconnect to the last device uses handleReconnect / startup auto-connect instead.
       setConnectionStage('connectionPanel.stageScanning');
       try {
-        await window.electronAPI.startNobleBleScanning(protocol);
+        await startNobleBleScanningWithRetry(protocol);
       } catch (err) {
         console.warn('[ConnectionPanel] startNobleBleScanning failed: ' + errLikeToLogString(err));
         const bleErrMsg = humanizeBleError(err, t);
@@ -2775,13 +2775,18 @@ export default function ConnectionPanel({
                 Docs ↗
               </a>
               <span
-                className={`text-xs font-medium ${
-                  state.status === 'reconnecting'
-                    ? 'animate-pulse text-orange-400'
-                    : 'text-brand-green'
+                className={`inline-flex items-center gap-1 text-xs font-medium ${
+                  state.status === 'reconnecting' ? 'text-orange-200' : 'text-brand-green'
                 }`}
               >
-                ● {state.status}
+                {state.status === 'reconnecting' ? (
+                  <span aria-hidden className="inline-block animate-pulse">
+                    ●
+                  </span>
+                ) : (
+                  <>●</>
+                )}{' '}
+                {state.status}
               </span>
             </div>
           </div>

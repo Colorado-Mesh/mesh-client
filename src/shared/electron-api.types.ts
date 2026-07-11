@@ -170,6 +170,9 @@ export type BlePeripheralOwner =
 
 export type BleScanOwner = 'noble' | 'reticulum' | 'webbt';
 
+export type NobleBleStartScanResult =
+  { ok: true } | { ok: false; code: 'scan_busy'; owner: BleScanOwner };
+
 export interface BleRegisteredConnection {
   mac: string;
   owner: BlePeripheralOwner;
@@ -685,7 +688,7 @@ export interface ElectronAPI {
   onNobleBleFromRadio: (
     cb: (payload: { sessionId: NobleBleSessionId; bytes: Uint8Array }) => void,
   ) => () => void;
-  startNobleBleScanning: (sessionId: NobleBleSessionId) => Promise<void>;
+  startNobleBleScanning: (sessionId: NobleBleSessionId) => Promise<NobleBleStartScanResult>;
   stopNobleBleScanning: (sessionId: NobleBleSessionId) => Promise<void>;
   connectNobleBle: (
     sessionId: NobleBleSessionId,
