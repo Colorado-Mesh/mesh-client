@@ -4046,7 +4046,7 @@
       "stackOff": "Mulai tumpukan Reticulum untuk mendengar pengumuman penemuan RMAP.",
       "noDiscoveries": "Belum ada antarmuka penemuan RMAP yang terdengar.",
       "filterEmpty": "Tidak ada antarmuka yang cocok dengan filter ini.",
-      "hint": "Node hanya muncul ketika operator mengaktifkan discoverable=yes. Jalur LoRa membutuhkan hub TCP (misalnya rmap.world:4242) untuk menyampaikan pengumuman. Untuk cakupan di seluruh dunia, gunakan tautan peta global."
+      "hint": "Node hanya muncul ketika operator mengaktifkan publikasi RMAP. Jalur LoRa membutuhkan hub TCP (misalnya rmap.world:4242) untuk menyampaikan pengumuman. Untuk cakupan di seluruh dunia, gunakan tautan peta global."
     }
   }
 }

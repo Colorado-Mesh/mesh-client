@@ -4046,7 +4046,7 @@
       "stackOff": "Avvia lo stack Reticulum per ascoltare gli annunci di scoperta RMAP.",
       "noDiscoveries": "Nessuna interfaccia di rilevamento RMAP ancora sentita.",
       "filterEmpty": "Nessuna interfaccia corrisponde a questo filtro.",
-      "hint": "I nodi appaiono solo quando gli operatori abilitano discoverable=yes. I percorsi LoRa necessitano di un hub TCP (ad esempio rmap.world:4242) per trasmettere gli annunci. Per la copertura in tutto il mondo, utilizzare il link della mappa globale."
+      "hint": "I nodi appaiono solo quando gli operatori abilitano la pubblicazione RMAP. I percorsi LoRa necessitano di un hub TCP (ad esempio rmap.world:4242) per trasmettere gli annunci. Per la copertura in tutto il mondo, utilizzare il link della mappa globale."
     }
   }
 }

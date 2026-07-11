@@ -3605,7 +3605,7 @@
       "invalidHost": "Nome de anfitrião inválido para contactável em.",
       "tooLong": "O valor alcançável é muito longo."
     },
-    "hint": "Aplica descobrível=sim e as coordenadas GPS do aplicativo a todas as interfaces habilitadas para RMAP (RNode, KISS, BLE peer, I2P, UDP, pipe). Use alternâncias RMAP por interface na Conexão para controle fino. Os caminhos LoRa também permitem o transporte e o hub rmap.world.",
+    "hint": "Aplica publicação RMAP e as coordenadas GPS do aplicativo a todas as interfaces habilitadas para RMAP (RNode, KISS, BLE peer, I2P, UDP, pipe). Use alternâncias RMAP por interface na Conexão para controle fino. Os caminhos LoRa também permitem o transporte e o hub rmap.world.",
     "openGlobalMap": "Abrir mapa global",
     "openGlobalMapAria": "Abra o mapa global do RMAP v4 em rmap.world",
     "applyPartialSuccess": "Configurações de RMAP aplicadas às interfaces {{applied}} de {{total}}.",
@@ -4046,7 +4046,7 @@
       "stackOff": "Inicie a pilha Reticulum para ouvir os anúncios de descoberta do RMAP.",
       "noDiscoveries": "Nenhuma interface de descoberta RMAP ouvida ainda.",
       "filterEmpty": "Nenhuma interface corresponde a este filtro.",
-      "hint": "Os nós aparecem apenas quando os operadores ativam detectable=yes. Os caminhos LoRa precisam de um hub TCP (por exemplo, rmap.world:4242) para retransmitir anúncios. Para cobertura mundial, use o link do mapa global."
+      "hint": "Os nós aparecem apenas quando os operadores ativam a publicação RMAP. Os caminhos LoRa precisam de um hub TCP (por exemplo, rmap.world:4242) para retransmitir anúncios. Para cobertura mundial, use o link do mapa global."
     }
   }
 }

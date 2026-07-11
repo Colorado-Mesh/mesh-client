@@ -4046,7 +4046,7 @@
       "stackOff": "启动Reticulum堆栈以收听RMAP发现通知。",
       "noDiscoveries": "尚未听到RMAP发现接口。",
       "filterEmpty": "没有与此筛选器匹配的接口。",
-      "hint": "只有当操作员启用discoverable = yes时，节点才会出现。LoRa路径需要TCP集线器（例如rmap.world: 4242 ）来中继通告。如需覆盖全球，请使用全球地图链接。"
+      "hint": "只有当操作员启用RMAP发布时，节点才会出现。LoRa路径需要TCP集线器（例如rmap.world:4242）来中继通告。如需覆盖全球，请使用全球地图链接。"
     }
   }
 }

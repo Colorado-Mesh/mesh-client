@@ -3239,7 +3239,10 @@ function checkReticulumMapIssues(ctx) {
     }
   }
 
-  if (flatKey === 'reticulumRmapDiscovery.hint' && /discoverable\s*=\s*yes/i.test(val)) {
+  if (
+    (flatKey === 'reticulumRmapDiscovery.hint' || flatKey === 'reticulumMap.empty.hint') &&
+    /(?:discoverable|detectable)\s*=\s*yes|descobr[ií]vel\s*=\s*sim/i.test(val)
+  ) {
     issues.push('RMAP hint must describe publishing in plain language, not raw discoverable=yes');
   }
 

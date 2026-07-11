@@ -4046,7 +4046,7 @@
       "stackOff": "Inicie la pila Reticulum para escuchar los anuncios de descubrimiento de RMAP.",
       "noDiscoveries": "Aún no se han escuchado interfaces de descubrimiento RMAP.",
       "filterEmpty": "No hay interfaces que coincidan con este filtro.",
-      "hint": "Los nodos aparecen solo cuando los operadores habilitan discoverable=yes. Las rutas LoRa necesitan un concentrador TCP (por ejemplo, rmap.world:4242) para retransmitir anuncios. Para una cobertura mundial, utilice el enlace del mapa global."
+      "hint": "Los nodos aparecen solo cuando los operadores habilitan la publicación RMAP. Las rutas LoRa necesitan un concentrador TCP (por ejemplo, rmap.world:4242) para retransmitir anuncios. Para una cobertura mundial, utilice el enlace del mapa global."
     }
   }
 }
