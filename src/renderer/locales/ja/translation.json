@@ -817,7 +817,7 @@
       "replaceIdentityConfirmTitle": "Reticulum のアイデンティティを置き換えますか?",
       "replaceIdentityConfirmMessage": "これにより、現在の ID キーが置き換えられ、Reticulum スタックが再起動されます。一致する秘密キーをインポートしない限り、保存されたメタデータは一致しなくなる可能性があります。",
       "replaceIdentityConfirmAction": "ID を置き換える",
-      "invalidMnemonic": "無効なリカバリ フレーズ — 有効な BIP-39 英単語を 12 文字入力してください。",
+      "invalidMnemonic": "無効なリカバリ フレーズ — 有効な BIP-39 英単語を 12 語入力してください。",
       "invalidPrivateKeyLength": "秘密キー ファイルは正確に 64 バイトである必要があります。",
       "identityAlreadyConfigured": "ID はすでに構成されています。新しいものをインポートするには、置換を確認します。",
       "identityFileMissing": "ID キー ファイルがありません。秘密キーまたは回復フレーズを再インポートします。",
@@ -1054,7 +1054,7 @@
       "needsSync": "{{count}}有効なローカルインターフェースにはRMAP検出の同期が必要です",
       "noPublishTargets": "RMAPに公開する有効なローカルインターフェイスはありません。",
       "syncSuccess": "RMAP検出がインターフェイスに同期されました。",
-      "openGlobalMap": "グローバル マップの種類",
+      "openGlobalMap": "グローバルマップ",
       "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く",
       "syncFailed": "RMAP検出の同期に失敗しました。"
     }
@@ -3605,7 +3605,7 @@
       "invalidHost": "に到達可能なホスト名が無効です。",
       "tooLong": "値で到達可能な時間が長すぎます。"
     },
-    "hint": "すべての有効なRMAP対応インターフェイス（ RNode、KISS、BLEピア、I 2 P、UDP、パイプ）にdiscoverable = yesとApp GPS座標を適用します。インターフェースごとのRMAPトグルを接続で使用して、細かい制御を行います。LoRaパスは、トランスポートとrmap.worldハブも有効にします。",
+    "hint": "すべての有効なRMAP対応インターフェイス（RNode、KISS、BLEピア、I2P、UDP、パイプ）にRMAP公開とApp GPS座標を適用します。インターフェースごとのRMAPトグルを接続で使用して、細かい制御を行います。LoRaパスは、トランスポートとrmap.worldハブも有効にします。",
     "openGlobalMap": "グローバルマップを開く",
     "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く",
     "applyPartialSuccess": "RMAP設定は、{{total}}インターフェイスの{{applied}}に適用されます。",

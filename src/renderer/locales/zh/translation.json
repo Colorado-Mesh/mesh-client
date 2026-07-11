@@ -3605,7 +3605,7 @@
       "invalidHost": "上可访问的主机名无效。",
       "tooLong": "可触及的值太长。"
     },
-    "hint": "将discoverable = yes和应用GPS坐标应用于所有启用的支持RMAP的接口（ RNode、KISS、BLE对等点、I2P、UDP、管道）。使用连接上的每个接口RMAP切换进行精细控制。LoRa路径还支持传输和rmap.world集线器。",
+    "hint": "将RMAP发布和应用GPS坐标应用于所有启用的支持RMAP的接口（RNode、KISS、BLE对等点、I2P、UDP、管道）。使用连接上的每个接口RMAP切换进行精细控制。LoRa路径还支持传输和rmap.world集线器。",
     "openGlobalMap": "全球测绘",
     "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图",
     "applyPartialSuccess": "RMAP设置已应用于{{applied}}/{{total}}接口。",

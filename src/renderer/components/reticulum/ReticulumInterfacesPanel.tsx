@@ -57,6 +57,7 @@ import {
   type ReticulumRnodeTransportKind,
   RNODE_DEFAULT_TCP_PORT,
 } from '@/renderer/lib/reticulum/reticulumRnodeTransport';
+import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import type {
   ReticulumInterfaceRow,
   ReticulumSerialPortOption,
@@ -672,12 +673,6 @@ export function ReticulumInterfacesPanel({
     [addToast, identityDisplayName, onRefresh, t],
   );
 
-  const parseStackSettings = (raw: Record<string, unknown>) => ({
-    enable_transport: Boolean(raw.enable_transport),
-    share_instance: raw.share_instance !== false,
-    loglevel: typeof raw.loglevel === 'number' ? raw.loglevel : Number(raw.loglevel) || 4,
-  });
-
   const handleToggleRmapDiscoverable = useCallback(
     async (iface: ReticulumInterfaceRow) => {
       const enable = iface.discoverable !== true;
@@ -694,7 +689,7 @@ export function ReticulumInterfacesPanel({
         await setReticulumRmapDiscoverableForInterface(iface, enable, {
           discoveryName: identityDisplayName,
           interfaces,
-          stackSettings: parseStackSettings(stackRaw),
+          stackSettings: parseReticulumStackSettingsPayload(stackRaw),
         });
         addToast(
           enable

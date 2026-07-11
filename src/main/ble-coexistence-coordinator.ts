@@ -128,7 +128,22 @@ export class BleCoexistenceCoordinator {
   async suspendNobleForReticulumBleConnect(): Promise<void> {
     await this.acquireScan('reticulum');
     if (this.nobleManager && (process.platform === 'darwin' || process.platform === 'win32')) {
-      await this.nobleManager.disconnectAllSessions();
+      const disconnectMs = 30_000;
+      try {
+        await Promise.race([
+          this.nobleManager.disconnectAllSessions(),
+          new Promise<void>((_, reject) => {
+            setTimeout(() => {
+              reject(new Error('Noble disconnectAll timeout'));
+            }, disconnectMs);
+          }),
+        ]);
+      } catch (err) {
+        console.warn(
+          '[BleCoexistence] disconnectAllSessions failed or timed out (proceeding with yield):',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
+      }
     }
   }
 }

@@ -3605,7 +3605,7 @@
       "invalidHost": "Nom d'hôte non valide pour joignable le.",
       "tooLong": "La valeur atteignable est trop longue."
     },
-    "hint": "Applique discoverable=yes et Appliquer les coordonnées GPS à toutes les interfaces compatibles RMAP activées (RNode, KISS, ble peer, I2P, UDP, pipe). Utilisez les bascules RMAP par interface sur la connexion pour un contrôle fin. Les chemins LoRa permettent également le transport et le hub rmap.world.",
+    "hint": "Applique la publication RMAP et les coordonnées GPS de l'application à toutes les interfaces compatibles RMAP activées (RNode, KISS, ble peer, I2P, UDP, pipe). Utilisez les bascules RMAP par interface sur la connexion pour un contrôle fin. Les chemins LoRa permettent également le transport et le hub rmap.world.",
     "openGlobalMap": "Carte mondiale",
     "openGlobalMapAria": "Ouvrez la carte globale RMAP v4 sur rmap.world",
     "applyPartialSuccess": "Paramètres RMAP appliqués à {{applied}} des interfaces {{total}}.",

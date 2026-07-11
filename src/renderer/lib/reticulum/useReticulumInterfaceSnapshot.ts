@@ -3,13 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useNowMs } from '@/renderer/hooks/useNowMs';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import {
-  isReticulumBleRnodeInterfaceRow,
-  isReticulumBleRnodeOnline,
-  prepareReticulumBleRnodeConnect,
-  releaseReticulumBleRnodeConnect,
-  syncReticulumBleRegistry,
-} from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
+import { syncReticulumBleRegistry } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
 import type { ReticulumLocalInterfaceHealthOptions } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import { logReticulumLocalInterfaceHealthChanges } from '@/renderer/lib/reticulum/reticulumLocalInterfaceLogging';
 import {
@@ -17,6 +11,7 @@ import {
   RETICULUM_BLE_CONNECT_GRACE_MS,
   scheduleReticulumLocalInterfaceBurst,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
+import { syncReticulumNobleBleYield } from '@/renderer/lib/reticulum/reticulumNobleBleYield';
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
@@ -72,7 +67,7 @@ export function useReticulumInterfaceSnapshot({
   >(null);
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burstCancelRef = useRef<(() => void) | null>(null);
-  const bleNobleYieldActiveRef = useRef(false);
+  const nobleBleYieldStateRef = useRef({ yieldActive: false });
 
   const nowMs = useNowMs(bleConnectGraceExpiresAt > 0, bleConnectGraceExpiresAt > 0 ? 1_000 : 0);
   const healthOptions = useMemo((): ReticulumLocalInterfaceHealthOptions | undefined => {
@@ -145,6 +140,15 @@ export function useReticulumInterfaceSnapshot({
       setBleConnectGraceExpiresAt(0);
       burstCancelRef.current?.();
       burstCancelRef.current = null;
+      void syncReticulumNobleBleYield(
+        {
+          sidecarActive: false,
+          interfaces: [],
+          nowMs: Date.now(),
+          bleConnectGraceExpiresAt: 0,
+        },
+        nobleBleYieldStateRef.current,
+      );
       return;
     }
     beginBleConnectGrace();
@@ -200,33 +204,15 @@ export function useReticulumInterfaceSnapshot({
     if (!sidecarApiReady || bleConnectGraceExpiresAt <= 0 || nowMs <= 0) {
       return;
     }
-    const hasEnabledBleRnode = interfaces.some(
-      (row) => row.enabled && isReticulumBleRnodeInterfaceRow(row),
+    void syncReticulumNobleBleYield(
+      {
+        sidecarActive: true,
+        interfaces,
+        nowMs,
+        bleConnectGraceExpiresAt,
+      },
+      nobleBleYieldStateRef.current,
     );
-    const hasOfflineBleRnode = interfaces.some(
-      (row) =>
-        row.enabled &&
-        isReticulumBleRnodeInterfaceRow(row) &&
-        row.status.toLowerCase() !== 'up' &&
-        row.status.toLowerCase() !== 'online',
-    );
-    if (hasOfflineBleRnode && !bleNobleYieldActiveRef.current) {
-      void (async () => {
-        const state = await window.electronAPI.bleCoexistence.getState();
-        if (state.scanOwner === 'reticulum') {
-          bleNobleYieldActiveRef.current = true;
-          return;
-        }
-        bleNobleYieldActiveRef.current = true;
-        await prepareReticulumBleRnodeConnect();
-      })();
-    }
-    const bleRnodeOnline = interfaces.some((row) => isReticulumBleRnodeOnline(row));
-    const graceExpired = nowMs >= bleConnectGraceExpiresAt;
-    if (bleNobleYieldActiveRef.current && (!hasEnabledBleRnode || bleRnodeOnline || graceExpired)) {
-      bleNobleYieldActiveRef.current = false;
-      void releaseReticulumBleRnodeConnect();
-    }
   }, [sidecarApiReady, interfaces, bleConnectGraceExpiresAt, nowMs]);
 
   return {

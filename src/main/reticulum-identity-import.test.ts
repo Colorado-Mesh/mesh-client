@@ -5,10 +5,15 @@ import {
   showReticulumIdentityImportDialog,
 } from './reticulum-identity-import';
 
-const { showOpenDialogMock, readFileSyncMock } = vi.hoisted(() => ({
-  showOpenDialogMock: vi.fn(),
-  readFileSyncMock: vi.fn(),
-}));
+const { showOpenDialogMock, openSyncMock, fstatSyncMock, readSyncMock, closeSyncMock } = vi.hoisted(
+  () => ({
+    showOpenDialogMock: vi.fn(),
+    openSyncMock: vi.fn(),
+    fstatSyncMock: vi.fn(),
+    readSyncMock: vi.fn(),
+    closeSyncMock: vi.fn(),
+  }),
+);
 
 vi.mock('electron', () => ({
   dialog: {
@@ -18,14 +23,21 @@ vi.mock('electron', () => ({
 
 vi.mock('fs', () => ({
   default: {
-    readFileSync: readFileSyncMock,
+    openSync: openSyncMock,
+    fstatSync: fstatSyncMock,
+    readSync: readSyncMock,
+    closeSync: closeSyncMock,
   },
 }));
 
 describe('showReticulumIdentityImportDialog', () => {
   beforeEach(() => {
     showOpenDialogMock.mockReset();
-    readFileSyncMock.mockReset();
+    openSyncMock.mockReset();
+    fstatSyncMock.mockReset();
+    readSyncMock.mockReset();
+    closeSyncMock.mockReset();
+    openSyncMock.mockReturnValue(3);
   });
 
   it('returns null content when dialog is canceled', async () => {
@@ -40,22 +52,28 @@ describe('showReticulumIdentityImportDialog', () => {
 
   it('rejects files that are not exactly 64 bytes', async () => {
     showOpenDialogMock.mockResolvedValue({ canceled: false, filePaths: ['/tmp/key.retid'] });
-    readFileSyncMock.mockReturnValue(Buffer.alloc(32));
+    fstatSyncMock.mockReturnValue({ size: 32 });
     await expect(showReticulumIdentityImportDialog()).resolves.toEqual({
       path: '/tmp/key.retid',
       contentBase64: null,
       byteLength: 32,
       error: 'invalid_private_key_length',
     });
+    expect(closeSyncMock).toHaveBeenCalledWith(3);
   });
 
   it('returns base64 for a valid 64-byte identity file', async () => {
     showOpenDialogMock.mockResolvedValue({ canceled: false, filePaths: ['/tmp/key.retid'] });
     const bytes = Buffer.alloc(RNS_PRIVATE_KEY_LEN, 0xab);
-    readFileSyncMock.mockReturnValue(bytes);
+    fstatSyncMock.mockReturnValue({ size: RNS_PRIVATE_KEY_LEN });
+    readSyncMock.mockImplementation((_fd: number, buf: Buffer, _offset: number, length: number) => {
+      bytes.copy(buf, 0, 0, length);
+      return length;
+    });
     const result = await showReticulumIdentityImportDialog();
     expect(result.error).toBeNull();
     expect(result.byteLength).toBe(RNS_PRIVATE_KEY_LEN);
     expect(result.contentBase64).toBe(bytes.toString('base64'));
+    expect(closeSyncMock).toHaveBeenCalledWith(3);
   });
 });

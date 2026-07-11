@@ -132,12 +132,13 @@ Event types: `lxmf_message`, `lxmf_outbound_status`, `peers_updated`, `stats_upd
 
 Renderer calls `electronAPI.reticulum.*`; main process proxies to this API (sandboxed renderer cannot reach localhost directly).
 
-| IPC channel                                                     | Role                                        |
-| --------------------------------------------------------------- | ------------------------------------------- |
-| `reticulum:start` / `stop` / `getStatus`                        | Sidecar lifecycle                           |
-| `reticulum:proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete` | HTTP proxy to paths above                   |
-| `reticulum:readDefaultConfigFile`                               | Read first existing system rnsd config path |
-| `reticulum:showConfigImportDialog`                              | Native file picker for config import        |
-| `reticulum:onEvent` / `onStatus`                                | WS events and sidecar status                |
+| IPC channel                                                     | Role                                                             |
+| --------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `reticulum:start` / `stop` / `getStatus`                        | Sidecar lifecycle                                                |
+| `reticulum:proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete` | HTTP proxy to paths above                                        |
+| `reticulum:readDefaultConfigFile`                               | Read first existing system rnsd config path                      |
+| `reticulum:showConfigImportDialog`                              | Native file picker for config import                             |
+| `reticulum:showIdentityImportDialog`                            | Native file picker for 64-byte private key (`.retid`, `.key`, …) |
+| `reticulum:onEvent` / `onStatus`                                | WS events and sidecar status                                     |
 
 SQLite chat history uses separate `db:*` handlers (`getReticulumMessages`, `saveReticulumMessage`, `searchReticulumMessages`, `deleteReticulumMessage`, destination upserts).

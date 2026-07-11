@@ -22,6 +22,7 @@ import {
   validateRmapReachableOn,
 } from '@/renderer/lib/reticulum/reticulumRmapDiscovery';
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 
 import { ConfirmModal } from './ConfirmModal';
@@ -32,18 +33,6 @@ export interface ReticulumRmapDiscoveryControlsProps {
   sidecarApiReady: boolean;
   identityDisplayName?: string | null;
   onOpenAppGpsSettings?: () => void;
-}
-
-function parseStackSettings(raw: Record<string, unknown>): {
-  enable_transport: boolean;
-  share_instance: boolean;
-  loglevel: number;
-} {
-  return {
-    enable_transport: Boolean(raw.enable_transport),
-    share_instance: raw.share_instance !== false,
-    loglevel: typeof raw.loglevel === 'number' ? raw.loglevel : Number(raw.loglevel) || 4,
-  };
 }
 
 /** RMAP v4 discovery publish controls for the Reticulum Network tab. */
@@ -150,7 +139,7 @@ export function ReticulumRmapDiscoveryControls({
               ? heightParsed
               : null,
           reachableOn: reachableOn.trim() || null,
-          stackSettings: parseStackSettings(stackRaw),
+          stackSettings: parseReticulumStackSettingsPayload(stackRaw),
         });
         if (result.errors.length > 0) {
           if (result.applied === 0) {

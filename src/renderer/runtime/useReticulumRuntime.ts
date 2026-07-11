@@ -18,6 +18,7 @@ import {
   type ReticulumRawPacketEntry,
 } from '@/renderer/lib/rawPacketLogConstants';
 import { resolveReticulumOutboundViaFromInterfaces } from '@/renderer/lib/reticulum/classifyReticulumVia';
+import { clearReticulumSessionStores } from '@/renderer/lib/reticulum/clearReticulumSessionStores';
 import {
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
@@ -47,6 +48,7 @@ import {
   invalidateReticulumInterfacesCache,
   type ReticulumSidecarInterfaceRow,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
 import { registerReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
 import {
@@ -132,6 +134,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const stateRef = useRef(state);
   const localInterfacesRef = useRef<ReticulumSidecarInterfaceRow[]>([]);
   const nodeStoreSlice = useNodeStore((s) => (identityId ? s.nodes[identityId] : undefined));
+
+  const sidecarActiveForBleYield =
+    state.status === 'configured' || state.status === 'connected' || state.status === 'stale';
+  useReticulumNobleBleYieldWatcher(sidecarActiveForBleYield);
 
   useEffect(() => {
     stateRef.current = state;
@@ -457,8 +463,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     setSelfLxmfHash(null);
     rawPacketAppenderRef.current?.clearPending();
     setRawPackets([]);
-    useReticulumDiscoveryMapStore.getState().clear();
-    useReticulumPeerStore.getState().clearPeers();
+    clearReticulumSessionStores();
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);
@@ -567,8 +572,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     setSelfLxmfHash(null);
     rawPacketAppenderRef.current?.clearPending();
     setRawPackets([]);
-    useReticulumDiscoveryMapStore.getState().clear();
-    useReticulumPeerStore.getState().clearPeers();
+    clearReticulumSessionStores();
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);
