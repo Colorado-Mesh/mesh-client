@@ -3605,7 +3605,7 @@
       "invalidHost": "上可访问的主机名无效。",
       "tooLong": "可触及的值太长。"
     },
-    "hint": "将discoverable = yes和应用GPS坐标应用于所有启用的支持RMAP的接口（ RNode、KISS、BLE对等点、I2P、UDP、管道）。使用连接上的每个接口RMAP切换进行精细控制。LoRa路径还支持传输和rmap.world集线器。",
+    "hint": "将RMAP发布和应用GPS坐标应用于所有启用的支持RMAP的接口（RNode、KISS、BLE对等点、I2P、UDP、管道）。使用连接上的每个接口RMAP切换进行精细控制。LoRa路径还支持传输和rmap.world集线器。",
     "openGlobalMap": "全球测绘",
     "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图",
     "applyPartialSuccess": "RMAP设置已应用于{{applied}}/{{total}}接口。",
@@ -4046,7 +4046,7 @@
       "stackOff": "启动Reticulum堆栈以收听RMAP发现通知。",
       "noDiscoveries": "尚未听到RMAP发现接口。",
       "filterEmpty": "没有与此筛选器匹配的接口。",
-      "hint": "只有当操作员启用discoverable = yes时，节点才会出现。LoRa路径需要TCP集线器（例如rmap.world: 4242 ）来中继通告。如需覆盖全球，请使用全球地图链接。"
+      "hint": "只有当操作员启用RMAP发布时，节点才会出现。LoRa路径需要TCP集线器（例如rmap.world:4242）来中继通告。如需覆盖全球，请使用全球地图链接。"
     }
   }
 }

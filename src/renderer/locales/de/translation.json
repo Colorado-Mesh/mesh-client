@@ -1054,7 +1054,7 @@
       "needsSync": "{{count}} aktivierte lokale Schnittstelle(n) benötigen RMAP Discovery Sync",
       "noPublishTargets": "Keine aktivierten lokalen Schnittstellen zum Veröffentlichen auf RMAP.",
       "syncSuccess": "RMAP-Erkennung mit Schnittstelle synchronisiert.",
-      "openGlobalMap": "[Globale Karte?]",
+      "openGlobalMap": "Globale Karte",
       "openGlobalMapAria": "RMAP v4 Global Map auf rmap.world öffnen",
       "syncFailed": "RMAP-Erkennungssynchronisierung fehlgeschlagen."
     }
@@ -3605,7 +3605,7 @@
       "invalidHost": "Ungültiger Hostname für erreichbar am.",
       "tooLong": "Der erreichbare Wert ist zu lang."
     },
-    "hint": "Wendet discoverable=yes und App GPS-Koordinaten auf alle aktivierten RMAP-fähigen Schnittstellen (RNode, KISS, BLE Peer, I2P, UDP, Pipe) an. Verwenden Sie RMAP-Schalter pro Schnittstelle für die Verbindung zur Feinsteuerung. LoRa-Pfade ermöglichen auch den Transport und den Hub rmap.world.",
+    "hint": "Wendet RMAP-Veröffentlichung und App-GPS-Koordinaten auf alle aktivierten RMAP-fähigen Schnittstellen (RNode, KISS, BLE Peer, I2P, UDP, Pipe) an. Verwenden Sie RMAP-Schalter pro Schnittstelle für die Verbindung zur Feinsteuerung. LoRa-Pfade ermöglichen auch den Transport und den Hub rmap.world.",
     "openGlobalMap": "Globale Karte öffnen",
     "openGlobalMapAria": "RMAP v4 Global Map auf rmap.world öffnen",
     "applyPartialSuccess": "RMAP-Einstellungen wurden auf {{applied}} von {{total}} Schnittstellen angewendet.",

@@ -20,21 +20,36 @@ export async function showReticulumIdentityImportDialog(): Promise<ReticulumIden
   }
   const filePath = result.filePaths[0];
   try {
-    const data = fs.readFileSync(filePath);
-    if (data.length !== RNS_PRIVATE_KEY_LEN) {
+    const fd = fs.openSync(filePath, 'r');
+    try {
+      const stat = fs.fstatSync(fd);
+      if (stat.size !== RNS_PRIVATE_KEY_LEN) {
+        return {
+          path: filePath,
+          contentBase64: null,
+          byteLength: stat.size,
+          error: 'invalid_private_key_length',
+        };
+      }
+      const data = Buffer.alloc(RNS_PRIVATE_KEY_LEN);
+      const bytesRead = fs.readSync(fd, data, 0, RNS_PRIVATE_KEY_LEN, 0);
+      if (bytesRead !== RNS_PRIVATE_KEY_LEN) {
+        return {
+          path: filePath,
+          contentBase64: null,
+          byteLength: bytesRead,
+          error: 'invalid_private_key_length',
+        };
+      }
       return {
         path: filePath,
-        contentBase64: null,
+        contentBase64: data.toString('base64'),
         byteLength: data.length,
-        error: 'invalid_private_key_length',
+        error: null,
       };
+    } finally {
+      fs.closeSync(fd);
     }
-    return {
-      path: filePath,
-      contentBase64: data.toString('base64'),
-      byteLength: data.length,
-      error: null,
-    };
   } catch {
     // catch-no-log-ok: dialog file read failed; caller shows error state
     return {

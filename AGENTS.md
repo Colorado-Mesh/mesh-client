@@ -144,7 +144,7 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 - **Runtime:** `useReticulumRuntime`, `reticulumSession.ts`, `reticulumIngest.ts`; connect starts sidecar, not `ConnectionDriver` RF
 - **Diagnostics:** `ReticulumDiagnosticEngine.ts` (Reticulum-native rows; no LoRa hop-goblin semantics)
 - **No Noble/MQTT** for Reticulum tab; gate UI with `hasReticulumInterfaceConfig` / `hasReticulumNetworkPanel` / `ProtocolCapabilities`
-- **Multi-protocol BLE:** Meshtastic, MeshCore, and Reticulum (BLE Peer + `ble://` RNode) may connect to **different** BLE devices at once on all platforms. Coexistence: `ble-coexistence-coordinator.ts` (peripheral MAC registry + scan-only mutex); Linux mesh uses Web Bluetooth + sidecar `btleplug`. Same MAC rejected; scans serialized—never disconnect unrelated GATT for scans.
+- **Multi-protocol BLE:** Meshtastic, MeshCore, and Reticulum (BLE Peer + `ble://` RNode) may connect to **different** BLE devices at once on all platforms. Coexistence: `ble-coexistence-coordinator.ts` (peripheral MAC registry + scan-only mutex); Linux mesh uses Web Bluetooth + sidecar `btleplug`. Same MAC rejected; scans serialized—never disconnect unrelated GATT for scans. **Reticulum BLE RNode** on macOS/Windows may **suspend Noble** (`suspendNobleForReticulumBleConnect`, `reticulum-ble-rnode-config.ts`, `reticulumNobleBleYield.ts`, `useReticulumNobleBleYieldWatcher`); release dispatches `mesh-client:nobleBleYieldReleased` for Meshtastic/MeshCore reconnect.
 - **Docs:** [docs/reticulum.md](docs/reticulum.md), [docs/reticulum-sidecar-ipc.md](docs/reticulum-sidecar-ipc.md)
 
 ### Diagnostics
@@ -293,7 +293,7 @@ Do not change behavior guarded by `meshcoreZeroHopRepeaterWorkingState.test.ts` 
 
 - **Error humanization:** `connectionPanelErrorHumanize.ts` — serial/HTTP/BLE user-facing hints (i18n); uses `electronAPI.getPlatform()`.
 - **Last connection / reconnect rehydrate:** `lastConnectionStorage.ts` — `mesh-client:lastConnection:<protocol>` and BLE fallback keys; rebuild RF params after wake or Noble disconnect.
-- **Storage migrations:** `connectionPanelStorageMigrations.ts` — idempotent localStorage fixes on ConnectionPanel mount.
+- **Storage migrations:** `connectionPanelStorageMigrations.ts` — idempotent localStorage fixes on ConnectionPanel mount and from `main.tsx` before React mount (MeshCore MQTT preset reconcile, Colorado port 443 migration).
 - **MeshCore chat channel filter:** `meshcoreConfiguredChatChannels.ts` — zero-PSK slots excluded from unread badges and chat channel pills.
 
 ### Common issues

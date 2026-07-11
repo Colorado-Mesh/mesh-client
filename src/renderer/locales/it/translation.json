@@ -1054,7 +1054,7 @@
       "needsSync": "{{count}} le interfacce locali abilitate richiedono la sincronizzazione del rilevamento RMAP",
       "noPublishTargets": "Nessuna interfaccia locale abilitata da pubblicare su RMAP.",
       "syncSuccess": "Individuazione RMAP sincronizzata con l'interfaccia.",
-      "openGlobalMap": "È un attributo globale?",
+      "openGlobalMap": "Mappa globale",
       "openGlobalMapAria": "Apri la mappa globale RMAP v4 su rmap.world",
       "syncFailed": "Sincronizzazione rilevamento RMAP non riuscita."
     }
@@ -4019,7 +4019,7 @@
   "reticulumMap": {
     "title": "Mappa di scoperta",
     "subtitle": "Interfacce RMAP v4 opt-in ascoltate dal tuo stack (vista locale)",
-    "openGlobalMap": "È un attributo globale?",
+    "openGlobalMap": "Mappa globale",
     "openGlobalMapAria": "Apri la mappa globale RMAP v4 su rmap.world",
     "openPublishSettings": "Impostazioni di pubblicazione RMAP",
     "openPublishSettingsAria": "Apri le impostazioni di pubblicazione RMAP di Reticulum Network",
@@ -4046,7 +4046,7 @@
       "stackOff": "Avvia lo stack Reticulum per ascoltare gli annunci di scoperta RMAP.",
       "noDiscoveries": "Nessuna interfaccia di rilevamento RMAP ancora sentita.",
       "filterEmpty": "Nessuna interfaccia corrisponde a questo filtro.",
-      "hint": "I nodi appaiono solo quando gli operatori abilitano discoverable=yes. I percorsi LoRa necessitano di un hub TCP (ad esempio rmap.world:4242) per trasmettere gli annunci. Per la copertura in tutto il mondo, utilizzare il link della mappa globale."
+      "hint": "I nodi appaiono solo quando gli operatori abilitano la pubblicazione RMAP. I percorsi LoRa necessitano di un hub TCP (ad esempio rmap.world:4242) per trasmettere gli annunci. Per la copertura in tutto il mondo, utilizzare il link della mappa globale."
     }
   }
 }

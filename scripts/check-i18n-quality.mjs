@@ -578,6 +578,8 @@ export const BOOT_SEQUENCE_TRANSPORT_FALSE_FRIENDS = {
 export const RETICULUM_DEFAULT_HUB_KEYS = [
   'connectionPanel.reticulumInterfaces.defaultHubsLabel',
   'connectionPanel.reticulumInterfaces.addDefaultHubs',
+  'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
+  'connectionPanel.reticulumInterfaces.addDefaultHubsAllPresent',
   'connectionPanel.reticulumInterfaces.addDefaultHubsFailed',
 ];
 
@@ -3224,6 +3226,39 @@ function checkReticulumMapIssues(ctx) {
 
   if (flatKey === RETICULUM_MAP_OPEN_GLOBAL_KEY && /^\[.*\?]$/.test(val)) {
     issues.push('reticulumMap.openGlobalMap must not use CAT […?] placeholder');
+  }
+
+  if (
+    (flatKey === RETICULUM_MAP_OPEN_GLOBAL_KEY ||
+      flatKey === 'connectionPanel.reticulumRmap.openGlobalMap' ||
+      flatKey === 'reticulumRmapDiscovery.openGlobalMap') &&
+    locale !== 'en'
+  ) {
+    if (/attributo globale/i.test(val) || /\?\s*$/.test(val.trim())) {
+      issues.push('openGlobalMap must name the global map, not a yes/no attribute question');
+    }
+  }
+
+  if (
+    (flatKey === 'reticulumRmapDiscovery.hint' || flatKey === 'reticulumMap.empty.hint') &&
+    /(?:discoverable|detectable)\s*=\s*yes|descobr[ií]vel\s*=\s*sim/i.test(val)
+  ) {
+    issues.push('RMAP hint must describe publishing in plain language, not raw discoverable=yes');
+  }
+
+  if (
+    flatKey === 'connectionPanel.reticulumIdentity.importLabel' &&
+    enVal.includes('BIP-39') &&
+    locale !== 'en' &&
+    !/BIP-39/i.test(val)
+  ) {
+    issues.push('reticulumIdentity.importLabel must retain BIP-39 when English does');
+  }
+
+  if (flatKey === 'connectionPanel.reticulumIdentity.invalidMnemonic' && locale === 'ja') {
+    if (/12\s*文字/.test(val)) {
+      issues.push('invalidMnemonic in ja must use 12 words (語), not 12 characters (文字)');
+    }
   }
 
   if (flatKey === RETICULUM_MAP_REACHABLE_KEY && locale !== 'en') {

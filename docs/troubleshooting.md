@@ -961,6 +961,27 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 9. **Refresh errors** — transient sidecar errors show inline `refreshFailed` without clearing last-good markers.
 10. **No publish-capable interface** — Auto and outbound TCP client types cannot publish RMAP discovery.
 
+### Reticulum BLE RNode blocks Meshtastic/MeshCore Noble BLE
+
+**Symptoms**: Reticulum stack is running with an enabled BLE RNode; Meshtastic or MeshCore BLE scan/connect fails with “Bluetooth scan in progress (reticulum)” or Noble sessions stay disconnected.
+
+**Cause**: On macOS/Windows, sidecar start **yields Noble BLE** so btleplug can pair the RNode. mesh-client releases the scan mutex when the RNode connects, the grace window expires, or the stack stops.
+
+**Fix**:
+
+1. Wait up to ~30s after stack start for the BLE RNode to connect (Connection tab interface status **up** / **online**).
+2. Stop the Reticulum stack if you need immediate Meshtastic/MeshCore BLE access.
+3. Ensure you are on a current build with paired yield/release (`reticulumNobleBleYield.ts`, `useReticulumNobleBleYieldWatcher`).
+4. Check Device logs for `[BleCoexistence]` and `[useReticulumNobleBleYieldWatcher]`.
+
+### MeshCore Colorado Mesh / LetsMesh won't connect after upgrade
+
+**Symptoms**: MeshCore MQTT preset worked before upgrade; broker connection fails on port **1883** or wrong topic.
+
+**Cause**: Colorado Mesh moved to **wss port 443** with topic **`meshcore/DEN`**; LetsMesh uses **`meshcore/test`**. Stale `mesh-client:mqttSettings:meshcore` may retain old port/topic.
+
+**Fix**: Re-select the preset on the Connection tab, or clear `mesh-client:mqttSettings:meshcore` in devtools Application → Local Storage and reconnect. Migrations run on app start via `connectionPanelStorageMigrations.ts`.
+
 ### Reticulum interface add/edit/delete fails
 
 **Symptoms**: Connection tab **Add interface**, **Edit**, or **Delete** shows an inline error; interface list does not refresh.

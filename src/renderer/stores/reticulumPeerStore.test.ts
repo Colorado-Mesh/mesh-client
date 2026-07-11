@@ -1,10 +1,36 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  capReticulumPeerMaps,
   mergeReticulumPeerMaps,
   refreshReticulumPeersFromSidecar,
   useReticulumPeerStore,
 } from './reticulumPeerStore';
+
+describe('capReticulumPeerMaps', () => {
+  it('keeps newest peers by last_seen and drops orphaned contacts', () => {
+    const peers = new Map([
+      ['old', { destination_hash: 'old', last_seen: 1 }],
+      ['mid', { destination_hash: 'mid', last_seen: 50 }],
+      ['new', { destination_hash: 'new', last_seen: 100 }],
+    ]);
+    const contacts = new Map([
+      ['old', { destination_hash: 'old', last_heard: 1 }],
+      ['mid', { destination_hash: 'mid', last_heard: 50 }],
+      ['orphan', { destination_hash: 'orphan', last_heard: 200 }],
+    ]);
+    const { peers: cappedPeers, contacts: cappedContacts } = capReticulumPeerMaps(
+      peers,
+      contacts,
+      2,
+    );
+    expect(cappedPeers.size).toBe(2);
+    expect(cappedPeers.has('new')).toBe(true);
+    expect(cappedPeers.has('mid')).toBe(true);
+    expect(cappedContacts.has('mid')).toBe(true);
+    expect(cappedContacts.has('orphan')).toBe(false);
+  });
+});
 
 describe('mergeReticulumPeerMaps', () => {
   it('merges peers and contacts with SQLite overlay', () => {
@@ -81,6 +107,14 @@ describe('reticulumPeerStore', () => {
     expect(useReticulumPeerStore.getState().isContact('contact1')).toBe(true);
     expect(useReticulumPeerStore.getState().isContact('peeronly')).toBe(false);
     expect(useReticulumPeerStore.getState().isContact('CONTACT1')).toBe(true);
+  });
+
+  it('clearPeers empties peers and contacts', () => {
+    useReticulumPeerStore.getState().replacePeers([{ destination_hash: 'aa' }]);
+    useReticulumPeerStore.getState().replaceContacts([{ destination_hash: 'bb', last_heard: 1 }]);
+    useReticulumPeerStore.getState().clearPeers();
+    expect(useReticulumPeerStore.getState().peers.size).toBe(0);
+    expect(useReticulumPeerStore.getState().contacts.size).toBe(0);
   });
 
   it('toggleFavorite rolls back when SQLite upsert fails', async () => {

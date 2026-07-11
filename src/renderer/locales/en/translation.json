@@ -3583,7 +3583,7 @@
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 discovery",
     "publishToggle": "Publish on RMAP v4",
-    "hint": "Applies discoverable=yes and App GPS coordinates to all enabled RMAP-capable interfaces (RNode, KISS, BLE peer, I2P, UDP, pipe). Use per-interface RMAP toggles on Connection for fine control. LoRa paths also enable transport and the rmap.world hub.",
+    "hint": "Applies RMAP publishing and App GPS coordinates to all enabled RMAP-capable interfaces (RNode, KISS, BLE peer, I2P, UDP, pipe). Use per-interface RMAP toggles on Connection for fine control. LoRa paths also enable transport and the rmap.world hub.",
     "coordsStatus": "Map coordinates: {{lat}}, {{lon}} (from App → GPS / Location)",
     "gpsMissingWarning": "Set static GPS in App → GPS / Location before publishing on RMAP.",
     "announceIntervalMin": "Announce interval (minutes)",
@@ -3641,7 +3641,7 @@
       "stackOff": "Start the Reticulum stack to hear RMAP discovery announces.",
       "noDiscoveries": "No RMAP discovery interfaces heard yet.",
       "filterEmpty": "No interfaces match this filter.",
-      "hint": "Nodes appear only when operators enable discoverable=yes. LoRa paths need a TCP hub (for example rmap.world:4242) to relay announces. For worldwide coverage, use the global map link."
+      "hint": "Nodes appear only when operators enable RMAP publishing. LoRa paths need a TCP hub (for example rmap.world:4242) to relay announces. For worldwide coverage, use the global map link."
     }
   },
   "reticulumTopology": {
