@@ -3682,7 +3682,7 @@
     "loginTitle": "Iniciar sessão no servidor da sala",
     "adminLoginTitle": "Acessar Admin",
     "loginHelp": "Digite a senha do convidado para participar e postar. O padrão geralmente é «hello». Para servidores sem senha de convidado, use «Continuar somente leitura» (o login envia «hello» quando o campo está vazio).",
-    "adminLoginHelp": "Digite a senha do administrador da sala para gerenciar as configurações e ACLs. O padrão geralmente é \"senha\".",
+    "adminLoginHelp": "Digite a senha do administrador da sala para gerenciar as configurações e ACLs. O padrão geralmente é «hello».",
     "guestPasswordLabel": "Senha do Convidado",
     "guestPasswordPlaceholder": "hello",
     "adminPasswordLabel": "Senha de administrador",

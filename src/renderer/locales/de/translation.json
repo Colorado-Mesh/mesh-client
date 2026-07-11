@@ -3682,7 +3682,7 @@
     "loginTitle": "Melden Sie sich beim Server an",
     "adminLoginTitle": "Admin-Anmeldung",
     "loginHelp": "Geben Sie das Gastpasswort ein, um beizutreten und zu posten. Standard ist oft „hello“. Für Server ohne Gastpasswort „Schreibgeschützt fortfahren“ verwenden (Login sendet „hello“, wenn das Feld leer ist).",
-    "adminLoginHelp": "Geben Sie das Raumadministrator-Passwort ein, um Einstellungen und ACLs zu verwalten. Standard ist oft \"Passwort\".",
+    "adminLoginHelp": "Geben Sie das Raumadministrator-Passwort ein, um Einstellungen und ACLs zu verwalten. Standard ist oft „hello“.",
     "guestPasswordLabel": "Gastpasswort",
     "guestPasswordPlaceholder": "hello",
     "adminPasswordLabel": "Admin-Kennwort",

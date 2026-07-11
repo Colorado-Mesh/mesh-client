@@ -3682,7 +3682,7 @@
     "loginTitle": "룸 서버에 로그인",
     "adminLoginTitle": "관리자 로그인",
     "loginHelp": "게스트 비밀번호를 입력해 참여하고 게시하세요. 기본값은 종종 \"hello\"입니다. 게스트 비밀번호가 없는 서버는 \"읽기 전용으로 계속\"을 사용하세요(필드가 비어 있으면 로그인이 \"hello\"를 보냅니다).",
-    "adminLoginHelp": "설정 및 ACL을 관리하려면 룸 관리자 암호를 입력하십시오. 기본값은 종종 \"암호\" 입니다.",
+    "adminLoginHelp": "설정 및 ACL을 관리하려면 룸 관리자 암호를 입력하십시오. 기본값은 종종 \"hello\"입니다.",
     "guestPasswordLabel": "게스트 비밀번호",
     "guestPasswordPlaceholder": "hello",
     "adminPasswordLabel": "관리자 비밀번호",

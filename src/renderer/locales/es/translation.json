@@ -3682,7 +3682,7 @@
     "loginTitle": "Iniciar sesión en el servidor de la sala",
     "adminLoginTitle": "Inicio de sesión del administrador",
     "loginHelp": "Introduce la contraseña de invitado para unirte y publicar. El valor predeterminado suele ser «hello». Para servidores sin contraseña de invitado, usa «Continuar con la opción de solo lectura» (el inicio de sesión envía «hello» si el campo está vacío).",
-    "adminLoginHelp": "Introduzca la contraseña del administrador de la sala para gestionar la configuración y las ACL. El valor predeterminado suele ser \"contraseña\".",
+    "adminLoginHelp": "Introduzca la contraseña del administrador de la sala para gestionar la configuración y las ACL. El valor predeterminado suele ser «hello».",
     "guestPasswordLabel": "Contraseña de invitado",
     "guestPasswordPlaceholder": "hello",
     "adminPasswordLabel": "Contraseña del administrador",

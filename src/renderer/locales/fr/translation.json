@@ -3682,7 +3682,7 @@
     "loginTitle": "Connexion au serveur de salle",
     "adminLoginTitle": "Connexion à l’interface d’administration",
     "loginHelp": "Saisissez le mot de passe invité pour rejoindre et publier. La valeur par défaut est souvent « hello ». Pour les serveurs sans mot de passe invité, utilisez « Continuer en lecture seule » (la connexion envoie « hello » si le champ est vide).",
-    "adminLoginHelp": "Saisissez le mot de passe de l'administrateur de la salle pour gérer les paramètres et les listes de contrôle d'accès. La valeur par défaut est souvent « mot de passe ».",
+    "adminLoginHelp": "Saisissez le mot de passe de l'administrateur de la salle pour gérer les paramètres et les listes de contrôle d'accès. La valeur par défaut est souvent « hello ».",
     "guestPasswordLabel": "Mot de passe invité",
     "guestPasswordPlaceholder": "hello",
     "adminPasswordLabel": "Mot de passe de l'administrateur",

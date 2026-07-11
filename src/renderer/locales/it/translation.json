@@ -3682,7 +3682,7 @@
     "loginTitle": "Accedi al server della sala",
     "adminLoginTitle": "Login Amministratore",
     "loginHelp": "Inserisci la password ospite per partecipare e pubblicare. Il valore predefinito è spesso «hello». Per i server senza password ospite, usa «Continua in sola lettura» (l'accesso invia «hello» se il campo è vuoto).",
-    "adminLoginHelp": "Inserisci la password dell'amministratore della room per gestire le impostazioni e gli ACL. Il valore predefinito è spesso \"password\".",
+    "adminLoginHelp": "Inserisci la password dell'amministratore della room per gestire le impostazioni e gli ACL. Il valore predefinito è spesso «hello».",
     "guestPasswordLabel": "Password ospite",
     "guestPasswordPlaceholder": "hello",
     "adminPasswordLabel": "Password amministratore",

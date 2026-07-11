@@ -3682,7 +3682,7 @@
     "loginTitle": "Zaloguj się do serwera pokojowego",
     "adminLoginTitle": "Login administratora",
     "loginHelp": "Wprowadź hasło gościa, aby dołączyć i publikować. Domyślnie często jest „hello”. Na serwerach bez hasła gościa użyj „Kontynuuj tylko do odczytu” (logowanie wysyła „hello”, gdy pole jest puste).",
-    "adminLoginHelp": "Wprowadź hasło administratora pokoju, aby zarządzać ustawieniami i listami ACL. Domyślne jest często „hasło”.",
+    "adminLoginHelp": "Wprowadź hasło administratora pokoju, aby zarządzać ustawieniami i listami ACL. Domyślne jest często „hello”.",
     "guestPasswordLabel": "Hasło gościa",
     "guestPasswordPlaceholder": "hello",
     "adminPasswordLabel": "Hasło administracyjne",
