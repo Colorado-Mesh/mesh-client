@@ -377,6 +377,17 @@ if ! pnpm run test:run; then
   exit 1
 fi
 
+# Reticulum sidecar (Rust) — required before release; same gate as release/build CI packaging.
+if ! command -v cargo > /dev/null 2>&1; then
+  print_error "cargo not found. Install Rust (https://rustup.rs/) — Reticulum sidecar tests are required for release."
+  exit 1
+fi
+echo "Running Reticulum sidecar tests..."
+if ! pnpm run reticulum:sidecar:test; then
+  print_error "Reticulum sidecar tests failed."
+  exit 1
+fi
+
 print_success "All pre-flight checks passed!"
 
 echo ""

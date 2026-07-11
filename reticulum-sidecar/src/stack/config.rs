@@ -1713,6 +1713,14 @@ longitude = 2.3522
     }
 
     #[test]
+    fn interface_id_from_name_slugs_display_names() {
+        assert_eq!(interface_id_from_name("LoRa Node"), "lora-node");
+        assert_eq!(interface_id_from_name("BLE RNode"), "ble-rnode");
+        assert_eq!(interface_id_from_name("NV0N2"), "nv0n2");
+        assert_eq!(interface_id_from_name("  Hub TCP  "), "hub-tcp");
+    }
+
+    #[test]
     fn update_interface_preserves_discovery_when_patch_enabled_only() {
         let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
         fs::create_dir_all(&dir).unwrap();
@@ -1731,9 +1739,10 @@ longitude = -105.0
         )
         .unwrap();
 
+        let iface_id = interface_id_from_name("LoRa Node");
         let row = update_interface_in_config(
             &dir,
-            "lo-ra-node",
+            &iface_id,
             &UpdateInterfacePatch {
                 enabled: Some(true),
                 ..Default::default()
