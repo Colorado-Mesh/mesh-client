@@ -2775,13 +2775,18 @@ export default function ConnectionPanel({
                 Docs ↗
               </a>
               <span
-                className={`text-xs font-medium ${
-                  state.status === 'reconnecting'
-                    ? 'animate-pulse text-orange-400'
-                    : 'text-brand-green'
+                className={`inline-flex items-center gap-1 text-xs font-medium ${
+                  state.status === 'reconnecting' ? 'text-orange-200' : 'text-brand-green'
                 }`}
               >
-                ● {state.status}
+                {state.status === 'reconnecting' ? (
+                  <span aria-hidden className="inline-block animate-pulse">
+                    ●
+                  </span>
+                ) : (
+                  <>●</>
+                )}{' '}
+                {state.status}
               </span>
             </div>
           </div>

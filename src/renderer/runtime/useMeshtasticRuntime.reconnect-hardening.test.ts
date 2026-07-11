@@ -76,6 +76,13 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     );
   });
 
+  it('logs at debug when Noble yield release nudges reconnect', () => {
+    expect(SOURCE).toMatch(/nobleYieldReconnectNudgeRef\.current = true/);
+    expect(SOURCE).toMatch(
+      /afterNobleYieldRelease[\s\S]*?Noble BLE yield released — initiating Meshtastic reconnect/,
+    );
+  });
+
   it('skips Noble yield nudge when Meshtastic is configured and connected', () => {
     expect(SOURCE).toMatch(
       /onNobleYieldReleased[\s\S]*?meshtasticDriverConnectedRef\.current && deviceConfiguredRef\.current[\s\S]*?return;/,

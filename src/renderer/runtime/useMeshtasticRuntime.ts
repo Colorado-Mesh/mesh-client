@@ -1836,11 +1836,25 @@ export function useMeshtasticRuntime() {
   );
 
   // ─── Connection lost handler ──────────────────────────────────
+  const nobleYieldReconnectNudgeRef = useRef(false);
+
   const handleConnectionLost = useCallback(() => {
     reconnectGenerationRef.current += 1;
+    const afterNobleYieldRelease = nobleYieldReconnectNudgeRef.current;
+    nobleYieldReconnectNudgeRef.current = false;
     if (!isReconnectingRef.current) {
-      console.warn('[useMeshtasticRuntime] Connection lost — initiating reconnect');
+      if (afterNobleYieldRelease) {
+        console.debug(
+          '[useMeshtasticRuntime] Noble BLE yield released — initiating Meshtastic reconnect',
+        );
+      } else {
+        console.warn('[useMeshtasticRuntime] Connection lost — initiating reconnect');
+      }
       isReconnectingRef.current = true;
+    } else if (afterNobleYieldRelease) {
+      console.debug(
+        '[useMeshtasticRuntime] Noble BLE yield released during reconnect — restarting reconnect cycle',
+      );
     } else {
       console.warn(
         '[useMeshtasticRuntime] Connection lost during reconnect — restarting reconnect cycle',
@@ -2106,6 +2120,7 @@ export function useMeshtasticRuntime() {
       );
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
+      nobleYieldReconnectNudgeRef.current = true;
       handleConnectionLostRef.current();
     };
     window.addEventListener(NOBLE_BLE_YIELD_RELEASED_EVENT, onNobleYieldReleased);

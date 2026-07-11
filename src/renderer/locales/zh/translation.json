@@ -612,7 +612,8 @@
     "reconnect": "重新连接",
     "reconnectingAttempt": "正在重新连接… 尝试 {{attempt}}/{{max}}",
     "serialReselect": "USB串行连接丢失—请重新选择您的设备",
-    "serialReselectAction": "选择串行端口"
+    "serialReselectAction": "选择串行端口",
+    "statusRegion": "连接状态"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "最大MQTT重新连接尝试次数",

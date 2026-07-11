@@ -4011,7 +4011,11 @@ function ConnectionBanner({
     connectionType === 'serial'
   ) {
     return (
-      <div className="flex items-center justify-between border-b border-red-700 bg-red-900/80 px-4 py-2">
+      <div
+        role="region"
+        aria-label={t('connectionBanner.statusRegion')}
+        className="flex items-center justify-between border-b border-red-700 bg-red-900/80 px-4 py-2"
+      >
         <div className="flex items-center gap-2">
           <span className="text-red-400">⚠</span>
           <span className="text-sm text-red-200">{t('connectionBanner.serialReselect')}</span>
@@ -4030,7 +4034,11 @@ function ConnectionBanner({
 
   if (status === 'disconnected' && connectionLoss) {
     return (
-      <div className="flex items-center justify-between border-b border-red-700 bg-red-900/80 px-4 py-2">
+      <div
+        role="region"
+        aria-label={t('connectionBanner.statusRegion')}
+        className="flex items-center justify-between border-b border-red-700 bg-red-900/80 px-4 py-2"
+      >
         <div className="flex items-center gap-2">
           <span className="text-red-400">⚠</span>
           <span className="text-sm text-red-200">{t('connectionBanner.disconnectedLoss')}</span>
@@ -4049,7 +4057,11 @@ function ConnectionBanner({
 
   if (status === 'stale') {
     return (
-      <div className="flex items-center justify-between border-b border-yellow-700 bg-yellow-900/80 px-4 py-2">
+      <div
+        role="region"
+        aria-label={t('connectionBanner.statusRegion')}
+        className="flex items-center justify-between border-b border-yellow-700 bg-yellow-900/80 px-4 py-2"
+      >
         <div className="flex items-center gap-2">
           <span className="text-yellow-400">⚠</span>
           <span className="text-sm text-yellow-200">{t('connectionBanner.staleLoss')}</span>
@@ -4068,9 +4080,15 @@ function ConnectionBanner({
 
   if (status === 'reconnecting') {
     return (
-      <div className="flex items-center gap-2 border-b border-orange-700 bg-orange-900/80 px-4 py-2">
-        <span className="inline-block animate-spin text-orange-400">⟳</span>
-        <span className="animate-pulse text-sm text-orange-200">
+      <div
+        role="region"
+        aria-label={t('connectionBanner.statusRegion')}
+        className="flex items-center gap-2 border-b border-orange-700 bg-orange-900/80 px-4 py-2"
+      >
+        <span aria-hidden className="inline-block animate-spin text-orange-200">
+          ⟳
+        </span>
+        <span className="text-sm text-orange-200">
           {t('connectionBanner.reconnectingAttempt', {
             attempt: reconnectAttempt ?? 1,
             max: 5,

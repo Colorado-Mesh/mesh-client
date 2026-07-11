@@ -612,7 +612,8 @@
     "reconnect": "再接続",
     "reconnectingAttempt": "再接続中… {{attempt}}/{{max}} 回目",
     "serialReselect": "USBシリアル接続が失われました—デバイスを再度選択してください",
-    "serialReselectAction": "シリアルポートを選択"
+    "serialReselectAction": "シリアルポートを選択",
+    "statusRegion": "接続状態"
   },
   "connectionPanel": {
     "maxReconnectAttempts": "MQTT 再接続の最大試行回数",
