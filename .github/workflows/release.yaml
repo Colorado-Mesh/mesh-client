@@ -130,6 +130,18 @@ jobs:
         env:
           # electron-publish reads GH_TOKEN; GITHUB_TOKEN alone is not used for uploads
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # ── macOS code signing ─────────────────────────────────────────────
+          # CSC_LINK: base64-encoded .p12 Developer ID Application certificate.
+          # CSC_KEY_PASSWORD: password protecting the .p12 file.
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          # Disable identity auto-discovery when no cert is available (fork PRs)
+          # so electron-builder skips signing gracefully instead of erroring.
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.CSC_LINK && 'true' || 'false' }}
+          # ── macOS notarization ─────────────────────────────────────────────
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         # dist:*:publish scripts run electron-builder with --publish always
         run: ${{ matrix.build_script }}
 
