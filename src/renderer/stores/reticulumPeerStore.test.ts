@@ -107,6 +107,7 @@ describe('reticulumPeerStore', () => {
     expect(useReticulumPeerStore.getState().isContact('contact1')).toBe(true);
     expect(useReticulumPeerStore.getState().isContact('peeronly')).toBe(false);
     expect(useReticulumPeerStore.getState().isContact('CONTACT1')).toBe(true);
+    expect(useReticulumPeerStore.getState().isContact('NONEXISTENT')).toBe(false);
   });
 
   it('clearPeers empties peers and contacts', () => {
