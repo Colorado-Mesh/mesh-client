@@ -4,18 +4,22 @@ import * as meshcoreRepeaterRpcInFlight from './meshcoreRepeaterRpcInFlight';
 import * as meshcoreTracePathMultiplex from './meshcoreTracePathMultiplex';
 import {
   isMeshcoreCompanionDrainDeferred,
+  isMeshcoreSyncNextMessageTimeoutError,
   logMeshcoreWaitingMessagesDrainError,
   markMeshcoreCompanionTx,
+  markMeshcoreMsgWaitingEvent,
   resetMeshcoreWaitingMessagesDrainSchedule,
   resetMeshcoreWaitingMessagesDrainState,
   scheduleMeshcoreWaitingMessagesDrain,
   shouldActivateWaitingMessagesBanner,
+  shouldRunMeshcoreWaitingMessagesPeriodicPoll,
   waitingMessagesDrainTimeoutMs,
 } from './meshcoreWaitingMessagesDrain';
 import {
   MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS,
   MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS,
   MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
+  MESHCORE_WAITING_MESSAGES_POLL_MS,
   MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS,
@@ -199,6 +203,44 @@ describe('logMeshcoreWaitingMessagesDrainError', () => {
     logMeshcoreWaitingMessagesDrainError('manual sync', new Error('timed out after 60000ms'), true);
     expect(warnSpy).toHaveBeenCalled();
     warnSpy.mockRestore();
+  });
+});
+
+describe('isMeshcoreSyncNextMessageTimeoutError', () => {
+  it('matches silent syncNextMessage timeout messages', () => {
+    expect(
+      isMeshcoreSyncNextMessageTimeoutError(
+        new Error('MeshCore syncNextMessage timed out after 12000ms'),
+      ),
+    ).toBe(true);
+    expect(isMeshcoreSyncNextMessageTimeoutError(new Error('getWaitingMessages timed out'))).toBe(
+      false,
+    );
+  });
+});
+
+describe('shouldRunMeshcoreWaitingMessagesPeriodicPoll', () => {
+  beforeEach(() => {
+    resetMeshcoreWaitingMessagesDrainState(0);
+  });
+
+  it('runs when waiting message count is positive', () => {
+    expect(shouldRunMeshcoreWaitingMessagesPeriodicPoll(2, MESHCORE_WAITING_MESSAGES_POLL_MS)).toBe(
+      true,
+    );
+  });
+
+  it('skips when idle and no recent event 131', () => {
+    expect(shouldRunMeshcoreWaitingMessagesPeriodicPoll(0, MESHCORE_WAITING_MESSAGES_POLL_MS)).toBe(
+      false,
+    );
+  });
+
+  it('runs after a recent event 131', () => {
+    markMeshcoreMsgWaitingEvent(0);
+    expect(
+      shouldRunMeshcoreWaitingMessagesPeriodicPoll(0, MESHCORE_WAITING_MESSAGES_POLL_MS - 1),
+    ).toBe(true);
   });
 });
 

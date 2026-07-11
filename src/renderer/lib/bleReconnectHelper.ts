@@ -1,9 +1,17 @@
-import type { NobleBleSessionId } from '@/shared/electron-api.types';
+import type { NobleBleSessionId, NobleBleStartScanResult } from '@/shared/electron-api.types';
 
+import { MESHCORE_SETUP_ABORT_MESSAGE } from './bleConnectErrors';
 import { errLikeToLogString } from './errLikeToLogString';
+import { isBleScanBusyErrorMessage } from './reticulum/reticulumBleAdapterLease';
 import type { MeshProtocol } from './types';
 
 export const BLE_RECONNECT_SCAN_TIMEOUT_MS = 30_000;
+
+/** Poll interval while waiting for Reticulum/external BLE scan to release the adapter. */
+export const BLE_SCAN_BUSY_RETRY_INTERVAL_MS = 250;
+
+/** Max wait for scan mutex before failing Noble reconnect scan fallback. */
+export const BLE_SCAN_BUSY_MAX_WAIT_MS = 20_000;
 
 /** Noble wait-for-peripheral + scan fallback; ConnectionPanel must not use a shorter UI timeout. */
 export const BLE_NOBLE_AUTO_CONNECT_MAX_MS = 30_000 + BLE_RECONNECT_SCAN_TIMEOUT_MS + 15_000;
@@ -14,6 +22,59 @@ function isLinuxPlatform(): boolean {
 
 function isLinuxWebBluetoothPlatform(): boolean {
   return typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('linux');
+}
+
+function isMeshcoreSetupAbortError(err: unknown): boolean {
+  return (
+    err instanceof DOMException &&
+    err.name === 'AbortError' &&
+    err.message === MESHCORE_SETUP_ABORT_MESSAGE
+  );
+}
+
+function isNobleBleStartScanBusyResult(
+  result: NobleBleStartScanResult,
+): result is Extract<NobleBleStartScanResult, { ok: false; code: 'scan_busy' }> {
+  return !result.ok && result.code === 'scan_busy';
+}
+
+function nobleBleStartScanBusyMessage(owner: string): string {
+  return `Bluetooth scan in progress (${owner})`;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+/** Start Noble scan; retry when Reticulum or another owner holds the scan mutex. */
+export async function startNobleBleScanningWithRetry(
+  sessionId: NobleBleSessionId,
+  opts?: { maxWaitMs?: number; retryIntervalMs?: number },
+): Promise<void> {
+  const maxWaitMs = opts?.maxWaitMs ?? BLE_SCAN_BUSY_MAX_WAIT_MS;
+  const retryIntervalMs = opts?.retryIntervalMs ?? BLE_SCAN_BUSY_RETRY_INTERVAL_MS;
+  const deadline = Date.now() + maxWaitMs;
+  let lastOwner = 'unknown';
+
+  while (Date.now() < deadline) {
+    const result = await window.electronAPI.startNobleBleScanning(sessionId);
+    if (result.ok) {
+      return;
+    }
+    if (isNobleBleStartScanBusyResult(result)) {
+      lastOwner = result.owner;
+      console.debug(
+        `[bleReconnectHelper] scan busy (owner=${result.owner}) — retrying in ${retryIntervalMs}ms`,
+      );
+      await sleep(retryIntervalMs);
+      continue;
+    }
+    throw new Error('Noble BLE scan failed');
+  }
+
+  throw new Error(nobleBleStartScanBusyMessage(lastOwner));
 }
 
 /** Verify Noble BLE GATT is still connected after configure (macOS/Windows). */
@@ -40,7 +101,7 @@ export async function reconnectBleWithScan(
   protocol: MeshProtocol,
   peripheralId: string,
   connect: () => Promise<void>,
-  opts?: { scanTimeoutMs?: number },
+  opts?: { scanTimeoutMs?: number; scanBusyMaxWaitMs?: number },
 ): Promise<void> {
   if (isLinuxPlatform()) {
     await connect();
@@ -52,6 +113,9 @@ export async function reconnectBleWithScan(
     await connect();
     return;
   } catch (err) {
+    if (isMeshcoreSetupAbortError(err)) {
+      throw err;
+    }
     console.debug(
       '[bleReconnectHelper] immediate connect failed — scanning ' + errLikeToLogString(err),
     );
@@ -59,6 +123,8 @@ export async function reconnectBleWithScan(
 
   const sessionId: NobleBleSessionId = protocol;
   const timeoutMs = opts?.scanTimeoutMs ?? BLE_RECONNECT_SCAN_TIMEOUT_MS;
+  const scanBusyMaxWaitMs = opts?.scanBusyMaxWaitMs ?? BLE_SCAN_BUSY_MAX_WAIT_MS;
+  const scanStartedAt = Date.now();
 
   return new Promise<void>((resolve, reject) => {
     const abortController = new AbortController();
@@ -93,16 +159,24 @@ export async function reconnectBleWithScan(
       });
     });
 
+    const remainingDiscoveryMs = Math.max(0, timeoutMs - (Date.now() - scanStartedAt));
     scanTimeout = setTimeout(() => {
       finish(() => {
         reject(new Error(`BLE auto-reconnect timed out after ${timeoutMs / 1000}s`));
       });
-    }, timeoutMs);
+    }, remainingDiscoveryMs);
 
-    void window.electronAPI.startNobleBleScanning(sessionId).catch((err: unknown) => {
-      finish(() => {
-        reject(err instanceof Error ? err : new Error(String(err)));
-      });
-    });
+    void startNobleBleScanningWithRetry(sessionId, { maxWaitMs: scanBusyMaxWaitMs }).catch(
+      (err: unknown) => {
+        finish(() => {
+          const message = err instanceof Error ? err.message : String(err);
+          if (isBleScanBusyErrorMessage(message)) {
+            reject(new Error(message));
+            return;
+          }
+          reject(err instanceof Error ? err : new Error(String(err)));
+        });
+      },
+    );
   });
 }

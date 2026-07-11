@@ -165,6 +165,20 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
       /if \(meshcoreExplicitDisconnectRef\.current\) \{[\s\S]*?meshcoreIsReconnectingRef\.current = false/,
     );
   });
+
+  it('attemptMeshcoreReconnect treats setup AbortError as superseded reconnect', () => {
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toMatch(
+      /err\.message === MESHCORE_SETUP_ABORT_MESSAGE[\s\S]*?reconnect aborted \(setup superseded\)/,
+    );
+  });
+
+  it('periodic waiting-message poll skips idle queues', () => {
+    expect(RUNTIME_SOURCE).toContain('shouldRunMeshcoreWaitingMessagesPeriodicPoll');
+    expect(RUNTIME_SOURCE).toMatch(
+      /shouldRunMeshcoreWaitingMessagesPeriodicPoll\(waitingMessagesCountRef\.current\)/,
+    );
+  });
 });
 
 describe('meshcoreLegacyConnEvents disconnected handler (regression)', () => {
@@ -192,6 +206,11 @@ describe('meshcoreLegacyConnEvents disconnected handler (regression)', () => {
     expect(CONN_EVENTS_SOURCE).toMatch(
       /publishMeshcorePacketLog[\s\S]{0,800}MQTT packet-log publish failed/,
     );
+  });
+
+  it('marks event 131 and treats silent syncNextMessage timeout as empty queue', () => {
+    expect(CONN_EVENTS_SOURCE).toContain('markMeshcoreMsgWaitingEvent()');
+    expect(CONN_EVENTS_SOURCE).toMatch(/isMeshcoreSyncNextMessageTimeoutError\(e\)[\s\S]*?break;/);
   });
 });
 

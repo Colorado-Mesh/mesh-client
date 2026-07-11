@@ -18,7 +18,7 @@ describe('reconnectRfFromLastConnection', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
-    window.electronAPI.startNobleBleScanning = vi.fn().mockResolvedValue(undefined);
+    window.electronAPI.startNobleBleScanning = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.stopNobleBleScanning = vi.fn().mockResolvedValue(undefined);
     window.electronAPI.onNobleBleDeviceDiscovered = vi.fn(() => () => {});
   });

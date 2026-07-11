@@ -316,6 +316,7 @@ import {
   logMeshcoreWaitingMessagesDrainError,
   markMeshcoreCompanionTx,
   scheduleMeshcoreWaitingMessagesDrain,
+  shouldRunMeshcoreWaitingMessagesPeriodicPoll,
 } from '../lib/meshcoreWaitingMessagesDrain';
 import {
   bindMeshcoreIngress,
@@ -471,6 +472,7 @@ export function useMeshcoreRuntime() {
   const [mqttStatus, setMqttStatus] = useState<MQTTStatus>('disconnected');
   const [mqttConnectionLoss, setMqttConnectionLoss] = useState(false);
   const [waitingMessagesCount, setWaitingMessagesCount] = useState(0);
+  const waitingMessagesCountRef = useRef(0);
   const [waitingMessagesSyncActive, setWaitingMessagesSyncActive] = useState(false);
   const [waitingMessagesSyncProgress, setWaitingMessagesSyncProgress] = useState<{
     processed: number;
@@ -803,6 +805,10 @@ export function useMeshcoreRuntime() {
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  useEffect(() => {
+    waitingMessagesCountRef.current = waitingMessagesCount;
+  }, [waitingMessagesCount]);
 
   useEffect(() => {
     rawPacketsRef.current = rawPackets;
@@ -2296,6 +2302,9 @@ export function useMeshcoreRuntime() {
         clearInterval(meshcoreWaitingMessagesPollRef.current);
       meshcoreWaitingMessagesPollRef.current = setInterval(() => {
         if (!meshcoreHookMountedRef.current) return;
+        if (!shouldRunMeshcoreWaitingMessagesPeriodicPoll(waitingMessagesCountRef.current)) {
+          return;
+        }
         scheduleMeshcoreWaitingMessagesDrain(
           async () => {
             try {
@@ -2656,6 +2665,15 @@ export function useMeshcoreRuntime() {
         connectionLoss: false,
       }));
     } catch (err) {
+      if (
+        err instanceof DOMException &&
+        err.name === 'AbortError' &&
+        err.message === MESHCORE_SETUP_ABORT_MESSAGE
+      ) {
+        console.debug('[useMeshcoreRuntime] reconnect aborted (setup superseded)');
+        meshcoreIsReconnectingRef.current = false;
+        return;
+      }
       if (opened?.driverIdentityId) {
         await connectionDriver.disconnect(opened.driverIdentityId).catch((e: unknown) => {
           console.debug(

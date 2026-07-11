@@ -1286,7 +1286,7 @@ describe('ConnectionPanel serial auto-connect BLE fallback', () => {
     const onAutoConnect = vi
       .fn()
       .mockRejectedValue(new Error('Serial auto-connect failed (radio did not respond)'));
-    vi.mocked(window.electronAPI.startNobleBleScanning).mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.startNobleBleScanning).mockResolvedValue({ ok: true });
 
     try {
       render(

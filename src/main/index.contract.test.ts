@@ -26,6 +26,13 @@ describe('Noble BLE disconnect handling (source contract)', () => {
       /noble-ble-to-radio: disconnected during write, ignoring session=/,
     );
   });
+
+  it('returns scan_busy result instead of throwing when Reticulum holds the scan mutex', () => {
+    expect(INDEX_SOURCE).toContain('BleScanBusyError');
+    expect(INDEX_SOURCE).toMatch(
+      /noble-ble-start-scan[\s\S]{0,1200}err instanceof BleScanBusyError[\s\S]{0,400}code: 'scan_busy'/,
+    );
+  });
 });
 
 describe('MeshCore packet log IPC (source contract)', () => {

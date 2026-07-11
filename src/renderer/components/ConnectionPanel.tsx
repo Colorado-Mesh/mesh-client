@@ -38,7 +38,7 @@ import {
   loadProtocolMqttSettings,
   persistMqttSettingsIfChanged,
 } from '../hooks/useProtocolMqttSettings';
-import { reconnectBleWithScan } from '../lib/bleReconnectHelper';
+import { reconnectBleWithScan, startNobleBleScanningWithRetry } from '../lib/bleReconnectHelper';
 import {
   humanizeBleError,
   humanizeHttpError,
@@ -1162,7 +1162,7 @@ export default function ConnectionPanel({
       // Reconnect to the last device uses handleReconnect / startup auto-connect instead.
       setConnectionStage('connectionPanel.stageScanning');
       try {
-        await window.electronAPI.startNobleBleScanning(protocol);
+        await startNobleBleScanningWithRetry(protocol);
       } catch (err) {
         console.warn('[ConnectionPanel] startNobleBleScanning failed: ' + errLikeToLogString(err));
         const bleErrMsg = humanizeBleError(err, t);

@@ -43,6 +43,7 @@ import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
 import {
   bleCoexistenceCoordinator,
   type BlePeripheralOwner,
+  BleScanBusyError,
   type BleScanOwner,
 } from './ble-coexistence-coordinator';
 import { formatChatExportLines } from './chatExportFormat';
@@ -2642,9 +2643,20 @@ ipcMain.handle('noble-ble-start-scan', async (event, sessionId: unknown) => {
   }
   if (isQuitting) {
     console.debug('[main] noble-ble-start-scan: ignoring (app is quitting)');
-    return;
+    return { ok: true as const };
   }
-  await nobleBleManager.startScanning(sessionId);
+  try {
+    await nobleBleManager.startScanning(sessionId);
+    return { ok: true as const };
+  } catch (err) {
+    if (err instanceof BleScanBusyError) {
+      console.debug(
+        `[main] noble-ble-start-scan: scan busy (owner=${err.scanOwner}) session=${sessionId}`,
+      );
+      return { ok: false as const, code: 'scan_busy' as const, owner: err.scanOwner };
+    }
+    throw err;
+  }
 });
 ipcMain.handle('noble-ble-stop-scan', async (event, sessionId: unknown) => {
   assertIpcSender(event, 'noble-ble-stop-scan');
