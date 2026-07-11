@@ -3682,7 +3682,7 @@
     "loginTitle": "Inloggen op roomserver",
     "adminLoginTitle": "Inloggen beheerder",
     "loginHelp": "Voer het gastwachtwoord in om mee te doen en te plaatsen. Standaard is vaak \"hello\". Voor servers zonder gastwachtwoord: \"Doorgaan met alleen-lezen\" (inloggen stuurt \"hello\" als het veld leeg is).",
-    "adminLoginHelp": "Voer het beheerderswachtwoord van de ruimte in om instellingen en ACL's te beheren. Standaard is dit vaak \"wachtwoord\".",
+    "adminLoginHelp": "Voer het beheerderswachtwoord van de ruimte in om instellingen en ACL's te beheren. Standaard is dit vaak \"hello\".",
     "guestPasswordLabel": "Gastwachtwoord",
     "guestPasswordPlaceholder": "hello",
     "adminPasswordLabel": "Admin wachtwoord",

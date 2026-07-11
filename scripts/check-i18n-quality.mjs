@@ -1366,6 +1366,7 @@ export const ROOMS_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
 /** Hints that describe the wire default guest password (literal hello, not a greeting translation). */
 export const ROOMS_PANEL_LITERAL_HELLO_KEYS = new Set([
   'loginHelp',
+  'adminLoginHelp',
   'emptyGuestLoginHint',
   'loginAllSavedTooltip',
 ]);

@@ -551,6 +551,16 @@ describe('localeStringQualityIssues', () => {
     expect(issues).toContain('rooms-hello-false-friend:tr');
   });
 
+  it('flags translated hello password in roomsPanel adminLoginHelp', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'roomsPanel.adminLoginHelp',
+      val: 'Standard ist oft "Hallo".',
+      enVal: 'Enter the room admin password to manage settings and ACLs. Default is often "hello".',
+    });
+    expect(issues).toContain('rooms-hello-false-friend:de');
+  });
+
   it('flags translated hello password in roomsPanel emptyGuestLoginHint', () => {
     const issues = localeStringQualityIssues({
       locale: 'de',

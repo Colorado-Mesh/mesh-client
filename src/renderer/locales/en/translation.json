@@ -3719,7 +3719,7 @@
     "loginHelp": "Enter the guest password to join and post. Default is often \"hello\". For servers with no guest password, use Continue read-only (Login sends \"hello\" when the field is empty).",
     "emptyGuestLoginHint": "Empty guest field: use Continue read-only for blank-password servers. Login requires a password and sends \"hello\" when the field is empty.",
     "unreadPosts": "{{count}} new",
-    "adminLoginHelp": "Enter the room admin password to manage settings and ACLs. Default is often \"password\".",
+    "adminLoginHelp": "Enter the room admin password to manage settings and ACLs. Default is often \"hello\".",
     "guestPasswordLabel": "Guest password",
     "guestPasswordPlaceholder": "hello",
     "adminPasswordLabel": "Admin password",

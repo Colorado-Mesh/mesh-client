@@ -3682,7 +3682,7 @@
     "loginTitle": "Sunucuya Giriş Yapın",
     "adminLoginTitle": "Yönetici oturumu açma",
     "loginHelp": "Katılmak ve yayınlamak için misafir şifresini girin. Varsayılan genellikle \"hello\"dır. Misafir şifresi olmayan sunucular için \"Salt okunur olarak devam et\" kullanın (giriş alan boşken \"hello\" gönderir).",
-    "adminLoginHelp": "Ayarları ve ACL'leri yönetmek için oda yöneticisi şifresini girin. Varsayılan genellikle \"parola\" dır.",
+    "adminLoginHelp": "Ayarları ve ACL'leri yönetmek için oda yöneticisi şifresini girin. Varsayılan genellikle \"hello\"dır.",
     "guestPasswordLabel": "Misafir parolası",
     "guestPasswordPlaceholder": "hello",
     "adminPasswordLabel": "Admin Şifresi",

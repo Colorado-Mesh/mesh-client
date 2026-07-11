@@ -3682,7 +3682,7 @@
     "loginTitle": "Masuk ke server ruangan",
     "adminLoginTitle": "Login admin ruangan",
     "loginHelp": "Masukkan kata sandi tamu untuk bergabung dan memposting. Bawaannya sering \"hello\". Untuk server tanpa kata sandi tamu, gunakan Lanjutkan hanya baca (Login mengirim \"hello\" saat kolom kosong).",
-    "adminLoginHelp": "Masukkan kata sandi admin ruangan untuk mengelola pengaturan dan ACL. Default sering kali \"password\".",
+    "adminLoginHelp": "Masukkan kata sandi admin ruangan untuk mengelola pengaturan dan ACL. Default sering kali \"hello\".",
     "guestPasswordLabel": "Sandi tamu",
     "guestPasswordPlaceholder": "hello",
     "adminPasswordLabel": "Kata sandi admin",

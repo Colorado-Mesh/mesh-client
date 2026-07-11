@@ -3682,7 +3682,7 @@
     "loginTitle": "登录聊天室服务器",
     "adminLoginTitle": "管理员登录",
     "loginHelp": "输入访客密码以加入和发布。默认常为「hello」。无访客密码的服务器请使用「继续只读」（字段为空时登录会发送「hello」）。",
-    "adminLoginHelp": "输入聊天室管理员密码以管理设置和ACL。默认值通常为“密码”。",
+    "adminLoginHelp": "输入聊天室管理员密码以管理设置和ACL。默认值通常为「hello」。",
     "guestPasswordLabel": "访客密码",
     "guestPasswordPlaceholder": "hello",
     "adminPasswordLabel": "管理员密码",
