@@ -34,8 +34,6 @@ extraResources:
   - from: resources/icons/mac/macos-menubar-icon-Template/macos-menubar-icon-Template@3x.png
     to: macos-menubar-icon-Template@3x.png
 mac:
-  # Ad-hoc signing test path.
-  identity: '-'
   category: public.app-category.utilities
   # Hardened runtime improves tamper resistance; required for notarized distribution.
   hardenedRuntime: true
@@ -49,6 +47,10 @@ mac:
   icon: resources/icons/mac/icon.icns
   entitlements: resources/entitlements.mac.plist
   entitlementsInherit: resources/entitlements.mac.inherit.plist
+  # Notarize after signing via Apple notarytool. Requires APPLE_ID,
+  # APPLE_APP_SPECIFIC_PASSWORD, and APPLE_TEAM_ID env vars at build time.
+  # Automatically skipped when code signing is skipped (no cert available).
+  notarize: true
 linux:
   target:
     - target: AppImage
