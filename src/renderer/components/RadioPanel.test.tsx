@@ -180,6 +180,67 @@ describe('RadioPanel remote target safeguards', () => {
   });
 });
 
+describe('RadioPanel Bluetooth fixed PIN display', () => {
+  it('shows leading zeros when syncing fixedPin from device config', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          meshtasticConfigSlices={{
+            bluetooth: { enabled: true, mode: 1, fixedPin: 12345 },
+          }}
+        />
+      </ToastProvider>,
+    );
+
+    const bluetoothDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Bluetooth';
+    });
+    expect(bluetoothDetails).toBeDefined();
+    await user.click(bluetoothDetails!.querySelector('summary')!);
+
+    const pinInput = screen.getByLabelText('Pairing PIN');
+    expect(pinInput).toHaveValue('012345');
+  });
+
+  it('applies fixedPin as numeric wire value while preserving leading-zero display', async () => {
+    const user = userEvent.setup();
+    const onSetConfig = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          onSetConfig={onSetConfig}
+          meshtasticConfigSlices={{
+            bluetooth: { enabled: true, mode: 1, fixedPin: 12345 },
+          }}
+        />
+      </ToastProvider>,
+    );
+
+    const bluetoothDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'Bluetooth';
+    });
+    expect(bluetoothDetails).toBeDefined();
+    await user.click(bluetoothDetails!.querySelector('summary')!);
+    await user.click(screen.getByRole('button', { name: 'Apply Bluetooth' }));
+
+    await waitFor(() => {
+      expect(onSetConfig).toHaveBeenCalled();
+    });
+    const payload = onSetConfig.mock.calls[0]?.[0] as {
+      payloadVariant: { case: string; value: { fixedPin: number } };
+    };
+    expect(payload.payloadVariant.case).toBe('bluetooth');
+    expect(payload.payloadVariant.value.fixedPin).toBe(12345);
+  });
+});
+
 describe('RadioPanel HelpTooltip coverage — channel edit form', () => {
   it('Key Size and Encryption Key have help tooltips once a channel slot is selected', async () => {
     const user = userEvent.setup();
