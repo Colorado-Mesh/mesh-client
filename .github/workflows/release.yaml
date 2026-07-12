@@ -91,7 +91,8 @@ jobs:
         # dist:*:publish scripts run electron-builder with --publish always
         run: ${{ matrix.build_script }}
 
-      # Keep artificates for 30 days when we manually build
+      # Do not upload raw Mesh-client.app — upload-artifact@v7 dereferences framework
+      # symlinks (~3× Electron Framework size). DMG/ZIP preserve correct layout.
       - name: Upload macOS Artifact
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v7
@@ -104,7 +105,6 @@ jobs:
             release/mac-arm64/**/*.zip
             release/mac-universal/**/*.dmg
             release/mac-universal/**/*.zip
-            release/mac*/**/Mesh-client.app/**
             release/*.dmg
             release/*.zip
           retention-days: 30

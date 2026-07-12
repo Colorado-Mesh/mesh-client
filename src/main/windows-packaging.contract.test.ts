@@ -216,6 +216,9 @@ describe('Windows packaging (contract)', () => {
     expect(macVerify).toContain("'Contents', 'MacOS'");
     expect(macVerify).toContain('Electron Framework.framework');
     expect(macVerify).toContain('Mesh-client');
+    expect(macVerify).toContain('ditto -xk');
+    expect(macVerify).toContain('hdiutil attach');
+    expect(macVerify).toContain('isSymbolicLink');
 
     const linuxVerify = readFileSync(
       join(REPO_ROOT, 'scripts', 'verify-linux-packaging.mjs'),
@@ -235,7 +238,8 @@ describe('Windows packaging (contract)', () => {
       expect(workflow).toContain('node scripts/verify-linux-packaging.mjs');
       expect(workflow).toContain('node scripts/test-linux-appimage-reticulum-sidecar.mjs');
       expect(workflow).toContain('verify-reticulum-sidecar-staged.mjs');
-      expect(workflow).toContain('release/mac*/**/Mesh-client.app/**');
+      expect(workflow).not.toContain('release/mac*/**/Mesh-client.app/**');
+      expect(workflow).toMatch(/upload-artifact@v7[\s\S]*?symlinks/);
     }
   });
 });
