@@ -5,6 +5,7 @@ import {
   interpolationPlaceholderIssues,
   localeStringQualityIssues,
   nodeListPanelConnectionCrossKeyIssues,
+  placeholderNameSet,
   protectedBrandIssues,
   protectedProtocolTokenIssues,
   RETICULUM_RUNTIME_PREFIX,
@@ -729,8 +730,7 @@ describe('localeStringQualityIssues', () => {
 });
 
 describe('interpolationPlaceholderIssues', () => {
-  it('memoizes placeholderNameSet for identical strings', async () => {
-    const { placeholderNameSet } = await import('./check-i18n-quality.mjs');
+  it('memoizes placeholderNameSet for identical strings', () => {
     const text = 'Hello {{name}} and {{count}}';
     expect(placeholderNameSet(text)).toBe(placeholderNameSet(text));
   });
@@ -1829,7 +1829,7 @@ describe('checkReticulumRuntimeAndRoutingPortIssues', () => {
       enVal: 'RNS stack is not ready',
       val: 'La pila no está lista',
     });
-    expectIssue(issues, 'reticulum runtime copy must preserve protocol token "RNS"');
+    expectIssue(issues, 'Protocol token "RNS" missing');
   });
 });
 
