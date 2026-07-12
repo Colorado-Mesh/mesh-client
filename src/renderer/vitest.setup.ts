@@ -16,6 +16,16 @@ afterEach(() => {
   resetElectronAPIOutboxMock();
 });
 
+/** Fail tests on [object Object] in console.warn (use mockConsoleWarn when expecting warnings). */
+const originalConsoleWarn = console.warn.bind(console);
+console.warn = (...args: Parameters<typeof console.warn>) => {
+  const text = args.map((a) => String(a)).join(' ');
+  if (text.includes('[object Object]')) {
+    throw new Error(`Unexpected console.warn containing [object Object]: ${text}`);
+  }
+  originalConsoleWarn(...args);
+};
+
 // Node.js 25+ exposes a native localStorage global that emits a warning when accessed
 // without --localstorage-file. Always stub it unconditionally so no code path touches
 // the native getter, and all tests get a consistent in-memory implementation.
@@ -23,7 +33,7 @@ const _localStorageStore: Record<string, string> = {};
 vi.stubGlobal('localStorage', {
   getItem: (k: string) => _localStorageStore[k] ?? null,
   setItem: (k: string, v: string) => {
-    _localStorageStore[k] = v;
+    _localStorageStore[k] = typeof v === 'string' ? v : JSON.stringify(v);
   },
   removeItem: (k: string) => {
     Reflect.deleteProperty(_localStorageStore, k);

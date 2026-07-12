@@ -125,21 +125,16 @@ impl LiveBridge {
             }
         });
 
-        let identity_path = config_dir.join("identity");
+        let identity_path = crate::stack::identity_apply::identity_file_path(&config_dir);
         let identity_configured = inner.read().await.identity.configured;
         let identity = if identity_path.exists() {
-            Identity::from_file(&identity_path).map_err(|e| format!("load identity: {e}"))?
+            rns_identity::identity::Identity::from_file(&identity_path)
+                .map_err(|e| format!("load identity: {e}"))?
         } else if identity_configured {
-            Identity::new()
+            return Err("identity file missing; re-import or generate identity".into());
         } else {
             return Err("identity not configured for live stack".into());
         };
-
-        if !identity_path.exists() {
-            identity
-                .to_file(&identity_path)
-                .map_err(|e| format!("save identity: {e}"))?;
-        }
 
         const LXMF_APP: &str = "lxmf.delivery";
         let lxmf_dest_hash =
@@ -545,6 +540,36 @@ impl LiveBridge {
         });
     }
 
+    /// Snapshot of RMAP v4 discovered interfaces from rsReticulum DiscoveryStore.
+    pub async fn fetch_rmap_discovered(&self) -> Vec<super::rmap_discovery::RmapDiscoveredWireRow> {
+        let rows = self.handle.discovered_interfaces().await;
+        super::rmap_discovery::list_discovered_wire_rows_from_store(&rows)
+    }
+
+    /// Poll DiscoveryStore and emit `rmap.discovery` WebSocket events when the set changes.
+    pub fn register_rmap_discovery_watcher(&self, event_tx: broadcast::Sender<String>) {
+        let handle = self.handle.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(10));
+            let mut last_fingerprint = String::new();
+            loop {
+                interval.tick().await;
+                let rows = handle.discovered_interfaces().await;
+                let wire = super::rmap_discovery::list_discovered_wire_rows_from_store(&rows);
+                let fingerprint = serde_json::to_string(&wire).unwrap_or_default();
+                if fingerprint == last_fingerprint {
+                    continue;
+                }
+                last_fingerprint = fingerprint;
+                let frame = serde_json::json!({
+                    "type": "rmap.discovery",
+                    "payload": { "discovered": wire },
+                });
+                let _ = event_tx.send(frame.to_string());
+            }
+        });
+    }
+
     pub async fn send_reaction(
         &self,
         req: &LxmfReactionRequest,
@@ -681,6 +706,14 @@ impl LiveBridge {
                 id_interval: None,
                 mode: None,
                 seed_addresses: Vec::new(),
+                discoverable: None,
+                latitude: None,
+                longitude: None,
+                height: None,
+                discovery_name: None,
+                announce_interval_min: None,
+                connectable: None,
+                reachable_on: None,
             })
             .collect();
         Ok(merge_live_interfaces_with_config(&config_rows, live_rows))

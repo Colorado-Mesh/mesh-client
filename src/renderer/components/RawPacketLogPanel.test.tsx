@@ -75,6 +75,8 @@ function meshcorePacket(rawHex: string, payloadTypeString: string): RxPacketEntr
     routeTypeString: 'FLOOD',
     payloadTypeString,
     hopCount: 1,
+    pathBytes: [0x80, 0x5d],
+    pathHashSizeBytes: 1,
     fromNodeId: null,
     messageFingerprintHex: 'TEST1234',
     transportScopeCode: null,
@@ -382,6 +384,12 @@ describe('RawPacketLogPanel duplicate row keys', () => {
   });
 });
 
+function clickRowTypeBadge(label: string) {
+  const badge = screen.getAllByText(label).find((el) => el.tagName === 'SPAN');
+  if (!badge) throw new Error(`row badge not found: ${label}`);
+  fireEvent.click(badge);
+}
+
 describe('RawPacketLogPanel meshcore expanded details', () => {
   it('shows GRP_TXT channel hash plus MAC/ciphertext info', () => {
     const packets = [
@@ -399,7 +407,7 @@ describe('RawPacketLogPanel meshcore expanded details', () => {
       />,
     );
 
-    fireEvent.click(screen.getByText('GRP_TXT'));
+    clickRowTypeBadge('GRP_TXT');
     expect(screen.getByText(/Channel hash:/)).toBeInTheDocument();
     expect(screen.getByText(/MAC:/)).toBeInTheDocument();
     expect(screen.getByText(/Ciphertext bytes:/)).toBeInTheDocument();
@@ -421,7 +429,7 @@ describe('RawPacketLogPanel meshcore expanded details', () => {
       />,
     );
 
-    fireEvent.click(screen.getByText('CONTROL'));
+    clickRowTypeBadge('CONTROL');
     expect(screen.getByText(/Control:/)).toBeInTheDocument();
     expect(screen.getByText(/subtype=0x9\(DISCOVER_RESP\)/)).toBeInTheDocument();
     expect(screen.getByText(/tag=0x24280D42/)).toBeInTheDocument();
@@ -549,5 +557,64 @@ describe('RawPacketLogPanel meshtastic expanded details', () => {
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'POSITION' } });
     expect(screen.queryByText(/id=0x12345678/)).not.toBeInTheDocument();
     expect(screen.getByText('POSITION_APP')).toBeInTheDocument();
+  });
+
+  it('renders MeshCore path hash chain in collapsed row', () => {
+    render(
+      <RawPacketLogPanel
+        variant="meshcore"
+        packets={[meshcorePacket('aabb', 'ADVERT')]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+    expect(screen.getByText('80')).toBeInTheDocument();
+    expect(screen.getByText('5D')).toBeInTheDocument();
+  });
+
+  it('filters MeshCore rows with type chips', () => {
+    render(
+      <RawPacketLogPanel
+        variant="meshcore"
+        packets={[
+          meshcorePacket('aabb', 'ADVERT'),
+          { ...meshcorePacket('ccdd', 'TXT_MSG'), pathBytes: [], hopCount: 0 },
+        ]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'TXT_MSG' }));
+    expect(screen.queryByText('ADVERT', { selector: 'span' })).not.toBeInTheDocument();
+    expect(screen.getByText('TXT_MSG', { selector: 'span' })).toBeInTheDocument();
+  });
+
+  it('reorders MeshCore rows when HB column header is clicked', () => {
+    const lowHop = { ...meshcorePacket('aabb', 'ADVERT'), hopCount: 1, ts: 1_710_000_000_001 };
+    const highHop = {
+      ...meshcorePacket('ccdd', 'TXT_MSG'),
+      hopCount: 3,
+      ts: 1_710_000_000_002,
+      pathBytes: [],
+    };
+    render(
+      <RawPacketLogPanel
+        variant="meshcore"
+        packets={[lowHop, highHop]}
+        onClear={vi.fn()}
+        getNodeLabel={() => 'node'}
+      />,
+    );
+
+    const rowLabel = (label: string) =>
+      screen.getAllByText(label).find((el) => el.tagName === 'SPAN' && !el.closest('button'));
+
+    fireEvent.click(screen.getByRole('button', { name: /Sort by HB/i }));
+
+    const highRow = rowLabel('TXT_MSG');
+    const lowRow = rowLabel('ADVERT');
+    expect(highRow).toBeDefined();
+    expect(lowRow).toBeDefined();
+    expect(highRow!.compareDocumentPosition(lowRow!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 });

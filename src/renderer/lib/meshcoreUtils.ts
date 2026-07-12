@@ -505,7 +505,8 @@ export function meshcoreInferHopsFromOutPath(contact: {
         return Math.max(0, trimmed.length - 1);
       }
     }
-    return meshcoreTracePathLenToHops(len);
+    // Contact outPathLen is the last byte index (slice length − 1), not TraceData pathLen.
+    return Math.max(0, Math.trunc(len));
   }
   if (sliced.length > 1) {
     return Math.max(0, sliced.length - 1);

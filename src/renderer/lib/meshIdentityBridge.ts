@@ -92,6 +92,8 @@ export function meshtasticTransportParams(
       return { type: 'serial', portSignature: opts.portSignature };
     case 'http':
       return { type: 'http', host: opts.host ?? '' };
+    case 'tcp':
+      return { type: 'tcp', host: opts.host ?? '' };
     default: {
       const _exhaustive: never = type;
       throw new Error(

@@ -30,6 +30,7 @@ import {
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import { clampTcpPort, parseTcpPortFromString } from '@/shared/tcpPort';
 
+import { useActiveMeshIdentity } from '../hooks/useActiveMeshIdentity';
 import { useNobleBleConnectMutexWait } from '../hooks/useNobleBleConnectMutexWait';
 import {
   flushPendingMqttSave,
@@ -37,7 +38,7 @@ import {
   loadProtocolMqttSettings,
   persistMqttSettingsIfChanged,
 } from '../hooks/useProtocolMqttSettings';
-import { reconnectBleWithScan } from '../lib/bleReconnectHelper';
+import { reconnectBleWithScan, startNobleBleScanningWithRetry } from '../lib/bleReconnectHelper';
 import {
   humanizeBleError,
   humanizeHttpError,
@@ -52,21 +53,26 @@ import {
   validateLetsMeshPresetConnect,
 } from '../lib/letsMeshConnectionGuards';
 import {
-  COLORADO_MESH_HOST,
   generateLetsMeshAuthToken,
   LETSMESH_HOST_EU,
   LETSMESH_HOST_US,
   letsMeshMqttUsernameFromIdentity,
   meshcoreIdentityHasFullKeyPair,
   meshcoreIdentityHasPrivateKey,
-  MESHMAPPER_HOST,
   readMeshcoreIdentity,
   readMeshcoreIdentityAsync,
 } from '../lib/letsMeshJwt';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
+import { applyMeshcoreMqttPreset, type MeshcoreMqttPreset } from '../lib/meshcoreMqttPresets';
 import { meshcoreMqttUserFacingHint } from '../lib/meshcoreMqttUserHint';
 import {
+  meshtasticMqttTopicPrefixesDiverge,
+  meshtasticRadioMqttRootFromModuleConfigs,
+  normalizeMeshtasticMqttTopicPrefix,
+} from '../lib/meshtastic/meshtasticMqttTopicPrefixOverlay';
+import {
   formatChannelPskInput,
+  manualChannelPsksDeclareSlotIndices,
   parseChannelPskInput,
   validateChannelPskEntries,
 } from '../lib/meshtasticChannelPskInput';
@@ -92,6 +98,7 @@ import type {
   NobleBleDevice,
   SerialPortInfo,
 } from '../lib/types';
+import { useDeviceStore } from '../stores/deviceStore';
 import ConnectionBatteryGauge from './ConnectionBatteryGauge';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 import { HelpTooltip } from './HelpTooltip';
@@ -312,6 +319,10 @@ interface Props {
   ensureMeshcoreMqttIdentity?: () => Promise<boolean>;
   /** Reticulum: start or restart the AGPL sidecar stack. */
   onStartReticulumStack?: () => Promise<void>;
+  /** Reticulum: open Network tab RMAP discovery settings. */
+  onOpenReticulumRmapSettings?: () => void;
+  /** Reticulum: open App tab GPS settings for RMAP coordinates. */
+  onOpenAppGpsSettings?: () => void;
 }
 
 export default function ConnectionPanel({
@@ -328,6 +339,8 @@ export default function ConnectionPanel({
   onOpenFirmwareReleases,
   ensureMeshcoreMqttIdentity,
   onStartReticulumStack,
+  onOpenReticulumRmapSettings,
+  onOpenAppGpsSettings,
 }: Props) {
   const { t } = useTranslation();
   const capabilities = useRadioProvider(protocol);
@@ -343,6 +356,10 @@ export default function ConnectionPanel({
   const [httpAddress, setHttpAddress] = useState(() => {
     const last = loadLastConnection(protocol);
     return last?.type === 'http' && last.httpAddress ? last.httpAddress : 'meshtastic.local';
+  });
+  const [tcpAddress, setTcpAddress] = useState(() => {
+    const last = loadLastConnection(protocol);
+    return last?.type === 'tcp' && last.httpAddress ? last.httpAddress : 'meshtastic.local:4403';
   });
   const [tcpHost, setTcpHost] = useState(() => {
     const last = loadLastConnection(protocol);
@@ -371,7 +388,12 @@ export default function ConnectionPanel({
   const pinPromptSeenSinceRePairRef = useRef(false);
   const [pinCountdown, setPinCountdown] = useState<number | null>(null);
   const pinCountdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const activeHostAddress = protocol === 'meshcore' ? `${tcpHost}:${tcpPort}` : httpAddress;
+  const activeHostAddress =
+    protocol === 'meshcore'
+      ? `${tcpHost}:${tcpPort}`
+      : connectionType === 'tcp'
+        ? tcpAddress
+        : httpAddress;
 
   // ─── MQTT settings state ───────────────────────────────────────
   const [mqttSettings, setMqttSettings] = useState<MQTTSettings>(loadMqttSettings);
@@ -392,9 +414,7 @@ export default function ConnectionPanel({
   mqttSettingsRef.current = mqttSettings;
   const meshcoreMqttSettingsRef = useRef(meshcoreMqttSettings);
   meshcoreMqttSettingsRef.current = meshcoreMqttSettings;
-  const [meshcorePreset, setMeshcorePreset] = useState<
-    'letsmesh' | 'coloradomesh' | 'meshmapper' | 'ripple' | 'custom'
-  >(() => {
+  const [meshcorePreset, setMeshcorePreset] = useState<MeshcoreMqttPreset>(() => {
     const saved = localStorage.getItem('mesh-client:mqttPreset:meshcore');
     if (
       saved === 'letsmesh' ||
@@ -562,6 +582,23 @@ export default function ConnectionPanel({
   const activeMqttSettings = protocol === 'meshcore' ? meshcoreMqttSettings : mqttSettings;
   const setActiveMqttSettings = protocol === 'meshcore' ? setMeshcoreMqttSettings : setMqttSettings;
   const activeMqttTls = mqttUsesTls(activeMqttSettings);
+  const { focusedIdentityId } = useActiveMeshIdentity(protocol);
+  const radioModuleConfigs = useDeviceStore((s) =>
+    protocol === 'meshtastic' && focusedIdentityId
+      ? (s.devices[focusedIdentityId]?.moduleConfigs ?? null)
+      : null,
+  );
+  const radioMqttRoot =
+    protocol === 'meshtastic' && state.status === 'configured' && radioModuleConfigs
+      ? meshtasticRadioMqttRootFromModuleConfigs(radioModuleConfigs)
+      : null;
+  const radioMqttRootDiverges =
+    radioMqttRoot != null &&
+    meshtasticMqttTopicPrefixesDiverge(activeMqttSettings.topicPrefix, radioMqttRoot);
+  const showMqttOnlyChannelPskIndexHint =
+    protocol === 'meshtastic' &&
+    state.status !== 'configured' &&
+    !manualChannelPsksDeclareSlotIndices(parseChannelPskInput(channelPskDraft));
 
   const updateMqtt = <K extends keyof MQTTSettings>(
     key: K,
@@ -707,7 +744,7 @@ export default function ConnectionPanel({
       // Persist connection details for next startup
       if (state.connectionType) {
         const conn: LastConnection = { type: state.connectionType };
-        if (state.connectionType === 'http') {
+        if (state.connectionType === 'http' || state.connectionType === 'tcp') {
           conn.httpAddress = activeHostAddress;
         } else if (state.connectionType === 'ble') {
           const bleId = loadLastBleDevice(protocol);
@@ -1125,7 +1162,7 @@ export default function ConnectionPanel({
       // Reconnect to the last device uses handleReconnect / startup auto-connect instead.
       setConnectionStage('connectionPanel.stageScanning');
       try {
-        await window.electronAPI.startNobleBleScanning(protocol);
+        await startNobleBleScanningWithRetry(protocol);
       } catch (err) {
         console.warn('[ConnectionPanel] startNobleBleScanning failed: ' + errLikeToLogString(err));
         const bleErrMsg = humanizeBleError(err, t);
@@ -1140,6 +1177,8 @@ export default function ConnectionPanel({
       console.debug('[ConnectionPanel] handleConnect', connectionType, activeHostAddress);
       if (connectionType === 'http') {
         await onConnect('http', activeHostAddress);
+      } else if (connectionType === 'tcp') {
+        await onConnect('tcp', activeHostAddress);
       } else {
         await onConnect('serial');
       }
@@ -1148,7 +1187,7 @@ export default function ConnectionPanel({
       let errorMsg: string;
       if (connectionType === 'serial') {
         errorMsg = humanizeSerialError(err, t);
-      } else if (connectionType === 'http') {
+      } else if (connectionType === 'http' || connectionType === 'tcp') {
         errorMsg = humanizeHttpError(activeHostAddress, err, t);
       } else {
         errorMsg = err instanceof Error ? err.message : t('connectionPanel.error.connectionFailed');
@@ -1605,6 +1644,21 @@ export default function ConnectionPanel({
         setConnecting(false);
         setConnectionStage('');
       });
+    } else if (lastConnection.type === 'tcp') {
+      const addr = lastConnection.httpAddress ?? tcpAddress;
+      setTcpAddress(addr);
+      setConnectionType('tcp');
+      setConnecting(true);
+      setBleDevices([]);
+      setSerialPorts([]);
+      setShowBlePicker(false);
+      setShowSerialPicker(false);
+      setConnectionStage('connectionPanel.stagePleaseWait');
+      onConnect('tcp', addr).catch((err: unknown) => {
+        setError(humanizeHttpError(addr, err, t));
+        setConnecting(false);
+        setConnectionStage('');
+      });
     } else if (lastConnection.type === 'serial') {
       isAutoConnectingRef.current = true;
       setIsAutoConnecting(true);
@@ -1619,7 +1673,17 @@ export default function ConnectionPanel({
         setConnectionStage('');
       });
     }
-  }, [lastConnection, onConnect, onAutoConnect, httpAddress, protocol, tcpHost, isLinux, t]);
+  }, [
+    lastConnection,
+    onConnect,
+    onAutoConnect,
+    httpAddress,
+    tcpAddress,
+    protocol,
+    tcpHost,
+    isLinux,
+    t,
+  ]);
 
   const isConnected =
     state.status === 'connected' ||
@@ -2180,60 +2244,15 @@ export default function ConnectionPanel({
                     type="button"
                     onClick={() => {
                       setMeshcorePreset(id);
-                      if (id === 'letsmesh') {
-                        const fromIdentity =
-                          letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
-                        setMeshcoreMqttSettings((prev) => ({
-                          ...prev,
-                          server: LETSMESH_HOST_US,
-                          port: 443,
-                          topicPrefix: 'meshcore/test',
-                          useWebSocket: true,
-                          keepalive: 30,
-                          username: fromIdentity || prev.username,
-                          password: '',
-                        }));
-                      } else if (id === 'coloradomesh') {
-                        const fromIdentity =
-                          letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
-                        setMeshcoreMqttSettings((prev) => ({
-                          ...prev,
-                          server: COLORADO_MESH_HOST,
-                          port: 1883,
-                          topicPrefix: 'meshcore/DEN',
-                          useWebSocket: true,
-                          tlsEnabled: true,
-                          wsPath: '/ws',
-                          keepalive: 30,
-                          username: fromIdentity || prev.username,
-                          password: '',
-                        }));
-                      } else if (id === 'meshmapper') {
-                        const fromIdentity =
-                          letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
-                        setMeshcoreMqttSettings((prev) => ({
-                          ...prev,
-                          server: MESHMAPPER_HOST,
-                          port: 443,
-                          topicPrefix: 'meshcore/test',
-                          useWebSocket: true,
-                          keepalive: 30,
-                          username: fromIdentity || prev.username,
-                          password: '',
-                        }));
-                      } else if (id === 'ripple') {
+                      if (id === 'custom') return;
+                      if (id === 'ripple') {
                         if (!window.confirm(t('connectionPanel.ripplePresetConfirm'))) return;
-                        setMeshcoreMqttSettings((prev) => ({
-                          ...prev,
-                          server: 'mqtt.ripplenetworks.com.au',
-                          port: 8883,
-                          username: 'nswmesh',
-                          password: 'nswmesh',
-                          topicPrefix: 'meshcore',
-                          tlsInsecure: true,
-                          useWebSocket: false,
-                        }));
                       }
+                      const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                      setMeshcoreMqttSettings((prev) => ({
+                        ...applyMeshcoreMqttPreset(id, prev),
+                        username: fromIdentity || prev.username,
+                      }));
                     }}
                     className={`flex-1 rounded border px-2 py-1.5 text-xs font-medium transition-colors ${
                       meshcorePreset === id
@@ -2499,6 +2518,14 @@ export default function ConnectionPanel({
               className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
               placeholder={t('connectionPanel.topicPrefixPlaceholder')}
             />
+            {radioMqttRootDiverges ? (
+              <p className="text-xs text-amber-400" role="status">
+                {t('connectionPanel.radioMqttRootDivergesWarning', {
+                  radioRoot: radioMqttRoot,
+                  appPrefix: normalizeMeshtasticMqttTopicPrefix(activeMqttSettings.topicPrefix),
+                })}
+              </p>
+            ) : null}
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">
@@ -2557,6 +2584,11 @@ export default function ConnectionPanel({
               {channelPskWarn && (
                 <p className="text-xs text-amber-300/90" role="status">
                   {channelPskWarn}
+                </p>
+              )}
+              {showMqttOnlyChannelPskIndexHint && (
+                <p className="text-xs text-amber-300/90" role="status">
+                  {t('connectionPanel.channelPsksMqttOnlyIndexHint')}
                 </p>
               )}
               <p className="text-muted text-xs">
@@ -2698,6 +2730,8 @@ export default function ConnectionPanel({
         <ReticulumStackPanel
           connecting={state.status === 'connecting'}
           stackError={reticulumStackError}
+          onOpenReticulumRmapSettings={onOpenReticulumRmapSettings}
+          onOpenAppGpsSettings={onOpenAppGpsSettings}
           onStartStack={async () => {
             setReticulumStackError(null);
             try {
@@ -2741,13 +2775,18 @@ export default function ConnectionPanel({
                 Docs ↗
               </a>
               <span
-                className={`text-xs font-medium ${
-                  state.status === 'reconnecting'
-                    ? 'animate-pulse text-orange-400'
-                    : 'text-brand-green'
+                className={`inline-flex items-center gap-1 text-xs font-medium ${
+                  state.status === 'reconnecting' ? 'text-orange-200' : 'text-brand-green'
                 }`}
               >
-                ● {state.status}
+                {state.status === 'reconnecting' ? (
+                  <span aria-hidden className="inline-block animate-pulse">
+                    ●
+                  </span>
+                ) : (
+                  <>●</>
+                )}{' '}
+                {state.status}
               </span>
             </div>
           </div>
@@ -3000,7 +3039,7 @@ export default function ConnectionPanel({
                 aria-labelledby="connection-type-legend"
                 className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
               >
-                {(['ble', 'serial', 'http'] as const).map((type) => (
+                {(['ble', 'serial', 'http', 'tcp'] as const).map((type) => (
                   <button
                     key={type}
                     type="button"
@@ -3020,6 +3059,7 @@ export default function ConnectionPanel({
                     {type === 'ble' && t('connectionPanel.bluetooth')}
                     {type === 'serial' && t('connectionPanel.usbSerial')}
                     {type === 'http' && t('connectionPanel.wifiHttp')}
+                    {type === 'tcp' && t('connectionPanel.wifiTcp')}
                   </button>
                 ))}
               </div>
@@ -3076,6 +3116,25 @@ export default function ConnectionPanel({
               {navigator.userAgent.toLowerCase().includes('windows') && (
                 <p className="text-xs text-yellow-400">{t('connectionPanel.windowsMdnsNote')}</p>
               )}
+            </div>
+          )}
+          {connectionType === 'tcp' && protocol === 'meshtastic' && (
+            <div className="space-y-1">
+              <label htmlFor="connection-meshtastic-tcp-host" className="text-muted text-xs">
+                {t('connectionPanel.deviceAddress')}
+              </label>
+              <input
+                id="connection-meshtastic-tcp-host"
+                type="text"
+                value={tcpAddress}
+                onChange={(e) => {
+                  setTcpAddress(e.target.value);
+                }}
+                placeholder={t('connectionPanel.tcpAddressPlaceholder')}
+                className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
+                autoComplete="off"
+              />
+              <p className="text-muted text-xs">{t('connectionPanel.tcpAddressHint')}</p>
             </div>
           )}
           {connectionType === 'http' && protocol === 'meshcore' && (
@@ -3152,6 +3211,12 @@ export default function ConnectionPanel({
                 <p>{t('connectionPanel.hintMeshtasticHttp2')}</p>
               </>
             )}
+            {connectionType === 'tcp' && protocol === 'meshtastic' && (
+              <>
+                <p>{t('connectionPanel.hintMeshtasticTcp1')}</p>
+                <p>{t('connectionPanel.hintMeshtasticTcp2')}</p>
+              </>
+            )}
             {connectionType === 'http' && protocol === 'meshcore' && (
               <p>{t('connectionPanel.hintMeshcoreHttp')}</p>
             )}
@@ -3165,7 +3230,8 @@ export default function ConnectionPanel({
               disabled={
                 connecting ||
                 state.status === 'connecting' ||
-                (connectionType === 'http' && !activeHostAddress.trim())
+                ((connectionType === 'http' || connectionType === 'tcp') &&
+                  !activeHostAddress.trim())
               }
               className="bg-readable-green hover:bg-readable-green/90 w-full rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >

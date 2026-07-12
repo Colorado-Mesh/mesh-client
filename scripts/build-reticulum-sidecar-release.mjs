@@ -45,6 +45,11 @@ function run(cmd, args, extraEnv = {}) {
   }
 }
 
+function runSidecarTests() {
+  console.debug(`[build-reticulum-sidecar-release] cargo test --features ${SIDECAR_FEATURES}`);
+  run('cargo', ['test', '--features', SIDECAR_FEATURES]);
+}
+
 function cloneRatspeakStack() {
   const scriptPath = path.join(projectRoot, 'scripts', 'clone-ratspeak-stack.sh');
   const shell = process.platform === 'win32' ? 'bash' : 'bash';
@@ -132,6 +137,7 @@ function main() {
   }
 
   cloneRatspeakStack();
+  runSidecarTests();
   for (const { cargoTarget, archKey } of targets) {
     buildAndStage(cargoTarget, platform, archKey);
   }

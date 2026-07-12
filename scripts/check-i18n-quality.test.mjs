@@ -5,6 +5,7 @@ import {
   interpolationPlaceholderIssues,
   localeStringQualityIssues,
   nodeListPanelConnectionCrossKeyIssues,
+  placeholderNameSet,
   protectedBrandIssues,
   protectedProtocolTokenIssues,
   RETICULUM_RUNTIME_PREFIX,
@@ -551,6 +552,16 @@ describe('localeStringQualityIssues', () => {
     expect(issues).toContain('rooms-hello-false-friend:tr');
   });
 
+  it('flags translated hello password in roomsPanel adminLoginHelp', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'roomsPanel.adminLoginHelp',
+      val: 'Standard ist oft "Hallo".',
+      enVal: 'Enter the room admin password to manage settings and ACLs. Default is often "hello".',
+    });
+    expect(issues).toContain('rooms-hello-false-friend:de');
+  });
+
   it('flags translated hello password in roomsPanel emptyGuestLoginHint', () => {
     const issues = localeStringQualityIssues({
       locale: 'de',
@@ -719,8 +730,7 @@ describe('localeStringQualityIssues', () => {
 });
 
 describe('interpolationPlaceholderIssues', () => {
-  it('memoizes placeholderNameSet for identical strings', async () => {
-    const { placeholderNameSet } = await import('./check-i18n-quality.mjs');
+  it('memoizes placeholderNameSet for identical strings', () => {
     const text = 'Hello {{name}} and {{count}}';
     expect(placeholderNameSet(text)).toBe(placeholderNameSet(text));
   });
@@ -1819,6 +1829,49 @@ describe('checkReticulumRuntimeAndRoutingPortIssues', () => {
       enVal: 'RNS stack is not ready',
       val: 'La pila no está lista',
     });
-    expectIssue(issues, 'reticulum runtime copy must preserve protocol token "RNS"');
+    expectIssue(issues, 'Protocol token "RNS" missing');
+  });
+});
+
+describe('sniffer tab and MQTT channel PSK i18n quality', () => {
+  it('flags corrupted channelPsksMqttOnlyIndexHint wire literals', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'connectionPanel.channelPsksMqttOnlyIndexHint',
+      enVal:
+        'Without a radio connected, inbound MQTT messages route to chat tabs by channel name. Use ChannelName@index=base64 so each name maps to the correct slot — for example LongFast@1=AQ== when your public mesh channel is slot 1 (Colorado-mesh style). LongFast without @ maps to slot 0.',
+      val: 'LongFast @1=AQ = =',
+    });
+    expectIssue(issues, 'channelPsksMqttOnlyIndexHint must preserve wire literal');
+  });
+
+  it('flags translated filterChipAdvert protocol chip', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'rawPacketLog.filterChipAdvert',
+      enVal: 'ADVERT',
+      val: 'Publicidad',
+    });
+    expectIssue(issues, 'must stay verbatim "ADVERT"');
+  });
+
+  it('flags commercial advert tooltip wording', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'rawPacketLog.filterChipAdvertTooltip',
+      enVal: 'Show only node advertisement (ADVERT) packets',
+      val: 'Nur Knoten-Werbepakete anzeigen',
+    });
+    expectIssue(issues, 'mesh-advert false friend');
+  });
+
+  it('flags natural-disaster flood tooltip wording', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'rawPacketLog.filterChipFloodTooltip',
+      enVal: 'Show flood-routed packets (FLOOD / T_FLOOD)',
+      val: 'Hochwasser-geroutete Pakete anzeigen (FLOOD / T_FLOOD)',
+    });
+    expectIssue(issues, 'flood-routing false friend');
   });
 });

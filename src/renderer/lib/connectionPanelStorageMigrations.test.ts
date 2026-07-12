@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  COLORADO_MESH_PORT_MIGRATION_KEY,
   LEGACY_MQTT_SETTINGS_KEY,
   MESHCORE_MQTT_SETTINGS_KEY,
   MESHCORE_TOPIC_IATA_MIGRATION_KEY,
@@ -84,6 +85,64 @@ describe('runConnectionPanelStorageMigrations', () => {
   it('sets migration marker even when meshcore settings are absent', () => {
     runConnectionPanelStorageMigrations();
     expect(localStorage.getItem(MESHCORE_TOPIC_IATA_MIGRATION_KEY)).toBe('1');
+  });
+
+  it('migrates Colorado Mesh port from 1883 to 443', () => {
+    localStorage.setItem(
+      MESHCORE_MQTT_SETTINGS_KEY,
+      JSON.stringify({ server: COLORADO_MESH_HOST, topicPrefix: 'meshcore/DEN', port: 1883 }),
+    );
+    localStorage.setItem(MESHCORE_TOPIC_IATA_MIGRATION_KEY, '1');
+
+    runConnectionPanelStorageMigrations();
+
+    const parsed = JSON.parse(localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY) ?? '{}') as {
+      port?: number;
+    };
+    expect(parsed.port).toBe(443);
+    expect(localStorage.getItem(COLORADO_MESH_PORT_MIGRATION_KEY)).toBe('1');
+  });
+
+  it('reconciles stale Colorado Mesh preset settings to port 443 on startup', () => {
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'coloradomesh');
+    localStorage.setItem(
+      MESHCORE_MQTT_SETTINGS_KEY,
+      JSON.stringify({
+        server: COLORADO_MESH_HOST,
+        topicPrefix: 'meshcore/DEN',
+        port: 1883,
+        useWebSocket: true,
+        tlsEnabled: true,
+        autoLaunch: true,
+      }),
+    );
+    localStorage.setItem(MESHCORE_TOPIC_IATA_MIGRATION_KEY, '1');
+    localStorage.setItem(COLORADO_MESH_PORT_MIGRATION_KEY, '1');
+
+    runConnectionPanelStorageMigrations();
+
+    const parsed = JSON.parse(localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY) ?? '{}') as {
+      port?: number;
+      wsPath?: string;
+      autoLaunch?: boolean;
+    };
+    expect(parsed.port).toBe(443);
+    expect(parsed.wsPath).toBe('/ws');
+    expect(parsed.autoLaunch).toBe(true);
+  });
+
+  it('does not overwrite custom preset settings', () => {
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'custom');
+    const custom = JSON.stringify({
+      server: 'mqtt.example.com',
+      topicPrefix: 'meshcore/custom',
+      port: 1883,
+    });
+    localStorage.setItem(MESHCORE_MQTT_SETTINGS_KEY, custom);
+
+    runConnectionPanelStorageMigrations();
+
+    expect(localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY)).toBe(custom);
   });
 
   it('is idempotent on second call', () => {

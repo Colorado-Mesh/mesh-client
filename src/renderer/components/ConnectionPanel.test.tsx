@@ -776,6 +776,32 @@ describe('ConnectionPanel exit actions', () => {
     });
   });
 
+  it('connects via TCP with typed address', async () => {
+    const user = userEvent.setup();
+    const onConnect = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={onConnect}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    const radioCard = screen.getByText('Radio Connection').closest('.bg-deep-black');
+    expect(radioCard).toBeTruthy();
+    await user.click(within(radioCard as HTMLElement).getByRole('radio', { name: /wifi\/tcp/i }));
+    const hostInput = within(radioCard as HTMLElement).getByLabelText(/device address/i);
+    fireEvent.change(hostInput, { target: { value: '192.168.200.4' } });
+    await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
+
+    await waitFor(() => {
+      expect(onConnect).toHaveBeenCalledWith('tcp', '192.168.200.4');
+    });
+  });
+
   it('shows Disconnect & Quit on disconnected view when MQTT is connected', () => {
     render(
       <ConnectionPanel
@@ -1260,7 +1286,7 @@ describe('ConnectionPanel serial auto-connect BLE fallback', () => {
     const onAutoConnect = vi
       .fn()
       .mockRejectedValue(new Error('Serial auto-connect failed (radio did not respond)'));
-    vi.mocked(window.electronAPI.startNobleBleScanning).mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.startNobleBleScanning).mockResolvedValue({ ok: true });
 
     try {
       render(
@@ -1556,6 +1582,44 @@ describe('ConnectionPanel MQTT channel PSKs', () => {
     await waitFor(() => {
       expect(screen.queryByText(/Each key must decode to 16 bytes/)).not.toBeInTheDocument();
     });
+  });
+
+  it('shows MQTT-only @index hint when no radio is configured and no @index lines', () => {
+    renderMeshtasticMqtt();
+
+    expect(
+      screen.getByText(/Without a radio connected, inbound MQTT messages route to chat tabs/i),
+    ).toBeInTheDocument();
+  });
+
+  it('hides MQTT-only @index hint when draft includes ChannelName@index', async () => {
+    renderMeshtasticMqtt();
+
+    const textarea = document.getElementById('mqtt-channel-psks') as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: `LongFast@1=${KEY_B}` } });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText(/Without a radio connected, inbound MQTT messages route to chat tabs/i),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it('hides MQTT-only @index hint when radio is configured', () => {
+    render(
+      <ConnectionPanel
+        state={configuredState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+
+    expect(
+      screen.queryByText(/Without a radio connected, inbound MQTT messages route to chat tabs/i),
+    ).not.toBeInTheDocument();
   });
 });
 

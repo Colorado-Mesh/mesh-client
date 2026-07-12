@@ -13,7 +13,9 @@ import type {
 } from '../shared/reticulum-types';
 import { RETICULUM_PROXY_MAX_BODY_BYTES } from '../shared/reticulumProxyLimits';
 import { MS_PER_SECOND } from '../shared/timeConstants';
+import { bleCoexistenceCoordinator } from './ble-coexistence-coordinator';
 import { sanitizeLogMessage } from './log-service';
+import { reticulumConfigDirHasEnabledBleRnode } from './reticulum-ble-rnode-config';
 import { assertReticulumProxyPath, reticulumProxyGetTimeoutMs } from './reticulum-proxy-path';
 import { ensureDevSidecarBinary, resolveSidecarBinaryPath } from './reticulum-sidecar-path';
 import { ReticulumSidecarAutoBeaconTracker } from './reticulumSidecarAutoBeaconTracker';
@@ -26,6 +28,8 @@ import {
 const HEALTH_POLL_INTERVAL_MS = 250;
 const HEALTH_POLL_TIMEOUT_MS = 30 * MS_PER_SECOND;
 const STOP_GRACE_MS = 5 * MS_PER_SECOND;
+/** After yielding Noble BLE, allow CoreBluetooth/btleplug to settle before sidecar connect. */
+const RETICULUM_BLE_RNODE_NOBLE_SETTLE_MS = 500;
 
 function sidecarChildEnv(): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {
@@ -163,16 +167,32 @@ export class ReticulumSidecarManager extends EventEmitter {
     fs.mkdirSync(configDir, { recursive: true });
     fs.mkdirSync(storageDir, { recursive: true });
 
+    const needsBleRnodeNobleYield = reticulumConfigDirHasEnabledBleRnode(configDir);
+    let nobleYieldHeldForStart = false;
+    if (needsBleRnodeNobleYield) {
+      await bleCoexistenceCoordinator.suspendNobleForReticulumBleConnect();
+      nobleYieldHeldForStart = true;
+      await new Promise((r) => setTimeout(r, RETICULUM_BLE_RNODE_NOBLE_SETTLE_MS));
+    }
+
+    const releaseNobleYieldOnStartFailure = (): void => {
+      if (!nobleYieldHeldForStart) return;
+      nobleYieldHeldForStart = false;
+      bleCoexistenceCoordinator.releaseScan('reticulum');
+    };
+
     const port = await findFreePort();
     const binary = this.resolveBinaryPath();
     try {
       await ensureDevSidecarBinary(binary);
     } catch (err) {
+      releaseNobleYieldOnStartFailure();
       const msg = err instanceof Error ? err.message : String(err);
       this._status = { running: false, port: 0, pid: null, lastError: msg };
       throw new Error(msg);
     }
     if (!fs.existsSync(binary)) {
+      releaseNobleYieldOnStartFailure();
       const msg = app.isPackaged
         ? `RETICULUM_SIDECAR_BUNDLED_MISSING: packaged sidecar binary not found at ${binary}`
         : `Reticulum sidecar binary not found: ${binary}. Run \`pnpm run reticulum:sidecar:build\` from the repo root (requires Rust).`;
@@ -236,11 +256,14 @@ export class ReticulumSidecarManager extends EventEmitter {
     try {
       await pollSidecarHealth(port);
     } catch (err) {
+      releaseNobleYieldOnStartFailure();
       const msg = err instanceof Error ? err.message : String(err);
       await this.stopProc();
       this._status = { running: false, port: 0, pid: null, lastError: msg };
       throw new Error(msg);
     }
+
+    nobleYieldHeldForStart = false;
 
     this._status = {
       running: true,
@@ -263,6 +286,9 @@ export class ReticulumSidecarManager extends EventEmitter {
 
   private async stopProc(): Promise<void> {
     this.teardownWs();
+    if (bleCoexistenceCoordinator.getState().scanOwner === 'reticulum') {
+      bleCoexistenceCoordinator.releaseScan('reticulum');
+    }
     const proc = this.proc;
     this.proc = null;
     if (!proc) {

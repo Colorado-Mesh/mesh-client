@@ -384,9 +384,9 @@ describe('meshcoreTracePathLenToHops', () => {
 });
 
 describe('meshcoreInferHopsFromOutPath', () => {
-  it('uses trace semantics for valid outPathLen', () => {
-    expect(meshcoreInferHopsFromOutPath({ outPathLen: 1 })).toBe(0);
-    expect(meshcoreInferHopsFromOutPath({ outPathLen: 3 })).toBe(2);
+  it('uses contact outPathLen as hop count (last-byte index semantics)', () => {
+    expect(meshcoreInferHopsFromOutPath({ outPathLen: 1 })).toBe(1);
+    expect(meshcoreInferHopsFromOutPath({ outPathLen: 3 })).toBe(3);
   });
 
   it('when outPathLen is 0 but buffer still encodes hops, infers from bytes', () => {
@@ -453,7 +453,7 @@ describe('meshcoreContactToMeshNode', () => {
   const key32 = new Uint8Array(32);
   for (let i = 0; i < 32; i++) key32[i] = (i * 11 + 3) & 0xff;
 
-  it('sets hops_away from inferred path length', () => {
+  it('sets hops_away from contact outPathLen (last-byte index)', () => {
     const node = meshcoreContactToMeshNode({
       publicKey: key32,
       type: 1,
@@ -463,7 +463,7 @@ describe('meshcoreContactToMeshNode', () => {
       advLon: 0,
       outPathLen: 2,
     });
-    expect(node.hops_away).toBe(1);
+    expect(node.hops_away).toBe(2);
   });
 
   it('infers hops from outPath when outPathLen is unset', () => {

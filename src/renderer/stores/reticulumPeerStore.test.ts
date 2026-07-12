@@ -1,10 +1,38 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ReticulumContact } from '@/shared/reticulum-types';
+
 import {
+  capReticulumPeerMaps,
   mergeReticulumPeerMaps,
   refreshReticulumPeersFromSidecar,
   useReticulumPeerStore,
 } from './reticulumPeerStore';
+
+describe('capReticulumPeerMaps', () => {
+  it('keeps newest peers by last_seen and drops orphaned contacts', () => {
+    const peers = new Map([
+      ['old', { destination_hash: 'old', last_seen: 1 }],
+      ['mid', { destination_hash: 'mid', last_seen: 50 }],
+      ['new', { destination_hash: 'new', last_seen: 100 }],
+    ]);
+    const contacts = new Map([
+      ['old', { destination_hash: 'old', last_heard: 1 }],
+      ['mid', { destination_hash: 'mid', last_heard: 50 }],
+      ['orphan', { destination_hash: 'orphan', last_heard: 200 }],
+    ]);
+    const { peers: cappedPeers, contacts: cappedContacts } = capReticulumPeerMaps(
+      peers,
+      contacts,
+      2,
+    );
+    expect(cappedPeers.size).toBe(2);
+    expect(cappedPeers.has('new')).toBe(true);
+    expect(cappedPeers.has('mid')).toBe(true);
+    expect(cappedContacts.has('mid')).toBe(true);
+    expect(cappedContacts.has('orphan')).toBe(false);
+  });
+});
 
 describe('mergeReticulumPeerMaps', () => {
   it('merges peers and contacts with SQLite overlay', () => {
@@ -37,6 +65,40 @@ describe('mergeReticulumPeerMaps', () => {
     expect(peers.get('abc123')?.custom_display_name).toBe('Custom A');
     expect(contacts.get('def456')?.last_heard).toBe(1000);
     expect(peers.has('def456')).toBe(true);
+  });
+
+  it('reflects contact fields on the merged peer entry and applies SQLite overlay to contacts', () => {
+    const { peers, contacts } = mergeReticulumPeerMaps(
+      [],
+      [
+        {
+          destination_hash: 'def456',
+          display_name: 'Contact B',
+          last_heard: 1000,
+          hops: 1,
+        },
+      ],
+      [
+        {
+          destination_hash: 'def456',
+          display_name: 'Saved Contact',
+          favorited: 1,
+        },
+      ],
+    );
+
+    const contact = contacts.get('def456');
+    expect(contact?.last_heard).toBe(1000);
+    expect(contact?.hops).toBe(1);
+    expect(contact?.favorited).toBe(true);
+    expect(contact?.custom_display_name).toBe('Saved Contact');
+
+    const peer = peers.get('def456') as ReticulumContact | undefined;
+    expect(peer?.last_heard).toBe(1000);
+    expect(peer?.hops).toBe(1);
+    expect(peer?.favorited).toBe(true);
+    expect(peer?.custom_display_name).toBe('Saved Contact');
+    expect(peer?.display_name).toBe('Contact B');
   });
 });
 
@@ -81,6 +143,31 @@ describe('reticulumPeerStore', () => {
     expect(useReticulumPeerStore.getState().isContact('contact1')).toBe(true);
     expect(useReticulumPeerStore.getState().isContact('peeronly')).toBe(false);
     expect(useReticulumPeerStore.getState().isContact('CONTACT1')).toBe(true);
+    expect(useReticulumPeerStore.getState().isContact('NONEXISTENT')).toBe(false);
+  });
+
+  it('getPeer normalizes hash case like isContact', () => {
+    useReticulumPeerStore
+      .getState()
+      .replacePeers([{ destination_hash: 'abc123', display_name: 'Peer A', hops: 2 }]);
+    useReticulumPeerStore
+      .getState()
+      .replaceContacts([{ destination_hash: 'contact1', last_heard: 100, display_name: 'LXMF' }]);
+
+    expect(useReticulumPeerStore.getState().getPeer('ABC123')?.display_name).toBe('Peer A');
+    expect(useReticulumPeerStore.getState().getPeer('CONTACT1')?.display_name).toBe('LXMF');
+    const contactPeer = useReticulumPeerStore.getState().getPeer('contact1') as
+      ReticulumContact | undefined;
+    expect(contactPeer?.last_heard).toBe(100);
+    expect(useReticulumPeerStore.getState().getPeer('missing')).toBeUndefined();
+  });
+
+  it('clearPeers empties peers and contacts', () => {
+    useReticulumPeerStore.getState().replacePeers([{ destination_hash: 'aa' }]);
+    useReticulumPeerStore.getState().replaceContacts([{ destination_hash: 'bb', last_heard: 1 }]);
+    useReticulumPeerStore.getState().clearPeers();
+    expect(useReticulumPeerStore.getState().peers.size).toBe(0);
+    expect(useReticulumPeerStore.getState().contacts.size).toBe(0);
   });
 
   it('toggleFavorite rolls back when SQLite upsert fails', async () => {

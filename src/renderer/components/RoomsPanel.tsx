@@ -112,7 +112,6 @@ import { ChatComposer } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
-import { MeshcoreWaitingMessagesBanner } from './MeshcoreWaitingMessagesBanner';
 import { MessageStatusBadge } from './MessageStatusBadge';
 
 function RoomUnreadDivider({ label }: { label: string }) {
@@ -155,7 +154,7 @@ interface Props {
   messages: ChatMessage[];
   myNodeNum: number;
   isConnected: boolean;
-  connectionType?: 'ble' | 'serial' | 'http' | null;
+  connectionType?: 'ble' | 'serial' | 'http' | 'tcp' | null;
   /** True when the Rooms tab panel is visible (for mark-read while viewing). */
   isActive?: boolean;
   initialRoomTarget?: number | null;
@@ -186,13 +185,6 @@ interface Props {
   outerScrollMetricsRootRef?: React.RefObject<HTMLElement | null>;
   /** Denser post bubbles (same App Appearance setting as Chat). */
   compactMode?: boolean;
-  /** MeshCore MsgWaiting drain — messages queued on device. */
-  waitingMessagesCount?: number;
-  onSyncWaitingMessages?: () => void;
-  waitingMessagesSyncActive?: boolean;
-  waitingMessagesSyncProgress?: { processed: number; total: number } | null;
-  waitingMessagesSilentDrainActive?: boolean;
-  waitingMessagesDrainDeferred?: boolean;
 }
 
 function formatTimestamp(ts: number): string {
@@ -265,12 +257,6 @@ export default function RoomsPanel({
   scrollToTopRef,
   outerScrollMetricsRootRef,
   compactMode = false,
-  waitingMessagesCount = 0,
-  onSyncWaitingMessages,
-  waitingMessagesSyncActive = false,
-  waitingMessagesSyncProgress = null,
-  waitingMessagesSilentDrainActive = false,
-  waitingMessagesDrainDeferred = false,
 }: Props) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
@@ -1380,15 +1366,6 @@ export default function RoomsPanel({
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col gap-3">
       {RemoteAuthModal}
-      <MeshcoreWaitingMessagesBanner
-        waitingMessagesCount={waitingMessagesCount}
-        waitingMessagesSyncActive={waitingMessagesSyncActive}
-        waitingMessagesSyncProgress={waitingMessagesSyncProgress}
-        waitingMessagesSilentDrainActive={waitingMessagesSilentDrainActive}
-        waitingMessagesDrainDeferred={waitingMessagesDrainDeferred}
-        connectionType={connectionType}
-        onSyncWaitingMessages={onSyncWaitingMessages}
-      />
       {forgetConfirmNodeId != null && (
         <ConfirmModal
           title={t('roomsPanel.forgetSavedPasswordConfirmTitle')}

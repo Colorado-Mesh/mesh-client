@@ -4,7 +4,6 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 import L from 'leaflet';
-import { Crosshair, PARENT_HOVER_ATTR } from 'lucide-react-motion';
 import {
   Fragment,
   memo,
@@ -16,20 +15,8 @@ import {
   useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Circle,
-  CircleMarker,
-  MapContainer,
-  Marker,
-  Polyline,
-  Popup,
-  TileLayer,
-  useMap,
-} from 'react-leaflet';
+import { Circle, MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
-
-import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import type { LocationFilter } from '../App';
 import {
@@ -58,7 +45,11 @@ import { useMapLayerStore } from '../stores/mapLayerStore';
 import { useMapViewportStore } from '../stores/mapViewportStore';
 import { getWeightedPaths, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
-import { useToast } from './Toast';
+import {
+  ensureLoRaMapPanelStyles,
+  LocateMeControl,
+  MapViewportSaver,
+} from './map/leafletMapControls';
 
 const WAYPOINT_MARKER_ICON = L.divIcon({
   className: '',
@@ -67,81 +58,7 @@ const WAYPOINT_MARKER_ICON = L.divIcon({
   iconAnchor: [9, 9],
 });
 
-// ─── Map styles (anomaly halos + dark popup) ──────────────────────────────────
-
-const MAP_STYLE_ID = 'map-styles';
-function ensureMapStyles() {
-  if (document.getElementById(MAP_STYLE_ID)) return;
-  const style = document.createElement('style');
-  style.id = MAP_STYLE_ID;
-  style.textContent = `
-    @keyframes anomaly-pulse {
-      0%, 100% { opacity: 0.75; }
-      50%       { opacity: 0.15; }
-    }
-    .anomaly-halo-warning {
-      animation: anomaly-pulse 2s ease-in-out infinite;
-      pointer-events: none !important;
-    }
-    .anomaly-halo-error {
-      animation: anomaly-pulse 1.4s ease-in-out infinite;
-      pointer-events: none !important;
-    }
-    html[data-reduce-motion='true'] .anomaly-halo-warning,
-    html[data-reduce-motion='true'] .anomaly-halo-error {
-      animation: none !important;
-      opacity: 0.75 !important;
-    }
-    .leaflet-popup.map-node-popup .leaflet-popup-content-wrapper {
-      background: #0f172a;
-      border: 1px solid #334155;
-      color: #e5e7eb;
-      border-radius: 0.75rem;
-      padding: 0;
-      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-    }
-    .leaflet-popup.map-node-popup .leaflet-popup-content {
-      margin: 0;
-      min-width: 280px;
-      max-width: 340px;
-      max-height: 70vh;
-      overflow: hidden;
-    }
-    .leaflet-popup.map-node-popup .leaflet-popup-content > div {
-      max-height: 70vh;
-      overflow-y: auto;
-    }
-    .leaflet-popup.map-node-popup .leaflet-popup-tip {
-      background: #0f172a;
-    }
-    .leaflet-popup.map-node-popup .leaflet-popup-close-button {
-      color: #9ca3af !important;
-    }
-    .leaflet-popup.map-node-popup .leaflet-popup-close-button:hover {
-      color: #e5e7eb !important;
-    }
-    .leaflet-locate-control a {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 30px;
-      height: 30px;
-      background: #ffffff;
-      color: #52525b;
-      cursor: pointer;
-      border: none;
-      outline: none;
-    }
-    .leaflet-locate-control a:hover {
-      background: #f4f4f5;
-      color: #000000;
-    }
-    .leaflet-locate-control a.locating {
-      color: #3b82f6;
-    }
-  `;
-  document.head.appendChild(style);
-}
+// ─── Map styles (anomaly halos + dark popup) — see ensureLoRaMapPanelStyles in leafletMapControls ─
 
 // ─── Marker icon helpers ──────────────────────────────────────────────────────
 
@@ -467,122 +384,7 @@ function MapFitter({
   return null;
 }
 
-// ─── ViewportSaver ────────────────────────────────────────────────────────────
-// Only save viewport when we have position data, so that when data arrives
-// later we still perform the initial fit once instead of staying at default.
-
-const VIEWPORT_EPS = 1e-6;
-
-function ViewportSaver({ hasAnyPositions }: { hasAnyPositions: boolean }) {
-  const map = useMap();
-  const setViewport = useMapViewportStore((s) => s.setViewport);
-  useEffect(() => {
-    if (!hasAnyPositions) return;
-    const onMoveEnd = () => {
-      const center = map.getCenter();
-      const zoom = map.getZoom();
-      const next = { center: [center.lat, center.lng] as [number, number], zoom };
-      const current = useMapViewportStore.getState().viewport;
-      if (
-        current?.zoom === next.zoom &&
-        Math.abs(current.center[0] - next.center[0]) < VIEWPORT_EPS &&
-        Math.abs(current.center[1] - next.center[1]) < VIEWPORT_EPS
-      ) {
-        return;
-      }
-      setViewport(next);
-    };
-    map.on('moveend', onMoveEnd);
-    return () => {
-      map.off('moveend', onMoveEnd);
-    };
-  }, [map, setViewport, hasAnyPositions]);
-  return null;
-}
-
-// ─── LocateMeControl ──────────────────────────────────────────────────────────
-
-function LocateMeControl({
-  onLocateMe,
-}: {
-  onLocateMe?: () => Promise<{ lat: number; lon: number } | null>;
-}) {
-  const map = useMap();
-  const [loading, setLoading] = useState(false);
-  const [locatedPos, setLocatedPos] = useState<[number, number] | null>(null);
-  const { addToast } = useToast();
-  const { t } = useTranslation();
-  const locateTrigger = useParentIconTrigger();
-
-  const handleLocate = async () => {
-    setLoading(true);
-    try {
-      if (onLocateMe) {
-        const pos = await onLocateMe();
-        if (pos) {
-          const coords: [number, number] = [pos.lat, pos.lon];
-          setLocatedPos(coords);
-          map.flyTo(coords, 16);
-        } else {
-          addToast(t('mapPanel.locationUnavailable'), 'error');
-        }
-        return;
-      }
-      const result = await window.electronAPI.getGpsFix();
-      if ('status' in result && result.status === 'error') {
-        addToast(result.message, 'error');
-        return;
-      }
-      if (!('lat' in result) || !('lon' in result)) {
-        addToast(t('mapPanel.locationRequestFailed'), 'error');
-        return;
-      }
-      const coords: [number, number] = [result.lat, result.lon];
-      setLocatedPos(coords);
-      map.flyTo(coords, 16);
-    } catch (e) {
-      console.error('[LocateMeControl] getGpsFix failed: ' + errLikeToLogString(e));
-      addToast(t('mapPanel.locationRequestFailed'), 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <>
-      <div className="leaflet-top leaflet-left" style={{ pointerEvents: 'none' }}>
-        <div
-          className="leaflet-control leaflet-bar leaflet-locate-control"
-          style={{ marginTop: '80px', pointerEvents: 'auto' }}
-        >
-          <button
-            type="button"
-            title={t('mapPanel.showMyLocation')}
-            aria-label={t('mapPanel.showMyLocation')}
-            aria-busy={loading}
-            {...{ [PARENT_HOVER_ATTR]: '' }}
-            className={`leaflet-bar-part cursor-pointer border-0 bg-white p-0 ${loading ? 'locating' : ''}`}
-            onClick={handleLocate}
-          >
-            <Crosshair
-              aria-hidden
-              className="h-4 w-4 text-gray-700"
-              trigger={locateTrigger}
-              size={16}
-            />
-          </button>
-        </div>
-      </div>
-      {locatedPos && (
-        <CircleMarker
-          center={locatedPos}
-          radius={8}
-          pathOptions={{ color: '#ffffff', fillColor: '#3b82f6', fillOpacity: 1, weight: 2 }}
-        />
-      )}
-    </>
-  );
-}
+// ─── PathPolyline ─────────────────────────────────────────────────────────────
 
 function PathPolyline({
   nodeId,
@@ -931,7 +733,7 @@ export default function MapPanel({
   ]);
 
   useEffect(() => {
-    ensureMapStyles();
+    ensureLoRaMapPanelStyles();
     void loadHistoryFromDb().catch((e: unknown) => {
       console.warn('[MapPanel] loadHistoryFromDb failed:', String(e));
     });
@@ -1221,7 +1023,7 @@ export default function MapPanel({
         preferCanvas
       >
         <DiagnosticPanes />
-        <ViewportSaver hasAnyPositions={positions.length > 0 || !!ourPosition} />
+        <MapViewportSaver hasAnyPositions={positions.length > 0 || !!ourPosition} />
         <MapFocusController />
         <MapFitter
           positions={positions}

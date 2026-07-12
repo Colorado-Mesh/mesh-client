@@ -7,6 +7,7 @@ import {
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
+import { MAX_MESH_ENTITY_CAP } from '@/renderer/lib/sessionMemoryCaps';
 import { useNodeStore } from '@/renderer/stores/nodeStore';
 import { omitRecordKey } from '@/renderer/stores/storeUtils';
 import type {
@@ -52,6 +53,7 @@ interface ReticulumPeerStoreState {
   getPeer: (hash: string) => ReticulumPeer | ReticulumContact | undefined;
   getDisplayName: (peer: ReticulumPeer) => string;
   isContact: (hash: string) => boolean;
+  clearPeers: () => void;
 }
 
 function normalizeHash(hash: string): string {
@@ -193,6 +195,30 @@ export function mergeReticulumPeerMaps(
   }
 
   return { peers: peerMap, contacts: contactMap };
+}
+
+/** Keep newest peers by last_seen when the path table exceeds the product cap. */
+export function capReticulumPeerMaps(
+  peers: Map<string, ReticulumPeer>,
+  contacts: Map<string, ReticulumContact>,
+  max: number = MAX_MESH_ENTITY_CAP,
+): { peers: Map<string, ReticulumPeer>; contacts: Map<string, ReticulumContact> } {
+  if (peers.size <= max) {
+    return { peers, contacts };
+  }
+  const sorted = [...peers.entries()].sort(([, a], [, b]) => {
+    const aSeen = a.last_seen ?? ('last_heard' in a ? (a as ReticulumContact).last_heard : 0) ?? 0;
+    const bSeen = b.last_seen ?? ('last_heard' in b ? (b as ReticulumContact).last_heard : 0) ?? 0;
+    return bSeen - aSeen;
+  });
+  const cappedPeers = new Map(sorted.slice(0, max));
+  const cappedContacts = new Map<string, ReticulumContact>();
+  for (const [hash, contact] of contacts) {
+    if (cappedPeers.has(hash)) {
+      cappedContacts.set(hash, contact);
+    }
+  }
+  return { peers: cappedPeers, contacts: cappedContacts };
 }
 
 export function reticulumContactToMeshNode(contact: ReticulumContact): MeshNode {
@@ -413,6 +439,14 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
   getDisplayName: (peer) => peerDisplayName(peer),
 
   isContact: (hash) => get().contacts.has(normalizeHash(hash)),
+
+  clearPeers: () => {
+    set({
+      peers: new Map(),
+      contacts: new Map(),
+      lastRefreshAt: null,
+    });
+  },
 }));
 
 /** Resolve LXMF destination hash for a numeric node id (registry, node store, peer/contact store). */
@@ -426,8 +460,8 @@ export function reticulumHashForNodeId(nodeId: number): string | null {
     registerReticulumDestinationHash(nodeId, nodeRecord.reticulumDestinationHash);
     return nodeRecord.reticulumDestinationHash;
   }
-  const { peers, contacts } = useReticulumPeerStore.getState();
-  for (const row of [...peers.values(), ...contacts.values()]) {
+  const { peers } = useReticulumPeerStore.getState();
+  for (const row of peers.values()) {
     const hash = row.destination_hash;
     if (reticulumHashToNodeId(hash) === nodeId) {
       registerReticulumDestinationHash(nodeId, hash);
@@ -482,12 +516,8 @@ export async function refreshReticulumPeersFromSidecar(): Promise<ReticulumConta
     );
 
     const dismissed = useReticulumPeerStore.getState().dismissedContactHashes;
-    const { peers, contacts } = mergeReticulumPeerMaps(
-      wirePeers,
-      wireContacts,
-      dbRows ?? [],
-      dismissed,
-    );
+    const merged = mergeReticulumPeerMaps(wirePeers, wireContacts, dbRows ?? [], dismissed);
+    const { peers, contacts } = capReticulumPeerMaps(merged.peers, merged.contacts);
 
     useReticulumPeerStore.setState({
       peers,

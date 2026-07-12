@@ -15,6 +15,11 @@ import {
   meshtasticConfigSliceHydrated,
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
+import {
+  formatMeshtasticBluetoothPin,
+  parseMeshtasticBluetoothPin,
+  sanitizeMeshtasticBluetoothPinInput,
+} from '@/shared/meshtasticBluetoothPin';
 import type { ApplyChannelSetResult } from '@/shared/meshtasticChannelApply';
 import {
   generateConfigUrl,
@@ -450,6 +455,45 @@ export function ConfigNumber({
   );
 }
 
+export function ConfigBluetoothPin({
+  label,
+  value,
+  onChange,
+  disabled,
+  description,
+}: {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  disabled: boolean;
+  description?: string;
+}) {
+  const inputId = useId();
+  return (
+    <div className="space-y-1">
+      <label htmlFor={inputId} className="text-muted text-sm">
+        {label}
+      </label>
+      <div className="flex items-center gap-2">
+        <input
+          id={inputId}
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={6}
+          value={value}
+          onChange={(e) => {
+            onChange(sanitizeMeshtasticBluetoothPinInput(e.target.value));
+          }}
+          disabled={disabled}
+          className="bg-secondary-dark focus:border-brand-green w-28 rounded-lg border border-gray-600 px-3 py-2 font-mono text-gray-200 focus:outline-none disabled:opacity-50"
+        />
+      </div>
+      {description && <p className="text-muted text-xs">{description}</p>}
+    </div>
+  );
+}
+
 /** Collapsible section wrapper */
 function ConfigSection({
   title,
@@ -730,7 +774,7 @@ export default function RadioPanel({
 
   // ─── Bluetooth settings ───────────────────────────────────────
   const [btEnabled, setBtEnabled] = useState(true);
-  const [btFixedPin, setBtFixedPin] = useState(123456);
+  const [btFixedPin, setBtFixedPin] = useState('123456');
   const [btPairingMode, setBtPairingMode] = useState(0);
 
   // ─── Display settings ─────────────────────────────────────────
@@ -754,7 +798,9 @@ export default function RadioPanel({
 
   useSyncFormFromConfig(meshtasticConfigSlices?.bluetooth, (cfg) => {
     if (typeof cfg.enabled === 'boolean') setBtEnabled(cfg.enabled);
-    if (typeof cfg.fixedPin === 'number') setBtFixedPin(cfg.fixedPin);
+    if (typeof cfg.fixedPin === 'number') {
+      setBtFixedPin(formatMeshtasticBluetoothPin(cfg.fixedPin));
+    }
     if (typeof cfg.mode === 'number') setBtPairingMode(cfg.mode);
   });
 
@@ -949,7 +995,11 @@ export default function RadioPanel({
   const networkConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.network);
   const deviceApplyDisabled = disabled || !deviceConfigReady;
   const displayApplyDisabled = disabled || !displayConfigReady;
-  const bluetoothApplyDisabled = disabled || !bluetoothConfigReady;
+  const btFixedPinWireValue = parseMeshtasticBluetoothPin(btFixedPin);
+  const bluetoothApplyDisabled =
+    disabled ||
+    !bluetoothConfigReady ||
+    (btEnabled && btPairingMode === 1 && btFixedPinWireValue === null);
   const powerApplyDisabled = disabled || !powerConfigReady;
   const positionApplyDisabled =
     disabled || !positionConfigReady || capabilities?.hasFullPositionConfig === false;
@@ -2445,13 +2495,15 @@ export default function RadioPanel({
       {capabilities?.hasBluetoothConfig !== false && (
         <ConfigSection
           title={t('radioPanel.sectionBluetooth')}
-          onApply={() =>
-            applyConfig(t('radioPanel.sectionBluetooth'), 'bluetooth', {
+          onApply={() => {
+            const fixedPin = parseMeshtasticBluetoothPin(btFixedPin);
+            if (fixedPin === null) return;
+            void applyConfig(t('radioPanel.sectionBluetooth'), 'bluetooth', {
               enabled: btEnabled,
               mode: btPairingMode,
-              fixedPin: btFixedPin,
-            })
-          }
+              fixedPin,
+            });
+          }}
           applying={applyingSection === 'bluetooth'}
           disabled={bluetoothApplyDisabled}
         >
@@ -2476,13 +2528,11 @@ export default function RadioPanel({
             onChange={setBtPairingMode}
             disabled={disabled || applyingSection !== null || !btEnabled}
           />
-          <ConfigNumber
+          <ConfigBluetoothPin
             label={t('radioPanel.pairingPin')}
             value={btFixedPin}
             onChange={setBtFixedPin}
             disabled={disabled || applyingSection !== null || !btEnabled || btPairingMode !== 1}
-            min={100000}
-            max={999999}
             description={t('radioPanel.pairingPinDesc')}
           />
         </ConfigSection>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useToast } from '@/renderer/components/Toast';
+import type { ReticulumDevicePickerSelection } from '@/renderer/hooks/useReticulumInterfaceDevicePicker';
 import { useReticulumInterfaceDevicePicker } from '@/renderer/hooks/useReticulumInterfaceDevicePicker';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
@@ -15,11 +16,24 @@ import {
   type ReticulumConfigAuditIssue,
   type ReticulumConfigRepairKind,
 } from '@/renderer/lib/reticulum/reticulumConfigAudit';
+import {
+  applyDefaultHubPresetsSync,
+  planDefaultHubPresetsSync,
+} from '@/renderer/lib/reticulum/reticulumDefaultHubPresets';
+import {
+  RETICULUM_I2P_PEERS_MAX_LENGTH,
+  validateReticulumI2pPeers,
+} from '@/renderer/lib/reticulum/reticulumI2pPeerValidation';
+import { humanizeReticulumInterfaceApiError } from '@/renderer/lib/reticulum/reticulumInterfaceApiError';
 import { getReticulumInterfaceHelp } from '@/renderer/lib/reticulum/reticulumInterfaceHelp';
 import {
   formatReticulumInterfaceRowSummary,
   RETICULUM_IFACE_TYPE_LABELS,
 } from '@/renderer/lib/reticulum/reticulumInterfaceLabels';
+import {
+  deriveReticulumInterfaceName,
+  isReticulumRnodeCallsignType,
+} from '@/renderer/lib/reticulum/reticulumInterfaceName';
 import { reticulumInterfaceChangeRequiresStackRestart } from '@/renderer/lib/reticulum/reticulumInterfaceStackRestart';
 import {
   classifyReticulumLocalInterface,
@@ -29,12 +43,21 @@ import {
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import { setReticulumPrimaryLocalSerialInterface } from '@/renderer/lib/reticulum/reticulumLocalRnodePrimary';
 import {
+  isReticulumRmapDiscoveryCapable,
+  maybeSyncReticulumRmapAfterInterfaceEnable,
+  resolveRmapCoordinates,
+  ReticulumRmapGpsRequiredError,
+  ReticulumRmapValidationError,
+  setReticulumRmapDiscoverableForInterface,
+} from '@/renderer/lib/reticulum/reticulumRmapDiscovery';
+import {
   buildReticulumRnodeTcpPort,
   isReticulumTcpRnodeSerialPort,
   parseReticulumRnodeTcpPort,
   type ReticulumRnodeTransportKind,
   RNODE_DEFAULT_TCP_PORT,
 } from '@/renderer/lib/reticulum/reticulumRnodeTransport';
+import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import type {
   ReticulumInterfaceRow,
   ReticulumSerialPortOption,
@@ -109,6 +132,9 @@ type ReticulumIfaceUiType =
 export interface ReticulumInterfacesPanelProps {
   sidecarApiReady: boolean;
   connecting: boolean;
+  identityConfigured?: boolean;
+  identityDisplayName?: string | null;
+  onOpenAppGpsSettings?: () => void;
   interfaces: ReticulumInterfaceRow[];
   serialPorts: ReticulumSerialPortOption[];
   serialPortPaths: string[];
@@ -121,6 +147,9 @@ export interface ReticulumInterfacesPanelProps {
 export function ReticulumInterfacesPanel({
   sidecarApiReady,
   connecting,
+  identityConfigured = true,
+  identityDisplayName = null,
+  onOpenAppGpsSettings,
   interfaces,
   serialPorts,
   serialPortPaths,
@@ -133,6 +162,8 @@ export function ReticulumInterfacesPanel({
   const [ifaceType, setIfaceType] = useState<ReticulumIfaceUiType>('tcp');
   const [ifaceHost, setIfaceHost] = useState('');
   const [ifacePort, setIfacePort] = useState('4242');
+  const [rnodeDeviceName, setRnodeDeviceName] = useState('');
+  const [ifaceCallsign, setIfaceCallsign] = useState('');
   const [serialPort, setSerialPort] = useState('');
   const [pipeCommand, setPipeCommand] = useState('');
   const [presets, setPresets] = useState<ReticulumRnodePresetGroups>({
@@ -141,7 +172,8 @@ export function ReticulumInterfacesPanel({
     fallback: [],
     legacy: [],
   });
-  const [selectedPreset, setSelectedPreset] = useState('');
+  const [selectedPreset, setSelectedPreset] = useState('rnode_us');
+  const [addRfFields, setAddRfFields] = useState<RnodeRfFieldValues>(defaultAddRnodeRfFields);
   const [auditByInterfaceId, setAuditByInterfaceId] = useState<
     Map<string, ReticulumConfigAuditIssue[]>
   >(() => new Map());
@@ -160,6 +192,8 @@ export function ReticulumInterfacesPanel({
   } | null>(null);
   const [editingInterface, setEditingInterface] = useState<ReticulumInterfaceRow | null>(null);
   const [restartStackHint, setRestartStackHint] = useState(false);
+  const [addingDefaultHubs, setAddingDefaultHubs] = useState(false);
+  const [rmapToggleBusyId, setRmapToggleBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!sidecarApiReady) {
@@ -243,7 +277,14 @@ export function ReticulumInterfacesPanel({
       try {
         const res = await setReticulumPrimaryLocalSerialInterface(id);
         if (!res.ok) {
-          addToast(res.error ?? t('connectionPanel.reticulumInterfaces.setPrimaryFailed'), 'error');
+          addToast(
+            humanizeReticulumInterfaceApiError(
+              res.error,
+              t,
+              'connectionPanel.reticulumInterfaces.setPrimaryFailed',
+            ),
+            'error',
+          );
           return;
         }
         addToast(t('connectionPanel.reticulumInterfaces.setPrimarySuccess'), 'success');
@@ -251,11 +292,31 @@ export function ReticulumInterfacesPanel({
         await onRefresh();
       } catch (e) {
         // catch-no-log-ok set-primary failure surfaced via interfaceError toast area
-        setInterfaceError(errLikeToLogString(e));
+        setInterfaceError(
+          humanizeReticulumInterfaceApiError(
+            errLikeToLogString(e),
+            t,
+            'connectionPanel.reticulumInterfaces.setPrimaryFailed',
+          ),
+        );
       }
     },
     [addToast, onRefresh, sidecarApiReady, t],
   );
+
+  const handleSelectedPresetChange = useCallback((value: string) => {
+    setSelectedPreset(value);
+    if (!value) return;
+    const defaults = forceApplyReticulumRnodePresetDefaults(value);
+    if (!defaults) return;
+    setAddRfFields({
+      frequencyMhz: hzToMhzFieldValue(defaults.frequency),
+      bandwidthKhz: hzToKhzFieldValue(defaults.bandwidth),
+      spreadingFactor: String(defaults.spreading_factor),
+      codingRate: String(defaults.coding_rate),
+      txpower: String(defaults.txpower),
+    });
+  }, []);
 
   const runInterfaceAuditRepair = useCallback(
     async (repairKind: ReticulumConfigRepairKind) => {
@@ -296,6 +357,11 @@ export function ReticulumInterfacesPanel({
           }
           body.host = normalizeReticulumConnectHost(ifaceHost);
         } else {
+          const i2pErrorKey = validateReticulumI2pPeers(ifaceHost);
+          if (i2pErrorKey) {
+            setInterfaceError(t(i2pErrorKey, { max: RETICULUM_I2P_PEERS_MAX_LENGTH }));
+            return;
+          }
           body.host = ifaceHost.trim();
         }
         if (ifaceType !== 'i2p') {
@@ -324,7 +390,49 @@ export function ReticulumInterfacesPanel({
         body.seed_addresses = seeds;
       }
       if (ifaceType === 'rnode' || ifaceType === 'rnode_multi') {
-        body.preset = selectedPreset || null;
+        if (!ifaceCallsign.trim()) {
+          setInterfaceError(t('connectionPanel.reticulumInterfaces.callsignRequired'));
+          return;
+        }
+        const presetId =
+          selectedPreset || (ifaceType === 'rnode' && rnodeTransport === 'ble' ? 'rnode_us' : '');
+        if (!presetId) {
+          setInterfaceError(t('connectionPanel.reticulumInterfaces.rnodePresetRequired'));
+          return;
+        }
+        const presetDefaults = forceApplyReticulumRnodePresetDefaults(presetId);
+        const rfForAdd: RnodeRfFieldValues = presetDefaults
+          ? {
+              frequencyMhz: hzToMhzFieldValue(presetDefaults.frequency),
+              bandwidthKhz: hzToKhzFieldValue(presetDefaults.bandwidth),
+              spreadingFactor: String(presetDefaults.spreading_factor),
+              codingRate: String(presetDefaults.coding_rate),
+              txpower: String(presetDefaults.txpower),
+            }
+          : addRfFields;
+        appendRnodeRfFieldsToBody(body, {
+          preset: presetId,
+          callsign: ifaceCallsign,
+          rf: rfForAdd,
+        });
+      }
+      const derivedName = deriveReticulumInterfaceName({
+        ifaceType,
+        rnodeDeviceName:
+          ifaceType === 'rnode' && rnodeTransport === 'wifi'
+            ? rnodeWifiHost.trim() || rnodeDeviceName
+            : rnodeDeviceName,
+        serialPort:
+          ifaceType === 'rnode' && rnodeTransport === 'wifi'
+            ? buildReticulumRnodeTcpPort(
+                rnodeWifiHost,
+                clampTcpPort(rnodeWifiPort, RNODE_DEFAULT_TCP_PORT),
+              )
+            : serialPort,
+        serialPorts,
+      });
+      if (derivedName) {
+        body.name = derivedName;
       }
       if (ifaceType === 'pipe') {
         body.command = pipeCommand.trim();
@@ -332,18 +440,87 @@ export function ReticulumInterfacesPanel({
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/interfaces', body)) as {
         ok?: boolean;
         error?: string;
+        interface?: ReticulumInterfaceRow;
       };
       if (res?.ok === false) {
-        setInterfaceError(res.error ?? t('connectionPanel.reticulumInterfaces.addFailed'));
+        setInterfaceError(
+          humanizeReticulumInterfaceApiError(
+            res.error,
+            t,
+            'connectionPanel.reticulumInterfaces.addFailed',
+          ),
+        );
         return;
       }
       await onRefresh();
+      if (res.interface?.id) {
+        await syncRmapAfterInterfaceChange(res.interface.id);
+      }
       if (reticulumInterfaceChangeRequiresStackRestart(ifaceType)) {
         await restartStackForInterfaceChange();
       }
+      if (ifaceType === 'rnode' || ifaceType === 'rnode_multi') {
+        setRnodeDeviceName('');
+        setIfaceCallsign('');
+      }
     } catch (e) {
       // catch-no-log-ok: interface add failure shown via interfaceError
-      setInterfaceError(errLikeToLogString(e));
+      setInterfaceError(
+        humanizeReticulumInterfaceApiError(
+          errLikeToLogString(e),
+          t,
+          'connectionPanel.reticulumInterfaces.addFailed',
+        ),
+      );
+    }
+  };
+
+  const handleAddDefaultHubPresets = async () => {
+    setInterfaceError(null);
+    const plan = planDefaultHubPresetsSync(interfaces);
+    if (plan.add.length === 0 && plan.repair.length === 0) {
+      addToast(t('connectionPanel.reticulumInterfaces.addDefaultHubsAllPresent'), 'info');
+      return;
+    }
+    setAddingDefaultHubs(true);
+    try {
+      const { result } = await applyDefaultHubPresetsSync(interfaces, window.electronAPI.reticulum);
+      const changed = result.added + result.repaired;
+      if (changed > 0) {
+        await onRefresh();
+        setRestartStackHint(true);
+        addToast(
+          t('connectionPanel.reticulumInterfaces.addDefaultHubsSuccess', {
+            added: result.added,
+            repaired: result.repaired,
+            skipped: result.skipped,
+          }),
+          'success',
+        );
+      }
+      if (result.failed.length > 0) {
+        const lastFailure = result.failed.at(-1);
+        if (lastFailure) {
+          setInterfaceError(
+            humanizeReticulumInterfaceApiError(
+              lastFailure.error,
+              t,
+              'connectionPanel.reticulumInterfaces.addDefaultHubsFailed',
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setInterfaceError(
+        humanizeReticulumInterfaceApiError(
+          errLikeToLogString(e),
+          t,
+          'connectionPanel.reticulumInterfaces.addDefaultHubsFailed',
+        ),
+      );
+      console.debug('[ReticulumInterfacesPanel] add default hubs', e);
+    } finally {
+      setAddingDefaultHubs(false);
     }
   };
 
@@ -356,16 +533,31 @@ export function ReticulumInterfacesPanel({
         error?: string;
       };
       if (res?.ok === false) {
-        setInterfaceError(res.error ?? t('connectionPanel.reticulumInterfaces.toggleFailed'));
+        setInterfaceError(
+          humanizeReticulumInterfaceApiError(
+            res.error,
+            t,
+            'connectionPanel.reticulumInterfaces.toggleFailed',
+          ),
+        );
         return;
       }
       await onRefresh();
+      if (enabled) {
+        await syncRmapAfterInterfaceChange(id);
+      }
       if (enabled && ifaceTypeName && reticulumInterfaceChangeRequiresStackRestart(ifaceTypeName)) {
         await restartStackForInterfaceChange();
       }
     } catch (e) {
       // catch-no-log-ok: interface toggle failure shown via interfaceError
-      setInterfaceError(errLikeToLogString(e));
+      setInterfaceError(
+        humanizeReticulumInterfaceApiError(
+          errLikeToLogString(e),
+          t,
+          'connectionPanel.reticulumInterfaces.toggleFailed',
+        ),
+      );
     }
   };
 
@@ -377,7 +569,13 @@ export function ReticulumInterfacesPanel({
         error?: string;
       };
       if (res?.ok === false) {
-        setInterfaceError(res.error ?? t('connectionPanel.reticulumInterfaces.deleteFailed'));
+        setInterfaceError(
+          humanizeReticulumInterfaceApiError(
+            res.error,
+            t,
+            'connectionPanel.reticulumInterfaces.deleteFailed',
+          ),
+        );
         return;
       }
       setPendingDeleteInterface(null);
@@ -388,7 +586,13 @@ export function ReticulumInterfacesPanel({
       await restartStackForInterfaceChange();
     } catch (e) {
       // catch-no-log-ok: delete failure shown via interfaceError
-      setInterfaceError(errLikeToLogString(e));
+      setInterfaceError(
+        humanizeReticulumInterfaceApiError(
+          errLikeToLogString(e),
+          t,
+          'connectionPanel.reticulumInterfaces.deleteFailed',
+        ),
+      );
     }
   };
 
@@ -400,6 +604,12 @@ export function ReticulumInterfacesPanel({
     if (patchType === 'tcp' || patchType === 'udp') {
       if (reticulumConnectHostIsInvalid(patchHost)) {
         setInterfaceError(t('connectionPanel.reticulumInterfaces.invalidHost'));
+        return;
+      }
+    } else if (patchType === 'i2p') {
+      const i2pErrorKey = validateReticulumI2pPeers(patchHost);
+      if (i2pErrorKey) {
+        setInterfaceError(t(i2pErrorKey, { max: RETICULUM_I2P_PEERS_MAX_LENGTH }));
         return;
       }
     } else if (patchType === 'rnode' && isReticulumTcpRnodeSerialPort(patchSerialPort)) {
@@ -415,7 +625,13 @@ export function ReticulumInterfacesPanel({
         patch,
       )) as { ok?: boolean; error?: string };
       if (res?.ok === false) {
-        setInterfaceError(res.error ?? t('connectionPanel.reticulumInterfaces.editFailed'));
+        setInterfaceError(
+          humanizeReticulumInterfaceApiError(
+            res.error,
+            t,
+            'connectionPanel.reticulumInterfaces.editFailed',
+          ),
+        );
         return;
       }
       setEditingInterface(null);
@@ -425,11 +641,94 @@ export function ReticulumInterfacesPanel({
       }
     } catch (e) {
       // catch-no-log-ok: edit failure shown via interfaceError
-      setInterfaceError(errLikeToLogString(e));
+      setInterfaceError(
+        humanizeReticulumInterfaceApiError(
+          errLikeToLogString(e),
+          t,
+          'connectionPanel.reticulumInterfaces.editFailed',
+        ),
+      );
     }
   };
 
-  const actionsDisabled = !sidecarApiReady || connecting;
+  const actionsDisabled = !sidecarApiReady || connecting || !identityConfigured;
+  const defaultHubsDisabled = actionsDisabled || addingDefaultHubs;
+
+  const syncRmapAfterInterfaceChange = useCallback(
+    async (interfaceId: string) => {
+      try {
+        const synced = await maybeSyncReticulumRmapAfterInterfaceEnable(interfaceId, {
+          discoveryName: identityDisplayName,
+        });
+        if (synced) {
+          addToast(t('connectionPanel.reticulumRmap.syncSuccess'), 'success');
+          setRestartStackHint(true);
+          await onRefresh();
+        }
+      } catch (e) {
+        addToast(t('connectionPanel.reticulumRmap.syncFailed'), 'error');
+        console.debug('[ReticulumInterfacesPanel] rmap sync ' + errLikeToLogString(e));
+      }
+    },
+    [addToast, identityDisplayName, onRefresh, t],
+  );
+
+  const handleToggleRmapDiscoverable = useCallback(
+    async (iface: ReticulumInterfaceRow) => {
+      const enable = iface.discoverable !== true;
+      if (enable && !resolveRmapCoordinates()) {
+        addToast(t('reticulumRmapDiscovery.gpsMissingWarning'), 'error');
+        onOpenAppGpsSettings?.();
+        return;
+      }
+      setRmapToggleBusyId(iface.id);
+      try {
+        const stackRaw = (await window.electronAPI.reticulum.proxyGet(
+          '/api/v1/stack/settings',
+        )) as Record<string, unknown>;
+        await setReticulumRmapDiscoverableForInterface(iface, enable, {
+          discoveryName: identityDisplayName,
+          interfaces,
+          stackSettings: parseReticulumStackSettingsPayload(stackRaw),
+        });
+        addToast(
+          enable
+            ? t('connectionPanel.reticulumInterfaces.rmapEnableSuccess', { name: iface.name })
+            : t('connectionPanel.reticulumInterfaces.rmapDisableSuccess', { name: iface.name }),
+          'success',
+        );
+        setRestartStackHint(true);
+        await onRefresh();
+      } catch (e) {
+        if (e instanceof ReticulumRmapGpsRequiredError) {
+          addToast(t('reticulumRmapDiscovery.gpsMissingWarning'), 'error');
+          onOpenAppGpsSettings?.();
+          return;
+        }
+        if (e instanceof ReticulumRmapValidationError) {
+          addToast(
+            t('connectionPanel.reticulumInterfaces.rmapToggleFailed', {
+              name: iface.name,
+              error: e.message,
+            }),
+            'error',
+          );
+          return;
+        }
+        addToast(
+          t('connectionPanel.reticulumInterfaces.rmapToggleFailed', {
+            name: iface.name,
+            error: errLikeToLogString(e),
+          }),
+          'error',
+        );
+        console.warn('[ReticulumInterfacesPanel] rmap toggle ' + errLikeToLogString(e));
+      } finally {
+        setRmapToggleBusyId(null);
+      }
+    },
+    [addToast, identityDisplayName, interfaces, onOpenAppGpsSettings, onRefresh, t],
+  );
 
   return (
     <div className="space-y-2">
@@ -452,6 +751,7 @@ export function ReticulumInterfacesPanel({
         ifaceType={ifaceType}
         ifaceHost={ifaceHost}
         ifacePort={ifacePort}
+        ifaceCallsign={ifaceCallsign}
         serialPort={serialPort}
         pipeCommand={pipeCommand}
         selectedPreset={selectedPreset}
@@ -465,9 +765,11 @@ export function ReticulumInterfacesPanel({
         onIfaceTypeChange={setIfaceType}
         onIfaceHostChange={setIfaceHost}
         onIfacePortChange={setIfacePort}
+        onIfaceCallsignChange={setIfaceCallsign}
+        onRnodeDeviceNameChange={setRnodeDeviceName}
         onSerialPortChange={setSerialPort}
         onPipeCommandChange={setPipeCommand}
-        onSelectedPresetChange={setSelectedPreset}
+        onSelectedPresetChange={handleSelectedPresetChange}
         onRnodeTransportChange={setRnodeTransport}
         onRnodeWifiHostChange={setRnodeWifiHost}
         onRnodeWifiPortChange={setRnodeWifiPort}
@@ -506,6 +808,16 @@ export function ReticulumInterfacesPanel({
         }}
         onSetPrimaryLocalSerial={(id) => {
           void handleSetPrimaryLocalSerial(id);
+        }}
+        identityConfigured={identityConfigured}
+        addingDefaultHubs={addingDefaultHubs}
+        defaultHubsDisabled={defaultHubsDisabled}
+        onAddDefaultHubs={() => {
+          void handleAddDefaultHubPresets();
+        }}
+        rmapToggleBusyId={rmapToggleBusyId}
+        onToggleRmapDiscoverable={(iface) => {
+          void handleToggleRmapDiscoverable(iface);
         }}
       />
       {pendingDeleteInterface ? (
@@ -556,6 +868,46 @@ function uiTypeFromRow(type: string): ReticulumIfaceUiType {
   return 'auto';
 }
 
+function appendRnodeRfFieldsToBody(
+  body: Record<string, unknown>,
+  draft: { preset: string; callsign?: string; rf: RnodeRfFieldValues },
+): void {
+  body.preset = draft.preset || null;
+  if (draft.callsign !== undefined) {
+    body.callsign = draft.callsign.trim() || null;
+  }
+  const frequency = parseMhzFieldToHz(draft.rf.frequencyMhz);
+  const bandwidth = parseKhzFieldToHz(draft.rf.bandwidthKhz);
+  const spreadingFactor = Number.parseInt(draft.rf.spreadingFactor, 10);
+  const codingRate = Number.parseInt(draft.rf.codingRate, 10);
+  const txpower = Number.parseInt(draft.rf.txpower, 10);
+  if (frequency != null) body.frequency = frequency;
+  if (bandwidth != null) body.bandwidth = bandwidth;
+  if (Number.isFinite(spreadingFactor)) body.spreading_factor = spreadingFactor;
+  if (Number.isFinite(codingRate)) body.coding_rate = codingRate;
+  if (Number.isFinite(txpower)) body.txpower = txpower;
+}
+
+function defaultAddRnodeRfFields(): RnodeRfFieldValues {
+  const defaults = forceApplyReticulumRnodePresetDefaults('rnode_us');
+  if (!defaults) {
+    return {
+      frequencyMhz: '',
+      bandwidthKhz: '',
+      spreadingFactor: '',
+      codingRate: '5',
+      txpower: '17',
+    };
+  }
+  return {
+    frequencyMhz: hzToMhzFieldValue(defaults.frequency),
+    bandwidthKhz: hzToKhzFieldValue(defaults.bandwidth),
+    spreadingFactor: String(defaults.spreading_factor),
+    codingRate: String(defaults.coding_rate),
+    txpower: String(defaults.txpower),
+  };
+}
+
 function buildInterfaceEditPatch(draft: {
   name: string;
   type: ReticulumIfaceUiType;
@@ -589,18 +941,11 @@ function buildInterfaceEditPatch(draft: {
       .filter(Boolean);
   }
   if (draft.type === 'rnode' || draft.type === 'rnode_multi') {
-    body.preset = draft.preset || null;
-    body.callsign = draft.callsign.trim() || null;
-    const frequency = parseMhzFieldToHz(draft.rf.frequencyMhz);
-    const bandwidth = parseKhzFieldToHz(draft.rf.bandwidthKhz);
-    const spreadingFactor = Number.parseInt(draft.rf.spreadingFactor, 10);
-    const codingRate = Number.parseInt(draft.rf.codingRate, 10);
-    const txpower = Number.parseInt(draft.rf.txpower, 10);
-    if (frequency != null) body.frequency = frequency;
-    if (bandwidth != null) body.bandwidth = bandwidth;
-    if (Number.isFinite(spreadingFactor)) body.spreading_factor = spreadingFactor;
-    if (Number.isFinite(codingRate)) body.coding_rate = codingRate;
-    if (Number.isFinite(txpower)) body.txpower = txpower;
+    appendRnodeRfFieldsToBody(body, {
+      preset: draft.preset,
+      callsign: draft.callsign,
+      rf: draft.rf,
+    });
   }
   if (draft.type === 'pipe') {
     body.command = draft.pipeCommand.trim() || null;
@@ -694,7 +1039,7 @@ function InterfaceEditPanel({
   serialPorts: ReticulumSerialPortOption[];
   onPickDevice: (
     mode: 'serial' | 'ble-peer' | 'ble-rnode',
-    onSelect: (value: string) => void,
+    onSelect: (selection: ReticulumDevicePickerSelection) => void,
   ) => void;
   onSave: (patch: Record<string, unknown>) => void;
   onCancel: () => void;
@@ -723,6 +1068,9 @@ function InterfaceEditPanel({
     !isReticulumTcpRnodeSerialPort(serialPort) &&
     osSerialPaths.length > 0 &&
     !osSerialPaths.includes(serialPort.trim());
+
+  const editRequiresCallsign = isReticulumRnodeCallsignType(uiType);
+  const canSaveEdit = Boolean(name.trim()) && (!editRequiresCallsign || callsign.trim().length > 0);
 
   return (
     <div className="mt-3 rounded border border-amber-700/50 bg-amber-950/10 p-3">
@@ -863,17 +1211,22 @@ function InterfaceEditPanel({
                 setRfFields((prev) => ({ ...prev, ...patch }));
               }}
             />
-            <label className="text-xs text-gray-400">
-              {t('connectionPanel.reticulumInterfaces.callsign')}
-              <input
-                value={callsign}
-                onChange={(e) => {
-                  setCallsign(e.target.value);
-                }}
-                className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
-              />
-            </label>
           </>
+        ) : null}
+        {editRequiresCallsign ? (
+          <label className="text-xs text-gray-400">
+            {t('connectionPanel.reticulumInterfaces.callsign')}
+            <input
+              value={callsign}
+              onChange={(e) => {
+                setCallsign(e.target.value);
+              }}
+              placeholder={t('connectionPanel.reticulumInterfaces.callsignPlaceholder')}
+              className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+              aria-label={t('connectionPanel.reticulumInterfaces.callsign')}
+              required
+            />
+          </label>
         ) : null}
         {uiType === 'ble_peer' ? (
           <label className="text-xs text-gray-400">
@@ -899,11 +1252,23 @@ function InterfaceEditPanel({
             onClick={() => {
               const mode =
                 uiType === 'ble_peer' ? 'ble-peer' : editUsesBleRnode ? 'ble-rnode' : 'serial';
-              onPickDevice(mode, (value) => {
+              onPickDevice(mode, (selection) => {
                 if (uiType === 'ble_peer') {
-                  setSeedAddresses((prev) => (prev.trim() ? `${prev},${value}` : value));
-                } else {
-                  setSerialPort(value);
+                  setSeedAddresses((prev) =>
+                    prev.trim() ? `${prev},${selection.value}` : selection.value,
+                  );
+                  return;
+                }
+                setSerialPort(selection.value);
+                if (isReticulumRnodeCallsignType(uiType) || uiType === 'kiss') {
+                  setName(
+                    deriveReticulumInterfaceName({
+                      ifaceType: uiType,
+                      rnodeDeviceName: selection.deviceName,
+                      serialPort: selection.value,
+                      serialPorts,
+                    }),
+                  );
                 }
               });
             }}
@@ -917,7 +1282,7 @@ function InterfaceEditPanel({
       <div className="mt-3 flex gap-2">
         <button
           type="button"
-          disabled={!name.trim()}
+          disabled={!canSaveEdit}
           onClick={() => {
             const resolvedSerialPort = editUsesWifiRnode
               ? buildReticulumRnodeTcpPort(wifiHost, clampTcpPort(wifiPort, RNODE_DEFAULT_TCP_PORT))
@@ -962,6 +1327,7 @@ function InterfacesSection({
   ifaceType,
   ifaceHost,
   ifacePort,
+  ifaceCallsign,
   serialPort,
   pipeCommand,
   selectedPreset,
@@ -975,6 +1341,8 @@ function InterfacesSection({
   onIfaceTypeChange,
   onIfaceHostChange,
   onIfacePortChange,
+  onIfaceCallsignChange,
+  onRnodeDeviceNameChange,
   onSerialPortChange,
   onPipeCommandChange,
   onSelectedPresetChange,
@@ -994,6 +1362,12 @@ function InterfacesSection({
   onAuditRepair,
   onAuditDisable,
   onSetPrimaryLocalSerial,
+  identityConfigured,
+  addingDefaultHubs,
+  defaultHubsDisabled,
+  onAddDefaultHubs,
+  rmapToggleBusyId,
+  onToggleRmapDiscoverable,
 }: {
   interfaces: ReticulumInterfaceRow[];
   osSerialPortPaths: string[];
@@ -1003,6 +1377,7 @@ function InterfacesSection({
   ifaceType: ReticulumIfaceUiType;
   ifaceHost: string;
   ifacePort: string;
+  ifaceCallsign: string;
   serialPort: string;
   pipeCommand: string;
   selectedPreset: string;
@@ -1016,6 +1391,8 @@ function InterfacesSection({
   onIfaceTypeChange: (v: ReticulumIfaceUiType) => void;
   onIfaceHostChange: (v: string) => void;
   onIfacePortChange: (v: string) => void;
+  onIfaceCallsignChange: (v: string) => void;
+  onRnodeDeviceNameChange: (v: string) => void;
   onSerialPortChange: (v: string) => void;
   onPipeCommandChange: (v: string) => void;
   onSelectedPresetChange: (v: string) => void;
@@ -1025,7 +1402,7 @@ function InterfacesSection({
   onSeedAddressesChange: (v: string) => void;
   onPickDevice: (
     mode: 'serial' | 'ble-peer' | 'ble-rnode',
-    onSelect: (value: string) => void,
+    onSelect: (selection: ReticulumDevicePickerSelection) => void,
   ) => void;
   onAdd: () => void;
   onToggle: (id: string, enabled: boolean, ifaceType: string) => void;
@@ -1038,6 +1415,12 @@ function InterfacesSection({
   onAuditRepair: (kind: ReticulumConfigRepairKind) => void;
   onAuditDisable: (id: string) => Promise<void>;
   onSetPrimaryLocalSerial: (id: string) => void;
+  identityConfigured: boolean;
+  addingDefaultHubs: boolean;
+  defaultHubsDisabled: boolean;
+  onAddDefaultHubs: () => void;
+  rmapToggleBusyId: string | null;
+  onToggleRmapDiscoverable: (iface: ReticulumInterfaceRow) => void;
 }) {
   const { t } = useTranslation();
   const purposeIconTrigger = useIconTrigger();
@@ -1087,6 +1470,27 @@ function InterfacesSection({
         <DetailsChevron />
       </summary>
       <div className="space-y-3 px-3 pb-3">
+        <div className="space-y-1">
+          <p id="reticulum-default-hubs" className="text-muted text-xs">
+            {t('connectionPanel.reticulumInterfaces.defaultHubsLabel')}
+          </p>
+          {!identityConfigured ? (
+            <p className="text-xs text-amber-300" role="status">
+              {t('connectionPanel.reticulumInterfaces.identityRequiredHint')}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            disabled={defaultHubsDisabled}
+            onClick={onAddDefaultHubs}
+            className="rounded border border-amber-600/70 bg-amber-950/20 px-3 py-1.5 text-xs font-medium text-amber-200 transition-colors hover:bg-amber-950/40 disabled:opacity-40"
+            aria-label={t('connectionPanel.reticulumInterfaces.addDefaultHubsAria')}
+          >
+            {addingDefaultHubs
+              ? t('common.loading')
+              : t('connectionPanel.reticulumInterfaces.addDefaultHubs')}
+          </button>
+        </div>
         <div className="flex flex-wrap items-end gap-2">
           <label className="text-xs text-gray-400">
             {t('connectionPanel.reticulumInterfaces.type')}
@@ -1179,18 +1583,34 @@ function InterfacesSection({
               </p>
             </details>
           ) : null}
-          {showRnodePreset && showRnodeWifi ? (
-            <label className="text-xs text-gray-400">
-              {t('connectionPanel.reticulumInterfaces.preset')}
-              <RnodePresetSelect
-                value={selectedPreset}
-                onChange={onSelectedPresetChange}
-                presets={presets}
-                disabled={actionsDisabled}
-                className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
-                ariaLabel={t('connectionPanel.reticulumInterfaces.preset')}
-              />
-            </label>
+          {showRnodePreset ? (
+            <>
+              <label className="text-xs text-gray-400">
+                {t('connectionPanel.reticulumInterfaces.callsign')}
+                <input
+                  value={ifaceCallsign}
+                  disabled={actionsDisabled}
+                  onChange={(e) => {
+                    onIfaceCallsignChange(e.target.value);
+                  }}
+                  placeholder={t('connectionPanel.reticulumInterfaces.callsignPlaceholder')}
+                  className="mt-1 block w-28 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                  aria-label={t('connectionPanel.reticulumInterfaces.callsign')}
+                  required
+                />
+              </label>
+              <label className="text-xs text-gray-400">
+                {t('connectionPanel.reticulumInterfaces.preset')}
+                <RnodePresetSelect
+                  value={selectedPreset}
+                  onChange={onSelectedPresetChange}
+                  presets={presets}
+                  disabled={actionsDisabled}
+                  className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                  ariaLabel={t('connectionPanel.reticulumInterfaces.preset')}
+                />
+              </label>
+            </>
           ) : null}
           {showHostPort ? (
             <>
@@ -1243,7 +1663,10 @@ function InterfacesSection({
                     value={serialPort}
                     disabled={actionsDisabled}
                     onChange={(e) => {
-                      onSerialPortChange(e.target.value);
+                      const path = e.target.value;
+                      onSerialPortChange(path);
+                      const port = serialPorts.find((p) => p.path === path);
+                      onRnodeDeviceNameChange(port?.label?.trim() || path);
                     }}
                     className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
                   >
@@ -1259,25 +1682,14 @@ function InterfacesSection({
                     value={serialPort}
                     disabled={actionsDisabled}
                     onChange={(e) => {
-                      onSerialPortChange(e.target.value);
+                      const path = e.target.value;
+                      onSerialPortChange(path);
+                      onRnodeDeviceNameChange(path);
                     }}
                     className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
                   />
                 )}
               </label>
-              {showRnodePreset ? (
-                <label className="text-xs text-gray-400">
-                  {t('connectionPanel.reticulumInterfaces.preset')}
-                  <RnodePresetSelect
-                    value={selectedPreset}
-                    onChange={onSelectedPresetChange}
-                    presets={presets}
-                    disabled={actionsDisabled}
-                    className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
-                    ariaLabel={t('connectionPanel.reticulumInterfaces.preset')}
-                  />
-                </label>
-              ) : null}
             </>
           ) : null}
           {showBlePeer ? (
@@ -1310,14 +1722,17 @@ function InterfacesSection({
               type="button"
               disabled={actionsDisabled || (!sidecarReady && pickerMode !== 'serial')}
               onClick={() => {
-                onPickDevice(pickerMode, (value) => {
+                onPickDevice(pickerMode, (selection) => {
                   if (ifaceType === 'ble_peer') {
                     onSeedAddressesChange(
-                      seedAddresses.trim() ? `${seedAddresses},${value}` : value,
+                      seedAddresses.trim()
+                        ? `${seedAddresses},${selection.value}`
+                        : selection.value,
                     );
                     return;
                   }
-                  onSerialPortChange(value);
+                  onSerialPortChange(selection.value);
+                  onRnodeDeviceNameChange(selection.deviceName?.trim() || selection.value);
                 });
               }}
               className="rounded border border-amber-600 px-2 py-1.5 text-xs text-amber-200 hover:bg-amber-950/40 disabled:opacity-40"
@@ -1466,6 +1881,23 @@ function InterfacesSection({
                       >
                         {t('connectionPanel.reticulumInterfaces.auditDisable')}
                       </button>
+                    ) : null}
+                    {isReticulumRmapDiscoveryCapable(iface) && !help.isSystemManaged ? (
+                      <label className="flex cursor-pointer items-center gap-1 text-xs text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={iface.discoverable === true}
+                          disabled={actionsDisabled || rmapToggleBusyId === iface.id}
+                          aria-label={t(
+                            'connectionPanel.reticulumInterfaces.rmapDiscoverableAria',
+                            { name: iface.name },
+                          )}
+                          onChange={() => {
+                            onToggleRmapDiscoverable(iface);
+                          }}
+                        />
+                        {t('connectionPanel.reticulumInterfaces.rmapDiscoverableShort')}
+                      </label>
                     ) : null}
                     {!help.isSystemManaged ? (
                       <button

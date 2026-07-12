@@ -4,6 +4,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { extractUseCallbackBody } from '../lib/sourceContractTestHelpers';
+
 const RUNTIME_SOURCE = readFileSync(join(__dirname, '../runtime/useMeshcoreRuntime.ts'), 'utf-8');
 const CONN_EVENTS_SOURCE = readFileSync(
   join(__dirname, '../hooks/meshcore/meshcoreLegacyConnEvents.ts'),
@@ -39,6 +41,33 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     );
   });
 
+  it('prepareRfConnect preserves reconnect state when requested', () => {
+    const prepareBody = extractUseCallbackBody(RUNTIME_SOURCE, 'prepareRfConnect');
+    expect(prepareBody).toContain('preserveReconnectState');
+    expect(prepareBody).toMatch(
+      /if \(!opts\?\.preserveReconnectState\) \{[\s\S]*?meshcoreIsReconnectingRef\.current = false/,
+    );
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toContain('preserveReconnectState: true');
+  });
+
+  it('listens for Noble BLE adapter poweredOn to restart reconnect', () => {
+    expect(RUNTIME_SOURCE).toContain('onNobleBleAdapterState');
+    expect(RUNTIME_SOURCE).toContain('BLE adapter poweredOn');
+  });
+
+  it('skips Noble yield nudge when MeshCore is already connected', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /onNobleYieldReleased[\s\S]*?meshcoreDriverConnectedRef\.current \|\| connRef\.current[\s\S]*?return;/,
+    );
+  });
+
+  it('skips Noble yield nudge when reconnect is already in progress', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /onNobleYieldReleased[\s\S]*?meshcoreIsReconnectingRef\.current \|\| bleConnectInProgressRef\.current[\s\S]*?skip nudge \(reconnect in progress\)/,
+    );
+  });
+
   it('exports power suspend/resume handlers wired to reconnect', () => {
     expect(RUNTIME_SOURCE).toContain('onPowerSuspend');
     expect(RUNTIME_SOURCE).toContain('onPowerResume');
@@ -50,6 +79,28 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toContain('meshcoreExplicitDisconnectRef');
     expect(RUNTIME_SOURCE).toContain('awaitDualNobleBleMeshtasticSettle');
     expect(RUNTIME_SOURCE).toContain('POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS');
+  });
+
+  it('defers Noble disconnect only before a live session exists', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /bleConnectInProgressRef\.current &&[\s\S]*?!meshcoreDriverConnectedRef\.current &&[\s\S]*?!connRef\.current/,
+    );
+  });
+
+  it('reconnects when stored session exists before everConfigured (HMR/stale runtime)', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /Connection lost with stored session before everConfigured — reconnecting/,
+    );
+    expect(RUNTIME_SOURCE).toMatch(/traceRoute: no live conn — scheduling reconnect/);
+  });
+
+  it('fast-fails ping when flood prime exhausts even if stale path history exists', () => {
+    expect(RUNTIME_SOURCE).toMatch(
+      /const shouldAbortPing = evaluateMeshcorePingRouteAbort\(\{[\s\S]*?floodPrimeExhausted[\s\S]*?pathResolvedComposed: pathResolved\.composed/,
+    );
+    expect(RUNTIME_SOURCE).toMatch(
+      /radioContactPathLen != null &&[\s\S]*?radioContactPathLen >= 0[\s\S]*?ensureBestPathLoaded\(nodeId\)/,
+    );
   });
 
   it('clears bleConnectInProgressRef after auto-reconnect attempts', () => {
@@ -72,10 +123,74 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
   });
 });
 
+describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
+  it('finalizeDriverDisconnect clears reconnect session before teardown', () => {
+    const finalizeBody = extractUseCallbackBody(RUNTIME_SOURCE, 'finalizeDriverDisconnect');
+    expect(finalizeBody.length).toBeGreaterThan(0);
+    expect(finalizeBody).toContain('meshcoreExplicitDisconnectRef.current = true');
+    expect(finalizeBody).toContain('meshcoreConnectionParamsRef.current = null');
+    expect(finalizeBody).toContain('meshcoreIsReconnectingRef.current = false');
+    expect(finalizeBody).toContain('meshcoreReconnectAttemptRef.current = 0');
+    expect(finalizeBody).toContain('meshcoreReconnectGenerationRef.current += 1');
+    expect(finalizeBody).toContain('meshcoreEverConfiguredRef.current = false');
+    const teardownIndex = finalizeBody.indexOf('teardownMeshcoreConnEventListeners');
+    const explicitIndex = finalizeBody.indexOf('meshcoreExplicitDisconnectRef.current = true');
+    expect(explicitIndex).toBeGreaterThanOrEqual(0);
+    expect(teardownIndex).toBeGreaterThan(explicitIndex);
+  });
+
+  it('disconnect delegates to finalizeDriverDisconnect (Connection panel path)', () => {
+    const disconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'disconnect');
+    expect(disconnectBody).toContain('finalizeDriverDisconnect({ disconnectDriver: true })');
+    expect(disconnectBody).not.toContain('meshcoreConnectionParamsRef.current = null');
+  });
+
+  it('handleMeshcoreConnectionLost returns early on explicit user disconnect', () => {
+    const lostBody = extractUseCallbackBody(RUNTIME_SOURCE, 'handleMeshcoreConnectionLost');
+    expect(lostBody).toMatch(
+      /if \(meshcoreExplicitDisconnectRef\.current\) \{[\s\S]*?skip reconnect \(user disconnect\)/,
+    );
+  });
+
+  it('attemptMeshcoreReconnect returns when connection params are cleared', () => {
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toMatch(
+      /if \(!params\) \{[\s\S]*?meshcoreIsReconnectingRef\.current = false/,
+    );
+  });
+
+  it('attemptMeshcoreReconnect returns early on explicit user disconnect', () => {
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toMatch(
+      /if \(meshcoreExplicitDisconnectRef\.current\) \{[\s\S]*?meshcoreIsReconnectingRef\.current = false/,
+    );
+  });
+
+  it('attemptMeshcoreReconnect treats setup AbortError as superseded reconnect', () => {
+    const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
+    expect(reconnectBody).toMatch(
+      /err\.message === MESHCORE_SETUP_ABORT_MESSAGE[\s\S]*?reconnect aborted \(setup superseded\)/,
+    );
+  });
+
+  it('periodic waiting-message poll skips idle queues', () => {
+    expect(RUNTIME_SOURCE).toContain('shouldRunMeshcoreWaitingMessagesPeriodicPoll');
+    expect(RUNTIME_SOURCE).toMatch(
+      /shouldRunMeshcoreWaitingMessagesPeriodicPoll\(waitingMessagesCountRef\.current\)/,
+    );
+  });
+});
+
 describe('meshcoreLegacyConnEvents disconnected handler (regression)', () => {
   it('triggers handleConnectionLost when an operational session drops', () => {
     expect(CONN_EVENTS_SOURCE).toMatch(
       /onMeshcoreConn\('disconnected'[\s\S]{0,2000}handleConnectionLostRef\.current\(\)/,
+    );
+  });
+
+  it('skips handleConnectionLost on explicit user disconnect', () => {
+    expect(CONN_EVENTS_SOURCE).toMatch(
+      /if \(shouldReconnect && !meshcoreExplicitDisconnectRef\.current\)/,
     );
   });
 
@@ -92,6 +207,11 @@ describe('meshcoreLegacyConnEvents disconnected handler (regression)', () => {
       /publishMeshcorePacketLog[\s\S]{0,800}MQTT packet-log publish failed/,
     );
   });
+
+  it('marks event 131 and treats silent syncNextMessage timeout as empty queue', () => {
+    expect(CONN_EVENTS_SOURCE).toContain('markMeshcoreMsgWaitingEvent()');
+    expect(CONN_EVENTS_SOURCE).toMatch(/isMeshcoreSyncNextMessageTimeoutError\(e\)[\s\S]*?break;/);
+  });
 });
 
 describe('useMeshcoreRuntime prepareRfConnect driver teardown (regression)', () => {
@@ -99,5 +219,12 @@ describe('useMeshcoreRuntime prepareRfConnect driver teardown (regression)', () 
     expect(RUNTIME_SOURCE).toMatch(
       /prepareRfConnect[\s\S]{0,2500}await connectionDriver\.disconnect\(driverIdentity\)/,
     );
+  });
+
+  it('clears explicit-disconnect and reconnect refs when starting a new connect (Meshtastic parity)', () => {
+    const prepareBody = extractUseCallbackBody(RUNTIME_SOURCE, 'prepareRfConnect');
+    expect(prepareBody).toContain('meshcoreExplicitDisconnectRef.current = false');
+    expect(prepareBody).toContain('meshcoreReconnectAttemptRef.current = 0');
+    expect(prepareBody).toContain('meshcoreIsReconnectingRef.current = false');
   });
 });

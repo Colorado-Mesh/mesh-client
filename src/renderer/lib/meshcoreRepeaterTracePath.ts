@@ -1,6 +1,6 @@
 import { meshcorePubkeyPathPrefix } from '../../shared/meshcorePathHash';
 
-/** True when `path` is the full 32-byte destination pubkey (not a hashed route). */
+export type MeshcoreTracePrimeStrategy = 'none' | 'passive' | 'flood';
 export function meshcoreStoredPathLooksLikeFullPubKey(
   path: Uint8Array | undefined,
   pubKey: Uint8Array,
@@ -29,7 +29,8 @@ export function meshcoreIsUsableTraceStoredPath(
     return hops === 0;
   }
   if (hops >= 1 && path.length === pubKey.length) return false;
-  if (hops >= 1 && path.length < 2) return false;
+  // Hash-segment count must cover hop count (1-hop → 2 bytes, 3-hop → 4 bytes, …).
+  if (hops >= 1 && path.length < hops + 1) return false;
   return true;
 }
 
@@ -58,7 +59,9 @@ export function planMeshcoreRepeaterTraceRoute(opts: {
     (!storedPath || storedPath.length <= 1) &&
     opts.pathFromHistory &&
     meshcoreIsUsableTraceStoredPath(opts.pathFromHistory, opts.hopsAway, opts.pubKey) &&
-    opts.pathFromHistory.length > 1
+    opts.pathFromHistory.length > 1 &&
+    opts.radioContactPathLen != null &&
+    opts.radioContactPathLen >= 0
   ) {
     storedPath = opts.pathFromHistory;
   }
@@ -103,11 +106,68 @@ export function meshcoreShouldAbortMultiHopPingNoRoute(
   hopsAway: number | null | undefined,
   uiSaysMultiHop: boolean,
   radioSaysMultiHop: boolean,
+  hasResolvedPath = false,
 ): boolean {
+  if (hasResolvedPath) return false;
   if (!pathTooShort) return false;
   if (radioSaysMultiHop) return true;
   const hops = hopsAway ?? 0;
-  return uiSaysMultiHop && hops >= 2;
+  return uiSaysMultiHop && hops >= 1;
+}
+
+/** Whether ping should fast-fail with pingNoRoute after route priming and path resolution. */
+export function evaluateMeshcorePingRouteAbort(opts: {
+  floodPrimeExhausted: boolean;
+  pathResolvedComposed: boolean;
+  pathTooShort: boolean;
+  hopsAway: number | null | undefined;
+  uiSaysMultiHop: boolean;
+  radioSaysMultiHop: boolean;
+  hasResolvedPath: boolean;
+}): boolean {
+  if (opts.floodPrimeExhausted && !opts.pathResolvedComposed) return true;
+  return meshcoreShouldAbortMultiHopPingNoRoute(
+    opts.pathTooShort,
+    opts.hopsAway,
+    opts.uiSaysMultiHop,
+    opts.radioSaysMultiHop,
+    opts.hasResolvedPath,
+  );
+}
+
+/** Whether route priming should run before trace/ping. */
+export function computeMeshcoreTracePrimeStrategy(opts: {
+  needsRoutePrime: boolean;
+  pathTooShort: boolean;
+  hopsAway: number | null | undefined;
+  hasUsableStoredPath: boolean;
+  canSynthesizePath: boolean;
+  skipPrime?: boolean;
+}): MeshcoreTracePrimeStrategy {
+  void opts.canSynthesizePath;
+  if (opts.skipPrime || !opts.needsRoutePrime || !opts.pathTooShort) return 'none';
+  if (opts.hasUsableStoredPath) return 'none';
+  if (opts.hopsAway == null) return 'passive';
+  const hops = opts.hopsAway ?? 0;
+  if (hops >= 1) return 'passive';
+  return 'none';
+}
+
+/** Whether evidence-backed path synthesis can skip route priming. */
+export function meshcoreCanSynthesizeTracePath(opts: {
+  hopsAway: number | null | undefined;
+  relayKeysForSynth: readonly Uint8Array[];
+  partialDestPath: Uint8Array | undefined;
+  destPubKey: Uint8Array;
+}): boolean {
+  const hopsForSynth = opts.hopsAway ?? 0;
+  return (
+    (hopsForSynth === 1 && opts.relayKeysForSynth.length > 0) ||
+    (hopsForSynth === 2 &&
+      opts.relayKeysForSynth.length > 0 &&
+      opts.partialDestPath?.length === 2 &&
+      meshcoreIsUsableTraceStoredPath(opts.partialDestPath, 1, opts.destPubKey))
+  );
 }
 
 /** Build 1-byte-hash-mode path [relayPrefix, destPrefix] for a single known direct repeater relay. */
@@ -149,4 +209,87 @@ export function meshcoreDirectRepeaterRelayPubKeys(
     if (pk && pk.length > 0) keys.push(pk);
   }
   return keys;
+}
+
+/**
+ * Evidence-backed trace path synthesis for multi-hop targets (no blind pubkey guessing).
+ * - hops 1: [relayPrefix, destPrefix] via direct 0-hop repeater
+ * - hops 2: prepend a 0-hop relay byte to a known 2-byte path toward dest
+ * - hops 3+: only return stored paths with enough segments for the hop count
+ */
+export function meshcoreSynthesizeMultiHopTracePath(opts: {
+  destPubKey: Uint8Array;
+  hopsAway: number | null | undefined;
+  nodes: ReadonlyMap<number, { hops_away?: number | null; hw_model?: string | null }>;
+  pubKeyByNodeId: ReadonlyMap<number, Uint8Array>;
+  excludeNodeId: number;
+  pathByNodeId: ReadonlyMap<number, Uint8Array>;
+}): Uint8Array | undefined {
+  const hops = opts.hopsAway ?? 0;
+  if (hops <= 0) return undefined;
+
+  const relayKeys = meshcoreDirectRepeaterRelayPubKeys(
+    opts.nodes,
+    opts.pubKeyByNodeId,
+    opts.excludeNodeId,
+  );
+
+  if (hops === 1) {
+    return meshcoreSynthesizeOneHopTracePath(opts.destPubKey, relayKeys);
+  }
+
+  const storedToDest = opts.pathByNodeId.get(opts.excludeNodeId);
+  if (hops >= 3) {
+    if (
+      storedToDest &&
+      storedToDest.length > hops &&
+      meshcoreIsUsableTraceStoredPath(storedToDest, hops, opts.destPubKey)
+    ) {
+      return storedToDest;
+    }
+    return undefined;
+  }
+
+  // hops === 2: prepend direct relay byte to a known 1-hop (2-byte) path toward dest
+  const oneHopPath =
+    storedToDest?.length === 2 && meshcoreIsUsableTraceStoredPath(storedToDest, 1, opts.destPubKey)
+      ? storedToDest
+      : undefined;
+  if (!oneHopPath) return undefined;
+
+  for (const relayKey of relayKeys) {
+    const relayByte = (relayKey[0] ?? 0) & 0xff;
+    const composed = new Uint8Array([relayByte, oneHopPath[0], oneHopPath[1]]);
+    if (meshcoreIsUsableTraceStoredPath(composed, 2, opts.destPubKey)) {
+      return composed;
+    }
+  }
+  return undefined;
+}
+
+/** Resolve trace outPath seed after planning, priming, and multi-hop synthesis. */
+export function resolveMeshcoreTraceOutPathSeed(opts: {
+  tracePlan: MeshcoreRepeaterTraceRoutePlan;
+  pubKey: Uint8Array;
+  hopsAway: number | null | undefined;
+  nodeId: number;
+  nodes: ReadonlyMap<number, { hops_away?: number | null; hw_model?: string | null }>;
+  pubKeyByNodeId: ReadonlyMap<number, Uint8Array>;
+  pathByNodeId: ReadonlyMap<number, Uint8Array>;
+}): { outPath: Uint8Array; composed: boolean } {
+  if (!opts.tracePlan.pathTooShort) {
+    return { outPath: opts.tracePlan.outPathSeed, composed: false };
+  }
+  const synthesized = meshcoreSynthesizeMultiHopTracePath({
+    destPubKey: opts.pubKey,
+    hopsAway: opts.hopsAway,
+    nodes: opts.nodes,
+    pubKeyByNodeId: opts.pubKeyByNodeId,
+    excludeNodeId: opts.nodeId,
+    pathByNodeId: opts.pathByNodeId,
+  });
+  if (synthesized) {
+    return { outPath: synthesized, composed: true };
+  }
+  return { outPath: opts.tracePlan.outPathSeed, composed: false };
 }

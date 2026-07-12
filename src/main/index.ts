@@ -26,7 +26,8 @@ import { pathToFileURL } from 'url';
 import zlib from 'zlib';
 
 import type { MQTTSettings } from '../renderer/lib/types';
-import { formatHostForSocket } from '../shared/connectHost';
+import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
+import { formatHostForSocket, parseConnectHostPort } from '../shared/connectHost';
 import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
 import {
   sanitizeMeshcoreAdvLatLonForDb,
@@ -42,6 +43,7 @@ import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
 import {
   bleCoexistenceCoordinator,
   type BlePeripheralOwner,
+  BleScanBusyError,
   type BleScanOwner,
 } from './ble-coexistence-coordinator';
 import { formatChatExportLines } from './chatExportFormat';
@@ -114,6 +116,7 @@ import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { MQTTManager, parsePsk } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
+import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
 import { assertReticulumAttachmentPathJailed } from './reticulum-attachment-path';
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
 import {
@@ -290,27 +293,7 @@ function isAnyMqttConnected(): boolean {
 }
 
 let mainWindow: BrowserWindow | null = null;
-const RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS = 30_000;
-let lastRendererHeartbeatAt = 0;
-let rendererResumeWatchdogTimer: ReturnType<typeof setTimeout> | null = null;
-
-function clearRendererResumeWatchdog(): void {
-  if (rendererResumeWatchdogTimer) {
-    clearTimeout(rendererResumeWatchdogTimer);
-    rendererResumeWatchdogTimer = null;
-  }
-}
-
-function startRendererResumeWatchdog(): void {
-  clearRendererResumeWatchdog();
-  const resumeAt = Date.now();
-  rendererResumeWatchdogTimer = setTimeout(() => {
-    rendererResumeWatchdogTimer = null;
-    if (lastRendererHeartbeatAt >= resumeAt) return;
-    console.warn('[main] renderer unresponsive after system resume (no heartbeat within 30s)');
-  }, RENDERER_HEARTBEAT_RESUME_WATCHDOG_MS);
-  rendererResumeWatchdogTimer.unref?.();
-}
+const rendererHeartbeatWatchdog = createRendererHeartbeatWatchdog();
 /** Win32 About: native About panel can hard-crash; use a small HTML BrowserWindow instead (#406). */
 let windowsAboutWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -843,6 +826,15 @@ function validateMqttUpdateChannelKeysArgs(args: unknown): void {
   }
 }
 
+function validateMqttUpdateTopicPrefixArgs(args: unknown): void {
+  if (!args || typeof args !== 'object')
+    throw new Error('mqtt:updateTopicPrefix: args must be an object');
+  const a = args as Record<string, unknown>;
+  if (typeof a.topicPrefix !== 'string')
+    throw new Error('mqtt:updateTopicPrefix: topicPrefix must be a string');
+  if (a.topicPrefix.length > 128) throw new Error('mqtt:updateTopicPrefix: topicPrefix too long');
+}
+
 function validateMqttPublishArgs(args: unknown): void {
   if (!args || typeof args !== 'object') throw new Error('mqtt:publish: args must be an object');
   const a = args as Record<string, unknown>;
@@ -1125,7 +1117,7 @@ function applyAboutPanelOptions(): void {
   const credits = [
     `Version ${version}`,
     '',
-    'Cross-platform Electron desktop client for Meshtastic, MeshCore, and Reticulum on macOS, Linux, and Windows with multi-language support, BLE, USB serial, Wi‑Fi/TCP, MQTT, local SQLite history, and routing diagnostics.',
+    APP_ABOUT_TAGLINE,
     '',
     'Reticulum support uses a bundled AGPL-3.0 sidecar (mesh-client-reticulum). See docs/reticulum.md and docs/license.md.',
     '',
@@ -2145,11 +2137,26 @@ ipcMain.handle('bluetooth-unpair', async (_event, macAddress: unknown) => {
 });
 
 // ─── IPC: Start BLE scan (Linux) ─────────────────────────────────────
+const BLUETOOTH_START_SCAN_TIMEOUT_MS = 15_000;
+
 ipcMain.handle('bluetooth-start-scan', async () => {
   console.debug('[IPC] bluetooth-start-scan');
   return new Promise<void>((resolve, reject) => {
     const proc = spawn('bluetoothctl', ['scan', 'on']);
+    let settled = false;
+
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        proc.kill();
+        reject(new Error('bluetooth-start-scan: timed out after 15 s'));
+      }
+    }, BLUETOOTH_START_SCAN_TIMEOUT_MS);
+
     proc.on('close', (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
       if (code === 0) {
         console.debug('[IPC] bluetooth-start-scan success');
         resolve();
@@ -2159,6 +2166,9 @@ ipcMain.handle('bluetooth-start-scan', async () => {
       }
     });
     proc.on('error', (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
       console.warn(
         '[IPC] bluetooth-start-scan error:',
         sanitizeLogMessage(err?.message ?? String(err)),
@@ -2617,6 +2627,11 @@ ipcMain.handle('bleCoexistence:pauseNobleScan', async (event) => {
   await bleCoexistenceCoordinator.pauseNobleScan();
   return bleCoexistenceCoordinator.getState();
 });
+ipcMain.handle('bleCoexistence:suspendNobleForReticulumBleConnect', async (event) => {
+  assertIpcSender(event, 'bleCoexistence:suspendNobleForReticulumBleConnect');
+  await bleCoexistenceCoordinator.suspendNobleForReticulumBleConnect();
+  return bleCoexistenceCoordinator.getState();
+});
 
 ipcMain.handle('noble-ble-start-scan', async (event, sessionId: unknown) => {
   assertIpcSender(event, 'noble-ble-start-scan');
@@ -2630,9 +2645,20 @@ ipcMain.handle('noble-ble-start-scan', async (event, sessionId: unknown) => {
   }
   if (isQuitting) {
     console.debug('[main] noble-ble-start-scan: ignoring (app is quitting)');
-    return;
+    return { ok: true as const };
   }
-  await nobleBleManager.startScanning(sessionId);
+  try {
+    await nobleBleManager.startScanning(sessionId);
+    return { ok: true as const };
+  } catch (err) {
+    if (err instanceof BleScanBusyError) {
+      console.debug(
+        `[main] noble-ble-start-scan: scan busy (owner=${err.scanOwner}) session=${sessionId}`,
+      );
+      return { ok: false as const, code: 'scan_busy' as const, owner: err.scanOwner };
+    }
+    throw err;
+  }
 });
 ipcMain.handle('noble-ble-stop-scan', async (event, sessionId: unknown) => {
   assertIpcSender(event, 'noble-ble-stop-scan');
@@ -2939,6 +2965,20 @@ ipcMain.handle('mqtt:updateChannelKeys', (_event, args) => {
   } catch (err) {
     console.error(
       '[IPC] mqtt:updateChannelKeys failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+ipcMain.handle('mqtt:updateTopicPrefix', (_event, args) => {
+  try {
+    console.debug('[IPC] mqtt:updateTopicPrefix');
+    validateMqttUpdateTopicPrefixArgs(args);
+    const a = args as { topicPrefix: string };
+    mqttManager.updateTopicPrefix(a.topicPrefix);
+  } catch (err) {
+    console.error(
+      '[IPC] mqtt:updateTopicPrefix failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -3332,6 +3372,8 @@ const MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX = 'meshtasticRemoteAdminKey:';
 const MESHCORE_ROOM_SYNC_SETTING_PREFIX = 'meshcoreRoomSync:';
 const MESHCORE_ROOM_LAST_POST_SETTING_PREFIX = 'meshcoreRoomLastPost:';
 const MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX = 'meshcoreRoomCredential:';
+/** MeshCore Repeaters tab — must match renderer meshcoreRepeaterCredentialStorage. */
+const MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX = 'meshcoreRepeaterCredential:';
 
 function isAppSettingsKeyAllowed(key: string): boolean {
   return (
@@ -3339,17 +3381,31 @@ function isAppSettingsKeyAllowed(key: string): boolean {
     key.startsWith(MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX) ||
     key.startsWith(MESHCORE_ROOM_SYNC_SETTING_PREFIX) ||
     key.startsWith(MESHCORE_ROOM_LAST_POST_SETTING_PREFIX) ||
-    key.startsWith(MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX)
+    key.startsWith(MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX) ||
+    key.startsWith(MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX)
   );
 }
 
-ipcMain.handle('app:rendererHeartbeat', (_event, payload?: { ts?: number }) => {
+function appSettingsMaxValueLengthForKey(key: string): number {
+  if (
+    key.startsWith(MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX) ||
+    key.startsWith(MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX)
+  ) {
+    return 512;
+  }
+  return APP_SETTINGS_MAX_VALUE_LENGTH;
+}
+
+ipcMain.handle('app:rendererHeartbeat', (event, payload?: { ts?: number }) => {
+  if (!validateIpcSender(event)) return;
   if (!mainWindow) return;
-  lastRendererHeartbeatAt = typeof payload?.ts === 'number' ? payload.ts : Date.now();
-  clearRendererResumeWatchdog();
+  rendererHeartbeatWatchdog.recordHeartbeat(payload?.ts);
 });
 
-ipcMain.handle('appSettings:get', () => {
+ipcMain.handle('appSettings:get', (event) => {
+  if (!validateIpcSender(event)) {
+    throw new Error('IPC sender validation failed');
+  }
   try {
     const rows = getDatabase().prepareOnce('SELECT key, value FROM app_settings').all() as {
       key: string;
@@ -3378,8 +3434,9 @@ ipcMain.handle('appSettings:set', (event, key: unknown, value: unknown) => {
   if (typeof key !== 'string' || !isAppSettingsKeyAllowed(key)) {
     throw new Error('appSettings:set: key not allowed');
   }
-  if (typeof value !== 'string' || value.length > APP_SETTINGS_MAX_VALUE_LENGTH) {
-    throw new Error('appSettings:set: value must be a string under 256 chars');
+  const maxValueLength = appSettingsMaxValueLengthForKey(key);
+  if (typeof value !== 'string' || value.length > maxValueLength) {
+    throw new Error(`appSettings:set: value must be a string under ${maxValueLength} chars`);
   }
   try {
     const result = getDatabase()
@@ -3465,6 +3522,17 @@ ipcMain.handle('app:quit', async (event) => {
         ); // log-injection-ok internal Node.js socket error during cleanup
       }
       meshcoreTcpSocket = null;
+    }
+    if (meshtasticTcpSocket) {
+      try {
+        meshtasticTcpSocket.destroy();
+      } catch (err) {
+        console.debug(
+          '[IPC] app:quit TCP socket destroy (ignored):',
+          err instanceof Error ? err.message : err,
+        ); // log-injection-ok internal Node.js socket error during cleanup
+      }
+      meshtasticTcpSocket = null;
     }
     stopPowerSaveBlocker();
 
@@ -4899,7 +4967,7 @@ ipcMain.handle('meshcore:openJsonFile', async () => {
       properties: ['openFile'],
     });
     if (result.canceled || result.filePaths.length === 0) return null;
-    const raw = fs.readFileSync(result.filePaths[0], 'utf-8');
+    const raw = await fs.promises.readFile(result.filePaths[0], 'utf-8');
     if (raw.length > 5 * 1024 * 1024) throw new Error('File too large (max 5 MB)');
     return raw;
   } catch (err) {
@@ -5657,6 +5725,114 @@ ipcMain.handle('meshcore:tcp-disconnect', (event) => {
   }
 });
 
+// ─── Meshtastic TCP bridge ──────────────────────────────────────────
+// Independent from meshcoreTcpSocket: Meshtastic and MeshCore may be
+// connected simultaneously, each over its own transport.
+let meshtasticTcpSocket: net.Socket | null = null;
+
+ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => {
+  assertIpcSender(event, 'meshtastic:tcp-connect');
+  return new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const p = port;
+    if (!Number.isInteger(p) || p < 1 || p > 65535) {
+      reject(new Error('Invalid port'));
+      return;
+    }
+    try {
+      validateHttpHost(host);
+    } catch (err) {
+      // catch-no-log-ok validation error forwarded to promise reject
+      reject(err instanceof Error ? err : new Error(String(err)));
+      return;
+    }
+    if (meshtasticTcpSocket) {
+      meshtasticTcpSocket.destroy();
+      meshtasticTcpSocket = null;
+    }
+    const socketHost = formatHostForSocket(host);
+    const socket = new net.Socket();
+    meshtasticTcpSocket = socket;
+    const connectTimeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      if (meshtasticTcpSocket === socket) meshtasticTcpSocket = null;
+      reject(new Error('meshtastic:tcp-connect: connection timeout'));
+    }, MESHTASTIC_TCP_CONNECT_TIMEOUT_MS);
+    socket.connect(p, socketHost, () => {
+      clearTimeout(connectTimeout);
+      console.debug('[IPC] meshtastic:tcp-connect connected to', sanitizeLogMessage(socketHost), p);
+      logDeviceConnection(
+        `transport=tcp stack=meshtastic host=${sanitizeLogMessage(socketHost)} port=${p}`,
+      );
+      if (!settled) {
+        settled = true;
+        resolve();
+      }
+    });
+    socket.on('data', (data) => {
+      const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
+      mainWindow?.webContents.send('meshtastic:tcp-data', new Uint8Array(chunk));
+    });
+    socket.on('close', (hadError) => {
+      clearTimeout(connectTimeout);
+      console.debug('[IPC] meshtastic:tcp socket closed', hadError ? '(hadError)' : '(clean)');
+      mainWindow?.webContents.send('meshtastic:tcp-disconnected');
+      if (meshtasticTcpSocket === socket) meshtasticTcpSocket = null;
+    });
+    socket.on('error', (err) => {
+      clearTimeout(connectTimeout);
+      console.error('[IPC] meshtastic:tcp-connect error:', sanitizeLogMessage(err.message));
+      if (!settled) {
+        settled = true;
+        reject(err);
+      }
+      if (meshtasticTcpSocket === socket) meshtasticTcpSocket = null;
+    });
+  });
+});
+
+ipcMain.handle('meshtastic:tcp-write', (event, bytes: number[]) => {
+  assertIpcSender(event, 'meshtastic:tcp-write');
+  if (!Array.isArray(bytes) || bytes.length > MESHTASTIC_TCP_WRITE_MAX_BYTES) {
+    return Promise.reject(
+      new Error(
+        `meshtastic:tcp-write: invalid or oversized payload (max ${MESHTASTIC_TCP_WRITE_MAX_BYTES} bytes)`,
+      ),
+    );
+  }
+  // Validate each element is a valid byte value so Uint8Array coercion is not silently lossy.
+  if (!bytes.every((b) => Number.isInteger(b) && b >= 0 && b <= 255)) {
+    return Promise.reject(new Error('meshtastic:tcp-write: byte values must be integers 0-255'));
+  }
+  if (!meshtasticTcpSocket) {
+    const msg = 'meshtastic:tcp-write: no active socket';
+    console.warn(`[IPC] ${msg}`);
+    return Promise.reject(new Error(msg));
+  }
+  const sock = meshtasticTcpSocket;
+  return new Promise<void>((resolve, reject) => {
+    sock.write(new Uint8Array(bytes), (err) => {
+      if (err) {
+        console.error('[IPC] meshtastic:tcp-write error:', sanitizeLogMessage(err.message));
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+});
+
+ipcMain.handle('meshtastic:tcp-disconnect', (event) => {
+  assertIpcSender(event, 'meshtastic:tcp-disconnect');
+  if (meshtasticTcpSocket) {
+    console.debug('[IPC] meshtastic:tcp-disconnect');
+    meshtasticTcpSocket.destroy();
+    meshtasticTcpSocket = null;
+  }
+});
+
 // ─── Meshtastic HTTP bridge ─────────────────────────────────────────
 let httpDevice: {
   host: string;
@@ -5668,6 +5844,9 @@ let httpDevice: {
 const HTTP_FETCH_INTERVAL_MS = 3000;
 const HTTP_FETCH_TIMEOUT_MS = 10_000;
 const MESHCORE_TCP_CONNECT_TIMEOUT_MS = 20_000;
+const MESHTASTIC_TCP_CONNECT_TIMEOUT_MS = 20_000;
+/** Max Meshtastic TCP toRadio write payload (aligned with meshcore:tcp-write cap). */
+const MESHTASTIC_TCP_WRITE_MAX_BYTES = 256 * 1024;
 const CHAT_EXPORT_MAX_MESSAGES = 10_000;
 const DB_SAVE_NODE_PATH_MAX_BYTES = 16 * 1024;
 /** Max Meshtastic HTTP toRadio payload (aligned with meshcore:tcp-write cap). */
@@ -5678,7 +5857,11 @@ function validateHttpHost(host: unknown): asserts host is string {
   if (typeof host !== 'string' || host.length === 0 || host.length > MAX_HOST_LENGTH) {
     throw new Error('Invalid host');
   }
-  if (!isValidHttpHostname(host)) {
+  // http:preflight/http:connect pass an authority string with a port already
+  // appended (formatHostForUrl); meshcore:tcp-connect passes a bare host.
+  // Strip a trailing port before validating so both call sites work.
+  const bareHost = parseConnectHostPort(host, 0).host;
+  if (!isValidHttpHostname(bareHost)) {
     throw new Error('Invalid host format');
   }
 }
@@ -5898,14 +6081,14 @@ void app.whenReady().then(() => {
     // ─── Power monitor: notify renderer on suspend/resume ──────────
     powerMonitor.on('suspend', () => {
       console.debug('[main] System suspending');
-      clearRendererResumeWatchdog();
+      rendererHeartbeatWatchdog.clearResumeWatchdog();
       mqttManager.handlePowerSuspend();
       meshcoreMqttAdapter.handlePowerSuspend();
       mainWindow?.webContents.send('power:suspend');
     });
     powerMonitor.on('resume', () => {
       console.debug('[main] System resumed');
-      startRendererResumeWatchdog();
+      rendererHeartbeatWatchdog.startResumeWatchdog();
       mainWindow?.webContents.send('power:resume');
     });
   } catch (error) {
@@ -6019,6 +6202,17 @@ app.on('will-quit', () => {
       ); // log-injection-ok internal Node.js socket error during cleanup
     }
     meshcoreTcpSocket = null;
+  }
+  if (meshtasticTcpSocket) {
+    try {
+      meshtasticTcpSocket.destroy();
+    } catch (err) {
+      console.debug(
+        '[main] TCP socket destroy during will-quit (ignored):',
+        err instanceof Error ? err.message : err,
+      ); // log-injection-ok internal Node.js socket error during cleanup
+    }
+    meshtasticTcpSocket = null;
   }
   stopPowerSaveBlocker();
   nobleBleManager.releaseNobleProcessHandles();

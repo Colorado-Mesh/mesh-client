@@ -60,17 +60,19 @@ export function buildBootLines(protocol: MeshProtocol, identityId: IdentityId | 
 
   const ifaceLabel =
     connType === 'ble'
-      ? 'BLE'
+      ? i18n.t('bootSequence.transportBle')
       : connType === 'serial'
-        ? 'Serial'
+        ? i18n.t('bootSequence.transportSerial')
         : connType === 'http'
-          ? 'HTTP'
-          : 'Radio';
+          ? i18n.t('bootSequence.transportHttp')
+          : i18n.t('bootSequence.transportRadio');
 
   if (protocol === 'meshtastic') {
     lines.push({
       prefix: '[ OK ]  ',
-      message: i18n.t('bootSequence.meshtasticLora', { model: hwModel ?? 'radio interface' }),
+      message: i18n.t('bootSequence.meshtasticLora', {
+        model: hwModel ?? i18n.t('bootSequence.radioInterfaceFallback'),
+      }),
     });
 
     if (channelCount > 0) {

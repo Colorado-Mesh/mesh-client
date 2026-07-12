@@ -18,6 +18,7 @@ export interface RfReconnectHandlers {
   connectBleDirect: (bleDeviceId: string) => Promise<void>;
   connectSerialAutomatic: (serialPortId: string | null | undefined) => Promise<void>;
   connectHttp: (httpAddress: string) => Promise<void>;
+  connectTcp: (httpAddress: string) => Promise<void>;
 }
 
 /**
@@ -58,6 +59,15 @@ export async function reconnectRfFromLastConnection(
       throw new Error(`[rfReconnectHelper] missing HTTP/TCP address for ${protocol}`);
     }
     await handlers.connectHttp(httpAddress);
+    return;
+  }
+
+  if (rfType === 'tcp') {
+    const tcpAddress = resolveLastHttpAddress(protocol);
+    if (!tcpAddress) {
+      throw new Error(`[rfReconnectHelper] missing TCP address for ${protocol}`);
+    }
+    await handlers.connectTcp(tcpAddress);
     return;
   }
 

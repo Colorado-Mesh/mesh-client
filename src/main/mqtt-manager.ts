@@ -108,6 +108,21 @@ export function parseChannelPskLine(
   return psk ? { psk } : null;
 }
 
+const MESHTASTIC_MQTT_TOPIC_CHANNEL_MARKERS = ['/2/e/', '/2/json/'] as const;
+
+/** Extract channel name from `.../2/e/{channelName}/...` or `.../2/json/{channelName}/...`. */
+export function parseMeshtasticMqttTopicChannelName(topic: string): string | undefined {
+  for (const marker of MESHTASTIC_MQTT_TOPIC_CHANNEL_MARKERS) {
+    const idx = topic.indexOf(marker);
+    if (idx === -1) continue;
+    const rest = topic.slice(idx + marker.length);
+    const slash = rest.indexOf('/');
+    const channelName = slash === -1 ? rest : rest.slice(0, slash);
+    if (channelName.length > 0) return channelName;
+  }
+  return undefined;
+}
+
 /** Extract MQTT encrypted topic channel name from `.../2/e/{channelName}/{gatewayId}`. */
 export function parseMeshtasticMqttEncryptedTopicChannelName(topic: string): string | undefined {
   const marker = '/2/e/';
@@ -295,6 +310,8 @@ export class MQTTManager extends EventEmitter {
   private keepaliveRescheduleTimer: ReturnType<typeof setInterval> | null = null;
   private sampledDebugLogs = new Map<string, SampledDebugLogState>();
   private badEnvelopeSignatures = new Map<string, number>(); // signature -> expiry timestamp
+  /** Last wildcard topic subscribed (`{prefix}#`); cleared on disconnect. */
+  private subscribedWildcardTopic: string | null = null;
   private static MAX_SAMPLED_LOGS = 1000;
   /** Wall time at start of last `_doConnect` (CONNACK timing in connect logs). */
   private meshtasticConnectT0 = 0;
@@ -334,10 +351,20 @@ export class MQTTManager extends EventEmitter {
       this.channelNameToIndex.delete(name);
     }
     this.radioChannelKeyNames.clear();
+    const radioTopicIndices = new Map<string, number>();
     for (const entry of entries) {
       const name = entry.name.trim();
       const psk = parsePsk(entry.pskBase64);
       if (!name || !psk) continue;
+      if (entry.index !== undefined && Number.isInteger(entry.index)) {
+        const idx = entry.index >>> 0;
+        if (idx <= 7) {
+          radioTopicIndices.set(name, idx);
+          if (!this.manualChannelKeyNames.has(name)) {
+            this.channelNameToIndex.set(name, idx);
+          }
+        }
+      }
       if (this.manualChannelKeyNames.has(name)) continue;
       const existing = this.channelKeysByName.get(name);
       if (
@@ -349,12 +376,18 @@ export class MQTTManager extends EventEmitter {
       }
       this.channelKeysByName.set(name, psk);
       this.radioChannelKeyNames.add(name);
-      if (entry.index !== undefined && Number.isInteger(entry.index)) {
-        const idx = entry.index >>> 0;
-        if (idx <= 7) this.channelNameToIndex.set(name, idx);
-      }
     }
     this.applyManualChannelPskLines(this.manualChannelPskLines);
+    for (const [name, idx] of radioTopicIndices) {
+      if (!this.manualChannelKeyNames.has(name)) continue;
+      const manualHasExplicitIndex = this.manualChannelPskLines.some((line) => {
+        const parsed = parseChannelPskLine(line);
+        return parsed?.name === name && parsed.index !== undefined;
+      });
+      if (!manualHasExplicitIndex) {
+        this.channelNameToIndex.set(name, idx);
+      }
+    }
     this.rebuildAllDecryptKeys();
   }
 
@@ -415,9 +448,9 @@ export class MQTTManager extends EventEmitter {
     return this.channelKeysByName.get(channelName) ?? DEFAULT_PSK;
   }
 
-  private resolveChannelIndexFromTopic(topic: string): number {
-    const channelName = parseMeshtasticMqttEncryptedTopicChannelName(topic);
-    if (!channelName) return 0;
+  private resolveChannelIndexFromTopic(topic: string): number | undefined {
+    const channelName = parseMeshtasticMqttTopicChannelName(topic);
+    if (!channelName) return undefined;
     const mapped = this.channelNameToIndex.get(channelName);
     if (mapped !== undefined) return mapped;
     if (channelName === 'LongFast') return 0;
@@ -426,6 +459,100 @@ export class MQTTManager extends EventEmitter {
       `[Meshtastic MQTT] Unknown topic channel name "${sanitizeLogMessage(channelName)}"; attributing to channel 0`,
     );
     return 0;
+  }
+
+  /** MeshPacket.channel is 0–7 on the wire; clamp for ingest when protobuf omits or sends garbage. */
+  private clampMeshtasticRfChannel(channel: number | undefined): number {
+    if (channel == null || !Number.isFinite(channel)) return 0;
+    const idx = channel >>> 0;
+    return idx <= 7 ? idx : 7;
+  }
+
+  /** Prefer topic channel name (maps to receiver's local slot); fall back to MeshPacket.channel. */
+  private resolveMqttInboundTextChannelIndex(rfChannel: number, topic?: string): number {
+    if (topic !== undefined) {
+      const topicIndex = this.resolveChannelIndexFromTopic(topic);
+      if (topicIndex !== undefined) {
+        const packetIndex = this.clampMeshtasticRfChannel(rfChannel);
+        if (topicIndex !== packetIndex) {
+          this.logSampledDebug(
+            `mqtt-channel-topic-mismatch:${topicIndex}:${packetIndex}`,
+            `[Meshtastic MQTT] TEXT topic channel (${topicIndex}) differs from packet channel (${packetIndex}); using topic channel | topic=${sanitizeLogMessage(topic)}`,
+          );
+        }
+        return topicIndex;
+      }
+      return this.clampMeshtasticRfChannel(rfChannel);
+    }
+    return this.clampMeshtasticRfChannel(rfChannel);
+  }
+
+  private wildcardSubscribeTopicForPrefix(topicPrefix: string): string {
+    const prefix = topicPrefix.endsWith('/') ? topicPrefix : `${topicPrefix}/`;
+    return `${prefix}#`;
+  }
+
+  private subscribeWildcardTopic(topic: string): void {
+    if (!this.client?.connected) return;
+    if (this.subscribedWildcardTopic === topic) return;
+    const previous = this.subscribedWildcardTopic;
+    this.subscribedWildcardTopic = topic;
+    const doSubscribe = () => {
+      if (!this.client?.connected) return;
+      this.client.subscribe(topic, (err) => {
+        if (err) {
+          const isCascade =
+            err.message.toLowerCase().includes('connection closed') ||
+            err.message.toLowerCase().includes('connection reset');
+          if (isCascade) {
+            console.warn(
+              '[Meshtastic MQTT] Subscribe interrupted (will retry on reconnect):',
+              sanitizeLogMessage(err.message),
+            );
+          } else {
+            console.error('[Meshtastic MQTT] Subscribe failed:', sanitizeLogMessage(err.message)); // log-filter-ok Meshtastic MQTT logs → App log panel
+            this.setError(`Subscribe failed: ${err.message}`);
+          }
+        } else {
+          this.retryCount = 0;
+          console.debug('[Meshtastic MQTT] Subscribed to', topic); // log-filter-ok Meshtastic MQTT logs → App log panel
+        }
+      });
+    };
+    if (previous && previous !== topic) {
+      this.client.unsubscribe(previous, (err) => {
+        if (err) {
+          console.warn(
+            '[Meshtastic MQTT] Unsubscribe failed before resubscribe:',
+            sanitizeLogMessage(err.message),
+          );
+        }
+        doSubscribe();
+      });
+      return;
+    }
+    doSubscribe();
+  }
+
+  /** Live-session overlay: resubscribe when radio mqtt.root is more specific than Connection panel prefix. */
+  updateTopicPrefix(topicPrefix: string): void {
+    if (!this.currentSettings) return;
+    if (/[+#]/.test(topicPrefix)) {
+      throw new Error(
+        `MQTT topicPrefix must not contain wildcard characters '+' or '#': ${topicPrefix}`,
+      );
+    }
+    const trimmed = topicPrefix.trim();
+    if (!trimmed) return;
+    const nextTopic = this.wildcardSubscribeTopicForPrefix(trimmed);
+    if (
+      this.wildcardSubscribeTopicForPrefix(this.currentSettings.topicPrefix) === nextTopic &&
+      this.subscribedWildcardTopic === nextTopic
+    ) {
+      return;
+    }
+    this.currentSettings = { ...this.currentSettings, topicPrefix: trimmed };
+    this.subscribeWildcardTopic(nextTopic);
   }
 
   private clearConnectAckTimer(): void {
@@ -559,33 +686,8 @@ export class MQTTManager extends EventEmitter {
       // Guard: only subscribe if still connected
       if (!this.client?.connected) return;
 
-      // Normalize prefix: ensure it ends with "/" before appending the wildcard
-      const prefix = settings.topicPrefix.endsWith('/')
-        ? settings.topicPrefix
-        : `${settings.topicPrefix}/`;
-      const topic = `${prefix}#`;
-      this.client.subscribe(topic, (err) => {
-        if (err) {
-          // "Connection closed" is a cascade from a network reset — not fatal,
-          // the client will reconnect and resubscribe automatically.
-          const isCascade =
-            err.message.toLowerCase().includes('connection closed') ||
-            err.message.toLowerCase().includes('connection reset');
-          if (isCascade) {
-            console.warn(
-              '[Meshtastic MQTT] Subscribe interrupted (will retry on reconnect):',
-              sanitizeLogMessage(err.message),
-            );
-          } else {
-            console.error('[Meshtastic MQTT] Subscribe failed:', sanitizeLogMessage(err.message)); // log-filter-ok Meshtastic MQTT logs → App log panel
-            this.setError(`Subscribe failed: ${err.message}`);
-          }
-        } else {
-          // Only reset retry count after a fully stable connection + subscribe
-          this.retryCount = 0;
-          console.debug('[Meshtastic MQTT] Subscribed to', topic); // log-filter-ok Meshtastic MQTT logs → App log panel
-        }
-      });
+      const topic = this.wildcardSubscribeTopicForPrefix(settings.topicPrefix);
+      this.subscribeWildcardTopic(topic);
 
       if (settings.useWebSocket) {
         this.clearWssPing();
@@ -1072,6 +1174,7 @@ export class MQTTManager extends EventEmitter {
     }
     this.clearWssPing();
     this.clearKeepaliveReschedule();
+    this.subscribedWildcardTopic = null;
     this.currentSettings = null;
     this.retryCount = 0;
     if (this.client) {
@@ -1316,18 +1419,19 @@ export class MQTTManager extends EventEmitter {
     const hopsAway = hopStart > 0 && hopLimit <= hopStart ? hopStart - hopLimit : undefined;
 
     const payloadCase = packet.payloadVariant?.case;
+    const rfChannel = this.clampMeshtasticRfChannel(packet.channel);
 
     if (payloadCase === 'decoded') {
       const decoded = packet.payloadVariant.value as {
         portnum?: (typeof PortNum)[keyof typeof PortNum];
         payload?: Uint8Array;
       };
-      this.handleDecoded(nodeId, packetId, decoded, hopsAway);
+      this.handleDecoded(nodeId, packetId, decoded, hopsAway, rfChannel, topic);
     } else if (payloadCase === 'encrypted') {
       const encrypted = packet.payloadVariant.value;
       const decodedData = this.tryDecryptAllKeys(encrypted, packetId, nodeId);
       if (decodedData) {
-        this.handleDecoded(nodeId, packetId, decodedData, hopsAway, topic);
+        this.handleDecoded(nodeId, packetId, decodedData, hopsAway, rfChannel, topic);
       }
     }
   }
@@ -1501,7 +1605,10 @@ export class MQTTManager extends EventEmitter {
       sender_id: nodeId,
       sender_name: formatMeshtasticNodeId(nodeId),
       payload: text,
-      channel: typeof json.channel === 'number' ? json.channel : 0,
+      channel: this.resolveMqttInboundTextChannelIndex(
+        typeof json.channel === 'number' ? json.channel : 0,
+        topic,
+      ),
       timestamp: typeof json.timestamp === 'number' ? json.timestamp * 1000 : Date.now(),
       packetId,
       from_mqtt: true,
@@ -1653,7 +1760,8 @@ export class MQTTManager extends EventEmitter {
       emoji?: number;
       replyId?: number;
     },
-    hopsAway?: number,
+    hopsAway: number | undefined,
+    rfChannel: number,
     topic?: string,
   ): void {
     const portnum = data.portnum ?? PortNum.UNKNOWN_APP;
@@ -1770,7 +1878,7 @@ export class MQTTManager extends EventEmitter {
           sender_id: nodeId,
           sender_name: formatMeshtasticNodeId(nodeId),
           payload: resolved.text,
-          channel: topic !== undefined ? this.resolveChannelIndexFromTopic(topic) : 0,
+          channel: this.resolveMqttInboundTextChannelIndex(rfChannel, topic),
           timestamp: Date.now(),
           packetId,
           from_mqtt: true,

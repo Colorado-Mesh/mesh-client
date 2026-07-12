@@ -15,8 +15,34 @@ import { refreshReticulumPeersFromSidecar } from '../stores/reticulumPeerStore';
 import { ConfirmModal } from './ConfirmModal';
 import { IdentityVaultPanel } from './IdentityVaultPanel';
 import { ReticulumAnnounceControls } from './ReticulumAnnounceControls';
-import { ReticulumIdentitySwitcher } from './ReticulumIdentitySwitcher';
 import ReticulumPropagationSection from './ReticulumPropagationSection';
+import { ReticulumRmapDiscoveryControls } from './ReticulumRmapDiscoveryControls';
+
+type IdentityReplaceAction = 'generate' | 'importPhrase' | 'importBackup' | 'importPrivate';
+
+function formatIdentityApiError(t: (key: string) => string, error: string | undefined): string {
+  switch (error) {
+    case 'identity_already_configured':
+      return t('connectionPanel.reticulumIdentity.identityAlreadyConfigured');
+    case 'invalid seed phrase: expected 12 valid BIP-39 English words':
+      return t('connectionPanel.reticulumIdentity.invalidMnemonic');
+    case 'identity file missing; re-import or generate identity':
+      return t('connectionPanel.reticulumIdentity.identityFileMissing');
+    case 'backup_hash_mismatch_with_identity_file':
+      return t('connectionPanel.reticulumIdentity.backupHashMismatch');
+    case 'identity operations require an rns-stack sidecar build':
+      return t('connectionPanel.reticulumIdentity.importPrivateKeyRequiresStack');
+    case 'invalid private key length: expected 64, got 0':
+    default:
+      if (error?.startsWith('invalid private key length')) {
+        return t('connectionPanel.reticulumIdentity.invalidPrivateKeyLength');
+      }
+      if (error?.includes('BIP-39')) {
+        return t('connectionPanel.reticulumIdentity.invalidMnemonic');
+      }
+      return error ?? t('connectionPanel.reticulumIdentity.failed');
+  }
+}
 
 function ReticulumCollapsibleSection({
   title,
@@ -50,10 +76,15 @@ function ReticulumCollapsibleSection({
 export interface ReticulumNetworkPanelProps {
   connecting: boolean;
   onStartStack: () => Promise<void>;
+  onOpenAppGpsSettings?: () => void;
 }
 
 /** Network tab: identity, stack settings, propagation, config import. */
-export function ReticulumNetworkPanel({ connecting, onStartStack }: ReticulumNetworkPanelProps) {
+export function ReticulumNetworkPanel({
+  connecting,
+  onStartStack,
+  onOpenAppGpsSettings,
+}: ReticulumNetworkPanelProps) {
   const { t } = useTranslation();
   const sidecarEventRef = useRef<(evt: ReticulumSidecarEvent) => void>(() => {});
 
@@ -73,6 +104,12 @@ export function ReticulumNetworkPanel({ connecting, onStartStack }: ReticulumNet
   const [confirmSaved, setConfirmSaved] = useState(false);
   const [exportJson, setExportJson] = useState<string | null>(null);
   const [exportPassphrase, setExportPassphrase] = useState('');
+  const [importBackupJson, setImportBackupJson] = useState('');
+  const [importPrivateKey, setImportPrivateKey] = useState('');
+  const [showReplaceIdentityConfirm, setShowReplaceIdentityConfirm] = useState(false);
+  const [pendingReplaceAction, setPendingReplaceAction] = useState<IdentityReplaceAction | null>(
+    null,
+  );
   const [configPaste, setConfigPaste] = useState('');
   const [importWarnings, setImportWarnings] = useState<string[]>([]);
   const [showImportConfirm, setShowImportConfirm] = useState(false);
@@ -153,23 +190,31 @@ export function ReticulumNetworkPanel({ connecting, onStartStack }: ReticulumNet
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (replace = false) => {
     if (!sidecarApiReady) return;
     setIdentityError(null);
     try {
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identity/generate', {
         display_name: displayName.trim() || null,
+        replace,
       })) as {
         ok?: boolean;
         mnemonic?: string;
         error?: string;
       };
       if (!res.ok) {
-        setIdentityError(res.error ?? t('connectionPanel.reticulumIdentity.failed'));
+        if (res.error === 'identity_already_configured' && !replace) {
+          setPendingReplaceAction('generate');
+          setShowReplaceIdentityConfirm(true);
+          return;
+        }
+        setIdentityError(formatIdentityApiError(t, res.error));
         return;
       }
       setMnemonic(res.mnemonic ?? null);
       setConfirmSaved(false);
+      setImportPrivateKey('');
+      setImportBackupJson('');
       await refreshIdentity();
     } catch (e) {
       // catch-no-log-ok: export failure shown via setIdentityError
@@ -177,25 +222,126 @@ export function ReticulumNetworkPanel({ connecting, onStartStack }: ReticulumNet
     }
   };
 
-  const handleImportIdentity = async () => {
+  const handleImportIdentity = async (replace = false) => {
     if (!sidecarApiReady) return;
     setIdentityError(null);
     try {
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identity/import', {
         mnemonic: importPhrase.trim(),
         display_name: displayName.trim() || null,
+        replace,
       })) as { ok?: boolean; error?: string };
       if (!res.ok) {
-        setIdentityError(res.error ?? t('connectionPanel.reticulumIdentity.failed'));
+        if (res.error === 'identity_already_configured' && !replace) {
+          setPendingReplaceAction('importPhrase');
+          setShowReplaceIdentityConfirm(true);
+          return;
+        }
+        setIdentityError(formatIdentityApiError(t, res.error));
         return;
       }
       setImportPhrase('');
+      setImportPrivateKey('');
+      setImportBackupJson('');
       setMnemonic(null);
       await refreshIdentity();
     } catch (e) {
       // catch-no-log-ok: export failure shown via setIdentityError
       setIdentityError(errLikeToLogString(e));
     }
+  };
+
+  const handleImportBackup = async (replace = false) => {
+    if (!sidecarApiReady) return;
+    const raw = importBackupJson.trim();
+    if (!raw) return;
+    setIdentityError(null);
+    let backup: unknown;
+    try {
+      backup = JSON.parse(raw) as unknown;
+    } catch {
+      // catch-no-log-ok: invalid JSON shown via setIdentityError
+      setIdentityError(t('connectionPanel.reticulumIdentity.failed'));
+      return;
+    }
+    try {
+      const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identity/import-backup', {
+        backup,
+        display_name: displayName.trim() || null,
+        replace,
+      })) as { ok?: boolean; error?: string; metadata_only?: boolean };
+      if (!res.ok) {
+        if (res.error === 'identity_already_configured' && !replace) {
+          setPendingReplaceAction('importBackup');
+          setShowReplaceIdentityConfirm(true);
+          return;
+        }
+        setIdentityError(formatIdentityApiError(t, res.error));
+        return;
+      }
+      setImportBackupJson('');
+      await refreshIdentity();
+    } catch (e) {
+      // catch-no-log-ok: import failure shown via setIdentityError
+      setIdentityError(errLikeToLogString(e));
+    }
+  };
+
+  const handleImportPrivateKey = async (replace = false, privateKeyValue?: string) => {
+    if (!sidecarApiReady) return;
+    const privateKey = (privateKeyValue ?? importPrivateKey).trim();
+    if (!privateKey) return;
+    setIdentityError(null);
+    try {
+      const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identity/import-private', {
+        private_key: privateKey,
+        display_name: displayName.trim() || null,
+        replace,
+      })) as { ok?: boolean; error?: string };
+      if (!res.ok) {
+        if (res.error === 'identity_already_configured' && !replace) {
+          setPendingReplaceAction('importPrivate');
+          setShowReplaceIdentityConfirm(true);
+          return;
+        }
+        setIdentityError(formatIdentityApiError(t, res.error));
+        return;
+      }
+      setImportPrivateKey('');
+      setImportPhrase('');
+      setImportBackupJson('');
+      setMnemonic(null);
+      await refreshIdentity();
+    } catch (e) {
+      // catch-no-log-ok: import failure shown via setIdentityError
+      setIdentityError(errLikeToLogString(e));
+    }
+  };
+
+  const handleImportPrivateKeyFromFile = async () => {
+    try {
+      const result = await window.electronAPI.reticulum.showIdentityImportDialog();
+      if (!result.contentBase64) {
+        if (result.error === 'invalid_private_key_length') {
+          setIdentityError(t('connectionPanel.reticulumIdentity.invalidPrivateKeyLength'));
+        }
+        return;
+      }
+      await handleImportPrivateKey(false, result.contentBase64);
+    } catch (e) {
+      // catch-no-log-ok: file import failure shown via setIdentityError
+      setIdentityError(errLikeToLogString(e));
+    }
+  };
+
+  const runPendingReplaceAction = () => {
+    setShowReplaceIdentityConfirm(false);
+    const action = pendingReplaceAction;
+    setPendingReplaceAction(null);
+    if (action === 'generate') void handleGenerate(true);
+    else if (action === 'importPhrase') void handleImportIdentity(true);
+    else if (action === 'importBackup') void handleImportBackup(true);
+    else if (action === 'importPrivate') void handleImportPrivateKey(true);
   };
 
   const runConfigImport = async (mode: 'merge' | 'replace', content: string) => {
@@ -374,14 +520,23 @@ export function ReticulumNetworkPanel({ connecting, onStartStack }: ReticulumNet
             }}
           />
         )}
-        {identityReady && sidecarApiReady ? (
-          <ReticulumIdentitySwitcher
-            disabled={identityActionsDisabled}
-            onSwitched={() => {
-              void refreshIdentity();
-            }}
-          />
-        ) : null}
+        <IdentityImportExtras
+          disabled={identityActionsDisabled}
+          importBackupJson={importBackupJson}
+          importPrivateKey={importPrivateKey}
+          onImportBackupJsonChange={setImportBackupJson}
+          onImportPrivateKeyChange={setImportPrivateKey}
+          onImportBackup={() => {
+            void handleImportBackup();
+          }}
+          onImportPrivateKey={() => {
+            void handleImportPrivateKey();
+          }}
+          onImportPrivateKeyFromFile={() => {
+            void handleImportPrivateKeyFromFile();
+          }}
+          showReplaceHint={identityReady}
+        />
         {identityReady ? (
           <IdentityVaultPanel disabled={identityActionsDisabled} secret={exportJson} />
         ) : null}
@@ -389,6 +544,17 @@ export function ReticulumNetworkPanel({ connecting, onStartStack }: ReticulumNet
           <ReticulumAnnounceControls disabled={!sidecarApiReady} />
         ) : null}
       </ReticulumCollapsibleSection>
+
+      {identityReady && sidecarApiReady ? (
+        <ReticulumCollapsibleSection title={t('reticulumRmapDiscovery.sectionTitle')}>
+          <ReticulumRmapDiscoveryControls
+            disabled={connecting}
+            sidecarApiReady={sidecarApiReady}
+            identityDisplayName={identity?.display_name ?? displayName}
+            onOpenAppGpsSettings={onOpenAppGpsSettings}
+          />
+        </ReticulumCollapsibleSection>
+      ) : null}
 
       {sidecarApiReady ? (
         <>
@@ -484,6 +650,115 @@ export function ReticulumNetworkPanel({ connecting, onStartStack }: ReticulumNet
           }}
         />
       ) : null}
+
+      {showReplaceIdentityConfirm ? (
+        <ConfirmModal
+          title={t('connectionPanel.reticulumIdentity.replaceIdentityConfirmTitle')}
+          message={t('connectionPanel.reticulumIdentity.replaceIdentityConfirmMessage')}
+          confirmLabel={t('connectionPanel.reticulumIdentity.replaceIdentityConfirmAction')}
+          onConfirm={runPendingReplaceAction}
+          onCancel={() => {
+            setShowReplaceIdentityConfirm(false);
+            setPendingReplaceAction(null);
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function IdentityImportExtras({
+  disabled,
+  importBackupJson,
+  importPrivateKey,
+  onImportBackupJsonChange,
+  onImportPrivateKeyChange,
+  onImportBackup,
+  onImportPrivateKey,
+  onImportPrivateKeyFromFile,
+  showReplaceHint,
+}: {
+  disabled: boolean;
+  importBackupJson: string;
+  importPrivateKey: string;
+  onImportBackupJsonChange: (v: string) => void;
+  onImportPrivateKeyChange: (v: string) => void;
+  onImportBackup: () => void;
+  onImportPrivateKey: () => void;
+  onImportPrivateKeyFromFile: () => void;
+  showReplaceHint: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="mt-3 space-y-3 rounded-lg border border-gray-700 bg-slate-900/40 p-3">
+      {showReplaceHint ? (
+        <>
+          <h4 className="text-sm font-medium text-gray-200">
+            {t('connectionPanel.reticulumIdentity.replaceIdentitySection')}
+          </h4>
+          <p className="text-muted text-xs">
+            {t('connectionPanel.reticulumIdentity.replaceIdentityHint')}
+          </p>
+        </>
+      ) : null}
+      <label className="block text-xs text-gray-400">
+        {t('connectionPanel.reticulumIdentity.importBackupLabel')}
+        <p className="text-muted mt-1 text-[11px]">
+          {t('connectionPanel.reticulumIdentity.importBackupHint')}
+        </p>
+        <textarea
+          value={importBackupJson}
+          onChange={(e) => {
+            onImportBackupJsonChange(e.target.value);
+          }}
+          disabled={disabled}
+          rows={3}
+          className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 font-mono text-xs disabled:opacity-50"
+          aria-label={t('connectionPanel.reticulumIdentity.importBackupLabel')}
+        />
+      </label>
+      <button
+        type="button"
+        disabled={disabled || !importBackupJson.trim()}
+        onClick={onImportBackup}
+        className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm hover:bg-slate-800 disabled:opacity-40"
+      >
+        {t('connectionPanel.reticulumIdentity.importBackup')}
+      </button>
+      <label className="block text-xs text-gray-400">
+        {t('connectionPanel.reticulumIdentity.importPrivateKeyLabel')}
+        <p className="text-muted mt-1 text-[11px]">
+          {t('connectionPanel.reticulumIdentity.importPrivateKeyHint')}
+        </p>
+        <textarea
+          value={importPrivateKey}
+          onChange={(e) => {
+            onImportPrivateKeyChange(e.target.value);
+          }}
+          disabled={disabled}
+          rows={2}
+          className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 font-mono text-xs disabled:opacity-50"
+          aria-label={t('connectionPanel.reticulumIdentity.importPrivateKeyLabel')}
+        />
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={disabled || !importPrivateKey.trim()}
+          onClick={onImportPrivateKey}
+          className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm hover:bg-slate-800 disabled:opacity-40"
+        >
+          {t('connectionPanel.reticulumIdentity.importPrivateKey')}
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onImportPrivateKeyFromFile}
+          className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm hover:bg-slate-800 disabled:opacity-40"
+        >
+          {t('connectionPanel.reticulumIdentity.importPrivateKeyFromFile')}
+        </button>
+      </div>
     </div>
   );
 }

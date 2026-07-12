@@ -27,3 +27,8 @@ extensions:
       - - scripts/i18n-auto-translate-lib.mjs
         - Member[sanitizeLocaleTranslationJsonFileBodyForDisk].ReturnValue
         - file-content-store
+      # Flatpak Electron sync: validated manifest YAML before writeFileSync.
+      - ['mesh-client', 'Member[sanitizeFlatpakElectronManifestYamlForDisk].ReturnValue', 'file-content-store']
+      - - scripts/sync-flatpak-electron.mjs
+        - Member[sanitizeFlatpakElectronManifestYamlForDisk].ReturnValue
+        - file-content-store

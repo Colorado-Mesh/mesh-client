@@ -65,6 +65,7 @@ export interface MeshCoreRfParseOk {
   /** Inner application payload bytes (after path hashes). */
   innerPayload: Uint8Array;
   pathBytes: number[];
+  pathHashSizeBytes: 1 | 2 | 3;
   transportCodes: readonly [number, number] | null;
   messageFingerprintHex: string;
   advert: MeshCoreAdvertParsed | null;
@@ -227,6 +228,7 @@ export function parseMeshCoreRfPacket(raw: Uint8Array): MeshCoreRfParseResult {
     hops: number;
     pathEndOffset: number;
     path: number[];
+    hashSizeBytes: 1 | 2 | 3;
     transportCodes: readonly [number, number] | null;
   };
   try {
@@ -260,6 +262,7 @@ export function parseMeshCoreRfPacket(raw: Uint8Array): MeshCoreRfParseResult {
     pathEndOffset: path.pathEndOffset,
     innerPayload: inner,
     pathBytes: path.path,
+    pathHashSizeBytes: path.hashSizeBytes,
     transportCodes: path.transportCodes,
     messageFingerprintHex: structure.messageFingerprintHex,
     advert,

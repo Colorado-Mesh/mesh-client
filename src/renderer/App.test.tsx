@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe, configureAxe } from 'vitest-axe';
 
@@ -353,7 +353,7 @@ vi.mock('./lazyModals', () => ({
 }));
 
 vi.mock('./lib/appSettingsStorage', () => ({
-  getAppSettingsRaw: vi.fn().mockReturnValue({}),
+  getAppSettingsRaw: vi.fn().mockReturnValue(null),
 }));
 
 vi.mock('./lib/firmwareCheck', () => ({
@@ -723,7 +723,7 @@ describe('App accessibility', () => {
     });
   });
 
-  it('wires Chat Sync now to syncWaitingMessages, not getWaitingMessages', async () => {
+  it('wires header waiting-message sync to syncWaitingMessages, not getWaitingMessages', async () => {
     getStoredMeshProtocolMock.mockReturnValue('meshcore');
     const syncWaitingMessages = vi.fn().mockResolvedValue(undefined);
     const getWaitingMessages = vi.fn().mockResolvedValue([]);
@@ -736,17 +736,103 @@ describe('App accessibility', () => {
     });
 
     renderApp();
+
+    const syncButton = await screen.findByRole('button', {
+      name: /3 queued message\(s\) on radio.*Sync now/i,
+    });
+    fireEvent.click(syncButton);
+    expect(syncWaitingMessages).toHaveBeenCalledTimes(1);
+    expect(getWaitingMessages).not.toHaveBeenCalled();
+  });
+
+  it('shows silent drain in header instead of Chat panel banner', async () => {
+    getStoredMeshProtocolMock.mockReturnValue('meshcore');
+    const selfNodeId = 0x12345678;
+    useMeshCoreMock.mockReturnValue({
+      ...createMeshCoreMock(),
+      state: { status: 'configured', myNodeNum: selfNodeId, connectionType: 'serial' },
+      selfNodeId,
+      waitingMessagesSilentDrainActive: true,
+    });
+    setConnection(OFFLINE_MESHCORE_IDENTITY_ID, {
+      status: 'configured',
+      myNodeNum: selfNodeId,
+      connectionType: 'serial',
+      mqttStatus: 'disconnected',
+    });
+
+    renderApp();
     fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
 
     await waitFor(() => {
       expect(lastChatPanelProps.current).not.toBeNull();
     });
-    expect(lastChatPanelProps.current?.onSyncWaitingMessages).toBeDefined();
-    act(() => {
-      (lastChatPanelProps.current?.onSyncWaitingMessages as () => void)();
+
+    const headerStatus = screen.getByRole('status', {
+      name: /Fetching messages queued on the radio/i,
     });
-    expect(syncWaitingMessages).toHaveBeenCalledTimes(1);
-    expect(getWaitingMessages).not.toHaveBeenCalled();
+    expect(headerStatus).toBeInTheDocument();
+    expect(headerStatus).toHaveAttribute(
+      'aria-label',
+      expect.stringMatching(/USB serial handles one command at a time/i),
+    );
+  });
+
+  it('shows waiting-message indicator on Meshtastic tab when MeshCore has queued messages', async () => {
+    getStoredMeshProtocolMock.mockReturnValue('meshtastic');
+    useMeshCoreMock.mockReturnValue({
+      ...createMeshCoreMock(),
+      waitingMessagesCount: 2,
+      syncWaitingMessages: vi.fn().mockResolvedValue(undefined),
+    });
+
+    renderApp();
+
+    expect(
+      await screen.findByRole('button', {
+        name: /2 queued message\(s\) on radio.*Sync now/i,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('hides silent drain spinner on Meshtastic tab during MeshCore message fetch', () => {
+    getStoredMeshProtocolMock.mockReturnValue('meshtastic');
+    useMeshCoreMock.mockReturnValue({
+      ...createMeshCoreMock(),
+      waitingMessagesSilentDrainActive: true,
+      syncWaitingMessages: vi.fn().mockResolvedValue(undefined),
+    });
+
+    renderApp();
+
+    expect(
+      screen.queryByRole('status', {
+        name: /Fetching messages queued on the radio/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('hides deferred waiting-message indicator on Meshtastic tab during MeshCore admin/trace', () => {
+    getStoredMeshProtocolMock.mockReturnValue('meshtastic');
+    useMeshCoreMock.mockReturnValue({
+      ...createMeshCoreMock(),
+      waitingMessagesCount: 0,
+      waitingMessagesDrainDeferred: true,
+      syncWaitingMessages: vi.fn().mockResolvedValue(undefined),
+    });
+
+    renderApp();
+
+    expect(
+      screen.queryByRole('status', {
+        name: /Message sync paused while the radio is busy/i,
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: /queued message\(s\) on radio/i,
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it('keeps MeshCore node detail remote-admin props protocol-gated after node click', async () => {

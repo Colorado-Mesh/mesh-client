@@ -140,7 +140,7 @@ describe('useProtocolDisconnect (driver-first)', () => {
     });
   });
 
-  it('finalizes session with driver disconnect (single teardown owner)', async () => {
+  it('finalizes Meshtastic session with driver disconnect (Connection panel path)', async () => {
     const meshtastic = createMeshtasticSessionStub();
     registerMeshtasticSession(meshtastic);
     const { result } = renderHook(() => useProtocolDisconnect());
@@ -148,6 +148,16 @@ describe('useProtocolDisconnect (driver-first)', () => {
     await result.current('meshtastic');
 
     expect(meshtastic.finalizeDriverDisconnect).toHaveBeenCalledWith({ disconnectDriver: true });
+  });
+
+  it('finalizes MeshCore session with driver disconnect (Connection panel path)', async () => {
+    const meshcore = createMeshcoreSessionStub();
+    registerMeshcoreSession(meshcore);
+    const { result } = renderHook(() => useProtocolDisconnect());
+
+    await result.current('meshcore');
+
+    expect(meshcore.finalizeDriverDisconnect).toHaveBeenCalledWith({ disconnectDriver: true });
   });
 });
 
@@ -241,7 +251,7 @@ describe('useProtocolDisconnect (reticulum)', () => {
     registerReticulumSession(null);
   });
 
-  it('finalizes reticulum session on disconnect', async () => {
+  it('finalizes Reticulum session on disconnect (Connection panel path)', async () => {
     const reticulum = createReticulumSessionStub();
     registerReticulumSession(reticulum);
     const { result } = renderHook(() => useProtocolDisconnect());

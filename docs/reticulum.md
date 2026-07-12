@@ -15,7 +15,7 @@ Related docs: [README — Reticulum Features](../README.md#reticulum-features), 
 1. Select the **Reticulum** pill (amber) in the header.
 2. **Connection** → **Start stack** (optional **Auto-start** for next launch).
 3. **Network** → generate or import your LXMF identity (stack must be running).
-4. **Connection → Interfaces** → add and enable transports (TCP hub, Auto, or RNode over USB / BLE / Wi‑Fi).
+4. **Connection → Interfaces** → add and enable transports (TCP hub, I2P, Auto, or RNode over USB / BLE / Wi‑Fi). Use **Add default network hubs** to sync official bootstrap presets (testnet, Ratspeak, and RMAP World — adds missing rows disabled, repairs mismatched endpoints, skips correct ones) after identity is configured.
 5. **Chat** → LXMF direct messages. **Peers** and **Topology** for path-table visibility. **Nomad Network** → browse announced nodes (Micron pages, back/forward, session cache).
 
 After changing interfaces on a live network, **restart the stack** so RNS picks up transport changes.
@@ -24,23 +24,24 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 
 ## What is included
 
-| Area            | Shipped behavior                                                                                                                                                                |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Stack lifecycle | Start / stop / auto-start; disconnect & quit                                                                                                                                    |
-| Interfaces      | TCP client, Auto discovery, RNode (USB serial, `ble://…`, Wi‑Fi `tcp://host:7633`)                                                                                              |
-| Identity        | Generate / import mnemonic; display name; encrypted export; **identity vault** passcode on Network tab                                                                          |
-| LXMF chat       | DM-only text, reactions, file attachments, voice clips (~60 s)                                                                                                                  |
-| Delivery        | Direct when destination is in path table; propagated (PN) via preferred propagation node when offline                                                                           |
-| Peers           | RNS path table + LXMF contacts (Peers tab sub-tabs); probe and peer detail modal                                                                                                |
-| Topology        | Best-effort graph from path-table next hops (not a full multi-hop trace)                                                                                                        |
-| Nomad Network   | Favourites / announces list; Micron (.mu) browser with in-page navigation, back/forward, session page cache, `/file/` downloads, source toggle, and lxmf:// DM links            |
-| Propagation     | Preferred node, per-node **Sync messages**, optional **local propagation inbox**, configurable **auto-sync interval**                                                           |
-| Diagnostics     | Reticulum-native interface / path / LXMF health and config audit (`reticulum/*` rows only on this tab; LoRa Hop Goblins and foreign-LoRa tables are Meshtastic/MeshCore-scoped) |
-| Admin           | RNode firmware flasher (Web Serial), stack factory reset                                                                                                                        |
-| Sniffer / Stats | Reticulum packet log tab (`rawPacketLog.reticulum.*`)                                                                                                                           |
-| Coexistence     | BLE on a **different** MAC from Meshtastic/MeshCore; scan mutex only                                                                                                            |
+| Area            | Shipped behavior                                                                                                                                                                                                                                     |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stack lifecycle | Start / stop / auto-start; disconnect & quit                                                                                                                                                                                                         |
+| Interfaces      | TCP client, I2P (`peers`), Auto discovery, RNode (USB serial, `ble://…`, Wi‑Fi `tcp://host:7633`); default hub presets (testnet + Ratspeak + RMAP World, added disabled; button syncs/repairs by endpoint)                                           |
+| Identity        | Generate / import mnemonic; display name; encrypted export; **identity vault** passcode on Network tab                                                                                                                                               |
+| LXMF chat       | DM-only text, reactions, file attachments, voice clips (~60 s)                                                                                                                                                                                       |
+| Delivery        | Direct when destination is in path table; propagated (PN) via preferred propagation node when offline                                                                                                                                                |
+| Peers           | RNS path table + LXMF contacts (Peers tab sub-tabs); probe and peer detail modal                                                                                                                                                                     |
+| Topology        | Best-effort graph from path-table next hops (not a full multi-hop trace)                                                                                                                                                                             |
+| Map             | Local RMAP v4 discovery map (heard opt-in interfaces with GPS); link to rmap.world for global view                                                                                                                                                   |
+| Nomad Network   | Favourites / announces list (collapsible sidebar, default Favourites sub-tab); lazy-mount after first visit; Micron (.mu) browser with in-page navigation, back/forward, session page cache, `/file/` downloads, source toggle, and lxmf:// DM links |
+| Propagation     | Preferred node, per-node **Sync messages**, optional **local propagation inbox**, configurable **auto-sync interval**                                                                                                                                |
+| Diagnostics     | Reticulum-native interface / path / LXMF health and config audit (`reticulum/*` rows only on this tab; LoRa Hop Goblins and foreign-LoRa tables are Meshtastic/MeshCore-scoped)                                                                      |
+| Admin           | RNode firmware flasher (Web Serial), stack factory reset                                                                                                                                                                                             |
+| Sniffer / Stats | Reticulum packet log tab (`rawPacketLog.reticulum.*`)                                                                                                                                                                                                |
+| Coexistence     | BLE on a **different** MAC from Meshtastic/MeshCore; scan mutex; **Noble BLE yield** when an enabled BLE RNode is in config (sidecar suspends Noble on macOS/Windows so btleplug can pair)                                                           |
 
-**Not in Reticulum mode:** Meshtastic/MeshCore-style RF channel chat, MQTT broker card, LoRa map, Rooms BBS, TAK, Meshtastic PKI Security tab, Hop Goblins routing diagnostics.
+**Not in Reticulum mode:** Meshtastic/MeshCore-style RF channel chat, MQTT broker card, Meshtastic/MeshCore LoRa node position map, Rooms BBS, TAK, Meshtastic PKI Security tab, Hop Goblins routing diagnostics.
 
 ---
 
@@ -56,12 +57,55 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 | Admin           | RNode firmware flasher; factory reset (danger zone)                                                                                         |
 | Diagnostics     | Reticulum runtime rows + interface config audit/repair; LoRa routing/RF and foreign-LoRa findings hidden                                    |
 | Topology        | Path-table graph (BFS layout; `via_hash` next-hop edges)                                                                                    |
+| Map             | RMAP v4 discovery map (local heard interfaces + path-table reachability overlay)                                                            |
 | Stats / Sniffer | Packet log views (`rawPacketLog.reticulum.*`)                                                                                               |
 | App             | Shared app settings, DB tools, appearance (includes **Log panel** toggle)                                                                   |
 
-Hidden tabs (Meshtastic/MeshCore only): Map, Modules/Repeaters, Rooms, Telemetry, Security, TAK, RF, Graph.
+Hidden tabs (Meshtastic/MeshCore only): Modules/Repeaters, Rooms, Telemetry, Security, TAK, RF, Graph.
 
 The **Log panel** (right rail, toggled from **App → Log panel**) is shared across protocols; on Reticulum it shows sidecar and local-interface lines tagged for filtering.
+
+### Default hub presets
+
+**Connection → Interfaces** offers **Add default network hubs** to sync official bootstrap entries from [`reticulumDefaultHubPresets.ts`](../src/renderer/lib/reticulum/reticulumDefaultHubPresets.ts). New presets are added **disabled** so you can enable them after review. On repeat clicks the button **skips** rows that already match the preset, **repairs** rows that match the same TCP host+port or I2P peer but have wrong name/type/host formatting (does not change `enabled`), and **adds** any missing presets:
+
+| Preset                        | Type | Host                                                           |
+| ----------------------------- | ---- | -------------------------------------------------------------- |
+| RNS Testnet Dublin            | TCP  | `dublin.connect.reticulum.network:4965`                        |
+| RNS Testnet BetweenTheBorders | TCP  | `reticulum.betweentheborders.com:4242`                         |
+| RNS_Transport_US-East         | TCP  | `45.77.109.86:4965`                                            |
+| RNS Testnet I2P Hub A         | I2P  | `g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p` |
+| Ratspeak                      | TCP  | `rns.ratspeak.org:4242`                                        |
+| RMAP World                    | TCP  | `rmap.world:4242`                                              |
+
+Configure a Reticulum identity on the **Network** tab before adding interfaces; the panel disables interface actions until identity is ready.
+
+### RMAP v4 discovery map
+
+The **Map** tab shows **local** RMAP v4 discovery data — interfaces your stack has heard on aspect `rnstransport.discovery.interface`. This is distinct from Meshtastic/MeshCore node position maps:
+
+| View                      | Source                                                                                                                  |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Map tab (local)**       | rsReticulum `DiscoveryStore` via `GET /api/v1/rmap/discovered`; refreshed on a timer and via WebSocket `rmap.discovery` |
+| **Global map (external)** | [rmap.world](https://rmap.world/) — link in Map tab and Network → RMAP controls                                         |
+
+**Publish (appear on maps):** Network → **RMAP v4 discovery** or per-interface RMAP toggles on Connection. Requires App → GPS coordinates for map markers. LoRa-only stacks need an enabled TCP hub (for example `rmap.world:4242`) so discovery announces reach the wider network — see config audit `rmap_no_tcp_hub`.
+
+**Consume (Map tab):** Sidecar sets `discover_interfaces = Yes` in rnsd config on bootstrap so the stack listens for discovery announces. Markers show GPS when coordinates were included in the announce; interfaces without coords appear in the sidebar list only. **Reachable** badges join discovery rows with the RNS path table (Peers tab) by matching `transport_id` against peer `destination_hash` or `via_hash`.
+
+**UI:** Leaflet map with 280px sidebar list; filter pills (All, LoRa, Backbone, I2P, TCP, Other); basemap switcher and Locate Me (App GPS); manual Refresh; marker click opens peer detail when the node is in the path table. List row click flies to coordinates at zoom 14.
+
+**Refresh model:** Map tab polls `GET /api/v1/rmap/discovered` every **30s** while mounted; sidecar also pushes WebSocket `rmap.discovery` every **10s** when the discovery fingerprint changes (runtime updates store even when Map tab is hidden).
+
+**Publish settings (Network → RMAP v4 discovery):** announce interval **60–1440 min** (default **360**); optional height (meters) and `reachable_on` (max 256 chars). LoRa/BLE publish auto-enables `enable_transport` and the **`rmap.world:4242`** hub. Stack restart confirm after enabling publish.
+
+**Performance / memory:** Renderer mirrors discovery rows in `reticulumDiscoveryMapStore` (in-memory only; capped at **2,000** newest rows with client-side 7-day `last_heard` eviction). Peer store capped at **10,000** entries on refresh. Leaflet uses `preferCanvas`; tile layer `keepBuffer={1}`. No marker clustering — typical scale is bounded by sidecar TTL. Stores clear on disconnect and unexpected sidecar stop.
+
+**Config audit kinds:** `rmap_missing_coordinates`, `rmap_no_tcp_hub`, `rmap_transport_disabled`, `rmap_i2p_not_connectable`.
+
+**Implementation:** `ReticulumMapPanel.tsx`, `reticulumDiscoveryMapStore.ts`, `reticulumDiscoveryMapLayout.ts`, `reticulumRmapDiscovery.ts`, `useReticulumRuntime.ts` (WS `rmap.discovery`).
+
+**Related panels:** **Topology** = logical hops (no geography); **Peers** = path table; **Map** = geographic discovery + reachability.
 
 ---
 
@@ -108,6 +152,7 @@ Config lives under `userData/reticulum/config/` (rnsd INI). The Connection tab s
 
 - **All:** display name
 - **TCP client:** host, port (mesh hub — default port **4242**); IPv6 literals use brackets: `[2001:db8::1]:4242`
+- **I2P:** comma-separated peer hostnames (`.b32.i2p` addresses, e.g. `{52-base32-chars}.b32.i2p`); max **512** characters total; validated in UI and sidecar before write
 - **RNode:** USB serial, **Bluetooth** (`ble://…`), or **Wi‑Fi** (`tcp://host[:7633]`, default **7633**), LoRa preset, callsign
 - **BLE Peer mesh:** optional seed peer addresses
 - **Auto:** name only (link-local discovery)
@@ -123,6 +168,8 @@ When multiple enabled local RNode interfaces are connected, the interface list s
 **RNode Wi‑Fi:** stays type **RNode** with `port = tcp://host:7633`. Do **not** use the TCP Client type for RNode Wi‑Fi. Provision Wi‑Fi over USB from **Admin → Wi‑Fi** (or RNode AP bootstrap) before adding the interface. Packaged sidecars include `rns-rnode-tcp`. See [RNode over Wi-Fi](#rnode-over-wi-fi) below.
 
 **Bluetooth coexistence:** Meshtastic, MeshCore, and Reticulum may each use Bluetooth on **different devices** at once. Same MAC is rejected. Only **active scans** are serialized; connected GATT links are not torn down for another protocol’s scan. On Linux, LoRa stacks use Web Bluetooth in the renderer; Reticulum uses the sidecar `btleplug` stack.
+
+**Noble BLE yield (macOS/Windows):** When the Reticulum config includes an **enabled BLE RNode** (`ble://…`), sidecar start calls `bleCoexistence:suspendNobleForReticulumBleConnect` — Noble disconnects GATT sessions and holds the scan mutex until the RNode connects or a grace window expires. mesh-client then dispatches `mesh-client:nobleBleYieldReleased` so Meshtastic/MeshCore can reconnect. An always-mounted runtime watcher releases the lock even when the Reticulum Connection tab is not visible.
 
 **Bulk migration:** **Network → Config import** (merge or replace), or import from standard system paths (see [Config import paths](#config-import-paths-system)).
 
@@ -140,8 +187,8 @@ When multiple enabled local RNode interfaces are connected, the interface list s
 
 ## Network tab
 
-- **Identity:** generate, import mnemonic, export with passphrase, display name
-- **Multiple identities:** when the sidecar reports more than one row from `GET /api/v1/identities`, the **Identity switcher** dropdown calls `POST /api/v1/identities/switch` (stack restart may be required)
+- **Identity:** generate BIP-39 recovery phrase, import **private key** (paste or file picker via `reticulum:showIdentityImportDialog`), import **backup JSON**, export with passphrase, display name; **replace identity** confirm when keys already exist (`replace: true` on generate/import)
+- **Note:** `GET /api/v1/identities` and `POST /api/v1/identities/switch` remain sidecar APIs; mesh-client UI uses a single unified identity (no in-app identity switcher)
 - **Identity vault:** optional passcode (minimum 8 characters) to encrypt secrets in the main process; unlock is rate-limited
 - **Stack settings:** `enable_transport`, `share_instance`, `loglevel` via `PUT /api/v1/stack/settings` (UI merge-reads so `announce_interval_sec` is not cleared accidentally)
 - **Announces:** interval (`announce_interval_sec`, 0–86400) and **Clear announces** (`DELETE /api/v1/announces`) — live networks may repopulate the path table on the next peer refresh

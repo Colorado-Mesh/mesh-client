@@ -31,6 +31,7 @@ import {
   parseAutoaddConfigResponse,
 } from '../../lib/meshcoreContactAutoAdd';
 import { processMeshcoreWaitingMessageItem } from '../../lib/meshcoreProcessWaitingMessageItem';
+import { meshcoreContactOutPathBytesForTrace } from '../../lib/meshcoreRadioContactPath';
 import {
   MESHCORE_CHAT_CORRELATE_WINDOW_MS,
   meshcoreCorrelateOrSynthesizeChatEntry,
@@ -56,7 +57,6 @@ import {
   meshcoreInferHopsFromOutPath,
   meshcoreMergeChannelDisplayNameOntoNode,
   meshcoreMergeContactHopsAwayFromPrevious,
-  meshcoreSliceContactOutPathForTrace,
   meshcoreSyntheticPlaceholderPubKeyHex,
   minimalMeshcoreChatNode,
   pubkeyToNodeId,
@@ -67,7 +67,9 @@ import {
 } from '../../lib/meshcoreWaitingMessageItem';
 import {
   isMeshcoreCompanionDrainDeferred,
+  isMeshcoreSyncNextMessageTimeoutError,
   logMeshcoreWaitingMessagesDrainError,
+  markMeshcoreMsgWaitingEvent,
   resetMeshcoreWaitingMessagesDrainSchedule,
   scheduleMeshcoreWaitingMessagesDrain,
   shouldActivateWaitingMessagesBanner,
@@ -214,6 +216,7 @@ export function attachMeshcoreLegacyConnEvents(
     teardownMeshcoreConnEventListeners,
     meshcorePreviousNodesBaselineForBuild,
     handleConnectionLostRef,
+    meshcoreExplicitDisconnectRef,
     bumpLastDataReceived,
   } = ctx;
 
@@ -419,7 +422,7 @@ export function attachMeshcoreLegacyConnEvents(
         for (const contact of contacts) {
           const cNodeId = pubkeyToNodeId(contact.publicKey);
           if (cNodeId !== nodeId) continue;
-          const sliced = meshcoreSliceContactOutPathForTrace(contact.outPath, contact.outPathLen);
+          const sliced = meshcoreContactOutPathBytesForTrace(contact);
           if (sliced.length > 0) {
             outPathMapRef.current.set(cNodeId, sliced);
             const pathBytes = Array.from(sliced);
@@ -460,7 +463,7 @@ export function attachMeshcoreLegacyConnEvents(
           for (const contact of contacts) {
             const cNodeId = pubkeyToNodeId(contact.publicKey);
             if (!pendingIds.has(cNodeId)) continue;
-            const sliced = meshcoreSliceContactOutPathForTrace(contact.outPath, contact.outPathLen);
+            const sliced = meshcoreContactOutPathBytesForTrace(contact);
             const pathBytes = sliced.length > 0 ? Array.from(sliced) : [];
             if (pathBytes.length > 0) {
               const hops = newNodes.get(cNodeId)?.hops_away ?? 0;
@@ -568,10 +571,7 @@ export function attachMeshcoreLegacyConnEvents(
     const d = meshcoreContactRawFromDevice(data as MeshCoreContactRaw);
     const node = meshcoreContactToMeshNode(d);
     pubKeyMapRef.current.set(node.node_id, d.publicKey);
-    outPathMapRef.current.set(
-      node.node_id,
-      meshcoreSliceContactOutPathForTrace(d.outPath, d.outPathLen),
-    );
+    outPathMapRef.current.set(node.node_id, meshcoreContactOutPathBytesForTrace(d));
     const prefix = Array.from(d.publicKey.slice(0, 6))
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
@@ -757,11 +757,19 @@ export function attachMeshcoreLegacyConnEvents(
           let silentDrainExhaustedCap = false;
           for (let i = 0; i < MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN; i += 1) {
             if (!meshcoreHookMountedRef.current) break;
-            const raw = await withTimeout(
-              conn.syncNextMessage(),
-              MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS,
-              'MeshCore syncNextMessage',
-            );
+            let raw: unknown;
+            try {
+              raw = await withTimeout(
+                conn.syncNextMessage(),
+                MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS,
+                'MeshCore syncNextMessage',
+              );
+            } catch (e: unknown) {
+              if (isMeshcoreSyncNextMessageTimeoutError(e)) {
+                break;
+              }
+              throw e;
+            }
             const item = normalizeMeshcoreWaitingMessageItem(raw);
             if (!item) break;
             await ingestItem(item);
@@ -797,6 +805,7 @@ export function attachMeshcoreLegacyConnEvents(
   };
   processWaitingMessagesRef.current = processWaitingMessages;
   onMeshcoreConn(131, () => {
+    markMeshcoreMsgWaitingEvent();
     scheduleMeshcoreWaitingMessagesDrain(
       async () => {
         try {
@@ -849,7 +858,7 @@ export function attachMeshcoreLegacyConnEvents(
     if (d.txtType === 1) {
       const service = repeaterCommandServiceRef.current;
       if (service) {
-        const handled = service.handleResponse(d.text);
+        const handled = service.handleResponse(d.text, senderId);
         if (handled) {
           return;
         }
@@ -951,6 +960,8 @@ export function attachMeshcoreLegacyConnEvents(
         routeTypeString: null,
         payloadTypeString: 'TXT_MSG',
         hopCount: 0,
+        pathBytes: [],
+        pathHashSizeBytes: 1,
         fromNodeId: resolvedSenderId,
         messageFingerprintHex: null,
         transportScopeCode: null,
@@ -1064,6 +1075,8 @@ export function attachMeshcoreLegacyConnEvents(
         routeTypeString: null,
         payloadTypeString: 'GRP_TXT',
         hopCount: 0,
+        pathBytes: [],
+        pathHashSizeBytes: 1,
         fromNodeId: resolved.senderId || null,
         messageFingerprintHex: null,
         transportScopeCode: null,
@@ -1143,6 +1156,8 @@ export function attachMeshcoreLegacyConnEvents(
       let routeTypeString: string | null = null;
       let payloadTypeString: string | null = null;
       let hopCount = 0;
+      let pathBytes: number[] = [];
+      let pathHashSizeBytes: 1 | 2 | 3 = 1;
       let fromNodeId: number | null = null;
       let messageFingerprintHex: string | null = null;
       let transportScopeCode: number | null = null;
@@ -1159,6 +1174,8 @@ export function attachMeshcoreLegacyConnEvents(
         routeTypeString = parsed.routeTypeString;
         payloadTypeString = parsed.payloadTypeString;
         hopCount = parsed.hopCount;
+        pathBytes = parsed.pathBytes;
+        pathHashSizeBytes = parsed.pathHashSizeBytes;
         messageFingerprintHex = parsed.messageFingerprintHex;
         if (parsed.transportCodes) {
           transportScopeCode = parsed.transportCodes[0];
@@ -1194,6 +1211,8 @@ export function attachMeshcoreLegacyConnEvents(
           routeTypeString = fb.routeTypeString;
           payloadTypeString = fb.payloadTypeString;
           hopCount = fb.hopCount;
+          pathBytes = fb.pathBytes;
+          pathHashSizeBytes = fb.pathHashSizeBytes;
           if (fb.fromNodeId != null) fromNodeId = fb.fromNodeId;
         }
       }
@@ -1266,6 +1285,8 @@ export function attachMeshcoreLegacyConnEvents(
         routeTypeString,
         payloadTypeString,
         hopCount,
+        pathBytes,
+        pathHashSizeBytes,
         fromNodeId,
         messageFingerprintHex,
         transportScopeCode,
@@ -1494,7 +1515,7 @@ export function attachMeshcoreLegacyConnEvents(
           console.debug('[meshcoreLegacyConnEvents] stale conn close ' + errLikeToLogString(e));
         });
       }
-      if (shouldReconnect) {
+      if (shouldReconnect && !meshcoreExplicitDisconnectRef.current) {
         handleConnectionLostRef.current();
       }
     });

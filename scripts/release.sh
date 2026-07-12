@@ -161,6 +161,9 @@ pnpm update
 print_header "Deduplicating dependencies..."
 pnpm dedupe
 
+print_header "Syncing Flatpak Electron vendored archives..."
+node scripts/sync-flatpak-electron.mjs
+
 # 4. Get the last tag
 LAST_TAG=$(git describe --tags --abbrev=0 2> /dev/null || echo "")
 if [ -z "$LAST_TAG" ]; then
@@ -315,6 +318,11 @@ if ! pnpm run check:licenses; then
   exit 1
 fi
 
+if ! pnpm run check:flatpak; then
+  print_error "Flatpak manifest check failed. Run 'node scripts/sync-flatpak-electron.mjs' if Electron drifted."
+  exit 1
+fi
+
 # Dependency checks
 echo "Checking dependencies..."
 if ! pnpm dedupe --check; then
@@ -369,6 +377,17 @@ if ! pnpm run test:run; then
   exit 1
 fi
 
+# Reticulum sidecar (Rust) — required before release; same gate as release/build CI packaging.
+if ! command -v cargo > /dev/null 2>&1; then
+  print_error "cargo not found. Install Rust (https://rustup.rs/) — Reticulum sidecar tests are required for release."
+  exit 1
+fi
+echo "Running Reticulum sidecar tests..."
+if ! pnpm run reticulum:sidecar:test; then
+  print_error "Reticulum sidecar tests failed."
+  exit 1
+fi
+
 print_success "All pre-flight checks passed!"
 
 echo ""
@@ -397,7 +416,7 @@ if [ -f "$METAINFO_FILE" ]; then
 fi
 
 # 11. Commit the version bump
-git add package.json pnpm-lock.yaml
+git add package.json pnpm-lock.yaml org.coloradomesh.MeshClient.yml
 [ -f "$METAINFO_FILE" ] && git add "$METAINFO_FILE"
 git commit -m "chore: release $NEW_VERSION"
 

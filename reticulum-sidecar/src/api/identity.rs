@@ -9,17 +9,39 @@ use crate::stack::StackHandle;
 #[derive(Deserialize)]
 pub struct GenerateBody {
     pub display_name: Option<String>,
+    #[serde(default)]
+    pub replace: bool,
 }
 
 #[derive(Deserialize)]
 pub struct ImportBody {
     pub mnemonic: String,
     pub display_name: Option<String>,
+    #[serde(default)]
+    pub replace: bool,
 }
 
 #[derive(Deserialize)]
 pub struct ExportBody {
     pub passphrase: String,
+}
+
+#[derive(Deserialize)]
+pub struct ImportBackupBody {
+    pub backup: serde_json::Value,
+    #[serde(default)]
+    pub passphrase: Option<String>,
+    pub display_name: Option<String>,
+    #[serde(default)]
+    pub replace: bool,
+}
+
+#[derive(Deserialize)]
+pub struct ImportPrivateBody {
+    pub private_key: String,
+    pub display_name: Option<String>,
+    #[serde(default)]
+    pub replace: bool,
 }
 
 #[derive(Deserialize)]
@@ -44,7 +66,10 @@ pub async fn identity_generate(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<GenerateBody>,
 ) -> Json<serde_json::Value> {
-    match stack.identity_generate(body.display_name).await {
+    match stack
+        .identity_generate(body.display_name, body.replace)
+        .await
+    {
         Ok(id) => Json(serde_json::json!({
             "ok": true,
             "identity_hash": id.identity_hash,
@@ -61,7 +86,45 @@ pub async fn identity_import(
     Json(body): Json<ImportBody>,
 ) -> Json<serde_json::Value> {
     match stack
-        .identity_import(&body.mnemonic, body.display_name)
+        .identity_import(&body.mnemonic, body.display_name, body.replace)
+        .await
+    {
+        Ok(id) => Json(serde_json::json!({
+            "ok": true,
+            "identity_hash": id.identity_hash,
+            "lxmf_hash": id.lxmf_hash,
+            "display_name": id.display_name,
+        })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn identity_import_backup(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<ImportBackupBody>,
+) -> Json<serde_json::Value> {
+    let passphrase = body.passphrase.unwrap_or_default();
+    match stack
+        .identity_import_backup(body.backup, &passphrase, body.display_name, body.replace)
+        .await
+    {
+        Ok(id) => Json(serde_json::json!({
+            "ok": true,
+            "identity_hash": id.identity_hash,
+            "lxmf_hash": id.lxmf_hash,
+            "display_name": id.display_name,
+            "metadata_only": true,
+        })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn identity_import_private(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<ImportPrivateBody>,
+) -> Json<serde_json::Value> {
+    match stack
+        .identity_import_private(&body.private_key, body.display_name, body.replace)
         .await
     {
         Ok(id) => Json(serde_json::json!({

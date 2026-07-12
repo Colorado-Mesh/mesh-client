@@ -42,6 +42,7 @@ export function decodeMeshCorePathPrefix(raw: Uint8Array): {
   hops: number;
   pathEndOffset: number;
   path: number[];
+  hashSizeBytes: 1 | 2 | 3;
   /** Present when route is transport flood (`0x00`) or transport direct (`0x03`): `[scope, returnRegion]` as on-air uint16 LE. */
   transportCodes: readonly [number, number] | null;
 } {
@@ -86,6 +87,7 @@ export function decodeMeshCorePathPrefix(raw: Uint8Array): {
     hops: pathLength,
     pathEndOffset,
     path: Array.from(path),
+    hashSizeBytes: hashSize as 1 | 2 | 3,
     transportCodes,
   };
 }

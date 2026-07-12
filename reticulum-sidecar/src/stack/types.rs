@@ -43,6 +43,36 @@ pub struct InterfaceRow {
     pub mode: Option<String>,
     #[serde(default)]
     pub seed_addresses: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub discoverable: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub latitude: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub longitude: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub height: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub discovery_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub announce_interval_min: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub connectable: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reachable_on: Option<String>,
+}
+
+/// Discovery-related defaults for `InterfaceRow` struct literals outside config parse.
+pub fn interface_discovery_defaults() -> (
+    Option<bool>,
+    Option<f64>,
+    Option<f64>,
+    Option<u32>,
+    Option<String>,
+    Option<u32>,
+    Option<bool>,
+    Option<String>,
+) {
+    (None, None, None, None, None, None, None, None)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -103,6 +133,8 @@ pub struct AddInterfaceRequest {
     #[serde(rename = "type")]
     pub iface_type: String,
     pub name: Option<String>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
     pub host: Option<String>,
     pub port: Option<u16>,
     pub preset: Option<String>,
@@ -117,6 +149,53 @@ pub struct AddInterfaceRequest {
     pub mode: Option<String>,
     #[serde(default)]
     pub seed_addresses: Vec<String>,
+    #[serde(default)]
+    pub discoverable: Option<bool>,
+    #[serde(default)]
+    pub latitude: Option<f64>,
+    #[serde(default)]
+    pub longitude: Option<f64>,
+    #[serde(default)]
+    pub height: Option<u32>,
+    #[serde(default)]
+    pub discovery_name: Option<String>,
+    #[serde(default)]
+    pub announce_interval_min: Option<u32>,
+    #[serde(default)]
+    pub connectable: Option<bool>,
+    #[serde(default)]
+    pub reachable_on: Option<String>,
+}
+
+impl Default for AddInterfaceRequest {
+    fn default() -> Self {
+        Self {
+            iface_type: String::new(),
+            name: None,
+            enabled: None,
+            host: None,
+            port: None,
+            preset: None,
+            serial_port: None,
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: None,
+            seed_addresses: Vec::new(),
+            discoverable: None,
+            latitude: None,
+            longitude: None,
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]

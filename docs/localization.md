@@ -53,6 +53,17 @@ If you find a mistranslation or an awkward phrasing:
 
 CI does **not** run `check:i18n` as a standalone workflow step. Quality rules run via **pre-commit** (`pnpm run check:i18n`) and indirectly in CI through Vitest (`locale-quality.test.ts` subprocess). See [AGENTS.md](../AGENTS.md) (i18n / Localization) for maintainer commands (`pnpm run check:i18n`, `pnpm run i18n:auto-translate`).
 
+### Quality checks (selected categories)
+
+`scripts/check-i18n-quality.mjs` enforces more than missing keys. Notable rule families:
+
+- **Boot sequence** (`bootSequence.transport*`, `bootSequence.radioInterfaceFallback`) — short transport labels must not be mistranslated as serial numbers, TV series, broadcast stations, or mixed-language RF interface text.
+- **Reticulum hub/stack** (`connectionPanel.reticulumInterfaces.*`, `reticulumStack*`, `reticulumPeers.*`) — “hub”, “stack”, “peer”, and “host” must not become unrelated words (pressure, colleague, chimney stack, etc.).
+- **Repeaters CLI danger confirm** (`repeatersPanel.cliDangerConfirmAction`) — confirm button must be translated and must not read like “delete” or other false friends.
+- **`repeatersPanel.cliMultiHopHint`** — must describe **multi-hop** CLI and automatic **Ping** before the first command, not multi-tab UI wording.
+
+Full rule set: `scripts/check-i18n-quality.mjs` and `scripts/check-i18n-quality.test.mjs`.
+
 ### Adding a New Language
 
 If you would like to help us add support for a new language:

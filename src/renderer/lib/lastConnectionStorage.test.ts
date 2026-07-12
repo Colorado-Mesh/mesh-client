@@ -106,6 +106,32 @@ describe('lastConnectionStorage reconnect rehydrate', () => {
     });
   });
 
+  it('builds Meshtastic TCP params from last connection', () => {
+    expect(
+      buildMeshtasticConnectionParamsFromLastConnection({
+        type: 'tcp',
+        httpAddress: '192.168.200.4:4403',
+      }),
+    ).toEqual({
+      type: 'tcp',
+      httpAddress: '192.168.200.4:4403',
+      serialPort: null,
+    });
+  });
+
+  it('returns null for Meshtastic TCP with no stored address', () => {
+    expect(buildMeshtasticConnectionParamsFromLastConnection({ type: 'tcp' })).toBeNull();
+  });
+
+  it('returns null for MeshCore given a tcp-typed last connection (Meshtastic-only type)', () => {
+    expect(
+      buildMeshcoreConnectionParamsFromLastConnection({
+        type: 'tcp',
+        httpAddress: '192.168.200.4:4403',
+      }),
+    ).toBeNull();
+  });
+
   it('rehydrates Meshtastic params from localStorage', () => {
     localStorage.setItem(
       'mesh-client:lastConnection:meshtastic',

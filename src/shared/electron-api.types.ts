@@ -22,6 +22,13 @@ export interface IdentityVaultActionResult {
   ok: boolean;
   error?: string;
 }
+
+export interface ReticulumIdentityImportDialogResult {
+  path: string | null;
+  contentBase64: string | null;
+  byteLength: number | null;
+  error: 'invalid_private_key_length' | 'read_failed' | null;
+}
 //
 // Rules for maintaining this file:
 // - Every method here must have a matching ipcMain.handle/on in src/main/index.ts
@@ -162,6 +169,9 @@ export type BlePeripheralOwner =
   'noble:meshtastic' | 'noble:meshcore' | 'webbt:meshtastic' | 'webbt:meshcore' | 'reticulum';
 
 export type BleScanOwner = 'noble' | 'reticulum' | 'webbt';
+
+export type NobleBleStartScanResult =
+  { ok: true } | { ok: false; code: 'scan_busy'; owner: BleScanOwner };
 
 export interface BleRegisteredConnection {
   mac: string;
@@ -573,6 +583,7 @@ export interface ElectronAPI {
     updateChannelKeys: (args: {
       entries: { name: string; pskBase64: string; index?: number }[];
     }) => Promise<void>;
+    updateTopicPrefix: (args: { topicPrefix: string }) => Promise<void>;
     publish: (args: {
       text: string;
       from: number;
@@ -663,6 +674,7 @@ export interface ElectronAPI {
     acquireScan: (owner: BleScanOwner) => Promise<BleCoexistenceState>;
     releaseScan: (owner: BleScanOwner) => Promise<BleCoexistenceState>;
     pauseNobleScan: () => Promise<BleCoexistenceState>;
+    suspendNobleForReticulumBleConnect: () => Promise<BleCoexistenceState>;
   };
 
   // ─── Noble BLE ───────────────────────────────────────────────────────────────
@@ -676,7 +688,7 @@ export interface ElectronAPI {
   onNobleBleFromRadio: (
     cb: (payload: { sessionId: NobleBleSessionId; bytes: Uint8Array }) => void,
   ) => () => void;
-  startNobleBleScanning: (sessionId: NobleBleSessionId) => Promise<void>;
+  startNobleBleScanning: (sessionId: NobleBleSessionId) => Promise<NobleBleStartScanResult>;
   stopNobleBleScanning: (sessionId: NobleBleSessionId) => Promise<void>;
   connectNobleBle: (
     sessionId: NobleBleSessionId,
@@ -818,6 +830,17 @@ export interface ElectronAPI {
     onData: (cb: (bytes: Uint8Array) => void) => () => void;
   };
 
+  // ─── Meshtastic TCP bridge ────────────────────────────────────────────────────
+  meshtastic: {
+    tcp: {
+      connect: (host: string, port: number) => Promise<void>;
+      write: (bytes: number[]) => Promise<void>;
+      disconnect: () => Promise<void>;
+      onData: (cb: (bytes: Uint8Array) => void) => () => void;
+      onDisconnected: (cb: () => void) => () => void;
+    };
+  };
+
   // ─── Chat export ─────────────────────────────────────────────────────────────
   chat: {
     export: (messages: ChatExportMessage[]) => Promise<{ success: boolean; path?: string }>;
@@ -873,6 +896,7 @@ export interface ElectronAPI {
     proxyDelete: (apiPath: string) => Promise<unknown>;
     readDefaultConfigFile: () => Promise<{ path: string | null; content: string | null }>;
     showConfigImportDialog: () => Promise<{ path: string | null; content: string | null }>;
+    showIdentityImportDialog: () => Promise<ReticulumIdentityImportDialogResult>;
     onEvent: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
     onStatus: (cb: (status: ReticulumSidecarStatus) => void) => () => void;
   };

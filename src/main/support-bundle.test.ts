@@ -15,6 +15,7 @@ vi.mock('electron', () => ({
   app: {
     getPath: vi.fn((key: string) => {
       if (key === 'temp') return path.join(os.tmpdir(), 'mesh-client-support-test-temp');
+      if (key === 'userData') return path.join(os.tmpdir(), 'mesh-client-support-test-userdata');
       return path.join(os.tmpdir(), 'mesh-client-support-test-userdata');
     }),
     getVersion: vi.fn(() => '9.9.9-test'),
@@ -31,10 +32,14 @@ vi.mock('./database', () => ({
   exportDatabase,
 }));
 
+import { app } from 'electron';
+
 import {
   buildSupportBundleZip,
   defaultSupportBundleFilename,
   isSupportBundleMode,
+  readReticulumDeveloperArtifacts,
+  redactMnemonicFromStackJson,
   validateDebugSnapshotJson,
 } from './support-bundle';
 
@@ -64,6 +69,66 @@ describe('defaultSupportBundleFilename', () => {
   it('uses mode-specific prefixes', () => {
     expect(defaultSupportBundleFilename('github')).toMatch(/^mesh-client-github-report-/);
     expect(defaultSupportBundleFilename('developer')).toMatch(/^mesh-client-developer-bundle-/);
+  });
+});
+
+describe('redactMnemonicFromStackJson', () => {
+  it('removes identity.mnemonic from stack JSON', () => {
+    const raw = JSON.stringify({
+      identity: { configured: true, mnemonic: 'secret words', identity_hash: 'aa' },
+    });
+    const redacted = JSON.parse(redactMnemonicFromStackJson(raw)) as {
+      identity: { mnemonic?: string; identity_hash: string };
+    };
+    expect(redacted.identity.mnemonic).toBeUndefined();
+    expect(redacted.identity.identity_hash).toBe('aa');
+  });
+
+  it('fails closed on invalid JSON instead of returning raw stack text', () => {
+    const redacted = JSON.parse(redactMnemonicFromStackJson('{"identity":{"mnemonic":"leak"')) as {
+      error?: string;
+      identity?: { mnemonic?: string };
+    };
+    expect(redacted.error).toBe('stack_json_redaction_failed');
+    expect(redacted.identity?.mnemonic).toBeUndefined();
+  });
+});
+
+describe('readReticulumDeveloperArtifacts', () => {
+  let userDataDir: string;
+
+  beforeEach(async () => {
+    userDataDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mesh-reticulum-artifacts-'));
+    vi.mocked(app.getPath).mockImplementation((key: string) => {
+      if (key === 'userData') return userDataDir;
+      if (key === 'temp') return path.join(userDataDir, 'temp');
+      return userDataDir;
+    });
+  });
+
+  afterEach(async () => {
+    await fs.promises.rm(userDataDir, { recursive: true, force: true });
+  });
+
+  it('reads config and redacted stack state when present', async () => {
+    const configPath = path.join(userDataDir, 'reticulum', 'config', 'config');
+    const stackPath = path.join(userDataDir, 'reticulum', 'storage', 'mesh_client_stack.json');
+    await fs.promises.mkdir(path.dirname(configPath), { recursive: true });
+    await fs.promises.mkdir(path.dirname(stackPath), { recursive: true });
+    await fs.promises.writeFile(configPath, '[interfaces]\n[[TCPClientInterface]]\n', 'utf8');
+    await fs.promises.writeFile(
+      stackPath,
+      JSON.stringify({ identity: { mnemonic: 'never export', configured: true } }),
+      'utf8',
+    );
+
+    const artifacts = readReticulumDeveloperArtifacts();
+
+    expect(artifacts.config?.toString('utf8')).toContain('TCPClientInterface');
+    const stack = JSON.parse(artifacts.stackJson?.toString('utf8') ?? '{}') as {
+      identity: { mnemonic?: string };
+    };
+    expect(stack.identity.mnemonic).toBeUndefined();
   });
 });
 
@@ -123,6 +188,28 @@ describe('buildSupportBundleZip', () => {
     const zip = await JSZip.loadAsync(buf);
     const dbBytes = await zip.file('mesh-client.db')!.async('nodebuffer');
     expect(dbBytes.toString('utf8')).toBe('sqlite-bytes');
+  });
+
+  it('developer bundle includes reticulum artifacts when present on disk', async () => {
+    const userDataDir = path.join(workDir, 'userdata');
+    vi.mocked(app.getPath).mockImplementation((key: string) => {
+      if (key === 'userData') return userDataDir;
+      if (key === 'temp') return path.join(workDir, 'temp');
+      return userDataDir;
+    });
+    const configPath = path.join(userDataDir, 'reticulum', 'config', 'config');
+    await fs.promises.mkdir(path.dirname(configPath), { recursive: true });
+    await fs.promises.writeFile(configPath, 'reticulum ini', 'utf8');
+
+    const dest = path.join(workDir, 'developer-reticulum.zip');
+    exportDatabase.mockImplementation((destPath: string) => {
+      fs.mkdirSync(path.dirname(destPath), { recursive: true });
+      fs.writeFileSync(destPath, 'sqlite-bytes');
+    });
+    await buildSupportBundleZip(dest, 'developer', '{"ok":true}');
+
+    const names = await zipEntryNames(dest);
+    expect(names).toContain('reticulum/config');
   });
 
   it('includes rotated log backup when present', async () => {

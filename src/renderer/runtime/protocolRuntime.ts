@@ -85,7 +85,7 @@ export interface ProtocolRuntime {
   sendReaction?: (glyph: string, replyId: number, channel: number) => Promise<void>;
   sendAttachment?: (file: File, to: number | string) => Promise<void>;
   sendPositionToDevice?: (...args: never[]) => Promise<void>;
-  traceRoute?: (nodeId: number) => Promise<void>;
+  traceRoute?: (nodeId: number) => Promise<boolean | undefined>;
   reboot?: () => Promise<void>;
   deleteNode?: (nodeId: number) => Promise<void>;
   clearRawPackets?: () => void;

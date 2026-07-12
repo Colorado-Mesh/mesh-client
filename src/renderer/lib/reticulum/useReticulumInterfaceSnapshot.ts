@@ -11,6 +11,7 @@ import {
   RETICULUM_BLE_CONNECT_GRACE_MS,
   scheduleReticulumLocalInterfaceBurst,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
+import { syncReticulumNobleBleYield } from '@/renderer/lib/reticulum/reticulumNobleBleYield';
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
@@ -31,6 +32,14 @@ export interface ReticulumInterfaceRow {
   callsign?: string | null;
   preset?: string | null;
   seed_addresses?: string[];
+  discoverable?: boolean | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  height?: number | null;
+  discovery_name?: string | null;
+  announce_interval_min?: number | null;
+  connectable?: boolean | null;
+  reachable_on?: string | null;
 }
 
 export interface ReticulumSerialPortOption {
@@ -58,6 +67,7 @@ export function useReticulumInterfaceSnapshot({
   >(null);
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burstCancelRef = useRef<(() => void) | null>(null);
+  const nobleBleYieldStateRef = useRef({ yieldActive: false });
 
   const nowMs = useNowMs(bleConnectGraceExpiresAt > 0, bleConnectGraceExpiresAt > 0 ? 1_000 : 0);
   const healthOptions = useMemo((): ReticulumLocalInterfaceHealthOptions | undefined => {
@@ -130,6 +140,15 @@ export function useReticulumInterfaceSnapshot({
       setBleConnectGraceExpiresAt(0);
       burstCancelRef.current?.();
       burstCancelRef.current = null;
+      void syncReticulumNobleBleYield(
+        {
+          sidecarActive: false,
+          interfaces: [],
+          nowMs: Date.now(),
+          bleConnectGraceExpiresAt: 0,
+        },
+        nobleBleYieldStateRef.current,
+      );
       return;
     }
     beginBleConnectGrace();
@@ -180,6 +199,21 @@ export function useReticulumInterfaceSnapshot({
       }
     };
   }, [sidecarApiReady, pollActive, healthOptions]);
+
+  useEffect(() => {
+    if (!sidecarApiReady || bleConnectGraceExpiresAt <= 0 || nowMs <= 0) {
+      return;
+    }
+    void syncReticulumNobleBleYield(
+      {
+        sidecarActive: true,
+        interfaces,
+        nowMs,
+        bleConnectGraceExpiresAt,
+      },
+      nobleBleYieldStateRef.current,
+    );
+  }, [sidecarApiReady, interfaces, bleConnectGraceExpiresAt, nowMs]);
 
   return {
     interfaces,

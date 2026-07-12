@@ -141,6 +141,8 @@ export const MESH_ADVERT_COMMERCIAL_CHECK_LEAF_KEYS = new Set([
   'floodAdvertTypeZeroHop',
   'zeroHopAdvertButton',
   'zeroHopAdvertSent',
+  'filterChipAdvert',
+  'filterChipAdvertTooltip',
 ]);
 
 export function isMeshAdvertCommercialCheckKey(flatKey) {
@@ -256,6 +258,79 @@ export const RAW_PACKET_LOG_SHORT_LABEL_KEYS = new Set([
   'payloadLabel',
   'transportHeading',
 ]);
+
+/** Sniffer quick-filter chips — protocol tokens must match English verbatim. */
+export const RAW_PACKET_LOG_FILTER_CHIP_VERBATIM_LEAF_KEYS = new Set([
+  'filterChipAdvert',
+  'filterChipTxtMsg',
+  'filterChipGrpTxt',
+  'filterChipFlood',
+  'filterChipDirect',
+  'filterChipRf',
+  'filterChipMqtt',
+  'filterChipLocal',
+  'filterChipRx',
+  'filterChipTx',
+]);
+
+/** MQTT-only channel PSK hint — wire literals must not be corrupted by auto-translate. */
+export const CHANNEL_PSK_MQTT_ONLY_INDEX_HINT_KEY = 'connectionPanel.channelPsksMqttOnlyIndexHint';
+
+const CHANNEL_PSK_MQTT_ONLY_INDEX_HINT_LITERALS = ['ChannelName@index=base64', 'LongFast@1=AQ=='];
+
+/** Sniffer hop-count tooltips — must use routing hop terms, not jump/leap false friends. */
+export const RAW_PACKET_LOG_HOP_COUNT_TOOLTIP_LEAF_KEYS = new Set(['colHbTooltip', 'hbRowTooltip']);
+
+const RAW_PACKET_LOG_HOP_JUMP_FALSE_FRIENDS = {
+  es: [{ re: /\bsaltos\b/i, hint: 'use routing hop count, not jump "saltos"' }],
+  ru: [{ re: /\bпрыжок/i, hint: 'use routing хоп term, not jump "прыжок"' }],
+  de: [{ re: /\bSprunganzahl\b/i, hint: 'use Hop Count, not jump "Sprunganzahl"' }],
+};
+
+/** Flood-routing filter tooltips — must not use natural-disaster flood wording. */
+export const RAW_PACKET_LOG_FLOOD_ROUTING_LEAF_KEYS = new Set([
+  'filterChipFlood',
+  'filterChipFloodTooltip',
+]);
+
+const RAW_PACKET_LOG_FLOOD_ROUTING_FALSE_FRIENDS = {
+  de: [{ re: /\bHochwasser\b/i, hint: 'use flood-routing "Flood", not water "Hochwasser"' }],
+  nl: [
+    { re: /\bOPSTAL\b/i, hint: 'preserve FLOOD protocol token, not barn "OPSTAL"' },
+    { re: /\bOVERSTROMING\b/i, hint: 'use flood-routing FLOOD, not disaster "overstroming"' },
+  ],
+  zh: [{ re: /洪水/, hint: 'preserve FLOOD protocol token, not natural flood 洪水' }],
+  ja: [{ re: /洪水/, hint: 'preserve FLOOD protocol token, not natural flood 洪水' }],
+  ko: [{ re: /홍수/, hint: 'preserve FLOOD protocol token, not natural flood 홍수' }],
+  ru: [{ re: /ПОГРУЖЕНИЕ/i, hint: 'preserve FLOOD protocol token, not diving "погружение"' }],
+  id: [{ re: /T_FROID/i, hint: 'preserve T_FLOOD token, not French "T_FROID"' }],
+  pl: [{ re: /\bPowódź\b/i, hint: 'preserve FLOOD protocol token, not disaster "powódź"' }],
+  uk: [{ re: /\bПовінь\b/i, hint: 'preserve FLOOD protocol token, not disaster "повінь"' }],
+  tr: [{ re: /\bTAŞKIN\b/i, hint: 'preserve FLOOD protocol token, not disaster "taşkın"' }],
+  'pt-BR': [{ re: /\bINUNDAÇÃO\b/i, hint: 'preserve FLOOD protocol token, not disaster' }],
+};
+
+/**
+ * @param {string} val
+ * @returns {string[]}
+ */
+export function channelPsksMqttOnlyIndexHintIssues(val) {
+  const issues = [];
+  for (const literal of CHANNEL_PSK_MQTT_ONLY_INDEX_HINT_LITERALS) {
+    if (!val.includes(literal)) {
+      issues.push(
+        `channelPsksMqttOnlyIndexHint must preserve wire literal ${JSON.stringify(literal)}`,
+      );
+    }
+  }
+  if (/AQ\s+=\s+=/i.test(val)) {
+    issues.push('channelPsksMqttOnlyIndexHint has spaced wire-format corruption');
+  }
+  if (/ChannelName\s+@/i.test(val) || /\bbase\s+64\b/i.test(val) || /LongFast\s+@/i.test(val)) {
+    issues.push('channelPsksMqttOnlyIndexHint must keep ChannelName@index=base64 without spaces');
+  }
+  return issues;
+}
 
 /** Flasher UI when no USB serial ports are enumerated. */
 export const FLASHER_NO_SERIAL_PORTS_KEYS = new Set([
@@ -438,6 +513,99 @@ export function reticulumRequiresTranslation(flatKey, leafKey, enVal) {
 
 /** MT mistranslates UI Disable as parallax / unrelated accessibility jargon. */
 export const RETICULUM_DISABLE_PARALLAX_RE = /parallax/i;
+
+/** Boot sequence transport labels — short connection-type names, not serial numbers or broadcast stations. */
+export const BOOT_SEQUENCE_TRANSPORT_PREFIX = 'bootSequence.transport';
+export const BOOT_SEQUENCE_RADIO_FALLBACK_KEY = 'bootSequence.radioInterfaceFallback';
+
+export const BOOT_SEQUENCE_TRANSPORT_FALSE_FRIENDS = {
+  fr: [
+    {
+      re: /num[ée]ro de s[ée]rie/i,
+      hint: 'bootSequence.transportSerial is Serial transport, not serial number',
+    },
+    { re: /\bmoyeux\b/i, hint: 'network hub wording, not wheel/axle "moyeux"' },
+    {
+      re: /^Série$/i,
+      hint: 'bootSequence.transportSerial should be "Port série" (serial port), not TV series',
+    },
+  ],
+  de: [
+    {
+      re: /^Serie$/i,
+      hint: 'bootSequence.transportSerial should be "Seriell" (serial port), not TV series',
+    },
+  ],
+  'pt-BR': [
+    {
+      re: /^Série$/i,
+      hint: 'bootSequence.transportSerial should be serial port (e.g. "Porta serial"), not TV series',
+    },
+  ],
+  es: [
+    {
+      re: /n[úu]mero de serie/i,
+      hint: 'bootSequence.transportSerial is Serial transport, not serial number',
+    },
+    {
+      re: /interfaz a[ée]rea/i,
+      hint: 'bootSequence.radioInterfaceFallback is RF/radio interface, not aerial interface',
+    },
+  ],
+  ru: [
+    {
+      re: /заводск/i,
+      hint: 'bootSequence.transportSerial is Serial transport, not factory default',
+    },
+  ],
+  zh: [
+    { re: /广播电台/, hint: 'bootSequence.transportRadio is RF transport, not broadcast station' },
+  ],
+  it: [
+    {
+      re: /Data Radio interface/i,
+      hint: 'bootSequence.radioInterfaceFallback must not mix English and Italian',
+    },
+  ],
+  nl: [
+    {
+      re: /ether-interface/i,
+      hint: 'bootSequence.radioInterfaceFallback is RF interface, not Ethernet',
+    },
+  ],
+};
+
+export const RETICULUM_DEFAULT_HUB_KEYS = [
+  'connectionPanel.reticulumInterfaces.defaultHubsLabel',
+  'connectionPanel.reticulumInterfaces.addDefaultHubs',
+  'connectionPanel.reticulumInterfaces.addDefaultHubsAria',
+  'connectionPanel.reticulumInterfaces.addDefaultHubsAllPresent',
+  'connectionPanel.reticulumInterfaces.addDefaultHubsFailed',
+];
+
+/** Repeaters panel CLI hint must mention automatic pre-ping on multi-hop (middle sentence often dropped by MT). */
+export const REPEATERS_CLI_MULTI_HOP_HINT_KEY = 'repeatersPanel.cliMultiHopHint';
+export const REPEATERS_CLI_AUTO_PING_FAILED_KEY = 'repeatersPanel.cliAutoPingFailed';
+export const REPEATERS_CLI_DANGER_CONFIRM_ACTION_KEY = 'repeatersPanel.cliDangerConfirmAction';
+export const REPEATERS_CLI_DANGER_CONFIRM_ACTION_EN = 'Run command';
+
+/** Locale-specific markers that the auto-ping middle sentence was translated (not exhaustive MT output). */
+export function repeatersCliAutoPingSentencePresent(val) {
+  if (!/Ping/i.test(val)) return false;
+  return /autom[aáàâä]t|automatic|自动|自動|자동|otomatik|otomatis|автоматич|автомат/i.test(val);
+}
+
+/** Known false friends for destructive CLI confirm button label. */
+export const REPEATERS_CLI_DANGER_CONFIRM_FALSE_FRIENDS = {
+  es: [{ re: /Reproducir sonido/i, hint: 'confirm button must mean run command, not play sound' }],
+  fr: [
+    {
+      re: /traçabilité/i,
+      hint: 'cliMultiHopHint must use trace/route wording, not supply-chain traçabilité',
+    },
+  ],
+  tr: [{ re: /çok sekmeli/i, hint: 'cliMultiHopHint must mean multi-hop, not multi-tab' }],
+};
 
 /** MT mistranslates network Host as recording venue / unrelated nouns. */
 export const RETICULUM_HOST_FALSE_FRIEND_RES = [
@@ -1198,6 +1366,7 @@ export const ROOMS_PANEL_MUST_TRANSLATE_LEAF_KEYS = new Set([
 /** Hints that describe the wire default guest password (literal hello, not a greeting translation). */
 export const ROOMS_PANEL_LITERAL_HELLO_KEYS = new Set([
   'loginHelp',
+  'adminLoginHelp',
   'emptyGuestLoginHint',
   'loginAllSavedTooltip',
 ]);
@@ -1827,12 +1996,6 @@ function checkReticulumRuntimeAndRoutingPortIssues(ctx) {
   const { flatKey, val, enVal } = ctx;
   const issues = [];
   if (flatKey.startsWith(RETICULUM_RUNTIME_PREFIX)) {
-    for (const token of RETICULUM_RUNTIME_PROTOCOL_TOKENS) {
-      if (!enVal.includes(token)) continue;
-      if (!val.includes(token)) {
-        issues.push(`reticulum runtime copy must preserve protocol token "${token}"`);
-      }
-    }
     issues.push(...protectedProtocolTokenIssues(enVal, val, RETICULUM_RUNTIME_PROTOCOL_TOKENS));
   }
   if (flatKey.startsWith('connectionPanel.reticulumInterfaces.picker')) {
@@ -2126,6 +2289,25 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
 
   if (flatKey.startsWith(RAW_PACKET_LOG_PREFIX)) {
     const packetLeaf = flatKey.split('.').pop() ?? flatKey;
+    if (RAW_PACKET_LOG_FILTER_CHIP_VERBATIM_LEAF_KEYS.has(packetLeaf) && val !== enVal) {
+      issues.push(
+        `rawPacketLog ${packetLeaf} must stay verbatim "${enVal}" (protocol filter chip)`,
+      );
+    }
+    if (RAW_PACKET_LOG_HOP_COUNT_TOOLTIP_LEAF_KEYS.has(packetLeaf)) {
+      for (const { re, hint } of RAW_PACKET_LOG_HOP_JUMP_FALSE_FRIENDS[locale] ?? []) {
+        if (re.test(val)) {
+          issues.push(`rawPacketLog hop tooltip false friend: ${hint}`);
+        }
+      }
+    }
+    if (RAW_PACKET_LOG_FLOOD_ROUTING_LEAF_KEYS.has(packetLeaf)) {
+      for (const { re, hint } of RAW_PACKET_LOG_FLOOD_ROUTING_FALSE_FRIENDS[locale] ?? []) {
+        if (re.test(val)) {
+          issues.push(`rawPacketLog flood-routing false friend: ${hint}`);
+        }
+      }
+    }
     if (RAW_PACKET_LOG_SHORT_LABEL_KEYS.has(packetLeaf)) {
       if (CAT_DOT_PADDING_RE.test(val)) {
         issues.push('rawPacketLog short label has CAT dot-padding garbage — use a concise label');
@@ -2196,6 +2378,10 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
       }
     }
   }
+  if (flatKey === CHANNEL_PSK_MQTT_ONLY_INDEX_HINT_KEY) {
+    issues.push(...channelPsksMqttOnlyIndexHintIssues(val));
+  }
+
   return issues;
 }
 
@@ -2921,6 +3107,205 @@ function checkMeshcorePathHashIssues(ctx) {
   return issues;
 }
 
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkBootSequenceTransportIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (flatKey.startsWith(BOOT_SEQUENCE_TRANSPORT_PREFIX)) {
+    issues.push(...protectedProtocolTokenIssues(enVal, val));
+    for (const { re, hint } of BOOT_SEQUENCE_TRANSPORT_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(hint);
+      }
+    }
+  }
+  if (flatKey === BOOT_SEQUENCE_RADIO_FALLBACK_KEY) {
+    for (const { re, hint } of BOOT_SEQUENCE_TRANSPORT_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(hint);
+      }
+    }
+  }
+  return issues;
+}
+
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkReticulumDefaultHubKeyIssues(ctx) {
+  const { flatKey, val } = ctx;
+  const issues = [];
+  if (!RETICULUM_DEFAULT_HUB_KEYS.includes(flatKey)) {
+    return issues;
+  }
+  if (/\bmoyeux\b/i.test(val)) {
+    issues.push('reticulum default hub copy must not use wheel/axle "moyeux"');
+  }
+  return issues;
+}
+
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkRepeatersCliIssues(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
+  if (flatKey === REPEATERS_CLI_MULTI_HOP_HINT_KEY && locale !== 'en') {
+    if (!repeatersCliAutoPingSentencePresent(val)) {
+      issues.push('cliMultiHopHint must mention automatic Ping before first multi-hop CLI');
+    }
+    for (const { re, hint } of REPEATERS_CLI_DANGER_CONFIRM_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(hint);
+      }
+    }
+  }
+  if (flatKey === REPEATERS_CLI_AUTO_PING_FAILED_KEY && locale !== 'en') {
+    for (const { re, hint } of REPEATERS_CLI_DANGER_CONFIRM_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(hint);
+      }
+    }
+  }
+  if (flatKey === REPEATERS_CLI_DANGER_CONFIRM_ACTION_KEY) {
+    if (locale !== 'en' && val.trim() === REPEATERS_CLI_DANGER_CONFIRM_ACTION_EN) {
+      issues.push('cliDangerConfirmAction must be translated, not left as English');
+    }
+    for (const { re, hint } of REPEATERS_CLI_DANGER_CONFIRM_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(hint);
+      }
+    }
+  }
+  if (flatKey === 'bootSequence.transportBle' && locale === 'tr' && /BLE\s*:/i.test(val)) {
+    issues.push('bootSequence.transportBle must not include trailing colon');
+  }
+  return issues;
+}
+
+const RETICULUM_MAP_REACHABLE_KEY = 'reticulumMap.reachable';
+const RETICULUM_MAP_HEARD_ONLY_KEY = 'reticulumMap.heardOnly';
+const RETICULUM_MAP_OPEN_GLOBAL_KEY = 'reticulumMap.openGlobalMap';
+const RETICULUM_MAP_OPEN_NODE_ARIA_KEY = 'reticulumMap.openNodeAria';
+const RETICULUM_MAP_FILTER_BACKBONE_KEY = 'reticulumMap.filter.backbone';
+
+const RETICULUM_MAP_REACHABLE_FALSE_FRIENDS = [
+  {
+    re: /lexique de la théorie des graphes/i,
+    hint: 'use network-reachable wording, not graph theory',
+  },
+  { re: /^greifbar\.?$/i, hint: 'use "Erreichbar", not affordable Greifbar' },
+  { re: /^reachable$/i, hint: 'translate reachable for network path table' },
+];
+
+const RETICULUM_MAP_BACKBONE_FALSE_FRIENDS = [
+  { re: /colonne vertébrale/i, hint: 'use network backbone, not spine/anatomy' },
+  { re: /^椎骨$/i, hint: 'use Backbone or network backbone, not vertebra' },
+];
+
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkReticulumMapIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith('reticulumMap.') && !flatKey.startsWith('reticulumRmapDiscovery.')) {
+    return issues;
+  }
+
+  if (flatKey === RETICULUM_MAP_OPEN_GLOBAL_KEY && /^\[.*\?]$/.test(val)) {
+    issues.push('reticulumMap.openGlobalMap must not use CAT […?] placeholder');
+  }
+
+  if (
+    (flatKey === RETICULUM_MAP_OPEN_GLOBAL_KEY ||
+      flatKey === 'connectionPanel.reticulumRmap.openGlobalMap' ||
+      flatKey === 'reticulumRmapDiscovery.openGlobalMap') &&
+    locale !== 'en'
+  ) {
+    if (/attributo globale/i.test(val) || /\?\s*$/.test(val.trim())) {
+      issues.push('openGlobalMap must name the global map, not a yes/no attribute question');
+    }
+  }
+
+  if (
+    (flatKey === 'reticulumRmapDiscovery.hint' || flatKey === 'reticulumMap.empty.hint') &&
+    /(?:discoverable|detectable)\s*=\s*yes|descobr[ií]vel\s*=\s*sim/i.test(val)
+  ) {
+    issues.push('RMAP hint must describe publishing in plain language, not raw discoverable=yes');
+  }
+
+  if (
+    flatKey === 'connectionPanel.reticulumIdentity.importLabel' &&
+    enVal.includes('BIP-39') &&
+    locale !== 'en' &&
+    !/BIP-39/i.test(val)
+  ) {
+    issues.push('reticulumIdentity.importLabel must retain BIP-39 when English does');
+  }
+
+  if (flatKey === 'connectionPanel.reticulumIdentity.invalidMnemonic' && locale === 'ja') {
+    if (/12\s*文字/.test(val)) {
+      issues.push('invalidMnemonic in ja must use 12 words (語), not 12 characters (文字)');
+    }
+  }
+
+  if (flatKey === RETICULUM_MAP_REACHABLE_KEY && locale !== 'en') {
+    if (val === enVal) {
+      issues.push('reticulumMap.reachable must be translated');
+    }
+    for (const { re, hint } of RETICULUM_MAP_REACHABLE_FALSE_FRIENDS) {
+      if (re.test(val)) {
+        issues.push(`reticulumMap.reachable false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (flatKey === RETICULUM_MAP_HEARD_ONLY_KEY && locale !== 'en' && val === enVal) {
+    issues.push('reticulumMap.heardOnly must be translated');
+  }
+
+  if (
+    flatKey === RETICULUM_MAP_OPEN_NODE_ARIA_KEY &&
+    enVal.includes('{{name}}') &&
+    locale !== 'en'
+  ) {
+    for (const { re, hint } of [
+      { re: /détails de \{\{name\}\}/i, hint: 'use show-on-map wording, not open details' },
+      { re: /details für \{\{name\}\}/i, hint: 'use show-on-map wording, not open details' },
+      { re: /\{\{name\}\}の詳細/i, hint: 'use show-on-map wording, not open details' },
+    ]) {
+      if (re.test(val)) {
+        issues.push(`reticulumMap.openNodeAria false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (flatKey === RETICULUM_MAP_FILTER_BACKBONE_KEY) {
+    for (const { re, hint } of RETICULUM_MAP_BACKBONE_FALSE_FRIENDS) {
+      if (re.test(val)) {
+        issues.push(`reticulumMap.filter.backbone false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (
+    flatKey === 'reticulumRmapDiscovery.gpsRequiredTitle' &&
+    locale === 'ru' &&
+    /sono necessarie/i.test(val)
+  ) {
+    issues.push('reticulumRmapDiscovery.gpsRequiredTitle must be Russian, not Italian');
+  }
+
+  return issues;
+}
+
 const LOCALE_STRING_QUALITY_CHECKS = [
   checkCatEncodingAndMeshtasticIssues,
   checkMustTranslateAndFormFieldIssues,
@@ -2941,6 +3326,10 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkMeshcoreReactionAndConnectionIssues,
   checkMeshcorePathHashIssues,
   checkReticulumRuntimeAndRoutingPortIssues,
+  checkBootSequenceTransportIssues,
+  checkReticulumDefaultHubKeyIssues,
+  checkRepeatersCliIssues,
+  checkReticulumMapIssues,
 ];
 
 /**
@@ -2988,6 +3377,34 @@ export function nodeListPanelConnectionCrossKeyIssues(locale, localeFlat) {
     issues.push(
       'connectedViaRfAndMqtt* uses "Połączony" — match mqttConnectedTooltip impersonal "Połączono"',
     );
+  }
+  return issues;
+}
+
+/**
+ * Cross-key checks for Reticulum default hub preset terminology.
+ *
+ * @param {Record<string, string>} localeFlat
+ * @returns {string[]} Human-readable issue descriptions (empty if OK).
+ */
+export function reticulumDefaultHubsCrossKeyIssues(localeFlat) {
+  const issues = [];
+  const values = RETICULUM_DEFAULT_HUB_KEYS.map((key) => localeFlat[key]).filter(
+    (v) => typeof v === 'string' && v.length > 0,
+  );
+  if (values.length < 2) return issues;
+
+  const hasHub = values.some((v) => /\bhub/i.test(v));
+  const hasKoncentrator = values.some((v) =>
+    /koncentrator|concentrador|centro\b|moyeux|rozboč/i.test(v),
+  );
+  if (hasHub && hasKoncentrator) {
+    issues.push('reticulumInterfaces default hub keys mix hub and concentrator terminology');
+  }
+  const hasRozboc = values.some((v) => /rozboč/i.test(v));
+  const hasCenterHub = values.some((v) => /\bcenter\b/i.test(v));
+  if (hasRozboc && hasCenterHub) {
+    issues.push('reticulumInterfaces default hub keys mix rozbočovače and center terminology');
   }
   return issues;
 }

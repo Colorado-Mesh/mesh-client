@@ -107,6 +107,14 @@ pub fn merge_live_interfaces_with_config(
             live_row.callsign = cfg.callsign.clone();
             live_row.id_interval = cfg.id_interval;
             live_row.mode = cfg.mode.clone();
+            live_row.discoverable = cfg.discoverable;
+            live_row.latitude = cfg.latitude;
+            live_row.longitude = cfg.longitude;
+            live_row.height = cfg.height;
+            live_row.discovery_name = cfg.discovery_name.clone();
+            live_row.announce_interval_min = cfg.announce_interval_min;
+            live_row.connectable = cfg.connectable;
+            live_row.reachable_on = cfg.reachable_on.clone();
             // Config INI is the source of truth for user enable/disable; live stats only
             // report carrier status (online), which must not flip `enabled` in the UI.
             live_row.enabled = cfg.enabled;
@@ -183,6 +191,14 @@ mod tests {
             id_interval: None,
             mode: None,
             seed_addresses: Vec::new(),
+            discoverable: None,
+            latitude: None,
+            longitude: None,
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
         }];
         assert_eq!(resolve_stub_sent_via(&ifaces), "rf");
         assert_eq!(resolve_outbound_sent_via(&ifaces), "rf");
@@ -209,6 +225,14 @@ mod tests {
             id_interval: None,
             mode: None,
             seed_addresses: Vec::new(),
+            discoverable: None,
+            latitude: None,
+            longitude: None,
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
         }];
         let live = vec![InterfaceRow {
             id: "rns-0".into(),
@@ -229,6 +253,14 @@ mod tests {
             id_interval: None,
             mode: None,
             seed_addresses: Vec::new(),
+            discoverable: None,
+            latitude: None,
+            longitude: None,
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
         assert_eq!(resolve_outbound_sent_via(&merged), "rf");
@@ -255,6 +287,14 @@ mod tests {
             id_interval: None,
             mode: None,
             seed_addresses: Vec::new(),
+            discoverable: None,
+            latitude: None,
+            longitude: None,
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
         }
     }
 
@@ -285,6 +325,14 @@ mod tests {
                 id_interval: None,
                 mode: None,
                 seed_addresses: Vec::new(),
+                discoverable: None,
+                latitude: None,
+                longitude: None,
+                height: None,
+                discovery_name: None,
+                announce_interval_min: None,
+                connectable: None,
+                reachable_on: None,
             },
             InterfaceRow {
                 id: "rns-1".into(),
@@ -305,6 +353,14 @@ mod tests {
                 id_interval: None,
                 mode: None,
                 seed_addresses: Vec::new(),
+                discoverable: None,
+                latitude: None,
+                longitude: None,
+                height: None,
+                discovery_name: None,
+                announce_interval_min: None,
+                connectable: None,
+                reachable_on: None,
             },
         ];
         let merged = merge_live_interfaces_with_config(&config, live);
@@ -336,6 +392,14 @@ mod tests {
             id_interval: None,
             mode: None,
             seed_addresses: Vec::new(),
+            discoverable: None,
+            latitude: None,
+            longitude: None,
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
         assert_eq!(merged.len(), 1);

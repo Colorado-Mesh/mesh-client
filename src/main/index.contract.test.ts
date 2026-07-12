@@ -26,6 +26,13 @@ describe('Noble BLE disconnect handling (source contract)', () => {
       /noble-ble-to-radio: disconnected during write, ignoring session=/,
     );
   });
+
+  it('returns scan_busy result instead of throwing when Reticulum holds the scan mutex', () => {
+    expect(INDEX_SOURCE).toContain('BleScanBusyError');
+    expect(INDEX_SOURCE).toMatch(
+      /noble-ble-start-scan[\s\S]{0,1200}err instanceof BleScanBusyError[\s\S]{0,400}code: 'scan_busy'/,
+    );
+  });
 });
 
 describe('MeshCore packet log IPC (source contract)', () => {
@@ -123,6 +130,7 @@ describe('Persistent app settings IPC (source contract)', () => {
     expect(INDEX_SOURCE).toContain('meshcoreRoomSync:');
     expect(INDEX_SOURCE).toContain('meshcoreRoomLastPost:');
     expect(INDEX_SOURCE).toContain('meshcoreRoomCredential:');
+    expect(INDEX_SOURCE).toContain('meshcoreRepeaterCredential:');
     expect(INDEX_SOURCE).toContain('isAppSettingsKeyAllowed');
   });
 
@@ -242,9 +250,14 @@ describe('MQTT IPC handlers (source contract)', () => {
 
   it('registers renderer heartbeat IPC for post-resume hang detection', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('app:rendererHeartbeat'");
-    expect(INDEX_SOURCE).toContain(
-      'renderer unresponsive after system resume (no heartbeat within 30s)',
-    );
+    expect(INDEX_SOURCE).toContain('createRendererHeartbeatWatchdog');
+    expect(INDEX_SOURCE).toContain('rendererHeartbeatWatchdog.recordHeartbeat');
+    expect(INDEX_SOURCE).toContain('rendererHeartbeatWatchdog.startResumeWatchdog');
+  });
+
+  it('registers support bundle export IPC', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('support:exportBundle'");
+    expect(INDEX_SOURCE).toContain('buildSupportBundleZip');
   });
 });
 
@@ -270,6 +283,9 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:readDefaultConfigFile'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain(
       "ipcMain.handle('reticulum:showConfigImportDialog'",
+    );
+    expect(RETICULUM_HANDLERS_SOURCE).toContain(
+      "ipcMain.handle('reticulum:showIdentityImportDialog'",
     );
     expect(INDEX_SOURCE).toContain('registerReticulumDbIpcHandlers');
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("ipcMain.handle('db:getReticulumMessages'");
@@ -386,5 +402,17 @@ describe('Native Electron call guards (source contract)', () => {
       /ipcMain\.handle\('clipboard:writeText'[\s\S]*?validateIpcSender\(event\)/,
     );
     expect(INDEX_SOURCE).toContain('clipboard.writeText(text)');
+  });
+
+  it('bounds bluetooth-start-scan with a 15 s timeout', () => {
+    expect(INDEX_SOURCE).toContain('BLUETOOTH_START_SCAN_TIMEOUT_MS = 15_000');
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('bluetooth-start-scan'");
+    expect(INDEX_SOURCE).toContain('bluetooth-start-scan: timed out after 15 s');
+  });
+
+  it('reads meshcore import JSON via fs.promises.readFile', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('meshcore:openJsonFile'[\s\S]*?fs\.promises\.readFile/,
+    );
   });
 });

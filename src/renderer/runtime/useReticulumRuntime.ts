@@ -18,6 +18,7 @@ import {
   type ReticulumRawPacketEntry,
 } from '@/renderer/lib/rawPacketLogConstants';
 import { resolveReticulumOutboundViaFromInterfaces } from '@/renderer/lib/reticulum/classifyReticulumVia';
+import { clearReticulumSessionStores } from '@/renderer/lib/reticulum/clearReticulumSessionStores';
 import {
   resolveReticulumDestinationHash,
   reticulumHashToNodeId,
@@ -47,6 +48,7 @@ import {
   invalidateReticulumInterfacesCache,
   type ReticulumSidecarInterfaceRow,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
 import { registerReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
 import {
@@ -72,6 +74,7 @@ import {
 } from '../stores/messageStore';
 import { upsertNodeRecord, upsertNodeRecordsForIdentity, useNodeStore } from '../stores/nodeStore';
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
+import { useReticulumDiscoveryMapStore } from '../stores/reticulumDiscoveryMapStore';
 import {
   parseAnnounceActivityRows,
   useReticulumIdentityActivityStore,
@@ -131,6 +134,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const stateRef = useRef(state);
   const localInterfacesRef = useRef<ReticulumSidecarInterfaceRow[]>([]);
   const nodeStoreSlice = useNodeStore((s) => (identityId ? s.nodes[identityId] : undefined));
+
+  const sidecarActiveForBleYield =
+    state.status === 'configured' || state.status === 'connected' || state.status === 'stale';
+  useReticulumNobleBleYieldWatcher(sidecarActiveForBleYield);
 
   useEffect(() => {
     stateRef.current = state;
@@ -403,6 +410,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
         const p = evt.payload as { progress?: number; active?: boolean; message?: string | null };
         applyPropagationSyncEvent(p);
       }
+      if (evt.type === 'rmap.discovery' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as { discovered?: unknown };
+        if (Array.isArray(p.discovered)) {
+          useReticulumDiscoveryMapStore.getState().setDiscovered(p.discovered);
+        }
+      }
       if (evt.type === 'nomadnetwork.node') {
         void useNomadNetworkStore.getState().refreshFromSidecar();
         recordAnnounceActivity(evt.payload, 'nomadnetwork.node');
@@ -450,6 +463,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     setSelfLxmfHash(null);
     rawPacketAppenderRef.current?.clearPending();
     setRawPackets([]);
+    clearReticulumSessionStores();
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);
@@ -558,6 +572,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     setSelfLxmfHash(null);
     rawPacketAppenderRef.current?.clearPending();
     setRawPackets([]);
+    clearReticulumSessionStores();
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);

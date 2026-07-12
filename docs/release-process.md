@@ -36,12 +36,13 @@ The release script (`scripts/release.sh`) is the supported maintainer path. It:
 
 1. Verifies you are on `main` and pulls latest
 2. Runs **`pnpm update`** and **`pnpm dedupe`** (updates lockfile before the bump)
-3. Auto-detects **patch / minor / major** from [Conventional Commits](https://www.conventionalcommits.org/) since the last tag (or accept an explicit bump — see below)
-4. Runs **pre-flight validation** (format, lint, typecheck, security `check:*`, dedupe check, audit, actionlint, yamllint, tests)
-5. Prints **copy-paste release notes** grouped by feat/fix/other/breaking
-6. Bumps `package.json` via `pnpm version`
-7. Prepends a `<release>` entry to `flatpak/org.coloradomesh.MeshClient.metainfo.xml`
-8. Commits, creates an annotated tag, and pushes **commit + tag** to `origin`
+3. Syncs **`org.coloradomesh.MeshClient.yml`** Electron vendored archives to match `package.json` (`node scripts/sync-flatpak-electron.mjs`)
+4. Auto-detects **patch / minor / major** from [Conventional Commits](https://www.conventionalcommits.org/) since the last tag (or accept an explicit bump — see below)
+5. Runs **pre-flight validation** (format, lint, typecheck, security `check:*`, **`check:flatpak`**, dedupe check, audit, actionlint, yamllint, tests)
+6. Prints **copy-paste release notes** grouped by feat/fix/other/breaking
+7. Bumps `package.json` via `pnpm version`
+8. Prepends a `<release>` entry to `flatpak/org.coloradomesh.MeshClient.metainfo.xml`
+9. Commits, creates an annotated tag, and pushes **commit + tag** to `origin`
 
 ```bash
 git checkout main
@@ -82,7 +83,8 @@ Only if `pnpm run release` cannot be used:
 
 ```bash
 # Edit package.json version, then:
-git add package.json pnpm-lock.yaml
+git add package.json pnpm-lock.yaml org.coloradomesh.MeshClient.yml
+# If electron changed: node scripts/sync-flatpak-electron.mjs
 # Add a <release version="…" date="YYYY-MM-DD"/> entry to flatpak/org.coloradomesh.MeshClient.metainfo.xml
 git add flatpak/org.coloradomesh.MeshClient.metainfo.xml
 git commit -m "chore: release vX.Y.Z"
@@ -108,7 +110,7 @@ Each job runs `pnpm install --frozen-lockfile`, `pnpm run rebuild`, then publish
 After builds finish, **`packaging-smoke`** runs on:
 
 - macOS — `verify-mac-packaging.mjs` (includes bundled Reticulum sidecar in `.app`)
-- Linux — `verify-linux-packaging.mjs` plus `test-linux-appimage-reticulum-sidecar.mjs` (extracts x64/arm64 AppImages and asserts sidecar)
+- Linux — `verify-linux-packaging.mjs` plus `test-linux-appimage-reticulum-sidecar.mjs` (extracts x64/arm64 AppImages and asserts sidecar). **`verify-linux-packaging.mjs`** also asserts each `.deb` **Description** field is ASCII-only (no mojibake `??`) via `dpkg-deb -f` — non-ASCII control metadata breaks some package managers and mirrors.
 - Windows x64 — NSIS install smoke test (`test-win-nsis-install.mjs`, asserts sidecar after install)
 - **`windows-11-arm`** — arm64 NSIS install smoke test with 7z probe (asserts sidecar inside installer payload and after install)
 
@@ -197,6 +199,15 @@ Follow [Semantic Versioning](https://semver.org/):
 
 - Confirm the workflow job has `contents: write`
 - Publishing uses `GITHUB_TOKEN` as `GH_TOKEN`; forked or restricted workflows may lack upload permission
+- **404 uploading to `/releases/{id}/assets`:** parallel `dist:*:publish` jobs raced and created duplicate draft releases. Re-run the failed release workflow after merging the `prepare-github-release` gate (or delete orphan drafts and re-run). Do not PATCH release `tag_name` via API while CI is uploading — that orphans in-flight upload targets.
+
+### Duplicate draft releases for one tag
+
+- Caused when GitHub’s `GET /releases/tags/{tag}` returns **404** while multiple draft releases share the same `tag_name` — parallel `dist:*:publish` jobs each create another draft. `release.yaml` runs `scripts/ci-ensure-github-draft-release.mjs` before builds and again in `finalize-github-release` (list + merge split assets + delete duplicates + set `target_commitish`).
+- **Assets spread across duplicates:** CI now merges automatically; for a broken tag outside CI, run `node scripts/consolidate-github-release-duplicates.mjs --tag vX.Y.Z` (requires `GH_TOKEN`), then re-run the release workflow for any missing platform artifacts.
+- To recover on a broken tag: consolidate duplicates, keep the draft with merged assets, re-run **Build/Release Electron App** on the tag.
+- **Do not force-move the `v*` tag while a release workflow is in progress.** Retagging starts another run and (with workflow concurrency) cancels the in-flight build; smoke jobs also assume a stable workflow `github.sha`.
+- **Smoke tests fail with “ref does not point to the expected commit”:** the tag was moved after the workflow started. Re-run failed jobs only after the tag matches the run’s `headSha`, or merge the checkout `ref: ${{ github.sha }}` fix and trigger a fresh tag run.
 
 ### Tag already exists
 

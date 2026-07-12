@@ -170,9 +170,10 @@ describe('Windows packaging (contract)', () => {
       join(REPO_ROOT, '.github', 'workflows', 'release.yaml'),
       'utf-8',
     );
-    expect(releaseWorkflow).toMatch(
-      /- os: windows-latest\s*\n\s+build_script: pnpm run dist:win:publish/,
+    expect(readFileSync(join(REPO_ROOT, 'scripts', 'resolve-release-matrix.mjs'), 'utf-8')).toMatch(
+      /platform_key:\s*'win'[\s\S]*build_script:\s*'pnpm run dist:win:publish'/,
     );
+    expect(releaseWorkflow).toContain('scripts/resolve-release-matrix.mjs');
     expect(releaseWorkflow).toContain(
       "contains(matrix.build_script, 'dist:win') && matrix.os != 'windows-latest'",
     );

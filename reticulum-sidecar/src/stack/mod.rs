@@ -4,6 +4,8 @@ pub mod config;
 pub mod config_audit;
 pub mod rf_profiles;
 mod ble;
+mod identity_apply;
+mod identity_import;
 mod local_rnode_primary;
 mod nomad_file;
 #[cfg(feature = "rns-stack")]
@@ -11,6 +13,7 @@ mod nomad_request_payload;
 mod nomad_timeouts;
 mod packet_log;
 mod persistence;
+mod rmap_discovery;
 mod topology;
 mod types;
 mod via;
@@ -55,6 +58,10 @@ impl StackHandle {
             }
         }
 
+        if let Err(e) = config::ensure_discover_interfaces_enabled(&config_dir) {
+            tracing::warn!("failed to enable discover_interfaces in config: {e}");
+        }
+
         if let Err(e) = config::repair_rnode_radio_fields_in_config(&config_dir) {
             tracing::warn!("failed to repair RNode radio fields in config: {e}");
         }
@@ -63,6 +70,17 @@ impl StackHandle {
         persisted.ensure_defaults();
         if let Ok(ifaces) = config::interfaces_from_config_dir(&config_dir) {
             persisted.interfaces = ifaces;
+        }
+
+        #[cfg(feature = "rns-stack")]
+        {
+            if let Err(e) = identity_apply::reconcile_persisted_identity_from_file(
+                &mut persisted,
+                &config_dir,
+                &storage_dir,
+            ) {
+                tracing::warn!("identity reconcile on bootstrap failed: {e}");
+            }
         }
 
         let inner = Arc::new(RwLock::new(persisted));
@@ -79,7 +97,20 @@ impl StackHandle {
         )
         .await
         {
-            Ok(bridge) => Some(Arc::new(bridge)),
+            Ok(bridge) => {
+                let bridge = Arc::new(bridge);
+                {
+                    let mut inner_guard = inner.write().await;
+                    if let Err(e) = identity_apply::reconcile_persisted_identity_from_file(
+                        &mut inner_guard,
+                        &config_dir,
+                        &storage_dir,
+                    ) {
+                        tracing::warn!("identity reconcile after live spawn failed: {e}");
+                    }
+                }
+                Some(bridge)
+            }
             Err(e) => {
                 tracing::warn!("live RNS bridge unavailable, using local stack: {e}");
                 None
@@ -93,7 +124,7 @@ impl StackHandle {
             config_dir,
             storage_dir,
             inner,
-            event_tx,
+            event_tx: event_tx.clone(),
             packet_log,
             live,
         };
@@ -113,6 +144,7 @@ impl StackHandle {
                 handle.storage_dir.clone(),
             );
             live.register_lxmf_identity_announce_handler();
+            live.register_rmap_discovery_watcher(event_tx.clone());
         }
         handle.emit_stats().await;
         handle
@@ -276,32 +308,141 @@ impl StackHandle {
     }
 
     pub async fn identity_status(&self) -> StackIdentity {
+        #[cfg(feature = "rns-stack")]
+        {
+            let mut inner = self.inner.write().await;
+            if let Err(e) = identity_apply::reconcile_persisted_identity_from_file(
+                &mut inner,
+                &self.config_dir,
+                &self.storage_dir,
+            ) {
+                tracing::debug!("identity status reconcile skipped: {e}");
+            }
+            return inner.identity.clone();
+        }
+        #[cfg(not(feature = "rns-stack"))]
         self.inner.read().await.identity.clone()
+    }
+
+    async fn ensure_identity_replace_allowed(&self, replace: bool) -> Result<(), String> {
+        let configured = self.inner.read().await.identity.configured;
+        if configured && !replace {
+            return Err("identity_already_configured".into());
+        }
+        Ok(())
     }
 
     pub async fn identity_generate(
         &self,
         display_name: Option<String>,
+        replace: bool,
     ) -> Result<StackIdentity, String> {
-        let mut inner = self.inner.write().await;
-        let identity = inner.generate_identity(display_name)?;
-        inner.save(&self.config_dir, &self.storage_dir)?;
-        drop(inner);
-        self.maybe_emit_identity_restart();
-        Ok(identity)
+        identity_apply::identity_requires_rns_stack()?;
+        self.ensure_identity_replace_allowed(replace).await?;
+        #[cfg(feature = "rns-stack")]
+        {
+            let (rns_identity, mnemonic) = identity_apply::generate_identity_with_mnemonic()?;
+            let mut inner = self.inner.write().await;
+            let identity = identity_apply::apply_unified_identity(
+                &mut inner,
+                &self.config_dir,
+                &self.storage_dir,
+                rns_identity,
+                display_name,
+                Some(mnemonic),
+            )?;
+            drop(inner);
+            self.maybe_emit_identity_restart();
+            return Ok(identity);
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        Err("identity operations require an rns-stack sidecar build".into())
     }
 
     pub async fn identity_import(
         &self,
         mnemonic: &str,
         display_name: Option<String>,
+        replace: bool,
     ) -> Result<StackIdentity, String> {
-        let mut inner = self.inner.write().await;
-        let identity = inner.import_identity_mnemonic(mnemonic, display_name)?;
-        inner.save(&self.config_dir, &self.storage_dir)?;
-        drop(inner);
-        self.maybe_emit_identity_restart();
-        Ok(identity)
+        identity_apply::identity_requires_rns_stack()?;
+        self.ensure_identity_replace_allowed(replace).await?;
+        #[cfg(feature = "rns-stack")]
+        {
+            let (rns_identity, normalized) = identity_apply::identity_from_mnemonic(mnemonic)?;
+            let mut inner = self.inner.write().await;
+            let identity = identity_apply::apply_unified_identity(
+                &mut inner,
+                &self.config_dir,
+                &self.storage_dir,
+                rns_identity,
+                display_name,
+                Some(normalized),
+            )?;
+            drop(inner);
+            self.maybe_emit_identity_restart();
+            return Ok(identity);
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        Err("identity operations require an rns-stack sidecar build".into())
+    }
+
+    pub async fn identity_import_private(
+        &self,
+        private_key: &str,
+        display_name: Option<String>,
+        replace: bool,
+    ) -> Result<StackIdentity, String> {
+        identity_apply::identity_requires_rns_stack()?;
+        self.ensure_identity_replace_allowed(replace).await?;
+        #[cfg(feature = "rns-stack")]
+        {
+            let bytes = identity_import::decode_private_key_input(private_key)?;
+            let rns_identity = identity_apply::identity_from_private_bytes(&bytes)?;
+            let mut inner = self.inner.write().await;
+            let identity = identity_apply::apply_unified_identity(
+                &mut inner,
+                &self.config_dir,
+                &self.storage_dir,
+                rns_identity,
+                display_name,
+                None,
+            )?;
+            drop(inner);
+            self.maybe_emit_identity_restart();
+            return Ok(identity);
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        Err("identity operations require an rns-stack sidecar build".into())
+    }
+
+    pub async fn identity_import_private_bytes(
+        &self,
+        bytes: &[u8],
+        display_name: Option<String>,
+        replace: bool,
+    ) -> Result<StackIdentity, String> {
+        identity_apply::identity_requires_rns_stack()?;
+        self.ensure_identity_replace_allowed(replace).await?;
+        #[cfg(feature = "rns-stack")]
+        {
+            let key = identity_import::decode_private_key_bytes(bytes)?;
+            let rns_identity = identity_apply::identity_from_private_bytes(&key)?;
+            let mut inner = self.inner.write().await;
+            let identity = identity_apply::apply_unified_identity(
+                &mut inner,
+                &self.config_dir,
+                &self.storage_dir,
+                rns_identity,
+                display_name,
+                None,
+            )?;
+            drop(inner);
+            self.maybe_emit_identity_restart();
+            return Ok(identity);
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        Err("identity operations require an rns-stack sidecar build".into())
     }
 
     pub async fn identity_export_backup(
@@ -316,10 +457,44 @@ impl StackHandle {
         &self,
         backup: serde_json::Value,
         passphrase: &str,
+        display_name: Option<String>,
+        replace: bool,
     ) -> Result<StackIdentity, String> {
+        if self.inner.read().await.identity.configured && !replace {
+            return Err("identity_already_configured".into());
+        }
+
+        let format = backup.get("format").and_then(|v| v.as_str()).unwrap_or("");
+        if format != "mesh-client.identity.v1" && format != "ratspeak.identity.v2" {
+            return Err("unsupported backup format".into());
+        }
+        let backup_identity_hash = backup
+            .get("identity_hash")
+            .and_then(|v| v.as_str())
+            .ok_or("missing identity_hash")?;
+        let backup_lxmf_hash = backup
+            .get("lxmf_hash")
+            .and_then(|v| v.as_str())
+            .ok_or("missing lxmf_hash")?;
+
+        #[cfg(feature = "rns-stack")]
+        if identity_apply::backup_conflicts_with_file(
+            &self.config_dir,
+            backup_identity_hash,
+            backup_lxmf_hash,
+        )? {
+            return Err("backup_hash_mismatch_with_identity_file".into());
+        }
+
         let mut inner = self.inner.write().await;
-        let identity = inner.import_identity_backup(backup, passphrase)?;
+        let mut identity = inner.import_identity_backup(backup, passphrase)?;
+        if let Some(name) = display_name {
+            identity.display_name = Some(name.clone());
+            inner.identity.display_name = Some(name);
+        }
         inner.save(&self.config_dir, &self.storage_dir)?;
+        drop(inner);
+        self.maybe_emit_identity_restart();
         Ok(identity)
     }
 
@@ -656,6 +831,16 @@ impl StackHandle {
         let rtt_ms = started.elapsed().as_millis() as u64;
         let ok = probe.get("ok").and_then(|v| v.as_bool()).unwrap_or(false);
         Ok(serde_json::json!({ "ok": ok, "rtt_ms": rtt_ms }))
+    }
+
+    pub async fn list_rmap_discovered(&self) -> Vec<rmap_discovery::RmapDiscoveredWireRow> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.fetch_rmap_discovered().await;
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        let _ = self;
+        Vec::new()
     }
 
     pub async fn topology_snapshot(&self) -> serde_json::Value {

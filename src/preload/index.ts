@@ -14,6 +14,7 @@ import type {
   OutboxEntry,
   OutboxEntryInput,
   OutboxStatus,
+  ReticulumIdentityImportDialogResult,
   SerialPort,
   SpellcheckReplacePayload,
   UpdateCheckingPayload,
@@ -455,6 +456,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getCachedNodes: () => ipcRenderer.invoke('mqtt:getCachedNodes'),
     updateChannelKeys: (args: { entries: { name: string; pskBase64: string; index?: number }[] }) =>
       ipcRenderer.invoke('mqtt:updateChannelKeys', args),
+    updateTopicPrefix: (args: { topicPrefix: string }) =>
+      ipcRenderer.invoke('mqtt:updateTopicPrefix', args),
     publish: (args: {
       text: string;
       from: number;
@@ -557,6 +560,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     acquireScan: (owner: BleScanOwner) => ipcRenderer.invoke('bleCoexistence:acquireScan', owner),
     releaseScan: (owner: BleScanOwner) => ipcRenderer.invoke('bleCoexistence:releaseScan', owner),
     pauseNobleScan: () => ipcRenderer.invoke('bleCoexistence:pauseNobleScan'),
+    suspendNobleForReticulumBleConnect: () =>
+      ipcRenderer.invoke('bleCoexistence:suspendNobleForReticulumBleConnect'),
   },
 
   // ─── Noble BLE ──────────────────────────────────────────────────
@@ -606,7 +611,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('noble-ble-from-radio', handler);
     return () => ipcRenderer.off('noble-ble-from-radio', handler);
   },
-  startNobleBleScanning: (sessionId: NobleBleSessionId): Promise<void> =>
+  startNobleBleScanning: (sessionId: NobleBleSessionId) =>
     ipcRenderer.invoke('noble-ble-start-scan', sessionId),
   stopNobleBleScanning: (sessionId: NobleBleSessionId): Promise<void> =>
     ipcRenderer.invoke('noble-ble-stop-scan', sessionId),
@@ -899,6 +904,30 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
   },
 
+  // ─── Meshtastic TCP bridge ────────────────────────────────────────
+  meshtastic: {
+    tcp: {
+      connect: (host: string, port: number): Promise<void> =>
+        ipcRenderer.invoke('meshtastic:tcp-connect', host, port),
+      write: (bytes: number[]): Promise<void> => ipcRenderer.invoke('meshtastic:tcp-write', bytes),
+      disconnect: (): Promise<void> => ipcRenderer.invoke('meshtastic:tcp-disconnect'),
+      onData: (cb: (bytes: Uint8Array) => void): (() => void) => {
+        const handler = (_: unknown, bytes: Uint8Array) => {
+          cb(bytes);
+        };
+        ipcRenderer.on('meshtastic:tcp-data', handler);
+        return () => ipcRenderer.off('meshtastic:tcp-data', handler);
+      },
+      onDisconnected: (cb: () => void): (() => void) => {
+        const handler = () => {
+          cb();
+        };
+        ipcRenderer.on('meshtastic:tcp-disconnected', handler);
+        return () => ipcRenderer.off('meshtastic:tcp-disconnected', handler);
+      },
+    },
+  },
+
   // ─── TAK server ──────────────────────────────────────────────────
   tak: {
     start: (settings: TAKSettings): Promise<void> => ipcRenderer.invoke('tak:start', settings),
@@ -951,6 +980,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('reticulum:readDefaultConfigFile'),
     showConfigImportDialog: (): Promise<{ path: string | null; content: string | null }> =>
       ipcRenderer.invoke('reticulum:showConfigImportDialog'),
+    showIdentityImportDialog: (): Promise<ReticulumIdentityImportDialogResult> =>
+      ipcRenderer.invoke('reticulum:showIdentityImportDialog'),
     onEvent: (cb: (event: ReticulumSidecarEvent) => void): (() => void) => {
       const handler = (_: unknown, event: ReticulumSidecarEvent) => {
         cb(event);

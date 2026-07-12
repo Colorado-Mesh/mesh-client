@@ -410,7 +410,8 @@ describe('app_settings table + message retention defaults (schema sync)', () => 
 
   it('appSettings:set rejects oversized values to bound DB writes', () => {
     expect(INDEX_SOURCE).toContain('APP_SETTINGS_MAX_VALUE_LENGTH');
-    expect(INDEX_SOURCE).toMatch(/value\.length > APP_SETTINGS_MAX_VALUE_LENGTH/);
+    expect(INDEX_SOURCE).toContain('appSettingsMaxValueLengthForKey');
+    expect(INDEX_SOURCE).toMatch(/value\.length > maxValueLength/);
   });
 
   it('db:pruneMessagesByCount keeps the newest N rows by timestamp', () => {

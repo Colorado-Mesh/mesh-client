@@ -435,8 +435,12 @@ On the **Reticulum** protocol tab, the **Diagnostics** panel includes a **Reticu
 | `rf_preset_deviation` / `rf_cross_mismatch` | RNode LoRa params differ from coordinated regional presets            | **Apply preset** or edit RNode                              |
 | `missing_auto_interface`                    | No enabled `AutoInterface` (LAN discovery off)                        | **Add Auto interface**                                      |
 | `missing_shared_instance`                   | `share_instance = Yes` but `SharedInstanceServer` not up              | **Restart stack**                                           |
+| `rmap_missing_coordinates`                  | Discoverable interface without valid GPS                              | Set App GPS or disable RMAP on that interface               |
+| `rmap_no_tcp_hub`                           | LoRa RMAP publish without reachable TCP hub                           | Add/sync default hubs or enable transport                   |
+| `rmap_transport_disabled`                   | RMAP-capable interface while `enable_transport` is off                | Enable transport in Network stack settings or RMAP apply    |
+| `rmap_i2p_not_connectable`                  | I2P interface discoverable but not connectable                        | Set `connectable=yes` or disable RMAP on that interface     |
 
-The Connection tab **Interfaces** list shows the same audit hints per row (amber/red subtext) with **Repair** / **Disable** shortcuts. **SharedInstanceServer** is runtime-only (created when **Share instance** is on) — it shows a **Runtime** badge and cannot be edited or deleted from config.
+The Connection tab **Interfaces** list shows the same audit hints per row (amber/red subtext) with **Repair** / **Disable** shortcuts. **SharedInstanceServer** is runtime-only (created when **Share instance** is on) — it shows a **Runtime** badge and cannot be edited or deleted from config. The `runtime_only_interface` audit note is intentionally omitted from the Diagnostics panel (expected state, not a fault); misconfiguration is reported via `missing_shared_instance` or `shared_instance_unexpected` instead.
 
 Sidecar APIs: `GET /api/v1/config/audit`, `POST /api/v1/config/repair` (see [`reticulum-sidecar-ipc.md`](reticulum-sidecar-ipc.md)).
 

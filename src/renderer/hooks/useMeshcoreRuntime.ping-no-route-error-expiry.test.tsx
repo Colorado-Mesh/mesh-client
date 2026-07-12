@@ -1,5 +1,5 @@
 /**
- * MeshCore ping error: “no route” message auto-expires after {@link MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS}.
+ * MeshCore ping error: “no route” message persists until the next ping attempt.
  */
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,8 +7,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { pubkeyToNodeId } from '../lib/meshcoreUtils';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 
-const { startMeshcoreTracePathMultiplexedMock } = vi.hoisted(() => ({
+const { startMeshcoreTracePathMultiplexedMock, getContactsMock } = vi.hoisted(() => ({
   startMeshcoreTracePathMultiplexedMock: vi.fn(),
+  getContactsMock: vi.fn().mockResolvedValue([]),
 }));
 vi.mock('../lib/meshcoreTracePathMultiplex', async (importOriginal) => {
   const actual = await importOriginal();
@@ -23,8 +24,10 @@ vi.mock('../lib/meshcoreTracePathMultiplex', async (importOriginal) => {
   });
 });
 import {
+  computeMeshcoreTracePrimeWaitMs,
   MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS,
   MESHCORE_PING_NO_ROUTE_ERROR_MSG,
+  MESHCORE_TRACE_PRIME_MAX_ROUNDS,
   meshcorePingNoRouteErrorExpiryUpdate,
 } from '../hooks/meshcore/meshcoreHookPreamble';
 import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
@@ -46,8 +49,10 @@ const REMOTE_PUBKEY_HEX = Array.from(REMOTE_PUBKEY)
 const SELF_PUBKEY = new Uint8Array(32).fill(0xab);
 const MY_NODE_ID = pubkeyToNodeId(SELF_PUBKEY);
 
-/** Matches {@link MESHCORE_TRACE_PRIME_WAIT_MS} in useMeshcoreRuntime.ts — wait after flood advert for PathUpdated. */
-const TRACE_PRIME_WAIT_MS = 12_000;
+/** Hop-scaled PathUpdated waits: passive round + flood fallback rounds (excludes expiry window). */
+const TRACE_PRIME_TOTAL_WAIT_MS =
+  computeMeshcoreTracePrimeWaitMs(2) +
+  computeMeshcoreTracePrimeWaitMs(2) * MESHCORE_TRACE_PRIME_MAX_ROUNDS;
 
 vi.mock('@liamcottle/meshcore.js', () => {
   class MockWebSerialConnection {
@@ -82,7 +87,7 @@ vi.mock('@liamcottle/meshcore.js', () => {
     }
     close = vi.fn().mockResolvedValue(undefined);
     getSelfInfo = getSelfInfoMock;
-    getContacts = vi.fn().mockResolvedValue([]);
+    getContacts = getContactsMock;
     getChannels = vi.fn().mockResolvedValue([]);
     deviceQuery = vi.fn().mockResolvedValue({
       firmwareVer: 1,
@@ -275,6 +280,8 @@ describe('useMeshcoreRuntime refreshNodesFromDb hop preservation', () => {
 describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
   beforeEach(() => {
     resetMeshcoreRuntimeElectronMocks();
+    vi.mocked(window.electronAPI.db.getMeshcorePathHistory).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getAllMeshcorePathHistory).mockResolvedValue([]);
     startMeshcoreTracePathMultiplexedMock.mockResolvedValue({
       pathLen: 2,
       pathHashes: [1, 2],
@@ -314,7 +321,7 @@ describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
     vi.useRealTimers();
   });
 
-  it('clears the no-route ping error after the display duration (fake timers)', async () => {
+  it('keeps the no-route ping error until the next ping attempt', async () => {
     const port = makeMockSerialPort();
     Object.defineProperty(navigator, 'serial', {
       configurable: true,
@@ -342,10 +349,10 @@ describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
 
     vi.useFakeTimers();
 
-    let tracePromise: Promise<void>;
+    let tracePromise: Promise<boolean>;
     await act(async () => {
       tracePromise = result.current.traceRoute(REMOTE_NODE_ID);
-      await vi.advanceTimersByTimeAsync(TRACE_PRIME_WAIT_MS);
+      await vi.advanceTimersByTimeAsync(TRACE_PRIME_TOTAL_WAIT_MS);
     });
 
     await act(async () => {
@@ -360,13 +367,30 @@ describe('useMeshcoreRuntime traceRoute no-route error expiry', () => {
       await vi.advanceTimersByTimeAsync(MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS);
     });
 
-    expect(result.current.meshcorePingErrors.has(REMOTE_NODE_ID)).toBe(false);
+    expect(result.current.meshcorePingErrors.get(REMOTE_NODE_ID)).toBe(
+      MESHCORE_PING_NO_ROUTE_ERROR_MSG,
+    );
   });
 });
 
 describe('useMeshcoreRuntime traceRoute path outcome attribution', () => {
   beforeEach(() => {
     resetMeshcoreRuntimeElectronMocks();
+    vi.mocked(window.electronAPI.db.getMeshcorePathHistory).mockResolvedValue([]);
+    vi.mocked(window.electronAPI.db.getAllMeshcorePathHistory).mockResolvedValue([]);
+    getContactsMock.mockReset();
+    getContactsMock.mockResolvedValue([
+      {
+        publicKey: REMOTE_PUBKEY,
+        advName: 'RemotePeer',
+        type: 1,
+        lastAdvert: 1_700_000_000,
+        advLat: 0,
+        advLon: 0,
+        outPath: new Uint8Array([0x11, 0x22, 0x33]),
+        outPathLen: 2,
+      },
+    ]);
     startMeshcoreTracePathMultiplexedMock.mockResolvedValue({
       pathLen: 2,
       pathHashes: [1, 2],
@@ -404,9 +428,9 @@ describe('useMeshcoreRuntime traceRoute path outcome attribution', () => {
 
   it('records success outcome for traceRoute on the used path hash', async () => {
     const dbOutcomeSpy = vi.spyOn(window.electronAPI.db, 'recordMeshcorePathOutcome');
-    const pathBytes = [0x11, 0x22];
+    const pathBytes = [0x11, 0x22, 0x33];
     const pathHash = computePathHash(pathBytes);
-    usePathHistoryStore.getState().recordPathUpdated(REMOTE_NODE_ID, pathBytes, 1, false);
+    usePathHistoryStore.getState().recordPathUpdated(REMOTE_NODE_ID, pathBytes, 2, false);
 
     const port = makeMockSerialPort();
     Object.defineProperty(navigator, 'serial', {
@@ -444,9 +468,9 @@ describe('useMeshcoreRuntime traceRoute path outcome attribution', () => {
   it('records failure outcome for traceRoute errors on the used path hash', async () => {
     startMeshcoreTracePathMultiplexedMock.mockRejectedValueOnce(new Error('trace timeout'));
     const dbOutcomeSpy = vi.spyOn(window.electronAPI.db, 'recordMeshcorePathOutcome');
-    const pathBytes = [0x11, 0x22];
+    const pathBytes = [0x11, 0x22, 0x33];
     const pathHash = computePathHash(pathBytes);
-    usePathHistoryStore.getState().recordPathUpdated(REMOTE_NODE_ID, pathBytes, 1, false);
+    usePathHistoryStore.getState().recordPathUpdated(REMOTE_NODE_ID, pathBytes, 2, false);
 
     const port = makeMockSerialPort();
     Object.defineProperty(navigator, 'serial', {

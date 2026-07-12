@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   formatChannelPskInput,
+  manualChannelPsksDeclareSlotIndices,
   parseChannelPskInput,
   parseManualChannelPublishEntries,
   parseManualChannelPublishEntry,
@@ -77,6 +78,15 @@ describe('validateChannelPskEntries', () => {
     expect(validateChannelPskEntries([twentyBytes])).toBe('invalidLength');
   });
 
+  it('rejects decoded keys shorter than 16 bytes on named lines', () => {
+    const fifteenBytes = btoa(String.fromCharCode(...new Uint8Array(15).fill(2)));
+    expect(validateChannelPskEntries([`HamNet=${fifteenBytes}`])).toBe('invalidLength');
+  });
+
+  it('accepts 1-byte default public PSK on named lines', () => {
+    expect(validateChannelPskEntries(['LongFast=AQ=='])).toBe('ok');
+  });
+
   it('returns ok for empty list', () => {
     expect(validateChannelPskEntries([])).toBe('ok');
   });
@@ -112,6 +122,11 @@ describe('parseManualChannelPublishEntry', () => {
     expect(parseManualChannelPublishEntry(`HamNet=${twentyBytes}`)).toBeNull();
   });
 
+  it('returns null for keys shorter than 16 bytes', () => {
+    const oneByte = btoa(String.fromCharCode(0x01));
+    expect(parseManualChannelPublishEntry(`HamNet=${oneByte}`)).toBeNull();
+  });
+
   it('parses reporter LongFast@0 key as 32-byte AES-256', () => {
     const entry = parseManualChannelPublishEntry(REPORTER_LONGFAST_LINE);
     expect(entry?.name).toBe('LongFast');
@@ -130,5 +145,22 @@ describe('parseManualChannelPublishEntries', () => {
     expect(entries).toHaveLength(2);
     expect(entries[0]?.name).toBe('HamNet');
     expect(entries[1]?.index).toBe(0);
+  });
+});
+
+describe('manualChannelPsksDeclareSlotIndices', () => {
+  it('returns false when no named lines declare @index', () => {
+    expect(manualChannelPsksDeclareSlotIndices([KEY_A, `HamNet=${KEY_B}`])).toBe(false);
+  });
+
+  it('returns true when any named line includes @index', () => {
+    expect(manualChannelPsksDeclareSlotIndices([`LongFast@1=${KEY_B}`])).toBe(true);
+    expect(
+      manualChannelPsksDeclareSlotIndices([`HamNet=${KEY_B}`, `LongFast@0=${KEY_AES256}`]),
+    ).toBe(true);
+  });
+
+  it('returns false for empty input', () => {
+    expect(manualChannelPsksDeclareSlotIndices([])).toBe(false);
   });
 });

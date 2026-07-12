@@ -6,6 +6,7 @@ mod interfaces;
 mod lxmf;
 mod nomad;
 mod propagation;
+mod rmap;
 mod status;
 mod system;
 mod ws;
@@ -30,6 +31,14 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             post(identity::identity_generate),
         )
         .route("/api/v1/identity/import", post(identity::identity_import))
+        .route(
+            "/api/v1/identity/import-backup",
+            post(identity::identity_import_backup),
+        )
+        .route(
+            "/api/v1/identity/import-private",
+            post(identity::identity_import_private),
+        )
         .route("/api/v1/identity/export", post(identity::identity_export))
         .route(
             "/api/v1/identity/display-name",
@@ -85,6 +94,7 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/peers/{hash}/probe", post(lxmf::peer_probe))
         .route("/api/v1/ping", post(lxmf::ping))
         .route("/api/v1/topology", get(system::topology))
+        .route("/api/v1/rmap/discovered", get(rmap::list_rmap_discovered))
         .route("/api/v1/packets", get(system::list_packets).delete(system::clear_packets))
         .route("/api/v1/announces", delete(system::clear_announces))
         .route("/api/v1/propagation", get(propagation::list_propagation))

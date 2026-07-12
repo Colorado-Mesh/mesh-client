@@ -172,10 +172,43 @@ export function messageToDbRow(
 export const MESHCORE_INIT_TIMEOUT_MS = 60_000;
 /** Companion Ok/Err for `sendFloodAdvert` — meshcore.js has no internal timeout. */
 export const MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS = 25_000;
-/** Max time to wait for PathUpdated (129) after a flood advert when priming trace route. */
-export const MESHCORE_TRACE_PRIME_WAIT_MS = 12_000;
+/** Base wait for PathUpdated (129) after a flood advert when priming trace route. */
+export const MESHCORE_TRACE_PRIME_WAIT_BASE_MS = 15_000;
+/** Per-hop add-on for {@link computeMeshcoreTracePrimeWaitMs}. */
+export const MESHCORE_TRACE_PRIME_WAIT_PER_HOP_MS = 5_000;
+/** Cap for a single PathUpdated wait during trace route priming. */
+export const MESHCORE_TRACE_PRIME_WAIT_CAP_MS = 45_000;
+/** Max flood-advert priming rounds before trace/ping or no-route fast-fail. */
+export const MESHCORE_TRACE_PRIME_MAX_ROUNDS = 2;
+/** Post-prime `getContacts` slack for passive strategy aggregate timeout (BLE can be slow). */
+export const MESHCORE_TRACE_PRIME_CONTACT_REFRESH_MS = 20_000;
 
-/** Shown when multi-hop trace cannot run until the radio reports a route; UI auto-clears after {@link MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS}. */
+/** Worst-case aggregate timeout for {@link primeMeshcoreTraceRoute} (all rounds). */
+export function computeMeshcoreTracePrimeAggregateTimeoutMs(
+  hopsAway?: number | null,
+  maxRounds = MESHCORE_TRACE_PRIME_MAX_ROUNDS,
+  strategy: 'none' | 'passive' | 'flood' = 'flood',
+): number {
+  const waitMs = computeMeshcoreTracePrimeWaitMs(hopsAway);
+  if (strategy === 'none') return 0;
+  if (strategy === 'passive') {
+    // Pre-round getContacts + PathUpdated wait + post-round getContacts (each contact refresh may use full slack).
+    return 2 * MESHCORE_TRACE_PRIME_CONTACT_REFRESH_MS + waitMs;
+  }
+  return maxRounds * (MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS + waitMs) + 5_000;
+}
+
+/** Hop-scaled PathUpdated wait after flood advert when priming multi-hop trace routes. */
+export function computeMeshcoreTracePrimeWaitMs(hopsAway?: number | null): number {
+  const hops =
+    hopsAway != null && Number.isFinite(hopsAway) ? Math.max(0, Math.trunc(hopsAway)) : 0;
+  return Math.min(
+    MESHCORE_TRACE_PRIME_WAIT_CAP_MS,
+    MESHCORE_TRACE_PRIME_WAIT_BASE_MS + hops * MESHCORE_TRACE_PRIME_WAIT_PER_HOP_MS,
+  );
+}
+
+/** Shown when multi-hop trace cannot run until the radio reports a route; cleared on the next ping attempt. */
 export const MESHCORE_PING_NO_ROUTE_ERROR_MSG = 'meshcore.errors.pingNoRoute';
 export const MESHCORE_PING_NO_ROUTE_ERROR_DISPLAY_MS = 20_000;
 
@@ -216,31 +249,45 @@ export function formatStructuredLogDetail(detail: Record<string, unknown>): stri
 }
 
 /** Wait for companion push 0x81 (129 PathUpdated) for a specific node's pubkey. */
+export interface MeshcorePath129WaitHandle {
+  promise: Promise<boolean>;
+  cancel: () => void;
+}
+
 export function waitForMeshcorePath129ForNode(
   conn: Pick<MeshCoreConnection, 'on' | 'off'>,
   nodeId: number,
   timeoutMs: number,
-): Promise<boolean> {
-  return new Promise((resolve) => {
-    let settled = false;
-    const finish = (ok: boolean) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(t);
-      conn.off(129, on129);
-      resolve(ok);
-    };
-    const on129 = (data: unknown) => {
-      const d = data as { publicKey?: Uint8Array };
-      if (d.publicKey?.length !== 32) return;
-      if (pubkeyToNodeId(d.publicKey) !== nodeId) return;
-      finish(true);
-    };
-    const t = setTimeout(() => {
+): MeshcorePath129WaitHandle {
+  let settled = false;
+  let resolvePromise: (ok: boolean) => void = () => {};
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const on129 = (data: unknown) => {
+    const d = data as { publicKey?: Uint8Array };
+    if (d.publicKey?.length !== 32) return;
+    if (pubkeyToNodeId(d.publicKey) !== nodeId) return;
+    finish(true);
+  };
+  const finish = (ok: boolean) => {
+    if (settled) return;
+    settled = true;
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+    conn.off(129, on129);
+    resolvePromise(ok);
+  };
+  const promise = new Promise<boolean>((resolve) => {
+    resolvePromise = resolve;
+    timeoutId = setTimeout(() => {
       finish(false);
     }, timeoutMs);
     conn.on(129, on129);
   });
+  return {
+    promise,
+    cancel: () => {
+      finish(false);
+    },
+  };
 }
 export const MANUAL_CONTACTS_KEY = 'mesh-client:meshcoreManualContacts';
 

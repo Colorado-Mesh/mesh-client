@@ -5,6 +5,7 @@
  * Failure point: cross-arch electron-builder runs can silently skip an arch target.
  * Fallback: hard fail before artifact upload so a broken Linux build never ships.
  */
+import { execFileSync } from 'child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -71,6 +72,32 @@ function pickOne(arch, names, match) {
   return hits[0];
 }
 
+/** @param {string} label @param {string} debPath */
+function assertDebDescriptionAscii(label, debPath) {
+  /** @type {string} */
+  let description;
+  try {
+    description = execFileSync('dpkg-deb', ['-f', debPath, 'Description'], {
+      encoding: 'utf-8',
+    }).trim();
+  } catch (e) {
+    fail(
+      `Could not read Description from ${label} (${debPath}): ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
+  for (let i = 0; i < description.length; i++) {
+    if (description.charCodeAt(i) > 127) {
+      fail(`${label} Description contains non-ASCII: ${JSON.stringify(description)}`);
+    }
+  }
+  if (description.includes('??')) {
+    fail(`${label} Description contains mojibake "??": ${JSON.stringify(description)}`);
+  }
+  if (!description.includes('Windows with BLE')) {
+    fail(`${label} Description missing expected wording: ${JSON.stringify(description)}`);
+  }
+}
+
 function main() {
   if (!existsSync(releaseDir)) {
     fail(`Missing release directory: ${releaseDir}`);
@@ -99,6 +126,10 @@ function main() {
 
   for (const name of [x64Deb, arm64Deb, x64Rpm, arm64Rpm]) {
     assertMinSize(name, path.join(releaseDir, name), MIN_DEB_RPM_BYTES);
+  }
+
+  for (const name of [x64Deb, arm64Deb]) {
+    assertDebDescriptionAscii(name, path.join(releaseDir, name));
   }
 
   for (const [label, dirName] of [

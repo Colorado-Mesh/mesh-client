@@ -39,6 +39,10 @@ import {
   computeReticulumChatUnread,
   totalUnreadCount,
 } from '@/renderer/lib/chatUnreadCounts';
+import {
+  buildDebugSnapshotMeshtasticContextFromRuntime,
+  setDebugSnapshotMeshtasticContext,
+} from '@/renderer/lib/debugSnapshotMeshtasticContext';
 import { setDebugSnapshotUiContext } from '@/renderer/lib/debugSnapshotUiContext';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
@@ -53,6 +57,7 @@ import {
 import { persistMeshcoreSelfNodeId } from '@/renderer/lib/meshcoreLastSelfNodeId';
 import { resolveMeshcoreOwnNodeIdSet } from '@/renderer/lib/meshcoreOwnNodeIds';
 import { totalRoomsUnreadCount } from '@/renderer/lib/meshcoreRoomsUnread';
+import { meshcoreWaitingMessagesVisibleForProtocol } from '@/renderer/lib/meshcoreWaitingMessagesStatusText';
 import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
 import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
@@ -68,6 +73,7 @@ import { GlobalInstantTooltip } from './components/GlobalInstantTooltip';
 import { HelpTooltip } from './components/HelpTooltip';
 import { InactiveProtocolNotifier } from './components/InactiveProtocolNotifier';
 import LanguageSelector from './components/LanguageSelector';
+import { MeshcoreWaitingMessagesHeaderIndicator } from './components/MeshcoreWaitingMessagesHeaderIndicator';
 import { ProtocolSwitcher } from './components/ProtocolSwitcher';
 import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
 import Sidebar from './components/Sidebar';
@@ -116,6 +122,7 @@ import {
   RawPacketLogPanel,
   RepeatersPanel,
   ReticulumAdminPanel,
+  ReticulumMapPanel,
   ReticulumNetworkPanel,
   ReticulumPeerListPanel,
   ReticulumTopologyPanel,
@@ -1142,6 +1149,37 @@ function AppContent() {
     (id: number) => nodeLabelForRawPacket(nodesForUi.get(id), id, protocol),
     [nodesForUi, protocol],
   );
+  const rawPacketGetNodeHwModel = useCallback(
+    (id: number) => nodesForUi.get(id)?.hw_model,
+    [nodesForUi],
+  );
+  const meshcoreSnifferPubKeyByNodeId = useMemo(() => {
+    const m = new Map<number, Uint8Array>();
+    const addHex = (nodeId: number, hex: string | undefined) => {
+      if (hex?.length !== 64) return;
+      const bytes = new Uint8Array(32);
+      for (let i = 0; i < 32; i++) {
+        bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+      }
+      m.set(nodeId, bytes);
+    };
+    for (const [id, node] of meshcoreUiNodes) {
+      addHex(id, node.public_key_hex);
+    }
+    const self = meshcoreRuntime.selfInfo;
+    if (self?.publicKey?.length === 32) {
+      m.set(pubkeyToNodeId(self.publicKey), self.publicKey);
+    }
+    return m;
+  }, [meshcoreUiNodes, meshcoreRuntime.selfInfo]);
+  const meshcoreSnifferPathCandidates = useMemo(
+    () =>
+      Array.from(meshcoreUiNodes.values()).map((n) => ({
+        node_id: n.node_id,
+        last_heard: n.last_heard ?? 0,
+      })),
+    [meshcoreUiNodes],
+  );
   const meshcorePublicKeyHexByNodeId = useMemo(() => {
     const m = new Map<number, string>();
     if (!meshcoreCapabilities.hasContactImportExport) return m;
@@ -1659,10 +1697,8 @@ function AppContent() {
       frozenMessageCount: null,
       liveResolvedMessageCount,
       activeProtocol: protocol,
-      waitingMessagesSilentDrainActive:
-        protocol === 'meshcore' ? meshcoreRuntime.waitingMessagesSilentDrainActive : false,
-      waitingMessagesDrainDeferred:
-        protocol === 'meshcore' ? meshcoreRuntime.waitingMessagesDrainDeferred : false,
+      waitingMessagesSilentDrainActive: meshcoreRuntime.waitingMessagesSilentDrainActive,
+      waitingMessagesDrainDeferred: meshcoreRuntime.waitingMessagesDrainDeferred,
     });
   }, [
     activePanelIndex,
@@ -1672,6 +1708,15 @@ function AppContent() {
     meshcoreRuntime.waitingMessagesSilentDrainActive,
     meshcoreRuntime.waitingMessagesDrainDeferred,
   ]);
+
+  useEffect(() => {
+    setDebugSnapshotMeshtasticContext(
+      buildDebugSnapshotMeshtasticContextFromRuntime(
+        meshtasticRuntime.channels,
+        meshtasticRuntime.channelConfigs,
+      ),
+    );
+  }, [meshtasticRuntime.channels, meshtasticRuntime.channelConfigs]);
 
   const syncWaitingMessages = meshcoreRuntime.syncWaitingMessages;
   const handleMeshcoreSyncWaitingMessages = useCallback(async () => {
@@ -1687,6 +1732,29 @@ function AppContent() {
       );
     }
   }, [syncWaitingMessages, addToast, t]);
+
+  const meshcoreWaitingMessagesInput = useMemo(
+    () => ({
+      waitingMessagesCount: meshcoreRuntime.waitingMessagesCount,
+      waitingMessagesSyncActive: meshcoreRuntime.waitingMessagesSyncActive,
+      waitingMessagesSyncProgress: meshcoreRuntime.waitingMessagesSyncProgress,
+      waitingMessagesSilentDrainActive: meshcoreRuntime.waitingMessagesSilentDrainActive,
+      waitingMessagesDrainDeferred: meshcoreRuntime.waitingMessagesDrainDeferred,
+      connectionType: meshcoreConnectionView.state.connectionType,
+    }),
+    [
+      meshcoreRuntime.waitingMessagesCount,
+      meshcoreRuntime.waitingMessagesSyncActive,
+      meshcoreRuntime.waitingMessagesSyncProgress,
+      meshcoreRuntime.waitingMessagesSilentDrainActive,
+      meshcoreRuntime.waitingMessagesDrainDeferred,
+      meshcoreConnectionView.state.connectionType,
+    ],
+  );
+
+  const showMeshcoreWaitingMessagesIndicator =
+    meshcoreCapabilities.hasCompanionContactManagementConfig &&
+    meshcoreWaitingMessagesVisibleForProtocol(meshcoreWaitingMessagesInput, protocol);
 
   const handleDmTargetConsumed = useCallback(() => {
     setPendingDmTarget(null);
@@ -2068,6 +2136,7 @@ function AppContent() {
                 serialPortId,
               ),
             connectHttp: (httpAddress) => protocolConnect(protocol, 'http', httpAddress),
+            connectTcp: (httpAddress) => protocolConnect(protocol, 'tcp', httpAddress),
           })
             .catch((err: unknown) => {
               logRfReconnectFailure('[App] handleReconnect failed', err);
@@ -2342,6 +2411,23 @@ function AppContent() {
                     })}
                   </span>
                 )}
+              {showMeshcoreWaitingMessagesIndicator && (
+                <MeshcoreWaitingMessagesHeaderIndicator
+                  waitingMessagesCount={meshcoreWaitingMessagesInput.waitingMessagesCount}
+                  waitingMessagesSyncActive={meshcoreWaitingMessagesInput.waitingMessagesSyncActive}
+                  waitingMessagesSyncProgress={
+                    meshcoreWaitingMessagesInput.waitingMessagesSyncProgress
+                  }
+                  waitingMessagesSilentDrainActive={
+                    meshcoreWaitingMessagesInput.waitingMessagesSilentDrainActive
+                  }
+                  waitingMessagesDrainDeferred={
+                    meshcoreWaitingMessagesInput.waitingMessagesDrainDeferred
+                  }
+                  connectionType={meshcoreWaitingMessagesInput.connectionType}
+                  onSync={() => void handleMeshcoreSyncWaitingMessages()}
+                />
+              )}
               {/* Queue status badge: 0–10 used = green, 11–14 = yellow, 15–16 = red */}
               {queueShowBadge && activeQueue && (
                 <HelpTooltip
@@ -2518,6 +2604,19 @@ function AppContent() {
                             onStartReticulumStack={() =>
                               reticulumConnection.connectAutomatic('http')
                             }
+                            onOpenReticulumRmapSettings={() => {
+                              const networkTabIdx = tabSlotIds.indexOf('Radio');
+                              if (networkTabIdx >= 0) {
+                                setActiveTab(networkTabIdx);
+                              }
+                            }}
+                            onOpenAppGpsSettings={() => {
+                              const appTabIdx = tabSlotIds.indexOf('App');
+                              if (appTabIdx >= 0) {
+                                setAppTabVisited(true);
+                                setActiveTab(appTabIdx);
+                              }
+                            }}
                           />
                         </div>
                       </Suspense>
@@ -2591,36 +2690,6 @@ function AppContent() {
                                       manual: true,
                                     })
                                 : undefined
-                            }
-                            waitingMessagesCount={
-                              capabilities.hasCompanionContactManagementConfig
-                                ? meshcoreRuntime.waitingMessagesCount
-                                : 0
-                            }
-                            onSyncWaitingMessages={
-                              capabilities.hasCompanionContactManagementConfig
-                                ? () => void handleMeshcoreSyncWaitingMessages()
-                                : undefined
-                            }
-                            waitingMessagesSyncActive={
-                              capabilities.hasCompanionContactManagementConfig
-                                ? meshcoreRuntime.waitingMessagesSyncActive
-                                : false
-                            }
-                            waitingMessagesSyncProgress={
-                              capabilities.hasCompanionContactManagementConfig
-                                ? meshcoreRuntime.waitingMessagesSyncProgress
-                                : null
-                            }
-                            waitingMessagesSilentDrainActive={
-                              capabilities.hasCompanionContactManagementConfig
-                                ? meshcoreRuntime.waitingMessagesSilentDrainActive
-                                : false
-                            }
-                            waitingMessagesDrainDeferred={
-                              capabilities.hasCompanionContactManagementConfig
-                                ? meshcoreRuntime.waitingMessagesDrainDeferred
-                                : false
                             }
                           />
                         </Suspense>
@@ -2761,33 +2830,54 @@ function AppContent() {
                       {activePanelIndex === 4 ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            <MapPanel
-                              nodes={nodesForUi}
-                              myNodeNum={activeRuntime.selfNodeId}
-                              locationFilter={locationFilter}
-                              ourPosition={activeRuntime.ourPosition}
-                              onLocateMe={
-                                capabilities.hasFullPositionConfig
-                                  ? () =>
-                                      meshtasticPanelActions
-                                        .refreshOurPosition()
-                                        .then((p) => (p ? { lat: p.lat, lon: p.lon } : null))
-                                  : undefined
-                              }
-                              waypoints={activeRuntime.waypoints}
-                              onSendWaypoint={
-                                capabilities.hasFullPositionConfig
-                                  ? meshtasticPanelActions.sendWaypoint
-                                  : undefined
-                              }
-                              onDeleteWaypoint={
-                                capabilities.hasFullPositionConfig
-                                  ? meshtasticPanelActions.deleteWaypoint
-                                  : undefined
-                              }
-                              onNodeClick={setSelectedNodeId}
-                              protocol={protocol}
-                            />
+                            {protocol === 'reticulum' && capabilities.hasReticulumDiscoveryMap ? (
+                              <ReticulumMapPanel
+                                stackConfigured={reticulumConnection.state.status === 'configured'}
+                                onPeerClick={setSelectedPeerHash}
+                                onOpenRmapSettings={() => {
+                                  const networkTabIdx = tabSlotIds.indexOf('Radio');
+                                  if (networkTabIdx >= 0) {
+                                    setActiveTab(networkTabIdx);
+                                  }
+                                }}
+                                onOpenAppGpsSettings={() => {
+                                  const appTabIdx = tabSlotIds.indexOf('App');
+                                  if (appTabIdx >= 0) {
+                                    setAppTabVisited(true);
+                                    setActiveTab(appTabIdx);
+                                  }
+                                }}
+                              />
+                            ) : capabilities.hasFullPositionConfig ||
+                              capabilities.nodeListTabUsesContactsLabel ? (
+                              <MapPanel
+                                nodes={nodesForUi}
+                                myNodeNum={activeRuntime.selfNodeId}
+                                locationFilter={locationFilter}
+                                ourPosition={activeRuntime.ourPosition}
+                                onLocateMe={
+                                  capabilities.hasFullPositionConfig
+                                    ? () =>
+                                        meshtasticPanelActions
+                                          .refreshOurPosition()
+                                          .then((p) => (p ? { lat: p.lat, lon: p.lon } : null))
+                                    : undefined
+                                }
+                                waypoints={activeRuntime.waypoints}
+                                onSendWaypoint={
+                                  capabilities.hasFullPositionConfig
+                                    ? meshtasticPanelActions.sendWaypoint
+                                    : undefined
+                                }
+                                onDeleteWaypoint={
+                                  capabilities.hasFullPositionConfig
+                                    ? meshtasticPanelActions.deleteWaypoint
+                                    : undefined
+                                }
+                                onNodeClick={setSelectedNodeId}
+                                protocol={protocol}
+                              />
+                            ) : null}
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}
@@ -2806,6 +2896,13 @@ function AppContent() {
                               <ReticulumNetworkPanel
                                 connecting={reticulumConnectionView.state.status === 'connecting'}
                                 onStartStack={() => reticulumConnection.connectAutomatic('http')}
+                                onOpenAppGpsSettings={() => {
+                                  const appTabIdx = tabSlotIds.indexOf('App');
+                                  if (appTabIdx >= 0) {
+                                    setAppTabVisited(true);
+                                    setActiveTab(appTabIdx);
+                                  }
+                                }}
                               />
                             ) : (
                               <>
@@ -3193,22 +3290,6 @@ function AppContent() {
                                 scrollToTopRef={scrollToTopRoomsRef}
                                 outerScrollMetricsRootRef={mainViewportRef}
                                 compactMode={chatCompactMode}
-                                waitingMessagesCount={meshcoreRuntime.waitingMessagesCount}
-                                onSyncWaitingMessages={() =>
-                                  void handleMeshcoreSyncWaitingMessages()
-                                }
-                                waitingMessagesSyncActive={
-                                  meshcoreRuntime.waitingMessagesSyncActive
-                                }
-                                waitingMessagesSyncProgress={
-                                  meshcoreRuntime.waitingMessagesSyncProgress
-                                }
-                                waitingMessagesSilentDrainActive={
-                                  meshcoreRuntime.waitingMessagesSilentDrainActive
-                                }
-                                waitingMessagesDrainDeferred={
-                                  meshcoreRuntime.waitingMessagesDrainDeferred
-                                }
                               />
                             </div>
                           </Suspense>
@@ -3427,8 +3508,11 @@ function AppContent() {
                                 capabilities.prefersDeviceOwnerLongNameInHeader
                                   ? meshcorePanelActions.traceRoute
                                   : capabilities.hasChannelConfig
-                                    ? meshtasticPanelActions.traceRoute
-                                    : async () => {}
+                                    ? async (nodeNum: number) => {
+                                        await meshtasticPanelActions.traceRoute(nodeNum);
+                                        return undefined;
+                                      }
+                                    : () => Promise.resolve(undefined)
                               }
                               isConnected={isOperational}
                               traceRouteResults={activeRuntime.traceRouteResults}
@@ -3520,7 +3604,11 @@ function AppContent() {
                                   packets={meshcoreRuntime.rawPackets}
                                   onClear={meshcorePanelActions.clearRawPackets}
                                   getNodeLabel={rawPacketGetNodeLabel}
+                                  getNodeHwModel={rawPacketGetNodeHwModel}
+                                  pubKeyByNodeId={meshcoreSnifferPubKeyByNodeId}
+                                  pathCandidates={meshcoreSnifferPathCandidates}
                                   onNodeClick={setSelectedNodeId}
+                                  onPing={meshcorePanelActions.traceRoute}
                                   floodScopeHashtag={meshcoreFloodScopeHashtag}
                                 />
                               ) : (
@@ -3732,7 +3820,10 @@ function AppContent() {
               detailModalCapabilities.hasTraceRoute
                 ? detailModalProtocol === 'meshcore'
                   ? meshcorePanelActions.traceRoute
-                  : meshtasticPanelActions.traceRoute
+                  : async (nodeNum: number) => {
+                      await meshtasticPanelActions.traceRoute(nodeNum);
+                      return undefined;
+                    }
                 : undefined
             }
             traceRouteHops={traceRouteHops}
@@ -3922,7 +4013,11 @@ function ConnectionBanner({
     connectionType === 'serial'
   ) {
     return (
-      <div className="flex items-center justify-between border-b border-red-700 bg-red-900/80 px-4 py-2">
+      <div
+        role="region"
+        aria-label={t('connectionBanner.statusRegion')}
+        className="flex items-center justify-between border-b border-red-700 bg-red-900/80 px-4 py-2"
+      >
         <div className="flex items-center gap-2">
           <span className="text-red-400">⚠</span>
           <span className="text-sm text-red-200">{t('connectionBanner.serialReselect')}</span>
@@ -3941,7 +4036,11 @@ function ConnectionBanner({
 
   if (status === 'disconnected' && connectionLoss) {
     return (
-      <div className="flex items-center justify-between border-b border-red-700 bg-red-900/80 px-4 py-2">
+      <div
+        role="region"
+        aria-label={t('connectionBanner.statusRegion')}
+        className="flex items-center justify-between border-b border-red-700 bg-red-900/80 px-4 py-2"
+      >
         <div className="flex items-center gap-2">
           <span className="text-red-400">⚠</span>
           <span className="text-sm text-red-200">{t('connectionBanner.disconnectedLoss')}</span>
@@ -3960,7 +4059,11 @@ function ConnectionBanner({
 
   if (status === 'stale') {
     return (
-      <div className="flex items-center justify-between border-b border-yellow-700 bg-yellow-900/80 px-4 py-2">
+      <div
+        role="region"
+        aria-label={t('connectionBanner.statusRegion')}
+        className="flex items-center justify-between border-b border-yellow-700 bg-yellow-900/80 px-4 py-2"
+      >
         <div className="flex items-center gap-2">
           <span className="text-yellow-400">⚠</span>
           <span className="text-sm text-yellow-200">{t('connectionBanner.staleLoss')}</span>
@@ -3979,9 +4082,15 @@ function ConnectionBanner({
 
   if (status === 'reconnecting') {
     return (
-      <div className="flex items-center gap-2 border-b border-orange-700 bg-orange-900/80 px-4 py-2">
-        <span className="inline-block animate-spin text-orange-400">⟳</span>
-        <span className="animate-pulse text-sm text-orange-200">
+      <div
+        role="region"
+        aria-label={t('connectionBanner.statusRegion')}
+        className="flex items-center gap-2 border-b border-orange-700 bg-orange-900/80 px-4 py-2"
+      >
+        <span aria-hidden className="inline-block animate-spin text-orange-200">
+          ⟳
+        </span>
+        <span className="text-sm text-orange-200">
           {t('connectionBanner.reconnectingAttempt', {
             attempt: reconnectAttempt ?? 1,
             max: 5,

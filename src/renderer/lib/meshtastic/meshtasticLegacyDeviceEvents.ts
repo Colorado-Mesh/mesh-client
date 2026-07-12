@@ -17,8 +17,11 @@ export function pushMeshtasticTransportSideEffectUnsubs(
 ): void {
   // Noble BLE disconnect is handled at runtime mount (useMeshtasticRuntime) with storage rehydrate.
 
-  if (type === 'serial' || type === 'ble') {
+  if (type === 'serial' || type === 'ble' || type === 'http' || type === 'tcp') {
     push(attachMeshtasticTransportLossWatch(device, type, onTransportLost));
+  }
+
+  if (type === 'serial' || type === 'ble' || type === 'tcp') {
     try {
       device.setHeartbeatInterval(60_000);
     } catch (e) {

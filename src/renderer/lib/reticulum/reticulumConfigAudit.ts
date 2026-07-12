@@ -50,32 +50,37 @@ function auditI18nKey(kind: string): string {
   return `diagnosticsPanel.reticulum.audit.${kind}`;
 }
 
+/** Expected runtime state — not actionable; Connection tab shows a Runtime badge instead. */
+export const RETICULUM_AUDIT_KINDS_EXCLUDED_FROM_DIAGNOSTICS = new Set(['runtime_only_interface']);
+
 export function auditIssuesToDiagnosticRows(
   issues: ReticulumConfigAuditIssue[],
   selfNodeId: number,
 ): DiagnosticRow[] {
   const now = Date.now();
-  return issues.map((issue) => {
-    const ifaceId = issue.interface_id ?? undefined;
-    const slug = ifaceId ? `${issue.kind}/${ifaceId}` : issue.kind;
-    const repairKind = issue.repair_kind as ReticulumConfigRepairKind | undefined;
-    return {
-      kind: 'rf' as const,
-      id: rfRowId(selfNodeId, `reticulum/audit/${slug}`),
-      nodeId: selfNodeId,
-      condition: `reticulum/audit/${issue.kind}`,
-      cause: issue.message,
-      severity: issue.severity,
-      detectedAt: now,
-      causeI18n: {
-        key: auditI18nKey(issue.kind),
-        params: {
-          name: issue.interface_name ?? '',
-          message: issue.message,
+  return issues
+    .filter((issue) => !RETICULUM_AUDIT_KINDS_EXCLUDED_FROM_DIAGNOSTICS.has(issue.kind))
+    .map((issue) => {
+      const ifaceId = issue.interface_id ?? undefined;
+      const slug = ifaceId ? `${issue.kind}/${ifaceId}` : issue.kind;
+      const repairKind = issue.repair_kind as ReticulumConfigRepairKind | undefined;
+      return {
+        kind: 'rf' as const,
+        id: rfRowId(selfNodeId, `reticulum/audit/${slug}`),
+        nodeId: selfNodeId,
+        condition: `reticulum/audit/${issue.kind}`,
+        cause: issue.message,
+        severity: issue.severity,
+        detectedAt: now,
+        causeI18n: {
+          key: auditI18nKey(issue.kind),
+          params: {
+            name: issue.interface_name ?? '',
+            message: issue.message,
+          },
         },
-      },
-      reticulumInterfaceId: ifaceId,
-      reticulumRepairKind: repairKind ?? undefined,
-    };
-  });
+        reticulumInterfaceId: ifaceId,
+        reticulumRepairKind: repairKind ?? undefined,
+      };
+    });
 }

@@ -6,6 +6,7 @@ import {
   MESHCORE_WAITING_MESSAGES_AFTER_TX_DEFER_MS,
   MESHCORE_WAITING_MESSAGES_CONGESTED_RETRY_MS,
   MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS,
+  MESHCORE_WAITING_MESSAGES_POLL_MS,
   MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_SILENT_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_SYNC_TIMEOUT_MS,
@@ -13,6 +14,7 @@ import {
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let lastCompanionTxAt = 0;
+let lastMsgWaitingEventAt = 0;
 
 /** Record outbound companion RF TX so auto-drains can defer until the radio settles. */
 export function markMeshcoreCompanionTx(): void {
@@ -26,6 +28,27 @@ export function resetMeshcoreWaitingMessagesDrainState(now = 0): void {
     debounceTimer = null;
   }
   lastCompanionTxAt = now;
+  lastMsgWaitingEventAt = now;
+}
+
+/** Record MsgWaiting (event 131) so periodic safety-net polls can skip idle queues. */
+export function markMeshcoreMsgWaitingEvent(now = Date.now()): void {
+  lastMsgWaitingEventAt = now;
+}
+
+/** True when the 5-minute safety-net poll should run (queued count or recent event 131). */
+export function shouldRunMeshcoreWaitingMessagesPeriodicPoll(
+  waitingMessagesCount: number,
+  now = Date.now(),
+): boolean {
+  if (waitingMessagesCount > 0) return true;
+  return now - lastMsgWaitingEventAt < MESHCORE_WAITING_MESSAGES_POLL_MS;
+}
+
+/** True when silent incremental syncNextMessage hit the fail-fast timeout (empty queue). */
+export function isMeshcoreSyncNextMessageTimeoutError(error: unknown): boolean {
+  const errMsg = errLikeToLogString(error).toLowerCase();
+  return errMsg.includes('syncnextmessage') && errMsg.includes('timed out');
 }
 
 export function resetMeshcoreWaitingMessagesDrainSchedule(): void {

@@ -24,7 +24,7 @@ const defaultUiContext: DebugSnapshotUiContext = {
 
 let uiContext: DebugSnapshotUiContext = { ...defaultUiContext };
 
-/** Updated from App.tsx so debug snapshots capture chat-freeze / tab context. */
+/** Updated from App.tsx so debug snapshots capture active tab context and waiting-message drain state. */
 export function setDebugSnapshotUiContext(partial: Partial<DebugSnapshotUiContext>): void {
   uiContext = { ...uiContext, ...partial };
 }

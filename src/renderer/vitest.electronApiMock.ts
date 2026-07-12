@@ -101,7 +101,7 @@ export function createElectronAPIMock(): ElectronAPI {
         .fn()
         .mockResolvedValue({ deleted: 0, excludedStubCount: 0 }),
       offloadAllMeshcoreContacts: vi.fn().mockResolvedValue(0),
-      getMeshcoreContactById: vi.fn().mockResolvedValue(undefined),
+      getMeshcoreContactById: vi.fn().mockResolvedValue(null),
       updateMeshcoreContactNickname: vi.fn().mockResolvedValue(undefined),
       updateMeshcoreContactFavorited: vi.fn().mockResolvedValue(undefined),
       savePositionHistory: vi.fn().mockResolvedValue(undefined),
@@ -143,6 +143,7 @@ export function createElectronAPIMock(): ElectronAPI {
       getClientId: vi.fn().mockResolvedValue(''),
       getCachedNodes: vi.fn().mockResolvedValue([]),
       updateChannelKeys: vi.fn().mockResolvedValue(undefined),
+      updateTopicPrefix: vi.fn().mockResolvedValue(undefined),
       publish: vi.fn().mockResolvedValue(1),
       publishProxy: vi.fn().mockResolvedValue(undefined),
       publishNodeInfo: vi.fn().mockResolvedValue(1),
@@ -161,7 +162,7 @@ export function createElectronAPIMock(): ElectronAPI {
     onNobleBleDisconnected: vi.fn().mockReturnValue(() => {}),
     onNobleBleConnectAborted: vi.fn().mockReturnValue(() => {}),
     onNobleBleFromRadio: vi.fn().mockReturnValue(() => {}),
-    startNobleBleScanning: vi.fn().mockResolvedValue(undefined),
+    startNobleBleScanning: vi.fn().mockResolvedValue({ ok: true }),
     stopNobleBleScanning: vi.fn().mockResolvedValue(undefined),
     connectNobleBle: vi.fn().mockResolvedValue({ ok: true }),
     disconnectNobleBle: vi.fn().mockResolvedValue(undefined),
@@ -242,6 +243,15 @@ export function createElectronAPIMock(): ElectronAPI {
       write: vi.fn().mockResolvedValue(undefined),
       disconnect: vi.fn().mockResolvedValue(undefined),
       onData: vi.fn().mockReturnValue(() => {}),
+    },
+    meshtastic: {
+      tcp: {
+        connect: vi.fn().mockResolvedValue(undefined),
+        write: vi.fn().mockResolvedValue(undefined),
+        disconnect: vi.fn().mockResolvedValue(undefined),
+        onData: vi.fn().mockReturnValue(() => {}),
+        onDisconnected: vi.fn().mockReturnValue(() => {}),
+      },
     },
     chat: {
       export: vi.fn().mockResolvedValue({ success: false }),
@@ -324,6 +334,9 @@ export function createElectronAPIMock(): ElectronAPI {
       acquireScan: vi.fn().mockResolvedValue({ connections: [], scanOwner: 'reticulum' }),
       releaseScan: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
       pauseNobleScan: vi.fn().mockResolvedValue({ connections: [], scanOwner: null }),
+      suspendNobleForReticulumBleConnect: vi
+        .fn()
+        .mockResolvedValue({ connections: [], scanOwner: null }),
     },
     reticulum: {
       start: vi.fn().mockResolvedValue({ running: true, port: 19437, pid: 1 }),
@@ -335,6 +348,9 @@ export function createElectronAPIMock(): ElectronAPI {
       proxyDelete: vi.fn().mockResolvedValue({ ok: true }),
       readDefaultConfigFile: vi.fn().mockResolvedValue({ path: null, content: null }),
       showConfigImportDialog: vi.fn().mockResolvedValue({ path: null, content: null }),
+      showIdentityImportDialog: vi
+        .fn()
+        .mockResolvedValue({ path: null, contentBase64: null, byteLength: null, error: null }),
       onEvent: vi.fn().mockReturnValue(() => {}),
       onStatus: vi.fn().mockReturnValue(() => {}),
     },

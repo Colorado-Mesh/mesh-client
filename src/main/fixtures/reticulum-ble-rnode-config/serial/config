@@ -1,0 +1,4 @@
+[[rnode-usb]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/cu.usbserial-0001

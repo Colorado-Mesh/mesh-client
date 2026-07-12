@@ -21,7 +21,7 @@ const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [
   undefined, // Chat
   'hasNomadNetworkPanel', // Nomad Network
   undefined, // Nodes/Contacts
-  { or: ['hasFullPositionConfig', 'nodeListTabUsesContactsLabel'] }, // Map
+  { or: ['hasFullPositionConfig', 'nodeListTabUsesContactsLabel', 'hasReticulumDiscoveryMap'] }, // Map
   { or: ['hasChannelConfig', 'hasReticulumNetworkPanel', 'hasJsonRadioConfigImport'] }, // Radio
   { or: ['modulesTabUsesRepeatersLabel', 'hasChannelConfig'] }, // Modules or Repeaters
   { or: ['hasSecurityPanel', 'hasReticulumAdminPanel'] }, // Admin

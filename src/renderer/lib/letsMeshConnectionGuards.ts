@@ -1,19 +1,15 @@
-import { COLORADO_MESH_HOST, isLetsMeshSettings } from './letsMeshJwt';
+import { isLetsMeshSettings } from './letsMeshJwt';
 import type { MQTTSettings } from './types';
 
-function getExpectedPort(server: string): number | null {
-  if (server.trim() === COLORADO_MESH_HOST) return 1883;
-  return 443;
-}
+const DEVICE_SIGNING_BROKER_PORT = 443;
 
 /** Hard validation before connecting with the LetsMesh preset (public US/EU brokers only). */
 export function validateLetsMeshPresetConnect(settings: MQTTSettings): string | null {
   if (!(settings.useWebSocket ?? false)) {
     return 'LetsMesh requires WebSocket transport.';
   }
-  const expectedPort = getExpectedPort(settings.server);
-  if (settings.port !== expectedPort) {
-    return `LetsMesh requires port ${expectedPort}.`;
+  if (settings.port !== DEVICE_SIGNING_BROKER_PORT) {
+    return `LetsMesh requires port ${DEVICE_SIGNING_BROKER_PORT}.`;
   }
   if (!isLetsMeshSettings(settings.server)) {
     return 'LetsMesh / MeshMapper preset only supports known device-signing brokers. Use Custom for other brokers.';
@@ -35,8 +31,7 @@ export function validateLetsMeshManualCredentials(settings: MQTTSettings): strin
 /** True if current fields diverge from what the public LetsMesh brokers need. */
 export function letsMeshPresetConfigurationDeviation(settings: MQTTSettings): boolean {
   if (!(settings.useWebSocket ?? false)) return true;
-  const expectedPort = getExpectedPort(settings.server);
-  if (settings.port !== expectedPort) return true;
+  if (settings.port !== DEVICE_SIGNING_BROKER_PORT) return true;
   if (!isLetsMeshSettings(settings.server)) return true;
   if ((settings.keepalive ?? 30) !== 30) return true;
   return false;

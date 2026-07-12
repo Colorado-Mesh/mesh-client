@@ -6,10 +6,19 @@ permissions:
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     tags: ['v*']
     paths:
       - 'reticulum-sidecar/**'
       - '.github/workflows/reticulum-sidecar.yaml'
+      - 'scripts/build-reticulum-sidecar-release.mjs'
+      - 'scripts/clone-ratspeak-stack.sh'
+  pull_request:
+    paths:
+      - 'reticulum-sidecar/**'
+      - '.github/workflows/reticulum-sidecar.yaml'
+      - 'scripts/build-reticulum-sidecar-release.mjs'
+      - 'scripts/clone-ratspeak-stack.sh'
 
 jobs:
   build:

@@ -30,9 +30,9 @@ Open the **Log** panel (right rail), enable **debug** if needed, reproduce the p
 
 ### Reporting bugs: **Export for GitHub** (App tab)
 
-Before opening a GitHub issue, use **App → Support / Bug reports → Export for GitHub**. This writes one zip with the debug snapshot JSON and application log file(s) — the same artifacts maintainers previously asked for in three separate steps.
+Before opening a GitHub issue, use **App → Support / Bug reports → Export for GitHub**. This writes one zip with the debug snapshot JSON and application log file(s) — the same artifacts maintainers previously asked for in three separate steps. The snapshot includes **Reticulum** sidecar status, interface diagnostics, and config audit when the stack was running at export time (`reticulum` section in `debug-snapshot.json`; `[ReticulumSidecar]` lines in the log).
 
-**Do not attach Export for Developer or `mesh-client.db` to public GitHub issues.** The developer bundle includes your SQLite database, which may contain **saved passwords** (MeshCore room/repeater credentials, MQTT settings, etc.). Use **Export for Developer** only when a maintainer asks for it and share via a **private channel** (email, Discord DM, etc.).
+**Do not attach Export for Developer or `mesh-client.db` to public GitHub issues.** The developer bundle includes your SQLite database, which may contain **saved passwords** (MeshCore room/repeater credentials, MQTT settings, etc.). It may also include **Reticulum** rnsd config and sidecar stack state under `reticulum/` — share only via a **private channel** when a maintainer requests **Export for Developer**.
 
 Works on macOS, Windows, Linux (.deb / .rpm / AppImage), and Flatpak. Local data paths:
 
@@ -56,16 +56,32 @@ Works on macOS, Windows, Linux (.deb / .rpm / AppImage), and Flatpak. Local data
 
 The top-level **`legend`** explains that ids like `offline-meshcore` are **internal hydration-slot store keys**, not “disconnected.” When connect reuses that slot (`hydrationSlotIsLiveSession: true`), the id still contains `offline-` while BLE/MQTT are up — that is **expected**.
 
-**Per-protocol bucket fields** (under `meshtastic` / `meshcore`):
+**Per-protocol bucket fields** (under `meshtastic` / `meshcore`; Reticulum uses `reticulum.bucket` with the same shape):
 
-- `hydrationSlotId` — pre-connect DB hydration bucket (`offline-meshtastic` / `offline-meshcore`).
+- `hydrationSlotId` — pre-connect DB hydration bucket (`offline-meshtastic` / `offline-meshcore` / `offline-reticulum`).
 - `connectIdentityId` — connected radio/MQTT identity.
 - `uiStoreIdentityId` — bucket Chat and Nodes read from.
 - `identitySplit: true` while transport is connected — **suspicious** (live ingress and UI may disagree).
 - `ui.chatPanelFrozen` + `frozenMessageCount` lagging `liveResolvedMessageCount` — **legacy builds only** (Chat freeze removed in newer releases); still useful when analyzing snapshots from older versions.
-- `ui.waitingMessagesSilentDrainActive` / `ui.waitingMessagesDrainDeferred` — MeshCore incremental drain in progress or paused behind admin/trace (serial may show small batches).
+- `ui.waitingMessagesSilentDrainActive` / `ui.waitingMessagesDrainDeferred` — MeshCore incremental drain in progress or paused behind admin/trace (serial may show small batches). UI: **header status indicator** (queued backlog visible on any protocol tab; **active sync spinner and paused/deferred** state only on the MeshCore tab), not Chat/Rooms panel strips.
+- `meshcoreContactPathDiagnostics` — redacted MeshCore contact rows with `pubKeyPrefixHex` (12 hex chars), `hopsAway`, and best known `bestPathBytes` / `bestPathHopCount` from SQLite path history (useful for ping/no-route reports).
 
-**Automatic warning codes** in `warnings[]`: `identitySplit`, `staleResolvedBucket`, `chatPanelFrozen` (legacy builds), `connectedNoPrimaryMessages`, `windowHiddenOnChat`.
+**Meshtastic-only extension** (under `meshtastic` bucket):
+
+- `channelPills` — UI channel index + name (runtime channel pills).
+- `channelConfigsSummary` — index, name, role, `uplinkEnabled`, `isDefaultPublicPsk` (no PSK material).
+- `mqttChannelKeyEntryCount` — count of synced MQTT channel keys from radio config; `null` when empty.
+
+**Automatic warning codes** in `warnings[]`: `identitySplit`, `staleResolvedBucket`, `chatPanelFrozen` (legacy builds), `connectedNoPrimaryMessages`, `windowHiddenOnChat`, `sidecarNotRunning` (Reticulum stack expected but sidecar process down).
+
+**Reticulum-only fields** (under `reticulum`):
+
+- `sidecar` — process `running`, `port`, `lastError`, auto-beacon / interface issue alerts from main.
+- `stack` — live `/api/v1/diagnostics`, `/api/v1/config/audit`, identity hashes, stack settings (when sidecar was up at export).
+- `diagnosticRows` — Reticulum-native Diagnostics tab rows (`reticulum/*` conditions).
+- `fetchErrors` — per-API errors when the stack was stopped or proxy failed.
+
+Developer bundle only: `reticulum/config` (rnsd INI) and `reticulum/mesh_client_stack.json` (mnemonic redacted).
 
 Attach the GitHub report zip (or paste `debug-snapshot.json` from it; redact `myNodeNum` if you prefer). Do **not** attach the developer bundle or `mesh-client.db` to this public issue.
 
@@ -484,6 +500,22 @@ Alternatively, enter the device's **IP address** directly instead of its `.local
 
 IPv6 addresses work for Meshtastic Wi‑Fi, MeshCore TCP, and Reticulum RNode Wi‑Fi. Use bracket form when a port is included: `[fe80::1]:4403` or `[fd00::1]:7633`. Bare IPv6 (e.g. `::1` or `fd00::1`) is accepted; the app normalizes bracket form for HTTP URLs automatically.
 
+### Meshtastic: WiFi/TCP (fast) vs WiFi/HTTP
+
+**WiFi/TCP (fast)** on the Connection tab uses Meshtastic's native binary streaming protocol on port **4403** (same `0x94 0xc3` framing as USB serial). Use it when the node exposes TCP and you need fast NodeDB sync — configure typically completes in about a second on large networks instead of 40–60+ seconds over HTTP REST (one packet per request).
+
+**WiFi/HTTP** remains the fallback when TCP is unavailable on the firmware.
+
+**Symptoms suggesting TCP:** HTTP connect succeeds but status stays on **Connecting** or **Configuring** for a long time with a large NodeDB (~250 nodes).
+
+**Address examples:** `192.168.1.10:4403`, `meshtastic.local:4403`, `[fd00::1]:4403`.
+
+### Meshtastic HTTP fails immediately with "Invalid host format"
+
+**Cause:** Builds before v5.21.x validated the hostname incorrectly when the address included a port (`192.168.1.10:443`), rejecting every HTTP connect.
+
+**Fix:** Upgrade to v5.21.2 or later. As a workaround on older builds, omit the port when the app default applies.
+
 Local/private targets include RFC1918 IPv4 (`10.x`, `172.16–31.x`, `192.168.x`), RFC4193 ULA (`fd00::/8`), link-local IPv6 (`fe80::/10`), loopback, and `.local` mDNS names.
 
 ## Sleep, wake, and long-running sessions
@@ -663,7 +695,7 @@ Startup maintenance can delete stale MeshCore contacts by age. Important details
 **Common causes**:
 
 - **Large contact/repeater lists (1,000+)** — list tabs virtualize rows, but USB serial still serializes companion RPCs; prefer **Nodes → search** for one repeater instead of scrolling the full Repeaters table.
-- **Queued public messages (Sync now)** — MsgWaiting backlog is drained **incrementally in the background** after connect and when the radio pushes event 131 (including after you send). Chat and Rooms show an **amber status strip** while silent auto-drain runs or when drain is deferred behind repeater admin/trace work. The determinate progress banner appears when you click **Sync now** and the radio confirms a non-empty queue. Large backlogs may take a minute on manual sync; wait for the progress banner to finish before switching tabs during heavy sync.
+- **Queued public messages (Sync now)** — MsgWaiting backlog is drained **incrementally in the background** after connect and when the radio pushes event 131 (including after you send). The **header status indicator** (queued backlog and active sync on any protocol tab; **paused/deferred** state only on the MeshCore tab) shows silent auto-drain or deferred drain behind repeater admin/trace work. The determinate progress state appears when you click **Sync now** and the radio confirms a non-empty queue. Large backlogs may take a minute on manual sync; wait for the indicator to finish before switching tabs during heavy sync.
 - **Multi-hop repeater RPCs** (Neighbors, Status, telemetry) share one serialized USB serial queue. Retrying rapidly or querying distant repeaters (8+ hops) can block the link for up to **120 seconds** per request; queued pings up to **180s** each.
 - **Concurrent Ping + Status** — MeshCore allows only **one traceroute at a time** on the RF link; multiple pings are queued serially. Status/Neighbors/Sensors wait for an in-progress ping to finish before using the companion queue (see [Serialized traceroutes](meshcore-meshtastic-parity.md#serialized-traceroutes-protocol-requirement)).
 
@@ -727,9 +759,14 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 - When the room server **guest password is empty**, use **Continue read-only** on the Rooms login overlay. That sends **zero password bytes** (same as the official Android app). **Login** with an empty guest field is disabled; it would send the default **`hello`** password instead.
 - When the server **does** configure a guest password, enter that value in the guest field and click **Login** (some communities use **`hello`**).
-- Logs showing push **`0x86`** (frame 134) mean **LoginFail** (wrong password or ACL denied). Current builds fail fast with a clear message instead of waiting the full timeout.
+- Logs showing push **`0x86`** (frame 134) mean **LoginFail** (wrong password or ACL denied). **Room login** rejects immediately on a prefix-matched LoginFail. **Repeater admin login** keeps waiting for a possible LoginSuccess (meshcore.js behavior on congested links); timeout after LoginFail alone is reported as timeout, not wrong password.
 - **Admin password** working while guest/read-only fails usually means the guest password on the server does not match what the client sent, or ACL denies read-only login.
 - If the room **changed its password** and mesh-client keeps trying to log in, open the **Rooms** tab: expand **Saved passwords** in the sidebar (or use the login overlay for the selected room). Use **Stop auto-login** to stop connect-time retries while keeping the old password stored, or **Forget saved password** to clear the stored guest/admin password and turn off auto-login and auto-sync. After a wrong-password failure, auto-login is turned off automatically until you log in again with **Remember password** or re-enable it.
+
+**MeshCore repeater saved passwords**:
+
+- Per-repeater admin passwords are stored in SQLite as `meshcoreRepeaterCredential:<nodeId>` when you check **Remember** on the repeater auth dialog. Open **Repeaters** → expand **Saved repeater passwords** (sidebar label) to **Forget** a stale entry, or use **Change password** / **Save password** on the node detail modal for a single repeater.
+- If **Remember** fails silently, the password still works for the current session (ephemeral secret) but will not survive restart — check the app log for `appSettings:set` errors and retry after updating mesh-client.
 
 **Room post fails with "unsupported on this firmware"**:
 
@@ -791,7 +828,9 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **Parallel pings**: MeshCore does **not** allow parallel traceroutes on one radio. mesh-client queues them, but two back-to-back pings can take up to **180s** each (including 0-hop direct-retry). **Status/Neighbors/Telemetry** use **120s** timeouts and wait for the active trace (TraceData) and same-node ping wrapper to finish first. Prefer **one ping at a time** when troubleshooting. See [meshcore-meshtastic-parity.md — Serialized traceroutes](meshcore-meshtastic-parity.md#serialized-traceroutes-protocol-requirement).
 
-**Fix**: When possible, exchange contact adds so the remote node lists you as a contact. If you cannot add them (or they never add you), treat the timeout as expected, not a Mesh-Client defect when the radio never returns a result.
+**Multi-hop route priming / no route**: When outbound path bytes are missing but the UI shows multi-hop, ping/trace first waits passively for PathUpdated (129) and contact refresh (**15s + 5s × hops**, capped at **45s**). For **2+ hops**, if that still yields no usable hash-segment path, mesh-client may run up to **two** flood-advert priming rounds before `SendTracePath` (listener registered **before** each advert). **1-hop** targets may use a synthesized `[relayPrefix, destPrefix]` path when a direct 0-hop repeater is known. If priming and synthesis still fail, ping may fail fast with **No route from radio yet** instead of waiting the full trace timeout. One-way contacts may still time out with no TraceData after priming.
+
+**Fix**: When possible, exchange contact adds so the remote node lists you as a contact. If you cannot add them (or they never add you), treat the timeout as expected, not a Mesh-Client defect when the radio never returns a result. For multi-hop repeaters, wait for contact/path updates or run **Ping trace** once before CLI (Repeaters panel auto-pings on first multi-hop CLI when no trace exists this session).
 
 ## Reticulum
 
@@ -909,6 +948,42 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 **Fix**: Generate or import identity with the stack running; restart the stack after identity changes. Compare `GET /api/v1/identity/status` with your Ratspeak identity file.
 
+### Reticulum Map empty or no markers
+
+**Symptoms**: Map tab shows empty state, sidebar list only, or no markers despite peers on the Peers tab.
+
+1. **Stack not running** — start the stack from Connection; Map ingest requires live `rns-stack`.
+2. **No discovery announces heard yet** — only interfaces with `discoverable=yes` appear. Wait for transport propagation; default re-announce interval can be hours.
+3. **LoRa without TCP hub** — Diagnostics / config audit may show `rmap_no_tcp_hub`. Enable `rmap.world:4242` or another TCP hub and restart the stack.
+4. **Missing GPS in announce** — nodes without latitude/longitude appear in the list panel only (no map marker).
+5. **Global coverage** — the in-app map shows **heard** opt-in nodes only; use **Global map** (rmap.world) for worldwide view.
+6. **`discover_interfaces`** — sidecar enables `discover_interfaces = Yes` on bootstrap; restart the stack after upgrading if the Map tab stays empty on an old config.
+7. **Stub sidecar** — dev builds without `rns-stack` return an empty discovered list.
+8. **Filter empty** — interface-type filter pills may exclude all rows; try **All**.
+9. **Refresh errors** — transient sidecar errors show inline `refreshFailed` without clearing last-good markers.
+10. **No publish-capable interface** — Auto and outbound TCP client types cannot publish RMAP discovery.
+
+### Reticulum BLE RNode blocks Meshtastic/MeshCore Noble BLE
+
+**Symptoms**: Reticulum stack is running with an enabled BLE RNode; Meshtastic or MeshCore BLE scan/connect fails with “Bluetooth scan in progress (reticulum)” or Noble sessions stay disconnected.
+
+**Cause**: On macOS/Windows, sidecar start **yields Noble BLE** so btleplug can pair the RNode. mesh-client releases the scan mutex when the RNode connects, the grace window expires, or the stack stops.
+
+**Fix**:
+
+1. Wait up to ~30s after stack start for the BLE RNode to connect (Connection tab interface status **up** / **online**).
+2. Stop the Reticulum stack if you need immediate Meshtastic/MeshCore BLE access.
+3. Ensure you are on a current build with paired yield/release (`reticulumNobleBleYield.ts`, `useReticulumNobleBleYieldWatcher`).
+4. Check Device logs for `[BleCoexistence]` and `[useReticulumNobleBleYieldWatcher]`.
+
+### MeshCore Colorado Mesh / LetsMesh won't connect after upgrade
+
+**Symptoms**: MeshCore MQTT preset worked before upgrade; broker connection fails on port **1883** or wrong topic.
+
+**Cause**: Colorado Mesh moved to **wss port 443** with topic **`meshcore/DEN`**; LetsMesh uses **`meshcore/test`**. Stale `mesh-client:mqttSettings:meshcore` may retain old port/topic.
+
+**Fix**: Re-select the preset on the Connection tab, or clear `mesh-client:mqttSettings:meshcore` in devtools Application → Local Storage and reconnect. Migrations run on app start via `connectionPanelStorageMigrations.ts`.
+
 ### Reticulum interface add/edit/delete fails
 
 **Symptoms**: Connection tab **Add interface**, **Edit**, or **Delete** shows an inline error; interface list does not refresh.
@@ -916,7 +991,7 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 **Checks**:
 
 1. **Stack running**: start the sidecar from **Connection → Start stack** before editing interfaces. Identity routes on the Network tab also require a live sidecar (`reticulum:proxyGet` / `proxyPut` / `proxyDelete`).
-2. **Edit validation**: name is required; TCP needs a reachable host and valid port; RNode needs a serial port path when adding (edit can update preset/callsign without re-plugging).
+2. **Edit validation**: name is required; TCP needs a reachable host and valid port; RNode needs a serial port path when adding (edit can update preset/callsign without re-plugging). **I2P** peers must be comma-separated `.b32.i2p` hostnames (max **512** characters); inline errors: `i2pPeersRequired`, `i2pPeersInvalid`, `i2pPeersTooLong`.
 3. **Delete**: confirm in the modal; if the interface id changed after config import, refresh by stopping and restarting the stack.
 4. **Logs**: filter Device logs for `[ReticulumIPC]` or `[ReticulumSidecar]`; sidecar returns `{ ok: false, error }` for parse or unknown-interface failures.
 
@@ -937,6 +1012,28 @@ For bulk fixes, use Network **Config import** (merge) instead of hand-editing in
 See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 
 ## Chat, nodes, and notifications
+
+### Meshtastic: inbound messages on the wrong channel tab
+
+**Symptoms**
+
+- Public mesh traffic appears under your **primary/private** Chat channel pill instead of the configured public slot (often channel 1).
+- The same message may appear on two channel tabs when heard over **RF** (correct slot) and **MQTT** (wrong slot).
+- Other Meshtastic clients (phone app, radio UI) show the message on the expected channel.
+
+**Cause**
+
+MQTT ingest must map inbound text to the **receiver's** local channel slot using the MQTT topic channel name (`LongFast`, regional names, etc.) via `channelNameToIndex`. `MeshPacket.channel` in the ServiceEnvelope is the **sender's** local RF slot and must not drive attribution — remote gateways often use a different slot layout (e.g. LongFast on slot 1 while you use slot 0).
+
+Mis-filed messages also occur when `channelNameToIndex` is stale or incomplete: unnamed default-public on slot 1 without radio sync, MQTT-only without `ChannelName@index=` manual PSK lines, or delayed `mqtt:updateChannelKeys` after connect.
+
+**Fix**
+
+1. Update to a build that prefers the **topic channel name** for MQTT text ingest (sampled log `mqtt-channel-topic-mismatch:*` when topic index disagrees with packet channel).
+2. Connect the radio so channel keys and slot indexes sync to MQTT (`mqtt:updateChannelKeys` in logs after configure).
+3. **MQTT-only (no radio):** add `ChannelName@index=base64` lines in Connection → Channel PSKs (e.g. `LongFast@1=AQ==` for Colorado-mesh slot-1 public). The Connection panel shows an inline hint when no radio is configured and no `@index` lines are present.
+4. On **Export for Developer** / **Copy Debug Snapshot**, check `meshtastic.channelPills`, `meshtastic.channelConfigsSummary`, and `meshtastic.mqttChannelKeyEntryCount` — slot 1 with empty name and `isDefaultPublicPsk: true` is the common Colorado-mesh layout.
+5. When reporting, note whether mis-filed messages are **MQTT-only**, **RF-only**, or **both**, and attach a Radio tab screenshot of channel names + slot indices.
 
 ### Phantom chat unread on channels not on the radio
 
@@ -1006,14 +1103,14 @@ The companion radio queues public messages behind a **single serialized USB seri
 
 **In-app status**
 
-Chat and Rooms show an **amber strip** while silent auto-drain runs ("Fetching messages queued on the radio…") or when drain is **deferred** behind admin/trace work. On serial, a hint explains that messages may arrive in small batches.
+The **header status indicator** (queued backlog and active sync on any protocol tab; **paused/deferred** state only on the MeshCore tab) shows silent auto-drain or deferred drain behind admin/trace work. On serial, messages may arrive in small batches without a Chat/Rooms panel banner.
 
 **Fix / workaround**
 
 1. Pause repeater **Status / Neighbors / ping** while monitoring live chat on serial.
 2. Prefer **BLE** or **TCP** when available for lower-latency chat.
 3. If drains stall, **Disconnect → Connect** or quit and reopen after repeated timeouts in the log.
-4. Use **Sync now** in **Chat** or **Rooms** for a large backlog (determinate progress banner).
+4. Use **Sync now** from the **header waiting-messages indicator** for a large backlog (determinate progress in the header tooltip/status).
 
 ### Chat or Rooms: scroll jumps when switching tabs
 

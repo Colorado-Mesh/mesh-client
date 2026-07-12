@@ -1,5 +1,7 @@
 import dns from 'node:dns/promises';
 
+import { Agent, fetch as undiciFetch } from 'undici';
+
 import {
   isLinkLocalIpv6,
   isLocalConnectHost,
@@ -11,6 +13,7 @@ import {
 import { sanitizeLogMessage } from './sanitize-log-message';
 
 export const LINK_PREVIEW_FETCH_TIMEOUT_MS = 10_000;
+export const LINK_PREVIEW_DNS_LOOKUP_TIMEOUT_MS = 3_000;
 export const LINK_PREVIEW_MAX_HTML_BYTES = 65_536;
 export const LINK_PREVIEW_CACHE_TTL_MS = 15 * 60 * 1000;
 export const LINK_PREVIEW_IMAGE_MAX_BYTES = 262_144;
@@ -18,6 +21,102 @@ export const LINK_PREVIEW_IMAGE_FETCH_TIMEOUT_MS = 10_000;
 /** After a failed image fetch (e.g. 429), do not retry until this elapses. */
 export const LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS = 5 * 60 * 1000;
 const LINK_PREVIEW_IMAGE_MAX_REDIRECTS = 5;
+const LINK_PREVIEW_MAX_CACHE_ENTRIES = 256;
+const LINK_PREVIEW_MAX_IMAGE_CACHE_ENTRIES = 128;
+
+function evictOldestCacheEntry<K, V>(cache: Map<K, V>, maxEntries: number): void {
+  while (cache.size >= maxEntries) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+}
+
+async function withInflightDedup<K, T>(
+  map: Map<K, Promise<T>>,
+  key: K,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const existing = map.get(key);
+  if (existing) return existing;
+  const promise = fn().finally(() => {
+    map.delete(key);
+  });
+  map.set(key, promise);
+  return promise;
+}
+
+async function lookupHostname(hostname: string): Promise<string> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const { address } = await Promise.race([
+      dns.lookup(hostname, { verbatim: true }),
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error('dns lookup timeout'));
+        }, LINK_PREVIEW_DNS_LOOKUP_TIMEOUT_MS);
+      }),
+    ]);
+    return address;
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+  }
+}
+
+/** Single DNS resolution used for both block checks and pinned connect (avoids lookup TOCTOU). */
+async function resolvePinnedPreviewAddress(hostname: string): Promise<string> {
+  const bare = stripConnectHostBrackets(hostname.trim()).toLowerCase();
+  if (isBlockedHostname(bare)) {
+    throw new Error('blocked hostname');
+  }
+  if (isLoopbackHost(bare) || isLocalConnectHost(bare)) {
+    throw new Error('blocked hostname');
+  }
+  if (isPrivateNetworkHost(bare) || isUniqueLocalIpv6(bare) || isLinkLocalIpv6(bare)) {
+    throw new Error('blocked hostname');
+  }
+
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(bare) || bare.includes(':')) {
+    return bare;
+  }
+
+  const address = await lookupHostname(bare);
+  if (
+    isLoopbackHost(address) ||
+    isPrivateNetworkHost(address) ||
+    isUniqueLocalIpv6(address) ||
+    isLinkLocalIpv6(address)
+  ) {
+    throw new Error('blocked resolved address');
+  }
+  return address;
+}
+
+function defaultConnectPort(url: URL): number {
+  if (url.port) return Number(url.port);
+  return url.protocol === 'http:' ? 80 : 443;
+}
+
+async function fetchWithResolvedHost(urlString: string, init: RequestInit): Promise<Response> {
+  const url = new URL(urlString);
+  const address = await resolvePinnedPreviewAddress(url.hostname);
+  const agent = new Agent({
+    connect: {
+      host: address,
+      port: defaultConnectPort(url),
+      servername: url.hostname,
+    },
+  });
+  try {
+    const response = await undiciFetch(urlString, {
+      ...init,
+      dispatcher: agent,
+    } as Parameters<typeof undiciFetch>[1]);
+    return response as unknown as Response;
+  } finally {
+    await agent.close();
+  }
+}
 
 function isIpv4Literal(hostname: string): boolean {
   const parts = hostname.split('.');
@@ -41,10 +140,14 @@ interface TimedCacheEntry<T> {
 
 const previewCache = new Map<string, TimedCacheEntry<LinkPreviewMetadata | null>>();
 const imageCache = new Map<string, TimedCacheEntry<string | null>>();
+const previewInFlight = new Map<string, Promise<LinkPreviewMetadata | null>>();
+const imageInFlight = new Map<string, Promise<string | undefined>>();
 
 export function clearLinkPreviewCachesForTests(): void {
   previewCache.clear();
   imageCache.clear();
+  previewInFlight.clear();
+  imageInFlight.clear();
 }
 
 export function isBlockedHostname(hostname: string): boolean {
@@ -53,26 +156,11 @@ export function isBlockedHostname(hostname: string): boolean {
 
 /** Block hostnames that resolve to loopback, RFC1918, ULA, or link-local targets (SSRF guard). */
 export async function isBlockedHostnameResolved(hostname: string): Promise<boolean> {
-  const bare = stripConnectHostBrackets(hostname.trim()).toLowerCase();
-  if (isBlockedHostname(bare)) return true;
-  if (isLoopbackHost(bare) || isLocalConnectHost(bare)) return true;
-  if (isPrivateNetworkHost(bare) || isUniqueLocalIpv6(bare) || isLinkLocalIpv6(bare)) return true;
-
-  // IP literals already handled above; resolve DNS for hostnames.
-  if (/^\d+\.\d+\.\d+\.\d+$/.test(bare) || bare.includes(':')) {
-    return false;
-  }
-
   try {
-    const { address } = await dns.lookup(bare, { verbatim: true });
-    return (
-      isLoopbackHost(address) ||
-      isPrivateNetworkHost(address) ||
-      isUniqueLocalIpv6(address) ||
-      isLinkLocalIpv6(address)
-    );
+    await resolvePinnedPreviewAddress(hostname);
+    return false;
   } catch {
-    // catch-no-log-ok DNS failure — fail closed for preview fetch
+    // catch-no-log-ok DNS failure or blocked target — fail closed for preview fetch
     return true;
   }
 }
@@ -86,7 +174,7 @@ export function shouldProxyPreviewImageUrl(imageUrl: string): boolean {
   }
 }
 
-function isAllowedHttpsImageUrl(imageUrl: string): boolean {
+async function isAllowedHttpsImageUrl(imageUrl: string): Promise<boolean> {
   let parsed: URL;
   try {
     parsed = new URL(imageUrl);
@@ -95,7 +183,7 @@ function isAllowedHttpsImageUrl(imageUrl: string): boolean {
     return false;
   }
   if (parsed.protocol !== 'https:') return false;
-  return !isBlockedHostname(parsed.hostname);
+  return !(await isBlockedHostnameResolved(parsed.hostname));
 }
 
 async function readResponseBodyUpTo(
@@ -117,7 +205,7 @@ async function readResponseBodyUpTo(
     try {
       await reader.cancel();
     } catch {
-      // catch-no-log-ok abort/timeout during body read — expected when fetch times out
+      // catch-no-log-ok: stream may already be aborted when AbortSignal.timeout fires
     }
   }
   if (total === 0) return null;
@@ -134,10 +222,10 @@ async function fetchImageResponseWithRedirectGuard(
   imageUrl: string,
   redirectCount = 0,
 ): Promise<Response | null> {
-  if (!isAllowedHttpsImageUrl(imageUrl)) return null;
+  if (!(await isAllowedHttpsImageUrl(imageUrl))) return null;
   if (redirectCount > LINK_PREVIEW_IMAGE_MAX_REDIRECTS) return null;
 
-  const response = await fetch(imageUrl, {
+  const response = await fetchWithResolvedHost(imageUrl, {
     method: 'GET',
     headers: { Accept: 'image/*' },
     redirect: 'manual',
@@ -161,7 +249,7 @@ async function fetchImageResponseWithRedirectGuard(
 }
 
 async function fetchPreviewImageAsDataUrl(imageUrl: string): Promise<string | undefined> {
-  if (!isAllowedHttpsImageUrl(imageUrl)) return undefined;
+  if (!(await isAllowedHttpsImageUrl(imageUrl))) return undefined;
 
   const now = Date.now();
   const cached = imageCache.get(imageUrl);
@@ -169,38 +257,41 @@ async function fetchPreviewImageAsDataUrl(imageUrl: string): Promise<string | un
     return cached.value ?? undefined;
   }
 
-  try {
-    const response = await fetchImageResponseWithRedirectGuard(imageUrl);
-    if (!response?.ok) {
+  return withInflightDedup(imageInFlight, imageUrl, async (): Promise<string | undefined> => {
+    try {
+      const response = await fetchImageResponseWithRedirectGuard(imageUrl);
+      if (!response?.ok) {
+        imageCache.set(imageUrl, {
+          value: null,
+          expires: now + LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS,
+        });
+        return undefined;
+      }
+      const contentType = response.headers.get('content-type') ?? '';
+      if (!contentType.startsWith('image/')) return undefined;
+
+      const reader = response.body?.getReader();
+      if (!reader) return undefined;
+      const bytes = await readResponseBodyUpTo(reader, LINK_PREVIEW_IMAGE_MAX_BYTES);
+      if (!bytes) return undefined;
+
+      const mime = contentType.split(';')[0]?.trim() || 'image/jpeg';
+      const dataUrl = `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`;
+      evictOldestCacheEntry(imageCache, LINK_PREVIEW_MAX_IMAGE_CACHE_ENTRIES);
+      imageCache.set(imageUrl, { value: dataUrl, expires: now + LINK_PREVIEW_CACHE_TTL_MS });
+      return dataUrl;
+    } catch (err) {
+      console.debug(
+        '[chat] fetchLinkPreview image error:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
       imageCache.set(imageUrl, {
         value: null,
         expires: now + LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS,
       });
       return undefined;
     }
-    const contentType = response.headers.get('content-type') ?? '';
-    if (!contentType.startsWith('image/')) return undefined;
-
-    const reader = response.body?.getReader();
-    if (!reader) return undefined;
-    const bytes = await readResponseBodyUpTo(reader, LINK_PREVIEW_IMAGE_MAX_BYTES);
-    if (!bytes) return undefined;
-
-    const mime = contentType.split(';')[0]?.trim() || 'image/jpeg';
-    const dataUrl = `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`;
-    imageCache.set(imageUrl, { value: dataUrl, expires: now + LINK_PREVIEW_CACHE_TTL_MS });
-    return dataUrl;
-  } catch (err) {
-    console.debug(
-      '[chat] fetchLinkPreview image error:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    imageCache.set(imageUrl, {
-      value: null,
-      expires: now + LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS,
-    });
-    return undefined;
-  }
+  });
 }
 
 export interface LinkPreviewMetadata {
@@ -221,7 +312,7 @@ async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewM
   if (await isBlockedHostnameResolved(url.hostname)) return null;
 
   try {
-    const response = await fetch(urlString, {
+    const response = await fetchWithResolvedHost(urlString, {
       method: 'GET',
       redirect: 'manual',
       headers: { Accept: 'text/html' },
@@ -257,7 +348,7 @@ async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewM
       /<meta\s+content="([^"]+)"\s+property="og:image"/i.exec(html)?.[1];
     let image = ogImage?.trim().startsWith('https://') ? ogImage.trim() : undefined;
 
-    if (image && shouldProxyPreviewImageUrl(image)) {
+    if (image) {
       image = await fetchPreviewImageAsDataUrl(image);
     }
 
@@ -278,7 +369,14 @@ export async function fetchLinkPreview(urlString: string): Promise<LinkPreviewMe
     return cached.value;
   }
 
-  const value = await fetchLinkPreviewUncached(urlString);
-  previewCache.set(urlString, { value, expires: now + LINK_PREVIEW_CACHE_TTL_MS });
-  return value;
+  return withInflightDedup(
+    previewInFlight,
+    urlString,
+    async (): Promise<LinkPreviewMetadata | null> => {
+      const value = await fetchLinkPreviewUncached(urlString);
+      evictOldestCacheEntry(previewCache, LINK_PREVIEW_MAX_CACHE_ENTRIES);
+      previewCache.set(urlString, { value, expires: Date.now() + LINK_PREVIEW_CACHE_TTL_MS });
+      return value;
+    },
+  );
 }

@@ -9,17 +9,28 @@ import {
   loadPersistedLastReadInitial,
 } from './chatPanelProtocolStorage';
 import { computeChannelUnreadCounts, filterRegularChatMessages } from './chatUnreadCounts';
+import {
+  type DebugSnapshotMeshtasticChannelConfigSummary,
+  type DebugSnapshotMeshtasticChannelPill,
+  getDebugSnapshotMeshtasticContext,
+} from './debugSnapshotMeshtasticContext';
 import { getDebugSnapshotUiContext } from './debugSnapshotUiContext';
 import {
   resolveIdentityIdForProtocol,
   resolvePrimaryIdentityIdForProtocol,
 } from './identityByProtocol';
-import { effectiveMessageTimestampMs, isUnreasonablyFutureMessageTimestampMs } from './nodeStatus';
 import {
-  OFFLINE_MESHCORE_IDENTITY_ID,
-  OFFLINE_MESHTASTIC_IDENTITY_ID,
-} from './offlineProtocolIdentities';
+  fetchMeshcoreContactPathDiagnostics,
+  type MeshcoreContactPathDiagnosticRow,
+} from './meshcoreContactPathDiagnostics';
+import { effectiveMessageTimestampMs, isUnreasonablyFutureMessageTimestampMs } from './nodeStatus';
+import { getOfflineIdentityIdForProtocol } from './offlineProtocolIdentities';
 import { parseStoredJson } from './parseStoredJson';
+import {
+  buildReticulumDiagnosticSnapshotSync,
+  fetchReticulumDiagnosticSnapshot,
+  type ReticulumDiagnosticSidecarSnapshot,
+} from './reticulum/reticulumDiagnosticSnapshot';
 import { getStoredMeshProtocol } from './storedMeshProtocol';
 import { messageRecordsToChatMessages } from './storeRecordAdapters';
 import type { ChatMessage, IdentityId, MeshProtocol, MQTTStatus } from './types';
@@ -89,6 +100,13 @@ export interface DebugIdentityBucketSnapshot {
   connection: DebugConnectionSnapshot | null;
 }
 
+/** Meshtastic bucket adds channel layout for inbound/outbound channel triage (no PSK). */
+export interface DebugMeshtasticBucketSnapshot extends DebugIdentityBucketSnapshot {
+  channelPills: DebugSnapshotMeshtasticChannelPill[];
+  channelConfigsSummary: DebugSnapshotMeshtasticChannelConfigSummary[];
+  mqttChannelKeyEntryCount: number | null;
+}
+
 export interface DebugChannelLastReadTriageRow {
   viewKey: string;
   channelIndex: number;
@@ -108,7 +126,12 @@ export type DebugSnapshotWarningCode =
   | 'chatPanelFrozen'
   | 'connectedNoPrimaryMessages'
   | 'windowHiddenOnChat'
-  | 'lastReadSuppressesChannelUnread';
+  | 'lastReadSuppressesChannelUnread'
+  | 'sidecarNotRunning';
+
+export interface DebugReticulumSnapshot extends ReticulumDiagnosticSidecarSnapshot {
+  bucket: DebugIdentityBucketSnapshot;
+}
 
 export interface DebugSnapshotWarning {
   code: DebugSnapshotWarningCode;
@@ -122,13 +145,17 @@ export interface DebugSnapshot {
   sessionSummary: {
     meshtastic: DebugSessionSummary;
     meshcore: DebugSessionSummary;
+    reticulum: DebugSessionSummary;
   };
   activeTab: DebugActiveTabSummary;
   storedProtocol: MeshProtocol;
   windowHidden: boolean;
   ui: ReturnType<typeof getDebugSnapshotUiContext>;
-  meshtastic: DebugIdentityBucketSnapshot;
+  meshtastic: DebugMeshtasticBucketSnapshot;
   meshcore: DebugIdentityBucketSnapshot;
+  reticulum: DebugReticulumSnapshot;
+  /** MeshCore SQLite contact hops + best path history bytes (redacted pubkeys). */
+  meshcoreContactPathDiagnostics?: MeshcoreContactPathDiagnosticRow[];
   warnings: DebugSnapshotWarning[];
 }
 
@@ -307,8 +334,7 @@ function toSessionSummary(bucket: DebugIdentityBucketSnapshot): DebugSessionSumm
 
 function buildProtocolBucketSnapshot(protocol: MeshProtocol): DebugIdentityBucketSnapshot {
   const { identities, activeIdentityId } = useIdentityStore.getState();
-  const hydrationSlotId =
-    protocol === 'meshtastic' ? OFFLINE_MESHTASTIC_IDENTITY_ID : OFFLINE_MESHCORE_IDENTITY_ID;
+  const hydrationSlotId = getOfflineIdentityIdForProtocol(protocol);
   const connectIdentityId = resolvePrimaryIdentityIdForProtocol(
     identities,
     activeIdentityId,
@@ -428,6 +454,93 @@ function analyzeProtocolBucket(
   return warnings;
 }
 
+function analyzeReticulumSnapshot(reticulum: DebugReticulumSnapshot): DebugSnapshotWarning[] {
+  const warnings = analyzeProtocolBucket('reticulum', reticulum.bucket);
+  const identityConfigured = reticulum.stack?.identityStatus?.configured === true;
+  const hasLocalData =
+    reticulum.bucket.hydrationSlotMessageCount > 0 || reticulum.bucket.uiStoreMessageCount > 0;
+  const expectsSidecar = identityConfigured || hasLocalData || reticulum.bucket.liveSession;
+
+  if (!reticulum.sidecar.running && expectsSidecar) {
+    warnings.push({
+      code: 'sidecarNotRunning',
+      protocol: 'reticulum',
+      detail: reticulum.sidecar.lastError ?? 'Reticulum sidecar is not running',
+    });
+  }
+
+  return warnings;
+}
+
+function buildReticulumSnapshot(
+  sidecarSnapshot: ReticulumDiagnosticSidecarSnapshot,
+): DebugReticulumSnapshot {
+  return {
+    bucket: buildProtocolBucketSnapshot('reticulum'),
+    ...sidecarSnapshot,
+  };
+}
+
+function activeTabSummaryForProtocol(
+  protocol: MeshProtocol,
+  snap: Pick<DebugSnapshot, 'meshtastic' | 'meshcore' | 'reticulum'>,
+): DebugActiveTabSummary {
+  const bucket =
+    protocol === 'reticulum'
+      ? snap.reticulum.bucket
+      : protocol === 'meshcore'
+        ? snap.meshcore
+        : snap.meshtastic;
+  return {
+    protocol,
+    uiStoreIdentityId: bucket.uiStoreIdentityId,
+    sessionState: bucket.sessionState,
+    liveSession: bucket.liveSession,
+  };
+}
+
+function buildMeshtasticBucketSnapshot(): DebugMeshtasticBucketSnapshot {
+  const base = buildProtocolBucketSnapshot('meshtastic');
+  const channelCtx = getDebugSnapshotMeshtasticContext();
+  return {
+    ...base,
+    channelPills: channelCtx.channelPills,
+    channelConfigsSummary: channelCtx.channelConfigsSummary,
+    mqttChannelKeyEntryCount: channelCtx.mqttChannelKeyEntryCount,
+  };
+}
+
+function buildDebugSnapshotBase(
+  reticulumSidecar: ReticulumDiagnosticSidecarSnapshot,
+): Omit<DebugSnapshot, 'warnings'> {
+  const meshtastic = buildMeshtasticBucketSnapshot();
+  const meshcore = buildProtocolBucketSnapshot('meshcore');
+  const reticulum = buildReticulumSnapshot(reticulumSidecar);
+  const ui = getDebugSnapshotUiContext();
+  const storedProtocol = getStoredMeshProtocol();
+
+  return {
+    capturedAt: new Date().toISOString(),
+    legend: DEBUG_SNAPSHOT_ID_LEGEND,
+    sessionSummary: {
+      meshtastic: toSessionSummary(meshtastic),
+      meshcore: toSessionSummary(meshcore),
+      reticulum: toSessionSummary(reticulum.bucket),
+    },
+    activeTab: activeTabSummaryForProtocol(ui.activeProtocol, {
+      meshtastic,
+      meshcore,
+      reticulum,
+    }),
+    storedProtocol,
+    windowHidden: typeof document !== 'undefined' ? document.hidden : false,
+    ui,
+    meshtastic,
+    meshcore,
+    reticulum,
+  };
+}
+
 /** Pure triage helper — flags common stuck-chat / UI failure signatures. */
 export function analyzeDebugSnapshot(
   snap: Omit<DebugSnapshot, 'warnings'>,
@@ -435,6 +548,7 @@ export function analyzeDebugSnapshot(
   const warnings: DebugSnapshotWarning[] = [
     ...analyzeProtocolBucket('meshtastic', snap.meshtastic),
     ...analyzeProtocolBucket('meshcore', snap.meshcore),
+    ...analyzeReticulumSnapshot(snap.reticulum),
   ];
 
   const { ui } = snap;
@@ -459,39 +573,29 @@ export function analyzeDebugSnapshot(
   return warnings;
 }
 
-/** Renderer-side support snapshot for bug reports (identity buckets + store counts). */
+/** Renderer-side support snapshot (sync — sidecar APIs omitted; use buildDebugSnapshotAsync for exports). */
 export function buildDebugSnapshot(): DebugSnapshot {
-  const meshtastic = buildProtocolBucketSnapshot('meshtastic');
-  const meshcore = buildProtocolBucketSnapshot('meshcore');
-  const storedProtocol = getStoredMeshProtocol();
-  const activeBucket = storedProtocol === 'meshcore' ? meshcore : meshtastic;
-  const base = {
-    capturedAt: new Date().toISOString(),
-    legend: DEBUG_SNAPSHOT_ID_LEGEND,
-    sessionSummary: {
-      meshtastic: toSessionSummary(meshtastic),
-      meshcore: toSessionSummary(meshcore),
-    },
-    activeTab: {
-      protocol: storedProtocol,
-      uiStoreIdentityId: activeBucket.uiStoreIdentityId,
-      sessionState: activeBucket.sessionState,
-      liveSession: activeBucket.liveSession,
-    },
-    storedProtocol,
-    windowHidden: typeof document !== 'undefined' ? document.hidden : false,
-    ui: getDebugSnapshotUiContext(),
-    meshtastic,
-    meshcore,
-  };
+  const base = buildDebugSnapshotBase(buildReticulumDiagnosticSnapshotSync());
   return {
     ...base,
     warnings: analyzeDebugSnapshot(base),
   };
 }
 
+/** Full support snapshot including live Reticulum sidecar state for GitHub/developer bundles. */
+export async function buildDebugSnapshotAsync(): Promise<DebugSnapshot> {
+  const reticulumSidecar = await fetchReticulumDiagnosticSnapshot();
+  const base = buildDebugSnapshotBase(reticulumSidecar);
+  const meshcoreContactPathDiagnostics = await fetchMeshcoreContactPathDiagnostics();
+  return {
+    ...base,
+    meshcoreContactPathDiagnostics,
+    warnings: analyzeDebugSnapshot(base),
+  };
+}
+
 export async function copyDebugSnapshotToClipboard(): Promise<boolean> {
-  const text = JSON.stringify(buildDebugSnapshot(), null, 2);
+  const text = JSON.stringify(await buildDebugSnapshotAsync(), null, 2);
   await writeClipboardText(text);
   return true;
 }

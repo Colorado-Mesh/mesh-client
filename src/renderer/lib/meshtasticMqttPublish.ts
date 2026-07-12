@@ -36,13 +36,14 @@ export interface ResolveMeshtasticMqttPublishOptions {
   preferManualOverRadio?: boolean;
 }
 
-/** MQTT topic channel name: configured name, or LongFast for unnamed primary. Unnamed secondary returns empty (skip MQTT). */
+/** MQTT topic channel name: configured name, LongFast for unnamed primary, or unnamed default-public at any slot. */
 export function resolveMeshtasticMqttChannelName(
   chCfg: MeshtasticChannelConfigForMqtt | undefined,
 ): string {
   const trimmed = chCfg?.name?.trim();
   if (trimmed) return trimmed;
   if (chCfg?.index === 0) return 'LongFast';
+  if (chCfg && isMeshtasticDefaultPublicPsk(chCfg.psk)) return 'LongFast';
   return '';
 }
 
@@ -152,7 +153,7 @@ export function buildMeshtasticMqttOnlyChannelState(
     });
   }
 
-  const barePsk = channels.length === 0 ? firstBareManualPsk(lines) : undefined;
+  const barePsk = !channels.some((c) => c.index === 0) ? firstBareManualPsk(lines) : undefined;
   if (barePsk) {
     channels.push({ index: 0, name: 'LongFast' });
     channelConfigs.push({
@@ -238,7 +239,9 @@ export function meshtasticMqttChannelKeyEntries(
     if (ch.role === MESHTASTIC_CHANNEL_ROLE.DISABLED) continue;
     const name = resolveMeshtasticMqttChannelName(ch);
     if (!name) continue;
-    if (!isNonTrivialMeshtasticChannelPsk(ch.psk)) continue;
+    if (!isNonTrivialMeshtasticChannelPsk(ch.psk) && !isMeshtasticDefaultPublicPsk(ch.psk)) {
+      continue;
+    }
     entries.push({ name, pskBase64: pskToBase64(ch.psk), index: ch.index });
   }
   return entries;

@@ -1,3 +1,4 @@
+import { dispatchNobleBleYieldReleased } from '@/renderer/lib/nobleBleYieldReleased';
 import type { BlePeripheralOwner } from '@/shared/electron-api.types';
 import { normalizeBleMac } from '@/shared/normalizeBleMac';
 
@@ -32,6 +33,25 @@ export async function releaseReticulumBleScan(): Promise<void> {
   } catch (err) {
     console.warn('[Reticulum] bleCoexistence releaseScan failed:', err);
   }
+}
+
+/** Yield Noble BLE so the sidecar (btleplug) can pair/connect a BLE RNode on macOS/Windows. */
+export async function prepareReticulumBleRnodeConnect(): Promise<boolean> {
+  try {
+    await window.electronAPI.bleCoexistence.suspendNobleForReticulumBleConnect();
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 500);
+    });
+    return true;
+  } catch (err) {
+    console.warn('[Reticulum] suspendNobleForReticulumBleConnect failed:', err);
+    return false;
+  }
+}
+
+export async function releaseReticulumBleRnodeConnect(): Promise<void> {
+  await releaseReticulumBleScan();
+  dispatchNobleBleYieldReleased();
 }
 
 export async function registerReticulumBleMac(mac: string): Promise<boolean> {

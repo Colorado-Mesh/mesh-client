@@ -1,20 +1,16 @@
-import {
-  MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
-  MESHCORE_TRACE_PRIME_WAIT_MS,
-  waitForMeshcorePath129ForNode,
-} from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
 import { withTimeout } from '@/shared/withTimeout';
 
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
+import { meshcoreSnapshotContactPathFromContacts } from './meshcoreRadioContactPath';
 import {
   type MeshcoreTracePathConnection,
   runMeshcoreTracePathMultiplexed,
 } from './meshcoreTracePathMultiplex';
 import {
-  meshcoreSliceContactOutPathForTrace,
-  meshcoreTraceResultToOutPathBytes,
-  pubkeyToNodeId,
-} from './meshcoreUtils';
+  meshcoreTracePrimeFloodWhenForRoomLogin,
+  primeMeshcoreTraceRouteWithFallback,
+} from './meshcoreTraceRoutePrime';
+import { meshcoreTraceResultToOutPathBytes } from './meshcoreUtils';
 import {
   MESHCORE_ROOM_LOGIN_ROUTE_RESOLVE_MAX_MS,
   MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS,
@@ -27,20 +23,6 @@ export interface MeshcoreRoomLoginRouteResolveConn {
   off(event: string | number, cb: (...args: unknown[]) => void): void;
   once?(event: string | number, cb: (...args: unknown[]) => void): void;
   sendCommandSendTracePath?(tag: number, auth: number, path: Uint8Array): Promise<void>;
-}
-
-function pathFromContacts(contacts: MeshCoreContactRaw[], nodeId: number): Uint8Array | undefined {
-  for (const contact of contacts) {
-    if (pubkeyToNodeId(contact.publicKey) !== nodeId) continue;
-    let slice = meshcoreSliceContactOutPathForTrace(contact.outPath, contact.outPathLen);
-    if (slice.length <= 1 && contact.outPathLen === 0) {
-      slice = meshcoreSliceContactOutPathForTrace(contact.outPath, undefined);
-    }
-    if (slice.length > 1) return slice;
-    if (slice.length > 0) return slice;
-    return undefined;
-  }
-  return undefined;
 }
 
 async function traceRouteForRoomLogin(
@@ -118,11 +100,11 @@ export async function resolveMeshcoreRoomLoginRouteBytes(
 
   try {
     const contacts = await conn.getContacts();
-    const fromRadio = pathFromContacts(contacts, nodeId);
+    const fromRadio = meshcoreSnapshotContactPathFromContacts(nodeId, contacts).path;
     if (fromRadio && fromRadio.length > 1) return fromRadio;
     if (fromRadio && fromRadio.length > 0) path = fromRadio;
   } catch {
-    // catch-no-log-ok getContacts optional during login path resolve
+    console.debug('[meshcoreRoomLoginRouteResolve] getContacts failed during path resolve');
   }
 
   if (path && path.length > 1) return path;
@@ -132,26 +114,20 @@ export async function resolveMeshcoreRoomLoginRouteBytes(
   }
 
   if (opts.allowPrime !== false) {
-    try {
-      await withTimeout(
-        conn.sendFloodAdvert(),
-        MESHCORE_SEND_FLOOD_ADVERT_TIMEOUT_MS,
-        'meshcoreRoomLoginRoutePrimeFloodAdvert',
-      );
-    } catch {
-      // catch-no-log-ok flood advert is best-effort before path wait
-    }
-
-    await waitForMeshcorePath129ForNode(conn, nodeId, MESHCORE_TRACE_PRIME_WAIT_MS);
-
-    try {
-      const contactsPrime = await conn.getContacts();
-      const primed = pathFromContacts(contactsPrime, nodeId);
-      if (primed && primed.length > 1) return primed;
-      if (primed && primed.length > 0) path = primed;
-    } catch {
-      // catch-no-log-ok post-prime getContacts optional
-    }
+    const outPathMapRef = new Map<number, Uint8Array>();
+    if (path) outPathMapRef.set(nodeId, path);
+    const primed = await primeMeshcoreTraceRouteWithFallback({
+      conn,
+      nodeId,
+      pubKey: opts.pubKey,
+      hopsAway: opts.loginHopsAway,
+      outPathMapRef,
+      existingPath: path,
+      initialStrategy: 'passive',
+      floodWhen: meshcoreTracePrimeFloodWhenForRoomLogin,
+    });
+    if (primed.path && primed.path.length > 1) return primed.path;
+    if (primed.path && primed.path.length > 0) path = primed.path;
   }
 
   if (path && path.length > 1) return path;
@@ -167,5 +143,8 @@ export async function resolveMeshcoreRoomLoginRouteBytes(
     if (traced && traced.length > 1) return traced;
   }
 
+  if (opts.loginHopsAway >= 1) {
+    return path && path.length > 1 ? path : undefined;
+  }
   return path && path.length > 0 ? path : undefined;
 }

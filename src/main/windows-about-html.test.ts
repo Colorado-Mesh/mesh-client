@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 
+import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
 import { buildWindowsAboutDocumentHtml, escapeHtmlText } from './windows-about-html';
 
 describe('windows-about-html', () => {
@@ -24,5 +25,9 @@ describe('windows-about-html', () => {
     expect(html).toContain('href="https://discord.com/invite/McChKR5NpS"');
     expect(html).toContain('aria-label="Close About window"');
     expect(html).not.toContain('<script');
+    expect(html).toContain('Reticulum');
+    expect(html).not.toContain('\u2014');
+    expect(html).not.toContain('\u2011');
+    expect(html).toContain(escapeHtmlText(APP_ABOUT_TAGLINE));
   });
 });

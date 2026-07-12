@@ -17,13 +17,15 @@ Electron main validates proxy paths: must start with `/api/v1/` (no `..` segment
 
 ### Identity
 
-| Method | Path                            | Body / notes                  | Response                                                  |
-| ------ | ------------------------------- | ----------------------------- | --------------------------------------------------------- |
-| GET    | `/api/v1/identity/status`       |                               | `{ configured, identity_hash, lxmf_hash, display_name? }` |
-| POST   | `/api/v1/identity/generate`     | `{ display_name? }`           | `{ ok, mnemonic?, identity_hash, lxmf_hash }`             |
-| POST   | `/api/v1/identity/import`       | `{ mnemonic, display_name? }` | `{ ok, identity_hash, lxmf_hash }`                        |
-| POST   | `/api/v1/identity/export`       | `{ passphrase }`              | `{ ok, backup? }`                                         |
-| POST   | `/api/v1/identity/display-name` | `{ display_name }`            | `{ ok }`                                                  |
+| Method | Path                              | Body / notes                                       | Response                                                  |
+| ------ | --------------------------------- | -------------------------------------------------- | --------------------------------------------------------- |
+| GET    | `/api/v1/identity/status`         |                                                    | `{ configured, identity_hash, lxmf_hash, display_name? }` |
+| POST   | `/api/v1/identity/generate`       | `{ display_name?, replace? }`                      | `{ ok, mnemonic?, identity_hash, lxmf_hash }`             |
+| POST   | `/api/v1/identity/import`         | `{ mnemonic, display_name?, replace? }`            | `{ ok, identity_hash, lxmf_hash }`                        |
+| POST   | `/api/v1/identity/import-backup`  | `{ backup, passphrase?, display_name?, replace? }` | `{ ok, identity_hash, lxmf_hash, metadata_only? }`        |
+| POST   | `/api/v1/identity/import-private` | `{ private_key, display_name?, replace? }`         | `{ ok, identity_hash, lxmf_hash }`                        |
+| POST   | `/api/v1/identity/export`         | `{ passphrase }`                                   | `{ ok, backup? }`                                         |
+| POST   | `/api/v1/identity/display-name`   | `{ display_name }`                                 | `{ ok }`                                                  |
 
 ### Interfaces
 
@@ -41,7 +43,7 @@ Electron main validates proxy paths: must start with `/api/v1/` (no `..` segment
 | GET    | `/api/v1/ble/availability`               |                                                                                                                    | `{ available, missing, permissions_granted, probe_failed? }`                                           |
 | GET    | `/api/v1/ble/scan`                       | `timeout_secs` (1–30, default 5), `mode` (`peer` \| `rnode` \| `all`)                                              | `{ devices: [{ address, name?, rssi?, kind? }] }` or `{ ok: false, error }`                            |
 
-**`PUT /api/v1/interfaces/{id}` patch fields** (all optional): `name`, `type`, `enabled`, `host`, `port`, `preset`, `serial_port`, `frequency`, `bandwidth`, `txpower`, `spreading_factor`, `coding_rate`, `callsign`, `id_interval`, `mode`.
+**`PUT /api/v1/interfaces/{id}` patch fields** (all optional): `name`, `type`, `enabled`, `host`, `port`, `preset`, `serial_port`, `frequency`, `bandwidth`, `txpower`, `spreading_factor`, `coding_rate`, `callsign`, `id_interval`, `mode`, `discoverable`, `latitude`, `longitude`, `height`, `discovery_name`, `announce_interval_min`, `connectable`, `reachable_on`.
 
 The Connection tab UI edits a subset: **name** for all types; **host** / **port** for TCP; **serial_port**, **preset**, **callsign** for RNode. Enable/disable uses the dedicated POST routes.
 
@@ -72,22 +74,27 @@ The Connection tab UI edits a subset: **name** for all types; **host** / **port*
 
 ### Peers, topology, and propagation
 
-| Method | Path                                 | Body / notes                  | Response                                                                                                                       |
-| ------ | ------------------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| GET    | `/api/v1/peers`                      |                               | `{ peers: [] }` — live path table when `rns-stack` enabled                                                                     |
-| POST   | `/api/v1/peers/{hash}/path`          |                               | `{ ok }` — emits `peers_updated` WS on success                                                                                 |
-| POST   | `/api/v1/peers/{hash}/probe`         |                               | `{ ok, hops? }` live; `{ ok, mode, hash }` stub — emits `peers_updated` on success                                             |
-| POST   | `/api/v1/ping`                       | `{ destination_hash }`        | `{ ok, rtt_ms? }`                                                                                                              |
-| GET    | `/api/v1/topology`                   |                               | `{ nodes, edges }` — `via_hash` is the immediate RNS next hop (transport id); sidecar infers `self → relay` when needed        |
-| GET    | `/api/v1/packets`                    | `?limit=500` (1–2500)         | `{ packets: [] }` — recent wire tap ring buffer                                                                                |
-| DELETE | `/api/v1/packets`                    |                               | `{ ok }` — clear wire tap buffer                                                                                               |
-| GET    | `/api/v1/propagation`                |                               | `{ propagation, preferred_id, auto_sync_interval_sec }` — `local-prop` rows include `message_count`, `storage_bytes` when live |
-| POST   | `/api/v1/propagation/add`            | `{ destination_hash, name? }` | `{ ok, node }` — add a remote propagation node by hash                                                                         |
-| POST   | `/api/v1/propagation/{id}/enable`    |                               | `{ ok }`                                                                                                                       |
-| POST   | `/api/v1/propagation/{id}/disable`   |                               | `{ ok }`                                                                                                                       |
-| POST   | `/api/v1/propagation/{id}/preferred` |                               | `{ ok }`                                                                                                                       |
-| POST   | `/api/v1/propagation/sync`           |                               | `{ ok }`                                                                                                                       |
-| POST   | `/api/v1/propagation/sync/cancel`    |                               | `{ ok }`                                                                                                                       |
+| Method | Path                         | Body / notes           | Response                                                                                                                      |
+| ------ | ---------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/peers`              |                        | `{ peers: [] }` — live path table when `rns-stack` enabled                                                                    |
+| POST   | `/api/v1/peers/{hash}/path`  |                        | `{ ok }` — emits `peers_updated` WS on success                                                                                |
+| POST   | `/api/v1/peers/{hash}/probe` |                        | `{ ok, hops? }` live; `{ ok, mode, hash }` stub — emits `peers_updated` on success                                            |
+| POST   | `/api/v1/ping`               | `{ destination_hash }` | `{ ok, rtt_ms? }`                                                                                                             |
+| GET    | `/api/v1/topology`           |                        | `{ nodes, edges }` — `via_hash` is the immediate RNS next hop (transport id); sidecar infers `self → relay` when needed       |
+| GET    | `/api/v1/rmap/discovered`    |                        | `{ discovered: RmapDiscoveredWireRow[] }` — local RMAP v4 heard interfaces (7-day TTL eviction in rsReticulum DiscoveryStore) |
+
+**`RmapDiscoveredWireRow` fields** (see `src/shared/reticulum-types.ts`): `discovery_hash`, `transport_id`, `discovery_name`, `interface_type`, `latitude`, `longitude`, `height`, `transport_enabled`, `reachable_on`, LoRa RF fields (`frequency`, `bandwidth`, `spreading_factor`, …), `hops`, `stamp_value`, `discovered`, `last_heard`, `heard_count`, `status` (`available`/`stale`/`unknown`), `has_coordinates`. Renderer caps at 2,000 newest rows with client-side TTL eviction.
+
+**WS `rmap.discovery`:** sidecar polls DiscoveryStore every **10s**; emits full `{ discovered: [...] }` snapshot when JSON fingerprint changes. Stub builds return `{ discovered: [] }`.
+| GET | `/api/v1/packets` | `?limit=500` (1–2500) | `{ packets: [] }` — recent wire tap ring buffer |
+| DELETE | `/api/v1/packets` | | `{ ok }` — clear wire tap buffer |
+| GET | `/api/v1/propagation` | | `{ propagation, preferred_id, auto_sync_interval_sec }` — `local-prop` rows include `message_count`, `storage_bytes` when live |
+| POST | `/api/v1/propagation/add` | `{ destination_hash, name? }` | `{ ok, node }` — add a remote propagation node by hash |
+| POST | `/api/v1/propagation/{id}/enable` | | `{ ok }` |
+| POST | `/api/v1/propagation/{id}/disable` | | `{ ok }` |
+| POST | `/api/v1/propagation/{id}/preferred` | | `{ ok }` |
+| POST | `/api/v1/propagation/sync` | | `{ ok }` |
+| POST | `/api/v1/propagation/sync/cancel` | | `{ ok }` |
 
 ### Nomad Network
 
@@ -117,7 +124,7 @@ The Connection tab UI edits a subset: **name** for all types; **host** / **port*
 { "type": "lxmf_message", "payload": { ... } }
 ```
 
-Event types: `lxmf_message`, `lxmf_outbound_status`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`.
+Event types: `lxmf_message`, `lxmf_outbound_status`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`, `rmap.discovery` (payload `{ discovered: RmapDiscoveredWireRow[] }`).
 
 `lxmf_message` payload fields include `sender_hash`, `text`, `timestamp`, `message_hash`, optional `direction` (`inbound` / `outbound`), and transport markers `received_via` / `sent_via` (`rf`, `tcp`, or `network`).
 
@@ -125,12 +132,13 @@ Event types: `lxmf_message`, `lxmf_outbound_status`, `peers_updated`, `stats_upd
 
 Renderer calls `electronAPI.reticulum.*`; main process proxies to this API (sandboxed renderer cannot reach localhost directly).
 
-| IPC channel                                                     | Role                                        |
-| --------------------------------------------------------------- | ------------------------------------------- |
-| `reticulum:start` / `stop` / `getStatus`                        | Sidecar lifecycle                           |
-| `reticulum:proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete` | HTTP proxy to paths above                   |
-| `reticulum:readDefaultConfigFile`                               | Read first existing system rnsd config path |
-| `reticulum:showConfigImportDialog`                              | Native file picker for config import        |
-| `reticulum:onEvent` / `onStatus`                                | WS events and sidecar status                |
+| IPC channel                                                     | Role                                                             |
+| --------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `reticulum:start` / `stop` / `getStatus`                        | Sidecar lifecycle                                                |
+| `reticulum:proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete` | HTTP proxy to paths above                                        |
+| `reticulum:readDefaultConfigFile`                               | Read first existing system rnsd config path                      |
+| `reticulum:showConfigImportDialog`                              | Native file picker for config import                             |
+| `reticulum:showIdentityImportDialog`                            | Native file picker for 64-byte private key (`.retid`, `.key`, …) |
+| `reticulum:onEvent` / `onStatus`                                | WS events and sidecar status                                     |
 
 SQLite chat history uses separate `db:*` handlers (`getReticulumMessages`, `saveReticulumMessage`, `searchReticulumMessages`, `deleteReticulumMessage`, destination upserts).

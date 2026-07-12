@@ -23,6 +23,22 @@ vi.mock('./reticulum-sidecar-path', () => ({
   resolveSidecarBinaryPath: () => '/tmp/mesh-client-test/mesh-client-reticulum',
 }));
 
+const suspendNobleMock = vi.fn().mockResolvedValue(undefined);
+const releaseScanMock = vi.fn();
+const getStateMock = vi.fn().mockReturnValue({ connections: [], scanOwner: null });
+
+vi.mock('./ble-coexistence-coordinator', () => ({
+  bleCoexistenceCoordinator: {
+    suspendNobleForReticulumBleConnect: (...args: unknown[]) => suspendNobleMock(...args),
+    releaseScan: (...args: unknown[]) => releaseScanMock(...args),
+    getState: (...args: unknown[]) => getStateMock(...args),
+  },
+}));
+
+vi.mock('./reticulum-ble-rnode-config', () => ({
+  reticulumConfigDirHasEnabledBleRnode: vi.fn().mockReturnValue(false),
+}));
+
 vi.mock('ws', () => ({
   default: class MockWebSocket {
     on = vi.fn();
@@ -32,7 +48,9 @@ vi.mock('ws', () => ({
 
 import fs from 'fs';
 
+import { reticulumConfigDirHasEnabledBleRnode } from './reticulum-ble-rnode-config';
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
+import { ensureDevSidecarBinary } from './reticulum-sidecar-path';
 
 function mockSidecarProc(
   pid = 4242,
@@ -53,6 +71,10 @@ function mockSidecarProc(
 describe('ReticulumSidecarManager', () => {
   beforeEach(() => {
     spawnMock.mockReset();
+    suspendNobleMock.mockClear();
+    releaseScanMock.mockClear();
+    getStateMock.mockReturnValue({ connections: [], scanOwner: null });
+    vi.mocked(reticulumConfigDirHasEnabledBleRnode).mockReturnValue(false);
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -255,5 +277,49 @@ describe('ReticulumSidecarManager', () => {
       'http://127.0.0.1:59477/api/v1/interfaces/abc',
       expect.objectContaining({ method: 'DELETE' }),
     );
+  });
+
+  it('yields Noble BLE when config has enabled ble RNode before spawn', async () => {
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    vi.mocked(reticulumConfigDirHasEnabledBleRnode).mockReturnValue(true);
+
+    const proc = mockSidecarProc();
+    proc.kill.mockImplementation(() => {
+      proc.emit('exit', 0, null);
+    });
+    spawnMock.mockReturnValue(proc);
+
+    const manager = new ReticulumSidecarManager();
+    await manager.start();
+
+    expect(suspendNobleMock).toHaveBeenCalledTimes(1);
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+
+    await manager.stop();
+    existsSpy.mockRestore();
+    mkdirSpy.mockRestore();
+  });
+
+  it('releases Noble scan lock when sidecar binary ensure fails after yield', async () => {
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    vi.mocked(reticulumConfigDirHasEnabledBleRnode).mockReturnValue(true);
+    vi.mocked(ensureDevSidecarBinary).mockRejectedValueOnce(new Error('missing rust toolchain'));
+
+    const manager = new ReticulumSidecarManager();
+    await expect(manager.start()).rejects.toThrow('missing rust toolchain');
+    expect(suspendNobleMock).toHaveBeenCalledTimes(1);
+    expect(releaseScanMock).toHaveBeenCalledWith('reticulum');
+
+    existsSpy.mockRestore();
+    mkdirSpy.mockRestore();
+  });
+
+  it('releases Noble scan lock on stop when reticulum holds scanOwner', async () => {
+    getStateMock.mockReturnValue({ connections: [], scanOwner: 'reticulum' });
+    const manager = new ReticulumSidecarManager();
+    await manager.stop();
+    expect(releaseScanMock).toHaveBeenCalledWith('reticulum');
   });
 });

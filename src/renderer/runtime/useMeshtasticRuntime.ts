@@ -38,6 +38,8 @@ import {
   resolveMeshtasticMqttPublishFieldsForChannel,
   type ResolveMeshtasticMqttPublishOptions,
 } from '@/renderer/lib/meshtasticMqttPublish';
+import { readMeshtasticMqttSettingsFromStorage } from '@/renderer/lib/meshtasticMqttSettingsStorage';
+import { NOBLE_BLE_YIELD_RELEASED_EVENT } from '@/renderer/lib/nobleBleYieldReleased';
 import {
   type ApplyChannelSetResult,
   channelNameExists,
@@ -102,6 +104,11 @@ import {
   isMeshtasticMqttProxyActive,
   mqttSettingsFromMeshtasticModuleConfig,
 } from '../lib/meshtastic/meshtasticMqttModuleSettings';
+import {
+  meshtasticMqttTopicPrefixesDiverge,
+  meshtasticRadioMqttRootFromModuleConfigs,
+  overlayMeshtasticMqttTopicPrefixForRadio,
+} from '../lib/meshtastic/meshtasticMqttTopicPrefixOverlay';
 import {
   meshtasticXmodemDownload,
   meshtasticXmodemUpload,
@@ -593,6 +600,36 @@ export function useMeshtasticRuntime() {
     pushMqttChannelKeys();
   }, [channelConfigs, mqttStatus, pushMqttChannelKeys]);
 
+  const overlayMqttTopicPrefixFromRadioRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (mqttStatus !== 'connected') {
+      overlayMqttTopicPrefixFromRadioRef.current = null;
+    }
+  }, [mqttStatus]);
+
+  useEffect(() => {
+    if (state.status !== 'configured') return;
+    if (isMeshtasticMqttProxyActive(moduleConfigs)) return;
+    if (mqttStatusRef.current !== 'connected') return;
+
+    const radioRoot = meshtasticRadioMqttRootFromModuleConfigs(moduleConfigs);
+    if (!radioRoot) return;
+
+    const appSettings = readMeshtasticMqttSettingsFromStorage();
+    if (!meshtasticMqttTopicPrefixesDiverge(appSettings.topicPrefix, radioRoot)) return;
+
+    const overlay = overlayMeshtasticMqttTopicPrefixForRadio(appSettings.topicPrefix, radioRoot);
+    if (overlayMqttTopicPrefixFromRadioRef.current === overlay) return;
+    overlayMqttTopicPrefixFromRadioRef.current = overlay;
+
+    if (overlay === appSettings.topicPrefix.trim()) return;
+
+    void window.electronAPI.mqtt.updateTopicPrefix({ topicPrefix: overlay }).catch((e: unknown) => {
+      console.warn('[useMeshtasticRuntime] mqtt.updateTopicPrefix failed ' + errLikeToLogString(e));
+    });
+  }, [moduleConfigs, state.status]);
+
   // ─── Packet dedup helper (shared by RF and MQTT handlers) ──────
   const isDuplicate = useCallback((senderId: number, packetId: number): boolean => {
     const now = Date.now();
@@ -714,6 +751,7 @@ export function useMeshtasticRuntime() {
       case 'ble':
         return { stale: BLE_STALE_THRESHOLD_MS, dead: BLE_DEAD_THRESHOLD_MS };
       case 'serial':
+      case 'tcp':
         return { stale: SERIAL_STALE_THRESHOLD_MS, dead: SERIAL_DEAD_THRESHOLD_MS };
       case 'http':
         return { stale: HTTP_STALE_THRESHOLD_MS, dead: HTTP_DEAD_THRESHOLD_MS };
@@ -1647,7 +1685,10 @@ export function useMeshtasticRuntime() {
           transportOpts.type === 'serial'
             ? (transportOpts.lastSerialPortId ?? undefined)
             : undefined,
-        host: transportOpts.type === 'http' ? transportOpts.httpAddress : undefined,
+        host:
+          transportOpts.type === 'http' || transportOpts.type === 'tcp'
+            ? transportOpts.httpAddress
+            : undefined,
       });
       const identityId = await connectionDriver.connect('meshtastic', params);
       meshtasticDriverConnectedRef.current = true;
@@ -1795,11 +1836,25 @@ export function useMeshtasticRuntime() {
   );
 
   // ─── Connection lost handler ──────────────────────────────────
+  const nobleYieldReconnectNudgeRef = useRef(false);
+
   const handleConnectionLost = useCallback(() => {
     reconnectGenerationRef.current += 1;
+    const afterNobleYieldRelease = nobleYieldReconnectNudgeRef.current;
+    nobleYieldReconnectNudgeRef.current = false;
     if (!isReconnectingRef.current) {
-      console.warn('[useMeshtasticRuntime] Connection lost — initiating reconnect');
+      if (afterNobleYieldRelease) {
+        console.debug(
+          '[useMeshtasticRuntime] Noble BLE yield released — initiating Meshtastic reconnect',
+        );
+      } else {
+        console.warn('[useMeshtasticRuntime] Connection lost — initiating reconnect');
+      }
       isReconnectingRef.current = true;
+    } else if (afterNobleYieldRelease) {
+      console.debug(
+        '[useMeshtasticRuntime] Noble BLE yield released during reconnect — restarting reconnect cycle',
+      );
     } else {
       console.warn(
         '[useMeshtasticRuntime] Connection lost during reconnect — restarting reconnect cycle',
@@ -2047,6 +2102,33 @@ export function useMeshtasticRuntime() {
     });
   }, []);
 
+  useEffect(() => {
+    const onNobleYieldReleased = () => {
+      if (connectionParamsRef.current?.type !== 'ble') return;
+      if (meshtasticExplicitDisconnectRef.current) return;
+      if (meshtasticDriverConnectedRef.current && deviceConfiguredRef.current) {
+        return;
+      }
+      if (isReconnectingRef.current) {
+        console.debug(
+          '[useMeshtasticRuntime] Noble BLE yield released — skip nudge (reconnect in progress)',
+        );
+        return;
+      }
+      console.debug(
+        '[useMeshtasticRuntime] Noble BLE yield released — nudging Meshtastic reconnect',
+      );
+      reconnectAttemptRef.current = 0;
+      isReconnectingRef.current = false;
+      nobleYieldReconnectNudgeRef.current = true;
+      handleConnectionLostRef.current();
+    };
+    window.addEventListener(NOBLE_BLE_YIELD_RELEASED_EVENT, onNobleYieldReleased);
+    return () => {
+      window.removeEventListener(NOBLE_BLE_YIELD_RELEASED_EVENT, onNobleYieldReleased);
+    };
+  }, []);
+
   // Keep the ref in sync
   attemptReconnectRef.current = attemptReconnect;
 
@@ -2230,6 +2312,7 @@ export function useMeshtasticRuntime() {
       cleanupSubscriptions();
       stopWatchdog();
       stopGpsInterval();
+      meshtasticExplicitDisconnectRef.current = true;
       isReconnectingRef.current = false;
       reconnectAttemptRef.current = 0;
       reconnectGenerationRef.current++;

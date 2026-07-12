@@ -133,6 +133,8 @@ export interface ProtocolCapabilities {
   hasReticulumNativeDiagnostics: boolean;
   /** Reticulum: dedicated network topology tab */
   hasReticulumTopologyPanel: boolean;
+  /** Reticulum: RMAP v4 discovery map tab */
+  hasReticulumDiscoveryMap: boolean;
   /** Reticulum: LXMF delivery status badge on chat messages */
   hasLxmfDeliveryStatus: boolean;
   /** Reticulum: dedicated peer detail modal (hash-based peers) */
@@ -209,6 +211,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumPeersList: false,
   hasReticulumNativeDiagnostics: false,
   hasReticulumTopologyPanel: false,
+  hasReticulumDiscoveryMap: false,
   hasLxmfDeliveryStatus: false,
   hasReticulumPeerDetailModal: false,
   hasNomadNetworkPanel: false,
@@ -280,6 +283,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumPeersList: false,
   hasReticulumNativeDiagnostics: false,
   hasReticulumTopologyPanel: false,
+  hasReticulumDiscoveryMap: false,
   hasLxmfDeliveryStatus: false,
   hasReticulumPeerDetailModal: false,
   hasNomadNetworkPanel: false,
@@ -350,6 +354,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasReticulumPeersList: true,
   hasReticulumNativeDiagnostics: true,
   hasReticulumTopologyPanel: true,
+  hasReticulumDiscoveryMap: true,
   hasLxmfDeliveryStatus: true,
   hasReticulumPeerDetailModal: true,
   hasNomadNetworkPanel: true,

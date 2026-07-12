@@ -139,6 +139,10 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+
       - uses: actions/download-artifact@v8
         with:
           pattern: 'org.coloradomesh.MeshClient-*'
@@ -160,6 +164,17 @@ jobs:
             rm -rf "$dir"
             mv "$staging" "flatpak-dist/${name}"
           done
+
+      - name: Resolve release tag from package.json
+        id: release_tag
+        run: echo "value=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure draft GitHub release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_SHA: ${{ github.sha }}
+          RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
+        run: node scripts/ci-ensure-github-draft-release.mjs
 
       - name: Attach Flatpak to release
         # softprops/action-gh-release v3 (Node 24)

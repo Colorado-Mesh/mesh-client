@@ -235,7 +235,97 @@ pub fn audit_config(
         }
     }
 
+    audit_rmap_discovery(&config_rows, stack_settings, &mut issues);
+
     Ok(issues)
+}
+
+fn is_valid_lat_lon(lat: f64, lon: f64) -> bool {
+    lat.is_finite() && (-90.0..=90.0).contains(&lat) && lon.is_finite() && (-180.0..=180.0).contains(&lon)
+}
+
+fn is_local_rnode_publish_target(row: &InterfaceRow) -> bool {
+    if row.iface_type != "rnode" && row.iface_type != "rnode_multi" && row.iface_type != "kiss" {
+        return row.iface_type == "ble_peer";
+    }
+    row.serial_port.as_ref().is_some_and(|p| !p.trim().is_empty())
+}
+
+fn audit_rmap_discovery(
+    config_rows: &[InterfaceRow],
+    stack_settings: &StackSettings,
+    issues: &mut Vec<ConfigAuditIssue>,
+) {
+    let mut any_discoverable = false;
+    let mut discoverable_local_rnode = false;
+    let mut any_enabled_tcp = false;
+
+    for row in config_rows {
+        if row.iface_type == "tcp" && row.enabled {
+            any_enabled_tcp = true;
+        }
+        if row.discoverable != Some(true) {
+            continue;
+        }
+        any_discoverable = true;
+        if is_local_rnode_publish_target(row) && row.enabled {
+            discoverable_local_rnode = true;
+        }
+
+        let coords_ok = row
+            .latitude
+            .zip(row.longitude)
+            .is_some_and(|(lat, lon)| is_valid_lat_lon(lat, lon));
+        if !coords_ok {
+            issues.push(issue(
+                "rmap_missing_coordinates",
+                "error",
+                Some(row.id.clone()),
+                Some(row.name.clone()),
+                format!(
+                    "Interface \"{}\" is discoverable but missing valid latitude/longitude",
+                    row.name
+                ),
+                Some("edit"),
+            ));
+        }
+
+        if row.iface_type == "i2p" && row.connectable != Some(true) {
+            issues.push(issue(
+                "rmap_i2p_not_connectable",
+                "warning",
+                Some(row.id.clone()),
+                Some(row.name.clone()),
+                format!(
+                    "I2P interface \"{}\" is discoverable but connectable is not yes",
+                    row.name
+                ),
+                Some("edit"),
+            ));
+        }
+    }
+
+    if any_discoverable && !stack_settings.enable_transport {
+        issues.push(issue(
+            "rmap_transport_disabled",
+            "warning",
+            None,
+            None,
+            "Discoverable interfaces are configured but enable_transport is off".into(),
+            Some("edit"),
+        ));
+    }
+
+    if discoverable_local_rnode && !any_enabled_tcp {
+        issues.push(issue(
+            "rmap_no_tcp_hub",
+            "warning",
+            None,
+            None,
+            "Discoverable local RNode has no enabled TCP client hub for internet reachability".into(),
+            Some("edit"),
+        ));
+    }
 }
 
 fn audit_rnode_row(row: &InterfaceRow, issues: &mut Vec<ConfigAuditIssue>) {
@@ -349,4 +439,158 @@ pub fn repair_config(
     }
 
     Ok((repaired, restart_required))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::stack::config::{self, StackSettings};
+    use std::fs;
+    use uuid::Uuid;
+
+    fn write_sample_config(dir: &std::path::Path, extra: &str) {
+        let content = format!(
+            r#"[reticulum]
+enable_transport = Yes
+share_instance = Yes
+
+[logging]
+loglevel = 4
+
+[interfaces]
+{extra}
+"#
+        );
+        config::write_config(dir, &content).unwrap();
+    }
+
+    #[test]
+    fn rmap_missing_coordinates_when_discoverable_without_lat() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_sample_config(
+            &dir,
+            r#"[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+discoverable = Yes
+"#,
+        );
+        let rows = config::interfaces_from_config_dir(&dir).unwrap();
+        let settings = StackSettings {
+            enable_transport: true,
+            ..Default::default()
+        };
+        let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+        assert!(issues.iter().any(|i| i.kind == "rmap_missing_coordinates"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn rmap_no_tcp_hub_when_discoverable_rnode_only() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_sample_config(
+            &dir,
+            r#"[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+"#,
+        );
+        let rows = config::interfaces_from_config_dir(&dir).unwrap();
+        let settings = StackSettings {
+            enable_transport: true,
+            ..Default::default()
+        };
+        let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+        assert!(issues.iter().any(|i| i.kind == "rmap_no_tcp_hub"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn rmap_transport_disabled_when_discoverable() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_sample_config(
+            &dir,
+            r#"[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+"#,
+        );
+        let rows = config::interfaces_from_config_dir(&dir).unwrap();
+        let settings = StackSettings {
+            enable_transport: false,
+            ..Default::default()
+        };
+        let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+        assert!(issues.iter().any(|i| i.kind == "rmap_transport_disabled"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn rmap_i2p_not_connectable_when_discoverable() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_sample_config(
+            &dir,
+            r#"[[I2P]]
+type = I2PInterface
+enabled = Yes
+peers = g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p
+discoverable = Yes
+latitude = 48.8566
+longitude = 2.3522
+"#,
+        );
+        let rows = config::interfaces_from_config_dir(&dir).unwrap();
+        let settings = StackSettings {
+            enable_transport: true,
+            ..Default::default()
+        };
+        let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+        assert!(issues.iter().any(|i| i.kind == "rmap_i2p_not_connectable"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn rmap_clean_config_produces_no_rmap_issues() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_sample_config(
+            &dir,
+            r#"[[LoRa]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+
+[[RMAP World]]
+type = TCPClientInterface
+interface_enabled = Yes
+name = RMAP World
+target_host = rmap.world
+target_port = 4242
+"#,
+        );
+        let rows = config::interfaces_from_config_dir(&dir).unwrap();
+        let settings = StackSettings {
+            enable_transport: true,
+            ..Default::default()
+        };
+        let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+        assert!(!issues.iter().any(|i| i.kind.starts_with("rmap_")));
+        let _ = fs::remove_dir_all(&dir);
+    }
 }

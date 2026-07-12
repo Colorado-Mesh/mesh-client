@@ -13,6 +13,7 @@ A clear and concise description of what the bug is.
 
 - [ ] Meshtastic
 - [ ] MeshCore
+- [ ] Reticulum
 
 **To Reproduce**
 Steps to reproduce the behavior:

@@ -3,9 +3,11 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 
+import { formatHostForUrl, parseConnectHostPort } from '../shared/connectHost';
 import { isValidHttpHostname } from './httpHostValidation';
 
 const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
+const SUPPORT_BUNDLE_SOURCE = readFileSync(join(__dirname, 'support-bundle.ts'), 'utf-8');
 const TAK_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/tak-handlers.ts'), 'utf-8');
 const GPS_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/gps-handlers.ts'), 'utf-8');
 
@@ -14,7 +16,7 @@ const GPS_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/gps-handlers.ts'), 'utf
 describe('validateHttpHost (source contract)', () => {
   it('uses isValidHttpHostname from httpHostValidation', () => {
     expect(INDEX_SOURCE).toContain("import { isValidHttpHostname } from './httpHostValidation'");
-    expect(INDEX_SOURCE).toContain('isValidHttpHostname(host)');
+    expect(INDEX_SOURCE).toContain('isValidHttpHostname(bareHost)');
   });
 
   it('calls validateHttpHost in http:preflight handler', () => {
@@ -49,6 +51,73 @@ describe('validateHttpHost (source contract)', () => {
     expect(isValidHttpHostname('::1')).toBe(true);
     expect(isValidHttpHostname('[::1]')).toBe(true);
     expect(isValidHttpHostname('fd00::1')).toBe(true);
+  });
+
+  it('strips a trailing port via parseConnectHostPort before calling isValidHttpHostname', () => {
+    // http:preflight/http:connect are called with an authority string that always
+    // has a port appended (connection.ts: formatHostForUrl(host, port)), even for
+    // a bare IP with no port typed. isValidHttpHostname alone rejects that string
+    // because it looks like an unbracketed (and invalid) IPv6 literal.
+    const bodyIdx = INDEX_SOURCE.indexOf('function validateHttpHost(');
+    expect(bodyIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(bodyIdx, bodyIdx + 500);
+    expect(body).toContain('parseConnectHostPort(host, 0).host');
+  });
+
+  it('regression: recovers a validatable host from formatHostForUrl output (connection.ts http case)', () => {
+    const urlHost = formatHostForUrl('192.168.1.50', 80);
+    expect(urlHost).toBe('192.168.1.50:80');
+
+    // Without the fix, validateHttpHost would call isValidHttpHostname directly
+    // on this authority string, which fails.
+    expect(isValidHttpHostname(urlHost)).toBe(false);
+
+    // The fix strips the port first, recovering a validatable bare host.
+    expect(isValidHttpHostname(parseConnectHostPort(urlHost, 0).host)).toBe(true);
+  });
+
+  it('regression: IPv6 authority from formatHostForUrl also validates after stripping the port', () => {
+    const urlHost = formatHostForUrl('fd00::1', 4403);
+    expect(urlHost).toBe('[fd00::1]:4403');
+    expect(isValidHttpHostname(urlHost)).toBe(false);
+    expect(isValidHttpHostname(parseConnectHostPort(urlHost, 0).host)).toBe(true);
+  });
+
+  it('still validates a bare host with no port, as used by meshcore:tcp-connect', () => {
+    expect(parseConnectHostPort('fd00::1', 0).host).toBe('fd00::1');
+    expect(isValidHttpHostname(parseConnectHostPort('fd00::1', 0).host)).toBe(true);
+  });
+});
+
+// ─── meshtastic:tcp-write byte element validation ───────────────────
+
+describe('meshtastic:tcp-write byte validation (source contract)', () => {
+  it('validates individual byte elements in addition to array length', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-write'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 600);
+    expect(handlerBody).toContain('Number.isInteger(b)');
+    expect(handlerBody).toContain('b >= 0');
+    expect(handlerBody).toContain('b <= 255');
+  });
+
+  it('defines a 256 KB cap on meshtastic tcp-write payloads', () => {
+    expect(INDEX_SOURCE).toContain('const MESHTASTIC_TCP_WRITE_MAX_BYTES = 256 * 1024');
+  });
+
+  it('rejects connect when port is out of range', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
+    expect(handlerBody).toContain('p < 1');
+    expect(handlerBody).toContain('p > 65535');
+  });
+
+  it('destroys prior socket before opening a new meshtastic tcp connection', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1200);
+    expect(handlerBody).toContain('meshtasticTcpSocket.destroy()');
   });
 });
 
@@ -169,6 +238,28 @@ describe('meshcore:tcp-connect hostname validation (source contract)', () => {
   });
 });
 
+// ─── meshtastic:tcp-connect hostname validation ──────────────────────
+
+describe('meshtastic:tcp-connect hostname validation (source contract)', () => {
+  it('calls validateHttpHost in the meshtastic:tcp-connect handler', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 600);
+    expect(handlerBody).toContain('validateHttpHost(');
+  });
+
+  it('normalizes bracketed IPv6 before net.Socket.connect', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:tcp-connect'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 800);
+    expect(handlerBody).toContain('formatHostForSocket(');
+  });
+
+  it('uses an independent socket ref from meshcore:tcp-connect', () => {
+    expect(INDEX_SOURCE).toContain('let meshtasticTcpSocket: net.Socket | null = null;');
+  });
+});
+
 // ─── IPC sender validation (gps / tak) ──────────────────────────────
 
 describe('GPS/TAK IPC sender validation (source contract)', () => {
@@ -249,14 +340,31 @@ describe('privileged IPC sender validation (source contract)', () => {
     'mqtt:connect',
     'mqtt:disconnect',
     'mqtt:publish',
+    'mqtt:publishProxy',
+    'mqtt:publishMeshcore',
+    'mqtt:publishMeshcorePacketLog',
     'storage:encrypt',
     'storage:decrypt',
     'http:write',
     'http:disconnect',
     'meshcore:tcp-connect',
     'meshcore:tcp-write',
+    'meshcore:tcp-disconnect',
+    'meshtastic:tcp-connect',
+    'meshtastic:tcp-write',
+    'meshtastic:tcp-disconnect',
     'noble-ble-connect',
+    'noble-ble-disconnect',
+    'notify:message',
     'chat:outbox:add',
+    'chat:outbox:remove',
+    'chat:fetchLinkPreview',
+    'appSettings:get',
+    'appSettings:set',
+    'app:rendererHeartbeat',
+    'db:saveNode',
+    'db:saveNodePath',
+    'support:exportBundle',
   ] as const;
 
   it.each(privilegedChannels)('%s calls assertIpcSender or validateIpcSender', (channel) => {
@@ -283,6 +391,13 @@ describe('privileged IPC sender validation (source contract)', () => {
     );
   });
 
+  it('meshtastic tcp-connect uses connect timeout', () => {
+    expect(INDEX_SOURCE).toContain('MESHTASTIC_TCP_CONNECT_TIMEOUT_MS');
+    expect(INDEX_SOURCE).toMatch(
+      /meshtastic:tcp-connect[\s\S]{0,1200}meshtastic:tcp-connect: connection timeout/,
+    );
+  });
+
   it('validateMqttSettings rejects invalid broker hostnames', () => {
     const fnIdx = INDEX_SOURCE.indexOf('function validateMqttSettings(');
     expect(fnIdx).toBeGreaterThan(-1);
@@ -292,6 +407,35 @@ describe('privileged IPC sender validation (source contract)', () => {
 
   it('chat:export caps message array length', () => {
     expect(INDEX_SOURCE).toContain('CHAT_EXPORT_MAX_MESSAGES');
+  });
+
+  it('support:exportBundle validates mode and snapshot size', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('support:exportBundle'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 1200);
+    expect(body).toContain('validateIpcSender(event)');
+    expect(body).toContain('isSupportBundleMode');
+    expect(body).toContain('buildSupportBundleZip');
+    expect(SUPPORT_BUNDLE_SOURCE).toContain('MAX_DEBUG_SNAPSHOT_JSON_BYTES');
+  });
+
+  it('appSettings allows meshcore repeater credential prefix', () => {
+    expect(INDEX_SOURCE).toContain('meshcoreRepeaterCredential:');
+    expect(INDEX_SOURCE).toContain('appSettingsMaxValueLengthForKey');
+  });
+
+  it('appSettings:get validates IPC sender', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('appSettings:get'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
+    expect(body).toContain('validateIpcSender(event)');
+  });
+
+  it('app:rendererHeartbeat validates IPC sender', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('app:rendererHeartbeat'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
+    expect(body).toContain('validateIpcSender(event)');
   });
 });
 

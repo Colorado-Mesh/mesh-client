@@ -12,10 +12,16 @@ import {
 
 import { useMeshcoreRepeaterRemoteAuth } from './useMeshcoreRepeaterRemoteAuth';
 
+const addToastMock = vi.fn();
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
+}));
+
+vi.mock('../components/Toast', () => ({
+  useToast: () => ({ addToast: addToastMock }),
 }));
 
 function RepeaterAuthProbe({
@@ -54,6 +60,7 @@ describe('useMeshcoreRepeaterRemoteAuth', () => {
     localStorage.clear();
     clearAllMeshcoreRepeaterEphemeralPasswords();
     vi.mocked(window.electronAPI.appSettings.set).mockClear();
+    addToastMock.mockClear();
   });
 
   it('resolves immediately when a saved credential exists', async () => {
@@ -109,5 +116,6 @@ describe('useMeshcoreRepeaterRemoteAuth', () => {
       );
     });
     expect(onAuthed).toHaveBeenCalledTimes(1);
+    expect(addToastMock).toHaveBeenCalledWith('repeatersPanel.rememberPasswordSaveFailed', 'error');
   });
 });

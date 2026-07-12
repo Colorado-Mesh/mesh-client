@@ -1,6 +1,10 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const { agentConnectOpts } = vi.hoisted(() => ({
+  agentConnectOpts: [] as { port?: number }[],
+}));
+
 vi.mock('node:dns/promises', () => ({
   default: {
     lookup: vi.fn(),
@@ -8,7 +12,22 @@ vi.mock('node:dns/promises', () => ({
   lookup: vi.fn(),
 }));
 
+vi.mock('undici', () => {
+  class MockAgent {
+    constructor(opts: { connect?: { port?: number } }) {
+      if (opts.connect) agentConnectOpts.push(opts.connect);
+    }
+    close = vi.fn().mockResolvedValue(undefined);
+  }
+  return {
+    Agent: MockAgent,
+    fetch: vi.fn(),
+  };
+});
+
 import dns from 'node:dns/promises';
+
+import { fetch as undiciFetch } from 'undici';
 
 import {
   clearLinkPreviewCachesForTests,
@@ -19,21 +38,31 @@ import {
 } from './fetchLinkPreview';
 
 const mockDnsLookup = vi.mocked(dns.lookup);
-const mockFetch = vi.fn();
+const mockFetch = vi.mocked(undiciFetch);
+
+type UndiciFetchResponse = Awaited<ReturnType<typeof undiciFetch>>;
+
+function mockUndiciResponse(partial: object): UndiciFetchResponse {
+  return partial as UndiciFetchResponse;
+}
 
 beforeEach(() => {
-  vi.stubGlobal('fetch', mockFetch);
+  mockFetch.mockReset();
   mockDnsLookup.mockReset();
   mockDnsLookup.mockResolvedValue({ address: '93.184.216.34', family: 4 });
+  agentConnectOpts.length = 0;
+  clearLinkPreviewCachesForTests();
 });
 
 afterEach(() => {
-  vi.restoreAllMocks();
   mockFetch.mockReset();
   clearLinkPreviewCachesForTests();
 });
 
-function makeStreamResponse(html: string, contentType = 'text/html; charset=utf-8'): Response {
+function makeStreamResponse(
+  html: string,
+  contentType = 'text/html; charset=utf-8',
+): UndiciFetchResponse {
   const encoder = new TextEncoder();
   const bytes = encoder.encode(html);
   const stream = new ReadableStream<Uint8Array>({
@@ -42,12 +71,12 @@ function makeStreamResponse(html: string, contentType = 'text/html; charset=utf-
       controller.close();
     },
   });
-  return {
+  return mockUndiciResponse({
     ok: true,
     status: 200,
     headers: new Headers({ 'content-type': contentType }),
     body: stream,
-  } as unknown as Response;
+  });
 }
 
 function fetchRequestHostname(input: string | URL | Request): string | null {
@@ -147,22 +176,28 @@ describe('fetchLinkPreview', () => {
   });
 
   it('returns null when fetch response is not ok', async () => {
-    mockFetch.mockResolvedValue({ ok: false, status: 404, headers: new Headers() });
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({ ok: false, status: 404, headers: new Headers() }),
+    );
     expect(await fetchLinkPreview('https://example.com/missing')).toBeNull();
   });
 
   it('returns null for redirects (redirect:manual gives ok=false)', async () => {
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 301,
-      headers: new Headers(),
-      type: 'opaqueredirect',
-    });
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({
+        ok: false,
+        status: 301,
+        headers: new Headers(),
+        type: 'opaqueredirect',
+      }),
+    );
     expect(await fetchLinkPreview('https://example.com')).toBeNull();
   });
 
   it('passes redirect:manual to fetch', async () => {
-    mockFetch.mockResolvedValue({ ok: false, status: 301, headers: new Headers() });
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({ ok: false, status: 301, headers: new Headers() }),
+    );
     await fetchLinkPreview('https://example.com');
     expect(mockFetch).toHaveBeenCalledWith(
       'https://example.com',
@@ -171,21 +206,25 @@ describe('fetchLinkPreview', () => {
   });
 
   it('returns null for non-HTML content-type', async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: new Headers({ 'content-type': 'application/json' }),
-    });
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+      }),
+    );
     expect(await fetchLinkPreview('https://example.com/api')).toBeNull();
   });
 
   it('returns null when body is null', async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: new Headers({ 'content-type': 'text/html' }),
-      body: null,
-    });
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'text/html' }),
+        body: null,
+      }),
+    );
     expect(await fetchLinkPreview('https://example.com')).toBeNull();
   });
 
@@ -195,12 +234,14 @@ describe('fetchLinkPreview', () => {
         c.close();
       },
     });
-    mockFetch.mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: new Headers({ 'content-type': 'text/html' }),
-      body: emptyStream,
-    });
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'text/html' }),
+        body: emptyStream,
+      }),
+    );
     expect(await fetchLinkPreview('https://example.com')).toBeNull();
   });
 
@@ -230,19 +271,83 @@ describe('fetchLinkPreview', () => {
     expect(result?.title).toBe('Plain Title');
   });
 
-  it('parses description and image', async () => {
+  it('proxies https og:image URLs as data URLs in main (SSRF guard)', async () => {
     const html = [
       `<meta property="og:title" content="Title">`,
       `<meta property="og:description" content="Desc text">`,
       `<meta property="og:image" content="https://example.com/img.png">`,
     ].join('\n');
-    mockFetch.mockResolvedValue(makeStreamResponse(html));
+    const pngBytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47]);
+    mockFetch.mockImplementation(((input: string | URL | Request) => {
+      const host = fetchRequestHostname(input);
+      const href =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      let path = '';
+      try {
+        path = new URL(href).pathname;
+      } catch {
+        // catch-no-log-ok test mock may receive partial URLs
+      }
+      if (host === 'example.com' && path.endsWith('/img.png')) {
+        return Promise.resolve(
+          mockUndiciResponse({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'image/png' }),
+            body: new ReadableStream<Uint8Array>({
+              start(c) {
+                c.enqueue(pngBytes);
+                c.close();
+              },
+            }),
+          }),
+        );
+      }
+      return Promise.resolve(makeStreamResponse(html));
+    }) as typeof undiciFetch);
     const result = await fetchLinkPreview('https://example.com');
     expect(result).toEqual({
       title: 'Title',
       description: 'Desc text',
-      image: 'https://example.com/img.png',
+      image: expect.stringMatching(/^data:image\/png;base64,/),
     });
+  });
+
+  it('blocks proxied image fetch when og:image hostname resolves to private IPv4', async () => {
+    const pageHtml = [
+      `<meta property="og:title" content="DNS trap">`,
+      `<meta property="og:image" content="https://opengraph.githubassets.com/abc/trap.png">`,
+    ].join('\n');
+    mockFetch.mockImplementation(((input: string | URL | Request) => {
+      const host = fetchRequestHostname(input);
+      if (host === 'opengraph.githubassets.com') {
+        return Promise.resolve(
+          mockUndiciResponse({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'image/png' }),
+            body: new ReadableStream<Uint8Array>({
+              start(c) {
+                c.enqueue(Uint8Array.from([0x89, 0x50, 0x4e, 0x47]));
+                c.close();
+              },
+            }),
+          }),
+        );
+      }
+      return Promise.resolve(makeStreamResponse(pageHtml));
+    }) as typeof undiciFetch);
+    mockDnsLookup.mockImplementation((hostname: string) => {
+      if (hostname === 'opengraph.githubassets.com') {
+        return Promise.resolve({ address: '10.0.0.8', family: 4 });
+      }
+      return Promise.resolve({ address: '93.184.216.34', family: 4 });
+    });
+
+    const result = await fetchLinkPreview('https://example.com/page');
+    expect(result?.title).toBe('DNS trap');
+    expect(result?.image).toBeUndefined();
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
   it('blocks proxied image fetch when redirect targets a private host', async () => {
@@ -250,17 +355,19 @@ describe('fetchLinkPreview', () => {
       `<meta property="og:title" content="Redirect trap">`,
       `<meta property="og:image" content="https://opengraph.githubassets.com/abc/trap.png">`,
     ].join('\n');
-    mockFetch.mockImplementation((input: string | URL | Request) => {
+    mockFetch.mockImplementation(((input: string | URL | Request) => {
       const host = fetchRequestHostname(input);
       if (host === 'opengraph.githubassets.com') {
-        return Promise.resolve({
-          ok: false,
-          status: 302,
-          headers: new Headers({ location: 'http://127.0.0.1/secret.png' }),
-        } as Response);
+        return Promise.resolve(
+          mockUndiciResponse({
+            ok: false,
+            status: 302,
+            headers: new Headers({ location: 'http://127.0.0.1/secret.png' }),
+          }),
+        );
       }
       return Promise.resolve(makeStreamResponse(pageHtml));
-    });
+    }) as typeof undiciFetch);
 
     const result = await fetchLinkPreview('https://example.com/page');
     expect(result?.title).toBe('Redirect trap');
@@ -279,17 +386,19 @@ describe('fetchLinkPreview', () => {
         controller.close();
       },
     });
-    mockFetch.mockImplementation((input: string | URL | Request) => {
+    mockFetch.mockImplementation(((input: string | URL | Request) => {
       if (fetchRequestHostname(input) === 'opengraph.githubassets.com') {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          headers: new Headers({ 'content-type': 'image/png' }),
-          body: imageStream,
-        } as unknown as Response);
+        return Promise.resolve(
+          mockUndiciResponse({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'image/png' }),
+            body: imageStream,
+          }),
+        );
       }
       return Promise.resolve(makeStreamResponse(pageHtml));
-    });
+    }) as typeof undiciFetch);
 
     const result = await fetchLinkPreview('https://github.com/Colorado-Mesh/mesh-client');
     expect(result?.title).toBe('mesh-client');
@@ -302,12 +411,12 @@ describe('fetchLinkPreview', () => {
       `<meta property="og:title" content="mesh-client">`,
       `<meta property="og:image" content="https://opengraph.githubassets.com/abc/Colorado-Mesh/mesh-client">`,
     ].join('\n');
-    mockFetch.mockImplementation((input: string | URL | Request) => {
+    mockFetch.mockImplementation(((input: string | URL | Request) => {
       if (fetchRequestHostname(input) === 'opengraph.githubassets.com') {
-        return Promise.resolve({ ok: false, status: 429 } as Response);
+        return Promise.resolve(mockUndiciResponse({ ok: false, status: 429 }));
       }
       return Promise.resolve(makeStreamResponse(pageHtml));
-    });
+    }) as typeof undiciFetch);
 
     const result = await fetchLinkPreview('https://github.com/Colorado-Mesh/mesh-client');
     expect(result).toEqual({ title: 'mesh-client', description: undefined, image: undefined });
@@ -343,12 +452,14 @@ describe('fetchLinkPreview', () => {
         controller.close();
       },
     });
-    mockFetch.mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: new Headers({ 'content-type': 'text/html' }),
-      body: stream,
-    });
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'text/html' }),
+        body: stream,
+      }),
+    );
     // No title in 200KB of 'A's → returns null without OOMing
     expect(await fetchLinkPreview('https://example.com')).toBeNull();
   });
@@ -363,6 +474,38 @@ describe('fetchLinkPreview', () => {
     );
   });
 
+  it('returns null without unhandled rejection when body read times out', async () => {
+    const timeoutErr = new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+    const stream = new ReadableStream<Uint8Array>({
+      pull() {
+        return Promise.reject(timeoutErr);
+      },
+      cancel() {
+        return Promise.reject(timeoutErr);
+      },
+    });
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'text/html' }),
+        body: stream,
+      }),
+    );
+
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => {
+      unhandled.push(reason);
+    };
+    process.on('unhandledRejection', onUnhandled);
+    try {
+      expect(await fetchLinkPreview('https://example.com/slow')).toBeNull();
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
+  });
+
   it('does not leave unhandled rejection when image body reader cancel rejects', async () => {
     const unhandled: unknown[] = [];
     const onUnhandled = (reason: unknown) => {
@@ -375,7 +518,7 @@ describe('fetchLinkPreview', () => {
       `<meta property="og:image" content="https://opengraph.githubassets.com/abc/Colorado-Mesh/mesh-client">`,
     ].join('\n');
     const cancelErr = new DOMException('The operation was aborted due to timeout', 'TimeoutError');
-    mockFetch.mockImplementation((input: string | URL | Request) => {
+    mockFetch.mockImplementation(((input: string | URL | Request) => {
       if (fetchRequestHostname(input) === 'opengraph.githubassets.com') {
         return Promise.resolve({
           ok: true,
@@ -390,12 +533,44 @@ describe('fetchLinkPreview', () => {
         } as unknown as Response);
       }
       return Promise.resolve(makeStreamResponse(pageHtml));
-    });
+    }) as typeof undiciFetch);
 
     const result = await fetchLinkPreview('https://github.com/Colorado-Mesh/mesh-client');
     expect(result?.title).toBe('mesh-client');
     expect(result?.image).toBeUndefined();
     expect(unhandled).toHaveLength(0);
     process.off('unhandledRejection', onUnhandled);
+  });
+
+  it('uses port 80 for http URLs without explicit port', async () => {
+    const html = `<meta property="og:title" content="HTTP Title">`;
+    mockFetch.mockResolvedValue(makeStreamResponse(html));
+    await fetchLinkPreview('http://example.com/page');
+    expect(agentConnectOpts.some((opts) => opts.port === 80)).toBe(true);
+  });
+
+  it('deduplicates concurrent preview fetches for the same URL', async () => {
+    const html = `<meta property="og:title" content="Deduped">`;
+    mockFetch.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(() => {
+            resolve(makeStreamResponse(html));
+          }, 20);
+        }),
+    );
+    const [a, b] = await Promise.all([
+      fetchLinkPreview('https://example.com/dedup'),
+      fetchLinkPreview('https://example.com/dedup'),
+    ]);
+    expect(a?.title).toBe('Deduped');
+    expect(b?.title).toBe('Deduped');
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns null when resolved address is private for HTML fetch', async () => {
+    mockDnsLookup.mockResolvedValue({ address: '10.0.0.5', family: 4 });
+    expect(await fetchLinkPreview('https://metadata.example.internal/page')).toBeNull();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });

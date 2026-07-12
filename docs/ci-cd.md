@@ -54,13 +54,16 @@ Test results are available as a downloadable artifact from the workflow run.
 
 Triggered by pushing a version tag (e.g., `v1.2.3`):
 
-1. Builds for all three platforms in parallel:
+1. **`prepare-github-release`** — creates a single draft GitHub release for the tag (prevents parallel electron-builder jobs from creating duplicate drafts and 404 asset uploads). On `workflow_dispatch`, the tag is resolved in the workflow from `package.json` and passed as `RELEASE_TAG` (not read inside the release API script — avoids CodeQL `js/file-access-to-http`).
+2. Builds for all three platforms in parallel (or a filtered subset on `workflow_dispatch`):
    - `macos-latest` → `pnpm run dist:mac:publish`
    - `ubuntu-latest` → `pnpm run dist:linux:publish`
    - `windows-latest` → `pnpm run dist:win:publish`
-2. Rebuilds native dependencies (`pnpm run rebuild`)
-3. Installs Linux build dependencies (`libudev-dev`, `rpm`)
-4. Publishes artifacts to GitHub Releases
+3. Rebuilds native dependencies (`pnpm run rebuild`)
+4. Installs Linux build dependencies (`libudev-dev`, `rpm`)
+5. Publishes artifacts to GitHub Releases
+
+Linux packaging smoke (`verify-linux-packaging.mjs`) asserts `.deb` **Description** metadata is ASCII-only. See [Release Process](release-process.md).
 
 See [Release Process](release-process.md) for the maintainer workflow.
 
@@ -246,3 +249,22 @@ CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage 
 - Verify `docs/requirements.txt` dependencies are valid
 - Check MkDocs configuration in `mkdocs.yml`
 - Ensure all referenced doc files exist
+
+---
+
+## Packaging smoke builds (`build.yaml` / `release.yaml`)
+
+Linux arm64 cross-builds on Ubuntu 24.04 runners use `scripts/ci-setup-linux-arm64-apt.sh` before `dpkg --add-architecture arm64`. The script pins `Architectures: amd64` only on deb822 stanzas in `ubuntu.sources` that lack an `Architectures` field, writes arm64 ports mirrors as deb822 `arm64.sources` (not legacy `.list`), and is idempotent across workflow re-runs.
+
+Reticulum sidecar staging before `electron-builder`:
+
+- `scripts/build-reticulum-sidecar-release.mjs` — compile/copy sidecar per target OS/arch
+- `scripts/verify-reticulum-sidecar-staged.mjs` — size/assert checks
+- `scripts/electron-builder-before-pack.mjs` — copy into `resources/reticulum-sidecar/`
+
+Post-build smoke tests:
+
+- `scripts/test-linux-appimage-reticulum-sidecar.mjs` — x64 uses `--appimage-extract`; arm64 on x64 runners uses `unsquashfs` for cross-arch extract
+- `scripts/test-win-nsis-install.mjs` — NSIS + 7z sidecar probe on WoA
+
+Local packaging parity: see [development-environment.md](development-environment.md#reticulum-sidecar-optional).

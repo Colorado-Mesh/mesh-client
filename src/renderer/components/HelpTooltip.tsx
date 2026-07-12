@@ -13,6 +13,8 @@ export function HelpTooltip({
   children,
   className,
   ariaLabel,
+  /** When true, wrapper is not focusable (use when children are buttons/links). */
+  nonFocusableWrapper = false,
 }: {
   text: string;
   children?: ReactNode;
@@ -20,6 +22,7 @@ export function HelpTooltip({
   className?: string;
   /** Accessible name when custom children replace the default ⓘ trigger. */
   ariaLabel?: string;
+  nonFocusableWrapper?: boolean;
 }) {
   const [pos, setPos] = useState<InstantTooltipPosition | null>(null);
   const ref = useRef<HTMLSpanElement>(null);
@@ -32,10 +35,11 @@ export function HelpTooltip({
     <span
       ref={ref}
       data-instant-tooltip-managed=""
-      className={`inline-flex cursor-help${className ? ` ${className}` : ''}`}
+      className={['inline-flex', !nonFocusableWrapper && 'cursor-help', className]
+        .filter(Boolean)
+        .join(' ')}
       aria-label={ariaLabel}
-      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keyboard focus shows same tooltip as hover
-      tabIndex={0}
+      tabIndex={nonFocusableWrapper ? undefined : 0}
       onMouseEnter={updatePosition}
       onMouseLeave={() => {
         setPos(null);

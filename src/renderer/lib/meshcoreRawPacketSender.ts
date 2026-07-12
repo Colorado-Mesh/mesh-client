@@ -183,10 +183,12 @@ export function meshcoreRawPacketLogFromBytesFallback(
   routeTypeString: string;
   payloadTypeString: string;
   hopCount: number;
+  pathBytes: number[];
+  pathHashSizeBytes: 1 | 2 | 3;
   fromNodeId: number | null;
 } | null {
   try {
-    const { hops, pathEndOffset } = decodeMeshCorePathPrefix(raw);
+    const { hops, pathEndOffset, path, hashSizeBytes } = decodeMeshCorePathPrefix(raw);
     const byte0 = raw[0];
     const routeTypeString = meshCoreRouteTypeStringFromByte0(byte0);
     const payloadTypeString = meshCorePayloadTypeStringFromByte0(byte0);
@@ -230,6 +232,8 @@ export function meshcoreRawPacketLogFromBytesFallback(
       routeTypeString,
       payloadTypeString,
       hopCount: hops,
+      pathBytes: path,
+      pathHashSizeBytes: hashSizeBytes,
       fromNodeId,
     };
   } catch {

@@ -259,4 +259,31 @@ describe('useMeshcoreRuntime waiting messages drain', () => {
     );
     expect(getWaitingMessagesMock).not.toHaveBeenCalled();
   }, 15_000);
+
+  it('event 131 silent drain treats syncNextMessage timeout as empty queue', async () => {
+    syncNextMessageMock.mockRejectedValue(
+      new Error('MeshCore syncNextMessage timed out after 12000ms'),
+    );
+
+    const result = await connectSerialConfigured();
+    const conn = lastMeshSerialMock.current;
+    expect(conn).not.toBeNull();
+
+    act(() => {
+      conn!.emit(131);
+    });
+
+    await waitFor(
+      () => {
+        expect(syncNextMessageMock).toHaveBeenCalled();
+      },
+      { timeout: 8_000 },
+    );
+    await waitFor(
+      () => {
+        expect(result.current.waitingMessagesSilentDrainActive).toBe(false);
+      },
+      { timeout: 8_000 },
+    );
+  }, 20_000);
 });

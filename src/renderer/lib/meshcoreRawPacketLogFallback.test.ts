@@ -30,6 +30,8 @@ describe('meshcoreRawPacketLogFromBytesFallback', () => {
     expect(fb!.routeTypeString).toBe('FLOOD');
     expect(fb!.payloadTypeString).toBe('ADVERT');
     expect(fb!.hopCount).toBe(6);
+    expect(fb!.pathBytes.length).toBeGreaterThan(0);
+    expect(fb!.pathHashSizeBytes).toBe(1);
     const innerStart = 8;
     const expectId = pubkeyToNodeId(raw.subarray(innerStart, innerStart + 32));
     expect(fb!.fromNodeId).toBe(expectId);

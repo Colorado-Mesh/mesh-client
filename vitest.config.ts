@@ -109,6 +109,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/meshcoreOwnNodeIds.test.ts',
   'src/renderer/lib/meshcoreRoomCredentialStorage.test.ts',
   'src/renderer/lib/meshcoreRepeaterCredentialStorage.test.ts',
+  'src/renderer/lib/meshcorePerNodeCredentialStorage.test.ts',
   'src/renderer/lib/meshcoreRepeaterSavedSecrets.test.ts',
   'src/renderer/lib/meshcoreRepeaterSession.test.ts',
   'src/renderer/lib/meshcoreRoomSavedSecrets.test.ts',
@@ -123,7 +124,10 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/rfReconnectHelper.test.ts',
   'src/renderer/lib/reticulum/useReticulumSidecarApi.test.ts',
   'src/renderer/lib/reticulum/useReticulumInterfaceSnapshot.test.ts',
+  'src/renderer/lib/reticulum/reticulumNobleBleYield.test.ts',
+  'src/renderer/lib/reticulum/reticulumBleAdapterLease.test.ts',
   'src/renderer/lib/reticulum/reticulumAttachmentCache.test.ts',
+  'src/renderer/lib/reticulum/reticulumDiagnosticSnapshot.test.ts',
   'src/renderer/components/NomadMicronPageView.test.tsx',
   'src/renderer/lib/serialPortSignature.test.ts',
   'src/renderer/lib/startupDbPrune.test.ts',
@@ -131,6 +135,8 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/systemPowerState.test.ts',
   'src/renderer/lib/themeColors.test.ts',
   'src/renderer/lib/transport/TransportManager.test.ts',
+  'src/renderer/lib/transportTcpIpc.test.ts',
+  'src/renderer/lib/connection.tcp.test.ts',
   'src/renderer/lib/webbluetooth-ble-manager.test.ts',
   'src/renderer/lib/writeClipboardText.test.ts',
   'src/renderer/runtime/useMeshcoreRuntime.favorited-identity.test.ts',
@@ -149,8 +155,8 @@ const RENDERER_LOGIC_EXCLUDE = [
 const RENDERER_LOGIC_LIB_GLOB = 'src/renderer/lib/**/*.test.ts';
 
 /** Lib tests that need jsdom/setup — excluded from renderer-logic, routed to renderer-ui */
-const RENDERER_LOGIC_LIB_UI_FALLBACK = RENDERER_LOGIC_EXCLUDE.filter((f) =>
-  f.startsWith('src/renderer/lib/'),
+const RENDERER_LOGIC_LIB_UI_FALLBACK = new Set(
+  RENDERER_LOGIC_EXCLUDE.filter((f) => f.startsWith('src/renderer/lib/')),
 );
 
 function collectRendererLibTestFiles(): string[] {
@@ -172,7 +178,7 @@ function collectRendererLibTestFiles(): string[] {
 
 /** Pure lib unit tests owned by renderer-logic; borderline files run in renderer-ui instead */
 const RENDERER_LOGIC_LIB_NODE_ONLY = collectRendererLibTestFiles().filter(
-  (f) => !RENDERER_LOGIC_LIB_UI_FALLBACK.includes(f),
+  (f) => !RENDERER_LOGIC_LIB_UI_FALLBACK.has(f),
 );
 
 /** renderer-ui skips tests that run in renderer-logic (node), not borderline jsdom lib tests */

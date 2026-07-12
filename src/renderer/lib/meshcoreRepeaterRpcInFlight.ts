@@ -1,6 +1,6 @@
 import { meshcoreTraceResponsesInFlightCount } from './meshcoreTracePathMultiplex';
 
-export type MeshcoreRepeaterRpcKind = 'neighbors' | 'telemetry' | 'status' | 'trace';
+export type MeshcoreRepeaterRpcKind = 'neighbors' | 'telemetry' | 'status' | 'trace' | 'cli';
 
 const inFlightByKey = new Map<string, Promise<unknown>>();
 
