@@ -337,6 +337,7 @@ export class NobleBleManager extends EventEmitter {
     session.attMtuSanitized = attMtuOrDefault(null);
     session.attMtuSuspiciousLogged = false;
     session.sessionEstablishedAtMs = null;
+    session.lastConnectedPeripheralId = null;
   }
 
   private updateSessionAttMtuFromRaw(

@@ -8,6 +8,7 @@ import {
   type SimNodeState,
   startForceSimulationLoop,
 } from '@/renderer/lib/forceDirectedGraphLayout';
+import { isReticulumHashPrefixAlias } from '@/renderer/lib/ingest/reticulumIngest';
 import {
   buildReticulumMeshTopologyGraph,
   type ReticulumTopologyGraph,
@@ -43,13 +44,19 @@ function enrichTopologyPeers(peers: ReticulumPeerWireRow[]): ReticulumPeerWireRo
       null;
     const interfaceName =
       peer.interface?.trim() || fromStore?.interface?.trim() || peer.interface || null;
-    if (display_name && display_name !== hash.slice(0, 12) && interfaceName === peer.interface) {
+    if (
+      display_name &&
+      !isReticulumHashPrefixAlias(hash, display_name) &&
+      interfaceName === peer.interface
+    ) {
       return { ...peer, display_name };
     }
     return {
       ...peer,
       display_name:
-        display_name && display_name !== hash.slice(0, 12) ? display_name : peer.display_name,
+        display_name && !isReticulumHashPrefixAlias(hash, display_name)
+          ? display_name
+          : peer.display_name,
       interface: interfaceName,
     };
   });

@@ -244,61 +244,70 @@ function detachDmgMount() {
       stdio: 'inherit',
     });
     if (forced.error || forced.status !== 0) {
-      console.error('[verify-mac-packaging] hdiutil detach -force failed:', forced.error);
+      const msg = `[verify-mac-packaging] hdiutil detach -force failed: ${forced.error ?? forced.status}`;
+      if (process.env.CI === 'true') {
+        fail(msg);
+      }
+      console.error(msg);
     }
   }
 }
 
 function main() {
-  if (!existsSync(releaseDir)) {
-    fail(`Missing release directory: ${releaseDir}`);
+  try {
+    if (!existsSync(releaseDir)) {
+      fail(`Missing release directory: ${releaseDir}`);
+    }
+
+    const dmgArchives = collectArchives(releaseDir, '.dmg');
+    const zipArchives = collectArchives(releaseDir, '.zip');
+
+    if (dmgArchives.length === 0) {
+      fail(`No .dmg artifacts under ${releaseDir}`);
+    }
+    if (zipArchives.length === 0) {
+      fail(`No .zip artifacts under ${releaseDir}`);
+    }
+
+    for (const dmgPath of dmgArchives) {
+      assertMinSize(`dmg ${path.basename(dmgPath)}`, dmgPath, MIN_DMG_BYTES);
+    }
+    for (const zipPath of zipArchives) {
+      assertMinSize(`zip ${path.basename(zipPath)}`, zipPath, MIN_ZIP_BYTES);
+    }
+
+    /** @type {string[]} */
+    const validatedSources = [];
+
+    /** @type {string[]} */
+    const onDiskBundles = [];
+    collectAppBundles(releaseDir, onDiskBundles);
+    const directBundle = onDiskBundles.find((bundle) => isCompleteAppBundle(bundle));
+
+    if (directBundle) {
+      validateAppBundle(directBundle, 'direct');
+      validatedSources.push('direct');
+    }
+
+    if (process.env.CI === 'true' || !directBundle) {
+      const zipBundle = extractZipToTemp(pickPrimaryArchive(zipArchives));
+      validateAppBundle(zipBundle, 'zip');
+      validatedSources.push('zip');
+    }
+
+    mountDmgAndValidate(pickPrimaryArchive(dmgArchives), (dmgBundle) => {
+      validateAppBundle(dmgBundle, 'dmg');
+      validatedSources.push('dmg');
+    });
+
+    const version = readPackageVersion();
+    console.debug(
+      `[verify-mac-packaging] OK — validated via ${validatedSources.join(', ')}; ${dmgArchives.length} dmg, ${zipArchives.length} zip (v${version})`,
+    );
+  } finally {
+    rmSync(VERIFY_ZIP_EXTRACT_DIR, { recursive: true, force: true });
+    rmSync(VERIFY_DMG_MOUNT_DIR, { recursive: true, force: true });
   }
-
-  const dmgArchives = collectArchives(releaseDir, '.dmg');
-  const zipArchives = collectArchives(releaseDir, '.zip');
-
-  if (dmgArchives.length === 0) {
-    fail(`No .dmg artifacts under ${releaseDir}`);
-  }
-  if (zipArchives.length === 0) {
-    fail(`No .zip artifacts under ${releaseDir}`);
-  }
-
-  for (const dmgPath of dmgArchives) {
-    assertMinSize(`dmg ${path.basename(dmgPath)}`, dmgPath, MIN_DMG_BYTES);
-  }
-  for (const zipPath of zipArchives) {
-    assertMinSize(`zip ${path.basename(zipPath)}`, zipPath, MIN_ZIP_BYTES);
-  }
-
-  /** @type {string[]} */
-  const validatedSources = [];
-
-  /** @type {string[]} */
-  const onDiskBundles = [];
-  collectAppBundles(releaseDir, onDiskBundles);
-  const directBundle = onDiskBundles.find((bundle) => isCompleteAppBundle(bundle));
-
-  if (directBundle) {
-    validateAppBundle(directBundle, 'direct');
-    validatedSources.push('direct');
-  }
-
-  if (!directBundle) {
-    const zipBundle = extractZipToTemp(pickPrimaryArchive(zipArchives));
-    validateAppBundle(zipBundle, 'zip');
-    validatedSources.push('zip');
-  }
-
-  mountDmgAndValidate(pickPrimaryArchive(dmgArchives), (dmgBundle) => {
-    validateAppBundle(dmgBundle, 'dmg');
-    validatedSources.push('dmg');
-  });
-
-  const version = readPackageVersion();
-  console.debug(
-    `[verify-mac-packaging] OK — validated via ${validatedSources.join(', ')}; ${dmgArchives.length} dmg, ${zipArchives.length} zip (v${version})`,
-  );
 }
 
 /** @returns {string} */
@@ -313,7 +322,12 @@ function readPackageVersion() {
 }
 
 try {
-  main();
+  const isDirectRun =
+    process.argv[1] &&
+    path.resolve(fileURLToPath(import.meta.url)) === path.resolve(process.argv[1]);
+  if (isDirectRun) {
+    main();
+  }
 } catch (e) {
   if (e instanceof VerificationFailure) {
     console.error(`[verify-mac-packaging] ${e.message}`);
@@ -322,3 +336,14 @@ try {
   }
   process.exit(1);
 }
+
+export {
+  assertFrameworkSymlinks,
+  collectAppBundles,
+  collectArchives,
+  detachDmgMount,
+  fail,
+  isCompleteAppBundle,
+  pickPrimaryArchive,
+  VerificationFailure,
+};

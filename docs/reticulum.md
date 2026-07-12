@@ -220,6 +220,7 @@ Reticulum is async — offline peers need a propagation node, not a TCP-style im
 - **`GET /api/v1/peers`:** live RNS path table when the sidecar is built with the full stack; cached on fetch failure
 - **Your node** does not appear as a peer row; identity hash is under **Network → Identity**; topology uses a synthetic **You** center node
 - **`interface` column:** path learned via that interface, not “devices on this serial port”
+- **Display names / aliases:** sidecar peers may ship without labels; mesh-client enriches from (in order) sidecar `display_name`, **LXMF / Nomad announce** `app_data` (msgpack or UTF-8 — parsed in the sidecar), SQLite `reticulum_destinations.display_name`, and Nomad Network node list during `refreshReticulumPeersFromSidecar`. Inbound LXMF ingest (`reticulumIngest.ts`) treats a `sender_name` equal to the destination hash prefix as a **placeholder**, not a real alias — contact upserts omit it. SQLite upsert (`db:upsertReticulumDestination`) **refuses to overwrite** an existing name with a hash-prefix alias (case-insensitive guard on the first 12 hex chars).
 - **Topology:** one next hop per destination (`via_hash`); sidecar infers `self → relay` when needed; BFS layout with hop fallback
 
 ---

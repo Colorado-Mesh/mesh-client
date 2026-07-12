@@ -5,8 +5,13 @@
 import type { FileEntry } from '@zip.js/zip.js';
 import { BlobReader, TextWriter, Uint8ArrayWriter, ZipReader } from '@zip.js/zip.js';
 
+import { closeSerialPortIfOpen } from '@/renderer/lib/connection';
+
 import { sleepMillis } from './binaryUtils';
 import type { FlashProgressCallback } from './types';
+
+/** Abort DFU when no packet progress (USB drop mid-transfer). */
+export const NRF52_DFU_STALL_TIMEOUT_MS = 60_000;
 
 export class Nrf52DfuFlasher {
   static readonly DFU_TOUCH_BAUD = 1200;
@@ -51,31 +56,37 @@ export class Nrf52DfuFlasher {
   async flash(firmwareZipBlob: Blob, progressCallback?: FlashProgressCallback): Promise<void> {
     const blobReader = new BlobReader(firmwareZipBlob);
     const zipReader = new ZipReader(blobReader);
-    const zipEntries = await zipReader.getEntries();
+    try {
+      const zipEntries = await zipReader.getEntries();
 
-    const manifestFile = zipEntries.find(
-      (entry): entry is FileEntry => !entry.directory && entry.filename === 'manifest.json',
-    );
-    if (!manifestFile) {
-      throw new Error('manifest.json not found in firmware file');
-    }
-
-    const text = await manifestFile.getData(new TextWriter());
-    const json = JSON.parse(text) as {
-      manifest: { application?: { bin_file: string; dat_file: string } };
-    };
-    const manifest = json.manifest;
-
-    if (manifest.application) {
-      await this.dfuSendImage(
-        Nrf52DfuFlasher.HEX_TYPE_APPLICATION,
-        zipEntries,
-        manifest.application,
-        progressCallback,
+      const manifestFile = zipEntries.find(
+        (entry): entry is FileEntry => !entry.directory && entry.filename === 'manifest.json',
       );
-    }
+      if (!manifestFile) {
+        throw new Error('manifest.json not found in firmware file');
+      }
 
-    await zipReader.close();
+      const text = await manifestFile.getData(new TextWriter());
+      const json = JSON.parse(text) as {
+        manifest: { application?: { bin_file: string; dat_file: string } };
+      };
+      const manifest = json.manifest;
+
+      if (manifest.application) {
+        await this.dfuSendImage(
+          Nrf52DfuFlasher.HEX_TYPE_APPLICATION,
+          zipEntries,
+          manifest.application,
+          progressCallback,
+        );
+      }
+    } finally {
+      try {
+        await zipReader.close();
+      } catch {
+        // catch-no-log-ok zip may already be closed after successful flash
+      }
+    }
   }
 
   private async dfuSendImage(
@@ -228,15 +239,40 @@ export class Nrf52DfuFlasher {
     const flashPageWriteTime =
       (Nrf52DfuFlasher.FLASH_PAGE_SIZE / 4) * Nrf52DfuFlasher.FLASH_WORD_WRITE_TIME;
 
-    for (let i = 0; i < packets.length; i++) {
-      await this.sendPacket(packets[i]);
-      await sleepMillis(flashPageWriteTime * 1000);
-      progressCallback?.(Math.floor(((i + 1) / packets.length) * 100));
-    }
+    let lastProgressAt = Date.now();
+    let stallInterval: ReturnType<typeof setInterval> | undefined;
 
-    await this.sendPacket(
-      this.createHciPacketFromFrame([...this.int32ToBytes(Nrf52DfuFlasher.DFU_STOP_DATA_PACKET)]),
-    );
+    try {
+      await Promise.race([
+        (async () => {
+          for (let i = 0; i < packets.length; i++) {
+            await this.sendPacket(packets[i]);
+            await sleepMillis(flashPageWriteTime * 1000);
+            lastProgressAt = Date.now();
+            progressCallback?.(Math.floor(((i + 1) / packets.length) * 100));
+          }
+
+          await this.sendPacket(
+            this.createHciPacketFromFrame([
+              ...this.int32ToBytes(Nrf52DfuFlasher.DFU_STOP_DATA_PACKET),
+            ]),
+          );
+        })(),
+        new Promise<never>((_, reject) => {
+          stallInterval = setInterval(() => {
+            if (Date.now() - lastProgressAt >= NRF52_DFU_STALL_TIMEOUT_MS) {
+              console.warn('[nrf52DfuFlasher] sendFirmware stalled — closing serial port');
+              void closeSerialPortIfOpen(this.serialPort);
+              reject(new Error('NRF52_DFU_STALLED'));
+            }
+          }, 2000);
+        }),
+      ]);
+    } finally {
+      if (stallInterval) {
+        clearInterval(stallInterval);
+      }
+    }
   }
 
   private createSlipHeader(

@@ -153,17 +153,7 @@ impl LiveBridge {
             Arc::new(Mutex::new(HashMap::new()));
         let display_name_cache: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new({
             let state = inner.read().await;
-            state
-                .contacts
-                .iter()
-                .filter_map(|c| {
-                    let name = c.display_name.as_ref()?.trim();
-                    if name.is_empty() {
-                        return None;
-                    }
-                    Some((c.destination_hash.clone(), name.to_string()))
-                })
-                .collect()
+            contacts_to_name_map(&state.contacts)
         }));
 
         let mut router = LxmRouter::new(lxmf_core::router::RouterConfig::default());
@@ -1352,8 +1342,16 @@ fn parse_announce_display_name(app_data: Option<&[u8]>) -> Option<String> {
     std::str::from_utf8(bytes)
         .ok()
         .map(str::trim)
-        .filter(|s| !s.is_empty())
+        .filter(|s| is_plausible_display_name(s))
         .map(str::to_string)
+}
+
+fn is_plausible_display_name(s: &str) -> bool {
+    if s.is_empty() || s.len() > 128 {
+        return false;
+    }
+    s.chars()
+        .all(|c| !c.is_control() || c == ' ' || c == '\t')
 }
 
 fn nomad_name_from_msgpack_value(value: &rmpv::Value) -> Option<String> {
@@ -1375,20 +1373,21 @@ fn nomad_name_from_msgpack_value(value: &rmpv::Value) -> Option<String> {
     }
 }
 
+fn contacts_to_name_map(contacts: &[ContactRow]) -> HashMap<String, String> {
+    contacts
+        .iter()
+        .filter_map(|c| {
+            let name = c.display_name.as_ref()?.trim();
+            if name.is_empty() {
+                return None;
+            }
+            Some((c.destination_hash.clone(), name.to_string()))
+        })
+        .collect()
+}
+
 fn resolve_inbound_sender_name(contacts: &[ContactRow], sender_hash: &str) -> String {
-    resolve_inbound_sender_name_map(
-        &contacts
-            .iter()
-            .filter_map(|c| {
-                let name = c.display_name.as_ref()?.trim();
-                if name.is_empty() {
-                    return None;
-                }
-                Some((c.destination_hash.clone(), name.to_string()))
-            })
-            .collect(),
-        sender_hash,
-    )
+    resolve_inbound_sender_name_map(&contacts_to_name_map(contacts), sender_hash)
 }
 
 fn resolve_inbound_sender_name_map(
@@ -1447,6 +1446,11 @@ mod announce_display_name_tests {
     fn parse_announce_display_name_empty_is_none() {
         assert_eq!(parse_announce_display_name(Some(b"")), None);
         assert_eq!(parse_announce_display_name(None), None);
+    }
+
+    #[test]
+    fn parse_announce_display_name_rejects_control_chars() {
+        assert_eq!(parse_announce_display_name(Some(b"bad\x01name")), None);
     }
 
     #[test]

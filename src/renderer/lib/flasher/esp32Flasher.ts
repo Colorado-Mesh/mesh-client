@@ -136,6 +136,7 @@ export async function flashEsp32Firmware(
     }
 
     let lastProgressAt = Date.now();
+    let hasSeenProgress = false;
     let stallInterval: ReturnType<typeof setInterval> | undefined;
 
     try {
@@ -149,6 +150,7 @@ export async function flashEsp32Firmware(
           compress: true,
           calculateMD5Hash: (image: string) => md5Latin1String(image),
           reportProgress: (_fileIndex: number, written: number, total: number) => {
+            hasSeenProgress = true;
             lastProgressAt = Date.now();
             maxBytesWritten = Math.max(maxBytesWritten, written);
             progressCallback?.(Math.floor((written / total) * 100));
@@ -156,6 +158,9 @@ export async function flashEsp32Firmware(
         }),
         new Promise<never>((_, reject) => {
           stallInterval = setInterval(() => {
+            if (!hasSeenProgress) {
+              return;
+            }
             if (Date.now() - lastProgressAt >= ESP32_FLASH_STALL_TIMEOUT_MS) {
               console.warn('[esp32Flasher] writeFlash stalled — closing serial port');
               void closeSerialPortIfOpen(serialPort);

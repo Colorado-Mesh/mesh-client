@@ -1507,6 +1507,7 @@
       "noSerialPorts": "No USB serial ports found. Connect your board over USB and try again.",
       "portInUse": "Serial port is already open. Stop other connections and try again.",
       "generic": "Operation failed: {{message}}",
+      "unknown": "An unexpected error occurred.",
       "selectProduct": "Select a product first.",
       "selectModel": "Select a model first.",
       "selectFirmware": "Select a firmware file first.",

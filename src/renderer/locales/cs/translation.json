@@ -1476,8 +1476,9 @@
       "flashMd5Mismatch": "Ověření firmwaru se po zápisu nezdařilo. Zkuste to znovu s jiným USB kabelem nebo portem; pokud přetrvává, znovu stáhněte firmware zip.",
       "portSelectionTimedOut": "Časový limit výběru sériového portu vypršel. Vyberte port ze seznamu do dvou minut nebo opakujte flash pro opětovné použití posledního portu.",
       "noSerialPorts": "Nebyly nalezeny žádné sériové porty USB. Připojte desku přes USB a zkuste to znovu.",
-      "rnodeCommandTimeout": "Zařízení přestalo reagovat sériově. Odpojte ostatní aplikace pomocí portu, počkejte, až deska dokončí zavádění, a zkuste to znovu.",
-      "esp32FlashStalled": "Přenos firmwaru se zastavil bez pokroku. Zkuste jiný kabel nebo port USB, přejděte do režimu zavaděče (podržte SPUŠTĚNÍ, klepněte na RESET) a znovu blikejte."
+      "rnodeCommandTimeout": "Zařízení přestalo reagovat přes sériový port. Zavřete ostatní aplikace, které používají stejný sériový port, počkejte, až deska dokončí bootování, a zkuste to znovu.",
+      "esp32FlashStalled": "Přenos firmwaru se zastavil bez pokroku. Zkuste jiný USB kabel nebo port, přejděte do režimu bootloaderu (podržte BOOT, klepněte RESET) a flashujte znovu.",
+      "unknown": "Nastala neočekávaná chyba."
     },
     "selectSerialPort": "Výběr sériového portu",
     "noSerialPorts": "Nebyly nalezeny žádné sériové porty USB.",
@@ -3999,7 +4000,7 @@
     "newMessages_one": "{{protocol}}: {{count}} nová zpráva",
     "newMessages_other": "{{protocol}}: {{count}} nových zpráv",
     "meshcoreDistanceFilterHint": "Na mapě máš {{count}} kontaktů s GPS. Povol filtr vzdálenosti v App → Vzhled a zaměř se na blízké uzly.",
-    "longSessionRestartNudge": "Mesh-klient běží již čtyři dny. Restartujte aplikaci, abyste snížili riziko selhání při dlouhých relacích MeshCore ble."
+    "longSessionRestartNudge": "mesh-client běží již čtyři dny. Restartujte aplikaci, abyste snížili riziko pádů při dlouhých relacích MeshCore BLE."
   },
   "updateStatus": {
     "checking": "Kontrola…",

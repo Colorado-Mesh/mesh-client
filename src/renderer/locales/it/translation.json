@@ -1476,8 +1476,9 @@
       "flashMd5Mismatch": "Verifica del firmware non riuscita dopo la scrittura. Riprovare con un altro cavo o porta USB; se persiste, scaricare nuovamente lo zip del firmware.",
       "portSelectionTimedOut": "Timeout della selezione della porta seriale. Scegli una porta dall'elenco entro due minuti o riprova il flash per riutilizzare l'ultima porta.",
       "noSerialPorts": "Nessuna porta seriale USB trovata. Collega la scheda tramite USB e riprova.",
-      "rnodeCommandTimeout": "Il dispositivo ha smesso di rispondere in modalità seriale. Scollega altre app utilizzando la porta, attendi che la scheda termini l'avvio, quindi riprova.",
-      "esp32FlashStalled": "Trasferimento firmware in stallo senza avanzamento. Provare un altro cavo o porta USB, accedere alla modalità bootloader (tenere premuto BOOT, toccare RESET) e lampeggiare di nuovo."
+      "rnodeCommandTimeout": "Il dispositivo ha smesso di rispondere in seriale. Chiudere le altre app che usano la stessa porta seriale, attendere il completamento dell'avvio della scheda e riprovare.",
+      "esp32FlashStalled": "Trasferimento firmware bloccato senza progressi. Provare un altro cavo o porta USB, entrare in modalità bootloader (tenere premuto BOOT, toccare RESET) e riflashare.",
+      "unknown": "Si è verificato un errore imprevisto."
     },
     "selectSerialPort": "Selezionare la Porta Seriale.",
     "noSerialPorts": "Nessuna porta seriale USB trovata.",
@@ -3999,7 +4000,7 @@
     "newMessages_one": "{{protocol}}: {{count}} nuovo messaggio",
     "newMessages_other": "{{protocol}}: {{count}} nuovi messaggi",
     "meshcoreDistanceFilterHint": "Hai {{count}} contatti con GPS sulla mappa. Abilita il filtro distanza in App → Aspetto per concentrarti sui nodi vicini.",
-    "longSessionRestartNudge": "Mesh-client è in funzione da quattro giorni. Riavvia l'app per ridurre il rischio di crash su sessioni BLE MeshCore lunghe."
+    "longSessionRestartNudge": "mesh-client è in esecuzione da quattro giorni. Riavviare l'app per ridurre il rischio di arresti anomali nelle lunghe sessioni MeshCore BLE."
   },
   "updateStatus": {
     "checking": "Verifica…",

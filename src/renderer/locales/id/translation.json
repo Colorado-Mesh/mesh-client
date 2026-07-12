@@ -1476,8 +1476,9 @@
       "flashMd5Mismatch": "Verifikasi firmware gagal setelah ditulis. Coba lagi dengan kabel atau port USB yang berbeda; jika terus berlanjut, unduh ulang zip firmware.",
       "portSelectionTimedOut": "Waktu pemilihan port serial habis. Pilih port dari daftar dalam waktu dua menit, atau coba lagi flash untuk menggunakan kembali port terakhir.",
       "noSerialPorts": "Tidak ditemukan port serial USB. Hubungkan papan Anda melalui USB dan coba lagi.",
-      "rnodeCommandTimeout": "Perangkat berhenti merespons melalui serial. Cabut aplikasi lain menggunakan port, tunggu hingga papan selesai boot, lalu coba lagi.",
-      "esp32FlashStalled": "Transfer firmware terhenti tanpa kemajuan. Coba kabel atau port USB lain, masuk ke mode bootloader (tahan BOOT, ketuk RESET), dan flash lagi."
+      "rnodeCommandTimeout": "Perangkat berhenti merespons melalui serial. Tutup aplikasi lain yang menggunakan port serial yang sama, tunggu hingga papan selesai boot, lalu coba lagi.",
+      "esp32FlashStalled": "Transfer firmware terhenti tanpa kemajuan. Coba kabel atau port USB lain, masuk ke mode bootloader (tahan BOOT, ketuk RESET), dan flash lagi.",
+      "unknown": "Kesalahan tak terduga terjadi."
     },
     "selectSerialPort": "Pilih port serial",
     "noSerialPorts": "Tidak ditemukan port serial USB.",
@@ -3999,7 +4000,7 @@
     "newMessages_one": "{{protocol}}: {{count}} pesan baru",
     "newMessages_other": "{{protocol}}: {{count}} pesan baru",
     "meshcoreDistanceFilterHint": "Anda memiliki {{count}} kontak dengan GPS di peta. Aktifkan filter jarak di Aplikasi → Penampilan untuk fokus pada node terdekat.",
-    "longSessionRestartNudge": "Mesh - client telah berjalan selama empat hari. Mulai ulang aplikasi untuk mengurangi risiko crash pada sesi BLE MeshCore yang panjang."
+    "longSessionRestartNudge": "mesh-client telah berjalan selama empat hari. Mulai ulang aplikasi untuk mengurangi risiko crash pada sesi MeshCore BLE yang panjang."
   },
   "updateStatus": {
     "checking": "Memeriksa…",

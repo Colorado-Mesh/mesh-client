@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 import { useElectronSerialPortPicker } from '@/renderer/hooks/useElectronSerialPortPicker';
 import { bytesToHex } from '@/renderer/lib/flasher/binaryUtils';
 import { rnodeDisplayBufferToPng } from '@/renderer/lib/flasher/displayUtils';
@@ -22,6 +23,7 @@ import {
 } from '@/renderer/lib/flasher/flasherSessionPort';
 import { Nrf52DfuFlasher } from '@/renderer/lib/flasher/nrf52DfuFlasher';
 import { provisionEeprom, setFirmwareHashFromDevice } from '@/renderer/lib/flasher/provision';
+import { RNODE_POST_EEPROM_SETTLE_MS } from '@/renderer/lib/flasher/rnode';
 import { ROM } from '@/renderer/lib/flasher/rom';
 import type { RNodeModel, RNodeProduct } from '@/renderer/lib/flasher/types';
 import { persistSerialPortIdentity } from '@/renderer/lib/serialPortSignature';
@@ -212,7 +214,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
       product: selectedProduct.catalogKey,
       model: selectedModel?.id,
       platform: selectedProduct.platform,
-      firmware: firmwareFile.name,
+      firmware: sanitizeLogMessage(firmwareFile.name),
     });
 
     try {
@@ -294,7 +296,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
           return;
         }
         await provisionEeprom(rnode, { product: selectedProduct, model: selectedModel });
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+        await new Promise((resolve) => setTimeout(resolve, RNODE_POST_EEPROM_SETTLE_MS));
         await rnode.reset();
         setProvisionSucceeded(true);
         showStatus(t('flasher.provisionSuccess'));
@@ -322,7 +324,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
           return;
         }
         await setFirmwareHashFromDevice(rnode);
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+        await new Promise((resolve) => setTimeout(resolve, RNODE_POST_EEPROM_SETTLE_MS));
         await rnode.reset();
         setHashSetSucceeded(true);
         showStatus(t('flasher.firmwareHashSuccess'));

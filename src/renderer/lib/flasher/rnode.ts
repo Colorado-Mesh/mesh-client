@@ -8,6 +8,10 @@ type CommandCallback = (response: number[]) => void;
 
 /** Default KISS command timeout — hung device otherwise blocks the flasher UI indefinitely. */
 export const RNODE_COMMAND_TIMEOUT_MS = 30_000;
+/** Bluetooth pairing can hang until force-quit without a bounded wait. */
+export const RNODE_BT_PAIRING_TIMEOUT_MS = 90_000;
+/** Wait after EEPROM writes before reset so the device can settle. */
+export const RNODE_POST_EEPROM_SETTLE_MS = 5_000;
 
 export class RNode {
   static readonly KISS_FEND = 0xc0;
@@ -291,7 +295,7 @@ export class RNode {
         finish(false);
       }, timeoutMs);
 
-      void this.sendCommand(RNode.CMD_DETECT, [RNode.DETECT_REQ])
+      void this.sendCommand(RNode.CMD_DETECT, [RNode.DETECT_REQ], timeoutMs)
         .then((response) => {
           const [responseByte] = response;
           finish(responseByte === RNode.DETECT_RESP);
@@ -421,15 +425,25 @@ export class RNode {
   }
 
   async startBluetoothPairing(pinCallback: (pin: number) => void): Promise<void> {
-    this.callbacks.set(RNode.CMD_BT_PIN, (response) => {
-      const pin =
-        ((response[0] ?? 0) << 24) |
-        ((response[1] ?? 0) << 16) |
-        ((response[2] ?? 0) << 8) |
-        (response[3] ?? 0);
-      pinCallback(pin);
-    });
-    await this.sendKissCommand([RNode.CMD_BT_CTRL, 0x02]);
+    await Promise.race([
+      (async () => {
+        this.callbacks.set(RNode.CMD_BT_PIN, (response) => {
+          const pin =
+            ((response[0] ?? 0) << 24) |
+            ((response[1] ?? 0) << 16) |
+            ((response[2] ?? 0) << 8) |
+            (response[3] ?? 0);
+          pinCallback(pin);
+        });
+        await this.sendKissCommand([RNode.CMD_BT_CTRL, 0x02]);
+      })(),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          this.callbacks.delete(RNode.CMD_BT_PIN);
+          reject(new Error('RNODE_COMMAND_TIMEOUT'));
+        }, RNODE_BT_PAIRING_TIMEOUT_MS);
+      }),
+    ]);
   }
 
   async setWifiMode(mode: 'off' | 'station' | 'ap'): Promise<void> {

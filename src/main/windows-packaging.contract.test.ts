@@ -243,4 +243,19 @@ describe('Windows packaging (contract)', () => {
       expect(workflow).toMatch(/upload-artifact@v7[\s\S]*?symlinks/);
     }
   });
+
+  it('enables macOS notarization and documents signing env vars in release workflow', () => {
+    const yml = readFileSync(join(REPO_ROOT, 'electron-builder.yml'), 'utf-8');
+    expect(yml).toContain('notarize: true');
+    expect(yml).not.toContain("identity: '-'");
+
+    const releaseWorkflow = readFileSync(
+      join(REPO_ROOT, '.github', 'workflows', 'release.yaml'),
+      'utf-8',
+    );
+    expect(releaseWorkflow).toContain('CSC_LINK');
+    expect(releaseWorkflow).toContain('APPLE_TEAM_ID');
+    expect(releaseWorkflow).toContain('CSC_IDENTITY_AUTO_DISCOVERY');
+    expect(releaseWorkflow).toContain('Validate macOS signing secrets');
+  });
 });

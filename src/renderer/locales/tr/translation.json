@@ -1476,8 +1476,9 @@
       "flashMd5Mismatch": "Yazılım doğrulaması yazıldıktan sonra başarısız oldu. Farklı bir USB kablosu veya bağlantı noktası ile tekrar deneyin; devam ederse, ürün yazılımı zip dosyasını yeniden indirin.",
       "portSelectionTimedOut": "Seri bağlantı noktası seçimi zaman aşımına uğradı. İki dakika içinde listeden bir bağlantı noktası seçin veya son bağlantı noktasını yeniden kullanmak için flash'ı yeniden deneyin.",
       "noSerialPorts": "Hiçbir USB seri bağlantı noktası bulunamadı. Anakartınızı USB üzerinden bağlayın ve tekrar deneyin.",
-      "rnodeCommandTimeout": "Cihaz seri yanıt vermeyi durdurdu. Bağlantı noktasını kullanarak diğer uygulamaların fişini çekin, kartın önyükleme işleminin bitmesini bekleyin ve ardından yeniden deneyin.",
-      "esp32FlashStalled": "Ürün yazılımı aktarımı durmuş ve ilerleme kaydedilememiştir. Başka bir USB kablosu veya bağlantı noktası deneyin, önyükleyici moduna girin (ÖNYÜKLEMEYİ basılı tutun, SIFIRLA'YA dokunun) ve tekrar yanıp sönmeye başlayın."
+      "rnodeCommandTimeout": "Cihaz seri yanıt vermeyi durdurdu. Aynı seri portu kullanan diğer uygulamaları kapatın, kartın önyükleme işleminin bitmesini bekleyin ve yeniden deneyin.",
+      "esp32FlashStalled": "Ürün yazılımı aktarımı ilerleme olmadan durdu. Başka bir USB kablosu veya bağlantı noktası deneyin, önyükleyici moduna girin (BOOT'a basılı tutun, RESET'e dokunun) ve yeniden flash yapın.",
+      "unknown": "Beklenmedik bir hata oluştu."
     },
     "selectSerialPort": "COM… seri portunu seçin",
     "noSerialPorts": "USB seri bağlantı noktası bulunamadı.",
@@ -3999,7 +4000,7 @@
     "newMessages_one": "{{protocol}}: {{count}} yeni mesaj",
     "newMessages_other": "{{protocol}}: {{count}} yeni mesajlar",
     "meshcoreDistanceFilterHint": "Haritada GPS'li {{count}} kişi var. Yakındaki düğümlere odaklanmak için Uygulama → Dış görünüş bölümünde mesafe filtresini etkinleştirin.",
-    "longSessionRestartNudge": "Mesh istemcisi dört gündür çalışıyor. Uzun MeshCore BLE oturumlarında çökme riskini azaltmak için uygulamayı yeniden başlatın."
+    "longSessionRestartNudge": "mesh-client dört gündür çalışıyor. Uzun MeshCore BLE oturumlarında çökme riskini azaltmak için uygulamayı yeniden başlatın."
   },
   "updateStatus": {
     "checking": "Kontrol ediliyor…",

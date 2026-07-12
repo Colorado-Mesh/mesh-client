@@ -1476,8 +1476,9 @@
       "flashMd5Mismatch": "A verificação do firmware falhou após a gravação. Tente novamente com um cabo ou porta USB diferente; se persistir, baixe novamente o zip do firmware.",
       "portSelectionTimedOut": "A seleção da porta serial expirou. Escolha uma porta da lista dentro de dois minutos ou tente piscar novamente para reutilizar a última porta.",
       "noSerialPorts": "Nenhuma porta serial USB encontrada. Conecte sua placa via USB e tente novamente.",
-      "rnodeCommandTimeout": "O dispositivo parou de responder em série. Desconecte outros aplicativos usando a porta, aguarde a placa terminar de inicializar e tente novamente.",
-      "esp32FlashStalled": "Transferência de firmware paralisada sem progresso. Tente outro cabo ou porta USB, entre no modo de bootloader (segure BOOT, toque em RESET) e pisque novamente."
+      "rnodeCommandTimeout": "O dispositivo parou de responder pela serial. Feche outros aplicativos que usam a mesma porta serial, aguarde a placa terminar de inicializar e tente novamente.",
+      "esp32FlashStalled": "Transferência de firmware parada sem progresso. Tente outro cabo ou porta USB, entre no modo bootloader (segure BOOT, toque RESET) e reflashe novamente.",
+      "unknown": "Ocorreu um erro inesperado."
     },
     "selectSerialPort": "Selecionar porta serial",
     "noSerialPorts": "Nenhuma porta serial USB encontrada.",
@@ -3999,7 +4000,7 @@
     "newMessages_one": "{{protocol}}: {{count}} nova mensagem",
     "newMessages_other": "{{protocol}}: {{count}} novas mensagens",
     "meshcoreDistanceFilterHint": "Você tem {{count}} contatos com GPS no mapa. Ative o filtro de distância em Aplicativo → Aparência para focar nos nós próximos.",
-    "longSessionRestartNudge": "O Mesh-client está em execução há quatro dias. Reinicie o aplicativo para reduzir o risco de falhas em sessões longas do MeshCore BLE."
+    "longSessionRestartNudge": "mesh-client está em execução há quatro dias. Reinicie o aplicativo para reduzir o risco de falhas em sessões longas de MeshCore BLE."
   },
   "updateStatus": {
     "checking": "A verificar…",

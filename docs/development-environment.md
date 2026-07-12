@@ -523,6 +523,22 @@ pnpm run dist:win   # Windows -> .exe installer in release/
 
 Output goes to the `release/` directory.
 
+**macOS (`dist:mac`)** runs `electron-builder --mac --publish never`, then **`node scripts/verify-mac-packaging.mjs`**. The verify step asserts `.dmg` + `.zip` artifacts, symlink-preserving ZIP extract (`ditto -xk`), DMG mount, launcher/framework sizes, and bundled Reticulum sidecar — same checks CI `packaging-smoke` uses on downloaded artifacts. It does **not** require signing secrets; unsigned local builds are expected to pass verify.
+
+**Optional macOS signing (release parity):** export the same env vars CI uses before `pnpm run dist:mac` or `dist:mac:publish`:
+
+```bash
+export CSC_LINK='…' # base64 .p12 Developer ID Application cert
+export CSC_KEY_PASSWORD='…'
+export CSC_IDENTITY_AUTO_DISCOVERY=true
+export APPLE_ID='…'
+export APPLE_APP_SPECIFIC_PASSWORD='…'
+export APPLE_TEAM_ID='…'
+pnpm run dist:mac
+```
+
+When `CSC_LINK` is unset, electron-builder skips signing/notarization (`CSC_IDENTITY_AUTO_DISCOVERY=false` in CI). See [Release Process — macOS code signing and notarization](release-process.md#macos-code-signing-and-notarization).
+
 ### Build analysis
 
 To analyze the main process bundle size and composition:
