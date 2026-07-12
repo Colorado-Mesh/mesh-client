@@ -1996,12 +1996,6 @@ function checkReticulumRuntimeAndRoutingPortIssues(ctx) {
   const { flatKey, val, enVal } = ctx;
   const issues = [];
   if (flatKey.startsWith(RETICULUM_RUNTIME_PREFIX)) {
-    for (const token of RETICULUM_RUNTIME_PROTOCOL_TOKENS) {
-      if (!enVal.includes(token)) continue;
-      if (!val.includes(token)) {
-        issues.push(`reticulum runtime copy must preserve protocol token "${token}"`);
-      }
-    }
     issues.push(...protectedProtocolTokenIssues(enVal, val, RETICULUM_RUNTIME_PROTOCOL_TOKENS));
   }
   if (flatKey.startsWith('connectionPanel.reticulumInterfaces.picker')) {
