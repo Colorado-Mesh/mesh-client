@@ -1475,7 +1475,9 @@
       "flashTransferTooSmall": "Firmware-overdracht is niet voltooid — er zijn bijna geen gegevens geschreven. Bevestig dat u de juiste USB-poort hebt geselecteerd en dat het bord in de bootloader-modus is gegaan.",
       "flashMd5Mismatch": "Firmwareverificatie mislukt na schrijven. Probeer het opnieuw met een andere USB-kabel of poort; als het aanhoudt, download dan de ZIP-firmware opnieuw.",
       "portSelectionTimedOut": "Er is een time-out opgetreden bij de selectie van de seriële poort. Kies binnen twee minuten een poort uit de lijst of probeer opnieuw te knipperen om de laatste poort opnieuw te gebruiken.",
-      "noSerialPorts": "Geen seriële USB-poorten gevonden. Sluit uw bord aan via USB en probeer het opnieuw."
+      "noSerialPorts": "Geen seriële USB-poorten gevonden. Sluit uw bord aan via USB en probeer het opnieuw.",
+      "rnodeCommandTimeout": "Het apparaat reageerde niet meer via serieel. Koppel andere apps los via de poort, wacht tot het bord klaar is met opstarten en probeer het opnieuw.",
+      "esp32FlashStalled": "Firmwareoverdracht vastgelopen zonder voortgang. Probeer een andere USB-kabel of poort, ga naar de bootloader-modus (houd BOOT ingedrukt, tik op RESET) en flits opnieuw."
     },
     "selectSerialPort": "Seriële poort selecteren",
     "noSerialPorts": "Geen USB seriële poorten gevonden.",

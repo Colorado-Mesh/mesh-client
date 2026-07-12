@@ -9,6 +9,8 @@ vi.mock('@/renderer/lib/i18n', () => ({
         'flasher.errors.portSelectionTimedOut':
           'Serial port selection timed out. Pick a port from the list within two minutes, or retry flash to reuse the last port.',
         'flasher.errors.portSelectionCancelled': 'Serial port selection was cancelled.',
+        'flasher.errors.rnodeCommandTimeout': 'Device stopped responding over serial.',
+        'flasher.errors.esp32FlashStalled': 'Firmware transfer stalled with no progress.',
       };
       return messages[key] ?? key;
     },
@@ -26,5 +28,12 @@ describe('humanizeFlasherError', () => {
     expect(humanizeFlasherError(new Error('FLASHER_SERIAL_PORT_SELECTION_CANCELLED'))).toContain(
       'Serial port selection was cancelled',
     );
+  });
+
+  it('maps flasher hang timeout errors', () => {
+    expect(humanizeFlasherError(new Error('RNODE_COMMAND_TIMEOUT'))).toContain(
+      'stopped responding',
+    );
+    expect(humanizeFlasherError(new Error('ESP32_FLASH_STALLED'))).toContain('stalled');
   });
 });

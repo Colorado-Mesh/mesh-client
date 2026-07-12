@@ -22,6 +22,12 @@ export function humanizeFlasherError(err: unknown): string {
   if (message === 'FLASH_TRANSFER_TOO_SMALL') {
     return i18n.t('flasher.errors.flashTransferTooSmall');
   }
+  if (message === 'RNODE_COMMAND_TIMEOUT') {
+    return i18n.t('flasher.errors.rnodeCommandTimeout');
+  }
+  if (message === 'ESP32_FLASH_STALLED') {
+    return i18n.t('flasher.errors.esp32FlashStalled');
+  }
   if (message === 'FLASHER_SERIAL_PORT_SELECTION_TIMEOUT') {
     return i18n.t('flasher.errors.portSelectionTimedOut');
   }

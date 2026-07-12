@@ -3,9 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useBlockStore } from '@/renderer/stores/blockStore';
 import type { MessageRecord } from '@/renderer/stores/messageStore';
 
-import { ingestReticulumLxmfPayload } from './reticulumIngest';
+import {
+  ingestReticulumLxmfPayload,
+  isReticulumHashPrefixAlias,
+  persistReticulumContactFromPayload,
+  reticulumContactDisplayNameFromPayload,
+} from './reticulumIngest';
 
 const upsertMessage = vi.fn();
+const upsertReticulumDestination = vi.fn();
 let messagesState: Record<string, Record<string, MessageRecord>> = {};
 
 vi.mock('@/renderer/stores/messageStore', () => ({
@@ -20,6 +26,65 @@ vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
     getState: () => ({ restoreDismissedContact: vi.fn() }),
   },
 }));
+
+beforeEach(() => {
+  upsertReticulumDestination.mockReset();
+  upsertReticulumDestination.mockResolvedValue(undefined);
+  vi.stubGlobal('window', {
+    electronAPI: {
+      db: { upsertReticulumDestination },
+    },
+  });
+});
+
+describe('reticulumIngest alias helpers', () => {
+  const hash = 'deadbeef'.repeat(4);
+
+  it('detects hash-prefix placeholders', () => {
+    expect(isReticulumHashPrefixAlias(hash, 'deadbeefdead')).toBe(true);
+    expect(isReticulumHashPrefixAlias(hash, 'Alice')).toBe(false);
+  });
+
+  it('omits hash-prefix names from contact upsert payload', () => {
+    expect(
+      reticulumContactDisplayNameFromPayload({
+        sender_hash: hash,
+        sender_name: 'deadbeefdead',
+      }),
+    ).toBeUndefined();
+    expect(
+      reticulumContactDisplayNameFromPayload({
+        sender_hash: hash,
+        sender_name: 'Alice',
+      }),
+    ).toBe('Alice');
+  });
+
+  it('persistReticulumContactFromPayload skips display_name for hash prefix', async () => {
+    await persistReticulumContactFromPayload({
+      sender_hash: hash,
+      sender_name: 'deadbeefdead',
+      timestamp: 1_700_000_000_000,
+    });
+    expect(upsertReticulumDestination).toHaveBeenCalledWith({
+      destination_hash: hash,
+      last_heard: 1_700_000_000,
+    });
+  });
+
+  it('persistReticulumContactFromPayload keeps real display names', async () => {
+    await persistReticulumContactFromPayload({
+      sender_hash: hash,
+      sender_name: 'Alice',
+      timestamp: 1_700_000_000_000,
+    });
+    expect(upsertReticulumDestination).toHaveBeenCalledWith({
+      destination_hash: hash,
+      display_name: 'Alice',
+      last_heard: 1_700_000_000,
+    });
+  });
+});
 
 describe('reticulumIngest blocked senders', () => {
   beforeEach(() => {

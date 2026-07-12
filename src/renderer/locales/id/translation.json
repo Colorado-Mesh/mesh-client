@@ -1475,7 +1475,9 @@
       "flashTransferTooSmall": "Transfer firmware tidak selesai — hampir tidak ada data yang ditulis. Pastikan Anda memilih port USB yang benar dan papan masuk ke mode bootloader.",
       "flashMd5Mismatch": "Verifikasi firmware gagal setelah ditulis. Coba lagi dengan kabel atau port USB yang berbeda; jika terus berlanjut, unduh ulang zip firmware.",
       "portSelectionTimedOut": "Waktu pemilihan port serial habis. Pilih port dari daftar dalam waktu dua menit, atau coba lagi flash untuk menggunakan kembali port terakhir.",
-      "noSerialPorts": "Tidak ditemukan port serial USB. Hubungkan papan Anda melalui USB dan coba lagi."
+      "noSerialPorts": "Tidak ditemukan port serial USB. Hubungkan papan Anda melalui USB dan coba lagi.",
+      "rnodeCommandTimeout": "Perangkat berhenti merespons melalui serial. Cabut aplikasi lain menggunakan port, tunggu hingga papan selesai boot, lalu coba lagi.",
+      "esp32FlashStalled": "Transfer firmware terhenti tanpa kemajuan. Coba kabel atau port USB lain, masuk ke mode bootloader (tahan BOOT, ketuk RESET), dan flash lagi."
     },
     "selectSerialPort": "Pilih port serial",
     "noSerialPorts": "Tidak ditemukan port serial USB.",

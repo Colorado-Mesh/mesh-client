@@ -143,7 +143,7 @@ impl StackHandle {
                 handle.config_dir.clone(),
                 handle.storage_dir.clone(),
             );
-            live.register_lxmf_identity_announce_handler();
+            live.register_lxmf_identity_announce_handler(handle.inner.clone());
             live.register_rmap_discovery_watcher(event_tx.clone());
         }
         handle.emit_stats().await;

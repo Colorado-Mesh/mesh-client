@@ -6,8 +6,28 @@ import {
   capReticulumPeerMaps,
   mergeReticulumPeerMaps,
   refreshReticulumPeersFromSidecar,
+  resolveReticulumPeerLabel,
   useReticulumPeerStore,
 } from './reticulumPeerStore';
+
+describe('resolveReticulumPeerLabel', () => {
+  const hash = 'aa'.repeat(16);
+
+  it('uses peer display_name when present', () => {
+    expect(
+      resolveReticulumPeerLabel({
+        destination_hash: hash,
+        display_name: 'Alice',
+      }),
+    ).toBe('Alice');
+  });
+
+  it('falls back to nomad name when peer row is hash-only', () => {
+    expect(
+      resolveReticulumPeerLabel({ destination_hash: hash, display_name: null }, null, 'Nomad Node'),
+    ).toBe('Nomad Node');
+  });
+});
 
 describe('capReticulumPeerMaps', () => {
   it('keeps newest peers by last_seen and drops orphaned contacts', () => {

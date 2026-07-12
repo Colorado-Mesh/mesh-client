@@ -296,6 +296,7 @@ impl LxmfOutboundDriver {
                     None,
                     Some(method),
                     "outbound",
+                    None,
                 );
                 emit_outbound_status(event_tx, &payload, "failed", method);
             }

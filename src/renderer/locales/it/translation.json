@@ -1475,7 +1475,9 @@
       "flashTransferTooSmall": "Il trasferimento del firmware non è stato completato — quasi nessun dato è stato scritto. Confermare di aver selezionato la porta USB corretta e che la scheda sia entrata in modalità bootloader.",
       "flashMd5Mismatch": "Verifica del firmware non riuscita dopo la scrittura. Riprovare con un altro cavo o porta USB; se persiste, scaricare nuovamente lo zip del firmware.",
       "portSelectionTimedOut": "Timeout della selezione della porta seriale. Scegli una porta dall'elenco entro due minuti o riprova il flash per riutilizzare l'ultima porta.",
-      "noSerialPorts": "Nessuna porta seriale USB trovata. Collega la scheda tramite USB e riprova."
+      "noSerialPorts": "Nessuna porta seriale USB trovata. Collega la scheda tramite USB e riprova.",
+      "rnodeCommandTimeout": "Il dispositivo ha smesso di rispondere in modalità seriale. Scollega altre app utilizzando la porta, attendi che la scheda termini l'avvio, quindi riprova.",
+      "esp32FlashStalled": "Trasferimento firmware in stallo senza avanzamento. Provare un altro cavo o porta USB, accedere alla modalità bootloader (tenere premuto BOOT, toccare RESET) e lampeggiare di nuovo."
     },
     "selectSerialPort": "Selezionare la Porta Seriale.",
     "noSerialPorts": "Nessuna porta seriale USB trovata.",

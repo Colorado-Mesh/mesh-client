@@ -40,6 +40,22 @@ export interface ReticulumLxmfPayload {
   icon_appearance?: ReticulumIconAppearanceWire | null;
 }
 
+/** True when a wire sender_name is just the destination hash prefix, not a real alias. */
+export function isReticulumHashPrefixAlias(senderHash: string, name?: string | null): boolean {
+  if (!name?.trim()) return true;
+  const prefix = senderHash.slice(0, 12).toLowerCase();
+  return name.trim().toLowerCase() === prefix;
+}
+
+/** Display name suitable for SQLite upsert; omits hash-prefix placeholders. */
+export function reticulumContactDisplayNameFromPayload(
+  p: ReticulumLxmfPayload,
+): string | undefined {
+  if (!p.sender_hash) return undefined;
+  if (isReticulumHashPrefixAlias(p.sender_hash, p.sender_name)) return undefined;
+  return p.sender_name?.trim() || undefined;
+}
+
 function parseReticulumDeliveryMethod(
   value: string | undefined,
 ): MessageRecord['reticulumDeliveryMethod'] {
@@ -152,10 +168,11 @@ export async function persistReticulumMessageToDb(
 export async function persistReticulumContactFromPayload(p: ReticulumLxmfPayload): Promise<void> {
   if (!p.sender_hash) return;
   useReticulumPeerStore.getState().restoreDismissedContact(p.sender_hash);
+  const displayName = reticulumContactDisplayNameFromPayload(p);
   try {
     await window.electronAPI.db.upsertReticulumDestination({
       destination_hash: p.sender_hash,
-      display_name: p.sender_name ?? p.sender_hash.slice(0, 12),
+      ...(displayName ? { display_name: displayName } : {}),
       last_heard: Math.floor((p.timestamp ?? Date.now()) / 1000),
     });
   } catch (e) {

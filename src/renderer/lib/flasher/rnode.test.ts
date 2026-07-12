@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { RNode } from './rnode';
+import { RNode, RNODE_COMMAND_TIMEOUT_MS } from './rnode';
+
+describe('RNode command timeouts', () => {
+  it('exports a positive default KISS command timeout', () => {
+    expect(RNODE_COMMAND_TIMEOUT_MS).toBeGreaterThan(5_000);
+  });
+});
 
 describe('RNode WiFi payloads', () => {
   it('nullableStringPayload matches rnodeconf shapes', () => {

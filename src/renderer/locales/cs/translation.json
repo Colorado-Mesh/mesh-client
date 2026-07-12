@@ -1475,7 +1475,9 @@
       "flashTransferTooSmall": "Přenos firmwaru nebyl dokončen — téměř žádná data nebyla zapsána. Potvrďte, že jste vybrali správný port USB a že deska vstoupila do režimu zavaděče.",
       "flashMd5Mismatch": "Ověření firmwaru se po zápisu nezdařilo. Zkuste to znovu s jiným USB kabelem nebo portem; pokud přetrvává, znovu stáhněte firmware zip.",
       "portSelectionTimedOut": "Časový limit výběru sériového portu vypršel. Vyberte port ze seznamu do dvou minut nebo opakujte flash pro opětovné použití posledního portu.",
-      "noSerialPorts": "Nebyly nalezeny žádné sériové porty USB. Připojte desku přes USB a zkuste to znovu."
+      "noSerialPorts": "Nebyly nalezeny žádné sériové porty USB. Připojte desku přes USB a zkuste to znovu.",
+      "rnodeCommandTimeout": "Zařízení přestalo reagovat sériově. Odpojte ostatní aplikace pomocí portu, počkejte, až deska dokončí zavádění, a zkuste to znovu.",
+      "esp32FlashStalled": "Přenos firmwaru se zastavil bez pokroku. Zkuste jiný kabel nebo port USB, přejděte do režimu zavaděče (podržte SPUŠTĚNÍ, klepněte na RESET) a znovu blikejte."
     },
     "selectSerialPort": "Výběr sériového portu",
     "noSerialPorts": "Nebyly nalezeny žádné sériové porty USB.",
