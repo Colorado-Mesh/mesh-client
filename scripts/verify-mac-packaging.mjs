@@ -38,10 +38,17 @@ const MIN_FRAMEWORK_BYTES = 50 * 1024 * 1024;
 const MIN_DMG_BYTES = 1024 * 1024;
 const MIN_ZIP_BYTES = 1024 * 1024;
 
-/** @param {string} msg */
+/** Expected validation failure — printed without a stack trace at top level. */
+class VerificationFailure extends Error {}
+
+/**
+ * Throws instead of calling process.exit so `finally` cleanup (e.g. detachDmgMount)
+ * still runs; the top-level handler prints the message and exits 1.
+ * @param {string} msg
+ * @returns {never}
+ */
 function fail(msg) {
-  console.error(`[verify-mac-packaging] ${msg}`);
-  process.exit(1);
+  throw new VerificationFailure(msg);
 }
 
 /** @param {string} label @param {string} filePath @param {number} minBytes */
@@ -106,11 +113,12 @@ function collectArchives(dir, ext) {
   return rootMatches.length > 0 ? rootMatches : nestedMatches;
 }
 
-/** @param {string[]} archives @returns {string | null} */
+/**
+ * Largest archive wins (electron-builder can emit per-arch variants).
+ * Callers guarantee a non-empty list (main() fails early when none exist).
+ * @param {string[]} archives @returns {string}
+ */
 function pickPrimaryArchive(archives) {
-  if (archives.length === 0) {
-    return null;
-  }
   return archives
     .map((filePath) => ({ filePath, size: statSync(filePath).size }))
     .reduce((largest, current) => (current.size > largest.size ? current : largest)).filePath;
@@ -276,22 +284,13 @@ function main() {
     validatedSources.push('direct');
   }
 
-  const primaryZip = pickPrimaryArchive(zipArchives);
-  const primaryDmg = pickPrimaryArchive(dmgArchives);
-
   if (!directBundle) {
-    if (!primaryZip) {
-      fail(`No .zip artifact to extract under ${releaseDir}`);
-    }
-    const zipBundle = extractZipToTemp(primaryZip);
+    const zipBundle = extractZipToTemp(pickPrimaryArchive(zipArchives));
     validateAppBundle(zipBundle, 'zip');
     validatedSources.push('zip');
   }
 
-  if (!primaryDmg) {
-    fail(`No .dmg artifact to mount under ${releaseDir}`);
-  }
-  mountDmgAndValidate(primaryDmg, (dmgBundle) => {
+  mountDmgAndValidate(pickPrimaryArchive(dmgArchives), (dmgBundle) => {
     validateAppBundle(dmgBundle, 'dmg');
     validatedSources.push('dmg');
   });
@@ -316,6 +315,10 @@ function readPackageVersion() {
 try {
   main();
 } catch (e) {
-  console.error('[verify-mac-packaging] Unexpected error:', e);
+  if (e instanceof VerificationFailure) {
+    console.error(`[verify-mac-packaging] ${e.message}`);
+  } else {
+    console.error('[verify-mac-packaging] Unexpected error:', e);
+  }
   process.exit(1);
 }
