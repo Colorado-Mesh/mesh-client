@@ -111,11 +111,9 @@ function pickPrimaryArchive(archives) {
   if (archives.length === 0) {
     return null;
   }
-  return archives.reduce((largest, current) => {
-    const largestSize = statSync(largest).size;
-    const currentSize = statSync(current).size;
-    return currentSize > largestSize ? current : largest;
-  });
+  return archives
+    .map((filePath) => ({ filePath, size: statSync(filePath).size }))
+    .reduce((largest, current) => (current.size > largest.size ? current : largest)).filePath;
 }
 
 /** @param {string} bundleRoot @param {string} label */
@@ -199,7 +197,7 @@ function extractZipToTemp(zipPath) {
   return bundle;
 }
 
-/** @param {string} dmgPath @param {(bundle: string) => void} validate */
+/** @param {string} dmgPath @param {(bundleRoot: string) => void} validate */
 function mountDmgAndValidate(dmgPath, validate) {
   rmSync(VERIFY_DMG_MOUNT_DIR, { recursive: true, force: true });
   mkdirSync(VERIFY_DMG_MOUNT_DIR, { recursive: true });
@@ -295,19 +293,29 @@ function main() {
   }
   mountDmgAndValidate(primaryDmg, (dmgBundle) => {
     validateAppBundle(dmgBundle, 'dmg');
+    validatedSources.push('dmg');
   });
-  validatedSources.push('dmg');
 
-  const version = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf-8')).version;
+  const version = readPackageVersion();
   console.debug(
     `[verify-mac-packaging] OK — validated via ${validatedSources.join(', ')}; ${dmgArchives.length} dmg, ${zipArchives.length} zip (v${version})`,
   );
 }
 
+/** @returns {string} */
+function readPackageVersion() {
+  try {
+    const raw = readFileSync(path.join(projectRoot, 'package.json'), 'utf-8');
+    const parsed = JSON.parse(raw);
+    return typeof parsed.version === 'string' ? parsed.version : 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
 try {
   main();
 } catch (e) {
-  detachDmgMount();
   console.error('[verify-mac-packaging] Unexpected error:', e);
   process.exit(1);
 }
