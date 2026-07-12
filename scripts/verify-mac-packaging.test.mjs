@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { mkdirSync, rmSync, writeFileSync } from 'fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
@@ -28,8 +28,7 @@ describe('verify-mac-packaging helpers', () => {
   });
 
   it('pickPrimaryArchive chooses the largest file', () => {
-    const dir = join(tmpdir(), `verify-mac-packaging-test-${Date.now()}`);
-    mkdirSync(dir, { recursive: true });
+    const dir = mkdtempSync(join(tmpdir(), 'verify-mac-packaging-test-'));
     try {
       const small = join(dir, 'small.zip');
       const large = join(dir, 'large.zip');
