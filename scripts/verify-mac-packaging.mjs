@@ -199,8 +199,8 @@ function extractZipToTemp(zipPath) {
   return bundle;
 }
 
-/** @param {string} dmgPath @returns {string} */
-function mountDmgAndFindApp(dmgPath) {
+/** @param {string} dmgPath @param {(bundle: string) => void} validate */
+function mountDmgAndValidate(dmgPath, validate) {
   rmSync(VERIFY_DMG_MOUNT_DIR, { recursive: true, force: true });
   mkdirSync(VERIFY_DMG_MOUNT_DIR, { recursive: true });
 
@@ -216,7 +216,7 @@ function mountDmgAndFindApp(dmgPath) {
     if (!bundle) {
       fail(`No complete ${APP_NAME}.app found inside dmg: ${dmgPath}`);
     }
-    return bundle;
+    validate(bundle);
   } finally {
     detachDmgMount();
   }
@@ -293,8 +293,9 @@ function main() {
   if (!primaryDmg) {
     fail(`No .dmg artifact to mount under ${releaseDir}`);
   }
-  const dmgBundle = mountDmgAndFindApp(primaryDmg);
-  validateAppBundle(dmgBundle, 'dmg');
+  mountDmgAndValidate(primaryDmg, (dmgBundle) => {
+    validateAppBundle(dmgBundle, 'dmg');
+  });
   validatedSources.push('dmg');
 
   const version = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf-8')).version;
