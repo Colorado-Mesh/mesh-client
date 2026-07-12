@@ -1514,7 +1514,9 @@
       "blockedByStack": "Cannot flash while the Reticulum stack holds the RNode serial port.",
       "esp32SyncFailed": "Could not sync with the ESP32 bootloader. Unplug other serial apps, pick the correct USB port, then retry. If the board has a bad flash, hold BOOT (0), tap RESET (EN), release BOOT, and flash again.",
       "flashTransferTooSmall": "Firmware transfer did not complete — almost no data was written. Confirm you selected the correct USB port and that the board entered bootloader mode.",
-      "flashMd5Mismatch": "Firmware verification failed after writing. Try again with a different USB cable or port; if it persists, re-download the firmware zip."
+      "flashMd5Mismatch": "Firmware verification failed after writing. Try again with a different USB cable or port; if it persists, re-download the firmware zip.",
+      "rnodeCommandTimeout": "The device stopped responding over serial. Unplug other apps using the port, wait for the board to finish booting, then retry.",
+      "esp32FlashStalled": "Firmware transfer stalled with no progress. Try another USB cable or port, enter bootloader mode (hold BOOT, tap RESET), and flash again."
     }
   },
   "identityVault": {

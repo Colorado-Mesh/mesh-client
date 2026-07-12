@@ -6,6 +6,9 @@ import { Rom } from './rom';
 
 type CommandCallback = (response: number[]) => void;
 
+/** Default KISS command timeout — hung device otherwise blocks the flasher UI indefinitely. */
+export const RNODE_COMMAND_TIMEOUT_MS = 30_000;
+
 export class RNode {
   static readonly KISS_FEND = 0xc0;
   static readonly KISS_FESC = 0xdb;
@@ -235,12 +238,37 @@ export class RNode {
     await this.write(RNode.createKissFrame(data));
   }
 
-  private sendCommand(command: number, data: number[]): Promise<number[]> {
+  private sendCommand(
+    command: number,
+    data: number[],
+    timeoutMs = RNODE_COMMAND_TIMEOUT_MS,
+  ): Promise<number[]> {
     return new Promise((resolve, reject) => {
+      let settled = false;
+      const finish = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        this.callbacks.delete(command);
+        fn();
+      };
+
+      const timeoutId = setTimeout(() => {
+        finish(() => {
+          reject(new Error('RNODE_COMMAND_TIMEOUT'));
+        });
+      }, timeoutMs);
+
       this.callbacks.set(command, (response) => {
-        resolve(response);
+        finish(() => {
+          resolve(response);
+        });
       });
-      void this.sendKissCommand([command, ...data]).catch(reject);
+      void this.sendKissCommand([command, ...data]).catch((err: unknown) => {
+        finish(() => {
+          reject(err instanceof Error ? err : new Error(String(err)));
+        });
+      });
     });
   }
 
@@ -259,6 +287,7 @@ export class RNode {
       };
 
       const timeoutId = setTimeout(() => {
+        this.callbacks.delete(RNode.CMD_DETECT);
         finish(false);
       }, timeoutMs);
 

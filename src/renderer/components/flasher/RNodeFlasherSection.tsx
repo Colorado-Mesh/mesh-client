@@ -208,6 +208,13 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
     setEsp32Syncing(selectedProduct.platform === ROM.PLATFORM_ESP32);
     let port: SerialPort | null = null;
 
+    console.warn('[RNodeFlasher] flash start', {
+      product: selectedProduct.catalogKey,
+      model: selectedModel?.id,
+      platform: selectedProduct.platform,
+      firmware: firmwareFile.name,
+    });
+
     try {
       port = await requestFlasherSerialPort(requestSerialPort, {
         preferSessionReuse: hasFlasherSessionPort(),
@@ -238,8 +245,10 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
       markFlasherFlashCompleted();
       setFlashSucceeded(true);
       showStatus(t('flasher.flashSuccess'));
+      console.warn('[RNodeFlasher] flash success', { product: selectedProduct.catalogKey });
     } catch (e) {
       setFlashSucceeded(false);
+      console.error('[RNodeFlasher] flash failed', e);
       // catch-no-log-ok error humanized and surfaced via flasher status UI
       showStatus(humanizeFlasherError(e), true);
     } finally {
@@ -275,21 +284,24 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
     clearStatus();
     setProvisioning(true);
     showStatus(t('flasher.provisioning'));
-    await runWithRNode(async (rnode) => {
-      const rom = await rnode.getRomAsObject();
-      const details = rom.parse();
-      if (details?.is_provisioned) {
+    try {
+      await runWithRNode(async (rnode) => {
+        const rom = await rnode.getRomAsObject();
+        const details = rom.parse();
+        if (details?.is_provisioned) {
+          setProvisionSucceeded(true);
+          showStatus(t('flasher.provisionAlreadyDone'));
+          return;
+        }
+        await provisionEeprom(rnode, { product: selectedProduct, model: selectedModel });
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        await rnode.reset();
         setProvisionSucceeded(true);
-        showStatus(t('flasher.provisionAlreadyDone'));
-        return;
-      }
-      await provisionEeprom(rnode, { product: selectedProduct, model: selectedModel });
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-      await rnode.reset();
-      setProvisionSucceeded(true);
-      showStatus(t('flasher.provisionSuccess'));
-    });
-    setProvisioning(false);
+        showStatus(t('flasher.provisionSuccess'));
+      });
+    } finally {
+      setProvisioning(false);
+    }
   }, [flashSucceeded, runWithRNode, selectedModel, selectedProduct, showStatus, t, clearStatus]);
 
   const handleSetFirmwareHash = useCallback(async () => {
@@ -301,20 +313,23 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
     clearStatus();
     setSettingHash(true);
     showStatus(t('flasher.settingFirmwareHash'));
-    await runWithRNode(async (rnode) => {
-      const rom = await rnode.getRomAsObject();
-      const details = rom.parse();
-      if (!details?.is_provisioned) {
-        showStatus(t('flasher.firmwareHashNotProvisioned'), true);
-        return;
-      }
-      await setFirmwareHashFromDevice(rnode);
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-      await rnode.reset();
-      setHashSetSucceeded(true);
-      showStatus(t('flasher.firmwareHashSuccess'));
-    });
-    setSettingHash(false);
+    try {
+      await runWithRNode(async (rnode) => {
+        const rom = await rnode.getRomAsObject();
+        const details = rom.parse();
+        if (!details?.is_provisioned) {
+          showStatus(t('flasher.firmwareHashNotProvisioned'), true);
+          return;
+        }
+        await setFirmwareHashFromDevice(rnode);
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        await rnode.reset();
+        setHashSetSucceeded(true);
+        showStatus(t('flasher.firmwareHashSuccess'));
+      });
+    } finally {
+      setSettingHash(false);
+    }
   }, [provisionSucceeded, runWithRNode, showStatus, t, clearStatus]);
 
   const handleWipeEeprom = useCallback(async () => {

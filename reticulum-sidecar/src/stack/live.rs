@@ -32,7 +32,7 @@ use super::nomad_timeouts;
 use super::packet_log::{emit_wire_packet_event, wire_packet_from_tap, PacketLogBuffer};
 use super::persistence::PersistedState;
 use super::propagation_bridge::PropagationBridge;
-use super::types::{InterfaceRow, LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, PeerRow};
+use super::types::{InterfaceRow, LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, PeerRow, ContactRow};
 use super::via::{
     classify_interface, merge_live_interfaces_with_config, resolve_outbound_sent_via_with_primary,
     resolve_peer_sent_via,
@@ -62,6 +62,7 @@ pub struct LiveBridge {
     lxmf_hash_hex: String,
     display_name: String,
     peer_via_cache: Arc<Mutex<HashMap<String, String>>>,
+    display_name_cache: Arc<Mutex<HashMap<String, String>>>,
     outbound: Arc<Mutex<LxmfOutboundDriver>>,
     propagation: Arc<PropagationBridge>,
     sync_cancel: Arc<std::sync::atomic::AtomicBool>,
@@ -150,11 +151,26 @@ impl LiveBridge {
 
         let peer_via_cache: Arc<Mutex<HashMap<String, String>>> =
             Arc::new(Mutex::new(HashMap::new()));
+        let display_name_cache: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new({
+            let state = inner.read().await;
+            state
+                .contacts
+                .iter()
+                .filter_map(|c| {
+                    let name = c.display_name.as_ref()?.trim();
+                    if name.is_empty() {
+                        return None;
+                    }
+                    Some((c.destination_hash.clone(), name.to_string()))
+                })
+                .collect()
+        }));
 
         let mut router = LxmRouter::new(lxmf_core::router::RouterConfig::default());
         router.set_transport(handle.transport_tx.clone());
 
         let cache_for_cb = peer_via_cache.clone();
+        let name_cache_for_cb = display_name_cache.clone();
         let event_tx_cb = event_tx.clone();
         let self_hash_cb = lxmf_hash_hex.clone();
         let self_name_cb = display_name.clone();
@@ -172,6 +188,11 @@ impl LiveBridge {
                 .and_then(|cache| cache.get(&sender_hex).cloned())
                 .map(|iface| classify_interface(&iface).to_string())
                 .unwrap_or_else(|| "network".into());
+            let inbound_sender_name = name_cache_for_cb
+                .lock()
+                .ok()
+                .map(|cache| resolve_inbound_sender_name_map(&cache, &sender_hex))
+                .unwrap_or_else(|| sender_hex.get(..12).unwrap_or(&sender_hex).to_string());
             let payload = lxmf_payload_from_message(
                 msg,
                 &self_hash_cb,
@@ -179,13 +200,26 @@ impl LiveBridge {
                 Some(&received_via),
                 None,
                 "inbound",
+                Some(&inbound_sender_name),
             );
             let inner = inner_for_cb.clone();
             let config_dir = config_dir_for_cb.clone();
             let storage_dir = storage_dir_for_cb.clone();
+            let name_cache = name_cache_for_cb.clone();
             let sender = sender_hex.clone();
             tokio::spawn(async move {
                 let mut state = inner.write().await;
+                if let Some(name) = state
+                    .contacts
+                    .iter()
+                    .find(|c| c.destination_hash == sender)
+                    .and_then(|c| c.display_name.clone())
+                    .filter(|name| !name.trim().is_empty())
+                {
+                    if let Ok(mut cache) = name_cache.lock() {
+                        cache.insert(sender.clone(), name);
+                    }
+                }
                 state.upsert_contact(&sender, None);
                 if let Err(e) = state.save(&config_dir, &storage_dir) {
                     tracing::warn!("contact persist failed: {e}");
@@ -220,6 +254,7 @@ impl LiveBridge {
             lxmf_hash_hex: lxmf_hash_hex.clone(),
             display_name: display_name.clone(),
             peer_via_cache,
+            display_name_cache,
             outbound: Arc::new(Mutex::new(LxmfOutboundDriver::new(
                 handle.transport_tx.clone(),
                 &identity,
@@ -433,7 +468,7 @@ impl LiveBridge {
             while let Some(evt) = callback_rx.recv().await {
                 let hash_hex = hex::encode(evt.destination_hash);
                 let identity_hash_hex = evt.identity_hash.map(hex::encode);
-                let display_name = parse_nomad_display_name(evt.app_data.as_deref());
+                let display_name = parse_announce_display_name(evt.app_data.as_deref());
                 let hops = Some(evt.hops);
                 let payload = {
                     let mut state = inner.write().await;
@@ -510,9 +545,13 @@ impl LiveBridge {
     }
 
     /// Register handler for announces carrying identity public keys (LXMF path proofs).
-    pub fn register_lxmf_identity_announce_handler(&self) {
+    pub fn register_lxmf_identity_announce_handler(&self, inner: Arc<RwLock<PersistedState>>) {
         let transport_tx = self.handle.transport_tx.clone();
         let outbound = self.outbound.clone();
+        let config_dir = self.config_dir.clone();
+        let storage_dir = self.storage_dir.clone();
+        let event_tx = self.event_tx.clone();
+        let display_name_cache = self.display_name_cache.clone();
         tokio::spawn(async move {
             let (callback_tx, mut callback_rx) =
                 tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(64);
@@ -530,11 +569,30 @@ impl LiveBridge {
             }
 
             while let Some(evt) = callback_rx.recv().await {
+                let dest_hex = hex::encode(evt.destination_hash);
                 if let Some(pub_key) = evt.public_key {
-                    let dest_hex = hex::encode(evt.destination_hash);
                     if let Ok(mut driver) = outbound.lock() {
                         driver.register_identity_key(&dest_hex, pub_key);
                     }
+                }
+                if let Some(name) = parse_announce_display_name(evt.app_data.as_deref()) {
+                    if let Ok(mut cache) = display_name_cache.lock() {
+                        cache.insert(dest_hex.clone(), name.clone());
+                    }
+                    let mut state = inner.write().await;
+                    state.upsert_contact(&dest_hex, Some(name.clone()));
+                    if let Err(e) = state.save(&config_dir, &storage_dir) {
+                        tracing::warn!("lxmf announce contact persist failed: {e}");
+                    }
+                    drop(state);
+                    let frame = serde_json::json!({
+                        "type": "announce.received",
+                        "payload": {
+                            "destination_hash": dest_hex,
+                            "display_name": name,
+                        }
+                    });
+                    let _ = event_tx.send(frame.to_string());
                 }
             }
         });
@@ -1118,6 +1176,7 @@ pub(super) fn lxmf_payload_from_message(
     received_via: Option<&str>,
     sent_via: Option<&str>,
     direction: &str,
+    inbound_sender_name: Option<&str>,
 ) -> serde_json::Value {
     let sender_hex = hex::encode(msg.source_hash);
     let to_hex = hex::encode(msg.destination_hash);
@@ -1128,9 +1187,13 @@ pub(super) fn lxmf_payload_from_message(
         sender_hex.as_str()
     };
     let sender_name = if is_outbound {
-        self_name
+        self_name.to_string()
     } else {
-        sender_hex.get(..12).unwrap_or(&sender_hex)
+        inbound_sender_name
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+            .map(str::to_string)
+            .unwrap_or_else(|| sender_hex.get(..12).unwrap_or(&sender_hex).to_string())
     };
     let message_hash = msg
         .hash
@@ -1272,9 +1335,9 @@ pub(super) fn emit_lxmf_event(event_tx: &broadcast::Sender<String>, payload: ser
     let _ = event_tx.send(frame.to_string());
 }
 
-/// Nomad Network encodes node display names in announce app_data as msgpack
-/// `[display_name_bytes, ...]` (see NomadNet / MeshChat wire compat).
-fn parse_nomad_display_name(app_data: Option<&[u8]>) -> Option<String> {
+/// LXMF / Nomad announces encode display names in app_data as msgpack
+/// `[display_name_bytes, ...]` or raw UTF-8 (see NomadNet / MeshChat wire compat).
+fn parse_announce_display_name(app_data: Option<&[u8]>) -> Option<String> {
     let bytes = app_data?;
     if bytes.is_empty() {
         return None;
@@ -1312,6 +1375,35 @@ fn nomad_name_from_msgpack_value(value: &rmpv::Value) -> Option<String> {
     }
 }
 
+fn resolve_inbound_sender_name(contacts: &[ContactRow], sender_hash: &str) -> String {
+    resolve_inbound_sender_name_map(
+        &contacts
+            .iter()
+            .filter_map(|c| {
+                let name = c.display_name.as_ref()?.trim();
+                if name.is_empty() {
+                    return None;
+                }
+                Some((c.destination_hash.clone(), name.to_string()))
+            })
+            .collect(),
+        sender_hash,
+    )
+}
+
+fn resolve_inbound_sender_name_map(
+    names: &HashMap<String, String>,
+    sender_hash: &str,
+) -> String {
+    let prefix = sender_hash.get(..12).unwrap_or(sender_hash);
+    names
+        .get(sender_hash)
+        .map(|name| name.trim())
+        .filter(|name| !name.is_empty() && *name != prefix)
+        .map(str::to_string)
+        .unwrap_or_else(|| prefix.to_string())
+}
+
 pub(super) fn parse_hash16(hex_str: &str) -> Result<[u8; 16], String> {
     let clean: String = hex_str.chars().filter(|c| c.is_ascii_hexdigit()).collect();
     let bytes = hex::decode(if clean.len() >= 32 {
@@ -1323,6 +1415,70 @@ pub(super) fn parse_hash16(hex_str: &str) -> Result<[u8; 16], String> {
     let mut out = [0u8; 16];
     out.copy_from_slice(&bytes[..16]);
     Ok(out)
+}
+
+#[cfg(test)]
+mod announce_display_name_tests {
+    use super::*;
+
+    #[test]
+    fn parse_announce_display_name_raw_utf8() {
+        assert_eq!(
+            parse_announce_display_name(Some(b"Alice Node")),
+            Some("Alice Node".into())
+        );
+    }
+
+    #[test]
+    fn parse_announce_display_name_msgpack_binary() {
+        let mut buf = Vec::new();
+        rmpv::encode::write_value(
+            &mut buf,
+            &rmpv::Value::Array(vec![rmpv::Value::Binary(b"Mesh Peer".to_vec())]),
+        )
+        .unwrap();
+        assert_eq!(
+            parse_announce_display_name(Some(&buf)),
+            Some("Mesh Peer".into())
+        );
+    }
+
+    #[test]
+    fn parse_announce_display_name_empty_is_none() {
+        assert_eq!(parse_announce_display_name(Some(b"")), None);
+        assert_eq!(parse_announce_display_name(None), None);
+    }
+
+    #[test]
+    fn resolve_inbound_sender_name_map_uses_cache_entry() {
+        let mut names = HashMap::new();
+        names.insert("aa".repeat(16), "Alice".into());
+        assert_eq!(
+            resolve_inbound_sender_name_map(&names, &"aa".repeat(16)),
+            "Alice"
+        );
+    }
+
+    #[test]
+    fn resolve_inbound_sender_name_prefers_contact_display_name() {
+        let contacts = vec![ContactRow {
+            destination_hash: "aa".repeat(16),
+            display_name: Some("Alice".into()),
+            last_heard: None,
+            favorited: false,
+        }];
+        assert_eq!(
+            resolve_inbound_sender_name(&contacts, &"aa".repeat(16)),
+            "Alice"
+        );
+    }
+
+    #[test]
+    fn resolve_inbound_sender_name_falls_back_to_hash_prefix() {
+        let contacts = vec![];
+        let hash = "deadbeef".repeat(4);
+        assert_eq!(resolve_inbound_sender_name(&contacts, &hash), "deadbeefdead");
+    }
 }
 
 #[cfg(test)]

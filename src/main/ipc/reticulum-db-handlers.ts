@@ -245,7 +245,13 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         `INSERT INTO reticulum_destinations (destination_hash, display_name, last_heard, favorited, icon_name, icon_color)
          VALUES (?, ?, ?, ?, ?, ?)
          ON CONFLICT(destination_hash) DO UPDATE SET
-           display_name = COALESCE(excluded.display_name, reticulum_destinations.display_name),
+           display_name = CASE
+             WHEN excluded.display_name IS NOT NULL
+               AND excluded.display_name != ''
+               AND excluded.display_name != substr(reticulum_destinations.destination_hash, 1, 12)
+             THEN excluded.display_name
+             ELSE reticulum_destinations.display_name
+           END,
            last_heard = COALESCE(excluded.last_heard, reticulum_destinations.last_heard),
            favorited = excluded.favorited,
            icon_name = COALESCE(excluded.icon_name, reticulum_destinations.icon_name),

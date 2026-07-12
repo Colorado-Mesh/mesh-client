@@ -1475,7 +1475,9 @@
       "flashTransferTooSmall": "固件传输未完成—几乎未写入任何数据。确认您选择了正确的USB端口，并且主板已进入引导加载程序模式。",
       "flashMd5Mismatch": "写入后固件验证失败。请使用其他USB电缆或端口重试；如果问题仍然存在，请重新下载固件ZIP。",
       "portSelectionTimedOut": "串行端口选择超时。在两分钟内从列表中选择一个端口，或重试闪存以重用最后一个端口。",
-      "noSerialPorts": "未找到 USB 串行端口。通过 USB 连接您的开发板并重试。"
+      "noSerialPorts": "未找到 USB 串行端口。通过 USB 连接您的开发板并重试。",
+      "rnodeCommandTimeout": "设备停止通过串行响应。使用端口拔下其他应用程序，等待主板完成引导，然后重试。",
+      "esp32FlashStalled": "固件传输已停止，没有任何进展。尝试其他USB电缆或端口，进入引导加载程序模式（按住引导，点击重置） ，然后再次闪烁。"
     },
     "selectSerialPort": "选择串行端口",
     "noSerialPorts": "未找到USB串行端口。",

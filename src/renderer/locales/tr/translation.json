@@ -1475,7 +1475,9 @@
       "flashTransferTooSmall": "Yazılım aktarımı tamamlanmadı — neredeyse hiç veri yazılmadı. Doğru USB bağlantı noktasını seçtiğinizden ve kartın önyükleyici moduna girdiğinden emin olun.",
       "flashMd5Mismatch": "Yazılım doğrulaması yazıldıktan sonra başarısız oldu. Farklı bir USB kablosu veya bağlantı noktası ile tekrar deneyin; devam ederse, ürün yazılımı zip dosyasını yeniden indirin.",
       "portSelectionTimedOut": "Seri bağlantı noktası seçimi zaman aşımına uğradı. İki dakika içinde listeden bir bağlantı noktası seçin veya son bağlantı noktasını yeniden kullanmak için flash'ı yeniden deneyin.",
-      "noSerialPorts": "Hiçbir USB seri bağlantı noktası bulunamadı. Anakartınızı USB üzerinden bağlayın ve tekrar deneyin."
+      "noSerialPorts": "Hiçbir USB seri bağlantı noktası bulunamadı. Anakartınızı USB üzerinden bağlayın ve tekrar deneyin.",
+      "rnodeCommandTimeout": "Cihaz seri yanıt vermeyi durdurdu. Bağlantı noktasını kullanarak diğer uygulamaların fişini çekin, kartın önyükleme işleminin bitmesini bekleyin ve ardından yeniden deneyin.",
+      "esp32FlashStalled": "Ürün yazılımı aktarımı durmuş ve ilerleme kaydedilememiştir. Başka bir USB kablosu veya bağlantı noktası deneyin, önyükleyici moduna girin (ÖNYÜKLEMEYİ basılı tutun, SIFIRLA'YA dokunun) ve tekrar yanıp sönmeye başlayın."
     },
     "selectSerialPort": "COM… seri portunu seçin",
     "noSerialPorts": "USB seri bağlantı noktası bulunamadı.",
