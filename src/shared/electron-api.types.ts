@@ -794,6 +794,8 @@ export interface ElectronAPI {
 
   /** Renderer liveness ping for post-resume hang detection (main log only). */
   sendRendererHeartbeat: (payload?: { ts: number }) => Promise<void>;
+  /** Main-process uptime in seconds (for long-session restart nudge). */
+  getProcessUptimeSec: () => Promise<number>;
 
   // ─── MeshCore TCP bridge ─────────────────────────────────────────────────────
   meshcore: {

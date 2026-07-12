@@ -81,6 +81,7 @@ import { useAppTrayUnreadSync } from './hooks/useAppTrayUnreadSync';
 import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
+import { useLongSessionMaintenance } from './hooks/useLongSessionMaintenance';
 import { useMeshcoreDistanceFilterHint } from './hooks/useMeshcoreDistanceFilterHint';
 import type { useMeshcorePanelActions } from './hooks/useMeshcorePanelActions';
 import type { useMeshtasticPanelActions } from './hooks/useMeshtasticPanelActions';
@@ -686,6 +687,7 @@ function AppContent() {
       },
     },
   });
+  useLongSessionMaintenance();
   useRendererHeartbeat();
   useSerialServiceListeners();
   useSpellcheckReplaceSync();

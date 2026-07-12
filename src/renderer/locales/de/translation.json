@@ -3789,7 +3789,8 @@
     "firmwareAvailable": "Firmware-Update verfügbar: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} neue Nachricht",
     "newMessages_other": "{{protocol}}: {{count}} neue Nachrichten",
-    "meshcoreDistanceFilterHint": "Du hast {{count}} Kontakte mit GPS auf der Karte. Aktiviere den Entfernungsfilter unter App → Aussehen, um dich auf nahe Knoten zu konzentrieren."
+    "meshcoreDistanceFilterHint": "Du hast {{count}} Kontakte mit GPS auf der Karte. Aktiviere den Entfernungsfilter unter App → Aussehen, um dich auf nahe Knoten zu konzentrieren.",
+    "longSessionRestartNudge": "Der Mesh-Client läuft seit vier Tagen. Starten Sie die App neu, um das Risiko von Abstürzen bei langen MeshCore BLE-Sitzungen zu reduzieren."
   },
   "updateStatus": {
     "checking": "Überprüfung…",

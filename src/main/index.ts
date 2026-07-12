@@ -462,6 +462,7 @@ process.on('uncaughtException', (error) => {
     '[main] Uncaught exception:',
     sanitizeLogMessage(error?.stack ?? error?.message ?? String(error)),
   );
+  void flushLogBeforeQuit();
   try {
     dialog.showErrorBox(
       'Mesh-Client — Unexpected Error',
@@ -481,6 +482,7 @@ process.on('unhandledRejection', (reason) => {
     '[main] Unhandled rejection:',
     sanitizeLogMessage(reason instanceof Error ? (reason.stack ?? reason.message) : String(reason)),
   );
+  void flushLogBeforeQuit();
   const now = Date.now();
   if (now - lastUnhandledRejectionDialogAt < UNHANDLED_REJECTION_DIALOG_COOLDOWN_MS) return;
   lastUnhandledRejectionDialogAt = now;
@@ -3275,6 +3277,8 @@ ipcMain.handle('storage:decrypt', (event, ciphertext: unknown) => {
 });
 
 // ─── IPC: Login item (launch at startup) ───────────────────────────
+ipcMain.handle('app:getProcessUptimeSec', () => Math.floor(process.uptime()));
+
 ipcMain.handle('app:getLoginItem', () => {
   try {
     const settings = app.getLoginItemSettings();
@@ -3436,6 +3440,7 @@ ipcMain.handle('app:quit', async (event) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
   }
+  isQuitting = true;
   isConnected = false;
   try {
     await nobleBleManager.stopAllScanning();
@@ -5880,10 +5885,11 @@ void app.whenReady().then(() => {
     const MAIN_PROCESS_HEALTH_UPTIME_THRESHOLD_SEC = 24 * 60 * 60;
     setInterval(() => {
       if (process.uptime() < MAIN_PROCESS_HEALTH_UPTIME_THRESHOLD_SEC) return;
+      const uptimeSec = Math.floor(process.uptime());
       const mem = process.memoryUsage();
       const ble = nobleBleManager.getLongSessionHealthSnapshot();
       console.debug(
-        `[main] long-session health uptimeSec=${Math.floor(process.uptime())} rss=${mem.rss} heapUsed=${mem.heapUsed} ble=${JSON.stringify(ble)}`,
+        `[main] long-session health uptimeSec=${uptimeSec} rss=${mem.rss} heapUsed=${mem.heapUsed} ble=${JSON.stringify(ble)}`,
       );
     }, MAIN_PROCESS_HEALTH_LOG_INTERVAL_MS).unref();
 
@@ -5974,6 +5980,10 @@ app.on('before-quit', (event) => {
 });
 
 app.on('will-quit', () => {
+  console.debug(
+    `[main] will-quit userInitiated=${isQuitting} shutdownDone=${shutdownDone} uptimeSec=${Math.floor(process.uptime())}`,
+  );
+  void flushLogBeforeQuit();
   try {
     takServerManager?.stop();
   } catch (err) {

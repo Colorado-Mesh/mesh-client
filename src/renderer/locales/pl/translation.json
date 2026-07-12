@@ -3789,7 +3789,8 @@
     "firmwareAvailable": "Dostępna aktualizacja oprogramowania sprzętowego: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} nowa wiadomość",
     "newMessages_other": "{{protocol}}: {{count}} nowe wiadomości",
-    "meshcoreDistanceFilterHint": "Masz {{count}} kontaktów z GPS na mapie. Włącz filtr odległości w Aplikacja → Wygląd, aby skupić się na pobliskich węzłach."
+    "meshcoreDistanceFilterHint": "Masz {{count}} kontaktów z GPS na mapie. Włącz filtr odległości w Aplikacja → Wygląd, aby skupić się na pobliskich węzłach.",
+    "longSessionRestartNudge": "Klient sieci działa od czterech dni. Uruchom ponownie aplikację, aby zmniejszyć ryzyko awarii podczas długich sesji BLE MeshCore."
   },
   "updateStatus": {
     "checking": "Sprawdzanie...",

@@ -3789,7 +3789,8 @@
     "firmwareAvailable": "Aggiornamento firmware disponibile: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} nuovo messaggio",
     "newMessages_other": "{{protocol}}: {{count}} nuovi messaggi",
-    "meshcoreDistanceFilterHint": "Hai {{count}} contatti con GPS sulla mappa. Abilita il filtro distanza in App → Aspetto per concentrarti sui nodi vicini."
+    "meshcoreDistanceFilterHint": "Hai {{count}} contatti con GPS sulla mappa. Abilita il filtro distanza in App → Aspetto per concentrarti sui nodi vicini.",
+    "longSessionRestartNudge": "Mesh-client è in funzione da quattro giorni. Riavvia l'app per ridurre il rischio di crash su sessioni BLE MeshCore lunghe."
   },
   "updateStatus": {
     "checking": "Verifica…",

@@ -3789,7 +3789,8 @@
     "firmwareAvailable": "Ürün yazılımı güncellemesi mevcut: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} yeni mesaj",
     "newMessages_other": "{{protocol}}: {{count}} yeni mesajlar",
-    "meshcoreDistanceFilterHint": "Haritada GPS'li {{count}} kişi var. Yakındaki düğümlere odaklanmak için Uygulama → Dış görünüş bölümünde mesafe filtresini etkinleştirin."
+    "meshcoreDistanceFilterHint": "Haritada GPS'li {{count}} kişi var. Yakındaki düğümlere odaklanmak için Uygulama → Dış görünüş bölümünde mesafe filtresini etkinleştirin.",
+    "longSessionRestartNudge": "Mesh istemcisi dört gündür çalışıyor. Uzun MeshCore BLE oturumlarında çökme riskini azaltmak için uygulamayı yeniden başlatın."
   },
   "updateStatus": {
     "checking": "Kontrol ediliyor…",

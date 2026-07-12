@@ -114,7 +114,11 @@ async function readResponseBodyUpTo(
       total += slice.length;
     }
   } finally {
-    void reader.cancel();
+    try {
+      await reader.cancel();
+    } catch {
+      // catch-no-log-ok abort/timeout during body read — expected when fetch times out
+    }
   }
   if (total === 0) return null;
   const merged = new Uint8Array(total);

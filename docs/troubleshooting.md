@@ -518,12 +518,14 @@ After sleep or hibernate, mesh-client uses the same resume path as macOS: reconn
 If mesh-client stays open for **days** on a busy mesh (especially **MeshCore BLE-only** with hundreds of repeaters):
 
 - **Restart the app every 1–2 days** to limit main-process uptime (reduces risk of native BLE / V8 edge cases after ~72h).
-- **MeshCore:** default contact cap is **10,000** (App settings); enable **auto-prune by age** if you want SQLite trimmed below that. Avoid bulk repeater status/neighbors refresh when not needed.
+- After **4 days**, mesh-client shows a one-time toast suggesting a restart.
+- **MeshCore:** default contact cap is **10,000** (App settings); enable **auto-prune by age** if you want SQLite trimmed below that. Avoid bulk repeater status/neighbors refresh when not needed — thousands of `syncNextMessage timed out` lines in the log usually mean the companion radio is overloaded.
 - **Meshtastic:** default node cap is **10,000**; enable **auto-prune** in App settings as needed.
 - **Reticulum:** restart the sidecar/stack periodically on always-on nodes; message retention prunes run at startup and every 6 hours while the app is open.
 - If the app crashes, save **`~/Library/Logs/DiagnosticReports/Mesh-client-*.ips`** (macOS) before relaunching. Main-process crashes often show `EXC_BREAKPOINT` during a timer/GC; include the `.ips` and exported log when reporting.
+- **Reporting a crash:** Export the app log (App tab → Export for GitHub), attach the `.ips` if available, and note app version, OS version, uptime (look for `[main] long-session health uptimeSec=…`), and whether MeshCore BLE was connected. Upgrade to the latest release when convenient — crashes on very old builds are harder to reproduce.
 
-After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory and BLE session state.
+After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory, per-session BLE timer state, and Noble connection age.
 
 ### App shows "disconnected" but device is still on
 
