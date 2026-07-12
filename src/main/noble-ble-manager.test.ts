@@ -242,3 +242,13 @@ describe('NobleBleManager — connect/write queue timeouts (regression)', () => 
     expect(SOURCE).toContain("'BLE writeAsync'");
   });
 });
+
+describe('NobleBleManager long-session maintenance (regression)', () => {
+  it('extends health snapshot with per-session timer and connection age fields', () => {
+    expect(SOURCE).toContain('sessionEstablishedAtMs');
+    expect(SOURCE).toContain('lastConnectedPeripheralId');
+    expect(SOURCE).toContain('postWriteTimer');
+    expect(SOURCE).toContain('sessionAgeSec');
+    expect(SOURCE).toContain('getLongSessionHealthSnapshot');
+  });
+});

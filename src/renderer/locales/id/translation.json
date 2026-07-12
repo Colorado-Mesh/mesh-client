@@ -3996,7 +3996,8 @@
     "firmwareAvailable": "Pembaruan firmware tersedia: v{{version}}",
     "newMessages_one": "{{protocol}}: {{count}} pesan baru",
     "newMessages_other": "{{protocol}}: {{count}} pesan baru",
-    "meshcoreDistanceFilterHint": "Anda memiliki {{count}} kontak dengan GPS di peta. Aktifkan filter jarak di Aplikasi → Penampilan untuk fokus pada node terdekat."
+    "meshcoreDistanceFilterHint": "Anda memiliki {{count}} kontak dengan GPS di peta. Aktifkan filter jarak di Aplikasi → Penampilan untuk fokus pada node terdekat.",
+    "longSessionRestartNudge": "Mesh - client telah berjalan selama empat hari. Mulai ulang aplikasi untuk mengurangi risiko crash pada sesi BLE MeshCore yang panjang."
   },
   "updateStatus": {
     "checking": "Memeriksa…",

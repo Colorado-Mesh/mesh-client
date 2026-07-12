@@ -54,12 +54,14 @@ index af6f6d670adc0948d3453df34acbbde46c1b4250..337c18dbf16796a21c9834578589a583
          } else if(responseCode === Constants.PushCodes.StatusResponse){
              this.onStatusResponsePush(bufferReader);
          } else if(responseCode === Constants.PushCodes.LogRxData){
-@@ -412,8 +425,12 @@ class Connection extends EventEmitter {
+@@ -412,8 +425,14 @@ class Connection extends EventEmitter {
              this.onNewAdvertPush(bufferReader);
          } else if(responseCode === Constants.PushCodes.BinaryResponse){
              this.onBinaryResponsePush(bufferReader);
 +        } else if(responseCode === 25){
 +            // AUTOADD_CONFIG — handled in mesh-client app rx path; ignore in library
++        } else if(responseCode === 0x8E){
++            // Unknown push (0x8E) — firmware ahead of library; drop silently
 +        } else if(responseCode === 0x8F){
 +            // Unknown push (0x8F) — firmware ahead of library; drop silently
          } else {

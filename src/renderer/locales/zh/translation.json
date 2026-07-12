@@ -3996,7 +3996,8 @@
     "firmwareAvailable": "固件更新可用： v {{version}}",
     "newMessages_one": "{{protocol}} ： {{count}}条新消息",
     "newMessages_other": "{{protocol}} ： {{count}}条新消息",
-    "meshcoreDistanceFilterHint": "地图上有 {{count}} 个带 GPS 的联系人。在应用 → 外貌中启用距离过滤器，以关注附近的节点。"
+    "meshcoreDistanceFilterHint": "地图上有 {{count}} 个带 GPS 的联系人。在应用 → 外貌中启用距离过滤器，以关注附近的节点。",
+    "longSessionRestartNudge": "Mesh-client已经运行了四天。重新启动应用程序，以降低长时间MeshCore BLE会话崩溃的风险。"
   },
   "updateStatus": {
     "checking": "正在检查...",

@@ -4,8 +4,12 @@
  *
  * Failure point: electron-builder can emit empty or stub bundles on misconfigured runners.
  * Fallback: hard fail before artifact upload so a broken macOS build never ships.
+ *
+ * CI smoke path (artifact download): validates .app from shipped ZIP (ditto) and DMG (hdiutil).
+ * Local dist:mac path: validates on-disk .app plus DMG mount; skips ZIP extract when .app exists.
  */
-import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
+import { spawnSync } from 'node:child_process';
+import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { assertBundledReticulumSidecarInBundle } from './assert-bundled-reticulum-sidecar.mjs';
@@ -24,6 +28,10 @@ const ELECTRON_FRAMEWORK_BINARY = path.join(
   'A',
   'Electron Framework',
 );
+const ELECTRON_FRAMEWORK_ROOT = path.join('Contents', 'Frameworks', 'Electron Framework.framework');
+const VERIFY_ZIP_EXTRACT_DIR = path.join(releaseDir, '.verify-mac-extract');
+const VERIFY_DMG_MOUNT_DIR = path.join(releaseDir, '.verify-mac-dmg-mount');
+
 /** Thin Mach-O launcher in Contents/MacOS (Electron 30+); real runtime is in the framework. */
 const MIN_LAUNCHER_BYTES = 1024;
 const MIN_FRAMEWORK_BYTES = 50 * 1024 * 1024;
@@ -64,71 +72,241 @@ function collectAppBundles(dir, found) {
   }
 }
 
+/**
+ * @param {string} dir
+ * @param {string} ext e.g. '.dmg' or '.zip'
+ * @returns {string[]}
+ */
+function collectArchives(dir, ext) {
+  /** @type {string[]} */
+  const rootMatches = [];
+  /** @type {string[]} */
+  const nestedMatches = [];
+
+  /** @param {string} scanDir */
+  function walk(scanDir) {
+    if (!existsSync(scanDir)) {
+      return;
+    }
+    for (const entry of readdirSync(scanDir, { withFileTypes: true })) {
+      const full = path.join(scanDir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.isFile() && entry.name.endsWith(ext)) {
+        if (scanDir === releaseDir) {
+          rootMatches.push(full);
+        } else {
+          nestedMatches.push(full);
+        }
+      }
+    }
+  }
+
+  walk(dir);
+  return rootMatches.length > 0 ? rootMatches : nestedMatches;
+}
+
+/** @param {string[]} archives @returns {string | null} */
+function pickPrimaryArchive(archives) {
+  if (archives.length === 0) {
+    return null;
+  }
+  return archives.reduce((largest, current) => {
+    const largestSize = statSync(largest).size;
+    const currentSize = statSync(current).size;
+    return currentSize > largestSize ? current : largest;
+  });
+}
+
+/** @param {string} bundleRoot @param {string} label */
+function assertFrameworkSymlinks(bundleRoot, label) {
+  const frameworkRoot = path.join(bundleRoot, ELECTRON_FRAMEWORK_ROOT);
+  const currentLink = path.join(frameworkRoot, 'Versions', 'Current');
+  const rootBinaryLink = path.join(frameworkRoot, 'Electron Framework');
+
+  for (const linkPath of [currentLink, rootBinaryLink]) {
+    if (!existsSync(linkPath)) {
+      fail(`Missing ${label} framework entry: ${linkPath}`);
+    }
+    if (!lstatSync(linkPath).isSymbolicLink()) {
+      fail(
+        `${label} must be a symlink (upload-artifact dereferences break Electron bundles): ${linkPath}`,
+      );
+    }
+  }
+}
+
+/** @param {string} bundleRoot @param {string} sourceLabel */
+function validateAppBundle(bundleRoot, sourceLabel) {
+  const bundleName = path.basename(bundleRoot);
+  const label = `${sourceLabel} ${bundleName}`;
+  const launcherPath = path.join(bundleRoot, MACOS_LAUNCHER);
+  const frameworkPath = path.join(bundleRoot, ELECTRON_FRAMEWORK_BINARY);
+
+  if (!existsSync(launcherPath) || !existsSync(frameworkPath)) {
+    fail(`No ${MACOS_LAUNCHER} + ${ELECTRON_FRAMEWORK_BINARY} in ${label} at ${bundleRoot}`);
+  }
+
+  assertFrameworkSymlinks(bundleRoot, label);
+  assertMinSize(`macOS launcher in ${label}`, launcherPath, MIN_LAUNCHER_BYTES);
+  assertMinSize(`Electron Framework in ${label}`, frameworkPath, MIN_FRAMEWORK_BYTES);
+  assertBundledReticulumSidecarInBundle({
+    label: `bundled Reticulum sidecar in ${label}`,
+    platform: 'darwin',
+    bundleRoot,
+    fail,
+  });
+}
+
+/** @param {string} bundleRoot @returns {boolean} */
+function isCompleteAppBundle(bundleRoot) {
+  const launcherPath = path.join(bundleRoot, MACOS_LAUNCHER);
+  const frameworkPath = path.join(bundleRoot, ELECTRON_FRAMEWORK_BINARY);
+  return existsSync(launcherPath) && existsSync(frameworkPath);
+}
+
+/** @param {string} searchRoot @returns {string | null} */
+function findCompleteAppBundle(searchRoot) {
+  /** @type {string[]} */
+  const bundles = [];
+  collectAppBundles(searchRoot, bundles);
+  return bundles.find((bundle) => isCompleteAppBundle(bundle)) ?? null;
+}
+
+/** @param {string} command @param {string[]} args @param {string} failLabel */
+function runCommand(command, args, failLabel) {
+  const result = spawnSync(command, args, { stdio: 'inherit' });
+  if (result.error || result.status !== 0) {
+    fail(failLabel);
+  }
+}
+
+/** @param {string} zipPath @returns {string} */
+function extractZipToTemp(zipPath) {
+  rmSync(VERIFY_ZIP_EXTRACT_DIR, { recursive: true, force: true });
+  mkdirSync(VERIFY_ZIP_EXTRACT_DIR, { recursive: true });
+  // ditto -xk preserves symlinks inside electron-builder zips.
+  runCommand(
+    'ditto',
+    ['-xk', zipPath, VERIFY_ZIP_EXTRACT_DIR],
+    `Failed to extract zip with ditto: ${zipPath}`,
+  );
+
+  const bundle = findCompleteAppBundle(VERIFY_ZIP_EXTRACT_DIR);
+  if (!bundle) {
+    fail(`No complete ${APP_NAME}.app found inside zip: ${zipPath}`);
+  }
+  return bundle;
+}
+
+/** @param {string} dmgPath @returns {string} */
+function mountDmgAndFindApp(dmgPath) {
+  rmSync(VERIFY_DMG_MOUNT_DIR, { recursive: true, force: true });
+  mkdirSync(VERIFY_DMG_MOUNT_DIR, { recursive: true });
+
+  // hdiutil attach: mount dmg read-only for bundle inspection.
+  runCommand(
+    'hdiutil',
+    ['attach', '-nobrowse', '-readonly', '-mountpoint', VERIFY_DMG_MOUNT_DIR, dmgPath],
+    `Failed to mount dmg with hdiutil: ${dmgPath}`,
+  );
+
+  try {
+    const bundle = findCompleteAppBundle(VERIFY_DMG_MOUNT_DIR);
+    if (!bundle) {
+      fail(`No complete ${APP_NAME}.app found inside dmg: ${dmgPath}`);
+    }
+    return bundle;
+  } finally {
+    detachDmgMount();
+  }
+}
+
+function detachDmgMount() {
+  if (!existsSync(VERIFY_DMG_MOUNT_DIR)) {
+    return;
+  }
+  const quiet = spawnSync('hdiutil', ['detach', VERIFY_DMG_MOUNT_DIR, '-quiet'], {
+    stdio: 'inherit',
+  });
+  if (quiet.error || quiet.status !== 0) {
+    console.warn(
+      '[verify-mac-packaging] hdiutil detach failed, retrying with -force:',
+      quiet.error,
+    );
+    const forced = spawnSync('hdiutil', ['detach', '-force', VERIFY_DMG_MOUNT_DIR], {
+      stdio: 'inherit',
+    });
+    if (forced.error || forced.status !== 0) {
+      console.error('[verify-mac-packaging] hdiutil detach -force failed:', forced.error);
+    }
+  }
+}
+
 function main() {
   if (!existsSync(releaseDir)) {
     fail(`Missing release directory: ${releaseDir}`);
   }
 
+  const dmgArchives = collectArchives(releaseDir, '.dmg');
+  const zipArchives = collectArchives(releaseDir, '.zip');
+
+  if (dmgArchives.length === 0) {
+    fail(`No .dmg artifacts under ${releaseDir}`);
+  }
+  if (zipArchives.length === 0) {
+    fail(`No .zip artifacts under ${releaseDir}`);
+  }
+
+  for (const dmgPath of dmgArchives) {
+    assertMinSize(`dmg ${path.basename(dmgPath)}`, dmgPath, MIN_DMG_BYTES);
+  }
+  for (const zipPath of zipArchives) {
+    assertMinSize(`zip ${path.basename(zipPath)}`, zipPath, MIN_ZIP_BYTES);
+  }
+
   /** @type {string[]} */
-  const appBundles = [];
-  collectAppBundles(releaseDir, appBundles);
-  if (appBundles.length === 0) {
-    fail(`No ${APP_NAME}.app bundle found under ${releaseDir}`);
+  const validatedSources = [];
+
+  /** @type {string[]} */
+  const onDiskBundles = [];
+  collectAppBundles(releaseDir, onDiskBundles);
+  const directBundle = onDiskBundles.find((bundle) => isCompleteAppBundle(bundle));
+
+  if (directBundle) {
+    validateAppBundle(directBundle, 'direct');
+    validatedSources.push('direct');
   }
 
-  let validatedBundle = false;
-  for (const bundle of appBundles) {
-    const launcherPath = path.join(bundle, MACOS_LAUNCHER);
-    const frameworkPath = path.join(bundle, ELECTRON_FRAMEWORK_BINARY);
-    if (existsSync(launcherPath) && existsSync(frameworkPath)) {
-      const bundleName = path.basename(bundle);
-      assertMinSize(`macOS launcher in ${bundleName}`, launcherPath, MIN_LAUNCHER_BYTES);
-      assertMinSize(`Electron Framework in ${bundleName}`, frameworkPath, MIN_FRAMEWORK_BYTES);
-      assertBundledReticulumSidecarInBundle({
-        label: `bundled Reticulum sidecar in ${bundleName}`,
-        platform: 'darwin',
-        bundleRoot: bundle,
-        fail,
-      });
-      validatedBundle = true;
-      break;
+  const primaryZip = pickPrimaryArchive(zipArchives);
+  const primaryDmg = pickPrimaryArchive(dmgArchives);
+
+  if (!directBundle) {
+    if (!primaryZip) {
+      fail(`No .zip artifact to extract under ${releaseDir}`);
     }
-  }
-  if (!validatedBundle) {
-    fail(
-      `No ${MACOS_LAUNCHER} + ${ELECTRON_FRAMEWORK_BINARY} found in any .app bundle under ${releaseDir}`,
-    );
+    const zipBundle = extractZipToTemp(primaryZip);
+    validateAppBundle(zipBundle, 'zip');
+    validatedSources.push('zip');
   }
 
-  const releaseFiles = readdirSync(releaseDir, { withFileTypes: true })
-    .filter((e) => e.isFile())
-    .map((e) => e.name);
-  const dmgs = releaseFiles.filter((n) => n.endsWith('.dmg'));
-  const zips = releaseFiles.filter((n) => n.endsWith('.zip'));
-
-  if (dmgs.length === 0) {
-    fail(`No .dmg artifacts in ${releaseDir}`);
+  if (!primaryDmg) {
+    fail(`No .dmg artifact to mount under ${releaseDir}`);
   }
-  if (zips.length === 0) {
-    fail(`No .zip artifacts in ${releaseDir}`);
-  }
-
-  for (const dmg of dmgs) {
-    assertMinSize(`dmg ${dmg}`, path.join(releaseDir, dmg), MIN_DMG_BYTES);
-  }
-  for (const zip of zips) {
-    assertMinSize(`zip ${zip}`, path.join(releaseDir, zip), MIN_ZIP_BYTES);
-  }
+  const dmgBundle = mountDmgAndFindApp(primaryDmg);
+  validateAppBundle(dmgBundle, 'dmg');
+  validatedSources.push('dmg');
 
   const version = JSON.parse(readFileSync(path.join(projectRoot, 'package.json'), 'utf-8')).version;
   console.debug(
-    `[verify-mac-packaging] OK — ${APP_NAME}.app launcher + Electron Framework + ${dmgs.length} dmg, ${zips.length} zip (v${version})`,
+    `[verify-mac-packaging] OK — validated via ${validatedSources.join(', ')}; ${dmgArchives.length} dmg, ${zipArchives.length} zip (v${version})`,
   );
 }
 
 try {
   main();
 } catch (e) {
+  detachDmgMount();
   console.error('[verify-mac-packaging] Unexpected error:', e);
   process.exit(1);
 }

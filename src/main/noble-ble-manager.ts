@@ -170,6 +170,10 @@ interface NobleBleSession {
   attMtuSuspiciousLogged: boolean;
   /** Bound handler removed on disconnect; NobleMac emits `mtu` asynchronously vs `connectAsync`. */
   peripheralMtuHandler: ((rawMtu: number) => void) | null;
+  /** Set when GATT subscriptions are ready; used for long-session health and refresh. */
+  sessionEstablishedAtMs: number | null;
+  /** Last peripheral id for controlled long-session Noble recycle. */
+  lastConnectedPeripheralId: string | null;
 }
 
 export class NobleBleManager extends EventEmitter {
@@ -272,6 +276,8 @@ export class NobleBleManager extends EventEmitter {
       attMtuSanitized: attMtuOrDefault(null),
       attMtuSuspiciousLogged: false,
       peripheralMtuHandler: null,
+      sessionEstablishedAtMs: null,
+      lastConnectedPeripheralId: null,
     };
   }
 
@@ -330,6 +336,7 @@ export class NobleBleManager extends EventEmitter {
     session.writeQueue = Promise.resolve();
     session.attMtuSanitized = attMtuOrDefault(null);
     session.attMtuSuspiciousLogged = false;
+    session.sessionEstablishedAtMs = null;
   }
 
   private updateSessionAttMtuFromRaw(
@@ -532,12 +539,34 @@ export class NobleBleManager extends EventEmitter {
     meshtasticConnected: boolean;
     bleSessionActive: boolean;
     scanningActive: boolean;
+    sessions: {
+      meshtastic: ReturnType<typeof sessionDetail>;
+      meshcore: ReturnType<typeof sessionDetail>;
+    };
   } {
+    const sessionDetail = (sessionId: 'meshtastic' | 'meshcore') => {
+      const session = this.getSession(sessionId);
+      const established = session.sessionEstablishedAtMs;
+      return {
+        connected: this.isConnected(sessionId),
+        peripheralId: session.lastConnectedPeripheralId,
+        sessionAgeSec: established != null ? Math.floor((Date.now() - established) / 1000) : null,
+        postWriteTimer: session.postWriteReadPumpTimer !== null,
+        notifyWatchdog: session.notifyWatchdogTimer !== null,
+        gattInflight: session.meshcoreGattInflight !== null,
+        readPumpActive: session.readPumpActive,
+        fromRadioPackets: session.fromRadioDeliveryCount,
+      };
+    };
     return {
       meshcoreConnected: this.isConnected('meshcore'),
       meshtasticConnected: this.isConnected('meshtastic'),
       bleSessionActive: this.isBleSessionActive(),
       scanningActive: this.scanningActive,
+      sessions: {
+        meshtastic: sessionDetail('meshtastic'),
+        meshcore: sessionDetail('meshcore'),
+      },
     };
   }
 
@@ -1298,6 +1327,8 @@ export class NobleBleManager extends EventEmitter {
       const registeredMac = String(peripheral.address ?? peripheralId);
       bleCoexistenceCoordinator.register(registeredMac, peripheralOwner);
       session.registeredMac = registeredMac;
+      session.lastConnectedPeripheralId = peripheralId;
+      session.sessionEstablishedAtMs = Date.now();
       this.emit('connected', { sessionId });
     } catch (err) {
       console.warn(`[BLE:${sessionId}] connect failed:`, err instanceof Error ? err.message : err); // log-injection-ok noble internal error

@@ -324,6 +324,17 @@ describe('Native crash observability (source contract)', () => {
     expect(INDEX_SOURCE).toContain("'[main] crashDumps path:'");
     expect(INDEX_SOURCE).toContain("'[main] child-process-gone:'");
   });
+
+  it('flushes logs on uncaught errors and records will-quit breadcrumbs', () => {
+    expect(INDEX_SOURCE).toContain('void flushLogBeforeQuit()');
+    expect(INDEX_SOURCE).toContain('will-quit userInitiated=');
+  });
+});
+
+describe('Long-session maintenance (source contract)', () => {
+  it('exposes process uptime IPC for restart nudge', () => {
+    expect(INDEX_SOURCE).toContain("'app:getProcessUptimeSec'");
+  });
 });
 
 describe('Native Electron call guards (source contract)', () => {

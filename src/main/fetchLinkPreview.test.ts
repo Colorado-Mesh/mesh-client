@@ -506,6 +506,42 @@ describe('fetchLinkPreview', () => {
     }
   });
 
+  it('does not leave unhandled rejection when image body reader cancel rejects', async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => {
+      unhandled.push(reason);
+    };
+    process.on('unhandledRejection', onUnhandled);
+
+    const pageHtml = [
+      `<meta property="og:title" content="mesh-client">`,
+      `<meta property="og:image" content="https://opengraph.githubassets.com/abc/Colorado-Mesh/mesh-client">`,
+    ].join('\n');
+    const cancelErr = new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+    mockFetch.mockImplementation(((input: string | URL | Request) => {
+      if (fetchRequestHostname(input) === 'opengraph.githubassets.com') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers({ 'content-type': 'image/png' }),
+          body: {
+            getReader: () => ({
+              read: () => Promise.resolve({ done: true, value: undefined }),
+              cancel: () => Promise.reject(cancelErr),
+            }),
+          },
+        } as unknown as Response);
+      }
+      return Promise.resolve(makeStreamResponse(pageHtml));
+    }) as typeof undiciFetch);
+
+    const result = await fetchLinkPreview('https://github.com/Colorado-Mesh/mesh-client');
+    expect(result?.title).toBe('mesh-client');
+    expect(result?.image).toBeUndefined();
+    expect(unhandled).toHaveLength(0);
+    process.off('unhandledRejection', onUnhandled);
+  });
+
   it('uses port 80 for http URLs without explicit port', async () => {
     const html = `<meta property="og:title" content="HTTP Title">`;
     mockFetch.mockResolvedValue(makeStreamResponse(html));
