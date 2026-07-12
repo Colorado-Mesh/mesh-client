@@ -189,7 +189,7 @@
     "reduceMotion": "Zmniejszyć ruch",
     "reduceMotionDesc": "Wyłącza animowane ikony i efekty dekoracyjne. Wskaźniki ładowania i stanu połączenia nadal są animowane.",
     "roomMessages": "Wiadomości z pokoju",
-    "importSchemaTooNew": "Ten plik bazy danych wymaga nowszego klienta Mesh (schemat {{dbVersion}}). Ta kompilacja obsługuje schemat {{appVersion}} lub starszy. Zainstaluj najnowszą wersję i spróbuj ponownie.",
+    "importSchemaTooNew": "Ten plik bazy danych wymaga nowszej wersji mesh-client (schemat {{dbVersion}}). Ta kompilacja obsługuje schemat {{appVersion}} lub starszy. Zainstaluj najnowszą wersję i spróbuj ponownie.",
     "floodAdvertTypeLabel": "Typ ogłoszenia",
     "floodAdvertTypeFlood": "Powódź (wielokrotny przeskok)",
     "floodAdvertTypeZeroHop": "Zero hop (tylko bezpośredni sąsiedzi)",
@@ -1476,8 +1476,9 @@
       "flashMd5Mismatch": "Weryfikacja oprogramowania nie powiodła się po zapisaniu. Spróbuj ponownie z innym kablem USB lub portem. Jeśli problem nie ustąpi, pobierz ponownie plik ZIP oprogramowania sprzętowego.",
       "portSelectionTimedOut": "Upłynął limit czasu wyboru portu szeregowego. Wybierz port z listy w ciągu dwóch minut lub spróbuj ponownie flash, aby ponownie użyć ostatniego portu.",
       "noSerialPorts": "Nie znaleziono portów szeregowych USB. Podłącz płytę przez USB i spróbuj ponownie.",
-      "rnodeCommandTimeout": "Urządzenie przestało reagować przez port szeregowy. Odłącz inne aplikacje za pomocą portu, poczekaj, aż tablica zakończy uruchamianie, a następnie spróbuj ponownie.",
-      "esp32FlashStalled": "Transfer oprogramowania sprzętowego utknął bez postępu. Wypróbuj inny kabel USB lub port, przejdź do trybu bootloadera (przytrzymaj BOOT, stuknij RESETUJ) i ponownie zacznij migać."
+      "rnodeCommandTimeout": "Urządzenie przestało odpowiadać przez port szeregowy. Zamknij inne aplikacje korzystające z tego samego portu szeregowego, poczekaj na zakończenie uruchamiania płyty i spróbuj ponownie.",
+      "esp32FlashStalled": "Transfer firmware utknął bez postępu. Wypróbuj inny kabel lub port USB, przejdź do trybu bootloadera (przytrzymaj BOOT, stuknij RESET) i wgraj ponownie.",
+      "unknown": "Wystąpił nieoczekiwany błąd."
     },
     "selectSerialPort": "Wybierz port szeregowy",
     "noSerialPorts": "Nie znaleziono portów szeregowych USB.",
@@ -3999,7 +4000,7 @@
     "newMessages_one": "{{protocol}}: {{count}} nowa wiadomość",
     "newMessages_other": "{{protocol}}: {{count}} nowe wiadomości",
     "meshcoreDistanceFilterHint": "Masz {{count}} kontaktów z GPS na mapie. Włącz filtr odległości w Aplikacja → Wygląd, aby skupić się na pobliskich węzłach.",
-    "longSessionRestartNudge": "Klient sieci działa od czterech dni. Uruchom ponownie aplikację, aby zmniejszyć ryzyko awarii podczas długich sesji BLE MeshCore."
+    "longSessionRestartNudge": "mesh-client działa od czterech dni. Uruchom ponownie aplikację, aby zmniejszyć ryzyko awarii podczas długich sesji MeshCore BLE."
   },
   "updateStatus": {
     "checking": "Sprawdzanie...",

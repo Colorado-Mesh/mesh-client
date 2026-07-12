@@ -1454,6 +1454,67 @@ describe('roomsPanel saved passwords per-key quality', () => {
     expectIssue(issues, 'must express absence');
   });
 
+  const enEsp32FlashStalled =
+    'Firmware transfer stalled with no progress. Try another USB cable or port, enter bootloader mode (hold BOOT, tap RESET), and flash again.';
+
+  it('flags blink false friend in esp32FlashStalled', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'flasher.errors.esp32FlashStalled',
+      val: '... blinken Sie erneut.',
+      enVal: enEsp32FlashStalled,
+    });
+    expectIssue(issues, 'firmware-flash wording, not LED blink verbs');
+  });
+
+  it('passes esp32FlashStalled with firmware-flash wording', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'flasher.errors.esp32FlashStalled',
+        val: '... flashen Sie erneut (BOOT, RESET).',
+        enVal: enEsp32FlashStalled,
+      }),
+    ).toEqual([]);
+  });
+
+  const enRnodeCommandTimeout =
+    'The device stopped responding over serial. Unplug other apps using the port, wait for the board to finish booting, then retry.';
+
+  it('flags garbled unplug phrasing in rnodeCommandTimeout', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'flasher.errors.rnodeCommandTimeout',
+      val: 'Trennen Sie andere Apps über den Port.',
+      enVal: enRnodeCommandTimeout,
+    });
+    expectIssue(issues, 'close other apps using the serial port');
+  });
+
+  const enLongSessionRestartNudge =
+    'Mesh-client has been running for four days. Restart the app to reduce the risk of crashes on long MeshCore BLE sessions.';
+
+  it('flags lowercase ble in longSessionRestartNudge', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'toasts.longSessionRestartNudge',
+      val: '... longues sessions ble MeshCore.',
+      enVal: enLongSessionRestartNudge,
+    });
+    expectIssue(issues, 'protocol token "BLE"');
+  });
+
+  it('accepts Mesh-Client casing for mesh-client brand in longSessionRestartNudge', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'toasts.longSessionRestartNudge',
+        val: 'Mesh-Client läuft seit vier Tagen. MeshCore BLE-Sitzungen.',
+        enVal: enLongSessionRestartNudge,
+      }),
+    ).toEqual([]);
+  });
+
   const enMeshcoreOpenWireCompatHint =
     'When enabled, mesh-client sends keyed text replies (@[Name#key]), compact r: reactions, and g: Giphy GIFs. This may not match the official companion wire format; receivers need MeshCore Open-aware clients.';
 

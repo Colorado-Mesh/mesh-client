@@ -248,7 +248,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
            display_name = CASE
              WHEN excluded.display_name IS NOT NULL
                AND excluded.display_name != ''
-               AND excluded.display_name != substr(reticulum_destinations.destination_hash, 1, 12)
+               AND LOWER(excluded.display_name) != LOWER(substr(reticulum_destinations.destination_hash, 1, 12))
              THEN excluded.display_name
              ELSE reticulum_destinations.display_name
            END,
@@ -258,7 +258,12 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
            icon_color = COALESCE(excluded.icon_color, reticulum_destinations.icon_color)`,
       ).run(
         hash,
-        typeof r.display_name === 'string' ? r.display_name.slice(0, 128) : null,
+        typeof r.display_name === 'string'
+          ? r.display_name
+              .replace(/[\r\n]+/g, ' ')
+              .trim()
+              .slice(0, 128) || null
+          : null,
         r.last_heard != null && Number.isFinite(Number(r.last_heard))
           ? Math.trunc(Number(r.last_heard))
           : null,

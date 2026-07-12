@@ -72,3 +72,14 @@ describe('reticulum-db-handlers validation', () => {
     expect(handler?.(event, 'id-1', 'query', 999999)).toEqual([]);
   });
 });
+
+describe('reticulum-db-handlers SQL contracts', () => {
+  it('preserves custom display names over hash-prefix aliases with case-insensitive guard', async () => {
+    const { readFileSync } = await import('fs');
+    const { join } = await import('path');
+    const source = readFileSync(join(__dirname, 'reticulum-db-handlers.ts'), 'utf-8');
+    expect(source).toContain('LOWER(excluded.display_name)');
+    expect(source).toContain('LOWER(substr(reticulum_destinations.destination_hash, 1, 12))');
+    expect(source).toContain('.replace(/[\\r\\n]+/g');
+  });
+});

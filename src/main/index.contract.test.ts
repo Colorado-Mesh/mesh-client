@@ -327,7 +327,14 @@ describe('Native crash observability (source contract)', () => {
 
   it('flushes logs on uncaught errors and records will-quit breadcrumbs', () => {
     expect(INDEX_SOURCE).toContain('void flushLogBeforeQuit()');
+    expect(INDEX_SOURCE).toContain('flushLogBeforeQuit()');
     expect(INDEX_SOURCE).toContain('will-quit userInitiated=');
+  });
+
+  it('uses shared Meshtastic Bluetooth PIN helpers in bluetooth-pair IPC', () => {
+    expect(INDEX_SOURCE).toContain("from '../shared/meshtasticBluetoothPin'");
+    expect(INDEX_SOURCE).toContain('formatMeshtasticBluetoothPin');
+    expect(INDEX_SOURCE).toContain('parseMeshtasticBluetoothPin');
   });
 });
 

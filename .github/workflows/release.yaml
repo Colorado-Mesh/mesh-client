@@ -126,6 +126,29 @@ jobs:
       - name: Rebuild native dependencies
         run: pnpm run rebuild
 
+      - name: Validate macOS signing secrets
+        if: matrix.os == 'macos-latest' && github.event_name == 'release'
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -z "$CSC_LINK" ]; then
+            echo "CSC_LINK not set — skipping notarization secret validation (unsigned/fork build)."
+            exit 0
+          fi
+          missing=""
+          [ -z "$CSC_KEY_PASSWORD" ] && missing="$missing CSC_KEY_PASSWORD"
+          [ -z "$APPLE_ID" ] && missing="$missing APPLE_ID"
+          [ -z "$APPLE_APP_SPECIFIC_PASSWORD" ] && missing="$missing APPLE_APP_SPECIFIC_PASSWORD"
+          [ -z "$APPLE_TEAM_ID" ] && missing="$missing APPLE_TEAM_ID"
+          if [ -n "$missing" ]; then
+            echo "CSC_LINK is set but missing required notarization secrets:$missing"
+            exit 1
+          fi
+
       - name: Build and Publish
         env:
           # electron-publish reads GH_TOKEN; GITHUB_TOKEN alone is not used for uploads

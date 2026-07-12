@@ -258,9 +258,11 @@ Download a CI or release artifact's `win-arm64-unpacked` folder and run `Mesh-cl
 
 ### macOS: File is damaged and cannot be opened
 
-**Cause:** macOS tags downloads with the **`com.apple.quarantine`** extended attribute. For apps that are **not signed with a Developer ID** and **not notarized**, Gatekeeper may show **"File is damaged and cannot be opened"** (or **"Mesh-client" is damaged and can't be opened**) instead of the usual unidentified-developer prompt. This is a **security / quarantine** behavior and is **common on Apple silicon** for community-built Electron binaries.
+**Official releases (v5.22.0+):** macOS artifacts from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) are **Developer ID signed and notarized** (`notarize: true` in [`electron-builder.yml`](../electron-builder.yml); signing secrets in [`release.yaml`](../.github/workflows/release.yaml)). They should open from **Applications** without `xattr`. If macOS still blocks a signed build, check **System Settings → Privacy & Security** for an **Allow** entry first.
 
-**Fix:**
+**Unsigned builds** (local `pnpm run dist:mac` without `CSC_*` / `APPLE_*` env vars, fork CI artifacts, or older pre-notarization releases): macOS tags downloads with **`com.apple.quarantine`**. Gatekeeper may show **"File is damaged and cannot be opened"** (or **"Mesh-client" is damaged and can't be opened**) instead of the usual unidentified-developer prompt — common on **Apple silicon**, not a corrupt file.
+
+**Fix (unsigned / quarantined downloads):**
 
 1. Open **System Settings → Privacy & Security** and scroll to the bottom. If you see "Mesh-client was blocked from use", click **Allow** to run the app.
 2. If you don't see the Mesh-client entry in Privacy & Security, or the app still won't open after clicking Allow, strip the quarantine attribute; adjust the path if the app is still under **Downloads** or another folder:
@@ -269,13 +271,13 @@ Download a CI or release artifact's `win-arm64-unpacked` folder and run `Mesh-cl
 xattr -r -d com.apple.quarantine /Applications/Mesh-client.app
 ```
 
-After running xattr, check Privacy & Security again (scroll to the bottom); the entry should now appear with an **Allow** button.
+After running `xattr`, check Privacy & Security again (scroll to the bottom); the entry should now appear with an **Allow** button.
 
 **Right-click → Open** on first launch can also help in some cases. Background and discussion: [jeffvli/feishin#104 (comment)](https://github.com/jeffvli/feishin/issues/104#issuecomment-1553914730).
 
 ### App crashes on launch (macOS distributable)
 
-- **macOS 26 (Tahoe) + EXC_BREAKPOINT at launch**: electron-builder ad-hoc signing can crash during ElectronMain/V8 init before any app code runs. This repo sets `mac.identity: null` in `electron-builder.yml` so the packaged app is unsigned and avoids that re-sign path; first open may require **Right-click → Open** or clearing quarantine ([macOS: File is damaged…](#macos-file-is-damaged-and-cannot-be-opened) above). For notarized releases, set a real Developer ID in `mac.identity` and retest on macOS 26. See [electron#49522](https://github.com/electron/electron/issues/49522) and [electron-builder#9396](https://github.com/electron-userland/electron-builder/issues/9396).
+- **macOS 26 (Tahoe) + EXC_BREAKPOINT at launch**: ad-hoc or partial signing can crash during ElectronMain/V8 init before any app code runs. Official notarized releases use hardened runtime + Developer ID signing; retest on macOS 26 with a current release build. Local unsigned builds may still need **Right-click → Open** or clearing quarantine ([macOS: File is damaged…](#macos-file-is-damaged-and-cannot-be-opened) above). See [electron#49522](https://github.com/electron/electron/issues/49522) and [electron-builder#9396](https://github.com/electron-userland/electron-builder/issues/9396).
 - This may also be a native module signing issue; try rebuilding: `pnpm run dist:mac`
 - If building from source: make sure `pnpm install` completed without errors
 
@@ -759,6 +761,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 - When the room server **guest password is empty**, use **Continue read-only** on the Rooms login overlay. That sends **zero password bytes** (same as the official Android app). **Login** with an empty guest field is disabled; it would send the default **`hello`** password instead.
 - When the server **does** configure a guest password, enter that value in the guest field and click **Login** (some communities use **`hello`**).
+- **Room admin CLI** (Rooms → admin overlay): many stock room servers use **`hello`** as the default admin password when none was configured. The guest field placeholder shows `hello`; admin login uses the same MeshCore default when you type it explicitly — do not confuse that with **Continue read-only**, which sends zero bytes for blank guest servers.
 - Logs showing push **`0x86`** (frame 134) mean **LoginFail** (wrong password or ACL denied). **Room login** rejects immediately on a prefix-matched LoginFail. **Repeater admin login** keeps waiting for a possible LoginSuccess (meshcore.js behavior on congested links); timeout after LoginFail alone is reported as timeout, not wrong password.
 - **Admin password** working while guest/read-only fails usually means the guest password on the server does not match what the client sent, or ACL denies read-only login.
 - If the room **changed its password** and mesh-client keeps trying to log in, open the **Rooms** tab: expand **Saved passwords** in the sidebar (or use the login overlay for the selected room). Use **Stop auto-login** to stop connect-time retries while keeping the old password stored, or **Forget saved password** to clear the stored guest/admin password and turn off auto-login and auto-sync. After a wrong-password failure, auto-login is turned off automatically until you log in again with **Remember password** or re-enable it.
@@ -1010,6 +1013,18 @@ For bulk fixes, use Network **Config import** (merge) instead of hand-editing in
 5. **Sidecar build**: packaged builds include `rns-rnode-tcp`; dev builds need `pnpm run reticulum:sidecar:build` with `rns-stack,rns-ble,rns-rnode-tcp` features.
 
 See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
+
+### Reticulum Admin: RNode flasher timeout or stalled transfer
+
+**Symptoms**: **Reticulum → Admin → RNode flasher** fails with a timeout or stall message after you pick a port and start flashing. UI copy maps internal error tags to i18n hints (`flasher.errors.*`).
+
+| Error tag                   | Typical cause                                                                        | Recovery                                                                                                                                                                                                                                                               |
+| --------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`RNODE_COMMAND_TIMEOUT`** | Board not responding on serial (boot loop, wrong port, stack still holding the port) | **Stop stack** (or disable the RNode interface) so the sidecar releases USB; quit other serial tools; wait for boot to finish; retry. Command window: **30 s** (`RNODE_COMMAND_TIMEOUT_MS`). BLE pairing uses a separate **90 s** cap (`RNODE_BT_PAIRING_TIMEOUT_MS`). |
+| **`ESP32_FLASH_STALLED`**   | ESP32-S3 flash wrote no progress for **60 s**                                        | Different USB cable/port; hold **BOOT (0)**, tap **RESET (EN)**, release **BOOT** for bootloader mode; flash again.                                                                                                                                                    |
+| **`NRF52_DFU_STALLED`**     | nRF52 DFU wrote no progress for **60 s**                                             | Same cable/port/bootloader steps as ESP32; confirm you selected the DFU-capable port.                                                                                                                                                                                  |
+
+**Before flashing**: stop the Reticulum stack or disable the RNode interface — the sidecar holds the serial port while the stack runs (`flasher.errors.blockedByStack`). After a failed flash, power-cycle the board and re-enter bootloader if the port disappears.
 
 ## Chat, nodes, and notifications
 

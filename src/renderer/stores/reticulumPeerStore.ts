@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
+import { isReticulumHashPrefixAlias } from '@/renderer/lib/ingest/reticulumIngest';
 import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
 import {
   registerReticulumDestinationHash,
@@ -76,7 +77,7 @@ export function resolveReticulumPeerLabel(
 ): string {
   const label = peerDisplayName(peer);
   const hashSlice = peer.destination_hash.slice(0, 12);
-  if (label !== hashSlice) return label;
+  if (!isReticulumHashPrefixAlias(peer.destination_hash, label)) return label;
   const wire = nodeLongName?.trim();
   if (wire && wire !== hashSlice) return wire;
   const nomad = nomadDisplayName?.trim();

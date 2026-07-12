@@ -36,6 +36,10 @@ import {
 import { MESHCORE_CONTACTS_BATCH_MAX } from '../shared/meshcoreContactsBatchLimit';
 import type { MeshProtocol } from '../shared/meshProtocol';
 import { MESH_PROTOCOL_SET } from '../shared/meshProtocol';
+import {
+  formatMeshtasticBluetoothPin,
+  parseMeshtasticBluetoothPin,
+} from '../shared/meshtasticBluetoothPin';
 import { effectiveMessageTimestampMs } from '../shared/messageTimestampSkew';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import type { ReticulumSidecarStatus } from '../shared/reticulum-types';
@@ -2207,11 +2211,11 @@ ipcMain.handle('bluetooth-pair', async (_event, macAddress: unknown, pin: unknow
   }
   let normalizedPin: string | undefined;
   if (typeof pin === 'number' && Number.isInteger(pin) && pin >= 0 && pin <= 999999) {
-    normalizedPin = String(pin).padStart(6, '0');
+    normalizedPin = formatMeshtasticBluetoothPin(pin);
   } else if (typeof pin === 'string' && pin.trim().length > 0) {
-    const trimmed = pin.trim();
-    if (/^\d{6}$/.test(trimmed)) normalizedPin = trimmed;
-    else throw new Error('bluetooth-pair: pin must be exactly 6 digits');
+    const parsed = parseMeshtasticBluetoothPin(pin.trim());
+    if (parsed === null) throw new Error('bluetooth-pair: pin must be exactly 6 digits');
+    normalizedPin = formatMeshtasticBluetoothPin(parsed);
   } else if (typeof pin !== 'undefined' && pin !== null) {
     throw new Error('bluetooth-pair: pin must be a 6-digit number');
   }
@@ -6162,65 +6166,73 @@ app.on('before-quit', (event) => {
   });
 });
 
-app.on('will-quit', () => {
-  console.debug(
-    `[main] will-quit userInitiated=${isQuitting} shutdownDone=${shutdownDone} uptimeSec=${Math.floor(process.uptime())}`,
-  );
-  void flushLogBeforeQuit();
-  try {
-    takServerManager?.stop();
-  } catch (err) {
+app.on('will-quit', (event) => {
+  event.preventDefault();
+  void (async () => {
     console.debug(
-      '[main] TAK server stop during will-quit (ignored):',
-      err instanceof Error ? err.message : err,
-    ); // log-injection-ok internal cleanup
-  }
-  try {
-    void reticulumSidecarManager?.stop();
-  } catch (err) {
-    console.debug(
-      '[main] Reticulum sidecar stop during will-quit (ignored):',
-      err instanceof Error ? err.message : err,
-    ); // log-injection-ok internal cleanup
-  }
-  try {
-    mqttManager.disconnect();
-    meshcoreMqttAdapter.disconnect();
-  } catch (err) {
-    console.debug(
-      '[main] MQTT disconnect during will-quit (ignored):',
-      err instanceof Error ? err.message : err,
-    ); // log-injection-ok internal library error during cleanup
-  }
-  if (meshcoreTcpSocket) {
+      `[main] will-quit userInitiated=${isQuitting} shutdownDone=${shutdownDone} uptimeSec=${Math.floor(process.uptime())}`,
+    );
+    await Promise.race([
+      flushLogBeforeQuit(),
+      new Promise<void>((resolve) => {
+        setTimeout(resolve, 500);
+      }),
+    ]);
     try {
-      meshcoreTcpSocket.destroy();
+      takServerManager?.stop();
     } catch (err) {
       console.debug(
-        '[main] TCP socket destroy during will-quit (ignored):',
+        '[main] TAK server stop during will-quit (ignored):',
         err instanceof Error ? err.message : err,
-      ); // log-injection-ok internal Node.js socket error during cleanup
+      ); // log-injection-ok internal cleanup
     }
-    meshcoreTcpSocket = null;
-  }
-  if (meshtasticTcpSocket) {
     try {
-      meshtasticTcpSocket.destroy();
+      void reticulumSidecarManager?.stop();
     } catch (err) {
       console.debug(
-        '[main] TCP socket destroy during will-quit (ignored):',
+        '[main] Reticulum sidecar stop during will-quit (ignored):',
         err instanceof Error ? err.message : err,
-      ); // log-injection-ok internal Node.js socket error during cleanup
+      ); // log-injection-ok internal cleanup
     }
-    meshtasticTcpSocket = null;
-  }
-  stopPowerSaveBlocker();
-  nobleBleManager.releaseNobleProcessHandles();
-  tray?.destroy();
-  tray = null;
-  // releaseNobleProcessHandles() above calls noble._bindings.stop() which releases the native
-  // BLEManager and its CBqueue GCD dispatch queue — without that, the process cannot exit on macOS.
-  app.exit(0);
+    try {
+      mqttManager.disconnect();
+      meshcoreMqttAdapter.disconnect();
+    } catch (err) {
+      console.debug(
+        '[main] MQTT disconnect during will-quit (ignored):',
+        err instanceof Error ? err.message : err,
+      ); // log-injection-ok internal library error during cleanup
+    }
+    if (meshcoreTcpSocket) {
+      try {
+        meshcoreTcpSocket.destroy();
+      } catch (err) {
+        console.debug(
+          '[main] TCP socket destroy during will-quit (ignored):',
+          err instanceof Error ? err.message : err,
+        ); // log-injection-ok internal Node.js socket error during cleanup
+      }
+      meshcoreTcpSocket = null;
+    }
+    if (meshtasticTcpSocket) {
+      try {
+        meshtasticTcpSocket.destroy();
+      } catch (err) {
+        console.debug(
+          '[main] TCP socket destroy during will-quit (ignored):',
+          err instanceof Error ? err.message : err,
+        ); // log-injection-ok internal Node.js socket error during cleanup
+      }
+      meshtasticTcpSocket = null;
+    }
+    stopPowerSaveBlocker();
+    nobleBleManager.releaseNobleProcessHandles();
+    tray?.destroy();
+    tray = null;
+    // releaseNobleProcessHandles() above calls noble._bindings.stop() which releases the native
+    // BLEManager and its CBqueue GCD dispatch queue — without that, the process cannot exit on macOS.
+    app.exit(0);
+  })();
 });
 
 app.on('window-all-closed', () => {

@@ -383,16 +383,21 @@ flatpak run org.coloradomesh.MeshClient
 
 VMware guests and other GPU edge cases: [Flatpak troubleshooting](docs/troubleshooting.md#flatpak-vmwgfx-driver-missing-vmware-on-macos).
 
-**macOS (release download):** If macOS reports **"Mesh-client" is damaged and can't be opened** (or **File is damaged and cannot be opened**):
+**macOS (release download):**
+
+- **Official [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) (v5.22.0+):** macOS builds are **Developer ID signed and notarized**. Drag to **Applications** and open normally — you should **not** need `xattr` or Right-click → Open.
+- **Unsigned local or fork builds** (`pnpm run dist:mac` without signing secrets, CI artifacts from forks): Gatekeeper may show **"Mesh-client" is damaged and can't be opened** (or **File is damaged and cannot be opened**), especially on **Apple silicon**. That is quarantine on unsigned downloads, not a corrupt file.
+
+If the app is blocked:
 
 1. Open **System Settings → Privacy & Security** and scroll to the bottom. If you see "Mesh-client was blocked from use", click **Allow** to run the app.
-2. If you don't see the Mesh-client entry in Privacy & Security, or the app still won't open after clicking Allow, that is usually **Gatekeeper quarantine** on downloaded, **unsigned** apps; especially on **Apple silicon (M-series)** Macs; not a corrupt file. Remove the quarantine attribute:
+2. For **unsigned** builds only — if you don't see the Mesh-client entry in Privacy & Security, or the app still won't open after clicking Allow — remove the quarantine attribute:
 
 ```bash
 xattr -r -d com.apple.quarantine /Applications/Mesh-client.app
 ```
 
-After running xattr, check Privacy & Security again (scroll to the bottom); the entry should now appear with an **Allow** button.
+After running `xattr`, check Privacy & Security again (scroll to the bottom); the entry should now appear with an **Allow** button.
 
 See [Troubleshooting; macOS: File is damaged…](docs/troubleshooting.md#macos-file-is-damaged-and-cannot-be-opened) and [this explanation for a similar Electron app](https://github.com/jeffvli/feishin/issues/104#issuecomment-1553914730).
 

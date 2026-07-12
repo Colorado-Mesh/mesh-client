@@ -1476,8 +1476,9 @@
       "flashMd5Mismatch": "La vérification du micrologiciel a échoué après l'écriture. Réessayez avec un câble ou un port USB différent ; si cela persiste, téléchargez à nouveau le code postal du micrologiciel.",
       "portSelectionTimedOut": "La sélection du port série a expiré. Choisissez un port dans la liste dans les deux minutes, ou réessayez de clignoter pour réutiliser le dernier port.",
       "noSerialPorts": "Aucun port série USB trouvé. Connectez votre carte via USB et réessayez.",
-      "rnodeCommandTimeout": "L'appareil a cessé de répondre par série. Débranchez les autres applications en utilisant le port, attendez que la carte ait fini de démarrer, puis réessayez.",
-      "esp32FlashStalled": "Le transfert du micrologiciel a été bloqué sans aucun progrès. Essayez un autre câble ou port USB, passez en mode bootloader (maintenez BOOT, appuyez sur RESET) et clignotez à nouveau."
+      "rnodeCommandTimeout": "L'appareil ne répond plus en série. Fermez les autres applications qui utilisent le port série, attendez que la carte ait fini de démarrer, puis réessayez.",
+      "esp32FlashStalled": "Le transfert du firmware est bloqué sans progression. Essayez un autre câble ou port USB, entrez en mode bootloader (maintenez BOOT, appuyez sur RESET) et flashez à nouveau.",
+      "unknown": "Une erreur inattendue s'est produite."
     },
     "selectSerialPort": "Sélectionner le port série",
     "noSerialPorts": "Aucun port série USB trouvé.",
@@ -3999,7 +4000,7 @@
     "newMessages_one": "{{protocol}} : {{count}} nouveau message",
     "newMessages_other": "{{protocol}} : {{count}} nouveaux messages",
     "meshcoreDistanceFilterHint": "Vous avez {{count}} contacts avec GPS sur la carte. Activez le filtre de distance dans Application → Apparence pour vous concentrer sur les nœuds à proximité.",
-    "longSessionRestartNudge": "Mesh-client fonctionne depuis quatre jours. Redémarrez l'application pour réduire le risque de crash sur les longues sessions ble MeshCore."
+    "longSessionRestartNudge": "mesh-client fonctionne depuis quatre jours. Redémarrez l'application pour réduire le risque de plantage lors de longues sessions MeshCore BLE."
   },
   "updateStatus": {
     "checking": "Vérification…",
@@ -4014,7 +4015,7 @@
     "restartTitle": "Redémarrer et installer",
     "retryCheck": "Réessayer la vérification de mise à jour",
     "updateError": "Erreur de mise à jour",
-    "menuToastUpToDateTitle": "MAILLE (CLIENT)",
+    "menuToastUpToDateTitle": "mesh-client",
     "menuToastUpToDateBody": "Vous êtes sur la dernière version.",
     "menuToastAvailableTitle": "mise à jour disponible",
     "menuToastAvailableBody": "La version {{version}} est disponible.",

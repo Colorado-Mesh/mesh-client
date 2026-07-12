@@ -11,6 +11,8 @@ vi.mock('@/renderer/lib/i18n', () => ({
         'flasher.errors.portSelectionCancelled': 'Serial port selection was cancelled.',
         'flasher.errors.rnodeCommandTimeout': 'Device stopped responding over serial.',
         'flasher.errors.esp32FlashStalled': 'Firmware transfer stalled with no progress.',
+        'flasher.errors.generic': 'Operation failed: {{message}}',
+        'flasher.errors.unknown': 'An unexpected error occurred.',
       };
       return messages[key] ?? key;
     },
@@ -35,5 +37,10 @@ describe('humanizeFlasherError', () => {
       'stopped responding',
     );
     expect(humanizeFlasherError(new Error('ESP32_FLASH_STALLED'))).toContain('stalled');
+    expect(humanizeFlasherError(new Error('NRF52_DFU_STALLED'))).toContain('stalled');
+  });
+
+  it('uses unknown fallback for unrecognized errors', () => {
+    expect(humanizeFlasherError(new Error('SOME_GARBAGE_WIRE_TEXT'))).toContain('Operation failed');
   });
 });

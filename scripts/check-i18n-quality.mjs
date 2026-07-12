@@ -342,6 +342,37 @@ export const FLASHER_NO_SERIAL_PORTS_KEYS = new Set([
 export const FR_NO_SERIAL_PORTS_INVERTED_RE = /\btrouvés?\s*:/i;
 export const FR_NO_SERIAL_PORTS_NEGATION_RE = /\b(aucun|pas de|non trouv|introuvable)/i;
 
+/** flasher.errors.esp32FlashStalled — MT often translates "flash again" as LED blink verbs. */
+export const FLASHER_ESP32_FLASH_BLINK_FALSE_FRIENDS = new Map([
+  ['de', /\bblink/i],
+  ['fr', /\bclignot/i],
+  ['es', /\bparpad/i],
+  ['it', /\blampegg/i],
+  ['pt-BR', /\bpisqu/i],
+  ['pl', /\bmig/i],
+  ['cs', /\bblik/i],
+  ['ru', /\bвспыхн/i],
+  ['uk', /\bспалах/i],
+  ['tr', /\byanıp\s+sön/i],
+  ['zh', /闪烁/],
+  ['ko', /\b깜박/i],
+  ['nl', /\bflits/i],
+]);
+
+/** flasher.errors.rnodeCommandTimeout — MT garbles "close apps using the serial port". */
+export const RNODE_TIMEOUT_BAD_UNPLUG_RE = new Map([
+  ['de', /über den port/i],
+  ['fr', /\bdébranchez.*en utilisant le port/i],
+  ['ja', /ポートを使用して.*抜/],
+  ['ko', /포트를 사용하여.*뽑/],
+  ['zh', /使用端口.*拔/],
+  ['nl', /\bvia de poort.*los/i],
+  ['pl', /\bza pomocą portu/i],
+  ['cs', /\bpomocí portu/i],
+]);
+
+export const LONG_SESSION_RESTART_NUDGE_KEY = 'toasts.longSessionRestartNudge';
+
 /** MyMemory/CAT padding with dot runs in short UI labels. */
 export const CAT_DOT_PADDING_RE = /\.{4,}/;
 
@@ -1818,7 +1849,7 @@ const BRAND_WORD_RES = new Map([
   ['MeshMapper', /\bMeshMapper\b/g],
   ['Ripple Networks', /Ripple Networks/g],
   ['Nomad Network', /Nomad Network/g],
-  ['mesh-client', /mesh-client/g],
+  ['mesh-client', /mesh-client/gi],
   ['Giphy', /\bGiphy\b/g],
   ['GitHub', /\bGitHub\b/g],
   ['RNode', /\bRNode\b/g],
@@ -2403,6 +2434,43 @@ function checkFlasherIssues(ctx) {
       'flasher noSerialPorts must express absence (aucun/pas de), not affirmative "trouvé(s):"',
     );
   }
+
+  if (
+    locale !== 'en' &&
+    flatKey === 'flasher.errors.esp32FlashStalled' &&
+    /flash again/i.test(enVal)
+  ) {
+    const blinkRe = FLASHER_ESP32_FLASH_BLINK_FALSE_FRIENDS.get(locale);
+    if (blinkRe?.test(val)) {
+      issues.push(
+        'esp32FlashStalled must use firmware-flash wording, not LED blink verbs (false friend for "flash again")',
+      );
+    }
+    if (!/\bBOOT\b/.test(val) || !/\bRESET\b/.test(val)) {
+      issues.push('esp32FlashStalled must preserve literal button labels BOOT and RESET');
+    }
+  }
+
+  if (
+    locale !== 'en' &&
+    flatKey === 'flasher.errors.rnodeCommandTimeout' &&
+    /Unplug other apps using the port/i.test(enVal)
+  ) {
+    const badUnplugRe = RNODE_TIMEOUT_BAD_UNPLUG_RE.get(locale);
+    if (badUnplugRe?.test(val)) {
+      issues.push(
+        'rnodeCommandTimeout must say close other apps using the serial port, not unplug via the port',
+      );
+    }
+  }
+
+  if (locale !== 'en' && flatKey === LONG_SESSION_RESTART_NUDGE_KEY && /\bBLE\b/.test(enVal)) {
+    if (!/\bBLE\b/.test(val)) {
+      issues.push('longSessionRestartNudge must preserve protocol token "BLE"');
+    }
+    issues.push(...protectedBrandIssues(enVal, val, ['mesh-client']));
+  }
+
   return issues;
 }
 

@@ -59,6 +59,32 @@ If pre-flight fails, fix the issue on `main` and run `pnpm run release` again �
 
 ---
 
+## macOS code signing and notarization
+
+Official macOS release artifacts are **Developer ID signed** and **notarized** when repository secrets are configured. [`electron-builder.yml`](../electron-builder.yml) sets `hardenedRuntime: true` and `notarize: true`; electron-builder skips notarization automatically when no signing certificate is available (local/fork builds).
+
+### Required GitHub Actions secrets
+
+Configure these in **Settings → Secrets and variables → Actions** (maintainers only):
+
+| Secret                            | Purpose                                                                 |
+| --------------------------------- | ----------------------------------------------------------------------- |
+| **`CSC_LINK`**                    | Base64-encoded `.p12` **Developer ID Application** certificate          |
+| **`CSC_KEY_PASSWORD`**            | Password protecting the `.p12` file                                     |
+| **`APPLE_ID`**                    | Apple ID email used with App Store Connect / notarytool                 |
+| **`APPLE_APP_SPECIFIC_PASSWORD`** | App-specific password for notarytool (not your Apple ID login password) |
+| **`APPLE_TEAM_ID`**               | 10-character Team ID from Apple Developer membership                    |
+
+`release.yaml` and `build.yaml` pass these only on **`macos-latest`** matrix legs. **`CSC_IDENTITY_AUTO_DISCOVERY`** is set to `true` when `CSC_LINK` is present; otherwise `false` so electron-builder skips signing gracefully on fork PRs.
+
+### Partial-secret validation
+
+Before the macOS build step, [`release.yaml`](../.github/workflows/release.yaml) runs **Validate macOS signing secrets** when `CSC_LINK` is non-empty on tag releases. If any of `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, or `APPLE_TEAM_ID` is missing, the job **fails early** with a clear list — avoids a signed-but-unnotarized upload that Gatekeeper would reject.
+
+Fork workflows and local `pnpm run dist:mac` without these env vars produce **unsigned** `.dmg` / `.zip` bundles (still validated by `verify-mac-packaging.mjs`). See [CI/CD — macOS packaging verify](ci-cd.md#macos-packaging-verify-verify-mac-packagingmjs).
+
+---
+
 ## Manual verification (optional)
 
 If you need to run checks outside `release.sh`:
