@@ -987,6 +987,41 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 **Fix**: Re-select the preset on the Connection tab, or clear `mesh-client:mqttSettings:meshcore` in devtools Application → Local Storage and reconnect. Migrations run on app start via `connectionPanelStorageMigrations.ts`.
 
+### Reticulum DM stuck on Sending (MeshChatX / shared instance)
+
+**Symptoms**: Outbound Reticulum DMs stay **Sending**; Device log shows `link delivery timed out` with `link establishment timeout`, and many `failed to queue path request for LXMF delivery` lines. Connection tab may show **sidecar interface issues** (TX queue drops, transport saturated). Sniffer may show a **Link Request** that never completes.
+
+**Cause**: Usually **RNS transport overload**, not a missing mesh-client chat handshake. Common triggers:
+
+1. **Shared instance conflict** — `share_instance = Yes` with another Reticulum app still running (MeshChatX, Ratspeak, standalone `rnsd`) fighting the same IPC socket.
+2. **Dead TCP hub still enabled** — outbound queue fills; path requests fail with _no available capacity_.
+3. **No propagation node** — when direct link fails, there is no store-and-forward fallback (see next section).
+
+**Fix**:
+
+1. **Fully quit** other Reticulum apps (MeshChatX, Ratspeak, any `rnsd` tray process) — not just close the window.
+2. **Stop and restart** the mesh-client Reticulum stack (Connection → **Restart stack** or stop/start).
+3. Disable unreachable TCP interfaces on Connection → Interfaces.
+4. Retry the DM; use **Peers → Request path / Probe** if the peer is reachable but the path is stale.
+5. Configure a **propagation node** on Network → Propagation for offline delivery.
+
+Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts) helps confirm transport saturation vs. a single peer outage.
+
+### Reticulum: no propagation node configured
+
+**Symptoms**: Chat shows a persistent amber **propagation** notice; send failures toast _No propagation node configured_; offline peers never receive LXMF.
+
+**Cause**: Direct LXMF links require a live path. When the peer is offline or unreachable, mesh-client needs a **remote propagation node** (lxmd store-and-forward) — not a TCP transport hub.
+
+**Fix**:
+
+1. Open **Network → Propagation** (Chat notice **Set up propagation** jumps there).
+2. Add a **32-character LXMF destination hash** from whoever runs the propagation node you trust.
+3. Set **Preferred** (manual mode) or leave **Auto** when multiple nodes are listed.
+4. **Local propagation only** queues messages on this device — it does **not** replace a remote propagation node for peers you cannot reach directly.
+
+**Not the same as transport:** Ratspeak TCP hubs (e.g. `rns.ratspeak.org:4242`) and [rathole](https://github.com/ratspeak/rathole) are **connectivity / transport** tools, not LXMF propagation. mesh-client does not ship a default community propagation hash.
+
 ### Reticulum interface add/edit/delete fails
 
 **Symptoms**: Connection tab **Add interface**, **Edit**, or **Delete** shows an inline error; interface list does not refresh.

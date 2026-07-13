@@ -59,6 +59,14 @@ describe('ReticulumStackPanel', () => {
           ports: [{ path: '/dev/cu.usbserial-0001', label: 'usbserial-0001' }],
         });
       }
+      if (path === '/api/v1/stack/settings') {
+        return Promise.resolve({
+          enable_transport: true,
+          share_instance: false,
+          loglevel: 4,
+          announce_interval_sec: 3600,
+        });
+      }
       return Promise.resolve({});
     });
     window.electronAPI.reticulum.onStatus = vi.fn().mockReturnValue(() => {});
@@ -234,6 +242,9 @@ describe('ReticulumStackPanel', () => {
     const issueAlert = {
       tcpConnectFailed: ['RNS HAM RADIO'],
       txQueueDrops: [{ name: 'RNS HAM RADIO', dropCount: 128 }],
+      linkDeliveryTimeouts: [],
+      transportSaturatedCount: 0,
+      slowTransportQueryCount: 0,
       suppressedCount: 0,
       lastAtMs: Date.now(),
     };

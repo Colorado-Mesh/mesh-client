@@ -1037,7 +1037,14 @@
       "tcpConnectFailedHint": "在下面的列表中禁用此接口，或确认远程集线器正在运行。",
       "txQueueDrops": "{{name}} ：出站数据包已丢弃（ {{count}}已排队）",
       "txQueueDropsHint": "通常是由死TCP接口仍处于启用状态引起的。禁用无法访问的集线器以停止队列溢出。",
-      "suppressed": "{{count}}最近取消了类似的侧车日志行。"
+      "suppressed": "{{count}}最近取消了类似的侧车日志行。",
+      "linkDeliveryTimeout": "直接LXMF链接到{{hash}} …超时（ {{count}} × ）",
+      "linkDeliveryTimeoutHint": "对等节点可能处于离线状态，或者RNS传输过载。DM可以继续发送，直到链接失败。",
+      "transportSaturated": "RNS传输饱和（ {{count}}路径请求丢弃）",
+      "transportSaturatedHint": "禁用失效接口并重新启动堆栈。减少并发Reticulum流量。",
+      "slowTransportQuery": "RNS传输查询缓慢或失败({{count}} ×)",
+      "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
+      "shareInstanceHint": "共享实例已启用—在重试DM之前，完全退出其他Reticulum应用程序（ MeshChatX、Ratspeak、独立rnsd ）并重新启动此堆栈。"
     },
     "reticulumSidecarBundledMissing": "此安装缺少捆绑的 Reticulum sidecar。升级到较新的版本或报告问题 - 在打包安装中无法从源代码构建。",
     "radioMqttRootDivergesWarning": "无线电MQTT根主题为{{radioRoot}} ，但此面板订阅了{{appPrefix}}。匹配无线电以限制全国节点流量—更新主题前缀并重新连接MQTT。",
@@ -1355,7 +1362,11 @@
         "autoBeaconPhysicalFailures": "自动接口信标TX在{{ifaces}}失败—在修复此问题之前，本地局域网发现可能无法正常工作。",
         "tcpUnreachable": "无法访问TCP集线器「{{name}}」（ {{host}} ： {{port}} ）",
         "tcpConnectFailed": "TCP集线器“{{name}}”连接被拒绝或超时",
-        "txQueueDrops": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满）"
+        "txQueueDrops": "接口“{{name}}”丢弃了{{count}}个出站数据包（ TX队列已满）",
+        "linkDeliveryTimeout": "直接LXMF链接到{{hash}} …超时（ {{count}} × ）",
+        "transportSaturated": "RNS传输饱和（ {{count}} LXMF路径请求丢弃）",
+        "transportSaturatedShareInstance": "RNS传输饱和（ {{count}}路径请求丢弃）。共享实例已打开—退出其他Reticulum应用程序（ MeshChatX、Ratspeak、rnsd ）并重新启动堆栈。",
+        "slowTransportQuery": "RNS传输查询缓慢或失败({{count}} ×)"
       }
     },
     "routingPort": {
@@ -3572,7 +3583,12 @@
     "autoSyncOption12h": "每12小时一次",
     "autoSyncOption24h": "每24小时一次",
     "lastSynced": "上次同步：{{time}}",
-    "lastRefreshed": "最后更新{{time}}"
+    "lastRefreshed": "最后更新{{time}}",
+    "notice": {
+      "body": "未配置传播节点。离线或无法访问的对等节点需要一个传播节点来存储和转发LXMF交付。",
+      "openSettings": "设置传播",
+      "openSettingsAria": "Open Reticulum Network propagation settings"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "传播模式",

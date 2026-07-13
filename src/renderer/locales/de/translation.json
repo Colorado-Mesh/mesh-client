@@ -1037,7 +1037,14 @@
       "tcpConnectFailedHint": "Deaktivieren Sie diese Schnittstelle in der folgenden Liste oder bestätigen Sie, dass der Remote-Hub ausgeführt wird.",
       "txQueueDrops": "{{name}}: ausgehende Pakete abgelegt ({{count}} in der Warteschlange)",
       "txQueueDropsHint": "In der Regel verursacht durch eine tote TCP-Schnittstelle, die immer noch aktiviert ist. Deaktivieren Sie nicht erreichbare Hubs, um den Warteschlangenüberlauf zu stoppen.",
-      "suppressed": "{{count}} ähnliche Sidecar-Log-Linien wurden kürzlich unterdrückt."
+      "suppressed": "{{count}} ähnliche Sidecar-Log-Linien wurden kürzlich unterdrückt.",
+      "linkDeliveryTimeout": "Direkter LXMF-Link zu {{hash}}… Zeitüberschreitung ({{count}}×)",
+      "linkDeliveryTimeoutHint": "Der Peer kann offline sein oder der RNS-Transport ist überlastet. DMs können beim Senden bleiben, bis der Link ausfällt.",
+      "transportSaturated": "RNS-Transport gesättigt ({{count}} Path-Request-Drops)",
+      "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
+      "slowTransportQuery": "RNS-Transportabfragen langsam oder fehlgeschlagen ({{count}}×)",
+      "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
+      "shareInstanceHint": "Share-Instanz ist aktiviert — beenden Sie vollständig andere Reticulum-Apps (MeshChatX, Ratspeak, Standalone-RNSD) und starten Sie diesen Stack neu, bevor Sie DMs erneut versuchen."
     },
     "reticulumSidecarBundledMissing": "Bei dieser Installation fehlt der mitgelieferte Reticulum-Sidecar. Führen Sie ein Upgrade auf eine neuere Version durch oder melden Sie das Problem – das Erstellen aus dem Quellcode ist bei Paketinstallationen nicht verfügbar.",
     "radioMqttRootDivergesWarning": "Das Hauptthema von Radio MQTT ist {{radioRoot}}, aber dieses Panel abonniert {{appPrefix}}. Passen Sie das Funkgerät an, um den landesweiten Knotenverkehr zu begrenzen — aktualisieren Sie das Themenpräfix und verbinden Sie MQTT erneut.",
@@ -1355,7 +1362,11 @@
         "autoBeaconPhysicalFailures": "AutoInterface-Beacon TX schlägt auf {{ifaces}} fehl — die lokale LAN-Erkennung funktioniert möglicherweise nicht, bis dies behoben ist.",
         "tcpUnreachable": "TCP-Hub „{{name}}“ ist nicht erreichbar ({{host}}:{{port}})",
         "tcpConnectFailed": "TCP Hub \"{{name}}\" Verbindung abgelehnt oder Zeitüberschreitung",
-        "txQueueDrops": "Schnittstelle „{{name}}“ abgeworfen {{count}} ausgehende Pakete (TX-Warteschlange voll)"
+        "txQueueDrops": "Schnittstelle „{{name}}“ abgeworfen {{count}} ausgehende Pakete (TX-Warteschlange voll)",
+        "linkDeliveryTimeout": "Direkter LXMF-Link zu {{hash}}… Zeitüberschreitung ({{count}}×)",
+        "transportSaturated": "RNS-Transport gesättigt ({{count}} LXMF-Pfadanforderung fällt ab)",
+        "transportSaturatedShareInstance": "RNS-Transport gesättigt ({{count}} Path-Request-Drops). Share-Instanz ist aktiviert — beenden Sie andere Reticulum-Apps (MeshChatX, Ratspeak, rnsd) und starten Sie den Stack neu.",
+        "slowTransportQuery": "RNS-Transportabfragen langsam oder fehlgeschlagen ({{count}}×)"
       }
     },
     "routingPort": {
@@ -3572,7 +3583,12 @@
     "autoSyncOption12h": "Alle 12 Stunden",
     "autoSyncOption24h": "Alle 24 Stunden",
     "lastSynced": "Zuletzt synchronisiert: {{time}}",
-    "lastRefreshed": "Letzte Aktualisierung {{time}}"
+    "lastRefreshed": "Letzte Aktualisierung {{time}}",
+    "notice": {
+      "body": "Es ist kein Ausbreitungsknoten konfiguriert. Offline- oder nicht erreichbare Peers benötigen einen Ausbreitungsknoten für die Store-and-Forward-LXMF-Bereitstellung.",
+      "openSettings": "Ausbreitung einrichten",
+      "openSettingsAria": "Open Reticulum Network propagation settings"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Ausbreitungsmodus",

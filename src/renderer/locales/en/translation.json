@@ -716,6 +716,13 @@
       "tcpConnectFailedHint": "Disable this interface in the list below or confirm the remote hub is running.",
       "txQueueDrops": "{{name}}: outbound packets dropped ({{count}} queued)",
       "txQueueDropsHint": "Usually caused by a dead TCP interface still enabled. Disable unreachable hubs to stop queue overflow.",
+      "linkDeliveryTimeout": "Direct LXMF link to {{hash}}… timed out ({{count}}×)",
+      "linkDeliveryTimeoutHint": "The peer may be offline or the RNS transport is overloaded. DMs may stay on Sending until the link fails.",
+      "transportSaturated": "RNS transport saturated ({{count}} path-request drops)",
+      "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
+      "slowTransportQuery": "RNS transport queries slow or failing ({{count}}×)",
+      "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
+      "shareInstanceHint": "Share instance is enabled — fully quit other Reticulum apps (MeshChatX, Ratspeak, standalone rnsd) and restart this stack before retrying DMs.",
       "suppressed": "{{count}} similar sidecar log lines suppressed recently."
     },
     "reticulumNetworkEmpty": "No interfaces reported yet.",
@@ -1350,6 +1357,10 @@
         "interfaceDown": "{{type}} interface \"{{name}}\" is enabled but {{status}}",
         "tcpConnectFailed": "TCP hub \"{{name}}\" connection refused or timed out",
         "txQueueDrops": "Interface \"{{name}}\" dropped {{count}} outbound packets (TX queue full)",
+        "linkDeliveryTimeout": "Direct LXMF link to {{hash}}… timed out ({{count}}×)",
+        "transportSaturated": "RNS transport saturated ({{count}} LXMF path-request drops)",
+        "transportSaturatedShareInstance": "RNS transport saturated ({{count}} path-request drops). Share instance is on — quit other Reticulum apps (MeshChatX, Ratspeak, rnsd) and restart the stack.",
+        "slowTransportQuery": "RNS transport queries slow or failing ({{count}}×)",
         "noPeers": "No known peers in path table yet",
         "autoBeaconTunnelOnly": "AutoInterface beacon TX is failing on VPN tunnel interface(s) {{ifaces}}. Rebuild the Reticulum sidecar or temporarily disable AutoInterface if logs are flooded.",
         "autoBeaconPhysicalFailures": "AutoInterface beacon TX is failing on {{ifaces}} — local LAN discovery may not work until this is fixed."
@@ -3545,6 +3556,11 @@
     "iconUser": "User"
   },
   "reticulumPropagation": {
+    "notice": {
+      "body": "No propagation node is configured. Offline or unreachable peers need a propagation node for store-and-forward LXMF delivery.",
+      "openSettings": "Set up propagation",
+      "openSettingsAria": "Open Reticulum Network propagation settings"
+    },
     "preferred": "Preferred",
     "setPreferred": "Set preferred",
     "syncNow": "Sync messages",

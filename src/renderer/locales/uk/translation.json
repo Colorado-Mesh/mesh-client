@@ -1037,7 +1037,14 @@
       "tcpConnectFailedHint": "Вимкніть цей інтерфейс у списку нижче або переконайтеся, що віддалений концентратор працює.",
       "txQueueDrops": "{{name}}: вихідні пакети скинуто ({{count}} в черзі)",
       "txQueueDropsHint": "Зазвичай це викликано тим, що непрацездатний інтерфейс TCP все ще увімкнено. Вимкніть недоступні концентратори, щоб зупинити переповнення черги.",
-      "suppressed": "{{count}} аналогічні лінії журналу коляски нещодавно придушено."
+      "suppressed": "{{count}} аналогічні лінії журналу коляски нещодавно придушено.",
+      "linkDeliveryTimeout": "Пряме посилання LXMF на {{hash}}… вичерпано час очікування ({{count}}×)",
+      "linkDeliveryTimeoutHint": "Одноранговий вузол може бути в автономному режимі або транспорт RNS перевантажений. DM можуть залишатися в режимі надсилання, доки посилання не вийде з ладу.",
+      "transportSaturated": "Транспорт RNS насичений ({{count}} краплі запиту шляху)",
+      "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
+      "slowTransportQuery": "Транспортні запити RNS повільні або невдалі ({{count}}×)",
+      "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
+      "shareInstanceHint": "Екземпляр Share увімкнено — повністю закрийте інші програми Reticulum (MeshChatX, Ratspeak, автономний rnsd) і перезапустіть цей стек перед повторною спробою DM."
     },
     "reticulumSidecarBundledMissing": "У цій інсталяції відсутній Reticulum sidecar. Оновіть до новішого випуску або повідомте про проблему — збірка з вихідного коду недоступна в пакетних встановленнях.",
     "radioMqttRootDivergesWarning": "Коренева тема радіо MQTT - {{radioRoot}}, але ця панель підписується на {{appPrefix}}. Підключіть радіоприймач, щоб обмежити загальнонаціональний трафік вузлів — оновіть префікс теми та повторно підключіть MQTT.",
@@ -1355,7 +1362,11 @@
         "autoBeaconPhysicalFailures": "AutoInterface beacon TX зазнає невдачі на {{ifaces}} — виявлення локальної мережі може не працювати, поки це не буде виправлено.",
         "tcpUnreachable": "Концентратор TCP \"{{name}}\" недоступний ({{host}}:{{port}})",
         "tcpConnectFailed": "З'єднання TCP Hub \"{{name}}\" відхилено або вичерпано час очікування",
-        "txQueueDrops": "Інтерфейс \"{{name}}\" скинув {{count}} вихідних пакетів (черга TX заповнена)"
+        "txQueueDrops": "Інтерфейс \"{{name}}\" скинув {{count}} вихідних пакетів (черга TX заповнена)",
+        "linkDeliveryTimeout": "Пряме посилання LXMF на {{hash}}… вичерпано час очікування ({{count}}×)",
+        "transportSaturated": "Транспорт RNS насичений ({{count}} LXMF path-request drops)",
+        "transportSaturatedShareInstance": "Транспорт RNS насичений ({{count}} краплі запиту шляху). Екземпляр Share увімкнено — закрийте інші програми Reticulum (MeshChatX, Ratspeak, rnsd) і перезапустіть стек.",
+        "slowTransportQuery": "Транспортні запити RNS повільні або невдалі ({{count}}×)"
       }
     },
     "routingPort": {
@@ -3572,7 +3583,12 @@
     "autoSyncOption12h": "Кожні 12 годин",
     "autoSyncOption24h": "Кожні 24 години",
     "lastSynced": "Остання синхронізація: {{time}}",
-    "lastRefreshed": "Останнє оновлення {{time}}"
+    "lastRefreshed": "Останнє оновлення {{time}}",
+    "notice": {
+      "body": "Вузол поширення не налаштовано. Автономні або недоступні вузли потребують вузла розповсюдження для доставки LXMF.",
+      "openSettings": "Налаштувати поширення",
+      "openSettingsAria": "Open Reticulum Network propagation settings"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Режим поширення",

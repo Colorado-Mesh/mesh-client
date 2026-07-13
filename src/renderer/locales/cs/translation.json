@@ -1037,7 +1037,14 @@
       "tcpConnectFailedHint": "Zakažte toto rozhraní v níže uvedeném seznamu nebo potvrďte, že je spuštěn vzdálený rozbočovač.",
       "txQueueDrops": "{{name}}: odchozí pakety byly vyhozeny ({{count}} ve frontě)",
       "txQueueDropsHint": "Obvykle je to způsobeno stále povoleným mrtvým rozhraním TCP. Zakažte nedosažitelné rozbočovače pro zastavení přetečení fronty.",
-      "suppressed": "{{count}} podobné řádky protokolu postranního vozíku byly nedávno potlačeny."
+      "suppressed": "{{count}} podobné řádky protokolu postranního vozíku byly nedávno potlačeny.",
+      "linkDeliveryTimeout": "Přímý odkaz LXMF na {{hash}}… vypršel ({{count}}×)",
+      "linkDeliveryTimeoutHint": "Protějšek může být offline nebo je transport RNS přetížen. DM mohou zůstat na Odesílání, dokud se odkaz nezdaří.",
+      "transportSaturated": "Nasycený transport RNS ({{count}} kapek s požadavkem na cestu)",
+      "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
+      "slowTransportQuery": "Transportní dotazy RNS pomalé nebo selhávající ({{count}}×)",
+      "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
+      "shareInstanceHint": "Sdílená instance je povolena — zcela ukončete ostatní aplikace Reticulum (MeshChatX, Ratspeak, samostatný rnsd) a restartujte tento zásobník před opakováním DM."
     },
     "reticulumSidecarBundledMissing": "V této instalaci chybí přibalený Reticulum sidecar. Upgradujte na novější verzi nebo nahlaste problém – sestavení ze zdroje není v balených instalacích k dispozici.",
     "radioMqttRootDivergesWarning": "Kořenové téma rádia MQTT je {{radioRoot}}, ale tento panel odebírá {{appPrefix}}. Přizpůsobením rádia omezíte celostátní provoz uzlů — aktualizujte předponu tématu a znovu připojte MQTT.",
@@ -1355,7 +1362,11 @@
         "autoBeaconPhysicalFailures": "Beacon AutoInterface TX selhává na {{ifaces}} — lokální zjišťování LAN nemusí fungovat, dokud to nebude opraveno.",
         "tcpUnreachable": "Centrum TCP „{{name}}“ je nedosažitelné ({{host}}:{{port}})",
         "tcpConnectFailed": "Připojení TCP hub „{{name}}“ bylo odmítnuto nebo vypršel časový limit",
-        "txQueueDrops": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta TX je plná)"
+        "txQueueDrops": "Rozhraní „{{name}}“ upustilo {{count}} odchozí pakety (fronta TX je plná)",
+        "linkDeliveryTimeout": "Přímý odkaz LXMF na {{hash}}… vypršel ({{count}}×)",
+        "transportSaturated": "Nasycený transport RNS ({{count}} LXMF kapek vyžadujících cestu)",
+        "transportSaturatedShareInstance": "Nasycený transport RNS ({{count}} kapek s požadavkem na cestu). Sdílená instance je zapnutá — ukončete ostatní aplikace Reticulum (MeshChatX, Ratspeak, rnsd) a restartujte zásobník.",
+        "slowTransportQuery": "Transportní dotazy RNS pomalé nebo selhávající ({{count}}×)"
       }
     },
     "routingPort": {
@@ -3572,7 +3583,12 @@
     "autoSyncOption12h": "Každých 12 hodin",
     "autoSyncOption24h": "Každých 24 hodin",
     "lastSynced": "Poslední synchronizace: {{time}}",
-    "lastRefreshed": "Poslední aktualizace {{time}}"
+    "lastRefreshed": "Poslední aktualizace {{time}}",
+    "notice": {
+      "body": "Není nakonfigurován žádný propagační uzel. Offline nebo nedosažitelné protějšky potřebují propagační uzel pro doručování LXMF v obchodě a dopředu.",
+      "openSettings": "Nastavit propagaci",
+      "openSettingsAria": "Otevřít nastavení propagace sítě Reticulum"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Režim propagace",

@@ -1037,7 +1037,14 @@
       "tcpConnectFailedHint": "Désactivez cette interface dans la liste ci-dessous ou confirmez que le concentrateur distant est en cours d'exécution.",
       "txQueueDrops": "{{name}} : paquets sortants abandonnés ({{count}} en file d'attente)",
       "txQueueDropsHint": "Généralement causé par une interface TCP morte toujours activée. Désactivez les concentrateurs inaccessibles pour arrêter le débordement de la file d'attente.",
-      "suppressed": "{{count}} lignes de bûches de side-car similaires supprimées récemment."
+      "suppressed": "{{count}} lignes de bûches de side-car similaires supprimées récemment.",
+      "linkDeliveryTimeout": "Lien LXMF direct vers {{hash}}… expiré ({{count}}×)",
+      "linkDeliveryTimeoutHint": "L'homologue peut être hors ligne ou le transport RNS est surchargé. Les DM peuvent rester à l'envoi jusqu'à ce que le lien échoue.",
+      "transportSaturated": "Transport RNS saturé ({{count}} gouttes de demande de chemin)",
+      "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
+      "slowTransportQuery": "Requêtes de transport RNS lentes ou en échec ({{count}}×)",
+      "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
+      "shareInstanceHint": "L'instance de partage est activée — quittez complètement les autres applications Reticulum (MeshChatX, Ratspeak, rnsd autonome) et redémarrez cette pile avant de réessayer les DM."
     },
     "reticulumSidecarBundledMissing": "Cette installation ne dispose pas du side-car Reticulum fourni. Effectuez une mise à niveau vers une version plus récente ou signalez le problème : la création à partir des sources n'est pas disponible dans les installations packagées.",
     "radioMqttRootDivergesWarning": "Le sujet racine du MQTT radio est {{radioRoot}}, mais ce panneau est abonné à {{appPrefix}}. Faites correspondre la radio pour limiter le trafic des nœuds à l'échelle nationale — mettez à jour le préfixe du sujet et reconnectez le MQTT.",
@@ -1355,7 +1362,11 @@
         "autoBeaconPhysicalFailures": "La balise AutoInterface TX échoue sur {{ifaces}} — la découverte du LAN local peut ne pas fonctionner tant que cela n'est pas corrigé.",
         "tcpUnreachable": "Le concentrateur TCP « {{name}} » est inaccessible ({{host}} :{{port}})",
         "tcpConnectFailed": "La connexion du concentrateur TCP « {{name}} » a été refusée ou a expiré",
-        "txQueueDrops": "L'interface « {{name}} » a supprimé {{count}} paquets sortants (file d'attente TX pleine)"
+        "txQueueDrops": "L'interface « {{name}} » a supprimé {{count}} paquets sortants (file d'attente TX pleine)",
+        "linkDeliveryTimeout": "Lien LXMF direct vers {{hash}}… expiré ({{count}}×)",
+        "transportSaturated": "Transport RNS saturé ({{count}} LXMF path-request drops)",
+        "transportSaturatedShareInstance": "RNS transport saturé ({{count}} path-request drops). L'instance de partage est activée — quittez les autres applications Reticulum (MeshChatX, Ratspeak, rnsd) et redémarrez la pile.",
+        "slowTransportQuery": "Requêtes de transport RNS lentes ou en échec ({{count}}×)"
       }
     },
     "routingPort": {
@@ -3572,7 +3583,12 @@
     "autoSyncOption12h": "Toutes les 12 heures",
     "autoSyncOption24h": "Toutes les 24 heures",
     "lastSynced": "Dernière synchronisation : {{time}}",
-    "lastRefreshed": "Dernière mise à jour {{time}}"
+    "lastRefreshed": "Dernière mise à jour {{time}}",
+    "notice": {
+      "body": "Aucun nœud de propagation n'est configuré. Les pairs hors ligne ou inaccessibles ont besoin d'un nœud de propagation pour la livraison LXMF de stockage et de transfert.",
+      "openSettings": "Configurer la propagation",
+      "openSettingsAria": "Open Reticulum Network propagation settings"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "mode de propagation",

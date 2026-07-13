@@ -1395,6 +1395,18 @@ function AppContent() {
     }
   }, [tabsByProtocol]);
 
+  const [reticulumPropagationNavKey, setReticulumPropagationNavKey] = useState(0);
+  const handleOpenReticulumPropagationSettings = useCallback(() => {
+    const radioTabIndex = findFilteredTabIndexForPanel(
+      selectByProtocol(tabsByProtocol, 'reticulum'),
+      RADIO_TAB_PANEL_INDEX,
+    );
+    if (radioTabIndex >= 0) {
+      setActiveTab(radioTabIndex);
+    }
+    setReticulumPropagationNavKey((key) => key + 1);
+  }, [tabsByProtocol]);
+
   const handleRefreshReticulumDiagnostics = useCallback(() => {
     void reticulumRuntime.syncDiagnostics?.();
   }, [reticulumRuntime]);
@@ -2691,6 +2703,17 @@ function AppContent() {
                                     })
                                 : undefined
                             }
+                            onOpenPropagationSettings={
+                              protocol === 'reticulum'
+                                ? handleOpenReticulumPropagationSettings
+                                : undefined
+                            }
+                            reticulumStackLive={
+                              protocol === 'reticulum' &&
+                              (reticulumConnectionView.state.status === 'configured' ||
+                                reticulumConnectionView.state.status === 'connected' ||
+                                reticulumConnectionView.state.status === 'stale')
+                            }
                           />
                         </Suspense>
                       </div>
@@ -2896,6 +2919,7 @@ function AppContent() {
                               <ReticulumNetworkPanel
                                 connecting={reticulumConnectionView.state.status === 'connecting'}
                                 onStartStack={() => reticulumConnection.connectAutomatic('http')}
+                                propagationSectionOpenKey={reticulumPropagationNavKey}
                                 onOpenAppGpsSettings={() => {
                                   const appTabIdx = tabSlotIds.indexOf('App');
                                   if (appTabIdx >= 0) {

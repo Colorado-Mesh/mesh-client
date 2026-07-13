@@ -1037,7 +1037,14 @@
       "tcpConnectFailedHint": "Schakel deze interface uit in de onderstaande lijst of bevestig dat de externe hub actief is.",
       "txQueueDrops": "{{name}}: uitgaande pakketten verwijderd ({{count}} in de wachtrij)",
       "txQueueDropsHint": "Meestal veroorzaakt door een dode TCP-interface die nog steeds is ingeschakeld. Schakel onbereikbare hubs uit om wachtrijoverloop te stoppen.",
-      "suppressed": "{{count}} vergelijkbare zijspanlogregels die onlangs zijn onderdrukt."
+      "suppressed": "{{count}} vergelijkbare zijspanlogregels die onlangs zijn onderdrukt.",
+      "linkDeliveryTimeout": "Directe LXMF-link naar {{hash}}… time-out ({{count}}×)",
+      "linkDeliveryTimeoutHint": "De peer kan offline zijn of het RNS-transport is overbelast. DM's kunnen op Verzenden blijven totdat de link mislukt.",
+      "transportSaturated": "RNS-transport verzadigd ({{count}} pad-aanvraagdruppels)",
+      "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
+      "slowTransportQuery": "RNS-transportvragen traag of mislukt ({{count}}×)",
+      "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
+      "shareInstanceHint": "Deel instantie is ingeschakeld — sluit andere Reticulum-apps (MeshChatX, Ratspeak, standalone rnsd) volledig af en start deze stapel opnieuw voordat u DM's opnieuw probeert."
     },
     "reticulumSidecarBundledMissing": "Bij deze installatie ontbreekt het gebundelde Reticulum sidecar. Upgrade naar een nieuwere release of rapporteer het probleem: bouwen vanaf de broncode is niet beschikbaar in pakketinstallaties.",
     "radioMqttRootDivergesWarning": "Radio MQTT-hoofdonderwerp is {{radioRoot}}, maar dit paneel is geabonneerd op {{appPrefix}}. Koppel de radio om landelijk knooppuntverkeer te beperken — werk het onderwerpvoorvoegsel bij en sluit MQTT opnieuw aan.",
@@ -1355,7 +1362,11 @@
         "autoBeaconPhysicalFailures": "AutoInterface-baken TX faalt op {{ifaces}} — lokale LAN-detectie werkt mogelijk niet totdat dit is opgelost.",
         "tcpUnreachable": "TCP-hub \"{{name}}\" is onbereikbaar ({{host}}:{{port}})",
         "tcpConnectFailed": "TCP-hub \"{{name}}\" -verbinding geweigerd of er is een time-out opgetreden",
-        "txQueueDrops": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (TX-wachtrij vol)"
+        "txQueueDrops": "Interface \"{{name}}\" liet {{count}} uitgaande pakketten vallen (TX-wachtrij vol)",
+        "linkDeliveryTimeout": "Directe LXMF-link naar {{hash}}… time-out ({{count}}×)",
+        "transportSaturated": "RNS-transport verzadigd ({{count}} LXMF-pad-aanvraagdruppels)",
+        "transportSaturatedShareInstance": "RNS-transport verzadigd ({{count}} pad-aanvraagdruppels). Deel instantie is ingeschakeld — sluit andere Reticulum-apps (MeshChatX, Ratspeak, rnsd) en start de stapel opnieuw.",
+        "slowTransportQuery": "RNS-transportvragen traag of mislukt ({{count}}×)"
       }
     },
     "routingPort": {
@@ -3572,7 +3583,12 @@
     "autoSyncOption12h": "Elke 12 uur",
     "autoSyncOption24h": "Elke 24 uur",
     "lastSynced": "Laatst gesynchroniseerd: {{time}}",
-    "lastRefreshed": "Laatst bijgewerkt {{time}}"
+    "lastRefreshed": "Laatst bijgewerkt {{time}}",
+    "notice": {
+      "body": "Er is geen propagatieknooppunt geconfigureerd. Offline of onbereikbare collega's hebben een propagatieknooppunt nodig voor store-and-forward LXMF-levering.",
+      "openSettings": "Propagatie instellen",
+      "openSettingsAria": "Open Reticulum Network propagatie-instellingen"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "voortplantingsmodus",

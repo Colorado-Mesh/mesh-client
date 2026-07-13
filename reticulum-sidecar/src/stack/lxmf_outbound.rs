@@ -17,12 +17,73 @@ use tokio::sync::mpsc;
 
 use super::{lxmf_payload_from_message, parse_hash16};
 
+const PATH_REQUEST_BACKOFF_SECS: f64 = 20.0;
+const PATH_REQUEST_MAX_ATTEMPTS: u32 = 12;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PathRequestDecision {
+    Send,
+    Backoff,
+    MaxAttempts,
+}
+
+/// Rate-limits `RequestPath` when the transport channel is full (avoids retry storms).
+struct PathRequestGate {
+    backoff_until: HashMap<[u8; 16], f64>,
+    fail_count: HashMap<[u8; 16], u32>,
+    last_warn_at: HashMap<[u8; 16], f64>,
+}
+
+impl PathRequestGate {
+    fn new() -> Self {
+        Self {
+            backoff_until: HashMap::new(),
+            fail_count: HashMap::new(),
+            last_warn_at: HashMap::new(),
+        }
+    }
+
+    fn clear_destination(&mut self, dest: [u8; 16]) {
+        self.backoff_until.remove(&dest);
+        self.fail_count.remove(&dest);
+        self.last_warn_at.remove(&dest);
+    }
+
+    fn decide(&self, dest: [u8; 16], now: f64) -> PathRequestDecision {
+        if self.fail_count.get(&dest).copied().unwrap_or(0) >= PATH_REQUEST_MAX_ATTEMPTS {
+            return PathRequestDecision::MaxAttempts;
+        }
+        if let Some(until) = self.backoff_until.get(&dest) {
+            if now < *until {
+                return PathRequestDecision::Backoff;
+            }
+        }
+        PathRequestDecision::Send
+    }
+
+    fn record_queue_failure(&mut self, dest: [u8; 16], now: f64) {
+        *self.fail_count.entry(dest).or_insert(0) += 1;
+        self.backoff_until.insert(dest, now + PATH_REQUEST_BACKOFF_SECS);
+    }
+
+    fn should_warn(&mut self, dest: [u8; 16], now: f64) -> bool {
+        let last = self.last_warn_at.get(&dest).copied().unwrap_or(0.0);
+        if now - last >= PATH_REQUEST_BACKOFF_SECS {
+            self.last_warn_at.insert(dest, now);
+            true
+        } else {
+            false
+        }
+    }
+}
+
 pub struct LxmfOutboundDriver {
     transport_tx: mpsc::Sender<TransportMessage>,
     link_delivery: LinkDeliveryManager,
     route_hops: HashMap<[u8; 16], u8>,
     known_identities: HashMap<String, [u8; 64]>,
     path_table_hashes: HashSet<String>,
+    path_request_gate: PathRequestGate,
     self_lxmf_hash: String,
     self_display_name: String,
 }
@@ -44,6 +105,7 @@ impl LxmfOutboundDriver {
             route_hops: HashMap::new(),
             known_identities: HashMap::new(),
             path_table_hashes: HashSet::new(),
+            path_request_gate: PathRequestGate::new(),
             self_lxmf_hash: self_lxmf_hash.clone(),
             self_display_name,
         };
@@ -70,6 +132,7 @@ impl LxmfOutboundDriver {
         for (hash, hops, hex_key) in entries {
             self.route_hops.insert(*hash, (*hops).max(1));
             self.path_table_hashes.insert(hex_key.clone());
+            self.path_request_gate.clear_destination(*hash);
         }
     }
 
@@ -110,7 +173,7 @@ impl LxmfOutboundDriver {
         });
 
         if !actions.is_empty() {
-            self.execute_actions(router, actions);
+            self.execute_actions(router, event_tx, actions);
         }
 
         router.run_jobs_tick();
@@ -121,21 +184,26 @@ impl LxmfOutboundDriver {
         }
     }
 
-    fn execute_actions(&mut self, router: &mut LxmRouter, actions: Vec<OutboundAction>) {
+    fn execute_actions(
+        &mut self,
+        router: &mut LxmRouter,
+        event_tx: &broadcast::Sender<String>,
+        actions: Vec<OutboundAction>,
+    ) {
         for action in actions {
             match action {
                 OutboundAction::DeliverPropagated { message, prop_hash } => {
-                    self.deliver_propagated(router, message, prop_hash);
+                    self.deliver_propagated(router, event_tx, message, prop_hash);
                 }
                 OutboundAction::DeliverDirect { message, dest_hash } => {
-                    self.deliver_direct(router, message, dest_hash, None);
+                    self.deliver_direct(router, event_tx, message, dest_hash, None);
                 }
                 OutboundAction::PlanDirect {
                     message,
                     dest_hash,
                     plan,
                 } => {
-                    self.deliver_direct(router, message, dest_hash, Some(plan));
+                    self.deliver_direct(router, event_tx, message, dest_hash, Some(plan));
                 }
                 OutboundAction::DeliverOpportunistic { message, dest_hash } => {
                     if let Ok(packed) = message.pack_payload() {
@@ -152,6 +220,7 @@ impl LxmfOutboundDriver {
                         dest = %hex::encode(msg.destination_hash),
                         "LXMF outbound message failed or expired"
                     );
+                    self.fail_outbound_message(router, event_tx, msg);
                 }
             }
         }
@@ -160,6 +229,7 @@ impl LxmfOutboundDriver {
     fn deliver_propagated(
         &mut self,
         router: &mut LxmRouter,
+        event_tx: &broadcast::Sender<String>,
         mut message: LxMessage,
         prop_hash: [u8; 16],
     ) {
@@ -168,8 +238,7 @@ impl LxmfOutboundDriver {
             .known_identities
             .contains_key(&prop_hex.to_lowercase())
         {
-            queue_path_request(&self.transport_tx, prop_hash, false, "propagation node path");
-            router.send(message);
+            self.request_path_gated(router, event_tx, prop_hash, false, "propagation node path", message);
             return;
         }
         let Some(packed) = self.pack_for_propagation(&mut message, prop_hash) else {
@@ -193,6 +262,7 @@ impl LxmfOutboundDriver {
     fn deliver_direct(
         &mut self,
         router: &mut LxmRouter,
+        event_tx: &broadcast::Sender<String>,
         mut message: LxMessage,
         dest_hash: [u8; 16],
         planned: Option<DirectDeliveryPlan>,
@@ -213,11 +283,17 @@ impl LxmfOutboundDriver {
 
         match plan {
             DirectDeliveryPlan::RequestPath { .. } | DirectDeliveryPlan::WaitForReusableLink => {
-                queue_path_request(&self.transport_tx, dest_hash, false, "direct delivery path");
-                router.send(message);
+                self.request_path_gated(
+                    router,
+                    event_tx,
+                    dest_hash,
+                    false,
+                    "direct delivery path",
+                    message,
+                );
             }
             DirectDeliveryPlan::DeferTerminalFailure | DirectDeliveryPlan::Fail => {
-                message.mark_failed();
+                self.fail_outbound_message(router, event_tx, message);
             }
             DirectDeliveryPlan::UseReusableLink | DirectDeliveryPlan::StartNewLink { .. } => {
                 let hops = match plan {
@@ -237,6 +313,70 @@ impl LxmfOutboundDriver {
                 }
             }
         }
+    }
+
+    fn request_path_gated(
+        &mut self,
+        router: &mut LxmRouter,
+        event_tx: &broadcast::Sender<String>,
+        request_hash: [u8; 16],
+        drop_existing: bool,
+        reason: &str,
+        message: LxMessage,
+    ) {
+        let now = now_f64();
+        match self.path_request_gate.decide(request_hash, now) {
+            PathRequestDecision::Send => {
+                if try_queue_path_request(&self.transport_tx, request_hash, drop_existing, reason) {
+                    router.send(message);
+                } else {
+                    self.path_request_gate.record_queue_failure(request_hash, now);
+                    if self.path_request_gate.should_warn(request_hash, now) {
+                        tracing::warn!(
+                            dest = %hex::encode(request_hash),
+                            reason,
+                            "failed to queue path request for LXMF delivery (transport channel full)"
+                        );
+                    }
+                    router.send(message);
+                }
+            }
+            PathRequestDecision::Backoff => {
+                router.send(message);
+            }
+            PathRequestDecision::MaxAttempts => {
+                tracing::warn!(
+                    dest = %hex::encode(request_hash),
+                    reason,
+                    "LXMF path request budget exhausted; marking outbound failed"
+                );
+                self.fail_outbound_message(router, event_tx, message);
+            }
+        }
+    }
+
+    fn fail_outbound_message(
+        &mut self,
+        router: &mut LxmRouter,
+        event_tx: &broadcast::Sender<String>,
+        mut message: LxMessage,
+    ) {
+        message.mark_failed();
+        if let Some(hash) = message.hash.or(message.message_id) {
+            let _ = router.mark_outbound_failed(&hash);
+            emit_outbound_status_by_hash(event_tx, &hash, "failed");
+        }
+        let method = delivery_method_label(message.method);
+        let payload = lxmf_payload_from_message(
+            &message,
+            &self.self_lxmf_hash,
+            &self.self_display_name,
+            None,
+            Some(method),
+            "outbound",
+            None,
+        );
+        emit_outbound_status(event_tx, &payload, "failed", method);
     }
 
     fn pack_for_propagation(
@@ -380,12 +520,12 @@ fn direct_reusable_link_state(
     }
 }
 
-fn queue_path_request(
+fn try_queue_path_request(
     transport_tx: &mpsc::Sender<TransportMessage>,
     request_hash: [u8; 16],
     drop_existing: bool,
     reason: &str,
-) {
+) -> bool {
     if drop_existing {
         let (response_tx, _response_rx) = tokio::sync::oneshot::channel();
         let _ = transport_tx.try_send(TransportMessage::Rpc {
@@ -393,16 +533,19 @@ fn queue_path_request(
             response_tx,
         });
     }
-    if let Err(e) = transport_tx.try_send(TransportMessage::RequestPath {
-        destination_hash: request_hash,
-    }) {
-        tracing::warn!(
-            dest = %hex::encode(request_hash),
-            error = %e,
-            reason,
-            "failed to queue path request for LXMF delivery"
-        );
-    }
+    transport_tx
+        .try_send(TransportMessage::RequestPath {
+            destination_hash: request_hash,
+        })
+        .map_err(|e| {
+            tracing::debug!(
+                dest = %hex::encode(request_hash),
+                error = %e,
+                reason,
+                "path request try_send rejected"
+            );
+        })
+        .is_ok()
 }
 
 pub fn parse_propagation_hash(hex_str: &str) -> Option<[u8; 16]> {
@@ -414,4 +557,52 @@ fn now_f64() -> f64 {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs_f64()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn dest(byte: u8) -> [u8; 16] {
+        [byte; 16]
+    }
+
+    #[test]
+    fn path_gate_allows_first_request() {
+        let gate = PathRequestGate::new();
+        assert_eq!(gate.decide(dest(1), 100.0), PathRequestDecision::Send);
+    }
+
+    #[test]
+    fn path_gate_backoffs_after_queue_failure() {
+        let mut gate = PathRequestGate::new();
+        gate.record_queue_failure(dest(1), 100.0);
+        assert_eq!(gate.decide(dest(1), 110.0), PathRequestDecision::Backoff);
+        assert_eq!(gate.decide(dest(1), 121.0), PathRequestDecision::Send);
+    }
+
+    #[test]
+    fn path_gate_max_attempts_fails_terminal() {
+        let mut gate = PathRequestGate::new();
+        for i in 0..PATH_REQUEST_MAX_ATTEMPTS {
+            gate.record_queue_failure(dest(2), 100.0 + f64::from(i));
+        }
+        assert_eq!(gate.decide(dest(2), 500.0), PathRequestDecision::MaxAttempts);
+    }
+
+    #[test]
+    fn path_gate_clears_on_path_resolution() {
+        let mut gate = PathRequestGate::new();
+        gate.record_queue_failure(dest(3), 100.0);
+        gate.clear_destination(dest(3));
+        assert_eq!(gate.decide(dest(3), 101.0), PathRequestDecision::Send);
+    }
+
+    #[test]
+    fn path_gate_warn_is_rate_limited() {
+        let mut gate = PathRequestGate::new();
+        assert!(gate.should_warn(dest(4), 100.0));
+        assert!(!gate.should_warn(dest(4), 110.0));
+        assert!(gate.should_warn(dest(4), 121.0));
+    }
 }
