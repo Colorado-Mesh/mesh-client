@@ -17,6 +17,24 @@ describe('useReticulumRuntime reconnect hardening (regression)', () => {
     );
   });
 
+  it('awaits in-flight stack ops instead of silent no-op on connect', () => {
+    expect(SOURCE).toMatch(
+      /if \(connectInFlightRef\.current\) \{[\s\S]*?connectInFlightDoneRef\.current[\s\S]*?await pending/,
+    );
+    expect(SOURCE).not.toMatch(
+      /const connect = useCallback\(async \(\) => \{[\s\S]*?if \(connectInFlightRef\.current\) return;/,
+    );
+  });
+
+  it('restartStack awaits in-flight connect before restarting', () => {
+    expect(SOURCE).toMatch(
+      /const restartStack = useCallback\(async \(\) => \{[\s\S]*?if \(connectInFlightRef\.current\) \{[\s\S]*?await pending/,
+    );
+    expect(SOURCE).not.toMatch(
+      /const restartStack = useCallback\(async \(\) => \{[\s\S]*?if \(connectInFlightRef\.current\) \{\s*return;/,
+    );
+  });
+
   it('does not treat connecting as an active session for sidecar stop reconnect', () => {
     expect(SOURCE).toMatch(
       /const wasActive =[\s\S]*?stateRef\.current\.status === 'configured'[\s\S]*?stateRef\.current\.status === 'connected'[\s\S]*?stateRef\.current\.status === 'stale'/,

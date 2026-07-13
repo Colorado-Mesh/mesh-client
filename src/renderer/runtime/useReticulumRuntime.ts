@@ -127,6 +127,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const connectRef = useRef<(() => Promise<void>) | null>(null);
   const restartStackRef = useRef<(() => Promise<void>) | null>(null);
   const connectInFlightRef = useRef(false);
+  const connectInFlightDoneRef = useRef<Promise<void> | null>(null);
   const suppressReconnectRef = useRef(false);
   const peerRefreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localInterfaceBurstCancelRef = useRef<(() => void) | null>(null);
@@ -512,11 +513,18 @@ export function useReticulumRuntime(): ProtocolRuntime {
   }, []);
 
   const connect = useCallback(async () => {
-    if (connectInFlightRef.current) return;
+    if (connectInFlightRef.current) {
+      const pending = connectInFlightDoneRef.current;
+      if (pending) {
+        await pending.catch(() => {});
+        return;
+      }
+      throw new Error('Reticulum connect already in progress');
+    }
     connectInFlightRef.current = true;
-    setState((s) => ({ ...s, status: 'connecting', connectionType: null }));
-    syncConnectionStore({ status: 'connecting', connectionType: null });
-    try {
+    const flight = (async () => {
+      setState((s) => ({ ...s, status: 'connecting', connectionType: null }));
+      syncConnectionStore({ status: 'connecting', connectionType: null });
       await window.electronAPI.reticulum.start({ reuseIfRunning: true });
       unsubEventRef.current?.();
       unsubEventRef.current = window.electronAPI.reticulum.onEvent(handleSidecarEvent);
@@ -538,6 +546,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
         myNodeNum: connectedNodeId,
       });
       scheduleLocalInterfaceStatusBurst();
+    })();
+    connectInFlightDoneRef.current = flight;
+    try {
+      await flight;
     } catch (e) {
       console.error('[useReticulumRuntime] connect failed ' + errLikeToLogString(e));
       setState(INITIAL_STATE);
@@ -545,6 +557,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       throw e instanceof Error ? e : new Error(String(e));
     } finally {
       connectInFlightRef.current = false;
+      connectInFlightDoneRef.current = null;
     }
   }, [
     handleSidecarEvent,
@@ -579,15 +592,21 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const restartStack = useCallback(async () => {
     if (connectInFlightRef.current) {
-      return;
+      const pending = connectInFlightDoneRef.current;
+      if (pending) {
+        await pending.catch(() => {});
+      }
+      if (connectInFlightRef.current) {
+        throw new Error('Reticulum stack operation already in progress');
+      }
     }
     connectInFlightRef.current = true;
     console.warn('[useReticulumRuntime] restarting stack to reload interface config');
     const priorSuppress = suppressReconnectRef.current;
     suppressReconnectRef.current = true;
-    setState((s) => ({ ...s, status: 'connecting', connectionType: null }));
-    syncConnectionStore({ status: 'connecting', connectionType: null });
-    try {
+    const flight = (async () => {
+      setState((s) => ({ ...s, status: 'connecting', connectionType: null }));
+      syncConnectionStore({ status: 'connecting', connectionType: null });
       unsubEventRef.current?.();
       unsubEventRef.current = null;
       await window.electronAPI.reticulum.stop();
@@ -611,6 +630,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
         myNodeNum: connectedNodeId,
       });
       scheduleLocalInterfaceStatusBurst();
+    })();
+    connectInFlightDoneRef.current = flight;
+    try {
+      await flight;
     } catch (e) {
       console.error('[useReticulumRuntime] stack restart failed ' + errLikeToLogString(e));
       tearDownFromSidecarStop();
@@ -618,6 +641,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     } finally {
       suppressReconnectRef.current = priorSuppress;
       connectInFlightRef.current = false;
+      connectInFlightDoneRef.current = null;
     }
   }, [
     handleSidecarEvent,

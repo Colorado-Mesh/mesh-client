@@ -60,6 +60,21 @@ describe('reticulumIngest alias helpers', () => {
     ).toBe('Alice');
   });
 
+  it('extracts server_name from JSON sender_name and rejects RMAP blobs', () => {
+    expect(
+      reticulumContactDisplayNameFromPayload({
+        sender_hash: hash,
+        sender_name: '{"server_name": "FOXDPI RetiBBS"}',
+      }),
+    ).toBe('FOXDPI RetiBBS');
+    expect(
+      reticulumContactDisplayNameFromPayload({
+        sender_hash: hash,
+        sender_name: '{"h":"5440f5d4485a00fb8441ad94fbdee46e","ha":"0"}',
+      }),
+    ).toBeUndefined();
+  });
+
   it('persistReticulumContactFromPayload skips display_name for hash prefix', async () => {
     await persistReticulumContactFromPayload({
       sender_hash: hash,

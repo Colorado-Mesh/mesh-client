@@ -1,6 +1,7 @@
 import type { IpcMain } from 'electron';
 
 import { isMeshProtocol } from '../../shared/meshProtocol';
+import { sanitizeReticulumDisplayNameForDb } from '../../shared/reticulumDisplayName';
 import { finishDbIpcHandler, getDbForIpc } from '../db-ipc-lifecycle';
 import { buildFtsMatchQuery, isMessageFtsReady } from '../messageFts';
 import { sanitizeReticulumAttachmentPathForDb } from '../reticulum-attachment-path';
@@ -259,10 +260,9 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       ).run(
         hash,
         typeof r.display_name === 'string'
-          ? r.display_name
-              .replace(/[\r\n]+/g, ' ')
-              .trim()
-              .slice(0, 128) || null
+          ? (sanitizeReticulumDisplayNameForDb(
+              r.display_name.replace(/[\r\n]+/g, ' ').trim(),
+            )?.slice(0, 128) ?? null)
           : null,
         r.last_heard != null && Number.isFinite(Number(r.last_heard))
           ? Math.trunc(Number(r.last_heard))

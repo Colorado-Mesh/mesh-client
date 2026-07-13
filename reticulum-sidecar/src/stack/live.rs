@@ -1326,24 +1326,80 @@ pub(super) fn emit_lxmf_event(event_tx: &broadcast::Sender<String>, payload: ser
 }
 
 /// LXMF / Nomad announces encode display names in app_data as msgpack
-/// `[display_name_bytes, ...]` or raw UTF-8 (see NomadNet / MeshChat wire compat).
+/// `[display_name_bytes, ...]`, msgpack maps, JSON objects (`server_name`), or raw UTF-8.
 fn parse_announce_display_name(app_data: Option<&[u8]>) -> Option<String> {
     let bytes = app_data?;
     if bytes.is_empty() {
         return None;
     }
     if let Ok(value) = rmpv::decode::read_value(&mut Cursor::new(bytes)) {
-        if let rmpv::Value::Array(arr) = value {
-            if let Some(name) = arr.first().and_then(nomad_name_from_msgpack_value) {
-                return Some(name);
+        match value {
+            rmpv::Value::Array(arr) => {
+                if let Some(name) = arr.first().and_then(nomad_name_from_msgpack_value) {
+                    return sanitize_parsed_display_name(&name);
+                }
+            }
+            rmpv::Value::Map(map) => {
+                if let Some(name) = display_name_from_msgpack_map(&map) {
+                    return sanitize_parsed_display_name(&name);
+                }
+            }
+            _ => {}
+        }
+    }
+    if let Ok(text) = std::str::from_utf8(bytes) {
+        let trimmed = text.trim();
+        if trimmed.starts_with('{') {
+            if let Some(name) = display_name_from_json_str(trimmed) {
+                return sanitize_parsed_display_name(&name);
+            }
+            return None;
+        }
+        return sanitize_parsed_display_name(trimmed);
+    }
+    None
+}
+
+fn sanitize_parsed_display_name(s: &str) -> Option<String> {
+    let trimmed = s.trim();
+    if is_plausible_display_name(trimmed) {
+        Some(trimmed.to_string())
+    } else {
+        None
+    }
+}
+
+fn display_name_from_json_str(text: &str) -> Option<String> {
+    let value: serde_json::Value = serde_json::from_str(text).ok()?;
+    display_name_from_json_value(&value)
+}
+
+fn display_name_from_json_value(value: &serde_json::Value) -> Option<String> {
+    let obj = value.as_object()?;
+    for key in ["server_name", "name", "display_name", "title"] {
+        if let Some(name) = obj
+            .get(key)
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+        {
+            return Some(name.to_string());
+        }
+    }
+    None
+}
+
+fn display_name_from_msgpack_map(map: &[(rmpv::Value, rmpv::Value)]) -> Option<String> {
+    for key in ["server_name", "name", "display_name", "title"] {
+        for (k, v) in map {
+            if k.as_str() == Some(key) {
+                if let Some(name) = nomad_name_from_msgpack_value(v) {
+                    return Some(name);
+                }
             }
         }
     }
-    std::str::from_utf8(bytes)
-        .ok()
-        .map(str::trim)
-        .filter(|s| is_plausible_display_name(s))
-        .map(str::to_string)
+    None
 }
 
 fn is_plausible_display_name(s: &str) -> bool {
@@ -1451,6 +1507,29 @@ mod announce_display_name_tests {
     #[test]
     fn parse_announce_display_name_rejects_control_chars() {
         assert_eq!(parse_announce_display_name(Some(b"bad\x01name")), None);
+    }
+
+    #[test]
+    fn parse_announce_display_name_json_server_name() {
+        let json = br#"{"server_name": "Aurora Mesh \u2014 Cosmos BBS"}"#;
+        assert_eq!(
+            parse_announce_display_name(Some(json)),
+            Some("Aurora Mesh — Cosmos BBS".into())
+        );
+    }
+
+    #[test]
+    fn parse_announce_display_name_json_rmap_geo_blob_is_none() {
+        let json = br#"{"h":"5440f5d4485a00fb8441ad94fbdee46e","ha":"0","c":"1","c_n":"County/Region/City","r":"1","r_n":"Country,Country/Region"}"#;
+        assert_eq!(parse_announce_display_name(Some(json)), None);
+    }
+
+    #[test]
+    fn parse_announce_display_name_rejects_unknown_json_object() {
+        assert_eq!(
+            parse_announce_display_name(Some(br#"{"foo":"bar"}"#)),
+            None
+        );
     }
 
     #[test]

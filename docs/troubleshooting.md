@@ -1000,6 +1000,17 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 For bulk fixes, use Network **Config import** (merge) instead of hand-editing individual rows. See [reticulum.md — Interface management](reticulum.md#interface-management-connection-tab).
 
+### Reticulum Peers tab slow with many hubs or testnets
+
+**Symptoms**: After enabling several public hubs or testnets, **Peers** shows thousands of path-table rows; scrolling, search, or refresh feels sluggish. UI may remain responsive on **Contacts** or **Favorites** because those tabs show a smaller LXMF contact set.
+
+**Checks**:
+
+1. **Expected at scale**: mesh-client virtualizes peer rows above 100 entries, but the sidecar still maintains the full RNS path table (often 3k–10k rows on busy hubs). Background refresh runs every 30 s while the stack is configured.
+2. **Reduce noise**: disable unused TCP testnet interfaces on **Connection → Interfaces** and restart the stack so RNS drops stale TCP clients.
+3. **Prefer Contacts**: use the **Contacts** tab for LXMF peers you message; **Favorites** for a short pinned list.
+4. **Search**: the peer search box debounces input — wait a moment after typing before judging filter performance on very large lists.
+
 ### RNode Wi-Fi interface offline or won't connect
 
 **Symptoms**: Connection tab shows a Wi-Fi RNode interface as **down**; logs may show TCP connect failures to the configured host.
