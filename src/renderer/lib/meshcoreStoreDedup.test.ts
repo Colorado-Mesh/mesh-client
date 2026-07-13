@@ -13,7 +13,7 @@ import {
   syncMeshcoreDisplayReplyRepairs,
   upsertMeshcoreMessageWithDedup,
 } from './meshcoreStoreDedup';
-import { chatMessageToMessageRecord } from './storeRecordAdapters';
+import { chatMessageToMessageRecord, messageRecordToChatMessage } from './storeRecordAdapters';
 import type { ChatMessage } from './types';
 
 const ID = 'meshcore-dedup-test';
@@ -464,5 +464,113 @@ describe('meshcoreStoreDedup', () => {
 
     const rows = Object.values(useMessageStore.getState().messages[ID] ?? {});
     expect(rows).toHaveLength(1);
+  });
+
+  it('enriches exact-key duplicate with rxHops when first row lacked hops', () => {
+    const tsMs = 1_700_000_050_000;
+    const channelMsg = buildMeshcoreChannelIncomingMessage([], {
+      rawText: 'Alice: hop enrich',
+      senderId: 0xabcd1234,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+    });
+    upsertMeshcoreMessageWithDedup(ID, channelMsg);
+
+    const enriched = { ...channelMsg, rxHops: 3 };
+    const result = upsertMeshcoreMessageWithDedup(ID, enriched);
+    expect(result.storeUpdated).toBe(true);
+    expect(result.message.rxHops).toBe(3);
+    const record = useMessageStore.getState().messages[ID]?.[result.canonicalId];
+    expect(record).toBeDefined();
+    expect(messageRecordToChatMessage(record).rxHops).toBe(3);
+  });
+
+  it('does not overwrite existing rxHops on exact-key duplicate', () => {
+    const tsMs = 1_700_000_051_000;
+    const channelMsg = buildMeshcoreChannelIncomingMessage([], {
+      rawText: 'Alice: keep hops',
+      senderId: 0xabcd1234,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'rf',
+      rxHops: 2,
+    });
+    upsertMeshcoreMessageWithDedup(ID, channelMsg);
+
+    const attempt = { ...channelMsg, rxHops: 5 };
+    const result = upsertMeshcoreMessageWithDedup(ID, attempt);
+    expect(result.message.rxHops).toBe(2);
+    const record = useMessageStore.getState().messages[ID]?.[result.canonicalId];
+    expect(record).toBeDefined();
+    expect(messageRecordToChatMessage(record).rxHops).toBe(2);
+  });
+
+  it('merges rxHops on exact-key reply-field upgrade branch', () => {
+    const tsMs = 1_700_000_052_000;
+    const parentTs = tsMs - 60_000;
+    upsertMeshcoreMessageWithDedup(
+      ID,
+      buildMeshcoreChannelIncomingMessage([], {
+        rawText: 'Alice: parent',
+        senderId: 0xabcd1234,
+        displayName: 'Alice',
+        channel: 0,
+        timestamp: parentTs,
+        receivedVia: 'rf',
+      }),
+    );
+    const reply = buildMeshcoreChannelIncomingMessage(
+      [
+        {
+          sender_id: 0xabcd1234,
+          sender_name: 'Alice',
+          payload: 'parent',
+          channel: 0,
+          timestamp: parentTs,
+          status: 'acked',
+        },
+      ],
+      {
+        rawText: 'Bob: @[Alice] thanks',
+        senderId: 0xbeef,
+        displayName: 'Bob',
+        channel: 0,
+        timestamp: tsMs,
+        receivedVia: 'rf',
+      },
+    );
+    upsertMeshcoreMessageWithDedup(ID, reply);
+
+    const repaired = { ...reply, replyId: parentTs, rxHops: 1 };
+    const result = upsertMeshcoreMessageWithDedup(ID, repaired);
+    expect(result.storeUpdated).toBe(true);
+    expect(result.message.replyId).toBe(parentTs);
+    expect(result.message.rxHops).toBe(1);
+  });
+
+  it('retains rxHops on cross-transport MQTT then RF merge', () => {
+    const tsMs = 1_700_000_053_000;
+    const mqttMsg = buildMeshcoreChannelIncomingMessage([], {
+      rawText: 'Alice: cross hops',
+      senderId: 0xabcd1234,
+      displayName: 'Alice',
+      channel: 0,
+      timestamp: tsMs,
+      receivedVia: 'mqtt',
+    });
+    upsertMeshcoreMessageWithDedup(ID, mqttMsg);
+
+    const rfMsg: ChatMessage = {
+      ...mqttMsg,
+      timestamp: tsMs + 500,
+      receivedVia: 'rf',
+      rxHops: 2,
+    };
+    const result = upsertMeshcoreMessageWithDedup(ID, rfMsg);
+    expect(result.message.receivedVia).toBe('both');
+    expect(result.message.rxHops).toBe(2);
   });
 });

@@ -2048,6 +2048,7 @@ export function useMeshcoreRuntime() {
       if (identityId) {
         meshcoreIngestDetachRef.current = attachMeshcoreIngest(identityId, {
           onPathUpdated: handleMeshcorePathUpdatedFromIngest,
+          rawPacketsForHopCorrelation: () => rawPacketsRef.current,
         });
         setConnection(identityId, {
           status: 'configured',

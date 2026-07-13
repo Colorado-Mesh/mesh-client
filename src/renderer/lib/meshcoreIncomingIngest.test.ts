@@ -279,6 +279,25 @@ describe('ingestMeshcoreChannelMessage + store persist', () => {
     expect(inStore?.rxHops).toBe(3);
     expect(inStore?.receivedVia).toBe('rf');
   });
+
+  it('enriches store row with rxHops on second exact-key upsert (protocol-first timing)', () => {
+    const parsed = ingestMeshcoreChannelMessage(ID, {
+      rawText: `${NV0N}: protocol first`,
+      senderId: 100,
+      displayName: NV0N,
+      channel: CH,
+      timestamp: 1_780_240_001_000,
+      receivedVia: 'rf',
+    });
+    upsertMeshcoreMessageWithDedup(ID, parsed);
+    const withoutHops = listChatMessagesFromStore(ID).find((m) => m.payload === 'protocol first');
+    expect(withoutHops?.rxHops).toBeUndefined();
+
+    const enriched = { ...parsed, rxHops: 2 };
+    upsertMeshcoreMessageWithDedup(ID, enriched);
+    const inStore = listChatMessagesFromStore(ID).find((m) => m.payload === 'protocol first');
+    expect(inStore?.rxHops).toBe(2);
+  });
 });
 
 describe('meshcoreChatMessagesForDisplay (historical backfill only)', () => {

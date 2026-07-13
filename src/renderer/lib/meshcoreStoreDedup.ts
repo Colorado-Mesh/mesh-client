@@ -193,6 +193,7 @@ function mergeExactKeyDuplicate(existing: ChatMessage, incoming: ChatMessage): C
     existing.status === 'sending' && (incoming.status === 'acked' || incoming.status === 'failed');
   const richerPacketId = incoming.packetId != null && existing.packetId == null;
   const richerError = incoming.error != null && existing.error == null;
+  const richerRxHops = incoming.rxHops != null && existing.rxHops == null;
   const channelTimestampAdopt =
     meshcoreIsBroadcastChannelMessage(existing) &&
     incoming.receivedVia === 'rf' &&
@@ -203,6 +204,7 @@ function mergeExactKeyDuplicate(existing: ChatMessage, incoming: ChatMessage): C
     mergedReceivedVia === existing.receivedVia &&
     !richerPacketId &&
     !richerError &&
+    !richerRxHops &&
     !channelTimestampAdopt
   ) {
     return null;
@@ -227,6 +229,7 @@ function mergeExactKeyDuplicate(existing: ChatMessage, incoming: ChatMessage): C
     status: statusAdvances ? incoming.status : (existing.status ?? incoming.status),
     packetId: incoming.packetId ?? existing.packetId,
     error: incoming.error ?? existing.error,
+    rxHops: existing.rxHops ?? incoming.rxHops,
     timestamp,
   };
 }
@@ -326,6 +329,7 @@ export function upsertMeshcoreMessageWithDedup(
         ...exactMatch,
         ...replyFields,
         receivedVia: mergeMeshcoreReceivedVia(exactMatch.receivedVia, msg.receivedVia),
+        rxHops: exactMatch.rxHops ?? msg.rxHops,
       };
       const record = chatMessageToMessageRecord(upgraded);
       record.id = canonicalId;
