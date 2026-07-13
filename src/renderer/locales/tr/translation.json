@@ -3532,7 +3532,8 @@
     "announceSaveFailed": "Duyuru aralığı kaydedilemedi: {{error}}",
     "announceSaveSidecarStopped": "Duyuru ayarlarını kaydetmeden önce Reticulum yığınını başlat.",
     "clearAnnouncesDone": "Anonslar temizlendi.",
-    "clearAnnouncesFailed": "Duyurular temizlenemedi."
+    "clearAnnouncesFailed": "Duyurular temizlenemedi.",
+    "announceIntervalHint": "Varsayılan 3600 s (1 saat). Yalnızca başlangıç anonsları için 0 'ı kullanın."
   },
   "reticulumProfileIcon": {
     "iconName": "Avatar Görünümü",

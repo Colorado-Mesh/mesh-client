@@ -11,6 +11,7 @@ import {
 } from '../meshcoreUtils';
 import { getNodeStatus } from '../nodeStatus';
 import { meshcoreProtocol } from '../protocols/MeshCoreProtocol';
+import { messageRecordToChatMessage } from '../storeRecordAdapters';
 import { attachMeshcoreIngest, meshcoreIngestHandleTextMessage } from './meshcoreIngest';
 
 const ID = 'meshcore-ingest-test';
@@ -536,5 +537,130 @@ describe('attachMeshcoreIngest', () => {
     });
     expect(useNodeStore.getState().nodes[ID]?.[botId]).toBeUndefined();
     expect(useNodeStore.getState().nodes[ID]?.[MESHCORE_UNKNOWN_SENDER_STUB_ID]).toBeUndefined();
+  });
+});
+
+describe('meshcoreIngest hop correlation (driver path)', () => {
+  const saveMeshcoreMessage = vi.fn().mockResolvedValue(undefined);
+  const now = Date.now();
+  const channelMsgId = `ch:0:${Math.floor(now / 1000)}`;
+  const dmMsgId = 'dm:abc:1700000001';
+
+  beforeEach(() => {
+    vi.spyOn(window.electronAPI.db, 'saveMeshcoreMessage').mockImplementation(saveMeshcoreMessage);
+    saveMeshcoreMessage.mockClear();
+    useMessageStore.setState({ messages: {} });
+    addIdentity({
+      id: ID,
+      protocol: meshcoreProtocol,
+      signature: 'meshcore:hop-ingest-test',
+      transports: [],
+      createdAt: Date.now(),
+      lastSeenAt: Date.now(),
+    });
+  });
+
+  afterEach(() => {
+    useMessageStore.setState({ messages: {} });
+    vi.restoreAllMocks();
+  });
+
+  function dispatchChannelText(overrides: { hopCount?: number; payload?: string } = {}) {
+    const payload = overrides.payload ?? 'Peer: hello mesh';
+    upsertMessage(ID, {
+      id: channelMsgId,
+      from: 0,
+      to: 0xffffffff,
+      payload,
+      channelIndex: 0,
+      timestamp: now,
+      receivedVia: 'rf',
+    });
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: channelMsgId,
+          from: 0,
+          to: 0,
+          payload,
+          channelIndex: 0,
+          timestamp: now,
+          hopCount: overrides.hopCount,
+        },
+      },
+      ID,
+    );
+  }
+
+  it('correlates channel rxHops from GRP_TXT raw packet log when hopCount omitted', () => {
+    const detach = attachMeshcoreIngest(ID, {
+      rawPacketsForHopCorrelation: () => [
+        { ts: now - 50, payloadTypeString: 'GRP_TXT', fromNodeId: null, hopCount: 2 },
+      ],
+    });
+    dispatchChannelText();
+    detach();
+    const record = useMessageStore.getState().messages[ID]?.[channelMsgId];
+    expect(record).toBeDefined();
+    expect(messageRecordToChatMessage(record).rxHops).toBe(2);
+  });
+
+  it('correlates DM rxHops from TXT_MSG raw packet log when hopCount omitted', () => {
+    const detach = attachMeshcoreIngest(ID, {
+      rawPacketsForHopCorrelation: () => [
+        { ts: now - 50, payloadTypeString: 'TXT_MSG', fromNodeId: null, hopCount: 1 },
+      ],
+    });
+    upsertMessage(ID, {
+      id: dmMsgId,
+      from: 0xabcd,
+      senderName: 'Peer',
+      to: 0xffffffff,
+      payload: 'dm hello',
+      channelIndex: -1,
+      timestamp: now,
+      receivedVia: 'rf',
+    });
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: dmMsgId,
+          from: 0xabcd,
+          to: 0,
+          payload: 'dm hello',
+          channelIndex: -1,
+          timestamp: now,
+        },
+      },
+      ID,
+    );
+    detach();
+    const record = useMessageStore.getState().messages[ID]?.[dmMsgId];
+    expect(record).toBeDefined();
+    expect(messageRecordToChatMessage(record).rxHops).toBe(1);
+  });
+
+  it('prefers event.payload.hopCount over raw packet correlation', () => {
+    const detach = attachMeshcoreIngest(ID, {
+      rawPacketsForHopCorrelation: () => [
+        { ts: now - 50, payloadTypeString: 'GRP_TXT', fromNodeId: null, hopCount: 2 },
+      ],
+    });
+    dispatchChannelText({ hopCount: 4 });
+    detach();
+    const record = useMessageStore.getState().messages[ID]?.[channelMsgId];
+    expect(record).toBeDefined();
+    expect(messageRecordToChatMessage(record).rxHops).toBe(4);
+  });
+
+  it('leaves rxHops undefined without correlation callback', () => {
+    const detach = attachMeshcoreIngest(ID);
+    dispatchChannelText();
+    detach();
+    const record = useMessageStore.getState().messages[ID]?.[channelMsgId];
+    expect(record).toBeDefined();
+    expect(messageRecordToChatMessage(record).rxHops).toBeUndefined();
   });
 });

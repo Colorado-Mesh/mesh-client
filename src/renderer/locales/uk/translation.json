@@ -3532,7 +3532,8 @@
     "announceSaveFailed": "Не вдалося зберегти інтервал оголошення: {{error}}",
     "announceSaveSidecarStopped": "Запустіть стек Reticulum перед збереженням налаштувань оголошення.",
     "clearAnnouncesDone": "Оголошення очищено.",
-    "clearAnnouncesFailed": "Не вдалося очистити оголошення."
+    "clearAnnouncesFailed": "Не вдалося очистити оголошення.",
+    "announceIntervalHint": "За замовчуванням 3600 с (1 год). Використовуйте 0 для оголошень лише для запуску."
   },
   "reticulumProfileIcon": {
     "iconName": "Значок аватара",

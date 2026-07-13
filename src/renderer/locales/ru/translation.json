@@ -3526,9 +3526,10 @@
     "cliCommandTooLong": "Слишком длинная команда CLI (максимум {{max}} символов)."
   },
   "reticulumIdentity": {
-    "announceIntervalSec": "Объявить интервал (секунды)",
+    "announceIntervalSec": "Интервал объявления (секунды)",
+    "announceIntervalHint": "По умолчанию 3600 с (1 ч). Используйте 0 только при запуске.",
     "clearAnnounces": "Очистить объявления",
-    "announceSaved": "Объявить интервал сохранен.",
+    "announceSaved": "Интервал объявления сохранён.",
     "announceSaveFailed": "Не удалось сохранить интервал объявления: {{error}}",
     "announceSaveSidecarStopped": "Запустите стек Reticulum перед сохранением настроек объявления.",
     "clearAnnouncesDone": "Объявления очищены.",

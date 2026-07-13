@@ -101,6 +101,7 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     ? normalizeReactionEmoji(MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG, record.payload)
     : undefined;
   const reticulumReplyHash = record.reticulumReplyToHash;
+  const rxHops = record.rxHops ?? record.hopCount;
   return {
     ...(packetId != null ? { id: packetId } : {}),
     sender_id: record.from,
@@ -124,6 +125,8 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
       reticulumReplyHash == null && record.replyTo != null ? Number(record.replyTo) : undefined,
     replyPreviewText: record.replyPreviewText,
     replyPreviewSender: record.replyPreviewSender,
+    ...(rxHops != null ? { rxHops } : {}),
+    ...(record.viaStoreForward ? { viaStoreForward: true } : {}),
     ...(record.roomServerId != null ? { roomServerId: record.roomServerId } : {}),
     ...(record.reticulumDeliveryMethod
       ? { reticulumDeliveryMethod: record.reticulumDeliveryMethod }
@@ -350,6 +353,8 @@ export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
     replyTo: msg.reticulum_reply_to_hash ?? (msg.replyId != null ? String(msg.replyId) : undefined),
     replyPreviewText: msg.replyPreviewText,
     replyPreviewSender: msg.replyPreviewSender,
+    ...(msg.rxHops != null ? { rxHops: msg.rxHops } : {}),
+    ...(msg.viaStoreForward ? { viaStoreForward: true } : {}),
     ...(msg.reticulum_message_hash ? { reticulumMessageHash: msg.reticulum_message_hash } : {}),
     ...(msg.reticulum_sender_hash ? { reticulumSenderHash: msg.reticulum_sender_hash } : {}),
     ...(msg.reticulum_reply_to_hash ? { reticulumReplyToHash: msg.reticulum_reply_to_hash } : {}),

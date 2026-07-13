@@ -40,6 +40,9 @@ impl ImportMode {
     }
 }
 
+/// Default stack-level re-announce interval when absent from config (1 hour).
+pub const DEFAULT_ANNOUNCE_INTERVAL_SEC: u32 = 3600;
+
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct StackSettings {
     pub enable_transport: bool,
@@ -209,7 +212,7 @@ fn stack_settings_from_parsed(parsed: &ParsedConfig) -> StackSettings {
             .reticulum
             .get("announce_interval_sec")
             .and_then(|v| v.parse().ok())
-            .unwrap_or(0),
+            .unwrap_or(DEFAULT_ANNOUNCE_INTERVAL_SEC),
     }
 }
 
@@ -1142,6 +1145,22 @@ fn write_block_section(out: &mut String, section: &str, block: &IniBlock) {
     }
 }
 
+/// Ensure stack-level `announce_interval_sec` is present in rnsd config when absent.
+/// Persists the default for API/UI; mesh-client sidecar does not schedule periodic
+/// identity announces from this key in Rust runtime code yet.
+pub fn ensure_announce_interval_sec_default(config_dir: &Path) -> Result<bool, String> {
+    let content = read_config(config_dir)?;
+    let mut parsed = parse_config(&content)?;
+    if parsed.reticulum.get("announce_interval_sec").is_some() {
+        return Ok(false);
+    }
+    parsed
+        .reticulum
+        .set("announce_interval_sec", &DEFAULT_ANNOUNCE_INTERVAL_SEC.to_string());
+    write_config(config_dir, &serialize_config(&parsed))?;
+    Ok(true)
+}
+
 /// Ensure RNS listens for `rnstransport.discovery.interface` announces (RMAP v4 map ingest).
 pub fn ensure_discover_interfaces_enabled(config_dir: &Path) -> Result<bool, String> {
     let content = read_config(config_dir)?;
@@ -1162,6 +1181,10 @@ fn default_config_content() -> String {
             b.set("share_instance", "Yes");
             b.set("instance_name", "default");
             b.set("discover_interfaces", "Yes");
+            b.set(
+                "announce_interval_sec",
+                &DEFAULT_ANNOUNCE_INTERVAL_SEC.to_string(),
+            );
             b
         },
         logging: {
@@ -1397,6 +1420,7 @@ future_key = future_value
         assert!(!settings.enable_transport);
         assert!(settings.share_instance);
         assert_eq!(settings.loglevel, 4);
+        assert_eq!(settings.announce_interval_sec, DEFAULT_ANNOUNCE_INTERVAL_SEC);
     }
 
     #[test]
@@ -1770,6 +1794,44 @@ longitude = -105.0
         assert!(validate_lat_lon(40.0, -105.0).is_ok());
         assert!(validate_lat_lon(91.0, 0.0).is_err());
         assert!(validate_lat_lon(0.0, 181.0).is_err());
+    }
+
+    #[test]
+    fn ensure_announce_interval_sec_default_writes_when_missing() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"[reticulum]
+enable_transport = No
+share_instance = Yes
+"#,
+        )
+        .unwrap();
+        assert!(ensure_announce_interval_sec_default(&dir).unwrap());
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("announce_interval_sec = 3600"));
+        assert!(!ensure_announce_interval_sec_default(&dir).unwrap());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn ensure_announce_interval_sec_default_skips_explicit_zero() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"[reticulum]
+enable_transport = No
+share_instance = Yes
+announce_interval_sec = 0
+"#,
+        )
+        .unwrap();
+        assert!(!ensure_announce_interval_sec_default(&dir).unwrap());
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("announce_interval_sec = 0"));
+        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]

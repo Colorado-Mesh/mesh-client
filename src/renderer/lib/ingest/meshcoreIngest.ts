@@ -28,6 +28,10 @@ import {
   resolveMeshcoreChannelMessageSender,
 } from '../meshcoreChannelText';
 import {
+  type ChatCorrelateRxLike,
+  resolveMeshcoreIngestRxHops,
+} from '../meshcoreRawPacketCorrelate';
+import {
   isMeshcoreRoomServerHwModel,
   meshcoreRoomPostBodyFromWire,
   meshcoreRoomWireLooksLikeRoom,
@@ -46,6 +50,8 @@ import type { ChatMessage, IdentityId } from '../types';
 export interface MeshcoreIngestOptions {
   /** Runtime hook for path-updated side effects (outPath refresh, ping-route epoch). */
   onPathUpdated?: (nodeId: number, publicKey: Uint8Array, isNewContact: boolean) => void;
+  /** Recent RF raw packet log rows for hop correlation when protocol events omit hopCount. */
+  rawPacketsForHopCorrelation?: () => readonly ChatCorrelateRxLike[];
 }
 
 function handleNodeInfo(
@@ -155,6 +161,7 @@ function resolveRoomServerIdForIngest(
 function handleTextMessage(
   identityId: IdentityId,
   event: Extract<DomainEvent, { type: 'text_message' }>,
+  options: MeshcoreIngestOptions = {},
 ): void {
   const record = useMessageStore.getState().messages[identityId]?.[event.payload.id];
   if (!record) return;
@@ -167,6 +174,9 @@ function handleTextMessage(
   const messages = listChatMessages(identityId);
   const wireTimestampMs = effectiveMessageTimestampMs(event.payload.timestamp);
   const isChannel = event.payload.id.startsWith('ch:');
+  const hopCount =
+    event.payload.hopCount ??
+    resolveMeshcoreIngestRxHops(options.rawPacketsForHopCorrelation?.() ?? [], isChannel);
   const fromNode = useNodeStore.getState().nodes[identityId]?.[event.payload.from];
   const isKnownRoomNode = isMeshcoreRoomServerHwModel(fromNode?.hwModel);
   const looksLikeRoom = meshcoreRoomWireLooksLikeRoom({
@@ -202,7 +212,7 @@ function handleTextMessage(
       authorName,
       timestamp: wireTimestampMs,
       receivedVia: record.receivedVia ?? 'rf',
-      rxHops: event.payload.hopCount,
+      rxHops: hopCount,
     });
     const { inserted, message: stored } = upsertMeshcoreMessageWithDedup(
       identityId,
@@ -215,7 +225,7 @@ function handleTextMessage(
         timestampMs: wireTimestampMs,
         displayName: authorName !== 'Unknown' ? authorName : undefined,
         receivedVia: record.receivedVia,
-        hopCount: event.payload.hopCount,
+        hopCount,
       });
     }
     if (inserted && !isEcho) {
@@ -254,7 +264,7 @@ function handleTextMessage(
         channel: event.payload.channelIndex,
         timestamp: wireTimestampMs,
         receivedVia: 'rf',
-        rxHops: event.payload.hopCount,
+        rxHops: hopCount,
       })
     : parseMeshcoreDmIncomingFromThread(sortedPrior, {
         rawText: event.payload.payload,
@@ -265,7 +275,7 @@ function handleTextMessage(
         peerNodeId: senderId,
         myNodeId: myNodeNum,
         to: myNodeNum > 0 ? myNodeNum : undefined,
-        rxHops: event.payload.hopCount,
+        rxHops: hopCount,
       });
 
   const merged: ChatMessage = {
@@ -301,7 +311,7 @@ function handleTextMessage(
       timestampMs: wireTimestampMs,
       displayName: displayName !== 'Unknown' ? displayName : undefined,
       receivedVia: record.receivedVia,
-      hopCount: event.payload.hopCount,
+      hopCount,
     });
   }
   const replyUpgraded =
@@ -323,7 +333,7 @@ function createListener(
     if (routedIdentityId !== identityId) return;
     switch (event.type) {
       case 'text_message':
-        handleTextMessage(identityId, event);
+        handleTextMessage(identityId, event, options);
         break;
       case 'node_info':
         handleNodeInfo(identityId, event);

@@ -4,6 +4,10 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import {
+  DEFAULT_ANNOUNCE_INTERVAL_SEC,
+  parseReticulumStackSettingsPayload,
+} from '@/renderer/lib/reticulum/reticulumStackSettings';
 
 import { useToast } from './Toast';
 
@@ -11,25 +15,6 @@ export interface ReticulumAnnounceControlsProps {
   disabled?: boolean;
   /** When true, omit top border/margin for embedding in App panel. */
   embedded?: boolean;
-}
-
-interface StackSettingsPayload {
-  enable_transport: boolean;
-  share_instance: boolean;
-  loglevel: number;
-  announce_interval_sec: number;
-}
-
-function parseStackSettings(raw: Record<string, unknown>): StackSettingsPayload {
-  return {
-    enable_transport: Boolean(raw.enable_transport),
-    share_instance: raw.share_instance !== false,
-    loglevel: typeof raw.loglevel === 'number' ? raw.loglevel : Number(raw.loglevel) || 4,
-    announce_interval_sec:
-      typeof raw.announce_interval_sec === 'number'
-        ? raw.announce_interval_sec
-        : Number(raw.announce_interval_sec) || 0,
-  };
 }
 
 function clampAnnounceIntervalSec(value: number): number {
@@ -43,17 +28,17 @@ export function ReticulumAnnounceControls({
 }: ReticulumAnnounceControlsProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
-  const [announceInterval, setAnnounceInterval] = useState(0);
+  const [announceInterval, setAnnounceInterval] = useState(DEFAULT_ANNOUNCE_INTERVAL_SEC);
   const [busy, setBusy] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!(await isReticulumSidecarRunning())) return;
     try {
-      const settings = (await window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings')) as {
-        announce_interval_sec?: number;
-      };
-      setAnnounceInterval(settings.announce_interval_sec ?? 0);
+      const settings = parseReticulumStackSettingsPayload(
+        await window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings'),
+      );
+      setAnnounceInterval(settings.announce_interval_sec);
     } catch (e) {
       console.warn('[ReticulumAnnounceControls] load ' + errLikeToLogString(e));
     }
@@ -72,11 +57,8 @@ export function ReticulumAnnounceControls({
         addToast(t('reticulumIdentity.announceSaveSidecarStopped'), 'error');
         return;
       }
-      const current = parseStackSettings(
-        (await window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings')) as Record<
-          string,
-          unknown
-        >,
+      const current = parseReticulumStackSettingsPayload(
+        await window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings'),
       );
       const res = (await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
         ...current,
@@ -169,6 +151,7 @@ export function ReticulumAnnounceControls({
           {t('reticulumIdentity.clearAnnounces')}
         </button>
       </div>
+      <p className="text-xs text-gray-500">{t('reticulumIdentity.announceIntervalHint')}</p>
       {statusMessage ? (
         <p className="mt-2 text-xs text-gray-300" role="status">
           {statusMessage}

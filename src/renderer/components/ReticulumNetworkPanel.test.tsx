@@ -82,6 +82,32 @@ describe('ReticulumNetworkPanel', () => {
     });
   });
 
+  it('defaults announce_interval_sec to 3600 when saving stack settings without the field', async () => {
+    const user = userEvent.setup();
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/stack/settings') {
+        return Promise.resolve({
+          enable_transport: true,
+          share_instance: true,
+          loglevel: 3,
+        });
+      }
+      return Promise.resolve({});
+    });
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    await user.click(screen.getByText('networkPanel.reticulumStackSettings.save'));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith('/api/v1/stack/settings', {
+        enable_transport: true,
+        share_instance: true,
+        loglevel: 3,
+        announce_interval_sec: 3600,
+      });
+    });
+  });
+
   it('renders private key and backup import controls when identity is configured', async () => {
     render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
     expect(

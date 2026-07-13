@@ -3532,7 +3532,8 @@
     "announceSaveFailed": "Error al guardar el intervalo de anuncio: {{error}}",
     "announceSaveSidecarStopped": "Inicie la pila Reticulum antes de guardar la configuración del anuncio.",
     "clearAnnouncesDone": "Anuncios borrados.",
-    "clearAnnouncesFailed": "No se han podido borrar los anuncios."
+    "clearAnnouncesFailed": "No se han podido borrar los anuncios.",
+    "announceIntervalHint": "Predeterminado 3600 s (1 h). Utilice 0 para anuncios solo de inicio."
   },
   "reticulumProfileIcon": {
     "iconName": "Icono del Avatar",

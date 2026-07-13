@@ -4,6 +4,9 @@ import {
   type ChatCorrelateRxLike,
   MESHCORE_CHAT_CORRELATE_WINDOW_MS,
   meshcoreCorrelateOrSynthesizeChatEntry,
+  meshcoreFindRecentGrpTxtRawPacket,
+  meshcoreFindRecentTxtMsgRawPacket,
+  resolveMeshcoreIngestRxHops,
 } from './meshcoreRawPacketCorrelate';
 import { MAX_RAW_PACKET_LOG_ENTRIES } from './rawPacketLogConstants';
 
@@ -144,5 +147,70 @@ describe('meshcoreCorrelateOrSynthesizeChatEntry', () => {
     );
     expect(result).toHaveLength(1);
     expect(result[0].fromNodeId).toBeNull();
+  });
+});
+
+describe('meshcoreFindRecentGrpTxtRawPacket', () => {
+  const now = 10_000;
+
+  it('returns the most recent GRP_TXT within the correlation window', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      { ts: now - 500, payloadTypeString: 'GRP_TXT', fromNodeId: 1, hopCount: 1 },
+      { ts: now - 200, payloadTypeString: 'GRP_TXT', fromNodeId: 2, hopCount: 3 },
+    ];
+    expect(meshcoreFindRecentGrpTxtRawPacket(packets, now)?.hopCount).toBe(3);
+  });
+
+  it('returns undefined when log is empty or entries are stale', () => {
+    const emptyPackets: ChatCorrelateRxLike[] = [];
+    expect(meshcoreFindRecentGrpTxtRawPacket(emptyPackets, now)).toBeUndefined();
+    const stale: ChatCorrelateRxLike[] = [
+      {
+        ts: now - MESHCORE_CHAT_CORRELATE_WINDOW_MS - 1,
+        payloadTypeString: 'GRP_TXT',
+        fromNodeId: null,
+      },
+    ];
+    expect(meshcoreFindRecentGrpTxtRawPacket(stale, now)).toBeUndefined();
+  });
+});
+
+describe('meshcoreFindRecentTxtMsgRawPacket', () => {
+  const now = 20_000;
+
+  it('returns unattributed TXT_MSG within window', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      { ts: now - 400, payloadTypeString: 'TXT_MSG', fromNodeId: 0xabc, hopCount: 9 },
+      { ts: now - 100, payloadTypeString: 'TXT_MSG', fromNodeId: null, hopCount: 2 },
+    ];
+    expect(meshcoreFindRecentTxtMsgRawPacket(packets, now)?.hopCount).toBe(2);
+  });
+
+  it('ignores GRP_TXT and attributed TXT_MSG rows', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      { ts: now - 100, payloadTypeString: 'GRP_TXT', fromNodeId: null, hopCount: 5 },
+      { ts: now - 50, payloadTypeString: 'TXT_MSG', fromNodeId: 0x111, hopCount: 4 },
+    ];
+    expect(meshcoreFindRecentTxtMsgRawPacket(packets, now)).toBeUndefined();
+  });
+});
+
+describe('resolveMeshcoreIngestRxHops', () => {
+  const now = 30_000;
+
+  it('resolves channel hops from GRP_TXT and DM hops from TXT_MSG', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      { ts: now - 100, payloadTypeString: 'GRP_TXT', fromNodeId: null, hopCount: 2 },
+      { ts: now - 100, payloadTypeString: 'TXT_MSG', fromNodeId: null, hopCount: 1 },
+    ];
+    expect(resolveMeshcoreIngestRxHops(packets, true, now)).toBe(2);
+    expect(resolveMeshcoreIngestRxHops(packets, false, now)).toBe(1);
+  });
+
+  it('returns undefined when matched row has no hopCount', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      { ts: now - 100, payloadTypeString: 'GRP_TXT', fromNodeId: null },
+    ];
+    expect(resolveMeshcoreIngestRxHops(packets, true, now)).toBeUndefined();
   });
 });

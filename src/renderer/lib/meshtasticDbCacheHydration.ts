@@ -205,6 +205,7 @@ export function savedMessageToChatMessage(m: SavedMessage): ChatMessage {
     to: m.to,
     receivedVia: (m.receivedVia as ChatMessage['receivedVia']) ?? undefined,
     viaStoreForward: m.viaStoreForward,
+    rxHops: m.rxHops ?? undefined,
   };
 }
 

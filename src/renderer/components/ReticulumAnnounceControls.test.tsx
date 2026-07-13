@@ -27,10 +27,43 @@ describe('ReticulumAnnounceControls', () => {
       enable_transport: false,
       share_instance: true,
       loglevel: 4,
-      announce_interval_sec: 0,
+      announce_interval_sec: 3600,
     });
     window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.reticulum.proxyDelete = vi.fn().mockResolvedValue({ ok: true });
+  });
+
+  it('preserves explicit announce interval of 0 from API', async () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockResolvedValue({
+      enable_transport: false,
+      share_instance: true,
+      loglevel: 4,
+      announce_interval_sec: 0,
+    });
+    render(
+      <ToastProvider>
+        <ReticulumAnnounceControls disabled={false} />
+      </ToastProvider>,
+    );
+
+    const input = await screen.findByLabelText('reticulumIdentity.announceIntervalSec');
+    expect(input).toHaveValue(0);
+  });
+
+  it('defaults announce interval to 3600 when API omits the field', async () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockResolvedValue({
+      enable_transport: false,
+      share_instance: true,
+      loglevel: 4,
+    });
+    render(
+      <ToastProvider>
+        <ReticulumAnnounceControls disabled={false} />
+      </ToastProvider>,
+    );
+
+    const input = await screen.findByLabelText('reticulumIdentity.announceIntervalSec');
+    expect(input).toHaveValue(3600);
   });
 
   it('saves announce interval and shows status when sidecar is running', async () => {

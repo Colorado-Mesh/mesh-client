@@ -6,7 +6,9 @@ import { axe } from 'vitest-axe';
 import * as chatNotifications from '../lib/chatNotifications';
 import { draftsStorageKey, lastReadStorageKey, saveDraft } from '../lib/chatPanelProtocolStorage';
 import { getDistFromChatBottom, VIRTUALIZER_SCROLL_END_THRESHOLD } from '../lib/chatScrollUtils';
+import { messageRecordsToChatMessages } from '../lib/storeRecordAdapters';
 import type { ChatMessage, MeshNode } from '../lib/types';
+import type { MessageRecord } from '../stores/messageStore';
 import ChatPanel from './ChatPanel';
 import { ToastProvider } from './Toast';
 
@@ -2919,6 +2921,32 @@ describe('ChatPanel RF hop label', () => {
               rxHops: 3,
             },
           ]}
+        />
+      </ToastProvider>,
+    );
+    expect(await screen.findByText('3 hops')).toBeInTheDocument();
+  });
+
+  it('shows rx hops when messages come from MessageRecord store adapters', async () => {
+    const records: MessageRecord[] = [
+      {
+        id: 'ch:0:1700000010',
+        from: 1,
+        senderName: 'Peer',
+        to: 0xffffffff,
+        payload: 'hello from store',
+        channelIndex: 0,
+        timestamp: Date.now(),
+        receivedVia: 'rf',
+        rxHops: 3,
+      },
+    ];
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="meshcore"
+          messages={messageRecordsToChatMessages(records)}
         />
       </ToastProvider>,
     );

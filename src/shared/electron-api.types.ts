@@ -60,6 +60,7 @@ export interface SavedMessage {
   mqttStatus: string | null;
   receivedVia: string | null;
   viaStoreForward?: boolean;
+  rxHops?: number | null;
 }
 
 export interface SavedNode {
@@ -201,6 +202,7 @@ export interface ElectronAPI {
       replyId?: number;
       receivedVia?: string;
       viaStoreForward?: boolean;
+      rxHops?: number;
     }) => Promise<void>;
 
     getMessages: (channel?: number, limit?: number) => Promise<SavedMessage[]>;

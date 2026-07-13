@@ -81,6 +81,54 @@ describe('store record adapters (merge precedence)', () => {
     expect(back.to).toBeUndefined();
   });
 
+  it('round-trips rxHops and viaStoreForward through MessageRecord', () => {
+    const rfMsg: ChatMessage = {
+      sender_id: 3,
+      sender_name: 'Node',
+      payload: 'hello rf',
+      channel: 0,
+      timestamp: 1000,
+      receivedVia: 'rf',
+      rxHops: 2,
+    };
+    const rfRecord = chatMessageToMessageRecord(rfMsg);
+    expect(rfRecord.rxHops).toBe(2);
+    expect(rfRecord.viaStoreForward).toBeUndefined();
+    const rfBack = messageRecordToChatMessage(rfRecord);
+    expect(rfBack.rxHops).toBe(2);
+    expect(rfBack.viaStoreForward).toBeUndefined();
+
+    const sfMsg: ChatMessage = {
+      sender_id: 4,
+      sender_name: 'SF Node',
+      payload: 'from store forward',
+      channel: 0,
+      timestamp: 2000,
+      receivedVia: 'rf',
+      viaStoreForward: true,
+      rxHops: 1,
+    };
+    const sfRecord = chatMessageToMessageRecord(sfMsg);
+    expect(sfRecord.rxHops).toBe(1);
+    expect(sfRecord.viaStoreForward).toBe(true);
+    const sfBack = messageRecordToChatMessage(sfRecord);
+    expect(sfBack.rxHops).toBe(1);
+    expect(sfBack.viaStoreForward).toBe(true);
+  });
+
+  it('maps hopCount to rxHops when rxHops is absent', () => {
+    const record = {
+      id: 'hop-only',
+      from: 5,
+      to: 0xffffffff,
+      payload: 'meshtastic hops',
+      channelIndex: 0,
+      timestamp: 3000,
+      hopCount: 3,
+    };
+    expect(messageRecordToChatMessage(record).rxHops).toBe(3);
+  });
+
   it('round-trips channel utilization and air util between NodeRecord and MeshNode', () => {
     const record: NodeRecord = {
       nodeId: 1,

@@ -99,7 +99,7 @@
     "logPanelSection": "Log panel",
     "floodAdvertSection": "Flood Advert",
     "reticulumSection": "Reticulum stack",
-    "reticulumAnnounceHelp": "How often your identity is announced on the network, and tools to clear stored announces.",
+    "reticulumAnnounceHelp": "How often your identity is announced on the network (default 3600 s / 1 h when unset; 0 = startup-only), and tools to clear stored announces.",
     "reticulumPropagationHelp": "Choose how propagation nodes are synced and pull the latest propagation data when needed.",
     "floodAdvertScheduleLabel": "Automatically send a flood advert on a schedule:",
     "floodAdvertEvery12h": "Every 12 hours",
@@ -3527,6 +3527,7 @@
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Announce interval (seconds)",
+    "announceIntervalHint": "Default 3600 s (1 h). Use 0 for startup-only announces.",
     "announceSaved": "Announce interval saved.",
     "announceSaveFailed": "Failed to save announce interval: {{error}}",
     "announceSaveSidecarStopped": "Start the Reticulum stack before saving announce settings.",

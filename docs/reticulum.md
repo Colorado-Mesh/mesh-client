@@ -91,7 +91,7 @@ The **Map** tab shows **local** RMAP v4 discovery data — interfaces your stack
 
 **Publish (appear on maps):** Network → **RMAP v4 discovery** or per-interface RMAP toggles on Connection. Requires App → GPS coordinates for map markers. LoRa-only stacks need an enabled TCP hub (for example `rmap.world:4242`) so discovery announces reach the wider network — see config audit `rmap_no_tcp_hub`.
 
-**Consume (Map tab):** Sidecar sets `discover_interfaces = Yes` in rnsd config on bootstrap so the stack listens for discovery announces. Markers show GPS when coordinates were included in the announce; interfaces without coords appear in the sidebar list only. **Reachable** badges join discovery rows with the RNS path table (Peers tab) by matching `transport_id` against peer `destination_hash` or `via_hash`.
+**Consume (Map tab):** Sidecar bootstrap migrations in rnsd config: `discover_interfaces = Yes` so the stack listens for discovery announces; when `announce_interval_sec` is absent, writes **3600** (explicit **0** is preserved). Markers show GPS when coordinates were included in the announce; interfaces without coords appear in the sidebar list only. **Reachable** badges join discovery rows with the RNS path table (Peers tab) by matching `transport_id` against peer `destination_hash` or `via_hash`.
 
 **UI:** Leaflet map with 280px sidebar list; filter pills (All, LoRa, Backbone, I2P, TCP, Other); basemap switcher and Locate Me (App GPS); manual Refresh; marker click opens peer detail when the node is in the path table. List row click flies to coordinates at zoom 14.
 
@@ -191,7 +191,7 @@ When multiple enabled local RNode interfaces are connected, the interface list s
 - **Note:** `GET /api/v1/identities` and `POST /api/v1/identities/switch` remain sidecar APIs; mesh-client UI uses a single unified identity (no in-app identity switcher)
 - **Identity vault:** optional passcode (minimum 8 characters) to encrypt secrets in the main process; unlock is rate-limited
 - **Stack settings:** `enable_transport`, `share_instance`, `loglevel` via `PUT /api/v1/stack/settings` (UI merge-reads so `announce_interval_sec` is not cleared accidentally)
-- **Announces:** interval (`announce_interval_sec`, 0–86400) and **Clear announces** (`DELETE /api/v1/announces`) — live networks may repopulate the path table on the next peer refresh
+- **Announces:** interval (`announce_interval_sec`, 0–86400; default **3600** s / 1 h when unset; `0` = startup-only) persisted in rnsd config and **Clear announces** (`DELETE /api/v1/announces`) — live networks may repopulate the path table on the next peer refresh. mesh-client sidecar stores this value for API/UI parity; periodic identity announce scheduling is not implemented in sidecar Rust code yet (per-interface `announce_interval_min` is separate).
 - **Propagation:** preferred node for offline DMs, per-node **Sync messages**, add remote propagation nodes by 32-character hash, optional **local propagation inbox**, **auto-sync interval** (`auto_sync_interval_sec`; `0` disables periodic sync)
 
 ---

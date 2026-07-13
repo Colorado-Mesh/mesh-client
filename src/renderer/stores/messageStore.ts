@@ -18,6 +18,8 @@ export interface MessageRecord {
   rxSnr?: number;
   rxRssi?: number;
   hopCount?: number;
+  /** RF-derived hops away for this receive when known (Meshtastic hopStart−hopLimit; MeshCore path hops). */
+  rxHops?: number;
   tapback?: boolean;
   replyTo?: string;
   replyPreviewText?: string;
@@ -39,6 +41,8 @@ export interface MessageRecord {
   reticulumDeliveryMethod?: 'direct' | 'propagated' | 'opportunistic';
   /** Saved attachment path on disk (local saves). */
   reticulumAttachmentPath?: string;
+  /** Message was replayed from a Store & Forward server (Meshtastic only). */
+  viaStoreForward?: boolean;
 }
 
 interface MessageStoreState {
@@ -62,6 +66,7 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'rxSnr',
   'rxRssi',
   'hopCount',
+  'rxHops',
   'tapback',
   'replyTo',
   'replyPreviewText',
@@ -76,6 +81,7 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'reticulumSenderHash',
   'reticulumReplyToHash',
   'reticulumAttachmentPath',
+  'viaStoreForward',
 ];
 
 function messageRecordFieldsEqual(a: MessageRecord, b: MessageRecord): boolean {

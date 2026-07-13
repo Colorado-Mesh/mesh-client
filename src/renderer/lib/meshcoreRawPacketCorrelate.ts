@@ -9,6 +9,7 @@ export interface ChatCorrelateRxLike {
   payloadTypeString: string | null;
   fromNodeId: number | null;
   advertName?: string | null;
+  hopCount?: number;
 }
 
 /**
@@ -54,4 +55,31 @@ export function meshcoreFindRecentGrpTxtRawPacket<T extends ChatCorrelateRxLike>
     if (e.payloadTypeString === 'GRP_TXT') return e;
   }
   return undefined;
+}
+
+/** Most recent unattributed TXT_MSG raw log row within the chat correlation window (DM path). */
+export function meshcoreFindRecentTxtMsgRawPacket<T extends ChatCorrelateRxLike>(
+  prev: readonly T[],
+  now: number,
+  windowMs: number = MESHCORE_CHAT_CORRELATE_WINDOW_MS,
+): T | undefined {
+  for (let i = prev.length - 1; i >= 0; i--) {
+    const e = prev[i];
+    if (now - e.ts > windowMs) break;
+    if (e.payloadTypeString === 'TXT_MSG' && e.fromNodeId === null) return e;
+  }
+  return undefined;
+}
+
+/** Resolve RF hop count for driver-path ingest from the raw packet log (event 136). */
+export function resolveMeshcoreIngestRxHops(
+  rawPackets: readonly ChatCorrelateRxLike[],
+  isChannel: boolean,
+  now: number = Date.now(),
+): number | undefined {
+  const match = isChannel
+    ? meshcoreFindRecentGrpTxtRawPacket(rawPackets, now)
+    : meshcoreFindRecentTxtMsgRawPacket(rawPackets, now);
+  const hops = match?.hopCount;
+  return hops != null && Number.isFinite(hops) ? hops : undefined;
 }

@@ -3532,7 +3532,8 @@
     "announceSaveFailed": "Interval oznámení se nepodařilo uložit: {{error}}",
     "announceSaveSidecarStopped": "Před uložením nastavení oznamování spusťte zásobník Reticulum.",
     "clearAnnouncesDone": "Oznámení vymazána.",
-    "clearAnnouncesFailed": "Nepodařilo se vymazat oznámení."
+    "clearAnnouncesFailed": "Nepodařilo se vymazat oznámení.",
+    "announceIntervalHint": "Výchozí 3600 s (1 h). Použijte 0 pro oznámení pouze při spuštění."
   },
   "reticulumProfileIcon": {
     "iconName": "Ikona avatara",

@@ -49,18 +49,20 @@ The Connection tab UI edits a subset: **name** for all types; **host** / **port*
 
 ### Config and stack settings
 
-| Method | Path                     | Body / notes                                                                              | Response                                                                                 |
-| ------ | ------------------------ | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| GET    | `/api/v1/config`         |                                                                                           | `{ content }`                                                                            |
-| PUT    | `/api/v1/config`         | `{ content }` (full rnsd INI text)                                                        | `{ ok }`                                                                                 |
-| GET    | `/api/v1/config/export`  |                                                                                           | `{ content }`                                                                            |
-| POST   | `/api/v1/config/import`  | `{ content, mode: merge\|replace }`                                                       | `{ ok, warnings? }`                                                                      |
-| GET    | `/api/v1/config/audit`   |                                                                                           | `{ issues: ConfigAuditIssue[] }` — config vs live interface audit                        |
-| POST   | `/api/v1/config/repair`  | `{ repair_kinds?: string[] }` — `repair_config`, `apply_preset`, `add_auto` (empty = all) | `{ ok, repaired: string[], restart_required: bool }`                                     |
-| GET    | `/api/v1/stack/settings` |                                                                                           | `{ enable_transport, share_instance, loglevel, announce_interval_sec }`                  |
-| PUT    | `/api/v1/stack/settings` | Full `StackSettings` JSON (all four fields recommended)                                   | `{ ok }` — missing `announce_interval_sec` deserializes as **0**                         |
-| POST   | `/api/v1/stack/restart`  |                                                                                           | `{ ok }`                                                                                 |
-| DELETE | `/api/v1/announces`      |                                                                                           | `{ ok }` — clears stub persisted peers; live path table may repopulate under `rns-stack` |
+| Method | Path                     | Body / notes                                                                              | Response                                                                                                                                             |
+| ------ | ------------------------ | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/config`         |                                                                                           | `{ content }`                                                                                                                                        |
+| PUT    | `/api/v1/config`         | `{ content }` (full rnsd INI text)                                                        | `{ ok }`                                                                                                                                             |
+| GET    | `/api/v1/config/export`  |                                                                                           | `{ content }`                                                                                                                                        |
+| POST   | `/api/v1/config/import`  | `{ content, mode: merge\|replace }`                                                       | `{ ok, warnings? }`                                                                                                                                  |
+| GET    | `/api/v1/config/audit`   |                                                                                           | `{ issues: ConfigAuditIssue[] }` — config vs live interface audit                                                                                    |
+| POST   | `/api/v1/config/repair`  | `{ repair_kinds?: string[] }` — `repair_config`, `apply_preset`, `add_auto` (empty = all) | `{ ok, repaired: string[], restart_required: bool }`                                                                                                 |
+| GET    | `/api/v1/stack/settings` |                                                                                           | `{ enable_transport, share_instance, loglevel, announce_interval_sec }` — `announce_interval_sec` defaults to **3600** (1 h) when absent from config |
+| PUT    | `/api/v1/stack/settings` | Full `StackSettings` JSON (all four fields recommended)                                   | `{ ok }` — missing `announce_interval_sec` deserializes as **0**                                                                                     |
+| POST   | `/api/v1/stack/restart`  |                                                                                           | `{ ok }`                                                                                                                                             |
+| DELETE | `/api/v1/announces`      |                                                                                           | `{ ok }` — clears stub persisted peers; live path table may repopulate under `rns-stack`                                                             |
+
+**Config bootstrap (stack start):** When `announce_interval_sec` is missing from rnsd config, the sidecar writes **3600**; explicit **0** is left unchanged (`ensure_announce_interval_sec_default` in `reticulum-sidecar/src/stack/config.rs`). Same bootstrap pass may set `discover_interfaces = Yes` for RMAP ingest.
 
 ### LXMF and contacts
 

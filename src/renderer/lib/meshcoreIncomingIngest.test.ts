@@ -259,6 +259,44 @@ describe('ingestMeshcoreChannelMessage + store persist', () => {
     const result = upsertMeshcoreMessageWithDedup(ID, rfRefreshed);
     expect(result.storeUpdated).toBe(true);
     expect(result.message.replyId).toBe(1780240608140);
+    expect(result.message.rxHops).toBe(1);
+    const inStore = listChatMessagesFromStore(ID).find((m) => m.payload === 'reply to b');
+    expect(inStore?.rxHops).toBe(1);
+  });
+
+  it('persists rxHops through store round-trip on RF ingest', () => {
+    const parsed = ingestMeshcoreChannelMessage(ID, {
+      rawText: `${NV0N}: hello with hops`,
+      senderId: 100,
+      displayName: NV0N,
+      channel: CH,
+      timestamp: 1_780_240_000_000,
+      receivedVia: 'rf',
+      rxHops: 3,
+    });
+    upsertMeshcoreMessageWithDedup(ID, parsed);
+    const inStore = listChatMessagesFromStore(ID).find((m) => m.payload === 'hello with hops');
+    expect(inStore?.rxHops).toBe(3);
+    expect(inStore?.receivedVia).toBe('rf');
+  });
+
+  it('enriches store row with rxHops on second exact-key upsert (protocol-first timing)', () => {
+    const parsed = ingestMeshcoreChannelMessage(ID, {
+      rawText: `${NV0N}: protocol first`,
+      senderId: 100,
+      displayName: NV0N,
+      channel: CH,
+      timestamp: 1_780_240_001_000,
+      receivedVia: 'rf',
+    });
+    upsertMeshcoreMessageWithDedup(ID, parsed);
+    const withoutHops = listChatMessagesFromStore(ID).find((m) => m.payload === 'protocol first');
+    expect(withoutHops?.rxHops).toBeUndefined();
+
+    const enriched = { ...parsed, rxHops: 2 };
+    upsertMeshcoreMessageWithDedup(ID, enriched);
+    const inStore = listChatMessagesFromStore(ID).find((m) => m.payload === 'protocol first');
+    expect(inStore?.rxHops).toBe(2);
   });
 });
 

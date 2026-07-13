@@ -1,3 +1,6 @@
+/** Default stack-level identity re-announce interval (1 hour); mirrors sidecar `DEFAULT_ANNOUNCE_INTERVAL_SEC`. */
+export const DEFAULT_ANNOUNCE_INTERVAL_SEC = 3600;
+
 export interface ReticulumStackSettingsFields {
   enable_transport?: boolean;
   share_instance?: boolean;
@@ -34,6 +37,15 @@ export function parseReticulumStackSettings(raw: unknown): ReticulumStackSetting
   return out;
 }
 
+/** Coerce announce interval from stack settings JSON; preserves explicit `0`. */
+export function coerceAnnounceIntervalSec(raw: unknown): number {
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    return raw;
+  }
+  const n = Number(raw);
+  return Number.isFinite(n) && n !== 0 ? n : DEFAULT_ANNOUNCE_INTERVAL_SEC;
+}
+
 /** Parse stack settings with defaults used by RMAP and announce apply paths. */
 export function parseReticulumStackSettingsPayload(raw: unknown): ReticulumStackSettingsPayload {
   const obj = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
@@ -41,9 +53,6 @@ export function parseReticulumStackSettingsPayload(raw: unknown): ReticulumStack
     enable_transport: Boolean(obj.enable_transport),
     share_instance: obj.share_instance !== false,
     loglevel: typeof obj.loglevel === 'number' ? obj.loglevel : Number(obj.loglevel) || 4,
-    announce_interval_sec:
-      typeof obj.announce_interval_sec === 'number'
-        ? obj.announce_interval_sec
-        : Number(obj.announce_interval_sec) || 0,
+    announce_interval_sec: coerceAnnounceIntervalSec(obj.announce_interval_sec),
   };
 }
