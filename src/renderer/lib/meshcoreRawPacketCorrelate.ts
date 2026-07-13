@@ -1,7 +1,7 @@
 import { MAX_RAW_PACKET_LOG_ENTRIES } from './rawPacketLogConstants';
 
 /** Correlation window: event 7/8 must arrive within this many ms of the matching event 136. */
-export const MESHCORE_CHAT_CORRELATE_WINDOW_MS = 1500;
+export const MESHCORE_CHAT_CORRELATE_WINDOW_MS = 3000;
 
 /** Minimal shape needed for chat-entry correlation (avoids importing RxPacketEntry from useMeshcoreRuntime). */
 export interface ChatCorrelateRxLike {

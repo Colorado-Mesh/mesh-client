@@ -1310,14 +1310,22 @@ export function attachMeshcoreLegacyConnEvents(
           )
         ) {
           const next = [...prev.slice(0, -1), rxEntry];
-          return next.length > MAX_RAW_PACKET_LOG_ENTRIES
-            ? next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES)
-            : next;
+          const trimmed =
+            next.length > MAX_RAW_PACKET_LOG_ENTRIES
+              ? next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES)
+              : next;
+          // Sync before React commit so same-tick event 7/8 ingest sees this row.
+          rawPacketsRef.current = trimmed;
+          return trimmed;
         }
         const next = [...prev, rxEntry];
-        return next.length > MAX_RAW_PACKET_LOG_ENTRIES
-          ? next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES)
-          : next;
+        const trimmed =
+          next.length > MAX_RAW_PACKET_LOG_ENTRIES
+            ? next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES)
+            : next;
+        // Sync before React commit so same-tick event 7/8 ingest sees this row.
+        rawPacketsRef.current = trimmed;
+        return trimmed;
       });
 
       // Populate hoisted MQTT packet-log fields from the parsed result.

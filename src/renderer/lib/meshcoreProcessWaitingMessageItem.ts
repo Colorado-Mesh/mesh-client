@@ -10,6 +10,7 @@ import { meshcoreRoomPostBodyFromWire } from '@/renderer/lib/meshcoreRoomMessage
 import { setMeshcoreRoomLastPostAt } from '@/renderer/lib/meshcoreRoomSyncStorage';
 import {
   isMeshcoreTransportStatusChatLine,
+  meshcoreCompanionRxPathLenToHopCount,
   meshcoreMergeChannelDisplayNameOntoNode,
   minimalMeshcoreChatNode,
 } from '@/renderer/lib/meshcoreUtils';
@@ -83,6 +84,7 @@ export function processMeshcoreWaitingMessageItem(
               text: d.text,
               senderTimestamp: d.senderTimestamp,
               ...(d.txtType != null ? { txtType: d.txtType } : {}),
+              ...(d.pathLen != null ? { pathLen: d.pathLen } : {}),
             },
             deps.pubKeyPrefixMap,
             roomNodeIds,
@@ -110,6 +112,7 @@ export function processMeshcoreWaitingMessageItem(
         const authorName =
           authorNode?.long_name ??
           (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
+        const roomRxHops = meshcoreCompanionRxPathLenToHopCount(d.pathLen);
         pendingMessages.push(
           buildMeshcoreRoomIncomingMessage({
             rawText: payload,
@@ -118,10 +121,12 @@ export function processMeshcoreWaitingMessageItem(
             authorName,
             timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
             receivedVia: 'rf',
+            ...(roomRxHops != null ? { rxHops: roomRxHops } : {}),
           }),
         );
       }
     } else {
+      const dmRxHops = meshcoreCompanionRxPathLenToHopCount(d.pathLen);
       pendingMessages.push({
         ...parseMeshcoreDmIncomingFromThread(deps.storePriorForBatch(), {
           rawText: d.text,
@@ -132,6 +137,7 @@ export function processMeshcoreWaitingMessageItem(
           peerNodeId: senderId,
           myNodeId: deps.myNodeNum || 0,
           to: deps.myNodeNum || undefined,
+          ...(dmRxHops != null ? { rxHops: dmRxHops } : {}),
         }),
         isHistory: true,
       });
@@ -168,6 +174,7 @@ export function processMeshcoreWaitingMessageItem(
         );
         nodesDirty = true;
       }
+      const channelRxHops = meshcoreCompanionRxPathLenToHopCount(d.pathLen);
       pendingMessages.push({
         ...parseMeshcoreChannelIncomingFromThread(deps.storePriorForBatch(), {
           rawText: d.text,
@@ -176,6 +183,7 @@ export function processMeshcoreWaitingMessageItem(
           channel: d.channelIdx,
           timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
           receivedVia: 'rf',
+          ...(channelRxHops != null ? { rxHops: channelRxHops } : {}),
         }),
         isHistory: true,
       });

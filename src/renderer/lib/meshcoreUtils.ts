@@ -89,6 +89,17 @@ export function meshcoreMergeChannelDisplayNameOntoNode(
 }
 
 /**
+ * Companion ContactMsgRecv / ChannelMsgRecv `pathLen` → chat RF hop count.
+ * meshcore.js: ChannelMsgRecv uses 0xFF for direct; otherwise flood hop count.
+ */
+export function meshcoreCompanionRxPathLenToHopCount(pathLen: unknown): number | undefined {
+  if (typeof pathLen !== 'number' || !Number.isFinite(pathLen)) return undefined;
+  const n = Math.trunc(pathLen) & 0xff;
+  if (n === 0xff) return 0;
+  return n;
+}
+
+/**
  * `tracePath` reports `pathLen` as segment count along the route (a direct RF link is often 1).
  * UI hop count (repeaters between us and the peer) is one less; clamp at 0.
  */

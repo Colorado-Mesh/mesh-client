@@ -8,6 +8,7 @@ import { decodeMeshcoreDirectMessageEvents } from '../meshcoreDirectMessageDecod
 import { isMeshcoreRoomServerContactType } from '../meshcoreRoomMessageRouting';
 import {
   isMeshcoreTransportStatusChatLine,
+  meshcoreCompanionRxPathLenToHopCount,
   pubKeyPrefixHex,
   pubkeyToNodeId,
 } from '../meshcoreUtils';
@@ -187,6 +188,7 @@ export class MeshCoreProtocol implements Protocol {
           text: string;
           senderTimestamp: number;
           txtType?: number;
+          pathLen?: number;
         },
         nodeIdByPrefix,
         roomNodeIds,
@@ -535,10 +537,16 @@ export class MeshCoreProtocol implements Protocol {
   }
 
   private decodeChannelMessage(raw: unknown): DomainEvent[] {
-    const d = raw as { channelIdx: number; text: string; senderTimestamp: number };
+    const d = raw as {
+      channelIdx: number;
+      text: string;
+      senderTimestamp: number;
+      pathLen?: number;
+    };
     if (isMeshcoreTransportStatusChatLine(d.text)) {
       return this.decodeTransportStatusChatLine(d.text);
     }
+    const hopCount = meshcoreCompanionRxPathLenToHopCount(d.pathLen);
     return [
       {
         type: 'text_message',
@@ -549,6 +557,7 @@ export class MeshCoreProtocol implements Protocol {
           payload: d.text,
           channelIndex: d.channelIdx,
           timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
+          ...(hopCount != null ? { hopCount } : {}),
         },
       },
     ];

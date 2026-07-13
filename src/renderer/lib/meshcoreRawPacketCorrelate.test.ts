@@ -173,6 +173,14 @@ describe('meshcoreFindRecentGrpTxtRawPacket', () => {
     ];
     expect(meshcoreFindRecentGrpTxtRawPacket(stale, now)).toBeUndefined();
   });
+
+  it('matches GRP_TXT entries between 1500ms and 3000ms (widened window)', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      { ts: now - 2500, payloadTypeString: 'GRP_TXT', fromNodeId: null, hopCount: 4 },
+    ];
+    expect(meshcoreFindRecentGrpTxtRawPacket(packets, now)?.hopCount).toBe(4);
+    expect(MESHCORE_CHAT_CORRELATE_WINDOW_MS).toBe(3000);
+  });
 });
 
 describe('meshcoreFindRecentTxtMsgRawPacket', () => {

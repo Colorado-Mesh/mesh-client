@@ -64,6 +64,32 @@ describe('decodeMeshcoreDirectMessageEvents', () => {
       meshcoreRoomMessageId(roomId, 1_700_000_100, authorId),
     );
   });
+
+  it('sets hopCount from companion pathLen on DM decode', () => {
+    const pubKey = Uint8Array.from({ length: 32 }, (_, i) => i + 1);
+    const nodeId = pubkeyToNodeId(pubKey);
+    registerMeshcorePubKey(nodeId, pubKey);
+    const prefixMap = new Map<string, number>([
+      [
+        Array.from(pubKey.slice(0, 4))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join(''),
+        nodeId,
+      ],
+    ]);
+    const events = decodeMeshcoreDirectMessageEvents(
+      {
+        pubKeyPrefix: pubKey.slice(0, 6),
+        text: 'hello',
+        senderTimestamp: 1_700_000_200,
+        pathLen: 0xff,
+      },
+      prefixMap,
+      new Set(),
+    );
+    const text = events.find((e) => e.type === 'text_message');
+    expect(text?.type === 'text_message' && text.payload.hopCount).toBe(0);
+  });
 });
 
 describe('dispatchMeshcoreWaitingContactMessage', () => {

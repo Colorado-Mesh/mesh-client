@@ -72,6 +72,71 @@ describe('MeshtasticProtocol.subscribe', () => {
     teardown();
   });
 
+  it('computes hopCount from hopStart/hopLimit on RF text', () => {
+    const { device, emit } = mockMeshDevice();
+    const events: DomainEvent[] = [];
+    const teardown = meshtasticProtocol.subscribe(device, (e) => events.push(e));
+    emit('onMeshPacket', {
+      payloadVariant: {
+        case: 'decoded',
+        value: {
+          portnum: Portnums.PortNum.TEXT_MESSAGE_APP,
+          payload: new TextEncoder().encode('hop'),
+        },
+      },
+      from: 1,
+      to: 0xffffffff,
+      id: 1,
+      hopStart: 7,
+      hopLimit: 4,
+      viaMqtt: false,
+    });
+    const text = events.find((e) => e.type === 'text_message');
+    expect(text?.type === 'text_message' && text.payload.hopCount).toBe(3);
+    teardown();
+  });
+
+  it('omits hopCount for viaMqtt packets and hopStart zero', () => {
+    const { device, emit } = mockMeshDevice();
+    const events: DomainEvent[] = [];
+    const teardown = meshtasticProtocol.subscribe(device, (e) => events.push(e));
+    emit('onMeshPacket', {
+      payloadVariant: {
+        case: 'decoded',
+        value: {
+          portnum: Portnums.PortNum.TEXT_MESSAGE_APP,
+          payload: new TextEncoder().encode('mqtt'),
+        },
+      },
+      from: 1,
+      to: 0xffffffff,
+      id: 2,
+      hopStart: 7,
+      hopLimit: 4,
+      viaMqtt: true,
+    });
+    const mqttText = events.find((e) => e.type === 'text_message');
+    expect(mqttText?.type === 'text_message' && mqttText.payload.hopCount).toBeUndefined();
+    events.length = 0;
+    emit('onMeshPacket', {
+      payloadVariant: {
+        case: 'decoded',
+        value: {
+          portnum: Portnums.PortNum.TEXT_MESSAGE_APP,
+          payload: new TextEncoder().encode('zero'),
+        },
+      },
+      from: 1,
+      to: 0xffffffff,
+      id: 3,
+      hopStart: 0,
+      hopLimit: 0,
+    });
+    const zero = events.find((e) => e.type === 'text_message');
+    expect(zero?.type === 'text_message' && zero.payload.hopCount).toBeUndefined();
+    teardown();
+  });
+
   it('emits node_info from onNodeInfoPacket', () => {
     const { device, emit } = mockMeshDevice();
     const events: DomainEvent[] = [];
