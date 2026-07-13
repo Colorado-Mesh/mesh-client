@@ -17,6 +17,7 @@ import type {
   ReticulumPeer,
   ReticulumPeerWireRow,
 } from '@/shared/reticulum-types';
+import { sanitizeReticulumDisplayName } from '@/shared/reticulumDisplayName';
 
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import type { MeshNode } from '../lib/types';
@@ -62,11 +63,11 @@ function normalizeHash(hash: string): string {
 }
 
 function peerDisplayName(peer: ReticulumPeer): string {
-  return (
-    peer.custom_display_name?.trim() ||
-    peer.display_name?.trim() ||
-    peer.destination_hash.slice(0, 12)
-  );
+  const custom = peer.custom_display_name?.trim();
+  if (custom) return custom;
+  const wire = sanitizeReticulumDisplayName(peer.display_name);
+  if (wire) return wire;
+  return peer.destination_hash.slice(0, 12);
 }
 
 /** Prefer wire/LXMF names from node store when path-table peers only have hashes. */
@@ -78,9 +79,9 @@ export function resolveReticulumPeerLabel(
   const label = peerDisplayName(peer);
   const hashSlice = peer.destination_hash.slice(0, 12);
   if (!isReticulumHashPrefixAlias(peer.destination_hash, label)) return label;
-  const wire = nodeLongName?.trim();
+  const wire = sanitizeReticulumDisplayName(nodeLongName);
   if (wire && wire !== hashSlice) return wire;
-  const nomad = nomadDisplayName?.trim();
+  const nomad = sanitizeReticulumDisplayName(nomadDisplayName);
   if (nomad && nomad !== hashSlice) return nomad;
   return label;
 }

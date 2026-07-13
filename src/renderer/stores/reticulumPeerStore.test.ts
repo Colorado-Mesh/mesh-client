@@ -22,6 +22,24 @@ describe('resolveReticulumPeerLabel', () => {
     ).toBe('Alice');
   });
 
+  it('extracts server_name from JSON display_name blobs', () => {
+    expect(
+      resolveReticulumPeerLabel({
+        destination_hash: hash,
+        display_name: '{"server_name": "Chicago Offline BBS"}',
+      }),
+    ).toBe('Chicago Offline BBS');
+  });
+
+  it('falls back to hash prefix for RMAP geo JSON blobs', () => {
+    expect(
+      resolveReticulumPeerLabel({
+        destination_hash: hash,
+        display_name: '{"h":"5440f5d4485a00fb8441ad94fbdee46e","ha":"0","c":"1"}',
+      }),
+    ).toBe(hash.slice(0, 12));
+  });
+
   it('falls back to nomad name when peer row is hash-only', () => {
     expect(
       resolveReticulumPeerLabel({ destination_hash: hash, display_name: null }, null, 'Nomad Node'),

@@ -173,7 +173,9 @@ describe('ReticulumPeerListPanel', () => {
     );
     const search = screen.getByLabelText('peerListPanel.searchAria');
     await user.type(search, 'nomatch');
-    expect(screen.queryByText('Alpha Peer')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText('Alpha Peer')).not.toBeInTheDocument();
+    });
   });
 
   it('shows toast after path and probe actions', async () => {

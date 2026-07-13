@@ -21,6 +21,7 @@ import { useBlockStore } from '@/renderer/stores/blockStore';
 import type { MessageRecord, MessageStatus } from '@/renderer/stores/messageStore';
 import { addMessage, upsertMessage, useMessageStore } from '@/renderer/stores/messageStore';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
+import { sanitizeReticulumDisplayName } from '@/shared/reticulumDisplayName';
 
 export interface ReticulumLxmfPayload {
   sender_hash?: string;
@@ -52,8 +53,9 @@ export function reticulumContactDisplayNameFromPayload(
   p: ReticulumLxmfPayload,
 ): string | undefined {
   if (!p.sender_hash) return undefined;
-  if (isReticulumHashPrefixAlias(p.sender_hash, p.sender_name)) return undefined;
-  return p.sender_name?.trim() || undefined;
+  const sanitized = sanitizeReticulumDisplayName(p.sender_name);
+  if (!sanitized || isReticulumHashPrefixAlias(p.sender_hash, sanitized)) return undefined;
+  return sanitized;
 }
 
 function parseReticulumDeliveryMethod(

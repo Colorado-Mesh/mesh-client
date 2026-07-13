@@ -134,6 +134,7 @@ export default function ReticulumPeerListPanel({
 
   const [activeTab, setActiveTab] = useState<PeerListTab>('peers');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [refreshing, setRefreshing] = useState(false);
@@ -155,6 +156,15 @@ export default function ReticulumPeerListPanel({
       setRefreshing(false);
     }
   }, [onRefresh]);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 250);
+    return () => {
+      window.clearTimeout(id);
+    };
+  }, [searchQuery]);
 
   useEffect(() => {
     void hydratePeerAppearancesFromDb();
@@ -198,14 +208,14 @@ export default function ReticulumPeerListPanel({
   }, [activeTab, contacts, peers, selectedGroupId, groupMemberIds]);
 
   const filteredRows = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
+    const q = debouncedSearchQuery.trim().toLowerCase();
     if (!q) return sourceRows;
     return sourceRows.filter((peer) => {
       const name = resolvePeerLabel(peer).toLowerCase();
       const hash = peer.destination_hash.toLowerCase();
       return name.includes(q) || hash.includes(q);
     });
-  }, [searchQuery, sourceRows, resolvePeerLabel]);
+  }, [debouncedSearchQuery, sourceRows, resolvePeerLabel]);
 
   const sortedRows = useMemo(() => {
     const rows = [...filteredRows];
