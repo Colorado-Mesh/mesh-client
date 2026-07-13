@@ -11,11 +11,12 @@ import {
 import { MAX_MESH_ENTITY_CAP } from '@/renderer/lib/sessionMemoryCaps';
 import { useNodeStore } from '@/renderer/stores/nodeStore';
 import { omitRecordKey } from '@/renderer/stores/storeUtils';
-import type {
-  ReticulumContact,
-  ReticulumContactWireRow,
-  ReticulumPeer,
-  ReticulumPeerWireRow,
+import {
+  isReticulumContact,
+  type ReticulumContact,
+  type ReticulumContactWireRow,
+  type ReticulumPeer,
+  type ReticulumPeerWireRow,
 } from '@/shared/reticulum-types';
 import { sanitizeReticulumDisplayName } from '@/shared/reticulumDisplayName';
 
@@ -209,8 +210,8 @@ export function capReticulumPeerMaps(
     return { peers, contacts };
   }
   const sorted = [...peers.entries()].sort(([, a], [, b]) => {
-    const aSeen = a.last_seen ?? ('last_heard' in a ? (a as ReticulumContact).last_heard : 0) ?? 0;
-    const bSeen = b.last_seen ?? ('last_heard' in b ? (b as ReticulumContact).last_heard : 0) ?? 0;
+    const aSeen = a.last_seen ?? (isReticulumContact(a) ? a.last_heard : 0) ?? 0;
+    const bSeen = b.last_seen ?? (isReticulumContact(b) ? b.last_heard : 0) ?? 0;
     return bSeen - aSeen;
   });
   const cappedPeers = new Map(sorted.slice(0, max));
@@ -354,8 +355,7 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
         destination_hash: key,
         display_name: trimmed,
         favorited: peer?.favorited ?? false,
-        last_heard:
-          'last_heard' in (peer ?? {}) ? (peer as ReticulumContact).last_heard : undefined,
+        last_heard: isReticulumContact(peer) ? peer.last_heard : undefined,
       });
     } catch (e) {
       console.warn('[reticulumPeerStore] setCustomDisplayName ' + errLikeToLogString(e));

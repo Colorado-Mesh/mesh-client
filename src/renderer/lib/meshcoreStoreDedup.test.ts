@@ -146,6 +146,20 @@ describe('meshcoreStoreDedup', () => {
     expect(meshcoreMessageStoreId(msg)).toBe(`room:${roomId >>> 0}:17:1700000000`);
   });
 
+  it('assigns room store ids when only legacy room channel and to are set', () => {
+    const roomId = 0xac200e59;
+    const msg = {
+      sender_id: 0x11,
+      sender_name: 'Author',
+      payload: 'Welcome',
+      channel: MESHCORE_ROOM_MESSAGE_CHANNEL,
+      timestamp: 1_700_000_000_000,
+      to: roomId,
+      receivedVia: 'rf' as const,
+    };
+    expect(meshcoreMessageStoreId(msg)).toBe(`room:${roomId >>> 0}:17:1700000000`);
+  });
+
   it('keeps two room posts in the same UTC second from different authors', () => {
     const roomId = 0xac200e59;
     const tsMs = 1_700_000_005_000;
@@ -215,6 +229,7 @@ describe('meshcoreStoreDedup', () => {
     expect(result.inserted).toBe(false);
     expect(result.message.timestamp).toBe(firmwareTsMs);
     expect(result.message.status).toBe('acked');
+    expect(result.message.payload).toBe('Testing from the mesh-client');
     expect(Object.values(useMessageStore.getState().messages[ID] ?? {})).toHaveLength(1);
   });
 

@@ -70,6 +70,10 @@ export interface ReticulumContact extends ReticulumPeer {
   last_heard: number;
 }
 
+export function isReticulumContact(peer: ReticulumPeer | undefined): peer is ReticulumContact {
+  return peer != null && 'last_heard' in peer;
+}
+
 /** Sidecar wire row for GET /api/v1/peers */
 export interface ReticulumPeerWireRow {
   destination_hash: string;

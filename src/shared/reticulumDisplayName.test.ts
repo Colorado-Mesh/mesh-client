@@ -32,9 +32,17 @@ describe('sanitizeReticulumDisplayName', () => {
     expect(sanitizeReticulumDisplayName('')).toBeUndefined();
     expect(sanitizeReticulumDisplayName(null)).toBeUndefined();
   });
+});
 
-  it('sanitizeReticulumDisplayNameForDb maps missing to null', () => {
+describe('sanitizeReticulumDisplayNameForDb', () => {
+  it('maps missing or invalid names to null', () => {
+    expect(sanitizeReticulumDisplayNameForDb(null)).toBeNull();
+    expect(sanitizeReticulumDisplayNameForDb(undefined)).toBeNull();
+    expect(sanitizeReticulumDisplayNameForDb('')).toBeNull();
     expect(sanitizeReticulumDisplayNameForDb('{"h":"abc"}')).toBeNull();
+  });
+
+  it('returns sanitized plain names for SQLite upsert', () => {
     expect(sanitizeReticulumDisplayNameForDb('Runr02')).toBe('Runr02');
   });
 });
