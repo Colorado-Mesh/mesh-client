@@ -456,7 +456,7 @@ export class MeshtasticProtocol implements Protocol {
           timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
           rxSnr: p.rxSnr,
           rxRssi: p.rxRssi,
-          hopCount,
+          ...(hopCount != null ? { hopCount } : {}),
           replyTo: rawReplyId ? String(rawReplyId) : undefined,
           tapback: data.emoji != null ? data.emoji !== 0 : undefined,
         },

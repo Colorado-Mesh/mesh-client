@@ -96,7 +96,7 @@ describe('MeshtasticProtocol.subscribe', () => {
     teardown();
   });
 
-  it('omits hopCount for viaMqtt packets and hopStart zero', () => {
+  it('omits hopCount key for viaMqtt packets and hopStart zero', () => {
     const { device, emit } = mockMeshDevice();
     const events: DomainEvent[] = [];
     const teardown = meshtasticProtocol.subscribe(device, (e) => events.push(e));
@@ -117,6 +117,7 @@ describe('MeshtasticProtocol.subscribe', () => {
     });
     const mqttText = events.find((e) => e.type === 'text_message');
     expect(mqttText?.type === 'text_message' && mqttText.payload.hopCount).toBeUndefined();
+    expect(mqttText?.type === 'text_message' && !('hopCount' in mqttText.payload)).toBe(true);
     events.length = 0;
     emit('onMeshPacket', {
       payloadVariant: {
@@ -134,6 +135,7 @@ describe('MeshtasticProtocol.subscribe', () => {
     });
     const zero = events.find((e) => e.type === 'text_message');
     expect(zero?.type === 'text_message' && zero.payload.hopCount).toBeUndefined();
+    expect(zero?.type === 'text_message' && !('hopCount' in zero.payload)).toBe(true);
     teardown();
   });
 

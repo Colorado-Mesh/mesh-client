@@ -377,6 +377,8 @@ describe('meshcoreCompanionRxPathLenToHopCount', () => {
     expect(meshcoreCompanionRxPathLenToHopCount(0)).toBe(0);
     expect(meshcoreCompanionRxPathLenToHopCount(1)).toBe(1);
     expect(meshcoreCompanionRxPathLenToHopCount(3)).toBe(3);
+    expect(meshcoreCompanionRxPathLenToHopCount(63)).toBe(63);
+    expect(meshcoreCompanionRxPathLenToHopCount(1.9)).toBe(1);
   });
 
   it('returns undefined for missing or non-finite values', () => {
@@ -384,6 +386,14 @@ describe('meshcoreCompanionRxPathLenToHopCount', () => {
     expect(meshcoreCompanionRxPathLenToHopCount(null)).toBeUndefined();
     expect(meshcoreCompanionRxPathLenToHopCount('2')).toBeUndefined();
     expect(meshcoreCompanionRxPathLenToHopCount(Number.NaN)).toBeUndefined();
+  });
+
+  it('rejects negatives, oversized, and non-direct high bytes without wrapping', () => {
+    expect(meshcoreCompanionRxPathLenToHopCount(-1)).toBeUndefined();
+    expect(meshcoreCompanionRxPathLenToHopCount(256)).toBeUndefined();
+    expect(meshcoreCompanionRxPathLenToHopCount(511)).toBeUndefined();
+    expect(meshcoreCompanionRxPathLenToHopCount(64)).toBeUndefined();
+    expect(meshcoreCompanionRxPathLenToHopCount(254)).toBeUndefined();
   });
 });
 

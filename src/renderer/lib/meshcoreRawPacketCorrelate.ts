@@ -10,6 +10,8 @@ export interface ChatCorrelateRxLike {
   fromNodeId: number | null;
   advertName?: string | null;
   hopCount?: number;
+  /** When false, hopCount is unreliable (failed parse / synthetic chat row). Absent = trusted. */
+  parseOk?: boolean;
 }
 
 /**
@@ -80,6 +82,8 @@ export function resolveMeshcoreIngestRxHops(
   const match = isChannel
     ? meshcoreFindRecentGrpTxtRawPacket(rawPackets, now)
     : meshcoreFindRecentTxtMsgRawPacket(rawPackets, now);
-  const hops = match?.hopCount;
+  // Failed parses / synthetic chat rows default hopCount to 0 — do not adopt those.
+  if (!match || match.parseOk === false) return undefined;
+  const hops = match.hopCount;
   return hops != null && Number.isFinite(hops) ? hops : undefined;
 }

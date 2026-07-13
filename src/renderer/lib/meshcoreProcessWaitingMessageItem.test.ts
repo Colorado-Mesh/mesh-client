@@ -281,4 +281,162 @@ describe('processMeshcoreWaitingMessageItem', () => {
     expect(result.pendingMessages[0]?.payload).toBe('channel hello');
     expect(result.pendingMessages[0]?.isHistory).toBe(true);
   });
+
+  describe('pathLen → rxHops', () => {
+    function dmDeps(pubKey: Uint8Array) {
+      const prefixBytes = pubKey.slice(0, 6);
+      const senderId = pubkeyToNodeId(pubKey);
+      const deps = baseDeps({
+        pubKeyPrefixMap: new Map([[prefixHexFromBytes(prefixBytes), senderId]]),
+      });
+      deps.workingNodes.set(senderId, {
+        node_id: senderId,
+        long_name: 'HopPeer',
+        short_name: '',
+        hw_model: 'Client',
+        snr: 0,
+        rssi: 0,
+        last_heard: 0,
+        battery: 0,
+        latitude: null,
+        longitude: null,
+      });
+      return { deps, prefixBytes };
+    }
+
+    function roomDeps(roomPubKey: Uint8Array, legacyOwnsRoomPosts: boolean) {
+      const roomPrefixBytes = roomPubKey.slice(0, 6);
+      const roomId = pubkeyToNodeId(roomPubKey);
+      const deps = baseDeps({
+        pubKeyPrefixMap: new Map([[prefixHexFromBytes(roomPrefixBytes), roomId]]),
+        legacyOwnsRoomPosts: () => legacyOwnsRoomPosts,
+      });
+      deps.workingNodes.set(roomId, {
+        node_id: roomId,
+        long_name: 'BBS',
+        short_name: '',
+        hw_model: 'Room',
+        snr: 0,
+        rssi: 0,
+        last_heard: 0,
+        battery: 0,
+        latitude: null,
+        longitude: null,
+      });
+      return { deps, roomPrefixBytes, roomId };
+    }
+
+    it('sets DM rxHops from pathLen 0xFF (direct) and flood pathLen', () => {
+      const { deps, prefixBytes } = dmDeps(makePubKey(50));
+      const direct = processMeshcoreWaitingMessageItem(
+        {
+          contactMessage: {
+            pubKeyPrefix: prefixBytes,
+            text: 'direct dm',
+            senderTimestamp: 1_700_000_700,
+            pathLen: 0xff,
+          },
+        },
+        deps,
+      );
+      expect(direct.pendingMessages[0]?.rxHops).toBe(0);
+
+      const flood = processMeshcoreWaitingMessageItem(
+        {
+          contactMessage: {
+            pubKeyPrefix: prefixBytes,
+            text: 'flood dm',
+            senderTimestamp: 1_700_000_701,
+            pathLen: 3,
+          },
+        },
+        deps,
+      );
+      expect(flood.pendingMessages[0]?.rxHops).toBe(3);
+    });
+
+    it('omits DM rxHops when pathLen is missing', () => {
+      const { deps, prefixBytes } = dmDeps(makePubKey(51));
+      const result = processMeshcoreWaitingMessageItem(
+        {
+          contactMessage: {
+            pubKeyPrefix: prefixBytes,
+            text: 'no hops dm',
+            senderTimestamp: 1_700_000_710,
+          },
+        },
+        deps,
+      );
+      expect(result.pendingMessages[0]?.rxHops).toBeUndefined();
+    });
+
+    it('sets channel rxHops from pathLen', () => {
+      const deps = baseDeps();
+      const result = processMeshcoreWaitingMessageItem(
+        {
+          channelMessage: {
+            channelIdx: 0,
+            text: 'channel hops',
+            senderTimestamp: 1_700_000_720,
+            pathLen: 2,
+          },
+        },
+        deps,
+      );
+      expect(result.pendingMessages[0]?.rxHops).toBe(2);
+    });
+
+    it('omits channel rxHops when pathLen is missing', () => {
+      const deps = baseDeps();
+      const result = processMeshcoreWaitingMessageItem(
+        {
+          channelMessage: {
+            channelIdx: 0,
+            text: 'channel no hops',
+            senderTimestamp: 1_700_000_721,
+          },
+        },
+        deps,
+      );
+      expect(result.pendingMessages[0]?.rxHops).toBeUndefined();
+    });
+
+    it('sets legacy room rxHops from pathLen', () => {
+      const { deps, roomPrefixBytes } = roomDeps(makePubKey(52), true);
+      const result = processMeshcoreWaitingMessageItem(
+        {
+          contactMessage: {
+            pubKeyPrefix: roomPrefixBytes,
+            text: 'legacy room hops',
+            senderTimestamp: 1_700_000_730,
+            pathLen: 4,
+          },
+        },
+        deps,
+      );
+      expect(result.pendingMessages[0]?.rxHops).toBe(4);
+    });
+
+    it('forwards pathLen into PacketRouter room dispatch as hopCount', () => {
+      const dispatchSpy = vi.spyOn(packetRouter, 'dispatch').mockImplementation(() => {});
+      const { deps, roomPrefixBytes } = roomDeps(makePubKey(53), false);
+      const result = processMeshcoreWaitingMessageItem(
+        {
+          contactMessage: {
+            pubKeyPrefix: roomPrefixBytes,
+            text: 'router room hops',
+            senderTimestamp: 1_700_000_740,
+            pathLen: 0xff,
+          },
+        },
+        deps,
+      );
+      expect(result.roomDispatched).toBe(true);
+      const textEvent = dispatchSpy.mock.calls
+        .map(([event]) => event)
+        .find((e) => e.type === 'text_message');
+      expect(textEvent?.type === 'text_message' && textEvent.payload.hopCount).toBe(0);
+      dispatchSpy.mockRestore();
+    });
+  });
 });
