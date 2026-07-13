@@ -44,6 +44,6 @@ export function parseReticulumStackSettingsPayload(raw: unknown): ReticulumStack
     announce_interval_sec:
       typeof obj.announce_interval_sec === 'number'
         ? obj.announce_interval_sec
-        : Number(obj.announce_interval_sec) || 0,
+        : Number(obj.announce_interval_sec) || 3600,
   };
 }

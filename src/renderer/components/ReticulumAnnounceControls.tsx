@@ -28,7 +28,7 @@ function parseStackSettings(raw: Record<string, unknown>): StackSettingsPayload 
     announce_interval_sec:
       typeof raw.announce_interval_sec === 'number'
         ? raw.announce_interval_sec
-        : Number(raw.announce_interval_sec) || 0,
+        : Number(raw.announce_interval_sec) || 3600,
   };
 }
 
@@ -43,7 +43,7 @@ export function ReticulumAnnounceControls({
 }: ReticulumAnnounceControlsProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
-  const [announceInterval, setAnnounceInterval] = useState(0);
+  const [announceInterval, setAnnounceInterval] = useState(3600);
   const [busy, setBusy] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -53,7 +53,7 @@ export function ReticulumAnnounceControls({
       const settings = (await window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings')) as {
         announce_interval_sec?: number;
       };
-      setAnnounceInterval(settings.announce_interval_sec ?? 0);
+      setAnnounceInterval(settings.announce_interval_sec ?? 3600);
     } catch (e) {
       console.warn('[ReticulumAnnounceControls] load ' + errLikeToLogString(e));
     }

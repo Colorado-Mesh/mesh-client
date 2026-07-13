@@ -62,6 +62,10 @@ impl StackHandle {
             tracing::warn!("failed to enable discover_interfaces in config: {e}");
         }
 
+        if let Err(e) = config::ensure_announce_interval_sec_default(&config_dir) {
+            tracing::warn!("failed to set default announce_interval_sec in config: {e}");
+        }
+
         if let Err(e) = config::repair_rnode_radio_fields_in_config(&config_dir) {
             tracing::warn!("failed to repair RNode radio fields in config: {e}");
         }

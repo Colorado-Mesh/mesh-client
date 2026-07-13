@@ -403,7 +403,7 @@ export function ReticulumNetworkPanel({
       const announceInterval =
         typeof current.announce_interval_sec === 'number'
           ? current.announce_interval_sec
-          : Number(current.announce_interval_sec) || 0;
+          : Number(current.announce_interval_sec) || 3600;
       const res = (await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
         ...stackSettings,
         announce_interval_sec: announceInterval,
