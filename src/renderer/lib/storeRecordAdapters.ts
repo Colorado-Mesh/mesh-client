@@ -101,6 +101,7 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     ? normalizeReactionEmoji(MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG, record.payload)
     : undefined;
   const reticulumReplyHash = record.reticulumReplyToHash;
+  const rxHops = record.rxHops ?? record.hopCount;
   return {
     ...(packetId != null ? { id: packetId } : {}),
     sender_id: record.from,
@@ -124,7 +125,7 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
       reticulumReplyHash == null && record.replyTo != null ? Number(record.replyTo) : undefined,
     replyPreviewText: record.replyPreviewText,
     replyPreviewSender: record.replyPreviewSender,
-    ...(record.rxHops != null ? { rxHops: record.rxHops } : {}),
+    ...(rxHops != null ? { rxHops } : {}),
     ...(record.viaStoreForward ? { viaStoreForward: true } : {}),
     ...(record.roomServerId != null ? { roomServerId: record.roomServerId } : {}),
     ...(record.reticulumDeliveryMethod

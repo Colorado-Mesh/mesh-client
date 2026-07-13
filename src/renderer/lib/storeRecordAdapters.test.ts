@@ -116,6 +116,19 @@ describe('store record adapters (merge precedence)', () => {
     expect(sfBack.viaStoreForward).toBe(true);
   });
 
+  it('maps hopCount to rxHops when rxHops is absent', () => {
+    const record = {
+      id: 'hop-only',
+      from: 5,
+      to: 0xffffffff,
+      payload: 'meshtastic hops',
+      channelIndex: 0,
+      timestamp: 3000,
+      hopCount: 3,
+    };
+    expect(messageRecordToChatMessage(record).rxHops).toBe(3);
+  });
+
   it('round-trips channel utilization and air util between NodeRecord and MeshNode', () => {
     const record: NodeRecord = {
       nodeId: 1,

@@ -3532,7 +3532,8 @@
     "announceSaveFailed": "アナウンス間隔の保存に失敗しました： {{error}}",
     "announceSaveSidecarStopped": "アナウンス設定を保存する前に、Reticulumスタックを起動します。",
     "clearAnnouncesDone": "クリアをお知らせします。",
-    "clearAnnouncesFailed": "アナウンスをクリアできませんでした。"
+    "clearAnnouncesFailed": "アナウンスをクリアできませんでした。",
+    "announceIntervalHint": "デフォルトは3600秒（ 1時間）です。起動のみのアナウンスには0を使用します。"
   },
   "reticulumProfileIcon": {
     "iconName": "プレイヤーアイコンを見る",

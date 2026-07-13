@@ -13,7 +13,10 @@ vi.mock('@/renderer/lib/appSettingsStorage', () => ({
 }));
 
 import { isReticulumAutostartEnabled } from '@/renderer/lib/appSettingsStorage';
-import { resetReticulumIdentityStoreForTests } from '@/renderer/stores/reticulumIdentityStore';
+import {
+  resetReticulumIdentityStoreForTests,
+  useReticulumIdentityStore,
+} from '@/renderer/stores/reticulumIdentityStore';
 
 import { useReticulumSidecarApi } from './useReticulumSidecarApi';
 
@@ -123,6 +126,128 @@ describe('useReticulumSidecarApi', () => {
       lxmf_hash: 'lxmf-hash',
       display_name: 'Mesh User',
     });
+  });
+
+  it('does not clear shared identity while a new hook hydrates sidecar status', async () => {
+    let resolveStatus:
+      ((value: { running: boolean; port: number; pid: number | null }) => void) | undefined;
+    getStatus.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveStatus = resolve;
+        }),
+    );
+    window.electronAPI.reticulum.proxyGet = vi.fn((path: string) => {
+      if (path === '/api/v1/identity/status') {
+        return Promise.resolve({
+          configured: true,
+          identity_hash: 'seeded-hash',
+          lxmf_hash: 'seeded-lxmf',
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    useReticulumIdentityStore.getState().setIdentity({
+      configured: true,
+      identity_hash: 'seeded-hash',
+      lxmf_hash: 'seeded-lxmf',
+    });
+
+    const { result } = renderHook(() =>
+      useReticulumSidecarApi({
+        connecting: false,
+        onStartStack,
+      }),
+    );
+
+    expect(result.current.identity?.identity_hash).toBe('seeded-hash');
+
+    resolveStatus?.({ running: true, port: 59477, pid: 42 });
+
+    await waitFor(() => {
+      expect(result.current.sidecarApiReady).toBe(true);
+      expect(result.current.identity?.identity_hash).toBe('seeded-hash');
+    });
+  });
+
+  it('clears shared identity when sidecar stops', async () => {
+    let statusHandler:
+      ((status: { running: boolean; port: number; pid: number | null }) => void) | undefined;
+    getStatus.mockResolvedValue({ running: true, port: 59477, pid: 42 });
+    window.electronAPI.reticulum.proxyGet = vi.fn((path: string) => {
+      if (path === '/api/v1/identity/status') {
+        return Promise.resolve({
+          configured: true,
+          identity_hash: 'identity-hash',
+          lxmf_hash: 'lxmf-hash',
+        });
+      }
+      return Promise.resolve({});
+    });
+    onStatus.mockImplementation((handler) => {
+      statusHandler = handler;
+      return () => {};
+    });
+
+    const { result } = renderHook(() =>
+      useReticulumSidecarApi({
+        connecting: false,
+        onStartStack,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.identity?.configured).toBe(true);
+    });
+
+    statusHandler?.({ running: false, port: 0, pid: null });
+
+    await waitFor(() => {
+      expect(result.current.identity).toBeNull();
+    });
+  });
+
+  it('ignores stale identity responses after sidecar stops', async () => {
+    let resolveIdentity: ((value: Record<string, unknown>) => void) | undefined;
+    getStatus.mockResolvedValue({ running: true, port: 59477, pid: 42 });
+    window.electronAPI.reticulum.proxyGet = vi.fn((path: string) => {
+      if (path === '/api/v1/identity/status') {
+        return new Promise((resolve) => {
+          resolveIdentity = resolve;
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    const { result } = renderHook(() =>
+      useReticulumSidecarApi({
+        connecting: false,
+        onStartStack,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.sidecarApiReady).toBe(true);
+    });
+
+    const refreshPromise = act(async () => {
+      await result.current.refreshIdentity();
+    });
+
+    getStatus.mockResolvedValue({ running: false, port: 0, pid: null });
+    await act(async () => {
+      await result.current.refreshSidecarStatus();
+    });
+
+    resolveIdentity?.({
+      configured: true,
+      identity_hash: 'stale-hash',
+      lxmf_hash: 'stale-lxmf',
+    });
+    await refreshPromise;
+
+    expect(useReticulumIdentityStore.getState().identity).toBeNull();
   });
 
   it('updates sidecarUiRunning when onStatus reports stopped', async () => {

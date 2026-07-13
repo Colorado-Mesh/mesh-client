@@ -1145,7 +1145,9 @@ fn write_block_section(out: &mut String, section: &str, block: &IniBlock) {
     }
 }
 
-/// Ensure stack-level periodic announces when `announce_interval_sec` is absent from config.
+/// Ensure stack-level `announce_interval_sec` is present in rnsd config when absent.
+/// Persists the default for API/UI; mesh-client sidecar does not schedule periodic
+/// identity announces from this key in Rust runtime code yet.
 pub fn ensure_announce_interval_sec_default(config_dir: &Path) -> Result<bool, String> {
     let content = read_config(config_dir)?;
     let mut parsed = parse_config(&content)?;

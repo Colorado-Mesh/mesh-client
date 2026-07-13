@@ -50,6 +50,22 @@ describe('ReticulumAnnounceControls', () => {
     expect(input).toHaveValue(0);
   });
 
+  it('defaults announce interval to 3600 when API omits the field', async () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockResolvedValue({
+      enable_transport: false,
+      share_instance: true,
+      loglevel: 4,
+    });
+    render(
+      <ToastProvider>
+        <ReticulumAnnounceControls disabled={false} />
+      </ToastProvider>,
+    );
+
+    const input = await screen.findByLabelText('reticulumIdentity.announceIntervalSec');
+    expect(input).toHaveValue(3600);
+  });
+
   it('saves announce interval and shows status when sidecar is running', async () => {
     const user = userEvent.setup();
     render(

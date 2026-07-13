@@ -62,6 +62,8 @@ The Connection tab UI edits a subset: **name** for all types; **host** / **port*
 | POST   | `/api/v1/stack/restart`  |                                                                                           | `{ ok }`                                                                                                                                             |
 | DELETE | `/api/v1/announces`      |                                                                                           | `{ ok }` — clears stub persisted peers; live path table may repopulate under `rns-stack`                                                             |
 
+**Config bootstrap (stack start):** When `announce_interval_sec` is missing from rnsd config, the sidecar writes **3600**; explicit **0** is left unchanged (`ensure_announce_interval_sec_default` in `reticulum-sidecar/src/stack/config.rs`). Same bootstrap pass may set `discover_interfaces = Yes` for RMAP ingest.
+
 ### LXMF and contacts
 
 | Method | Path                           | Body / notes                                                              | Response                                                                                                                                                      |

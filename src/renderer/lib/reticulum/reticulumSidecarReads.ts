@@ -157,7 +157,7 @@ export async function fetchReticulumRmapDiscovered(): Promise<ReticulumRmapDisco
   }
 }
 
-/** Fetch sidecar identity status (shared by runtime and connection/radio panels). */
+/** Fetch sidecar identity status. Panels use `reticulumIdentityStore` via `useReticulumSidecarApi`; runtime uses this helper directly. */
 export async function fetchReticulumIdentityStatus(): Promise<ReticulumIdentityStatus> {
   if (!(await isReticulumSidecarRunning())) {
     return { configured: false, lxmfHash: null, displayName: null };

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useMessageStore } from '../../stores/messageStore';
 import { upsertNode } from '../../stores/nodeStore';
 import { packetRouter } from '../drivers/PacketRouter';
+import { messageRecordToChatMessage } from '../storeRecordAdapters';
 import { attachMeshtasticIngest } from './meshtasticIngest';
 
 const ID = 'ingest-test';
@@ -126,6 +127,34 @@ describe('attachMeshtasticIngest', () => {
     );
     expect(updateReceivedVia).toHaveBeenCalled();
     expect(useMessageStore.getState().messages[ID]['1'].receivedVia).toBe('both');
+    expect(useMessageStore.getState().messages[ID]['1'].hopCount).toBe(2);
+    session.detach();
+  });
+
+  it('exposes hopCount as rxHops through store adapter round-trip', () => {
+    const session = attachMeshtasticIngest(ID, {
+      getIsConfiguring: () => false,
+      getMyNodeNum: () => 0,
+    });
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: '77',
+          from: 3,
+          to: 0xffffffff,
+          payload: 'hops test',
+          channelIndex: 0,
+          timestamp: 8000,
+          hopCount: 4,
+        },
+      },
+      ID,
+    );
+    const record = useMessageStore.getState().messages[ID]['77'];
+    expect(record?.hopCount).toBe(4);
+    expect(record).toBeDefined();
+    expect(messageRecordToChatMessage(record).rxHops).toBe(4);
     session.detach();
   });
 

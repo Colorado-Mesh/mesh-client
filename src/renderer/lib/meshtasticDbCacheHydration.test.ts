@@ -5,6 +5,7 @@ import {
   dedupeMeshtasticHydrationOrphanSends,
   mergeMeshtasticDbHydrationWithLive,
   meshtasticLoosePersistenceMatchKey,
+  savedMessageToChatMessage,
 } from './meshtasticDbCacheHydration';
 import type { ChatMessage } from './types';
 
@@ -101,5 +102,22 @@ describe('mergeMeshtasticDbHydrationWithLive', () => {
     expect(key).toBe(meshtasticLoosePersistenceMatchKey(live[0]));
     const merged = mergeMeshtasticDbHydrationWithLive(live, fromDb);
     expect(merged).toHaveLength(1);
+  });
+});
+
+describe('savedMessageToChatMessage', () => {
+  it('maps rxHops and viaStoreForward from SavedMessage', () => {
+    const chat = savedMessageToChatMessage({
+      id: 1,
+      sender_id: 42,
+      sender_name: 'Node',
+      payload: 'hello db',
+      channel: 0,
+      timestamp: 1_700_000_000_000,
+      rxHops: 2,
+      viaStoreForward: true,
+    } as never);
+    expect(chat.rxHops).toBe(2);
+    expect(chat.viaStoreForward).toBe(true);
   });
 });

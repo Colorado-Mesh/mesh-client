@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import {
   type ReticulumIdentityStatus,
   useReticulumSidecarApi,
@@ -397,16 +398,12 @@ export function ReticulumNetworkPanel({
 
   const saveStackSettings = async () => {
     try {
-      const current = (await window.electronAPI.reticulum.proxyGet(
-        '/api/v1/stack/settings',
-      )) as Record<string, unknown>;
-      const announceInterval =
-        typeof current.announce_interval_sec === 'number'
-          ? current.announce_interval_sec
-          : Number(current.announce_interval_sec) || 3600;
+      const current = parseReticulumStackSettingsPayload(
+        await window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings'),
+      );
       const res = (await window.electronAPI.reticulum.proxyPut('/api/v1/stack/settings', {
         ...stackSettings,
-        announce_interval_sec: announceInterval,
+        announce_interval_sec: current.announce_interval_sec,
       })) as { ok?: boolean; error?: string };
       if (res?.ok === false) {
         setIdentityError(res.error ?? t('networkPanel.reticulumStackSettings.saveFailed'));

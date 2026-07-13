@@ -931,7 +931,7 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 **Symptoms**: You set an announce interval on the Network tab, then saved **Stack settings** (transport / log level) and the interval returned to **0**.
 
-**Cause**: `PUT /api/v1/stack/settings` replaces all four fields (`enable_transport`, `share_instance`, `loglevel`, `announce_interval_sec`). A partial JSON body omits `announce_interval_sec`, which deserializes as **0**.
+**Cause**: `PUT /api/v1/stack/settings` replaces all four fields (`enable_transport`, `share_instance`, `loglevel`, `announce_interval_sec`). A partial JSON body omits `announce_interval_sec`, which deserializes as **0**. `GET /api/v1/stack/settings` and missing keys in rnsd config default to **3600** s (1 h) after bootstrap migration — a value of **0** in the UI usually means an explicit setting or a partial PUT, not the new GET default.
 
 **Fix**: Current Network UI merge-reads settings before PUT. If you hit this on an older build, re-save the announce interval after stack settings changes.
 
@@ -956,7 +956,7 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 **Symptoms**: Map tab shows empty state, sidebar list only, or no markers despite peers on the Peers tab.
 
 1. **Stack not running** — start the stack from Connection; Map ingest requires live `rns-stack`.
-2. **No discovery announces heard yet** — only interfaces with `discoverable=yes` appear. Wait for transport propagation; default re-announce interval can be hours.
+2. **No discovery announces heard yet** — only interfaces with `discoverable=yes` appear. Wait for transport propagation; stack identity re-announce default is **3600 s (1 h)** when unset (RMAP publish interval remains separate; see Network → RMAP controls).
 3. **LoRa without TCP hub** — Diagnostics / config audit may show `rmap_no_tcp_hub`. Enable `rmap.world:4242` or another TCP hub and restart the stack.
 4. **Missing GPS in announce** — nodes without latitude/longitude appear in the list panel only (no map marker).
 5. **Global coverage** — the in-app map shows **heard** opt-in nodes only; use **Global map** (rmap.world) for worldwide view.

@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  beginReticulumIdentityFetch,
+  bumpReticulumIdentityFetchGeneration,
+  isReticulumIdentityFetchCurrent,
   resetReticulumIdentityStoreForTests,
   useReticulumIdentityStore,
 } from './reticulumIdentityStore';
@@ -28,5 +31,12 @@ describe('reticulumIdentityStore', () => {
     resetReticulumIdentityStoreForTests();
 
     expect(useReticulumIdentityStore.getState().identity).toBeNull();
+  });
+
+  it('invalidates in-flight identity fetch generations', () => {
+    const generation = beginReticulumIdentityFetch();
+    expect(isReticulumIdentityFetchCurrent(generation)).toBe(true);
+    bumpReticulumIdentityFetchGeneration();
+    expect(isReticulumIdentityFetchCurrent(generation)).toBe(false);
   });
 });
