@@ -1037,7 +1037,14 @@
       "tcpConnectFailedHint": "Desative esta interface na lista abaixo ou confirme se o hub remoto está em execução.",
       "txQueueDrops": "{{name}}: pacotes de saída descartados ({{count}} na fila)",
       "txQueueDropsHint": "Geralmente causado por uma interface TCP inativa ainda ativada. Desative os hubs inacessíveis para interromper o estouro da fila.",
-      "suppressed": "{{count}} linhas de registro de sidecar semelhantes foram suprimidas recentemente."
+      "suppressed": "{{count}} linhas de registro de sidecar semelhantes foram suprimidas recentemente.",
+      "linkDeliveryTimeout": "O link LXMF direto para {{hash}}… expirou ({{count}}×)",
+      "linkDeliveryTimeoutHint": "O par pode estar offline ou o transporte RNs está sobrecarregado. Os DMs podem permanecer no Envio até que o link falhe.",
+      "transportSaturated": "Transporte RNs saturado ({{count}} path-request drops)",
+      "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
+      "slowTransportQuery": "Consultas de transporte RNs lentas ou com falha ({{count}}×)",
+      "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
+      "shareInstanceHint": "Share instance is enabled — fully quit other Reticulum apps (MeshChatX, Ratspeak, standalone rnsd) and restart this stack before retrying DMs."
     },
     "reticulumSidecarBundledMissing": "Esta instalação não contém o sidecar Reticulum incluído. Atualize para uma versão mais recente ou relate o problema – a compilação a partir do código-fonte não está disponível em instalações empacotadas.",
     "radioMqttRootDivergesWarning": "O tópico raiz do MQTT de rádio é {{radioRoot}}, mas este painel assina {{appPrefix}}. Combine o rádio para limitar o tráfego de nós em todo o país — atualize o Prefixo do Tópico e reconecte o MQTT.",
@@ -1355,7 +1362,11 @@
         "autoBeaconPhysicalFailures": "AutoInterface beacon TX está falhando em {{ifaces}} — a descoberta de LAN local pode não funcionar até que isso seja corrigido.",
         "tcpUnreachable": "O hub TCP \"{{name}}\" está inacessível ({{host}}:{{port}})",
         "tcpConnectFailed": "Ligação TCP Hub \"{{name}}\" recusada ou tempo esgotado",
-        "txQueueDrops": "Interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX cheia)"
+        "txQueueDrops": "Interface \"{{name}}\" descartou {{count}} pacotes de saída (fila TX cheia)",
+        "linkDeliveryTimeout": "O link LXMF direto para {{hash}}… expirou ({{count}}×)",
+        "transportSaturated": "RNS transport saturated ({{count}} LXMF path-request drops)",
+        "transportSaturatedShareInstance": "RNS transport saturated ({{count}} path-request drops). Share instance is on — quit other Reticulum apps (MeshChatX, Ratspeak, rnsd) and restart the stack.",
+        "slowTransportQuery": "RNS transport queries slow or failing ({{count}}×)"
       }
     },
     "routingPort": {
@@ -3572,7 +3583,12 @@
     "autoSyncOption12h": "A cada 12 horas",
     "autoSyncOption24h": "A cada 24 horas",
     "lastSynced": "Última sincronização: {{time}}",
-    "lastRefreshed": "Última atualização {{time}}"
+    "lastRefreshed": "Última atualização {{time}}",
+    "notice": {
+      "body": "Nenhum nó de propagação está configurado. Os pares offline ou inacessíveis precisam de um nó de propagação para a entrega de LXMF de armazenamento e encaminhamento.",
+      "openSettings": "Configurar propagação",
+      "openSettingsAria": "Open Reticulum Network propagation settings"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modo de propagação",

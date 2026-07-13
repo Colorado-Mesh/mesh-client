@@ -23,6 +23,9 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
   useEffect(() => {
     if (!sidecarReady) return;
 
+    // Keep preferred/nodes fresh for Chat notice + auto-sync even if Network tab was never opened.
+    void useReticulumPropagationStore.getState().refreshFromSidecar();
+
     const tick = () => {
       const { autoSyncIntervalSec, preferredId, sync, lastPropagationSyncAt, startSync } =
         useReticulumPropagationStore.getState();

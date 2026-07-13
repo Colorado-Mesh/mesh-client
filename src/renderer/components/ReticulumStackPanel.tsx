@@ -7,6 +7,7 @@ import {
   collectReticulumLocalInterfaceConnecting,
   type ReticulumLocalInterfaceAlert,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
+import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { useReticulumInterfaceSnapshot } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
@@ -37,6 +38,7 @@ export function ReticulumStackPanel({
 }: ReticulumStackPanelProps) {
   const { t } = useTranslation();
   const [restartError, setRestartError] = useState<string | null>(null);
+  const [shareInstanceSetting, setShareInstanceSetting] = useState(false);
   const sidecarEventRef = useRef<(evt: ReticulumSidecarEvent) => void>(() => {});
 
   const {
@@ -81,6 +83,25 @@ export function ReticulumStackPanel({
       void refreshSidecarStatus();
     }
   }, [interfaces, sidecarApiReady, sidecarUiRunning, refreshSidecarStatus]);
+
+  useEffect(() => {
+    if (!sidecarApiReady || !sidecarUiRunning) return;
+    let cancelled = false;
+    void window.electronAPI.reticulum
+      .proxyGet('/api/v1/stack/settings')
+      .then((raw) => {
+        if (cancelled) return;
+        setShareInstanceSetting(parseReticulumStackSettingsPayload(raw).share_instance);
+      })
+      .catch(() => {
+        if (!cancelled) setShareInstanceSetting(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sidecarApiReady, sidecarUiRunning, sidecarStatus.interfaceIssueAlert?.lastAtMs]);
+
+  const shareInstanceEnabled = sidecarApiReady && sidecarUiRunning && shareInstanceSetting;
 
   const localAlerts = useMemo(
     (): ReticulumLocalInterfaceAlert[] =>
@@ -156,7 +177,10 @@ export function ReticulumStackPanel({
           <>
             <ReticulumLocalInterfaceConnectingBlock interfaces={connectingInterfaces} />
             {sidecarStatus.interfaceIssueAlert ? (
-              <ReticulumSidecarIssueAlertsBlock alert={sidecarStatus.interfaceIssueAlert} />
+              <ReticulumSidecarIssueAlertsBlock
+                alert={sidecarStatus.interfaceIssueAlert}
+                shareInstanceEnabled={shareInstanceEnabled}
+              />
             ) : null}
             <ReticulumLocalInterfaceAlertsBlock
               alerts={localAlerts}

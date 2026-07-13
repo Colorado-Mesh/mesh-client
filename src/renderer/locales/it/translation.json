@@ -1037,7 +1037,14 @@
       "tcpConnectFailedHint": "Disabilitare questa interfaccia nell'elenco sottostante o confermare che l'hub remoto sia in esecuzione.",
       "txQueueDrops": "{{name}}: pacchetti in uscita scartati ({{count}} in coda)",
       "txQueueDropsHint": "Di solito causato da un'interfaccia TCP morta ancora abilitata. Disabilita gli hub non raggiungibili per interrompere l'overflow della coda.",
-      "suppressed": "{{count}} righe di registro sidecar simili soppresse di recente."
+      "suppressed": "{{count}} righe di registro sidecar simili soppresse di recente.",
+      "linkDeliveryTimeout": "Collegamento LXMF diretto a {{hash}}… scaduto ({{count}}×)",
+      "linkDeliveryTimeoutHint": "Il peer potrebbe essere offline o il trasporto RNS è sovraccarico. I DM possono rimanere su Invio fino a quando il collegamento non si interrompe.",
+      "transportSaturated": "Trasporto RNS saturo ({{count}} gocce path-request)",
+      "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
+      "slowTransportQuery": "Query di trasporto RNS lente o non riuscite ({{count}}×)",
+      "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
+      "shareInstanceHint": "L'istanza di condivisione è abilitata: chiudi completamente altre app Reticulum (MeshChatX, Ratspeak, rnsd autonomo) e riavvia questo stack prima di riprovare i DM."
     },
     "reticulumSidecarBundledMissing": "In questa installazione manca il sidecar Reticulum in bundle. Esegui l'upgrade a una versione più recente o segnala il problema: la creazione dal codice sorgente non è disponibile nelle installazioni in pacchetto.",
     "radioMqttRootDivergesWarning": "L'argomento principale di Radio MQTT è {{radioRoot}}, ma questo panel si iscrive a {{appPrefix}}. Abbina la radio per limitare il traffico dei nodi a livello nazionale: aggiorna il prefisso dell'argomento e ricollega MQTT.",
@@ -1355,7 +1362,11 @@
         "autoBeaconPhysicalFailures": "AutoInterface beacon TX non funziona su {{ifaces}} — il rilevamento della LAN locale potrebbe non funzionare fino a quando questo problema non viene risolto.",
         "tcpUnreachable": "L'hub TCP \"{{name}}\" non è raggiungibile ({{host}}:{{port}})",
         "tcpConnectFailed": "Connessione TCP hub \"{{name}}\" rifiutata o scaduta",
-        "txQueueDrops": "L'interfaccia \"{{name}}\" ha rilasciato {{count}} pacchetti in uscita (coda TX piena)"
+        "txQueueDrops": "L'interfaccia \"{{name}}\" ha rilasciato {{count}} pacchetti in uscita (coda TX piena)",
+        "linkDeliveryTimeout": "Collegamento LXMF diretto a {{hash}}… scaduto ({{count}}×)",
+        "transportSaturated": "Trasporto RNS saturo ({{count}} LXMF path-request drop)",
+        "transportSaturatedShareInstance": "Trasporto RNS saturo ({{count}} gocce path-request). L'istanza di condivisione è attiva: esci da altre app Reticulum (MeshChatX, Ratspeak, rnsd) e riavvia lo stack.",
+        "slowTransportQuery": "Query di trasporto RNS lente o non riuscite ({{count}}×)"
       }
     },
     "routingPort": {
@@ -3572,7 +3583,12 @@
     "autoSyncOption12h": "Ogni 12 ore",
     "autoSyncOption24h": "Ogni 24 ore",
     "lastSynced": "Ultima sincronizzazione: {{time}}",
-    "lastRefreshed": "Ultimo aggiornamento {{time}}"
+    "lastRefreshed": "Ultimo aggiornamento {{time}}",
+    "notice": {
+      "body": "Non è configurato alcun nodo di propagazione. I peer offline o non raggiungibili hanno bisogno di un nodo di propagazione per la consegna LXMF store-and-forward.",
+      "openSettings": "Imposta la propagazione",
+      "openSettingsAria": "Open Reticulum Network propagation settings"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modalità di propagazione",

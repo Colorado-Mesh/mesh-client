@@ -82,6 +82,9 @@ describe('ReticulumDiagnosticEngine', () => {
         interfaceIssueAlert: {
           tcpConnectFailed: ['RNS HAM RADIO'],
           txQueueDrops: [{ name: 'RNS HAM RADIO', dropCount: 128 }],
+          linkDeliveryTimeouts: [],
+          transportSaturatedCount: 0,
+          slowTransportQueryCount: 0,
           suppressedCount: 0,
           lastAtMs: Date.now(),
         },
@@ -97,6 +100,37 @@ describe('ReticulumDiagnosticEngine', () => {
       (r): r is RfDiagnosticRow => r.kind === 'rf' && r.condition === 'reticulum/tx-queue-drops',
     );
     expect(dropRow?.severity).toBe('error');
+  });
+
+  it('adds link timeout and transport saturation rows from sidecar alerts', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
+      {
+        interfaceIssueAlert: {
+          tcpConnectFailed: [],
+          txQueueDrops: [],
+          linkDeliveryTimeouts: [{ destinationHash: '5526a65d0b4d23448206fd3485b76f5b', count: 3 }],
+          transportSaturatedCount: 42,
+          slowTransportQueryCount: 2,
+          suppressedCount: 0,
+          lastAtMs: Date.now(),
+        },
+        shareInstanceEnabled: true,
+      },
+    );
+    expect(
+      rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/link-delivery-timeout'),
+    ).toBe(true);
+    const saturated = rows.find(
+      (r): r is RfDiagnosticRow =>
+        r.kind === 'rf' && r.condition === 'reticulum/transport-saturated',
+    );
+    expect(saturated?.causeI18n?.key).toBe(
+      'diagnosticsPanel.reticulum.runtime.transportSaturatedShareInstance',
+    );
+    expect(
+      rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/slow-transport-query'),
+    ).toBe(true);
   });
 
   it('flags stale local serial port separately from generic interface-down', () => {

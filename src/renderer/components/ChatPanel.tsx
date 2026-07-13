@@ -134,6 +134,7 @@ import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { ReticulumAttachmentLine } from './ReticulumAttachmentLine';
 import { ReticulumMessageStatusBadge } from './ReticulumMessageStatusBadge';
+import { ReticulumPropagationNotice } from './ReticulumPropagationNotice';
 import { useToast } from './Toast';
 
 function chatPanelIsLinux(): boolean {
@@ -434,6 +435,10 @@ export interface ChatPanelProps {
   lxmfReplyHashReplies?: boolean;
   /** Reticulum LXMF file/image attachments in DM composer. */
   onSendAttachment?: (file: File, destination: number) => Promise<void>;
+  /** Reticulum: open Network tab propagation settings. */
+  onOpenPropagationSettings?: () => void;
+  /** Reticulum: stack is configured and sidecar is live. */
+  reticulumStackLive?: boolean;
 }
 
 function ChatPanel({
@@ -465,6 +470,8 @@ function ChatPanel({
   composerPayloadLimit,
   lxmfReplyHashReplies = false,
   onSendAttachment,
+  onOpenPropagationSettings,
+  reticulumStackLive = false,
 }: ChatPanelProps) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
@@ -1794,6 +1801,13 @@ function ChatPanel({
           </ChatToolbarTooltipButton>
         </div>
       </div>
+
+      {protocol === 'reticulum' ? (
+        <ReticulumPropagationNotice
+          stackLive={reticulumStackLive}
+          onOpenPropagationSettings={onOpenPropagationSettings}
+        />
+      ) : null}
 
       {protocol === 'reticulum' && reticulumPropagationSync.active && (
         <div

@@ -1037,7 +1037,14 @@
       "tcpConnectFailedHint": "Nonaktifkan antarmuka ini dalam daftar di bawah ini atau konfirmasikan bahwa hub jarak jauh sedang berjalan.",
       "txQueueDrops": "{{name}}: paket keluar dijatuhkan (antrean {{count}})",
       "txQueueDropsHint": "Biasanya disebabkan oleh antarmuka TCP mati yang masih diaktifkan. Nonaktifkan hub yang tidak dapat dijangkau untuk menghentikan overflow antrean.",
-      "suppressed": "{{count}} garis log sespan serupa baru - baru ini ditekan."
+      "suppressed": "{{count}} garis log sespan serupa baru - baru ini ditekan.",
+      "linkDeliveryTimeout": "Tautan LXMF langsung ke {{hash}}… waktu habis ({{count}}×)",
+      "linkDeliveryTimeoutHint": "Rekan mungkin offline atau transportasi RNS kelebihan beban. DM mungkin tetap aktif Mengirim sampai tautan gagal.",
+      "transportSaturated": "Transportasi RNS jenuh ({{count}} permintaan jalur turun)",
+      "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
+      "slowTransportQuery": "Kueri transportasi RNS lambat atau gagal ({{count}}×)",
+      "slowTransportQueryHint": "Aktor transportasi sidecar dapat terjepit — nyalakan kembali tumpukan Reticulum.",
+      "shareInstanceHint": "Contoh berbagi diaktifkan — sepenuhnya keluar dari aplikasi Reticulum lainnya (MeshChatX, Ratspeak, rnsd mandiri) dan mulai ulang tumpukan ini sebelum mencoba DM lagi."
     },
     "reticulumSidecarBundledMissing": "Instalasi ini tidak memiliki sespan Reticulum yang dibundel. Tingkatkan versi ke rilis yang lebih baru atau laporkan masalahnya — pembuatan dari sumber tidak tersedia dalam paket instalasi.",
     "radioMqttRootDivergesWarning": "Topik utama Radio MQTT adalah {{radioRoot}} tetapi panel ini berlangganan {{appPrefix}}. Cocokkan radio untuk membatasi lalu lintas simpul nasional — perbarui Prefiks Topik dan sambungkan kembali MQTT.",
@@ -1355,7 +1362,11 @@
         "autoBeaconPhysicalFailures": "Suar Antarmuka Otomatis TX gagal pada {{ifaces}} — penemuan Lan lokal mungkin tidak berfungsi sampai ini diperbaiki.",
         "tcpUnreachable": "Hub TCP \"{{name}}\" tidak dapat dijangkau ({{host}}:{{port}})",
         "tcpConnectFailed": "Koneksi hub TCP \"{{name}}\" ditolak atau kehabisan waktu",
-        "txQueueDrops": "Antarmuka \"{{name}}\" menjatuhkan paket keluar {{count}} (antrean TX penuh)"
+        "txQueueDrops": "Antarmuka \"{{name}}\" menjatuhkan paket keluar {{count}} (antrean TX penuh)",
+        "linkDeliveryTimeout": "Tautan LXMF langsung ke {{hash}}… waktu habis ({{count}}×)",
+        "transportSaturated": "Transportasi RNS jenuh ({{count}} permintaan jalur LXMF turun)",
+        "transportSaturatedShareInstance": "Transportasi RNS jenuh ({{count}} permintaan jalur turun). Bagikan instance aktif — keluar dari aplikasi Reticulum lainnya (MeshChatX, Ratspeak, rnsd) dan mulai ulang tumpukan.",
+        "slowTransportQuery": "Kueri transportasi RNS lambat atau gagal ({{count}}×)"
       }
     },
     "routingPort": {
@@ -3572,7 +3583,12 @@
     "autoSyncOption12h": "Setiap 12 jam",
     "autoSyncOption24h": "Setiap 24 jam",
     "lastSynced": "Terakhir disinkronkan: {{time}}",
-    "lastRefreshed": "Terakhir diperbarui {{time}}"
+    "lastRefreshed": "Terakhir diperbarui {{time}}",
+    "notice": {
+      "body": "Tidak ada simpul propagasi yang dikonfigurasi. Peer offline atau tidak terjangkau membutuhkan simpul propagasi untuk pengiriman LXMF store - and - forward.",
+      "openSettings": "Atur propagasi",
+      "openSettingsAria": "Open Reticulum Network propagation settings"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Mode propagasi",

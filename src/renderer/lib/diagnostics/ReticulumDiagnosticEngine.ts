@@ -33,6 +33,8 @@ export interface ReticulumDiagnosticsBuildOptions {
   auditIssues?: ReticulumConfigAuditIssue[];
   autoBeaconAlert?: ReticulumAutoBeaconAlert | null;
   interfaceIssueAlert?: ReticulumInterfaceIssueAlert | null;
+  /** When true, append shared-instance conflict hint on transport saturation rows. */
+  shareInstanceEnabled?: boolean;
 }
 
 function runtimeCauseI18n(
@@ -55,6 +57,10 @@ export const RETICULUM_RUNTIME_CAUSE_I18N_KEYS = [
   'diagnosticsPanel.reticulum.runtime.noPeers',
   'diagnosticsPanel.reticulum.runtime.autoBeaconTunnelOnly',
   'diagnosticsPanel.reticulum.runtime.autoBeaconPhysicalFailures',
+  'diagnosticsPanel.reticulum.runtime.linkDeliveryTimeout',
+  'diagnosticsPanel.reticulum.runtime.transportSaturated',
+  'diagnosticsPanel.reticulum.runtime.transportSaturatedShareInstance',
+  'diagnosticsPanel.reticulum.runtime.slowTransportQuery',
 ] as const;
 
 /** Build Reticulum-native diagnostic rows (interface/path/LXMF — not LoRa RF). */
@@ -220,6 +226,55 @@ export function buildReticulumDiagnosticRows(
         detectedAt: now,
         reticulumInterfaceId: iface?.id,
         reticulumRepairKind: 'disable',
+      });
+    }
+    for (const timeout of interfaceIssueAlert.linkDeliveryTimeouts) {
+      rows.push({
+        kind: 'rf',
+        id: rfRowId(homeNodeId, `reticulum/link-delivery-timeout/${timeout.destinationHash}`),
+        nodeId: homeNodeId,
+        condition: 'reticulum/link-delivery-timeout',
+        cause: `Direct LXMF link to ${timeout.destinationHash.slice(0, 8)}… timed out (${timeout.count}×)`,
+        causeI18n: runtimeCauseI18n('linkDeliveryTimeout', {
+          hash: timeout.destinationHash.slice(0, 8),
+          count: String(timeout.count),
+        }),
+        severity: 'error',
+        detectedAt: now,
+        reticulumRepairKind: 'restart_stack',
+      });
+    }
+    if (interfaceIssueAlert.transportSaturatedCount > 0) {
+      rows.push({
+        kind: 'rf',
+        id: rfRowId(homeNodeId, 'reticulum/transport-saturated'),
+        nodeId: homeNodeId,
+        condition: 'reticulum/transport-saturated',
+        cause: `RNS transport saturated (${interfaceIssueAlert.transportSaturatedCount} path-request drops)`,
+        causeI18n: runtimeCauseI18n(
+          options?.shareInstanceEnabled ? 'transportSaturatedShareInstance' : 'transportSaturated',
+          {
+            count: String(interfaceIssueAlert.transportSaturatedCount),
+          },
+        ),
+        severity: 'error',
+        detectedAt: now,
+        reticulumRepairKind: 'restart_stack',
+      });
+    }
+    if (interfaceIssueAlert.slowTransportQueryCount > 0) {
+      rows.push({
+        kind: 'rf',
+        id: rfRowId(homeNodeId, 'reticulum/slow-transport-query'),
+        nodeId: homeNodeId,
+        condition: 'reticulum/slow-transport-query',
+        cause: `RNS transport queries slow or failing (${interfaceIssueAlert.slowTransportQueryCount}×)`,
+        causeI18n: runtimeCauseI18n('slowTransportQuery', {
+          count: String(interfaceIssueAlert.slowTransportQueryCount),
+        }),
+        severity: 'warning',
+        detectedAt: now,
+        reticulumRepairKind: 'restart_stack',
       });
     }
   }

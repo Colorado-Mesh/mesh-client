@@ -1037,7 +1037,14 @@
       "tcpConnectFailedHint": "以下のリストでこのインターフェースを無効にするか、リモートハブが実行されていることを確認します。",
       "txQueueDrops": "{{name}} ：送信パケットがドロップされました（ {{count}}がキューに入れられました）",
       "txQueueDropsHint": "通常は、デッドTCPインターフェイスがまだ有効になっていることが原因です。キューオーバーフローを停止するには、到達不能なハブを無効にします。",
-      "suppressed": "{{count}}類似のサイドカーログ行は最近抑制されました。"
+      "suppressed": "{{count}}類似のサイドカーログ行は最近抑制されました。",
+      "linkDeliveryTimeout": "{{hash}} …への直接LXMFリンクがタイムアウトしました（ {{count}} × ）",
+      "linkDeliveryTimeoutHint": "ピアはオフラインであってもよく、またはRNSトランスポートが過負荷であってもよい。DMは、リンクが失敗するまで送信を続けることができます。",
+      "transportSaturated": "RNSトランスポート飽和（ {{count}}パス要求ドロップ）",
+      "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
+      "slowTransportQuery": "RNSトランスポートクエリが遅いか失敗しました({{count}} ×)",
+      "slowTransportQueryHint": "サイドカーの輸送アクターがくさび形になっている可能性があります。Reticulumスタックを再起動してください。",
+      "shareInstanceHint": "共有インスタンスが有効になっています—他のReticulumアプリ（ MeshChatX、Ratspeak、スタンドアロンrnsd ）を完全に終了し、DMを再試行する前にこのスタックを再起動します。"
     },
     "reticulumSidecarBundledMissing": "このインストールには、バンドルされている Reticulum サイドカーがありません。新しいリリースにアップグレードするか、問題を報告してください。パッケージ化されたインストールではソースからのビルドは利用できません。",
     "radioMqttRootDivergesWarning": "ラジオMQTTルートトピックは{{radioRoot}}ですが、このパネルは{{appPrefix}}に加入しています。全国のノードトラフィックを制限するために無線を一致させます—トピックプレフィックスを更新し、MQTTを再接続します。",
@@ -1355,7 +1362,11 @@
         "autoBeaconPhysicalFailures": "オートインターフェイスビーコンTXが{{ifaces}}で失敗しています—これが修正されるまで、ローカルLAN検出が機能しない可能性があります。",
         "tcpUnreachable": "TCPハブ\"{{name}}\"に到達できません({{host}}: {{port}})",
         "tcpConnectFailed": "TCPハブ\"{{name}}\"接続が拒否されたか、タイムアウトしました",
-        "txQueueDrops": "インターフェース「{{name}}」が{{count}}個のアウトバウンドパケットをドロップしました（ TXキューがいっぱいです）"
+        "txQueueDrops": "インターフェース「{{name}}」が{{count}}個のアウトバウンドパケットをドロップしました（ TXキューがいっぱいです）",
+        "linkDeliveryTimeout": "{{hash}} …への直接LXMFリンクがタイムアウトしました（ {{count}} × ）",
+        "transportSaturated": "RNSトランスポート飽和（ {{count}} LXMFパス要求ドロップ）",
+        "transportSaturatedShareInstance": "RNSトランスポートが飽和しました（ {{count}}パス要求ドロップ）。共有インスタンスがオンになっています—他のReticulumアプリ（ MeshChatX、Ratspeak、rnsd ）を終了し、スタックを再起動します。",
+        "slowTransportQuery": "RNSトランスポートクエリが遅いか失敗しました({{count}} ×)"
       }
     },
     "routingPort": {
@@ -3572,7 +3583,12 @@
     "autoSyncOption12h": "12時間ごと",
     "autoSyncOption24h": "24時間ごと",
     "lastSynced": "最終同期: {{time}}",
-    "lastRefreshed": "最終更新日 {{time}}"
+    "lastRefreshed": "最終更新日 {{time}}",
+    "notice": {
+      "body": "伝播ノードが設定されていません。オフラインまたは到達不能なピアには、ストアアンドフォワードLXMF配信用の伝播ノードが必要です。",
+      "openSettings": "伝播の設定",
+      "openSettingsAria": "Reticulumネットワーク伝播設定を開く"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "伝播モード",

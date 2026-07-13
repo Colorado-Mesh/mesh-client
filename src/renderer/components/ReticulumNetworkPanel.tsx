@@ -78,6 +78,8 @@ export interface ReticulumNetworkPanelProps {
   connecting: boolean;
   onStartStack: () => Promise<void>;
   onOpenAppGpsSettings?: () => void;
+  /** When incremented, opens the propagation collapsible section. */
+  propagationSectionOpenKey?: number;
 }
 
 /** Network tab: identity, stack settings, propagation, config import. */
@@ -85,6 +87,7 @@ export function ReticulumNetworkPanel({
   connecting,
   onStartStack,
   onOpenAppGpsSettings,
+  propagationSectionOpenKey = 0,
 }: ReticulumNetworkPanelProps) {
   const { t } = useTranslation();
   const sidecarEventRef = useRef<(evt: ReticulumSidecarEvent) => void>(() => {});
@@ -615,7 +618,11 @@ export function ReticulumNetworkPanel({
             ) : null}
           </ReticulumCollapsibleSection>
 
-          <ReticulumCollapsibleSection title={t('connectionPanel.reticulumPropagation.title')}>
+          <ReticulumCollapsibleSection
+            key={`propagation-${propagationSectionOpenKey}`}
+            title={t('connectionPanel.reticulumPropagation.title')}
+            defaultOpen={propagationSectionOpenKey > 0}
+          >
             <ReticulumPropagationSection embedded />
           </ReticulumCollapsibleSection>
         </>

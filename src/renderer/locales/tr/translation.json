@@ -1037,7 +1037,14 @@
       "tcpConnectFailedHint": "Aşağıdaki listeden bu arayüzü devre dışı bırakın veya uzak hub'ın çalıştığını onaylayın.",
       "txQueueDrops": "{{name}}: giden paketler düştü ({{count}} kuyruğa alındı)",
       "txQueueDropsHint": "Genellikle ölü bir TCP arayüzü hala etkindir. Kuyruk taşmasını durdurmak için erişilemeyen hub'ları devre dışı bırakın.",
-      "suppressed": "{{count}} benzer sepet günlük satırları yakın zamanda bastırıldı."
+      "suppressed": "{{count}} benzer sepet günlük satırları yakın zamanda bastırıldı.",
+      "linkDeliveryTimeout": "{{hash}} 'a doğrudan LXMF bağlantısı… zaman aşımına uğradı ({{count}}×)",
+      "linkDeliveryTimeoutHint": "Eş çevrimdışı olabilir veya RNS aktarımı aşırı yüklenmiş olabilir. DM'ler, bağlantı başarısız olana kadar Gönderme işleminde kalabilir.",
+      "transportSaturated": "RNS transport saturated ({{count}} path - request drops)",
+      "transportSaturatedHint": "Ölü arayüzleri devre dışı bırakın ve yığını yeniden başlatın. Eşzamanlı Reticulum trafiğini azaltın.",
+      "slowTransportQuery": "RNS taşıma sorguları yavaş veya başarısız ({{count}}×)",
+      "slowTransportQueryHint": "Sepet taşıma aktörü sıkışmış olabilir — Reticulum yığınını yeniden başlatın.",
+      "shareInstanceHint": "Paylaşım örneği etkinleştirildi — diğer Reticulum uygulamalarından (MeshChatX, Ratspeak, standalone rnsd) tamamen çıkın ve DM'leri yeniden denemeden önce bu yığını yeniden başlatın."
     },
     "reticulumSidecarBundledMissing": "Bu kurulumda birlikte verilen Reticulum sidecar eksik. Daha yeni bir sürüme yükseltin veya sorunu bildirin; kaynaktan derleme, paketli kurulumlarda mevcut değildir.",
     "radioMqttRootDivergesWarning": "Radyo MQTT kök konusu {{radioRoot}} 'dır, ancak bu panel {{appPrefix}}' e abone olur. Ülke çapındaki düğüm trafiğini sınırlamak için radyoyu eşleştirin — Konu Önekini güncelleyin ve MQTT'yi yeniden bağlayın.",
@@ -1355,7 +1362,11 @@
         "autoBeaconPhysicalFailures": "AutoInterface beacon TX {{ifaces}} üzerinde başarısız oluyor — bu düzeltilinceye kadar yerel lan keşfi çalışmayabilir.",
         "tcpUnreachable": "TCP merkezi \"{{name}}\" ulaşılamıyor ({{host}}:{{port}})",
         "tcpConnectFailed": "TCP hub \"{{name}}\" bağlantısı reddedildi veya zaman aşımına uğradı",
-        "txQueueDrops": "Arayüz \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu)"
+        "txQueueDrops": "Arayüz \"{{name}}\" düştü {{count}} giden paketler (TX kuyruğu dolu)",
+        "linkDeliveryTimeout": "{{hash}} 'a doğrudan LXMF bağlantısı… zaman aşımına uğradı ({{count}}×)",
+        "transportSaturated": "RNS transport saturated ({{count}} LXMF path - request drops)",
+        "transportSaturatedShareInstance": "RNS nakli doymuş ({{count}} yol talebi düşer). Paylaşım örneği açık — diğer Reticulum uygulamalarından (MeshChatX, Ratspeak, rnsd) çıkın ve yığını yeniden başlatın.",
+        "slowTransportQuery": "RNS taşıma sorguları yavaş veya başarısız ({{count}}×)"
       }
     },
     "routingPort": {
@@ -3572,7 +3583,12 @@
     "autoSyncOption12h": "Her 12 saatte bir",
     "autoSyncOption24h": "Her 24 saatte bir",
     "lastSynced": "Son senkronizasyon: {{time}}",
-    "lastRefreshed": "Son güncelleme {{time}}"
+    "lastRefreshed": "Son güncelleme {{time}}",
+    "notice": {
+      "body": "Hiçbir yayılma düğümü yapılandırılmamış. Çevrimdışı veya erişilemeyen eşler, LXMF teslimatı için bir yayılma düğümüne ihtiyaç duyar.",
+      "openSettings": "Yayılımı ayarla",
+      "openSettingsAria": "Reticulum Ağı yayılım ayarlarını aç"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Yayılma modu",

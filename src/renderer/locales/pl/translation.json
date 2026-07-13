@@ -1037,7 +1037,14 @@
       "tcpConnectFailedHint": "Wyłącz ten interfejs na poniższej liście lub potwierdź, że zdalny koncentrator jest uruchomiony.",
       "txQueueDrops": "{{name}}: pakiety wychodzące odrzucone ({{count}} w kolejce)",
       "txQueueDropsHint": "Zwykle spowodowane przez nadal włączony martwy interfejs TCP. Wyłącz niedostępne koncentratory, aby zatrzymać przepełnienie kolejki.",
-      "suppressed": "Ostatnio zablokowano podobne wiersze dziennika wózka bocznego {{count}}."
+      "suppressed": "Ostatnio zablokowano podobne wiersze dziennika wózka bocznego {{count}}.",
+      "linkDeliveryTimeout": "Upłynął limit czasu bezpośredniego łącza LXMF do {{hash}}… ({{count}}×)",
+      "linkDeliveryTimeoutHint": "Partner może być offline lub transport RNS jest przeciążony. SMS-y mogą pozostać w trybie wysyłania do czasu awarii linku.",
+      "transportSaturated": "Transport RNS nasycony (krople żądania ścieżki {{count}})",
+      "transportSaturatedHint": "Wyłącz martwe interfejsy i uruchom ponownie stos. Zmniejsz równoczesny ruch Reticulum.",
+      "slowTransportQuery": "Powolne lub nieudane zapytania transportowe RNS ({{count}}×)",
+      "slowTransportQueryHint": "Aktor transportowy wózka bocznego może być zaklinowany — uruchom ponownie stos Reticulum.",
+      "shareInstanceHint": "Instancja udostępniania jest włączona — całkowicie zamknij inne aplikacje Reticulum (MeshChatX, Ratspeak, standalone rnsd) i uruchom ponownie ten stos przed ponowną próbą wysłania wiadomości SMS."
     },
     "reticulumSidecarBundledMissing": "W tej instalacji brakuje dołączonego sidecar Reticulum. Uaktualnij do nowszej wersji lub zgłoś problem — budowanie ze źródła nie jest możliwe w przypadku instalacji pakietowych.",
     "radioMqttRootDivergesWarning": "Główny temat radia MQTT to {{radioRoot}}, ale ten panel subskrybuje {{appPrefix}}. Dopasuj radio, aby ograniczyć ogólnokrajowy ruch w węzłach — zaktualizuj prefiks tematu i ponownie połącz MQTT.",
@@ -1355,7 +1362,11 @@
         "autoBeaconPhysicalFailures": "Lampa sygnalizacyjna AutoInterface TX nie działa w {{ifaces}} — lokalne wykrywanie sieci LAN może nie działać, dopóki nie zostanie to naprawione.",
         "tcpUnreachable": "Koncentrator TCP „{{name}}” jest nieosiągalny ({{host}}:{{port}})",
         "tcpConnectFailed": "Odmowa lub przekroczenie limitu czasu połączenia koncentratora TCP „{{name}}”",
-        "txQueueDrops": "Interfejs \"{{name}}\" upuścił pakiety wychodzące {{count}} (kolejka TX pełna)"
+        "txQueueDrops": "Interfejs \"{{name}}\" upuścił pakiety wychodzące {{count}} (kolejka TX pełna)",
+        "linkDeliveryTimeout": "Upłynął limit czasu bezpośredniego łącza LXMF do {{hash}}… ({{count}}×)",
+        "transportSaturated": "Transport RNS nasycony (spadki {{count}} LXMF)",
+        "transportSaturatedShareInstance": "Transport RNS nasycony (krople z żądaniem ścieżki {{count}}). Udostępnij instancję jest włączona — zamknij inne aplikacje Reticulum (MeshChatX, Ratspeak, rnsd) i uruchom ponownie stos.",
+        "slowTransportQuery": "Powolne lub nieudane zapytania transportowe RNS ({{count}}×)"
       }
     },
     "routingPort": {
@@ -3572,7 +3583,12 @@
     "autoSyncOption12h": "Co 12 godzin",
     "autoSyncOption24h": "Co 24 godziny",
     "lastSynced": "Ostatnia synchronizacja: {{time}}",
-    "lastRefreshed": "Ostatnia aktualizacja {{time}}"
+    "lastRefreshed": "Ostatnia aktualizacja {{time}}",
+    "notice": {
+      "body": "Brak skonfigurowanego węzła propagacji. Partnerzy offline lub nieosiągalni potrzebują węzła propagacji do przechowywania i przekazywania LXMF.",
+      "openSettings": "Skonfiguruj propagację",
+      "openSettingsAria": "Open Reticulum Network propagation settings"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Tryb propagacji:",

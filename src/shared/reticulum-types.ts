@@ -23,10 +23,20 @@ export interface ReticulumInterfaceTxQueueDrop {
   dropCount: number;
 }
 
+export interface ReticulumLinkDeliveryTimeout {
+  /** 32-char LXMF destination hash (hex). */
+  destinationHash: string;
+  count: number;
+}
+
 /** Parsed from sidecar stdout when TCP peers are unreachable or TX queues overflow. */
 export interface ReticulumInterfaceIssueAlert {
   tcpConnectFailed: string[];
   txQueueDrops: ReticulumInterfaceTxQueueDrop[];
+  linkDeliveryTimeouts: ReticulumLinkDeliveryTimeout[];
+  /** Incremented when LXMF path requests fail with transport channel full. */
+  transportSaturatedCount: number;
+  slowTransportQueryCount: number;
   suppressedCount: number;
   lastAtMs: number;
 }

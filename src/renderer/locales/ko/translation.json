@@ -1037,7 +1037,14 @@
       "tcpConnectFailedHint": "아래 목록에서 이 인터페이스를 비활성화하거나 원격 허브가 실행 중인지 확인하십시오.",
       "txQueueDrops": "{{name}}: 아웃바운드 패킷이 삭제됨 ({{count}} 대기 중)",
       "txQueueDropsHint": "일반적으로 죽은 TCP 인터페이스가 여전히 활성화되어 있기 때문에 발생합니다. 연결할 수 없는 허브를 비활성화하여 대기열 오버플로를 중지합니다.",
-      "suppressed": "{{count}} 최근 유사한 사이드카 로그 라인이 억제되었습니다."
+      "suppressed": "{{count}} 최근 유사한 사이드카 로그 라인이 억제되었습니다.",
+      "linkDeliveryTimeout": "{{hash}} 에 대한 직접 LXMF 링크… 시간 초과 ({{count}} ×)",
+      "linkDeliveryTimeoutHint": "피어가 오프라인이거나 RNS 전송이 과부하 상태일 수 있습니다. DM은 링크가 실패할 때까지 전송을 유지할 수 있습니다.",
+      "transportSaturated": "RNS 전송 포화 ({{count}} 경로 요청 드롭)",
+      "transportSaturatedHint": "죽은 인터페이스를 비활성화하고 스택을 다시 시작하십시오. 동시 Reticulum 트래픽을 줄입니다.",
+      "slowTransportQuery": "RNS 전송 쿼리가 느리거나 실패함 ({{count}} ×)",
+      "slowTransportQueryHint": "사이드카 트랜스포트 액터에 쐐기를 박을 수 있습니다. Reticulum 스택을 다시 시작하십시오.",
+      "shareInstanceHint": "공유 인스턴스가 활성화되었습니다. DM을 다시 시도하기 전에 다른 Reticulum 앱 (MeshChatX, Ratspeak, 독립 실행형 rnsd) 을 완전히 종료하고 이 스택을 다시 시작하십시오."
     },
     "reticulumSidecarBundledMissing": "이 설치에는 번들로 제공되는 Reticulum 사이드카가 없습니다. 최신 릴리스로 업그레이드하거나 문제를 보고하세요. 패키지 설치에서는 소스에서 빌드할 수 없습니다.",
     "radioMqttRootDivergesWarning": "라디오 MQTT 루트 주제는 {{radioRoot}} 이지만 이 패널은 {{appPrefix}} 을 (를) 구독합니다. 라디오를 일치시켜 전국 노드 트래픽을 제한하십시오 — 주제 접두사를 업데이트하고 MQTT를 다시 연결하십시오.",
@@ -1355,7 +1362,11 @@
         "autoBeaconPhysicalFailures": "AutoInterface 비콘 TX가 {{ifaces}} 에서 실패하고 있습니다. 이 문제가 해결될 때까지 로컬 LAN 검색이 작동하지 않을 수 있습니다.",
         "tcpUnreachable": "TCP 허브 \"{{name}}\" 에 연결할 수 없습니다 ({{host}}: {{port}})",
         "tcpConnectFailed": "TCP 허브 \"{{name}}\" 연결이 거부되었거나 시간이 초과되었습니다",
-        "txQueueDrops": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참)"
+        "txQueueDrops": "인터페이스 \"{{name}}\" 삭제됨 {{count}} 아웃바운드 패킷 (TX 대기열 가득 참)",
+        "linkDeliveryTimeout": "{{hash}} 에 대한 직접 LXMF 링크… 시간 초과 ({{count}} ×)",
+        "transportSaturated": "RNS 전송 포화 ({{count}} LXMF 경로 요청 드롭)",
+        "transportSaturatedShareInstance": "RNS 전송 포화 ({{count}} 경로 요청 드롭). 인스턴스 공유 켜짐 — 다른 Reticulum 앱 (MeshChatX, Ratspeak, rnsd) 을 종료하고 스택을 다시 시작합니다.",
+        "slowTransportQuery": "RNS 전송 쿼리가 느리거나 실패함 ({{count}} ×)"
       }
     },
     "routingPort": {
@@ -3572,7 +3583,12 @@
     "autoSyncOption12h": "12시간마다",
     "autoSyncOption24h": "24시간마다",
     "lastSynced": "마지막 동기화: {{time}}",
-    "lastRefreshed": "마지막 업데이트: {{time}}"
+    "lastRefreshed": "마지막 업데이트: {{time}}",
+    "notice": {
+      "body": "전파 노드가 구성되지 않았습니다. 오프라인 또는 연락이 닿지 않는 동료에게는 스토어 앤 포워드 LXMF 배송을 위한 전파 노드가 필요합니다.",
+      "openSettings": "전파 설정",
+      "openSettingsAria": "Reticulum Network 전파 설정 열기"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "전파 모드",

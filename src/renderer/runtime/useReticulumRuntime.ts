@@ -38,6 +38,7 @@ import {
   pickReticulumLocalHealthPollMs,
   scheduleReticulumLocalInterfaceBurst,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
+import { failReticulumSendingOutboundToDestHash } from '@/renderer/lib/reticulum/reticulumOutboundFailureBridge';
 import { applyPropagationSyncEvent } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import { reticulumWireRowToEntry } from '@/renderer/lib/reticulum/reticulumRawPacketLog';
 import {
@@ -48,6 +49,7 @@ import {
   invalidateReticulumInterfacesCache,
   type ReticulumSidecarInterfaceRow,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
 import { registerReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
@@ -134,6 +136,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const localInterfacePollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stateRef = useRef(state);
   const localInterfacesRef = useRef<ReticulumSidecarInterfaceRow[]>([]);
+  const processedLinkTimeoutDestsRef = useRef(new Set<string>());
   const nodeStoreSlice = useNodeStore((s) => (identityId ? s.nodes[identityId] : undefined));
 
   const sidecarActiveForBleYield =
@@ -254,7 +257,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const syncDiagnosticsFromSidecar = useCallback(async () => {
     try {
-      const [snapshot, health, auditIssues, sidecarStatus] = await Promise.all([
+      const [snapshot, health, auditIssues, sidecarStatus, stackRaw] = await Promise.all([
         window.electronAPI.reticulum.proxyGet('/api/v1/diagnostics') as Promise<
           Parameters<typeof buildReticulumDiagnosticRows>[0]
         >,
@@ -264,9 +267,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
           return [];
         }),
         window.electronAPI.reticulum.getStatus(),
+        window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings').catch(() => null),
       ]);
       const { interfaces, osSerialPorts } = health;
       const selfNodeId = selfLxmfHash ? reticulumHashToNodeId(selfLxmfHash) : 0;
+      const shareInstanceEnabled =
+        stackRaw != null ? parseReticulumStackSettingsPayload(stackRaw).share_instance : false;
       const rows = buildReticulumDiagnosticRows(snapshot, {
         selfNodeId,
         interfaces,
@@ -274,6 +280,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         auditIssues,
         autoBeaconAlert: sidecarStatus.autoBeaconAlert ?? null,
         interfaceIssueAlert: sidecarStatus.interfaceIssueAlert ?? null,
+        shareInstanceEnabled,
       });
       useDiagnosticsStore.setState((s) => ({
         diagnosticRows: mergeReticulumDiagnosticRows(s.diagnosticRows, rows),
@@ -465,6 +472,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     rawPacketAppenderRef.current?.clearPending();
     setRawPackets([]);
     clearReticulumSessionStores();
+    processedLinkTimeoutDestsRef.current.clear();
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);
@@ -473,6 +481,19 @@ export function useReticulumRuntime(): ProtocolRuntime {
     const unsubStatus = window.electronAPI.reticulum.onStatus((status) => {
       if (status.interfaceIssueAlert || status.autoBeaconAlert) {
         void syncDiagnosticsFromSidecar();
+        const timeouts = status.interfaceIssueAlert?.linkDeliveryTimeouts;
+        if (identityId && timeouts?.length) {
+          for (const { destinationHash } of timeouts) {
+            const norm = destinationHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+            if (!norm || processedLinkTimeoutDestsRef.current.has(norm)) continue;
+            processedLinkTimeoutDestsRef.current.add(norm);
+            failReticulumSendingOutboundToDestHash(
+              identityId,
+              norm,
+              i18n.t('chatPanel.reticulumSendFailed'),
+            );
+          }
+        }
       }
       if (status.running) return;
       if (connectInFlightRef.current) return;
@@ -495,7 +516,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     return () => {
       unsubStatus();
     };
-  }, [tearDownFromSidecarStop, syncDiagnosticsFromSidecar]);
+  }, [tearDownFromSidecarStop, syncDiagnosticsFromSidecar, identityId]);
 
   useEffect(() => {
     return () => {
@@ -586,6 +607,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     rawPacketAppenderRef.current?.clearPending();
     setRawPackets([]);
     clearReticulumSessionStores();
+    processedLinkTimeoutDestsRef.current.clear();
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);
