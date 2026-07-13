@@ -259,6 +259,25 @@ describe('ingestMeshcoreChannelMessage + store persist', () => {
     const result = upsertMeshcoreMessageWithDedup(ID, rfRefreshed);
     expect(result.storeUpdated).toBe(true);
     expect(result.message.replyId).toBe(1780240608140);
+    expect(result.message.rxHops).toBe(1);
+    const inStore = listChatMessagesFromStore(ID).find((m) => m.payload === 'reply to b');
+    expect(inStore?.rxHops).toBe(1);
+  });
+
+  it('persists rxHops through store round-trip on RF ingest', () => {
+    const parsed = ingestMeshcoreChannelMessage(ID, {
+      rawText: `${NV0N}: hello with hops`,
+      senderId: 100,
+      displayName: NV0N,
+      channel: CH,
+      timestamp: 1_780_240_000_000,
+      receivedVia: 'rf',
+      rxHops: 3,
+    });
+    upsertMeshcoreMessageWithDedup(ID, parsed);
+    const inStore = listChatMessagesFromStore(ID).find((m) => m.payload === 'hello with hops');
+    expect(inStore?.rxHops).toBe(3);
+    expect(inStore?.receivedVia).toBe('rf');
   });
 });
 
