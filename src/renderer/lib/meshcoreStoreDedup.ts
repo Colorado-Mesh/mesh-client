@@ -61,15 +61,15 @@ export function meshcoreMessageStoreId(msg: ChatMessage): string {
       msg.sender_id > 0 ? msg.sender_id : undefined,
     );
   }
-  if (msg.channel != null && msg.channel >= 0) {
-    return meshcoreChannelMessageStoreId(msg.channel, meshcoreTimestampSec(msg.timestamp));
-  }
   if (msg.channel === MESHCORE_ROOM_MESSAGE_CHANNEL && msg.to != null) {
     return meshcoreRoomMessageStoreId(
       msg.to,
       meshcoreTimestampSec(msg.timestamp),
       msg.sender_id > 0 ? msg.sender_id : undefined,
     );
+  }
+  if (msg.channel != null && msg.channel >= 0) {
+    return meshcoreChannelMessageStoreId(msg.channel, meshcoreTimestampSec(msg.timestamp));
   }
   return `${msg.sender_id}-${msg.timestamp}-${msg.channel ?? -1}`;
 }
@@ -248,7 +248,7 @@ function mergeRoomPostDuplicate(existing: ChatMessage, incoming: ChatMessage): C
     ...incoming,
     timestamp,
     status,
-    payload: incoming.meshcoreDedupeKey ?? incoming.payload ?? existing.payload,
+    payload: incoming.payload ?? existing.payload,
     meshcoreDedupeKey: incoming.meshcoreDedupeKey ?? existing.meshcoreDedupeKey,
     sender_name: incoming.sender_name || existing.sender_name,
     receivedVia: mergeMeshcoreReceivedVia(existing.receivedVia, incoming.receivedVia),
