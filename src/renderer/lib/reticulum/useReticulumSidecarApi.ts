@@ -7,14 +7,11 @@ import {
   setReticulumAutostartEnabled,
 } from '@/renderer/lib/appSettingsStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import type { ReticulumIdentityStatus } from '@/renderer/stores/reticulumIdentityStore';
+import { useReticulumIdentityStore } from '@/renderer/stores/reticulumIdentityStore';
 import type { ReticulumSidecarEvent, ReticulumSidecarStatus } from '@/shared/reticulum-types';
 
-export interface ReticulumIdentityStatus {
-  configured: boolean;
-  identity_hash: string;
-  lxmf_hash: string;
-  display_name?: string | null;
-}
+export type { ReticulumIdentityStatus } from '@/renderer/stores/reticulumIdentityStore';
 
 export interface UseReticulumSidecarApiOptions {
   connecting: boolean;
@@ -40,7 +37,7 @@ export function useReticulumSidecarApi({
   const autostartAttemptedRef = useRef(false);
   const startInFlightRef = useRef(false);
   const manualStopSuppressRef = useRef(false);
-  const [identity, setIdentity] = useState<ReticulumIdentityStatus | null>(null);
+  const identity = useReticulumIdentityStore((state) => state.identity);
   const [statsSummary, setStatsSummary] = useState<string | null>(null);
   const [appInfo, setAppInfo] = useState<{ sidecar_version?: string; rns_version?: string } | null>(
     null,
@@ -62,14 +59,14 @@ export function useReticulumSidecarApi({
 
   const refreshIdentity = useCallback(async () => {
     if (!sidecarApiReady) {
-      setIdentity(null);
+      useReticulumIdentityStore.getState().setIdentity(null);
       return;
     }
     try {
       const body = (await window.electronAPI.reticulum.proxyGet(
         '/api/v1/identity/status',
       )) as ReticulumIdentityStatus;
-      setIdentity(body);
+      useReticulumIdentityStore.getState().setIdentity(body);
     } catch (e) {
       console.debug('[useReticulumSidecarApi] identity status ' + errLikeToLogString(e));
     }

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getStatus = vi.fn();
@@ -13,6 +13,7 @@ vi.mock('@/renderer/lib/appSettingsStorage', () => ({
 }));
 
 import { isReticulumAutostartEnabled } from '@/renderer/lib/appSettingsStorage';
+import { resetReticulumIdentityStoreForTests } from '@/renderer/stores/reticulumIdentityStore';
 
 import { useReticulumSidecarApi } from './useReticulumSidecarApi';
 
@@ -22,6 +23,8 @@ describe('useReticulumSidecarApi', () => {
     onStatus.mockReset();
     onEvent.mockReset();
     onStartStack.mockReset();
+    vi.mocked(isReticulumAutostartEnabled).mockReturnValue(false);
+    resetReticulumIdentityStoreForTests();
     onStartStack.mockResolvedValue(undefined);
     getStatus.mockResolvedValue({ running: false, port: 0, pid: null });
     onStatus.mockReturnValue(() => {});
@@ -63,6 +66,63 @@ describe('useReticulumSidecarApi', () => {
       expect(result.current.sidecarUiRunning).toBe(true);
     });
     expect(result.current.sidecarApiReady).toBe(false);
+  });
+
+  it('shares refreshed identity status across hook instances', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 59477, pid: 42 });
+    const proxyGet = vi.fn((path: string) => {
+      if (path === '/api/v1/identity/status') {
+        return Promise.resolve({
+          configured: false,
+          identity_hash: '',
+          lxmf_hash: '',
+        });
+      }
+      return Promise.resolve({});
+    });
+    window.electronAPI.reticulum.proxyGet = proxyGet;
+
+    const first = renderHook(() =>
+      useReticulumSidecarApi({
+        connecting: false,
+        onStartStack,
+      }),
+    );
+    const second = renderHook(() =>
+      useReticulumSidecarApi({
+        connecting: false,
+        onStartStack,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(first.result.current.sidecarApiReady).toBe(true);
+      expect(second.result.current.sidecarApiReady).toBe(true);
+      expect(second.result.current.identity?.configured).toBe(false);
+    });
+
+    proxyGet.mockImplementation((path: string) => {
+      if (path === '/api/v1/identity/status') {
+        return Promise.resolve({
+          configured: true,
+          identity_hash: 'identity-hash',
+          lxmf_hash: 'lxmf-hash',
+          display_name: 'Mesh User',
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    await act(async () => {
+      await first.result.current.refreshIdentity();
+    });
+
+    expect(second.result.current.identity).toEqual({
+      configured: true,
+      identity_hash: 'identity-hash',
+      lxmf_hash: 'lxmf-hash',
+      display_name: 'Mesh User',
+    });
   });
 
   it('updates sidecarUiRunning when onStatus reports stopped', async () => {
