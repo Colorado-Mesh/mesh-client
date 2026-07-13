@@ -3544,7 +3544,10 @@
     "announceSaveSidecarStopped": "Démarrez la pile Reticulum avant d'enregistrer les paramètres d'annonce.",
     "clearAnnouncesDone": "Annonces effacées.",
     "clearAnnouncesFailed": "Échec de l'effacement des annonces.",
-    "announceIntervalHint": "Par défaut 3600 s (1 h). Utilisez 0 pour les annonces de démarrage uniquement."
+    "announceIntervalHint": "Par défaut 3600 s (1 h). Utilisez 0 pour les annonces de démarrage uniquement.",
+    "announceNow": "Annoncez maintenant",
+    "announceNowDone": "Annonce de livraison LXMF envoyée.",
+    "announceNowFailed": "Échec de l'annonce : {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "Avatar",

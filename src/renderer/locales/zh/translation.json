@@ -3544,7 +3544,10 @@
     "announceSaveSidecarStopped": "在保存公告设置之前启动Reticulum堆栈。",
     "clearAnnouncesDone": "宣布已清除。",
     "clearAnnouncesFailed": "清除公告失败。",
-    "announceIntervalHint": "默认3600秒（ 1小时）。对于仅限启动的公告，请使用0。"
+    "announceIntervalHint": "默认3600秒（ 1小时）。对于仅限启动的公告，请使用0。",
+    "announceNow": "立即公告",
+    "announceNowDone": "LXMF交付公告已发送。",
+    "announceNowFailed": "公告失败： {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "阿凡达图标",

@@ -96,7 +96,7 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/topology", get(system::topology))
         .route("/api/v1/rmap/discovered", get(rmap::list_rmap_discovered))
         .route("/api/v1/packets", get(system::list_packets).delete(system::clear_packets))
-        .route("/api/v1/announces", delete(system::clear_announces))
+        .route("/api/v1/announces", delete(system::clear_announces).post(system::announce_now))
         .route("/api/v1/propagation", get(propagation::list_propagation))
         .route("/api/v1/propagation/add", post(propagation::add_propagation_node))
         .route(

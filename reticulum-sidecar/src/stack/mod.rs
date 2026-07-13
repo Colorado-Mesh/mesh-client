@@ -21,6 +21,8 @@ mod via;
 #[cfg(feature = "rns-stack")]
 mod live;
 #[cfg(feature = "rns-stack")]
+mod lxmf_delivery;
+#[cfg(feature = "rns-stack")]
 mod propagation_bridge;
 
 use std::path::PathBuf;
@@ -866,6 +868,22 @@ impl StackHandle {
         inner.save(&self.config_dir, &self.storage_dir)?;
         self.emit_event("peers_updated", serde_json::json!({ "cleared": true }));
         Ok(())
+    }
+
+    /// Send an LXMF delivery announce immediately (live stack only).
+    pub async fn announce_now(&self) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.announce_lxmf_now().await;
+        }
+        #[cfg(feature = "rns-stack")]
+        {
+            return Err("live RNS bridge unavailable; start stack with identity configured".into());
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            Err("announce requires an rns-stack sidecar build".into())
+        }
     }
 
     pub async fn list_nomad_nodes(&self) -> Vec<NomadNodeRow> {

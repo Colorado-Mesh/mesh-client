@@ -3544,7 +3544,10 @@
     "announceSaveSidecarStopped": "Inicie a pilha Reticulum antes de salvar as configurações de anúncio.",
     "clearAnnouncesDone": "Anúncios liberados.",
     "clearAnnouncesFailed": "Falha ao limpar anúncios.",
-    "announceIntervalHint": "Padrão 3600 s (1 h). Use 0 para anúncios somente de inicialização."
+    "announceIntervalHint": "Padrão 3600 s (1 h). Use 0 para anúncios somente de inicialização.",
+    "announceNow": "Anuncie agora",
+    "announceNowDone": "Anúncio de entrega LXMF enviado.",
+    "announceNowFailed": "Falha ao anunciar: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "Ícone de avatar",

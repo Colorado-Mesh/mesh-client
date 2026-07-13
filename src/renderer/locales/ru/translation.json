@@ -3544,7 +3544,10 @@
     "announceSaveFailed": "Не удалось сохранить интервал объявления: {{error}}",
     "announceSaveSidecarStopped": "Запустите стек Reticulum перед сохранением настроек объявления.",
     "clearAnnouncesDone": "Объявления очищены.",
-    "clearAnnouncesFailed": "Не удалось очистить объявления."
+    "clearAnnouncesFailed": "Не удалось очистить объявления.",
+    "announceNow": "Объявить сейчас",
+    "announceNowDone": "Объявление о доставке LXMF отправлено.",
+    "announceNowFailed": "Не удалось объявить: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "Значок аватара",

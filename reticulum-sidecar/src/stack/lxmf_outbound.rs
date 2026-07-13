@@ -131,13 +131,14 @@ impl LxmfOutboundDriver {
         self.path_table_hashes.clear();
         for (hash, hops, hex_key) in entries {
             self.route_hops.insert(*hash, (*hops).max(1));
-            self.path_table_hashes.insert(hex_key.clone());
+            self.path_table_hashes.insert(hex_key.to_lowercase());
             self.path_request_gate.clear_destination(*hash);
         }
     }
 
     pub fn has_path_to(&self, destination_hex: &str) -> bool {
-        self.path_table_hashes.contains(destination_hex)
+        self.path_table_hashes
+            .contains(&destination_hex.to_lowercase())
     }
 
     pub fn process_tick(&mut self, router: &mut LxmRouter, event_tx: &broadcast::Sender<String>) {

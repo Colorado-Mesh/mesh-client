@@ -106,6 +106,42 @@ export function ReticulumAnnounceControls({
     }
   };
 
+  const announceNow = async () => {
+    setBusy(true);
+    setStatusMessage(null);
+    try {
+      if (!(await isReticulumSidecarRunning())) {
+        setStatusMessage(t('reticulumIdentity.announceSaveSidecarStopped'));
+        addToast(t('reticulumIdentity.announceSaveSidecarStopped'), 'error');
+        return;
+      }
+      const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/announces', {})) as {
+        ok?: boolean;
+        error?: string;
+      };
+      if (res?.ok === false) {
+        const message = t('reticulumIdentity.announceNowFailed', {
+          error: res.error ?? t('common.error'),
+        });
+        setStatusMessage(message);
+        addToast(message, 'error');
+        return;
+      }
+      const savedMessage = t('reticulumIdentity.announceNowDone');
+      setStatusMessage(savedMessage);
+      addToast(savedMessage, 'success');
+    } catch (e) {
+      const message = t('reticulumIdentity.announceNowFailed', {
+        error: errLikeToLogString(e),
+      });
+      console.warn('[ReticulumAnnounceControls] announce now ' + errLikeToLogString(e));
+      setStatusMessage(message);
+      addToast(message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const controlsDisabled = disabled || busy;
 
   return (
@@ -138,6 +174,17 @@ export function ReticulumAnnounceControls({
           }}
         >
           {busy ? t('common.saving') : t('common.save')}
+        </button>
+        <button
+          type="button"
+          disabled={controlsDisabled}
+          aria-label={t('reticulumIdentity.announceNow')}
+          className="border-brand-green/60 text-brand-green rounded border px-2 py-1 text-xs transition-colors hover:bg-slate-800 disabled:opacity-40"
+          onClick={() => {
+            void announceNow();
+          }}
+        >
+          {t('reticulumIdentity.announceNow')}
         </button>
         <button
           type="button"

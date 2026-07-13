@@ -1022,6 +1022,21 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 
 **Not the same as transport:** Ratspeak TCP hubs (e.g. `rns.ratspeak.org:4242`) and [rathole](https://github.com/ratspeak/rathole) are **connectivity / transport** tools, not LXMF propagation. mesh-client does not ship a default community propagation hash.
 
+### Reticulum: Ratspeak DMs work but mesh-client stays silent
+
+**Symptoms**: Another Reticulum client (Ratspeak, Sideband, MeshChat) exchanges DMs with a mobile peer after both sides announce; mesh-client shows outbound stuck **Sending** / **Queued** / **Failed**, **zero inbound**, or a Chat contact that never appears under **Peers**.
+
+**Cause**: LXMF requires (1) an **`lxmf.delivery` announce** so peers learn a path _to_ this identity and (2) inbound destination registration (`RegisterDestination` + LinkManager) so link payloads reach Chat. Older sidecars stored announce interval in config without scheduling announces; current builds send startup + periodic delivery announces and register `lxmf.delivery`.
+
+**Checks**:
+
+1. Upgrade / rebuild the sidecar (`pnpm run reticulum:sidecar:build`) and **Restart stack**.
+2. On Network, use **Announce now**; on the other client, confirm mesh-client’s LXMF hash (Network identity) appears after the announce.
+3. Same fabric: enable the same TCP hub / Auto / RNode paths on both clients when A/B testing.
+4. Contact named in Chat but missing from Peers → path dead; use **Peers → Request path / Probe**, or wait for the peer’s announce on that fabric.
+5. **Auto interface up ≠ Auto peers.** Auto “up” means LAN multicast carrier works; peer rows appear only when another RNS node announces onto that Auto group (or paths are owned by that interface). Multi-hop peers labeled with a TCP hub name and a shared `via` are hub fanout, not LAN neighbors.
+6. Configure a remote **propagation node** if the peer is often offline (does not replace missing announces).
+
 ### Reticulum interface add/edit/delete fails
 
 **Symptoms**: Connection tab **Add interface**, **Edit**, or **Delete** shows an inline error; interface list does not refresh.

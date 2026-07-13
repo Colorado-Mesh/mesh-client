@@ -3544,7 +3544,10 @@
     "announceSaveSidecarStopped": "Před uložením nastavení oznamování spusťte zásobník Reticulum.",
     "clearAnnouncesDone": "Oznámení vymazána.",
     "clearAnnouncesFailed": "Nepodařilo se vymazat oznámení.",
-    "announceIntervalHint": "Výchozí 3600 s (1 h). Použijte 0 pro oznámení pouze při spuštění."
+    "announceIntervalHint": "Výchozí 3600 s (1 h). Použijte 0 pro oznámení pouze při spuštění.",
+    "announceNow": "Ohlásit nyní",
+    "announceNowDone": "Oznámení o doručení LXMF odesláno.",
+    "announceNowFailed": "Nepodařilo se oznámit: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "Ikona avatara",

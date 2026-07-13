@@ -3538,10 +3538,13 @@
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Announce interval (seconds)",
-    "announceIntervalHint": "Default 3600 s (1 h). Use 0 for startup-only announces.",
+    "announceIntervalHint": "Default 3600 s (1 h). Use 0 for startup-only announces. Announce now sends an LXMF delivery announce immediately.",
     "announceSaved": "Announce interval saved.",
     "announceSaveFailed": "Failed to save announce interval: {{error}}",
     "announceSaveSidecarStopped": "Start the Reticulum stack before saving announce settings.",
+    "announceNow": "Announce now",
+    "announceNowDone": "LXMF delivery announce sent.",
+    "announceNowFailed": "Failed to announce: {{error}}",
     "clearAnnounces": "Clear announces",
     "clearAnnouncesDone": "Announces cleared.",
     "clearAnnouncesFailed": "Failed to clear announces."

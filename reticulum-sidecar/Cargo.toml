@@ -17,6 +17,7 @@ rns-stack = [
     "dep:rns-runtime",
     "dep:lxmf-core",
     "dep:rns-identity",
+    "dep:rns-wire",
     "dep:rns-ratkey",
     "dep:rns-transport",
     "dep:rmpv",
@@ -55,6 +56,12 @@ features = ["serial"]
 package = "rns-identity"
 path = "../../rsReticulum/crates/rns-identity"
 optional = true
+
+[dependencies.rns-wire]
+package = "rns-wire"
+path = "../../rsReticulum/crates/rns-wire"
+optional = true
+features = ["std"]
 
 [dependencies.rns-ratkey]
 package = "rns-ratkey"

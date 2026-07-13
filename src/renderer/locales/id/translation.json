@@ -3544,7 +3544,10 @@
     "announceSaveSidecarStopped": "Mulai tumpukan Reticulum sebelum menyimpan pengaturan pengumuman.",
     "clearAnnouncesDone": "Pengumuman dihapus.",
     "clearAnnouncesFailed": "Gagal menghapus pengumuman.",
-    "announceIntervalHint": "Default 3600 s (1 jam). Gunakan 0 untuk pengumuman khusus startup."
+    "announceIntervalHint": "Default 3600 s (1 jam). Gunakan 0 untuk pengumuman khusus startup.",
+    "announceNow": "Umumkan sekarang",
+    "announceNowDone": "Pengumuman pengiriman LXMF terkirim.",
+    "announceNowFailed": "Gagal mengumumkan: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "Ikon avatar",

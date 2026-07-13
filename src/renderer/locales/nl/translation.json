@@ -3544,7 +3544,10 @@
     "announceSaveSidecarStopped": "Start de Reticulum-stack voordat u de aankondigingsinstellingen opslaat.",
     "clearAnnouncesDone": "Aankondigingen gewist.",
     "clearAnnouncesFailed": "Kan aankondigingen niet wissen.",
-    "announceIntervalHint": "Standaard 3600 s (1 uur). Gebruik 0 voor aankondigingen voor alleen opstarten."
+    "announceIntervalHint": "Standaard 3600 s (1 uur). Gebruik 0 voor aankondigingen voor alleen opstarten.",
+    "announceNow": "Nu aankondigen",
+    "announceNowDone": "Bezorgaankondiging LXMF verzonden.",
+    "announceNowFailed": "Aankondiging mislukt: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "Avatar-pictogram",

@@ -3544,7 +3544,10 @@
     "announceSaveSidecarStopped": "Inicie la pila Reticulum antes de guardar la configuración del anuncio.",
     "clearAnnouncesDone": "Anuncios borrados.",
     "clearAnnouncesFailed": "No se han podido borrar los anuncios.",
-    "announceIntervalHint": "Predeterminado 3600 s (1 h). Utilice 0 para anuncios solo de inicio."
+    "announceIntervalHint": "Predeterminado 3600 s (1 h). Utilice 0 para anuncios solo de inicio.",
+    "announceNow": "Anunciar ahora",
+    "announceNowDone": "Anuncio de entrega LXMF enviado.",
+    "announceNowFailed": "No se ha podido anunciar: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "Icono del Avatar",

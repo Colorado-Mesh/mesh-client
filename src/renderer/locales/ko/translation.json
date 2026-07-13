@@ -3544,7 +3544,10 @@
     "announceSaveSidecarStopped": "공지 설정을 저장하기 전에 Reticulum 스택을 시작합니다.",
     "clearAnnouncesDone": "공지가 지워졌습니다.",
     "clearAnnouncesFailed": "공지 지우기에 실패했습니다.",
-    "announceIntervalHint": "기본값은 3600초 (1시간) 입니다. 시작 전용 발표에 0을 사용하십시오."
+    "announceIntervalHint": "기본값은 3600초 (1시간) 입니다. 시작 전용 발표에 0을 사용하십시오.",
+    "announceNow": "지금 발표하기",
+    "announceNowDone": "LXMF 배송 발표가 전송되었습니다.",
+    "announceNowFailed": "발표 실패: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "아바타 아이콘",

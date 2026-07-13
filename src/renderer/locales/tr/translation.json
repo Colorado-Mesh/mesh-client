@@ -3544,7 +3544,10 @@
     "announceSaveSidecarStopped": "Duyuru ayarlarını kaydetmeden önce Reticulum yığınını başlat.",
     "clearAnnouncesDone": "Anonslar temizlendi.",
     "clearAnnouncesFailed": "Duyurular temizlenemedi.",
-    "announceIntervalHint": "Varsayılan 3600 s (1 saat). Yalnızca başlangıç anonsları için 0 'ı kullanın."
+    "announceIntervalHint": "Varsayılan 3600 s (1 saat). Yalnızca başlangıç anonsları için 0 'ı kullanın.",
+    "announceNow": "Şimdi duyur",
+    "announceNowDone": "LXMF teslimat duyurusu gönderildi.",
+    "announceNowFailed": "Duyurulamadı: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "Avatar Görünümü",

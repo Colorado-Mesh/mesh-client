@@ -3544,7 +3544,10 @@
     "announceSaveSidecarStopped": "Uruchom stos Reticulum przed zapisaniem ustawień zapowiedzi.",
     "clearAnnouncesDone": "Ogłoszenia wyczyszczone.",
     "clearAnnouncesFailed": "Nie udało się wyczyścić ogłoszeń.",
-    "announceIntervalHint": "Domyślnie 3600 s (1 h). Użyj 0 do komunikatów tylko przy starcie."
+    "announceIntervalHint": "Domyślnie 3600 s (1 h). Użyj 0 do komunikatów tylko przy starcie.",
+    "announceNow": "Ogłoś teraz",
+    "announceNowDone": "Wysłano zawiadomienie o dostawie LXMF.",
+    "announceNowFailed": "Nie udało się ogłosić: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "Ikona awatara",

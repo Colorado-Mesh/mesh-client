@@ -61,6 +61,7 @@ The Connection tab UI edits a subset: **name** for all types; **host** / **port*
 | PUT    | `/api/v1/stack/settings` | Full `StackSettings` JSON (all four fields recommended)                                   | `{ ok }` — missing `announce_interval_sec` deserializes as **0**                                                                                     |
 | POST   | `/api/v1/stack/restart`  |                                                                                           | `{ ok }`                                                                                                                                             |
 | DELETE | `/api/v1/announces`      |                                                                                           | `{ ok }` — clears stub persisted peers; live path table may repopulate under `rns-stack`                                                             |
+| POST   | `/api/v1/announces`      |                                                                                           | `{ ok }` — send LXMF delivery announce now (live stack). Interval scheduling also sends startup + periodic announces from `announce_interval_sec`    |
 
 **Config bootstrap (stack start):** When `announce_interval_sec` is missing from rnsd config, the sidecar writes **3600**; explicit **0** is left unchanged (`ensure_announce_interval_sec_default` in `reticulum-sidecar/src/stack/config.rs`). Same bootstrap pass may set `discover_interfaces = Yes` for RMAP ingest.
 

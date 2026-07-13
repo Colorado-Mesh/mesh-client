@@ -296,7 +296,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
             `UPDATE reticulum_messages
            SET delivery_status = 'failed'
            WHERE identity_id = ?
-             AND delivery_status IN ('sending', 'pending')
+             AND delivery_status IN ('sending', 'pending', 'queued')
              AND timestamp < ?`,
           )
           .run(identityId, cutoff);

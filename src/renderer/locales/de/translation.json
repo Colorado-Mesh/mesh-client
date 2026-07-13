@@ -3544,7 +3544,10 @@
     "announceSaveSidecarStopped": "Starten Sie den Reticulum-Stapel, bevor Sie die Ankündigungseinstellungen speichern.",
     "clearAnnouncesDone": "Ansagen gelöscht.",
     "clearAnnouncesFailed": "Ansagen konnten nicht gelöscht werden.",
-    "announceIntervalHint": "Standard 3600 s (1 h). Verwenden Sie 0 für reine Startankündigungen."
+    "announceIntervalHint": "Standard 3600 s (1 h). Verwenden Sie 0 für reine Startankündigungen.",
+    "announceNow": "Jetzt ankündigen",
+    "announceNowDone": "LXMF Lieferankündigung gesendet.",
+    "announceNowFailed": "Ankündigung fehlgeschlagen: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "\"Avatar-Symbol\",",

@@ -3544,7 +3544,10 @@
     "announceSaveSidecarStopped": "アナウンス設定を保存する前に、Reticulumスタックを起動します。",
     "clearAnnouncesDone": "クリアをお知らせします。",
     "clearAnnouncesFailed": "アナウンスをクリアできませんでした。",
-    "announceIntervalHint": "デフォルトは3600秒（ 1時間）です。起動のみのアナウンスには0を使用します。"
+    "announceIntervalHint": "デフォルトは3600秒（ 1時間）です。起動のみのアナウンスには0を使用します。",
+    "announceNow": "今すぐお知らせ",
+    "announceNowDone": "LXMF配信アナウンスを送信しました。",
+    "announceNowFailed": "お知らせできませんでした： {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "プレイヤーアイコンを見る",

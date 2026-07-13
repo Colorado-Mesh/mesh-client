@@ -26,6 +26,9 @@ use tokio::sync::{RwLock, broadcast};
 use super::StackHandle;
 use super::config;
 use super::local_rnode_primary;
+use super::lxmf_delivery::{
+    send_lxmf_delivery_announce, spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver, LXMF_APP,
+};
 use super::nomad_file::nomad_file_name_from_path;
 use super::nomad_request_payload::nomad_page_request_payload;
 use super::nomad_timeouts;
@@ -137,9 +140,9 @@ impl LiveBridge {
             return Err("identity not configured for live stack".into());
         };
 
-        const LXMF_APP: &str = "lxmf.delivery";
+        const LXMF_APP_NAME: &str = LXMF_APP;
         let lxmf_dest_hash =
-            Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity.hash));
+            Destination::hash_from_name_and_identity(LXMF_APP_NAME, Some(&identity.hash));
         let lxmf_hash_hex = hex::encode(lxmf_dest_hash);
         let display_name = inner
             .read()
@@ -218,6 +221,21 @@ impl LiveBridge {
             emit_lxmf_event(&event_tx_cb, payload);
         });
 
+        let router = Arc::new(tokio::sync::Mutex::new(router));
+        spawn_lxmf_inbound_receiver(
+            handle.transport_tx.clone(),
+            &identity,
+            lxmf_dest_hash,
+            router.clone(),
+        );
+        spawn_lxmf_announce_loop(
+            handle.transport_tx.clone(),
+            identity.clone(),
+            lxmf_dest_hash,
+            config_dir.clone(),
+            inner.clone(),
+        );
+
         #[cfg(feature = "rns-ble")]
         let foreground_wake = Arc::new(tokio::sync::Notify::new());
         #[cfg(feature = "rns-ble")]
@@ -239,7 +257,7 @@ impl LiveBridge {
             storage_dir: storage_dir.clone(),
             handle: handle.clone(),
             _shutdown: shutdown,
-            router: Arc::new(tokio::sync::Mutex::new(router)),
+            router,
             identity: identity.clone(),
             lxmf_hash_hex: lxmf_hash_hex.clone(),
             display_name: display_name.clone(),
@@ -296,6 +314,27 @@ impl LiveBridge {
         }
 
         Ok(bridge)
+    }
+
+    /// Emit an LXMF delivery announce now (Network → Announce now / POST /api/v1/announces).
+    pub async fn announce_lxmf_now(&self) -> Result<(), String> {
+        let display_name = {
+            let state = PersistedState::load(&self.config_dir, &self.storage_dir);
+            state
+                .identity
+                .display_name
+                .as_ref()
+                .map(|n| n.trim().to_string())
+                .filter(|n| !n.is_empty() && n != "Self")
+        };
+        let dest = parse_hash16(&self.lxmf_hash_hex)?;
+        send_lxmf_delivery_announce(
+            &self.handle.transport_tx,
+            &self.identity,
+            dest,
+            display_name.as_deref(),
+        )
+        .await
     }
 
     /// `hash_hex` is the announced Nomad node destination hash (used for the

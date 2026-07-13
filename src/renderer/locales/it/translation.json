@@ -3544,7 +3544,10 @@
     "announceSaveSidecarStopped": "Avviare lo stack Reticulum prima di salvare le impostazioni di annuncio.",
     "clearAnnouncesDone": "Annunci liquidati.",
     "clearAnnouncesFailed": "Impossibile cancellare gli annunci.",
-    "announceIntervalHint": "Predefinito 3600 s (1 ora). Usa 0 per gli annunci di solo avvio."
+    "announceIntervalHint": "Predefinito 3600 s (1 ora). Usa 0 per gli annunci di solo avvio.",
+    "announceNow": "Annuncia ora",
+    "announceNowDone": "Annuncio di consegna LXMF inviato.",
+    "announceNowFailed": "Impossibile annunciare: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "icona avatar",
