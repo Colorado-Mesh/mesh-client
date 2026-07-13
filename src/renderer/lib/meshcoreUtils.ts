@@ -89,6 +89,22 @@ export function meshcoreMergeChannelDisplayNameOntoNode(
 }
 
 /**
+ * Companion ContactMsgRecv / ChannelMsgRecv `pathLen` → chat RF hop count.
+ * meshcore.js: ChannelMsgRecv uses 0xFF for direct; otherwise flood hop count.
+ * Rejects out-of-range values (no `& 0xff` wrap) so negatives / oversized bytes
+ * cannot become false "direct" or absurd hop badges. Flood counts above 63 are
+ * rejected (RF path length max uses 6 bits); 0xFF remains the direct sentinel.
+ */
+export function meshcoreCompanionRxPathLenToHopCount(pathLen: unknown): number | undefined {
+  if (typeof pathLen !== 'number' || !Number.isFinite(pathLen)) return undefined;
+  const n = Math.trunc(pathLen);
+  if (n < 0 || n > 255) return undefined;
+  if (n === 0xff) return 0;
+  if (n > 63) return undefined;
+  return n;
+}
+
+/**
  * `tracePath` reports `pathLen` as segment count along the route (a direct RF link is often 1).
  * UI hop count (repeaters between us and the peer) is one less; clamp at 0.
  */

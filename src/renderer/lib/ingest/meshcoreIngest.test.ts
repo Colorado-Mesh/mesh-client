@@ -655,6 +655,20 @@ describe('meshcoreIngest hop correlation (driver path)', () => {
     expect(messageRecordToChatMessage(record).rxHops).toBe(4);
   });
 
+  it('correlates hops when rawPackets callback returns a fresh same-tick packet list', () => {
+    const packets = [
+      { ts: now - 10, payloadTypeString: 'GRP_TXT' as const, fromNodeId: null, hopCount: 5 },
+    ];
+    const detach = attachMeshcoreIngest(ID, {
+      rawPacketsForHopCorrelation: () => packets,
+    });
+    dispatchChannelText();
+    detach();
+    const record = useMessageStore.getState().messages[ID]?.[channelMsgId];
+    expect(record).toBeDefined();
+    expect(messageRecordToChatMessage(record).rxHops).toBe(5);
+  });
+
   it('leaves rxHops undefined without correlation callback', () => {
     const detach = attachMeshcoreIngest(ID);
     dispatchChannelText();

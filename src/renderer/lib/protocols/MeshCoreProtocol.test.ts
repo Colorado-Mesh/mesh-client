@@ -89,6 +89,49 @@ describe('MeshCoreProtocol.subscribe', () => {
     teardown();
   });
 
+  it('maps channel pathLen to hopCount (0xFF = direct)', () => {
+    const conn = mockMeshCoreConnection();
+    const events: DomainEvent[] = [];
+    const teardown = meshcoreProtocol.subscribe(conn, (e) => events.push(e));
+    conn.emit(EVENT_CHANNEL_MESSAGE, {
+      channelIdx: 0,
+      text: 'hello mesh',
+      senderTimestamp: 1_700_000,
+      pathLen: 0xff,
+    });
+    const direct = events.find((e) => e.type === 'text_message');
+    expect(direct?.type === 'text_message' && direct.payload.hopCount).toBe(0);
+    events.length = 0;
+    conn.emit(EVENT_CHANNEL_MESSAGE, {
+      channelIdx: 0,
+      text: 'multi hop',
+      senderTimestamp: 1_700_001,
+      pathLen: 3,
+    });
+    const flood = events.find((e) => e.type === 'text_message');
+    expect(flood?.type === 'text_message' && flood.payload.hopCount).toBe(3);
+    teardown();
+  });
+
+  it('maps DM pathLen to hopCount', () => {
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => i + 1);
+    const nodeId = pubkeyToNodeId(publicKey);
+    registerMeshcorePubKey(nodeId, publicKey);
+    const conn = mockMeshCoreConnection();
+    const events: DomainEvent[] = [];
+    const teardown = meshcoreProtocol.subscribe(conn, (e) => events.push(e));
+    conn.emit(EVENT_DIRECT_MESSAGE, {
+      pubKeyPrefix: publicKey.slice(0, 6),
+      text: 'weather report',
+      senderTimestamp: 1_700_000_300,
+      txtType: 0,
+      pathLen: 2,
+    });
+    const text = events.find((e) => e.type === 'text_message');
+    expect(text?.type === 'text_message' && text.payload.hopCount).toBe(2);
+    teardown();
+  });
+
   it('routes transport status channel lines to device_log instead of chat', () => {
     const conn = mockMeshCoreConnection();
     const events: DomainEvent[] = [];

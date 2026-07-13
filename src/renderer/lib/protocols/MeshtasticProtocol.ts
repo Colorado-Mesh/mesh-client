@@ -13,6 +13,7 @@ import {
   safeDisconnect,
 } from '../connection';
 import { meshtasticHwModelName } from '../hardwareModels';
+import { meshtasticComputedRfHopsAway } from '../meshtasticRfHops';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import { MESHTASTIC_CAPABILITIES } from '../radio/BaseRadioProvider';
 import type { TransportParams } from '../types';
@@ -437,13 +438,11 @@ export class MeshtasticProtocol implements Protocol {
       rxRssi?: number;
       hopStart?: number;
       hopLimit?: number;
+      viaMqtt?: boolean;
     };
     if (p.payloadVariant?.case !== 'decoded') return [];
     const data = p.payloadVariant.value;
-    const hopCount =
-      p.hopStart != null && p.hopLimit != null && p.hopStart >= p.hopLimit
-        ? p.hopStart - p.hopLimit
-        : undefined;
+    const hopCount = meshtasticComputedRfHopsAway(p);
     const rawReplyId = data.replyId ?? data.reply_id;
     return [
       {
@@ -457,7 +456,7 @@ export class MeshtasticProtocol implements Protocol {
           timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
           rxSnr: p.rxSnr,
           rxRssi: p.rxRssi,
-          hopCount,
+          ...(hopCount != null ? { hopCount } : {}),
           replyTo: rawReplyId ? String(rawReplyId) : undefined,
           tapback: data.emoji != null ? data.emoji !== 0 : undefined,
         },

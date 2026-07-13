@@ -6,7 +6,11 @@ import {
   parseMeshcoreRoomPostPayload,
 } from './meshcoreChannelText';
 import { meshcoreRoomMessageId, meshcoreRoomWireLooksLikeRoom } from './meshcoreRoomMessageRouting';
-import { isMeshcoreTransportStatusChatLine, pubKeyPrefixHex } from './meshcoreUtils';
+import {
+  isMeshcoreTransportStatusChatLine,
+  meshcoreCompanionRxPathLenToHopCount,
+  pubKeyPrefixHex,
+} from './meshcoreUtils';
 import { effectiveMessageTimestampMs } from './nodeStatus';
 import type { DomainEvent } from './protocols/Protocol';
 
@@ -15,6 +19,8 @@ export interface DecodeMeshcoreDirectMessageInput {
   text: string;
   senderTimestamp: number;
   txtType?: number;
+  /** Companion ContactMsgRecv / waiting-message pathLen (0xFF = direct). */
+  pathLen?: number;
 }
 
 function decodeTransportStatusDeviceLog(text: string): DomainEvent[] {
@@ -78,6 +84,7 @@ export function decodeMeshcoreDirectMessageEvents(
     roomServerId != null
       ? resolveRoomAuthorIdForMessageId(raw.text, raw.txtType, isKnownRoomNode, nodeIdByPrefix)
       : undefined;
+  const hopCount = meshcoreCompanionRxPathLenToHopCount(raw.pathLen);
   return [
     {
       type: 'text_message',
@@ -91,6 +98,7 @@ export function decodeMeshcoreDirectMessageEvents(
         payload: raw.text,
         channelIndex: isRoomWire ? MESHCORE_ROOM_MESSAGE_CHANNEL : -1,
         timestamp: effectiveMessageTimestampMs(raw.senderTimestamp * 1000),
+        ...(hopCount != null ? { hopCount } : {}),
         ...(raw.txtType != null ? { txtType: raw.txtType } : {}),
         ...(roomServerId != null ? { roomServerId } : {}),
       },

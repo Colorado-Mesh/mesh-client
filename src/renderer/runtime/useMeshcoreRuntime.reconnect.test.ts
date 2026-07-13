@@ -212,6 +212,12 @@ describe('meshcoreLegacyConnEvents disconnected handler (regression)', () => {
     expect(CONN_EVENTS_SOURCE).toContain('markMeshcoreMsgWaitingEvent()');
     expect(CONN_EVENTS_SOURCE).toMatch(/isMeshcoreSyncNextMessageTimeoutError\(e\)[\s\S]*?break;/);
   });
+
+  it('syncs rawPacketsRef inside event 136 setRawPackets updater (same-tick hop correlation)', () => {
+    expect(CONN_EVENTS_SOURCE).toMatch(
+      /setRawPackets\(\(prev\) => \{[\s\S]*?rawPacketsRef\.current = trimmed;[\s\S]*?return trimmed;/,
+    );
+  });
 });
 
 describe('useMeshcoreRuntime prepareRfConnect driver teardown (regression)', () => {

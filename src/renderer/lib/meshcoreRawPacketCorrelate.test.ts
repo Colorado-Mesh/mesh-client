@@ -173,6 +173,30 @@ describe('meshcoreFindRecentGrpTxtRawPacket', () => {
     ];
     expect(meshcoreFindRecentGrpTxtRawPacket(stale, now)).toBeUndefined();
   });
+
+  it('matches GRP_TXT entries in the widened correlation window', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      {
+        ts: now - (MESHCORE_CHAT_CORRELATE_WINDOW_MS - 500),
+        payloadTypeString: 'GRP_TXT',
+        fromNodeId: null,
+        hopCount: 4,
+      },
+    ];
+    expect(meshcoreFindRecentGrpTxtRawPacket(packets, now)?.hopCount).toBe(4);
+  });
+
+  it('rejects GRP_TXT just outside the correlation window', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      {
+        ts: now - MESHCORE_CHAT_CORRELATE_WINDOW_MS - 1,
+        payloadTypeString: 'GRP_TXT',
+        fromNodeId: null,
+        hopCount: 4,
+      },
+    ];
+    expect(meshcoreFindRecentGrpTxtRawPacket(packets, now)).toBeUndefined();
+  });
 });
 
 describe('meshcoreFindRecentTxtMsgRawPacket', () => {
@@ -184,6 +208,30 @@ describe('meshcoreFindRecentTxtMsgRawPacket', () => {
       { ts: now - 100, payloadTypeString: 'TXT_MSG', fromNodeId: null, hopCount: 2 },
     ];
     expect(meshcoreFindRecentTxtMsgRawPacket(packets, now)?.hopCount).toBe(2);
+  });
+
+  it('matches unattributed TXT_MSG in the widened correlation window', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      {
+        ts: now - (MESHCORE_CHAT_CORRELATE_WINDOW_MS - 500),
+        payloadTypeString: 'TXT_MSG',
+        fromNodeId: null,
+        hopCount: 6,
+      },
+    ];
+    expect(meshcoreFindRecentTxtMsgRawPacket(packets, now)?.hopCount).toBe(6);
+  });
+
+  it('rejects TXT_MSG just outside the correlation window', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      {
+        ts: now - MESHCORE_CHAT_CORRELATE_WINDOW_MS - 1,
+        payloadTypeString: 'TXT_MSG',
+        fromNodeId: null,
+        hopCount: 6,
+      },
+    ];
+    expect(meshcoreFindRecentTxtMsgRawPacket(packets, now)).toBeUndefined();
   });
 
   it('ignores GRP_TXT and attributed TXT_MSG rows', () => {
@@ -212,5 +260,31 @@ describe('resolveMeshcoreIngestRxHops', () => {
       { ts: now - 100, payloadTypeString: 'GRP_TXT', fromNodeId: null },
     ];
     expect(resolveMeshcoreIngestRxHops(packets, true, now)).toBeUndefined();
+  });
+
+  it('ignores hopCount from failed-parse or synthetic rows (parseOk false)', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      {
+        ts: now - 100,
+        payloadTypeString: 'GRP_TXT',
+        fromNodeId: null,
+        hopCount: 0,
+        parseOk: false,
+      },
+    ];
+    expect(resolveMeshcoreIngestRxHops(packets, true, now)).toBeUndefined();
+  });
+
+  it('accepts hopCount when parseOk is true', () => {
+    const packets: ChatCorrelateRxLike[] = [
+      {
+        ts: now - 100,
+        payloadTypeString: 'TXT_MSG',
+        fromNodeId: null,
+        hopCount: 0,
+        parseOk: true,
+      },
+    ];
+    expect(resolveMeshcoreIngestRxHops(packets, false, now)).toBe(0);
   });
 });

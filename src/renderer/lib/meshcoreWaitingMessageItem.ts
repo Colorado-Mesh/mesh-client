@@ -5,8 +5,16 @@ export interface MeshcoreWaitingMessageItem {
     senderTimestamp: number;
     text: string;
     txtType?: number;
+    /** Companion pathLen when present (0xFF = direct). */
+    pathLen?: number;
   };
-  channelMessage?: { channelIdx: number; senderTimestamp: number; text: string };
+  channelMessage?: {
+    channelIdx: number;
+    senderTimestamp: number;
+    text: string;
+    /** Companion pathLen when present (0xFF = direct). */
+    pathLen?: number;
+  };
 }
 
 export function isMeshcoreWaitingMessageItem(value: unknown): value is MeshcoreWaitingMessageItem {
