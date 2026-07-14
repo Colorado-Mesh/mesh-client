@@ -145,7 +145,7 @@ describe('ReticulumPropagationSection', () => {
     const input = screen.getByLabelText('reticulumPropagation.renameLabel');
     await user.clear(input);
     await user.type(input, 'Office PN');
-    await user.click(screen.getByRole('button', { name: 'reticulumPropagation.renameSave' }));
+    await user.click(screen.getByRole('button', { name: 'reticulumPropagation.renameSaveAria' }));
 
     await waitFor(() => {
       expect(renamePropagationNode).toHaveBeenCalledWith('pn-aabb1111', 'Office PN');

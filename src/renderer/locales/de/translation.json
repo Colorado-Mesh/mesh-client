@@ -3694,7 +3694,20 @@
     "deleteAria": "Ausbreitungsknoten {{name}} löschen",
     "deleteConfirmTitle": "Ausbreitungsknoten löschen?",
     "deleteConfirmBody": "{{name}} aus der Propagierungsknotenliste entfernen? Dadurch wird der Remote-Knoten nicht verändert.",
-    "deleteConfirm": "Löschen"
+    "deleteConfirm": "Löschen",
+    "renameSaveAria": "Name des Ausbreitungsknotens speichern",
+    "renameCancelAria": "Brechen Sie die Umbenennung des Weitergabeknotens ab",
+    "enableAria": "Ausbreitungsknoten {{name}} aktivieren",
+    "disableAria": "Ausbreitungsknoten {{name}} deaktivieren",
+    "syncNowPreferredAria": "Synchronisieren Sie Nachrichten vom bevorzugten Ausbreitungsknoten",
+    "nodeStatus": {
+      "active": "aktiv",
+      "idle": "Leerlauf",
+      "known": "bekannt",
+      "pending": "ausstehend",
+      "unknown": "unbekannt",
+      "online": "online"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Ausbreitungsmodus",

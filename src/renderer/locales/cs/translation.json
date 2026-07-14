@@ -3694,7 +3694,20 @@
     "deleteAria": "Smazat uzel šíření {{name}}",
     "deleteConfirmTitle": "Smazat uzel šíření?",
     "deleteConfirmBody": "Odebrat {{name}} ze seznamu uzlů šíření? Toto nezmění vzdálený uzel.",
-    "deleteConfirm": "Vymazat"
+    "deleteConfirm": "Vymazat",
+    "renameSaveAria": "Uložit název uzlu šíření",
+    "renameCancelAria": "Zrušit přejmenování uzlu šíření",
+    "enableAria": "Povolit uzel šíření {{name}}",
+    "disableAria": "Zakázat uzel šíření {{name}}",
+    "syncNowPreferredAria": "Synchronizujte zprávy z preferovaného uzlu šíření",
+    "nodeStatus": {
+      "active": "aktivní",
+      "idle": "líný",
+      "known": "známý",
+      "pending": "čeká na vyřízení",
+      "unknown": "neznámý",
+      "online": "online"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Režim propagace",

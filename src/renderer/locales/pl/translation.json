@@ -3694,7 +3694,20 @@
     "deleteAria": "Usuń węzeł propagacji {{name}}",
     "deleteConfirmTitle": "Usunąć węzeł propagacji?",
     "deleteConfirmBody": "Usunąć {{name}} z listy węzłów propagacji? Nie powoduje to zmiany węzła zdalnego.",
-    "deleteConfirm": "Usuwać"
+    "deleteConfirm": "Usuwać",
+    "renameSaveAria": "Zapisz nazwę węzła propagacji",
+    "renameCancelAria": "Anuluj zmianę nazwy węzła propagacji",
+    "enableAria": "Włącz węzeł propagacji {{name}}",
+    "disableAria": "Wyłącz węzeł propagacji {{name}}",
+    "syncNowPreferredAria": "Synchronizuj wiadomości z preferowanego węzła propagacji",
+    "nodeStatus": {
+      "active": "aktywny",
+      "idle": "bezczynny",
+      "known": "znany",
+      "pending": "aż do",
+      "unknown": "nieznany",
+      "online": "w Internecie"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Tryb propagacji:",

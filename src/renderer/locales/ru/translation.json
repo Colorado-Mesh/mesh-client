@@ -3694,7 +3694,20 @@
     "deleteAria": "Удалить узел распространения {{name}}",
     "deleteConfirmTitle": "Удалить узел распространения?",
     "deleteConfirmBody": "Удалить {{name}} из списка узлов распространения? Это не меняет удаленный узел.",
-    "deleteConfirm": "Удалить"
+    "deleteConfirm": "Удалить",
+    "renameSaveAria": "Сохранить имя узла распространения",
+    "renameCancelAria": "Отменить переименование узла распространения",
+    "enableAria": "Включить узел распространения {{name}}",
+    "disableAria": "Отключить узел распространения {{name}}",
+    "syncNowPreferredAria": "Синхронизировать сообщения с предпочтительного узла распространения.",
+    "nodeStatus": {
+      "active": "активный",
+      "idle": "праздный",
+      "known": "известный",
+      "pending": "в ожидании",
+      "unknown": "неизвестный",
+      "online": "онлайн"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Режим распространения",

@@ -62,17 +62,21 @@ export function useReticulumSidecarApi({
     sidecarRunningRef.current = sidecarStatus.running;
   }, [sidecarStatus.running]);
 
+  const applySidecarStatus = useCallback((status: ReticulumSidecarStatus) => {
+    statusHydratedRef.current = true;
+    setSidecarStatus(status);
+  }, []);
+
   const refreshSidecarStatus = useCallback(async () => {
     try {
       const status = await window.electronAPI.reticulum.getStatus();
-      statusHydratedRef.current = true;
-      setSidecarStatus(status);
+      applySidecarStatus(status);
       return status;
     } catch (e) {
       console.debug('[useReticulumSidecarApi] getStatus ' + errLikeToLogString(e));
       return { running: false, port: 0, pid: null };
     }
-  }, []);
+  }, [applySidecarStatus]);
 
   const refreshIdentity = useCallback(async () => {
     if (!sidecarApiReady) {
@@ -186,6 +190,7 @@ export function useReticulumSidecarApi({
     identity,
     statsSummary,
     appInfo,
+    applySidecarStatus,
     refreshSidecarStatus,
     refreshIdentity,
     refreshAppInfo,

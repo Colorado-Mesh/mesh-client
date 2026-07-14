@@ -3694,7 +3694,20 @@
     "deleteAria": "Supprimer le nœud de propagation {{name}}",
     "deleteConfirmTitle": "Supprimer le nœud de propagation ?",
     "deleteConfirmBody": "Supprimer {{name}} de la liste des nœuds de propagation ? Cela ne change pas le nœud distant.",
-    "deleteConfirm": "Supprimer"
+    "deleteConfirm": "Supprimer",
+    "renameSaveAria": "Enregistrer le nom du nœud de propagation",
+    "renameCancelAria": "Annuler le changement de nom du nœud de propagation",
+    "enableAria": "Activer le nœud de propagation {{name}}",
+    "disableAria": "Désactiver le nœud de propagation {{name}}",
+    "syncNowPreferredAria": "Synchroniser les messages du nœud de propagation préféré",
+    "nodeStatus": {
+      "active": "actif",
+      "idle": "inactif",
+      "known": "connu",
+      "pending": "en attente",
+      "unknown": "inconnu",
+      "online": "en ligne"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "mode de propagation",

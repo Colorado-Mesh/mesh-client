@@ -1044,8 +1044,8 @@ Unrecognized codes pass through unchanged.
 **Fix**:
 
 1. **Fully quit** other Reticulum apps (MeshChatX, Ratspeak, any `rnsd` tray process) — not just close the window — **or** turn off **Share Reticulum instance** (Connection banner / Network → stack settings) and restart the stack.
-2. **Stop and restart** the mesh-client Reticulum stack (Connection → **Restart stack** or stop/start).
-3. Disable unreachable TCP interfaces on Connection → Interfaces (only when not in shared-instance client mode).
+2. **Stop and restart** the mesh-client Reticulum stack (Connection → **Restart stack** or stop/start). Stopping (or an unexpected sidecar exit) clears the interface-issue tracker immediately.
+3. Disable unreachable TCP interfaces on Connection → Interfaces (only when not in shared-instance client mode). Disabling or removing a hub drops that name from the TCP/TX latch **immediately** (and keeps it from reappearing while logs catch up); each latch also ages out after a **5-minute** per-entry TTL (`RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS`), not a single global timestamp.
 4. Retry the DM; use **Peers → Request path / Probe** if the peer is reachable but the path is stale.
 5. Configure a **propagation node** on Network → Propagation for offline delivery.
 

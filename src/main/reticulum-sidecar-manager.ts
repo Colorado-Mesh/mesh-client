@@ -121,15 +121,34 @@ export class ReticulumSidecarManager extends EventEmitter {
     };
   }
 
-  private recordSidecarOutputLine(text: string): void {
-    const before = JSON.stringify(this.interfaceIssueTracker.getAlert());
-    this.interfaceIssueTracker.recordLine(text);
-    const after = JSON.stringify(this.interfaceIssueTracker.getAlert());
+  /** Prune, mutate tracker, optionally emit status when alert changes (or throttle fires). */
+  private mutateInterfaceIssues(
+    mutate: () => void,
+    opts: { alwaysEmitAfterMs?: number } = {},
+  ): ReticulumSidecarStatus {
+    this.interfaceIssueTracker.getAlert();
+    const before = JSON.stringify(this.interfaceIssueTracker.peekAlert());
+    mutate();
+    this.interfaceIssueTracker.getAlert();
+    const after = JSON.stringify(this.interfaceIssueTracker.peekAlert());
+    const status = this.getStatus();
     const now = Date.now();
-    if (before !== after || now - this.lastIssueStatusEmitAt >= 5_000) {
+    const throttleDue =
+      opts.alwaysEmitAfterMs != null && now - this.lastIssueStatusEmitAt >= opts.alwaysEmitAfterMs;
+    if (before !== after || throttleDue) {
       this.lastIssueStatusEmitAt = now;
-      this.emit('status', this.getStatus());
+      this.emit('status', status);
     }
+    return status;
+  }
+
+  private recordSidecarOutputLine(text: string): void {
+    this.mutateInterfaceIssues(
+      () => {
+        this.interfaceIssueTracker.recordLine(text);
+      },
+      { alwaysEmitAfterMs: 5_000 },
+    );
   }
 
   /**
@@ -137,15 +156,20 @@ export class ReticulumSidecarManager extends EventEmitter {
    * Emits status when the alert changes so the Connection banner updates immediately.
    */
   syncInterfaceIssueScope(enabledInterfaceNames: readonly string[]): ReticulumSidecarStatus {
-    const before = JSON.stringify(this.interfaceIssueTracker.getAlert());
-    this.interfaceIssueTracker.retainInterfaces(new Set(enabledInterfaceNames));
-    const after = JSON.stringify(this.interfaceIssueTracker.getAlert());
-    const status = this.getStatus();
-    if (before !== after) {
-      this.lastIssueStatusEmitAt = Date.now();
-      this.emit('status', status);
-    }
-    return status;
+    return this.mutateInterfaceIssues(() => {
+      this.interfaceIssueTracker.retainInterfaces(new Set(enabledInterfaceNames));
+    });
+  }
+
+  private clearSidecarTrackers(): void {
+    this.interfaceIssueTracker.clear();
+    this.autoBeaconTracker.clear();
+  }
+
+  private finalizeStopped(): void {
+    this.clearSidecarTrackers();
+    this._status = { running: false, port: 0, pid: null };
+    this.emit('status', this.getStatus());
   }
 
   private reticulumUserDir(...segments: string[]): string {
@@ -261,6 +285,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       console.debug(`[ReticulumSidecar] exited code=${code ?? 'null'} signal=${signal ?? 'null'}`);
       this.teardownWs();
       this.proc = null;
+      this.clearSidecarTrackers();
       this._status = {
         running: false,
         port: this._status.port,
@@ -309,9 +334,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     const proc = this.proc;
     this.proc = null;
     if (!proc) {
-      this.interfaceIssueTracker.clear();
-      this._status = { running: false, port: 0, pid: null };
-      this.emit('status', this.getStatus());
+      this.finalizeStopped();
       return;
     }
 
@@ -339,9 +362,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       }
     });
 
-    this.interfaceIssueTracker.clear();
-    this._status = { running: false, port: 0, pid: null };
-    this.emit('status', this.getStatus());
+    this.finalizeStopped();
   }
 
   async proxyGet(apiPath: string): Promise<unknown> {

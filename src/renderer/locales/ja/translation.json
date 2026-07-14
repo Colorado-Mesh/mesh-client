@@ -3694,7 +3694,20 @@
     "deleteAria": "伝播ノード {{name}} を削除します",
     "deleteConfirmTitle": "伝播ノードを削除しますか?",
     "deleteConfirmBody": "{{name}} を伝播ノードリストから削除しますか?これによってリモート ノードは変更されません。",
-    "deleteConfirm": "消去"
+    "deleteConfirm": "消去",
+    "renameSaveAria": "伝播ノード名を保存する",
+    "renameCancelAria": "伝播ノードの名前変更をキャンセルします",
+    "enableAria": "伝播ノード {{name}} を有効にする",
+    "disableAria": "伝播ノード {{name}} を無効にする",
+    "syncNowPreferredAria": "優先伝播ノードからのメッセージを同期する",
+    "nodeStatus": {
+      "active": "アクティブ",
+      "idle": "アイドル状態",
+      "known": "知られている",
+      "pending": "保留中",
+      "unknown": "未知",
+      "online": "オンライン"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "伝播モード",

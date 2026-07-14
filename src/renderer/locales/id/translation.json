@@ -3694,7 +3694,20 @@
     "deleteAria": "Hapus node propagasi {{name}}",
     "deleteConfirmTitle": "Hapus node propagasi?",
     "deleteConfirmBody": "Hapus {{name}} dari daftar node propagasi? Ini tidak mengubah node jarak jauh.",
-    "deleteConfirm": "Menghapus"
+    "deleteConfirm": "Menghapus",
+    "renameSaveAria": "Simpan nama node propagasi",
+    "renameCancelAria": "Batalkan penggantian nama node propagasi",
+    "enableAria": "Aktifkan node propagasi {{name}}",
+    "disableAria": "Nonaktifkan node propagasi {{name}}",
+    "syncNowPreferredAria": "Sinkronkan pesan dari node propagasi pilihan",
+    "nodeStatus": {
+      "active": "aktif",
+      "idle": "menganggur",
+      "known": "diketahui",
+      "pending": "tertunda",
+      "unknown": "tidak dikenal",
+      "online": "on line"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Mode propagasi",

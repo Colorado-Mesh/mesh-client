@@ -3694,7 +3694,20 @@
     "deleteAria": "删除传播节点 {{name}}",
     "deleteConfirmTitle": "删除传播节点？",
     "deleteConfirmBody": "从传播节点列表中删除 {{name}} 吗？这不会更改远程节点。",
-    "deleteConfirm": "删除"
+    "deleteConfirm": "删除",
+    "renameSaveAria": "保存传播节点名称",
+    "renameCancelAria": "取消重命名传播节点",
+    "enableAria": "启用传播节点 {{name}}",
+    "disableAria": "禁用传播节点 {{name}}",
+    "syncNowPreferredAria": "从首选传播节点同步消息",
+    "nodeStatus": {
+      "active": "积极的",
+      "idle": "闲置的",
+      "known": "已知的",
+      "pending": "待办的",
+      "unknown": "未知",
+      "online": "在线的"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "传播模式",

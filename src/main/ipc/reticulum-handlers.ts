@@ -10,6 +10,7 @@ import {
 import { validateReticulumUserConfig } from '../reticulum-config-validate';
 import { showReticulumIdentityImportDialog } from '../reticulum-identity-import';
 import type { ReticulumSidecarManager } from '../reticulum-sidecar-manager';
+import { parseEnabledInterfaceNames } from '../reticulumInterfaceIssueScope';
 import { assertIpcSender } from '../validate-ipc-sender';
 
 export interface ReticulumIpcDeps {
@@ -76,12 +77,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
 
   ipcMain.handle('reticulum:syncInterfaceIssueScope', (event, enabledInterfaceNames: unknown) => {
     assertIpcSender(event, 'reticulum:syncInterfaceIssueScope');
-    if (!Array.isArray(enabledInterfaceNames)) {
-      throw new Error('enabledInterfaceNames must be an array of strings');
-    }
-    const names = enabledInterfaceNames.filter(
-      (n): n is string => typeof n === 'string' && n.trim().length > 0,
-    );
+    const names = parseEnabledInterfaceNames(enabledInterfaceNames);
     const m = getManager();
     if (!m) return idleStatus;
     return m.syncInterfaceIssueScope(names);

@@ -3694,7 +3694,20 @@
     "deleteAria": "Excluir nó de propagação {{name}}",
     "deleteConfirmTitle": "Excluir nó de propagação?",
     "deleteConfirmBody": "Remover {{name}} da lista de nós de propagação? Isso não altera o nó remoto.",
-    "deleteConfirm": "Excluir"
+    "deleteConfirm": "Excluir",
+    "renameSaveAria": "Salvar nome do nó de propagação",
+    "renameCancelAria": "Cancelar renomeação do nó de propagação",
+    "enableAria": "Habilitar nó de propagação {{name}}",
+    "disableAria": "Desabilitar nó de propagação {{name}}",
+    "syncNowPreferredAria": "Sincronizar mensagens do nó de propagação preferencial",
+    "nodeStatus": {
+      "active": "ativo",
+      "idle": "parado",
+      "known": "conhecido",
+      "pending": "pendente",
+      "unknown": "desconhecido",
+      "online": "on-line"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modo de propagação",

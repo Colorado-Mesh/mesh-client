@@ -3694,7 +3694,20 @@
     "deleteAria": "Видалити вузол розповсюдження {{name}}",
     "deleteConfirmTitle": "Видалити вузол розповсюдження?",
     "deleteConfirmBody": "Видалити {{name}} зі списку вузлів поширення? Це не змінює віддалений вузол.",
-    "deleteConfirm": "Видалити"
+    "deleteConfirm": "Видалити",
+    "renameSaveAria": "Зберегти назву вузла поширення",
+    "renameCancelAria": "Скасувати перейменування вузла поширення",
+    "enableAria": "Увімкнути вузол розповсюдження {{name}}",
+    "disableAria": "Вимкнути вузол розповсюдження {{name}}",
+    "syncNowPreferredAria": "Синхронізувати повідомлення від бажаного вузла розповсюдження",
+    "nodeStatus": {
+      "active": "активний",
+      "idle": "непрацюючий",
+      "known": "відомий",
+      "pending": "в очікуванні",
+      "unknown": "невідомий",
+      "online": "онлайн"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Режим поширення",

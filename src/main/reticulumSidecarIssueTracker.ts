@@ -56,10 +56,18 @@ function parseSlowTransportQuery(line: string): string | null {
   return match?.[1]?.trim() ?? null;
 }
 
-function pruneStaleTimestamps(map: Map<string, number>, nowMs: number): void {
-  for (const [key, atMs] of map) {
-    if (nowMs - atMs > RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS) {
+function pruneStaleMap<T>(map: Map<string, T>, nowMs: number, getAtMs: (value: T) => number): void {
+  for (const [key, value] of map) {
+    if (nowMs - getAtMs(value) > RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS) {
       map.delete(key);
+    }
+  }
+}
+
+function retainMapKeys<T>(map: Map<string, T>, enabledNames: ReadonlySet<string>): void {
+  for (const name of [...map.keys()]) {
+    if (!enabledNames.has(name)) {
+      map.delete(name);
     }
   }
 }
@@ -67,14 +75,6 @@ function pruneStaleTimestamps(map: Map<string, number>, nowMs: number): void {
 interface CountedAt {
   count: number;
   atMs: number;
-}
-
-function pruneStaleCounted(map: Map<string, CountedAt>, nowMs: number): void {
-  for (const [key, entry] of map) {
-    if (nowMs - entry.atMs > RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS) {
-      map.delete(key);
-    }
-  }
 }
 
 export class ReticulumSidecarInterfaceIssueTracker {
@@ -89,19 +89,29 @@ export class ReticulumSidecarInterfaceIssueTracker {
   private slowTransportQueryCount = 0;
   private slowTransportQueryAtMs: number | null = null;
   private suppressedCount = 0;
+  /**
+   * Last synced enabled interface names. When set, TCP/TX latches for names
+   * outside the set are ignored (sticky across config-apply lag after disable).
+   * Null until the first {@link retainInterfaces} call.
+   */
+  private enabledInterfaceScope: ReadonlySet<string> | null = null;
+
+  private allowsInterface(name: string): boolean {
+    return this.enabledInterfaceScope == null || this.enabledInterfaceScope.has(name);
+  }
 
   recordLine(line: string, nowMs = Date.now()): void {
     const plain = normalizeSidecarLogLine(line);
     if (plain.includes(TCP_CONNECT_FAILED_MARKER)) {
       const iface = parseTcpConnectFailedIface(line);
-      if (iface) {
+      if (iface && this.allowsInterface(iface)) {
         this.tcpConnectFailed.set(iface, nowMs);
       }
       return;
     }
     if (plain.includes(TX_QUEUE_DROP_MARKER)) {
       const iface = parseTxDropIface(line);
-      if (iface) {
+      if (iface && this.allowsInterface(iface)) {
         const drops = parseTxDropCount(line);
         this.txQueueDrops.set(iface, {
           count: drops ?? this.txQueueDrops.get(iface)?.count ?? 0,
@@ -138,20 +148,14 @@ export class ReticulumSidecarInterfaceIssueTracker {
   }
 
   /**
-   * Drop TCP/TX issues for interfaces that are disabled or removed.
+   * Drop TCP/TX issues for interfaces that are disabled or removed, and remember
+   * the enabled set so later log lines cannot re-latch those names.
    * Stack-wide transport counters are left alone.
    */
   retainInterfaces(enabledNames: ReadonlySet<string>): void {
-    for (const name of [...this.tcpConnectFailed.keys()]) {
-      if (!enabledNames.has(name)) {
-        this.tcpConnectFailed.delete(name);
-      }
-    }
-    for (const name of [...this.txQueueDrops.keys()]) {
-      if (!enabledNames.has(name)) {
-        this.txQueueDrops.delete(name);
-      }
-    }
+    this.enabledInterfaceScope = new Set(enabledNames);
+    retainMapKeys(this.tcpConnectFailed, enabledNames);
+    retainMapKeys(this.txQueueDrops, enabledNames);
   }
 
   clear(): void {
@@ -163,6 +167,7 @@ export class ReticulumSidecarInterfaceIssueTracker {
     this.slowTransportQueryCount = 0;
     this.slowTransportQueryAtMs = null;
     this.suppressedCount = 0;
+    this.enabledInterfaceScope = null;
   }
 
   /** @deprecated Prefer {@link clear}; kept for existing test call sites. */
@@ -170,10 +175,10 @@ export class ReticulumSidecarInterfaceIssueTracker {
     this.clear();
   }
 
-  getAlert(nowMs = Date.now()): ReticulumInterfaceIssueAlert | null {
-    pruneStaleTimestamps(this.tcpConnectFailed, nowMs);
-    pruneStaleCounted(this.txQueueDrops, nowMs);
-    pruneStaleCounted(this.linkDeliveryTimeouts, nowMs);
+  private pruneStale(nowMs: number): void {
+    pruneStaleMap(this.tcpConnectFailed, nowMs, (atMs) => atMs);
+    pruneStaleMap(this.txQueueDrops, nowMs, (entry) => entry.atMs);
+    pruneStaleMap(this.linkDeliveryTimeouts, nowMs, (entry) => entry.atMs);
 
     if (
       this.transportSaturatedAtMs != null &&
@@ -189,7 +194,10 @@ export class ReticulumSidecarInterfaceIssueTracker {
       this.slowTransportQueryCount = 0;
       this.slowTransportQueryAtMs = null;
     }
+  }
 
+  /** Build alert from current maps without pruning. */
+  peekAlert(): ReticulumInterfaceIssueAlert | null {
     const timestamps: number[] = [
       ...this.tcpConnectFailed.values(),
       ...[...this.txQueueDrops.values()].map((e) => e.atMs),
@@ -200,6 +208,7 @@ export class ReticulumSidecarInterfaceIssueTracker {
 
     const lastAtMs = timestamps.length > 0 ? Math.max(...timestamps) : null;
     if (lastAtMs == null) {
+      this.suppressedCount = 0;
       return null;
     }
 
@@ -218,6 +227,7 @@ export class ReticulumSidecarInterfaceIssueTracker {
       this.transportSaturatedCount === 0 &&
       this.slowTransportQueryCount === 0
     ) {
+      this.suppressedCount = 0;
       return null;
     }
 
@@ -230,6 +240,11 @@ export class ReticulumSidecarInterfaceIssueTracker {
       suppressedCount: this.suppressedCount,
       lastAtMs,
     };
+  }
+
+  getAlert(nowMs = Date.now()): ReticulumInterfaceIssueAlert | null {
+    this.pruneStale(nowMs);
+    return this.peekAlert();
   }
 }
 

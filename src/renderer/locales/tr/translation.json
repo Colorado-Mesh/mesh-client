@@ -3694,7 +3694,20 @@
     "deleteAria": "Yayılma düğümünü sil {{name}}",
     "deleteConfirmTitle": "Yayılma düğümü silinsin mi?",
     "deleteConfirmBody": "{{name}} yayılma düğümü listesinden kaldırılsın mı? Bu uzak düğümü değiştirmez.",
-    "deleteConfirm": "Silmek"
+    "deleteConfirm": "Silmek",
+    "renameSaveAria": "Yayılma düğümü adını kaydet",
+    "renameCancelAria": "Yayılma düğümünün yeniden adlandırılmasını iptal et",
+    "enableAria": "Yayılma düğümünü etkinleştir {{name}}",
+    "disableAria": "Yayılma düğümünü devre dışı bırak {{name}}",
+    "syncNowPreferredAria": "Tercih edilen yayılma düğümünden gelen mesajları senkronize edin",
+    "nodeStatus": {
+      "active": "aktif",
+      "idle": "boşta",
+      "known": "bilinen",
+      "pending": "askıda olması",
+      "unknown": "bilinmiyor",
+      "online": "çevrimiçi"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Yayılma modu",

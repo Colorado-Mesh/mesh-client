@@ -3694,7 +3694,20 @@
     "deleteAria": "전파 노드 삭제 {{name}}",
     "deleteConfirmTitle": "전파 노드를 삭제하시겠습니까?",
     "deleteConfirmBody": "전파 노드 목록에서 {{name}}을(를) 제거하시겠습니까? 이는 원격 노드를 변경하지 않습니다.",
-    "deleteConfirm": "삭제"
+    "deleteConfirm": "삭제",
+    "renameSaveAria": "전파 노드 이름 저장",
+    "renameCancelAria": "전파 노드 이름 변경 취소",
+    "enableAria": "전파 노드 {{name}} 활성화",
+    "disableAria": "전파 노드 {{name}} 비활성화",
+    "syncNowPreferredAria": "기본 전파 노드의 메시지 동기화",
+    "nodeStatus": {
+      "active": "활동적인",
+      "idle": "게으른",
+      "known": "알려진",
+      "pending": "보류 중",
+      "unknown": "알려지지 않은",
+      "online": "온라인"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "전파 모드",

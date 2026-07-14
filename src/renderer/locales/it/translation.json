@@ -3694,7 +3694,20 @@
     "deleteAria": "Elimina nodo di propagazione {{name}}",
     "deleteConfirmTitle": "Eliminare il nodo di propagazione?",
     "deleteConfirmBody": "Rimuovere {{name}} dall'elenco dei nodi di propagazione? Ciò non modifica il nodo remoto.",
-    "deleteConfirm": "Eliminare"
+    "deleteConfirm": "Eliminare",
+    "renameSaveAria": "Salva il nome del nodo di propagazione",
+    "renameCancelAria": "Annulla la ridenominazione del nodo di propagazione",
+    "enableAria": "Abilita nodo di propagazione {{name}}",
+    "disableAria": "Disabilita nodo di propagazione {{name}}",
+    "syncNowPreferredAria": "Sincronizza i messaggi dal nodo di propagazione preferito",
+    "nodeStatus": {
+      "active": "attivo",
+      "idle": "oziare",
+      "known": "conosciuto",
+      "pending": "in attesa di",
+      "unknown": "sconosciuto",
+      "online": "in linea"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modalità di propagazione",

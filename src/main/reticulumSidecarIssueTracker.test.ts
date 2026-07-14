@@ -104,6 +104,31 @@ describe('ReticulumSidecarInterfaceIssueTracker', () => {
     expect(tracker.getAlert(1_500)).toBeNull();
   });
 
+  it('retainInterfaces preserves stack-wide transport counters', () => {
+    tracker.recordLine(TCP_LINE, 1_000);
+    tracker.recordLine(LINK_TIMEOUT_LINE, 1_100);
+    tracker.recordLine(PATH_REQUEST_SATURATED_LINE, 1_200);
+    tracker.recordLine(SLOW_TRANSPORT_LINE, 1_300);
+    tracker.retainInterfaces(new Set());
+    const alert = tracker.getAlert(1_500);
+    expect(alert?.tcpConnectFailed).toEqual([]);
+    expect(alert?.txQueueDrops).toEqual([]);
+    expect(alert?.linkDeliveryTimeouts).toHaveLength(1);
+    expect(alert?.transportSaturatedCount).toBe(1);
+    expect(alert?.slowTransportQueryCount).toBe(1);
+  });
+
+  it('sticky retainInterfaces rejects later log lines for disabled names', () => {
+    tracker.recordLine(TCP_LINE, 1_000);
+    tracker.retainInterfaces(new Set(['RNS Testnet Dublin']));
+    tracker.recordLine(TCP_LINE, 1_200);
+    tracker.recordLine(TX_DROP_LINE, 1_300);
+    expect(tracker.getAlert(1_500)?.tcpConnectFailed ?? []).toEqual([]);
+    expect(tracker.getAlert(1_500)?.txQueueDrops ?? []).toEqual([]);
+    tracker.recordLine(TCP_LINE_DUBLIN, 1_400);
+    expect(tracker.getAlert(1_500)?.tcpConnectFailed).toEqual(['RNS Testnet Dublin']);
+  });
+
   it('clear empties the alert immediately', () => {
     tracker.recordLine(TCP_LINE, 1_000);
     tracker.recordLine(PATH_REQUEST_SATURATED_LINE, 1_100);

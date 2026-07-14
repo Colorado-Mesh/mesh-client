@@ -16,6 +16,21 @@ import {
   ReticulumPropagationSyncProgress,
 } from './ReticulumPropagationSyncProgress';
 
+const PROPAGATION_NODE_STATUS_KEYS = new Set([
+  'active',
+  'idle',
+  'known',
+  'pending',
+  'unknown',
+  'online',
+]);
+
+function formatPropagationNodeStatus(status: string, t: (key: string) => string): string {
+  if (PROPAGATION_NODE_STATUS_KEYS.has(status)) {
+    return t(`reticulumPropagation.nodeStatus.${status}`);
+  }
+  return status;
+}
 export interface ReticulumPropagationSectionProps {
   onRefresh?: () => void;
   embedded?: boolean;
@@ -125,6 +140,7 @@ export default function ReticulumPropagationSection({
                       type="button"
                       className="text-xs text-amber-400 hover:underline disabled:opacity-40"
                       disabled={!renameDraft.trim()}
+                      aria-label={t('reticulumPropagation.renameSaveAria')}
                       onClick={() => {
                         void renamePropagationNode(node.id, renameDraft.trim()).then((ok) => {
                           if (ok) {
@@ -139,6 +155,7 @@ export default function ReticulumPropagationSection({
                     <button
                       type="button"
                       className="text-muted text-xs hover:underline"
+                      aria-label={t('reticulumPropagation.renameCancelAria')}
                       onClick={() => {
                         setRenamingId(null);
                         setRenameDraft('');
@@ -149,7 +166,7 @@ export default function ReticulumPropagationSection({
                   </label>
                 ) : (
                   <>
-                    {node.name} ({node.status})
+                    {node.name} ({formatPropagationNodeStatus(node.status, t)})
                     {isLocal && node.message_count != null ? (
                       <span className="text-muted ml-1 text-xs">
                         {t('reticulumPropagation.localInboxStats', {
@@ -198,6 +215,11 @@ export default function ReticulumPropagationSection({
                         {},
                       )
                       .then(handleRefresh)
+                  }
+                  aria-label={
+                    node.enabled
+                      ? t('reticulumPropagation.disableAria', { name: node.name })
+                      : t('reticulumPropagation.enableAria', { name: node.name })
                   }
                 >
                   {node.enabled
@@ -268,6 +290,7 @@ export default function ReticulumPropagationSection({
           type="button"
           disabled={!preferredId || sync.active}
           className="rounded border border-amber-600 px-2 py-1 text-xs text-amber-300 disabled:opacity-40"
+          aria-label={t('reticulumPropagation.syncNowPreferredAria')}
           onClick={() => {
             void startSync();
           }}
@@ -286,7 +309,7 @@ export default function ReticulumPropagationSection({
             }}
             placeholder={t('reticulumPropagation.addNodePlaceholder')}
             className="rounded border border-gray-700 bg-slate-900 px-2 py-1 text-sm text-gray-200"
-            aria-label={t('reticulumPropagation.addNodePlaceholder')}
+            aria-label={t('reticulumPropagation.addNodeLabel')}
           />
         </label>
         <button

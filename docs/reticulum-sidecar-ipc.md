@@ -144,15 +144,18 @@ Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers
 
 Renderer calls `electronAPI.reticulum.*`; main process proxies to this API (sandboxed renderer cannot reach localhost directly).
 
-| IPC channel                                                     | Role                                                                                                     |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `reticulum:start` / `stop` / `getStatus`                        | Sidecar lifecycle                                                                                        |
-| `reticulum:proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete` | HTTP proxy to paths above                                                                                |
-| `reticulum:validateConfig`                                      | One-shot `validate-config --json` against `userData/reticulum/config` (read-only; safe while stack runs) |
-| `reticulum:readDefaultConfigFile`                               | Read first existing system rnsd config path                                                              |
-| `reticulum:showConfigImportDialog`                              | Native file picker for config import                                                                     |
-| `reticulum:showIdentityImportDialog`                            | Native file picker for 64-byte private key (`.retid`, `.key`, …)                                         |
-| `reticulum:onEvent` / `onStatus`                                | WS events and sidecar status                                                                             |
+| IPC channel                                                     | Role                                                                                                      |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `reticulum:start` / `stop` / `getStatus`                        | Sidecar lifecycle                                                                                         |
+| `reticulum:syncInterfaceIssueScope`                             | Drop TCP/TX latch entries for disabled/removed interfaces; sticky enabled-name filter for later log lines |
+| `reticulum:proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete` | HTTP proxy to paths above                                                                                 |
+| `reticulum:validateConfig`                                      | One-shot `validate-config --json` against `userData/reticulum/config` (read-only; safe while stack runs)  |
+| `reticulum:readDefaultConfigFile`                               | Read first existing system rnsd config path                                                               |
+| `reticulum:showConfigImportDialog`                              | Native file picker for config import                                                                      |
+| `reticulum:showIdentityImportDialog`                            | Native file picker for 64-byte private key (`.retid`, `.key`, …)                                          |
+| `reticulum:onEvent` / `onStatus`                                | WS events and sidecar status                                                                              |
+
+`getStatus` / `onStatus` may include `interfaceIssueAlert` (TCP connect failures, TX queue drops, link-delivery timeouts, transport saturation / slow queries). Per-entry latch timestamps use a **5-minute** stale window (`RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS`). Connection syncs **enabled** interface names via `syncInterfaceIssueScope` so disabling or removing an interface clears that name immediately and rejects re-latch from lagging log lines. Stopping the stack (or unexpected process exit) clears the tracker.
 
 SQLite chat history uses separate `db:*` handlers (`getReticulumMessages`, `saveReticulumMessage`, `searchReticulumMessages`, `deleteReticulumMessage`, destination upserts), not sidecar HTTP.
 

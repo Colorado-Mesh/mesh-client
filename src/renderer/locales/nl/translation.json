@@ -3694,7 +3694,20 @@
     "deleteAria": "Doorgifteknooppunt {{name}} verwijderen",
     "deleteConfirmTitle": "Doorgifteknooppunt verwijderen?",
     "deleteConfirmBody": "{{name}} verwijderen uit de lijst met propagatieknooppunten? Dit verandert niets aan het externe knooppunt.",
-    "deleteConfirm": "Verwijderen"
+    "deleteConfirm": "Verwijderen",
+    "renameSaveAria": "Sla de naam van het voortplantingsknooppunt op",
+    "renameCancelAria": "Annuleer het hernoemen van het voortplantingsknooppunt",
+    "enableAria": "Doorgifteknooppunt {{name}} inschakelen",
+    "disableAria": "Schakel voortplantingsknooppunt {{name}} uit",
+    "syncNowPreferredAria": "Synchroniseer berichten van het gewenste voortplantingsknooppunt",
+    "nodeStatus": {
+      "active": "actief",
+      "idle": "inactief",
+      "known": "bekend",
+      "pending": "in behandeling",
+      "unknown": "onbekend",
+      "online": "online"
+    }
   },
   "reticulumPropagationHeader": {
     "modeLabel": "voortplantingsmodus",
