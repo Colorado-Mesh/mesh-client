@@ -11,6 +11,7 @@ export function useReticulumPanelActions(runtime: ReticulumRuntime) {
       refreshNodesFromDb: runtime.refreshNodesFromDb,
       refreshMessagesFromDb: runtime.refreshMessagesFromDb,
       requestRefresh: runtime.requestRefresh,
+      requestSoftRefresh: runtime.requestSoftRefresh,
       setNodeFavorited: runtime.setNodeFavorited,
       sendReaction: runtime.sendReaction,
       clearRawPackets: runtime.clearRawPackets,

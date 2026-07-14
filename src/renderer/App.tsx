@@ -1691,6 +1691,7 @@ function AppContent() {
   const [chatTabVisited, setChatTabVisited] = useState(false);
   const [roomsTabVisited, setRoomsTabVisited] = useState(false);
   const [nomadTabVisited, setNomadTabVisited] = useState(false);
+  const [peersTabVisited, setPeersTabVisited] = useState(false);
   const [appTabVisited, setAppTabVisited] = useState(false);
 
   useEffect(() => {
@@ -1704,6 +1705,7 @@ function AppContent() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- protocol switch clears tab visit state
     setChatTabVisited(false);
     setRoomsTabVisited(false);
+    setPeersTabVisited(false);
     setAppTabVisited(false);
   }, [protocol]);
 
@@ -1720,6 +1722,13 @@ function AppContent() {
       setNomadTabVisited(true);
     }
   }, [activePanelIndex]);
+
+  useEffect(() => {
+    if (activePanelIndex === NODES_PANEL_INDEX && capabilities.hasReticulumPeersList) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- track Peers tab visit for keep-alive mount
+      setPeersTabVisited(true);
+    }
+  }, [activePanelIndex, capabilities.hasReticulumPeersList]);
 
   useEffect(() => {
     if (activePanelIndex === APP_PANEL_INDEX) {
@@ -2778,96 +2787,102 @@ function AppContent() {
                       role="tabpanel"
                       aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), NODES_PANEL_INDEX))}`}
                       hidden={activePanelIndex !== NODES_PANEL_INDEX}
-                      className="w-full min-w-0"
+                      className="h-full min-h-0 w-full min-w-0"
                     >
-                      {activePanelIndex === NODES_PANEL_INDEX ? (
+                      {(activePanelIndex === NODES_PANEL_INDEX || peersTabVisited) && (
                         <Suspense fallback={<PanelSkeleton />}>
-                          {capabilities.hasReticulumPeersList ? (
-                            <ReticulumPeerListPanel
-                              isConnected={isConnectedOrOperational}
-                              contactNodes={reticulumUiNodes}
-                              onPeerClick={setSelectedPeerHash}
-                              onSendMessage={handleMessageNode}
-                              onRefresh={reticulumPanelActions.requestRefresh}
-                              onToggleFavorite={reticulumPanelActions.setNodeFavorited}
-                              groups={contactGroups.groups}
-                              selectedGroupId={contactGroups.selectedGroupId}
-                              onGroupChange={contactGroups.setSelectedGroupId}
-                              onManageGroups={
-                                capabilities.hasUserManagedContactGroups
-                                  ? () => {
-                                      setShowGroupsModal(true);
-                                    }
-                                  : undefined
-                              }
-                              groupMemberIds={contactGroups.groupMemberIds}
-                              contactGroupsEnabled={capabilities.hasUserManagedContactGroups}
-                            />
-                          ) : (
-                            <NodeListPanel
-                              nodes={nodesForUi}
-                              myNodeNum={activeRuntime.selfNodeId}
-                              onNodeClick={(node) => {
-                                setSelectedNodeId(node.node_id);
-                              }}
-                              mqttConnected={activeConnectionView.mqttStatus === 'connected'}
-                              radioConnected={isConnectedOrOperational}
-                              locationFilter={locationFilter}
-                              onToggleFavorite={panelActions.setNodeFavorited}
-                              mode={protocol}
-                              groups={contactGroups.groups}
-                              selectedGroupId={contactGroups.selectedGroupId}
-                              onGroupChange={contactGroups.setSelectedGroupId}
-                              onManageGroups={
-                                capabilities.hasUserManagedContactGroups
-                                  ? () => {
-                                      setShowGroupsModal(true);
-                                    }
-                                  : undefined
-                              }
-                              groupMemberIds={contactGroups.groupMemberIds}
-                              contactGroupsEnabled={capabilities.hasUserManagedContactGroups}
-                              onImportContacts={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePanelActions.importContacts
-                                  : undefined
-                              }
-                              meshcoreShowRefreshControl={
-                                capabilities.hasContactImportExport
-                                  ? meshcoreContactsShowRefreshControl
-                                  : false
-                              }
-                              onRefreshContacts={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePanelActions.refreshContacts
-                                  : undefined
-                              }
-                              meshcoreShowPublicKeys={
-                                capabilities.hasContactImportExport
-                                  ? meshcoreContactsShowPublicKeys
-                                  : false
-                              }
-                              meshcorePublicKeyHexByNodeId={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePublicKeyHexByNodeId
-                                  : undefined
-                              }
-                              onSendAdvert={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePanelActions.sendAdvert
-                                  : undefined
-                              }
-                              onOffloadContactsFromRadio={
-                                capabilities.hasContactImportExport
-                                  ? meshcorePanelActions.offloadContactsFromRadio
-                                  : undefined
-                              }
-                              meshcoreRadioOperational={isOperational}
-                              onShowOnMap={handleShowOnMap}
-                            />
-                          )}
+                          <div
+                            className="h-full min-h-0 w-full min-w-0"
+                            hidden={activePanelIndex !== NODES_PANEL_INDEX}
+                          >
+                            {capabilities.hasReticulumPeersList ? (
+                              <ReticulumPeerListPanel
+                                isConnected={isConnectedOrOperational}
+                                contactNodes={reticulumUiNodes}
+                                onPeerClick={setSelectedPeerHash}
+                                onSendMessage={handleMessageNode}
+                                onRefresh={reticulumPanelActions.requestRefresh}
+                                onSoftRefresh={reticulumPanelActions.requestSoftRefresh}
+                                onToggleFavorite={reticulumPanelActions.setNodeFavorited}
+                                groups={contactGroups.groups}
+                                selectedGroupId={contactGroups.selectedGroupId}
+                                onGroupChange={contactGroups.setSelectedGroupId}
+                                onManageGroups={
+                                  capabilities.hasUserManagedContactGroups
+                                    ? () => {
+                                        setShowGroupsModal(true);
+                                      }
+                                    : undefined
+                                }
+                                groupMemberIds={contactGroups.groupMemberIds}
+                                contactGroupsEnabled={capabilities.hasUserManagedContactGroups}
+                              />
+                            ) : (
+                              <NodeListPanel
+                                nodes={nodesForUi}
+                                myNodeNum={activeRuntime.selfNodeId}
+                                onNodeClick={(node) => {
+                                  setSelectedNodeId(node.node_id);
+                                }}
+                                mqttConnected={activeConnectionView.mqttStatus === 'connected'}
+                                radioConnected={isConnectedOrOperational}
+                                locationFilter={locationFilter}
+                                onToggleFavorite={panelActions.setNodeFavorited}
+                                mode={protocol}
+                                groups={contactGroups.groups}
+                                selectedGroupId={contactGroups.selectedGroupId}
+                                onGroupChange={contactGroups.setSelectedGroupId}
+                                onManageGroups={
+                                  capabilities.hasUserManagedContactGroups
+                                    ? () => {
+                                        setShowGroupsModal(true);
+                                      }
+                                    : undefined
+                                }
+                                groupMemberIds={contactGroups.groupMemberIds}
+                                contactGroupsEnabled={capabilities.hasUserManagedContactGroups}
+                                onImportContacts={
+                                  capabilities.hasContactImportExport
+                                    ? meshcorePanelActions.importContacts
+                                    : undefined
+                                }
+                                meshcoreShowRefreshControl={
+                                  capabilities.hasContactImportExport
+                                    ? meshcoreContactsShowRefreshControl
+                                    : false
+                                }
+                                onRefreshContacts={
+                                  capabilities.hasContactImportExport
+                                    ? meshcorePanelActions.refreshContacts
+                                    : undefined
+                                }
+                                meshcoreShowPublicKeys={
+                                  capabilities.hasContactImportExport
+                                    ? meshcoreContactsShowPublicKeys
+                                    : false
+                                }
+                                meshcorePublicKeyHexByNodeId={
+                                  capabilities.hasContactImportExport
+                                    ? meshcorePublicKeyHexByNodeId
+                                    : undefined
+                                }
+                                onSendAdvert={
+                                  capabilities.hasContactImportExport
+                                    ? meshcorePanelActions.sendAdvert
+                                    : undefined
+                                }
+                                onOffloadContactsFromRadio={
+                                  capabilities.hasContactImportExport
+                                    ? meshcorePanelActions.offloadContactsFromRadio
+                                    : undefined
+                                }
+                                meshcoreRadioOperational={isOperational}
+                                onShowOnMap={handleShowOnMap}
+                              />
+                            )}
+                          </div>
                         </Suspense>
-                      ) : null}
+                      )}
                     </div>
                     <div
                       id="panel-4"

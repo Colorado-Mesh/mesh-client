@@ -1,7 +1,15 @@
 /* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as NodeListPanel */
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { MessageCircle, RefreshCw, Star } from 'lucide-react-motion';
-import { memo, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  memo,
+  type ReactNode,
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -52,7 +60,10 @@ export interface ReticulumPeerListPanelProps {
   isConnected: boolean;
   onPeerClick: (hash: string) => void;
   onSendMessage: (nodeNum: number) => void;
+  /** Forced live path-table dump (`?refresh=1`). Used by the Refresh button. */
   onRefresh?: () => Promise<void>;
+  /** Soft/cached peers refresh. Used on connect when the store is still empty. */
+  onSoftRefresh?: () => Promise<void>;
   onToggleFavorite?: (nodeId: number, favorited: boolean) => Promise<void>;
   /** Canonical LXMF contacts from identity-scoped nodeStore (NodeListPanel adapter). */
   contactNodes?: Map<number, MeshNode>;
@@ -164,11 +175,39 @@ const PeerTableRow = memo(function PeerTableRow({
   );
 });
 
+function buildSourcePeerRows(
+  activeTab: PeerListTab,
+  peers: Map<string, ReticulumPeer>,
+  contacts: Map<string, ReticulumPeer>,
+  selectedGroupId: number | null,
+  groupMemberIds: Set<number> | undefined,
+): ReticulumPeer[] {
+  if (activeTab === 'favorites') {
+    const all = new Map<string, ReticulumPeer>();
+    for (const peer of peers.values()) {
+      if (peer.favorited) all.set(peer.destination_hash, peer);
+    }
+    for (const contact of contacts.values()) {
+      if (contact.favorited) all.set(contact.destination_hash, contact);
+    }
+    return [...all.values()];
+  }
+  if (activeTab === 'contacts') {
+    let rows = [...contacts.values()];
+    if (selectedGroupId != null && groupMemberIds?.size) {
+      rows = rows.filter((c) => groupMemberIds.has(reticulumHashToNodeId(c.destination_hash)));
+    }
+    return rows;
+  }
+  return [...peers.values()];
+}
+
 export default function ReticulumPeerListPanel({
   isConnected,
   onPeerClick,
   onSendMessage,
   onRefresh,
+  onSoftRefresh,
   onToggleFavorite,
   contactNodes,
   groups = [],
@@ -210,10 +249,12 @@ export default function ReticulumPeerListPanel({
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [refreshing, setRefreshing] = useState(false);
   const [actionBusyHash, setActionBusyHash] = useState<string | null>(null);
+  const [sortedRows, setSortedRows] = useState<PreparedReticulumPeerRow[]>([]);
 
   const tableScrollRef = useRef<HTMLDivElement>(null);
+  const sortedRowsPrepGenRef = useRef(0);
 
-  const runRefresh = useCallback(async () => {
+  const runForcedRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
       if (onRefresh) {
@@ -228,6 +269,21 @@ export default function ReticulumPeerListPanel({
     }
   }, [onRefresh]);
 
+  const runSoftRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      if (onSoftRefresh) {
+        await onSoftRefresh();
+      } else {
+        await refreshReticulumPeersFromSidecar();
+      }
+    } catch (e) {
+      console.warn('[ReticulumPeerListPanel] soft refresh ' + errLikeToLogString(e));
+    } finally {
+      setRefreshing(false);
+    }
+  }, [onSoftRefresh]);
+
   useEffect(() => {
     const id = window.setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
@@ -239,8 +295,10 @@ export default function ReticulumPeerListPanel({
 
   useEffect(() => {
     if (!isConnected) return;
-    void runRefresh();
-  }, [isConnected, runRefresh]);
+    // Runtime already keeps the store warm via connect/poll/patches — avoid a live dump on open.
+    if (useReticulumPeerStore.getState().peers.size > 0) return;
+    void runSoftRefresh();
+  }, [isConnected, runSoftRefresh]);
 
   const resolvePeerLabel = useCallback(
     (peer: ReticulumPeer) => {
@@ -251,42 +309,51 @@ export default function ReticulumPeerListPanel({
     [contactNodes, nomadNodes],
   );
 
-  const sourceRows = useMemo(() => {
-    if (activeTab === 'favorites') {
-      const all = new Map<string, ReticulumPeer>();
-      for (const peer of peers.values()) {
-        if (peer.favorited) all.set(peer.destination_hash, peer);
-      }
-      for (const contact of contacts.values()) {
-        if (contact.favorited) all.set(contact.destination_hash, contact);
-      }
-      return [...all.values()];
-    }
-    if (activeTab === 'contacts') {
-      let rows = [...contacts.values()];
-      if (selectedGroupId != null && groupMemberIds?.size) {
-        rows = rows.filter((c) => groupMemberIds.has(reticulumHashToNodeId(c.destination_hash)));
-      }
-      return rows;
-    }
-    return [...peers.values()];
-  }, [activeTab, contacts, peers, selectedGroupId, groupMemberIds]);
-
-  const preparedRows = useMemo(() => {
-    // Peers tab: cheap labels for the full prepare; overlay resolution for visible rows.
-    const labelFor =
+  useEffect(() => {
+    const gen = ++sortedRowsPrepGenRef.current;
+    const run = () => {
+      const sourceRows = buildSourcePeerRows(
+        activeTab,
+        peers,
+        contacts,
+        selectedGroupId,
+        groupMemberIds,
+      );
+      // Peers tab: cheap labels for the full prepare; overlay resolution for visible rows.
+      const labelFor =
+        activeTab === 'peers'
+          ? (peer: ReticulumPeer) => cheapReticulumPeerLabel(peer)
+          : resolvePeerLabel;
+      const prepared = prepareReticulumPeerRows(sourceRows, labelFor);
+      const filtered = filterPreparedReticulumPeerRows(prepared, debouncedSearchQuery);
+      const sorted = sortPreparedReticulumPeerRows(filtered, sortKey, sortDir);
+      if (gen !== sortedRowsPrepGenRef.current) return;
+      setSortedRows(sorted);
+    };
+    const approxCount =
       activeTab === 'peers'
-        ? (peer: ReticulumPeer) => cheapReticulumPeerLabel(peer)
-        : resolvePeerLabel;
-    return prepareReticulumPeerRows(sourceRows, labelFor);
+        ? peers.size
+        : activeTab === 'contacts'
+          ? contacts.size
+          : peers.size + contacts.size;
+    if (approxCount > RETICULUM_PEER_VIRTUALIZE_THRESHOLD) {
+      startTransition(run);
+    } else {
+      run();
+    }
     // peersRevision ensures Map identity churn still recomputes when patches flush.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- peersRevision tracks peers Map updates
-  }, [sourceRows, resolvePeerLabel, activeTab, peersRevision]);
-
-  const sortedRows = useMemo(() => {
-    const filtered = filterPreparedReticulumPeerRows(preparedRows, debouncedSearchQuery);
-    return sortPreparedReticulumPeerRows(filtered, sortKey, sortDir);
-  }, [preparedRows, debouncedSearchQuery, sortKey, sortDir]);
+  }, [
+    activeTab,
+    contacts,
+    debouncedSearchQuery,
+    groupMemberIds,
+    peers,
+    peersRevision,
+    resolvePeerLabel,
+    selectedGroupId,
+    sortDir,
+    sortKey,
+  ]);
 
   const shouldVirtualize = sortedRows.length > RETICULUM_PEER_VIRTUALIZE_THRESHOLD;
   const rowVirtualizer = useVirtualizer({
@@ -479,7 +546,7 @@ export default function ReticulumPeerListPanel({
           type="button"
           disabled={!isConnected || refreshing}
           onClick={() => {
-            void runRefresh();
+            void runForcedRefresh();
           }}
           className="flex items-center justify-center gap-1 rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:bg-gray-800 disabled:opacity-40 min-[480px]:justify-self-end"
           aria-label={t('common.refresh')}

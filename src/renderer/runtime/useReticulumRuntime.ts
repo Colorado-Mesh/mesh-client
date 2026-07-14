@@ -239,6 +239,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
     await refreshContactsFromSidecar({ forceRefresh: true });
   }, [refreshContactsFromSidecar]);
 
+  const refreshContactsFromSidecarSoft = useCallback(async () => {
+    await refreshContactsFromSidecar();
+  }, [refreshContactsFromSidecar]);
+
   const syncSelfNodeFromIdentityStatus = useCallback(
     (lxmfHash: string, displayName: string | null) => {
       if (!identityId) return;
@@ -1134,6 +1138,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       refreshNodesFromDb,
       refreshMessagesFromDb,
       requestRefresh: refreshContactsFromSidecarForced,
+      requestSoftRefresh: refreshContactsFromSidecarSoft,
       syncDiagnostics: syncDiagnosticsFromSidecar,
       getNodes,
       getFullNodeLabel,
@@ -1159,6 +1164,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       refreshNodesFromDb,
       refreshMessagesFromDb,
       refreshContactsFromSidecarForced,
+      refreshContactsFromSidecarSoft,
       syncDiagnosticsFromSidecar,
       getNodes,
       getFullNodeLabel,
