@@ -3,7 +3,6 @@ import { create } from 'zustand';
 import { getAppSettingsRaw } from '@/renderer/lib/appSettingsStorage';
 import { DEFAULT_APP_SETTINGS_SHARED } from '@/renderer/lib/defaultAppSettings';
 import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
-import { isReticulumHashPrefixAlias } from '@/renderer/lib/ingest/reticulumIngest';
 import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
 import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
 import {
@@ -21,7 +20,12 @@ import {
   type ReticulumPeer,
   type ReticulumPeerWireRow,
 } from '@/shared/reticulum-types';
-import { sanitizeReticulumDisplayName } from '@/shared/reticulumDisplayName';
+import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
+import {
+  isReticulumHashPrefixAlias,
+  reticulumRealDisplayName,
+  sanitizeReticulumDisplayName,
+} from '@/shared/reticulumDisplayName';
 
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import type { MeshNode } from '../lib/types';
@@ -85,7 +89,9 @@ function readReticulumDestinationCap(): number {
 }
 
 function normalizeHash(hash: string): string {
-  return hash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+  return (
+    canonicalizeReticulumDestinationHash(hash) ?? hash.replace(/[^0-9a-f]/gi, '').toLowerCase()
+  );
 }
 
 function peerDisplayName(peer: ReticulumPeer): string {
@@ -150,11 +156,19 @@ function overlayDbMeta(
   };
 }
 
-/** Prefer a real alias; treat empty / hash-prefix as missing. */
-function realDisplayName(hash: string, name?: string | null): string | null {
-  const sanitized = sanitizeReticulumDisplayName(name);
-  if (!sanitized || isReticulumHashPrefixAlias(hash, sanitized)) return null;
-  return sanitized;
+/**
+ * First non-placeholder display name among wire → prior custom/wire → peer announce → Nomad.
+ * Shared by peer and contact sidecar refresh enrichment.
+ */
+function resolveEnrichedDisplayName(
+  hash: string,
+  candidates: (string | null | undefined)[],
+): string | null {
+  for (const candidate of candidates) {
+    const real = reticulumRealDisplayName(hash, candidate);
+    if (real) return real;
+  }
+  return null;
 }
 
 /**
@@ -166,7 +180,7 @@ function preservePeerNamesOntoContact(
   contactMerged: ReticulumPeer,
   existingPeer: ReticulumPeer | undefined,
 ): ReticulumPeer {
-  const contactWire = realDisplayName(hash, contactMerged.display_name);
+  const contactWire = reticulumRealDisplayName(hash, contactMerged.display_name);
   if (contactWire) {
     return {
       ...contactMerged,
@@ -174,7 +188,7 @@ function preservePeerNamesOntoContact(
         contactMerged.custom_display_name ?? existingPeer?.custom_display_name ?? undefined,
     };
   }
-  const peerWire = realDisplayName(hash, existingPeer?.display_name);
+  const peerWire = reticulumRealDisplayName(hash, existingPeer?.display_name);
   return {
     ...contactMerged,
     display_name: peerWire ?? contactMerged.display_name ?? null,
@@ -897,52 +911,34 @@ async function refreshReticulumPeersFromSidecarOnce(
   const wirePeers = (peersBody.peers ?? []).map((row) => {
     const peer = wirePeerToPeer(row);
     const hash = normalizeHash(peer.destination_hash);
-    const wireName = peer.display_name?.trim()
-      ? (sanitizeReticulumDisplayName(peer.display_name) ?? null)
-      : null;
-    if (wireName && !isReticulumHashPrefixAlias(hash, wireName)) {
-      return { ...peer, display_name: wireName };
-    }
     const prior = priorPeers.get(hash);
-    const priorName =
-      sanitizeReticulumDisplayName(prior?.custom_display_name) ??
-      sanitizeReticulumDisplayName(prior?.display_name) ??
-      null;
-    if (priorName && !isReticulumHashPrefixAlias(hash, priorName)) {
-      return { ...peer, display_name: priorName };
-    }
-    const nomadName = nomadNameByHash.get(hash);
-    const nomadSanitized = nomadName ? sanitizeReticulumDisplayName(nomadName) : null;
-    return nomadSanitized
-      ? { ...peer, display_name: nomadSanitized }
-      : { ...peer, display_name: wireName };
+    const display_name = resolveEnrichedDisplayName(hash, [
+      peer.display_name,
+      prior?.custom_display_name,
+      prior?.display_name,
+      nomadNameByHash.get(hash),
+    ]);
+    return { ...peer, display_name };
   });
   const peerNameByHash = new Map<string, string>();
   for (const peer of wirePeers) {
     const hash = normalizeHash(peer.destination_hash);
-    const name = realDisplayName(hash, peer.display_name);
+    const name = reticulumRealDisplayName(hash, peer.display_name);
     if (name) peerNameByHash.set(hash, name);
   }
   const priorContacts = useReticulumPeerStore.getState().contacts;
   const wireContacts = (contactsBody.contacts ?? []).map((row) => {
     const contact = wireContactToContact(row, hopsByHash, ifaceByHash);
     const hash = normalizeHash(contact.destination_hash);
-    const wireName = realDisplayName(hash, contact.display_name);
-    if (wireName) return { ...contact, destination_hash: hash, display_name: wireName };
     const prior = priorContacts.get(hash) ?? priorPeers.get(hash);
-    const priorName =
-      realDisplayName(hash, prior?.custom_display_name) ??
-      realDisplayName(hash, prior?.display_name);
-    if (priorName) return { ...contact, destination_hash: hash, display_name: priorName };
-    const fromPeer = peerNameByHash.get(hash);
-    if (fromPeer) return { ...contact, destination_hash: hash, display_name: fromPeer };
-    const nomadName = nomadNameByHash.get(hash);
-    const nomadSanitized = nomadName ? realDisplayName(hash, nomadName) : null;
-    return {
-      ...contact,
-      destination_hash: hash,
-      display_name: nomadSanitized ?? wireName,
-    };
+    const display_name = resolveEnrichedDisplayName(hash, [
+      contact.display_name,
+      prior?.custom_display_name,
+      prior?.display_name,
+      peerNameByHash.get(hash),
+      nomadNameByHash.get(hash),
+    ]);
+    return { ...contact, destination_hash: hash, display_name };
   });
 
   const dismissed = useReticulumPeerStore.getState().dismissedContactHashes;

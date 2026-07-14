@@ -1,6 +1,7 @@
 import type { IpcMain } from 'electron';
 
 import { isMeshProtocol } from '../../shared/meshProtocol';
+import { canonicalizeReticulumDestinationHash } from '../../shared/reticulumDestinationHash';
 import { sanitizeReticulumDisplayNameForDb } from '../../shared/reticulumDisplayName';
 import { finishDbIpcHandler, getDbForIpc } from '../db-ipc-lifecycle';
 import { buildFtsMatchQuery, isMessageFtsReady } from '../messageFts';
@@ -247,12 +248,12 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       }
       const r = row as Record<string, unknown>;
       const rawHash = r.destination_hash;
-      if (typeof rawHash !== 'string' || rawHash.length > 128) {
+      if (typeof rawHash !== 'string') {
         throw new Error('db:upsertReticulumDestination: destination_hash invalid');
       }
-      // Canonicalize so icon/rename rows cannot split from contact upserts by casing.
-      const hash = rawHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
-      if (!hash || hash.length > 128) {
+      // Exactly 32 hex (case-insensitive) → lowercase; never strip separators.
+      const hash = canonicalizeReticulumDestinationHash(rawHash);
+      if (!hash) {
         throw new Error('db:upsertReticulumDestination: destination_hash invalid');
       }
       const db = getDbForIpc('db:upsertReticulumDestination');

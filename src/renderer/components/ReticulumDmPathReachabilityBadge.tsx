@@ -89,8 +89,11 @@ export interface ReticulumDmPathActionsProps {
   status: ReticulumDmPathStatus;
   /** Re-run the Chat DM path probe (also used after a successful path request). */
   onReprobe: () => void;
-  /** Apply a probe result from the manual Probe button (avoids a second /probe). */
-  onProbeSettled: (ok: boolean, hops: number | null) => void;
+  /**
+   * Apply a probe result from the manual Probe button (avoids a second /probe).
+   * First arg is the destination that was probed so stale completions can be ignored.
+   */
+  onProbeSettled: (forHash: string, ok: boolean, hops: number | null) => void;
 }
 
 /** Manual path request / probe when auto reachability check has settled. */
@@ -104,6 +107,7 @@ export function ReticulumDmPathActions({
   const { addToast } = useToast();
   const [busy, setBusy] = useState(false);
 
+  // Busy resets on destination change via ChatPanel `key={destinationHash}` remount.
   if (status === 'idle' || status === 'probing') return null;
 
   const runPath = async () => {
@@ -128,25 +132,26 @@ export function ReticulumDmPathActions({
   };
 
   const runProbe = async () => {
+    const probedHash = destinationHash;
     setBusy(true);
     try {
       if (!(await isReticulumSidecarRunning())) {
         addToast(t('connectionPanel.reticulumIdentity.startStackFirst'), 'error');
         return;
       }
-      const result = await probeReticulumPeer(destinationHash);
+      const result = await probeReticulumPeer(probedHash);
       const toast = formatReticulumPeerProbeToast(t, result);
       addToast(toast.message, toast.variant);
       if (result.ok && result.hops != null) {
-        useReticulumPeerStore.getState().updatePeer(destinationHash, { hops: result.hops });
+        useReticulumPeerStore.getState().updatePeer(probedHash, { hops: result.hops });
       }
       if (result.ok) {
         await refreshReticulumPeersFromSidecar();
       }
-      onProbeSettled(result.ok, result.hops ?? null);
+      onProbeSettled(probedHash, result.ok, result.hops ?? null);
     } catch (e) {
       console.warn('[ReticulumDmPathActions] probe ' + errLikeToLogString(e));
-      onProbeSettled(false, null);
+      onProbeSettled(probedHash, false, null);
     } finally {
       setBusy(false);
     }

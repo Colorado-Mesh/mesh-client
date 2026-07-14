@@ -45,6 +45,8 @@ pub struct StackHandle {
     inner: Arc<RwLock<PersistedState>>,
     event_tx: broadcast::Sender<String>,
     packet_log: Arc<PacketLogBuffer>,
+    /// When true, `list_contacts` must retry persisting contact name overlays after a prior save failure.
+    contact_name_persist_dirty: std::sync::atomic::AtomicBool,
     #[cfg(feature = "rns-stack")]
     live: Option<Arc<live::LiveBridge>>,
 }
@@ -133,6 +135,7 @@ impl StackHandle {
             inner,
             event_tx: event_tx.clone(),
             packet_log,
+            contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
             live,
         };
         #[cfg(not(feature = "rns-stack"))]
@@ -142,6 +145,7 @@ impl StackHandle {
             inner,
             event_tx,
             packet_log: Arc::new(PacketLogBuffer::new(MAX_WIRE_PACKET_LOG)),
+            contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
         };
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &handle.live {
@@ -639,8 +643,22 @@ impl StackHandle {
         topology::extend_name_map_with_announce_labels(&mut name_by_hash, &announce_labels);
         let changed = topology::overlay_contact_display_names(&mut inner.contacts, &name_by_hash);
         if changed > 0 {
-            if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
-                tracing::warn!("contact name persist after list_contacts failed: {e}");
+            self.contact_name_persist_dirty
+                .store(true, std::sync::atomic::Ordering::Relaxed);
+        }
+        // Failure point: contacts.json write fails after in-memory overlay. Fallback: keep
+        // overlay for this process and retry persist on the next list_contacts call.
+        if self
+            .contact_name_persist_dirty
+            .load(std::sync::atomic::Ordering::Relaxed)
+        {
+            match inner.save(&self.config_dir, &self.storage_dir) {
+                Ok(()) => self
+                    .contact_name_persist_dirty
+                    .store(false, std::sync::atomic::Ordering::Relaxed),
+                Err(e) => {
+                    tracing::warn!("contact name persist after list_contacts failed: {e}");
+                }
             }
         }
         inner.contacts.clone()

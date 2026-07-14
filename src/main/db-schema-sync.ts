@@ -18,7 +18,7 @@ import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 42;
+export const CURRENT_SCHEMA_VERSION = 43;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -851,6 +851,89 @@ function seedAppSettings(db: NodeSqliteDB): void {
   seed.run('reticulumMessageRetentionCount', '4000');
 }
 
+/**
+ * Collapse case-variant reticulum_destinations rows onto a single lowercase 32-hex PK.
+ * Idempotent — safe on every startup (schema v43).
+ */
+function repairReticulumDestinationHashCasing(db: NodeSqliteDB): void {
+  if (!tableExists(db, 'reticulum_destinations')) return;
+  const rows = db
+    .prepare(
+      `SELECT destination_hash, display_name, last_heard, favorited, icon_name, icon_color
+       FROM reticulum_destinations`,
+    )
+    .all() as {
+    destination_hash: string;
+    display_name: string | null;
+    last_heard: number | null;
+    favorited: number | null;
+    icon_name: string | null;
+    icon_color: string | null;
+  }[];
+
+  type DestRow = (typeof rows)[number];
+  const groups = new Map<string, DestRow[]>();
+  for (const row of rows) {
+    const raw = typeof row.destination_hash === 'string' ? row.destination_hash.trim() : '';
+    if (!/^[0-9a-fA-F]{32}$/.test(raw)) continue;
+    const key = raw.toLowerCase();
+    const list = groups.get(key);
+    if (list) list.push(row);
+    else groups.set(key, [row]);
+  }
+
+  const del = db.prepare('DELETE FROM reticulum_destinations WHERE destination_hash = ?');
+  const upsert = db.prepare(
+    `INSERT INTO reticulum_destinations
+       (destination_hash, display_name, last_heard, favorited, icon_name, icon_color)
+     VALUES (?, ?, ?, ?, ?, ?)
+     ON CONFLICT(destination_hash) DO UPDATE SET
+       display_name = COALESCE(excluded.display_name, reticulum_destinations.display_name),
+       last_heard = CASE
+         WHEN excluded.last_heard IS NOT NULL
+           AND (reticulum_destinations.last_heard IS NULL
+             OR excluded.last_heard > reticulum_destinations.last_heard)
+         THEN excluded.last_heard
+         ELSE reticulum_destinations.last_heard
+       END,
+       favorited = CASE
+         WHEN excluded.favorited = 1 OR reticulum_destinations.favorited = 1 THEN 1
+         ELSE 0
+       END,
+       icon_name = COALESCE(excluded.icon_name, reticulum_destinations.icon_name),
+       icon_color = COALESCE(excluded.icon_color, reticulum_destinations.icon_color)`,
+  );
+
+  for (const [canonical, group] of groups) {
+    const needsRewrite = group.length > 1 || group.some((r) => r.destination_hash !== canonical);
+    if (!needsRewrite) continue;
+
+    let displayName: string | null = null;
+    let lastHeard: number | null = null;
+    let favorited = 0;
+    let iconName: string | null = null;
+    let iconColor: string | null = null;
+    for (const r of group) {
+      const name = r.display_name;
+      if (displayName == null && name?.trim()) {
+        displayName = name;
+      }
+      const heard = r.last_heard;
+      if (heard != null && Number.isFinite(heard) && (lastHeard == null || heard > lastHeard)) {
+        lastHeard = Math.trunc(heard);
+      }
+      if (r.favorited === 1) favorited = 1;
+      if (iconName == null && r.icon_name != null) iconName = r.icon_name;
+      if (iconColor == null && r.icon_color != null) iconColor = r.icon_color;
+    }
+
+    for (const r of group) {
+      if (r.destination_hash !== canonical) del.run(r.destination_hash);
+    }
+    upsert.run(canonical, displayName, lastHeard, favorited, iconName, iconColor);
+  }
+}
+
 function structuralUpgrades(db: NodeSqliteDB): void {
   ensureMessagesPacketDedup(db);
   ensureMessagesReactionDedup(db);
@@ -863,6 +946,7 @@ function structuralUpgrades(db: NodeSqliteDB): void {
   repairMeshcoreOrphanSendingMessages(db);
   repairMeshtasticInboundNullStatus(db);
   purgeMeshcoreRowsFromMeshtasticNodesTable(db);
+  repairReticulumDestinationHashCasing(db);
   ensureMessageFtsTables(db);
 }
 

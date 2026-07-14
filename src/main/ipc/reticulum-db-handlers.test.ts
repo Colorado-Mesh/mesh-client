@@ -98,7 +98,7 @@ describe('reticulum-db-handlers SQL contracts', () => {
     expect(source).toContain('LOWER(excluded.display_name)');
     expect(source).toContain('LOWER(substr(reticulum_destinations.destination_hash, 1, 12))');
     expect(source).toContain('.replace(/[\\r\\n]+/g');
-    expect(source).toContain("rawHash.replace(/[^0-9a-f]/gi, '').toLowerCase()");
+    expect(source).toContain('canonicalizeReticulumDestinationHash(rawHash)');
     expect(source).toContain('WHEN ? = 1 THEN excluded.favorited');
     // Age prune must use Unix-seconds cutoff (destinations store seconds, not ms).
     expect(source).toMatch(
@@ -300,5 +300,60 @@ describe('reticulum destination / activity prune IPC', () => {
     expect(row.favorited).toBe(1);
     expect(row.icon_name).toBe('heart');
     expect(row.icon_color).toBe('cyan');
+  });
+
+  it('upsertReticulumDestination rejects stripped/malformed hashes', () => {
+    const upsert = handlers.get('db:upsertReticulumDestination');
+    expect(() =>
+      upsert?.(event, {
+        destination_hash: 'aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99',
+        display_name: 'Bad',
+      }),
+    ).toThrow(/destination_hash invalid/);
+    expect(() =>
+      upsert?.(event, {
+        destination_hash: 'deadbeef',
+        display_name: 'Short',
+      }),
+    ).toThrow(/destination_hash invalid/);
+  });
+
+  it('upsertReticulumDestination refuses hash-prefix overwrite of a real name', () => {
+    const upsert = handlers.get('db:upsertReticulumDestination');
+    const hash = 'aabbccddeeff00112233445566778899';
+    upsert?.(event, {
+      destination_hash: hash,
+      display_name: 'Alice',
+      favorited: true,
+    });
+    upsert?.(event, {
+      destination_hash: hash.toUpperCase(),
+      display_name: 'AABBCCDDEEFF',
+    });
+    let row = db!
+      .prepareOnce('SELECT * FROM reticulum_destinations WHERE destination_hash = ?')
+      .get(hash) as Record<string, unknown>;
+    expect(row.display_name).toBe('Alice');
+    expect(row.favorited).toBe(1);
+
+    upsert?.(event, {
+      destination_hash: hash,
+      display_name: 'Bob',
+    });
+    row = db!
+      .prepareOnce('SELECT * FROM reticulum_destinations WHERE destination_hash = ?')
+      .get(hash) as Record<string, unknown>;
+    expect(row.display_name).toBe('Bob');
+    expect(row.favorited).toBe(1);
+
+    upsert?.(event, {
+      destination_hash: hash,
+      favorited: false,
+    });
+    row = db!
+      .prepareOnce('SELECT * FROM reticulum_destinations WHERE destination_hash = ?')
+      .get(hash) as Record<string, unknown>;
+    expect(row.favorited).toBe(0);
+    expect(row.display_name).toBe('Bob');
   });
 });

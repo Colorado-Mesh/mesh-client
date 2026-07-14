@@ -143,6 +143,23 @@ describe('reticulumSidecarReads', () => {
     });
   });
 
+  it('probeReticulumPeer coalesces concurrent probes for the same hash', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    let resolvePost!: (value: { ok: boolean; hops: number }) => void;
+    const pending = new Promise<{ ok: boolean; hops: number }>((resolve) => {
+      resolvePost = resolve;
+    });
+    proxyPost.mockReturnValueOnce(pending);
+    const first = probeReticulumPeer('AABBCCDDEEFF00112233445566778899');
+    const second = probeReticulumPeer('aabbccddeeff00112233445566778899');
+    resolvePost({ ok: true, hops: 4 });
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      { ok: true, hops: 4, mode: undefined, error: undefined },
+      { ok: true, hops: 4, mode: undefined, error: undefined },
+    ]);
+    expect(proxyPost).toHaveBeenCalledTimes(1);
+  });
+
   it('pingReticulumDestination merges ping RTT and probe hops', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     proxyPost

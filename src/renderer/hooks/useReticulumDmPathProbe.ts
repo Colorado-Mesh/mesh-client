@@ -26,8 +26,11 @@ export interface UseReticulumDmPathProbeResult {
   hops: number | null;
   /** Re-run probe for the current destination (no-op when disabled / no hash). */
   reprobe: () => void;
-  /** Apply a probe result from an external manual Probe click (no second /probe). */
-  applyProbeResult: (ok: boolean, hops: number | null) => void;
+  /**
+   * Apply a probe result from an external manual Probe click (no second /probe).
+   * Ignores results whose hash does not match the current destination.
+   */
+  applyProbeResult: (forHash: string, ok: boolean, hops: number | null) => void;
 }
 
 /**
@@ -50,7 +53,14 @@ export function useReticulumDmPathProbe({
     setProbeNonce((n) => n + 1);
   }, [enabled, destinationHash]);
 
-  const applyProbeResult = useCallback((ok: boolean, hopsNext: number | null) => {
+  const destinationHashRef = useRef(destinationHash);
+  // Keep latest destination for async settle guards (must not wait for an effect).
+  // eslint-disable-next-line react-hooks/refs -- latest-dest ref for stale probe discard
+  destinationHashRef.current = destinationHash;
+
+  const applyProbeResult = useCallback((forHash: string, ok: boolean, hopsNext: number | null) => {
+    // Failure point: stale manual probe after DM switch. Fallback: ignore mismatched hash.
+    if (!forHash || forHash !== destinationHashRef.current) return;
     setStatus(reticulumDmPathStatusFromProbe(ok));
     setHops(hopsNext);
   }, []);

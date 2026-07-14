@@ -2142,6 +2142,7 @@ function ChatPanel({
           const pathActions =
             showPathUi && reticulumDmDestinationHash ? (
               <ReticulumDmPathActions
+                key={reticulumDmDestinationHash}
                 destinationHash={reticulumDmDestinationHash}
                 status={reticulumDmPathProbe.status}
                 onReprobe={reticulumDmPathProbe.reprobe}

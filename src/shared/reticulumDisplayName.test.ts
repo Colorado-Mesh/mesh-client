@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  isReticulumHashPrefixAlias,
+  reticulumRealDisplayName,
   sanitizeReticulumDisplayName,
   sanitizeReticulumDisplayNameForDb,
 } from './reticulumDisplayName';
@@ -44,5 +46,21 @@ describe('sanitizeReticulumDisplayNameForDb', () => {
 
   it('returns sanitized plain names for SQLite upsert', () => {
     expect(sanitizeReticulumDisplayNameForDb('Runr02')).toBe('Runr02');
+  });
+});
+
+describe('isReticulumHashPrefixAlias / reticulumRealDisplayName', () => {
+  const hash = 'aabbccddeeff00112233445566778899';
+
+  it('treats empty and first-12-hex as placeholders', () => {
+    expect(isReticulumHashPrefixAlias(hash, '')).toBe(true);
+    expect(isReticulumHashPrefixAlias(hash, 'aabbccddeeff')).toBe(true);
+    expect(isReticulumHashPrefixAlias(hash, 'AABBCCDDEEFF')).toBe(true);
+    expect(isReticulumHashPrefixAlias(hash, 'Alice')).toBe(false);
+  });
+
+  it('returns null for placeholders and a sanitized real name otherwise', () => {
+    expect(reticulumRealDisplayName(hash, 'aabbccddeeff')).toBeNull();
+    expect(reticulumRealDisplayName(hash, 'Hub Peer')).toBe('Hub Peer');
   });
 });

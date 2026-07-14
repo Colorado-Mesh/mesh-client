@@ -1808,7 +1808,12 @@ export const HTML_ENTITY_RESIDUE_RE = /&#\d+;/;
 export const BRACKET_CAT_PLACEHOLDER_RE = /\[(?:Data|Date|Time)\]/i;
 
 /** peerDetailModal probe toast keys — same probe wording rules as reticulumPeers.probe. */
-export const PEER_DETAIL_PROBE_LEAF_KEYS = new Set(['probeHops', 'probeLocal', 'probeFailed']);
+export const PEER_DETAIL_PROBE_LEAF_KEYS = new Set([
+  'probeHops',
+  'probeLocal',
+  'probeFailed',
+  'probeOk',
+]);
 
 /** Brand / product names preserved verbatim when present in English. */
 // GPIO is a hardware acronym that must not be translated or expanded in UI strings.

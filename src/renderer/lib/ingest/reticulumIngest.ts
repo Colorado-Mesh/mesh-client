@@ -21,7 +21,11 @@ import { useBlockStore } from '@/renderer/stores/blockStore';
 import type { MessageRecord, MessageStatus } from '@/renderer/stores/messageStore';
 import { addMessage, upsertMessage, useMessageStore } from '@/renderer/stores/messageStore';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
-import { sanitizeReticulumDisplayName } from '@/shared/reticulumDisplayName';
+import {
+  isReticulumHashPrefixAlias,
+  reticulumRealDisplayName,
+  sanitizeReticulumDisplayName,
+} from '@/shared/reticulumDisplayName';
 
 export interface ReticulumLxmfPayload {
   sender_hash?: string;
@@ -41,21 +45,15 @@ export interface ReticulumLxmfPayload {
   icon_appearance?: ReticulumIconAppearanceWire | null;
 }
 
-/** True when a wire sender_name is just the destination hash prefix, not a real alias. */
-export function isReticulumHashPrefixAlias(senderHash: string, name?: string | null): boolean {
-  if (!name?.trim()) return true;
-  const prefix = senderHash.slice(0, 12).toLowerCase();
-  return name.trim().toLowerCase() === prefix;
-}
+/** Re-export for call sites that historically imported the predicate from ingest. */
+export { isReticulumHashPrefixAlias };
 
 /** Display name suitable for SQLite upsert; omits hash-prefix placeholders. */
 export function reticulumContactDisplayNameFromPayload(
   p: ReticulumLxmfPayload,
 ): string | undefined {
   if (!p.sender_hash) return undefined;
-  const sanitized = sanitizeReticulumDisplayName(p.sender_name);
-  if (!sanitized || isReticulumHashPrefixAlias(p.sender_hash, sanitized)) return undefined;
-  return sanitized;
+  return reticulumRealDisplayName(p.sender_hash, p.sender_name) ?? undefined;
 }
 
 function parseReticulumDeliveryMethod(

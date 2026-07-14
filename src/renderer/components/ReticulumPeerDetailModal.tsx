@@ -25,6 +25,7 @@ import {
   resolveReticulumPeerLabel,
   useReticulumPeerStore,
 } from '@/renderer/stores/reticulumPeerStore';
+import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
 
 import { ConfirmModal } from './ConfirmModal';
 import {
@@ -75,7 +76,8 @@ export default function ReticulumPeerDetailModal({
   const [iconName, setIconName] = useState<ReticulumProfileIconName>('circle');
 
   useEffect(() => {
-    const key = peerHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+    const key = canonicalizeReticulumDestinationHash(peerHash);
+    if (!key) return;
     void window.electronAPI.db.getReticulumDestinations().then((rows) => {
       const list = rows as {
         destination_hash?: string;
@@ -85,7 +87,7 @@ export default function ReticulumPeerDetailModal({
       const row = list.find(
         (r) =>
           typeof r.destination_hash === 'string' &&
-          r.destination_hash.replace(/[^0-9a-f]/gi, '').toLowerCase() === key,
+          canonicalizeReticulumDestinationHash(r.destination_hash) === key,
       );
       if (row?.icon_color) setIconColor(row.icon_color);
       if (
@@ -100,7 +102,8 @@ export default function ReticulumPeerDetailModal({
   const saveIconAppearance = async (patch: { icon_color?: string; icon_name?: string }) => {
     if (patch.icon_color != null) setIconColor(patch.icon_color);
     if (patch.icon_name != null) setIconName(patch.icon_name as ReticulumProfileIconName);
-    const key = peerHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+    const key = canonicalizeReticulumDestinationHash(peerHash);
+    if (!key) return;
     try {
       await window.electronAPI.db.upsertReticulumDestination({
         destination_hash: key,
@@ -186,7 +189,11 @@ export default function ReticulumPeerDetailModal({
     if (!peer) return;
     setBusy(true);
     try {
-      const key = peerHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+      const key = canonicalizeReticulumDestinationHash(peerHash);
+      if (!key) {
+        console.warn('[ReticulumPeerDetailModal] save contact invalid hash');
+        return;
+      }
       const label = resolveReticulumPeerLabel(peer, peer.display_name);
       await window.electronAPI.db.upsertReticulumDestination({
         destination_hash: key,

@@ -3923,6 +3923,104 @@ describe('ChatPanel reticulum dm-only chat', () => {
     expect(refreshReticulumPeersFromSidecarMock).toHaveBeenCalled();
   });
 
+  it('manual Probe failure toasts and settles unreachable without refreshing peers', async () => {
+    const hash = '368f994c056de0d8882855eb0d627497';
+    probeReticulumPeerMock
+      .mockResolvedValueOnce({ ok: true, hops: 1 })
+      .mockResolvedValueOnce({ ok: false, error: 'timeout' });
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} reticulumStackLive />
+      </ToastProvider>,
+    );
+    const addressInput = screen.getByLabelText('Destination address');
+    await user.type(addressInput, hash);
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    await waitFor(() => {
+      expect(
+        screen.getByRole('status', { name: 'Destination path is reachable' }),
+      ).toBeInTheDocument();
+    });
+    refreshReticulumPeersFromSidecarMock.mockClear();
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Probe Reticulum path reachability for this destination',
+      }),
+    );
+    await waitFor(() => {
+      expect(screen.getByText(/Probe failed/)).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByText('No path')).toBeInTheDocument();
+    });
+    expect(refreshReticulumPeersFromSidecarMock).not.toHaveBeenCalled();
+  });
+
+  it('manual Probe when sidecar is down shows start-stack toast and does not call /probe', async () => {
+    const hash = '368f994c056de0d8882855eb0d627497';
+    probeReticulumPeerMock.mockResolvedValueOnce({ ok: true, hops: 1 });
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} reticulumStackLive />
+      </ToastProvider>,
+    );
+    const addressInput = screen.getByLabelText('Destination address');
+    await user.type(addressInput, hash);
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {
+          name: 'Probe Reticulum path reachability for this destination',
+        }),
+      ).toBeInTheDocument();
+    });
+    const probeCallsAfterAuto = probeReticulumPeerMock.mock.calls.length;
+    isReticulumSidecarRunningMock.mockResolvedValue(false);
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Probe Reticulum path reachability for this destination',
+      }),
+    );
+    await waitFor(() => {
+      expect(screen.getByText(/Start the stack/i)).toBeInTheDocument();
+    });
+    expect(probeReticulumPeerMock).toHaveBeenCalledTimes(probeCallsAfterAuto);
+  });
+
+  it('disables path/probe actions while a manual Probe is in flight', async () => {
+    const hash = '368f994c056de0d8882855eb0d627497';
+    let resolveManual!: (value: { ok: boolean; hops?: number }) => void;
+    const manual = new Promise<{ ok: boolean; hops?: number }>((resolve) => {
+      resolveManual = resolve;
+    });
+    probeReticulumPeerMock.mockResolvedValueOnce({ ok: true, hops: 1 }).mockReturnValueOnce(manual);
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} reticulumStackLive />
+      </ToastProvider>,
+    );
+    const addressInput = screen.getByLabelText('Destination address');
+    await user.type(addressInput, hash);
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    const probeBtnName = 'Probe Reticulum path reachability for this destination';
+    const pathBtnName = 'Request Reticulum path to this destination';
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: probeBtnName })).toBeEnabled();
+    });
+    await user.click(screen.getByRole('button', { name: probeBtnName }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: probeBtnName })).toBeDisabled();
+      expect(screen.getByRole('button', { name: pathBtnName })).toBeDisabled();
+    });
+    resolveManual({ ok: true, hops: 2 });
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: probeBtnName })).toBeEnabled();
+    });
+  });
+
   it('does not probe when reticulum stack is not live', async () => {
     const hash = '368f994c056de0d8882855eb0d627497';
     const user = userEvent.setup();

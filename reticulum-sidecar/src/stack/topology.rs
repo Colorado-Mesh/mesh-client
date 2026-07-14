@@ -169,18 +169,28 @@ pub fn overlay_peer_display_names(peers: &mut [PeerRow], name_by_hash: &HashMap<
     merge_topology_display_names(peers, name_by_hash);
 }
 
+/// Canonicalize a destination hash to 32 lowercase hex chars (sidecar `parse_hash16` contract).
+pub fn canonicalize_destination_hash(hash: &str) -> Option<String> {
+    let trimmed = hash.trim();
+    if trimmed.len() != 32 || !trimmed.chars().all(|c| c.is_ascii_hexdigit()) {
+        return None;
+    }
+    Some(trimmed.to_ascii_lowercase())
+}
+
 /// True when `name` is only the first 12 hex chars of `hash` (placeholder alias).
 pub fn is_hash_prefix_alias(hash: &str, name: &str) -> bool {
     let trimmed = name.trim();
     if trimmed.is_empty() {
         return true;
     }
-    let prefix: String = hash
-        .chars()
-        .filter(|c| c.is_ascii_hexdigit())
-        .take(12)
-        .flat_map(|c| c.to_lowercase())
-        .collect();
+    let hex: String = canonicalize_destination_hash(hash).unwrap_or_else(|| {
+        hash.chars()
+            .filter(|c| c.is_ascii_hexdigit())
+            .flat_map(|c| c.to_lowercase())
+            .collect()
+    });
+    let prefix: String = hex.chars().take(12).collect();
     trimmed.eq_ignore_ascii_case(&prefix)
 }
 
@@ -398,6 +408,19 @@ mod tests {
         assert!(edges.iter().any(|e| e.source == "self" && e.target == "direct99"));
         assert!(edges.iter().any(|e| e.source == "self" && e.target == hub));
         assert!(edges.iter().any(|e| e.source == hub && e.target == leaf));
+    }
+
+    #[test]
+    fn canonicalize_destination_hash_requires_exact_32_hex() {
+        assert_eq!(
+            canonicalize_destination_hash("AABBCCDDEEFF00112233445566778899").as_deref(),
+            Some("aabbccddeeff00112233445566778899")
+        );
+        assert_eq!(
+            canonicalize_destination_hash("aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"),
+            None
+        );
+        assert_eq!(canonicalize_destination_hash("deadbeef"), None);
     }
 
     #[test]
