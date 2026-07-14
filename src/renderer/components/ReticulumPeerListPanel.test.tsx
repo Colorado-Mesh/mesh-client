@@ -3,6 +3,30 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+const VIRTUALIZER_VISIBLE_CAP = 3;
+
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: (opts: Record<string, unknown> & { count: number; enabled?: boolean }) => {
+    const enabled = opts.enabled !== false;
+    const total = opts.count;
+    const visible = enabled && total > 100 ? Math.min(total, VIRTUALIZER_VISIBLE_CAP) : total;
+    return {
+      getVirtualItems: () =>
+        Array.from({ length: visible }, (_, index) => ({
+          index,
+          start: index * 44,
+          end: (index + 1) * 44,
+          size: 44,
+          key: index,
+          lane: 0,
+        })),
+      getTotalSize: () => total * 44,
+      measureElement: vi.fn(),
+      measure: vi.fn(),
+    };
+  },
+}));
+
 const reticulumSidecarMocks = vi.hoisted(() => ({
   isReticulumSidecarRunning: vi.fn(),
   requestReticulumPeerPath: vi.fn(),
@@ -56,9 +80,31 @@ vi.mock('../stores/reticulumPeerStore', async (importOriginal) => {
 });
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
+import { reticulumHashToNodeId } from '../lib/reticulum/destHash';
+import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import ReticulumPeerListPanel from './ReticulumPeerListPanel';
 import { ToastProvider } from './Toast';
+
+function fillLargePeerMap(count: number, buried?: { hash: string; name: string }) {
+  const peers = new Map<string, { destination_hash: string; display_name: string; hops: number }>();
+  for (let i = 0; i < count; i++) {
+    const hash = `peer${i.toString(16).padStart(8, '0')}`;
+    peers.set(hash, {
+      destination_hash: hash,
+      display_name: `Peer ${i}`,
+      hops: i % 5,
+    });
+  }
+  if (buried) {
+    peers.set(buried.hash, {
+      destination_hash: buried.hash,
+      display_name: buried.name,
+      hops: 1,
+    });
+  }
+  return peers;
+}
 
 describe('ReticulumPeerListPanel', () => {
   beforeEach(() => {
@@ -66,6 +112,7 @@ describe('ReticulumPeerListPanel', () => {
     reticulumSidecarMocks.requestReticulumPeerPath.mockReset();
     reticulumSidecarMocks.probeReticulumPeer.mockReset();
     reticulumSidecarMocks.refreshReticulumPeersFromSidecar.mockResolvedValue([]);
+    useNomadNetworkStore.setState({ nodes: new Map() });
     useReticulumPeerStore.setState({
       peers: new Map([
         [
@@ -98,6 +145,7 @@ describe('ReticulumPeerListPanel', () => {
         ],
       ]),
       lastRefreshAt: null,
+      peerAppearanceByHash: new Map(),
     });
   });
 
@@ -175,6 +223,152 @@ describe('ReticulumPeerListPanel', () => {
     await user.type(search, 'nomatch');
     await waitFor(() => {
       expect(screen.queryByText('Alpha Peer')).not.toBeInTheDocument();
+    });
+  });
+
+  it('virtualizes large peer lists to a small DOM window', () => {
+    useReticulumPeerStore.setState({
+      peers: fillLargePeerMap(150),
+      contacts: new Map(),
+    });
+    render(
+      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+    expect(screen.getByText('Peer 0')).toBeInTheDocument();
+    expect(screen.queryByText('Peer 50')).not.toBeInTheDocument();
+    expect(screen.getByText(/peerListPanel\.heading/)).toHaveTextContent('(150)');
+  });
+
+  it('finds a buried peer by display name after search', async () => {
+    const user = userEvent.setup();
+    useReticulumPeerStore.setState({
+      peers: fillLargePeerMap(150, {
+        hash: 'burieddeadbeef01',
+        name: 'Unique Buried Peer',
+      }),
+      contacts: new Map(),
+    });
+    render(
+      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+    expect(screen.queryByText('Unique Buried Peer')).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('peerListPanel.searchAria'), 'Unique Buried');
+    await waitFor(() => {
+      expect(screen.getByText('Unique Buried Peer')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Peer 0')).not.toBeInTheDocument();
+  });
+
+  it('finds a buried peer by destination hash fragment', async () => {
+    const user = userEvent.setup();
+    useReticulumPeerStore.setState({
+      peers: fillLargePeerMap(150, {
+        hash: 'cafe1234buried99',
+        name: 'Hash Target Peer',
+      }),
+      contacts: new Map(),
+    });
+    render(
+      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+
+    await user.type(screen.getByLabelText('peerListPanel.searchAria'), 'cafe1234');
+    await waitFor(() => {
+      expect(screen.getByText('Hash Target Peer')).toBeInTheDocument();
+    });
+  });
+
+  it('finds a peer via Nomad overlay label when path-table name is a hash alias', async () => {
+    const user = userEvent.setup();
+    const hash = 'aa'.repeat(16);
+    useReticulumPeerStore.setState({
+      peers: new Map([
+        ...fillLargePeerMap(120),
+        [
+          hash,
+          {
+            destination_hash: hash,
+            display_name: hash.slice(0, 12),
+            hops: 1,
+          },
+        ],
+      ]),
+      contacts: new Map(),
+    });
+    useNomadNetworkStore.setState({
+      nodes: new Map([
+        [
+          hash,
+          {
+            destination_hash: hash,
+            display_name: 'Nomad Overlay Friend',
+            hops: 1,
+            last_heard: Date.now() / 1000,
+            favorited: false,
+          },
+        ],
+      ]),
+    });
+
+    render(
+      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+    await user.type(screen.getByLabelText('peerListPanel.searchAria'), 'Overlay Friend');
+    await waitFor(() => {
+      expect(screen.getByText('Nomad Overlay Friend')).toBeInTheDocument();
+    });
+  });
+
+  it('finds a peer via contactNodes long_name overlay', async () => {
+    const user = userEvent.setup();
+    const hash = 'bb'.repeat(16);
+    const nodeId = reticulumHashToNodeId(hash);
+    useReticulumPeerStore.setState({
+      peers: new Map([
+        ...fillLargePeerMap(120),
+        [
+          hash,
+          {
+            destination_hash: hash,
+            display_name: hash.slice(0, 12),
+            hops: 2,
+          },
+        ],
+      ]),
+      contacts: new Map(),
+    });
+    const contactNodes = new Map([
+      [
+        nodeId,
+        {
+          node_id: nodeId,
+          reticulum_destination_hash: hash,
+          long_name: 'LXMF Contact Overlay',
+          short_name: 'LXMF',
+          hw_model: 'Reticulum',
+          snr: 0,
+          battery: 0,
+          last_heard: Date.now(),
+          latitude: null,
+          longitude: null,
+          favorited: false,
+          source: 'rf' as const,
+        },
+      ],
+    ]);
+
+    render(
+      <ReticulumPeerListPanel
+        isConnected={false}
+        onPeerClick={vi.fn()}
+        onSendMessage={vi.fn()}
+        contactNodes={contactNodes}
+      />,
+    );
+    await user.type(screen.getByLabelText('peerListPanel.searchAria'), 'LXMF Contact');
+    await waitFor(() => {
+      expect(screen.getByText('LXMF Contact Overlay')).toBeInTheDocument();
     });
   });
 

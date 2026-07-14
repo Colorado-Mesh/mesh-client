@@ -89,3 +89,29 @@ describe('useReticulumRuntime RMAP discovery map', () => {
     expect(tearDownBody).toMatch(/clearReticulumSessionStores\(\)/);
   });
 });
+
+describe('useReticulumRuntime peer refresh WS routing', () => {
+  it('uses reticulumSidecarEventRefreshActions for peer vs diagnostics scheduling', () => {
+    expect(SOURCE).toContain(
+      "import { reticulumSidecarEventRefreshActions } from '@/renderer/lib/reticulum/reticulumSidecarPeerRefreshEvents';",
+    );
+    expect(SOURCE).toMatch(
+      /const refreshActions = reticulumSidecarEventRefreshActions\(evt\.type\);/,
+    );
+    expect(SOURCE).toMatch(
+      /if \(refreshActions\.peers\) \{[\s\S]*?scheduleDebouncedPeerRefresh\(\)/,
+    );
+    expect(SOURCE).toMatch(
+      /else if \(refreshActions\.diagnostics\) \{[\s\S]*?scheduleDebouncedDiagnosticsRefresh\(\)/,
+    );
+  });
+
+  it('does not schedule full peer refresh for stats_update or interface.state inline', () => {
+    expect(SOURCE).not.toMatch(
+      /evt\.type === 'stats_update'[\s\S]{0,200}?scheduleDebouncedPeerRefresh/,
+    );
+    expect(SOURCE).not.toMatch(
+      /evt\.type === 'interface\.state'[\s\S]{0,200}?scheduleDebouncedPeerRefresh/,
+    );
+  });
+});

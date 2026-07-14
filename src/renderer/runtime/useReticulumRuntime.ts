@@ -45,6 +45,7 @@ import {
   resolveReticulumSelfFullLabel,
   resolveReticulumSelfHeaderLabel,
 } from '@/renderer/lib/reticulum/reticulumSelfNodeLabel';
+import { reticulumSidecarEventRefreshActions } from '@/renderer/lib/reticulum/reticulumSidecarPeerRefreshEvents';
 import {
   fetchReticulumIdentityStatus,
   fetchReticulumInterfaces,
@@ -140,6 +141,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const connectInFlightDoneRef = useRef<Promise<void> | null>(null);
   const suppressReconnectRef = useRef(false);
   const peerRefreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const diagnosticsRefreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localInterfaceBurstCancelRef = useRef<(() => void) | null>(null);
   const localInterfacePollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stateRef = useRef(state);
@@ -329,7 +331,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     });
   }, [refreshLocalInterfacesFromSidecar]);
 
-  const scheduleDebouncedSidecarRefresh = useCallback(() => {
+  const scheduleDebouncedPeerRefresh = useCallback(() => {
     if (peerRefreshDebounceRef.current) {
       clearTimeout(peerRefreshDebounceRef.current);
     }
@@ -339,6 +341,16 @@ export function useReticulumRuntime(): ProtocolRuntime {
       void syncDiagnosticsFromSidecar();
     }, 2_000);
   }, [refreshContactsFromSidecar, syncDiagnosticsFromSidecar]);
+
+  const scheduleDebouncedDiagnosticsRefresh = useCallback(() => {
+    if (diagnosticsRefreshDebounceRef.current) {
+      clearTimeout(diagnosticsRefreshDebounceRef.current);
+    }
+    diagnosticsRefreshDebounceRef.current = setTimeout(() => {
+      diagnosticsRefreshDebounceRef.current = null;
+      void syncDiagnosticsFromSidecar();
+    }, 2_000);
+  }, [syncDiagnosticsFromSidecar]);
 
   const appendRawPacket = useCallback((entry: ReticulumRawPacketEntry) => {
     rawPacketAppenderRef.current?.append(entry);
@@ -463,30 +475,27 @@ export function useReticulumRuntime(): ProtocolRuntime {
         void useNomadNetworkStore.getState().refreshFromSidecar();
         recordAnnounceActivity(evt.payload, 'nomadnetwork.node');
       }
-      if (
-        evt.type === 'announce.received' ||
-        evt.type === 'peers_updated' ||
-        evt.type === 'interface.state' ||
-        evt.type === 'stats_update' ||
-        evt.type === 'stack_restart_requested'
-      ) {
-        if (evt.type === 'interface.state') {
-          logReticulumInterfaceStateEvent(evt.payload);
-          invalidateReticulumInterfacesCache();
-          void refreshLocalInterfacesFromSidecar();
-        }
-        if (evt.type === 'stack_restart_requested') {
-          void restartStackRef.current?.().catch((e: unknown) => {
-            console.error(
-              '[useReticulumRuntime] stack_restart_requested failed ' + errLikeToLogString(e),
-            );
-          });
-        }
-        scheduleDebouncedSidecarRefresh();
-        if (evt.type === 'announce.received') {
-          recordAnnounceActivity(evt.payload);
-          requestChatOutboxDrain('reticulum');
-        }
+      const refreshActions = reticulumSidecarEventRefreshActions(evt.type);
+      if (refreshActions.interfaces) {
+        logReticulumInterfaceStateEvent(evt.payload);
+        invalidateReticulumInterfacesCache();
+        void refreshLocalInterfacesFromSidecar();
+      }
+      if (evt.type === 'stack_restart_requested') {
+        void restartStackRef.current?.().catch((e: unknown) => {
+          console.error(
+            '[useReticulumRuntime] stack_restart_requested failed ' + errLikeToLogString(e),
+          );
+        });
+      }
+      if (refreshActions.peers) {
+        scheduleDebouncedPeerRefresh();
+      } else if (refreshActions.diagnostics) {
+        scheduleDebouncedDiagnosticsRefresh();
+      }
+      if (evt.type === 'announce.received') {
+        recordAnnounceActivity(evt.payload);
+        requestChatOutboxDrain('reticulum');
       }
     },
     [
@@ -495,7 +504,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
       ingestLxmfPayload,
       recordAnnounceActivity,
       refreshLocalInterfacesFromSidecar,
-      scheduleDebouncedSidecarRefresh,
+      scheduleDebouncedDiagnosticsRefresh,
+      scheduleDebouncedPeerRefresh,
     ],
   );
 
@@ -558,6 +568,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (peerRefreshDebounceRef.current) {
         clearTimeout(peerRefreshDebounceRef.current);
         peerRefreshDebounceRef.current = null;
+      }
+      if (diagnosticsRefreshDebounceRef.current) {
+        clearTimeout(diagnosticsRefreshDebounceRef.current);
+        diagnosticsRefreshDebounceRef.current = null;
       }
       unsubEventRef.current?.();
       unsubEventRef.current = null;
@@ -633,6 +647,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
     if (peerRefreshDebounceRef.current) {
       clearTimeout(peerRefreshDebounceRef.current);
       peerRefreshDebounceRef.current = null;
+    }
+    if (diagnosticsRefreshDebounceRef.current) {
+      clearTimeout(diagnosticsRefreshDebounceRef.current);
+      diagnosticsRefreshDebounceRef.current = null;
     }
     unsubEventRef.current?.();
     unsubEventRef.current = null;

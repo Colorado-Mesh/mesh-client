@@ -355,6 +355,13 @@ describe('reticulumPeerStore', () => {
   });
 
   it('refreshReticulumPeersFromSidecar loads sidecar and db rows', async () => {
+    const getReticulumDestinations = vi.fn().mockResolvedValue([
+      {
+        destination_hash: 'aa',
+        icon_name: 'star',
+        icon_color: '#0f0',
+      },
+    ]);
     vi.stubGlobal('window', {
       electronAPI: {
         reticulum: {
@@ -364,14 +371,20 @@ describe('reticulumPeerStore', () => {
             }
             if (path === '/api/v1/peers') {
               return Promise.resolve({
-                peers: [{ destination_hash: 'bb', hops: 3, interface: 'tcp' }],
+                peers: [
+                  { destination_hash: 'aa', hops: 1 },
+                  { destination_hash: 'bb', hops: 3, interface: 'tcp' },
+                ],
               });
+            }
+            if (path === '/api/v1/nomadnetwork/nodes') {
+              return Promise.resolve({ nodes: [] });
             }
             return Promise.resolve({});
           }),
         },
         db: {
-          getReticulumDestinations: vi.fn().mockResolvedValue([]),
+          getReticulumDestinations,
         },
       },
     });
@@ -379,8 +392,13 @@ describe('reticulumPeerStore', () => {
     const contacts = await refreshReticulumPeersFromSidecar();
 
     expect(contacts).toHaveLength(1);
+    expect(getReticulumDestinations).toHaveBeenCalledTimes(1);
     expect(useReticulumPeerStore.getState().peers.get('bb')?.hops).toBe(3);
     expect(useReticulumPeerStore.getState().contacts.get('aa')?.last_heard).toBe(5);
+    expect(useReticulumPeerStore.getState().peerAppearanceByHash.get('aa')).toEqual({
+      icon_name: 'star',
+      icon_color: '#0f0',
+    });
   });
 });
 

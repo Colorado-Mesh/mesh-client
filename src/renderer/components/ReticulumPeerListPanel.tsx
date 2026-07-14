@@ -12,6 +12,15 @@ import {
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
 import {
+  filterPreparedReticulumPeerRows,
+  prepareReticulumPeerRows,
+  RETICULUM_PEER_ROW_HEIGHT_PX,
+  RETICULUM_PEER_VIRTUALIZE_THRESHOLD,
+  type ReticulumPeerSortDir,
+  type ReticulumPeerSortKey,
+  sortPreparedReticulumPeerRows,
+} from '@/renderer/lib/reticulum/reticulumPeerListRows';
+import {
   formatReticulumPeerPathToast,
   formatReticulumPeerProbeToast,
   isReticulumSidecarRunning,
@@ -32,8 +41,8 @@ import { hasCustomReticulumProfileIcon, ReticulumProfileIcon } from './Reticulum
 import { useToast } from './Toast';
 
 type PeerListTab = 'peers' | 'contacts' | 'favorites';
-type SortKey = 'name' | 'hops' | 'lastSeen' | 'interface' | 'favorite';
-type SortDir = 'asc' | 'desc';
+type SortKey = ReticulumPeerSortKey;
+type SortDir = ReticulumPeerSortDir;
 
 export interface ReticulumPeerListPanelProps {
   isConnected: boolean;
@@ -65,38 +74,6 @@ function contactLastHeardMs(contact: ReticulumContact): number {
   return normalizeLastHeardMs(contact.last_heard ?? 0);
 }
 
-function lastActivityMs(peer: ReticulumPeer): number {
-  const contact = peer as ReticulumContact;
-  if (contact.last_heard != null && contact.last_heard > 0) {
-    return contactLastHeardMs(contact);
-  }
-  return peerLastSeenMs(peer);
-}
-
-function comparePeers(
-  a: ReticulumPeer,
-  b: ReticulumPeer,
-  key: SortKey,
-  dir: SortDir,
-  labelFor: (peer: ReticulumPeer) => string,
-): number {
-  const sign = dir === 'asc' ? 1 : -1;
-  switch (key) {
-    case 'name':
-      return sign * labelFor(a).localeCompare(labelFor(b));
-    case 'hops':
-      return sign * ((a.hops ?? -1) - (b.hops ?? -1));
-    case 'lastSeen':
-      return sign * (lastActivityMs(a) - lastActivityMs(b));
-    case 'interface':
-      return sign * (a.interface ?? '').localeCompare(b.interface ?? '');
-    case 'favorite':
-      return sign * (Number(Boolean(b.favorited)) - Number(Boolean(a.favorited)));
-    default:
-      return 0;
-  }
-}
-
 export default function ReticulumPeerListPanel({
   isConnected,
   onPeerClick,
@@ -116,8 +93,8 @@ export default function ReticulumPeerListPanel({
   const peers = useReticulumPeerStore((s) => s.peers);
   const contacts = useReticulumPeerStore((s) => s.contacts);
   const peerAppearanceByHash = useReticulumPeerStore((s) => s.peerAppearanceByHash);
-  const hydratePeerAppearancesFromDb = useReticulumPeerStore((s) => s.hydratePeerAppearancesFromDb);
   const isContact = useReticulumPeerStore((s) => s.isContact);
+  const nomadNodes = useNomadNetworkStore((s) => s.nodes);
 
   const handleToggleFavorite = useCallback(
     async (peer: ReticulumPeer) => {
@@ -167,10 +144,6 @@ export default function ReticulumPeerListPanel({
   }, [searchQuery]);
 
   useEffect(() => {
-    void hydratePeerAppearancesFromDb();
-  }, [hydratePeerAppearancesFromDb]);
-
-  useEffect(() => {
     if (!isConnected) return;
     void runRefresh();
   }, [isConnected, runRefresh]);
@@ -178,12 +151,10 @@ export default function ReticulumPeerListPanel({
   const resolvePeerLabel = useCallback(
     (peer: ReticulumPeer) => {
       const nodeId = reticulumHashToNodeId(peer.destination_hash);
-      const nomadName = useNomadNetworkStore
-        .getState()
-        .nodes.get(peer.destination_hash.toLowerCase())?.display_name;
+      const nomadName = nomadNodes.get(peer.destination_hash.toLowerCase())?.display_name;
       return resolveReticulumPeerLabel(peer, contactNodes?.get(nodeId)?.long_name, nomadName);
     },
-    [contactNodes],
+    [contactNodes, nomadNodes],
   );
 
   const sourceRows = useMemo(() => {
@@ -207,46 +178,36 @@ export default function ReticulumPeerListPanel({
     return [...peers.values()];
   }, [activeTab, contacts, peers, selectedGroupId, groupMemberIds]);
 
-  const filteredRows = useMemo(() => {
-    const q = debouncedSearchQuery.trim().toLowerCase();
-    if (!q) return sourceRows;
-    return sourceRows.filter((peer) => {
-      const name = resolvePeerLabel(peer).toLowerCase();
-      const hash = peer.destination_hash.toLowerCase();
-      return name.includes(q) || hash.includes(q);
-    });
-  }, [debouncedSearchQuery, sourceRows, resolvePeerLabel]);
+  const preparedRows = useMemo(
+    () => prepareReticulumPeerRows(sourceRows, resolvePeerLabel),
+    [sourceRows, resolvePeerLabel],
+  );
 
   const sortedRows = useMemo(() => {
-    const rows = [...filteredRows];
-    rows.sort((a, b) => {
-      const favDelta = Number(Boolean(b.favorited)) - Number(Boolean(a.favorited));
-      if (favDelta !== 0) return favDelta;
-      return comparePeers(a, b, sortKey, sortDir, resolvePeerLabel);
-    });
-    return rows;
-  }, [filteredRows, sortKey, sortDir, resolvePeerLabel]);
+    const filtered = filterPreparedReticulumPeerRows(preparedRows, debouncedSearchQuery);
+    return sortPreparedReticulumPeerRows(filtered, sortKey, sortDir);
+  }, [preparedRows, debouncedSearchQuery, sortKey, sortDir]);
 
-  const shouldVirtualize = sortedRows.length > 100;
+  const shouldVirtualize = sortedRows.length > RETICULUM_PEER_VIRTUALIZE_THRESHOLD;
   const rowVirtualizer = useVirtualizer({
     count: sortedRows.length,
     getScrollElement: () => tableScrollRef.current,
-    estimateSize: () => 44,
+    estimateSize: () => RETICULUM_PEER_ROW_HEIGHT_PX,
     overscan: 10,
     enabled: shouldVirtualize,
   });
   const virtualRows = rowVirtualizer.getVirtualItems();
-  const rowsForRender =
-    shouldVirtualize && virtualRows.length > 0
-      ? virtualRows
-      : sortedRows.map((peer, index) => ({
-          index,
-          start: index * 44,
-          end: (index + 1) * 44,
-          size: 44,
-          key: peer.destination_hash,
-          lane: 0 as const,
-        }));
+  // Never fall back to mounting the full list while virtualizing (would hang at ~6k rows).
+  const rowsForRender = shouldVirtualize
+    ? virtualRows
+    : sortedRows.map((row, index) => ({
+        index,
+        start: index * RETICULUM_PEER_ROW_HEIGHT_PX,
+        end: (index + 1) * RETICULUM_PEER_ROW_HEIGHT_PX,
+        size: RETICULUM_PEER_ROW_HEIGHT_PX,
+        key: row.peer.destination_hash,
+        lane: 0 as const,
+      }));
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -578,7 +539,7 @@ export default function ReticulumPeerListPanel({
           </thead>
           <tbody>
             {shouldVirtualize && virtualRows.length > 0 ? (
-              <tr>
+              <tr aria-hidden="true">
                 <td colSpan={tableColSpan} style={{ height: virtualRows[0]?.start ?? 0 }} />
               </tr>
             ) : null}
@@ -588,12 +549,24 @@ export default function ReticulumPeerListPanel({
                   {t(emptyKey)}
                 </td>
               </tr>
+            ) : shouldVirtualize && virtualRows.length === 0 ? (
+              <tr aria-hidden="true">
+                <td
+                  colSpan={tableColSpan}
+                  style={{
+                    height:
+                      rowVirtualizer.getTotalSize() ||
+                      sortedRows.length * RETICULUM_PEER_ROW_HEIGHT_PX,
+                  }}
+                />
+              </tr>
             ) : (
               rowsForRender.map((virtualRow) => {
-                const peer = sortedRows[virtualRow.index];
-                if (!peer) return null;
+                const prepared = sortedRows[virtualRow.index];
+                if (!prepared) return null;
+                const peer = prepared.peer;
                 const busy = actionBusyHash === peer.destination_hash;
-                const label = resolvePeerLabel(peer);
+                const label = prepared.label;
                 const hashTitle = peer.destination_hash;
                 const iconMeta = peerAppearanceByHash.get(peer.destination_hash.toLowerCase());
                 const showIcon = hasCustomReticulumProfileIcon(
@@ -604,7 +577,6 @@ export default function ReticulumPeerListPanel({
                 return (
                   <tr
                     key={peer.destination_hash}
-                    ref={shouldVirtualize ? rowVirtualizer.measureElement : undefined}
                     data-index={virtualRow.index}
                     className="cursor-pointer border-b border-gray-800 hover:bg-gray-900/60"
                     onClick={() => {
@@ -687,7 +659,7 @@ export default function ReticulumPeerListPanel({
               })
             )}
             {shouldVirtualize && virtualRows.length > 0 ? (
-              <tr>
+              <tr aria-hidden="true">
                 <td
                   colSpan={tableColSpan}
                   style={{

@@ -1056,10 +1056,10 @@ For bulk fixes, use Network **Config import** (merge) instead of hand-editing in
 
 **Checks**:
 
-1. **Expected at scale**: mesh-client virtualizes peer rows above 100 entries, but the sidecar still maintains the full RNS path table (often 3k–10k rows on busy hubs). Background refresh runs every 30 s while the stack is configured.
+1. **Scale behavior**: mesh-client virtualizes peer rows above 100 entries (never mounts the full DOM when the virtualizer is not ready), prepares labels once before filter/sort, and does **not** reload the full path table on high-frequency `stats_update` / `interface.state` WS events. The sidecar still maintains the full RNS path table (often 3k–10k rows on busy hubs). Background peer refresh runs every 30 s while the stack is configured, plus announce/`peers_updated` debounced updates.
 2. **Reduce noise**: disable unused TCP testnet interfaces on **Connection → Interfaces** and restart the stack so RNS drops stale TCP clients.
 3. **Prefer Contacts**: use the **Contacts** tab for LXMF peers you message; **Favorites** for a short pinned list.
-4. **Search**: the peer search box debounces input — wait a moment after typing before judging filter performance on very large lists.
+4. **Search**: the peer search box debounces input and filters the full prepared list (not only the visible window) — wait a moment after typing before judging filter performance on very large lists.
 
 ### RNode Wi-Fi interface offline or won't connect
 

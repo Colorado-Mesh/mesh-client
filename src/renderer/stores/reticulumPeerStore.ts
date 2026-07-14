@@ -560,6 +560,21 @@ export function reticulumHashForNodeId(nodeId: number): string | null {
 
 export const RETICULUM_PEER_REFRESH_MS = 30_000;
 
+function appearancesFromDbRows(
+  dbRows: ReticulumDestinationDbRow[],
+): Map<string, ReticulumPeerAppearance> {
+  const next = new Map<string, ReticulumPeerAppearance>();
+  for (const row of dbRows) {
+    if (!row.destination_hash) continue;
+    if (row.icon_name == null && row.icon_color == null) continue;
+    next.set(normalizeHash(row.destination_hash), {
+      icon_name: row.icon_name,
+      icon_color: row.icon_color,
+    });
+  }
+  return next;
+}
+
 /** Fetch sidecar peers/contacts, overlay SQLite + nomad announce names, update store. */
 export async function refreshReticulumPeersFromSidecar(): Promise<ReticulumContact[]> {
   try {
@@ -605,18 +620,20 @@ export async function refreshReticulumPeersFromSidecar(): Promise<ReticulumConta
     const dismissed = useReticulumPeerStore.getState().dismissedContactHashes;
     const merged = mergeReticulumPeerMaps(wirePeers, wireContacts, dbRows ?? [], dismissed);
     const { peers, contacts } = capReticulumPeerMaps(merged.peers, merged.contacts);
+    const peerAppearanceByHash = appearancesFromDbRows(dbRows ?? []);
 
     useReticulumPeerStore.setState({
       peers,
       contacts,
+      peerAppearanceByHash,
       lastRefreshAt: Date.now(),
     });
-    await useReticulumPeerStore.getState().hydratePeerAppearancesFromDb();
 
-    for (const peer of peers.values()) {
+    // Chat/DM identity path — contacts only. Path-table peers register on demand from the panel.
+    for (const contact of contacts.values()) {
       registerReticulumDestinationHash(
-        reticulumHashToNodeId(peer.destination_hash),
-        peer.destination_hash,
+        reticulumHashToNodeId(contact.destination_hash),
+        contact.destination_hash,
       );
     }
 
