@@ -2645,7 +2645,16 @@
     "forward": "Vpřed",
     "invalidUrl": "Neplatná adresa stránky Nomad",
     "collapseNodeList": "Sbalit seznam uzlů",
-    "expandNodeList": "Rozbalit seznam uzlů"
+    "expandNodeList": "Rozbalit seznam uzlů",
+    "errors": {
+      "pathTimeout": "Žádná cesta k tomuto uzlu (časový limit vyhledávání cesty vypršel). Zkuste bližší uzel nebo počkejte na čerstvější oznámení.",
+      "pubkeyNotFound": "Nelze najít identifikační klíč tohoto uzlu. Počkej na oznámení Nomáda a zkus to znovu.",
+      "linkTimeout": "Propojení s uzlem se nepodařilo navázat včas.",
+      "responseTimeout": "Uzel přijal odkaz, ale stránku nevrátil včas.",
+      "missingIdentity": "Tento uzel zatím nemá zapamatovanou identitu. Počkej na oznámení Nomáda a zkus to znovu.",
+      "transportUnavailable": "Transport Reticulum není k dispozici. Restartujte zásobník a zkuste to znovu.",
+      "sidecarNotRunning": "Reticulum sidecar neběží. Spusťte zásobník z Připojení a zkuste to znovu."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",

@@ -2645,7 +2645,16 @@
     "forward": "向前",
     "invalidUrl": "Nomad 页面地址无效",
     "collapseNodeList": "折叠节点列表",
-    "expandNodeList": "展开节点列表"
+    "expandNodeList": "展开节点列表",
+    "errors": {
+      "pathTimeout": "没有到此节点的路由（路径查找超时）。尝试更近的节点或等待更新的公告。",
+      "pubkeyNotFound": "找不到此节点的标识密钥。等待游牧公告，然后重试。",
+      "linkTimeout": "无法及时建立到节点的链接。",
+      "responseTimeout": "节点接受了链接，但没有及时返回页面。",
+      "missingIdentity": "此节点尚未记住身份。等待游牧公告，然后重试。",
+      "transportUnavailable": "Reticulum 传输不可用。请重新启动协议栈后重试。",
+      "sidecarNotRunning": "Reticulum sidecar 未运行。请从 Connection 启动协议栈，然后重试。"
+    }
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",

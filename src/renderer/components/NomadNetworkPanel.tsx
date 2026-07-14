@@ -18,6 +18,7 @@ import {
   MAX_NOMAD_PAGE_CACHE_CHARS,
   setNomadPageCache,
 } from '@/renderer/lib/nomad/nomadPageCache';
+import { humanizeNomadPageError } from '@/renderer/lib/nomad/nomadPageErrorHumanize';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { NomadNodeRow, NomadPageRequestData } from '@/shared/nomad-types';
 
@@ -340,7 +341,7 @@ export default function NomadNetworkPanel({
       if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
       setPageLoading(false);
       if (!res.ok || !res.content) {
-        setPageError(res.error ?? t('common.error'));
+        setPageError(humanizeNomadPageError(res.error, t));
         return;
       }
       const { text, truncated } = truncateNomadPageContent(res.content);
@@ -377,7 +378,7 @@ export default function NomadNetworkPanel({
       fileDownloadInFlightRef.current = false;
       setFileDownloading(false);
       if (!res.ok || !res.content_base64) {
-        setFileDownloadError(res.error ?? t('common.error'));
+        setFileDownloadError(humanizeNomadPageError(res.error, t));
         return;
       }
       const fileName = res.file_name ?? normalizedPath.split('/').pop() ?? 'downloaded_file';

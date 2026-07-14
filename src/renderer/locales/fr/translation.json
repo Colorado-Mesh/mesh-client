@@ -2645,7 +2645,16 @@
     "forward": "Avant",
     "invalidUrl": "Adresse de la page Nomad invalide",
     "collapseNodeList": "Réduire la liste des nœuds",
-    "expandNodeList": "Développer la liste des nœuds"
+    "expandNodeList": "Développer la liste des nœuds",
+    "errors": {
+      "pathTimeout": "Aucun itinéraire vers ce nœud (la recherche de chemin a expiré). Essayez un nœud plus proche ou attendez une annonce plus fraîche.",
+      "pubkeyNotFound": "Impossible de trouver la clé d'identité de ce nœud. Attendez une annonce Nomad, puis réessayez.",
+      "linkTimeout": "Le lien vers le nœud n'a pas pu être établi à temps.",
+      "responseTimeout": "Le nœud a accepté le lien mais n'a pas renvoyé la page à temps.",
+      "missingIdentity": "Ce nœud n'a pas encore d'identité mémorisée. Attendez une annonce Nomad, puis réessayez.",
+      "transportUnavailable": "Le transport Reticulum n’est pas disponible. Redémarrez la pile et réessayez.",
+      "sidecarNotRunning": "Le sidecar Reticulum n’est pas en cours d’exécution. Démarrez la pile depuis Connexion, puis réessayez."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",

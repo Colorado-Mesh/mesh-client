@@ -2645,7 +2645,16 @@
     "forward": "Vooruit",
     "invalidUrl": "Ongeldig Nomad-paginaadres",
     "collapseNodeList": "Knooppuntenlijst samenvouwen",
-    "expandNodeList": "Knooppuntenlijst uitvouwen"
+    "expandNodeList": "Knooppuntenlijst uitvouwen",
+    "errors": {
+      "pathTimeout": "Geen route naar dit knooppunt (pad opzoeken is verlopen). Probeer een dichterbij gelegen knooppunt of wacht op een versere aankondiging.",
+      "pubkeyNotFound": "Kon de identiteitssleutel van dit knooppunt niet vinden. Wacht op een Nomad-aankondiging en probeer het dan opnieuw.",
+      "linkTimeout": "Link naar het knooppunt kon niet op tijd worden vastgesteld.",
+      "responseTimeout": "Het knooppunt heeft de link geaccepteerd, maar de pagina niet op tijd teruggestuurd.",
+      "missingIdentity": "Dit knooppunt heeft nog geen identiteit onthouden. Wacht op een Nomad-aankondiging en probeer het dan opnieuw.",
+      "transportUnavailable": "Reticulum-transport is niet beschikbaar. Start de stack opnieuw en probeer het opnieuw.",
+      "sidecarNotRunning": "Reticulum-sidecar draait niet. Start de stack vanuit Verbinding en probeer het opnieuw."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",

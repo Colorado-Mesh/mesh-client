@@ -2645,7 +2645,16 @@
     "forward": "Inoltrare",
     "invalidUrl": "Indirizzo della pagina Nomad non valido",
     "collapseNodeList": "Comprimi l'elenco dei nodi",
-    "expandNodeList": "Espandi elenco nodi"
+    "expandNodeList": "Espandi elenco nodi",
+    "errors": {
+      "pathTimeout": "Nessun percorso per questo nodo (ricerca percorso scaduta). Prova un nodo più vicino o attendi un annuncio più fresco.",
+      "pubkeyNotFound": "Impossibile trovare la chiave di identità di questo nodo. Attendi l'annuncio di un Nomade, quindi riprova.",
+      "linkTimeout": "Impossibile stabilire in tempo il collegamento al nodo.",
+      "responseTimeout": "Il nodo ha accettato il collegamento ma non ha restituito la pagina in tempo.",
+      "missingIdentity": "Questo nodo non ha ancora un'identità ricordata. Attendi l'annuncio di un Nomade, quindi riprova.",
+      "transportUnavailable": "Il trasporto Reticulum non è disponibile. Riavviare lo stack e riprovare.",
+      "sidecarNotRunning": "Il sidecar Reticulum non è in esecuzione. Avviare lo stack da Connessione, quindi riprovare."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Distribuzione complessiva",

@@ -2645,7 +2645,16 @@
     "forward": "İleri",
     "invalidUrl": "Geçersiz Göçebe sayfa adresi",
     "collapseNodeList": "Düğüm listesini daralt",
-    "expandNodeList": "Düğüm listesini genişlet"
+    "expandNodeList": "Düğüm listesini genişlet",
+    "errors": {
+      "pathTimeout": "Bu karoya rota yok (yol arama zaman aşımına uğradı). Daha yakın bir karo deneyin veya daha yeni bir duyuru bekleyin.",
+      "pubkeyNotFound": "Bu düğümün kimlik anahtarı bulunamadı. Bir Göçebe duyurusunu bekleyin, sonra tekrar deneyin.",
+      "linkTimeout": "Düğüme bağlantı zamanında kurulamadı.",
+      "responseTimeout": "Düğüm bağlantıyı kabul etti ancak sayfayı zamanında döndürmedi.",
+      "missingIdentity": "Bu düğümün henüz hatırlanan bir kimliği yok. Bir Göçebe duyurusunu bekleyin, sonra tekrar deneyin.",
+      "transportUnavailable": "Reticulum taşıması kullanılamıyor. Yığını yeniden başlatın ve tekrar deneyin.",
+      "sidecarNotRunning": "Reticulum sidecar çalışmıyor. Bağlantı bölümünden yığını başlatın, sonra tekrar deneyin."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",

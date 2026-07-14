@@ -890,6 +890,7 @@ Quit mesh-client fully, reopen, and click **Start stack** again.
    ```bash
    ./scripts/apply-rsReticulum-packet-tap.sh
    ./scripts/apply-rsReticulum-auto-beacon-utun.sh
+   ./scripts/apply-rsReticulum-link-client-nomad.sh
    pnpm run reticulum:sidecar:build
    ```
 3. **Workaround on old builds**: disable **AutoInterface** under Connection → Interfaces if LAN discovery is not needed (TCP/RNode paths still work).
@@ -910,6 +911,18 @@ Log path: `~/Library/Application Support/mesh-client/mesh-client.log` (macOS).
 3. Confirm with `curl` against the sidecar port from logs: `/api/v1/nomadnetwork/nodes` and `/api/v1/topology` return JSON 200
 
 In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Cargo.toml` is newer than the debug binary.
+
+### Nomad Network pages hang or almost never load
+
+**Symptoms**: Most Nomad pages spin for a long time then fail; a few nearby nodes load quickly. UI may show path/link timeout messages.
+
+**Cause**: Older `LinkClient` always waited for a fresh path-response announce for the destination public key, even when Nomad announces had already cached it. Successful fetches could also deregister all `nomadnetwork.node` announce handlers. Distant/high-hop nodes can still time out at the path stage (expected RF/mesh reachability limits).
+
+**Fix**:
+
+1. Ensure rsReticulum overlay is applied: `./scripts/apply-rsReticulum-link-client-nomad.sh` (see [patches/README.md](../reticulum-sidecar/patches/README.md); upstream [ratspeak/rsReticulum#14](https://github.com/ratspeak/rsReticulum/pull/14)).
+2. Rebuild sidecar: `pnpm run reticulum:sidecar:build`, restart stack.
+3. Prefer low-hop nodes while testing; hop count is shown in the Nomad list.
 
 ### Reticulum sidecar stops during dev (Vite HMR)
 

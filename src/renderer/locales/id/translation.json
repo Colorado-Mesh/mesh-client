@@ -2645,7 +2645,16 @@
     "forward": "Maju",
     "invalidUrl": "Alamat halaman Nomad tidak valid",
     "collapseNodeList": "Ciutkan daftar simpul",
-    "expandNodeList": "Perluas daftar simpul"
+    "expandNodeList": "Perluas daftar simpul",
+    "errors": {
+      "pathTimeout": "Tidak ada rute ke simpul ini (waktu pencarian jalur habis). Coba simpul yang lebih dekat atau tunggu pengumuman yang lebih segar.",
+      "pubkeyNotFound": "Tidak dapat menemukan kunci identitas simpul ini. Tunggu pengumuman Nomad, lalu coba lagi.",
+      "linkTimeout": "Tautan ke simpul tidak dapat dibuat tepat waktu.",
+      "responseTimeout": "Node menerima tautan tetapi tidak mengembalikan halaman tepat waktu.",
+      "missingIdentity": "Node ini belum memiliki identitas yang diingat. Tunggu pengumuman Nomad, lalu coba lagi.",
+      "transportUnavailable": "Transport Reticulum tidak tersedia. Mulai ulang stack dan coba lagi.",
+      "sidecarNotRunning": "Sidecar Reticulum tidak berjalan. Mulai stack dari Connection, lalu coba lagi."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Distribusi Keseluruhan",

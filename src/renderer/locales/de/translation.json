@@ -2645,7 +2645,16 @@
     "forward": "Nach vorne",
     "invalidUrl": "Ungültige Nomad-Seitenadresse",
     "collapseNodeList": "Knotenliste einklappen",
-    "expandNodeList": "Knotenliste erweitern"
+    "expandNodeList": "Knotenliste erweitern",
+    "errors": {
+      "pathTimeout": "Keine Route zu diesem Knoten (Zeitüberschreitung bei der Pfadsuche). Probieren Sie einen näheren Knoten aus oder warten Sie auf eine frischere Ankündigung.",
+      "pubkeyNotFound": "Der Identitätsschlüssel dieses Knotens konnte nicht gefunden werden. Warten Sie auf die Ankündigung eines Nomaden und versuchen Sie es dann erneut.",
+      "linkTimeout": "Verbindung zum Knoten konnte nicht rechtzeitig hergestellt werden.",
+      "responseTimeout": "Der Knoten hat den Link akzeptiert, aber die Seite nicht rechtzeitig zurückgegeben.",
+      "missingIdentity": "Dieser Knoten hat noch keine erinnerte Identität. Warten Sie auf die Ankündigung eines Nomaden und versuchen Sie es dann erneut.",
+      "transportUnavailable": "Reticulum-Transport ist nicht verfügbar. Starten Sie den Stack neu und versuchen Sie es erneut.",
+      "sidecarNotRunning": "Reticulum-Sidecar läuft nicht. Starten Sie den Stack unter Verbindung und versuchen Sie es erneut."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Gesamtverteilung",

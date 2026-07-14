@@ -2645,7 +2645,16 @@
     "forward": "フォワード",
     "invalidUrl": "Nomad ページのアドレスが無効です",
     "collapseNodeList": "ノードリストを折りたたむ",
-    "expandNodeList": "ノードリストを展開"
+    "expandNodeList": "ノードリストを展開",
+    "errors": {
+      "pathTimeout": "このノードへのルートがありません（パスルックアップがタイムアウトしました）。近いノードを試すか、新鮮なお知らせをお待ちください。",
+      "pubkeyNotFound": "このノードのIDキーが見つかりませんでした。放浪者の発表を待ってから、もう一度やり直してください。",
+      "linkTimeout": "ノードへのリンクを時間内に確立できませんでした。",
+      "responseTimeout": "ノードはリンクを受け入れましたが、時間内にページを返しませんでした。",
+      "missingIdentity": "このノードにはまだ記憶されている身元がありません。放浪者の発表を待ってから、もう一度やり直してください。",
+      "transportUnavailable": "Reticulum トランスポートは利用できません。スタックを再起動してもう一度お試しください。",
+      "sidecarNotRunning": "Reticulum サイドカーが実行されていません。接続からスタックを開始してから、もう一度お試しください。"
+    }
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",

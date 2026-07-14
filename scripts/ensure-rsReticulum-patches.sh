@@ -13,3 +13,4 @@ fi
 
 "${SCRIPT_DIR}/apply-rsReticulum-packet-tap.sh"
 "${SCRIPT_DIR}/apply-rsReticulum-auto-beacon-utun.sh"
+"${SCRIPT_DIR}/apply-rsReticulum-link-client-nomad.sh"

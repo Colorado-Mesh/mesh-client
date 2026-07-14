@@ -2637,6 +2637,15 @@
     "pageLoading": "Loading page…",
     "pageFailed": "Failed to load page: {{error}}",
     "pageTruncated": "Page truncated for display",
+    "errors": {
+      "pathTimeout": "No route to this node (path lookup timed out). Try a closer node or wait for a fresher announce.",
+      "pubkeyNotFound": "Could not find this node's identity key. Wait for a Nomad announce, then try again.",
+      "linkTimeout": "Link to the node could not be established in time.",
+      "responseTimeout": "The node accepted the link but did not return the page in time.",
+      "missingIdentity": "This node has no remembered identity yet. Wait for a Nomad announce, then try again.",
+      "transportUnavailable": "Reticulum transport is unavailable. Restart the stack and try again.",
+      "sidecarNotRunning": "Reticulum sidecar is not running. Start the stack from Connection, then try again."
+    },
     "showSource": "Show page source",
     "hideSource": "Show formatted page",
     "fileDownloading": "Downloading file…",

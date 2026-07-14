@@ -8,6 +8,7 @@ mod identity_apply;
 mod identity_import;
 mod local_rnode_primary;
 mod nomad_file;
+mod nomad_link_errors;
 #[cfg(feature = "rns-stack")]
 mod nomad_request_payload;
 mod nomad_timeouts;

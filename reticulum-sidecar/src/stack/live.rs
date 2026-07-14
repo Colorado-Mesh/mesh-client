@@ -30,6 +30,7 @@ use super::lxmf_delivery::{
     send_lxmf_delivery_announce, spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver, LXMF_APP,
 };
 use super::nomad_file::nomad_file_name_from_path;
+use super::nomad_link_errors::map_nomad_link_error;
 use super::nomad_request_payload::nomad_page_request_payload;
 use super::nomad_timeouts;
 use super::packet_log::{emit_wire_packet_event, wire_packet_from_tap, PacketLogBuffer};
@@ -70,6 +71,9 @@ pub struct LiveBridge {
     propagation: Arc<PropagationBridge>,
     sync_cancel: Arc<std::sync::atomic::AtomicBool>,
     event_tx: broadcast::Sender<String>,
+    /// Serialize Nomad Link queries — transport actor is single-threaded and
+    /// overlapping page/file fetches contend with path/pubkey discovery.
+    nomad_link_lock: Arc<tokio::sync::Mutex<()>>,
     #[cfg(feature = "rns-ble")]
     ble_peer_state: Arc<tokio::sync::Mutex<BlePeerRuntimeState>>,
 }
@@ -276,6 +280,7 @@ impl LiveBridge {
             )?),
             sync_cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             event_tx: event_tx.clone(),
+            nomad_link_lock: Arc::new(tokio::sync::Mutex::new(())),
             #[cfg(feature = "rns-ble")]
             ble_peer_state: Arc::new(tokio::sync::Mutex::new(BlePeerRuntimeState {
                 spawned: HashMap::new(),
@@ -341,9 +346,7 @@ impl LiveBridge {
     /// path-table hops lookup); `identity_hash_hex` is the node's identity
     /// hash recovered from its announce (`AnnounceHandlerEvent::identity_hash`),
     /// required by `LinkClient::query` to rebuild the `nomadnetwork.node`
-    /// destination on our side. Falls back to `hash_hex` when the identity
-    /// hash hasn't been observed yet (e.g. node added without an announce);
-    /// the query will simply fail to resolve a path in that case.
+    /// destination on our side.
     pub async fn fetch_nomad_file(
         &self,
         hash_hex: &str,
@@ -351,7 +354,10 @@ impl LiveBridge {
         path: &str,
         interfaces: &[InterfaceRow],
     ) -> serde_json::Value {
-        let remote_hash = match parse_hash16(identity_hash_hex.unwrap_or(hash_hex)) {
+        let Some(identity_hash_hex) = identity_hash_hex.filter(|s| !s.is_empty()) else {
+            return serde_json::json!({ "ok": false, "error": "missing_identity_hash" });
+        };
+        let remote_hash = match parse_hash16(identity_hash_hex) {
             Ok(h) => h,
             Err(e) => {
                 return serde_json::json!({ "ok": false, "error": e });
@@ -359,6 +365,7 @@ impl LiveBridge {
         };
         let hops = self.hops_to_destination(hash_hex).await.unwrap_or(8);
         let timeout_secs = nomad_timeouts::nomad_page_timeout_secs_for_interfaces(interfaces, hops);
+        let _guard = self.nomad_link_lock.lock().await;
         let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
         match client
             .query(
@@ -383,7 +390,10 @@ impl LiveBridge {
                     "content_base64": content_base64,
                 })
             }
-            Err(e) => serde_json::json!({ "ok": false, "error": format!("{e}") }),
+            Err(e) => serde_json::json!({
+                "ok": false,
+                "error": map_nomad_link_error(&format!("{e}")),
+            }),
         }
     }
 
@@ -396,7 +406,10 @@ impl LiveBridge {
         data_b64: Option<&str>,
         interfaces: &[InterfaceRow],
     ) -> serde_json::Value {
-        let remote_hash = match parse_hash16(identity_hash_hex.unwrap_or(hash_hex)) {
+        let Some(identity_hash_hex) = identity_hash_hex.filter(|s| !s.is_empty()) else {
+            return serde_json::json!({ "ok": false, "error": "missing_identity_hash" });
+        };
+        let remote_hash = match parse_hash16(identity_hash_hex) {
             Ok(h) => h,
             Err(e) => {
                 return serde_json::json!({ "ok": false, "error": e });
@@ -405,6 +418,7 @@ impl LiveBridge {
         let hops = self.hops_to_destination(hash_hex).await.unwrap_or(8);
         let timeout_secs = nomad_timeouts::nomad_page_timeout_secs_for_interfaces(interfaces, hops);
         let payload = nomad_page_request_payload(data_b64);
+        let _guard = self.nomad_link_lock.lock().await;
         let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
         match client
             .query(
@@ -430,7 +444,10 @@ impl LiveBridge {
                     "content_type": content_type,
                 })
             }
-            Err(e) => serde_json::json!({ "ok": false, "error": format!("{e}") }),
+            Err(e) => serde_json::json!({
+                "ok": false,
+                "error": map_nomad_link_error(&format!("{e}")),
+            }),
         }
     }
 
