@@ -3886,6 +3886,43 @@ describe('ChatPanel reticulum dm-only chat', () => {
     expect(refreshReticulumPeersFromSidecarMock).toHaveBeenCalled();
   });
 
+  it('probes and toasts from DM Probe action', async () => {
+    const hash = '368f994c056de0d8882855eb0d627497';
+    probeReticulumPeerMock
+      .mockResolvedValueOnce({ ok: false, error: 'timeout' })
+      .mockResolvedValueOnce({ ok: true, hops: 2 });
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} reticulumStackLive />
+      </ToastProvider>,
+    );
+    const addressInput = screen.getByLabelText('Destination address');
+    await user.type(addressInput, hash);
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    await waitFor(() => {
+      expect(screen.getByText('No path')).toBeInTheDocument();
+    });
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Probe Reticulum path reachability for this destination',
+      }),
+    );
+    await waitFor(() => {
+      expect(probeReticulumPeerMock).toHaveBeenCalledTimes(2);
+    });
+    expect(probeReticulumPeerMock).toHaveBeenLastCalledWith(hash);
+    await waitFor(() => {
+      expect(screen.getByText(/Probe OK/)).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByRole('status', { name: 'Destination path is reachable' }),
+      ).toBeInTheDocument();
+    });
+    expect(refreshReticulumPeersFromSidecarMock).toHaveBeenCalled();
+  });
+
   it('does not probe when reticulum stack is not live', async () => {
     const hash = '368f994c056de0d8882855eb0d627497';
     const user = userEvent.setup();

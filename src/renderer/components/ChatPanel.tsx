@@ -2145,6 +2145,7 @@ function ChatPanel({
                 destinationHash={reticulumDmDestinationHash}
                 status={reticulumDmPathProbe.status}
                 onReprobe={reticulumDmPathProbe.reprobe}
+                onProbeSettled={reticulumDmPathProbe.applyProbeResult}
               />
             ) : null;
           if (!pathBadge && !dmNode) return null;
