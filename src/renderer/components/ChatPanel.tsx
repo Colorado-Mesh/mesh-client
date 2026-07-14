@@ -1698,14 +1698,109 @@ function ChatPanel({
     [activeDmNode, dmOnlyChat, dmNodeName, isConnected, isDmMode, isMqttOnly, t],
   );
 
+  /** Shared DMS label + pills (Row 1 when dmOnlyChat; Row 2 otherwise). */
+  const dmTabPills = (
+    <>
+      <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
+        {t('chatPanel.dms')}
+      </span>
+      {visibleDmTabs.length === 0 ? (
+        <span className="text-[10px] text-gray-600 italic">
+          {t(dmOnlyChat ? 'chatPanel.noDmConversationsReticulum' : 'chatPanel.noDmConversations')}
+        </span>
+      ) : (
+        visibleDmTabs.map((nodeNum) => {
+          const dmUnread = dmUnreadCounts.get(nodeNum) ?? 0;
+          const showDmUnreadBadge =
+            dmUnread > 0 && !(viewMode === 'dm' && activeDmNode === nodeNum);
+          return (
+            <div
+              key={`dm-${protocol}-${nodeNum}`}
+              className={`relative flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                viewMode === 'dm' && activeDmNode === nodeNum
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-secondary-dark text-muted hover:text-gray-200'
+              }`}
+            >
+              <button
+                type="button"
+                aria-label={getDmLabel(nodeNum)}
+                className={`min-w-0 truncate rounded-full px-0 py-0 text-left font-medium transition-colors ${
+                  viewMode === 'dm' && activeDmNode === nodeNum
+                    ? 'text-white'
+                    : 'text-muted hover:text-gray-200'
+                }`}
+                onClick={() => {
+                  openDmTo(nodeNum);
+                }}
+              >
+                {getDmLabel(nodeNum)}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  toggleMuteView(`dm:${nodeNum}`);
+                }}
+                aria-label={
+                  mutedViews.has(`dm:${nodeNum}`)
+                    ? t('chatPanel.unmuteConversation')
+                    : t('chatPanel.muteConversation')
+                }
+                className={`ml-0.5 text-[10px] leading-none transition-colors ${
+                  mutedViews.has(`dm:${nodeNum}`)
+                    ? 'text-amber-500 hover:text-amber-300'
+                    : 'text-muted hover:text-white'
+                }`}
+                title={
+                  mutedViews.has(`dm:${nodeNum}`)
+                    ? t('chatPanel.unmuteConversation')
+                    : t('chatPanel.muteConversation')
+                }
+              >
+                {mutedViews.has(`dm:${nodeNum}`) ? (
+                  <BellOff
+                    aria-hidden
+                    className="h-2.5 w-2.5"
+                    trigger={parentIconTrigger}
+                    size={10}
+                  />
+                ) : (
+                  <Bell aria-hidden className="h-2.5 w-2.5" trigger={parentIconTrigger} size={10} />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  closeDmTab(nodeNum);
+                }}
+                aria-label={t('chatPanel.closeDmTab')}
+                className="text-muted ml-0.5 text-[10px] leading-none hover:text-white"
+                title={t('chatPanel.closeDm')}
+              >
+                x
+              </button>
+              {showDmUnreadBadge && (
+                <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                  {dmUnread > 99 ? '99+' : dmUnread}
+                </span>
+              )}
+            </div>
+          );
+        })
+      )}
+    </>
+  );
+
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col">
-      {/* Row 1 — Channel selector + toolbar utilities */}
+      {/* Row 1 — Channel selector (or Reticulum DMs) + toolbar utilities */}
       <div
         className={`mb-1 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 ${!dmOnlyChat && viewMode === 'dm' ? 'opacity-50' : ''}`}
       >
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          {!dmOnlyChat && (
+          {dmOnlyChat ? (
+            dmTabPills
+          ) : (
             <>
               <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
                 {t('chatPanel.channels')}
@@ -1887,103 +1982,14 @@ function ChatPanel({
         />
       ) : null}
 
-      {/* Row 2 — DM tabs */}
-      <div
-        className={`mb-2 flex min-h-[28px] min-w-0 items-center gap-2 whitespace-nowrap ${!dmOnlyChat && viewMode === 'channels' ? 'opacity-50' : ''}`}
-      >
-        <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
-          {t('chatPanel.dms')}
-        </span>
-        {visibleDmTabs.length === 0 ? (
-          <span className="text-[10px] text-gray-600 italic">
-            {t(dmOnlyChat ? 'chatPanel.noDmConversationsReticulum' : 'chatPanel.noDmConversations')}
-          </span>
-        ) : (
-          visibleDmTabs.map((nodeNum) => {
-            const dmUnread = dmUnreadCounts.get(nodeNum) ?? 0;
-            const showDmUnreadBadge =
-              dmUnread > 0 && !(viewMode === 'dm' && activeDmNode === nodeNum);
-            return (
-              <div
-                key={`dm-${protocol}-${nodeNum}`}
-                className={`relative flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                  viewMode === 'dm' && activeDmNode === nodeNum
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-secondary-dark text-muted hover:text-gray-200'
-                }`}
-              >
-                <button
-                  type="button"
-                  aria-label={getDmLabel(nodeNum)}
-                  className={`min-w-0 truncate rounded-full px-0 py-0 text-left font-medium transition-colors ${
-                    viewMode === 'dm' && activeDmNode === nodeNum
-                      ? 'text-white'
-                      : 'text-muted hover:text-gray-200'
-                  }`}
-                  onClick={() => {
-                    openDmTo(nodeNum);
-                  }}
-                >
-                  {getDmLabel(nodeNum)}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    toggleMuteView(`dm:${nodeNum}`);
-                  }}
-                  aria-label={
-                    mutedViews.has(`dm:${nodeNum}`)
-                      ? t('chatPanel.unmuteConversation')
-                      : t('chatPanel.muteConversation')
-                  }
-                  className={`ml-0.5 text-[10px] leading-none transition-colors ${
-                    mutedViews.has(`dm:${nodeNum}`)
-                      ? 'text-amber-500 hover:text-amber-300'
-                      : 'text-muted hover:text-white'
-                  }`}
-                  title={
-                    mutedViews.has(`dm:${nodeNum}`)
-                      ? t('chatPanel.unmuteConversation')
-                      : t('chatPanel.muteConversation')
-                  }
-                >
-                  {mutedViews.has(`dm:${nodeNum}`) ? (
-                    <BellOff
-                      aria-hidden
-                      className="h-2.5 w-2.5"
-                      trigger={parentIconTrigger}
-                      size={10}
-                    />
-                  ) : (
-                    <Bell
-                      aria-hidden
-                      className="h-2.5 w-2.5"
-                      trigger={parentIconTrigger}
-                      size={10}
-                    />
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeDmTab(nodeNum);
-                  }}
-                  aria-label={t('chatPanel.closeDmTab')}
-                  className="text-muted ml-0.5 text-[10px] leading-none hover:text-white"
-                  title={t('chatPanel.closeDm')}
-                >
-                  x
-                </button>
-                {showDmUnreadBadge && (
-                  <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
-                    {dmUnread > 99 ? '99+' : dmUnread}
-                  </span>
-                )}
-              </div>
-            );
-          })
-        )}
-      </div>
+      {/* Row 2 — DM tabs (Meshtastic/MeshCore; Reticulum promotes DMs into Row 1) */}
+      {!dmOnlyChat ? (
+        <div
+          className={`mb-2 flex min-h-[28px] min-w-0 items-center gap-2 whitespace-nowrap ${viewMode === 'channels' ? 'opacity-50' : ''}`}
+        >
+          {dmTabPills}
+        </div>
+      ) : null}
 
       {protocol === 'reticulum' && dmOnlyChat ? (
         <div className="mb-2 flex min-w-0 flex-wrap items-center gap-1">
