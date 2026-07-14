@@ -69,6 +69,7 @@ import {
   isUnreasonablyFutureMessageTimestampMs,
 } from '@/shared/messageTimestampSkew';
 import { formatMeshtasticNodeId, isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
+import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
 import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '@/shared/timeConstants';
 
 import type { OutboxEntry } from '../../shared/electron-api.types';
@@ -446,6 +447,8 @@ export interface ChatPanelProps {
   onReact: (glyph: string, replyId: number, channel: number) => Promise<void>;
   onResend: (msg: ChatMessage) => void;
   onNodeClick: (nodeNum: number) => void;
+  /** Reticulum: open peer detail by destination hash (Peers-panel path). */
+  onPeerClick?: (destinationHash: string) => void;
   isConnected: boolean;
   isMqttOnly?: boolean;
   connectionType?: 'ble' | 'serial' | 'http' | 'tcp' | null;
@@ -495,6 +498,7 @@ function ChatPanel({
   onReact,
   onResend,
   onNodeClick,
+  onPeerClick,
   isConnected,
   isMqttOnly,
   connectionType,
@@ -2374,6 +2378,24 @@ function ChatPanel({
                               <div className="mb-0.5 flex items-center gap-2">
                                 <button
                                   onClick={() => {
+                                    if (protocol === 'reticulum' && onPeerClick) {
+                                      const rawHash =
+                                        msg.reticulum_sender_hash?.trim() ||
+                                        nodes
+                                          .get(msg.sender_id)
+                                          ?.reticulum_destination_hash?.trim() ||
+                                        reticulumHashForNodeId(msg.sender_id) ||
+                                        resolveReticulumDestinationHash(msg.sender_id) ||
+                                        '';
+                                      const peerHash =
+                                        canonicalizeReticulumDestinationHash(rawHash);
+                                      if (peerHash) {
+                                        onPeerClick(peerHash);
+                                        return;
+                                      }
+                                      // No resolvable LXMF hash — avoid Meshtastic/MeshCore NodeDetailModal.
+                                      return;
+                                    }
                                     onNodeClick(msg.sender_id);
                                   }}
                                   className={`cursor-pointer text-xs font-semibold hover:underline ${

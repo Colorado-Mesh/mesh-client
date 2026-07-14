@@ -2710,6 +2710,7 @@ function AppContent() {
                             onReact={selectByProtocol(sendReactionByProtocol, protocol)}
                             onResend={handleResend}
                             onNodeClick={setSelectedNodeId}
+                            onPeerClick={setSelectedPeerHash}
                             isConnected={
                               isOperational || activeConnectionView.mqttStatus === 'connected'
                             }

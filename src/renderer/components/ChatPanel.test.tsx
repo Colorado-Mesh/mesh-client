@@ -4037,4 +4037,71 @@ describe('ChatPanel reticulum dm-only chat', () => {
     expect(screen.queryByText('No path')).not.toBeInTheDocument();
     expect(screen.queryByText(/Path reachable/)).not.toBeInTheDocument();
   });
+
+  it('opens peer detail via onPeerClick when sender name is clicked', async () => {
+    const user = userEvent.setup();
+    const peerHash = '8fd7a9361aca00000000000000000000';
+    const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;
+    const onNodeClick = vi.fn();
+    const onPeerClick = vi.fn();
+    const messages: ChatMessage[] = [
+      {
+        sender_id: peerId,
+        sender_name: '98046ee20235',
+        payload: 'hello peer detail',
+        channel: 0,
+        to: 0,
+        reticulum_sender_hash: peerHash,
+        timestamp: Date.now(),
+        status: 'acked',
+      },
+    ];
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...reticulumProps}
+          messages={messages}
+          ownNodeIds={[1]}
+          onNodeClick={onNodeClick}
+          onPeerClick={onPeerClick}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByRole('button', { name: '98046ee20235' }));
+    expect(onPeerClick).toHaveBeenCalledExactlyOnceWith(peerHash);
+    expect(onNodeClick).not.toHaveBeenCalled();
+  });
+
+  it('does not call onNodeClick or onPeerClick when Reticulum sender hash cannot be resolved', async () => {
+    const user = userEvent.setup();
+    const peerId = 0xabcdef01;
+    const onNodeClick = vi.fn();
+    const onPeerClick = vi.fn();
+    const messages: ChatMessage[] = [
+      {
+        sender_id: peerId,
+        sender_name: 'Unknown Peer',
+        payload: 'no hash here',
+        channel: 0,
+        to: peerId,
+        timestamp: Date.now(),
+        status: 'acked',
+      },
+    ];
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...reticulumProps}
+          messages={messages}
+          ownNodeIds={[1]}
+          initialDmTarget={peerId}
+          onNodeClick={onNodeClick}
+          onPeerClick={onPeerClick}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Unknown Peer' }));
+    expect(onPeerClick).not.toHaveBeenCalled();
+    expect(onNodeClick).not.toHaveBeenCalled();
+  });
 });
