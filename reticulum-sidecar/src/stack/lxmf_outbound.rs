@@ -61,6 +61,11 @@ impl PathRequestGate {
         PathRequestDecision::Send
     }
 
+    fn record_send(&mut self, dest: [u8; 16], now: f64) {
+        self.backoff_until
+            .insert(dest, now + PATH_REQUEST_BACKOFF_SECS);
+    }
+
     fn record_queue_failure(&mut self, dest: [u8; 16], now: f64) {
         *self.fail_count.entry(dest).or_insert(0) += 1;
         self.backoff_until.insert(dest, now + PATH_REQUEST_BACKOFF_SECS);
@@ -141,6 +146,11 @@ impl LxmfOutboundDriver {
             .contains(&destination_hex.to_lowercase())
     }
 
+    pub fn identity_known_for(&self, destination_hex: &str) -> bool {
+        self.known_identities
+            .contains_key(&destination_hex.to_lowercase())
+    }
+
     pub fn process_tick(&mut self, router: &mut LxmRouter, event_tx: &broadcast::Sender<String>) {
         let direct_inputs: HashMap<[u8; 16], DirectDeliveryPlanInput> = router
             .pending_outbound
@@ -153,8 +163,11 @@ impl LxmfOutboundDriver {
                 (
                     dest,
                     DirectDeliveryPlanInput {
-                        identity_known: self.known_identities.contains_key(&dest_hex.to_lowercase())
-                            || self.route_hops.contains_key(&dest),
+                        // lxmd parity: path alone is not identity knowledge — LRPROOF needs
+                        // the destination public key from known_identities.
+                        identity_known: self
+                            .known_identities
+                            .contains_key(&dest_hex.to_lowercase()),
                         route: direct_route_snapshot(&self.route_hops, dest),
                         reusable_link: direct_reusable_link_state(&self.link_delivery, dest),
                     },
@@ -179,6 +192,8 @@ impl LxmfOutboundDriver {
 
         router.run_jobs_tick();
 
+        // Must drain before tick so LRPROOF/resources can verify against known_identities.
+        self.link_delivery.drain_events(&self.known_identities);
         let results = self.link_delivery.tick();
         for result in results {
             self.handle_delivery_result(router, event_tx, result);
@@ -239,7 +254,15 @@ impl LxmfOutboundDriver {
             .known_identities
             .contains_key(&prop_hex.to_lowercase())
         {
-            self.request_path_gated(router, event_tx, prop_hash, false, "propagation node path", message);
+            self.request_path_gated(
+                router,
+                event_tx,
+                prop_hash,
+                false,
+                "propagation node path",
+                message,
+                false,
+            );
             return;
         }
         let Some(packed) = self.pack_for_propagation(&mut message, prop_hash) else {
@@ -269,12 +292,13 @@ impl LxmfOutboundDriver {
         planned: Option<DirectDeliveryPlan>,
     ) {
         let dest_hex = hex::encode(dest_hash);
+        // Capture ownership before consuming `planned` (lxmd `router_owned` parity).
+        let router_owned = planned.is_some();
         let plan = planned.unwrap_or_else(|| {
             plan_direct_delivery(
                 &mut message,
                 DirectDeliveryPlanInput {
-                    identity_known: self.known_identities.contains_key(&dest_hex.to_lowercase())
-                        || self.route_hops.contains_key(&dest_hash),
+                    identity_known: self.known_identities.contains_key(&dest_hex.to_lowercase()),
                     route: direct_route_snapshot(&self.route_hops, dest_hash),
                     reusable_link: direct_reusable_link_state(&self.link_delivery, dest_hash),
                 },
@@ -282,15 +306,24 @@ impl LxmfOutboundDriver {
             )
         });
 
+        // `router_owned` ⇒ message still sits in `pending_outbound`
+        // (`process_outbound_with_direct`). Must not `router.send` again or we
+        // fork-bomb duplicates and fill the transport channel while waiting for LRPROOF.
         match plan {
-            DirectDeliveryPlan::RequestPath { .. } | DirectDeliveryPlan::WaitForReusableLink => {
+            DirectDeliveryPlan::WaitForReusableLink => {
+                if !router_owned {
+                    router.send(message);
+                }
+            }
+            DirectDeliveryPlan::RequestPath { drop_existing } => {
                 self.request_path_gated(
                     router,
                     event_tx,
                     dest_hash,
-                    false,
+                    drop_existing,
                     "direct delivery path",
                     message,
+                    router_owned,
                 );
             }
             DirectDeliveryPlan::DeferTerminalFailure | DirectDeliveryPlan::Fail => {
@@ -324,12 +357,16 @@ impl LxmfOutboundDriver {
         drop_existing: bool,
         reason: &str,
         message: LxMessage,
+        router_owned: bool,
     ) {
         let now = now_f64();
         match self.path_request_gate.decide(request_hash, now) {
             PathRequestDecision::Send => {
                 if try_queue_path_request(&self.transport_tx, request_hash, drop_existing, reason) {
-                    router.send(message);
+                    self.path_request_gate.record_send(request_hash, now);
+                    if !router_owned {
+                        router.send(message);
+                    }
                 } else {
                     self.path_request_gate.record_queue_failure(request_hash, now);
                     if self.path_request_gate.should_warn(request_hash, now) {
@@ -339,11 +376,15 @@ impl LxmfOutboundDriver {
                             "failed to queue path request for LXMF delivery (transport channel full)"
                         );
                     }
-                    router.send(message);
+                    if !router_owned {
+                        router.send(message);
+                    }
                 }
             }
             PathRequestDecision::Backoff => {
-                router.send(message);
+                if !router_owned {
+                    router.send(message);
+                }
             }
             PathRequestDecision::MaxAttempts => {
                 tracing::warn!(
@@ -589,6 +630,14 @@ mod tests {
             gate.record_queue_failure(dest(2), 100.0 + f64::from(i));
         }
         assert_eq!(gate.decide(dest(2), 500.0), PathRequestDecision::MaxAttempts);
+    }
+
+    #[test]
+    fn path_gate_backoffs_after_successful_send() {
+        let mut gate = PathRequestGate::new();
+        gate.record_send(dest(4), 100.0);
+        assert_eq!(gate.decide(dest(4), 110.0), PathRequestDecision::Backoff);
+        assert_eq!(gate.decide(dest(4), 121.0), PathRequestDecision::Send);
     }
 
     #[test]

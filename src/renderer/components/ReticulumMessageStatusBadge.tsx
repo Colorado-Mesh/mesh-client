@@ -40,7 +40,7 @@ export function ReticulumMessageStatusBadge({
         : (error ?? t('chatPanel.reticulumSendFailed'));
   const tooltip = `${t(tooltipKey)}: ${statusLabel}`;
   return (
-    <HelpTooltip text={tooltip}>
+    <HelpTooltip text={tooltip} ariaLabel={tooltip}>
       <span className={`text-[10px] ${colorClass}`}>
         {label} {icon}
       </span>

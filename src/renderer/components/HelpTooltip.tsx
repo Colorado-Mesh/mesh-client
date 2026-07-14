@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import {
   computeInstantTooltipPosition,
@@ -50,7 +51,7 @@ export function HelpTooltip({
       }}
     >
       {children ?? <span className="text-xs text-gray-500 select-none">ⓘ</span>}
-      {pos && <InstantTooltipBubble text={text} pos={pos} />}
+      {pos && createPortal(<InstantTooltipBubble text={text} pos={pos} />, document.body)}
     </span>
   );
 }

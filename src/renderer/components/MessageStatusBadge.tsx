@@ -85,7 +85,7 @@ export function MessageStatusBadge({
         : failedReason
   }`;
   return (
-    <HelpTooltip text={tooltip}>
+    <HelpTooltip text={tooltip} ariaLabel={tooltip}>
       <span className={`text-[10px] ${colorClass}`}>
         {label} {icon}
       </span>

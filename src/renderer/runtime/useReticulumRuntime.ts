@@ -403,7 +403,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
         ingestLxmfPayload(evt.payload);
       }
       if (evt.type === 'lxmf_outbound_status' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { message_hash?: string; status?: string };
+        const p = evt.payload as {
+          message_hash?: string;
+          status?: string;
+        };
         if (identityId && p.message_hash && p.status) {
           const status =
             p.status === 'delivered' ? 'acked' : p.status === 'failed' ? 'failed' : 'sending';

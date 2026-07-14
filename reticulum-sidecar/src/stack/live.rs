@@ -533,6 +533,9 @@ impl LiveBridge {
             let mut interval = tokio::time::interval(Duration::from_secs(2));
             loop {
                 interval.tick().await;
+                // Only replace the outbound path table on a successful GetPathTable.
+                // Timeout/empty fallback must NOT wipe known routes (that forced every
+                // LXMF send onto the propagation node with hasPath:false).
                 let path_entries = match tokio::time::timeout(
                     TRANSPORT_QUERY_TIMEOUT,
                     handle.query_control(TransportQuery::GetPathTable),
@@ -547,22 +550,26 @@ impl LiveBridge {
                                 cache.insert(key, entry.interface.clone());
                             }
                         }
-                        entries
-                            .iter()
-                            .map(|e| (e.hash, e.hops, hex::encode(e.hash)))
-                            .collect::<Vec<_>>()
+                        Some(
+                            entries
+                                .iter()
+                                .map(|e| (e.hash, e.hops, hex::encode(e.hash)))
+                                .collect::<Vec<_>>(),
+                        )
                     }
                     _ => {
                         tracing::debug!(
-                            "maintenance path table query timed out after {:?}",
+                            "maintenance path table query timed out after {:?}; keeping prior routes",
                             TRANSPORT_QUERY_TIMEOUT
                         );
-                        Vec::new()
+                        None
                     }
                 };
                 let mut router = router.lock().await;
                 if let Ok(mut driver) = outbound.lock() {
-                    driver.update_path_table(&path_entries);
+                    if let Some(ref entries) = path_entries {
+                        driver.update_path_table(entries);
+                    }
                     driver.process_tick(&mut router, &event_tx);
                     let known_identities = driver.known_identities_for_propagation();
                     propagation.tick(&known_identities);
@@ -574,6 +581,9 @@ impl LiveBridge {
     }
 
     /// Register handler for announces carrying identity public keys (LXMF path proofs).
+    ///
+    /// `receive_path_responses: true` matches lxmd — path responses often carry the
+    /// destination public key needed for Direct LRPROOF while already filling the path table.
     pub fn register_lxmf_identity_announce_handler(&self, inner: Arc<RwLock<PersistedState>>) {
         let transport_tx = self.handle.transport_tx.clone();
         let outbound = self.outbound.clone();
@@ -583,11 +593,11 @@ impl LiveBridge {
         let display_name_cache = self.display_name_cache.clone();
         tokio::spawn(async move {
             let (callback_tx, mut callback_rx) =
-                tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(64);
+                tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(256);
             if transport_tx
                 .send(TransportMessage::RegisterAnnounceHandler {
                     aspect_filter: None,
-                    receive_path_responses: false,
+                    receive_path_responses: true,
                     callback_tx,
                 })
                 .await
@@ -627,6 +637,139 @@ impl LiveBridge {
         });
     }
 
+    /// Backfill `known_identities` from transport recent-announce cache (includes path responses).
+    async fn hydrate_identity_from_recent_announces(&self, destination_hex: &str) -> bool {
+        let already = self
+            .outbound
+            .lock()
+            .map(|d| d.identity_known_for(destination_hex))
+            .unwrap_or(false);
+        if already {
+            return true;
+        }
+        let resp = self
+            .query_control_timed(TransportQuery::GetRecentAnnounces)
+            .await;
+        let Some(TransportQueryResponse::Announces(entries)) = resp else {
+            return false;
+        };
+        let key = destination_hex.to_lowercase();
+        let mut hydrated = false;
+        for entry in &entries {
+            let dest = hex::encode(entry.dest_hash);
+            if dest.to_lowercase() != key {
+                continue;
+            }
+            if let Some(pub_key) = entry.public_key {
+                if let Ok(mut driver) = self.outbound.lock() {
+                    driver.register_identity_key(&dest, pub_key);
+                }
+                hydrated = true;
+                break;
+            }
+        }
+        hydrated
+    }
+
+    /// Refresh outbound path table from transport when GetPathTable succeeds.
+    async fn refresh_outbound_path_table(&self) -> bool {
+        let Some(TransportQueryResponse::PathTable(entries)) = self
+            .query_control_timed(TransportQuery::GetPathTable)
+            .await
+        else {
+            return false;
+        };
+        if let Ok(mut cache) = self.peer_via_cache.lock() {
+            cache.clear();
+            for entry in &entries {
+                cache.insert(hex::encode(entry.hash), entry.interface.clone());
+            }
+        }
+        let path_entries = entries
+            .iter()
+            .map(|e| (e.hash, e.hops, hex::encode(e.hash)))
+            .collect::<Vec<_>>();
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.update_path_table(&path_entries);
+        }
+        true
+    }
+
+    /// Discover a path to the destination before falling back to the propagation node.
+    async fn ensure_path_for_direct(&self, destination_hex: &str) -> bool {
+        let already = self
+            .outbound
+            .lock()
+            .map(|d| d.has_path_to(destination_hex))
+            .unwrap_or(false);
+        if already {
+            return true;
+        }
+        let Ok(dest) = parse_hash16(destination_hex) else {
+            return false;
+        };
+        let _ = self
+            .handle
+            .transport_tx
+            .send(TransportMessage::RequestPath {
+                destination_hash: dest,
+            })
+            .await;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+        while tokio::time::Instant::now() < deadline {
+            let _ = self.refresh_outbound_path_table().await;
+            if self
+                .outbound
+                .lock()
+                .map(|d| d.has_path_to(destination_hex))
+                .unwrap_or(false)
+            {
+                return true;
+            }
+            tokio::time::sleep(Duration::from_millis(200)).await;
+        }
+        false
+    }
+
+    /// Ensure destination public key is known before choosing Direct delivery.
+    async fn ensure_identity_for_direct(&self, destination_hex: &str) -> bool {
+        if self.hydrate_identity_from_recent_announces(destination_hex).await {
+            return true;
+        }
+        let Ok(dest) = parse_hash16(destination_hex) else {
+            return false;
+        };
+        let _ = self
+            .handle
+            .transport_tx
+            .send(TransportMessage::RequestPath {
+                destination_hash: dest,
+            })
+            .await;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        while tokio::time::Instant::now() < deadline {
+            if self
+                .outbound
+                .lock()
+                .map(|d| d.identity_known_for(destination_hex))
+                .unwrap_or(false)
+            {
+                return true;
+            }
+            let _ = self.hydrate_identity_from_recent_announces(destination_hex).await;
+            if self
+                .outbound
+                .lock()
+                .map(|d| d.identity_known_for(destination_hex))
+                .unwrap_or(false)
+            {
+                return true;
+            }
+            tokio::time::sleep(Duration::from_millis(200)).await;
+        }
+        false
+    }
+
     /// Snapshot of RMAP v4 discovered interfaces from rsReticulum DiscoveryStore.
     pub async fn fetch_rmap_discovered(&self) -> Vec<super::rmap_discovery::RmapDiscoveredWireRow> {
         let rows = self.handle.discovered_interfaces().await;
@@ -657,6 +800,35 @@ impl LiveBridge {
         });
     }
 
+    /// Build a signed outbound LXMF message whose [`LxMessage::hash`] matches
+    /// Direct link-delivery completion events (Unsigned packs fail with `NotSigned`
+    /// and leave the session stuck in `Transferring`).
+    fn prepare_signed_outbound_lxmf(
+        &self,
+        dest: [u8; 16],
+        title: &str,
+        content: &str,
+        method: DeliveryMethod,
+    ) -> Result<(LxMessage, String), String> {
+        let mut msg = LxMessage::new(
+            dest,
+            parse_hash16(&self.lxmf_hash_hex)?,
+            title,
+            content,
+            method,
+        );
+        let signing_key = self.identity.get_signing_key().ok_or_else(|| {
+            "lxmf sign: identity has no signing key".to_string()
+        })?;
+        msg.sign(&signing_key)
+            .map_err(|e| format!("lxmf sign: {e:?}"))?;
+        let hash_hex = msg
+            .hash
+            .map(hex::encode)
+            .ok_or_else(|| "lxmf hash missing after sign".to_string())?;
+        Ok((msg, hash_hex))
+    }
+
     pub async fn send_reaction(
         &self,
         req: &LxmfReactionRequest,
@@ -683,13 +855,12 @@ impl LiveBridge {
             }
         };
 
-        let msg = LxMessage::new(
+        let (msg, message_hash_hex) = self.prepare_signed_outbound_lxmf(
             dest,
-            parse_hash16(&self.lxmf_hash_hex)?,
             "",
             &req.emoji,
             delivery_method,
-        );
+        )?;
         let mut router = self.router.lock().await;
         router
             .try_send(msg)
@@ -708,7 +879,8 @@ impl LiveBridge {
             "to_hash": req.destination_hash,
             "reaction_target": req.target_hash,
             "direction": "outbound",
-            "delivery_status": "queued"
+            "message_hash": message_hash_hex,
+            "delivery_status": "sending"
         });
 
         if let Ok(mut driver) = self.outbound.lock() {
@@ -859,25 +1031,46 @@ impl LiveBridge {
 
     pub async fn send_lxmf(&self, req: &LxmfSendRequest) -> Result<serde_json::Value, String> {
         let dest = parse_hash16(&req.destination_hash)?;
-        let has_path = self
+        let (mut has_path, mut identity_known) = self
             .outbound
             .lock()
-            .map(|d| d.has_path_to(&req.destination_hash))
-            .unwrap_or(false);
+            .map(|d| {
+                (
+                    d.has_path_to(&req.destination_hash),
+                    d.identity_known_for(&req.destination_hash),
+                )
+            })
+            .unwrap_or((false, false));
 
-        let delivery_method = if has_path {
+        let preferred_pn_set = {
+            let router = self.router.lock().await;
+            router.outbound_propagation_node.is_some()
+        };
+
+        // Prefer Direct when a path can be discovered — do not immediately park on
+        // the preferred PN just because the local path table was empty at click time.
+        if !has_path {
+            has_path = self.ensure_path_for_direct(&req.destination_hash).await;
+        }
+        // Path alone is not enough for Direct (LRPROOF needs pubkey). Learn it from
+        // recent announces / path responses before deciding Propagated.
+        if has_path && !identity_known {
+            identity_known = self.ensure_identity_for_direct(&req.destination_hash).await;
+        }
+
+        let delivery_method = if has_path && identity_known {
+            DeliveryMethod::Direct
+        } else if preferred_pn_set {
+            // Offline / no pubkey: store-and-forward via preferred PN.
+            DeliveryMethod::Propagated
+        } else if has_path {
             DeliveryMethod::Direct
         } else {
-            let router = self.router.lock().await;
-            if router.outbound_propagation_node.is_some() {
-                DeliveryMethod::Propagated
-            } else {
-                return Ok(serde_json::json!({
-                    "ok": false,
-                    "error": "no_propagation_node",
-                    "destination_hash": req.destination_hash,
-                }));
-            }
+            return Ok(serde_json::json!({
+                "ok": false,
+                "error": "no_propagation_node",
+                "destination_hash": req.destination_hash,
+            }));
         };
         let delivery_method_str = match delivery_method {
             DeliveryMethod::Direct => "direct",
@@ -898,13 +1091,12 @@ impl LiveBridge {
             }
         };
 
-        let msg = LxMessage::new(
+        let (msg, message_hash_hex) = self.prepare_signed_outbound_lxmf(
             dest,
-            parse_hash16(&self.lxmf_hash_hex)?,
             "",
             &req.text,
             delivery_method,
-        );
+        )?;
         let mut router = self.router.lock().await;
         router
             .try_send(msg)
@@ -915,7 +1107,7 @@ impl LiveBridge {
             .unwrap_or_default()
             .as_secs()
             * 1000) as i64;
-        let mut payload = serde_json::json!({
+        let payload = serde_json::json!({
             "sender_hash": self.lxmf_hash_hex,
             "sender_name": self.display_name,
             "text": req.text,
@@ -927,22 +1119,9 @@ impl LiveBridge {
             "delivery_method": delivery_method_str,
             "sent_via": egress_via,
             "received_via": egress_via,
-            "delivery_status": "queued"
+            "delivery_status": "sending",
+            "message_hash": message_hash_hex.clone(),
         });
-        let hash_input = format!(
-            "{}:{}:{}",
-            payload["sender_hash"].as_str().unwrap_or_default(),
-            payload["timestamp"].as_i64().unwrap_or(0),
-            payload["text"].as_str().unwrap_or_default()
-        );
-        if let Some(obj) = payload.as_object_mut() {
-            obj.insert(
-                "message_hash".into(),
-                serde_json::Value::String(format!("{:032x}", super::persistence::stable_hash(
-                    &hash_input
-                ))),
-            );
-        }
 
         if let Ok(mut driver) = self.outbound.lock() {
             driver.process_tick(&mut router, &self.event_tx);
@@ -1028,6 +1207,15 @@ impl LiveBridge {
         );
         msg.set_msgpack_field(FIELD_FILE_ATTACHMENTS, attachment_msgpack)
             .map_err(|e| format!("attachment field: {e:?}"))?;
+        let signing_key = self.identity.get_signing_key().ok_or_else(|| {
+            "lxmf attachment sign: identity has no signing key".to_string()
+        })?;
+        msg.sign(&signing_key)
+            .map_err(|e| format!("lxmf attachment sign: {e:?}"))?;
+        let message_hash_hex = msg
+            .hash
+            .map(hex::encode)
+            .ok_or_else(|| "lxmf hash missing after attachment sign".to_string())?;
 
         let mut router = self.router.lock().await;
         router
@@ -1040,7 +1228,7 @@ impl LiveBridge {
             .as_secs()
             * 1000) as i64;
         let attachment_b64 = base64::engine::general_purpose::STANDARD.encode(&file_bytes);
-        let mut payload = serde_json::json!({
+        let payload = serde_json::json!({
             "sender_hash": self.lxmf_hash_hex,
             "sender_name": self.display_name,
             "text": text,
@@ -1051,7 +1239,8 @@ impl LiveBridge {
             "delivery_method": delivery_method_str,
             "sent_via": egress_via,
             "received_via": egress_via,
-            "delivery_status": "queued",
+            "delivery_status": "sending",
+            "message_hash": message_hash_hex,
             "attachment": {
                 "file_name": req.file_name,
                 "mime_type": req.mime_type,
@@ -1059,21 +1248,6 @@ impl LiveBridge {
                 "data_base64": attachment_b64,
             }
         });
-        let hash_input = format!(
-            "{}:{}:{}",
-            payload["sender_hash"].as_str().unwrap_or_default(),
-            payload["timestamp"].as_i64().unwrap_or(0),
-            payload["text"].as_str().unwrap_or_default()
-        );
-        if let Some(obj) = payload.as_object_mut() {
-            obj.insert(
-                "message_hash".into(),
-                serde_json::Value::String(format!(
-                    "{:032x}",
-                    super::persistence::stable_hash(&hash_input)
-                )),
-            );
-        }
 
         if let Ok(mut driver) = self.outbound.lock() {
             driver.process_tick(&mut router, &self.event_tx);
@@ -1084,7 +1258,7 @@ impl LiveBridge {
             "destination_hash": req.destination_hash,
             "delivery_method": delivery_method_str,
             "sent_via": egress_via,
-            "delivery_status": "queued",
+            "delivery_status": "sending",
             "message": payload
         }))
     }
