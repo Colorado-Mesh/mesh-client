@@ -516,7 +516,6 @@
     "reticulumSendPropagated": "En file d'attente au nœud de propagation",
     "reticulumNoPropagationNode": "Aucun nœud de propagation configuré. Définissez un nœud de propagation préféré dans l’onglet Reticulum Radio.",
     "sentViaPropagation": "Nœud de propagation",
-    "reticulumPropagationSyncActive": "Synchronisation des messages du nœud de propagation…",
     "reticulumAudioAttachment": "Voix : {{name}}",
     "reticulumSaveAttachment": "Enregistrer la pièce jointe",
     "recordVoice": "Enregistrer un message vocal",

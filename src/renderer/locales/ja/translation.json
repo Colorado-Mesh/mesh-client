@@ -516,7 +516,6 @@
     "reticulumSendPropagated": "伝播ノードでキューに入れられました",
     "reticulumNoPropagationNode": "伝播ノードが構成されていません。 Reticulum Radio タブで優先伝播ノードを設定します。",
     "sentViaPropagation": "伝播ノード",
-    "reticulumPropagationSyncActive": "伝播ノードからのメッセージを同期しています…",
     "reticulumAudioAttachment": "音声: {{name}}",
     "reticulumSaveAttachment": "添付ファイルを保存する",
     "recordVoice": "音声メッセージを録音する",

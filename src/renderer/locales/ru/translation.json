@@ -516,7 +516,6 @@
     "reticulumSendPropagated": "В очереди на узле распространения",
     "reticulumNoPropagationNode": "Не настроен узел распространения. Установите предпочтительный узел распространения на вкладке Reticulum Radio.",
     "sentViaPropagation": "Узел распространения",
-    "reticulumPropagationSyncActive": "Синхронизация сообщений с узла распространения…",
     "reticulumAudioAttachment": "Голос: {{name}}",
     "reticulumSaveAttachment": "Сохранить вложение",
     "recordVoice": "Записать голосовое сообщение",

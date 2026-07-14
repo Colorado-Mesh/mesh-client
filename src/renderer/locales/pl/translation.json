@@ -516,7 +516,6 @@
     "reticulumSendPropagated": "W kolejce w węźle propagacji",
     "reticulumNoPropagationNode": "Nie skonfigurowano węzła propagacji. Ustaw preferowany węzeł propagacji na karcie Reticulum Radio.",
     "sentViaPropagation": "Węzeł propagacji",
-    "reticulumPropagationSyncActive": "Synchronizowanie wiadomości z węzła propagacji…",
     "reticulumAudioAttachment": "Głos: {{name}}",
     "reticulumSaveAttachment": "Zapisz załącznik",
     "recordVoice": "Nagraj wiadomość głosową",

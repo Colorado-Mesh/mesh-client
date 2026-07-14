@@ -37,11 +37,14 @@ interface ReticulumPropagationStoreState {
   lastSyncError: string | null;
   lastRefreshedAt: number | null;
   lastPropagationSyncAt: number | null;
+  /** When the most recent sync attempt began (success or failure). Used for auto-sync backoff. */
+  lastPropagationSyncAttemptAt: number | null;
   replaceNodes: (nodes: PropagationNodeRow[]) => void;
   setPreferredId: (id: string | null) => void;
   setSyncState: (patch: Partial<PropagationSyncState>) => void;
   setLastSyncError: (message: string | null) => void;
   setLastPropagationSyncAt: (atMs: number | null) => void;
+  setLastPropagationSyncAttemptAt: (atMs: number | null) => void;
   refreshFromSidecar: () => Promise<void>;
   setPreferredOnSidecar: (id: string) => Promise<boolean>;
   setAutoSyncIntervalOnSidecar: (sec: number) => Promise<boolean>;
@@ -58,6 +61,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   lastSyncError: null,
   lastRefreshedAt: null,
   lastPropagationSyncAt: null,
+  lastPropagationSyncAttemptAt: null,
 
   replaceNodes: (nodes) => {
     set({ nodes });
@@ -77,6 +81,10 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
 
   setLastPropagationSyncAt: (atMs) => {
     set({ lastPropagationSyncAt: atMs });
+  },
+
+  setLastPropagationSyncAttemptAt: (atMs) => {
+    set({ lastPropagationSyncAttemptAt: atMs });
   },
 
   refreshFromSidecar: async () => {
@@ -144,7 +152,11 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
     const propId = id ?? get().preferredId;
     if (!propId) return false;
     clearPropagationSyncStallWatchdog();
-    set({ sync: { active: true, progress: 0, message: null }, lastSyncError: null });
+    set({
+      sync: { active: true, progress: 0, message: null },
+      lastSyncError: null,
+      lastPropagationSyncAttemptAt: Date.now(),
+    });
     schedulePropagationSyncStallWatchdog();
     try {
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/propagation/sync', {

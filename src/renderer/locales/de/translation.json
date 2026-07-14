@@ -516,7 +516,6 @@
     "reticulumSendPropagated": "In der Warteschlange am Ausbreitungsknoten",
     "reticulumNoPropagationNode": "Kein Ausbreitungsknoten konfiguriert. Legen Sie auf der Registerkarte „Reticulum Radio“ einen bevorzugten Ausbreitungsknoten fest.",
     "sentViaPropagation": "Ausbreitungsknoten",
-    "reticulumPropagationSyncActive": "Nachrichten vom Verbreitungsknoten werden synchronisiert…",
     "reticulumAudioAttachment": "Stimme: {{name}}",
     "reticulumSaveAttachment": "Anhang speichern",
     "recordVoice": "Sprachnachricht aufzeichnen",

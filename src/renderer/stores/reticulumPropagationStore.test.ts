@@ -31,6 +31,7 @@ describe('reticulumPropagationStore', () => {
       lastSyncError: null,
       lastRefreshedAt: null,
       lastPropagationSyncAt: null,
+      lastPropagationSyncAttemptAt: null,
     });
   });
 
@@ -76,6 +77,9 @@ describe('reticulumPropagationStore', () => {
     proxyPost.mockResolvedValueOnce({ ok: true });
     await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe(true);
     expect(useReticulumPropagationStore.getState().sync.active).toBe(true);
+    expect(useReticulumPropagationStore.getState().lastPropagationSyncAttemptAt).toBeTypeOf(
+      'number',
+    );
 
     proxyPost.mockResolvedValueOnce({});
     await expect(useReticulumPropagationStore.getState().cancelSync()).resolves.toBe(true);

@@ -516,7 +516,6 @@
     "reticulumSendPropagated": "Mengantri di node propagasi",
     "reticulumNoPropagationNode": "Tidak ada node propagasi yang dikonfigurasi. Tetapkan node propagasi pilihan pada tab Reticulum Radio.",
     "sentViaPropagation": "Node propagasi",
-    "reticulumPropagationSyncActive": "Menyinkronkan pesan dari node propagasi…",
     "reticulumAudioAttachment": "Suara: {{name}}",
     "reticulumSaveAttachment": "Simpan lampiran",
     "recordVoice": "Rekam pesan suara",

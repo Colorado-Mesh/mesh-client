@@ -516,7 +516,6 @@
     "reticulumSendPropagated": "У черзі на вузлі поширення",
     "reticulumNoPropagationNode": "Вузол розповсюдження не налаштовано. Установіть бажаний вузол розповсюдження на вкладці Reticulum Radio.",
     "sentViaPropagation": "Вузол розповсюдження",
-    "reticulumPropagationSyncActive": "Синхронізація повідомлень із вузла поширення…",
     "reticulumAudioAttachment": "Голос: {{name}}",
     "reticulumSaveAttachment": "Зберегти вкладення",
     "recordVoice": "Записати голосове повідомлення",

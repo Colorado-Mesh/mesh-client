@@ -8,11 +8,25 @@ export function shouldRunPropagationAutoSync(args: {
   preferredId: string | null;
   syncActive: boolean;
   lastPropagationSyncAt: number | null;
+  lastPropagationSyncAttemptAt: number | null;
   nowMs: number;
 }): boolean {
-  const { autoSyncIntervalSec, preferredId, syncActive, lastPropagationSyncAt, nowMs } = args;
+  const {
+    autoSyncIntervalSec,
+    preferredId,
+    syncActive,
+    lastPropagationSyncAt,
+    lastPropagationSyncAttemptAt,
+    nowMs,
+  } = args;
   if (!preferredId || autoSyncIntervalSec <= 0 || syncActive) return false;
-  const lastMs = lastPropagationSyncAt ?? 0;
+
+  // Prefer last attempt so failures still honor the full interval (not every 30s check).
+  // Fall back to last success for sessions that have synced before attempts were tracked.
+  // Both null → allow one first sync.
+  const lastMs = lastPropagationSyncAttemptAt ?? lastPropagationSyncAt ?? Number.NEGATIVE_INFINITY;
+  if (lastMs === Number.NEGATIVE_INFINITY) return true;
+
   return nowMs - lastMs >= autoSyncIntervalSec * MS_PER_SECOND;
 }
 
@@ -27,14 +41,21 @@ export function useReticulumPropagationAutoSync(sidecarReady: boolean): void {
     void useReticulumPropagationStore.getState().refreshFromSidecar();
 
     const tick = () => {
-      const { autoSyncIntervalSec, preferredId, sync, lastPropagationSyncAt, startSync } =
-        useReticulumPropagationStore.getState();
+      const {
+        autoSyncIntervalSec,
+        preferredId,
+        sync,
+        lastPropagationSyncAt,
+        lastPropagationSyncAttemptAt,
+        startSync,
+      } = useReticulumPropagationStore.getState();
       if (
         !shouldRunPropagationAutoSync({
           autoSyncIntervalSec,
           preferredId,
           syncActive: sync.active,
           lastPropagationSyncAt,
+          lastPropagationSyncAttemptAt,
           nowMs: Date.now(),
         })
       ) {

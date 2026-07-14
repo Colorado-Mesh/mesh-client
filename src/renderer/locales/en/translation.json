@@ -418,7 +418,6 @@
     "waitingMessagesDrainDeferred": "Message sync paused while the radio is busy (admin/trace)…",
     "waitingMessagesSerialHint": "USB serial handles one command at a time; messages may arrive in small batches.",
     "waitingMessagesSyncFailed": "Failed to sync queued messages: {{message}}",
-    "reticulumPropagationSyncActive": "Syncing messages from propagation node…",
     "receivedViaRf": "Received via RF",
     "receivedViaMqtt": "Received via MQTT",
     "receivedViaRfAndMqtt": "Received via RF + MQTT",

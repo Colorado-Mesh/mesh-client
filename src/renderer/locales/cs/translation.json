@@ -516,7 +516,6 @@
     "reticulumSendPropagated": "Ve frontě v uzlu propagace",
     "reticulumNoPropagationNode": "Není nakonfigurován žádný uzel šíření. Nastavte preferovaný uzel šíření na kartě Reticulum Radio.",
     "sentViaPropagation": "Uzel šíření",
-    "reticulumPropagationSyncActive": "Synchronizace zpráv z uzlu šíření…",
     "reticulumAudioAttachment": "Hlas: {{name}}",
     "reticulumSaveAttachment": "Uložit přílohu",
     "recordVoice": "Nahrajte hlasovou zprávu",

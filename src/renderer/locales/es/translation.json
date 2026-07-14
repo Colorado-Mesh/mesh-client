@@ -516,7 +516,6 @@
     "reticulumSendPropagated": "En cola en el nodo de propagación",
     "reticulumNoPropagationNode": "No hay ningún nodo de propagación configurado. Establezca un nodo de propagación preferido en la pestaña Reticulum Radio.",
     "sentViaPropagation": "Nodo de propagación",
-    "reticulumPropagationSyncActive": "Sincronizando mensajes desde el nodo de propagación...",
     "reticulumAudioAttachment": "Voz: {{name}}",
     "reticulumSaveAttachment": "Guardar archivo adjunto",
     "recordVoice": "Grabar mensaje de voz",

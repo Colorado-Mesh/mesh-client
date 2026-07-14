@@ -516,7 +516,6 @@
     "reticulumSendPropagated": "在传播节点排队",
     "reticulumNoPropagationNode": "未配置传播节点。请在 Reticulum Radio 选项卡上设置首选传播节点。",
     "sentViaPropagation": "传播节点",
-    "reticulumPropagationSyncActive": "正在同步来自传播节点的消息...",
     "reticulumAudioAttachment": "声音：{{name}}",
     "reticulumSaveAttachment": "保存附件",
     "recordVoice": "录制语音留言",
