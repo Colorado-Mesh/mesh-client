@@ -843,7 +843,8 @@
       "importPrivateKeyRequiresStack": "Import soukromého klíče vyžaduje kompletní sestavení zásobníku Reticulum.",
       "saveDisplayName": "Uložit zobrazované jméno",
       "saveDisplayNameFailed": "Nepodařilo se uložit zobrazované jméno.",
-      "displayNameSaved": "Zobrazované jméno uloženo."
+      "displayNameSaved": "Zobrazované jméno uloženo.",
+      "copyLxmfHash": "Kopírovat hash LXMF"
     },
     "reticulumInterfaces": {
       "title": "Rozhraní",

@@ -843,7 +843,8 @@
       "importPrivateKeyRequiresStack": "개인 키 가져오기에는 전체 Reticulum 스택 빌드가 필요합니다.",
       "saveDisplayName": "표시 이름 저장",
       "saveDisplayNameFailed": "표시 이름을 저장하지 못했습니다.",
-      "displayNameSaved": "표시 이름이 저장되었습니다."
+      "displayNameSaved": "표시 이름이 저장되었습니다.",
+      "copyLxmfHash": "LXMF 해시 복사"
     },
     "reticulumInterfaces": {
       "title": "연계 문서",

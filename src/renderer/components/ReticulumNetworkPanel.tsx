@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+import { Copy } from 'lucide-react-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,6 +12,7 @@ import {
   type ReticulumIdentityStatus,
   useReticulumSidecarApi,
 } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
+import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
 import { refreshReticulumPeersFromSidecar } from '../stores/reticulumPeerStore';
@@ -815,6 +817,17 @@ function IdentityConfiguredView({
     setNameDraft(identity?.display_name?.trim() ?? '');
   }, [identity?.display_name]);
 
+  const lxmfHash = identity?.lxmf_hash?.trim() ?? '';
+
+  const copyLxmfHash = useCallback(async () => {
+    if (!lxmfHash) return;
+    try {
+      await writeClipboardText(lxmfHash);
+    } catch (e) {
+      console.warn('[ReticulumNetworkPanel] copy LXMF hash ' + errLikeToLogString(e));
+    }
+  }, [lxmfHash]);
+
   const handleSave = async () => {
     setSaving(true);
     setSaveNotice(null);
@@ -830,9 +843,23 @@ function IdentityConfiguredView({
 
   return (
     <div className="mt-3 space-y-1 text-sm text-gray-300">
-      <div>
-        <span className="text-muted">{t('connectionPanel.reticulumIdentity.hashLabel')}</span>{' '}
-        <code className="text-amber-300">{identity?.lxmf_hash.slice(0, 24)}…</code>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-muted">{t('connectionPanel.reticulumIdentity.hashLabel')}</span>
+        <code className="text-amber-300" title={lxmfHash || undefined}>
+          {lxmfHash ? `${lxmfHash.slice(0, 24)}…` : '—'}
+        </code>
+        {lxmfHash ? (
+          <button
+            type="button"
+            className="shrink-0 text-amber-400 hover:text-amber-300"
+            aria-label={t('connectionPanel.reticulumIdentity.copyLxmfHash')}
+            onClick={() => {
+              void copyLxmfHash();
+            }}
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
       </div>
       <label className="mt-2 block text-xs text-gray-400">
         {t('connectionPanel.reticulumIdentity.displayName')}

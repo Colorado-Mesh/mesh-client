@@ -843,7 +843,8 @@
       "importPrivateKeyRequiresStack": "L'importazione della chiave privata richiede la creazione completa dello stack Reticulum.",
       "saveDisplayName": "Salva nome visualizzato",
       "saveDisplayNameFailed": "Impossibile salvare il nome visualizzato.",
-      "displayNameSaved": "Nome visualizzato salvato."
+      "displayNameSaved": "Nome visualizzato salvato.",
+      "copyLxmfHash": "Copia hash LXMF"
     },
     "reticulumInterfaces": {
       "title": "interfacce",

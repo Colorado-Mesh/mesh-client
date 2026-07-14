@@ -843,7 +843,8 @@
       "importPrivateKeyRequiresStack": "Özel anahtarın içe aktarılması, tam bir Reticulum yığını yapısı gerektirir.",
       "saveDisplayName": "Görünen adı kaydet",
       "saveDisplayNameFailed": "Görünen ad kaydedilemedi.",
-      "displayNameSaved": "Görünen ad kaydedildi."
+      "displayNameSaved": "Görünen ad kaydedildi.",
+      "copyLxmfHash": "LXMF karmasını kopyala"
     },
     "reticulumInterfaces": {
       "title": "Ara birimler",

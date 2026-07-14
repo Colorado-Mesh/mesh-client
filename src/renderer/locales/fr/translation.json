@@ -843,7 +843,8 @@
       "importPrivateKeyRequiresStack": "L’importation de clé privée nécessite une construction complète de la pile Reticulum.",
       "saveDisplayName": "Enregistrer le nom d’affichage",
       "saveDisplayNameFailed": "Échec de l'enregistrement du nom d'affichage.",
-      "displayNameSaved": "Nom d'affichage enregistré."
+      "displayNameSaved": "Nom d'affichage enregistré.",
+      "copyLxmfHash": "Copier le hachage LXMF"
     },
     "reticulumInterfaces": {
       "title": "Interfaces",

@@ -843,7 +843,8 @@
       "importPrivateKeyRequiresStack": "La importación de claves privadas requiere una compilación completa de la pila de Reticulum.",
       "saveDisplayName": "Guardar nombre para mostrar",
       "saveDisplayNameFailed": "Error al guardar el nombre para mostrar.",
-      "displayNameSaved": "Nombre para mostrar guardado."
+      "displayNameSaved": "Nombre para mostrar guardado.",
+      "copyLxmfHash": "Copiar hash LXMF"
     },
     "reticulumInterfaces": {
       "title": "Interfaces",

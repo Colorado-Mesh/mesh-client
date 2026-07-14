@@ -843,7 +843,8 @@
       "importPrivateKeyRequiresStack": "Impor kunci pribadi memerlukan build stack Reticulum penuh.",
       "saveDisplayName": "Simpan nama tampilan",
       "saveDisplayNameFailed": "Gagal menyimpan nama tampilan.",
-      "displayNameSaved": "Nama tampilan disimpan."
+      "displayNameSaved": "Nama tampilan disimpan.",
+      "copyLxmfHash": "Salin hash LXMF"
     },
     "reticulumInterfaces": {
       "title": "Interface",

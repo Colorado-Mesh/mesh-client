@@ -843,7 +843,8 @@
       "importPrivateKeyRequiresStack": "秘密キーのインポートには、完全な Reticulum スタックのビルドが必要です。",
       "saveDisplayName": "表示名を保存",
       "saveDisplayNameFailed": "表示名の保存に失敗しました。",
-      "displayNameSaved": "表示名を保存しました。"
+      "displayNameSaved": "表示名を保存しました。",
+      "copyLxmfHash": "LXMFハッシュをコピー"
     },
     "reticulumInterfaces": {
       "title": "インターフェース",

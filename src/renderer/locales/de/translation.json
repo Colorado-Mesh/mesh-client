@@ -843,7 +843,8 @@
       "importPrivateKeyRequiresStack": "Für den Import eines privaten Schlüssels ist ein vollständiger Reticulum-Stack-Build erforderlich.",
       "saveDisplayName": "Anzeigenamen speichern",
       "saveDisplayNameFailed": "Speichern des Anzeigenamens fehlgeschlagen.",
-      "displayNameSaved": "Anzeigename gespeichert."
+      "displayNameSaved": "Anzeigename gespeichert.",
+      "copyLxmfHash": "LXMF-Hash kopieren"
     },
     "reticulumInterfaces": {
       "title": "Schnittstellen",

@@ -843,7 +843,8 @@
       "importPrivateKeyRequiresStack": "Для импорта закрытого ключа требуется полная сборка стека Reticulum.",
       "saveDisplayName": "Сохранить отображаемое имя",
       "saveDisplayNameFailed": "Не удалось сохранить отображаемое имя.",
-      "displayNameSaved": "Отображаемое имя сохранено."
+      "displayNameSaved": "Отображаемое имя сохранено.",
+      "copyLxmfHash": "Копировать хэш LXMF"
     },
     "reticulumInterfaces": {
       "title": "Интерфейсы",

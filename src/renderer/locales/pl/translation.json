@@ -843,7 +843,8 @@
       "importPrivateKeyRequiresStack": "Import klucza prywatnego wymaga pełnej kompilacji stosu Reticulum.",
       "saveDisplayName": "Zapisz wyświetlaną nazwę",
       "saveDisplayNameFailed": "Nie udało się zapisać wyświetlanej nazwy.",
-      "displayNameSaved": "Nazwa wyświetlana zapisana."
+      "displayNameSaved": "Nazwa wyświetlana zapisana.",
+      "copyLxmfHash": "Skopiuj skrót LXMF"
     },
     "reticulumInterfaces": {
       "title": "Interfejsy",

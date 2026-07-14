@@ -843,7 +843,8 @@
       "importPrivateKeyRequiresStack": "Voor het importeren van privésleutels is een volledige Reticulum-stack-build vereist.",
       "saveDisplayName": "Weergavenaam opslaan",
       "saveDisplayNameFailed": "Kan weergavenaam niet opslaan.",
-      "displayNameSaved": "Weergavenaam opgeslagen."
+      "displayNameSaved": "Weergavenaam opgeslagen.",
+      "copyLxmfHash": "Kopieer LXMF-hash"
     },
     "reticulumInterfaces": {
       "title": "Raakvlakken",

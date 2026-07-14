@@ -843,7 +843,8 @@
       "importPrivateKeyRequiresStack": "私钥导入需要完整的 Reticulum 堆栈构建。",
       "saveDisplayName": "保存显示名称",
       "saveDisplayNameFailed": "保存显示名称失败。",
-      "displayNameSaved": "显示名称已保存。"
+      "displayNameSaved": "显示名称已保存。",
+      "copyLxmfHash": "复制LXMF哈希"
     },
     "reticulumInterfaces": {
       "title": "接口",

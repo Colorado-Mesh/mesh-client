@@ -779,6 +779,7 @@
       "mnemonic": "Write down this phrase and store it safely.",
       "confirmSaved": "I have saved my recovery phrase",
       "hashLabel": "LXMF hash:",
+      "copyLxmfHash": "Copy LXMF hash",
       "saveDisplayName": "Save display name",
       "saveDisplayNameFailed": "Failed to save display name.",
       "displayNameSaved": "Display name saved.",
