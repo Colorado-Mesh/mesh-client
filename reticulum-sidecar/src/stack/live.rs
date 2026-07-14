@@ -41,8 +41,8 @@ use super::persistence::PersistedState;
 use super::propagation_bridge::PropagationBridge;
 use super::types::{InterfaceRow, LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, PeerRow, ContactRow};
 use super::via::{
-    classify_interface, classify_path_interface_name, merge_live_interfaces_with_config,
-    merge_observed_egress_vias, resolve_lxmf_sent_via,
+    classify_path_interface_name, merge_live_interfaces_with_config, merge_observed_egress_vias,
+    resolve_lxmf_sent_via,
 };
 use lxmf_outbound::LxmfOutboundDriver;
 
@@ -254,11 +254,17 @@ impl LiveBridge {
                 return;
             }
             let sender_hex = hex::encode(msg.source_hash);
+            // Match path-table iface name to local config (same as outbound) so
+            // TCP hubs named e.g. "RNS Testnet" classify as tcp, not network.
             let received_via = cache_for_cb
                 .lock()
                 .ok()
                 .and_then(|cache| cache.get(&sender_hex).cloned())
-                .map(|iface| classify_interface(&iface).to_string())
+                .map(|iface_name| {
+                    let config_rows =
+                        config::interfaces_from_config_dir(&config_dir_for_cb).unwrap_or_default();
+                    classify_path_interface_name(&iface_name, &config_rows).to_string()
+                })
                 .unwrap_or_else(|| "network".into());
             let inbound_sender_name = name_cache_for_cb
                 .lock()
