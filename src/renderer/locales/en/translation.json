@@ -2668,6 +2668,8 @@
     },
     "showSource": "Show page source",
     "hideSource": "Show formatted page",
+    "fitWidth": "Fit page to window",
+    "openWidth": "Open page width",
     "fileDownloading": "Downloading file…",
     "fileDownloadFailed": "Failed to download file: {{error}}",
     "fileDownloadInProgress": "A file download is already in progress.",

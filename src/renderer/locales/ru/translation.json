@@ -2674,7 +2674,9 @@
       "sidecarNotRunning": "Sidecar Reticulum не запущен. Запустите стек из Connection и повторите попытку.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
       "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
-    }
+    },
+    "fitWidth": "Уместить в окне",
+    "openWidth": "ширина страницы"
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",

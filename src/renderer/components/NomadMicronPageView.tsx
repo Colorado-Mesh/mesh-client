@@ -17,6 +17,8 @@ interface NomadMicronPageViewProps {
   content: string;
   defaultPagePath: string;
   selectedHash: string;
+  /** When true, constrain page width to the viewer and wrap text (default for prose). */
+  fitWidth?: boolean;
   onNavigate: (hash: string, path: string, requestData?: Record<string, string>) => void;
   onDownloadFile: (hash: string, path: string) => void;
   onOpenDm?: (destinationHash: string) => void;
@@ -26,6 +28,7 @@ export default function NomadMicronPageView({
   content,
   defaultPagePath,
   selectedHash,
+  fitWidth = true,
   onNavigate,
   onDownloadFile,
   onOpenDm,
@@ -118,7 +121,15 @@ export default function NomadMicronPageView({
   return (
     <div
       ref={containerRef}
-      className="nomad-micron-page text-sm leading-snug text-gray-200 [&_a]:text-amber-400 [&_a]:underline [&_a:hover]:text-amber-300 [&_hr]:my-3 [&_hr]:border-gray-600 [&_input]:rounded [&_input]:border [&_input]:border-gray-600 [&_input]:bg-slate-900 [&_input]:px-1 [&_input]:text-gray-200"
+      className={[
+        'nomad-micron-page text-sm leading-snug text-gray-200',
+        '[&_a]:text-amber-400 [&_a]:underline [&_a:hover]:text-amber-300',
+        '[&_hr]:my-3 [&_hr]:border-gray-600',
+        '[&_input]:rounded [&_input]:border [&_input]:border-gray-600 [&_input]:bg-slate-900 [&_input]:px-1 [&_input]:text-gray-200',
+        fitWidth ? 'nomad-micron-page--fit-width' : null,
+      ]
+        .filter(Boolean)
+        .join(' ')}
     />
   );
 }

@@ -32,6 +32,8 @@ async function openAnnouncesNode(user: ReturnType<typeof userEvent.setup>) {
 describe('NomadNetworkPanel', () => {
   beforeEach(() => {
     clearNomadPageCache();
+    localStorage.removeItem('mesh-client:nomadPageFitWidth');
+    localStorage.removeItem('mesh-client:nomadNodeListCollapsed');
     isReticulumSidecarRunning.mockResolvedValue(false);
     onReticulumStatus.mockReturnValue(() => {});
     window.electronAPI.reticulum.onStatus = onReticulumStatus;
@@ -482,5 +484,81 @@ describe('NomadNetworkPanel', () => {
     const scroll = screen.getByTestId('nomad-page-scroll');
     expect(scroll).toHaveClass('nomad-page-scroll', 'overflow-auto');
     expect(scroll.parentElement).toHaveClass('min-h-0', 'min-w-0', 'flex-1');
+  });
+
+  it('defaults to fit-width and toggles/persists open width', async () => {
+    localStorage.removeItem('mesh-client:nomadPageFitWidth');
+    const user = userEvent.setup();
+    const fetchNomadPage = vi.fn().mockResolvedValue({
+      ok: true,
+      content: '`!Hello Nomad:`!',
+      content_type: 'micron',
+    });
+    useNomadNetworkStore.setState({
+      fetchNomadPage,
+      nodes: new Map([
+        [
+          'abc1234567890',
+          {
+            destination_hash: 'abc1234567890',
+            display_name: 'Test Node',
+            favorited: false,
+          },
+        ],
+      ]),
+    });
+
+    render(<NomadNetworkPanel />);
+    await openAnnouncesNode(user);
+
+    await waitFor(() => {
+      expect(document.querySelector('.nomad-micron-page')).toHaveClass(
+        'nomad-micron-page--fit-width',
+      );
+    });
+
+    const toggle = screen.getByLabelText('nomadNetwork.openWidth');
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await user.click(toggle);
+
+    expect(localStorage.getItem('mesh-client:nomadPageFitWidth')).toBe('false');
+    expect(document.querySelector('.nomad-micron-page')).not.toHaveClass(
+      'nomad-micron-page--fit-width',
+    );
+    expect(screen.getByLabelText('nomadNetwork.fitWidth')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('restores open-width preference from localStorage', async () => {
+    localStorage.setItem('mesh-client:nomadPageFitWidth', 'false');
+    const user = userEvent.setup();
+    const fetchNomadPage = vi.fn().mockResolvedValue({
+      ok: true,
+      content: '`!Hello Nomad:`!',
+      content_type: 'micron',
+    });
+    useNomadNetworkStore.setState({
+      fetchNomadPage,
+      nodes: new Map([
+        [
+          'abc1234567890',
+          {
+            destination_hash: 'abc1234567890',
+            display_name: 'Test Node',
+            favorited: false,
+          },
+        ],
+      ]),
+    });
+
+    render(<NomadNetworkPanel />);
+    await openAnnouncesNode(user);
+
+    await waitFor(() => {
+      expect(document.querySelector('.nomad-micron-page')).toBeTruthy();
+    });
+    expect(document.querySelector('.nomad-micron-page')).not.toHaveClass(
+      'nomad-micron-page--fit-width',
+    );
+    expect(screen.getByLabelText('nomadNetwork.fitWidth')).toHaveAttribute('aria-pressed', 'false');
   });
 });

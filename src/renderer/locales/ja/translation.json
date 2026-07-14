@@ -2674,7 +2674,9 @@
       "sidecarNotRunning": "Reticulum サイドカーが実行されていません。接続からスタックを開始してから、もう一度お試しください。",
       "responseTooLarge": "ノードが返すデータ量が、この要求で mesh-client が受け入れる上限を超えました。",
       "nomadBusy": "別の Nomad ページまたはファイル要求が処理中です。しばらくしてから再試行してください。"
-    }
+    },
+    "fitWidth": "ウィンドウに適合",
+    "openWidth": "ページ幅"
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",

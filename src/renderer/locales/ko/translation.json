@@ -2674,7 +2674,9 @@
       "sidecarNotRunning": "Reticulum 사이드카가 실행되고 있지 않습니다. Connection에서 스택을 시작한 다음 다시 시도하십시오.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
       "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
-    }
+    },
+    "fitWidth": "창에 맞춤",
+    "openWidth": "페이지 폭"
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",

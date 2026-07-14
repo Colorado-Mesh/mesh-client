@@ -2674,7 +2674,9 @@
       "sidecarNotRunning": "Reticulum sidecar 未运行。请从 Connection 启动协议栈，然后重试。",
       "responseTooLarge": "该节点返回的数据超出了 mesh-client 对此请求的接受上限。",
       "nomadBusy": "另一个 Nomad 页面或文件请求仍在进行中。请稍后再试。"
-    }
+    },
+    "fitWidth": "适合窗口",
+    "openWidth": "图框宽度"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",

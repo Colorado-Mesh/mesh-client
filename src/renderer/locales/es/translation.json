@@ -2674,7 +2674,9 @@
       "sidecarNotRunning": "El sidecar de Reticulum no está en ejecución. Inicie la pila desde Conexión y vuelva a intentarlo.",
       "responseTooLarge": "El nodo devolvió más datos de los que mesh-client acepta para esta solicitud.",
       "nomadBusy": "Otra solicitud de página o archivo Nomad aún está en curso. Inténtalo de nuevo en un momento."
-    }
+    },
+    "fitWidth": "Ajustar a la ventana",
+    "openWidth": "Anchura de la página"
   },
   "packetDistribution": {
     "overallDistribution": "Distribución general",

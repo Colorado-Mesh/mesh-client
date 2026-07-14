@@ -2674,7 +2674,9 @@
       "sidecarNotRunning": "Sidecar Reticulum nie działa. Uruchom stos z Połączenia, a następnie spróbuj ponownie.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
       "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
-    }
+    },
+    "fitWidth": "Dopasuj do okna",
+    "openWidth": "Szerokość strony"
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",

@@ -2674,7 +2674,9 @@
       "sidecarNotRunning": "Reticulum sidecar çalışmıyor. Bağlantı bölümünden yığını başlatın, sonra tekrar deneyin.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
       "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
-    }
+    },
+    "fitWidth": "Pencereye sığdır",
+    "openWidth": "Sayfa Genişliği"
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",

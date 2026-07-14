@@ -2674,7 +2674,9 @@
       "sidecarNotRunning": "Le sidecar Reticulum n’est pas en cours d’exécution. Démarrez la pile depuis Connexion, puis réessayez.",
       "responseTooLarge": "Le nœud a renvoyé plus de données que mesh-client n’accepte pour cette requête.",
       "nomadBusy": "Une autre requête de page ou de fichier Nomad est encore en cours. Réessayez dans un instant."
-    }
+    },
+    "fitWidth": "Ajuster la page à la fenêtre",
+    "openWidth": "Largeur de la page"
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",

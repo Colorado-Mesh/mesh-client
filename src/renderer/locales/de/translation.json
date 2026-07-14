@@ -2674,7 +2674,9 @@
       "sidecarNotRunning": "Reticulum-Sidecar läuft nicht. Starten Sie den Stack unter Verbindung und versuchen Sie es erneut.",
       "responseTooLarge": "Der Knoten hat mehr Daten zurückgegeben, als mesh-client für diese Anfrage akzeptiert.",
       "nomadBusy": "Eine andere Nomad-Seiten- oder Dateianfrage läuft noch. Versuche es gleich noch einmal."
-    }
+    },
+    "fitWidth": "An Fenster anpassen",
+    "openWidth": "Seitenbreite"
   },
   "packetDistribution": {
     "overallDistribution": "Gesamtverteilung",

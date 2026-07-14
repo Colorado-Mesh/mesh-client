@@ -2674,7 +2674,9 @@
       "sidecarNotRunning": "Reticulum sidecar neběží. Spusťte zásobník z Připojení a zkuste to znovu.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
       "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
-    }
+    },
+    "fitWidth": "Přizpůsobit stránku oknu",
+    "openWidth": "Šířka stránky"
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",
