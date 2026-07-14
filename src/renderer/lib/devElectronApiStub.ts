@@ -298,6 +298,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       start: async () => ({ running: false, port: 0, pid: null }),
       stop: noopAsync,
       getStatus: async () => ({ running: false, port: 0, pid: null }),
+      syncInterfaceIssueScope: async () => ({ running: false, port: 0, pid: null }),
       proxyGet: async () => ({}),
       proxyPost: async () => ({ ok: true }),
       proxyPut: async () => ({ ok: true }),

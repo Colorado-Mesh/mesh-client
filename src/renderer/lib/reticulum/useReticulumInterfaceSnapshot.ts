@@ -64,6 +64,7 @@ export function useReticulumInterfaceSnapshot({
   const [effectivePrimaryLocalSerialInterfaceId, setEffectivePrimaryLocalSerialInterfaceId] =
     useState<string | null>(null);
   const [bleConnectGraceExpiresAt, setBleConnectGraceExpiresAt] = useState(0);
+  const [interfacesHydrated, setInterfacesHydrated] = useState(false);
   const refreshRef = useRef<
     (() => Promise<{ interfaces: ReticulumInterfaceRow[]; paths: string[] } | undefined>) | null
   >(null);
@@ -101,6 +102,7 @@ export function useReticulumInterfaceSnapshot({
       const paths = ports.map((p) => p.path);
       setInterfaces(rows);
       setSerialPorts(ports);
+      setInterfacesHydrated(true);
       setEffectivePrimaryLocalSerialInterfaceId(
         body.effective_primary_local_serial_interface_id ?? null,
       );
@@ -140,6 +142,7 @@ export function useReticulumInterfaceSnapshot({
       setSerialPorts([]);
       setEffectivePrimaryLocalSerialInterfaceId(null);
       setBleConnectGraceExpiresAt(0);
+      setInterfacesHydrated(false);
       burstCancelRef.current?.();
       burstCancelRef.current = null;
       void syncReticulumNobleBleYield(
@@ -219,6 +222,7 @@ export function useReticulumInterfaceSnapshot({
 
   return {
     interfaces,
+    interfacesHydrated,
     serialPorts,
     serialPortPaths,
     effectivePrimaryLocalSerialInterfaceId,

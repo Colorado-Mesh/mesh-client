@@ -1,9 +1,8 @@
 /** Tracks TCP connect failures and TX queue drops parsed from sidecar stdout/stderr. */
 
 import type { ReticulumInterfaceIssueAlert } from '../shared/reticulum-types';
-import { MS_PER_SECOND } from '../shared/timeConstants';
+import { RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS } from '../shared/reticulum-types';
 
-const ALERT_STALE_MS = 5 * 60 * MS_PER_SECOND;
 const TCP_CONNECT_FAILED_MARKER = 'TCP connect failed';
 const TX_QUEUE_DROP_MARKER = 'PACKET DROPPED: interface TX channel full';
 const LINK_DELIVERY_TIMEOUT_MARKER = 'link delivery timed out';
@@ -57,14 +56,39 @@ function parseSlowTransportQuery(line: string): string | null {
   return match?.[1]?.trim() ?? null;
 }
 
+function pruneStaleTimestamps(map: Map<string, number>, nowMs: number): void {
+  for (const [key, atMs] of map) {
+    if (nowMs - atMs > RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS) {
+      map.delete(key);
+    }
+  }
+}
+
+interface CountedAt {
+  count: number;
+  atMs: number;
+}
+
+function pruneStaleCounted(map: Map<string, CountedAt>, nowMs: number): void {
+  for (const [key, entry] of map) {
+    if (nowMs - entry.atMs > RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS) {
+      map.delete(key);
+    }
+  }
+}
+
 export class ReticulumSidecarInterfaceIssueTracker {
+  /** interface name → last-seen ms */
   private tcpConnectFailed = new Map<string, number>();
-  private txQueueDrops = new Map<string, number>();
-  private linkDeliveryTimeouts = new Map<string, number>();
+  /** interface name → drop count + last-seen ms */
+  private txQueueDrops = new Map<string, CountedAt>();
+  /** destination hash → count + last-seen ms */
+  private linkDeliveryTimeouts = new Map<string, CountedAt>();
   private transportSaturatedCount = 0;
+  private transportSaturatedAtMs: number | null = null;
   private slowTransportQueryCount = 0;
+  private slowTransportQueryAtMs: number | null = null;
   private suppressedCount = 0;
-  private lastAtMs: number | null = null;
 
   recordLine(line: string, nowMs = Date.now()): void {
     const plain = normalizeSidecarLogLine(line);
@@ -72,7 +96,6 @@ export class ReticulumSidecarInterfaceIssueTracker {
       const iface = parseTcpConnectFailedIface(line);
       if (iface) {
         this.tcpConnectFailed.set(iface, nowMs);
-        this.lastAtMs = nowMs;
       }
       return;
     }
@@ -80,27 +103,32 @@ export class ReticulumSidecarInterfaceIssueTracker {
       const iface = parseTxDropIface(line);
       if (iface) {
         const drops = parseTxDropCount(line);
-        this.txQueueDrops.set(iface, drops ?? this.txQueueDrops.get(iface) ?? 0);
-        this.lastAtMs = nowMs;
+        this.txQueueDrops.set(iface, {
+          count: drops ?? this.txQueueDrops.get(iface)?.count ?? 0,
+          atMs: nowMs,
+        });
       }
       return;
     }
     if (plain.includes(LINK_DELIVERY_TIMEOUT_MARKER)) {
       const dest = parseLinkDeliveryTimeoutDest(line);
       if (dest) {
-        this.linkDeliveryTimeouts.set(dest, (this.linkDeliveryTimeouts.get(dest) ?? 0) + 1);
-        this.lastAtMs = nowMs;
+        const prev = this.linkDeliveryTimeouts.get(dest);
+        this.linkDeliveryTimeouts.set(dest, {
+          count: (prev?.count ?? 0) + 1,
+          atMs: nowMs,
+        });
       }
       return;
     }
     if (plain.includes(LXMF_PATH_REQUEST_SATURATED_MARKER)) {
       this.transportSaturatedCount += 1;
-      this.lastAtMs = nowMs;
+      this.transportSaturatedAtMs = nowMs;
       return;
     }
     if (plain.includes(SLOW_TRANSPORT_QUERY_MARKER) && parseSlowTransportQuery(line)) {
       this.slowTransportQueryCount += 1;
-      this.lastAtMs = nowMs;
+      this.slowTransportQueryAtMs = nowMs;
     }
   }
 
@@ -109,17 +137,80 @@ export class ReticulumSidecarInterfaceIssueTracker {
     this.suppressedCount += count;
   }
 
+  /**
+   * Drop TCP/TX issues for interfaces that are disabled or removed.
+   * Stack-wide transport counters are left alone.
+   */
+  retainInterfaces(enabledNames: ReadonlySet<string>): void {
+    for (const name of [...this.tcpConnectFailed.keys()]) {
+      if (!enabledNames.has(name)) {
+        this.tcpConnectFailed.delete(name);
+      }
+    }
+    for (const name of [...this.txQueueDrops.keys()]) {
+      if (!enabledNames.has(name)) {
+        this.txQueueDrops.delete(name);
+      }
+    }
+  }
+
+  clear(): void {
+    this.tcpConnectFailed.clear();
+    this.txQueueDrops.clear();
+    this.linkDeliveryTimeouts.clear();
+    this.transportSaturatedCount = 0;
+    this.transportSaturatedAtMs = null;
+    this.slowTransportQueryCount = 0;
+    this.slowTransportQueryAtMs = null;
+    this.suppressedCount = 0;
+  }
+
+  /** @deprecated Prefer {@link clear}; kept for existing test call sites. */
+  resetForTests(): void {
+    this.clear();
+  }
+
   getAlert(nowMs = Date.now()): ReticulumInterfaceIssueAlert | null {
-    if (this.lastAtMs == null || nowMs - this.lastAtMs > ALERT_STALE_MS) {
+    pruneStaleTimestamps(this.tcpConnectFailed, nowMs);
+    pruneStaleCounted(this.txQueueDrops, nowMs);
+    pruneStaleCounted(this.linkDeliveryTimeouts, nowMs);
+
+    if (
+      this.transportSaturatedAtMs != null &&
+      nowMs - this.transportSaturatedAtMs > RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS
+    ) {
+      this.transportSaturatedCount = 0;
+      this.transportSaturatedAtMs = null;
+    }
+    if (
+      this.slowTransportQueryAtMs != null &&
+      nowMs - this.slowTransportQueryAtMs > RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS
+    ) {
+      this.slowTransportQueryCount = 0;
+      this.slowTransportQueryAtMs = null;
+    }
+
+    const timestamps: number[] = [
+      ...this.tcpConnectFailed.values(),
+      ...[...this.txQueueDrops.values()].map((e) => e.atMs),
+      ...[...this.linkDeliveryTimeouts.values()].map((e) => e.atMs),
+    ];
+    if (this.transportSaturatedAtMs != null) timestamps.push(this.transportSaturatedAtMs);
+    if (this.slowTransportQueryAtMs != null) timestamps.push(this.slowTransportQueryAtMs);
+
+    const lastAtMs = timestamps.length > 0 ? Math.max(...timestamps) : null;
+    if (lastAtMs == null) {
       return null;
     }
+
     const tcpConnectFailed = [...this.tcpConnectFailed.keys()].sort();
     const txQueueDrops = [...this.txQueueDrops.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([name, dropCount]) => ({ name, dropCount }));
+      .map(([name, entry]) => ({ name, dropCount: entry.count }));
     const linkDeliveryTimeouts = [...this.linkDeliveryTimeouts.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([destinationHash, count]) => ({ destinationHash, count }));
+      .map(([destinationHash, entry]) => ({ destinationHash, count: entry.count }));
+
     if (
       tcpConnectFailed.length === 0 &&
       txQueueDrops.length === 0 &&
@@ -129,6 +220,7 @@ export class ReticulumSidecarInterfaceIssueTracker {
     ) {
       return null;
     }
+
     return {
       tcpConnectFailed,
       txQueueDrops,
@@ -136,18 +228,8 @@ export class ReticulumSidecarInterfaceIssueTracker {
       transportSaturatedCount: this.transportSaturatedCount,
       slowTransportQueryCount: this.slowTransportQueryCount,
       suppressedCount: this.suppressedCount,
-      lastAtMs: this.lastAtMs,
+      lastAtMs,
     };
-  }
-
-  resetForTests(): void {
-    this.tcpConnectFailed.clear();
-    this.txQueueDrops.clear();
-    this.linkDeliveryTimeouts.clear();
-    this.transportSaturatedCount = 0;
-    this.slowTransportQueryCount = 0;
-    this.suppressedCount = 0;
-    this.lastAtMs = null;
   }
 }
 

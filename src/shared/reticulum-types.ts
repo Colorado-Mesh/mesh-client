@@ -1,5 +1,10 @@
 /** Reticulum sidecar IPC types (MIT — wire DTOs only). */
 
+import { MS_PER_SECOND } from './timeConstants';
+
+/** How long a log-latched sidecar interface issue stays in status after last sighting. */
+export const RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS = 5 * 60 * MS_PER_SECOND;
+
 export interface ReticulumSidecarStatus {
   running: boolean;
   port: number;

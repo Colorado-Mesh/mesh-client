@@ -350,6 +350,7 @@ export function createElectronAPIMock(): ElectronAPI {
       start: vi.fn().mockResolvedValue({ running: true, port: 19437, pid: 1 }),
       stop: vi.fn().mockResolvedValue(undefined),
       getStatus: vi.fn().mockResolvedValue({ running: false, port: 0, pid: null }),
+      syncInterfaceIssueScope: vi.fn().mockResolvedValue({ running: false, port: 0, pid: null }),
       proxyGet: vi.fn().mockResolvedValue({ status: 'ok' }),
       proxyPost: vi.fn().mockResolvedValue({ ok: true }),
       proxyPut: vi.fn().mockResolvedValue({ ok: true }),

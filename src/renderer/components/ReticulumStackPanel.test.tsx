@@ -39,6 +39,12 @@ describe('ReticulumStackPanel', () => {
       pid: 1,
       interfaceIssueAlert: null,
     });
+    vi.mocked(window.electronAPI.reticulum.syncInterfaceIssueScope).mockResolvedValue({
+      running: true,
+      port: 19437,
+      pid: 1,
+      interfaceIssueAlert: null,
+    });
     window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
       if (path === '/api/v1/interfaces') {
         return Promise.resolve({
@@ -286,5 +292,61 @@ describe('ReticulumStackPanel', () => {
     expect(
       screen.getByText('connectionPanel.reticulumSidecarIssues.tcpConnectFailed:RNS HAM RADIO'),
     ).toBeInTheDocument();
+  });
+
+  it('syncs enabled interface names into main issue scope after hydrate', async () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/interfaces') {
+        return Promise.resolve({
+          interfaces: [
+            {
+              id: 'ham',
+              name: 'RNS HAM RADIO',
+              type: 'tcpclient',
+              enabled: false,
+              status: 'down',
+              host: '127.0.0.1',
+              port: 4242,
+            },
+            {
+              id: 'heltec-v3',
+              name: 'Heltec V3',
+              type: 'rnode',
+              enabled: true,
+              status: 'up',
+              serial_port: '/dev/cu.usbserial-7',
+            },
+          ],
+        });
+      }
+      if (path === '/api/v1/serial/ports') {
+        return Promise.resolve({
+          ports: [{ path: '/dev/cu.usbserial-7', label: 'usbserial-7' }],
+        });
+      }
+      if (path === '/api/v1/stack/settings') {
+        return Promise.resolve({
+          enable_transport: true,
+          share_instance: false,
+          loglevel: 4,
+          announce_interval_sec: 3600,
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    render(
+      <ReticulumStackPanel
+        connecting={false}
+        onStartStack={async () => {}}
+        onStopStack={async () => {}}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.syncInterfaceIssueScope).toHaveBeenCalledWith([
+        'Heltec V3',
+      ]);
+    });
   });
 });

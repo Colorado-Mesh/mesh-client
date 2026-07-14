@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS } from '../shared/reticulum-types';
 import {
   parseLinkDeliveryTimeoutDestForTests,
   parseTcpConnectFailedIfaceForTests,
@@ -9,6 +10,9 @@ import {
 
 const TCP_LINE =
   '[2m2026-07-03T22:38:51.145492Z [0m [33m WARN [0m [2mrns_interface::tcp [0m [2m: [0m TCP connect failed [3mname [0m [2m= [0mRNS HAM RADIO [3merror [0m [2m= [0mConnection refused (os error 61)';
+
+const TCP_LINE_DUBLIN =
+  'TCP connect failed name = RNS Testnet Dublin error = Connection refused (os error 61)';
 
 const TX_DROP_LINE =
   '[2m2026-07-03T22:56:04.991728Z [0m [31mERROR [0m [2mrns_transport::actor [0m [2m: [0m PACKET DROPPED: interface TX channel full [3minterface_id [0m [2m= [0m3 [3minterface_name [0m [2m= [0mRNS HAM RADIO [3mqueue_remaining [0m [2m= [0m0 [3mqueue_max [0m [2m= [0m1024 [3mtx_drops [0m [2m= [0m8192';
@@ -70,11 +74,47 @@ describe('ReticulumSidecarInterfaceIssueTracker', () => {
     ]);
     expect(alert?.transportSaturatedCount).toBe(2);
     expect(alert?.slowTransportQueryCount).toBe(1);
+    expect(alert?.lastAtMs).toBe(2_200);
   });
 
-  it('expires alerts after stale window', () => {
+  it('expires alerts after stale window and purges entries (no resurrection)', () => {
     tracker.recordLine(TCP_LINE, 0);
     expect(tracker.getAlert(4 * 60_000)).not.toBeNull();
     expect(tracker.getAlert(6 * 60_000)).toBeNull();
+    // Unrelated issue after TTL must not resurrect the old TCP name.
+    tracker.recordLine(PATH_REQUEST_SATURATED_LINE, 6 * 60_000 + 1_000);
+    const alert = tracker.getAlert(6 * 60_000 + 1_500);
+    expect(alert?.tcpConnectFailed).toEqual([]);
+    expect(alert?.transportSaturatedCount).toBe(1);
+  });
+
+  it('retainInterfaces drops disabled or removed interface names', () => {
+    tracker.recordLine(TCP_LINE, 1_000);
+    tracker.recordLine(TCP_LINE_DUBLIN, 1_100);
+    tracker.recordLine(TX_DROP_LINE, 1_200);
+    tracker.retainInterfaces(new Set(['RNS Testnet Dublin']));
+    const alert = tracker.getAlert(1_500);
+    expect(alert?.tcpConnectFailed).toEqual(['RNS Testnet Dublin']);
+    expect(alert?.txQueueDrops).toEqual([]);
+  });
+
+  it('retainInterfaces clears alert when all TCP/TX names are disabled', () => {
+    tracker.recordLine(TCP_LINE, 1_000);
+    tracker.retainInterfaces(new Set());
+    expect(tracker.getAlert(1_500)).toBeNull();
+  });
+
+  it('clear empties the alert immediately', () => {
+    tracker.recordLine(TCP_LINE, 1_000);
+    tracker.recordLine(PATH_REQUEST_SATURATED_LINE, 1_100);
+    tracker.clear();
+    expect(tracker.getAlert(1_500)).toBeNull();
+  });
+
+  it('prunes individual entries by their own timestamps', () => {
+    tracker.recordLine(TCP_LINE, 0);
+    tracker.recordLine(TCP_LINE_DUBLIN, RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS - 10_000);
+    const alert = tracker.getAlert(RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS + 1_000);
+    expect(alert?.tcpConnectFailed).toEqual(['RNS Testnet Dublin']);
   });
 });

@@ -132,6 +132,22 @@ export class ReticulumSidecarManager extends EventEmitter {
     }
   }
 
+  /**
+   * Drop TCP/TX latch entries for interfaces that are disabled or missing from config.
+   * Emits status when the alert changes so the Connection banner updates immediately.
+   */
+  syncInterfaceIssueScope(enabledInterfaceNames: readonly string[]): ReticulumSidecarStatus {
+    const before = JSON.stringify(this.interfaceIssueTracker.getAlert());
+    this.interfaceIssueTracker.retainInterfaces(new Set(enabledInterfaceNames));
+    const after = JSON.stringify(this.interfaceIssueTracker.getAlert());
+    const status = this.getStatus();
+    if (before !== after) {
+      this.lastIssueStatusEmitAt = Date.now();
+      this.emit('status', status);
+    }
+    return status;
+  }
+
   private reticulumUserDir(...segments: string[]): string {
     return path.join(app.getPath('userData'), 'reticulum', ...segments);
   }
@@ -293,6 +309,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     const proc = this.proc;
     this.proc = null;
     if (!proc) {
+      this.interfaceIssueTracker.clear();
       this._status = { running: false, port: 0, pid: null };
       this.emit('status', this.getStatus());
       return;
@@ -322,6 +339,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       }
     });
 
+    this.interfaceIssueTracker.clear();
     this._status = { running: false, port: 0, pid: null };
     this.emit('status', this.getStatus());
   }

@@ -74,6 +74,19 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     return getManager()?.getStatus() ?? idleStatus;
   });
 
+  ipcMain.handle('reticulum:syncInterfaceIssueScope', (event, enabledInterfaceNames: unknown) => {
+    assertIpcSender(event, 'reticulum:syncInterfaceIssueScope');
+    if (!Array.isArray(enabledInterfaceNames)) {
+      throw new Error('enabledInterfaceNames must be an array of strings');
+    }
+    const names = enabledInterfaceNames.filter(
+      (n): n is string => typeof n === 'string' && n.trim().length > 0,
+    );
+    const m = getManager();
+    if (!m) return idleStatus;
+    return m.syncInterfaceIssueScope(names);
+  });
+
   ipcMain.handle('reticulum:proxyGet', async (event, apiPath: unknown) => {
     assertIpcSender(event, 'reticulum:proxyGet');
     const pathArg = assertProxyApiPath(apiPath);

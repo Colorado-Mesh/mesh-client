@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
 import {
   collectReticulumInterfaceAlerts,
@@ -11,7 +12,10 @@ import {
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { useReticulumInterfaceSnapshot } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
-import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
+import {
+  RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS,
+  type ReticulumSidecarEvent,
+} from '@/shared/reticulum-types';
 
 import { ReticulumInterfacesPanel } from './reticulum/ReticulumInterfacesPanel';
 import { ReticulumLocalInterfaceAlertsBlock } from './ReticulumLocalInterfaceAlertsBlock';
@@ -64,6 +68,7 @@ export function ReticulumStackPanel({
 
   const {
     interfaces,
+    interfacesHydrated,
     serialPorts,
     serialPortPaths,
     effectivePrimaryLocalSerialInterfaceId,
@@ -81,10 +86,38 @@ export function ReticulumStackPanel({
   }, [handleSidecarEvent]);
 
   useEffect(() => {
-    if (sidecarApiReady && sidecarUiRunning) {
+    if (!sidecarApiReady || !sidecarUiRunning || !interfacesHydrated) return;
+    const enabledNames = interfaces.filter((row) => row.enabled).map((row) => row.name);
+    let cancelled = false;
+    void window.electronAPI.reticulum
+      .syncInterfaceIssueScope(enabledNames)
+      .then(() => {
+        if (!cancelled) void refreshSidecarStatus();
+      })
+      .catch((e: unknown) => {
+        console.debug('[ReticulumStackPanel] syncInterfaceIssueScope ' + errLikeToLogString(e));
+        if (!cancelled) void refreshSidecarStatus();
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [interfaces, interfacesHydrated, sidecarApiReady, sidecarUiRunning, refreshSidecarStatus]);
+
+  useEffect(() => {
+    const alert = sidecarStatus.interfaceIssueAlert;
+    if (!sidecarApiReady || !sidecarUiRunning || !alert) return;
+    const remainingMs = alert.lastAtMs + RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS - Date.now();
+    if (remainingMs <= 0) {
       void refreshSidecarStatus();
+      return;
     }
-  }, [interfaces, sidecarApiReady, sidecarUiRunning, refreshSidecarStatus]);
+    const timer = window.setTimeout(() => {
+      void refreshSidecarStatus();
+    }, remainingMs);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [sidecarApiReady, sidecarUiRunning, sidecarStatus.interfaceIssueAlert, refreshSidecarStatus]);
 
   useEffect(() => {
     if (!sidecarApiReady || !sidecarUiRunning) return;
