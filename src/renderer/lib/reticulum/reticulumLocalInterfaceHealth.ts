@@ -1,6 +1,8 @@
 import { isReticulumTcpRnodeSerialPort } from './reticulumRnodeTransport';
+import { RETICULUM_SHARED_INSTANCE_CLIENT_NAME } from './reticulumSharedInstanceNames';
 
 export { isReticulumTcpRnodeSerialPort } from './reticulumRnodeTransport';
+export { RETICULUM_SHARED_INSTANCE_CLIENT_NAME } from './reticulumSharedInstanceNames';
 
 export const RETICULUM_LOCAL_SERIAL_INTERFACE_TYPES = new Set(['rnode', 'rnode_multi', 'kiss']);
 
@@ -19,8 +21,6 @@ export interface ReticulumLocalInterfaceInput {
   host?: string | null;
   port?: number | null;
 }
-
-export const RETICULUM_SHARED_INSTANCE_CLIENT_NAME = 'SharedInstanceClient';
 
 export interface ReticulumLocalInterfaceAlert {
   iface: ReticulumLocalInterfaceInput;

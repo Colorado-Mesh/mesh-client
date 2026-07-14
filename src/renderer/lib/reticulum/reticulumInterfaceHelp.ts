@@ -1,8 +1,14 @@
 import { isReticulumBleRnodeSerialPort } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import { isReticulumTcpRnodeSerialPort } from '@/renderer/lib/reticulum/reticulumRnodeTransport';
+import {
+  RETICULUM_SHARED_INSTANCE_CLIENT_NAME,
+  RETICULUM_SHARED_INSTANCE_NAME,
+} from '@/renderer/lib/reticulum/reticulumSharedInstanceNames';
 
-export const RETICULUM_SHARED_INSTANCE_NAME = 'SharedInstanceServer';
-export const RETICULUM_SHARED_INSTANCE_CLIENT_NAME = 'SharedInstanceClient';
+export {
+  RETICULUM_SHARED_INSTANCE_CLIENT_NAME,
+  RETICULUM_SHARED_INSTANCE_NAME,
+} from '@/renderer/lib/reticulum/reticulumSharedInstanceNames';
 
 export interface ReticulumInterfaceHelpInput {
   id: string;
@@ -20,12 +26,16 @@ export interface ReticulumInterfaceHelp {
 export function getReticulumInterfaceHelp(
   iface: ReticulumInterfaceHelpInput,
 ): ReticulumInterfaceHelp {
-  if (
-    iface.name === RETICULUM_SHARED_INSTANCE_NAME ||
-    iface.name === RETICULUM_SHARED_INSTANCE_CLIENT_NAME
-  ) {
+  if (iface.name === RETICULUM_SHARED_INSTANCE_NAME) {
     return {
       purposeKey: 'connectionPanel.reticulumInterfaces.purpose.sharedInstance',
+      isRuntimeOnly: true,
+      isSystemManaged: true,
+    };
+  }
+  if (iface.name === RETICULUM_SHARED_INSTANCE_CLIENT_NAME) {
+    return {
+      purposeKey: 'connectionPanel.reticulumInterfaces.purpose.sharedInstanceClient',
       isRuntimeOnly: true,
       isSystemManaged: true,
     };

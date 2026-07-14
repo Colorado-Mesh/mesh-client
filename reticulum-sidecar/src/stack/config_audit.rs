@@ -79,9 +79,14 @@ pub fn audit_config(
         }
     }
 
-    let shared_client_live = live_interfaces
-        .iter()
-        .find(|i| i.name == SHARED_INSTANCE_CLIENT_NAME && i.status == "up");
+    // Keep status set aligned with renderer `isReticulumInterfaceOnlineStatus`.
+    let shared_client_live = live_interfaces.iter().find(|i| {
+        i.name == SHARED_INSTANCE_CLIENT_NAME
+            && matches!(
+                i.status.to_ascii_lowercase().as_str(),
+                "up" | "connected" | "online" | "running"
+            )
+    });
     let shared_instance_client = shared_client_live.is_some();
 
     if stack_running && !shared_instance_client {
@@ -657,6 +662,37 @@ target_port = 4242
         assert!(issues.iter().any(|i| i.kind == "shared_instance_client"));
         assert!(issues.iter().all(|i| i.kind != "tcp_unreachable"));
         assert!(issues.iter().all(|i| i.kind != "ghost_interface"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn repair_disable_share_instance_turns_share_off() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_sample_config(
+            &dir,
+            r#"[[Default Interface]]
+type = AutoInterface
+enabled = Yes
+"#,
+        );
+        let mut settings = StackSettings {
+            share_instance: true,
+            ..Default::default()
+        };
+        config::set_stack_settings(&dir, &settings).unwrap();
+        let req = ConfigRepairRequest {
+            repair_kinds: vec!["disable_share_instance".into()],
+        };
+        let (repaired, restart) = repair_config(&dir, &req).unwrap();
+        assert!(repaired.iter().any(|r| r == "disable_share_instance"));
+        assert!(restart);
+        settings = config::get_stack_settings(&dir).unwrap();
+        assert!(!settings.share_instance);
+
+        let (repaired2, restart2) = repair_config(&dir, &req).unwrap();
+        assert!(!repaired2.iter().any(|r| r == "disable_share_instance"));
+        assert!(!restart2);
         let _ = fs::remove_dir_all(&dir);
     }
 

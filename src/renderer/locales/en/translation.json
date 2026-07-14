@@ -747,9 +747,9 @@
       "tcpUnreachableHint": "The remote Reticulum instance may be offline or blocking connections. Disable this interface or verify the host and port."
     },
     "reticulumSharedInstance": {
-      "title": "Share instance is using another app",
-      "body": "This app connected as a client of an existing shared instance. Local TCP hubs and other interfaces in this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
+      "title": "Using another app’s shared instance",
+      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
+      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
@@ -943,6 +943,7 @@
       "purpose": {
         "auto": "Local LAN multicast discovery — finds other Reticulum nodes on the same Wi-Fi or subnet.",
         "sharedInstance": "Localhost TCP server when Share instance is on — lets other apps on this machine use this stack.",
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
         "tcp": "Outbound TCP tunnel to a remote Reticulum hub or gateway.",
         "rnodeUsb": "LoRa mesh via USB RNode.",
         "rnodeBle": "LoRa mesh via Bluetooth RNode.",
@@ -1406,7 +1407,8 @@
         "apply_preset": "Apply preset",
         "edit": "Edit interface",
         "restart_stack": "Restart stack",
-        "add_auto": "Add Auto interface"
+        "add_auto": "Add Auto interface",
+        "disable_share_instance": "Turn off Share instance"
       },
       "runtime": {
         "rnsNotReady": "RNS stack is not ready",
@@ -2337,7 +2339,11 @@
       "aria": "Validate on-disk network config",
       "running": "Checking…",
       "ok": "Config looks good — no audit issues.",
-      "issuesHeading": "{{count}} config issue(s)",
+      "issuesHeading_one": "{{count}} config issue",
+      "issuesHeading_other": "{{count}} config issues",
+      "severityError": "error",
+      "severityWarning": "warning",
+      "severityInfo": "info",
       "failed": "Config check failed: {{message}}"
     }
   },

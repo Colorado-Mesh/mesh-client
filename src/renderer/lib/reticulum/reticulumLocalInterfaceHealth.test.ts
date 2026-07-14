@@ -164,6 +164,29 @@ describe('reticulumLocalInterfaceHealth', () => {
     expect(alerts).toHaveLength(0);
   });
 
+  it('still emits tcp_unreachable when SharedInstanceClient is down', () => {
+    const alerts = collectReticulumRemoteInterfaceAlerts([
+      {
+        id: 'ratspeak',
+        name: 'Ratspeak',
+        type: 'tcp',
+        enabled: true,
+        status: 'down',
+        host: 'rns.ratspeak.org',
+        port: 4242,
+      },
+      {
+        id: 'rns-0',
+        name: 'SharedInstanceClient',
+        type: 'Full',
+        enabled: true,
+        status: 'down',
+      },
+    ]);
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]?.reason).toBe('tcp_unreachable');
+  });
+
   it('collectInterfaceAlerts merges local and remote alerts', () => {
     const alerts = collectReticulumInterfaceAlerts(
       [

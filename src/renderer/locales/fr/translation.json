@@ -934,7 +934,8 @@
         "rnodeBle": "Maillage LoRa via Bluetooth RNode.",
         "rnodeWifi": "Maillage LoRa via RNode Wi-Fi (hôte tcp://).",
         "blePeer": "Maillage d’homologues BLE utilisant des adresses d’homologues de départ.",
-        "generic": "Interface réseau Reticulum."
+        "generic": "Interface réseau Reticulum.",
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
       },
       "rfProfile": {
         "coordinated": "Coordination régionale",
@@ -1119,9 +1120,9 @@
     "coloradoRegionGateSwitch": "Passer à LetsMesh",
     "topicPrefixInvalidIata": "Le préfixe du sujet doit être meshcore/test ou meshcore/{IATA} (3 lettres), par exemple meshcore/DEN.",
     "reticulumSharedInstance": {
-      "title": "Share instance is using another app",
-      "body": "This app connected as a client of an existing shared instance. Local TCP hubs and other interfaces in this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
+      "title": "Using another app’s shared instance",
+      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
+      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
@@ -1389,7 +1390,8 @@
         "apply_preset": "Appliquer le préréglage",
         "edit": "Modifier l'interface",
         "restart_stack": "Redémarrer la pile",
-        "add_auto": "Ajouter une interface automatique"
+        "add_auto": "Ajouter une interface automatique",
+        "disable_share_instance": "Turn off Share instance"
       },
       "audit": {
         "tcp_enable_key": "L'interface TCP \"{{name}}\" utilise la mauvaise clé d'activation — RNS ne la chargera pas.",
@@ -2337,8 +2339,12 @@
       "aria": "Validate on-disk network config",
       "running": "Checking…",
       "ok": "Config looks good — no audit issues.",
-      "issuesHeading": "{{count}} config issue(s)",
-      "failed": "Config check failed: {{message}}"
+      "failed": "Config check failed: {{message}}",
+      "issuesHeading_one": "{{count}} config issue",
+      "issuesHeading_other": "{{count}} config issues",
+      "severityError": "error",
+      "severityWarning": "warning",
+      "severityInfo": "info"
     }
   },
   "nodeDetailModal": {

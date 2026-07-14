@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
+import { translateReticulumAuditIssue } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import { reticulumSidecarEventRefreshActions } from '@/renderer/lib/reticulum/reticulumSidecarPeerRefreshEvents';
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
@@ -696,11 +697,26 @@ export function ReticulumNetworkPanel({
                       })}
                     </p>
                     <ul className="list-disc space-y-1 pl-4 text-amber-100/90">
-                      {configValidateResult.issues.map((issue) => (
-                        <li key={`${issue.kind}-${issue.interface_id ?? ''}-${issue.message}`}>
-                          <span className="text-amber-300">[{issue.severity}]</span> {issue.message}
-                        </li>
-                      ))}
+                      {configValidateResult.issues.map((issue) => {
+                        const severity =
+                          issue.severity === 'error' ||
+                          issue.severity === 'warning' ||
+                          issue.severity === 'info'
+                            ? issue.severity
+                            : 'warning';
+                        const translated = translateReticulumAuditIssue(t, {
+                          kind: issue.kind,
+                          severity,
+                          interface_name: issue.interface_name,
+                          message: issue.message,
+                        });
+                        return (
+                          <li key={`${issue.kind}-${issue.interface_id ?? ''}-${issue.message}`}>
+                            <span className="text-amber-300">[{translated.severityLabel}]</span>{' '}
+                            {translated.message}
+                          </li>
+                        );
+                      })}
                     </ul>
                   </>
                 )}

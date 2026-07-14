@@ -16,7 +16,7 @@ export interface ReticulumLocalInterfaceAlertsBlockProps {
   alerts: ReticulumLocalInterfaceAlert[];
   availablePorts: string[];
   onRefreshPorts?: () => void;
-  onRestartStack?: () => void;
+  onRestartStack?: () => void | Promise<void>;
   compact?: boolean;
 }
 
@@ -95,7 +95,9 @@ export function ReticulumLocalInterfaceAlertsBlock({
         {onRestartStack ? (
           <button
             type="button"
-            onClick={onRestartStack}
+            onClick={() => {
+              void onRestartStack();
+            }}
             className="rounded bg-amber-700/80 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-600"
             aria-label={t('connectionPanel.reticulumLocalInterfaces.restartStackAria')}
           >

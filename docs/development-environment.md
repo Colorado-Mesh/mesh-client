@@ -366,6 +366,7 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `check:log-panel-filter`          | Verify log panel filter wiring                                |
 | `check:log-service-sinks`         | Verify log service sink configuration                         |
 | `check:protocol-string-gates`     | Enforce protocol capability gates over string compares        |
+| `check:reticulum-interface-modes` | Keep TS/Rust Reticulum interface-mode catalogs aligned        |
 | `check:silent-catches`            | Detect empty or unlogged catch blocks                         |
 | `check:url-hostname-sanitization` | Verify URL hostname sanitization helpers                      |
 | `check:xss-patterns`              | Detect risky DOM/HTML sink patterns                           |
@@ -566,7 +567,7 @@ Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-comm
 5. When `src/renderer/locales/en/translation.json` is staged: `pnpm run i18n:auto-translate` (incremental vs `HEAD` English, not `--all`) and re-stage `src/renderer/locales/` — see [Internationalization](#9-internationalization-i18n)
 6. `pnpm run lint`
 7. `pnpm run typecheck`
-8. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:i18n` when English locale is staged else `check:i18n:branch`, `check:licenses`
+8. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:reticulum-interface-modes`, `check:i18n` when English locale is staged else `check:i18n:branch`, `check:licenses`
 9. `pnpm audit --audit-level=high`
 10. `actionlint` when `.github/workflows/*` is staged; `yamllint` when any `*.yaml` / `*.yml` is staged
 11. `pnpm run test:run -- --changed HEAD --bail 1` (full suite when vitest config, shared/preload, vitest setup mocks, or dependency manifests change)

@@ -17,6 +17,8 @@ use lxmf_core::message::LxMessage;
 const FIELD_REPLY_TO: u8 = 0x30;
 /// Optional UTF-8 quoted parent text for clients that lack the parent message.
 const FIELD_REPLY_QUOTE: u8 = 0x31;
+/// Cap wire quote length (matches renderer `REPLY_PREVIEW_MAX_LEN` without ellipsis).
+const REPLY_QUOTE_MAX_CHARS: usize = 50;
 use lxmf_core::router::LxmRouter;
 use rns_identity::destination::Destination;
 use rns_identity::identity::Identity;
@@ -1021,12 +1023,7 @@ impl LiveBridge {
             content,
             method,
         );
-        if let Some(parent_id) = reply_to {
-            msg.set_field(FIELD_REPLY_TO, parent_id.to_vec());
-            if let Some(quote) = reply_quote.map(str::trim).filter(|q| !q.is_empty()) {
-                msg.set_field(FIELD_REPLY_QUOTE, quote.as_bytes().to_vec());
-            }
-        }
+        apply_reply_fields(&mut msg, reply_to, reply_quote);
         let signing_key = self.identity.get_signing_key().ok_or_else(|| {
             "lxmf sign: identity has no signing key".to_string()
         })?;
@@ -1483,11 +1480,7 @@ impl LiveBridge {
             build_file_attachment_msgpack(&req.file_name, &file_bytes)?;
 
         let reply_to = parse_optional_reply_to_hash(req.reply_to_hash.as_deref());
-        let reply_quote = req
-            .reply_preview_text
-            .as_deref()
-            .map(str::trim)
-            .filter(|q| !q.is_empty());
+        let reply_quote = req.reply_preview_text.as_deref();
 
         let mut msg = LxMessage::new(
             dest,
@@ -1496,12 +1489,7 @@ impl LiveBridge {
             &text,
             delivery_method,
         );
-        if let Some(parent_id) = reply_to {
-            msg.set_field(FIELD_REPLY_TO, parent_id.to_vec());
-            if let Some(quote) = reply_quote {
-                msg.set_field(FIELD_REPLY_QUOTE, quote.as_bytes().to_vec());
-            }
-        }
+        apply_reply_fields(&mut msg, reply_to, reply_quote);
         msg.set_msgpack_field(FIELD_FILE_ATTACHMENTS, attachment_msgpack)
             .map_err(|e| format!("attachment field: {e:?}"))?;
         let signing_key = self.identity.get_signing_key().ok_or_else(|| {
@@ -1777,6 +1765,31 @@ struct LxmfReplyFields {
     reply_preview_text: Option<String>,
 }
 
+/// Truncate UTF-8 quote text for LXMF `FIELD_REPLY_QUOTE` (encoder + decoder).
+fn truncate_reply_quote(quote: &str) -> Option<String> {
+    let trimmed = quote.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let truncated: String = trimmed.chars().take(REPLY_QUOTE_MAX_CHARS).collect();
+    if truncated.is_empty() {
+        None
+    } else {
+        Some(truncated)
+    }
+}
+
+/// Stamp reply fields before `sign()` so they are covered by the message hash.
+fn apply_reply_fields(msg: &mut LxMessage, reply_to: Option<[u8; 32]>, reply_quote: Option<&str>) {
+    let Some(parent_id) = reply_to else {
+        return;
+    };
+    msg.set_field(FIELD_REPLY_TO, parent_id.to_vec());
+    if let Some(quote) = reply_quote.and_then(truncate_reply_quote) {
+        msg.set_field(FIELD_REPLY_QUOTE, quote.as_bytes().to_vec());
+    }
+}
+
 /// Decode LXMF 1.0 `FIELD_REPLY_TO` (0x30) and optional `FIELD_REPLY_QUOTE` (0x31).
 fn reply_fields_from_message(msg: &LxMessage) -> Option<LxmfReplyFields> {
     let raw = msg.get_field(FIELD_REPLY_TO)?;
@@ -1785,12 +1798,8 @@ fn reply_fields_from_message(msg: &LxMessage) -> Option<LxmfReplyFields> {
     }
     let reply_to_hash = hex::encode(raw);
     let reply_preview_text = msg.get_field(FIELD_REPLY_QUOTE).and_then(|bytes| {
-        let s = std::str::from_utf8(bytes).ok()?.trim();
-        if s.is_empty() {
-            None
-        } else {
-            Some(s.to_string())
-        }
+        let s = std::str::from_utf8(bytes).ok()?;
+        truncate_reply_quote(s)
     });
     Some(LxmfReplyFields {
         reply_to_hash,
@@ -2347,5 +2356,24 @@ mod reply_field_tests {
         );
         msg.set_field(FIELD_REPLY_TO, vec![0u8; 16]);
         assert!(reply_fields_from_message(&msg).is_none());
+    }
+
+    #[test]
+    fn apply_reply_fields_caps_quote_length() {
+        let parent_id = [0x22u8; 32];
+        let long = "x".repeat(REPLY_QUOTE_MAX_CHARS + 40);
+        let mut msg = LxMessage::new(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "reply",
+            DeliveryMethod::Direct,
+        );
+        apply_reply_fields(&mut msg, Some(parent_id), Some(&long));
+        let fields = reply_fields_from_message(&msg).expect("reply fields");
+        assert_eq!(
+            fields.reply_preview_text.as_ref().map(|s| s.chars().count()),
+            Some(REPLY_QUOTE_MAX_CHARS)
+        );
     }
 }

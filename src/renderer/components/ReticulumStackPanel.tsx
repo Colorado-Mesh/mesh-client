@@ -119,26 +119,24 @@ export function ReticulumStackPanel({
     [interfaces, serialPortPaths, healthOptions],
   );
 
-  const handleRestartStack = useCallback(() => {
+  const handleRestartStack = useCallback(async () => {
     setRestartError(null);
-    void (async () => {
-      const result = await restartReticulumStack({
-        onBeginBleConnectGrace: beginBleConnectGrace,
-        onRefresh: refresh,
-        logTag: 'ReticulumStackPanel',
-      });
-      if (result.ok && !result.restarted && result.unavailable) {
-        setRestartError(t('connectionPanel.reticulumInterfaces.restartStackUnavailable'));
-        return;
-      }
-      if (!result.ok) {
-        setRestartError(
-          t('connectionPanel.reticulumInterfaces.restartStackFailed', {
-            message: result.message,
-          }),
-        );
-      }
-    })();
+    const result = await restartReticulumStack({
+      onBeginBleConnectGrace: beginBleConnectGrace,
+      onRefresh: refresh,
+      logTag: 'ReticulumStackPanel',
+    });
+    if (result.ok && !result.restarted && result.unavailable) {
+      setRestartError(t('connectionPanel.reticulumInterfaces.restartStackUnavailable'));
+      return;
+    }
+    if (!result.ok) {
+      setRestartError(
+        t('connectionPanel.reticulumInterfaces.restartStackFailed', {
+          message: result.message,
+        }),
+      );
+    }
   }, [beginBleConnectGrace, refresh, t]);
 
   return (

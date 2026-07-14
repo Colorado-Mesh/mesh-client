@@ -1,4 +1,8 @@
 import { meshcoreMessageMatchesReplyKey } from './meshcoreChannelText';
+import {
+  normalizeReticulumMessageHash,
+  reticulumMessageHashesEqual,
+} from './reticulum/reticulumMessageHash';
 import type { ChatMessage } from './types';
 
 /** MM-PLAN Feature 2: truncated original message text (max 50 chars). */
@@ -151,12 +155,9 @@ export function findReticulumParentMessageForReply(
   messages: readonly ChatMessage[],
   replyToHash: string,
 ): ChatMessage | undefined {
-  const target = replyToHash.trim().toLowerCase();
+  const target = normalizeReticulumMessageHash(replyToHash);
   if (!target) return undefined;
-  return messages.find((m) => {
-    const candidate = m.reticulum_message_hash?.trim().toLowerCase();
-    return candidate != null && candidate === target;
-  });
+  return messages.find((m) => reticulumMessageHashesEqual(m.reticulum_message_hash, target));
 }
 
 /**

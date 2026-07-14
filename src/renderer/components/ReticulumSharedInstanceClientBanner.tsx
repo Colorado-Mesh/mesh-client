@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -6,7 +6,8 @@ import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulum
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 
 export interface ReticulumSharedInstanceClientBannerProps {
-  onRestartStack?: () => void;
+  /** Optional external restart; must settle before banner clears busy. */
+  onRestartStack?: () => void | Promise<void>;
   onRefresh?: () => Promise<unknown>;
   onBeginBleConnectGrace?: () => void;
 }
@@ -20,11 +21,55 @@ export function ReticulumSharedInstanceClientBanner({
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const inFlightRef = useRef(false);
 
-  const disableShareAndRestart = async () => {
+  const runRestart = async (): Promise<boolean> => {
+    if (onRestartStack) {
+      await onRestartStack();
+      return true;
+    }
+    const result = await restartReticulumStack({
+      onBeginBleConnectGrace,
+      onRefresh:
+        onRefresh ??
+        (async () => {
+          /* no-op refresh */
+        }),
+      logTag: 'ReticulumSharedInstanceClientBanner',
+    });
+    if (!result.ok) {
+      setActionError(
+        t('connectionPanel.reticulumInterfaces.restartStackFailed', {
+          message: result.message,
+        }),
+      );
+      return false;
+    }
+    if (!result.restarted && result.unavailable) {
+      setActionError(t('connectionPanel.reticulumInterfaces.restartStackUnavailable'));
+      return false;
+    }
+    return true;
+  };
+
+  const withBusy = async (fn: () => Promise<void>): Promise<void> => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setBusy(true);
     setActionError(null);
     try {
+      await fn();
+    } catch (e) {
+      console.error(`[ReticulumSharedInstanceClientBanner] action failed ${errLikeToLogString(e)}`);
+      setActionError(errLikeToLogString(e));
+    } finally {
+      inFlightRef.current = false;
+      setBusy(false);
+    }
+  };
+
+  const disableShareAndRestart = () =>
+    withBusy(async () => {
       const current = parseReticulumStackSettingsPayload(
         await window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings'),
       );
@@ -36,35 +81,13 @@ export function ReticulumSharedInstanceClientBanner({
         setActionError(res.error ?? t('connectionPanel.reticulumSharedInstance.disableFailed'));
         return;
       }
-      if (onRestartStack) {
-        onRestartStack();
-        return;
-      }
-      const result = await restartReticulumStack({
-        onBeginBleConnectGrace,
-        onRefresh:
-          onRefresh ??
-          (async () => {
-            /* no-op refresh */
-          }),
-        logTag: 'ReticulumSharedInstanceClientBanner',
-      });
-      if (!result.ok) {
-        setActionError(
-          t('connectionPanel.reticulumInterfaces.restartStackFailed', {
-            message: result.message,
-          }),
-        );
-      } else if (!result.restarted && result.unavailable) {
-        setActionError(t('connectionPanel.reticulumInterfaces.restartStackUnavailable'));
-      }
-    } catch (e) {
-      // catch-no-log-ok: disable-share failure shown in banner
-      setActionError(errLikeToLogString(e));
-    } finally {
-      setBusy(false);
-    }
-  };
+      await runRestart();
+    });
+
+  const restartOnly = () =>
+    withBusy(async () => {
+      await runRestart();
+    });
 
   return (
     <div
@@ -101,7 +124,9 @@ export function ReticulumSharedInstanceClientBanner({
           <button
             type="button"
             disabled={busy}
-            onClick={onRestartStack}
+            onClick={() => {
+              void restartOnly();
+            }}
             className="rounded border border-amber-600/60 px-2.5 py-1 text-xs font-medium text-amber-100 hover:bg-amber-900/40 disabled:opacity-50"
             aria-label={t('connectionPanel.reticulumLocalInterfaces.restartStackAria')}
           >

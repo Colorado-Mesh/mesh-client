@@ -31,7 +31,8 @@ const STOP_GRACE_MS = 5 * MS_PER_SECOND;
 /** After yielding Noble BLE, allow CoreBluetooth/btleplug to settle before sidecar connect. */
 const RETICULUM_BLE_RNODE_NOBLE_SETTLE_MS = 500;
 
-function sidecarChildEnv(): NodeJS.ProcessEnv {
+/** Minimal env for sidecar child processes (start + validate-config). */
+export function sidecarChildEnv(): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {
     PATH: process.env.PATH,
     HOME: process.env.HOME,

@@ -163,7 +163,7 @@ Config lives under `userData/reticulum/config/` (rnsd INI). The Connection tab s
 
 Inbound “other apps / nodes connect to me” on this machine uses **Share instance** under **Network → stack settings** (runtime `SharedInstanceServer`), not a separate TCP server interface type. See also [diagnostics.md](diagnostics.md) SharedInstance notes.
 
-Defaults for new/incomplete configs: `share_instance = No` and `instance_name = mesh-client` (avoids attaching as a client on system `\0rns/default`, which would skip spawning local TCP hubs). **Network → Check config** runs an offline parse/audit of `userData/reticulum/config` via the bundled sidecar (`validate-config`) on macOS, Windows, and Linux.
+Defaults for new/incomplete configs: `share_instance = No` and `instance_name = mesh-client` (avoids attaching as a client on system `\0rns/default`, which would skip spawning local TCP hubs). Existing installs that already have `share_instance = Yes` / `instance_name = default` are **not** auto-migrated — use the Connection banner, Network → **Share Reticulum instance**, or Diagnostics **Turn off Share instance** repair, then restart. **Network → Check config** runs an offline parse/audit of `userData/reticulum/config` via the bundled sidecar (`validate-config`) on macOS, Windows, and Linux. Maintainers can run the same lint from the CLI: `pnpm run reticulum:config:check` (optional `MESH_CLIENT_RETICULUM_CONFIG_DIR`).
 
 **Pick device** opens a modal for serial or BLE selection:
 
@@ -211,6 +211,7 @@ When multiple enabled local RNode interfaces are connected, the interface list s
 
 - **DM-only** — no RF channel pills
 - Text and emoji reactions. **File and voice attachments are not offered in the UI** (deferred redesign); historic `[file:name:mime]` bubbles still render as a read-only label
+- **Replies:** outbound DMs stamp LXMF `FIELD_REPLY_TO` (0x30) and optional `FIELD_REPLY_QUOTE` (0x31, capped) before sign so peers see structured replies; ingest/Chat use `reticulum_reply_to_hash` plus quote preview (store parent when present, else wire quote) and jump-to-parent by message hash
 - Outbound **Sending** until sidecar emits `lxmf_outbound_status` (`delivered` / `failed`); `/api/v1/lxmf/send` may return `delivery_status: "queued"` or `"sending"` — that is enqueue/acceptance, not delivery confirmation
 - Terminal **Completes** / **Failed** from `lxmf_outbound_status` are persisted to SQLite (`delivery_status` on `reticulum_messages`) via `applyReticulumOutboundDeliveryStatus.ts` so restart/DB hydration does not regress delivered rows; early WS events before provisional id→hash rekey are buffered
 - **DM path reachability:** active DM header shows a reachability badge (`ReticulumDmPathReachabilityBadge` + `useReticulumDmPathProbe`) seeded from path-table/contact hops, then settled by peer probe; when settled, **Request path** / **Probe** use the same sidecar endpoints as the Peers tab. Chat **Probe** mirrors Peer List UX: stack-running check → `/probe` → toast → peer refresh; `onProbeSettled` / `applyProbeResult(forHash, …)` applies the result without a second `/probe` (stale hashes after DM switch are ignored); manual reprobe forces Checking… even when passive hops already look reachable

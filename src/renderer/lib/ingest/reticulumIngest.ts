@@ -16,6 +16,10 @@ import {
   mergeReticulumIngestRecord,
   type ReticulumIngestMergeContext,
 } from '@/renderer/lib/reticulum/reticulumIngestMerge';
+import {
+  normalizeReticulumMessageHash,
+  reticulumMessageHashesEqual,
+} from '@/renderer/lib/reticulum/reticulumMessageHash';
 import { reticulumDbRowToMessageRecord } from '@/renderer/lib/storeRecordAdapters';
 import type { IdentityId } from '@/renderer/lib/types';
 import { useBlockStore } from '@/renderer/stores/blockStore';
@@ -95,15 +99,19 @@ export function findReticulumParentRecordByHash(
   identityId: IdentityId,
   replyToHash: string,
 ): MessageRecord | undefined {
-  const target = replyToHash.trim().toLowerCase();
+  const target = normalizeReticulumMessageHash(replyToHash);
   if (!target) return undefined;
   const byId = useMessageStore.getState().messages[identityId];
   if (!byId) return undefined;
   const direct = byId[replyToHash] ?? byId[target];
   if (direct) return direct;
   for (const row of Object.values(byId)) {
-    const candidate = row.reticulumMessageHash?.trim().toLowerCase();
-    if (candidate === target || row.id.trim().toLowerCase() === target) return row;
+    if (
+      reticulumMessageHashesEqual(row.reticulumMessageHash, target) ||
+      reticulumMessageHashesEqual(row.id, target)
+    ) {
+      return row;
+    }
   }
   return undefined;
 }

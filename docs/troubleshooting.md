@@ -1049,7 +1049,7 @@ Unrecognized codes pass through unchanged.
 4. Retry the DM; use **Peers → Request path / Probe** if the peer is reachable but the path is stale.
 5. Configure a **propagation node** on Network → Propagation for offline delivery.
 
-New installs default to `share_instance = No` and `instance_name = mesh-client` so mesh-client does not attach to system `\0rns/default`. Use Network → **Check config** to lint the on-disk INI.
+New/incomplete configs default to `share_instance = No` and `instance_name = mesh-client` so mesh-client does not attach to system `\0rns/default`. **Upgrades are not auto-migrated** when Share is already `Yes` or `instance_name` is already `default` — turn Share off (banner / Network / Diagnostics repair) and restart, or fully quit the other RNS app. Use Network → **Check config** (or `pnpm run reticulum:config:check`) to lint the on-disk INI.
 
 Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts) helps confirm transport saturation vs. a single peer outage.
 

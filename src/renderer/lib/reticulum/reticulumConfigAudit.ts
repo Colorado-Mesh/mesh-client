@@ -1,5 +1,6 @@
 import type { DiagnosticRow } from '@/renderer/lib/types';
 import { rfRowId } from '@/renderer/lib/types';
+import type { ReticulumConfigValidateIssue } from '@/shared/reticulum-types';
 
 export type ReticulumConfigAuditSeverity = 'error' | 'warning' | 'info';
 
@@ -12,14 +13,10 @@ export type ReticulumConfigRepairKind =
   | 'add_auto'
   | 'disable_share_instance';
 
-export interface ReticulumConfigAuditIssue {
-  kind: string;
+/** Audit issue from live `/config/audit` (severity narrowed vs wire DTO). */
+export type ReticulumConfigAuditIssue = Omit<ReticulumConfigValidateIssue, 'severity'> & {
   severity: ReticulumConfigAuditSeverity;
-  interface_id?: string | null;
-  interface_name?: string | null;
-  message: string;
-  repair_kind?: string | null;
-}
+};
 
 export interface ReticulumConfigAuditResponse {
   issues?: ReticulumConfigAuditIssue[];
@@ -52,8 +49,27 @@ export async function repairReticulumConfig(
   })) as ReticulumConfigRepairResponse;
 }
 
-function auditI18nKey(kind: string): string {
+export function auditI18nKey(kind: string): string {
   return `diagnosticsPanel.reticulum.audit.${kind}`;
+}
+
+export function translateReticulumAuditIssue(
+  t: (key: string, opts?: Record<string, unknown>) => string,
+  issue: Pick<ReticulumConfigAuditIssue, 'kind' | 'interface_name' | 'message' | 'severity'>,
+): { severityLabel: string; message: string } {
+  const severityKey =
+    issue.severity === 'error'
+      ? 'networkPanel.reticulumConfigValidate.severityError'
+      : issue.severity === 'info'
+        ? 'networkPanel.reticulumConfigValidate.severityInfo'
+        : 'networkPanel.reticulumConfigValidate.severityWarning';
+  return {
+    severityLabel: t(severityKey),
+    message: t(auditI18nKey(issue.kind), {
+      name: issue.interface_name ?? '',
+      message: issue.message,
+    }),
+  };
 }
 
 /** Expected runtime state — not actionable; Connection tab shows a Runtime badge instead. */

@@ -428,19 +428,21 @@ SVG force-directed graph of nodes within direct reach (hops 0–1 from the conne
 
 On the **Reticulum** protocol tab, the **Diagnostics** panel includes a **Reticulum interface config** section (below continuous ping). It audits the sidecar rnsd config against the live RNS interface list and surfaces actionable repairs.
 
-| Issue kind                                  | Typical cause                                                         | In-app action                                               |
-| ------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `tcp_enable_key` / `ghost_interface`        | TCP blocks use `enabled = Yes` but RNS only loads `interface_enabled` | **Repair config**                                           |
-| `tcp_unreachable`                           | Hub host/port down or firewalled                                      | **Disable** or **Edit interface** (jumps to Connection tab) |
-| `rf_preset_deviation` / `rf_cross_mismatch` | RNode LoRa params differ from coordinated regional presets            | **Apply preset** or edit RNode                              |
-| `missing_auto_interface`                    | No enabled `AutoInterface` (LAN discovery off)                        | **Add Auto interface**                                      |
-| `missing_shared_instance`                   | `share_instance = Yes` but `SharedInstanceServer` not up              | **Restart stack**                                           |
-| `rmap_missing_coordinates`                  | Discoverable interface without valid GPS                              | Set App GPS or disable RMAP on that interface               |
-| `rmap_no_tcp_hub`                           | LoRa RMAP publish without reachable TCP hub                           | Add/sync default hubs or enable transport                   |
-| `rmap_transport_disabled`                   | RMAP-capable interface while `enable_transport` is off                | Enable transport in Network stack settings or RMAP apply    |
-| `rmap_i2p_not_connectable`                  | I2P interface discoverable but not connectable                        | Set `connectable=yes` or disable RMAP on that interface     |
+| Issue kind                                  | Typical cause                                                                                               | In-app action                                                       |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `tcp_enable_key` / `ghost_interface`        | TCP blocks use `enabled = Yes` but RNS only loads `interface_enabled`                                       | **Repair config**                                                   |
+| `tcp_unreachable`                           | Hub host/port down or firewalled                                                                            | **Disable** or **Edit interface** (jumps to Connection tab)         |
+| `rf_preset_deviation` / `rf_cross_mismatch` | RNode LoRa params differ from coordinated regional presets                                                  | **Apply preset** or edit RNode                                      |
+| `missing_auto_interface`                    | No enabled `AutoInterface` (LAN discovery off)                                                              | **Add Auto interface**                                              |
+| `missing_shared_instance`                   | `share_instance = Yes` but this app is not hosting `SharedInstanceServer` (often another app owns the name) | **Turn off Share instance** (`disable_share_instance`) then restart |
+| `shared_instance_client`                    | Attached as `SharedInstanceClient` of another app — local TCP hubs from this config are not started         | **Turn off Share instance** / quit the other app, then restart      |
+| `shared_instance_unexpected`                | `SharedInstanceServer` is live but Share is off                                                             | **Restart stack**                                                   |
+| `rmap_missing_coordinates`                  | Discoverable interface without valid GPS                                                                    | Set App GPS or disable RMAP on that interface                       |
+| `rmap_no_tcp_hub`                           | LoRa RMAP publish without reachable TCP hub                                                                 | Add/sync default hubs or enable transport                           |
+| `rmap_transport_disabled`                   | RMAP-capable interface while `enable_transport` is off                                                      | Enable transport in Network stack settings or RMAP apply            |
+| `rmap_i2p_not_connectable`                  | I2P interface discoverable but not connectable                                                              | Set `connectable=yes` or disable RMAP on that interface             |
 
-The Connection tab **Interfaces** list shows the same audit hints per row (amber/red subtext) with **Repair** / **Disable** shortcuts. **SharedInstanceServer** is runtime-only (created when **Share instance** is on) — it shows a **Runtime** badge and cannot be edited or deleted from config. The `runtime_only_interface` audit note is intentionally omitted from the Diagnostics panel (expected state, not a fault); misconfiguration is reported via `missing_shared_instance` or `shared_instance_unexpected` instead.
+The Connection tab **Interfaces** list shows the same audit hints per row (amber/red subtext) with **Repair** / **Turn off Share instance** / **Disable** shortcuts. **SharedInstanceServer** / **SharedInstanceClient** are runtime-only — they show a **Runtime** badge and cannot be edited or deleted from config. In **SharedInstanceClient** mode, misleading `tcp_unreachable` / ghost-TCP alerts for this app’s hubs are suppressed. The `runtime_only_interface` audit note is intentionally omitted from the Diagnostics panel (expected state, not a fault); misconfiguration is reported via `missing_shared_instance`, `shared_instance_client`, or `shared_instance_unexpected` instead.
 
 Sidecar APIs: `GET /api/v1/config/audit`, `POST /api/v1/config/repair` (see [`reticulum-sidecar-ipc.md`](reticulum-sidecar-ipc.md)).
 

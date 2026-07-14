@@ -27,7 +27,7 @@ describe('ReticulumSharedInstanceClientBanner', () => {
 
   it('disables share instance then restarts via callback', async () => {
     const user = userEvent.setup();
-    const onRestartStack = vi.fn();
+    const onRestartStack = vi.fn().mockResolvedValue(undefined);
     render(<ReticulumSharedInstanceClientBanner onRestartStack={onRestartStack} />);
 
     expect(screen.getByRole('alert')).toBeInTheDocument();
@@ -44,5 +44,26 @@ describe('ReticulumSharedInstanceClientBanner', () => {
       );
       expect(onRestartStack).toHaveBeenCalled();
     });
+  });
+
+  it('shows error and skips restart when settings PUT fails', async () => {
+    const user = userEvent.setup();
+    const onRestartStack = vi.fn();
+    vi.mocked(window.electronAPI.reticulum.proxyPut).mockResolvedValue({
+      ok: false,
+      error: 'put failed',
+    });
+    render(<ReticulumSharedInstanceClientBanner onRestartStack={onRestartStack} />);
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'connectionPanel.reticulumSharedInstance.disableShareAria',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('put failed')).toBeInTheDocument();
+    });
+    expect(onRestartStack).not.toHaveBeenCalled();
   });
 });

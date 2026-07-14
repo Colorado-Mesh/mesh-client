@@ -46,7 +46,10 @@ export interface ReticulumSidecarStartOptions {
   reuseIfRunning?: boolean;
 }
 
-/** One issue from offline `validate-config` / config audit. */
+/**
+ * One issue from offline `validate-config` / config audit.
+ * Shape matches renderer `ReticulumConfigAuditIssue` (severity may be untyped on the wire).
+ */
 export interface ReticulumConfigValidateIssue {
   kind: string;
   severity: string;
@@ -55,6 +58,9 @@ export interface ReticulumConfigValidateIssue {
   message: string;
   repair_kind?: string | null;
 }
+
+/** Alias — prefer this name when mapping audit/validate issues in shared code. */
+export type ReticulumConfigAuditIssueDto = ReticulumConfigValidateIssue;
 
 /** Result of `reticulum:validateConfig` (bundled sidecar one-shot). */
 export interface ReticulumConfigValidateResult {

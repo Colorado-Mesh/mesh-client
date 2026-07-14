@@ -3,7 +3,10 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    t: (key: string, opts?: Record<string, unknown>) =>
+      opts && Object.keys(opts).length > 0 ? `${key}:${JSON.stringify(opts)}` : key,
+  }),
 }));
 
 const refreshIdentity = vi.fn();
@@ -181,6 +184,63 @@ describe('ReticulumNetworkPanel', () => {
 
     expect(
       await screen.findByText('connectionPanel.reticulumIdentity.replaceIdentityConfirmTitle'),
+    ).toBeInTheDocument();
+  });
+
+  it('renders Check config ok result via validateConfig', async () => {
+    const user = userEvent.setup();
+    const validateConfig = vi.fn().mockResolvedValue({ ok: true, issues: [] });
+    window.electronAPI.reticulum.validateConfig = validateConfig;
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    await user.click(
+      screen.getByRole('button', { name: 'networkPanel.reticulumConfigValidate.aria' }),
+    );
+    await waitFor(() => {
+      expect(validateConfig).toHaveBeenCalled();
+    });
+    expect(await screen.findByText('networkPanel.reticulumConfigValidate.ok')).toBeInTheDocument();
+  });
+
+  it('renders Check config issues via audit i18n keys', async () => {
+    const user = userEvent.setup();
+    window.electronAPI.reticulum.validateConfig = vi.fn().mockResolvedValue({
+      ok: false,
+      issues: [
+        {
+          kind: 'shared_instance_client',
+          severity: 'warning',
+          message: 'English sidecar message',
+          interface_name: null,
+        },
+      ],
+    });
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    await user.click(
+      screen.getByRole('button', { name: 'networkPanel.reticulumConfigValidate.aria' }),
+    );
+    expect(
+      await screen.findByText(
+        'diagnosticsPanel.reticulum.audit.shared_instance_client:{"name":"","message":"English sidecar message"}',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('renders Check config failure when validateConfig throws', async () => {
+    const user = userEvent.setup();
+    window.electronAPI.reticulum.validateConfig = vi
+      .fn()
+      .mockRejectedValue(new Error('spawn failed'));
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    await user.click(
+      screen.getByRole('button', { name: 'networkPanel.reticulumConfigValidate.aria' }),
+    );
+    expect(
+      await screen.findByText(
+        'networkPanel.reticulumConfigValidate.failed:{"message":"spawn failed"}',
+      ),
     ).toBeInTheDocument();
   });
 });

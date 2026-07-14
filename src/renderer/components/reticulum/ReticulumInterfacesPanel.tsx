@@ -1966,7 +1966,9 @@ function InterfacesSection({
                         }}
                         className="text-xs text-sky-400 hover:underline disabled:opacity-40"
                       >
-                        {t('connectionPanel.reticulumInterfaces.auditRepair')}
+                        {repairKind === 'disable_share_instance'
+                          ? t('diagnosticsPanel.reticulum.action.disable_share_instance')
+                          : t('connectionPanel.reticulumInterfaces.auditRepair')}
                       </button>
                     ) : null}
                     {repairKind === 'disable' && help.isSystemManaged ? (
