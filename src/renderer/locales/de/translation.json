@@ -344,7 +344,15 @@
     "clearReticulumContactsDesc": "Entfernt jeden Eintrag aus dem Kontakte-Tab und der Sidecar-Kontaktliste. Ziele bleiben im Peers-Tab mit ihren Namen. Chatnachrichten bleiben erhalten. Kontakte erscheinen erneut, wenn du jemandem schreibst oder „Als Kontakt speichern“ verwendest.",
     "clearReticulumContactsConfirm": "Dadurch werden alle {{count}} Reticulum-LXMF-Kontakte dauerhaft gelöscht. Ziele bleiben im Peers-Tab; Nachrichten werden nicht gelöscht. Dies kann nicht rückgängig gemacht werden.",
     "clearReticulumContactsConfirmButton": "{{count}} Kontakte löschen",
-    "clearReticulumContactsButton": "Alle Kontakte löschen ({{count}})"
+    "clearReticulumContactsButton": "Alle Kontakte löschen ({{count}})",
+    "reticulumDestinationRetentionHint": "Begrenzt die SQLite LXMF-Kontakt-Meta und die In-Memory-Peers-Liste. Die Nabenpfadtabelle im Beiwagen kann immer noch mehr Routen enthalten als diese Kappe.",
+    "reticulumAutoPruneDestinations": "Reticulum-Ziele, die älter als sind, automatisch beschneiden",
+    "reticulumAutoPruneDestinationsLabel": "Ziele beim Start automatisch beschneiden, älter als",
+    "reticulumAutoPruneDestinationsDaysAria": "Ziele beim Start automatisch beschneiden, älter als {{days}} Tage",
+    "reticulumCapDestinations": "Cap total Reticulum Destinationen",
+    "reticulumCapDestinationsLabel": "Ziele / Peers im Speicher und SQLite begrenzen, zuletzt gehört halten",
+    "reticulumCapDestinationsCountAria": "Ziele begrenzen, zuletzt gehört behalten {{count}}",
+    "reticulumDestinationsUnit": "Touren"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

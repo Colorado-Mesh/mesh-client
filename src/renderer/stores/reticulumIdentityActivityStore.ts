@@ -25,6 +25,51 @@ function normalizeHash(hash: string): string {
   return hash.replace(/[^0-9a-f]/gi, '').toLowerCase();
 }
 
+const ACTIVITY_BATCH_FLUSH_MS = 500;
+const ACTIVITY_BATCH_MAX = 50;
+
+let pendingActivityByKey = new Map<string, ReticulumIdentityActivityRow>();
+let activityFlushTimer: ReturnType<typeof setTimeout> | null = null;
+
+function activityBatchKey(row: ReticulumIdentityActivityRow): string {
+  return `${row.destination_hash}\0${row.aspect}`;
+}
+
+async function flushPendingActivity(): Promise<void> {
+  activityFlushTimer = null;
+  if (pendingActivityByKey.size === 0) return;
+  const batch = [...pendingActivityByKey.values()];
+  pendingActivityByKey = new Map();
+  try {
+    const api = window.electronAPI?.db;
+    if (api?.upsertReticulumIdentityActivityBatch) {
+      await api.upsertReticulumIdentityActivityBatch(batch);
+    } else {
+      for (const row of batch) {
+        await api.upsertReticulumIdentityActivity(row);
+      }
+    }
+  } catch (e) {
+    console.warn('[reticulumIdentityActivityStore] batch upsert ' + errLikeToLogString(e));
+  }
+}
+
+function scheduleActivityFlush(): void {
+  if (activityFlushTimer != null) return;
+  activityFlushTimer = setTimeout(() => {
+    void flushPendingActivity();
+  }, ACTIVITY_BATCH_FLUSH_MS);
+}
+
+/** Test helper — reset activity IPC batch buffer. */
+export function resetReticulumIdentityActivityBatchForTests(): void {
+  pendingActivityByKey = new Map();
+  if (activityFlushTimer != null) {
+    clearTimeout(activityFlushTimer);
+    activityFlushTimer = null;
+  }
+}
+
 export const useReticulumIdentityActivityStore = create<ReticulumIdentityActivityStoreState>(
   (set, get) => ({
     byDestination: new Map(),
@@ -47,17 +92,22 @@ export const useReticulumIdentityActivityStore = create<ReticulumIdentityActivit
       }
     },
 
-    upsertActivity: async (row) => {
+    upsertActivity: (row) => {
       const key = normalizeHash(row.destination_hash);
       const normalized: ReticulumIdentityActivityRow = {
         ...row,
         destination_hash: key,
         aspect: row.aspect.slice(0, 128),
       };
-      try {
-        await window.electronAPI.db.upsertReticulumIdentityActivity(normalized);
-      } catch (e) {
-        console.warn('[reticulumIdentityActivityStore] upsert ' + errLikeToLogString(e));
+      pendingActivityByKey.set(activityBatchKey(normalized), normalized);
+      if (pendingActivityByKey.size >= ACTIVITY_BATCH_MAX) {
+        if (activityFlushTimer != null) {
+          clearTimeout(activityFlushTimer);
+          activityFlushTimer = null;
+        }
+        void flushPendingActivity();
+      } else {
+        scheduleActivityFlush();
       }
       set((s) => {
         const next = new Map(s.byDestination);
@@ -66,6 +116,7 @@ export const useReticulumIdentityActivityStore = create<ReticulumIdentityActivit
         next.set(key, [normalized, ...filtered]);
         return { byDestination: trimMapToMaxSize(next, MAX_RETICULUM_IDENTITY_DESTINATIONS) };
       });
+      return Promise.resolve();
     },
 
     getActivity: (destinationHash) => {

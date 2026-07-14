@@ -382,6 +382,8 @@ describe('app_settings table + message retention defaults (schema sync)', () => 
     );
     expect(SCHEMA_SYNC_SOURCE).toContain("'meshtasticMessageRetentionEnabled', '1'");
     expect(SCHEMA_SYNC_SOURCE).toContain("'meshtasticMessageRetentionCount', '4000'");
+    expect(SCHEMA_SYNC_SOURCE).toContain("'reticulumMessageRetentionEnabled', '1'");
+    expect(SCHEMA_SYNC_SOURCE).toContain("'reticulumMessageRetentionCount', '4000'");
     expect(SCHEMA_SYNC_SOURCE).toContain("'meshcoreMessageRetentionEnabled', '1'");
     expect(SCHEMA_SYNC_SOURCE).toContain("'meshcoreMessageRetentionCount', '4000'");
     expect(SCHEMA_SYNC_SOURCE).toMatch(
@@ -399,6 +401,8 @@ describe('app_settings table + message retention defaults (schema sync)', () => 
     expect(INDEX_SOURCE).toContain('APP_SETTINGS_ALLOWED_KEYS');
     expect(INDEX_SOURCE).toContain('meshtasticMessageRetentionEnabled');
     expect(INDEX_SOURCE).toContain('meshtasticMessageRetentionCount');
+    expect(INDEX_SOURCE).toContain('reticulumMessageRetentionEnabled');
+    expect(INDEX_SOURCE).toContain('reticulumMessageRetentionCount');
     expect(INDEX_SOURCE).toContain('meshcoreMessageRetentionEnabled');
     expect(INDEX_SOURCE).toContain('meshcoreMessageRetentionCount');
     expect(INDEX_SOURCE).toContain('reduceMotion');

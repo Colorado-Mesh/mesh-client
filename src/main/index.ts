@@ -3360,6 +3360,8 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshtasticMessageRetentionCount',
   'meshcoreMessageRetentionEnabled',
   'meshcoreMessageRetentionCount',
+  'reticulumMessageRetentionEnabled',
+  'reticulumMessageRetentionCount',
   'locale',
   'mapBasemapId',
   'meshtasticMqttClientId',

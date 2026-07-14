@@ -344,7 +344,15 @@
     "clearReticulumContactsDesc": "删除“联系人”选项卡和 Sidecar 联系人列表中的所有条目。目标保留在 Peers 选项卡上并保留其名称。聊天消息会保留。当你向某人发消息或使用“另存为联系人”时，联系人会重新出现。",
     "clearReticulumContactsConfirm": "这将永久清除全部 {{count}} 个 Reticulum LXMF 联系人。目标仍保留在 Peers 选项卡上；消息不会被删除。此操作无法撤消。",
     "clearReticulumContactsConfirmButton": "清除 {{count}} 个联系人",
-    "clearReticulumContactsButton": "清除所有联系人（ {{count}} ）"
+    "clearReticulumContactsButton": "清除所有联系人（ {{count}} ）",
+    "reticulumDestinationRetentionHint": "限制SQLite LXMF联系人元数据和内存中的对等项列表。Sidecar中的集线器路径表仍然可以容纳比此CAP更多的路由。",
+    "reticulumAutoPruneDestinations": "自动清理早于以下天数的 Reticulum 目的地",
+    "reticulumAutoPruneDestinationsLabel": "启动时自动修剪目标，早于",
+    "reticulumAutoPruneDestinationsDaysAria": "启动时自动修剪目的地，早于{{days}}天",
+    "reticulumCapDestinations": "限制 Reticulum 目的地总数",
+    "reticulumCapDestinationsLabel": "在内存和SQLite中封装目标/对等项，保留最近听到的内容",
+    "reticulumCapDestinationsCountAria": "加盖目的地，保留最近听到的{{count}}",
+    "reticulumDestinationsUnit": "目的地"
   },
   "aria": {
     "closeDialog": "关闭对话框",

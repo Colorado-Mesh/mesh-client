@@ -68,6 +68,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:pruneMeshcoreMessagesByCount', maxCount),
     pruneReticulumMessagesByCount: (maxCount: number) =>
       ipcRenderer.invoke('db:pruneReticulumMessagesByCount', maxCount),
+    pruneReticulumDestinationsByCount: (maxCount: number) =>
+      ipcRenderer.invoke('db:pruneReticulumDestinationsByCount', maxCount),
+    deleteReticulumDestinationsByAge: (days: number) =>
+      ipcRenderer.invoke('db:deleteReticulumDestinationsByAge', days),
+    pruneReticulumIdentityActivityByAge: (days: number) =>
+      ipcRenderer.invoke('db:pruneReticulumIdentityActivityByAge', days),
     deleteNodesBatch: (nodeIds: number[]) => ipcRenderer.invoke('db:deleteNodesBatch', nodeIds),
     clearMessagesByChannel: (channel: number) =>
       ipcRenderer.invoke('db:clearMessagesByChannel', channel),
@@ -168,6 +174,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       last_seen: number;
       hops?: number | null;
     }) => ipcRenderer.invoke('db:upsertReticulumIdentityActivity', row),
+    upsertReticulumIdentityActivityBatch: (
+      rows: {
+        destination_hash: string;
+        aspect: string;
+        identity_hash?: string | null;
+        last_seen: number;
+        hops?: number | null;
+      }[],
+    ) => ipcRenderer.invoke('db:upsertReticulumIdentityActivityBatch', rows),
     saveMeshcoreContact: (contact: {
       node_id: number;
       public_key: string;

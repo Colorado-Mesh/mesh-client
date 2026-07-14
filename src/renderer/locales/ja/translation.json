@@ -344,7 +344,15 @@
     "clearReticulumContactsDesc": "連絡先タブとサイドカーの連絡先リストからすべての項目を削除します。宛先はPeersタブに名前付きで残ります。チャットメッセージは保持されます。誰かにメッセージを送るか「連絡先として保存」を使うと、連絡先が再表示されます。",
     "clearReticulumContactsConfirm": "これにより{{count}}件すべてのReticulum LXMF連絡先が完全に消去されます。宛先はPeersタブに残り、メッセージは削除されません。この操作は元に戻せません。",
     "clearReticulumContactsConfirmButton": "{{count}}件の連絡先を消去",
-    "clearReticulumContactsButton": "すべての連絡先を消去（ {{count}} ）"
+    "clearReticulumContactsButton": "すべての連絡先を消去（ {{count}} ）",
+    "reticulumDestinationRetentionHint": "SQLite LXMF連絡先メタとメモリ内のピアリストを制限します。サイドカー内のハブパステーブルは、このキャップよりも多くのルートを保持し得る。",
+    "reticulumAutoPruneDestinations": "指定日数より古い Reticulum 宛先を自動整理",
+    "reticulumAutoPruneDestinationsLabel": "起動時に自動プルーニングされた宛先、より古い",
+    "reticulumAutoPruneDestinationsDaysAria": "起動時に目的地を自動プルーニングします。{{days}}日以上経過しています",
+    "reticulumCapDestinations": "Cap total Reticulum destinations",
+    "reticulumCapDestinationsLabel": "メモリとSQLiteで宛先/ピアをキャップし、最新の音声を保持する",
+    "reticulumCapDestinationsCountAria": "目的地をキャップし、最新の{{count}}をキープしてください",
+    "reticulumDestinationsUnit": "目的地"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",

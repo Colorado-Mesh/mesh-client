@@ -344,7 +344,15 @@
     "clearReticulumContactsDesc": "Usuwa każdy wpis z karty Kontakty i listy kontaktów sidecara. Destynacje pozostają na karcie Peers ze swoimi nazwami. Wiadomości czatu są zachowane. Kontakty pojawiają się ponownie, gdy napiszesz do kogoś lub użyjesz Zapisz jako kontakt.",
     "clearReticulumContactsConfirm": "Spowoduje to trwałe usunięcie wszystkich {{count}} kontaktów Reticulum LXMF. Destynacje pozostają na karcie Peers; wiadomości nie są usuwane. Tej czynności nie można cofnąć.",
     "clearReticulumContactsConfirmButton": "Wyczyść {{count}} kontaktów",
-    "clearReticulumContactsButton": "Wyczyść wszystkie kontakty ({{count}})"
+    "clearReticulumContactsButton": "Wyczyść wszystkie kontakty ({{count}})",
+    "reticulumDestinationRetentionHint": "Ogranicza meta kontakty SQLite LXMF i listę partnerów w pamięci. Stół ścieżki piasty w wózku bocznym może nadal obsługiwać więcej tras niż ta nakładka.",
+    "reticulumAutoPruneDestinations": "Automatyczne przycinanie miejsc docelowych Reticulum starszych niż",
+    "reticulumAutoPruneDestinationsLabel": "Automatyczne przycinanie miejsc docelowych podczas uruchamiania, starszych niż",
+    "reticulumAutoPruneDestinationsDaysAria": "Automatyczne przycinanie miejsc docelowych przy starcie, starsze niż {{days}} dni",
+    "reticulumCapDestinations": "Limit całkowitej liczby miejsc docelowych Reticulum",
+    "reticulumCapDestinationsLabel": "Ograniczaj miejsca docelowe / równorzędne w pamięci i SQLite, zachowaj najnowsze informacje",
+    "reticulumCapDestinationsCountAria": "Ogranicz miejsca docelowe, zachowaj ostatnio usłyszane {{count}}",
+    "reticulumDestinationsUnit": "cel"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

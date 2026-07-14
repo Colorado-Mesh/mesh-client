@@ -639,11 +639,17 @@ impl StackHandle {
         Ok(cleared)
     }
 
+    /// List path-table peers. When `force_refresh` is true, always query live transport;
+    /// otherwise the live bridge may serve a short-TTL maintained cache.
     pub async fn list_peers(&self) -> Vec<PeerRow> {
+        self.list_peers_with_refresh(false).await
+    }
+
+    pub async fn list_peers_with_refresh(&self, force_refresh: bool) -> Vec<PeerRow> {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             let announce_labels = live.display_name_snapshot();
-            let fetched = live.fetch_peers().await;
+            let fetched = live.fetch_peers(force_refresh).await;
             let mut inner = self.inner.write().await;
             let mut peers = merge_live_peer_fetch(&mut inner.peers, fetched);
             let mut name_by_hash = topology::build_topology_name_map(
@@ -655,6 +661,7 @@ impl StackHandle {
             topology::overlay_peer_display_names(&mut peers, &name_by_hash);
             return peers;
         }
+        let _ = force_refresh;
         let inner = self.inner.read().await;
         let mut peers = inner.peers.clone();
         let name_by_hash =
@@ -1242,6 +1249,13 @@ fn sync_live_peer_cache(cache: &mut Vec<PeerRow>, fetched: Vec<PeerRow>) -> Vec<
         *cache = Vec::new();
         return Vec::new();
     }
+    let prev_names: std::collections::HashMap<String, String> = cache
+        .iter()
+        .filter_map(|p| {
+            let name = p.display_name.as_ref()?.clone();
+            Some((p.destination_hash.to_lowercase(), name))
+        })
+        .collect();
     let fetched_hashes: std::collections::HashSet<String> = fetched
         .iter()
         .map(|p| p.destination_hash.to_lowercase())
@@ -1255,11 +1269,8 @@ fn sync_live_peer_cache(cache: &mut Vec<PeerRow>, fetched: Vec<PeerRow>) -> Vec<
         .into_iter()
         .map(|mut peer| {
             if peer.display_name.is_none() {
-                if let Some(prev) = cache
-                    .iter()
-                    .find(|p| p.destination_hash.eq_ignore_ascii_case(&peer.destination_hash))
-                {
-                    peer.display_name = prev.display_name.clone();
+                if let Some(name) = prev_names.get(&peer.destination_hash.to_lowercase()) {
+                    peer.display_name = Some(name.clone());
                 }
             }
             peer
@@ -1355,6 +1366,34 @@ mod tests {
         let fetched = sync_live_peer_cache(&mut cache, vec![]);
         assert!(fetched.is_empty());
         assert!(cache.is_empty());
+    }
+
+    #[test]
+    fn sync_live_peer_cache_preserves_names_via_hashmap() {
+        let mut cache = vec![PeerRow {
+            destination_hash: "AaBbCcDd".into(),
+            display_name: Some("Alice".into()),
+            hops: Some(1),
+            last_seen: None,
+            interface: None,
+            path_hash: None,
+            via_hash: None,
+        }];
+        let fetched = sync_live_peer_cache(
+            &mut cache,
+            vec![PeerRow {
+                destination_hash: "aabbccdd".into(),
+                display_name: None,
+                hops: Some(2),
+                last_seen: Some(9),
+                interface: Some("tcp".into()),
+                path_hash: None,
+                via_hash: None,
+            }],
+        );
+        assert_eq!(fetched.len(), 1);
+        assert_eq!(fetched[0].display_name.as_deref(), Some("Alice"));
+        assert_eq!(fetched[0].hops, Some(2));
     }
 
     #[test]

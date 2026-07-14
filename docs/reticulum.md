@@ -99,7 +99,7 @@ The **Map** tab shows **local** RMAP v4 discovery data — interfaces your stack
 
 **Publish settings (Network → RMAP v4 discovery):** announce interval **60–1440 min** (default **360**); optional height (meters) and `reachable_on` (max 256 chars). LoRa/BLE publish auto-enables `enable_transport` and the **`rmap.world:4242`** hub. Stack restart confirm after enabling publish.
 
-**Performance / memory:** Renderer mirrors discovery rows in `reticulumDiscoveryMapStore` (in-memory only; capped at **2,000** newest rows with client-side 7-day `last_heard` eviction). Peer store capped at **10,000** entries on refresh. Leaflet uses `preferCanvas`; tile layer `keepBuffer={1}`. No marker clustering — typical scale is bounded by sidecar TTL. Stores clear on disconnect and unexpected sidecar stop.
+**Performance / memory:** Renderer mirrors discovery rows in `reticulumDiscoveryMapStore` (in-memory only; capped at **2,000** newest rows with client-side 7-day `last_heard` eviction). Path-table peers apply **incremental** `peers_updated` / announce patches (50ms batch); full `GET /api/v1/peers` runs on connect, manual Refresh (`?refresh=1`), stack restart, and a slow safety poll (30s, or 60s above 2,000 peers). In-memory hard ceiling **100,000**; App tab destination cap defaults to **10,000** (max **50,000**) and age prune for SQLite contact meta. Topology auto-refresh pauses under large meshes; graph render caps at 2,000 peers. Leaflet uses `preferCanvas`; tile layer `keepBuffer={1}`. Stores clear on disconnect and unexpected sidecar stop.
 
 **Config audit kinds:** `rmap_missing_coordinates`, `rmap_no_tcp_hub`, `rmap_transport_disabled`, `rmap_i2p_not_connectable`.
 
@@ -222,12 +222,12 @@ When multiple enabled local RNode interfaces are connected, the interface list s
 
 ## Peers and topology
 
-- **`GET /api/v1/peers`:** live RNS path table when the sidecar is built with the full stack; cached on fetch failure
-- **After a DB wipe:** peer rows refill only as destinations announce again (or path responses arrive). Connecting to the same hub does **not** dump every known destination instantly. mesh-client refreshes Peers immediately on `announce.received` / path-table `peers_updated` (leading + short trailing coalesce), with a 30s poll as safety net.
+- **`GET /api/v1/peers`:** live RNS path table when the sidecar is built with the full stack; may serve a short-TTL maintenance cache unless `?refresh=1` (manual Refresh); falls back to last cache on live query failure
+- **After a DB wipe:** peer rows refill only as destinations announce again (or path responses arrive). Connecting to the same hub does **not** dump every known destination instantly. mesh-client applies announces / `peers_updated` patches incrementally (batched), with a full peer dump on connect, manual Refresh, stack restart, and a 30s safety poll (60s when the path table is large).
 - **Your node** does not appear as a peer row; identity hash is under **Network → Identity**; topology uses a synthetic **You** center node
 - **`interface` column:** path learned via that interface, not “devices on this serial port”
 - **Display names / aliases:** sidecar peers may ship without labels; mesh-client enriches from (in order) sidecar `display_name`, **LXMF / Nomad announce** `app_data` (msgpack, JSON `server_name`, or UTF-8 — parsed in the sidecar; RMAP/geo JSON blobs are rejected), SQLite `reticulum_destinations.display_name`, and Nomad Network node list during `refreshReticulumPeersFromSidecar`. Renderer display (`sanitizeReticulumDisplayName`) mirrors sidecar rules for already-stored bad values. Inbound LXMF ingest (`reticulumIngest.ts`) treats a `sender_name` equal to the destination hash prefix as a **placeholder**, not a real alias — contact upserts omit it. SQLite upsert (`db:upsertReticulumDestination`) **refuses to overwrite** an existing name with a hash-prefix alias (case-insensitive guard on the first 12 hex chars).
-- **Topology:** one next hop per destination (`via_hash`); sidecar infers `self → relay` when needed; BFS layout with hop fallback
+- **Topology:** one next hop per destination (`via_hash`); sidecar infers `self → relay` when needed; force layout with hop fallback; auto-refresh debounced and paused under large path tables (manual Refresh always available)
 
 ---
 

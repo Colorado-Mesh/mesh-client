@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ReticulumPeer } from '@/shared/reticulum-types';
 
 import {
+  cheapReticulumPeerLabel,
   filterPreparedReticulumPeerRows,
   prepareReticulumPeerRows,
   sortPreparedReticulumPeerRows,
@@ -18,6 +19,15 @@ function peer(partial: Partial<ReticulumPeer> & { destination_hash: string }): R
 }
 
 describe('reticulumPeerListRows', () => {
+  it('cheapReticulumPeerLabel prefers display_name then hash prefix', () => {
+    expect(
+      cheapReticulumPeerLabel(peer({ destination_hash: 'aabbccddeeff', display_name: 'Alice' })),
+    ).toBe('Alice');
+    expect(cheapReticulumPeerLabel(peer({ destination_hash: 'aabbccddeeff0011' }))).toBe(
+      'aabbccddeeff',
+    );
+  });
+
   it('prepares label fields once per peer for filter and sort', () => {
     const labelFor = vi.fn((p: ReticulumPeer) => p.display_name ?? p.destination_hash);
     const peers = [

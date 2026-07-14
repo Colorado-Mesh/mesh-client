@@ -4,9 +4,12 @@ import type { ReticulumContact } from '@/shared/reticulum-types';
 
 import {
   applyReticulumAnnounceReceivedOptimistic,
+  applyReticulumPeerPatchesNow,
+  applyReticulumPeersUpdatedPatches,
   capReticulumPeerMaps,
   mergeReticulumPeerMaps,
   refreshReticulumPeersFromSidecar,
+  resetReticulumPeerPatchBufferForTests,
   resetReticulumPeerRefreshSingleFlightForTests,
   resolveReticulumPeerLabel,
   useReticulumPeerStore,
@@ -233,12 +236,49 @@ describe('mergeReticulumPeerMaps', () => {
 describe('reticulumPeerStore', () => {
   beforeEach(() => {
     resetReticulumPeerRefreshSingleFlightForTests();
+    resetReticulumPeerPatchBufferForTests();
     useReticulumPeerStore.setState({
       peers: new Map(),
       contacts: new Map(),
+      peerAppearanceByHash: new Map(),
       lastRefreshAt: null,
+      peersRevision: 0,
     });
     vi.restoreAllMocks();
+  });
+
+  it('applies peers_updated patches without a full Map replacePeers path', () => {
+    applyReticulumPeersUpdatedPatches({
+      added: ['aa'.repeat(16)],
+      patches: [
+        {
+          destination_hash: 'aa'.repeat(16),
+          display_name: 'Patched',
+          hops: 2,
+          last_seen: 42,
+        },
+      ],
+      count: 1,
+    });
+    applyReticulumPeerPatchesNow([]);
+    const peer = useReticulumPeerStore.getState().peers.get('aa'.repeat(16));
+    expect(peer?.display_name).toBe('Patched');
+    expect(peer?.hops).toBe(2);
+  });
+
+  it('batches announce optimistic updates via patch buffer', () => {
+    vi.useFakeTimers();
+    applyReticulumAnnounceReceivedOptimistic({
+      destination_hash: 'bb'.repeat(16),
+      display_name: 'Announced',
+      hops: 1,
+    });
+    expect(useReticulumPeerStore.getState().peers.size).toBe(0);
+    vi.advanceTimersByTime(50);
+    expect(useReticulumPeerStore.getState().peers.get('bb'.repeat(16))?.display_name).toBe(
+      'Announced',
+    );
+    vi.useRealTimers();
   });
 
   it('toggleFavorite persists to SQLite', async () => {
@@ -475,6 +515,7 @@ describe('reticulumPeerStore', () => {
       display_name: 'Hub Peer',
       hops: 1,
     });
+    applyReticulumPeerPatchesNow([]);
     const peer = useReticulumPeerStore.getState().peers.get('aabbccddeeff00112233445566778899');
     expect(peer?.display_name).toBe('Hub Peer');
     expect(peer?.hops).toBe(1);
@@ -485,6 +526,7 @@ describe('reticulumPeerStore', () => {
     applyReticulumAnnounceReceivedOptimistic({
       destination_hash: '11223344556677889900aabbccddeeff',
     });
+    applyReticulumPeerPatchesNow([]);
     const peer = useReticulumPeerStore.getState().peers.get('11223344556677889900aabbccddeeff');
     expect(peer).toBeDefined();
     expect(peer?.display_name).toBeNull();
@@ -497,6 +539,7 @@ describe('reticulumPeerStore', () => {
       display_name: 'Hub Peer',
       hops: 1,
     });
+    applyReticulumPeerPatchesNow([]);
     vi.stubGlobal('window', {
       electronAPI: {
         reticulum: {

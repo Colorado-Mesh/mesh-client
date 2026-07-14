@@ -344,7 +344,15 @@
     "clearReticulumContactsDesc": "Supprime toutes les entrées de l’onglet Contacts et de la liste de contacts du side-car. Les destinations restent dans l’onglet Pairs avec leurs noms. Les messages de chat sont conservés. Les contacts réapparaissent lorsque vous écrivez à quelqu’un ou utilisez Enregistrer comme contact.",
     "clearReticulumContactsConfirm": "Cela effacera définitivement les {{count}} contacts Reticulum LXMF. Les destinations restent dans l’onglet Pairs ; les messages ne sont pas supprimés. Cette action est irréversible.",
     "clearReticulumContactsConfirmButton": "Effacer {{count}} contacts",
-    "clearReticulumContactsButton": "Effacer tous les contacts ({{count}})"
+    "clearReticulumContactsButton": "Effacer tous les contacts ({{count}})",
+    "reticulumDestinationRetentionHint": "Limite les méta-contacts SQLite LXMF et la liste des pairs en mémoire. La table de chemin du moyeu dans le side-car peut encore contenir plus d'itinéraires que ce capuchon.",
+    "reticulumAutoPruneDestinations": "Élaguer automatiquement les destinations Reticulum plus anciennes que",
+    "reticulumAutoPruneDestinationsLabel": "Destinations à pruneau automatique au démarrage, plus anciennes que",
+    "reticulumAutoPruneDestinationsDaysAria": "Destinations à pruneau automatique au démarrage, datant de plus de {{days}} jours",
+    "reticulumCapDestinations": "Plafond total des destinations Reticulum",
+    "reticulumCapDestinationsLabel": "Cap destinations / pairs en mémoire et SQLite, garder le plus récemment entendu",
+    "reticulumCapDestinationsCountAria": "Cap destinations, garder le plus récemment entendu {{count}}",
+    "reticulumDestinationsUnit": "destinations"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

@@ -344,7 +344,15 @@
     "clearReticulumContactsDesc": "Rimuove ogni voce dalla scheda Contatti e dall’elenco contatti del sidecar. Le destinazioni restano nella scheda Peer con i loro nomi. I messaggi della chat vengono conservati. I contatti riappaiono quando invii un messaggio o usi Salva come contatto.",
     "clearReticulumContactsConfirm": "Questo cancellerà definitivamente tutti i {{count}} contatti Reticulum LXMF. Le destinazioni restano nella scheda Peer; i messaggi non vengono eliminati. L’operazione non può essere annullata.",
     "clearReticulumContactsConfirmButton": "Cancella {{count}} contatti",
-    "clearReticulumContactsButton": "Cancella tutti i contatti ({{count}})"
+    "clearReticulumContactsButton": "Cancella tutti i contatti ({{count}})",
+    "reticulumDestinationRetentionHint": "Limita il meta contatto SQLite LXMF e l'elenco Peers in memoria. La tabella del percorso del mozzo nel sidecar può ancora contenere più percorsi di questo tappo.",
+    "reticulumAutoPruneDestinations": "Rimozione automatica delle destinazioni Reticulum più vecchie di",
+    "reticulumAutoPruneDestinationsLabel": "Potenzia automaticamente le destinazioni all'avvio, più vecchie di",
+    "reticulumAutoPruneDestinationsDaysAria": "Potenzia automaticamente le destinazioni all'avvio, più vecchie di {{days}} giorni",
+    "reticulumCapDestinations": "Limite totale destinazioni Reticulum",
+    "reticulumCapDestinationsLabel": "CAP destinazioni / peer in memoria e SQLite, mantieni le voci più recenti",
+    "reticulumCapDestinationsCountAria": "Destinazioni CAP, mantieni l'ascolto più recente {{count}}",
+    "reticulumDestinationsUnit": "destinazioni"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

@@ -344,7 +344,15 @@
     "clearReticulumContactsDesc": "Remove todas as entradas da guia Contatos e da lista de contatos do sidecar. Os destinos permanecem na guia Peers com seus nomes. As mensagens de bate-papo são mantidas. Os contatos reaparecem quando você envia uma mensagem ou usa Salvar como contato.",
     "clearReticulumContactsConfirm": "Isso limpará permanentemente todos os {{count}} contatos Reticulum LXMF. Os destinos permanecem na guia Peers; as mensagens não são excluídas. Isso não pode ser desfeito.",
     "clearReticulumContactsConfirmButton": "Limpar {{count}} contatos",
-    "clearReticulumContactsButton": "Limpar todos os contatos ({{count}})"
+    "clearReticulumContactsButton": "Limpar todos os contatos ({{count}})",
+    "reticulumDestinationRetentionHint": "Limita a meta de contato SQLite LXMF e a lista de pares na memória. A tabela de caminho do hub no sidecar ainda pode conter mais rotas do que este limite.",
+    "reticulumAutoPruneDestinations": "Auto-podar destinos Reticulum anteriores a",
+    "reticulumAutoPruneDestinationsLabel": "Destinos de ajuste automático na inicialização, anteriores a",
+    "reticulumAutoPruneDestinationsDaysAria": "Destinos de ajuste automático na inicialização, com mais de {{days}} dias",
+    "reticulumCapDestinations": "Limite total de destinos Reticulum",
+    "reticulumCapDestinationsLabel": "Limite destinos / pares na memória e SQLite, mantenha-se mais recentemente ouvido",
+    "reticulumCapDestinationsCountAria": "Limite os destinos, mantenha-se ouvido mais recentemente {{count}}",
+    "reticulumDestinationsUnit": "internacionais"
   },
   "aria": {
     "closeDialog": "Fechar janela",

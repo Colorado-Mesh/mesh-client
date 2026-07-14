@@ -344,7 +344,15 @@
     "clearReticulumContactsDesc": "Удаляет все записи из вкладки «Контакты» и списка контактов sidecar. Назначения остаются на вкладке «Peers» со своими именами. Сообщения чата сохраняются. Контакты снова появляются, когда вы пишете кому-то или используете «Сохранить как контакт».",
     "clearReticulumContactsConfirm": "Это навсегда удалит все {{count}} контактов Reticulum LXMF. Назначения останутся на вкладке «Peers»; сообщения не удаляются. Это действие нельзя отменить.",
     "clearReticulumContactsConfirmButton": "Очистить {{count}} контактов",
-    "clearReticulumContactsButton": "Очистить все контакты ({{count}})"
+    "clearReticulumContactsButton": "Очистить все контакты ({{count}})",
+    "reticulumDestinationRetentionHint": "Ограничивает мета-контакт SQLite LXMF и список одноранговых узлов в памяти. Таблица путей концентратора в коляске может по-прежнему содержать больше маршрутов, чем эта крышка.",
+    "reticulumAutoPruneDestinations": "Автоматическое удаление пунктов назначения Reticulum старше",
+    "reticulumAutoPruneDestinationsLabel": "Автоматическое удаление пунктов назначения при запуске, старше",
+    "reticulumAutoPruneDestinationsDaysAria": "Автоматическое удаление пунктов назначения при запуске старше {{days}} дн.",
+    "reticulumCapDestinations": "Ограничить общее число назначений Reticulum",
+    "reticulumCapDestinationsLabel": "Ограничьте места назначения / одноранговые узлы в памяти и SQLite, держите последний услышанный",
+    "reticulumCapDestinationsCountAria": "Ограничьте направления, следите за новостями {{count}}",
+    "reticulumDestinationsUnit": "Направлений"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",

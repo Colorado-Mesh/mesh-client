@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
+use serde::Deserialize;
 
 use crate::stack::{LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, StackHandle};
 
@@ -37,8 +38,22 @@ pub async fn clear_contacts(State(stack): State<Arc<StackHandle>>) -> Json<serde
     }
 }
 
-pub async fn list_peers(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
-    let peers = stack.list_peers().await;
+#[derive(Debug, Deserialize)]
+pub struct ListPeersQuery {
+    /// When `1` or `true`, force a live GetPathTable (manual Refresh).
+    #[serde(default)]
+    pub refresh: Option<String>,
+}
+
+pub async fn list_peers(
+    State(stack): State<Arc<StackHandle>>,
+    Query(q): Query<ListPeersQuery>,
+) -> Json<serde_json::Value> {
+    let force = matches!(
+        q.refresh.as_deref().map(str::trim),
+        Some("1") | Some("true") | Some("yes")
+    );
+    let peers = stack.list_peers_with_refresh(force).await;
     Json(serde_json::json!({ "peers": peers }))
 }
 

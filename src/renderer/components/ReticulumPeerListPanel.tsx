@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as NodeListPanel */
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { MessageCircle, RefreshCw, Star } from 'lucide-react-motion';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -13,7 +13,9 @@ import {
 } from '@/renderer/lib/reticulum/destHash';
 import { parseReticulumDestinationInput } from '@/renderer/lib/reticulum/reticulumDestinationInput';
 import {
+  cheapReticulumPeerLabel,
   filterPreparedReticulumPeerRows,
+  type PreparedReticulumPeerRow,
   prepareReticulumPeerRows,
   RETICULUM_PEER_ROW_HEIGHT_PX,
   RETICULUM_PEER_VIRTUALIZE_THRESHOLD,
@@ -68,6 +70,100 @@ function peerHashToNodeNum(hash: string): number {
   return nodeId;
 }
 
+interface PeerTableRowProps {
+  prepared: PreparedReticulumPeerRow;
+  activeTab: PeerListTab;
+  busy: boolean;
+  contacted: boolean;
+  showIcon: boolean;
+  iconName?: string | null;
+  iconColor?: string | null;
+  displayLabel: string;
+  formatPeerActivity: (peer: ReticulumPeer) => string;
+  onPeerClick: (hash: string) => void;
+  onToggleFavorite: (peer: ReticulumPeer) => void;
+  renderActionButtons: (peer: ReticulumPeer, busy: boolean) => ReactNode;
+  t: (key: string) => string;
+}
+
+const PeerTableRow = memo(function PeerTableRow({
+  prepared,
+  activeTab,
+  busy,
+  contacted,
+  showIcon,
+  iconName,
+  iconColor,
+  displayLabel,
+  formatPeerActivity,
+  onPeerClick,
+  onToggleFavorite,
+  renderActionButtons,
+  t,
+}: PeerTableRowProps) {
+  const peer = prepared.peer;
+  return (
+    <tr
+      className="cursor-pointer border-b border-gray-800 hover:bg-gray-900/60"
+      onClick={() => {
+        onPeerClick(peer.destination_hash);
+      }}
+    >
+      <td className="max-w-[10rem] truncate py-2 pr-2 pl-2 font-mono" title={peer.destination_hash}>
+        <span className="inline-flex items-center gap-1.5">
+          {showIcon ? (
+            <ReticulumProfileIcon iconName={iconName} iconColor={iconColor} size={14} />
+          ) : null}
+          <span className="truncate">{displayLabel}</span>
+        </span>
+      </td>
+      {activeTab === 'peers' ? (
+        <>
+          <td className="py-2 pr-2">
+            <span
+              className={
+                contacted
+                  ? 'bg-readable-green/20 text-readable-green rounded px-1.5 py-0.5 text-[10px] font-medium'
+                  : 'text-muted text-[10px]'
+              }
+            >
+              {contacted ? t('peerListPanel.contactYes') : t('peerListPanel.contactNo')}
+            </span>
+          </td>
+          <td className="py-2 pr-2">{peer.hops ?? '—'}</td>
+          <td className="py-2 pr-2 whitespace-nowrap" title={formatPeerActivity(peer)}>
+            {formatPeerActivity(peer)}
+          </td>
+          <td className="hidden max-w-[8rem] truncate py-2 pr-2 sm:table-cell">
+            {peer.interface ?? '—'}
+          </td>
+        </>
+      ) : (
+        <>
+          <td className="py-2 pr-2 whitespace-nowrap" title={formatPeerActivity(peer)}>
+            {formatPeerActivity(peer)}
+          </td>
+          <td className="py-2 pr-2">{peer.hops ?? '—'}</td>
+          <td className="py-2 pr-2">
+            <button
+              type="button"
+              className={peer.favorited ? 'text-yellow-400' : 'text-gray-500'}
+              aria-label={t('peerListPanel.toggleFavorite')}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite(peer);
+              }}
+            >
+              <Star className="h-4 w-4" fill={peer.favorited ? 'currentColor' : 'none'} />
+            </button>
+          </td>
+        </>
+      )}
+      <td className="py-2 pr-2 whitespace-nowrap">{renderActionButtons(peer, busy)}</td>
+    </tr>
+  );
+});
+
 export default function ReticulumPeerListPanel({
   isConnected,
   onPeerClick,
@@ -85,6 +181,7 @@ export default function ReticulumPeerListPanel({
   const { t } = useTranslation();
   const { addToast } = useToast();
   const peers = useReticulumPeerStore((s) => s.peers);
+  const peersRevision = useReticulumPeerStore((s) => s.peersRevision);
   const contacts = useReticulumPeerStore((s) => s.contacts);
   const peerAppearanceByHash = useReticulumPeerStore((s) => s.peerAppearanceByHash);
   const isContact = useReticulumPeerStore((s) => s.isContact);
@@ -122,7 +219,7 @@ export default function ReticulumPeerListPanel({
       if (onRefresh) {
         await onRefresh();
       } else {
-        await refreshReticulumPeersFromSidecar();
+        await refreshReticulumPeersFromSidecar({ forceRefresh: true });
       }
     } catch (e) {
       console.warn('[ReticulumPeerListPanel] refresh ' + errLikeToLogString(e));
@@ -175,10 +272,16 @@ export default function ReticulumPeerListPanel({
     return [...peers.values()];
   }, [activeTab, contacts, peers, selectedGroupId, groupMemberIds]);
 
-  const preparedRows = useMemo(
-    () => prepareReticulumPeerRows(sourceRows, resolvePeerLabel),
-    [sourceRows, resolvePeerLabel],
-  );
+  const preparedRows = useMemo(() => {
+    // Peers tab: cheap labels for the full prepare; overlay resolution for visible rows.
+    const labelFor =
+      activeTab === 'peers'
+        ? (peer: ReticulumPeer) => cheapReticulumPeerLabel(peer)
+        : resolvePeerLabel;
+    return prepareReticulumPeerRows(sourceRows, labelFor);
+    // peersRevision ensures Map identity churn still recomputes when patches flush.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- peersRevision tracks peers Map updates
+  }, [sourceRows, resolvePeerLabel, activeTab, peersRevision]);
 
   const sortedRows = useMemo(() => {
     const filtered = filterPreparedReticulumPeerRows(preparedRows, debouncedSearchQuery);
@@ -232,7 +335,7 @@ export default function ReticulumPeerListPanel({
       const toast = formatReticulumPeerPathToast(t, result);
       addToast(toast.message, toast.variant);
       if (result.ok) {
-        await refreshReticulumPeersFromSidecar();
+        await refreshReticulumPeersFromSidecar({ forceRefresh: true });
       }
     } catch (e) {
       console.warn('[ReticulumPeerListPanel] path ' + errLikeToLogString(e));
@@ -255,7 +358,7 @@ export default function ReticulumPeerListPanel({
         useReticulumPeerStore.getState().updatePeer(hash, { hops: result.hops });
       }
       if (result.ok) {
-        await refreshReticulumPeersFromSidecar();
+        await refreshReticulumPeersFromSidecar({ forceRefresh: true });
       }
     } catch (e) {
       console.warn('[ReticulumPeerListPanel] probe ' + errLikeToLogString(e));
@@ -299,11 +402,14 @@ export default function ReticulumPeerListPanel({
     }
   };
 
-  const formatPeerActivity = (peer: ReticulumPeer) => {
-    const ms = reticulumPeerLastActivityMs(peer);
-    if (!ms) return '—';
-    return formatRelativeOrIsoDate(ms, t, normalizeLastHeardMs);
-  };
+  const formatPeerActivity = useCallback(
+    (peer: ReticulumPeer) => {
+      const ms = reticulumPeerLastActivityMs(peer);
+      if (!ms) return '—';
+      return formatRelativeOrIsoDate(ms, t, normalizeLastHeardMs);
+    },
+    [t],
+  );
 
   const emptyKey =
     activeTab === 'contacts'
@@ -635,95 +741,33 @@ export default function ReticulumPeerListPanel({
                 if (!prepared) return null;
                 const peer = prepared.peer;
                 const busy = actionBusyHash === peer.destination_hash;
-                const label = prepared.label;
-                const hashTitle = peer.destination_hash;
                 const iconMeta = peerAppearanceByHash.get(peer.destination_hash.toLowerCase());
                 const showIcon = hasCustomReticulumProfileIcon(
                   iconMeta?.icon_name,
                   iconMeta?.icon_color,
                 );
                 const contacted = isContact(peer.destination_hash);
+                const displayLabel =
+                  activeTab === 'peers' ? resolvePeerLabel(peer) : prepared.label;
                 return (
-                  <tr
+                  <PeerTableRow
                     key={peer.destination_hash}
-                    data-index={virtualRow.index}
-                    className="cursor-pointer border-b border-gray-800 hover:bg-gray-900/60"
-                    onClick={() => {
-                      onPeerClick(peer.destination_hash);
+                    prepared={prepared}
+                    activeTab={activeTab}
+                    busy={busy}
+                    contacted={contacted}
+                    showIcon={showIcon}
+                    iconName={iconMeta?.icon_name}
+                    iconColor={iconMeta?.icon_color}
+                    displayLabel={displayLabel}
+                    formatPeerActivity={formatPeerActivity}
+                    onPeerClick={onPeerClick}
+                    onToggleFavorite={(p) => {
+                      void handleToggleFavorite(p);
                     }}
-                  >
-                    <td
-                      className="max-w-[10rem] truncate py-2 pr-2 pl-2 font-mono"
-                      title={hashTitle}
-                    >
-                      <span className="inline-flex items-center gap-1.5">
-                        {showIcon ? (
-                          <ReticulumProfileIcon
-                            iconName={iconMeta?.icon_name}
-                            iconColor={iconMeta?.icon_color}
-                            size={14}
-                          />
-                        ) : null}
-                        <span className="truncate">{label}</span>
-                      </span>
-                    </td>
-                    {activeTab === 'peers' ? (
-                      <>
-                        <td className="py-2 pr-2">
-                          <span
-                            className={
-                              contacted
-                                ? 'bg-readable-green/20 text-readable-green rounded px-1.5 py-0.5 text-[10px] font-medium'
-                                : 'text-muted text-[10px]'
-                            }
-                          >
-                            {contacted
-                              ? t('peerListPanel.contactYes')
-                              : t('peerListPanel.contactNo')}
-                          </span>
-                        </td>
-                        <td className="py-2 pr-2">{peer.hops ?? '—'}</td>
-                        <td
-                          className="py-2 pr-2 whitespace-nowrap"
-                          title={formatPeerActivity(peer)}
-                        >
-                          {formatPeerActivity(peer)}
-                        </td>
-                        <td className="hidden max-w-[8rem] truncate py-2 pr-2 sm:table-cell">
-                          {peer.interface ?? '—'}
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td
-                          className="py-2 pr-2 whitespace-nowrap"
-                          title={formatPeerActivity(peer)}
-                        >
-                          {formatPeerActivity(peer)}
-                        </td>
-                        <td className="py-2 pr-2">{peer.hops ?? '—'}</td>
-                        <td className="py-2 pr-2">
-                          <button
-                            type="button"
-                            className={peer.favorited ? 'text-yellow-400' : 'text-gray-500'}
-                            aria-label={t('peerListPanel.toggleFavorite')}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void handleToggleFavorite(peer);
-                            }}
-                          >
-                            <Star
-                              className="h-4 w-4"
-                              fill={peer.favorited ? 'currentColor' : 'none'}
-                            />
-                          </button>
-                        </td>
-                      </>
-                    )}
-                    <td className="py-2 pr-2 whitespace-nowrap">
-                      {renderActionButtons(peer, busy)}
-                    </td>
-                  </tr>
+                    renderActionButtons={renderActionButtons}
+                    t={t}
+                  />
                 );
               })
             )}

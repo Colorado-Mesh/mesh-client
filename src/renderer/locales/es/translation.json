@@ -344,7 +344,15 @@
     "clearReticulumContactsDesc": "Elimina todas las entradas de la pestaña Contactos y de la lista de contactos del sidecar. Los destinos se conservan en la pestaña Pares con sus nombres. Los mensajes de chat se conservan. Los contactos reaparecen cuando envías un mensaje o usas Guardar como contacto.",
     "clearReticulumContactsConfirm": "Esto borrará permanentemente los {{count}} contactos Reticulum LXMF. Los destinos permanecen en la pestaña Pares; los mensajes no se eliminan. Esto no se puede deshacer.",
     "clearReticulumContactsConfirmButton": "Borrar {{count}} contactos",
-    "clearReticulumContactsButton": "Borrar todos los contactos ({{count}})"
+    "clearReticulumContactsButton": "Borrar todos los contactos ({{count}})",
+    "reticulumDestinationRetentionHint": "Limita la meta de contacto SQLite LXMF y la lista de pares en memoria. La tabla de trayectoria del buje en el sidecar aún puede contener más rutas que esta tapa.",
+    "reticulumAutoPruneDestinations": "Recortar automáticamente los destinos Reticulum más antiguos que",
+    "reticulumAutoPruneDestinationsLabel": "Recortar automáticamente los destinos en el arranque, más antiguos que",
+    "reticulumAutoPruneDestinationsDaysAria": "Recortar automáticamente los destinos en el arranque, con más de {{days}} días",
+    "reticulumCapDestinations": "Destinos totales de Cap Reticulum",
+    "reticulumCapDestinationsLabel": "Cap destinos / pares en memoria y SQLite, mantener los más recientes",
+    "reticulumCapDestinationsCountAria": "Destinos de la tapa, tenga en cuenta que se escuchó más recientemente {{count}}",
+    "reticulumDestinationsUnit": "destinos"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

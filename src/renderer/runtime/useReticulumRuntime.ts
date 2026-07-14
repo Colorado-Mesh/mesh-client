@@ -54,8 +54,11 @@ import {
   resolveReticulumSelfHeaderLabel,
 } from '@/renderer/lib/reticulum/reticulumSelfNodeLabel';
 import {
+  peersUpdatedRequiresFullRefresh,
+  RETICULUM_PEER_REFRESH_STORM_COALESCE_MS,
   reticulumSidecarEventRefreshActions,
   scheduleLeadingTrailingRefresh,
+  scheduleTrailingOnlyRefresh,
 } from '@/renderer/lib/reticulum/reticulumSidecarPeerRefreshEvents';
 import {
   fetchReticulumIdentityStatus,
@@ -68,6 +71,7 @@ import {
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
+import { LARGE_MESH_NODE_THRESHOLD } from '@/renderer/lib/sessionMemoryCaps';
 import { registerReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
 import {
   nodeRecordsToMeshNodeMap,
@@ -102,6 +106,7 @@ import {
 import { useReticulumPacketStore } from '../stores/reticulumPacketStore';
 import {
   applyReticulumAnnounceReceivedOptimistic,
+  applyReticulumPeersUpdatedPatches,
   refreshReticulumPeersFromSidecar,
   RETICULUM_PEER_REFRESH_MS,
   reticulumContactToNodeRecord,
@@ -110,6 +115,9 @@ import {
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
 import type { ProtocolRuntime } from './protocolRuntime';
+
+/** Safety poll interval when the path table is large. */
+const RETICULUM_PEER_REFRESH_LARGE_MS = 60_000;
 
 const INITIAL_STATE: DeviceState = {
   status: 'disconnected',
@@ -219,10 +227,17 @@ export function useReticulumRuntime(): ProtocolRuntime {
     upsertNodeRecordsForIdentity(identityId, records);
   }, [identityId, selfNodeId]);
 
-  const refreshContactsFromSidecar = useCallback(async () => {
-    await refreshReticulumPeersFromSidecar();
-    applyContactNodesFromStore();
-  }, [applyContactNodesFromStore]);
+  const refreshContactsFromSidecar = useCallback(
+    async (opts?: { forceRefresh?: boolean }) => {
+      await refreshReticulumPeersFromSidecar(opts);
+      applyContactNodesFromStore();
+    },
+    [applyContactNodesFromStore],
+  );
+
+  const refreshContactsFromSidecarForced = useCallback(async () => {
+    await refreshContactsFromSidecar({ forceRefresh: true });
+  }, [refreshContactsFromSidecar]);
 
   const syncSelfNodeFromIdentityStatus = useCallback(
     (lxmfHash: string, displayName: string | null) => {
@@ -342,13 +357,23 @@ export function useReticulumRuntime(): ProtocolRuntime {
     });
   }, [refreshLocalInterfacesFromSidecar]);
 
-  const scheduleLeadingPeerRefresh = useCallback(() => {
+  const scheduleFullPeerRefresh = useCallback(() => {
+    const peerCount = useReticulumPeerStore.getState().peers.size;
+    const onRefresh = () => {
+      void refreshContactsFromSidecar();
+      void syncDiagnosticsFromSidecar();
+    };
+    if (peerCount > LARGE_MESH_NODE_THRESHOLD) {
+      scheduleTrailingOnlyRefresh({
+        timerRef: peerRefreshDebounceRef,
+        onRefresh,
+        coalesceMs: RETICULUM_PEER_REFRESH_STORM_COALESCE_MS,
+      });
+      return;
+    }
     scheduleLeadingTrailingRefresh({
       timerRef: peerRefreshDebounceRef,
-      onRefresh: () => {
-        void refreshContactsFromSidecar();
-        void syncDiagnosticsFromSidecar();
-      },
+      onRefresh,
     });
   }, [refreshContactsFromSidecar, syncDiagnosticsFromSidecar]);
 
@@ -504,8 +529,15 @@ export function useReticulumRuntime(): ProtocolRuntime {
         recordAnnounceActivity(evt.payload);
         requestChatOutboxDrain('reticulum');
       }
+      if (evt.type === 'peers_updated' && refreshActions.peerPatches) {
+        if (peersUpdatedRequiresFullRefresh(evt.payload)) {
+          scheduleFullPeerRefresh();
+        } else {
+          applyReticulumPeersUpdatedPatches(evt.payload);
+        }
+      }
       if (refreshActions.peers) {
-        scheduleLeadingPeerRefresh();
+        scheduleFullPeerRefresh();
       } else if (refreshActions.diagnostics) {
         scheduleDebouncedDiagnosticsRefresh();
       }
@@ -517,7 +549,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       recordAnnounceActivity,
       refreshLocalInterfacesFromSidecar,
       scheduleDebouncedDiagnosticsRefresh,
-      scheduleLeadingPeerRefresh,
+      scheduleFullPeerRefresh,
     ],
   );
 
@@ -755,12 +787,21 @@ export function useReticulumRuntime(): ProtocolRuntime {
     }
     void refreshContactsFromSidecar();
     void refreshSelfNodeDisplayNameFromSidecar();
-    const intervalId = window.setInterval(() => {
-      void refreshContactsFromSidecar();
-      void refreshSelfNodeDisplayNameFromSidecar();
-    }, RETICULUM_PEER_REFRESH_MS);
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const scheduleNext = () => {
+      const ms =
+        useReticulumPeerStore.getState().peers.size > LARGE_MESH_NODE_THRESHOLD
+          ? RETICULUM_PEER_REFRESH_LARGE_MS
+          : RETICULUM_PEER_REFRESH_MS;
+      timeoutId = setTimeout(() => {
+        void refreshContactsFromSidecar();
+        void refreshSelfNodeDisplayNameFromSidecar();
+        scheduleNext();
+      }, ms);
+    };
+    scheduleNext();
     return () => {
-      window.clearInterval(intervalId);
+      if (timeoutId != null) clearTimeout(timeoutId);
     };
   }, [state.status, refreshContactsFromSidecar, refreshSelfNodeDisplayNameFromSidecar]);
 
@@ -1092,7 +1133,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       setNodeFavorited,
       refreshNodesFromDb,
       refreshMessagesFromDb,
-      requestRefresh: refreshContactsFromSidecar,
+      requestRefresh: refreshContactsFromSidecarForced,
       syncDiagnostics: syncDiagnosticsFromSidecar,
       getNodes,
       getFullNodeLabel,
@@ -1117,7 +1158,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       setNodeFavorited,
       refreshNodesFromDb,
       refreshMessagesFromDb,
-      refreshContactsFromSidecar,
+      refreshContactsFromSidecarForced,
       syncDiagnosticsFromSidecar,
       getNodes,
       getFullNodeLabel,

@@ -10,6 +10,7 @@ export const RETICULUM_PACKET_RING_CAPACITY = 500;
 interface ReticulumPacketStoreState {
   packets: ReticulumRawPacketEntry[];
   appendPacket: (entry: ReticulumRawPacketEntry) => void;
+  appendPackets: (entries: ReticulumRawPacketEntry[]) => void;
   replacePackets: (entries: ReticulumRawPacketEntry[]) => void;
   clearPackets: () => void;
   hydrateFromSidecar: () => Promise<void>;
@@ -21,11 +22,49 @@ function trimRingBuffer(entries: ReticulumRawPacketEntry[]): ReticulumRawPacketE
   return entries.slice(-RETICULUM_PACKET_RING_CAPACITY);
 }
 
+let pendingPackets: ReticulumRawPacketEntry[] = [];
+let packetFlushScheduled = false;
+let packetRafId: number | null = null;
+
+function flushPendingPackets(): void {
+  packetFlushScheduled = false;
+  packetRafId = null;
+  if (pendingPackets.length === 0) return;
+  const batch = pendingPackets;
+  pendingPackets = [];
+  useReticulumPacketStore.setState((s) => ({
+    packets: trimRingBuffer([...s.packets, ...batch]),
+  }));
+}
+
+export function resetReticulumPacketBatchForTests(): void {
+  pendingPackets = [];
+  packetFlushScheduled = false;
+  if (packetRafId != null && typeof cancelAnimationFrame === 'function') {
+    cancelAnimationFrame(packetRafId);
+  }
+  packetRafId = null;
+}
+
 export const useReticulumPacketStore = create<ReticulumPacketStoreState>((set, get) => ({
   packets: [],
 
   appendPacket: (entry) => {
-    set((s) => ({ packets: trimRingBuffer([...s.packets, entry]) }));
+    pendingPackets.push(entry);
+    if (packetFlushScheduled) return;
+    packetFlushScheduled = true;
+    if (typeof requestAnimationFrame === 'function') {
+      packetRafId = requestAnimationFrame(() => {
+        flushPendingPackets();
+      });
+    } else {
+      flushPendingPackets();
+    }
+  },
+
+  appendPackets: (entries) => {
+    if (entries.length === 0) return;
+    set((s) => ({ packets: trimRingBuffer([...s.packets, ...entries]) }));
   },
 
   replacePackets: (entries) => {
@@ -33,6 +72,12 @@ export const useReticulumPacketStore = create<ReticulumPacketStoreState>((set, g
   },
 
   clearPackets: () => {
+    pendingPackets = [];
+    packetFlushScheduled = false;
+    if (packetRafId != null && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(packetRafId);
+    }
+    packetRafId = null;
     set({ packets: [] });
   },
 

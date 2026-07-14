@@ -344,7 +344,15 @@
     "clearReticulumContactsDesc": "연락처 탭과 사이드카 연락처 목록의 모든 항목을 제거합니다. 대상은 이름과 함께 Peers 탭에 유지됩니다. 채팅 메시지는 보관됩니다. 누군가에게 메시지를 보내거나 연락처로 저장을 사용하면 연락처가 다시 나타납니다.",
     "clearReticulumContactsConfirm": "이렇게 하면 {{count}}개의 모든 Reticulum LXMF 연락처가 영구적으로 지워집니다. 대상은 Peers 탭에 남고 메시지는 삭제되지 않습니다. 이 작업은 취소할 수 없습니다.",
     "clearReticulumContactsConfirmButton": "연락처 {{count}}개 지우기",
-    "clearReticulumContactsButton": "모든 연락처 지우기 ({{count}})"
+    "clearReticulumContactsButton": "모든 연락처 지우기 ({{count}})",
+    "reticulumDestinationRetentionHint": "SQLite LXMF 연락처 메타 및 인메모리 피어 목록을 제한합니다. 사이드카의 허브 경로 테이블에는 여전히 이 캡보다 더 많은 경로가 있을 수 있습니다.",
+    "reticulumAutoPruneDestinations": "다음보다 오래된 Reticulum 목적지를 자동 정리합니다.",
+    "reticulumAutoPruneDestinationsLabel": "시작 시 목적지 자동 조정 (이전 버전)",
+    "reticulumAutoPruneDestinationsDaysAria": "시작 시 {{days}} 일 이상 경과한 목적지 자동 조정",
+    "reticulumCapDestinations": "CAP 총 Reticulum 목적지",
+    "reticulumCapDestinationsLabel": "메모리 및 SQLite의 캡 대상/피어, 가장 최근에 들었던 정보 유지",
+    "reticulumCapDestinationsCountAria": "CAP 여행지, 가장 최근에 들린 곳 {{count}}",
+    "reticulumDestinationsUnit": "여행 목적지"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

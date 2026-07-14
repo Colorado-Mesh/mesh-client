@@ -344,7 +344,15 @@
     "clearReticulumContactsDesc": "Видаляє всі записи з вкладки «Контакти» та списку контактів sidecar. Призначення залишаються на вкладці Peers зі своїми іменами. Повідомлення чату зберігаються. Контакти знову з’являються, коли ви пишете комусь або використовуєте «Зберегти як контакт».",
     "clearReticulumContactsConfirm": "Це назавжди очистить усі {{count}} контактів Reticulum LXMF. Призначення залишаються на вкладці Peers; повідомлення не видаляються. Цю дію неможливо скасувати.",
     "clearReticulumContactsConfirmButton": "Очистити {{count}} контактів",
-    "clearReticulumContactsButton": "Очистити всі контакти ({{count}})"
+    "clearReticulumContactsButton": "Очистити всі контакти ({{count}})",
+    "reticulumDestinationRetentionHint": "Обмежує мета-контакти SQLite LXMF та список вузлів у пам'яті. Таблиця шляхів хаба у sidecar може все ще містити більше маршрутів, ніж цей ліміт.",
+    "reticulumAutoPruneDestinations": "Автоматично підрізати пункти призначення Reticulum, старші за",
+    "reticulumAutoPruneDestinationsLabel": "Автоматично підрізати місця призначення під час запуску, старіші за",
+    "reticulumAutoPruneDestinationsDaysAria": "Автоматично визначати місця призначення під час запуску, старіші за {{days}} дн.",
+    "reticulumCapDestinations": "Обмежити загальну кількість призначень Reticulum",
+    "reticulumCapDestinationsLabel": "Обмежити пункти призначення / вузли в пам'яті та SQLite, зберігати останні почуті",
+    "reticulumCapDestinationsCountAria": "Закрийте пункти призначення, залишайтеся в курсі останніх подій {{count}}",
+    "reticulumDestinationsUnit": "призначення"
   },
   "aria": {
     "closeDialog": "Закрити діалог",

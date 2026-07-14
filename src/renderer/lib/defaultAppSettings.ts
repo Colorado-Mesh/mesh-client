@@ -15,6 +15,11 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   meshcoreContactCapEnabled: true,
   meshcoreContactCapCount: 10000,
   meshcoreDeleteNeverAdvertised: true,
+  /** Reticulum SQLite destination + in-memory peer cap / age prune (App tab). */
+  reticulumAutoPruneEnabled: true,
+  reticulumAutoPruneDays: 30,
+  reticulumDestinationCapEnabled: true,
+  reticulumDestinationCapCount: 10000,
   distanceFilterEnabled: false,
   distanceFilterMax: 500,
   distanceUnit: 'miles' as const,

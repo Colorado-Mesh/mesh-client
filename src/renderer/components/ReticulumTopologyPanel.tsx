@@ -15,6 +15,10 @@ import {
   type ReticulumTopologyGraphNode,
 } from '@/renderer/lib/reticulum/buildReticulumTopologyLayout';
 import {
+  RETICULUM_PEER_REFRESH_COALESCE_MS,
+  RETICULUM_PEER_REFRESH_STORM_COALESCE_MS,
+} from '@/renderer/lib/reticulum/reticulumSidecarPeerRefreshEvents';
+import {
   fetchReticulumInterfaces,
   isReticulumSidecarRunning,
   type ReticulumSidecarInterfaceRow,
@@ -23,10 +27,14 @@ import {
   normalizeReticulumInterfaceGlyphType,
   type ReticulumTopologyInterfaceGlyph,
 } from '@/renderer/lib/reticulum/reticulumTopologyInterfaceGlyph';
+import { LARGE_MESH_NODE_THRESHOLD } from '@/renderer/lib/sessionMemoryCaps';
 import type { ReticulumPeerWireRow } from '@/shared/reticulum-types';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import { reticulumPeerDisplayName, useReticulumPeerStore } from '../stores/reticulumPeerStore';
+
+/** Cap path-table rows rendered in the topology force graph. */
+const TOPOLOGY_PEER_RENDER_CAP = 2000;
 
 function enrichTopologyPeers(peers: ReticulumPeerWireRow[]): ReticulumPeerWireRow[] {
   const storePeers = useReticulumPeerStore.getState().peers;
@@ -224,21 +232,37 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
   const [includeDistantPeers, setIncludeDistantPeers] = useState(true);
   const [maxHops, setMaxHops] = useState<number | null>(null);
 
-  const publishSnapshotFromSim = useCallback(() => {
-    const renderNodes = simRef.current
-      .map((sn) => {
-        const meta = metaRef.current.get(sn.id);
-        if (!meta) return null;
-        return { ...meta, x: sn.x, y: sn.y };
-      })
-      .filter((n): n is RenderNode => n != null);
-    setSnapshot({
-      nodes: renderNodes,
-      edges: [...edgesRef.current],
-      hiddenCount: statsRef.current.hiddenCount,
-      totalNodeCount: statsRef.current.totalNodeCount,
-      onlineInterfaceCount: statsRef.current.onlineInterfaceCount,
-      offlineInterfaceCount: statsRef.current.offlineInterfaceCount,
+  const snapshotRafRef = useRef<number | null>(null);
+  const publishSnapshotFromSim = useCallback((opts?: { immediate?: boolean }) => {
+    const publish = () => {
+      const renderNodes = simRef.current
+        .map((sn) => {
+          const meta = metaRef.current.get(sn.id);
+          if (!meta) return null;
+          return { ...meta, x: sn.x, y: sn.y };
+        })
+        .filter((n): n is RenderNode => n != null);
+      setSnapshot({
+        nodes: renderNodes,
+        edges: [...edgesRef.current],
+        hiddenCount: statsRef.current.hiddenCount,
+        totalNodeCount: statsRef.current.totalNodeCount,
+        onlineInterfaceCount: statsRef.current.onlineInterfaceCount,
+        offlineInterfaceCount: statsRef.current.offlineInterfaceCount,
+      });
+    };
+    if (opts?.immediate) {
+      if (snapshotRafRef.current != null) {
+        cancelAnimationFrame(snapshotRafRef.current);
+        snapshotRafRef.current = null;
+      }
+      publish();
+      return;
+    }
+    if (snapshotRafRef.current != null) return;
+    snapshotRafRef.current = requestAnimationFrame(() => {
+      snapshotRafRef.current = null;
+      publish();
     });
   }, []);
 
@@ -275,7 +299,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
         onlineInterfaceCount: interfaceNodes.filter((n) => n.online).length,
         offlineInterfaceCount: interfaceNodes.filter((n) => !n.online).length,
       };
-      publishSnapshotFromSim();
+      publishSnapshotFromSim({ immediate: true });
     },
     [publishSnapshotFromSim],
   );
@@ -299,11 +323,16 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
 
       const peerNodes = enrichTopologyPeers(topologyBody.nodes ?? []);
       const seenHashes = new Set<string>();
-      const uniquePeers = peerNodes.filter((peer) => {
+      let uniquePeers = peerNodes.filter((peer) => {
         if (!peer.destination_hash || seenHashes.has(peer.destination_hash)) return false;
         seenHashes.add(peer.destination_hash);
         return true;
       });
+      if (uniquePeers.length > TOPOLOGY_PEER_RENDER_CAP) {
+        uniquePeers = [...uniquePeers]
+          .sort((a, b) => (b.last_seen ?? 0) - (a.last_seen ?? 0))
+          .slice(0, TOPOLOGY_PEER_RENDER_CAP);
+      }
 
       const selfLabel = identityBody.display_name?.trim() || t('reticulumTopology.self');
 
@@ -342,31 +371,71 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
 
   useEffect(() => {
     void refresh();
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const unsub = window.electronAPI.reticulum.onEvent((evt) => {
       if (
-        evt.type === 'peers_updated' ||
-        evt.type === 'stats_update' ||
-        evt.type === 'interface.state'
+        evt.type !== 'peers_updated' &&
+        evt.type !== 'stats_update' &&
+        evt.type !== 'interface.state'
       ) {
-        void refresh();
+        return;
       }
+      const peerCount = useReticulumPeerStore.getState().peers.size;
+      // Large meshes: skip auto topology rebuild; user can Refresh manually.
+      if (peerCount > LARGE_MESH_NODE_THRESHOLD && evt.type === 'peers_updated') {
+        return;
+      }
+      const coalesceMs =
+        peerCount > LARGE_MESH_NODE_THRESHOLD
+          ? RETICULUM_PEER_REFRESH_STORM_COALESCE_MS
+          : RETICULUM_PEER_REFRESH_COALESCE_MS;
+      if (debounceTimer != null) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+        void refresh();
+      }, coalesceMs);
     });
-    return unsub;
+    return () => {
+      if (debounceTimer != null) clearTimeout(debounceTimer);
+      unsub();
+    };
   }, [includeDistantPeers, maxHops, refresh]);
 
   useEffect(() => {
-    return startForceSimulationLoop({
-      getSimNodes: () => simRef.current,
-      getEdges: () => edgesRef.current,
-      getDimensions: () => ({
-        width: svgRef.current?.clientWidth ?? 800,
-        height: svgRef.current?.clientHeight ?? 600,
-      }),
-      onFrame: () => {
-        publishSnapshotFromSim();
-      },
-      nodePadding: CENTER_R,
-    });
+    let stop: (() => void) | null = null;
+    const start = () => {
+      stop?.();
+      stop = startForceSimulationLoop({
+        getSimNodes: () => simRef.current,
+        getEdges: () => edgesRef.current,
+        getDimensions: () => ({
+          width: svgRef.current?.clientWidth ?? 800,
+          height: svgRef.current?.clientHeight ?? 600,
+        }),
+        onFrame: () => {
+          publishSnapshotFromSim();
+        },
+        nodePadding: CENTER_R,
+      });
+    };
+    const onVisibility = () => {
+      if (document.hidden) {
+        stop?.();
+        stop = null;
+      } else {
+        start();
+      }
+    };
+    if (!document.hidden) start();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      stop?.();
+      if (snapshotRafRef.current != null) {
+        cancelAnimationFrame(snapshotRafRef.current);
+        snapshotRafRef.current = null;
+      }
+    };
   }, [publishSnapshotFromSim]);
 
   const { nodes, edges, hiddenCount, totalNodeCount, onlineInterfaceCount, offlineInterfaceCount } =

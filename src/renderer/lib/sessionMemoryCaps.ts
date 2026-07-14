@@ -1,7 +1,10 @@
 /** Shared in-memory retention limits for long-running sessions. */
 
-/** Product cap for Meshtastic nodes, MeshCore contacts, and Reticulum destinations. */
-export const MAX_MESH_ENTITY_CAP = 10_000;
+/**
+ * In-memory hard ceiling for Meshtastic nodes, MeshCore contacts, and Reticulum peers.
+ * User-facing destination/node caps (default 10k, Reticulum max 50k) apply first.
+ */
+export const MAX_MESH_ENTITY_CAP = 100_000;
 
 export const MAX_TRACE_ROUTES_PER_IDENTITY = 100;
 export const MAX_MESHCORE_CLI_HISTORY_ENTRIES = 50;

@@ -374,6 +374,93 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     }
   });
 
+  ipcMain.handle('db:pruneReticulumDestinationsByCount', (event, maxCount: number) => {
+    try {
+      assertIpcSender(event, 'db:pruneReticulumDestinationsByCount');
+      const db = getDbForIpc('db:pruneReticulumDestinationsByCount');
+      if (!db) return { changes: 0 };
+      const safeMax = typeof maxCount === 'number' && maxCount > 0 ? Math.floor(maxCount) : 10_000;
+      const total = (
+        db.prepareOnce('SELECT COUNT(*) as cnt FROM reticulum_destinations').get() as {
+          cnt: number;
+        }
+      ).cnt;
+      if (total <= safeMax) return { changes: 0 };
+      const deletable = (
+        db
+          .prepareOnce(
+            'SELECT COUNT(*) as cnt FROM reticulum_destinations WHERE (favorited IS NULL OR favorited = 0) AND last_heard IS NOT NULL',
+          )
+          .get() as { cnt: number }
+      ).cnt;
+      const toDelete = Math.min(total - safeMax, deletable);
+      if (toDelete <= 0) return { changes: 0 };
+      const result = db
+        .prepareOnce(
+          `DELETE FROM reticulum_destinations WHERE destination_hash IN (
+            SELECT destination_hash FROM reticulum_destinations
+            WHERE (favorited IS NULL OR favorited = 0) AND last_heard IS NOT NULL
+            ORDER BY last_heard ASC LIMIT ?
+          )`,
+        )
+        .run(toDelete);
+      if (result.changes > 0) {
+        console.debug(
+          `[IPC] db:pruneReticulumDestinationsByCount: removed ${result.changes} excess destinations`,
+        );
+      }
+      return { changes: Number(result.changes) };
+    } catch (err) {
+      finishDbIpcHandler('db:pruneReticulumDestinationsByCount', err);
+    }
+  });
+
+  ipcMain.handle('db:deleteReticulumDestinationsByAge', (event, days: number) => {
+    try {
+      assertIpcSender(event, 'db:deleteReticulumDestinationsByAge');
+      const db = getDbForIpc('db:deleteReticulumDestinationsByAge');
+      if (!db) return { changes: 0 };
+      const safeDays = typeof days === 'number' && days > 0 ? Math.floor(days) : 30;
+      const cutoff = Date.now() - safeDays * 86_400_000;
+      const result = db
+        .prepareOnce(
+          `DELETE FROM reticulum_destinations
+           WHERE last_heard IS NOT NULL AND last_heard < ?
+             AND (favorited IS NULL OR favorited = 0)`,
+        )
+        .run(cutoff);
+      if (result.changes > 0) {
+        console.debug(
+          `[IPC] db:deleteReticulumDestinationsByAge: removed ${result.changes} destinations older than ${safeDays}d`,
+        );
+      }
+      return { changes: Number(result.changes) };
+    } catch (err) {
+      finishDbIpcHandler('db:deleteReticulumDestinationsByAge', err);
+    }
+  });
+
+  ipcMain.handle('db:pruneReticulumIdentityActivityByAge', (event, days: number) => {
+    try {
+      assertIpcSender(event, 'db:pruneReticulumIdentityActivityByAge');
+      const db = getDbForIpc('db:pruneReticulumIdentityActivityByAge');
+      if (!db) return { changes: 0 };
+      const safeDays = typeof days === 'number' && days > 0 ? Math.floor(days) : 30;
+      const cutoff = Date.now() - safeDays * 86_400_000;
+      const result = db
+        .prepareOnce('DELETE FROM reticulum_identity_activity WHERE last_seen < ?')
+        .run(cutoff);
+      if (result.changes > 0) {
+        console.debug(
+          `[IPC] db:pruneReticulumIdentityActivityByAge: removed ${result.changes} activity rows older than ${safeDays}d`,
+        );
+      }
+      return { changes: Number(result.changes) };
+    } catch (err) {
+      finishDbIpcHandler('db:pruneReticulumIdentityActivityByAge', err);
+    }
+  });
+
   ipcMain.handle('db:vacuumReticulumTables', (event) => {
     try {
       assertIpcSender(event, 'db:vacuumReticulumTables');
@@ -463,41 +550,82 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     }
   });
 
-  ipcMain.handle('db:upsertReticulumIdentityActivity', (event, row: unknown) => {
-    try {
-      assertIpcSender(event, 'db:upsertReticulumIdentityActivity');
-      if (!row || typeof row !== 'object') return { changes: 0 };
-      const r = row as Record<string, unknown>;
-      const destinationHash = r.destination_hash;
-      const aspect = r.aspect;
-      if (typeof destinationHash !== 'string' || destinationHash.length > 128)
-        return { changes: 0 };
-      if (typeof aspect !== 'string' || aspect.length > 128) return { changes: 0 };
-      const lastSeen = Number(r.last_seen);
-      if (!Number.isFinite(lastSeen)) return { changes: 0 };
-      const identityHash =
-        typeof r.identity_hash === 'string' ? r.identity_hash.slice(0, 128) : null;
-      const hops =
-        r.hops != null && Number.isFinite(Number(r.hops)) ? Math.trunc(Number(r.hops)) : null;
-      const db = getDbForIpc('db:upsertReticulumIdentityActivity');
-      if (!db) return { changes: 0 };
-      db.prepareOnce(
-        `INSERT INTO reticulum_identity_activity (destination_hash, aspect, identity_hash, last_seen, hops)
+  const IDENTITY_ACTIVITY_UPSERT_SQL = `INSERT INTO reticulum_identity_activity (destination_hash, aspect, identity_hash, last_seen, hops)
          VALUES (?, ?, ?, ?, ?)
          ON CONFLICT(destination_hash, aspect) DO UPDATE SET
            identity_hash = COALESCE(excluded.identity_hash, reticulum_identity_activity.identity_hash),
            last_seen = excluded.last_seen,
-           hops = COALESCE(excluded.hops, reticulum_identity_activity.hops)`,
-      ).run(
-        destinationHash.toLowerCase(),
-        aspect.slice(0, 128),
-        identityHash,
-        Math.trunc(lastSeen),
-        hops,
+           hops = COALESCE(excluded.hops, reticulum_identity_activity.hops)`;
+
+  function parseIdentityActivityRow(row: unknown): {
+    destinationHash: string;
+    aspect: string;
+    identityHash: string | null;
+    lastSeen: number;
+    hops: number | null;
+  } | null {
+    if (!row || typeof row !== 'object') return null;
+    const r = row as Record<string, unknown>;
+    const destinationHash = r.destination_hash;
+    const aspect = r.aspect;
+    if (typeof destinationHash !== 'string' || destinationHash.length > 128) return null;
+    if (typeof aspect !== 'string' || aspect.length > 128) return null;
+    const lastSeen = Number(r.last_seen);
+    if (!Number.isFinite(lastSeen)) return null;
+    const identityHash = typeof r.identity_hash === 'string' ? r.identity_hash.slice(0, 128) : null;
+    const hops =
+      r.hops != null && Number.isFinite(Number(r.hops)) ? Math.trunc(Number(r.hops)) : null;
+    return {
+      destinationHash: destinationHash.toLowerCase(),
+      aspect: aspect.slice(0, 128),
+      identityHash,
+      lastSeen: Math.trunc(lastSeen),
+      hops,
+    };
+  }
+
+  ipcMain.handle('db:upsertReticulumIdentityActivity', (event, row: unknown) => {
+    try {
+      assertIpcSender(event, 'db:upsertReticulumIdentityActivity');
+      const parsed = parseIdentityActivityRow(row);
+      if (!parsed) return { changes: 0 };
+      const db = getDbForIpc('db:upsertReticulumIdentityActivity');
+      if (!db) return { changes: 0 };
+      db.prepareOnce(IDENTITY_ACTIVITY_UPSERT_SQL).run(
+        parsed.destinationHash,
+        parsed.aspect,
+        parsed.identityHash,
+        parsed.lastSeen,
+        parsed.hops,
       );
       return { changes: 1 };
     } catch (err) {
       finishDbIpcHandler('db:upsertReticulumIdentityActivity', err);
+    }
+  });
+
+  ipcMain.handle('db:upsertReticulumIdentityActivityBatch', (event, rows: unknown) => {
+    try {
+      assertIpcSender(event, 'db:upsertReticulumIdentityActivityBatch');
+      if (!Array.isArray(rows) || rows.length === 0) return { changes: 0 };
+      const db = getDbForIpc('db:upsertReticulumIdentityActivityBatch');
+      if (!db) return { changes: 0 };
+      const parsed: NonNullable<ReturnType<typeof parseIdentityActivityRow>>[] = [];
+      for (const row of rows.slice(0, 500)) {
+        const p = parseIdentityActivityRow(row);
+        if (p) parsed.push(p);
+      }
+      if (parsed.length === 0) return { changes: 0 };
+      const stmt = db.prepareOnce(IDENTITY_ACTIVITY_UPSERT_SQL);
+      const run = db.transaction(() => {
+        for (const p of parsed) {
+          stmt.run(p.destinationHash, p.aspect, p.identityHash, p.lastSeen, p.hops);
+        }
+      });
+      run();
+      return { changes: parsed.length };
+    } catch (err) {
+      finishDbIpcHandler('db:upsertReticulumIdentityActivityBatch', err);
     }
   });
 }

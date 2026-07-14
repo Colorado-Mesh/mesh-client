@@ -93,31 +93,33 @@ describe('useReticulumRuntime RMAP discovery map', () => {
 describe('useReticulumRuntime peer refresh WS routing', () => {
   it('uses reticulumSidecarEventRefreshActions for peer vs diagnostics scheduling', () => {
     expect(SOURCE).toContain('reticulumSidecarEventRefreshActions');
-    expect(SOURCE).toContain('scheduleLeadingTrailingRefresh');
+    expect(SOURCE).toContain('scheduleFullPeerRefresh');
     expect(SOURCE).toMatch(
       /const refreshActions = reticulumSidecarEventRefreshActions\(evt\.type\);/,
     );
-    expect(SOURCE).toMatch(/if \(refreshActions\.peers\) \{[\s\S]*?scheduleLeadingPeerRefresh\(\)/);
+    expect(SOURCE).toMatch(/if \(refreshActions\.peers\) \{[\s\S]*?scheduleFullPeerRefresh\(\)/);
     expect(SOURCE).toMatch(
       /else if \(refreshActions\.diagnostics\) \{[\s\S]*?scheduleDebouncedDiagnosticsRefresh\(\)/,
     );
   });
 
   it('does not schedule full peer refresh for stats_update or interface.state inline', () => {
+    expect(SOURCE).not.toMatch(/evt\.type === 'stats_update'[\s\S]{0,200}?scheduleFullPeerRefresh/);
     expect(SOURCE).not.toMatch(
-      /evt\.type === 'stats_update'[\s\S]{0,200}?scheduleLeadingPeerRefresh/,
-    );
-    expect(SOURCE).not.toMatch(
-      /evt\.type === 'interface\.state'[\s\S]{0,200}?scheduleLeadingPeerRefresh/,
+      /evt\.type === 'interface\.state'[\s\S]{0,200}?scheduleFullPeerRefresh/,
     );
   });
 
-  it('applies optimistic peer update before leading refresh on announce.received', () => {
+  it('applies optimistic peer patches on announce without mandating full refresh', () => {
     expect(SOURCE).toContain('applyReticulumAnnounceReceivedOptimistic(evt.payload)');
-    expect(SOURCE).toMatch(
-      /if \(evt\.type === 'announce\.received'\) \{[\s\S]*?applyReticulumAnnounceReceivedOptimistic[\s\S]*?scheduleLeadingPeerRefresh/,
-    );
-    expect(SOURCE).toContain('scheduleLeadingTrailingRefresh');
+    expect(SOURCE).toContain('applyReticulumPeersUpdatedPatches');
+    expect(SOURCE).toContain('peersUpdatedRequiresFullRefresh');
+    const announceBlock =
+      /if \(evt\.type === 'announce\.received'\) \{[\s\S]{0,400}?requestChatOutboxDrain/.exec(
+        SOURCE,
+      )?.[0];
+    expect(announceBlock).toBeTruthy();
+    expect(announceBlock).not.toContain('scheduleFullPeerRefresh');
   });
 });
 

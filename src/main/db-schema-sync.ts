@@ -18,7 +18,7 @@ import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 41;
+export const CURRENT_SCHEMA_VERSION = 42;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -278,6 +278,7 @@ export const INDEX_DDLS: readonly string[] = [
   'CREATE INDEX IF NOT EXISTS idx_reticulum_msgs_identity ON reticulum_messages(identity_id, timestamp DESC)',
   'CREATE INDEX IF NOT EXISTS idx_blocked_contacts_lookup ON blocked_contacts(protocol, identity_id)',
   'CREATE INDEX IF NOT EXISTS idx_reticulum_activity_dest ON reticulum_identity_activity(destination_hash)',
+  'CREATE INDEX IF NOT EXISTS idx_reticulum_dest_last_heard ON reticulum_destinations(last_heard)',
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_ts ON meshcore_messages(timestamp)',
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_channel_id ON meshcore_messages(channel_idx, id DESC)',
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup
@@ -846,6 +847,8 @@ function seedAppSettings(db: NodeSqliteDB): void {
   seed.run('meshtasticMessageRetentionCount', '4000');
   seed.run('meshcoreMessageRetentionEnabled', '1');
   seed.run('meshcoreMessageRetentionCount', '4000');
+  seed.run('reticulumMessageRetentionEnabled', '1');
+  seed.run('reticulumMessageRetentionCount', '4000');
 }
 
 function structuralUpgrades(db: NodeSqliteDB): void {

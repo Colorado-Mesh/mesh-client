@@ -344,7 +344,15 @@
     "clearReticulumContactsDesc": "Odstraní každou položku z karty Kontakty a seznamu kontaktů sidecar. Cíle zůstanou na kartě Peers se svými názvy. Chatové zprávy zůstávají. Kontakty se znovu zobrazí, když někomu napíšete nebo použijete Uložit jako kontakt.",
     "clearReticulumContactsConfirm": "Tím trvale vymažete všech {{count}} Reticulum LXMF kontaktů. Cíle zůstanou na kartě Peers; zprávy se nemažou. Tuto akci nelze vrátit zpět.",
     "clearReticulumContactsConfirmButton": "Vymazat {{count}} kontaktů",
-    "clearReticulumContactsButton": "Vymazat všechny kontakty ({{count}})"
+    "clearReticulumContactsButton": "Vymazat všechny kontakty ({{count}})",
+    "reticulumDestinationRetentionHint": "Omezuje kontaktní meta SQLite LXMF a seznam vrstevníků v paměti. Tabulka dráhy náboje v postranním vozíku může stále obsahovat více tras než tento uzávěr.",
+    "reticulumAutoPruneDestinations": "Automaticky prořezávat cíle Reticulum starší než",
+    "reticulumAutoPruneDestinationsLabel": "Automatické prořezávání cílů při spuštění, starší než",
+    "reticulumAutoPruneDestinationsDaysAria": "Cíle automatického prořezávání při spuštění, starší než {{days}} dní",
+    "reticulumCapDestinations": "Omezit celkový počet destinací Reticulum",
+    "reticulumCapDestinationsLabel": "Uzavřete cíle / protějšky v paměti a SQLite, uchovejte naposledy slyšené",
+    "reticulumCapDestinationsCountAria": "Destinace na čepičkách, naposledy slyšeno {{count}}",
+    "reticulumDestinationsUnit": "Cíle"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

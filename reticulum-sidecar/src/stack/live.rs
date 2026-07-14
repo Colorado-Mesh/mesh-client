@@ -8,7 +8,7 @@ use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use lxmf_core::constants::{DeliveryMethod, FIELD_FILE_ATTACHMENTS, FIELD_ICON_APPEARANCE};
 use lxmf_core::message::LxMessage;
@@ -72,6 +72,9 @@ pub struct LiveBridge {
     lxmf_hash_hex: String,
     display_name: String,
     peer_via_cache: Arc<Mutex<HashMap<String, String>>>,
+    /// Maintained path-table snapshot from the 2s maintenance tick (or forced fetch).
+    path_peer_cache: Arc<Mutex<Vec<PeerRow>>>,
+    path_peer_cache_fetched_at: Arc<Mutex<Option<Instant>>>,
     display_name_cache: Arc<Mutex<HashMap<String, String>>>,
     outbound: Arc<Mutex<LxmfOutboundDriver>>,
     propagation: Arc<PropagationBridge>,
@@ -233,6 +236,8 @@ impl LiveBridge {
 
         let peer_via_cache: Arc<Mutex<HashMap<String, String>>> =
             Arc::new(Mutex::new(HashMap::new()));
+        let path_peer_cache: Arc<Mutex<Vec<PeerRow>>> = Arc::new(Mutex::new(Vec::new()));
+        let path_peer_cache_fetched_at: Arc<Mutex<Option<Instant>>> = Arc::new(Mutex::new(None));
         let display_name_cache: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new({
             let state = inner.read().await;
             contacts_to_name_map(&state.contacts)
@@ -347,6 +352,8 @@ impl LiveBridge {
             lxmf_hash_hex: lxmf_hash_hex.clone(),
             display_name: display_name.clone(),
             peer_via_cache,
+            path_peer_cache,
+            path_peer_cache_fetched_at,
             display_name_cache,
             outbound: Arc::new(Mutex::new(LxmfOutboundDriver::new(
                 handle.transport_tx.clone(),
@@ -627,6 +634,9 @@ impl LiveBridge {
         let handle = self.handle.clone();
         let router = self.router.clone();
         let peer_via_cache = self.peer_via_cache.clone();
+        let path_peer_cache = self.path_peer_cache.clone();
+        let path_peer_cache_fetched_at = self.path_peer_cache_fetched_at.clone();
+        let display_name_cache = self.display_name_cache.clone();
         let outbound = self.outbound.clone();
         let event_tx = self.event_tx.clone();
         let propagation = self.propagation.clone();
@@ -652,16 +662,60 @@ impl LiveBridge {
                                 cache.insert(key, entry.interface.clone());
                             }
                         }
-                        let next_hashes: HashSet<String> = entries
+                        let name_lookup = display_name_cache
+                            .lock()
+                            .ok()
+                            .map(|c| c.clone())
+                            .unwrap_or_default();
+                        let peer_rows: Vec<PeerRow> = entries
                             .iter()
-                            .map(|e| hex::encode(e.hash))
+                            .map(|e| {
+                                let destination_hash = hex::encode(e.hash);
+                                let display_name = name_lookup.get(&destination_hash).cloned();
+                                PeerRow {
+                                    destination_hash,
+                                    display_name,
+                                    hops: Some(e.hops),
+                                    last_seen: Some(e.timestamp as u64),
+                                    interface: Some(e.interface.clone()),
+                                    path_hash: e.via.map(hex::encode),
+                                    via_hash: e.via.map(hex::encode),
+                                }
+                            })
+                            .collect();
+                        if let Ok(mut cache) = path_peer_cache.lock() {
+                            *cache = peer_rows.clone();
+                        }
+                        if let Ok(mut at) = path_peer_cache_fetched_at.lock() {
+                            *at = Some(Instant::now());
+                        }
+                        let next_hashes: HashSet<String> = peer_rows
+                            .iter()
+                            .map(|p| p.destination_hash.clone())
                             .collect();
                         let added = path_table_added_hashes_capped(&known_path_hashes, &next_hashes);
                         if !added.is_empty() {
+                            let added_set: HashSet<String> = added.iter().cloned().collect();
+                            let patches: Vec<serde_json::Value> = peer_rows
+                                .iter()
+                                .filter(|p| added_set.contains(&p.destination_hash))
+                                .map(|p| {
+                                    serde_json::json!({
+                                        "destination_hash": p.destination_hash,
+                                        "display_name": p.display_name,
+                                        "hops": p.hops,
+                                        "last_seen": p.last_seen,
+                                        "interface": p.interface,
+                                        "path_hash": p.path_hash,
+                                        "via_hash": p.via_hash,
+                                    })
+                                })
+                                .collect();
                             let frame = serde_json::json!({
                                 "type": "peers_updated",
                                 "payload": {
                                     "added": added,
+                                    "patches": patches,
                                     "count": next_hashes.len(),
                                 }
                             });
@@ -1101,7 +1155,22 @@ impl LiveBridge {
             .unwrap_or_default()
     }
 
-    pub async fn fetch_peers(&self) -> Result<Vec<PeerRow>, String> {
+    /// Fetch path-table peers. When `force` is false and the maintenance cache is
+    /// fresher than [`PATH_PEER_CACHE_TTL`], return that snapshot (avoids a second
+    /// GetPathTable on every automatic poll).
+    pub async fn fetch_peers(&self, force: bool) -> Result<Vec<PeerRow>, String> {
+        if !force {
+            if let (Ok(cache), Ok(at)) = (
+                self.path_peer_cache.lock(),
+                self.path_peer_cache_fetched_at.lock(),
+            ) {
+                if let Some(fetched_at) = *at {
+                    if fetched_at.elapsed() < PATH_PEER_CACHE_TTL && !cache.is_empty() {
+                        return Ok(cache.clone());
+                    }
+                }
+            }
+        }
         let resp = self
             .query_control_timed(TransportQuery::GetPathTable)
             .await;
@@ -1115,18 +1184,35 @@ impl LiveBridge {
                 cache.insert(key, entry.interface.clone());
             }
         }
-        Ok(entries
+        let name_lookup = self
+            .display_name_cache
+            .lock()
+            .ok()
+            .map(|c| c.clone())
+            .unwrap_or_default();
+        let peers: Vec<PeerRow> = entries
             .iter()
-            .map(|e| PeerRow {
-                destination_hash: hex::encode(e.hash),
-                display_name: None,
-                hops: Some(e.hops),
-                last_seen: Some(e.timestamp as u64),
-                interface: Some(e.interface.clone()),
-                path_hash: e.via.map(hex::encode),
-                via_hash: e.via.map(hex::encode),
+            .map(|e| {
+                let destination_hash = hex::encode(e.hash);
+                let display_name = name_lookup.get(&destination_hash).cloned();
+                PeerRow {
+                    destination_hash,
+                    display_name,
+                    hops: Some(e.hops),
+                    last_seen: Some(e.timestamp as u64),
+                    interface: Some(e.interface.clone()),
+                    path_hash: e.via.map(hex::encode),
+                    via_hash: e.via.map(hex::encode),
+                }
             })
-            .collect())
+            .collect();
+        if let Ok(mut cache) = self.path_peer_cache.lock() {
+            *cache = peers.clone();
+        }
+        if let Ok(mut at) = self.path_peer_cache_fetched_at.lock() {
+            *at = Some(Instant::now());
+        }
+        Ok(peers)
     }
 
     pub async fn request_path(&self, hash: &str) -> Result<(), String> {
@@ -1836,7 +1922,9 @@ pub(super) fn parse_hash16(hex_str: &str) -> Result<[u8; 16], String> {
 }
 
 /// Cap membership growth event payloads under path-table floods.
-const MAX_PEERS_UPDATED_ADDED: usize = 256;
+const MAX_PEERS_UPDATED_ADDED: usize = 1024;
+/// Serve HTTP peer list from the maintenance snapshot when newer than this.
+const PATH_PEER_CACHE_TTL: Duration = Duration::from_secs(2);
 /// Cap Nomad page body before UTF-8 conversion (DoS bound).
 const NOMAD_PAGE_MAX_BYTES: usize = 512 * 1024;
 /// Cap Nomad file body before base64 (aligned with Axum 4 MiB body limit).

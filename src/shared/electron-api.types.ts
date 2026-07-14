@@ -228,6 +228,9 @@ export interface ElectronAPI {
     pruneMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
     pruneMeshcoreMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
     pruneReticulumMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
+    pruneReticulumDestinationsByCount: (maxCount: number) => Promise<DbPruneResult>;
+    deleteReticulumDestinationsByAge: (days: number) => Promise<DbPruneResult>;
+    pruneReticulumIdentityActivityByAge: (days: number) => Promise<DbPruneResult>;
     deleteNodesNeverHeard: () => Promise<number>;
     deleteNodesBatch: (nodeIds: number[]) => Promise<number>;
     clearMessagesByChannel: (channel: number) => Promise<void>;
@@ -331,6 +334,15 @@ export interface ElectronAPI {
       last_seen: number;
       hops?: number | null;
     }) => Promise<{ changes: number }>;
+    upsertReticulumIdentityActivityBatch: (
+      rows: {
+        destination_hash: string;
+        aspect: string;
+        identity_hash?: string | null;
+        last_seen: number;
+        hops?: number | null;
+      }[],
+    ) => Promise<{ changes: number }>;
     saveMeshcoreMessage: (message: {
       sender_id?: number | null;
       sender_name?: string | null;

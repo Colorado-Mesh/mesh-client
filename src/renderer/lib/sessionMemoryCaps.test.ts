@@ -13,7 +13,7 @@ import {
 
 describe('sessionMemoryCaps', () => {
   it('aligns product caps at 10k', () => {
-    expect(MAX_MESH_ENTITY_CAP).toBe(10_000);
+    expect(MAX_MESH_ENTITY_CAP).toBe(100_000);
     expect(MAX_DIAGNOSTICS_TRACKED_NODES).toBe(MAX_MESH_ENTITY_CAP);
     expect(MAX_RETICULUM_IDENTITY_DESTINATIONS).toBe(MAX_MESH_ENTITY_CAP);
     expect(MAX_RMAP_DISCOVERED_ROWS).toBe(2_000);

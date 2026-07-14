@@ -12,13 +12,23 @@ vi.stubGlobal('window', {
   },
 });
 
-import { RETICULUM_PACKET_RING_CAPACITY, useReticulumPacketStore } from './reticulumPacketStore';
+import {
+  resetReticulumPacketBatchForTests,
+  RETICULUM_PACKET_RING_CAPACITY,
+  useReticulumPacketStore,
+} from './reticulumPacketStore';
 
 describe('reticulumPacketStore', () => {
   beforeEach(() => {
     proxyGet.mockReset();
     proxyDelete.mockReset();
+    resetReticulumPacketBatchForTests();
     useReticulumPacketStore.setState({ packets: [] });
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      cb(0);
+      return 1;
+    });
+    vi.stubGlobal('cancelAnimationFrame', () => {});
   });
 
   it('trims ring buffer to capacity', () => {
