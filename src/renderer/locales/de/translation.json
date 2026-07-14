@@ -807,7 +807,6 @@
       "mnemonic": "Notieren Sie sich diesen Satz und bewahren Sie ihn sicher auf.",
       "confirmSaved": "Ich habe meine Genesungsphrase gespeichert",
       "hashLabel": "LXMF-Hash:",
-      "nameLabel": "Name:",
       "failed": "Identitätseinstellung fehlgeschlagen",
       "export": "Sicherungskopie",
       "exportPassphrase": "Backup-Passphrase",
@@ -829,7 +828,10 @@
       "identityAlreadyConfigured": "Eine Identität ist bereits konfiguriert. Bestätigen Sie das Ersetzen, um ein neues zu importieren.",
       "identityFileMissing": "Die Identitätsschlüsseldatei fehlt. Importieren Sie Ihren privaten Schlüssel oder Ihre Wiederherstellungsphrase erneut.",
       "backupHashMismatch": "Backup-Hashes stimmen nicht mit der Identitätsschlüsseldatei auf der Festplatte überein.",
-      "importPrivateKeyRequiresStack": "Für den Import eines privaten Schlüssels ist ein vollständiger Reticulum-Stack-Build erforderlich."
+      "importPrivateKeyRequiresStack": "Für den Import eines privaten Schlüssels ist ein vollständiger Reticulum-Stack-Build erforderlich.",
+      "saveDisplayName": "Anzeigename",
+      "saveDisplayNameFailed": "Speichern des Anzeigenamens fehlgeschlagen.",
+      "displayNameSaved": "Anzeigename gespeichert."
     },
     "reticulumInterfaces": {
       "title": "Schnittstellen",

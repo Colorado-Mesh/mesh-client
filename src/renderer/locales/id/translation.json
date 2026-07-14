@@ -807,7 +807,6 @@
       "mnemonic": "Tuliskan frasa ini dan simpan dengan aman.",
       "confirmSaved": "Saya telah menyimpan frasa pemulihan saya",
       "hashLabel": "Hash LXMF:",
-      "nameLabel": "Nama:",
       "failed": "Penyiapan identitas gagal",
       "export": "Ekspor cadangan",
       "exportPassphrase": "Frasa sandi cadangan",
@@ -829,7 +828,10 @@
       "identityAlreadyConfigured": "Identitas sudah dikonfigurasi. Konfirmasikan penggantian untuk mengimpor yang baru.",
       "identityFileMissing": "File kunci identitas tidak ada. Impor ulang kunci pribadi atau frase pemulihan Anda.",
       "backupHashMismatch": "Hash cadangan tidak cocok dengan file kunci identitas pada disk.",
-      "importPrivateKeyRequiresStack": "Impor kunci pribadi memerlukan build stack Reticulum penuh."
+      "importPrivateKeyRequiresStack": "Impor kunci pribadi memerlukan build stack Reticulum penuh.",
+      "saveDisplayName": "Nama tampil",
+      "saveDisplayNameFailed": "Gagal menyimpan nama tampilan.",
+      "displayNameSaved": "Nama tampilan disimpan."
     },
     "reticulumInterfaces": {
       "title": "Interface",

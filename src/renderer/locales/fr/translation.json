@@ -807,7 +807,6 @@
       "mnemonic": "Notez cette phrase et rangez-la en toute sécurité.",
       "confirmSaved": "J'ai enregistré ma phrase de récupération",
       "hashLabel": "Hachage LXMF :",
-      "nameLabel": "Nom :",
       "failed": "Échec de la configuration de l'identité",
       "export": "Exporter les sauvegardes",
       "exportPassphrase": "Phrase de passe de sauvegarde",
@@ -829,7 +828,10 @@
       "identityAlreadyConfigured": "Une identité est déjà configurée. Confirmez le remplacement pour en importer un nouveau.",
       "identityFileMissing": "Le fichier de clé d'identité est manquant. Réimportez votre clé privée ou votre phrase de récupération.",
       "backupHashMismatch": "Les hachages de sauvegarde ne correspondent pas au fichier de clé d'identité sur le disque.",
-      "importPrivateKeyRequiresStack": "L’importation de clé privée nécessite une construction complète de la pile Reticulum."
+      "importPrivateKeyRequiresStack": "L’importation de clé privée nécessite une construction complète de la pile Reticulum.",
+      "saveDisplayName": "afficher un nom/nom d'affichage",
+      "saveDisplayNameFailed": "Échec de l'enregistrement du nom d'affichage.",
+      "displayNameSaved": "Nom d'affichage enregistré."
     },
     "reticulumInterfaces": {
       "title": "Interfaces",

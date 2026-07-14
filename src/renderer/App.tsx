@@ -189,6 +189,7 @@ import { useRadioProvider } from './lib/radio/providerFactory';
 import type { ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
 import { openReticulumDmFromHash } from './lib/reticulum/reticulumDestinationInput';
+import { resolveReticulumSelfHeaderLabel } from './lib/reticulum/reticulumSelfNodeLabel';
 import { logRfReconnectFailure, reconnectRfFromLastConnection } from './lib/rfReconnectHelper';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
 import {
@@ -222,6 +223,7 @@ import { useMapViewportStore } from './stores/mapViewportStore';
 import { useNodeStore } from './stores/nodeStore';
 import { usePathHistoryStore } from './stores/pathHistoryStore';
 import { usePositionHistoryStore } from './stores/positionHistoryStore';
+import { useReticulumIdentityStore } from './stores/reticulumIdentityStore';
 import { useReticulumPeerStore } from './stores/reticulumPeerStore';
 
 // Tabs capability filtering lives in appTabMappings.ts (computeTabMappings).
@@ -1255,10 +1257,28 @@ function AppContent() {
         : reticulumRuntime.state.myNodeNum;
     return selfId > 0 ? [selfId >>> 0] : [];
   }, [reticulumRuntime.selfNodeId, reticulumRuntime.state.myNodeNum]);
-  const headerSelfNodeLabel = capabilities.prefersDeviceOwnerLongNameInHeader
-    ? meshcoreRuntime.deviceOwner?.longName?.trim() ||
-      panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum)
-    : panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum);
+  const reticulumIdentityForHeader = useReticulumIdentityStore((s) => s.identity);
+  const headerSelfNodeLabel = (() => {
+    if (protocol === 'reticulum') {
+      const selfId =
+        typeof reticulumRuntime.selfNodeId === 'number'
+          ? reticulumRuntime.selfNodeId
+          : activeConnectionView.state.myNodeNum;
+      const stored =
+        reticulumIdentityId && selfId > 0
+          ? useNodeStore.getState().nodes[reticulumIdentityId]?.[selfId >>> 0]?.longName
+          : undefined;
+      return resolveReticulumSelfHeaderLabel({
+        identityDisplayName: reticulumIdentityForHeader?.display_name,
+        lxmfHash: reticulumIdentityForHeader?.lxmf_hash ?? null,
+        storedLongName: stored,
+      });
+    }
+    return capabilities.prefersDeviceOwnerLongNameInHeader
+      ? meshcoreRuntime.deviceOwner?.longName?.trim() ||
+          panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum)
+      : panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum);
+  })();
   const sendReactionByProtocol = useMemo(
     () =>
       protocolRecord(
@@ -2410,6 +2430,7 @@ function AppContent() {
                 </div>
               </div>
               {activeConnectionView.state.myNodeNum > 0 &&
+                Boolean(headerSelfNodeLabel) &&
                 (!capabilities.prefersDeviceOwnerLongNameInHeader ||
                   activeConnectionView.state.status === 'configured') && (
                   <span

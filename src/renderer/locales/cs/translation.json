@@ -807,7 +807,6 @@
       "mnemonic": "Zapište si tuto větu a bezpečně ji uložte.",
       "confirmSaved": "Uložil (a) jsem svou obnovovací frázi",
       "hashLabel": "LXMF hash:",
-      "nameLabel": "Jméno:",
       "failed": "Nastavení identity selhalo",
       "export": "Exportovat zálohu",
       "exportPassphrase": "Záložní přístupová fráze",
@@ -829,7 +828,10 @@
       "identityAlreadyConfigured": "Identita je již nakonfigurována. Chcete-li importovat nový, potvrďte nahrazení.",
       "identityFileMissing": "Chybí soubor klíče identity. Znovu importujte svůj soukromý klíč nebo frázi pro obnovení.",
       "backupHashMismatch": "Záložní hodnoty hash neodpovídají souboru klíče identity na disku.",
-      "importPrivateKeyRequiresStack": "Import soukromého klíče vyžaduje kompletní sestavení zásobníku Reticulum."
+      "importPrivateKeyRequiresStack": "Import soukromého klíče vyžaduje kompletní sestavení zásobníku Reticulum.",
+      "saveDisplayName": "Zobrazovaný název",
+      "saveDisplayNameFailed": "Nepodařilo se uložit zobrazované jméno.",
+      "displayNameSaved": "Zobrazované jméno uloženo."
     },
     "reticulumInterfaces": {
       "title": "Rozhraní",

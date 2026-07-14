@@ -807,7 +807,6 @@
       "mnemonic": "写下这句话，并妥善保存。",
       "confirmSaved": "我已经保存了我的恢复短语",
       "hashLabel": "LXMF哈希：",
-      "nameLabel": "姓名：",
       "failed": "身份设置失败",
       "export": "导出备份",
       "exportPassphrase": "备份密码",
@@ -829,7 +828,10 @@
       "identityAlreadyConfigured": "身份已配置。确认替换以导入新的。",
       "identityFileMissing": "身份密钥文件丢失。重新导入您的私钥或恢复短语。",
       "backupHashMismatch": "备份哈希与磁盘上的身份密钥文件不匹配。",
-      "importPrivateKeyRequiresStack": "私钥导入需要完整的 Reticulum 堆栈构建。"
+      "importPrivateKeyRequiresStack": "私钥导入需要完整的 Reticulum 堆栈构建。",
+      "saveDisplayName": "显示名",
+      "saveDisplayNameFailed": "保存显示名称失败。",
+      "displayNameSaved": "显示名称已保存。"
     },
     "reticulumInterfaces": {
       "title": "接口",

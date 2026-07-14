@@ -807,7 +807,6 @@
       "mnemonic": "Zapisz to wyrażenie i przechowuj je w bezpieczny sposób.",
       "confirmSaved": "Zapisałem moją frazę odzyskiwania",
       "hashLabel": "Skrót LXMF:",
-      "nameLabel": "Imię i nazwisko:",
       "failed": "Konfiguracja tożsamości nie powiodła się",
       "export": "Kopia zapasowa eksportu",
       "exportPassphrase": "Hasło zapasowe",
@@ -829,7 +828,10 @@
       "identityAlreadyConfigured": "Tożsamość jest już skonfigurowana. Potwierdź wymianę, aby zaimportować nowy.",
       "identityFileMissing": "Brak pliku klucza tożsamości. Zaimportuj ponownie swój klucz prywatny lub frazę odzyskiwania.",
       "backupHashMismatch": "Skróty kopii zapasowych nie odpowiadają plikowi klucza tożsamości na dysku.",
-      "importPrivateKeyRequiresStack": "Import klucza prywatnego wymaga pełnej kompilacji stosu Reticulum."
+      "importPrivateKeyRequiresStack": "Import klucza prywatnego wymaga pełnej kompilacji stosu Reticulum.",
+      "saveDisplayName": "Display Name",
+      "saveDisplayNameFailed": "Nie udało się zapisać wyświetlanej nazwy.",
+      "displayNameSaved": "Nazwa wyświetlana zapisana."
     },
     "reticulumInterfaces": {
       "title": "Interfejsy",

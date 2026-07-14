@@ -807,7 +807,6 @@
       "mnemonic": "Noteer deze zin en bewaar deze veilig.",
       "confirmSaved": "IK HEB MIJN HERSTELZIN OPGESLAGEN",
       "hashLabel": "LXMF-hash:",
-      "nameLabel": "Naam:",
       "failed": "Identiteitsinstelling mislukt",
       "export": "Back-up exporteren",
       "exportPassphrase": "Back-up wachtwoordzin",
@@ -829,7 +828,10 @@
       "identityAlreadyConfigured": "Er is al een identiteit geconfigureerd. Bevestig vervangen om een ​​nieuwe te importeren.",
       "identityFileMissing": "Identiteitssleutelbestand ontbreekt. Importeer uw privésleutel of herstelzin opnieuw.",
       "backupHashMismatch": "Back-up-hashes komen niet overeen met het identiteitssleutelbestand op schijf.",
-      "importPrivateKeyRequiresStack": "Voor het importeren van privésleutels is een volledige Reticulum-stack-build vereist."
+      "importPrivateKeyRequiresStack": "Voor het importeren van privésleutels is een volledige Reticulum-stack-build vereist.",
+      "saveDisplayName": "Display Naam",
+      "saveDisplayNameFailed": "Kan weergavenaam niet opslaan.",
+      "displayNameSaved": "Weergavenaam opgeslagen."
     },
     "reticulumInterfaces": {
       "title": "Raakvlakken",

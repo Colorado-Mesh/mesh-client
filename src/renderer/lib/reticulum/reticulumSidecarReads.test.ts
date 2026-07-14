@@ -60,6 +60,7 @@ describe('reticulumSidecarReads', () => {
       configured: false,
       lxmfHash: null,
       displayName: null,
+      identityHash: null,
     });
     expect(proxyGet).not.toHaveBeenCalled();
   });
@@ -69,12 +70,14 @@ describe('reticulumSidecarReads', () => {
     proxyGet.mockResolvedValue({
       configured: true,
       lxmf_hash: 'f8b4e04e1234567890abcdef',
+      identity_hash: 'aabbccddeeff00112233445566778899',
       display_name: 'NV0N',
     });
     await expect(fetchReticulumIdentityStatus()).resolves.toEqual({
       configured: true,
       lxmfHash: 'f8b4e04e1234567890abcdef',
       displayName: 'NV0N',
+      identityHash: 'aabbccddeeff00112233445566778899',
     });
   });
 

@@ -807,7 +807,6 @@
       "mnemonic": "Escribe esta frase y guárdala de forma segura.",
       "confirmSaved": "He guardado mi frase de recuperación",
       "hashLabel": "LXMF hash:",
-      "nameLabel": "Nombre:",
       "failed": "Error en la configuración de la identidad",
       "export": "Exportar copia de seguridad",
       "exportPassphrase": "Frase de contraseña de copia de seguridad",
@@ -829,7 +828,10 @@
       "identityAlreadyConfigured": "Ya hay una identidad configurada. Confirme el reemplazo para importar uno nuevo.",
       "identityFileMissing": "Falta el archivo de clave de identidad. Vuelva a importar su clave privada o frase de recuperación.",
       "backupHashMismatch": "Los hash de la copia de seguridad no coinciden con el archivo de clave de identidad en el disco.",
-      "importPrivateKeyRequiresStack": "La importación de claves privadas requiere una compilación completa de la pila de Reticulum."
+      "importPrivateKeyRequiresStack": "La importación de claves privadas requiere una compilación completa de la pila de Reticulum.",
+      "saveDisplayName": "Nombre mostrado",
+      "saveDisplayNameFailed": "Error al guardar el nombre para mostrar.",
+      "displayNameSaved": "Nombre para mostrar guardado."
     },
     "reticulumInterfaces": {
       "title": "Interfaces",

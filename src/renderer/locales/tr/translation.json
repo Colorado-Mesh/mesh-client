@@ -807,7 +807,6 @@
       "mnemonic": "Bu ifadeyi yazın ve güvenli bir şekilde saklayın.",
       "confirmSaved": "Kurtarma cümlemi kaydettim",
       "hashLabel": "LXMF karması:",
-      "nameLabel": "Ad Soyad:",
       "failed": "Kimlik kurulumu başarısız oldu",
       "export": "Yedeklemeyi dışa aktar",
       "exportPassphrase": "Yedekleme parolası",
@@ -829,7 +828,10 @@
       "identityAlreadyConfigured": "Bir kimlik zaten yapılandırılmıştır. Yenisini içe aktarmak için değiştirmeyi onaylayın.",
       "identityFileMissing": "Kimlik anahtarı dosyası eksik. Özel anahtarınızı veya kurtarma ifadenizi yeniden içe aktarın.",
       "backupHashMismatch": "Yedekleme karmaları diskteki kimlik anahtarı dosyasıyla eşleşmiyor.",
-      "importPrivateKeyRequiresStack": "Özel anahtarın içe aktarılması, tam bir Reticulum yığını yapısı gerektirir."
+      "importPrivateKeyRequiresStack": "Özel anahtarın içe aktarılması, tam bir Reticulum yığını yapısı gerektirir.",
+      "saveDisplayName": "Görünüm Adı",
+      "saveDisplayNameFailed": "Görünen ad kaydedilemedi.",
+      "displayNameSaved": "Görünen ad kaydedildi."
     },
     "reticulumInterfaces": {
       "title": "Ara birimler",

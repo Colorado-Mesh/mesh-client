@@ -807,7 +807,6 @@
       "mnemonic": "このフレーズを書き留めて、安全に保管してください。",
       "confirmSaved": "回復フレーズを保存しました",
       "hashLabel": "LXMFハッシュ：",
-      "nameLabel": "名前:",
       "failed": "IDの設定に失敗しました",
       "export": "バックアップをエクスポート",
       "exportPassphrase": "バックアップパスフレーズ",
@@ -829,7 +828,10 @@
       "identityAlreadyConfigured": "ID はすでに構成されています。新しいものをインポートするには、置換を確認します。",
       "identityFileMissing": "ID キー ファイルがありません。秘密キーまたは回復フレーズを再インポートします。",
       "backupHashMismatch": "バックアップ ハッシュがディスク上の ID キー ファイルと一致しません。",
-      "importPrivateKeyRequiresStack": "秘密キーのインポートには、完全な Reticulum スタックのビルドが必要です。"
+      "importPrivateKeyRequiresStack": "秘密キーのインポートには、完全な Reticulum スタックのビルドが必要です。",
+      "saveDisplayName": "列名",
+      "saveDisplayNameFailed": "表示名の保存に失敗しました。",
+      "displayNameSaved": "表示名を保存しました。"
     },
     "reticulumInterfaces": {
       "title": "インターフェース",

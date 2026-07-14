@@ -42,6 +42,10 @@ import { failReticulumSendingOutboundToDestHash } from '@/renderer/lib/reticulum
 import { applyPropagationSyncEvent } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import { reticulumWireRowToEntry } from '@/renderer/lib/reticulum/reticulumRawPacketLog';
 import {
+  resolveReticulumSelfFullLabel,
+  resolveReticulumSelfHeaderLabel,
+} from '@/renderer/lib/reticulum/reticulumSelfNodeLabel';
+import {
   fetchReticulumIdentityStatus,
   fetchReticulumInterfaces,
   fetchReticulumSerialPorts,
@@ -57,7 +61,10 @@ import {
   nodeRecordsToMeshNodeMap,
   reticulumDbRowToMessageRecord,
 } from '@/renderer/lib/storeRecordAdapters';
-import { reticulumHashForNodeId } from '@/renderer/stores/reticulumPeerStore';
+import {
+  type ReticulumIdentityStatus,
+  useReticulumIdentityStore,
+} from '@/renderer/stores/reticulumIdentityStore';
 import type { ReticulumSidecarEvent, ReticulumWirePacketRow } from '@/shared/reticulum-types';
 import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
@@ -86,6 +93,7 @@ import {
   refreshReticulumPeersFromSidecar,
   RETICULUM_PEER_REFRESH_MS,
   reticulumContactToNodeRecord,
+  reticulumHashForNodeId,
   reticulumSelfIdentityToNodeRecord,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
@@ -212,11 +220,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
         upsertNodeRecord(identityId, {
           ...existing,
           reticulumDestinationHash: record.reticulumDestinationHash,
-          ...(displayName
-            ? { longName: record.longName, shortName: record.shortName }
-            : existing.longName
-              ? {}
-              : { longName: record.longName, shortName: record.shortName }),
+          longName: record.longName,
+          shortName: record.shortName,
         });
         return;
       }
@@ -225,23 +230,50 @@ export function useReticulumRuntime(): ProtocolRuntime {
     [identityId],
   );
 
-  const refreshIdentityFromSidecar = useCallback(async (): Promise<string | null> => {
-    const status = await fetchReticulumIdentityStatus();
-    if (status.lxmfHash) {
+  const applyIdentityStatusToStores = useCallback(
+    (status: {
+      configured: boolean;
+      lxmfHash: string | null;
+      displayName: string | null;
+      identityHash?: string | null;
+    }) => {
+      if (!status.lxmfHash) return null;
+      const existing = useReticulumIdentityStore.getState().identity;
+      const nextIdentity: ReticulumIdentityStatus = {
+        configured: status.configured,
+        identity_hash: status.identityHash?.trim() || existing?.identity_hash || '',
+        lxmf_hash: status.lxmfHash,
+        display_name: status.displayName,
+      };
+      useReticulumIdentityStore.getState().setIdentity(nextIdentity);
       setSelfLxmfHash(status.lxmfHash);
       syncSelfNodeFromIdentityStatus(status.lxmfHash, status.displayName);
       return status.lxmfHash;
-    }
-    return null;
-  }, [syncSelfNodeFromIdentityStatus]);
+    },
+    [syncSelfNodeFromIdentityStatus],
+  );
 
-  /** Refresh local identity display name without touching React lxmf hash state (safe in effects). */
+  const refreshIdentityFromSidecar = useCallback(async (): Promise<string | null> => {
+    const status = await fetchReticulumIdentityStatus();
+    return applyIdentityStatusToStores(status);
+  }, [applyIdentityStatusToStores]);
+
+  /**
+   * Refresh local identity display name into Zustand stores only.
+   * Avoid React setState here — this is polled from an effect.
+   */
   const refreshSelfNodeDisplayNameFromSidecar = useCallback(async () => {
     if (!identityId || !selfLxmfHash) return;
     const status = await fetchReticulumIdentityStatus();
-    if (status.lxmfHash) {
-      syncSelfNodeFromIdentityStatus(status.lxmfHash, status.displayName);
-    }
+    if (!status.lxmfHash) return;
+    const existing = useReticulumIdentityStore.getState().identity;
+    useReticulumIdentityStore.getState().setIdentity({
+      configured: status.configured,
+      identity_hash: status.identityHash?.trim() || existing?.identity_hash || '',
+      lxmf_hash: status.lxmfHash,
+      display_name: status.displayName,
+    });
+    syncSelfNodeFromIdentityStatus(status.lxmfHash, status.displayName);
   }, [identityId, selfLxmfHash, syncSelfNodeFromIdentityStatus]);
 
   const refreshLocalInterfacesFromSidecar = useCallback(async () => {
@@ -702,6 +734,23 @@ export function useReticulumRuntime(): ProtocolRuntime {
     };
   }, [state.status, refreshContactsFromSidecar, refreshSelfNodeDisplayNameFromSidecar]);
 
+  /** Keep nodeStore longName in sync when Network panel updates identity display_name. */
+  useEffect(() => {
+    return useReticulumIdentityStore.subscribe((identityState, prev) => {
+      const next = identityState.identity;
+      const prevIdentity = prev.identity;
+      if (
+        next?.display_name === prevIdentity?.display_name &&
+        next?.lxmf_hash === prevIdentity?.lxmf_hash
+      ) {
+        return;
+      }
+      if (!next?.lxmf_hash) return;
+      setSelfLxmfHash(next.lxmf_hash);
+      syncSelfNodeFromIdentityStatus(next.lxmf_hash, next.display_name?.trim() || null);
+    });
+  }, [syncSelfNodeFromIdentityStatus]);
+
   useEffect(() => {
     if (state.status !== 'configured' && state.status !== 'connected' && state.status !== 'stale') {
       if (localInterfacePollTimeoutRef.current !== null) {
@@ -877,11 +926,22 @@ export function useReticulumRuntime(): ProtocolRuntime {
     (nodeId: number) => {
       if (!identityId) return String(nodeId);
       const normalizedId = nodeId >>> 0;
+      const isSelf = selfNodeId != null && normalizedId === selfNodeId;
+      if (isSelf) {
+        const identity = useReticulumIdentityStore.getState().identity;
+        const stored = useNodeStore.getState().nodes[identityId]?.[normalizedId]?.longName;
+        return resolveReticulumSelfFullLabel(
+          {
+            identityDisplayName: identity?.display_name,
+            lxmfHash: selfLxmfHash ?? identity?.lxmf_hash ?? null,
+            storedLongName: stored,
+          },
+          normalizedId,
+        );
+      }
       const stored = useNodeStore.getState().nodes[identityId]?.[normalizedId]?.longName;
       if (stored) return stored;
-      const hash =
-        (selfNodeId != null && normalizedId === selfNodeId ? selfLxmfHash : null) ??
-        resolveReticulumDestinationHash(normalizedId);
+      const hash = resolveReticulumDestinationHash(normalizedId);
       return (
         hash?.replace(/[^0-9a-f]/gi, '').slice(0, 12) ?? normalizedId.toString(16).toUpperCase()
       );
@@ -889,7 +949,24 @@ export function useReticulumRuntime(): ProtocolRuntime {
     [identityId, selfNodeId, selfLxmfHash],
   );
 
-  const getPickerStyleNodeLabel = getFullNodeLabel;
+  const getPickerStyleNodeLabel = useCallback(
+    (nodeId: number) => {
+      if (!identityId) return String(nodeId);
+      const normalizedId = nodeId >>> 0;
+      const isSelf = selfNodeId != null && normalizedId === selfNodeId;
+      if (isSelf) {
+        const identity = useReticulumIdentityStore.getState().identity;
+        const stored = useNodeStore.getState().nodes[identityId]?.[normalizedId]?.longName;
+        return resolveReticulumSelfHeaderLabel({
+          identityDisplayName: identity?.display_name,
+          lxmfHash: selfLxmfHash ?? identity?.lxmf_hash ?? null,
+          storedLongName: stored,
+        });
+      }
+      return getFullNodeLabel(normalizedId);
+    },
+    [identityId, selfNodeId, selfLxmfHash, getFullNodeLabel],
+  );
 
   const getNodes = useCallback(() => [...nodes.values()], [nodes]);
 
