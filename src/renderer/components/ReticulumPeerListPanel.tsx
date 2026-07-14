@@ -17,6 +17,7 @@ import {
   prepareReticulumPeerRows,
   RETICULUM_PEER_ROW_HEIGHT_PX,
   RETICULUM_PEER_VIRTUALIZE_THRESHOLD,
+  reticulumPeerLastActivityMs,
   type ReticulumPeerSortDir,
   type ReticulumPeerSortKey,
   sortPreparedReticulumPeerRows,
@@ -28,7 +29,7 @@ import {
   probeReticulumPeer,
   requestReticulumPeerPath,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
-import type { ReticulumContact, ReticulumPeer } from '@/shared/reticulum-types';
+import type { ReticulumPeer } from '@/shared/reticulum-types';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
 import type { MeshNode } from '../lib/types';
@@ -65,14 +66,6 @@ function peerHashToNodeNum(hash: string): number {
   const nodeId = reticulumHashToNodeId(hash);
   registerReticulumDestinationHash(nodeId, hash);
   return nodeId;
-}
-
-function peerLastSeenMs(peer: ReticulumPeer): number {
-  return normalizeLastHeardMs(peer.last_seen ?? 0);
-}
-
-function contactLastHeardMs(contact: ReticulumContact): number {
-  return normalizeLastHeardMs(contact.last_heard ?? 0);
 }
 
 export default function ReticulumPeerListPanel({
@@ -306,14 +299,8 @@ export default function ReticulumPeerListPanel({
     }
   };
 
-  const formatPeerLastSeen = (peer: ReticulumPeer) => {
-    const ms = peerLastSeenMs(peer);
-    if (!ms) return '—';
-    return formatRelativeOrIsoDate(ms, t, normalizeLastHeardMs);
-  };
-
-  const formatContactLastHeard = (contact: ReticulumContact) => {
-    const ms = contactLastHeardMs(contact);
+  const formatPeerActivity = (peer: ReticulumPeer) => {
+    const ms = reticulumPeerLastActivityMs(peer);
     if (!ms) return '—';
     return formatRelativeOrIsoDate(ms, t, normalizeLastHeardMs);
   };
@@ -698,9 +685,9 @@ export default function ReticulumPeerListPanel({
                         <td className="py-2 pr-2">{peer.hops ?? '—'}</td>
                         <td
                           className="py-2 pr-2 whitespace-nowrap"
-                          title={formatPeerLastSeen(peer)}
+                          title={formatPeerActivity(peer)}
                         >
-                          {formatPeerLastSeen(peer)}
+                          {formatPeerActivity(peer)}
                         </td>
                         <td className="hidden max-w-[8rem] truncate py-2 pr-2 sm:table-cell">
                           {peer.interface ?? '—'}
@@ -710,9 +697,9 @@ export default function ReticulumPeerListPanel({
                       <>
                         <td
                           className="py-2 pr-2 whitespace-nowrap"
-                          title={formatContactLastHeard(peer as ReticulumContact)}
+                          title={formatPeerActivity(peer)}
                         >
-                          {formatContactLastHeard(peer as ReticulumContact)}
+                          {formatPeerActivity(peer)}
                         </td>
                         <td className="py-2 pr-2">{peer.hops ?? '—'}</td>
                         <td className="py-2 pr-2">

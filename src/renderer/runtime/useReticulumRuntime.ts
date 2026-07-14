@@ -17,7 +17,10 @@ import {
   MAX_RAW_PACKET_LOG_ENTRIES,
   type ReticulumRawPacketEntry,
 } from '@/renderer/lib/rawPacketLogConstants';
-import { applyReticulumOutboundDeliveryStatus } from '@/renderer/lib/reticulum/applyReticulumOutboundDeliveryStatus';
+import {
+  applyReticulumOutboundDeliveryStatus,
+  flushPendingReticulumOutboundDeliveryStatus,
+} from '@/renderer/lib/reticulum/applyReticulumOutboundDeliveryStatus';
 import { resolveReticulumOutboundViaFromInterfaces } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import { clearReticulumSessionStores } from '@/renderer/lib/reticulum/clearReticulumSessionStores';
 import {
@@ -860,10 +863,25 @@ export function useReticulumRuntime(): ProtocolRuntime {
           if (pendingId && hash) {
             renameMessageId(identityId, pendingId, hash);
             ingestLxmfPayload(lxmfPayload);
-            updateMessageStatus(identityId, hash, outboundStatus);
+            // Terminal WS may have arrived before rename; apply buffered Completes/Fails.
+            flushPendingReticulumOutboundDeliveryStatus(identityId, hash);
+            const afterFlush = useMessageStore.getState().messages[identityId]?.[hash]?.status;
+            if (afterFlush !== 'acked' && afterFlush !== 'failed') {
+              updateMessageStatus(identityId, hash, outboundStatus);
+            }
           } else {
             ingestLxmfPayload(lxmfPayload);
-            if (pendingId) updateMessageStatus(identityId, pendingId, outboundStatus);
+            if (hash) {
+              flushPendingReticulumOutboundDeliveryStatus(identityId, hash);
+            }
+            if (pendingId) {
+              const afterFlush = hash
+                ? useMessageStore.getState().messages[identityId]?.[hash]?.status
+                : undefined;
+              if (afterFlush !== 'acked' && afterFlush !== 'failed') {
+                updateMessageStatus(identityId, pendingId, outboundStatus);
+              }
+            }
           }
         } else if (pendingId) {
           updateMessageStatus(identityId, pendingId, 'failed', 'LXMF send returned no payload');

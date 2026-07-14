@@ -24,22 +24,22 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 
 ## What is included
 
-| Area            | Shipped behavior                                                                                                                                                                                                                                     |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Stack lifecycle | Start / stop / auto-start; disconnect & quit                                                                                                                                                                                                         |
-| Interfaces      | TCP client, I2P (`peers`), Auto discovery, RNode (USB serial, `ble://…`, Wi‑Fi `tcp://host:7633`); default hub presets (testnet + Ratspeak + RMAP World, added disabled; button syncs/repairs by endpoint)                                           |
-| Identity        | Generate / import mnemonic; display name; encrypted export; **identity vault** passcode on Network tab                                                                                                                                               |
-| LXMF chat       | DM-only text, reactions, file attachments, voice clips (~60 s)                                                                                                                                                                                       |
-| Delivery        | Direct when destination is in path table; propagated (PN) via preferred propagation node when offline                                                                                                                                                |
-| Peers           | RNS path table + LXMF contacts (Peers tab sub-tabs); probe and peer detail modal                                                                                                                                                                     |
-| Topology        | Best-effort graph from path-table next hops (not a full multi-hop trace)                                                                                                                                                                             |
-| Map             | Local RMAP v4 discovery map (heard opt-in interfaces with GPS); link to rmap.world for global view                                                                                                                                                   |
-| Nomad Network   | Favourites / announces list (collapsible sidebar, default Favourites sub-tab); lazy-mount after first visit; Micron (.mu) browser with in-page navigation, back/forward, session page cache, `/file/` downloads, source toggle, and lxmf:// DM links |
-| Propagation     | Preferred node, per-node **Sync messages**, optional **local propagation inbox**, configurable **auto-sync interval**                                                                                                                                |
-| Diagnostics     | Reticulum-native interface / path / LXMF health and config audit (`reticulum/*` rows only on this tab; LoRa Hop Goblins and foreign-LoRa tables are Meshtastic/MeshCore-scoped)                                                                      |
-| Admin           | RNode firmware flasher (Web Serial), stack factory reset                                                                                                                                                                                             |
-| Sniffer / Stats | Reticulum packet log tab (`rawPacketLog.reticulum.*`)                                                                                                                                                                                                |
-| Coexistence     | BLE on a **different** MAC from Meshtastic/MeshCore; scan mutex; **Noble BLE yield** when an enabled BLE RNode is in config (sidecar suspends Noble on macOS/Windows so btleplug can pair)                                                           |
+| Area            | Shipped behavior                                                                                                                                                                                                                                                                                                                                     |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stack lifecycle | Start / stop / auto-start; disconnect & quit                                                                                                                                                                                                                                                                                                         |
+| Interfaces      | TCP client, I2P (`peers`), Auto discovery, RNode (USB serial, `ble://…`, Wi‑Fi `tcp://host:7633`); default hub presets (testnet + Ratspeak + RMAP World, added disabled; button syncs/repairs by endpoint)                                                                                                                                           |
+| Identity        | Generate / import mnemonic; display name; encrypted export; **identity vault** passcode on Network tab                                                                                                                                                                                                                                               |
+| LXMF chat       | DM-only text, reactions, file attachments, voice clips (~60 s)                                                                                                                                                                                                                                                                                       |
+| Delivery        | **Direct** when destination is in path table, **Propagated (PN)** when offline and a preferred propagation node is set; path presence and transport badges (RF/TCP/NET, PN) indicate routing method/egress, not final LXMF delivery — UI stays **Sending** until `lxmf_outbound_status` (`delivered` / `failed`); terminal status persists in SQLite |
+| Peers           | RNS path table + LXMF contacts (Peers tab sub-tabs); probe and peer detail modal                                                                                                                                                                                                                                                                     |
+| Topology        | Best-effort graph from path-table next hops (not a full multi-hop trace)                                                                                                                                                                                                                                                                             |
+| Map             | Local RMAP v4 discovery map (heard opt-in interfaces with GPS); link to rmap.world for global view                                                                                                                                                                                                                                                   |
+| Nomad Network   | Favourites / announces list (collapsible sidebar, default Favourites sub-tab); **lazy-mount after first visit**; Micron (.mu) browser in a **dual-axis scroll shell**; in-page navigation, back/forward, session page cache, `/file/` downloads, source toggle, and lxmf:// DM links; page/file errors humanized via `nomadPageErrorHumanize.ts`     |
+| Propagation     | Preferred node, per-node **Sync messages**, optional **local propagation inbox**, configurable **auto-sync interval**                                                                                                                                                                                                                                |
+| Diagnostics     | Reticulum-native interface / path / LXMF health and config audit (`reticulum/*` rows only on this tab; LoRa Hop Goblins and foreign-LoRa tables are Meshtastic/MeshCore-scoped)                                                                                                                                                                      |
+| Admin           | RNode firmware flasher (Web Serial), stack factory reset                                                                                                                                                                                                                                                                                             |
+| Sniffer / Stats | Reticulum packet log tab (`rawPacketLog.reticulum.*`)                                                                                                                                                                                                                                                                                                |
+| Coexistence     | BLE on a **different** MAC from Meshtastic/MeshCore; scan mutex; **Noble BLE yield** when an enabled BLE RNode is in config (sidecar suspends Noble on macOS/Windows so btleplug can pair)                                                                                                                                                           |
 
 **Not in Reticulum mode:** Meshtastic/MeshCore-style RF channel chat, MQTT broker card, Meshtastic/MeshCore LoRa node position map, Rooms BBS, TAK, Meshtastic PKI Security tab, Hop Goblins routing diagnostics.
 
@@ -47,19 +47,19 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 
 ## Sidebar tabs
 
-| Tab             | Role                                                                                                                                        |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Connection      | Stack start/stop, auto-start, interfaces CRUD, interface health, **Pick device** (serial / BLE)                                             |
-| Chat            | LXMF DMs (only chat mode for Reticulum)                                                                                                     |
-| Nomad Network   | Favourites, announces, and Micron page browser (navigation, cache, file downloads)                                                          |
-| Peers           | Path-table peers and LXMF contacts (sidebar label **Peers**; Meshtastic/MeshCore use **Nodes**)                                             |
-| Network         | Identity, stack settings, announces, propagation, config import/export, identity vault (sidebar label **Network**; LoRa tabs use **Radio**) |
-| Admin           | RNode firmware flasher; factory reset (danger zone)                                                                                         |
-| Diagnostics     | Reticulum runtime rows + interface config audit/repair; LoRa routing/RF and foreign-LoRa findings hidden                                    |
-| Topology        | Path-table graph (BFS layout; `via_hash` next-hop edges)                                                                                    |
-| Map             | RMAP v4 discovery map (local heard interfaces + path-table reachability overlay)                                                            |
-| Stats / Sniffer | Packet log views (`rawPacketLog.reticulum.*`)                                                                                               |
-| App             | Shared app settings, DB tools, appearance (includes **Log panel** toggle)                                                                   |
+| Tab             | Role                                                                                                                                            |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Connection      | Stack start/stop, auto-start, interfaces CRUD, interface health, **Pick device** (serial / BLE)                                                 |
+| Chat            | LXMF DMs (only chat mode for Reticulum)                                                                                                         |
+| Nomad Network   | Favourites, announces, Micron page browser (dual-axis scroll shell, navigation, cache, file downloads); lazy-mount keep-alive after first visit |
+| Peers           | Path-table peers and LXMF contacts (sidebar label **Peers**; Meshtastic/MeshCore use **Nodes**)                                                 |
+| Network         | Identity, stack settings, announces, propagation, config import/export, identity vault (sidebar label **Network**; LoRa tabs use **Radio**)     |
+| Admin           | RNode firmware flasher; factory reset (danger zone)                                                                                             |
+| Diagnostics     | Reticulum runtime rows + interface config audit/repair; LoRa routing/RF and foreign-LoRa findings hidden                                        |
+| Topology        | Path-table graph (BFS layout; `via_hash` next-hop edges)                                                                                        |
+| Map             | RMAP v4 discovery map (local heard interfaces + path-table reachability overlay)                                                                |
+| Stats / Sniffer | Packet log views (`rawPacketLog.reticulum.*`)                                                                                                   |
+| App             | Shared app settings, DB tools, appearance (includes **Log panel** toggle)                                                                       |
 
 Hidden tabs (Meshtastic/MeshCore only): Modules/Repeaters, Rooms, Telemetry, Security, TAK, RF, Graph.
 
@@ -188,6 +188,7 @@ When multiple enabled local RNode interfaces are connected, the interface list s
 ## Network tab
 
 - **Identity:** generate BIP-39 recovery phrase, import **private key** (paste or file picker via `reticulum:showIdentityImportDialog`), import **backup JSON**, export with passphrase, display name; **replace identity** confirm when keys already exist (`replace: true` on generate/import)
+- **Header self label:** when configured, the app header shows your Network **display name** (`reticulumSelfNodeLabel.ts`) — not a hash-prefix stub; omit the `Node:` label when no real name is set
 - **Note:** `GET /api/v1/identities` and `POST /api/v1/identities/switch` remain sidecar APIs; mesh-client UI uses a single unified identity (no in-app identity switcher)
 - **Identity vault:** optional passcode (minimum 8 characters) to encrypt secrets in the main process; unlock is rate-limited
 - **Stack settings:** `enable_transport`, `share_instance`, `loglevel` via `PUT /api/v1/stack/settings` (UI merge-reads so `announce_interval_sec` is not cleared accidentally)
@@ -201,18 +202,20 @@ When multiple enabled local RNode interfaces are connected, the interface list s
 
 - **DM-only** — no RF channel pills
 - Text, emoji reactions, file attachments (paperclip), voice clips (mic, max ~60 s)
-- Outbound **Sending** until sidecar emits `lxmf_outbound_status` (`delivered` / `failed`)
+- Outbound **Sending** until sidecar emits `lxmf_outbound_status` (`delivered` / `failed`); `/api/v1/lxmf/send` may return `delivery_status: "queued"` or `"sending"` — that is enqueue/acceptance, not delivery confirmation
+- Terminal **Completes** / **Failed** from `lxmf_outbound_status` are persisted to SQLite (`delivery_status` on `reticulum_messages`) via `applyReticulumOutboundDeliveryStatus.ts` so restart/DB hydration does not regress delivered rows; early WS events before provisional id→hash rekey are buffered
+- **DM path reachability:** active DM header shows a reachability badge (`ReticulumDmPathReachabilityBadge` + `useReticulumDmPathProbe`) seeded from path-table/contact hops, then settled by peer probe; when settled, **Request path** / **Probe** use the same sidecar endpoints as the Peers tab
 - Inbound attachments cached under `userData/reticulum/attachments/`; main process jails paths for save/show-in-folder
 
 ### Delivery modes
 
-| Path table          | Propagation node | Result                                                         |
-| ------------------- | ---------------- | -------------------------------------------------------------- |
-| Destination present | —                | **Direct** (link delivery); RF/TCP/NET badge → **Delivered**   |
-| Destination absent  | Preferred PN set | **Propagated**; **PN** badge until sidecar confirms            |
-| Destination absent  | None             | Error `no_propagation_node`; set preferred node on Network tab |
+| Path table          | Propagation node | Routing / UI                                                                                                                      |
+| ------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Destination present | —                | **Direct** link delivery; RF/TCP/NET badge = egress transport — message stays **Sending** until `lxmf_outbound_status: delivered` |
+| Destination absent  | Preferred PN set | **Propagated** via preferred propagation node; **PN** badge = store-and-forward path — still **Sending** until sidecar confirms   |
+| Destination absent  | None             | Error `no_propagation_node`; set preferred node on Network tab                                                                    |
 
-Reticulum is async — offline peers need a propagation node, not a TCP-style immediate refusal.
+**Path ≠ delivered:** a path-table entry means RNS knows a route, not that LXMF completed. Reticulum is async — offline peers need a propagation node, not a TCP-style immediate refusal.
 
 ---
 
@@ -260,10 +263,10 @@ Firmware `.zip` files are selected locally (no in-app GitHub download). Disconne
 
 ### SQLite (main process)
 
-| Table                    | Contents                                                             |
-| ------------------------ | -------------------------------------------------------------------- |
-| `reticulum_destinations` | Contact rows (hash, display name, favorited)                         |
-| `reticulum_messages`     | LXMF history (`message_hash`, `reply_to_hash` for threads/reactions) |
+| Table                    | Contents                                                                                                                                                                                                                         |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reticulum_destinations` | Contact rows (hash, display name, favorited)                                                                                                                                                                                     |
+| `reticulum_messages`     | LXMF history (`message_hash`, `reply_to_hash`, `delivery_status` — `sending`/`queued`/`pending`/`delivered`/`failed`; terminal outbound status written on `lxmf_outbound_status`; stale `sending` rows marked failed on startup) |
 
 ### Sidecar `userData`
 

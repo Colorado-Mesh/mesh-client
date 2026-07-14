@@ -341,8 +341,8 @@
     "exportSupportBundleFailed": "Destek paketi dışa aktarılamadı: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Tüm LXMF kişilerini temizle",
-    "clearReticulumContactsDesc": "Kişiler sekmesinden ve sepet kişi listesinden her girişi kaldırır. Sohbet mesajları, yol tablosu eşleri ve yalnızca favori eş meta verileri tutulur. Kişiler, birine mesaj gönderdiğinizde veya Kişi olarak kaydet'i kullandığınızda yeniden görünür.",
-    "clearReticulumContactsConfirm": "Bu, tüm {{count}} Reticulum LXMF kişilerini sepetten ve yerel veritabanından kalıcı olarak temizleyecektir. Yol tablosu eşleri ve mesajları silinmez. Bu işlem geri alınamaz.",
+    "clearReticulumContactsDesc": "Kişiler sekmesinden ve sidecar kişi listesinden her girişi kaldırır. Hedefler adlarıyla Peers sekmesinde kalır. Sohbet mesajları korunur. Birine mesaj gönderdiğinizde veya Kişi olarak kaydet’i kullandığınızda kişiler yeniden görünür.",
+    "clearReticulumContactsConfirm": "Bu, tüm {{count}} Reticulum LXMF kişisini kalıcı olarak temizler. Hedefler Peers sekmesinde kalır; mesajlar silinmez. Bu işlem geri alınamaz.",
     "clearReticulumContactsConfirmButton": "{{count}} kişiyi temizle",
     "clearReticulumContactsButton": "Tüm Kişileri Temizle ({{count}})"
   },
@@ -552,7 +552,7 @@
     "dmPathCheckingAria": "Varış yolu erişilebilirliğini kontrol etme",
     "dmPathCheckingTooltip": "Bu hedefe bir Reticulum yolu talep ediliyor.",
     "dmPathReachable": "Ulaşılabilir yol",
-    "dmPathReachableHops": "Erişilebilir yol · {{hops}} atlama noktası(ları)",
+    "dmPathReachableHops": "Yol erişilebilir · {{hops}} atlama",
     "dmPathReachableAria": "Varış noktasına ulaşılabiliyor",
     "dmPathReachableTooltip": "Bu hedefe bir Reticulum yolu bilinmektedir. Akran çevrimdışıysa doğrudan teslimat yine de başarısız olabilir.",
     "dmPathUnreachable": "Yol yok",
@@ -841,7 +841,7 @@
       "identityFileMissing": "Kimlik anahtarı dosyası eksik. Özel anahtarınızı veya kurtarma ifadenizi yeniden içe aktarın.",
       "backupHashMismatch": "Yedekleme karmaları diskteki kimlik anahtarı dosyasıyla eşleşmiyor.",
       "importPrivateKeyRequiresStack": "Özel anahtarın içe aktarılması, tam bir Reticulum yığını yapısı gerektirir.",
-      "saveDisplayName": "Görünüm Adı",
+      "saveDisplayName": "Görünen adı kaydet",
       "saveDisplayNameFailed": "Görünen ad kaydedilemedi.",
       "displayNameSaved": "Görünen ad kaydedildi."
     },
@@ -2647,13 +2647,15 @@
     "collapseNodeList": "Düğüm listesini daralt",
     "expandNodeList": "Düğüm listesini genişlet",
     "errors": {
-      "pathTimeout": "Bu karoya rota yok (yol arama zaman aşımına uğradı). Daha yakın bir karo deneyin veya daha yeni bir duyuru bekleyin.",
+      "pathTimeout": "Bu düğüme rota yok (yol araması zaman aşımına uğradı). Daha yakın bir düğüm deneyin veya daha yeni bir announce bekleyin.",
       "pubkeyNotFound": "Bu düğümün kimlik anahtarı bulunamadı. Bir Göçebe duyurusunu bekleyin, sonra tekrar deneyin.",
       "linkTimeout": "Düğüme bağlantı zamanında kurulamadı.",
       "responseTimeout": "Düğüm bağlantıyı kabul etti ancak sayfayı zamanında döndürmedi.",
       "missingIdentity": "Bu düğümün henüz hatırlanan bir kimliği yok. Bir Göçebe duyurusunu bekleyin, sonra tekrar deneyin.",
       "transportUnavailable": "Reticulum taşıması kullanılamıyor. Yığını yeniden başlatın ve tekrar deneyin.",
-      "sidecarNotRunning": "Reticulum sidecar çalışmıyor. Bağlantı bölümünden yığını başlatın, sonra tekrar deneyin."
+      "sidecarNotRunning": "Reticulum sidecar çalışmıyor. Bağlantı bölümünden yığını başlatın, sonra tekrar deneyin.",
+      "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
+      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     }
   },
   "packetDistribution": {
@@ -2747,10 +2749,10 @@
     "tabFavorites": "Favoriler",
     "emptyFavorites": "Henüz favori akranınız yok — burada sabitlemek için bir kişiye veya akranınıza yıldız verin.",
     "lookupPlaceholder": "Hedef hash'ini ara…",
-    "lookupAria": "Hedef hash'ine göre eş ara",
-    "lookupSubmit": "Arama",
-    "lookupSubmitAria": "İstek yolu ve prob hedef karması",
-    "lookupInvalid": "Geçerli bir 32 karakterlik LXMF hedef karması veya lxmf :// bağlantısı girin.",
+    "lookupAria": "Hedef özetine göre eş arayın",
+    "lookupSubmit": "Ara",
+    "lookupSubmitAria": "Yol isteyin ve hedef özetini yoklayın",
+    "lookupInvalid": "Geçerli 32 karakterlik bir LXMF hedef özeti veya lxmf:// bağlantısı girin.",
     "lookupHint": "Henüz eşler listesinde olmayan bir karma için bir yol isteyin (örneğin, paylaştığınız bir merkezdeki bir eş)."
   },
   "radioPanel": {
@@ -3577,7 +3579,7 @@
     "announceSaveSidecarStopped": "Duyuru ayarlarını kaydetmeden önce Reticulum yığınını başlat.",
     "clearAnnouncesDone": "Anonslar temizlendi.",
     "clearAnnouncesFailed": "Duyurular temizlenemedi.",
-    "announceIntervalHint": "Varsayılan 3600 s (1 saat). Yalnızca başlangıç anonsları için 0 'ı kullanın.",
+    "announceIntervalHint": "Varsayılan 3600 sn (1 sa). Yalnızca başlangıç announce’ları için 0 kullanın. Şimdi announce, hemen bir LXMF teslimat announce’ı gönderir.",
     "announceNow": "Şimdi duyur",
     "announceNowDone": "LXMF teslimat duyurusu gönderildi.",
     "announceNowFailed": "Duyurulamadı: {{error}}"

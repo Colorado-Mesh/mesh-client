@@ -29,6 +29,12 @@ pub fn map_nomad_link_error(err: &str) -> String {
     if lower.contains("transport channel closed") || lower.contains("transportunavailable") {
         return "transport_unavailable".into();
     }
+    if lower.contains("response_too_large") || lower.contains("too large") {
+        return "response_too_large".into();
+    }
+    if lower.contains("nomad_busy") {
+        return "nomad_busy".into();
+    }
     err.to_string()
 }
 

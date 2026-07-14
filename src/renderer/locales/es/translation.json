@@ -341,8 +341,8 @@
     "exportSupportBundleFailed": "No se pudo exportar el paquete de soporte: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Borrar todos los contactos LXMF",
-    "clearReticulumContactsDesc": "Elimina todas las entradas de la pestaña Contactos y de la lista de contactos del sidecar. Se conservan los mensajes de chat, los pares de la tabla de rutas y los metadatos de pares solo favoritos. Los contactos reaparecen cuando envías un mensaje a alguien o usas Guardar como contacto.",
-    "clearReticulumContactsConfirm": "Esto borrará permanentemente todos los contactos de {{count}} Reticulum LXMF del sidecar y la base de datos local. Los pares y mensajes de la tabla de ruta no se eliminan. Esto no se puede deshacer.",
+    "clearReticulumContactsDesc": "Elimina todas las entradas de la pestaña Contactos y de la lista de contactos del sidecar. Los destinos se conservan en la pestaña Pares con sus nombres. Los mensajes de chat se conservan. Los contactos reaparecen cuando envías un mensaje o usas Guardar como contacto.",
+    "clearReticulumContactsConfirm": "Esto borrará permanentemente los {{count}} contactos Reticulum LXMF. Los destinos permanecen en la pestaña Pares; los mensajes no se eliminan. Esto no se puede deshacer.",
     "clearReticulumContactsConfirmButton": "Borrar {{count}} contactos",
     "clearReticulumContactsButton": "Borrar todos los contactos ({{count}})"
   },
@@ -552,7 +552,7 @@
     "dmPathCheckingAria": "Comprobación de la accesibilidad de la ruta de destino",
     "dmPathCheckingTooltip": "Solicitar una ruta de Reticulum a este destino.",
     "dmPathReachable": "Ruta accesible",
-    "dmPathReachableHops": "Ruta accesible · {{hops}} hop(s)",
+    "dmPathReachableHops": "Ruta alcanzable · {{hops}} salto(s)",
     "dmPathReachableAria": "Se puede acceder a la ruta de destino",
     "dmPathReachableTooltip": "Se conoce un camino de Reticulum a este destino. La entrega directa aún puede fallar si el compañero está desconectado.",
     "dmPathUnreachable": "Sin ruta",
@@ -841,7 +841,7 @@
       "identityFileMissing": "Falta el archivo de clave de identidad. Vuelva a importar su clave privada o frase de recuperación.",
       "backupHashMismatch": "Los hash de la copia de seguridad no coinciden con el archivo de clave de identidad en el disco.",
       "importPrivateKeyRequiresStack": "La importación de claves privadas requiere una compilación completa de la pila de Reticulum.",
-      "saveDisplayName": "Nombre mostrado",
+      "saveDisplayName": "Guardar nombre para mostrar",
       "saveDisplayNameFailed": "Error al guardar el nombre para mostrar.",
       "displayNameSaved": "Nombre para mostrar guardado."
     },
@@ -2647,13 +2647,15 @@
     "collapseNodeList": "Contraer lista de nodos",
     "expandNodeList": "Expandir lista de nodos",
     "errors": {
-      "pathTimeout": "No hay ruta a este nodo (se ha agotado el tiempo de búsqueda de la ruta). Prueba con un nodo más cercano o espera un anuncio más reciente.",
+      "pathTimeout": "No hay ruta a este nodo (agotó el tiempo de búsqueda de ruta). Prueba un nodo más cercano o espera un anuncio más reciente.",
       "pubkeyNotFound": "No se ha podido encontrar la clave de identidad de este nodo. Espera a que se anuncie un nómada e inténtalo de nuevo.",
       "linkTimeout": "No se ha podido establecer el enlace al nodo a tiempo.",
       "responseTimeout": "El nodo aceptó el enlace pero no devolvió la página a tiempo.",
       "missingIdentity": "Este nodo aún no tiene ninguna identidad recordada. Espera a que se anuncie un nómada e inténtalo de nuevo.",
       "transportUnavailable": "El transporte de Reticulum no está disponible. Reinicie la pila e inténtelo de nuevo.",
-      "sidecarNotRunning": "El sidecar de Reticulum no está en ejecución. Inicie la pila desde Conexión y vuelva a intentarlo."
+      "sidecarNotRunning": "El sidecar de Reticulum no está en ejecución. Inicie la pila desde Conexión y vuelva a intentarlo.",
+      "responseTooLarge": "El nodo devolvió más datos de los que mesh-client acepta para esta solicitud.",
+      "nomadBusy": "Otra solicitud de página o archivo Nomad aún está en curso. Inténtalo de nuevo en un momento."
     }
   },
   "packetDistribution": {
@@ -2749,8 +2751,8 @@
     "lookupPlaceholder": "Buscar hash de destino...",
     "lookupAria": "Buscar par por hash de destino",
     "lookupSubmit": "Buscar",
-    "lookupSubmitAria": "Ruta de solicitud y hash de destino de la sonda",
-    "lookupInvalid": "Introduzca un hash de destino LXMF válido de 32 caracteres o un enlace lxmf://.",
+    "lookupSubmitAria": "Solicitar ruta y sondear el hash de destino",
+    "lookupInvalid": "Introduce un hash de destino LXMF válido de 32 caracteres o un enlace lxmf://.",
     "lookupHint": "Solicita una ruta para un hash que aún no está en la lista de compañeros (por ejemplo, un compañero en un centro que compartes)."
   },
   "radioPanel": {
@@ -3577,7 +3579,7 @@
     "announceSaveSidecarStopped": "Inicie la pila Reticulum antes de guardar la configuración del anuncio.",
     "clearAnnouncesDone": "Anuncios borrados.",
     "clearAnnouncesFailed": "No se han podido borrar los anuncios.",
-    "announceIntervalHint": "Predeterminado 3600 s (1 h). Utilice 0 para anuncios solo de inicio.",
+    "announceIntervalHint": "Predeterminado 3600 s (1 h). Usa 0 para anuncios solo al inicio. Anunciar ahora envía de inmediato un anuncio de entrega LXMF.",
     "announceNow": "Anunciar ahora",
     "announceNowDone": "Anuncio de entrega LXMF enviado.",
     "announceNowFailed": "No se ha podido anunciar: {{error}}"

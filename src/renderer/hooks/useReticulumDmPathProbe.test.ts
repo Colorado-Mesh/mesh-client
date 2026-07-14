@@ -133,4 +133,20 @@ describe('useReticulumDmPathProbe', () => {
     expect(result.current.status).toBe('idle');
     expect(result.current.hops).toBeNull();
   });
+
+  it('settles to unreachable when probeReticulumPeer rejects', async () => {
+    probeReticulumPeerMock.mockRejectedValue(new Error('sidecar down'));
+    const { result } = renderHook(() =>
+      useReticulumDmPathProbe({
+        enabled: true,
+        destinationHash: 'aabbccddeeff00112233445566778899',
+        passiveHops: null,
+      }),
+    );
+    await waitFor(() => {
+      expect(result.current.status).toBe('unreachable');
+    });
+    expect(result.current.hops).toBeNull();
+    expect(refreshPeersMock).not.toHaveBeenCalled();
+  });
 });

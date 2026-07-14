@@ -341,9 +341,9 @@
     "exportSupportBundleFailed": "Не удалось экспортировать пакет поддержки: {{message}}.",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Очистить все контакты LXMF",
-    "clearReticulumContactsDesc": "Удаляет все записи из вкладки «Контакты» и списка контактов коляски. Сохраняются сообщения чата, одноранговые узлы таблицы путей и метаданные только избранных одноранговых узлов. Контакты снова появляются, когда вы отправляете кому-то сообщение или используете «Сохранить как контакт».",
-    "clearReticulumContactsConfirm": "Это навсегда удалит все контакты {{count}} Reticulum LXMF из коляски и локальной базы данных. Одноранговые узлы таблицы путей и сообщения не удаляются. Это действие нельзя отменить.",
-    "clearReticulumContactsConfirmButton": "Очистить контакты {{count}}",
+    "clearReticulumContactsDesc": "Удаляет все записи из вкладки «Контакты» и списка контактов sidecar. Назначения остаются на вкладке «Peers» со своими именами. Сообщения чата сохраняются. Контакты снова появляются, когда вы пишете кому-то или используете «Сохранить как контакт».",
+    "clearReticulumContactsConfirm": "Это навсегда удалит все {{count}} контактов Reticulum LXMF. Назначения останутся на вкладке «Peers»; сообщения не удаляются. Это действие нельзя отменить.",
+    "clearReticulumContactsConfirmButton": "Очистить {{count}} контактов",
     "clearReticulumContactsButton": "Очистить все контакты ({{count}})"
   },
   "aria": {
@@ -552,7 +552,7 @@
     "dmPathCheckingAria": "Проверка достижимости пути назначения",
     "dmPathCheckingTooltip": "Запрос пути Reticulum к этому пункту назначения.",
     "dmPathReachable": "Достижимый путь",
-    "dmPathReachableHops": "Достижимый путь · {{hops}} hop(s)",
+    "dmPathReachableHops": "Путь достижим · {{hops}} переход(ов)",
     "dmPathReachableAria": "Путь к месту назначения доступен",
     "dmPathReachableTooltip": "Путь Reticulum к этому пункту назначения известен. Прямая доставка всё ещё может не удаться, если узел не в сети.",
     "dmPathUnreachable": "Нет пути",
@@ -841,7 +841,7 @@
       "identityFileMissing": "Файл идентификационного ключа отсутствует. Повторно импортируйте свой закрытый ключ или фразу восстановления.",
       "backupHashMismatch": "Хэши резервной копии не соответствуют файлу ключа идентификации на диске.",
       "importPrivateKeyRequiresStack": "Для импорта закрытого ключа требуется полная сборка стека Reticulum.",
-      "saveDisplayName": "Отображаемое имя",
+      "saveDisplayName": "Сохранить отображаемое имя",
       "saveDisplayNameFailed": "Не удалось сохранить отображаемое имя.",
       "displayNameSaved": "Отображаемое имя сохранено."
     },
@@ -2647,13 +2647,15 @@
     "collapseNodeList": "Свернуть список узлов",
     "expandNodeList": "Развернуть список узлов",
     "errors": {
-      "pathTimeout": "Нет маршрута к этому узлу (время ожидания поиска пути истекло). Попробуйте более близкий узел или дождитесь более свежего объявления.",
+      "pathTimeout": "Нет маршрута к этому узлу (тайм-аут поиска пути). Попробуйте более близкий узел или дождитесь более свежего announce.",
       "pubkeyNotFound": "Не удалось найти идентификационный ключ этого узла. Дождитесь объявления Nomad и повторите попытку.",
       "linkTimeout": "Не удалось вовремя установить ссылку на узел.",
       "responseTimeout": "Узел принял ссылку, но не вернул страницу вовремя.",
       "missingIdentity": "Этот узел еще не запомнил личность. Дождитесь объявления Nomad и повторите попытку.",
       "transportUnavailable": "Транспорт Reticulum недоступен. Перезапустите стек и повторите попытку.",
-      "sidecarNotRunning": "Sidecar Reticulum не запущен. Запустите стек из Connection и повторите попытку."
+      "sidecarNotRunning": "Sidecar Reticulum не запущен. Запустите стек из Connection и повторите попытку.",
+      "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
+      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     }
   },
   "packetDistribution": {
@@ -2747,10 +2749,10 @@
     "tabFavorites": "Избранное",
     "emptyFavorites": "Пока нет избранных одноранговых узлов — поставьте звезду контакту или одноранговому узлу, чтобы закрепить их здесь.",
     "lookupPlaceholder": "Хеш назначения поиска...",
-    "lookupAria": "Поиск однорангового узла по хэшу назначения",
-    "lookupSubmit": "Искать",
-    "lookupSubmitAria": "Запросить путь и хеш назначения зонда",
-    "lookupInvalid": "Введите допустимый 32-символьный хэш назначения LXMF или ссылку lxmf://.",
+    "lookupAria": "Найти пира по хешу назначения",
+    "lookupSubmit": "Найти",
+    "lookupSubmitAria": "Запросить путь и проверить хеш назначения",
+    "lookupInvalid": "Введите действительный 32-символьный хеш назначения LXMF или ссылку lxmf://.",
     "lookupHint": "Запросите путь для хеша, которого еще нет в списке одноранговых узлов (например, одноранговый узел на концентраторе, которым вы делитесь)."
   },
   "radioPanel": {
@@ -3571,7 +3573,7 @@
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Интервал объявления (секунды)",
-    "announceIntervalHint": "По умолчанию 3600 с (1 ч). Используйте 0 только при запуске.",
+    "announceIntervalHint": "По умолчанию 3600 с (1 ч). Укажите 0 для объявлений только при запуске. «Объявить сейчас» сразу отправляет LXMF delivery announce.",
     "clearAnnounces": "Очистить объявления",
     "announceSaved": "Интервал объявления сохранён.",
     "announceSaveFailed": "Не удалось сохранить интервал объявления: {{error}}",

@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
+import { DeliveryStatusBadgeFrame } from '@/renderer/components/DeliveryStatusBadgeFrame';
 import { HelpTooltip } from '@/renderer/components/HelpTooltip';
 import { translateMeshcoreUserMessage } from '@/renderer/lib/meshcore/meshcoreMessageI18n';
 
@@ -85,10 +86,6 @@ export function MessageStatusBadge({
         : failedReason
   }`;
   return (
-    <HelpTooltip text={tooltip} ariaLabel={tooltip}>
-      <span className={`text-[10px] ${colorClass}`}>
-        {label} {icon}
-      </span>
-    </HelpTooltip>
+    <DeliveryStatusBadgeFrame label={label} icon={icon} colorClass={colorClass} tooltip={tooltip} />
   );
 }

@@ -341,8 +341,8 @@
     "exportSupportBundleFailed": "Kan ondersteuningsbundel niet exporteren: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Alle LXMF-contacten wissen",
-    "clearReticulumContactsDesc": "Verwijdert elke invoer van het tabblad Contacten en de lijst met contactpersonen van het zijspan. Chatberichten, pad-tabel collega's en favoriete peer metadata worden bewaard. Contactpersonen verschijnen opnieuw wanneer u iemand een bericht stuurt of Opslaan als contactpersoon gebruikt.",
-    "clearReticulumContactsConfirm": "Hiermee worden alle {{count}} Reticulum LXMF-contacten permanent uit de zijspan- en lokale database verwijderd. Path-table peers en berichten worden niet verwijderd. Dit kan niet ongedaan worden gemaakt.",
+    "clearReticulumContactsDesc": "Verwijdert elke invoer van het tabblad Contacten en de sidecar-contactlijst. Bestemmingen blijven op het tabblad Peers met hun namen. Chatberichten blijven bewaard. Contacten verschijnen opnieuw wanneer je iemand een bericht stuurt of Opslaan als contact gebruikt.",
+    "clearReticulumContactsConfirm": "Hiermee worden alle {{count}} Reticulum LXMF-contacten permanent gewist. Bestemmingen blijven op het tabblad Peers; berichten worden niet verwijderd. Dit kan niet ongedaan worden gemaakt.",
     "clearReticulumContactsConfirmButton": "{{count}} contacten wissen",
     "clearReticulumContactsButton": "Alle contacten wissen ({{count}})"
   },
@@ -552,7 +552,7 @@
     "dmPathCheckingAria": "Bereikbaarheid van bestemmingspad controleren",
     "dmPathCheckingTooltip": "Een Reticulum-pad naar deze bestemming aanvragen.",
     "dmPathReachable": "Pad bereikbaar",
-    "dmPathReachableHops": "Bereikbaar pad · {{hops}} hop(s)",
+    "dmPathReachableHops": "Pad bereikbaar · {{hops}} sprong(en)",
     "dmPathReachableAria": "Bestemmingspad is bereikbaar",
     "dmPathReachableTooltip": "Er is een Reticulum-pad naar deze bestemming bekend. Directe levering kan nog steeds mislukken als de peer offline is.",
     "dmPathUnreachable": "Geen pad",
@@ -841,7 +841,7 @@
       "identityFileMissing": "Identiteitssleutelbestand ontbreekt. Importeer uw privésleutel of herstelzin opnieuw.",
       "backupHashMismatch": "Back-up-hashes komen niet overeen met het identiteitssleutelbestand op schijf.",
       "importPrivateKeyRequiresStack": "Voor het importeren van privésleutels is een volledige Reticulum-stack-build vereist.",
-      "saveDisplayName": "Display Naam",
+      "saveDisplayName": "Weergavenaam opslaan",
       "saveDisplayNameFailed": "Kan weergavenaam niet opslaan.",
       "displayNameSaved": "Weergavenaam opgeslagen."
     },
@@ -2647,13 +2647,15 @@
     "collapseNodeList": "Knooppuntenlijst samenvouwen",
     "expandNodeList": "Knooppuntenlijst uitvouwen",
     "errors": {
-      "pathTimeout": "Geen route naar dit knooppunt (pad opzoeken is verlopen). Probeer een dichterbij gelegen knooppunt of wacht op een versere aankondiging.",
+      "pathTimeout": "Geen route naar dit knooppunt (padzoekopdracht time-out). Probeer een dichter knooppunt of wacht op een recentere announce.",
       "pubkeyNotFound": "Kon de identiteitssleutel van dit knooppunt niet vinden. Wacht op een Nomad-aankondiging en probeer het dan opnieuw.",
       "linkTimeout": "Link naar het knooppunt kon niet op tijd worden vastgesteld.",
       "responseTimeout": "Het knooppunt heeft de link geaccepteerd, maar de pagina niet op tijd teruggestuurd.",
       "missingIdentity": "Dit knooppunt heeft nog geen identiteit onthouden. Wacht op een Nomad-aankondiging en probeer het dan opnieuw.",
       "transportUnavailable": "Reticulum-transport is niet beschikbaar. Start de stack opnieuw en probeer het opnieuw.",
-      "sidecarNotRunning": "Reticulum-sidecar draait niet. Start de stack vanuit Verbinding en probeer het opnieuw."
+      "sidecarNotRunning": "Reticulum-sidecar draait niet. Start de stack vanuit Verbinding en probeer het opnieuw.",
+      "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
+      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     }
   },
   "packetDistribution": {
@@ -2747,10 +2749,10 @@
     "tabFavorites": "Favorieten",
     "emptyFavorites": "Nog geen favoriete collega's — geef een contactpersoon of collega een ster om ze hier vast te pinnen.",
     "lookupPlaceholder": "Bestemmingshash opzoeken...",
-    "lookupAria": "Peer opzoeken op bestemmingshash",
-    "lookupSubmit": "Lookup",
-    "lookupSubmitAria": "Aanvraag pad en sonde bestemmings hash",
-    "lookupInvalid": "Voer een geldige LXMF-bestemmingshash van 32 tekens of een lxmf:// -link in.",
+    "lookupAria": "Peer opzoeken via bestemmings-hash",
+    "lookupSubmit": "Opzoeken",
+    "lookupSubmitAria": "Pad aanvragen en bestemmings-hash sondieren",
+    "lookupInvalid": "Voer een geldige 32-tekens LXMF-bestemmings-hash of lxmf://-link in.",
     "lookupHint": "Vraag een pad aan voor een hash die nog niet in de lijst met peers staat (bijvoorbeeld een peer op een hub die je deelt)."
   },
   "radioPanel": {
@@ -3577,7 +3579,7 @@
     "announceSaveSidecarStopped": "Start de Reticulum-stack voordat u de aankondigingsinstellingen opslaat.",
     "clearAnnouncesDone": "Aankondigingen gewist.",
     "clearAnnouncesFailed": "Kan aankondigingen niet wissen.",
-    "announceIntervalHint": "Standaard 3600 s (1 uur). Gebruik 0 voor aankondigingen voor alleen opstarten.",
+    "announceIntervalHint": "Standaard 3600 s (1 u). Gebruik 0 voor alleen announce bij opstarten. Nu announce sturen verzendt meteen een LXMF-leveringsannounce.",
     "announceNow": "Nu aankondigen",
     "announceNowDone": "Bezorgaankondiging LXMF verzonden.",
     "announceNowFailed": "Aankondiging mislukt: {{error}}"

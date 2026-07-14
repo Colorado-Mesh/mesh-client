@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, PARENT_HOVER_ATTR } from 'lucide-react-motio
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
@@ -372,17 +373,29 @@ export default function NomadNetworkPanel({
       fileDownloadInFlightRef.current = true;
       setFileDownloading(true);
       setFileDownloadError(null);
-      const normalizedPath = normalizeNomadPagePath(path);
-      const res = await fetchNomadFile(hash, normalizedPath);
-      if (!mountedRef.current) return;
-      fileDownloadInFlightRef.current = false;
-      setFileDownloading(false);
-      if (!res.ok || !res.content_base64) {
-        setFileDownloadError(humanizeNomadPageError(res.error, t));
-        return;
+      try {
+        const normalizedPath = normalizeNomadPagePath(path);
+        const res = await fetchNomadFile(hash, normalizedPath);
+        if (!mountedRef.current) return;
+        if (!res.ok || !res.content_base64) {
+          setFileDownloadError(humanizeNomadPageError(res.error, t));
+          return;
+        }
+        const fileName = res.file_name ?? normalizedPath.split('/').pop() ?? 'downloaded_file';
+        downloadNomadFileFromBase64(fileName, res.content_base64);
+      } catch (e) {
+        // Failure point: unexpected fetchNomadFile reject. Fallback: humanize if possible.
+        if (!mountedRef.current) return;
+        console.warn('[NomadNetworkPanel] file download ' + errLikeToLogString(e));
+        setFileDownloadError(humanizeNomadPageError(undefined, t));
+      } finally {
+        if (mountedRef.current) {
+          fileDownloadInFlightRef.current = false;
+          setFileDownloading(false);
+        } else {
+          fileDownloadInFlightRef.current = false;
+        }
       }
-      const fileName = res.file_name ?? normalizedPath.split('/').pop() ?? 'downloaded_file';
-      downloadNomadFileFromBase64(fileName, res.content_base64);
     },
     [fetchNomadFile, t],
   );

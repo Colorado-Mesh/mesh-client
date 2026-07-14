@@ -341,9 +341,9 @@
     "exportSupportBundleFailed": "Nelze exportovat balíček podpory: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Vymazat všechny kontakty LXMF",
-    "clearReticulumContactsDesc": "Odstraní každou položku z karty Kontakty a seznamu kontaktů postranního vozíku. Zprávy z chatu, vrstevníci z tabulek cest a metadata vrstevníků, která jsou pouze oblíbená, jsou zachována. Kontakty se znovu zobrazí, když někomu napíšete zprávu nebo použijete Uložit jako kontakt.",
-    "clearReticulumContactsConfirm": "Tím trvale vymažete všechny kontakty {{count}} Reticulum LXMF z postranního vozíku a místní databáze. Protějšky a zprávy v tabulce tras nejsou smazány. Tuto akci nelze vrátit zpět.",
-    "clearReticulumContactsConfirmButton": "Vymazat {{count}} kontakty",
+    "clearReticulumContactsDesc": "Odstraní každou položku z karty Kontakty a seznamu kontaktů sidecar. Cíle zůstanou na kartě Peers se svými názvy. Chatové zprávy zůstávají. Kontakty se znovu zobrazí, když někomu napíšete nebo použijete Uložit jako kontakt.",
+    "clearReticulumContactsConfirm": "Tím trvale vymažete všech {{count}} Reticulum LXMF kontaktů. Cíle zůstanou na kartě Peers; zprávy se nemažou. Tuto akci nelze vrátit zpět.",
+    "clearReticulumContactsConfirmButton": "Vymazat {{count}} kontaktů",
     "clearReticulumContactsButton": "Vymazat všechny kontakty ({{count}})"
   },
   "aria": {
@@ -552,7 +552,7 @@
     "dmPathCheckingAria": "Kontrola dosažitelnosti cílové cesty",
     "dmPathCheckingTooltip": "Žádost o cestu Reticulum k tomuto cíli.",
     "dmPathReachable": "Cesta dosažitelná",
-    "dmPathReachableHops": "Cesta dosažitelná · {{hops}} hop(y)",
+    "dmPathReachableHops": "Cesta dostupná · {{hops}} skok(ů)",
     "dmPathReachableAria": "Cílová cesta je dosažitelná",
     "dmPathReachableTooltip": "Cesta Reticulum k tomuto cíli je známa. Přímé doručení může stále selhat, pokud je partner offline.",
     "dmPathUnreachable": "Žádná cesta",
@@ -841,7 +841,7 @@
       "identityFileMissing": "Chybí soubor klíče identity. Znovu importujte svůj soukromý klíč nebo frázi pro obnovení.",
       "backupHashMismatch": "Záložní hodnoty hash neodpovídají souboru klíče identity na disku.",
       "importPrivateKeyRequiresStack": "Import soukromého klíče vyžaduje kompletní sestavení zásobníku Reticulum.",
-      "saveDisplayName": "Zobrazovaný název",
+      "saveDisplayName": "Uložit zobrazované jméno",
       "saveDisplayNameFailed": "Nepodařilo se uložit zobrazované jméno.",
       "displayNameSaved": "Zobrazované jméno uloženo."
     },
@@ -2647,13 +2647,15 @@
     "collapseNodeList": "Sbalit seznam uzlů",
     "expandNodeList": "Rozbalit seznam uzlů",
     "errors": {
-      "pathTimeout": "Žádná cesta k tomuto uzlu (časový limit vyhledávání cesty vypršel). Zkuste bližší uzel nebo počkejte na čerstvější oznámení.",
+      "pathTimeout": "K tomuto uzlu neexistuje cesta (vypršel časový limit vyhledávání cesty). Zkuste bližší uzel nebo počkejte na novější announce.",
       "pubkeyNotFound": "Nelze najít identifikační klíč tohoto uzlu. Počkej na oznámení Nomáda a zkus to znovu.",
       "linkTimeout": "Propojení s uzlem se nepodařilo navázat včas.",
       "responseTimeout": "Uzel přijal odkaz, ale stránku nevrátil včas.",
       "missingIdentity": "Tento uzel zatím nemá zapamatovanou identitu. Počkej na oznámení Nomáda a zkus to znovu.",
       "transportUnavailable": "Transport Reticulum není k dispozici. Restartujte zásobník a zkuste to znovu.",
-      "sidecarNotRunning": "Reticulum sidecar neběží. Spusťte zásobník z Připojení a zkuste to znovu."
+      "sidecarNotRunning": "Reticulum sidecar neběží. Spusťte zásobník z Připojení a zkuste to znovu.",
+      "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
+      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     }
   },
   "packetDistribution": {
@@ -2749,8 +2751,8 @@
     "lookupPlaceholder": "Vyhledání cílového hashe...",
     "lookupAria": "Vyhledat peer podle cílového hashe",
     "lookupSubmit": "Vyhledat",
-    "lookupSubmitAria": "Vyžádat cestu a cílový hash sondy",
-    "lookupInvalid": "Zadejte platný 32místný LXMF cílový hash nebo lxmf:// odkaz.",
+    "lookupSubmitAria": "Vyžádat cestu a otestovat cílový hash",
+    "lookupInvalid": "Zadejte platný 32znakový LXMF cílový hash nebo odkaz lxmf://.",
     "lookupHint": "Požádejte o cestu pro hash, který ještě není v seznamu kolegů (například kolega v centru, které sdílíte)."
   },
   "radioPanel": {
@@ -3577,7 +3579,7 @@
     "announceSaveSidecarStopped": "Před uložením nastavení oznamování spusťte zásobník Reticulum.",
     "clearAnnouncesDone": "Oznámení vymazána.",
     "clearAnnouncesFailed": "Nepodařilo se vymazat oznámení.",
-    "announceIntervalHint": "Výchozí 3600 s (1 h). Použijte 0 pro oznámení pouze při spuštění.",
+    "announceIntervalHint": "Výchozí 3600 s (1 h). Použijte 0 pro announce pouze při spuštění. Announce now ihned odešle LXMF delivery announce.",
     "announceNow": "Ohlásit nyní",
     "announceNowDone": "Oznámení o doručení LXMF odesláno.",
     "announceNowFailed": "Nepodařilo se oznámit: {{error}}"

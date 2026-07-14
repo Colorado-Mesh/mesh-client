@@ -341,8 +341,8 @@
     "exportSupportBundleFailed": "Tidak dapat mengekspor paket dukungan: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Hapus semua kontak LXMF",
-    "clearReticulumContactsDesc": "Menghapus setiap entri dari tab Kontak dan daftar kontak sidecar. Pesan obrolan, rekan sejawat, dan metadata teman sejawat favorit saja disimpan. Kontak muncul kembali saat Anda mengirim pesan kepada seseorang atau menggunakan Simpan sebagai kontak.",
-    "clearReticulumContactsConfirm": "Ini akan menghapus semua kontak {{count}} Reticulum LXMF secara permanen dari database sidecar dan lokal. Path - table peer dan pesan tidak dihapus. Ini tidak dapat diurungkan.",
+    "clearReticulumContactsDesc": "Menghapus setiap entri dari tab Kontak dan daftar kontak sidecar. Destinasi tetap di tab Peers beserta namanya. Pesan obrolan disimpan. Kontak muncul kembali saat Anda mengirim pesan atau memakai Simpan sebagai kontak.",
+    "clearReticulumContactsConfirm": "Ini akan menghapus secara permanen semua {{count}} kontak Reticulum LXMF. Destinasi tetap di tab Peers; pesan tidak dihapus. Tindakan ini tidak dapat dibatalkan.",
     "clearReticulumContactsConfirmButton": "Hapus {{count}} kontak",
     "clearReticulumContactsButton": "Hapus Semua Kontak ({{count}})"
   },
@@ -552,7 +552,7 @@
     "dmPathCheckingAria": "Memeriksa keterjangkauan jalur tujuan",
     "dmPathCheckingTooltip": "Meminta jalur Reticulum ke tujuan ini.",
     "dmPathReachable": "Jalur dapat dijangkau",
-    "dmPathReachableHops": "Jalur dapat dijangkau · {{hops}} hop",
+    "dmPathReachableHops": "Jalur terjangkau · {{hops}} hop",
     "dmPathReachableAria": "Jalur tujuan dapat dijangkau",
     "dmPathReachableTooltip": "Jalur Reticulum ke tujuan ini diketahui. Pengiriman langsung mungkin masih gagal jika rekan sedang offline.",
     "dmPathUnreachable": "Tidak ada jalur",
@@ -841,7 +841,7 @@
       "identityFileMissing": "File kunci identitas tidak ada. Impor ulang kunci pribadi atau frase pemulihan Anda.",
       "backupHashMismatch": "Hash cadangan tidak cocok dengan file kunci identitas pada disk.",
       "importPrivateKeyRequiresStack": "Impor kunci pribadi memerlukan build stack Reticulum penuh.",
-      "saveDisplayName": "Nama tampil",
+      "saveDisplayName": "Simpan nama tampilan",
       "saveDisplayNameFailed": "Gagal menyimpan nama tampilan.",
       "displayNameSaved": "Nama tampilan disimpan."
     },
@@ -2647,13 +2647,15 @@
     "collapseNodeList": "Ciutkan daftar simpul",
     "expandNodeList": "Perluas daftar simpul",
     "errors": {
-      "pathTimeout": "Tidak ada rute ke simpul ini (waktu pencarian jalur habis). Coba simpul yang lebih dekat atau tunggu pengumuman yang lebih segar.",
+      "pathTimeout": "Tidak ada rute ke node ini (pencarian jalur habis waktu). Coba node yang lebih dekat atau tunggu announce yang lebih baru.",
       "pubkeyNotFound": "Tidak dapat menemukan kunci identitas simpul ini. Tunggu pengumuman Nomad, lalu coba lagi.",
       "linkTimeout": "Tautan ke simpul tidak dapat dibuat tepat waktu.",
       "responseTimeout": "Node menerima tautan tetapi tidak mengembalikan halaman tepat waktu.",
       "missingIdentity": "Node ini belum memiliki identitas yang diingat. Tunggu pengumuman Nomad, lalu coba lagi.",
       "transportUnavailable": "Transport Reticulum tidak tersedia. Mulai ulang stack dan coba lagi.",
-      "sidecarNotRunning": "Sidecar Reticulum tidak berjalan. Mulai stack dari Connection, lalu coba lagi."
+      "sidecarNotRunning": "Sidecar Reticulum tidak berjalan. Mulai stack dari Connection, lalu coba lagi.",
+      "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
+      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     }
   },
   "packetDistribution": {
@@ -2747,10 +2749,10 @@
     "tabFavorites": "Favorit",
     "emptyFavorites": "Belum ada rekan favorit — beri bintang pada kontak atau rekan untuk menyematkannya di sini.",
     "lookupPlaceholder": "Cari hash tujuan…",
-    "lookupAria": "Cari rekan sejawat berdasarkan hash tujuan",
-    "lookupSubmit": "Pencarian",
-    "lookupSubmitAria": "Jalur permintaan dan hash tujuan probe",
-    "lookupInvalid": "Masukkan hash tujuan LXMF 32 karakter yang valid atau tautan lxmf ://.",
+    "lookupAria": "Cari peer berdasarkan hash tujuan",
+    "lookupSubmit": "Cari",
+    "lookupSubmitAria": "Minta jalur dan probe hash tujuan",
+    "lookupInvalid": "Masukkan hash tujuan LXMF 32 karakter yang valid atau tautan lxmf://.",
     "lookupHint": "Minta jalur untuk hash yang belum ada dalam daftar rekan (misalnya rekan di hub yang Anda bagikan)."
   },
   "radioPanel": {
@@ -3577,7 +3579,7 @@
     "announceSaveSidecarStopped": "Mulai tumpukan Reticulum sebelum menyimpan pengaturan pengumuman.",
     "clearAnnouncesDone": "Pengumuman dihapus.",
     "clearAnnouncesFailed": "Gagal menghapus pengumuman.",
-    "announceIntervalHint": "Default 3600 s (1 jam). Gunakan 0 untuk pengumuman khusus startup.",
+    "announceIntervalHint": "Default 3600 dtk (1 jam). Gunakan 0 untuk announce hanya saat mulai. Announce sekarang segera mengirim announce pengiriman LXMF.",
     "announceNow": "Umumkan sekarang",
     "announceNowDone": "Pengumuman pengiriman LXMF terkirim.",
     "announceNowFailed": "Gagal mengumumkan: {{error}}"

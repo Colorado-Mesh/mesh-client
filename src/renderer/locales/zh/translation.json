@@ -341,9 +341,9 @@
     "exportSupportBundleFailed": "无法导出支持包：{{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "清除所有LXMF联系人",
-    "clearReticulumContactsDesc": "删除“联系人”选项卡和Sidecar联系人列表中的每个条目。保留聊天消息、路径表对等体和仅收藏的对等体元数据。当您向某人发送消息或使用“另存为联系人”时，联系人会重新出现。",
-    "clearReticulumContactsConfirm": "这将从Sidecar和本地数据库中永久清除所有{{count}} Reticulum LXMF联系人。路径表对等项和消息不会被删除。此操作无法撤消。",
-    "clearReticulumContactsConfirmButton": "清除{{count}}工单",
+    "clearReticulumContactsDesc": "删除“联系人”选项卡和 Sidecar 联系人列表中的所有条目。目标保留在 Peers 选项卡上并保留其名称。聊天消息会保留。当你向某人发消息或使用“另存为联系人”时，联系人会重新出现。",
+    "clearReticulumContactsConfirm": "这将永久清除全部 {{count}} 个 Reticulum LXMF 联系人。目标仍保留在 Peers 选项卡上；消息不会被删除。此操作无法撤消。",
+    "clearReticulumContactsConfirmButton": "清除 {{count}} 个联系人",
     "clearReticulumContactsButton": "清除所有联系人（ {{count}} ）"
   },
   "aria": {
@@ -552,7 +552,7 @@
     "dmPathCheckingAria": "正在检查目标路径可达性",
     "dmPathCheckingTooltip": "正在请求到此目的地的 Reticulum 路径。",
     "dmPathReachable": "可到达的路径",
-    "dmPathReachableHops": "路径可达· {{hops}}跳",
+    "dmPathReachableHops": "路径可达 · {{hops}} 跳",
     "dmPathReachableAria": "目标路径可达",
     "dmPathReachableTooltip": "已知到此目的地的 Reticulum 路径。如果对等节点离线，直接投递仍可能失败。",
     "dmPathUnreachable": "无路径",
@@ -841,7 +841,7 @@
       "identityFileMissing": "身份密钥文件丢失。重新导入您的私钥或恢复短语。",
       "backupHashMismatch": "备份哈希与磁盘上的身份密钥文件不匹配。",
       "importPrivateKeyRequiresStack": "私钥导入需要完整的 Reticulum 堆栈构建。",
-      "saveDisplayName": "显示名",
+      "saveDisplayName": "保存显示名称",
       "saveDisplayNameFailed": "保存显示名称失败。",
       "displayNameSaved": "显示名称已保存。"
     },
@@ -2647,13 +2647,15 @@
     "collapseNodeList": "折叠节点列表",
     "expandNodeList": "展开节点列表",
     "errors": {
-      "pathTimeout": "没有到此节点的路由（路径查找超时）。尝试更近的节点或等待更新的公告。",
+      "pathTimeout": "无法到达此节点（路径查找超时）。请尝试更近的节点，或等待更新的 announce。",
       "pubkeyNotFound": "找不到此节点的标识密钥。等待游牧公告，然后重试。",
       "linkTimeout": "无法及时建立到节点的链接。",
       "responseTimeout": "节点接受了链接，但没有及时返回页面。",
       "missingIdentity": "此节点尚未记住身份。等待游牧公告，然后重试。",
       "transportUnavailable": "Reticulum 传输不可用。请重新启动协议栈后重试。",
-      "sidecarNotRunning": "Reticulum sidecar 未运行。请从 Connection 启动协议栈，然后重试。"
+      "sidecarNotRunning": "Reticulum sidecar 未运行。请从 Connection 启动协议栈，然后重试。",
+      "responseTooLarge": "该节点返回的数据超出了 mesh-client 对此请求的接受上限。",
+      "nomadBusy": "另一个 Nomad 页面或文件请求仍在进行中。请稍后再试。"
     }
   },
   "packetDistribution": {
@@ -2747,10 +2749,10 @@
     "tabFavorites": "收藏",
     "emptyFavorites": "还没有收藏的同行—为联系人或同行加星标以在此处固定他们。",
     "lookupPlaceholder": "查找目标哈希…",
-    "lookupAria": "按目标哈希查找对等点",
+    "lookupAria": "按目标哈希查找对等节点",
     "lookupSubmit": "查找",
-    "lookupSubmitAria": "请求路径和探测目标哈希",
-    "lookupInvalid": "输入有效的32个字符的LXMF目标哈希或lxmf://链接。",
+    "lookupSubmitAria": "请求路径并探测目标哈希",
+    "lookupInvalid": "请输入有效的 32 字符 LXMF 目标哈希或 lxmf:// 链接。",
     "lookupHint": "请求尚未在对等体列表中的哈希路径（例如，您共享的集线器上的对等体）。"
   },
   "radioPanel": {
@@ -3577,7 +3579,7 @@
     "announceSaveSidecarStopped": "在保存公告设置之前启动Reticulum堆栈。",
     "clearAnnouncesDone": "宣布已清除。",
     "clearAnnouncesFailed": "清除公告失败。",
-    "announceIntervalHint": "默认3600秒（ 1小时）。对于仅限启动的公告，请使用0。",
+    "announceIntervalHint": "默认 3600 秒（1 小时）。设为 0 表示仅在启动时 announce。“立即 announce”会马上发送 LXMF 投递 announce。",
     "announceNow": "立即公告",
     "announceNowDone": "LXMF交付公告已发送。",
     "announceNowFailed": "公告失败： {{error}}"

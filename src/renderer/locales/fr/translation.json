@@ -341,8 +341,8 @@
     "exportSupportBundleFailed": "Impossible d'exporter le pack de support : {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Effacer tous les contacts LXMF",
-    "clearReticulumContactsDesc": "Supprime toutes les entrées de l'onglet Contacts et de la liste des contacts du side-car. Les messages de clavardage, les pairs de la table de chemin d'accès et les métadonnées des pairs favoris uniquement sont conservés. Les contacts réapparaissent lorsque vous envoyez un message à quelqu'un ou utilisez Enregistrer en tant que contact.",
-    "clearReticulumContactsConfirm": "Cela effacera définitivement tous les contacts {{count}} Reticulum LXMF du side-car et de la base de données locale. Les pairs et les messages de la table de chemin d'accès ne sont pas supprimés. Cela ne peut pas être annulé.",
+    "clearReticulumContactsDesc": "Supprime toutes les entrées de l’onglet Contacts et de la liste de contacts du side-car. Les destinations restent dans l’onglet Pairs avec leurs noms. Les messages de chat sont conservés. Les contacts réapparaissent lorsque vous écrivez à quelqu’un ou utilisez Enregistrer comme contact.",
+    "clearReticulumContactsConfirm": "Cela effacera définitivement les {{count}} contacts Reticulum LXMF. Les destinations restent dans l’onglet Pairs ; les messages ne sont pas supprimés. Cette action est irréversible.",
     "clearReticulumContactsConfirmButton": "Effacer {{count}} contacts",
     "clearReticulumContactsButton": "Effacer tous les contacts ({{count}})"
   },
@@ -552,7 +552,7 @@
     "dmPathCheckingAria": "Vérification de l'accessibilité du chemin de destination",
     "dmPathCheckingTooltip": "Demander un chemin de Reticulum vers cette destination.",
     "dmPathReachable": "Chemin accessible",
-    "dmPathReachableHops": "Chemin accessible · {{hops}} hop(s)",
+    "dmPathReachableHops": "Chemin joignable · {{hops}} saut(s)",
     "dmPathReachableAria": "Le chemin de destination est accessible",
     "dmPathReachableTooltip": "Un chemin Reticulum vers cette destination est connu. La livraison directe peut toujours échouer si le pair est hors ligne.",
     "dmPathUnreachable": "Aucun chemin",
@@ -841,7 +841,7 @@
       "identityFileMissing": "Le fichier de clé d'identité est manquant. Réimportez votre clé privée ou votre phrase de récupération.",
       "backupHashMismatch": "Les hachages de sauvegarde ne correspondent pas au fichier de clé d'identité sur le disque.",
       "importPrivateKeyRequiresStack": "L’importation de clé privée nécessite une construction complète de la pile Reticulum.",
-      "saveDisplayName": "afficher un nom/nom d'affichage",
+      "saveDisplayName": "Enregistrer le nom d’affichage",
       "saveDisplayNameFailed": "Échec de l'enregistrement du nom d'affichage.",
       "displayNameSaved": "Nom d'affichage enregistré."
     },
@@ -2647,13 +2647,15 @@
     "collapseNodeList": "Réduire la liste des nœuds",
     "expandNodeList": "Développer la liste des nœuds",
     "errors": {
-      "pathTimeout": "Aucun itinéraire vers ce nœud (la recherche de chemin a expiré). Essayez un nœud plus proche ou attendez une annonce plus fraîche.",
+      "pathTimeout": "Aucun itinéraire vers ce nœud (délai de recherche de chemin dépassé). Essayez un nœud plus proche ou attendez une annonce plus récente.",
       "pubkeyNotFound": "Impossible de trouver la clé d'identité de ce nœud. Attendez une annonce Nomad, puis réessayez.",
       "linkTimeout": "Le lien vers le nœud n'a pas pu être établi à temps.",
       "responseTimeout": "Le nœud a accepté le lien mais n'a pas renvoyé la page à temps.",
       "missingIdentity": "Ce nœud n'a pas encore d'identité mémorisée. Attendez une annonce Nomad, puis réessayez.",
       "transportUnavailable": "Le transport Reticulum n’est pas disponible. Redémarrez la pile et réessayez.",
-      "sidecarNotRunning": "Le sidecar Reticulum n’est pas en cours d’exécution. Démarrez la pile depuis Connexion, puis réessayez."
+      "sidecarNotRunning": "Le sidecar Reticulum n’est pas en cours d’exécution. Démarrez la pile depuis Connexion, puis réessayez.",
+      "responseTooLarge": "Le nœud a renvoyé plus de données que mesh-client n’accepte pour cette requête.",
+      "nomadBusy": "Une autre requête de page ou de fichier Nomad est encore en cours. Réessayez dans un instant."
     }
   },
   "packetDistribution": {
@@ -2747,10 +2749,10 @@
     "tabFavorites": "Favoris",
     "emptyFavorites": "Pas encore de pairs préférés — mettez en vedette un contact ou un pair pour les épingler ici.",
     "lookupPlaceholder": "Rechercher le hachage de destination…",
-    "lookupAria": "Rechercher un homologue par hachage de destination",
-    "lookupSubmit": "Chercher",
-    "lookupSubmitAria": "Chemin de la demande et hachage de la destination de la",
-    "lookupInvalid": "Entrez un hachage de destination LXMF valide de 32 caractères ou un lien lxmf ://.",
+    "lookupAria": "Rechercher un pair par hash de destination",
+    "lookupSubmit": "Rechercher",
+    "lookupSubmitAria": "Demander un chemin et sonder le hash de destination",
+    "lookupInvalid": "Saisissez un hash de destination LXMF valide de 32 caractères ou un lien lxmf://.",
     "lookupHint": "Demandez un chemin pour un hachage qui ne figure pas encore dans la liste des pairs (par exemple, un pair sur un hub que vous partagez)."
   },
   "radioPanel": {
@@ -3577,7 +3579,7 @@
     "announceSaveSidecarStopped": "Démarrez la pile Reticulum avant d'enregistrer les paramètres d'annonce.",
     "clearAnnouncesDone": "Annonces effacées.",
     "clearAnnouncesFailed": "Échec de l'effacement des annonces.",
-    "announceIntervalHint": "Par défaut 3600 s (1 h). Utilisez 0 pour les annonces de démarrage uniquement.",
+    "announceIntervalHint": "Par défaut 3600 s (1 h). Utilisez 0 pour des annonces au démarrage uniquement. Annoncer maintenant envoie immédiatement une annonce de livraison LXMF.",
     "announceNow": "Annoncez maintenant",
     "announceNowDone": "Annonce de livraison LXMF envoyée.",
     "announceNowFailed": "Échec de l'annonce : {{error}}"

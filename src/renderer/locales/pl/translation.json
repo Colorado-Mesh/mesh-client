@@ -341,9 +341,9 @@
     "exportSupportBundleFailed": "Nie można wyeksportować pakietu wsparcia: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Wyczyść wszystkie kontakty LXMF",
-    "clearReticulumContactsDesc": "Usuwa każdy wpis z zakładki Kontakty i listy kontaktów wózka bocznego. Wiadomości czatu, równorzędne tabele ścieżek i ulubione metadane równorzędne są przechowywane. Kontakty pojawiają się ponownie, gdy wysyłasz komuś wiadomość lub używasz opcji Zapisz jako kontakt.",
-    "clearReticulumContactsConfirm": "Spowoduje to trwałe usunięcie wszystkich kontaktów {{count}} Reticulum LXMF z przyczepy bocznej i lokalnej bazy danych. Rówieśnicy w tabeli ścieżek i wiadomości nie są usuwane. Tej czynności nie można cofnąć.",
-    "clearReticulumContactsConfirmButton": "Wyczyść kontakty {{count}}",
+    "clearReticulumContactsDesc": "Usuwa każdy wpis z karty Kontakty i listy kontaktów sidecara. Destynacje pozostają na karcie Peers ze swoimi nazwami. Wiadomości czatu są zachowane. Kontakty pojawiają się ponownie, gdy napiszesz do kogoś lub użyjesz Zapisz jako kontakt.",
+    "clearReticulumContactsConfirm": "Spowoduje to trwałe usunięcie wszystkich {{count}} kontaktów Reticulum LXMF. Destynacje pozostają na karcie Peers; wiadomości nie są usuwane. Tej czynności nie można cofnąć.",
+    "clearReticulumContactsConfirmButton": "Wyczyść {{count}} kontaktów",
     "clearReticulumContactsButton": "Wyczyść wszystkie kontakty ({{count}})"
   },
   "aria": {
@@ -552,7 +552,7 @@
     "dmPathCheckingAria": "Sprawdzanie dostępności ścieżki docelowej",
     "dmPathCheckingTooltip": "Żądanie ścieżki Reticulum do tego miejsca docelowego.",
     "dmPathReachable": "Ścieżka osiągalna",
-    "dmPathReachableHops": "Ścieżka osiągalna · {{hops}} hop(s)",
+    "dmPathReachableHops": "Ścieżka osiągalna · {{hops}} skok(i)",
     "dmPathReachableAria": "Ścieżka docelowa jest osiągalna",
     "dmPathReachableTooltip": "Znana jest ścieżka Reticulum do tego miejsca docelowego. Bezpośrednia dostawa może się nie powieść, jeśli partner jest offline.",
     "dmPathUnreachable": "Brak ścieżki",
@@ -841,7 +841,7 @@
       "identityFileMissing": "Brak pliku klucza tożsamości. Zaimportuj ponownie swój klucz prywatny lub frazę odzyskiwania.",
       "backupHashMismatch": "Skróty kopii zapasowych nie odpowiadają plikowi klucza tożsamości na dysku.",
       "importPrivateKeyRequiresStack": "Import klucza prywatnego wymaga pełnej kompilacji stosu Reticulum.",
-      "saveDisplayName": "Display Name",
+      "saveDisplayName": "Zapisz wyświetlaną nazwę",
       "saveDisplayNameFailed": "Nie udało się zapisać wyświetlanej nazwy.",
       "displayNameSaved": "Nazwa wyświetlana zapisana."
     },
@@ -2647,13 +2647,15 @@
     "collapseNodeList": "Zwiń listę węzłów",
     "expandNodeList": "Rozwiń listę węzłów",
     "errors": {
-      "pathTimeout": "Brak trasy do tego węzła (przekroczono limit czasu wyszukiwania ścieżki). Wypróbuj bliższy węzeł lub poczekaj na świeższe ogłoszenie.",
+      "pathTimeout": "Brak trasy do tego węzła (przekroczono limit czasu wyszukiwania ścieżki). Spróbuj bliższego węzła lub poczekaj na nowszy announce.",
       "pubkeyNotFound": "Nie można znaleźć klucza tożsamości tego węzła. Poczekaj na ogłoszenie Nomada, a następnie spróbuj ponownie.",
       "linkTimeout": "Połączenie z węzłem nie mogło zostać ustanowione na czas.",
       "responseTimeout": "Węzeł zaakceptował link, ale nie zwrócił strony na czas.",
       "missingIdentity": "Ten węzeł nie ma jeszcze zapamiętanej tożsamości. Poczekaj na ogłoszenie Nomada, a następnie spróbuj ponownie.",
       "transportUnavailable": "Transport Reticulum jest niedostępny. Uruchom ponownie stos i spróbuj ponownie.",
-      "sidecarNotRunning": "Sidecar Reticulum nie działa. Uruchom stos z Połączenia, a następnie spróbuj ponownie."
+      "sidecarNotRunning": "Sidecar Reticulum nie działa. Uruchom stos z Połączenia, a następnie spróbuj ponownie.",
+      "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
+      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     }
   },
   "packetDistribution": {
@@ -2747,10 +2749,10 @@
     "tabFavorites": "Ulubione",
     "emptyFavorites": "Nie ma jeszcze ulubionych rówieśników — oznacz kontakt lub rówieśnika, aby ich tu przypiąć.",
     "lookupPlaceholder": "Wyszukaj skrót miejsca docelowego…",
-    "lookupAria": "Wyszukaj partnera według hasza miejsca docelowego",
-    "lookupSubmit": "Baza produktów",
-    "lookupSubmitAria": "Ścieżka żądania i hasz docelowy sondy",
-    "lookupInvalid": "Wprowadź prawidłowy 32-znakowy skrót miejsca docelowego LXMF lub link lxmf://.",
+    "lookupAria": "Wyszukaj peer według hasha docelowego",
+    "lookupSubmit": "Wyszukaj",
+    "lookupSubmitAria": "Poproś o ścieżkę i zbadaj hash docelowy",
+    "lookupInvalid": "Wprowadź prawidłowy 32-znakowy hash docelowy LXMF lub łącze lxmf://.",
     "lookupHint": "Poproś o ścieżkę do skrótu, który nie znajduje się jeszcze na liście rówieśników (na przykład rówieśnik w centrum, które udostępniasz)."
   },
   "radioPanel": {
@@ -3577,7 +3579,7 @@
     "announceSaveSidecarStopped": "Uruchom stos Reticulum przed zapisaniem ustawień zapowiedzi.",
     "clearAnnouncesDone": "Ogłoszenia wyczyszczone.",
     "clearAnnouncesFailed": "Nie udało się wyczyścić ogłoszeń.",
-    "announceIntervalHint": "Domyślnie 3600 s (1 h). Użyj 0 do komunikatów tylko przy starcie.",
+    "announceIntervalHint": "Domyślnie 3600 s (1 h). Użyj 0 tylko dla announce przy starcie. Announce teraz natychmiast wysyła announce dostawy LXMF.",
     "announceNow": "Ogłoś teraz",
     "announceNowDone": "Wysłano zawiadomienie o dostawie LXMF.",
     "announceNowFailed": "Nie udało się ogłosić: {{error}}"

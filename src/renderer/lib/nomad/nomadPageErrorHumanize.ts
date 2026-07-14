@@ -8,6 +8,8 @@ const NOMAD_ERROR_I18N_KEYS: Record<string, string> = {
   missing_identity_hash: 'nomadNetwork.errors.missingIdentity',
   transport_unavailable: 'nomadNetwork.errors.transportUnavailable',
   sidecar_not_running: 'nomadNetwork.errors.sidecarNotRunning',
+  response_too_large: 'nomadNetwork.errors.responseTooLarge',
+  nomad_busy: 'nomadNetwork.errors.nomadBusy',
 };
 
 export function nomadPageErrorI18nKey(error: string | null | undefined): string | null {

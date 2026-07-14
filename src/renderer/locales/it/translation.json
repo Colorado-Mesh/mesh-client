@@ -341,9 +341,9 @@
     "exportSupportBundleFailed": "Impossibile esportare il pacchetto di supporto: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Cancella tutti i contatti LXMF",
-    "clearReticulumContactsDesc": "Rimuove ogni voce dalla scheda Contatti e dall'elenco dei contatti del sidecar. Vengono mantenuti i messaggi di chat, i peer della tabella dei percorsi e i metadati peer solo preferiti. I contatti riappaiono quando invii un messaggio a qualcuno o utilizzi Salva come contatto.",
-    "clearReticulumContactsConfirm": "Questo cancellerà definitivamente tutti i contatti {{count}} Reticulum LXMF dal sidecar e dal database locale. I peer e i messaggi della tabella dei percorsi non vengono eliminati. Questa operazione non può essere annullata.",
-    "clearReticulumContactsConfirmButton": "Cancella contatti {{count}}",
+    "clearReticulumContactsDesc": "Rimuove ogni voce dalla scheda Contatti e dall’elenco contatti del sidecar. Le destinazioni restano nella scheda Peer con i loro nomi. I messaggi della chat vengono conservati. I contatti riappaiono quando invii un messaggio o usi Salva come contatto.",
+    "clearReticulumContactsConfirm": "Questo cancellerà definitivamente tutti i {{count}} contatti Reticulum LXMF. Le destinazioni restano nella scheda Peer; i messaggi non vengono eliminati. L’operazione non può essere annullata.",
+    "clearReticulumContactsConfirmButton": "Cancella {{count}} contatti",
     "clearReticulumContactsButton": "Cancella tutti i contatti ({{count}})"
   },
   "aria": {
@@ -552,7 +552,7 @@
     "dmPathCheckingAria": "Verifica raggiungibilità percorso di destinazione",
     "dmPathCheckingTooltip": "Richiesta di un percorso Reticulum per questa destinazione.",
     "dmPathReachable": "Percorso raggiungibile",
-    "dmPathReachableHops": "Percorso raggiungibile · {{hops}} hop(s)",
+    "dmPathReachableHops": "Percorso raggiungibile · {{hops}} salto/i",
     "dmPathReachableAria": "Il percorso di destinazione è raggiungibile",
     "dmPathReachableTooltip": "È noto un percorso Reticulum verso questa destinazione. La consegna diretta potrebbe comunque non riuscire se il peer è offline.",
     "dmPathUnreachable": "Nessun percorso",
@@ -841,7 +841,7 @@
       "identityFileMissing": "Manca il file della chiave di identità. Reimporta la chiave privata o la frase di ripristino.",
       "backupHashMismatch": "Gli hash di backup non corrispondono al file della chiave di identità sul disco.",
       "importPrivateKeyRequiresStack": "L'importazione della chiave privata richiede la creazione completa dello stack Reticulum.",
-      "saveDisplayName": "Nome visualizzato",
+      "saveDisplayName": "Salva nome visualizzato",
       "saveDisplayNameFailed": "Impossibile salvare il nome visualizzato.",
       "displayNameSaved": "Nome visualizzato salvato."
     },
@@ -2647,13 +2647,15 @@
     "collapseNodeList": "Comprimi l'elenco dei nodi",
     "expandNodeList": "Espandi elenco nodi",
     "errors": {
-      "pathTimeout": "Nessun percorso per questo nodo (ricerca percorso scaduta). Prova un nodo più vicino o attendi un annuncio più fresco.",
+      "pathTimeout": "Nessun percorso verso questo nodo (timeout ricerca percorso). Prova un nodo più vicino o attendi un announce più recente.",
       "pubkeyNotFound": "Impossibile trovare la chiave di identità di questo nodo. Attendi l'annuncio di un Nomade, quindi riprova.",
       "linkTimeout": "Impossibile stabilire in tempo il collegamento al nodo.",
       "responseTimeout": "Il nodo ha accettato il collegamento ma non ha restituito la pagina in tempo.",
       "missingIdentity": "Questo nodo non ha ancora un'identità ricordata. Attendi l'annuncio di un Nomade, quindi riprova.",
       "transportUnavailable": "Il trasporto Reticulum non è disponibile. Riavviare lo stack e riprovare.",
-      "sidecarNotRunning": "Il sidecar Reticulum non è in esecuzione. Avviare lo stack da Connessione, quindi riprovare."
+      "sidecarNotRunning": "Il sidecar Reticulum non è in esecuzione. Avviare lo stack da Connessione, quindi riprovare.",
+      "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
+      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     }
   },
   "packetDistribution": {
@@ -2747,10 +2749,10 @@
     "tabFavorites": "Preferiti",
     "emptyFavorites": "Ancora nessun collega preferito: aggiungi un contatto o un collega per aggiungerli qui.",
     "lookupPlaceholder": "Cerca hash di destinazione...",
-    "lookupAria": "Ricerca peer per hash di destinazione",
-    "lookupSubmit": "Ricerca",
-    "lookupSubmitAria": "Percorso della richiesta e hash di destinazione della sonda",
-    "lookupInvalid": "Inserisci un hash di destinazione LXMF di 32 caratteri valido o un link lxmf://.",
+    "lookupAria": "Cerca peer tramite hash di destinazione",
+    "lookupSubmit": "Cerca",
+    "lookupSubmitAria": "Richiedi percorso e verifica l’hash di destinazione",
+    "lookupInvalid": "Inserisci un hash di destinazione LXMF valido di 32 caratteri o un collegamento lxmf://.",
     "lookupHint": "Richiedi un percorso per un hash che non è ancora nell'elenco dei peer (ad esempio un peer su un hub che condividi)."
   },
   "radioPanel": {
@@ -3577,7 +3579,7 @@
     "announceSaveSidecarStopped": "Avviare lo stack Reticulum prima di salvare le impostazioni di annuncio.",
     "clearAnnouncesDone": "Annunci liquidati.",
     "clearAnnouncesFailed": "Impossibile cancellare gli annunci.",
-    "announceIntervalHint": "Predefinito 3600 s (1 ora). Usa 0 per gli annunci di solo avvio.",
+    "announceIntervalHint": "Predefinito 3600 s (1 h). Usa 0 per announce solo all’avvio. Annuncia ora invia immediatamente un announce di consegna LXMF.",
     "announceNow": "Annuncia ora",
     "announceNowDone": "Annuncio di consegna LXMF inviato.",
     "announceNowFailed": "Impossibile annunciare: {{error}}"

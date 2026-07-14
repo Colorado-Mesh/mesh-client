@@ -341,8 +341,8 @@
     "exportSupportBundleFailed": "Support-Paket konnte nicht exportiert werden: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "Alle LXMF-Kontakte löschen",
-    "clearReticulumContactsDesc": "Entfernt jeden Eintrag aus der Registerkarte Kontakte und der Seitenwagen-Kontaktliste. Chat-Nachrichten, Pfad-Tabelle Peers und Favoriten nur Peer-Metadaten werden beibehalten. Kontakte werden wieder angezeigt, wenn Sie jemandem eine Nachricht senden oder als Kontakt speichern verwenden.",
-    "clearReticulumContactsConfirm": "Dadurch werden alle {{count}} Reticulum LXMF-Kontakte dauerhaft aus dem Beiwagen und der lokalen Datenbank entfernt. Pfad-Tabellen-Peers und Nachrichten werden nicht gelöscht. Dies kann nicht rückgängig gemacht werden.",
+    "clearReticulumContactsDesc": "Entfernt jeden Eintrag aus dem Kontakte-Tab und der Sidecar-Kontaktliste. Ziele bleiben im Peers-Tab mit ihren Namen. Chatnachrichten bleiben erhalten. Kontakte erscheinen erneut, wenn du jemandem schreibst oder „Als Kontakt speichern“ verwendest.",
+    "clearReticulumContactsConfirm": "Dadurch werden alle {{count}} Reticulum-LXMF-Kontakte dauerhaft gelöscht. Ziele bleiben im Peers-Tab; Nachrichten werden nicht gelöscht. Dies kann nicht rückgängig gemacht werden.",
     "clearReticulumContactsConfirmButton": "{{count}} Kontakte löschen",
     "clearReticulumContactsButton": "Alle Kontakte löschen ({{count}})"
   },
@@ -552,7 +552,7 @@
     "dmPathCheckingAria": "Überprüfung der Erreichbarkeit des Zielpfads",
     "dmPathCheckingTooltip": "Einen Reticulum-Pfad zu diesem Ziel anfordern.",
     "dmPathReachable": "Weg erreichbar",
-    "dmPathReachableHops": "Weg erreichbar · {{hops}} Hop(s)",
+    "dmPathReachableHops": "Pfad erreichbar · {{hops}} Hop(s)",
     "dmPathReachableAria": "Zielpfad ist erreichbar",
     "dmPathReachableTooltip": "Ein Reticulum-Pfad zu diesem Ziel ist bekannt. Die direkte Zustellung kann immer noch fehlschlagen, wenn der Peer offline ist.",
     "dmPathUnreachable": "Kein Pfad",
@@ -841,7 +841,7 @@
       "identityFileMissing": "Die Identitätsschlüsseldatei fehlt. Importieren Sie Ihren privaten Schlüssel oder Ihre Wiederherstellungsphrase erneut.",
       "backupHashMismatch": "Backup-Hashes stimmen nicht mit der Identitätsschlüsseldatei auf der Festplatte überein.",
       "importPrivateKeyRequiresStack": "Für den Import eines privaten Schlüssels ist ein vollständiger Reticulum-Stack-Build erforderlich.",
-      "saveDisplayName": "Anzeigename",
+      "saveDisplayName": "Anzeigenamen speichern",
       "saveDisplayNameFailed": "Speichern des Anzeigenamens fehlgeschlagen.",
       "displayNameSaved": "Anzeigename gespeichert."
     },
@@ -2647,13 +2647,15 @@
     "collapseNodeList": "Knotenliste einklappen",
     "expandNodeList": "Knotenliste erweitern",
     "errors": {
-      "pathTimeout": "Keine Route zu diesem Knoten (Zeitüberschreitung bei der Pfadsuche). Probieren Sie einen näheren Knoten aus oder warten Sie auf eine frischere Ankündigung.",
+      "pathTimeout": "Keine Route zu diesem Knoten (Pfadabfrage zeitüberschritten). Versuche einen näheren Knoten oder warte auf einen aktuelleren Announce.",
       "pubkeyNotFound": "Der Identitätsschlüssel dieses Knotens konnte nicht gefunden werden. Warten Sie auf die Ankündigung eines Nomaden und versuchen Sie es dann erneut.",
       "linkTimeout": "Verbindung zum Knoten konnte nicht rechtzeitig hergestellt werden.",
       "responseTimeout": "Der Knoten hat den Link akzeptiert, aber die Seite nicht rechtzeitig zurückgegeben.",
       "missingIdentity": "Dieser Knoten hat noch keine erinnerte Identität. Warten Sie auf die Ankündigung eines Nomaden und versuchen Sie es dann erneut.",
       "transportUnavailable": "Reticulum-Transport ist nicht verfügbar. Starten Sie den Stack neu und versuchen Sie es erneut.",
-      "sidecarNotRunning": "Reticulum-Sidecar läuft nicht. Starten Sie den Stack unter Verbindung und versuchen Sie es erneut."
+      "sidecarNotRunning": "Reticulum-Sidecar läuft nicht. Starten Sie den Stack unter Verbindung und versuchen Sie es erneut.",
+      "responseTooLarge": "Der Knoten hat mehr Daten zurückgegeben, als mesh-client für diese Anfrage akzeptiert.",
+      "nomadBusy": "Eine andere Nomad-Seiten- oder Dateianfrage läuft noch. Versuche es gleich noch einmal."
     }
   },
   "packetDistribution": {
@@ -2747,10 +2749,10 @@
     "tabFavorites": "Favoriten",
     "emptyFavorites": "Noch keine Lieblingskollegen — markieren Sie einen Kontakt oder Kollegen, um ihn hier anzuheften.",
     "lookupPlaceholder": "Nachschlageziel-Hash...",
-    "lookupAria": "Peer nach Ziel-Hash suchen",
-    "lookupSubmit": "Suche",
-    "lookupSubmitAria": "Anforderungspfad und Sondierungsziel-Hash",
-    "lookupInvalid": "Geben Sie einen gültigen 32-stelligen LXMF-Ziel-Hash oder einen lxmf:// -Link ein.",
+    "lookupAria": "Peer anhand des Ziel-Hash suchen",
+    "lookupSubmit": "Suchen",
+    "lookupSubmitAria": "Pfad anfordern und Ziel-Hash prüfen",
+    "lookupInvalid": "Gib einen gültigen 32-stelligen LXMF-Ziel-Hash oder einen lxmf://-Link ein.",
     "lookupHint": "Fordern Sie einen Pfad für einen Hash an, der noch nicht in der Peers-Liste enthalten ist (z. B. einen Peer auf einem Hub, den Sie teilen)."
   },
   "radioPanel": {
@@ -3577,7 +3579,7 @@
     "announceSaveSidecarStopped": "Starten Sie den Reticulum-Stapel, bevor Sie die Ankündigungseinstellungen speichern.",
     "clearAnnouncesDone": "Ansagen gelöscht.",
     "clearAnnouncesFailed": "Ansagen konnten nicht gelöscht werden.",
-    "announceIntervalHint": "Standard 3600 s (1 h). Verwenden Sie 0 für reine Startankündigungen.",
+    "announceIntervalHint": "Standard 3600 s (1 h). Mit 0 nur Announces beim Start. „Jetzt announce“ sendet sofort einen LXMF-Delivery-Announce.",
     "announceNow": "Jetzt ankündigen",
     "announceNowDone": "LXMF Lieferankündigung gesendet.",
     "announceNowFailed": "Ankündigung fehlgeschlagen: {{error}}"

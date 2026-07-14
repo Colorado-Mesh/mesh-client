@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
+import { reticulumSidecarEventRefreshActions } from '@/renderer/lib/reticulum/reticulumSidecarPeerRefreshEvents';
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import {
@@ -154,11 +155,8 @@ export function ReticulumNetworkPanel({
       if (evt.type === 'interface.state' || evt.type === 'stats_update') {
         invalidateReticulumInterfacesCache();
       }
-      if (
-        evt.type === 'peers_updated' ||
-        evt.type === 'stats_update' ||
-        evt.type === 'announce.received'
-      ) {
+      // Match runtime policy: do not path-table reload peers on stats_update.
+      if (reticulumSidecarEventRefreshActions(evt.type).peers) {
         void refreshPeers();
       }
     };

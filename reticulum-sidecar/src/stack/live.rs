@@ -347,6 +347,36 @@ impl LiveBridge {
     /// hash recovered from its announce (`AnnounceHandlerEvent::identity_hash`),
     /// required by `LinkClient::query` to rebuild the `nomadnetwork.node`
     /// destination on our side.
+    async fn query_nomad_node(
+        &self,
+        hash_hex: &str,
+        identity_hash_hex: &str,
+        path: &str,
+        payload: Vec<u8>,
+        interfaces: &[InterfaceRow],
+    ) -> Result<Vec<u8>, String> {
+        let remote_hash = parse_hash16(identity_hash_hex)?;
+        let hops = self.hops_to_destination(hash_hex).await.unwrap_or(8);
+        let timeout_secs = nomad_timeouts::nomad_page_timeout_secs_for_interfaces(interfaces, hops);
+        let _guard = match tokio::time::timeout(NOMAD_LINK_LOCK_WAIT, self.nomad_link_lock.lock()).await
+        {
+            Ok(g) => g,
+            Err(_) => return Err("nomad_busy".into()),
+        };
+        let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
+        client
+            .query(
+                remote_hash,
+                NOMAD_NODE_ASPECT,
+                path,
+                payload,
+                hops,
+                Duration::from_secs(timeout_secs),
+            )
+            .await
+            .map_err(|e| map_nomad_link_error(&format!("{e}")))
+    }
+
     pub async fn fetch_nomad_file(
         &self,
         hash_hex: &str,
@@ -357,28 +387,14 @@ impl LiveBridge {
         let Some(identity_hash_hex) = identity_hash_hex.filter(|s| !s.is_empty()) else {
             return serde_json::json!({ "ok": false, "error": "missing_identity_hash" });
         };
-        let remote_hash = match parse_hash16(identity_hash_hex) {
-            Ok(h) => h,
-            Err(e) => {
-                return serde_json::json!({ "ok": false, "error": e });
-            }
-        };
-        let hops = self.hops_to_destination(hash_hex).await.unwrap_or(8);
-        let timeout_secs = nomad_timeouts::nomad_page_timeout_secs_for_interfaces(interfaces, hops);
-        let _guard = self.nomad_link_lock.lock().await;
-        let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
-        match client
-            .query(
-                remote_hash,
-                NOMAD_NODE_ASPECT,
-                path,
-                Vec::new(),
-                hops,
-                Duration::from_secs(timeout_secs),
-            )
+        match self
+            .query_nomad_node(hash_hex, identity_hash_hex, path, Vec::new(), interfaces)
             .await
         {
             Ok(bytes) => {
+                if bytes.len() > NOMAD_FILE_MAX_BYTES {
+                    return serde_json::json!({ "ok": false, "error": "response_too_large" });
+                }
                 let file_name = nomad_file_name_from_path(path);
                 let content_base64 = base64::Engine::encode(
                     &base64::engine::general_purpose::STANDARD,
@@ -392,7 +408,7 @@ impl LiveBridge {
             }
             Err(e) => serde_json::json!({
                 "ok": false,
-                "error": map_nomad_link_error(&format!("{e}")),
+                "error": e,
             }),
         }
     }
@@ -409,29 +425,15 @@ impl LiveBridge {
         let Some(identity_hash_hex) = identity_hash_hex.filter(|s| !s.is_empty()) else {
             return serde_json::json!({ "ok": false, "error": "missing_identity_hash" });
         };
-        let remote_hash = match parse_hash16(identity_hash_hex) {
-            Ok(h) => h,
-            Err(e) => {
-                return serde_json::json!({ "ok": false, "error": e });
-            }
-        };
-        let hops = self.hops_to_destination(hash_hex).await.unwrap_or(8);
-        let timeout_secs = nomad_timeouts::nomad_page_timeout_secs_for_interfaces(interfaces, hops);
         let payload = nomad_page_request_payload(data_b64);
-        let _guard = self.nomad_link_lock.lock().await;
-        let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
-        match client
-            .query(
-                remote_hash,
-                NOMAD_NODE_ASPECT,
-                path,
-                payload,
-                hops,
-                Duration::from_secs(timeout_secs),
-            )
+        match self
+            .query_nomad_node(hash_hex, identity_hash_hex, path, payload, interfaces)
             .await
         {
             Ok(bytes) => {
+                if bytes.len() > NOMAD_PAGE_MAX_BYTES {
+                    return serde_json::json!({ "ok": false, "error": "response_too_large" });
+                }
                 let content = String::from_utf8_lossy(&bytes).into_owned();
                 let content_type = if path.split('`').next().is_some_and(|p| p.ends_with(".mu")) {
                     "micron"
@@ -446,7 +448,7 @@ impl LiveBridge {
             }
             Err(e) => serde_json::json!({
                 "ok": false,
-                "error": map_nomad_link_error(&format!("{e}")),
+                "error": e,
             }),
         }
     }
@@ -572,7 +574,7 @@ impl LiveBridge {
                             .iter()
                             .map(|e| hex::encode(e.hash))
                             .collect();
-                        let added = path_table_added_hashes(&known_path_hashes, &next_hashes);
+                        let added = path_table_added_hashes_capped(&known_path_hashes, &next_hashes);
                         if !added.is_empty() {
                             let frame = serde_json::json!({
                                 "type": "peers_updated",
@@ -1089,19 +1091,20 @@ impl LiveBridge {
             identity_known = self.ensure_identity_for_direct(&req.destination_hash).await;
         }
 
-        let delivery_method = if has_path && identity_known {
-            DeliveryMethod::Direct
-        } else if preferred_pn_set {
-            // Offline / no pubkey: store-and-forward via preferred PN.
-            DeliveryMethod::Propagated
-        } else if has_path {
-            DeliveryMethod::Direct
-        } else {
-            return Ok(serde_json::json!({
-                "ok": false,
-                "error": "no_propagation_node",
-                "destination_hash": req.destination_hash,
-            }));
+        let delivery_method = match lxmf_outbound::choose_lxmf_send_route(
+            has_path,
+            identity_known,
+            preferred_pn_set,
+        ) {
+            lxmf_outbound::LxmfSendRoute::Direct => DeliveryMethod::Direct,
+            lxmf_outbound::LxmfSendRoute::Propagated => DeliveryMethod::Propagated,
+            lxmf_outbound::LxmfSendRoute::NoPropagationNode => {
+                return Ok(serde_json::json!({
+                    "ok": false,
+                    "error": "no_propagation_node",
+                    "destination_hash": req.destination_hash,
+                }));
+            }
         };
         let delivery_method_str = match delivery_method {
             DeliveryMethod::Direct => "direct",
@@ -1181,8 +1184,8 @@ impl LiveBridge {
         if file_bytes.is_empty() {
             return Err("attachment data is empty".into());
         }
-        if file_bytes.len() > 16 * 1024 * 1024 {
-            return Err("attachment exceeds 16 MiB limit".into());
+        if file_bytes.len() > 4 * 1024 * 1024 {
+            return Err("attachment exceeds 4 MiB limit".into());
         }
 
         let dest = parse_hash16(&req.destination_hash)?;
@@ -1709,16 +1712,31 @@ fn path_table_added_hashes(prev: &HashSet<String>, next: &HashSet<String>) -> Ve
 }
 
 pub(super) fn parse_hash16(hex_str: &str) -> Result<[u8; 16], String> {
-    let clean: String = hex_str.chars().filter(|c| c.is_ascii_hexdigit()).collect();
-    let bytes = hex::decode(if clean.len() >= 32 {
-        &clean[..32]
-    } else {
-        return Err("hash too short".into());
-    })
-    .map_err(|e| e.to_string())?;
+    let trimmed = hex_str.trim();
+    if trimmed.len() != 32 || !trimmed.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("hash must be exactly 32 hex characters".into());
+    }
+    let bytes = hex::decode(trimmed).map_err(|e| e.to_string())?;
     let mut out = [0u8; 16];
     out.copy_from_slice(&bytes[..16]);
     Ok(out)
+}
+
+/// Cap membership growth event payloads under path-table floods.
+const MAX_PEERS_UPDATED_ADDED: usize = 256;
+/// Cap Nomad page body before UTF-8 conversion (DoS bound).
+const NOMAD_PAGE_MAX_BYTES: usize = 512 * 1024;
+/// Cap Nomad file body before base64 (aligned with Axum 4 MiB body limit).
+const NOMAD_FILE_MAX_BYTES: usize = 4 * 1024 * 1024;
+const NOMAD_LINK_LOCK_WAIT: Duration = Duration::from_secs(2);
+
+fn path_table_added_hashes_capped(prev: &HashSet<String>, next: &HashSet<String>) -> Vec<String> {
+    let mut added = path_table_added_hashes(prev, next);
+    if added.len() > MAX_PEERS_UPDATED_ADDED {
+        added.sort();
+        added.truncate(MAX_PEERS_UPDATED_ADDED);
+    }
+    added
 }
 
 #[cfg(test)]
@@ -1826,6 +1844,26 @@ mod announce_display_name_tests {
         let contacts = vec![];
         let hash = "deadbeef".repeat(4);
         assert_eq!(resolve_inbound_sender_name(&contacts, &hash), "deadbeefdead");
+    }
+
+    #[test]
+    fn parse_hash16_requires_exact_32_hex() {
+        assert!(parse_hash16("aabbccddeeff00112233445566778899").is_ok());
+        assert!(parse_hash16("AABBCCDDEEFF00112233445566778899").is_ok());
+        assert!(parse_hash16("aabb").is_err());
+        assert!(parse_hash16("aabbccddeeff00112233445566778899ff").is_err());
+        assert!(parse_hash16("aabbccddeeff0011223344556677889g").is_err());
+        assert!(parse_hash16("aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99").is_err());
+    }
+
+    #[test]
+    fn path_table_added_hashes_capped_truncates_large_deltas() {
+        let prev: HashSet<String> = HashSet::new();
+        let next: HashSet<String> = (0..(MAX_PEERS_UPDATED_ADDED + 10))
+            .map(|i| format!("{:032x}", i))
+            .collect();
+        let added = path_table_added_hashes_capped(&prev, &next);
+        assert_eq!(added.len(), MAX_PEERS_UPDATED_ADDED);
     }
 }
 

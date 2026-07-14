@@ -92,12 +92,12 @@ describe('NomadMicronPageView', () => {
     );
   });
 
-  it('does not remount Micron HTML when only link callbacks change', async () => {
-    const micronParser = await import('@/renderer/lib/nomad/micronParser');
-    const renderSpy = vi.spyOn(micronParser, 'renderNomadMicronPage');
-    const markup = '`[Link`:/page/other.mu`]';
+  it('preserves Micron form input when only link callbacks change', () => {
+    const markup = ['`Search:`', '`<20|q`>`', '`[Go`:/page/results.mu`q|*]`'].join('\n');
     const { rerender } = render(<NomadMicronPageView {...defaultProps} content={markup} />);
-    expect(renderSpy).toHaveBeenCalledTimes(1);
+    const textInput = document.querySelector<HTMLInputElement>('input[name="q"]');
+    expect(textInput).not.toBeNull();
+    if (textInput) textInput.value = 'mesh';
 
     rerender(
       <NomadMicronPageView
@@ -108,7 +108,19 @@ describe('NomadMicronPageView', () => {
         onOpenDm={vi.fn()}
       />,
     );
-    expect(renderSpy).toHaveBeenCalledTimes(1);
-    renderSpy.mockRestore();
+    expect(document.querySelector<HTMLInputElement>('input[name="q"]')?.value).toBe('mesh');
+  });
+
+  it('replaces rendered page content when content changes', () => {
+    const { rerender } = render(
+      <NomadMicronPageView {...defaultProps} content="PAGE_ALPHA_UNIQUE" />,
+    );
+    expect(document.querySelector('.nomad-micron-page')?.textContent).toContain(
+      'PAGE_ALPHA_UNIQUE',
+    );
+    rerender(<NomadMicronPageView {...defaultProps} content="PAGE_BETA_UNIQUE" />);
+    const text = document.querySelector('.nomad-micron-page')?.textContent ?? '';
+    expect(text).toContain('PAGE_BETA_UNIQUE');
+    expect(text).not.toContain('PAGE_ALPHA_UNIQUE');
   });
 });

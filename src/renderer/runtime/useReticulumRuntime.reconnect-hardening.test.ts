@@ -128,6 +128,10 @@ describe('useReticulumRuntime outbound delivery persistence', () => {
     );
   });
 
+  it('flushes buffered early delivery status after LXMF hash rename', () => {
+    expect(SOURCE).toMatch(/flushPendingReticulumOutboundDeliveryStatus\(identityId, hash\)/);
+  });
+
   it('marks stale outbound with RETICULUM_STALE_OUTBOUND_MS (not a 5-minute override)', () => {
     expect(SOURCE).toContain('RETICULUM_STALE_OUTBOUND_MS');
     expect(SOURCE).toMatch(

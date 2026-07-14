@@ -2644,7 +2644,9 @@
       "responseTimeout": "The node accepted the link but did not return the page in time.",
       "missingIdentity": "This node has no remembered identity yet. Wait for a Nomad announce, then try again.",
       "transportUnavailable": "Reticulum transport is unavailable. Restart the stack and try again.",
-      "sidecarNotRunning": "Reticulum sidecar is not running. Start the stack from Connection, then try again."
+      "sidecarNotRunning": "Reticulum sidecar is not running. Start the stack from Connection, then try again.",
+      "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
+      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     },
     "showSource": "Show page source",
     "hideSource": "Show formatted page",

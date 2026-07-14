@@ -7,6 +7,10 @@ describe('nomadPageErrorHumanize', () => {
 
   it('maps known codes to i18n keys', () => {
     expect(nomadPageErrorI18nKey('path_timeout')).toBe('nomadNetwork.errors.pathTimeout');
+    expect(nomadPageErrorI18nKey('response_too_large')).toBe(
+      'nomadNetwork.errors.responseTooLarge',
+    );
+    expect(nomadPageErrorI18nKey('nomad_busy')).toBe('nomadNetwork.errors.nomadBusy');
     expect(nomadPageErrorI18nKey('missing_identity_hash')).toBe(
       'nomadNetwork.errors.missingIdentity',
     );

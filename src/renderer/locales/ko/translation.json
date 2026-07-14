@@ -341,9 +341,9 @@
     "exportSupportBundleFailed": "지원 번들을 내보낼 수 없습니다: {{message}}",
     "dangerZoneReticulumHeading": "Reticulum",
     "clearReticulumContactsTitle": "모든 LXMF 연락처 지우기",
-    "clearReticulumContactsDesc": "연락처 탭과 사이드카 연락처 목록에서 모든 항목을 제거합니다. 채팅 메시지, 경로 테이블 피어 및 즐겨찾기 전용 피어 메타데이터가 보관됩니다. 다른 사람에게 메시지를 보내거나 '연락처로 저장' 을 사용하면 연락처가 다시 표시됩니다.",
-    "clearReticulumContactsConfirm": "이렇게 하면 사이드카 및 로컬 데이터베이스에서 모든 {{count}} Reticulum LXMF 연락처가 영구적으로 지워집니다. 경로 테이블 피어 및 메시지는 삭제되지 않습니다. 이 작업은 취소할 수 없습니다.",
-    "clearReticulumContactsConfirmButton": "연락처 {{count}} 개 지우기",
+    "clearReticulumContactsDesc": "연락처 탭과 사이드카 연락처 목록의 모든 항목을 제거합니다. 대상은 이름과 함께 Peers 탭에 유지됩니다. 채팅 메시지는 보관됩니다. 누군가에게 메시지를 보내거나 연락처로 저장을 사용하면 연락처가 다시 나타납니다.",
+    "clearReticulumContactsConfirm": "이렇게 하면 {{count}}개의 모든 Reticulum LXMF 연락처가 영구적으로 지워집니다. 대상은 Peers 탭에 남고 메시지는 삭제되지 않습니다. 이 작업은 취소할 수 없습니다.",
+    "clearReticulumContactsConfirmButton": "연락처 {{count}}개 지우기",
     "clearReticulumContactsButton": "모든 연락처 지우기 ({{count}})"
   },
   "aria": {
@@ -552,7 +552,7 @@
     "dmPathCheckingAria": "목적지 경로 도달 가능성 확인",
     "dmPathCheckingTooltip": "이 목적지로 가는 Reticulum 경로를 요청합니다.",
     "dmPathReachable": "경로 도달 가능",
-    "dmPathReachableHops": "경로 도달 가능 · {{hops}} 홉",
+    "dmPathReachableHops": "경로 도달 가능 · {{hops}}홉",
     "dmPathReachableAria": "목적지 경로에 도달할 수 있습니다",
     "dmPathReachableTooltip": "이 목적지로 가는 Reticulum 경로가 알려져 있습니다. 피어가 오프라인인 경우 직접 배달이 실패할 수 있습니다.",
     "dmPathUnreachable": "경로 없음",
@@ -841,7 +841,7 @@
       "identityFileMissing": "ID 키 파일이 누락되었습니다. 개인 키 또는 복구 문구를 다시 가져오세요.",
       "backupHashMismatch": "백업 해시가 디스크의 ID 키 파일과 일치하지 않습니다.",
       "importPrivateKeyRequiresStack": "개인 키 가져오기에는 전체 Reticulum 스택 빌드가 필요합니다.",
-      "saveDisplayName": "디스플레이 이름",
+      "saveDisplayName": "표시 이름 저장",
       "saveDisplayNameFailed": "표시 이름을 저장하지 못했습니다.",
       "displayNameSaved": "표시 이름이 저장되었습니다."
     },
@@ -2647,13 +2647,15 @@
     "collapseNodeList": "노드 목록 축소",
     "expandNodeList": "노드 목록 펼치기",
     "errors": {
-      "pathTimeout": "이 노드로 가는 경로가 없습니다 (경로 조회 시간 초과). 더 가까운 노드를 시도하거나 더 새로운 발표를 기다리십시오.",
+      "pathTimeout": "이 노드로 가는 경로가 없습니다(경로 조회 시간 초과). 더 가까운 노드를 시도하거나 새 announce를 기다리세요.",
       "pubkeyNotFound": "이 노드의 ID 키를 찾을 수 없습니다. 유랑민 발표를 기다렸다가 다시 시도하십시오.",
       "linkTimeout": "노드에 대한 링크를 제시간에 설정할 수 없습니다.",
       "responseTimeout": "노드가 링크를 수락했지만 제시간에 페이지를 반환하지 않았습니다.",
       "missingIdentity": "이 노드는 아직 기억된 ID가 없습니다. 유랑민 발표를 기다렸다가 다시 시도하십시오.",
       "transportUnavailable": "Reticulum 전송을 사용할 수 없습니다. 스택을 다시 시작한 다음 다시 시도하십시오.",
-      "sidecarNotRunning": "Reticulum 사이드카가 실행되고 있지 않습니다. Connection에서 스택을 시작한 다음 다시 시도하십시오."
+      "sidecarNotRunning": "Reticulum 사이드카가 실행되고 있지 않습니다. Connection에서 스택을 시작한 다음 다시 시도하십시오.",
+      "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
+      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     }
   },
   "packetDistribution": {
@@ -2747,10 +2749,10 @@
     "tabFavorites": "즐겨찾기",
     "emptyFavorites": "아직 즐겨찾는 동료가 없습니다. 연락처 또는 동료에 별표를 표시하여 여기에 고정하세요.",
     "lookupPlaceholder": "목적지 해시 조회...",
-    "lookupAria": "목적지별 피어 해시 조회",
-    "lookupSubmit": "조회",
-    "lookupSubmitAria": "요청 경로 및 프로브 대상 해시",
-    "lookupInvalid": "유효한 32자 LXMF 대상 해시 또는 lxmf://링크를 입력하십시오.",
+    "lookupAria": "대상 해시로 피어 검색",
+    "lookupSubmit": "검색",
+    "lookupSubmitAria": "경로 요청 및 대상 해시 프로브",
+    "lookupInvalid": "유효한 32자 LXMF 대상 해시 또는 lxmf:// 링크를 입력하세요.",
     "lookupHint": "아직 피어 목록에 없는 해시의 경로를 요청합니다 (예: 공유하는 허브의 피어)."
   },
   "radioPanel": {
@@ -3577,7 +3579,7 @@
     "announceSaveSidecarStopped": "공지 설정을 저장하기 전에 Reticulum 스택을 시작합니다.",
     "clearAnnouncesDone": "공지가 지워졌습니다.",
     "clearAnnouncesFailed": "공지 지우기에 실패했습니다.",
-    "announceIntervalHint": "기본값은 3600초 (1시간) 입니다. 시작 전용 발표에 0을 사용하십시오.",
+    "announceIntervalHint": "기본값 3600초(1시간). 0은 시작 시에만 announce합니다. 지금 announce하면 LXMF 배달 announce를 즉시 보냅니다.",
     "announceNow": "지금 발표하기",
     "announceNowDone": "LXMF 배송 발표가 전송되었습니다.",
     "announceNowFailed": "발표 실패: {{error}}"

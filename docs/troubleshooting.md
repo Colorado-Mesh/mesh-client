@@ -914,7 +914,23 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 ### Nomad Network pages hang or almost never load
 
-**Symptoms**: Most Nomad pages spin for a long time then fail; a few nearby nodes load quickly. UI may show path/link timeout messages.
+**Symptoms**: Most Nomad pages spin for a long time then fail; a few nearby nodes load quickly. UI shows humanized errors (via `nomadPageErrorHumanize.ts`) instead of raw sidecar codes when recognized.
+
+**Humanized error categories** (sidecar code → user message):
+
+| Sidecar code            | Meaning                                                             |
+| ----------------------- | ------------------------------------------------------------------- |
+| `path_timeout`          | No route to the node (path lookup timed out)                        |
+| `pubkey_not_found`      | Destination identity key not cached yet — wait for a Nomad announce |
+| `link_timeout`          | Link could not be established in time                               |
+| `response_timeout`      | Link opened but page payload did not arrive in time                 |
+| `missing_identity_hash` | No remembered identity for the node yet                             |
+| `transport_unavailable` | Reticulum transport unavailable — restart stack                     |
+| `sidecar_not_running`   | Sidecar not running — start stack from Connection                   |
+| `response_too_large`    | Remote response exceeded the sidecar size cap                       |
+| `nomad_busy`            | Another Nomad page/file query still holds the link lock             |
+
+Unrecognized codes pass through unchanged.
 
 **Cause**: Older `LinkClient` always waited for a fresh path-response announce for the destination public key, even when Nomad announces had already cached it. Successful fetches could also deregister all `nomadnetwork.node` announce handlers. Distant/high-hop nodes can still time out at the path stage (expected RF/mesh reachability limits).
 
@@ -923,6 +939,7 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 1. Ensure rsReticulum overlay is applied: `./scripts/apply-rsReticulum-link-client-nomad.sh` (see [patches/README.md](../reticulum-sidecar/patches/README.md); upstream [ratspeak/rsReticulum#14](https://github.com/ratspeak/rsReticulum/pull/14)).
 2. Rebuild sidecar: `pnpm run reticulum:sidecar:build`, restart stack.
 3. Prefer low-hop nodes while testing; hop count is shown in the Nomad list.
+4. Match the humanized message to the table above — `path_timeout` / high hops often mean RF reachability limits, not a mesh-client bug.
 
 ### Reticulum sidecar stops during dev (Vite HMR)
 

@@ -119,8 +119,16 @@ impl LxmfOutboundDriver {
     }
 
     pub fn register_identity_key(&mut self, dest_hash_hex: &str, public_key: [u8; 64]) {
-        self.known_identities
-            .insert(dest_hash_hex.to_lowercase(), public_key);
+        let key = dest_hash_hex.to_lowercase();
+        if !self.known_identities.contains_key(&key)
+            && self.known_identities.len() >= MAX_KNOWN_IDENTITIES
+        {
+            // Evict an arbitrary entry to bound memory under announce floods.
+            if let Some(oldest) = self.known_identities.keys().next().cloned() {
+                self.known_identities.remove(&oldest);
+            }
+        }
+        self.known_identities.insert(key, public_key);
     }
 
     pub fn known_identities_for_propagation(&self) -> HashMap<String, [u8; 64]> {
@@ -495,6 +503,34 @@ fn delivery_method_label(method: DeliveryMethod) -> &'static str {
     }
 }
 
+/// Decide Direct vs Propagated for an LXMF send (path/pubkey/PN).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LxmfSendRoute {
+    Direct,
+    Propagated,
+    NoPropagationNode,
+}
+
+pub(crate) fn choose_lxmf_send_route(
+    has_path: bool,
+    identity_known: bool,
+    preferred_pn_set: bool,
+) -> LxmfSendRoute {
+    if has_path && identity_known {
+        LxmfSendRoute::Direct
+    } else if preferred_pn_set {
+        LxmfSendRoute::Propagated
+    } else if has_path {
+        // Path known but pubkey still missing — keep trying Direct / LRPROOF.
+        LxmfSendRoute::Direct
+    } else {
+        LxmfSendRoute::NoPropagationNode
+    }
+}
+
+/// Cap on retained destination public keys (announce / path flood bound).
+const MAX_KNOWN_IDENTITIES: usize = 4096;
+
 pub fn emit_outbound_status(
     event_tx: &broadcast::Sender<String>,
     message_payload: &serde_json::Value,
@@ -654,5 +690,37 @@ mod tests {
         assert!(gate.should_warn(dest(4), 100.0));
         assert!(!gate.should_warn(dest(4), 110.0));
         assert!(gate.should_warn(dest(4), 121.0));
+    }
+
+    #[test]
+    fn choose_lxmf_send_route_prefers_direct_when_path_and_pubkey_known() {
+        assert_eq!(
+            choose_lxmf_send_route(true, true, true),
+            LxmfSendRoute::Direct
+        );
+    }
+
+    #[test]
+    fn choose_lxmf_send_route_uses_propagated_when_offline_with_pn() {
+        assert_eq!(
+            choose_lxmf_send_route(false, false, true),
+            LxmfSendRoute::Propagated
+        );
+    }
+
+    #[test]
+    fn choose_lxmf_send_route_errors_without_path_or_pn() {
+        assert_eq!(
+            choose_lxmf_send_route(false, false, false),
+            LxmfSendRoute::NoPropagationNode
+        );
+    }
+
+    #[test]
+    fn choose_lxmf_send_route_keeps_direct_when_path_without_pubkey() {
+        assert_eq!(
+            choose_lxmf_send_route(true, false, false),
+            LxmfSendRoute::Direct
+        );
     }
 }

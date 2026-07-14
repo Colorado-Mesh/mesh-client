@@ -7,6 +7,7 @@ import {
   capReticulumPeerMaps,
   mergeReticulumPeerMaps,
   refreshReticulumPeersFromSidecar,
+  resetReticulumPeerRefreshSingleFlightForTests,
   resolveReticulumPeerLabel,
   useReticulumPeerStore,
 } from './reticulumPeerStore';
@@ -231,6 +232,7 @@ describe('mergeReticulumPeerMaps', () => {
 
 describe('reticulumPeerStore', () => {
   beforeEach(() => {
+    resetReticulumPeerRefreshSingleFlightForTests();
     useReticulumPeerStore.setState({
       peers: new Map(),
       contacts: new Map(),
@@ -335,6 +337,71 @@ describe('reticulumPeerStore', () => {
     expect(useReticulumPeerStore.getState().contacts.size).toBe(0);
     expect(useReticulumPeerStore.getState().peers.has('aabb01')).toBe(true);
     expect(useReticulumPeerStore.getState().peers.get('ccdd02')?.display_name).toBe('Demoted');
+  });
+
+  it('clearAllContacts leaves contacts in UI when sidecar clear fails', async () => {
+    const proxyDelete = vi.fn().mockRejectedValue(new Error('sidecar down'));
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: { proxyDelete },
+        db: { clearReticulumContactDestinations: vi.fn() },
+      },
+    });
+    useReticulumPeerStore
+      .getState()
+      .replaceContacts([{ destination_hash: 'aabb01', last_heard: 1, display_name: 'Keep' }]);
+
+    await expect(useReticulumPeerStore.getState().clearAllContacts()).rejects.toThrow(
+      'sidecar down',
+    );
+    expect(useReticulumPeerStore.getState().contacts.get('aabb01')?.display_name).toBe('Keep');
+    expect(window.electronAPI.db.clearReticulumContactDestinations).not.toHaveBeenCalled();
+  });
+
+  it('refreshReticulumPeersFromSidecar coalesces overlapping calls and applies latest', async () => {
+    let releaseFirst!: () => void;
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    let call = 0;
+    const proxyGet = vi.fn(async (path: string) => {
+      if (path === '/api/v1/contacts') {
+        call += 1;
+        const n = call;
+        if (n === 1) await firstGate;
+        return {
+          contacts: [
+            {
+              destination_hash: 'aa',
+              last_heard: n === 1 ? 1 : 99,
+              display_name: n === 1 ? 'Stale' : 'Fresh',
+            },
+          ],
+        };
+      }
+      if (path === '/api/v1/peers') {
+        return Promise.resolve({ peers: [{ destination_hash: 'aa', hops: 1 }] });
+      }
+      if (path === '/api/v1/nomadnetwork/nodes') {
+        return Promise.resolve({ nodes: [] });
+      }
+      return Promise.resolve({});
+    });
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: { proxyGet },
+        db: { getReticulumDestinations: vi.fn().mockResolvedValue([]) },
+      },
+    });
+
+    const first = refreshReticulumPeersFromSidecar();
+    const second = refreshReticulumPeersFromSidecar();
+    expect(second).toBe(first);
+    releaseFirst();
+    await first;
+
+    expect(useReticulumPeerStore.getState().contacts.get('aa')?.display_name).toBe('Fresh');
+    expect(useReticulumPeerStore.getState().contacts.get('aa')?.last_heard).toBe(99);
   });
 
   it('toggleFavorite rolls back when SQLite upsert fails', async () => {

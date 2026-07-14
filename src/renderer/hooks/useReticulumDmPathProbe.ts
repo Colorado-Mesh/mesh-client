@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect -- probe lifecycle seeds status then settles from async sidecar result */
 import { useCallback, useEffect, useState } from 'react';
 
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   type ReticulumDmPathStatus,
   reticulumDmPathStatusFromProbe,
@@ -58,16 +59,24 @@ export function useReticulumDmPathProbe({
     setHops(passiveHops ?? null);
 
     void (async () => {
-      const result = await probeReticulumPeer(destinationHash);
-      if (cancelled) return;
-      setStatus(reticulumDmPathStatusFromProbe(result.ok));
-      const nextHops = result.hops ?? null;
-      setHops(nextHops);
-      if (result.ok) {
-        if (nextHops != null) {
-          useReticulumPeerStore.getState().updatePeer(destinationHash, { hops: nextHops });
+      try {
+        const result = await probeReticulumPeer(destinationHash);
+        if (cancelled) return;
+        setStatus(reticulumDmPathStatusFromProbe(result.ok));
+        const nextHops = result.hops ?? null;
+        setHops(nextHops);
+        if (result.ok) {
+          if (nextHops != null) {
+            useReticulumPeerStore.getState().updatePeer(destinationHash, { hops: nextHops });
+          }
+          void refreshReticulumPeersFromSidecar();
         }
-        void refreshReticulumPeersFromSidecar();
+      } catch (e) {
+        // Failure point: probe IPC reject. Fallback: treat as unreachable.
+        if (cancelled) return;
+        console.debug('[useReticulumDmPathProbe] probe failed ' + errLikeToLogString(e));
+        setStatus('unreachable');
+        setHops(null);
       }
     })();
 
