@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 
 import {
   buildNomadLinkRequest,
@@ -31,9 +31,33 @@ export default function NomadMicronPageView({
   onOpenDm,
 }: NomadMicronPageViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // Keep latest link handlers/context in a ref so Micron remounts only when `content` changes.
+  // Parent panel re-renders often (node list / store); unstable callback identity must not
+  // re-parse large Micron pages (~0.5s each) or the whole app freezes.
+  const linkContextRef = useRef({
+    defaultPagePath,
+    selectedHash,
+    onNavigate,
+    onDownloadFile,
+    onOpenDm,
+  });
+  useLayoutEffect(() => {
+    linkContextRef.current = {
+      defaultPagePath,
+      selectedHash,
+      onNavigate,
+      onDownloadFile,
+      onOpenDm,
+    };
+  }, [defaultPagePath, selectedHash, onNavigate, onDownloadFile, onOpenDm]);
 
-  const handleNomadLink = useCallback(
-    (destination: string, dataFieldsAttr?: string | null) => {
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    mountNomadMicronHtml(container, renderNomadMicronPage(content));
+
+    const handleNomadLink = (destination: string, dataFieldsAttr?: string | null) => {
+      const ctx = linkContextRef.current;
       if (isExternalHttpUrl(destination)) {
         window.open(destination, '_blank', 'noopener,noreferrer');
         return;
@@ -41,7 +65,7 @@ export default function NomadMicronPageView({
 
       const lxmfHash = parseReticulumLxmfLinkUrl(destination);
       if (lxmfHash) {
-        onOpenDm?.(lxmfHash);
+        ctx.onOpenDm?.(lxmfHash);
         return;
       }
 
@@ -51,23 +75,20 @@ export default function NomadMicronPageView({
         containerRef.current,
       );
 
-      const parsed = parseNomadNetworkLinkUrl(linkDest, defaultPagePath);
+      const parsed = parseNomadNetworkLinkUrl(linkDest, ctx.defaultPagePath);
       if (!parsed) return;
 
-      const hash = parsed.destination_hash ?? selectedHash;
+      const hash = parsed.destination_hash ?? ctx.selectedHash;
       if (isNomadFilePath(parsed.path)) {
-        onDownloadFile(hash, parsed.path);
+        ctx.onDownloadFile(hash, parsed.path);
         return;
       }
-      onNavigate(hash, parsed.path, Object.keys(requestData).length > 0 ? requestData : undefined);
-    },
-    [defaultPagePath, onDownloadFile, onNavigate, onOpenDm, selectedHash],
-  );
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    mountNomadMicronHtml(container, renderNomadMicronPage(content));
+      ctx.onNavigate(
+        hash,
+        parsed.path,
+        Object.keys(requestData).length > 0 ? requestData : undefined,
+      );
+    };
 
     const links = container.querySelectorAll<HTMLElement>('[data-action="openNode"]');
     const cleanups: (() => void)[] = [];
@@ -92,7 +113,7 @@ export default function NomadMicronPageView({
     return () => {
       for (const cleanup of cleanups) cleanup();
     };
-  }, [content, handleNomadLink]);
+  }, [content]);
 
   return (
     <div

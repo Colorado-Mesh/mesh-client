@@ -91,4 +91,24 @@ describe('NomadMicronPageView', () => {
       }),
     );
   });
+
+  it('does not remount Micron HTML when only link callbacks change', async () => {
+    const micronParser = await import('@/renderer/lib/nomad/micronParser');
+    const renderSpy = vi.spyOn(micronParser, 'renderNomadMicronPage');
+    const markup = '`[Link`:/page/other.mu`]';
+    const { rerender } = render(<NomadMicronPageView {...defaultProps} content={markup} />);
+    expect(renderSpy).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <NomadMicronPageView
+        {...defaultProps}
+        content={markup}
+        onNavigate={vi.fn()}
+        onDownloadFile={vi.fn()}
+        onOpenDm={vi.fn()}
+      />,
+    );
+    expect(renderSpy).toHaveBeenCalledTimes(1);
+    renderSpy.mockRestore();
+  });
 });

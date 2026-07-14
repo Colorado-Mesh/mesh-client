@@ -456,6 +456,20 @@ export default function NomadNetworkPanel({
     [toggleFavorite],
   );
 
+  const handleMicronNavigate = useCallback(
+    (hash: string, path: string, requestData?: NomadPageRequestData) => {
+      void loadNodePage(hash, path, { requestData });
+    },
+    [loadNodePage],
+  );
+
+  const handleMicronDownload = useCallback(
+    (hash: string, path: string) => {
+      void downloadNodeFile(hash, path);
+    },
+    [downloadNodeFile],
+  );
+
   const searchPlaceholder =
     activeTab === 'favourites'
       ? t('nomadNetwork.searchFavourites', { count: favouritesCount })
@@ -792,12 +806,8 @@ export default function NomadNetworkPanel({
                         content={pageContent}
                         defaultPagePath={DEFAULT_NOMAD_NODE_PAGE_PATH}
                         selectedHash={selectedNode.destination_hash}
-                        onNavigate={(hash, path, requestData) => {
-                          void loadNodePage(hash, path, { requestData });
-                        }}
-                        onDownloadFile={(hash, path) => {
-                          void downloadNodeFile(hash, path);
-                        }}
+                        onNavigate={handleMicronNavigate}
+                        onDownloadFile={handleMicronDownload}
                         onOpenDm={onOpenDm}
                       />
                     ) : (
