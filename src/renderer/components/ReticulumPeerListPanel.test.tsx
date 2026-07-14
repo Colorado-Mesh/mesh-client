@@ -111,6 +111,7 @@ describe('ReticulumPeerListPanel', () => {
     reticulumSidecarMocks.isReticulumSidecarRunning.mockResolvedValue(true);
     reticulumSidecarMocks.requestReticulumPeerPath.mockReset();
     reticulumSidecarMocks.probeReticulumPeer.mockReset();
+    reticulumSidecarMocks.refreshReticulumPeersFromSidecar.mockReset();
     reticulumSidecarMocks.refreshReticulumPeersFromSidecar.mockResolvedValue([]);
     useNomadNetworkStore.setState({ nodes: new Map() });
     useReticulumPeerStore.setState({
@@ -146,6 +147,7 @@ describe('ReticulumPeerListPanel', () => {
       ]),
       lastRefreshAt: null,
       peerAppearanceByHash: new Map(),
+      peersRevision: 0,
     });
   });
 
@@ -226,7 +228,7 @@ describe('ReticulumPeerListPanel', () => {
     });
   });
 
-  it('virtualizes large peer lists to a small DOM window', () => {
+  it('virtualizes large peer lists to a small DOM window', async () => {
     useReticulumPeerStore.setState({
       peers: fillLargePeerMap(150),
       contacts: new Map(),
@@ -234,7 +236,9 @@ describe('ReticulumPeerListPanel', () => {
     render(
       <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
     );
-    expect(screen.getByText('Peer 0')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Peer 0')).toBeInTheDocument();
+    });
     expect(screen.queryByText('Peer 50')).not.toBeInTheDocument();
     expect(screen.getByText(/peerListPanel\.heading/)).toHaveTextContent('(150)');
   });
@@ -442,6 +446,68 @@ describe('ReticulumPeerListPanel', () => {
     await user.click(screen.getByRole('button', { name: 'peerListPanel.lookupSubmitAria' }));
     expect(await screen.findByText('peerListPanel.lookupInvalid')).toBeInTheDocument();
     expect(reticulumSidecarMocks.requestReticulumPeerPath).not.toHaveBeenCalled();
+  });
+
+  it('skips mount refresh when peers are already in the store', async () => {
+    const onRefresh = vi.fn().mockResolvedValue(undefined);
+    const onSoftRefresh = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ReticulumPeerListPanel
+        isConnected
+        onPeerClick={vi.fn()}
+        onSendMessage={vi.fn()}
+        onRefresh={onRefresh}
+        onSoftRefresh={onSoftRefresh}
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Alpha Peer')).toBeInTheDocument();
+    });
+    expect(onRefresh).not.toHaveBeenCalled();
+    expect(onSoftRefresh).not.toHaveBeenCalled();
+    expect(reticulumSidecarMocks.refreshReticulumPeersFromSidecar).not.toHaveBeenCalled();
+  });
+
+  it('soft-refreshes on mount when connected and the peer store is empty', async () => {
+    useReticulumPeerStore.setState({
+      peers: new Map(),
+      contacts: new Map(),
+    });
+    const onRefresh = vi.fn().mockResolvedValue(undefined);
+    const onSoftRefresh = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ReticulumPeerListPanel
+        isConnected
+        onPeerClick={vi.fn()}
+        onSendMessage={vi.fn()}
+        onRefresh={onRefresh}
+        onSoftRefresh={onSoftRefresh}
+      />,
+    );
+    await waitFor(() => {
+      expect(onSoftRefresh).toHaveBeenCalledTimes(1);
+    });
+    expect(onRefresh).not.toHaveBeenCalled();
+  });
+
+  it('forced Refresh button uses onRefresh, not soft refresh', async () => {
+    const user = userEvent.setup();
+    const onRefresh = vi.fn().mockResolvedValue(undefined);
+    const onSoftRefresh = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ReticulumPeerListPanel
+        isConnected
+        onPeerClick={vi.fn()}
+        onSendMessage={vi.fn()}
+        onRefresh={onRefresh}
+        onSoftRefresh={onSoftRefresh}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'common.refresh' }));
+    await waitFor(() => {
+      expect(onRefresh).toHaveBeenCalledTimes(1);
+    });
+    expect(onSoftRefresh).not.toHaveBeenCalled();
   });
 
   it('has no serious axe violations', async () => {

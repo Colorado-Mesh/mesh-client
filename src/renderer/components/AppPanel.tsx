@@ -195,6 +195,10 @@ interface AppSettings {
   meshcoreContactCapEnabled: boolean;
   meshcoreContactCapCount: number;
   meshcoreDeleteNeverAdvertised: boolean;
+  reticulumAutoPruneEnabled: boolean;
+  reticulumAutoPruneDays: number;
+  reticulumDestinationCapEnabled: boolean;
+  reticulumDestinationCapCount: number;
   distanceFilterEnabled: boolean;
   distanceFilterMax: number;
   distanceUnit: 'miles' | 'km';
@@ -476,18 +480,23 @@ export default function AppPanel({
   );
 
   const updateRetentionEnabled = useCallback(
-    (which: 'meshtastic' | 'meshcore', enabled: boolean) => {
+    (which: 'meshtastic' | 'meshcore' | 'reticulum', enabled: boolean) => {
       const previous = retention;
       const next = { ...previous, [`${which}Enabled`]: enabled };
       setRetention(next);
-      const debouncedKey = which === 'meshtastic' ? 'meshtasticEnabled' : 'meshcoreEnabled';
+      const debouncedKey =
+        which === 'meshtastic'
+          ? 'meshtasticEnabled'
+          : which === 'meshcore'
+            ? 'meshcoreEnabled'
+            : 'reticulumEnabled';
       persistRetention(debouncedKey, enabled ? '1' : '0', previous);
     },
     [retention, persistRetention],
   );
 
   const updateRetentionCount = useCallback(
-    (which: 'meshtastic' | 'meshcore', count: number) => {
+    (which: 'meshtastic' | 'meshcore' | 'reticulum', count: number) => {
       const clamped = Math.max(
         MESSAGE_RETENTION_MIN_COUNT,
         Math.min(MESSAGE_RETENTION_MAX_COUNT, Math.floor(count) || MESSAGE_RETENTION_MIN_COUNT),
@@ -495,7 +504,12 @@ export default function AppPanel({
       const previous = retention;
       const next = { ...previous, [`${which}Count`]: clamped };
       setRetention(next);
-      const stateKey = which === 'meshtastic' ? 'meshtasticCount' : 'meshcoreCount';
+      const stateKey =
+        which === 'meshtastic'
+          ? 'meshtasticCount'
+          : which === 'meshcore'
+            ? 'meshcoreCount'
+            : 'reticulumCount';
 
       if (retentionSaveTimerRef.current) clearTimeout(retentionSaveTimerRef.current);
       retentionSaveTimerRef.current = setTimeout(() => {
@@ -1049,7 +1063,7 @@ export default function AppPanel({
         <h3 className="text-muted text-sm font-medium">{t('appPanel.retentionLimitsHeading')}</h3>
 
         {/* Meshtastic node retention */}
-        {protocol !== 'meshcore' && (
+        {protocol === 'meshtastic' && (
           <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
             {/* Auto-prune nodes on startup */}
             <div className="flex items-center gap-2">
@@ -1299,6 +1313,96 @@ export default function AppPanel({
           </div>
         )}
 
+        {/* Reticulum destination retention (SQLite contacts/meta + in-memory peer cap) */}
+        {protocol === 'reticulum' && (
+          <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
+            <p className="text-muted text-xs leading-relaxed">
+              {t('appPanel.reticulumDestinationRetentionHint')}
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="reticulumAutoPrune"
+                checked={settings.reticulumAutoPruneEnabled}
+                onChange={(e) => {
+                  updateSetting('reticulumAutoPruneEnabled', e.target.checked);
+                }}
+                aria-label={t('appPanel.reticulumAutoPruneDestinations')}
+                className="accent-brand-green"
+              />
+              <label
+                id="apppanel-reticulum-auto-prune-label"
+                htmlFor="reticulumAutoPrune"
+                className="flex-1 cursor-pointer text-sm text-gray-300"
+              >
+                {t('appPanel.reticulumAutoPruneDestinationsLabel')}
+              </label>
+              <input
+                id="apppanel-reticulum-auto-prune-days"
+                type="number"
+                min={1}
+                value={settings.reticulumAutoPruneDays}
+                onChange={(e) => {
+                  updateSetting(
+                    'reticulumAutoPruneDays',
+                    Math.max(1, parseInt(e.target.value) || 1),
+                  );
+                }}
+                disabled={!settings.reticulumAutoPruneEnabled}
+                aria-labelledby="apppanel-reticulum-auto-prune-label"
+                aria-label={t('appPanel.reticulumAutoPruneDestinationsDaysAria', {
+                  days: settings.reticulumAutoPruneDays,
+                })}
+                className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+              />
+              <span className="text-sm text-gray-300">{t('common.days')}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="reticulumDestinationCap"
+                checked={settings.reticulumDestinationCapEnabled}
+                onChange={(e) => {
+                  updateSetting('reticulumDestinationCapEnabled', e.target.checked);
+                }}
+                aria-label={t('appPanel.reticulumCapDestinations')}
+                className="accent-brand-green"
+              />
+              <label
+                id="apppanel-reticulum-destination-cap-label"
+                htmlFor="reticulumDestinationCap"
+                className="flex-1 cursor-pointer text-sm text-gray-300"
+              >
+                {t('appPanel.reticulumCapDestinationsLabel')}
+              </label>
+              <input
+                id="apppanel-reticulum-destination-cap-count"
+                type="number"
+                min={1}
+                max={50000}
+                value={settings.reticulumDestinationCapCount}
+                onChange={(e) => {
+                  updateSetting(
+                    'reticulumDestinationCapCount',
+                    Math.max(1, Math.min(50000, parseInt(e.target.value) || 1)),
+                  );
+                }}
+                disabled={!settings.reticulumDestinationCapEnabled}
+                aria-labelledby="apppanel-reticulum-destination-cap-label"
+                aria-label={t('appPanel.reticulumCapDestinationsCountAria', {
+                  count: settings.reticulumDestinationCapCount,
+                })}
+                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+              />
+              <span className="text-sm text-gray-300">
+                {t('appPanel.reticulumDestinationsUnit', {
+                  count: settings.reticulumDestinationCapCount,
+                })}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* MeshCore Open wire compatibility (experimental) */}
         {protocol === 'meshcore' && (
           <div className="space-y-2">
@@ -1428,47 +1532,7 @@ export default function AppPanel({
             />
             <span className="text-sm text-gray-300">{t('common.messages')}</span>
           </div>
-          {protocol !== 'meshcore' ? (
-            <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
-              <input
-                type="checkbox"
-                id="messageRetentionMeshtastic"
-                checked={retention.meshtasticEnabled}
-                onChange={(e) => {
-                  updateRetentionEnabled('meshtastic', e.target.checked);
-                }}
-                aria-label={t('appPanel.capStoredMessages')}
-                className="accent-brand-green"
-              />
-              <label
-                id="apppanel-message-retention-meshtastic-label"
-                htmlFor="messageRetentionMeshtastic"
-                className="flex-1 cursor-pointer text-sm text-gray-300"
-              >
-                {t('appPanel.capStoredMessagesLabel')}
-              </label>
-              <input
-                id="apppanel-message-retention-meshtastic-count"
-                type="number"
-                min={MESSAGE_RETENTION_MIN_COUNT}
-                max={MESSAGE_RETENTION_MAX_COUNT}
-                value={retention.meshtasticCount}
-                onChange={(e) => {
-                  updateRetentionCount(
-                    'meshtastic',
-                    parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
-                  );
-                }}
-                disabled={!retention.meshtasticEnabled}
-                aria-labelledby="apppanel-message-retention-meshtastic-label"
-                aria-label={t('appPanel.capStoredMessagesCountAria', {
-                  count: retention.meshtasticCount,
-                })}
-                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
-              />
-              <span className="text-sm text-gray-300">{t('common.messages')}</span>
-            </div>
-          ) : (
+          {protocol === 'meshcore' ? (
             <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
               <input
                 type="checkbox"
@@ -1503,6 +1567,86 @@ export default function AppPanel({
                 aria-labelledby="apppanel-message-retention-meshcore-label"
                 aria-label={t('appPanel.capStoredMessagesCountAria', {
                   count: retention.meshcoreCount,
+                })}
+                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+              />
+              <span className="text-sm text-gray-300">{t('common.messages')}</span>
+            </div>
+          ) : protocol === 'reticulum' ? (
+            <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
+              <input
+                type="checkbox"
+                id="messageRetentionReticulum"
+                checked={retention.reticulumEnabled}
+                onChange={(e) => {
+                  updateRetentionEnabled('reticulum', e.target.checked);
+                }}
+                aria-label={t('appPanel.capStoredMessages')}
+                className="accent-brand-green"
+              />
+              <label
+                id="apppanel-message-retention-reticulum-label"
+                htmlFor="messageRetentionReticulum"
+                className="flex-1 cursor-pointer text-sm text-gray-300"
+              >
+                {t('appPanel.capStoredMessagesLabel')}
+              </label>
+              <input
+                id="apppanel-message-retention-reticulum-count"
+                type="number"
+                min={MESSAGE_RETENTION_MIN_COUNT}
+                max={MESSAGE_RETENTION_MAX_COUNT}
+                value={retention.reticulumCount}
+                onChange={(e) => {
+                  updateRetentionCount(
+                    'reticulum',
+                    parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
+                  );
+                }}
+                disabled={!retention.reticulumEnabled}
+                aria-labelledby="apppanel-message-retention-reticulum-label"
+                aria-label={t('appPanel.capStoredMessagesCountAria', {
+                  count: retention.reticulumCount,
+                })}
+                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+              />
+              <span className="text-sm text-gray-300">{t('common.messages')}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
+              <input
+                type="checkbox"
+                id="messageRetentionMeshtastic"
+                checked={retention.meshtasticEnabled}
+                onChange={(e) => {
+                  updateRetentionEnabled('meshtastic', e.target.checked);
+                }}
+                aria-label={t('appPanel.capStoredMessages')}
+                className="accent-brand-green"
+              />
+              <label
+                id="apppanel-message-retention-meshtastic-label"
+                htmlFor="messageRetentionMeshtastic"
+                className="flex-1 cursor-pointer text-sm text-gray-300"
+              >
+                {t('appPanel.capStoredMessagesLabel')}
+              </label>
+              <input
+                id="apppanel-message-retention-meshtastic-count"
+                type="number"
+                min={MESSAGE_RETENTION_MIN_COUNT}
+                max={MESSAGE_RETENTION_MAX_COUNT}
+                value={retention.meshtasticCount}
+                onChange={(e) => {
+                  updateRetentionCount(
+                    'meshtastic',
+                    parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
+                  );
+                }}
+                disabled={!retention.meshtasticEnabled}
+                aria-labelledby="apppanel-message-retention-meshtastic-label"
+                aria-label={t('appPanel.capStoredMessagesCountAria', {
+                  count: retention.meshtasticCount,
                 })}
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />

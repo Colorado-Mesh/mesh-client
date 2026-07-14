@@ -1,3 +1,4 @@
+import { meshcoreMqttNeedsColoradoRegionAck } from './connectionPanelStorageMigrations';
 import { errLikeToLogString } from './errLikeToLogString';
 import {
   validateLetsMeshManualCredentials,
@@ -10,7 +11,9 @@ import {
   meshcoreIdentityHasPrivateKey,
   readMeshcoreIdentityAsync,
 } from './letsMeshJwt';
+import { readStoredMeshcoreMqttPreset } from './meshcoreMqttPresets';
 import { readMeshcoreMqttSettingsFromStorage } from './meshcoreMqttSettingsStorage';
+import { prepareMeshcoreIataMqttTopicPrefix } from './meshcoreMqttTopicPrefix';
 import { readMeshtasticMqttSettingsFromStorage } from './meshtasticMqttSettingsStorage';
 import { MESHTASTIC_OFFICIAL_PRESET_DEFAULTS } from './meshtasticMqttTlsMigration';
 import type { MeshProtocol, MQTTSettings } from './types';
@@ -18,10 +21,12 @@ import type { MeshProtocol, MQTTSettings } from './types';
 /**
  * JWT/device-signing MeshCore brokers need the radio-exported private key before connect.
  * Defer startup auto-launch until RF init persists identity (initConn triggers retry).
+ * Also defer while the Colorado Mesh region confirmation is unanswered.
  */
 export function shouldAutoLaunchMeshcoreMqttAtStartup(): boolean {
   const settings = readMeshcoreMqttSettingsFromStorage();
   if (!settings.autoLaunch) return false;
+  if (meshcoreMqttNeedsColoradoRegionAck()) return false;
   if (isLetsMeshSettings(settings.server)) {
     return meshcoreIdentityHasPrivateKey();
   }
@@ -38,12 +43,31 @@ export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
       : readMeshtasticMqttSettingsFromStorage();
   if (!settings.autoLaunch) return;
 
+  if (prot === 'meshcore' && meshcoreMqttNeedsColoradoRegionAck()) {
+    console.warn('[App] MQTT auto-launch deferred: Colorado Mesh region confirmation pending');
+    return;
+  }
+
   const base =
     prot === 'meshtastic' ? { ...MESHTASTIC_OFFICIAL_PRESET_DEFAULTS, ...settings } : settings;
   const connectSettings: MQTTSettings = {
     ...base,
     mqttTransportProtocol: prot === 'meshcore' ? 'meshcore' : 'meshtastic',
   };
+
+  if (prot === 'meshcore') {
+    const iataPrepared = prepareMeshcoreIataMqttTopicPrefix(
+      readStoredMeshcoreMqttPreset(),
+      connectSettings,
+    );
+    if (!iataPrepared.ok) {
+      console.warn(
+        '[App] MQTT auto-launch skipped: invalid MeshCore topic prefix (need meshcore/{IATA} or meshcore/test)',
+      );
+      return;
+    }
+    connectSettings.topicPrefix = iataPrepared.topicPrefix;
+  }
 
   if (prot === 'meshcore' && isLetsMeshSettings(connectSettings.server)) {
     const presetErr = validateLetsMeshPresetConnect(connectSettings);

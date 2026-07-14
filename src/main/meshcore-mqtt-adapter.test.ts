@@ -42,6 +42,37 @@ function seedConnected(adapter: MeshcoreMqttAdapter, expiresAt: number): void {
   a.lastSettings = { ...BASE_SETTINGS, tokenExpiresAt: expiresAt };
 }
 
+describe('MeshcoreMqttAdapter — topicPrefix wildcards', () => {
+  let adapter: MeshcoreMqttAdapter;
+  const onError = vi.fn();
+  const onStatus = vi.fn();
+
+  beforeEach(async () => {
+    const mqtt = await import('mqtt');
+    vi.mocked(mqtt.connect).mockClear();
+    adapter = new MeshcoreMqttAdapter();
+    adapter.on('error', onError);
+    adapter.on('status', onStatus);
+    onError.mockClear();
+    onStatus.mockClear();
+  });
+
+  afterEach(() => {
+    adapter.disconnect();
+  });
+
+  it.each(['meshcore/+', 'meshcore/#', 'meshcore/DEN/#'])(
+    'rejects topicPrefix %s before creating a client',
+    async (topicPrefix) => {
+      const mqtt = await import('mqtt');
+      adapter.connect({ ...BASE_SETTINGS, topicPrefix });
+      expect(mqtt.connect).not.toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.stringContaining('wildcard'));
+      expect(onStatus).toHaveBeenCalledWith('error');
+    },
+  );
+});
+
 describe('MeshcoreMqttAdapter — clientId', () => {
   let adapter: MeshcoreMqttAdapter;
 

@@ -344,7 +344,16 @@
     "clearReticulumContactsDesc": "Удаляет все записи из вкладки «Контакты» и списка контактов sidecar. Назначения остаются на вкладке «Peers» со своими именами. Сообщения чата сохраняются. Контакты снова появляются, когда вы пишете кому-то или используете «Сохранить как контакт».",
     "clearReticulumContactsConfirm": "Это навсегда удалит все {{count}} контактов Reticulum LXMF. Назначения останутся на вкладке «Peers»; сообщения не удаляются. Это действие нельзя отменить.",
     "clearReticulumContactsConfirmButton": "Очистить {{count}} контактов",
-    "clearReticulumContactsButton": "Очистить все контакты ({{count}})"
+    "clearReticulumContactsButton": "Очистить все контакты ({{count}})",
+    "reticulumDestinationRetentionHint": "Ограничивает метаданные контактов LXMF в SQLite и список одноранговых узлов в памяти. Таблица путей хаба в sidecar может по-прежнему содержать больше маршрутов, чем этот лимит.",
+    "reticulumAutoPruneDestinations": "Автоматическое удаление пунктов назначения Reticulum старше",
+    "reticulumAutoPruneDestinationsLabel": "Автоматическое удаление пунктов назначения при запуске, старше",
+    "reticulumAutoPruneDestinationsDaysAria": "Автоматическое удаление пунктов назначения при запуске старше {{days}} дн.",
+    "reticulumCapDestinations": "Ограничить общее число пунктов назначения Reticulum",
+    "reticulumCapDestinationsLabel": "Ограничить пункты назначения / одноранговые узлы в памяти и SQLite, сохранять последние полученные",
+    "reticulumCapDestinationsCountAria": "Ограничить пункты назначения, сохранять последние полученные {{count}}",
+    "reticulumDestinationsUnit_one": "пункт назначения",
+    "reticulumDestinationsUnit_other": "пункта назначения"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -1101,7 +1110,14 @@
       "openGlobalMap": "Глобальная карта",
       "openGlobalMapAria": "Открыть глобальную карту RMAP v4 на rmap.world",
       "syncFailed": "Ошибка синхронизации обнаружения RMAP."
-    }
+    },
+    "coloradoPresetConfirm": "Colorado Mesh MQTT предназначен для пользователей mesh-сети в регионе Колорадо. Предустановка публикуется в meshcore/DEN (Denver IATA). Если вы не в Колорадо, используйте вместо этого LetsMesh или MeshMapper. Продолжить?",
+    "coloradoServerNote": "Colorado Mesh предназначен для пользователей mesh-сети в регионе Колорадо. В префиксе темы используется Denver IATA (meshcore/DEN).",
+    "coloradoRegionGateTitle": "Colorado Mesh MQTT",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT предназначен для пользователей сети Колорадо и публикуется под meshcore/DEN. Если вы находитесь за пределами Колорадо, переключитесь на LetsMesh (глобальный публичный брокер).",
+    "coloradoRegionGateStay": "Я в Колорадо",
+    "coloradoRegionGateSwitch": "Переключиться на LetsMesh",
+    "topicPrefixInvalidIata": "Префикс темы должен быть meshcore/test или meshcore/{IATA} (3 буквы), например meshcore/DEN."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",
@@ -2674,7 +2690,9 @@
       "sidecarNotRunning": "Sidecar Reticulum не запущен. Запустите стек из Connection и повторите попытку.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
       "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
-    }
+    },
+    "fitWidth": "Уместить в окне",
+    "openWidth": "ширина страницы"
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",

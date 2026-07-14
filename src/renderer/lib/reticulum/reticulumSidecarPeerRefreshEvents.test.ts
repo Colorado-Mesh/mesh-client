@@ -1,20 +1,33 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  peersUpdatedRequiresFullRefresh,
   RETICULUM_PEER_REFRESH_COALESCE_MS,
+  RETICULUM_PEER_REFRESH_STORM_COALESCE_MS,
   reticulumSidecarEventRefreshActions,
   scheduleLeadingTrailingRefresh,
+  scheduleTrailingOnlyRefresh,
 } from './reticulumSidecarPeerRefreshEvents';
 
 describe('reticulumSidecarEventRefreshActions', () => {
-  it('schedules peer + diagnostics refresh for peer-relevant events', () => {
-    for (const type of ['announce.received', 'peers_updated', 'stack_restart_requested'] as const) {
+  it('uses incremental peer patches for announce and peers_updated', () => {
+    for (const type of ['announce.received', 'peers_updated'] as const) {
       expect(reticulumSidecarEventRefreshActions(type)).toEqual({
-        peers: true,
+        peers: false,
         diagnostics: true,
         interfaces: false,
+        peerPatches: true,
       });
     }
+  });
+
+  it('schedules full peer refresh on stack restart', () => {
+    expect(reticulumSidecarEventRefreshActions('stack_restart_requested')).toEqual({
+      peers: true,
+      diagnostics: true,
+      interfaces: false,
+      peerPatches: false,
+    });
   });
 
   it('does not reload the path table on stats_update', () => {
@@ -22,6 +35,7 @@ describe('reticulumSidecarEventRefreshActions', () => {
       peers: false,
       diagnostics: true,
       interfaces: false,
+      peerPatches: false,
     });
   });
 
@@ -30,6 +44,7 @@ describe('reticulumSidecarEventRefreshActions', () => {
       peers: false,
       diagnostics: false,
       interfaces: true,
+      peerPatches: false,
     });
   });
 
@@ -38,7 +53,30 @@ describe('reticulumSidecarEventRefreshActions', () => {
       peers: false,
       diagnostics: false,
       interfaces: false,
+      peerPatches: false,
     });
+  });
+});
+
+describe('peersUpdatedRequiresFullRefresh', () => {
+  it('returns false when patches are present', () => {
+    expect(
+      peersUpdatedRequiresFullRefresh({
+        added: ['aa'],
+        patches: [{ destination_hash: 'aa' }],
+        count: 1,
+      }),
+    ).toBe(false);
+  });
+
+  it('returns false when only added hashes are present', () => {
+    expect(peersUpdatedRequiresFullRefresh({ added: ['aa'], count: 1 })).toBe(false);
+  });
+
+  it('returns true for clear / demote / probe payloads', () => {
+    expect(peersUpdatedRequiresFullRefresh({ cleared: true })).toBe(true);
+    expect(peersUpdatedRequiresFullRefresh({ demoted_from_contacts: 3 })).toBe(true);
+    expect(peersUpdatedRequiresFullRefresh({ hash: 'aabb' })).toBe(true);
   });
 });
 
@@ -74,6 +112,21 @@ describe('scheduleLeadingTrailingRefresh', () => {
 
     vi.advanceTimersByTime(RETICULUM_PEER_REFRESH_COALESCE_MS);
     expect(onRefresh).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
+  });
+});
+
+describe('scheduleTrailingOnlyRefresh', () => {
+  it('does not fire until coalesce elapses', () => {
+    vi.useFakeTimers();
+    const onRefresh = vi.fn();
+    const timerRef: { current: ReturnType<typeof setTimeout> | null } = { current: null };
+
+    scheduleTrailingOnlyRefresh({ timerRef, onRefresh });
+    expect(onRefresh).toHaveBeenCalledTimes(0);
+    vi.advanceTimersByTime(RETICULUM_PEER_REFRESH_STORM_COALESCE_MS);
+    expect(onRefresh).toHaveBeenCalledTimes(1);
 
     vi.useRealTimers();
   });

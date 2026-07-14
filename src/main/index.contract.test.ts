@@ -299,6 +299,18 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:getBlockedContacts'");
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain("'db:getReticulumIdentityActivity'");
     expect(RETICULUM_DB_HANDLERS_SOURCE).toContain(
+      "ipcMain.handle('db:upsertReticulumIdentityActivityBatch'",
+    );
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain(
+      "ipcMain.handle('db:pruneReticulumDestinationsByCount'",
+    );
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain(
+      "ipcMain.handle('db:deleteReticulumDestinationsByAge'",
+    );
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain(
+      "ipcMain.handle('db:pruneReticulumIdentityActivityByAge'",
+    );
+    expect(RETICULUM_DB_HANDLERS_SOURCE).toContain(
       "ipcMain.handle('db:deleteReticulumDestination'",
     );
   });

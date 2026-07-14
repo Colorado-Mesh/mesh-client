@@ -297,7 +297,7 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 - BLE: waits for GATT init (`connected` event) before issuing commands; includes nudge timeout for stuck `deviceQuery` on some devices. On **Windows**, **pair the MeshCore device in Settings → Bluetooth & devices** before connecting in the app; WinRT may need a bonded device for a stable Nordic UART session. On **Linux**, the app checks BlueZ pairing and may prompt for the PIN **before** Web Bluetooth completes when the radio is not bonded. A **second connect attempt** may run automatically after some transient GATT discovery or handshake timeouts (retry reuses the granted device without a new picker gesture).
 - Serial: auto-reconnects on startup using a saved port signature so reconnect targets the same physical device when possible
 - TCP: connects to MeshCore companion radio; default port **5000**, configurable per connection
-- **MQTT (JSON v1):** The Connection tab MQTT card includes **Network Preset** buttons; **LetsMesh** (WebSocket on port 443, topic prefix `meshcore/test`; broker auth uses `@michaelhart/meshcore-decoder`'s `createAuthToken`; MQTT username `v1_<64-hex public key>`, password token with JWT `aud` matching the **MQTT server hostname**; optional **Packet logger** forwards RX packet summaries to the broker when enabled; see [docs/letsmesh-mqtt-auth.md](docs/letsmesh-mqtt-auth.md)), **Ripple Networks** (TLS on port 8883, topic prefix `meshcore`, preset default credentials, and **Allow insecure TLS** for brokers that use a non–public CA), **Colorado Mesh** (WebSocket on port 443, topic prefix `meshcore/DEN`, JWT auth with custom audience mapping), **MeshMapper** (WebSocket on port 443, topic prefix `meshcore/test`), and **Custom** for your own broker
+- **MQTT (JSON v1):** The Connection tab MQTT card includes **Network Preset** buttons (order: **LetsMesh**, **MeshMapper**, **Colorado Mesh**, **Ripple Networks**, **Custom**). New installs default to **LetsMesh** (WebSocket on port 443, topic prefix `meshcore/test`; broker auth uses `@michaelhart/meshcore-decoder`'s `createAuthToken`; MQTT username `v1_<64-hex public key>`, password token with JWT `aud` matching the **MQTT server hostname**; optional **Packet logger** forwards RX packet summaries to the broker when enabled; see [docs/letsmesh-mqtt-auth.md](docs/letsmesh-mqtt-auth.md)). **MeshMapper** uses the same transport/topic shape (`meshcore/test`). **Colorado Mesh** is regional (Colorado residents only; WebSocket on port 443, topic prefix `meshcore/DEN`; confirm dialog on select; existing Colorado users get a one-time stay-or-switch prompt). IATA-scoped brokers require topic `meshcore/{IATA}` or `meshcore/test`. **Ripple Networks** (TLS on port 8883, topic prefix `meshcore`, shared credentials, insecure TLS confirm) and **Custom** remain available for other brokers.
 
 ---
 
@@ -324,10 +324,10 @@ Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGP
 
 **Peers, topology, Nomad Network**
 
-- **Peers** tab: RNS path-table peers and LXMF contacts (separate sub-tabs); path probe and peer detail modal
+- **Peers** tab: RNS path-table peers and LXMF contacts (separate sub-tabs); virtualized large lists, path probe, and peer detail modal
 - **Map** tab: local RMAP v4 discovery map (Leaflet + OSM basemaps; heard opt-in interfaces with GPS; interface-type filters; reachable vs heard-only sidebar list; publish via Network + Connection); **Global map** link to [rmap.world](https://rmap.world/) — no position trails or waypoints (contrast with Meshtastic/MeshCore Map)
-- **Topology** tab: best-effort graph from the RNS path table (next-hop edges, BFS layout)
-- **Nomad Network** tab: collapsible favourites/announces list (default **Favourites** sub-tab); panel lazy-mounts after first visit and keeps browse state across tab switches (`mesh-client:nomadNodeListCollapsed` for sidebar width)
+- **Topology** tab: best-effort graph from the RNS path table (next-hop edges, force layout)
+- **Nomad Network** tab: collapsible favourites/announces list (default **Favourites** sub-tab); fit-width pages by default with an open-width toggle; panel lazy-mounts after first visit and keeps browse state across tab switches (`mesh-client:nomadNodeListCollapsed` for sidebar width)
 
 **Admin & hardware**
 

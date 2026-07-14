@@ -2,9 +2,10 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 /**
  * Helpers for the SQLite-backed message retention setting.
  *
- * Two independent caps (one per protocol) live in the `app_settings` KV table:
+ * Independent caps per protocol live in the `app_settings` KV table:
  *   - meshtasticMessageRetentionEnabled / meshtasticMessageRetentionCount
  *   - meshcoreMessageRetentionEnabled  / meshcoreMessageRetentionCount
+ *   - reticulumMessageRetentionEnabled / reticulumMessageRetentionCount
  *
  * Defaults: enabled with a cap of 4000 messages per table. Pruning is invoked
  * from the renderer at app startup (see `App.tsx`) and applies the cap by
@@ -23,6 +24,8 @@ export interface MessageRetentionSettings {
   meshtasticCount: number;
   meshcoreEnabled: boolean;
   meshcoreCount: number;
+  reticulumEnabled: boolean;
+  reticulumCount: number;
 }
 
 export const DEFAULT_MESSAGE_RETENTION: MessageRetentionSettings = {
@@ -30,6 +33,8 @@ export const DEFAULT_MESSAGE_RETENTION: MessageRetentionSettings = {
   meshtasticCount: MESSAGE_RETENTION_DEFAULT_COUNT,
   meshcoreEnabled: true,
   meshcoreCount: MESSAGE_RETENTION_DEFAULT_COUNT,
+  reticulumEnabled: true,
+  reticulumCount: MESSAGE_RETENTION_DEFAULT_COUNT,
 };
 
 export const MESSAGE_RETENTION_KEYS = {
@@ -37,6 +42,8 @@ export const MESSAGE_RETENTION_KEYS = {
   meshtasticCount: 'meshtasticMessageRetentionCount',
   meshcoreEnabled: 'meshcoreMessageRetentionEnabled',
   meshcoreCount: 'meshcoreMessageRetentionCount',
+  reticulumEnabled: 'reticulumMessageRetentionEnabled',
+  reticulumCount: 'reticulumMessageRetentionCount',
 } as const;
 
 function parseBool(v: string | undefined, fallback: boolean): boolean {
@@ -73,11 +80,19 @@ export function parseMessageRetention(
       r[MESSAGE_RETENTION_KEYS.meshcoreCount],
       DEFAULT_MESSAGE_RETENTION.meshcoreCount,
     ),
+    reticulumEnabled: parseBool(
+      r[MESSAGE_RETENTION_KEYS.reticulumEnabled],
+      DEFAULT_MESSAGE_RETENTION.reticulumEnabled,
+    ),
+    reticulumCount: parseCount(
+      r[MESSAGE_RETENTION_KEYS.reticulumCount],
+      DEFAULT_MESSAGE_RETENTION.reticulumCount,
+    ),
   };
 }
 
 /**
- * Read all four retention values from the DB. Returns defaults on any error so
+ * Read all retention values from the DB. Returns defaults on any error so
  * UI hydration and startup pruning never block on a failed IPC.
  */
 export async function fetchMessageRetention(): Promise<MessageRetentionSettings> {

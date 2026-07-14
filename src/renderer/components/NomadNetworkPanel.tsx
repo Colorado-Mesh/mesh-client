@@ -43,6 +43,7 @@ interface LoadNodePageOptions {
 const MAX_NOMAD_PAGE_DISPLAY_CHARS = MAX_NOMAD_PAGE_CACHE_CHARS;
 
 const NOMAD_NODE_LIST_COLLAPSED_STORAGE_KEY = 'mesh-client:nomadNodeListCollapsed';
+const NOMAD_PAGE_FIT_WIDTH_STORAGE_KEY = 'mesh-client:nomadPageFitWidth';
 
 function nomadCollapsedLabel(displayName: string | null | undefined, hash: string): string {
   const name = displayName?.trim();
@@ -225,6 +226,10 @@ export default function NomadNetworkPanel({
   const [fileDownloadError, setFileDownloadError] = useState<string | null>(null);
   const [nodeListCollapsed, setNodeListCollapsed] = useState(
     () => localStorage.getItem(NOMAD_NODE_LIST_COLLAPSED_STORAGE_KEY) === 'true',
+  );
+  /** Missing key defaults to fit-width (wrap) for prose pages; open width is opt-in. */
+  const [pageFitWidth, setPageFitWidth] = useState(
+    () => localStorage.getItem(NOMAD_PAGE_FIT_WIDTH_STORAGE_KEY) !== 'false',
   );
   const pageRequestSeqRef = useRef(0);
   const fileDownloadInFlightRef = useRef(false);
@@ -752,6 +757,29 @@ export default function NomadNetworkPanel({
                       {'</>'}
                     </button>
                   ) : null}
+                  {pageContent != null ? (
+                    <button
+                      type="button"
+                      className={`rounded border px-2 py-1 text-xs ${
+                        pageFitWidth
+                          ? 'border-bright-green/60 bg-bright-green/20 text-bright-green'
+                          : 'border-gray-600 text-gray-200 hover:bg-slate-800'
+                      }`}
+                      aria-label={
+                        pageFitWidth ? t('nomadNetwork.openWidth') : t('nomadNetwork.fitWidth')
+                      }
+                      aria-pressed={pageFitWidth}
+                      onClick={() => {
+                        setPageFitWidth((prev) => {
+                          const next = !prev;
+                          localStorage.setItem(NOMAD_PAGE_FIT_WIDTH_STORAGE_KEY, String(next));
+                          return next;
+                        });
+                      }}
+                    >
+                      ⇔
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
@@ -819,12 +847,19 @@ export default function NomadNetworkPanel({
                         content={pageContent}
                         defaultPagePath={DEFAULT_NOMAD_NODE_PAGE_PATH}
                         selectedHash={selectedNode.destination_hash}
+                        fitWidth={pageFitWidth}
                         onNavigate={handleMicronNavigate}
                         onDownloadFile={handleMicronDownload}
                         onOpenDm={onOpenDm}
                       />
                     ) : (
-                      <pre className="font-mono text-xs leading-relaxed whitespace-pre text-gray-200">
+                      <pre
+                        className={`font-mono text-xs leading-relaxed text-gray-200 ${
+                          pageFitWidth
+                            ? 'max-w-full break-words whitespace-pre-wrap'
+                            : 'whitespace-pre'
+                        }`}
+                      >
                         {pageContent}
                       </pre>
                     )

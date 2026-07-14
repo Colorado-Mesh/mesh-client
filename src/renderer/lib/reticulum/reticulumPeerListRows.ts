@@ -34,6 +34,18 @@ export function reticulumPeerLastActivityMs(peer: ReticulumPeer): number {
   return peerLastSeenMs(peer);
 }
 
+/**
+ * Cheap Peers-tab label: wire/custom name when present, else hash prefix.
+ * Full Nomad/contact overlays can be resolved for visible rows only.
+ */
+export function cheapReticulumPeerLabel(peer: ReticulumPeer): string {
+  const custom = peer.custom_display_name?.trim();
+  if (custom) return custom;
+  const wire = peer.display_name?.trim();
+  if (wire) return wire;
+  return peer.destination_hash.slice(0, 12);
+}
+
 /** One O(n) label/sort-key pass before filter + sort. */
 export function prepareReticulumPeerRows(
   peers: readonly ReticulumPeer[],

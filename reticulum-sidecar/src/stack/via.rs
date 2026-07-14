@@ -336,6 +336,19 @@ mod tests {
     }
 
     #[test]
+    fn inbound_received_via_uses_config_type_not_display_name() {
+        // Path-table stores interface *names*; without config match, "RNS Testnet"
+        // would fall through classify_interface → network. Inbound must use the
+        // same path→config-row matching as outbound (live delivery callback).
+        let ifaces = vec![sample_iface("tcp", "RNS Testnet", "tcp", true, "up")];
+        assert_eq!(classify_interface("RNS Testnet"), "network");
+        assert_eq!(
+            classify_path_interface_name("RNS Testnet", &ifaces),
+            "tcp"
+        );
+    }
+
+    #[test]
     fn resolve_lxmf_sent_via_prefers_path_over_local_rnode() {
         let ifaces = vec![
             sample_iface("heltec", "Heltec V3", "rnode", true, "up"),

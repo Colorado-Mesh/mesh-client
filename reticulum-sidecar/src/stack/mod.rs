@@ -639,20 +639,29 @@ impl StackHandle {
         Ok(cleared)
     }
 
+    /// List path-table peers. When `force_refresh` is true, always query live transport;
+    /// otherwise the live bridge may serve a short-TTL maintained cache.
     pub async fn list_peers(&self) -> Vec<PeerRow> {
+        self.list_peers_with_refresh(false).await
+    }
+
+    pub async fn list_peers_with_refresh(&self, force_refresh: bool) -> Vec<PeerRow> {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            let fetched = live.fetch_peers().await;
+            let announce_labels = live.display_name_snapshot();
+            let fetched = live.fetch_peers(force_refresh).await;
             let mut inner = self.inner.write().await;
             let mut peers = merge_live_peer_fetch(&mut inner.peers, fetched);
-            let name_by_hash = topology::build_topology_name_map(
+            let mut name_by_hash = topology::build_topology_name_map(
                 &inner.peers,
                 &inner.contacts,
                 &inner.nomad_nodes,
             );
+            topology::extend_name_map_with_announce_labels(&mut name_by_hash, &announce_labels);
             topology::overlay_peer_display_names(&mut peers, &name_by_hash);
             return peers;
         }
+        let _ = force_refresh;
         let inner = self.inner.read().await;
         let mut peers = inner.peers.clone();
         let name_by_hash =
@@ -865,15 +874,30 @@ impl StackHandle {
 
     pub async fn topology_snapshot(&self) -> serde_json::Value {
         let peers = self.list_peers().await;
-        let (mut nodes, edges) = topology::build_topology(&peers);
+        let (selected, total) = topology::select_peers_for_topology(&peers, topology::TOPOLOGY_PEER_CAP);
+        let truncated = total > selected.len();
+        let (mut nodes, edges) = topology::build_topology(&selected);
         let inner = self.inner.read().await;
-        let name_by_hash = topology::build_topology_name_map(
+        let mut name_by_hash = topology::build_topology_name_map(
             &inner.peers,
             &inner.contacts,
             &inner.nomad_nodes,
         );
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            topology::extend_name_map_with_announce_labels(
+                &mut name_by_hash,
+                &live.display_name_snapshot(),
+            );
+        }
         topology::merge_topology_display_names(&mut nodes, &name_by_hash);
-        serde_json::json!({ "nodes": nodes, "edges": edges })
+        serde_json::json!({
+            "nodes": nodes,
+            "edges": edges,
+            "total": total,
+            "shown": nodes.len(),
+            "truncated": truncated,
+        })
     }
 
     pub async fn clear_announces(&self) -> Result<(), String> {
@@ -1223,39 +1247,88 @@ fn enumerate_serial_ports() -> Vec<serde_json::Value> {
     ports
 }
 
+/// Hard ceiling on peer rows returned / persisted after a live path-table sync.
+/// Matches the renderer destination cap (`50_000` / `MAX_MESH_ENTITY_CAP` floor).
+const MAX_PEER_CACHE: usize = 50_000;
+/// Cap on peers retained after leaving the live path table (e.g. Clear Contacts demotions).
+const MAX_ORPHAN_PEERS: usize = 5_000;
+/// Drop orphaned peers with `last_seen` older than this (Unix seconds). Missing
+/// `last_seen` ranks as oldest and is only kept while under the orphan cap.
+const ORPHAN_PEER_MAX_AGE_SECS: u64 = 30 * 86_400;
+
+fn peer_last_seen_or_zero(peer: &PeerRow) -> u64 {
+    peer.last_seen.unwrap_or(0)
+}
+
+fn now_unix_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
 /// Applies a live path-table fetch to the peer cache.
 ///
 /// Empty fetch clears the cache (intentional wipe). Non-empty fetch updates path-table
-/// rows while keeping previously cached destinations that are not in the current path
-/// table (e.g. contacts demoted to peers during Clear Contacts).
+/// rows while keeping a bounded set of previously cached destinations that are not in
+/// the current path table (e.g. contacts demoted to peers during Clear Contacts).
 fn sync_live_peer_cache(cache: &mut Vec<PeerRow>, fetched: Vec<PeerRow>) -> Vec<PeerRow> {
     if fetched.is_empty() {
         *cache = Vec::new();
         return Vec::new();
     }
+    let prev_names: std::collections::HashMap<String, String> = cache
+        .iter()
+        .filter_map(|p| {
+            let name = p.display_name.as_ref()?.clone();
+            Some((p.destination_hash.to_lowercase(), name))
+        })
+        .collect();
     let fetched_hashes: std::collections::HashSet<String> = fetched
         .iter()
         .map(|p| p.destination_hash.to_lowercase())
         .collect();
-    let preserved: Vec<PeerRow> = cache
+    let now = now_unix_secs();
+    let orphan_cutoff = now.saturating_sub(ORPHAN_PEER_MAX_AGE_SECS);
+    let mut preserved: Vec<PeerRow> = cache
         .iter()
         .filter(|p| !fetched_hashes.contains(&p.destination_hash.to_lowercase()))
+        .filter(|p| match p.last_seen {
+            Some(ts) => ts >= orphan_cutoff,
+            // Keep unnamed-less/nameless orphans briefly under the cap only.
+            None => true,
+        })
         .cloned()
         .collect();
-    let mut merged: Vec<PeerRow> = fetched
+    preserved.sort_by(|a, b| peer_last_seen_or_zero(b).cmp(&peer_last_seen_or_zero(a)));
+    if preserved.len() > MAX_ORPHAN_PEERS {
+        tracing::debug!(
+            retained = MAX_ORPHAN_PEERS,
+            dropped = preserved.len() - MAX_ORPHAN_PEERS,
+            "capping orphaned peer rows after path-table sync"
+        );
+        preserved.truncate(MAX_ORPHAN_PEERS);
+    }
+    let mut live_rows: Vec<PeerRow> = fetched
         .into_iter()
         .map(|mut peer| {
             if peer.display_name.is_none() {
-                if let Some(prev) = cache
-                    .iter()
-                    .find(|p| p.destination_hash.eq_ignore_ascii_case(&peer.destination_hash))
-                {
-                    peer.display_name = prev.display_name.clone();
+                if let Some(name) = prev_names.get(&peer.destination_hash.to_lowercase()) {
+                    peer.display_name = Some(name.clone());
                 }
             }
             peer
         })
         .collect();
+    if live_rows.len() > MAX_PEER_CACHE {
+        live_rows.sort_by(|a, b| peer_last_seen_or_zero(b).cmp(&peer_last_seen_or_zero(a)));
+        live_rows.truncate(MAX_PEER_CACHE);
+    }
+    let orphan_budget = MAX_PEER_CACHE.saturating_sub(live_rows.len());
+    if preserved.len() > orphan_budget {
+        preserved.truncate(orphan_budget);
+    }
+    let mut merged = live_rows;
     merged.extend(preserved);
     *cache = merged.clone();
     merged
@@ -1349,6 +1422,34 @@ mod tests {
     }
 
     #[test]
+    fn sync_live_peer_cache_preserves_names_via_hashmap() {
+        let mut cache = vec![PeerRow {
+            destination_hash: "AaBbCcDd".into(),
+            display_name: Some("Alice".into()),
+            hops: Some(1),
+            last_seen: None,
+            interface: None,
+            path_hash: None,
+            via_hash: None,
+        }];
+        let fetched = sync_live_peer_cache(
+            &mut cache,
+            vec![PeerRow {
+                destination_hash: "aabbccdd".into(),
+                display_name: None,
+                hops: Some(2),
+                last_seen: Some(9),
+                interface: Some("tcp".into()),
+                path_hash: None,
+                via_hash: None,
+            }],
+        );
+        assert_eq!(fetched.len(), 1);
+        assert_eq!(fetched[0].display_name.as_deref(), Some("Alice"));
+        assert_eq!(fetched[0].hops, Some(2));
+    }
+
+    #[test]
     fn sync_live_peer_cache_updates_non_empty() {
         let mut cache = Vec::new();
         let row = PeerRow {
@@ -1393,11 +1494,12 @@ mod tests {
 
     #[test]
     fn sync_live_peer_cache_keeps_demoted_peers_not_in_path_table() {
+        let now = now_unix_secs();
         let mut cache = vec![PeerRow {
             destination_hash: "aabb01".into(),
             display_name: Some("Demoted".into()),
             hops: None,
-            last_seen: Some(9),
+            last_seen: Some(now),
             interface: None,
             path_hash: None,
             via_hash: None,
@@ -1406,7 +1508,7 @@ mod tests {
             destination_hash: "ccdd02".into(),
             display_name: None,
             hops: Some(1),
-            last_seen: Some(1),
+            last_seen: Some(now),
             interface: Some("tcp".into()),
             path_hash: None,
             via_hash: None,
@@ -1415,6 +1517,45 @@ mod tests {
         assert_eq!(merged.len(), 2);
         assert!(merged.iter().any(|p| p.destination_hash == "aabb01"));
         assert!(merged.iter().any(|p| p.destination_hash == "ccdd02"));
+    }
+
+    #[test]
+    fn sync_live_peer_cache_drops_stale_orphans_and_caps_count() {
+        let now = now_unix_secs();
+        let mut cache: Vec<PeerRow> = (0..MAX_ORPHAN_PEERS + 50)
+            .map(|i| PeerRow {
+                destination_hash: format!("{i:032x}"),
+                display_name: Some(format!("orphan-{i}")),
+                hops: None,
+                last_seen: Some(now.saturating_sub(i as u64)),
+                interface: None,
+                path_hash: None,
+                via_hash: None,
+            })
+            .collect();
+        // One orphan older than TTL must be dropped even if under the count cap.
+        cache.push(PeerRow {
+            destination_hash: "ff".repeat(16),
+            display_name: Some("ancient".into()),
+            hops: None,
+            last_seen: Some(now.saturating_sub(ORPHAN_PEER_MAX_AGE_SECS + 10)),
+            interface: None,
+            path_hash: None,
+            via_hash: None,
+        });
+        let live = PeerRow {
+            destination_hash: "aa".repeat(16),
+            display_name: None,
+            hops: Some(1),
+            last_seen: Some(now),
+            interface: Some("tcp".into()),
+            path_hash: None,
+            via_hash: None,
+        };
+        let merged = sync_live_peer_cache(&mut cache, vec![live]);
+        assert!(merged.iter().any(|p| p.destination_hash == "aa".repeat(16)));
+        assert!(!merged.iter().any(|p| p.destination_hash == "ff".repeat(16)));
+        assert!(merged.len() <= 1 + MAX_ORPHAN_PEERS);
     }
 
     #[tokio::test]

@@ -3,14 +3,11 @@ import { DEFAULT_APP_SETTINGS_SHARED } from './defaultAppSettings';
 import { errLikeToLogString } from './errLikeToLogString';
 import { fetchMessageRetention } from './messageRetention';
 import { parseStoredJson } from './parseStoredJson';
-import {
-  MAX_MESH_ENTITY_CAP,
-  RETICULUM_MESSAGE_RETENTION_DEFAULT_COUNT,
-  SESSION_DB_PRUNE_INTERVAL_MS,
-} from './sessionMemoryCaps';
+import { MAX_MESH_ENTITY_CAP, SESSION_DB_PRUNE_INTERVAL_MS } from './sessionMemoryCaps';
 import { getStoredMeshProtocol } from './storedMeshProtocol';
 
 let startupDbPrunePromise: Promise<void> | null = null;
+let sessionDbPrunePromise: Promise<void> | null = null;
 
 export { SESSION_DB_PRUNE_INTERVAL_MS };
 
@@ -26,12 +23,17 @@ export function runStartupDbPrune(): Promise<void> {
 
 /** Periodic maintenance while the app stays connected (same ops as startup prune). */
 export function runSessionDbPrune(): Promise<void> {
-  return executeDbPrune('session');
+  if (sessionDbPrunePromise) return sessionDbPrunePromise;
+  sessionDbPrunePromise = executeDbPrune('session').finally(() => {
+    sessionDbPrunePromise = null;
+  });
+  return sessionDbPrunePromise;
 }
 
 /** @internal Vitest only — resets single-flight guard between tests. */
 export function resetStartupDbPruneForTests(): void {
   startupDbPrunePromise = null;
+  sessionDbPrunePromise = null;
 }
 
 async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
@@ -126,22 +128,38 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
       );
     }
   } else if (startupProtocol === 'reticulum') {
-    ops.push(
-      window.electronAPI.db
-        .pruneReticulumMessagesByCount(RETICULUM_MESSAGE_RETENTION_DEFAULT_COUNT)
-        .catch((e: unknown) => {
+    if (s.reticulumAutoPruneEnabled) {
+      const days =
+        typeof s.reticulumAutoPruneDays === 'number' && s.reticulumAutoPruneDays > 0
+          ? s.reticulumAutoPruneDays
+          : 30;
+      ops.push(
+        window.electronAPI.db.deleteReticulumDestinationsByAge(days).catch((e: unknown) => {
           console.warn(
-            `[App] ${label} pruneReticulumMessagesByCount failed ` + errLikeToLogString(e),
+            `[App] ${label} deleteReticulumDestinationsByAge failed ` + errLikeToLogString(e),
           );
         }),
-    );
+        window.electronAPI.db.pruneReticulumIdentityActivityByAge(days).catch((e: unknown) => {
+          console.warn(
+            `[App] ${label} pruneReticulumIdentityActivityByAge failed ` + errLikeToLogString(e),
+          );
+        }),
+      );
+    }
+    if (s.reticulumDestinationCapEnabled) {
+      const cap =
+        typeof s.reticulumDestinationCapCount === 'number' && s.reticulumDestinationCapCount > 0
+          ? Math.min(50_000, s.reticulumDestinationCapCount)
+          : DEFAULT_APP_SETTINGS_SHARED.reticulumDestinationCapCount;
+      ops.push(
+        window.electronAPI.db.pruneReticulumDestinationsByCount(cap).catch((e: unknown) => {
+          console.warn(
+            `[App] ${label} pruneReticulumDestinationsByCount failed ` + errLikeToLogString(e),
+          );
+        }),
+      );
+    }
   }
-
-  ops.push(
-    window.electronAPI.db.vacuumReticulumTables().catch((e: unknown) => {
-      console.warn('[App] startup vacuumReticulumTables failed ' + errLikeToLogString(e));
-    }),
-  );
 
   ops.push(
     fetchMessageRetention()
@@ -165,15 +183,17 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
               }),
           );
         }
-        innerOps.push(
-          window.electronAPI.db
-            .pruneReticulumMessagesByCount(RETICULUM_MESSAGE_RETENTION_DEFAULT_COUNT)
-            .catch((e: unknown) => {
-              console.warn(
-                `[App] ${label} pruneReticulumMessagesByCount failed ` + errLikeToLogString(e),
-              );
-            }),
-        );
+        if (r.reticulumEnabled) {
+          innerOps.push(
+            window.electronAPI.db
+              .pruneReticulumMessagesByCount(r.reticulumCount)
+              .catch((e: unknown) => {
+                console.warn(
+                  `[App] ${label} pruneReticulumMessagesByCount failed ` + errLikeToLogString(e),
+                );
+              }),
+          );
+        }
         return Promise.all(innerOps);
       })
       .catch((e: unknown) => {
@@ -183,5 +203,14 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
 
   if (ops.length > 0) {
     await Promise.all(ops);
+  }
+
+  // VACUUM rewrites the whole DB file — only after startup prune, never on the 6h session tick.
+  if (label === 'startup' && startupProtocol === 'reticulum') {
+    try {
+      await window.electronAPI.db.vacuumReticulumTables();
+    } catch (e: unknown) {
+      console.warn('[App] startup vacuumReticulumTables failed ' + errLikeToLogString(e));
+    }
   }
 }

@@ -123,4 +123,16 @@ describe('NomadMicronPageView', () => {
     expect(text).toContain('PAGE_BETA_UNIQUE');
     expect(text).not.toContain('PAGE_ALPHA_UNIQUE');
   });
+
+  it('defaults to fit-width class and drops it when fitWidth is false', () => {
+    const { rerender } = render(<NomadMicronPageView {...defaultProps} content="`!Wrap me:`!" />);
+    expect(document.querySelector('.nomad-micron-page')).toHaveClass(
+      'nomad-micron-page--fit-width',
+    );
+
+    rerender(<NomadMicronPageView {...defaultProps} fitWidth={false} content="`!Wrap me:`!" />);
+    expect(document.querySelector('.nomad-micron-page')).not.toHaveClass(
+      'nomad-micron-page--fit-width',
+    );
+  });
 });

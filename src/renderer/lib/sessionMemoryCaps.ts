@@ -1,7 +1,10 @@
 /** Shared in-memory retention limits for long-running sessions. */
 
-/** Product cap for Meshtastic nodes, MeshCore contacts, and Reticulum destinations. */
-export const MAX_MESH_ENTITY_CAP = 10_000;
+/**
+ * In-memory hard ceiling for Meshtastic nodes, MeshCore contacts, and Reticulum peers.
+ * User-facing destination/node caps (default 10k, Reticulum max 50k) apply first.
+ */
+export const MAX_MESH_ENTITY_CAP = 100_000;
 
 export const MAX_TRACE_ROUTES_PER_IDENTITY = 100;
 export const MAX_MESHCORE_CLI_HISTORY_ENTRIES = 50;
@@ -13,7 +16,6 @@ export const MAX_RMAP_DISCOVERED_ROWS = 2_000;
 export const LARGE_MESH_NODE_THRESHOLD = 2000;
 export const LARGE_MESH_DIAGNOSTICS_REANALYSIS_DELAY_MS = 10_000;
 export const SESSION_DB_PRUNE_INTERVAL_MS = 6 * 60 * 60 * 1000;
-export const RETICULUM_MESSAGE_RETENTION_DEFAULT_COUNT = 4000;
 
 /** Keep the newest `max` entries (tail of array). */
 export function trimArrayTail<T>(items: readonly T[], max: number): T[] {

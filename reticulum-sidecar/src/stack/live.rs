@@ -8,7 +8,7 @@ use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use lxmf_core::constants::{DeliveryMethod, FIELD_FILE_ATTACHMENTS, FIELD_ICON_APPEARANCE};
 use lxmf_core::message::LxMessage;
@@ -41,8 +41,8 @@ use super::persistence::PersistedState;
 use super::propagation_bridge::PropagationBridge;
 use super::types::{InterfaceRow, LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, PeerRow, ContactRow};
 use super::via::{
-    classify_interface, classify_path_interface_name, merge_live_interfaces_with_config,
-    merge_observed_egress_vias, resolve_lxmf_sent_via,
+    classify_path_interface_name, merge_live_interfaces_with_config, merge_observed_egress_vias,
+    resolve_lxmf_sent_via,
 };
 use lxmf_outbound::LxmfOutboundDriver;
 
@@ -72,6 +72,9 @@ pub struct LiveBridge {
     lxmf_hash_hex: String,
     display_name: String,
     peer_via_cache: Arc<Mutex<HashMap<String, String>>>,
+    /// Maintained path-table snapshot from the 2s maintenance tick (or forced fetch).
+    path_peer_cache: Arc<Mutex<Vec<PeerRow>>>,
+    path_peer_cache_fetched_at: Arc<Mutex<Option<Instant>>>,
     display_name_cache: Arc<Mutex<HashMap<String, String>>>,
     outbound: Arc<Mutex<LxmfOutboundDriver>>,
     propagation: Arc<PropagationBridge>,
@@ -233,6 +236,8 @@ impl LiveBridge {
 
         let peer_via_cache: Arc<Mutex<HashMap<String, String>>> =
             Arc::new(Mutex::new(HashMap::new()));
+        let path_peer_cache: Arc<Mutex<Vec<PeerRow>>> = Arc::new(Mutex::new(Vec::new()));
+        let path_peer_cache_fetched_at: Arc<Mutex<Option<Instant>>> = Arc::new(Mutex::new(None));
         let display_name_cache: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new({
             let state = inner.read().await;
             contacts_to_name_map(&state.contacts)
@@ -254,11 +259,17 @@ impl LiveBridge {
                 return;
             }
             let sender_hex = hex::encode(msg.source_hash);
+            // Match path-table iface name to local config (same as outbound) so
+            // TCP hubs named e.g. "RNS Testnet" classify as tcp, not network.
             let received_via = cache_for_cb
                 .lock()
                 .ok()
                 .and_then(|cache| cache.get(&sender_hex).cloned())
-                .map(|iface| classify_interface(&iface).to_string())
+                .map(|iface_name| {
+                    let config_rows =
+                        config::interfaces_from_config_dir(&config_dir_for_cb).unwrap_or_default();
+                    classify_path_interface_name(&iface_name, &config_rows).to_string()
+                })
                 .unwrap_or_else(|| "network".into());
             let inbound_sender_name = name_cache_for_cb
                 .lock()
@@ -341,6 +352,8 @@ impl LiveBridge {
             lxmf_hash_hex: lxmf_hash_hex.clone(),
             display_name: display_name.clone(),
             peer_via_cache,
+            path_peer_cache,
+            path_peer_cache_fetched_at,
             display_name_cache,
             outbound: Arc::new(Mutex::new(LxmfOutboundDriver::new(
                 handle.transport_tx.clone(),
@@ -621,12 +634,16 @@ impl LiveBridge {
         let handle = self.handle.clone();
         let router = self.router.clone();
         let peer_via_cache = self.peer_via_cache.clone();
+        let path_peer_cache = self.path_peer_cache.clone();
+        let path_peer_cache_fetched_at = self.path_peer_cache_fetched_at.clone();
+        let display_name_cache = self.display_name_cache.clone();
         let outbound = self.outbound.clone();
         let event_tx = self.event_tx.clone();
         let propagation = self.propagation.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(2));
             let mut known_path_hashes: HashSet<String> = HashSet::new();
+            let mut prev_peer_by_hash: HashMap<String, PeerRow> = HashMap::new();
             loop {
                 interval.tick().await;
                 // Only replace the outbound path table on a successful GetPathTable.
@@ -646,22 +663,85 @@ impl LiveBridge {
                                 cache.insert(key, entry.interface.clone());
                             }
                         }
-                        let next_hashes: HashSet<String> = entries
+                        let name_lookup = display_name_cache
+                            .lock()
+                            .ok()
+                            .map(|c| c.clone())
+                            .unwrap_or_default();
+                        let peer_rows: Vec<PeerRow> = entries
                             .iter()
-                            .map(|e| hex::encode(e.hash))
+                            .map(|e| {
+                                let destination_hash = hex::encode(e.hash);
+                                let display_name = name_lookup.get(&destination_hash).cloned();
+                                PeerRow {
+                                    destination_hash,
+                                    display_name,
+                                    hops: Some(e.hops),
+                                    last_seen: Some(e.timestamp as u64),
+                                    interface: Some(e.interface.clone()),
+                                    path_hash: e.via.map(hex::encode),
+                                    via_hash: e.via.map(hex::encode),
+                                }
+                            })
+                            .collect();
+                        if let Ok(mut cache) = path_peer_cache.lock() {
+                            *cache = peer_rows.clone();
+                        }
+                        if let Ok(mut at) = path_peer_cache_fetched_at.lock() {
+                            *at = Some(Instant::now());
+                        }
+                        let next_hashes: HashSet<String> = peer_rows
+                            .iter()
+                            .map(|p| p.destination_hash.clone())
                             .collect();
                         let added = path_table_added_hashes_capped(&known_path_hashes, &next_hashes);
-                        if !added.is_empty() {
+                        let mut patch_peers: Vec<&PeerRow> = Vec::new();
+                        for peer in &peer_rows {
+                            if added.iter().any(|h| h == &peer.destination_hash) {
+                                patch_peers.push(peer);
+                                continue;
+                            }
+                            match prev_peer_by_hash.get(&peer.destination_hash) {
+                                Some(prev) if peer_route_fields_equal(prev, peer) => {}
+                                _ if known_path_hashes.contains(&peer.destination_hash) => {
+                                    patch_peers.push(peer);
+                                }
+                                _ => {}
+                            }
+                        }
+                        if patch_peers.len() > MAX_PEERS_UPDATED_ADDED {
+                            patch_peers.truncate(MAX_PEERS_UPDATED_ADDED);
+                        }
+                        if !patch_peers.is_empty() {
+                            let patches: Vec<serde_json::Value> = patch_peers
+                                .iter()
+                                .map(|p| {
+                                    serde_json::json!({
+                                        "destination_hash": p.destination_hash,
+                                        "display_name": p.display_name,
+                                        "hops": p.hops,
+                                        "last_seen": p.last_seen,
+                                        "interface": p.interface,
+                                        "path_hash": p.path_hash,
+                                        "via_hash": p.via_hash,
+                                    })
+                                })
+                                .collect();
                             let frame = serde_json::json!({
                                 "type": "peers_updated",
                                 "payload": {
                                     "added": added,
+                                    "patches": patches,
                                     "count": next_hashes.len(),
                                 }
                             });
                             let _ = event_tx.send(frame.to_string());
                         }
                         known_path_hashes = next_hashes;
+                        prev_peer_by_hash = peer_rows
+                            .into_iter()
+                            .map(|p| (p.destination_hash.clone(), p))
+                            .collect();
                         Some(
                             entries
                                 .iter()
@@ -729,7 +809,7 @@ impl LiveBridge {
                 let display_name = parse_announce_display_name(evt.app_data.as_deref());
                 if let Some(ref name) = display_name {
                     if let Ok(mut cache) = display_name_cache.lock() {
-                        cache.insert(dest_hex.clone(), name.clone());
+                        insert_display_name_bounded(&mut cache, dest_hex.clone(), name.clone());
                     }
                 }
                 // Always notify the UI so nameless announces still refresh Peers promptly.
@@ -1087,7 +1167,30 @@ impl LiveBridge {
         Ok(merge_live_interfaces_with_config(&config_rows, live_rows))
     }
 
-    pub async fn fetch_peers(&self) -> Result<Vec<PeerRow>, String> {
+    /// Snapshot of LXMF / Nomad announce display names (labels only — not contacts).
+    pub fn display_name_snapshot(&self) -> HashMap<String, String> {
+        self.display_name_cache
+            .lock()
+            .map(|cache| cache.clone())
+            .unwrap_or_default()
+    }
+
+    /// Fetch path-table peers. When `force` is false and the maintenance cache is
+    /// fresher than [`PATH_PEER_CACHE_TTL`], return that snapshot (avoids a second
+    /// GetPathTable on every automatic poll).
+    pub async fn fetch_peers(&self, force: bool) -> Result<Vec<PeerRow>, String> {
+        if !force {
+            if let (Ok(cache), Ok(at)) = (
+                self.path_peer_cache.lock(),
+                self.path_peer_cache_fetched_at.lock(),
+            ) {
+                if let Some(fetched_at) = *at {
+                    if fetched_at.elapsed() < PATH_PEER_CACHE_TTL && !cache.is_empty() {
+                        return Ok(cache.clone());
+                    }
+                }
+            }
+        }
         let resp = self
             .query_control_timed(TransportQuery::GetPathTable)
             .await;
@@ -1101,18 +1204,35 @@ impl LiveBridge {
                 cache.insert(key, entry.interface.clone());
             }
         }
-        Ok(entries
+        let name_lookup = self
+            .display_name_cache
+            .lock()
+            .ok()
+            .map(|c| c.clone())
+            .unwrap_or_default();
+        let peers: Vec<PeerRow> = entries
             .iter()
-            .map(|e| PeerRow {
-                destination_hash: hex::encode(e.hash),
-                display_name: None,
-                hops: Some(e.hops),
-                last_seen: Some(e.timestamp as u64),
-                interface: Some(e.interface.clone()),
-                path_hash: e.via.map(hex::encode),
-                via_hash: e.via.map(hex::encode),
+            .map(|e| {
+                let destination_hash = hex::encode(e.hash);
+                let display_name = name_lookup.get(&destination_hash).cloned();
+                PeerRow {
+                    destination_hash,
+                    display_name,
+                    hops: Some(e.hops),
+                    last_seen: Some(e.timestamp as u64),
+                    interface: Some(e.interface.clone()),
+                    path_hash: e.via.map(hex::encode),
+                    via_hash: e.via.map(hex::encode),
+                }
             })
-            .collect())
+            .collect();
+        if let Ok(mut cache) = self.path_peer_cache.lock() {
+            *cache = peers.clone();
+        }
+        if let Ok(mut at) = self.path_peer_cache_fetched_at.lock() {
+            *at = Some(Instant::now());
+        }
+        Ok(peers)
     }
 
     pub async fn request_path(&self, hash: &str) -> Result<(), String> {
@@ -1822,7 +1942,21 @@ pub(super) fn parse_hash16(hex_str: &str) -> Result<[u8; 16], String> {
 }
 
 /// Cap membership growth event payloads under path-table floods.
-const MAX_PEERS_UPDATED_ADDED: usize = 256;
+const MAX_PEERS_UPDATED_ADDED: usize = 1024;
+/// Bound announce / contact display-name labels independently of the live path table.
+const MAX_DISPLAY_NAME_CACHE: usize = 50_000;
+/// Serve HTTP peer list from the maintenance snapshot when newer than this.
+const PATH_PEER_CACHE_TTL: Duration = Duration::from_secs(2);
+
+/// Insert or refresh a destination label; evict an arbitrary oldest-ish entry when full.
+fn insert_display_name_bounded(cache: &mut HashMap<String, String>, hash: String, name: String) {
+    if cache.len() >= MAX_DISPLAY_NAME_CACHE && !cache.contains_key(&hash) {
+        if let Some(evict) = cache.keys().next().cloned() {
+            cache.remove(&evict);
+        }
+    }
+    cache.insert(hash, name);
+}
 /// Cap Nomad page body before UTF-8 conversion (DoS bound).
 const NOMAD_PAGE_MAX_BYTES: usize = 512 * 1024;
 /// Cap Nomad file body before base64 (aligned with Axum 4 MiB body limit).
@@ -1836,6 +1970,14 @@ fn path_table_added_hashes_capped(prev: &HashSet<String>, next: &HashSet<String>
         added.truncate(MAX_PEERS_UPDATED_ADDED);
     }
     added
+}
+
+/// Compare route-relevant fields (ignore `last_seen` / display_name churn).
+fn peer_route_fields_equal(a: &PeerRow, b: &PeerRow) -> bool {
+    a.hops == b.hops
+        && a.interface == b.interface
+        && a.path_hash == b.path_hash
+        && a.via_hash == b.via_hash
 }
 
 #[cfg(test)]
@@ -1963,6 +2105,22 @@ mod announce_display_name_tests {
             .collect();
         let added = path_table_added_hashes_capped(&prev, &next);
         assert_eq!(added.len(), MAX_PEERS_UPDATED_ADDED);
+    }
+
+    #[test]
+    fn insert_display_name_bounded_evicts_when_full() {
+        let mut cache = HashMap::new();
+        for i in 0..MAX_DISPLAY_NAME_CACHE {
+            insert_display_name_bounded(&mut cache, format!("{i:032x}"), format!("n{i}"));
+        }
+        assert_eq!(cache.len(), MAX_DISPLAY_NAME_CACHE);
+        insert_display_name_bounded(&mut cache, "ff".repeat(16), "overflow".into());
+        assert_eq!(cache.len(), MAX_DISPLAY_NAME_CACHE);
+        assert_eq!(cache.get(&"ff".repeat(16)).map(String::as_str), Some("overflow"));
+        // Refresh of existing key must not grow past the cap.
+        insert_display_name_bounded(&mut cache, "ff".repeat(16), "renamed".into());
+        assert_eq!(cache.len(), MAX_DISPLAY_NAME_CACHE);
+        assert_eq!(cache.get(&"ff".repeat(16)).map(String::as_str), Some("renamed"));
     }
 }
 

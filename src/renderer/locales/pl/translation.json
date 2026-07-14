@@ -344,7 +344,16 @@
     "clearReticulumContactsDesc": "Usuwa każdy wpis z karty Kontakty i listy kontaktów sidecara. Destynacje pozostają na karcie Peers ze swoimi nazwami. Wiadomości czatu są zachowane. Kontakty pojawiają się ponownie, gdy napiszesz do kogoś lub użyjesz Zapisz jako kontakt.",
     "clearReticulumContactsConfirm": "Spowoduje to trwałe usunięcie wszystkich {{count}} kontaktów Reticulum LXMF. Destynacje pozostają na karcie Peers; wiadomości nie są usuwane. Tej czynności nie można cofnąć.",
     "clearReticulumContactsConfirmButton": "Wyczyść {{count}} kontaktów",
-    "clearReticulumContactsButton": "Wyczyść wszystkie kontakty ({{count}})"
+    "clearReticulumContactsButton": "Wyczyść wszystkie kontakty ({{count}})",
+    "reticulumDestinationRetentionHint": "Ogranicza metadane kontaktów LXMF w SQLite i listę peerów w pamięci. Tabela ścieżek huba w sidecarze może nadal zawierać więcej tras niż ten limit.",
+    "reticulumAutoPruneDestinations": "Automatyczne przycinanie miejsc docelowych Reticulum starszych niż",
+    "reticulumAutoPruneDestinationsLabel": "Automatyczne przycinanie miejsc docelowych podczas uruchamiania, starszych niż",
+    "reticulumAutoPruneDestinationsDaysAria": "Automatyczne przycinanie miejsc docelowych przy starcie, starsze niż {{days}} dni",
+    "reticulumCapDestinations": "Limit całkowitej liczby miejsc docelowych Reticulum",
+    "reticulumCapDestinationsLabel": "Ogranicz miejsca docelowe / peery w pamięci i SQLite, zachowaj ostatnio słyszane",
+    "reticulumCapDestinationsCountAria": "Ogranicz miejsca docelowe, zachowaj {{count}} ostatnio słyszanych",
+    "reticulumDestinationsUnit_one": "miejsce docelowe",
+    "reticulumDestinationsUnit_other": "miejsca docelowego"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -1101,7 +1110,14 @@
       "openGlobalMap": "Mapa globalna",
       "openGlobalMapAria": "Otwórz globalną mapę RMAP v4 na rmap.world",
       "syncFailed": "Synchronizacja wykrywania RMAP nie powiodła się."
-    }
+    },
+    "coloradoPresetConfirm": "Colorado Mesh MQTT jest przeznaczony dla użytkowników sieci mesh z obszaru Kolorado. Ustawienie wstępne jest publikowane w ramach meshcore/DEN (Denver IATA). Jeśli nie jesteś w Kolorado, użyj LetsMesh lub MeshMapper. Kontynuować?",
+    "coloradoServerNote": "Colorado Mesh jest przeznaczony dla użytkowników sieci mesh z obszaru Kolorado. Prefiks tematu używa Denver IATA (meshcore/DEN).",
+    "coloradoRegionGateTitle": "Colorado Mesh MQTT",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT jest przeznaczony dla użytkowników Colorado-area mesh i publikuje w ramach meshcore/DEN. Jeśli jesteś poza Kolorado, przełącz się na LetsMesh (globalny broker publiczny).",
+    "coloradoRegionGateStay": "Jestem w Kolorado",
+    "coloradoRegionGateSwitch": "Przełącz na LetsMesh",
+    "topicPrefixInvalidIata": "Prefiks tematu musi być meshcore/test lub meshcore/{IATA} (3 litery), np. meshcore/DEN."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",
@@ -2674,7 +2690,9 @@
       "sidecarNotRunning": "Sidecar Reticulum nie działa. Uruchom stos z Połączenia, a następnie spróbuj ponownie.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
       "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
-    }
+    },
+    "fitWidth": "Dopasuj do okna",
+    "openWidth": "Szerokość strony"
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",

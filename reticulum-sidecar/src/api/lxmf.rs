@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
+use serde::Deserialize;
 
 use crate::stack::{LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, StackHandle};
 
@@ -37,9 +38,44 @@ pub async fn clear_contacts(State(stack): State<Arc<StackHandle>>) -> Json<serde
     }
 }
 
-pub async fn list_peers(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
-    let peers = stack.list_peers().await;
+#[derive(Debug, Deserialize)]
+pub struct ListPeersQuery {
+    /// When `1` or `true`, force a live GetPathTable (manual Refresh).
+    #[serde(default)]
+    pub refresh: Option<String>,
+}
+
+/// Parse `?refresh=` for live path-table bypass (`1` / `true` / `yes`, case- and whitespace-tolerant).
+pub fn peers_query_forces_refresh(refresh: Option<&str>) -> bool {
+    matches!(
+        refresh.map(str::trim).map(|s| s.to_ascii_lowercase()).as_deref(),
+        Some("1") | Some("true") | Some("yes")
+    )
+}
+
+pub async fn list_peers(
+    State(stack): State<Arc<StackHandle>>,
+    Query(q): Query<ListPeersQuery>,
+) -> Json<serde_json::Value> {
+    let force = peers_query_forces_refresh(q.refresh.as_deref());
+    let peers = stack.list_peers_with_refresh(force).await;
     Json(serde_json::json!({ "peers": peers }))
+}
+
+#[cfg(test)]
+mod peers_query_tests {
+    use super::peers_query_forces_refresh;
+
+    #[test]
+    fn peers_query_forces_refresh_accepts_truthy_variants() {
+        assert!(peers_query_forces_refresh(Some("1")));
+        assert!(peers_query_forces_refresh(Some(" true ")));
+        assert!(peers_query_forces_refresh(Some("YES")));
+        assert!(!peers_query_forces_refresh(None));
+        assert!(!peers_query_forces_refresh(Some("0")));
+        assert!(!peers_query_forces_refresh(Some("no")));
+        assert!(!peers_query_forces_refresh(Some("maybe")));
+    }
 }
 
 #[derive(Debug, serde::Deserialize)]

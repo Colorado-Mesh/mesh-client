@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -15,6 +14,10 @@ import {
   type ReticulumTopologyGraphNode,
 } from '@/renderer/lib/reticulum/buildReticulumTopologyLayout';
 import {
+  RETICULUM_PEER_REFRESH_COALESCE_MS,
+  RETICULUM_PEER_REFRESH_STORM_COALESCE_MS,
+} from '@/renderer/lib/reticulum/reticulumSidecarPeerRefreshEvents';
+import {
   fetchReticulumInterfaces,
   isReticulumSidecarRunning,
   type ReticulumSidecarInterfaceRow,
@@ -23,10 +26,14 @@ import {
   normalizeReticulumInterfaceGlyphType,
   type ReticulumTopologyInterfaceGlyph,
 } from '@/renderer/lib/reticulum/reticulumTopologyInterfaceGlyph';
+import { LARGE_MESH_NODE_THRESHOLD } from '@/renderer/lib/sessionMemoryCaps';
 import type { ReticulumPeerWireRow } from '@/shared/reticulum-types';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
-import { reticulumPeerDisplayName, useReticulumPeerStore } from '../stores/reticulumPeerStore';
+import { resolveReticulumPeerLabel, useReticulumPeerStore } from '../stores/reticulumPeerStore';
+
+/** Cap path-table rows rendered in the topology force graph (sidecar also caps at 2000). */
+const TOPOLOGY_PEER_RENDER_CAP = 800;
 
 function enrichTopologyPeers(peers: ReticulumPeerWireRow[]): ReticulumPeerWireRow[] {
   const storePeers = useReticulumPeerStore.getState().peers;
@@ -37,26 +44,21 @@ function enrichTopologyPeers(peers: ReticulumPeerWireRow[]): ReticulumPeerWireRo
     const hash = peer.destination_hash.toLowerCase();
     const fromStore = storePeers.get(hash) ?? contacts.get(hash);
     const fromNomad = nomadNodes.get(hash);
-    const display_name =
-      peer.display_name?.trim() ||
-      (fromStore ? reticulumPeerDisplayName(fromStore) : null) ||
-      fromNomad?.display_name?.trim() ||
-      null;
+    const base = fromStore ?? {
+      destination_hash: peer.destination_hash,
+      display_name: peer.display_name ?? null,
+    };
+    const resolved = resolveReticulumPeerLabel(
+      base,
+      null,
+      fromNomad?.display_name ?? peer.display_name,
+    );
+    const display_name = isReticulumHashPrefixAlias(hash, resolved) ? peer.display_name : resolved;
     const interfaceName =
       peer.interface?.trim() || fromStore?.interface?.trim() || peer.interface || null;
-    if (
-      display_name &&
-      !isReticulumHashPrefixAlias(hash, display_name) &&
-      interfaceName === peer.interface
-    ) {
-      return { ...peer, display_name };
-    }
     return {
       ...peer,
-      display_name:
-        display_name && !isReticulumHashPrefixAlias(hash, display_name)
-          ? display_name
-          : peer.display_name,
+      display_name,
       interface: interfaceName,
     };
   });
@@ -224,21 +226,40 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
   const [includeDistantPeers, setIncludeDistantPeers] = useState(true);
   const [maxHops, setMaxHops] = useState<number | null>(null);
 
-  const publishSnapshotFromSim = useCallback(() => {
-    const renderNodes = simRef.current
-      .map((sn) => {
-        const meta = metaRef.current.get(sn.id);
-        if (!meta) return null;
-        return { ...meta, x: sn.x, y: sn.y };
-      })
-      .filter((n): n is RenderNode => n != null);
-    setSnapshot({
-      nodes: renderNodes,
-      edges: [...edgesRef.current],
-      hiddenCount: statsRef.current.hiddenCount,
-      totalNodeCount: statsRef.current.totalNodeCount,
-      onlineInterfaceCount: statsRef.current.onlineInterfaceCount,
-      offlineInterfaceCount: statsRef.current.offlineInterfaceCount,
+  const snapshotRafRef = useRef<number | null>(null);
+  const refreshGenerationRef = useRef(0);
+  const refreshInFlightRef = useRef(false);
+  const refreshPendingRef = useRef(false);
+  const publishSnapshotFromSim = useCallback((opts?: { immediate?: boolean }) => {
+    const publish = () => {
+      const renderNodes = simRef.current
+        .map((sn) => {
+          const meta = metaRef.current.get(sn.id);
+          if (!meta) return null;
+          return { ...meta, x: sn.x, y: sn.y };
+        })
+        .filter((n): n is RenderNode => n != null);
+      setSnapshot({
+        nodes: renderNodes,
+        edges: [...edgesRef.current],
+        hiddenCount: statsRef.current.hiddenCount,
+        totalNodeCount: statsRef.current.totalNodeCount,
+        onlineInterfaceCount: statsRef.current.onlineInterfaceCount,
+        offlineInterfaceCount: statsRef.current.offlineInterfaceCount,
+      });
+    };
+    if (opts?.immediate) {
+      if (snapshotRafRef.current != null) {
+        cancelAnimationFrame(snapshotRafRef.current);
+        snapshotRafRef.current = null;
+      }
+      publish();
+      return;
+    }
+    if (snapshotRafRef.current != null) return;
+    snapshotRafRef.current = requestAnimationFrame(() => {
+      snapshotRafRef.current = null;
+      publish();
     });
   }, []);
 
@@ -275,98 +296,158 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
         onlineInterfaceCount: interfaceNodes.filter((n) => n.online).length,
         offlineInterfaceCount: interfaceNodes.filter((n) => !n.online).length,
       };
-      publishSnapshotFromSim();
+      publishSnapshotFromSim({ immediate: true });
     },
     [publishSnapshotFromSim],
   );
 
   const refresh = useCallback(async () => {
-    setError(null);
-    if (!(await isReticulumSidecarRunning())) {
-      setLoading(false);
+    if (refreshInFlightRef.current) {
+      refreshPendingRef.current = true;
       return;
     }
+    refreshInFlightRef.current = true;
     try {
-      const [topologyBody, interfaces, identityBody] = await Promise.all([
-        window.electronAPI.reticulum.proxyGet('/api/v1/topology') as Promise<{
-          nodes?: ReticulumPeerWireRow[];
-        }>,
-        fetchReticulumInterfaces(),
-        window.electronAPI.reticulum.proxyGet('/api/v1/identity/status') as Promise<{
-          display_name?: string | null;
-        }>,
-      ]);
+      do {
+        refreshPendingRef.current = false;
+        const generation = ++refreshGenerationRef.current;
+        setError(null);
+        try {
+          if (!(await isReticulumSidecarRunning())) {
+            if (generation === refreshGenerationRef.current) setLoading(false);
+            continue;
+          }
+          const [topologyBody, interfaces, identityBody] = await Promise.all([
+            window.electronAPI.reticulum.proxyGet('/api/v1/topology') as Promise<{
+              nodes?: ReticulumPeerWireRow[];
+            }>,
+            fetchReticulumInterfaces(),
+            window.electronAPI.reticulum.proxyGet('/api/v1/identity/status') as Promise<{
+              display_name?: string | null;
+            }>,
+          ]);
+          if (generation !== refreshGenerationRef.current) continue;
 
-      const peerNodes = enrichTopologyPeers(topologyBody.nodes ?? []);
-      const seenHashes = new Set<string>();
-      const uniquePeers = peerNodes.filter((peer) => {
-        if (!peer.destination_hash || seenHashes.has(peer.destination_hash)) return false;
-        seenHashes.add(peer.destination_hash);
-        return true;
-      });
+          const peerNodes = enrichTopologyPeers(topologyBody.nodes ?? []);
+          const seenHashes = new Set<string>();
+          let uniquePeers = peerNodes.filter((peer) => {
+            if (!peer.destination_hash || seenHashes.has(peer.destination_hash)) return false;
+            seenHashes.add(peer.destination_hash);
+            return true;
+          });
+          if (uniquePeers.length > TOPOLOGY_PEER_RENDER_CAP) {
+            uniquePeers = [...uniquePeers]
+              .sort((a, b) => (b.last_seen ?? 0) - (a.last_seen ?? 0))
+              .slice(0, TOPOLOGY_PEER_RENDER_CAP);
+          }
 
-      const selfLabel = identityBody.display_name?.trim() || t('reticulumTopology.self');
+          const selfLabel = identityBody.display_name?.trim() || t('reticulumTopology.self');
 
-      const serverPeerHashes = new Set(
-        [...useNomadNetworkStore.getState().nodes.keys()].map((h) => h.toLowerCase()),
-      );
+          const serverPeerHashes = new Set(
+            [...useNomadNetworkStore.getState().nodes.keys()].map((h) => h.toLowerCase()),
+          );
 
-      const width = svgRef.current?.clientWidth ?? 800;
-      const height = svgRef.current?.clientHeight ?? 600;
-      const graph = buildReticulumMeshTopologyGraph(
-        interfaces.map((iface: ReticulumSidecarInterfaceRow) => ({
-          id: iface.id,
-          name: iface.name,
-          type: iface.type,
-          enabled: iface.enabled,
-          status: iface.status,
-        })),
-        uniquePeers,
-        {
-          selfLabel,
-          unassignedInterfaceLabel: t('reticulumTopology.unassignedInterface'),
-          cx: width / 2,
-          cy: height / 2,
-          filter: { includeDistantPeers, maxHops },
-          serverPeerHashes,
-        },
-      );
-      applyGraph(graph);
-      setLoading(false);
-    } catch (e) {
-      console.debug('[ReticulumTopologyPanel] refresh ' + errLikeToLogString(e));
-      setError(errLikeToLogString(e));
-      setLoading(false);
+          const width = svgRef.current?.clientWidth ?? 800;
+          const height = svgRef.current?.clientHeight ?? 600;
+          const graph = buildReticulumMeshTopologyGraph(
+            interfaces.map((iface: ReticulumSidecarInterfaceRow) => ({
+              id: iface.id,
+              name: iface.name,
+              type: iface.type,
+              enabled: iface.enabled,
+              status: iface.status,
+            })),
+            uniquePeers,
+            {
+              selfLabel,
+              unassignedInterfaceLabel: t('reticulumTopology.unassignedInterface'),
+              cx: width / 2,
+              cy: height / 2,
+              filter: { includeDistantPeers, maxHops },
+              serverPeerHashes,
+            },
+          );
+          applyGraph(graph);
+          setLoading(false);
+        } catch (e) {
+          if (generation !== refreshGenerationRef.current) continue;
+          console.debug('[ReticulumTopologyPanel] refresh ' + errLikeToLogString(e));
+          setError(errLikeToLogString(e));
+          setLoading(false);
+        }
+      } while (refreshPendingRef.current);
+    } finally {
+      refreshInFlightRef.current = false;
     }
   }, [applyGraph, includeDistantPeers, maxHops, t]);
 
   useEffect(() => {
     void refresh();
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const unsub = window.electronAPI.reticulum.onEvent((evt) => {
       if (
-        evt.type === 'peers_updated' ||
-        evt.type === 'stats_update' ||
-        evt.type === 'interface.state'
+        evt.type !== 'peers_updated' &&
+        evt.type !== 'stats_update' &&
+        evt.type !== 'interface.state'
       ) {
-        void refresh();
+        return;
       }
+      const peerCount = useReticulumPeerStore.getState().peers.size;
+      // Large meshes: skip auto topology rebuild; user can Refresh manually.
+      if (peerCount > LARGE_MESH_NODE_THRESHOLD && evt.type === 'peers_updated') {
+        return;
+      }
+      const coalesceMs =
+        peerCount > LARGE_MESH_NODE_THRESHOLD
+          ? RETICULUM_PEER_REFRESH_STORM_COALESCE_MS
+          : RETICULUM_PEER_REFRESH_COALESCE_MS;
+      if (debounceTimer != null) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+        void refresh();
+      }, coalesceMs);
     });
-    return unsub;
+    return () => {
+      if (debounceTimer != null) clearTimeout(debounceTimer);
+      unsub();
+    };
   }, [includeDistantPeers, maxHops, refresh]);
 
   useEffect(() => {
-    return startForceSimulationLoop({
-      getSimNodes: () => simRef.current,
-      getEdges: () => edgesRef.current,
-      getDimensions: () => ({
-        width: svgRef.current?.clientWidth ?? 800,
-        height: svgRef.current?.clientHeight ?? 600,
-      }),
-      onFrame: () => {
-        publishSnapshotFromSim();
-      },
-      nodePadding: CENTER_R,
-    });
+    let stop: (() => void) | null = null;
+    const start = () => {
+      stop?.();
+      stop = startForceSimulationLoop({
+        getSimNodes: () => simRef.current,
+        getEdges: () => edgesRef.current,
+        getDimensions: () => ({
+          width: svgRef.current?.clientWidth ?? 800,
+          height: svgRef.current?.clientHeight ?? 600,
+        }),
+        onFrame: () => {
+          publishSnapshotFromSim();
+        },
+        nodePadding: CENTER_R,
+      });
+    };
+    const onVisibility = () => {
+      if (document.hidden) {
+        stop?.();
+        stop = null;
+      } else {
+        start();
+      }
+    };
+    if (!document.hidden) start();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      stop?.();
+      if (snapshotRafRef.current != null) {
+        cancelAnimationFrame(snapshotRafRef.current);
+        snapshotRafRef.current = null;
+      }
+    };
   }, [publishSnapshotFromSim]);
 
   const { nodes, edges, hiddenCount, totalNodeCount, onlineInterfaceCount, offlineInterfaceCount } =

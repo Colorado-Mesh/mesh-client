@@ -228,6 +228,14 @@ export class MeshcoreMqttAdapter extends EventEmitter {
   }
 
   connect(settings: MQTTSettings): void {
+    const topicPrefix = settings.topicPrefix ?? '';
+    if (topicPrefix.includes('+') || topicPrefix.includes('#')) {
+      this.disconnect();
+      this.setError(
+        `MQTT topicPrefix must not contain wildcard characters '+' or '#': ${topicPrefix}`,
+      );
+      return;
+    }
     this.disconnect();
     this.lastSettings = settings;
     this.retryCount = 0;

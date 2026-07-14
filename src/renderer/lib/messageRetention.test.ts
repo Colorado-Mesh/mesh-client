@@ -79,6 +79,8 @@ describe('fetchMessageRetention', () => {
       meshtasticCount: 4000,
       meshcoreEnabled: true,
       meshcoreCount: 7500,
+      reticulumEnabled: true,
+      reticulumCount: MESSAGE_RETENTION_DEFAULT_COUNT,
     });
   });
 

@@ -4,9 +4,12 @@ import type { ReticulumContact } from '@/shared/reticulum-types';
 
 import {
   applyReticulumAnnounceReceivedOptimistic,
+  applyReticulumPeerPatchesNow,
+  applyReticulumPeersUpdatedPatches,
   capReticulumPeerMaps,
   mergeReticulumPeerMaps,
   refreshReticulumPeersFromSidecar,
+  resetReticulumPeerPatchBufferForTests,
   resetReticulumPeerRefreshSingleFlightForTests,
   resolveReticulumPeerLabel,
   useReticulumPeerStore,
@@ -233,12 +236,49 @@ describe('mergeReticulumPeerMaps', () => {
 describe('reticulumPeerStore', () => {
   beforeEach(() => {
     resetReticulumPeerRefreshSingleFlightForTests();
+    resetReticulumPeerPatchBufferForTests();
     useReticulumPeerStore.setState({
       peers: new Map(),
       contacts: new Map(),
+      peerAppearanceByHash: new Map(),
       lastRefreshAt: null,
+      peersRevision: 0,
     });
     vi.restoreAllMocks();
+  });
+
+  it('applies peers_updated patches without a full Map replacePeers path', () => {
+    applyReticulumPeersUpdatedPatches({
+      added: ['aa'.repeat(16)],
+      patches: [
+        {
+          destination_hash: 'aa'.repeat(16),
+          display_name: 'Patched',
+          hops: 2,
+          last_seen: 42,
+        },
+      ],
+      count: 1,
+    });
+    applyReticulumPeerPatchesNow([]);
+    const peer = useReticulumPeerStore.getState().peers.get('aa'.repeat(16));
+    expect(peer?.display_name).toBe('Patched');
+    expect(peer?.hops).toBe(2);
+  });
+
+  it('batches announce optimistic updates via patch buffer', () => {
+    vi.useFakeTimers();
+    applyReticulumAnnounceReceivedOptimistic({
+      destination_hash: 'bb'.repeat(16),
+      display_name: 'Announced',
+      hops: 1,
+    });
+    expect(useReticulumPeerStore.getState().peers.size).toBe(0);
+    vi.advanceTimersByTime(50);
+    expect(useReticulumPeerStore.getState().peers.get('bb'.repeat(16))?.display_name).toBe(
+      'Announced',
+    );
+    vi.useRealTimers();
   });
 
   it('toggleFavorite persists to SQLite', async () => {
@@ -404,6 +444,66 @@ describe('reticulumPeerStore', () => {
     expect(useReticulumPeerStore.getState().contacts.get('aa')?.last_heard).toBe(99);
   });
 
+  it('soft refresh applies when hop counts change with the same peer membership', async () => {
+    let peersCalls = 0;
+    const proxyGet = vi.fn((path: string) => {
+      if (path === '/api/v1/contacts') return Promise.resolve({ contacts: [] });
+      if (path.startsWith('/api/v1/peers')) {
+        peersCalls += 1;
+        return Promise.resolve({
+          peers: [{ destination_hash: 'aa', hops: peersCalls === 1 ? 1 : 4, interface: 'tcp' }],
+        });
+      }
+      if (path === '/api/v1/nomadnetwork/nodes') return Promise.resolve({ nodes: [] });
+      return Promise.resolve({});
+    });
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: { proxyGet },
+        db: { getReticulumDestinations: vi.fn().mockResolvedValue([]) },
+      },
+    });
+
+    await refreshReticulumPeersFromSidecar();
+    expect(useReticulumPeerStore.getState().peers.get('aa')?.hops).toBe(1);
+    await refreshReticulumPeersFromSidecar();
+    expect(useReticulumPeerStore.getState().peers.get('aa')?.hops).toBe(4);
+  });
+
+  it('refreshReticulumPeersFromSidecar OR-accumulates forceRefresh across coalesced callers', async () => {
+    let releaseFirst!: () => void;
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    const peersPaths: string[] = [];
+    const proxyGet = vi.fn(async (path: string) => {
+      if (path.startsWith('/api/v1/peers')) {
+        peersPaths.push(path);
+        if (peersPaths.length === 1) await firstGate;
+        return { peers: [{ destination_hash: 'aa', hops: peersPaths.length }] };
+      }
+      if (path === '/api/v1/contacts') return { contacts: [] };
+      if (path === '/api/v1/nomadnetwork/nodes') return { nodes: [] };
+      return {};
+    });
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: { proxyGet },
+        db: { getReticulumDestinations: vi.fn().mockResolvedValue([]) },
+      },
+    });
+
+    const soft = refreshReticulumPeersFromSidecar();
+    const forced = refreshReticulumPeersFromSidecar({ forceRefresh: true });
+    expect(forced).toBe(soft);
+    releaseFirst();
+    await soft;
+
+    expect(peersPaths[0]).toBe('/api/v1/peers');
+    expect(peersPaths).toContain('/api/v1/peers?refresh=1');
+    expect(useReticulumPeerStore.getState().peers.get('aa')?.hops).toBe(2);
+  });
+
   it('toggleFavorite rolls back when SQLite upsert fails', async () => {
     const upsert = vi.fn().mockRejectedValue(new Error('db down'));
     vi.stubGlobal('window', {
@@ -475,6 +575,7 @@ describe('reticulumPeerStore', () => {
       display_name: 'Hub Peer',
       hops: 1,
     });
+    applyReticulumPeerPatchesNow([]);
     const peer = useReticulumPeerStore.getState().peers.get('aabbccddeeff00112233445566778899');
     expect(peer?.display_name).toBe('Hub Peer');
     expect(peer?.hops).toBe(1);
@@ -485,9 +586,82 @@ describe('reticulumPeerStore', () => {
     applyReticulumAnnounceReceivedOptimistic({
       destination_hash: '11223344556677889900aabbccddeeff',
     });
+    applyReticulumPeerPatchesNow([]);
     const peer = useReticulumPeerStore.getState().peers.get('11223344556677889900aabbccddeeff');
     expect(peer).toBeDefined();
     expect(peer?.display_name).toBeNull();
+  });
+
+  it('refresh preserves announce alias when path-table peer omits display_name', async () => {
+    const hash = 'aabbccddeeff00112233445566778899';
+    applyReticulumAnnounceReceivedOptimistic({
+      destination_hash: hash,
+      display_name: 'Hub Peer',
+      hops: 1,
+    });
+    applyReticulumPeerPatchesNow([]);
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: {
+          proxyGet: vi.fn((path: string) => {
+            if (path === '/api/v1/contacts') return Promise.resolve({ contacts: [] });
+            if (path === '/api/v1/peers') {
+              return Promise.resolve({
+                peers: [{ destination_hash: hash, hops: 1, interface: 'RNS Testnet' }],
+              });
+            }
+            if (path === '/api/v1/nomadnetwork/nodes') return Promise.resolve({ nodes: [] });
+            return Promise.resolve({});
+          }),
+        },
+        db: { getReticulumDestinations: vi.fn().mockResolvedValue([]) },
+      },
+    });
+
+    await refreshReticulumPeersFromSidecar();
+
+    const peer = useReticulumPeerStore.getState().peers.get(hash);
+    expect(peer?.display_name).toBe('Hub Peer');
+    expect(peer?.interface).toBe('RNS Testnet');
+  });
+
+  it('refresh prefers wire display_name over stale optimistic announce alias', async () => {
+    const hash = '11223344556677889900aabbccddeeff';
+    applyReticulumAnnounceReceivedOptimistic({
+      destination_hash: hash,
+      display_name: 'Stale Alias',
+      hops: 1,
+    });
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: {
+          proxyGet: vi.fn((path: string) => {
+            if (path === '/api/v1/contacts') return Promise.resolve({ contacts: [] });
+            if (path === '/api/v1/peers') {
+              return Promise.resolve({
+                peers: [
+                  {
+                    destination_hash: hash,
+                    hops: 2,
+                    interface: 'tcp',
+                    display_name: 'Wire Name',
+                  },
+                ],
+              });
+            }
+            if (path === '/api/v1/nomadnetwork/nodes') return Promise.resolve({ nodes: [] });
+            return Promise.resolve({});
+          }),
+        },
+        db: { getReticulumDestinations: vi.fn().mockResolvedValue([]) },
+      },
+    });
+
+    await refreshReticulumPeersFromSidecar();
+
+    const peer = useReticulumPeerStore.getState().peers.get(hash);
+    expect(peer?.display_name).toBe('Wire Name');
+    expect(peer?.hops).toBe(2);
   });
 });
 

@@ -74,6 +74,8 @@ export interface ProtocolRuntime {
   refreshNodesFromDb: () => Promise<void>;
   refreshMessagesFromDb: () => Promise<void>;
   requestRefresh: () => Promise<void>;
+  /** Reticulum: soft peers refresh (cached path table; no `?refresh=1`). */
+  requestSoftRefresh?: () => Promise<void>;
   /** Reticulum: refresh config audit diagnostic rows from sidecar. */
   syncDiagnostics?: () => Promise<void>;
   /** Reticulum: restart rsReticulum stack after config repair. */

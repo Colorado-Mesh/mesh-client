@@ -344,7 +344,16 @@
     "clearReticulumContactsDesc": "Odstraní každou položku z karty Kontakty a seznamu kontaktů sidecar. Cíle zůstanou na kartě Peers se svými názvy. Chatové zprávy zůstávají. Kontakty se znovu zobrazí, když někomu napíšete nebo použijete Uložit jako kontakt.",
     "clearReticulumContactsConfirm": "Tím trvale vymažete všech {{count}} Reticulum LXMF kontaktů. Cíle zůstanou na kartě Peers; zprávy se nemažou. Tuto akci nelze vrátit zpět.",
     "clearReticulumContactsConfirmButton": "Vymazat {{count}} kontaktů",
-    "clearReticulumContactsButton": "Vymazat všechny kontakty ({{count}})"
+    "clearReticulumContactsButton": "Vymazat všechny kontakty ({{count}})",
+    "reticulumDestinationRetentionHint": "Omezuje metadata kontaktů LXMF v SQLite a seznam peerů v paměti. Tabulka cest hubu v sidecaru může stále obsahovat více tras než tento limit.",
+    "reticulumAutoPruneDestinations": "Automaticky prořezávat cíle Reticulum starší než",
+    "reticulumAutoPruneDestinationsLabel": "Automatické prořezávání cílů při spuštění, starší než",
+    "reticulumAutoPruneDestinationsDaysAria": "Cíle automatického prořezávání při spuštění, starší než {{days}} dní",
+    "reticulumCapDestinations": "Omezit celkový počet destinací Reticulum",
+    "reticulumCapDestinationsLabel": "Omezit cíle / peery v paměti a SQLite, zachovat naposledy slyšené",
+    "reticulumCapDestinationsCountAria": "Omezit cíle, zachovat {{count}} naposledy slyšených",
+    "reticulumDestinationsUnit_one": "cíl",
+    "reticulumDestinationsUnit_other": "cílů"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -1101,7 +1110,14 @@
       "openGlobalMap": "Globální mapa",
       "openGlobalMapAria": "Otevřete globální mapu RMAP v4 na rmap.world",
       "syncFailed": "Synchronizace zjišťování RMAP se nezdařila."
-    }
+    },
+    "coloradoPresetConfirm": "Colorado Mesh MQTT je určen pro uživatele síťoviny v oblasti Colorada. Přednastavení publikuje pod meshcore/DEN (Denver IATA). Pokud nejste v Coloradu, použijte LetsMesh nebo MeshMapper. Pokračovat?",
+    "coloradoServerNote": "Colorado Mesh je určen pro uživatele mesh v oblasti Colorada. Předpona tématu používá Denver IATA (meshcore/DEN).",
+    "coloradoRegionGateTitle": "Colorado Mesh MQTT",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT je určen pro uživatele sítí v oblasti Colorada a publikuje pod meshcore/DEN. Pokud se nacházíte mimo Colorado, přepněte na LetsMesh (globální veřejný makléř).",
+    "coloradoRegionGateStay": "Jsem v Coloradu",
+    "coloradoRegionGateSwitch": "Přepnout na LetsMesh",
+    "topicPrefixInvalidIata": "Předpona tématu musí být meshcore/test nebo meshcore/{IATA} (3 písmena), např. meshcore/DEN."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -2674,7 +2690,9 @@
       "sidecarNotRunning": "Reticulum sidecar neběží. Spusťte zásobník z Připojení a zkuste to znovu.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
       "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
-    }
+    },
+    "fitWidth": "Přizpůsobit stránku oknu",
+    "openWidth": "Šířka stránky"
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",

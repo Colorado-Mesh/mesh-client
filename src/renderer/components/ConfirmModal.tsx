@@ -5,6 +5,8 @@ export interface ConfirmModalProps {
   title: string;
   message: string;
   confirmLabel: string;
+  /** Defaults to `common.cancel`. */
+  cancelLabel?: string;
   danger?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -20,6 +22,7 @@ export function ConfirmModal({
   title,
   message,
   confirmLabel,
+  cancelLabel,
   danger,
   onConfirm,
   onCancel,
@@ -30,6 +33,7 @@ export function ConfirmModal({
   const { t } = useTranslation();
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const resolvedCancelLabel = cancelLabel ?? t('common.cancel');
 
   useEffect(() => {
     const panel = panelRef.current;
@@ -118,7 +122,7 @@ export function ConfirmModal({
             onClick={onCancel}
             className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
           >
-            {t('common.cancel')}
+            {resolvedCancelLabel}
           </button>
           <button
             type="button"

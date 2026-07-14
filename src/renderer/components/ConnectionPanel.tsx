@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
 import { PARENT_HOVER_ATTR } from 'lucide-react-motion';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -45,7 +46,11 @@ import {
   humanizeReticulumSidecarError,
   humanizeSerialError,
 } from '../lib/connectionPanelErrorHumanize';
-import { runConnectionPanelStorageMigrations } from '../lib/connectionPanelStorageMigrations';
+import {
+  COLORADO_MQTT_REGION_ACK_KEY,
+  meshcoreMqttNeedsColoradoRegionAck,
+  runConnectionPanelStorageMigrations,
+} from '../lib/connectionPanelStorageMigrations';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
 import {
   letsMeshPresetConfigurationDeviation,
@@ -63,7 +68,16 @@ import {
   readMeshcoreIdentityAsync,
 } from '../lib/letsMeshJwt';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
-import { applyMeshcoreMqttPreset, type MeshcoreMqttPreset } from '../lib/meshcoreMqttPresets';
+import {
+  applyMeshcoreMqttPreset,
+  type MeshcoreMqttPreset,
+  readStoredMeshcoreMqttPreset,
+} from '../lib/meshcoreMqttPresets';
+import {
+  isIataScopedMeshcoreMqtt,
+  parseMeshcoreIataTopicPrefix,
+  prepareMeshcoreIataMqttTopicPrefix,
+} from '../lib/meshcoreMqttTopicPrefix';
 import { meshcoreMqttUserFacingHint } from '../lib/meshcoreMqttUserHint';
 import {
   meshtasticMqttTopicPrefixesDiverge,
@@ -84,6 +98,7 @@ import {
   MESHTASTIC_OFFICIAL_1883,
   meshtasticMqttErrorUserHint,
 } from '../lib/meshtasticMqttTlsMigration';
+import { tryAutoLaunchMqtt } from '../lib/mqttAutoLaunch';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { getSerialPortNodeName } from '../lib/serialPortNodeNames';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
@@ -99,6 +114,7 @@ import type {
   SerialPortInfo,
 } from '../lib/types';
 import { useDeviceStore } from '../stores/deviceStore';
+import { ConfirmModal } from './ConfirmModal';
 import ConnectionBatteryGauge from './ConnectionBatteryGauge';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 import { HelpTooltip } from './HelpTooltip';
@@ -414,17 +430,10 @@ export default function ConnectionPanel({
   mqttSettingsRef.current = mqttSettings;
   const meshcoreMqttSettingsRef = useRef(meshcoreMqttSettings);
   meshcoreMqttSettingsRef.current = meshcoreMqttSettings;
-  const [meshcorePreset, setMeshcorePreset] = useState<MeshcoreMqttPreset>(() => {
-    const saved = localStorage.getItem('mesh-client:mqttPreset:meshcore');
-    if (
-      saved === 'letsmesh' ||
-      saved === 'coloradomesh' ||
-      saved === 'meshmapper' ||
-      saved === 'ripple'
-    )
-      return saved;
-    return 'custom';
-  });
+  const [meshcorePreset, setMeshcorePreset] = useState<MeshcoreMqttPreset>(() =>
+    readStoredMeshcoreMqttPreset(),
+  );
+  const [coloradoRegionGateOpen, setColoradoRegionGateOpen] = useState(false);
   const [meshtasticPreset, setMeshtasticPreset] = useState<'official-plain' | 'liam' | 'custom'>(
     () => {
       const s = loadMqttSettings();
@@ -465,6 +474,14 @@ export default function ConnectionPanel({
   useEffect(() => {
     localStorage.setItem('mesh-client:mqttPreset:meshcore', meshcorePreset);
   }, [meshcorePreset]);
+
+  // One-time Colorado region gate for existing Colorado MQTT users (blocks auto-launch until ack)
+  useEffect(() => {
+    if (protocol !== 'meshcore') return;
+    if (meshcoreMqttNeedsColoradoRegionAck()) {
+      setColoradoRegionGateOpen(true);
+    }
+  }, [protocol]);
 
   // Persist MeshCore MQTT settings with debounce
   useEffect(() => {
@@ -2233,8 +2250,8 @@ export default function ConnectionPanel({
                 {(
                   [
                     { id: 'letsmesh', labelKey: 'connectionPanel.meshcorePreset.letsmesh' },
-                    { id: 'coloradomesh', labelKey: 'connectionPanel.meshcorePreset.coloradomesh' },
                     { id: 'meshmapper', labelKey: 'connectionPanel.meshcorePreset.meshmapper' },
+                    { id: 'coloradomesh', labelKey: 'connectionPanel.meshcorePreset.coloradomesh' },
                     { id: 'ripple', labelKey: 'connectionPanel.meshcorePreset.ripple' },
                     { id: 'custom', labelKey: 'connectionPanel.meshcorePreset.custom' },
                   ] as const
@@ -2243,11 +2260,18 @@ export default function ConnectionPanel({
                     key={id}
                     type="button"
                     onClick={() => {
-                      setMeshcorePreset(id);
-                      if (id === 'custom') return;
+                      if (id === 'custom') {
+                        setMeshcorePreset(id);
+                        return;
+                      }
                       if (id === 'ripple') {
                         if (!window.confirm(t('connectionPanel.ripplePresetConfirm'))) return;
                       }
+                      if (id === 'coloradomesh') {
+                        if (!window.confirm(t('connectionPanel.coloradoPresetConfirm'))) return;
+                        localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
+                      }
+                      setMeshcorePreset(id);
                       const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
                       setMeshcoreMqttSettings((prev) => ({
                         ...applyMeshcoreMqttPreset(id, prev),
@@ -2264,6 +2288,9 @@ export default function ConnectionPanel({
                   </button>
                 ))}
               </div>
+              {meshcorePreset === 'coloradomesh' && (
+                <p className="text-xs text-amber-400">{t('connectionPanel.coloradoServerNote')}</p>
+              )}
               {meshcorePreset === 'letsmesh' && (
                 <div
                   className="flex flex-wrap items-center gap-2 pt-1"
@@ -2502,7 +2529,10 @@ export default function ConnectionPanel({
                 text={
                   protocol === 'meshtastic'
                     ? t('connectionPanel.topicPrefixHelp.meshtastic')
-                    : meshcorePreset === 'letsmesh' || meshcorePreset === 'meshmapper'
+                    : meshcorePreset === 'letsmesh' ||
+                        meshcorePreset === 'meshmapper' ||
+                        meshcorePreset === 'coloradomesh' ||
+                        isIataScopedMeshcoreMqtt(meshcorePreset, activeMqttSettings)
                       ? t('connectionPanel.topicPrefixHelp.meshcoreLetsmesh')
                       : t('connectionPanel.topicPrefixHelp.meshcoreDefault')
                 }
@@ -2515,9 +2545,29 @@ export default function ConnectionPanel({
               onChange={(e) => {
                 updateMqtt('topicPrefix', e.target.value, false);
               }}
+              onBlur={() => {
+                if (protocol !== 'meshcore') return;
+                if (!isIataScopedMeshcoreMqtt(meshcorePreset, activeMqttSettings)) return;
+                const parsed = parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix);
+                if (parsed.ok && parsed.normalized !== activeMqttSettings.topicPrefix) {
+                  updateMqtt('topicPrefix', parsed.normalized, false);
+                }
+              }}
               className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
               placeholder={t('connectionPanel.topicPrefixPlaceholder')}
+              aria-invalid={
+                protocol === 'meshcore' &&
+                isIataScopedMeshcoreMqtt(meshcorePreset, activeMqttSettings) &&
+                !parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix).ok
+              }
             />
+            {protocol === 'meshcore' &&
+            isIataScopedMeshcoreMqtt(meshcorePreset, activeMqttSettings) &&
+            !parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix).ok ? (
+              <p className="text-xs text-amber-400" role="alert">
+                {t('connectionPanel.topicPrefixInvalidIata')}
+              </p>
+            ) : null}
             {radioMqttRootDiverges ? (
               <p className="text-xs text-amber-400" role="status">
                 {t('connectionPanel.radioMqttRootDivergesWarning', {
@@ -2640,6 +2690,17 @@ export default function ConnectionPanel({
                   channelPsks: committedPsks.length > 0 ? committedPsks : undefined,
                   mqttTransportProtocol: protocol === 'meshcore' ? 'meshcore' : 'meshtastic',
                 };
+                if (protocol === 'meshcore') {
+                  const iataPrepared = prepareMeshcoreIataMqttTopicPrefix(meshcorePreset, settings);
+                  if (!iataPrepared.ok) {
+                    setMqttError(t(iataPrepared.errorKey));
+                    return;
+                  }
+                  if (iataPrepared.changed) {
+                    settings.topicPrefix = iataPrepared.topicPrefix;
+                    updateMqtt('topicPrefix', iataPrepared.topicPrefix, false);
+                  }
+                }
                 if (
                   protocol === 'meshcore' &&
                   (meshcorePreset === 'letsmesh' ||
@@ -2699,7 +2760,12 @@ export default function ConnectionPanel({
                   console.warn('[ConnectionPanel] mqtt.connect failed: ' + errLikeToLogString(err));
                 });
               }}
-              disabled={mqttStatus === 'connecting'}
+              disabled={
+                mqttStatus === 'connecting' ||
+                (protocol === 'meshcore' &&
+                  isIataScopedMeshcoreMqtt(meshcorePreset, activeMqttSettings) &&
+                  !parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix).ok)
+              }
               className={`bg-readable-green hover:bg-readable-green/90 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-40 ${mqttStatus === 'connecting' ? 'flex-1' : 'w-full'}`}
             >
               {t('connectionPanel.connectMqtt')}
@@ -2709,11 +2775,75 @@ export default function ConnectionPanel({
       </div>
     );
 
+  // Portal to body: MeshCore ConnectionPanel stays mounted under a `hidden` ancestor when
+  // another protocol tab is active — without a portal the gate would never paint.
+  const coloradoRegionGateModal =
+    coloradoRegionGateOpen && protocol === 'meshcore'
+      ? createPortal(
+          <ConfirmModal
+            title={t('connectionPanel.coloradoRegionGateTitle')}
+            message={t('connectionPanel.coloradoRegionGateMessage')}
+            confirmLabel={t('connectionPanel.coloradoRegionGateStay')}
+            cancelLabel={t('connectionPanel.coloradoRegionGateSwitch')}
+            onConfirm={() => {
+              localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
+              setColoradoRegionGateOpen(false);
+              if (meshcoreMqttSettingsRef.current.autoLaunch) {
+                void tryAutoLaunchMqtt('meshcore').catch((err: unknown) => {
+                  console.warn(
+                    '[ConnectionPanel] MQTT auto-launch after Colorado stay failed: ' +
+                      errLikeToLogString(err),
+                  );
+                });
+              }
+            }}
+            onCancel={() => {
+              void (async () => {
+                const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                const next = {
+                  ...applyMeshcoreMqttPreset('letsmesh', meshcoreMqttSettingsRef.current),
+                  username: fromIdentity || meshcoreMqttSettingsRef.current.username,
+                };
+                setMeshcorePreset('letsmesh');
+                setMeshcoreMqttSettings(next);
+                localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
+                persistMqttSettingsIfChanged(getMqttSettingsStorageKey('meshcore'), next);
+                localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
+                setColoradoRegionGateOpen(false);
+                if (mqttStatus === 'connected' || mqttStatus === 'connecting') {
+                  markMqttUserDisconnect();
+                  try {
+                    await window.electronAPI.mqtt.disconnect('meshcore');
+                  } catch (err: unknown) {
+                    console.warn(
+                      '[ConnectionPanel] mqtt.disconnect after Colorado switch failed: ' +
+                        errLikeToLogString(err),
+                    );
+                  }
+                }
+                if (next.autoLaunch) {
+                  try {
+                    await tryAutoLaunchMqtt('meshcore');
+                  } catch (err: unknown) {
+                    console.warn(
+                      '[ConnectionPanel] MQTT auto-launch after Colorado switch failed: ' +
+                        errLikeToLogString(err),
+                    );
+                  }
+                }
+              })();
+            }}
+          />,
+          document.body,
+        )
+      : null;
+
   if (connectingProgressView) {
     return (
       <div className="w-full space-y-6">
         {connectingProgressView}
         {mqttSection}
+        {coloradoRegionGateModal}
       </div>
     );
   }
@@ -2875,6 +3005,7 @@ export default function ConnectionPanel({
         )}
 
         {mqttSection}
+        {coloradoRegionGateModal}
       </div>
     );
   }
@@ -3242,6 +3373,7 @@ export default function ConnectionPanel({
       </div>
 
       {mqttSection}
+      {coloradoRegionGateModal}
     </div>
   );
 }

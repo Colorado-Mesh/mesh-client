@@ -78,14 +78,14 @@ The Connection tab UI edits a subset: **name** and **mode** for all types; **hos
 
 ### Peers, topology, and propagation
 
-| Method | Path                         | Body / notes           | Response                                                                                                                      |
-| ------ | ---------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/v1/peers`              |                        | `{ peers: [] }` — live path table when `rns-stack` enabled                                                                    |
-| POST   | `/api/v1/peers/{hash}/path`  |                        | `{ ok }` — emits `peers_updated` WS on success                                                                                |
-| POST   | `/api/v1/peers/{hash}/probe` |                        | `{ ok, hops? }` live; `{ ok, mode, hash }` stub — emits `peers_updated` on success                                            |
-| POST   | `/api/v1/ping`               | `{ destination_hash }` | `{ ok, rtt_ms? }`                                                                                                             |
-| GET    | `/api/v1/topology`           |                        | `{ nodes, edges }` — `via_hash` is the immediate RNS next hop (transport id); sidecar infers `self → relay` when needed       |
-| GET    | `/api/v1/rmap/discovered`    |                        | `{ discovered: RmapDiscoveredWireRow[] }` — local RMAP v4 heard interfaces (7-day TTL eviction in rsReticulum DiscoveryStore) |
+| Method | Path                         | Body / notes           | Response                                                                                                                                                                                                                                                   |
+| ------ | ---------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/peers`              | `?refresh=1` optional  | `{ peers: [] }` — live path table when `rns-stack` enabled; without `refresh=1` may serve a short-TTL maintenance cache; `refresh=1`/`true` forces live `GetPathTable` (manual Refresh). `display_name` overlayed from contacts/Nomad/announce label cache |
+| POST   | `/api/v1/peers/{hash}/path`  |                        | `{ ok }` — emits `peers_updated` WS on success                                                                                                                                                                                                             |
+| POST   | `/api/v1/peers/{hash}/probe` |                        | `{ ok, hops? }` live; `{ ok, mode, hash }` stub — emits `peers_updated` on success                                                                                                                                                                         |
+| POST   | `/api/v1/ping`               | `{ destination_hash }` | `{ ok, rtt_ms? }`                                                                                                                                                                                                                                          |
+| GET    | `/api/v1/topology`           |                        | `{ nodes, edges, total?, shown?, truncated? }` — `via_hash` is the immediate RNS next hop (transport id); sidecar infers `self → relay` when needed                                                                                                        |
+| GET    | `/api/v1/rmap/discovered`    |                        | `{ discovered: RmapDiscoveredWireRow[] }` — local RMAP v4 heard interfaces (7-day TTL eviction in rsReticulum DiscoveryStore)                                                                                                                              |
 
 **`RmapDiscoveredWireRow` fields** (see `src/shared/reticulum-types.ts`): `discovery_hash`, `transport_id`, `discovery_name`, `interface_type`, `latitude`, `longitude`, `height`, `transport_enabled`, `reachable_on`, LoRa RF fields (`frequency`, `bandwidth`, `spreading_factor`, …), `hops`, `stamp_value`, `discovered`, `last_heard`, `heard_count`, `status` (`available`/`stale`/`unknown`), `has_coordinates`. Renderer caps at 2,000 newest rows with client-side TTL eviction.
 
@@ -131,10 +131,10 @@ The Connection tab UI edits a subset: **name** and **mode** for all types; **hos
 Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`, `rmap.discovery` (payload `{ discovered: RmapDiscoveredWireRow[] }`).
 
 - **`lxmf_outbound_status`:** authoritative outbound delivery updates. Payload: `{ message_hash, status, delivery_method?, to_hash? }` where `status` is `delivered` or `failed` (intermediate states are not emitted on WS). mesh-client maps `delivered` → UI Completes (`acked`) and persists `delivery_status` to SQLite; `failed` → Failed. Do **not** treat `/api/v1/lxmf/send` response `delivery_status` (`queued`/`sending`) as terminal.
-- **`announce.received`:** emitted for every LXMF identity announce / path response the sidecar observes (named or nameless). Payload: `{ destination_hash, display_name?, hops }`. Display names update the peer-label cache only — announces do **not** auto-create LXMF contacts.
-- **`peers_updated`:** also emitted when the live path table **gains** new destination hashes (maintenance tick). Payload may include `{ added: string[], count }` (added capped). Hop/timestamp-only churn does not emit.
+- **`announce.received`:** emitted for every LXMF identity announce / path response the sidecar observes (named or nameless). Payload: `{ destination_hash, display_name?, hops }`. Display names update the peer-label cache only — announces do **not** auto-create LXMF contacts. That cache is overlayed onto `GET /api/v1/peers` / topology rows so path-table refreshes keep announce aliases.
+- **`peers_updated`:** also emitted when the live path table **gains** new destination hashes (maintenance tick). Payload may include `{ added: string[], patches: PeerRow[], count }` (added/patches capped at 1024). Renderer applies patches incrementally, including route-field changes. A full peer dump is used on connect, manual Refresh, restart, safety poll, or a `peers_updated` payload that cannot be applied incrementally: `cleared`, `demoted_from_contacts`, or a single-`hash` probe/path event. Hop/timestamp-only churn does not emit.
 
-`lxmf_message` payload fields include `sender_hash`, `text`, `timestamp`, `message_hash`, optional `direction` (`inbound` / `outbound`), optional `delivery_status` (`sending` on optimistic outbound rows), and transport markers `received_via` / `sent_via`. Outbound `sent_via` is **path-table / PacketTap evidence**, not “any local RNode enabled”: atomic values are `rf`, `ble`, `tcp`, or `network`; multi-egress observes join with `+` (e.g. `rf+tcp`, `ble+network`). Never use Meshtastic-style `both` for Reticulum.
+`lxmf_message` payload fields include `sender_hash`, `text`, `timestamp`, `message_hash`, optional `direction` (`inbound` / `outbound`), optional `delivery_status` (`sending` on optimistic outbound rows), and transport markers `received_via` / `sent_via`. Outbound `sent_via` is **path-table / PacketTap evidence**, not “any local RNode enabled”: atomic values are `rf`, `ble`, `tcp`, or `network`; multi-egress observes join with `+` (e.g. `rf+tcp`, `ble+network`). Inbound `received_via` uses the path-table interface name **matched to local interface config** (same atoms — so a TCP hub named “RNS Testnet” is `tcp`, not `network`). Never use Meshtastic-style `both` for Reticulum.
 
 `lxmf_outbound_status` payload: `message_hash`, `status` (`delivered` / `failed` / `sending`), optional `delivery_method`, optional `sent_via` (egress evidence upgrade before Completes).
 
@@ -151,4 +151,13 @@ Renderer calls `electronAPI.reticulum.*`; main process proxies to this API (sand
 | `reticulum:showIdentityImportDialog`                            | Native file picker for 64-byte private key (`.retid`, `.key`, …) |
 | `reticulum:onEvent` / `onStatus`                                | WS events and sidecar status                                     |
 
-SQLite chat history uses separate `db:*` handlers (`getReticulumMessages`, `saveReticulumMessage`, `searchReticulumMessages`, `deleteReticulumMessage`, destination upserts).
+SQLite chat history uses separate `db:*` handlers (`getReticulumMessages`, `saveReticulumMessage`, `searchReticulumMessages`, `deleteReticulumMessage`, destination upserts), not sidecar HTTP.
+
+| IPC channel                               | Reticulum maintenance behavior                                                               |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `db:pruneReticulumDestinationsByCount`    | Prunes excess non-favorited destinations by oldest `last_heard`; favorites are preserved.    |
+| `db:deleteReticulumDestinationsByAge`     | Deletes non-favorited destinations before a calculated Unix-**seconds** `last_heard` cutoff. |
+| `db:pruneReticulumIdentityActivityByAge`  | Deletes identity-activity rows before an epoch-**milliseconds** `last_seen` cutoff.          |
+| `db:upsertReticulumIdentityActivityBatch` | Validates and upserts at most **500** activity rows per call.                                |
+
+Reticulum startup maintenance runs the destination age/count prune and message retention independently. `VACUUM` runs only after the Reticulum startup prune, never on the six-hour session tick.
