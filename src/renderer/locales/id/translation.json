@@ -3685,7 +3685,16 @@
       "body": "Tidak ada simpul propagasi yang dikonfigurasi. Peer offline atau tidak terjangkau membutuhkan simpul propagasi untuk pengiriman LXMF store - and - forward.",
       "openSettings": "Atur propagasi",
       "openSettingsAria": "Open Reticulum Network propagation settings"
-    }
+    },
+    "rename": "Ganti nama",
+    "renameLabel": "Nama node propagasi",
+    "renameSave": "Simpan nama",
+    "renameAria": "Ganti nama node propagasi {{name}}",
+    "delete": "Menghapus",
+    "deleteAria": "Hapus node propagasi {{name}}",
+    "deleteConfirmTitle": "Hapus node propagasi?",
+    "deleteConfirmBody": "Hapus {{name}} dari daftar node propagasi? Ini tidak mengubah node jarak jauh.",
+    "deleteConfirm": "Menghapus"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Mode propagasi",

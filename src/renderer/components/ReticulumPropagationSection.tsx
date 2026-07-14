@@ -9,6 +9,7 @@ import {
   reticulumPropagationAutoSyncOptionKey,
 } from '@/shared/reticulumPropagationAutoSync';
 
+import { ConfirmModal } from './ConfirmModal';
 import {
   ReticulumPropagationLastRefreshed,
   ReticulumPropagationRefreshButton,
@@ -37,8 +38,13 @@ export default function ReticulumPropagationSection({
   );
   const startSync = useReticulumPropagationStore((s) => s.startSync);
   const addPropagationNode = useReticulumPropagationStore((s) => s.addPropagationNode);
+  const removePropagationNode = useReticulumPropagationStore((s) => s.removePropagationNode);
+  const renamePropagationNode = useReticulumPropagationStore((s) => s.renamePropagationNode);
   const [addHash, setAddHash] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     void refreshFromSidecar();
@@ -94,68 +100,139 @@ export default function ReticulumPropagationSection({
         className={`mt-2 space-y-2 text-sm transition-opacity ${refreshing ? 'opacity-60' : 'opacity-100'}`}
         aria-busy={refreshing}
       >
-        {nodes.map((node) => (
-          <li
-            key={node.id}
-            className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-700/60 px-2 py-1.5"
-          >
-            <span>
-              {node.name} ({node.status})
-              {node.id === 'local-prop' && node.message_count != null ? (
-                <span className="text-muted ml-1 text-xs">
-                  {t('reticulumPropagation.localInboxStats', {
-                    count: node.message_count,
-                    bytes: node.storage_bytes ?? 0,
-                  })}
-                </span>
-              ) : null}
-              {preferredId === node.id ? (
-                <span className="text-readable-green ml-1 text-xs">
-                  {t('reticulumPropagation.preferred')}
-                </span>
-              ) : null}
-            </span>
-            <span className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                className="text-xs text-amber-400 hover:underline"
-                onClick={() => {
-                  void setPreferredOnSidecar(node.id);
-                }}
-                aria-label={t('reticulumPropagation.setPreferred')}
-              >
-                {t('reticulumPropagation.setPreferred')}
-              </button>
-              <button
-                type="button"
-                className="text-xs text-amber-400 hover:underline disabled:opacity-40"
-                disabled={sync.active}
-                onClick={() => {
-                  void startSync(node.id);
-                }}
-                aria-label={t('reticulumPropagation.syncNowFor', { name: node.name })}
-              >
-                {t('reticulumPropagation.syncNow')}
-              </button>
-              <button
-                type="button"
-                className="text-xs text-amber-400 hover:underline"
-                onClick={() =>
-                  void window.electronAPI.reticulum
-                    .proxyPost(
-                      `/api/v1/propagation/${node.id}/${node.enabled ? 'disable' : 'enable'}`,
-                      {},
-                    )
-                    .then(handleRefresh)
-                }
-              >
-                {node.enabled
-                  ? t('connectionPanel.reticulumPropagation.disable')
-                  : t('connectionPanel.reticulumPropagation.enable')}
-              </button>
-            </span>
-          </li>
-        ))}
+        {nodes.map((node) => {
+          const isLocal = node.id === 'local-prop';
+          const isRenaming = renamingId === node.id;
+          return (
+            <li
+              key={node.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-700/60 px-2 py-1.5"
+            >
+              <span className="min-w-0 flex-1">
+                {isRenaming ? (
+                  <label className="flex flex-wrap items-center gap-2">
+                    <span className="sr-only">{t('reticulumPropagation.renameLabel')}</span>
+                    <input
+                      type="text"
+                      value={renameDraft}
+                      onChange={(e) => {
+                        setRenameDraft(e.target.value);
+                      }}
+                      className="min-w-[10rem] flex-1 rounded border border-gray-700 bg-slate-900 px-2 py-1 text-sm text-gray-200"
+                      aria-label={t('reticulumPropagation.renameLabel')}
+                    />
+                    <button
+                      type="button"
+                      className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                      disabled={!renameDraft.trim()}
+                      onClick={() => {
+                        void renamePropagationNode(node.id, renameDraft.trim()).then((ok) => {
+                          if (ok) {
+                            setRenamingId(null);
+                            setRenameDraft('');
+                          }
+                        });
+                      }}
+                    >
+                      {t('reticulumPropagation.renameSave')}
+                    </button>
+                    <button
+                      type="button"
+                      className="text-muted text-xs hover:underline"
+                      onClick={() => {
+                        setRenamingId(null);
+                        setRenameDraft('');
+                      }}
+                    >
+                      {t('common.cancel')}
+                    </button>
+                  </label>
+                ) : (
+                  <>
+                    {node.name} ({node.status})
+                    {isLocal && node.message_count != null ? (
+                      <span className="text-muted ml-1 text-xs">
+                        {t('reticulumPropagation.localInboxStats', {
+                          count: node.message_count,
+                          bytes: node.storage_bytes ?? 0,
+                        })}
+                      </span>
+                    ) : null}
+                    {preferredId === node.id ? (
+                      <span className="text-readable-green ml-1 text-xs">
+                        {t('reticulumPropagation.preferred')}
+                      </span>
+                    ) : null}
+                  </>
+                )}
+              </span>
+              <span className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="text-xs text-amber-400 hover:underline"
+                  onClick={() => {
+                    void setPreferredOnSidecar(node.id);
+                  }}
+                  aria-label={t('reticulumPropagation.setPreferred')}
+                >
+                  {t('reticulumPropagation.setPreferred')}
+                </button>
+                <button
+                  type="button"
+                  className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                  disabled={sync.active}
+                  onClick={() => {
+                    void startSync(node.id);
+                  }}
+                  aria-label={t('reticulumPropagation.syncNowFor', { name: node.name })}
+                >
+                  {t('reticulumPropagation.syncNow')}
+                </button>
+                <button
+                  type="button"
+                  className="text-xs text-amber-400 hover:underline"
+                  onClick={() =>
+                    void window.electronAPI.reticulum
+                      .proxyPost(
+                        `/api/v1/propagation/${node.id}/${node.enabled ? 'disable' : 'enable'}`,
+                        {},
+                      )
+                      .then(handleRefresh)
+                  }
+                >
+                  {node.enabled
+                    ? t('connectionPanel.reticulumPropagation.disable')
+                    : t('connectionPanel.reticulumPropagation.enable')}
+                </button>
+                {!isLocal && !isRenaming ? (
+                  <>
+                    <button
+                      type="button"
+                      className="text-xs text-amber-400 hover:underline"
+                      onClick={() => {
+                        setRenamingId(node.id);
+                        setRenameDraft(node.name);
+                      }}
+                      aria-label={t('reticulumPropagation.renameAria', { name: node.name })}
+                    >
+                      {t('reticulumPropagation.rename')}
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs text-red-400 hover:underline"
+                      onClick={() => {
+                        setPendingDelete({ id: node.id, name: node.name });
+                      }}
+                      aria-label={t('reticulumPropagation.deleteAria', { name: node.name })}
+                    >
+                      {t('reticulumPropagation.delete')}
+                    </button>
+                  </>
+                ) : null}
+              </span>
+            </li>
+          );
+        })}
       </ul>
       <div className="mt-3 space-y-1">
         <label htmlFor="reticulum-propagation-auto-sync" className="text-muted text-xs">
@@ -228,6 +305,22 @@ export default function ReticulumPropagationSection({
           {t('reticulumPropagation.addNode')}
         </button>
       </div>
+      {pendingDelete ? (
+        <ConfirmModal
+          title={t('reticulumPropagation.deleteConfirmTitle')}
+          message={t('reticulumPropagation.deleteConfirmBody', { name: pendingDelete.name })}
+          confirmLabel={t('reticulumPropagation.deleteConfirm')}
+          danger
+          onConfirm={() => {
+            const id = pendingDelete.id;
+            setPendingDelete(null);
+            void removePropagationNode(id);
+          }}
+          onCancel={() => {
+            setPendingDelete(null);
+          }}
+        />
+      ) : null}
     </>
   );
 

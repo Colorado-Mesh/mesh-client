@@ -51,6 +51,8 @@ interface ReticulumPropagationStoreState {
   startSync: (id?: string) => Promise<boolean>;
   cancelSync: () => Promise<boolean>;
   addPropagationNode: (destinationHash: string, name?: string) => Promise<boolean>;
+  removePropagationNode: (id: string) => Promise<boolean>;
+  renamePropagationNode: (id: string, name: string) => Promise<boolean>;
 }
 
 export const useReticulumPropagationStore = create<ReticulumPropagationStoreState>((set, get) => ({
@@ -199,6 +201,36 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       }
     } catch (e) {
       console.warn('[reticulumPropagationStore] add node ' + errLikeToLogString(e));
+    }
+    return false;
+  },
+
+  removePropagationNode: async (id) => {
+    try {
+      const res = (await window.electronAPI.reticulum.proxyDelete(`/api/v1/propagation/${id}`)) as {
+        ok?: boolean;
+      };
+      if (res.ok) {
+        await get().refreshFromSidecar();
+        return true;
+      }
+    } catch (e) {
+      console.warn('[reticulumPropagationStore] remove node ' + errLikeToLogString(e));
+    }
+    return false;
+  },
+
+  renamePropagationNode: async (id, name) => {
+    try {
+      const res = (await window.electronAPI.reticulum.proxyPut(`/api/v1/propagation/${id}`, {
+        name,
+      })) as { ok?: boolean };
+      if (res.ok) {
+        await get().refreshFromSidecar();
+        return true;
+      }
+    } catch (e) {
+      console.warn('[reticulumPropagationStore] rename node ' + errLikeToLogString(e));
     }
     return false;
   },

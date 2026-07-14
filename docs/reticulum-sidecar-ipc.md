@@ -94,6 +94,8 @@ The Connection tab UI edits a subset: **name** and **mode** for all types; **hos
 | DELETE | `/api/v1/packets` | | `{ ok }` — clear wire tap buffer |
 | GET | `/api/v1/propagation` | | `{ propagation, preferred_id, auto_sync_interval_sec }` — `local-prop` rows include `message_count`, `storage_bytes` when live |
 | POST | `/api/v1/propagation/add` | `{ destination_hash, name? }` | `{ ok, node }` — add a remote propagation node by hash |
+| PUT | `/api/v1/propagation/{id}` | `{ name }` | `{ ok }` — rename a remote node (`local-prop` rejected) |
+| DELETE | `/api/v1/propagation/{id}` | | `{ ok }` — remove a remote node (`local-prop` rejected; clears preferred if that id) |
 | POST | `/api/v1/propagation/{id}/enable` | | `{ ok }` |
 | POST | `/api/v1/propagation/{id}/disable` | | `{ ok }` |
 | POST | `/api/v1/propagation/{id}/preferred` | | `{ ok }` |

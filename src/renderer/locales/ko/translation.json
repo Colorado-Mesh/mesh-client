@@ -3685,7 +3685,16 @@
       "body": "전파 노드가 구성되지 않았습니다. 오프라인 또는 연락이 닿지 않는 동료에게는 스토어 앤 포워드 LXMF 배송을 위한 전파 노드가 필요합니다.",
       "openSettings": "전파 설정",
       "openSettingsAria": "Reticulum Network 전파 설정 열기"
-    }
+    },
+    "rename": "이름 바꾸기",
+    "renameLabel": "전파 노드 이름",
+    "renameSave": "이름 저장",
+    "renameAria": "전파 노드 이름 바꾸기 {{name}}",
+    "delete": "삭제",
+    "deleteAria": "전파 노드 삭제 {{name}}",
+    "deleteConfirmTitle": "전파 노드를 삭제하시겠습니까?",
+    "deleteConfirmBody": "전파 노드 목록에서 {{name}}을(를) 제거하시겠습니까? 이는 원격 노드를 변경하지 않습니다.",
+    "deleteConfirm": "삭제"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "전파 모드",

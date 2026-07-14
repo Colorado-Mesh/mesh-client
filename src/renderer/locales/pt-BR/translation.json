@@ -3685,7 +3685,16 @@
       "body": "Nenhum nó de propagação está configurado. Os pares offline ou inacessíveis precisam de um nó de propagação para a entrega de LXMF de armazenamento e encaminhamento.",
       "openSettings": "Configurar propagação",
       "openSettingsAria": "Open Reticulum Network propagation settings"
-    }
+    },
+    "rename": "Renomear",
+    "renameLabel": "Nome do nó de propagação",
+    "renameSave": "Salvar nome",
+    "renameAria": "Renomear nó de propagação {{name}}",
+    "delete": "Excluir",
+    "deleteAria": "Excluir nó de propagação {{name}}",
+    "deleteConfirmTitle": "Excluir nó de propagação?",
+    "deleteConfirmBody": "Remover {{name}} da lista de nós de propagação? Isso não altera o nó remoto.",
+    "deleteConfirm": "Excluir"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modo de propagação",

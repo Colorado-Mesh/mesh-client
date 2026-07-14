@@ -3685,7 +3685,16 @@
       "body": "Není nakonfigurován žádný propagační uzel. Offline nebo nedosažitelné protějšky potřebují propagační uzel pro doručování LXMF v obchodě a dopředu.",
       "openSettings": "Nastavit propagaci",
       "openSettingsAria": "Otevřít nastavení propagace sítě Reticulum"
-    }
+    },
+    "rename": "Přejmenovat",
+    "renameLabel": "Název uzlu šíření",
+    "renameSave": "Uložit jméno",
+    "renameAria": "Přejmenovat uzel šíření {{name}}",
+    "delete": "Vymazat",
+    "deleteAria": "Smazat uzel šíření {{name}}",
+    "deleteConfirmTitle": "Smazat uzel šíření?",
+    "deleteConfirmBody": "Odebrat {{name}} ze seznamu uzlů šíření? Toto nezmění vzdálený uzel.",
+    "deleteConfirm": "Vymazat"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Režim propagace",

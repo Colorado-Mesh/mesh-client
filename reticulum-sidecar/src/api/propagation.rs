@@ -22,6 +22,11 @@ pub struct AddPropagationBody {
     pub name: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct RenamePropagationBody {
+    pub name: String,
+}
+
 pub async fn add_propagation_node(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<AddPropagationBody>,
@@ -31,6 +36,27 @@ pub async fn add_propagation_node(
         .await
     {
         Ok(res) => Json(res),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn remove_propagation_node(
+    State(stack): State<Arc<StackHandle>>,
+    Path(id): Path<String>,
+) -> Json<serde_json::Value> {
+    match stack.remove_propagation_node(&id).await {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn rename_propagation_node(
+    State(stack): State<Arc<StackHandle>>,
+    Path(id): Path<String>,
+    Json(body): Json<RenamePropagationBody>,
+) -> Json<serde_json::Value> {
+    match stack.rename_propagation_node(&id, &body.name).await {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
 }

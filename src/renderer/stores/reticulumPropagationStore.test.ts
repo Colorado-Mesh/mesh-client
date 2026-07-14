@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const getStatus = vi.fn();
 const proxyGet = vi.fn();
 const proxyPost = vi.fn();
+const proxyPut = vi.fn();
+const proxyDelete = vi.fn();
 
 import { RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC } from '@/shared/reticulumPropagationAutoSync';
 
@@ -12,6 +14,8 @@ vi.stubGlobal('window', {
       getStatus,
       proxyGet,
       proxyPost,
+      proxyPut,
+      proxyDelete,
     },
   },
 });
@@ -23,6 +27,8 @@ describe('reticulumPropagationStore', () => {
     getStatus.mockReset();
     proxyGet.mockReset();
     proxyPost.mockReset();
+    proxyPut.mockReset();
+    proxyDelete.mockReset();
     useReticulumPropagationStore.setState({
       nodes: [],
       preferredId: null,
@@ -84,5 +90,39 @@ describe('reticulumPropagationStore', () => {
     proxyPost.mockResolvedValueOnce({});
     await expect(useReticulumPropagationStore.getState().cancelSync()).resolves.toBe(true);
     expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
+  });
+
+  it('removePropagationNode deletes then refreshes', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyDelete.mockResolvedValueOnce({ ok: true });
+    proxyGet.mockResolvedValueOnce({
+      propagation: [{ id: 'local-prop', name: 'Local', enabled: true, status: 'ok' }],
+      preferred_id: null,
+    });
+
+    await expect(
+      useReticulumPropagationStore.getState().removePropagationNode('pn-aabb'),
+    ).resolves.toBe(true);
+
+    expect(proxyDelete).toHaveBeenCalledWith('/api/v1/propagation/pn-aabb');
+    expect(useReticulumPropagationStore.getState().nodes).toHaveLength(1);
+  });
+
+  it('renamePropagationNode renames then refreshes', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPut.mockResolvedValueOnce({ ok: true });
+    proxyGet.mockResolvedValueOnce({
+      propagation: [{ id: 'pn-aabb', name: 'Renamed hub', enabled: true, status: 'known' }],
+      preferred_id: null,
+    });
+
+    await expect(
+      useReticulumPropagationStore.getState().renamePropagationNode('pn-aabb', 'Renamed hub'),
+    ).resolves.toBe(true);
+
+    expect(proxyPut).toHaveBeenCalledWith('/api/v1/propagation/pn-aabb', {
+      name: 'Renamed hub',
+    });
+    expect(useReticulumPropagationStore.getState().nodes[0]?.name).toBe('Renamed hub');
   });
 });

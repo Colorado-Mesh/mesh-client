@@ -3685,7 +3685,16 @@
       "body": "Non è configurato alcun nodo di propagazione. I peer offline o non raggiungibili hanno bisogno di un nodo di propagazione per la consegna LXMF store-and-forward.",
       "openSettings": "Imposta la propagazione",
       "openSettingsAria": "Open Reticulum Network propagation settings"
-    }
+    },
+    "rename": "Rinominare",
+    "renameLabel": "Nome del nodo di propagazione",
+    "renameSave": "Salva nome",
+    "renameAria": "Rinomina nodo di propagazione {{name}}",
+    "delete": "Eliminare",
+    "deleteAria": "Elimina nodo di propagazione {{name}}",
+    "deleteConfirmTitle": "Eliminare il nodo di propagazione?",
+    "deleteConfirmBody": "Rimuovere {{name}} dall'elenco dei nodi di propagazione? Ciò non modifica il nodo remoto.",
+    "deleteConfirm": "Eliminare"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modalità di propagazione",

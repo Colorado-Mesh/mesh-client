@@ -896,6 +896,30 @@ impl StackHandle {
         Ok(serde_json::json!({ "ok": true, "node": row }))
     }
 
+    pub async fn remove_propagation_node(&self, id: &str) -> Result<(), String> {
+        let cleared_preferred = {
+            let mut inner = self.inner.write().await;
+            let was_preferred = inner.preferred_propagation_id.as_deref() == Some(id);
+            inner.remove_propagation_node(id)?;
+            inner.save(&self.config_dir, &self.storage_dir)?;
+            was_preferred
+        };
+        if cleared_preferred {
+            #[cfg(feature = "rns-stack")]
+            if let Some(live) = &self.live {
+                live.set_outbound_propagation_node(None).await;
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn rename_propagation_node(&self, id: &str, name: &str) -> Result<(), String> {
+        let mut inner = self.inner.write().await;
+        inner.rename_propagation_node(id, name)?;
+        inner.save(&self.config_dir, &self.storage_dir)?;
+        Ok(())
+    }
+
     pub async fn ping_destination(&self, destination_hash: &str) -> Result<serde_json::Value, String> {
         let started = std::time::Instant::now();
         let probe = self.probe_peer(destination_hash).await?;

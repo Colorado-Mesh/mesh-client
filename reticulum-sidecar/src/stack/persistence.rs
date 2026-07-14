@@ -113,6 +113,53 @@ impl PersistedState {
         Ok(row)
     }
 
+    pub fn remove_propagation_node(&mut self, id: &str) -> Result<(), String> {
+        if id == "local-prop" {
+            return Err("cannot remove local propagation node".into());
+        }
+        let idx = self
+            .propagation
+            .iter()
+            .position(|p| p.id == id)
+            .ok_or_else(|| format!("propagation node not found: {id}"))?;
+        self.propagation.remove(idx);
+        if self.preferred_propagation_id.as_deref() == Some(id) {
+            self.preferred_propagation_id = None;
+        }
+        let syncing = self
+            .propagation_sync
+            .get("active")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false)
+            && self
+                .propagation_sync
+                .get("propagation_id")
+                .and_then(|v| v.as_str())
+                == Some(id);
+        if syncing {
+            self.cancel_propagation_sync();
+        }
+        Ok(())
+    }
+
+    pub fn rename_propagation_node(&mut self, id: &str, name: &str) -> Result<(), String> {
+        if id == "local-prop" {
+            return Err("cannot rename local propagation node".into());
+        }
+        let trimmed = name.trim();
+        if trimmed.is_empty() {
+            return Err("name must not be empty".into());
+        }
+        let capped: String = trimmed.chars().take(128).collect();
+        let node = self
+            .propagation
+            .iter_mut()
+            .find(|p| p.id == id)
+            .ok_or_else(|| format!("propagation node not found: {id}"))?;
+        node.name = capped;
+        Ok(())
+    }
+
     pub fn save(&self, _config_dir: &Path, storage_dir: &Path) -> Result<(), String> {
         let path = storage_dir.join(STATE_FILE);
         let mut value = serde_json::to_value(self).map_err(|e| e.to_string())?;
@@ -715,5 +762,56 @@ mod tests {
         assert_eq!(state.contacts.len(), 1);
         assert_eq!(state.contacts[0].destination_hash, lower);
         assert_eq!(state.contacts[0].display_name.as_deref(), Some("Named"));
+    }
+
+    #[test]
+    fn remove_propagation_node_rejects_local_prop() {
+        let mut state = PersistedState::default_empty();
+        state.ensure_defaults();
+        assert!(state.remove_propagation_node("local-prop").is_err());
+        assert!(state.propagation.iter().any(|p| p.id == "local-prop"));
+    }
+
+    #[test]
+    fn remove_propagation_node_clears_preferred_and_sync() {
+        let mut state = PersistedState::default_empty();
+        let row = state
+            .add_propagation_node("aabbccddeeff00112233445566778899", Some("Remote".into()))
+            .expect("add");
+        state.preferred_propagation_id = Some(row.id.clone());
+        state
+            .start_propagation_sync(&row.id)
+            .expect("start sync");
+        state.remove_propagation_node(&row.id).expect("remove");
+        assert!(!state.propagation.iter().any(|p| p.id == row.id));
+        assert!(state.preferred_propagation_id.is_none());
+        assert_eq!(
+            state
+                .propagation_sync
+                .get("active")
+                .and_then(|v| v.as_bool()),
+            Some(false)
+        );
+    }
+
+    #[test]
+    fn rename_propagation_node_updates_name() {
+        let mut state = PersistedState::default_empty();
+        let row = state
+            .add_propagation_node("deadbeefcafebabe0123456789abcdef", None)
+            .expect("add");
+        state
+            .rename_propagation_node(&row.id, "  Hub PN  ")
+            .expect("rename");
+        assert_eq!(
+            state
+                .propagation
+                .iter()
+                .find(|p| p.id == row.id)
+                .map(|p| p.name.as_str()),
+            Some("Hub PN")
+        );
+        assert!(state.rename_propagation_node("local-prop", "Nope").is_err());
+        assert!(state.rename_propagation_node(&row.id, "   ").is_err());
     }
 }

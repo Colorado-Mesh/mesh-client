@@ -3685,7 +3685,16 @@
       "body": "Aucun nœud de propagation n'est configuré. Les pairs hors ligne ou inaccessibles ont besoin d'un nœud de propagation pour la livraison LXMF de stockage et de transfert.",
       "openSettings": "Configurer la propagation",
       "openSettingsAria": "Open Reticulum Network propagation settings"
-    }
+    },
+    "rename": "Rebaptiser",
+    "renameLabel": "Nom du nœud de propagation",
+    "renameSave": "Enregistrer le nom",
+    "renameAria": "Renommer le nœud de propagation {{name}}",
+    "delete": "Supprimer",
+    "deleteAria": "Supprimer le nœud de propagation {{name}}",
+    "deleteConfirmTitle": "Supprimer le nœud de propagation ?",
+    "deleteConfirmBody": "Supprimer {{name}} de la liste des nœuds de propagation ? Cela ne change pas le nœud distant.",
+    "deleteConfirm": "Supprimer"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "mode de propagation",

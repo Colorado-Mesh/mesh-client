@@ -3685,7 +3685,16 @@
       "body": "Hiçbir yayılma düğümü yapılandırılmamış. Çevrimdışı veya erişilemeyen eşler, LXMF teslimatı için bir yayılma düğümüne ihtiyaç duyar.",
       "openSettings": "Yayılımı ayarla",
       "openSettingsAria": "Reticulum Ağı yayılım ayarlarını aç"
-    }
+    },
+    "rename": "Yeniden isimlendirmek",
+    "renameLabel": "Yayılma düğümü adı",
+    "renameSave": "Adı kaydet",
+    "renameAria": "Yayılma düğümünü yeniden adlandırın {{name}}",
+    "delete": "Silmek",
+    "deleteAria": "Yayılma düğümünü sil {{name}}",
+    "deleteConfirmTitle": "Yayılma düğümü silinsin mi?",
+    "deleteConfirmBody": "{{name}} yayılma düğümü listesinden kaldırılsın mı? Bu uzak düğümü değiştirmez.",
+    "deleteConfirm": "Silmek"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Yayılma modu",

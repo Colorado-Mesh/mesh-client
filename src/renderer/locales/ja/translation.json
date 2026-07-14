@@ -3685,7 +3685,16 @@
       "body": "伝播ノードが設定されていません。オフラインまたは到達不能なピアには、ストアアンドフォワードLXMF配信用の伝播ノードが必要です。",
       "openSettings": "伝播の設定",
       "openSettingsAria": "Reticulumネットワーク伝播設定を開く"
-    }
+    },
+    "rename": "名前の変更",
+    "renameLabel": "伝播ノード名",
+    "renameSave": "名前を保存する",
+    "renameAria": "伝播ノード {{name}} の名前を変更します",
+    "delete": "消去",
+    "deleteAria": "伝播ノード {{name}} を削除します",
+    "deleteConfirmTitle": "伝播ノードを削除しますか?",
+    "deleteConfirmBody": "{{name}} を伝播ノードリストから削除しますか?これによってリモート ノードは変更されません。",
+    "deleteConfirm": "消去"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "伝播モード",

@@ -3685,7 +3685,16 @@
       "body": "未配置传播节点。离线或无法访问的对等节点需要一个传播节点来存储和转发LXMF交付。",
       "openSettings": "设置传播",
       "openSettingsAria": "Open Reticulum Network propagation settings"
-    }
+    },
+    "rename": "重命名",
+    "renameLabel": "传播节点名称",
+    "renameSave": "保存名称",
+    "renameAria": "重命名传播节点 {{name}}",
+    "delete": "删除",
+    "deleteAria": "删除传播节点 {{name}}",
+    "deleteConfirmTitle": "删除传播节点？",
+    "deleteConfirmBody": "从传播节点列表中删除 {{name}} 吗？这不会更改远程节点。",
+    "deleteConfirm": "删除"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "传播模式",

@@ -3685,7 +3685,16 @@
       "body": "No hay ningún nodo de propagación configurado. Los pares fuera de línea o inalcanzables necesitan un nodo de propagación para la entrega de LXMF de almacenamiento y reenvío.",
       "openSettings": "Configurar propagación",
       "openSettingsAria": "Open Reticulum Network propagation settings"
-    }
+    },
+    "rename": "Rebautizar",
+    "renameLabel": "Nombre del nodo de propagación",
+    "renameSave": "Guardar nombre",
+    "renameAria": "Cambiar el nombre del nodo de propagación {{name}}",
+    "delete": "Borrar",
+    "deleteAria": "Eliminar el nodo de propagación {{name}}",
+    "deleteConfirmTitle": "¿Eliminar el nodo de propagación?",
+    "deleteConfirmBody": "¿Eliminar {{name}} de la lista de nodos de propagación? Esto no cambia el nodo remoto.",
+    "deleteConfirm": "Borrar"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "modo de propagación",
