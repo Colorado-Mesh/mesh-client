@@ -634,9 +634,10 @@ export function ReticulumInterfacesPanel({
         );
         return;
       }
+      const editType = editingInterface?.type ?? (patchType || undefined);
       setEditingInterface(null);
       await onRefresh();
-      if (reticulumInterfaceChangeRequiresStackRestart(undefined, patch)) {
+      if (reticulumInterfaceChangeRequiresStackRestart(editType, patch)) {
         await restartStackForInterfaceChange();
       }
     } catch (e) {

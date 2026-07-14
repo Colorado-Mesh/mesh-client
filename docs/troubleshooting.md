@@ -1078,6 +1078,8 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 3. **Delete**: confirm in the modal; if the interface id changed after config import, refresh by stopping and restarting the stack.
 4. **Logs**: filter Device logs for `[ReticulumIPC]` or `[ReticulumSidecar]`; sidecar returns `{ ok: false, error }` for parse or unknown-interface failures.
 
+**TCP / UDP / I2P / Auto / Pipe not active after add**: Sidecar live `apply_interfaces` only hot-applies **BLE Peer**; other types are written to config and require a stack restart. The Connection UI auto-restarts after add/enable/edit/delete for those types (`reticulumInterfaceChangeRequiresStackRestart`). If a transport still does not appear, use **Stop stack** then **Start stack**, or check the amber restart hint. **Add default hubs** still shows the hint only (no auto-restart).
+
 For bulk fixes, use Network **Config import** (merge) instead of hand-editing individual rows. See [reticulum.md — Interface management](reticulum.md#interface-management-connection-tab).
 
 ### Reticulum Peers tab slow with many hubs or testnets
