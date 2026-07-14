@@ -321,8 +321,11 @@ html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-off .cm-waterma
   }
 }
 
-/* Nomad Micron pages: monospace + optional locally installed Nerd Fonts for alignment. */
+/* Nomad Micron pages: monospace + optional locally installed Nerd Fonts for alignment.
+   Width grows with ASCII/Micron content so the page scroll parent can dual-axis scroll. */
 .nomad-micron-page {
+  width: max-content;
+  min-width: 100%;
   font-family:
     'JetBrainsMono Nerd Font', 'FiraCode Nerd Font', 'Hack Nerd Font', ui-monospace, SFMono-Regular,
     Menlo, Monaco, Consolas, monospace;

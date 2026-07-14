@@ -470,7 +470,7 @@ export default function NomadNetworkPanel({
   const showStartStackBanner = !sidecarRunning && lastRefreshAt == null && allRows.length === 0;
 
   return (
-    <div className="flex h-full min-h-0 flex-col p-4">
+    <div className="flex h-full min-h-0 min-w-0 flex-col p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-medium text-gray-100">{t('nomadNetwork.title')}</h2>
         <button
@@ -643,8 +643,8 @@ export default function NomadNetworkPanel({
               {t('nomadNetwork.selectNode')}
             </p>
           ) : (
-            <>
-              <div className="flex flex-wrap items-center gap-2 border-b border-gray-700/60 p-2">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-700/60 p-2">
                 <span className="truncate font-medium text-gray-100">
                   {selectedNode.display_name ?? selectedNode.destination_hash.slice(0, 16)}
                 </span>
@@ -748,7 +748,7 @@ export default function NomadNetworkPanel({
               </div>
 
               <form
-                className="flex gap-2 border-b border-gray-700/60 p-2"
+                className="flex shrink-0 gap-2 border-b border-gray-700/60 p-2"
                 onSubmit={(e) => {
                   e.preventDefault();
                   submitUrlBar();
@@ -766,43 +766,48 @@ export default function NomadNetworkPanel({
                 />
               </form>
 
-              <div className="min-h-0 flex-1 overflow-y-auto p-3">
-                {fileDownloading ? (
-                  <p className="text-muted mb-2 text-sm">{t('nomadNetwork.fileDownloading')}</p>
-                ) : null}
-                {fileDownloadError ? (
-                  <p className="mb-2 text-sm text-red-300">
-                    {t('nomadNetwork.fileDownloadFailed', { error: fileDownloadError })}
-                  </p>
-                ) : null}
-                {pageLoading ? (
-                  <p className="text-muted text-sm">{t('nomadNetwork.pageLoading')}</p>
-                ) : pageError ? (
-                  <p className="text-sm text-red-300">
-                    {t('nomadNetwork.pageFailed', { error: pageError })}
-                  </p>
-                ) : pageContent != null ? (
-                  isNomadMicronPage(pageContentType, pagePath) && !showPageSource ? (
-                    <NomadMicronPageView
-                      content={pageContent}
-                      defaultPagePath={DEFAULT_NOMAD_NODE_PAGE_PATH}
-                      selectedHash={selectedNode.destination_hash}
-                      onNavigate={(hash, path, requestData) => {
-                        void loadNodePage(hash, path, { requestData });
-                      }}
-                      onDownloadFile={(hash, path) => {
-                        void downloadNodeFile(hash, path);
-                      }}
-                      onOpenDm={onOpenDm}
-                    />
-                  ) : (
-                    <pre className="font-mono text-xs leading-relaxed whitespace-pre-wrap text-gray-200">
-                      {pageContent}
-                    </pre>
-                  )
-                ) : null}
+              <div className="relative min-h-0 flex-1">
+                <div
+                  data-testid="nomad-page-scroll"
+                  className="h-full min-h-0 overflow-auto overscroll-contain p-3 [overflow-anchor:none]"
+                >
+                  {fileDownloading ? (
+                    <p className="text-muted mb-2 text-sm">{t('nomadNetwork.fileDownloading')}</p>
+                  ) : null}
+                  {fileDownloadError ? (
+                    <p className="mb-2 text-sm text-red-300">
+                      {t('nomadNetwork.fileDownloadFailed', { error: fileDownloadError })}
+                    </p>
+                  ) : null}
+                  {pageLoading ? (
+                    <p className="text-muted text-sm">{t('nomadNetwork.pageLoading')}</p>
+                  ) : pageError ? (
+                    <p className="text-sm text-red-300">
+                      {t('nomadNetwork.pageFailed', { error: pageError })}
+                    </p>
+                  ) : pageContent != null ? (
+                    isNomadMicronPage(pageContentType, pagePath) && !showPageSource ? (
+                      <NomadMicronPageView
+                        content={pageContent}
+                        defaultPagePath={DEFAULT_NOMAD_NODE_PAGE_PATH}
+                        selectedHash={selectedNode.destination_hash}
+                        onNavigate={(hash, path, requestData) => {
+                          void loadNodePage(hash, path, { requestData });
+                        }}
+                        onDownloadFile={(hash, path) => {
+                          void downloadNodeFile(hash, path);
+                        }}
+                        onOpenDm={onOpenDm}
+                      />
+                    ) : (
+                      <pre className="font-mono text-xs leading-relaxed whitespace-pre text-gray-200">
+                        {pageContent}
+                      </pre>
+                    )
+                  ) : null}
+                </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
