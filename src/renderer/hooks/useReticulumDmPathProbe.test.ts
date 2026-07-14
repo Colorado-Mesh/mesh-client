@@ -1,0 +1,107 @@
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const probeReticulumPeerMock = vi.fn();
+const updatePeerMock = vi.fn();
+
+vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
+  probeReticulumPeer: (...args: unknown[]) => probeReticulumPeerMock(...args),
+}));
+
+vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
+  useReticulumPeerStore: {
+    getState: () => ({
+      updatePeer: (...args: unknown[]) => updatePeerMock(...args),
+    }),
+  },
+}));
+
+import { useReticulumDmPathProbe } from './useReticulumDmPathProbe';
+
+describe('useReticulumDmPathProbe', () => {
+  beforeEach(() => {
+    probeReticulumPeerMock.mockReset();
+    updatePeerMock.mockReset();
+  });
+
+  it('probes when enabled and destination hash is set', async () => {
+    probeReticulumPeerMock.mockResolvedValue({ ok: true, hops: 2 });
+    const { result } = renderHook(() =>
+      useReticulumDmPathProbe({
+        enabled: true,
+        destinationHash: 'aabbccddeeff00112233445566778899',
+        passiveHops: null,
+      }),
+    );
+    expect(result.current.status).toBe('probing');
+    await waitFor(() => {
+      expect(result.current.status).toBe('reachable');
+    });
+    expect(result.current.hops).toBe(2);
+    expect(probeReticulumPeerMock).toHaveBeenCalledWith('aabbccddeeff00112233445566778899');
+    expect(updatePeerMock).toHaveBeenCalledWith('aabbccddeeff00112233445566778899', { hops: 2 });
+  });
+
+  it('ignores stale probe results after destination switch', async () => {
+    let resolveFirst!: (value: { ok: boolean; hops?: number }) => void;
+    const first = new Promise<{ ok: boolean; hops?: number }>((resolve) => {
+      resolveFirst = resolve;
+    });
+    probeReticulumPeerMock.mockReturnValueOnce(first).mockResolvedValueOnce({ ok: false });
+
+    const { result, rerender } = renderHook(
+      ({ hash }: { hash: string }) =>
+        useReticulumDmPathProbe({
+          enabled: true,
+          destinationHash: hash,
+          passiveHops: null,
+        }),
+      { initialProps: { hash: '11111111111111111111111111111111' } },
+    );
+
+    rerender({ hash: '22222222222222222222222222222222' });
+    await waitFor(() => {
+      expect(result.current.status).toBe('unreachable');
+    });
+
+    act(() => {
+      resolveFirst({ ok: true, hops: 9 });
+    });
+    expect(result.current.status).toBe('unreachable');
+    expect(result.current.hops).toBeNull();
+  });
+
+  it('seeds reachable from passive hops then confirms probe', async () => {
+    probeReticulumPeerMock.mockResolvedValue({ ok: true, hops: 1 });
+    const { result } = renderHook(() =>
+      useReticulumDmPathProbe({
+        enabled: true,
+        destinationHash: 'aabbccddeeff00112233445566778899',
+        passiveHops: 3,
+      }),
+    );
+    expect(result.current.status).toBe('reachable');
+    expect(result.current.hops).toBe(3);
+    await waitFor(() => {
+      expect(result.current.hops).toBe(1);
+    });
+  });
+
+  it('resets to idle when disabled', async () => {
+    probeReticulumPeerMock.mockResolvedValue({ ok: true, hops: 1 });
+    const { result, rerender } = renderHook(
+      ({ enabled }: { enabled: boolean }) =>
+        useReticulumDmPathProbe({
+          enabled,
+          destinationHash: 'aabbccddeeff00112233445566778899',
+        }),
+      { initialProps: { enabled: true } },
+    );
+    await waitFor(() => {
+      expect(result.current.status).toBe('reachable');
+    });
+    rerender({ enabled: false });
+    expect(result.current.status).toBe('idle');
+    expect(result.current.hops).toBeNull();
+  });
+});

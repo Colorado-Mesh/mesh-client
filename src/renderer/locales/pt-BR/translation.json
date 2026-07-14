@@ -547,7 +547,17 @@
     "waitingMessagesSilentDrain": "Buscando mensagens enfileiradas no rádio…",
     "waitingMessagesDrainDeferred": "Sincronização de mensagens pausada enquanto o rádio está ocupado (administração/rastreamento)…",
     "waitingMessagesSerialHint": "A serial USB lida com um comando por vez; as mensagens podem chegar em pequenos lotes.",
-    "waitingMessagesSyncFailed": "Falha ao sincronizar mensagens na fila: {{message}}"
+    "waitingMessagesSyncFailed": "Falha ao sincronizar mensagens na fila: {{message}}",
+    "dmPathChecking": "Verificando caminho...",
+    "dmPathCheckingAria": "Verificando a acessibilidade do caminho de destino",
+    "dmPathCheckingTooltip": "Solicitando um caminho do Reticulum para este destino.",
+    "dmPathReachable": "Caminho acessível",
+    "dmPathReachableHops": "Caminho acessível · {{hops}} salto(s)",
+    "dmPathReachableAria": "O caminho de destino está acessível",
+    "dmPathReachableTooltip": "Um caminho do Reticulum para este destino é conhecido. A entrega direta ainda pode falhar se o par estiver offline.",
+    "dmPathUnreachable": "Nenhum caminho",
+    "dmPathUnreachableAria": "O caminho de destino não está acessível",
+    "dmPathUnreachableTooltip": "Ainda não há caminho do Reticulum para este destino. As mensagens ainda podem ser entregues mais tarde através de um nó de propagação configurado."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

@@ -547,7 +547,17 @@
     "waitingMessagesSilentDrain": "Pobieram wiadomości oczekujące w kolejce w radiu…",
     "waitingMessagesDrainDeferred": "Synchronizacja wiadomości została wstrzymana, gdy radio jest zajęte (administrator/śledzenie)…",
     "waitingMessagesSerialHint": "Port szeregowy USB obsługuje jedno polecenie na raz; wiadomości mogą docierać w małych partiach.",
-    "waitingMessagesSyncFailed": "Nie udało się zsynchronizować wiadomości w kolejce: {{message}}"
+    "waitingMessagesSyncFailed": "Nie udało się zsynchronizować wiadomości w kolejce: {{message}}",
+    "dmPathChecking": "Sprawdzam ścieżkę…",
+    "dmPathCheckingAria": "Sprawdzanie dostępności ścieżki docelowej",
+    "dmPathCheckingTooltip": "Żądanie ścieżki Reticulum do tego miejsca docelowego.",
+    "dmPathReachable": "Ścieżka osiągalna",
+    "dmPathReachableHops": "Ścieżka osiągalna · {{hops}} hop(s)",
+    "dmPathReachableAria": "Ścieżka docelowa jest osiągalna",
+    "dmPathReachableTooltip": "Znana jest ścieżka Reticulum do tego miejsca docelowego. Bezpośrednia dostawa może się nie powieść, jeśli partner jest offline.",
+    "dmPathUnreachable": "Brak ścieżki",
+    "dmPathUnreachableAria": "Ścieżka docelowa jest niedostępna",
+    "dmPathUnreachableTooltip": "Nie ma jeszcze ścieżki Reticulum do tego miejsca docelowego. Komunikaty mogą być nadal dostarczane później za pośrednictwem skonfigurowanego węzła propagacji."
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

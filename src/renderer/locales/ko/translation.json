@@ -547,7 +547,17 @@
     "waitingMessagesSilentDrain": "라디오에 대기 중인 메시지를 가져오는 중…",
     "waitingMessagesDrainDeferred": "라디오가 사용 중인 동안 메시지 동기화가 일시 중지되었습니다(관리/추적)…",
     "waitingMessagesSerialHint": "USB 직렬은 한 번에 하나의 명령을 처리합니다. 메시지는 작은 배치로 도착할 수 있습니다.",
-    "waitingMessagesSyncFailed": "대기 중인 메시지를 동기화하지 못했습니다: {{message}}"
+    "waitingMessagesSyncFailed": "대기 중인 메시지를 동기화하지 못했습니다: {{message}}",
+    "dmPathChecking": "경로 확인 중...",
+    "dmPathCheckingAria": "목적지 경로 도달 가능성 확인",
+    "dmPathCheckingTooltip": "이 목적지로 가는 Reticulum 경로를 요청합니다.",
+    "dmPathReachable": "경로 도달 가능",
+    "dmPathReachableHops": "경로 도달 가능 · {{hops}} 홉",
+    "dmPathReachableAria": "목적지 경로에 도달할 수 있습니다",
+    "dmPathReachableTooltip": "이 목적지로 가는 Reticulum 경로가 알려져 있습니다. 피어가 오프라인인 경우 직접 배달이 실패할 수 있습니다.",
+    "dmPathUnreachable": "경로 없음",
+    "dmPathUnreachableAria": "목적지 경로에 도달할 수 없습니다",
+    "dmPathUnreachableTooltip": "이 목적지로 가는 Reticulum 경로가 아직 없습니다. 메시지는 구성된 전파 노드를 통해 나중에 전달될 수 있습니다."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

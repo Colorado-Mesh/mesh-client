@@ -547,7 +547,17 @@
     "waitingMessagesSilentDrain": "Načítání zpráv ve frontě v rádiu…",
     "waitingMessagesDrainDeferred": "Synchronizace zpráv byla pozastavena, když je rádio zaneprázdněné (správce/sledování)…",
     "waitingMessagesSerialHint": "Sériové rozhraní USB zpracovává jeden příkaz najednou; zprávy mohou dorazit v malých dávkách.",
-    "waitingMessagesSyncFailed": "Synchronizace zpráv ve frontě se nezdařila: {{message}}"
+    "waitingMessagesSyncFailed": "Synchronizace zpráv ve frontě se nezdařila: {{message}}",
+    "dmPathChecking": "Kontroluje se cesta...",
+    "dmPathCheckingAria": "Kontrola dosažitelnosti cílové cesty",
+    "dmPathCheckingTooltip": "Žádost o cestu Reticulum k tomuto cíli.",
+    "dmPathReachable": "Cesta dosažitelná",
+    "dmPathReachableHops": "Cesta dosažitelná · {{hops}} hop(y)",
+    "dmPathReachableAria": "Cílová cesta je dosažitelná",
+    "dmPathReachableTooltip": "Cesta Reticulum k tomuto cíli je známa. Přímé doručení může stále selhat, pokud je partner offline.",
+    "dmPathUnreachable": "Žádná cesta",
+    "dmPathUnreachableAria": "Cílová cesta není dosažitelná",
+    "dmPathUnreachableTooltip": "K tomuto cíli zatím nevede žádná cesta Reticulum. Zprávy mohou být doručeny později prostřednictvím nakonfigurovaného propagačního uzlu."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

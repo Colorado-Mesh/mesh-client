@@ -547,7 +547,17 @@
     "waitingMessagesSilentDrain": "Radyoda sıraya alınan mesajlar getiriliyor…",
     "waitingMessagesDrainDeferred": "Telsiz meşgulken mesaj senkronizasyonu duraklatıldı (yönetici/izleme)…",
     "waitingMessagesSerialHint": "USB seri, aynı anda bir komutu işler; mesajlar küçük gruplar halinde gelebilir.",
-    "waitingMessagesSyncFailed": "Sıraya alınan iletiler senkronize edilemedi: {{message}}"
+    "waitingMessagesSyncFailed": "Sıraya alınan iletiler senkronize edilemedi: {{message}}",
+    "dmPathChecking": "Yol kontrol ediliyor…",
+    "dmPathCheckingAria": "Varış yolu erişilebilirliğini kontrol etme",
+    "dmPathCheckingTooltip": "Bu hedefe bir Reticulum yolu talep ediliyor.",
+    "dmPathReachable": "Ulaşılabilir yol",
+    "dmPathReachableHops": "Erişilebilir yol · {{hops}} atlama noktası(ları)",
+    "dmPathReachableAria": "Varış noktasına ulaşılabiliyor",
+    "dmPathReachableTooltip": "Bu hedefe bir Reticulum yolu bilinmektedir. Akran çevrimdışıysa doğrudan teslimat yine de başarısız olabilir.",
+    "dmPathUnreachable": "Yol yok",
+    "dmPathUnreachableAria": "Varış noktasına ulaşılamıyor",
+    "dmPathUnreachableTooltip": "Bu hedefe henüz Reticulum yolu yok. Mesajlar daha sonra yapılandırılmış bir yayılma düğümü aracılığıyla iletilebilir."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

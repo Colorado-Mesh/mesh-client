@@ -547,7 +547,17 @@
     "waitingMessagesSilentDrain": "正在获取无线电中排队的消息...",
     "waitingMessagesDrainDeferred": "无线电繁忙时消息同步暂停（管理/跟踪）...",
     "waitingMessagesSerialHint": "USB串行一次处理一个命令；消息可能会小批量到达。",
-    "waitingMessagesSyncFailed": "无法同步排队消息：{{message}}"
+    "waitingMessagesSyncFailed": "无法同步排队消息：{{message}}",
+    "dmPathChecking": "正在检查路径…",
+    "dmPathCheckingAria": "正在检查目标路径可达性",
+    "dmPathCheckingTooltip": "正在请求到此目的地的 Reticulum 路径。",
+    "dmPathReachable": "可到达的路径",
+    "dmPathReachableHops": "路径可达· {{hops}}跳",
+    "dmPathReachableAria": "目标路径可达",
+    "dmPathReachableTooltip": "已知到此目的地的 Reticulum 路径。如果对等节点离线，直接投递仍可能失败。",
+    "dmPathUnreachable": "无路径",
+    "dmPathUnreachableAria": "无法到达目标路径",
+    "dmPathUnreachableTooltip": "尚无到此目的地的 Reticulum 路径。消息仍可能稍后通过已配置的传播节点送达。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

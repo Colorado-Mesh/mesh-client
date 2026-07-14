@@ -547,7 +547,17 @@
     "waitingMessagesSilentDrain": "Mengambil pesan yang antri di radio…",
     "waitingMessagesDrainDeferred": "Sinkronisasi pesan dijeda saat radio sedang sibuk (admin/pelacakan)…",
     "waitingMessagesSerialHint": "Serial USB menangani satu perintah dalam satu waktu; pesan mungkin tiba dalam jumlah kecil.",
-    "waitingMessagesSyncFailed": "Gagal menyinkronkan pesan antrean: {{message}}"
+    "waitingMessagesSyncFailed": "Gagal menyinkronkan pesan antrean: {{message}}",
+    "dmPathChecking": "Memeriksa jalur…",
+    "dmPathCheckingAria": "Memeriksa keterjangkauan jalur tujuan",
+    "dmPathCheckingTooltip": "Meminta jalur Reticulum ke tujuan ini.",
+    "dmPathReachable": "Jalur dapat dijangkau",
+    "dmPathReachableHops": "Jalur dapat dijangkau · {{hops}} hop",
+    "dmPathReachableAria": "Jalur tujuan dapat dijangkau",
+    "dmPathReachableTooltip": "Jalur Reticulum ke tujuan ini diketahui. Pengiriman langsung mungkin masih gagal jika rekan sedang offline.",
+    "dmPathUnreachable": "Tidak ada jalur",
+    "dmPathUnreachableAria": "Jalur tujuan tidak dapat dijangkau",
+    "dmPathUnreachableTooltip": "Belum ada jalur Reticulum ke tujuan ini. Pesan mungkin masih dikirimkan nanti melalui simpul propagasi yang dikonfigurasi."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

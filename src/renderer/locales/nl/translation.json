@@ -547,7 +547,17 @@
     "waitingMessagesSilentDrain": "Berichten ophalen die in de wachtrij staan op de radio…",
     "waitingMessagesDrainDeferred": "Berichtensynchronisatie gepauzeerd terwijl de radio bezet is (beheer/trace)…",
     "waitingMessagesSerialHint": "USB-serieel verwerkt één opdracht tegelijk; berichten kunnen in kleine batches aankomen.",
-    "waitingMessagesSyncFailed": "Kan berichten in de wachtrij niet synchroniseren: {{message}}"
+    "waitingMessagesSyncFailed": "Kan berichten in de wachtrij niet synchroniseren: {{message}}",
+    "dmPathChecking": "Pad controleren...",
+    "dmPathCheckingAria": "Bereikbaarheid van bestemmingspad controleren",
+    "dmPathCheckingTooltip": "Een Reticulum-pad naar deze bestemming aanvragen.",
+    "dmPathReachable": "Pad bereikbaar",
+    "dmPathReachableHops": "Bereikbaar pad · {{hops}} hop(s)",
+    "dmPathReachableAria": "Bestemmingspad is bereikbaar",
+    "dmPathReachableTooltip": "Er is een Reticulum-pad naar deze bestemming bekend. Directe levering kan nog steeds mislukken als de peer offline is.",
+    "dmPathUnreachable": "Geen pad",
+    "dmPathUnreachableAria": "Bestemmingspad is niet bereikbaar",
+    "dmPathUnreachableTooltip": "Nog geen Reticulum-pad naar deze bestemming. Berichten kunnen later nog steeds worden afgeleverd via een geconfigureerd propagatieknooppunt."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

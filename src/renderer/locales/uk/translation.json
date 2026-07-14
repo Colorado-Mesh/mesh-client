@@ -547,7 +547,17 @@
     "waitingMessagesSilentDrain": "Отримання повідомлень із черги на радіо…",
     "waitingMessagesDrainDeferred": "Синхронізацію повідомлень призупинено, коли радіостанція зайнята (адмін/трасування)…",
     "waitingMessagesSerialHint": "Послідовний USB обробляє одну команду за раз; повідомлення можуть надходити невеликими партіями.",
-    "waitingMessagesSyncFailed": "Не вдалося синхронізувати повідомлення в черзі: {{message}}"
+    "waitingMessagesSyncFailed": "Не вдалося синхронізувати повідомлення в черзі: {{message}}",
+    "dmPathChecking": "Перевірка шляху…",
+    "dmPathCheckingAria": "Перевірка досяжності шляху призначення",
+    "dmPathCheckingTooltip": "Запит шляху Reticulum до цього пункту призначення.",
+    "dmPathReachable": "Шлях досяжний",
+    "dmPathReachableHops": "Шлях досяжний · {{hops}} Hop(s)",
+    "dmPathReachableAria": "Шлях до місця призначення доступний",
+    "dmPathReachableTooltip": "Шлях Reticulum до цього пункту призначення відомий. Пряма доставка може завершитися невдало, якщо вузол не в мережі.",
+    "dmPathUnreachable": "Немає шляху",
+    "dmPathUnreachableAria": "Шлях до місця призначення недоступний",
+    "dmPathUnreachableTooltip": "Шляху Reticulum до цього пункту призначення ще немає. Повідомлення все ще можуть доставлятися пізніше через налаштований вузол поширення."
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

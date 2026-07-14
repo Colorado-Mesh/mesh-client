@@ -547,7 +547,17 @@
     "waitingMessagesSilentDrain": "Nachrichten aus der Warteschlange im Radio werden abgerufen …",
     "waitingMessagesDrainDeferred": "Nachrichtensynchronisierung angehalten, während das Funkgerät beschäftigt ist (Administrator/Trace)…",
     "waitingMessagesSerialHint": "USB seriell verarbeitet jeweils einen Befehl; Nachrichten können in kleinen Mengen eingehen.",
-    "waitingMessagesSyncFailed": "Nachrichten in der Warteschlange konnten nicht synchronisiert werden: {{message}}"
+    "waitingMessagesSyncFailed": "Nachrichten in der Warteschlange konnten nicht synchronisiert werden: {{message}}",
+    "dmPathChecking": "Pfad wird überprüft...",
+    "dmPathCheckingAria": "Überprüfung der Erreichbarkeit des Zielpfads",
+    "dmPathCheckingTooltip": "Einen Reticulum-Pfad zu diesem Ziel anfordern.",
+    "dmPathReachable": "Weg erreichbar",
+    "dmPathReachableHops": "Weg erreichbar · {{hops}} Hop(s)",
+    "dmPathReachableAria": "Zielpfad ist erreichbar",
+    "dmPathReachableTooltip": "Ein Reticulum-Pfad zu diesem Ziel ist bekannt. Die direkte Zustellung kann immer noch fehlschlagen, wenn der Peer offline ist.",
+    "dmPathUnreachable": "Kein Pfad",
+    "dmPathUnreachableAria": "Zielpfad ist nicht erreichbar",
+    "dmPathUnreachableTooltip": "Noch kein Reticulum-Pfad zu diesem Ziel. Nachrichten können später noch über einen konfigurierten Ausbreitungsknoten zugestellt werden."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

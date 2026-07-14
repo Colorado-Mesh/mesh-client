@@ -547,7 +547,17 @@
     "waitingMessagesSilentDrain": "Recupero dei messaggi in coda alla radio…",
     "waitingMessagesDrainDeferred": "Sincronizzazione dei messaggi in pausa mentre la radio è occupata (amministrazione/traccia)...",
     "waitingMessagesSerialHint": "La seriale USB gestisce un comando alla volta; i messaggi possono arrivare in piccoli lotti.",
-    "waitingMessagesSyncFailed": "Impossibile sincronizzare i messaggi in coda: {{message}}"
+    "waitingMessagesSyncFailed": "Impossibile sincronizzare i messaggi in coda: {{message}}",
+    "dmPathChecking": "Verifica percorso in corso...",
+    "dmPathCheckingAria": "Verifica raggiungibilità percorso di destinazione",
+    "dmPathCheckingTooltip": "Richiesta di un percorso Reticulum per questa destinazione.",
+    "dmPathReachable": "Percorso raggiungibile",
+    "dmPathReachableHops": "Percorso raggiungibile · {{hops}} hop(s)",
+    "dmPathReachableAria": "Il percorso di destinazione è raggiungibile",
+    "dmPathReachableTooltip": "È noto un percorso Reticulum verso questa destinazione. La consegna diretta potrebbe comunque non riuscire se il peer è offline.",
+    "dmPathUnreachable": "Nessun percorso",
+    "dmPathUnreachableAria": "Il percorso di destinazione non è raggiungibile",
+    "dmPathUnreachableTooltip": "Ancora nessun percorso Reticulum per questa destinazione. I messaggi possono ancora essere consegnati in seguito tramite un nodo di propagazione configurato."
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

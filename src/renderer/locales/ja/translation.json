@@ -547,7 +547,17 @@
     "waitingMessagesSilentDrain": "無線のキューにあるメッセージを取得しています…",
     "waitingMessagesDrainDeferred": "無線がビジー状態 (管理/トレース) の間、メッセージの同期が一時停止されました…",
     "waitingMessagesSerialHint": "USB シリアルは一度に 1 つのコマンドを処理します。メッセージは小さなバッチで届く場合があります。",
-    "waitingMessagesSyncFailed": "キューに入れられたメッセージを同期できませんでした: {{message}}"
+    "waitingMessagesSyncFailed": "キューに入れられたメッセージを同期できませんでした: {{message}}",
+    "dmPathChecking": "パスを確認しています…",
+    "dmPathCheckingAria": "宛先パスの到達可能性を確認しています",
+    "dmPathCheckingTooltip": "この宛先への Reticulum パスを要求しています。",
+    "dmPathReachable": "到達可能なパス",
+    "dmPathReachableHops": "到達可能なパス· {{hops}}ホップ",
+    "dmPathReachableAria": "宛先パスに到達可能です",
+    "dmPathReachableTooltip": "この宛先への Reticulum パスが判明しています。ピアがオフラインの場合、直接配信は失敗することがあります。",
+    "dmPathUnreachable": "パスがありません",
+    "dmPathUnreachableAria": "宛先パスに到達できません",
+    "dmPathUnreachableTooltip": "この宛先への Reticulum パスはまだありません。設定済みの伝播ノード経由で後から配信されることがあります。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

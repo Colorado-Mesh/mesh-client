@@ -45,7 +45,11 @@ import {
   MeshtasticMqttPathIcon,
   MeshtasticRfPathIcon,
 } from '@/renderer/lib/meshtasticSourceIcons';
-import { normalizeReticulumNodeId } from '@/renderer/lib/reticulum/destHash';
+import {
+  normalizeReticulumNodeId,
+  registerReticulumDestinationHash,
+  resolveReticulumDestinationHash,
+} from '@/renderer/lib/reticulum/destHash';
 import { parseReticulumAttachmentPayload } from '@/renderer/lib/reticulum/parseReticulumAttachmentPayload';
 import { reticulumMessageMatchesDmPeer } from '@/renderer/lib/reticulum/reticulumChatDmFilter';
 import {
@@ -67,6 +71,7 @@ import type { OutboxEntry } from '../../shared/electron-api.types';
 import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreamble';
 import { useChatOutbox } from '../hooks/useChatOutbox';
 import { useNowMs } from '../hooks/useNowMs';
+import { useReticulumDmPathProbe } from '../hooks/useReticulumDmPathProbe';
 import { playMessageNotification } from '../lib/chatNotifications';
 import {
   dismissedDmTabsStorageKey,
@@ -127,12 +132,14 @@ import {
 } from '../lib/storeRecordAdapters';
 import type { ChatMessage, MeshNode, MeshProtocol } from '../lib/types';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
+import { reticulumHashForNodeId, useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useReticulumPropagationStore } from '../stores/reticulumPropagationStore';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { ReticulumAttachmentLine } from './ReticulumAttachmentLine';
+import { ReticulumDmPathReachabilityBadge } from './ReticulumDmPathReachabilityBadge';
 import { ReticulumMessageStatusBadge } from './ReticulumMessageStatusBadge';
 import { ReticulumPropagationNotice } from './ReticulumPropagationNotice';
 import { useToast } from './Toast';
@@ -196,7 +203,7 @@ function DmPeerInfoBar({ dmNode, nowMs, t }: { dmNode: MeshNode; nowMs: number; 
   if (parts.length === 0) return null;
   return (
     <div
-      className="mb-2 flex items-center gap-1.5 rounded-lg bg-slate-800/60 px-3 py-1.5 text-xs text-gray-400"
+      className="flex items-center gap-1.5 rounded-lg bg-slate-800/60 px-3 py-1.5 text-xs text-gray-400"
       role="status"
       aria-label={t('chatPanel.dmPeerInfoAria')}
     >
@@ -1591,6 +1598,42 @@ function ChatPanel({
   const nowMs = useNowMs(isDmMode);
   const dmNodeName = activeDmNode != null ? getDmLabel(activeDmNode) : '';
 
+  const reticulumDmDestinationHash = useMemo(() => {
+    if (protocol !== 'reticulum' || activeDmNode == null) return null;
+    const fromNode = nodes.get(activeDmNode)?.reticulum_destination_hash?.trim();
+    if (fromNode) {
+      registerReticulumDestinationHash(activeDmNode, fromNode);
+      return fromNode;
+    }
+    return (
+      reticulumHashForNodeId(activeDmNode) ?? resolveReticulumDestinationHash(activeDmNode) ?? null
+    );
+  }, [activeDmNode, nodes, protocol]);
+
+  const reticulumDmPeerHops = useReticulumPeerStore((s) => {
+    if (!reticulumDmDestinationHash) return null;
+    const key = reticulumDmDestinationHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+    const peer = s.contacts.get(key) ?? s.peers.get(key);
+    return peer?.hops ?? null;
+  });
+
+  const reticulumDmPassiveHops = useMemo(() => {
+    if (reticulumDmPeerHops != null) return reticulumDmPeerHops;
+    if (activeDmNode == null) return null;
+    return nodes.get(activeDmNode)?.hops_away ?? null;
+  }, [activeDmNode, nodes, reticulumDmPeerHops]);
+
+  const reticulumDmPathProbe = useReticulumDmPathProbe({
+    enabled:
+      protocol === 'reticulum' &&
+      dmOnlyChat &&
+      reticulumStackLive &&
+      isDmMode &&
+      reticulumDmDestinationHash != null,
+    destinationHash: reticulumDmDestinationHash,
+    passiveHops: reticulumDmPassiveHops,
+  });
+
   // Jump to date — scroll to first message with matching day key
   const handleJumpToDate = useCallback(
     (dateStr: string) => {
@@ -2058,8 +2101,20 @@ function ChatPanel({
         activeDmNode != null &&
         (() => {
           const dmNode = nodes.get(activeDmNode);
-          if (!dmNode) return null;
-          return <DmPeerInfoBar dmNode={dmNode} nowMs={nowMs} t={t} />;
+          const pathBadge =
+            protocol === 'reticulum' && dmOnlyChat && reticulumDmPathProbe.status !== 'idle' ? (
+              <ReticulumDmPathReachabilityBadge
+                status={reticulumDmPathProbe.status}
+                hops={reticulumDmPathProbe.hops}
+              />
+            ) : null;
+          if (!pathBadge && !dmNode) return null;
+          return (
+            <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
+              {pathBadge}
+              {dmNode ? <DmPeerInfoBar dmNode={dmNode} nowMs={nowMs} t={t} /> : null}
+            </div>
+          );
         })()}
 
       {/* Starred messages view */}
