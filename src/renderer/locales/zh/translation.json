@@ -560,7 +560,11 @@
     "dmPathUnreachableTooltip": "尚无到此目的地的 Reticulum 路径。消息仍可能稍后通过已配置的传播节点送达。",
     "dmPathRequestPathAria": "请求到此目的地的 Reticulum 路径",
     "dmPathProbeAria": "探测此目的地的 Reticulum 路径可达性",
-    "microphonePermissionDenied": "麦克风访问被拒绝。在系统隐私设置中为 Mesh-client 启用麦克风权限，然后重试。"
+    "microphonePermissionDenied": "麦克风访问被拒绝。在系统隐私设置中为 Mesh-client 启用麦克风权限，然后重试。",
+    "receivedViaBle": "通过蓝牙接收",
+    "receivedViaMultiple": "通过{{vias}}接收",
+    "sentViaBle": "通过蓝牙发送",
+    "sentViaMultiple": "已通过{{vias}}发送"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

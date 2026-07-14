@@ -560,7 +560,11 @@
     "dmPathUnreachableTooltip": "Ancora nessun percorso Reticulum per questa destinazione. I messaggi possono ancora essere consegnati in seguito tramite un nodo di propagazione configurato.",
     "dmPathRequestPathAria": "Richiedi percorso Reticulum per questa destinazione",
     "dmPathProbeAria": "Verifica raggiungibilità del percorso Reticulum per questa destinazione",
-    "microphonePermissionDenied": "Accesso al microfono negato. Abilita l'autorizzazione del microfono per Mesh-client nelle impostazioni di privacy del sistema, quindi riprova."
+    "microphonePermissionDenied": "Accesso al microfono negato. Abilita l'autorizzazione del microfono per Mesh-client nelle impostazioni di privacy del sistema, quindi riprova.",
+    "receivedViaBle": "Ricevuto via Bluetooth",
+    "receivedViaMultiple": "Ricevuto tramite {{vias}}",
+    "sentViaBle": "Inviato via Bluetooth",
+    "sentViaMultiple": "Inviato tramite {{vias}}"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

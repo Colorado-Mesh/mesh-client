@@ -69,6 +69,42 @@ pub fn emit_wire_packet_event(event_tx: &broadcast::Sender<String>, row: &WirePa
     let _ = event_tx.send(msg.to_string());
 }
 
+/// Collect PacketTap Tx interface names for LXMF egress evidence.
+/// Prefer destination-matched rows; when none match, include pathless Tx in the settle window.
+pub fn collect_tx_interface_names_for_egress(
+    rows: &[WirePacketRow],
+    since_ts_ms: u64,
+    destination_hashes: &[&str],
+) -> Vec<String> {
+    let dest_set: std::collections::HashSet<String> = destination_hashes
+        .iter()
+        .map(|h| h.to_ascii_lowercase())
+        .collect();
+    let mut matched = Vec::new();
+    let mut pathless = Vec::new();
+    for row in rows {
+        if row.direction != "tx" || row.ts < since_ts_ms {
+            continue;
+        }
+        let name = row.interface_name.trim();
+        if name.is_empty() {
+            continue;
+        }
+        match row.destination_hash.as_deref() {
+            Some(dest) if dest_set.contains(&dest.to_ascii_lowercase()) => {
+                matched.push(name.to_string());
+            }
+            None => pathless.push(name.to_string()),
+            _ => {}
+        }
+    }
+    if !matched.is_empty() {
+        matched
+    } else {
+        pathless
+    }
+}
+
 #[cfg(feature = "rns-stack")]
 pub fn wire_packet_from_tap(evt: &rns_transport::messages::PacketTapEvent) -> WirePacketRow {
     use rns_transport::messages::PacketTapDirection;
@@ -98,6 +134,46 @@ pub fn wire_packet_from_tap(evt: &rns_transport::messages::PacketTapEvent) -> Wi
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn tx_row(ts: u64, iface: &str, dest: Option<&str>) -> WirePacketRow {
+        WirePacketRow {
+            ts,
+            direction: "tx".into(),
+            interface_id: 1,
+            interface_name: iface.into(),
+            raw_hex: "aa".into(),
+            rssi: None,
+            snr: None,
+            q: None,
+            packet_type: None,
+            header_type: None,
+            destination_hash: dest.map(|d| d.into()),
+            transport_type: None,
+            context: None,
+        }
+    }
+
+    #[test]
+    fn collect_tx_prefers_destination_matched_rows() {
+        let rows = vec![
+            tx_row(10, "Heltec", Some("abcd")),
+            tx_row(11, "TCP Hub", None),
+            tx_row(12, "RNS Testnet", Some("abcd")),
+        ];
+        let names = collect_tx_interface_names_for_egress(&rows, 10, &["abcd"]);
+        assert_eq!(names, vec!["Heltec".to_string(), "RNS Testnet".to_string()]);
+    }
+
+    #[test]
+    fn collect_tx_falls_back_to_pathless_when_no_dest_match() {
+        let rows = vec![
+            tx_row(10, "Heltec", None),
+            tx_row(11, "RNS Testnet", None),
+            tx_row(12, "Other", Some("ffff")),
+        ];
+        let names = collect_tx_interface_names_for_egress(&rows, 10, &["abcd"]);
+        assert_eq!(names, vec!["Heltec".to_string(), "RNS Testnet".to_string()]);
+    }
 
     #[test]
     fn ring_buffer_drops_oldest_at_cap() {

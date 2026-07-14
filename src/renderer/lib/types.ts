@@ -382,7 +382,18 @@ export interface ChatMessage {
   // Direct message destination (undefined = broadcast)
   to?: number;
   // Which transport(s) delivered this incoming message
-  receivedVia?: 'rf' | 'mqtt' | 'both' | 'tcp' | 'network';
+  /**
+   * Which transport(s) delivered this message.
+   * Reticulum multi-egress may use `+`-joined atoms (e.g. `rf+tcp`); Meshtastic hybrid RF+MQTT uses `both`.
+   */
+  receivedVia?:
+    | 'rf'
+    | 'ble'
+    | 'mqtt'
+    | 'both'
+    | 'tcp'
+    | 'network'
+    | `${'rf' | 'ble' | 'tcp' | 'network'}+${string}`;
   // true for backlog messages (e.g. MeshCore MsgWaiting catch-up); excluded from unread counter
   isHistory?: boolean;
   /** Full raw line from device/MQTT for dedupe only (not persisted); avoids collapsing same-second identical payloads. */

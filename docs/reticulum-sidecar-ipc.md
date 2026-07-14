@@ -134,7 +134,9 @@ Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers
 - **`announce.received`:** emitted for every LXMF identity announce / path response the sidecar observes (named or nameless). Payload: `{ destination_hash, display_name?, hops }`. Display names update the peer-label cache only — announces do **not** auto-create LXMF contacts.
 - **`peers_updated`:** also emitted when the live path table **gains** new destination hashes (maintenance tick). Payload may include `{ added: string[], count }` (added capped). Hop/timestamp-only churn does not emit.
 
-`lxmf_message` payload fields include `sender_hash`, `text`, `timestamp`, `message_hash`, optional `direction` (`inbound` / `outbound`), optional `delivery_status` (`sending` on optimistic outbound rows), and transport markers `received_via` / `sent_via` (`rf`, `tcp`, or `network`).
+`lxmf_message` payload fields include `sender_hash`, `text`, `timestamp`, `message_hash`, optional `direction` (`inbound` / `outbound`), optional `delivery_status` (`sending` on optimistic outbound rows), and transport markers `received_via` / `sent_via`. Outbound `sent_via` is **path-table / PacketTap evidence**, not “any local RNode enabled”: atomic values are `rf`, `ble`, `tcp`, or `network`; multi-egress observes join with `+` (e.g. `rf+tcp`, `ble+network`). Never use Meshtastic-style `both` for Reticulum.
+
+`lxmf_outbound_status` payload: `message_hash`, `status` (`delivered` / `failed` / `sending`), optional `delivery_method`, optional `sent_via` (egress evidence upgrade before Completes).
 
 ## Electron bridge
 

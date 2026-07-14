@@ -544,6 +544,34 @@ describe('ChatPanel accessibility', () => {
     expect(screen.getByText(/TCP/)).toBeInTheDocument();
   });
 
+  it('shows explicit multi-egress Reticulum outbound badge (RF+TCP)', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="reticulum"
+          dmOnlyChat
+          isConnected
+          showLxmfDeliveryStatus
+          myNodeNum={42}
+          messages={[
+            {
+              sender_id: 42,
+              sender_name: 'Self',
+              payload: 'Outbound dual',
+              channel: 0,
+              timestamp: Date.now(),
+              status: 'sending',
+              receivedVia: 'rf+tcp',
+              to: 2,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByText(/RF\+TCP/)).toBeInTheDocument();
+  });
+
   it('surfaces incoming DM conversations and renders them in DM view', async () => {
     const user = userEvent.setup();
     render(

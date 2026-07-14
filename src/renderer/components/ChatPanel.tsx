@@ -46,6 +46,10 @@ import {
   MeshtasticRfPathIcon,
 } from '@/renderer/lib/meshtasticSourceIcons';
 import {
+  formatReticulumViaBadgeLabel,
+  parseReticulumViaAtoms,
+} from '@/renderer/lib/reticulum/classifyReticulumVia';
+import {
   normalizeReticulumNodeId,
   registerReticulumDestinationHash,
   resolveReticulumDestinationHash,
@@ -278,12 +282,19 @@ function OutboxBubble({
   );
 }
 
-function TransportBadge({ via }: { via: NonNullable<ChatMessage['receivedVia']> }) {
+function TransportBadge({
+  via,
+  protocol,
+}: {
+  via: NonNullable<ChatMessage['receivedVia']>;
+  protocol?: string;
+}) {
   const { t } = useTranslation();
   const rfLabel = t('chatPanel.receivedViaRf');
   const mqttLabel = t('chatPanel.receivedViaMqtt');
   const tcpLabel = t('chatPanel.receivedViaTcp');
   const networkLabel = t('chatPanel.receivedViaNetwork');
+  const bleLabel = t('chatPanel.receivedViaBle');
   const rfIcon = (
     <span role="img" title={rfLabel} aria-label={rfLabel}>
       <MeshtasticRfPathIcon />
@@ -295,9 +306,37 @@ function TransportBadge({ via }: { via: NonNullable<ChatMessage['receivedVia']> 
     </span>
   );
 
+  // Reticulum: explicit atom / multi-egress text labels (never Meshtastic RF+MQTT "both").
+  if (protocol === 'reticulum' && via !== 'mqtt' && via !== 'both') {
+    const viasLabel = formatReticulumViaBadgeLabel(via);
+    const atoms = parseReticulumViaAtoms(via);
+    const label =
+      atoms.length > 1
+        ? t('chatPanel.receivedViaMultiple', { vias: viasLabel })
+        : atoms[0] === 'rf'
+          ? rfLabel
+          : atoms[0] === 'ble'
+            ? bleLabel
+            : atoms[0] === 'tcp'
+              ? tcpLabel
+              : networkLabel;
+    return (
+      <span className="text-[10px] text-sky-400" title={label} aria-label={label}>
+        {viasLabel}
+      </span>
+    );
+  }
+
   if (via === 'both') {
     const bothLabel = t('chatPanel.receivedViaRfAndMqtt');
     return <MeshtasticHybridPathIcons title={bothLabel} ariaLabel={bothLabel} />;
+  }
+  if (via === 'ble') {
+    return (
+      <span className="text-[10px] text-sky-400" title={bleLabel} aria-label={bleLabel}>
+        BLE
+      </span>
+    );
   }
   if (via === 'tcp') {
     return (
@@ -314,11 +353,6 @@ function TransportBadge({ via }: { via: NonNullable<ChatMessage['receivedVia']> 
     );
   }
   return via === 'rf' ? rfIcon : mqttIcon;
-}
-
-function reticulumOutboundVia(via: ChatMessage['receivedVia']): 'rf' | 'tcp' | 'network' {
-  if (via === 'rf' || via === 'tcp' || via === 'network') return via;
-  return 'network';
 }
 
 function StoreForwardBadge() {
@@ -2546,7 +2580,9 @@ function ChatPanel({
                                       </span>
                                     )}
                                   {msg.viaStoreForward && <StoreForwardBadge />}
-                                  {msg.receivedVia && <TransportBadge via={msg.receivedVia} />}
+                                  {msg.receivedVia && (
+                                    <TransportBadge via={msg.receivedVia} protocol={protocol} />
+                                  )}
                                 </div>
                               )}
 
@@ -2582,7 +2618,7 @@ function ChatPanel({
                                         ? msg.status
                                         : 'failed'
                                     }
-                                    via={reticulumOutboundVia(msg.receivedVia)}
+                                    via={msg.receivedVia}
                                     deliveryMethod={msg.reticulumDeliveryMethod}
                                     error={msg.error}
                                   />

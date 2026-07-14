@@ -33,15 +33,21 @@ use super::nomad_file::nomad_file_name_from_path;
 use super::nomad_link_errors::map_nomad_link_error;
 use super::nomad_request_payload::nomad_page_request_payload;
 use super::nomad_timeouts;
-use super::packet_log::{emit_wire_packet_event, wire_packet_from_tap, PacketLogBuffer};
+use super::packet_log::{
+    collect_tx_interface_names_for_egress, emit_wire_packet_event, wire_packet_from_tap,
+    PacketLogBuffer,
+};
 use super::persistence::PersistedState;
 use super::propagation_bridge::PropagationBridge;
 use super::types::{InterfaceRow, LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, PeerRow, ContactRow};
 use super::via::{
-    classify_interface, merge_live_interfaces_with_config, resolve_outbound_sent_via_with_primary,
-    resolve_peer_sent_via,
+    classify_interface, classify_path_interface_name, merge_live_interfaces_with_config,
+    merge_observed_egress_vias, resolve_lxmf_sent_via,
 };
 use lxmf_outbound::LxmfOutboundDriver;
+
+/// Settle window for PacketTap Tx correlation after LXMF enqueue.
+const LXMF_EGRESS_TAP_SETTLE_MS: u64 = 1500;
 
 /// Cap blocking transport control queries so HTTP handlers return cached state
 /// before the Electron IPC proxy GET timeout (10s default).
@@ -71,6 +77,7 @@ pub struct LiveBridge {
     propagation: Arc<PropagationBridge>,
     sync_cancel: Arc<std::sync::atomic::AtomicBool>,
     event_tx: broadcast::Sender<String>,
+    packet_log: Arc<PacketLogBuffer>,
     /// Serialize Nomad Link queries — transport actor is single-threaded and
     /// overlapping page/file fetches contend with path/pubkey discovery.
     nomad_link_lock: Arc<tokio::sync::Mutex<()>>,
@@ -79,15 +86,83 @@ pub struct LiveBridge {
 }
 
 impl LiveBridge {
-    fn resolve_egress_via_for_interfaces(&self, ifaces: &[InterfaceRow]) -> &'static str {
+    fn primary_local_serial_id(&self) -> Option<String> {
         let state = PersistedState::load(&self.config_dir, &self.storage_dir);
         let config_ifaces =
             config::interfaces_from_config_dir(&self.config_dir).unwrap_or_default();
-        let effective = local_rnode_primary::resolve_effective_primary_local_serial_interface_id(
+        local_rnode_primary::resolve_effective_primary_local_serial_interface_id(
             &config_ifaces,
             state.primary_local_serial_interface_id.as_deref(),
-        );
-        resolve_outbound_sent_via_with_primary(ifaces, effective.as_deref())
+        )
+    }
+
+    fn path_interface_for_hash(&self, destination_hash: &str) -> Option<String> {
+        self.peer_via_cache
+            .lock()
+            .ok()
+            .and_then(|cache| cache.get(destination_hash).cloned())
+            .filter(|name| !name.is_empty())
+    }
+
+    fn resolve_lxmf_egress_via(
+        &self,
+        ifaces: &[InterfaceRow],
+        path_hash: &str,
+        delivery_method: DeliveryMethod,
+        preferred_pn_hash: Option<&str>,
+    ) -> String {
+        let path_iface = match delivery_method {
+            DeliveryMethod::Propagated => preferred_pn_hash
+                .and_then(|pn| self.path_interface_for_hash(pn))
+                .or_else(|| self.path_interface_for_hash(path_hash)),
+            _ => self.path_interface_for_hash(path_hash),
+        };
+        resolve_lxmf_sent_via(
+            path_iface.as_deref(),
+            ifaces,
+            self.primary_local_serial_id().as_deref(),
+        )
+    }
+
+    fn schedule_egress_tap_upgrade(
+        &self,
+        message_hash: String,
+        to_hash: String,
+        preferred_pn_hash: Option<String>,
+        initial_via: String,
+        interfaces: Vec<InterfaceRow>,
+        since_ts_ms: u64,
+    ) {
+        let packet_log = self.packet_log.clone();
+        let event_tx = self.event_tx.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(LXMF_EGRESS_TAP_SETTLE_MS)).await;
+            let rows = packet_log.snapshot(256);
+            let mut dests: Vec<&str> = vec![to_hash.as_str()];
+            if let Some(ref pn) = preferred_pn_hash {
+                dests.push(pn.as_str());
+            }
+            let iface_names = collect_tx_interface_names_for_egress(&rows, since_ts_ms, &dests);
+            if iface_names.is_empty() {
+                return;
+            }
+            let observed: Vec<&str> = iface_names
+                .iter()
+                .map(|name| classify_path_interface_name(name, &interfaces))
+                .collect();
+            let mut atoms: Vec<&str> = initial_via.split('+').filter(|p| !p.is_empty()).collect();
+            atoms.extend(observed.iter().copied());
+            let merged = merge_observed_egress_vias(atoms);
+            if merged == initial_via {
+                return;
+            }
+            lxmf_outbound::emit_outbound_egress_via(
+                &event_tx,
+                &message_hash,
+                Some(&to_hash),
+                &merged,
+            );
+        });
     }
 }
 
@@ -280,6 +355,7 @@ impl LiveBridge {
             )?),
             sync_cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             event_tx: event_tx.clone(),
+            packet_log,
             nomad_link_lock: Arc::new(tokio::sync::Mutex::new(())),
             #[cfg(feature = "rns-ble")]
             ble_peer_state: Arc::new(tokio::sync::Mutex::new(BlePeerRuntimeState {
@@ -1075,10 +1151,13 @@ impl LiveBridge {
             })
             .unwrap_or((false, false));
 
-        let preferred_pn_set = {
+        let preferred_pn_hash = {
             let router = self.router.lock().await;
-            router.outbound_propagation_node.is_some()
+            router
+                .outbound_propagation_node
+                .map(hex::encode)
         };
+        let preferred_pn_set = preferred_pn_hash.is_some();
 
         // Prefer Direct when a path can be discovered — do not immediately park on
         // the preferred PN just because the local path table was empty at click time.
@@ -1113,17 +1192,18 @@ impl LiveBridge {
             DeliveryMethod::Paper => "paper",
         };
 
-        let egress_via = match self.fetch_interfaces().await {
-            Ok(ifaces) if !ifaces.is_empty() => self.resolve_egress_via_for_interfaces(&ifaces),
-            _ => {
-                let peer_iface = self
-                    .peer_via_cache
-                    .lock()
-                    .ok()
-                    .and_then(|cache| cache.get(&req.destination_hash).cloned());
-                resolve_peer_sent_via(peer_iface.as_deref())
-            }
-        };
+        let ifaces = self.fetch_interfaces().await.unwrap_or_default();
+        let egress_via = self.resolve_lxmf_egress_via(
+            &ifaces,
+            &req.destination_hash,
+            delivery_method,
+            preferred_pn_hash.as_deref(),
+        );
+
+        let send_started_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
 
         let (msg, message_hash_hex) = self.prepare_signed_outbound_lxmf(
             dest,
@@ -1161,6 +1241,15 @@ impl LiveBridge {
             driver.process_tick(&mut router, &self.event_tx);
         }
 
+        self.schedule_egress_tap_upgrade(
+            message_hash_hex.clone(),
+            req.destination_hash.clone(),
+            preferred_pn_hash,
+            egress_via.clone(),
+            ifaces,
+            send_started_ms,
+        );
+
         Ok(serde_json::json!({
             "ok": true,
             "destination_hash": req.destination_hash,
@@ -1195,19 +1284,20 @@ impl LiveBridge {
             .map(|d| d.has_path_to(&req.destination_hash))
             .unwrap_or(false);
 
+        let preferred_pn_hash = {
+            let router = self.router.lock().await;
+            router.outbound_propagation_node.map(hex::encode)
+        };
         let delivery_method = if has_path {
             DeliveryMethod::Direct
+        } else if preferred_pn_hash.is_some() {
+            DeliveryMethod::Propagated
         } else {
-            let router = self.router.lock().await;
-            if router.outbound_propagation_node.is_some() {
-                DeliveryMethod::Propagated
-            } else {
-                return Ok(serde_json::json!({
-                    "ok": false,
-                    "error": "no_propagation_node",
-                    "destination_hash": req.destination_hash,
-                }));
-            }
+            return Ok(serde_json::json!({
+                "ok": false,
+                "error": "no_propagation_node",
+                "destination_hash": req.destination_hash,
+            }));
         };
         let delivery_method_str = match delivery_method {
             DeliveryMethod::Direct => "direct",
@@ -1216,17 +1306,17 @@ impl LiveBridge {
             DeliveryMethod::Paper => "paper",
         };
 
-        let egress_via = match self.fetch_interfaces().await {
-            Ok(ifaces) if !ifaces.is_empty() => self.resolve_egress_via_for_interfaces(&ifaces),
-            _ => {
-                let peer_iface = self
-                    .peer_via_cache
-                    .lock()
-                    .ok()
-                    .and_then(|cache| cache.get(&req.destination_hash).cloned());
-                resolve_peer_sent_via(peer_iface.as_deref())
-            }
-        };
+        let ifaces = self.fetch_interfaces().await.unwrap_or_default();
+        let egress_via = self.resolve_lxmf_egress_via(
+            &ifaces,
+            &req.destination_hash,
+            delivery_method,
+            preferred_pn_hash.as_deref(),
+        );
+        let send_started_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
 
         let text = format!("[file:{}:{}]", req.file_name, req.mime_type);
         let attachment_msgpack =
@@ -1274,7 +1364,7 @@ impl LiveBridge {
             "sent_via": egress_via,
             "received_via": egress_via,
             "delivery_status": "sending",
-            "message_hash": message_hash_hex,
+            "message_hash": message_hash_hex.clone(),
             "attachment": {
                 "file_name": req.file_name,
                 "mime_type": req.mime_type,
@@ -1286,6 +1376,15 @@ impl LiveBridge {
         if let Ok(mut driver) = self.outbound.lock() {
             driver.process_tick(&mut router, &self.event_tx);
         }
+
+        self.schedule_egress_tap_upgrade(
+            message_hash_hex,
+            req.destination_hash.clone(),
+            preferred_pn_hash,
+            egress_via.clone(),
+            ifaces,
+            send_started_ms,
+        );
 
         Ok(serde_json::json!({
             "ok": true,

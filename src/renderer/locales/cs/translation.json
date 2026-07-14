@@ -560,7 +560,11 @@
     "dmPathUnreachableTooltip": "K tomuto cíli zatím nevede žádná cesta Reticulum. Zprávy mohou být doručeny později prostřednictvím nakonfigurovaného propagačního uzlu.",
     "dmPathRequestPathAria": "Požádat o cestu Reticulum k tomuto cíli",
     "dmPathProbeAria": "Zjistit dosažitelnost cesty Reticulum pro tento cíl",
-    "microphonePermissionDenied": "Přístup k mikrofonu byl odepřen. Povolte oprávnění mikrofonu pro Mesh-client v nastavení ochrany osobních údajů systému a zkuste to znovu."
+    "microphonePermissionDenied": "Přístup k mikrofonu byl odepřen. Povolte oprávnění mikrofonu pro Mesh-client v nastavení ochrany osobních údajů systému a zkuste to znovu.",
+    "receivedViaBle": "Přijato přes Bluetooth",
+    "receivedViaMultiple": "Přijato prostřednictvím {{vias}}",
+    "sentViaBle": "Odesláno přes Bluetooth",
+    "sentViaMultiple": "Odesláno prostřednictvím {{vias}}"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

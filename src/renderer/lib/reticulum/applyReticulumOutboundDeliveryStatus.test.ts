@@ -178,4 +178,41 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
     persistReticulumOutboundMessageStatus(identityId, messageHash, 'sending');
     expect(useMessageStore.getState().messages[identityId]?.[messageHash]?.status).toBe('acked');
   });
+
+  it('upgrades receivedVia from lxmf_outbound_status sent_via evidence', () => {
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          [messageHash]: {
+            id: messageHash,
+            from: 1,
+            to: 2,
+            payload: 'dual',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'sending',
+            receivedVia: 'rf',
+            reticulumMessageHash: messageHash,
+            reticulumSenderHash: SELF,
+          },
+        },
+      },
+    });
+
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'sending', {
+      sentVia: 'rf+tcp',
+    });
+
+    expect(useMessageStore.getState().messages[identityId]?.[messageHash]?.receivedVia).toBe(
+      'rf+tcp',
+    );
+    expect(useMessageStore.getState().messages[identityId]?.[messageHash]?.status).toBe('sending');
+    expect(window.electronAPI.db.saveReticulumMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message_hash: messageHash,
+        received_via: 'rf+tcp',
+        delivery_status: 'sending',
+      }),
+    );
+  });
 });

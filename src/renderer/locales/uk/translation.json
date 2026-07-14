@@ -560,7 +560,11 @@
     "dmPathUnreachableTooltip": "Шляху Reticulum до цього пункту призначення ще немає. Повідомлення все ще можуть доставлятися пізніше через налаштований вузол поширення.",
     "dmPathRequestPathAria": "Запитати шлях Reticulum до цього призначення",
     "dmPathProbeAria": "Перевірити досяжність шляху Reticulum для цього призначення",
-    "microphonePermissionDenied": "У доступі до мікрофона відмовлено. Увімкніть дозвіл на доступ до мікрофона для Mesh-client в налаштуваннях конфіденційності системи, а потім повторіть спробу."
+    "microphonePermissionDenied": "У доступі до мікрофона відмовлено. Увімкніть дозвіл на доступ до мікрофона для Mesh-client в налаштуваннях конфіденційності системи, а потім повторіть спробу.",
+    "receivedViaBle": "Отримано через Bluetooth",
+    "receivedViaMultiple": "Отримано через {{vias}}",
+    "sentViaBle": "Надіслано через Bluetooth",
+    "sentViaMultiple": "Надіслано через {{vias}}"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

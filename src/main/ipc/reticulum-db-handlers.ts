@@ -16,6 +16,17 @@ const ALLOWED_DELIVERY_STATUS = new Set([
   'queued',
 ]);
 
+const RETICULUM_VIA_ATOMS = new Set(['rf', 'ble', 'tcp', 'network', 'mqtt', 'both']);
+const RETICULUM_MULTI_VIA_ATOMS = new Set(['ble', 'rf', 'tcp', 'network']);
+
+/** Single atom or explicit `+`-joined multi-egress (e.g. `rf+tcp`). */
+export function isAllowedReticulumReceivedVia(value: string): boolean {
+  if (RETICULUM_VIA_ATOMS.has(value)) return true;
+  const parts = value.split('+');
+  if (parts.length < 2 || parts.length > 4) return false;
+  return parts.every((p) => RETICULUM_MULTI_VIA_ATOMS.has(p));
+}
+
 export interface ReticulumDbIpcDeps {
   ipcMain: IpcMain;
 }
@@ -64,9 +75,8 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         throw new Error('db:saveReticulumMessage: timestamp invalid');
       }
       const receivedVia =
-        typeof m.received_via === 'string' &&
-        ['rf', 'tcp', 'network', 'mqtt', 'both'].includes(m.received_via)
-          ? m.received_via
+        typeof m.received_via === 'string' && isAllowedReticulumReceivedVia(m.received_via)
+          ? m.received_via.slice(0, 64)
           : null;
       const db = getDbForIpc('db:saveReticulumMessage');
       if (!db) return { changes: 0 };

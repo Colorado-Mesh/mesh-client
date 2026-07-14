@@ -560,7 +560,11 @@
     "dmPathUnreachableTooltip": "この宛先への Reticulum パスはまだありません。設定済みの伝播ノード経由で後から配信されることがあります。",
     "dmPathRequestPathAria": "この宛先への Reticulum パスをリクエスト",
     "dmPathProbeAria": "この宛先の Reticulum パス到達可能性をプローブ",
-    "microphonePermissionDenied": "マイクへのアクセスが拒否されました。システムのプライバシー設定で Mesh-client のマイクアクセス許可を有効にしてから、もう一度お試しください。"
+    "microphonePermissionDenied": "マイクへのアクセスが拒否されました。システムのプライバシー設定で Mesh-client のマイクアクセス許可を有効にしてから、もう一度お試しください。",
+    "receivedViaBle": "Bluetooth経由で受信",
+    "receivedViaMultiple": "{{vias}}経由で受け取りました",
+    "sentViaBle": "Bluetooth経由で送信",
+    "sentViaMultiple": "{{vias}}経由で送信"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

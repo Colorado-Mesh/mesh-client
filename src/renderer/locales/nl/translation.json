@@ -560,7 +560,11 @@
     "dmPathUnreachableTooltip": "Nog geen Reticulum-pad naar deze bestemming. Berichten kunnen later nog steeds worden afgeleverd via een geconfigureerd propagatieknooppunt.",
     "dmPathRequestPathAria": "Reticulum-pad naar deze bestemming aanvragen",
     "dmPathProbeAria": "Reticulum-padbereikbaarheid voor deze bestemming controleren",
-    "microphonePermissionDenied": "Microfoontoegang is geweigerd. Schakel microfoontoestemming in voor Mesh-client in uw systeemprivacyinstellingen en probeer het opnieuw."
+    "microphonePermissionDenied": "Microfoontoegang is geweigerd. Schakel microfoontoestemming in voor Mesh-client in uw systeemprivacyinstellingen en probeer het opnieuw.",
+    "receivedViaBle": "Ontvangen via Bluetooth",
+    "receivedViaMultiple": "Ontvangen via {{vias}}",
+    "sentViaBle": "Verzonden via Bluetooth",
+    "sentViaMultiple": "Verzonden via {{vias}}"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
