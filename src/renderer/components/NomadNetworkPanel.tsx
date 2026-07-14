@@ -644,7 +644,7 @@ export default function NomadNetworkPanel({
               {t('nomadNetwork.selectNode')}
             </p>
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-700/60 p-2">
                 <span className="truncate font-medium text-gray-100">
                   {selectedNode.display_name ?? selectedNode.destination_hash.slice(0, 16)}
@@ -767,10 +767,10 @@ export default function NomadNetworkPanel({
                 />
               </form>
 
-              <div className="relative min-h-0 flex-1">
+              <div className="relative min-h-0 min-w-0 flex-1">
                 <div
                   data-testid="nomad-page-scroll"
-                  className="h-full min-h-0 overflow-auto overscroll-contain p-3 [overflow-anchor:none]"
+                  className="nomad-page-scroll bg-deep-black/50 h-full min-h-0 min-w-0 overflow-auto overscroll-contain p-3 [overflow-anchor:none]"
                 >
                   {fileDownloading ? (
                     <p className="text-muted mb-2 text-sm">{t('nomadNetwork.fileDownloading')}</p>

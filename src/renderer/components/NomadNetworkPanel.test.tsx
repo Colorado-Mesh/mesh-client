@@ -480,7 +480,13 @@ describe('NomadNetworkPanel', () => {
     });
 
     const scroll = screen.getByTestId('nomad-page-scroll');
-    expect(scroll).toHaveClass('overflow-auto', 'overscroll-contain', '[overflow-anchor:none]');
-    expect(scroll.parentElement).toHaveClass('min-h-0', 'flex-1');
+    expect(scroll).toHaveClass(
+      'nomad-page-scroll',
+      'bg-deep-black/50',
+      'overflow-auto',
+      'overscroll-contain',
+      '[overflow-anchor:none]',
+    );
+    expect(scroll.parentElement).toHaveClass('min-h-0', 'min-w-0', 'flex-1');
   });
 });
