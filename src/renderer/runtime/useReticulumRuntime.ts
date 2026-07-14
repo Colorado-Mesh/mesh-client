@@ -45,7 +45,10 @@ import {
   resolveReticulumSelfFullLabel,
   resolveReticulumSelfHeaderLabel,
 } from '@/renderer/lib/reticulum/reticulumSelfNodeLabel';
-import { reticulumSidecarEventRefreshActions } from '@/renderer/lib/reticulum/reticulumSidecarPeerRefreshEvents';
+import {
+  reticulumSidecarEventRefreshActions,
+  scheduleLeadingTrailingRefresh,
+} from '@/renderer/lib/reticulum/reticulumSidecarPeerRefreshEvents';
 import {
   fetchReticulumIdentityStatus,
   fetchReticulumInterfaces,
@@ -91,6 +94,7 @@ import {
 } from '../stores/reticulumIdentityActivityStore';
 import { useReticulumPacketStore } from '../stores/reticulumPacketStore';
 import {
+  applyReticulumAnnounceReceivedOptimistic,
   refreshReticulumPeersFromSidecar,
   RETICULUM_PEER_REFRESH_MS,
   reticulumContactToNodeRecord,
@@ -331,15 +335,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
     });
   }, [refreshLocalInterfacesFromSidecar]);
 
-  const scheduleDebouncedPeerRefresh = useCallback(() => {
-    if (peerRefreshDebounceRef.current) {
-      clearTimeout(peerRefreshDebounceRef.current);
-    }
-    peerRefreshDebounceRef.current = setTimeout(() => {
-      peerRefreshDebounceRef.current = null;
-      void refreshContactsFromSidecar();
-      void syncDiagnosticsFromSidecar();
-    }, 2_000);
+  const scheduleLeadingPeerRefresh = useCallback(() => {
+    scheduleLeadingTrailingRefresh({
+      timerRef: peerRefreshDebounceRef,
+      onRefresh: () => {
+        void refreshContactsFromSidecar();
+        void syncDiagnosticsFromSidecar();
+      },
+    });
   }, [refreshContactsFromSidecar, syncDiagnosticsFromSidecar]);
 
   const scheduleDebouncedDiagnosticsRefresh = useCallback(() => {
@@ -488,14 +491,15 @@ export function useReticulumRuntime(): ProtocolRuntime {
           );
         });
       }
-      if (refreshActions.peers) {
-        scheduleDebouncedPeerRefresh();
-      } else if (refreshActions.diagnostics) {
-        scheduleDebouncedDiagnosticsRefresh();
-      }
       if (evt.type === 'announce.received') {
+        applyReticulumAnnounceReceivedOptimistic(evt.payload);
         recordAnnounceActivity(evt.payload);
         requestChatOutboxDrain('reticulum');
+      }
+      if (refreshActions.peers) {
+        scheduleLeadingPeerRefresh();
+      } else if (refreshActions.diagnostics) {
+        scheduleDebouncedDiagnosticsRefresh();
       }
     },
     [
@@ -505,7 +509,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       recordAnnounceActivity,
       refreshLocalInterfacesFromSidecar,
       scheduleDebouncedDiagnosticsRefresh,
-      scheduleDebouncedPeerRefresh,
+      scheduleLeadingPeerRefresh,
     ],
   );
 

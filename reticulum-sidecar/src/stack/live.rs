@@ -3,7 +3,7 @@
 #[path = "lxmf_outbound.rs"]
 mod lxmf_outbound;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -531,6 +531,7 @@ impl LiveBridge {
         let propagation = self.propagation.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(2));
+            let mut known_path_hashes: HashSet<String> = HashSet::new();
             loop {
                 interval.tick().await;
                 // Only replace the outbound path table on a successful GetPathTable.
@@ -550,6 +551,22 @@ impl LiveBridge {
                                 cache.insert(key, entry.interface.clone());
                             }
                         }
+                        let next_hashes: HashSet<String> = entries
+                            .iter()
+                            .map(|e| hex::encode(e.hash))
+                            .collect();
+                        let added = path_table_added_hashes(&known_path_hashes, &next_hashes);
+                        if !added.is_empty() {
+                            let frame = serde_json::json!({
+                                "type": "peers_updated",
+                                "payload": {
+                                    "added": added,
+                                    "count": next_hashes.len(),
+                                }
+                            });
+                            let _ = event_tx.send(frame.to_string());
+                        }
+                        known_path_hashes = next_hashes;
                         Some(
                             entries
                                 .iter()
@@ -614,19 +631,22 @@ impl LiveBridge {
                 }
                 // Named announces update the display-name cache for peer labels only —
                 // do not upsert LXMF contacts (contacts are messaged / explicitly saved).
-                if let Some(name) = parse_announce_display_name(evt.app_data.as_deref()) {
+                let display_name = parse_announce_display_name(evt.app_data.as_deref());
+                if let Some(ref name) = display_name {
                     if let Ok(mut cache) = display_name_cache.lock() {
                         cache.insert(dest_hex.clone(), name.clone());
                     }
-                    let frame = serde_json::json!({
-                        "type": "announce.received",
-                        "payload": {
-                            "destination_hash": dest_hex,
-                            "display_name": name,
-                        }
-                    });
-                    let _ = event_tx.send(frame.to_string());
                 }
+                // Always notify the UI so nameless announces still refresh Peers promptly.
+                let frame = serde_json::json!({
+                    "type": "announce.received",
+                    "payload": {
+                        "destination_hash": dest_hex,
+                        "display_name": display_name,
+                        "hops": evt.hops,
+                    }
+                });
+                let _ = event_tx.send(frame.to_string());
             }
         });
     }
@@ -1666,6 +1686,11 @@ fn resolve_inbound_sender_name_map(
         .unwrap_or_else(|| prefix.to_string())
 }
 
+/// Hashes present in `next` but not in `prev` (path-table membership growth).
+fn path_table_added_hashes(prev: &HashSet<String>, next: &HashSet<String>) -> Vec<String> {
+    next.difference(prev).cloned().collect()
+}
+
 pub(super) fn parse_hash16(hex_str: &str) -> Result<[u8; 16], String> {
     let clean: String = hex_str.chars().filter(|c| c.is_ascii_hexdigit()).collect();
     let bytes = hex::decode(if clean.len() >= 32 {
@@ -1682,6 +1707,22 @@ pub(super) fn parse_hash16(hex_str: &str) -> Result<[u8; 16], String> {
 #[cfg(test)]
 mod announce_display_name_tests {
     use super::*;
+
+    #[test]
+    fn path_table_added_hashes_reports_only_new_membership() {
+        let prev: HashSet<String> = ["aa".into(), "bb".into()].into_iter().collect();
+        let next: HashSet<String> = ["bb".into(), "cc".into()].into_iter().collect();
+        let mut added = path_table_added_hashes(&prev, &next);
+        added.sort();
+        assert_eq!(added, vec!["cc".to_string()]);
+    }
+
+    #[test]
+    fn path_table_added_hashes_empty_when_membership_unchanged() {
+        let prev: HashSet<String> = ["aa".into()].into_iter().collect();
+        let next: HashSet<String> = ["aa".into()].into_iter().collect();
+        assert!(path_table_added_hashes(&prev, &next).is_empty());
+    }
 
     #[test]
     fn parse_announce_display_name_raw_utf8() {

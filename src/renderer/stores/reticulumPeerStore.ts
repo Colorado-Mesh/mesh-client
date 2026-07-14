@@ -560,6 +560,34 @@ export function reticulumHashForNodeId(nodeId: number): string | null {
 
 export const RETICULUM_PEER_REFRESH_MS = 30_000;
 
+/** Optimistic Peers-tab row from an `announce.received` WS payload (before path-table fetch). */
+export function applyReticulumAnnounceReceivedOptimistic(payload: unknown): void {
+  if (!payload || typeof payload !== 'object') return;
+  const p = payload as Record<string, unknown>;
+  const rawHash = typeof p.destination_hash === 'string' ? p.destination_hash : null;
+  if (!rawHash) return;
+  const hash = normalizeHash(rawHash);
+  if (!hash) return;
+
+  const displayNameRaw = typeof p.display_name === 'string' ? p.display_name.trim() : '';
+  const display_name = displayNameRaw
+    ? (sanitizeReticulumDisplayName(displayNameRaw) ?? null)
+    : null;
+  const hops =
+    typeof p.hops === 'number' && Number.isFinite(p.hops) ? Math.trunc(p.hops) : undefined;
+
+  useReticulumPeerStore.getState().replacePeers([
+    {
+      destination_hash: hash,
+      display_name,
+      hops: hops ?? null,
+      last_seen: Date.now(),
+      interface: null,
+    },
+  ]);
+  registerReticulumDestinationHash(reticulumHashToNodeId(hash), hash);
+}
+
 function appearancesFromDbRows(
   dbRows: ReticulumDestinationDbRow[],
 ): Map<string, ReticulumPeerAppearance> {

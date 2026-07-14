@@ -1,6 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { reticulumSidecarEventRefreshActions } from './reticulumSidecarPeerRefreshEvents';
+import {
+  RETICULUM_PEER_REFRESH_COALESCE_MS,
+  reticulumSidecarEventRefreshActions,
+  scheduleLeadingTrailingRefresh,
+} from './reticulumSidecarPeerRefreshEvents';
 
 describe('reticulumSidecarEventRefreshActions', () => {
   it('schedules peer + diagnostics refresh for peer-relevant events', () => {
@@ -35,5 +39,42 @@ describe('reticulumSidecarEventRefreshActions', () => {
       diagnostics: false,
       interfaces: false,
     });
+  });
+});
+
+describe('scheduleLeadingTrailingRefresh', () => {
+  it('runs leading refresh immediately then trailing after coalesce', () => {
+    vi.useFakeTimers();
+    const onRefresh = vi.fn();
+    const timerRef: { current: ReturnType<typeof setTimeout> | null } = { current: null };
+
+    scheduleLeadingTrailingRefresh({ timerRef, onRefresh });
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+
+    scheduleLeadingTrailingRefresh({ timerRef, onRefresh });
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(RETICULUM_PEER_REFRESH_COALESCE_MS);
+    expect(onRefresh).toHaveBeenCalledTimes(2);
+    expect(timerRef.current).toBeNull();
+
+    vi.useRealTimers();
+  });
+
+  it('coalesces a burst into one trailing refresh after quiet', () => {
+    vi.useFakeTimers();
+    const onRefresh = vi.fn();
+    const timerRef: { current: ReturnType<typeof setTimeout> | null } = { current: null };
+
+    scheduleLeadingTrailingRefresh({ timerRef, onRefresh });
+    scheduleLeadingTrailingRefresh({ timerRef, onRefresh });
+    vi.advanceTimersByTime(RETICULUM_PEER_REFRESH_COALESCE_MS / 2);
+    scheduleLeadingTrailingRefresh({ timerRef, onRefresh });
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(RETICULUM_PEER_REFRESH_COALESCE_MS);
+    expect(onRefresh).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
   });
 });

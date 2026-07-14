@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReticulumContact } from '@/shared/reticulum-types';
 
 import {
+  applyReticulumAnnounceReceivedOptimistic,
   capReticulumPeerMaps,
   mergeReticulumPeerMaps,
   refreshReticulumPeersFromSidecar,
@@ -399,6 +400,27 @@ describe('reticulumPeerStore', () => {
       icon_name: 'star',
       icon_color: '#0f0',
     });
+  });
+
+  it('applyReticulumAnnounceReceivedOptimistic inserts a peer before path-table refresh', () => {
+    applyReticulumAnnounceReceivedOptimistic({
+      destination_hash: 'AaBbCcDdEeFf00112233445566778899',
+      display_name: 'Hub Peer',
+      hops: 1,
+    });
+    const peer = useReticulumPeerStore.getState().peers.get('aabbccddeeff00112233445566778899');
+    expect(peer?.display_name).toBe('Hub Peer');
+    expect(peer?.hops).toBe(1);
+    expect(peer?.last_seen).toEqual(expect.any(Number));
+  });
+
+  it('applyReticulumAnnounceReceivedOptimistic accepts nameless announces', () => {
+    applyReticulumAnnounceReceivedOptimistic({
+      destination_hash: '11223344556677889900aabbccddeeff',
+    });
+    const peer = useReticulumPeerStore.getState().peers.get('11223344556677889900aabbccddeeff');
+    expect(peer).toBeDefined();
+    expect(peer?.display_name).toBeNull();
   });
 });
 

@@ -128,7 +128,10 @@ The Connection tab UI edits a subset: **name** for all types; **host** / **port*
 { "type": "lxmf_message", "payload": { ... } }
 ```
 
-Event types: `lxmf_message`, `lxmf_outbound_status`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`, `rmap.discovery` (payload `{ discovered: RmapDiscoveredWireRow[] }`).
+Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`, `rmap.discovery` (payload `{ discovered: RmapDiscoveredWireRow[] }`).
+
+- **`announce.received`:** emitted for every LXMF identity announce / path response the sidecar observes (named or nameless). Payload: `{ destination_hash, display_name?, hops }`. Display names update the peer-label cache only — announces do **not** auto-create LXMF contacts.
+- **`peers_updated`:** also emitted when the live path table **gains** new destination hashes (maintenance tick). Payload may include `{ added: string[], count }`. Hop/timestamp-only churn does not emit.
 
 `lxmf_message` payload fields include `sender_hash`, `text`, `timestamp`, `message_hash`, optional `direction` (`inbound` / `outbound`), and transport markers `received_via` / `sent_via` (`rf`, `tcp`, or `network`).
 
