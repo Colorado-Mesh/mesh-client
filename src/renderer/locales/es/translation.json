@@ -338,7 +338,13 @@
     "exportForDeveloper": "Paquete de soporte de exportación para desarrolladores",
     "exportForDeveloperButton": "Exportar para desarrollador",
     "exportForDeveloperWarning": "Incluye su base de datos completa, que puede contener contraseñas guardadas (credenciales de sala MeshCore, configuración de MQTT, etc.). Comparta este paquete de forma privada solo con los mantenedores, nunca en GitHub público.",
-    "exportSupportBundleFailed": "No se pudo exportar el paquete de soporte: {{message}}"
+    "exportSupportBundleFailed": "No se pudo exportar el paquete de soporte: {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "Borrar todos los contactos LXMF",
+    "clearReticulumContactsDesc": "Elimina todas las entradas de la pestaña Contactos y de la lista de contactos del sidecar. Se conservan los mensajes de chat, los pares de la tabla de rutas y los metadatos de pares solo favoritos. Los contactos reaparecen cuando envías un mensaje a alguien o usas Guardar como contacto.",
+    "clearReticulumContactsConfirm": "Esto borrará permanentemente todos los contactos de {{count}} Reticulum LXMF del sidecar y la base de datos local. Los pares y mensajes de la tabla de ruta no se eliminan. Esto no se puede deshacer.",
+    "clearReticulumContactsConfirmButton": "Borrar {{count}} contactos",
+    "clearReticulumContactsButton": "Borrar todos los contactos ({{count}})"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

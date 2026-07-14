@@ -338,7 +338,13 @@
     "exportForDeveloper": "为开发人员导出支持包",
     "exportForDeveloperButton": "为开发者导出",
     "exportForDeveloperWarning": "包括您的完整数据库，其中可能包含保存的密码（MeshCore 房间凭据、MQTT 设置等）。仅与维护者私下共享此捆绑包 - 切勿在公共 GitHub 上共享。",
-    "exportSupportBundleFailed": "无法导出支持包：{{message}}"
+    "exportSupportBundleFailed": "无法导出支持包：{{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "清除所有LXMF联系人",
+    "clearReticulumContactsDesc": "删除“联系人”选项卡和Sidecar联系人列表中的每个条目。保留聊天消息、路径表对等体和仅收藏的对等体元数据。当您向某人发送消息或使用“另存为联系人”时，联系人会重新出现。",
+    "clearReticulumContactsConfirm": "这将从Sidecar和本地数据库中永久清除所有{{count}} Reticulum LXMF联系人。路径表对等项和消息不会被删除。此操作无法撤消。",
+    "clearReticulumContactsConfirmButton": "清除{{count}}工单",
+    "clearReticulumContactsButton": "清除所有联系人（ {{count}} ）"
   },
   "aria": {
     "closeDialog": "关闭对话框",

@@ -50,6 +50,8 @@ interface ReticulumPeerStoreState {
   toggleFavorite: (hash: string, favorited: boolean) => Promise<void>;
   setCustomDisplayName: (hash: string, name: string | null) => Promise<void>;
   removeContact: (hash: string, identityId?: string | null) => Promise<void>;
+  /** Danger Zone: wipe sidecar + SQLite LXMF contacts; demotes them to peers (keeps Peers tab). */
+  clearAllContacts: () => Promise<{ clearedSidecar: number; clearedDb: number }>;
   restoreDismissedContact: (hash: string) => void;
   hydratePeerAppearancesFromDb: () => Promise<void>;
   patchPeerAppearance: (hash: string, appearance: ReticulumPeerAppearance) => void;
@@ -182,19 +184,35 @@ export function mergeReticulumPeerMaps(
   for (const [hash, row] of dbByHash) {
     if (dismissedContactHashes.has(hash)) continue;
     if (contactMap.has(hash)) continue;
-    const fromPeer = peerMap.get(hash);
-    const saved: ReticulumContact = {
-      destination_hash: hash,
-      display_name: row.display_name ?? fromPeer?.display_name ?? null,
-      last_heard: row.last_heard ?? fromPeer?.last_seen ?? 0,
-      hops: fromPeer?.hops ?? null,
-      interface: fromPeer?.interface ?? null,
-      favorited: Boolean(row.favorited),
-    };
-    contactMap.set(hash, saved);
+
+    // Favorites / renames / icons write destination rows without last_heard —
+    // keep peer meta but do not treat them as LXMF contacts.
     if (!peerMap.has(hash)) {
-      peerMap.set(hash, saved);
+      peerMap.set(hash, {
+        destination_hash: hash,
+        display_name: row.display_name ?? null,
+        hops: null,
+        interface: null,
+        favorited: Boolean(row.favorited),
+        custom_display_name: row.display_name?.trim() ? row.display_name : undefined,
+      });
     }
+
+    // Promote to contacts only when the row carries last_heard (Save Contact / message ingest).
+    if (row.last_heard == null) continue;
+
+    const fromPeer = peerMap.get(hash);
+    const base = overlayDbMeta(
+      {
+        destination_hash: hash,
+        display_name: row.display_name ?? fromPeer?.display_name ?? null,
+        hops: fromPeer?.hops ?? null,
+        interface: fromPeer?.interface ?? null,
+        favorited: Boolean(row.favorited),
+      },
+      dbByHash,
+    );
+    contactMap.set(hash, { ...base, last_heard: row.last_heard });
   }
 
   return { peers: peerMap, contacts: contactMap };
@@ -394,6 +412,73 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
         };
       });
     }
+  },
+
+  clearAllContacts: async () => {
+    // Demote contacts into peers first so Peers tab is not emptied while we wipe contacts.
+    set((s) => {
+      const peers = new Map(s.peers);
+      for (const [hash, contact] of s.contacts) {
+        const existing = peers.get(hash);
+        if (existing) {
+          peers.set(hash, {
+            ...existing,
+            display_name: existing.display_name ?? contact.display_name ?? null,
+            custom_display_name: existing.custom_display_name ?? contact.custom_display_name,
+            favorited: existing.favorited || contact.favorited,
+            last_seen: existing.last_seen ?? contact.last_heard ?? null,
+          });
+        } else {
+          peers.set(hash, {
+            destination_hash: hash,
+            display_name: contact.display_name ?? null,
+            custom_display_name: contact.custom_display_name,
+            hops: contact.hops ?? null,
+            interface: contact.interface ?? null,
+            favorited: Boolean(contact.favorited),
+            last_seen: contact.last_heard ?? null,
+          });
+        }
+      }
+      return { peers, contacts: new Map() };
+    });
+
+    let clearedSidecar: number;
+    try {
+      const body = (await window.electronAPI.reticulum.proxyDelete('/api/v1/contacts')) as {
+        ok?: boolean;
+        cleared?: number;
+        error?: string;
+      };
+      if (body?.ok === false) {
+        throw new Error(body.error ?? 'sidecar clear contacts failed');
+      }
+      clearedSidecar = typeof body?.cleared === 'number' ? body.cleared : 0;
+    } catch (e) {
+      console.warn('[reticulumPeerStore] clearAllContacts sidecar ' + errLikeToLogString(e));
+      throw e;
+    }
+
+    let clearedDb: number;
+    try {
+      const result = await window.electronAPI.db.clearReticulumContactDestinations();
+      clearedDb = result.changes ?? 0;
+    } catch (e) {
+      console.warn('[reticulumPeerStore] clearAllContacts db ' + errLikeToLogString(e));
+      throw e;
+    }
+
+    const emptyDismissed = new Set<string>();
+    persistDismissedContactHashes(emptyDismissed);
+    set({ dismissedContactHashes: emptyDismissed });
+
+    try {
+      await refreshReticulumPeersFromSidecar();
+    } catch (e) {
+      console.warn('[reticulumPeerStore] clearAllContacts refresh ' + errLikeToLogString(e));
+    }
+
+    return { clearedSidecar, clearedDb };
   },
 
   restoreDismissedContact: (hash) => {

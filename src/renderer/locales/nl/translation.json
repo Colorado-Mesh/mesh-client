@@ -338,7 +338,13 @@
     "exportForDeveloper": "Ondersteuningsbundel exporteren voor ontwikkelaar",
     "exportForDeveloperButton": "Exporteren voor ontwikkelaar",
     "exportForDeveloperWarning": "Omvat uw volledige database, die mogelijk opgeslagen wachtwoorden bevat (MeshCore-ruimtegegevens, MQTT-instellingen, enz.). Deel deze bundel alleen privé met beheerders, nooit op openbare GitHub.",
-    "exportSupportBundleFailed": "Kan ondersteuningsbundel niet exporteren: {{message}}"
+    "exportSupportBundleFailed": "Kan ondersteuningsbundel niet exporteren: {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "Alle LXMF-contacten wissen",
+    "clearReticulumContactsDesc": "Verwijdert elke invoer van het tabblad Contacten en de lijst met contactpersonen van het zijspan. Chatberichten, pad-tabel collega's en favoriete peer metadata worden bewaard. Contactpersonen verschijnen opnieuw wanneer u iemand een bericht stuurt of Opslaan als contactpersoon gebruikt.",
+    "clearReticulumContactsConfirm": "Hiermee worden alle {{count}} Reticulum LXMF-contacten permanent uit de zijspan- en lokale database verwijderd. Path-table peers en berichten worden niet verwijderd. Dit kan niet ongedaan worden gemaakt.",
+    "clearReticulumContactsConfirmButton": "{{count}} contacten wissen",
+    "clearReticulumContactsButton": "Alle contacten wissen ({{count}})"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

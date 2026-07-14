@@ -338,7 +338,13 @@
     "exportForDeveloper": "개발자용 지원 번들 내보내기",
     "exportForDeveloperButton": "개발자용으로 내보내기",
     "exportForDeveloperWarning": "저장된 비밀번호(MeshCore 룸 자격 증명, MQTT 설정 등)가 포함될 수 있는 전체 데이터베이스를 포함합니다. 이 번들을 관리자에게만 비공개로 공유하세요. 공개 GitHub에서는 절대 공유하지 마세요.",
-    "exportSupportBundleFailed": "지원 번들을 내보낼 수 없습니다: {{message}}"
+    "exportSupportBundleFailed": "지원 번들을 내보낼 수 없습니다: {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "모든 LXMF 연락처 지우기",
+    "clearReticulumContactsDesc": "연락처 탭과 사이드카 연락처 목록에서 모든 항목을 제거합니다. 채팅 메시지, 경로 테이블 피어 및 즐겨찾기 전용 피어 메타데이터가 보관됩니다. 다른 사람에게 메시지를 보내거나 '연락처로 저장' 을 사용하면 연락처가 다시 표시됩니다.",
+    "clearReticulumContactsConfirm": "이렇게 하면 사이드카 및 로컬 데이터베이스에서 모든 {{count}} Reticulum LXMF 연락처가 영구적으로 지워집니다. 경로 테이블 피어 및 메시지는 삭제되지 않습니다. 이 작업은 취소할 수 없습니다.",
+    "clearReticulumContactsConfirmButton": "연락처 {{count}} 개 지우기",
+    "clearReticulumContactsButton": "모든 연락처 지우기 ({{count}})"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

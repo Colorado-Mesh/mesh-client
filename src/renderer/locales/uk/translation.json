@@ -338,7 +338,13 @@
     "exportForDeveloper": "Експорт пакета підтримки для розробника",
     "exportForDeveloperButton": "Експорт для розробника",
     "exportForDeveloperWarning": "Включає вашу повну базу даних, яка може містити збережені паролі (облікові дані кімнати MeshCore, налаштування MQTT тощо). Поділіться цим набором приватно лише з супроводжуючими — ніколи на публічному GitHub.",
-    "exportSupportBundleFailed": "Не вдалося експортувати пакет підтримки: {{message}}"
+    "exportSupportBundleFailed": "Не вдалося експортувати пакет підтримки: {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "Очистити всі контакти LXMF",
+    "clearReticulumContactsDesc": "Видаляє всі записи з вкладки «Контакти» та списку контактів коляски. Повідомлення чату, однорангові вузли таблиці шляхів та метадані лише улюблених вузлів зберігаються. Контакти знову з'являються, коли ви надсилаєте комусь повідомлення або використовуєте «Зберегти як контакт».",
+    "clearReticulumContactsConfirm": "Це назавжди очистить всі контакти {{count}} Reticulum LXMF з коляски та локальної бази даних. Однорангові вузли та повідомлення таблиці шляхів не видаляються. Цю дію неможливо скасувати.",
+    "clearReticulumContactsConfirmButton": "Очистити контакти ({{count}})",
+    "clearReticulumContactsButton": "Очистити всі контакти ({{count}})"
   },
   "aria": {
     "closeDialog": "Закрити діалог",

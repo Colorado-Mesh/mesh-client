@@ -54,6 +54,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       getMeshcoreMessages: async () => [],
       getReticulumMessages: async () => [],
       clearReticulumMessages: async () => ({ changes: 0 }),
+      clearReticulumContactDestinations: async () => ({ changes: 0 }),
       saveReticulumMessage: noopAsync,
       markStaleReticulumOutbound: async () => ({ changes: 0 }),
       vacuumReticulumTables: async () => ({ ok: true }),

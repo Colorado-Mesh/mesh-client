@@ -338,7 +338,13 @@
     "exportForDeveloper": "Eksportuj pakiet wsparcia dla programisty",
     "exportForDeveloperButton": "Eksport dla programisty",
     "exportForDeveloperWarning": "Obejmuje pełną bazę danych, która może zawierać zapisane hasła (dane logowania do pokoju MeshCore, ustawienia MQTT itp.). Udostępnij ten pakiet prywatnie tylko opiekunom — nigdy w publicznym GitHub.",
-    "exportSupportBundleFailed": "Nie można wyeksportować pakietu wsparcia: {{message}}"
+    "exportSupportBundleFailed": "Nie można wyeksportować pakietu wsparcia: {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "Wyczyść wszystkie kontakty LXMF",
+    "clearReticulumContactsDesc": "Usuwa każdy wpis z zakładki Kontakty i listy kontaktów wózka bocznego. Wiadomości czatu, równorzędne tabele ścieżek i ulubione metadane równorzędne są przechowywane. Kontakty pojawiają się ponownie, gdy wysyłasz komuś wiadomość lub używasz opcji Zapisz jako kontakt.",
+    "clearReticulumContactsConfirm": "Spowoduje to trwałe usunięcie wszystkich kontaktów {{count}} Reticulum LXMF z przyczepy bocznej i lokalnej bazy danych. Rówieśnicy w tabeli ścieżek i wiadomości nie są usuwane. Tej czynności nie można cofnąć.",
+    "clearReticulumContactsConfirmButton": "Wyczyść kontakty {{count}}",
+    "clearReticulumContactsButton": "Wyczyść wszystkie kontakty ({{count}})"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

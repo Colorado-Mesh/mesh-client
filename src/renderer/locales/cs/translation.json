@@ -338,7 +338,13 @@
     "exportForDeveloper": "Balíček podpory exportu pro vývojáře",
     "exportForDeveloperButton": "Export pro vývojáře",
     "exportForDeveloperWarning": "Zahrnuje vaši úplnou databázi, která může obsahovat uložená hesla (přihlašovací údaje místnosti MeshCore, nastavení MQTT atd.). Sdílejte tento balíček soukromě pouze se správci – nikdy na veřejném GitHub.",
-    "exportSupportBundleFailed": "Nelze exportovat balíček podpory: {{message}}"
+    "exportSupportBundleFailed": "Nelze exportovat balíček podpory: {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "Vymazat všechny kontakty LXMF",
+    "clearReticulumContactsDesc": "Odstraní každou položku z karty Kontakty a seznamu kontaktů postranního vozíku. Zprávy z chatu, vrstevníci z tabulek cest a metadata vrstevníků, která jsou pouze oblíbená, jsou zachována. Kontakty se znovu zobrazí, když někomu napíšete zprávu nebo použijete Uložit jako kontakt.",
+    "clearReticulumContactsConfirm": "Tím trvale vymažete všechny kontakty {{count}} Reticulum LXMF z postranního vozíku a místní databáze. Protějšky a zprávy v tabulce tras nejsou smazány. Tuto akci nelze vrátit zpět.",
+    "clearReticulumContactsConfirmButton": "Vymazat {{count}} kontakty",
+    "clearReticulumContactsButton": "Vymazat všechny kontakty ({{count}})"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

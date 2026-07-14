@@ -269,6 +269,8 @@ export interface ElectronAPI {
       messageHash: string,
     ) => Promise<{ changes: number }>;
     clearReticulumMessages: (identityId: string) => Promise<{ changes: number }>;
+    /** Clears last_heard on LXMF contact destinations; preserves display_name / favorite / icon peer meta. */
+    clearReticulumContactDestinations: () => Promise<{ changes: number }>;
     saveReticulumMessage: (message: {
       identity_id: string;
       sender_id: string;

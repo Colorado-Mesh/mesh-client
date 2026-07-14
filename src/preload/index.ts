@@ -122,6 +122,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:deleteReticulumMessage', identityId, messageHash),
     clearReticulumMessages: (identityId: string) =>
       ipcRenderer.invoke('db:clearReticulumMessages', identityId),
+    clearReticulumContactDestinations: () =>
+      ipcRenderer.invoke('db:clearReticulumContactDestinations'),
     saveReticulumMessage: (message: {
       identity_id: string;
       sender_id: string;

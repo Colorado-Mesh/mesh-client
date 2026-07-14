@@ -88,7 +88,10 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             "/api/v1/lxmf/messages/{hash}",
             axum::routing::delete(lxmf::lxmf_delete_message),
         )
-        .route("/api/v1/contacts", get(lxmf::list_contacts))
+        .route(
+            "/api/v1/contacts",
+            get(lxmf::list_contacts).delete(lxmf::clear_contacts),
+        )
         .route("/api/v1/peers", get(lxmf::list_peers))
         .route("/api/v1/peers/{hash}/path", post(lxmf::peer_path))
         .route("/api/v1/peers/{hash}/probe", post(lxmf::peer_probe))

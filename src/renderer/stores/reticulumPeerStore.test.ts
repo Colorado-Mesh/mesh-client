@@ -101,8 +101,96 @@ describe('mergeReticulumPeerMaps', () => {
 
     expect(peers.get('abc123')?.favorited).toBe(true);
     expect(peers.get('abc123')?.custom_display_name).toBe('Custom A');
+    expect(contacts.has('abc123')).toBe(false);
     expect(contacts.get('def456')?.last_heard).toBe(1000);
     expect(peers.has('def456')).toBe(true);
+  });
+
+  it('does not promote favorited path peers without last_heard into contacts', () => {
+    const { peers, contacts } = mergeReticulumPeerMaps(
+      [
+        {
+          destination_hash: 'aabb01',
+          display_name: 'Path Peer',
+          hops: 1,
+        },
+      ],
+      [],
+      [
+        {
+          destination_hash: 'aabb01',
+          display_name: 'Renamed Peer',
+          favorited: 1,
+        },
+      ],
+    );
+
+    expect(peers.get('aabb01')?.favorited).toBe(true);
+    expect(peers.get('aabb01')?.custom_display_name).toBe('Renamed Peer');
+    expect(contacts.has('aabb01')).toBe(false);
+  });
+
+  it('promotes SQLite rows with last_heard into contacts (Save Contact)', () => {
+    const { peers, contacts } = mergeReticulumPeerMaps(
+      [
+        {
+          destination_hash: 'aabb02',
+          display_name: 'Announce Name',
+          hops: 3,
+        },
+      ],
+      [],
+      [
+        {
+          destination_hash: 'aabb02',
+          display_name: 'Saved Label',
+          last_heard: 1_700_000_000,
+          favorited: 0,
+        },
+      ],
+    );
+
+    expect(contacts.get('aabb02')?.last_heard).toBe(1_700_000_000);
+    expect(contacts.get('aabb02')?.custom_display_name).toBe('Saved Label');
+    expect(contacts.get('aabb02')?.hops).toBe(3);
+    expect(peers.has('aabb02')).toBe(true);
+  });
+
+  it('promotes DB-only last_heard rows into contacts when peer is absent', () => {
+    const { peers, contacts } = mergeReticulumPeerMaps(
+      [],
+      [],
+      [
+        {
+          destination_hash: 'aabb03',
+          display_name: 'Offline Contact',
+          last_heard: 1_700_000_100,
+          favorited: 1,
+        },
+      ],
+    );
+
+    expect(contacts.get('aabb03')?.last_heard).toBe(1_700_000_100);
+    expect(contacts.get('aabb03')?.favorited).toBe(true);
+    expect(peers.has('aabb03')).toBe(true);
+  });
+
+  it('keeps DB-only favorite/appearance rows on peers without promoting to contacts', () => {
+    const { peers, contacts } = mergeReticulumPeerMaps(
+      [],
+      [],
+      [
+        {
+          destination_hash: 'aabb04',
+          display_name: 'Starred',
+          favorited: 1,
+        },
+      ],
+    );
+
+    expect(peers.get('aabb04')?.favorited).toBe(true);
+    expect(peers.get('aabb04')?.custom_display_name).toBe('Starred');
+    expect(contacts.has('aabb04')).toBe(false);
   });
 
   it('reflects contact fields on the merged peer entry and applies SQLite overlay to contacts', () => {
@@ -206,6 +294,46 @@ describe('reticulumPeerStore', () => {
     useReticulumPeerStore.getState().clearPeers();
     expect(useReticulumPeerStore.getState().peers.size).toBe(0);
     expect(useReticulumPeerStore.getState().contacts.size).toBe(0);
+  });
+
+  it('clearAllContacts clears sidecar, SQLite contact rows, and store contacts', async () => {
+    const proxyDelete = vi.fn().mockResolvedValue({ ok: true, cleared: 3 });
+    const clearDb = vi.fn().mockResolvedValue({ changes: 2 });
+    const proxyGet = vi.fn((path: string) => {
+      if (path === '/api/v1/contacts') return Promise.resolve({ contacts: [] });
+      if (path === '/api/v1/peers') {
+        return Promise.resolve({
+          peers: [
+            { destination_hash: 'aabb01', hops: 1 },
+            { destination_hash: 'ccdd02', display_name: 'Demoted', last_seen: 9 },
+          ],
+        });
+      }
+      return Promise.resolve({});
+    });
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: { proxyDelete, proxyGet },
+        db: {
+          clearReticulumContactDestinations: clearDb,
+          getReticulumDestinations: vi.fn().mockResolvedValue([]),
+        },
+      },
+    });
+
+    useReticulumPeerStore.getState().replacePeers([{ destination_hash: 'aabb01', hops: 1 }]);
+    useReticulumPeerStore
+      .getState()
+      .replaceContacts([{ destination_hash: 'ccdd02', last_heard: 9, display_name: 'Demoted' }]);
+
+    const result = await useReticulumPeerStore.getState().clearAllContacts();
+
+    expect(proxyDelete).toHaveBeenCalledWith('/api/v1/contacts');
+    expect(clearDb).toHaveBeenCalled();
+    expect(result).toEqual({ clearedSidecar: 3, clearedDb: 2 });
+    expect(useReticulumPeerStore.getState().contacts.size).toBe(0);
+    expect(useReticulumPeerStore.getState().peers.has('aabb01')).toBe(true);
+    expect(useReticulumPeerStore.getState().peers.get('ccdd02')?.display_name).toBe('Demoted');
   });
 
   it('toggleFavorite rolls back when SQLite upsert fails', async () => {

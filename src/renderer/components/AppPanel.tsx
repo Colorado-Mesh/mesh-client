@@ -48,6 +48,7 @@ import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
+import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { HelpTooltip } from './HelpTooltip';
 import { ReticulumAppPanelSection } from './ReticulumAppPanelSection';
 import { useToast } from './Toast';
@@ -67,6 +68,7 @@ type DangerActionId =
   | 'pruneOfflineNodes'
   | 'clearNodes'
   | 'deleteContactsNoPubkeys'
+  | 'clearReticulumContacts'
   | 'clearMessages'
   | 'clearAllRepeaters'
   | 'clearAllData';
@@ -104,6 +106,7 @@ const DANGER_ACTION_LABEL_KEY: Record<DangerActionId, string> = {
   pruneOfflineNodes: 'appPanel.pruneOfflineNodesTitle',
   clearNodes: 'appPanel.clearAllNodesButton',
   deleteContactsNoPubkeys: 'appPanel.deleteContactsNoPubkeysTitle',
+  clearReticulumContacts: 'appPanel.clearReticulumContactsTitle',
   clearMessages: 'appPanel.clearMessagesTitle',
   clearAllRepeaters: 'appPanel.clearAllRepeaters',
   clearAllData: 'appPanel.clearAllLocalData',
@@ -321,6 +324,8 @@ export default function AppPanel({
   const setHistoryWindow = usePositionHistoryStore((s) => s.setHistoryWindow);
   const clearHistory = usePositionHistoryStore((s) => s.clearHistory);
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
+  const reticulumContactCount = useReticulumPeerStore((s) => s.contacts.size);
+  const clearAllReticulumContacts = useReticulumPeerStore((s) => s.clearAllContacts);
 
   const historyWindowOptionLabels = useMemo((): Record<number, string> => {
     return {
@@ -2158,6 +2163,48 @@ export default function AppPanel({
                 </button>
               )}
             </div>
+
+            {/* Reticulum contacts */}
+            {protocol === 'reticulum' && (
+              <div className="space-y-2 border-t border-red-900/50 pt-4">
+                <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+                  {t('appPanel.dangerZoneReticulumHeading')}
+                </div>
+                <p className="text-muted text-xs leading-relaxed">
+                  {t('appPanel.clearReticulumContactsDesc')}
+                </p>
+                <button
+                  type="button"
+                  disabled={!reticulumSidecarReady}
+                  aria-label={t('appPanel.clearReticulumContactsButton', {
+                    count: reticulumContactCount,
+                  })}
+                  onClick={() => {
+                    executeWithConfirmation({
+                      actionId: 'clearReticulumContacts',
+                      title: t('appPanel.clearReticulumContactsTitle'),
+                      message: t('appPanel.clearReticulumContactsConfirm', {
+                        count: reticulumContactCount,
+                      }),
+                      confirmLabel: t('appPanel.clearReticulumContactsConfirmButton', {
+                        count: reticulumContactCount,
+                      }),
+                      danger: true,
+                      action: async () => {
+                        await clearAllReticulumContacts();
+                      },
+                    });
+                  }}
+                  className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <div className="font-medium">
+                    {t('appPanel.clearReticulumContactsButton', {
+                      count: reticulumContactCount,
+                    })}
+                  </div>
+                </button>
+              </div>
+            )}
 
             {/* Messages */}
             <div className="space-y-2 border-t border-red-900/50 pt-4">

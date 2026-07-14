@@ -74,6 +74,7 @@ The Connection tab UI edits a subset: **name** for all types; **host** / **port*
 | POST   | `/api/v1/lxmf/resource`        | `{ destination_hash, file_name, mime_type, data_base64, reply_to_hash? }` | Live: LXMF `FIELD_FILE_ATTACHMENTS` send. Stub: local persist only. `{ ok, message? }`                                                                        |
 | DELETE | `/api/v1/lxmf/messages/{hash}` |                                                                           | `{ ok }`                                                                                                                                                      |
 | GET    | `/api/v1/contacts`             |                                                                           | `{ contacts: [] }`                                                                                                                                            |
+| DELETE | `/api/v1/contacts`             |                                                                           | `{ ok, cleared }` — clears LXMF contacts after demoting them into the peer cache (keeps Peers; does not delete chat messages)                                 |
 
 ### Peers, topology, and propagation
 

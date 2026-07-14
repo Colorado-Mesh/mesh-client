@@ -322,6 +322,23 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     }
   });
 
+  /** Clear LXMF contact marker (last_heard); keeps display_name / favorite / icon peer meta. */
+  ipcMain.handle('db:clearReticulumContactDestinations', (event) => {
+    try {
+      assertIpcSender(event, 'db:clearReticulumContactDestinations');
+      const db = getDbForIpc('db:clearReticulumContactDestinations');
+      if (!db) return { changes: 0 };
+      const result = db
+        .prepareOnce(
+          'UPDATE reticulum_destinations SET last_heard = NULL WHERE last_heard IS NOT NULL',
+        )
+        .run();
+      return { changes: result.changes ?? 0 };
+    } catch (err) {
+      finishDbIpcHandler('db:clearReticulumContactDestinations', err);
+    }
+  });
+
   ipcMain.handle('db:pruneReticulumMessagesByCount', (event, maxCount: number) => {
     try {
       assertIpcSender(event, 'db:pruneReticulumMessagesByCount');

@@ -338,7 +338,13 @@
     "exportForDeveloper": "開発者向けのサポート バンドルをエクスポートする",
     "exportForDeveloperButton": "開発者向けのエクスポート",
     "exportForDeveloperWarning": "保存されたパスワード (MeshCore ルームの資格情報、MQTT 設定など) が含まれる可能性のある完全なデータベースが含まれます。このバンドルはメンテナとのみ非公開で共有し、公開 GitHub では決して共有しません。",
-    "exportSupportBundleFailed": "サポート バンドルをエクスポートできませんでした: {{message}}"
+    "exportSupportBundleFailed": "サポート バンドルをエクスポートできませんでした: {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "すべてのLXMF連絡先を消去",
+    "clearReticulumContactsDesc": "[連絡先]タブとサイドカーの連絡先リストからすべてのエントリを削除します。チャットメッセージ、パステーブルピア、お気に入りのみのピアメタデータが保持されます。連絡先は、誰かにメッセージを送るか、連絡先として保存を使用すると再表示されます。",
+    "clearReticulumContactsConfirm": "これにより、サイドカーおよびローカルデータベースからすべての{{count}} Reticulum LXMF連絡先が完全に消去されます。パステーブルのピアとメッセージは削除されません。これは元に戻せません。",
+    "clearReticulumContactsConfirmButton": "{{count}}件の問い合わせを消去",
+    "clearReticulumContactsButton": "すべての連絡先を消去（ {{count}} ）"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",

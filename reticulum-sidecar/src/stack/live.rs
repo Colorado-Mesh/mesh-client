@@ -584,11 +584,9 @@ impl LiveBridge {
     ///
     /// `receive_path_responses: true` matches lxmd — path responses often carry the
     /// destination public key needed for Direct LRPROOF while already filling the path table.
-    pub fn register_lxmf_identity_announce_handler(&self, inner: Arc<RwLock<PersistedState>>) {
+    pub fn register_lxmf_identity_announce_handler(&self) {
         let transport_tx = self.handle.transport_tx.clone();
         let outbound = self.outbound.clone();
-        let config_dir = self.config_dir.clone();
-        let storage_dir = self.storage_dir.clone();
         let event_tx = self.event_tx.clone();
         let display_name_cache = self.display_name_cache.clone();
         tokio::spawn(async move {
@@ -614,16 +612,12 @@ impl LiveBridge {
                         driver.register_identity_key(&dest_hex, pub_key);
                     }
                 }
+                // Named announces update the display-name cache for peer labels only —
+                // do not upsert LXMF contacts (contacts are messaged / explicitly saved).
                 if let Some(name) = parse_announce_display_name(evt.app_data.as_deref()) {
                     if let Ok(mut cache) = display_name_cache.lock() {
                         cache.insert(dest_hex.clone(), name.clone());
                     }
-                    let mut state = inner.write().await;
-                    state.upsert_contact(&dest_hex, Some(name.clone()));
-                    if let Err(e) = state.save(&config_dir, &storage_dir) {
-                        tracing::warn!("lxmf announce contact persist failed: {e}");
-                    }
-                    drop(state);
                     let frame = serde_json::json!({
                         "type": "announce.received",
                         "payload": {

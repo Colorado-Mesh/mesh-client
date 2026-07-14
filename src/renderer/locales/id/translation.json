@@ -338,7 +338,13 @@
     "exportForDeveloper": "Ekspor paket dukungan untuk pengembang",
     "exportForDeveloperButton": "Ekspor untuk Pengembang",
     "exportForDeveloperWarning": "Termasuk database lengkap Anda, yang mungkin berisi kata sandi yang disimpan (kredensial ruang MeshCore, pengaturan MQTT, dll.). Bagikan bundel ini secara pribadi hanya kepada pengelola — jangan pernah di GitHub publik.",
-    "exportSupportBundleFailed": "Tidak dapat mengekspor paket dukungan: {{message}}"
+    "exportSupportBundleFailed": "Tidak dapat mengekspor paket dukungan: {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "Hapus semua kontak LXMF",
+    "clearReticulumContactsDesc": "Menghapus setiap entri dari tab Kontak dan daftar kontak sidecar. Pesan obrolan, rekan sejawat, dan metadata teman sejawat favorit saja disimpan. Kontak muncul kembali saat Anda mengirim pesan kepada seseorang atau menggunakan Simpan sebagai kontak.",
+    "clearReticulumContactsConfirm": "Ini akan menghapus semua kontak {{count}} Reticulum LXMF secara permanen dari database sidecar dan lokal. Path - table peer dan pesan tidak dihapus. Ini tidak dapat diurungkan.",
+    "clearReticulumContactsConfirmButton": "Hapus {{count}} kontak",
+    "clearReticulumContactsButton": "Hapus Semua Kontak ({{count}})"
   },
   "aria": {
     "closeDialog": "Tutup dialog",

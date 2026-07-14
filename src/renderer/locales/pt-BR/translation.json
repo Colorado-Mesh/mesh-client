@@ -338,7 +338,13 @@
     "exportForDeveloper": "Exportar pacote de suporte para desenvolvedor",
     "exportForDeveloperButton": "Exportar para desenvolvedor",
     "exportForDeveloperWarning": "Inclui seu banco de dados completo, que pode conter senhas salvas (credenciais de sala MeshCore, configurações MQTT, etc.). Compartilhe este pacote de forma privada apenas com os mantenedores — nunca no GitHub público.",
-    "exportSupportBundleFailed": "Não foi possível exportar o pacote de suporte: {{message}}"
+    "exportSupportBundleFailed": "Não foi possível exportar o pacote de suporte: {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "Limpar todos os contatos LXMF",
+    "clearReticulumContactsDesc": "Remove todas as entradas da guia Contatos e da lista de contatos do sidecar. Mensagens de bate-papo, pares de tabela de caminhos e metadados de pares somente favoritos são mantidos. Os contatos reaparecem quando você envia uma mensagem para alguém ou usa Salvar como contato.",
+    "clearReticulumContactsConfirm": "Isso limpará permanentemente todos os contatos {{count}} Reticulum LXMF do sidecar e do banco de dados local. Os pares de tabela de caminho e as mensagens não são excluídos. Isso não pode ser desfeito.",
+    "clearReticulumContactsConfirmButton": "Limpar {{count}} contatos",
+    "clearReticulumContactsButton": "Limpar todos os contatos ({{count}})"
   },
   "aria": {
     "closeDialog": "Fechar janela",

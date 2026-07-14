@@ -338,7 +338,13 @@
     "exportForDeveloper": "Supportpaket für Entwickler exportieren",
     "exportForDeveloperButton": "Export für Entwickler",
     "exportForDeveloperWarning": "Beinhaltet Ihre vollständige Datenbank, die möglicherweise gespeicherte Passwörter (MeshCore-Raumanmeldeinformationen, MQTT-Einstellungen usw.) enthält. Teilen Sie dieses Paket nur privat mit Betreuern – niemals auf dem öffentlichen GitHub.",
-    "exportSupportBundleFailed": "Support-Paket konnte nicht exportiert werden: {{message}}"
+    "exportSupportBundleFailed": "Support-Paket konnte nicht exportiert werden: {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "Alle LXMF-Kontakte löschen",
+    "clearReticulumContactsDesc": "Entfernt jeden Eintrag aus der Registerkarte Kontakte und der Seitenwagen-Kontaktliste. Chat-Nachrichten, Pfad-Tabelle Peers und Favoriten nur Peer-Metadaten werden beibehalten. Kontakte werden wieder angezeigt, wenn Sie jemandem eine Nachricht senden oder als Kontakt speichern verwenden.",
+    "clearReticulumContactsConfirm": "Dadurch werden alle {{count}} Reticulum LXMF-Kontakte dauerhaft aus dem Beiwagen und der lokalen Datenbank entfernt. Pfad-Tabellen-Peers und Nachrichten werden nicht gelöscht. Dies kann nicht rückgängig gemacht werden.",
+    "clearReticulumContactsConfirmButton": "{{count}} Kontakte löschen",
+    "clearReticulumContactsButton": "Alle Kontakte löschen ({{count}})"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
