@@ -470,13 +470,13 @@ export interface ChatPanelProps {
   dmOnlyChat?: boolean;
   /** Reticulum LXMF delivery status badge on outbound/inbound messages. */
   showLxmfDeliveryStatus?: boolean;
-  /** Reticulum LXMF attachment line in message bubbles. */
+  /** Read-only historic LXMF `[file:…]` labels in message bubbles. */
   showLxmfAttachmentLine?: boolean;
   /** Composer single-message payload limit override (LXMF). */
   composerPayloadLimit?: number;
   /** Use LXMF message hash for threaded replies (ratspeak.chat.v2). */
   lxmfReplyHashReplies?: boolean;
-  /** Reticulum LXMF file/image attachments in DM composer. */
+  /** Optional LXMF file/voice send (unused while hasLxmfAttachments is false). */
   onSendAttachment?: (file: File, destination: number) => Promise<void>;
   /** Reticulum: open Network tab propagation settings. */
   onOpenPropagationSettings?: () => void;
@@ -2537,10 +2537,7 @@ function ChatPanel({
                             <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
                               {showLxmfAttachmentLine &&
                               parseReticulumAttachmentPayload(msg.payload) ? (
-                                <ReticulumAttachmentLine
-                                  payload={msg.payload}
-                                  attachmentPath={msg.reticulumAttachmentPath}
-                                />
+                                <ReticulumAttachmentLine payload={msg.payload} />
                               ) : (
                                 <ChatPayloadText
                                   text={msg.payload}

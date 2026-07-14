@@ -2715,16 +2715,9 @@ function AppContent() {
                             protocol={protocol}
                             dmOnlyChat={capabilities.hasReticulumInterfaceConfig}
                             showLxmfDeliveryStatus={capabilities.hasLxmfDeliveryStatus}
-                            showLxmfAttachmentLine={capabilities.hasLxmfAttachments}
+                            showLxmfAttachmentLine={capabilities.hasReticulumInterfaceConfig}
                             composerPayloadLimit={capabilities.lxmfPayloadLimit}
                             lxmfReplyHashReplies={capabilities.hasLxmfDeliveryStatus}
-                            onSendAttachment={
-                              capabilities.hasLxmfAttachments
-                                ? (file, destination) =>
-                                    reticulumPanelActions.sendAttachment?.(file, destination) ??
-                                    Promise.resolve()
-                                : undefined
-                            }
                             scrollToTopRef={scrollToTopChatRef}
                             outerScrollMetricsRootRef={mainViewportRef}
                             compactMode={chatCompactMode}

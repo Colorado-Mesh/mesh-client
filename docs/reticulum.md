@@ -29,7 +29,7 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 | Stack lifecycle | Start / stop / auto-start; disconnect & quit                                                                                                                                                                                                                                                                                                                                                                                 |
 | Interfaces      | TCP client, I2P (`peers`), Auto discovery, RNode (USB serial, `ble://…`, Wi‑Fi `tcp://host:7633`); default hub presets (testnet + Ratspeak + RMAP World, added disabled; button syncs/repairs by endpoint)                                                                                                                                                                                                                   |
 | Identity        | Generate / import mnemonic; display name; encrypted export; **identity vault** passcode on Network tab                                                                                                                                                                                                                                                                                                                       |
-| LXMF chat       | DM-only text, reactions, file attachments, voice clips (~60 s)                                                                                                                                                                                                                                                                                                                                                               |
+| LXMF chat       | DM-only text and reactions (file/voice attachments deferred)                                                                                                                                                                                                                                                                                                                                                                 |
 | Delivery        | **Direct** when destination is in path table, **Propagated (PN)** when offline and a preferred propagation node is set; path presence and transport badges (RF/BLE/TCP/NET, explicit multi like RF+TCP, PN) indicate **observed / path-table egress**, not “interfaces enabled” and not final LXMF delivery — UI stays **Sending** until `lxmf_outbound_status` (`delivered` / `failed`); terminal status persists in SQLite |
 | Peers           | RNS path table + LXMF contacts (Peers tab sub-tabs); probe and peer detail modal                                                                                                                                                                                                                                                                                                                                             |
 | Topology        | Best-effort graph from path-table next hops (not a full multi-hop trace)                                                                                                                                                                                                                                                                                                                                                     |
@@ -201,11 +201,10 @@ When multiple enabled local RNode interfaces are connected, the interface list s
 ## Chat (LXMF)
 
 - **DM-only** — no RF channel pills
-- Text, emoji reactions, file attachments (paperclip), voice clips (mic, max ~60 s)
+- Text and emoji reactions. **File and voice attachments are not offered in the UI** (deferred redesign); historic `[file:name:mime]` bubbles still render as a read-only label
 - Outbound **Sending** until sidecar emits `lxmf_outbound_status` (`delivered` / `failed`); `/api/v1/lxmf/send` may return `delivery_status: "queued"` or `"sending"` — that is enqueue/acceptance, not delivery confirmation
 - Terminal **Completes** / **Failed** from `lxmf_outbound_status` are persisted to SQLite (`delivery_status` on `reticulum_messages`) via `applyReticulumOutboundDeliveryStatus.ts` so restart/DB hydration does not regress delivered rows; early WS events before provisional id→hash rekey are buffered
 - **DM path reachability:** active DM header shows a reachability badge (`ReticulumDmPathReachabilityBadge` + `useReticulumDmPathProbe`) seeded from path-table/contact hops, then settled by peer probe; when settled, **Request path** / **Probe** use the same sidecar endpoints as the Peers tab
-- Inbound attachments cached under `userData/reticulum/attachments/`; main process jails paths for save/show-in-folder
 
 ### Delivery modes
 
@@ -273,7 +272,7 @@ Firmware `.zip` files are selected locally (no in-app GitHub download). Disconne
 | Path                                       | Contents                                                                                                           |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
 | `reticulum/config/`                        | Active rnsd INI                                                                                                    |
-| `reticulum/attachments/`                   | Inbound LXMF attachment files                                                                                      |
+| `reticulum/attachments/`                   | Legacy LXMF attachment cache (send UI deferred; may be empty)                                                      |
 | `reticulum/storage/mesh_client_stack.json` | Stub/dev file-backed stack state when not using live RNS — **treat as sensitive** (may hold mnemonic in stub mode) |
 
 ### Config import paths (system)

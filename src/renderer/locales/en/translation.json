@@ -442,8 +442,6 @@
     "reticulumImageAttachment": "Image: {{name}}",
     "reticulumFileAttachment": "File: {{name}}",
     "reticulumAudioAttachment": "Voice: {{name}}",
-    "reticulumSaveAttachment": "Save attachment",
-    "reticulumShowInFolder": "Show in folder",
     "recordVoice": "Record voice message",
     "recordVoiceHint": "Record a voice clip and send as an LXMF attachment (DM only)",
     "stopVoiceRecording": "Stop recording and send",

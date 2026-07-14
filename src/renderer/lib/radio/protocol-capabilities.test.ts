@@ -297,7 +297,7 @@ describe('ProtocolCapabilities contract', () => {
         "hasHopCount": false,
         "hasIpTunnel": false,
         "hasJsonRadioConfigImport": true,
-        "hasLxmfAttachments": true,
+        "hasLxmfAttachments": false,
         "hasLxmfDeliveryStatus": true,
         "hasMapReport": false,
         "hasModemPresets": false,
