@@ -462,6 +462,7 @@ impl PersistedState {
             "to_hash": req.destination_hash,
             "reply_to_hash": req.reply_to_hash,
             "reply_to_id": req.reply_to_id,
+            "reply_preview_text": req.reply_preview_text,
             "direction": "outbound",
             "sent_via": sent_via,
             "received_via": sent_via
@@ -528,6 +529,7 @@ impl PersistedState {
             "timestamp": ts * 1000,
             "to_hash": req.destination_hash,
             "reply_to_hash": req.reply_to_hash,
+            "reply_preview_text": req.reply_preview_text,
             "direction": "outbound",
             "attachment": {
                 "file_name": req.file_name,

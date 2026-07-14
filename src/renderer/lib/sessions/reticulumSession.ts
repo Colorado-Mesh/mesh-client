@@ -40,6 +40,7 @@ export type ReticulumSendMessageFn = (
   to: number | string,
   replyToHash?: string,
   pendingId?: string,
+  replyPreviewText?: string,
 ) => Promise<void>;
 
 export function getReticulumSendMessage(

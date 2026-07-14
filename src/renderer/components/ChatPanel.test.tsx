@@ -1857,6 +1857,85 @@ describe('ChatPanel StatusBadge', () => {
     expect(screen.getByText('Saved parent snippet')).toBeInTheDocument();
   });
 
+  it('renders Reticulum quote bubble from reticulum_reply_to_hash and jumps to parent', () => {
+    const parentHash = 'ab'.repeat(32);
+    const t0 = Date.now() - 5000;
+    const t1 = t0 + 1000;
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="reticulum"
+          dmOnlyChat
+          myNodeNum={1}
+          ownNodeIds={[1]}
+          initialDmTarget={2}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Alice',
+              payload: 'Parent LXMF text',
+              channel: 0,
+              timestamp: t0,
+              status: 'acked',
+              to: 1,
+              reticulum_message_hash: parentHash,
+            },
+            {
+              sender_id: 1,
+              sender_name: 'Me',
+              payload: 'Child reply',
+              channel: 0,
+              timestamp: t1,
+              status: 'acked',
+              to: 2,
+              reticulum_message_hash: 'cd'.repeat(32),
+              reticulum_reply_to_hash: parentHash,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(
+      screen.getByRole('button', { name: /Jump to quoted message from Alice/i }),
+    ).toBeInTheDocument();
+    // Parent payload appears in the original bubble and again in the quote strip.
+    expect(screen.getAllByText('Parent LXMF text').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Child reply')).toBeInTheDocument();
+  });
+
+  it('renders Reticulum quote from stored preview when parent hash is missing from thread', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="reticulum"
+          dmOnlyChat
+          myNodeNum={1}
+          ownNodeIds={[1]}
+          initialDmTarget={2}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Bob',
+              payload: 'orphan reply',
+              channel: 0,
+              timestamp: Date.now(),
+              status: 'acked',
+              to: 1,
+              reticulum_reply_to_hash: 'ef'.repeat(32),
+              replyPreviewText: 'Remote parent quote',
+              replyPreviewSender: 'Alice',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByText('Remote parent quote')).toBeInTheDocument();
+    expect(screen.getByText('Alice')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Jump to quoted message from Alice/i })).toBeNull();
+  });
+
   it('shows tooltip on hover and does not use a native title attribute', async () => {
     // Regression: StatusBadge previously used `title` which is silently dropped
     // in Electron. It must use HelpTooltip so the tooltip mounts in the DOM.

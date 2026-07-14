@@ -885,7 +885,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
   }, []);
 
   const sendMessage = useCallback(
-    async (text: string, to: number | string, replyToHash?: string, pendingId?: string) => {
+    async (
+      text: string,
+      to: number | string,
+      replyToHash?: string,
+      pendingId?: string,
+      replyPreviewText?: string,
+    ) => {
       if (!identityId) return;
       const destination =
         typeof to === 'string'
@@ -898,6 +904,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (replyToHash) {
         body.reply_to_hash = replyToHash;
         body.reply_to_id = replyToHash;
+      }
+      const quote = replyPreviewText?.trim();
+      if (quote) {
+        body.reply_preview_text = quote;
       }
       try {
         const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/send', body)) as {

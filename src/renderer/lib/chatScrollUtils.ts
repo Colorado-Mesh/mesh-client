@@ -194,6 +194,20 @@ export function findMessageIndexByKey(messages: readonly ChatMessage[], key: num
   return -1;
 }
 
+/** Resolve virtual index for Reticulum quote jump by LXMF message hash. */
+export function findMessageIndexByReticulumHash(
+  messages: readonly ChatMessage[],
+  replyToHash: string,
+): number {
+  const target = replyToHash.trim().toLowerCase();
+  if (!target) return -1;
+  for (let i = 0; i < messages.length; i++) {
+    const candidate = messages[i].reticulum_message_hash?.trim().toLowerCase();
+    if (candidate != null && candidate === target) return i;
+  }
+  return -1;
+}
+
 /** First message index matching a calendar day key. */
 export function findFirstMessageIndexByDayKey(
   messages: readonly ChatMessage[],

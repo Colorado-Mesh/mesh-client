@@ -99,6 +99,7 @@ import {
   estimateChatRowHeight,
   findFirstMessageIndexByDayKey,
   findMessageIndexByKey,
+  findMessageIndexByReticulumHash,
   getChatDayKey,
   getChatMessageVirtualizerKey,
   getDistFromChatBottom,
@@ -130,7 +131,11 @@ import {
   reactionDisplayGlyph,
   reactionGlyphFromPicker,
 } from '../lib/reactions';
-import { findMeshtasticParentMessageForReply, truncateReplyPreviewText } from '../lib/replyPreview';
+import {
+  findMeshtasticParentMessageForReply,
+  findReticulumParentMessageForReply,
+  truncateReplyPreviewText,
+} from '../lib/replyPreview';
 import {
   groupChatReactionsByParentKey,
   reactionLookupKeysForParentMessage,
@@ -1327,6 +1332,16 @@ function ChatPanel({
     [filteredMessages],
   );
 
+  const scrollToQuotedParentByHash = useCallback(
+    (replyToHash: string) => {
+      const index = findMessageIndexByReticulumHash(filteredMessages, replyToHash);
+      if (index < 0) return;
+      isPinnedToBottomRef.current = false;
+      messageVirtualizerRef.current.scrollToIndex(index, { align: 'center', behavior: 'smooth' });
+    },
+    [filteredMessages],
+  );
+
   const closeSearch = useCallback(() => {
     setShowSearch(false);
     setSearchQuery('');
@@ -2467,12 +2482,18 @@ function ChatPanel({
 
                             {/* Quoted reply preview */}
                             {(msg.replyId != null ||
+                              msg.reticulum_reply_to_hash != null ||
                               msg.replyPreviewSender != null ||
                               msg.replyPreviewText != null) &&
                               !msg.emoji &&
                               (() => {
-                                const orig =
-                                  msg.replyId != null
+                                const reticulumReplyHash = msg.reticulum_reply_to_hash?.trim();
+                                const orig = reticulumReplyHash
+                                  ? findReticulumParentMessageForReply(
+                                      viewMessages,
+                                      reticulumReplyHash,
+                                    )
+                                  : msg.replyId != null
                                     ? protocol === 'meshtastic'
                                       ? findMeshtasticParentMessageForReply(
                                           viewMessages,
@@ -2506,7 +2527,8 @@ function ChatPanel({
                                     ? nodeDisplayName(nodes.get(orig.sender_id), protocol) ||
                                       orig.sender_name
                                     : msg.replyPreviewSender?.trim() || undefined;
-                                const canJumpToParent = msg.replyId != null && !!orig;
+                                const canJumpToParent =
+                                  !!orig && (reticulumReplyHash != null || msg.replyId != null);
                                 if (!quoteSnippet && !quotedLabel) return null;
                                 const quoteClassName =
                                   'bg-secondary-dark/50 mb-1.5 flex w-full gap-1.5 rounded-lg border border-gray-600/50 px-2 py-1.5 text-left';
@@ -2530,7 +2552,11 @@ function ChatPanel({
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        scrollToQuotedParent(msg.replyId!);
+                                        if (reticulumReplyHash) {
+                                          scrollToQuotedParentByHash(reticulumReplyHash);
+                                        } else if (msg.replyId != null) {
+                                          scrollToQuotedParent(msg.replyId);
+                                        }
                                       }}
                                       className={`${quoteClassName} hover:bg-secondary-dark/80 transition-colors`}
                                       aria-label={t('chatPanel.jumpToQuotedMessage', {

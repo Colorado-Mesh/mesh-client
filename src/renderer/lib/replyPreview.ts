@@ -146,6 +146,19 @@ export function findParentMessageForReply(
   return messages.find((m) => meshcoreMessageMatchesReplyKey(m, replyId));
 }
 
+/** Reticulum / LXMF reply lookup by parent message hash (`FIELD_REPLY_TO`). */
+export function findReticulumParentMessageForReply(
+  messages: readonly ChatMessage[],
+  replyToHash: string,
+): ChatMessage | undefined {
+  const target = replyToHash.trim().toLowerCase();
+  if (!target) return undefined;
+  return messages.find((m) => {
+    const candidate = m.reticulum_message_hash?.trim().toLowerCase();
+    return candidate != null && candidate === target;
+  });
+}
+
 /**
  * Fills reply preview fields when the parent message is present in `priorMessages`
  * (Meshtastic RF/MQTT ingest).

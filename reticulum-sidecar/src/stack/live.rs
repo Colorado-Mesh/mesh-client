@@ -12,6 +12,11 @@ use std::time::{Duration, Instant};
 
 use lxmf_core::constants::{DeliveryMethod, FIELD_FILE_ATTACHMENTS, FIELD_ICON_APPEARANCE};
 use lxmf_core::message::LxMessage;
+
+/// Upstream LXMF 1.0.0 reply-to (`LXMF.py`); not yet named in rsLXMF constants.
+const FIELD_REPLY_TO: u8 = 0x30;
+/// Optional UTF-8 quoted parent text for clients that lack the parent message.
+const FIELD_REPLY_QUOTE: u8 = 0x31;
 use lxmf_core::router::LxmRouter;
 use rns_identity::destination::Destination;
 use rns_identity::identity::Identity;
@@ -997,12 +1002,17 @@ impl LiveBridge {
     /// Build a signed outbound LXMF message whose [`LxMessage::hash`] matches
     /// Direct link-delivery completion events (Unsigned packs fail with `NotSigned`
     /// and leave the session stuck in `Transferring`).
+    ///
+    /// Reply fields (`FIELD_REPLY_TO` / optional `FIELD_REPLY_QUOTE`) are set
+    /// before `sign()` so they are covered by the message hash.
     fn prepare_signed_outbound_lxmf(
         &self,
         dest: [u8; 16],
         title: &str,
         content: &str,
         method: DeliveryMethod,
+        reply_to: Option<[u8; 32]>,
+        reply_quote: Option<&str>,
     ) -> Result<(LxMessage, String), String> {
         let mut msg = LxMessage::new(
             dest,
@@ -1011,6 +1021,12 @@ impl LiveBridge {
             content,
             method,
         );
+        if let Some(parent_id) = reply_to {
+            msg.set_field(FIELD_REPLY_TO, parent_id.to_vec());
+            if let Some(quote) = reply_quote.map(str::trim).filter(|q| !q.is_empty()) {
+                msg.set_field(FIELD_REPLY_QUOTE, quote.as_bytes().to_vec());
+            }
+        }
         let signing_key = self.identity.get_signing_key().ok_or_else(|| {
             "lxmf sign: identity has no signing key".to_string()
         })?;
@@ -1054,6 +1070,8 @@ impl LiveBridge {
             "",
             &req.emoji,
             delivery_method,
+            None,
+            None,
         )?;
         let mut router = self.router.lock().await;
         router
@@ -1330,11 +1348,19 @@ impl LiveBridge {
             .unwrap_or_default()
             .as_millis() as u64;
 
+        let reply_to = parse_optional_reply_to_hash(req.reply_to_hash.as_deref());
+        let reply_quote = req
+            .reply_preview_text
+            .as_deref()
+            .map(str::trim)
+            .filter(|q| !q.is_empty());
         let (msg, message_hash_hex) = self.prepare_signed_outbound_lxmf(
             dest,
             "",
             &req.text,
             delivery_method,
+            reply_to,
+            reply_quote,
         )?;
         let mut router = self.router.lock().await;
         router
@@ -1346,13 +1372,14 @@ impl LiveBridge {
             .unwrap_or_default()
             .as_secs()
             * 1000) as i64;
-        let payload = serde_json::json!({
+        let reply_to_hash_echo = reply_to.map(hex::encode).or_else(|| req.reply_to_hash.clone());
+        let mut payload = serde_json::json!({
             "sender_hash": self.lxmf_hash_hex,
             "sender_name": self.display_name,
             "text": req.text,
             "timestamp": ts_ms,
             "to_hash": req.destination_hash,
-            "reply_to_hash": req.reply_to_hash,
+            "reply_to_hash": reply_to_hash_echo,
             "reply_to_id": req.reply_to_id,
             "direction": "outbound",
             "delivery_method": delivery_method_str,
@@ -1361,6 +1388,14 @@ impl LiveBridge {
             "delivery_status": "sending",
             "message_hash": message_hash_hex.clone(),
         });
+        if let Some(quote) = reply_quote {
+            if let Some(obj) = payload.as_object_mut() {
+                obj.insert(
+                    "reply_preview_text".into(),
+                    serde_json::Value::String(quote.to_string()),
+                );
+            }
+        }
 
         if let Ok(mut driver) = self.outbound.lock() {
             driver.process_tick(&mut router, &self.event_tx);
@@ -1447,6 +1482,13 @@ impl LiveBridge {
         let attachment_msgpack =
             build_file_attachment_msgpack(&req.file_name, &file_bytes)?;
 
+        let reply_to = parse_optional_reply_to_hash(req.reply_to_hash.as_deref());
+        let reply_quote = req
+            .reply_preview_text
+            .as_deref()
+            .map(str::trim)
+            .filter(|q| !q.is_empty());
+
         let mut msg = LxMessage::new(
             dest,
             parse_hash16(&self.lxmf_hash_hex)?,
@@ -1454,6 +1496,12 @@ impl LiveBridge {
             &text,
             delivery_method,
         );
+        if let Some(parent_id) = reply_to {
+            msg.set_field(FIELD_REPLY_TO, parent_id.to_vec());
+            if let Some(quote) = reply_quote {
+                msg.set_field(FIELD_REPLY_QUOTE, quote.as_bytes().to_vec());
+            }
+        }
         msg.set_msgpack_field(FIELD_FILE_ATTACHMENTS, attachment_msgpack)
             .map_err(|e| format!("attachment field: {e:?}"))?;
         let signing_key = self.identity.get_signing_key().ok_or_else(|| {
@@ -1477,13 +1525,14 @@ impl LiveBridge {
             .as_secs()
             * 1000) as i64;
         let attachment_b64 = base64::engine::general_purpose::STANDARD.encode(&file_bytes);
-        let payload = serde_json::json!({
+        let reply_to_hash_echo = reply_to.map(hex::encode).or_else(|| req.reply_to_hash.clone());
+        let mut payload = serde_json::json!({
             "sender_hash": self.lxmf_hash_hex,
             "sender_name": self.display_name,
             "text": text,
             "timestamp": ts_ms,
             "to_hash": req.destination_hash,
-            "reply_to_hash": req.reply_to_hash,
+            "reply_to_hash": reply_to_hash_echo,
             "direction": "outbound",
             "delivery_method": delivery_method_str,
             "sent_via": egress_via,
@@ -1497,6 +1546,14 @@ impl LiveBridge {
                 "data_base64": attachment_b64,
             }
         });
+        if let Some(quote) = reply_quote {
+            if let Some(obj) = payload.as_object_mut() {
+                obj.insert(
+                    "reply_preview_text".into(),
+                    serde_json::Value::String(quote.to_string()),
+                );
+            }
+        }
 
         if let Ok(mut driver) = self.outbound.lock() {
             driver.process_tick(&mut router, &self.event_tx);
@@ -1701,7 +1758,44 @@ pub(super) fn lxmf_payload_from_message(
             obj.insert("icon_appearance".into(), icon);
         }
     }
+    if let Some(reply) = reply_fields_from_message(msg) {
+        if let Some(obj) = payload.as_object_mut() {
+            obj.insert(
+                "reply_to_hash".into(),
+                serde_json::Value::String(reply.reply_to_hash),
+            );
+            if let Some(quote) = reply.reply_preview_text {
+                obj.insert("reply_preview_text".into(), serde_json::Value::String(quote));
+            }
+        }
+    }
     payload
+}
+
+struct LxmfReplyFields {
+    reply_to_hash: String,
+    reply_preview_text: Option<String>,
+}
+
+/// Decode LXMF 1.0 `FIELD_REPLY_TO` (0x30) and optional `FIELD_REPLY_QUOTE` (0x31).
+fn reply_fields_from_message(msg: &LxMessage) -> Option<LxmfReplyFields> {
+    let raw = msg.get_field(FIELD_REPLY_TO)?;
+    if raw.len() != 32 {
+        return None;
+    }
+    let reply_to_hash = hex::encode(raw);
+    let reply_preview_text = msg.get_field(FIELD_REPLY_QUOTE).and_then(|bytes| {
+        let s = std::str::from_utf8(bytes).ok()?.trim();
+        if s.is_empty() {
+            None
+        } else {
+            Some(s.to_string())
+        }
+    });
+    Some(LxmfReplyFields {
+        reply_to_hash,
+        reply_preview_text,
+    })
 }
 
 fn build_file_attachment_msgpack(file_name: &str, data: &[u8]) -> Result<Vec<u8>, String> {
@@ -1946,6 +2040,32 @@ pub(super) fn parse_hash16(hex_str: &str) -> Result<[u8; 16], String> {
     Ok(out)
 }
 
+/// LXMF message id / reply-to target is a full SHA-256 (64 hex chars → 32 bytes).
+pub(super) fn parse_hash32(hex_str: &str) -> Result<[u8; 32], String> {
+    let trimmed = hex_str.trim();
+    if trimmed.len() != 64 || !trimmed.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("message hash must be exactly 64 hex characters".into());
+    }
+    let bytes = hex::decode(trimmed).map_err(|e| e.to_string())?;
+    let mut out = [0u8; 32];
+    out.copy_from_slice(&bytes[..32]);
+    Ok(out)
+}
+
+/// Parse optional reply parent hash; invalid lengths are omitted (plain DM) with a warning log.
+fn parse_optional_reply_to_hash(hex_str: Option<&str>) -> Option<[u8; 32]> {
+    let Some(raw) = hex_str.map(str::trim).filter(|s| !s.is_empty()) else {
+        return None;
+    };
+    match parse_hash32(raw) {
+        Ok(bytes) => Some(bytes),
+        Err(err) => {
+            tracing::warn!(error = %err, "ignoring invalid reply_to_hash");
+            None
+        }
+    }
+}
+
 /// Cap membership growth event payloads under path-table floods.
 const MAX_PEERS_UPDATED_ADDED: usize = 1024;
 /// Bound announce / contact display-name labels independently of the live path table.
@@ -2160,5 +2280,72 @@ mod icon_appearance_tests {
         assert_eq!(json["icon_name"], "hiking");
         assert_eq!(json["foreground_rgb"], serde_json::json!([255, 255, 0]));
         assert_eq!(json["background_rgb"], serde_json::json!([0, 0, 255]));
+    }
+}
+
+#[cfg(test)]
+mod reply_field_tests {
+    use super::*;
+    use lxmf_core::message::LxMessage;
+
+    #[test]
+    fn parse_hash32_requires_exact_64_hex() {
+        let ok = "aa".repeat(32);
+        assert!(parse_hash32(&ok).is_ok());
+        assert!(parse_hash32("aabb").is_err());
+        assert!(parse_hash32(&"aa".repeat(16)).is_err());
+        assert!(parse_optional_reply_to_hash(Some("not-a-hash")).is_none());
+        assert!(parse_optional_reply_to_hash(None).is_none());
+        assert_eq!(
+            parse_optional_reply_to_hash(Some(&ok)).map(hex::encode),
+            Some(ok)
+        );
+    }
+
+    #[test]
+    fn reply_fields_round_trip_on_lxmf_message() {
+        let parent_id = [0x11u8; 32];
+        let mut msg = LxMessage::new(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "reply body",
+            DeliveryMethod::Direct,
+        );
+        msg.set_field(FIELD_REPLY_TO, parent_id.to_vec());
+        msg.set_field(FIELD_REPLY_QUOTE, b"original snippet".to_vec());
+
+        let fields = reply_fields_from_message(&msg).expect("reply fields");
+        assert_eq!(fields.reply_to_hash, hex::encode(parent_id));
+        assert_eq!(
+            fields.reply_preview_text.as_deref(),
+            Some("original snippet")
+        );
+
+        let payload = lxmf_payload_from_message(
+            &msg,
+            "aabbccddeeff00112233445566778899",
+            "Self",
+            None,
+            None,
+            "inbound",
+            Some("Alice"),
+        );
+        assert_eq!(payload["reply_to_hash"], hex::encode(parent_id));
+        assert_eq!(payload["reply_preview_text"], "original snippet");
+        assert_eq!(payload["text"], "reply body");
+    }
+
+    #[test]
+    fn reply_fields_omit_invalid_length_reply_to() {
+        let mut msg = LxMessage::new(
+            [0u8; 16],
+            [1u8; 16],
+            "",
+            "hi",
+            DeliveryMethod::Direct,
+        );
+        msg.set_field(FIELD_REPLY_TO, vec![0u8; 16]);
+        assert!(reply_fields_from_message(&msg).is_none());
     }
 }
