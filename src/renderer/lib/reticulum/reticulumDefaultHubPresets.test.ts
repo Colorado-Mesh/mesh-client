@@ -102,6 +102,7 @@ describe('reticulumDefaultHubPresets', () => {
         name: 'Custom Dublin',
         host: dublin.host,
         port: dublin.port,
+        mode: 'boundary',
       },
       dublin,
     );
@@ -112,7 +113,23 @@ describe('reticulumDefaultHubPresets', () => {
     expect(patch).not.toHaveProperty('enabled');
   });
 
-  it('returns null repair patch when fields match preset', () => {
+  it('returns null repair patch when fields match preset including mode', () => {
+    const dublin = RETICULUM_DEFAULT_HUB_PRESETS[0];
+    expect(
+      buildDefaultHubRepairPatch(
+        {
+          type: 'tcp',
+          name: dublin.name,
+          host: dublin.host,
+          port: dublin.port,
+          mode: 'boundary',
+        },
+        dublin,
+      ),
+    ).toBeNull();
+  });
+
+  it('repairs missing hub mode to boundary', () => {
     const dublin = RETICULUM_DEFAULT_HUB_PRESETS[0];
     expect(
       buildDefaultHubRepairPatch(
@@ -124,7 +141,7 @@ describe('reticulumDefaultHubPresets', () => {
         },
         dublin,
       ),
-    ).toBeNull();
+    ).toEqual({ mode: 'boundary' });
   });
 
   it('plans add for empty interfaces', () => {
@@ -143,6 +160,7 @@ describe('reticulumDefaultHubPresets', () => {
         name: preset.name,
         host: preset.host,
         port: preset.port,
+        mode: 'boundary',
       }),
     );
     const plan = planDefaultHubPresetsSync(interfaces);
@@ -161,6 +179,7 @@ describe('reticulumDefaultHubPresets', () => {
         name: 'My Dublin',
         host: dublin.host,
         port: dublin.port,
+        mode: 'boundary',
       }),
     ]);
     expect(plan.repair).toHaveLength(1);
@@ -248,6 +267,7 @@ describe('reticulumDefaultHubPresets', () => {
       host: 'rmap.world',
       port: 4242,
       enabled: false,
+      mode: 'boundary',
     });
   });
 
@@ -288,6 +308,7 @@ describe('reticulumDefaultHubPresets', () => {
       host: 'dublin.connect.reticulum.network',
       port: 4965,
       enabled: false,
+      mode: 'boundary',
     });
     const i2p = RETICULUM_DEFAULT_HUB_PRESETS[3];
     expect(buildDefaultHubAddRequest(i2p)).toEqual({
@@ -295,6 +316,7 @@ describe('reticulumDefaultHubPresets', () => {
       name: 'RNS Testnet I2P Hub A',
       host: 'g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p',
       enabled: false,
+      mode: 'boundary',
     });
   });
 

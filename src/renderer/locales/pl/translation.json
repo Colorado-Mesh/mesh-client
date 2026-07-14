@@ -967,7 +967,20 @@
       "rmapDiscoverableAria": "Opublikuj {{name}} na RMAP v4",
       "rmapEnableSuccess": "Wykrywanie RMAP włączone w dniu {{name}}.",
       "rmapDisableSuccess": "Wykrywanie RMAP wyłączone w dniu {{name}}.",
-      "rmapToggleFailed": "Zmiana RMAP nie powiodła się dla {{name}}: {{error}}"
+      "rmapToggleFailed": "Zmiana RMAP nie powiodła się dla {{name}}: {{error}}",
+      "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
+      "mode": "Tryb",
+      "modeAria": "Tryb interfejsu siateczki",
+      "modeHint": "Kontroluje sposób, w jaki ten interfejs łączy się z szerszą siecią (wyszukiwanie ścieżki, ogłaszanie propagacji). Koncentratory TCP zwykle używają granicy; RNode zwykle korzystają z punktu dostępowego.",
+      "modeDefault": "Domyślny (pełny)",
+      "modeOption": {
+        "full": "Pełny",
+        "point_to_point": "Punkt za punktem",
+        "access_point": "Punkt dostępu",
+        "roaming": "Roaming",
+        "boundary": "Granica",
+        "gateway": "Wejście"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

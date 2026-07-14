@@ -30,4 +30,21 @@ describe('reticulumInterfaceLabels', () => {
       }),
     );
   });
+
+  it('formats row summary with mode when set', () => {
+    formatReticulumInterfaceRowSummary(t, {
+      name: 'Hub',
+      type: 'tcp',
+      status: 'up',
+      mode: 'boundary',
+    });
+    expect(t).toHaveBeenCalledWith(
+      'connectionPanel.reticulumInterfaces.rowSummaryWithMode',
+      expect.objectContaining({
+        name: 'Hub',
+        type: 'TCP',
+        mode: 'connectionPanel.reticulumInterfaces.modeOption.boundary',
+      }),
+    );
+  });
 });

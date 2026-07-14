@@ -293,7 +293,76 @@ describe('ReticulumInterfacesPanel', () => {
         txpower: 17,
         callsign: 'NV0N',
         name: '192.168.1.10',
+        mode: 'access_point',
       });
+    });
+  });
+
+  it('posts boundary mode when adding a TCP interface', async () => {
+    const user = userEvent.setup();
+    render(<ReticulumInterfacesPanel {...defaultProps} />);
+
+    await user.type(
+      screen.getByLabelText('connectionPanel.reticulumInterfaces.host'),
+      'example.org',
+    );
+    expect(screen.getByLabelText('connectionPanel.reticulumInterfaces.modeAria')).toHaveValue(
+      'boundary',
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.add' }),
+    );
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith(
+        '/api/v1/interfaces',
+        expect.objectContaining({
+          type: 'tcp',
+          host: 'example.org',
+          mode: 'boundary',
+        }),
+      );
+    });
+  });
+
+  it('includes mode in edit save patch', async () => {
+    const user = userEvent.setup();
+    const proxyPut = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyPut = proxyPut;
+
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'hub',
+            name: 'Hub',
+            type: 'tcp',
+            enabled: true,
+            status: 'up',
+            host: 'example.org',
+            port: 4242,
+            mode: 'boundary',
+          },
+        ]}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.edit' }),
+    );
+    const modeSelect = document.getElementById('edit-mode-hub');
+    expect(modeSelect).toBeTruthy();
+    await user.selectOptions(modeSelect!, 'gateway');
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.saveEdit' }),
+    );
+
+    await waitFor(() => {
+      expect(proxyPut).toHaveBeenCalledWith(
+        '/api/v1/interfaces/hub',
+        expect.objectContaining({ mode: 'gateway' }),
+      );
     });
   });
 
@@ -514,6 +583,7 @@ describe('ReticulumInterfacesPanel', () => {
             status: 'down',
             host: 'dublin.connect.reticulum.network',
             port: 4965,
+            mode: 'boundary',
           },
           {
             id: 'btb',
@@ -523,6 +593,7 @@ describe('ReticulumInterfacesPanel', () => {
             status: 'down',
             host: 'reticulum.betweentheborders.com',
             port: 4242,
+            mode: 'boundary',
           },
           {
             id: 'us-east',
@@ -532,6 +603,7 @@ describe('ReticulumInterfacesPanel', () => {
             status: 'down',
             host: '45.77.109.86',
             port: 4965,
+            mode: 'boundary',
           },
           {
             id: 'i2p',
@@ -540,6 +612,7 @@ describe('ReticulumInterfacesPanel', () => {
             enabled: false,
             status: 'down',
             host: 'g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p',
+            mode: 'boundary',
           },
         ]}
       />,
@@ -584,6 +657,7 @@ describe('ReticulumInterfacesPanel', () => {
             status: 'down',
             host: 'dublin.connect.reticulum.network',
             port: 4965,
+            mode: 'boundary',
           },
           {
             id: 'btb',
@@ -593,6 +667,7 @@ describe('ReticulumInterfacesPanel', () => {
             status: 'down',
             host: 'reticulum.betweentheborders.com',
             port: 4242,
+            mode: 'boundary',
           },
           {
             id: 'us-east',
@@ -602,6 +677,7 @@ describe('ReticulumInterfacesPanel', () => {
             status: 'down',
             host: '45.77.109.86',
             port: 4965,
+            mode: 'boundary',
           },
           {
             id: 'i2p',
@@ -610,6 +686,7 @@ describe('ReticulumInterfacesPanel', () => {
             enabled: false,
             status: 'down',
             host: 'g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p',
+            mode: 'boundary',
           },
         ]}
       />,
@@ -655,6 +732,7 @@ describe('ReticulumInterfacesPanel', () => {
           status: 'down',
           host: preset.host,
           port: preset.port,
+          mode: 'boundary',
         }))}
       />,
     );
@@ -692,6 +770,7 @@ describe('ReticulumInterfacesPanel', () => {
           status: 'down',
           host: preset.host,
           port: preset.port,
+          mode: 'boundary',
         }))}
       />,
     );

@@ -967,7 +967,20 @@
       "rmapDiscoverableAria": "Publicar {{name}} en RMAP v4",
       "rmapEnableSuccess": "Descubrimiento de RMAP habilitado en {{name}}.",
       "rmapDisableSuccess": "Descubrimiento de RMAP desactivado el {{name}}.",
-      "rmapToggleFailed": "Error en el cambio de RMAP para {{name}}: {{error}}"
+      "rmapToggleFailed": "Error en el cambio de RMAP para {{name}}: {{error}}",
+      "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
+      "mode": "Modalidad",
+      "modeAria": "Modo de interfaz de retículo",
+      "modeHint": "Controla cómo esta interfaz se une a la red más amplia (búsqueda de rutas, anuncio de propagación). Los concentradores TCP suelen usar Boundary; los RNodes suelen usar Access Point.",
+      "modeDefault": "Predeterminado (completo)",
+      "modeOption": {
+        "full": "Completas",
+        "point_to_point": "Punto a punto",
+        "access_point": "Punto de acceso the frequency of the radio channel that the access point is operating on",
+        "roaming": "Roaming",
+        "boundary": "Límite",
+        "gateway": "Puerta de enlace"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

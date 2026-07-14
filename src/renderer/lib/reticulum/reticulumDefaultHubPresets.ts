@@ -1,4 +1,8 @@
 import { validateReticulumI2pPeers } from '@/renderer/lib/reticulum/reticulumI2pPeerValidation';
+import {
+  normalizeReticulumInterfaceMode,
+  RETICULUM_HUB_INTERFACE_MODE,
+} from '@/renderer/lib/reticulum/reticulumInterfaceMode';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import { stripConnectHostBrackets } from '@/shared/connectHost';
 
@@ -119,14 +123,15 @@ export function findInterfaceForHubPresetEndpoint(
 }
 
 function interfaceFullyMatchesDefaultHubPreset(
-  iface: Pick<ReticulumInterfaceRow, 'type' | 'name' | 'host' | 'port'>,
+  iface: Pick<ReticulumInterfaceRow, 'type' | 'name' | 'host' | 'port' | 'mode'>,
   preset: ReticulumDefaultHubPreset,
 ): boolean {
-  return reticulumInterfaceMatchesHubPreset(iface, preset) && iface.name === preset.name;
+  const modeOk = normalizeReticulumInterfaceMode(iface.mode) === RETICULUM_HUB_INTERFACE_MODE;
+  return reticulumInterfaceMatchesHubPreset(iface, preset) && iface.name === preset.name && modeOk;
 }
 
 export function buildDefaultHubRepairPatch(
-  iface: Pick<ReticulumInterfaceRow, 'type' | 'name' | 'host' | 'port'>,
+  iface: Pick<ReticulumInterfaceRow, 'type' | 'name' | 'host' | 'port' | 'mode'>,
   preset: ReticulumDefaultHubPreset,
 ): Record<string, unknown> | null {
   const patch: Record<string, unknown> = {};
@@ -142,6 +147,9 @@ export function buildDefaultHubRepairPatch(
   }
   if (preset.type === 'tcp' && preset.port != null && iface.port !== preset.port) {
     patch.port = preset.port;
+  }
+  if (normalizeReticulumInterfaceMode(iface.mode) !== RETICULUM_HUB_INTERFACE_MODE) {
+    patch.mode = RETICULUM_HUB_INTERFACE_MODE;
   }
   return Object.keys(patch).length > 0 ? patch : null;
 }
@@ -200,6 +208,7 @@ export function buildDefaultHubAddRequest(
     name: preset.name,
     host: preset.host,
     enabled: false,
+    mode: RETICULUM_HUB_INTERFACE_MODE,
   };
   if (preset.type === 'tcp' && preset.port != null) {
     body.port = preset.port;

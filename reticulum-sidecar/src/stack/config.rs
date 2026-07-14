@@ -24,6 +24,62 @@ const SUPPORTED_TYPES: &[&str] = &[
 
 const SERIAL_PORT_IFACE_TYPES: &[&str] = &["rnode", "rnode_multi", "kiss"];
 
+/// Canonical rnsd interface modes (see Reticulum / rsReticulum `InterfaceMode`).
+const INTERFACE_MODES: &[&str] = &[
+    "full",
+    "point_to_point",
+    "access_point",
+    "roaming",
+    "boundary",
+    "gateway",
+];
+
+/// Normalize a user/config mode string to a canonical rnsd value.
+/// Accepts shorthands `ap` → `access_point`, `gw` → `gateway`.
+/// Empty / whitespace-only returns `Ok(None)`.
+pub fn normalize_interface_mode(raw: &str) -> Result<Option<String>, String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Ok(None);
+    }
+    let lower = trimmed.to_ascii_lowercase();
+    let canonical = match lower.as_str() {
+        "ap" => "access_point",
+        "gw" => "gateway",
+        other => other,
+    };
+    if INTERFACE_MODES.contains(&canonical) {
+        Ok(Some(canonical.to_string()))
+    } else {
+        Err(format!("invalid interface mode: {trimmed}"))
+    }
+}
+
+/// Recommended default `mode` when adding an interface with no explicit mode.
+pub fn default_mode_for_iface_type(iface_type: &str) -> Option<&'static str> {
+    match iface_type {
+        "tcp" | "i2p" | "udp" => Some("boundary"),
+        "rnode" | "rnode_multi" => Some("access_point"),
+        _ => None,
+    }
+}
+
+fn resolve_interface_mode(
+    iface_type: &str,
+    raw: Option<&str>,
+    apply_default: bool,
+) -> Result<Option<String>, String> {
+    if let Some(raw) = raw {
+        if let Some(normalized) = normalize_interface_mode(raw)? {
+            return Ok(Some(normalized));
+        }
+    }
+    if apply_default {
+        return Ok(default_mode_for_iface_type(iface_type).map(str::to_string));
+    }
+    Ok(None)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImportMode {
     Merge,
@@ -293,7 +349,9 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         coding_rate: block.get("codingrate").and_then(|v| v.parse().ok()),
         callsign: block.get("callsign").map(str::to_string),
         id_interval: block.get("id_interval").and_then(|v| v.parse().ok()),
-        mode: block.get("mode").map(str::to_string),
+        mode: block
+            .get("mode")
+            .and_then(|m| normalize_interface_mode(m).ok().flatten()),
         seed_addresses,
         discoverable: block.get_bool("discoverable"),
         latitude: block.get("latitude").and_then(|v| v.parse().ok()),
@@ -349,6 +407,11 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
 
     if row.iface_type == "ble_peer" && !row.seed_addresses.is_empty() {
         block.set("seed_addresses", &row.seed_addresses.join(","));
+    }
+
+    // Mode applies to all interface types (not only RNode).
+    if let Some(v) = &row.mode {
+        block.set("mode", v);
     }
 
     write_discovery_fields(&mut block, row);
@@ -408,9 +471,7 @@ fn write_rnode_radio_fields(block: &mut IniBlock, row: &InterfaceRow) {
     if let Some(v) = row.id_interval {
         block.set("id_interval", &v.to_string());
     }
-    if let Some(v) = &row.mode {
-        block.set("mode", v);
-    }
+    // `mode` is written by `interface_row_to_block` for all types.
     if let Some(v) = &row.preset {
         block.set("preset", v);
     }
@@ -539,6 +600,11 @@ pub fn add_interface_to_config(
         .unwrap_or_else(|| format!("{}-{}", req.iface_type, &id[..8]));
 
     let enabled = req.enabled.unwrap_or(true);
+    let mode = resolve_interface_mode(
+        &req.iface_type,
+        req.mode.as_deref(),
+        /* apply_default */ true,
+    )?;
     let mut row = InterfaceRow {
         id: interface_id_from_name(&name),
         name,
@@ -556,7 +622,7 @@ pub fn add_interface_to_config(
         coding_rate: req.coding_rate,
         callsign: req.callsign.clone(),
         id_interval: req.id_interval,
-        mode: req.mode.clone(),
+        mode,
         seed_addresses: req.seed_addresses.clone(),
         discoverable: req.discoverable,
         latitude: req.latitude,
@@ -650,8 +716,9 @@ pub fn update_interface_in_config(
     if patch.id_interval.is_some() {
         row.id_interval = patch.id_interval;
     }
-    if patch.mode.is_some() {
-        row.mode = patch.mode.clone();
+    if let Some(ref raw_mode) = patch.mode {
+        // Empty string clears mode; non-empty must be a valid/canonical value.
+        row.mode = resolve_interface_mode(&row.iface_type, Some(raw_mode.as_str()), false)?;
     }
     if patch.seed_addresses.is_some() {
         row.seed_addresses = patch.seed_addresses.clone().unwrap_or_default();
@@ -1851,5 +1918,176 @@ share_instance = Yes
         assert!(content.contains("discover_interfaces = Yes"));
         assert!(!ensure_discover_interfaces_enabled(&dir).unwrap());
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn normalize_interface_mode_accepts_canonical_and_aliases() {
+        assert_eq!(
+            normalize_interface_mode("boundary").unwrap(),
+            Some("boundary".into())
+        );
+        assert_eq!(
+            normalize_interface_mode("  AP ").unwrap(),
+            Some("access_point".into())
+        );
+        assert_eq!(
+            normalize_interface_mode("gw").unwrap(),
+            Some("gateway".into())
+        );
+        assert_eq!(normalize_interface_mode("").unwrap(), None);
+        assert!(normalize_interface_mode("nonsense").is_err());
+    }
+
+    #[test]
+    fn tcp_mode_boundary_round_trips() {
+        let content = r#"
+[reticulum]
+share_instance = Yes
+
+[logging]
+loglevel = 4
+
+[interfaces]
+[[RMAP World]]
+type = TCPClientInterface
+interface_enabled = Yes
+target_host = rmap.world
+target_port = 4242
+mode = boundary
+"#;
+        let parsed = parse_config(content).unwrap();
+        let rows = interfaces_from_parsed(&parsed);
+        assert_eq!(rows[0].mode.as_deref(), Some("boundary"));
+
+        let serialized = serialize_config(&ParsedConfig {
+            reticulum: parsed.reticulum.clone(),
+            logging: parsed.logging.clone(),
+            interfaces: vec![interface_row_to_block(&rows[0])],
+            extra_sections: Vec::new(),
+        });
+        assert!(serialized.contains("mode = boundary"));
+        let reparsed = interfaces_from_parsed(&parse_config(&serialized).unwrap());
+        assert_eq!(reparsed[0].mode.as_deref(), Some("boundary"));
+    }
+
+    #[test]
+    fn update_tcp_preserves_mode_when_patch_omits_it() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"[reticulum]
+share_instance = Yes
+
+[logging]
+loglevel = 4
+
+[interfaces]
+[[Ratspeak]]
+type = TCPClientInterface
+interface_enabled = Yes
+target_host = rns.ratspeak.org
+target_port = 4242
+mode = boundary
+"#,
+        )
+        .unwrap();
+
+        let updated = update_interface_in_config(
+            &dir,
+            "ratspeak",
+            &UpdateInterfacePatch {
+                name: Some("Ratspeak Hub".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(updated.mode.as_deref(), Some("boundary"));
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("mode = boundary"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn add_tcp_defaults_to_boundary_mode() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(&dir, SAMPLE).unwrap();
+
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "tcp".into(),
+                name: Some("New Hub".into()),
+                host: Some("example.org".into()),
+                port: Some(4242),
+                enabled: Some(false),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(row.mode.as_deref(), Some("boundary"));
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("mode = boundary"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn add_rnode_defaults_to_access_point_mode() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(&dir, SAMPLE).unwrap();
+
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "rnode".into(),
+                name: Some("My RNode".into()),
+                serial_port: Some("/dev/ttyUSB9".into()),
+                frequency: Some(914_875_000),
+                bandwidth: Some(125_000),
+                spreading_factor: Some(8),
+                coding_rate: Some(5),
+                txpower: Some(17),
+                enabled: Some(false),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(row.mode.as_deref(), Some("access_point"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn update_rejects_invalid_mode() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(&dir, SAMPLE).unwrap();
+        let err = update_interface_in_config(
+            &dir,
+            "tcp-upstream",
+            &UpdateInterfacePatch {
+                mode: Some("nonsense".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(err.contains("invalid interface mode"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn parse_normalizes_mode_aliases() {
+        let content = r#"
+[interfaces]
+[[Hub]]
+type = TCPClientInterface
+interface_enabled = Yes
+target_host = example.org
+target_port = 4242
+mode = gw
+"#;
+        let rows = interfaces_from_parsed(&parse_config(content).unwrap());
+        assert_eq!(rows[0].mode.as_deref(), Some("gateway"));
     }
 }

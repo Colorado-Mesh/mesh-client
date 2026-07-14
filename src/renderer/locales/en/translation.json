@@ -843,6 +843,19 @@
       "seedAddresses": "Seed peers (optional)",
       "seedAddressesPlaceholder": "AA:BB:CC:DD:EE:FF",
       "rowSummary": "{{name}} ({{type}}) — {{status}}",
+      "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
+      "mode": "Mode",
+      "modeAria": "Interface mode",
+      "modeHint": "Controls how this interface joins the wider network (path seeking, announce propagation). TCP hubs usually use Boundary; RNodes usually use Access point.",
+      "modeDefault": "Default (full)",
+      "modeOption": {
+        "full": "Full",
+        "point_to_point": "Point to point",
+        "access_point": "Access point",
+        "roaming": "Roaming",
+        "boundary": "Boundary",
+        "gateway": "Gateway"
+      },
       "status": {
         "up": "up",
         "down": "down"

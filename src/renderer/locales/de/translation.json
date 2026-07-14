@@ -967,7 +967,20 @@
       "rmapDiscoverableAria": "{{name}} auf RMAP v4 veröffentlichen",
       "rmapEnableSuccess": "RMAP-Erkennung auf {{name}} aktiviert.",
       "rmapDisableSuccess": "RMAP-Erkennung am {{name}} deaktiviert.",
-      "rmapToggleFailed": "RMAP-Änderung für {{name}} fehlgeschlagen: {{error}}"
+      "rmapToggleFailed": "RMAP-Änderung für {{name}} fehlgeschlagen: {{error}}",
+      "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
+      "mode": "Modus",
+      "modeAria": "Retikulum-Schnittstellenmodus",
+      "modeHint": "Steuert, wie diese Schnittstelle dem breiteren Netzwerk beitritt (Pfadsuche, Propagation ankündigen). TCP-Hubs verwenden normalerweise Boundary; RNodes verwenden normalerweise Access Point.",
+      "modeDefault": "Standard (voll)",
+      "modeOption": {
+        "full": "Vollständig",
+        "point_to_point": "Punkt zu Punkt",
+        "access_point": "AcessPoint",
+        "roaming": "Roaming",
+        "boundary": "Begrenzung",
+        "gateway": "Gateway"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

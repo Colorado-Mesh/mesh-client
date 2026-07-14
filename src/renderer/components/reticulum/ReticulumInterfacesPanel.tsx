@@ -31,6 +31,11 @@ import {
   RETICULUM_IFACE_TYPE_LABELS,
 } from '@/renderer/lib/reticulum/reticulumInterfaceLabels';
 import {
+  defaultModeForIfaceType,
+  normalizeReticulumInterfaceMode,
+  RETICULUM_INTERFACE_MODES,
+} from '@/renderer/lib/reticulum/reticulumInterfaceMode';
+import {
   deriveReticulumInterfaceName,
   isReticulumRnodeCallsignType,
 } from '@/renderer/lib/reticulum/reticulumInterfaceName';
@@ -160,6 +165,7 @@ export function ReticulumInterfacesPanel({
   const { t } = useTranslation();
   const { addToast } = useToast();
   const [ifaceType, setIfaceType] = useState<ReticulumIfaceUiType>('tcp');
+  const [ifaceMode, setIfaceMode] = useState<string>(() => defaultModeForIfaceType('tcp') ?? '');
   const [ifaceHost, setIfaceHost] = useState('');
   const [ifacePort, setIfacePort] = useState('4242');
   const [rnodeDeviceName, setRnodeDeviceName] = useState('');
@@ -318,6 +324,11 @@ export function ReticulumInterfacesPanel({
     });
   }, []);
 
+  const handleIfaceTypeChange = useCallback((next: ReticulumIfaceUiType) => {
+    setIfaceType(next);
+    setIfaceMode(defaultModeForIfaceType(next) ?? '');
+  }, []);
+
   const runInterfaceAuditRepair = useCallback(
     async (repairKind: ReticulumConfigRepairKind) => {
       try {
@@ -436,6 +447,10 @@ export function ReticulumInterfacesPanel({
       }
       if (ifaceType === 'pipe') {
         body.command = pipeCommand.trim();
+      }
+      const mode = normalizeReticulumInterfaceMode(ifaceMode);
+      if (mode) {
+        body.mode = mode;
       }
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/interfaces', body)) as {
         ok?: boolean;
@@ -750,6 +765,7 @@ export function ReticulumInterfacesPanel({
         sidecarReady={sidecarApiReady}
         actionsDisabled={actionsDisabled}
         ifaceType={ifaceType}
+        ifaceMode={ifaceMode}
         ifaceHost={ifaceHost}
         ifacePort={ifacePort}
         ifaceCallsign={ifaceCallsign}
@@ -763,7 +779,8 @@ export function ReticulumInterfacesPanel({
         rnodeWifiHost={rnodeWifiHost}
         rnodeWifiPort={rnodeWifiPort}
         seedAddresses={seedAddresses}
-        onIfaceTypeChange={setIfaceType}
+        onIfaceTypeChange={handleIfaceTypeChange}
+        onIfaceModeChange={setIfaceMode}
         onIfaceHostChange={setIfaceHost}
         onIfacePortChange={setIfacePort}
         onIfaceCallsignChange={setIfaceCallsign}
@@ -919,6 +936,7 @@ function buildInterfaceEditPatch(draft: {
   callsign: string;
   pipeCommand: string;
   seedAddresses: string;
+  mode: string;
   rf: RnodeRfFieldValues;
 }): Record<string, unknown> {
   const body: Record<string, unknown> = { name: draft.name.trim(), type: draft.type };
@@ -951,7 +969,47 @@ function buildInterfaceEditPatch(draft: {
   if (draft.type === 'pipe') {
     body.command = draft.pipeCommand.trim() || null;
   }
+  const mode = normalizeReticulumInterfaceMode(draft.mode);
+  // Empty selection clears mode (sidecar accepts empty → None).
+  body.mode = mode ?? '';
   return body;
+}
+
+function ReticulumInterfaceModeSelect({
+  value,
+  onChange,
+  disabled,
+  id,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  id?: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <label className="text-xs text-gray-400" htmlFor={id}>
+      {t('connectionPanel.reticulumInterfaces.mode')}
+      <select
+        id={id}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => {
+          onChange(e.target.value);
+        }}
+        className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+        aria-label={t('connectionPanel.reticulumInterfaces.modeAria')}
+        title={t('connectionPanel.reticulumInterfaces.modeHint')}
+      >
+        <option value="">{t('connectionPanel.reticulumInterfaces.modeDefault')}</option>
+        {RETICULUM_INTERFACE_MODES.map((mode) => (
+          <option key={mode} value={mode}>
+            {t(`connectionPanel.reticulumInterfaces.modeOption.${mode}`)}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 }
 
 function rfFieldsFromInterface(iface: ReticulumInterfaceRow): RnodeRfFieldValues {
@@ -1058,6 +1116,9 @@ function InterfaceEditPanel({
   );
   const [preset, setPreset] = useState(iface.preset ?? '');
   const [callsign, setCallsign] = useState(iface.callsign ?? '');
+  const [mode, setMode] = useState(
+    () => normalizeReticulumInterfaceMode(iface.mode) ?? defaultModeForIfaceType(uiType) ?? '',
+  );
   const [rfFields, setRfFields] = useState<RnodeRfFieldValues>(() => rfFieldsFromInterface(iface));
   const [seedAddresses, setSeedAddresses] = useState((iface.seed_addresses ?? []).join(', '));
   const editUsesBleRnode = uiType === 'rnode' && isReticulumBleRnodeSerialPort(serialPort);
@@ -1089,6 +1150,11 @@ function InterfaceEditPanel({
             className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
           />
         </label>
+        <ReticulumInterfaceModeSelect
+          id={`edit-mode-${iface.id}`}
+          value={mode}
+          onChange={setMode}
+        />
         {uiType === 'tcp' || uiType === 'udp' ? (
           <>
             <label className="text-xs text-gray-400">
@@ -1299,6 +1365,7 @@ function InterfaceEditPanel({
                 callsign,
                 pipeCommand: '',
                 seedAddresses,
+                mode,
                 rf: rfFields,
               }),
             );
@@ -1326,6 +1393,7 @@ function InterfacesSection({
   sidecarReady,
   actionsDisabled,
   ifaceType,
+  ifaceMode,
   ifaceHost,
   ifacePort,
   ifaceCallsign,
@@ -1340,6 +1408,7 @@ function InterfacesSection({
   rnodeWifiPort,
   seedAddresses,
   onIfaceTypeChange,
+  onIfaceModeChange,
   onIfaceHostChange,
   onIfacePortChange,
   onIfaceCallsignChange,
@@ -1376,6 +1445,7 @@ function InterfacesSection({
   sidecarReady: boolean;
   actionsDisabled: boolean;
   ifaceType: ReticulumIfaceUiType;
+  ifaceMode: string;
   ifaceHost: string;
   ifacePort: string;
   ifaceCallsign: string;
@@ -1390,6 +1460,7 @@ function InterfacesSection({
   rnodeWifiPort: string;
   seedAddresses: string;
   onIfaceTypeChange: (v: ReticulumIfaceUiType) => void;
+  onIfaceModeChange: (v: string) => void;
   onIfaceHostChange: (v: string) => void;
   onIfacePortChange: (v: string) => void;
   onIfaceCallsignChange: (v: string) => void;
@@ -1519,6 +1590,12 @@ function InterfacesSection({
               ) : null}
             </select>
           </label>
+          <ReticulumInterfaceModeSelect
+            id="reticulum-add-iface-mode"
+            value={ifaceMode}
+            onChange={onIfaceModeChange}
+            disabled={actionsDisabled}
+          />
           {ifaceType === 'rnode' ? (
             <label className="text-xs text-gray-400">
               {t('connectionPanel.reticulumInterfaces.rnodeTransport')}

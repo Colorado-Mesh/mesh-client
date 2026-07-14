@@ -967,7 +967,20 @@
       "rmapDiscoverableAria": "{{name}} öğesini RMAP v4 'te yayınlayın",
       "rmapEnableSuccess": "RMAP keşfi {{name}} tarihinde etkinleştirildi.",
       "rmapDisableSuccess": "RMAP keşfi {{name}} tarihinde devre dışı bırakıldı.",
-      "rmapToggleFailed": "{{name}} için RMAP değişikliği başarısız oldu: {{error}}"
+      "rmapToggleFailed": "{{name}} için RMAP değişikliği başarısız oldu: {{error}}",
+      "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
+      "mode": "Mod",
+      "modeAria": "Retikulum arayüz modu",
+      "modeHint": "Bu arayüzün daha geniş ağa nasıl katılacağını kontrol eder (yol arama, duyuru yayılımı). TCP hub'ları genellikle Sınırı kullanır; RNode'lar genellikle Erişim noktasını kullanır.",
+      "modeDefault": "Varsayılan (tam)",
+      "modeOption": {
+        "full": "Tam dolu",
+        "point_to_point": "Noktadan noktaya",
+        "access_point": "Erişim noktası",
+        "roaming": "Roaming",
+        "boundary": "Sınır",
+        "gateway": "Geçit"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
