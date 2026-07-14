@@ -55,6 +55,7 @@
     "check:flatpak": "node scripts/check-flatpak.mjs",
     "check:i18n": "node scripts/check-i18n.mjs",
     "check:i18n:branch": "node scripts/check-i18n.mjs --branch",
+    "check:insecure-temp-files": "node scripts/check-insecure-temp-files.mjs",
     "check:ipc-contract": "node scripts/check-ipc-contract.mjs",
     "check:licenses": "license-checker-rseidelsohn --summary --excludePrivatePackages",
     "check:log-injection": "node scripts/check-log-injection.mjs",

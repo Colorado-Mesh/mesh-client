@@ -74,6 +74,7 @@ Adding a cross-boundary feature:
 - **Log injection:** Call `sanitizeLogMessage()` on user-controlled strings before `appendLine()` or loggers.
 - **IPC:** Namespaced channels (`db:*`, `mqtt:*`, etc.); expose only via `contextBridge` in preload; **never** expose `ipcRenderer` directly.
 - **System boundaries:** Follow repo security rules for subprocess APIs, DOM/HTML sinks, and dynamic code. Validate external inputs; do not over-validate internal code.
+- **CodeQL — insecure temp files (`js/insecure-temporary-file`):** Never `writeFile` / `writeFileSync` / `copyFileSync` (etc.) to a predictable path under `os.tmpdir()` / `tmpdir()` (e.g. `path.join(os.tmpdir(), 'fixed-name')`). Always `fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-…-'))` (or `fs.promises.mkdtemp`) and write **inside** that unique directory. String-only tmpdir joins for mocks (no disk write) are OK. Enforced by `pnpm run check:insecure-temp-files` (pre-commit). See `.github/codeql/README.md`.
 
 ## 4. Code Style
 
@@ -89,6 +90,7 @@ Adding a cross-boundary feature:
 ## 5. Testing
 
 - Renderer: jsdom (`src/renderer/**/*.test.{ts,tsx}`). Main: node (`src/main/**/*.test.ts`).
+- **Temp dirs in tests:** Use `mkdtempSync(path.join(os.tmpdir(), 'prefix-'))` — never write to a fixed name under `os.tmpdir()` (CodeQL + `check:insecure-temp-files`).
 - Vitest worker pool sizes and shared Vite dep inline lists live in `vitest.harness.ts` — update when adding deps that need inlining.
 - Prefer `mockConsoleWarn` / `withMockedConsoleWarn` from `src/renderer/lib/vitestConsoleMock.ts` over ad-hoc `vi.spyOn(console, 'warn')` in renderer tests.
 - Monolithic runtimes (`useMeshtasticRuntime`, `useMeshcoreRuntime`, `noble-ble-manager`) may use **source contract tests** (`sourceContractTestHelpers.ts`, `*.reconnect*.test.ts`) when full integration mocking is impractical — see [development-environment.md](docs/development-environment.md#vitest-projects-and-worker-allocation).

@@ -36,6 +36,14 @@ vi.mock('./log-service', () => ({
 
 import { validateReticulumUserConfig } from './reticulum-config-validate';
 
+/** Unique temp dir + empty stub binary (CodeQL `js/insecure-temporary-file`). */
+function makeFakeSidecarBinary(label: string): { dir: string; binary: string } {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), `mesh-validate-${label}-`));
+  const binary = path.join(dir, 'fake-sidecar');
+  fs.writeFileSync(binary, '');
+  return { dir, binary };
+}
+
 function mockSpawnProc(opts: {
   stdout?: string;
   stderr?: string;
@@ -86,6 +94,8 @@ function mockSpawnProc(opts: {
 }
 
 describe('validateReticulumUserConfig', () => {
+  const tempDirs: string[] = [];
+
   beforeEach(() => {
     spawnMock.mockReset();
     resolveBinaryMock.mockReset();
@@ -96,6 +106,12 @@ describe('validateReticulumUserConfig', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    while (tempDirs.length > 0) {
+      const dir = tempDirs.pop();
+      if (dir) {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    }
   });
 
   it.each(['linux', 'darwin', 'win32'] as const)(
@@ -103,8 +119,8 @@ describe('validateReticulumUserConfig', () => {
     async (platform) => {
       const previous = process.platform;
       Object.defineProperty(process, 'platform', { value: platform });
-      const binary = path.join(os.tmpdir(), `fake-sidecar-${platform}`);
-      fs.writeFileSync(binary, '');
+      const { dir, binary } = makeFakeSidecarBinary(platform);
+      tempDirs.push(dir);
       resolveBinaryMock.mockReturnValue(binary);
 
       mockSpawnProc({
@@ -112,8 +128,10 @@ describe('validateReticulumUserConfig', () => {
         closeCode: 0,
       });
 
+      const configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'reticulum-config-validate-'));
+      tempDirs.push(configDir);
       const result = await validateReticulumUserConfig({
-        configDir: path.join(os.tmpdir(), 'reticulum-config-validate'),
+        configDir,
         binaryPath: binary,
       });
       expect(result.ok).toBe(true);
@@ -123,7 +141,6 @@ describe('validateReticulumUserConfig', () => {
       expect(args).toContain('--json');
       expect(sidecarChildEnvMock).toHaveBeenCalled();
       Object.defineProperty(process, 'platform', { value: previous });
-      fs.unlinkSync(binary);
     },
   );
 
@@ -146,8 +163,8 @@ describe('validateReticulumUserConfig', () => {
   });
 
   it('surfaces ok:false issues from sidecar JSON', async () => {
-    const binary = path.join(os.tmpdir(), 'fake-sidecar-issues');
-    fs.writeFileSync(binary, '');
+    const { dir, binary } = makeFakeSidecarBinary('issues');
+    tempDirs.push(dir);
     resolveBinaryMock.mockReturnValue(binary);
     mockSpawnProc({
       stdout: JSON.stringify({
@@ -168,34 +185,31 @@ describe('validateReticulumUserConfig', () => {
     expect(result.issues).toHaveLength(1);
     expect(result.issues[0]?.kind).toBe('tcp_enable_key');
     expect(result.error).toBeDefined();
-    fs.unlinkSync(binary);
   });
 
   it('returns error for invalid JSON stdout', async () => {
-    const binary = path.join(os.tmpdir(), 'fake-sidecar-bad-json');
-    fs.writeFileSync(binary, '');
+    const { dir, binary } = makeFakeSidecarBinary('bad-json');
+    tempDirs.push(dir);
     resolveBinaryMock.mockReturnValue(binary);
     mockSpawnProc({ stdout: 'not-json', closeCode: 0 });
     const result = await validateReticulumUserConfig({ binaryPath: binary });
     expect(result.ok).toBe(false);
     expect(result.error).toBeTruthy();
-    fs.unlinkSync(binary);
   });
 
   it('surfaces stderr when stdout is empty', async () => {
-    const binary = path.join(os.tmpdir(), 'fake-sidecar-empty');
-    fs.writeFileSync(binary, '');
+    const { dir, binary } = makeFakeSidecarBinary('empty');
+    tempDirs.push(dir);
     resolveBinaryMock.mockReturnValue(binary);
     mockSpawnProc({ stdout: '', stderr: 'boom', closeCode: 1 });
     const result = await validateReticulumUserConfig({ binaryPath: binary });
     expect(result.ok).toBe(false);
     expect(result.error).toMatch(/boom/);
-    fs.unlinkSync(binary);
   });
 
   it('times out and kills hung validate-config', async () => {
-    const binary = path.join(os.tmpdir(), 'fake-sidecar-timeout');
-    fs.writeFileSync(binary, '');
+    const { dir, binary } = makeFakeSidecarBinary('timeout');
+    tempDirs.push(dir);
     resolveBinaryMock.mockReturnValue(binary);
     mockSpawnProc({ neverClose: true });
     const result = await validateReticulumUserConfig({
@@ -204,6 +218,5 @@ describe('validateReticulumUserConfig', () => {
     });
     expect(result.ok).toBe(false);
     expect(result.error).toMatch(/timed out/);
-    fs.unlinkSync(binary);
   });
 });
