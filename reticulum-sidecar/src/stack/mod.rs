@@ -642,14 +642,16 @@ impl StackHandle {
     pub async fn list_peers(&self) -> Vec<PeerRow> {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
+            let announce_labels = live.display_name_snapshot();
             let fetched = live.fetch_peers().await;
             let mut inner = self.inner.write().await;
             let mut peers = merge_live_peer_fetch(&mut inner.peers, fetched);
-            let name_by_hash = topology::build_topology_name_map(
+            let mut name_by_hash = topology::build_topology_name_map(
                 &inner.peers,
                 &inner.contacts,
                 &inner.nomad_nodes,
             );
+            topology::extend_name_map_with_announce_labels(&mut name_by_hash, &announce_labels);
             topology::overlay_peer_display_names(&mut peers, &name_by_hash);
             return peers;
         }
@@ -867,11 +869,18 @@ impl StackHandle {
         let peers = self.list_peers().await;
         let (mut nodes, edges) = topology::build_topology(&peers);
         let inner = self.inner.read().await;
-        let name_by_hash = topology::build_topology_name_map(
+        let mut name_by_hash = topology::build_topology_name_map(
             &inner.peers,
             &inner.contacts,
             &inner.nomad_nodes,
         );
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            topology::extend_name_map_with_announce_labels(
+                &mut name_by_hash,
+                &live.display_name_snapshot(),
+            );
+        }
         topology::merge_topology_display_names(&mut nodes, &name_by_hash);
         serde_json::json!({ "nodes": nodes, "edges": edges })
     }

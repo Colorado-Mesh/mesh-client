@@ -1093,6 +1093,14 @@ impl LiveBridge {
         Ok(merge_live_interfaces_with_config(&config_rows, live_rows))
     }
 
+    /// Snapshot of LXMF / Nomad announce display names (labels only — not contacts).
+    pub fn display_name_snapshot(&self) -> HashMap<String, String> {
+        self.display_name_cache
+            .lock()
+            .map(|cache| cache.clone())
+            .unwrap_or_default()
+    }
+
     pub async fn fetch_peers(&self) -> Result<Vec<PeerRow>, String> {
         let resp = self
             .query_control_timed(TransportQuery::GetPathTable)

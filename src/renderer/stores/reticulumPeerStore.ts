@@ -657,12 +657,29 @@ async function refreshReticulumPeersFromSidecarOnce(): Promise<ReticulumContact[
     if (peer.interface) ifaceByHash.set(hash, peer.interface);
   }
 
+  const priorPeers = useReticulumPeerStore.getState().peers;
   const wirePeers = (peersBody.peers ?? []).map((row) => {
     const peer = wirePeerToPeer(row);
     const hash = normalizeHash(peer.destination_hash);
-    if (peer.display_name?.trim()) return peer;
+    const wireName = peer.display_name?.trim()
+      ? (sanitizeReticulumDisplayName(peer.display_name) ?? null)
+      : null;
+    if (wireName && !isReticulumHashPrefixAlias(hash, wireName)) {
+      return { ...peer, display_name: wireName };
+    }
+    const prior = priorPeers.get(hash);
+    const priorName =
+      sanitizeReticulumDisplayName(prior?.custom_display_name) ??
+      sanitizeReticulumDisplayName(prior?.display_name) ??
+      null;
+    if (priorName && !isReticulumHashPrefixAlias(hash, priorName)) {
+      return { ...peer, display_name: priorName };
+    }
     const nomadName = nomadNameByHash.get(hash);
-    return nomadName ? { ...peer, display_name: nomadName } : peer;
+    const nomadSanitized = nomadName ? sanitizeReticulumDisplayName(nomadName) : null;
+    return nomadSanitized
+      ? { ...peer, display_name: nomadSanitized }
+      : { ...peer, display_name: wireName };
   });
   const wireContacts = (contactsBody.contacts ?? []).map((row) =>
     wireContactToContact(row, hopsByHash, ifaceByHash),

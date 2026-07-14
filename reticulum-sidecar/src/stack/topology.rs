@@ -128,6 +128,21 @@ pub fn build_topology_name_map(
     name_by_hash
 }
 
+/// Merge LXMF announce labels into a name map. Existing peer/contact/nomad entries win.
+pub fn extend_name_map_with_announce_labels(
+    name_by_hash: &mut HashMap<String, String>,
+    announce_labels: &HashMap<String, String>,
+) {
+    for (hash, name) in announce_labels {
+        if name.is_empty() {
+            continue;
+        }
+        name_by_hash
+            .entry(hash.clone())
+            .or_insert_with(|| name.clone());
+    }
+}
+
 /// Overlay known display names onto path-table peer rows.
 pub fn overlay_peer_display_names(peers: &mut [PeerRow], name_by_hash: &HashMap<String, String>) {
     merge_topology_display_names(peers, name_by_hash);
@@ -224,6 +239,47 @@ mod tests {
         names.insert("abc".into(), "Alice".into());
         merge_topology_display_names(&mut nodes, &names);
         assert_eq!(nodes[0].display_name.as_deref(), Some("Alice"));
+    }
+
+    #[test]
+    fn announce_labels_fill_nameless_path_peers_without_overwriting_contacts() {
+        let mut peers = vec![
+            PeerRow {
+                destination_hash: "aabb".into(),
+                display_name: None,
+                hops: Some(1),
+                last_seen: Some(1),
+                interface: Some("tcp".into()),
+                path_hash: None,
+                via_hash: None,
+            },
+            PeerRow {
+                destination_hash: "ccdd".into(),
+                display_name: None,
+                hops: Some(2),
+                last_seen: Some(2),
+                interface: Some("tcp".into()),
+                path_hash: None,
+                via_hash: None,
+            },
+        ];
+        let mut name_by_hash = build_topology_name_map(
+            &[],
+            &[ContactRow {
+                destination_hash: "aabb".into(),
+                display_name: Some("Saved Contact".into()),
+                last_heard: Some(1),
+                favorited: false,
+            }],
+            &[],
+        );
+        let mut announce = HashMap::new();
+        announce.insert("aabb".into(), "Announce A".into());
+        announce.insert("ccdd".into(), "Announce B".into());
+        extend_name_map_with_announce_labels(&mut name_by_hash, &announce);
+        overlay_peer_display_names(&mut peers, &name_by_hash);
+        assert_eq!(peers[0].display_name.as_deref(), Some("Saved Contact"));
+        assert_eq!(peers[1].display_name.as_deref(), Some("Announce B"));
     }
 
     #[test]

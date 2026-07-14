@@ -489,6 +489,77 @@ describe('reticulumPeerStore', () => {
     expect(peer).toBeDefined();
     expect(peer?.display_name).toBeNull();
   });
+
+  it('refresh preserves announce alias when path-table peer omits display_name', async () => {
+    const hash = 'aabbccddeeff00112233445566778899';
+    applyReticulumAnnounceReceivedOptimistic({
+      destination_hash: hash,
+      display_name: 'Hub Peer',
+      hops: 1,
+    });
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: {
+          proxyGet: vi.fn((path: string) => {
+            if (path === '/api/v1/contacts') return Promise.resolve({ contacts: [] });
+            if (path === '/api/v1/peers') {
+              return Promise.resolve({
+                peers: [{ destination_hash: hash, hops: 1, interface: 'RNS Testnet' }],
+              });
+            }
+            if (path === '/api/v1/nomadnetwork/nodes') return Promise.resolve({ nodes: [] });
+            return Promise.resolve({});
+          }),
+        },
+        db: { getReticulumDestinations: vi.fn().mockResolvedValue([]) },
+      },
+    });
+
+    await refreshReticulumPeersFromSidecar();
+
+    const peer = useReticulumPeerStore.getState().peers.get(hash);
+    expect(peer?.display_name).toBe('Hub Peer');
+    expect(peer?.interface).toBe('RNS Testnet');
+  });
+
+  it('refresh prefers wire display_name over stale optimistic announce alias', async () => {
+    const hash = '11223344556677889900aabbccddeeff';
+    applyReticulumAnnounceReceivedOptimistic({
+      destination_hash: hash,
+      display_name: 'Stale Alias',
+      hops: 1,
+    });
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: {
+          proxyGet: vi.fn((path: string) => {
+            if (path === '/api/v1/contacts') return Promise.resolve({ contacts: [] });
+            if (path === '/api/v1/peers') {
+              return Promise.resolve({
+                peers: [
+                  {
+                    destination_hash: hash,
+                    hops: 2,
+                    interface: 'tcp',
+                    display_name: 'Wire Name',
+                  },
+                ],
+              });
+            }
+            if (path === '/api/v1/nomadnetwork/nodes') return Promise.resolve({ nodes: [] });
+            return Promise.resolve({});
+          }),
+        },
+        db: { getReticulumDestinations: vi.fn().mockResolvedValue([]) },
+      },
+    });
+
+    await refreshReticulumPeersFromSidecar();
+
+    const peer = useReticulumPeerStore.getState().peers.get(hash);
+    expect(peer?.display_name).toBe('Wire Name');
+    expect(peer?.hops).toBe(2);
+  });
 });
 
 describe('reticulumSelfIdentityToNodeRecord', () => {
