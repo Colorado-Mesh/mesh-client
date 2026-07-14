@@ -1117,7 +1117,15 @@
     "coloradoRegionGateMessage": "Colorado Mesh MQTT je určen pro uživatele sítí v oblasti Colorada a publikuje pod meshcore/DEN. Pokud se nacházíte mimo Colorado, přepněte na LetsMesh (globální veřejný makléř).",
     "coloradoRegionGateStay": "Jsem v Coloradu",
     "coloradoRegionGateSwitch": "Přepnout na LetsMesh",
-    "topicPrefixInvalidIata": "Předpona tématu musí být meshcore/test nebo meshcore/{IATA} (3 písmena), např. meshcore/DEN."
+    "topicPrefixInvalidIata": "Předpona tématu musí být meshcore/test nebo meshcore/{IATA} (3 písmena), např. meshcore/DEN.",
+    "reticulumSharedInstance": {
+      "title": "Share instance is using another app",
+      "body": "This app connected as a client of an existing shared instance. Local TCP hubs and other interfaces in this app’s config are not started in this mode — traffic may only use the other app’s stack.",
+      "networkHint": "Or open Network → Share instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
+      "disableShare": "Turn off Share instance and restart",
+      "disableShareAria": "Turn off Share instance and restart the stack",
+      "disableFailed": "Failed to turn off Share instance."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -1395,13 +1403,14 @@
         "ghost_interface": "Rozhraní „{{name}}“ je v konfiguraci povoleno, ale není načteno službou RNS.",
         "missing_auto_interface": "Není povoleno automatické rozhraní – zjišťování místní sítě LAN je vypnuté.",
         "auto_interface_down": "Automatické rozhraní „{{name}}“ je povoleno, ale nefunguje.",
-        "missing_shared_instance": "Sdílená instance je zapnutá, ale SharedInstanceServer není aktivní.",
-        "shared_instance_unexpected": "SharedInstanceServer je aktivní, ale share_instance je vypnutá.",
+        "missing_shared_instance": "Share instance is on but this app is not hosting the shared server — quit other mesh apps or turn off Share instance, then restart.",
+        "shared_instance_unexpected": "Shared instance server is live but Share instance is off — restart the stack.",
         "runtime_only_interface": "„{{name}}“ je pouze runtime (není uloženo v konfiguraci).",
         "rmap_missing_coordinates": "Rozhraní „{{name}}“ je zjistitelné, ale chybí platné souřadnice mapy.",
         "rmap_no_tcp_hub": "Detekovatelný místní RNode nemá aktivované TCP klientské centrum pro dostupnost internetu.",
         "rmap_transport_disabled": "Detekovatelná rozhraní jsou nakonfigurována, ale režim přenosu je vypnutý.",
-        "rmap_i2p_not_connectable": "Rozhraní I2P „{{name}}“ je zjistitelné, ale připojitelné není ano."
+        "rmap_i2p_not_connectable": "Rozhraní I2P „{{name}}“ je zjistitelné, ale připojitelné není ano.",
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
       },
       "runtime": {
         "rnsNotReady": "Zásobník RNS není připraven",
@@ -2322,7 +2331,15 @@
       "confirm": "Importovat"
     },
     "reticulumConfigImportFailed": "Import konfigurace se nezdařil.",
-    "reticulumConfigNotFound": "Na výchozích cestách nebyla nalezena žádná konfigurace systému Reticulum."
+    "reticulumConfigNotFound": "Na výchozích cestách nebyla nalezena žádná konfigurace systému Reticulum.",
+    "reticulumConfigValidate": {
+      "button": "Check config",
+      "aria": "Validate on-disk network config",
+      "running": "Checking…",
+      "ok": "Config looks good — no audit issues.",
+      "issuesHeading": "{{count}} config issue(s)",
+      "failed": "Config check failed: {{message}}"
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Odebrat z oblíbených",

@@ -54,7 +54,10 @@ function remedyCategoryForRow(row: RfDiagnosticRow): keyof typeof DIAGNOSTICS_CA
   if (row.reticulumRepairKind === 'repair_config' || row.reticulumRepairKind === 'add_auto') {
     return 'Configuration';
   }
-  if (row.reticulumRepairKind === 'restart_stack') {
+  if (
+    row.reticulumRepairKind === 'restart_stack' ||
+    row.reticulumRepairKind === 'disable_share_instance'
+  ) {
     return 'Software';
   }
   if (row.reticulumRepairKind === 'apply_preset') {
@@ -168,6 +171,10 @@ export function ReticulumDiagnosticsSection({
       }
       if (kind === 'add_auto') {
         await runRepair(['add_auto'], row.id);
+        return;
+      }
+      if (kind === 'disable_share_instance') {
+        await runRepair(['disable_share_instance'], row.id);
         return;
       }
       if (kind === 'apply_preset') {

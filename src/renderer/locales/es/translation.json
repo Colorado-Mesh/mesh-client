@@ -1117,7 +1117,15 @@
     "coloradoRegionGateMessage": "Colorado Mesh MQTT es para usuarios de malla del área de Colorado y se publica bajo meshcore/DEN. Si se encuentra fuera de Colorado, cambie a LetsMesh (bróker público global).",
     "coloradoRegionGateStay": "Estoy en Colorado",
     "coloradoRegionGateSwitch": "Cambiar a LetsMesh",
-    "topicPrefixInvalidIata": "El prefijo del tema debe ser meshcore/test o meshcore/{IATA} (3 letras), por ejemplo, meshcore/DEN."
+    "topicPrefixInvalidIata": "El prefijo del tema debe ser meshcore/test o meshcore/{IATA} (3 letras), por ejemplo, meshcore/DEN.",
+    "reticulumSharedInstance": {
+      "title": "Share instance is using another app",
+      "body": "This app connected as a client of an existing shared instance. Local TCP hubs and other interfaces in this app’s config are not started in this mode — traffic may only use the other app’s stack.",
+      "networkHint": "Or open Network → Share instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
+      "disableShare": "Turn off Share instance and restart",
+      "disableShareAria": "Turn off Share instance and restart the stack",
+      "disableFailed": "Failed to turn off Share instance."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",
@@ -1395,13 +1403,14 @@
         "ghost_interface": "La interfaz \"{{name}}\" está habilitada en la configuración pero no cargada por RNS.",
         "missing_auto_interface": "No hay AutoInterface habilitada: la detección de LAN local está desactivada.",
         "auto_interface_down": "La interfaz automática \"{{name}}\" está habilitada pero inactiva.",
-        "missing_shared_instance": "La instancia compartida está activada pero SharedInstanceServer no está activo.",
-        "shared_instance_unexpected": "SharedInstanceServer está activo pero share_instance está desactivado.",
+        "missing_shared_instance": "Share instance is on but this app is not hosting the shared server — quit other mesh apps or turn off Share instance, then restart.",
+        "shared_instance_unexpected": "Shared instance server is live but Share instance is off — restart the stack.",
         "runtime_only_interface": "\"{{name}}\" es solo de tiempo de ejecución (no almacenado en la configuración).",
         "rmap_missing_coordinates": "La interfaz \"{{name}}\" se puede descubrir pero faltan coordenadas de mapa válidas.",
         "rmap_no_tcp_hub": "El RNode local detectable no tiene un concentrador de clientes TCP habilitado para la accesibilidad a Internet.",
         "rmap_transport_disabled": "Las interfaces detectables están configuradas, pero el modo de transporte está desactivado.",
-        "rmap_i2p_not_connectable": "La interfaz I2P \"{{name}}\" es detectable pero no es conectable."
+        "rmap_i2p_not_connectable": "La interfaz I2P \"{{name}}\" es detectable pero no es conectable.",
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
       },
       "runtime": {
         "rnsNotReady": "La pila RNS no está lista",
@@ -2322,7 +2331,15 @@
       "confirm": "Importar"
     },
     "reticulumConfigImportFailed": "Error al importar la configuración.",
-    "reticulumConfigNotFound": "No se encontró ninguna configuración de Reticulum del sistema en las rutas predeterminadas."
+    "reticulumConfigNotFound": "No se encontró ninguna configuración de Reticulum del sistema en las rutas predeterminadas.",
+    "reticulumConfigValidate": {
+      "button": "Check config",
+      "aria": "Validate on-disk network config",
+      "running": "Checking…",
+      "ok": "Config looks good — no audit issues.",
+      "issuesHeading": "{{count}} config issue(s)",
+      "failed": "Config check failed: {{message}}"
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Eliminar de favoritos",

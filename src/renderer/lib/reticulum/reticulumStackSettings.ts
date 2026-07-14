@@ -51,7 +51,7 @@ export function parseReticulumStackSettingsPayload(raw: unknown): ReticulumStack
   const obj = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   return {
     enable_transport: Boolean(obj.enable_transport),
-    share_instance: obj.share_instance !== false,
+    share_instance: Boolean(obj.share_instance),
     loglevel: typeof obj.loglevel === 'number' ? obj.loglevel : Number(obj.loglevel) || 4,
     announce_interval_sec: coerceAnnounceIntervalSec(obj.announce_interval_sec),
   };

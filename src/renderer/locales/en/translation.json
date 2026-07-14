@@ -746,6 +746,14 @@
       "tcpUnreachable": "{{name}}: TCP hub unreachable ({{host}}:{{port}})",
       "tcpUnreachableHint": "The remote Reticulum instance may be offline or blocking connections. Disable this interface or verify the host and port."
     },
+    "reticulumSharedInstance": {
+      "title": "Share instance is using another app",
+      "body": "This app connected as a client of an existing shared instance. Local TCP hubs and other interfaces in this app’s config are not started in this mode — traffic may only use the other app’s stack.",
+      "networkHint": "Or open Network → Share instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
+      "disableShare": "Turn off Share instance and restart",
+      "disableShareAria": "Turn off Share instance and restart the stack",
+      "disableFailed": "Failed to turn off Share instance."
+    },
     "reticulumSidecarIssues": {
       "heading": "{{count}} sidecar interface issue(s) detected",
       "tcpConnectFailed": "{{name}}: TCP connection refused or timed out",
@@ -1429,8 +1437,9 @@
         "ghost_interface": "Interface \"{{name}}\" is enabled in config but not loaded by RNS.",
         "missing_auto_interface": "No enabled AutoInterface — local LAN discovery is off.",
         "auto_interface_down": "AutoInterface \"{{name}}\" is enabled but down.",
-        "missing_shared_instance": "Share instance is on but SharedInstanceServer is not up.",
-        "shared_instance_unexpected": "SharedInstanceServer is live but share_instance is off.",
+        "missing_shared_instance": "Share instance is on but this app is not hosting the shared server — quit other mesh apps or turn off Share instance, then restart.",
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "shared_instance_unexpected": "Shared instance server is live but Share instance is off — restart the stack.",
         "runtime_only_interface": "\"{{name}}\" is runtime-only (not stored in config).",
         "rmap_missing_coordinates": "Interface \"{{name}}\" is discoverable but missing valid map coordinates.",
         "rmap_no_tcp_hub": "Discoverable local RNode has no enabled TCP client hub for internet reachability.",
@@ -2322,7 +2331,15 @@
       "confirm": "Import"
     },
     "reticulumConfigImportFailed": "Config import failed.",
-    "reticulumConfigNotFound": "No system Reticulum config found at default paths."
+    "reticulumConfigNotFound": "No system Reticulum config found at default paths.",
+    "reticulumConfigValidate": {
+      "button": "Check config",
+      "aria": "Validate on-disk network config",
+      "running": "Checking…",
+      "ok": "Config looks good — no audit issues.",
+      "issuesHeading": "{{count}} config issue(s)",
+      "failed": "Config check failed: {{message}}"
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Remove from favorites",

@@ -13,7 +13,10 @@ import {
   useReticulumSidecarApi,
 } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
-import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
+import type {
+  ReticulumConfigValidateResult,
+  ReticulumSidecarEvent,
+} from '@/shared/reticulum-types';
 
 import { refreshReticulumPeersFromSidecar } from '../stores/reticulumPeerStore';
 import { ConfirmModal } from './ConfirmModal';
@@ -123,9 +126,12 @@ export function ReticulumNetworkPanel({
   const [pendingImportMode, setPendingImportMode] = useState<'merge' | 'replace'>('merge');
   const [stackSettings, setStackSettings] = useState({
     enable_transport: false,
-    share_instance: true,
+    share_instance: false,
     loglevel: 4,
   });
+  const [configValidateBusy, setConfigValidateBusy] = useState(false);
+  const [configValidateResult, setConfigValidateResult] =
+    useState<ReticulumConfigValidateResult | null>(null);
 
   const refreshStackSettings = useCallback(async () => {
     if (!sidecarApiReady) return;
@@ -419,6 +425,24 @@ export function ReticulumNetworkPanel({
     }
   };
 
+  const handleValidateConfig = async () => {
+    setConfigValidateBusy(true);
+    setConfigValidateResult(null);
+    try {
+      const result = await window.electronAPI.reticulum.validateConfig();
+      setConfigValidateResult(result);
+    } catch (e) {
+      // catch-no-log-ok: validate failure shown in panel
+      setConfigValidateResult({
+        ok: false,
+        issues: [],
+        error: errLikeToLogString(e),
+      });
+    } finally {
+      setConfigValidateBusy(false);
+    }
+  };
+
   const saveStackSettings = async () => {
     try {
       const current = parseReticulumStackSettingsPayload(
@@ -630,6 +654,19 @@ export function ReticulumNetworkPanel({
               >
                 {t('networkPanel.reticulumConfigImport.replace')}
               </button>
+              <button
+                type="button"
+                disabled={configValidateBusy}
+                onClick={() => {
+                  void handleValidateConfig();
+                }}
+                className="rounded border border-cyan-700 px-2 py-1 text-xs text-cyan-200 hover:bg-cyan-950/40 disabled:opacity-40"
+                aria-label={t('networkPanel.reticulumConfigValidate.aria')}
+              >
+                {configValidateBusy
+                  ? t('networkPanel.reticulumConfigValidate.running')
+                  : t('networkPanel.reticulumConfigValidate.button')}
+              </button>
             </div>
             {importWarnings.length > 0 ? (
               <ul className="mt-2 list-disc pl-4 text-xs text-amber-300">
@@ -637,6 +674,37 @@ export function ReticulumNetworkPanel({
                   <li key={w}>{w}</li>
                 ))}
               </ul>
+            ) : null}
+            {configValidateResult ? (
+              <div
+                className="mt-2 rounded border border-gray-700 bg-slate-900/50 p-2 text-xs"
+                role="status"
+              >
+                {configValidateResult.error || configValidateResult.parseError ? (
+                  <p className="text-red-300">
+                    {t('networkPanel.reticulumConfigValidate.failed', {
+                      message: configValidateResult.parseError ?? configValidateResult.error ?? '',
+                    })}
+                  </p>
+                ) : configValidateResult.ok && configValidateResult.issues.length === 0 ? (
+                  <p className="text-brand-green">{t('networkPanel.reticulumConfigValidate.ok')}</p>
+                ) : (
+                  <>
+                    <p className="mb-1 font-medium text-amber-200">
+                      {t('networkPanel.reticulumConfigValidate.issuesHeading', {
+                        count: configValidateResult.issues.length,
+                      })}
+                    </p>
+                    <ul className="list-disc space-y-1 pl-4 text-amber-100/90">
+                      {configValidateResult.issues.map((issue) => (
+                        <li key={`${issue.kind}-${issue.interface_id ?? ''}-${issue.message}`}>
+                          <span className="text-amber-300">[{issue.severity}]</span> {issue.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
             ) : null}
           </ReticulumCollapsibleSection>
 

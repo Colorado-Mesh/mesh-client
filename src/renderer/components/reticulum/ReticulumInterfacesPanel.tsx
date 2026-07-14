@@ -1956,7 +1956,8 @@ function InterfacesSection({
                     ) : null}
                     {repairKind === 'repair_config' ||
                     repairKind === 'apply_preset' ||
-                    repairKind === 'add_auto' ? (
+                    repairKind === 'add_auto' ||
+                    repairKind === 'disable_share_instance' ? (
                       <button
                         type="button"
                         disabled={actionsDisabled}

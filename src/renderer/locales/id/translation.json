@@ -1117,7 +1117,15 @@
     "coloradoRegionGateMessage": "Colorado Mesh MQTT adalah untuk pengguna mesh area Colorado dan dipublikasikan di bawah meshcore/DEN. Jika Anda berada di luar Colorado, beralihlah ke LetsMesh (broker publik global).",
     "coloradoRegionGateStay": "Saya di Colorado",
     "coloradoRegionGateSwitch": "Beralih ke LetsMesh",
-    "topicPrefixInvalidIata": "Awalan topik harus berupa meshcore/test atau meshcore/{IATA} (3 huruf), misalnya meshcore/DEN."
+    "topicPrefixInvalidIata": "Awalan topik harus berupa meshcore/test atau meshcore/{IATA} (3 huruf), misalnya meshcore/DEN.",
+    "reticulumSharedInstance": {
+      "title": "Share instance is using another app",
+      "body": "This app connected as a client of an existing shared instance. Local TCP hubs and other interfaces in this app’s config are not started in this mode — traffic may only use the other app’s stack.",
+      "networkHint": "Or open Network → Share instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
+      "disableShare": "Turn off Share instance and restart",
+      "disableShareAria": "Turn off Share instance and restart the stack",
+      "disableFailed": "Failed to turn off Share instance."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -1395,13 +1403,14 @@
         "ghost_interface": "Antarmuka \"{{name}}\" diaktifkan di konfigurasi tetapi tidak dimuat oleh RNS.",
         "missing_auto_interface": "Tidak ada AutoInterface yang diaktifkan — penemuan LAN lokal tidak aktif.",
         "auto_interface_down": "AutoInterface \"{{name}}\" diaktifkan tetapi tidak aktif.",
-        "missing_shared_instance": "Bagikan instance aktif tetapi SharedInstanceServer tidak aktif.",
-        "shared_instance_unexpected": "SharedInstanceServer aktif tetapi share_instance tidak aktif.",
+        "missing_shared_instance": "Share instance is on but this app is not hosting the shared server — quit other mesh apps or turn off Share instance, then restart.",
+        "shared_instance_unexpected": "Shared instance server is live but Share instance is off — restart the stack.",
         "runtime_only_interface": "\"{{name}}\" hanya runtime (tidak disimpan dalam konfigurasi).",
         "rmap_missing_coordinates": "Antarmuka \"{{name}}\" dapat ditemukan tetapi tidak memiliki koordinat peta yang valid.",
         "rmap_no_tcp_hub": "RNode lokal yang dapat ditemukan tidak memiliki hub klien TCP yang diaktifkan untuk jangkauan internet.",
         "rmap_transport_disabled": "Antarmuka yang dapat ditemukan dikonfigurasi tetapi mode transportasi tidak aktif.",
-        "rmap_i2p_not_connectable": "Antarmuka I2P \"{{name}}\" dapat ditemukan tetapi terhubung bukan ya."
+        "rmap_i2p_not_connectable": "Antarmuka I2P \"{{name}}\" dapat ditemukan tetapi terhubung bukan ya.",
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
       },
       "runtime": {
         "rnsNotReady": "Tumpukan RNS belum siap",
@@ -2322,7 +2331,15 @@
       "confirm": "Impor"
     },
     "reticulumConfigImportFailed": "Impor konfigurasi gagal.",
-    "reticulumConfigNotFound": "Config Reticulum sistem tidak ditemukan di path default."
+    "reticulumConfigNotFound": "Config Reticulum sistem tidak ditemukan di path default.",
+    "reticulumConfigValidate": {
+      "button": "Check config",
+      "aria": "Validate on-disk network config",
+      "running": "Checking…",
+      "ok": "Config looks good — no audit issues.",
+      "issuesHeading": "{{count}} config issue(s)",
+      "failed": "Config check failed: {{message}}"
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Hapus dari favorit",

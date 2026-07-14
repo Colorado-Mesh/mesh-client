@@ -4,7 +4,13 @@ import { rfRowId } from '@/renderer/lib/types';
 export type ReticulumConfigAuditSeverity = 'error' | 'warning' | 'info';
 
 export type ReticulumConfigRepairKind =
-  'repair_config' | 'disable' | 'apply_preset' | 'edit' | 'restart_stack' | 'add_auto';
+  | 'repair_config'
+  | 'disable'
+  | 'apply_preset'
+  | 'edit'
+  | 'restart_stack'
+  | 'add_auto'
+  | 'disable_share_instance';
 
 export interface ReticulumConfigAuditIssue {
   kind: string;

@@ -5,6 +5,7 @@ import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulum
 import {
   collectReticulumInterfaceAlerts,
   collectReticulumLocalInterfaceConnecting,
+  isReticulumSharedInstanceClientMode,
   type ReticulumLocalInterfaceAlert,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
@@ -16,6 +17,7 @@ import { ReticulumInterfacesPanel } from './reticulum/ReticulumInterfacesPanel';
 import { ReticulumLocalInterfaceAlertsBlock } from './ReticulumLocalInterfaceAlertsBlock';
 import { ReticulumLocalInterfaceConnectingBlock } from './ReticulumLocalInterfaceConnectingBlock';
 import { ReticulumRmapConnectionStatus } from './ReticulumRmapConnectionStatus';
+import { ReticulumSharedInstanceClientBanner } from './ReticulumSharedInstanceClientBanner';
 import { ReticulumSidecarIssueAlertsBlock } from './ReticulumSidecarIssueAlertsBlock';
 
 export interface ReticulumStackPanelProps {
@@ -103,6 +105,10 @@ export function ReticulumStackPanel({
 
   const shareInstanceEnabled = sidecarApiReady && sidecarUiRunning && shareInstanceSetting;
 
+  const sharedInstanceClient = useMemo(
+    () => isReticulumSharedInstanceClientMode(interfaces),
+    [interfaces],
+  );
   const localAlerts = useMemo(
     (): ReticulumLocalInterfaceAlert[] =>
       collectReticulumInterfaceAlerts(interfaces, serialPortPaths, healthOptions),
@@ -176,6 +182,13 @@ export function ReticulumStackPanel({
         {sidecarUiRunning ? (
           <>
             <ReticulumLocalInterfaceConnectingBlock interfaces={connectingInterfaces} />
+            {sharedInstanceClient ? (
+              <ReticulumSharedInstanceClientBanner
+                onRestartStack={handleRestartStack}
+                onRefresh={refresh}
+                onBeginBleConnectGrace={beginBleConnectGrace}
+              />
+            ) : null}
             {sidecarStatus.interfaceIssueAlert ? (
               <ReticulumSidecarIssueAlertsBlock
                 alert={sidecarStatus.interfaceIssueAlert}

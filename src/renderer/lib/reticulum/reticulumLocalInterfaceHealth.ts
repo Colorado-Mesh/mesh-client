@@ -20,9 +20,22 @@ export interface ReticulumLocalInterfaceInput {
   port?: number | null;
 }
 
+export const RETICULUM_SHARED_INSTANCE_CLIENT_NAME = 'SharedInstanceClient';
+
 export interface ReticulumLocalInterfaceAlert {
   iface: ReticulumLocalInterfaceInput;
   reason: 'stale_port' | 'enabled_down' | 'tcp_unreachable';
+}
+
+/** True when mesh-client attached as a shared-instance client (local hubs not spawned). */
+export function isReticulumSharedInstanceClientMode(
+  interfaces: readonly ReticulumLocalInterfaceInput[],
+): boolean {
+  return interfaces.some(
+    (iface) =>
+      iface.name === RETICULUM_SHARED_INSTANCE_CLIENT_NAME &&
+      isReticulumInterfaceOnlineStatus(iface.status),
+  );
 }
 
 export interface ReticulumLocalInterfaceHealthOptions {
@@ -147,6 +160,10 @@ export function collectReticulumLocalInterfaceAlerts(
 export function collectReticulumRemoteInterfaceAlerts(
   interfaces: readonly ReticulumLocalInterfaceInput[],
 ): ReticulumLocalInterfaceAlert[] {
+  // Shared-instance client mode never spawns local TCP hubs — skip false unreachable.
+  if (isReticulumSharedInstanceClientMode(interfaces)) {
+    return [];
+  }
   const alerts: ReticulumLocalInterfaceAlert[] = [];
   for (const iface of interfaces) {
     const health = classifyReticulumRemoteInterface(iface);

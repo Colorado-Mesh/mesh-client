@@ -1117,7 +1117,15 @@
     "coloradoRegionGateMessage": "Colorado Mesh MQTT适用于科罗拉多州地区的网格用户，并在meshcore/DEN下发布。如果您在科罗拉多州以外，请切换到LetsMesh（全球公共经纪商）。",
     "coloradoRegionGateStay": "我在科罗拉多州",
     "coloradoRegionGateSwitch": "切换到LetsMesh",
-    "topicPrefixInvalidIata": "主题前缀必须是meshcore/test或meshcore/{IATA} （ 3个字母） ，例如meshcore/DEN。"
+    "topicPrefixInvalidIata": "主题前缀必须是meshcore/test或meshcore/{IATA} （ 3个字母） ，例如meshcore/DEN。",
+    "reticulumSharedInstance": {
+      "title": "Share instance is using another app",
+      "body": "This app connected as a client of an existing shared instance. Local TCP hubs and other interfaces in this app’s config are not started in this mode — traffic may only use the other app’s stack.",
+      "networkHint": "Or open Network → Share instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
+      "disableShare": "Turn off Share instance and restart",
+      "disableShareAria": "Turn off Share instance and restart the stack",
+      "disableFailed": "Failed to turn off Share instance."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -1395,13 +1403,14 @@
         "ghost_interface": "接口“{{name}}”在配置中启用，但 RNS 未加载。",
         "missing_auto_interface": "未启用自动接口 — 本地 LAN 发现已关闭。",
         "auto_interface_down": "自动接口“{{name}}”已启用但已关闭。",
-        "missing_shared_instance": "共享实例已开启，但 SharedInstanceServer 未启动。",
-        "shared_instance_unexpected": "SharedInstanceServer 已启用，但 share_instance 已关闭。",
+        "missing_shared_instance": "Share instance is on but this app is not hosting the shared server — quit other mesh apps or turn off Share instance, then restart.",
+        "shared_instance_unexpected": "Shared instance server is live but Share instance is off — restart the stack.",
         "runtime_only_interface": "“{{name}}”仅是运行时的（不存储在配置中）。",
         "rmap_missing_coordinates": "接口“{{name}}”是可发现的，但缺少有效的地图坐标。",
         "rmap_no_tcp_hub": "可发现的本地RNode没有启用TCP客户端集线器以实现互联网可访问性。",
         "rmap_transport_disabled": "已配置可发现的接口，但传输模式已关闭。",
-        "rmap_i2p_not_connectable": "I2P接口“{{name}}”是可发现的，但不是可连接的。"
+        "rmap_i2p_not_connectable": "I2P接口“{{name}}”是可发现的，但不是可连接的。",
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
       },
       "runtime": {
         "rnsNotReady": "RNS 堆栈尚未准备好",
@@ -2322,7 +2331,15 @@
       "confirm": "进口"
     },
     "reticulumConfigImportFailed": "配置导入失败。",
-    "reticulumConfigNotFound": "在默认路径中未找到系统 Reticulum 配置。"
+    "reticulumConfigNotFound": "在默认路径中未找到系统 Reticulum 配置。",
+    "reticulumConfigValidate": {
+      "button": "Check config",
+      "aria": "Validate on-disk network config",
+      "running": "Checking…",
+      "ok": "Config looks good — no audit issues.",
+      "issuesHeading": "{{count}} config issue(s)",
+      "failed": "Config check failed: {{message}}"
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "从收藏夹中移除",

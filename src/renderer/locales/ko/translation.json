@@ -1117,7 +1117,15 @@
     "coloradoRegionGateMessage": "Colorado Mesh MQTT는 콜로라도 지역 메쉬 사용자를 위한 것이며 meshcore/DEN 아래에 게시됩니다. 콜로라도 외부에 있는 경우 LetsMesh(글로벌 공개 브로커)로 전환하십시오.",
     "coloradoRegionGateStay": "콜로라도에 있습니다",
     "coloradoRegionGateSwitch": "LetsMesh로 전환",
-    "topicPrefixInvalidIata": "주제 접두사는 meshcore/test 또는 meshcore/{IATA}(3글자)여야 합니다(예: meshcore/DEN)."
+    "topicPrefixInvalidIata": "주제 접두사는 meshcore/test 또는 meshcore/{IATA}(3글자)여야 합니다(예: meshcore/DEN).",
+    "reticulumSharedInstance": {
+      "title": "Share instance is using another app",
+      "body": "This app connected as a client of an existing shared instance. Local TCP hubs and other interfaces in this app’s config are not started in this mode — traffic may only use the other app’s stack.",
+      "networkHint": "Or open Network → Share instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
+      "disableShare": "Turn off Share instance and restart",
+      "disableShareAria": "Turn off Share instance and restart the stack",
+      "disableFailed": "Failed to turn off Share instance."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -1395,13 +1403,14 @@
         "ghost_interface": "인터페이스 \"{{name}}\"은 구성에서는 활성화되어 있지만 RNS에서는 로드되지 않습니다.",
         "missing_auto_interface": "활성화된 AutoInterface 없음 — 로컬 LAN 검색이 꺼져 있습니다.",
         "auto_interface_down": "AutoInterface \"{{name}}\"이(가) 활성화되었지만 작동 중지되었습니다.",
-        "missing_shared_instance": "공유 인스턴스가 켜져 있지만 SharedInstanceServer가 작동하지 않습니다.",
-        "shared_instance_unexpected": "SharedInstanceServer가 활성화되어 있지만 share_instance가 꺼져 있습니다.",
+        "missing_shared_instance": "Share instance is on but this app is not hosting the shared server — quit other mesh apps or turn off Share instance, then restart.",
+        "shared_instance_unexpected": "Shared instance server is live but Share instance is off — restart the stack.",
         "runtime_only_interface": "\"{{name}}\"은 런타임 전용입니다(구성에 저장되지 않음).",
         "rmap_missing_coordinates": "인터페이스 \"{{name}}\" 을 (를) 검색할 수 있지만 유효한 지도 좌표가 누락되었습니다.",
         "rmap_no_tcp_hub": "검색 가능한 로컬 RNode에는 인터넷에 연결할 수 있는 TCP 클라이언트 허브가 없습니다.",
         "rmap_transport_disabled": "검색 가능한 인터페이스가 구성되었지만 전송 모드가 꺼져 있습니다.",
-        "rmap_i2p_not_connectable": "I2P 인터페이스 \"{{name}}\" 는 검색 가능하지만 연결 가능은 예가 아닙니다."
+        "rmap_i2p_not_connectable": "I2P 인터페이스 \"{{name}}\" 는 검색 가능하지만 연결 가능은 예가 아닙니다.",
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
       },
       "runtime": {
         "rnsNotReady": "RNS 스택이 준비되지 않았습니다.",
@@ -2322,7 +2331,15 @@
       "confirm": "수입"
     },
     "reticulumConfigImportFailed": "구성 가져오기에 실패했습니다.",
-    "reticulumConfigNotFound": "기본 경로에서 시스템 Reticulum 구성을 찾을 수 없습니다."
+    "reticulumConfigNotFound": "기본 경로에서 시스템 Reticulum 구성을 찾을 수 없습니다.",
+    "reticulumConfigValidate": {
+      "button": "Check config",
+      "aria": "Validate on-disk network config",
+      "running": "Checking…",
+      "ok": "Config looks good — no audit issues.",
+      "issuesHeading": "{{count}} config issue(s)",
+      "failed": "Config check failed: {{message}}"
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "즐겨찾기에서 제거",

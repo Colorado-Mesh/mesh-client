@@ -2,6 +2,7 @@ import { isReticulumBleRnodeSerialPort } from '@/renderer/lib/reticulum/reticulu
 import { isReticulumTcpRnodeSerialPort } from '@/renderer/lib/reticulum/reticulumRnodeTransport';
 
 export const RETICULUM_SHARED_INSTANCE_NAME = 'SharedInstanceServer';
+export const RETICULUM_SHARED_INSTANCE_CLIENT_NAME = 'SharedInstanceClient';
 
 export interface ReticulumInterfaceHelpInput {
   id: string;
@@ -19,7 +20,10 @@ export interface ReticulumInterfaceHelp {
 export function getReticulumInterfaceHelp(
   iface: ReticulumInterfaceHelpInput,
 ): ReticulumInterfaceHelp {
-  if (iface.name === RETICULUM_SHARED_INSTANCE_NAME) {
+  if (
+    iface.name === RETICULUM_SHARED_INSTANCE_NAME ||
+    iface.name === RETICULUM_SHARED_INSTANCE_CLIENT_NAME
+  ) {
     return {
       purposeKey: 'connectionPanel.reticulumInterfaces.purpose.sharedInstance',
       isRuntimeOnly: true,

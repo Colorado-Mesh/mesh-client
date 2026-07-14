@@ -1117,7 +1117,15 @@
     "coloradoRegionGateMessage": "Colorado Mesh MQTTは、コロラド州エリアのメッシュユーザー向けで、meshcore/DENの下で公開されています。コロラド州外にいる場合は、LetsMesh（グローバルパブリックブローカー）に切り替えます。",
     "coloradoRegionGateStay": "私はコロラド州にいます",
     "coloradoRegionGateSwitch": "LetsMeshに切り替える",
-    "topicPrefixInvalidIata": "トピックの接頭辞は、meshcore/testまたはmeshcore/{IATA}（3文字）でなければなりません（例：meshcore/DEN）。"
+    "topicPrefixInvalidIata": "トピックの接頭辞は、meshcore/testまたはmeshcore/{IATA}（3文字）でなければなりません（例：meshcore/DEN）。",
+    "reticulumSharedInstance": {
+      "title": "Share instance is using another app",
+      "body": "This app connected as a client of an existing shared instance. Local TCP hubs and other interfaces in this app’s config are not started in this mode — traffic may only use the other app’s stack.",
+      "networkHint": "Or open Network → Share instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
+      "disableShare": "Turn off Share instance and restart",
+      "disableShareAria": "Turn off Share instance and restart the stack",
+      "disableFailed": "Failed to turn off Share instance."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -1395,13 +1403,14 @@
         "ghost_interface": "インターフェイス「{{name}}」は構成で有効になっていますが、RNS によってロードされていません。",
         "missing_auto_interface": "有効な AutoInterface がありません - ローカル LAN 検出がオフになっています。",
         "auto_interface_down": "AutoInterface \"{{name}}\" は有効ですが、ダウンしています。",
-        "missing_shared_instance": "共有インスタンスはオンですが、SharedInstanceServer が起動していません。",
-        "shared_instance_unexpected": "SharedInstanceServer はライブですが、share_instance はオフです。",
+        "missing_shared_instance": "Share instance is on but this app is not hosting the shared server — quit other mesh apps or turn off Share instance, then restart.",
+        "shared_instance_unexpected": "Shared instance server is live but Share instance is off — restart the stack.",
         "runtime_only_interface": "「{{name}}」は実行時のみです (構成には保存されません)。",
         "rmap_missing_coordinates": "インターフェース「{{name}}」は検出可能ですが、有効なマップ座標がありません。",
         "rmap_no_tcp_hub": "検出可能なローカルRNodeには、インターネット到達可能性のために有効なTCPクライアントハブがありません。",
         "rmap_transport_disabled": "検出可能なインターフェイスが設定されていますが、トランスポートモードはオフです。",
-        "rmap_i2p_not_connectable": "I 2 Pインターフェース「{{name}}」は検出可能ですが、接続可能ではありません。"
+        "rmap_i2p_not_connectable": "I 2 Pインターフェース「{{name}}」は検出可能ですが、接続可能ではありません。",
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
       },
       "runtime": {
         "rnsNotReady": "RNS スタックの準備ができていません",
@@ -2322,7 +2331,15 @@
       "confirm": "輸入"
     },
     "reticulumConfigImportFailed": "構成のインポートに失敗しました。",
-    "reticulumConfigNotFound": "デフォルトのパスにシステム Reticulum 構成が見つかりません。"
+    "reticulumConfigNotFound": "デフォルトのパスにシステム Reticulum 構成が見つかりません。",
+    "reticulumConfigValidate": {
+      "button": "Check config",
+      "aria": "Validate on-disk network config",
+      "running": "Checking…",
+      "ok": "Config looks good — no audit issues.",
+      "issuesHeading": "{{count}} config issue(s)",
+      "failed": "Config check failed: {{message}}"
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "お気に入りから削除",

@@ -71,6 +71,10 @@ impl StackHandle {
             tracing::warn!("failed to set default announce_interval_sec in config: {e}");
         }
 
+        if let Err(e) = config::ensure_share_instance_defaults(&config_dir) {
+            tracing::warn!("failed to set share_instance / instance_name defaults: {e}");
+        }
+
         if let Err(e) = config::repair_rnode_radio_fields_in_config(&config_dir) {
             tracing::warn!("failed to repair RNode radio fields in config: {e}");
         }
