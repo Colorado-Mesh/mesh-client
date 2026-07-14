@@ -3707,7 +3707,10 @@
       "pending": "in behandeling",
       "unknown": "onbekend",
       "online": "online"
-    }
+    },
+    "syncLocalNotSupported": "Lokale propagatie is uw offline inbox; deze kan niet via het netwerk worden gesynchroniseerd zoals een extern LXMF-propagatieknooppunt.",
+    "syncIdentityUnknown": "De identiteit van het voortplantingsknooppunt is onbekend: wacht op een aankondiging of padreactie en probeer het vervolgens opnieuw.",
+    "syncTargetNotPropagationNode": "Die bestemming is bereikbaar op Reticulum, maar is geen LXMF-propagatieknooppunt (TCP-hubs zijn alleen transportpaden). Voeg een bestemming toe die wordt aangekondigd als lxmf.propagation om offline berichten te synchroniseren."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "voortplantingsmodus",

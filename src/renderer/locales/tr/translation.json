@@ -3707,7 +3707,10 @@
       "pending": "askıda olması",
       "unknown": "bilinmiyor",
       "online": "çevrimiçi"
-    }
+    },
+    "syncLocalNotSupported": "Yerel yayılım, çevrimdışı gelen kutunuzdur; uzak bir LXMF yayılım düğümü gibi ağ üzerinden senkronize edilemez.",
+    "syncIdentityUnknown": "Yayılım düğümü kimliği bilinmiyor; bir duyuru veya yol yanıtı bekleyin ve ardından tekrar deneyin.",
+    "syncTargetNotPropagationNode": "Bu hedefe Reticulum'da ulaşılabilir ancak bir LXMF yayılım düğümü değildir (TCP hub'ları yalnızca aktarım yollarıdır). Çevrimdışı mesajları senkronize etmek için lxmf.propagation olarak duyuru yapan bir hedef ekleyin."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Yayılma modu",

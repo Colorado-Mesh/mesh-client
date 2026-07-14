@@ -3707,7 +3707,10 @@
       "pending": "aż do",
       "unknown": "nieznany",
       "online": "w Internecie"
-    }
+    },
+    "syncLocalNotSupported": "Lokalna propagacja to Twoja skrzynka odbiorcza offline — nie można jej synchronizować przez sieć jak zdalny węzeł propagacji LXMF.",
+    "syncIdentityUnknown": "Tożsamość węzła propagacji jest nieznana — poczekaj na ogłoszenie lub odpowiedź dotyczącą ścieżki, a następnie spróbuj ponownie.",
+    "syncTargetNotPropagationNode": "Miejsce docelowe jest osiągalne na Reticulum, ale nie jest węzłem propagacji LXMF (węzły TCP są jedynie ścieżkami transportowymi). Dodaj miejsce docelowe ogłaszające się jako lxmf.propagation, aby synchronizować wiadomości offline."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Tryb propagacji:",

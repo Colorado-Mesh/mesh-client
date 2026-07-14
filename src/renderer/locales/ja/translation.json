@@ -3707,7 +3707,10 @@
       "pending": "保留中",
       "unknown": "未知",
       "online": "オンライン"
-    }
+    },
+    "syncLocalNotSupported": "ローカル伝播はオフラインの受信箱です。リモート LXMF 伝播ノードのようにネットワーク経由で同期することはできません。",
+    "syncIdentityUnknown": "伝播ノードの ID が不明です。アナウンスまたはパス応答を待ってから、再試行してください。",
+    "syncTargetNotPropagationNode": "その宛先は Reticulum 上で到達可能ですが、LXMF 伝播ノードではありません (TCP ハブはトランスポート パスのみです)。オフライン メッセージを同期するには、lxmf.propagation として通知する宛先を追加します。"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "伝播モード",

@@ -3709,7 +3709,7 @@
     "lastSynced": "Last synced: {{time}}",
     "addNode": "Add node",
     "addNodeLabel": "Add propagation node by hash",
-    "addNodePlaceholder": "32-character LXMF destination hash",
+    "addNodePlaceholder": "32-character lxmf.propagation destination hash",
     "rename": "Rename",
     "renameLabel": "Propagation node name",
     "renameSave": "Save name",
@@ -3740,7 +3740,10 @@
     "syncStatusNegotiating": "Negotiating sync with propagation node…",
     "syncStatusTransferring": "Transferring messages from propagation node…",
     "syncFailed": "Propagation sync failed — the node may be unreachable.",
-    "syncTimedOut": "Propagation sync timed out — the node may be unreachable."
+    "syncTimedOut": "Propagation sync timed out — the node may be unreachable.",
+    "syncLocalNotSupported": "Local propagation is your offline inbox — it cannot be synced over the network like a remote LXMF propagation node.",
+    "syncIdentityUnknown": "Propagation node identity is unknown — wait for an announce or path response, then try again.",
+    "syncTargetNotPropagationNode": "That destination is reachable on Reticulum but is not an LXMF propagation node (TCP hubs are transport paths only). Add a destination that announces as lxmf.propagation to sync offline messages."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Propagation mode",

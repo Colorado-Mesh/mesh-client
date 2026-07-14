@@ -3707,7 +3707,10 @@
       "pending": "čeká na vyřízení",
       "unknown": "neznámý",
       "online": "online"
-    }
+    },
+    "syncLocalNotSupported": "Místní šíření je vaše offline doručená pošta – nelze jej synchronizovat přes síť jako vzdálený uzel šíření LXMF.",
+    "syncIdentityUnknown": "Identita uzlu propagace je neznámá – počkejte na odpověď na oznámení nebo cestu a zkuste to znovu.",
+    "syncTargetNotPropagationNode": "Tento cíl je dosažitelný na Reticulum, ale není to uzel šíření LXMF (rozbočovače TCP jsou pouze transportní cesty). Chcete-li synchronizovat zprávy offline, přidejte cíl, který se ohlašuje jako lxmf.propagation."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Režim propagace",

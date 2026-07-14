@@ -6,8 +6,29 @@ export const RETICULUM_PROPAGATION_REFRESH_MIN_VISIBLE_MS = 500;
 /** Cancel sync when stuck establishing connection to an unreachable node. */
 export const RETICULUM_PROPAGATION_SYNC_STALL_MS = 60_000;
 
+/** Match sidecar Establishing (~10) — do not cancel once negotiation/transfer starts. */
+export const RETICULUM_PROPAGATION_SYNC_ESTABLISHING_MAX_PROGRESS = 15;
+
 const SYNC_FAILED_KEY = 'reticulumPropagation.syncFailed';
 const SYNC_TIMED_OUT_KEY = 'reticulumPropagation.syncTimedOut';
+const SYNC_LOCAL_UNSUPPORTED_KEY = 'reticulumPropagation.syncLocalNotSupported';
+const SYNC_IDENTITY_UNKNOWN_KEY = 'reticulumPropagation.syncIdentityUnknown';
+
+/** Map sidecar/API sync error codes to i18n keys. */
+const SYNC_TARGET_NOT_PN_KEY = 'reticulumPropagation.syncTargetNotPropagationNode';
+
+export function mapPropagationSyncError(error: string | null | undefined): string {
+  switch (error) {
+    case 'LOCAL_PROPAGATION_SYNC_UNSUPPORTED':
+      return SYNC_LOCAL_UNSUPPORTED_KEY;
+    case 'PROPAGATION_IDENTITY_UNKNOWN':
+      return SYNC_IDENTITY_UNKNOWN_KEY;
+    case 'PROPAGATION_TARGET_NOT_PN':
+      return SYNC_TARGET_NOT_PN_KEY;
+    default:
+      return SYNC_FAILED_KEY;
+  }
+}
 
 let syncStallTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -24,6 +45,11 @@ export function schedulePropagationSyncStallWatchdog(): void {
     syncStallTimer = null;
     const { sync } = useReticulumPropagationStore.getState();
     if (!sync.active) return;
+    // Progress past Establishing means link+offer are in flight; lxmf-core owns the
+    // remaining timeout (120s). Canceling here aborts healthy multi-hop syncs.
+    if (sync.progress >= RETICULUM_PROPAGATION_SYNC_ESTABLISHING_MAX_PROGRESS) {
+      return;
+    }
     void useReticulumPropagationStore.getState().cancelSync();
     useReticulumPropagationStore.getState().setLastSyncError(SYNC_TIMED_OUT_KEY);
     useReticulumPropagationStore.getState().setSyncState({

@@ -3707,7 +3707,10 @@
       "pending": "pendiente",
       "unknown": "desconocido",
       "online": "en línea"
-    }
+    },
+    "syncLocalNotSupported": "La propagación local es su bandeja de entrada fuera de línea; no se puede sincronizar a través de la red como un nodo de propagación LXMF remoto.",
+    "syncIdentityUnknown": "Se desconoce la identidad del nodo de propagación: espere un anuncio o una respuesta de ruta y vuelva a intentarlo.",
+    "syncTargetNotPropagationNode": "Se puede llegar a ese destino en Reticulum pero no es un nodo de propagación LXMF (los centros TCP son solo rutas de transporte). Agregue un destino que se anuncie como lxmf.propagation para sincronizar mensajes sin conexión."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "modo de propagación",

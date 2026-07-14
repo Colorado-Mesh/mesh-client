@@ -3707,7 +3707,10 @@
       "pending": "tertunda",
       "unknown": "tidak dikenal",
       "online": "on line"
-    }
+    },
+    "syncLocalNotSupported": "Propagasi lokal adalah kotak masuk offline Anda — tidak dapat disinkronkan melalui jaringan seperti node propagasi LXMF jarak jauh.",
+    "syncIdentityUnknown": "Identitas node propagasi tidak diketahui — tunggu pengumuman atau respons jalur, lalu coba lagi.",
+    "syncTargetNotPropagationNode": "Tujuan tersebut dapat dijangkau di Reticulum tetapi bukan merupakan node propagasi LXMF (hub TCP hanya merupakan jalur transportasi). Tambahkan tujuan yang diumumkan sebagai lxmf.propagation untuk menyinkronkan pesan offline."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Mode propagasi",

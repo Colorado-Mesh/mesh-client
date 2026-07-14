@@ -92,6 +92,40 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
   });
 
+  it('startSync settles local-prop in-process without a stall watchdog error', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockResolvedValueOnce({ ok: true });
+    await expect(useReticulumPropagationStore.getState().startSync('local-prop')).resolves.toBe(
+      true,
+    );
+    expect(proxyPost).toHaveBeenCalledWith('/api/v1/propagation/sync', {
+      propagation_id: 'local-prop',
+    });
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBeNull();
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
+    expect(useReticulumPropagationStore.getState().lastPropagationSyncAt).toBeTypeOf('number');
+  });
+
+  it('startSync maps sidecar identity errors to i18n keys', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    useReticulumPropagationStore.setState({ preferredId: 'pn-vegas' });
+    proxyPost.mockResolvedValueOnce({ ok: false, error: 'PROPAGATION_IDENTITY_UNKNOWN' });
+    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe(false);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      'reticulumPropagation.syncIdentityUnknown',
+    );
+  });
+
+  it('startSync maps non-PN destination errors to i18n keys', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    useReticulumPropagationStore.setState({ preferredId: 'pn-vegas' });
+    proxyPost.mockResolvedValueOnce({ ok: false, error: 'PROPAGATION_TARGET_NOT_PN' });
+    await expect(useReticulumPropagationStore.getState().startSync()).resolves.toBe(false);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      'reticulumPropagation.syncTargetNotPropagationNode',
+    );
+  });
+
   it('removePropagationNode deletes then refreshes', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     proxyDelete.mockResolvedValueOnce({ ok: true });

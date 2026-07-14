@@ -9,6 +9,7 @@ use std::time::{Duration, Instant};
 use lxmf_core::propagation_node::{PropagationNode, PropagationNodeConfig};
 use lxmf_core::propagation_sync::{PropagationSyncTask, SyncTaskState};
 use lxmf_core::router::LxmRouter;
+use rns_identity::identity::Identity;
 use rns_transport::messages::TransportMessage;
 use tokio::sync::{broadcast, mpsc};
 
@@ -24,6 +25,7 @@ impl PropagationBridge {
         transport_tx: mpsc::Sender<TransportMessage>,
         local_dest_hash: [u8; 16],
         storage_dir: PathBuf,
+        identity: &Identity,
     ) -> Result<Self, String> {
         std::fs::create_dir_all(&storage_dir).map_err(|e| e.to_string())?;
         let local_node = Arc::new(Mutex::new(
@@ -34,7 +36,11 @@ impl PropagationBridge {
             )
             .map_err(|e| format!("propagation storage init: {e}"))?,
         ));
-        let sync_task = PropagationSyncTask::with_shared_node(transport_tx, local_node.clone());
+        let mut sync_task = PropagationSyncTask::with_shared_node(transport_tx, local_node.clone());
+        let signing_key = identity
+            .get_signing_key()
+            .ok_or_else(|| "propagation sync: identity has no signing key".to_string())?;
+        sync_task.set_local_identity(identity.get_public_key(), signing_key);
         Ok(Self {
             local_dest_hash,
             local_node,
@@ -63,11 +69,18 @@ impl PropagationBridge {
             .unwrap_or((0, 0))
     }
 
-    pub fn start_sync(&self, remote_hash: [u8; 16]) -> bool {
+    pub fn start_sync(
+        &self,
+        remote_hash: [u8; 16],
+        peering: Option<([u8; 16], [u8; 16], u8, Option<Vec<u8>>)>,
+    ) -> bool {
         let mut task = match self.sync_task.lock() {
             Ok(task) => task,
             Err(_) => return false,
         };
+        if let Some((local_id, peer_id, cost, key)) = peering {
+            task.configure_peering(local_id, peer_id, cost, key);
+        }
         task.request_sync_now(remote_hash);
         true
     }
@@ -102,6 +115,21 @@ impl PropagationBridge {
         }).unwrap_or(0.0)
     }
 
+    pub fn last_offer_error(&self) -> Option<&'static str> {
+        self.sync_task
+            .lock()
+            .ok()
+            .and_then(|task| task.last_offer_error)
+    }
+
+    /// Sticky success/failure after Complete/Failed collapses to Idle.
+    pub fn last_finished_ok(&self) -> Option<bool> {
+        self.sync_task
+            .lock()
+            .ok()
+            .and_then(|task| task.last_finished_ok)
+    }
+
     pub fn tick(&self, known_identities: &HashMap<String, [u8; 64]>) {
         if let Ok(mut task) = self.sync_task.lock() {
             task.drain_events(known_identities);
@@ -126,7 +154,19 @@ impl PropagationBridge {
                     break;
                 }
                 let active = bridge.sync_active();
-                let progress = bridge.sync_progress();
+                let finished_ok = bridge.last_finished_ok();
+                let offer_error = bridge.last_offer_error();
+                // Complete/Failed immediately collapse to Idle (progress 0). Use sticky
+                // last_finished_ok so success (e.g. HaveAll) is not reported as failure.
+                let progress = if !active {
+                    match finished_ok {
+                        Some(true) => 100.0,
+                        Some(false) => 0.0,
+                        None => bridge.sync_progress(),
+                    }
+                } else {
+                    bridge.sync_progress()
+                };
                 if active && progress <= 10.0 && started.elapsed() > SYNC_STALL_TIMEOUT {
                     bridge.cancel_sync();
                     let payload = serde_json::json!({
@@ -141,9 +181,30 @@ impl PropagationBridge {
                     let _ = event_tx.send(frame.to_string());
                     break;
                 }
+                let fail_message = if !active && progress == 0.0 {
+                    offer_error.map(|e| format!("propagation offer rejected: {e}"))
+                } else {
+                    None
+                };
                 let payload = serde_json::json!({
                     "active": active,
                     "progress": progress,
+                    "message": fail_message,
+                });
+                let frame = serde_json::json!({
+                    "type": "propagation_sync",
+                    "payload": payload,
+                });
+                let _ = event_tx.send(frame.to_string());
+                if !active && (progress >= 99.0 || finished_ok.is_some()) {
+                    break;
+                }
+            }
+            // Do not emit a blanket progress=100 after a real failure terminal.
+            if bridge.last_finished_ok() != Some(false) {
+                let payload = serde_json::json!({
+                    "active": false,
+                    "progress": 100.0,
                     "message": null,
                 });
                 let frame = serde_json::json!({
@@ -151,23 +212,7 @@ impl PropagationBridge {
                     "payload": payload,
                 });
                 let _ = event_tx.send(frame.to_string());
-                if !active && progress >= 99.0 {
-                    break;
-                }
-                if !active && progress == 0.0 {
-                    break;
-                }
             }
-            let payload = serde_json::json!({
-                "active": false,
-                "progress": 100.0,
-                "message": null,
-            });
-            let frame = serde_json::json!({
-                "type": "propagation_sync",
-                "payload": payload,
-            });
-            let _ = event_tx.send(frame.to_string());
         });
     }
 }

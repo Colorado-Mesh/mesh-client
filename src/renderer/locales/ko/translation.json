@@ -3707,7 +3707,10 @@
       "pending": "보류 중",
       "unknown": "알려지지 않은",
       "online": "온라인"
-    }
+    },
+    "syncLocalNotSupported": "로컬 전파는 오프라인 받은 편지함이므로 원격 LXMF 전파 노드처럼 네트워크를 통해 동기화할 수 없습니다.",
+    "syncIdentityUnknown": "전파 노드 ID를 알 수 없습니다. 알림 또는 경로 응답을 기다린 후 다시 시도하십시오.",
+    "syncTargetNotPropagationNode": "해당 대상은 Reticulum에서 도달할 수 있지만 LXMF 전파 노드는 아닙니다(TCP 허브는 전송 경로일 뿐입니다). 오프라인 메시지를 동기화하려면 lxmf.propagation으로 알리는 대상을 추가하세요."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "전파 모드",

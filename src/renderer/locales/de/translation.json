@@ -3707,7 +3707,10 @@
       "pending": "ausstehend",
       "unknown": "unbekannt",
       "online": "online"
-    }
+    },
+    "syncLocalNotSupported": "Die lokale Weitergabe ist Ihr Offline-Posteingang – sie kann nicht wie ein Remote-LXMF-Weitergabeknoten über das Netzwerk synchronisiert werden.",
+    "syncIdentityUnknown": "Die Identität des Ausbreitungsknotens ist unbekannt – warten Sie auf eine Ankündigung oder eine Pfadantwort und versuchen Sie es dann erneut.",
+    "syncTargetNotPropagationNode": "Dieses Ziel ist auf Reticulum erreichbar, aber kein LXMF-Verbreitungsknoten (TCP-Hubs sind nur Transportpfade). Fügen Sie ein Ziel hinzu, das sich als lxmf.propagation ankündigt, um Offline-Nachrichten zu synchronisieren."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Ausbreitungsmodus",

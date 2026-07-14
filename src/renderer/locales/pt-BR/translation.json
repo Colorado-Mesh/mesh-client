@@ -3707,7 +3707,10 @@
       "pending": "pendente",
       "unknown": "desconhecido",
       "online": "on-line"
-    }
+    },
+    "syncLocalNotSupported": "A propagação local é sua caixa de entrada offline – ela não pode ser sincronizada pela rede como um nó de propagação LXMF remoto.",
+    "syncIdentityUnknown": "A identidade do nó de propagação é desconhecida — aguarde um anúncio ou resposta do caminho e tente novamente.",
+    "syncTargetNotPropagationNode": "Esse destino pode ser alcançado no Reticulum, mas não é um nó de propagação LXMF (os hubs TCP são apenas caminhos de transporte). Adicione um destino anunciado como lxmf.propagation para sincronizar mensagens offline."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modo de propagação",

@@ -841,6 +841,43 @@ impl StackHandle {
                 .and_then(|p| p.destination_hash.clone())
                 .ok_or_else(|| format!("propagation node not found: {propagation_id}"))?
         };
+        let lxmf = {
+            let inner = self.inner.read().await;
+            inner.identity.lxmf_hash.clone()
+        };
+        let is_local = propagation_id == "local-prop";
+        let local_prop_hash = {
+            #[cfg(feature = "rns-stack")]
+            {
+                self.live
+                    .as_ref()
+                    .map(|live| live.propagation_local_hash())
+                    .unwrap_or_default()
+            }
+            #[cfg(not(feature = "rns-stack"))]
+            {
+                String::new()
+            }
+        };
+        let sync_self = is_local
+            || prop_hash.eq_ignore_ascii_case(&lxmf)
+            || (!local_prop_hash.is_empty() && prop_hash.eq_ignore_ascii_case(&local_prop_hash));
+        // Local inbox lives in this process — settle without a self LinkRequest.
+        if is_local {
+            self.emit_event(
+                "propagation_sync",
+                serde_json::json!({
+                    "active": false,
+                    "progress": 100.0,
+                    "message": null,
+                }),
+            );
+            return Ok(());
+        }
+        // Remote row pointing at our own hashes would still try a self-link.
+        if sync_self {
+            return Err("LOCAL_PROPAGATION_SYNC_UNSUPPORTED".into());
+        }
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             live.start_propagation_sync(&prop_hash).await?;

@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   clearPropagationSyncStallWatchdog,
+  mapPropagationSyncError,
   schedulePropagationSyncStallWatchdog,
 } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import {
@@ -159,20 +160,38 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       lastSyncError: null,
       lastPropagationSyncAttemptAt: Date.now(),
     });
-    schedulePropagationSyncStallWatchdog();
+    // Local inbox settles in-process (no Establishing stall); remotes need the watchdog.
+    if (propId !== 'local-prop') {
+      schedulePropagationSyncStallWatchdog();
+    }
     try {
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/propagation/sync', {
         propagation_id: propId,
       })) as { ok?: boolean; error?: string };
       if (!res.ok) {
         clearPropagationSyncStallWatchdog();
-        set({ sync: { active: false, progress: 0, message: null } });
+        set({
+          sync: { active: false, progress: 0, message: null },
+          lastSyncError: mapPropagationSyncError(res.error),
+        });
+        return false;
       }
-      return Boolean(res.ok);
+      // Local settle has no WS progress stream if the emitter races; mark success here.
+      if (propId === 'local-prop') {
+        set({
+          sync: { active: false, progress: 0, message: null },
+          lastSyncError: null,
+          lastPropagationSyncAt: Date.now(),
+        });
+      }
+      return true;
     } catch (e) {
       clearPropagationSyncStallWatchdog();
       console.warn('[reticulumPropagationStore] sync ' + errLikeToLogString(e));
-      set({ sync: { active: false, progress: 0, message: null } });
+      set({
+        sync: { active: false, progress: 0, message: null },
+        lastSyncError: mapPropagationSyncError(null),
+      });
       return false;
     }
   },

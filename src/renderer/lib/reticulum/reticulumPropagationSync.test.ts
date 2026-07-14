@@ -1,11 +1,13 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
 
 import {
   applyPropagationSyncEvent,
   clearPropagationSyncStallWatchdog,
+  mapPropagationSyncError,
   normalizePropagationSyncProgress,
+  schedulePropagationSyncStallWatchdog,
 } from './reticulumPropagationSync';
 
 describe('reticulumPropagationSync', () => {
@@ -16,6 +18,11 @@ describe('reticulumPropagationSync', () => {
       lastSyncError: null,
       lastPropagationSyncAt: null,
     });
+  });
+
+  afterEach(() => {
+    clearPropagationSyncStallWatchdog();
+    vi.useRealTimers();
   });
 
   it('normalizes fractional sidecar progress to percent width', () => {
@@ -48,5 +55,44 @@ describe('reticulumPropagationSync', () => {
     expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
     expect(useReticulumPropagationStore.getState().sync.progress).toBe(0);
     expect(useReticulumPropagationStore.getState().lastPropagationSyncAt).toBeTypeOf('number');
+  });
+
+  it('maps sidecar sync error codes to i18n keys', () => {
+    expect(mapPropagationSyncError('LOCAL_PROPAGATION_SYNC_UNSUPPORTED')).toBe(
+      'reticulumPropagation.syncLocalNotSupported',
+    );
+    expect(mapPropagationSyncError('PROPAGATION_IDENTITY_UNKNOWN')).toBe(
+      'reticulumPropagation.syncIdentityUnknown',
+    );
+    expect(mapPropagationSyncError('PROPAGATION_TARGET_NOT_PN')).toBe(
+      'reticulumPropagation.syncTargetNotPropagationNode',
+    );
+    expect(mapPropagationSyncError('other')).toBe('reticulumPropagation.syncFailed');
+  });
+
+  it('stall watchdog only cancels while still establishing', async () => {
+    vi.useFakeTimers();
+    useReticulumPropagationStore.setState({
+      sync: { active: true, progress: 40, message: null },
+      lastSyncError: null,
+      cancelSync: vi.fn().mockResolvedValue(true),
+    });
+
+    schedulePropagationSyncStallWatchdog();
+    await vi.advanceTimersByTimeAsync(60_000);
+
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(true);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBeNull();
+
+    useReticulumPropagationStore.setState({
+      sync: { active: true, progress: 10, message: null },
+    });
+    schedulePropagationSyncStallWatchdog();
+    await vi.advanceTimersByTimeAsync(60_000);
+
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      'reticulumPropagation.syncTimedOut',
+    );
   });
 });
