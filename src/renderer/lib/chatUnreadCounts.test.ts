@@ -4,6 +4,7 @@ import {
   chatViewKeyForMessage,
   computeChannelUnreadCounts,
   computeDmUnreadCounts,
+  computeReticulumChatUnread,
   hasAudibleBackgroundMessages,
   pickAudibleNotificationType,
   resolveChatDmPeer,
@@ -331,6 +332,62 @@ describe('chatUnreadCounts', () => {
       'reticulum',
     );
     expect(peer).toBe(peerId);
+  });
+
+  it('Reticulum inbound to=self + hash resolves peer when ownNodeIds populated', () => {
+    const peerHash = '8fd7a9361aca00000000000000000000';
+    const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;
+    const selfId = 4172361550;
+    const peer = resolveChatDmPeer(
+      msg({
+        channel: 0,
+        sender_id: peerId,
+        to: selfId,
+        reticulum_sender_hash: peerHash,
+      }),
+      new Set([selfId]),
+      'reticulum',
+    );
+    expect(peer).toBe(peerId);
+  });
+
+  it('Reticulum inbound to=self + hash misattributes peer to self when own empty', () => {
+    const peerHash = '8fd7a9361aca00000000000000000000';
+    const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;
+    const selfId = 4172361550;
+    const peer = resolveChatDmPeer(
+      msg({
+        channel: 0,
+        sender_id: peerId,
+        to: selfId,
+        reticulum_sender_hash: peerHash,
+      }),
+      new Set(),
+      'reticulum',
+    );
+    expect(peer).toBe(selfId);
+  });
+
+  it('computeReticulumChatUnread clears after dm:peer last-read when own populated', () => {
+    const peerHash = '8fd7a9361aca00000000000000000000';
+    const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;
+    const selfId = 4172361550;
+    const own = new Set([selfId]);
+    const inbound = msg({
+      channel: 0,
+      sender_id: peerId,
+      to: selfId,
+      reticulum_sender_hash: peerHash,
+      timestamp: 2000,
+    });
+    expect(computeReticulumChatUnread([inbound], 'configured', {}, own)).toBe(1);
+    expect(
+      computeReticulumChatUnread([inbound], 'configured', { [`dm:${peerId}`]: 2000 }, own),
+    ).toBe(0);
+    // Empty own + peer watermark still leaves sticky dm:self unread (App must pass own).
+    expect(
+      computeReticulumChatUnread([inbound], 'configured', { [`dm:${peerId}`]: 2000 }, new Set()),
+    ).toBe(1);
   });
 });
 

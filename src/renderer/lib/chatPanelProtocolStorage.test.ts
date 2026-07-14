@@ -18,6 +18,7 @@ import {
   sanitizeMeshcoreChatLastRead,
   sanitizeMeshcoreRoomsLastRead,
   sanitizeMeshtasticChatLastRead,
+  sanitizeReticulumChatLastRead,
   saveDraft,
   saveMutedViews,
   savePersistedRoomsLastRead,
@@ -347,6 +348,29 @@ describe('sanitizeMeshcoreChatLastRead', () => {
         timestamp: deviceTs,
       },
     ]);
+    expect(sanitized[`dm:${peerId}`]).toBe(deviceTs);
+    expect(sanitized[`dm:${selfId}`]).toBeUndefined();
+  });
+
+  it('clamps inbound Reticulum DM lastRead using peer key when own populated', () => {
+    const peerHash = '8fd7a9361aca00000000000000000000';
+    const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;
+    const selfId = 4172361550;
+    const clientNow = 1_700_000_000_000;
+    const deviceTs = clientNow - 60_000;
+    const sanitized = sanitizeReticulumChatLastRead(
+      { [`dm:${peerId}`]: clientNow },
+      [
+        {
+          sender_id: peerId,
+          channel: 0,
+          to: selfId,
+          reticulum_sender_hash: peerHash,
+          timestamp: deviceTs,
+        },
+      ],
+      new Set([selfId]),
+    );
     expect(sanitized[`dm:${peerId}`]).toBe(deviceTs);
     expect(sanitized[`dm:${selfId}`]).toBeUndefined();
   });
