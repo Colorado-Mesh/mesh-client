@@ -623,7 +623,27 @@ impl StackHandle {
     }
 
     pub async fn list_contacts(&self) -> Vec<ContactRow> {
-        self.inner.read().await.contacts.clone()
+        #[cfg(feature = "rns-stack")]
+        let announce_labels = self
+            .live
+            .as_ref()
+            .map(|live| live.display_name_snapshot())
+            .unwrap_or_default();
+        #[cfg(not(feature = "rns-stack"))]
+        let announce_labels: std::collections::HashMap<String, String> =
+            std::collections::HashMap::new();
+
+        let mut inner = self.inner.write().await;
+        let mut name_by_hash =
+            topology::build_topology_name_map(&inner.peers, &[], &inner.nomad_nodes);
+        topology::extend_name_map_with_announce_labels(&mut name_by_hash, &announce_labels);
+        let changed = topology::overlay_contact_display_names(&mut inner.contacts, &name_by_hash);
+        if changed > 0 {
+            if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                tracing::warn!("contact name persist after list_contacts failed: {e}");
+            }
+        }
+        inner.contacts.clone()
     }
 
     pub async fn clear_contacts(&self) -> Result<usize, String> {

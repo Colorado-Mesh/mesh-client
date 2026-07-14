@@ -246,12 +246,20 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         throw new Error('db:upsertReticulumDestination: row must be an object');
       }
       const r = row as Record<string, unknown>;
-      const hash = r.destination_hash;
-      if (typeof hash !== 'string' || hash.length > 128) {
+      const rawHash = r.destination_hash;
+      if (typeof rawHash !== 'string' || rawHash.length > 128) {
+        throw new Error('db:upsertReticulumDestination: destination_hash invalid');
+      }
+      // Canonicalize so icon/rename rows cannot split from contact upserts by casing.
+      const hash = rawHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+      if (!hash || hash.length > 128) {
         throw new Error('db:upsertReticulumDestination: destination_hash invalid');
       }
       const db = getDbForIpc('db:upsertReticulumDestination');
       if (!db) return { changes: 0 };
+      const favoritedProvided = Object.prototype.hasOwnProperty.call(r, 'favorited');
+      const favoritedForInsert =
+        r.favorited === true || r.favorited === 1 ? 1 : favoritedProvided ? 0 : 0;
       db.prepareOnce(
         `INSERT INTO reticulum_destinations (destination_hash, display_name, last_heard, favorited, icon_name, icon_color)
          VALUES (?, ?, ?, ?, ?, ?)
@@ -264,7 +272,10 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
              ELSE reticulum_destinations.display_name
            END,
            last_heard = COALESCE(excluded.last_heard, reticulum_destinations.last_heard),
-           favorited = excluded.favorited,
+           favorited = CASE
+             WHEN ? = 1 THEN excluded.favorited
+             ELSE reticulum_destinations.favorited
+           END,
            icon_name = COALESCE(excluded.icon_name, reticulum_destinations.icon_name),
            icon_color = COALESCE(excluded.icon_color, reticulum_destinations.icon_color)`,
       ).run(
@@ -277,9 +288,10 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
         r.last_heard != null && Number.isFinite(Number(r.last_heard))
           ? Math.trunc(Number(r.last_heard))
           : null,
-        r.favorited === true || r.favorited === 1 ? 1 : 0,
+        favoritedForInsert,
         typeof r.icon_name === 'string' ? r.icon_name.slice(0, 64) : null,
         typeof r.icon_color === 'string' ? r.icon_color.slice(0, 32) : null,
+        favoritedProvided ? 1 : 0,
       );
       return { changes: 1 };
     } catch (err) {

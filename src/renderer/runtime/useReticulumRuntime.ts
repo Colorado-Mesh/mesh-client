@@ -109,7 +109,7 @@ import {
   applyReticulumPeersUpdatedPatches,
   refreshReticulumPeersFromSidecar,
   RETICULUM_PEER_REFRESH_MS,
-  reticulumContactToNodeRecord,
+  reticulumContactToNodeRecordPreservingLabel,
   reticulumHashForNodeId,
   reticulumSelfIdentityToNodeRecord,
   useReticulumPeerStore,
@@ -202,6 +202,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     if (!identityId) return;
     const dismissed = useReticulumPeerStore.getState().dismissedContactHashes;
     const contacts = useReticulumPeerStore.getState().contacts;
+    const priorNodes = useNodeStore.getState().nodes[identityId] ?? {};
     const records = [];
     const keepNodeIds = new Set<number>();
     if (selfNodeId != null) keepNodeIds.add(selfNodeId);
@@ -209,8 +210,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
     for (const contact of contacts.values()) {
       const hash = contact.destination_hash.replace(/[^0-9a-f]/gi, '').toLowerCase();
       if (dismissed.has(hash)) continue;
-      records.push(reticulumContactToNodeRecord(contact));
-      keepNodeIds.add(reticulumHashToNodeId(contact.destination_hash));
+      const nodeId = reticulumHashToNodeId(contact.destination_hash);
+      records.push(reticulumContactToNodeRecordPreservingLabel(contact, priorNodes[nodeId]));
+      keepNodeIds.add(nodeId);
     }
 
     // Drop path-table peers previously synced into nodeStore; keep self + LXMF contacts only.

@@ -150,6 +150,39 @@ function overlayDbMeta(
   };
 }
 
+/** Prefer a real alias; treat empty / hash-prefix as missing. */
+function realDisplayName(hash: string, name?: string | null): string | null {
+  const sanitized = sanitizeReticulumDisplayName(name);
+  if (!sanitized || isReticulumHashPrefixAlias(hash, sanitized)) return null;
+  return sanitized;
+}
+
+/**
+ * When a nameless contact overwrites a path-table peer, keep the peer announce alias
+ * (and any custom rename) instead of falling back to the LXMF hash prefix.
+ */
+function preservePeerNamesOntoContact(
+  hash: string,
+  contactMerged: ReticulumPeer,
+  existingPeer: ReticulumPeer | undefined,
+): ReticulumPeer {
+  const contactWire = realDisplayName(hash, contactMerged.display_name);
+  if (contactWire) {
+    return {
+      ...contactMerged,
+      custom_display_name:
+        contactMerged.custom_display_name ?? existingPeer?.custom_display_name ?? undefined,
+    };
+  }
+  const peerWire = realDisplayName(hash, existingPeer?.display_name);
+  return {
+    ...contactMerged,
+    display_name: peerWire ?? contactMerged.display_name ?? null,
+    custom_display_name:
+      contactMerged.custom_display_name ?? existingPeer?.custom_display_name ?? undefined,
+  };
+}
+
 function wirePeerToPeer(row: ReticulumPeerWireRow): ReticulumPeer {
   return {
     destination_hash: row.destination_hash,
@@ -167,7 +200,7 @@ function wireContactToContact(
   hopsByHash: Map<string, number>,
   ifaceByHash: Map<string, string>,
 ): ReticulumContact {
-  const hash = row.destination_hash;
+  const hash = normalizeHash(row.destination_hash);
   return {
     destination_hash: hash,
     display_name: row.display_name ?? null,
@@ -199,7 +232,12 @@ export function mergeReticulumPeerMaps(
   for (const contact of contacts) {
     const hash = normalizeHash(contact.destination_hash);
     if (dismissedContactHashes.has(hash)) continue;
-    const merged = overlayDbMeta({ ...contact, destination_hash: hash }, dbByHash);
+    const existingPeer = peerMap.get(hash);
+    const merged = preservePeerNamesOntoContact(
+      hash,
+      overlayDbMeta({ ...contact, destination_hash: hash }, dbByHash),
+      existingPeer,
+    );
     contactMap.set(hash, { ...merged, last_heard: contact.last_heard });
     peerMap.set(hash, merged);
   }
@@ -297,6 +335,32 @@ export function reticulumContactToNodeRecord(contact: ReticulumContact): NodeRec
     favorited: node.favorited,
     reticulumDestinationHash: contact.destination_hash,
   };
+}
+
+/**
+ * Build a Chat/nodeStore row without replacing a real longName with a hash-prefix alias
+ * after path/probe contact refresh.
+ */
+export function reticulumContactToNodeRecordPreservingLabel(
+  contact: ReticulumContact,
+  existing?: NodeRecord | null,
+): NodeRecord {
+  const record = reticulumContactToNodeRecord(contact);
+  const hash = normalizeHash(contact.destination_hash);
+  const nextLabel = record.longName?.trim() ?? '';
+  const priorLabel = existing?.longName?.trim() ?? '';
+  if (
+    priorLabel &&
+    !isReticulumHashPrefixAlias(hash, priorLabel) &&
+    (!nextLabel || isReticulumHashPrefixAlias(hash, nextLabel))
+  ) {
+    return {
+      ...record,
+      longName: priorLabel,
+      shortName: existing?.shortName?.trim() || priorLabel.slice(0, 4) || record.shortName,
+    };
+  }
+  return record;
 }
 
 /** Build a node-store row for the local Reticulum identity (not in the peer/contact table). */
@@ -758,6 +822,21 @@ function appearancesFromDbRows(
   return next;
 }
 
+/** DB appearance wins; keep prior in-memory icons when the DB row is missing them. */
+export function mergePeerAppearancesFromDb(
+  fromDb: Map<string, ReticulumPeerAppearance>,
+  prior: Map<string, ReticulumPeerAppearance>,
+): Map<string, ReticulumPeerAppearance> {
+  const next = new Map(fromDb);
+  for (const [hash, appearance] of prior) {
+    if (next.has(hash)) continue;
+    if (appearance.icon_name != null || appearance.icon_color != null) {
+      next.set(hash, appearance);
+    }
+  }
+  return next;
+}
+
 /** Single-flight + trailing coalesce so a slow older snapshot cannot overwrite a newer one. */
 let peerRefreshInFlight: Promise<ReticulumContact[]> | null = null;
 let peerRefreshPendingRerun = false;
@@ -838,15 +917,42 @@ async function refreshReticulumPeersFromSidecarOnce(
       ? { ...peer, display_name: nomadSanitized }
       : { ...peer, display_name: wireName };
   });
-  const wireContacts = (contactsBody.contacts ?? []).map((row) =>
-    wireContactToContact(row, hopsByHash, ifaceByHash),
-  );
+  const peerNameByHash = new Map<string, string>();
+  for (const peer of wirePeers) {
+    const hash = normalizeHash(peer.destination_hash);
+    const name = realDisplayName(hash, peer.display_name);
+    if (name) peerNameByHash.set(hash, name);
+  }
+  const priorContacts = useReticulumPeerStore.getState().contacts;
+  const wireContacts = (contactsBody.contacts ?? []).map((row) => {
+    const contact = wireContactToContact(row, hopsByHash, ifaceByHash);
+    const hash = normalizeHash(contact.destination_hash);
+    const wireName = realDisplayName(hash, contact.display_name);
+    if (wireName) return { ...contact, destination_hash: hash, display_name: wireName };
+    const prior = priorContacts.get(hash) ?? priorPeers.get(hash);
+    const priorName =
+      realDisplayName(hash, prior?.custom_display_name) ??
+      realDisplayName(hash, prior?.display_name);
+    if (priorName) return { ...contact, destination_hash: hash, display_name: priorName };
+    const fromPeer = peerNameByHash.get(hash);
+    if (fromPeer) return { ...contact, destination_hash: hash, display_name: fromPeer };
+    const nomadName = nomadNameByHash.get(hash);
+    const nomadSanitized = nomadName ? realDisplayName(hash, nomadName) : null;
+    return {
+      ...contact,
+      destination_hash: hash,
+      display_name: nomadSanitized ?? wireName,
+    };
+  });
 
   const dismissed = useReticulumPeerStore.getState().dismissedContactHashes;
   const merged = mergeReticulumPeerMaps(wirePeers, wireContacts, dbRows ?? [], dismissed);
   const cap = readReticulumDestinationCap();
   const { peers, contacts } = capReticulumPeerMaps(merged.peers, merged.contacts, cap);
-  const peerAppearanceByHash = appearancesFromDbRows(dbRows ?? []);
+  const peerAppearanceByHash = mergePeerAppearancesFromDb(
+    appearancesFromDbRows(dbRows ?? []),
+    useReticulumPeerStore.getState().peerAppearanceByHash,
+  );
 
   const fingerprint = fingerprintPeerSnapshot([...peers.values()], contacts.size);
   if (fingerprint === lastFullSnapshotFingerprint && !opts.forceRefresh) {

@@ -98,6 +98,8 @@ describe('reticulum-db-handlers SQL contracts', () => {
     expect(source).toContain('LOWER(excluded.display_name)');
     expect(source).toContain('LOWER(substr(reticulum_destinations.destination_hash, 1, 12))');
     expect(source).toContain('.replace(/[\\r\\n]+/g');
+    expect(source).toContain("rawHash.replace(/[^0-9a-f]/gi, '').toLowerCase()");
+    expect(source).toContain('WHEN ? = 1 THEN excluded.favorited');
     // Age prune must use Unix-seconds cutoff (destinations store seconds, not ms).
     expect(source).toMatch(
       /deleteReticulumDestinationsByAge[\s\S]*?Math\.floor\(Date\.now\(\) \/ 1000\) - safeDays \* 86_400/,
@@ -248,5 +250,55 @@ describe('reticulum destination / activity prune IPC', () => {
       }
     ).cnt;
     expect(count).toBe(250);
+  });
+
+  it('upsertReticulumDestination normalizes hash casing into one row', () => {
+    const upsert = handlers.get('db:upsertReticulumDestination');
+    const mixed = 'AABBCCDDEEFF00112233445566778899';
+    const lower = mixed.toLowerCase();
+    upsert?.(event, {
+      destination_hash: mixed,
+      display_name: 'Alice',
+      favorited: true,
+      icon_name: 'star',
+      icon_color: 'amber',
+    });
+    upsert?.(event, {
+      destination_hash: lower,
+      last_heard: 1_700_000_000,
+    });
+    const rows = db!.prepareOnce('SELECT * FROM reticulum_destinations').all() as Record<
+      string,
+      unknown
+    >[];
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.destination_hash).toBe(lower);
+    expect(rows[0]?.display_name).toBe('Alice');
+    expect(rows[0]?.favorited).toBe(1);
+    expect(rows[0]?.icon_name).toBe('star');
+    expect(rows[0]?.icon_color).toBe('amber');
+    expect(rows[0]?.last_heard).toBe(1_700_000_000);
+  });
+
+  it('upsertReticulumDestination icon-only patch does not clear favorited or display_name', () => {
+    const upsert = handlers.get('db:upsertReticulumDestination');
+    const hash = 'deadbeefcafebabe0123456789abcdef';
+    upsert?.(event, {
+      destination_hash: hash,
+      display_name: 'Named',
+      favorited: true,
+    });
+    upsert?.(event, {
+      destination_hash: hash,
+      icon_name: 'heart',
+      icon_color: 'cyan',
+    });
+    const row = db!
+      .prepareOnce('SELECT * FROM reticulum_destinations WHERE destination_hash = ?')
+      .get(hash) as Record<string, unknown>;
+    expect(row.display_name).toBe('Named');
+    expect(row.favorited).toBe(1);
+    expect(row.icon_name).toBe('heart');
+    expect(row.icon_color).toBe('cyan');
   });
 });

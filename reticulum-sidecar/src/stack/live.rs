@@ -303,7 +303,12 @@ impl LiveBridge {
                         cache.insert(sender.clone(), name);
                     }
                 }
-                state.upsert_contact(&sender, None);
+                let cache_snapshot = name_cache
+                    .lock()
+                    .ok()
+                    .map(|c| c.clone())
+                    .unwrap_or_default();
+                state.upsert_contact_with_name_cache(&sender, None, &cache_snapshot);
                 if let Err(e) = state.save(&config_dir, &storage_dir) {
                     tracing::warn!("contact persist failed: {e}");
                 }

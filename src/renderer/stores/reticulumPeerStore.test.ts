@@ -7,11 +7,14 @@ import {
   applyReticulumPeerPatchesNow,
   applyReticulumPeersUpdatedPatches,
   capReticulumPeerMaps,
+  mergePeerAppearancesFromDb,
   mergeReticulumPeerMaps,
   refreshReticulumPeersFromSidecar,
   resetReticulumPeerPatchBufferForTests,
   resetReticulumPeerRefreshSingleFlightForTests,
   resolveReticulumPeerLabel,
+  reticulumContactToNodeRecordPreservingLabel,
+  reticulumPeerDisplayName,
   useReticulumPeerStore,
 } from './reticulumPeerStore';
 
@@ -230,6 +233,54 @@ describe('mergeReticulumPeerMaps', () => {
     expect(peer?.favorited).toBe(true);
     expect(peer?.custom_display_name).toBe('Saved Contact');
     expect(peer?.display_name).toBe('Contact B');
+  });
+
+  it('preserves peer announce alias when nameless contact overwrites the peer row', () => {
+    const hash = 'aabbccddeeff00112233445566778899';
+    const { peers, contacts } = mergeReticulumPeerMaps(
+      [
+        {
+          destination_hash: hash,
+          display_name: 'Hub Peer',
+          hops: 2,
+          interface: 'tcp',
+        },
+      ],
+      [
+        {
+          destination_hash: hash,
+          display_name: null,
+          last_heard: 1_700_000_000,
+          hops: 1,
+        },
+      ],
+      [],
+    );
+
+    expect(contacts.get(hash)?.display_name).toBe('Hub Peer');
+    expect(contacts.get(hash)?.hops).toBe(1);
+    expect(contacts.get(hash)?.last_heard).toBe(1_700_000_000);
+    expect(peers.get(hash)?.display_name).toBe('Hub Peer');
+    expect(peers.get(hash)?.hops).toBe(1);
+  });
+
+  it('does not let hash-prefix contact alias wipe peer announce name', () => {
+    const hash = 'deadbeefcafebabe0123456789abcdef';
+    const { peers, contacts } = mergeReticulumPeerMaps(
+      [{ destination_hash: hash, display_name: 'Real Alias', hops: 3 }],
+      [
+        {
+          destination_hash: hash,
+          display_name: 'deadbeefcafe',
+          last_heard: 100,
+          hops: 3,
+        },
+      ],
+      [],
+    );
+
+    expect(contacts.get(hash)?.display_name).toBe('Real Alias');
+    expect(peers.get(hash)?.display_name).toBe('Real Alias');
   });
 });
 
@@ -662,6 +713,92 @@ describe('reticulumPeerStore', () => {
     const peer = useReticulumPeerStore.getState().peers.get(hash);
     expect(peer?.display_name).toBe('Wire Name');
     expect(peer?.hops).toBe(2);
+  });
+
+  it('refresh after path keeps announce alias + in-memory icon when contact wire is nameless', async () => {
+    const hash = 'aabbccddeeff00112233445566778899';
+    applyReticulumAnnounceReceivedOptimistic({
+      destination_hash: hash,
+      display_name: 'Hub Peer',
+      hops: 1,
+    });
+    applyReticulumPeerPatchesNow([]);
+    useReticulumPeerStore.getState().patchPeerAppearance(hash, {
+      icon_name: 'star',
+      icon_color: 'amber',
+    });
+
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: {
+          proxyGet: vi.fn((path: string) => {
+            if (path === '/api/v1/contacts') {
+              return Promise.resolve({
+                contacts: [{ destination_hash: hash, last_heard: 42, display_name: null }],
+              });
+            }
+            if (path === '/api/v1/peers') {
+              return Promise.resolve({
+                peers: [{ destination_hash: hash, hops: 2, interface: 'RNS Testnet' }],
+              });
+            }
+            if (path === '/api/v1/nomadnetwork/nodes') return Promise.resolve({ nodes: [] });
+            return Promise.resolve({});
+          }),
+        },
+        db: { getReticulumDestinations: vi.fn().mockResolvedValue([]) },
+      },
+    });
+
+    await refreshReticulumPeersFromSidecar();
+
+    const contact = useReticulumPeerStore.getState().contacts.get(hash);
+    expect(reticulumPeerDisplayName(contact!)).toBe('Hub Peer');
+    expect(contact?.hops).toBe(2);
+    expect(useReticulumPeerStore.getState().peerAppearanceByHash.get(hash)).toEqual({
+      icon_name: 'star',
+      icon_color: 'amber',
+    });
+  });
+});
+
+describe('reticulumContactToNodeRecordPreservingLabel', () => {
+  it('keeps prior longName when contact label collapses to hash prefix', () => {
+    const hash = 'aabbccddeeff00112233445566778899';
+    const record = reticulumContactToNodeRecordPreservingLabel(
+      { destination_hash: hash, display_name: null, last_heard: 1 },
+      { nodeId: 1, longName: 'Prior Name', shortName: 'Prio' },
+    );
+    expect(record.longName).toBe('Prior Name');
+    expect(record.shortName).toBe('Prio');
+  });
+
+  it('adopts a new real wire name', () => {
+    const hash = 'aabbccddeeff00112233445566778899';
+    const record = reticulumContactToNodeRecordPreservingLabel(
+      { destination_hash: hash, display_name: 'Fresh', last_heard: 1 },
+      { nodeId: 1, longName: 'Prior Name' },
+    );
+    expect(record.longName).toBe('Fresh');
+  });
+});
+
+describe('mergePeerAppearancesFromDb', () => {
+  it('keeps prior icons when DB row is missing appearance', () => {
+    const fromDb = new Map();
+    const prior = new Map([['aa'.repeat(16), { icon_name: 'heart', icon_color: 'cyan' }]]);
+    const merged = mergePeerAppearancesFromDb(fromDb, prior);
+    expect(merged.get('aa'.repeat(16))).toEqual({ icon_name: 'heart', icon_color: 'cyan' });
+  });
+
+  it('prefers DB appearance when present', () => {
+    const hash = 'bb'.repeat(16);
+    const fromDb = new Map([[hash, { icon_name: 'star', icon_color: 'green' }]]);
+    const prior = new Map([[hash, { icon_name: 'heart', icon_color: 'cyan' }]]);
+    expect(mergePeerAppearancesFromDb(fromDb, prior).get(hash)).toEqual({
+      icon_name: 'star',
+      icon_color: 'green',
+    });
   });
 });
 

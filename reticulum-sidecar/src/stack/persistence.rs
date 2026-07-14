@@ -377,14 +377,24 @@ impl PersistedState {
     }
 
     pub fn upsert_contact(&mut self, hash: &str, name: Option<String>) {
+        // Reject hash-prefix placeholders so LXMF sender aliases cannot wipe announce names.
+        let name = name.and_then(|n| {
+            let trimmed = n.trim().to_string();
+            if trimmed.is_empty() || super::topology::is_hash_prefix_alias(hash, &trimmed) {
+                None
+            } else {
+                Some(trimmed)
+            }
+        });
         if let Some(c) = self
             .contacts
             .iter_mut()
             .find(|c| c.destination_hash == hash)
         {
-            if name.is_some() {
-                c.display_name = name;
+            if let Some(new_name) = name {
+                c.display_name = Some(new_name);
             }
+            // nameless upserts leave an existing real/empty name alone.
             c.last_heard = Some(Self::now_secs());
             return;
         }
@@ -396,12 +406,38 @@ impl PersistedState {
         });
     }
 
+    /// Upsert a contact, filling a missing name from announce/peer cache when needed.
+    pub fn upsert_contact_with_name_cache(
+        &mut self,
+        hash: &str,
+        name: Option<String>,
+        name_cache: &std::collections::HashMap<String, String>,
+    ) {
+        let stored = self
+            .contacts
+            .iter()
+            .find(|c| c.destination_hash == hash)
+            .and_then(|c| c.display_name.clone());
+        let cache = name_cache.get(hash).map(String::as_str);
+        let resolved = super::topology::resolve_contact_name_for_upsert(
+            hash,
+            name.as_deref().or(stored.as_deref()),
+            cache,
+        );
+        self.upsert_contact(hash, resolved);
+    }
+
     pub fn send_lxmf_local(&mut self, req: &LxmfSendRequest) -> Result<serde_json::Value, String> {
         if !self.identity.configured {
             return Err("identity not configured".into());
         }
         let ts = Self::now_secs();
-        self.upsert_contact(&req.destination_hash, None);
+        let peer_names = super::topology::build_topology_name_map(
+            &self.peers,
+            &self.contacts,
+            &self.nomad_nodes,
+        );
+        self.upsert_contact_with_name_cache(&req.destination_hash, None, &peer_names);
         let sent_via = resolve_outbound_sent_via(&self.interfaces);
         let mut payload = serde_json::json!({
             "sender_hash": self.identity.lxmf_hash,
@@ -463,7 +499,12 @@ impl PersistedState {
             return Err("identity not configured".into());
         }
         let ts = Self::now_secs();
-        self.upsert_contact(&req.destination_hash, None);
+        let peer_names = super::topology::build_topology_name_map(
+            &self.peers,
+            &self.contacts,
+            &self.nomad_nodes,
+        );
+        self.upsert_contact_with_name_cache(&req.destination_hash, None, &peer_names);
         let text = format!("[file:{}:{}]", req.file_name, req.mime_type);
         let mut payload = serde_json::json!({
             "sender_hash": self.identity.lxmf_hash,

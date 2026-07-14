@@ -75,13 +75,18 @@ export default function ReticulumPeerDetailModal({
   const [iconName, setIconName] = useState<ReticulumProfileIconName>('circle');
 
   useEffect(() => {
+    const key = peerHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
     void window.electronAPI.db.getReticulumDestinations().then((rows) => {
       const list = rows as {
         destination_hash?: string;
         icon_name?: string | null;
         icon_color?: string | null;
       }[];
-      const row = list.find((r) => r.destination_hash === peerHash);
+      const row = list.find(
+        (r) =>
+          typeof r.destination_hash === 'string' &&
+          r.destination_hash.replace(/[^0-9a-f]/gi, '').toLowerCase() === key,
+      );
       if (row?.icon_color) setIconColor(row.icon_color);
       if (
         row?.icon_name &&
@@ -95,12 +100,13 @@ export default function ReticulumPeerDetailModal({
   const saveIconAppearance = async (patch: { icon_color?: string; icon_name?: string }) => {
     if (patch.icon_color != null) setIconColor(patch.icon_color);
     if (patch.icon_name != null) setIconName(patch.icon_name as ReticulumProfileIconName);
+    const key = peerHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
     try {
       await window.electronAPI.db.upsertReticulumDestination({
-        destination_hash: peerHash,
+        destination_hash: key,
         ...patch,
       });
-      useReticulumPeerStore.getState().patchPeerAppearance(peerHash, patch);
+      useReticulumPeerStore.getState().patchPeerAppearance(key, patch);
     } catch (e) {
       console.warn('[ReticulumPeerDetailModal] icon appearance ' + errLikeToLogString(e));
     }
@@ -180,14 +186,15 @@ export default function ReticulumPeerDetailModal({
     if (!peer) return;
     setBusy(true);
     try {
+      const key = peerHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
       const label = resolveReticulumPeerLabel(peer, peer.display_name);
       await window.electronAPI.db.upsertReticulumDestination({
-        destination_hash: peerHash,
+        destination_hash: key,
         display_name: label,
         last_heard: Math.floor(Date.now() / 1000),
         favorited: Boolean(peer.favorited),
       });
-      registerReticulumDestinationHash(reticulumHashToNodeId(peerHash), peerHash);
+      registerReticulumDestinationHash(reticulumHashToNodeId(key), key);
       const { refreshReticulumPeersFromSidecar } = await import('../stores/reticulumPeerStore');
       await refreshReticulumPeersFromSidecar();
     } catch (e) {
