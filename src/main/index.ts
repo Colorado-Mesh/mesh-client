@@ -17,6 +17,7 @@ import {
   screen,
   type Session,
   shell,
+  systemPreferences,
   Tray,
 } from 'electron';
 import fs from 'fs';
@@ -116,6 +117,7 @@ import {
 } from './log-service';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
+import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { MQTTManager, parsePsk } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
@@ -1568,7 +1570,7 @@ function createWindow() {
       spellcheck: true,
       // Security note: experimentalFeatures enables the Web Bluetooth and Web Serial APIs
       // required for direct device communication. These APIs are permission-gated via
-      // setPermissionCheckHandler/setPermissionRequestHandler (serial + geolocation only).
+      // setPermissionCheckHandler/setPermissionRequestHandler (serial, geolocation, media).
       experimentalFeatures: true,
     },
   });
@@ -1821,22 +1823,23 @@ function createWindow() {
     }
   });
 
-  // Allow serial and geolocation only; media and web-app-installation are not used
+  // Allow serial, geolocation, and media (Reticulum voice clips). Deny web-app-installation etc.
   mainWindow.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
-    const granted = permission === 'serial' || permission === 'geolocation';
-    if (granted) {
-      console.debug(`[permissions] checkHandler: ${sanitizeLogMessage(permission)} → granted`);
-    }
+    const granted =
+      permission === 'serial' || permission === 'geolocation' || permission === 'media';
+    console.debug(
+      `[permissions] checkHandler: ${sanitizeLogMessage(permission)} → ${granted ? 'granted' : 'denied'}`,
+    );
     return granted;
   });
 
-  // Grant geolocation permission requests (for browser GPS fallback)
+  // Grant geolocation (browser GPS fallback) and media (microphone for voice clips)
   mainWindow.webContents.session.setPermissionRequestHandler(
     (_webContents, permission, callback) => {
-      const grant = permission === 'geolocation';
-      if (grant) {
-        console.debug(`[permissions] requestHandler: ${sanitizeLogMessage(permission)} → granted`);
-      }
+      const grant = permission === 'geolocation' || permission === 'media';
+      console.debug(
+        `[permissions] requestHandler: ${sanitizeLogMessage(permission)} → ${grant ? 'granted' : 'denied'}`,
+      );
       callback(grant);
     },
   );
@@ -3494,6 +3497,30 @@ ipcMain.handle('clipboard:writeText', (event, text: unknown) => {
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
     throw e;
+  }
+});
+
+ipcMain.handle('media:ensureMicrophoneAccess', async (event) => {
+  assertIpcSender(event, 'media:ensureMicrophoneAccess');
+  try {
+    return await ensureMicrophoneAccess({
+      platform: process.platform,
+      getMediaAccessStatus: (mediaType) => systemPreferences.getMediaAccessStatus(mediaType),
+      askForMediaAccess: (mediaType) => systemPreferences.askForMediaAccess(mediaType),
+      openExternal: (url) => {
+        const validateUrl = isAllowedMicrophonePrivacySettingsUrl;
+        if (!validateUrl(url)) {
+          return Promise.reject(new Error('Blocked unexpected microphone privacy settings URL'));
+        }
+        return shell.openExternal(url);
+      },
+    });
+  } catch (e) {
+    console.warn(
+      '[IPC] media:ensureMicrophoneAccess failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+    return { granted: false, status: 'denied' };
   }
 });
 

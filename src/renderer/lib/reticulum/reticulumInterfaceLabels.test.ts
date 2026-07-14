@@ -30,4 +30,39 @@ describe('reticulumInterfaceLabels', () => {
       }),
     );
   });
+
+  it('formats row summary with mode when set', () => {
+    formatReticulumInterfaceRowSummary(t, {
+      name: 'Hub',
+      type: 'tcp',
+      status: 'up',
+      mode: 'boundary',
+    });
+    expect(t).toHaveBeenCalledWith(
+      'connectionPanel.reticulumInterfaces.rowSummaryWithMode',
+      expect.objectContaining({
+        name: 'Hub',
+        type: 'TCP',
+        mode: 'connectionPanel.reticulumInterfaces.modeOption.boundary',
+      }),
+    );
+  });
+
+  it('falls back to plain summary for invalid mode', () => {
+    vi.mocked(t).mockClear();
+    formatReticulumInterfaceRowSummary(t, {
+      name: 'Hub',
+      type: 'tcp',
+      status: 'up',
+      mode: 'nonsense',
+    });
+    expect(t).toHaveBeenCalledWith(
+      'connectionPanel.reticulumInterfaces.rowSummary',
+      expect.objectContaining({ name: 'Hub', type: 'TCP' }),
+    );
+    expect(t).not.toHaveBeenCalledWith(
+      'connectionPanel.reticulumInterfaces.rowSummaryWithMode',
+      expect.anything(),
+    );
+  });
 });

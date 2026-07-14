@@ -512,13 +512,10 @@
     "reticulumSendFailed": "보내지 못했습니다",
     "reticulumImageAttachment": "이미지: {{name}}",
     "reticulumFileAttachment": "파일: {{name}}",
-    "reticulumShowInFolder": "폴더에 표시",
     "reticulumSendPropagated": "전파 노드에서 대기 중",
     "reticulumNoPropagationNode": "전파 노드가 구성되지 않았습니다. Reticulum Radio 탭에서 기본 전파 노드를 설정합니다.",
     "sentViaPropagation": "전파 노드",
-    "reticulumPropagationSyncActive": "전파 노드에서 메시지를 동기화하는 중…",
     "reticulumAudioAttachment": "음성: {{name}}",
-    "reticulumSaveAttachment": "첨부파일 저장",
     "recordVoice": "음성 메시지 녹음",
     "recordVoiceHint": "음성 클립을 녹음하여 LXMF 첨부 파일로 보내기(DM만 해당)",
     "stopVoiceRecording": "녹음을 중지하고 보내기",
@@ -559,7 +556,12 @@
     "dmPathUnreachableAria": "목적지 경로에 도달할 수 없습니다",
     "dmPathUnreachableTooltip": "이 목적지로 가는 Reticulum 경로가 아직 없습니다. 메시지는 구성된 전파 노드를 통해 나중에 전달될 수 있습니다.",
     "dmPathRequestPathAria": "이 목적지로의 Reticulum 경로 요청",
-    "dmPathProbeAria": "이 대상에 대한 Reticulum 경로 도달 가능성 프로브"
+    "dmPathProbeAria": "이 대상에 대한 Reticulum 경로 도달 가능성 프로브",
+    "microphonePermissionDenied": "마이크 접근이 거부되었습니다. 시스템 개인 정보 설정에서 Mesh-client에 대한 마이크 권한을 활성화한 다음 다시 시도하십시오.",
+    "receivedViaBle": "블루투스를 통해 수신됨",
+    "receivedViaMultiple": "{{vias}} 을 (를) 통해 수신됨",
+    "sentViaBle": "블루투스를 통해 전송됨",
+    "sentViaMultiple": "{{vias}} 을 (를) 통해 전송됨"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -843,7 +845,8 @@
       "importPrivateKeyRequiresStack": "개인 키 가져오기에는 전체 Reticulum 스택 빌드가 필요합니다.",
       "saveDisplayName": "표시 이름 저장",
       "saveDisplayNameFailed": "표시 이름을 저장하지 못했습니다.",
-      "displayNameSaved": "표시 이름이 저장되었습니다."
+      "displayNameSaved": "표시 이름이 저장되었습니다.",
+      "copyLxmfHash": "LXMF 해시 복사"
     },
     "reticulumInterfaces": {
       "title": "연계 문서",
@@ -964,7 +967,22 @@
       "rmapDiscoverableAria": "RMAP v4에 {{name}} 게시",
       "rmapEnableSuccess": "{{name}} 에서 RMAP 검색이 활성화되었습니다.",
       "rmapDisableSuccess": "{{name}} 에서 RMAP 검색이 비활성화되었습니다.",
-      "rmapToggleFailed": "{{name}} 에 대한 RMAP 변경 실패: {{error}}"
+      "rmapToggleFailed": "{{name}} 에 대한 RMAP 변경 실패: {{error}}",
+      "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
+      "mode": "모드",
+      "modeAria": "Reticulum 인터페이스 모드",
+      "modeHint": "이 인터페이스가 더 넓은 네트워크에 연결되는 방식(경로 탐색, 전파 알림)을 제어합니다. 추가 시 유형 기본값은 TCP/UDP/I2P 허브는 Boundary, RNode는 Access point입니다. 편집 시 Default (clear)는 모드를 비웁니다(RNS Full).",
+      "modeOption": {
+        "full": "Full",
+        "point_to_point": "포인트 투 포인트",
+        "access_point": "액세스 포인트",
+        "roaming": "로밍",
+        "boundary": "Boundary",
+        "gateway": "게이트웨이"
+      },
+      "modeDefaultAdd": "유형 기본값",
+      "modeDefaultEdit": "기본값(지우기)",
+      "invalidMode": "잘못된 인터페이스 모드입니다."
     },
     "reticulumPeers": {
       "hops": "Hops",

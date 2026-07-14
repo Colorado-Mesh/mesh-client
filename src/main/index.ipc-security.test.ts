@@ -202,15 +202,30 @@ describe('BrowserWindow webPreferences (source contract)', () => {
 // ─── Permission handler whitelist ───────────────────────────────────
 
 describe('session permission whitelist (source contract)', () => {
-  it('grants only serial and geolocation via setPermissionCheckHandler', () => {
+  it('grants serial, geolocation, and media via setPermissionCheckHandler', () => {
     // Search for the actual session method call, not a comment mention of the name
     const checkIdx = INDEX_SOURCE.indexOf('.setPermissionCheckHandler(');
     expect(checkIdx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(checkIdx, checkIdx + 300);
-    // Ensure the allowlist is exactly serial + geolocation, not a wildcard
+    const body = INDEX_SOURCE.slice(checkIdx, checkIdx + 450);
+    // Ensure the allowlist is serial + geolocation + media, not a wildcard
     expect(body).toContain("permission === 'serial'");
     expect(body).toContain("permission === 'geolocation'");
+    expect(body).toContain("permission === 'media'");
     expect(body).not.toContain('return true'); // Must be conditional, not blanket true
+  });
+
+  it('grants media via setPermissionRequestHandler for voice clips', () => {
+    const reqIdx = INDEX_SOURCE.indexOf('.setPermissionRequestHandler(');
+    expect(reqIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(reqIdx, reqIdx + 450);
+    expect(body).toContain("permission === 'geolocation'");
+    expect(body).toContain("permission === 'media'");
+    expect(body).not.toMatch(/callback\s*\(\s*true\s*\)/);
+  });
+
+  it('registers media:ensureMicrophoneAccess IPC handler', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('media:ensureMicrophoneAccess'");
+    expect(INDEX_SOURCE).toContain('ensureMicrophoneAccess(');
   });
 });
 

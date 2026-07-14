@@ -808,6 +808,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPlatform: () => process.platform,
   showEmojiPanel: () => ipcRenderer.invoke('app:showEmojiPanel'),
 
+  // ─── Microphone (Reticulum voice clips) ─────────────────────────────────────
+  media: {
+    ensureMicrophoneAccess: (): Promise<{ granted: boolean; status: string }> =>
+      ipcRenderer.invoke('media:ensureMicrophoneAccess'),
+  },
+
   // ─── System clipboard (main process; preload direct access is unreliable on macOS) ─
   clipboard: {
     writeText: (text: string): Promise<void> => ipcRenderer.invoke('clipboard:writeText', text),

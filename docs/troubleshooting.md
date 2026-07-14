@@ -208,7 +208,13 @@ pnpm run trace-deprecation
 
 ### Permission messages in the console
 
-`[permissions] checkHandler: media → denied` and `web-app-installation → denied` are expected. The app only uses **serial** and **geolocation**; media and web-app-installation are intentionally denied.
+The session allowlist grants **serial**, **geolocation**, and **media** (Reticulum Chat voice clips via `getUserMedia`). Other permissions such as `web-app-installation` remain denied and may appear as `[permissions] … → denied` in the log.
+
+If Reticulum voice recording still fails with microphone permission denied after media is granted:
+
+- **macOS:** System Settings → Privacy & Security → Microphone — allow Mesh-client (or Electron when running `pnpm run dev`). Packaged builds include `NSMicrophoneUsageDescription`.
+- **Windows:** Settings → Privacy & security → Microphone — allow desktop apps / Mesh-client. The app opens this page when OS status is `denied`.
+- **Linux:** Ensure PulseAudio or PipeWire can capture; Flatpak builds already include `--socket=pulseaudio`. AppImage/deb use the host audio stack.
 
 ## Installation and packaged apps
 
@@ -1074,9 +1080,11 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 **Checks**:
 
 1. **Stack running**: start the sidecar from **Connection → Start stack** before editing interfaces. Identity routes on the Network tab also require a live sidecar (`reticulum:proxyGet` / `proxyPut` / `proxyDelete`).
-2. **Edit validation**: name is required; TCP needs a reachable host and valid port; RNode needs a serial port path when adding (edit can update preset/callsign without re-plugging). **I2P** peers must be comma-separated `.b32.i2p` hostnames (max **512** characters); inline errors: `i2pPeersRequired`, `i2pPeersInvalid`, `i2pPeersTooLong`.
+2. **Edit validation**: name is required; TCP needs a reachable host and valid port; RNode needs a serial port path when adding (edit can update preset/callsign without re-plugging). **I2P** peers must be comma-separated `.b32.i2p` hostnames (max **512** characters); inline errors: `i2pPeersRequired`, `i2pPeersInvalid`, `i2pPeersTooLong`. Invalid **mode** values are rejected by the sidecar (`invalid interface mode: …`); use the Connection mode select (or clear to omit). For TCP hub reachability / path seeking, prefer **Boundary** — **Add default network hubs** sets/repairs missing mode to `boundary` (does not overwrite a valid user-chosen mode).
 3. **Delete**: confirm in the modal; if the interface id changed after config import, refresh by stopping and restarting the stack.
 4. **Logs**: filter Device logs for `[ReticulumIPC]` or `[ReticulumSidecar]`; sidecar returns `{ ok: false, error }` for parse or unknown-interface failures.
+
+**TCP / UDP / I2P / Auto / Pipe not active after add**: Sidecar live `apply_interfaces` only hot-applies **BLE Peer**; other types are written to config and require a stack restart. The Connection UI auto-restarts after add/enable/edit/delete for those types (`reticulumInterfaceChangeRequiresStackRestart`). If a transport still does not appear, use **Stop stack** then **Start stack**, or check the amber restart hint. **Add default hubs** still shows the hint only (no auto-restart).
 
 For bulk fixes, use Network **Config import** (merge) instead of hand-editing individual rows. See [reticulum.md — Interface management](reticulum.md#interface-management-connection-tab).
 

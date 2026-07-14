@@ -544,6 +544,34 @@ describe('ChatPanel accessibility', () => {
     expect(screen.getByText(/TCP/)).toBeInTheDocument();
   });
 
+  it('shows explicit multi-egress Reticulum outbound badge (RF+TCP)', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...defaultProps}
+          protocol="reticulum"
+          dmOnlyChat
+          isConnected
+          showLxmfDeliveryStatus
+          myNodeNum={42}
+          messages={[
+            {
+              sender_id: 42,
+              sender_name: 'Self',
+              payload: 'Outbound dual',
+              channel: 0,
+              timestamp: Date.now(),
+              status: 'sending',
+              receivedVia: 'rf+tcp',
+              to: 2,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByText(/RF\+TCP/)).toBeInTheDocument();
+  });
+
   it('surfaces incoming DM conversations and renders them in DM view', async () => {
     const user = userEvent.setup();
     render(
@@ -3557,6 +3585,55 @@ describe('ChatPanel reticulum dm-only chat', () => {
     await waitFor(() => {
       expect(onSend).toHaveBeenCalledWith('hello', 0, peerId, undefined);
     });
+  });
+
+  it('promotes DM pills into the channel grid column with flex-wrap (no separate DM row)', () => {
+    const peerIds = [0x101, 0x102, 0x103, 0x104, 0x105, 0x106];
+    localStorage.setItem('mesh-client:openDmTabs:reticulum', JSON.stringify(peerIds));
+    const nodes = new Map<number, MeshNode>(
+      peerIds.map((nodeId, index) => [
+        nodeId,
+        {
+          node_id: nodeId,
+          reticulum_destination_hash: `deadbeef${index.toString(16).padStart(2, '0')}`,
+          long_name: `Peer ${index}`,
+          short_name: `P${index}`,
+          hw_model: 'Reticulum',
+          snr: 0,
+          battery: 0,
+          last_heard: Date.now(),
+          latitude: null,
+          longitude: null,
+          favorited: false,
+          source: 'rf',
+        },
+      ]),
+    );
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} nodes={nodes} />
+      </ToastProvider>,
+    );
+
+    expect(screen.queryByText('Channels')).not.toBeInTheDocument();
+
+    const label = screen.getByText('DMs');
+    const dmsContainer = label.parentElement;
+    expect(dmsContainer?.className).toMatch(/flex-wrap/);
+    expect(dmsContainer?.className).not.toMatch(/whitespace-nowrap/);
+
+    const headerRow = dmsContainer?.parentElement;
+    expect(headerRow?.className).toMatch(/grid-cols-\[minmax\(0,1fr\)_auto\]/);
+
+    const exportBtn = screen.getByRole('button', { name: 'Export chat' });
+    const starredBtn = screen.getByRole('button', { name: 'Starred messages' });
+    expect(dmsContainer?.contains(exportBtn)).toBe(false);
+    expect(dmsContainer?.contains(starredBtn)).toBe(false);
+    expect(headerRow?.contains(exportBtn)).toBe(true);
+    expect(headerRow?.contains(starredBtn)).toBe(true);
+
+    expect(screen.getByRole('button', { name: 'Peer 0' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Peer 5' })).toBeInTheDocument();
   });
 
   it('does not list node-map contacts without message history', () => {

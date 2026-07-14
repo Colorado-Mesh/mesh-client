@@ -319,7 +319,7 @@ Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGP
 
 **Messaging (Chat)**
 
-- **DM-only** LXMF text, reactions, file attachments, and voice clips (recorded as LXMF attachments)
+- **DM-only** LXMF text and reactions (file/voice attachments deferred)
 - **Direct** delivery when the destination is in the path table; **propagated (PN)** handoff when offline and a propagation node is configured
 
 **Peers, topology, Nomad Network**

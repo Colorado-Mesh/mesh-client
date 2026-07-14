@@ -31,6 +31,8 @@ export interface ReticulumInterfaceRow {
   coding_rate?: number | null;
   callsign?: string | null;
   preset?: string | null;
+  /** rnsd interface mode (`full`, `boundary`, `access_point`, …). */
+  mode?: string | null;
   seed_addresses?: string[];
   discoverable?: boolean | null;
   latitude?: number | null;

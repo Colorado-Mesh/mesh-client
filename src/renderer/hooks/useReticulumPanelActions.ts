@@ -13,7 +13,6 @@ export function useReticulumPanelActions(runtime: ReticulumRuntime) {
       requestRefresh: runtime.requestRefresh,
       setNodeFavorited: runtime.setNodeFavorited,
       sendReaction: runtime.sendReaction,
-      sendAttachment: runtime.sendAttachment,
       clearRawPackets: runtime.clearRawPackets,
     }),
     [runtime],

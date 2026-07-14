@@ -364,12 +364,13 @@ export function subscribePersistedRoomsLastRead(listener: () => void): () => voi
 type ChatLastReadSanitizeMessage = Pick<ChatMessage, 'channel' | 'timestamp'> & {
   to?: number | null;
   sender_id?: number;
+  reticulum_sender_hash?: string;
 };
 
 /** Max message timestamp per chat view key (`ch:N`, `dm:peer`). */
 export function maxMessageTimestampByViewKey(
   messages: readonly ChatLastReadSanitizeMessage[],
-  protocol: 'meshcore' | 'meshtastic' = 'meshtastic',
+  protocol: 'meshcore' | 'meshtastic' | 'reticulum' = 'meshtastic',
   ownNodeIds: ReadonlySet<number> = new Set(),
 ): Record<string, number> {
   const maxByKey: Record<string, number> = {};
@@ -381,6 +382,7 @@ export function maxMessageTimestampByViewKey(
               channel: msg.channel,
               to: msg.to ?? undefined,
               sender_id: msg.sender_id,
+              reticulum_sender_hash: msg.reticulum_sender_hash,
             },
             protocol,
             ownNodeIds,
@@ -466,11 +468,40 @@ export function getSanitizedMeshcoreChatLastRead(
   return sanitizeMeshcoreChatLastRead(loadPersistedLastReadInitial('meshcore'), messages);
 }
 
+/** Clamp Reticulum LXMF chat last-read watermarks that exceed message times or client clock. */
+export function sanitizeReticulumChatLastRead(
+  persisted: Readonly<Record<string, number>>,
+  messages: readonly ChatLastReadSanitizeMessage[],
+  ownNodeIds: ReadonlySet<number> = new Set(),
+): Record<string, number> {
+  const maxByKey = maxMessageTimestampByViewKey(messages, 'reticulum', ownNodeIds);
+  const now = Date.now();
+  let changed = false;
+  const next: Record<string, number> = { ...persisted };
+  for (const [key, watermark] of Object.entries(persisted)) {
+    if (!key.startsWith('ch:') && !key.startsWith('dm:')) continue;
+    const maxMsg = maxByKey[key] ?? 0;
+    let clamped = clampReadWatermarkMs(watermark, now);
+    if (watermark > now) clamped = maxMsg;
+    else if (maxMsg > 0 && clamped > maxMsg) clamped = maxMsg;
+    if (clamped !== watermark) {
+      next[key] = clamped;
+      changed = true;
+    }
+  }
+  return changed ? next : persisted;
+}
+
 /** Ongoing sanitize for Reticulum LXMF chat lastRead (sidebar/tray badges). */
 export function getSanitizedReticulumChatLastRead(
   messages: readonly ChatLastReadSanitizeMessage[],
+  ownNodeIds: ReadonlySet<number>,
 ): Record<string, number> {
-  return sanitizeMeshcoreChatLastRead(loadPersistedLastReadInitial('reticulum'), messages);
+  return sanitizeReticulumChatLastRead(
+    loadPersistedLastReadInitial('reticulum'),
+    messages,
+    ownNodeIds,
+  );
 }
 
 /** Persist MeshCore chat lastRead when sanitize adjusts watermarks (e.g. after upgrade). */
@@ -503,9 +534,10 @@ export function ensureMeshcoreChatLastReadSanitized(
 /** Persist Reticulum chat lastRead when sanitize adjusts watermarks (e.g. after upgrade). */
 export function ensureReticulumChatLastReadSanitized(
   messages: readonly ChatLastReadSanitizeMessage[],
+  ownNodeIds: ReadonlySet<number>,
 ): Record<string, number> {
   const loaded = loadPersistedLastReadInitial('reticulum');
-  const sanitized = sanitizeMeshcoreChatLastRead(loaded, messages);
+  const sanitized = sanitizeReticulumChatLastRead(loaded, messages, ownNodeIds);
   if (sanitized !== loaded) {
     try {
       localStorage.setItem(lastReadStorageKey('reticulum'), JSON.stringify(sanitized));

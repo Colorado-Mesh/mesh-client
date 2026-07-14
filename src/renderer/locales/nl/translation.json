@@ -512,13 +512,10 @@
     "reticulumSendFailed": "Versturen mislukt",
     "reticulumImageAttachment": "Afbeelding: {{name}}",
     "reticulumFileAttachment": "Bestand: {{name}}",
-    "reticulumShowInFolder": "Tonen in map",
     "reticulumSendPropagated": "In de wachtrij geplaatst bij het voortplantingsknooppunt",
     "reticulumNoPropagationNode": "Er is geen propagatieknooppunt geconfigureerd. Stel een voorkeurspropagatieknooppunt in op het tabblad Reticulum Radio.",
     "sentViaPropagation": "Voortplantingsknooppunt",
-    "reticulumPropagationSyncActive": "Berichten van propagatieknooppunt synchroniseren...",
     "reticulumAudioAttachment": "Stem: {{name}}",
-    "reticulumSaveAttachment": "Bijlage opslaan",
     "recordVoice": "Spraakbericht opnemen",
     "recordVoiceHint": "Neem een ​​spraakfragment op en verzend het als LXMF-bijlage (alleen DM)",
     "stopVoiceRecording": "Stop met opnemen en verzend",
@@ -559,7 +556,12 @@
     "dmPathUnreachableAria": "Bestemmingspad is niet bereikbaar",
     "dmPathUnreachableTooltip": "Nog geen Reticulum-pad naar deze bestemming. Berichten kunnen later nog steeds worden afgeleverd via een geconfigureerd propagatieknooppunt.",
     "dmPathRequestPathAria": "Reticulum-pad naar deze bestemming aanvragen",
-    "dmPathProbeAria": "Reticulum-padbereikbaarheid voor deze bestemming controleren"
+    "dmPathProbeAria": "Reticulum-padbereikbaarheid voor deze bestemming controleren",
+    "microphonePermissionDenied": "Microfoontoegang is geweigerd. Schakel microfoontoestemming in voor Mesh-client in uw systeemprivacyinstellingen en probeer het opnieuw.",
+    "receivedViaBle": "Ontvangen via Bluetooth",
+    "receivedViaMultiple": "Ontvangen via {{vias}}",
+    "sentViaBle": "Verzonden via Bluetooth",
+    "sentViaMultiple": "Verzonden via {{vias}}"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -843,7 +845,8 @@
       "importPrivateKeyRequiresStack": "Voor het importeren van privésleutels is een volledige Reticulum-stack-build vereist.",
       "saveDisplayName": "Weergavenaam opslaan",
       "saveDisplayNameFailed": "Kan weergavenaam niet opslaan.",
-      "displayNameSaved": "Weergavenaam opgeslagen."
+      "displayNameSaved": "Weergavenaam opgeslagen.",
+      "copyLxmfHash": "Kopieer LXMF-hash"
     },
     "reticulumInterfaces": {
       "title": "Raakvlakken",
@@ -964,7 +967,22 @@
       "rmapDiscoverableAria": "Publiceer {{name}} op RMAP v4",
       "rmapEnableSuccess": "RMAP-detectie ingeschakeld op {{name}}.",
       "rmapDisableSuccess": "RMAP-detectie uitgeschakeld op {{name}}.",
-      "rmapToggleFailed": "RMAP-wijziging mislukt voor {{name}}: {{error}}"
+      "rmapToggleFailed": "RMAP-wijziging mislukt voor {{name}}: {{error}}",
+      "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
+      "mode": "Modus",
+      "modeAria": "Reticulum-interfacemodus",
+      "modeHint": "Bepaalt hoe deze interface zich aansluit bij het bredere netwerk (pad zoeken, aankondigingspropagatie). Bij toevoegen is het typestandaard Boundary voor TCP/UDP/I2P-hubs en Access point voor RNodes. Bij bewerken wist Default (clear) de modus (RNS Full).",
+      "modeOption": {
+        "full": "Full",
+        "point_to_point": "Punt tot punt",
+        "access_point": "Access point",
+        "roaming": "Roaming",
+        "boundary": "Boundary",
+        "gateway": "Gateway"
+      },
+      "modeDefaultAdd": "Typestandaard",
+      "modeDefaultEdit": "Standaard (wissen)",
+      "invalidMode": "Ongeldige interfacemodus."
     },
     "reticulumPeers": {
       "hops": "Hops",

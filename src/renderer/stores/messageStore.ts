@@ -5,7 +5,18 @@ import { omitRecordKey } from './storeUtils';
 
 export type MessageStatus = 'sending' | 'acked' | 'failed';
 
-export type MessageTransport = 'rf' | 'mqtt' | 'both' | 'tcp' | 'network';
+/**
+ * Transport markers. Reticulum multi-egress uses `+`-joined atoms (e.g. `rf+tcp`).
+ * Meshtastic hybrid RF+MQTT remains `both`.
+ */
+export type MessageTransport =
+  | 'rf'
+  | 'ble'
+  | 'mqtt'
+  | 'both'
+  | 'tcp'
+  | 'network'
+  | `${'rf' | 'ble' | 'tcp' | 'network'}+${string}`;
 
 export interface MessageRecord {
   id: string;

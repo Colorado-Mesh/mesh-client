@@ -512,13 +512,10 @@
     "reticulumSendFailed": "Nie udało się wysłać",
     "reticulumImageAttachment": "Zdjęcie: {{name}}",
     "reticulumFileAttachment": "Plik: {{name}}",
-    "reticulumShowInFolder": "Pokaż w folderze",
     "reticulumSendPropagated": "W kolejce w węźle propagacji",
     "reticulumNoPropagationNode": "Nie skonfigurowano węzła propagacji. Ustaw preferowany węzeł propagacji na karcie Reticulum Radio.",
     "sentViaPropagation": "Węzeł propagacji",
-    "reticulumPropagationSyncActive": "Synchronizowanie wiadomości z węzła propagacji…",
     "reticulumAudioAttachment": "Głos: {{name}}",
-    "reticulumSaveAttachment": "Zapisz załącznik",
     "recordVoice": "Nagraj wiadomość głosową",
     "recordVoiceHint": "Nagraj klip głosowy i wyślij jako załącznik LXMF (tylko DM)",
     "stopVoiceRecording": "Zatrzymaj nagrywanie i wyślij",
@@ -559,7 +556,12 @@
     "dmPathUnreachableAria": "Ścieżka docelowa jest niedostępna",
     "dmPathUnreachableTooltip": "Nie ma jeszcze ścieżki Reticulum do tego miejsca docelowego. Komunikaty mogą być nadal dostarczane później za pośrednictwem skonfigurowanego węzła propagacji.",
     "dmPathRequestPathAria": "Poproś o ścieżkę Reticulum do tego miejsca docelowego",
-    "dmPathProbeAria": "Sprawdź osiągalność ścieżki Reticulum dla tego miejsca docelowego"
+    "dmPathProbeAria": "Sprawdź osiągalność ścieżki Reticulum dla tego miejsca docelowego",
+    "microphonePermissionDenied": "Odmowa dostępu do mikrofonu. Włącz uprawnienia mikrofonu dla Mesh-client w ustawieniach prywatności systemu, a następnie spróbuj ponownie.",
+    "receivedViaBle": "Odebrano przez Bluetooth",
+    "receivedViaMultiple": "Otrzymano za pośrednictwem {{vias}}",
+    "sentViaBle": "Wysłane przez Bluetooth",
+    "sentViaMultiple": "Wysłano przez {{vias}}"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -843,7 +845,8 @@
       "importPrivateKeyRequiresStack": "Import klucza prywatnego wymaga pełnej kompilacji stosu Reticulum.",
       "saveDisplayName": "Zapisz wyświetlaną nazwę",
       "saveDisplayNameFailed": "Nie udało się zapisać wyświetlanej nazwy.",
-      "displayNameSaved": "Nazwa wyświetlana zapisana."
+      "displayNameSaved": "Nazwa wyświetlana zapisana.",
+      "copyLxmfHash": "Skopiuj skrót LXMF"
     },
     "reticulumInterfaces": {
       "title": "Interfejsy",
@@ -964,7 +967,22 @@
       "rmapDiscoverableAria": "Opublikuj {{name}} na RMAP v4",
       "rmapEnableSuccess": "Wykrywanie RMAP włączone w dniu {{name}}.",
       "rmapDisableSuccess": "Wykrywanie RMAP wyłączone w dniu {{name}}.",
-      "rmapToggleFailed": "Zmiana RMAP nie powiodła się dla {{name}}: {{error}}"
+      "rmapToggleFailed": "Zmiana RMAP nie powiodła się dla {{name}}: {{error}}",
+      "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
+      "mode": "Tryb",
+      "modeAria": "Tryb interfejsu Reticulum",
+      "modeHint": "Kontroluje sposób, w jaki ten interfejs łączy się z szerszą siecią (wyszukiwanie ścieżki, ogłaszanie propagacji). Przy dodawaniu domyślny typ to Boundary dla hubów TCP/UDP/I2P i Access point dla RNode. Przy edycji Default (clear) pomija tryb (RNS Full).",
+      "modeOption": {
+        "full": "Full",
+        "point_to_point": "Punkt-punkt",
+        "access_point": "Punkt dostępu",
+        "roaming": "Roaming",
+        "boundary": "Boundary",
+        "gateway": "Gateway"
+      },
+      "modeDefaultAdd": "Domyślny dla typu",
+      "modeDefaultEdit": "Domyślny (wyczyść)",
+      "invalidMode": "Nieprawidłowy tryb interfejsu."
     },
     "reticulumPeers": {
       "hops": "Hops",

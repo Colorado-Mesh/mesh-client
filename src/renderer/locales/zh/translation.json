@@ -512,13 +512,10 @@
     "reticulumSendFailed": "发送失败",
     "reticulumImageAttachment": "图片： {{name}}",
     "reticulumFileAttachment": "文件： {{name}}",
-    "reticulumShowInFolder": "在文件夹中",
     "reticulumSendPropagated": "在传播节点排队",
     "reticulumNoPropagationNode": "未配置传播节点。请在 Reticulum Radio 选项卡上设置首选传播节点。",
     "sentViaPropagation": "传播节点",
-    "reticulumPropagationSyncActive": "正在同步来自传播节点的消息...",
     "reticulumAudioAttachment": "声音：{{name}}",
-    "reticulumSaveAttachment": "保存附件",
     "recordVoice": "录制语音留言",
     "recordVoiceHint": "录制语音剪辑并作为 LXMF 附件发送（仅限 DM）",
     "stopVoiceRecording": "停止录制并发送",
@@ -559,7 +556,12 @@
     "dmPathUnreachableAria": "无法到达目标路径",
     "dmPathUnreachableTooltip": "尚无到此目的地的 Reticulum 路径。消息仍可能稍后通过已配置的传播节点送达。",
     "dmPathRequestPathAria": "请求到此目的地的 Reticulum 路径",
-    "dmPathProbeAria": "探测此目的地的 Reticulum 路径可达性"
+    "dmPathProbeAria": "探测此目的地的 Reticulum 路径可达性",
+    "microphonePermissionDenied": "麦克风访问被拒绝。在系统隐私设置中为 Mesh-client 启用麦克风权限，然后重试。",
+    "receivedViaBle": "通过蓝牙接收",
+    "receivedViaMultiple": "通过{{vias}}接收",
+    "sentViaBle": "通过蓝牙发送",
+    "sentViaMultiple": "已通过{{vias}}发送"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -843,7 +845,8 @@
       "importPrivateKeyRequiresStack": "私钥导入需要完整的 Reticulum 堆栈构建。",
       "saveDisplayName": "保存显示名称",
       "saveDisplayNameFailed": "保存显示名称失败。",
-      "displayNameSaved": "显示名称已保存。"
+      "displayNameSaved": "显示名称已保存。",
+      "copyLxmfHash": "复制LXMF哈希"
     },
     "reticulumInterfaces": {
       "title": "接口",
@@ -964,7 +967,22 @@
       "rmapDiscoverableAria": "在RMAP v4上发布{{name}}",
       "rmapEnableSuccess": "RMAP发现已于{{name}}启用。",
       "rmapDisableSuccess": "RMAP发现在{{name}}被禁用。",
-      "rmapToggleFailed": "{{name}}的RMAP更改失败： {{error}}"
+      "rmapToggleFailed": "{{name}}的RMAP更改失败： {{error}}",
+      "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
+      "mode": "模式",
+      "modeAria": "Reticulum 接口模式",
+      "modeHint": "控制此接口如何加入更广泛的网络（寻路、通告传播）。添加时，类型默认值对 TCP/UDP/I2P 枢纽为 Boundary，对 RNode 为 Access point。编辑时，Default (clear) 会清除模式（RNS Full）。",
+      "modeOption": {
+        "full": "Full",
+        "point_to_point": "点对点",
+        "access_point": "接入点",
+        "roaming": "漫游",
+        "boundary": "Boundary",
+        "gateway": "网关"
+      },
+      "modeDefaultAdd": "类型默认",
+      "modeDefaultEdit": "默认（清除）",
+      "invalidMode": "无效的接口模式。"
     },
     "reticulumPeers": {
       "hops": "Hops",

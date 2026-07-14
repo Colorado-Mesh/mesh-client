@@ -512,13 +512,10 @@
     "reticulumSendFailed": "Gagal mengirim",
     "reticulumImageAttachment": "Gambar: {{name}}",
     "reticulumFileAttachment": "Berkas: {{name}}",
-    "reticulumShowInFolder": "Tampilkan dalam Folder",
     "reticulumSendPropagated": "Mengantri di node propagasi",
     "reticulumNoPropagationNode": "Tidak ada node propagasi yang dikonfigurasi. Tetapkan node propagasi pilihan pada tab Reticulum Radio.",
     "sentViaPropagation": "Node propagasi",
-    "reticulumPropagationSyncActive": "Menyinkronkan pesan dari node propagasi…",
     "reticulumAudioAttachment": "Suara: {{name}}",
-    "reticulumSaveAttachment": "Simpan lampiran",
     "recordVoice": "Rekam pesan suara",
     "recordVoiceHint": "Rekam klip suara dan kirim sebagai lampiran LXMF (khusus DM)",
     "stopVoiceRecording": "Berhenti merekam dan kirim",
@@ -559,7 +556,12 @@
     "dmPathUnreachableAria": "Jalur tujuan tidak dapat dijangkau",
     "dmPathUnreachableTooltip": "Belum ada jalur Reticulum ke tujuan ini. Pesan mungkin masih dikirimkan nanti melalui simpul propagasi yang dikonfigurasi.",
     "dmPathRequestPathAria": "Minta jalur Reticulum ke tujuan ini",
-    "dmPathProbeAria": "Periksa keterjangkauan jalur Reticulum untuk tujuan ini"
+    "dmPathProbeAria": "Periksa keterjangkauan jalur Reticulum untuk tujuan ini",
+    "microphonePermissionDenied": "Akses mikrofon ditolak. Aktifkan izin mikrofon untuk Mesh-client di pengaturan privasi sistem Anda, lalu coba lagi.",
+    "receivedViaBle": "Diterima melalui Bluetooth",
+    "receivedViaMultiple": "Diterima melalui {{vias}}",
+    "sentViaBle": "Dikirim melalui Bluetooth",
+    "sentViaMultiple": "Dikirim melalui {{vias}}"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -843,7 +845,8 @@
       "importPrivateKeyRequiresStack": "Impor kunci pribadi memerlukan build stack Reticulum penuh.",
       "saveDisplayName": "Simpan nama tampilan",
       "saveDisplayNameFailed": "Gagal menyimpan nama tampilan.",
-      "displayNameSaved": "Nama tampilan disimpan."
+      "displayNameSaved": "Nama tampilan disimpan.",
+      "copyLxmfHash": "Salin hash LXMF"
     },
     "reticulumInterfaces": {
       "title": "Interface",
@@ -964,7 +967,22 @@
       "rmapDiscoverableAria": "Publikasikan {{name}} pada RMAP v4",
       "rmapEnableSuccess": "Penemuan RMAP diaktifkan pada {{name}}.",
       "rmapDisableSuccess": "Penemuan RMAP dinonaktifkan pada {{name}}.",
-      "rmapToggleFailed": "Perubahan RMAP gagal untuk {{name}}: {{error}}"
+      "rmapToggleFailed": "Perubahan RMAP gagal untuk {{name}}: {{error}}",
+      "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
+      "mode": "Mode",
+      "modeAria": "Mode antarmuka Reticulum",
+      "modeHint": "Mengontrol bagaimana antarmuka ini bergabung dengan jaringan yang lebih luas (pencarian jalur, pengumuman propagasi). Saat menambah, bawaan tipe adalah Boundary untuk hub TCP/UDP/I2P dan Access point untuk RNode. Saat mengedit, Default (clear) menghapus mode (RNS Full).",
+      "modeOption": {
+        "full": "Full",
+        "point_to_point": "Titik ke titik",
+        "access_point": "Access point",
+        "roaming": "Roaming",
+        "boundary": "Boundary",
+        "gateway": "Gateway"
+      },
+      "modeDefaultAdd": "Bawaan tipe",
+      "modeDefaultEdit": "Bawaan (hapus)",
+      "invalidMode": "Mode antarmuka tidak valid."
     },
     "reticulumPeers": {
       "hops": "Hops",

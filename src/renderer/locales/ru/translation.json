@@ -512,13 +512,10 @@
     "reticulumSendFailed": "Не удалось отправить",
     "reticulumImageAttachment": "Изображение: {{name}}",
     "reticulumFileAttachment": "Файл: {{name}}",
-    "reticulumShowInFolder": "Показать в папке",
     "reticulumSendPropagated": "В очереди на узле распространения",
     "reticulumNoPropagationNode": "Не настроен узел распространения. Установите предпочтительный узел распространения на вкладке Reticulum Radio.",
     "sentViaPropagation": "Узел распространения",
-    "reticulumPropagationSyncActive": "Синхронизация сообщений с узла распространения…",
     "reticulumAudioAttachment": "Голос: {{name}}",
-    "reticulumSaveAttachment": "Сохранить вложение",
     "recordVoice": "Записать голосовое сообщение",
     "recordVoiceHint": "Запишите голосовой клип и отправьте его как вложение LXMF (только в DM)",
     "stopVoiceRecording": "Остановить запись и отправить",
@@ -559,7 +556,12 @@
     "dmPathUnreachableAria": "Путь назначения недоступен",
     "dmPathUnreachableTooltip": "Ещё нет пути Reticulum к этому пункту назначения. Сообщения всё ещё могут быть доставлены позже через настроенный узел распространения.",
     "dmPathRequestPathAria": "Запросить путь Reticulum к этому назначению",
-    "dmPathProbeAria": "Проверить достижимость пути Reticulum для этого назначения"
+    "dmPathProbeAria": "Проверить достижимость пути Reticulum для этого назначения",
+    "microphonePermissionDenied": "Доступ к микрофону запрещен. Включите разрешение микрофона для Mesh-client в настройках конфиденциальности системы, а затем повторите попытку.",
+    "receivedViaBle": "Получено через Bluetooth",
+    "receivedViaMultiple": "Получено через {{vias}}",
+    "sentViaBle": "По Bluetooth",
+    "sentViaMultiple": "Отправлено через {{vias}}"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -843,7 +845,8 @@
       "importPrivateKeyRequiresStack": "Для импорта закрытого ключа требуется полная сборка стека Reticulum.",
       "saveDisplayName": "Сохранить отображаемое имя",
       "saveDisplayNameFailed": "Не удалось сохранить отображаемое имя.",
-      "displayNameSaved": "Отображаемое имя сохранено."
+      "displayNameSaved": "Отображаемое имя сохранено.",
+      "copyLxmfHash": "Копировать хэш LXMF"
     },
     "reticulumInterfaces": {
       "title": "Интерфейсы",
@@ -964,7 +967,22 @@
       "rmapDiscoverableAria": "Опубликовать {{name}} на RMAP v4",
       "rmapEnableSuccess": "Обнаружение RMAP включено {{name}}.",
       "rmapDisableSuccess": "Обнаружение RMAP отключено {{name}}.",
-      "rmapToggleFailed": "Ошибка изменения RMAP для {{name}}: {{error}}"
+      "rmapToggleFailed": "Ошибка изменения RMAP для {{name}}: {{error}}",
+      "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
+      "mode": "Режим",
+      "modeAria": "Режим интерфейса Reticulum",
+      "modeHint": "Управляет тем, как этот интерфейс присоединяется к более широкой сети (поиск пути, распространение объявлений). При добавлении типовое значение — Boundary для TCP/UDP/I2P-хабов и Access point для RNode. При редактировании Default (clear) убирает режим (RNS Full).",
+      "modeOption": {
+        "full": "Full",
+        "point_to_point": "Точка–точка",
+        "access_point": "Точка доступа",
+        "roaming": "Роуминг",
+        "boundary": "Boundary",
+        "gateway": "Gateway"
+      },
+      "modeDefaultAdd": "По типу",
+      "modeDefaultEdit": "По умолчанию (очистить)",
+      "invalidMode": "Недопустимый режим интерфейса."
     },
     "reticulumPeers": {
       "hops": "Hops",

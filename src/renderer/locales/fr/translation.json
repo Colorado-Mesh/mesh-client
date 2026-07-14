@@ -512,13 +512,10 @@
     "reticulumSendFailed": "Échec d'envoi",
     "reticulumImageAttachment": "Image : {{name}}",
     "reticulumFileAttachment": "Dossier : {{name}}",
-    "reticulumShowInFolder": "Montrer dans son dossier",
     "reticulumSendPropagated": "En file d'attente au nœud de propagation",
     "reticulumNoPropagationNode": "Aucun nœud de propagation configuré. Définissez un nœud de propagation préféré dans l’onglet Reticulum Radio.",
     "sentViaPropagation": "Nœud de propagation",
-    "reticulumPropagationSyncActive": "Synchronisation des messages du nœud de propagation…",
     "reticulumAudioAttachment": "Voix : {{name}}",
-    "reticulumSaveAttachment": "Enregistrer la pièce jointe",
     "recordVoice": "Enregistrer un message vocal",
     "recordVoiceHint": "Enregistrez un clip vocal et envoyez-le sous forme de pièce jointe LXMF (DM uniquement)",
     "stopVoiceRecording": "Arrêter l'enregistrement et envoyer",
@@ -559,7 +556,12 @@
     "dmPathUnreachableAria": "Le chemin de destination n'est pas accessible",
     "dmPathUnreachableTooltip": "Pas encore de chemin de Reticulum vers cette destination. Les messages peuvent toujours être livrés plus tard via un nœud de propagation configuré.",
     "dmPathRequestPathAria": "Demander un chemin Reticulum vers cette destination",
-    "dmPathProbeAria": "Vérifier l’accessibilité du chemin Reticulum pour cette destination"
+    "dmPathProbeAria": "Vérifier l’accessibilité du chemin Reticulum pour cette destination",
+    "microphonePermissionDenied": "L'accès au microphone a été refusé. Activez l'autorisation de microphone pour Mesh-client dans les paramètres de confidentialité de votre système, puis réessayez.",
+    "receivedViaBle": "Reçu via Bluetooth",
+    "receivedViaMultiple": "Reçu via {{vias}}",
+    "sentViaBle": "Envoyé via Bluetooth",
+    "sentViaMultiple": "Envoyé via {{vias}}"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -843,7 +845,8 @@
       "importPrivateKeyRequiresStack": "L’importation de clé privée nécessite une construction complète de la pile Reticulum.",
       "saveDisplayName": "Enregistrer le nom d’affichage",
       "saveDisplayNameFailed": "Échec de l'enregistrement du nom d'affichage.",
-      "displayNameSaved": "Nom d'affichage enregistré."
+      "displayNameSaved": "Nom d'affichage enregistré.",
+      "copyLxmfHash": "Copier le hachage LXMF"
     },
     "reticulumInterfaces": {
       "title": "Interfaces",
@@ -964,7 +967,22 @@
       "rmapDiscoverableAria": "Publier {{name}} sur RMAP v4",
       "rmapEnableSuccess": "Découverte RMAP activée sur {{name}}.",
       "rmapDisableSuccess": "Découverte RMAP désactivée sur {{name}}.",
-      "rmapToggleFailed": "Échec de la modification du RMAP pour {{name}} : {{error}}"
+      "rmapToggleFailed": "Échec de la modification du RMAP pour {{name}} : {{error}}",
+      "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
+      "mode": "Mode",
+      "modeAria": "Mode d'interface Reticulum",
+      "modeHint": "Contrôle comment cette interface rejoint le réseau plus large (recherche de chemin, annonce de propagation). À l'ajout, la valeur par type est Boundary pour les hubs TCP/UDP/I2P et Access point pour les RNodes. À l'édition, Default (clear) omet le mode (RNS Full).",
+      "modeOption": {
+        "full": "Full",
+        "point_to_point": "Point à point",
+        "access_point": "Point d'accès",
+        "roaming": "Itinérance",
+        "boundary": "Boundary",
+        "gateway": "Passerelle"
+      },
+      "modeDefaultAdd": "Valeur par type",
+      "modeDefaultEdit": "Par défaut (effacer)",
+      "invalidMode": "Mode d'interface non valide."
     },
     "reticulumPeers": {
       "hops": "Hops",

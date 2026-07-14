@@ -21,7 +21,10 @@ import {
   applyReticulumOutboundDeliveryStatus,
   flushPendingReticulumOutboundDeliveryStatus,
 } from '@/renderer/lib/reticulum/applyReticulumOutboundDeliveryStatus';
-import { resolveReticulumOutboundViaFromInterfaces } from '@/renderer/lib/reticulum/classifyReticulumVia';
+import {
+  resolveReticulumOutboundViaFromPath,
+  reticulumViaToMessageTransport,
+} from '@/renderer/lib/reticulum/classifyReticulumVia';
 import { clearReticulumSessionStores } from '@/renderer/lib/reticulum/clearReticulumSessionStores';
 import {
   resolveReticulumDestinationHash,
@@ -457,9 +460,12 @@ export function useReticulumRuntime(): ProtocolRuntime {
         const p = evt.payload as {
           message_hash?: string;
           status?: string;
+          sent_via?: string;
         };
         if (identityId && p.message_hash && p.status) {
-          applyReticulumOutboundDeliveryStatus(identityId, p.message_hash, p.status);
+          applyReticulumOutboundDeliveryStatus(identityId, p.message_hash, p.status, {
+            sentVia: p.sent_via,
+          });
         }
       }
       if (
@@ -819,10 +825,15 @@ export function useReticulumRuntime(): ProtocolRuntime {
     await connect();
   }, [connect]);
 
-  const resolveOutboundVia = useCallback(() => {
-    return resolveReticulumOutboundViaFromInterfaces(
-      localInterfacesRef.current,
-      getCachedReticulumEffectivePrimaryLocalSerialInterfaceId(),
+  const resolveOutboundVia = useCallback((destinationHash: string) => {
+    const peer = useReticulumPeerStore.getState().getPeer(destinationHash);
+    const pathIface = peer?.interface?.trim() || null;
+    return reticulumViaToMessageTransport(
+      resolveReticulumOutboundViaFromPath(
+        pathIface,
+        localInterfacesRef.current,
+        getCachedReticulumEffectivePrimaryLocalSerialInterfaceId(),
+      ),
     );
   }, []);
 

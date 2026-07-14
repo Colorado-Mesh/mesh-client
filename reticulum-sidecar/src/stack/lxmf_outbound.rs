@@ -537,27 +537,77 @@ pub fn emit_outbound_status(
     status: &str,
     delivery_method: &str,
 ) {
+    emit_outbound_status_with_via(
+        event_tx,
+        message_payload.get("message_hash").cloned(),
+        message_payload.get("to_hash").cloned(),
+        status,
+        Some(delivery_method),
+        message_payload
+            .get("sent_via")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string()),
+    );
+}
+
+pub fn emit_outbound_status_with_via(
+    event_tx: &broadcast::Sender<String>,
+    message_hash: Option<serde_json::Value>,
+    to_hash: Option<serde_json::Value>,
+    status: &str,
+    delivery_method: Option<&str>,
+    sent_via: Option<String>,
+) {
+    let mut payload = serde_json::Map::new();
+    if let Some(h) = message_hash {
+        payload.insert("message_hash".into(), h);
+    }
+    if let Some(t) = to_hash {
+        payload.insert("to_hash".into(), t);
+    }
+    payload.insert("status".into(), serde_json::Value::String(status.into()));
+    if let Some(method) = delivery_method {
+        payload.insert(
+            "delivery_method".into(),
+            serde_json::Value::String(method.into()),
+        );
+    }
+    if let Some(via) = sent_via {
+        payload.insert("sent_via".into(), serde_json::Value::String(via));
+    }
     let frame = serde_json::json!({
         "type": "lxmf_outbound_status",
-        "payload": {
-            "message_hash": message_payload.get("message_hash"),
-            "to_hash": message_payload.get("to_hash"),
-            "status": status,
-            "delivery_method": delivery_method,
-        }
+        "payload": payload,
     });
     let _ = event_tx.send(frame.to_string());
 }
 
 fn emit_outbound_status_by_hash(event_tx: &broadcast::Sender<String>, hash: &[u8; 32], status: &str) {
-    let frame = serde_json::json!({
-        "type": "lxmf_outbound_status",
-        "payload": {
-            "message_hash": hex::encode(hash),
-            "status": status,
-        }
-    });
-    let _ = event_tx.send(frame.to_string());
+    emit_outbound_status_with_via(
+        event_tx,
+        Some(serde_json::Value::String(hex::encode(hash))),
+        None,
+        status,
+        None,
+        None,
+    );
+}
+
+/// Emit an egress evidence upgrade without changing delivery status.
+pub fn emit_outbound_egress_via(
+    event_tx: &broadcast::Sender<String>,
+    message_hash: &str,
+    to_hash: Option<&str>,
+    sent_via: &str,
+) {
+    emit_outbound_status_with_via(
+        event_tx,
+        Some(serde_json::Value::String(message_hash.into())),
+        to_hash.map(|h| serde_json::Value::String(h.into())),
+        "sending",
+        None,
+        Some(sent_via.into()),
+    );
 }
 
 fn route_hops_for(route_hops: &HashMap<[u8; 16], u8>, dest_hash: [u8; 16]) -> u8 {

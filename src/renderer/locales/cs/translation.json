@@ -512,13 +512,10 @@
     "reticulumSendFailed": "Odeslání se nezdařilo",
     "reticulumImageAttachment": "Obrázek: {{name}}",
     "reticulumFileAttachment": "Soubor: {{name}}",
-    "reticulumShowInFolder": "Zobrazit ve složce",
     "reticulumSendPropagated": "Ve frontě v uzlu propagace",
     "reticulumNoPropagationNode": "Není nakonfigurován žádný uzel šíření. Nastavte preferovaný uzel šíření na kartě Reticulum Radio.",
     "sentViaPropagation": "Uzel šíření",
-    "reticulumPropagationSyncActive": "Synchronizace zpráv z uzlu šíření…",
     "reticulumAudioAttachment": "Hlas: {{name}}",
-    "reticulumSaveAttachment": "Uložit přílohu",
     "recordVoice": "Nahrajte hlasovou zprávu",
     "recordVoiceHint": "Nahrajte hlasový klip a odešlete jej jako přílohu LXMF (pouze DM)",
     "stopVoiceRecording": "Zastavte nahrávání a odešlete",
@@ -559,7 +556,12 @@
     "dmPathUnreachableAria": "Cílová cesta není dosažitelná",
     "dmPathUnreachableTooltip": "K tomuto cíli zatím nevede žádná cesta Reticulum. Zprávy mohou být doručeny později prostřednictvím nakonfigurovaného propagačního uzlu.",
     "dmPathRequestPathAria": "Požádat o cestu Reticulum k tomuto cíli",
-    "dmPathProbeAria": "Zjistit dosažitelnost cesty Reticulum pro tento cíl"
+    "dmPathProbeAria": "Zjistit dosažitelnost cesty Reticulum pro tento cíl",
+    "microphonePermissionDenied": "Přístup k mikrofonu byl odepřen. Povolte oprávnění mikrofonu pro Mesh-client v nastavení ochrany osobních údajů systému a zkuste to znovu.",
+    "receivedViaBle": "Přijato přes Bluetooth",
+    "receivedViaMultiple": "Přijato prostřednictvím {{vias}}",
+    "sentViaBle": "Odesláno přes Bluetooth",
+    "sentViaMultiple": "Odesláno prostřednictvím {{vias}}"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -843,7 +845,8 @@
       "importPrivateKeyRequiresStack": "Import soukromého klíče vyžaduje kompletní sestavení zásobníku Reticulum.",
       "saveDisplayName": "Uložit zobrazované jméno",
       "saveDisplayNameFailed": "Nepodařilo se uložit zobrazované jméno.",
-      "displayNameSaved": "Zobrazované jméno uloženo."
+      "displayNameSaved": "Zobrazované jméno uloženo.",
+      "copyLxmfHash": "Kopírovat hash LXMF"
     },
     "reticulumInterfaces": {
       "title": "Rozhraní",
@@ -964,7 +967,22 @@
       "rmapDiscoverableAria": "Zveřejnit {{name}} na RMAP v4",
       "rmapEnableSuccess": "Zjišťování RMAP povoleno dne {{name}}.",
       "rmapDisableSuccess": "Zjišťování RMAP zakázáno dne {{name}}.",
-      "rmapToggleFailed": "Změna RMAP se nezdařila pro {{name}}: {{error}}"
+      "rmapToggleFailed": "Změna RMAP se nezdařila pro {{name}}: {{error}}",
+      "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
+      "mode": "Režim",
+      "modeAria": "Režim rozhraní Reticulum",
+      "modeHint": "Řídí, jak se toto rozhraní připojuje k širší síti (hledání cesty, oznamování šíření). Při přidání je výchozí typ u TCP/UDP/I2P hubů Boundary a u RNodů Access point. Při úpravě Default (clear) režim vynechá (RNS Full).",
+      "modeOption": {
+        "full": "Full",
+        "point_to_point": "Bod k bodu",
+        "access_point": "Přístupový bod",
+        "roaming": "Roaming",
+        "boundary": "Boundary",
+        "gateway": "Gateway"
+      },
+      "modeDefaultAdd": "Výchozí podle typu",
+      "modeDefaultEdit": "Výchozí (vymazat)",
+      "invalidMode": "Neplatný režim rozhraní."
     },
     "reticulumPeers": {
       "hops": "Hops",

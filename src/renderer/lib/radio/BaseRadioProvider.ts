@@ -123,7 +123,7 @@ export interface ProtocolCapabilities {
   hasReticulumInterfaceConfig: boolean;
   /** Reticulum: Network tab (identity, stack config, propagation) */
   hasReticulumNetworkPanel: boolean;
-  /** Reticulum: LXMF file/image attachments in chat */
+  /** Reticulum: LXMF file/voice attach UI (currently false — redesign deferred). */
   hasLxmfAttachments: boolean;
   /** Reticulum: RNode firmware flasher on Admin tab (ReticulumAdminPanel) */
   hasRNodeFlasher: boolean;
@@ -349,7 +349,8 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: true,
   hasReticulumNetworkPanel: true,
-  hasLxmfAttachments: true,
+  /** Deferred: LXMF file/voice attach UI disabled until a redesign. */
+  hasLxmfAttachments: false,
   hasRNodeFlasher: true,
   hasReticulumPeersList: true,
   hasReticulumNativeDiagnostics: true,

@@ -130,6 +130,19 @@ describe('ReticulumNetworkPanel', () => {
     ).toBeInTheDocument();
   });
 
+  it('writes full LXMF hash to clipboard via electronAPI', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.mocked(window.electronAPI.clipboard.writeText);
+    writeText.mockClear();
+
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    await user.click(
+      await screen.findByRole('button', { name: 'connectionPanel.reticulumIdentity.copyLxmfHash' }),
+    );
+    expect(writeText).toHaveBeenCalledWith('def0123456789abcdef0123456789abc');
+  });
+
   it('saves display name via identity display-name API and refreshes identity', async () => {
     const user = userEvent.setup();
     render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);

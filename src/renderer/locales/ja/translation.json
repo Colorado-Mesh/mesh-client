@@ -512,13 +512,10 @@
     "reticulumSendFailed": "送信に失敗しました。",
     "reticulumImageAttachment": "画像： {{name}}",
     "reticulumFileAttachment": "ファイル： {{name}}",
-    "reticulumShowInFolder": "フォルダを表示",
     "reticulumSendPropagated": "伝播ノードでキューに入れられました",
     "reticulumNoPropagationNode": "伝播ノードが構成されていません。 Reticulum Radio タブで優先伝播ノードを設定します。",
     "sentViaPropagation": "伝播ノード",
-    "reticulumPropagationSyncActive": "伝播ノードからのメッセージを同期しています…",
     "reticulumAudioAttachment": "音声: {{name}}",
-    "reticulumSaveAttachment": "添付ファイルを保存する",
     "recordVoice": "音声メッセージを録音する",
     "recordVoiceHint": "音声クリップを録音し、LXMF 添付ファイルとして送信します (DM のみ)",
     "stopVoiceRecording": "録音を停止して送信する",
@@ -559,7 +556,12 @@
     "dmPathUnreachableAria": "宛先パスに到達できません",
     "dmPathUnreachableTooltip": "この宛先への Reticulum パスはまだありません。設定済みの伝播ノード経由で後から配信されることがあります。",
     "dmPathRequestPathAria": "この宛先への Reticulum パスをリクエスト",
-    "dmPathProbeAria": "この宛先の Reticulum パス到達可能性をプローブ"
+    "dmPathProbeAria": "この宛先の Reticulum パス到達可能性をプローブ",
+    "microphonePermissionDenied": "マイクへのアクセスが拒否されました。システムのプライバシー設定で Mesh-client のマイクアクセス許可を有効にしてから、もう一度お試しください。",
+    "receivedViaBle": "Bluetooth経由で受信",
+    "receivedViaMultiple": "{{vias}}経由で受け取りました",
+    "sentViaBle": "Bluetooth経由で送信",
+    "sentViaMultiple": "{{vias}}経由で送信"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -843,7 +845,8 @@
       "importPrivateKeyRequiresStack": "秘密キーのインポートには、完全な Reticulum スタックのビルドが必要です。",
       "saveDisplayName": "表示名を保存",
       "saveDisplayNameFailed": "表示名の保存に失敗しました。",
-      "displayNameSaved": "表示名を保存しました。"
+      "displayNameSaved": "表示名を保存しました。",
+      "copyLxmfHash": "LXMFハッシュをコピー"
     },
     "reticulumInterfaces": {
       "title": "インターフェース",
@@ -964,7 +967,22 @@
       "rmapDiscoverableAria": "{{name}}をRMAP v 4に公開する",
       "rmapEnableSuccess": "{{name}}でRMAP検出が有効になりました。",
       "rmapDisableSuccess": "{{name}}でRMAP検出が無効になりました。",
-      "rmapToggleFailed": "{{name}}のRMAP変更に失敗しました: {{error}}"
+      "rmapToggleFailed": "{{name}}のRMAP変更に失敗しました: {{error}}",
+      "rowSummaryWithMode": "{{name}} ({{type}}、{{mode}}) — {{status}}",
+      "mode": "モード",
+      "modeAria": "Reticulum インターフェースモード",
+      "modeHint": "このインターフェイスがより広範なネットワークに参加する方法（パス探索、伝播アナウンス）を制御します。追加時のタイプ既定は TCP/UDP/I2P ハブで Boundary、RNode で Access point です。編集時の Default (clear) はモードを省略します（RNS Full）。",
+      "modeOption": {
+        "full": "Full",
+        "point_to_point": "ポイントツーポイント",
+        "access_point": "アクセスポイント",
+        "roaming": "ローミング",
+        "boundary": "Boundary",
+        "gateway": "ゲートウェイ"
+      },
+      "modeDefaultAdd": "タイプ既定",
+      "modeDefaultEdit": "デフォルト（クリア）",
+      "invalidMode": "無効なインターフェースモードです。"
     },
     "reticulumPeers": {
       "hops": "Hops",

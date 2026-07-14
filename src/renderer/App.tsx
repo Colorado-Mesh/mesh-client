@@ -1001,18 +1001,6 @@ function AppContent() {
   }, [meshcoreIdentityId, meshcoreUiMessages]);
 
   const reticulumLastReadSanitizedRef = useRef(false);
-  useEffect(() => {
-    if (!reticulumIdentityId || reticulumLastReadSanitizedRef.current) return;
-    if (localStorage.getItem('mesh-client:lastReadSanitized:reticulum') === '1') {
-      reticulumLastReadSanitizedRef.current = true;
-      return;
-    }
-    if (reticulumUiMessages.length === 0) return;
-    ensureReticulumChatLastReadSanitized(reticulumUiMessages);
-    reticulumLastReadSanitizedRef.current = true;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time migration bumps last-read revision after sanitize
-    setLastReadRevision((prev) => ({ ...prev, reticulum: prev.reticulum + 1 }));
-  }, [reticulumIdentityId, reticulumUiMessages]);
 
   const meshtasticOwnNodeIdSet = useMemo(() => {
     const ids = meshtasticMqttOwnNodeIds(
@@ -1042,6 +1030,27 @@ function AppContent() {
       connectionMyNodeNum,
     });
   }, [meshcoreConnectionView.state.myNodeNum, meshcoreIdentityId, meshcoreRuntime.selfNodeId]);
+
+  const reticulumOwnNodeIdSet = useMemo(() => {
+    const selfId =
+      typeof reticulumRuntime.selfNodeId === 'number'
+        ? reticulumRuntime.selfNodeId
+        : reticulumRuntime.state.myNodeNum;
+    return selfId > 0 ? new Set([selfId >>> 0]) : new Set<number>();
+  }, [reticulumRuntime.selfNodeId, reticulumRuntime.state.myNodeNum]);
+
+  useEffect(() => {
+    if (!reticulumIdentityId || reticulumLastReadSanitizedRef.current) return;
+    if (localStorage.getItem('mesh-client:lastReadSanitized:reticulum') === '1') {
+      reticulumLastReadSanitizedRef.current = true;
+      return;
+    }
+    if (reticulumUiMessages.length === 0) return;
+    ensureReticulumChatLastReadSanitized(reticulumUiMessages, reticulumOwnNodeIdSet);
+    reticulumLastReadSanitizedRef.current = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time migration bumps last-read revision after sanitize
+    setLastReadRevision((prev) => ({ ...prev, reticulum: prev.reticulum + 1 }));
+  }, [reticulumIdentityId, reticulumOwnNodeIdSet, reticulumUiMessages]);
 
   const meshtasticConfiguredChannelIndices = useMemo(
     () => new Set(meshtasticRuntime.channels.map((c) => c.index)),
@@ -1107,13 +1116,19 @@ function AppContent() {
 
   const reticulumChatUnread = useMemo(() => {
     void lastReadRevision.reticulum;
-    const lastRead = getSanitizedReticulumChatLastRead(reticulumUiMessages);
+    const lastRead = getSanitizedReticulumChatLastRead(reticulumUiMessages, reticulumOwnNodeIdSet);
     return computeReticulumChatUnread(
       reticulumUiMessages,
       reticulumConnectionView.state.status,
       lastRead,
+      reticulumOwnNodeIdSet,
     );
-  }, [lastReadRevision.reticulum, reticulumUiMessages, reticulumConnectionView.state.status]);
+  }, [
+    lastReadRevision.reticulum,
+    reticulumConnectionView.state.status,
+    reticulumOwnNodeIdSet,
+    reticulumUiMessages,
+  ]);
 
   const meshcoreRoomsUnread = useMemo(() => {
     void roomsLastReadRevision;
@@ -1250,13 +1265,10 @@ function AppContent() {
       ),
     [activeRuntime.selfNodeId, meshtasticRuntime.virtualNodeId, meshtasticRuntime.lastRfSelfNodeId],
   );
-  const reticulumOwnNodeIdsForChat = useMemo(() => {
-    const selfId =
-      typeof reticulumRuntime.selfNodeId === 'number'
-        ? reticulumRuntime.selfNodeId
-        : reticulumRuntime.state.myNodeNum;
-    return selfId > 0 ? [selfId >>> 0] : [];
-  }, [reticulumRuntime.selfNodeId, reticulumRuntime.state.myNodeNum]);
+  const reticulumOwnNodeIdsForChat = useMemo(
+    () => Array.from(reticulumOwnNodeIdSet),
+    [reticulumOwnNodeIdSet],
+  );
   const reticulumIdentityForHeader = useReticulumIdentityStore((s) => s.identity);
   const headerSelfNodeLabel = (() => {
     if (protocol === 'reticulum') {
@@ -2703,16 +2715,9 @@ function AppContent() {
                             protocol={protocol}
                             dmOnlyChat={capabilities.hasReticulumInterfaceConfig}
                             showLxmfDeliveryStatus={capabilities.hasLxmfDeliveryStatus}
-                            showLxmfAttachmentLine={capabilities.hasLxmfAttachments}
+                            showLxmfAttachmentLine={capabilities.hasReticulumInterfaceConfig}
                             composerPayloadLimit={capabilities.lxmfPayloadLimit}
                             lxmfReplyHashReplies={capabilities.hasLxmfDeliveryStatus}
-                            onSendAttachment={
-                              capabilities.hasLxmfAttachments
-                                ? (file, destination) =>
-                                    reticulumPanelActions.sendAttachment?.(file, destination) ??
-                                    Promise.resolve()
-                                : undefined
-                            }
                             scrollToTopRef={scrollToTopChatRef}
                             outerScrollMetricsRootRef={mainViewportRef}
                             compactMode={chatCompactMode}

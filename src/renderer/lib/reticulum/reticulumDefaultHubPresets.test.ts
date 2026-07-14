@@ -102,6 +102,7 @@ describe('reticulumDefaultHubPresets', () => {
         name: 'Custom Dublin',
         host: dublin.host,
         port: dublin.port,
+        mode: 'boundary',
       },
       dublin,
     );
@@ -112,7 +113,23 @@ describe('reticulumDefaultHubPresets', () => {
     expect(patch).not.toHaveProperty('enabled');
   });
 
-  it('returns null repair patch when fields match preset', () => {
+  it('returns null repair patch when fields match preset including mode', () => {
+    const dublin = RETICULUM_DEFAULT_HUB_PRESETS[0];
+    expect(
+      buildDefaultHubRepairPatch(
+        {
+          type: 'tcp',
+          name: dublin.name,
+          host: dublin.host,
+          port: dublin.port,
+          mode: 'boundary',
+        },
+        dublin,
+      ),
+    ).toBeNull();
+  });
+
+  it('repairs missing hub mode to boundary', () => {
     const dublin = RETICULUM_DEFAULT_HUB_PRESETS[0];
     expect(
       buildDefaultHubRepairPatch(
@@ -124,7 +141,50 @@ describe('reticulumDefaultHubPresets', () => {
         },
         dublin,
       ),
+    ).toEqual({ mode: 'boundary' });
+  });
+
+  it('does not overwrite a valid non-boundary hub mode', () => {
+    const dublin = RETICULUM_DEFAULT_HUB_PRESETS[0];
+    expect(
+      buildDefaultHubRepairPatch(
+        {
+          type: 'tcp',
+          name: dublin.name,
+          host: dublin.host,
+          port: dublin.port,
+          mode: 'gateway',
+        },
+        dublin,
+      ),
     ).toBeNull();
+  });
+
+  it('plans skip when endpoint matches with a valid non-boundary mode', () => {
+    const dublin = RETICULUM_DEFAULT_HUB_PRESETS[0];
+    const plan = planDefaultHubPresetsSync([
+      row({
+        id: 'dublin',
+        type: 'tcp',
+        name: dublin.name,
+        host: dublin.host,
+        port: dublin.port,
+        mode: 'gateway',
+      }),
+      ...RETICULUM_DEFAULT_HUB_PRESETS.slice(1).map((preset, index) =>
+        row({
+          id: `hub-${index}`,
+          type: preset.type,
+          name: preset.name,
+          host: preset.host,
+          port: preset.port,
+          mode: 'boundary',
+        }),
+      ),
+    ]);
+    expect(plan.repair).toEqual([]);
+    expect(plan.add).toEqual([]);
+    expect(plan.skip).toContainEqual(dublin);
   });
 
   it('plans add for empty interfaces', () => {
@@ -143,6 +203,7 @@ describe('reticulumDefaultHubPresets', () => {
         name: preset.name,
         host: preset.host,
         port: preset.port,
+        mode: 'boundary',
       }),
     );
     const plan = planDefaultHubPresetsSync(interfaces);
@@ -161,6 +222,7 @@ describe('reticulumDefaultHubPresets', () => {
         name: 'My Dublin',
         host: dublin.host,
         port: dublin.port,
+        mode: 'boundary',
       }),
     ]);
     expect(plan.repair).toHaveLength(1);
@@ -248,6 +310,7 @@ describe('reticulumDefaultHubPresets', () => {
       host: 'rmap.world',
       port: 4242,
       enabled: false,
+      mode: 'boundary',
     });
   });
 
@@ -288,6 +351,7 @@ describe('reticulumDefaultHubPresets', () => {
       host: 'dublin.connect.reticulum.network',
       port: 4965,
       enabled: false,
+      mode: 'boundary',
     });
     const i2p = RETICULUM_DEFAULT_HUB_PRESETS[3];
     expect(buildDefaultHubAddRequest(i2p)).toEqual({
@@ -295,6 +359,7 @@ describe('reticulumDefaultHubPresets', () => {
       name: 'RNS Testnet I2P Hub A',
       host: 'g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p',
       enabled: false,
+      mode: 'boundary',
     });
   });
 

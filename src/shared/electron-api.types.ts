@@ -796,6 +796,11 @@ export interface ElectronAPI {
   getPlatform: () => string;
   showEmojiPanel: () => Promise<void>;
 
+  // ─── Microphone (Reticulum voice clips; OS privacy + Chromium media) ─────────
+  media: {
+    ensureMicrophoneAccess: () => Promise<{ granted: boolean; status: string }>;
+  };
+
   // ─── System clipboard (main process; renderer Async Clipboard API is unreliable in Electron) ─
   clipboard: {
     writeText: (text: string) => Promise<void>;
