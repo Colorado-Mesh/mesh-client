@@ -17,6 +17,7 @@ import {
   MAX_RAW_PACKET_LOG_ENTRIES,
   type ReticulumRawPacketEntry,
 } from '@/renderer/lib/rawPacketLogConstants';
+import { applyReticulumOutboundDeliveryStatus } from '@/renderer/lib/reticulum/applyReticulumOutboundDeliveryStatus';
 import { resolveReticulumOutboundViaFromInterfaces } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import { clearReticulumSessionStores } from '@/renderer/lib/reticulum/clearReticulumSessionStores';
 import {
@@ -27,6 +28,7 @@ import { extractLxmfPayloadFromSendResponse } from '@/renderer/lib/reticulum/lxm
 import {
   markStaleReticulumOutboundInStore,
   markStaleReticulumOutboundMessages,
+  RETICULUM_STALE_OUTBOUND_MS,
 } from '@/renderer/lib/reticulum/markStaleReticulumOutbound';
 import { cacheReticulumInboundAttachment } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
 import { fetchReticulumConfigAudit } from '@/renderer/lib/reticulum/reticulumConfigAudit';
@@ -70,7 +72,6 @@ import {
   useReticulumIdentityStore,
 } from '@/renderer/stores/reticulumIdentityStore';
 import type { ReticulumSidecarEvent, ReticulumWirePacketRow } from '@/shared/reticulum-types';
-import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
@@ -455,9 +456,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
           status?: string;
         };
         if (identityId && p.message_hash && p.status) {
-          const status =
-            p.status === 'delivered' ? 'acked' : p.status === 'failed' ? 'failed' : 'sending';
-          updateMessageStatus(identityId, p.message_hash, status);
+          applyReticulumOutboundDeliveryStatus(identityId, p.message_hash, p.status);
         }
       }
       if (
@@ -609,8 +608,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
       await syncDiagnosticsFromSidecar();
       await hydrateRawPackets();
       if (identityId) {
-        await markStaleReticulumOutboundMessages(identityId, 5 * MS_PER_MINUTE);
-        markStaleReticulumOutboundInStore(identityId, 5 * MS_PER_MINUTE);
+        await markStaleReticulumOutboundMessages(identityId, RETICULUM_STALE_OUTBOUND_MS);
+        markStaleReticulumOutboundInStore(identityId, RETICULUM_STALE_OUTBOUND_MS);
         await refreshMessagesFromDb();
       }
       setState({ status: 'configured', myNodeNum: connectedNodeId, connectionType: null });
@@ -698,8 +697,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
       await syncDiagnosticsFromSidecar();
       await hydrateRawPackets();
       if (identityId) {
-        await markStaleReticulumOutboundMessages(identityId, 5 * MS_PER_MINUTE);
-        markStaleReticulumOutboundInStore(identityId, 5 * MS_PER_MINUTE);
+        await markStaleReticulumOutboundMessages(identityId, RETICULUM_STALE_OUTBOUND_MS);
+        markStaleReticulumOutboundInStore(identityId, RETICULUM_STALE_OUTBOUND_MS);
         await refreshMessagesFromDb();
       }
       setState({ status: 'configured', myNodeNum: connectedNodeId, connectionType: null });

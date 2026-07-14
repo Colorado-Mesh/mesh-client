@@ -120,3 +120,24 @@ describe('useReticulumRuntime peer refresh WS routing', () => {
     expect(SOURCE).toContain('scheduleLeadingTrailingRefresh');
   });
 });
+
+describe('useReticulumRuntime outbound delivery persistence', () => {
+  it('persists Completes/Fails via applyReticulumOutboundDeliveryStatus', () => {
+    expect(SOURCE).toMatch(
+      /evt\.type === 'lxmf_outbound_status'[\s\S]*?applyReticulumOutboundDeliveryStatus\(identityId, p\.message_hash, p\.status\)/,
+    );
+  });
+
+  it('marks stale outbound with RETICULUM_STALE_OUTBOUND_MS (not a 5-minute override)', () => {
+    expect(SOURCE).toContain('RETICULUM_STALE_OUTBOUND_MS');
+    expect(SOURCE).toMatch(
+      /markStaleReticulumOutboundMessages\(identityId, RETICULUM_STALE_OUTBOUND_MS\)/,
+    );
+    expect(SOURCE).toMatch(
+      /markStaleReticulumOutboundInStore\(identityId, RETICULUM_STALE_OUTBOUND_MS\)/,
+    );
+    expect(SOURCE).not.toMatch(
+      /markStaleReticulumOutboundMessages\(identityId, 5 \* MS_PER_MINUTE\)/,
+    );
+  });
+});
