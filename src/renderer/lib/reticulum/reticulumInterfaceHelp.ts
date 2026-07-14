@@ -1,7 +1,14 @@
 import { isReticulumBleRnodeSerialPort } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import { isReticulumTcpRnodeSerialPort } from '@/renderer/lib/reticulum/reticulumRnodeTransport';
+import {
+  RETICULUM_SHARED_INSTANCE_CLIENT_NAME,
+  RETICULUM_SHARED_INSTANCE_NAME,
+} from '@/renderer/lib/reticulum/reticulumSharedInstanceNames';
 
-export const RETICULUM_SHARED_INSTANCE_NAME = 'SharedInstanceServer';
+export {
+  RETICULUM_SHARED_INSTANCE_CLIENT_NAME,
+  RETICULUM_SHARED_INSTANCE_NAME,
+} from '@/renderer/lib/reticulum/reticulumSharedInstanceNames';
 
 export interface ReticulumInterfaceHelpInput {
   id: string;
@@ -22,6 +29,13 @@ export function getReticulumInterfaceHelp(
   if (iface.name === RETICULUM_SHARED_INSTANCE_NAME) {
     return {
       purposeKey: 'connectionPanel.reticulumInterfaces.purpose.sharedInstance',
+      isRuntimeOnly: true,
+      isSystemManaged: true,
+    };
+  }
+  if (iface.name === RETICULUM_SHARED_INSTANCE_CLIENT_NAME) {
+    return {
+      purposeKey: 'connectionPanel.reticulumInterfaces.purpose.sharedInstanceClient',
       isRuntimeOnly: true,
       isSystemManaged: true,
     };

@@ -1956,7 +1956,8 @@ function InterfacesSection({
                     ) : null}
                     {repairKind === 'repair_config' ||
                     repairKind === 'apply_preset' ||
-                    repairKind === 'add_auto' ? (
+                    repairKind === 'add_auto' ||
+                    repairKind === 'disable_share_instance' ? (
                       <button
                         type="button"
                         disabled={actionsDisabled}
@@ -1965,7 +1966,9 @@ function InterfacesSection({
                         }}
                         className="text-xs text-sky-400 hover:underline disabled:opacity-40"
                       >
-                        {t('connectionPanel.reticulumInterfaces.auditRepair')}
+                        {repairKind === 'disable_share_instance'
+                          ? t('diagnosticsPanel.reticulum.action.disable_share_instance')
+                          : t('connectionPanel.reticulumInterfaces.auditRepair')}
                       </button>
                     ) : null}
                     {repairKind === 'disable' && help.isSystemManaged ? (

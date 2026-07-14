@@ -97,7 +97,13 @@ export interface RfDiagnosticRow {
   reticulumInterfaceId?: string;
   /** Reticulum in-app repair action key. */
   reticulumRepairKind?:
-    'repair_config' | 'disable' | 'apply_preset' | 'edit' | 'restart_stack' | 'add_auto';
+    | 'repair_config'
+    | 'disable'
+    | 'apply_preset'
+    | 'edit'
+    | 'restart_stack'
+    | 'add_auto'
+    | 'disable_share_instance';
 }
 
 export type DiagnosticRow = RoutingDiagnosticRow | RfDiagnosticRow;

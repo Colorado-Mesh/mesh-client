@@ -7,6 +7,7 @@ import {
   readFirstExistingConfig,
   showReticulumConfigImportDialog,
 } from '../reticulum-config-paths';
+import { validateReticulumUserConfig } from '../reticulum-config-validate';
 import { showReticulumIdentityImportDialog } from '../reticulum-identity-import';
 import type { ReticulumSidecarManager } from '../reticulum-sidecar-manager';
 import { assertIpcSender } from '../validate-ipc-sender';
@@ -134,6 +135,17 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   ipcMain.handle('reticulum:showIdentityImportDialog', async (event) => {
     assertIpcSender(event, 'reticulum:showIdentityImportDialog');
     return showReticulumIdentityImportDialog();
+  });
+
+  ipcMain.handle('reticulum:validateConfig', async (event) => {
+    assertIpcSender(event, 'reticulum:validateConfig');
+    try {
+      return await validateReticulumUserConfig();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('[ReticulumIPC] validateConfig failed:', sanitizeLogMessage(message));
+      return { ok: false, issues: [], error: sanitizeLogMessage(message) };
+    }
   });
 }
 

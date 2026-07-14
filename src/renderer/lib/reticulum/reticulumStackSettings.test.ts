@@ -17,6 +17,12 @@ describe('parseReticulumStackSettingsPayload', () => {
     ).toBe(DEFAULT_ANNOUNCE_INTERVAL_SEC);
   });
 
+  it('defaults share_instance to false when absent', () => {
+    expect(parseReticulumStackSettingsPayload({ enable_transport: false }).share_instance).toBe(
+      false,
+    );
+  });
+
   it('preserves explicit announce_interval_sec of 0', () => {
     expect(
       parseReticulumStackSettingsPayload({

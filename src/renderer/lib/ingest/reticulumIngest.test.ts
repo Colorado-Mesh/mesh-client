@@ -188,3 +188,72 @@ describe('reticulumIngest reactions', () => {
     expect(record.reticulumReplyToHash).toBe(parentHash);
   });
 });
+
+describe('reticulumIngest reply quotes', () => {
+  const identityId = 'offline-reticulum';
+  const parentHash = 'ab'.repeat(32);
+  const childHash = 'cd'.repeat(32);
+  const senderHash = '11'.repeat(16);
+
+  beforeEach(() => {
+    upsertMessage.mockClear();
+    messagesState = {
+      [identityId]: {
+        [parentHash]: {
+          id: parentHash,
+          from: 1,
+          senderName: 'Alice',
+          to: 2,
+          payload: 'Original parent body that is long enough to truncate in previews',
+          channelIndex: 0,
+          timestamp: 1_700_000_000_000,
+          status: 'acked',
+          reticulumMessageHash: parentHash,
+        },
+      },
+    };
+    useBlockStore.setState({
+      protocol: 'reticulum',
+      identityId,
+      blockedHashes: new Set(),
+      loaded: true,
+    });
+  });
+
+  it('enriches replyPreview fields from parent hash in store', () => {
+    const ok = ingestReticulumLxmfPayload(identityId, {
+      sender_hash: senderHash,
+      sender_name: 'Bob',
+      text: 'reply body',
+      timestamp: 1_700_000_001_000,
+      reply_to_hash: parentHash,
+      message_hash: childHash,
+      direction: 'inbound',
+    });
+    expect(ok).toBe(true);
+    const record = upsertMessage.mock.calls.at(-1)?.[1] as MessageRecord;
+    expect(record.reticulumReplyToHash).toBe(parentHash);
+    expect(record.replyPreviewSender).toBe('Alice');
+    expect(record.replyPreviewText).toBe('Original parent body that is long enough to trunca…');
+  });
+
+  it('uses wire reply_preview_text when parent is absent', () => {
+    messagesState = {};
+    const ok = ingestReticulumLxmfPayload(identityId, {
+      sender_hash: senderHash,
+      sender_name: 'Bob',
+      text: 'reply body',
+      timestamp: 1_700_000_001_000,
+      reply_to_hash: parentHash,
+      reply_preview_text: 'Quoted offline',
+      reply_preview_sender: 'Carol',
+      message_hash: childHash,
+      direction: 'inbound',
+    });
+    expect(ok).toBe(true);
+    const record = upsertMessage.mock.calls.at(-1)?.[1] as MessageRecord;
+    expect(record.reticulumReplyToHash).toBe(parentHash);
+    expect(record.replyPreviewText).toBe('Quoted offline');
+    expect(record.replyPreviewSender).toBe('Carol');
+  });
+});

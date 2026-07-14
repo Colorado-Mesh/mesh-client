@@ -934,7 +934,8 @@
         "rnodeBle": "Malha LoRa via Bluetooth RNode.",
         "rnodeWifi": "Malha LoRa via RNode Wi-Fi (tcp: // host).",
         "blePeer": "Malha de pares BLE usando endereços de pares iniciais.",
-        "generic": "Interface de rede Reticulum."
+        "generic": "Interface de rede Reticulum.",
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
       },
       "rfProfile": {
         "coordinated": "Regional coordenado",
@@ -1117,7 +1118,15 @@
     "coloradoRegionGateMessage": "O Colorado Mesh MQTT é para usuários de malha da área do Colorado e publica sob meshcore/DEN. Se você estiver fora do Colorado, mude para LetsMesh (corretor público global).",
     "coloradoRegionGateStay": "Estou no Colorado",
     "coloradoRegionGateSwitch": "Mudar para LetsMesh",
-    "topicPrefixInvalidIata": "O prefixo do tópico deve ser meshcore/test ou meshcore/{IATA} (3 letras), por exemplo, meshcore/DEN."
+    "topicPrefixInvalidIata": "O prefixo do tópico deve ser meshcore/test ou meshcore/{IATA} (3 letras), por exemplo, meshcore/DEN.",
+    "reticulumSharedInstance": {
+      "title": "Using another app’s shared instance",
+      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
+      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
+      "disableShare": "Turn off Share instance and restart",
+      "disableShareAria": "Turn off Share instance and restart the stack",
+      "disableFailed": "Failed to turn off Share instance."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",
@@ -1381,7 +1390,8 @@
         "apply_preset": "Aplicar predefinição",
         "edit": "Editar interface",
         "restart_stack": "Reiniciar pilha",
-        "add_auto": "Adicionar interface automática"
+        "add_auto": "Adicionar interface automática",
+        "disable_share_instance": "Turn off Share instance"
       },
       "audit": {
         "tcp_enable_key": "A interface TCP \"{{name}}\" usa a chave de ativação errada — o RNS não a carregará.",
@@ -1395,13 +1405,14 @@
         "ghost_interface": "A interface \"{{name}}\" está habilitada na configuração, mas não é carregada pelo RNS.",
         "missing_auto_interface": "Nenhuma AutoInterface habilitada — a descoberta de LAN local está desativada.",
         "auto_interface_down": "AutoInterface \"{{name}}\" está habilitado, mas inativo.",
-        "missing_shared_instance": "A instância de compartilhamento está ativada, mas o SharedInstanceServer não está ativo.",
-        "shared_instance_unexpected": "SharedInstanceServer está ativo, mas share_instance está desativado.",
+        "missing_shared_instance": "Share instance is on but this app is not hosting the shared server — quit other mesh apps or turn off Share instance, then restart.",
+        "shared_instance_unexpected": "Shared instance server is live but Share instance is off — restart the stack.",
         "runtime_only_interface": "\"{{name}}\" é apenas em tempo de execução (não armazenado na configuração).",
         "rmap_missing_coordinates": "A interface \"{{name}}\" é detectável, mas faltam coordenadas válidas do mapa.",
         "rmap_no_tcp_hub": "RNode local detectável não tem hub de cliente TCP habilitado para acessibilidade à Internet.",
         "rmap_transport_disabled": "As interfaces detectáveis estão configuradas, mas o modo de transporte está desligado.",
-        "rmap_i2p_not_connectable": "A interface I2P \"{{name}}\" é detectável, mas conectável não é sim."
+        "rmap_i2p_not_connectable": "A interface I2P \"{{name}}\" é detectável, mas conectável não é sim.",
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
       },
       "runtime": {
         "rnsNotReady": "A pilha RNS não está pronta",
@@ -2322,7 +2333,19 @@
       "confirm": "Importar"
     },
     "reticulumConfigImportFailed": "Falha na importação de configuração.",
-    "reticulumConfigNotFound": "Nenhuma configuração do Reticulum do sistema encontrada nos caminhos padrão."
+    "reticulumConfigNotFound": "Nenhuma configuração do Reticulum do sistema encontrada nos caminhos padrão.",
+    "reticulumConfigValidate": {
+      "button": "Check config",
+      "aria": "Validate on-disk network config",
+      "running": "Checking…",
+      "ok": "Config looks good — no audit issues.",
+      "failed": "Config check failed: {{message}}",
+      "issuesHeading_one": "{{count}} config issue",
+      "issuesHeading_other": "{{count}} config issues",
+      "severityError": "error",
+      "severityWarning": "warning",
+      "severityInfo": "info"
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Remove from favorites",

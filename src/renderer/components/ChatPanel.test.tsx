@@ -1857,6 +1857,85 @@ describe('ChatPanel StatusBadge', () => {
     expect(screen.getByText('Saved parent snippet')).toBeInTheDocument();
   });
 
+  it('renders Reticulum quote bubble from reticulum_reply_to_hash and jumps to parent', () => {
+    const parentHash = 'ab'.repeat(32);
+    const t0 = Date.now() - 5000;
+    const t1 = t0 + 1000;
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="reticulum"
+          dmOnlyChat
+          myNodeNum={1}
+          ownNodeIds={[1]}
+          initialDmTarget={2}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Alice',
+              payload: 'Parent LXMF text',
+              channel: 0,
+              timestamp: t0,
+              status: 'acked',
+              to: 1,
+              reticulum_message_hash: parentHash,
+            },
+            {
+              sender_id: 1,
+              sender_name: 'Me',
+              payload: 'Child reply',
+              channel: 0,
+              timestamp: t1,
+              status: 'acked',
+              to: 2,
+              reticulum_message_hash: 'cd'.repeat(32),
+              reticulum_reply_to_hash: parentHash,
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(
+      screen.getByRole('button', { name: /Jump to quoted message from Alice/i }),
+    ).toBeInTheDocument();
+    // Parent payload appears in the original bubble and again in the quote strip.
+    expect(screen.getAllByText('Parent LXMF text').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Child reply')).toBeInTheDocument();
+  });
+
+  it('renders Reticulum quote from stored preview when parent hash is missing from thread', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="reticulum"
+          dmOnlyChat
+          myNodeNum={1}
+          ownNodeIds={[1]}
+          initialDmTarget={2}
+          messages={[
+            {
+              sender_id: 2,
+              sender_name: 'Bob',
+              payload: 'orphan reply',
+              channel: 0,
+              timestamp: Date.now(),
+              status: 'acked',
+              to: 1,
+              reticulum_reply_to_hash: 'ef'.repeat(32),
+              replyPreviewText: 'Remote parent quote',
+              replyPreviewSender: 'Alice',
+            },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    expect(screen.getByText('Remote parent quote')).toBeInTheDocument();
+    expect(screen.getByText('Alice')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Jump to quoted message from Alice/i })).toBeNull();
+  });
+
   it('shows tooltip on hover and does not use a native title attribute', async () => {
     // Regression: StatusBadge previously used `title` which is silently dropped
     // in Electron. It must use HelpTooltip so the tooltip mounts in the DOM.
@@ -3886,6 +3965,141 @@ describe('ChatPanel reticulum dm-only chat', () => {
     expect(refreshReticulumPeersFromSidecarMock).toHaveBeenCalled();
   });
 
+  it('probes and toasts from DM Probe action', async () => {
+    const hash = '368f994c056de0d8882855eb0d627497';
+    probeReticulumPeerMock
+      .mockResolvedValueOnce({ ok: false, error: 'timeout' })
+      .mockResolvedValueOnce({ ok: true, hops: 2 });
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} reticulumStackLive />
+      </ToastProvider>,
+    );
+    const addressInput = screen.getByLabelText('Destination address');
+    await user.type(addressInput, hash);
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    await waitFor(() => {
+      expect(screen.getByText('No path')).toBeInTheDocument();
+    });
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Probe Reticulum path reachability for this destination',
+      }),
+    );
+    await waitFor(() => {
+      expect(probeReticulumPeerMock).toHaveBeenCalledTimes(2);
+    });
+    expect(probeReticulumPeerMock).toHaveBeenLastCalledWith(hash);
+    await waitFor(() => {
+      expect(screen.getByText(/Probe OK/)).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByRole('status', { name: 'Destination path is reachable' }),
+      ).toBeInTheDocument();
+    });
+    expect(refreshReticulumPeersFromSidecarMock).toHaveBeenCalled();
+  });
+
+  it('manual Probe failure toasts and settles unreachable without refreshing peers', async () => {
+    const hash = '368f994c056de0d8882855eb0d627497';
+    probeReticulumPeerMock
+      .mockResolvedValueOnce({ ok: true, hops: 1 })
+      .mockResolvedValueOnce({ ok: false, error: 'timeout' });
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} reticulumStackLive />
+      </ToastProvider>,
+    );
+    const addressInput = screen.getByLabelText('Destination address');
+    await user.type(addressInput, hash);
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    await waitFor(() => {
+      expect(
+        screen.getByRole('status', { name: 'Destination path is reachable' }),
+      ).toBeInTheDocument();
+    });
+    refreshReticulumPeersFromSidecarMock.mockClear();
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Probe Reticulum path reachability for this destination',
+      }),
+    );
+    await waitFor(() => {
+      expect(screen.getByText(/Probe failed/)).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByText('No path')).toBeInTheDocument();
+    });
+    expect(refreshReticulumPeersFromSidecarMock).not.toHaveBeenCalled();
+  });
+
+  it('manual Probe when sidecar is down shows start-stack toast and does not call /probe', async () => {
+    const hash = '368f994c056de0d8882855eb0d627497';
+    probeReticulumPeerMock.mockResolvedValueOnce({ ok: true, hops: 1 });
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} reticulumStackLive />
+      </ToastProvider>,
+    );
+    const addressInput = screen.getByLabelText('Destination address');
+    await user.type(addressInput, hash);
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {
+          name: 'Probe Reticulum path reachability for this destination',
+        }),
+      ).toBeInTheDocument();
+    });
+    const probeCallsAfterAuto = probeReticulumPeerMock.mock.calls.length;
+    isReticulumSidecarRunningMock.mockResolvedValue(false);
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Probe Reticulum path reachability for this destination',
+      }),
+    );
+    await waitFor(() => {
+      expect(screen.getByText(/Start the stack/i)).toBeInTheDocument();
+    });
+    expect(probeReticulumPeerMock).toHaveBeenCalledTimes(probeCallsAfterAuto);
+  });
+
+  it('disables path/probe actions while a manual Probe is in flight', async () => {
+    const hash = '368f994c056de0d8882855eb0d627497';
+    let resolveManual!: (value: { ok: boolean; hops?: number }) => void;
+    const manual = new Promise<{ ok: boolean; hops?: number }>((resolve) => {
+      resolveManual = resolve;
+    });
+    probeReticulumPeerMock.mockResolvedValueOnce({ ok: true, hops: 1 }).mockReturnValueOnce(manual);
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} reticulumStackLive />
+      </ToastProvider>,
+    );
+    const addressInput = screen.getByLabelText('Destination address');
+    await user.type(addressInput, hash);
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    const probeBtnName = 'Probe Reticulum path reachability for this destination';
+    const pathBtnName = 'Request Reticulum path to this destination';
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: probeBtnName })).toBeEnabled();
+    });
+    await user.click(screen.getByRole('button', { name: probeBtnName }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: probeBtnName })).toBeDisabled();
+      expect(screen.getByRole('button', { name: pathBtnName })).toBeDisabled();
+    });
+    resolveManual({ ok: true, hops: 2 });
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: probeBtnName })).toBeEnabled();
+    });
+  });
+
   it('does not probe when reticulum stack is not live', async () => {
     const hash = '368f994c056de0d8882855eb0d627497';
     const user = userEvent.setup();
@@ -3901,5 +4115,72 @@ describe('ChatPanel reticulum dm-only chat', () => {
     expect(probeReticulumPeerMock).not.toHaveBeenCalled();
     expect(screen.queryByText('No path')).not.toBeInTheDocument();
     expect(screen.queryByText(/Path reachable/)).not.toBeInTheDocument();
+  });
+
+  it('opens peer detail via onPeerClick when sender name is clicked', async () => {
+    const user = userEvent.setup();
+    const peerHash = '8fd7a9361aca00000000000000000000';
+    const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;
+    const onNodeClick = vi.fn();
+    const onPeerClick = vi.fn();
+    const messages: ChatMessage[] = [
+      {
+        sender_id: peerId,
+        sender_name: '98046ee20235',
+        payload: 'hello peer detail',
+        channel: 0,
+        to: 0,
+        reticulum_sender_hash: peerHash,
+        timestamp: Date.now(),
+        status: 'acked',
+      },
+    ];
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...reticulumProps}
+          messages={messages}
+          ownNodeIds={[1]}
+          onNodeClick={onNodeClick}
+          onPeerClick={onPeerClick}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByRole('button', { name: '98046ee20235' }));
+    expect(onPeerClick).toHaveBeenCalledExactlyOnceWith(peerHash);
+    expect(onNodeClick).not.toHaveBeenCalled();
+  });
+
+  it('does not call onNodeClick or onPeerClick when Reticulum sender hash cannot be resolved', async () => {
+    const user = userEvent.setup();
+    const peerId = 0xabcdef01;
+    const onNodeClick = vi.fn();
+    const onPeerClick = vi.fn();
+    const messages: ChatMessage[] = [
+      {
+        sender_id: peerId,
+        sender_name: 'Unknown Peer',
+        payload: 'no hash here',
+        channel: 0,
+        to: peerId,
+        timestamp: Date.now(),
+        status: 'acked',
+      },
+    ];
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...reticulumProps}
+          messages={messages}
+          ownNodeIds={[1]}
+          initialDmTarget={peerId}
+          onNodeClick={onNodeClick}
+          onPeerClick={onPeerClick}
+        />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Unknown Peer' }));
+    expect(onPeerClick).not.toHaveBeenCalled();
+    expect(onNodeClick).not.toHaveBeenCalled();
   });
 });

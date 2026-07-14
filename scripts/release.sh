@@ -313,6 +313,11 @@ if ! pnpm run check:ipc-contract; then
   exit 1
 fi
 
+if ! pnpm run check:reticulum-interface-modes; then
+  print_error "Reticulum interface mode catalog check failed."
+  exit 1
+fi
+
 if ! pnpm run check:licenses; then
   print_error "License check failed."
   exit 1

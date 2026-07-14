@@ -1,4 +1,5 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { truncateReplyPreviewText } from '@/renderer/lib/replyPreview';
 import { messageTransportFromWire } from '@/renderer/lib/reticulum/classifyReticulumVia';
 import {
   registerReticulumDestinationHash,
@@ -15,13 +16,21 @@ import {
   mergeReticulumIngestRecord,
   type ReticulumIngestMergeContext,
 } from '@/renderer/lib/reticulum/reticulumIngestMerge';
+import {
+  normalizeReticulumMessageHash,
+  reticulumMessageHashesEqual,
+} from '@/renderer/lib/reticulum/reticulumMessageHash';
 import { reticulumDbRowToMessageRecord } from '@/renderer/lib/storeRecordAdapters';
 import type { IdentityId } from '@/renderer/lib/types';
 import { useBlockStore } from '@/renderer/stores/blockStore';
 import type { MessageRecord, MessageStatus } from '@/renderer/stores/messageStore';
 import { addMessage, upsertMessage, useMessageStore } from '@/renderer/stores/messageStore';
 import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
-import { sanitizeReticulumDisplayName } from '@/shared/reticulumDisplayName';
+import {
+  isReticulumHashPrefixAlias,
+  reticulumRealDisplayName,
+  sanitizeReticulumDisplayName,
+} from '@/shared/reticulumDisplayName';
 
 export interface ReticulumLxmfPayload {
   sender_hash?: string;
@@ -30,6 +39,8 @@ export interface ReticulumLxmfPayload {
   timestamp?: number;
   to_hash?: string;
   reply_to_hash?: string;
+  reply_preview_text?: string;
+  reply_preview_sender?: string;
   message_hash?: string;
   direction?: string;
   reaction_target?: string;
@@ -41,21 +52,15 @@ export interface ReticulumLxmfPayload {
   icon_appearance?: ReticulumIconAppearanceWire | null;
 }
 
-/** True when a wire sender_name is just the destination hash prefix, not a real alias. */
-export function isReticulumHashPrefixAlias(senderHash: string, name?: string | null): boolean {
-  if (!name?.trim()) return true;
-  const prefix = senderHash.slice(0, 12).toLowerCase();
-  return name.trim().toLowerCase() === prefix;
-}
+/** Re-export for call sites that historically imported the predicate from ingest. */
+export { isReticulumHashPrefixAlias };
 
 /** Display name suitable for SQLite upsert; omits hash-prefix placeholders. */
 export function reticulumContactDisplayNameFromPayload(
   p: ReticulumLxmfPayload,
 ): string | undefined {
   if (!p.sender_hash) return undefined;
-  const sanitized = sanitizeReticulumDisplayName(p.sender_name);
-  if (!sanitized || isReticulumHashPrefixAlias(p.sender_hash, sanitized)) return undefined;
-  return sanitized;
+  return reticulumRealDisplayName(p.sender_hash, p.sender_name) ?? undefined;
 }
 
 function parseReticulumDeliveryMethod(
@@ -89,7 +94,53 @@ function resolvePayloadTransport(p: ReticulumLxmfPayload) {
   return messageTransportFromWire(p.received_via, p.sent_via, p.direction);
 }
 
-function payloadToMessageRecord(p: ReticulumLxmfPayload): MessageRecord | null {
+/** Look up a prior LXMF row by message hash within an identity's store. */
+export function findReticulumParentRecordByHash(
+  identityId: IdentityId,
+  replyToHash: string,
+): MessageRecord | undefined {
+  const target = normalizeReticulumMessageHash(replyToHash);
+  if (!target) return undefined;
+  const byId = useMessageStore.getState().messages[identityId];
+  if (!byId) return undefined;
+  const direct = byId[replyToHash] ?? byId[target];
+  if (direct) return direct;
+  for (const row of Object.values(byId)) {
+    if (
+      reticulumMessageHashesEqual(row.reticulumMessageHash, target) ||
+      reticulumMessageHashesEqual(row.id, target)
+    ) {
+      return row;
+    }
+  }
+  return undefined;
+}
+
+function resolveReplyPreviewFromPayload(
+  identityId: IdentityId | null,
+  p: ReticulumLxmfPayload,
+  replyToHash: string | undefined,
+): Pick<MessageRecord, 'replyPreviewText' | 'replyPreviewSender'> {
+  if (!replyToHash) return {};
+  const fromWireText = p.reply_preview_text?.trim();
+  const fromWireSender = p.reply_preview_sender?.trim();
+  const parent =
+    identityId != null ? findReticulumParentRecordByHash(identityId, replyToHash) : undefined;
+  const replyPreviewText =
+    (parent ? truncateReplyPreviewText(parent.payload) : undefined) ??
+    (fromWireText ? truncateReplyPreviewText(fromWireText) : undefined);
+  const replyPreviewSender =
+    (parent?.senderName?.trim() || undefined) ?? (fromWireSender || undefined);
+  return {
+    ...(replyPreviewText ? { replyPreviewText } : {}),
+    ...(replyPreviewSender ? { replyPreviewSender } : {}),
+  };
+}
+
+function payloadToMessageRecord(
+  p: ReticulumLxmfPayload,
+  identityId: IdentityId | null = null,
+): MessageRecord | null {
   if (!p.text || !p.sender_hash) return null;
 
   const senderNodeId = reticulumHashToNodeId(p.sender_hash);
@@ -103,6 +154,8 @@ function payloadToMessageRecord(p: ReticulumLxmfPayload): MessageRecord | null {
   const status = mapDeliveryStatusToMessageStatus(p.delivery_status, p.direction);
 
   const deliveryMethod = parseReticulumDeliveryMethod(p.delivery_method);
+  const replyToHash = isReaction ? p.reaction_target : p.reply_to_hash;
+  const preview = isReaction ? {} : resolveReplyPreviewFromPayload(identityId, p, replyToHash);
 
   return {
     id: messageHash,
@@ -118,8 +171,8 @@ function payloadToMessageRecord(p: ReticulumLxmfPayload): MessageRecord | null {
     reticulumSenderHash: p.sender_hash,
     ...(isReaction
       ? { tapback: true, reticulumReplyToHash: p.reaction_target }
-      : p.reply_to_hash
-        ? { reticulumReplyToHash: p.reply_to_hash }
+      : replyToHash
+        ? { reticulumReplyToHash: replyToHash, ...preview }
         : {}),
     ...(deliveryMethod ? { reticulumDeliveryMethod: deliveryMethod } : {}),
   };
@@ -133,7 +186,7 @@ export function ingestReticulumLxmfPayload(
   if (p.sender_hash && useBlockStore.getState().isBlocked(p.sender_hash)) {
     return false;
   }
-  const record = payloadToMessageRecord(p);
+  const record = payloadToMessageRecord(p, identityId);
   if (!record) return false;
   const existing = useMessageStore.getState().messages[identityId]?.[record.id];
   const merged = mergeReticulumIngestRecord(existing, record, p, ctx);

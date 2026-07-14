@@ -4,6 +4,7 @@ import {
   enrichMeshtasticReplyPreviews,
   findMeshtasticParentMessageForReply,
   findParentMessageForReply,
+  findReticulumParentMessageForReply,
   repairMeshtasticReplyPreviews,
   REPLY_PREVIEW_MAX_LEN,
   resolveMeshtasticWireReplyId,
@@ -282,5 +283,31 @@ describe('repairMeshtasticReplyPreviews', () => {
     const [repaired] = repairMeshtasticReplyPreviews([reply]);
     expect(repaired.replyPreviewText).toBeUndefined();
     expect(repaired.replyPreviewSender).toBeUndefined();
+  });
+});
+
+describe('findReticulumParentMessageForReply', () => {
+  it('matches parent by reticulum_message_hash (case-insensitive)', () => {
+    const parentHash = 'ab'.repeat(32);
+    const parent: ChatMessage = {
+      sender_id: 1,
+      sender_name: 'Alice',
+      payload: 'parent',
+      channel: 0,
+      timestamp: 1_000,
+      status: 'acked',
+      reticulum_message_hash: parentHash.toUpperCase(),
+    };
+    const other: ChatMessage = {
+      sender_id: 2,
+      sender_name: 'Bob',
+      payload: 'other',
+      channel: 0,
+      timestamp: 2_000,
+      status: 'acked',
+      reticulum_message_hash: 'cd'.repeat(32),
+    };
+    expect(findReticulumParentMessageForReply([other, parent], parentHash)).toBe(parent);
+    expect(findReticulumParentMessageForReply([other], parentHash)).toBeUndefined();
   });
 });

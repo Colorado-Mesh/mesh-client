@@ -123,6 +123,16 @@ describe('useReticulumRuntime peer refresh WS routing', () => {
   });
 });
 
+describe('useReticulumRuntime contact → nodeStore label preservation', () => {
+  it('wires reticulumContactToNodeRecordPreservingLabel with prior node rows', () => {
+    expect(SOURCE).toContain('reticulumContactToNodeRecordPreservingLabel');
+    expect(SOURCE).toMatch(
+      /reticulumContactToNodeRecordPreservingLabel\(contact,\s*priorNodes\[nodeId\]\)/,
+    );
+    expect(SOURCE).not.toMatch(/records\.push\(reticulumContactToNodeRecord\(contact\)\)/);
+  });
+});
+
 describe('useReticulumRuntime outbound delivery persistence', () => {
   it('persists Completes/Fails via applyReticulumOutboundDeliveryStatus', () => {
     expect(SOURCE).toMatch(

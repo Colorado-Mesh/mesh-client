@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect -- probe lifecycle seeds status then settles from async sidecar result */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
@@ -26,6 +26,11 @@ export interface UseReticulumDmPathProbeResult {
   hops: number | null;
   /** Re-run probe for the current destination (no-op when disabled / no hash). */
   reprobe: () => void;
+  /**
+   * Apply a probe result from an external manual Probe click (no second /probe).
+   * Ignores results whose hash does not match the current destination.
+   */
+  applyProbeResult: (forHash: string, ok: boolean, hops: number | null) => void;
 }
 
 /**
@@ -40,22 +45,39 @@ export function useReticulumDmPathProbe({
   const [status, setStatus] = useState<ReticulumDmPathStatus>('idle');
   const [hops, setHops] = useState<number | null>(null);
   const [probeNonce, setProbeNonce] = useState(0);
+  const forceProbingRef = useRef(false);
 
   const reprobe = useCallback(() => {
     if (!enabled || !destinationHash) return;
+    forceProbingRef.current = true;
     setProbeNonce((n) => n + 1);
   }, [enabled, destinationHash]);
 
+  const destinationHashRef = useRef(destinationHash);
+  // Keep latest destination for async settle guards (must not wait for an effect).
+  // eslint-disable-next-line react-hooks/refs -- latest-dest ref for stale probe discard
+  destinationHashRef.current = destinationHash;
+
+  const applyProbeResult = useCallback((forHash: string, ok: boolean, hopsNext: number | null) => {
+    // Failure point: stale manual probe after DM switch. Fallback: ignore mismatched hash.
+    if (!forHash || forHash !== destinationHashRef.current) return;
+    setStatus(reticulumDmPathStatusFromProbe(ok));
+    setHops(hopsNext);
+  }, []);
+
   useEffect(() => {
     if (!enabled || !destinationHash) {
+      forceProbingRef.current = false;
       setStatus('idle');
       setHops(null);
       return;
     }
 
     let cancelled = false;
+    const forceProbing = forceProbingRef.current;
+    forceProbingRef.current = false;
     const seed = seedReticulumDmPathStatus(passiveHops);
-    setStatus(seed === 'reachable' ? 'reachable' : 'probing');
+    setStatus(forceProbing || seed !== 'reachable' ? 'probing' : 'reachable');
     setHops(passiveHops ?? null);
 
     void (async () => {
@@ -87,5 +109,5 @@ export function useReticulumDmPathProbe({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
   }, [enabled, destinationHash, probeNonce]);
 
-  return { status, hops, reprobe };
+  return { status, hops, reprobe, applyProbeResult };
 }

@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { copyFileSync, existsSync } from 'fs';
+import { copyFileSync, existsSync, mkdtempSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
@@ -18,7 +18,8 @@ describe('user backup repairs (local dumps)', () => {
       if (!existsSync(src)) {
         return;
       }
-      const dst = join(tmpdir(), `mesh-verify-${name}-${Date.now()}.db`);
+      const dir = mkdtempSync(join(tmpdir(), `mesh-verify-${name}-`));
+      const dst = join(dir, 'backup.db');
       copyFileSync(src, dst);
 
       const db = new NodeSqliteDB(dst);

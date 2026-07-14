@@ -3,6 +3,10 @@ import type { RefObject } from 'react';
 
 import { parseChatMentionSegments } from './chatMentionSegments';
 import { meshcoreMessageMatchesReplyKey } from './meshcoreChannelText';
+import {
+  normalizeReticulumMessageHash,
+  reticulumMessageHashesEqual,
+} from './reticulum/reticulumMessageHash';
 import type { ChatMessage } from './types';
 
 /** Pixels from latest message treated as “at bottom” (Jump to Latest, read-state, mark read). */
@@ -190,6 +194,19 @@ export function findMessageIndexByKey(messages: readonly ChatMessage[], key: num
     if ((msg.packetId ?? msg.timestamp) === key || meshcoreMessageMatchesReplyKey(msg, key)) {
       return i;
     }
+  }
+  return -1;
+}
+
+/** Resolve virtual index for Reticulum quote jump by LXMF message hash. */
+export function findMessageIndexByReticulumHash(
+  messages: readonly ChatMessage[],
+  replyToHash: string,
+): number {
+  const target = normalizeReticulumMessageHash(replyToHash);
+  if (!target) return -1;
+  for (let i = 0; i < messages.length; i++) {
+    if (reticulumMessageHashesEqual(messages[i].reticulum_message_hash, target)) return i;
   }
   return -1;
 }

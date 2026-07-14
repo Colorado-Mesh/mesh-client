@@ -2,6 +2,7 @@
 import type { MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
 import type { MeshProtocol } from './meshProtocol';
 import type {
+  ReticulumConfigValidateResult,
   ReticulumSidecarEvent,
   ReticulumSidecarStartOptions,
   ReticulumSidecarStatus,
@@ -918,6 +919,7 @@ export interface ElectronAPI {
     readDefaultConfigFile: () => Promise<{ path: string | null; content: string | null }>;
     showConfigImportDialog: () => Promise<{ path: string | null; content: string | null }>;
     showIdentityImportDialog: () => Promise<ReticulumIdentityImportDialogResult>;
+    validateConfig: () => Promise<ReticulumConfigValidateResult>;
     onEvent: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
     onStatus: (cb: (status: ReticulumSidecarStatus) => void) => () => void;
   };

@@ -45,6 +45,8 @@ pub struct StackHandle {
     inner: Arc<RwLock<PersistedState>>,
     event_tx: broadcast::Sender<String>,
     packet_log: Arc<PacketLogBuffer>,
+    /// When true, `list_contacts` must retry persisting contact name overlays after a prior save failure.
+    contact_name_persist_dirty: std::sync::atomic::AtomicBool,
     #[cfg(feature = "rns-stack")]
     live: Option<Arc<live::LiveBridge>>,
 }
@@ -67,6 +69,10 @@ impl StackHandle {
 
         if let Err(e) = config::ensure_announce_interval_sec_default(&config_dir) {
             tracing::warn!("failed to set default announce_interval_sec in config: {e}");
+        }
+
+        if let Err(e) = config::ensure_share_instance_defaults(&config_dir) {
+            tracing::warn!("failed to set share_instance / instance_name defaults: {e}");
         }
 
         if let Err(e) = config::repair_rnode_radio_fields_in_config(&config_dir) {
@@ -133,6 +139,7 @@ impl StackHandle {
             inner,
             event_tx: event_tx.clone(),
             packet_log,
+            contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
             live,
         };
         #[cfg(not(feature = "rns-stack"))]
@@ -142,6 +149,7 @@ impl StackHandle {
             inner,
             event_tx,
             packet_log: Arc::new(PacketLogBuffer::new(MAX_WIRE_PACKET_LOG)),
+            contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
         };
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &handle.live {
@@ -623,7 +631,41 @@ impl StackHandle {
     }
 
     pub async fn list_contacts(&self) -> Vec<ContactRow> {
-        self.inner.read().await.contacts.clone()
+        #[cfg(feature = "rns-stack")]
+        let announce_labels = self
+            .live
+            .as_ref()
+            .map(|live| live.display_name_snapshot())
+            .unwrap_or_default();
+        #[cfg(not(feature = "rns-stack"))]
+        let announce_labels: std::collections::HashMap<String, String> =
+            std::collections::HashMap::new();
+
+        let mut inner = self.inner.write().await;
+        let mut name_by_hash =
+            topology::build_topology_name_map(&inner.peers, &[], &inner.nomad_nodes);
+        topology::extend_name_map_with_announce_labels(&mut name_by_hash, &announce_labels);
+        let changed = topology::overlay_contact_display_names(&mut inner.contacts, &name_by_hash);
+        if changed > 0 {
+            self.contact_name_persist_dirty
+                .store(true, std::sync::atomic::Ordering::Relaxed);
+        }
+        // Failure point: contacts.json write fails after in-memory overlay. Fallback: keep
+        // overlay for this process and retry persist on the next list_contacts call.
+        if self
+            .contact_name_persist_dirty
+            .load(std::sync::atomic::Ordering::Relaxed)
+        {
+            match inner.save(&self.config_dir, &self.storage_dir) {
+                Ok(()) => self
+                    .contact_name_persist_dirty
+                    .store(false, std::sync::atomic::Ordering::Relaxed),
+                Err(e) => {
+                    tracing::warn!("contact name persist after list_contacts failed: {e}");
+                }
+            }
+        }
+        inner.contacts.clone()
     }
 
     pub async fn clear_contacts(&self) -> Result<usize, String> {

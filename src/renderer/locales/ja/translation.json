@@ -934,7 +934,8 @@
         "rnodeBle": "Bluetooth RNode 経由の LoRa メッシュ。",
         "rnodeWifi": "RNode Wi-Fi (tcp:// ホスト) 経由の LoRa メッシュ。",
         "blePeer": "シード ピア アドレスを使用する BLE ピア メッシュ。",
-        "generic": "Reticulumネットワークインターフェース。"
+        "generic": "Reticulumネットワークインターフェース。",
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
       },
       "rfProfile": {
         "coordinated": "地域連携",
@@ -1117,7 +1118,15 @@
     "coloradoRegionGateMessage": "Colorado Mesh MQTTは、コロラド州エリアのメッシュユーザー向けで、meshcore/DENの下で公開されています。コロラド州外にいる場合は、LetsMesh（グローバルパブリックブローカー）に切り替えます。",
     "coloradoRegionGateStay": "私はコロラド州にいます",
     "coloradoRegionGateSwitch": "LetsMeshに切り替える",
-    "topicPrefixInvalidIata": "トピックの接頭辞は、meshcore/testまたはmeshcore/{IATA}（3文字）でなければなりません（例：meshcore/DEN）。"
+    "topicPrefixInvalidIata": "トピックの接頭辞は、meshcore/testまたはmeshcore/{IATA}（3文字）でなければなりません（例：meshcore/DEN）。",
+    "reticulumSharedInstance": {
+      "title": "Using another app’s shared instance",
+      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
+      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
+      "disableShare": "Turn off Share instance and restart",
+      "disableShareAria": "Turn off Share instance and restart the stack",
+      "disableFailed": "Failed to turn off Share instance."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -1381,7 +1390,8 @@
         "apply_preset": "プリセットを適用する",
         "edit": "編集インターフェース",
         "restart_stack": "スタックを再起動します",
-        "add_auto": "自動インターフェースの追加"
+        "add_auto": "自動インターフェースの追加",
+        "disable_share_instance": "Turn off Share instance"
       },
       "audit": {
         "tcp_enable_key": "TCP インターフェイス「{{name}}」は間違った有効化キーを使用しています。RNS はそれをロードしません。",
@@ -1395,13 +1405,14 @@
         "ghost_interface": "インターフェイス「{{name}}」は構成で有効になっていますが、RNS によってロードされていません。",
         "missing_auto_interface": "有効な AutoInterface がありません - ローカル LAN 検出がオフになっています。",
         "auto_interface_down": "AutoInterface \"{{name}}\" は有効ですが、ダウンしています。",
-        "missing_shared_instance": "共有インスタンスはオンですが、SharedInstanceServer が起動していません。",
-        "shared_instance_unexpected": "SharedInstanceServer はライブですが、share_instance はオフです。",
+        "missing_shared_instance": "Share instance is on but this app is not hosting the shared server — quit other mesh apps or turn off Share instance, then restart.",
+        "shared_instance_unexpected": "Shared instance server is live but Share instance is off — restart the stack.",
         "runtime_only_interface": "「{{name}}」は実行時のみです (構成には保存されません)。",
         "rmap_missing_coordinates": "インターフェース「{{name}}」は検出可能ですが、有効なマップ座標がありません。",
         "rmap_no_tcp_hub": "検出可能なローカルRNodeには、インターネット到達可能性のために有効なTCPクライアントハブがありません。",
         "rmap_transport_disabled": "検出可能なインターフェイスが設定されていますが、トランスポートモードはオフです。",
-        "rmap_i2p_not_connectable": "I 2 Pインターフェース「{{name}}」は検出可能ですが、接続可能ではありません。"
+        "rmap_i2p_not_connectable": "I 2 Pインターフェース「{{name}}」は検出可能ですが、接続可能ではありません。",
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
       },
       "runtime": {
         "rnsNotReady": "RNS スタックの準備ができていません",
@@ -2322,7 +2333,19 @@
       "confirm": "輸入"
     },
     "reticulumConfigImportFailed": "構成のインポートに失敗しました。",
-    "reticulumConfigNotFound": "デフォルトのパスにシステム Reticulum 構成が見つかりません。"
+    "reticulumConfigNotFound": "デフォルトのパスにシステム Reticulum 構成が見つかりません。",
+    "reticulumConfigValidate": {
+      "button": "Check config",
+      "aria": "Validate on-disk network config",
+      "running": "Checking…",
+      "ok": "Config looks good — no audit issues.",
+      "failed": "Config check failed: {{message}}",
+      "issuesHeading_one": "{{count}} config issue",
+      "issuesHeading_other": "{{count}} config issues",
+      "severityError": "error",
+      "severityWarning": "warning",
+      "severityInfo": "info"
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "お気に入りから削除",

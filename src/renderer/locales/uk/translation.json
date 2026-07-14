@@ -934,7 +934,8 @@
         "rnodeBle": "Сітка LoRa через Bluetooth RNode.",
         "rnodeWifi": "Сітка LoRa через RNode Wi-Fi (tcp:// host).",
         "blePeer": "Однорангова сітка BLE з використанням початкових однорангових адрес.",
-        "generic": "Мережевий інтерфейс Reticulum."
+        "generic": "Мережевий інтерфейс Reticulum.",
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
       },
       "rfProfile": {
         "coordinated": "Узгоджена обл",
@@ -1117,7 +1118,15 @@
     "coloradoRegionGateMessage": "Colorado Mesh MQTT призначений для користувачів Colorado-rea mesh і публікується під meshcore/DEN. Якщо ви перебуваєте за межами Колорадо, перейдіть на LetsMesh (глобальний публічний брокер).",
     "coloradoRegionGateStay": "Я в Колорадо",
     "coloradoRegionGateSwitch": "Перемкнутися на LetsMesh",
-    "topicPrefixInvalidIata": "Префікс теми повинен бути meshcore/test або meshcore/{IATA} (3 літери), наприклад meshcore/DEN."
+    "topicPrefixInvalidIata": "Префікс теми повинен бути meshcore/test або meshcore/{IATA} (3 літери), наприклад meshcore/DEN.",
+    "reticulumSharedInstance": {
+      "title": "Using another app’s shared instance",
+      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
+      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
+      "disableShare": "Turn off Share instance and restart",
+      "disableShareAria": "Turn off Share instance and restart the stack",
+      "disableFailed": "Failed to turn off Share instance."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",
@@ -1381,7 +1390,8 @@
         "apply_preset": "Застосувати попередні налаштування",
         "edit": "Редагувати інтерфейс",
         "restart_stack": "Перезапустити стек",
-        "add_auto": "Додати автоматичний інтерфейс"
+        "add_auto": "Додати автоматичний інтерфейс",
+        "disable_share_instance": "Turn off Share instance"
       },
       "audit": {
         "tcp_enable_key": "Інтерфейс TCP \"{{name}}\" використовує неправильний ключ увімкнення — RNS не завантажить його.",
@@ -1395,13 +1405,14 @@
         "ghost_interface": "Інтерфейс \"{{name}}\" увімкнено в конфігурації, але не завантажується RNS.",
         "missing_auto_interface": "Автоінтерфейс не ввімкнено — виявлення локальної мережі вимкнено.",
         "auto_interface_down": "Автоінтерфейс \"{{name}}\" увімкнено, але не працює.",
-        "missing_shared_instance": "Спільний екземпляр увімкнено, але SharedInstanceServer не працює.",
-        "shared_instance_unexpected": "SharedInstanceServer працює, але share_instance вимкнено.",
+        "missing_shared_instance": "Share instance is on but this app is not hosting the shared server — quit other mesh apps or turn off Share instance, then restart.",
+        "shared_instance_unexpected": "Shared instance server is live but Share instance is off — restart the stack.",
         "runtime_only_interface": "\"{{name}}\" лише для виконання (не зберігається в конфігурації).",
         "rmap_missing_coordinates": "Інтерфейс \"{{name}}\" можна виявити, але відсутні дійсні координати карти.",
         "rmap_no_tcp_hub": "Локальний вузол Discoverable RNode не має ввімкненого клієнтського концентратора TCP для доступу до Інтернету.",
         "rmap_transport_disabled": "Інтерфейси, які можна виявити, налаштовані, але режим транспортування вимкнено.",
-        "rmap_i2p_not_connectable": "Інтерфейс I2P \"{{name}}\" можна виявити, але неможливо підключити."
+        "rmap_i2p_not_connectable": "Інтерфейс I2P \"{{name}}\" можна виявити, але неможливо підключити.",
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
       },
       "runtime": {
         "rnsNotReady": "Стек RNS не готовий",
@@ -2322,7 +2333,19 @@
       "confirm": "Імпорт"
     },
     "reticulumConfigImportFailed": "Не вдалося імпортувати конфігурацію.",
-    "reticulumConfigNotFound": "Не знайдено системної конфігурації Reticulum за типовими шляхами."
+    "reticulumConfigNotFound": "Не знайдено системної конфігурації Reticulum за типовими шляхами.",
+    "reticulumConfigValidate": {
+      "button": "Check config",
+      "aria": "Validate on-disk network config",
+      "running": "Checking…",
+      "ok": "Config looks good — no audit issues.",
+      "failed": "Config check failed: {{message}}",
+      "issuesHeading_one": "{{count}} config issue",
+      "issuesHeading_other": "{{count}} config issues",
+      "severityError": "error",
+      "severityWarning": "warning",
+      "severityInfo": "info"
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Видалити з обраного",
@@ -2730,7 +2753,7 @@
     "removeContact": "Видалити контакт",
     "removeContactConfirmTitle": "Видалити контакт?",
     "removeContactConfirmBody": "Після цього контакт буде видалено зі списку. Історія чату зберігається; повторне надсилання їм повідомлень повторно додасть контакт.",
-    "probeOk": "Датчик OK — шлях досяжний.",
+    "probeOk": "Зонд OK — шлях досяжний.",
     "blockContact": "& Заблокувати контакт",
     "unblockContact": "& Розблокувати контакт",
     "serviceBadge": "{{service}}",

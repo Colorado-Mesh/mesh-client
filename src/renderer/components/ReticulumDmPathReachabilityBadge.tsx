@@ -5,10 +5,15 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { ReticulumDmPathStatus } from '@/renderer/lib/reticulum/reticulumDmPathReachability';
 import {
   formatReticulumPeerPathToast,
+  formatReticulumPeerProbeToast,
   isReticulumSidecarRunning,
+  probeReticulumPeer,
   requestReticulumPeerPath,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
-import { refreshReticulumPeersFromSidecar } from '@/renderer/stores/reticulumPeerStore';
+import {
+  refreshReticulumPeersFromSidecar,
+  useReticulumPeerStore,
+} from '@/renderer/stores/reticulumPeerStore';
 
 import { HelpTooltip } from './HelpTooltip';
 import { useToast } from './Toast';
@@ -84,6 +89,11 @@ export interface ReticulumDmPathActionsProps {
   status: ReticulumDmPathStatus;
   /** Re-run the Chat DM path probe (also used after a successful path request). */
   onReprobe: () => void;
+  /**
+   * Apply a probe result from the manual Probe button (avoids a second /probe).
+   * First arg is the destination that was probed so stale completions can be ignored.
+   */
+  onProbeSettled: (forHash: string, ok: boolean, hops: number | null) => void;
 }
 
 /** Manual path request / probe when auto reachability check has settled. */
@@ -91,11 +101,13 @@ export function ReticulumDmPathActions({
   destinationHash,
   status,
   onReprobe,
+  onProbeSettled,
 }: ReticulumDmPathActionsProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
   const [busy, setBusy] = useState(false);
 
+  // Busy resets on destination change via ChatPanel `key={destinationHash}` remount.
   if (status === 'idle' || status === 'probing') return null;
 
   const runPath = async () => {
@@ -119,6 +131,32 @@ export function ReticulumDmPathActions({
     }
   };
 
+  const runProbe = async () => {
+    const probedHash = destinationHash;
+    setBusy(true);
+    try {
+      if (!(await isReticulumSidecarRunning())) {
+        addToast(t('connectionPanel.reticulumIdentity.startStackFirst'), 'error');
+        return;
+      }
+      const result = await probeReticulumPeer(probedHash);
+      const toast = formatReticulumPeerProbeToast(t, result);
+      addToast(toast.message, toast.variant);
+      if (result.ok && result.hops != null) {
+        useReticulumPeerStore.getState().updatePeer(probedHash, { hops: result.hops });
+      }
+      if (result.ok) {
+        await refreshReticulumPeersFromSidecar();
+      }
+      onProbeSettled(probedHash, result.ok, result.hops ?? null);
+    } catch (e) {
+      console.warn('[ReticulumDmPathActions] probe ' + errLikeToLogString(e));
+      onProbeSettled(probedHash, false, null);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-1.5">
       <button
@@ -136,7 +174,7 @@ export function ReticulumDmPathActions({
         type="button"
         disabled={busy}
         onClick={() => {
-          onReprobe();
+          void runProbe();
         }}
         className="rounded border border-gray-600 px-2 py-1 text-[11px] text-gray-200 hover:bg-gray-800 disabled:opacity-40"
         aria-label={t('chatPanel.dmPathProbeAria')}

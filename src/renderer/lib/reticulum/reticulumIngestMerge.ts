@@ -70,5 +70,16 @@ export function mergeReticulumIngestRecord(
     merged.reticulumAttachmentPath = existing.reticulumAttachmentPath;
   }
 
+  // Keep quote metadata when a later wire tick omits preview fields.
+  if (!merged.replyPreviewText && existing.replyPreviewText) {
+    merged.replyPreviewText = existing.replyPreviewText;
+  }
+  if (!merged.replyPreviewSender && existing.replyPreviewSender) {
+    merged.replyPreviewSender = existing.replyPreviewSender;
+  }
+  if (!merged.reticulumReplyToHash && existing.reticulumReplyToHash) {
+    merged.reticulumReplyToHash = existing.reticulumReplyToHash;
+  }
+
   return merged;
 }

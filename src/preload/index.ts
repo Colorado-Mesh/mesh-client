@@ -1005,6 +1005,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('reticulum:showConfigImportDialog'),
     showIdentityImportDialog: (): Promise<ReticulumIdentityImportDialogResult> =>
       ipcRenderer.invoke('reticulum:showIdentityImportDialog'),
+    validateConfig: () => ipcRenderer.invoke('reticulum:validateConfig'),
     onEvent: (cb: (event: ReticulumSidecarEvent) => void): (() => void) => {
       const handler = (_: unknown, event: ReticulumSidecarEvent) => {
         cb(event);

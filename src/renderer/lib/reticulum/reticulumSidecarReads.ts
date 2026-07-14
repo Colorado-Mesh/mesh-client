@@ -206,24 +206,40 @@ export async function requestReticulumPeerPath(hash: string): Promise<ReticulumP
   }
 }
 
+/** Coalesce concurrent probes for the same destination (DM header + Peers + auto-probe). */
+const probeInFlightByHash = new Map<string, Promise<ReticulumPeerProbeResult>>();
+
 export async function probeReticulumPeer(hash: string): Promise<ReticulumPeerProbeResult> {
-  if (!(await isReticulumSidecarRunning())) {
-    return { ok: false, error: 'sidecar_not_running' };
-  }
+  const key = hash.trim().toLowerCase();
+  const existing = probeInFlightByHash.get(key);
+  if (existing) return existing;
+
+  const run = (async (): Promise<ReticulumPeerProbeResult> => {
+    if (!(await isReticulumSidecarRunning())) {
+      return { ok: false, error: 'sidecar_not_running' };
+    }
+    try {
+      const res = (await window.electronAPI.reticulum.proxyPost(
+        `/api/v1/peers/${hash}/probe`,
+        {},
+      )) as { ok?: boolean; hops?: number; mode?: string; error?: string };
+      return {
+        ok: Boolean(res.ok),
+        hops: res.hops,
+        mode: res.mode,
+        error: res.error,
+      };
+    } catch (e) {
+      // catch-no-log-ok error returned to caller for toast/UI
+      return { ok: false, error: errLikeToLogString(e) };
+    }
+  })();
+
+  probeInFlightByHash.set(key, run);
   try {
-    const res = (await window.electronAPI.reticulum.proxyPost(
-      `/api/v1/peers/${hash}/probe`,
-      {},
-    )) as { ok?: boolean; hops?: number; mode?: string; error?: string };
-    return {
-      ok: Boolean(res.ok),
-      hops: res.hops,
-      mode: res.mode,
-      error: res.error,
-    };
-  } catch (e) {
-    // catch-no-log-ok error returned to caller for toast/UI
-    return { ok: false, error: errLikeToLogString(e) };
+    return await run;
+  } finally {
+    probeInFlightByHash.delete(key);
   }
 }
 

@@ -12,6 +12,7 @@ use super::rf_profiles::{match_params_to_profile, rf_profile_by_id};
 use super::types::InterfaceRow;
 
 pub const SHARED_INSTANCE_NAME: &str = "SharedInstanceServer";
+pub const SHARED_INSTANCE_CLIENT_NAME: &str = "SharedInstanceClient";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ConfigAuditIssue {
@@ -78,7 +79,17 @@ pub fn audit_config(
         }
     }
 
-    if stack_running {
+    // Keep status set aligned with renderer `isReticulumInterfaceOnlineStatus`.
+    let shared_client_live = live_interfaces.iter().find(|i| {
+        i.name == SHARED_INSTANCE_CLIENT_NAME
+            && matches!(
+                i.status.to_ascii_lowercase().as_str(),
+                "up" | "connected" | "online" | "running"
+            )
+    });
+    let shared_instance_client = shared_client_live.is_some();
+
+    if stack_running && !shared_instance_client {
         for row in config_rows.iter().filter(|r| r.enabled) {
             if row.iface_type != "tcp" {
                 continue;
@@ -100,7 +111,12 @@ pub fn audit_config(
     }
 
     for live in live_interfaces {
-        if live.iface_type == "tcp" && live.enabled && live.status != "up" {
+        // Client mode never spawns local TCP hubs — unreachable is misleading.
+        if !shared_instance_client
+            && live.iface_type == "tcp"
+            && live.enabled
+            && live.status != "up"
+        {
             issues.push(issue(
                 "tcp_unreachable",
                 "warning",
@@ -155,15 +171,24 @@ pub fn audit_config(
     }
 
     let shared_live = live_interfaces.iter().find(|i| i.name == SHARED_INSTANCE_NAME);
-    if stack_settings.share_instance {
+    if let Some(client) = shared_client_live {
+        issues.push(issue(
+            "shared_instance_client",
+            "warning",
+            Some(client.id.clone()),
+            Some(SHARED_INSTANCE_CLIENT_NAME.into()),
+            "Share instance attached as a client of another Reticulum app — local TCP hubs in this config are not started".into(),
+            Some("disable_share_instance"),
+        ));
+    } else if stack_settings.share_instance {
         if stack_running && shared_live.map(|i| i.status.as_str()) != Some("up") {
             issues.push(issue(
                 "missing_shared_instance",
                 "warning",
                 shared_live.map(|i| i.id.clone()),
                 Some(SHARED_INSTANCE_NAME.into()),
-                "share_instance is on but SharedInstanceServer is not up".into(),
-                Some("restart_stack"),
+                "Share instance is on but this app is not hosting the shared server — quit other Reticulum apps or turn off Share instance, then restart".into(),
+                Some("disable_share_instance"),
             ));
         }
     } else if shared_live.is_some() {
@@ -172,7 +197,7 @@ pub fn audit_config(
             "info",
             shared_live.map(|i| i.id.clone()),
             Some(SHARED_INSTANCE_NAME.into()),
-            "SharedInstanceServer is live but share_instance is off — restart stack".into(),
+            "Shared instance server is live but Share instance is off — restart the stack".into(),
             Some("restart_stack"),
         ));
     }
@@ -437,14 +462,33 @@ pub fn repair_config(
             restart_required = true;
         }
     }
+    if repair_all || kinds.contains("disable_share_instance") {
+        let mut settings = config::get_stack_settings(config_dir)?;
+        if settings.share_instance {
+            settings.share_instance = false;
+            config::set_stack_settings(config_dir, &settings)?;
+            repaired.push("disable_share_instance".into());
+            restart_required = true;
+        }
+    }
 
     Ok((repaired, restart_required))
+}
+
+/// Offline config lint: parse + audit without a live stack (for validate-config CLI).
+pub fn validate_config_offline(
+    config_dir: &Path,
+) -> Result<Vec<ConfigAuditIssue>, String> {
+    config::parse_config_dir(config_dir)?;
+    let settings = config::get_stack_settings(config_dir)?;
+    audit_config(config_dir, &[], &settings, false)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::stack::config::{self, StackSettings};
+    use crate::stack::types::InterfaceRow;
     use std::fs;
     use uuid::Uuid;
 
@@ -559,6 +603,115 @@ longitude = 2.3522
         };
         let issues = audit_config(&dir, &rows, &settings, false).unwrap();
         assert!(issues.iter().any(|i| i.kind == "rmap_i2p_not_connectable"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn shared_instance_client_suppresses_tcp_unreachable() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_sample_config(
+            &dir,
+            r#"[[Ratspeak]]
+type = TCPClientInterface
+interface_enabled = Yes
+name = Ratspeak
+target_host = rns.ratspeak.org
+target_port = 4242
+"#,
+        );
+        let mut rows = config::interfaces_from_config_dir(&dir).unwrap();
+        for row in &mut rows {
+            if row.name == "Ratspeak" {
+                row.status = "down".into();
+            }
+        }
+        rows.push(InterfaceRow {
+            id: "rns-0".into(),
+            name: SHARED_INSTANCE_CLIENT_NAME.into(),
+            iface_type: "Full".into(),
+            enabled: true,
+            status: "up".into(),
+            host: None,
+            port: None,
+            preset: None,
+            serial_port: None,
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: None,
+            seed_addresses: Vec::new(),
+            discoverable: None,
+            latitude: None,
+            longitude: None,
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
+        });
+        let settings = StackSettings {
+            share_instance: true,
+            ..Default::default()
+        };
+        let issues = audit_config(&dir, &rows, &settings, true).unwrap();
+        assert!(issues.iter().any(|i| i.kind == "shared_instance_client"));
+        assert!(issues.iter().all(|i| i.kind != "tcp_unreachable"));
+        assert!(issues.iter().all(|i| i.kind != "ghost_interface"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn repair_disable_share_instance_turns_share_off() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_sample_config(
+            &dir,
+            r#"[[Default Interface]]
+type = AutoInterface
+enabled = Yes
+"#,
+        );
+        let mut settings = StackSettings {
+            share_instance: true,
+            ..Default::default()
+        };
+        config::set_stack_settings(&dir, &settings).unwrap();
+        let req = ConfigRepairRequest {
+            repair_kinds: vec!["disable_share_instance".into()],
+        };
+        let (repaired, restart) = repair_config(&dir, &req).unwrap();
+        assert!(repaired.iter().any(|r| r == "disable_share_instance"));
+        assert!(restart);
+        settings = config::get_stack_settings(&dir).unwrap();
+        assert!(!settings.share_instance);
+
+        let (repaired2, restart2) = repair_config(&dir, &req).unwrap();
+        assert!(!repaired2.iter().any(|r| r == "disable_share_instance"));
+        assert!(!restart2);
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn validate_config_offline_flags_tcp_enable_key() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_sample_config(
+            &dir,
+            r#"[[Legacy TCP]]
+type = TCPClientInterface
+enabled = Yes
+name = Legacy TCP
+target_host = 127.0.0.1
+target_port = 4242
+"#,
+        );
+        let issues = validate_config_offline(&dir).unwrap();
+        assert!(issues.iter().any(|i| i.kind == "tcp_enable_key"));
         let _ = fs::remove_dir_all(&dir);
     }
 

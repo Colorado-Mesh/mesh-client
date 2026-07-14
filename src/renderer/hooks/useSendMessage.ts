@@ -7,11 +7,13 @@ import { isMeshcoreOpenWireCompatEnabled } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import {
+  findReticulumParentRecordByHash,
   persistReticulumOutboundRecord,
   resolveReticulumOutboundSenderHash,
 } from '../lib/ingest/reticulumIngest';
 import { resolveMeshcoreOutboundWireText } from '../lib/meshcoreChannelText';
 import { listChatMessagesFromStore } from '../lib/meshcoreStoreDedup';
+import { truncateReplyPreviewText } from '../lib/replyPreview';
 import { resolveReticulumDestinationHash, reticulumHashToNodeId } from '../lib/reticulum/destHash';
 import { tryGetMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { tryGetMeshtasticSession } from '../lib/sessions/meshtasticSession';
@@ -90,6 +92,9 @@ export function useSendMessage(
         const toNodeId = (destination ?? reticulumHashToNodeId(destHash)) >>> 0;
         const senderName = session.getFullNodeLabel(selfNodeId);
         const senderHash = resolveReticulumOutboundSenderHash(selfNodeId);
+        const parent = replyTo ? findReticulumParentRecordByHash(identityId, replyTo) : undefined;
+        const replyPreviewText = parent ? truncateReplyPreviewText(parent.payload) : undefined;
+        const replyPreviewSender = parent?.senderName?.trim() || undefined;
         const record: MessageRecord = {
           id: pendingId,
           from: selfNodeId >>> 0,
@@ -100,7 +105,13 @@ export function useSendMessage(
           timestamp: Date.now(),
           status: 'sending',
           receivedVia,
-          ...(replyTo ? { reticulumReplyToHash: replyTo } : {}),
+          ...(replyTo
+            ? {
+                reticulumReplyToHash: replyTo,
+                ...(replyPreviewText ? { replyPreviewText } : {}),
+                ...(replyPreviewSender ? { replyPreviewSender } : {}),
+              }
+            : {}),
         };
         addMessage(identityId, record);
         if (senderHash) {
@@ -113,13 +124,15 @@ export function useSendMessage(
             'sending',
           );
         }
-        void send(text, destHash, replyTo ?? undefined, pendingId).catch((e: unknown) => {
-          const err = errLikeToLogString(e);
-          if (err.includes('no_propagation_node')) {
-            addToast(t('chatPanel.reticulumNoPropagationNode'), 'error');
-          }
-          console.warn('[useSendMessage] reticulum send failed ' + err);
-        });
+        void send(text, destHash, replyTo ?? undefined, pendingId, replyPreviewText).catch(
+          (e: unknown) => {
+            const err = errLikeToLogString(e);
+            if (err.includes('no_propagation_node')) {
+              addToast(t('chatPanel.reticulumNoPropagationNode'), 'error');
+            }
+            console.warn('[useSendMessage] reticulum send failed ' + err);
+          },
+        );
         return;
       }
 

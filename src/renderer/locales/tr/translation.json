@@ -934,7 +934,8 @@
         "rnodeBle": "Bluetooth RNode aracılığıyla LoRa ağı.",
         "rnodeWifi": "RNode Wi-Fi (tcp:// ana bilgisayarı) aracılığıyla LoRa ağı.",
         "blePeer": "Çekirdek eş adreslerini kullanan BLE eş ağı.",
-        "generic": "Reticulum ağ arayüzü."
+        "generic": "Reticulum ağ arayüzü.",
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
       },
       "rfProfile": {
         "coordinated": "Koordineli bölgesel",
@@ -1117,7 +1118,15 @@
     "coloradoRegionGateMessage": "Colorado Mesh MQTT, Colorado bölgesindeki mesh kullanıcıları içindir ve meshcore/DEN altında yayınlanır. Colorado dışındaysanız, LetsMesh'e (küresel kamu brokeri) geçin.",
     "coloradoRegionGateStay": "Colorado'dayım",
     "coloradoRegionGateSwitch": "LetsMesh'e geç",
-    "topicPrefixInvalidIata": "Konu ön eki meshcore/test veya meshcore/{IATA} (3 harf), ör. meshcore/DEN olmalıdır."
+    "topicPrefixInvalidIata": "Konu ön eki meshcore/test veya meshcore/{IATA} (3 harf), ör. meshcore/DEN olmalıdır.",
+    "reticulumSharedInstance": {
+      "title": "Using another app’s shared instance",
+      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
+      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
+      "disableShare": "Turn off Share instance and restart",
+      "disableShareAria": "Turn off Share instance and restart the stack",
+      "disableFailed": "Failed to turn off Share instance."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -1381,7 +1390,8 @@
         "apply_preset": "Ön ayarı uygula",
         "edit": "Arayüzü düzenle",
         "restart_stack": "Yığını yeniden başlat",
-        "add_auto": "Otomatik arayüz ekle"
+        "add_auto": "Otomatik arayüz ekle",
+        "disable_share_instance": "Turn off Share instance"
       },
       "audit": {
         "tcp_enable_key": "TCP arayüzü \"{{name}}\" yanlış etkinleştirme anahtarını kullanıyor — RNS bunu yüklemeyecek.",
@@ -1395,13 +1405,14 @@
         "ghost_interface": "\"{{name}}\" arayüzü yapılandırmada etkinleştirildi ancak RNS tarafından yüklenmedi.",
         "missing_auto_interface": "Etkin Otomatik Arayüz yok — yerel LAN keşfi kapalı.",
         "auto_interface_down": "Otomatik Arayüz \"{{name}}\" etkin ancak çalışmıyor.",
-        "missing_shared_instance": "Paylaşım örneği açık ancak SharedInstanceServer çalışmıyor.",
-        "shared_instance_unexpected": "SharedInstanceServer yayında ancak share_instance kapalı.",
+        "missing_shared_instance": "Share instance is on but this app is not hosting the shared server — quit other mesh apps or turn off Share instance, then restart.",
+        "shared_instance_unexpected": "Shared instance server is live but Share instance is off — restart the stack.",
         "runtime_only_interface": "\"{{name}}\" yalnızca çalışma zamanıdır (yapılandırmada saklanmaz).",
         "rmap_missing_coordinates": "\"{{name}}\" arayüzü bulunabilir ancak geçerli harita koordinatları eksik.",
         "rmap_no_tcp_hub": "Bulunabilir yerel RNode'un internet erişilebilirliği için etkinleştirilmiş bir TCP istemci merkezi yoktur.",
         "rmap_transport_disabled": "Bulunabilir arayüzler yapılandırılmış ancak taşıma modu kapalı.",
-        "rmap_i2p_not_connectable": "\"{{name}}\" I2P arayüzü keşfedilebilir ancak bağlanılabilir evet değildir."
+        "rmap_i2p_not_connectable": "\"{{name}}\" I2P arayüzü keşfedilebilir ancak bağlanılabilir evet değildir.",
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
       },
       "runtime": {
         "rnsNotReady": "RNS yığını hazır değil",
@@ -2322,7 +2333,19 @@
       "confirm": "İçe aktarmak"
     },
     "reticulumConfigImportFailed": "Yapılandırma içe aktarımı başarısız oldu.",
-    "reticulumConfigNotFound": "Varsayılan yollarda sistem Reticulum yapılandırması bulunamadı."
+    "reticulumConfigNotFound": "Varsayılan yollarda sistem Reticulum yapılandırması bulunamadı.",
+    "reticulumConfigValidate": {
+      "button": "Check config",
+      "aria": "Validate on-disk network config",
+      "running": "Checking…",
+      "ok": "Config looks good — no audit issues.",
+      "failed": "Config check failed: {{message}}",
+      "issuesHeading_one": "{{count}} config issue",
+      "issuesHeading_other": "{{count}} config issues",
+      "severityError": "error",
+      "severityWarning": "warning",
+      "severityInfo": "info"
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Favorilerden kaldır",

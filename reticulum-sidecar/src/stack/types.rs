@@ -202,8 +202,13 @@ impl Default for AddInterfaceRequest {
 pub struct LxmfSendRequest {
     pub destination_hash: String,
     pub text: String,
+    #[serde(default)]
     pub reply_to_hash: Option<String>,
+    #[serde(default)]
     pub reply_to_id: Option<String>,
+    /// Optional UTF-8 quote snippet for LXMF `FIELD_REPLY_QUOTE` (0x31).
+    #[serde(default)]
+    pub reply_preview_text: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -219,5 +224,9 @@ pub struct LxmfResourceRequest {
     pub file_name: String,
     pub mime_type: String,
     pub data_base64: String,
+    #[serde(default)]
     pub reply_to_hash: Option<String>,
+    /// Optional UTF-8 quote snippet for LXMF `FIELD_REPLY_QUOTE` (0x31).
+    #[serde(default)]
+    pub reply_preview_text: Option<String>,
 }

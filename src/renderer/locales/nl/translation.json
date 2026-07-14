@@ -934,7 +934,8 @@
         "rnodeBle": "LoRa-mesh via Bluetooth RNode.",
         "rnodeWifi": "LoRa mesh via RNode Wi-Fi (tcp://host).",
         "blePeer": "BLE-peer mesh met behulp van zaad-peer-adressen.",
-        "generic": "Reticulum-netwerkinterface."
+        "generic": "Reticulum-netwerkinterface.",
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
       },
       "rfProfile": {
         "coordinated": "Regionaal gecoördineerd",
@@ -1117,7 +1118,15 @@
     "coloradoRegionGateMessage": "Colorado Mesh MQTT is voor Colorado-area mesh-gebruikers en publiceert onder meshcore/DEN. Als je buiten Colorado bent, schakel dan over naar LetsMesh (global public broker).",
     "coloradoRegionGateStay": "Ik ben in Colorado",
     "coloradoRegionGateSwitch": "Overschakelen naar LetsMesh",
-    "topicPrefixInvalidIata": "Onderwerpvoorvoegsel moet meshcore/test of meshcore/{IATA} zijn (3 letters), bijv. meshcore/DEN."
+    "topicPrefixInvalidIata": "Onderwerpvoorvoegsel moet meshcore/test of meshcore/{IATA} zijn (3 letters), bijv. meshcore/DEN.",
+    "reticulumSharedInstance": {
+      "title": "Using another app’s shared instance",
+      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
+      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
+      "disableShare": "Turn off Share instance and restart",
+      "disableShareAria": "Turn off Share instance and restart the stack",
+      "disableFailed": "Failed to turn off Share instance."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -1381,7 +1390,8 @@
         "apply_preset": "Voorinstelling toepassen",
         "edit": "Bewerkingsinterface",
         "restart_stack": "Start de stapel opnieuw",
-        "add_auto": "Automatische interface toevoegen"
+        "add_auto": "Automatische interface toevoegen",
+        "disable_share_instance": "Turn off Share instance"
       },
       "audit": {
         "tcp_enable_key": "TCP-interface \"{{name}}\" gebruikt de verkeerde inschakelsleutel - RNS zal deze niet laden.",
@@ -1395,13 +1405,14 @@
         "ghost_interface": "Interface \"{{name}}\" is ingeschakeld in de configuratie, maar niet geladen door RNS.",
         "missing_auto_interface": "Geen ingeschakelde AutoInterface: lokale LAN-detectie is uitgeschakeld.",
         "auto_interface_down": "AutoInterface \"{{name}}\" is ingeschakeld maar uitgeschakeld.",
-        "missing_shared_instance": "Share-instantie is ingeschakeld, maar SharedInstanceServer is niet actief.",
-        "shared_instance_unexpected": "SharedInstanceServer is live, maar share_instance is uitgeschakeld.",
+        "missing_shared_instance": "Share instance is on but this app is not hosting the shared server — quit other mesh apps or turn off Share instance, then restart.",
+        "shared_instance_unexpected": "Shared instance server is live but Share instance is off — restart the stack.",
         "runtime_only_interface": "\"{{name}}\" is alleen runtime (niet opgeslagen in de configuratie).",
         "rmap_missing_coordinates": "Interface \"{{name}}\" is detecteerbaar, maar er ontbreken geldige kaartcoördinaten.",
         "rmap_no_tcp_hub": "Ontdekbare lokale RNode heeft geen ingeschakelde TCP-clienthub voor internetbereikbaarheid.",
         "rmap_transport_disabled": "Ontdekbare interfaces zijn geconfigureerd, maar de transportmodus is uitgeschakeld.",
-        "rmap_i2p_not_connectable": "I2P-interface \"{{name}}\" is detecteerbaar, maar aansluitbaar is niet ja."
+        "rmap_i2p_not_connectable": "I2P-interface \"{{name}}\" is detecteerbaar, maar aansluitbaar is niet ja.",
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
       },
       "runtime": {
         "rnsNotReady": "RNS-stack is niet gereed",
@@ -2322,7 +2333,19 @@
       "confirm": "Importeren"
     },
     "reticulumConfigImportFailed": "Configuratie-import mislukt.",
-    "reticulumConfigNotFound": "Geen systeem-Reticulum-configuratie gevonden op standaardpaden."
+    "reticulumConfigNotFound": "Geen systeem-Reticulum-configuratie gevonden op standaardpaden.",
+    "reticulumConfigValidate": {
+      "button": "Check config",
+      "aria": "Validate on-disk network config",
+      "running": "Checking…",
+      "ok": "Config looks good — no audit issues.",
+      "failed": "Config check failed: {{message}}",
+      "issuesHeading_one": "{{count}} config issue",
+      "issuesHeading_other": "{{count}} config issues",
+      "severityError": "error",
+      "severityWarning": "warning",
+      "severityInfo": "info"
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Verwijderen uit favorieten",

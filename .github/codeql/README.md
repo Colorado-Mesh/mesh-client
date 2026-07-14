@@ -12,6 +12,20 @@ So the previous workflow that ran `github/codeql-action` with a custom `config-f
 
 Default setup already runs JavaScript/TypeScript analysis on push/PR; no separate workflow is required for scanning to occur.
 
+## `js/insecure-temporary-file` (tests and scripts)
+
+CodeQL flags `writeFile` / `writeFileSync` / similar to a **predictable** path under the OS temp directory (e.g. `path.join(os.tmpdir(), 'fake-sidecar')`). This commonly appears in Vitest fixtures and repeatedly fails PR Code Scanning.
+
+**Fix (required):** create a unique directory first, then write inside it:
+
+```ts
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-fixture-'));
+const file = path.join(dir, 'stub');
+fs.writeFileSync(file, '');
+```
+
+Do **not** rely on dismissals for new findings. Local/pre-commit guard: `pnpm run check:insecure-temp-files` (see AGENTS.md §3).
+
 ## `js/http-to-file-access` and `codeql-config.yml`
 
 [`js/http-to-file-access`](https://codeql.github.com/codeql-query-help/javascript/js-http-to-file-access/) is a path-problem query whose sink is the **data argument** to `appendFile` / `writeFileSync` (a narrow source span), not the whole statement. GitHub’s `// codeql[query-id]` suppression logic matches alerts whose location is a **whole line** (`startcolumn`/`endcolumn` zero); it does **not** suppress these argument-level sinks, so inline comments do not clear the alert.

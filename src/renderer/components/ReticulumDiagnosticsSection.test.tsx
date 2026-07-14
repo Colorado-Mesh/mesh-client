@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -6,6 +7,8 @@ import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import type { RfDiagnosticRow } from '@/renderer/lib/types';
 
 import { ReticulumDiagnosticsSection } from './ReticulumDiagnosticsSection';
+
+const repairReticulumConfig = vi.hoisted(() => vi.fn());
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -25,6 +28,14 @@ vi.mock('@/renderer/components/Toast', () => ({
 vi.mock('@/renderer/lib/sessions/reticulumSession', () => ({
   tryGetReticulumSession: () => ({ restartStack: vi.fn() }),
 }));
+
+vi.mock('@/renderer/lib/reticulum/reticulumConfigAudit', async (importOriginal) => {
+  const mod = await importOriginal<Record<string, unknown>>();
+  return {
+    ...mod,
+    repairReticulumConfig,
+  };
+});
 
 const reticulumRow: RfDiagnosticRow = {
   kind: 'rf',
@@ -66,6 +77,38 @@ describe('ReticulumDiagnosticsSection', () => {
         'diagnosticsPanel.reticulum.audit.ghost_interface:{"name":"Dublin","message":"ghost"}',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('runs disable_share_instance repair from the action button', async () => {
+    const user = userEvent.setup();
+    repairReticulumConfig.mockReset();
+    repairReticulumConfig.mockResolvedValue({ ok: true, repaired: ['disable_share_instance'] });
+    const shareRow: RfDiagnosticRow = {
+      kind: 'rf',
+      id: 'rf:1:reticulum/audit/shared_instance_client',
+      nodeId: 1,
+      condition: 'reticulum/audit/shared_instance_client',
+      cause: 'client',
+      severity: 'warning',
+      detectedAt: Date.now(),
+      causeI18n: {
+        key: 'diagnosticsPanel.reticulum.audit.shared_instance_client',
+        params: { name: '', message: 'client' },
+      },
+      reticulumRepairKind: 'disable_share_instance',
+    };
+    render(<ReticulumDiagnosticsSection rows={[shareRow]} />);
+    expect(
+      screen.getByText('diagnosticsPanel.reticulum.action.disable_share_instance'),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', {
+        name: 'diagnosticsPanel.reticulum.action.disable_share_instance',
+      }),
+    );
+    await waitFor(() => {
+      expect(repairReticulumConfig).toHaveBeenCalledWith(['disable_share_instance']);
+    });
   });
 
   it('has no serious axe violations', async () => {

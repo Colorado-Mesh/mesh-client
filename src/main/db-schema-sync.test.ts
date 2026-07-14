@@ -190,6 +190,40 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     db.close();
   });
 
+  it('collapses case-variant reticulum_destinations onto lowercase 32-hex PK (v43)', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-rns-hash-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+
+    const upper = 'AABBCCDDEEFF00112233445566778899';
+    const lower = upper.toLowerCase();
+    db.prepareOnce(
+      `INSERT INTO reticulum_destinations
+         (destination_hash, display_name, last_heard, favorited, icon_name, icon_color)
+       VALUES (?, 'Alice', 100, 1, NULL, NULL)`,
+    ).run(upper);
+    db.prepareOnce(
+      `INSERT INTO reticulum_destinations
+         (destination_hash, display_name, last_heard, favorited, icon_name, icon_color)
+       VALUES (?, NULL, 200, 0, 'star', 'amber')`,
+    ).run(lower);
+
+    runSchemaUpgrade(db);
+
+    const rows = db
+      .prepareOnce('SELECT * FROM reticulum_destinations ORDER BY destination_hash')
+      .all() as Record<string, unknown>[];
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.destination_hash).toBe(lower);
+    expect(rows[0]?.display_name).toBe('Alice');
+    expect(rows[0]?.favorited).toBe(1);
+    expect(rows[0]?.icon_name).toBe('star');
+    expect(rows[0]?.icon_color).toBe('amber');
+    expect(rows[0]?.last_heard).toBe(200);
+    db.close();
+  });
+
   it('rejects database newer than CURRENT_SCHEMA_VERSION without mutating schema', () => {
     dir = mkdtempSync(join(tmpdir(), 'mesh-schema-too-new-'));
     const db = new NodeSqliteDB(join(dir, 'too-new.db'));

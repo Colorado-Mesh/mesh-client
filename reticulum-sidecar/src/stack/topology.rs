@@ -169,6 +169,82 @@ pub fn overlay_peer_display_names(peers: &mut [PeerRow], name_by_hash: &HashMap<
     merge_topology_display_names(peers, name_by_hash);
 }
 
+/// Canonicalize a destination hash to 32 lowercase hex chars (sidecar `parse_hash16` contract).
+pub fn canonicalize_destination_hash(hash: &str) -> Option<String> {
+    let trimmed = hash.trim();
+    if trimmed.len() != 32 || !trimmed.chars().all(|c| c.is_ascii_hexdigit()) {
+        return None;
+    }
+    Some(trimmed.to_ascii_lowercase())
+}
+
+/// True when `name` is only the first 12 hex chars of `hash` (placeholder alias).
+pub fn is_hash_prefix_alias(hash: &str, name: &str) -> bool {
+    let trimmed = name.trim();
+    if trimmed.is_empty() {
+        return true;
+    }
+    let hex: String = canonicalize_destination_hash(hash).unwrap_or_else(|| {
+        hash.chars()
+            .filter(|c| c.is_ascii_hexdigit())
+            .flat_map(|c| c.to_lowercase())
+            .collect()
+    });
+    let prefix: String = hex.chars().take(12).collect();
+    trimmed.eq_ignore_ascii_case(&prefix)
+}
+
+/// Real (non-empty, non-hash-prefix) display name from a contact row, if any.
+pub fn contact_real_display_name(contact: &ContactRow) -> Option<&str> {
+    let name = contact.display_name.as_ref()?.trim();
+    if name.is_empty() || is_hash_prefix_alias(&contact.destination_hash, name) {
+        None
+    } else {
+        Some(name)
+    }
+}
+
+/// Fill nameless / hash-prefix contact labels from announce/peer/nomad cache.
+/// Does not overwrite an existing real contact name. Returns how many rows changed.
+pub fn overlay_contact_display_names(
+    contacts: &mut [ContactRow],
+    name_by_hash: &HashMap<String, String>,
+) -> usize {
+    let mut changed = 0;
+    for contact in contacts.iter_mut() {
+        if contact_real_display_name(contact).is_some() {
+            continue;
+        }
+        let Some(cached) = name_by_hash.get(&contact.destination_hash) else {
+            continue;
+        };
+        let trimmed = cached.trim();
+        if trimmed.is_empty() || is_hash_prefix_alias(&contact.destination_hash, trimmed) {
+            continue;
+        }
+        contact.display_name = Some(trimmed.to_string());
+        changed += 1;
+    }
+    changed
+}
+
+/// Prefer a real stored name; else a non-hash-prefix cache label.
+pub fn resolve_contact_name_for_upsert(
+    hash: &str,
+    stored_name: Option<&str>,
+    cache_name: Option<&str>,
+) -> Option<String> {
+    if let Some(name) = stored_name.map(str::trim).filter(|n| !n.is_empty()) {
+        if !is_hash_prefix_alias(hash, name) {
+            return Some(name.to_string());
+        }
+    }
+    cache_name
+        .map(str::trim)
+        .filter(|n| !n.is_empty() && !is_hash_prefix_alias(hash, n))
+        .map(str::to_string)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -332,5 +408,89 @@ mod tests {
         assert!(edges.iter().any(|e| e.source == "self" && e.target == "direct99"));
         assert!(edges.iter().any(|e| e.source == "self" && e.target == hub));
         assert!(edges.iter().any(|e| e.source == hub && e.target == leaf));
+    }
+
+    #[test]
+    fn canonicalize_destination_hash_requires_exact_32_hex() {
+        assert_eq!(
+            canonicalize_destination_hash("AABBCCDDEEFF00112233445566778899").as_deref(),
+            Some("aabbccddeeff00112233445566778899")
+        );
+        assert_eq!(
+            canonicalize_destination_hash("aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"),
+            None
+        );
+        assert_eq!(canonicalize_destination_hash("deadbeef"), None);
+    }
+
+    #[test]
+    fn is_hash_prefix_alias_matches_first_12_hex() {
+        let hash = "aabbccddeeff00112233445566778899";
+        assert!(is_hash_prefix_alias(hash, "aabbccddeeff"));
+        assert!(is_hash_prefix_alias(hash, "AABBCCDDEEFF"));
+        assert!(is_hash_prefix_alias(hash, ""));
+        assert!(!is_hash_prefix_alias(hash, "Alice"));
+        assert!(!is_hash_prefix_alias(hash, "aabbccddeef"));
+    }
+
+    #[test]
+    fn overlay_contact_display_names_fills_nameless_from_cache() {
+        let hash = "aabbccddeeff00112233445566778899";
+        let mut contacts = vec![
+            ContactRow {
+                destination_hash: hash.into(),
+                display_name: None,
+                last_heard: Some(1),
+                favorited: false,
+            },
+            ContactRow {
+                destination_hash: "11223344556677889900aabbccddeeff".into(),
+                display_name: Some("Saved".into()),
+                last_heard: Some(2),
+                favorited: false,
+            },
+        ];
+        let mut names = HashMap::new();
+        names.insert(hash.into(), "Hub Peer".into());
+        names.insert(
+            "11223344556677889900aabbccddeeff".into(),
+            "Announce Override".into(),
+        );
+        let changed = overlay_contact_display_names(&mut contacts, &names);
+        assert_eq!(changed, 1);
+        assert_eq!(contacts[0].display_name.as_deref(), Some("Hub Peer"));
+        assert_eq!(contacts[1].display_name.as_deref(), Some("Saved"));
+    }
+
+    #[test]
+    fn overlay_contact_display_names_replaces_hash_prefix_placeholder() {
+        let hash = "deadbeefcafebabe0123456789abcdef";
+        let mut contacts = vec![ContactRow {
+            destination_hash: hash.into(),
+            display_name: Some("deadbeefcafe".into()),
+            last_heard: Some(1),
+            favorited: false,
+        }];
+        let mut names = HashMap::new();
+        names.insert(hash.into(), "Real Name".into());
+        assert_eq!(overlay_contact_display_names(&mut contacts, &names), 1);
+        assert_eq!(contacts[0].display_name.as_deref(), Some("Real Name"));
+    }
+
+    #[test]
+    fn resolve_contact_name_for_upsert_prefers_stored_real_name() {
+        let hash = "aabbccddeeff00112233445566778899";
+        assert_eq!(
+            resolve_contact_name_for_upsert(hash, Some("Stored"), Some("Cached")).as_deref(),
+            Some("Stored")
+        );
+        assert_eq!(
+            resolve_contact_name_for_upsert(hash, Some("aabbccddeeff"), Some("Cached")).as_deref(),
+            Some("Cached")
+        );
+        assert_eq!(
+            resolve_contact_name_for_upsert(hash, None, Some("aabbccddeeff")),
+            None
+        );
     }
 }

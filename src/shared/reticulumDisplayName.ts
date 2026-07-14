@@ -1,6 +1,31 @@
+import { canonicalizeReticulumDestinationHash } from './reticulumDestinationHash';
+
 const DISPLAY_NAME_JSON_KEYS = ['server_name', 'name', 'display_name', 'title'] as const;
 
 const MAX_DISPLAY_NAME_LEN = 128;
+
+/**
+ * True when `name` is empty/whitespace or only the first 12 hex chars of `hash`
+ * (case-insensitive). Mirrors sidecar `is_hash_prefix_alias` for canonical hashes.
+ */
+export function isReticulumHashPrefixAlias(hash: string, name?: string | null): boolean {
+  const trimmed = name?.trim();
+  if (!trimmed) return true;
+  const canonical = canonicalizeReticulumDestinationHash(hash);
+  const hexOnly = (canonical ?? hash).replace(/[^0-9a-f]/gi, '').toLowerCase();
+  const prefix = hexOnly.slice(0, 12);
+  return prefix.length === 12 && trimmed.toLowerCase() === prefix;
+}
+
+/**
+ * Prefer a real alias; treat empty / hash-prefix placeholders as missing.
+ * Contract: empty or case-insensitive first-12-hex of destination hash ⇒ placeholder.
+ */
+export function reticulumRealDisplayName(hash: string, name?: string | null): string | null {
+  const sanitized = sanitizeReticulumDisplayName(name);
+  if (!sanitized || isReticulumHashPrefixAlias(hash, sanitized)) return null;
+  return sanitized;
+}
 
 function isPlausibleDisplayName(s: string): boolean {
   if (!s || s.length > MAX_DISPLAY_NAME_LEN) return false;

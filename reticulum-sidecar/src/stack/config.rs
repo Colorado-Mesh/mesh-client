@@ -102,6 +102,10 @@ impl ImportMode {
 /// Default stack-level re-announce interval when absent from config (1 hour).
 pub const DEFAULT_ANNOUNCE_INTERVAL_SEC: u32 = 3600;
 
+/// Private shared-instance name so mesh-client does not attach as a client on
+/// system/MeshChat `\0rns/default` (which skips spawning local TCP hubs).
+pub const DEFAULT_INSTANCE_NAME: &str = "mesh-client";
+
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct StackSettings {
     pub enable_transport: bool,
@@ -217,6 +221,8 @@ pub fn import_config(
     };
 
     write_config(config_dir, &serialize_config(&merged))?;
+    // Normalize TCP enable keys after import (third-party INI often uses `enabled`).
+    let _ = repair_tcp_blocks_in_config(config_dir);
     Ok(ImportResult { warnings })
 }
 
@@ -261,7 +267,7 @@ fn stack_settings_from_parsed(parsed: &ParsedConfig) -> StackSettings {
             .reticulum
             .get_bool("enable_transport")
             .unwrap_or(false),
-        share_instance: parsed.reticulum.get_bool("share_instance").unwrap_or(true),
+        share_instance: parsed.reticulum.get_bool("share_instance").unwrap_or(false),
         loglevel: parsed
             .logging
             .get("loglevel")
@@ -1246,6 +1252,34 @@ pub fn ensure_announce_interval_sec_default(config_dir: &Path) -> Result<bool, S
     Ok(true)
 }
 
+/// Ensure mesh-client-safe share defaults when keys are absent.
+/// Does not overwrite explicit `share_instance` / `instance_name` values.
+pub fn ensure_share_instance_defaults(config_dir: &Path) -> Result<bool, String> {
+    let content = read_config(config_dir)?;
+    let mut parsed = parse_config(&content)?;
+    let mut changed = false;
+    if parsed.reticulum.get("share_instance").is_none() {
+        parsed.reticulum.set("share_instance", "No");
+        changed = true;
+    }
+    if parsed.reticulum.get("instance_name").is_none() {
+        parsed.reticulum.set("instance_name", DEFAULT_INSTANCE_NAME);
+        changed = true;
+    }
+    if !changed {
+        return Ok(false);
+    }
+    write_config(config_dir, &serialize_config(&parsed))?;
+    Ok(true)
+}
+
+/// Parse the config file for syntax only (used by offline validate-config).
+pub fn parse_config_dir(config_dir: &Path) -> Result<(), String> {
+    let content = read_config(config_dir)?;
+    parse_config(&content)?;
+    Ok(())
+}
+
 /// Ensure RNS listens for `rnstransport.discovery.interface` announces (RMAP v4 map ingest).
 pub fn ensure_discover_interfaces_enabled(config_dir: &Path) -> Result<bool, String> {
     let content = read_config(config_dir)?;
@@ -1263,8 +1297,8 @@ fn default_config_content() -> String {
         reticulum: {
             let mut b = IniBlock::new("reticulum");
             b.set("enable_transport", "No");
-            b.set("share_instance", "Yes");
-            b.set("instance_name", "default");
+            b.set("share_instance", "No");
+            b.set("instance_name", DEFAULT_INSTANCE_NAME);
             b.set("discover_interfaces", "Yes");
             b.set(
                 "announce_interval_sec",
@@ -1525,7 +1559,90 @@ target_port = 5000
         import_config(&dir, extra, ImportMode::Merge).unwrap();
         let rows = interfaces_from_config_dir(&dir).unwrap();
         assert_eq!(rows.len(), 4);
+        let content = read_config(&dir).unwrap();
+        assert!(
+            content.contains("interface_enabled"),
+            "import should normalize TCP enable keys"
+        );
+        assert!(
+            !content.contains("[[New TCP]]")
+                || !content
+                    .lines()
+                    .skip_while(|l| !l.contains("[[New TCP]]"))
+                    .take_while(|l| !l.starts_with("[[") || l.contains("[[New TCP]]"))
+                    .any(|l| l.trim().starts_with("enabled =")),
+            "TCP enabled= key should be stripped after import repair"
+        );
+        let new_tcp = rows.iter().find(|r| r.name == "New TCP").unwrap();
+        assert!(new_tcp.enabled);
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn ensure_share_instance_defaults_writes_missing_keys() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"[reticulum]
+enable_transport = No
+
+[logging]
+loglevel = 4
+
+[interfaces]
+"#,
+        )
+        .unwrap();
+        assert!(ensure_share_instance_defaults(&dir).unwrap());
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("share_instance = No"));
+        assert!(content.contains(&format!("instance_name = {DEFAULT_INSTANCE_NAME}")));
+        assert!(!ensure_share_instance_defaults(&dir).unwrap());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn ensure_share_instance_defaults_preserves_explicit_values() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"[reticulum]
+enable_transport = No
+share_instance = Yes
+instance_name = default
+
+[logging]
+loglevel = 4
+
+[interfaces]
+"#,
+        )
+        .unwrap();
+        assert!(!ensure_share_instance_defaults(&dir).unwrap());
+        let settings = get_stack_settings(&dir).unwrap();
+        assert!(settings.share_instance);
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("instance_name = default"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn stack_settings_default_share_instance_false_when_absent() {
+        let parsed = parse_config(
+            r#"[reticulum]
+enable_transport = No
+
+[logging]
+loglevel = 4
+
+[interfaces]
+"#,
+        )
+        .unwrap();
+        let settings = stack_settings_from_parsed(&parsed);
+        assert!(!settings.share_instance);
     }
 
     #[test]

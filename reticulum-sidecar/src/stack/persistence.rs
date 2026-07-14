@@ -377,23 +377,69 @@ impl PersistedState {
     }
 
     pub fn upsert_contact(&mut self, hash: &str, name: Option<String>) {
+        let hash = super::topology::canonicalize_destination_hash(hash)
+            .unwrap_or_else(|| hash.trim().to_ascii_lowercase());
+        // Reject hash-prefix placeholders so LXMF sender aliases cannot wipe announce names.
+        let name = name.and_then(|n| {
+            let trimmed = n.trim().to_string();
+            if trimmed.is_empty() || super::topology::is_hash_prefix_alias(&hash, &trimmed) {
+                None
+            } else {
+                Some(trimmed)
+            }
+        });
         if let Some(c) = self
             .contacts
             .iter_mut()
-            .find(|c| c.destination_hash == hash)
+            .find(|c| c.destination_hash.eq_ignore_ascii_case(&hash))
         {
-            if name.is_some() {
-                c.display_name = name;
+            if c.destination_hash != hash {
+                c.destination_hash = hash.clone();
             }
+            if let Some(new_name) = name {
+                c.display_name = Some(new_name);
+            }
+            // nameless upserts leave an existing real/empty name alone.
             c.last_heard = Some(Self::now_secs());
             return;
         }
         self.contacts.push(ContactRow {
-            destination_hash: hash.to_string(),
+            destination_hash: hash,
             display_name: name,
             last_heard: Some(Self::now_secs()),
             favorited: false,
         });
+    }
+
+    /// Upsert a contact, filling a missing name from announce/peer cache when needed.
+    pub fn upsert_contact_with_name_cache(
+        &mut self,
+        hash: &str,
+        name: Option<String>,
+        name_cache: &std::collections::HashMap<String, String>,
+    ) {
+        let hash = super::topology::canonicalize_destination_hash(hash)
+            .unwrap_or_else(|| hash.trim().to_ascii_lowercase());
+        let stored = self
+            .contacts
+            .iter()
+            .find(|c| c.destination_hash.eq_ignore_ascii_case(&hash))
+            .and_then(|c| c.display_name.clone());
+        let cache = name_cache
+            .get(&hash)
+            .or_else(|| {
+                name_cache
+                    .iter()
+                    .find(|(k, _)| k.eq_ignore_ascii_case(&hash))
+                    .map(|(_, v)| v)
+            })
+            .map(String::as_str);
+        let resolved = super::topology::resolve_contact_name_for_upsert(
+            &hash,
+            name.as_deref().or(stored.as_deref()),
+            cache,
+        );
+        self.upsert_contact(&hash, resolved);
     }
 
     pub fn send_lxmf_local(&mut self, req: &LxmfSendRequest) -> Result<serde_json::Value, String> {
@@ -401,7 +447,12 @@ impl PersistedState {
             return Err("identity not configured".into());
         }
         let ts = Self::now_secs();
-        self.upsert_contact(&req.destination_hash, None);
+        let peer_names = super::topology::build_topology_name_map(
+            &self.peers,
+            &self.contacts,
+            &self.nomad_nodes,
+        );
+        self.upsert_contact_with_name_cache(&req.destination_hash, None, &peer_names);
         let sent_via = resolve_outbound_sent_via(&self.interfaces);
         let mut payload = serde_json::json!({
             "sender_hash": self.identity.lxmf_hash,
@@ -411,6 +462,7 @@ impl PersistedState {
             "to_hash": req.destination_hash,
             "reply_to_hash": req.reply_to_hash,
             "reply_to_id": req.reply_to_id,
+            "reply_preview_text": req.reply_preview_text,
             "direction": "outbound",
             "sent_via": sent_via,
             "received_via": sent_via
@@ -463,7 +515,12 @@ impl PersistedState {
             return Err("identity not configured".into());
         }
         let ts = Self::now_secs();
-        self.upsert_contact(&req.destination_hash, None);
+        let peer_names = super::topology::build_topology_name_map(
+            &self.peers,
+            &self.contacts,
+            &self.nomad_nodes,
+        );
+        self.upsert_contact_with_name_cache(&req.destination_hash, None, &peer_names);
         let text = format!("[file:{}:{}]", req.file_name, req.mime_type);
         let mut payload = serde_json::json!({
             "sender_hash": self.identity.lxmf_hash,
@@ -472,6 +529,7 @@ impl PersistedState {
             "timestamp": ts * 1000,
             "to_hash": req.destination_hash,
             "reply_to_hash": req.reply_to_hash,
+            "reply_preview_text": req.reply_preview_text,
             "direction": "outbound",
             "attachment": {
                 "file_name": req.file_name,
@@ -585,5 +643,77 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             auto_sync_interval_sec: raw.auto_sync_interval_sec,
             nomad_nodes: raw.nomad_nodes,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    fn peer(hash: &str, name: &str) -> PeerRow {
+        PeerRow {
+            destination_hash: hash.into(),
+            display_name: Some(name.into()),
+            hops: Some(1),
+            last_seen: Some(1),
+            interface: None,
+            path_hash: None,
+            via_hash: None,
+        }
+    }
+
+    #[test]
+    fn upsert_contact_with_name_cache_fills_from_peer_announce() {
+        let hash = "aabbccddeeff00112233445566778899";
+        let mut state = PersistedState::default_empty();
+        state.peers.push(peer(hash, "Hub Peer"));
+        let cache = super::super::topology::build_topology_name_map(
+            &state.peers,
+            &state.contacts,
+            &state.nomad_nodes,
+        );
+        state.upsert_contact_with_name_cache(hash, None, &cache);
+        assert_eq!(state.contacts.len(), 1);
+        assert_eq!(state.contacts[0].destination_hash, hash);
+        assert_eq!(state.contacts[0].display_name.as_deref(), Some("Hub Peer"));
+    }
+
+    #[test]
+    fn upsert_contact_keeps_real_name_over_hash_prefix() {
+        let hash = "deadbeefcafebabe0123456789abcdef";
+        let mut state = PersistedState::default_empty();
+        state.upsert_contact(hash, Some("Alice".into()));
+        state.upsert_contact(hash, Some("deadbeefcafe".into()));
+        assert_eq!(state.contacts.len(), 1);
+        assert_eq!(state.contacts[0].display_name.as_deref(), Some("Alice"));
+    }
+
+    #[test]
+    fn upsert_contact_with_name_cache_replaces_hash_prefix_placeholder() {
+        let hash = "aabbccddeeff00112233445566778899";
+        let mut state = PersistedState::default_empty();
+        state.upsert_contact(hash, Some("aabbccddeeff".into()));
+        assert!(state.contacts[0].display_name.is_none());
+        state.upsert_contact(hash, Some("aabbccddeeff".into()));
+        let mut cache = HashMap::new();
+        cache.insert(hash.into(), "Cached Alias".into());
+        state.upsert_contact_with_name_cache(hash, Some("aabbccddeeff".into()), &cache);
+        assert_eq!(
+            state.contacts[0].display_name.as_deref(),
+            Some("Cached Alias")
+        );
+    }
+
+    #[test]
+    fn upsert_contact_canonicalizes_uppercase_hash() {
+        let upper = "AABBCCDDEEFF00112233445566778899";
+        let lower = "aabbccddeeff00112233445566778899";
+        let mut state = PersistedState::default_empty();
+        state.upsert_contact(upper, Some("Named".into()));
+        state.upsert_contact(lower, None);
+        assert_eq!(state.contacts.len(), 1);
+        assert_eq!(state.contacts[0].destination_hash, lower);
+        assert_eq!(state.contacts[0].display_name.as_deref(), Some("Named"));
     }
 }

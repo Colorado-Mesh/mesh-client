@@ -934,7 +934,8 @@
         "rnodeBle": "LoRa mesh přes Bluetooth RNode.",
         "rnodeWifi": "LoRa mesh přes RNode Wi-Fi (tcp:// hostitel).",
         "blePeer": "BLE peer mesh pomocí seed peer adres.",
-        "generic": "Síťové rozhraní Reticulum."
+        "generic": "Síťové rozhraní Reticulum.",
+        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here."
       },
       "rfProfile": {
         "coordinated": "Koordinované regionální",
@@ -1117,7 +1118,15 @@
     "coloradoRegionGateMessage": "Colorado Mesh MQTT je určen pro uživatele sítí v oblasti Colorada a publikuje pod meshcore/DEN. Pokud se nacházíte mimo Colorado, přepněte na LetsMesh (globální veřejný makléř).",
     "coloradoRegionGateStay": "Jsem v Coloradu",
     "coloradoRegionGateSwitch": "Přepnout na LetsMesh",
-    "topicPrefixInvalidIata": "Předpona tématu musí být meshcore/test nebo meshcore/{IATA} (3 písmena), např. meshcore/DEN."
+    "topicPrefixInvalidIata": "Předpona tématu musí být meshcore/test nebo meshcore/{IATA} (3 písmena), např. meshcore/DEN.",
+    "reticulumSharedInstance": {
+      "title": "Using another app’s shared instance",
+      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
+      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
+      "disableShare": "Turn off Share instance and restart",
+      "disableShareAria": "Turn off Share instance and restart the stack",
+      "disableFailed": "Failed to turn off Share instance."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -1381,7 +1390,8 @@
         "apply_preset": "Použít předvolbu",
         "edit": "Upravit rozhraní",
         "restart_stack": "Restartujte zásobník",
-        "add_auto": "Přidat automatické rozhraní"
+        "add_auto": "Přidat automatické rozhraní",
+        "disable_share_instance": "Turn off Share instance"
       },
       "audit": {
         "tcp_enable_key": "Rozhraní TCP „{{name}}“ používá nesprávný povolovací klíč – RNS jej nenačte.",
@@ -1395,13 +1405,14 @@
         "ghost_interface": "Rozhraní „{{name}}“ je v konfiguraci povoleno, ale není načteno službou RNS.",
         "missing_auto_interface": "Není povoleno automatické rozhraní – zjišťování místní sítě LAN je vypnuté.",
         "auto_interface_down": "Automatické rozhraní „{{name}}“ je povoleno, ale nefunguje.",
-        "missing_shared_instance": "Sdílená instance je zapnutá, ale SharedInstanceServer není aktivní.",
-        "shared_instance_unexpected": "SharedInstanceServer je aktivní, ale share_instance je vypnutá.",
+        "missing_shared_instance": "Share instance is on but this app is not hosting the shared server — quit other mesh apps or turn off Share instance, then restart.",
+        "shared_instance_unexpected": "Shared instance server is live but Share instance is off — restart the stack.",
         "runtime_only_interface": "„{{name}}“ je pouze runtime (není uloženo v konfiguraci).",
         "rmap_missing_coordinates": "Rozhraní „{{name}}“ je zjistitelné, ale chybí platné souřadnice mapy.",
         "rmap_no_tcp_hub": "Detekovatelný místní RNode nemá aktivované TCP klientské centrum pro dostupnost internetu.",
         "rmap_transport_disabled": "Detekovatelná rozhraní jsou nakonfigurována, ale režim přenosu je vypnutý.",
-        "rmap_i2p_not_connectable": "Rozhraní I2P „{{name}}“ je zjistitelné, ale připojitelné není ano."
+        "rmap_i2p_not_connectable": "Rozhraní I2P „{{name}}“ je zjistitelné, ale připojitelné není ano.",
+        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started."
       },
       "runtime": {
         "rnsNotReady": "Zásobník RNS není připraven",
@@ -2322,7 +2333,19 @@
       "confirm": "Importovat"
     },
     "reticulumConfigImportFailed": "Import konfigurace se nezdařil.",
-    "reticulumConfigNotFound": "Na výchozích cestách nebyla nalezena žádná konfigurace systému Reticulum."
+    "reticulumConfigNotFound": "Na výchozích cestách nebyla nalezena žádná konfigurace systému Reticulum.",
+    "reticulumConfigValidate": {
+      "button": "Check config",
+      "aria": "Validate on-disk network config",
+      "running": "Checking…",
+      "ok": "Config looks good — no audit issues.",
+      "failed": "Config check failed: {{message}}",
+      "issuesHeading_one": "{{count}} config issue",
+      "issuesHeading_other": "{{count}} config issues",
+      "severityError": "error",
+      "severityWarning": "warning",
+      "severityInfo": "info"
+    }
   },
   "nodeDetailModal": {
     "removeFromFavorites": "Odebrat z oblíbených",

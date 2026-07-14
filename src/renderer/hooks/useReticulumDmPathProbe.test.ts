@@ -149,4 +149,103 @@ describe('useReticulumDmPathProbe', () => {
     expect(result.current.hops).toBeNull();
     expect(refreshPeersMock).not.toHaveBeenCalled();
   });
+
+  it('reprobe forces probing even when passive hops are known', async () => {
+    let resolveSecond!: (value: { ok: boolean; hops?: number }) => void;
+    const second = new Promise<{ ok: boolean; hops?: number }>((resolve) => {
+      resolveSecond = resolve;
+    });
+    probeReticulumPeerMock.mockResolvedValueOnce({ ok: true, hops: 3 }).mockReturnValueOnce(second);
+
+    const { result } = renderHook(() =>
+      useReticulumDmPathProbe({
+        enabled: true,
+        destinationHash: 'aabbccddeeff00112233445566778899',
+        passiveHops: 3,
+      }),
+    );
+    await waitFor(() => {
+      expect(result.current.status).toBe('reachable');
+      expect(result.current.hops).toBe(3);
+    });
+
+    act(() => {
+      result.current.reprobe();
+    });
+    expect(result.current.status).toBe('probing');
+
+    act(() => {
+      resolveSecond({ ok: true, hops: 1 });
+    });
+    await waitFor(() => {
+      expect(result.current.status).toBe('reachable');
+      expect(result.current.hops).toBe(1);
+    });
+    expect(probeReticulumPeerMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('applyProbeResult updates status and hops without another probe', async () => {
+    const hash = 'aabbccddeeff00112233445566778899';
+    probeReticulumPeerMock.mockResolvedValue({ ok: true, hops: 1 });
+    const { result } = renderHook(() =>
+      useReticulumDmPathProbe({
+        enabled: true,
+        destinationHash: hash,
+        passiveHops: null,
+      }),
+    );
+    await waitFor(() => {
+      expect(result.current.status).toBe('reachable');
+    });
+    const callsAfterAuto = probeReticulumPeerMock.mock.calls.length;
+
+    act(() => {
+      result.current.applyProbeResult(hash, false, null);
+    });
+    expect(result.current.status).toBe('unreachable');
+    expect(result.current.hops).toBeNull();
+
+    act(() => {
+      result.current.applyProbeResult(hash, true, 4);
+    });
+    expect(result.current.status).toBe('reachable');
+    expect(result.current.hops).toBe(4);
+    expect(probeReticulumPeerMock).toHaveBeenCalledTimes(callsAfterAuto);
+  });
+
+  it('applyProbeResult ignores stale results for a previous destination', async () => {
+    const hashA = '11111111111111111111111111111111';
+    const hashB = '22222222222222222222222222222222';
+    probeReticulumPeerMock.mockResolvedValue({ ok: true, hops: 1 });
+    const { result, rerender } = renderHook(
+      ({ hash }: { hash: string }) =>
+        useReticulumDmPathProbe({
+          enabled: true,
+          destinationHash: hash,
+          passiveHops: null,
+        }),
+      { initialProps: { hash: hashA } },
+    );
+    await waitFor(() => {
+      expect(result.current.status).toBe('reachable');
+    });
+
+    rerender({ hash: hashB });
+    await waitFor(() => {
+      expect(result.current.status).toBe('reachable');
+      expect(result.current.hops).toBe(1);
+    });
+
+    act(() => {
+      result.current.applyProbeResult(hashA, false, null);
+    });
+    expect(result.current.status).toBe('reachable');
+    expect(result.current.hops).toBe(1);
+
+    act(() => {
+      result.current.applyProbeResult(hashB, false, null);
+    });
+    expect(result.current.status).toBe('unreachable');
+    expect(result.current.hops).toBeNull();
+  });
 });

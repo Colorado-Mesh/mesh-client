@@ -98,4 +98,75 @@ describe('mergeReticulumIngestRecord', () => {
     );
     expect(merged.receivedVia).toBe('rf');
   });
+
+  it('preserves reply quote metadata when a later tick omits them', () => {
+    const parentHash = 'cc'.repeat(32);
+    const existing: MessageRecord = {
+      id: 'msg4',
+      from: peerId,
+      senderName: 'Peer',
+      to: selfId,
+      payload: 'reply',
+      channelIndex: 0,
+      timestamp: 1000,
+      status: 'acked',
+      reticulumReplyToHash: parentHash,
+      replyPreviewText: 'Quoted',
+      replyPreviewSender: 'Alice',
+    };
+    const incoming: MessageRecord = {
+      id: 'msg4',
+      from: peerId,
+      senderName: 'Peer',
+      to: selfId,
+      payload: 'reply',
+      channelIndex: 0,
+      timestamp: 1000,
+      status: 'acked',
+    };
+    const merged = mergeReticulumIngestRecord(
+      existing,
+      incoming,
+      { direction: 'inbound' },
+      { selfLxmfHash: selfHash },
+    );
+    expect(merged.reticulumReplyToHash).toBe(parentHash);
+    expect(merged.replyPreviewText).toBe('Quoted');
+    expect(merged.replyPreviewSender).toBe('Alice');
+  });
+
+  it('overwrites reply preview when incoming provides new quote fields', () => {
+    const existing: MessageRecord = {
+      id: 'msg5',
+      from: peerId,
+      senderName: 'Peer',
+      to: selfId,
+      payload: 'reply',
+      channelIndex: 0,
+      timestamp: 1000,
+      status: 'acked',
+      replyPreviewText: 'Old',
+      replyPreviewSender: 'OldSender',
+    };
+    const incoming: MessageRecord = {
+      id: 'msg5',
+      from: peerId,
+      senderName: 'Peer',
+      to: selfId,
+      payload: 'reply',
+      channelIndex: 0,
+      timestamp: 1000,
+      status: 'acked',
+      replyPreviewText: 'New quote',
+      replyPreviewSender: 'Bob',
+    };
+    const merged = mergeReticulumIngestRecord(
+      existing,
+      incoming,
+      { direction: 'inbound' },
+      { selfLxmfHash: selfHash },
+    );
+    expect(merged.replyPreviewText).toBe('New quote');
+    expect(merged.replyPreviewSender).toBe('Bob');
+  });
 });

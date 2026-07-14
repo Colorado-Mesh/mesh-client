@@ -10,6 +10,7 @@ import {
   findFirstMessageIndexByDayKey,
   findIndexByRowKey,
   findMessageIndexByKey,
+  findMessageIndexByReticulumHash,
   getChatDayKey,
   getChatMessageVirtualizerKey,
   roomPostRowKey,
@@ -135,6 +136,19 @@ describe('findMessageIndexByKey', () => {
       },
     ];
     expect(findMessageIndexByKey(messages, 1_780_240_708)).toBe(0);
+  });
+});
+
+describe('findMessageIndexByReticulumHash', () => {
+  it('finds by reticulum_message_hash', () => {
+    const parentHash = 'ab'.repeat(32);
+    const messages = [
+      makeMsg({ timestamp: 100, reticulum_message_hash: 'cd'.repeat(32) }),
+      makeMsg({ timestamp: 200, reticulum_message_hash: parentHash }),
+    ];
+    expect(findMessageIndexByReticulumHash(messages, parentHash)).toBe(1);
+    expect(findMessageIndexByReticulumHash(messages, parentHash.toUpperCase())).toBe(1);
+    expect(findMessageIndexByReticulumHash(messages, 'ff'.repeat(32))).toBe(-1);
   });
 });
 

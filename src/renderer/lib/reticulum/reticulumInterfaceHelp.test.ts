@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   getReticulumInterfaceHelp,
+  RETICULUM_SHARED_INSTANCE_CLIENT_NAME,
   RETICULUM_SHARED_INSTANCE_NAME,
 } from './reticulumInterfaceHelp';
 
@@ -15,6 +16,19 @@ describe('reticulumInterfaceHelp', () => {
     expect(help.isRuntimeOnly).toBe(true);
     expect(help.isSystemManaged).toBe(true);
     expect(help.purposeKey).toBe('connectionPanel.reticulumInterfaces.purpose.sharedInstance');
+  });
+
+  it('marks SharedInstanceClient with client-specific purpose copy', () => {
+    const help = getReticulumInterfaceHelp({
+      id: 'shared-client',
+      name: RETICULUM_SHARED_INSTANCE_CLIENT_NAME,
+      type: 'tcp',
+    });
+    expect(help.isRuntimeOnly).toBe(true);
+    expect(help.isSystemManaged).toBe(true);
+    expect(help.purposeKey).toBe(
+      'connectionPanel.reticulumInterfaces.purpose.sharedInstanceClient',
+    );
   });
 
   it('classifies auto interface purpose', () => {

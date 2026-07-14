@@ -69,6 +69,7 @@ import {
   isUnreasonablyFutureMessageTimestampMs,
 } from '@/shared/messageTimestampSkew';
 import { formatMeshtasticNodeId, isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
+import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
 import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '@/shared/timeConstants';
 
 import type { OutboxEntry } from '../../shared/electron-api.types';
@@ -98,6 +99,7 @@ import {
   estimateChatRowHeight,
   findFirstMessageIndexByDayKey,
   findMessageIndexByKey,
+  findMessageIndexByReticulumHash,
   getChatDayKey,
   getChatMessageVirtualizerKey,
   getDistFromChatBottom,
@@ -129,7 +131,11 @@ import {
   reactionDisplayGlyph,
   reactionGlyphFromPicker,
 } from '../lib/reactions';
-import { findMeshtasticParentMessageForReply, truncateReplyPreviewText } from '../lib/replyPreview';
+import {
+  findMeshtasticParentMessageForReply,
+  findReticulumParentMessageForReply,
+  truncateReplyPreviewText,
+} from '../lib/replyPreview';
 import {
   groupChatReactionsByParentKey,
   reactionLookupKeysForParentMessage,
@@ -446,6 +452,8 @@ export interface ChatPanelProps {
   onReact: (glyph: string, replyId: number, channel: number) => Promise<void>;
   onResend: (msg: ChatMessage) => void;
   onNodeClick: (nodeNum: number) => void;
+  /** Reticulum: open peer detail by destination hash (Peers-panel path). */
+  onPeerClick?: (destinationHash: string) => void;
   isConnected: boolean;
   isMqttOnly?: boolean;
   connectionType?: 'ble' | 'serial' | 'http' | 'tcp' | null;
@@ -495,6 +503,7 @@ function ChatPanel({
   onReact,
   onResend,
   onNodeClick,
+  onPeerClick,
   isConnected,
   isMqttOnly,
   connectionType,
@@ -1323,6 +1332,16 @@ function ChatPanel({
     [filteredMessages],
   );
 
+  const scrollToQuotedParentByHash = useCallback(
+    (replyToHash: string) => {
+      const index = findMessageIndexByReticulumHash(filteredMessages, replyToHash);
+      if (index < 0) return;
+      isPinnedToBottomRef.current = false;
+      messageVirtualizerRef.current.scrollToIndex(index, { align: 'center', behavior: 'smooth' });
+    },
+    [filteredMessages],
+  );
+
   const closeSearch = useCallback(() => {
     setShowSearch(false);
     setSearchQuery('');
@@ -2142,9 +2161,11 @@ function ChatPanel({
           const pathActions =
             showPathUi && reticulumDmDestinationHash ? (
               <ReticulumDmPathActions
+                key={reticulumDmDestinationHash}
                 destinationHash={reticulumDmDestinationHash}
                 status={reticulumDmPathProbe.status}
                 onReprobe={reticulumDmPathProbe.reprobe}
+                onProbeSettled={reticulumDmPathProbe.applyProbeResult}
               />
             ) : null;
           if (!pathBadge && !dmNode) return null;
@@ -2372,6 +2393,24 @@ function ChatPanel({
                               <div className="mb-0.5 flex items-center gap-2">
                                 <button
                                   onClick={() => {
+                                    if (protocol === 'reticulum' && onPeerClick) {
+                                      const rawHash =
+                                        msg.reticulum_sender_hash?.trim() ||
+                                        nodes
+                                          .get(msg.sender_id)
+                                          ?.reticulum_destination_hash?.trim() ||
+                                        reticulumHashForNodeId(msg.sender_id) ||
+                                        resolveReticulumDestinationHash(msg.sender_id) ||
+                                        '';
+                                      const peerHash =
+                                        canonicalizeReticulumDestinationHash(rawHash);
+                                      if (peerHash) {
+                                        onPeerClick(peerHash);
+                                        return;
+                                      }
+                                      // No resolvable LXMF hash — avoid Meshtastic/MeshCore NodeDetailModal.
+                                      return;
+                                    }
                                     onNodeClick(msg.sender_id);
                                   }}
                                   className={`cursor-pointer text-xs font-semibold hover:underline ${
@@ -2443,12 +2482,18 @@ function ChatPanel({
 
                             {/* Quoted reply preview */}
                             {(msg.replyId != null ||
+                              msg.reticulum_reply_to_hash != null ||
                               msg.replyPreviewSender != null ||
                               msg.replyPreviewText != null) &&
                               !msg.emoji &&
                               (() => {
-                                const orig =
-                                  msg.replyId != null
+                                const reticulumReplyHash = msg.reticulum_reply_to_hash?.trim();
+                                const orig = reticulumReplyHash
+                                  ? findReticulumParentMessageForReply(
+                                      viewMessages,
+                                      reticulumReplyHash,
+                                    )
+                                  : msg.replyId != null
                                     ? protocol === 'meshtastic'
                                       ? findMeshtasticParentMessageForReply(
                                           viewMessages,
@@ -2482,7 +2527,8 @@ function ChatPanel({
                                     ? nodeDisplayName(nodes.get(orig.sender_id), protocol) ||
                                       orig.sender_name
                                     : msg.replyPreviewSender?.trim() || undefined;
-                                const canJumpToParent = msg.replyId != null && !!orig;
+                                const canJumpToParent =
+                                  !!orig && (reticulumReplyHash != null || msg.replyId != null);
                                 if (!quoteSnippet && !quotedLabel) return null;
                                 const quoteClassName =
                                   'bg-secondary-dark/50 mb-1.5 flex w-full gap-1.5 rounded-lg border border-gray-600/50 px-2 py-1.5 text-left';
@@ -2506,7 +2552,11 @@ function ChatPanel({
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        scrollToQuotedParent(msg.replyId!);
+                                        if (reticulumReplyHash) {
+                                          scrollToQuotedParentByHash(reticulumReplyHash);
+                                        } else if (msg.replyId != null) {
+                                          scrollToQuotedParent(msg.replyId);
+                                        }
                                       }}
                                       className={`${quoteClassName} hover:bg-secondary-dark/80 transition-colors`}
                                       aria-label={t('chatPanel.jumpToQuotedMessage', {
