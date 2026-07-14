@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
 import { PARENT_HOVER_ATTR } from 'lucide-react-motion';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -47,6 +48,7 @@ import {
 } from '../lib/connectionPanelErrorHumanize';
 import {
   COLORADO_MQTT_REGION_ACK_KEY,
+  meshcoreMqttNeedsColoradoRegionAck,
   runConnectionPanelStorageMigrations,
 } from '../lib/connectionPanelStorageMigrations';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
@@ -56,7 +58,6 @@ import {
   validateLetsMeshPresetConnect,
 } from '../lib/letsMeshConnectionGuards';
 import {
-  COLORADO_MESH_HOST,
   generateLetsMeshAuthToken,
   LETSMESH_HOST_EU,
   LETSMESH_HOST_US,
@@ -96,6 +97,7 @@ import {
   MESHTASTIC_OFFICIAL_1883,
   meshtasticMqttErrorUserHint,
 } from '../lib/meshtasticMqttTlsMigration';
+import { tryAutoLaunchMqtt } from '../lib/mqttAutoLaunch';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { getSerialPortNodeName } from '../lib/serialPortNodeNames';
 import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
@@ -472,13 +474,10 @@ export default function ConnectionPanel({
     localStorage.setItem('mesh-client:mqttPreset:meshcore', meshcorePreset);
   }, [meshcorePreset]);
 
-  // One-time Colorado region gate for existing Colorado MQTT users
+  // One-time Colorado region gate for existing Colorado MQTT users (blocks auto-launch until ack)
   useEffect(() => {
     if (protocol !== 'meshcore') return;
-    if (localStorage.getItem(COLORADO_MQTT_REGION_ACK_KEY) !== null) return;
-    const preset = readStoredMeshcoreMqttPreset();
-    const settings = loadMeshcoreMqttSettings();
-    if (preset === 'coloradomesh' || settings.server.trim() === COLORADO_MESH_HOST) {
+    if (meshcoreMqttNeedsColoradoRegionAck()) {
       setColoradoRegionGateOpen(true);
     }
   }, [protocol]);
@@ -2771,37 +2770,79 @@ export default function ConnectionPanel({
               {t('connectionPanel.connectMqtt')}
             </button>
           </div>
-          {coloradoRegionGateOpen ? (
-            <ConfirmModal
-              title={t('connectionPanel.coloradoRegionGateTitle')}
-              message={t('connectionPanel.coloradoRegionGateMessage')}
-              confirmLabel={t('connectionPanel.coloradoRegionGateStay')}
-              cancelLabel={t('connectionPanel.coloradoRegionGateSwitch')}
-              onConfirm={() => {
-                localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
-                setColoradoRegionGateOpen(false);
-              }}
-              onCancel={() => {
-                const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
-                setMeshcorePreset('letsmesh');
-                setMeshcoreMqttSettings((prev) => ({
-                  ...applyMeshcoreMqttPreset('letsmesh', prev),
-                  username: fromIdentity || prev.username,
-                }));
-                localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
-                setColoradoRegionGateOpen(false);
-              }}
-            />
-          ) : null}
         </div>
       </div>
     );
+
+  // Portal to body: MeshCore ConnectionPanel stays mounted under a `hidden` ancestor when
+  // another protocol tab is active — without a portal the gate would never paint.
+  const coloradoRegionGateModal =
+    coloradoRegionGateOpen && protocol === 'meshcore'
+      ? createPortal(
+          <ConfirmModal
+            title={t('connectionPanel.coloradoRegionGateTitle')}
+            message={t('connectionPanel.coloradoRegionGateMessage')}
+            confirmLabel={t('connectionPanel.coloradoRegionGateStay')}
+            cancelLabel={t('connectionPanel.coloradoRegionGateSwitch')}
+            onConfirm={() => {
+              localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
+              setColoradoRegionGateOpen(false);
+              if (meshcoreMqttSettingsRef.current.autoLaunch) {
+                void tryAutoLaunchMqtt('meshcore').catch((err: unknown) => {
+                  console.warn(
+                    '[ConnectionPanel] MQTT auto-launch after Colorado stay failed: ' +
+                      errLikeToLogString(err),
+                  );
+                });
+              }
+            }}
+            onCancel={() => {
+              void (async () => {
+                const fromIdentity = letsMeshMqttUsernameFromIdentity(readMeshcoreIdentity());
+                const next = {
+                  ...applyMeshcoreMqttPreset('letsmesh', meshcoreMqttSettingsRef.current),
+                  username: fromIdentity || meshcoreMqttSettingsRef.current.username,
+                };
+                setMeshcorePreset('letsmesh');
+                setMeshcoreMqttSettings(next);
+                localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
+                persistMqttSettingsIfChanged(getMqttSettingsStorageKey('meshcore'), next);
+                localStorage.setItem(COLORADO_MQTT_REGION_ACK_KEY, '1');
+                setColoradoRegionGateOpen(false);
+                if (mqttStatus === 'connected' || mqttStatus === 'connecting') {
+                  markMqttUserDisconnect();
+                  try {
+                    await window.electronAPI.mqtt.disconnect('meshcore');
+                  } catch (err: unknown) {
+                    console.warn(
+                      '[ConnectionPanel] mqtt.disconnect after Colorado switch failed: ' +
+                        errLikeToLogString(err),
+                    );
+                  }
+                }
+                if (next.autoLaunch) {
+                  try {
+                    await tryAutoLaunchMqtt('meshcore');
+                  } catch (err: unknown) {
+                    console.warn(
+                      '[ConnectionPanel] MQTT auto-launch after Colorado switch failed: ' +
+                        errLikeToLogString(err),
+                    );
+                  }
+                }
+              })();
+            }}
+          />,
+          document.body,
+        )
+      : null;
 
   if (connectingProgressView) {
     return (
       <div className="w-full space-y-6">
         {connectingProgressView}
         {mqttSection}
+        {coloradoRegionGateModal}
       </div>
     );
   }
@@ -2963,6 +3004,7 @@ export default function ConnectionPanel({
         )}
 
         {mqttSection}
+        {coloradoRegionGateModal}
       </div>
     );
   }
@@ -3330,6 +3372,7 @@ export default function ConnectionPanel({
       </div>
 
       {mqttSection}
+      {coloradoRegionGateModal}
     </div>
   );
 }

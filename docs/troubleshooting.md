@@ -1025,11 +1025,11 @@ Unrecognized codes pass through unchanged.
 
 ### MeshCore Colorado Mesh one-time region prompt
 
-**Symptoms**: After upgrade, a dialog asks whether you are in Colorado when MQTT is set to Colorado Mesh.
+**Symptoms**: After upgrade, a dialog asks whether you are in Colorado when MQTT is set to Colorado Mesh. MQTT Auto-connect is deferred until you answer.
 
-**Cause**: Colorado Mesh is a **regional** broker. mesh-client prompts existing Colorado-preset (or Colorado host) users once so non-Colorado users can switch to **LetsMesh**.
+**Cause**: Colorado Mesh is a **regional** broker. mesh-client prompts existing Colorado-preset (or Colorado host) users once so non-Colorado users can switch to **LetsMesh**. Auto-launch will not connect to Colorado until that choice is stored.
 
-**Fix**: Choose **I am in Colorado** to keep the preset, or **Switch to LetsMesh**. The choice is stored in `mesh-client:coloradoMqttRegionAck-v1` and is not shown again. Selecting Colorado Mesh later shows a confirm that the preset is for Colorado-area users and publishes under `meshcore/DEN`.
+**Fix**: Choose **I am in Colorado** to keep the preset (Auto-connect resumes if enabled), or **Switch to LetsMesh**. The choice is stored in `mesh-client:coloradoMqttRegionAck-v1` and is not shown again. Selecting Colorado Mesh later shows a confirm that the preset is for Colorado-area users and publishes under `meshcore/DEN`.
 
 ### Reticulum DM stuck on Sending (MeshChatX / shared instance)
 

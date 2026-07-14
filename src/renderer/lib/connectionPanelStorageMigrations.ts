@@ -6,6 +6,7 @@ import {
   meshcoreMqttPresetFields,
   readStoredMeshcoreMqttPreset,
 } from './meshcoreMqttPresets';
+import { readMeshcoreMqttSettingsFromStorage } from './meshcoreMqttSettingsStorage';
 import { parseMeshcoreIataTopicPrefix } from './meshcoreMqttTopicPrefix';
 import { parseStoredJson } from './parseStoredJson';
 import type { MQTTSettings } from './types';
@@ -18,6 +19,13 @@ const MESHCORE_LETSMESH_DEFAULT_MIGRATION_KEY = 'mesh-client:migrated:meshcore-l
 const MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY = 'mesh-client:migrated:meshcore-topic-iata-shape-v1';
 /** Set after the one-time Colorado-region ConfirmModal (or Colorado preset confirm). */
 export const COLORADO_MQTT_REGION_ACK_KEY = 'mesh-client:coloradoMqttRegionAck-v1';
+
+/** True when Colorado Mesh is configured and the user has not answered the region gate yet. */
+export function meshcoreMqttNeedsColoradoRegionAck(): boolean {
+  if (localStorage.getItem(COLORADO_MQTT_REGION_ACK_KEY) !== null) return false;
+  if (readStoredMeshcoreMqttPreset() === 'coloradomesh') return true;
+  return readMeshcoreMqttSettingsFromStorage().server.trim() === COLORADO_MESH_HOST;
+}
 
 const PRESET_RECONCILE_PRESETS = new Set<MeshcoreMqttPreset>([
   'letsmesh',

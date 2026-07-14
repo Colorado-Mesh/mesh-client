@@ -1,3 +1,4 @@
+import { meshcoreMqttNeedsColoradoRegionAck } from './connectionPanelStorageMigrations';
 import { errLikeToLogString } from './errLikeToLogString';
 import {
   validateLetsMeshManualCredentials,
@@ -19,10 +20,12 @@ import type { MeshProtocol, MQTTSettings } from './types';
 /**
  * JWT/device-signing MeshCore brokers need the radio-exported private key before connect.
  * Defer startup auto-launch until RF init persists identity (initConn triggers retry).
+ * Also defer while the Colorado Mesh region confirmation is unanswered.
  */
 export function shouldAutoLaunchMeshcoreMqttAtStartup(): boolean {
   const settings = readMeshcoreMqttSettingsFromStorage();
   if (!settings.autoLaunch) return false;
+  if (meshcoreMqttNeedsColoradoRegionAck()) return false;
   if (isLetsMeshSettings(settings.server)) {
     return meshcoreIdentityHasPrivateKey();
   }
@@ -38,6 +41,11 @@ export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
       ? readMeshcoreMqttSettingsFromStorage()
       : readMeshtasticMqttSettingsFromStorage();
   if (!settings.autoLaunch) return;
+
+  if (prot === 'meshcore' && meshcoreMqttNeedsColoradoRegionAck()) {
+    console.warn('[App] MQTT auto-launch deferred: Colorado Mesh region confirmation pending');
+    return;
+  }
 
   const base =
     prot === 'meshtastic' ? { ...MESHTASTIC_OFFICIAL_PRESET_DEFAULTS, ...settings } : settings;

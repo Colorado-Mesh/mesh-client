@@ -354,6 +354,41 @@ describe('ConnectionPanel MeshCore MQTT presets', () => {
     expect(localStorage.getItem('mesh-client:mqttPreset:meshcore')).toBe('letsmesh');
     expect(screen.queryByRole('dialog', { name: 'Colorado Mesh MQTT' })).not.toBeInTheDocument();
   });
+
+  it('shows Colorado region gate even when MQTT is already connected', async () => {
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'coloradomesh');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt.meshcore.coloradomesh.org',
+        topicPrefix: 'meshcore/DEN',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/ws',
+        keepalive: 30,
+        password: '',
+        autoLaunch: true,
+      }),
+    );
+    localStorage.setItem('mesh-client:migrated:meshcore-letsmesh-default-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-v1', '1');
+    localStorage.setItem('mesh-client:migrated:colorado-mesh-port-443-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-shape-v1', '1');
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="connected"
+        protocol="meshcore"
+      />,
+    );
+
+    expect(await screen.findByRole('dialog', { name: 'Colorado Mesh MQTT' })).toBeInTheDocument();
+  });
 });
 
 describe('ConnectionPanel BLE error humanization', () => {
