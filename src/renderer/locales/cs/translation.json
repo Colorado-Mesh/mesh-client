@@ -1101,7 +1101,14 @@
       "openGlobalMap": "Globální mapa",
       "openGlobalMapAria": "Otevřete globální mapu RMAP v4 na rmap.world",
       "syncFailed": "Synchronizace zjišťování RMAP se nezdařila."
-    }
+    },
+    "coloradoPresetConfirm": "Colorado Mesh MQTT je určen pro uživatele síťoviny v oblasti Colorada. Přednastavení publikuje pod meshcore/DEN (Denver IATA). Pokud nejste v Coloradu, použijte LetsMesh nebo MeshMapper. Pokračovat?",
+    "coloradoServerNote": "Colorado Mesh je pouze pro obyvatele Colorada. Předpona tématu používá Denver IATA (meshcore/DEN).",
+    "coloradoRegionGateTitle": "Colorado Mesh MQTT",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT je určen pro uživatele sítí v oblasti Colorada a publikuje pod meshcore/DEN. Pokud se nacházíte mimo Colorado, přepněte na LetsMesh (globální veřejný makléř).",
+    "coloradoRegionGateStay": "Jsem v Coloradu",
+    "coloradoRegionGateSwitch": "Přepnout na LetsMesh",
+    "topicPrefixInvalidIata": "Předpona tématu musí být meshcore/test nebo meshcore/{IATA} (3 písmena), např. meshcore/DEN."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

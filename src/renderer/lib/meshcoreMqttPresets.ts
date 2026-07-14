@@ -19,7 +19,9 @@ const KNOWN_MESHCORE_MQTT_PRESETS = new Set<MeshcoreMqttPreset>([
 
 export function readStoredMeshcoreMqttPreset(): MeshcoreMqttPreset {
   const saved = localStorage.getItem(MESHCORE_MQTT_PRESET_STORAGE_KEY);
-  if (saved && KNOWN_MESHCORE_MQTT_PRESETS.has(saved as MeshcoreMqttPreset)) {
+  // No key yet → new install defaults to LetsMesh (settings seeded by migrations).
+  if (saved === null) return 'letsmesh';
+  if (KNOWN_MESHCORE_MQTT_PRESETS.has(saved as MeshcoreMqttPreset)) {
     return saved as MeshcoreMqttPreset;
   }
   return 'custom';

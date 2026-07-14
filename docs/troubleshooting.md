@@ -1019,9 +1019,17 @@ Unrecognized codes pass through unchanged.
 
 **Symptoms**: MeshCore MQTT preset worked before upgrade; broker connection fails on port **1883** or wrong topic.
 
-**Cause**: Colorado Mesh moved to **wss port 443** with topic **`meshcore/DEN`**; LetsMesh uses **`meshcore/test`**. Stale `mesh-client:mqttSettings:meshcore` may retain old port/topic.
+**Cause**: Colorado Mesh moved to **wss port 443** with topic **`meshcore/DEN`**; LetsMesh uses **`meshcore/test`**. Stale `mesh-client:mqttSettings:meshcore` may retain old port/topic. Malformed topic prefixes (not `meshcore/{IATA}` or `meshcore/test`) also block Connect on device-signing brokers.
 
-**Fix**: Re-select the preset on the Connection tab, or clear `mesh-client:mqttSettings:meshcore` in devtools Application → Local Storage and reconnect. Migrations run on app start via `connectionPanelStorageMigrations.ts`.
+**Fix**: Re-select the preset on the Connection tab, or clear `mesh-client:mqttSettings:meshcore` in devtools Application → Local Storage and reconnect. Migrations run on app start via `connectionPanelStorageMigrations.ts` (port/topic repair + IATA shape normalize).
+
+### MeshCore Colorado Mesh one-time region prompt
+
+**Symptoms**: After upgrade, a dialog asks whether you are in Colorado when MQTT is set to Colorado Mesh.
+
+**Cause**: Colorado Mesh is a **regional** broker. mesh-client prompts existing Colorado-preset (or Colorado host) users once so non-Colorado users can switch to **LetsMesh**.
+
+**Fix**: Choose **I am in Colorado** to keep the preset, or **Switch to LetsMesh**. The choice is stored in `mesh-client:coloradoMqttRegionAck-v1` and is not shown again. Selecting Colorado Mesh later shows a confirm that the preset is for Colorado-area users and publishes under `meshcore/DEN`.
 
 ### Reticulum DM stuck on Sending (MeshChatX / shared instance)
 

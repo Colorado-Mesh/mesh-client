@@ -1101,7 +1101,14 @@
       "openGlobalMap": "글로벌 맵",
       "openGlobalMapAria": "Rmap.world에서 RMAP v4 글로벌 맵 열기",
       "syncFailed": "RMAP 검색 동기화에 실패했습니다."
-    }
+    },
+    "coloradoPresetConfirm": "Colorado Mesh MQTT는 콜로라도 지역 메쉬 사용자를 위한 것입니다. 사전 설정은 meshcore/DEN(덴버 IATA) 아래에 게시됩니다. 콜로라도에 있지 않은 경우 LetsMesh 또는 MeshMapper를 대신 사용하십시오. 계속하시겠습니까?",
+    "coloradoServerNote": "Colorado Mesh는 콜로라도 거주자만 사용할 수 있습니다. 주제 접두사는 덴버 IATA(meshcore/DEN)를 사용합니다.",
+    "coloradoRegionGateTitle": "Colorado Mesh MQTT",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT는 콜로라도 지역 메쉬 사용자를 위한 것이며 meshcore/DEN 아래에 게시됩니다. 콜로라도 외부에 있는 경우 LetsMesh(글로벌 공개 브로커)로 전환하십시오.",
+    "coloradoRegionGateStay": "콜로라도에 있습니다",
+    "coloradoRegionGateSwitch": "LetsMesh로 전환",
+    "topicPrefixInvalidIata": "주제 접두사는 meshcore/test 또는 meshcore/{IATA}(3글자)여야 합니다(예: meshcore/DEN)."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",

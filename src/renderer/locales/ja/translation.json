@@ -1101,7 +1101,14 @@
       "openGlobalMap": "グローバルマップ",
       "openGlobalMapAria": "Rmap.worldでRMAP v 4グローバルマップを開く",
       "syncFailed": "RMAP検出の同期に失敗しました。"
-    }
+    },
+    "coloradoPresetConfirm": "Colorado Mesh MQTTは、コロラド州エリアのメッシュユーザー向けです。プリセットはmeshcore/DEN（デンバーIATA）で公開されています。コロラド州にいない場合は、代わりにLetsMeshまたはMeshMapperを使用してください。続行しますか？",
+    "coloradoServerNote": "Colorado Meshはコロラド州の居住者のみを対象としています。トピック接頭辞はデンバーIATA（meshcore/DEN）を使用します。",
+    "coloradoRegionGateTitle": "Colorado Mesh MQTT",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTTは、コロラド州エリアのメッシュユーザー向けで、meshcore/DENの下で公開されています。コロラド州外にいる場合は、LetsMesh（グローバルパブリックブローカー）に切り替えます。",
+    "coloradoRegionGateStay": "私はコロラド州にいます",
+    "coloradoRegionGateSwitch": "LetsMeshに切り替える",
+    "topicPrefixInvalidIata": "トピックの接頭辞は、meshcore/testまたはmeshcore/{IATA}（3文字）でなければなりません（例：meshcore/DEN）。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

@@ -1101,7 +1101,14 @@
       "openGlobalMap": "Carte mondiale",
       "openGlobalMapAria": "Ouvrez la carte globale RMAP v4 sur rmap.world",
       "syncFailed": "Échec de la synchronisation de la découverte RMAP."
-    }
+    },
+    "coloradoPresetConfirm": "Colorado Mesh MQTT est destiné aux utilisateurs de maillage Colorado-area. Le préréglage est publié sous meshcore/DEN (Denver IATA). Si vous n'êtes pas au Colorado, utilisez LetsMesh ou MeshMapper à la place. Continuer ?",
+    "coloradoServerNote": "Colorado Mesh est réservé aux résidents du Colorado. Le préfixe du sujet utilise l'IATA de Denver (meshcore/DEN).",
+    "coloradoRegionGateTitle": "Colorado Mesh MQTT",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT est destiné aux utilisateurs de mailles Colorado-area et publie sous meshcore/DEN. Si vous êtes à l'extérieur du Colorado, passez à LetsMesh (courtier public mondial).",
+    "coloradoRegionGateStay": "Je suis au Colorado",
+    "coloradoRegionGateSwitch": "Passer à LetsMesh",
+    "topicPrefixInvalidIata": "Le préfixe du sujet doit être meshcore/test ou meshcore/{IATA} (3 lettres), par exemple meshcore/DEN."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",

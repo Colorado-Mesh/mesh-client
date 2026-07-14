@@ -71,4 +71,20 @@ describe('ConfirmModal', () => {
 
     expect(screen.getByRole('button', { name: 'Yes' })).toBeDisabled();
   });
+
+  it('uses cancelLabel when provided', () => {
+    render(
+      <ConfirmModal
+        title="Colorado Mesh MQTT"
+        message="Are you in Colorado?"
+        confirmLabel="I am in Colorado"
+        cancelLabel="Switch to LetsMesh"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Switch to LetsMesh' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'I am in Colorado' })).toBeInTheDocument();
+  });
 });

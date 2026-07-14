@@ -1,10 +1,12 @@
-import { COLORADO_MESH_HOST } from './letsMeshJwt';
+import { COLORADO_MESH_HOST, isLetsMeshSettings } from './letsMeshJwt';
 import {
   applyMeshcoreMqttPreset,
+  MESHCORE_MQTT_PRESET_STORAGE_KEY,
   type MeshcoreMqttPreset,
   meshcoreMqttPresetFields,
   readStoredMeshcoreMqttPreset,
 } from './meshcoreMqttPresets';
+import { parseMeshcoreIataTopicPrefix } from './meshcoreMqttTopicPrefix';
 import { parseStoredJson } from './parseStoredJson';
 import type { MQTTSettings } from './types';
 
@@ -12,6 +14,10 @@ const LEGACY_MQTT_SETTINGS_KEY = 'mesh-client:mqttSettings';
 const MESHCORE_MQTT_SETTINGS_KEY = 'mesh-client:mqttSettings:meshcore';
 const MESHCORE_TOPIC_IATA_MIGRATION_KEY = 'mesh-client:migrated:meshcore-topic-iata-v1';
 const COLORADO_MESH_PORT_MIGRATION_KEY = 'mesh-client:migrated:colorado-mesh-port-443-v1';
+const MESHCORE_LETSMESH_DEFAULT_MIGRATION_KEY = 'mesh-client:migrated:meshcore-letsmesh-default-v1';
+const MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY = 'mesh-client:migrated:meshcore-topic-iata-shape-v1';
+/** Set after the one-time Colorado-region ConfirmModal (or Colorado preset confirm). */
+export const COLORADO_MQTT_REGION_ACK_KEY = 'mesh-client:coloradoMqttRegionAck-v1';
 
 const PRESET_RECONCILE_PRESETS = new Set<MeshcoreMqttPreset>([
   'letsmesh',
@@ -72,6 +78,63 @@ function migrateColoradoMeshPortOnce(): void {
   localStorage.setItem(COLORADO_MESH_PORT_MIGRATION_KEY, '1');
 }
 
+/** New installs (and missing preset + empty server): default MeshCore MQTT to LetsMesh. */
+function seedMeshcoreLetsMeshDefaultOnce(): void {
+  if (localStorage.getItem(MESHCORE_LETSMESH_DEFAULT_MIGRATION_KEY) !== null) return;
+
+  const hadPreset = localStorage.getItem(MESHCORE_MQTT_PRESET_STORAGE_KEY) !== null;
+  const raw = localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY);
+  const parsed = raw
+    ? parseStoredJson<Partial<MQTTSettings>>(raw, 'seedMeshcoreLetsMeshDefaultOnce')
+    : null;
+  const server = typeof parsed?.server === 'string' ? parsed.server.trim() : '';
+
+  if (!hadPreset) {
+    if (server) {
+      // Hand-tuned broker without a preset key — do not overwrite settings.
+      localStorage.setItem(MESHCORE_MQTT_PRESET_STORAGE_KEY, 'custom');
+    } else {
+      localStorage.setItem(MESHCORE_MQTT_PRESET_STORAGE_KEY, 'letsmesh');
+      const next = applyMeshcoreMqttPreset('letsmesh', (parsed ?? {}) as MQTTSettings);
+      localStorage.setItem(MESHCORE_MQTT_SETTINGS_KEY, JSON.stringify(next));
+    }
+  }
+
+  localStorage.setItem(MESHCORE_LETSMESH_DEFAULT_MIGRATION_KEY, '1');
+}
+
+/**
+ * Repair malformed IATA-scoped topic prefixes; uppercase 3-letter segments.
+ * Colorado host → meshcore/DEN; other device-signing hosts → meshcore/test.
+ */
+function migrateMeshcoreTopicIataShapeOnce(): void {
+  if (localStorage.getItem(MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY) !== null) return;
+  const raw = localStorage.getItem(MESHCORE_MQTT_SETTINGS_KEY);
+  if (raw) {
+    const parsed = parseStoredJson<Partial<MQTTSettings>>(raw, 'migrateMeshcoreTopicIataShapeOnce');
+    const server = typeof parsed?.server === 'string' ? parsed.server.trim() : '';
+    const topicPrefix = typeof parsed?.topicPrefix === 'string' ? parsed.topicPrefix : '';
+    if (parsed && server && isLetsMeshSettings(server) && topicPrefix) {
+      const result = parseMeshcoreIataTopicPrefix(topicPrefix);
+      if (result.ok) {
+        if (result.normalized !== topicPrefix) {
+          localStorage.setItem(
+            MESHCORE_MQTT_SETTINGS_KEY,
+            JSON.stringify({ ...parsed, topicPrefix: result.normalized }),
+          );
+        }
+      } else {
+        const fallback = server === COLORADO_MESH_HOST ? 'meshcore/DEN' : 'meshcore/test';
+        localStorage.setItem(
+          MESHCORE_MQTT_SETTINGS_KEY,
+          JSON.stringify({ ...parsed, topicPrefix: fallback }),
+        );
+      }
+    }
+  }
+  localStorage.setItem(MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY, '1');
+}
+
 /** Re-apply saved MeshCore network preset defaults when stored fields are stale. */
 function reconcileMeshcoreMqttPresetSettings(): void {
   const preset = readStoredMeshcoreMqttPreset();
@@ -93,12 +156,16 @@ export function runConnectionPanelStorageMigrations(): void {
   migrateMqttSettingsOnce();
   migrateMeshcoreTopicIataOnce();
   migrateColoradoMeshPortOnce();
+  seedMeshcoreLetsMeshDefaultOnce();
+  migrateMeshcoreTopicIataShapeOnce();
   reconcileMeshcoreMqttPresetSettings();
 }
 
 export {
   COLORADO_MESH_PORT_MIGRATION_KEY,
   LEGACY_MQTT_SETTINGS_KEY,
+  MESHCORE_LETSMESH_DEFAULT_MIGRATION_KEY,
   MESHCORE_MQTT_SETTINGS_KEY,
   MESHCORE_TOPIC_IATA_MIGRATION_KEY,
+  MESHCORE_TOPIC_IATA_SHAPE_MIGRATION_KEY,
 };

@@ -59,8 +59,11 @@ describe('applyMeshcoreMqttPreset', () => {
 });
 
 describe('readStoredMeshcoreMqttPreset', () => {
-  it('returns custom when preset is missing or unknown', () => {
-    expect(readStoredMeshcoreMqttPreset()).toBe('custom');
+  it('returns letsmesh when preset key is missing (new default)', () => {
+    expect(readStoredMeshcoreMqttPreset()).toBe('letsmesh');
+  });
+
+  it('returns custom when preset is unknown', () => {
     localStorage.setItem('mesh-client:mqttPreset:meshcore', 'unknown');
     expect(readStoredMeshcoreMqttPreset()).toBe('custom');
   });

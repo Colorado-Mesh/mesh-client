@@ -152,6 +152,23 @@ describe('ConnectionPanel MQTT connect error', () => {
     const user = userEvent.setup();
     const { spy: consoleWarnSpy, restore } = mockConsoleWarn();
     vi.mocked(window.electronAPI.mqtt.connect).mockRejectedValueOnce(new Error('broker refused'));
+    // Custom (non–device-signing) so Connect reaches mqtt.connect without JWT/identity gates.
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'custom');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt.example.com',
+        port: 1883,
+        username: '',
+        password: '',
+        topicPrefix: 'meshcore/chat',
+        useWebSocket: false,
+      }),
+    );
+    localStorage.setItem('mesh-client:migrated:meshcore-letsmesh-default-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-v1', '1');
+    localStorage.setItem('mesh-client:migrated:colorado-mesh-port-443-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-shape-v1', '1');
 
     render(
       <ConnectionPanel
@@ -174,6 +191,7 @@ describe('ConnectionPanel MQTT connect error', () => {
       expect.stringMatching(/\[ConnectionPanel\].*broker refused/s),
     );
     restore();
+    localStorage.clear();
   });
 
   it('does not run LetsMesh preset validation for Meshtastic when meshcore preset was letsmesh', async () => {
@@ -207,6 +225,134 @@ describe('ConnectionPanel MQTT connect error', () => {
     ).not.toBeInTheDocument();
 
     localStorage.removeItem('mesh-client:mqttPreset:meshcore');
+  });
+});
+
+describe('ConnectionPanel MeshCore MQTT presets', () => {
+  afterEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it('orders presets LetsMesh, MeshMapper, Colorado Mesh before Ripple', () => {
+    localStorage.setItem('mesh-client:coloradoMqttRegionAck-v1', '1');
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt-us-v1.letsmesh.net',
+        topicPrefix: 'meshcore/test',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+      }),
+    );
+    localStorage.setItem('mesh-client:migrated:meshcore-letsmesh-default-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-v1', '1');
+    localStorage.setItem('mesh-client:migrated:colorado-mesh-port-443-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-shape-v1', '1');
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+
+    const group = screen.getByRole('group', { name: 'Network Preset' });
+    const labels = within(group)
+      .getAllByRole('button')
+      .map((b) => b.textContent);
+    expect(labels).toEqual([
+      'LetsMesh',
+      'MeshMapper',
+      'Colorado Mesh',
+      'Ripple Networks',
+      'Custom',
+    ]);
+  });
+
+  it('does not apply Colorado preset fields when confirm is cancelled', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('mesh-client:coloradoMqttRegionAck-v1', '1');
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt-us-v1.letsmesh.net',
+        topicPrefix: 'meshcore/test',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+        username: '',
+        password: '',
+      }),
+    );
+    localStorage.setItem('mesh-client:migrated:meshcore-letsmesh-default-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-v1', '1');
+    localStorage.setItem('mesh-client:migrated:colorado-mesh-port-443-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-shape-v1', '1');
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Colorado Mesh' }));
+    expect(window.confirm).toHaveBeenCalled();
+    expect(localStorage.getItem('mesh-client:mqttPreset:meshcore')).toBe('letsmesh');
+    expect(screen.getByLabelText(/^Server$/i)).toHaveValue('mqtt-us-v1.letsmesh.net');
+  });
+
+  it('shows one-time Colorado region gate and switches to LetsMesh on cancel', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'coloradomesh');
+    localStorage.setItem(
+      'mesh-client:mqttSettings:meshcore',
+      JSON.stringify({
+        server: 'mqtt.meshcore.coloradomesh.org',
+        topicPrefix: 'meshcore/DEN',
+        port: 443,
+        useWebSocket: true,
+        tlsEnabled: true,
+        wsPath: '/ws',
+        keepalive: 30,
+        password: '',
+      }),
+    );
+    localStorage.setItem('mesh-client:migrated:meshcore-letsmesh-default-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-v1', '1');
+    localStorage.setItem('mesh-client:migrated:colorado-mesh-port-443-v1', '1');
+    localStorage.setItem('mesh-client:migrated:meshcore-topic-iata-shape-v1', '1');
+
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshcore"
+      />,
+    );
+
+    const dialog = await screen.findByRole('dialog', { name: 'Colorado Mesh MQTT' });
+    expect(dialog).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Switch to LetsMesh' }));
+    expect(localStorage.getItem('mesh-client:coloradoMqttRegionAck-v1')).toBe('1');
+    expect(localStorage.getItem('mesh-client:mqttPreset:meshcore')).toBe('letsmesh');
+    expect(screen.queryByRole('dialog', { name: 'Colorado Mesh MQTT' })).not.toBeInTheDocument();
   });
 });
 

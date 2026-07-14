@@ -1101,7 +1101,14 @@
       "openGlobalMap": "Peta global",
       "openGlobalMapAria": "Buka peta global RMAP v4 di rmap.world",
       "syncFailed": "Sinkronisasi penemuan RMAP gagal."
-    }
+    },
+    "coloradoPresetConfirm": "Colorado Mesh MQTT adalah untuk pengguna Colorado - area mesh. Prasetel diterbitkan di bawah meshcore/DEN (Denver IATA). Jika Anda tidak berada di Colorado, gunakan LetsMesh atau MeshMapper sebagai gantinya. Lanjutkan?",
+    "coloradoServerNote": "Colorado Mesh hanya untuk penduduk Colorado. Awalan topik menggunakan IATA Denver (meshcore/DEN).",
+    "coloradoRegionGateTitle": "Colorado Mesh MQTT",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT adalah untuk pengguna mesh area Colorado dan dipublikasikan di bawah meshcore/DEN. Jika Anda berada di luar Colorado, beralihlah ke LetsMesh (broker publik global).",
+    "coloradoRegionGateStay": "Saya di Colorado",
+    "coloradoRegionGateSwitch": "Beralih ke LetsMesh",
+    "topicPrefixInvalidIata": "Awalan topik harus berupa meshcore/test atau meshcore /{ IATA} (3 huruf), misalnya meshcore/DEN."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

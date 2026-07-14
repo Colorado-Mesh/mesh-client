@@ -1101,7 +1101,14 @@
       "openGlobalMap": "全球测绘",
       "openGlobalMapAria": "在rmap.world上打开RMAP v4全球地图",
       "syncFailed": "RMAP发现同步失败。"
-    }
+    },
+    "coloradoPresetConfirm": "Colorado Mesh MQTT适用于科罗拉多州地区的网格用户。预设在meshcore/DEN（丹佛IATA）下发布。如果您不在科罗拉多州，请改用LetsMesh或MeshMapper。是否继续？",
+    "coloradoServerNote": "Colorado Mesh仅适用于科罗拉多州居民。主题前缀使用丹佛IATA（meshcore/DEN）。",
+    "coloradoRegionGateTitle": "Colorado Mesh MQTT",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT适用于科罗拉多州地区的网格用户，并在meshcore/DEN下发布。如果您在科罗拉多州以外，请切换到LetsMesh（全球公共经纪商）。",
+    "coloradoRegionGateStay": "我在科罗拉多州",
+    "coloradoRegionGateSwitch": "切换到LetsMesh",
+    "topicPrefixInvalidIata": "主题前缀必须是meshcore/test或meshcore/{IATA} （ 3个字母） ，例如meshcore/DEN。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",

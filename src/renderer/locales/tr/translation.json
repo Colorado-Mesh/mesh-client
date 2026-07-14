@@ -1101,7 +1101,14 @@
       "openGlobalMap": "Küresel harita",
       "openGlobalMapAria": "RMAP v4 global haritasını rmap.world'de açın",
       "syncFailed": "RMAP keşif senkronizasyonu başarısız oldu."
-    }
+    },
+    "coloradoPresetConfirm": "Colorado Mesh MQTT, Colorado bölgesindeki mesh kullanıcıları içindir. Ön ayar meshcore/DEN (Denver IATA) altında yayınlanır. Colorado'da değilseniz, bunun yerine LetsMesh veya MeshMapper kullanın. Devam edilsin mi?",
+    "coloradoServerNote": "Colorado Mesh yalnızca Colorado sakinleri içindir. Konu ön eki Denver IATA (meshcore/DEN) kullanır.",
+    "coloradoRegionGateTitle": "Colorado Mesh MQTT",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT, Colorado bölgesindeki mesh kullanıcıları içindir ve meshcore/DEN altında yayınlanır. Colorado dışındaysanız, LetsMesh'e (küresel kamu brokeri) geçin.",
+    "coloradoRegionGateStay": "Colorado'dayım",
+    "coloradoRegionGateSwitch": "LetsMesh'e geç",
+    "topicPrefixInvalidIata": "Konu ön eki meshcore/test veya meshcore /{ IATA} (3 harf), ör. meshcore/DEN olmalıdır."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

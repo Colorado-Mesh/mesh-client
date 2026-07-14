@@ -1101,7 +1101,14 @@
       "openGlobalMap": "Глобальная карта",
       "openGlobalMapAria": "Открыть глобальную карту RMAP v4 на rmap.world",
       "syncFailed": "Ошибка синхронизации обнаружения RMAP."
-    }
+    },
+    "coloradoPresetConfirm": "Colorado Mesh MQTT предназначен для пользователей Colorado-области сетки. Предустановка публикуется в meshcore/DEN (Denver IATA). Если вы не в Колорадо, используйте вместо этого LetsMesh или MeshMapper. Продолжить?",
+    "coloradoServerNote": "Colorado Mesh предназначена только для жителей Колорадо. В префиксе темы используется Denver IATA (meshcore/DEN).",
+    "coloradoRegionGateTitle": "Colorado Mesh MQTT",
+    "coloradoRegionGateMessage": "Colorado Mesh MQTT предназначен для пользователей сети Колорадо и публикуется под meshcore/DEN. Если вы находитесь за пределами Колорадо, переключитесь на LetsMesh (глобальный публичный брокер).",
+    "coloradoRegionGateStay": "Я в Колорадо",
+    "coloradoRegionGateSwitch": "Переключиться на LetsMesh",
+    "topicPrefixInvalidIata": "Префикс темы должен быть meshcore/test или meshcore/{IATA} (3 буквы), например meshcore/DEN."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",
