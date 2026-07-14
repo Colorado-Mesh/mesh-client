@@ -557,7 +557,9 @@
     "dmPathReachableTooltip": "Cesta Reticulum k tomuto cíli je známa. Přímé doručení může stále selhat, pokud je partner offline.",
     "dmPathUnreachable": "Žádná cesta",
     "dmPathUnreachableAria": "Cílová cesta není dosažitelná",
-    "dmPathUnreachableTooltip": "K tomuto cíli zatím nevede žádná cesta Reticulum. Zprávy mohou být doručeny později prostřednictvím nakonfigurovaného propagačního uzlu."
+    "dmPathUnreachableTooltip": "K tomuto cíli zatím nevede žádná cesta Reticulum. Zprávy mohou být doručeny později prostřednictvím nakonfigurovaného propagačního uzlu.",
+    "dmPathRequestPathAria": "Požádat o cestu Reticulum k tomuto cíli",
+    "dmPathProbeAria": "Zjistit dosažitelnost cesty Reticulum pro tento cíl"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -1056,8 +1058,6 @@
       "txQueueDrops": "{{name}}: odchozí pakety byly vyhozeny ({{count}} ve frontě)",
       "txQueueDropsHint": "Obvykle je to způsobeno stále povoleným mrtvým rozhraním TCP. Zakažte nedosažitelné rozbočovače pro zastavení přetečení fronty.",
       "suppressed": "{{count}} podobné řádky protokolu postranního vozíku byly nedávno potlačeny.",
-      "linkDeliveryTimeout": "Přímý odkaz LXMF na {{hash}}… vypršel ({{count}}×)",
-      "linkDeliveryTimeoutHint": "Protějšek může být offline nebo je transport RNS přetížen. DM mohou zůstat na Odesílání, dokud se odkaz nezdaří.",
       "transportSaturated": "Nasycený transport RNS ({{count}} kapek s požadavkem na cestu)",
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "Transportní dotazy RNS pomalé nebo selhávající ({{count}}×)",
@@ -2736,7 +2736,13 @@
     "contactYes": "Ano",
     "contactNo": "Ne",
     "tabFavorites": "Oblíbené",
-    "emptyFavorites": "Zatím žádní oblíbení kolegové — označte kontakt nebo kolegu a připněte je sem."
+    "emptyFavorites": "Zatím žádní oblíbení kolegové — označte kontakt nebo kolegu a připněte je sem.",
+    "lookupPlaceholder": "Vyhledání cílového hashe...",
+    "lookupAria": "Vyhledat peer podle cílového hashe",
+    "lookupSubmit": "Vyhledat",
+    "lookupSubmitAria": "Vyžádat cestu a cílový hash sondy",
+    "lookupInvalid": "Zadejte platný 32místný LXMF cílový hash nebo lxmf:// odkaz.",
+    "lookupHint": "Požádejte o cestu pro hash, který ještě není v seznamu kolegů (například kolega v centru, které sdílíte)."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} kontaktů bylo přesunuto do databáze.",

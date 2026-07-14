@@ -557,7 +557,9 @@
     "dmPathReachableTooltip": "已知到此目的地的 Reticulum 路径。如果对等节点离线，直接投递仍可能失败。",
     "dmPathUnreachable": "无路径",
     "dmPathUnreachableAria": "无法到达目标路径",
-    "dmPathUnreachableTooltip": "尚无到此目的地的 Reticulum 路径。消息仍可能稍后通过已配置的传播节点送达。"
+    "dmPathUnreachableTooltip": "尚无到此目的地的 Reticulum 路径。消息仍可能稍后通过已配置的传播节点送达。",
+    "dmPathRequestPathAria": "请求到此目的地的 Reticulum 路径",
+    "dmPathProbeAria": "探测此目的地的 Reticulum 路径可达性"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -1056,8 +1058,6 @@
       "txQueueDrops": "{{name}} ：出站数据包已丢弃（ {{count}}已排队）",
       "txQueueDropsHint": "通常是由死TCP接口仍处于启用状态引起的。禁用无法访问的集线器以停止队列溢出。",
       "suppressed": "{{count}}最近取消了类似的侧车日志行。",
-      "linkDeliveryTimeout": "直接LXMF链接到{{hash}} …超时（ {{count}} × ）",
-      "linkDeliveryTimeoutHint": "对等节点可能处于离线状态，或者RNS传输过载。DM可以继续发送，直到链接失败。",
       "transportSaturated": "RNS传输饱和（ {{count}}路径请求丢弃）",
       "transportSaturatedHint": "禁用失效接口并重新启动堆栈。减少并发Reticulum流量。",
       "slowTransportQuery": "RNS传输查询缓慢或失败({{count}} ×)",
@@ -2736,7 +2736,13 @@
     "contactYes": "是",
     "contactNo": "否",
     "tabFavorites": "收藏",
-    "emptyFavorites": "还没有收藏的同行—为联系人或同行加星标以在此处固定他们。"
+    "emptyFavorites": "还没有收藏的同行—为联系人或同行加星标以在此处固定他们。",
+    "lookupPlaceholder": "查找目标哈希…",
+    "lookupAria": "按目标哈希查找对等点",
+    "lookupSubmit": "查找",
+    "lookupSubmitAria": "请求路径和探测目标哈希",
+    "lookupInvalid": "输入有效的32个字符的LXMF目标哈希或lxmf://链接。",
+    "lookupHint": "请求尚未在对等体列表中的哈希路径（例如，您共享的集线器上的对等体）。"
   },
   "radioPanel": {
     "offloadedContacts": "已将{{count}}个联系人卸载到数据库。",

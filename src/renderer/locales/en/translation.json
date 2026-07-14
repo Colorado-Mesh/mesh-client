@@ -553,6 +553,8 @@
     "dmPathUnreachable": "No path",
     "dmPathUnreachableAria": "Destination path is not reachable",
     "dmPathUnreachableTooltip": "No Reticulum path to this destination yet. Messages may still deliver later via a configured propagation node.",
+    "dmPathRequestPathAria": "Request Reticulum path to this destination",
+    "dmPathProbeAria": "Probe Reticulum path reachability for this destination",
     "clearDateAria": "Clear date",
     "readOnlyDisconnected": "Not connected — messages are read-only",
     "starredDm": "DM: {{name}}",
@@ -732,8 +734,6 @@
       "tcpConnectFailedHint": "Disable this interface in the list below or confirm the remote hub is running.",
       "txQueueDrops": "{{name}}: outbound packets dropped ({{count}} queued)",
       "txQueueDropsHint": "Usually caused by a dead TCP interface still enabled. Disable unreachable hubs to stop queue overflow.",
-      "linkDeliveryTimeout": "Direct LXMF link to {{hash}}… timed out ({{count}}×)",
-      "linkDeliveryTimeoutHint": "The peer may be offline or the RNS transport is overloaded. DMs may stay on Sending until the link fails.",
       "transportSaturated": "RNS transport saturated ({{count}} path-request drops)",
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "RNS transport queries slow or failing ({{count}}×)",
@@ -2721,6 +2721,12 @@
     "tabFavorites": "Favorites",
     "searchPlaceholder": "Search by name or hash…",
     "searchAria": "Search peers",
+    "lookupPlaceholder": "Lookup destination hash…",
+    "lookupAria": "Lookup peer by destination hash",
+    "lookupSubmit": "Lookup",
+    "lookupSubmitAria": "Request path and probe destination hash",
+    "lookupInvalid": "Enter a valid 32-character LXMF destination hash or lxmf:// link.",
+    "lookupHint": "Request a path for a hash that is not in the peers list yet (for example a peer on a hub you share).",
     "colName": "Name / Hash",
     "colLastSeen": "Last seen",
     "colLastHeard": "Last heard",
@@ -3567,6 +3573,39 @@
     "clearAnnouncesDone": "Announces cleared.",
     "clearAnnouncesFailed": "Failed to clear announces."
   },
+  "reticulumMap": {
+    "title": "Discovery map",
+    "subtitle": "Opt-in RMAP v4 interfaces heard by your stack (local view)",
+    "openGlobalMap": "Global map",
+    "openGlobalMapAria": "Open RMAP v4 global map on rmap.world",
+    "openPublishSettings": "RMAP publish settings",
+    "openPublishSettingsAria": "Open Reticulum Network RMAP publish settings",
+    "refresh": "Refresh",
+    "refreshAria": "Refresh discovery map",
+    "refreshFailed": "Could not refresh discovery map: {{error}}",
+    "countSummary": "{{markers}} on map · {{list}} list only",
+    "listTitle": "Discovered interfaces",
+    "selfMarker": "Your App GPS position",
+    "reachable": "Reachable",
+    "heardOnly": "Heard only (not in path table)",
+    "noCoords": "No GPS",
+    "lastHeard": "Last heard {{time}}",
+    "openNodeAria": "Show {{name}} on map",
+    "filter": {
+      "all": "All",
+      "rnode": "LoRa",
+      "backbone": "Backbone",
+      "i2p": "I2P",
+      "tcp": "TCP",
+      "other": "Other"
+    },
+    "empty": {
+      "stackOff": "Start the Reticulum stack to hear RMAP discovery announces.",
+      "noDiscoveries": "No RMAP discovery interfaces heard yet.",
+      "filterEmpty": "No interfaces match this filter.",
+      "hint": "Nodes appear only when operators enable RMAP publishing. LoRa paths need a TCP hub (for example rmap.world:4242) to relay announces. For worldwide coverage, use the global map link."
+    }
+  },
   "reticulumProfileIcon": {
     "iconName": "Avatar icon",
     "iconNameAria": "Peer avatar icon",
@@ -3651,39 +3690,6 @@
       "invalid": "Invalid reachable on value.",
       "invalidHost": "Invalid hostname for reachable on.",
       "tooLong": "Reachable on value is too long."
-    }
-  },
-  "reticulumMap": {
-    "title": "Discovery map",
-    "subtitle": "Opt-in RMAP v4 interfaces heard by your stack (local view)",
-    "openGlobalMap": "Global map",
-    "openGlobalMapAria": "Open RMAP v4 global map on rmap.world",
-    "openPublishSettings": "RMAP publish settings",
-    "openPublishSettingsAria": "Open Reticulum Network RMAP publish settings",
-    "refresh": "Refresh",
-    "refreshAria": "Refresh discovery map",
-    "refreshFailed": "Could not refresh discovery map: {{error}}",
-    "countSummary": "{{markers}} on map · {{list}} list only",
-    "listTitle": "Discovered interfaces",
-    "selfMarker": "Your App GPS position",
-    "reachable": "Reachable",
-    "heardOnly": "Heard only (not in path table)",
-    "noCoords": "No GPS",
-    "lastHeard": "Last heard {{time}}",
-    "openNodeAria": "Show {{name}} on map",
-    "filter": {
-      "all": "All",
-      "rnode": "LoRa",
-      "backbone": "Backbone",
-      "i2p": "I2P",
-      "tcp": "TCP",
-      "other": "Other"
-    },
-    "empty": {
-      "stackOff": "Start the Reticulum stack to hear RMAP discovery announces.",
-      "noDiscoveries": "No RMAP discovery interfaces heard yet.",
-      "filterEmpty": "No interfaces match this filter.",
-      "hint": "Nodes appear only when operators enable RMAP publishing. LoRa paths need a TCP hub (for example rmap.world:4242) to relay announces. For worldwide coverage, use the global map link."
     }
   },
   "reticulumTopology": {

@@ -557,7 +557,9 @@
     "dmPathReachableTooltip": "Se conoce un camino de Reticulum a este destino. La entrega directa aún puede fallar si el compañero está desconectado.",
     "dmPathUnreachable": "Sin ruta",
     "dmPathUnreachableAria": "No se puede acceder a la ruta de destino",
-    "dmPathUnreachableTooltip": "Aún no hay una ruta de Reticulum a este destino. Los mensajes aún pueden enviarse más tarde a través de un nodo de propagación configurado."
+    "dmPathUnreachableTooltip": "Aún no hay una ruta de Reticulum a este destino. Los mensajes aún pueden enviarse más tarde a través de un nodo de propagación configurado.",
+    "dmPathRequestPathAria": "Solicitar ruta de Reticulum a este destino",
+    "dmPathProbeAria": "Comprobar alcance de la ruta Reticulum para este destino"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -1056,8 +1058,6 @@
       "txQueueDrops": "{{name}}: paquetes salientes descartados ({{count}} en cola)",
       "txQueueDropsHint": "Por lo general, es causada por una interfaz TCP muerta que aún está habilitada. Deshabilite los concentradores inalcanzables para detener el desbordamiento de la cola.",
       "suppressed": "{{count}} líneas de registro de sidecar similares suprimidas recientemente.",
-      "linkDeliveryTimeout": "Enlace directo de LXMF a {{hash}}… agotado ({{count}}×)",
-      "linkDeliveryTimeoutHint": "El par puede estar fuera de línea o el transporte RNS está sobrecargado. Los DM pueden permanecer en Envío hasta que el enlace falle.",
       "transportSaturated": "Transporte RNS saturado (caídas de solicitud de ruta {{count}})",
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "Consultas de transporte RNS lentas o fallidas ({{count}}×)",
@@ -2736,7 +2736,13 @@
     "contactYes": "Sí",
     "contactNo": "No",
     "tabFavorites": "Favoritos",
-    "emptyFavorites": "Todavía no hay compañeros favoritos: marca un contacto o un compañero para fijarlos aquí."
+    "emptyFavorites": "Todavía no hay compañeros favoritos: marca un contacto o un compañero para fijarlos aquí.",
+    "lookupPlaceholder": "Buscar hash de destino...",
+    "lookupAria": "Buscar par por hash de destino",
+    "lookupSubmit": "Buscar",
+    "lookupSubmitAria": "Ruta de solicitud y hash de destino de la sonda",
+    "lookupInvalid": "Introduzca un hash de destino LXMF válido de 32 caracteres o un enlace lxmf://.",
+    "lookupHint": "Solicita una ruta para un hash que aún no está en la lista de compañeros (por ejemplo, un compañero en un centro que compartes)."
   },
   "radioPanel": {
     "offloadedContacts": "Se han descargado {{count}} contactos a la base de datos.",

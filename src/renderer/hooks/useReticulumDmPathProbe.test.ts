@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const probeReticulumPeerMock = vi.fn();
 const updatePeerMock = vi.fn();
+const refreshPeersMock = vi.fn();
 
 vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
   probeReticulumPeer: (...args: unknown[]) => probeReticulumPeerMock(...args),
@@ -14,6 +15,7 @@ vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
       updatePeer: (...args: unknown[]) => updatePeerMock(...args),
     }),
   },
+  refreshReticulumPeersFromSidecar: (...args: unknown[]) => refreshPeersMock(...args),
 }));
 
 import { useReticulumDmPathProbe } from './useReticulumDmPathProbe';
@@ -22,6 +24,8 @@ describe('useReticulumDmPathProbe', () => {
   beforeEach(() => {
     probeReticulumPeerMock.mockReset();
     updatePeerMock.mockReset();
+    refreshPeersMock.mockReset();
+    refreshPeersMock.mockResolvedValue([]);
   });
 
   it('probes when enabled and destination hash is set', async () => {
@@ -40,6 +44,31 @@ describe('useReticulumDmPathProbe', () => {
     expect(result.current.hops).toBe(2);
     expect(probeReticulumPeerMock).toHaveBeenCalledWith('aabbccddeeff00112233445566778899');
     expect(updatePeerMock).toHaveBeenCalledWith('aabbccddeeff00112233445566778899', { hops: 2 });
+    expect(refreshPeersMock).toHaveBeenCalled();
+  });
+
+  it('reprobe re-runs the sidecar probe', async () => {
+    probeReticulumPeerMock
+      .mockResolvedValueOnce({ ok: false })
+      .mockResolvedValueOnce({ ok: true, hops: 1 });
+    const { result } = renderHook(() =>
+      useReticulumDmPathProbe({
+        enabled: true,
+        destinationHash: 'aabbccddeeff00112233445566778899',
+        passiveHops: null,
+      }),
+    );
+    await waitFor(() => {
+      expect(result.current.status).toBe('unreachable');
+    });
+    act(() => {
+      result.current.reprobe();
+    });
+    await waitFor(() => {
+      expect(result.current.status).toBe('reachable');
+    });
+    expect(result.current.hops).toBe(1);
+    expect(probeReticulumPeerMock).toHaveBeenCalledTimes(2);
   });
 
   it('ignores stale probe results after destination switch', async () => {

@@ -11,6 +11,7 @@ import {
   registerReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
+import { parseReticulumDestinationInput } from '@/renderer/lib/reticulum/reticulumDestinationInput';
 import {
   filterPreparedReticulumPeerRows,
   prepareReticulumPeerRows,
@@ -112,6 +113,9 @@ export default function ReticulumPeerListPanel({
   const [activeTab, setActiveTab] = useState<PeerListTab>('peers');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [lookupInput, setLookupInput] = useState('');
+  const [lookupError, setLookupError] = useState<string | null>(null);
+  const [lookupBusy, setLookupBusy] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [refreshing, setRefreshing] = useState(false);
@@ -267,6 +271,41 @@ export default function ReticulumPeerListPanel({
     }
   };
 
+  const lookupByHash = async () => {
+    const parsed = parseReticulumDestinationInput(lookupInput);
+    if (!parsed) {
+      setLookupError(t('peerListPanel.lookupInvalid'));
+      return;
+    }
+    setLookupError(null);
+    setLookupBusy(true);
+    try {
+      if (!(await isReticulumSidecarRunning())) {
+        addToast(t('connectionPanel.reticulumIdentity.startStackFirst'), 'error');
+        return;
+      }
+      const pathResult = await requestReticulumPeerPath(parsed);
+      const pathToast = formatReticulumPeerPathToast(t, pathResult);
+      addToast(pathToast.message, pathToast.variant);
+      const probeResult = await probeReticulumPeer(parsed);
+      const probeToast = formatReticulumPeerProbeToast(t, probeResult);
+      addToast(probeToast.message, probeToast.variant);
+      if (probeResult.ok && probeResult.hops != null) {
+        useReticulumPeerStore.getState().updatePeer(parsed, { hops: probeResult.hops });
+      }
+      await refreshReticulumPeersFromSidecar();
+      const peer = useReticulumPeerStore.getState().peers.get(parsed);
+      if (peer) {
+        setLookupInput('');
+        onPeerClick(parsed);
+      }
+    } catch (e) {
+      console.warn('[ReticulumPeerListPanel] lookup ' + errLikeToLogString(e));
+    } finally {
+      setLookupBusy(false);
+    }
+  };
+
   const formatPeerLastSeen = (peer: ReticulumPeer) => {
     const ms = peerLastSeenMs(peer);
     if (!ms) return '—';
@@ -356,6 +395,49 @@ export default function ReticulumPeerListPanel({
           {t('common.refresh')}
         </button>
       </div>
+
+      {activeTab === 'peers' ? (
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <input
+              type="text"
+              value={lookupInput}
+              onChange={(e) => {
+                setLookupInput(e.target.value);
+                if (lookupError) setLookupError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void lookupByHash();
+                }
+              }}
+              placeholder={t('peerListPanel.lookupPlaceholder')}
+              aria-label={t('peerListPanel.lookupAria')}
+              aria-invalid={lookupError != null}
+              disabled={!isConnected || lookupBusy}
+              className="bg-deep-black min-w-0 flex-1 rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-100 disabled:opacity-40"
+            />
+            <button
+              type="button"
+              disabled={!isConnected || lookupBusy || !lookupInput.trim()}
+              onClick={() => {
+                void lookupByHash();
+              }}
+              className="rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:bg-gray-800 disabled:opacity-40"
+              aria-label={t('peerListPanel.lookupSubmitAria')}
+            >
+              {t('peerListPanel.lookupSubmit')}
+            </button>
+          </div>
+          <p className="text-muted text-[11px]">{t('peerListPanel.lookupHint')}</p>
+          {lookupError ? (
+            <p className="text-xs text-red-400" role="alert">
+              {lookupError}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div
         className="flex flex-wrap items-center gap-2"

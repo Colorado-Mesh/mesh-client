@@ -139,7 +139,10 @@ import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { ReticulumAttachmentLine } from './ReticulumAttachmentLine';
-import { ReticulumDmPathReachabilityBadge } from './ReticulumDmPathReachabilityBadge';
+import {
+  ReticulumDmPathActions,
+  ReticulumDmPathReachabilityBadge,
+} from './ReticulumDmPathReachabilityBadge';
 import { ReticulumMessageStatusBadge } from './ReticulumMessageStatusBadge';
 import { ReticulumPropagationNotice } from './ReticulumPropagationNotice';
 import { useToast } from './Toast';
@@ -2101,17 +2104,30 @@ function ChatPanel({
         activeDmNode != null &&
         (() => {
           const dmNode = nodes.get(activeDmNode);
-          const pathBadge =
-            protocol === 'reticulum' && dmOnlyChat && reticulumDmPathProbe.status !== 'idle' ? (
-              <ReticulumDmPathReachabilityBadge
+          const showPathUi =
+            protocol === 'reticulum' &&
+            dmOnlyChat &&
+            reticulumDmDestinationHash != null &&
+            reticulumDmPathProbe.status !== 'idle';
+          const pathBadge = showPathUi ? (
+            <ReticulumDmPathReachabilityBadge
+              status={reticulumDmPathProbe.status}
+              hops={reticulumDmPathProbe.hops}
+            />
+          ) : null;
+          const pathActions =
+            showPathUi && reticulumDmDestinationHash ? (
+              <ReticulumDmPathActions
+                destinationHash={reticulumDmDestinationHash}
                 status={reticulumDmPathProbe.status}
-                hops={reticulumDmPathProbe.hops}
+                onReprobe={reticulumDmPathProbe.reprobe}
               />
             ) : null;
           if (!pathBadge && !dmNode) return null;
           return (
             <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
               {pathBadge}
+              {pathActions}
               {dmNode ? <DmPeerInfoBar dmNode={dmNode} nowMs={nowMs} t={t} /> : null}
             </div>
           );

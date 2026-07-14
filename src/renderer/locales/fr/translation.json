@@ -557,7 +557,9 @@
     "dmPathReachableTooltip": "Un chemin Reticulum vers cette destination est connu. La livraison directe peut toujours échouer si le pair est hors ligne.",
     "dmPathUnreachable": "Aucun chemin",
     "dmPathUnreachableAria": "Le chemin de destination n'est pas accessible",
-    "dmPathUnreachableTooltip": "Pas encore de chemin de Reticulum vers cette destination. Les messages peuvent toujours être livrés plus tard via un nœud de propagation configuré."
+    "dmPathUnreachableTooltip": "Pas encore de chemin de Reticulum vers cette destination. Les messages peuvent toujours être livrés plus tard via un nœud de propagation configuré.",
+    "dmPathRequestPathAria": "Demander un chemin Reticulum vers cette destination",
+    "dmPathProbeAria": "Vérifier l’accessibilité du chemin Reticulum pour cette destination"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -1056,8 +1058,6 @@
       "txQueueDrops": "{{name}} : paquets sortants abandonnés ({{count}} en file d'attente)",
       "txQueueDropsHint": "Généralement causé par une interface TCP morte toujours activée. Désactivez les concentrateurs inaccessibles pour arrêter le débordement de la file d'attente.",
       "suppressed": "{{count}} lignes de bûches de side-car similaires supprimées récemment.",
-      "linkDeliveryTimeout": "Lien LXMF direct vers {{hash}}… expiré ({{count}}×)",
-      "linkDeliveryTimeoutHint": "L'homologue peut être hors ligne ou le transport RNS est surchargé. Les DM peuvent rester à l'envoi jusqu'à ce que le lien échoue.",
       "transportSaturated": "Transport RNS saturé ({{count}} gouttes de demande de chemin)",
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "Requêtes de transport RNS lentes ou en échec ({{count}}×)",
@@ -2736,7 +2736,13 @@
     "contactYes": "Oui",
     "contactNo": "Non",
     "tabFavorites": "Favoris",
-    "emptyFavorites": "Pas encore de pairs préférés — mettez en vedette un contact ou un pair pour les épingler ici."
+    "emptyFavorites": "Pas encore de pairs préférés — mettez en vedette un contact ou un pair pour les épingler ici.",
+    "lookupPlaceholder": "Rechercher le hachage de destination…",
+    "lookupAria": "Rechercher un homologue par hachage de destination",
+    "lookupSubmit": "Chercher",
+    "lookupSubmitAria": "Chemin de la demande et hachage de la destination de la",
+    "lookupInvalid": "Entrez un hachage de destination LXMF valide de 32 caractères ou un lien lxmf ://.",
+    "lookupHint": "Demandez un chemin pour un hachage qui ne figure pas encore dans la liste des pairs (par exemple, un pair sur un hub que vous partagez)."
   },
   "radioPanel": {
     "offloadedContacts": "Déchargement des contacts {{count}} dans la base de données.",

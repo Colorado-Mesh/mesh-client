@@ -557,7 +557,9 @@
     "dmPathReachableTooltip": "Ein Reticulum-Pfad zu diesem Ziel ist bekannt. Die direkte Zustellung kann immer noch fehlschlagen, wenn der Peer offline ist.",
     "dmPathUnreachable": "Kein Pfad",
     "dmPathUnreachableAria": "Zielpfad ist nicht erreichbar",
-    "dmPathUnreachableTooltip": "Noch kein Reticulum-Pfad zu diesem Ziel. Nachrichten können später noch über einen konfigurierten Ausbreitungsknoten zugestellt werden."
+    "dmPathUnreachableTooltip": "Noch kein Reticulum-Pfad zu diesem Ziel. Nachrichten können später noch über einen konfigurierten Ausbreitungsknoten zugestellt werden.",
+    "dmPathRequestPathAria": "Reticulum-Pfad zu diesem Ziel anfordern",
+    "dmPathProbeAria": "Reticulum-Pfad-Erreichbarkeit für dieses Ziel prüfen"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -1056,8 +1058,6 @@
       "txQueueDrops": "{{name}}: ausgehende Pakete abgelegt ({{count}} in der Warteschlange)",
       "txQueueDropsHint": "In der Regel verursacht durch eine tote TCP-Schnittstelle, die immer noch aktiviert ist. Deaktivieren Sie nicht erreichbare Hubs, um den Warteschlangenüberlauf zu stoppen.",
       "suppressed": "{{count}} ähnliche Sidecar-Log-Linien wurden kürzlich unterdrückt.",
-      "linkDeliveryTimeout": "Direkter LXMF-Link zu {{hash}}… Zeitüberschreitung ({{count}}×)",
-      "linkDeliveryTimeoutHint": "Der Peer kann offline sein oder der RNS-Transport ist überlastet. DMs können beim Senden bleiben, bis der Link ausfällt.",
       "transportSaturated": "RNS-Transport gesättigt ({{count}} Path-Request-Drops)",
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "RNS-Transportabfragen langsam oder fehlgeschlagen ({{count}}×)",
@@ -2736,7 +2736,13 @@
     "contactYes": "Ja",
     "contactNo": "Nr.",
     "tabFavorites": "Favoriten",
-    "emptyFavorites": "Noch keine Lieblingskollegen — markieren Sie einen Kontakt oder Kollegen, um ihn hier anzuheften."
+    "emptyFavorites": "Noch keine Lieblingskollegen — markieren Sie einen Kontakt oder Kollegen, um ihn hier anzuheften.",
+    "lookupPlaceholder": "Nachschlageziel-Hash...",
+    "lookupAria": "Peer nach Ziel-Hash suchen",
+    "lookupSubmit": "Suche",
+    "lookupSubmitAria": "Anforderungspfad und Sondierungsziel-Hash",
+    "lookupInvalid": "Geben Sie einen gültigen 32-stelligen LXMF-Ziel-Hash oder einen lxmf:// -Link ein.",
+    "lookupHint": "Fordern Sie einen Pfad für einen Hash an, der noch nicht in der Peers-Liste enthalten ist (z. B. einen Peer auf einem Hub, den Sie teilen)."
   },
   "radioPanel": {
     "offloadedContacts": "Entladen von {{count}} Kontakten in die Datenbank.",

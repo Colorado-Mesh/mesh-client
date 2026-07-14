@@ -557,7 +557,9 @@
     "dmPathReachableTooltip": "Jalur Reticulum ke tujuan ini diketahui. Pengiriman langsung mungkin masih gagal jika rekan sedang offline.",
     "dmPathUnreachable": "Tidak ada jalur",
     "dmPathUnreachableAria": "Jalur tujuan tidak dapat dijangkau",
-    "dmPathUnreachableTooltip": "Belum ada jalur Reticulum ke tujuan ini. Pesan mungkin masih dikirimkan nanti melalui simpul propagasi yang dikonfigurasi."
+    "dmPathUnreachableTooltip": "Belum ada jalur Reticulum ke tujuan ini. Pesan mungkin masih dikirimkan nanti melalui simpul propagasi yang dikonfigurasi.",
+    "dmPathRequestPathAria": "Minta jalur Reticulum ke tujuan ini",
+    "dmPathProbeAria": "Periksa keterjangkauan jalur Reticulum untuk tujuan ini"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -1056,8 +1058,6 @@
       "txQueueDrops": "{{name}}: paket keluar dijatuhkan (antrean {{count}})",
       "txQueueDropsHint": "Biasanya disebabkan oleh antarmuka TCP mati yang masih diaktifkan. Nonaktifkan hub yang tidak dapat dijangkau untuk menghentikan overflow antrean.",
       "suppressed": "{{count}} garis log sespan serupa baru - baru ini ditekan.",
-      "linkDeliveryTimeout": "Tautan LXMF langsung ke {{hash}}… waktu habis ({{count}}×)",
-      "linkDeliveryTimeoutHint": "Rekan mungkin offline atau transportasi RNS kelebihan beban. DM mungkin tetap aktif Mengirim sampai tautan gagal.",
       "transportSaturated": "Transportasi RNS jenuh ({{count}} permintaan jalur turun)",
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "Kueri transportasi RNS lambat atau gagal ({{count}}×)",
@@ -2736,7 +2736,13 @@
     "contactYes": "Ya",
     "contactNo": "Tidak",
     "tabFavorites": "Favorit",
-    "emptyFavorites": "Belum ada rekan favorit — beri bintang pada kontak atau rekan untuk menyematkannya di sini."
+    "emptyFavorites": "Belum ada rekan favorit — beri bintang pada kontak atau rekan untuk menyematkannya di sini.",
+    "lookupPlaceholder": "Cari hash tujuan…",
+    "lookupAria": "Cari rekan sejawat berdasarkan hash tujuan",
+    "lookupSubmit": "Pencarian",
+    "lookupSubmitAria": "Jalur permintaan dan hash tujuan probe",
+    "lookupInvalid": "Masukkan hash tujuan LXMF 32 karakter yang valid atau tautan lxmf ://.",
+    "lookupHint": "Minta jalur untuk hash yang belum ada dalam daftar rekan (misalnya rekan di hub yang Anda bagikan)."
   },
   "radioPanel": {
     "offloadedContacts": "Membongkar {{count}} kontak ke database.",

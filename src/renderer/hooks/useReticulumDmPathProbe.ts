@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect -- probe lifecycle seeds status then settles from async sidecar result */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   type ReticulumDmPathStatus,
@@ -7,7 +7,10 @@ import {
   seedReticulumDmPathStatus,
 } from '@/renderer/lib/reticulum/reticulumDmPathReachability';
 import { probeReticulumPeer } from '@/renderer/lib/reticulum/reticulumSidecarReads';
-import { useReticulumPeerStore } from '@/renderer/stores/reticulumPeerStore';
+import {
+  refreshReticulumPeersFromSidecar,
+  useReticulumPeerStore,
+} from '@/renderer/stores/reticulumPeerStore';
 
 export interface UseReticulumDmPathProbeArgs {
   /** When false, resets to idle and does not probe. */
@@ -20,6 +23,8 @@ export interface UseReticulumDmPathProbeArgs {
 export interface UseReticulumDmPathProbeResult {
   status: ReticulumDmPathStatus;
   hops: number | null;
+  /** Re-run probe for the current destination (no-op when disabled / no hash). */
+  reprobe: () => void;
 }
 
 /**
@@ -33,6 +38,12 @@ export function useReticulumDmPathProbe({
 }: UseReticulumDmPathProbeArgs): UseReticulumDmPathProbeResult {
   const [status, setStatus] = useState<ReticulumDmPathStatus>('idle');
   const [hops, setHops] = useState<number | null>(null);
+  const [probeNonce, setProbeNonce] = useState(0);
+
+  const reprobe = useCallback(() => {
+    if (!enabled || !destinationHash) return;
+    setProbeNonce((n) => n + 1);
+  }, [enabled, destinationHash]);
 
   useEffect(() => {
     if (!enabled || !destinationHash) {
@@ -52,8 +63,11 @@ export function useReticulumDmPathProbe({
       setStatus(reticulumDmPathStatusFromProbe(result.ok));
       const nextHops = result.hops ?? null;
       setHops(nextHops);
-      if (result.ok && nextHops != null) {
-        useReticulumPeerStore.getState().updatePeer(destinationHash, { hops: nextHops });
+      if (result.ok) {
+        if (nextHops != null) {
+          useReticulumPeerStore.getState().updatePeer(destinationHash, { hops: nextHops });
+        }
+        void refreshReticulumPeersFromSidecar();
       }
     })();
 
@@ -62,7 +76,7 @@ export function useReticulumDmPathProbe({
     };
     // Seed from passive hops at probe start only; later peer-store hop updates must not re-probe.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
-  }, [enabled, destinationHash]);
+  }, [enabled, destinationHash, probeNonce]);
 
-  return { status, hops };
+  return { status, hops, reprobe };
 }

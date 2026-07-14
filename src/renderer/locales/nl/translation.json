@@ -557,7 +557,9 @@
     "dmPathReachableTooltip": "Er is een Reticulum-pad naar deze bestemming bekend. Directe levering kan nog steeds mislukken als de peer offline is.",
     "dmPathUnreachable": "Geen pad",
     "dmPathUnreachableAria": "Bestemmingspad is niet bereikbaar",
-    "dmPathUnreachableTooltip": "Nog geen Reticulum-pad naar deze bestemming. Berichten kunnen later nog steeds worden afgeleverd via een geconfigureerd propagatieknooppunt."
+    "dmPathUnreachableTooltip": "Nog geen Reticulum-pad naar deze bestemming. Berichten kunnen later nog steeds worden afgeleverd via een geconfigureerd propagatieknooppunt.",
+    "dmPathRequestPathAria": "Reticulum-pad naar deze bestemming aanvragen",
+    "dmPathProbeAria": "Reticulum-padbereikbaarheid voor deze bestemming controleren"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -1056,8 +1058,6 @@
       "txQueueDrops": "{{name}}: uitgaande pakketten verwijderd ({{count}} in de wachtrij)",
       "txQueueDropsHint": "Meestal veroorzaakt door een dode TCP-interface die nog steeds is ingeschakeld. Schakel onbereikbare hubs uit om wachtrijoverloop te stoppen.",
       "suppressed": "{{count}} vergelijkbare zijspanlogregels die onlangs zijn onderdrukt.",
-      "linkDeliveryTimeout": "Directe LXMF-link naar {{hash}}… time-out ({{count}}×)",
-      "linkDeliveryTimeoutHint": "De peer kan offline zijn of het RNS-transport is overbelast. DM's kunnen op Verzenden blijven totdat de link mislukt.",
       "transportSaturated": "RNS-transport verzadigd ({{count}} pad-aanvraagdruppels)",
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "RNS-transportvragen traag of mislukt ({{count}}×)",
@@ -2736,7 +2736,13 @@
     "contactYes": "Ja",
     "contactNo": "Nee",
     "tabFavorites": "Favorieten",
-    "emptyFavorites": "Nog geen favoriete collega's — geef een contactpersoon of collega een ster om ze hier vast te pinnen."
+    "emptyFavorites": "Nog geen favoriete collega's — geef een contactpersoon of collega een ster om ze hier vast te pinnen.",
+    "lookupPlaceholder": "Bestemmingshash opzoeken...",
+    "lookupAria": "Peer opzoeken op bestemmingshash",
+    "lookupSubmit": "Lookup",
+    "lookupSubmitAria": "Aanvraag pad en sonde bestemmings hash",
+    "lookupInvalid": "Voer een geldige LXMF-bestemmingshash van 32 tekens of een lxmf:// -link in.",
+    "lookupHint": "Vraag een pad aan voor een hash die nog niet in de lijst met peers staat (bijvoorbeeld een peer op een hub die je deelt)."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} contacten naar de database overgebracht.",

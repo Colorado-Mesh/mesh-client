@@ -989,7 +989,7 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 ### Reticulum DM stuck on Sending (MeshChatX / shared instance)
 
-**Symptoms**: Outbound Reticulum DMs stay **Sending**; Device log shows `link delivery timed out` with `link establishment timeout`, and many `failed to queue path request for LXMF delivery` lines. Connection tab may show **sidecar interface issues** (TX queue drops, transport saturated). Sniffer may show a **Link Request** that never completes.
+**Symptoms**: Outbound Reticulum DMs stay **Sending**; Device log shows `link delivery timed out` with `link establishment timeout`, and many `failed to queue path request for LXMF delivery` lines. **Diagnostics** may list per-peer **Direct LXMF link … timed out** rows (warning). Connection may show **sidecar interface issues** only for stack health (TX queue drops, transport saturated, TCP hub failures) — not single-peer link timeouts. Sniffer may show a **Link Request** that never completes.
 
 **Cause**: Usually **RNS transport overload**, not a missing mesh-client chat handshake. Common triggers:
 

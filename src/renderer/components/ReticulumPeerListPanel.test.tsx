@@ -400,6 +400,50 @@ describe('ReticulumPeerListPanel', () => {
     expect(await screen.findByText('peerDetailModal.probeHops:2')).toBeInTheDocument();
   });
 
+  it('looks up a destination hash with path and probe', async () => {
+    const user = userEvent.setup();
+    const onPeerClick = vi.fn();
+    const hash = '368f994c056de0d8882855eb0d627497';
+    reticulumSidecarMocks.requestReticulumPeerPath.mockResolvedValue({ ok: true });
+    reticulumSidecarMocks.probeReticulumPeer.mockResolvedValue({ ok: true, hops: 3 });
+    reticulumSidecarMocks.refreshReticulumPeersFromSidecar.mockImplementation(() => {
+      useReticulumPeerStore
+        .getState()
+        .replacePeers([{ destination_hash: hash, display_name: 'Looked Up', hops: 3 }]);
+      return Promise.resolve([]);
+    });
+
+    render(
+      <ToastProvider>
+        <ReticulumPeerListPanel isConnected onPeerClick={onPeerClick} onSendMessage={vi.fn()} />
+      </ToastProvider>,
+    );
+
+    await user.type(screen.getByLabelText('peerListPanel.lookupAria'), hash);
+    await user.click(screen.getByRole('button', { name: 'peerListPanel.lookupSubmitAria' }));
+
+    await waitFor(() => {
+      expect(reticulumSidecarMocks.requestReticulumPeerPath).toHaveBeenCalledWith(hash);
+    });
+    expect(reticulumSidecarMocks.probeReticulumPeer).toHaveBeenCalledWith(hash);
+    await waitFor(() => {
+      expect(onPeerClick).toHaveBeenCalledWith(hash);
+    });
+  });
+
+  it('shows lookup validation error for invalid hash', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ReticulumPeerListPanel isConnected onPeerClick={vi.fn()} onSendMessage={vi.fn()} />
+      </ToastProvider>,
+    );
+    await user.type(screen.getByLabelText('peerListPanel.lookupAria'), 'not-a-hash');
+    await user.click(screen.getByRole('button', { name: 'peerListPanel.lookupSubmitAria' }));
+    expect(await screen.findByText('peerListPanel.lookupInvalid')).toBeInTheDocument();
+    expect(reticulumSidecarMocks.requestReticulumPeerPath).not.toHaveBeenCalled();
+  });
+
   it('has no serious axe violations', async () => {
     const { container } = render(
       <ToastProvider>

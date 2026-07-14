@@ -557,7 +557,9 @@
     "dmPathReachableTooltip": "Bu hedefe bir Reticulum yolu bilinmektedir. Akran çevrimdışıysa doğrudan teslimat yine de başarısız olabilir.",
     "dmPathUnreachable": "Yol yok",
     "dmPathUnreachableAria": "Varış noktasına ulaşılamıyor",
-    "dmPathUnreachableTooltip": "Bu hedefe henüz Reticulum yolu yok. Mesajlar daha sonra yapılandırılmış bir yayılma düğümü aracılığıyla iletilebilir."
+    "dmPathUnreachableTooltip": "Bu hedefe henüz Reticulum yolu yok. Mesajlar daha sonra yapılandırılmış bir yayılma düğümü aracılığıyla iletilebilir.",
+    "dmPathRequestPathAria": "Bu hedefe Reticulum yolu iste",
+    "dmPathProbeAria": "Bu hedef için Reticulum yolu erişilebilirliğini yokla"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -1056,8 +1058,6 @@
       "txQueueDrops": "{{name}}: giden paketler düştü ({{count}} kuyruğa alındı)",
       "txQueueDropsHint": "Genellikle ölü bir TCP arayüzü hala etkindir. Kuyruk taşmasını durdurmak için erişilemeyen hub'ları devre dışı bırakın.",
       "suppressed": "{{count}} benzer sepet günlük satırları yakın zamanda bastırıldı.",
-      "linkDeliveryTimeout": "{{hash}} 'a doğrudan LXMF bağlantısı… zaman aşımına uğradı ({{count}}×)",
-      "linkDeliveryTimeoutHint": "Eş çevrimdışı olabilir veya RNS aktarımı aşırı yüklenmiş olabilir. DM'ler, bağlantı başarısız olana kadar Gönderme işleminde kalabilir.",
       "transportSaturated": "RNS transport saturated ({{count}} path - request drops)",
       "transportSaturatedHint": "Ölü arayüzleri devre dışı bırakın ve yığını yeniden başlatın. Eşzamanlı Reticulum trafiğini azaltın.",
       "slowTransportQuery": "RNS taşıma sorguları yavaş veya başarısız ({{count}}×)",
@@ -2736,7 +2736,13 @@
     "contactYes": "Evet",
     "contactNo": "Hayır",
     "tabFavorites": "Favoriler",
-    "emptyFavorites": "Henüz favori akranınız yok — burada sabitlemek için bir kişiye veya akranınıza yıldız verin."
+    "emptyFavorites": "Henüz favori akranınız yok — burada sabitlemek için bir kişiye veya akranınıza yıldız verin.",
+    "lookupPlaceholder": "Hedef hash'ini ara…",
+    "lookupAria": "Hedef hash'ine göre eş ara",
+    "lookupSubmit": "Arama",
+    "lookupSubmitAria": "İstek yolu ve prob hedef karması",
+    "lookupInvalid": "Geçerli bir 32 karakterlik LXMF hedef karması veya lxmf :// bağlantısı girin.",
+    "lookupHint": "Henüz eşler listesinde olmayan bir karma için bir yol isteyin (örneğin, paylaştığınız bir merkezdeki bir eş)."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} kişi veritabanına aktarıldı.",

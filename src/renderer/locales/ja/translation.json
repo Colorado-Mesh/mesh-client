@@ -557,7 +557,9 @@
     "dmPathReachableTooltip": "この宛先への Reticulum パスが判明しています。ピアがオフラインの場合、直接配信は失敗することがあります。",
     "dmPathUnreachable": "パスがありません",
     "dmPathUnreachableAria": "宛先パスに到達できません",
-    "dmPathUnreachableTooltip": "この宛先への Reticulum パスはまだありません。設定済みの伝播ノード経由で後から配信されることがあります。"
+    "dmPathUnreachableTooltip": "この宛先への Reticulum パスはまだありません。設定済みの伝播ノード経由で後から配信されることがあります。",
+    "dmPathRequestPathAria": "この宛先への Reticulum パスをリクエスト",
+    "dmPathProbeAria": "この宛先の Reticulum パス到達可能性をプローブ"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -1056,8 +1058,6 @@
       "txQueueDrops": "{{name}} ：送信パケットがドロップされました（ {{count}}がキューに入れられました）",
       "txQueueDropsHint": "通常は、デッドTCPインターフェイスがまだ有効になっていることが原因です。キューオーバーフローを停止するには、到達不能なハブを無効にします。",
       "suppressed": "{{count}}類似のサイドカーログ行は最近抑制されました。",
-      "linkDeliveryTimeout": "{{hash}} …への直接LXMFリンクがタイムアウトしました（ {{count}} × ）",
-      "linkDeliveryTimeoutHint": "ピアはオフラインであってもよく、またはRNSトランスポートが過負荷であってもよい。DMは、リンクが失敗するまで送信を続けることができます。",
       "transportSaturated": "RNSトランスポート飽和（ {{count}}パス要求ドロップ）",
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "RNSトランスポートクエリが遅いか失敗しました({{count}} ×)",
@@ -2736,7 +2736,13 @@
     "contactYes": "あり",
     "contactNo": "なし",
     "tabFavorites": "お気に入り",
-    "emptyFavorites": "お気に入りのピアはまだありません。連絡先またはピアに星を付けて、ここにピン留めします。"
+    "emptyFavorites": "お気に入りのピアはまだありません。連絡先またはピアに星を付けて、ここにピン留めします。",
+    "lookupPlaceholder": "宛先ハッシュを検索…",
+    "lookupAria": "宛先ハッシュによるルックアップピア",
+    "lookupSubmit": "ルックアップ",
+    "lookupSubmitAria": "要求パスとプローブの宛先ハッシュ",
+    "lookupInvalid": "有効な32文字のLXMF宛先ハッシュまたはlxmf ://リンクを入力します。",
+    "lookupHint": "まだピアリストにないハッシュのパスを要求します（たとえば、共有するハブ上のピア）。"
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} 連絡先をデータベースにオフロードしました。",

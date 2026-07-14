@@ -557,7 +557,9 @@
     "dmPathReachableTooltip": "È noto un percorso Reticulum verso questa destinazione. La consegna diretta potrebbe comunque non riuscire se il peer è offline.",
     "dmPathUnreachable": "Nessun percorso",
     "dmPathUnreachableAria": "Il percorso di destinazione non è raggiungibile",
-    "dmPathUnreachableTooltip": "Ancora nessun percorso Reticulum per questa destinazione. I messaggi possono ancora essere consegnati in seguito tramite un nodo di propagazione configurato."
+    "dmPathUnreachableTooltip": "Ancora nessun percorso Reticulum per questa destinazione. I messaggi possono ancora essere consegnati in seguito tramite un nodo di propagazione configurato.",
+    "dmPathRequestPathAria": "Richiedi percorso Reticulum per questa destinazione",
+    "dmPathProbeAria": "Verifica raggiungibilità del percorso Reticulum per questa destinazione"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -1056,8 +1058,6 @@
       "txQueueDrops": "{{name}}: pacchetti in uscita scartati ({{count}} in coda)",
       "txQueueDropsHint": "Di solito causato da un'interfaccia TCP morta ancora abilitata. Disabilita gli hub non raggiungibili per interrompere l'overflow della coda.",
       "suppressed": "{{count}} righe di registro sidecar simili soppresse di recente.",
-      "linkDeliveryTimeout": "Collegamento LXMF diretto a {{hash}}… scaduto ({{count}}×)",
-      "linkDeliveryTimeoutHint": "Il peer potrebbe essere offline o il trasporto RNS è sovraccarico. I DM possono rimanere su Invio fino a quando il collegamento non si interrompe.",
       "transportSaturated": "Trasporto RNS saturo ({{count}} gocce path-request)",
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "Query di trasporto RNS lente o non riuscite ({{count}}×)",
@@ -2736,7 +2736,13 @@
     "contactYes": "Si",
     "contactNo": "No",
     "tabFavorites": "Preferiti",
-    "emptyFavorites": "Ancora nessun collega preferito: aggiungi un contatto o un collega per aggiungerli qui."
+    "emptyFavorites": "Ancora nessun collega preferito: aggiungi un contatto o un collega per aggiungerli qui.",
+    "lookupPlaceholder": "Cerca hash di destinazione...",
+    "lookupAria": "Ricerca peer per hash di destinazione",
+    "lookupSubmit": "Ricerca",
+    "lookupSubmitAria": "Percorso della richiesta e hash di destinazione della sonda",
+    "lookupInvalid": "Inserisci un hash di destinazione LXMF di 32 caratteri valido o un link lxmf://.",
+    "lookupHint": "Richiedi un percorso per un hash che non è ancora nell'elenco dei peer (ad esempio un peer su un hub che condividi)."
   },
   "radioPanel": {
     "offloadedContacts": "Contatti {{count}} scaricati nel database.",
