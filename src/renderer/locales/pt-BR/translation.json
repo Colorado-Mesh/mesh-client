@@ -970,17 +970,19 @@
       "rmapToggleFailed": "Falha na alteração do RMAP para {{name}}: {{error}}",
       "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
       "mode": "Modo",
-      "modeAria": "Modo de interface do retículo",
-      "modeHint": "Controla como essa interface se junta à rede mais ampla (busca de caminho, anúncio de propagação). Os hubs TCP geralmente usam Boundary; os RNodes geralmente usam o ponto de acesso.",
-      "modeDefault": "Padrão (completo)",
+      "modeAria": "Modo de interface Reticulum",
+      "modeHint": "Controla como essa interface se junta à rede mais ampla (busca de caminho, anúncio de propagação). Ao adicionar, o padrão por tipo é Boundary para hubs TCP/UDP/I2P e Access point para RNodes. Ao editar, Default (clear) omite o modo (RNS Full).",
       "modeOption": {
-        "full": "Cheio",
+        "full": "Full",
         "point_to_point": "Ponto a ponto",
         "access_point": "Ponto de acesso",
         "roaming": "Roaming",
-        "boundary": "Limite geografico",
-        "gateway": "Portal"
-      }
+        "boundary": "Boundary",
+        "gateway": "Gateway"
+      },
+      "modeDefaultAdd": "Padrão do tipo",
+      "modeDefaultEdit": "Padrão (limpar)",
+      "invalidMode": "Modo de interface inválido."
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -1080,7 +1080,7 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 **Checks**:
 
 1. **Stack running**: start the sidecar from **Connection → Start stack** before editing interfaces. Identity routes on the Network tab also require a live sidecar (`reticulum:proxyGet` / `proxyPut` / `proxyDelete`).
-2. **Edit validation**: name is required; TCP needs a reachable host and valid port; RNode needs a serial port path when adding (edit can update preset/callsign without re-plugging). **I2P** peers must be comma-separated `.b32.i2p` hostnames (max **512** characters); inline errors: `i2pPeersRequired`, `i2pPeersInvalid`, `i2pPeersTooLong`.
+2. **Edit validation**: name is required; TCP needs a reachable host and valid port; RNode needs a serial port path when adding (edit can update preset/callsign without re-plugging). **I2P** peers must be comma-separated `.b32.i2p` hostnames (max **512** characters); inline errors: `i2pPeersRequired`, `i2pPeersInvalid`, `i2pPeersTooLong`. Invalid **mode** values are rejected by the sidecar (`invalid interface mode: …`); use the Connection mode select (or clear to omit). For TCP hub reachability / path seeking, prefer **Boundary** — **Add default network hubs** sets/repairs missing mode to `boundary` (does not overwrite a valid user-chosen mode).
 3. **Delete**: confirm in the modal; if the interface id changed after config import, refresh by stopping and restarting the stack.
 4. **Logs**: filter Device logs for `[ReticulumIPC]` or `[ReticulumSidecar]`; sidecar returns `{ ok: false, error }` for parse or unknown-interface failures.
 

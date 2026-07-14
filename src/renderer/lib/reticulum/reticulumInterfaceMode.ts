@@ -1,4 +1,8 @@
-/** Canonical rnsd interface modes (Reticulum / rsReticulum `InterfaceMode`). */
+/**
+ * Canonical rnsd interface modes (Reticulum / rsReticulum `InterfaceMode`).
+ * Keep in sync with `INTERFACE_MODES` / `normalize_interface_mode` /
+ * `default_mode_for_iface_type` in `reticulum-sidecar/src/stack/config.rs`.
+ */
 export const RETICULUM_INTERFACE_MODES = [
   'full',
   'point_to_point',

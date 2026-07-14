@@ -126,7 +126,8 @@ function interfaceFullyMatchesDefaultHubPreset(
   iface: Pick<ReticulumInterfaceRow, 'type' | 'name' | 'host' | 'port' | 'mode'>,
   preset: ReticulumDefaultHubPreset,
 ): boolean {
-  const modeOk = normalizeReticulumInterfaceMode(iface.mode) === RETICULUM_HUB_INTERFACE_MODE;
+  // Any valid canonical mode counts; missing/invalid mode needs repair → boundary.
+  const modeOk = normalizeReticulumInterfaceMode(iface.mode) != null;
   return reticulumInterfaceMatchesHubPreset(iface, preset) && iface.name === preset.name && modeOk;
 }
 
@@ -148,7 +149,8 @@ export function buildDefaultHubRepairPatch(
   if (preset.type === 'tcp' && preset.port != null && iface.port !== preset.port) {
     patch.port = preset.port;
   }
-  if (normalizeReticulumInterfaceMode(iface.mode) !== RETICULUM_HUB_INTERFACE_MODE) {
+  // Only fill missing/invalid mode; do not overwrite a user-chosen valid mode.
+  if (normalizeReticulumInterfaceMode(iface.mode) == null) {
     patch.mode = RETICULUM_HUB_INTERFACE_MODE;
   }
   return Object.keys(patch).length > 0 ? patch : null;

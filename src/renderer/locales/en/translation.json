@@ -846,8 +846,10 @@
       "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
       "mode": "Mode",
       "modeAria": "Interface mode",
-      "modeHint": "Controls how this interface joins the wider network (path seeking, announce propagation). TCP hubs usually use Boundary; RNodes usually use Access point.",
-      "modeDefault": "Default (full)",
+      "modeHint": "Controls how this interface joins the wider network (path seeking, announce propagation). On add, Type default is Boundary for TCP/UDP/I2P hubs and Access point for RNodes. On edit, Default (clear) omits mode (RNS Full).",
+      "modeDefaultAdd": "Type default",
+      "modeDefaultEdit": "Default (clear)",
+      "invalidMode": "Invalid interface mode.",
       "modeOption": {
         "full": "Full",
         "point_to_point": "Point to point",

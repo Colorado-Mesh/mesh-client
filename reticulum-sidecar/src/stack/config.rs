@@ -25,6 +25,9 @@ const SUPPORTED_TYPES: &[&str] = &[
 const SERIAL_PORT_IFACE_TYPES: &[&str] = &["rnode", "rnode_multi", "kiss"];
 
 /// Canonical rnsd interface modes (see Reticulum / rsReticulum `InterfaceMode`).
+/// Keep in sync with `RETICULUM_INTERFACE_MODES` /
+/// `normalizeReticulumInterfaceMode` / `defaultModeForIfaceType` in
+/// `src/renderer/lib/reticulum/reticulumInterfaceMode.ts`.
 const INTERFACE_MODES: &[&str] = &[
     "full",
     "point_to_point",
@@ -349,9 +352,24 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         coding_rate: block.get("codingrate").and_then(|v| v.parse().ok()),
         callsign: block.get("callsign").map(str::to_string),
         id_interval: block.get("id_interval").and_then(|v| v.parse().ok()),
-        mode: block
-            .get("mode")
-            .and_then(|m| normalize_interface_mode(m).ok().flatten()),
+        mode: block.get("mode").and_then(|m| match normalize_interface_mode(m) {
+            Ok(normalized) => normalized,
+            Err(_) => {
+                // Preserve unrecognized third-party/typo modes across RMW
+                // (enable/disable/rename) so we do not silently strip them.
+                // API writes that set `mode` still validate via resolve_interface_mode.
+                let preserved = m.trim();
+                if preserved.is_empty() {
+                    None
+                } else {
+                    tracing::warn!(
+                        mode = %preserved,
+                        "preserving unrecognized interface mode from config"
+                    );
+                    Some(preserved.to_string())
+                }
+            }
+        }),
         seed_addresses,
         discoverable: block.get_bool("discoverable"),
         latitude: block.get("latitude").and_then(|v| v.parse().ok()),
@@ -2089,5 +2107,106 @@ mode = gw
 "#;
         let rows = interfaces_from_parsed(&parse_config(content).unwrap());
         assert_eq!(rows[0].mode.as_deref(), Some("gateway"));
+    }
+
+    #[test]
+    fn update_empty_mode_clears_mode() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"[reticulum]
+share_instance = Yes
+
+[logging]
+loglevel = 4
+
+[interfaces]
+[[Ratspeak]]
+type = TCPClientInterface
+interface_enabled = Yes
+target_host = rns.ratspeak.org
+target_port = 4242
+mode = boundary
+"#,
+        )
+        .unwrap();
+
+        let updated = update_interface_in_config(
+            &dir,
+            "ratspeak",
+            &UpdateInterfacePatch {
+                mode: Some("".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(updated.mode, None);
+        let disk = read_config(&dir).unwrap();
+        assert!(!disk.contains("mode ="));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn add_tcp_explicit_mode_overrides_default() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(&dir, SAMPLE).unwrap();
+
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "tcp".into(),
+                name: Some("Gateway Hub".into()),
+                host: Some("example.org".into()),
+                port: Some(4242),
+                mode: Some("gateway".into()),
+                enabled: Some(false),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(row.mode.as_deref(), Some("gateway"));
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("mode = gateway"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn unrecognized_ini_mode_preserved_on_rename() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"[reticulum]
+share_instance = Yes
+
+[logging]
+loglevel = 4
+
+[interfaces]
+[[Custom]]
+type = TCPClientInterface
+interface_enabled = Yes
+target_host = example.org
+target_port = 4242
+mode = Boundry
+"#,
+        )
+        .unwrap();
+
+        let updated = update_interface_in_config(
+            &dir,
+            "custom",
+            &UpdateInterfacePatch {
+                name: Some("Custom Hub".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(updated.mode.as_deref(), Some("Boundry"));
+        let disk = read_config(&dir).unwrap();
+        assert!(disk.contains("mode = Boundry"));
+        let _ = fs::remove_dir_all(&dir);
     }
 }

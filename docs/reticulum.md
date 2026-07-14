@@ -67,7 +67,7 @@ The **Log panel** (right rail, toggled from **App → Log panel**) is shared acr
 
 ### Default hub presets
 
-**Connection → Interfaces** offers **Add default network hubs** to sync official bootstrap entries from [`reticulumDefaultHubPresets.ts`](../src/renderer/lib/reticulum/reticulumDefaultHubPresets.ts). New presets are added **disabled** so you can enable them after review. On repeat clicks the button **skips** rows that already match the preset, **repairs** rows that match the same TCP host+port or I2P peer but have wrong name/type/host formatting (does not change `enabled`), and **adds** any missing presets:
+**Connection → Interfaces** offers **Add default network hubs** to sync official bootstrap entries from [`reticulumDefaultHubPresets.ts`](../src/renderer/lib/reticulum/reticulumDefaultHubPresets.ts). New presets are added **disabled** so you can enable them after review (add always sets `mode=boundary`). On repeat clicks the button **skips** rows that already match the preset (including any valid rnsd `mode`), **repairs** rows that match the same TCP host+port or I2P peer but have wrong name/type/host formatting or a missing/invalid `mode` (missing/invalid → `boundary`; does not overwrite a valid non-boundary mode or change `enabled`), and **adds** any missing presets:
 
 | Preset                        | Type | Host                                                           |
 | ----------------------------- | ---- | -------------------------------------------------------------- |
@@ -150,14 +150,14 @@ Config lives under `userData/reticulum/config/` (rnsd INI). The Connection tab s
 
 **Fields by type**
 
-- **All:** display name; optional rnsd **mode** (`full`, `gateway`, `access_point`, `roaming`, `boundary`, `point_to_point` — shorthands `gw` / `ap` accepted). Defaults when omitted on add: TCP/UDP/I2P → `boundary`; RNode → `access_point`; Auto left unset (RNS default `full`). Edit any mode after create.
+- **All:** display name; optional rnsd **mode** (`full`, `gateway`, `access_point`, `roaming`, `boundary`, `point_to_point` — shorthands `gw` / `ap` accepted). Defaults when omitted on add: TCP/UDP/I2P → `boundary`; RNode / RNode Multi → `access_point`; **Auto, BLE Peer, KISS, Pipe** leave mode unset (RNS default `full`). Hubs usually use **Boundary**; RNodes usually use **Access point**. On edit, clearing mode omits it from config (RNS `full`).
 - **TCP client:** host, port (mesh hub — default port **4242**); IPv6 literals use brackets: `[2001:db8::1]:4242`
 - **I2P:** comma-separated peer hostnames (`.b32.i2p` addresses, e.g. `{52-base32-chars}.b32.i2p`); max **512** characters total; validated in UI and sidecar before write
 - **RNode:** USB serial, **Bluetooth** (`ble://…`), or **Wi‑Fi** (`tcp://host[:7633]`, default **7633**), LoRa preset, callsign
 - **BLE Peer mesh:** optional seed peer addresses
 - **Auto:** name only (link-local discovery)
 
-Inbound “other apps / nodes connect to me” on this machine uses **Share instance** (runtime `SharedInstanceServer`), not a separate TCP server interface type.
+Inbound “other apps / nodes connect to me” on this machine uses **Share instance** under **Network → stack settings** (runtime `SharedInstanceServer`), not a separate TCP server interface type. See also [diagnostics.md](diagnostics.md) SharedInstance notes.
 
 **Pick device** opens a modal for serial or BLE selection:
 

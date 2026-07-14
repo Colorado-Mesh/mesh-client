@@ -970,17 +970,19 @@
       "rmapToggleFailed": "Échec de la modification du RMAP pour {{name}} : {{error}}",
       "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
       "mode": "Mode",
-      "modeAria": "Mode d'interface du réticulum",
-      "modeHint": "Contrôle comment cette interface rejoint le réseau plus large (recherche de chemin, annonce de propagation). Les concentrateurs TCP utilisent généralement Boundary ; les RNodes utilisent généralement un point d'accès.",
-      "modeDefault": "Par défaut (complet)",
+      "modeAria": "Mode d'interface Reticulum",
+      "modeHint": "Contrôle comment cette interface rejoint le réseau plus large (recherche de chemin, annonce de propagation). À l'ajout, la valeur par type est Boundary pour les hubs TCP/UDP/I2P et Access point pour les RNodes. À l'édition, Default (clear) omet le mode (RNS Full).",
       "modeOption": {
-        "full": "Complet",
+        "full": "Full",
         "point_to_point": "Point à point",
-        "access_point": "Point d’accès ( Access point )",
+        "access_point": "Point d'accès",
         "roaming": "Itinérance",
-        "boundary": "Limite",
+        "boundary": "Boundary",
         "gateway": "Passerelle"
-      }
+      },
+      "modeDefaultAdd": "Valeur par type",
+      "modeDefaultEdit": "Par défaut (effacer)",
+      "invalidMode": "Mode d'interface non valide."
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -37,6 +37,7 @@ export function reticulumInterfaceChangeRequiresStackRestart(
     'txpower' in patch ||
     'host' in patch ||
     'port' in patch ||
-    'command' in patch
+    'command' in patch ||
+    'mode' in patch
   );
 }

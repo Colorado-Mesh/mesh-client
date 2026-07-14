@@ -970,17 +970,19 @@
       "rmapToggleFailed": "Perubahan RMAP gagal untuk {{name}}: {{error}}",
       "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
       "mode": "Mode",
-      "modeAria": "Mode antarmuka retikulum",
-      "modeHint": "Mengontrol bagaimana antarmuka ini bergabung dengan jaringan yang lebih luas (pencarian jalur, mengumumkan propagasi). Hub TCP biasanya menggunakan Batas; RNodes biasanya menggunakan Access point.",
-      "modeDefault": "Bawaan (penuh)",
+      "modeAria": "Mode antarmuka Reticulum",
+      "modeHint": "Mengontrol bagaimana antarmuka ini bergabung dengan jaringan yang lebih luas (pencarian jalur, pengumuman propagasi). Saat menambah, bawaan tipe adalah Boundary untuk hub TCP/UDP/I2P dan Access point untuk RNode. Saat mengedit, Default (clear) menghapus mode (RNS Full).",
       "modeOption": {
-        "full": "Penuh",
+        "full": "Full",
         "point_to_point": "Titik ke titik",
-        "access_point": "Jalur akses",
-        "roaming": "Berkeliaran",
-        "boundary": "Batas",
-        "gateway": "Gerbang"
-      }
+        "access_point": "Access point",
+        "roaming": "Roaming",
+        "boundary": "Boundary",
+        "gateway": "Gateway"
+      },
+      "modeDefaultAdd": "Bawaan tipe",
+      "modeDefaultEdit": "Bawaan (hapus)",
+      "invalidMode": "Mode antarmuka tidak valid."
     },
     "reticulumPeers": {
       "hops": "Hops",

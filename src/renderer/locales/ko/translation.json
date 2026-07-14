@@ -969,18 +969,20 @@
       "rmapDisableSuccess": "{{name}} 에서 RMAP 검색이 비활성화되었습니다.",
       "rmapToggleFailed": "{{name}} 에 대한 RMAP 변경 실패: {{error}}",
       "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
-      "mode": "방법",
-      "modeAria": "레티큘럼 인터페이스 모드",
-      "modeHint": "이 인터페이스가 더 넓은 네트워크에 연결되는 방식(경로 탐색, 전파 알림)을 제어합니다. TCP 허브는 일반적으로 경계를 사용합니다. RNodes는 일반적으로 액세스 포인트를 사용합니다.",
-      "modeDefault": "기본값(전체)",
+      "mode": "모드",
+      "modeAria": "Reticulum 인터페이스 모드",
+      "modeHint": "이 인터페이스가 더 넓은 네트워크에 연결되는 방식(경로 탐색, 전파 알림)을 제어합니다. 추가 시 유형 기본값은 TCP/UDP/I2P 허브는 Boundary, RNode는 Access point입니다. 편집 시 Default (clear)는 모드를 비웁니다(RNS Full).",
       "modeOption": {
-        "full": "가득한",
+        "full": "Full",
         "point_to_point": "포인트 투 포인트",
         "access_point": "액세스 포인트",
         "roaming": "로밍",
-        "boundary": "경계",
+        "boundary": "Boundary",
         "gateway": "게이트웨이"
-      }
+      },
+      "modeDefaultAdd": "유형 기본값",
+      "modeDefaultEdit": "기본값(지우기)",
+      "invalidMode": "잘못된 인터페이스 모드입니다."
     },
     "reticulumPeers": {
       "hops": "Hops",

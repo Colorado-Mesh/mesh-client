@@ -971,16 +971,18 @@
       "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
       "mode": "Режим",
       "modeAria": "Режим интерфейса Reticulum",
-      "modeHint": "Управляет тем, как этот интерфейс присоединяется к более широкой сети (поиск пути, распространение объявлений). TCP-концентраторы обычно используют Boundary; RNodes обычно используют точку доступа.",
-      "modeDefault": "По умолчанию (полный)",
+      "modeHint": "Управляет тем, как этот интерфейс присоединяется к более широкой сети (поиск пути, распространение объявлений). При добавлении типовое значение — Boundary для TCP/UDP/I2P-хабов и Access point для RNode. При редактировании Default (clear) убирает режим (RNS Full).",
       "modeOption": {
-        "full": "Полный",
-        "point_to_point": "Точка в точку",
+        "full": "Full",
+        "point_to_point": "Точка–точка",
         "access_point": "Точка доступа",
         "roaming": "Роуминг",
-        "boundary": "Граница",
-        "gateway": "шлюз"
-      }
+        "boundary": "Boundary",
+        "gateway": "Gateway"
+      },
+      "modeDefaultAdd": "По типу",
+      "modeDefaultEdit": "По умолчанию (очистить)",
+      "invalidMode": "Недопустимый режим интерфейса."
     },
     "reticulumPeers": {
       "hops": "Hops",

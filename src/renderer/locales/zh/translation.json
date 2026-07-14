@@ -970,17 +970,19 @@
       "rmapToggleFailed": "{{name}}的RMAP更改失败： {{error}}",
       "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
       "mode": "模式",
-      "modeAria": "网状接口模式",
-      "modeHint": "控制此接口如何加入更广泛的网络（寻路、通告传播）。TCP集线器通常使用边界； RNode通常使用接入点。",
-      "modeDefault": "默认（完整）",
+      "modeAria": "Reticulum 接口模式",
+      "modeHint": "控制此接口如何加入更广泛的网络（寻路、通告传播）。添加时，类型默认值对 TCP/UDP/I2P 枢纽为 Boundary，对 RNode 为 Access point。编辑时，Default (clear) 会清除模式（RNS Full）。",
       "modeOption": {
-        "full": "已满",
-        "point_to_point": "Point to point  点对点",
+        "full": "Full",
+        "point_to_point": "点对点",
         "access_point": "接入点",
-        "roaming": "漫遊",
+        "roaming": "漫游",
         "boundary": "Boundary",
         "gateway": "网关"
-      }
+      },
+      "modeDefaultAdd": "类型默认",
+      "modeDefaultEdit": "默认（清除）",
+      "invalidMode": "无效的接口模式。"
     },
     "reticulumPeers": {
       "hops": "Hops",

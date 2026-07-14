@@ -938,7 +938,7 @@ function buildInterfaceEditPatch(draft: {
   seedAddresses: string;
   mode: string;
   rf: RnodeRfFieldValues;
-}): Record<string, unknown> {
+}): Record<string, unknown> | null {
   const body: Record<string, unknown> = { name: draft.name.trim(), type: draft.type };
   if (draft.type === 'tcp' || draft.type === 'udp' || draft.type === 'i2p') {
     if (draft.type === 'tcp' || draft.type === 'udp') {
@@ -969,9 +969,18 @@ function buildInterfaceEditPatch(draft: {
   if (draft.type === 'pipe') {
     body.command = draft.pipeCommand.trim() || null;
   }
-  const mode = normalizeReticulumInterfaceMode(draft.mode);
-  // Empty selection clears mode (sidecar accepts empty → None).
-  body.mode = mode ?? '';
+  const trimmedMode = draft.mode.trim();
+  if (!trimmedMode) {
+    // Empty selection clears mode (sidecar accepts empty → None).
+    body.mode = '';
+    return body;
+  }
+  const mode = normalizeReticulumInterfaceMode(trimmedMode);
+  if (!mode) {
+    // Non-empty unknown mode must not silently clear — caller should block Save.
+    return null;
+  }
+  body.mode = mode;
   return body;
 }
 
@@ -980,11 +989,16 @@ function ReticulumInterfaceModeSelect({
   onChange,
   disabled,
   id,
+  emptyOptionKey,
 }: {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
   id?: string;
+  /** Empty option: add uses type default; edit clears to RNS default. */
+  emptyOptionKey:
+    | 'connectionPanel.reticulumInterfaces.modeDefaultAdd'
+    | 'connectionPanel.reticulumInterfaces.modeDefaultEdit';
 }) {
   const { t } = useTranslation();
   return (
@@ -1001,9 +1015,10 @@ function ReticulumInterfaceModeSelect({
         aria-label={t('connectionPanel.reticulumInterfaces.modeAria')}
         title={t('connectionPanel.reticulumInterfaces.modeHint')}
       >
-        <option value="">{t('connectionPanel.reticulumInterfaces.modeDefault')}</option>
+        <option value="">{t(emptyOptionKey)}</option>
         {RETICULUM_INTERFACE_MODES.map((mode) => (
           <option key={mode} value={mode}>
+            {/* Template `t()` keeps modeOption.* registered for unused-key scan. */}
             {t(`connectionPanel.reticulumInterfaces.modeOption.${mode}`)}
           </option>
         ))}
@@ -1104,6 +1119,7 @@ function InterfaceEditPanel({
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const uiType = uiTypeFromRow(iface.type);
   const [name, setName] = useState(iface.name);
   const [host, setHost] = useState(iface.host ?? '');
@@ -1116,9 +1132,8 @@ function InterfaceEditPanel({
   );
   const [preset, setPreset] = useState(iface.preset ?? '');
   const [callsign, setCallsign] = useState(iface.callsign ?? '');
-  const [mode, setMode] = useState(
-    () => normalizeReticulumInterfaceMode(iface.mode) ?? defaultModeForIfaceType(uiType) ?? '',
-  );
+  // Do not invent a type default: legacy omitted mode stays empty (RNS full).
+  const [mode, setMode] = useState(() => normalizeReticulumInterfaceMode(iface.mode) ?? '');
   const [rfFields, setRfFields] = useState<RnodeRfFieldValues>(() => rfFieldsFromInterface(iface));
   const [seedAddresses, setSeedAddresses] = useState((iface.seed_addresses ?? []).join(', '));
   const editUsesBleRnode = uiType === 'rnode' && isReticulumBleRnodeSerialPort(serialPort);
@@ -1154,6 +1169,7 @@ function InterfaceEditPanel({
           id={`edit-mode-${iface.id}`}
           value={mode}
           onChange={setMode}
+          emptyOptionKey="connectionPanel.reticulumInterfaces.modeDefaultEdit"
         />
         {uiType === 'tcp' || uiType === 'udp' ? (
           <>
@@ -1354,21 +1370,24 @@ function InterfaceEditPanel({
             const resolvedSerialPort = editUsesWifiRnode
               ? buildReticulumRnodeTcpPort(wifiHost, clampTcpPort(wifiPort, RNODE_DEFAULT_TCP_PORT))
               : serialPort;
-            onSave(
-              buildInterfaceEditPatch({
-                name,
-                type: uiType,
-                host,
-                port,
-                serialPort: resolvedSerialPort,
-                preset,
-                callsign,
-                pipeCommand: '',
-                seedAddresses,
-                mode,
-                rf: rfFields,
-              }),
-            );
+            const patch = buildInterfaceEditPatch({
+              name,
+              type: uiType,
+              host,
+              port,
+              serialPort: resolvedSerialPort,
+              preset,
+              callsign,
+              pipeCommand: '',
+              seedAddresses,
+              mode,
+              rf: rfFields,
+            });
+            if (!patch) {
+              addToast(t('connectionPanel.reticulumInterfaces.invalidMode'), 'error');
+              return;
+            }
+            onSave(patch);
           }}
           className="rounded bg-amber-700 px-3 py-1.5 text-sm text-white hover:bg-amber-600 disabled:opacity-40"
         >
@@ -1595,6 +1614,7 @@ function InterfacesSection({
             value={ifaceMode}
             onChange={onIfaceModeChange}
             disabled={actionsDisabled}
+            emptyOptionKey="connectionPanel.reticulumInterfaces.modeDefaultAdd"
           />
           {ifaceType === 'rnode' ? (
             <label className="text-xs text-gray-400">

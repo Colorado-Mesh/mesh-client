@@ -970,17 +970,19 @@
       "rmapToggleFailed": "RMAP-Änderung für {{name}} fehlgeschlagen: {{error}}",
       "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
       "mode": "Modus",
-      "modeAria": "Retikulum-Schnittstellenmodus",
-      "modeHint": "Steuert, wie diese Schnittstelle dem breiteren Netzwerk beitritt (Pfadsuche, Propagation ankündigen). TCP-Hubs verwenden normalerweise Boundary; RNodes verwenden normalerweise Access Point.",
-      "modeDefault": "Standard (voll)",
+      "modeAria": "Reticulum-Schnittstellenmodus",
+      "modeHint": "Steuert, wie diese Schnittstelle dem breiteren Netzwerk beitritt (Pfadsuche, Ankündigungsweitergabe). Beim Hinzufügen ist der Typstandard für TCP/UDP/I2P-Hubs Boundary und für RNodes Access point. Beim Bearbeiten entfernt Default (clear) den Modus (RNS Full).",
       "modeOption": {
-        "full": "Vollständig",
+        "full": "Full",
         "point_to_point": "Punkt zu Punkt",
-        "access_point": "AcessPoint",
+        "access_point": "Access Point",
         "roaming": "Roaming",
-        "boundary": "Begrenzung",
+        "boundary": "Boundary",
         "gateway": "Gateway"
-      }
+      },
+      "modeDefaultAdd": "Typstandard",
+      "modeDefaultEdit": "Standard (löschen)",
+      "invalidMode": "Ungültiger Schnittstellenmodus."
     },
     "reticulumPeers": {
       "hops": "Hops",

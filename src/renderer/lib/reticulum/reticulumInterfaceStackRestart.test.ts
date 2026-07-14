@@ -29,6 +29,9 @@ describe('reticulumInterfaceChangeRequiresStackRestart', () => {
     expect(
       reticulumInterfaceChangeRequiresStackRestart(undefined, { command: 'rnsd --pipe' }),
     ).toBe(true);
+    expect(reticulumInterfaceChangeRequiresStackRestart(undefined, { mode: 'boundary' })).toBe(
+      true,
+    );
     expect(reticulumInterfaceChangeRequiresStackRestart(undefined, { name: 'new' })).toBe(false);
   });
 });

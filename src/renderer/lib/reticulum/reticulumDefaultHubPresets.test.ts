@@ -144,6 +144,49 @@ describe('reticulumDefaultHubPresets', () => {
     ).toEqual({ mode: 'boundary' });
   });
 
+  it('does not overwrite a valid non-boundary hub mode', () => {
+    const dublin = RETICULUM_DEFAULT_HUB_PRESETS[0];
+    expect(
+      buildDefaultHubRepairPatch(
+        {
+          type: 'tcp',
+          name: dublin.name,
+          host: dublin.host,
+          port: dublin.port,
+          mode: 'gateway',
+        },
+        dublin,
+      ),
+    ).toBeNull();
+  });
+
+  it('plans skip when endpoint matches with a valid non-boundary mode', () => {
+    const dublin = RETICULUM_DEFAULT_HUB_PRESETS[0];
+    const plan = planDefaultHubPresetsSync([
+      row({
+        id: 'dublin',
+        type: 'tcp',
+        name: dublin.name,
+        host: dublin.host,
+        port: dublin.port,
+        mode: 'gateway',
+      }),
+      ...RETICULUM_DEFAULT_HUB_PRESETS.slice(1).map((preset, index) =>
+        row({
+          id: `hub-${index}`,
+          type: preset.type,
+          name: preset.name,
+          host: preset.host,
+          port: preset.port,
+          mode: 'boundary',
+        }),
+      ),
+    ]);
+    expect(plan.repair).toEqual([]);
+    expect(plan.add).toEqual([]);
+    expect(plan.skip).toContainEqual(dublin);
+  });
+
   it('plans add for empty interfaces', () => {
     const plan = planDefaultHubPresetsSync([]);
     expect(plan.add).toEqual([...RETICULUM_DEFAULT_HUB_PRESETS]);

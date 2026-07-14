@@ -1,6 +1,9 @@
 import type { TFunction } from 'i18next';
 
-import { normalizeReticulumInterfaceMode } from '@/renderer/lib/reticulum/reticulumInterfaceMode';
+import {
+  normalizeReticulumInterfaceMode,
+  reticulumInterfaceModeLabelKey,
+} from '@/renderer/lib/reticulum/reticulumInterfaceMode';
 
 /** Display acronyms for Reticulum interface wire types — not passed through auto-translate. */
 export const RETICULUM_IFACE_TYPE_LABELS: Record<string, string> = {
@@ -35,7 +38,7 @@ export function formatReticulumInterfaceRowSummary(
     return t('connectionPanel.reticulumInterfaces.rowSummaryWithMode', {
       name: iface.name,
       type: typeLabel,
-      mode: t(`connectionPanel.reticulumInterfaces.modeOption.${mode}`),
+      mode: t(reticulumInterfaceModeLabelKey(mode)),
       status: statusLabel,
     });
   }

@@ -970,17 +970,19 @@
       "rmapToggleFailed": "Změna RMAP se nezdařila pro {{name}}: {{error}}",
       "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
       "mode": "Režim",
-      "modeAria": "Režim rozhraní retikula",
-      "modeHint": "Řídí, jak se toto rozhraní připojuje k širší síti (hledání cesty, oznamování šíření). TCP huby obvykle používají Boundary; RNody obvykle používají přístupový bod.",
-      "modeDefault": "Výchozí (úplné)",
+      "modeAria": "Režim rozhraní Reticulum",
+      "modeHint": "Řídí, jak se toto rozhraní připojuje k širší síti (hledání cesty, oznamování šíření). Při přidání je výchozí typ u TCP/UDP/I2P hubů Boundary a u RNodů Access point. Při úpravě Default (clear) režim vynechá (RNS Full).",
       "modeOption": {
-        "full": "Plný",
+        "full": "Full",
         "point_to_point": "Bod k bodu",
         "access_point": "Přístupový bod",
         "roaming": "Roaming",
-        "boundary": "Hranice",
-        "gateway": "Brána"
-      }
+        "boundary": "Boundary",
+        "gateway": "Gateway"
+      },
+      "modeDefaultAdd": "Výchozí podle typu",
+      "modeDefaultEdit": "Výchozí (vymazat)",
+      "invalidMode": "Neplatný režim rozhraní."
     },
     "reticulumPeers": {
       "hops": "Hops",

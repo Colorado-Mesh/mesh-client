@@ -970,17 +970,19 @@
       "rmapToggleFailed": "Не вдалося змінити RMAP для {{name}}: {{error}}",
       "rowSummaryWithMode": "{{name}} ({{type}}, {{mode}}) — {{status}}",
       "mode": "Режим",
-      "modeAria": "Режим інтерфейсу ретикулуму",
-      "modeHint": "Керує тим, як цей інтерфейс приєднується до ширшої мережі (пошук шляху, поширення оголошень). Концентратори TCP зазвичай використовують Boundary; RNodes зазвичай використовують Access point.",
-      "modeDefault": "За замовчуванням (повністю)",
+      "modeAria": "Режим інтерфейсу Reticulum",
+      "modeHint": "Керує тим, як цей інтерфейс приєднується до ширшої мережі (пошук шляху, поширення оголошень). Під час додавання типове значення — Boundary для TCP/UDP/I2P-хабів і Access point для RNode. Під час редагування Default (clear) прибирає режим (RNS Full).",
       "modeOption": {
-        "full": "Повний",
+        "full": "Full",
         "point_to_point": "Від точки до точки",
         "access_point": "Точка доступу",
         "roaming": "Роумінг",
-        "boundary": "Межа",
-        "gateway": "Шлюз"
-      }
+        "boundary": "Boundary",
+        "gateway": "Gateway"
+      },
+      "modeDefaultAdd": "За типом",
+      "modeDefaultEdit": "За замовчуванням (очистити)",
+      "invalidMode": "Недійсний режим інтерфейсу."
     },
     "reticulumPeers": {
       "hops": "Hops",

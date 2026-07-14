@@ -970,17 +970,19 @@
       "rmapToggleFailed": "{{name}}のRMAP変更に失敗しました: {{error}}",
       "rowSummaryWithMode": "{{name}} ({{type}}、{{mode}}) — {{status}}",
       "mode": "モード",
-      "modeAria": "網状体インターフェースモード",
-      "modeHint": "このインターフェイスがより広範なネットワークに参加する方法 (パスの探索、伝播のアナウンス) を制御します。 TCP ハブは通常、境界を使用します。 RNode は通常、アクセス ポイントを使用します。",
-      "modeDefault": "デフォルト（フル）",
+      "modeAria": "Reticulum インターフェースモード",
+      "modeHint": "このインターフェイスがより広範なネットワークに参加する方法（パス探索、伝播アナウンス）を制御します。追加時のタイプ既定は TCP/UDP/I2P ハブで Boundary、RNode で Access point です。編集時の Default (clear) はモードを省略します（RNS Full）。",
       "modeOption": {
-        "full": "満杯",
+        "full": "Full",
         "point_to_point": "ポイントツーポイント",
         "access_point": "アクセスポイント",
         "roaming": "ローミング",
-        "boundary": "境界",
+        "boundary": "Boundary",
         "gateway": "ゲートウェイ"
-      }
+      },
+      "modeDefaultAdd": "タイプ既定",
+      "modeDefaultEdit": "デフォルト（クリア）",
+      "invalidMode": "無効なインターフェースモードです。"
     },
     "reticulumPeers": {
       "hops": "Hops",
