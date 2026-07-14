@@ -122,6 +122,7 @@ export function ChatComposer({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
   const recordChunksRef = useRef<Blob[]>([]);
   const recordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [input, setInput] = useState('');
@@ -145,12 +146,22 @@ export function ChatComposer({
   inputValueRef.current = input;
   const prevViewKeyRef = useRef<string | null>(null);
 
+  const stopMediaStreamTracks = useCallback(() => {
+    const stream = mediaStreamRef.current;
+    if (!stream) return;
+    stream.getTracks().forEach((track) => {
+      track.stop();
+    });
+    mediaStreamRef.current = null;
+  }, []);
+
   useEffect(() => {
     return () => {
       if (recordTimerRef.current) clearTimeout(recordTimerRef.current);
       mediaRecorderRef.current?.stop();
+      stopMediaStreamTracks();
     };
-  }, []);
+  }, [stopMediaStreamTracks]);
 
   const stopVoiceRecording = useCallback(
     (send: boolean) => {
@@ -166,6 +177,7 @@ export function ChatComposer({
         });
         recordChunksRef.current = [];
         mediaRecorderRef.current = null;
+        stopMediaStreamTracks();
         setIsRecordingVoice(false);
         if (!send || !onSendAttachment || outboxDestination == null) return;
         const ext = blob.type.includes('ogg') ? 'ogg' : 'webm';
@@ -191,14 +203,27 @@ export function ChatComposer({
         })();
       };
       if (recorder.state !== 'inactive') recorder.stop();
+      else {
+        stopMediaStreamTracks();
+        setIsRecordingVoice(false);
+      }
     },
-    [onSendAttachment, onSendSuccess, outboxDestination, viewKey],
+    [onSendAttachment, onSendSuccess, outboxDestination, stopMediaStreamTracks, viewKey],
   );
 
   const startVoiceRecording = useCallback(async () => {
     if (!onSendAttachment || outboxDestination == null || disabled || !isConnected) return;
     try {
+      const access = await window.electronAPI.media.ensureMicrophoneAccess();
+      if (!access.granted) {
+        setChatActionError({
+          message: t('chatPanel.microphonePermissionDenied'),
+          viewKey,
+        });
+        return;
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
         : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
@@ -212,9 +237,7 @@ export function ChatComposer({
         if (e.data.size > 0) recordChunksRef.current.push(e.data);
       };
       recorder.onerror = () => {
-        stream.getTracks().forEach((track) => {
-          track.stop();
-        });
+        stopMediaStreamTracks();
         setIsRecordingVoice(false);
       };
       recorder.start();
@@ -228,9 +251,17 @@ export function ChatComposer({
         stopVoiceRecording(true);
       }, maxVoiceRecordMs);
     } catch (err) {
+      stopMediaStreamTracks();
+      const permissionDenied =
+        (typeof DOMException !== 'undefined' &&
+          err instanceof DOMException &&
+          err.name === 'NotAllowedError') ||
+        (err instanceof Error && /permission denied/i.test(err.message));
       console.error('[ChatComposer] Voice recording failed: ' + errLikeToLogString(err));
       setChatActionError({
-        message: errLikeToLogString(err),
+        message: permissionDenied
+          ? t('chatPanel.microphonePermissionDenied')
+          : errLikeToLogString(err),
         viewKey,
       });
     }
@@ -240,6 +271,7 @@ export function ChatComposer({
     maxVoiceRecordMs,
     onSendAttachment,
     outboxDestination,
+    stopMediaStreamTracks,
     stopVoiceRecording,
     t,
     viewKey,

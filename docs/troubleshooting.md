@@ -208,7 +208,13 @@ pnpm run trace-deprecation
 
 ### Permission messages in the console
 
-`[permissions] checkHandler: media → denied` and `web-app-installation → denied` are expected. The app only uses **serial** and **geolocation**; media and web-app-installation are intentionally denied.
+The session allowlist grants **serial**, **geolocation**, and **media** (Reticulum Chat voice clips via `getUserMedia`). Other permissions such as `web-app-installation` remain denied and may appear as `[permissions] … → denied` in the log.
+
+If Reticulum voice recording still fails with microphone permission denied after media is granted:
+
+- **macOS:** System Settings → Privacy & Security → Microphone — allow Mesh-client (or Electron when running `pnpm run dev`). Packaged builds include `NSMicrophoneUsageDescription`.
+- **Windows:** Settings → Privacy & security → Microphone — allow desktop apps / Mesh-client. The app opens this page when OS status is `denied`.
+- **Linux:** Ensure PulseAudio or PipeWire can capture; Flatpak builds already include `--socket=pulseaudio`. AppImage/deb use the host audio stack.
 
 ## Installation and packaged apps
 

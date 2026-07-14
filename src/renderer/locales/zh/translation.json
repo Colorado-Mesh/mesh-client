@@ -559,7 +559,8 @@
     "dmPathUnreachableAria": "无法到达目标路径",
     "dmPathUnreachableTooltip": "尚无到此目的地的 Reticulum 路径。消息仍可能稍后通过已配置的传播节点送达。",
     "dmPathRequestPathAria": "请求到此目的地的 Reticulum 路径",
-    "dmPathProbeAria": "探测此目的地的 Reticulum 路径可达性"
+    "dmPathProbeAria": "探测此目的地的 Reticulum 路径可达性",
+    "microphonePermissionDenied": "麦克风访问被拒绝。在系统隐私设置中为 Mesh-client 启用麦克风权限，然后重试。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

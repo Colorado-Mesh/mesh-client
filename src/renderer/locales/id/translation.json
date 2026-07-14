@@ -559,7 +559,8 @@
     "dmPathUnreachableAria": "Jalur tujuan tidak dapat dijangkau",
     "dmPathUnreachableTooltip": "Belum ada jalur Reticulum ke tujuan ini. Pesan mungkin masih dikirimkan nanti melalui simpul propagasi yang dikonfigurasi.",
     "dmPathRequestPathAria": "Minta jalur Reticulum ke tujuan ini",
-    "dmPathProbeAria": "Periksa keterjangkauan jalur Reticulum untuk tujuan ini"
+    "dmPathProbeAria": "Periksa keterjangkauan jalur Reticulum untuk tujuan ini",
+    "microphonePermissionDenied": "Akses mikrofon ditolak. Aktifkan izin mikrofon untuk Mesh-client di pengaturan privasi sistem Anda, lalu coba lagi."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

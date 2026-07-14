@@ -559,7 +559,8 @@
     "dmPathUnreachableAria": "Путь назначения недоступен",
     "dmPathUnreachableTooltip": "Ещё нет пути Reticulum к этому пункту назначения. Сообщения всё ещё могут быть доставлены позже через настроенный узел распространения.",
     "dmPathRequestPathAria": "Запросить путь Reticulum к этому назначению",
-    "dmPathProbeAria": "Проверить достижимость пути Reticulum для этого назначения"
+    "dmPathProbeAria": "Проверить достижимость пути Reticulum для этого назначения",
+    "microphonePermissionDenied": "Доступ к микрофону запрещен. Включите разрешение микрофона для Mesh-client в настройках конфиденциальности системы, а затем повторите попытку."
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",

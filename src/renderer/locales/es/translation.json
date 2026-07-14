@@ -559,7 +559,8 @@
     "dmPathUnreachableAria": "No se puede acceder a la ruta de destino",
     "dmPathUnreachableTooltip": "Aún no hay una ruta de Reticulum a este destino. Los mensajes aún pueden enviarse más tarde a través de un nodo de propagación configurado.",
     "dmPathRequestPathAria": "Solicitar ruta de Reticulum a este destino",
-    "dmPathProbeAria": "Comprobar alcance de la ruta Reticulum para este destino"
+    "dmPathProbeAria": "Comprobar alcance de la ruta Reticulum para este destino",
+    "microphonePermissionDenied": "Se ha denegado el acceso al micrófono. Habilite el permiso de micrófono para Mesh-client en la configuración de privacidad de su sistema y vuelva a intentarlo."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

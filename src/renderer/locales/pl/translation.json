@@ -559,7 +559,8 @@
     "dmPathUnreachableAria": "Ścieżka docelowa jest niedostępna",
     "dmPathUnreachableTooltip": "Nie ma jeszcze ścieżki Reticulum do tego miejsca docelowego. Komunikaty mogą być nadal dostarczane później za pośrednictwem skonfigurowanego węzła propagacji.",
     "dmPathRequestPathAria": "Poproś o ścieżkę Reticulum do tego miejsca docelowego",
-    "dmPathProbeAria": "Sprawdź osiągalność ścieżki Reticulum dla tego miejsca docelowego"
+    "dmPathProbeAria": "Sprawdź osiągalność ścieżki Reticulum dla tego miejsca docelowego",
+    "microphonePermissionDenied": "Odmowa dostępu do mikrofonu. Włącz uprawnienia mikrofonu dla Mesh-client w ustawieniach prywatności systemu, a następnie spróbuj ponownie."
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

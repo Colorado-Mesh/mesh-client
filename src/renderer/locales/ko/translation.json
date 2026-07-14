@@ -559,7 +559,8 @@
     "dmPathUnreachableAria": "목적지 경로에 도달할 수 없습니다",
     "dmPathUnreachableTooltip": "이 목적지로 가는 Reticulum 경로가 아직 없습니다. 메시지는 구성된 전파 노드를 통해 나중에 전달될 수 있습니다.",
     "dmPathRequestPathAria": "이 목적지로의 Reticulum 경로 요청",
-    "dmPathProbeAria": "이 대상에 대한 Reticulum 경로 도달 가능성 프로브"
+    "dmPathProbeAria": "이 대상에 대한 Reticulum 경로 도달 가능성 프로브",
+    "microphonePermissionDenied": "마이크 접근이 거부되었습니다. 시스템 개인 정보 설정에서 Mesh-client에 대한 마이크 권한을 활성화한 다음 다시 시도하십시오."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

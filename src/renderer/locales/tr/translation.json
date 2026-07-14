@@ -559,7 +559,8 @@
     "dmPathUnreachableAria": "Varış noktasına ulaşılamıyor",
     "dmPathUnreachableTooltip": "Bu hedefe henüz Reticulum yolu yok. Mesajlar daha sonra yapılandırılmış bir yayılma düğümü aracılığıyla iletilebilir.",
     "dmPathRequestPathAria": "Bu hedefe Reticulum yolu iste",
-    "dmPathProbeAria": "Bu hedef için Reticulum yolu erişilebilirliğini yokla"
+    "dmPathProbeAria": "Bu hedef için Reticulum yolu erişilebilirliğini yokla",
+    "microphonePermissionDenied": "Mikrofon erişimi engellendi. Sistem gizlilik ayarlarınızda Mesh-client için mikrofon iznini etkinleştirin, ardından tekrar deneyin."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

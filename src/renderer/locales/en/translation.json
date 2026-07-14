@@ -445,6 +445,7 @@
     "recordVoiceHint": "Record a voice clip and send as an LXMF attachment (DM only)",
     "stopVoiceRecording": "Stop recording and send",
     "voiceRecordingTooLong": "Voice clip reached the 60 second limit and was sent.",
+    "microphonePermissionDenied": "Microphone access was denied. Enable microphone permission for Mesh-client in your system privacy settings, then try again.",
     "closeDm": "Close DM",
     "resendMessage": "Resend message",
     "replyButton": "Reply",

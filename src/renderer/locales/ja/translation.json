@@ -559,7 +559,8 @@
     "dmPathUnreachableAria": "宛先パスに到達できません",
     "dmPathUnreachableTooltip": "この宛先への Reticulum パスはまだありません。設定済みの伝播ノード経由で後から配信されることがあります。",
     "dmPathRequestPathAria": "この宛先への Reticulum パスをリクエスト",
-    "dmPathProbeAria": "この宛先の Reticulum パス到達可能性をプローブ"
+    "dmPathProbeAria": "この宛先の Reticulum パス到達可能性をプローブ",
+    "microphonePermissionDenied": "マイクへのアクセスが拒否されました。システムのプライバシー設定で Mesh-client のマイクアクセス許可を有効にしてから、もう一度お試しください。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

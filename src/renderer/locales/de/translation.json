@@ -559,7 +559,8 @@
     "dmPathUnreachableAria": "Zielpfad ist nicht erreichbar",
     "dmPathUnreachableTooltip": "Noch kein Reticulum-Pfad zu diesem Ziel. Nachrichten können später noch über einen konfigurierten Ausbreitungsknoten zugestellt werden.",
     "dmPathRequestPathAria": "Reticulum-Pfad zu diesem Ziel anfordern",
-    "dmPathProbeAria": "Reticulum-Pfad-Erreichbarkeit für dieses Ziel prüfen"
+    "dmPathProbeAria": "Reticulum-Pfad-Erreichbarkeit für dieses Ziel prüfen",
+    "microphonePermissionDenied": "Der Mikrofonzugriff wurde verweigert. Aktivieren Sie die Mikrofonberechtigung für den Mesh-Client in den Datenschutzeinstellungen Ihres Systems und versuchen Sie es erneut."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
