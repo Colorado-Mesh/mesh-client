@@ -445,4 +445,42 @@ describe('NomadNetworkPanel', () => {
       );
     });
   });
+
+  it('keeps page content in a dual-axis scroll shell like Rooms', async () => {
+    localStorage.removeItem('mesh-client:nomadNodeListCollapsed');
+    const user = userEvent.setup();
+    const fetchNomadPage = vi.fn().mockResolvedValue({
+      ok: true,
+      content: '`!Hello Nomad:`!',
+      content_type: 'micron',
+    });
+    useNomadNetworkStore.setState({
+      fetchNomadPage,
+      nodes: new Map([
+        [
+          'abc1234567890',
+          {
+            destination_hash: 'abc1234567890',
+            display_name: 'Test Node',
+            favorited: false,
+          },
+        ],
+      ]),
+    });
+
+    render(
+      <div className="flex flex-col" style={{ height: '600px' }}>
+        <NomadNetworkPanel />
+      </div>,
+    );
+    await openAnnouncesNode(user);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('nomad-page-scroll')).toBeInTheDocument();
+    });
+
+    const scroll = screen.getByTestId('nomad-page-scroll');
+    expect(scroll).toHaveClass('nomad-page-scroll', 'overflow-auto');
+    expect(scroll.parentElement).toHaveClass('min-h-0', 'min-w-0', 'flex-1');
+  });
 });

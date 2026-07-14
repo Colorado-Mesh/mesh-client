@@ -30,6 +30,7 @@ describe('ReticulumAnnounceControls', () => {
       announce_interval_sec: 3600,
     });
     window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyPost = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.reticulum.proxyDelete = vi.fn().mockResolvedValue({ ok: true });
   });
 
@@ -139,6 +140,23 @@ describe('ReticulumAnnounceControls', () => {
     await waitFor(() => {
       expect(window.electronAPI.reticulum.proxyDelete).toHaveBeenCalledWith('/api/v1/announces');
     });
+  });
+
+  it('sends announce now when sidecar is running', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ReticulumAnnounceControls disabled={false} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'reticulumIdentity.announceNow' }));
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith('/api/v1/announces', {});
+    });
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'reticulumIdentity.announceNowDone',
+    );
   });
 
   it('surfaces proxyPut failure', async () => {

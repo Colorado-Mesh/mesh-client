@@ -1,6 +1,7 @@
+import { persistReticulumOutboundMessageStatus } from '@/renderer/lib/reticulum/applyReticulumOutboundDeliveryStatus';
 import { resolveReticulumDestinationHash } from '@/renderer/lib/reticulum/destHash';
 import type { IdentityId } from '@/renderer/lib/types';
-import { updateMessageStatus, useMessageStore } from '@/renderer/stores/messageStore';
+import { useMessageStore } from '@/renderer/stores/messageStore';
 import { reticulumHashForNodeId } from '@/renderer/stores/reticulumPeerStore';
 
 function normalizeDestHash(hash: string): string {
@@ -22,7 +23,7 @@ function resolveOutboundDestHash(toNodeId: number | undefined): string | null {
   return reticulumHashForNodeId(toNodeId) ?? resolveReticulumDestinationHash(toNodeId);
 }
 
-/** Mark in-memory outbound LXMF rows as failed when direct link delivery times out. */
+/** Mark outbound LXMF rows failed (store + SQLite) when direct link delivery times out. */
 export function failReticulumSendingOutboundToDestHash(
   identityId: IdentityId,
   destinationHash: string,
@@ -36,8 +37,9 @@ export function failReticulumSendingOutboundToDestHash(
     if (msg.status !== 'sending' || msg.to == null) continue;
     const destHash = resolveOutboundDestHash(msg.to);
     if (!destHash || !destHashMatchesPeer(destHash, targetNorm)) continue;
-    updateMessageStatus(identityId, msg.id, 'failed', errorMessage);
-    count += 1;
+    if (persistReticulumOutboundMessageStatus(identityId, msg.id, 'failed', errorMessage)) {
+      count += 1;
+    }
   }
   return count;
 }

@@ -338,7 +338,13 @@
     "exportForDeveloper": "Пакет поддержки экспорта для разработчика",
     "exportForDeveloperButton": "Экспорт для разработчика",
     "exportForDeveloperWarning": "Включает вашу полную базу данных, которая может содержать сохраненные пароли (учетные данные комнаты MeshCore, настройки MQTT и т. д.). Делитесь этим пакетом только с сопровождающими и никогда не публикуйте его на общедоступном GitHub.",
-    "exportSupportBundleFailed": "Не удалось экспортировать пакет поддержки: {{message}}."
+    "exportSupportBundleFailed": "Не удалось экспортировать пакет поддержки: {{message}}.",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "Очистить все контакты LXMF",
+    "clearReticulumContactsDesc": "Удаляет все записи из вкладки «Контакты» и списка контактов sidecar. Назначения остаются на вкладке «Peers» со своими именами. Сообщения чата сохраняются. Контакты снова появляются, когда вы пишете кому-то или используете «Сохранить как контакт».",
+    "clearReticulumContactsConfirm": "Это навсегда удалит все {{count}} контактов Reticulum LXMF. Назначения останутся на вкладке «Peers»; сообщения не удаляются. Это действие нельзя отменить.",
+    "clearReticulumContactsConfirmButton": "Очистить {{count}} контактов",
+    "clearReticulumContactsButton": "Очистить все контакты ({{count}})"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -541,7 +547,19 @@
     "waitingMessagesSilentDrain": "Получение сообщений из очереди на радио…",
     "waitingMessagesDrainDeferred": "Синхронизация сообщений приостановлена, пока радиостанция занята (админ/трассировка)…",
     "waitingMessagesSerialHint": "Последовательный порт USB обрабатывает одну команду за раз; Сообщения могут приходить небольшими партиями.",
-    "waitingMessagesSyncFailed": "Не удалось синхронизировать сообщения в очереди: {{message}}."
+    "waitingMessagesSyncFailed": "Не удалось синхронизировать сообщения в очереди: {{message}}.",
+    "dmPathChecking": "Проверка пути",
+    "dmPathCheckingAria": "Проверка достижимости пути назначения",
+    "dmPathCheckingTooltip": "Запрос пути Reticulum к этому пункту назначения.",
+    "dmPathReachable": "Достижимый путь",
+    "dmPathReachableHops": "Путь достижим · {{hops}} переход(ов)",
+    "dmPathReachableAria": "Путь к месту назначения доступен",
+    "dmPathReachableTooltip": "Путь Reticulum к этому пункту назначения известен. Прямая доставка всё ещё может не удаться, если узел не в сети.",
+    "dmPathUnreachable": "Нет пути",
+    "dmPathUnreachableAria": "Путь назначения недоступен",
+    "dmPathUnreachableTooltip": "Ещё нет пути Reticulum к этому пункту назначения. Сообщения всё ещё могут быть доставлены позже через настроенный узел распространения.",
+    "dmPathRequestPathAria": "Запросить путь Reticulum к этому назначению",
+    "dmPathProbeAria": "Проверить достижимость пути Reticulum для этого назначения"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -801,7 +819,6 @@
       "mnemonic": "Запишите эту фразу и храните ее безопасно.",
       "confirmSaved": "Я сохранил свою фразу восстановления",
       "hashLabel": "Хеш LXMF:",
-      "nameLabel": "Имя:",
       "failed": "Не удалось настроить удостоверение",
       "export": "Экспортировать резервную копи",
       "exportPassphrase": "Резервная кодовая фраза",
@@ -823,7 +840,10 @@
       "identityAlreadyConfigured": "Идентификация уже настроена. Подтвердите замену, чтобы импортировать новый.",
       "identityFileMissing": "Файл идентификационного ключа отсутствует. Повторно импортируйте свой закрытый ключ или фразу восстановления.",
       "backupHashMismatch": "Хэши резервной копии не соответствуют файлу ключа идентификации на диске.",
-      "importPrivateKeyRequiresStack": "Для импорта закрытого ключа требуется полная сборка стека Reticulum."
+      "importPrivateKeyRequiresStack": "Для импорта закрытого ключа требуется полная сборка стека Reticulum.",
+      "saveDisplayName": "Сохранить отображаемое имя",
+      "saveDisplayNameFailed": "Не удалось сохранить отображаемое имя.",
+      "displayNameSaved": "Отображаемое имя сохранено."
     },
     "reticulumInterfaces": {
       "title": "Интерфейсы",
@@ -1038,8 +1058,6 @@
       "txQueueDrops": "{{name}}: исходящие пакеты отброшены ({{count}} в очереди)",
       "txQueueDropsHint": "Обычно вызвано мертвым TCP-интерфейсом, который все еще включен. Отключите недоступные концентраторы, чтобы остановить переполнение очереди.",
       "suppressed": "{{count}} аналогичные линии бревна коляски подавлены в последнее время.",
-      "linkDeliveryTimeout": "Время ожидания прямой связи LXMF с {{hash}}… истекло ({{count}}×)",
-      "linkDeliveryTimeoutHint": "Одноранговый узел может быть отключен или транспорт RNS перегружен. DM могут оставаться на отправке до тех пор, пока ссылка не выйдет из строя.",
       "transportSaturated": "RNS транспорт насыщенный ({{count}} path-request drops)",
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "Транспортные запросы RNS медленные или сбойные ({{count}}×)",
@@ -2627,7 +2645,18 @@
     "forward": "Вперед",
     "invalidUrl": "Неверный адрес страницы Nomad",
     "collapseNodeList": "Свернуть список узлов",
-    "expandNodeList": "Развернуть список узлов"
+    "expandNodeList": "Развернуть список узлов",
+    "errors": {
+      "pathTimeout": "Нет маршрута к этому узлу (тайм-аут поиска пути). Попробуйте более близкий узел или дождитесь более свежего announce.",
+      "pubkeyNotFound": "Не удалось найти идентификационный ключ этого узла. Дождитесь объявления Nomad и повторите попытку.",
+      "linkTimeout": "Не удалось вовремя установить ссылку на узел.",
+      "responseTimeout": "Узел принял ссылку, но не вернул страницу вовремя.",
+      "missingIdentity": "Этот узел еще не запомнил личность. Дождитесь объявления Nomad и повторите попытку.",
+      "transportUnavailable": "Транспорт Reticulum недоступен. Перезапустите стек и повторите попытку.",
+      "sidecarNotRunning": "Sidecar Reticulum не запущен. Запустите стек из Connection и повторите попытку.",
+      "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
+      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",
@@ -2718,7 +2747,13 @@
     "contactYes": "Да",
     "contactNo": "Нет",
     "tabFavorites": "Избранное",
-    "emptyFavorites": "Пока нет избранных одноранговых узлов — поставьте звезду контакту или одноранговому узлу, чтобы закрепить их здесь."
+    "emptyFavorites": "Пока нет избранных одноранговых узлов — поставьте звезду контакту или одноранговому узлу, чтобы закрепить их здесь.",
+    "lookupPlaceholder": "Хеш назначения поиска...",
+    "lookupAria": "Найти пира по хешу назначения",
+    "lookupSubmit": "Найти",
+    "lookupSubmitAria": "Запросить путь и проверить хеш назначения",
+    "lookupInvalid": "Введите действительный 32-символьный хеш назначения LXMF или ссылку lxmf://.",
+    "lookupHint": "Запросите путь для хеша, которого еще нет в списке одноранговых узлов (например, одноранговый узел на концентраторе, которым вы делитесь)."
   },
   "radioPanel": {
     "offloadedContacts": "Контакты {{count}} выгружены в базу данных.",
@@ -3538,13 +3573,16 @@
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Интервал объявления (секунды)",
-    "announceIntervalHint": "По умолчанию 3600 с (1 ч). Используйте 0 только при запуске.",
+    "announceIntervalHint": "По умолчанию 3600 с (1 ч). Укажите 0 для объявлений только при запуске. «Объявить сейчас» сразу отправляет LXMF delivery announce.",
     "clearAnnounces": "Очистить объявления",
     "announceSaved": "Интервал объявления сохранён.",
     "announceSaveFailed": "Не удалось сохранить интервал объявления: {{error}}",
     "announceSaveSidecarStopped": "Запустите стек Reticulum перед сохранением настроек объявления.",
     "clearAnnouncesDone": "Объявления очищены.",
-    "clearAnnouncesFailed": "Не удалось очистить объявления."
+    "clearAnnouncesFailed": "Не удалось очистить объявления.",
+    "announceNow": "Объявить сейчас",
+    "announceNowDone": "Объявление о доставке LXMF отправлено.",
+    "announceNowFailed": "Не удалось объявить: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "Значок аватара",

@@ -390,7 +390,9 @@ export function reticulumDbRowToMessageRecord(row: {
   const status: MessageRecord['status'] =
     row.delivery_status === 'failed'
       ? 'failed'
-      : row.delivery_status === 'sending' || row.delivery_status === 'pending'
+      : row.delivery_status === 'sending' ||
+          row.delivery_status === 'pending' ||
+          row.delivery_status === 'queued'
         ? 'sending'
         : 'acked';
   return {

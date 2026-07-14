@@ -61,6 +61,11 @@ impl PathRequestGate {
         PathRequestDecision::Send
     }
 
+    fn record_send(&mut self, dest: [u8; 16], now: f64) {
+        self.backoff_until
+            .insert(dest, now + PATH_REQUEST_BACKOFF_SECS);
+    }
+
     fn record_queue_failure(&mut self, dest: [u8; 16], now: f64) {
         *self.fail_count.entry(dest).or_insert(0) += 1;
         self.backoff_until.insert(dest, now + PATH_REQUEST_BACKOFF_SECS);
@@ -114,8 +119,16 @@ impl LxmfOutboundDriver {
     }
 
     pub fn register_identity_key(&mut self, dest_hash_hex: &str, public_key: [u8; 64]) {
-        self.known_identities
-            .insert(dest_hash_hex.to_lowercase(), public_key);
+        let key = dest_hash_hex.to_lowercase();
+        if !self.known_identities.contains_key(&key)
+            && self.known_identities.len() >= MAX_KNOWN_IDENTITIES
+        {
+            // Evict an arbitrary entry to bound memory under announce floods.
+            if let Some(oldest) = self.known_identities.keys().next().cloned() {
+                self.known_identities.remove(&oldest);
+            }
+        }
+        self.known_identities.insert(key, public_key);
     }
 
     pub fn known_identities_for_propagation(&self) -> HashMap<String, [u8; 64]> {
@@ -131,13 +144,19 @@ impl LxmfOutboundDriver {
         self.path_table_hashes.clear();
         for (hash, hops, hex_key) in entries {
             self.route_hops.insert(*hash, (*hops).max(1));
-            self.path_table_hashes.insert(hex_key.clone());
+            self.path_table_hashes.insert(hex_key.to_lowercase());
             self.path_request_gate.clear_destination(*hash);
         }
     }
 
     pub fn has_path_to(&self, destination_hex: &str) -> bool {
-        self.path_table_hashes.contains(destination_hex)
+        self.path_table_hashes
+            .contains(&destination_hex.to_lowercase())
+    }
+
+    pub fn identity_known_for(&self, destination_hex: &str) -> bool {
+        self.known_identities
+            .contains_key(&destination_hex.to_lowercase())
     }
 
     pub fn process_tick(&mut self, router: &mut LxmRouter, event_tx: &broadcast::Sender<String>) {
@@ -152,8 +171,11 @@ impl LxmfOutboundDriver {
                 (
                     dest,
                     DirectDeliveryPlanInput {
-                        identity_known: self.known_identities.contains_key(&dest_hex.to_lowercase())
-                            || self.route_hops.contains_key(&dest),
+                        // lxmd parity: path alone is not identity knowledge — LRPROOF needs
+                        // the destination public key from known_identities.
+                        identity_known: self
+                            .known_identities
+                            .contains_key(&dest_hex.to_lowercase()),
                         route: direct_route_snapshot(&self.route_hops, dest),
                         reusable_link: direct_reusable_link_state(&self.link_delivery, dest),
                     },
@@ -178,6 +200,8 @@ impl LxmfOutboundDriver {
 
         router.run_jobs_tick();
 
+        // Must drain before tick so LRPROOF/resources can verify against known_identities.
+        self.link_delivery.drain_events(&self.known_identities);
         let results = self.link_delivery.tick();
         for result in results {
             self.handle_delivery_result(router, event_tx, result);
@@ -238,7 +262,15 @@ impl LxmfOutboundDriver {
             .known_identities
             .contains_key(&prop_hex.to_lowercase())
         {
-            self.request_path_gated(router, event_tx, prop_hash, false, "propagation node path", message);
+            self.request_path_gated(
+                router,
+                event_tx,
+                prop_hash,
+                false,
+                "propagation node path",
+                message,
+                false,
+            );
             return;
         }
         let Some(packed) = self.pack_for_propagation(&mut message, prop_hash) else {
@@ -268,12 +300,13 @@ impl LxmfOutboundDriver {
         planned: Option<DirectDeliveryPlan>,
     ) {
         let dest_hex = hex::encode(dest_hash);
+        // Capture ownership before consuming `planned` (lxmd `router_owned` parity).
+        let router_owned = planned.is_some();
         let plan = planned.unwrap_or_else(|| {
             plan_direct_delivery(
                 &mut message,
                 DirectDeliveryPlanInput {
-                    identity_known: self.known_identities.contains_key(&dest_hex.to_lowercase())
-                        || self.route_hops.contains_key(&dest_hash),
+                    identity_known: self.known_identities.contains_key(&dest_hex.to_lowercase()),
                     route: direct_route_snapshot(&self.route_hops, dest_hash),
                     reusable_link: direct_reusable_link_state(&self.link_delivery, dest_hash),
                 },
@@ -281,15 +314,24 @@ impl LxmfOutboundDriver {
             )
         });
 
+        // `router_owned` ⇒ message still sits in `pending_outbound`
+        // (`process_outbound_with_direct`). Must not `router.send` again or we
+        // fork-bomb duplicates and fill the transport channel while waiting for LRPROOF.
         match plan {
-            DirectDeliveryPlan::RequestPath { .. } | DirectDeliveryPlan::WaitForReusableLink => {
+            DirectDeliveryPlan::WaitForReusableLink => {
+                if !router_owned {
+                    router.send(message);
+                }
+            }
+            DirectDeliveryPlan::RequestPath { drop_existing } => {
                 self.request_path_gated(
                     router,
                     event_tx,
                     dest_hash,
-                    false,
+                    drop_existing,
                     "direct delivery path",
                     message,
+                    router_owned,
                 );
             }
             DirectDeliveryPlan::DeferTerminalFailure | DirectDeliveryPlan::Fail => {
@@ -323,12 +365,16 @@ impl LxmfOutboundDriver {
         drop_existing: bool,
         reason: &str,
         message: LxMessage,
+        router_owned: bool,
     ) {
         let now = now_f64();
         match self.path_request_gate.decide(request_hash, now) {
             PathRequestDecision::Send => {
                 if try_queue_path_request(&self.transport_tx, request_hash, drop_existing, reason) {
-                    router.send(message);
+                    self.path_request_gate.record_send(request_hash, now);
+                    if !router_owned {
+                        router.send(message);
+                    }
                 } else {
                     self.path_request_gate.record_queue_failure(request_hash, now);
                     if self.path_request_gate.should_warn(request_hash, now) {
@@ -338,11 +384,15 @@ impl LxmfOutboundDriver {
                             "failed to queue path request for LXMF delivery (transport channel full)"
                         );
                     }
-                    router.send(message);
+                    if !router_owned {
+                        router.send(message);
+                    }
                 }
             }
             PathRequestDecision::Backoff => {
-                router.send(message);
+                if !router_owned {
+                    router.send(message);
+                }
             }
             PathRequestDecision::MaxAttempts => {
                 tracing::warn!(
@@ -452,6 +502,34 @@ fn delivery_method_label(method: DeliveryMethod) -> &'static str {
         DeliveryMethod::Paper => "paper",
     }
 }
+
+/// Decide Direct vs Propagated for an LXMF send (path/pubkey/PN).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LxmfSendRoute {
+    Direct,
+    Propagated,
+    NoPropagationNode,
+}
+
+pub(crate) fn choose_lxmf_send_route(
+    has_path: bool,
+    identity_known: bool,
+    preferred_pn_set: bool,
+) -> LxmfSendRoute {
+    if has_path && identity_known {
+        LxmfSendRoute::Direct
+    } else if preferred_pn_set {
+        LxmfSendRoute::Propagated
+    } else if has_path {
+        // Path known but pubkey still missing — keep trying Direct / LRPROOF.
+        LxmfSendRoute::Direct
+    } else {
+        LxmfSendRoute::NoPropagationNode
+    }
+}
+
+/// Cap on retained destination public keys (announce / path flood bound).
+const MAX_KNOWN_IDENTITIES: usize = 4096;
 
 pub fn emit_outbound_status(
     event_tx: &broadcast::Sender<String>,
@@ -591,6 +669,14 @@ mod tests {
     }
 
     #[test]
+    fn path_gate_backoffs_after_successful_send() {
+        let mut gate = PathRequestGate::new();
+        gate.record_send(dest(4), 100.0);
+        assert_eq!(gate.decide(dest(4), 110.0), PathRequestDecision::Backoff);
+        assert_eq!(gate.decide(dest(4), 121.0), PathRequestDecision::Send);
+    }
+
+    #[test]
     fn path_gate_clears_on_path_resolution() {
         let mut gate = PathRequestGate::new();
         gate.record_queue_failure(dest(3), 100.0);
@@ -604,5 +690,37 @@ mod tests {
         assert!(gate.should_warn(dest(4), 100.0));
         assert!(!gate.should_warn(dest(4), 110.0));
         assert!(gate.should_warn(dest(4), 121.0));
+    }
+
+    #[test]
+    fn choose_lxmf_send_route_prefers_direct_when_path_and_pubkey_known() {
+        assert_eq!(
+            choose_lxmf_send_route(true, true, true),
+            LxmfSendRoute::Direct
+        );
+    }
+
+    #[test]
+    fn choose_lxmf_send_route_uses_propagated_when_offline_with_pn() {
+        assert_eq!(
+            choose_lxmf_send_route(false, false, true),
+            LxmfSendRoute::Propagated
+        );
+    }
+
+    #[test]
+    fn choose_lxmf_send_route_errors_without_path_or_pn() {
+        assert_eq!(
+            choose_lxmf_send_route(false, false, false),
+            LxmfSendRoute::NoPropagationNode
+        );
+    }
+
+    #[test]
+    fn choose_lxmf_send_route_keeps_direct_when_path_without_pubkey() {
+        assert_eq!(
+            choose_lxmf_send_route(true, false, false),
+            LxmfSendRoute::Direct
+        );
     }
 }

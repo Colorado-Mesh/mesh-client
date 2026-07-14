@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, PARENT_HOVER_ATTR } from 'lucide-react-motio
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
@@ -18,6 +19,7 @@ import {
   MAX_NOMAD_PAGE_CACHE_CHARS,
   setNomadPageCache,
 } from '@/renderer/lib/nomad/nomadPageCache';
+import { humanizeNomadPageError } from '@/renderer/lib/nomad/nomadPageErrorHumanize';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import type { NomadNodeRow, NomadPageRequestData } from '@/shared/nomad-types';
 
@@ -340,7 +342,7 @@ export default function NomadNetworkPanel({
       if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
       setPageLoading(false);
       if (!res.ok || !res.content) {
-        setPageError(res.error ?? t('common.error'));
+        setPageError(humanizeNomadPageError(res.error, t));
         return;
       }
       const { text, truncated } = truncateNomadPageContent(res.content);
@@ -371,17 +373,29 @@ export default function NomadNetworkPanel({
       fileDownloadInFlightRef.current = true;
       setFileDownloading(true);
       setFileDownloadError(null);
-      const normalizedPath = normalizeNomadPagePath(path);
-      const res = await fetchNomadFile(hash, normalizedPath);
-      if (!mountedRef.current) return;
-      fileDownloadInFlightRef.current = false;
-      setFileDownloading(false);
-      if (!res.ok || !res.content_base64) {
-        setFileDownloadError(res.error ?? t('common.error'));
-        return;
+      try {
+        const normalizedPath = normalizeNomadPagePath(path);
+        const res = await fetchNomadFile(hash, normalizedPath);
+        if (!mountedRef.current) return;
+        if (!res.ok || !res.content_base64) {
+          setFileDownloadError(humanizeNomadPageError(res.error, t));
+          return;
+        }
+        const fileName = res.file_name ?? normalizedPath.split('/').pop() ?? 'downloaded_file';
+        downloadNomadFileFromBase64(fileName, res.content_base64);
+      } catch (e) {
+        // Failure point: unexpected fetchNomadFile reject. Fallback: humanize if possible.
+        if (!mountedRef.current) return;
+        console.warn('[NomadNetworkPanel] file download ' + errLikeToLogString(e));
+        setFileDownloadError(humanizeNomadPageError(undefined, t));
+      } finally {
+        if (mountedRef.current) {
+          fileDownloadInFlightRef.current = false;
+          setFileDownloading(false);
+        } else {
+          fileDownloadInFlightRef.current = false;
+        }
       }
-      const fileName = res.file_name ?? normalizedPath.split('/').pop() ?? 'downloaded_file';
-      downloadNomadFileFromBase64(fileName, res.content_base64);
     },
     [fetchNomadFile, t],
   );
@@ -455,6 +469,20 @@ export default function NomadNetworkPanel({
     [toggleFavorite],
   );
 
+  const handleMicronNavigate = useCallback(
+    (hash: string, path: string, requestData?: NomadPageRequestData) => {
+      void loadNodePage(hash, path, { requestData });
+    },
+    [loadNodePage],
+  );
+
+  const handleMicronDownload = useCallback(
+    (hash: string, path: string) => {
+      void downloadNodeFile(hash, path);
+    },
+    [downloadNodeFile],
+  );
+
   const searchPlaceholder =
     activeTab === 'favourites'
       ? t('nomadNetwork.searchFavourites', { count: favouritesCount })
@@ -470,7 +498,7 @@ export default function NomadNetworkPanel({
   const showStartStackBanner = !sidecarRunning && lastRefreshAt == null && allRows.length === 0;
 
   return (
-    <div className="flex h-full min-h-0 flex-col p-4">
+    <div className="flex h-full min-h-0 min-w-0 flex-col p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-medium text-gray-100">{t('nomadNetwork.title')}</h2>
         <button
@@ -643,8 +671,8 @@ export default function NomadNetworkPanel({
               {t('nomadNetwork.selectNode')}
             </p>
           ) : (
-            <>
-              <div className="flex flex-wrap items-center gap-2 border-b border-gray-700/60 p-2">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+              <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-700/60 p-2">
                 <span className="truncate font-medium text-gray-100">
                   {selectedNode.display_name ?? selectedNode.destination_hash.slice(0, 16)}
                 </span>
@@ -748,7 +776,7 @@ export default function NomadNetworkPanel({
               </div>
 
               <form
-                className="flex gap-2 border-b border-gray-700/60 p-2"
+                className="flex shrink-0 gap-2 border-b border-gray-700/60 p-2"
                 onSubmit={(e) => {
                   e.preventDefault();
                   submitUrlBar();
@@ -766,43 +794,44 @@ export default function NomadNetworkPanel({
                 />
               </form>
 
-              <div className="min-h-0 flex-1 overflow-y-auto p-3">
-                {fileDownloading ? (
-                  <p className="text-muted mb-2 text-sm">{t('nomadNetwork.fileDownloading')}</p>
-                ) : null}
-                {fileDownloadError ? (
-                  <p className="mb-2 text-sm text-red-300">
-                    {t('nomadNetwork.fileDownloadFailed', { error: fileDownloadError })}
-                  </p>
-                ) : null}
-                {pageLoading ? (
-                  <p className="text-muted text-sm">{t('nomadNetwork.pageLoading')}</p>
-                ) : pageError ? (
-                  <p className="text-sm text-red-300">
-                    {t('nomadNetwork.pageFailed', { error: pageError })}
-                  </p>
-                ) : pageContent != null ? (
-                  isNomadMicronPage(pageContentType, pagePath) && !showPageSource ? (
-                    <NomadMicronPageView
-                      content={pageContent}
-                      defaultPagePath={DEFAULT_NOMAD_NODE_PAGE_PATH}
-                      selectedHash={selectedNode.destination_hash}
-                      onNavigate={(hash, path, requestData) => {
-                        void loadNodePage(hash, path, { requestData });
-                      }}
-                      onDownloadFile={(hash, path) => {
-                        void downloadNodeFile(hash, path);
-                      }}
-                      onOpenDm={onOpenDm}
-                    />
-                  ) : (
-                    <pre className="font-mono text-xs leading-relaxed whitespace-pre-wrap text-gray-200">
-                      {pageContent}
-                    </pre>
-                  )
-                ) : null}
+              <div className="relative min-h-0 min-w-0 flex-1">
+                <div
+                  data-testid="nomad-page-scroll"
+                  className="nomad-page-scroll bg-deep-black/50 h-full min-h-0 min-w-0 overflow-auto overscroll-contain p-3 [overflow-anchor:none]"
+                >
+                  {fileDownloading ? (
+                    <p className="text-muted mb-2 text-sm">{t('nomadNetwork.fileDownloading')}</p>
+                  ) : null}
+                  {fileDownloadError ? (
+                    <p className="mb-2 text-sm text-red-300">
+                      {t('nomadNetwork.fileDownloadFailed', { error: fileDownloadError })}
+                    </p>
+                  ) : null}
+                  {pageLoading ? (
+                    <p className="text-muted text-sm">{t('nomadNetwork.pageLoading')}</p>
+                  ) : pageError ? (
+                    <p className="text-sm text-red-300">
+                      {t('nomadNetwork.pageFailed', { error: pageError })}
+                    </p>
+                  ) : pageContent != null ? (
+                    isNomadMicronPage(pageContentType, pagePath) && !showPageSource ? (
+                      <NomadMicronPageView
+                        content={pageContent}
+                        defaultPagePath={DEFAULT_NOMAD_NODE_PAGE_PATH}
+                        selectedHash={selectedNode.destination_hash}
+                        onNavigate={handleMicronNavigate}
+                        onDownloadFile={handleMicronDownload}
+                        onOpenDm={onOpenDm}
+                      />
+                    ) : (
+                      <pre className="font-mono text-xs leading-relaxed whitespace-pre text-gray-200">
+                        {pageContent}
+                      </pre>
+                    )
+                  ) : null}
+                </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>

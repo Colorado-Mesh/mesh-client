@@ -338,7 +338,13 @@
     "exportForDeveloper": "Geliştirici için destek paketini dışa aktarın",
     "exportForDeveloperButton": "Geliştirici için Dışa Aktarma",
     "exportForDeveloperWarning": "Kaydedilmiş şifreleri (MeshCore oda kimlik bilgileri, MQTT ayarları vb.) içerebilecek tam veritabanınızı içerir. Bu paketi yalnızca bakımcılarla özel olarak paylaşın; asla herkese açık GitHub'da paylaşmayın.",
-    "exportSupportBundleFailed": "Destek paketi dışa aktarılamadı: {{message}}"
+    "exportSupportBundleFailed": "Destek paketi dışa aktarılamadı: {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "Tüm LXMF kişilerini temizle",
+    "clearReticulumContactsDesc": "Kişiler sekmesinden ve sidecar kişi listesinden her girişi kaldırır. Hedefler adlarıyla Peers sekmesinde kalır. Sohbet mesajları korunur. Birine mesaj gönderdiğinizde veya Kişi olarak kaydet’i kullandığınızda kişiler yeniden görünür.",
+    "clearReticulumContactsConfirm": "Bu, tüm {{count}} Reticulum LXMF kişisini kalıcı olarak temizler. Hedefler Peers sekmesinde kalır; mesajlar silinmez. Bu işlem geri alınamaz.",
+    "clearReticulumContactsConfirmButton": "{{count}} kişiyi temizle",
+    "clearReticulumContactsButton": "Tüm Kişileri Temizle ({{count}})"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -541,7 +547,19 @@
     "waitingMessagesSilentDrain": "Radyoda sıraya alınan mesajlar getiriliyor…",
     "waitingMessagesDrainDeferred": "Telsiz meşgulken mesaj senkronizasyonu duraklatıldı (yönetici/izleme)…",
     "waitingMessagesSerialHint": "USB seri, aynı anda bir komutu işler; mesajlar küçük gruplar halinde gelebilir.",
-    "waitingMessagesSyncFailed": "Sıraya alınan iletiler senkronize edilemedi: {{message}}"
+    "waitingMessagesSyncFailed": "Sıraya alınan iletiler senkronize edilemedi: {{message}}",
+    "dmPathChecking": "Yol kontrol ediliyor…",
+    "dmPathCheckingAria": "Varış yolu erişilebilirliğini kontrol etme",
+    "dmPathCheckingTooltip": "Bu hedefe bir Reticulum yolu talep ediliyor.",
+    "dmPathReachable": "Ulaşılabilir yol",
+    "dmPathReachableHops": "Yol erişilebilir · {{hops}} atlama",
+    "dmPathReachableAria": "Varış noktasına ulaşılabiliyor",
+    "dmPathReachableTooltip": "Bu hedefe bir Reticulum yolu bilinmektedir. Akran çevrimdışıysa doğrudan teslimat yine de başarısız olabilir.",
+    "dmPathUnreachable": "Yol yok",
+    "dmPathUnreachableAria": "Varış noktasına ulaşılamıyor",
+    "dmPathUnreachableTooltip": "Bu hedefe henüz Reticulum yolu yok. Mesajlar daha sonra yapılandırılmış bir yayılma düğümü aracılığıyla iletilebilir.",
+    "dmPathRequestPathAria": "Bu hedefe Reticulum yolu iste",
+    "dmPathProbeAria": "Bu hedef için Reticulum yolu erişilebilirliğini yokla"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -801,7 +819,6 @@
       "mnemonic": "Bu ifadeyi yazın ve güvenli bir şekilde saklayın.",
       "confirmSaved": "Kurtarma cümlemi kaydettim",
       "hashLabel": "LXMF karması:",
-      "nameLabel": "Ad Soyad:",
       "failed": "Kimlik kurulumu başarısız oldu",
       "export": "Yedeklemeyi dışa aktar",
       "exportPassphrase": "Yedekleme parolası",
@@ -823,7 +840,10 @@
       "identityAlreadyConfigured": "Bir kimlik zaten yapılandırılmıştır. Yenisini içe aktarmak için değiştirmeyi onaylayın.",
       "identityFileMissing": "Kimlik anahtarı dosyası eksik. Özel anahtarınızı veya kurtarma ifadenizi yeniden içe aktarın.",
       "backupHashMismatch": "Yedekleme karmaları diskteki kimlik anahtarı dosyasıyla eşleşmiyor.",
-      "importPrivateKeyRequiresStack": "Özel anahtarın içe aktarılması, tam bir Reticulum yığını yapısı gerektirir."
+      "importPrivateKeyRequiresStack": "Özel anahtarın içe aktarılması, tam bir Reticulum yığını yapısı gerektirir.",
+      "saveDisplayName": "Görünen adı kaydet",
+      "saveDisplayNameFailed": "Görünen ad kaydedilemedi.",
+      "displayNameSaved": "Görünen ad kaydedildi."
     },
     "reticulumInterfaces": {
       "title": "Ara birimler",
@@ -1038,8 +1058,6 @@
       "txQueueDrops": "{{name}}: giden paketler düştü ({{count}} kuyruğa alındı)",
       "txQueueDropsHint": "Genellikle ölü bir TCP arayüzü hala etkindir. Kuyruk taşmasını durdurmak için erişilemeyen hub'ları devre dışı bırakın.",
       "suppressed": "{{count}} benzer sepet günlük satırları yakın zamanda bastırıldı.",
-      "linkDeliveryTimeout": "{{hash}} 'a doğrudan LXMF bağlantısı… zaman aşımına uğradı ({{count}}×)",
-      "linkDeliveryTimeoutHint": "Eş çevrimdışı olabilir veya RNS aktarımı aşırı yüklenmiş olabilir. DM'ler, bağlantı başarısız olana kadar Gönderme işleminde kalabilir.",
       "transportSaturated": "RNS transport saturated ({{count}} path - request drops)",
       "transportSaturatedHint": "Ölü arayüzleri devre dışı bırakın ve yığını yeniden başlatın. Eşzamanlı Reticulum trafiğini azaltın.",
       "slowTransportQuery": "RNS taşıma sorguları yavaş veya başarısız ({{count}}×)",
@@ -2627,7 +2645,18 @@
     "forward": "İleri",
     "invalidUrl": "Geçersiz Göçebe sayfa adresi",
     "collapseNodeList": "Düğüm listesini daralt",
-    "expandNodeList": "Düğüm listesini genişlet"
+    "expandNodeList": "Düğüm listesini genişlet",
+    "errors": {
+      "pathTimeout": "Bu düğüme rota yok (yol araması zaman aşımına uğradı). Daha yakın bir düğüm deneyin veya daha yeni bir announce bekleyin.",
+      "pubkeyNotFound": "Bu düğümün kimlik anahtarı bulunamadı. Bir Göçebe duyurusunu bekleyin, sonra tekrar deneyin.",
+      "linkTimeout": "Düğüme bağlantı zamanında kurulamadı.",
+      "responseTimeout": "Düğüm bağlantıyı kabul etti ancak sayfayı zamanında döndürmedi.",
+      "missingIdentity": "Bu düğümün henüz hatırlanan bir kimliği yok. Bir Göçebe duyurusunu bekleyin, sonra tekrar deneyin.",
+      "transportUnavailable": "Reticulum taşıması kullanılamıyor. Yığını yeniden başlatın ve tekrar deneyin.",
+      "sidecarNotRunning": "Reticulum sidecar çalışmıyor. Bağlantı bölümünden yığını başlatın, sonra tekrar deneyin.",
+      "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
+      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",
@@ -2718,7 +2747,13 @@
     "contactYes": "Evet",
     "contactNo": "Hayır",
     "tabFavorites": "Favoriler",
-    "emptyFavorites": "Henüz favori akranınız yok — burada sabitlemek için bir kişiye veya akranınıza yıldız verin."
+    "emptyFavorites": "Henüz favori akranınız yok — burada sabitlemek için bir kişiye veya akranınıza yıldız verin.",
+    "lookupPlaceholder": "Hedef hash'ini ara…",
+    "lookupAria": "Hedef özetine göre eş arayın",
+    "lookupSubmit": "Ara",
+    "lookupSubmitAria": "Yol isteyin ve hedef özetini yoklayın",
+    "lookupInvalid": "Geçerli 32 karakterlik bir LXMF hedef özeti veya lxmf:// bağlantısı girin.",
+    "lookupHint": "Henüz eşler listesinde olmayan bir karma için bir yol isteyin (örneğin, paylaştığınız bir merkezdeki bir eş)."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} kişi veritabanına aktarıldı.",
@@ -3544,7 +3579,10 @@
     "announceSaveSidecarStopped": "Duyuru ayarlarını kaydetmeden önce Reticulum yığınını başlat.",
     "clearAnnouncesDone": "Anonslar temizlendi.",
     "clearAnnouncesFailed": "Duyurular temizlenemedi.",
-    "announceIntervalHint": "Varsayılan 3600 s (1 saat). Yalnızca başlangıç anonsları için 0 'ı kullanın."
+    "announceIntervalHint": "Varsayılan 3600 sn (1 sa). Yalnızca başlangıç announce’ları için 0 kullanın. Şimdi announce, hemen bir LXMF teslimat announce’ı gönderir.",
+    "announceNow": "Şimdi duyur",
+    "announceNowDone": "LXMF teslimat duyurusu gönderildi.",
+    "announceNowFailed": "Duyurulamadı: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "Avatar Görünümü",

@@ -7,6 +7,7 @@ export const RETICULUM_STALE_OUTBOUND_MS = 24 * MS_PER_HOUR;
 
 /**
  * Mark stale outbound Reticulum messages as failed in SQLite.
+ * Covers delivery_status sending/pending/queued (ingest maps queued→sending in the UI store).
  * Failure point: DB IPC unavailable — logs and returns count 0.
  */
 export async function markStaleReticulumOutboundMessages(

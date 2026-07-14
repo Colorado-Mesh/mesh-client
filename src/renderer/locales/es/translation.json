@@ -338,7 +338,13 @@
     "exportForDeveloper": "Paquete de soporte de exportación para desarrolladores",
     "exportForDeveloperButton": "Exportar para desarrollador",
     "exportForDeveloperWarning": "Incluye su base de datos completa, que puede contener contraseñas guardadas (credenciales de sala MeshCore, configuración de MQTT, etc.). Comparta este paquete de forma privada solo con los mantenedores, nunca en GitHub público.",
-    "exportSupportBundleFailed": "No se pudo exportar el paquete de soporte: {{message}}"
+    "exportSupportBundleFailed": "No se pudo exportar el paquete de soporte: {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "Borrar todos los contactos LXMF",
+    "clearReticulumContactsDesc": "Elimina todas las entradas de la pestaña Contactos y de la lista de contactos del sidecar. Los destinos se conservan en la pestaña Pares con sus nombres. Los mensajes de chat se conservan. Los contactos reaparecen cuando envías un mensaje o usas Guardar como contacto.",
+    "clearReticulumContactsConfirm": "Esto borrará permanentemente los {{count}} contactos Reticulum LXMF. Los destinos permanecen en la pestaña Pares; los mensajes no se eliminan. Esto no se puede deshacer.",
+    "clearReticulumContactsConfirmButton": "Borrar {{count}} contactos",
+    "clearReticulumContactsButton": "Borrar todos los contactos ({{count}})"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -541,7 +547,19 @@
     "waitingMessagesSilentDrain": "Recuperando mensajes en cola en la radio...",
     "waitingMessagesDrainDeferred": "Sincronización de mensajes en pausa mientras la radio está ocupada (administrador/rastreo)...",
     "waitingMessagesSerialHint": "El USB serial maneja un comando a la vez; Los mensajes pueden llegar en pequeños lotes.",
-    "waitingMessagesSyncFailed": "No se pudieron sincronizar los mensajes en cola: {{message}}"
+    "waitingMessagesSyncFailed": "No se pudieron sincronizar los mensajes en cola: {{message}}",
+    "dmPathChecking": "Comprobando ruta...",
+    "dmPathCheckingAria": "Comprobación de la accesibilidad de la ruta de destino",
+    "dmPathCheckingTooltip": "Solicitar una ruta de Reticulum a este destino.",
+    "dmPathReachable": "Ruta accesible",
+    "dmPathReachableHops": "Ruta alcanzable · {{hops}} salto(s)",
+    "dmPathReachableAria": "Se puede acceder a la ruta de destino",
+    "dmPathReachableTooltip": "Se conoce un camino de Reticulum a este destino. La entrega directa aún puede fallar si el compañero está desconectado.",
+    "dmPathUnreachable": "Sin ruta",
+    "dmPathUnreachableAria": "No se puede acceder a la ruta de destino",
+    "dmPathUnreachableTooltip": "Aún no hay una ruta de Reticulum a este destino. Los mensajes aún pueden enviarse más tarde a través de un nodo de propagación configurado.",
+    "dmPathRequestPathAria": "Solicitar ruta de Reticulum a este destino",
+    "dmPathProbeAria": "Comprobar alcance de la ruta Reticulum para este destino"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -801,7 +819,6 @@
       "mnemonic": "Escribe esta frase y guárdala de forma segura.",
       "confirmSaved": "He guardado mi frase de recuperación",
       "hashLabel": "LXMF hash:",
-      "nameLabel": "Nombre:",
       "failed": "Error en la configuración de la identidad",
       "export": "Exportar copia de seguridad",
       "exportPassphrase": "Frase de contraseña de copia de seguridad",
@@ -823,7 +840,10 @@
       "identityAlreadyConfigured": "Ya hay una identidad configurada. Confirme el reemplazo para importar uno nuevo.",
       "identityFileMissing": "Falta el archivo de clave de identidad. Vuelva a importar su clave privada o frase de recuperación.",
       "backupHashMismatch": "Los hash de la copia de seguridad no coinciden con el archivo de clave de identidad en el disco.",
-      "importPrivateKeyRequiresStack": "La importación de claves privadas requiere una compilación completa de la pila de Reticulum."
+      "importPrivateKeyRequiresStack": "La importación de claves privadas requiere una compilación completa de la pila de Reticulum.",
+      "saveDisplayName": "Guardar nombre para mostrar",
+      "saveDisplayNameFailed": "Error al guardar el nombre para mostrar.",
+      "displayNameSaved": "Nombre para mostrar guardado."
     },
     "reticulumInterfaces": {
       "title": "Interfaces",
@@ -1038,8 +1058,6 @@
       "txQueueDrops": "{{name}}: paquetes salientes descartados ({{count}} en cola)",
       "txQueueDropsHint": "Por lo general, es causada por una interfaz TCP muerta que aún está habilitada. Deshabilite los concentradores inalcanzables para detener el desbordamiento de la cola.",
       "suppressed": "{{count}} líneas de registro de sidecar similares suprimidas recientemente.",
-      "linkDeliveryTimeout": "Enlace directo de LXMF a {{hash}}… agotado ({{count}}×)",
-      "linkDeliveryTimeoutHint": "El par puede estar fuera de línea o el transporte RNS está sobrecargado. Los DM pueden permanecer en Envío hasta que el enlace falle.",
       "transportSaturated": "Transporte RNS saturado (caídas de solicitud de ruta {{count}})",
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "Consultas de transporte RNS lentas o fallidas ({{count}}×)",
@@ -2627,7 +2645,18 @@
     "forward": "Adelante",
     "invalidUrl": "Dirección de página de Nomad no válida",
     "collapseNodeList": "Contraer lista de nodos",
-    "expandNodeList": "Expandir lista de nodos"
+    "expandNodeList": "Expandir lista de nodos",
+    "errors": {
+      "pathTimeout": "No hay ruta a este nodo (agotó el tiempo de búsqueda de ruta). Prueba un nodo más cercano o espera un anuncio más reciente.",
+      "pubkeyNotFound": "No se ha podido encontrar la clave de identidad de este nodo. Espera a que se anuncie un nómada e inténtalo de nuevo.",
+      "linkTimeout": "No se ha podido establecer el enlace al nodo a tiempo.",
+      "responseTimeout": "El nodo aceptó el enlace pero no devolvió la página a tiempo.",
+      "missingIdentity": "Este nodo aún no tiene ninguna identidad recordada. Espera a que se anuncie un nómada e inténtalo de nuevo.",
+      "transportUnavailable": "El transporte de Reticulum no está disponible. Reinicie la pila e inténtelo de nuevo.",
+      "sidecarNotRunning": "El sidecar de Reticulum no está en ejecución. Inicie la pila desde Conexión y vuelva a intentarlo.",
+      "responseTooLarge": "El nodo devolvió más datos de los que mesh-client acepta para esta solicitud.",
+      "nomadBusy": "Otra solicitud de página o archivo Nomad aún está en curso. Inténtalo de nuevo en un momento."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Distribución general",
@@ -2718,7 +2747,13 @@
     "contactYes": "Sí",
     "contactNo": "No",
     "tabFavorites": "Favoritos",
-    "emptyFavorites": "Todavía no hay compañeros favoritos: marca un contacto o un compañero para fijarlos aquí."
+    "emptyFavorites": "Todavía no hay compañeros favoritos: marca un contacto o un compañero para fijarlos aquí.",
+    "lookupPlaceholder": "Buscar hash de destino...",
+    "lookupAria": "Buscar par por hash de destino",
+    "lookupSubmit": "Buscar",
+    "lookupSubmitAria": "Solicitar ruta y sondear el hash de destino",
+    "lookupInvalid": "Introduce un hash de destino LXMF válido de 32 caracteres o un enlace lxmf://.",
+    "lookupHint": "Solicita una ruta para un hash que aún no está en la lista de compañeros (por ejemplo, un compañero en un centro que compartes)."
   },
   "radioPanel": {
     "offloadedContacts": "Se han descargado {{count}} contactos a la base de datos.",
@@ -3544,7 +3579,10 @@
     "announceSaveSidecarStopped": "Inicie la pila Reticulum antes de guardar la configuración del anuncio.",
     "clearAnnouncesDone": "Anuncios borrados.",
     "clearAnnouncesFailed": "No se han podido borrar los anuncios.",
-    "announceIntervalHint": "Predeterminado 3600 s (1 h). Utilice 0 para anuncios solo de inicio."
+    "announceIntervalHint": "Predeterminado 3600 s (1 h). Usa 0 para anuncios solo al inicio. Anunciar ahora envía de inmediato un anuncio de entrega LXMF.",
+    "announceNow": "Anunciar ahora",
+    "announceNowDone": "Anuncio de entrega LXMF enviado.",
+    "announceNowFailed": "No se ha podido anunciar: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "Icono del Avatar",

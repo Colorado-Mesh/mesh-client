@@ -50,6 +50,8 @@ interface ReticulumPeerStoreState {
   toggleFavorite: (hash: string, favorited: boolean) => Promise<void>;
   setCustomDisplayName: (hash: string, name: string | null) => Promise<void>;
   removeContact: (hash: string, identityId?: string | null) => Promise<void>;
+  /** Danger Zone: wipe sidecar + SQLite LXMF contacts; demotes them to peers (keeps Peers tab). */
+  clearAllContacts: () => Promise<{ clearedSidecar: number; clearedDb: number }>;
   restoreDismissedContact: (hash: string) => void;
   hydratePeerAppearancesFromDb: () => Promise<void>;
   patchPeerAppearance: (hash: string, appearance: ReticulumPeerAppearance) => void;
@@ -182,19 +184,35 @@ export function mergeReticulumPeerMaps(
   for (const [hash, row] of dbByHash) {
     if (dismissedContactHashes.has(hash)) continue;
     if (contactMap.has(hash)) continue;
-    const fromPeer = peerMap.get(hash);
-    const saved: ReticulumContact = {
-      destination_hash: hash,
-      display_name: row.display_name ?? fromPeer?.display_name ?? null,
-      last_heard: row.last_heard ?? fromPeer?.last_seen ?? 0,
-      hops: fromPeer?.hops ?? null,
-      interface: fromPeer?.interface ?? null,
-      favorited: Boolean(row.favorited),
-    };
-    contactMap.set(hash, saved);
+
+    // Favorites / renames / icons write destination rows without last_heard —
+    // keep peer meta but do not treat them as LXMF contacts.
     if (!peerMap.has(hash)) {
-      peerMap.set(hash, saved);
+      peerMap.set(hash, {
+        destination_hash: hash,
+        display_name: row.display_name ?? null,
+        hops: null,
+        interface: null,
+        favorited: Boolean(row.favorited),
+        custom_display_name: row.display_name?.trim() ? row.display_name : undefined,
+      });
     }
+
+    // Promote to contacts only when the row carries last_heard (Save Contact / message ingest).
+    if (row.last_heard == null) continue;
+
+    const fromPeer = peerMap.get(hash);
+    const base = overlayDbMeta(
+      {
+        destination_hash: hash,
+        display_name: row.display_name ?? fromPeer?.display_name ?? null,
+        hops: fromPeer?.hops ?? null,
+        interface: fromPeer?.interface ?? null,
+        favorited: Boolean(row.favorited),
+      },
+      dbByHash,
+    );
+    contactMap.set(hash, { ...base, last_heard: row.last_heard });
   }
 
   return { peers: peerMap, contacts: contactMap };
@@ -396,6 +414,83 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
     }
   },
 
+  clearAllContacts: async () => {
+    // Durable clears first — only demote UI after sidecar + SQLite succeed so a
+    // partial failure does not leave Contacts empty while DB/sidecar still hold rows.
+    let clearedSidecar: number;
+    try {
+      const body = (await window.electronAPI.reticulum.proxyDelete('/api/v1/contacts')) as {
+        ok?: boolean;
+        cleared?: number;
+        error?: string;
+      };
+      if (body?.ok === false) {
+        throw new Error(body.error ?? 'sidecar clear contacts failed');
+      }
+      clearedSidecar = typeof body?.cleared === 'number' ? body.cleared : 0;
+    } catch (e) {
+      console.warn('[reticulumPeerStore] clearAllContacts sidecar ' + errLikeToLogString(e));
+      throw e;
+    }
+
+    let clearedDb: number;
+    try {
+      const result = await window.electronAPI.db.clearReticulumContactDestinations();
+      clearedDb = result.changes ?? 0;
+    } catch (e) {
+      console.warn('[reticulumPeerStore] clearAllContacts db ' + errLikeToLogString(e));
+      // Sidecar already cleared — reconcile UI from canonical sources so retry is safe.
+      try {
+        await refreshReticulumPeersFromSidecar();
+      } catch (refreshErr) {
+        console.warn(
+          '[reticulumPeerStore] clearAllContacts refresh after db fail ' +
+            errLikeToLogString(refreshErr),
+        );
+      }
+      throw e;
+    }
+
+    set((s) => {
+      const peers = new Map(s.peers);
+      for (const [hash, contact] of s.contacts) {
+        const existing = peers.get(hash);
+        if (existing) {
+          peers.set(hash, {
+            ...existing,
+            display_name: existing.display_name ?? contact.display_name ?? null,
+            custom_display_name: existing.custom_display_name ?? contact.custom_display_name,
+            favorited: existing.favorited || contact.favorited,
+            last_seen: existing.last_seen ?? contact.last_heard ?? null,
+          });
+        } else {
+          peers.set(hash, {
+            destination_hash: hash,
+            display_name: contact.display_name ?? null,
+            custom_display_name: contact.custom_display_name,
+            hops: contact.hops ?? null,
+            interface: contact.interface ?? null,
+            favorited: Boolean(contact.favorited),
+            last_seen: contact.last_heard ?? null,
+          });
+        }
+      }
+      return { peers, contacts: new Map() };
+    });
+
+    const emptyDismissed = new Set<string>();
+    persistDismissedContactHashes(emptyDismissed);
+    set({ dismissedContactHashes: emptyDismissed });
+
+    try {
+      await refreshReticulumPeersFromSidecar();
+    } catch (e) {
+      console.warn('[reticulumPeerStore] clearAllContacts refresh ' + errLikeToLogString(e));
+    }
+
+    return { clearedSidecar, clearedDb };
+  },
+
   restoreDismissedContact: (hash) => {
     const key = normalizeHash(hash);
     const dismissed = new Set(get().dismissedContactHashes);
@@ -475,69 +570,150 @@ export function reticulumHashForNodeId(nodeId: number): string | null {
 
 export const RETICULUM_PEER_REFRESH_MS = 30_000;
 
-/** Fetch sidecar peers/contacts, overlay SQLite + nomad announce names, update store. */
-export async function refreshReticulumPeersFromSidecar(): Promise<ReticulumContact[]> {
-  try {
-    const [contactsBody, peersBody, dbRows, nomadBody] = await Promise.all([
-      window.electronAPI.reticulum.proxyGet('/api/v1/contacts') as Promise<{
-        contacts?: ReticulumContactWireRow[];
-      }>,
-      window.electronAPI.reticulum.proxyGet('/api/v1/peers') as Promise<{
-        peers?: ReticulumPeerWireRow[];
-      }>,
-      window.electronAPI.db.getReticulumDestinations() as Promise<ReticulumDestinationDbRow[]>,
-      window.electronAPI.reticulum.proxyGet('/api/v1/nomadnetwork/nodes') as Promise<{
-        nodes?: { destination_hash: string; display_name?: string | null }[];
-      }>,
-    ]);
+/** Optimistic Peers-tab row from an `announce.received` WS payload (before path-table fetch). */
+export function applyReticulumAnnounceReceivedOptimistic(payload: unknown): void {
+  if (!payload || typeof payload !== 'object') return;
+  const p = payload as Record<string, unknown>;
+  const rawHash = typeof p.destination_hash === 'string' ? p.destination_hash : null;
+  if (!rawHash) return;
+  const hash = normalizeHash(rawHash);
+  if (!hash) return;
 
-    const nomadNameByHash = new Map<string, string>();
-    for (const node of nomadBody.nodes ?? []) {
-      const name = node.display_name?.trim();
-      if (!name) continue;
-      nomadNameByHash.set(normalizeHash(node.destination_hash), name);
-    }
+  const displayNameRaw = typeof p.display_name === 'string' ? p.display_name.trim() : '';
+  const display_name = displayNameRaw
+    ? (sanitizeReticulumDisplayName(displayNameRaw) ?? null)
+    : null;
+  const hops =
+    typeof p.hops === 'number' && Number.isFinite(p.hops) ? Math.trunc(p.hops) : undefined;
 
-    const hopsByHash = new Map<string, number>();
-    const ifaceByHash = new Map<string, string>();
-    for (const peer of peersBody.peers ?? []) {
-      const hash = normalizeHash(peer.destination_hash);
-      if (peer.hops != null) hopsByHash.set(hash, peer.hops);
-      if (peer.interface) ifaceByHash.set(hash, peer.interface);
-    }
+  useReticulumPeerStore.getState().replacePeers([
+    {
+      destination_hash: hash,
+      display_name,
+      hops: hops ?? null,
+      last_seen: Date.now(),
+      interface: null,
+    },
+  ]);
+  registerReticulumDestinationHash(reticulumHashToNodeId(hash), hash);
+}
 
-    const wirePeers = (peersBody.peers ?? []).map((row) => {
-      const peer = wirePeerToPeer(row);
-      const hash = normalizeHash(peer.destination_hash);
-      if (peer.display_name?.trim()) return peer;
-      const nomadName = nomadNameByHash.get(hash);
-      return nomadName ? { ...peer, display_name: nomadName } : peer;
+function appearancesFromDbRows(
+  dbRows: ReticulumDestinationDbRow[],
+): Map<string, ReticulumPeerAppearance> {
+  const next = new Map<string, ReticulumPeerAppearance>();
+  for (const row of dbRows) {
+    if (!row.destination_hash) continue;
+    if (row.icon_name == null && row.icon_color == null) continue;
+    next.set(normalizeHash(row.destination_hash), {
+      icon_name: row.icon_name,
+      icon_color: row.icon_color,
     });
-    const wireContacts = (contactsBody.contacts ?? []).map((row) =>
-      wireContactToContact(row, hopsByHash, ifaceByHash),
-    );
-
-    const dismissed = useReticulumPeerStore.getState().dismissedContactHashes;
-    const merged = mergeReticulumPeerMaps(wirePeers, wireContacts, dbRows ?? [], dismissed);
-    const { peers, contacts } = capReticulumPeerMaps(merged.peers, merged.contacts);
-
-    useReticulumPeerStore.setState({
-      peers,
-      contacts,
-      lastRefreshAt: Date.now(),
-    });
-    await useReticulumPeerStore.getState().hydratePeerAppearancesFromDb();
-
-    for (const peer of peers.values()) {
-      registerReticulumDestinationHash(
-        reticulumHashToNodeId(peer.destination_hash),
-        peer.destination_hash,
-      );
-    }
-
-    return [...contacts.values()];
-  } catch (e) {
-    console.warn('[reticulumPeerStore] refresh ' + errLikeToLogString(e));
-    return [];
   }
+  return next;
+}
+
+/** Single-flight + trailing coalesce so a slow older snapshot cannot overwrite a newer one. */
+let peerRefreshInFlight: Promise<ReticulumContact[]> | null = null;
+let peerRefreshPendingRerun = false;
+
+/** Test helper — reset peer-refresh coalesce state. */
+export function resetReticulumPeerRefreshSingleFlightForTests(): void {
+  peerRefreshInFlight = null;
+  peerRefreshPendingRerun = false;
+}
+
+async function refreshReticulumPeersFromSidecarOnce(): Promise<ReticulumContact[]> {
+  const [contactsBody, peersBody, dbRows, nomadBody] = await Promise.all([
+    window.electronAPI.reticulum.proxyGet('/api/v1/contacts') as Promise<{
+      contacts?: ReticulumContactWireRow[];
+    }>,
+    window.electronAPI.reticulum.proxyGet('/api/v1/peers') as Promise<{
+      peers?: ReticulumPeerWireRow[];
+    }>,
+    window.electronAPI.db.getReticulumDestinations() as Promise<ReticulumDestinationDbRow[]>,
+    window.electronAPI.reticulum.proxyGet('/api/v1/nomadnetwork/nodes') as Promise<{
+      nodes?: { destination_hash: string; display_name?: string | null }[];
+    }>,
+  ]);
+
+  // A newer request arrived while we were fetching — skip applying this stale snapshot.
+  if (peerRefreshPendingRerun) {
+    return [...useReticulumPeerStore.getState().contacts.values()];
+  }
+
+  const nomadNameByHash = new Map<string, string>();
+  for (const node of nomadBody.nodes ?? []) {
+    const name = node.display_name?.trim();
+    if (!name) continue;
+    nomadNameByHash.set(normalizeHash(node.destination_hash), name);
+  }
+
+  const hopsByHash = new Map<string, number>();
+  const ifaceByHash = new Map<string, string>();
+  for (const peer of peersBody.peers ?? []) {
+    const hash = normalizeHash(peer.destination_hash);
+    if (peer.hops != null) hopsByHash.set(hash, peer.hops);
+    if (peer.interface) ifaceByHash.set(hash, peer.interface);
+  }
+
+  const wirePeers = (peersBody.peers ?? []).map((row) => {
+    const peer = wirePeerToPeer(row);
+    const hash = normalizeHash(peer.destination_hash);
+    if (peer.display_name?.trim()) return peer;
+    const nomadName = nomadNameByHash.get(hash);
+    return nomadName ? { ...peer, display_name: nomadName } : peer;
+  });
+  const wireContacts = (contactsBody.contacts ?? []).map((row) =>
+    wireContactToContact(row, hopsByHash, ifaceByHash),
+  );
+
+  const dismissed = useReticulumPeerStore.getState().dismissedContactHashes;
+  const merged = mergeReticulumPeerMaps(wirePeers, wireContacts, dbRows ?? [], dismissed);
+  const { peers, contacts } = capReticulumPeerMaps(merged.peers, merged.contacts);
+  const peerAppearanceByHash = appearancesFromDbRows(dbRows ?? []);
+
+  useReticulumPeerStore.setState({
+    peers,
+    contacts,
+    peerAppearanceByHash,
+    lastRefreshAt: Date.now(),
+  });
+
+  // Chat/DM identity path — contacts only. Path-table peers register on demand from the panel.
+  for (const contact of contacts.values()) {
+    registerReticulumDestinationHash(
+      reticulumHashToNodeId(contact.destination_hash),
+      contact.destination_hash,
+    );
+  }
+
+  return [...contacts.values()];
+}
+
+/** Fetch sidecar peers/contacts, overlay SQLite + nomad announce names, update store. */
+export function refreshReticulumPeersFromSidecar(): Promise<ReticulumContact[]> {
+  if (peerRefreshInFlight) {
+    peerRefreshPendingRerun = true;
+    return peerRefreshInFlight;
+  }
+
+  peerRefreshInFlight = (async () => {
+    try {
+      peerRefreshPendingRerun = false;
+      let result = await refreshReticulumPeersFromSidecarOnce();
+      while (peerRefreshPendingRerun) {
+        peerRefreshPendingRerun = false;
+        result = await refreshReticulumPeersFromSidecarOnce();
+      }
+      return result;
+    } catch (e) {
+      console.warn('[reticulumPeerStore] refresh ' + errLikeToLogString(e));
+      return [];
+    } finally {
+      peerRefreshInFlight = null;
+    }
+  })();
+
+  return peerRefreshInFlight;
 }

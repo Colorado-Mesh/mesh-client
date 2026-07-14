@@ -338,7 +338,13 @@
     "exportForDeveloper": "Offre groupée de support à l'exportation pour les développeurs",
     "exportForDeveloperButton": "Exporter pour le développeur",
     "exportForDeveloperWarning": "Inclut votre base de données complète, qui peut contenir des mots de passe enregistrés (identifiants de salle MeshCore, paramètres MQTT, etc.). Partagez ce bundle en privé avec les responsables uniquement – ​​jamais sur GitHub public.",
-    "exportSupportBundleFailed": "Impossible d'exporter le pack de support : {{message}}"
+    "exportSupportBundleFailed": "Impossible d'exporter le pack de support : {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "Effacer tous les contacts LXMF",
+    "clearReticulumContactsDesc": "Supprime toutes les entrées de l’onglet Contacts et de la liste de contacts du side-car. Les destinations restent dans l’onglet Pairs avec leurs noms. Les messages de chat sont conservés. Les contacts réapparaissent lorsque vous écrivez à quelqu’un ou utilisez Enregistrer comme contact.",
+    "clearReticulumContactsConfirm": "Cela effacera définitivement les {{count}} contacts Reticulum LXMF. Les destinations restent dans l’onglet Pairs ; les messages ne sont pas supprimés. Cette action est irréversible.",
+    "clearReticulumContactsConfirmButton": "Effacer {{count}} contacts",
+    "clearReticulumContactsButton": "Effacer tous les contacts ({{count}})"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -541,7 +547,19 @@
     "waitingMessagesSilentDrain": "Récupération des messages en file d'attente à la radio…",
     "waitingMessagesDrainDeferred": "Synchronisation des messages interrompue pendant que la radio est occupée (administration/trace)…",
     "waitingMessagesSerialHint": "La série USB gère une commande à la fois ; les messages peuvent arriver par petits lots.",
-    "waitingMessagesSyncFailed": "Échec de la synchronisation des messages en file d'attente : {{message}}"
+    "waitingMessagesSyncFailed": "Échec de la synchronisation des messages en file d'attente : {{message}}",
+    "dmPathChecking": "Vérification du chemin…",
+    "dmPathCheckingAria": "Vérification de l'accessibilité du chemin de destination",
+    "dmPathCheckingTooltip": "Demander un chemin de Reticulum vers cette destination.",
+    "dmPathReachable": "Chemin accessible",
+    "dmPathReachableHops": "Chemin joignable · {{hops}} saut(s)",
+    "dmPathReachableAria": "Le chemin de destination est accessible",
+    "dmPathReachableTooltip": "Un chemin Reticulum vers cette destination est connu. La livraison directe peut toujours échouer si le pair est hors ligne.",
+    "dmPathUnreachable": "Aucun chemin",
+    "dmPathUnreachableAria": "Le chemin de destination n'est pas accessible",
+    "dmPathUnreachableTooltip": "Pas encore de chemin de Reticulum vers cette destination. Les messages peuvent toujours être livrés plus tard via un nœud de propagation configuré.",
+    "dmPathRequestPathAria": "Demander un chemin Reticulum vers cette destination",
+    "dmPathProbeAria": "Vérifier l’accessibilité du chemin Reticulum pour cette destination"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -801,7 +819,6 @@
       "mnemonic": "Notez cette phrase et rangez-la en toute sécurité.",
       "confirmSaved": "J'ai enregistré ma phrase de récupération",
       "hashLabel": "Hachage LXMF :",
-      "nameLabel": "Nom :",
       "failed": "Échec de la configuration de l'identité",
       "export": "Exporter les sauvegardes",
       "exportPassphrase": "Phrase de passe de sauvegarde",
@@ -823,7 +840,10 @@
       "identityAlreadyConfigured": "Une identité est déjà configurée. Confirmez le remplacement pour en importer un nouveau.",
       "identityFileMissing": "Le fichier de clé d'identité est manquant. Réimportez votre clé privée ou votre phrase de récupération.",
       "backupHashMismatch": "Les hachages de sauvegarde ne correspondent pas au fichier de clé d'identité sur le disque.",
-      "importPrivateKeyRequiresStack": "L’importation de clé privée nécessite une construction complète de la pile Reticulum."
+      "importPrivateKeyRequiresStack": "L’importation de clé privée nécessite une construction complète de la pile Reticulum.",
+      "saveDisplayName": "Enregistrer le nom d’affichage",
+      "saveDisplayNameFailed": "Échec de l'enregistrement du nom d'affichage.",
+      "displayNameSaved": "Nom d'affichage enregistré."
     },
     "reticulumInterfaces": {
       "title": "Interfaces",
@@ -1038,8 +1058,6 @@
       "txQueueDrops": "{{name}} : paquets sortants abandonnés ({{count}} en file d'attente)",
       "txQueueDropsHint": "Généralement causé par une interface TCP morte toujours activée. Désactivez les concentrateurs inaccessibles pour arrêter le débordement de la file d'attente.",
       "suppressed": "{{count}} lignes de bûches de side-car similaires supprimées récemment.",
-      "linkDeliveryTimeout": "Lien LXMF direct vers {{hash}}… expiré ({{count}}×)",
-      "linkDeliveryTimeoutHint": "L'homologue peut être hors ligne ou le transport RNS est surchargé. Les DM peuvent rester à l'envoi jusqu'à ce que le lien échoue.",
       "transportSaturated": "Transport RNS saturé ({{count}} gouttes de demande de chemin)",
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "Requêtes de transport RNS lentes ou en échec ({{count}}×)",
@@ -2627,7 +2645,18 @@
     "forward": "Avant",
     "invalidUrl": "Adresse de la page Nomad invalide",
     "collapseNodeList": "Réduire la liste des nœuds",
-    "expandNodeList": "Développer la liste des nœuds"
+    "expandNodeList": "Développer la liste des nœuds",
+    "errors": {
+      "pathTimeout": "Aucun itinéraire vers ce nœud (délai de recherche de chemin dépassé). Essayez un nœud plus proche ou attendez une annonce plus récente.",
+      "pubkeyNotFound": "Impossible de trouver la clé d'identité de ce nœud. Attendez une annonce Nomad, puis réessayez.",
+      "linkTimeout": "Le lien vers le nœud n'a pas pu être établi à temps.",
+      "responseTimeout": "Le nœud a accepté le lien mais n'a pas renvoyé la page à temps.",
+      "missingIdentity": "Ce nœud n'a pas encore d'identité mémorisée. Attendez une annonce Nomad, puis réessayez.",
+      "transportUnavailable": "Le transport Reticulum n’est pas disponible. Redémarrez la pile et réessayez.",
+      "sidecarNotRunning": "Le sidecar Reticulum n’est pas en cours d’exécution. Démarrez la pile depuis Connexion, puis réessayez.",
+      "responseTooLarge": "Le nœud a renvoyé plus de données que mesh-client n’accepte pour cette requête.",
+      "nomadBusy": "Une autre requête de page ou de fichier Nomad est encore en cours. Réessayez dans un instant."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",
@@ -2718,7 +2747,13 @@
     "contactYes": "Oui",
     "contactNo": "Non",
     "tabFavorites": "Favoris",
-    "emptyFavorites": "Pas encore de pairs préférés — mettez en vedette un contact ou un pair pour les épingler ici."
+    "emptyFavorites": "Pas encore de pairs préférés — mettez en vedette un contact ou un pair pour les épingler ici.",
+    "lookupPlaceholder": "Rechercher le hachage de destination…",
+    "lookupAria": "Rechercher un pair par hash de destination",
+    "lookupSubmit": "Rechercher",
+    "lookupSubmitAria": "Demander un chemin et sonder le hash de destination",
+    "lookupInvalid": "Saisissez un hash de destination LXMF valide de 32 caractères ou un lien lxmf://.",
+    "lookupHint": "Demandez un chemin pour un hachage qui ne figure pas encore dans la liste des pairs (par exemple, un pair sur un hub que vous partagez)."
   },
   "radioPanel": {
     "offloadedContacts": "Déchargement des contacts {{count}} dans la base de données.",
@@ -3544,7 +3579,10 @@
     "announceSaveSidecarStopped": "Démarrez la pile Reticulum avant d'enregistrer les paramètres d'annonce.",
     "clearAnnouncesDone": "Annonces effacées.",
     "clearAnnouncesFailed": "Échec de l'effacement des annonces.",
-    "announceIntervalHint": "Par défaut 3600 s (1 h). Utilisez 0 pour les annonces de démarrage uniquement."
+    "announceIntervalHint": "Par défaut 3600 s (1 h). Utilisez 0 pour des annonces au démarrage uniquement. Annoncer maintenant envoie immédiatement une annonce de livraison LXMF.",
+    "announceNow": "Annoncez maintenant",
+    "announceNowDone": "Annonce de livraison LXMF envoyée.",
+    "announceNowFailed": "Échec de l'annonce : {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "Avatar",

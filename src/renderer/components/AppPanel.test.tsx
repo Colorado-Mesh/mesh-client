@@ -306,3 +306,44 @@ describe('AppPanel: support bundle exports', () => {
     });
   });
 });
+
+describe('AppPanel: Reticulum clear contacts danger zone', () => {
+  const defaultProps = {
+    nodeCount: 0,
+    messageCount: 0,
+    channels: [] as { index: number; name: string }[],
+    myNodeNum: null as number | null,
+    onLocationFilterChange: vi.fn(),
+  };
+
+  it('shows clear-all contacts only on the Reticulum tab when sidecar is ready', async () => {
+    const { rerender } = render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} protocol="meshtastic" reticulumSidecarReady />
+      </ToastProvider>,
+    );
+
+    fireEvent.click(screen.getByText('Destructive actions'));
+    expect(screen.queryByRole('button', { name: /Clear All Contacts/i })).not.toBeInTheDocument();
+
+    rerender(
+      <ToastProvider>
+        <AppPanel {...defaultProps} protocol="reticulum" reticulumSidecarReady />
+      </ToastProvider>,
+    );
+
+    fireEvent.click(screen.getByText('Destructive actions'));
+    expect(await screen.findByRole('button', { name: /Clear All Contacts \(0\)/i })).toBeEnabled();
+  });
+
+  it('disables clear-all contacts when the sidecar is not ready', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} protocol="reticulum" reticulumSidecarReady={false} />
+      </ToastProvider>,
+    );
+
+    fireEvent.click(screen.getByText('Destructive actions'));
+    expect(await screen.findByRole('button', { name: /Clear All Contacts \(0\)/i })).toBeDisabled();
+  });
+});

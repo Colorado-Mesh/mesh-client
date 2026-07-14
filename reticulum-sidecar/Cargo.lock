@@ -1302,6 +1302,7 @@ dependencies = [
  "rns-ratkey",
  "rns-runtime",
  "rns-transport",
+ "rns-wire",
  "serde",
  "serde_json",
  "tempfile",

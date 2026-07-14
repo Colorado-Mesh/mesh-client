@@ -21,15 +21,21 @@ vi.mock('@/renderer/stores/messageStore', () => ({
   },
 }));
 
+const restoreDismissedContact = vi.fn();
+const getPeer = vi.fn();
+
 vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
   useReticulumPeerStore: {
-    getState: () => ({ restoreDismissedContact: vi.fn() }),
+    getState: () => ({ restoreDismissedContact, getPeer }),
   },
 }));
 
 beforeEach(() => {
   upsertReticulumDestination.mockReset();
   upsertReticulumDestination.mockResolvedValue(undefined);
+  restoreDismissedContact.mockReset();
+  getPeer.mockReset();
+  getPeer.mockReturnValue(undefined);
   vi.stubGlobal('window', {
     electronAPI: {
       db: { upsertReticulumDestination },
@@ -96,6 +102,24 @@ describe('reticulumIngest alias helpers', () => {
     expect(upsertReticulumDestination).toHaveBeenCalledWith({
       destination_hash: hash,
       display_name: 'Alice',
+      last_heard: 1_700_000_000,
+    });
+  });
+
+  it('persistReticulumContactFromPayload uses to_hash for outbound, not self sender', async () => {
+    const peerHash = 'cafebabe'.repeat(4);
+    getPeer.mockReturnValue({ display_name: 'Bob' });
+    await persistReticulumContactFromPayload({
+      sender_hash: hash,
+      sender_name: 'Me',
+      to_hash: peerHash,
+      direction: 'outbound',
+      timestamp: 1_700_000_000_000,
+    });
+    expect(restoreDismissedContact).toHaveBeenCalledWith(peerHash);
+    expect(upsertReticulumDestination).toHaveBeenCalledWith({
+      destination_hash: peerHash,
+      display_name: 'Bob',
       last_heard: 1_700_000_000,
     });
   });

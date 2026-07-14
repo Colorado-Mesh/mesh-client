@@ -6,13 +6,20 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
+const refreshIdentity = vi.fn();
+
 vi.mock('@/renderer/lib/reticulum/useReticulumSidecarApi', () => ({
   useReticulumSidecarApi: () => ({
     sidecarApiReady: true,
-    identity: { configured: true, identity_hash: 'abc', lxmf_hash: 'def' },
+    identity: {
+      configured: true,
+      identity_hash: 'abc',
+      lxmf_hash: 'def0123456789abcdef0123456789abc',
+      display_name: 'Existing Name',
+    },
     statsSummary: null,
     appInfo: null,
-    refreshIdentity: vi.fn(),
+    refreshIdentity,
   }),
 }));
 
@@ -26,6 +33,7 @@ import { ReticulumNetworkPanel } from './ReticulumNetworkPanel';
 
 describe('ReticulumNetworkPanel', () => {
   beforeEach(() => {
+    refreshIdentity.mockReset();
     window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
       if (path === '/api/v1/stack/settings') {
         return Promise.resolve({
@@ -38,6 +46,7 @@ describe('ReticulumNetworkPanel', () => {
       return Promise.resolve({});
     });
     window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.proxyPost = vi.fn().mockResolvedValue({ ok: true });
   });
 
   it('does not render flasher or factory reset sections', () => {
@@ -118,6 +127,28 @@ describe('ReticulumNetworkPanel', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText('connectionPanel.reticulumIdentity.replaceIdentitySection'),
+    ).toBeInTheDocument();
+  });
+
+  it('saves display name via identity display-name API and refreshes identity', async () => {
+    const user = userEvent.setup();
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    const nameInput = await screen.findByLabelText('connectionPanel.reticulumIdentity.displayName');
+    expect(nameInput).toHaveValue('Existing Name');
+    await user.clear(nameInput);
+    await user.type(nameInput, 'NV0N');
+    await user.click(screen.getByText('connectionPanel.reticulumIdentity.saveDisplayName'));
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith(
+        '/api/v1/identity/display-name',
+        { display_name: 'NV0N' },
+      );
+    });
+    expect(refreshIdentity).toHaveBeenCalled();
+    expect(
+      await screen.findByText('connectionPanel.reticulumIdentity.displayNameSaved'),
     ).toBeInTheDocument();
   });
 

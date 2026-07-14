@@ -167,13 +167,31 @@ export async function persistReticulumMessageToDb(
   }
 }
 
+/**
+ * Persist a messaged peer as a contact destination.
+ * Inbound → sender; outbound → recipient (`to_hash`), never the local sender.
+ */
 export async function persistReticulumContactFromPayload(p: ReticulumLxmfPayload): Promise<void> {
-  if (!p.sender_hash) return;
-  useReticulumPeerStore.getState().restoreDismissedContact(p.sender_hash);
-  const displayName = reticulumContactDisplayNameFromPayload(p);
+  const isOutbound = p.direction === 'outbound';
+  const contactHash = isOutbound ? p.to_hash : p.sender_hash;
+  if (!contactHash) return;
+
+  useReticulumPeerStore.getState().restoreDismissedContact(contactHash);
+
+  let displayName: string | undefined;
+  if (isOutbound) {
+    const peer = useReticulumPeerStore.getState().getPeer(contactHash);
+    const candidate = peer?.custom_display_name?.trim() || peer?.display_name?.trim() || undefined;
+    if (candidate && !isReticulumHashPrefixAlias(contactHash, candidate)) {
+      displayName = sanitizeReticulumDisplayName(candidate) ?? undefined;
+    }
+  } else {
+    displayName = reticulumContactDisplayNameFromPayload(p);
+  }
+
   try {
     await window.electronAPI.db.upsertReticulumDestination({
-      destination_hash: p.sender_hash,
+      destination_hash: contactHash,
       ...(displayName ? { display_name: displayName } : {}),
       last_heard: Math.floor((p.timestamp ?? Date.now()) / 1000),
     });

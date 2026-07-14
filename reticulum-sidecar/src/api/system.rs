@@ -59,6 +59,13 @@ pub async fn clear_announces(State(stack): State<Arc<StackHandle>>) -> Json<serd
     }
 }
 
+pub async fn announce_now(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
+    match stack.announce_now().await {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
 #[derive(serde::Deserialize)]
 pub struct PacketListQuery {
     #[serde(default = "default_packet_limit")]

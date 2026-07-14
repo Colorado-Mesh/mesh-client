@@ -341,6 +341,41 @@ impl PersistedState {
         self.peers.clear();
     }
 
+    pub fn clear_contacts(&mut self) {
+        self.contacts.clear();
+    }
+
+    /// Move LXMF contacts into the peer cache (keep display names on Peers after contact wipe).
+    pub fn demote_contacts_to_peers(&mut self) {
+        for contact in self.contacts.clone() {
+            let hash = contact.destination_hash;
+            if let Some(peer) = self
+                .peers
+                .iter_mut()
+                .find(|p| p.destination_hash.eq_ignore_ascii_case(&hash))
+            {
+                if peer.display_name.as_ref().map_or(true, |n| n.is_empty()) {
+                    if let Some(name) = contact.display_name.filter(|n| !n.is_empty()) {
+                        peer.display_name = Some(name);
+                    }
+                }
+                if peer.last_seen.is_none() {
+                    peer.last_seen = contact.last_heard;
+                }
+                continue;
+            }
+            self.peers.push(PeerRow {
+                destination_hash: hash,
+                display_name: contact.display_name,
+                hops: None,
+                last_seen: contact.last_heard,
+                interface: None,
+                path_hash: None,
+                via_hash: None,
+            });
+        }
+    }
+
     pub fn upsert_contact(&mut self, hash: &str, name: Option<String>) {
         if let Some(c) = self
             .contacts

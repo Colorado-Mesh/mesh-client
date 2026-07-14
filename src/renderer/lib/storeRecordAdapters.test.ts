@@ -217,6 +217,32 @@ describe('store record adapters (merge precedence)', () => {
     expect([...fromStore, legacyOnly]).toHaveLength(1);
   });
 
+  it('maps queued and pending reticulum DB delivery_status to sending', () => {
+    for (const delivery_status of ['queued', 'pending', 'sending'] as const) {
+      const record = reticulumDbRowToMessageRecord({
+        sender_id: 'aa'.repeat(16),
+        sender_name: 'Self',
+        payload: 'hello',
+        timestamp: 1_700_000_000_000,
+        to_hash: 'bb'.repeat(16),
+        message_hash: 'cc'.repeat(16),
+        delivery_status,
+      });
+      expect(record.status).toBe('sending');
+    }
+  });
+
+  it('maps failed reticulum DB delivery_status to failed', () => {
+    const record = reticulumDbRowToMessageRecord({
+      sender_id: 'aa'.repeat(16),
+      payload: 'hello',
+      timestamp: 1_700_000_000_000,
+      message_hash: 'cc'.repeat(16),
+      delivery_status: 'failed',
+    });
+    expect(record.status).toBe('failed');
+  });
+
   it('round-trips Reticulum LXMF hash and reply fields from DB rows', () => {
     const record = reticulumDbRowToMessageRecord({
       sender_id: 'aa'.repeat(16),

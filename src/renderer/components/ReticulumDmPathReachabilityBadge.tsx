@@ -1,0 +1,148 @@
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import type { ReticulumDmPathStatus } from '@/renderer/lib/reticulum/reticulumDmPathReachability';
+import {
+  formatReticulumPeerPathToast,
+  isReticulumSidecarRunning,
+  requestReticulumPeerPath,
+} from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { refreshReticulumPeersFromSidecar } from '@/renderer/stores/reticulumPeerStore';
+
+import { HelpTooltip } from './HelpTooltip';
+import { useToast } from './Toast';
+
+export function ReticulumDmPathReachabilityBadge({
+  status,
+  hops,
+}: {
+  status: ReticulumDmPathStatus;
+  hops: number | null;
+}) {
+  const { t } = useTranslation();
+  if (status === 'idle') return null;
+
+  const label =
+    status === 'probing'
+      ? t('chatPanel.dmPathChecking')
+      : status === 'reachable'
+        ? hops != null
+          ? t('chatPanel.dmPathReachableHops', { hops })
+          : t('chatPanel.dmPathReachable')
+        : t('chatPanel.dmPathUnreachable');
+
+  const tooltip =
+    status === 'unreachable'
+      ? t('chatPanel.dmPathUnreachableTooltip')
+      : status === 'reachable'
+        ? t('chatPanel.dmPathReachableTooltip')
+        : t('chatPanel.dmPathCheckingTooltip');
+
+  const ariaLabel =
+    status === 'probing'
+      ? t('chatPanel.dmPathCheckingAria')
+      : status === 'reachable'
+        ? t('chatPanel.dmPathReachableAria')
+        : t('chatPanel.dmPathUnreachableAria');
+
+  const textClass =
+    status === 'probing'
+      ? 'text-muted'
+      : status === 'reachable'
+        ? 'text-bright-green'
+        : 'text-red-400';
+
+  return (
+    <HelpTooltip text={tooltip} className="shrink-0" ariaLabel={ariaLabel}>
+      <span
+        role="status"
+        aria-label={ariaLabel}
+        className={`inline-flex items-center gap-1.5 rounded-lg bg-slate-800/60 px-3 py-1.5 text-xs ${textClass}`}
+      >
+        {status === 'probing' ? (
+          <span
+            className="inline-block h-3 w-3 shrink-0 animate-spin rounded-full border border-gray-400 border-t-transparent"
+            aria-hidden
+          />
+        ) : (
+          <span
+            className={`h-2 w-2 shrink-0 rounded-full ${
+              status === 'reachable' ? 'bg-bright-green' : 'bg-red-500'
+            }`}
+            aria-hidden
+          />
+        )}
+        <span aria-hidden>{label}</span>
+      </span>
+    </HelpTooltip>
+  );
+}
+
+export interface ReticulumDmPathActionsProps {
+  destinationHash: string;
+  status: ReticulumDmPathStatus;
+  /** Re-run the Chat DM path probe (also used after a successful path request). */
+  onReprobe: () => void;
+}
+
+/** Manual path request / probe when auto reachability check has settled. */
+export function ReticulumDmPathActions({
+  destinationHash,
+  status,
+  onReprobe,
+}: ReticulumDmPathActionsProps) {
+  const { t } = useTranslation();
+  const { addToast } = useToast();
+  const [busy, setBusy] = useState(false);
+
+  if (status === 'idle' || status === 'probing') return null;
+
+  const runPath = async () => {
+    setBusy(true);
+    try {
+      if (!(await isReticulumSidecarRunning())) {
+        addToast(t('connectionPanel.reticulumIdentity.startStackFirst'), 'error');
+        return;
+      }
+      const result = await requestReticulumPeerPath(destinationHash);
+      const toast = formatReticulumPeerPathToast(t, result);
+      addToast(toast.message, toast.variant);
+      if (result.ok) {
+        await refreshReticulumPeersFromSidecar();
+      }
+      onReprobe();
+    } catch (e) {
+      console.warn('[ReticulumDmPathActions] path ' + errLikeToLogString(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => {
+          void runPath();
+        }}
+        className="rounded border border-gray-600 px-2 py-1 text-[11px] text-gray-200 hover:bg-gray-800 disabled:opacity-40"
+        aria-label={t('chatPanel.dmPathRequestPathAria')}
+      >
+        {t('connectionPanel.reticulumPeers.path')}
+      </button>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => {
+          onReprobe();
+        }}
+        className="rounded border border-gray-600 px-2 py-1 text-[11px] text-gray-200 hover:bg-gray-800 disabled:opacity-40"
+        aria-label={t('chatPanel.dmPathProbeAria')}
+      >
+        {t('connectionPanel.reticulumPeers.probe')}
+      </button>
+    </div>
+  );
+}

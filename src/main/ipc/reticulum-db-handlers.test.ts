@@ -35,6 +35,7 @@ describe('reticulum-db-handlers validation', () => {
     expect(handlers.has('db:getReticulumMessages')).toBe(true);
     expect(handlers.has('db:saveReticulumMessage')).toBe(true);
     expect(handlers.has('db:searchReticulumMessages')).toBe(true);
+    expect(handlers.has('db:clearReticulumContactDestinations')).toBe(true);
   });
 
   it('db:getReticulumMessages rejects oversized identityId', () => {

@@ -8,6 +8,7 @@ mod identity_apply;
 mod identity_import;
 mod local_rnode_primary;
 mod nomad_file;
+mod nomad_link_errors;
 #[cfg(feature = "rns-stack")]
 mod nomad_request_payload;
 mod nomad_timeouts;
@@ -20,6 +21,8 @@ mod via;
 
 #[cfg(feature = "rns-stack")]
 mod live;
+#[cfg(feature = "rns-stack")]
+mod lxmf_delivery;
 #[cfg(feature = "rns-stack")]
 mod propagation_bridge;
 
@@ -147,7 +150,7 @@ impl StackHandle {
                 handle.config_dir.clone(),
                 handle.storage_dir.clone(),
             );
-            live.register_lxmf_identity_announce_handler(handle.inner.clone());
+            live.register_lxmf_identity_announce_handler();
             live.register_rmap_discovery_watcher(event_tx.clone());
         }
         handle.emit_stats().await;
@@ -623,6 +626,19 @@ impl StackHandle {
         self.inner.read().await.contacts.clone()
     }
 
+    pub async fn clear_contacts(&self) -> Result<usize, String> {
+        let mut inner = self.inner.write().await;
+        let cleared = inner.contacts.len();
+        // Announced / messaged destinations often live only in contacts; demote them to
+        // peers so Clear Contacts does not empty the Peers tab.
+        inner.demote_contacts_to_peers();
+        inner.clear_contacts();
+        inner.save(&self.config_dir, &self.storage_dir)?;
+        self.emit_event("contacts_updated", serde_json::json!({ "cleared": cleared }));
+        self.emit_event("peers_updated", serde_json::json!({ "demoted_from_contacts": cleared }));
+        Ok(cleared)
+    }
+
     pub async fn list_peers(&self) -> Vec<PeerRow> {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
@@ -866,6 +882,22 @@ impl StackHandle {
         inner.save(&self.config_dir, &self.storage_dir)?;
         self.emit_event("peers_updated", serde_json::json!({ "cleared": true }));
         Ok(())
+    }
+
+    /// Send an LXMF delivery announce immediately (live stack only).
+    pub async fn announce_now(&self) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.announce_lxmf_now().await;
+        }
+        #[cfg(feature = "rns-stack")]
+        {
+            return Err("live RNS bridge unavailable; start stack with identity configured".into());
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            Err("announce requires an rns-stack sidecar build".into())
+        }
     }
 
     pub async fn list_nomad_nodes(&self) -> Vec<NomadNodeRow> {
@@ -1191,15 +1223,32 @@ fn enumerate_serial_ports() -> Vec<serde_json::Value> {
     ports
 }
 
-/// Replaces the in-memory peer cache with a live path-table fetch result.
+/// Applies a live path-table fetch to the peer cache.
+///
+/// Empty fetch clears the cache (intentional wipe). Non-empty fetch updates path-table
+/// rows while keeping previously cached destinations that are not in the current path
+/// table (e.g. contacts demoted to peers during Clear Contacts).
 fn sync_live_peer_cache(cache: &mut Vec<PeerRow>, fetched: Vec<PeerRow>) -> Vec<PeerRow> {
-    let merged: Vec<PeerRow> = fetched
+    if fetched.is_empty() {
+        *cache = Vec::new();
+        return Vec::new();
+    }
+    let fetched_hashes: std::collections::HashSet<String> = fetched
+        .iter()
+        .map(|p| p.destination_hash.to_lowercase())
+        .collect();
+    let preserved: Vec<PeerRow> = cache
+        .iter()
+        .filter(|p| !fetched_hashes.contains(&p.destination_hash.to_lowercase()))
+        .cloned()
+        .collect();
+    let mut merged: Vec<PeerRow> = fetched
         .into_iter()
         .map(|mut peer| {
             if peer.display_name.is_none() {
                 if let Some(prev) = cache
                     .iter()
-                    .find(|p| p.destination_hash == peer.destination_hash)
+                    .find(|p| p.destination_hash.eq_ignore_ascii_case(&peer.destination_hash))
                 {
                     peer.display_name = prev.display_name.clone();
                 }
@@ -1207,6 +1256,7 @@ fn sync_live_peer_cache(cache: &mut Vec<PeerRow>, fetched: Vec<PeerRow>) -> Vec<
             peer
         })
         .collect();
+    merged.extend(preserved);
     *cache = merged.clone();
     merged
 }
@@ -1337,6 +1387,56 @@ mod tests {
         let handle = StackHandle::bootstrap(config_dir.clone(), storage_dir.clone(), tx).await;
         handle.clear_announces().await.expect("clear announces");
         assert!(handle.list_peers().await.is_empty());
+        let _ = std::fs::remove_dir_all(config_dir);
+        let _ = std::fs::remove_dir_all(storage_dir);
+    }
+
+    #[test]
+    fn sync_live_peer_cache_keeps_demoted_peers_not_in_path_table() {
+        let mut cache = vec![PeerRow {
+            destination_hash: "aabb01".into(),
+            display_name: Some("Demoted".into()),
+            hops: None,
+            last_seen: Some(9),
+            interface: None,
+            path_hash: None,
+            via_hash: None,
+        }];
+        let live = PeerRow {
+            destination_hash: "ccdd02".into(),
+            display_name: None,
+            hops: Some(1),
+            last_seen: Some(1),
+            interface: Some("tcp".into()),
+            path_hash: None,
+            via_hash: None,
+        };
+        let merged = sync_live_peer_cache(&mut cache, vec![live]);
+        assert_eq!(merged.len(), 2);
+        assert!(merged.iter().any(|p| p.destination_hash == "aabb01"));
+        assert!(merged.iter().any(|p| p.destination_hash == "ccdd02"));
+    }
+
+    #[tokio::test]
+    async fn clear_contacts_empties_persisted_lxmf_contacts() {
+        let (config_dir, storage_dir) = temp_stack_dirs();
+        let (tx, _) = broadcast::channel(8);
+        let handle = StackHandle::bootstrap(config_dir.clone(), storage_dir.clone(), tx).await;
+        {
+            let mut inner = handle.inner.write().await;
+            inner.upsert_contact("aabbccddeeff00112233445566778899", Some("Announced".into()));
+            inner
+                .save(&config_dir, &storage_dir)
+                .expect("persist contact");
+        }
+        assert_eq!(handle.list_contacts().await.len(), 1);
+        let cleared = handle.clear_contacts().await.expect("clear contacts");
+        assert_eq!(cleared, 1);
+        assert!(handle.list_contacts().await.is_empty());
+        let peers = handle.list_peers().await;
+        assert_eq!(peers.len(), 1);
+        assert_eq!(peers[0].destination_hash, "aabbccddeeff00112233445566778899");
+        assert_eq!(peers[0].display_name.as_deref(), Some("Announced"));
         let _ = std::fs::remove_dir_all(config_dir);
         let _ = std::fs::remove_dir_all(storage_dir);
     }

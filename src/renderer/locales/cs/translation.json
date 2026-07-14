@@ -338,7 +338,13 @@
     "exportForDeveloper": "Balíček podpory exportu pro vývojáře",
     "exportForDeveloperButton": "Export pro vývojáře",
     "exportForDeveloperWarning": "Zahrnuje vaši úplnou databázi, která může obsahovat uložená hesla (přihlašovací údaje místnosti MeshCore, nastavení MQTT atd.). Sdílejte tento balíček soukromě pouze se správci – nikdy na veřejném GitHub.",
-    "exportSupportBundleFailed": "Nelze exportovat balíček podpory: {{message}}"
+    "exportSupportBundleFailed": "Nelze exportovat balíček podpory: {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "Vymazat všechny kontakty LXMF",
+    "clearReticulumContactsDesc": "Odstraní každou položku z karty Kontakty a seznamu kontaktů sidecar. Cíle zůstanou na kartě Peers se svými názvy. Chatové zprávy zůstávají. Kontakty se znovu zobrazí, když někomu napíšete nebo použijete Uložit jako kontakt.",
+    "clearReticulumContactsConfirm": "Tím trvale vymažete všech {{count}} Reticulum LXMF kontaktů. Cíle zůstanou na kartě Peers; zprávy se nemažou. Tuto akci nelze vrátit zpět.",
+    "clearReticulumContactsConfirmButton": "Vymazat {{count}} kontaktů",
+    "clearReticulumContactsButton": "Vymazat všechny kontakty ({{count}})"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -541,7 +547,19 @@
     "waitingMessagesSilentDrain": "Načítání zpráv ve frontě v rádiu…",
     "waitingMessagesDrainDeferred": "Synchronizace zpráv byla pozastavena, když je rádio zaneprázdněné (správce/sledování)…",
     "waitingMessagesSerialHint": "Sériové rozhraní USB zpracovává jeden příkaz najednou; zprávy mohou dorazit v malých dávkách.",
-    "waitingMessagesSyncFailed": "Synchronizace zpráv ve frontě se nezdařila: {{message}}"
+    "waitingMessagesSyncFailed": "Synchronizace zpráv ve frontě se nezdařila: {{message}}",
+    "dmPathChecking": "Kontroluje se cesta...",
+    "dmPathCheckingAria": "Kontrola dosažitelnosti cílové cesty",
+    "dmPathCheckingTooltip": "Žádost o cestu Reticulum k tomuto cíli.",
+    "dmPathReachable": "Cesta dosažitelná",
+    "dmPathReachableHops": "Cesta dostupná · {{hops}} skok(ů)",
+    "dmPathReachableAria": "Cílová cesta je dosažitelná",
+    "dmPathReachableTooltip": "Cesta Reticulum k tomuto cíli je známa. Přímé doručení může stále selhat, pokud je partner offline.",
+    "dmPathUnreachable": "Žádná cesta",
+    "dmPathUnreachableAria": "Cílová cesta není dosažitelná",
+    "dmPathUnreachableTooltip": "K tomuto cíli zatím nevede žádná cesta Reticulum. Zprávy mohou být doručeny později prostřednictvím nakonfigurovaného propagačního uzlu.",
+    "dmPathRequestPathAria": "Požádat o cestu Reticulum k tomuto cíli",
+    "dmPathProbeAria": "Zjistit dosažitelnost cesty Reticulum pro tento cíl"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -801,7 +819,6 @@
       "mnemonic": "Zapište si tuto větu a bezpečně ji uložte.",
       "confirmSaved": "Uložil (a) jsem svou obnovovací frázi",
       "hashLabel": "LXMF hash:",
-      "nameLabel": "Jméno:",
       "failed": "Nastavení identity selhalo",
       "export": "Exportovat zálohu",
       "exportPassphrase": "Záložní přístupová fráze",
@@ -823,7 +840,10 @@
       "identityAlreadyConfigured": "Identita je již nakonfigurována. Chcete-li importovat nový, potvrďte nahrazení.",
       "identityFileMissing": "Chybí soubor klíče identity. Znovu importujte svůj soukromý klíč nebo frázi pro obnovení.",
       "backupHashMismatch": "Záložní hodnoty hash neodpovídají souboru klíče identity na disku.",
-      "importPrivateKeyRequiresStack": "Import soukromého klíče vyžaduje kompletní sestavení zásobníku Reticulum."
+      "importPrivateKeyRequiresStack": "Import soukromého klíče vyžaduje kompletní sestavení zásobníku Reticulum.",
+      "saveDisplayName": "Uložit zobrazované jméno",
+      "saveDisplayNameFailed": "Nepodařilo se uložit zobrazované jméno.",
+      "displayNameSaved": "Zobrazované jméno uloženo."
     },
     "reticulumInterfaces": {
       "title": "Rozhraní",
@@ -1038,8 +1058,6 @@
       "txQueueDrops": "{{name}}: odchozí pakety byly vyhozeny ({{count}} ve frontě)",
       "txQueueDropsHint": "Obvykle je to způsobeno stále povoleným mrtvým rozhraním TCP. Zakažte nedosažitelné rozbočovače pro zastavení přetečení fronty.",
       "suppressed": "{{count}} podobné řádky protokolu postranního vozíku byly nedávno potlačeny.",
-      "linkDeliveryTimeout": "Přímý odkaz LXMF na {{hash}}… vypršel ({{count}}×)",
-      "linkDeliveryTimeoutHint": "Protějšek může být offline nebo je transport RNS přetížen. DM mohou zůstat na Odesílání, dokud se odkaz nezdaří.",
       "transportSaturated": "Nasycený transport RNS ({{count}} kapek s požadavkem na cestu)",
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "Transportní dotazy RNS pomalé nebo selhávající ({{count}}×)",
@@ -2627,7 +2645,18 @@
     "forward": "Vpřed",
     "invalidUrl": "Neplatná adresa stránky Nomad",
     "collapseNodeList": "Sbalit seznam uzlů",
-    "expandNodeList": "Rozbalit seznam uzlů"
+    "expandNodeList": "Rozbalit seznam uzlů",
+    "errors": {
+      "pathTimeout": "K tomuto uzlu neexistuje cesta (vypršel časový limit vyhledávání cesty). Zkuste bližší uzel nebo počkejte na novější announce.",
+      "pubkeyNotFound": "Nelze najít identifikační klíč tohoto uzlu. Počkej na oznámení Nomáda a zkus to znovu.",
+      "linkTimeout": "Propojení s uzlem se nepodařilo navázat včas.",
+      "responseTimeout": "Uzel přijal odkaz, ale stránku nevrátil včas.",
+      "missingIdentity": "Tento uzel zatím nemá zapamatovanou identitu. Počkej na oznámení Nomáda a zkus to znovu.",
+      "transportUnavailable": "Transport Reticulum není k dispozici. Restartujte zásobník a zkuste to znovu.",
+      "sidecarNotRunning": "Reticulum sidecar neběží. Spusťte zásobník z Připojení a zkuste to znovu.",
+      "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
+      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",
@@ -2718,7 +2747,13 @@
     "contactYes": "Ano",
     "contactNo": "Ne",
     "tabFavorites": "Oblíbené",
-    "emptyFavorites": "Zatím žádní oblíbení kolegové — označte kontakt nebo kolegu a připněte je sem."
+    "emptyFavorites": "Zatím žádní oblíbení kolegové — označte kontakt nebo kolegu a připněte je sem.",
+    "lookupPlaceholder": "Vyhledání cílového hashe...",
+    "lookupAria": "Vyhledat peer podle cílového hashe",
+    "lookupSubmit": "Vyhledat",
+    "lookupSubmitAria": "Vyžádat cestu a otestovat cílový hash",
+    "lookupInvalid": "Zadejte platný 32znakový LXMF cílový hash nebo odkaz lxmf://.",
+    "lookupHint": "Požádejte o cestu pro hash, který ještě není v seznamu kolegů (například kolega v centru, které sdílíte)."
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} kontaktů bylo přesunuto do databáze.",
@@ -3544,7 +3579,10 @@
     "announceSaveSidecarStopped": "Před uložením nastavení oznamování spusťte zásobník Reticulum.",
     "clearAnnouncesDone": "Oznámení vymazána.",
     "clearAnnouncesFailed": "Nepodařilo se vymazat oznámení.",
-    "announceIntervalHint": "Výchozí 3600 s (1 h). Použijte 0 pro oznámení pouze při spuštění."
+    "announceIntervalHint": "Výchozí 3600 s (1 h). Použijte 0 pro announce pouze při spuštění. Announce now ihned odešle LXMF delivery announce.",
+    "announceNow": "Ohlásit nyní",
+    "announceNowDone": "Oznámení o doručení LXMF odesláno.",
+    "announceNowFailed": "Nepodařilo se oznámit: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "Ikona avatara",

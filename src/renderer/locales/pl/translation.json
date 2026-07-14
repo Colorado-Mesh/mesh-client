@@ -338,7 +338,13 @@
     "exportForDeveloper": "Eksportuj pakiet wsparcia dla programisty",
     "exportForDeveloperButton": "Eksport dla programisty",
     "exportForDeveloperWarning": "Obejmuje pełną bazę danych, która może zawierać zapisane hasła (dane logowania do pokoju MeshCore, ustawienia MQTT itp.). Udostępnij ten pakiet prywatnie tylko opiekunom — nigdy w publicznym GitHub.",
-    "exportSupportBundleFailed": "Nie można wyeksportować pakietu wsparcia: {{message}}"
+    "exportSupportBundleFailed": "Nie można wyeksportować pakietu wsparcia: {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "Wyczyść wszystkie kontakty LXMF",
+    "clearReticulumContactsDesc": "Usuwa każdy wpis z karty Kontakty i listy kontaktów sidecara. Destynacje pozostają na karcie Peers ze swoimi nazwami. Wiadomości czatu są zachowane. Kontakty pojawiają się ponownie, gdy napiszesz do kogoś lub użyjesz Zapisz jako kontakt.",
+    "clearReticulumContactsConfirm": "Spowoduje to trwałe usunięcie wszystkich {{count}} kontaktów Reticulum LXMF. Destynacje pozostają na karcie Peers; wiadomości nie są usuwane. Tej czynności nie można cofnąć.",
+    "clearReticulumContactsConfirmButton": "Wyczyść {{count}} kontaktów",
+    "clearReticulumContactsButton": "Wyczyść wszystkie kontakty ({{count}})"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -541,7 +547,19 @@
     "waitingMessagesSilentDrain": "Pobieram wiadomości oczekujące w kolejce w radiu…",
     "waitingMessagesDrainDeferred": "Synchronizacja wiadomości została wstrzymana, gdy radio jest zajęte (administrator/śledzenie)…",
     "waitingMessagesSerialHint": "Port szeregowy USB obsługuje jedno polecenie na raz; wiadomości mogą docierać w małych partiach.",
-    "waitingMessagesSyncFailed": "Nie udało się zsynchronizować wiadomości w kolejce: {{message}}"
+    "waitingMessagesSyncFailed": "Nie udało się zsynchronizować wiadomości w kolejce: {{message}}",
+    "dmPathChecking": "Sprawdzam ścieżkę…",
+    "dmPathCheckingAria": "Sprawdzanie dostępności ścieżki docelowej",
+    "dmPathCheckingTooltip": "Żądanie ścieżki Reticulum do tego miejsca docelowego.",
+    "dmPathReachable": "Ścieżka osiągalna",
+    "dmPathReachableHops": "Ścieżka osiągalna · {{hops}} skok(i)",
+    "dmPathReachableAria": "Ścieżka docelowa jest osiągalna",
+    "dmPathReachableTooltip": "Znana jest ścieżka Reticulum do tego miejsca docelowego. Bezpośrednia dostawa może się nie powieść, jeśli partner jest offline.",
+    "dmPathUnreachable": "Brak ścieżki",
+    "dmPathUnreachableAria": "Ścieżka docelowa jest niedostępna",
+    "dmPathUnreachableTooltip": "Nie ma jeszcze ścieżki Reticulum do tego miejsca docelowego. Komunikaty mogą być nadal dostarczane później za pośrednictwem skonfigurowanego węzła propagacji.",
+    "dmPathRequestPathAria": "Poproś o ścieżkę Reticulum do tego miejsca docelowego",
+    "dmPathProbeAria": "Sprawdź osiągalność ścieżki Reticulum dla tego miejsca docelowego"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -801,7 +819,6 @@
       "mnemonic": "Zapisz to wyrażenie i przechowuj je w bezpieczny sposób.",
       "confirmSaved": "Zapisałem moją frazę odzyskiwania",
       "hashLabel": "Skrót LXMF:",
-      "nameLabel": "Imię i nazwisko:",
       "failed": "Konfiguracja tożsamości nie powiodła się",
       "export": "Kopia zapasowa eksportu",
       "exportPassphrase": "Hasło zapasowe",
@@ -823,7 +840,10 @@
       "identityAlreadyConfigured": "Tożsamość jest już skonfigurowana. Potwierdź wymianę, aby zaimportować nowy.",
       "identityFileMissing": "Brak pliku klucza tożsamości. Zaimportuj ponownie swój klucz prywatny lub frazę odzyskiwania.",
       "backupHashMismatch": "Skróty kopii zapasowych nie odpowiadają plikowi klucza tożsamości na dysku.",
-      "importPrivateKeyRequiresStack": "Import klucza prywatnego wymaga pełnej kompilacji stosu Reticulum."
+      "importPrivateKeyRequiresStack": "Import klucza prywatnego wymaga pełnej kompilacji stosu Reticulum.",
+      "saveDisplayName": "Zapisz wyświetlaną nazwę",
+      "saveDisplayNameFailed": "Nie udało się zapisać wyświetlanej nazwy.",
+      "displayNameSaved": "Nazwa wyświetlana zapisana."
     },
     "reticulumInterfaces": {
       "title": "Interfejsy",
@@ -1038,8 +1058,6 @@
       "txQueueDrops": "{{name}}: pakiety wychodzące odrzucone ({{count}} w kolejce)",
       "txQueueDropsHint": "Zwykle spowodowane przez nadal włączony martwy interfejs TCP. Wyłącz niedostępne koncentratory, aby zatrzymać przepełnienie kolejki.",
       "suppressed": "Ostatnio zablokowano podobne wiersze dziennika wózka bocznego {{count}}.",
-      "linkDeliveryTimeout": "Upłynął limit czasu bezpośredniego łącza LXMF do {{hash}}… ({{count}}×)",
-      "linkDeliveryTimeoutHint": "Partner może być offline lub transport RNS jest przeciążony. SMS-y mogą pozostać w trybie wysyłania do czasu awarii linku.",
       "transportSaturated": "Transport RNS nasycony (krople żądania ścieżki {{count}})",
       "transportSaturatedHint": "Wyłącz martwe interfejsy i uruchom ponownie stos. Zmniejsz równoczesny ruch Reticulum.",
       "slowTransportQuery": "Powolne lub nieudane zapytania transportowe RNS ({{count}}×)",
@@ -2627,7 +2645,18 @@
     "forward": "Do przodu",
     "invalidUrl": "Nieprawidłowy adres strony Nomada",
     "collapseNodeList": "Zwiń listę węzłów",
-    "expandNodeList": "Rozwiń listę węzłów"
+    "expandNodeList": "Rozwiń listę węzłów",
+    "errors": {
+      "pathTimeout": "Brak trasy do tego węzła (przekroczono limit czasu wyszukiwania ścieżki). Spróbuj bliższego węzła lub poczekaj na nowszy announce.",
+      "pubkeyNotFound": "Nie można znaleźć klucza tożsamości tego węzła. Poczekaj na ogłoszenie Nomada, a następnie spróbuj ponownie.",
+      "linkTimeout": "Połączenie z węzłem nie mogło zostać ustanowione na czas.",
+      "responseTimeout": "Węzeł zaakceptował link, ale nie zwrócił strony na czas.",
+      "missingIdentity": "Ten węzeł nie ma jeszcze zapamiętanej tożsamości. Poczekaj na ogłoszenie Nomada, a następnie spróbuj ponownie.",
+      "transportUnavailable": "Transport Reticulum jest niedostępny. Uruchom ponownie stos i spróbuj ponownie.",
+      "sidecarNotRunning": "Sidecar Reticulum nie działa. Uruchom stos z Połączenia, a następnie spróbuj ponownie.",
+      "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
+      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",
@@ -2718,7 +2747,13 @@
     "contactYes": "Tak",
     "contactNo": "Nr",
     "tabFavorites": "Ulubione",
-    "emptyFavorites": "Nie ma jeszcze ulubionych rówieśników — oznacz kontakt lub rówieśnika, aby ich tu przypiąć."
+    "emptyFavorites": "Nie ma jeszcze ulubionych rówieśników — oznacz kontakt lub rówieśnika, aby ich tu przypiąć.",
+    "lookupPlaceholder": "Wyszukaj skrót miejsca docelowego…",
+    "lookupAria": "Wyszukaj peer według hasha docelowego",
+    "lookupSubmit": "Wyszukaj",
+    "lookupSubmitAria": "Poproś o ścieżkę i zbadaj hash docelowy",
+    "lookupInvalid": "Wprowadź prawidłowy 32-znakowy hash docelowy LXMF lub łącze lxmf://.",
+    "lookupHint": "Poproś o ścieżkę do skrótu, który nie znajduje się jeszcze na liście rówieśników (na przykład rówieśnik w centrum, które udostępniasz)."
   },
   "radioPanel": {
     "offloadedContacts": "Przeniesiono kontakty {{count}} do bazy danych.",
@@ -3544,7 +3579,10 @@
     "announceSaveSidecarStopped": "Uruchom stos Reticulum przed zapisaniem ustawień zapowiedzi.",
     "clearAnnouncesDone": "Ogłoszenia wyczyszczone.",
     "clearAnnouncesFailed": "Nie udało się wyczyścić ogłoszeń.",
-    "announceIntervalHint": "Domyślnie 3600 s (1 h). Użyj 0 do komunikatów tylko przy starcie."
+    "announceIntervalHint": "Domyślnie 3600 s (1 h). Użyj 0 tylko dla announce przy starcie. Announce teraz natychmiast wysyła announce dostawy LXMF.",
+    "announceNow": "Ogłoś teraz",
+    "announceNowDone": "Wysłano zawiadomienie o dostawie LXMF.",
+    "announceNowFailed": "Nie udało się ogłosić: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "Ikona awatara",

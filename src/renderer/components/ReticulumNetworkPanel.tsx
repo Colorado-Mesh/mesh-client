@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
+import { reticulumSidecarEventRefreshActions } from '@/renderer/lib/reticulum/reticulumSidecarPeerRefreshEvents';
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import {
@@ -154,11 +155,8 @@ export function ReticulumNetworkPanel({
       if (evt.type === 'interface.state' || evt.type === 'stats_update') {
         invalidateReticulumInterfacesCache();
       }
-      if (
-        evt.type === 'peers_updated' ||
-        evt.type === 'stats_update' ||
-        evt.type === 'announce.received'
-      ) {
+      // Match runtime policy: do not path-table reload peers on stats_update.
+      if (reticulumSidecarEventRefreshActions(evt.type).peers) {
         void refreshPeers();
       }
     };
@@ -191,6 +189,26 @@ export function ReticulumNetworkPanel({
     } catch (e) {
       // catch-no-log-ok: export failure shown via setIdentityError
       setIdentityError(errLikeToLogString(e));
+    }
+  };
+
+  const handleSaveDisplayName = async (name: string): Promise<boolean> => {
+    if (!sidecarApiReady) return false;
+    setIdentityError(null);
+    try {
+      const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identity/display-name', {
+        display_name: name.trim(),
+      })) as { ok?: boolean; error?: string };
+      if (!res.ok) {
+        setIdentityError(res.error ?? t('connectionPanel.reticulumIdentity.saveDisplayNameFailed'));
+        return false;
+      }
+      await refreshIdentity();
+      return true;
+    } catch (e) {
+      // catch-no-log-ok: save failure shown via setIdentityError
+      setIdentityError(errLikeToLogString(e));
+      return false;
     }
   };
 
@@ -497,10 +515,12 @@ export function ReticulumNetworkPanel({
             exportPassphrase={exportPassphrase}
             exportJson={exportJson}
             exportDisabled={!sidecarApiReady}
+            saveDisabled={!sidecarApiReady}
             onExportPassphraseChange={setExportPassphrase}
             onExport={() => {
               void handleExportIdentity();
             }}
+            onSaveDisplayName={(name) => handleSaveDisplayName(name)}
           />
         ) : (
           <IdentitySetupView
@@ -772,28 +792,76 @@ function IdentityConfiguredView({
   exportPassphrase,
   exportJson,
   exportDisabled,
+  saveDisabled,
   onExportPassphraseChange,
   onExport,
+  onSaveDisplayName,
 }: {
   identity: ReticulumIdentityStatus | null;
   exportPassphrase: string;
   exportJson: string | null;
   exportDisabled: boolean;
+  saveDisabled: boolean;
   onExportPassphraseChange: (v: string) => void;
   onExport: () => void;
+  onSaveDisplayName: (name: string) => Promise<boolean>;
 }) {
   const { t } = useTranslation();
+  const [nameDraft, setNameDraft] = useState(identity?.display_name?.trim() ?? '');
+  const [saving, setSaving] = useState(false);
+  const [saveNotice, setSaveNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    setNameDraft(identity?.display_name?.trim() ?? '');
+  }, [identity?.display_name]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveNotice(null);
+    try {
+      const ok = await onSaveDisplayName(nameDraft);
+      if (ok) {
+        setSaveNotice(t('connectionPanel.reticulumIdentity.displayNameSaved'));
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="mt-3 space-y-1 text-sm text-gray-300">
       <div>
         <span className="text-muted">{t('connectionPanel.reticulumIdentity.hashLabel')}</span>{' '}
         <code className="text-amber-300">{identity?.lxmf_hash.slice(0, 24)}…</code>
       </div>
-      {identity?.display_name ? (
-        <div>
-          <span className="text-muted">{t('connectionPanel.reticulumIdentity.nameLabel')}</span>{' '}
-          {identity.display_name}
-        </div>
+      <label className="mt-2 block text-xs text-gray-400">
+        {t('connectionPanel.reticulumIdentity.displayName')}
+        <input
+          type="text"
+          value={nameDraft}
+          disabled={saveDisabled || saving}
+          onChange={(e) => {
+            setNameDraft(e.target.value);
+            setSaveNotice(null);
+          }}
+          aria-label={t('connectionPanel.reticulumIdentity.displayName')}
+          className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-200 disabled:opacity-50"
+        />
+      </label>
+      <button
+        type="button"
+        disabled={saveDisabled || saving}
+        onClick={() => {
+          void handleSave();
+        }}
+        className="mt-2 rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+      >
+        {t('connectionPanel.reticulumIdentity.saveDisplayName')}
+      </button>
+      {saveNotice ? (
+        <p className="text-readable-green mt-1 text-xs" role="status">
+          {saveNotice}
+        </p>
       ) : null}
       <label className="mt-2 block text-xs text-gray-400">
         {t('connectionPanel.reticulumIdentity.exportPassphrase')}

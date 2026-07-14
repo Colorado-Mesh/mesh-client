@@ -890,6 +890,7 @@ Quit mesh-client fully, reopen, and click **Start stack** again.
    ```bash
    ./scripts/apply-rsReticulum-packet-tap.sh
    ./scripts/apply-rsReticulum-auto-beacon-utun.sh
+   ./scripts/apply-rsReticulum-link-client-nomad.sh
    pnpm run reticulum:sidecar:build
    ```
 3. **Workaround on old builds**: disable **AutoInterface** under Connection → Interfaces if LAN discovery is not needed (TCP/RNode paths still work).
@@ -910,6 +911,35 @@ Log path: `~/Library/Application Support/mesh-client/mesh-client.log` (macOS).
 3. Confirm with `curl` against the sidecar port from logs: `/api/v1/nomadnetwork/nodes` and `/api/v1/topology` return JSON 200
 
 In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Cargo.toml` is newer than the debug binary.
+
+### Nomad Network pages hang or almost never load
+
+**Symptoms**: Most Nomad pages spin for a long time then fail; a few nearby nodes load quickly. UI shows humanized errors (via `nomadPageErrorHumanize.ts`) instead of raw sidecar codes when recognized.
+
+**Humanized error categories** (sidecar code → user message):
+
+| Sidecar code            | Meaning                                                             |
+| ----------------------- | ------------------------------------------------------------------- |
+| `path_timeout`          | No route to the node (path lookup timed out)                        |
+| `pubkey_not_found`      | Destination identity key not cached yet — wait for a Nomad announce |
+| `link_timeout`          | Link could not be established in time                               |
+| `response_timeout`      | Link opened but page payload did not arrive in time                 |
+| `missing_identity_hash` | No remembered identity for the node yet                             |
+| `transport_unavailable` | Reticulum transport unavailable — restart stack                     |
+| `sidecar_not_running`   | Sidecar not running — start stack from Connection                   |
+| `response_too_large`    | Remote response exceeded the sidecar size cap                       |
+| `nomad_busy`            | Another Nomad page/file query still holds the link lock             |
+
+Unrecognized codes pass through unchanged.
+
+**Cause**: Older `LinkClient` always waited for a fresh path-response announce for the destination public key, even when Nomad announces had already cached it. Successful fetches could also deregister all `nomadnetwork.node` announce handlers. Distant/high-hop nodes can still time out at the path stage (expected RF/mesh reachability limits).
+
+**Fix**:
+
+1. Ensure rsReticulum overlay is applied: `./scripts/apply-rsReticulum-link-client-nomad.sh` (see [patches/README.md](../reticulum-sidecar/patches/README.md); upstream [ratspeak/rsReticulum#14](https://github.com/ratspeak/rsReticulum/pull/14)).
+2. Rebuild sidecar: `pnpm run reticulum:sidecar:build`, restart stack.
+3. Prefer low-hop nodes while testing; hop count is shown in the Nomad list.
+4. Match the humanized message to the table above — `path_timeout` / high hops often mean RF reachability limits, not a mesh-client bug.
 
 ### Reticulum sidecar stops during dev (Vite HMR)
 
@@ -989,7 +1019,7 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 ### Reticulum DM stuck on Sending (MeshChatX / shared instance)
 
-**Symptoms**: Outbound Reticulum DMs stay **Sending**; Device log shows `link delivery timed out` with `link establishment timeout`, and many `failed to queue path request for LXMF delivery` lines. Connection tab may show **sidecar interface issues** (TX queue drops, transport saturated). Sniffer may show a **Link Request** that never completes.
+**Symptoms**: Outbound Reticulum DMs stay **Sending**; Device log shows `link delivery timed out` with `link establishment timeout`, and many `failed to queue path request for LXMF delivery` lines. **Diagnostics** may list per-peer **Direct LXMF link … timed out** rows (warning). Connection may show **sidecar interface issues** only for stack health (TX queue drops, transport saturated, TCP hub failures) — not single-peer link timeouts. Sniffer may show a **Link Request** that never completes.
 
 **Cause**: Usually **RNS transport overload**, not a missing mesh-client chat handshake. Common triggers:
 
@@ -1022,6 +1052,21 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 
 **Not the same as transport:** Ratspeak TCP hubs (e.g. `rns.ratspeak.org:4242`) and [rathole](https://github.com/ratspeak/rathole) are **connectivity / transport** tools, not LXMF propagation. mesh-client does not ship a default community propagation hash.
 
+### Reticulum: Ratspeak DMs work but mesh-client stays silent
+
+**Symptoms**: Another Reticulum client (Ratspeak, Sideband, MeshChat) exchanges DMs with a mobile peer after both sides announce; mesh-client shows outbound stuck **Sending** / **Queued** / **Failed**, **zero inbound**, or a Chat contact that never appears under **Peers**.
+
+**Cause**: LXMF requires (1) an **`lxmf.delivery` announce** so peers learn a path _to_ this identity and (2) inbound destination registration (`RegisterDestination` + LinkManager) so link payloads reach Chat. Older sidecars stored announce interval in config without scheduling announces; current builds send startup + periodic delivery announces and register `lxmf.delivery`.
+
+**Checks**:
+
+1. Upgrade / rebuild the sidecar (`pnpm run reticulum:sidecar:build`) and **Restart stack**.
+2. On Network, use **Announce now**; on the other client, confirm mesh-client’s LXMF hash (Network identity) appears after the announce.
+3. Same fabric: enable the same TCP hub / Auto / RNode paths on both clients when A/B testing.
+4. Contact named in Chat but missing from Peers → path dead; use **Peers → Request path / Probe**, or wait for the peer’s announce on that fabric.
+5. **Auto interface up ≠ Auto peers.** Auto “up” means LAN multicast carrier works; peer rows appear only when another RNS node announces onto that Auto group (or paths are owned by that interface). Multi-hop peers labeled with a TCP hub name and a shared `via` are hub fanout, not LAN neighbors.
+6. Configure a remote **propagation node** if the peer is often offline (does not replace missing announces).
+
 ### Reticulum interface add/edit/delete fails
 
 **Symptoms**: Connection tab **Add interface**, **Edit**, or **Delete** shows an inline error; interface list does not refresh.
@@ -1041,10 +1086,10 @@ For bulk fixes, use Network **Config import** (merge) instead of hand-editing in
 
 **Checks**:
 
-1. **Expected at scale**: mesh-client virtualizes peer rows above 100 entries, but the sidecar still maintains the full RNS path table (often 3k–10k rows on busy hubs). Background refresh runs every 30 s while the stack is configured.
+1. **Scale behavior**: mesh-client virtualizes peer rows above 100 entries (never mounts the full DOM when the virtualizer is not ready), prepares labels once before filter/sort, and does **not** reload the full path table on high-frequency `stats_update` / `interface.state` WS events. The sidecar still maintains the full RNS path table (often 3k–10k rows on busy hubs). Background peer refresh runs every 30 s while the stack is configured, plus announce/`peers_updated` debounced updates.
 2. **Reduce noise**: disable unused TCP testnet interfaces on **Connection → Interfaces** and restart the stack so RNS drops stale TCP clients.
 3. **Prefer Contacts**: use the **Contacts** tab for LXMF peers you message; **Favorites** for a short pinned list.
-4. **Search**: the peer search box debounces input — wait a moment after typing before judging filter performance on very large lists.
+4. **Search**: the peer search box debounces input and filters the full prepared list (not only the visible window) — wait a moment after typing before judging filter performance on very large lists.
 
 ### RNode Wi-Fi interface offline or won't connect
 

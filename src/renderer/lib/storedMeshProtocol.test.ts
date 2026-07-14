@@ -16,7 +16,12 @@ describe('storedMeshProtocol', () => {
     expect(getStoredMeshProtocol()).toBe('meshcore');
   });
 
-  it('returns meshtastic for any other value', () => {
+  it('returns reticulum when key is reticulum', () => {
+    localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+    expect(getStoredMeshProtocol()).toBe('reticulum');
+  });
+
+  it('returns meshtastic for meshtastic and any invalid value', () => {
     localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'meshtastic');
     expect(getStoredMeshProtocol()).toBe('meshtastic');
 

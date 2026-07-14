@@ -8,11 +8,11 @@ export interface ReticulumSidecarIssueAlertsBlockProps {
   shareInstanceEnabled?: boolean;
 }
 
-function countSidecarIssues(alert: ReticulumInterfaceIssueAlert): number {
+/** Stack-health issues for Connection; per-peer link timeouts stay in Diagnostics/Chat. */
+function countSidecarInterfaceIssues(alert: ReticulumInterfaceIssueAlert): number {
   return (
     alert.tcpConnectFailed.length +
     alert.txQueueDrops.length +
-    alert.linkDeliveryTimeouts.length +
     (alert.transportSaturatedCount > 0 ? 1 : 0) +
     (alert.slowTransportQueryCount > 0 ? 1 : 0)
   );
@@ -24,16 +24,13 @@ export function ReticulumSidecarIssueAlertsBlock({
   shareInstanceEnabled = false,
 }: ReticulumSidecarIssueAlertsBlockProps) {
   const { t } = useTranslation();
-  const issueCount = countSidecarIssues(alert);
+  const issueCount = countSidecarInterfaceIssues(alert);
   if (issueCount === 0) {
     return null;
   }
 
   const showShareInstanceHint =
-    shareInstanceEnabled &&
-    (alert.linkDeliveryTimeouts.length > 0 ||
-      alert.transportSaturatedCount > 0 ||
-      alert.txQueueDrops.length > 0);
+    shareInstanceEnabled && (alert.transportSaturatedCount > 0 || alert.txQueueDrops.length > 0);
 
   return (
     <div
@@ -62,19 +59,6 @@ export function ReticulumSidecarIssueAlertsBlock({
             </p>
             <p className="text-muted mt-0.5 text-[11px]">
               {t('connectionPanel.reticulumSidecarIssues.txQueueDropsHint')}
-            </p>
-          </li>
-        ))}
-        {alert.linkDeliveryTimeouts.map(({ destinationHash, count }) => (
-          <li key={`link-${destinationHash}`}>
-            <p>
-              {t('connectionPanel.reticulumSidecarIssues.linkDeliveryTimeout', {
-                hash: destinationHash.slice(0, 8),
-                count,
-              })}
-            </p>
-            <p className="text-muted mt-0.5 text-[11px]">
-              {t('connectionPanel.reticulumSidecarIssues.linkDeliveryTimeoutHint')}
             </p>
           </li>
         ))}

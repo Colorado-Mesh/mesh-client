@@ -12,6 +12,31 @@ import type { MessageRecord } from '../stores/messageStore';
 import ChatPanel from './ChatPanel';
 import { ToastProvider } from './Toast';
 
+const probeReticulumPeerMock = vi.hoisted(() => vi.fn());
+const requestReticulumPeerPathMock = vi.hoisted(() => vi.fn());
+const isReticulumSidecarRunningMock = vi.hoisted(() => vi.fn());
+const refreshReticulumPeersFromSidecarMock = vi.hoisted(() => vi.fn());
+
+vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    probeReticulumPeer: (...args: unknown[]) => probeReticulumPeerMock(...args),
+    requestReticulumPeerPath: (...args: unknown[]) => requestReticulumPeerPathMock(...args),
+    isReticulumSidecarRunning: (...args: unknown[]) => isReticulumSidecarRunningMock(...args),
+  };
+});
+
+vi.mock('@/renderer/stores/reticulumPeerStore', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
+  const actual = await importOriginal<typeof import('@/renderer/stores/reticulumPeerStore')>();
+  return {
+    ...actual,
+    refreshReticulumPeersFromSidecar: (...args: unknown[]) =>
+      refreshReticulumPeersFromSidecarMock(...args),
+  };
+});
+
 async function waitForComposer(): Promise<HTMLTextAreaElement> {
   const boxes = await screen.findAllByRole('textbox');
   const textarea = boxes.find((el): el is HTMLTextAreaElement => el.tagName === 'TEXTAREA');
@@ -69,6 +94,14 @@ beforeEach(() => {
   mockScrollToIndex.mockClear();
   lastVirtualizerOptions = undefined;
   lastVirtualizerInstance = undefined;
+  probeReticulumPeerMock.mockReset();
+  probeReticulumPeerMock.mockResolvedValue({ ok: true, hops: 1 });
+  requestReticulumPeerPathMock.mockReset();
+  requestReticulumPeerPathMock.mockResolvedValue({ ok: true });
+  isReticulumSidecarRunningMock.mockReset();
+  isReticulumSidecarRunningMock.mockResolvedValue(true);
+  refreshReticulumPeersFromSidecarMock.mockReset();
+  refreshReticulumPeersFromSidecarMock.mockResolvedValue([]);
 });
 
 describe('ChatPanel accessibility', () => {
@@ -1808,8 +1841,8 @@ describe('ChatPanel StatusBadge', () => {
     const badge = screen.getByText('USB no ACK').closest('.cursor-help')!;
     expect(badge.getAttribute('title')).toBeNull();
     await user.hover(badge);
-    const tooltip = document.querySelector('.pointer-events-none');
-    expect(tooltip?.textContent?.trim()).toBeTruthy();
+    const tooltip = await screen.findByRole('tooltip');
+    expect(tooltip.textContent?.trim()).toBeTruthy();
   });
 });
 
@@ -3692,5 +3725,104 @@ describe('ChatPanel reticulum dm-only chat', () => {
     );
     expect(screen.queryByRole('button', { name: 'History Peer' })).not.toBeInTheDocument();
     expect(screen.queryByText('prior hello')).not.toBeInTheDocument();
+  });
+
+  it('probes path reachability when opening a DM with stack live', async () => {
+    const hash = '368f994c056de0d8882855eb0d627497';
+    probeReticulumPeerMock.mockResolvedValue({ ok: true, hops: 2 });
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} reticulumStackLive />
+      </ToastProvider>,
+    );
+    const addressInput = screen.getByLabelText('Destination address');
+    await user.type(addressInput, hash);
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    await waitFor(() => {
+      expect(probeReticulumPeerMock).toHaveBeenCalledWith(hash);
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByRole('status', { name: 'Destination path is reachable' }),
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Path reachable/)).toBeInTheDocument();
+  });
+
+  it('shows unreachable path indicator when probe fails', async () => {
+    const hash = '368f994c056de0d8882855eb0d627497';
+    probeReticulumPeerMock.mockResolvedValue({ ok: false, error: 'timeout' });
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} reticulumStackLive />
+      </ToastProvider>,
+    );
+    const addressInput = screen.getByLabelText('Destination address');
+    await user.type(addressInput, hash);
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    await waitFor(() => {
+      expect(
+        screen.getByRole('status', { name: 'Destination path is not reachable' }),
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByText('No path')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Request Reticulum path to this destination' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'Probe Reticulum path reachability for this destination',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('requests path and re-probes from DM path actions', async () => {
+    const hash = '368f994c056de0d8882855eb0d627497';
+    probeReticulumPeerMock
+      .mockResolvedValueOnce({ ok: false, error: 'timeout' })
+      .mockResolvedValueOnce({ ok: true, hops: 2 });
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} reticulumStackLive />
+      </ToastProvider>,
+    );
+    const addressInput = screen.getByLabelText('Destination address');
+    await user.type(addressInput, hash);
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    await waitFor(() => {
+      expect(screen.getByText('No path')).toBeInTheDocument();
+    });
+    await user.click(
+      screen.getByRole('button', { name: 'Request Reticulum path to this destination' }),
+    );
+    await waitFor(() => {
+      expect(requestReticulumPeerPathMock).toHaveBeenCalledWith(hash);
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByRole('status', { name: 'Destination path is reachable' }),
+      ).toBeInTheDocument();
+    });
+    expect(refreshReticulumPeersFromSidecarMock).toHaveBeenCalled();
+  });
+
+  it('does not probe when reticulum stack is not live', async () => {
+    const hash = '368f994c056de0d8882855eb0d627497';
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...reticulumProps} reticulumStackLive={false} />
+      </ToastProvider>,
+    );
+    const addressInput = screen.getByLabelText('Destination address');
+    await user.type(addressInput, hash);
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    await waitForComposer();
+    expect(probeReticulumPeerMock).not.toHaveBeenCalled();
+    expect(screen.queryByText('No path')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Path reachable/)).not.toBeInTheDocument();
   });
 });

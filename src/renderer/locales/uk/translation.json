@@ -338,7 +338,13 @@
     "exportForDeveloper": "Експорт пакета підтримки для розробника",
     "exportForDeveloperButton": "Експорт для розробника",
     "exportForDeveloperWarning": "Включає вашу повну базу даних, яка може містити збережені паролі (облікові дані кімнати MeshCore, налаштування MQTT тощо). Поділіться цим набором приватно лише з супроводжуючими — ніколи на публічному GitHub.",
-    "exportSupportBundleFailed": "Не вдалося експортувати пакет підтримки: {{message}}"
+    "exportSupportBundleFailed": "Не вдалося експортувати пакет підтримки: {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "Очистити всі контакти LXMF",
+    "clearReticulumContactsDesc": "Видаляє всі записи з вкладки «Контакти» та списку контактів sidecar. Призначення залишаються на вкладці Peers зі своїми іменами. Повідомлення чату зберігаються. Контакти знову з’являються, коли ви пишете комусь або використовуєте «Зберегти як контакт».",
+    "clearReticulumContactsConfirm": "Це назавжди очистить усі {{count}} контактів Reticulum LXMF. Призначення залишаються на вкладці Peers; повідомлення не видаляються. Цю дію неможливо скасувати.",
+    "clearReticulumContactsConfirmButton": "Очистити {{count}} контактів",
+    "clearReticulumContactsButton": "Очистити всі контакти ({{count}})"
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -541,7 +547,19 @@
     "waitingMessagesSilentDrain": "Отримання повідомлень із черги на радіо…",
     "waitingMessagesDrainDeferred": "Синхронізацію повідомлень призупинено, коли радіостанція зайнята (адмін/трасування)…",
     "waitingMessagesSerialHint": "Послідовний USB обробляє одну команду за раз; повідомлення можуть надходити невеликими партіями.",
-    "waitingMessagesSyncFailed": "Не вдалося синхронізувати повідомлення в черзі: {{message}}"
+    "waitingMessagesSyncFailed": "Не вдалося синхронізувати повідомлення в черзі: {{message}}",
+    "dmPathChecking": "Перевірка шляху…",
+    "dmPathCheckingAria": "Перевірка досяжності шляху призначення",
+    "dmPathCheckingTooltip": "Запит шляху Reticulum до цього пункту призначення.",
+    "dmPathReachable": "Шлях досяжний",
+    "dmPathReachableHops": "Шлях досяжний · {{hops}} стрибок/стрибків",
+    "dmPathReachableAria": "Шлях до місця призначення доступний",
+    "dmPathReachableTooltip": "Шлях Reticulum до цього пункту призначення відомий. Пряма доставка може завершитися невдало, якщо вузол не в мережі.",
+    "dmPathUnreachable": "Немає шляху",
+    "dmPathUnreachableAria": "Шлях до місця призначення недоступний",
+    "dmPathUnreachableTooltip": "Шляху Reticulum до цього пункту призначення ще немає. Повідомлення все ще можуть доставлятися пізніше через налаштований вузол поширення.",
+    "dmPathRequestPathAria": "Запитати шлях Reticulum до цього призначення",
+    "dmPathProbeAria": "Перевірити досяжність шляху Reticulum для цього призначення"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -801,7 +819,6 @@
       "mnemonic": "Запишіть цю фразу та зберігайте її безпечно.",
       "confirmSaved": "Я зберіг фразу для відновлення",
       "hashLabel": "Хеш LXMF:",
-      "nameLabel": "Ім'я:",
       "failed": "Не вдалося встановити ідентичність",
       "export": "Експортувати резервну ко",
       "exportPassphrase": "Резервна парольна фраза",
@@ -823,7 +840,10 @@
       "identityAlreadyConfigured": "Ідентичність уже налаштована. Підтвердьте заміну, щоб імпортувати новий.",
       "identityFileMissing": "Файл ключа ідентифікації відсутній. Повторно імпортуйте свій закритий ключ або фразу відновлення.",
       "backupHashMismatch": "Резервні хеші не збігаються з файлом ключа ідентифікації на диску.",
-      "importPrivateKeyRequiresStack": "Для імпорту закритого ключа потрібен повний стек Reticulum."
+      "importPrivateKeyRequiresStack": "Для імпорту закритого ключа потрібен повний стек Reticulum.",
+      "saveDisplayName": "Зберегти відображуване ім’я",
+      "saveDisplayNameFailed": "Не вдалося зберегти відображуване ім'я.",
+      "displayNameSaved": "Відображуване ім'я збережено."
     },
     "reticulumInterfaces": {
       "title": "Інтерфейси",
@@ -1038,8 +1058,6 @@
       "txQueueDrops": "{{name}}: вихідні пакети скинуто ({{count}} в черзі)",
       "txQueueDropsHint": "Зазвичай це викликано тим, що непрацездатний інтерфейс TCP все ще увімкнено. Вимкніть недоступні концентратори, щоб зупинити переповнення черги.",
       "suppressed": "{{count}} аналогічні лінії журналу коляски нещодавно придушено.",
-      "linkDeliveryTimeout": "Пряме посилання LXMF на {{hash}}… вичерпано час очікування ({{count}}×)",
-      "linkDeliveryTimeoutHint": "Одноранговий вузол може бути в автономному режимі або транспорт RNS перевантажений. DM можуть залишатися в режимі надсилання, доки посилання не вийде з ладу.",
       "transportSaturated": "Транспорт RNS насичений ({{count}} краплі запиту шляху)",
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "Транспортні запити RNS повільні або невдалі ({{count}}×)",
@@ -2627,7 +2645,18 @@
     "forward": "вперед",
     "invalidUrl": "Недійсна адреса сторінки Nomad",
     "collapseNodeList": "Згорнути список вузлів",
-    "expandNodeList": "Розгорнути список вузлів"
+    "expandNodeList": "Розгорнути список вузлів",
+    "errors": {
+      "pathTimeout": "Немає маршруту до цього вузла (тайм-аут пошуку шляху). Спробуйте ближчий вузол або зачекайте нановіший announce.",
+      "pubkeyNotFound": "Не вдалося знайти ідентифікаційний ключ цього вузла. Дочекайтеся оголошення Nomad, а потім повторіть спробу.",
+      "linkTimeout": "Посилання на вузол не вдалося встановити вчасно.",
+      "responseTimeout": "Вузол прийняв посилання, але вчасно не повернув сторінку.",
+      "missingIdentity": "У цього вузла ще немає збереженої ідентичності. Дочекайтеся оголошення Nomad, потім спробуйте ще раз.",
+      "transportUnavailable": "Транспорт Reticulum недоступний. Перезапустіть стек і спробуйте ще раз.",
+      "sidecarNotRunning": "Sidecar Reticulum не працює. Запустіть стек із Підключення, а потім спробуйте ще раз.",
+      "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
+      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Загальний розподіл",
@@ -2718,7 +2747,13 @@
     "contactYes": "Так",
     "contactNo": "Ні",
     "tabFavorites": "Обране",
-    "emptyFavorites": "Ще немає улюблених однолітків — позначте контакт або однолітка, щоб прикріпити їх тут."
+    "emptyFavorites": "Ще немає улюблених однолітків — позначте контакт або однолітка, щоб прикріпити їх тут.",
+    "lookupPlaceholder": "Хеш пункту призначення пошуку…",
+    "lookupAria": "Шукати пір за хешем призначення",
+    "lookupSubmit": "Шукати",
+    "lookupSubmitAria": "Запитати шлях і перевірити хеш призначення",
+    "lookupInvalid": "Введіть дійсний 32-символьний хеш призначення LXMF або посилання lxmf://.",
+    "lookupHint": "Запит шляху для хешу, якого ще немає в списку вузлів (наприклад, вузол на концентраторі, яким ви ділитеся)."
   },
   "radioPanel": {
     "offloadedContacts": "Вивантажено {{count}} контакти до бази даних.",
@@ -3544,7 +3579,10 @@
     "announceSaveSidecarStopped": "Запустіть стек Reticulum перед збереженням налаштувань оголошення.",
     "clearAnnouncesDone": "Оголошення очищено.",
     "clearAnnouncesFailed": "Не вдалося очистити оголошення.",
-    "announceIntervalHint": "За замовчуванням 3600 с (1 год). Використовуйте 0 для оголошень лише для запуску."
+    "announceIntervalHint": "Типово 3600 с (1 год). Вкажіть 0 для announce лише під час запуску. «Оголосити зараз» негайно надсилає LXMF delivery announce.",
+    "announceNow": "Оголосити зараз",
+    "announceNowDone": "Оголошення про доставку LXMF надіслано.",
+    "announceNowFailed": "Не вдалося оголосити: {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "Значок аватара",

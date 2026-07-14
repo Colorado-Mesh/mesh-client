@@ -30,6 +30,13 @@ pub async fn list_contacts(State(stack): State<Arc<StackHandle>>) -> Json<serde_
     Json(serde_json::json!({ "contacts": contacts }))
 }
 
+pub async fn clear_contacts(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
+    match stack.clear_contacts().await {
+        Ok(cleared) => Json(serde_json::json!({ "ok": true, "cleared": cleared })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
 pub async fn list_peers(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
     let peers = stack.list_peers().await;
     Json(serde_json::json!({ "peers": peers }))

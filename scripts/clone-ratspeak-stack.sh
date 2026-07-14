@@ -15,6 +15,7 @@ fi
 
 "${SCRIPT_DIR}/apply-rsReticulum-packet-tap.sh"
 "${SCRIPT_DIR}/apply-rsReticulum-auto-beacon-utun.sh"
+"${SCRIPT_DIR}/apply-rsReticulum-link-client-nomad.sh"
 
 if [[ ! -d "${LXMF_DIR}/.git" ]]; then
   git clone --depth 1 https://github.com/ratspeak/rsLXMF.git "${LXMF_DIR}"

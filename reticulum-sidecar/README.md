@@ -28,6 +28,7 @@ Apply overlays (required for `rns-stack` until upstream merges):
 ```bash
 ./scripts/apply-rsReticulum-packet-tap.sh
 ./scripts/apply-rsReticulum-auto-beacon-utun.sh
+./scripts/apply-rsReticulum-link-client-nomad.sh
 ```
 
 See [patches/README.md](patches/README.md) for base SHA and regen steps.

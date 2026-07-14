@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-import { HelpTooltip } from '@/renderer/components/HelpTooltip';
+import { DeliveryStatusBadgeFrame } from '@/renderer/components/DeliveryStatusBadgeFrame';
 import type { MessageRecord, MessageTransport } from '@/renderer/stores/messageStore';
 
 export interface ReticulumMessageStatusBadgeProps {
@@ -40,10 +40,6 @@ export function ReticulumMessageStatusBadge({
         : (error ?? t('chatPanel.reticulumSendFailed'));
   const tooltip = `${t(tooltipKey)}: ${statusLabel}`;
   return (
-    <HelpTooltip text={tooltip}>
-      <span className={`text-[10px] ${colorClass}`}>
-        {label} {icon}
-      </span>
-    </HelpTooltip>
+    <DeliveryStatusBadgeFrame label={label} icon={icon} colorClass={colorClass} tooltip={tooltip} />
   );
 }

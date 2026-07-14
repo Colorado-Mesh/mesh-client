@@ -239,7 +239,8 @@ export function buildReticulumDiagnosticRows(
           hash: timeout.destinationHash.slice(0, 8),
           count: String(timeout.count),
         }),
-        severity: 'error',
+        // Peer reachability — not stack interface health (Connection omits these).
+        severity: 'warning',
         detectedAt: now,
         reticulumRepairKind: 'restart_stack',
       });

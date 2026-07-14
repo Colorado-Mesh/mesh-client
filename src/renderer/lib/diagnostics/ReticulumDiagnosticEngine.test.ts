@@ -121,6 +121,11 @@ describe('ReticulumDiagnosticEngine', () => {
     expect(
       rows.some((r) => r.kind === 'rf' && r.condition === 'reticulum/link-delivery-timeout'),
     ).toBe(true);
+    const linkTimeout = rows.find(
+      (r): r is RfDiagnosticRow =>
+        r.kind === 'rf' && r.condition === 'reticulum/link-delivery-timeout',
+    );
+    expect(linkTimeout?.severity).toBe('warning');
     const saturated = rows.find(
       (r): r is RfDiagnosticRow =>
         r.kind === 'rf' && r.condition === 'reticulum/transport-saturated',

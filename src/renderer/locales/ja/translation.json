@@ -338,7 +338,13 @@
     "exportForDeveloper": "開発者向けのサポート バンドルをエクスポートする",
     "exportForDeveloperButton": "開発者向けのエクスポート",
     "exportForDeveloperWarning": "保存されたパスワード (MeshCore ルームの資格情報、MQTT 設定など) が含まれる可能性のある完全なデータベースが含まれます。このバンドルはメンテナとのみ非公開で共有し、公開 GitHub では決して共有しません。",
-    "exportSupportBundleFailed": "サポート バンドルをエクスポートできませんでした: {{message}}"
+    "exportSupportBundleFailed": "サポート バンドルをエクスポートできませんでした: {{message}}",
+    "dangerZoneReticulumHeading": "Reticulum",
+    "clearReticulumContactsTitle": "すべてのLXMF連絡先を消去",
+    "clearReticulumContactsDesc": "連絡先タブとサイドカーの連絡先リストからすべての項目を削除します。宛先はPeersタブに名前付きで残ります。チャットメッセージは保持されます。誰かにメッセージを送るか「連絡先として保存」を使うと、連絡先が再表示されます。",
+    "clearReticulumContactsConfirm": "これにより{{count}}件すべてのReticulum LXMF連絡先が完全に消去されます。宛先はPeersタブに残り、メッセージは削除されません。この操作は元に戻せません。",
+    "clearReticulumContactsConfirmButton": "{{count}}件の連絡先を消去",
+    "clearReticulumContactsButton": "すべての連絡先を消去（ {{count}} ）"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -541,7 +547,19 @@
     "waitingMessagesSilentDrain": "無線のキューにあるメッセージを取得しています…",
     "waitingMessagesDrainDeferred": "無線がビジー状態 (管理/トレース) の間、メッセージの同期が一時停止されました…",
     "waitingMessagesSerialHint": "USB シリアルは一度に 1 つのコマンドを処理します。メッセージは小さなバッチで届く場合があります。",
-    "waitingMessagesSyncFailed": "キューに入れられたメッセージを同期できませんでした: {{message}}"
+    "waitingMessagesSyncFailed": "キューに入れられたメッセージを同期できませんでした: {{message}}",
+    "dmPathChecking": "パスを確認しています…",
+    "dmPathCheckingAria": "宛先パスの到達可能性を確認しています",
+    "dmPathCheckingTooltip": "この宛先への Reticulum パスを要求しています。",
+    "dmPathReachable": "到達可能なパス",
+    "dmPathReachableHops": "経路到達可 · {{hops}} ホップ",
+    "dmPathReachableAria": "宛先パスに到達可能です",
+    "dmPathReachableTooltip": "この宛先への Reticulum パスが判明しています。ピアがオフラインの場合、直接配信は失敗することがあります。",
+    "dmPathUnreachable": "パスがありません",
+    "dmPathUnreachableAria": "宛先パスに到達できません",
+    "dmPathUnreachableTooltip": "この宛先への Reticulum パスはまだありません。設定済みの伝播ノード経由で後から配信されることがあります。",
+    "dmPathRequestPathAria": "この宛先への Reticulum パスをリクエスト",
+    "dmPathProbeAria": "この宛先の Reticulum パス到達可能性をプローブ"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -801,7 +819,6 @@
       "mnemonic": "このフレーズを書き留めて、安全に保管してください。",
       "confirmSaved": "回復フレーズを保存しました",
       "hashLabel": "LXMFハッシュ：",
-      "nameLabel": "名前:",
       "failed": "IDの設定に失敗しました",
       "export": "バックアップをエクスポート",
       "exportPassphrase": "バックアップパスフレーズ",
@@ -823,7 +840,10 @@
       "identityAlreadyConfigured": "ID はすでに構成されています。新しいものをインポートするには、置換を確認します。",
       "identityFileMissing": "ID キー ファイルがありません。秘密キーまたは回復フレーズを再インポートします。",
       "backupHashMismatch": "バックアップ ハッシュがディスク上の ID キー ファイルと一致しません。",
-      "importPrivateKeyRequiresStack": "秘密キーのインポートには、完全な Reticulum スタックのビルドが必要です。"
+      "importPrivateKeyRequiresStack": "秘密キーのインポートには、完全な Reticulum スタックのビルドが必要です。",
+      "saveDisplayName": "表示名を保存",
+      "saveDisplayNameFailed": "表示名の保存に失敗しました。",
+      "displayNameSaved": "表示名を保存しました。"
     },
     "reticulumInterfaces": {
       "title": "インターフェース",
@@ -1038,8 +1058,6 @@
       "txQueueDrops": "{{name}} ：送信パケットがドロップされました（ {{count}}がキューに入れられました）",
       "txQueueDropsHint": "通常は、デッドTCPインターフェイスがまだ有効になっていることが原因です。キューオーバーフローを停止するには、到達不能なハブを無効にします。",
       "suppressed": "{{count}}類似のサイドカーログ行は最近抑制されました。",
-      "linkDeliveryTimeout": "{{hash}} …への直接LXMFリンクがタイムアウトしました（ {{count}} × ）",
-      "linkDeliveryTimeoutHint": "ピアはオフラインであってもよく、またはRNSトランスポートが過負荷であってもよい。DMは、リンクが失敗するまで送信を続けることができます。",
       "transportSaturated": "RNSトランスポート飽和（ {{count}}パス要求ドロップ）",
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "RNSトランスポートクエリが遅いか失敗しました({{count}} ×)",
@@ -2627,7 +2645,18 @@
     "forward": "フォワード",
     "invalidUrl": "Nomad ページのアドレスが無効です",
     "collapseNodeList": "ノードリストを折りたたむ",
-    "expandNodeList": "ノードリストを展開"
+    "expandNodeList": "ノードリストを展開",
+    "errors": {
+      "pathTimeout": "このノードへの経路がありません（パス検索がタイムアウトしました）。近いノードを試すか、新しいannounceを待ってください。",
+      "pubkeyNotFound": "このノードのIDキーが見つかりませんでした。放浪者の発表を待ってから、もう一度やり直してください。",
+      "linkTimeout": "ノードへのリンクを時間内に確立できませんでした。",
+      "responseTimeout": "ノードはリンクを受け入れましたが、時間内にページを返しませんでした。",
+      "missingIdentity": "このノードにはまだ記憶されている身元がありません。放浪者の発表を待ってから、もう一度やり直してください。",
+      "transportUnavailable": "Reticulum トランスポートは利用できません。スタックを再起動してもう一度お試しください。",
+      "sidecarNotRunning": "Reticulum サイドカーが実行されていません。接続からスタックを開始してから、もう一度お試しください。",
+      "responseTooLarge": "ノードが返すデータ量が、この要求で mesh-client が受け入れる上限を超えました。",
+      "nomadBusy": "別の Nomad ページまたはファイル要求が処理中です。しばらくしてから再試行してください。"
+    }
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",
@@ -2718,7 +2747,13 @@
     "contactYes": "あり",
     "contactNo": "なし",
     "tabFavorites": "お気に入り",
-    "emptyFavorites": "お気に入りのピアはまだありません。連絡先またはピアに星を付けて、ここにピン留めします。"
+    "emptyFavorites": "お気に入りのピアはまだありません。連絡先またはピアに星を付けて、ここにピン留めします。",
+    "lookupPlaceholder": "宛先ハッシュを検索…",
+    "lookupAria": "宛先ハッシュでピアを検索",
+    "lookupSubmit": "検索",
+    "lookupSubmitAria": "パスを要求し宛先ハッシュをプローブ",
+    "lookupInvalid": "有効な32文字のLXMF宛先ハッシュ、または lxmf:// リンクを入力してください。",
+    "lookupHint": "まだピアリストにないハッシュのパスを要求します（たとえば、共有するハブ上のピア）。"
   },
   "radioPanel": {
     "offloadedContacts": "{{count}} 連絡先をデータベースにオフロードしました。",
@@ -3544,7 +3579,10 @@
     "announceSaveSidecarStopped": "アナウンス設定を保存する前に、Reticulumスタックを起動します。",
     "clearAnnouncesDone": "クリアをお知らせします。",
     "clearAnnouncesFailed": "アナウンスをクリアできませんでした。",
-    "announceIntervalHint": "デフォルトは3600秒（ 1時間）です。起動のみのアナウンスには0を使用します。"
+    "announceIntervalHint": "既定は3600秒（1時間）。0にすると起動時のみのannounceになります。「今すぐannounce」はLXMF配信announceを即座に送信します。",
+    "announceNow": "今すぐお知らせ",
+    "announceNowDone": "LXMF配信アナウンスを送信しました。",
+    "announceNowFailed": "お知らせできませんでした： {{error}}"
   },
   "reticulumProfileIcon": {
     "iconName": "プレイヤーアイコンを見る",
