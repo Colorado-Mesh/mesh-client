@@ -1096,16 +1096,17 @@ Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts)
 
 For bulk fixes, use Network **Config import** (merge) instead of hand-editing individual rows. See [reticulum.md — Interface management](reticulum.md#interface-management-connection-tab).
 
-### Reticulum Peers tab slow with many hubs or testnets
+### Reticulum Peers stale or slow with many hubs or testnets
 
-**Symptoms**: After enabling several public hubs or testnets, **Peers** shows thousands of path-table rows; scrolling, search, or refresh feels sluggish. UI may remain responsive on **Contacts** or **Favorites** because those tabs show a smaller LXMF contact set.
+**Symptoms**: Peers looks briefly stale after opening the tab, or—after enabling several public hubs or testnets—shows thousands of path-table rows and scrolling, search, or refresh feels sluggish. UI may remain responsive on **Contacts** or **Favorites** because those tabs show a smaller LXMF contact set.
 
 **Checks**:
 
-1. **Scale behavior**: mesh-client virtualizes peer rows above 100 entries (never mounts the full DOM when the virtualizer is not ready), prepares labels once before filter/sort, and does **not** reload the full path table on high-frequency `stats_update` / `interface.state` WS events. The sidecar still maintains the full RNS path table (often 3k–10k rows on busy hubs). Background peer refresh runs every 30 s while the stack is configured, plus announce/`peers_updated` debounced updates.
+1. **Refresh model**: opening Peers uses the sidecar’s short-lived soft cache. Click **Refresh** to force a live path-table read (`?refresh=1`). mesh-client virtualizes peer rows above 100 entries (never mounts the full DOM when the virtualizer is not ready), prepares labels once before filter/sort, and does **not** reload the full path table on high-frequency `stats_update` / `interface.state` WS events. The sidecar still maintains the full RNS path table (often 3k–10k rows on busy hubs). Background peer refresh runs every 30 s while the stack is configured (60 s above 2,000 peers), plus announce/`peers_updated` debounced updates.
 2. **Reduce noise**: disable unused TCP testnet interfaces on **Connection → Interfaces** and restart the stack so RNS drops stale TCP clients.
 3. **Prefer Contacts**: use the **Contacts** tab for LXMF peers you message; **Favorites** for a short pinned list.
 4. **Search**: the peer search box debounces input and filters the full prepared list (not only the visible window) — wait a moment after typing before judging filter performance on very large lists.
+5. **Topology**: automatic topology rebuilds pause above the large-mesh threshold; use its manual **Refresh** after a significant route change.
 
 ### RNode Wi-Fi interface offline or won't connect
 

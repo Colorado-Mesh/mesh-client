@@ -76,6 +76,7 @@ import {
 import {
   isIataScopedMeshcoreMqtt,
   parseMeshcoreIataTopicPrefix,
+  prepareMeshcoreIataMqttTopicPrefix,
 } from '../lib/meshcoreMqttTopicPrefix';
 import { meshcoreMqttUserFacingHint } from '../lib/meshcoreMqttUserHint';
 import {
@@ -2689,15 +2690,15 @@ export default function ConnectionPanel({
                   channelPsks: committedPsks.length > 0 ? committedPsks : undefined,
                   mqttTransportProtocol: protocol === 'meshcore' ? 'meshcore' : 'meshtastic',
                 };
-                if (protocol === 'meshcore' && isIataScopedMeshcoreMqtt(meshcorePreset, settings)) {
-                  const iataParsed = parseMeshcoreIataTopicPrefix(settings.topicPrefix);
-                  if (!iataParsed.ok) {
-                    setMqttError(t('connectionPanel.topicPrefixInvalidIata'));
+                if (protocol === 'meshcore') {
+                  const iataPrepared = prepareMeshcoreIataMqttTopicPrefix(meshcorePreset, settings);
+                  if (!iataPrepared.ok) {
+                    setMqttError(t(iataPrepared.errorKey));
                     return;
                   }
-                  if (iataParsed.normalized !== settings.topicPrefix) {
-                    settings.topicPrefix = iataParsed.normalized;
-                    updateMqtt('topicPrefix', iataParsed.normalized, false);
+                  if (iataPrepared.changed) {
+                    settings.topicPrefix = iataPrepared.topicPrefix;
+                    updateMqtt('topicPrefix', iataPrepared.topicPrefix, false);
                   }
                 }
                 if (

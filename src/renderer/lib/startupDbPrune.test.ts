@@ -58,11 +58,19 @@ describe('runStartupDbPrune', () => {
     expect(window.electronAPI.db.pruneReticulumMessagesByCount).toHaveBeenCalledTimes(1);
   });
 
-  it('runSessionDbPrune repeats maintenance without single-flight guard', async () => {
+  it('runSessionDbPrune repeats after prior run settles (single-flight only while in-flight)', async () => {
     await runStartupDbPrune();
     await runSessionDbPrune();
+    await runSessionDbPrune();
 
-    expect(window.electronAPI.db.pruneReticulumMessagesByCount).toHaveBeenCalledTimes(2);
+    expect(window.electronAPI.db.pruneReticulumMessagesByCount).toHaveBeenCalledTimes(3);
+  });
+
+  it('coalesces concurrent session prune callers', async () => {
+    await runStartupDbPrune();
+    vi.mocked(window.electronAPI.db.pruneReticulumMessagesByCount).mockClear();
+    await Promise.all([runSessionDbPrune(), runSessionDbPrune(), runSessionDbPrune()]);
+    expect(window.electronAPI.db.pruneReticulumMessagesByCount).toHaveBeenCalledTimes(1);
   });
 
   it('does not re-run when invoked again after concurrent callers', async () => {
@@ -70,5 +78,38 @@ describe('runStartupDbPrune', () => {
 
     expect(window.electronAPI.db.pruneMessagesByCount).toHaveBeenCalledTimes(1);
     expect(window.electronAPI.db.pruneMeshcoreMessagesByCount).toHaveBeenCalledTimes(1);
+  });
+
+  it('runs reticulum destination prune + startup-only vacuum', async () => {
+    localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
+    localStorage.setItem(
+      'mesh-client:appSettings',
+      JSON.stringify({
+        reticulumAutoPruneEnabled: true,
+        reticulumAutoPruneDays: 14,
+        reticulumDestinationCapEnabled: true,
+        reticulumDestinationCapCount: 1234,
+      }),
+    );
+    const deleteByAge = vi.fn().mockResolvedValue({ changes: 0 });
+    const pruneActivity = vi.fn().mockResolvedValue({ changes: 0 });
+    const pruneByCount = vi.fn().mockResolvedValue({ changes: 0 });
+    const vacuum = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.db).deleteReticulumDestinationsByAge = deleteByAge;
+    vi.mocked(window.electronAPI.db).pruneReticulumIdentityActivityByAge = pruneActivity;
+    vi.mocked(window.electronAPI.db).pruneReticulumDestinationsByCount = pruneByCount;
+    vi.mocked(window.electronAPI.db).vacuumReticulumTables = vacuum;
+
+    await runStartupDbPrune();
+    expect(deleteByAge).toHaveBeenCalledWith(14);
+    expect(pruneActivity).toHaveBeenCalledWith(14);
+    expect(pruneByCount).toHaveBeenCalledWith(1234);
+    expect(vacuum).toHaveBeenCalledTimes(1);
+
+    deleteByAge.mockClear();
+    vacuum.mockClear();
+    await runSessionDbPrune();
+    expect(deleteByAge).toHaveBeenCalledTimes(1);
+    expect(vacuum).not.toHaveBeenCalled();
   });
 });

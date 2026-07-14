@@ -345,14 +345,15 @@
     "clearReticulumContactsConfirm": "이렇게 하면 {{count}}개의 모든 Reticulum LXMF 연락처가 영구적으로 지워집니다. 대상은 Peers 탭에 남고 메시지는 삭제되지 않습니다. 이 작업은 취소할 수 없습니다.",
     "clearReticulumContactsConfirmButton": "연락처 {{count}}개 지우기",
     "clearReticulumContactsButton": "모든 연락처 지우기 ({{count}})",
-    "reticulumDestinationRetentionHint": "SQLite LXMF 연락처 메타 및 인메모리 피어 목록을 제한합니다. 사이드카의 허브 경로 테이블에는 여전히 이 캡보다 더 많은 경로가 있을 수 있습니다.",
+    "reticulumDestinationRetentionHint": "SQLite LXMF 연락처 메타데이터와 메모리 내 피어 목록을 제한합니다. sidecar의 허브 경로 테이블에는 이 상한보다 더 많은 경로가 남아 있을 수 있습니다.",
     "reticulumAutoPruneDestinations": "다음보다 오래된 Reticulum 목적지를 자동 정리합니다.",
-    "reticulumAutoPruneDestinationsLabel": "시작 시 목적지 자동 조정 (이전 버전)",
-    "reticulumAutoPruneDestinationsDaysAria": "시작 시 {{days}} 일 이상 경과한 목적지 자동 조정",
-    "reticulumCapDestinations": "CAP 총 Reticulum 목적지",
-    "reticulumCapDestinationsLabel": "메모리 및 SQLite의 캡 대상/피어, 가장 최근에 들었던 정보 유지",
-    "reticulumCapDestinationsCountAria": "CAP 여행지, 가장 최근에 들린 곳 {{count}}",
-    "reticulumDestinationsUnit": "여행 목적지"
+    "reticulumAutoPruneDestinationsLabel": "시작할 때 다음보다 오래된 목적지 자동 정리",
+    "reticulumAutoPruneDestinationsDaysAria": "시작할 때 {{days}}일보다 오래된 목적지 자동 정리",
+    "reticulumCapDestinations": "Reticulum 목적지 총수 제한",
+    "reticulumCapDestinationsLabel": "메모리와 SQLite의 목적지 / 피어 수를 제한하고 가장 최근에 수신한 항목 유지",
+    "reticulumCapDestinationsCountAria": "목적지 수를 제한하고 가장 최근에 수신한 {{count}}개 유지",
+    "reticulumDestinationsUnit_one": "목적지",
+    "reticulumDestinationsUnit_other": "목적지"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -1111,7 +1112,7 @@
       "syncFailed": "RMAP 검색 동기화에 실패했습니다."
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT는 콜로라도 지역 메쉬 사용자를 위한 것입니다. 사전 설정은 meshcore/DEN(덴버 IATA) 아래에 게시됩니다. 콜로라도에 있지 않은 경우 LetsMesh 또는 MeshMapper를 대신 사용하십시오. 계속하시겠습니까?",
-    "coloradoServerNote": "Colorado Mesh는 콜로라도 거주자만 사용할 수 있습니다. 주제 접두사는 덴버 IATA(meshcore/DEN)를 사용합니다.",
+    "coloradoServerNote": "Colorado Mesh는 콜로라도 지역의 메쉬 사용자를 위한 것입니다. 주제 접두사는 덴버 IATA(meshcore/DEN)를 사용합니다.",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT는 콜로라도 지역 메쉬 사용자를 위한 것이며 meshcore/DEN 아래에 게시됩니다. 콜로라도 외부에 있는 경우 LetsMesh(글로벌 공개 브로커)로 전환하십시오.",
     "coloradoRegionGateStay": "콜로라도에 있습니다",

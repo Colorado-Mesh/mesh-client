@@ -345,14 +345,15 @@
     "clearReticulumContactsConfirm": "Dadurch werden alle {{count}} Reticulum-LXMF-Kontakte dauerhaft gelöscht. Ziele bleiben im Peers-Tab; Nachrichten werden nicht gelöscht. Dies kann nicht rückgängig gemacht werden.",
     "clearReticulumContactsConfirmButton": "{{count}} Kontakte löschen",
     "clearReticulumContactsButton": "Alle Kontakte löschen ({{count}})",
-    "reticulumDestinationRetentionHint": "Begrenzt die SQLite LXMF-Kontakt-Meta und die In-Memory-Peers-Liste. Die Nabenpfadtabelle im Beiwagen kann immer noch mehr Routen enthalten als diese Kappe.",
-    "reticulumAutoPruneDestinations": "Reticulum-Ziele, die älter als sind, automatisch beschneiden",
+    "reticulumDestinationRetentionHint": "Begrenzt SQLite-LXMF-Kontaktmetadaten und die Peers-Liste im Speicher. Die Hub-Pfadtabelle im Sidecar kann weiterhin mehr Routen enthalten als diese Obergrenze.",
+    "reticulumAutoPruneDestinations": "Reticulum-Ziele automatisch bereinigen, die älter sind als",
     "reticulumAutoPruneDestinationsLabel": "Ziele beim Start automatisch beschneiden, älter als",
     "reticulumAutoPruneDestinationsDaysAria": "Ziele beim Start automatisch beschneiden, älter als {{days}} Tage",
-    "reticulumCapDestinations": "Cap total Reticulum Destinationen",
-    "reticulumCapDestinationsLabel": "Ziele / Peers im Speicher und SQLite begrenzen, zuletzt gehört halten",
-    "reticulumCapDestinationsCountAria": "Ziele begrenzen, zuletzt gehört behalten {{count}}",
-    "reticulumDestinationsUnit": "Touren"
+    "reticulumCapDestinations": "Gesamtzahl der Reticulum-Ziele begrenzen",
+    "reticulumCapDestinationsLabel": "Ziele / Peers im Speicher und SQLite begrenzen, zuletzt gehörte behalten",
+    "reticulumCapDestinationsCountAria": "Ziele begrenzen, die zuletzt gehörten {{count}} behalten",
+    "reticulumDestinationsUnit_one": "Ziel",
+    "reticulumDestinationsUnit_other": "Ziele"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -1110,8 +1111,8 @@
       "openGlobalMapAria": "RMAP v4 Global Map auf rmap.world öffnen",
       "syncFailed": "RMAP-Erkennungssynchronisierung fehlgeschlagen."
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTT ist für Colorado-area Mesh-Benutzer. Die Voreinstellung wird unter meshcore/DEN (Denver IATA) veröffentlicht. Wenn Sie nicht in Colorado sind, verwenden Sie stattdessen LetsMesh oder MeshMapper. Fortfahren?",
-    "coloradoServerNote": "Colorado Mesh ist nur für Einwohner von Colorado. Das Themenpräfix verwendet die Denver IATA (meshcore/DEN).",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT ist für Mesh-Nutzer im Raum Colorado. Die Voreinstellung wird unter meshcore/DEN (Denver IATA) veröffentlicht. Wenn Sie nicht in Colorado sind, verwenden Sie stattdessen LetsMesh oder MeshMapper. Fortfahren?",
+    "coloradoServerNote": "Colorado Mesh ist für Mesh-Nutzer im Raum Colorado. Das Themenpräfix verwendet die Denver IATA (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT ist für Colorado-area Mesh-Benutzer und veröffentlicht unter meshcore/DEN. Wenn Sie sich außerhalb von Colorado befinden, wechseln Sie zu LetsMesh (globaler öffentlicher Broker).",
     "coloradoRegionGateStay": "Ich bin in Colorado",

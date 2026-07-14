@@ -68,6 +68,13 @@ export const useReticulumPacketStore = create<ReticulumPacketStoreState>((set, g
   },
 
   replacePackets: (entries) => {
+    // Drop RAF-batched WS packets so hydration does not duplicate snapshot rows.
+    pendingPackets = [];
+    packetFlushScheduled = false;
+    if (packetRafId != null && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(packetRafId);
+    }
+    packetRafId = null;
     set({ packets: trimRingBuffer(entries) });
   },
 

@@ -7,6 +7,7 @@ import { MAX_MESH_ENTITY_CAP, SESSION_DB_PRUNE_INTERVAL_MS } from './sessionMemo
 import { getStoredMeshProtocol } from './storedMeshProtocol';
 
 let startupDbPrunePromise: Promise<void> | null = null;
+let sessionDbPrunePromise: Promise<void> | null = null;
 
 export { SESSION_DB_PRUNE_INTERVAL_MS };
 
@@ -22,12 +23,17 @@ export function runStartupDbPrune(): Promise<void> {
 
 /** Periodic maintenance while the app stays connected (same ops as startup prune). */
 export function runSessionDbPrune(): Promise<void> {
-  return executeDbPrune('session');
+  if (sessionDbPrunePromise) return sessionDbPrunePromise;
+  sessionDbPrunePromise = executeDbPrune('session').finally(() => {
+    sessionDbPrunePromise = null;
+  });
+  return sessionDbPrunePromise;
 }
 
 /** @internal Vitest only — resets single-flight guard between tests. */
 export function resetStartupDbPruneForTests(): void {
   startupDbPrunePromise = null;
+  sessionDbPrunePromise = null;
 }
 
 async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
@@ -156,12 +162,6 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
   }
 
   ops.push(
-    window.electronAPI.db.vacuumReticulumTables().catch((e: unknown) => {
-      console.warn('[App] startup vacuumReticulumTables failed ' + errLikeToLogString(e));
-    }),
-  );
-
-  ops.push(
     fetchMessageRetention()
       .then((r) => {
         const innerOps: Promise<unknown>[] = [];
@@ -203,5 +203,14 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
 
   if (ops.length > 0) {
     await Promise.all(ops);
+  }
+
+  // VACUUM rewrites the whole DB file — only after startup prune, never on the 6h session tick.
+  if (label === 'startup' && startupProtocol === 'reticulum') {
+    try {
+      await window.electronAPI.db.vacuumReticulumTables();
+    } catch (e: unknown) {
+      console.warn('[App] startup vacuumReticulumTables failed ' + errLikeToLogString(e));
+    }
   }
 }

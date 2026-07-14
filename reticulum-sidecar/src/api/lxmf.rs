@@ -45,16 +45,37 @@ pub struct ListPeersQuery {
     pub refresh: Option<String>,
 }
 
+/// Parse `?refresh=` for live path-table bypass (`1` / `true` / `yes`, case- and whitespace-tolerant).
+pub fn peers_query_forces_refresh(refresh: Option<&str>) -> bool {
+    matches!(
+        refresh.map(str::trim).map(|s| s.to_ascii_lowercase()).as_deref(),
+        Some("1") | Some("true") | Some("yes")
+    )
+}
+
 pub async fn list_peers(
     State(stack): State<Arc<StackHandle>>,
     Query(q): Query<ListPeersQuery>,
 ) -> Json<serde_json::Value> {
-    let force = matches!(
-        q.refresh.as_deref().map(str::trim),
-        Some("1") | Some("true") | Some("yes")
-    );
+    let force = peers_query_forces_refresh(q.refresh.as_deref());
     let peers = stack.list_peers_with_refresh(force).await;
     Json(serde_json::json!({ "peers": peers }))
+}
+
+#[cfg(test)]
+mod peers_query_tests {
+    use super::peers_query_forces_refresh;
+
+    #[test]
+    fn peers_query_forces_refresh_accepts_truthy_variants() {
+        assert!(peers_query_forces_refresh(Some("1")));
+        assert!(peers_query_forces_refresh(Some(" true ")));
+        assert!(peers_query_forces_refresh(Some("YES")));
+        assert!(!peers_query_forces_refresh(None));
+        assert!(!peers_query_forces_refresh(Some("0")));
+        assert!(!peers_query_forces_refresh(Some("no")));
+        assert!(!peers_query_forces_refresh(Some("maybe")));
+    }
 }
 
 #[derive(Debug, serde::Deserialize)]

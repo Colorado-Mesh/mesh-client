@@ -533,16 +533,7 @@ export const useReticulumPeerStore = create<ReticulumPeerStoreState>((set, get) 
     try {
       const rows =
         (await window.electronAPI.db.getReticulumDestinations()) as ReticulumDestinationDbRow[];
-      const next = new Map<string, ReticulumPeerAppearance>();
-      for (const row of rows) {
-        if (!row.destination_hash) continue;
-        if (row.icon_name == null && row.icon_color == null) continue;
-        next.set(normalizeHash(row.destination_hash), {
-          icon_name: row.icon_name,
-          icon_color: row.icon_color,
-        });
-      }
-      set({ peerAppearanceByHash: next });
+      set({ peerAppearanceByHash: appearancesFromDbRows(rows) });
     } catch (e) {
       console.warn('[reticulumPeerStore] hydratePeerAppearances ' + errLikeToLogString(e));
     }
@@ -696,10 +687,18 @@ function fingerprintPeerSnapshot(peers: ReticulumPeer[], contactsLen: number): s
   let sample = '';
   if (n > 0) {
     const step = Math.max(1, Math.floor(n / 8));
+    const pushSample = (p: ReticulumPeer) => {
+      sample += p.destination_hash.slice(0, 8);
+      sample += `:${p.hops ?? ''}`;
+      sample += `:${p.last_seen ?? ''}`;
+      sample += `:${p.interface ?? ''}`;
+      sample += `:${p.via_hash?.slice(0, 8) ?? ''}`;
+      sample += `:${p.display_name ?? ''};`;
+    };
     for (let i = 0; i < n; i += step) {
-      sample += peers[i].destination_hash.slice(0, 8);
+      pushSample(peers[i]);
     }
-    sample += peers[n - 1].destination_hash.slice(0, 8);
+    pushSample(peers[n - 1]);
   }
   return `${n}:${contactsLen}:${sample}`;
 }
@@ -762,11 +761,14 @@ function appearancesFromDbRows(
 /** Single-flight + trailing coalesce so a slow older snapshot cannot overwrite a newer one. */
 let peerRefreshInFlight: Promise<ReticulumContact[]> | null = null;
 let peerRefreshPendingRerun = false;
+/** OR of forceRefresh across coalesced callers (manual Refresh must not soften to cache). */
+let peerRefreshPendingForce = false;
 
 /** Test helper — reset peer-refresh coalesce state. */
 export function resetReticulumPeerRefreshSingleFlightForTests(): void {
   peerRefreshInFlight = null;
   peerRefreshPendingRerun = false;
+  peerRefreshPendingForce = false;
 }
 
 export interface RefreshReticulumPeersOptions {
@@ -890,19 +892,21 @@ export function refreshReticulumPeersFromSidecar(
 ): Promise<ReticulumContact[]> {
   if (peerRefreshInFlight) {
     peerRefreshPendingRerun = true;
+    if (opts.forceRefresh) peerRefreshPendingForce = true;
     return peerRefreshInFlight;
   }
 
   peerRefreshInFlight = (async () => {
     try {
+      let forceRefresh = Boolean(opts.forceRefresh) || peerRefreshPendingForce;
+      peerRefreshPendingForce = false;
       peerRefreshPendingRerun = false;
-      let result = await refreshReticulumPeersFromSidecarOnce(opts);
+      let result = await refreshReticulumPeersFromSidecarOnce({ forceRefresh });
       while (peerRefreshPendingRerun) {
         peerRefreshPendingRerun = false;
-        // Trailing reruns after a manual force still reconcile without another force flag.
-        result = await refreshReticulumPeersFromSidecarOnce({
-          forceRefresh: opts.forceRefresh,
-        });
+        forceRefresh = peerRefreshPendingForce;
+        peerRefreshPendingForce = false;
+        result = await refreshReticulumPeersFromSidecarOnce({ forceRefresh });
       }
       return result;
     } catch (e) {
@@ -910,6 +914,7 @@ export function refreshReticulumPeersFromSidecar(
       return [];
     } finally {
       peerRefreshInFlight = null;
+      peerRefreshPendingForce = false;
     }
   })();
 

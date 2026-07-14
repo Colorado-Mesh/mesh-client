@@ -4,6 +4,27 @@ use super::types::{ContactRow, NomadNodeRow, PeerRow, TopologyEdge};
 
 const SELF_ID: &str = "self";
 
+/// Cap peers considered when building a topology snapshot (IPC / graph serialization bound).
+/// Aligns with the renderer force-graph render budget.
+pub const TOPOLOGY_PEER_CAP: usize = 2_000;
+
+/// Select newest peers by `last_seen` before graph construction.
+pub fn select_peers_for_topology(peers: &[PeerRow], cap: usize) -> (Vec<PeerRow>, usize) {
+    let total = peers.len();
+    if total <= cap {
+        return (peers.to_vec(), total);
+    }
+    let mut ranked: Vec<PeerRow> = peers.to_vec();
+    ranked.sort_by(|a, b| {
+        b.last_seen
+            .unwrap_or(0)
+            .cmp(&a.last_seen.unwrap_or(0))
+            .then_with(|| a.destination_hash.cmp(&b.destination_hash))
+    });
+    ranked.truncate(cap);
+    (ranked, total)
+}
+
 /// Build topology nodes and edges from path-table peers.
 ///
 /// RNS `via_hash` is the immediate next-hop **transport id**, which may differ from a hub's
@@ -162,6 +183,22 @@ mod tests {
             path_hash: via.map(str::to_string),
             via_hash: via.map(str::to_string),
         }
+    }
+
+    #[test]
+    fn select_peers_for_topology_keeps_newest_under_cap() {
+        let peers: Vec<PeerRow> = (0..5)
+            .map(|i| {
+                let mut row = peer(&format!("{i:032x}"), 1, None);
+                row.last_seen = Some(i);
+                row
+            })
+            .collect();
+        let (selected, total) = select_peers_for_topology(&peers, 3);
+        assert_eq!(total, 5);
+        assert_eq!(selected.len(), 3);
+        assert_eq!(selected[0].last_seen, Some(4));
+        assert_eq!(selected[2].last_seen, Some(2));
     }
 
     #[test]

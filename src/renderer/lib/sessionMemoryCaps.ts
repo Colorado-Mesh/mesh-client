@@ -16,7 +16,6 @@ export const MAX_RMAP_DISCOVERED_ROWS = 2_000;
 export const LARGE_MESH_NODE_THRESHOLD = 2000;
 export const LARGE_MESH_DIAGNOSTICS_REANALYSIS_DELAY_MS = 10_000;
 export const SESSION_DB_PRUNE_INTERVAL_MS = 6 * 60 * 60 * 1000;
-export const RETICULUM_MESSAGE_RETENTION_DEFAULT_COUNT = 4000;
 
 /** Keep the newest `max` entries (tail of array). */
 export function trimArrayTail<T>(items: readonly T[], max: number): T[] {

@@ -228,7 +228,7 @@ describe('ReticulumPeerListPanel', () => {
     });
   });
 
-  it('virtualizes large peer lists to a small DOM window', () => {
+  it('virtualizes large peer lists to a small DOM window', async () => {
     useReticulumPeerStore.setState({
       peers: fillLargePeerMap(150),
       contacts: new Map(),
@@ -236,7 +236,9 @@ describe('ReticulumPeerListPanel', () => {
     render(
       <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
     );
-    expect(screen.getByText('Peer 0')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Peer 0')).toBeInTheDocument();
+    });
     expect(screen.queryByText('Peer 50')).not.toBeInTheDocument();
     expect(screen.getByText(/peerListPanel\.heading/)).toHaveTextContent('(150)');
   });

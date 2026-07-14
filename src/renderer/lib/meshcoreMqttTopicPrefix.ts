@@ -70,3 +70,27 @@ export function isValidMeshcoreIataTopicPrefix(
   if (!isIataScopedMeshcoreMqtt(preset, settings)) return true;
   return parseMeshcoreIataTopicPrefix(settings.topicPrefix ?? '').ok;
 }
+
+export type PrepareMeshcoreIataMqttResult =
+  | { ok: true; topicPrefix: string; changed: boolean }
+  | { ok: false; errorKey: typeof MESHCORE_TOPIC_PREFIX_INVALID_IATA_KEY };
+
+/**
+ * Shared validate/normalize for IATA-scoped MeshCore MQTT (manual connect + auto-launch).
+ * Non-IATA brokers pass through unchanged.
+ */
+export function prepareMeshcoreIataMqttTopicPrefix(
+  preset: MeshcoreMqttPreset | null | undefined,
+  settings: Pick<MQTTSettings, 'server' | 'topicPrefix'>,
+): PrepareMeshcoreIataMqttResult {
+  if (!isIataScopedMeshcoreMqtt(preset, settings)) {
+    return { ok: true, topicPrefix: settings.topicPrefix ?? '', changed: false };
+  }
+  const parsed = parseMeshcoreIataTopicPrefix(settings.topicPrefix ?? '');
+  if (!parsed.ok) return parsed;
+  return {
+    ok: true,
+    topicPrefix: parsed.normalized,
+    changed: parsed.normalized !== (settings.topicPrefix ?? ''),
+  };
+}

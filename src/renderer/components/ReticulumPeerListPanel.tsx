@@ -312,6 +312,7 @@ export default function ReticulumPeerListPanel({
   useEffect(() => {
     const gen = ++sortedRowsPrepGenRef.current;
     const run = () => {
+      if (gen !== sortedRowsPrepGenRef.current) return;
       const sourceRows = buildSourcePeerRows(
         activeTab,
         peers,
@@ -336,11 +337,19 @@ export default function ReticulumPeerListPanel({
         : activeTab === 'contacts'
           ? contacts.size
           : peers.size + contacts.size;
-    if (approxCount > RETICULUM_PEER_VIRTUALIZE_THRESHOLD) {
-      startTransition(run);
+    // Debounce large-list rebuilds under patch storms; keep small lists snappy.
+    const debounceMs = approxCount > RETICULUM_PEER_VIRTUALIZE_THRESHOLD ? 120 : 0;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    if (debounceMs > 0) {
+      timer = setTimeout(() => {
+        startTransition(run);
+      }, debounceMs);
     } else {
       run();
     }
+    return () => {
+      if (timer != null) clearTimeout(timer);
+    };
     // peersRevision ensures Map identity churn still recomputes when patches flush.
   }, [
     activeTab,

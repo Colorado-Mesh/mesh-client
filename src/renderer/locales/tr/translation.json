@@ -345,14 +345,15 @@
     "clearReticulumContactsConfirm": "Bu, tüm {{count}} Reticulum LXMF kişisini kalıcı olarak temizler. Hedefler Peers sekmesinde kalır; mesajlar silinmez. Bu işlem geri alınamaz.",
     "clearReticulumContactsConfirmButton": "{{count}} kişiyi temizle",
     "clearReticulumContactsButton": "Tüm Kişileri Temizle ({{count}})",
-    "reticulumDestinationRetentionHint": "SQLite LXMF iletişim metasını ve bellek içi Eşler listesini sınırlar. Sepetteki göbek yolu tablosu yine de bu kapaktan daha fazla rota tutabilir.",
+    "reticulumDestinationRetentionHint": "SQLite'taki LXMF iletişim meta verilerini ve bellekteki eş listesini sınırlar. Sidecar'daki hub yol tablosu bu sınırdan daha fazla rota tutmaya devam edebilir.",
     "reticulumAutoPruneDestinations": "Reticulum hedeflerini şu tarihten daha eski otomatik olarak budayın:",
     "reticulumAutoPruneDestinationsLabel": "Başlangıçtaki hedefleri otomatik olarak budayın, şundan eski:",
     "reticulumAutoPruneDestinationsDaysAria": "Başlangıçta {{days}} günden daha eski varış noktalarını otomatik olarak budayın",
-    "reticulumCapDestinations": "Cap total Reticulum hedefleri",
+    "reticulumCapDestinations": "Toplam Reticulum hedefi sayısını sınırla",
     "reticulumCapDestinationsLabel": "Bellekteki ve SQLite'daki hedef noktaları / eşleri sınırlayın, en son duyulanları saklayın",
     "reticulumCapDestinationsCountAria": "Varış noktalarını sınırlayın, en son duyulanları tutun {{count}}",
-    "reticulumDestinationsUnit": "Gidilecek Okullar"
+    "reticulumDestinationsUnit_one": "hedef",
+    "reticulumDestinationsUnit_other": "hedef"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -1111,12 +1112,12 @@
       "syncFailed": "RMAP keşif senkronizasyonu başarısız oldu."
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT, Colorado bölgesindeki mesh kullanıcıları içindir. Ön ayar meshcore/DEN (Denver IATA) altında yayınlanır. Colorado'da değilseniz, bunun yerine LetsMesh veya MeshMapper kullanın. Devam edilsin mi?",
-    "coloradoServerNote": "Colorado Mesh yalnızca Colorado sakinleri içindir. Konu ön eki Denver IATA (meshcore/DEN) kullanır.",
+    "coloradoServerNote": "Colorado Mesh, Colorado bölgesindeki mesh kullanıcıları içindir. Konu ön eki Denver IATA (meshcore/DEN) kullanır.",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT, Colorado bölgesindeki mesh kullanıcıları içindir ve meshcore/DEN altında yayınlanır. Colorado dışındaysanız, LetsMesh'e (küresel kamu brokeri) geçin.",
     "coloradoRegionGateStay": "Colorado'dayım",
     "coloradoRegionGateSwitch": "LetsMesh'e geç",
-    "topicPrefixInvalidIata": "Konu ön eki meshcore/test veya meshcore /{ IATA} (3 harf), ör. meshcore/DEN olmalıdır."
+    "topicPrefixInvalidIata": "Konu ön eki meshcore/test veya meshcore/{IATA} (3 harf), ör. meshcore/DEN olmalıdır."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

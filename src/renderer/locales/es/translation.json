@@ -345,14 +345,15 @@
     "clearReticulumContactsConfirm": "Esto borrará permanentemente los {{count}} contactos Reticulum LXMF. Los destinos permanecen en la pestaña Pares; los mensajes no se eliminan. Esto no se puede deshacer.",
     "clearReticulumContactsConfirmButton": "Borrar {{count}} contactos",
     "clearReticulumContactsButton": "Borrar todos los contactos ({{count}})",
-    "reticulumDestinationRetentionHint": "Limita la meta de contacto SQLite LXMF y la lista de pares en memoria. La tabla de trayectoria del buje en el sidecar aún puede contener más rutas que esta tapa.",
+    "reticulumDestinationRetentionHint": "Limita los metadatos de contactos LXMF en SQLite y la lista de pares en memoria. La tabla de rutas del concentrador en el sidecar puede seguir conteniendo más rutas que este límite.",
     "reticulumAutoPruneDestinations": "Recortar automáticamente los destinos Reticulum más antiguos que",
     "reticulumAutoPruneDestinationsLabel": "Recortar automáticamente los destinos en el arranque, más antiguos que",
     "reticulumAutoPruneDestinationsDaysAria": "Recortar automáticamente los destinos en el arranque, con más de {{days}} días",
-    "reticulumCapDestinations": "Destinos totales de Cap Reticulum",
-    "reticulumCapDestinationsLabel": "Cap destinos / pares en memoria y SQLite, mantener los más recientes",
-    "reticulumCapDestinationsCountAria": "Destinos de la tapa, tenga en cuenta que se escuchó más recientemente {{count}}",
-    "reticulumDestinationsUnit": "destinos"
+    "reticulumCapDestinations": "Limitar el total de destinos Reticulum",
+    "reticulumCapDestinationsLabel": "Limitar destinos / pares en memoria y SQLite; conservar los escuchados más recientemente",
+    "reticulumCapDestinationsCountAria": "Limitar destinos; conservar los {{count}} escuchados más recientemente",
+    "reticulumDestinationsUnit_one": "destino",
+    "reticulumDestinationsUnit_other": "destinos"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -1111,7 +1112,7 @@
       "syncFailed": "Error de sincronización de descubrimiento de RMAP."
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT es para usuarios de malla del área de Colorado. El preset se publica en meshcore/DEN (Denver IATA). Si no estás en Colorado, usa LetsMesh o MeshMapper en su lugar. ¿Continuar?",
-    "coloradoServerNote": "Colorado Mesh es solo para residentes de Colorado. El prefijo del tema utiliza la IATA de Denver (meshcore/DEN).",
+    "coloradoServerNote": "Colorado Mesh es para usuarios de malla del área de Colorado. El prefijo del tema utiliza la IATA de Denver (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT es para usuarios de malla del área de Colorado y se publica bajo meshcore/DEN. Si se encuentra fuera de Colorado, cambie a LetsMesh (bróker público global).",
     "coloradoRegionGateStay": "Estoy en Colorado",

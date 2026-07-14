@@ -345,14 +345,15 @@
     "clearReticulumContactsConfirm": "Це назавжди очистить усі {{count}} контактів Reticulum LXMF. Призначення залишаються на вкладці Peers; повідомлення не видаляються. Цю дію неможливо скасувати.",
     "clearReticulumContactsConfirmButton": "Очистити {{count}} контактів",
     "clearReticulumContactsButton": "Очистити всі контакти ({{count}})",
-    "reticulumDestinationRetentionHint": "Обмежує мета-контакти SQLite LXMF та список вузлів у пам'яті. Таблиця шляхів хаба у sidecar може все ще містити більше маршрутів, ніж цей ліміт.",
-    "reticulumAutoPruneDestinations": "Автоматично підрізати пункти призначення Reticulum, старші за",
-    "reticulumAutoPruneDestinationsLabel": "Автоматично підрізати місця призначення під час запуску, старіші за",
-    "reticulumAutoPruneDestinationsDaysAria": "Автоматично визначати місця призначення під час запуску, старіші за {{days}} дн.",
+    "reticulumDestinationRetentionHint": "Обмежує метадані контактів LXMF у SQLite та список однорангових вузлів у пам'яті. Таблиця шляхів хаба в sidecar може й надалі містити більше маршрутів, ніж цей ліміт.",
+    "reticulumAutoPruneDestinations": "Автоматично очищати пункти призначення Reticulum, старші за",
+    "reticulumAutoPruneDestinationsLabel": "Автоматично очищати пункти призначення під час запуску, старші за",
+    "reticulumAutoPruneDestinationsDaysAria": "Автоматично очищати пункти призначення під час запуску, старші за {{days}} днів",
     "reticulumCapDestinations": "Обмежити загальну кількість призначень Reticulum",
-    "reticulumCapDestinationsLabel": "Обмежити пункти призначення / вузли в пам'яті та SQLite, зберігати останні почуті",
-    "reticulumCapDestinationsCountAria": "Закрийте пункти призначення, залишайтеся в курсі останніх подій {{count}}",
-    "reticulumDestinationsUnit": "призначення"
+    "reticulumCapDestinationsLabel": "Обмежити пункти призначення / однорангові вузли в пам'яті та SQLite, зберігати останні отримані",
+    "reticulumCapDestinationsCountAria": "Обмежити пункти призначення, зберігати останні отримані {{count}}",
+    "reticulumDestinationsUnit_one": "пункт призначення",
+    "reticulumDestinationsUnit_other": "пункта призначення"
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -1110,8 +1111,8 @@
       "openGlobalMapAria": "Відкрити глобальну карту RMAP v4 на rmap.world",
       "syncFailed": "Не вдалося синхронізувати виявлення RMAP."
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTT призначений для користувачів Colorado-rea mesh. Попередній набір публікується під meshcore/DEN (Denver IATA). Якщо ви не в Колорадо, замість цього використовуйте LetsMesh або MeshMapper. Продовжити?",
-    "coloradoServerNote": "Colorado Mesh призначений лише для жителів Колорадо. Префікс теми використовує Denver IATA (meshcore/DEN).",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT призначений для користувачів mesh-мережі в регіоні Колорадо. Попередній набір публікується під meshcore/DEN (Denver IATA). Якщо ви не в Колорадо, замість цього використовуйте LetsMesh або MeshMapper. Продовжити?",
+    "coloradoServerNote": "Colorado Mesh призначений для користувачів mesh-мережі в регіоні Колорадо. Префікс теми використовує Denver IATA (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT призначений для користувачів Colorado-rea mesh і публікується під meshcore/DEN. Якщо ви перебуваєте за межами Колорадо, перейдіть на LetsMesh (глобальний публічний брокер).",
     "coloradoRegionGateStay": "Я в Колорадо",

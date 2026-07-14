@@ -1395,7 +1395,9 @@ export default function AppPanel({
                 className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
               />
               <span className="text-sm text-gray-300">
-                {t('appPanel.reticulumDestinationsUnit')}
+                {t('appPanel.reticulumDestinationsUnit', {
+                  count: settings.reticulumDestinationCapCount,
+                })}
               </span>
             </div>
           </div>

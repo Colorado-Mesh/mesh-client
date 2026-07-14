@@ -345,14 +345,15 @@
     "clearReticulumContactsConfirm": "Spowoduje to trwałe usunięcie wszystkich {{count}} kontaktów Reticulum LXMF. Destynacje pozostają na karcie Peers; wiadomości nie są usuwane. Tej czynności nie można cofnąć.",
     "clearReticulumContactsConfirmButton": "Wyczyść {{count}} kontaktów",
     "clearReticulumContactsButton": "Wyczyść wszystkie kontakty ({{count}})",
-    "reticulumDestinationRetentionHint": "Ogranicza meta kontakty SQLite LXMF i listę partnerów w pamięci. Stół ścieżki piasty w wózku bocznym może nadal obsługiwać więcej tras niż ta nakładka.",
+    "reticulumDestinationRetentionHint": "Ogranicza metadane kontaktów LXMF w SQLite i listę peerów w pamięci. Tabela ścieżek huba w sidecarze może nadal zawierać więcej tras niż ten limit.",
     "reticulumAutoPruneDestinations": "Automatyczne przycinanie miejsc docelowych Reticulum starszych niż",
     "reticulumAutoPruneDestinationsLabel": "Automatyczne przycinanie miejsc docelowych podczas uruchamiania, starszych niż",
     "reticulumAutoPruneDestinationsDaysAria": "Automatyczne przycinanie miejsc docelowych przy starcie, starsze niż {{days}} dni",
     "reticulumCapDestinations": "Limit całkowitej liczby miejsc docelowych Reticulum",
-    "reticulumCapDestinationsLabel": "Ograniczaj miejsca docelowe / równorzędne w pamięci i SQLite, zachowaj najnowsze informacje",
-    "reticulumCapDestinationsCountAria": "Ogranicz miejsca docelowe, zachowaj ostatnio usłyszane {{count}}",
-    "reticulumDestinationsUnit": "cel"
+    "reticulumCapDestinationsLabel": "Ogranicz miejsca docelowe / peery w pamięci i SQLite, zachowaj ostatnio słyszane",
+    "reticulumCapDestinationsCountAria": "Ogranicz miejsca docelowe, zachowaj {{count}} ostatnio słyszanych",
+    "reticulumDestinationsUnit_one": "miejsce docelowe",
+    "reticulumDestinationsUnit_other": "miejsca docelowego"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -1110,8 +1111,8 @@
       "openGlobalMapAria": "Otwórz globalną mapę RMAP v4 na rmap.world",
       "syncFailed": "Synchronizacja wykrywania RMAP nie powiodła się."
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTT jest przeznaczony dla użytkowników Colorado-area mesh. Ustawienie wstępne jest publikowane w ramach meshcore/DEN (Denver IATA). Jeśli nie jesteś w Kolorado, użyj LetsMesh lub MeshMapper. Kontynuować?",
-    "coloradoServerNote": "Colorado Mesh jest przeznaczony wyłącznie dla mieszkańców Kolorado. Prefiks tematu używa Denver IATA (meshcore/DEN).",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT jest przeznaczony dla użytkowników sieci mesh z obszaru Kolorado. Ustawienie wstępne jest publikowane w ramach meshcore/DEN (Denver IATA). Jeśli nie jesteś w Kolorado, użyj LetsMesh lub MeshMapper. Kontynuować?",
+    "coloradoServerNote": "Colorado Mesh jest przeznaczony dla użytkowników sieci mesh z obszaru Kolorado. Prefiks tematu używa Denver IATA (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT jest przeznaczony dla użytkowników Colorado-area mesh i publikuje w ramach meshcore/DEN. Jeśli jesteś poza Kolorado, przełącz się na LetsMesh (globalny broker publiczny).",
     "coloradoRegionGateStay": "Jestem w Kolorado",

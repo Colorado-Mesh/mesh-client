@@ -7,6 +7,7 @@ import {
   isValidMeshcoreIataTopicPrefix,
   normalizeMeshcoreIataTopicPrefix,
   parseMeshcoreIataTopicPrefix,
+  prepareMeshcoreIataMqttTopicPrefix,
 } from './meshcoreMqttTopicPrefix';
 
 describe('parseMeshcoreIataTopicPrefix', () => {
@@ -93,6 +94,29 @@ describe('isValidMeshcoreIataTopicPrefix', () => {
         server: COLORADO_MESH_HOST,
         topicPrefix: 'meshcore/xx',
       }),
+    ).toBe(false);
+  });
+});
+
+describe('prepareMeshcoreIataMqttTopicPrefix', () => {
+  it('normalizes IATA scope and passes through non-IATA brokers', () => {
+    expect(
+      prepareMeshcoreIataMqttTopicPrefix('coloradomesh', {
+        server: COLORADO_MESH_HOST,
+        topicPrefix: 'meshcore/den',
+      }),
+    ).toEqual({ ok: true, topicPrefix: 'meshcore/DEN', changed: true });
+    expect(
+      prepareMeshcoreIataMqttTopicPrefix('ripple', {
+        server: 'mqtt.ripplenetworks.com.au',
+        topicPrefix: 'meshcore',
+      }),
+    ).toEqual({ ok: true, topicPrefix: 'meshcore', changed: false });
+    expect(
+      prepareMeshcoreIataMqttTopicPrefix('letsmesh', {
+        server: LETSMESH_HOST_US,
+        topicPrefix: 'meshcore/xx',
+      }).ok,
     ).toBe(false);
   });
 });

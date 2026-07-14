@@ -324,10 +324,10 @@ Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGP
 
 **Peers, topology, Nomad Network**
 
-- **Peers** tab: RNS path-table peers and LXMF contacts (separate sub-tabs); path probe and peer detail modal
+- **Peers** tab: RNS path-table peers and LXMF contacts (separate sub-tabs); virtualized large lists, path probe, and peer detail modal
 - **Map** tab: local RMAP v4 discovery map (Leaflet + OSM basemaps; heard opt-in interfaces with GPS; interface-type filters; reachable vs heard-only sidebar list; publish via Network + Connection); **Global map** link to [rmap.world](https://rmap.world/) — no position trails or waypoints (contrast with Meshtastic/MeshCore Map)
-- **Topology** tab: best-effort graph from the RNS path table (next-hop edges, BFS layout)
-- **Nomad Network** tab: collapsible favourites/announces list (default **Favourites** sub-tab); panel lazy-mounts after first visit and keeps browse state across tab switches (`mesh-client:nomadNodeListCollapsed` for sidebar width)
+- **Topology** tab: best-effort graph from the RNS path table (next-hop edges, force layout)
+- **Nomad Network** tab: collapsible favourites/announces list (default **Favourites** sub-tab); fit-width pages by default with an open-width toggle; panel lazy-mounts after first visit and keeps browse state across tab switches (`mesh-client:nomadNodeListCollapsed` for sidebar width)
 
 **Admin & hardware**
 

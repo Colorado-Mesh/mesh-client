@@ -345,14 +345,15 @@
     "clearReticulumContactsConfirm": "Это навсегда удалит все {{count}} контактов Reticulum LXMF. Назначения останутся на вкладке «Peers»; сообщения не удаляются. Это действие нельзя отменить.",
     "clearReticulumContactsConfirmButton": "Очистить {{count}} контактов",
     "clearReticulumContactsButton": "Очистить все контакты ({{count}})",
-    "reticulumDestinationRetentionHint": "Ограничивает мета-контакт SQLite LXMF и список одноранговых узлов в памяти. Таблица путей концентратора в коляске может по-прежнему содержать больше маршрутов, чем эта крышка.",
+    "reticulumDestinationRetentionHint": "Ограничивает метаданные контактов LXMF в SQLite и список одноранговых узлов в памяти. Таблица путей хаба в sidecar может по-прежнему содержать больше маршрутов, чем этот лимит.",
     "reticulumAutoPruneDestinations": "Автоматическое удаление пунктов назначения Reticulum старше",
     "reticulumAutoPruneDestinationsLabel": "Автоматическое удаление пунктов назначения при запуске, старше",
     "reticulumAutoPruneDestinationsDaysAria": "Автоматическое удаление пунктов назначения при запуске старше {{days}} дн.",
-    "reticulumCapDestinations": "Ограничить общее число назначений Reticulum",
-    "reticulumCapDestinationsLabel": "Ограничьте места назначения / одноранговые узлы в памяти и SQLite, держите последний услышанный",
-    "reticulumCapDestinationsCountAria": "Ограничьте направления, следите за новостями {{count}}",
-    "reticulumDestinationsUnit": "Направлений"
+    "reticulumCapDestinations": "Ограничить общее число пунктов назначения Reticulum",
+    "reticulumCapDestinationsLabel": "Ограничить пункты назначения / одноранговые узлы в памяти и SQLite, сохранять последние полученные",
+    "reticulumCapDestinationsCountAria": "Ограничить пункты назначения, сохранять последние полученные {{count}}",
+    "reticulumDestinationsUnit_one": "пункт назначения",
+    "reticulumDestinationsUnit_other": "пункта назначения"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -1110,8 +1111,8 @@
       "openGlobalMapAria": "Открыть глобальную карту RMAP v4 на rmap.world",
       "syncFailed": "Ошибка синхронизации обнаружения RMAP."
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTT предназначен для пользователей Colorado-области сетки. Предустановка публикуется в meshcore/DEN (Denver IATA). Если вы не в Колорадо, используйте вместо этого LetsMesh или MeshMapper. Продолжить?",
-    "coloradoServerNote": "Colorado Mesh предназначена только для жителей Колорадо. В префиксе темы используется Denver IATA (meshcore/DEN).",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT предназначен для пользователей mesh-сети в регионе Колорадо. Предустановка публикуется в meshcore/DEN (Denver IATA). Если вы не в Колорадо, используйте вместо этого LetsMesh или MeshMapper. Продолжить?",
+    "coloradoServerNote": "Colorado Mesh предназначен для пользователей mesh-сети в регионе Колорадо. В префиксе темы используется Denver IATA (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT предназначен для пользователей сети Колорадо и публикуется под meshcore/DEN. Если вы находитесь за пределами Колорадо, переключитесь на LetsMesh (глобальный публичный брокер).",
     "coloradoRegionGateStay": "Я в Колорадо",

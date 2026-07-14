@@ -345,14 +345,15 @@
     "clearReticulumContactsConfirm": "これにより{{count}}件すべてのReticulum LXMF連絡先が完全に消去されます。宛先はPeersタブに残り、メッセージは削除されません。この操作は元に戻せません。",
     "clearReticulumContactsConfirmButton": "{{count}}件の連絡先を消去",
     "clearReticulumContactsButton": "すべての連絡先を消去（ {{count}} ）",
-    "reticulumDestinationRetentionHint": "SQLite LXMF連絡先メタとメモリ内のピアリストを制限します。サイドカー内のハブパステーブルは、このキャップよりも多くのルートを保持し得る。",
+    "reticulumDestinationRetentionHint": "SQLite の LXMF 連絡先メタデータとメモリ内のピア一覧を制限します。sidecar のハブ経路テーブルには、この上限より多くの経路が保持される場合があります。",
     "reticulumAutoPruneDestinations": "指定日数より古い Reticulum 宛先を自動整理",
-    "reticulumAutoPruneDestinationsLabel": "起動時に自動プルーニングされた宛先、より古い",
-    "reticulumAutoPruneDestinationsDaysAria": "起動時に目的地を自動プルーニングします。{{days}}日以上経過しています",
-    "reticulumCapDestinations": "Cap total Reticulum destinations",
-    "reticulumCapDestinationsLabel": "メモリとSQLiteで宛先/ピアをキャップし、最新の音声を保持する",
-    "reticulumCapDestinationsCountAria": "目的地をキャップし、最新の{{count}}をキープしてください",
-    "reticulumDestinationsUnit": "目的地"
+    "reticulumAutoPruneDestinationsLabel": "起動時に次より古い宛先を自動整理",
+    "reticulumAutoPruneDestinationsDaysAria": "起動時に {{days}} 日より古い宛先を自動整理",
+    "reticulumCapDestinations": "Reticulum 宛先の総数を制限",
+    "reticulumCapDestinationsLabel": "メモリと SQLite の宛先 / ピア数を制限し、最後に受信したものを保持",
+    "reticulumCapDestinationsCountAria": "宛先数を制限し、最後に受信した {{count}} 件を保持",
+    "reticulumDestinationsUnit_one": "宛先",
+    "reticulumDestinationsUnit_other": "宛先"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -1111,7 +1112,7 @@
       "syncFailed": "RMAP検出の同期に失敗しました。"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTTは、コロラド州エリアのメッシュユーザー向けです。プリセットはmeshcore/DEN（デンバーIATA）で公開されています。コロラド州にいない場合は、代わりにLetsMeshまたはMeshMapperを使用してください。続行しますか？",
-    "coloradoServerNote": "Colorado Meshはコロラド州の居住者のみを対象としています。トピック接頭辞はデンバーIATA（meshcore/DEN）を使用します。",
+    "coloradoServerNote": "Colorado Mesh はコロラド地域のメッシュ利用者向けです。トピック接頭辞はデンバー IATA（meshcore/DEN）を使用します。",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTTは、コロラド州エリアのメッシュユーザー向けで、meshcore/DENの下で公開されています。コロラド州外にいる場合は、LetsMesh（グローバルパブリックブローカー）に切り替えます。",
     "coloradoRegionGateStay": "私はコロラド州にいます",

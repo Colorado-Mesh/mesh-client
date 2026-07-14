@@ -32,6 +32,63 @@ export function springLengthForEdge(edge: ForceEdge): number {
     : FORCE_GRAPH_DEFAULTS.springLenDirect;
 }
 
+/** Above this count, use a uniform grid neighbor pass instead of all-pairs repulsion. */
+export const FORCE_REPULSION_FULL_PAIR_CAP = 400;
+const GRID_CELL = 80;
+
+function applyPairRepulsion(
+  nodes: SimNodeState[],
+  fx: Float64Array,
+  fy: Float64Array,
+  i: number,
+  j: number,
+): void {
+  const dx = nodes[j].x - nodes[i].x || 0.01;
+  const dy = nodes[j].y - nodes[i].y || 0.01;
+  const distSq = Math.max(1, dx * dx + dy * dy);
+  const dist = Math.sqrt(distSq);
+  const force = FORCE_GRAPH_DEFAULTS.repulsion / distSq;
+  fx[i] -= (force * dx) / dist;
+  fy[i] -= (force * dy) / dist;
+  fx[j] += (force * dx) / dist;
+  fy[j] += (force * dy) / dist;
+}
+
+function applyAllPairsRepulsion(nodes: SimNodeState[], fx: Float64Array, fy: Float64Array): void {
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      applyPairRepulsion(nodes, fx, fy, i, j);
+    }
+  }
+}
+
+/** O(n · k) approximate repulsion via neighboring grid cells. */
+function applyGridRepulsion(nodes: SimNodeState[], fx: Float64Array, fy: Float64Array): void {
+  const cells = new Map<string, number[]>();
+  for (let i = 0; i < nodes.length; i++) {
+    const cx = Math.floor(nodes[i].x / GRID_CELL);
+    const cy = Math.floor(nodes[i].y / GRID_CELL);
+    const key = `${cx},${cy}`;
+    const bucket = cells.get(key);
+    if (bucket) bucket.push(i);
+    else cells.set(key, [i]);
+  }
+  for (let i = 0; i < nodes.length; i++) {
+    const cx = Math.floor(nodes[i].x / GRID_CELL);
+    const cy = Math.floor(nodes[i].y / GRID_CELL);
+    for (let ox = -1; ox <= 1; ox++) {
+      for (let oy = -1; oy <= 1; oy++) {
+        const bucket = cells.get(`${cx + ox},${cy + oy}`);
+        if (!bucket) continue;
+        for (const j of bucket) {
+          if (j <= i) continue;
+          applyPairRepulsion(nodes, fx, fy, i, j);
+        }
+      }
+    }
+  }
+}
+
 /** One physics tick: mutates node positions in place. */
 export function stepForceSimulation(
   nodes: SimNodeState[],
@@ -46,18 +103,10 @@ export function stepForceSimulation(
   const fy = new Float64Array(nodes.length);
   const idToIndex = new Map(nodes.map((n, i) => [n.id, i]));
 
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      const dx = nodes[j].x - nodes[i].x || 0.01;
-      const dy = nodes[j].y - nodes[i].y || 0.01;
-      const distSq = Math.max(1, dx * dx + dy * dy);
-      const dist = Math.sqrt(distSq);
-      const force = FORCE_GRAPH_DEFAULTS.repulsion / distSq;
-      fx[i] -= (force * dx) / dist;
-      fy[i] -= (force * dy) / dist;
-      fx[j] += (force * dx) / dist;
-      fy[j] += (force * dy) / dist;
-    }
+  if (nodes.length <= FORCE_REPULSION_FULL_PAIR_CAP) {
+    applyAllPairsRepulsion(nodes, fx, fy);
+  } else {
+    applyGridRepulsion(nodes, fx, fy);
   }
 
   for (const edge of edges) {

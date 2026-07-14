@@ -643,6 +643,7 @@ impl LiveBridge {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(2));
             let mut known_path_hashes: HashSet<String> = HashSet::new();
+            let mut prev_peer_by_hash: HashMap<String, PeerRow> = HashMap::new();
             loop {
                 interval.tick().await;
                 // Only replace the outbound path table on a successful GetPathTable.
@@ -694,11 +695,26 @@ impl LiveBridge {
                             .map(|p| p.destination_hash.clone())
                             .collect();
                         let added = path_table_added_hashes_capped(&known_path_hashes, &next_hashes);
-                        if !added.is_empty() {
-                            let added_set: HashSet<String> = added.iter().cloned().collect();
-                            let patches: Vec<serde_json::Value> = peer_rows
+                        let mut patch_peers: Vec<&PeerRow> = Vec::new();
+                        for peer in &peer_rows {
+                            if added.iter().any(|h| h == &peer.destination_hash) {
+                                patch_peers.push(peer);
+                                continue;
+                            }
+                            match prev_peer_by_hash.get(&peer.destination_hash) {
+                                Some(prev) if peer_route_fields_equal(prev, peer) => {}
+                                _ if known_path_hashes.contains(&peer.destination_hash) => {
+                                    patch_peers.push(peer);
+                                }
+                                _ => {}
+                            }
+                        }
+                        if patch_peers.len() > MAX_PEERS_UPDATED_ADDED {
+                            patch_peers.truncate(MAX_PEERS_UPDATED_ADDED);
+                        }
+                        if !patch_peers.is_empty() {
+                            let patches: Vec<serde_json::Value> = patch_peers
                                 .iter()
-                                .filter(|p| added_set.contains(&p.destination_hash))
                                 .map(|p| {
                                     serde_json::json!({
                                         "destination_hash": p.destination_hash,
@@ -722,6 +738,10 @@ impl LiveBridge {
                             let _ = event_tx.send(frame.to_string());
                         }
                         known_path_hashes = next_hashes;
+                        prev_peer_by_hash = peer_rows
+                            .into_iter()
+                            .map(|p| (p.destination_hash.clone(), p))
+                            .collect();
                         Some(
                             entries
                                 .iter()
@@ -789,7 +809,7 @@ impl LiveBridge {
                 let display_name = parse_announce_display_name(evt.app_data.as_deref());
                 if let Some(ref name) = display_name {
                     if let Ok(mut cache) = display_name_cache.lock() {
-                        cache.insert(dest_hex.clone(), name.clone());
+                        insert_display_name_bounded(&mut cache, dest_hex.clone(), name.clone());
                     }
                 }
                 // Always notify the UI so nameless announces still refresh Peers promptly.
@@ -1923,8 +1943,20 @@ pub(super) fn parse_hash16(hex_str: &str) -> Result<[u8; 16], String> {
 
 /// Cap membership growth event payloads under path-table floods.
 const MAX_PEERS_UPDATED_ADDED: usize = 1024;
+/// Bound announce / contact display-name labels independently of the live path table.
+const MAX_DISPLAY_NAME_CACHE: usize = 50_000;
 /// Serve HTTP peer list from the maintenance snapshot when newer than this.
 const PATH_PEER_CACHE_TTL: Duration = Duration::from_secs(2);
+
+/// Insert or refresh a destination label; evict an arbitrary oldest-ish entry when full.
+fn insert_display_name_bounded(cache: &mut HashMap<String, String>, hash: String, name: String) {
+    if cache.len() >= MAX_DISPLAY_NAME_CACHE && !cache.contains_key(&hash) {
+        if let Some(evict) = cache.keys().next().cloned() {
+            cache.remove(&evict);
+        }
+    }
+    cache.insert(hash, name);
+}
 /// Cap Nomad page body before UTF-8 conversion (DoS bound).
 const NOMAD_PAGE_MAX_BYTES: usize = 512 * 1024;
 /// Cap Nomad file body before base64 (aligned with Axum 4 MiB body limit).
@@ -1938,6 +1970,14 @@ fn path_table_added_hashes_capped(prev: &HashSet<String>, next: &HashSet<String>
         added.truncate(MAX_PEERS_UPDATED_ADDED);
     }
     added
+}
+
+/// Compare route-relevant fields (ignore `last_seen` / display_name churn).
+fn peer_route_fields_equal(a: &PeerRow, b: &PeerRow) -> bool {
+    a.hops == b.hops
+        && a.interface == b.interface
+        && a.path_hash == b.path_hash
+        && a.via_hash == b.via_hash
 }
 
 #[cfg(test)]
@@ -2065,6 +2105,22 @@ mod announce_display_name_tests {
             .collect();
         let added = path_table_added_hashes_capped(&prev, &next);
         assert_eq!(added.len(), MAX_PEERS_UPDATED_ADDED);
+    }
+
+    #[test]
+    fn insert_display_name_bounded_evicts_when_full() {
+        let mut cache = HashMap::new();
+        for i in 0..MAX_DISPLAY_NAME_CACHE {
+            insert_display_name_bounded(&mut cache, format!("{i:032x}"), format!("n{i}"));
+        }
+        assert_eq!(cache.len(), MAX_DISPLAY_NAME_CACHE);
+        insert_display_name_bounded(&mut cache, "ff".repeat(16), "overflow".into());
+        assert_eq!(cache.len(), MAX_DISPLAY_NAME_CACHE);
+        assert_eq!(cache.get(&"ff".repeat(16)).map(String::as_str), Some("overflow"));
+        // Refresh of existing key must not grow past the cap.
+        insert_display_name_bounded(&mut cache, "ff".repeat(16), "renamed".into());
+        assert_eq!(cache.len(), MAX_DISPLAY_NAME_CACHE);
+        assert_eq!(cache.get(&"ff".repeat(16)).map(String::as_str), Some("renamed"));
     }
 }
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   FORCE_GRAPH_DEFAULTS,
+  FORCE_REPULSION_FULL_PAIR_CAP,
   type ForceEdge,
   type SimNodeState,
   springLengthForEdge,
@@ -46,5 +47,20 @@ describe('forceDirectedGraphLayout', () => {
     const dist = Math.hypot(nodes[1].x - nodes[0].x, nodes[1].y - nodes[0].y);
     expect(dist).toBeGreaterThan(FORCE_GRAPH_DEFAULTS.springLenDirect - 40);
     expect(dist).toBeLessThan(FORCE_GRAPH_DEFAULTS.springLenDirect + 40);
+  });
+
+  it('grid repulsion path runs for graphs above the full-pair cap', () => {
+    const n = FORCE_REPULSION_FULL_PAIR_CAP + 20;
+    const nodes: SimNodeState[] = Array.from({ length: n }, (_, i) => ({
+      id: `n${i}`,
+      x: 50 + (i % 40) * 10,
+      y: 50 + Math.floor(i / 40) * 10,
+      vx: 0,
+      vy: 0,
+    }));
+    expect(() => {
+      stepForceSimulation(nodes, [], 800, 600);
+    }).not.toThrow();
+    expect(nodes.every((node) => Number.isFinite(node.x) && Number.isFinite(node.y))).toBe(true);
   });
 });

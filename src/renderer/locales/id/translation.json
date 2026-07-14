@@ -345,14 +345,15 @@
     "clearReticulumContactsConfirm": "Ini akan menghapus secara permanen semua {{count}} kontak Reticulum LXMF. Destinasi tetap di tab Peers; pesan tidak dihapus. Tindakan ini tidak dapat dibatalkan.",
     "clearReticulumContactsConfirmButton": "Hapus {{count}} kontak",
     "clearReticulumContactsButton": "Hapus Semua Kontak ({{count}})",
-    "reticulumDestinationRetentionHint": "Membatasi meta kontak SQLite LXMF dan daftar Peers dalam memori. Tabel jalur hub di sidecar mungkin masih memiliki lebih banyak rute daripada batas ini.",
-    "reticulumAutoPruneDestinations": "Auto - prune Reticulum tujuan yang lebih tua dari",
-    "reticulumAutoPruneDestinationsLabel": "Destinasi prune otomatis saat startup, lebih lama dari",
-    "reticulumAutoPruneDestinationsDaysAria": "Destinasi prune otomatis saat startup, lebih lama dari {{days}} hari",
+    "reticulumDestinationRetentionHint": "Membatasi metadata kontak LXMF di SQLite dan daftar peer dalam memori. Tabel jalur hub di sidecar mungkin masih menyimpan lebih banyak rute daripada batas ini.",
+    "reticulumAutoPruneDestinations": "Pangkas otomatis destinasi Reticulum yang lebih lama dari",
+    "reticulumAutoPruneDestinationsLabel": "Pangkas otomatis destinasi saat memulai, yang lebih lama dari",
+    "reticulumAutoPruneDestinationsDaysAria": "Pangkas otomatis destinasi saat memulai, yang lebih lama dari {{days}} hari",
     "reticulumCapDestinations": "Batas total tujuan Reticulum",
-    "reticulumCapDestinationsLabel": "Tujuan cap/ rekan dalam memori dan SQLite, terus didengar terakhir",
-    "reticulumCapDestinationsCountAria": "Capai destinasi, terus dapatkan kabar terbaru {{count}}",
-    "reticulumDestinationsUnit": "destinasi"
+    "reticulumCapDestinationsLabel": "Batasi destinasi / peer di memori dan SQLite, pertahankan yang terakhir terdengar",
+    "reticulumCapDestinationsCountAria": "Batasi destinasi, pertahankan {{count}} yang terakhir terdengar",
+    "reticulumDestinationsUnit_one": "destinasi",
+    "reticulumDestinationsUnit_other": "destinasi"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -1110,13 +1111,13 @@
       "openGlobalMapAria": "Buka peta global RMAP v4 di rmap.world",
       "syncFailed": "Sinkronisasi penemuan RMAP gagal."
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTT adalah untuk pengguna Colorado - area mesh. Prasetel diterbitkan di bawah meshcore/DEN (Denver IATA). Jika Anda tidak berada di Colorado, gunakan LetsMesh atau MeshMapper sebagai gantinya. Lanjutkan?",
-    "coloradoServerNote": "Colorado Mesh hanya untuk penduduk Colorado. Awalan topik menggunakan IATA Denver (meshcore/DEN).",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT ditujukan bagi pengguna mesh di wilayah Colorado. Prasetel diterbitkan di bawah meshcore/DEN (Denver IATA). Jika Anda tidak berada di Colorado, gunakan LetsMesh atau MeshMapper sebagai gantinya. Lanjutkan?",
+    "coloradoServerNote": "Colorado Mesh ditujukan bagi pengguna mesh di wilayah Colorado. Awalan topik menggunakan IATA Denver (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT adalah untuk pengguna mesh area Colorado dan dipublikasikan di bawah meshcore/DEN. Jika Anda berada di luar Colorado, beralihlah ke LetsMesh (broker publik global).",
     "coloradoRegionGateStay": "Saya di Colorado",
     "coloradoRegionGateSwitch": "Beralih ke LetsMesh",
-    "topicPrefixInvalidIata": "Awalan topik harus berupa meshcore/test atau meshcore /{ IATA} (3 huruf), misalnya meshcore/DEN."
+    "topicPrefixInvalidIata": "Awalan topik harus berupa meshcore/test atau meshcore/{IATA} (3 huruf), misalnya meshcore/DEN."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -31,10 +30,10 @@ import { LARGE_MESH_NODE_THRESHOLD } from '@/renderer/lib/sessionMemoryCaps';
 import type { ReticulumPeerWireRow } from '@/shared/reticulum-types';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
-import { reticulumPeerDisplayName, useReticulumPeerStore } from '../stores/reticulumPeerStore';
+import { resolveReticulumPeerLabel, useReticulumPeerStore } from '../stores/reticulumPeerStore';
 
-/** Cap path-table rows rendered in the topology force graph. */
-const TOPOLOGY_PEER_RENDER_CAP = 2000;
+/** Cap path-table rows rendered in the topology force graph (sidecar also caps at 2000). */
+const TOPOLOGY_PEER_RENDER_CAP = 800;
 
 function enrichTopologyPeers(peers: ReticulumPeerWireRow[]): ReticulumPeerWireRow[] {
   const storePeers = useReticulumPeerStore.getState().peers;
@@ -45,26 +44,21 @@ function enrichTopologyPeers(peers: ReticulumPeerWireRow[]): ReticulumPeerWireRo
     const hash = peer.destination_hash.toLowerCase();
     const fromStore = storePeers.get(hash) ?? contacts.get(hash);
     const fromNomad = nomadNodes.get(hash);
-    const display_name =
-      peer.display_name?.trim() ||
-      (fromStore ? reticulumPeerDisplayName(fromStore) : null) ||
-      fromNomad?.display_name?.trim() ||
-      null;
+    const base = fromStore ?? {
+      destination_hash: peer.destination_hash,
+      display_name: peer.display_name ?? null,
+    };
+    const resolved = resolveReticulumPeerLabel(
+      base,
+      null,
+      fromNomad?.display_name ?? peer.display_name,
+    );
+    const display_name = isReticulumHashPrefixAlias(hash, resolved) ? peer.display_name : resolved;
     const interfaceName =
       peer.interface?.trim() || fromStore?.interface?.trim() || peer.interface || null;
-    if (
-      display_name &&
-      !isReticulumHashPrefixAlias(hash, display_name) &&
-      interfaceName === peer.interface
-    ) {
-      return { ...peer, display_name };
-    }
     return {
       ...peer,
-      display_name:
-        display_name && !isReticulumHashPrefixAlias(hash, display_name)
-          ? display_name
-          : peer.display_name,
+      display_name,
       interface: interfaceName,
     };
   });
@@ -233,6 +227,9 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
   const [maxHops, setMaxHops] = useState<number | null>(null);
 
   const snapshotRafRef = useRef<number | null>(null);
+  const refreshGenerationRef = useRef(0);
+  const refreshInFlightRef = useRef(false);
+  const refreshPendingRef = useRef(false);
   const publishSnapshotFromSim = useCallback((opts?: { immediate?: boolean }) => {
     const publish = () => {
       const renderNodes = simRef.current
@@ -305,67 +302,82 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
   );
 
   const refresh = useCallback(async () => {
-    setError(null);
-    if (!(await isReticulumSidecarRunning())) {
-      setLoading(false);
+    if (refreshInFlightRef.current) {
+      refreshPendingRef.current = true;
       return;
     }
+    refreshInFlightRef.current = true;
     try {
-      const [topologyBody, interfaces, identityBody] = await Promise.all([
-        window.electronAPI.reticulum.proxyGet('/api/v1/topology') as Promise<{
-          nodes?: ReticulumPeerWireRow[];
-        }>,
-        fetchReticulumInterfaces(),
-        window.electronAPI.reticulum.proxyGet('/api/v1/identity/status') as Promise<{
-          display_name?: string | null;
-        }>,
-      ]);
+      do {
+        refreshPendingRef.current = false;
+        const generation = ++refreshGenerationRef.current;
+        setError(null);
+        try {
+          if (!(await isReticulumSidecarRunning())) {
+            if (generation === refreshGenerationRef.current) setLoading(false);
+            continue;
+          }
+          const [topologyBody, interfaces, identityBody] = await Promise.all([
+            window.electronAPI.reticulum.proxyGet('/api/v1/topology') as Promise<{
+              nodes?: ReticulumPeerWireRow[];
+            }>,
+            fetchReticulumInterfaces(),
+            window.electronAPI.reticulum.proxyGet('/api/v1/identity/status') as Promise<{
+              display_name?: string | null;
+            }>,
+          ]);
+          if (generation !== refreshGenerationRef.current) continue;
 
-      const peerNodes = enrichTopologyPeers(topologyBody.nodes ?? []);
-      const seenHashes = new Set<string>();
-      let uniquePeers = peerNodes.filter((peer) => {
-        if (!peer.destination_hash || seenHashes.has(peer.destination_hash)) return false;
-        seenHashes.add(peer.destination_hash);
-        return true;
-      });
-      if (uniquePeers.length > TOPOLOGY_PEER_RENDER_CAP) {
-        uniquePeers = [...uniquePeers]
-          .sort((a, b) => (b.last_seen ?? 0) - (a.last_seen ?? 0))
-          .slice(0, TOPOLOGY_PEER_RENDER_CAP);
-      }
+          const peerNodes = enrichTopologyPeers(topologyBody.nodes ?? []);
+          const seenHashes = new Set<string>();
+          let uniquePeers = peerNodes.filter((peer) => {
+            if (!peer.destination_hash || seenHashes.has(peer.destination_hash)) return false;
+            seenHashes.add(peer.destination_hash);
+            return true;
+          });
+          if (uniquePeers.length > TOPOLOGY_PEER_RENDER_CAP) {
+            uniquePeers = [...uniquePeers]
+              .sort((a, b) => (b.last_seen ?? 0) - (a.last_seen ?? 0))
+              .slice(0, TOPOLOGY_PEER_RENDER_CAP);
+          }
 
-      const selfLabel = identityBody.display_name?.trim() || t('reticulumTopology.self');
+          const selfLabel = identityBody.display_name?.trim() || t('reticulumTopology.self');
 
-      const serverPeerHashes = new Set(
-        [...useNomadNetworkStore.getState().nodes.keys()].map((h) => h.toLowerCase()),
-      );
+          const serverPeerHashes = new Set(
+            [...useNomadNetworkStore.getState().nodes.keys()].map((h) => h.toLowerCase()),
+          );
 
-      const width = svgRef.current?.clientWidth ?? 800;
-      const height = svgRef.current?.clientHeight ?? 600;
-      const graph = buildReticulumMeshTopologyGraph(
-        interfaces.map((iface: ReticulumSidecarInterfaceRow) => ({
-          id: iface.id,
-          name: iface.name,
-          type: iface.type,
-          enabled: iface.enabled,
-          status: iface.status,
-        })),
-        uniquePeers,
-        {
-          selfLabel,
-          unassignedInterfaceLabel: t('reticulumTopology.unassignedInterface'),
-          cx: width / 2,
-          cy: height / 2,
-          filter: { includeDistantPeers, maxHops },
-          serverPeerHashes,
-        },
-      );
-      applyGraph(graph);
-      setLoading(false);
-    } catch (e) {
-      console.debug('[ReticulumTopologyPanel] refresh ' + errLikeToLogString(e));
-      setError(errLikeToLogString(e));
-      setLoading(false);
+          const width = svgRef.current?.clientWidth ?? 800;
+          const height = svgRef.current?.clientHeight ?? 600;
+          const graph = buildReticulumMeshTopologyGraph(
+            interfaces.map((iface: ReticulumSidecarInterfaceRow) => ({
+              id: iface.id,
+              name: iface.name,
+              type: iface.type,
+              enabled: iface.enabled,
+              status: iface.status,
+            })),
+            uniquePeers,
+            {
+              selfLabel,
+              unassignedInterfaceLabel: t('reticulumTopology.unassignedInterface'),
+              cx: width / 2,
+              cy: height / 2,
+              filter: { includeDistantPeers, maxHops },
+              serverPeerHashes,
+            },
+          );
+          applyGraph(graph);
+          setLoading(false);
+        } catch (e) {
+          if (generation !== refreshGenerationRef.current) continue;
+          console.debug('[ReticulumTopologyPanel] refresh ' + errLikeToLogString(e));
+          setError(errLikeToLogString(e));
+          setLoading(false);
+        }
+      } while (refreshPendingRef.current);
+    } finally {
+      refreshInFlightRef.current = false;
     }
   }, [applyGraph, includeDistantPeers, maxHops, t]);
 

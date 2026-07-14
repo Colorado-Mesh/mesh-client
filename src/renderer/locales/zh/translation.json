@@ -345,14 +345,15 @@
     "clearReticulumContactsConfirm": "这将永久清除全部 {{count}} 个 Reticulum LXMF 联系人。目标仍保留在 Peers 选项卡上；消息不会被删除。此操作无法撤消。",
     "clearReticulumContactsConfirmButton": "清除 {{count}} 个联系人",
     "clearReticulumContactsButton": "清除所有联系人（ {{count}} ）",
-    "reticulumDestinationRetentionHint": "限制SQLite LXMF联系人元数据和内存中的对等项列表。Sidecar中的集线器路径表仍然可以容纳比此CAP更多的路由。",
+    "reticulumDestinationRetentionHint": "限制 SQLite 中的 LXMF 联系人元数据和内存中的对等节点列表。sidecar 中的集线路径表仍可能保留比此上限更多的路由。",
     "reticulumAutoPruneDestinations": "自动清理早于以下天数的 Reticulum 目的地",
-    "reticulumAutoPruneDestinationsLabel": "启动时自动修剪目标，早于",
+    "reticulumAutoPruneDestinationsLabel": "启动时自动清理早于以下天数的目的地",
     "reticulumAutoPruneDestinationsDaysAria": "启动时自动修剪目的地，早于{{days}}天",
     "reticulumCapDestinations": "限制 Reticulum 目的地总数",
-    "reticulumCapDestinationsLabel": "在内存和SQLite中封装目标/对等项，保留最近听到的内容",
-    "reticulumCapDestinationsCountAria": "加盖目的地，保留最近听到的{{count}}",
-    "reticulumDestinationsUnit": "目的地"
+    "reticulumCapDestinationsLabel": "限制内存和 SQLite 中的目的地 / 对等节点总数，保留最近收到的项目",
+    "reticulumCapDestinationsCountAria": "限制目的地总数，保留最近收到的 {{count}} 个",
+    "reticulumDestinationsUnit_one": "目的地",
+    "reticulumDestinationsUnit_other": "目的地"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -1111,7 +1112,7 @@
       "syncFailed": "RMAP发现同步失败。"
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT适用于科罗拉多州地区的网格用户。预设在meshcore/DEN（丹佛IATA）下发布。如果您不在科罗拉多州，请改用LetsMesh或MeshMapper。是否继续？",
-    "coloradoServerNote": "Colorado Mesh仅适用于科罗拉多州居民。主题前缀使用丹佛IATA（meshcore/DEN）。",
+    "coloradoServerNote": "Colorado Mesh 面向科罗拉多州地区的网格用户。主题前缀使用丹佛 IATA（meshcore/DEN）。",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT适用于科罗拉多州地区的网格用户，并在meshcore/DEN下发布。如果您在科罗拉多州以外，请切换到LetsMesh（全球公共经纪商）。",
     "coloradoRegionGateStay": "我在科罗拉多州",

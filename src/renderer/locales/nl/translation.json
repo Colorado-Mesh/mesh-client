@@ -345,14 +345,15 @@
     "clearReticulumContactsConfirm": "Hiermee worden alle {{count}} Reticulum LXMF-contacten permanent gewist. Bestemmingen blijven op het tabblad Peers; berichten worden niet verwijderd. Dit kan niet ongedaan worden gemaakt.",
     "clearReticulumContactsConfirmButton": "{{count}} contacten wissen",
     "clearReticulumContactsButton": "Alle contacten wissen ({{count}})",
-    "reticulumDestinationRetentionHint": "Beperkt SQLite LXMF-contactmeta en de lijst met collega's in het geheugen. De naafpadtabel in het zijspan kan nog steeds meer routes bevatten dan deze dop.",
+    "reticulumDestinationRetentionHint": "Beperkt LXMF-contactmetadata in SQLite en de peer-lijst in het geheugen. De hub-padentabel in de sidecar kan nog steeds meer routes bevatten dan deze limiet.",
     "reticulumAutoPruneDestinations": "Reticulum-bestemmingen die ouder zijn dan",
-    "reticulumAutoPruneDestinationsLabel": "Auto-prune bestemmingen bij opstarten, ouder dan",
-    "reticulumAutoPruneDestinationsDaysAria": "Auto-prune bestemmingen bij opstarten, ouder dan {{days}} dagen",
-    "reticulumCapDestinations": "Cap totaal Reticulum bestemmingen",
-    "reticulumCapDestinationsLabel": "Dop bestemmingen / peers in het geheugen en SQLite, houd meest recentelijk gehoord",
-    "reticulumCapDestinationsCountAria": "GLB-bestemmingen, houd het laatst gehoord {{count}}",
-    "reticulumDestinationsUnit": "bestemmingen"
+    "reticulumAutoPruneDestinationsLabel": "Bestemmingen bij opstarten automatisch opschonen, ouder dan",
+    "reticulumAutoPruneDestinationsDaysAria": "Bestemmingen bij opstarten automatisch opschonen, ouder dan {{days}} dagen",
+    "reticulumCapDestinations": "Totaal aantal Reticulum-bestemmingen begrenzen",
+    "reticulumCapDestinationsLabel": "Bestemmingen / peers in geheugen en SQLite begrenzen, de meest recent gehoorde behouden",
+    "reticulumCapDestinationsCountAria": "Bestemmingen begrenzen, de {{count}} meest recent gehoorde behouden",
+    "reticulumDestinationsUnit_one": "bestemming",
+    "reticulumDestinationsUnit_other": "bestemmingen"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -1111,7 +1112,7 @@
       "syncFailed": "Synchronisatie van RMAP-detectie mislukt."
     },
     "coloradoPresetConfirm": "Colorado Mesh MQTT is voor gebruikers van Colorado-zone mesh. De preset publiceert onder meshcore/DEN (Denver IATA). Als je niet in Colorado bent, gebruik dan LetsMesh of MeshMapper. Doorgaan?",
-    "coloradoServerNote": "Colorado Mesh is alleen voor inwoners van Colorado. Onderwerpvoorvoegsel gebruikt de Denver IATA (meshcore/DEN).",
+    "coloradoServerNote": "Colorado Mesh is voor meshgebruikers in de regio Colorado. Onderwerpvoorvoegsel gebruikt de Denver IATA (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT is voor Colorado-area mesh-gebruikers en publiceert onder meshcore/DEN. Als je buiten Colorado bent, schakel dan over naar LetsMesh (global public broker).",
     "coloradoRegionGateStay": "Ik ben in Colorado",

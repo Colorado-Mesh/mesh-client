@@ -444,6 +444,66 @@ describe('reticulumPeerStore', () => {
     expect(useReticulumPeerStore.getState().contacts.get('aa')?.last_heard).toBe(99);
   });
 
+  it('soft refresh applies when hop counts change with the same peer membership', async () => {
+    let peersCalls = 0;
+    const proxyGet = vi.fn((path: string) => {
+      if (path === '/api/v1/contacts') return Promise.resolve({ contacts: [] });
+      if (path.startsWith('/api/v1/peers')) {
+        peersCalls += 1;
+        return Promise.resolve({
+          peers: [{ destination_hash: 'aa', hops: peersCalls === 1 ? 1 : 4, interface: 'tcp' }],
+        });
+      }
+      if (path === '/api/v1/nomadnetwork/nodes') return Promise.resolve({ nodes: [] });
+      return Promise.resolve({});
+    });
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: { proxyGet },
+        db: { getReticulumDestinations: vi.fn().mockResolvedValue([]) },
+      },
+    });
+
+    await refreshReticulumPeersFromSidecar();
+    expect(useReticulumPeerStore.getState().peers.get('aa')?.hops).toBe(1);
+    await refreshReticulumPeersFromSidecar();
+    expect(useReticulumPeerStore.getState().peers.get('aa')?.hops).toBe(4);
+  });
+
+  it('refreshReticulumPeersFromSidecar OR-accumulates forceRefresh across coalesced callers', async () => {
+    let releaseFirst!: () => void;
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    const peersPaths: string[] = [];
+    const proxyGet = vi.fn(async (path: string) => {
+      if (path.startsWith('/api/v1/peers')) {
+        peersPaths.push(path);
+        if (peersPaths.length === 1) await firstGate;
+        return { peers: [{ destination_hash: 'aa', hops: peersPaths.length }] };
+      }
+      if (path === '/api/v1/contacts') return { contacts: [] };
+      if (path === '/api/v1/nomadnetwork/nodes') return { nodes: [] };
+      return {};
+    });
+    vi.stubGlobal('window', {
+      electronAPI: {
+        reticulum: { proxyGet },
+        db: { getReticulumDestinations: vi.fn().mockResolvedValue([]) },
+      },
+    });
+
+    const soft = refreshReticulumPeersFromSidecar();
+    const forced = refreshReticulumPeersFromSidecar({ forceRefresh: true });
+    expect(forced).toBe(soft);
+    releaseFirst();
+    await soft;
+
+    expect(peersPaths[0]).toBe('/api/v1/peers');
+    expect(peersPaths).toContain('/api/v1/peers?refresh=1');
+    expect(useReticulumPeerStore.getState().peers.get('aa')?.hops).toBe(2);
+  });
+
   it('toggleFavorite rolls back when SQLite upsert fails', async () => {
     const upsert = vi.fn().mockRejectedValue(new Error('db down'));
     vi.stubGlobal('window', {

@@ -421,7 +421,8 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       const db = getDbForIpc('db:deleteReticulumDestinationsByAge');
       if (!db) return { changes: 0 };
       const safeDays = typeof days === 'number' && days > 0 ? Math.floor(days) : 30;
-      const cutoff = Date.now() - safeDays * 86_400_000;
+      // reticulum_destinations.last_heard is Unix seconds (see persistReticulumContactFromPayload).
+      const cutoff = Math.floor(Date.now() / 1000) - safeDays * 86_400;
       const result = db
         .prepareOnce(
           `DELETE FROM reticulum_destinations
@@ -446,6 +447,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       const db = getDbForIpc('db:pruneReticulumIdentityActivityByAge');
       if (!db) return { changes: 0 };
       const safeDays = typeof days === 'number' && days > 0 ? Math.floor(days) : 30;
+      // Identity activity last_seen is epoch milliseconds (Date.now() / WS timestamps).
       const cutoff = Date.now() - safeDays * 86_400_000;
       const result = db
         .prepareOnce('DELETE FROM reticulum_identity_activity WHERE last_seen < ?')

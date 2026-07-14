@@ -11,8 +11,9 @@ import {
   meshcoreIdentityHasPrivateKey,
   readMeshcoreIdentityAsync,
 } from './letsMeshJwt';
+import { readStoredMeshcoreMqttPreset } from './meshcoreMqttPresets';
 import { readMeshcoreMqttSettingsFromStorage } from './meshcoreMqttSettingsStorage';
-import { parseMeshcoreIataTopicPrefix } from './meshcoreMqttTopicPrefix';
+import { prepareMeshcoreIataMqttTopicPrefix } from './meshcoreMqttTopicPrefix';
 import { readMeshtasticMqttSettingsFromStorage } from './meshtasticMqttSettingsStorage';
 import { MESHTASTIC_OFFICIAL_PRESET_DEFAULTS } from './meshtasticMqttTlsMigration';
 import type { MeshProtocol, MQTTSettings } from './types';
@@ -54,15 +55,21 @@ export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
     mqttTransportProtocol: prot === 'meshcore' ? 'meshcore' : 'meshtastic',
   };
 
-  if (prot === 'meshcore' && isLetsMeshSettings(connectSettings.server)) {
-    const iataParsed = parseMeshcoreIataTopicPrefix(connectSettings.topicPrefix);
-    if (!iataParsed.ok) {
+  if (prot === 'meshcore') {
+    const iataPrepared = prepareMeshcoreIataMqttTopicPrefix(
+      readStoredMeshcoreMqttPreset(),
+      connectSettings,
+    );
+    if (!iataPrepared.ok) {
       console.warn(
         '[App] MQTT auto-launch skipped: invalid MeshCore topic prefix (need meshcore/{IATA} or meshcore/test)',
       );
       return;
     }
-    connectSettings.topicPrefix = iataParsed.normalized;
+    connectSettings.topicPrefix = iataPrepared.topicPrefix;
+  }
+
+  if (prot === 'meshcore' && isLetsMeshSettings(connectSettings.server)) {
     const presetErr = validateLetsMeshPresetConnect(connectSettings);
     if (presetErr) {
       console.warn('[App] MQTT auto-launch skipped: ' + errLikeToLogString(presetErr));

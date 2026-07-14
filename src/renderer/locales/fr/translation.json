@@ -345,14 +345,15 @@
     "clearReticulumContactsConfirm": "Cela effacera définitivement les {{count}} contacts Reticulum LXMF. Les destinations restent dans l’onglet Pairs ; les messages ne sont pas supprimés. Cette action est irréversible.",
     "clearReticulumContactsConfirmButton": "Effacer {{count}} contacts",
     "clearReticulumContactsButton": "Effacer tous les contacts ({{count}})",
-    "reticulumDestinationRetentionHint": "Limite les méta-contacts SQLite LXMF et la liste des pairs en mémoire. La table de chemin du moyeu dans le side-car peut encore contenir plus d'itinéraires que ce capuchon.",
-    "reticulumAutoPruneDestinations": "Élaguer automatiquement les destinations Reticulum plus anciennes que",
-    "reticulumAutoPruneDestinationsLabel": "Destinations à pruneau automatique au démarrage, plus anciennes que",
-    "reticulumAutoPruneDestinationsDaysAria": "Destinations à pruneau automatique au démarrage, datant de plus de {{days}} jours",
+    "reticulumDestinationRetentionHint": "Limite les métadonnées de contacts LXMF dans SQLite et la liste des pairs en mémoire. La table de chemins du hub dans le sidecar peut toujours contenir davantage de routes que cette limite.",
+    "reticulumAutoPruneDestinations": "Nettoyer automatiquement les destinations Reticulum datant de plus de",
+    "reticulumAutoPruneDestinationsLabel": "Nettoyer automatiquement au démarrage les destinations datant de plus de",
+    "reticulumAutoPruneDestinationsDaysAria": "Nettoyer automatiquement au démarrage les destinations datant de plus de {{days}} jours",
     "reticulumCapDestinations": "Plafond total des destinations Reticulum",
-    "reticulumCapDestinationsLabel": "Cap destinations / pairs en mémoire et SQLite, garder le plus récemment entendu",
-    "reticulumCapDestinationsCountAria": "Cap destinations, garder le plus récemment entendu {{count}}",
-    "reticulumDestinationsUnit": "destinations"
+    "reticulumCapDestinationsLabel": "Limiter les destinations / pairs en mémoire et dans SQLite, conserver les plus récemment entendus",
+    "reticulumCapDestinationsCountAria": "Limiter les destinations, conserver les {{count}} plus récemment entendues",
+    "reticulumDestinationsUnit_one": "destination",
+    "reticulumDestinationsUnit_other": "destinations"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -1110,8 +1111,8 @@
       "openGlobalMapAria": "Ouvrez la carte globale RMAP v4 sur rmap.world",
       "syncFailed": "Échec de la synchronisation de la découverte RMAP."
     },
-    "coloradoPresetConfirm": "Colorado Mesh MQTT est destiné aux utilisateurs de maillage Colorado-area. Le préréglage est publié sous meshcore/DEN (Denver IATA). Si vous n'êtes pas au Colorado, utilisez LetsMesh ou MeshMapper à la place. Continuer ?",
-    "coloradoServerNote": "Colorado Mesh est réservé aux résidents du Colorado. Le préfixe du sujet utilise l'IATA de Denver (meshcore/DEN).",
+    "coloradoPresetConfirm": "Colorado Mesh MQTT est destiné aux utilisateurs de maillage de la région du Colorado. Le préréglage est publié sous meshcore/DEN (Denver IATA). Si vous n'êtes pas au Colorado, utilisez LetsMesh ou MeshMapper à la place. Continuer ?",
+    "coloradoServerNote": "Colorado Mesh est destiné aux utilisateurs de maillage de la région du Colorado. Le préfixe du sujet utilise l'IATA de Denver (meshcore/DEN).",
     "coloradoRegionGateTitle": "Colorado Mesh MQTT",
     "coloradoRegionGateMessage": "Colorado Mesh MQTT est destiné aux utilisateurs de mailles Colorado-area et publie sous meshcore/DEN. Si vous êtes à l'extérieur du Colorado, passez à LetsMesh (courtier public mondial).",
     "coloradoRegionGateStay": "Je suis au Colorado",
