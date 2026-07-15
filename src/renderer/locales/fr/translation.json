@@ -961,9 +961,7 @@
       "setPrimaryFailed": "Impossible de définir le RNode local principal.",
       "defaultHubsLabel": "Hubs par défaut",
       "addDefaultHubs": "Ajouter des hubs testnet et Ratspeak",
-      "addDefaultHubsAria": "Ajouter des hubs Reticulum testnet et Ratspeak par défaut dans un état désactivé",
       "addDefaultHubsSuccess": "Ajoutés {{added}}, corrigés {{repaired}}. {{skipped}} déjà configuré.",
-      "addDefaultHubsAllPresent": "Les hubs testnet et Ratspeak par défaut sont déjà configurés.",
       "addDefaultHubsFailed": "Impossible d'ajouter des concentrateurs par défaut.",
       "identityNotConfigured": "Configurez d'abord une identité Reticulum dans l'onglet Réseau — générez ou importez une phrase de récupération.",
       "identityRequiredHint": "Configurez une identité Reticulum dans l'onglet Réseau avant d'ajouter des interfaces.",
@@ -996,7 +994,9 @@
       "backboneDirectoryLink": "Annuaire ↗",
       "backboneDirectoryLinkAria": "Ouvrez le répertoire principal de Reticulum pour trouver des hubs à ajouter en tant qu'interfaces",
       "backboneDirectoryHint": "Trouvez d’autres hubs communautaires sur directory.rns.recipes. Les hubs Yggdrasil (par exemple Yggdrasil_Ashburn_VA) nécessitent un tunnel Yggdrasil local en cours d'exécution — le manuel Reticulum recommande de se lier à l'interface de votre tunnel (souvent tun0).",
-      "localOfflineRowBleBondStale": "La liaison Bluetooth est obsolète — Oubliez ce RNode dans Paramètres système → Bluetooth, puis ré-appairez avec un nouveau code PIN (le système d'exploitation peut toujours afficher Jumelé)."
+      "localOfflineRowBleBondStale": "La liaison Bluetooth est obsolète — Oubliez ce RNode dans Paramètres système → Bluetooth, puis ré-appairez avec un nouveau code PIN (le système d'exploitation peut toujours afficher Jumelé).",
+      "addDefaultHubsAria": "Synchroniser les hubs de base Reticulum par défaut (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World) ; désactiver les points de terminaison testnet mis hors service",
+      "addDefaultHubsAllPresent": "Les hubs de base par défaut sont déjà configurés ; aucun hub testnet mis hors service n'est activé."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3668,7 +3668,6 @@
     "syncNowFor": "Synchroniser les messages de {{name}}",
     "addNode": "Ajouter un nœud",
     "addNodeLabel": "Ajouter un nœud de propagation par hachage",
-    "addNodePlaceholder": "Hachage de destination LXMF de 32 caractères",
     "localInboxStats": "{{count}} en file d'attente · {{bytes}} octets",
     "refreshing": "Rafraîchissant…",
     "refreshAria": "Actualiser les nœuds de propagation",
@@ -3694,7 +3693,7 @@
       "openSettings": "Configurer la propagation",
       "openSettingsAria": "Open Reticulum Network propagation settings"
     },
-    "rename": "Rebaptiser",
+    "rename": "Renommer",
     "renameLabel": "Nom du nœud de propagation",
     "renameSave": "Enregistrer le nom",
     "renameAria": "Renommer le nœud de propagation {{name}}",
@@ -3718,7 +3717,13 @@
     },
     "syncLocalNotSupported": "La propagation locale est votre boîte de réception hors ligne : elle ne peut pas être synchronisée sur le réseau comme un nœud de propagation LXMF distant.",
     "syncIdentityUnknown": "L'identité du nœud de propagation est inconnue : attendez une annonce ou une réponse de chemin, puis réessayez.",
-    "syncTargetNotPropagationNode": "Cette destination est accessible sur Reticulum mais n'est pas un nœud de propagation LXMF (les hubs TCP sont uniquement des chemins de transport). Ajoutez une destination qui s'annonce comme lxmf.propagation pour synchroniser les messages hors ligne."
+    "syncTargetNotPropagationNode": "Cette destination est accessible sur Reticulum mais n'est pas un nœud de propagation LXMF (les hubs TCP sont uniquement des chemins de transport). Ajoutez une destination qui s'annonce comme lxmf.propagation pour synchroniser les messages hors ligne.",
+    "syncPeeringStampFailed": "Impossible de créer un tampon de peering pour ce nœud de propagation. Réessayez dans quelques instants.",
+    "syncCancelled": "Synchronisation de propagation annulée.",
+    "renameFailed": "Impossible de renommer le nœud de propagation.",
+    "deleteFailed": "Impossible de supprimer le nœud de propagation.",
+    "addFailed": "Impossible d'ajouter le nœud de propagation.",
+    "addNodePlaceholder": "Hachage de destination lxmf.propagation de 32 caractères"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "mode de propagation",

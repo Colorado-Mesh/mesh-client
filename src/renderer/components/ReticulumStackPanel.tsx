@@ -104,6 +104,9 @@ export function ReticulumStackPanel({
 
   useEffect(() => {
     if (!sidecarApiReady || !sidecarUiRunning || !interfacesHydrated) return;
+    // Avoid sticky empty scope on a first empty hydrate race before config rows arrive.
+    // Once any interface row exists, empty enabled-names (all disabled) is intentional.
+    if (enabledInterfaceNames.length === 0 && interfaces.length === 0) return;
     const seq = ++syncScopeSeqRef.current;
     const names = enabledInterfaceNamesRef.current;
     let cancelled = false;
@@ -122,6 +125,8 @@ export function ReticulumStackPanel({
     };
   }, [
     enabledInterfaceNamesKey,
+    enabledInterfaceNames.length,
+    interfaces.length,
     interfacesHydrated,
     sidecarApiReady,
     sidecarUiRunning,

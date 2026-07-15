@@ -960,10 +960,8 @@
       "setPrimarySuccess": "RNode lokal utama diperbarui.",
       "setPrimaryFailed": "Gagal mengatur RNode lokal utama.",
       "defaultHubsLabel": "Hub default",
-      "addDefaultHubs": "Tambahkan hub testnet dan Ratspeak",
-      "addDefaultHubsAria": "Tambahkan hub Reticulum testnet dan Ratspeak default dalam keadaan dinonaktifkan",
+      "addDefaultHubs": "Tambahkan hub jaringan default",
       "addDefaultHubsSuccess": "Menambahkan {{added}}, memperbaiki {{repaired}}. {{skipped}} sudah dikonfigurasi.",
-      "addDefaultHubsAllPresent": "Hub testnet dan Ratspeak default sudah dikonfigurasi.",
       "addDefaultHubsFailed": "Gagal menambahkan hub default.",
       "identityNotConfigured": "Siapkan identitas Reticulum di tab Jaringan terlebih dahulu — buat atau impor frasa pemulihan.",
       "identityRequiredHint": "Konfigurasikan identitas Reticulum pada tab Jaringan sebelum menambahkan antarmuka.",
@@ -995,8 +993,10 @@
       "invalidMode": "Mode antarmuka tidak valid.",
       "backboneDirectoryLink": "Direktori ↗",
       "backboneDirectoryLinkAria": "Buka direktori tulang punggung Reticulum untuk menemukan hub yang akan ditambahkan sebagai antarmuka",
-      "backboneDirectoryHint": "Temukan lebih banyak hub tulang punggung komunitas di direktori.rns.recipes. Hub Yggdrasil (misalnya Yggdrasil_Ashburn_VA) memerlukan terowongan Yggdrasil lokal yang berjalan — manual Reticulum merekomendasikan pengikatan ke antarmuka terowongan Anda (seringkali tun0).",
-      "localOfflineRowBleBondStale": "Ikatan Bluetooth sudah basi — Lupakan RNode ini di Pengaturan Sistem → Bluetooth, lalu pasangkan kembali dengan PIN baru (OS mungkin masih menampilkan Dipasangkan)."
+      "backboneDirectoryHint": "Temukan lebih banyak hub tulang punggung komunitas di directory.rns.recipes. Hub Yggdrasil (misalnya Yggdrasil_Ashburn_VA) memerlukan terowongan Yggdrasil lokal yang berjalan — manual Reticulum merekomendasikan pengikatan ke antarmuka terowongan Anda (seringkali tun0).",
+      "localOfflineRowBleBondStale": "Ikatan Bluetooth sudah basi — Lupakan RNode ini di Pengaturan Sistem → Bluetooth, lalu pasangkan kembali dengan PIN baru (OS mungkin masih menampilkan Dipasangkan).",
+      "addDefaultHubsAria": "Sinkronkan hub tulang punggung Reticulum default (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); nonaktifkan titik akhir testnet yang dinonaktifkan",
+      "addDefaultHubsAllPresent": "Hub tulang punggung default sudah dikonfigurasi; tidak ada hub testnet yang dinonaktifkan yang diaktifkan."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3668,7 +3668,6 @@
     "syncNowFor": "Sinkronkan pesan dari {{name}}",
     "addNode": "Tambahkan simpul",
     "addNodeLabel": "Tambahkan node propagasi dengan hash",
-    "addNodePlaceholder": "Hash tujuan LXMF 32 karakter",
     "localInboxStats": "{{count}} antri · {{bytes}} byte",
     "refreshing": "Menyegarkan…",
     "refreshAria": "Segarkan node propagasi",
@@ -3698,7 +3697,7 @@
     "renameLabel": "Nama node propagasi",
     "renameSave": "Simpan nama",
     "renameAria": "Ganti nama node propagasi {{name}}",
-    "delete": "Menghapus",
+    "delete": "Hapus",
     "deleteAria": "Hapus node propagasi {{name}}",
     "deleteConfirmTitle": "Hapus node propagasi?",
     "deleteConfirmBody": "Hapus {{name}} dari daftar node propagasi? Ini tidak mengubah node jarak jauh.",
@@ -3714,11 +3713,17 @@
       "known": "diketahui",
       "pending": "tertunda",
       "unknown": "tidak dikenal",
-      "online": "on line"
+      "online": "online"
     },
     "syncLocalNotSupported": "Propagasi lokal adalah kotak masuk offline Anda — tidak dapat disinkronkan melalui jaringan seperti node propagasi LXMF jarak jauh.",
     "syncIdentityUnknown": "Identitas node propagasi tidak diketahui — tunggu pengumuman atau respons jalur, lalu coba lagi.",
-    "syncTargetNotPropagationNode": "Tujuan tersebut dapat dijangkau di Reticulum tetapi bukan merupakan node propagasi LXMF (hub TCP hanya merupakan jalur transportasi). Tambahkan tujuan yang diumumkan sebagai lxmf.propagation untuk menyinkronkan pesan offline."
+    "syncTargetNotPropagationNode": "Tujuan tersebut dapat dijangkau di Reticulum tetapi bukan merupakan node propagasi LXMF (hub TCP hanya merupakan jalur transportasi). Tambahkan tujuan yang diumumkan sebagai lxmf.propagation untuk menyinkronkan pesan offline.",
+    "syncPeeringStampFailed": "Tidak dapat membuat stempel peering untuk node propagasi ini — coba lagi sebentar lagi.",
+    "syncCancelled": "Sinkronisasi propagasi dibatalkan.",
+    "renameFailed": "Tidak dapat mengganti nama node propagasi.",
+    "deleteFailed": "Tidak dapat menghapus node propagasi.",
+    "addFailed": "Tidak dapat menambahkan node propagasi.",
+    "addNodePlaceholder": "Hash tujuan lxmf.propagation 32 karakter"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Mode propagasi",

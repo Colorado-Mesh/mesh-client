@@ -67,7 +67,22 @@ describe('reticulumPropagationSync', () => {
     expect(mapPropagationSyncError('PROPAGATION_TARGET_NOT_PN')).toBe(
       'reticulumPropagation.syncTargetNotPropagationNode',
     );
+    expect(mapPropagationSyncError('PROPAGATION_PEERING_STAMP_FAILED')).toBe(
+      'reticulumPropagation.syncPeeringStampFailed',
+    );
     expect(mapPropagationSyncError('other')).toBe('reticulumPropagation.syncFailed');
+  });
+
+  it('ignores late complete after cancel marked an error', () => {
+    useReticulumPropagationStore.setState({
+      sync: { active: false, progress: 0, message: null },
+      lastSyncError: 'reticulumPropagation.syncCancelled',
+      lastPropagationSyncAt: null,
+    });
+
+    applyPropagationSyncEvent({ active: false, progress: 100 });
+
+    expect(useReticulumPropagationStore.getState().lastPropagationSyncAt).toBeNull();
   });
 
   it('stall watchdog only cancels while still establishing', async () => {

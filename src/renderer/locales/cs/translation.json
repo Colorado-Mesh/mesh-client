@@ -961,9 +961,7 @@
       "setPrimaryFailed": "Nastavení primárního místního RNode se nezdařilo.",
       "defaultHubsLabel": "Výchozí rozbočovače",
       "addDefaultHubs": "Přidat rozbočovače testnet a Ratspeak",
-      "addDefaultHubsAria": "Přidat výchozí testovací síť Reticulum a rozbočovače Ratspeak v zakázaném stavu",
       "addDefaultHubsSuccess": "Přidáno {{added}}, opraveno {{repaired}}. {{skipped}} je již nakonfigurováno.",
-      "addDefaultHubsAllPresent": "Výchozí rozbočovače testnet a Ratspeak jsou již nakonfigurovány.",
       "addDefaultHubsFailed": "Přidání výchozích rozbočovačů se nezdařilo.",
       "identityNotConfigured": "Nejprve nastavte identitu Reticulum na kartě Síť — vygenerujte nebo importujte frázi pro obnovení.",
       "identityRequiredHint": "Před přidáním rozhraní nakonfigurujte identitu Reticulum na kartě Síť.",
@@ -996,7 +994,9 @@
       "backboneDirectoryLink": "Adresář ↗",
       "backboneDirectoryLinkAria": "Otevřete páteřní adresář Reticulum a vyhledejte centra, která chcete přidat jako rozhraní",
       "backboneDirectoryHint": "Další páteřní centra komunity naleznete na adrese directory.rns.recipes. Huby Yggdrasil (například Yggdrasil_Ashburn_VA) potřebují spuštěný místní tunel Yggdrasil — příručka Reticulum doporučuje vazbu na rozhraní vašeho tunelu (často tun0).",
-      "localOfflineRowBleBondStale": "Vazba Bluetooth je zastaralá – zapomeňte na tento RNode v Nastavení systému → Bluetooth a poté znovu spárujte s novým kódem PIN (OS může stále zobrazovat Spárováno)."
+      "localOfflineRowBleBondStale": "Vazba Bluetooth je zastaralá – zapomeňte na tento RNode v Nastavení systému → Bluetooth a poté znovu spárujte s novým kódem PIN (OS může stále zobrazovat Spárováno).",
+      "addDefaultHubsAria": "Synchronizovat výchozí páteřní uzly Reticulum (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); zakázat vyřazené koncové body testnetu",
+      "addDefaultHubsAllPresent": "Výchozí páteřní rozbočovače jsou již nakonfigurovány; nejsou povoleny žádné vyřazené rozbočovače testnet."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3668,7 +3668,6 @@
     "syncNowFor": "Synchronizovat zprávy z {{name}}",
     "addNode": "Přidat uzel",
     "addNodeLabel": "Přidejte uzel šíření pomocí hash",
-    "addNodePlaceholder": "32znakový cílový hash LXMF",
     "localInboxStats": "{{count}} ve frontě · {{bytes}} bajtů",
     "refreshing": "Osvěžující…",
     "refreshAria": "Obnovit uzly šíření",
@@ -3698,7 +3697,7 @@
     "renameLabel": "Název uzlu šíření",
     "renameSave": "Uložit jméno",
     "renameAria": "Přejmenovat uzel šíření {{name}}",
-    "delete": "Vymazat",
+    "delete": "Odstranit",
     "deleteAria": "Smazat uzel šíření {{name}}",
     "deleteConfirmTitle": "Smazat uzel šíření?",
     "deleteConfirmBody": "Odebrat {{name}} ze seznamu uzlů šíření? Toto nezmění vzdálený uzel.",
@@ -3710,7 +3709,7 @@
     "syncNowPreferredAria": "Synchronizujte zprávy z preferovaného uzlu šíření",
     "nodeStatus": {
       "active": "aktivní",
-      "idle": "líný",
+      "idle": "nečinný",
       "known": "známý",
       "pending": "čeká na vyřízení",
       "unknown": "neznámý",
@@ -3718,7 +3717,13 @@
     },
     "syncLocalNotSupported": "Místní šíření je vaše offline doručená pošta – nelze jej synchronizovat přes síť jako vzdálený uzel šíření LXMF.",
     "syncIdentityUnknown": "Identita uzlu propagace je neznámá – počkejte na odpověď na oznámení nebo cestu a zkuste to znovu.",
-    "syncTargetNotPropagationNode": "Tento cíl je dosažitelný na Reticulum, ale není to uzel šíření LXMF (rozbočovače TCP jsou pouze transportní cesty). Chcete-li synchronizovat zprávy offline, přidejte cíl, který se ohlašuje jako lxmf.propagation."
+    "syncTargetNotPropagationNode": "Tento cíl je dosažitelný na Reticulum, ale není to uzel šíření LXMF (rozbočovače TCP jsou pouze transportní cesty). Chcete-li synchronizovat zprávy offline, přidejte cíl, který se ohlašuje jako lxmf.propagation.",
+    "syncPeeringStampFailed": "Nepodařilo se vytvořit peeringové razítko pro tento uzel šíření – zkuste to znovu za chvíli.",
+    "syncCancelled": "Synchronizace šíření zrušena.",
+    "renameFailed": "Nelze přejmenovat uzel šíření.",
+    "deleteFailed": "Nelze odstranit uzel šíření.",
+    "addFailed": "Nelze přidat uzel šíření.",
+    "addNodePlaceholder": "32znakový cílový hash lxmf.propagation"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Režim propagace",

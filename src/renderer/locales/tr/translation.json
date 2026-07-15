@@ -961,9 +961,7 @@
       "setPrimaryFailed": "Birincil yerel RNode ayarlanamadı.",
       "defaultHubsLabel": "Varsayılan hub'lar",
       "addDefaultHubs": "Testnet ve Ratspeak hub'ları ekleyin",
-      "addDefaultHubsAria": "Devre dışı durumda varsayılan Reticulum test ağı ve Ratspeak hub'ları ekleyin",
       "addDefaultHubsSuccess": "{{added}} eklendi, {{repaired}} düzeltildi. {{skipped}} zaten yapılandırılmış.",
-      "addDefaultHubsAllPresent": "Varsayılan test ağı ve Ratspeak hub'ları zaten yapılandırılmıştır.",
       "addDefaultHubsFailed": "Varsayılan hub'lar eklenemedi.",
       "identityNotConfigured": "Önce Ağ sekmesinde bir Reticulum kimliği oluşturun — bir kurtarma ifadesi oluşturun veya içe aktarın.",
       "identityRequiredHint": "Arayüz eklemeden önce Ağ sekmesinde bir Reticulum kimliği yapılandırın.",
@@ -995,8 +993,10 @@
       "invalidMode": "Geçersiz arayüz modu.",
       "backboneDirectoryLink": "Rehber ↗",
       "backboneDirectoryLinkAria": "Arayüz olarak eklenecek hub'ları bulmak için Reticulum omurga dizinini açın",
-      "backboneDirectoryHint": "Directory.rns.recipes adresinde daha fazla topluluk omurgası merkezi bulabilirsiniz. Yggdrasil hub'ları (örneğin Yggdrasil_Ashburn_VA) çalışan bir yerel Yggdrasil tüneline ihtiyaç duyar; Reticulum kılavuzu, tünel arayüzünüze bağlanmanızı önerir (genellikle tun0).",
-      "localOfflineRowBleBondStale": "Bluetooth bağı eski — Sistem Ayarları → Bluetooth'ta bu RNode'u unutun, ardından yeni bir PIN ile yeniden eşleştirin (İşletim Sistemi hâlâ Eşlendi gösterebilir)."
+      "backboneDirectoryHint": "directory.rns.recipes adresinde daha fazla topluluk omurgası merkezi bulabilirsiniz. Yggdrasil hub'ları (örneğin Yggdrasil_Ashburn_VA) çalışan bir yerel Yggdrasil tüneline ihtiyaç duyar; Reticulum kılavuzu, tünel arayüzünüze bağlanmanızı önerir (genellikle tun0).",
+      "localOfflineRowBleBondStale": "Bluetooth bağı eski — Sistem Ayarları → Bluetooth'ta bu RNode'u unutun, ardından yeni bir PIN ile yeniden eşleştirin (İşletim Sistemi hâlâ Eşlendi gösterebilir).",
+      "addDefaultHubsAria": "Varsayılan Reticulum omurga merkezlerini senkronize edin (ABD-Doğu, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); hizmet dışı bırakılan test ağı uç noktalarını devre dışı bırak",
+      "addDefaultHubsAllPresent": "Varsayılan omurga hub'ları zaten yapılandırılmıştır; hizmet dışı bırakılmış test ağı hub'ları etkin değil."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3668,7 +3668,6 @@
     "syncNowFor": "{{name}} adlı kişiden gelen mesajları senkronize et",
     "addNode": "Düğüm ekle",
     "addNodeLabel": "Karmaya göre yayılım düğümü ekle",
-    "addNodePlaceholder": "32 karakterli LXMF hedef karması",
     "localInboxStats": "{{count}} sıraya alındı ​​· {{bytes}} bayt",
     "refreshing": "Yenileniyor…",
     "refreshAria": "Yayılma düğümlerini yenile",
@@ -3694,11 +3693,11 @@
       "openSettings": "Yayılımı ayarla",
       "openSettingsAria": "Reticulum Ağı yayılım ayarlarını aç"
     },
-    "rename": "Yeniden isimlendirmek",
+    "rename": "Yeniden adlandır",
     "renameLabel": "Yayılma düğümü adı",
     "renameSave": "Adı kaydet",
     "renameAria": "Yayılma düğümünü yeniden adlandırın {{name}}",
-    "delete": "Silmek",
+    "delete": "Sil",
     "deleteAria": "Yayılma düğümünü sil {{name}}",
     "deleteConfirmTitle": "Yayılma düğümü silinsin mi?",
     "deleteConfirmBody": "{{name}} yayılma düğümü listesinden kaldırılsın mı? Bu uzak düğümü değiştirmez.",
@@ -3718,7 +3717,13 @@
     },
     "syncLocalNotSupported": "Yerel yayılım, çevrimdışı gelen kutunuzdur; uzak bir LXMF yayılım düğümü gibi ağ üzerinden senkronize edilemez.",
     "syncIdentityUnknown": "Yayılım düğümü kimliği bilinmiyor; bir duyuru veya yol yanıtı bekleyin ve ardından tekrar deneyin.",
-    "syncTargetNotPropagationNode": "Bu hedefe Reticulum'da ulaşılabilir ancak bir LXMF yayılım düğümü değildir (TCP hub'ları yalnızca aktarım yollarıdır). Çevrimdışı mesajları senkronize etmek için lxmf.propagation olarak duyuru yapan bir hedef ekleyin."
+    "syncTargetNotPropagationNode": "Bu hedefe Reticulum'da ulaşılabilir ancak bir LXMF yayılım düğümü değildir (TCP hub'ları yalnızca aktarım yollarıdır). Çevrimdışı mesajları senkronize etmek için lxmf.propagation olarak duyuru yapan bir hedef ekleyin.",
+    "syncPeeringStampFailed": "Bu yayılım düğümü için eşleme damgası oluşturulamadı; birazdan tekrar deneyin.",
+    "syncCancelled": "Yayılma senkronizasyonu iptal edildi.",
+    "renameFailed": "Yayılma düğümü yeniden adlandırılamadı.",
+    "deleteFailed": "Yayılma düğümü silinemedi.",
+    "addFailed": "Yayılma düğümü eklenemedi.",
+    "addNodePlaceholder": "32 karakterli lxmf.propagation hedef karması"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Yayılma modu",

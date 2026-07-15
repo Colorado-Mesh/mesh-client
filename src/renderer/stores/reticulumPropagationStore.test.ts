@@ -90,6 +90,9 @@ describe('reticulumPropagationStore', () => {
     proxyPost.mockResolvedValueOnce({});
     await expect(useReticulumPropagationStore.getState().cancelSync()).resolves.toBe(true);
     expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      'reticulumPropagation.syncCancelled',
+    );
   });
 
   it('startSync settles local-prop in-process without a stall watchdog error', async () => {
@@ -142,6 +145,14 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().nodes).toHaveLength(1);
   });
 
+  it('removePropagationNode returns false when proxy rejects', async () => {
+    proxyDelete.mockResolvedValueOnce({ ok: false });
+    await expect(
+      useReticulumPropagationStore.getState().removePropagationNode('pn-aabb'),
+    ).resolves.toBe(false);
+    expect(proxyGet).not.toHaveBeenCalled();
+  });
+
   it('renamePropagationNode renames then refreshes', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     proxyPut.mockResolvedValueOnce({ ok: true });
@@ -158,5 +169,13 @@ describe('reticulumPropagationStore', () => {
       name: 'Renamed hub',
     });
     expect(useReticulumPropagationStore.getState().nodes[0]?.name).toBe('Renamed hub');
+  });
+
+  it('renamePropagationNode returns false when proxy rejects', async () => {
+    proxyPut.mockResolvedValueOnce({ ok: false });
+    await expect(
+      useReticulumPropagationStore.getState().renamePropagationNode('pn-aabb', 'Nope'),
+    ).resolves.toBe(false);
+    expect(proxyGet).not.toHaveBeenCalled();
   });
 });

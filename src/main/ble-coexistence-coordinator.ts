@@ -147,9 +147,13 @@ export class BleCoexistenceCoordinator {
         ]);
       } catch (err) {
         console.warn(
-          '[BleCoexistence] disconnectAllSessions failed or timed out (proceeding with yield):',
+          '[BleCoexistence] disconnectAllSessions failed or timed out (failing yield):',
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
+        // Failure point: Noble GATT may still be held — do not leave a half-yield.
+        // Fallback: release reticulum scan ownership and surface the error to prepare.
+        this.releaseScan('reticulum');
+        throw err instanceof Error ? err : new Error(String(err));
       }
     }
   }

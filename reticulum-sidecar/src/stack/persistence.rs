@@ -117,6 +117,12 @@ impl PersistedState {
         if id == "local-prop" {
             return Err("cannot remove local propagation node".into());
         }
+        if !id
+            .strip_prefix("pn-")
+            .is_some_and(|rest| rest.len() == 8 && rest.chars().all(|c| c.is_ascii_hexdigit()))
+        {
+            return Err(format!("invalid propagation node id: {id}"));
+        }
         let idx = self
             .propagation
             .iter()
@@ -146,17 +152,28 @@ impl PersistedState {
         if id == "local-prop" {
             return Err("cannot rename local propagation node".into());
         }
+        if !id
+            .strip_prefix("pn-")
+            .is_some_and(|rest| rest.len() == 8 && rest.chars().all(|c| c.is_ascii_hexdigit()))
+        {
+            return Err(format!("invalid propagation node id: {id}"));
+        }
         let trimmed = name.trim();
         if trimmed.is_empty() {
             return Err("name must not be empty".into());
         }
-        let capped: String = trimmed.chars().take(128).collect();
+        if trimmed.chars().any(|c| c.is_control()) {
+            return Err("name must not contain control characters".into());
+        }
+        if trimmed.chars().count() > 128 {
+            return Err("name too long (max 128)".into());
+        }
         let node = self
             .propagation
             .iter_mut()
             .find(|p| p.id == id)
             .ok_or_else(|| format!("propagation node not found: {id}"))?;
-        node.name = capped;
+        node.name = trimmed.to_string();
         Ok(())
     }
 
@@ -813,5 +830,21 @@ mod tests {
         );
         assert!(state.rename_propagation_node("local-prop", "Nope").is_err());
         assert!(state.rename_propagation_node(&row.id, "   ").is_err());
+        assert!(state
+            .rename_propagation_node("not-a-pn", "Nope")
+            .is_err());
+        assert!(state
+            .rename_propagation_node(&row.id, "bad\u{0001}name")
+            .is_err());
+        assert!(state
+            .rename_propagation_node(&row.id, &"x".repeat(129))
+            .is_err());
+    }
+
+    #[test]
+    fn remove_propagation_node_rejects_invalid_id() {
+        let mut state = PersistedState::default_empty();
+        assert!(state.remove_propagation_node("pn-short").is_err());
+        assert!(state.remove_propagation_node("evil-id").is_err());
     }
 }

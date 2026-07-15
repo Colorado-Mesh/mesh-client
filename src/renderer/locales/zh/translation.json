@@ -961,9 +961,7 @@
       "setPrimaryFailed": "设置主本地RNode失败。",
       "defaultHubsLabel": "默认集线器",
       "addDefaultHubs": "添加测试网和Ratspeak集线器",
-      "addDefaultHubsAria": "添加处于禁用状态的默认Reticulum测试网和Ratspeak集线器",
       "addDefaultHubsSuccess": "已添加 {{added}} 个，已修正 {{repaired}} 个。{{skipped}} 个已配置。",
-      "addDefaultHubsAllPresent": "默认测试网和Ratspeak集线器已配置。",
       "addDefaultHubsFailed": "添加默认集线器失败。",
       "identityNotConfigured": "请先在“网络”选项卡上设置 Reticulum 身份 — 生成或导入恢复短语。",
       "identityRequiredHint": "在添加接口之前，请先在“网络”选项卡上配置 Reticulum 身份。",
@@ -996,7 +994,9 @@
       "backboneDirectoryLink": "目录 ↗",
       "backboneDirectoryLinkAria": "打开 Reticulum 主干目录以查找要添加为接口的集线器",
       "backboneDirectoryHint": "在directory.rns.recipes 中查找更多社区骨干中心。 Yggdrasil 集线器（例如 Yggdrasil_Ashburn_VA）需要一个正在运行的本地 Yggdrasil 隧道 - Reticulum 手册建议绑定到您的隧道接口（通常是 tun0）。",
-      "localOfflineRowBleBondStale": "蓝牙绑定已过时 - 在“系统设置”→“蓝牙”中忘记此 RNode，然后使用新的 PIN 重新配对（操作系统可能仍显示“已配对”）。"
+      "localOfflineRowBleBondStale": "蓝牙绑定已过时 - 在“系统设置”→“蓝牙”中忘记此 RNode，然后使用新的 PIN 重新配对（操作系统可能仍显示“已配对”）。",
+      "addDefaultHubsAria": "同步默认的 Reticulum 主干集线器（US-East、I2P、Yggdrasil Ashburn VA、Ratspeak、RMAP World）；禁用已停用的测试网端点",
+      "addDefaultHubsAllPresent": "默认骨干集线器已配置；未启用已停用的测试网集线器。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1437,7 +1437,7 @@
         "transportSaturated": "RNS传输饱和（ {{count}} LXMF路径请求丢弃）",
         "transportSaturatedShareInstance": "RNS传输饱和（ {{count}}路径请求丢弃）。共享实例已打开—退出其他Reticulum应用程序（ MeshChatX、Ratspeak、rnsd ）并重新启动堆栈。",
         "slowTransportQuery": "RNS传输查询缓慢或失败({{count}} ×)",
-        "bleBondRemoved": "BLE RNode“{{name}}”绑定已过时 — 忘记操作系统蓝牙设置并重新配对"
+        "bleBondRemoved": "BLE RNode「{{name}}」绑定已过时 — 在操作系统蓝牙设置中忽略该设备并重新配对"
       }
     },
     "routingPort": {
@@ -3668,7 +3668,6 @@
     "syncNowFor": "同步来自 {{name}} 的消息",
     "addNode": "添加节点",
     "addNodeLabel": "通过hash添加传播节点",
-    "addNodePlaceholder": "32 字符 LXMF 目标哈希",
     "localInboxStats": "{{count}} 已排队 · {{bytes}} 字节",
     "refreshing": "清爽…",
     "refreshAria": "刷新传播节点",
@@ -3709,16 +3708,22 @@
     "disableAria": "禁用传播节点 {{name}}",
     "syncNowPreferredAria": "从首选传播节点同步消息",
     "nodeStatus": {
-      "active": "积极的",
-      "idle": "闲置的",
+      "active": "活动",
+      "idle": "空闲",
       "known": "已知的",
-      "pending": "待办的",
+      "pending": "等待中",
       "unknown": "未知",
-      "online": "在线的"
+      "online": "在线"
     },
     "syncLocalNotSupported": "本地传播是您的离线收件箱 - 它无法像远程 LXMF 传播节点一样通过网络同步。",
     "syncIdentityUnknown": "传播节点身份未知 - 等待公告或路径响应，然后重试。",
-    "syncTargetNotPropagationNode": "该目的地在 Reticulum 上可到达，但不是 LXMF 传播节点（TCP 集线器仅是传输路径）。添加一个声明为 lxmf.propagation 的目标来同步离线消息。"
+    "syncTargetNotPropagationNode": "该目的地在 Reticulum 上可到达，但不是 LXMF 传播节点（TCP 集线器仅是传输路径）。添加一个声明为 lxmf.propagation 的目标来同步离线消息。",
+    "syncPeeringStampFailed": "无法为此传播节点创建对等标记 — 请稍后重试。",
+    "syncCancelled": "传播同步已取消。",
+    "renameFailed": "无法重命名传播节点。",
+    "deleteFailed": "无法删除传播节点。",
+    "addFailed": "无法添加传播节点。",
+    "addNodePlaceholder": "32 字符 lxmf.propagation 目标哈希"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "传播模式",

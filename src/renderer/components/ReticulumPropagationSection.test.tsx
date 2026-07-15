@@ -42,6 +42,11 @@ vi.mock('./ConfirmModal', () => ({
   ),
 }));
 
+const addToast = vi.fn();
+vi.mock('./Toast', () => ({
+  useToast: () => ({ addToast }),
+}));
+
 import ReticulumPropagationSection from './ReticulumPropagationSection';
 
 describe('ReticulumPropagationSection', () => {
@@ -57,6 +62,7 @@ describe('ReticulumPropagationSection', () => {
   };
 
   beforeEach(() => {
+    addToast.mockReset();
     useReticulumPropagationStore.setState({
       nodes: [
         {
@@ -129,6 +135,28 @@ describe('ReticulumPropagationSection', () => {
     await waitFor(() => {
       expect(removePropagationNode).toHaveBeenCalledWith('pn-aabb1111');
     });
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  it('keeps delete confirm open and toasts when remove fails', async () => {
+    const user = userEvent.setup();
+    useReticulumPropagationStore.setState({
+      removePropagationNode: vi.fn().mockResolvedValue(false),
+    });
+
+    render(<ReticulumPropagationSection embedded />);
+
+    await user.click(
+      screen.getByRole('button', { name: 'reticulumPropagation.deleteAria:Remote hub' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'reticulumPropagation.deleteConfirm' }));
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('reticulumPropagation.deleteFailed', 'error');
+    });
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('saves renamed display name', async () => {
@@ -150,5 +178,27 @@ describe('ReticulumPropagationSection', () => {
     await waitFor(() => {
       expect(renamePropagationNode).toHaveBeenCalledWith('pn-aabb1111', 'Office PN');
     });
+  });
+
+  it('toasts and keeps rename editor when rename fails', async () => {
+    const user = userEvent.setup();
+    useReticulumPropagationStore.setState({
+      renamePropagationNode: vi.fn().mockResolvedValue(false),
+    });
+
+    render(<ReticulumPropagationSection embedded />);
+
+    await user.click(
+      screen.getByRole('button', { name: 'reticulumPropagation.renameAria:Remote hub' }),
+    );
+    const input = screen.getByLabelText('reticulumPropagation.renameLabel');
+    await user.clear(input);
+    await user.type(input, 'Office PN');
+    await user.click(screen.getByRole('button', { name: 'reticulumPropagation.renameSaveAria' }));
+
+    await waitFor(() => {
+      expect(addToast).toHaveBeenCalledWith('reticulumPropagation.renameFailed', 'error');
+    });
+    expect(screen.getByLabelText('reticulumPropagation.renameLabel')).toBeInTheDocument();
   });
 });

@@ -961,9 +961,7 @@
       "setPrimaryFailed": "Fehler beim Festlegen des primären lokalen RNode.",
       "defaultHubsLabel": "Standard-Hubs",
       "addDefaultHubs": "Hinzufügen von Testnet- und Ratspeak-Hubs",
-      "addDefaultHubsAria": "Fügen Sie standardmäßige Reticulum-Testnet- und Ratspeak-Hubs in einem deaktivierten Zustand hinzu",
       "addDefaultHubsSuccess": "{{added}} hinzugefügt, {{repaired}} korrigiert. {{skipped}} bereits konfiguriert.",
-      "addDefaultHubsAllPresent": "Standard-Testnet- und Ratspeak-Hubs sind bereits konfiguriert.",
       "addDefaultHubsFailed": "Standard-Hubs konnten nicht hinzugefügt werden.",
       "identityNotConfigured": "Richten Sie zuerst eine Reticulum-Identität auf der Registerkarte Netzwerk ein — generieren oder importieren Sie eine Wiederherstellungsphrase.",
       "identityRequiredHint": "Konfigurieren Sie eine Reticulum-Identität auf der Registerkarte Netzwerk, bevor Sie Schnittstellen hinzufügen.",
@@ -995,8 +993,10 @@
       "invalidMode": "Ungültiger Schnittstellenmodus.",
       "backboneDirectoryLink": "Verzeichnis ↗",
       "backboneDirectoryLinkAria": "Öffnen Sie das Reticulum-Backbone-Verzeichnis, um Hubs zu finden, die Sie als Schnittstellen hinzufügen können",
-      "backboneDirectoryHint": "Weitere Community-Backbone-Hubs finden Sie unter Directory.rns.recipes. Yggdrasil-Hubs (zum Beispiel Yggdrasil_Ashburn_VA) benötigen einen laufenden lokalen Yggdrasil-Tunnel – das Reticulum-Handbuch empfiehlt die Bindung an Ihre Tunnelschnittstelle (häufig tun0).",
-      "localOfflineRowBleBondStale": "Bluetooth-Verbindung ist veraltet – Vergessen Sie diesen RNode in Systemeinstellungen → Bluetooth und koppeln Sie ihn dann erneut mit einer neuen PIN (das Betriebssystem zeigt möglicherweise immer noch „Gekoppelt“ an)."
+      "backboneDirectoryHint": "Weitere Community-Backbone-Hubs finden Sie unter directory.rns.recipes. Yggdrasil-Hubs (zum Beispiel Yggdrasil_Ashburn_VA) benötigen einen laufenden lokalen Yggdrasil-Tunnel – das Reticulum-Handbuch empfiehlt die Bindung an Ihre Tunnelschnittstelle (häufig tun0).",
+      "localOfflineRowBleBondStale": "Bluetooth-Verbindung ist veraltet – Vergessen Sie diesen RNode in Systemeinstellungen → Bluetooth und koppeln Sie ihn dann erneut mit einer neuen PIN (das Betriebssystem zeigt möglicherweise immer noch „Gekoppelt“ an).",
+      "addDefaultHubsAria": "Standardmäßige Reticulum-Backbone-Hubs synchronisieren (US-Ost, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); Deaktivieren Sie stillgelegte Testnet-Endpunkte",
+      "addDefaultHubsAllPresent": "Standard-Backbone-Hubs sind bereits konfiguriert; Keine stillgelegten Testnet-Hubs aktiviert."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3668,7 +3668,6 @@
     "syncNowFor": "Nachrichten von {{name}} synchronisieren",
     "addNode": "Knoten hinzufügen",
     "addNodeLabel": "Ausbreitungsknoten per Hash hinzufügen",
-    "addNodePlaceholder": "32-stelliger LXMF-Ziel-Hash",
     "localInboxStats": "{{count}} in der Warteschlange · {{bytes}} Bytes",
     "refreshing": "Erfrischend…",
     "refreshAria": "Ausbreitungsknoten aktualisieren",
@@ -3718,7 +3717,13 @@
     },
     "syncLocalNotSupported": "Die lokale Weitergabe ist Ihr Offline-Posteingang – sie kann nicht wie ein Remote-LXMF-Weitergabeknoten über das Netzwerk synchronisiert werden.",
     "syncIdentityUnknown": "Die Identität des Ausbreitungsknotens ist unbekannt – warten Sie auf eine Ankündigung oder eine Pfadantwort und versuchen Sie es dann erneut.",
-    "syncTargetNotPropagationNode": "Dieses Ziel ist auf Reticulum erreichbar, aber kein LXMF-Verbreitungsknoten (TCP-Hubs sind nur Transportpfade). Fügen Sie ein Ziel hinzu, das sich als lxmf.propagation ankündigt, um Offline-Nachrichten zu synchronisieren."
+    "syncTargetNotPropagationNode": "Dieses Ziel ist auf Reticulum erreichbar, aber kein LXMF-Verbreitungsknoten (TCP-Hubs sind nur Transportpfade). Fügen Sie ein Ziel hinzu, das sich als lxmf.propagation ankündigt, um Offline-Nachrichten zu synchronisieren.",
+    "syncPeeringStampFailed": "Für diesen Ausbreitungsknoten konnte kein Peering-Stempel erstellt werden. Versuchen Sie es gleich noch einmal.",
+    "syncCancelled": "Ausbreitungssynchronisierung abgebrochen.",
+    "renameFailed": "Der Weitergabeknoten konnte nicht umbenannt werden.",
+    "deleteFailed": "Der Ausbreitungsknoten konnte nicht gelöscht werden.",
+    "addFailed": "Der Ausbreitungsknoten konnte nicht hinzugefügt werden.",
+    "addNodePlaceholder": "32-stelliger lxmf.propagation-Ziel-Hash"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Ausbreitungsmodus",

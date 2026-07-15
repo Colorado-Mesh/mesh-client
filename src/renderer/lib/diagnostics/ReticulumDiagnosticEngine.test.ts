@@ -103,6 +103,40 @@ describe('ReticulumDiagnosticEngine', () => {
     expect(dropRow?.severity).toBe('error');
   });
 
+  it('adds bleBondRemoved runtime rows from sidecar alerts', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 0 },
+      {
+        interfaces: [
+          {
+            id: 'ble1',
+            name: 'RNode BLE',
+            type: 'rnode',
+            enabled: true,
+            status: 'down',
+            serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+          },
+        ],
+        interfaceIssueAlert: {
+          tcpConnectFailed: [],
+          txQueueDrops: [],
+          linkDeliveryTimeouts: [],
+          bleBondRemoved: ['RNode BLE'],
+          transportSaturatedCount: 0,
+          slowTransportQueryCount: 0,
+          suppressedCount: 0,
+          lastAtMs: Date.now(),
+        },
+      },
+    );
+    const bondRow = rows.find(
+      (r): r is RfDiagnosticRow => r.kind === 'rf' && r.condition === 'reticulum/ble-bond-removed',
+    );
+    expect(bondRow).toBeDefined();
+    expect(bondRow?.causeI18n?.key).toBe('diagnosticsPanel.reticulum.runtime.bleBondRemoved');
+    expect(bondRow?.causeI18n?.params).toEqual({ name: 'RNode BLE' });
+  });
+
   it('adds link timeout and transport saturation rows from sidecar alerts', () => {
     const rows = buildReticulumDiagnosticRows(
       { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },

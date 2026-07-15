@@ -1137,7 +1137,9 @@ impl LiveBridge {
     /// Classify a destination announce as an LXMF propagation node (or not).
     ///
     /// Sync links to non-PN destinations (hubs, lxmf.delivery, etc.) can complete the
-    /// RNS handshake then hang forever on `/offer` — fail before Establishing.
+    /// RNS handshake then hang forever on `/offer` — fail before Establishing when the
+    /// announce positively identifies a non-PN. Missing/aged announces (`unknown`) are
+    /// allowed when identity is already known (caller gates identity).
     async fn classify_propagation_sync_target(&self, destination_hex: &str) -> &'static str {
         let prop_nh = rns_identity::name_hash::name_hash("lxmf.propagation");
         let delivery_nh = rns_identity::name_hash::name_hash("lxmf.delivery");
@@ -1147,34 +1149,22 @@ impl LiveBridge {
         let Some(TransportQueryResponse::Announces(entries)) = resp else {
             return "unknown";
         };
-        let key = destination_hex.to_lowercase();
-        for entry in &entries {
-            if hex::encode(entry.dest_hash).to_lowercase() != key {
-                continue;
-            }
-            if entry.name_hash == prop_nh {
-                if entry
-                    .app_data
-                    .as_deref()
-                    .and_then(lxmf_core::handlers::parse_pn_announce_data)
-                    .is_some()
-                {
-                    return "propagation";
-                }
-                // Aspect matches even if app_data is empty/legacy.
-                return "propagation";
-            }
-            if entry.name_hash == delivery_nh {
-                return "delivery";
-            }
-            return "other";
-        }
-        "unknown"
+        classify_propagation_target_name_hashes(
+            destination_hex,
+            &entries
+                .iter()
+                .map(|e| (hex::encode(e.dest_hash), e.name_hash))
+                .collect::<Vec<_>>(),
+            &prop_nh,
+            &delivery_nh,
+        )
     }
 
     pub async fn start_propagation_sync(&self, destination_hash: &str) -> Result<(), String> {
         let hash = parse_hash16(destination_hash)?;
         let dest_hex = destination_hash.to_lowercase();
+        // Cancel any in-flight sync/emitter before starting a new one.
+        self.cancel_propagation_sync().await;
         // Link proofs are ignored unless the destination pubkey is in known_identities.
         // Resolve identity (+ path when possible) before Establishing, same as LXMF delivery.
         let identity_ok = self.ensure_identity_for_direct(&dest_hex).await;
@@ -1188,12 +1178,13 @@ impl LiveBridge {
         if !identity_ok || !identity_known_after {
             return Err("PROPAGATION_IDENTITY_UNKNOWN".into());
         }
-        if target_class != "propagation" {
+        // Only hard-reject destinations positively classified as non-PN.
+        if target_class == "delivery" || target_class == "other" {
             return Err("PROPAGATION_TARGET_NOT_PN".into());
         }
-        let peering = self.resolve_propagation_peering(&dest_hex).await;
+        let peering = self.resolve_propagation_peering(&dest_hex).await?;
         self.sync_cancel.store(false, std::sync::atomic::Ordering::SeqCst);
-        if !self.propagation.start_sync(hash, peering) {
+        if !self.propagation.start_sync(hash, Some(peering)) {
             return Err("propagation sync unavailable".into());
         }
         self.propagation.spawn_sync_progress_emitter(
@@ -1210,13 +1201,15 @@ impl LiveBridge {
     async fn resolve_propagation_peering(
         &self,
         destination_hex: &str,
-    ) -> Option<([u8; 16], [u8; 16], u8, Option<Vec<u8>>)> {
+    ) -> Result<([u8; 16], [u8; 16], u8, Option<Vec<u8>>), String> {
         let pub_key = self
             .outbound
             .lock()
             .ok()
-            .and_then(|d| d.public_key_for(destination_hex))?;
-        let peer_identity = Identity::from_public_key(&pub_key).ok()?;
+            .and_then(|d| d.public_key_for(destination_hex))
+            .ok_or_else(|| "PROPAGATION_IDENTITY_UNKNOWN".to_string())?;
+        let peer_identity = Identity::from_public_key(&pub_key)
+            .map_err(|e| format!("PROPAGATION_IDENTITY_UNKNOWN: {e}"))?;
         let peer_id = peer_identity.hash;
         let local_id = self.identity.hash;
         let peering_cost = self
@@ -1226,7 +1219,7 @@ impl LiveBridge {
         let precomputed = if peering_cost == 0 {
             Some(Vec::new())
         } else {
-            tokio::task::spawn_blocking(move || {
+            let stamp = tokio::task::spawn_blocking(move || {
                 let mut peering_id = Vec::with_capacity(32);
                 peering_id.extend_from_slice(&peer_id);
                 peering_id.extend_from_slice(&local_id);
@@ -1238,10 +1231,11 @@ impl LiveBridge {
                 .map(|(stamp, _)| stamp.to_vec())
             })
             .await
-            .ok()
-            .flatten()
+            .map_err(|e| format!("PROPAGATION_PEERING_STAMP_FAILED: {e}"))?
+            .ok_or_else(|| "PROPAGATION_PEERING_STAMP_FAILED".to_string())?;
+            Some(stamp)
         };
-        Some((local_id, peer_id, peering_cost, precomputed))
+        Ok((local_id, peer_id, peering_cost, precomputed))
     }
 
     async fn pn_announce_peering_cost(&self, destination_hex: &str) -> Option<u8> {
@@ -2254,9 +2248,82 @@ fn peer_route_fields_equal(a: &PeerRow, b: &PeerRow) -> bool {
         && a.via_hash == b.via_hash
 }
 
+/// Pure announce classification for propagation sync targets.
+///
+/// `entries` is `(dest_hash_hex, name_hash)` pairs from recent announces.
+fn classify_propagation_target_name_hashes(
+    destination_hex: &str,
+    entries: &[(String, [u8; 10])],
+    prop_nh: &[u8; 10],
+    delivery_nh: &[u8; 10],
+) -> &'static str {
+    let key = destination_hex.to_lowercase();
+    for (dest_hex, name_hash) in entries {
+        if dest_hex.to_lowercase() != key {
+            continue;
+        }
+        if name_hash == prop_nh {
+            return "propagation";
+        }
+        if name_hash == delivery_nh {
+            return "delivery";
+        }
+        return "other";
+    }
+    "unknown"
+}
+
 #[cfg(test)]
 mod announce_display_name_tests {
     use super::*;
+
+    #[test]
+    fn classify_propagation_target_accepts_prop_and_unknown() {
+        let prop_nh = rns_identity::name_hash::name_hash("lxmf.propagation");
+        let delivery_nh = rns_identity::name_hash::name_hash("lxmf.delivery");
+        let dest = "aabbccddeeff00112233445566778899";
+        let other_nh = [0u8; 10];
+        assert_eq!(
+            classify_propagation_target_name_hashes(
+                dest,
+                &[(dest.to_string(), prop_nh)],
+                &prop_nh,
+                &delivery_nh,
+            ),
+            "propagation"
+        );
+        assert_eq!(
+            classify_propagation_target_name_hashes(
+                dest,
+                &[(dest.to_string(), delivery_nh)],
+                &prop_nh,
+                &delivery_nh,
+            ),
+            "delivery"
+        );
+        assert_eq!(
+            classify_propagation_target_name_hashes(
+                dest,
+                &[(dest.to_string(), other_nh)],
+                &prop_nh,
+                &delivery_nh,
+            ),
+            "other"
+        );
+        assert_eq!(
+            classify_propagation_target_name_hashes(dest, &[], &prop_nh, &delivery_nh),
+            "unknown"
+        );
+        assert_eq!(
+            classify_propagation_target_name_hashes(
+                dest,
+                &[("ffffffffffff00112233445566778899".into(), prop_nh)],
+                &prop_nh,
+                &delivery_nh,
+            ),
+            "unknown"
+        );
+    }
 
     #[test]
     fn path_table_added_hashes_reports_only_new_membership() {

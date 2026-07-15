@@ -15,6 +15,7 @@ import {
   ReticulumPropagationRefreshButton,
   ReticulumPropagationSyncProgress,
 } from './ReticulumPropagationSyncProgress';
+import { useToast } from './Toast';
 
 const PROPAGATION_NODE_STATUS_KEYS = new Set([
   'active',
@@ -41,6 +42,7 @@ export default function ReticulumPropagationSection({
   embedded = false,
 }: ReticulumPropagationSectionProps) {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const nodes = useReticulumPropagationStore((s) => s.nodes);
   const preferredId = useReticulumPropagationStore((s) => s.preferredId);
   const autoSyncIntervalSec = useReticulumPropagationStore((s) => s.autoSyncIntervalSec);
@@ -146,6 +148,8 @@ export default function ReticulumPropagationSection({
                           if (ok) {
                             setRenamingId(null);
                             setRenameDraft('');
+                          } else {
+                            addToast(t('reticulumPropagation.renameFailed'), 'error');
                           }
                         });
                       }}
@@ -321,6 +325,8 @@ export default function ReticulumPropagationSection({
               if (ok) {
                 setAddHash('');
                 void handleRefresh();
+              } else {
+                addToast(t('reticulumPropagation.addFailed'), 'error');
               }
             });
           }}
@@ -336,8 +342,13 @@ export default function ReticulumPropagationSection({
           danger
           onConfirm={() => {
             const id = pendingDelete.id;
-            setPendingDelete(null);
-            void removePropagationNode(id);
+            void removePropagationNode(id).then((ok) => {
+              if (ok) {
+                setPendingDelete(null);
+              } else {
+                addToast(t('reticulumPropagation.deleteFailed'), 'error');
+              }
+            });
           }}
           onCancel={() => {
             setPendingDelete(null);

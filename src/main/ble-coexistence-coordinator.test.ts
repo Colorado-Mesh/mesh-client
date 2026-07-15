@@ -76,6 +76,33 @@ describe('BleCoexistenceCoordinator', () => {
     }
   });
 
+  it('suspendNobleForReticulumBleConnect releases yield when Noble disconnect times out', async () => {
+    const noble = {
+      pauseScanningForExternalScan: vi.fn().mockResolvedValue(undefined),
+      resumeScanningAfterExternalScan: vi.fn().mockResolvedValue(undefined),
+      disconnectAllSessions: vi.fn().mockImplementation(
+        () => new Promise(() => undefined), // never resolves
+      ),
+    };
+    const coordinator = new BleCoexistenceCoordinator();
+    coordinator.setNobleManager(noble as never);
+
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
+    vi.useFakeTimers();
+
+    try {
+      const pending = coordinator.suspendNobleForReticulumBleConnect();
+      const expectation = expect(pending).rejects.toThrow(/Noble disconnectAll timeout/);
+      await vi.advanceTimersByTimeAsync(30_000);
+      await expectation;
+      expect(coordinator.getState().scanOwner).toBeNull();
+    } finally {
+      vi.useRealTimers();
+      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+    }
+  });
+
   it('assertCanConnect rejects Noble while reticulum holds the scan yield', async () => {
     const coordinator = new BleCoexistenceCoordinator();
     await coordinator.acquireScan('reticulum');

@@ -960,10 +960,8 @@
       "setPrimarySuccess": "RNode local primario actualizado.",
       "setPrimaryFailed": "No se ha podido establecer el RNode local principal.",
       "defaultHubsLabel": "Hubs predeterminados",
-      "addDefaultHubs": "Añadir hubs testnet y Ratspeak",
-      "addDefaultHubsAria": "Añadir hubs predeterminados de Reticulum testnet y Ratspeak en estado deshabilitado",
+      "addDefaultHubs": "Añadir hubs de red predeterminados",
       "addDefaultHubsSuccess": "Añadidos {{added}}, corregidos {{repaired}}. {{skipped}} ya configurado.",
-      "addDefaultHubsAllPresent": "Los hubs predeterminados de testnet y Ratspeak ya están configurados.",
       "addDefaultHubsFailed": "No se han podido añadir los hubs predeterminados.",
       "identityNotConfigured": "Configure primero una identidad de Reticulum en la pestaña Red: genere o importe una frase de recuperación.",
       "identityRequiredHint": "Configure una identidad de Reticulum en la pestaña Red antes de añadir interfaces.",
@@ -995,8 +993,10 @@
       "invalidMode": "Modo de interfaz no válido.",
       "backboneDirectoryLink": "Directorio ↗",
       "backboneDirectoryLinkAria": "Abra el directorio principal de Reticulum para encontrar centros para agregar como interfaces",
-      "backboneDirectoryHint": "Encuentre más centros troncales comunitarios en directorio.rns.recipes. Los concentradores de Yggdrasil (por ejemplo, Yggdrasil_Ashburn_VA) necesitan un túnel de Yggdrasil local en ejecución; el manual de Reticulum recomienda vincularse a la interfaz de su túnel (a menudo tun0).",
-      "localOfflineRowBleBondStale": "El vínculo Bluetooth está obsoleto: olvide este RNode en Configuración del sistema → Bluetooth, luego vuelva a emparejarlo con un nuevo PIN (es posible que el sistema operativo aún muestre Emparejado)."
+      "backboneDirectoryHint": "Encuentre más centros troncales comunitarios en directory.rns.recipes. Los concentradores de Yggdrasil (por ejemplo, Yggdrasil_Ashburn_VA) necesitan un túnel de Yggdrasil local en ejecución; el manual de Reticulum recomienda vincularse a la interfaz de su túnel (a menudo tun0).",
+      "localOfflineRowBleBondStale": "El vínculo Bluetooth está obsoleto: olvide este RNode en Configuración del sistema → Bluetooth, luego vuelva a emparejarlo con un nuevo PIN (es posible que el sistema operativo aún muestre Emparejado).",
+      "addDefaultHubsAria": "Sincronizar hubs troncales de Reticulum predeterminados (EE. UU. Este, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); deshabilitar los puntos finales de testnet fuera de servicio",
+      "addDefaultHubsAllPresent": "Los hubs troncales predeterminados ya están configurados; no se habilitan hubs de testnet desmantelados."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3668,7 +3668,6 @@
     "syncNowFor": "Sincronizar mensajes de {{name}}",
     "addNode": "Agregar nodo",
     "addNodeLabel": "Agregar nodo de propagación por hash",
-    "addNodePlaceholder": "Hash de destino LXMF de 32 caracteres",
     "localInboxStats": "{{count}} en cola · {{bytes}} bytes",
     "refreshing": "Refrescante…",
     "refreshAria": "Actualizar nodos de propagación",
@@ -3694,11 +3693,11 @@
       "openSettings": "Configurar propagación",
       "openSettingsAria": "Open Reticulum Network propagation settings"
     },
-    "rename": "Rebautizar",
+    "rename": "Renombrar",
     "renameLabel": "Nombre del nodo de propagación",
     "renameSave": "Guardar nombre",
     "renameAria": "Cambiar el nombre del nodo de propagación {{name}}",
-    "delete": "Borrar",
+    "delete": "Eliminar",
     "deleteAria": "Eliminar el nodo de propagación {{name}}",
     "deleteConfirmTitle": "¿Eliminar el nodo de propagación?",
     "deleteConfirmBody": "¿Eliminar {{name}} de la lista de nodos de propagación? Esto no cambia el nodo remoto.",
@@ -3718,7 +3717,13 @@
     },
     "syncLocalNotSupported": "La propagación local es su bandeja de entrada fuera de línea; no se puede sincronizar a través de la red como un nodo de propagación LXMF remoto.",
     "syncIdentityUnknown": "Se desconoce la identidad del nodo de propagación: espere un anuncio o una respuesta de ruta y vuelva a intentarlo.",
-    "syncTargetNotPropagationNode": "Se puede llegar a ese destino en Reticulum pero no es un nodo de propagación LXMF (los centros TCP son solo rutas de transporte). Agregue un destino que se anuncie como lxmf.propagation para sincronizar mensajes sin conexión."
+    "syncTargetNotPropagationNode": "Se puede llegar a ese destino en Reticulum pero no es un nodo de propagación LXMF (los centros TCP son solo rutas de transporte). Agregue un destino que se anuncie como lxmf.propagation para sincronizar mensajes sin conexión.",
+    "syncPeeringStampFailed": "No se pudo crear un sello de emparejamiento para este nodo de propagación. Vuelva a intentarlo en un momento.",
+    "syncCancelled": "Sincronización de propagación cancelada.",
+    "renameFailed": "No se pudo cambiar el nombre del nodo de propagación.",
+    "deleteFailed": "No se pudo eliminar el nodo de propagación.",
+    "addFailed": "No se pudo agregar el nodo de propagación.",
+    "addNodePlaceholder": "Hash de destino lxmf.propagation de 32 caracteres"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "modo de propagación",

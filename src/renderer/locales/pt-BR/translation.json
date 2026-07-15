@@ -961,9 +961,7 @@
       "setPrimaryFailed": "Falha ao definir o RNode local primário.",
       "defaultHubsLabel": "Hubs padrão",
       "addDefaultHubs": "Adicionar hubs testnet e Ratspeak",
-      "addDefaultHubsAria": "Adicione testnet Reticulum padrão e hubs Ratspeak em estado desativado",
       "addDefaultHubsSuccess": "Adicionados {{added}}, corrigidos {{repaired}}. {{skipped}} já configurados.",
-      "addDefaultHubsAllPresent": "Os hubs de testnet e Ratspeak padrão já estão configurados.",
       "addDefaultHubsFailed": "Falha ao adicionar hubs padrão.",
       "identityNotConfigured": "Configure uma identidade Reticulum na guia Rede primeiro — gere ou importe uma frase de recuperação.",
       "identityRequiredHint": "Configure uma identidade Reticulum na guia Rede antes de adicionar interfaces.",
@@ -996,7 +994,9 @@
       "backboneDirectoryLink": "Diretório ↗",
       "backboneDirectoryLinkAria": "Abra o diretório backbone do Reticulum para encontrar hubs para adicionar como interfaces",
       "backboneDirectoryHint": "Encontre mais centros de backbone da comunidade em directory.rns.recipes. Os hubs Yggdrasil (por exemplo Yggdrasil_Ashburn_VA) precisam de um túnel Yggdrasil local em execução - o manual do Reticulum recomenda a ligação à interface do seu túnel (geralmente tun0).",
-      "localOfflineRowBleBondStale": "A ligação Bluetooth está obsoleta - Esqueça este RNode em Configurações do sistema → Bluetooth e, em seguida, emparelhe novamente com um novo PIN (o sistema operacional ainda pode mostrar Emparelhado)."
+      "localOfflineRowBleBondStale": "A ligação Bluetooth está obsoleta - Esqueça este RNode em Configurações do sistema → Bluetooth e, em seguida, emparelhe novamente com um novo PIN (o sistema operacional ainda pode mostrar Emparelhado).",
+      "addDefaultHubsAria": "Sincronizar hubs de backbone Reticulum padrão (Leste dos EUA, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); desabilitar endpoints testnet desativados",
+      "addDefaultHubsAllPresent": "Os hubs de backbone padrão já estão configurados; nenhum hub testnet desativado habilitado."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1437,7 +1437,7 @@
         "transportSaturated": "RNS transport saturated ({{count}} LXMF path-request drops)",
         "transportSaturatedShareInstance": "RNS transport saturated ({{count}} path-request drops). Share instance is on — quit other Reticulum apps (MeshChatX, Ratspeak, rnsd) and restart the stack.",
         "slowTransportQuery": "RNS transport queries slow or failing ({{count}}×)",
-        "bleBondRemoved": "A ligação BLE RNode \"{{name}}\" está obsoleta - esqueça as configurações de Bluetooth do sistema operacional e emparelhe novamente"
+        "bleBondRemoved": "A ligação BLE RNode \"{{name}}\" está obsoleta — esqueça o dispositivo nas configurações de Bluetooth do sistema operacional e emparelhe novamente"
       }
     },
     "routingPort": {
@@ -3668,7 +3668,6 @@
     "syncNowFor": "Sincronizar mensagens de {{name}}",
     "addNode": "Adicionar nó",
     "addNodeLabel": "Adicionar nó de propagação por hash",
-    "addNodePlaceholder": "Hash de destino LXMF de 32 caracteres",
     "localInboxStats": "{{count}} na fila · {{bytes}} bytes",
     "refreshing": "Refrescante…",
     "refreshAria": "Atualizar nós de propagação",
@@ -3718,7 +3717,13 @@
     },
     "syncLocalNotSupported": "A propagação local é sua caixa de entrada offline – ela não pode ser sincronizada pela rede como um nó de propagação LXMF remoto.",
     "syncIdentityUnknown": "A identidade do nó de propagação é desconhecida — aguarde um anúncio ou resposta do caminho e tente novamente.",
-    "syncTargetNotPropagationNode": "Esse destino pode ser alcançado no Reticulum, mas não é um nó de propagação LXMF (os hubs TCP são apenas caminhos de transporte). Adicione um destino anunciado como lxmf.propagation para sincronizar mensagens offline."
+    "syncTargetNotPropagationNode": "Esse destino pode ser alcançado no Reticulum, mas não é um nó de propagação LXMF (os hubs TCP são apenas caminhos de transporte). Adicione um destino anunciado como lxmf.propagation para sincronizar mensagens offline.",
+    "syncPeeringStampFailed": "Não foi possível criar um carimbo de peering para este nó de propagação. Tente novamente em alguns instantes.",
+    "syncCancelled": "Sincronização de propagação cancelada.",
+    "renameFailed": "Não foi possível renomear o nó de propagação.",
+    "deleteFailed": "Não foi possível excluir o nó de propagação.",
+    "addFailed": "Não foi possível adicionar o nó de propagação.",
+    "addNodePlaceholder": "Hash de destino lxmf.propagation de 32 caracteres"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modo de propagação",

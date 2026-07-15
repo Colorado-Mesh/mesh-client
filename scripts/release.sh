@@ -318,6 +318,11 @@ if ! pnpm run check:reticulum-interface-modes; then
   exit 1
 fi
 
+if ! pnpm run check:reticulum-decommissioned-hubs; then
+  print_error "Reticulum decommissioned hub catalog check failed."
+  exit 1
+fi
+
 if ! pnpm run check:licenses; then
   print_error "License check failed."
   exit 1

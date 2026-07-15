@@ -88,7 +88,14 @@ impl PropagationBridge {
     pub fn cancel_sync(&self) {
         if let Ok(mut task) = self.sync_task.lock() {
             task.state = SyncTaskState::Failed;
+            // Sticky fail so the progress emitter does not emit a terminal progress=100.
+            task.last_finished_ok = Some(false);
         }
+    }
+
+    /// Whether a post-loop terminal success (progress 100) should be emitted.
+    pub fn should_emit_terminal_success(last_finished_ok: Option<bool>) -> bool {
+        last_finished_ok != Some(false)
     }
 
     pub fn sync_active(&self) -> bool {
@@ -200,8 +207,8 @@ impl PropagationBridge {
                     break;
                 }
             }
-            // Do not emit a blanket progress=100 after a real failure terminal.
-            if bridge.last_finished_ok() != Some(false) {
+            // Do not emit a blanket progress=100 after a real failure/cancel terminal.
+            if Self::should_emit_terminal_success(bridge.last_finished_ok()) {
                 let payload = serde_json::json!({
                     "active": false,
                     "progress": 100.0,
@@ -214,5 +221,35 @@ impl PropagationBridge {
                 let _ = event_tx.send(frame.to_string());
             }
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_emit_terminal_success_skips_explicit_failure() {
+        assert!(!PropagationBridge::should_emit_terminal_success(Some(false)));
+        assert!(PropagationBridge::should_emit_terminal_success(Some(true)));
+        assert!(PropagationBridge::should_emit_terminal_success(None));
+    }
+
+    #[test]
+    fn cancel_sync_sets_sticky_failure() {
+        let dir = std::env::temp_dir().join(format!(
+            "mesh-prop-bridge-cancel-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let identity = rns_identity::identity::Identity::new();
+        let bridge = PropagationBridge::new(tx, [0xab; 16], dir.clone(), &identity)
+            .expect("bridge");
+        bridge.cancel_sync();
+        assert_eq!(bridge.last_finished_ok(), Some(false));
+        assert!(!bridge.sync_active());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

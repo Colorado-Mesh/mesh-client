@@ -961,9 +961,7 @@
       "setPrimaryFailed": "Kan primaire lokale RNode niet instellen.",
       "defaultHubsLabel": "Standaardhubs",
       "addDefaultHubs": "Voeg testnet en Ratspeak hubs toe",
-      "addDefaultHubsAria": "Voeg standaard Reticulum-testnet en Ratspeak-hubs toe in een uitgeschakelde toestand",
       "addDefaultHubsSuccess": "{{added}} toegevoegd, {{repaired}} gecorrigeerd. {{skipped}} al geconfigureerd.",
-      "addDefaultHubsAllPresent": "Standaard testnet en Ratspeak-hubs zijn al geconfigureerd.",
       "addDefaultHubsFailed": "Kan standaardhubs niet toevoegen.",
       "identityNotConfigured": "Stel eerst een Reticulum-identiteit in op het tabblad Netwerk — genereer of importeer een herstelzin.",
       "identityRequiredHint": "Configureer een Reticulum-identiteit op het tabblad Netwerk voordat u interfaces toevoegt.",
@@ -996,7 +994,9 @@
       "backboneDirectoryLink": "Telefoonboek ↗",
       "backboneDirectoryLinkAria": "Open de Reticulum-backbone-map om hubs te vinden die u als interfaces kunt toevoegen",
       "backboneDirectoryHint": "Vind meer community-backbone-hubs op directory.rns.recipes. Yggdrasil-hubs (bijvoorbeeld Yggdrasil_Ashburn_VA) hebben een actieve lokale Yggdrasil-tunnel nodig - de Reticulum-handleiding beveelt aan om te binden aan uw tunnelinterface (vaak tun0).",
-      "localOfflineRowBleBondStale": "Bluetooth-verbinding is verouderd: vergeet deze RNode in Systeeminstellingen → Bluetooth en koppel opnieuw met een nieuwe pincode (het besturingssysteem kan nog steeds Gekoppeld weergeven)."
+      "localOfflineRowBleBondStale": "Bluetooth-verbinding is verouderd: vergeet deze RNode in Systeeminstellingen → Bluetooth en koppel opnieuw met een nieuwe pincode (het besturingssysteem kan nog steeds Gekoppeld weergeven).",
+      "addDefaultHubsAria": "Synchroniseer standaard Reticulum-backbone-hubs (US-Oost, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); buiten gebruik gestelde testnet-eindpunten uitschakelen",
+      "addDefaultHubsAllPresent": "Standaard backbone-hubs zijn al geconfigureerd; geen buiten gebruik gestelde testnet-hubs ingeschakeld."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -3668,7 +3668,6 @@
     "syncNowFor": "Synchroniseer berichten van {{name}}",
     "addNode": "Knooppunt toevoegen",
     "addNodeLabel": "Voeg voortplantingsknooppunt toe via hash",
-    "addNodePlaceholder": "LXMF-bestemmingshash van 32 tekens",
     "localInboxStats": "{{count}} in wachtrij · {{bytes}} bytes",
     "refreshing": "Verfrissend…",
     "refreshAria": "Vernieuw de voortplantingsknooppunten",
@@ -3718,7 +3717,13 @@
     },
     "syncLocalNotSupported": "Lokale propagatie is uw offline inbox; deze kan niet via het netwerk worden gesynchroniseerd zoals een extern LXMF-propagatieknooppunt.",
     "syncIdentityUnknown": "De identiteit van het voortplantingsknooppunt is onbekend: wacht op een aankondiging of padreactie en probeer het vervolgens opnieuw.",
-    "syncTargetNotPropagationNode": "Die bestemming is bereikbaar op Reticulum, maar is geen LXMF-propagatieknooppunt (TCP-hubs zijn alleen transportpaden). Voeg een bestemming toe die wordt aangekondigd als lxmf.propagation om offline berichten te synchroniseren."
+    "syncTargetNotPropagationNode": "Die bestemming is bereikbaar op Reticulum, maar is geen LXMF-propagatieknooppunt (TCP-hubs zijn alleen transportpaden). Voeg een bestemming toe die wordt aangekondigd als lxmf.propagation om offline berichten te synchroniseren.",
+    "syncPeeringStampFailed": "Kan geen peering-stempel maken voor dit propagatieknooppunt. Probeer het over enkele ogenblikken opnieuw.",
+    "syncCancelled": "Doorgiftesynchronisatie geannuleerd.",
+    "renameFailed": "Kan de naam van het voortplantingsknooppunt niet wijzigen.",
+    "deleteFailed": "Kan het voortplantingsknooppunt niet verwijderen.",
+    "addFailed": "Kan het voortplantingsknooppunt niet toevoegen.",
+    "addNodePlaceholder": "Bestemmingshash van lxmf.propagation van 32 tekens"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "voortplantingsmodus",

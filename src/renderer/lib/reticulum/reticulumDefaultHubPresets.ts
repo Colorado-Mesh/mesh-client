@@ -4,8 +4,9 @@ import {
   RETICULUM_HUB_INTERFACE_MODE,
 } from '@/renderer/lib/reticulum/reticulumInterfaceMode';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
-import { stripConnectHostBrackets } from '@/shared/connectHost';
 import {
+  isDecommissionedReticulumTcpHub,
+  normalizeReticulumTcpHubHost,
   RETICULUM_DECOMMISSIONED_HUB_ENDPOINTS,
   type ReticulumDecommissionedHubEndpoint,
 } from '@/shared/reticulumDecommissionedHubs';
@@ -77,7 +78,7 @@ export const RETICULUM_RMAP_WORLD_HUB_PRESET = RETICULUM_DEFAULT_HUB_PRESETS.fin
 )!;
 
 function normalizeTcpHubHost(host: string): string {
-  return stripConnectHostBrackets(host.trim()).toLowerCase();
+  return normalizeReticulumTcpHubHost(host);
 }
 
 function normalizeI2pPeer(peer: string): string {
@@ -169,15 +170,19 @@ export function reticulumInterfaceMatchesDecommissionedHub(
   if (iface.type !== 'tcp' || !iface.enabled) {
     return false;
   }
-  if (iface.port !== endpoint.port) {
+  const ifaceHost = iface.host?.trim();
+  if (!ifaceHost || iface.port == null) {
     return false;
   }
-  const ifaceHost = iface.host?.trim();
-  if (!ifaceHost) {
+  // Match by shared catalog; still require this endpoint id for plan grouping.
+  if (!isDecommissionedReticulumTcpHub(ifaceHost, iface.port)) {
     return false;
   }
   const normalized = normalizeTcpHubHost(ifaceHost);
-  return endpoint.hosts.some((host) => normalizeTcpHubHost(host) === normalized);
+  return (
+    iface.port === endpoint.port &&
+    endpoint.hosts.some((host) => normalizeTcpHubHost(host) === normalized)
+  );
 }
 
 export interface DefaultHubPresetSyncRepair {

@@ -2,26 +2,12 @@ import fs from 'fs';
 import path from 'path';
 
 import { isDecommissionedReticulumTcpHub } from '../shared/reticulumDecommissionedHubs';
+import {
+  parseReticulumIniEnabledValue,
+  parseReticulumIniInterfaceField,
+} from './reticulum-config-ini';
 import { readUtf8FileBounded } from './reticulum-config-read';
-
-function parseEnabledValue(raw: string): boolean {
-  const v = raw.trim().toLowerCase();
-  return v === 'yes' || v === 'true' || v === '1';
-}
-
-function parseInterfaceField(line: string): { key: string; value: string } | null {
-  const eq = line.indexOf('=');
-  if (eq <= 0) return null;
-  const key = line.slice(0, eq).trim().toLowerCase();
-  let value = line.slice(eq + 1).trim();
-  if (
-    (value.startsWith('"') && value.endsWith('"')) ||
-    (value.startsWith("'") && value.endsWith("'"))
-  ) {
-    value = value.slice(1, -1);
-  }
-  return { key, value };
-}
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 interface TcpBlockState {
   name: string;
@@ -70,12 +56,12 @@ export function disableDecommissionedReticulumHubsInConfigContent(content: strin
     }
     if (!current) continue;
     current.endLine = i;
-    const parsed = parseInterfaceField(line);
+    const parsed = parseReticulumIniInterfaceField(line);
     if (!parsed) continue;
     if (parsed.key === 'type') current.ifaceType = parsed.value;
     if (parsed.key === 'name' && parsed.value.trim()) current.name = parsed.value.trim();
     if (parsed.key === 'enabled' || parsed.key === 'interface_enabled') {
-      current.enabled = parseEnabledValue(parsed.value);
+      current.enabled = parseReticulumIniEnabledValue(parsed.value);
     }
     if (parsed.key === 'target_host') current.host = parsed.value;
     if (parsed.key === 'target_port') {
@@ -99,7 +85,7 @@ export function disableDecommissionedReticulumHubsInConfigContent(content: strin
       const line = out[i] ?? '';
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith(';')) continue;
-      const parsed = parseInterfaceField(trimmed);
+      const parsed = parseReticulumIniInterfaceField(trimmed);
       if (!parsed) continue;
       if (parsed.key !== 'interface_enabled' && parsed.key !== 'enabled') continue;
       const indent = line.slice(0, line.length - line.trimStart().length);
@@ -119,12 +105,15 @@ export function disableDecommissionedReticulumHubsInConfigDir(configDir: string)
     const content = readUtf8FileBounded(configPath);
     const { next, disabledNames } = disableDecommissionedReticulumHubsInConfigContent(content);
     if (disabledNames.length === 0 || next === content) return [];
-    fs.writeFileSync(configPath, next, 'utf8');
+    // Atomic replace: write temp then rename into place.
+    const tmpPath = `${configPath}.${process.pid}.${Date.now()}.tmp`;
+    fs.writeFileSync(tmpPath, next, 'utf8');
+    fs.renameSync(tmpPath, configPath);
     return disabledNames;
   } catch (err) {
     console.warn(
       '[reticulum-decommissioned-hubs] failed to disable decommissioned hubs:',
-      err instanceof Error ? err.message : String(err),
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     return [];
   }

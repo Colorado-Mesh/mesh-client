@@ -947,11 +947,34 @@ impl StackHandle {
     }
 
     pub async fn remove_propagation_node(&self, id: &str) -> Result<(), String> {
+        // Live sync tracks progress in PropagationBridge, not persisted flags — always
+        // cancel before mutating so RF/`/offer` work cannot outlive a deleted node.
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            live.cancel_propagation_sync().await;
+            self.emit_event(
+                "propagation_sync",
+                serde_json::json!({
+                    "active": false,
+                    "progress": 0.0,
+                    "message": "propagation sync cancelled",
+                }),
+            );
+        }
         let cleared_preferred = {
             let mut inner = self.inner.write().await;
             let was_preferred = inner.preferred_propagation_id.as_deref() == Some(id);
+            // Snapshot for rollback if durable save fails after in-memory mutate.
+            let snapshot = serde_json::to_value(&*inner).ok();
             inner.remove_propagation_node(id)?;
-            inner.save(&self.config_dir, &self.storage_dir)?;
+            if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                if let Some(snap) = snapshot {
+                    if let Ok(restored) = serde_json::from_value::<PersistedState>(snap) {
+                        *inner = restored;
+                    }
+                }
+                return Err(e);
+            }
             was_preferred
         };
         if cleared_preferred {
@@ -965,8 +988,16 @@ impl StackHandle {
 
     pub async fn rename_propagation_node(&self, id: &str, name: &str) -> Result<(), String> {
         let mut inner = self.inner.write().await;
+        let snapshot = serde_json::to_value(&*inner).ok();
         inner.rename_propagation_node(id, name)?;
-        inner.save(&self.config_dir, &self.storage_dir)?;
+        if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+            if let Some(snap) = snapshot {
+                if let Ok(restored) = serde_json::from_value::<PersistedState>(snap) {
+                    *inner = restored;
+                }
+            }
+            return Err(e);
+        }
         Ok(())
     }
 

@@ -47,19 +47,19 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 
 ## Sidebar tabs
 
-| Tab             | Role                                                                                                                                                                                   |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Connection      | Stack start/stop, auto-start, interfaces CRUD, interface health, sidecar interface-issue banner (clears when hubs are disabled/removed), **Pick device** (serial / BLE)                |
-| Chat            | LXMF DMs (only chat mode for Reticulum)                                                                                                                                                |
-| Nomad Network   | Favourites, announces, Micron page browser (dual-axis scroll shell, fit-width default + open-width toggle, navigation, cache, file downloads); lazy-mount keep-alive after first visit |
-| Peers           | Path-table peers and LXMF contacts (sidebar label **Peers**; Meshtastic/MeshCore use **Nodes**)                                                                                        |
-| Network         | Identity, stack settings, announces, propagation, config import/export, identity vault (sidebar label **Network**; LoRa tabs use **Radio**)                                            |
-| Admin           | RNode firmware flasher; factory reset (danger zone)                                                                                                                                    |
-| Diagnostics     | Reticulum runtime rows + interface config audit/repair; LoRa routing/RF and foreign-LoRa findings hidden                                                                               |
-| Topology        | Path-table graph (force layout; `via_hash` next-hop edges)                                                                                                                             |
-| Map             | RMAP v4 discovery map (local heard interfaces + path-table reachability overlay)                                                                                                       |
-| Stats / Sniffer | Packet log views (`rawPacketLog.reticulum.*`)                                                                                                                                          |
-| App             | Shared app settings, DB tools, appearance (includes **Log panel** toggle)                                                                                                              |
+| Tab             | Role                                                                                                                                                                                      |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Connection      | Stack start/stop, auto-start, interfaces CRUD, interface health, sidecar interface-issue banner (clears when hubs are disabled/removed), **Pick device** (serial / BLE)                   |
+| Chat            | LXMF DMs (only chat mode for Reticulum)                                                                                                                                                   |
+| Nomad Network   | Favourites, announces, Micron page browser (dual-axis scroll shell, fit-width default + open-width toggle, navigation, cache, file downloads); lazy-mount keep-alive after first visit    |
+| Peers           | Path-table peers and LXMF contacts (sidebar label **Peers**; Meshtastic/MeshCore use **Nodes**)                                                                                           |
+| Network         | Identity, stack settings, announces, propagation (preferred, sync, rename/delete remote nodes), config import/export, identity vault (sidebar label **Network**; LoRa tabs use **Radio**) |
+| Admin           | RNode firmware flasher; factory reset (danger zone)                                                                                                                                       |
+| Diagnostics     | Reticulum runtime rows + interface config audit/repair; LoRa routing/RF and foreign-LoRa findings hidden                                                                                  |
+| Topology        | Path-table graph (force layout; `via_hash` next-hop edges)                                                                                                                                |
+| Map             | RMAP v4 discovery map (local heard interfaces + path-table reachability overlay)                                                                                                          |
+| Stats / Sniffer | Packet log views (`rawPacketLog.reticulum.*`)                                                                                                                                             |
+| App             | Shared app settings, DB tools, appearance (includes **Log panel** toggle)                                                                                                                 |
 
 Hidden tabs (Meshtastic/MeshCore only): Modules/Repeaters, Rooms, Telemetry, Security, TAK, RF, Graph.
 
@@ -178,7 +178,9 @@ When multiple enabled local RNode interfaces are connected, the interface list s
 
 **Bluetooth coexistence:** Meshtastic, MeshCore, and Reticulum may each use Bluetooth on **different devices** at once. Same MAC is rejected. Only **active scans** are serialized; connected GATT links are not torn down for another protocol’s scan. On Linux, LoRa stacks use Web Bluetooth in the renderer; Reticulum uses the sidecar `btleplug` stack.
 
-**Noble BLE yield (macOS/Windows):** When the Reticulum config includes an **enabled BLE RNode** (`ble://…`), sidecar start calls `bleCoexistence:suspendNobleForReticulumBleConnect` — Noble disconnects GATT sessions and holds the scan mutex until the RNode connects or a grace window expires. mesh-client then dispatches `mesh-client:nobleBleYieldReleased` so Meshtastic/MeshCore can reconnect. An always-mounted runtime watcher releases the lock even when the Reticulum Connection tab is not visible.
+**Noble BLE yield (macOS/Windows):** When the Reticulum config includes an **enabled BLE RNode** (`ble://…`), sidecar start calls `bleCoexistence:suspendNobleForReticulumBleConnect` — Noble disconnects GATT sessions and holds the scan mutex until the RNode connects or a grace window expires. While `scanOwner === 'reticulum'`, Meshtastic/MeshCore Noble **connect is rejected** (`BleScanBusyError`). After the post-connect grace, yield **stops re-contending** (prepare backoff) so an offline RNode cannot thrash LoRa BLE. mesh-client then dispatches `mesh-client:nobleBleYieldReleased` so Meshtastic/MeshCore can reconnect. If Noble disconnect times out during suspend, the yield is **released** (fail closed) rather than leaving a half-held mutex. An always-mounted runtime watcher releases the lock even when the Reticulum Connection tab is not visible.
+
+**Stale BLE bond:** Sidecar may latch `bleBondRemoved` when the peer dropped pairing information while the OS still shows Paired. Connection / Diagnostics surface Forget-and-re-pair copy — forget the RNode in System Settings → Bluetooth, start pairing on the radio, restart the stack, enter the new PIN.
 
 **Bulk migration:** **Network → Config import** (merge or replace), or import from standard system paths (see [Config import paths](#config-import-paths-system)).
 
@@ -204,7 +206,7 @@ When multiple enabled local RNode interfaces are connected, the interface list s
 - **Config validate:** Electron IPC `reticulum:validateConfig` → one-shot sidecar `validate-config --json` against `userData/reticulum/config`
 - **Announces:** interval (`announce_interval_sec`, 0–86400; default **3600** s / 1 h when unset; `0` = startup-only) persisted in rnsd config. The live sidecar sends an **LXMF delivery** announce shortly after stack start and on that interval (Ratspeak/lxmd parity). **Announce now** (`POST /api/v1/announces`) forces an immediate delivery announce. **Clear announces** (`DELETE /api/v1/announces`) clears the stub peer cache; the live path table may refill on the next peer refresh. Per-interface `announce_interval_min` (RMAP/discoverable interfaces) is separate.
 - **Inbound LXMF:** the sidecar registers `lxmf.delivery` with the transport (`RegisterDestination` + `LinkManager`) and feeds decrypted link/resource payloads into the delivery callback (WS `lxmf_message`). Without this registration, peer DMs never appear in Chat even when paths exist.
-- **Propagation:** preferred node for offline DMs, per-node **Sync messages**, add remote propagation nodes by 32-character hash, **rename** / **delete** remote nodes, optional **local propagation inbox**, **auto-sync interval** (`auto_sync_interval_sec`; `0` disables periodic sync)
+- **Propagation:** preferred node for offline DMs, per-node **Sync messages**, add remote propagation nodes by 32-character `lxmf.propagation` hash, **rename** / **delete** remote nodes, optional **local propagation inbox**, **auto-sync interval** (`auto_sync_interval_sec`; `0` disables periodic sync). Remote sync resolves identity+path before Establishing, rejects non-PN destinations (`PROPAGATION_TARGET_NOT_PN`), requires a peering stamp when cost > 0, treats HaveAll/Complete as success (not failure), and the renderer cancels Establishing-only stalls (~60s) plus a hard ceiling (~180s) via `reticulumPropagationSync.ts`.
 
 ---
 
