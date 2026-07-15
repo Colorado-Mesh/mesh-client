@@ -1,31 +1,16 @@
 import fs from 'fs';
 import path from 'path';
 
+import {
+  parseReticulumIniEnabledValue,
+  parseReticulumIniInterfaceField,
+} from './reticulum-config-ini';
 import { readUtf8FileBounded } from './reticulum-config-read';
 
 interface InterfaceBlockFields {
   ifaceType: string | null;
   enabled: boolean | null;
   port: string | null;
-}
-
-function parseEnabledValue(raw: string): boolean {
-  const v = raw.trim().toLowerCase();
-  return v === 'yes' || v === 'true' || v === '1';
-}
-
-function parseInterfaceField(line: string): { key: string; value: string } | null {
-  const eq = line.indexOf('=');
-  if (eq <= 0) return null;
-  const key = line.slice(0, eq).trim().toLowerCase();
-  let value = line.slice(eq + 1).trim();
-  if (
-    (value.startsWith('"') && value.endsWith('"')) ||
-    (value.startsWith("'") && value.endsWith("'"))
-  ) {
-    value = value.slice(1, -1);
-  }
-  return { key, value };
 }
 
 function blockHasEnabledBleRnode(fields: InterfaceBlockFields): boolean {
@@ -51,10 +36,10 @@ function contentHasEnabledBleRnode(content: string): boolean {
       if (flush()) return true;
       continue;
     }
-    const parsed = parseInterfaceField(line);
+    const parsed = parseReticulumIniInterfaceField(line);
     if (!parsed) continue;
     if (parsed.key === 'type') current.ifaceType = parsed.value;
-    if (parsed.key === 'enabled') current.enabled = parseEnabledValue(parsed.value);
+    if (parsed.key === 'enabled') current.enabled = parseReticulumIniEnabledValue(parsed.value);
     if (parsed.key === 'port') current.port = parsed.value;
   }
   return flush();

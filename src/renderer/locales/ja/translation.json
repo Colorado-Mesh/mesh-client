@@ -961,9 +961,7 @@
       "setPrimaryFailed": "プライマリローカルRNodeの設定に失敗しました。",
       "defaultHubsLabel": "デフォルトのハブ",
       "addDefaultHubs": "テストネットとRatspeakハブを追加する",
-      "addDefaultHubsAria": "無効状態のデフォルトのReticulumテストネットとRatspeakハブを追加する",
       "addDefaultHubsSuccess": "{{added}}件追加、{{repaired}}件修正。{{skipped}}件は既に設定済み。",
-      "addDefaultHubsAllPresent": "デフォルトのテストネットとRatspeakハブはすでに設定されています。",
       "addDefaultHubsFailed": "デフォルトのハブを追加できませんでした。",
       "identityNotConfigured": "最初に[ネットワーク]タブでReticulum IDを設定します。リカバリフレーズを生成またはインポートします。",
       "identityRequiredHint": "インターフェースを追加する前に、[ネットワーク]タブでReticulumアイデンティティを設定します。",
@@ -992,7 +990,13 @@
       },
       "modeDefaultAdd": "タイプ既定",
       "modeDefaultEdit": "デフォルト（クリア）",
-      "invalidMode": "無効なインターフェースモードです。"
+      "invalidMode": "無効なインターフェースモードです。",
+      "backboneDirectoryLink": "ディレクトリ ↗",
+      "backboneDirectoryLinkAria": "Reticulum バックボーン ディレクトリを開いて、インターフェイスとして追加するハブを見つけます。",
+      "backboneDirectoryHint": "他のコミュニティ バックボーン ハブについては、directory.rns.recipes で見つけてください。 Yggdrasil ハブ (Yggdrasil_Ashburn_VA など) には、実行中のローカル Yggdrasil トンネルが必要です。Reticulum マニュアルでは、トンネル インターフェイス (多くの場合 tun0) にバインドすることを推奨しています。",
+      "localOfflineRowBleBondStale": "Bluetooth ボンディングが古い — [システム設定] → [Bluetooth] でこの RNode を忘れてから、新しい PIN で再ペアリングします (OS にはまだペアリング済みと表示される場合があります)。",
+      "addDefaultHubsAria": "デフォルトの Reticulum バックボーン ハブ (米国東部、I2P、Yggdrasil Ashburn VA、Ratspeak、RMAP World) を同期します。廃止されたテストネットエンドポイントを無効にする",
+      "addDefaultHubsAllPresent": "デフォルトのバックボーン ハブはすでに構成されています。廃止されたテストネット ハブは有効になっていません。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1021,7 +1025,8 @@
       "offlineHintBle": "OS によって、6 桁の Bluetooth PIN の入力を求められる場合があります (macOS、Windows、または Linux)。 RNode はペアリングごとに新しいコードを生成します。デフォルトの PIN はありません。ヘッドレス無線: USB を接続 → Reticulum Admin → Bluetooth → ペアリングを開始 → OS ダイアログに表示される PIN を入力します。ディスプレイ付き無線機: Heltec デバイスではボタンを約 7 秒押し続け (タイミングはさまざまです。多くのボードでは約 10 秒で Wi-Fi AP が有効になります)、画面上の PIN を読み取って、OS ダイアログに入力します。再試行する前に、OS の Bluetooth 設定で失敗したボンドをクリアしてください。",
       "offlineHintWifi": "RNodeがLAN上にあり、電源が入っており、設定されたIP （ 4242ではなくデフォルトのTCPポート7633 ）で到達可能であることを確認します。DHCPが新しいアドレスを割り当てた場合は、以下のホストを更新するか、Reticulum → AdminでWi-Fiを再プロビジョニングします。",
       "tcpUnreachable": "{{name}} ： TCPハブに到達できません（ {{host}} ： {{port}} ）",
-      "tcpUnreachableHint": "リモートReticulumインスタンスは、オフラインであっても、接続をブロックしていてもよい。このインターフェイスを無効にするか、ホストとポートを確認します。"
+      "tcpUnreachableHint": "リモートReticulumインスタンスは、オフラインであっても、接続をブロックしていてもよい。このインターフェイスを無効にするか、ホストとポートを確認します。",
+      "offlineHintBleBondStale": "macOS では引き続きこの RNode がペアリング済みとして表示されますが、Bluetooth キーは一致しなくなりました (ピアはペアリング情報を削除しました)。 [システム設定] → [Bluetooth] でデバイスを忘れ、RNode をペアリング モードにして ([管理者] → [Bluetooth] → [ペアリングの開始] またはボタンを約 7 秒押し続けます)、スタックを再起動し、プロンプトが表示されたら新しい 6 桁の PIN を入力します。"
     },
     "autoConnectingTo": "{{deviceName}} に自動接続中…",
     "autoReconnectInProgress": "自動再接続中です…",
@@ -1090,7 +1095,9 @@
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "RNSトランスポートクエリが遅いか失敗しました({{count}} ×)",
       "slowTransportQueryHint": "サイドカーの輸送アクターがくさび形になっている可能性があります。Reticulumスタックを再起動してください。",
-      "shareInstanceHint": "共有インスタンスが有効になっています—他のReticulumアプリ（ MeshChatX、Ratspeak、スタンドアロンrnsd ）を完全に終了し、DMを再試行する前にこのスタックを再起動します。"
+      "shareInstanceHint": "共有インスタンスが有効になっています—他のReticulumアプリ（ MeshChatX、Ratspeak、スタンドアロンrnsd ）を完全に終了し、DMを再試行する前にこのスタックを再起動します。",
+      "bleBondRemoved": "{{name}}: Bluetooth ボンディングが無効です (OS にはペアリング済みと表示されたままです)",
+      "bleBondRemovedHint": "[システム設定] → [Bluetooth] でこの RNode を忘れ、無線でペアリングを開始し ([管理者] → [Bluetooth] または 7 秒ボタンを長押し)、スタックを再起動し、新しい 6 桁の PIN を入力します。"
     },
     "reticulumSidecarBundledMissing": "このインストールには、バンドルされている Reticulum サイドカーがありません。新しいリリースにアップグレードするか、問題を報告してください。パッケージ化されたインストールではソースからのビルドは利用できません。",
     "radioMqttRootDivergesWarning": "ラジオMQTTルートトピックは{{radioRoot}}ですが、このパネルは{{appPrefix}}に加入しています。全国のノードトラフィックを制限するために無線を一致させます—トピックプレフィックスを更新し、MQTTを再接続します。",
@@ -1429,7 +1436,8 @@
         "linkDeliveryTimeout": "{{hash}} …への直接LXMFリンクがタイムアウトしました（ {{count}} × ）",
         "transportSaturated": "RNSトランスポート飽和（ {{count}} LXMFパス要求ドロップ）",
         "transportSaturatedShareInstance": "RNSトランスポートが飽和しました（ {{count}}パス要求ドロップ）。共有インスタンスがオンになっています—他のReticulumアプリ（ MeshChatX、Ratspeak、rnsd ）を終了し、スタックを再起動します。",
-        "slowTransportQuery": "RNSトランスポートクエリが遅いか失敗しました({{count}} ×)"
+        "slowTransportQuery": "RNSトランスポートクエリが遅いか失敗しました({{count}} ×)",
+        "bleBondRemoved": "BLE RNode「{{name}}」のボンディングが古くなっています — OS の Bluetooth 設定でデバイスを削除して再ペアリングしてください"
       }
     },
     "routingPort": {
@@ -3660,7 +3668,6 @@
     "syncNowFor": "{{name}} からのメッセージを同期する",
     "addNode": "ノードの追加",
     "addNodeLabel": "ハッシュによる伝播ノードの追加",
-    "addNodePlaceholder": "32 文字の LXMF 宛先ハッシュ",
     "localInboxStats": "{{count}} キューに入れられました · {{bytes}} バイト",
     "refreshing": "爽やか…",
     "refreshAria": "伝播ノードをリフレッシュする",
@@ -3685,7 +3692,38 @@
       "body": "伝播ノードが設定されていません。オフラインまたは到達不能なピアには、ストアアンドフォワードLXMF配信用の伝播ノードが必要です。",
       "openSettings": "伝播の設定",
       "openSettingsAria": "Reticulumネットワーク伝播設定を開く"
-    }
+    },
+    "rename": "名前の変更",
+    "renameLabel": "伝播ノード名",
+    "renameSave": "名前を保存する",
+    "renameAria": "伝播ノード {{name}} の名前を変更します",
+    "delete": "削除",
+    "deleteAria": "伝播ノード {{name}} を削除します",
+    "deleteConfirmTitle": "伝播ノードを削除しますか?",
+    "deleteConfirmBody": "{{name}} を伝播ノードリストから削除しますか?これによってリモート ノードは変更されません。",
+    "deleteConfirm": "消去",
+    "renameSaveAria": "伝播ノード名を保存する",
+    "renameCancelAria": "伝播ノードの名前変更をキャンセルします",
+    "enableAria": "伝播ノード {{name}} を有効にする",
+    "disableAria": "伝播ノード {{name}} を無効にする",
+    "syncNowPreferredAria": "優先伝播ノードからのメッセージを同期する",
+    "nodeStatus": {
+      "active": "アクティブ",
+      "idle": "アイドル状態",
+      "known": "知られている",
+      "pending": "保留中",
+      "unknown": "未知",
+      "online": "オンライン"
+    },
+    "syncLocalNotSupported": "ローカル伝播はオフラインの受信箱です。リモート LXMF 伝播ノードのようにネットワーク経由で同期することはできません。",
+    "syncIdentityUnknown": "伝播ノードの ID が不明です。アナウンスまたはパス応答を待ってから、再試行してください。",
+    "syncTargetNotPropagationNode": "その宛先は Reticulum 上で到達可能ですが、LXMF 伝播ノードではありません (TCP ハブはトランスポート パスのみです)。オフライン メッセージを同期するには、lxmf.propagation として通知する宛先を追加します。",
+    "syncPeeringStampFailed": "この伝播ノードのピアリング スタンプを作成できませんでした。しばらくしてからもう一度お試しください。",
+    "syncCancelled": "伝播同期がキャンセルされました。",
+    "renameFailed": "伝播ノードの名前を変更できませんでした。",
+    "deleteFailed": "伝播ノードを削除できませんでした。",
+    "addFailed": "伝播ノードを追加できませんでした。",
+    "addNodePlaceholder": "32 文字の lxmf.propagation 宛先ハッシュ"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "伝播モード",

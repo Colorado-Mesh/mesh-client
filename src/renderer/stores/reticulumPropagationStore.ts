@@ -3,6 +3,8 @@ import { create } from 'zustand';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   clearPropagationSyncStallWatchdog,
+  mapPropagationSyncError,
+  RETICULUM_PROPAGATION_SYNC_IDLE,
   schedulePropagationSyncStallWatchdog,
 } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import {
@@ -51,6 +53,8 @@ interface ReticulumPropagationStoreState {
   startSync: (id?: string) => Promise<boolean>;
   cancelSync: () => Promise<boolean>;
   addPropagationNode: (destinationHash: string, name?: string) => Promise<boolean>;
+  removePropagationNode: (id: string) => Promise<boolean>;
+  renamePropagationNode: (id: string, name: string) => Promise<boolean>;
 }
 
 export const useReticulumPropagationStore = create<ReticulumPropagationStoreState>((set, get) => ({
@@ -157,20 +161,38 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       lastSyncError: null,
       lastPropagationSyncAttemptAt: Date.now(),
     });
-    schedulePropagationSyncStallWatchdog();
+    // Local inbox settles in-process (no Establishing stall); remotes need the watchdog.
+    if (propId !== 'local-prop') {
+      schedulePropagationSyncStallWatchdog();
+    }
     try {
       const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/propagation/sync', {
         propagation_id: propId,
       })) as { ok?: boolean; error?: string };
       if (!res.ok) {
         clearPropagationSyncStallWatchdog();
-        set({ sync: { active: false, progress: 0, message: null } });
+        set({
+          sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
+          lastSyncError: mapPropagationSyncError(res.error),
+        });
+        return false;
       }
-      return Boolean(res.ok);
+      // Local settle has no WS progress stream if the emitter races; mark success here.
+      if (propId === 'local-prop') {
+        set({
+          sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
+          lastSyncError: null,
+          lastPropagationSyncAt: Date.now(),
+        });
+      }
+      return true;
     } catch (e) {
       clearPropagationSyncStallWatchdog();
       console.warn('[reticulumPropagationStore] sync ' + errLikeToLogString(e));
-      set({ sync: { active: false, progress: 0, message: null } });
+      set({
+        sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
+        lastSyncError: mapPropagationSyncError(null),
+      });
       return false;
     }
   },
@@ -179,7 +201,11 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
     try {
       clearPropagationSyncStallWatchdog();
       await window.electronAPI.reticulum.proxyPost('/api/v1/propagation/sync/cancel', {});
-      set({ sync: { active: false, progress: 0, message: null } });
+      // Mark cancelled so a late progress=100 frame cannot advance lastPropagationSyncAt.
+      set({
+        sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
+        lastSyncError: 'reticulumPropagation.syncCancelled',
+      });
       return true;
     } catch (e) {
       console.warn('[reticulumPropagationStore] cancel ' + errLikeToLogString(e));
@@ -199,6 +225,40 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       }
     } catch (e) {
       console.warn('[reticulumPropagationStore] add node ' + errLikeToLogString(e));
+    }
+    return false;
+  },
+
+  removePropagationNode: async (id) => {
+    try {
+      const encodedId = encodeURIComponent(id);
+      const res = (await window.electronAPI.reticulum.proxyDelete(
+        `/api/v1/propagation/${encodedId}`,
+      )) as {
+        ok?: boolean;
+      };
+      if (res.ok) {
+        await get().refreshFromSidecar();
+        return true;
+      }
+    } catch (e) {
+      console.warn('[reticulumPropagationStore] remove node ' + errLikeToLogString(e));
+    }
+    return false;
+  },
+
+  renamePropagationNode: async (id, name) => {
+    try {
+      const encodedId = encodeURIComponent(id);
+      const res = (await window.electronAPI.reticulum.proxyPut(`/api/v1/propagation/${encodedId}`, {
+        name,
+      })) as { ok?: boolean };
+      if (res.ok) {
+        await get().refreshFromSidecar();
+        return true;
+      }
+    } catch (e) {
+      console.warn('[reticulumPropagationStore] rename node ' + errLikeToLogString(e));
     }
     return false;
   },

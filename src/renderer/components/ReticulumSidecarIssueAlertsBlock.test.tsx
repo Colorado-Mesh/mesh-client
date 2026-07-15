@@ -23,6 +23,7 @@ function baseAlert(
     tcpConnectFailed: [],
     txQueueDrops: [],
     linkDeliveryTimeouts: [],
+    bleBondRemoved: [],
     transportSaturatedCount: 0,
     slowTransportQueryCount: 0,
     suppressedCount: 0,
@@ -94,5 +95,21 @@ describe('ReticulumSidecarIssueAlertsBlock', () => {
     expect(
       screen.queryByText('connectionPanel.reticulumSidecarIssues.shareInstanceHint'),
     ).not.toBeInTheDocument();
+  });
+
+  it('shows BLE bond-removed issue from sidecar alert', () => {
+    render(
+      <ReticulumSidecarIssueAlertsBlock
+        alert={baseAlert({
+          bleBondRemoved: ['RNode 41F4'],
+        })}
+      />,
+    );
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.heading:1'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.bleBondRemoved:RNode 41F4'),
+    ).toBeInTheDocument();
   });
 });

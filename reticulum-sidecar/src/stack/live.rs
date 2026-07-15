@@ -232,6 +232,9 @@ impl LiveBridge {
         const LXMF_APP_NAME: &str = LXMF_APP;
         let lxmf_dest_hash =
             Destination::hash_from_name_and_identity(LXMF_APP_NAME, Some(&identity.hash));
+        // Offline inbox / PN identity is lxmf.propagation — not the delivery destination.
+        let lxmf_propagation_dest_hash =
+            Destination::hash_from_name_and_identity("lxmf.propagation", Some(&identity.hash));
         let lxmf_hash_hex = hex::encode(lxmf_dest_hash);
         let display_name = inner
             .read()
@@ -375,8 +378,9 @@ impl LiveBridge {
             ))),
             propagation: Arc::new(PropagationBridge::new(
                 handle.transport_tx.clone(),
-                lxmf_dest_hash,
+                lxmf_propagation_dest_hash,
                 storage_dir.join("propagation"),
+                &identity,
             )?),
             sync_cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             event_tx: event_tx.clone(),
@@ -389,21 +393,39 @@ impl LiveBridge {
             })),
         };
 
-        let preferred_prop_hash = {
+        let (preferred_prop_hash, local_prop_enabled) = {
             let state = inner.read().await;
-            state
-                .preferred_propagation_id
-                .as_ref()
-                .and_then(|id| {
-                    state
-                        .propagation
-                        .iter()
-                        .find(|p| p.id == *id)
-                        .and_then(|p| p.destination_hash.clone())
-                })
+            let preferred = state.preferred_propagation_id.as_ref().and_then(|id| {
+                state
+                    .propagation
+                    .iter()
+                    .find(|p| p.id == *id)
+                    .and_then(|p| p.destination_hash.clone())
+            });
+            let local_enabled = state
+                .propagation
+                .iter()
+                .find(|p| p.id == "local-prop")
+                .map(|p| p.enabled)
+                .unwrap_or(false);
+            (preferred, local_enabled)
         };
 
         bridge.spawn_maintenance(event_tx);
+
+        // Persisted local-prop.enabled must drive live serving; otherwise UI always
+        // shows disabled until the user toggles Enable (AtomicBool defaults false).
+        if local_prop_enabled {
+            bridge.set_local_propagation_serving(true).await;
+        }
+        // Keep persisted local-prop hash on lxmf.propagation (legacy rows stored delivery).
+        {
+            let mut state = inner.write().await;
+            if let Some(node) = state.propagation.iter_mut().find(|p| p.id == "local-prop") {
+                node.destination_hash = Some(bridge.propagation_local_hash());
+            }
+            let _ = state.save(&config_dir, &storage_dir);
+        }
 
         if let Some(hash_hex) = preferred_prop_hash {
             bridge.set_outbound_propagation_node(Some(&hash_hex)).await;
@@ -1112,10 +1134,57 @@ impl LiveBridge {
         self.propagation.local_dest_hash_hex()
     }
 
+    /// Classify a destination announce as an LXMF propagation node (or not).
+    ///
+    /// Sync links to non-PN destinations (hubs, lxmf.delivery, etc.) can complete the
+    /// RNS handshake then hang forever on `/offer` — fail before Establishing when the
+    /// announce positively identifies a non-PN. Missing/aged announces (`unknown`) are
+    /// allowed when identity is already known (caller gates identity).
+    async fn classify_propagation_sync_target(&self, destination_hex: &str) -> &'static str {
+        let prop_nh = rns_identity::name_hash::name_hash("lxmf.propagation");
+        let delivery_nh = rns_identity::name_hash::name_hash("lxmf.delivery");
+        let resp = self
+            .query_control_timed(TransportQuery::GetRecentAnnounces)
+            .await;
+        let Some(TransportQueryResponse::Announces(entries)) = resp else {
+            return "unknown";
+        };
+        classify_propagation_target_name_hashes(
+            destination_hex,
+            &entries
+                .iter()
+                .map(|e| (hex::encode(e.dest_hash), e.name_hash))
+                .collect::<Vec<_>>(),
+            &prop_nh,
+            &delivery_nh,
+        )
+    }
+
     pub async fn start_propagation_sync(&self, destination_hash: &str) -> Result<(), String> {
         let hash = parse_hash16(destination_hash)?;
+        let dest_hex = destination_hash.to_lowercase();
+        // Cancel any in-flight sync/emitter before starting a new one.
+        self.cancel_propagation_sync().await;
+        // Link proofs are ignored unless the destination pubkey is in known_identities.
+        // Resolve identity (+ path when possible) before Establishing, same as LXMF delivery.
+        let identity_ok = self.ensure_identity_for_direct(&dest_hex).await;
+        let _path_ok = self.ensure_path_for_direct(&dest_hex).await;
+        let identity_known_after = self
+            .outbound
+            .lock()
+            .map(|d| d.identity_known_for(&dest_hex))
+            .unwrap_or(false);
+        let target_class = self.classify_propagation_sync_target(&dest_hex).await;
+        if !identity_ok || !identity_known_after {
+            return Err("PROPAGATION_IDENTITY_UNKNOWN".into());
+        }
+        // Only hard-reject destinations positively classified as non-PN.
+        if target_class == "delivery" || target_class == "other" {
+            return Err("PROPAGATION_TARGET_NOT_PN".into());
+        }
+        let peering = self.resolve_propagation_peering(&dest_hex).await?;
         self.sync_cancel.store(false, std::sync::atomic::Ordering::SeqCst);
-        if !self.propagation.start_sync(hash) {
+        if !self.propagation.start_sync(hash, Some(peering)) {
             return Err("propagation sync unavailable".into());
         }
         self.propagation.spawn_sync_progress_emitter(
@@ -1123,6 +1192,71 @@ impl LiveBridge {
             Arc::clone(&self.sync_cancel),
         );
         Ok(())
+    }
+
+    /// Resolve identity hashes + peering stamp for a remote LXMF PN `/offer`.
+    ///
+    /// PNs with peering_cost > 0 reject empty keys (`ErrorInvalidKey`). When cost is 0,
+    /// an empty key is valid and we still pass identity hashes for completeness.
+    async fn resolve_propagation_peering(
+        &self,
+        destination_hex: &str,
+    ) -> Result<([u8; 16], [u8; 16], u8, Option<Vec<u8>>), String> {
+        let pub_key = self
+            .outbound
+            .lock()
+            .ok()
+            .and_then(|d| d.public_key_for(destination_hex))
+            .ok_or_else(|| "PROPAGATION_IDENTITY_UNKNOWN".to_string())?;
+        let peer_identity = Identity::from_public_key(&pub_key)
+            .map_err(|e| format!("PROPAGATION_IDENTITY_UNKNOWN: {e}"))?;
+        let peer_id = peer_identity.hash;
+        let local_id = self.identity.hash;
+        let peering_cost = self
+            .pn_announce_peering_cost(destination_hex)
+            .await
+            .unwrap_or(lxmf_core::constants::PEERING_COST);
+        let precomputed = if peering_cost == 0 {
+            Some(Vec::new())
+        } else {
+            let stamp = tokio::task::spawn_blocking(move || {
+                let mut peering_id = Vec::with_capacity(32);
+                peering_id.extend_from_slice(&peer_id);
+                peering_id.extend_from_slice(&local_id);
+                lxmf_core::stamper::generate_stamp(
+                    &peering_id,
+                    peering_cost,
+                    lxmf_core::constants::STAMP_WORKBLOCK_EXPAND_ROUNDS_PEERING,
+                )
+                .map(|(stamp, _)| stamp.to_vec())
+            })
+            .await
+            .map_err(|e| format!("PROPAGATION_PEERING_STAMP_FAILED: {e}"))?
+            .ok_or_else(|| "PROPAGATION_PEERING_STAMP_FAILED".to_string())?;
+            Some(stamp)
+        };
+        Ok((local_id, peer_id, peering_cost, precomputed))
+    }
+
+    async fn pn_announce_peering_cost(&self, destination_hex: &str) -> Option<u8> {
+        let resp = self
+            .query_control_timed(TransportQuery::GetRecentAnnounces)
+            .await;
+        let TransportQueryResponse::Announces(entries) = resp? else {
+            return None;
+        };
+        let key = destination_hex.to_lowercase();
+        for entry in &entries {
+            if hex::encode(entry.dest_hash).to_lowercase() != key {
+                continue;
+            }
+            return entry
+                .app_data
+                .as_deref()
+                .and_then(lxmf_core::handlers::parse_pn_announce_data)
+                .map(|d| d.peering_cost);
+        }
+        None
     }
 
     pub fn propagation_is_local_serving(&self) -> bool {
@@ -2114,9 +2248,82 @@ fn peer_route_fields_equal(a: &PeerRow, b: &PeerRow) -> bool {
         && a.via_hash == b.via_hash
 }
 
+/// Pure announce classification for propagation sync targets.
+///
+/// `entries` is `(dest_hash_hex, name_hash)` pairs from recent announces.
+fn classify_propagation_target_name_hashes(
+    destination_hex: &str,
+    entries: &[(String, [u8; 10])],
+    prop_nh: &[u8; 10],
+    delivery_nh: &[u8; 10],
+) -> &'static str {
+    let key = destination_hex.to_lowercase();
+    for (dest_hex, name_hash) in entries {
+        if dest_hex.to_lowercase() != key {
+            continue;
+        }
+        if name_hash == prop_nh {
+            return "propagation";
+        }
+        if name_hash == delivery_nh {
+            return "delivery";
+        }
+        return "other";
+    }
+    "unknown"
+}
+
 #[cfg(test)]
 mod announce_display_name_tests {
     use super::*;
+
+    #[test]
+    fn classify_propagation_target_accepts_prop_and_unknown() {
+        let prop_nh = rns_identity::name_hash::name_hash("lxmf.propagation");
+        let delivery_nh = rns_identity::name_hash::name_hash("lxmf.delivery");
+        let dest = "aabbccddeeff00112233445566778899";
+        let other_nh = [0u8; 10];
+        assert_eq!(
+            classify_propagation_target_name_hashes(
+                dest,
+                &[(dest.to_string(), prop_nh)],
+                &prop_nh,
+                &delivery_nh,
+            ),
+            "propagation"
+        );
+        assert_eq!(
+            classify_propagation_target_name_hashes(
+                dest,
+                &[(dest.to_string(), delivery_nh)],
+                &prop_nh,
+                &delivery_nh,
+            ),
+            "delivery"
+        );
+        assert_eq!(
+            classify_propagation_target_name_hashes(
+                dest,
+                &[(dest.to_string(), other_nh)],
+                &prop_nh,
+                &delivery_nh,
+            ),
+            "other"
+        );
+        assert_eq!(
+            classify_propagation_target_name_hashes(dest, &[], &prop_nh, &delivery_nh),
+            "unknown"
+        );
+        assert_eq!(
+            classify_propagation_target_name_hashes(
+                dest,
+                &[("ffffffffffff00112233445566778899".into(), prop_nh)],
+                &prop_nh,
+                &delivery_nh,
+            ),
+            "unknown"
+        );
+    }
 
     #[test]
     fn path_table_added_hashes_reports_only_new_membership() {

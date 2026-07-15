@@ -94,6 +94,8 @@ The Connection tab UI edits a subset: **name** and **mode** for all types; **hos
 | DELETE | `/api/v1/packets` | | `{ ok }` — clear wire tap buffer |
 | GET | `/api/v1/propagation` | | `{ propagation, preferred_id, auto_sync_interval_sec }` — `local-prop` rows include `message_count`, `storage_bytes` when live |
 | POST | `/api/v1/propagation/add` | `{ destination_hash, name? }` | `{ ok, node }` — add a remote propagation node by hash |
+| PUT | `/api/v1/propagation/{id}` | `{ name }` | `{ ok }` — rename a remote node (`local-prop` rejected) |
+| DELETE | `/api/v1/propagation/{id}` | | `{ ok }` — remove a remote node (`local-prop` rejected; clears preferred if that id) |
 | POST | `/api/v1/propagation/{id}/enable` | | `{ ok }` |
 | POST | `/api/v1/propagation/{id}/disable` | | `{ ok }` |
 | POST | `/api/v1/propagation/{id}/preferred` | | `{ ok }` |
@@ -142,15 +144,20 @@ Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers
 
 Renderer calls `electronAPI.reticulum.*`; main process proxies to this API (sandboxed renderer cannot reach localhost directly).
 
-| IPC channel                                                     | Role                                                                                                     |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `reticulum:start` / `stop` / `getStatus`                        | Sidecar lifecycle                                                                                        |
-| `reticulum:proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete` | HTTP proxy to paths above                                                                                |
-| `reticulum:validateConfig`                                      | One-shot `validate-config --json` against `userData/reticulum/config` (read-only; safe while stack runs) |
-| `reticulum:readDefaultConfigFile`                               | Read first existing system rnsd config path                                                              |
-| `reticulum:showConfigImportDialog`                              | Native file picker for config import                                                                     |
-| `reticulum:showIdentityImportDialog`                            | Native file picker for 64-byte private key (`.retid`, `.key`, …)                                         |
-| `reticulum:onEvent` / `onStatus`                                | WS events and sidecar status                                                                             |
+| IPC channel                                                     | Role                                                                                                      |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `reticulum:start` / `stop` / `getStatus`                        | Sidecar lifecycle                                                                                         |
+| `reticulum:syncInterfaceIssueScope`                             | Drop TCP/TX latch entries for disabled/removed interfaces; sticky enabled-name filter for later log lines |
+| `reticulum:proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete` | HTTP proxy to paths above                                                                                 |
+| `reticulum:validateConfig`                                      | One-shot `validate-config --json` against `userData/reticulum/config` (read-only; safe while stack runs)  |
+| `reticulum:readDefaultConfigFile`                               | Read first existing system rnsd config path                                                               |
+| `reticulum:showConfigImportDialog`                              | Native file picker for config import                                                                      |
+| `reticulum:showIdentityImportDialog`                            | Native file picker for 64-byte private key (`.retid`, `.key`, …)                                          |
+| `reticulum:onEvent` / `onStatus`                                | WS events and sidecar status                                                                              |
+
+`getStatus` / `onStatus` may include `interfaceIssueAlert` (TCP connect failures, TX queue drops, link-delivery timeouts, transport saturation / slow queries, **`bleBondRemoved`** stale RNode bonds). Per-entry latch timestamps use a **5-minute** stale window (`RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS`). Connection syncs **enabled** interface names via `syncInterfaceIssueScope` so disabling or removing an interface clears that name immediately and rejects re-latch from lagging log lines. Stopping the stack (or unexpected process exit) clears the tracker.
+
+**`propagation_sync` WebSocket payload:** `{ active: boolean, progress: number, message: string | null }`. Progress uses 0–100 (Establishing ≈10, Offering ≈25, …, Complete ≈100). Sticky success after HaveAll emits `active:false, progress:100`; cancel/stall/failure emit `active:false, progress:0` (and must not emit a trailing 100). Sync `POST /api/v1/propagation/sync` may return `PROPAGATION_IDENTITY_UNKNOWN`, `PROPAGATION_TARGET_NOT_PN`, `PROPAGATION_PEERING_STAMP_FAILED`, or `LOCAL_PROPAGATION_SYNC_UNSUPPORTED`.
 
 SQLite chat history uses separate `db:*` handlers (`getReticulumMessages`, `saveReticulumMessage`, `searchReticulumMessages`, `deleteReticulumMessage`, destination upserts), not sidecar HTTP.
 

@@ -159,6 +159,12 @@ impl LxmfOutboundDriver {
             .contains_key(&destination_hex.to_lowercase())
     }
 
+    pub fn public_key_for(&self, destination_hex: &str) -> Option<[u8; 64]> {
+        self.known_identities
+            .get(&destination_hex.to_lowercase())
+            .copied()
+    }
+
     pub fn process_tick(&mut self, router: &mut LxmRouter, event_tx: &broadcast::Sender<String>) {
         let direct_inputs: HashMap<[u8; 16], DirectDeliveryPlanInput> = router
             .pending_outbound

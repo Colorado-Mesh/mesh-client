@@ -1,6 +1,7 @@
 /** Tracks AutoInterface beacon TX failures parsed from sidecar stderr. */
 
 import type { ReticulumAutoBeaconAlert } from '../shared/reticulum-types';
+import { RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS } from '../shared/reticulum-types';
 
 const BEACON_FAIL_IFACE_RE = /iface\s*=\s*([A-Za-z0-9_.-]+)/;
 const TUNNEL_IFACE_PREFIXES = ['utun', 'ipsec', 'ppp'] as const;
@@ -38,9 +39,15 @@ export class ReticulumSidecarAutoBeaconTracker {
     }
   }
 
+  clear(): void {
+    this.tunnelIfaces.clear();
+    this.physicalIfaces.clear();
+    this.suppressedCount = 0;
+    this.lastAtMs = 0;
+  }
+
   getAlert(nowMs = Date.now()): ReticulumAutoBeaconAlert | null {
-    const staleMs = 5 * 60 * 1000;
-    if (this.lastAtMs === 0 || nowMs - this.lastAtMs > staleMs) {
+    if (this.lastAtMs === 0 || nowMs - this.lastAtMs > RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS) {
       return null;
     }
     if (this.physicalIfaces.size > 0) {
@@ -62,11 +69,9 @@ export class ReticulumSidecarAutoBeaconTracker {
     return null;
   }
 
+  /** @deprecated Prefer {@link clear}; kept for existing test call sites. */
   resetForTests(): void {
-    this.tunnelIfaces.clear();
-    this.physicalIfaces.clear();
-    this.suppressedCount = 0;
-    this.lastAtMs = 0;
+    this.clear();
   }
 }
 

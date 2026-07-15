@@ -1,5 +1,5 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -29,11 +29,21 @@ vi.mock('@/renderer/lib/sessions/reticulumSession', () => ({
   }),
 }));
 
+import { RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS } from '@/shared/reticulum-types';
+
 import { ReticulumStackPanel } from './ReticulumStackPanel';
 
 describe('ReticulumStackPanel', () => {
   beforeEach(() => {
+    vi.mocked(window.electronAPI.reticulum.getStatus).mockReset();
+    vi.mocked(window.electronAPI.reticulum.syncInterfaceIssueScope).mockReset();
     vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
+      running: true,
+      port: 19437,
+      pid: 1,
+      interfaceIssueAlert: null,
+    });
+    vi.mocked(window.electronAPI.reticulum.syncInterfaceIssueScope).mockResolvedValue({
       running: true,
       port: 19437,
       pid: 1,
@@ -71,6 +81,10 @@ describe('ReticulumStackPanel', () => {
     });
     window.electronAPI.reticulum.onStatus = vi.fn().mockReturnValue(() => {});
     window.electronAPI.reticulum.onEvent = vi.fn().mockReturnValue(() => {});
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('shows local interface alert when serial port is stale', async () => {
@@ -243,19 +257,30 @@ describe('ReticulumStackPanel', () => {
       tcpConnectFailed: ['RNS HAM RADIO'],
       txQueueDrops: [{ name: 'RNS HAM RADIO', dropCount: 128 }],
       linkDeliveryTimeouts: [],
+      bleBondRemoved: [],
       transportSaturatedCount: 0,
       slowTransportQueryCount: 0,
       suppressedCount: 0,
       lastAtMs: Date.now(),
     };
-    vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
+    const statusWithAlert = {
       running: true,
       port: 19437,
       pid: 1,
       interfaceIssueAlert: issueAlert,
-    });
+    };
+    vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue(statusWithAlert);
+    vi.mocked(window.electronAPI.reticulum.syncInterfaceIssueScope).mockResolvedValue(
+      statusWithAlert,
+    );
     let statusCb:
-      ((status: { running: boolean; port: number; pid: number | null }) => void) | null = null;
+      | ((status: {
+          running: boolean;
+          port: number;
+          pid: number | null;
+          interfaceIssueAlert?: typeof issueAlert | null;
+        }) => void)
+      | null = null;
     window.electronAPI.reticulum.onStatus = vi.fn((cb) => {
       statusCb = cb;
       return () => {};
@@ -270,12 +295,7 @@ describe('ReticulumStackPanel', () => {
     );
 
     act(() => {
-      statusCb?.({
-        running: true,
-        port: 19437,
-        pid: 1,
-        interfaceIssueAlert: issueAlert,
-      } as never);
+      statusCb?.(statusWithAlert);
     });
 
     await waitFor(() => {
@@ -286,5 +306,207 @@ describe('ReticulumStackPanel', () => {
     expect(
       screen.getByText('connectionPanel.reticulumSidecarIssues.tcpConnectFailed:RNS HAM RADIO'),
     ).toBeInTheDocument();
+  });
+
+  it('syncs enabled interface names into main issue scope after hydrate', async () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/interfaces') {
+        return Promise.resolve({
+          interfaces: [
+            {
+              id: 'ham',
+              name: 'RNS HAM RADIO',
+              type: 'tcpclient',
+              enabled: false,
+              status: 'down',
+              host: '127.0.0.1',
+              port: 4242,
+            },
+            {
+              id: 'heltec-v3',
+              name: 'Heltec V3',
+              type: 'rnode',
+              enabled: true,
+              status: 'up',
+              serial_port: '/dev/cu.usbserial-7',
+            },
+          ],
+        });
+      }
+      if (path === '/api/v1/serial/ports') {
+        return Promise.resolve({
+          ports: [{ path: '/dev/cu.usbserial-7', label: 'usbserial-7' }],
+        });
+      }
+      if (path === '/api/v1/stack/settings') {
+        return Promise.resolve({
+          enable_transport: true,
+          share_instance: false,
+          loglevel: 4,
+          announce_interval_sec: 3600,
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    render(
+      <ReticulumStackPanel
+        connecting={false}
+        onStartStack={async () => {}}
+        onStopStack={async () => {}}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.syncInterfaceIssueScope).toHaveBeenCalledWith([
+        'Heltec V3',
+      ]);
+    });
+  });
+
+  it('does not sync interface issue scope before interfaces hydrate', async () => {
+    let resolveInterfaces: ((value: unknown) => void) | null = null;
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/interfaces') {
+        return new Promise((resolve) => {
+          resolveInterfaces = resolve;
+        });
+      }
+      if (path === '/api/v1/serial/ports') {
+        return Promise.resolve({ ports: [] });
+      }
+      if (path === '/api/v1/stack/settings') {
+        return Promise.resolve({
+          enable_transport: true,
+          share_instance: false,
+          loglevel: 4,
+          announce_interval_sec: 3600,
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    render(
+      <ReticulumStackPanel
+        connecting={false}
+        onStartStack={async () => {}}
+        onStopStack={async () => {}}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalledWith('/api/v1/interfaces');
+    });
+    expect(window.electronAPI.reticulum.syncInterfaceIssueScope).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveInterfaces?.({
+        interfaces: [
+          {
+            id: 'heltec-v3',
+            name: 'Heltec V3',
+            type: 'rnode',
+            enabled: true,
+            status: 'up',
+            serial_port: '/dev/cu.usbserial-7',
+          },
+        ],
+      });
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.syncInterfaceIssueScope).toHaveBeenCalledWith([
+        'Heltec V3',
+      ]);
+    });
+  });
+
+  it('applies syncInterfaceIssueScope return status without a follow-up getStatus for scope', async () => {
+    const clearedStatus = {
+      running: true,
+      port: 19437,
+      pid: 1,
+      interfaceIssueAlert: null,
+    };
+    vi.mocked(window.electronAPI.reticulum.syncInterfaceIssueScope).mockResolvedValue(
+      clearedStatus,
+    );
+    const getStatus = vi.mocked(window.electronAPI.reticulum.getStatus);
+
+    render(
+      <ReticulumStackPanel
+        connecting={false}
+        onStartStack={async () => {}}
+        onStopStack={async () => {}}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.syncInterfaceIssueScope).toHaveBeenCalled();
+    });
+    const getStatusAfterHydrate = getStatus.mock.calls.length;
+    await act(async () => {
+      await Promise.resolve();
+    });
+    // Success path applies returned status; no extra getStatus from the sync effect.
+    expect(getStatus.mock.calls.length).toBe(getStatusAfterHydrate);
+  });
+
+  it('refreshes sidecar status when interface issue alert TTL elapses', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const lastAtMs = Date.now() - RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS + 5_000;
+    const issueAlert = {
+      tcpConnectFailed: ['RNS HAM RADIO'],
+      txQueueDrops: [],
+      linkDeliveryTimeouts: [],
+      bleBondRemoved: [],
+      transportSaturatedCount: 0,
+      slowTransportQueryCount: 0,
+      suppressedCount: 0,
+      lastAtMs,
+    };
+    const statusWithAlert = {
+      running: true,
+      port: 19437,
+      pid: 1,
+      interfaceIssueAlert: issueAlert,
+    };
+    vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue(statusWithAlert);
+    vi.mocked(window.electronAPI.reticulum.syncInterfaceIssueScope).mockResolvedValue(
+      statusWithAlert,
+    );
+    let statusCb:
+      | ((status: {
+          running: boolean;
+          port: number;
+          pid: number | null;
+          interfaceIssueAlert?: typeof issueAlert | null;
+        }) => void)
+      | null = null;
+    window.electronAPI.reticulum.onStatus = vi.fn((cb) => {
+      statusCb = cb;
+      return () => {};
+    });
+
+    render(
+      <ReticulumStackPanel
+        connecting={false}
+        onStartStack={async () => {}}
+        onStopStack={async () => {}}
+      />,
+    );
+
+    act(() => {
+      statusCb?.(statusWithAlert);
+    });
+
+    const callsBeforeTtl = vi.mocked(window.electronAPI.reticulum.getStatus).mock.calls.length;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(6_000);
+    });
+    expect(vi.mocked(window.electronAPI.reticulum.getStatus).mock.calls.length).toBeGreaterThan(
+      callsBeforeTtl,
+    );
   });
 });

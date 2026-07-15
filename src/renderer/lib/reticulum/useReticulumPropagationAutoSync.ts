@@ -19,7 +19,10 @@ export function shouldRunPropagationAutoSync(args: {
     lastPropagationSyncAttemptAt,
     nowMs,
   } = args;
-  if (!preferredId || autoSyncIntervalSec <= 0 || syncActive) return false;
+  // Local inbox is served in-process; auto-sync must target a remote PN only.
+  if (!preferredId || preferredId === 'local-prop' || autoSyncIntervalSec <= 0 || syncActive) {
+    return false;
+  }
 
   // Prefer last attempt so failures still honor the full interval (not every 30s check).
   // Fall back to last success for sessions that have synced before attempts were tracked.

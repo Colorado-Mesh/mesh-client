@@ -10,6 +10,7 @@ import {
 import { validateReticulumUserConfig } from '../reticulum-config-validate';
 import { showReticulumIdentityImportDialog } from '../reticulum-identity-import';
 import type { ReticulumSidecarManager } from '../reticulum-sidecar-manager';
+import { parseEnabledInterfaceNames } from '../reticulumInterfaceIssueScope';
 import { assertIpcSender } from '../validate-ipc-sender';
 
 export interface ReticulumIpcDeps {
@@ -72,6 +73,14 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   ipcMain.handle('reticulum:getStatus', (event) => {
     assertIpcSender(event, 'reticulum:getStatus');
     return getManager()?.getStatus() ?? idleStatus;
+  });
+
+  ipcMain.handle('reticulum:syncInterfaceIssueScope', (event, enabledInterfaceNames: unknown) => {
+    assertIpcSender(event, 'reticulum:syncInterfaceIssueScope');
+    const names = parseEnabledInterfaceNames(enabledInterfaceNames);
+    const m = getManager();
+    if (!m) return idleStatus;
+    return m.syncInterfaceIssueScope(names);
   });
 
   ipcMain.handle('reticulum:proxyGet', async (event, apiPath: unknown) => {

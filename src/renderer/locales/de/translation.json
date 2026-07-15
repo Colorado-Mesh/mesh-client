@@ -961,9 +961,7 @@
       "setPrimaryFailed": "Fehler beim Festlegen des primären lokalen RNode.",
       "defaultHubsLabel": "Standard-Hubs",
       "addDefaultHubs": "Hinzufügen von Testnet- und Ratspeak-Hubs",
-      "addDefaultHubsAria": "Fügen Sie standardmäßige Reticulum-Testnet- und Ratspeak-Hubs in einem deaktivierten Zustand hinzu",
       "addDefaultHubsSuccess": "{{added}} hinzugefügt, {{repaired}} korrigiert. {{skipped}} bereits konfiguriert.",
-      "addDefaultHubsAllPresent": "Standard-Testnet- und Ratspeak-Hubs sind bereits konfiguriert.",
       "addDefaultHubsFailed": "Standard-Hubs konnten nicht hinzugefügt werden.",
       "identityNotConfigured": "Richten Sie zuerst eine Reticulum-Identität auf der Registerkarte Netzwerk ein — generieren oder importieren Sie eine Wiederherstellungsphrase.",
       "identityRequiredHint": "Konfigurieren Sie eine Reticulum-Identität auf der Registerkarte Netzwerk, bevor Sie Schnittstellen hinzufügen.",
@@ -992,7 +990,13 @@
       },
       "modeDefaultAdd": "Typstandard",
       "modeDefaultEdit": "Standard (löschen)",
-      "invalidMode": "Ungültiger Schnittstellenmodus."
+      "invalidMode": "Ungültiger Schnittstellenmodus.",
+      "backboneDirectoryLink": "Verzeichnis ↗",
+      "backboneDirectoryLinkAria": "Öffnen Sie das Reticulum-Backbone-Verzeichnis, um Hubs zu finden, die Sie als Schnittstellen hinzufügen können",
+      "backboneDirectoryHint": "Weitere Community-Backbone-Hubs finden Sie unter directory.rns.recipes. Yggdrasil-Hubs (zum Beispiel Yggdrasil_Ashburn_VA) benötigen einen laufenden lokalen Yggdrasil-Tunnel – das Reticulum-Handbuch empfiehlt die Bindung an Ihre Tunnelschnittstelle (häufig tun0).",
+      "localOfflineRowBleBondStale": "Bluetooth-Verbindung ist veraltet – Vergessen Sie diesen RNode in Systemeinstellungen → Bluetooth und koppeln Sie ihn dann erneut mit einer neuen PIN (das Betriebssystem zeigt möglicherweise immer noch „Gekoppelt“ an).",
+      "addDefaultHubsAria": "Standardmäßige Reticulum-Backbone-Hubs synchronisieren (US-Ost, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); Deaktivieren Sie stillgelegte Testnet-Endpunkte",
+      "addDefaultHubsAllPresent": "Standard-Backbone-Hubs sind bereits konfiguriert; Keine stillgelegten Testnet-Hubs aktiviert."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1021,7 +1025,8 @@
       "offlineHintBle": "Ihr Betriebssystem fordert möglicherweise zur Eingabe einer 6-stelligen Bluetooth-PIN auf (macOS, Windows oder Linux). RNode generiert bei jedem Pairing einen neuen Code – es gibt keine Standard-PIN. Headless-Radios: USB anschließen → Reticulum Admin → Bluetooth → Kopplung starten → die angezeigte PIN in den OS-Dialog eingeben. Funkgeräte mit Display: Halten Sie die Taste bei Heltec-Geräten etwa 7 Sekunden lang gedrückt (die Zeitspanne variiert; bei vielen Karten wird stattdessen etwa 10 Sekunden lang Wi-Fi AP aktiviert), lesen Sie die PIN auf dem Bildschirm ab und geben Sie sie dann in das Betriebssystemdialogfeld ein. Löschen Sie fehlgeschlagene Verbindungen in den Bluetooth-Einstellungen Ihres Betriebssystems, bevor Sie es erneut versuchen.",
       "offlineHintWifi": "Überprüfen Sie, ob sich der RNode in Ihrem LAN befindet, eingeschaltet ist und über die konfigurierte IP erreichbar ist (Standard-TCP-Port 7633, nicht 4242). Aktualisieren Sie den Host unten, wenn DHCP eine neue Adresse zugewiesen hat, oder stellen Sie Wi-Fi im Reticulum → Admin erneut bereit.",
       "tcpUnreachable": "{{name}}: TCP-Hub nicht erreichbar ({{host}}:{{port}})",
-      "tcpUnreachableHint": "Die Remote-Reticulum-Instanz kann offline sein oder Verbindungen blockieren. Deaktivieren Sie diese Schnittstelle oder überprüfen Sie den Host und den Port."
+      "tcpUnreachableHint": "Die Remote-Reticulum-Instanz kann offline sein oder Verbindungen blockieren. Deaktivieren Sie diese Schnittstelle oder überprüfen Sie den Host und den Port.",
+      "offlineHintBleBondStale": "macOS zeigt diesen RNode immer noch als gekoppelt an, aber die Bluetooth-Schlüssel stimmen nicht mehr überein (Peer hat die Kopplungsinformationen entfernt). Vergessen Sie das Gerät in den Systemeinstellungen → Bluetooth, versetzen Sie den RNode in den Kopplungsmodus (Admin → Bluetooth → Kopplung starten oder halten Sie die Taste ca. 7 s lang gedrückt), starten Sie dann den Stapel neu und geben Sie bei Aufforderung die neue 6-stellige PIN ein."
     },
     "autoConnectingTo": "Automatische Verbindung mit {{deviceName}}…",
     "autoReconnectInProgress": "Automatische Wiederverbindung läuft…",
@@ -1090,7 +1095,9 @@
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "RNS-Transportabfragen langsam oder fehlgeschlagen ({{count}}×)",
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
-      "shareInstanceHint": "Share-Instanz ist aktiviert — beenden Sie vollständig andere Reticulum-Apps (MeshChatX, Ratspeak, Standalone-RNSD) und starten Sie diesen Stack neu, bevor Sie DMs erneut versuchen."
+      "shareInstanceHint": "Share-Instanz ist aktiviert — beenden Sie vollständig andere Reticulum-Apps (MeshChatX, Ratspeak, Standalone-RNSD) und starten Sie diesen Stack neu, bevor Sie DMs erneut versuchen.",
+      "bleBondRemoved": "{{name}}: Bluetooth-Verbindung ist veraltet (das Betriebssystem zeigt immer noch „Paired“ an)",
+      "bleBondRemovedHint": "Vergessen Sie diesen RNode in Systemeinstellungen → Bluetooth, starten Sie die Kopplung am Radio (Admin → Bluetooth oder ~7 Sekunden gedrückt halten), starten Sie den Stack neu und geben Sie die neue 6-stellige PIN ein."
     },
     "reticulumSidecarBundledMissing": "Bei dieser Installation fehlt der mitgelieferte Reticulum-Sidecar. Führen Sie ein Upgrade auf eine neuere Version durch oder melden Sie das Problem – das Erstellen aus dem Quellcode ist bei Paketinstallationen nicht verfügbar.",
     "radioMqttRootDivergesWarning": "Das Hauptthema von Radio MQTT ist {{radioRoot}}, aber dieses Panel abonniert {{appPrefix}}. Passen Sie das Funkgerät an, um den landesweiten Knotenverkehr zu begrenzen — aktualisieren Sie das Themenpräfix und verbinden Sie MQTT erneut.",
@@ -1429,7 +1436,8 @@
         "linkDeliveryTimeout": "Direkter LXMF-Link zu {{hash}}… Zeitüberschreitung ({{count}}×)",
         "transportSaturated": "RNS-Transport gesättigt ({{count}} LXMF-Pfadanforderung fällt ab)",
         "transportSaturatedShareInstance": "RNS-Transport gesättigt ({{count}} Path-Request-Drops). Share-Instanz ist aktiviert — beenden Sie andere Reticulum-Apps (MeshChatX, Ratspeak, rnsd) und starten Sie den Stack neu.",
-        "slowTransportQuery": "RNS-Transportabfragen langsam oder fehlgeschlagen ({{count}}×)"
+        "slowTransportQuery": "RNS-Transportabfragen langsam oder fehlgeschlagen ({{count}}×)",
+        "bleBondRemoved": "Die BLE-RNode-Verbindung „{{name}}“ ist veraltet – vergessen Sie sie in den Bluetooth-Einstellungen des Betriebssystems und führen Sie erneut eine Kopplung durch"
       }
     },
     "routingPort": {
@@ -3660,7 +3668,6 @@
     "syncNowFor": "Nachrichten von {{name}} synchronisieren",
     "addNode": "Knoten hinzufügen",
     "addNodeLabel": "Ausbreitungsknoten per Hash hinzufügen",
-    "addNodePlaceholder": "32-stelliger LXMF-Ziel-Hash",
     "localInboxStats": "{{count}} in der Warteschlange · {{bytes}} Bytes",
     "refreshing": "Erfrischend…",
     "refreshAria": "Ausbreitungsknoten aktualisieren",
@@ -3685,7 +3692,38 @@
       "body": "Es ist kein Ausbreitungsknoten konfiguriert. Offline- oder nicht erreichbare Peers benötigen einen Ausbreitungsknoten für die Store-and-Forward-LXMF-Bereitstellung.",
       "openSettings": "Ausbreitung einrichten",
       "openSettingsAria": "Open Reticulum Network propagation settings"
-    }
+    },
+    "rename": "Umbenennen",
+    "renameLabel": "Name des Ausbreitungsknotens",
+    "renameSave": "Namen speichern",
+    "renameAria": "Weitergabeknoten {{name}} umbenennen",
+    "delete": "Löschen",
+    "deleteAria": "Ausbreitungsknoten {{name}} löschen",
+    "deleteConfirmTitle": "Ausbreitungsknoten löschen?",
+    "deleteConfirmBody": "{{name}} aus der Propagierungsknotenliste entfernen? Dadurch wird der Remote-Knoten nicht verändert.",
+    "deleteConfirm": "Löschen",
+    "renameSaveAria": "Name des Ausbreitungsknotens speichern",
+    "renameCancelAria": "Brechen Sie die Umbenennung des Weitergabeknotens ab",
+    "enableAria": "Ausbreitungsknoten {{name}} aktivieren",
+    "disableAria": "Ausbreitungsknoten {{name}} deaktivieren",
+    "syncNowPreferredAria": "Synchronisieren Sie Nachrichten vom bevorzugten Ausbreitungsknoten",
+    "nodeStatus": {
+      "active": "aktiv",
+      "idle": "Leerlauf",
+      "known": "bekannt",
+      "pending": "ausstehend",
+      "unknown": "unbekannt",
+      "online": "online"
+    },
+    "syncLocalNotSupported": "Die lokale Weitergabe ist Ihr Offline-Posteingang – sie kann nicht wie ein Remote-LXMF-Weitergabeknoten über das Netzwerk synchronisiert werden.",
+    "syncIdentityUnknown": "Die Identität des Ausbreitungsknotens ist unbekannt – warten Sie auf eine Ankündigung oder eine Pfadantwort und versuchen Sie es dann erneut.",
+    "syncTargetNotPropagationNode": "Dieses Ziel ist auf Reticulum erreichbar, aber kein LXMF-Verbreitungsknoten (TCP-Hubs sind nur Transportpfade). Fügen Sie ein Ziel hinzu, das sich als lxmf.propagation ankündigt, um Offline-Nachrichten zu synchronisieren.",
+    "syncPeeringStampFailed": "Für diesen Ausbreitungsknoten konnte kein Peering-Stempel erstellt werden. Versuchen Sie es gleich noch einmal.",
+    "syncCancelled": "Ausbreitungssynchronisierung abgebrochen.",
+    "renameFailed": "Der Weitergabeknoten konnte nicht umbenannt werden.",
+    "deleteFailed": "Der Ausbreitungsknoten konnte nicht gelöscht werden.",
+    "addFailed": "Der Ausbreitungsknoten konnte nicht hinzugefügt werden.",
+    "addNodePlaceholder": "32-stelliger lxmf.propagation-Ziel-Hash"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Ausbreitungsmodus",

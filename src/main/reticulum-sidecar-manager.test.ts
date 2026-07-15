@@ -191,18 +191,69 @@ describe('ReticulumSidecarManager', () => {
     mkdirSpy.mockRestore();
   });
 
-  it('surfaces interface issue alert from sidecar stdout lines', () => {
-    const manager = new ReticulumSidecarManager();
-    const tracker = (
+  function getIssueTracker(manager: ReticulumSidecarManager): {
+    recordLine: (line: string, nowMs?: number) => void;
+  } {
+    return (
       manager as unknown as {
         interfaceIssueTracker: {
           recordLine: (line: string, nowMs?: number) => void;
         };
       }
     ).interfaceIssueTracker;
+  }
+
+  it('surfaces interface issue alert from sidecar stdout lines', () => {
+    const manager = new ReticulumSidecarManager();
+    const tracker = getIssueTracker(manager);
     const line = 'TCP connect failed name = RNS HAM RADIO error = Connection refused (os error 61)';
     tracker.recordLine(line, Date.now());
     expect(manager.getStatus().interfaceIssueAlert?.tcpConnectFailed).toEqual(['RNS HAM RADIO']);
+  });
+
+  it('syncInterfaceIssueScope drops disabled interface names and emits status', () => {
+    const manager = new ReticulumSidecarManager();
+    const tracker = getIssueTracker(manager);
+    tracker.recordLine(
+      'TCP connect failed name = RNS HAM RADIO error = Connection refused (os error 61)',
+      Date.now(),
+    );
+    tracker.recordLine(
+      'TCP connect failed name = RNS Testnet Dublin error = Connection refused (os error 61)',
+      Date.now(),
+    );
+    const statuses: unknown[] = [];
+    manager.on('status', (s) => statuses.push(s));
+    const status = manager.syncInterfaceIssueScope(['RNS Testnet Dublin']);
+    expect(status.interfaceIssueAlert?.tcpConnectFailed).toEqual(['RNS Testnet Dublin']);
+    expect(statuses.length).toBe(1);
+  });
+
+  it('syncInterfaceIssueScope does not emit when scope is unchanged', () => {
+    const manager = new ReticulumSidecarManager();
+    const tracker = getIssueTracker(manager);
+    tracker.recordLine(
+      'TCP connect failed name = RNS Testnet Dublin error = Connection refused (os error 61)',
+      Date.now(),
+    );
+    manager.syncInterfaceIssueScope(['RNS Testnet Dublin']);
+    const statuses: unknown[] = [];
+    manager.on('status', (s) => statuses.push(s));
+    const status = manager.syncInterfaceIssueScope(['RNS Testnet Dublin']);
+    expect(status.interfaceIssueAlert?.tcpConnectFailed).toEqual(['RNS Testnet Dublin']);
+    expect(statuses.length).toBe(0);
+  });
+
+  it('clears interface issue alert on stop', async () => {
+    const manager = new ReticulumSidecarManager();
+    const tracker = getIssueTracker(manager);
+    tracker.recordLine(
+      'TCP connect failed name = RNS HAM RADIO error = Connection refused (os error 61)',
+      Date.now(),
+    );
+    expect(manager.getStatus().interfaceIssueAlert).not.toBeNull();
+    await manager.stop();
+    expect(manager.getStatus().interfaceIssueAlert).toBeNull();
   });
 
   function setRunning(manager: ReticulumSidecarManager, port = 59477): void {

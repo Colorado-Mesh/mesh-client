@@ -961,9 +961,7 @@
       "setPrimaryFailed": "Kan primaire lokale RNode niet instellen.",
       "defaultHubsLabel": "Standaardhubs",
       "addDefaultHubs": "Voeg testnet en Ratspeak hubs toe",
-      "addDefaultHubsAria": "Voeg standaard Reticulum-testnet en Ratspeak-hubs toe in een uitgeschakelde toestand",
       "addDefaultHubsSuccess": "{{added}} toegevoegd, {{repaired}} gecorrigeerd. {{skipped}} al geconfigureerd.",
-      "addDefaultHubsAllPresent": "Standaard testnet en Ratspeak-hubs zijn al geconfigureerd.",
       "addDefaultHubsFailed": "Kan standaardhubs niet toevoegen.",
       "identityNotConfigured": "Stel eerst een Reticulum-identiteit in op het tabblad Netwerk — genereer of importeer een herstelzin.",
       "identityRequiredHint": "Configureer een Reticulum-identiteit op het tabblad Netwerk voordat u interfaces toevoegt.",
@@ -992,7 +990,13 @@
       },
       "modeDefaultAdd": "Typestandaard",
       "modeDefaultEdit": "Standaard (wissen)",
-      "invalidMode": "Ongeldige interfacemodus."
+      "invalidMode": "Ongeldige interfacemodus.",
+      "backboneDirectoryLink": "Telefoonboek ↗",
+      "backboneDirectoryLinkAria": "Open de Reticulum-backbone-map om hubs te vinden die u als interfaces kunt toevoegen",
+      "backboneDirectoryHint": "Vind meer community-backbone-hubs op directory.rns.recipes. Yggdrasil-hubs (bijvoorbeeld Yggdrasil_Ashburn_VA) hebben een actieve lokale Yggdrasil-tunnel nodig - de Reticulum-handleiding beveelt aan om te binden aan uw tunnelinterface (vaak tun0).",
+      "localOfflineRowBleBondStale": "Bluetooth-verbinding is verouderd: vergeet deze RNode in Systeeminstellingen → Bluetooth en koppel opnieuw met een nieuwe pincode (het besturingssysteem kan nog steeds Gekoppeld weergeven).",
+      "addDefaultHubsAria": "Synchroniseer standaard Reticulum-backbone-hubs (US-Oost, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); buiten gebruik gestelde testnet-eindpunten uitschakelen",
+      "addDefaultHubsAllPresent": "Standaard backbone-hubs zijn al geconfigureerd; geen buiten gebruik gestelde testnet-hubs ingeschakeld."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1021,7 +1025,8 @@
       "offlineHintBle": "Uw besturingssysteem vraagt ​​mogelijk om een ​​6-cijferige Bluetooth-pincode (macOS, Windows of Linux). RNode genereert bij elke koppeling een nieuwe code - er is geen standaardpincode. Headless radio's: sluit USB aan → Reticulum Admin → Bluetooth → Start het koppelen → voer de weergegeven pincode in het OS-dialoogvenster in. Radio's met een display: houd de knop ~7 s ingedrukt op Heltec-apparaten (de timing varieert; ~10 s op veel kaarten maakt in plaats daarvan Wi-Fi AP mogelijk), lees de pincode op het scherm en voer deze vervolgens in het OS-dialoogvenster in. Wis mislukte verbindingen in de Bluetooth-instellingen van uw besturingssysteem voordat u het opnieuw probeert.",
       "offlineHintWifi": "Controleer of de RNode op uw LAN staat, is ingeschakeld en bereikbaar is via het geconfigureerde IP (standaard TCP-poort 7633, niet 4242). Werk de onderstaande host bij als DHCP een nieuw adres heeft toegewezen, of voorzie wifi opnieuw in Reticulum → Admin.",
       "tcpUnreachable": "{{name}}: TCP-hub onbereikbaar ({{host}}:{{port}})",
-      "tcpUnreachableHint": "De externe Reticulum-instantie kan offline zijn of verbindingen blokkeren. Schakel deze interface uit of verifieer de host en poort."
+      "tcpUnreachableHint": "De externe Reticulum-instantie kan offline zijn of verbindingen blokkeren. Schakel deze interface uit of verifieer de host en poort.",
+      "offlineHintBleBondStale": "macOS geeft deze RNode nog steeds weer als gekoppeld, maar de Bluetooth-sleutels komen niet meer overeen (Peer heeft de koppelingsinformatie verwijderd). Vergeet het apparaat in Systeeminstellingen → Bluetooth, zet de RNode in de koppelingsmodus (Beheerder → Bluetooth → Begin met koppelen, of houd de knop ~7 s ingedrukt), start vervolgens de stapel opnieuw op en voer de nieuwe 6-cijferige pincode in wanneer daarom wordt gevraagd."
     },
     "autoConnectingTo": "Automatisch verbinden met {{deviceName}}…",
     "autoReconnectInProgress": "Automatisch opnieuw verbinden bezig…",
@@ -1090,7 +1095,9 @@
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "RNS-transportvragen traag of mislukt ({{count}}×)",
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
-      "shareInstanceHint": "Deel instantie is ingeschakeld — sluit andere Reticulum-apps (MeshChatX, Ratspeak, standalone rnsd) volledig af en start deze stapel opnieuw voordat u DM's opnieuw probeert."
+      "shareInstanceHint": "Deel instantie is ingeschakeld — sluit andere Reticulum-apps (MeshChatX, Ratspeak, standalone rnsd) volledig af en start deze stapel opnieuw voordat u DM's opnieuw probeert.",
+      "bleBondRemoved": "{{name}}: Bluetooth-verbinding is verouderd (OS toont nog steeds Gekoppeld)",
+      "bleBondRemovedHint": "Vergeet deze RNode in Systeeminstellingen → Bluetooth, begin met koppelen op de radio (Admin → Bluetooth of ~7 s knop ingedrukt houden), start de stapel opnieuw op en voer de nieuwe 6-cijferige pincode in."
     },
     "reticulumSidecarBundledMissing": "Bij deze installatie ontbreekt het gebundelde Reticulum sidecar. Upgrade naar een nieuwere release of rapporteer het probleem: bouwen vanaf de broncode is niet beschikbaar in pakketinstallaties.",
     "radioMqttRootDivergesWarning": "Radio MQTT-hoofdonderwerp is {{radioRoot}}, maar dit paneel is geabonneerd op {{appPrefix}}. Koppel de radio om landelijk knooppuntverkeer te beperken — werk het onderwerpvoorvoegsel bij en sluit MQTT opnieuw aan.",
@@ -1429,7 +1436,8 @@
         "linkDeliveryTimeout": "Directe LXMF-link naar {{hash}}… time-out ({{count}}×)",
         "transportSaturated": "RNS-transport verzadigd ({{count}} LXMF-pad-aanvraagdruppels)",
         "transportSaturatedShareInstance": "RNS-transport verzadigd ({{count}} pad-aanvraagdruppels). Deel instantie is ingeschakeld — sluit andere Reticulum-apps (MeshChatX, Ratspeak, rnsd) en start de stapel opnieuw.",
-        "slowTransportQuery": "RNS-transportvragen traag of mislukt ({{count}}×)"
+        "slowTransportQuery": "RNS-transportvragen traag of mislukt ({{count}}×)",
+        "bleBondRemoved": "BLE RNode \"{{name}}\"-verbinding is verouderd: vergeet de Bluetooth-instellingen van het besturingssysteem en koppel opnieuw"
       }
     },
     "routingPort": {
@@ -3660,7 +3668,6 @@
     "syncNowFor": "Synchroniseer berichten van {{name}}",
     "addNode": "Knooppunt toevoegen",
     "addNodeLabel": "Voeg voortplantingsknooppunt toe via hash",
-    "addNodePlaceholder": "LXMF-bestemmingshash van 32 tekens",
     "localInboxStats": "{{count}} in wachtrij · {{bytes}} bytes",
     "refreshing": "Verfrissend…",
     "refreshAria": "Vernieuw de voortplantingsknooppunten",
@@ -3685,7 +3692,38 @@
       "body": "Er is geen propagatieknooppunt geconfigureerd. Offline of onbereikbare collega's hebben een propagatieknooppunt nodig voor store-and-forward LXMF-levering.",
       "openSettings": "Propagatie instellen",
       "openSettingsAria": "Open Reticulum Network propagatie-instellingen"
-    }
+    },
+    "rename": "Hernoemen",
+    "renameLabel": "Naam van het voortplantingsknooppunt",
+    "renameSave": "Naam opslaan",
+    "renameAria": "Naam van voortplantingsknooppunt {{name}} wijzigen",
+    "delete": "Verwijderen",
+    "deleteAria": "Doorgifteknooppunt {{name}} verwijderen",
+    "deleteConfirmTitle": "Doorgifteknooppunt verwijderen?",
+    "deleteConfirmBody": "{{name}} verwijderen uit de lijst met propagatieknooppunten? Dit verandert niets aan het externe knooppunt.",
+    "deleteConfirm": "Verwijderen",
+    "renameSaveAria": "Sla de naam van het voortplantingsknooppunt op",
+    "renameCancelAria": "Annuleer het hernoemen van het voortplantingsknooppunt",
+    "enableAria": "Doorgifteknooppunt {{name}} inschakelen",
+    "disableAria": "Schakel voortplantingsknooppunt {{name}} uit",
+    "syncNowPreferredAria": "Synchroniseer berichten van het gewenste voortplantingsknooppunt",
+    "nodeStatus": {
+      "active": "actief",
+      "idle": "inactief",
+      "known": "bekend",
+      "pending": "in behandeling",
+      "unknown": "onbekend",
+      "online": "online"
+    },
+    "syncLocalNotSupported": "Lokale propagatie is uw offline inbox; deze kan niet via het netwerk worden gesynchroniseerd zoals een extern LXMF-propagatieknooppunt.",
+    "syncIdentityUnknown": "De identiteit van het voortplantingsknooppunt is onbekend: wacht op een aankondiging of padreactie en probeer het vervolgens opnieuw.",
+    "syncTargetNotPropagationNode": "Die bestemming is bereikbaar op Reticulum, maar is geen LXMF-propagatieknooppunt (TCP-hubs zijn alleen transportpaden). Voeg een bestemming toe die wordt aangekondigd als lxmf.propagation om offline berichten te synchroniseren.",
+    "syncPeeringStampFailed": "Kan geen peering-stempel maken voor dit propagatieknooppunt. Probeer het over enkele ogenblikken opnieuw.",
+    "syncCancelled": "Doorgiftesynchronisatie geannuleerd.",
+    "renameFailed": "Kan de naam van het voortplantingsknooppunt niet wijzigen.",
+    "deleteFailed": "Kan het voortplantingsknooppunt niet verwijderen.",
+    "addFailed": "Kan het voortplantingsknooppunt niet toevoegen.",
+    "addNodePlaceholder": "Bestemmingshash van lxmf.propagation van 32 tekens"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "voortplantingsmodus",

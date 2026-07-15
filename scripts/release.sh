@@ -318,6 +318,11 @@ if ! pnpm run check:reticulum-interface-modes; then
   exit 1
 fi
 
+if ! pnpm run check:reticulum-decommissioned-hubs; then
+  print_error "Reticulum decommissioned hub catalog check failed."
+  exit 1
+fi
+
 if ! pnpm run check:licenses; then
   print_error "License check failed."
   exit 1
@@ -335,7 +340,9 @@ if ! pnpm dedupe --check; then
   exit 1
 fi
 
-if ! pnpm audit --audit-level=high; then
+# npm retired legacy audit APIs (HTTP 410); pnpm 10.x still calls them. Use pnpm 11+ via dlx
+# until packageManager is bumped (pnpm.io migration / issue #11265).
+if ! pnpm dlx --config.minimumReleaseAge=0 pnpm@11.13.0 --config.manage-package-manager-versions=false --config.pm-on-fail=ignore audit --audit-level=high; then
   print_error "Security audit failed. Address high-severity vulnerabilities."
   exit 1
 fi

@@ -18,7 +18,10 @@ fi
 "${SCRIPT_DIR}/apply-rsReticulum-link-client-nomad.sh"
 
 if [[ ! -d "${LXMF_DIR}/.git" ]]; then
-  git clone --depth 1 https://github.com/ratspeak/rsLXMF.git "${LXMF_DIR}"
+  # Full clone so apply-rsLXMF-* can fall back to RS_LXMF_REF if tip drifts.
+  git clone https://github.com/ratspeak/rsLXMF.git "${LXMF_DIR}"
 fi
+
+"${SCRIPT_DIR}/apply-rsLXMF-propagation-sync-peering.sh"
 
 echo "Ratspeak stack ready: rsReticulum @ $(git -C "${RNS_DIR}" rev-parse --short HEAD), rsLXMF @ $(git -C "${LXMF_DIR}" rev-parse --short HEAD)"

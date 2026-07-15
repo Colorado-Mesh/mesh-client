@@ -40,6 +40,19 @@ describe('shouldRunPropagationAutoSync', () => {
     ).toBe(false);
   });
 
+  it('returns false when preferredId is local-prop', () => {
+    expect(
+      shouldRunPropagationAutoSync({
+        autoSyncIntervalSec: 3600,
+        preferredId: 'local-prop',
+        syncActive: false,
+        lastPropagationSyncAt: null,
+        lastPropagationSyncAttemptAt: null,
+        nowMs: 4_000_000,
+      }),
+    ).toBe(false);
+  });
+
   it('allows first sync when never attempted or succeeded', () => {
     expect(
       shouldRunPropagationAutoSync({

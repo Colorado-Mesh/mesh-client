@@ -961,9 +961,7 @@
       "setPrimaryFailed": "Nastavení primárního místního RNode se nezdařilo.",
       "defaultHubsLabel": "Výchozí rozbočovače",
       "addDefaultHubs": "Přidat rozbočovače testnet a Ratspeak",
-      "addDefaultHubsAria": "Přidat výchozí testovací síť Reticulum a rozbočovače Ratspeak v zakázaném stavu",
       "addDefaultHubsSuccess": "Přidáno {{added}}, opraveno {{repaired}}. {{skipped}} je již nakonfigurováno.",
-      "addDefaultHubsAllPresent": "Výchozí rozbočovače testnet a Ratspeak jsou již nakonfigurovány.",
       "addDefaultHubsFailed": "Přidání výchozích rozbočovačů se nezdařilo.",
       "identityNotConfigured": "Nejprve nastavte identitu Reticulum na kartě Síť — vygenerujte nebo importujte frázi pro obnovení.",
       "identityRequiredHint": "Před přidáním rozhraní nakonfigurujte identitu Reticulum na kartě Síť.",
@@ -992,7 +990,13 @@
       },
       "modeDefaultAdd": "Výchozí podle typu",
       "modeDefaultEdit": "Výchozí (vymazat)",
-      "invalidMode": "Neplatný režim rozhraní."
+      "invalidMode": "Neplatný režim rozhraní.",
+      "backboneDirectoryLink": "Adresář ↗",
+      "backboneDirectoryLinkAria": "Otevřete páteřní adresář Reticulum a vyhledejte centra, která chcete přidat jako rozhraní",
+      "backboneDirectoryHint": "Další páteřní centra komunity naleznete na adrese directory.rns.recipes. Huby Yggdrasil (například Yggdrasil_Ashburn_VA) potřebují spuštěný místní tunel Yggdrasil — příručka Reticulum doporučuje vazbu na rozhraní vašeho tunelu (často tun0).",
+      "localOfflineRowBleBondStale": "Vazba Bluetooth je zastaralá – zapomeňte na tento RNode v Nastavení systému → Bluetooth a poté znovu spárujte s novým kódem PIN (OS může stále zobrazovat Spárováno).",
+      "addDefaultHubsAria": "Synchronizovat výchozí páteřní uzly Reticulum (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); zakázat vyřazené koncové body testnetu",
+      "addDefaultHubsAllPresent": "Výchozí páteřní rozbočovače jsou již nakonfigurovány; nejsou povoleny žádné vyřazené rozbočovače testnet."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1021,7 +1025,8 @@
       "offlineHintBle": "Váš operační systém může vyžadovat zadání 6místného kódu PIN Bluetooth (macOS, Windows nebo Linux). RNode generuje nový kód při každém párování – neexistuje žádný výchozí PIN. Bezhlavá rádia: připojte USB → Reticulum Admin → Bluetooth → Zahájit párování → zadejte PIN zobrazený v dialogovém okně OS. Rádia s displejem: na zařízeních Heltec podržte tlačítko ~7 s (časování se liší; ~10 s na mnoha deskách místo toho umožňuje Wi-Fi AP), přečtěte si PIN na obrazovce a poté jej zadejte do dialogového okna OS. Než to zkusíte znovu, vymažte neúspěšná spojení v nastavení Bluetooth operačního systému.",
       "offlineHintWifi": "Zkontrolujte, zda je RNode v síti LAN, zapnutý a dosažitelný na nakonfigurované IP (výchozí port TCP 7633, nikoli 4242). Aktualizuj hostitele níže, pokud mu služba DHCP přidělila novou adresu nebo znovu poskytl Wi-Fi v → administraci Reticulum.",
       "tcpUnreachable": "{{name}}: Nedosažitelné centrum TCP ({{host}}:{{port}})",
-      "tcpUnreachableHint": "Vzdálená instance Reticulum může být offline nebo blokovat připojení. Zakažte toto rozhraní nebo ověřte hostitele a port."
+      "tcpUnreachableHint": "Vzdálená instance Reticulum může být offline nebo blokovat připojení. Zakažte toto rozhraní nebo ověřte hostitele a port.",
+      "offlineHintBleBondStale": "macOS stále zobrazuje tento RNode jako Spárovaný, ale klíče Bluetooth se již neshodují (Peer odstranil informace o párování). Zapomeňte zařízení v Nastavení systému → Bluetooth, uveďte RNode do režimu párování (Admin → Bluetooth → Zahájit párování nebo podržte tlačítko ~7 s), poté restartujte zásobník a po zobrazení výzvy zadejte nový 6místný PIN."
     },
     "autoConnectingTo": "Automatické připojení k {{deviceName}}…",
     "autoReconnectInProgress": "Probíhá automatické opětovné připojení…",
@@ -1090,7 +1095,9 @@
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "Transportní dotazy RNS pomalé nebo selhávající ({{count}}×)",
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
-      "shareInstanceHint": "Sdílená instance je povolena — zcela ukončete ostatní aplikace Reticulum (MeshChatX, Ratspeak, samostatný rnsd) a restartujte tento zásobník před opakováním DM."
+      "shareInstanceHint": "Sdílená instance je povolena — zcela ukončete ostatní aplikace Reticulum (MeshChatX, Ratspeak, samostatný rnsd) a restartujte tento zásobník před opakováním DM.",
+      "bleBondRemoved": "{{name}}: Připojení Bluetooth je zastaralé (OS stále zobrazuje Spárováno)",
+      "bleBondRemovedHint": "Zapomeňte na tento RNode v Nastavení systému → Bluetooth, zahajte párování na rádiu (Admin → Bluetooth nebo podržení tlačítka ~7 s), restartujte zásobník a zadejte nový 6místný PIN."
     },
     "reticulumSidecarBundledMissing": "V této instalaci chybí přibalený Reticulum sidecar. Upgradujte na novější verzi nebo nahlaste problém – sestavení ze zdroje není v balených instalacích k dispozici.",
     "radioMqttRootDivergesWarning": "Kořenové téma rádia MQTT je {{radioRoot}}, ale tento panel odebírá {{appPrefix}}. Přizpůsobením rádia omezíte celostátní provoz uzlů — aktualizujte předponu tématu a znovu připojte MQTT.",
@@ -1429,7 +1436,8 @@
         "linkDeliveryTimeout": "Přímý odkaz LXMF na {{hash}}… vypršel ({{count}}×)",
         "transportSaturated": "Nasycený transport RNS ({{count}} LXMF kapek vyžadujících cestu)",
         "transportSaturatedShareInstance": "Nasycený transport RNS ({{count}} kapek s požadavkem na cestu). Sdílená instance je zapnutá — ukončete ostatní aplikace Reticulum (MeshChatX, Ratspeak, rnsd) a restartujte zásobník.",
-        "slowTransportQuery": "Transportní dotazy RNS pomalé nebo selhávající ({{count}}×)"
+        "slowTransportQuery": "Transportní dotazy RNS pomalé nebo selhávající ({{count}}×)",
+        "bleBondRemoved": "Vazba BLE RNode „{{name}}“ je zastaralá – zapomeňte v nastavení Bluetooth v operačním systému a znovu spárujte"
       }
     },
     "routingPort": {
@@ -3660,7 +3668,6 @@
     "syncNowFor": "Synchronizovat zprávy z {{name}}",
     "addNode": "Přidat uzel",
     "addNodeLabel": "Přidejte uzel šíření pomocí hash",
-    "addNodePlaceholder": "32znakový cílový hash LXMF",
     "localInboxStats": "{{count}} ve frontě · {{bytes}} bajtů",
     "refreshing": "Osvěžující…",
     "refreshAria": "Obnovit uzly šíření",
@@ -3685,7 +3692,38 @@
       "body": "Není nakonfigurován žádný propagační uzel. Offline nebo nedosažitelné protějšky potřebují propagační uzel pro doručování LXMF v obchodě a dopředu.",
       "openSettings": "Nastavit propagaci",
       "openSettingsAria": "Otevřít nastavení propagace sítě Reticulum"
-    }
+    },
+    "rename": "Přejmenovat",
+    "renameLabel": "Název uzlu šíření",
+    "renameSave": "Uložit jméno",
+    "renameAria": "Přejmenovat uzel šíření {{name}}",
+    "delete": "Odstranit",
+    "deleteAria": "Smazat uzel šíření {{name}}",
+    "deleteConfirmTitle": "Smazat uzel šíření?",
+    "deleteConfirmBody": "Odebrat {{name}} ze seznamu uzlů šíření? Toto nezmění vzdálený uzel.",
+    "deleteConfirm": "Vymazat",
+    "renameSaveAria": "Uložit název uzlu šíření",
+    "renameCancelAria": "Zrušit přejmenování uzlu šíření",
+    "enableAria": "Povolit uzel šíření {{name}}",
+    "disableAria": "Zakázat uzel šíření {{name}}",
+    "syncNowPreferredAria": "Synchronizujte zprávy z preferovaného uzlu šíření",
+    "nodeStatus": {
+      "active": "aktivní",
+      "idle": "nečinný",
+      "known": "známý",
+      "pending": "čeká na vyřízení",
+      "unknown": "neznámý",
+      "online": "online"
+    },
+    "syncLocalNotSupported": "Místní šíření je vaše offline doručená pošta – nelze jej synchronizovat přes síť jako vzdálený uzel šíření LXMF.",
+    "syncIdentityUnknown": "Identita uzlu propagace je neznámá – počkejte na odpověď na oznámení nebo cestu a zkuste to znovu.",
+    "syncTargetNotPropagationNode": "Tento cíl je dosažitelný na Reticulum, ale není to uzel šíření LXMF (rozbočovače TCP jsou pouze transportní cesty). Chcete-li synchronizovat zprávy offline, přidejte cíl, který se ohlašuje jako lxmf.propagation.",
+    "syncPeeringStampFailed": "Nepodařilo se vytvořit peeringové razítko pro tento uzel šíření – zkuste to znovu za chvíli.",
+    "syncCancelled": "Synchronizace šíření zrušena.",
+    "renameFailed": "Nelze přejmenovat uzel šíření.",
+    "deleteFailed": "Nelze odstranit uzel šíření.",
+    "addFailed": "Nelze přidat uzel šíření.",
+    "addNodePlaceholder": "32znakový cílový hash lxmf.propagation"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Režim propagace",

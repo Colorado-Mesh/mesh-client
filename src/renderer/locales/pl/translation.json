@@ -960,10 +960,8 @@
       "setPrimarySuccess": "Zaktualizowano główny lokalny RNode.",
       "setPrimaryFailed": "Nie udało się ustawić głównego lokalnego RNode.",
       "defaultHubsLabel": "Domyślne huby",
-      "addDefaultHubs": "Dodaj huby testnet i Ratspeak",
-      "addDefaultHubsAria": "Dodaj domyślne huby Reticulum testnet i Ratspeak w stanie wyłączonym",
+      "addDefaultHubs": "Dodaj domyślne huby sieciowe",
       "addDefaultHubsSuccess": "Dodano {{added}}, poprawiono {{repaired}}. {{skipped}} już skonfigurowane.",
-      "addDefaultHubsAllPresent": "Domyślne huby testnet i Ratspeak są już skonfigurowane.",
       "addDefaultHubsFailed": "Nie udało się dodać domyślnych hubów.",
       "identityNotConfigured": "Skonfiguruj najpierw tożsamość Reticulum na karcie Sieć — wygeneruj lub zaimportuj frazę odzyskiwania.",
       "identityRequiredHint": "Skonfiguruj tożsamość Reticulum na karcie Sieć przed dodaniem interfejsów.",
@@ -992,7 +990,13 @@
       },
       "modeDefaultAdd": "Domyślny dla typu",
       "modeDefaultEdit": "Domyślny (wyczyść)",
-      "invalidMode": "Nieprawidłowy tryb interfejsu."
+      "invalidMode": "Nieprawidłowy tryb interfejsu.",
+      "backboneDirectoryLink": "Katalog ↗",
+      "backboneDirectoryLinkAria": "Otwórz katalog szkieletowy Reticulum, aby znaleźć koncentratory, które możesz dodać jako interfejsy",
+      "backboneDirectoryHint": "Więcej centrów szkieletowych społeczności znajdziesz na stronie directory.rns.recipes. Koncentratory Yggdrasil (na przykład Yggdrasil_Ashburn_VA) wymagają działającego lokalnego tunelu Yggdrasil — podręcznik Reticulum zaleca powiązanie z interfejsem tunelu (często tun0).",
+      "localOfflineRowBleBondStale": "Połączenie Bluetooth jest nieaktualne — Zapomnij o tym węźle RNode w Ustawieniach systemu → Bluetooth, a następnie sparuj ponownie, używając nowego kodu PIN (system operacyjny może nadal wyświetlać komunikat Sparowano).",
+      "addDefaultHubsAria": "Synchronizuj domyślne huby szkieletowe Reticulum (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); wyłącz wycofane punkty końcowe sieci testowej",
+      "addDefaultHubsAllPresent": "Domyślne huby szkieletowe są już skonfigurowane; nie włączono żadnych wycofanych z eksploatacji hubów sieci testowej."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1021,7 +1025,8 @@
       "offlineHintBle": "Twój system operacyjny może poprosić o 6-cyfrowy kod PIN Bluetooth (macOS, Windows lub Linux). RNode generuje nowy kod przy każdym parowaniu — nie ma domyślnego kodu PIN. Radiotelefony bezgłowe: podłącz USB → Reticulum Admin → Bluetooth → Rozpocznij parowanie → wprowadź kod PIN wyświetlony w oknie dialogowym systemu operacyjnego. Radia z wyświetlaczem: przytrzymaj przycisk ~7 s na urządzeniach Heltec (czas jest różny; ~10 s na wielu płytach zamiast tego włącza Wi-Fi AP), odczytaj PIN na ekranie, a następnie wprowadź go w oknie dialogowym systemu operacyjnego. Przed ponowną próbą usuń nieudane powiązania w ustawieniach Bluetooth systemu operacyjnego.",
       "offlineHintWifi": "Sprawdź, czy RNode znajduje się w sieci LAN, jest włączony i osiągalny w skonfigurowanym IP (domyślny port TCP 7633, a nie 4242). Zaktualizuj poniższy host, jeśli DHCP przypisał nowy adres lub ponownie udostępnij Wi-Fi w → administratora Reticulum.",
       "tcpUnreachable": "{{name}}: nieosiągalny koncentrator TCP ({{host}}:{{port}})",
-      "tcpUnreachableHint": "Zdalna instancja Reticulum może być offline lub blokować połączenia. Wyłącz ten interfejs lub sprawdź host i port."
+      "tcpUnreachableHint": "Zdalna instancja Reticulum może być offline lub blokować połączenia. Wyłącz ten interfejs lub sprawdź host i port.",
+      "offlineHintBleBondStale": "macOS nadal wyświetla ten RNode jako sparowany, ale klucze Bluetooth nie są już zgodne (informacje o parowaniu usunięte z urządzenia równorzędnego). Zapomnij urządzenie w Ustawieniach systemowych → Bluetooth, przełącz RNode w tryb parowania (Admin → Bluetooth → Rozpocznij parowanie lub przytrzymaj przycisk ~7 s), następnie uruchom ponownie stos i po wyświetleniu monitu wprowadź nowy 6-cyfrowy PIN."
     },
     "autoConnectingTo": "Automatyczne łączenie z {{deviceName}}…",
     "autoReconnectInProgress": "Automatyczne ponowne łączenie w toku…",
@@ -1090,7 +1095,9 @@
       "transportSaturatedHint": "Wyłącz martwe interfejsy i uruchom ponownie stos. Zmniejsz równoczesny ruch Reticulum.",
       "slowTransportQuery": "Powolne lub nieudane zapytania transportowe RNS ({{count}}×)",
       "slowTransportQueryHint": "Aktor transportowy wózka bocznego może być zaklinowany — uruchom ponownie stos Reticulum.",
-      "shareInstanceHint": "Instancja udostępniania jest włączona — całkowicie zamknij inne aplikacje Reticulum (MeshChatX, Ratspeak, standalone rnsd) i uruchom ponownie ten stos przed ponowną próbą wysłania wiadomości SMS."
+      "shareInstanceHint": "Instancja udostępniania jest włączona — całkowicie zamknij inne aplikacje Reticulum (MeshChatX, Ratspeak, standalone rnsd) i uruchom ponownie ten stos przed ponowną próbą wysłania wiadomości SMS.",
+      "bleBondRemoved": "{{name}}: Połączenie Bluetooth jest nieaktualne (system operacyjny nadal wyświetla komunikat Sparowano)",
+      "bleBondRemovedHint": "Zapomnij o tym RNode w Ustawieniach systemowych → Bluetooth, rozpocznij parowanie w radiu (Admin → Bluetooth lub przytrzymanie przycisku ~7 s), zrestartuj stos i wprowadź nowy 6-cyfrowy PIN."
     },
     "reticulumSidecarBundledMissing": "W tej instalacji brakuje dołączonego sidecar Reticulum. Uaktualnij do nowszej wersji lub zgłoś problem — budowanie ze źródła nie jest możliwe w przypadku instalacji pakietowych.",
     "radioMqttRootDivergesWarning": "Główny temat radia MQTT to {{radioRoot}}, ale ten panel subskrybuje {{appPrefix}}. Dopasuj radio, aby ograniczyć ogólnokrajowy ruch w węzłach — zaktualizuj prefiks tematu i ponownie połącz MQTT.",
@@ -1429,7 +1436,8 @@
         "linkDeliveryTimeout": "Upłynął limit czasu bezpośredniego łącza LXMF do {{hash}}… ({{count}}×)",
         "transportSaturated": "Transport RNS nasycony (spadki {{count}} LXMF)",
         "transportSaturatedShareInstance": "Transport RNS nasycony (krople z żądaniem ścieżki {{count}}). Udostępnij instancję jest włączona — zamknij inne aplikacje Reticulum (MeshChatX, Ratspeak, rnsd) i uruchom ponownie stos.",
-        "slowTransportQuery": "Powolne lub nieudane zapytania transportowe RNS ({{count}}×)"
+        "slowTransportQuery": "Powolne lub nieudane zapytania transportowe RNS ({{count}}×)",
+        "bleBondRemoved": "Wiązanie BLE RNode „{{name}}” jest nieaktualne — usuń urządzenie w ustawieniach Bluetooth systemu i sparuj ponownie"
       }
     },
     "routingPort": {
@@ -3660,7 +3668,6 @@
     "syncNowFor": "Synchronizuj wiadomości od {{name}}",
     "addNode": "Dodaj węzeł",
     "addNodeLabel": "Dodaj węzeł propagacji według skrótu",
-    "addNodePlaceholder": "32-znakowy skrót docelowy LXMF",
     "localInboxStats": "{{count}} w kolejce · {{bytes}} bajtów",
     "refreshing": "Orzeźwiający…",
     "refreshAria": "Odśwież węzły propagacji",
@@ -3685,7 +3692,38 @@
       "body": "Brak skonfigurowanego węzła propagacji. Partnerzy offline lub nieosiągalni potrzebują węzła propagacji do przechowywania i przekazywania LXMF.",
       "openSettings": "Skonfiguruj propagację",
       "openSettingsAria": "Open Reticulum Network propagation settings"
-    }
+    },
+    "rename": "Zmień nazwę",
+    "renameLabel": "Nazwa węzła propagacji",
+    "renameSave": "Zapisz nazwę",
+    "renameAria": "Zmień nazwę węzła propagacji {{name}}",
+    "delete": "Usuń",
+    "deleteAria": "Usuń węzeł propagacji {{name}}",
+    "deleteConfirmTitle": "Usunąć węzeł propagacji?",
+    "deleteConfirmBody": "Usunąć {{name}} z listy węzłów propagacji? Nie powoduje to zmiany węzła zdalnego.",
+    "deleteConfirm": "Usuwać",
+    "renameSaveAria": "Zapisz nazwę węzła propagacji",
+    "renameCancelAria": "Anuluj zmianę nazwy węzła propagacji",
+    "enableAria": "Włącz węzeł propagacji {{name}}",
+    "disableAria": "Wyłącz węzeł propagacji {{name}}",
+    "syncNowPreferredAria": "Synchronizuj wiadomości z preferowanego węzła propagacji",
+    "nodeStatus": {
+      "active": "aktywny",
+      "idle": "bezczynny",
+      "known": "znany",
+      "pending": "oczekujący",
+      "unknown": "nieznany",
+      "online": "online"
+    },
+    "syncLocalNotSupported": "Lokalna propagacja to Twoja skrzynka odbiorcza offline — nie można jej synchronizować przez sieć jak zdalny węzeł propagacji LXMF.",
+    "syncIdentityUnknown": "Tożsamość węzła propagacji jest nieznana — poczekaj na ogłoszenie lub odpowiedź dotyczącą ścieżki, a następnie spróbuj ponownie.",
+    "syncTargetNotPropagationNode": "Miejsce docelowe jest osiągalne na Reticulum, ale nie jest węzłem propagacji LXMF (węzły TCP są jedynie ścieżkami transportowymi). Dodaj miejsce docelowe ogłaszające się jako lxmf.propagation, aby synchronizować wiadomości offline.",
+    "syncPeeringStampFailed": "Nie można utworzyć znacznika komunikacji równorzędnej dla tego węzła propagacji — spróbuj ponownie za chwilę.",
+    "syncCancelled": "Synchronizacja propagacji została anulowana.",
+    "renameFailed": "Nie można zmienić nazwy węzła propagacji.",
+    "deleteFailed": "Nie można usunąć węzła propagacji.",
+    "addFailed": "Nie można dodać węzła propagacji.",
+    "addNodePlaceholder": "32-znakowy skrót docelowy lxmf.propagation"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Tryb propagacji:",

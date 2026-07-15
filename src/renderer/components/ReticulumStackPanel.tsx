@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
 import {
   collectReticulumInterfaceAlerts,
@@ -11,7 +12,10 @@ import {
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { useReticulumInterfaceSnapshot } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
-import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
+import {
+  RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS,
+  type ReticulumSidecarEvent,
+} from '@/shared/reticulum-types';
 
 import { ReticulumInterfacesPanel } from './reticulum/ReticulumInterfacesPanel';
 import { ReticulumLocalInterfaceAlertsBlock } from './ReticulumLocalInterfaceAlertsBlock';
@@ -52,6 +56,7 @@ export function ReticulumStackPanel({
     handleAutoStartChange,
     notifyManualStackStop,
     notifyManualStackStart,
+    applySidecarStatus,
     refreshSidecarStatus,
   } = useReticulumSidecarApi({
     connecting,
@@ -64,6 +69,7 @@ export function ReticulumStackPanel({
 
   const {
     interfaces,
+    interfacesHydrated,
     serialPorts,
     serialPortPaths,
     effectivePrimaryLocalSerialInterfaceId,
@@ -80,11 +86,72 @@ export function ReticulumStackPanel({
     sidecarEventRef.current = handleSidecarEvent;
   }, [handleSidecarEvent]);
 
+  const enabledInterfaceNames = useMemo(
+    () =>
+      interfaces
+        .filter((row) => row.enabled)
+        .map((row) => row.name)
+        .sort((a, b) => a.localeCompare(b)),
+    [interfaces],
+  );
+  const enabledInterfaceNamesKey = enabledInterfaceNames.join('\0');
+  const enabledInterfaceNamesRef = useRef(enabledInterfaceNames);
+  const syncScopeSeqRef = useRef(0);
+
   useEffect(() => {
-    if (sidecarApiReady && sidecarUiRunning) {
+    enabledInterfaceNamesRef.current = enabledInterfaceNames;
+  }, [enabledInterfaceNames]);
+
+  useEffect(() => {
+    if (!sidecarApiReady || !sidecarUiRunning || !interfacesHydrated) return;
+    // Avoid sticky empty scope on a first empty hydrate race before config rows arrive.
+    // Once any interface row exists, empty enabled-names (all disabled) is intentional.
+    if (enabledInterfaceNames.length === 0 && interfaces.length === 0) return;
+    const seq = ++syncScopeSeqRef.current;
+    const names = enabledInterfaceNamesRef.current;
+    let cancelled = false;
+    void window.electronAPI.reticulum
+      .syncInterfaceIssueScope(names)
+      .then((status) => {
+        if (cancelled || seq !== syncScopeSeqRef.current) return;
+        applySidecarStatus(status);
+      })
+      .catch((e: unknown) => {
+        console.debug('[ReticulumStackPanel] syncInterfaceIssueScope ' + errLikeToLogString(e));
+        if (!cancelled && seq === syncScopeSeqRef.current) void refreshSidecarStatus();
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    enabledInterfaceNamesKey,
+    enabledInterfaceNames.length,
+    interfaces.length,
+    interfacesHydrated,
+    sidecarApiReady,
+    sidecarUiRunning,
+    applySidecarStatus,
+    refreshSidecarStatus,
+  ]);
+
+  const issueAlertLastAtMs = sidecarStatus.interfaceIssueAlert?.lastAtMs ?? null;
+
+  useEffect(() => {
+    if (!sidecarApiReady || !sidecarUiRunning || issueAlertLastAtMs == null) return;
+    // Align with tracker prune (`now - atMs > STALE`): fire one ms after the boundary.
+    const remainingMs =
+      issueAlertLastAtMs + RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS + 1 - Date.now();
+    if (remainingMs <= 0) {
       void refreshSidecarStatus();
+      return;
     }
-  }, [interfaces, sidecarApiReady, sidecarUiRunning, refreshSidecarStatus]);
+    const timer = window.setTimeout(() => {
+      void refreshSidecarStatus();
+    }, remainingMs);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [sidecarApiReady, sidecarUiRunning, issueAlertLastAtMs, refreshSidecarStatus]);
 
   useEffect(() => {
     if (!sidecarApiReady || !sidecarUiRunning) return;
@@ -101,7 +168,7 @@ export function ReticulumStackPanel({
     return () => {
       cancelled = true;
     };
-  }, [sidecarApiReady, sidecarUiRunning, sidecarStatus.interfaceIssueAlert?.lastAtMs]);
+  }, [sidecarApiReady, sidecarUiRunning]);
 
   const shareInstanceEnabled = sidecarApiReady && sidecarUiRunning && shareInstanceSetting;
 
@@ -196,6 +263,7 @@ export function ReticulumStackPanel({
             <ReticulumLocalInterfaceAlertsBlock
               alerts={localAlerts}
               availablePorts={serialPortPaths}
+              bleBondRemovedNames={sidecarStatus.interfaceIssueAlert?.bleBondRemoved}
               onRefreshPorts={() => {
                 void refresh();
               }}
@@ -215,6 +283,7 @@ export function ReticulumStackPanel({
               interfaces={interfaces}
               serialPorts={serialPorts}
               serialPortPaths={serialPortPaths}
+              bleBondRemovedNames={sidecarStatus.interfaceIssueAlert?.bleBondRemoved}
               effectivePrimaryLocalSerialInterfaceId={effectivePrimaryLocalSerialInterfaceId}
               onRefresh={refresh}
               onBeginBleConnectGrace={beginBleConnectGrace}

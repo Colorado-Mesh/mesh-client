@@ -1273,6 +1273,80 @@ pub fn ensure_share_instance_defaults(config_dir: &Path) -> Result<bool, String>
     Ok(true)
 }
 
+/// Official public-testnet TCP hubs that were decommissioned (DNS gone / port closed).
+/// Keep host/port pairs in sync with `src/shared/reticulumDecommissionedHubs.ts`.
+const DECOMMISSIONED_TCP_HUBS: &[(&[&str], u16)] = &[
+    (&["dublin.connect.reticulum.network"], 4965),
+    (&["amsterdam.connect.reticulum.network"], 4965),
+    (
+        &[
+            "reticulum.betweentheborders.com",
+            "betweentheborders.com",
+        ],
+        4242,
+    ),
+];
+
+fn normalize_tcp_hub_host(host: &str) -> String {
+    let trimmed = host.trim();
+    let unbracketed = if trimmed.starts_with('[') && trimmed.ends_with(']') {
+        &trimmed[1..trimmed.len().saturating_sub(1)]
+    } else {
+        trimmed
+    };
+    unbracketed.trim().to_ascii_lowercase()
+}
+
+fn tcp_hub_is_decommissioned(host: &str, port: u16) -> bool {
+    let normalized = normalize_tcp_hub_host(host);
+    DECOMMISSIONED_TCP_HUBS.iter().any(|(hosts, ep_port)| {
+        *ep_port == port && hosts.iter().any(|h| normalize_tcp_hub_host(h) == normalized)
+    })
+}
+
+/// Disable enabled TCP hubs pointed at decommissioned official testnet endpoints.
+/// Returns the interface section names that were disabled.
+pub fn ensure_decommissioned_hubs_disabled(config_dir: &Path) -> Result<Vec<String>, String> {
+    let content = read_config(config_dir)?;
+    let mut parsed = parse_config(&content)?;
+    let mut disabled = Vec::new();
+    for block in &mut parsed.interfaces {
+        if block.get("type") != Some("TCPClientInterface") {
+            continue;
+        }
+        let enabled = block
+            .get_bool("enabled")
+            .or_else(|| block.get_bool("interface_enabled"))
+            .unwrap_or(false);
+        if !enabled {
+            continue;
+        }
+        let Some(host) = block.get("target_host") else {
+            continue;
+        };
+        let Some(port) = block
+            .get("target_port")
+            .and_then(|p| p.parse::<u16>().ok())
+        else {
+            continue;
+        };
+        if !tcp_hub_is_decommissioned(host, port) {
+            continue;
+        }
+        block.set("interface_enabled", &bool_to_ini(false));
+        if block.values.contains_key("enabled") {
+            block.values.remove("enabled");
+            block.order.retain(|k| k != "enabled");
+        }
+        disabled.push(block.name.clone());
+    }
+    if disabled.is_empty() {
+        return Ok(disabled);
+    }
+    write_config(config_dir, &serialize_config(&parsed))?;
+    Ok(disabled)
+}
+
 /// Parse the config file for syntax only (used by offline validate-config).
 pub fn parse_config_dir(config_dir: &Path) -> Result<(), String> {
     let content = read_config(config_dir)?;
@@ -1625,6 +1699,53 @@ loglevel = 4
         assert!(settings.share_instance);
         let content = read_config(&dir).unwrap();
         assert!(content.contains("instance_name = default"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn ensure_decommissioned_hubs_disabled_turns_off_dublin_and_btb() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"[reticulum]
+enable_transport = Yes
+
+[logging]
+loglevel = 4
+
+[interfaces]
+
+[[RNS Testnet Dublin]]
+type = TCPClientInterface
+interface_enabled = Yes
+target_host = dublin.connect.reticulum.network
+target_port = 4965
+
+[[RNS Testnet BetweenTheBorders]]
+type = TCPClientInterface
+interface_enabled = Yes
+target_host = betweentheborders.com
+target_port = 4242
+
+[[RNS_Transport_US-East]]
+type = TCPClientInterface
+interface_enabled = Yes
+target_host = 45.77.109.86
+target_port = 4965
+"#,
+        )
+        .unwrap();
+        let disabled = ensure_decommissioned_hubs_disabled(&dir).unwrap();
+        assert_eq!(disabled.len(), 2);
+        assert!(disabled.contains(&"RNS Testnet Dublin".to_string()));
+        assert!(disabled.contains(&"RNS Testnet BetweenTheBorders".to_string()));
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("dublin.connect.reticulum.network"));
+        assert!(content.contains("interface_enabled = No"));
+        assert!(content.contains("45.77.109.86"));
+        // Second pass is a no-op.
+        assert!(ensure_decommissioned_hubs_disabled(&dir).unwrap().is_empty());
         let _ = fs::remove_dir_all(&dir);
     }
 

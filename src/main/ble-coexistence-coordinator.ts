@@ -82,6 +82,13 @@ export class BleCoexistenceCoordinator {
   }
 
   assertCanConnect(owner: BlePeripheralOwner, mac: string): void {
+    // Reticulum holds CoreBluetooth for BLE RNode connect — Noble GATTs must wait.
+    if (
+      this.scanOwner === 'reticulum' &&
+      (owner === 'noble:meshtastic' || owner === 'noble:meshcore')
+    ) {
+      throw new BleScanBusyError('reticulum');
+    }
     const key = normalizeBleMac(mac);
     if (!key) return;
     const existing = this.connections.get(key);
@@ -140,9 +147,13 @@ export class BleCoexistenceCoordinator {
         ]);
       } catch (err) {
         console.warn(
-          '[BleCoexistence] disconnectAllSessions failed or timed out (proceeding with yield):',
+          '[BleCoexistence] disconnectAllSessions failed or timed out (failing yield):',
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
+        // Failure point: Noble GATT may still be held — do not leave a half-yield.
+        // Fallback: release reticulum scan ownership and surface the error to prepare.
+        this.releaseScan('reticulum');
+        throw err instanceof Error ? err : new Error(String(err));
       }
     }
   }

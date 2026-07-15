@@ -15,15 +15,26 @@ function alertNeedsSerialPortContext(alert: ReticulumLocalInterfaceAlert): boole
 export interface ReticulumLocalInterfaceAlertsBlockProps {
   alerts: ReticulumLocalInterfaceAlert[];
   availablePorts: string[];
+  /** Interface display names with CoreBluetooth "Peer removed pairing information". */
+  bleBondRemovedNames?: readonly string[];
   onRefreshPorts?: () => void;
   onRestartStack?: () => void | Promise<void>;
   compact?: boolean;
+}
+
+function ifaceHasBleBondRemoved(
+  ifaceName: string,
+  bleBondRemovedNames: readonly string[] | undefined,
+): boolean {
+  if (!bleBondRemovedNames || bleBondRemovedNames.length === 0) return false;
+  return bleBondRemovedNames.some((n) => n === ifaceName);
 }
 
 /** User-visible summary when local/USB Reticulum interfaces need attention. */
 export function ReticulumLocalInterfaceAlertsBlock({
   alerts,
   availablePorts,
+  bleBondRemovedNames,
   onRefreshPorts,
   onRestartStack,
   compact = false,
@@ -72,6 +83,11 @@ export function ReticulumLocalInterfaceAlertsBlock({
                     : (() => {
                         const kind = reticulumLocalOfflineDisplayKind(alert.iface);
                         if (kind === 'ble') {
+                          if (ifaceHasBleBondRemoved(alert.iface.name, bleBondRemovedNames)) {
+                            return t(
+                              'connectionPanel.reticulumLocalInterfaces.offlineHintBleBondStale',
+                            );
+                          }
                           return t('connectionPanel.reticulumLocalInterfaces.offlineHintBle');
                         }
                         if (kind === 'wifi') {

@@ -991,6 +991,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('reticulum:start', opts),
     stop: (): Promise<void> => ipcRenderer.invoke('reticulum:stop'),
     getStatus: (): Promise<ReticulumSidecarStatus> => ipcRenderer.invoke('reticulum:getStatus'),
+    syncInterfaceIssueScope: (enabledInterfaceNames: string[]): Promise<ReticulumSidecarStatus> =>
+      ipcRenderer.invoke('reticulum:syncInterfaceIssueScope', enabledInterfaceNames),
     proxyGet: (apiPath: string): Promise<unknown> =>
       ipcRenderer.invoke('reticulum:proxyGet', apiPath),
     proxyPost: (apiPath: string, body: unknown): Promise<unknown> =>

@@ -1006,14 +1006,39 @@ Unrecognized codes pass through unchanged.
 
 **Symptoms**: Reticulum stack is running with an enabled BLE RNode; Meshtastic or MeshCore BLE scan/connect fails with “Bluetooth scan in progress (reticulum)” or Noble sessions stay disconnected.
 
-**Cause**: On macOS/Windows, sidecar start **yields Noble BLE** so btleplug can pair the RNode. mesh-client releases the scan mutex when the RNode connects, the grace window expires, or the stack stops.
+**Cause**: On macOS/Windows, sidecar start **yields Noble BLE** so btleplug can pair the RNode. While the yield holds `scanOwner === 'reticulum'`, Meshtastic/MeshCore Noble connect is rejected. After grace, yield stops re-contending so an offline RNode cannot thrash LoRa BLE. mesh-client releases the scan mutex when the RNode connects, the grace window expires, prepare fails closed after Noble disconnect timeout, or the stack stops.
 
 **Fix**:
 
 1. Wait up to ~30s after stack start for the BLE RNode to connect (Connection tab interface status **up** / **online**).
 2. Stop the Reticulum stack if you need immediate Meshtastic/MeshCore BLE access.
-3. Ensure you are on a current build with paired yield/release (`reticulumNobleBleYield.ts`, `useReticulumNobleBleYieldWatcher`).
+3. Ensure you are on a current build with paired yield/release (`reticulumNobleBleYield.ts`, `useReticulumNobleBleYieldWatcher`, `ble-coexistence-coordinator.assertCanConnect`).
 4. Check Device logs for `[BleCoexistence]` and `[useReticulumNobleBleYieldWatcher]`.
+
+### Reticulum BLE RNode bond is stale (OS still shows Paired)
+
+**Symptoms**: Connection / Diagnostics show a BLE bond-stale banner for an RNode interface; Connect fails; System Settings still lists the device as Paired.
+
+**Cause**: Sidecar latched `interfaceIssueAlert.bleBondRemoved` (“Peer removed pairing information”). The OS bond no longer matches the radio.
+
+**Fix**:
+
+1. Forget the RNode in System Settings → Bluetooth.
+2. Start pairing on the radio (Admin → Bluetooth, or ~7 s button hold).
+3. Restart the Reticulum stack and enter the new 6-digit PIN when prompted.
+
+### Reticulum remote propagation sync fails or never completes
+
+**Symptoms**: **Sync messages** stays Establishing, fails with “not an LXMF propagation node”, or marks Complete incorrectly after cancel.
+
+**Cause / behavior**:
+
+- Remote sync needs a known identity (and prefers a path). Missing identity → `PROPAGATION_IDENTITY_UNKNOWN`.
+- Destinations that announce as delivery/other (including TCP hubs) → `PROPAGATION_TARGET_NOT_PN`. Add a destination that announces `lxmf.propagation`.
+- HaveAll / Complete is success (not failure). Cancel or Establishing stall (~60s) must not advance “last synced”.
+- Transfer-phase hangs use a renderer hard ceiling (~180s) plus lxmf-core’s own timeouts.
+
+**Fix**: Wait for an announce/path, confirm the hash is a propagation node (not a hub), retry Sync, or Cancel and check Device logs for `propagation_sync` / offer errors.
 
 ### MeshCore Colorado Mesh / LetsMesh won't connect after upgrade
 
@@ -1044,8 +1069,8 @@ Unrecognized codes pass through unchanged.
 **Fix**:
 
 1. **Fully quit** other Reticulum apps (MeshChatX, Ratspeak, any `rnsd` tray process) — not just close the window — **or** turn off **Share Reticulum instance** (Connection banner / Network → stack settings) and restart the stack.
-2. **Stop and restart** the mesh-client Reticulum stack (Connection → **Restart stack** or stop/start).
-3. Disable unreachable TCP interfaces on Connection → Interfaces (only when not in shared-instance client mode).
+2. **Stop and restart** the mesh-client Reticulum stack (Connection → **Restart stack** or stop/start). Stopping (or an unexpected sidecar exit) clears the interface-issue tracker immediately.
+3. Disable unreachable TCP interfaces on Connection → Interfaces (only when not in shared-instance client mode). Disabling or removing a hub drops that name from the TCP/TX latch **immediately** (and keeps it from reappearing while logs catch up); each latch also ages out after a **5-minute** per-entry TTL (`RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS`), not a single global timestamp.
 4. Retry the DM; use **Peers → Request path / Probe** if the peer is reachable but the path is stale.
 5. Configure a **propagation node** on Network → Propagation for offline delivery.
 
@@ -1105,7 +1130,7 @@ For bulk fixes, use Network **Config import** (merge) instead of hand-editing in
 **Checks**:
 
 1. **Refresh model**: opening Peers uses the sidecar’s short-lived soft cache. Click **Refresh** to force a live path-table read (`?refresh=1`). mesh-client virtualizes peer rows above 100 entries (never mounts the full DOM when the virtualizer is not ready), prepares labels once before filter/sort, and does **not** reload the full path table on high-frequency `stats_update` / `interface.state` WS events. The sidecar still maintains the full RNS path table (often 3k–10k rows on busy hubs). Background peer refresh runs every 30 s while the stack is configured (60 s above 2,000 peers), plus announce/`peers_updated` debounced updates.
-2. **Reduce noise**: disable unused TCP testnet interfaces on **Connection → Interfaces** and restart the stack so RNS drops stale TCP clients.
+2. **Reduce noise**: disable unused TCP/community hub interfaces on **Connection → Interfaces** and restart the stack so RNS drops stale TCP clients. Official Dublin / Amsterdam / BetweenTheBorders testnet hubs are decommissioned and auto-disabled on stack start and by **Add default hubs** — focus remaining noise on community hubs you enabled.
 3. **Prefer Contacts**: use the **Contacts** tab for LXMF peers you message; **Favorites** for a short pinned list.
 4. **Search**: the peer search box debounces input and filters the full prepared list (not only the visible window) — wait a moment after typing before judging filter performance on very large lists.
 5. **Topology**: automatic topology rebuilds pause above the large-mesh threshold; use its manual **Refresh** after a significant route change.

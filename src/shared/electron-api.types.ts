@@ -912,6 +912,8 @@ export interface ElectronAPI {
     start: (opts?: ReticulumSidecarStartOptions) => Promise<ReticulumSidecarStatus>;
     stop: () => Promise<void>;
     getStatus: () => Promise<ReticulumSidecarStatus>;
+    /** Drop latched TCP/TX issues for interfaces not in the enabled set; returns updated status. */
+    syncInterfaceIssueScope: (enabledInterfaceNames: string[]) => Promise<ReticulumSidecarStatus>;
     proxyGet: (apiPath: string) => Promise<unknown>;
     proxyPost: (apiPath: string, body: unknown) => Promise<unknown>;
     proxyPut: (apiPath: string, body: unknown) => Promise<unknown>;

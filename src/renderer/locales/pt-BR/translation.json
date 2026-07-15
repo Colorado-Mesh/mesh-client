@@ -961,9 +961,7 @@
       "setPrimaryFailed": "Falha ao definir o RNode local primário.",
       "defaultHubsLabel": "Hubs padrão",
       "addDefaultHubs": "Adicionar hubs testnet e Ratspeak",
-      "addDefaultHubsAria": "Adicione testnet Reticulum padrão e hubs Ratspeak em estado desativado",
       "addDefaultHubsSuccess": "Adicionados {{added}}, corrigidos {{repaired}}. {{skipped}} já configurados.",
-      "addDefaultHubsAllPresent": "Os hubs de testnet e Ratspeak padrão já estão configurados.",
       "addDefaultHubsFailed": "Falha ao adicionar hubs padrão.",
       "identityNotConfigured": "Configure uma identidade Reticulum na guia Rede primeiro — gere ou importe uma frase de recuperação.",
       "identityRequiredHint": "Configure uma identidade Reticulum na guia Rede antes de adicionar interfaces.",
@@ -992,7 +990,13 @@
       },
       "modeDefaultAdd": "Padrão do tipo",
       "modeDefaultEdit": "Padrão (limpar)",
-      "invalidMode": "Modo de interface inválido."
+      "invalidMode": "Modo de interface inválido.",
+      "backboneDirectoryLink": "Diretório ↗",
+      "backboneDirectoryLinkAria": "Abra o diretório backbone do Reticulum para encontrar hubs para adicionar como interfaces",
+      "backboneDirectoryHint": "Encontre mais centros de backbone da comunidade em directory.rns.recipes. Os hubs Yggdrasil (por exemplo Yggdrasil_Ashburn_VA) precisam de um túnel Yggdrasil local em execução - o manual do Reticulum recomenda a ligação à interface do seu túnel (geralmente tun0).",
+      "localOfflineRowBleBondStale": "A ligação Bluetooth está obsoleta - Esqueça este RNode em Configurações do sistema → Bluetooth e, em seguida, emparelhe novamente com um novo PIN (o sistema operacional ainda pode mostrar Emparelhado).",
+      "addDefaultHubsAria": "Sincronizar hubs de backbone Reticulum padrão (Leste dos EUA, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); desabilitar endpoints testnet desativados",
+      "addDefaultHubsAllPresent": "Os hubs de backbone padrão já estão configurados; nenhum hub testnet desativado habilitado."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1021,7 +1025,8 @@
       "offlineHintBle": "Seu sistema operacional pode solicitar um PIN Bluetooth de 6 dígitos (macOS, Windows ou Linux). RNode gera um novo código a cada emparelhamento – não há PIN padrão. Rádios sem cabeça: conecte USB → Reticulum Admin → Bluetooth → Iniciar emparelhamento → insira o PIN mostrado na caixa de diálogo do sistema operacional. Rádios com display: segure o botão por aproximadamente 7 s em dispositivos Heltec (o tempo varia; aproximadamente 10 s em muitas placas habilita o AP Wi-Fi), leia o PIN na tela e insira-o na caixa de diálogo do sistema operacional. Limpe as ligações com falha nas configurações de Bluetooth do seu sistema operacional antes de tentar novamente.",
       "offlineHintWifi": "Verifique se o RNode está na sua LAN, ligado e acessível no IP configurado (porta TCP padrão 7633, não 4242). Atualize o host abaixo se o DHCP tiver atribuído um novo endereço ou reprovisione o Wi-Fi no Reticulum → Admin.",
       "tcpUnreachable": "{{name}}: TCP Hub inacessível ({{host}}:{{port}})",
-      "tcpUnreachableHint": "A instância remota do Reticulum pode estar offline ou bloqueando conexões. Desative esta interface ou verifique o host e a porta."
+      "tcpUnreachableHint": "A instância remota do Reticulum pode estar offline ou bloqueando conexões. Desative esta interface ou verifique o host e a porta.",
+      "offlineHintBleBondStale": "O macOS ainda mostra este RNode como emparelhado, mas as chaves Bluetooth não correspondem mais (informações de emparelhamento removidas pelo peer). Esqueça o dispositivo em Configurações do sistema → Bluetooth, coloque o RNode no modo de emparelhamento (Admin → Bluetooth → Iniciar emparelhamento ou segure o botão ~7 s), reinicie a pilha e insira o novo PIN de 6 dígitos quando solicitado."
     },
     "autoConnectingTo": "Conectando-se automaticamente a {{deviceName}}…",
     "autoReconnectInProgress": "Auto-reconexão em andamento…",
@@ -1090,7 +1095,9 @@
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "Consultas de transporte RNs lentas ou com falha ({{count}}×)",
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
-      "shareInstanceHint": "Share instance is enabled — fully quit other Reticulum apps (MeshChatX, Ratspeak, standalone rnsd) and restart this stack before retrying DMs."
+      "shareInstanceHint": "Share instance is enabled — fully quit other Reticulum apps (MeshChatX, Ratspeak, standalone rnsd) and restart this stack before retrying DMs.",
+      "bleBondRemoved": "{{name}}: A ligação Bluetooth está obsoleta (o sistema operacional ainda mostra Emparelhado)",
+      "bleBondRemovedHint": "Esqueça este RNode em Configurações do sistema → Bluetooth, inicie o emparelhamento no rádio (Admin → Bluetooth ou mantenha o botão pressionado por ~ 7 s), reinicie a pilha e insira o novo PIN de 6 dígitos."
     },
     "reticulumSidecarBundledMissing": "Esta instalação não contém o sidecar Reticulum incluído. Atualize para uma versão mais recente ou relate o problema – a compilação a partir do código-fonte não está disponível em instalações empacotadas.",
     "radioMqttRootDivergesWarning": "O tópico raiz do MQTT de rádio é {{radioRoot}}, mas este painel assina {{appPrefix}}. Combine o rádio para limitar o tráfego de nós em todo o país — atualize o Prefixo do Tópico e reconecte o MQTT.",
@@ -1429,7 +1436,8 @@
         "linkDeliveryTimeout": "O link LXMF direto para {{hash}}… expirou ({{count}}×)",
         "transportSaturated": "RNS transport saturated ({{count}} LXMF path-request drops)",
         "transportSaturatedShareInstance": "RNS transport saturated ({{count}} path-request drops). Share instance is on — quit other Reticulum apps (MeshChatX, Ratspeak, rnsd) and restart the stack.",
-        "slowTransportQuery": "RNS transport queries slow or failing ({{count}}×)"
+        "slowTransportQuery": "RNS transport queries slow or failing ({{count}}×)",
+        "bleBondRemoved": "A ligação BLE RNode \"{{name}}\" está obsoleta — esqueça o dispositivo nas configurações de Bluetooth do sistema operacional e emparelhe novamente"
       }
     },
     "routingPort": {
@@ -3660,7 +3668,6 @@
     "syncNowFor": "Sincronizar mensagens de {{name}}",
     "addNode": "Adicionar nó",
     "addNodeLabel": "Adicionar nó de propagação por hash",
-    "addNodePlaceholder": "Hash de destino LXMF de 32 caracteres",
     "localInboxStats": "{{count}} na fila · {{bytes}} bytes",
     "refreshing": "Refrescante…",
     "refreshAria": "Atualizar nós de propagação",
@@ -3685,7 +3692,38 @@
       "body": "Nenhum nó de propagação está configurado. Os pares offline ou inacessíveis precisam de um nó de propagação para a entrega de LXMF de armazenamento e encaminhamento.",
       "openSettings": "Configurar propagação",
       "openSettingsAria": "Open Reticulum Network propagation settings"
-    }
+    },
+    "rename": "Renomear",
+    "renameLabel": "Nome do nó de propagação",
+    "renameSave": "Salvar nome",
+    "renameAria": "Renomear nó de propagação {{name}}",
+    "delete": "Excluir",
+    "deleteAria": "Excluir nó de propagação {{name}}",
+    "deleteConfirmTitle": "Excluir nó de propagação?",
+    "deleteConfirmBody": "Remover {{name}} da lista de nós de propagação? Isso não altera o nó remoto.",
+    "deleteConfirm": "Excluir",
+    "renameSaveAria": "Salvar nome do nó de propagação",
+    "renameCancelAria": "Cancelar renomeação do nó de propagação",
+    "enableAria": "Habilitar nó de propagação {{name}}",
+    "disableAria": "Desabilitar nó de propagação {{name}}",
+    "syncNowPreferredAria": "Sincronizar mensagens do nó de propagação preferencial",
+    "nodeStatus": {
+      "active": "ativo",
+      "idle": "parado",
+      "known": "conhecido",
+      "pending": "pendente",
+      "unknown": "desconhecido",
+      "online": "on-line"
+    },
+    "syncLocalNotSupported": "A propagação local é sua caixa de entrada offline – ela não pode ser sincronizada pela rede como um nó de propagação LXMF remoto.",
+    "syncIdentityUnknown": "A identidade do nó de propagação é desconhecida — aguarde um anúncio ou resposta do caminho e tente novamente.",
+    "syncTargetNotPropagationNode": "Esse destino pode ser alcançado no Reticulum, mas não é um nó de propagação LXMF (os hubs TCP são apenas caminhos de transporte). Adicione um destino anunciado como lxmf.propagation para sincronizar mensagens offline.",
+    "syncPeeringStampFailed": "Não foi possível criar um carimbo de peering para este nó de propagação. Tente novamente em alguns instantes.",
+    "syncCancelled": "Sincronização de propagação cancelada.",
+    "renameFailed": "Não foi possível renomear o nó de propagação.",
+    "deleteFailed": "Não foi possível excluir o nó de propagação.",
+    "addFailed": "Não foi possível adicionar o nó de propagação.",
+    "addNodePlaceholder": "Hash de destino lxmf.propagation de 32 caracteres"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modo de propagação",

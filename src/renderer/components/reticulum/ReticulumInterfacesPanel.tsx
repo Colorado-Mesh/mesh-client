@@ -73,6 +73,7 @@ import {
   isValidConnectHost,
   stripConnectHostBrackets,
 } from '@/shared/connectHost';
+import { RETICULUM_BACKBONE_DIRECTORY_URL } from '@/shared/reticulumDecommissionedHubs';
 import {
   countEnabledLocallyConnectedSerialInterfaces,
   isReticulumLocallyConnectedSerialInterface,
@@ -143,6 +144,8 @@ export interface ReticulumInterfacesPanelProps {
   interfaces: ReticulumInterfaceRow[];
   serialPorts: ReticulumSerialPortOption[];
   serialPortPaths: string[];
+  /** Interface display names with CoreBluetooth stale-bond errors. */
+  bleBondRemovedNames?: readonly string[];
   effectivePrimaryLocalSerialInterfaceId: string | null;
   onRefresh: () => Promise<unknown>;
   onBeginBleConnectGrace: () => void;
@@ -158,6 +161,7 @@ export function ReticulumInterfacesPanel({
   interfaces,
   serialPorts,
   serialPortPaths,
+  bleBondRemovedNames,
   effectivePrimaryLocalSerialInterfaceId,
   onRefresh,
   onBeginBleConnectGrace,
@@ -493,21 +497,25 @@ export function ReticulumInterfacesPanel({
   const handleAddDefaultHubPresets = async () => {
     setInterfaceError(null);
     const plan = planDefaultHubPresetsSync(interfaces);
-    if (plan.add.length === 0 && plan.repair.length === 0) {
+    if (
+      plan.add.length === 0 &&
+      plan.repair.length === 0 &&
+      plan.disableDecommissioned.length === 0
+    ) {
       addToast(t('connectionPanel.reticulumInterfaces.addDefaultHubsAllPresent'), 'info');
       return;
     }
     setAddingDefaultHubs(true);
     try {
       const { result } = await applyDefaultHubPresetsSync(interfaces, window.electronAPI.reticulum);
-      const changed = result.added + result.repaired;
+      const changed = result.added + result.repaired + result.disabledDecommissioned;
       if (changed > 0) {
         await onRefresh();
         setRestartStackHint(true);
         addToast(
           t('connectionPanel.reticulumInterfaces.addDefaultHubsSuccess', {
             added: result.added,
-            repaired: result.repaired,
+            repaired: result.repaired + result.disabledDecommissioned,
             skipped: result.skipped,
           }),
           'success',
@@ -761,6 +769,7 @@ export function ReticulumInterfacesPanel({
       <InterfacesSection
         interfaces={interfaces}
         osSerialPortPaths={serialPortPaths}
+        bleBondRemovedNames={bleBondRemovedNames}
         effectivePrimaryLocalSerialInterfaceId={effectivePrimaryLocalSerialInterfaceId}
         sidecarReady={sidecarApiReady}
         actionsDisabled={actionsDisabled}
@@ -1408,6 +1417,7 @@ function InterfaceEditPanel({
 function InterfacesSection({
   interfaces,
   osSerialPortPaths,
+  bleBondRemovedNames,
   effectivePrimaryLocalSerialInterfaceId,
   sidecarReady,
   actionsDisabled,
@@ -1460,6 +1470,7 @@ function InterfacesSection({
 }: {
   interfaces: ReticulumInterfaceRow[];
   osSerialPortPaths: string[];
+  bleBondRemovedNames?: readonly string[];
   effectivePrimaryLocalSerialInterfaceId: string | null;
   sidecarReady: boolean;
   actionsDisabled: boolean;
@@ -1544,6 +1555,9 @@ function InterfacesSection({
     if (health === 'enabled_down') {
       const kind = reticulumLocalOfflineDisplayKind(iface);
       if (kind === 'ble') {
+        if (bleBondRemovedNames?.some((n) => n === iface.name)) {
+          return t('connectionPanel.reticulumInterfaces.localOfflineRowBleBondStale');
+        }
         return t('connectionPanel.reticulumInterfaces.localOfflineRowBle');
       }
       if (kind === 'wifi') {
@@ -1557,13 +1571,30 @@ function InterfacesSection({
   return (
     <details className="group bg-deep-black/40 rounded-lg border border-gray-700">
       <summary className="flex cursor-pointer items-center justify-between rounded-lg px-3 py-3 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-800">
-        <span>{t('connectionPanel.reticulumInterfaces.title')}</span>
+        <span className="flex items-center gap-3">
+          <span>{t('connectionPanel.reticulumInterfaces.title')}</span>
+          <a
+            href={RETICULUM_BACKBONE_DIRECTORY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-brand-green text-xs font-normal text-gray-300 transition-colors"
+            aria-label={t('connectionPanel.reticulumInterfaces.backboneDirectoryLinkAria')}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            {t('connectionPanel.reticulumInterfaces.backboneDirectoryLink')}
+          </a>
+        </span>
         <DetailsChevron />
       </summary>
       <div className="space-y-3 px-3 pb-3">
         <div className="space-y-1">
           <p id="reticulum-default-hubs" className="text-muted text-xs">
             {t('connectionPanel.reticulumInterfaces.defaultHubsLabel')}
+          </p>
+          <p className="text-muted text-xs">
+            {t('connectionPanel.reticulumInterfaces.backboneDirectoryHint')}
           </p>
           {!identityConfigured ? (
             <p className="text-xs text-amber-300" role="status">

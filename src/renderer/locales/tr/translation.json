@@ -961,9 +961,7 @@
       "setPrimaryFailed": "Birincil yerel RNode ayarlanamadı.",
       "defaultHubsLabel": "Varsayılan hub'lar",
       "addDefaultHubs": "Testnet ve Ratspeak hub'ları ekleyin",
-      "addDefaultHubsAria": "Devre dışı durumda varsayılan Reticulum test ağı ve Ratspeak hub'ları ekleyin",
       "addDefaultHubsSuccess": "{{added}} eklendi, {{repaired}} düzeltildi. {{skipped}} zaten yapılandırılmış.",
-      "addDefaultHubsAllPresent": "Varsayılan test ağı ve Ratspeak hub'ları zaten yapılandırılmıştır.",
       "addDefaultHubsFailed": "Varsayılan hub'lar eklenemedi.",
       "identityNotConfigured": "Önce Ağ sekmesinde bir Reticulum kimliği oluşturun — bir kurtarma ifadesi oluşturun veya içe aktarın.",
       "identityRequiredHint": "Arayüz eklemeden önce Ağ sekmesinde bir Reticulum kimliği yapılandırın.",
@@ -992,7 +990,13 @@
       },
       "modeDefaultAdd": "Tür varsayılanı",
       "modeDefaultEdit": "Varsayılan (temizle)",
-      "invalidMode": "Geçersiz arayüz modu."
+      "invalidMode": "Geçersiz arayüz modu.",
+      "backboneDirectoryLink": "Rehber ↗",
+      "backboneDirectoryLinkAria": "Arayüz olarak eklenecek hub'ları bulmak için Reticulum omurga dizinini açın",
+      "backboneDirectoryHint": "directory.rns.recipes adresinde daha fazla topluluk omurgası merkezi bulabilirsiniz. Yggdrasil hub'ları (örneğin Yggdrasil_Ashburn_VA) çalışan bir yerel Yggdrasil tüneline ihtiyaç duyar; Reticulum kılavuzu, tünel arayüzünüze bağlanmanızı önerir (genellikle tun0).",
+      "localOfflineRowBleBondStale": "Bluetooth bağı eski — Sistem Ayarları → Bluetooth'ta bu RNode'u unutun, ardından yeni bir PIN ile yeniden eşleştirin (İşletim Sistemi hâlâ Eşlendi gösterebilir).",
+      "addDefaultHubsAria": "Varsayılan Reticulum omurga merkezlerini senkronize edin (ABD-Doğu, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); hizmet dışı bırakılan test ağı uç noktalarını devre dışı bırak",
+      "addDefaultHubsAllPresent": "Varsayılan omurga hub'ları zaten yapılandırılmıştır; hizmet dışı bırakılmış test ağı hub'ları etkin değil."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1021,7 +1025,8 @@
       "offlineHintBle": "İşletim sisteminiz 6 haneli bir Bluetooth PIN'i (macOS, Windows veya Linux) isteyebilir. RNode her eşleştirmede yeni bir kod oluşturur; varsayılan bir PIN yoktur. Başsız telsizler: USB'yi bağlayın → Reticulum Admin → Bluetooth → Eşleştirmeyi başlat → İşletim Sistemi iletişim kutusunda gösterilen PIN'i girin. Ekranlı radyolar: Heltec cihazlarında düğmeyi ~7 saniye basılı tutun (zamanlama değişir; birçok kartta ~10 saniye bunun yerine Wi-Fi AP'yi etkinleştirir), ekrandaki PIN'i okuyun ve ardından işletim sistemi iletişim kutusuna girin. Yeniden denemeden önce işletim sisteminizin Bluetooth ayarlarındaki başarısız bağlantıları temizleyin.",
       "offlineHintWifi": "RNode'un LAN'ınızda olduğunu, açık olduğunu ve yapılandırılmış IP'de erişilebilir olduğunu kontrol edin (varsayılan TCP bağlantı noktası 7633, 4242 değil). DHCP yeni bir adres atadıysa aşağıdaki ana bilgisayarı güncelleyin veya Reticulum Admin'de Wi-Fi'yi yeniden → sağlayın.",
       "tcpUnreachable": "{{name}}: TCP göbeğine ulaşılamıyor ({{host}}:{{port}})",
-      "tcpUnreachableHint": "Uzak Reticulum örneği çevrimdışı olabilir veya bağlantıları engelleyebilir. Bu arayüzü devre dışı bırakın veya ana bilgisayarı ve bağlantı noktasını doğrulayın."
+      "tcpUnreachableHint": "Uzak Reticulum örneği çevrimdışı olabilir veya bağlantıları engelleyebilir. Bu arayüzü devre dışı bırakın veya ana bilgisayarı ve bağlantı noktasını doğrulayın.",
+      "offlineHintBleBondStale": "macOS bu RNode'u hâlâ Eşlenmiş olarak gösteriyor ancak Bluetooth anahtarları artık eşleşmiyor (Eş tarafından kaldırılan eşleştirme bilgileri). Sistem Ayarları → Bluetooth'ta cihazı unutun, RNode'u eşleştirme moduna getirin (Yönetici → Bluetooth → Eşleştirmeyi başlat veya düğmeyi ~7 saniye basılı tutun), ardından yığını yeniden başlatın ve istendiğinde yeni 6 haneli PIN'i girin."
     },
     "autoConnectingTo": "{{deviceName}}'a otomatik bağlanılıyor…",
     "autoReconnectInProgress": "Otomatik yeniden bağlanma işlemi devam ediyor…",
@@ -1090,7 +1095,9 @@
       "transportSaturatedHint": "Ölü arayüzleri devre dışı bırakın ve yığını yeniden başlatın. Eşzamanlı Reticulum trafiğini azaltın.",
       "slowTransportQuery": "RNS taşıma sorguları yavaş veya başarısız ({{count}}×)",
       "slowTransportQueryHint": "Sepet taşıma aktörü sıkışmış olabilir — Reticulum yığınını yeniden başlatın.",
-      "shareInstanceHint": "Paylaşım örneği etkinleştirildi — diğer Reticulum uygulamalarından (MeshChatX, Ratspeak, standalone rnsd) tamamen çıkın ve DM'leri yeniden denemeden önce bu yığını yeniden başlatın."
+      "shareInstanceHint": "Paylaşım örneği etkinleştirildi — diğer Reticulum uygulamalarından (MeshChatX, Ratspeak, standalone rnsd) tamamen çıkın ve DM'leri yeniden denemeden önce bu yığını yeniden başlatın.",
+      "bleBondRemoved": "{{name}}: Bluetooth bağlantısı eski (İşletim sistemi hâlâ Eşlendi gösteriyor)",
+      "bleBondRemovedHint": "Sistem Ayarları → Bluetooth'ta bu RNode'u unutun, radyoda eşleştirmeyi başlatın (Yönetici → Bluetooth veya ~7 saniye düğmeyi basılı tutun), yığını yeniden başlatın ve yeni 6 haneli PIN'i girin."
     },
     "reticulumSidecarBundledMissing": "Bu kurulumda birlikte verilen Reticulum sidecar eksik. Daha yeni bir sürüme yükseltin veya sorunu bildirin; kaynaktan derleme, paketli kurulumlarda mevcut değildir.",
     "radioMqttRootDivergesWarning": "Radyo MQTT kök konusu {{radioRoot}} 'dır, ancak bu panel {{appPrefix}}' e abone olur. Ülke çapındaki düğüm trafiğini sınırlamak için radyoyu eşleştirin — Konu Önekini güncelleyin ve MQTT'yi yeniden bağlayın.",
@@ -1429,7 +1436,8 @@
         "linkDeliveryTimeout": "{{hash}} 'a doğrudan LXMF bağlantısı… zaman aşımına uğradı ({{count}}×)",
         "transportSaturated": "RNS transport saturated ({{count}} LXMF path - request drops)",
         "transportSaturatedShareInstance": "RNS nakli doymuş ({{count}} yol talebi düşer). Paylaşım örneği açık — diğer Reticulum uygulamalarından (MeshChatX, Ratspeak, rnsd) çıkın ve yığını yeniden başlatın.",
-        "slowTransportQuery": "RNS taşıma sorguları yavaş veya başarısız ({{count}}×)"
+        "slowTransportQuery": "RNS taşıma sorguları yavaş veya başarısız ({{count}}×)",
+        "bleBondRemoved": "BLE RNode \"{{name}}\" bağı eski — İşletim Sistemi Bluetooth ayarlarını unutun ve yeniden eşleştirin"
       }
     },
     "routingPort": {
@@ -3660,7 +3668,6 @@
     "syncNowFor": "{{name}} adlı kişiden gelen mesajları senkronize et",
     "addNode": "Düğüm ekle",
     "addNodeLabel": "Karmaya göre yayılım düğümü ekle",
-    "addNodePlaceholder": "32 karakterli LXMF hedef karması",
     "localInboxStats": "{{count}} sıraya alındı ​​· {{bytes}} bayt",
     "refreshing": "Yenileniyor…",
     "refreshAria": "Yayılma düğümlerini yenile",
@@ -3685,7 +3692,38 @@
       "body": "Hiçbir yayılma düğümü yapılandırılmamış. Çevrimdışı veya erişilemeyen eşler, LXMF teslimatı için bir yayılma düğümüne ihtiyaç duyar.",
       "openSettings": "Yayılımı ayarla",
       "openSettingsAria": "Reticulum Ağı yayılım ayarlarını aç"
-    }
+    },
+    "rename": "Yeniden adlandır",
+    "renameLabel": "Yayılma düğümü adı",
+    "renameSave": "Adı kaydet",
+    "renameAria": "Yayılma düğümünü yeniden adlandırın {{name}}",
+    "delete": "Sil",
+    "deleteAria": "Yayılma düğümünü sil {{name}}",
+    "deleteConfirmTitle": "Yayılma düğümü silinsin mi?",
+    "deleteConfirmBody": "{{name}} yayılma düğümü listesinden kaldırılsın mı? Bu uzak düğümü değiştirmez.",
+    "deleteConfirm": "Silmek",
+    "renameSaveAria": "Yayılma düğümü adını kaydet",
+    "renameCancelAria": "Yayılma düğümünün yeniden adlandırılmasını iptal et",
+    "enableAria": "Yayılma düğümünü etkinleştir {{name}}",
+    "disableAria": "Yayılma düğümünü devre dışı bırak {{name}}",
+    "syncNowPreferredAria": "Tercih edilen yayılma düğümünden gelen mesajları senkronize edin",
+    "nodeStatus": {
+      "active": "aktif",
+      "idle": "boşta",
+      "known": "bilinen",
+      "pending": "askıda olması",
+      "unknown": "bilinmiyor",
+      "online": "çevrimiçi"
+    },
+    "syncLocalNotSupported": "Yerel yayılım, çevrimdışı gelen kutunuzdur; uzak bir LXMF yayılım düğümü gibi ağ üzerinden senkronize edilemez.",
+    "syncIdentityUnknown": "Yayılım düğümü kimliği bilinmiyor; bir duyuru veya yol yanıtı bekleyin ve ardından tekrar deneyin.",
+    "syncTargetNotPropagationNode": "Bu hedefe Reticulum'da ulaşılabilir ancak bir LXMF yayılım düğümü değildir (TCP hub'ları yalnızca aktarım yollarıdır). Çevrimdışı mesajları senkronize etmek için lxmf.propagation olarak duyuru yapan bir hedef ekleyin.",
+    "syncPeeringStampFailed": "Bu yayılım düğümü için eşleme damgası oluşturulamadı; birazdan tekrar deneyin.",
+    "syncCancelled": "Yayılma senkronizasyonu iptal edildi.",
+    "renameFailed": "Yayılma düğümü yeniden adlandırılamadı.",
+    "deleteFailed": "Yayılma düğümü silinemedi.",
+    "addFailed": "Yayılma düğümü eklenemedi.",
+    "addNodePlaceholder": "32 karakterli lxmf.propagation hedef karması"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Yayılma modu",

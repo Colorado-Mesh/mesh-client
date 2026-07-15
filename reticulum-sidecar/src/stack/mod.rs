@@ -75,6 +75,19 @@ impl StackHandle {
             tracing::warn!("failed to set share_instance / instance_name defaults: {e}");
         }
 
+        match config::ensure_decommissioned_hubs_disabled(&config_dir) {
+            Ok(disabled) if !disabled.is_empty() => {
+                tracing::info!(
+                    "disabled decommissioned testnet hubs: {}",
+                    disabled.join(", ")
+                );
+            }
+            Ok(_) => {}
+            Err(e) => {
+                tracing::warn!("failed to disable decommissioned testnet hubs: {e}");
+            }
+        }
+
         if let Err(e) = config::repair_rnode_radio_fields_in_config(&config_dir) {
             tracing::warn!("failed to repair RNode radio fields in config: {e}");
         }
@@ -841,6 +854,43 @@ impl StackHandle {
                 .and_then(|p| p.destination_hash.clone())
                 .ok_or_else(|| format!("propagation node not found: {propagation_id}"))?
         };
+        let lxmf = {
+            let inner = self.inner.read().await;
+            inner.identity.lxmf_hash.clone()
+        };
+        let is_local = propagation_id == "local-prop";
+        let local_prop_hash = {
+            #[cfg(feature = "rns-stack")]
+            {
+                self.live
+                    .as_ref()
+                    .map(|live| live.propagation_local_hash())
+                    .unwrap_or_default()
+            }
+            #[cfg(not(feature = "rns-stack"))]
+            {
+                String::new()
+            }
+        };
+        let sync_self = is_local
+            || prop_hash.eq_ignore_ascii_case(&lxmf)
+            || (!local_prop_hash.is_empty() && prop_hash.eq_ignore_ascii_case(&local_prop_hash));
+        // Local inbox lives in this process — settle without a self LinkRequest.
+        if is_local {
+            self.emit_event(
+                "propagation_sync",
+                serde_json::json!({
+                    "active": false,
+                    "progress": 100.0,
+                    "message": null,
+                }),
+            );
+            return Ok(());
+        }
+        // Remote row pointing at our own hashes would still try a self-link.
+        if sync_self {
+            return Err("LOCAL_PROPAGATION_SYNC_UNSUPPORTED".into());
+        }
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             live.start_propagation_sync(&prop_hash).await?;
@@ -894,6 +944,61 @@ impl StackHandle {
         let row = inner.add_propagation_node(destination_hash, name)?;
         inner.save(&self.config_dir, &self.storage_dir)?;
         Ok(serde_json::json!({ "ok": true, "node": row }))
+    }
+
+    pub async fn remove_propagation_node(&self, id: &str) -> Result<(), String> {
+        // Live sync tracks progress in PropagationBridge, not persisted flags — always
+        // cancel before mutating so RF/`/offer` work cannot outlive a deleted node.
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            live.cancel_propagation_sync().await;
+            self.emit_event(
+                "propagation_sync",
+                serde_json::json!({
+                    "active": false,
+                    "progress": 0.0,
+                    "message": "propagation sync cancelled",
+                }),
+            );
+        }
+        let cleared_preferred = {
+            let mut inner = self.inner.write().await;
+            let was_preferred = inner.preferred_propagation_id.as_deref() == Some(id);
+            // Snapshot for rollback if durable save fails after in-memory mutate.
+            let snapshot = serde_json::to_value(&*inner).ok();
+            inner.remove_propagation_node(id)?;
+            if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                if let Some(snap) = snapshot {
+                    if let Ok(restored) = serde_json::from_value::<PersistedState>(snap) {
+                        *inner = restored;
+                    }
+                }
+                return Err(e);
+            }
+            was_preferred
+        };
+        if cleared_preferred {
+            #[cfg(feature = "rns-stack")]
+            if let Some(live) = &self.live {
+                live.set_outbound_propagation_node(None).await;
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn rename_propagation_node(&self, id: &str, name: &str) -> Result<(), String> {
+        let mut inner = self.inner.write().await;
+        let snapshot = serde_json::to_value(&*inner).ok();
+        inner.rename_propagation_node(id, name)?;
+        if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+            if let Some(snap) = snapshot {
+                if let Ok(restored) = serde_json::from_value::<PersistedState>(snap) {
+                    *inner = restored;
+                }
+            }
+            return Err(e);
+        }
+        Ok(())
     }
 
     pub async fn ping_destination(&self, destination_hash: &str) -> Result<serde_json::Value, String> {

@@ -961,9 +961,7 @@
       "setPrimaryFailed": "Не вдалося встановити основний локальний RNode.",
       "defaultHubsLabel": "Концентратори за замовчуванням",
       "addDefaultHubs": "Додати тестову мережу та концентратори Ratspeak",
-      "addDefaultHubsAria": "Додайте тестову мережу Reticulum за замовчуванням та концентратори Ratspeak у вимкнений стан",
       "addDefaultHubsSuccess": "Додано {{added}}, виправлено {{repaired}}. {{skipped}} вже налаштовано.",
-      "addDefaultHubsAllPresent": "Концентратори тестової мережі та Ratspeak за замовчуванням вже налаштовані.",
       "addDefaultHubsFailed": "Не вдалося додати концентратори за умовчанням.",
       "identityNotConfigured": "Налаштуйте ідентифікатор Reticulum на вкладці \"Мережа\" — спочатку створіть або імпортуйте фразу відновлення.",
       "identityRequiredHint": "Налаштуйте ідентифікатор Reticulum на вкладці Network (Мережа) перед додаванням інтерфейсів.",
@@ -992,7 +990,13 @@
       },
       "modeDefaultAdd": "За типом",
       "modeDefaultEdit": "За замовчуванням (очистити)",
-      "invalidMode": "Недійсний режим інтерфейсу."
+      "invalidMode": "Недійсний режим інтерфейсу.",
+      "backboneDirectoryLink": "Довідник ↗",
+      "backboneDirectoryLinkAria": "Відкрийте магістральний каталог Reticulum, щоб знайти концентратори, які можна додати як інтерфейси",
+      "backboneDirectoryHint": "Знайдіть більше опорних центрів спільноти на directory.rns.recipes. Хабам Yggdrasil (наприклад, Yggdrasil_Ashburn_VA) потрібен запущений локальний тунель Yggdrasil — посібник Reticulum рекомендує прив’язати до вашого інтерфейсу тунелю (часто tun0).",
+      "localOfflineRowBleBondStale": "Зв’язок Bluetooth застарілий — Забудьте про цей вузол RNode у системних налаштуваннях → Bluetooth, а потім повторіть з’єднання з новим PIN-кодом (ОС може все ще відображати Paired).",
+      "addDefaultHubsAria": "Синхронізувати базові концентратори Reticulum за замовчуванням (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); вимкнути виведені з експлуатації кінцеві точки тестової мережі",
+      "addDefaultHubsAllPresent": "Основні магістральні концентратори вже налаштовані; не ввімкнено виведених з експлуатації концентраторів тестової мережі."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1021,7 +1025,8 @@
       "offlineHintBle": "Ваша ОС може запитати 6-значний PIN-код Bluetooth (macOS, Windows або Linux). RNode генерує новий код для кожного з’єднання — PIN-код за замовчуванням відсутній. Безголові радіостанції: підключіть USB → Reticulum Admin → Bluetooth → Розпочати з’єднання → введіть PIN-код, показаний у діалоговому вікні ОС. Радіо з дисплеєм: утримуйте кнопку ~7 с на пристроях Heltec (час змінюється; ~10 с на багатьох платах замість цього вмикає Wi-Fi AP), прочитайте PIN-код на екрані, а потім введіть його в діалоговому вікні ОС. Перед повторною спробою очистіть невдалі зв’язки в налаштуваннях Bluetooth ОС.",
       "offlineHintWifi": "Переконайтеся, що RNode знаходиться у вашій локальній мережі, увімкнений і доступний за налаштованою IP-адресою (порт TCP за замовчуванням 7633, а не 4242). Оновіть хост нижче, якщо DHCP призначив нову адресу, або повторно надайте Wi-Fi в Reticulum → Admin.",
       "tcpUnreachable": "{{name}}: концентратор TCP недоступний ({{host}}:{{port}})",
-      "tcpUnreachableHint": "Віддалений екземпляр Reticulum може бути offline або блокувати з'єднання. Вимкніть цей інтерфейс або перевірте хост і порт."
+      "tcpUnreachableHint": "Віддалений екземпляр Reticulum може бути offline або блокувати з'єднання. Вимкніть цей інтерфейс або перевірте хост і порт.",
+      "offlineHintBleBondStale": "macOS усе ще показує цей вузол RNode як сполучений, але ключі Bluetooth більше не збігаються (інформацію про сполучення видалено з однорангового пристрою). Забудьте про пристрій у системних налаштуваннях → Bluetooth, переведіть RNode у режим з’єднання (Адміністратор → Bluetooth → Почати з’єднання або утримуйте кнопку ~7 с), потім перезапустіть стек і введіть новий 6-значний PIN-код, коли буде запропоновано."
     },
     "autoConnectingTo": "Автоматичне підключення до {{deviceName}}…",
     "autoReconnectInProgress": "Триває автоматичне повторне підключення…",
@@ -1090,7 +1095,9 @@
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "Транспортні запити RNS повільні або невдалі ({{count}}×)",
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
-      "shareInstanceHint": "Екземпляр Share увімкнено — повністю закрийте інші програми Reticulum (MeshChatX, Ratspeak, автономний rnsd) і перезапустіть цей стек перед повторною спробою DM."
+      "shareInstanceHint": "Екземпляр Share увімкнено — повністю закрийте інші програми Reticulum (MeshChatX, Ratspeak, автономний rnsd) і перезапустіть цей стек перед повторною спробою DM.",
+      "bleBondRemoved": "{{name}}: з’єднання Bluetooth застаріле (ОС все ще відображає сполучення)",
+      "bleBondRemovedHint": "Забудьте про цей вузол RNode у системних налаштуваннях → Bluetooth, почніть сполучення на радіо (Адміністратор → Bluetooth або утримання кнопки ~7 с), перезапустіть стек і введіть новий 6-значний PIN-код."
     },
     "reticulumSidecarBundledMissing": "У цій інсталяції відсутній Reticulum sidecar. Оновіть до новішого випуску або повідомте про проблему — збірка з вихідного коду недоступна в пакетних встановленнях.",
     "radioMqttRootDivergesWarning": "Коренева тема радіо MQTT - {{radioRoot}}, але ця панель підписується на {{appPrefix}}. Підключіть радіоприймач, щоб обмежити загальнонаціональний трафік вузлів — оновіть префікс теми та повторно підключіть MQTT.",
@@ -1429,7 +1436,8 @@
         "linkDeliveryTimeout": "Пряме посилання LXMF на {{hash}}… вичерпано час очікування ({{count}}×)",
         "transportSaturated": "Транспорт RNS насичений ({{count}} LXMF path-request drops)",
         "transportSaturatedShareInstance": "Транспорт RNS насичений ({{count}} краплі запиту шляху). Екземпляр Share увімкнено — закрийте інші програми Reticulum (MeshChatX, Ratspeak, rnsd) і перезапустіть стек.",
-        "slowTransportQuery": "Транспортні запити RNS повільні або невдалі ({{count}}×)"
+        "slowTransportQuery": "Транспортні запити RNS повільні або невдалі ({{count}}×)",
+        "bleBondRemoved": "Зв’язок BLE RNode \"{{name}}\" застарілий — видаліть пристрій у налаштуваннях Bluetooth ОС і повторіть сполучення"
       }
     },
     "routingPort": {
@@ -3660,7 +3668,6 @@
     "syncNowFor": "Синхронізувати повідомлення від {{name}}",
     "addNode": "Додати вузол",
     "addNodeLabel": "Додати вузол поширення за хешем",
-    "addNodePlaceholder": "32-символьний хеш призначення LXMF",
     "localInboxStats": "{{count}} у черзі · {{bytes}} байт",
     "refreshing": "Оновлення…",
     "refreshAria": "Оновити вузли поширення",
@@ -3685,7 +3692,38 @@
       "body": "Вузол поширення не налаштовано. Автономні або недоступні вузли потребують вузла розповсюдження для доставки LXMF.",
       "openSettings": "Налаштувати поширення",
       "openSettingsAria": "Open Reticulum Network propagation settings"
-    }
+    },
+    "rename": "Перейменувати",
+    "renameLabel": "Ім'я вузла поширення",
+    "renameSave": "Зберегти назву",
+    "renameAria": "Перейменувати вузол поширення {{name}}",
+    "delete": "Видалити",
+    "deleteAria": "Видалити вузол розповсюдження {{name}}",
+    "deleteConfirmTitle": "Видалити вузол розповсюдження?",
+    "deleteConfirmBody": "Видалити {{name}} зі списку вузлів поширення? Це не змінює віддалений вузол.",
+    "deleteConfirm": "Видалити",
+    "renameSaveAria": "Зберегти назву вузла поширення",
+    "renameCancelAria": "Скасувати перейменування вузла поширення",
+    "enableAria": "Увімкнути вузол розповсюдження {{name}}",
+    "disableAria": "Вимкнути вузол розповсюдження {{name}}",
+    "syncNowPreferredAria": "Синхронізувати повідомлення від бажаного вузла розповсюдження",
+    "nodeStatus": {
+      "active": "активний",
+      "idle": "непрацюючий",
+      "known": "відомий",
+      "pending": "в очікуванні",
+      "unknown": "невідомий",
+      "online": "онлайн"
+    },
+    "syncLocalNotSupported": "Локальне розповсюдження — це ваша офлайн-вхідна скринька — його не можна синхронізувати через мережу, як віддалений вузол розповсюдження LXMF.",
+    "syncIdentityUnknown": "Ідентифікатор вузла розповсюдження невідомий — зачекайте на оголошення або відповідь на шлях і повторіть спробу.",
+    "syncTargetNotPropagationNode": "Цей пункт призначення доступний на Reticulum, але не є вузлом розповсюдження LXMF (центри TCP є лише транспортними шляхами). Додайте призначення, яке оголошує як lxmf.propagation для синхронізації повідомлень в режимі офлайн.",
+    "syncPeeringStampFailed": "Не вдалося створити одноранговий штамп для цього вузла розповсюдження — спробуйте ще раз через мить.",
+    "syncCancelled": "Синхронізацію розповсюдження скасовано.",
+    "renameFailed": "Не вдалося перейменувати вузол розповсюдження.",
+    "deleteFailed": "Не вдалося видалити вузол розповсюдження.",
+    "addFailed": "Не вдалося додати вузол розповсюдження.",
+    "addNodePlaceholder": "32-символьний хеш призначення lxmf.propagation"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Режим поширення",

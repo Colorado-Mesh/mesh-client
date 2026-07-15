@@ -88,6 +88,7 @@ pnpm run check:insecure-temp-files || fail 'pnpm run check:insecure-temp-files'
 pnpm run check:db-migrations || fail 'pnpm run check:db-migrations'
 pnpm run check:ipc-contract || fail 'pnpm run check:ipc-contract'
 pnpm run check:reticulum-interface-modes || fail 'pnpm run check:reticulum-interface-modes'
+pnpm run check:reticulum-decommissioned-hubs || fail 'pnpm run check:reticulum-decommissioned-hubs'
 pnpm run check:console-log || fail 'pnpm run check:console-log'
 pnpm run check:silent-catches || fail 'pnpm run check:silent-catches'
 pnpm run check:url-hostname-sanitization || fail 'pnpm run check:url-hostname-sanitization'
@@ -100,7 +101,10 @@ else
   pnpm run check:i18n:branch || fail 'pnpm run check:i18n:branch'
 fi
 pnpm run check:licenses || fail 'pnpm run check:licenses'
-pnpm audit --audit-level=high || fail 'pnpm audit --audit-level=high'
+# npm retired legacy audit APIs (HTTP 410); pnpm 10.x still calls them. Use pnpm 11+ audit
+# via dlx until packageManager is bumped (pnpm.io migration / issue #11265).
+pnpm dlx --config.minimumReleaseAge=0 pnpm@11.13.0 --config.manage-package-manager-versions=false --config.pm-on-fail=ignore audit --audit-level=high \
+  || fail 'pnpm audit --audit-level=high'
 if grep -qE '^\.github/workflows/' "$STAGED_LIST" 2> /dev/null; then
   actionlint || fail 'actionlint'
 fi
