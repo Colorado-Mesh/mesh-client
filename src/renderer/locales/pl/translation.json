@@ -992,7 +992,10 @@
       },
       "modeDefaultAdd": "Domyślny dla typu",
       "modeDefaultEdit": "Domyślny (wyczyść)",
-      "invalidMode": "Nieprawidłowy tryb interfejsu."
+      "invalidMode": "Nieprawidłowy tryb interfejsu.",
+      "backboneDirectoryLink": "Katalog ↗",
+      "backboneDirectoryLinkAria": "Otwórz katalog szkieletowy Reticulum, aby znaleźć koncentratory, które możesz dodać jako interfejsy",
+      "backboneDirectoryHint": "Więcej centrów szkieletowych społeczności znajdziesz na stronie Directory.rns.recipes. Koncentratory Yggdrasil (na przykład Yggdrasil_Ashburn_VA) wymagają działającego lokalnego tunelu Yggdrasil — podręcznik Reticulum zaleca powiązanie z interfejsem tunelu (często tun0)."
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -992,7 +992,10 @@
       },
       "modeDefaultAdd": "Valeur par type",
       "modeDefaultEdit": "Par défaut (effacer)",
-      "invalidMode": "Mode d'interface non valide."
+      "invalidMode": "Mode d'interface non valide.",
+      "backboneDirectoryLink": "Annuaire ↗",
+      "backboneDirectoryLinkAria": "Ouvrez le répertoire principal de Reticulum pour trouver des hubs à ajouter en tant qu'interfaces",
+      "backboneDirectoryHint": "Trouvez d’autres hubs communautaires sur directory.rns.recipes. Les hubs Yggdrasil (par exemple Yggdrasil_Ashburn_VA) nécessitent un tunnel Yggdrasil local en cours d'exécution — le manuel Reticulum recommande de se lier à l'interface de votre tunnel (souvent tun0)."
     },
     "reticulumPeers": {
       "hops": "Hops",

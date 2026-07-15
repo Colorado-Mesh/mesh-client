@@ -992,7 +992,10 @@
       },
       "modeDefaultAdd": "Typstandard",
       "modeDefaultEdit": "Standard (löschen)",
-      "invalidMode": "Ungültiger Schnittstellenmodus."
+      "invalidMode": "Ungültiger Schnittstellenmodus.",
+      "backboneDirectoryLink": "Verzeichnis ↗",
+      "backboneDirectoryLinkAria": "Öffnen Sie das Reticulum-Backbone-Verzeichnis, um Hubs zu finden, die Sie als Schnittstellen hinzufügen können",
+      "backboneDirectoryHint": "Weitere Community-Backbone-Hubs finden Sie unter Directory.rns.recipes. Yggdrasil-Hubs (zum Beispiel Yggdrasil_Ashburn_VA) benötigen einen laufenden lokalen Yggdrasil-Tunnel – das Reticulum-Handbuch empfiehlt die Bindung an Ihre Tunnelschnittstelle (häufig tun0)."
     },
     "reticulumPeers": {
       "hops": "Hops",

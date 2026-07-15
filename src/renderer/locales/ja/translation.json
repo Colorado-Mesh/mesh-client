@@ -992,7 +992,10 @@
       },
       "modeDefaultAdd": "タイプ既定",
       "modeDefaultEdit": "デフォルト（クリア）",
-      "invalidMode": "無効なインターフェースモードです。"
+      "invalidMode": "無効なインターフェースモードです。",
+      "backboneDirectoryLink": "ディレクトリ ↗",
+      "backboneDirectoryLinkAria": "Reticulum バックボーン ディレクトリを開いて、インターフェイスとして追加するハブを見つけます。",
+      "backboneDirectoryHint": "他のコミュニティ バックボーン ハブについては、directory.rns.recipes で見つけてください。 Yggdrasil ハブ (Yggdrasil_Ashburn_VA など) には、実行中のローカル Yggdrasil トンネルが必要です。Reticulum マニュアルでは、トンネル インターフェイス (多くの場合 tun0) にバインドすることを推奨しています。"
     },
     "reticulumPeers": {
       "hops": "Hops",

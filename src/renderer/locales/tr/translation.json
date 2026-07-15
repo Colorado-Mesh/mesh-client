@@ -992,7 +992,10 @@
       },
       "modeDefaultAdd": "Tür varsayılanı",
       "modeDefaultEdit": "Varsayılan (temizle)",
-      "invalidMode": "Geçersiz arayüz modu."
+      "invalidMode": "Geçersiz arayüz modu.",
+      "backboneDirectoryLink": "Rehber ↗",
+      "backboneDirectoryLinkAria": "Arayüz olarak eklenecek hub'ları bulmak için Reticulum omurga dizinini açın",
+      "backboneDirectoryHint": "Directory.rns.recipes adresinde daha fazla topluluk omurgası merkezi bulabilirsiniz. Yggdrasil hub'ları (örneğin Yggdrasil_Ashburn_VA) çalışan bir yerel Yggdrasil tüneline ihtiyaç duyar; Reticulum kılavuzu, tünel arayüzünüze bağlanmanızı önerir (genellikle tun0)."
     },
     "reticulumPeers": {
       "hops": "Hops",

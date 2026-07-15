@@ -5,6 +5,13 @@ import {
 } from '@/renderer/lib/reticulum/reticulumInterfaceMode';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import { stripConnectHostBrackets } from '@/shared/connectHost';
+import {
+  RETICULUM_DECOMMISSIONED_HUB_ENDPOINTS,
+  type ReticulumDecommissionedHubEndpoint,
+} from '@/shared/reticulumDecommissionedHubs';
+
+export type { ReticulumDecommissionedHubEndpoint };
+export { RETICULUM_DECOMMISSIONED_HUB_ENDPOINTS };
 
 export interface ReticulumDefaultHubPreset {
   id: string;
@@ -12,41 +19,40 @@ export interface ReticulumDefaultHubPreset {
   type: 'tcp' | 'i2p';
   host: string;
   port?: number;
-  group: 'testnet' | 'interop';
+  group: 'backbone' | 'interop';
 }
 
-/** Official Main Testnet TCP/I2P bootstrap entries + Ratspeak interop hub. */
+/**
+ * Community / backbone bootstrap entries (official public testnet hubs like Dublin
+ * and BetweenTheBorders were decommissioned — do not re-add them here).
+ *
+ * Yggdrasil entries use TCPClientInterface against directory Backbone remotes
+ * (types are interchangeable for outbound connect). Added disabled — enable only
+ * when a local Yggdrasil tunnel is up.
+ */
 export const RETICULUM_DEFAULT_HUB_PRESETS: readonly ReticulumDefaultHubPreset[] = [
   {
-    id: 'testnet-dublin',
-    name: 'RNS Testnet Dublin',
-    type: 'tcp',
-    host: 'dublin.connect.reticulum.network',
-    port: 4965,
-    group: 'testnet',
-  },
-  {
-    id: 'testnet-betweentheborders',
-    name: 'RNS Testnet BetweenTheBorders',
-    type: 'tcp',
-    host: 'reticulum.betweentheborders.com',
-    port: 4242,
-    group: 'testnet',
-  },
-  {
-    id: 'testnet-us-east',
+    id: 'backbone-us-east',
     name: 'RNS_Transport_US-East',
     type: 'tcp',
     host: '45.77.109.86',
     port: 4965,
-    group: 'testnet',
+    group: 'backbone',
   },
   {
-    id: 'testnet-i2p-a',
-    name: 'RNS Testnet I2P Hub A',
+    id: 'backbone-i2p-a',
+    name: 'RNS I2P Hub A',
     type: 'i2p',
     host: 'g3br23bvx3lq5uddcsjii74xgmn6y5q325ovrkq2zw2wbzbqgbuq.b32.i2p',
-    group: 'testnet',
+    group: 'backbone',
+  },
+  {
+    id: 'yggdrasil-ashburn-va',
+    name: 'Yggdrasil_Ashburn_VA',
+    type: 'tcp',
+    host: '201:ac2f:89eb:2afe:5f3d:9db9:a7e9:2f75',
+    port: 4343,
+    group: 'backbone',
   },
   {
     id: 'ratspeak',
@@ -156,16 +162,42 @@ export function buildDefaultHubRepairPatch(
   return Object.keys(patch).length > 0 ? patch : null;
 }
 
+export function reticulumInterfaceMatchesDecommissionedHub(
+  iface: Pick<ReticulumInterfaceRow, 'type' | 'host' | 'port' | 'enabled'>,
+  endpoint: ReticulumDecommissionedHubEndpoint,
+): boolean {
+  if (iface.type !== 'tcp' || !iface.enabled) {
+    return false;
+  }
+  if (iface.port !== endpoint.port) {
+    return false;
+  }
+  const ifaceHost = iface.host?.trim();
+  if (!ifaceHost) {
+    return false;
+  }
+  const normalized = normalizeTcpHubHost(ifaceHost);
+  return endpoint.hosts.some((host) => normalizeTcpHubHost(host) === normalized);
+}
+
 export interface DefaultHubPresetSyncRepair {
   preset: ReticulumDefaultHubPreset;
   iface: ReticulumInterfaceRow;
   patch: Record<string, unknown>;
 }
 
+export interface DecommissionedHubDisableRepair {
+  endpoint: ReticulumDecommissionedHubEndpoint;
+  iface: ReticulumInterfaceRow;
+  patch: { enabled: false };
+}
+
 export interface DefaultHubPresetSyncPlan {
   skip: ReticulumDefaultHubPreset[];
   add: ReticulumDefaultHubPreset[];
   repair: DefaultHubPresetSyncRepair[];
+  /** Enabled interfaces pointed at known-dead hubs → disable. */
+  disableDecommissioned: DecommissionedHubDisableRepair[];
 }
 
 export function planDefaultHubPresetsSync(
@@ -193,7 +225,20 @@ export function planDefaultHubPresetsSync(
     }
   }
 
-  return { skip, add, repair };
+  const disableDecommissioned: DecommissionedHubDisableRepair[] = [];
+  for (const endpoint of RETICULUM_DECOMMISSIONED_HUB_ENDPOINTS) {
+    for (const iface of interfaces) {
+      if (reticulumInterfaceMatchesDecommissionedHub(iface, endpoint)) {
+        disableDecommissioned.push({
+          endpoint,
+          iface,
+          patch: { enabled: false },
+        });
+      }
+    }
+  }
+
+  return { skip, add, repair, disableDecommissioned };
 }
 
 export function listMissingDefaultHubPresets(
@@ -227,7 +272,7 @@ export function isDefaultHubPresetAddable(preset: ReticulumDefaultHubPreset): bo
 
 export interface DefaultHubPresetSyncFailure {
   presetId: string;
-  phase: 'add' | 'repair';
+  phase: 'add' | 'repair' | 'disable';
   error: string;
 }
 
@@ -235,6 +280,8 @@ export interface DefaultHubPresetsSyncResult {
   added: number;
   repaired: number;
   skipped: number;
+  /** Enabled decommissioned hubs that were disabled. */
+  disabledDecommissioned: number;
   failed: DefaultHubPresetSyncFailure[];
 }
 
@@ -250,8 +297,30 @@ export async function applyDefaultHubPresetsSync(
     added: 0,
     repaired: 0,
     skipped: plan.skip.length,
+    disabledDecommissioned: 0,
     failed: [],
   };
+
+  for (const { iface, patch, endpoint } of plan.disableDecommissioned) {
+    const res = (await api.proxyPut(`/api/v1/interfaces/${iface.id}`, patch)) as {
+      ok?: boolean;
+      error?: string;
+    };
+    if (res?.ok === false) {
+      result.failed.push({
+        presetId: endpoint.id,
+        phase: 'disable',
+        error: res.error?.trim() || 'unknown',
+      });
+      console.debug(
+        '[reticulumDefaultHubPresets] disable decommissioned hub failed',
+        endpoint.id,
+        res.error,
+      );
+      continue;
+    }
+    result.disabledDecommissioned += 1;
+  }
 
   for (const { iface, patch, preset } of plan.repair) {
     const res = (await api.proxyPut(`/api/v1/interfaces/${iface.id}`, patch)) as {

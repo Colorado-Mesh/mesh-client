@@ -100,7 +100,10 @@ else
   pnpm run check:i18n:branch || fail 'pnpm run check:i18n:branch'
 fi
 pnpm run check:licenses || fail 'pnpm run check:licenses'
-pnpm audit --audit-level=high || fail 'pnpm audit --audit-level=high'
+# npm retired legacy audit APIs (HTTP 410); pnpm 10.x still calls them. Use pnpm 11+ audit
+# via dlx until packageManager is bumped (pnpm.io migration / issue #11265).
+pnpm dlx --config.minimumReleaseAge=0 pnpm@11.13.0 --config.manage-package-manager-versions=false --config.pm-on-fail=ignore audit --audit-level=high \
+  || fail 'pnpm audit --audit-level=high'
 if grep -qE '^\.github/workflows/' "$STAGED_LIST" 2> /dev/null; then
   actionlint || fail 'actionlint'
 fi

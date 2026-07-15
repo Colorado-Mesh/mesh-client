@@ -992,7 +992,10 @@
       },
       "modeDefaultAdd": "Typestandaard",
       "modeDefaultEdit": "Standaard (wissen)",
-      "invalidMode": "Ongeldige interfacemodus."
+      "invalidMode": "Ongeldige interfacemodus.",
+      "backboneDirectoryLink": "Telefoonboek ↗",
+      "backboneDirectoryLinkAria": "Open de Reticulum-backbone-map om hubs te vinden die u als interfaces kunt toevoegen",
+      "backboneDirectoryHint": "Vind meer community-backbone-hubs op directory.rns.recipes. Yggdrasil-hubs (bijvoorbeeld Yggdrasil_Ashburn_VA) hebben een actieve lokale Yggdrasil-tunnel nodig - de Reticulum-handleiding beveelt aan om te binden aan uw tunnelinterface (vaak tun0)."
     },
     "reticulumPeers": {
       "hops": "Hops",

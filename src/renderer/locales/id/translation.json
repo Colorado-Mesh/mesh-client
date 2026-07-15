@@ -992,7 +992,10 @@
       },
       "modeDefaultAdd": "Bawaan tipe",
       "modeDefaultEdit": "Bawaan (hapus)",
-      "invalidMode": "Mode antarmuka tidak valid."
+      "invalidMode": "Mode antarmuka tidak valid.",
+      "backboneDirectoryLink": "Direktori ↗",
+      "backboneDirectoryLinkAria": "Buka direktori tulang punggung Reticulum untuk menemukan hub yang akan ditambahkan sebagai antarmuka",
+      "backboneDirectoryHint": "Temukan lebih banyak hub tulang punggung komunitas di direktori.rns.recipes. Hub Yggdrasil (misalnya Yggdrasil_Ashburn_VA) memerlukan terowongan Yggdrasil lokal yang berjalan — manual Reticulum merekomendasikan pengikatan ke antarmuka terowongan Anda (seringkali tun0)."
     },
     "reticulumPeers": {
       "hops": "Hops",

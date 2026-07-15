@@ -75,6 +75,19 @@ impl StackHandle {
             tracing::warn!("failed to set share_instance / instance_name defaults: {e}");
         }
 
+        match config::ensure_decommissioned_hubs_disabled(&config_dir) {
+            Ok(disabled) if !disabled.is_empty() => {
+                tracing::info!(
+                    "disabled decommissioned testnet hubs: {}",
+                    disabled.join(", ")
+                );
+            }
+            Ok(_) => {}
+            Err(e) => {
+                tracing::warn!("failed to disable decommissioned testnet hubs: {e}");
+            }
+        }
+
         if let Err(e) = config::repair_rnode_radio_fields_in_config(&config_dir) {
             tracing::warn!("failed to repair RNode radio fields in config: {e}");
         }

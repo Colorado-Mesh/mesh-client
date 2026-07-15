@@ -992,7 +992,10 @@
       },
       "modeDefaultAdd": "Výchozí podle typu",
       "modeDefaultEdit": "Výchozí (vymazat)",
-      "invalidMode": "Neplatný režim rozhraní."
+      "invalidMode": "Neplatný režim rozhraní.",
+      "backboneDirectoryLink": "Adresář ↗",
+      "backboneDirectoryLinkAria": "Otevřete páteřní adresář Reticulum a vyhledejte centra, která chcete přidat jako rozhraní",
+      "backboneDirectoryHint": "Další páteřní centra komunity naleznete na adrese directory.rns.recipes. Huby Yggdrasil (například Yggdrasil_Ashburn_VA) potřebují spuštěný místní tunel Yggdrasil — příručka Reticulum doporučuje vazbu na rozhraní vašeho tunelu (často tun0)."
     },
     "reticulumPeers": {
       "hops": "Hops",

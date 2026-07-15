@@ -992,7 +992,10 @@
       },
       "modeDefaultAdd": "类型默认",
       "modeDefaultEdit": "默认（清除）",
-      "invalidMode": "无效的接口模式。"
+      "invalidMode": "无效的接口模式。",
+      "backboneDirectoryLink": "目录 ↗",
+      "backboneDirectoryLinkAria": "打开 Reticulum 主干目录以查找要添加为接口的集线器",
+      "backboneDirectoryHint": "在directory.rns.recipes 中查找更多社区骨干中心。 Yggdrasil 集线器（例如 Yggdrasil_Ashburn_VA）需要一个正在运行的本地 Yggdrasil 隧道 - Reticulum 手册建议绑定到您的隧道接口（通常是 tun0）。"
     },
     "reticulumPeers": {
       "hops": "Hops",

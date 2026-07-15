@@ -992,7 +992,10 @@
       },
       "modeDefaultAdd": "Padrão do tipo",
       "modeDefaultEdit": "Padrão (limpar)",
-      "invalidMode": "Modo de interface inválido."
+      "invalidMode": "Modo de interface inválido.",
+      "backboneDirectoryLink": "Diretório ↗",
+      "backboneDirectoryLinkAria": "Abra o diretório backbone do Reticulum para encontrar hubs para adicionar como interfaces",
+      "backboneDirectoryHint": "Encontre mais centros de backbone da comunidade em directory.rns.recipes. Os hubs Yggdrasil (por exemplo Yggdrasil_Ashburn_VA) precisam de um túnel Yggdrasil local em execução - o manual do Reticulum recomenda a ligação à interface do seu túnel (geralmente tun0)."
     },
     "reticulumPeers": {
       "hops": "Hops",

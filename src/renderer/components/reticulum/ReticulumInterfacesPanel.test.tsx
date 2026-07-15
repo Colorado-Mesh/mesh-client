@@ -12,6 +12,7 @@ import type {
 } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import { useConnectionStore } from '@/renderer/stores/connectionStore';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
+import { RETICULUM_BACKBONE_DIRECTORY_URL } from '@/shared/reticulumDecommissionedHubs';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -86,6 +87,19 @@ describe('ReticulumInterfacesPanel', () => {
     expect(
       screen.getByText('connectionPanel.reticulumInterfaces.localOfflineRowStale'),
     ).toBeInTheDocument();
+  });
+
+  it('links to the Reticulum backbone directory next to Interfaces', () => {
+    render(<ReticulumInterfacesPanel {...defaultProps} />);
+    const link = screen.getByRole('link', {
+      name: 'connectionPanel.reticulumInterfaces.backboneDirectoryLinkAria',
+    });
+    expect(link).toHaveAttribute('href', RETICULUM_BACKBONE_DIRECTORY_URL);
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(RETICULUM_DEFAULT_HUB_PRESETS.some((p) => p.host.includes('dublin'))).toBe(false);
+    expect(RETICULUM_DEFAULT_HUB_PRESETS.some((p) => p.host.includes('betweentheborders'))).toBe(
+      false,
+    );
   });
 
   it('does not flag BLE RNode interface rows as stale USB serial ports', () => {
@@ -682,26 +696,6 @@ describe('ReticulumInterfacesPanel', () => {
         {...defaultProps}
         interfaces={[
           {
-            id: 'dublin',
-            name: 'RNS Testnet Dublin',
-            type: 'tcp',
-            enabled: false,
-            status: 'down',
-            host: 'dublin.connect.reticulum.network',
-            port: 4965,
-            mode: 'boundary',
-          },
-          {
-            id: 'btb',
-            name: 'RNS Testnet BetweenTheBorders',
-            type: 'tcp',
-            enabled: false,
-            status: 'down',
-            host: 'reticulum.betweentheborders.com',
-            port: 4242,
-            mode: 'boundary',
-          },
-          {
             id: 'us-east',
             name: 'RNS_Transport_US-East',
             type: 'tcp',
@@ -713,7 +707,7 @@ describe('ReticulumInterfacesPanel', () => {
           },
           {
             id: 'i2p',
-            name: 'RNS Testnet I2P Hub A',
+            name: 'RNS I2P Hub A',
             type: 'i2p',
             enabled: false,
             status: 'down',
@@ -731,20 +725,26 @@ describe('ReticulumInterfacesPanel', () => {
     );
 
     await waitFor(() => {
-      expect(proxyPost).toHaveBeenCalledTimes(2);
+      expect(proxyPost).toHaveBeenCalledTimes(3);
     });
     expect(proxyPost).toHaveBeenCalledWith(
       '/api/v1/interfaces',
-      buildDefaultHubAddRequest(RETICULUM_DEFAULT_HUB_PRESETS[4]),
+      buildDefaultHubAddRequest(
+        RETICULUM_DEFAULT_HUB_PRESETS.find((p) => p.id === 'yggdrasil-ashburn-va')!,
+      ),
     );
     expect(proxyPost).toHaveBeenCalledWith(
       '/api/v1/interfaces',
-      buildDefaultHubAddRequest(RETICULUM_DEFAULT_HUB_PRESETS[5]),
+      buildDefaultHubAddRequest(RETICULUM_DEFAULT_HUB_PRESETS.find((p) => p.id === 'ratspeak')!),
+    );
+    expect(proxyPost).toHaveBeenCalledWith(
+      '/api/v1/interfaces',
+      buildDefaultHubAddRequest(RETICULUM_DEFAULT_HUB_PRESETS.find((p) => p.id === 'rmap-world')!),
     );
     expect(window.electronAPI.reticulum.proxyPut).not.toHaveBeenCalled();
   });
 
-  it('repairs misnamed endpoint matches and adds missing hubs', async () => {
+  it('disables decommissioned hubs and adds missing backbone presets', async () => {
     const user = userEvent.setup();
     const proxyPost = vi.fn().mockResolvedValue({ ok: true });
     const proxyPut = vi.fn().mockResolvedValue({ ok: true });
@@ -769,7 +769,7 @@ describe('ReticulumInterfacesPanel', () => {
             id: 'btb',
             name: 'RNS Testnet BetweenTheBorders',
             type: 'tcp',
-            enabled: false,
+            enabled: true,
             status: 'down',
             host: 'reticulum.betweentheborders.com',
             port: 4242,
@@ -787,7 +787,7 @@ describe('ReticulumInterfacesPanel', () => {
           },
           {
             id: 'i2p',
-            name: 'RNS Testnet I2P Hub A',
+            name: 'RNS I2P Hub A',
             type: 'i2p',
             enabled: false,
             status: 'down',
@@ -805,16 +805,11 @@ describe('ReticulumInterfacesPanel', () => {
     );
 
     await waitFor(() => {
-      expect(proxyPut).toHaveBeenCalledTimes(1);
-      expect(proxyPost).toHaveBeenCalledTimes(2);
+      expect(proxyPut).toHaveBeenCalledTimes(2);
+      expect(proxyPost).toHaveBeenCalledTimes(3);
     });
-    expect(proxyPut).toHaveBeenCalledWith('/api/v1/interfaces/dublin', {
-      name: 'RNS Testnet Dublin',
-    });
-    expect(proxyPost).not.toHaveBeenCalledWith(
-      '/api/v1/interfaces',
-      buildDefaultHubAddRequest(RETICULUM_DEFAULT_HUB_PRESETS[0]),
-    );
+    expect(proxyPut).toHaveBeenCalledWith('/api/v1/interfaces/dublin', { enabled: false });
+    expect(proxyPut).toHaveBeenCalledWith('/api/v1/interfaces/btb', { enabled: false });
     expect(defaultProps.onRefresh).toHaveBeenCalled();
   });
 
@@ -832,7 +827,7 @@ describe('ReticulumInterfacesPanel', () => {
         onRefresh={onRefresh}
         interfaces={RETICULUM_DEFAULT_HUB_PRESETS.map((preset, index) => ({
           id: `hub-${index}`,
-          name: index === 0 ? 'Wrong Dublin Name' : preset.name,
+          name: index === 0 ? 'Wrong US East Name' : preset.name,
           type: preset.type,
           enabled: false,
           status: 'down',
@@ -904,12 +899,12 @@ describe('ReticulumInterfacesPanel', () => {
         {...defaultProps}
         interfaces={[
           {
-            id: 'dublin',
-            name: 'Custom Dublin',
+            id: 'us-east',
+            name: 'Custom US East',
             type: 'tcp',
             enabled: false,
             status: 'down',
-            host: 'dublin.connect.reticulum.network',
+            host: '45.77.109.86',
             port: 4965,
           },
         ]}

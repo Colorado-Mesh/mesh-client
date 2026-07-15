@@ -9,7 +9,10 @@ import {
   prepareReticulumBleRnodeConnect,
   releaseReticulumBleRnodeConnect,
 } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
-import { syncReticulumNobleBleYield } from '@/renderer/lib/reticulum/reticulumNobleBleYield';
+import {
+  type ReticulumNobleBleYieldMutableState,
+  syncReticulumNobleBleYield,
+} from '@/renderer/lib/reticulum/reticulumNobleBleYield';
 
 vi.mock('@/renderer/lib/reticulum/reticulumBleAdapterLease', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
@@ -52,6 +55,74 @@ describe('syncReticulumNobleBleYield', () => {
     );
     expect(prepareReticulumBleRnodeConnect).toHaveBeenCalled();
     expect(state.yieldActive).toBe(true);
+  });
+
+  it('does not mark yield active or release when prepare fails', async () => {
+    vi.mocked(prepareReticulumBleRnodeConnect).mockResolvedValueOnce(false);
+    const state: ReticulumNobleBleYieldMutableState = { yieldActive: false };
+    await syncReticulumNobleBleYield(
+      {
+        sidecarActive: true,
+        interfaces: [BLE_ROW],
+        nowMs: Date.now(),
+        bleConnectGraceExpiresAt: Date.now() + 30_000,
+      },
+      state,
+    );
+    expect(prepareReticulumBleRnodeConnect).toHaveBeenCalled();
+    expect(releaseReticulumBleRnodeConnect).not.toHaveBeenCalled();
+    expect(state.yieldActive).toBe(false);
+    expect(state.lastPrepareFailedAtMs).toBeTypeOf('number');
+  });
+
+  it('backs off repeat prepare after a failure during grace', async () => {
+    vi.mocked(prepareReticulumBleRnodeConnect).mockResolvedValue(false);
+    const now = Date.now();
+    const state = { yieldActive: false, lastPrepareFailedAtMs: now - 1_000 };
+    await syncReticulumNobleBleYield(
+      {
+        sidecarActive: true,
+        interfaces: [BLE_ROW],
+        nowMs: now,
+        bleConnectGraceExpiresAt: now + 30_000,
+      },
+      state,
+    );
+    expect(prepareReticulumBleRnodeConnect).not.toHaveBeenCalled();
+    expect(releaseReticulumBleRnodeConnect).not.toHaveBeenCalled();
+  });
+
+  it('stops re-yielding after grace expires when noble still owns the scan', async () => {
+    const now = Date.now();
+    const state = { yieldActive: false };
+    await syncReticulumNobleBleYield(
+      {
+        sidecarActive: true,
+        interfaces: [BLE_ROW],
+        nowMs: now,
+        bleConnectGraceExpiresAt: now - 1_000,
+      },
+      state,
+    );
+    expect(prepareReticulumBleRnodeConnect).not.toHaveBeenCalled();
+    expect(releaseReticulumBleRnodeConnect).not.toHaveBeenCalled();
+    expect(state.yieldActive).toBe(false);
+  });
+
+  it('releases an active yield after grace expires without reticulum scan lock', async () => {
+    const now = Date.now();
+    const state = { yieldActive: true };
+    await syncReticulumNobleBleYield(
+      {
+        sidecarActive: true,
+        interfaces: [BLE_ROW],
+        nowMs: now,
+        bleConnectGraceExpiresAt: now - 1_000,
+      },
+      state,
+    );
+    expect(releaseReticulumBleRnodeConnect).toHaveBeenCalled();
+    expect(state.yieldActive).toBe(false);
   });
 
   it('tracks main-process yield and releases when RNode already online', async () => {

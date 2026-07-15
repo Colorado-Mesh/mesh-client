@@ -992,7 +992,10 @@
       },
       "modeDefaultAdd": "Valor por tipo",
       "modeDefaultEdit": "Predeterminado (borrar)",
-      "invalidMode": "Modo de interfaz no válido."
+      "invalidMode": "Modo de interfaz no válido.",
+      "backboneDirectoryLink": "Directorio ↗",
+      "backboneDirectoryLinkAria": "Abra el directorio principal de Reticulum para encontrar centros para agregar como interfaces",
+      "backboneDirectoryHint": "Encuentre más centros troncales comunitarios en directorio.rns.recipes. Los concentradores de Yggdrasil (por ejemplo, Yggdrasil_Ashburn_VA) necesitan un túnel de Yggdrasil local en ejecución; el manual de Reticulum recomienda vincularse a la interfaz de su túnel (a menudo tun0)."
     },
     "reticulumPeers": {
       "hops": "Hops",

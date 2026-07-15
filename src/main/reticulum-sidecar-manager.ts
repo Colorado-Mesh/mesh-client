@@ -16,6 +16,7 @@ import { MS_PER_SECOND } from '../shared/timeConstants';
 import { bleCoexistenceCoordinator } from './ble-coexistence-coordinator';
 import { sanitizeLogMessage } from './log-service';
 import { reticulumConfigDirHasEnabledBleRnode } from './reticulum-ble-rnode-config';
+import { disableDecommissionedReticulumHubsInConfigDir } from './reticulum-decommissioned-hubs';
 import { assertReticulumProxyPath, reticulumProxyGetTimeoutMs } from './reticulum-proxy-path';
 import { ensureDevSidecarBinary, resolveSidecarBinaryPath } from './reticulum-sidecar-path';
 import { ReticulumSidecarAutoBeaconTracker } from './reticulumSidecarAutoBeaconTracker';
@@ -207,6 +208,14 @@ export class ReticulumSidecarManager extends EventEmitter {
     const storageDir = this.reticulumUserDir('storage');
     fs.mkdirSync(configDir, { recursive: true });
     fs.mkdirSync(storageDir, { recursive: true });
+
+    const disabledDecommissioned = disableDecommissionedReticulumHubsInConfigDir(configDir);
+    if (disabledDecommissioned.length > 0) {
+      console.debug(
+        '[ReticulumSidecar] disabled decommissioned testnet hubs:',
+        disabledDecommissioned.join(', '),
+      );
+    }
 
     const needsBleRnodeNobleYield = reticulumConfigDirHasEnabledBleRnode(configDir);
     let nobleYieldHeldForStart = false;

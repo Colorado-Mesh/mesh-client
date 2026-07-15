@@ -992,7 +992,10 @@
       },
       "modeDefaultAdd": "За типом",
       "modeDefaultEdit": "За замовчуванням (очистити)",
-      "invalidMode": "Недійсний режим інтерфейсу."
+      "invalidMode": "Недійсний режим інтерфейсу.",
+      "backboneDirectoryLink": "Довідник ↗",
+      "backboneDirectoryLinkAria": "Відкрийте магістральний каталог Reticulum, щоб знайти концентратори, які можна додати як інтерфейси",
+      "backboneDirectoryHint": "Знайдіть більше опорних центрів спільноти на directory.rns.recipes. Хабам Yggdrasil (наприклад, Yggdrasil_Ashburn_VA) потрібен запущений локальний тунель Yggdrasil — посібник Reticulum рекомендує прив’язати до вашого інтерфейсу тунелю (часто tun0)."
     },
     "reticulumPeers": {
       "hops": "Hops",

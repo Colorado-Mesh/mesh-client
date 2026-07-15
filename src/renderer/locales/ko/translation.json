@@ -992,7 +992,10 @@
       },
       "modeDefaultAdd": "유형 기본값",
       "modeDefaultEdit": "기본값(지우기)",
-      "invalidMode": "잘못된 인터페이스 모드입니다."
+      "invalidMode": "잘못된 인터페이스 모드입니다.",
+      "backboneDirectoryLink": "디렉토리 ↗",
+      "backboneDirectoryLinkAria": "인터페이스로 추가할 허브를 찾으려면 Reticulum 백본 디렉터리를 엽니다.",
+      "backboneDirectoryHint": "Directory.rns.recipes에서 더 많은 커뮤니티 백본 허브를 찾아보세요. Yggdrasil 허브(예: Yggdrasil_Ashburn_VA)에는 실행 중인 로컬 Yggdrasil 터널이 필요합니다. Reticulum 매뉴얼에서는 터널 인터페이스(종종 tun0)에 바인딩할 것을 권장합니다."
     },
     "reticulumPeers": {
       "hops": "Hops",
