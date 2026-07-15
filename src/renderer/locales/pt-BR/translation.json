@@ -995,7 +995,8 @@
       "invalidMode": "Modo de interface inválido.",
       "backboneDirectoryLink": "Diretório ↗",
       "backboneDirectoryLinkAria": "Abra o diretório backbone do Reticulum para encontrar hubs para adicionar como interfaces",
-      "backboneDirectoryHint": "Encontre mais centros de backbone da comunidade em directory.rns.recipes. Os hubs Yggdrasil (por exemplo Yggdrasil_Ashburn_VA) precisam de um túnel Yggdrasil local em execução - o manual do Reticulum recomenda a ligação à interface do seu túnel (geralmente tun0)."
+      "backboneDirectoryHint": "Encontre mais centros de backbone da comunidade em directory.rns.recipes. Os hubs Yggdrasil (por exemplo Yggdrasil_Ashburn_VA) precisam de um túnel Yggdrasil local em execução - o manual do Reticulum recomenda a ligação à interface do seu túnel (geralmente tun0).",
+      "localOfflineRowBleBondStale": "A ligação Bluetooth está obsoleta - Esqueça este RNode em Configurações do sistema → Bluetooth e, em seguida, emparelhe novamente com um novo PIN (o sistema operacional ainda pode mostrar Emparelhado)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1024,7 +1025,8 @@
       "offlineHintBle": "Seu sistema operacional pode solicitar um PIN Bluetooth de 6 dígitos (macOS, Windows ou Linux). RNode gera um novo código a cada emparelhamento – não há PIN padrão. Rádios sem cabeça: conecte USB → Reticulum Admin → Bluetooth → Iniciar emparelhamento → insira o PIN mostrado na caixa de diálogo do sistema operacional. Rádios com display: segure o botão por aproximadamente 7 s em dispositivos Heltec (o tempo varia; aproximadamente 10 s em muitas placas habilita o AP Wi-Fi), leia o PIN na tela e insira-o na caixa de diálogo do sistema operacional. Limpe as ligações com falha nas configurações de Bluetooth do seu sistema operacional antes de tentar novamente.",
       "offlineHintWifi": "Verifique se o RNode está na sua LAN, ligado e acessível no IP configurado (porta TCP padrão 7633, não 4242). Atualize o host abaixo se o DHCP tiver atribuído um novo endereço ou reprovisione o Wi-Fi no Reticulum → Admin.",
       "tcpUnreachable": "{{name}}: TCP Hub inacessível ({{host}}:{{port}})",
-      "tcpUnreachableHint": "A instância remota do Reticulum pode estar offline ou bloqueando conexões. Desative esta interface ou verifique o host e a porta."
+      "tcpUnreachableHint": "A instância remota do Reticulum pode estar offline ou bloqueando conexões. Desative esta interface ou verifique o host e a porta.",
+      "offlineHintBleBondStale": "O macOS ainda mostra este RNode como emparelhado, mas as chaves Bluetooth não correspondem mais (informações de emparelhamento removidas pelo peer). Esqueça o dispositivo em Configurações do sistema → Bluetooth, coloque o RNode no modo de emparelhamento (Admin → Bluetooth → Iniciar emparelhamento ou segure o botão ~7 s), reinicie a pilha e insira o novo PIN de 6 dígitos quando solicitado."
     },
     "autoConnectingTo": "Conectando-se automaticamente a {{deviceName}}…",
     "autoReconnectInProgress": "Auto-reconexão em andamento…",
@@ -1093,7 +1095,9 @@
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "Consultas de transporte RNs lentas ou com falha ({{count}}×)",
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
-      "shareInstanceHint": "Share instance is enabled — fully quit other Reticulum apps (MeshChatX, Ratspeak, standalone rnsd) and restart this stack before retrying DMs."
+      "shareInstanceHint": "Share instance is enabled — fully quit other Reticulum apps (MeshChatX, Ratspeak, standalone rnsd) and restart this stack before retrying DMs.",
+      "bleBondRemoved": "{{name}}: A ligação Bluetooth está obsoleta (o sistema operacional ainda mostra Emparelhado)",
+      "bleBondRemovedHint": "Esqueça este RNode em Configurações do sistema → Bluetooth, inicie o emparelhamento no rádio (Admin → Bluetooth ou mantenha o botão pressionado por ~ 7 s), reinicie a pilha e insira o novo PIN de 6 dígitos."
     },
     "reticulumSidecarBundledMissing": "Esta instalação não contém o sidecar Reticulum incluído. Atualize para uma versão mais recente ou relate o problema – a compilação a partir do código-fonte não está disponível em instalações empacotadas.",
     "radioMqttRootDivergesWarning": "O tópico raiz do MQTT de rádio é {{radioRoot}}, mas este painel assina {{appPrefix}}. Combine o rádio para limitar o tráfego de nós em todo o país — atualize o Prefixo do Tópico e reconecte o MQTT.",
@@ -1432,7 +1436,8 @@
         "linkDeliveryTimeout": "O link LXMF direto para {{hash}}… expirou ({{count}}×)",
         "transportSaturated": "RNS transport saturated ({{count}} LXMF path-request drops)",
         "transportSaturatedShareInstance": "RNS transport saturated ({{count}} path-request drops). Share instance is on — quit other Reticulum apps (MeshChatX, Ratspeak, rnsd) and restart the stack.",
-        "slowTransportQuery": "RNS transport queries slow or failing ({{count}}×)"
+        "slowTransportQuery": "RNS transport queries slow or failing ({{count}}×)",
+        "bleBondRemoved": "A ligação BLE RNode \"{{name}}\" está obsoleta - esqueça as configurações de Bluetooth do sistema operacional e emparelhe novamente"
       }
     },
     "routingPort": {

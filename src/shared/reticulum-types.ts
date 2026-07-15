@@ -39,6 +39,11 @@ export interface ReticulumInterfaceIssueAlert {
   tcpConnectFailed: string[];
   txQueueDrops: ReticulumInterfaceTxQueueDrop[];
   linkDeliveryTimeouts: ReticulumLinkDeliveryTimeout[];
+  /**
+   * BLE RNode interface names where CoreBluetooth reported
+   * "Peer removed pairing information" (OS still shows Paired; bond keys are stale).
+   */
+  bleBondRemoved: string[];
   /** Incremented when LXMF path requests fail with transport channel full. */
   transportSaturatedCount: number;
   slowTransportQueryCount: number;

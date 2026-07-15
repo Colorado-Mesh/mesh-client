@@ -995,7 +995,8 @@
       "invalidMode": "無効なインターフェースモードです。",
       "backboneDirectoryLink": "ディレクトリ ↗",
       "backboneDirectoryLinkAria": "Reticulum バックボーン ディレクトリを開いて、インターフェイスとして追加するハブを見つけます。",
-      "backboneDirectoryHint": "他のコミュニティ バックボーン ハブについては、directory.rns.recipes で見つけてください。 Yggdrasil ハブ (Yggdrasil_Ashburn_VA など) には、実行中のローカル Yggdrasil トンネルが必要です。Reticulum マニュアルでは、トンネル インターフェイス (多くの場合 tun0) にバインドすることを推奨しています。"
+      "backboneDirectoryHint": "他のコミュニティ バックボーン ハブについては、directory.rns.recipes で見つけてください。 Yggdrasil ハブ (Yggdrasil_Ashburn_VA など) には、実行中のローカル Yggdrasil トンネルが必要です。Reticulum マニュアルでは、トンネル インターフェイス (多くの場合 tun0) にバインドすることを推奨しています。",
+      "localOfflineRowBleBondStale": "Bluetooth ボンディングが古い — [システム設定] → [Bluetooth] でこの RNode を忘れてから、新しい PIN で再ペアリングします (OS にはまだペアリング済みと表示される場合があります)。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1024,7 +1025,8 @@
       "offlineHintBle": "OS によって、6 桁の Bluetooth PIN の入力を求められる場合があります (macOS、Windows、または Linux)。 RNode はペアリングごとに新しいコードを生成します。デフォルトの PIN はありません。ヘッドレス無線: USB を接続 → Reticulum Admin → Bluetooth → ペアリングを開始 → OS ダイアログに表示される PIN を入力します。ディスプレイ付き無線機: Heltec デバイスではボタンを約 7 秒押し続け (タイミングはさまざまです。多くのボードでは約 10 秒で Wi-Fi AP が有効になります)、画面上の PIN を読み取って、OS ダイアログに入力します。再試行する前に、OS の Bluetooth 設定で失敗したボンドをクリアしてください。",
       "offlineHintWifi": "RNodeがLAN上にあり、電源が入っており、設定されたIP （ 4242ではなくデフォルトのTCPポート7633 ）で到達可能であることを確認します。DHCPが新しいアドレスを割り当てた場合は、以下のホストを更新するか、Reticulum → AdminでWi-Fiを再プロビジョニングします。",
       "tcpUnreachable": "{{name}} ： TCPハブに到達できません（ {{host}} ： {{port}} ）",
-      "tcpUnreachableHint": "リモートReticulumインスタンスは、オフラインであっても、接続をブロックしていてもよい。このインターフェイスを無効にするか、ホストとポートを確認します。"
+      "tcpUnreachableHint": "リモートReticulumインスタンスは、オフラインであっても、接続をブロックしていてもよい。このインターフェイスを無効にするか、ホストとポートを確認します。",
+      "offlineHintBleBondStale": "macOS では引き続きこの RNode がペアリング済みとして表示されますが、Bluetooth キーは一致しなくなりました (ピアはペアリング情報を削除しました)。 [システム設定] → [Bluetooth] でデバイスを忘れ、RNode をペアリング モードにして ([管理者] → [Bluetooth] → [ペアリングの開始] またはボタンを約 7 秒押し続けます)、スタックを再起動し、プロンプトが表示されたら新しい 6 桁の PIN を入力します。"
     },
     "autoConnectingTo": "{{deviceName}} に自動接続中…",
     "autoReconnectInProgress": "自動再接続中です…",
@@ -1093,7 +1095,9 @@
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "RNSトランスポートクエリが遅いか失敗しました({{count}} ×)",
       "slowTransportQueryHint": "サイドカーの輸送アクターがくさび形になっている可能性があります。Reticulumスタックを再起動してください。",
-      "shareInstanceHint": "共有インスタンスが有効になっています—他のReticulumアプリ（ MeshChatX、Ratspeak、スタンドアロンrnsd ）を完全に終了し、DMを再試行する前にこのスタックを再起動します。"
+      "shareInstanceHint": "共有インスタンスが有効になっています—他のReticulumアプリ（ MeshChatX、Ratspeak、スタンドアロンrnsd ）を完全に終了し、DMを再試行する前にこのスタックを再起動します。",
+      "bleBondRemoved": "{{name}}: Bluetooth ボンディングが無効です (OS にはペアリング済みと表示されたままです)",
+      "bleBondRemovedHint": "[システム設定] → [Bluetooth] でこの RNode を忘れ、無線でペアリングを開始し ([管理者] → [Bluetooth] または 7 秒ボタンを長押し)、スタックを再起動し、新しい 6 桁の PIN を入力します。"
     },
     "reticulumSidecarBundledMissing": "このインストールには、バンドルされている Reticulum サイドカーがありません。新しいリリースにアップグレードするか、問題を報告してください。パッケージ化されたインストールではソースからのビルドは利用できません。",
     "radioMqttRootDivergesWarning": "ラジオMQTTルートトピックは{{radioRoot}}ですが、このパネルは{{appPrefix}}に加入しています。全国のノードトラフィックを制限するために無線を一致させます—トピックプレフィックスを更新し、MQTTを再接続します。",
@@ -1432,7 +1436,8 @@
         "linkDeliveryTimeout": "{{hash}} …への直接LXMFリンクがタイムアウトしました（ {{count}} × ）",
         "transportSaturated": "RNSトランスポート飽和（ {{count}} LXMFパス要求ドロップ）",
         "transportSaturatedShareInstance": "RNSトランスポートが飽和しました（ {{count}}パス要求ドロップ）。共有インスタンスがオンになっています—他のReticulumアプリ（ MeshChatX、Ratspeak、rnsd ）を終了し、スタックを再起動します。",
-        "slowTransportQuery": "RNSトランスポートクエリが遅いか失敗しました({{count}} ×)"
+        "slowTransportQuery": "RNSトランスポートクエリが遅いか失敗しました({{count}} ×)",
+        "bleBondRemoved": "BLE RNode \"{{name}}\" 結合が古い - OS の Bluetooth 設定を忘れて再ペアリングする"
       }
     },
     "routingPort": {

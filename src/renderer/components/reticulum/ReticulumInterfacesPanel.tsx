@@ -144,6 +144,8 @@ export interface ReticulumInterfacesPanelProps {
   interfaces: ReticulumInterfaceRow[];
   serialPorts: ReticulumSerialPortOption[];
   serialPortPaths: string[];
+  /** Interface display names with CoreBluetooth stale-bond errors. */
+  bleBondRemovedNames?: readonly string[];
   effectivePrimaryLocalSerialInterfaceId: string | null;
   onRefresh: () => Promise<unknown>;
   onBeginBleConnectGrace: () => void;
@@ -159,6 +161,7 @@ export function ReticulumInterfacesPanel({
   interfaces,
   serialPorts,
   serialPortPaths,
+  bleBondRemovedNames,
   effectivePrimaryLocalSerialInterfaceId,
   onRefresh,
   onBeginBleConnectGrace,
@@ -766,6 +769,7 @@ export function ReticulumInterfacesPanel({
       <InterfacesSection
         interfaces={interfaces}
         osSerialPortPaths={serialPortPaths}
+        bleBondRemovedNames={bleBondRemovedNames}
         effectivePrimaryLocalSerialInterfaceId={effectivePrimaryLocalSerialInterfaceId}
         sidecarReady={sidecarApiReady}
         actionsDisabled={actionsDisabled}
@@ -1413,6 +1417,7 @@ function InterfaceEditPanel({
 function InterfacesSection({
   interfaces,
   osSerialPortPaths,
+  bleBondRemovedNames,
   effectivePrimaryLocalSerialInterfaceId,
   sidecarReady,
   actionsDisabled,
@@ -1465,6 +1470,7 @@ function InterfacesSection({
 }: {
   interfaces: ReticulumInterfaceRow[];
   osSerialPortPaths: string[];
+  bleBondRemovedNames?: readonly string[];
   effectivePrimaryLocalSerialInterfaceId: string | null;
   sidecarReady: boolean;
   actionsDisabled: boolean;
@@ -1549,6 +1555,9 @@ function InterfacesSection({
     if (health === 'enabled_down') {
       const kind = reticulumLocalOfflineDisplayKind(iface);
       if (kind === 'ble') {
+        if (bleBondRemovedNames?.some((n) => n === iface.name)) {
+          return t('connectionPanel.reticulumInterfaces.localOfflineRowBleBondStale');
+        }
         return t('connectionPanel.reticulumInterfaces.localOfflineRowBle');
       }
       if (kind === 'wifi') {

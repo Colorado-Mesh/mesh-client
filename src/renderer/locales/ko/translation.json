@@ -995,7 +995,8 @@
       "invalidMode": "잘못된 인터페이스 모드입니다.",
       "backboneDirectoryLink": "디렉토리 ↗",
       "backboneDirectoryLinkAria": "인터페이스로 추가할 허브를 찾으려면 Reticulum 백본 디렉터리를 엽니다.",
-      "backboneDirectoryHint": "Directory.rns.recipes에서 더 많은 커뮤니티 백본 허브를 찾아보세요. Yggdrasil 허브(예: Yggdrasil_Ashburn_VA)에는 실행 중인 로컬 Yggdrasil 터널이 필요합니다. Reticulum 매뉴얼에서는 터널 인터페이스(종종 tun0)에 바인딩할 것을 권장합니다."
+      "backboneDirectoryHint": "Directory.rns.recipes에서 더 많은 커뮤니티 백본 허브를 찾아보세요. Yggdrasil 허브(예: Yggdrasil_Ashburn_VA)에는 실행 중인 로컬 Yggdrasil 터널이 필요합니다. Reticulum 매뉴얼에서는 터널 인터페이스(종종 tun0)에 바인딩할 것을 권장합니다.",
+      "localOfflineRowBleBondStale": "Bluetooth 결합이 오래되었습니다. 시스템 설정 → Bluetooth에서 이 RNode를 삭제한 다음 새 PIN으로 다시 페어링하세요(OS에서는 여전히 페어링됨으로 표시될 수 있음)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1024,7 +1025,8 @@
       "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — there is no default PIN. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
       "offlineHintWifi": "RNode가 LAN에 있고 전원이 켜져 있으며 구성된 IP (기본 TCP 포트 7633, 4242 아님) 에서 연결 가능한지 확인하십시오. DHCP가 새 주소를 지정한 경우 아래 호스트를 업데이트하거나 Reticulum → Admin에서 Wi-Fi를 다시 프로비저닝합니다.",
       "tcpUnreachable": "{{name}}: TCP 허브에 연결할 수 없음 ({{host}}: {{port}})",
-      "tcpUnreachableHint": "원격 Reticulum 인스턴스는 오프라인 또는 차단 연결일 수 있습니다. 이 인터페이스를 비활성화하거나 호스트와 포트를 확인하십시오."
+      "tcpUnreachableHint": "원격 Reticulum 인스턴스는 오프라인 또는 차단 연결일 수 있습니다. 이 인터페이스를 비활성화하거나 호스트와 포트를 확인하십시오.",
+      "offlineHintBleBondStale": "macOS는 여전히 이 RNode를 페어링됨으로 표시하지만 Bluetooth 키가 더 이상 일치하지 않습니다(피어가 페어링 정보를 제거함). 시스템 설정 → Bluetooth에서 장치를 삭제하고 RNode를 페어링 모드(관리자 → Bluetooth → 페어링 시작 또는 ~7초 동안 누르기)로 설정한 다음 스택을 다시 시작하고 메시지가 표시되면 새 6자리 PIN을 입력합니다."
     },
     "autoConnectingTo": "{{deviceName}}에 자동 연결 중…",
     "autoReconnectInProgress": "자동 재연결 진행 중…",
@@ -1093,7 +1095,9 @@
       "transportSaturatedHint": "죽은 인터페이스를 비활성화하고 스택을 다시 시작하십시오. 동시 Reticulum 트래픽을 줄입니다.",
       "slowTransportQuery": "RNS 전송 쿼리가 느리거나 실패함 ({{count}} ×)",
       "slowTransportQueryHint": "사이드카 트랜스포트 액터에 쐐기를 박을 수 있습니다. Reticulum 스택을 다시 시작하십시오.",
-      "shareInstanceHint": "공유 인스턴스가 활성화되었습니다. DM을 다시 시도하기 전에 다른 Reticulum 앱 (MeshChatX, Ratspeak, 독립 실행형 rnsd) 을 완전히 종료하고 이 스택을 다시 시작하십시오."
+      "shareInstanceHint": "공유 인스턴스가 활성화되었습니다. DM을 다시 시도하기 전에 다른 Reticulum 앱 (MeshChatX, Ratspeak, 독립 실행형 rnsd) 을 완전히 종료하고 이 스택을 다시 시작하십시오.",
+      "bleBondRemoved": "{{name}}: Bluetooth 연결이 오래되었습니다(OS에 여전히 페어링됨이 표시됨).",
+      "bleBondRemovedHint": "시스템 설정 → Bluetooth에서 이 RNode를 삭제하고 무선에서 페어링을 시작한 다음(관리자 → Bluetooth 또는 ~7초 버튼 누르기) 스택을 다시 시작한 다음 새 6자리 PIN을 입력합니다."
     },
     "reticulumSidecarBundledMissing": "이 설치에는 번들로 제공되는 Reticulum 사이드카가 없습니다. 최신 릴리스로 업그레이드하거나 문제를 보고하세요. 패키지 설치에서는 소스에서 빌드할 수 없습니다.",
     "radioMqttRootDivergesWarning": "라디오 MQTT 루트 주제는 {{radioRoot}} 이지만 이 패널은 {{appPrefix}} 을 (를) 구독합니다. 라디오를 일치시켜 전국 노드 트래픽을 제한하십시오 — 주제 접두사를 업데이트하고 MQTT를 다시 연결하십시오.",
@@ -1432,7 +1436,8 @@
         "linkDeliveryTimeout": "{{hash}} 에 대한 직접 LXMF 링크… 시간 초과 ({{count}} ×)",
         "transportSaturated": "RNS 전송 포화 ({{count}} LXMF 경로 요청 드롭)",
         "transportSaturatedShareInstance": "RNS 전송 포화 ({{count}} 경로 요청 드롭). 인스턴스 공유 켜짐 — 다른 Reticulum 앱 (MeshChatX, Ratspeak, rnsd) 을 종료하고 스택을 다시 시작합니다.",
-        "slowTransportQuery": "RNS 전송 쿼리가 느리거나 실패함 ({{count}} ×)"
+        "slowTransportQuery": "RNS 전송 쿼리가 느리거나 실패함 ({{count}} ×)",
+        "bleBondRemoved": "BLE RNode \"{{name}}\" 본드가 오래되었습니다. — OS Bluetooth 설정을 잊어버리고 다시 페어링하세요."
       }
     },
     "routingPort": {

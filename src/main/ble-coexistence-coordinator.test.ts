@@ -75,4 +75,19 @@ describe('BleCoexistenceCoordinator', () => {
       Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
     }
   });
+
+  it('assertCanConnect rejects Noble while reticulum holds the scan yield', async () => {
+    const coordinator = new BleCoexistenceCoordinator();
+    await coordinator.acquireScan('reticulum');
+    expect(() => {
+      coordinator.assertCanConnect('noble:meshtastic', 'aa:bb:cc:dd:ee:01');
+    }).toThrow(BleScanBusyError);
+    expect(() => {
+      coordinator.assertCanConnect('noble:meshcore', 'aa:bb:cc:dd:ee:02');
+    }).toThrow(BleScanBusyError);
+    coordinator.releaseScan('reticulum');
+    expect(() => {
+      coordinator.assertCanConnect('noble:meshtastic', 'aa:bb:cc:dd:ee:01');
+    }).not.toThrow();
+  });
 });

@@ -13,6 +13,7 @@ function countSidecarInterfaceIssues(alert: ReticulumInterfaceIssueAlert): numbe
   return (
     alert.tcpConnectFailed.length +
     alert.txQueueDrops.length +
+    (alert.bleBondRemoved?.length ?? 0) +
     (alert.transportSaturatedCount > 0 ? 1 : 0) +
     (alert.slowTransportQueryCount > 0 ? 1 : 0)
   );
@@ -31,6 +32,7 @@ export function ReticulumSidecarIssueAlertsBlock({
 
   const showShareInstanceHint =
     shareInstanceEnabled && (alert.transportSaturatedCount > 0 || alert.txQueueDrops.length > 0);
+  const bleBondRemoved = alert.bleBondRemoved ?? [];
 
   return (
     <div
@@ -59,6 +61,14 @@ export function ReticulumSidecarIssueAlertsBlock({
             </p>
             <p className="text-muted mt-0.5 text-[11px]">
               {t('connectionPanel.reticulumSidecarIssues.txQueueDropsHint')}
+            </p>
+          </li>
+        ))}
+        {bleBondRemoved.map((name) => (
+          <li key={`ble-bond-${name}`}>
+            <p>{t('connectionPanel.reticulumSidecarIssues.bleBondRemoved', { name })}</p>
+            <p className="text-muted mt-0.5 text-[11px]">
+              {t('connectionPanel.reticulumSidecarIssues.bleBondRemovedHint')}
             </p>
           </li>
         ))}

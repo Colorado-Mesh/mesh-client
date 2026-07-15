@@ -82,6 +82,13 @@ export class BleCoexistenceCoordinator {
   }
 
   assertCanConnect(owner: BlePeripheralOwner, mac: string): void {
+    // Reticulum holds CoreBluetooth for BLE RNode connect — Noble GATTs must wait.
+    if (
+      this.scanOwner === 'reticulum' &&
+      (owner === 'noble:meshtastic' || owner === 'noble:meshcore')
+    ) {
+      throw new BleScanBusyError('reticulum');
+    }
     const key = normalizeBleMac(mac);
     if (!key) return;
     const existing = this.connections.get(key);

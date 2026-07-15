@@ -995,7 +995,8 @@
       "invalidMode": "Geçersiz arayüz modu.",
       "backboneDirectoryLink": "Rehber ↗",
       "backboneDirectoryLinkAria": "Arayüz olarak eklenecek hub'ları bulmak için Reticulum omurga dizinini açın",
-      "backboneDirectoryHint": "Directory.rns.recipes adresinde daha fazla topluluk omurgası merkezi bulabilirsiniz. Yggdrasil hub'ları (örneğin Yggdrasil_Ashburn_VA) çalışan bir yerel Yggdrasil tüneline ihtiyaç duyar; Reticulum kılavuzu, tünel arayüzünüze bağlanmanızı önerir (genellikle tun0)."
+      "backboneDirectoryHint": "Directory.rns.recipes adresinde daha fazla topluluk omurgası merkezi bulabilirsiniz. Yggdrasil hub'ları (örneğin Yggdrasil_Ashburn_VA) çalışan bir yerel Yggdrasil tüneline ihtiyaç duyar; Reticulum kılavuzu, tünel arayüzünüze bağlanmanızı önerir (genellikle tun0).",
+      "localOfflineRowBleBondStale": "Bluetooth bağı eski — Sistem Ayarları → Bluetooth'ta bu RNode'u unutun, ardından yeni bir PIN ile yeniden eşleştirin (İşletim Sistemi hâlâ Eşlendi gösterebilir)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1024,7 +1025,8 @@
       "offlineHintBle": "İşletim sisteminiz 6 haneli bir Bluetooth PIN'i (macOS, Windows veya Linux) isteyebilir. RNode her eşleştirmede yeni bir kod oluşturur; varsayılan bir PIN yoktur. Başsız telsizler: USB'yi bağlayın → Reticulum Admin → Bluetooth → Eşleştirmeyi başlat → İşletim Sistemi iletişim kutusunda gösterilen PIN'i girin. Ekranlı radyolar: Heltec cihazlarında düğmeyi ~7 saniye basılı tutun (zamanlama değişir; birçok kartta ~10 saniye bunun yerine Wi-Fi AP'yi etkinleştirir), ekrandaki PIN'i okuyun ve ardından işletim sistemi iletişim kutusuna girin. Yeniden denemeden önce işletim sisteminizin Bluetooth ayarlarındaki başarısız bağlantıları temizleyin.",
       "offlineHintWifi": "RNode'un LAN'ınızda olduğunu, açık olduğunu ve yapılandırılmış IP'de erişilebilir olduğunu kontrol edin (varsayılan TCP bağlantı noktası 7633, 4242 değil). DHCP yeni bir adres atadıysa aşağıdaki ana bilgisayarı güncelleyin veya Reticulum Admin'de Wi-Fi'yi yeniden → sağlayın.",
       "tcpUnreachable": "{{name}}: TCP göbeğine ulaşılamıyor ({{host}}:{{port}})",
-      "tcpUnreachableHint": "Uzak Reticulum örneği çevrimdışı olabilir veya bağlantıları engelleyebilir. Bu arayüzü devre dışı bırakın veya ana bilgisayarı ve bağlantı noktasını doğrulayın."
+      "tcpUnreachableHint": "Uzak Reticulum örneği çevrimdışı olabilir veya bağlantıları engelleyebilir. Bu arayüzü devre dışı bırakın veya ana bilgisayarı ve bağlantı noktasını doğrulayın.",
+      "offlineHintBleBondStale": "macOS bu RNode'u hâlâ Eşlenmiş olarak gösteriyor ancak Bluetooth anahtarları artık eşleşmiyor (Eş tarafından kaldırılan eşleştirme bilgileri). Sistem Ayarları → Bluetooth'ta cihazı unutun, RNode'u eşleştirme moduna getirin (Yönetici → Bluetooth → Eşleştirmeyi başlat veya düğmeyi ~7 saniye basılı tutun), ardından yığını yeniden başlatın ve istendiğinde yeni 6 haneli PIN'i girin."
     },
     "autoConnectingTo": "{{deviceName}}'a otomatik bağlanılıyor…",
     "autoReconnectInProgress": "Otomatik yeniden bağlanma işlemi devam ediyor…",
@@ -1093,7 +1095,9 @@
       "transportSaturatedHint": "Ölü arayüzleri devre dışı bırakın ve yığını yeniden başlatın. Eşzamanlı Reticulum trafiğini azaltın.",
       "slowTransportQuery": "RNS taşıma sorguları yavaş veya başarısız ({{count}}×)",
       "slowTransportQueryHint": "Sepet taşıma aktörü sıkışmış olabilir — Reticulum yığınını yeniden başlatın.",
-      "shareInstanceHint": "Paylaşım örneği etkinleştirildi — diğer Reticulum uygulamalarından (MeshChatX, Ratspeak, standalone rnsd) tamamen çıkın ve DM'leri yeniden denemeden önce bu yığını yeniden başlatın."
+      "shareInstanceHint": "Paylaşım örneği etkinleştirildi — diğer Reticulum uygulamalarından (MeshChatX, Ratspeak, standalone rnsd) tamamen çıkın ve DM'leri yeniden denemeden önce bu yığını yeniden başlatın.",
+      "bleBondRemoved": "{{name}}: Bluetooth bağlantısı eski (İşletim sistemi hâlâ Eşlendi gösteriyor)",
+      "bleBondRemovedHint": "Sistem Ayarları → Bluetooth'ta bu RNode'u unutun, radyoda eşleştirmeyi başlatın (Yönetici → Bluetooth veya ~7 saniye düğmeyi basılı tutun), yığını yeniden başlatın ve yeni 6 haneli PIN'i girin."
     },
     "reticulumSidecarBundledMissing": "Bu kurulumda birlikte verilen Reticulum sidecar eksik. Daha yeni bir sürüme yükseltin veya sorunu bildirin; kaynaktan derleme, paketli kurulumlarda mevcut değildir.",
     "radioMqttRootDivergesWarning": "Radyo MQTT kök konusu {{radioRoot}} 'dır, ancak bu panel {{appPrefix}}' e abone olur. Ülke çapındaki düğüm trafiğini sınırlamak için radyoyu eşleştirin — Konu Önekini güncelleyin ve MQTT'yi yeniden bağlayın.",
@@ -1432,7 +1436,8 @@
         "linkDeliveryTimeout": "{{hash}} 'a doğrudan LXMF bağlantısı… zaman aşımına uğradı ({{count}}×)",
         "transportSaturated": "RNS transport saturated ({{count}} LXMF path - request drops)",
         "transportSaturatedShareInstance": "RNS nakli doymuş ({{count}} yol talebi düşer). Paylaşım örneği açık — diğer Reticulum uygulamalarından (MeshChatX, Ratspeak, rnsd) çıkın ve yığını yeniden başlatın.",
-        "slowTransportQuery": "RNS taşıma sorguları yavaş veya başarısız ({{count}}×)"
+        "slowTransportQuery": "RNS taşıma sorguları yavaş veya başarısız ({{count}}×)",
+        "bleBondRemoved": "BLE RNode \"{{name}}\" bağı eski — İşletim Sistemi Bluetooth ayarlarını unutun ve yeniden eşleştirin"
       }
     },
     "routingPort": {

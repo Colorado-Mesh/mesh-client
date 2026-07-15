@@ -911,6 +911,8 @@ export class NobleBleManager extends EventEmitter {
       `[BLE:${sessionId}] connect start — peripheralId=${peripheralId} adapterReady=${this.adapterReady} scanRequesters=[${[...this.scanRequesters].join(',')}]`,
     );
     try {
+      // Fail before scan/GATT so Reticulum BLE RNode can keep CoreBluetooth exclusively.
+      bleCoexistenceCoordinator.assertCanConnect(peripheralOwner, peripheralId);
       if (!this.adapterReady) {
         throw new Error('Bluetooth adapter is not powered on');
       }

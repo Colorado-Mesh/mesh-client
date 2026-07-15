@@ -995,7 +995,8 @@
       "invalidMode": "Nieprawidłowy tryb interfejsu.",
       "backboneDirectoryLink": "Katalog ↗",
       "backboneDirectoryLinkAria": "Otwórz katalog szkieletowy Reticulum, aby znaleźć koncentratory, które możesz dodać jako interfejsy",
-      "backboneDirectoryHint": "Więcej centrów szkieletowych społeczności znajdziesz na stronie Directory.rns.recipes. Koncentratory Yggdrasil (na przykład Yggdrasil_Ashburn_VA) wymagają działającego lokalnego tunelu Yggdrasil — podręcznik Reticulum zaleca powiązanie z interfejsem tunelu (często tun0)."
+      "backboneDirectoryHint": "Więcej centrów szkieletowych społeczności znajdziesz na stronie Directory.rns.recipes. Koncentratory Yggdrasil (na przykład Yggdrasil_Ashburn_VA) wymagają działającego lokalnego tunelu Yggdrasil — podręcznik Reticulum zaleca powiązanie z interfejsem tunelu (często tun0).",
+      "localOfflineRowBleBondStale": "Połączenie Bluetooth jest nieaktualne — Zapomnij o tym węźle RNode w Ustawieniach systemu → Bluetooth, a następnie sparuj ponownie, używając nowego kodu PIN (system operacyjny może nadal wyświetlać komunikat Sparowano)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1024,7 +1025,8 @@
       "offlineHintBle": "Twój system operacyjny może poprosić o 6-cyfrowy kod PIN Bluetooth (macOS, Windows lub Linux). RNode generuje nowy kod przy każdym parowaniu — nie ma domyślnego kodu PIN. Radiotelefony bezgłowe: podłącz USB → Reticulum Admin → Bluetooth → Rozpocznij parowanie → wprowadź kod PIN wyświetlony w oknie dialogowym systemu operacyjnego. Radia z wyświetlaczem: przytrzymaj przycisk ~7 s na urządzeniach Heltec (czas jest różny; ~10 s na wielu płytach zamiast tego włącza Wi-Fi AP), odczytaj PIN na ekranie, a następnie wprowadź go w oknie dialogowym systemu operacyjnego. Przed ponowną próbą usuń nieudane powiązania w ustawieniach Bluetooth systemu operacyjnego.",
       "offlineHintWifi": "Sprawdź, czy RNode znajduje się w sieci LAN, jest włączony i osiągalny w skonfigurowanym IP (domyślny port TCP 7633, a nie 4242). Zaktualizuj poniższy host, jeśli DHCP przypisał nowy adres lub ponownie udostępnij Wi-Fi w → administratora Reticulum.",
       "tcpUnreachable": "{{name}}: nieosiągalny koncentrator TCP ({{host}}:{{port}})",
-      "tcpUnreachableHint": "Zdalna instancja Reticulum może być offline lub blokować połączenia. Wyłącz ten interfejs lub sprawdź host i port."
+      "tcpUnreachableHint": "Zdalna instancja Reticulum może być offline lub blokować połączenia. Wyłącz ten interfejs lub sprawdź host i port.",
+      "offlineHintBleBondStale": "macOS nadal wyświetla ten RNode jako sparowany, ale klucze Bluetooth nie są już zgodne (informacje o parowaniu usunięte z urządzenia równorzędnego). Zapomnij urządzenie w Ustawieniach systemowych → Bluetooth, przełącz RNode w tryb parowania (Admin → Bluetooth → Rozpocznij parowanie lub przytrzymaj przycisk ~7 s), następnie uruchom ponownie stos i po wyświetleniu monitu wprowadź nowy 6-cyfrowy PIN."
     },
     "autoConnectingTo": "Automatyczne łączenie z {{deviceName}}…",
     "autoReconnectInProgress": "Automatyczne ponowne łączenie w toku…",
@@ -1093,7 +1095,9 @@
       "transportSaturatedHint": "Wyłącz martwe interfejsy i uruchom ponownie stos. Zmniejsz równoczesny ruch Reticulum.",
       "slowTransportQuery": "Powolne lub nieudane zapytania transportowe RNS ({{count}}×)",
       "slowTransportQueryHint": "Aktor transportowy wózka bocznego może być zaklinowany — uruchom ponownie stos Reticulum.",
-      "shareInstanceHint": "Instancja udostępniania jest włączona — całkowicie zamknij inne aplikacje Reticulum (MeshChatX, Ratspeak, standalone rnsd) i uruchom ponownie ten stos przed ponowną próbą wysłania wiadomości SMS."
+      "shareInstanceHint": "Instancja udostępniania jest włączona — całkowicie zamknij inne aplikacje Reticulum (MeshChatX, Ratspeak, standalone rnsd) i uruchom ponownie ten stos przed ponowną próbą wysłania wiadomości SMS.",
+      "bleBondRemoved": "{{name}}: Połączenie Bluetooth jest nieaktualne (system operacyjny nadal wyświetla komunikat Sparowano)",
+      "bleBondRemovedHint": "Zapomnij o tym RNode w Ustawieniach systemowych → Bluetooth, rozpocznij parowanie w radiu (Admin → Bluetooth lub przytrzymanie przycisku ~7 s), zrestartuj stos i wprowadź nowy 6-cyfrowy PIN."
     },
     "reticulumSidecarBundledMissing": "W tej instalacji brakuje dołączonego sidecar Reticulum. Uaktualnij do nowszej wersji lub zgłoś problem — budowanie ze źródła nie jest możliwe w przypadku instalacji pakietowych.",
     "radioMqttRootDivergesWarning": "Główny temat radia MQTT to {{radioRoot}}, ale ten panel subskrybuje {{appPrefix}}. Dopasuj radio, aby ograniczyć ogólnokrajowy ruch w węzłach — zaktualizuj prefiks tematu i ponownie połącz MQTT.",
@@ -1432,7 +1436,8 @@
         "linkDeliveryTimeout": "Upłynął limit czasu bezpośredniego łącza LXMF do {{hash}}… ({{count}}×)",
         "transportSaturated": "Transport RNS nasycony (spadki {{count}} LXMF)",
         "transportSaturatedShareInstance": "Transport RNS nasycony (krople z żądaniem ścieżki {{count}}). Udostępnij instancję jest włączona — zamknij inne aplikacje Reticulum (MeshChatX, Ratspeak, rnsd) i uruchom ponownie stos.",
-        "slowTransportQuery": "Powolne lub nieudane zapytania transportowe RNS ({{count}}×)"
+        "slowTransportQuery": "Powolne lub nieudane zapytania transportowe RNS ({{count}}×)",
+        "bleBondRemoved": "Połączenie BLE RNode „{{name}}” jest nieaktualne — zapomnij o ustawieniach Bluetooth systemu operacyjnego i sparuj ponownie"
       }
     },
     "routingPort": {

@@ -995,7 +995,8 @@
       "invalidMode": "Недопустимый режим интерфейса.",
       "backboneDirectoryLink": "Каталог ↗",
       "backboneDirectoryLinkAria": "Откройте каталог магистральной сети Reticulum, чтобы найти концентраторы для добавления в качестве интерфейсов.",
-      "backboneDirectoryHint": "Дополнительные центры магистральной сети сообщества можно найти на сайте Directory.rns.recipes. Хабам Yggdrasil (например, Yggdrasil_Ashburn_VA) необходим работающий локальный туннель Yggdrasil — руководство Reticulum рекомендует привязку к вашему интерфейсу туннеля (часто tun0)."
+      "backboneDirectoryHint": "Дополнительные центры магистральной сети сообщества можно найти на сайте Directory.rns.recipes. Хабам Yggdrasil (например, Yggdrasil_Ashburn_VA) необходим работающий локальный туннель Yggdrasil — руководство Reticulum рекомендует привязку к вашему интерфейсу туннеля (часто tun0).",
+      "localOfflineRowBleBondStale": "Связь Bluetooth устарела. Забудьте этот RNode в «Системные настройки» → «Bluetooth», затем выполните повторное сопряжение с новым PIN-кодом (ОС по-прежнему может отображать «Сопряжено»)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1024,7 +1025,8 @@
       "offlineHintBle": "Ваша ОС может запросить 6-значный PIN-код Bluetooth (macOS, Windows или Linux). RNode генерирует новый код при каждом сопряжении — PIN-кода по умолчанию нет. Безголовые радиостанции: подключите USB → Reticulum Admin → Bluetooth → Начать сопряжение → введите PIN-код, указанный в диалоговом окне ОС. Радиостанции с дисплеем: удерживайте кнопку ~7 секунд на устройствах Heltec (время варьируется; ~10 секунд на многих платах вместо этого включает точку доступа Wi-Fi), прочитайте PIN-код на экране, затем введите его в диалоговом окне ОС. Прежде чем повторить попытку, удалите неудачные соединения в настройках Bluetooth вашей ОС.",
       "offlineHintWifi": "Убедитесь, что RNode находится в вашей локальной сети, включен и доступен по настроенному IP-адресу (порт TCP по умолчанию 7633, а не 4242). Обновите узел ниже, если DHCP назначил новый адрес, или повторно предоставьте Wi-Fi в Reticulum → Admin.",
       "tcpUnreachable": "{{name}}: концентратор TCP недоступен ({{host}}:{{port}})",
-      "tcpUnreachableHint": "Удалённый экземпляр Reticulum может быть offline или блокировать подключения. Отключите этот интерфейс или проверьте хост и порт."
+      "tcpUnreachableHint": "Удалённый экземпляр Reticulum может быть offline или блокировать подключения. Отключите этот интерфейс или проверьте хост и порт.",
+      "offlineHintBleBondStale": "macOS по-прежнему отображает этот RNode как сопряженный, но ключи Bluetooth больше не совпадают (Peer удалил информацию о сопряжении). Забудьте устройство в «Системные настройки» → «Bluetooth», переведите RNode в режим сопряжения («Администратор» → «Bluetooth» → «Начать сопряжение» или удерживайте кнопку ~7 с), затем перезапустите стек и введите новый 6-значный PIN-код при появлении запроса."
     },
     "autoConnectingTo": "Автоматическое подключение к {{deviceName}}…",
     "autoReconnectInProgress": "Выполняется автоматическое повторное подключение…",
@@ -1093,7 +1095,9 @@
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "Транспортные запросы RNS медленные или сбойные ({{count}}×)",
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
-      "shareInstanceHint": "Экземпляр Share включен — полностью закройте другие приложения Reticulum (MeshChatX, Ratspeak, автономный rnsd) и перезапустите этот стек перед повторной попыткой DM."
+      "shareInstanceHint": "Экземпляр Share включен — полностью закройте другие приложения Reticulum (MeshChatX, Ratspeak, автономный rnsd) и перезапустите этот стек перед повторной попыткой DM.",
+      "bleBondRemoved": "{{name}}: Связь Bluetooth устарела (ОС по-прежнему показывает «Сопряжено»)",
+      "bleBondRemovedHint": "Забудьте этот RNode в Системных настройках → Bluetooth, запустите сопряжение по радио (Администратор → Bluetooth или удерживайте кнопку ~7 секунд), перезапустите стек и введите новый 6-значный PIN-код."
     },
     "reticulumSidecarBundledMissing": "В этой установке отсутствует входящая в комплект Reticulum sidecar. Обновите версию до более новой или сообщите о проблеме — сборка из исходного кода недоступна при пакетной установке.",
     "radioMqttRootDivergesWarning": "Корневая тема радио MQTT - {{radioRoot}}, но эта панель подписана на {{appPrefix}}. Сопоставьте радиостанцию, чтобы ограничить трафик узлов по всей стране — обновите префикс темы и повторно подключите MQTT.",
@@ -1432,7 +1436,8 @@
         "linkDeliveryTimeout": "Время ожидания прямой связи LXMF с {{hash}}… истекло ({{count}}×)",
         "transportSaturated": "Насыщенный транспорт RNS ({{count}} LXMF path-request drops)",
         "transportSaturatedShareInstance": "RNS транспорт насыщенный ({{count}} path-request drops). Экземпляр Share включен — закройте другие приложения Reticulum (MeshChatX, Ratspeak, rnsd) и перезапустите стек.",
-        "slowTransportQuery": "Транспортные запросы RNS медленные или сбойные ({{count}}×)"
+        "slowTransportQuery": "Транспортные запросы RNS медленные или сбойные ({{count}}×)",
+        "bleBondRemoved": "Связь BLE RNode «{{name}}» устарела — забудьте в настройках Bluetooth ОС и выполните повторное сопряжение."
       }
     },
     "routingPort": {

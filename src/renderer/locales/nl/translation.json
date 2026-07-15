@@ -995,7 +995,8 @@
       "invalidMode": "Ongeldige interfacemodus.",
       "backboneDirectoryLink": "Telefoonboek ↗",
       "backboneDirectoryLinkAria": "Open de Reticulum-backbone-map om hubs te vinden die u als interfaces kunt toevoegen",
-      "backboneDirectoryHint": "Vind meer community-backbone-hubs op directory.rns.recipes. Yggdrasil-hubs (bijvoorbeeld Yggdrasil_Ashburn_VA) hebben een actieve lokale Yggdrasil-tunnel nodig - de Reticulum-handleiding beveelt aan om te binden aan uw tunnelinterface (vaak tun0)."
+      "backboneDirectoryHint": "Vind meer community-backbone-hubs op directory.rns.recipes. Yggdrasil-hubs (bijvoorbeeld Yggdrasil_Ashburn_VA) hebben een actieve lokale Yggdrasil-tunnel nodig - de Reticulum-handleiding beveelt aan om te binden aan uw tunnelinterface (vaak tun0).",
+      "localOfflineRowBleBondStale": "Bluetooth-verbinding is verouderd: vergeet deze RNode in Systeeminstellingen → Bluetooth en koppel opnieuw met een nieuwe pincode (het besturingssysteem kan nog steeds Gekoppeld weergeven)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1024,7 +1025,8 @@
       "offlineHintBle": "Uw besturingssysteem vraagt ​​mogelijk om een ​​6-cijferige Bluetooth-pincode (macOS, Windows of Linux). RNode genereert bij elke koppeling een nieuwe code - er is geen standaardpincode. Headless radio's: sluit USB aan → Reticulum Admin → Bluetooth → Start het koppelen → voer de weergegeven pincode in het OS-dialoogvenster in. Radio's met een display: houd de knop ~7 s ingedrukt op Heltec-apparaten (de timing varieert; ~10 s op veel kaarten maakt in plaats daarvan Wi-Fi AP mogelijk), lees de pincode op het scherm en voer deze vervolgens in het OS-dialoogvenster in. Wis mislukte verbindingen in de Bluetooth-instellingen van uw besturingssysteem voordat u het opnieuw probeert.",
       "offlineHintWifi": "Controleer of de RNode op uw LAN staat, is ingeschakeld en bereikbaar is via het geconfigureerde IP (standaard TCP-poort 7633, niet 4242). Werk de onderstaande host bij als DHCP een nieuw adres heeft toegewezen, of voorzie wifi opnieuw in Reticulum → Admin.",
       "tcpUnreachable": "{{name}}: TCP-hub onbereikbaar ({{host}}:{{port}})",
-      "tcpUnreachableHint": "De externe Reticulum-instantie kan offline zijn of verbindingen blokkeren. Schakel deze interface uit of verifieer de host en poort."
+      "tcpUnreachableHint": "De externe Reticulum-instantie kan offline zijn of verbindingen blokkeren. Schakel deze interface uit of verifieer de host en poort.",
+      "offlineHintBleBondStale": "macOS geeft deze RNode nog steeds weer als gekoppeld, maar de Bluetooth-sleutels komen niet meer overeen (Peer heeft de koppelingsinformatie verwijderd). Vergeet het apparaat in Systeeminstellingen → Bluetooth, zet de RNode in de koppelingsmodus (Beheerder → Bluetooth → Begin met koppelen, of houd de knop ~7 s ingedrukt), start vervolgens de stapel opnieuw op en voer de nieuwe 6-cijferige pincode in wanneer daarom wordt gevraagd."
     },
     "autoConnectingTo": "Automatisch verbinden met {{deviceName}}…",
     "autoReconnectInProgress": "Automatisch opnieuw verbinden bezig…",
@@ -1093,7 +1095,9 @@
       "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
       "slowTransportQuery": "RNS-transportvragen traag of mislukt ({{count}}×)",
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
-      "shareInstanceHint": "Deel instantie is ingeschakeld — sluit andere Reticulum-apps (MeshChatX, Ratspeak, standalone rnsd) volledig af en start deze stapel opnieuw voordat u DM's opnieuw probeert."
+      "shareInstanceHint": "Deel instantie is ingeschakeld — sluit andere Reticulum-apps (MeshChatX, Ratspeak, standalone rnsd) volledig af en start deze stapel opnieuw voordat u DM's opnieuw probeert.",
+      "bleBondRemoved": "{{name}}: Bluetooth-verbinding is verouderd (OS toont nog steeds Gekoppeld)",
+      "bleBondRemovedHint": "Vergeet deze RNode in Systeeminstellingen → Bluetooth, begin met koppelen op de radio (Admin → Bluetooth of ~7 s knop ingedrukt houden), start de stapel opnieuw op en voer de nieuwe 6-cijferige pincode in."
     },
     "reticulumSidecarBundledMissing": "Bij deze installatie ontbreekt het gebundelde Reticulum sidecar. Upgrade naar een nieuwere release of rapporteer het probleem: bouwen vanaf de broncode is niet beschikbaar in pakketinstallaties.",
     "radioMqttRootDivergesWarning": "Radio MQTT-hoofdonderwerp is {{radioRoot}}, maar dit paneel is geabonneerd op {{appPrefix}}. Koppel de radio om landelijk knooppuntverkeer te beperken — werk het onderwerpvoorvoegsel bij en sluit MQTT opnieuw aan.",
@@ -1432,7 +1436,8 @@
         "linkDeliveryTimeout": "Directe LXMF-link naar {{hash}}… time-out ({{count}}×)",
         "transportSaturated": "RNS-transport verzadigd ({{count}} LXMF-pad-aanvraagdruppels)",
         "transportSaturatedShareInstance": "RNS-transport verzadigd ({{count}} pad-aanvraagdruppels). Deel instantie is ingeschakeld — sluit andere Reticulum-apps (MeshChatX, Ratspeak, rnsd) en start de stapel opnieuw.",
-        "slowTransportQuery": "RNS-transportvragen traag of mislukt ({{count}}×)"
+        "slowTransportQuery": "RNS-transportvragen traag of mislukt ({{count}}×)",
+        "bleBondRemoved": "BLE RNode \"{{name}}\"-verbinding is verouderd: vergeet de Bluetooth-instellingen van het besturingssysteem en koppel opnieuw"
       }
     },
     "routingPort": {

@@ -258,6 +258,7 @@ export function ReticulumStackPanel({
             <ReticulumLocalInterfaceAlertsBlock
               alerts={localAlerts}
               availablePorts={serialPortPaths}
+              bleBondRemovedNames={sidecarStatus.interfaceIssueAlert?.bleBondRemoved}
               onRefreshPorts={() => {
                 void refresh();
               }}
@@ -277,6 +278,7 @@ export function ReticulumStackPanel({
               interfaces={interfaces}
               serialPorts={serialPorts}
               serialPortPaths={serialPortPaths}
+              bleBondRemovedNames={sidecarStatus.interfaceIssueAlert?.bleBondRemoved}
               effectivePrimaryLocalSerialInterfaceId={effectivePrimaryLocalSerialInterfaceId}
               onRefresh={refresh}
               onBeginBleConnectGrace={beginBleConnectGrace}

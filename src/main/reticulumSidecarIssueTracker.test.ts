@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS } from '../shared/reticulum-types';
 import {
+  parseBleBondRemovedIfaceForTests,
   parseLinkDeliveryTimeoutDestForTests,
   parseTcpConnectFailedIfaceForTests,
   parseTxDropIfaceForTests,
@@ -26,6 +27,12 @@ const PATH_REQUEST_SATURATED_LINE =
 const SLOW_TRANSPORT_LINE =
   'transport query slow or failed query=GetInterfaceStats elapsed_ms=8123';
 
+const BLE_BOND_REMOVED_LINE =
+  'BLE RNode connect failed name = RNode 41F4 error = send failed: BLE connect failed after 3 attempts: Runtime Error: Peer removed pairing information';
+
+const BLE_BOND_ATTEMPT_LINE =
+  'BLE RNode connect attempt failed attempt = 1 error = Runtime Error: Peer removed pairing information';
+
 describe('ReticulumSidecarInterfaceIssueTracker', () => {
   let tracker: ReticulumSidecarInterfaceIssueTracker;
 
@@ -47,6 +54,19 @@ describe('ReticulumSidecarInterfaceIssueTracker', () => {
     );
   });
 
+  it('parses BLE bond-removed interface names only from named connect-failed lines', () => {
+    expect(parseBleBondRemovedIfaceForTests(BLE_BOND_REMOVED_LINE)).toBe('RNode 41F4');
+    expect(parseBleBondRemovedIfaceForTests(BLE_BOND_ATTEMPT_LINE)).toBeNull();
+  });
+
+  it('builds alert with BLE bond-removed issues', () => {
+    tracker.recordLine(BLE_BOND_ATTEMPT_LINE, 500);
+    tracker.recordLine(BLE_BOND_REMOVED_LINE, 1_000);
+    const alert = tracker.getAlert(1_500);
+    expect(alert?.bleBondRemoved).toEqual(['RNode 41F4']);
+    expect(alert?.lastAtMs).toBe(1_000);
+  });
+
   it('builds alert with tcp and tx drop issues', () => {
     tracker.recordLine(TCP_LINE, 1_000);
     tracker.recordLine(TX_DROP_LINE, 2_000);
@@ -55,6 +75,7 @@ describe('ReticulumSidecarInterfaceIssueTracker', () => {
       tcpConnectFailed: ['RNS HAM RADIO'],
       txQueueDrops: [{ name: 'RNS HAM RADIO', dropCount: 8192 }],
       linkDeliveryTimeouts: [],
+      bleBondRemoved: [],
       transportSaturatedCount: 0,
       slowTransportQueryCount: 0,
       suppressedCount: 0,

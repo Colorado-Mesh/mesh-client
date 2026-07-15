@@ -995,7 +995,8 @@
       "invalidMode": "无效的接口模式。",
       "backboneDirectoryLink": "目录 ↗",
       "backboneDirectoryLinkAria": "打开 Reticulum 主干目录以查找要添加为接口的集线器",
-      "backboneDirectoryHint": "在directory.rns.recipes 中查找更多社区骨干中心。 Yggdrasil 集线器（例如 Yggdrasil_Ashburn_VA）需要一个正在运行的本地 Yggdrasil 隧道 - Reticulum 手册建议绑定到您的隧道接口（通常是 tun0）。"
+      "backboneDirectoryHint": "在directory.rns.recipes 中查找更多社区骨干中心。 Yggdrasil 集线器（例如 Yggdrasil_Ashburn_VA）需要一个正在运行的本地 Yggdrasil 隧道 - Reticulum 手册建议绑定到您的隧道接口（通常是 tun0）。",
+      "localOfflineRowBleBondStale": "蓝牙绑定已过时 - 在“系统设置”→“蓝牙”中忘记此 RNode，然后使用新的 PIN 重新配对（操作系统可能仍显示“已配对”）。"
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1024,7 +1025,8 @@
       "offlineHintBle": "您的操作系统可能会提示输入 6 位蓝牙 PIN（macOS、Windows 或 Linux）。 RNode 每次配对都会生成一个新代码 - 没有默认 PIN。无头无线电：连接 USB → Reticulum Admin → 蓝牙 → 开始配对 → 输入操作系统对话框中显示的 PIN。带显示屏的无线电：在 Heltec 设备上按住按钮约 7 秒（时间各不相同；许多板上约 10 秒启用 Wi-Fi AP），读取屏幕上的 PIN，然后将其输入到操作系统对话框中。重试之前，请清除操作系统蓝牙设置中失败的绑定。",
       "offlineHintWifi": "检查RNode是否在您的LAN上，已通电，并且可以在配置的IP上访问（默认TCP端口7633 ，而不是4242 ）。如果DHCP分配了新地址，请在下方更新主机，或在Reticulum → Admin中重新配置Wi-Fi。",
       "tcpUnreachable": "{{name}} ：无法访问TCP集线器（ {{host}} ： {{port}} ）",
-      "tcpUnreachableHint": "远程Reticulum实例可能处于离线状态或阻塞连接。禁用此接口或验证主机和端口。"
+      "tcpUnreachableHint": "远程Reticulum实例可能处于离线状态或阻塞连接。禁用此接口或验证主机和端口。",
+      "offlineHintBleBondStale": "macOS 仍显示此 RNode 为已配对，但蓝牙密钥不再匹配（对等点删除了配对信息）。在系统设置 → 蓝牙中忘记设备，将 RNode 置于配对模式（管理 → 蓝牙 → 开始配对，或按住按钮约 7 秒），然后重新启动堆栈并在出现提示时输入新的 6 位 PIN。"
     },
     "autoConnectingTo": "正在自动连接到 {{deviceName}}…",
     "autoReconnectInProgress": "正在自动重新连接…",
@@ -1093,7 +1095,9 @@
       "transportSaturatedHint": "禁用失效接口并重新启动堆栈。减少并发Reticulum流量。",
       "slowTransportQuery": "RNS传输查询缓慢或失败({{count}} ×)",
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
-      "shareInstanceHint": "共享实例已启用—在重试DM之前，完全退出其他Reticulum应用程序（ MeshChatX、Ratspeak、独立rnsd ）并重新启动此堆栈。"
+      "shareInstanceHint": "共享实例已启用—在重试DM之前，完全退出其他Reticulum应用程序（ MeshChatX、Ratspeak、独立rnsd ）并重新启动此堆栈。",
+      "bleBondRemoved": "{{name}}：蓝牙绑定已过时（操作系统仍显示已配对）",
+      "bleBondRemovedHint": "在“系统设置”→“蓝牙”中忘记此 RNode，开始在无线电上进行配对（管理→蓝牙或按住约 7 秒按钮），重新启动堆栈，然后输入新的 6 位 PIN。"
     },
     "reticulumSidecarBundledMissing": "此安装缺少捆绑的 Reticulum sidecar。升级到较新的版本或报告问题 - 在打包安装中无法从源代码构建。",
     "radioMqttRootDivergesWarning": "无线电MQTT根主题为{{radioRoot}} ，但此面板订阅了{{appPrefix}}。匹配无线电以限制全国节点流量—更新主题前缀并重新连接MQTT。",
@@ -1432,7 +1436,8 @@
         "linkDeliveryTimeout": "直接LXMF链接到{{hash}} …超时（ {{count}} × ）",
         "transportSaturated": "RNS传输饱和（ {{count}} LXMF路径请求丢弃）",
         "transportSaturatedShareInstance": "RNS传输饱和（ {{count}}路径请求丢弃）。共享实例已打开—退出其他Reticulum应用程序（ MeshChatX、Ratspeak、rnsd ）并重新启动堆栈。",
-        "slowTransportQuery": "RNS传输查询缓慢或失败({{count}} ×)"
+        "slowTransportQuery": "RNS传输查询缓慢或失败({{count}} ×)",
+        "bleBondRemoved": "BLE RNode“{{name}}”绑定已过时 — 忘记操作系统蓝牙设置并重新配对"
       }
     },
     "routingPort": {
