@@ -136,3 +136,39 @@ git -C /tmp/rsReticulum-patch-test diff \
 ### Sunset
 
 When [ratspeak/rsReticulum#14](https://github.com/ratspeak/rsReticulum/pull/14) merges, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
+
+## rsLXMF-propagation-sync-peering.patch
+
+LinkIdentify + peering stamp before LXMF `/offer`, plus `set_local_identity` / `configure_peering` / `last_offer_error` / `last_finished_ok` on `PropagationSyncTask` so mesh-client can complete remote PN sync and distinguish HaveAll success from Failed after Complete→Idle cleanup.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | `68ad7c835187c052c763bb28c41b04a655f35c64` |
+| **Upstream** | local patch until merged to [ratspeak/rsLXMF](https://github.com/ratspeak/rsLXMF) |
+
+**Modifies (1 file):**
+
+- `crates/lxmf-core/src/propagation_sync.rs` — identify/stamp before `/offer`; sync task peering + sticky finish fields
+
+### Apply locally
+
+From mesh-client repo root (sibling `../rsLXMF` required):
+
+```bash
+./scripts/apply-rsLXMF-propagation-sync-peering.sh
+```
+
+`clone-ratspeak-stack.sh` and `ensure-rsReticulum-patches.sh` invoke this automatically.
+
+### Regenerate
+
+```bash
+cd ../rsLXMF
+git fetch origin
+git diff 68ad7c835187c052c763bb28c41b04a655f35c64 -- crates/lxmf-core/src/propagation_sync.rs \
+  > ../mesh-client/reticulum-sidecar/patches/rsLXMF-propagation-sync-peering.patch
+```
+
+### Sunset
+
+When the peering/identity APIs land on `ratspeak/rsLXMF` `main`, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.

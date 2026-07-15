@@ -13,12 +13,16 @@ on:
       - '.github/workflows/reticulum-sidecar.yaml'
       - 'scripts/build-reticulum-sidecar-release.mjs'
       - 'scripts/clone-ratspeak-stack.sh'
+      - 'scripts/ensure-rsReticulum-patches.sh'
+      - 'scripts/apply-rsLXMF-propagation-sync-peering.sh'
   pull_request:
     paths:
       - 'reticulum-sidecar/**'
       - '.github/workflows/reticulum-sidecar.yaml'
       - 'scripts/build-reticulum-sidecar-release.mjs'
       - 'scripts/clone-ratspeak-stack.sh'
+      - 'scripts/ensure-rsReticulum-patches.sh'
+      - 'scripts/apply-rsLXMF-propagation-sync-peering.sh'
 
 jobs:
   build:
