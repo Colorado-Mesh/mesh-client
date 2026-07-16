@@ -55,10 +55,7 @@ describe('rrcRecentRooms', () => {
   });
 
   it('returns empty when storage is unavailable', () => {
-    const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-      throw new Error('blocked');
-    });
-    // Fall back to stub getItem throwing via localStorage override.
+    // renderer-logic runs in node — no Storage global; stub localStorage to throw.
     vi.stubGlobal('localStorage', {
       getItem: () => {
         throw new Error('blocked');
@@ -72,6 +69,5 @@ describe('rrcRecentRooms', () => {
       key: () => null,
     });
     expect(loadRrcRecentRooms(HUB)).toEqual([]);
-    spy.mockRestore();
   });
 });
