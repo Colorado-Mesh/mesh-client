@@ -52,10 +52,18 @@ function runSidecarTests() {
 
 function cloneRatspeakStack() {
   const scriptPath = path.join(projectRoot, 'scripts', 'clone-ratspeak-stack.sh');
-  const shell = 'bash';
-  // Maintainer release helper: inherit host PATH so cargo/bash resolve normally.
-  const result = spawnSync(shell, [scriptPath], {
-    // NOSONAR — bash via PATH; intentional for local/CI (javascript:S4036)
+  // Absolute bash path avoids Sonar javascript:S4036 (PATH lookup for OS commands).
+  const bash =
+    process.platform === 'win32'
+      ? [
+          'C:\\Program Files\\Git\\bin\\bash.exe',
+          'C:\\Program Files (x86)\\Git\\bin\\bash.exe',
+        ].find((candidate) => existsSync(candidate))
+      : '/bin/bash';
+  if (!bash) {
+    fail('Git bash not found (expected under Program Files\\Git\\bin\\bash.exe)');
+  }
+  const result = spawnSync(bash, [scriptPath], {
     cwd: projectRoot,
     stdio: 'inherit',
     env: {
