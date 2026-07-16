@@ -1138,7 +1138,8 @@
     "maxRetriesHelpConnected": {
       "meshcore": "在放弃前尝试重新连接（ 1– {{max}} ）。已保存设置；更改后再次按“连接” ，以便主进程将其拾取。",
       "meshtastic": "两种方案均允许1– {{max}}。已使用设置保存；断开连接并再次连接，以便正在运行的会话使用新值。"
-    }
+    },
+    "reticulumStackRunningAs": "跑步— {{name}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",

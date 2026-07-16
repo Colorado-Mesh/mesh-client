@@ -1138,7 +1138,8 @@
     "maxRetriesHelpConnected": {
       "meshcore": "Sambungkan kembali percobaan sebelum menyerah (1 -{{max}}). Disimpan dengan pengaturan; tekan Hubungkan lagi setelah berubah sehingga proses utama mengambilnya.",
       "meshtastic": "Kedua protokol mengizinkan 1 -{{max}}. Disimpan dengan pengaturan; putuskan dan Hubungkan lagi sehingga sesi yang sedang berjalan menggunakan nilai baru."
-    }
+    },
+    "reticulumStackRunningAs": "Berjalan — {{name}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

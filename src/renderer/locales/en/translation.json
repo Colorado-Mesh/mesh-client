@@ -733,6 +733,7 @@
     "reticulumStopStack": "Stop stack",
     "reticulumAutostart": "Auto-start stack when opening Connection",
     "reticulumStackRunning": "Stack running",
+    "reticulumStackRunningAs": "Running — {{name}}",
     "reticulumLocalInterfaces": {
       "needsAttention": "{{count}} local interface(s) need attention",
       "stalePort": "{{name}}: serial port {{port}} not found",

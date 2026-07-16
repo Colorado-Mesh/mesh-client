@@ -8,9 +8,9 @@ import {
 } from '@/renderer/lib/appSettingsStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { isBleScanBusyErrorMessage } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
+import { fetchReticulumIdentityStatus } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { notifyReticulumStartupAutostartSettled } from '@/renderer/lib/reticulum/reticulumStartupAutostartGate';
 import { tryGetReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
-import type { ReticulumIdentityStatus } from '@/renderer/stores/reticulumIdentityStore';
 import {
   beginReticulumIdentityFetch,
   bumpReticulumIdentityFetchGeneration,
@@ -90,6 +90,9 @@ export function useReticulumSidecarApi({
 
   const applySidecarStatus = useCallback((status: ReticulumSidecarStatus) => {
     statusHydratedRef.current = true;
+    if (sidecarRunningRef.current && !status.running) {
+      bumpReticulumIdentityFetchGeneration();
+    }
     setSidecarStatus(status);
   }, []);
 
@@ -105,8 +108,8 @@ export function useReticulumSidecarApi({
   }, [applySidecarStatus]);
 
   const refreshIdentity = useCallback(async () => {
-    if (!sidecarApiReady) {
-      if (statusHydratedRef.current && !sidecarRunningRef.current && !connectingRef.current) {
+    if (!sidecarRunningRef.current) {
+      if (statusHydratedRef.current && !connectingRef.current) {
         bumpReticulumIdentityFetchGeneration();
         useReticulumIdentityStore.getState().setIdentity(null);
       }
@@ -115,14 +118,30 @@ export function useReticulumSidecarApi({
     const generation = beginReticulumIdentityFetch();
     try {
       await refreshReticulumIdentityShared(async () => {
-        return (await window.electronAPI.reticulum.proxyGet(
-          '/api/v1/identity/status',
-        )) as ReticulumIdentityStatus;
+        const status = await fetchReticulumIdentityStatus();
+        if (!status.lxmfHash) {
+          const existing = useReticulumIdentityStore.getState().identity;
+          if (existing?.lxmf_hash) {
+            return existing;
+          }
+          return {
+            configured: false,
+            identity_hash: '',
+            lxmf_hash: '',
+            display_name: null,
+          };
+        }
+        return {
+          configured: status.configured,
+          identity_hash: status.identityHash?.trim() || '',
+          lxmf_hash: status.lxmfHash,
+          display_name: status.displayName,
+        };
       }, generation);
     } catch (e) {
       console.debug('[useReticulumSidecarApi] identity status ' + errLikeToLogString(e));
     }
-  }, [sidecarApiReady]);
+  }, []);
 
   const refreshAppInfo = useCallback(async () => {
     if (!sidecarApiReady) {
@@ -145,6 +164,9 @@ export function useReticulumSidecarApi({
     void refreshSidecarStatus();
     const unsubStatus = window.electronAPI.reticulum.onStatus((status) => {
       statusHydratedRef.current = true;
+      if (sidecarRunningRef.current && !status.running) {
+        bumpReticulumIdentityFetchGeneration();
+      }
       setSidecarStatus(status);
       if (!status.running && !manualStopSuppressRef.current && !startInFlightRef.current) {
         autostartAttemptedRef.current = false;
@@ -238,8 +260,10 @@ export function useReticulumSidecarApi({
 
   useEffect(() => {
     void refreshIdentity();
-    void refreshAppInfo();
-  }, [refreshIdentity, refreshAppInfo]);
+    if (sidecarApiReady) {
+      void refreshAppInfo();
+    }
+  }, [sidecarStatus.running, sidecarApiReady, refreshIdentity, refreshAppInfo]);
 
   useEffect(() => {
     if (!sidecarApiReady || !onEvent) return;

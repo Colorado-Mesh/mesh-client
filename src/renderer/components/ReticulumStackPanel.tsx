@@ -9,6 +9,7 @@ import {
   isReticulumSharedInstanceClientMode,
   type ReticulumLocalInterfaceAlert,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
+import { resolveReticulumSelfHeaderLabel } from '@/renderer/lib/reticulum/reticulumSelfNodeLabel';
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { useReticulumInterfaceSnapshot } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
@@ -207,6 +208,11 @@ export function ReticulumStackPanel({
     }
   }, [beginBleConnectGrace, refresh, t]);
 
+  const stackStatusIdentityLabel = resolveReticulumSelfHeaderLabel({
+    identityDisplayName: identity?.display_name,
+    lxmfHash: identity?.lxmf_hash ?? null,
+  });
+
   return (
     <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
       <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
@@ -222,7 +228,9 @@ export function ReticulumStackPanel({
         >
           ●{' '}
           {sidecarUiRunning
-            ? t('connectionPanel.reticulumStackRunning')
+            ? stackStatusIdentityLabel
+              ? t('connectionPanel.reticulumStackRunningAs', { name: stackStatusIdentityLabel })
+              : t('connectionPanel.reticulumStackRunning')
             : connecting
               ? t('connectionPanel.connecting')
               : t('connectionPanel.disconnected')}

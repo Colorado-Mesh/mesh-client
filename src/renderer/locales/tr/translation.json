@@ -1138,7 +1138,8 @@
     "maxRetriesHelpConnected": {
       "meshcore": "Vazgeçmeden önce denemeleri yeniden bağlayın (1 -{{max}}). Ayarlar ile kaydedildi; değiştirdikten sonra Bağlan'a tekrar basın, böylece ana işlem onu alır.",
       "meshtastic": "Her iki protokol de 1 -{{max}} 'a izin verir. Ayarlar ile kaydedildi; bağlantıyı kesin ve tekrar bağlanın, böylece çalışan oturum yeni değeri kullanır."
-    }
+    },
+    "reticulumStackRunningAs": "Çalışıyor — {{name}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

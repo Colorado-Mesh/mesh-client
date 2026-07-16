@@ -1138,7 +1138,8 @@
     "maxRetriesHelpConnected": {
       "meshcore": "Pokus o opětovné připojení před vzdáním se (1–{{max}}). Uloženo s nastavením; po změně znovu stiskněte tlačítko Připojit, aby jej hlavní proces zvedl.",
       "meshtastic": "Oba protokoly umožňují 1–{{max}}. Uloženo s nastavením; odpojte a znovu připojte, aby běžící relace používala novou hodnotu."
-    }
+    },
+    "reticulumStackRunningAs": "Běží — {{name}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

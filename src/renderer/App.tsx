@@ -204,6 +204,7 @@ import { protocolHeaderBorderClass } from './lib/protocolTheme';
 import { useRadioProvider } from './lib/radio/providerFactory';
 import type { ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
+import { reticulumHashToNodeId } from './lib/reticulum/destHash';
 import { openReticulumDmFromHash } from './lib/reticulum/reticulumDestinationInput';
 import { resolveReticulumSelfHeaderLabel } from './lib/reticulum/reticulumSelfNodeLabel';
 import { skipReticulumStartupAutostartGate } from './lib/reticulum/reticulumStartupAutostartGate';
@@ -1386,12 +1387,19 @@ function AppContent() {
     [reticulumOwnNodeIdSet],
   );
   const reticulumIdentityForHeader = useReticulumIdentityStore((s) => s.identity);
+  const headerMyNodeNum =
+    protocol === 'reticulum'
+      ? Math.max(
+          activeConnectionView.state.myNodeNum,
+          typeof reticulumRuntime.selfNodeId === 'number' ? reticulumRuntime.selfNodeId : 0,
+          reticulumIdentityForHeader?.lxmf_hash
+            ? reticulumHashToNodeId(reticulumIdentityForHeader.lxmf_hash)
+            : 0,
+        )
+      : activeConnectionView.state.myNodeNum;
   const headerSelfNodeLabel = (() => {
     if (protocol === 'reticulum') {
-      const selfId =
-        typeof reticulumRuntime.selfNodeId === 'number'
-          ? reticulumRuntime.selfNodeId
-          : activeConnectionView.state.myNodeNum;
+      const selfId = headerMyNodeNum;
       const stored =
         reticulumIdentityId && selfId > 0
           ? useNodeStore.getState().nodes[reticulumIdentityId]?.[selfId >>> 0]?.longName
@@ -1407,6 +1415,7 @@ function AppContent() {
           panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum)
       : panelActions.getPickerStyleNodeLabel(activeConnectionView.state.myNodeNum);
   })();
+
   const sendReactionByProtocol = useMemo(
     () =>
       protocolRecord(
@@ -1598,6 +1607,7 @@ function AppContent() {
   const isOperational = isConfigured || activeConnectionView.state.status === 'stale';
   const isConnectedOrOperational =
     isOperational || activeConnectionView.state.status === 'connected';
+
   const hasLocalMeshtasticRadio =
     capabilities.hasRemoteAdmin &&
     meshtasticConnectionView.state.myNodeNum > 0 &&
@@ -2630,15 +2640,17 @@ function AppContent() {
                   </span>
                 </div>
               </div>
-              {activeConnectionView.state.myNodeNum > 0 &&
+              {headerMyNodeNum > 0 &&
                 Boolean(headerSelfNodeLabel) &&
-                (!capabilities.prefersDeviceOwnerLongNameInHeader ||
-                  activeConnectionView.state.status === 'configured') && (
+                (protocol === 'reticulum'
+                  ? isConnectedOrOperational
+                  : !capabilities.prefersDeviceOwnerLongNameInHeader ||
+                    activeConnectionView.state.status === 'configured') && (
                   <span
                     aria-label={t('app.nodeLabel', {
                       name: headerSelfNodeLabel,
                     })}
-                    className="text-muted hidden shrink-0 text-xs xl:inline"
+                    className="text-muted hidden shrink-0 text-xs lg:inline"
                   >
                     {t('app.nodeLabel', {
                       name: headerSelfNodeLabel,

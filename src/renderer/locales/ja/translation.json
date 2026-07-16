@@ -1138,7 +1138,8 @@
     "maxRetriesHelpConnected": {
       "meshcore": "諦める前に再接続を試みます（ 1 - {{max}} ）。設定が保存されました。変更後にもう一度接続を押して、メインプロセスがそれをピックアップします。",
       "meshtastic": "どちらのプロトコルも1 - {{max}}を許可します。設定とともに保存されました。接続を解除してもう一度接続すると、実行中のセッションが新しい値を使用します。"
-    }
+    },
+    "reticulumStackRunningAs": "実行中— {{name}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

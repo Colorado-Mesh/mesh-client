@@ -1138,7 +1138,8 @@
     "maxRetriesHelpConnected": {
       "meshcore": "Reconecte as tentativas antes de desistir (1–{{max}}). Salvo com as configurações; pressione Conectar novamente depois de alterar para que o processo principal o pegue.",
       "meshtastic": "Ambos os protocolos permitem 1–{{max}}. Salvo com configurações; desconecte e conecte novamente para que a sessão em execução use o novo valor."
-    }
+    },
+    "reticulumStackRunningAs": "Em execução — {{name}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",

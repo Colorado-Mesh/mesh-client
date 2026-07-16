@@ -1138,7 +1138,8 @@
     "maxRetriesHelpConnected": {
       "meshcore": "Riconnetti i tentativi prima di rinunciare (1–{{max}}). Salvato con le impostazioni; premere nuovamente Connetti dopo aver modificato in modo che il processo principale lo raccolga.",
       "meshtastic": "Entrambi i protocolli consentono 1–{{max}}. Salvato con le impostazioni; disconnettersi e connettersi di nuovo in modo che la sessione in esecuzione utilizzi il nuovo valore."
-    }
+    },
+    "reticulumStackRunningAs": "Corsa — {{name}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",

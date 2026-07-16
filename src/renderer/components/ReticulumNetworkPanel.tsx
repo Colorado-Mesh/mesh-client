@@ -99,7 +99,7 @@ export function ReticulumNetworkPanel({
   const { t } = useTranslation();
   const sidecarEventRef = useRef<(evt: ReticulumSidecarEvent) => void>(() => {});
 
-  const { sidecarApiReady, identity, statsSummary, appInfo, refreshIdentity } =
+  const { sidecarApiReady, sidecarUiRunning, identity, statsSummary, appInfo, refreshIdentity } =
     useReticulumSidecarApi({
       connecting,
       onStartStack,
@@ -464,12 +464,12 @@ export function ReticulumNetworkPanel({
     }
   };
 
-  const identityReady = identity?.configured === true;
+  const identityReady = Boolean(identity?.lxmf_hash?.trim());
   const identityActionsDisabled = !sidecarApiReady || connecting;
 
   return (
     <div className="space-y-4">
-      {!sidecarApiReady ? (
+      {!sidecarUiRunning && !connecting ? (
         <p className="rounded-lg border border-amber-600/40 bg-amber-950/20 p-3 text-sm text-amber-200">
           {t('connectionPanel.reticulumIdentity.startStackFirst')}
         </p>

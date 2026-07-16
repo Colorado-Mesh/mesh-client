@@ -1138,7 +1138,8 @@
     "maxRetriesHelpConnected": {
       "meshcore": "Reconnectez-vous avant d'abandonner (1–{{max}}). Enregistré avec les paramètres ; appuyez à nouveau sur Connecter après la modification pour que le processus principal le récupère.",
       "meshtastic": "Les deux protocoles permettent 1–{{max}}. Enregistré avec les paramètres ; déconnectez-vous et reconnectez-vous afin que la session en cours d'exécution utilise la nouvelle valeur."
-    }
+    },
+    "reticulumStackRunningAs": "En cours — {{name}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",
