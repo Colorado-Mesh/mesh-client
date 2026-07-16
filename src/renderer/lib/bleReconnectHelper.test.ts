@@ -5,6 +5,7 @@ import { MESHCORE_SETUP_ABORT_MESSAGE } from './bleConnectErrors';
 import {
   BLE_SCAN_BUSY_MAX_WAIT_MS,
   BLE_SCAN_BUSY_RETRY_INTERVAL_MS,
+  connectNobleBleWithScanBusyRetry,
   reconnectBleWithScan,
   startNobleBleScanningWithRetry,
   verifyNobleBleRfLink,
@@ -73,6 +74,74 @@ describe('startNobleBleScanningWithRetry', () => {
     });
 
     const pending = startNobleBleScanningWithRetry('meshcore');
+    const rejection = expect(pending).rejects.toThrow(/Bluetooth scan in progress \(reticulum\)/);
+    await vi.advanceTimersByTimeAsync(BLE_SCAN_BUSY_MAX_WAIT_MS + BLE_SCAN_BUSY_RETRY_INTERVAL_MS);
+    await rejection;
+    vi.useRealTimers();
+  });
+});
+
+describe('connectNobleBleWithScanBusyRetry', () => {
+  beforeEach(() => {
+    window.electronAPI = {
+      ...window.electronAPI,
+      connectNobleBle: vi.fn().mockResolvedValue({ ok: true }),
+    };
+  });
+
+  it('retries when connect is rejected for reticulum scan yield then succeeds', async () => {
+    vi.useFakeTimers();
+    vi.mocked(window.electronAPI.connectNobleBle)
+      .mockResolvedValueOnce({
+        ok: false,
+        error: 'Bluetooth scan in progress (reticulum)',
+      })
+      .mockResolvedValueOnce({ ok: true });
+
+    const pending = connectNobleBleWithScanBusyRetry('meshtastic', 'periph-1');
+    await vi.advanceTimersByTimeAsync(BLE_SCAN_BUSY_RETRY_INTERVAL_MS);
+    await expect(pending).resolves.toBeUndefined();
+    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
+    expect(window.electronAPI.connectNobleBle).toHaveBeenNthCalledWith(1, 'meshtastic', 'periph-1');
+    vi.useRealTimers();
+  });
+
+  it('retries when another scan owner holds the mutex (not only reticulum)', async () => {
+    vi.useFakeTimers();
+    vi.mocked(window.electronAPI.connectNobleBle)
+      .mockResolvedValueOnce({
+        ok: false,
+        error: 'Bluetooth scan in progress (noble)',
+      })
+      .mockResolvedValueOnce({ ok: true });
+
+    const pending = connectNobleBleWithScanBusyRetry('meshcore', 'periph-2');
+    await vi.advanceTimersByTimeAsync(BLE_SCAN_BUSY_RETRY_INTERVAL_MS);
+    await expect(pending).resolves.toBeUndefined();
+    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it('fails immediately on non-scan-busy connect errors', async () => {
+    vi.mocked(window.electronAPI.connectNobleBle).mockResolvedValue({
+      ok: false,
+      error: 'Bluetooth adapter is not available',
+    });
+
+    await expect(connectNobleBleWithScanBusyRetry('meshtastic', 'periph-1')).rejects.toThrow(
+      'Bluetooth adapter is not available',
+    );
+    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(1);
+  });
+
+  it('fails after max wait when scan yield never releases', async () => {
+    vi.useFakeTimers();
+    vi.mocked(window.electronAPI.connectNobleBle).mockResolvedValue({
+      ok: false,
+      error: 'Bluetooth scan in progress (reticulum)',
+    });
+
+    const pending = connectNobleBleWithScanBusyRetry('meshtastic', 'periph-1');
     const rejection = expect(pending).rejects.toThrow(/Bluetooth scan in progress \(reticulum\)/);
     await vi.advanceTimersByTimeAsync(BLE_SCAN_BUSY_MAX_WAIT_MS + BLE_SCAN_BUSY_RETRY_INTERVAL_MS);
     await rejection;

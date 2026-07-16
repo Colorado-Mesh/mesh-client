@@ -77,6 +77,40 @@ export async function startNobleBleScanningWithRetry(
   throw new Error(nobleBleStartScanBusyMessage(lastOwner));
 }
 
+/**
+ * Noble GATT connect; retry when Reticulum (or another owner) holds the scan yield.
+ * Meshtastic dual-Noble auto-connect is primary and often races a short RNode yield —
+ * hard-failing here left MeshCore able to connect after release while Meshtastic stayed down.
+ */
+export async function connectNobleBleWithScanBusyRetry(
+  sessionId: NobleBleSessionId,
+  peripheralId: string,
+  opts?: { maxWaitMs?: number; retryIntervalMs?: number },
+): Promise<void> {
+  const maxWaitMs = opts?.maxWaitMs ?? BLE_SCAN_BUSY_MAX_WAIT_MS;
+  const retryIntervalMs = opts?.retryIntervalMs ?? BLE_SCAN_BUSY_RETRY_INTERVAL_MS;
+  const deadline = Date.now() + maxWaitMs;
+  let lastError = 'BLE connect failed';
+
+  while (Date.now() < deadline) {
+    const result = await window.electronAPI.connectNobleBle(sessionId, peripheralId);
+    if (result.ok) {
+      return;
+    }
+    const message = result.error || 'BLE connect failed';
+    lastError = message;
+    if (!isBleScanBusyErrorMessage(message)) {
+      throw new Error(message);
+    }
+    console.debug(
+      `[bleReconnectHelper] connect scan busy — retrying in ${retryIntervalMs}ms (${message})`,
+    );
+    await sleep(retryIntervalMs);
+  }
+
+  throw new Error(lastError);
+}
+
 /** Verify Noble BLE GATT is still connected after configure (macOS/Windows). */
 export async function verifyNobleBleRfLink(
   rfType: 'ble' | 'serial' | 'tcp' | 'http',
