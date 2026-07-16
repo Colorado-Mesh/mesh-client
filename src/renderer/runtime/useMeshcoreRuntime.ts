@@ -76,6 +76,7 @@ import {
 } from '../lib/appSettingsStorage';
 import {
   classifyMeshcoreBleTimeoutStage,
+  isMeshcoreSetupAbortError,
   MESHCORE_SETUP_ABORT_MESSAGE,
 } from '../lib/bleConnectErrors';
 import { verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
@@ -1842,6 +1843,17 @@ export function useMeshcoreRuntime() {
     [],
   );
 
+  /**
+   * Parallel init RPCs can reject with setup AbortError while another await is in flight
+   * (e.g. DB cache). Attach early so sibling cancels do not surface as unhandledrejection.
+   */
+  const observeMeshcoreSetupAbort = useCallback((promise: Promise<unknown>): void => {
+    void promise.catch((e: unknown) => {
+      if (isMeshcoreSetupAbortError(e)) return;
+      throw e;
+    });
+  }, []);
+
   const refreshMeshcoreAutoaddFromDevice = useCallback(async () => {
     const conn = connRef.current;
     if (!conn) return;
@@ -1902,7 +1914,7 @@ export function useMeshcoreRuntime() {
             setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
           }
         } catch (e) {
-          if (e instanceof DOMException && e.name === 'AbortError') return;
+          if (isMeshcoreSetupAbortError(e)) return;
           console.warn('[useMeshcoreRuntime] loadMessagesFromDb error ' + errLikeToLogString(e));
         }
       })();
@@ -1924,6 +1936,7 @@ export function useMeshcoreRuntime() {
           setupGen,
           conn.getSelfInfo(5000),
         );
+        observeMeshcoreSetupAbort(parallelSelfInfoPromise);
         getContactsStart = performance.now();
         parallelContactsPromise = awaitUnlessMeshcoreSetupCancelled(
           setupGen,
@@ -1934,6 +1947,7 @@ export function useMeshcoreRuntime() {
             return withTimeout(conn.getContacts(), MESHCORE_INIT_TIMEOUT_MS, 'getContacts');
           })(),
         );
+        observeMeshcoreSetupAbort(parallelContactsPromise);
         const channelsPromise = awaitUnlessMeshcoreSetupCancelled(
           setupGen,
           withTimeout(conn.getChannels(), MESHCORE_INIT_TIMEOUT_MS, 'getChannels'),
@@ -1947,7 +1961,7 @@ export function useMeshcoreRuntime() {
               ),
             );
           } catch (e) {
-            if (e instanceof DOMException && e.name === 'AbortError') return;
+            if (isMeshcoreSetupAbortError(e)) return;
             console.warn('[useMeshcoreRuntime] getChannels error ' + errLikeToLogString(e));
           }
         })();
@@ -1976,7 +1990,7 @@ export function useMeshcoreRuntime() {
           meshcoreLastPersistedNodesRef.current = new Map(cachedNodes);
           applyMeshcoreNodesToUi(cachedNodes);
         } catch (e) {
-          if (e instanceof DOMException && e.name === 'AbortError') throw e;
+          if (isMeshcoreSetupAbortError(e)) throw e;
           console.warn(
             '[useMeshcoreRuntime] initConn db cache hydrate failed ' + errLikeToLogString(e),
           );
@@ -2121,7 +2135,7 @@ export function useMeshcoreRuntime() {
             `[useMeshcoreRuntime] initConn getChannels ${getChannelsMs}ms (${rawChannels.length} channels)`,
           );
         } catch (e) {
-          if (e instanceof DOMException && e.name === 'AbortError') throw e;
+          if (isMeshcoreSetupAbortError(e)) throw e;
           console.warn('[useMeshcoreRuntime] getChannels error ' + errLikeToLogString(e));
         }
       }
@@ -2152,7 +2166,7 @@ export function useMeshcoreRuntime() {
           await awaitUnlessMeshcoreSetupCancelled(setupGen, conn.setManualAddContacts());
         }
       } catch (e) {
-        if (e instanceof DOMException && e.name === 'AbortError') throw e;
+        if (isMeshcoreSetupAbortError(e)) throw e;
         console.warn(
           '[useMeshcoreRuntime] setManualAddContacts (init) error ' + errLikeToLogString(e),
         );
@@ -2195,7 +2209,7 @@ export function useMeshcoreRuntime() {
           );
         }
       } catch (e) {
-        if (e instanceof DOMException && e.name === 'AbortError') throw e;
+        if (isMeshcoreSetupAbortError(e)) throw e;
         console.warn(
           '[useMeshcoreRuntime] initConn reapply flood scope failed ' + errLikeToLogString(e),
         );
@@ -2253,13 +2267,13 @@ export function useMeshcoreRuntime() {
             }
           }
         } catch (e) {
-          if (e instanceof DOMException && e.name === 'AbortError') throw e;
+          if (isMeshcoreSetupAbortError(e)) throw e;
           console.warn(
             '[useMeshcoreRuntime] initConn reapply path hash mode failed ' + errLikeToLogString(e),
           );
         }
       } catch (e) {
-        if (e instanceof DOMException && e.name === 'AbortError') throw e;
+        if (isMeshcoreSetupAbortError(e)) throw e;
         // catch-no-log-ok deviceQuery optional for firmware string
       }
 
@@ -2271,7 +2285,7 @@ export function useMeshcoreRuntime() {
           exportAndPersistMeshcoreMqttIdentity(conn, info.publicKey, transportType),
         );
       } catch (e) {
-        if (e instanceof DOMException && e.name === 'AbortError') throw e;
+        if (isMeshcoreSetupAbortError(e)) throw e;
         console.warn(
           '[useMeshcoreRuntime] initConn MQTT identity export failed ' + errLikeToLogString(e),
         );
@@ -2333,6 +2347,7 @@ export function useMeshcoreRuntime() {
       handleMeshcorePathUpdatedFromIngest,
       maybeAutoLaunchMeshcoreMqttAfterIdentity,
       meshcorePreviousNodesBaselineForBuild,
+      observeMeshcoreSetupAbort,
       refreshMeshcoreAutoaddFromDevice,
       resolveMeshcoreStoreIdentityId,
       setupEventListeners,
@@ -2666,11 +2681,7 @@ export function useMeshcoreRuntime() {
         connectionLoss: false,
       }));
     } catch (err) {
-      if (
-        err instanceof DOMException &&
-        err.name === 'AbortError' &&
-        err.message === MESHCORE_SETUP_ABORT_MESSAGE
-      ) {
+      if (isMeshcoreSetupAbortError(err)) {
         console.debug('[useMeshcoreRuntime] reconnect aborted (setup superseded)');
         meshcoreIsReconnectingRef.current = false;
         return;
@@ -2853,10 +2864,7 @@ export function useMeshcoreRuntime() {
         connectSucceeded = true;
         meshcoreEverConfiguredRef.current = true;
       } catch (err) {
-        const isSetupAbort =
-          err instanceof DOMException &&
-          err.name === 'AbortError' &&
-          err.message === MESHCORE_SETUP_ABORT_MESSAGE;
+        const isSetupAbort = isMeshcoreSetupAbortError(err);
         if (isSetupAbort) {
           await handleRfConnectFailure(type, opened?.driverIdentityId);
           throw err;
@@ -2978,10 +2986,7 @@ export function useMeshcoreRuntime() {
           try {
             await attachSerialSession();
           } catch (firstErr) {
-            const firstSetupAbort =
-              firstErr instanceof DOMException &&
-              firstErr.name === 'AbortError' &&
-              firstErr.message === MESHCORE_SETUP_ABORT_MESSAGE;
+            const firstSetupAbort = isMeshcoreSetupAbortError(firstErr);
             if (firstSetupAbort || opened) {
               throw firstErr;
             }
@@ -2995,10 +3000,7 @@ export function useMeshcoreRuntime() {
             await attachSerialSession();
           }
         } catch (err) {
-          const isSetupAbort =
-            err instanceof DOMException &&
-            err.name === 'AbortError' &&
-            err.message === MESHCORE_SETUP_ABORT_MESSAGE;
+          const isSetupAbort = isMeshcoreSetupAbortError(err);
           if (!isSetupAbort) {
             const normalized = normalizeMeshCoreError(
               err,

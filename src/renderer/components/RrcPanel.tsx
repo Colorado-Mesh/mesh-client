@@ -112,7 +112,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
   const [hubSearch, setHubSearch] = useState('');
   const [roomSearch, setRoomSearch] = useState('');
   const [manualHash, setManualHash] = useState('');
-  const [joinRoomName, setJoinRoomName] = useState('#lobby');
+  const [joinRoomName, setJoinRoomName] = useState('lobby');
   const [joinRoomKey, setJoinRoomKey] = useState('');
   const [recentRoomsEpoch, setRecentRoomsEpoch] = useState(0);
   const [prefsEpoch, setPrefsEpoch] = useState(0);
@@ -122,6 +122,8 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
   const [draft, setDraft] = useState('');
   const listSentForHubRef = useRef<string | null>(null);
   const autoJoinDoneRef = useRef<string | null>(null);
+  /** Per-hub room keys we already requested `/who` for (rrcd JOINED often has no roster). */
+  const whoRequestedRef = useRef(new Set<string>());
 
   useEffect(() => {
     try {
@@ -191,6 +193,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
       if (status === 'disconnected') {
         listSentForHubRef.current = null;
         autoJoinDoneRef.current = null;
+        whoRequestedRef.current.clear();
       }
       return;
     }
@@ -210,6 +213,31 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
       }
     }
   }, [status, hubDestHash, sendHubCommand]);
+
+  // rrcd JOINED member lists are optional (off by default) — request `/who` per joined room.
+  useEffect(() => {
+    if (status !== 'active' || !hubDestHash) return;
+    const live = new Set<string>();
+    for (const key of rooms.keys()) {
+      if (!key || key.startsWith('[')) continue;
+      const reqKey = `${hubDestHash}::${key}`;
+      live.add(reqKey);
+      if (whoRequestedRef.current.has(reqKey)) continue;
+      whoRequestedRef.current.add(reqKey);
+      void window.electronAPI.reticulum.rrc
+        .send({ room: key, body: `/who ${key}`, type: 'msg' })
+        .catch((e: unknown) => {
+          whoRequestedRef.current.delete(reqKey);
+          console.debug('[RrcPanel] auto /who ' + errLikeToLogString(e));
+        });
+    }
+    // Drop parted rooms so a later re-join triggers a fresh `/who`.
+    for (const prev of [...whoRequestedRef.current]) {
+      if (prev.startsWith(`${hubDestHash}::`) && !live.has(prev)) {
+        whoRequestedRef.current.delete(prev);
+      }
+    }
+  }, [status, hubDestHash, rooms]);
 
   const hubList = useMemo(() => {
     const all = [...hubs.values()].filter((h) => hubMatchesSearch(h, hubSearch));
@@ -257,17 +285,24 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
 
   const nicklistMembers = useMemo(() => {
     const members = [...(activeRoomInfo?.members ?? [])];
-    if (!localIdentityHash) return members;
-    const selfIdx = members.findIndex(
-      (m) => m.identity_hash.toLowerCase() === localIdentityHash.toLowerCase(),
-    );
-    if (selfIdx >= 0) {
-      const cur = members[selfIdx];
-      if (cur) {
-        members[selfIdx] = { ...cur, nickname: nickname || cur.nickname };
+    if (localIdentityHash) {
+      const selfIdx = members.findIndex(
+        (m) => m.identity_hash.toLowerCase() === localIdentityHash.toLowerCase(),
+      );
+      if (selfIdx >= 0) {
+        const cur = members[selfIdx];
+        if (cur) {
+          members[selfIdx] = { ...cur, nickname: nickname || cur.nickname };
+        }
+      } else if (nickname) {
+        members.unshift({ identity_hash: localIdentityHash, nickname });
       }
-    } else if (nickname) {
-      members.unshift({ identity_hash: localIdentityHash, nickname });
+    } else if (
+      nickname &&
+      !members.some((m) => (m.nickname ?? '').toLowerCase() === nickname.toLowerCase())
+    ) {
+      // Identity hash may arrive after WELCOME; still show self nick immediately.
+      members.unshift({ identity_hash: `nick:${nickname.toLowerCase()}`, nickname });
     }
     return members;
   }, [activeRoomInfo?.members, localIdentityHash, nickname]);

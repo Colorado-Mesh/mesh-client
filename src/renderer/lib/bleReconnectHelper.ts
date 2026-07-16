@@ -1,6 +1,6 @@
 import type { NobleBleSessionId, NobleBleStartScanResult } from '@/shared/electron-api.types';
 
-import { MESHCORE_SETUP_ABORT_MESSAGE } from './bleConnectErrors';
+import { isMeshcoreSetupAbortError } from './bleConnectErrors';
 import { errLikeToLogString } from './errLikeToLogString';
 import { isBleScanBusyErrorMessage } from './reticulum/reticulumBleAdapterLease';
 import type { MeshProtocol } from './types';
@@ -26,14 +26,6 @@ function isLinuxPlatform(): boolean {
 
 function isLinuxWebBluetoothPlatform(): boolean {
   return typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('linux');
-}
-
-function isMeshcoreSetupAbortError(err: unknown): boolean {
-  return (
-    err instanceof DOMException &&
-    err.name === 'AbortError' &&
-    err.message === MESHCORE_SETUP_ABORT_MESSAGE
-  );
 }
 
 function isNobleBleStartScanBusyResult(

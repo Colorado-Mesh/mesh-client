@@ -188,7 +188,14 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
   it('attemptMeshcoreReconnect treats setup AbortError as superseded reconnect', () => {
     const reconnectBody = extractUseCallbackBody(RUNTIME_SOURCE, 'attemptMeshcoreReconnect');
     expect(reconnectBody).toMatch(
-      /err\.message === MESHCORE_SETUP_ABORT_MESSAGE[\s\S]*?reconnect aborted \(setup superseded\)/,
+      /isMeshcoreSetupAbortError\(err\)[\s\S]*?reconnect aborted \(setup superseded\)/,
+    );
+  });
+
+  it('observes parallel init setup AbortErrors so sibling cancels are not unhandled', () => {
+    expect(RUNTIME_SOURCE).toContain('observeMeshcoreSetupAbort');
+    expect(RUNTIME_SOURCE).toMatch(
+      /observeMeshcoreSetupAbort\(parallelSelfInfoPromise\)[\s\S]*?observeMeshcoreSetupAbort\(parallelContactsPromise\)/,
     );
   });
 

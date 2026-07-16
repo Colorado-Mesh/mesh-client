@@ -3,6 +3,15 @@ export type MeshcoreBleTimeoutStage = 'ipc-open' | 'protocol-handshake' | 'unkno
 /** DOMException.message when user disconnects while MeshCore `initConn` is still running. */
 export const MESHCORE_SETUP_ABORT_MESSAGE = 'MeshCore connection setup cancelled';
 
+/** True when MeshCore RF setup was superseded (disconnect / new connect bumped setup generation). */
+export function isMeshcoreSetupAbortError(err: unknown): boolean {
+  return (
+    err instanceof DOMException &&
+    err.name === 'AbortError' &&
+    err.message === MESHCORE_SETUP_ABORT_MESSAGE
+  );
+}
+
 const MAIN_PROCESS_BLE_TIMEOUT_RE =
   /BLE connectAsync timed out|BLE characteristic discovery timed out|BLE fromNum subscribe timed out|BLE fromRadio subscribe timed out/i;
 

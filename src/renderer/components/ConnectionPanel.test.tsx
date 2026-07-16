@@ -1455,6 +1455,72 @@ describe('ConnectionPanel BLE auto-connect error humanization', () => {
       restore();
     }
   });
+
+  it('does not surface MeshCore setup AbortError as an unhandledrejection or UI error', async () => {
+    const { restore } = mockMacNoblePlatform();
+    const protocolKey = 'mesh-client:protocol';
+    const mcConnKey = 'mesh-client:lastConnection:meshcore';
+    const mtConnKey = 'mesh-client:lastConnection:meshtastic';
+    const mcBleKey = 'mesh-client:lastBleDevice:meshcore';
+    const mtBleKey = 'mesh-client:lastBleDevice:meshtastic';
+    localStorage.setItem(protocolKey, 'meshcore');
+    localStorage.setItem(mcBleKey, 'meshcore-ble');
+    localStorage.setItem(mtBleKey, 'meshtastic-ble');
+    localStorage.setItem(mcConnKey, JSON.stringify({ type: 'ble', bleDeviceId: 'meshcore-ble' }));
+    localStorage.setItem(mtConnKey, JSON.stringify({ type: 'ble', bleDeviceId: 'meshtastic-ble' }));
+    const { MESHCORE_SETUP_ABORT_MESSAGE } = await import('../lib/bleConnectErrors');
+    const abort = new DOMException(MESHCORE_SETUP_ABORT_MESSAGE, 'AbortError');
+    const onAutoConnect = vi.fn().mockRejectedValue(abort);
+    const reconnectModule = await import('../lib/bleReconnectHelper');
+    // Invoke the connect callback so dual-primary `void attempt.finally` runs (regression for
+    // unhandledrejection from the finally chain when setup AbortError rejects).
+    const reconnectSpy = vi
+      .spyOn(reconnectModule, 'reconnectBleWithScan')
+      .mockImplementation(async (_protocol, _id, connect) => {
+        await connect();
+      });
+    const dualNoble = await import('../lib/meshcoreDualNobleBleInit');
+    dualNoble.resetNobleBleConnectMutexForTests();
+    dualNoble.initNobleBleDualRadioStartup();
+    const unhandled: unknown[] = [];
+    const onUnhandled = (ev: PromiseRejectionEvent) => {
+      unhandled.push(ev.reason);
+    };
+    window.addEventListener('unhandledrejection', onUnhandled);
+
+    try {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={onAutoConnect}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="disconnected"
+          protocol="meshcore"
+        />,
+      );
+
+      await waitFor(() => {
+        expect(onAutoConnect).toHaveBeenCalled();
+      });
+      await waitFor(() => {
+        expect(screen.queryByText(/Auto-connect failed/i)).not.toBeInTheDocument();
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(unhandled).toEqual([]);
+    } finally {
+      window.removeEventListener('unhandledrejection', onUnhandled);
+      reconnectSpy.mockRestore();
+      dualNoble.resetNobleBleConnectMutexForTests();
+      localStorage.removeItem(protocolKey);
+      localStorage.removeItem(mcConnKey);
+      localStorage.removeItem(mtConnKey);
+      localStorage.removeItem(mcBleKey);
+      localStorage.removeItem(mtBleKey);
+      restore();
+    }
+  });
 });
 
 describe('ConnectionPanel serial auto-connect BLE fallback', () => {

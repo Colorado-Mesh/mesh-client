@@ -16,8 +16,8 @@ describe('parseRrcListNotice', () => {
       '  #ops - operator lounge',
     ].join('\n');
     expect(parseRrcListNotice(body)).toEqual([
-      { name: '#lobby', topic: 'welcome to the lobby' },
-      { name: '#general' },
+      { name: 'lobby', topic: 'welcome to the lobby' },
+      { name: 'general' },
       { name: '#ops', topic: 'operator lounge' },
     ]);
   });
@@ -36,7 +36,7 @@ describe('parseRrcWhoNotice', () => {
     const parsed = parseRrcWhoNotice(
       'members in lobby: alice (aabbccddeeff), bob (112233445566), cdef0123456789ab',
     );
-    expect(parsed?.room).toBe('#lobby');
+    expect(parsed?.room).toBe('lobby');
     expect(parsed?.members).toHaveLength(3);
     expect(parsed?.members[0]).toEqual({
       identity_hash: 'aabbccddeeff',
@@ -55,7 +55,7 @@ describe('parseRrcWhoNotice', () => {
 describe('parseRrcTopicNotice', () => {
   it('parses join info and topic command replies', () => {
     expect(parseRrcTopicNotice('room lobby: registered; mode=+nrt; topic=hello world')).toEqual({
-      room: '#lobby',
+      room: 'lobby',
       topic: 'hello world',
     });
     expect(parseRrcTopicNotice('topic for #lobby: coffee chat')).toEqual({
@@ -63,7 +63,7 @@ describe('parseRrcTopicNotice', () => {
       topic: 'coffee chat',
     });
     expect(parseRrcTopicNotice('topic for lobby is now: (cleared)')).toEqual({
-      room: '#lobby',
+      room: 'lobby',
       topic: '',
     });
   });

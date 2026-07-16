@@ -1,7 +1,8 @@
 const RECENT_PREFIX = 'mesh-client:rrc:recentRooms:';
 const MAX_RECENT = 10;
 
-export const RRC_SUGGESTED_ROOMS = ['#lobby', '#general'] as const;
+/** Common rrcd registry names (no forced `#` — matches hub `_norm_room`). */
+export const RRC_SUGGESTED_ROOMS = ['lobby', 'general'] as const;
 
 export function loadRrcRecentRooms(hubHash: string): string[] {
   try {

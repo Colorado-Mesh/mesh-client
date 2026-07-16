@@ -682,12 +682,34 @@ export function useReticulumRuntime(): ProtocolRuntime {
               const listed = parseRrcListNotice(p.body);
               if (listed) session.setListedRooms(listed);
               const who = parseRrcWhoNotice(p.body);
-              if (who) session.mergeRoomMembers(who.room, who.members, 'merge');
+              // Full roster snapshot — replace so departed nicks disappear.
+              if (who) session.mergeRoomMembers(who.room, who.members, 'replace');
               const topic = parseRrcTopicNotice(p.body);
               if (topic) session.setRoomTopic(topic.room, topic.topic || null);
               if (isRrcModerationLanguage(p.body)) {
                 session.setModerationBanner(p.body);
               }
+            }
+
+            // Opportunistic nicklist: room chat reveals senders even before `/who`.
+            if (
+              (kind === 'msg' || kind === 'action') &&
+              !isDirect &&
+              typeof p.sender_hash === 'string' &&
+              p.sender_hash.length >= 8 &&
+              typeof room === 'string' &&
+              !room.startsWith('[')
+            ) {
+              session.mergeRoomMembers(
+                room,
+                [
+                  {
+                    identity_hash: p.sender_hash.toLowerCase(),
+                    nickname: typeof p.nickname === 'string' ? p.nickname : null,
+                  },
+                ],
+                'merge',
+              );
             }
 
             session.addMessage(

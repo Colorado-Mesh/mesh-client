@@ -254,11 +254,39 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     const key = normRoom(room);
     set((s) => {
       const rooms = new Map(s.rooms);
+      const existing = rooms.get(key);
+      const incoming = members ?? [];
+      // rrcd defaults `include_joined_member_list=false`, so JOINED body is often empty.
+      // Empty must not wipe a roster filled by `/who`. Non-empty JOINED (full list or
+      // single-peer join notify) merges by identity hash.
+      let nextMembers: RrcRoomMember[];
+      if (incoming.length === 0) {
+        nextMembers = existing?.members ? [...existing.members] : [];
+      } else if (!existing?.members?.length) {
+        nextMembers = incoming.map((m) => ({
+          identity_hash: m.identity_hash.toLowerCase(),
+          nickname: m.nickname,
+        }));
+      } else {
+        const byHash = new Map<string, RrcRoomMember>();
+        for (const m of existing.members) {
+          byHash.set(m.identity_hash.toLowerCase(), m);
+        }
+        for (const m of incoming) {
+          const h = m.identity_hash.toLowerCase();
+          const prev = byHash.get(h);
+          byHash.set(h, {
+            identity_hash: h,
+            nickname: m.nickname ?? prev?.nickname,
+          });
+        }
+        nextMembers = [...byHash.values()];
+      }
       rooms.set(key, {
-        name: room,
-        members: members ?? rooms.get(key)?.members ?? [],
-        member_count: members?.length ?? rooms.get(key)?.member_count,
-        topic: rooms.get(key)?.topic ?? null,
+        name: existing?.name ?? room,
+        members: nextMembers,
+        member_count: nextMembers.length,
+        topic: existing?.topic ?? null,
       });
       return {
         rooms,

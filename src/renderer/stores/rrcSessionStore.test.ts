@@ -153,4 +153,36 @@ describe('rrcSessionStore', () => {
     expect(useRrcSessionStore.getState().rooms.has('#ops')).toBe(false);
     expect(useRrcSessionStore.getState().messages.get(key)?.[0]?.body).toBe('secret');
   });
+
+  it('preserves /who roster when a later empty JOINED arrives', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');
+    store.roomJoined('lobby', []);
+    store.mergeRoomMembers(
+      'lobby',
+      [
+        { identity_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', nickname: 'Alice' },
+        { identity_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', nickname: 'Bob' },
+      ],
+      'replace',
+    );
+    expect(useRrcSessionStore.getState().rooms.get('lobby')?.members).toHaveLength(2);
+    // Peer join notify with empty body (rrcd include_joined_member_list=false)
+    store.roomJoined('lobby', []);
+    expect(useRrcSessionStore.getState().rooms.get('lobby')?.members).toHaveLength(2);
+  });
+
+  it('merges non-empty JOINED presence into existing roster', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');
+    store.roomJoined('lobby', [
+      { identity_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', nickname: 'Alice' },
+    ]);
+    store.roomJoined('lobby', [
+      { identity_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', nickname: 'Bob' },
+    ]);
+    const members = useRrcSessionStore.getState().rooms.get('lobby')?.members ?? [];
+    expect(members).toHaveLength(2);
+    expect(members.map((m) => m.nickname).sort()).toEqual(['Alice', 'Bob']);
+  });
 });
