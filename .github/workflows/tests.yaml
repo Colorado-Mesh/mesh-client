@@ -165,6 +165,13 @@ jobs:
           name: reticulum-sidecar-lcov
           path: reticulum-sidecar
 
+      - name: Ensure Sonar Quality Gate (coverage ≥ 45%)
+        if: github.actor != 'nektos/act'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+        run: node scripts/sonar-ensure-quality-gate.mjs
+
       - name: SonarQube Scan
         if: github.actor != 'nektos/act'
         # SonarSource/sonarqube-scan-action v7.2.1 (pinned SHA for CodeQL + Sonar)

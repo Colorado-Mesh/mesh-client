@@ -68,6 +68,7 @@
     "check:silent-catches": "node scripts/check-silent-catches.mjs",
     "check:url-hostname-sanitization": "node scripts/check-url-hostname-sanitization.mjs",
     "check:xss-patterns": "node scripts/check-xss-patterns.mjs",
+    "sonar:ensure-quality-gate": "node scripts/sonar-ensure-quality-gate.mjs",
     "clean": "rm -rf dist-electron dist node_modules",
     "dedupe:dist": "pnpm dedupe --config.ignore-scripts=true",
     "dev": "node scripts/run-dev.mjs",
