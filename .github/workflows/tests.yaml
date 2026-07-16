@@ -171,6 +171,7 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@c7ee0f9df90b7aa20e8dcf9695dcfe2e7da5b4f2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
 
       # Skip actions/upload-code-coverage: GitHub Code Quality (Team/Enterprise)
       # is not available on the free org plan — uploads return HTTP 403.
