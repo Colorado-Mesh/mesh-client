@@ -7,8 +7,8 @@ use lxmf_core::constants::DeliveryMethod;
 use lxmf_core::link_delivery::{DeliveryResult, LinkDeliveryManager};
 use lxmf_core::message::LxMessage;
 use lxmf_core::router::{
-    plan_direct_delivery, DirectDeliveryPlan, DirectDeliveryPlanInput, DirectReusableLinkState,
-    DirectRouteSnapshot, LxmRouter, OutboundAction,
+    DirectDeliveryPlan, DirectDeliveryPlanInput, DirectReusableLinkState, DirectRouteSnapshot,
+    LxmRouter, OutboundAction, plan_direct_delivery,
 };
 use rns_identity::identity::Identity;
 use rns_transport::messages::{TransportMessage, TransportQuery};
@@ -68,7 +68,8 @@ impl PathRequestGate {
 
     fn record_queue_failure(&mut self, dest: [u8; 16], now: f64) {
         *self.fail_count.entry(dest).or_insert(0) += 1;
-        self.backoff_until.insert(dest, now + PATH_REQUEST_BACKOFF_SECS);
+        self.backoff_until
+            .insert(dest, now + PATH_REQUEST_BACKOFF_SECS);
     }
 
     fn should_warn(&mut self, dest: [u8; 16], now: f64) -> bool {
@@ -94,6 +95,7 @@ pub struct LxmfOutboundDriver {
 }
 
 impl LxmfOutboundDriver {
+    #[allow(clippy::needless_pass_by_value)] // hash hex is cloned into driver state at construction
     pub fn new(
         transport_tx: mpsc::Sender<TransportMessage>,
         identity: &Identity,
@@ -135,11 +137,12 @@ impl LxmfOutboundDriver {
         self.known_identities.clone()
     }
 
+    #[allow(clippy::unused_self)] // method slot mirrors other LxmfOutboundDriver mutators
     pub fn set_propagation_node(&mut self, router: &mut LxmRouter, hash: Option<[u8; 16]>) {
         router.set_outbound_propagation_node(hash);
     }
 
-    pub fn update_path_table(&mut self, entries: &[( [u8; 16], u8, String)]) {
+    pub fn update_path_table(&mut self, entries: &[([u8; 16], u8, String)]) {
         self.route_hops.clear();
         self.path_table_hashes.clear();
         for (hash, hops, hex_key) in entries {
@@ -264,10 +267,7 @@ impl LxmfOutboundDriver {
         prop_hash: [u8; 16],
     ) {
         let prop_hex = hex::encode(prop_hash);
-        if !self
-            .known_identities
-            .contains_key(&prop_hex.to_lowercase())
-        {
+        if !self.known_identities.contains_key(&prop_hex.to_lowercase()) {
             self.request_path_gated(
                 router,
                 event_tx,
@@ -363,6 +363,7 @@ impl LxmfOutboundDriver {
         }
     }
 
+    #[allow(clippy::too_many_arguments)] // path-gate + router ownership split is intentional
     fn request_path_gated(
         &mut self,
         router: &mut LxmRouter,
@@ -382,7 +383,8 @@ impl LxmfOutboundDriver {
                         router.send(message);
                     }
                 } else {
-                    self.path_request_gate.record_queue_failure(request_hash, now);
+                    self.path_request_gate
+                        .record_queue_failure(request_hash, now);
                     if self.path_request_gate.should_warn(request_hash, now) {
                         tracing::warn!(
                             dest = %hex::encode(request_hash),
@@ -478,8 +480,12 @@ impl LxmfOutboundDriver {
                     emit_outbound_status_by_hash(event_tx, &hash, "delivered");
                 }
             }
-            DeliveryResult::Rejected { msg_hash, message, .. }
-            | DeliveryResult::Failed { msg_hash, message, .. } => {
+            DeliveryResult::Rejected {
+                msg_hash, message, ..
+            }
+            | DeliveryResult::Failed {
+                msg_hash, message, ..
+            } => {
                 if let Some(hash) = msg_hash {
                     let _ = router.mark_outbound_failed(&hash);
                     emit_outbound_status_by_hash(event_tx, &hash, "failed");
@@ -552,7 +558,7 @@ pub fn emit_outbound_status(
         message_payload
             .get("sent_via")
             .and_then(|v| v.as_str())
-            .map(|s| s.to_string()),
+            .map(str::to_string),
     );
 }
 
@@ -588,7 +594,11 @@ pub fn emit_outbound_status_with_via(
     let _ = event_tx.send(frame.to_string());
 }
 
-fn emit_outbound_status_by_hash(event_tx: &broadcast::Sender<String>, hash: &[u8; 32], status: &str) {
+fn emit_outbound_status_by_hash(
+    event_tx: &broadcast::Sender<String>,
+    hash: &[u8; 32],
+    status: &str,
+) {
     emit_outbound_status_with_via(
         event_tx,
         Some(serde_json::Value::String(hex::encode(hash))),
@@ -721,7 +731,10 @@ mod tests {
         for i in 0..PATH_REQUEST_MAX_ATTEMPTS {
             gate.record_queue_failure(dest(2), 100.0 + f64::from(i));
         }
-        assert_eq!(gate.decide(dest(2), 500.0), PathRequestDecision::MaxAttempts);
+        assert_eq!(
+            gate.decide(dest(2), 500.0),
+            PathRequestDecision::MaxAttempts
+        );
     }
 
     #[test]

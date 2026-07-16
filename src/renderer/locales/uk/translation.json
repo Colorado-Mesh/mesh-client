@@ -43,7 +43,8 @@
     "scrollToTop": "↑ Вгору",
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh на GitHub",
-    "footerWebsiteTitle": "Веб-сайт Colorado Mesh"
+    "footerWebsiteTitle": "Веб-сайт Colorado Mesh",
+    "loadingApp": "Завантаження клієнта сіті"
   },
   "appPanel": {
     "failedSaveRetention": "Не вдалося зберегти налаштування збереження повідомлень.",
@@ -1137,7 +1138,8 @@
     "maxRetriesHelpConnected": {
       "meshcore": "Перш ніж відмовитися, повторіть спробу підключення (1–{{max}}). Збережено з налаштуваннями; натисніть Connect ще раз після зміни, щоб основний процес забрав його.",
       "meshtastic": "Обидва протоколи дозволяють 1–{{max}}. Збережено з налаштуваннями; від'єднайтеся та підключіться знову, щоб сеанс роботи використовував нове значення."
-    }
+    },
+    "reticulumStackRunningAs": "Триває — {{name}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",

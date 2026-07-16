@@ -172,4 +172,15 @@ describe('reconnectBleWithScan', () => {
     });
     expect(window.electronAPI.startNobleBleScanning).not.toHaveBeenCalled();
   });
+
+  it('does not scan when protocol runtime session is not mounted yet', async () => {
+    const connect = vi
+      .fn()
+      .mockRejectedValue(new Error('[meshtasticSession] Meshtastic runtime is not mounted'));
+
+    await expect(reconnectBleWithScan('meshtastic', 'abc', connect)).rejects.toThrow(
+      /runtime is not mounted/,
+    );
+    expect(window.electronAPI.startNobleBleScanning).not.toHaveBeenCalled();
+  });
 });

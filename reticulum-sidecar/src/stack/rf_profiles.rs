@@ -30,6 +30,7 @@ fn load_profiles() -> Vec<RfProfile> {
         .unwrap_or_default()
 }
 
+#[allow(dead_code)] // catalog helper; presets use rf_profile_by_id
 pub fn all_rf_profiles() -> Vec<RfProfile> {
     load_profiles()
 }

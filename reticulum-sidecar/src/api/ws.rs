@@ -25,15 +25,14 @@ async fn handle_ws(mut socket: WebSocket, stack: Arc<StackHandle>) {
                             break;
                         }
                     }
-                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {}
                     Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
                 }
             }
             incoming = socket.next() => {
                 match incoming {
-                    Some(Ok(Message::Close(_))) | None => break,
+                    Some(Ok(Message::Close(_)) | Err(_)) | None => break,
                     Some(Ok(_)) => {}
-                    Some(Err(_)) => break,
                 }
             }
         }

@@ -1,3 +1,5 @@
+import { MS_PER_DAY } from '@/shared/timeConstants';
+
 import { getAppSettingsRaw } from './appSettingsStorage';
 import { DEFAULT_APP_SETTINGS_SHARED } from './defaultAppSettings';
 import { errLikeToLogString } from './errLikeToLogString';
@@ -8,8 +10,66 @@ import { getStoredMeshProtocol } from './storedMeshProtocol';
 
 let startupDbPrunePromise: Promise<void> | null = null;
 let sessionDbPrunePromise: Promise<void> | null = null;
+let reticulumVacuumScheduled = false;
 
 export { SESSION_DB_PRUNE_INTERVAL_MS };
+
+/** At most one idle VACUUM per this interval (localStorage gate). */
+const RETICULUM_VACUUM_MIN_INTERVAL_MS = 7 * MS_PER_DAY;
+const RETICULUM_VACUUM_LAST_MS_KEY = 'mesh-client:lastReticulumVacuumMs';
+
+/**
+ * Schedule a Reticulum table VACUUM after first paint / idle — never on the cold-start
+ * prune path. Single-flight per session; skipped if vacuumed within the last 7 days.
+ */
+export function scheduleReticulumVacuumIfNeeded(): void {
+  if (reticulumVacuumScheduled) return;
+  if (typeof window === 'undefined' || !window.electronAPI?.db?.vacuumReticulumTables) return;
+
+  let lastMs = 0;
+  try {
+    const raw = localStorage.getItem(RETICULUM_VACUUM_LAST_MS_KEY);
+    if (raw) {
+      const n = Number(raw);
+      if (Number.isFinite(n) && n > 0) lastMs = n;
+    }
+  } catch {
+    // catch-no-log-ok localStorage may be unavailable in tests
+  }
+  if (Date.now() - lastMs < RETICULUM_VACUUM_MIN_INTERVAL_MS) return;
+
+  reticulumVacuumScheduled = true;
+  const run = (): void => {
+    void window.electronAPI.db
+      .vacuumReticulumTables()
+      .then(() => {
+        try {
+          localStorage.setItem(RETICULUM_VACUUM_LAST_MS_KEY, String(Date.now()));
+        } catch {
+          // catch-no-log-ok
+        }
+      })
+      .catch((e: unknown) => {
+        console.warn('[App] idle vacuumReticulumTables failed ' + errLikeToLogString(e));
+      });
+  };
+
+  const ric = (
+    window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+    }
+  ).requestIdleCallback;
+  if (typeof ric === 'function') {
+    ric(run, { timeout: 60_000 });
+  } else {
+    setTimeout(run, 30_000);
+  }
+}
+
+/** @internal Vitest only */
+export function resetReticulumVacuumScheduleForTests(): void {
+  reticulumVacuumScheduled = false;
+}
 
 /**
  * One-shot startup DB maintenance (node/message retention, migrations).
@@ -205,12 +265,7 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
     await Promise.all(ops);
   }
 
-  // VACUUM rewrites the whole DB file — only after startup prune, never on the 6h session tick.
-  if (label === 'startup' && startupProtocol === 'reticulum') {
-    try {
-      await window.electronAPI.db.vacuumReticulumTables();
-    } catch (e: unknown) {
-      console.warn('[App] startup vacuumReticulumTables failed ' + errLikeToLogString(e));
-    }
-  }
+  // VACUUM is intentionally not part of cold-start prune — it rewrites the whole DB and
+  // dominated Reticulum startups (~1s). Use scheduleReticulumVacuumIfNeeded() after prune
+  // that deleted rows, or idle/manual maintenance.
 }

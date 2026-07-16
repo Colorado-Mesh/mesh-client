@@ -34,8 +34,8 @@ export function findAppArchive(rootDir) {
 
   const inPluginsDir = candidates.filter((p) => p.includes('$PLUGINSDIR'));
   if (inPluginsDir.length > 0) {
-    return inPluginsDir.sort()[0];
+    return inPluginsDir.sort((a, b) => a.localeCompare(b))[0];
   }
 
-  return candidates.sort()[0];
+  return candidates.sort((a, b) => a.localeCompare(b))[0];
 }

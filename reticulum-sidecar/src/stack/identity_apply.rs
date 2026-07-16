@@ -13,6 +13,7 @@ pub fn identity_file_path(config_dir: &Path) -> PathBuf {
 }
 
 #[cfg(feature = "rns-stack")]
+#[allow(clippy::unnecessary_wraps)] // Result keeps a uniform ?-able gate at call sites
 pub fn identity_requires_rns_stack() -> Result<(), String> {
     Ok(())
 }
@@ -28,7 +29,7 @@ mod rns {
     use rns_identity::identity::Identity;
     use rns_ratkey::seed;
 
-    use super::*;
+    use super::{LXMF_APP_NAME, Path, PersistedState, StackIdentity, identity_file_path};
 
     pub fn stack_identity_from_rns(
         identity: &Identity,
@@ -65,8 +66,8 @@ mod rns {
     }
 
     pub fn generate_identity_with_mnemonic() -> Result<(Identity, String), String> {
-        let mnemonic = seed::generate_mnemonic()
-            .map_err(|e| format!("mnemonic generation failed: {e}"))?;
+        let mnemonic =
+            seed::generate_mnemonic().map_err(|e| format!("mnemonic generation failed: {e}"))?;
         let (identity, _) = identity_from_mnemonic(&mnemonic)?;
         Ok((identity, mnemonic))
     }
@@ -79,6 +80,7 @@ mod rns {
         Identity::from_file(&path).map_err(|e| format!("load identity: {e}"))
     }
 
+    #[allow(clippy::needless_pass_by_value)] // Identity is moved into to_file on the live stack path
     pub fn apply_unified_identity(
         state: &mut PersistedState,
         config_dir: &Path,
@@ -139,8 +141,10 @@ mod rns {
         }
         let identity = load_identity_from_file(config_dir)?;
         let file_stack = stack_identity_from_rns(&identity, None, None);
-        Ok(file_stack.identity_hash.to_lowercase() != backup_identity_hash.to_lowercase()
-            || file_stack.lxmf_hash.to_lowercase() != backup_lxmf_hash.to_lowercase())
+        Ok(
+            file_stack.identity_hash.to_lowercase() != backup_identity_hash.to_lowercase()
+                || file_stack.lxmf_hash.to_lowercase() != backup_lxmf_hash.to_lowercase(),
+        )
     }
 }
 
@@ -209,7 +213,8 @@ mod tests {
 
         let mut state = PersistedState::default_empty();
         let (imported, _) = identity_from_mnemonic(&mnemonic).unwrap();
-        apply_unified_identity(&mut state, &config_dir, &storage_dir, imported, None, None).unwrap();
+        apply_unified_identity(&mut state, &config_dir, &storage_dir, imported, None, None)
+            .unwrap();
 
         assert_eq!(state.identity.identity_hash, expected.identity_hash);
         assert_eq!(state.identity.lxmf_hash, expected.lxmf_hash);
@@ -234,9 +239,10 @@ mod tests {
         state.save(&config_dir, &storage_dir).unwrap();
 
         let mut reloaded = PersistedState::load(&config_dir, &storage_dir);
-        let updated = reconcile_persisted_identity_from_file(&mut reloaded, &config_dir, &storage_dir)
-            .unwrap()
-            .expect("should reconcile");
+        let updated =
+            reconcile_persisted_identity_from_file(&mut reloaded, &config_dir, &storage_dir)
+                .unwrap()
+                .expect("should reconcile");
         assert_ne!(updated.identity_hash, "deadbeef".repeat(4));
         assert_eq!(updated.identity_hash.len(), 32);
     }
@@ -245,18 +251,12 @@ mod tests {
     fn backup_conflicts_when_hashes_differ() {
         let (_root, config_dir, _storage_dir) = temp_dirs();
         let (identity, _) = generate_identity_with_mnemonic().unwrap();
-        identity
-            .to_file(&identity_file_path(&config_dir))
-            .unwrap();
+        identity.to_file(&identity_file_path(&config_dir)).unwrap();
         let stack = stack_identity_from_rns(&identity, None, None);
         assert!(backup_conflicts_with_file(&config_dir, "00", "00").unwrap());
         assert!(
-            !backup_conflicts_with_file(
-                &config_dir,
-                &stack.identity_hash,
-                &stack.lxmf_hash
-            )
-            .unwrap()
+            !backup_conflicts_with_file(&config_dir, &stack.identity_hash, &stack.lxmf_hash)
+                .unwrap()
         );
     }
 }

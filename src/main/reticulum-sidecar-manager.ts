@@ -42,7 +42,7 @@ export function sidecarChildEnv(): NodeJS.ProcessEnv {
     PATH: process.env.PATH,
     HOME: process.env.HOME,
     USER: process.env.USER,
-    TMPDIR: process.env.TMPDIR,
+    TMPDIR: process.env.TMPDIR, // NOSONAR passthrough of existing env var only; no temp file write here
     LANG: process.env.LANG,
     LC_ALL: process.env.LC_ALL,
   };

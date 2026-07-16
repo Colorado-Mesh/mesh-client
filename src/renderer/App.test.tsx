@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe, configureAxe } from 'vitest-axe';
 
@@ -12,6 +12,10 @@ import { meshtasticProtocol } from './lib/protocols/MeshtasticProtocol';
 import { MESHCORE_CAPABILITIES, MESHTASTIC_CAPABILITIES } from './lib/radio/BaseRadioProvider';
 import * as providerFactory from './lib/radio/providerFactory';
 import { registerMeshtasticSession } from './lib/sessions/meshtasticSession';
+import {
+  resetReticulumVacuumScheduleForTests,
+  resetStartupDbPruneForTests,
+} from './lib/startupDbPrune';
 import { chatMessageToMessageRecord } from './lib/storeRecordAdapters';
 import type { ChatMessage } from './lib/types';
 import { setConnection, useConnectionStore } from './stores/connectionStore';
@@ -232,6 +236,8 @@ const {
 }));
 
 beforeEach(() => {
+  resetStartupDbPruneForTests();
+  resetReticulumVacuumScheduleForTests();
   localStorage.clear();
   Object.defineProperty(document, 'hidden', { value: false, configurable: true });
   getStoredMeshProtocolMock.mockReset();
@@ -496,14 +502,20 @@ describe('App accessibility', () => {
   it('does not log mount-time act warnings during render', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    renderApp();
-    await Promise.resolve();
+    await act(async () => {
+      renderApp();
+      // Startup prune (mocked IPC) then setStartupPruneDone — keep under act.
+      for (let i = 0; i < 8; i += 1) {
+        await Promise.resolve();
+      }
+    });
 
     expect(
       consoleError.mock.calls.some((call) =>
         call.some((arg) => typeof arg === 'string' && arg.includes('not wrapped in act(...)')),
       ),
     ).toBe(false);
+    consoleError.mockRestore();
   });
 
   it('has no axe violations', async () => {

@@ -50,6 +50,25 @@ curl -s http://127.0.0.1:19437/api/v1/status
 
 Or **Reticulum tab → Connection → Start stack** (sidecar must be running before identity or Network configuration).
 
+## Lint and coverage
+
+Toolchain components (`clippy`, `rustfmt`, `llvm-tools-preview`) come from [`rust-toolchain.toml`](rust-toolchain.toml).
+
+| Command | Purpose |
+| ------- | ------- |
+| `pnpm run reticulum:sidecar:fmt` | `cargo fmt` |
+| `pnpm run reticulum:sidecar:fmt:check` | `cargo fmt --check` |
+| `pnpm run reticulum:sidecar:clippy` | Clippy stub build (`-D warnings`) |
+| `pnpm run reticulum:sidecar:clippy:full` | Clippy with `rns-stack,rns-ble,rns-rnode-tcp` |
+| `pnpm run check:reticulum-sidecar` | Pre-commit: fmt + stub clippy + stub test |
+| `pnpm run reticulum:sidecar:coverage` | Optional local HTML coverage (`cargo llvm-cov`; no threshold) |
+
+Install coverage tooling once: `cargo install cargo-llvm-cov`.
+
+- **Pre-commit** runs stub fmt/clippy/test when `cargo` is on `PATH` (no coverage).
+- **CI lint** (`reticulum-sidecar.yaml`): full-feature `fmt --check` + Clippy.
+- **CI coverage** (`tests.yaml`): `cargo llvm-cov --fail-under-lines 45` when sidecar paths change (ratchet toward ~52%).
+
 ## API
 
 [docs/reticulum-sidecar-ipc.md](../docs/reticulum-sidecar-ipc.md)

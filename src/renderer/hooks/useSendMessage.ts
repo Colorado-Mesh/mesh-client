@@ -172,17 +172,17 @@ export function useSendMessage(
       const isMeshtastic = identity.protocol.type === 'meshtastic';
       const isMeshcoreDm = identity.protocol.type === 'meshcore' && destination != null;
       const meshtasticTempPacketId = isMeshtastic
-        ? (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0
+        ? (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0 // NOSONAR non-crypto local temp packet id
         : undefined;
       const meshcoreDmTempPacketId = isMeshcoreDm
-        ? (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0
+        ? (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0 // NOSONAR non-crypto local temp packet id
         : undefined;
       const provisionalId =
         meshtasticTempPacketId != null
           ? String(meshtasticTempPacketId)
           : meshcoreDmTempPacketId != null
             ? String(meshcoreDmTempPacketId)
-            : `out:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+            : `out:${Date.now()}:${Math.random().toString(36).slice(2)}`; // NOSONAR non-crypto local provisional id
       const myNodeNum = getConnection(identityId)?.myNodeNum ?? 0;
       const meshcoreSenderName =
         identity.protocol.type === 'meshcore'

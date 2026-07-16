@@ -53,7 +53,7 @@ export class ReticulumSidecarAutoBeaconTracker {
     if (this.physicalIfaces.size > 0) {
       return {
         kind: 'physical_failures',
-        ifaceNames: [...this.physicalIfaces].sort(),
+        ifaceNames: [...this.physicalIfaces].sort((a, b) => a.localeCompare(b)),
         suppressedCount: this.suppressedCount,
         lastAtMs: this.lastAtMs,
       };
@@ -61,7 +61,7 @@ export class ReticulumSidecarAutoBeaconTracker {
     if (this.tunnelIfaces.size > 0) {
       return {
         kind: 'tunnel_only',
-        ifaceNames: [...this.tunnelIfaces].sort(),
+        ifaceNames: [...this.tunnelIfaces].sort((a, b) => a.localeCompare(b)),
         suppressedCount: this.suppressedCount,
         lastAtMs: this.lastAtMs,
       };

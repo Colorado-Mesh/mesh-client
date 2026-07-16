@@ -1,7 +1,7 @@
 //! Nomad page fetch timeouts (MeshChat + Python RNS per-hop scaling on RF).
 
-use super::via::resolve_outbound_sent_via;
 use super::types::InterfaceRow;
+use super::via::resolve_outbound_sent_via;
 
 /// MeshChat `NomadnetDownloader.download()` path_lookup_timeout default.
 pub const NOMAD_PATH_LOOKUP_SECS: u64 = 15;
@@ -32,8 +32,7 @@ fn bounded_hops(hops: u8) -> u64 {
 pub fn nomad_page_overall_timeout_secs(egress_via: &str, hops: u8) -> u64 {
     if egress_via == "rf" {
         let bounded_hops = bounded_hops(hops);
-        let link_establish =
-            NOMAD_RF_FIRST_HOP_SECS + NOMAD_RF_PER_HOP_TIMEOUT_SECS * bounded_hops;
+        let link_establish = NOMAD_RF_FIRST_HOP_SECS + NOMAD_RF_PER_HOP_TIMEOUT_SECS * bounded_hops;
         let total = NOMAD_PATH_LOOKUP_SECS + link_establish + NOMAD_RF_TRANSFER_GRACE_SECS;
         total.min(NOMAD_RF_MAX_OVERALL_SECS)
     } else {

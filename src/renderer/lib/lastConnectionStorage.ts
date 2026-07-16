@@ -25,6 +25,14 @@ export function loadLastConnection(protocol: MeshProtocol): LastConnection | nul
   );
 }
 
+export function saveLastConnection(protocol: MeshProtocol, connection: LastConnection): void {
+  try {
+    localStorage.setItem(lastConnectionKey(protocol), JSON.stringify(connection));
+  } catch (error) {
+    console.warn('[lastConnectionStorage] saveLastConnection failed', error);
+  }
+}
+
 export function loadLastBleDeviceId(protocol: MeshProtocol): string | null {
   try {
     return localStorage.getItem(lastBleDeviceKey(protocol));

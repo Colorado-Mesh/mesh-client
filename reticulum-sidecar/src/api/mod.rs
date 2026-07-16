@@ -99,10 +99,19 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/ping", post(lxmf::ping))
         .route("/api/v1/topology", get(system::topology))
         .route("/api/v1/rmap/discovered", get(rmap::list_rmap_discovered))
-        .route("/api/v1/packets", get(system::list_packets).delete(system::clear_packets))
-        .route("/api/v1/announces", delete(system::clear_announces).post(system::announce_now))
+        .route(
+            "/api/v1/packets",
+            get(system::list_packets).delete(system::clear_packets),
+        )
+        .route(
+            "/api/v1/announces",
+            delete(system::clear_announces).post(system::announce_now),
+        )
         .route("/api/v1/propagation", get(propagation::list_propagation))
-        .route("/api/v1/propagation/add", post(propagation::add_propagation_node))
+        .route(
+            "/api/v1/propagation/add",
+            post(propagation::add_propagation_node),
+        )
         .route(
             "/api/v1/propagation/{id}",
             put(propagation::rename_propagation_node).delete(propagation::remove_propagation_node),
@@ -131,10 +140,7 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             "/api/v1/propagation/{id}/disable",
             post(propagation::disable_propagation),
         )
-        .route(
-            "/api/v1/nomadnetwork/nodes",
-            get(nomad::list_nomad_nodes),
-        )
+        .route("/api/v1/nomadnetwork/nodes", get(nomad::list_nomad_nodes))
         .route(
             "/api/v1/nomadnetwork/nodes/favorite",
             post(nomad::favorite_nomad_node),
@@ -147,7 +153,10 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             "/api/v1/nomadnetwork/file/{hash}",
             get(nomad::get_nomad_file),
         )
-        .route("/api/v1/rrc/hubs", get(rrc::list_rrc_hubs).post(rrc::upsert_rrc_hub))
+        .route(
+            "/api/v1/rrc/hubs",
+            get(rrc::list_rrc_hubs).post(rrc::upsert_rrc_hub),
+        )
         .route("/api/v1/rrc/hubs/favorite", post(rrc::favorite_rrc_hub))
         .route("/api/v1/rrc/connect", post(rrc::rrc_connect))
         .route("/api/v1/rrc/disconnect", post(rrc::rrc_disconnect))

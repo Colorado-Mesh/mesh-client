@@ -43,7 +43,8 @@
     "scrollToTop": "↑ Bovenkant",
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh op GitHub",
-    "footerWebsiteTitle": "Colorado Mesh-website"
+    "footerWebsiteTitle": "Colorado Mesh-website",
+    "loadingApp": "Mesh-client laden"
   },
   "appPanel": {
     "failedSaveRetention": "Kan de instelling voor het bewaren van berichten niet opslaan.",
@@ -1137,7 +1138,8 @@
     "maxRetriesHelpConnected": {
       "meshcore": "Probeer het opnieuw voordat je het opgeeft (1–{{max}}). Opgeslagen met instellingen; druk opnieuw op Verbinden na het wijzigen, zodat het hoofdproces het oppikt.",
       "meshtastic": "Beide protocollen staan 1–{{max}} toe. Opgeslagen met instellingen; verbreek de verbinding en maak opnieuw verbinding, zodat de lopende sessie de nieuwe waarde gebruikt."
-    }
+    },
+    "reticulumStackRunningAs": "Hardlopen — {{name}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

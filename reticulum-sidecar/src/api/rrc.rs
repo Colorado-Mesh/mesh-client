@@ -84,7 +84,10 @@ pub async fn favorite_rrc_hub(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<RrcFavoriteBody>,
 ) -> Json<serde_json::Value> {
-    match stack.set_rrc_favorite(&body.dest_hash, body.favorited).await {
+    match stack
+        .set_rrc_favorite(&body.dest_hash, body.favorited)
+        .await
+    {
         Ok(()) => Json(serde_json::json!({ "ok": true })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
@@ -98,7 +101,9 @@ const MAX_BODY_CHARS: usize = 8_192;
 
 fn reject_oversize(label: &str, value: &str, max: usize) -> Option<String> {
     if value.chars().count() > max {
-        Some(format!("{label} exceeds maximum length of {max} characters"))
+        Some(format!(
+            "{label} exceeds maximum length of {max} characters"
+        ))
     } else {
         None
     }
@@ -189,7 +194,10 @@ pub async fn rrc_set_nick(
     if let Some(err) = reject_oversize("nickname", &body.nickname, MAX_NICK_CHARS) {
         return Json(serde_json::json!({ "ok": false, "error": err }));
     }
-    let hub_dest_hash = body.hub_dest_hash.as_deref().filter(|h| !h.trim().is_empty());
+    let hub_dest_hash = body
+        .hub_dest_hash
+        .as_deref()
+        .filter(|h| !h.trim().is_empty());
     Json(stack.rrc_set_nick(hub_dest_hash, &body.nickname).await)
 }
 

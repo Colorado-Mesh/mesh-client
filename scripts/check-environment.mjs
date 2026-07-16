@@ -316,7 +316,7 @@ function checkRust() {
       status: 'warn',
       severity: 'optional',
       label: 'Rust/cargo not found (optional)',
-      hint: 'Needed for Reticulum sidecar — install via https://rustup.rs/',
+      hint: 'Needed for Reticulum sidecar — install via https://rustup.rs/; pre-commit skips Rust checks when cargo is missing',
     };
   }
   return {
@@ -324,6 +324,46 @@ function checkRust() {
     severity: 'optional',
     label: 'Rust/cargo',
     detail: out,
+  };
+}
+
+function checkRustClippy() {
+  if (!commandOutput('cargo', ['--version'])) return null;
+
+  if (commandOk('cargo', ['clippy', '--version'])) {
+    const out = commandOutput('cargo', ['clippy', '--version']);
+    return {
+      status: 'pass',
+      severity: 'optional',
+      label: 'cargo clippy',
+      detail: out?.split('\n')[0] ?? 'found',
+    };
+  }
+  return {
+    status: 'warn',
+    severity: 'optional',
+    label: 'cargo clippy not ready (optional)',
+    hint: 'cd reticulum-sidecar once — rust-toolchain.toml installs clippy/rustfmt/llvm-tools-preview via rustup',
+  };
+}
+
+function checkCargoLlvmCov() {
+  if (!commandOutput('cargo', ['--version'])) return null;
+
+  const out = commandOutput('cargo', ['llvm-cov', '--version']);
+  if (out) {
+    return {
+      status: 'pass',
+      severity: 'optional',
+      label: 'cargo llvm-cov',
+      detail: out.split('\n')[0],
+    };
+  }
+  return {
+    status: 'warn',
+    severity: 'optional',
+    label: 'cargo llvm-cov not found (optional)',
+    hint: 'cargo install cargo-llvm-cov — for pnpm run reticulum:sidecar:coverage (CI enforces threshold in tests.yaml)',
   };
 }
 
@@ -507,6 +547,8 @@ export function runChecks(options = {}) {
     checkPython(),
     checkPip(),
     checkRust(),
+    checkRustClippy(),
+    checkCargoLlvmCov(),
     checkActionlint(),
     checkYamllint(),
     checkDocker(),

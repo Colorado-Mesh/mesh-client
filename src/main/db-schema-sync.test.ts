@@ -127,6 +127,28 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     db.close();
   });
 
+  it('skips meshcore dedup DROP when both unique indexes already exist', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-mc-dedup-fast-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+
+    const insert = db.prepareOnce(
+      `INSERT INTO meshcore_messages (sender_id, payload, channel_idx, timestamp)
+       VALUES (?, ?, 0, ?)`,
+    );
+    insert.run(1, 'keep', 1_774_000_000_001);
+    // Second open must keep unique indexes (duplicate insert fails).
+    runSchemaUpgrade(db);
+    expect(() => insert.run(1, 'keep', 1_774_000_000_001)).toThrow();
+
+    const count = (
+      db.prepareOnce('SELECT COUNT(*) as cnt FROM meshcore_messages').get() as { cnt: number }
+    ).cnt;
+    expect(count).toBe(1);
+    db.close();
+  });
+
   it('removes orphan meshtastic sending rows when acked twin exists', () => {
     dir = mkdtempSync(join(tmpdir(), 'mesh-schema-orphan-send-'));
     const db = new NodeSqliteDB(join(dir, 'test.db'));

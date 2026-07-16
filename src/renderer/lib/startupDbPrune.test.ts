@@ -1,15 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  resetReticulumVacuumScheduleForTests,
   resetStartupDbPruneForTests,
   runSessionDbPrune,
   runStartupDbPrune,
+  scheduleReticulumVacuumIfNeeded,
 } from './startupDbPrune';
 import { MESH_PROTOCOL_STORAGE_KEY } from './storedMeshProtocol';
 
 describe('runStartupDbPrune', () => {
   beforeEach(() => {
     resetStartupDbPruneForTests();
+    resetReticulumVacuumScheduleForTests();
     localStorage.clear();
     localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'meshtastic');
     localStorage.setItem(
@@ -36,6 +39,7 @@ describe('runStartupDbPrune', () => {
 
   afterEach(() => {
     resetStartupDbPruneForTests();
+    resetReticulumVacuumScheduleForTests();
     vi.mocked(window.electronAPI.db.migrateRfStubNodes).mockClear();
     vi.mocked(window.electronAPI.db.deleteNodesNeverHeard).mockClear();
     vi.mocked(window.electronAPI.db.pruneNodesByCount).mockClear();
@@ -80,7 +84,7 @@ describe('runStartupDbPrune', () => {
     expect(window.electronAPI.db.pruneMeshcoreMessagesByCount).toHaveBeenCalledTimes(1);
   });
 
-  it('runs reticulum destination prune + startup-only vacuum', async () => {
+  it('runs reticulum destination prune without startup vacuum', async () => {
     localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, 'reticulum');
     localStorage.setItem(
       'mesh-client:appSettings',
@@ -104,12 +108,48 @@ describe('runStartupDbPrune', () => {
     expect(deleteByAge).toHaveBeenCalledWith(14);
     expect(pruneActivity).toHaveBeenCalledWith(14);
     expect(pruneByCount).toHaveBeenCalledWith(1234);
-    expect(vacuum).toHaveBeenCalledTimes(1);
+    expect(vacuum).not.toHaveBeenCalled();
 
     deleteByAge.mockClear();
     vacuum.mockClear();
     await runSessionDbPrune();
     expect(deleteByAge).toHaveBeenCalledTimes(1);
+    expect(vacuum).not.toHaveBeenCalled();
+  });
+});
+
+describe('scheduleReticulumVacuumIfNeeded', () => {
+  beforeEach(() => {
+    resetReticulumVacuumScheduleForTests();
+    localStorage.clear();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    resetReticulumVacuumScheduleForTests();
+    vi.useRealTimers();
+  });
+
+  it('schedules idle vacuum once when never vacuumed', async () => {
+    const vacuum = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.db).vacuumReticulumTables = vacuum;
+
+    scheduleReticulumVacuumIfNeeded();
+    scheduleReticulumVacuumIfNeeded();
+    await vi.advanceTimersByTimeAsync(30_000);
+    await Promise.resolve();
+
+    expect(vacuum).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips when vacuumed recently', () => {
+    const vacuum = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.db).vacuumReticulumTables = vacuum;
+    localStorage.setItem('mesh-client:lastReticulumVacuumMs', String(Date.now()));
+
+    scheduleReticulumVacuumIfNeeded();
+    void vi.advanceTimersByTimeAsync(30_000);
+
     expect(vacuum).not.toHaveBeenCalled();
   });
 });

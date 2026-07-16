@@ -1,9 +1,8 @@
 //! Persistent stack state + optional live RNS/LXMF bridge.
 
+mod ble;
 pub mod config;
 pub mod config_audit;
-pub mod rf_profiles;
-mod ble;
 mod identity_apply;
 mod identity_import;
 mod local_rnode_primary;
@@ -14,6 +13,7 @@ mod nomad_request_payload;
 mod nomad_timeouts;
 mod packet_log;
 mod persistence;
+pub mod rf_profiles;
 mod rmap_discovery;
 mod rrc_codec;
 mod rrc_defaults;
@@ -36,8 +36,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 pub use config::{ImportMode, ImportResult, StackSettings, UpdateInterfacePatch};
-pub use config_audit::{ConfigAuditIssue, ConfigRepairRequest};
-use packet_log::{PacketLogBuffer, WirePacketRow, MAX_WIRE_PACKET_LOG};
+use packet_log::{MAX_WIRE_PACKET_LOG, PacketLogBuffer, WirePacketRow};
 use persistence::PersistedState;
 use tokio::sync::{RwLock, broadcast};
 pub use types::{
@@ -149,8 +148,6 @@ impl StackHandle {
             }
         };
 
-        #[cfg(not(feature = "rns-stack"))]
-        let inner = inner;
         #[cfg(feature = "rns-stack")]
         let handle = Self {
             config_dir,
@@ -189,6 +186,7 @@ impl StackHandle {
         handle
     }
 
+    #[allow(clippy::needless_pass_by_value)] // payload is moved into the broadcast frame
     fn emit_event(&self, event_type: &str, payload: serde_json::Value) {
         let msg = serde_json::json!({ "type": event_type, "payload": payload });
         let _ = self.event_tx.send(msg.to_string());
@@ -245,9 +243,8 @@ impl StackHandle {
     }
 
     async fn reconcile_primary_after_interface_change(&self) {
-        let interfaces = match config::interfaces_from_config_dir(&self.config_dir) {
-            Ok(rows) => rows,
-            Err(_) => return,
+        let Ok(interfaces) = config::interfaces_from_config_dir(&self.config_dir) else {
+            return;
         };
         let stored = {
             let inner = self.inner.read().await;
@@ -264,9 +261,10 @@ impl StackHandle {
         }
         drop(inner);
         if let Some(effective_id) = effective {
-            if let Err(e) =
-                local_rnode_primary::ensure_primary_local_serial_order(&self.config_dir, &effective_id)
-            {
+            if let Err(e) = local_rnode_primary::ensure_primary_local_serial_order(
+                &self.config_dir,
+                &effective_id,
+            ) {
                 tracing::warn!(
                     interface_id = %effective_id,
                     "primary local serial reorder failed: {e}"
@@ -275,9 +273,7 @@ impl StackHandle {
         }
     }
 
-    pub async fn primary_local_serial_interface_ids(
-        &self,
-    ) -> (Option<String>, Option<String>) {
+    pub async fn primary_local_serial_interface_ids(&self) -> (Option<String>, Option<String>) {
         let interfaces = match config::interfaces_from_config_dir(&self.config_dir) {
             Ok(rows) => rows,
             Err(_) => self.inner.read().await.interfaces.clone(),
@@ -295,6 +291,8 @@ impl StackHandle {
         (stored, effective)
     }
 
+    /// Public API for outbound transport resolution from enabled interfaces.
+    #[allow(dead_code)] // renderer IPC may call before all call sites are wired
     pub async fn resolve_outbound_sent_via_for_interfaces(
         &self,
         interfaces: &[InterfaceRow],
@@ -357,10 +355,12 @@ impl StackHandle {
             ) {
                 tracing::debug!("identity status reconcile skipped: {e}");
             }
-            return inner.identity.clone();
+            inner.identity.clone()
         }
         #[cfg(not(feature = "rns-stack"))]
-        self.inner.read().await.identity.clone()
+        {
+            self.inner.read().await.identity.clone()
+        }
     }
 
     async fn ensure_identity_replace_allowed(&self, replace: bool) -> Result<(), String> {
@@ -392,10 +392,12 @@ impl StackHandle {
             )?;
             drop(inner);
             self.maybe_emit_identity_restart();
-            return Ok(identity);
+            Ok(identity)
         }
         #[cfg(not(feature = "rns-stack"))]
-        Err("identity operations require an rns-stack sidecar build".into())
+        {
+            Err("identity operations require an rns-stack sidecar build".into())
+        }
     }
 
     pub async fn identity_import(
@@ -420,10 +422,12 @@ impl StackHandle {
             )?;
             drop(inner);
             self.maybe_emit_identity_restart();
-            return Ok(identity);
+            Ok(identity)
         }
         #[cfg(not(feature = "rns-stack"))]
-        Err("identity operations require an rns-stack sidecar build".into())
+        {
+            Err("identity operations require an rns-stack sidecar build".into())
+        }
     }
 
     pub async fn identity_import_private(
@@ -449,12 +453,16 @@ impl StackHandle {
             )?;
             drop(inner);
             self.maybe_emit_identity_restart();
-            return Ok(identity);
+            Ok(identity)
         }
         #[cfg(not(feature = "rns-stack"))]
-        Err("identity operations require an rns-stack sidecar build".into())
+        {
+            Err("identity operations require an rns-stack sidecar build".into())
+        }
     }
 
+    /// Binary private-key import (file picker / IPC).
+    #[allow(dead_code)] // public identity API; not all builds expose the route yet
     pub async fn identity_import_private_bytes(
         &self,
         bytes: &[u8],
@@ -478,10 +486,12 @@ impl StackHandle {
             )?;
             drop(inner);
             self.maybe_emit_identity_restart();
-            return Ok(identity);
+            Ok(identity)
         }
         #[cfg(not(feature = "rns-stack"))]
-        Err("identity operations require an rns-stack sidecar build".into())
+        {
+            Err("identity operations require an rns-stack sidecar build".into())
+        }
     }
 
     pub async fn identity_export_backup(
@@ -650,6 +660,7 @@ impl StackHandle {
         Ok(result)
     }
 
+    #[allow(clippy::unused_async)] // async matches StackHandle settings API awaited by HTTP handlers
     pub async fn set_stack_settings(&self, settings: &StackSettings) -> Result<(), String> {
         config::set_stack_settings(&self.config_dir, settings)
     }
@@ -700,8 +711,14 @@ impl StackHandle {
         inner.demote_contacts_to_peers();
         inner.clear_contacts();
         inner.save(&self.config_dir, &self.storage_dir)?;
-        self.emit_event("contacts_updated", serde_json::json!({ "cleared": cleared }));
-        self.emit_event("peers_updated", serde_json::json!({ "demoted_from_contacts": cleared }));
+        self.emit_event(
+            "contacts_updated",
+            serde_json::json!({ "cleared": cleared }),
+        );
+        self.emit_event(
+            "peers_updated",
+            serde_json::json!({ "demoted_from_contacts": cleared }),
+        );
         Ok(cleared)
     }
 
@@ -843,7 +860,8 @@ impl StackHandle {
         };
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            live.set_outbound_propagation_node(prop_hash.as_deref()).await;
+            live.set_outbound_propagation_node(prop_hash.as_deref())
+                .await;
         }
         Ok(())
     }
@@ -910,10 +928,7 @@ impl StackHandle {
         let mut inner = self.inner.write().await;
         inner.start_propagation_sync(propagation_id)?;
         inner.save(&self.config_dir, &self.storage_dir)?;
-        self.emit_event(
-            "propagation_sync",
-            inner.propagation_sync.clone(),
-        );
+        self.emit_event("propagation_sync", inner.propagation_sync.clone());
         Ok(())
     }
 
@@ -926,10 +941,7 @@ impl StackHandle {
         let mut inner = self.inner.write().await;
         inner.cancel_propagation_sync();
         inner.save(&self.config_dir, &self.storage_dir)?;
-        self.emit_event(
-            "propagation_sync",
-            inner.propagation_sync.clone(),
-        );
+        self.emit_event("propagation_sync", inner.propagation_sync.clone());
         Ok(())
     }
 
@@ -1012,11 +1024,17 @@ impl StackHandle {
         Ok(())
     }
 
-    pub async fn ping_destination(&self, destination_hash: &str) -> Result<serde_json::Value, String> {
+    pub async fn ping_destination(
+        &self,
+        destination_hash: &str,
+    ) -> Result<serde_json::Value, String> {
         let started = std::time::Instant::now();
         let probe = self.probe_peer(destination_hash).await?;
         let rtt_ms = started.elapsed().as_millis() as u64;
-        let ok = probe.get("ok").and_then(|v| v.as_bool()).unwrap_or(false);
+        let ok = probe
+            .get("ok")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false);
         Ok(serde_json::json!({ "ok": ok, "rtt_ms": rtt_ms }))
     }
 
@@ -1032,15 +1050,13 @@ impl StackHandle {
 
     pub async fn topology_snapshot(&self) -> serde_json::Value {
         let peers = self.list_peers().await;
-        let (selected, total) = topology::select_peers_for_topology(&peers, topology::TOPOLOGY_PEER_CAP);
+        let (selected, total) =
+            topology::select_peers_for_topology(&peers, topology::TOPOLOGY_PEER_CAP);
         let truncated = total > selected.len();
         let (mut nodes, edges) = topology::build_topology(&selected);
         let inner = self.inner.read().await;
-        let mut name_by_hash = topology::build_topology_name_map(
-            &inner.peers,
-            &inner.contacts,
-            &inner.nomad_nodes,
-        );
+        let mut name_by_hash =
+            topology::build_topology_name_map(&inner.peers, &inner.contacts, &inner.nomad_nodes);
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             topology::extend_name_map_with_announce_labels(
@@ -1074,7 +1090,7 @@ impl StackHandle {
         }
         #[cfg(feature = "rns-stack")]
         {
-            return Err("live RNS bridge unavailable; start stack with identity configured".into());
+            Err("live RNS bridge unavailable; start stack with identity configured".into())
         }
         #[cfg(not(feature = "rns-stack"))]
         {
@@ -1142,7 +1158,11 @@ impl StackHandle {
         Ok(())
     }
 
-    pub async fn rrc_connect(&self, dest_hash: &str, nickname: Option<String>) -> serde_json::Value {
+    pub async fn rrc_connect(
+        &self,
+        dest_hash: &str,
+        nickname: Option<String>,
+    ) -> serde_json::Value {
         let clean = dest_hash.trim().to_lowercase().replace(':', "");
         if clean.len() != 32 || !clean.chars().all(|c| c.is_ascii_hexdigit()) {
             return serde_json::json!({ "ok": false, "error": "dest_hash must be 32 hex characters" });
@@ -1206,7 +1226,12 @@ impl StackHandle {
         })
     }
 
-    pub async fn rrc_join(&self, hub_dest_hash: &str, room: &str, key: Option<&str>) -> serde_json::Value {
+    pub async fn rrc_join(
+        &self,
+        hub_dest_hash: &str,
+        room: &str,
+        key: Option<&str>,
+    ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             return live.rrc_join(hub_dest_hash, room, key).await;
@@ -1242,7 +1267,11 @@ impl StackHandle {
         serde_json::json!({ "ok": false, "error": "rrc requires live rns-stack sidecar" })
     }
 
-    pub async fn rrc_set_nick(&self, hub_dest_hash: Option<&str>, nickname: &str) -> serde_json::Value {
+    pub async fn rrc_set_nick(
+        &self,
+        hub_dest_hash: Option<&str>,
+        nickname: &str,
+    ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             return live.rrc_set_nick(hub_dest_hash, nickname).await;
@@ -1272,7 +1301,12 @@ impl StackHandle {
             .and_then(|n| n.identity_hash.clone())
     }
 
-    pub async fn nomad_page(&self, hash: &str, path: &str, data_b64: Option<&str>) -> serde_json::Value {
+    pub async fn nomad_page(
+        &self,
+        hash: &str,
+        path: &str,
+        data_b64: Option<&str>,
+    ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             let interfaces = self.inner.read().await.interfaces.clone();
@@ -1352,10 +1386,12 @@ impl StackHandle {
         Ok(res)
     }
 
+    #[allow(clippy::unused_async)] // async matches StackHandle admin API awaited by HTTP handlers
     pub async fn rnode_presets(&self) -> serde_json::Value {
         rf_profiles::presets_wire_json()
     }
 
+    #[allow(clippy::unused_async)] // async matches StackHandle admin API awaited by HTTP handlers
     pub async fn serial_ports(&self) -> serde_json::Value {
         serde_json::json!({ "ports": enumerate_serial_ports() })
     }
@@ -1364,7 +1400,11 @@ impl StackHandle {
         ble::ble_availability().await
     }
 
-    pub async fn ble_scan(&self, timeout_secs: u64, mode: &str) -> Result<serde_json::Value, String> {
+    pub async fn ble_scan(
+        &self,
+        timeout_secs: u64,
+        mode: &str,
+    ) -> Result<serde_json::Value, String> {
         ble::ble_scan(timeout_secs, mode).await
     }
 
@@ -1375,7 +1415,7 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             let res = live.send_lxmf_resource(&req).await?;
-            if res.get("ok").and_then(|v| v.as_bool()) == Some(true) {
+            if res.get("ok").and_then(serde_json::Value::as_bool) == Some(true) {
                 let payload = res.get("message").cloned().unwrap_or(res.clone());
                 self.emit_event("resource.received", payload.clone());
                 self.emit_event("lxmf_message", payload);
@@ -1399,6 +1439,7 @@ impl StackHandle {
         Ok(removed)
     }
 
+    #[allow(clippy::unused_async)] // async matches StackHandle lifecycle API awaited by HTTP handlers
     pub async fn request_stack_restart(&self) -> Result<(), String> {
         self.emit_event("stack_restart_requested", serde_json::json!({ "ok": true }));
         Ok(())
@@ -1451,6 +1492,7 @@ impl StackHandle {
         config_audit::audit_config(&self.config_dir, &live, &settings, stack_running)
     }
 
+    #[allow(clippy::unused_async)] // async matches StackHandle config API awaited by HTTP handlers
     pub async fn config_repair(
         &self,
         request: config_audit::ConfigRepairRequest,
@@ -1458,6 +1500,7 @@ impl StackHandle {
         config_audit::repair_config(&self.config_dir, &request)
     }
 
+    #[allow(clippy::unused_async)] // async matches StackHandle feature-status API awaited by HTTP handlers
     pub async fn voice_status(&self) -> serde_json::Value {
         serde_json::json!({
             "available": cfg!(feature = "rns-stack"),
@@ -1467,6 +1510,7 @@ impl StackHandle {
         })
     }
 
+    #[allow(clippy::unused_async)] // async matches StackHandle feature-status API awaited by HTTP handlers
     pub async fn games_status(&self) -> serde_json::Value {
         serde_json::json!({
             "available": true,
@@ -1489,6 +1533,7 @@ impl StackHandle {
         })
     }
 
+    #[allow(clippy::unused_async)] // async matches StackHandle identity API awaited by HTTP handlers
     pub async fn switch_identity(&self, identity_id: &str) -> Result<(), String> {
         if identity_id != "default" {
             return Err("only default identity is available in this build".into());
@@ -1504,6 +1549,7 @@ impl StackHandle {
         self.inner.read().await.lxmf_ready
     }
 
+    #[allow(clippy::unused_self, clippy::unnecessary_wraps)] // version probes mirror StackHandle info API
     pub fn rns_version(&self) -> Option<String> {
         #[cfg(feature = "rns-stack")]
         {
@@ -1515,6 +1561,7 @@ impl StackHandle {
         }
     }
 
+    #[allow(clippy::unused_self, clippy::unnecessary_wraps)] // version probes mirror StackHandle info API
     pub fn lxmf_version(&self) -> Option<String> {
         #[cfg(feature = "rns-stack")]
         {
@@ -1625,7 +1672,7 @@ fn sync_live_peer_cache(cache: &mut Vec<PeerRow>, fetched: Vec<PeerRow>) -> Vec<
         })
         .cloned()
         .collect();
-    preserved.sort_by(|a, b| peer_last_seen_or_zero(b).cmp(&peer_last_seen_or_zero(a)));
+    preserved.sort_by_key(|b| std::cmp::Reverse(peer_last_seen_or_zero(b)));
     if preserved.len() > MAX_ORPHAN_PEERS {
         tracing::debug!(
             retained = MAX_ORPHAN_PEERS,
@@ -1646,7 +1693,7 @@ fn sync_live_peer_cache(cache: &mut Vec<PeerRow>, fetched: Vec<PeerRow>) -> Vec<
         })
         .collect();
     if live_rows.len() > MAX_PEER_CACHE {
-        live_rows.sort_by(|a, b| peer_last_seen_or_zero(b).cmp(&peer_last_seen_or_zero(a)));
+        live_rows.sort_by_key(|b| std::cmp::Reverse(peer_last_seen_or_zero(b)));
         live_rows.truncate(MAX_PEER_CACHE);
     }
     let orphan_budget = MAX_PEER_CACHE.saturating_sub(live_rows.len());
@@ -1799,7 +1846,10 @@ mod tests {
         state.upsert_nomad_node("abc123", None, Some("Forum".into()), Some(2));
         state.upsert_nomad_node("ABC123", None, Some("Updated Forum".into()), Some(3));
         assert_eq!(state.nomad_nodes.len(), 1);
-        assert_eq!(state.nomad_nodes[0].display_name.as_deref(), Some("Updated Forum"));
+        assert_eq!(
+            state.nomad_nodes[0].display_name.as_deref(),
+            Some("Updated Forum")
+        );
         assert_eq!(state.nomad_nodes[0].hops, Some(3));
         assert_eq!(state.nomad_nodes[0].status.as_deref(), Some("online"));
         let _ = std::fs::remove_dir_all(config_dir);
@@ -1901,7 +1951,10 @@ mod tests {
         assert!(handle.list_contacts().await.is_empty());
         let peers = handle.list_peers().await;
         assert_eq!(peers.len(), 1);
-        assert_eq!(peers[0].destination_hash, "aabbccddeeff00112233445566778899");
+        assert_eq!(
+            peers[0].destination_hash,
+            "aabbccddeeff00112233445566778899"
+        );
         assert_eq!(peers[0].display_name.as_deref(), Some("Announced"));
         let _ = std::fs::remove_dir_all(config_dir);
         let _ = std::fs::remove_dir_all(storage_dir);

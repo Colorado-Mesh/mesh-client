@@ -43,7 +43,8 @@
     "scrollToTop": "↑ Góra",
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
-    "footerWebsiteTitle": "Witryna internetowa Colorado Mesh"
+    "footerWebsiteTitle": "Witryna internetowa Colorado Mesh",
+    "loadingApp": "Wczytywanie klienta siatki"
   },
   "appPanel": {
     "failedSaveRetention": "Nie udało się zapisać ustawienia przechowywania wiadomości.",
@@ -1137,7 +1138,8 @@
     "maxRetriesHelpConnected": {
       "meshcore": "Ponownie połącz próby przed rezygnacją (1–{{max}}). Zapisano z ustawieniami; naciśnij ponownie Połącz po zmianie, aby główny proces go podniósł.",
       "meshtastic": "Oba protokoły umożliwiają 1–{{max}}. Zapisano z ustawieniami; odłącz i połącz ponownie, aby uruchomiona sesja używała nowej wartości."
-    }
+    },
+    "reticulumStackRunningAs": "Uruchamianie — {{name}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",

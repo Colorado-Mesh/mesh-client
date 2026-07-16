@@ -6,8 +6,8 @@ mod lxmf_outbound;
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use lxmf_core::constants::{DeliveryMethod, FIELD_FILE_ATTACHMENTS, FIELD_ICON_APPEARANCE};
@@ -22,8 +22,8 @@ const REPLY_QUOTE_MAX_CHARS: usize = 50;
 use lxmf_core::router::LxmRouter;
 use rns_identity::destination::Destination;
 use rns_identity::identity::Identity;
-use rns_runtime::link_client::LinkClient;
 use rns_runtime::lifecycle::ShutdownSignal;
+use rns_runtime::link_client::LinkClient;
 use rns_runtime::reticulum;
 use rns_transport::messages::{
     AnnounceHandlerEvent, TransportMessage, TransportQuery, TransportQueryResponse,
@@ -34,21 +34,23 @@ use super::StackHandle;
 use super::config;
 use super::local_rnode_primary;
 use super::lxmf_delivery::{
-    send_lxmf_delivery_announce, spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver, LXMF_APP,
+    LXMF_APP, send_lxmf_delivery_announce, spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver,
 };
 use super::nomad_file::nomad_file_name_from_path;
 use super::nomad_link_errors::map_nomad_link_error;
 use super::nomad_request_payload::nomad_page_request_payload;
 use super::nomad_timeouts;
 use super::packet_log::{
-    collect_tx_interface_names_for_egress, emit_wire_packet_event, wire_packet_from_tap,
-    PacketLogBuffer,
+    PacketLogBuffer, collect_tx_interface_names_for_egress, emit_wire_packet_event,
+    wire_packet_from_tap,
 };
 use super::persistence::PersistedState;
 use super::propagation_bridge::PropagationBridge;
 use super::rrc_defaults::RRC_HUB_ASPECT;
 use super::rrc_session::RrcSessionManager;
-use super::types::{InterfaceRow, LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, PeerRow, ContactRow};
+use super::types::{
+    ContactRow, InterfaceRow, LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, PeerRow,
+};
 use super::via::{
     classify_path_interface_name, merge_live_interfaces_with_config, merge_observed_egress_vias,
     resolve_lxmf_sent_via,
@@ -232,9 +234,8 @@ impl LiveBridge {
             return Err("identity not configured for live stack".into());
         };
 
-        const LXMF_APP_NAME: &str = LXMF_APP;
         let lxmf_dest_hash =
-            Destination::hash_from_name_and_identity(LXMF_APP_NAME, Some(&identity.hash));
+            Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity.hash));
         // Offline inbox / PN identity is lxmf.propagation — not the delivery destination.
         let lxmf_propagation_dest_hash =
             Destination::hash_from_name_and_identity("lxmf.propagation", Some(&identity.hash));
@@ -489,10 +490,10 @@ impl LiveBridge {
         let remote_hash = parse_hash16(identity_hash_hex)?;
         let hops = self.hops_to_destination(hash_hex).await.unwrap_or(8);
         let timeout_secs = nomad_timeouts::nomad_page_timeout_secs_for_interfaces(interfaces, hops);
-        let _guard = match tokio::time::timeout(NOMAD_LINK_LOCK_WAIT, self.nomad_link_lock.lock()).await
-        {
-            Ok(g) => g,
-            Err(_) => return Err("nomad_busy".into()),
+        let Ok(_guard) =
+            tokio::time::timeout(NOMAD_LINK_LOCK_WAIT, self.nomad_link_lock.lock()).await
+        else {
+            return Err("nomad_busy".into());
         };
         let client = LinkClient::new(self.handle.transport_tx.clone(), self.identity.clone());
         client
@@ -527,10 +528,8 @@ impl LiveBridge {
                     return serde_json::json!({ "ok": false, "error": "response_too_large" });
                 }
                 let file_name = nomad_file_name_from_path(path);
-                let content_base64 = base64::Engine::encode(
-                    &base64::engine::general_purpose::STANDARD,
-                    &bytes,
-                );
+                let content_base64 =
+                    base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &bytes);
                 serde_json::json!({
                     "ok": true,
                     "file_name": file_name,
@@ -584,24 +583,17 @@ impl LiveBridge {
         }
     }
 
-    async fn query_control_timed(
-        &self,
-        query: TransportQuery,
-    ) -> Option<TransportQueryResponse> {
-        match tokio::time::timeout(
-            TRANSPORT_QUERY_TIMEOUT,
-            self.handle.query_control(query),
-        )
-        .await
+    async fn query_control_timed(&self, query: TransportQuery) -> Option<TransportQueryResponse> {
+        if let Ok(resp) =
+            tokio::time::timeout(TRANSPORT_QUERY_TIMEOUT, self.handle.query_control(query)).await
         {
-            Ok(resp) => resp,
-            Err(_) => {
-                tracing::debug!(
-                    "transport control query timed out after {:?}",
-                    TRANSPORT_QUERY_TIMEOUT
-                );
-                None
-            }
+            resp
+        } else {
+            tracing::debug!(
+                "transport control query timed out after {:?}",
+                TRANSPORT_QUERY_TIMEOUT
+            );
+            None
         }
     }
 
@@ -753,10 +745,13 @@ impl LiveBridge {
         self.rrc_session.status_snapshot().await
     }
 
-    pub async fn rrc_join(&self, hub_dest_hash: &str, room: &str, key: Option<&str>) -> serde_json::Value {
-        let key = key
-            .map(|k| k.trim().to_string())
-            .filter(|k| !k.is_empty());
+    pub async fn rrc_join(
+        &self,
+        hub_dest_hash: &str,
+        room: &str,
+        key: Option<&str>,
+    ) -> serde_json::Value {
+        let key = key.map(|k| k.trim().to_string()).filter(|k| !k.is_empty());
         match self
             .rrc_session
             .join(hub_dest_hash, room.to_string(), key)
@@ -782,9 +777,7 @@ impl LiveBridge {
         kind: &str,
         dst_hash: Option<&str>,
     ) -> serde_json::Value {
-        let room = room
-            .map(|r| r.trim().to_string())
-            .filter(|r| !r.is_empty());
+        let room = room.map(|r| r.trim().to_string()).filter(|r| !r.is_empty());
         match self
             .rrc_session
             .send_chat(hub_dest_hash, room, body.to_string(), kind, dst_hash)
@@ -795,7 +788,11 @@ impl LiveBridge {
         }
     }
 
-    pub async fn rrc_set_nick(&self, hub_dest_hash: Option<&str>, nickname: &str) -> serde_json::Value {
+    pub async fn rrc_set_nick(
+        &self,
+        hub_dest_hash: Option<&str>,
+        nickname: &str,
+    ) -> serde_json::Value {
         match self
             .rrc_session
             .set_nickname(hub_dest_hash, nickname.to_string())
@@ -829,113 +826,111 @@ impl LiveBridge {
                 // Only replace the outbound path table on a successful GetPathTable.
                 // Timeout/empty fallback must NOT wipe known routes (that forced every
                 // LXMF send onto the propagation node with hasPath:false).
-                let path_entries = match tokio::time::timeout(
-                    TRANSPORT_QUERY_TIMEOUT,
-                    handle.query_control(TransportQuery::GetPathTable),
-                )
-                .await
+                let path_entries = if let Ok(Some(TransportQueryResponse::PathTable(entries))) =
+                    tokio::time::timeout(
+                        TRANSPORT_QUERY_TIMEOUT,
+                        handle.query_control(TransportQuery::GetPathTable),
+                    )
+                    .await
                 {
-                    Ok(Some(TransportQueryResponse::PathTable(entries))) => {
-                        if let Ok(mut cache) = peer_via_cache.lock() {
-                            cache.clear();
-                            for entry in &entries {
-                                let key = hex::encode(entry.hash);
-                                cache.insert(key, entry.interface.clone());
-                            }
+                    if let Ok(mut cache) = peer_via_cache.lock() {
+                        cache.clear();
+                        for entry in &entries {
+                            let key = hex::encode(entry.hash);
+                            cache.insert(key, entry.interface.clone());
                         }
-                        let name_lookup = display_name_cache
-                            .lock()
-                            .ok()
-                            .map(|c| c.clone())
-                            .unwrap_or_default();
-                        let peer_rows: Vec<PeerRow> = entries
+                    }
+                    let name_lookup = display_name_cache
+                        .lock()
+                        .ok()
+                        .map(|c| c.clone())
+                        .unwrap_or_default();
+                    let peer_rows: Vec<PeerRow> = entries
+                        .iter()
+                        .map(|e| {
+                            let destination_hash = hex::encode(e.hash);
+                            let display_name = name_lookup.get(&destination_hash).cloned();
+                            PeerRow {
+                                destination_hash,
+                                display_name,
+                                hops: Some(e.hops),
+                                last_seen: Some(e.timestamp as u64),
+                                interface: Some(e.interface.clone()),
+                                path_hash: e.via.map(hex::encode),
+                                via_hash: e.via.map(hex::encode),
+                            }
+                        })
+                        .collect();
+                    if let Ok(mut cache) = path_peer_cache.lock() {
+                        *cache = peer_rows.clone();
+                    }
+                    if let Ok(mut at) = path_peer_cache_fetched_at.lock() {
+                        *at = Some(Instant::now());
+                    }
+                    let next_hashes: HashSet<String> = peer_rows
+                        .iter()
+                        .map(|p| p.destination_hash.clone())
+                        .collect();
+                    let added = path_table_added_hashes_capped(&known_path_hashes, &next_hashes);
+                    let mut patch_peers: Vec<&PeerRow> = Vec::new();
+                    for peer in &peer_rows {
+                        if added.iter().any(|h| h == &peer.destination_hash) {
+                            patch_peers.push(peer);
+                            continue;
+                        }
+                        match prev_peer_by_hash.get(&peer.destination_hash) {
+                            Some(prev) if peer_route_fields_equal(prev, peer) => {}
+                            _ if known_path_hashes.contains(&peer.destination_hash) => {
+                                patch_peers.push(peer);
+                            }
+                            _ => {}
+                        }
+                    }
+                    if patch_peers.len() > MAX_PEERS_UPDATED_ADDED {
+                        patch_peers.truncate(MAX_PEERS_UPDATED_ADDED);
+                    }
+                    if !patch_peers.is_empty() {
+                        let patches: Vec<serde_json::Value> = patch_peers
                             .iter()
-                            .map(|e| {
-                                let destination_hash = hex::encode(e.hash);
-                                let display_name = name_lookup.get(&destination_hash).cloned();
-                                PeerRow {
-                                    destination_hash,
-                                    display_name,
-                                    hops: Some(e.hops),
-                                    last_seen: Some(e.timestamp as u64),
-                                    interface: Some(e.interface.clone()),
-                                    path_hash: e.via.map(hex::encode),
-                                    via_hash: e.via.map(hex::encode),
-                                }
+                            .map(|p| {
+                                serde_json::json!({
+                                    "destination_hash": p.destination_hash,
+                                    "display_name": p.display_name,
+                                    "hops": p.hops,
+                                    "last_seen": p.last_seen,
+                                    "interface": p.interface,
+                                    "path_hash": p.path_hash,
+                                    "via_hash": p.via_hash,
+                                })
                             })
                             .collect();
-                        if let Ok(mut cache) = path_peer_cache.lock() {
-                            *cache = peer_rows.clone();
-                        }
-                        if let Ok(mut at) = path_peer_cache_fetched_at.lock() {
-                            *at = Some(Instant::now());
-                        }
-                        let next_hashes: HashSet<String> = peer_rows
+                        let frame = serde_json::json!({
+                            "type": "peers_updated",
+                            "payload": {
+                                "added": added,
+                                "patches": patches,
+                                "count": next_hashes.len(),
+                            }
+                        });
+                        let _ = event_tx.send(frame.to_string());
+                    }
+                    known_path_hashes = next_hashes;
+                    prev_peer_by_hash = peer_rows
+                        .into_iter()
+                        .map(|p| (p.destination_hash.clone(), p))
+                        .collect();
+                    Some(
+                        entries
                             .iter()
-                            .map(|p| p.destination_hash.clone())
-                            .collect();
-                        let added = path_table_added_hashes_capped(&known_path_hashes, &next_hashes);
-                        let mut patch_peers: Vec<&PeerRow> = Vec::new();
-                        for peer in &peer_rows {
-                            if added.iter().any(|h| h == &peer.destination_hash) {
-                                patch_peers.push(peer);
-                                continue;
-                            }
-                            match prev_peer_by_hash.get(&peer.destination_hash) {
-                                Some(prev) if peer_route_fields_equal(prev, peer) => {}
-                                _ if known_path_hashes.contains(&peer.destination_hash) => {
-                                    patch_peers.push(peer);
-                                }
-                                _ => {}
-                            }
-                        }
-                        if patch_peers.len() > MAX_PEERS_UPDATED_ADDED {
-                            patch_peers.truncate(MAX_PEERS_UPDATED_ADDED);
-                        }
-                        if !patch_peers.is_empty() {
-                            let patches: Vec<serde_json::Value> = patch_peers
-                                .iter()
-                                .map(|p| {
-                                    serde_json::json!({
-                                        "destination_hash": p.destination_hash,
-                                        "display_name": p.display_name,
-                                        "hops": p.hops,
-                                        "last_seen": p.last_seen,
-                                        "interface": p.interface,
-                                        "path_hash": p.path_hash,
-                                        "via_hash": p.via_hash,
-                                    })
-                                })
-                                .collect();
-                            let frame = serde_json::json!({
-                                "type": "peers_updated",
-                                "payload": {
-                                    "added": added,
-                                    "patches": patches,
-                                    "count": next_hashes.len(),
-                                }
-                            });
-                            let _ = event_tx.send(frame.to_string());
-                        }
-                        known_path_hashes = next_hashes;
-                        prev_peer_by_hash = peer_rows
-                            .into_iter()
-                            .map(|p| (p.destination_hash.clone(), p))
-                            .collect();
-                        Some(
-                            entries
-                                .iter()
-                                .map(|e| (e.hash, e.hops, hex::encode(e.hash)))
-                                .collect::<Vec<_>>(),
-                        )
-                    }
-                    _ => {
-                        tracing::debug!(
-                            "maintenance path table query timed out after {:?}; keeping prior routes",
-                            TRANSPORT_QUERY_TIMEOUT
-                        );
-                        None
-                    }
+                            .map(|e| (e.hash, e.hops, hex::encode(e.hash)))
+                            .collect::<Vec<_>>(),
+                    )
+                } else {
+                    tracing::debug!(
+                        "maintenance path table query timed out after {:?}; keeping prior routes",
+                        TRANSPORT_QUERY_TIMEOUT
+                    );
+                    None
                 };
                 let mut router = router.lock().await;
                 if let Ok(mut driver) = outbound.lock() {
@@ -973,7 +968,9 @@ impl LiveBridge {
                 .await
                 .is_err()
             {
-                tracing::warn!("LXMF identity announce handler registration failed: transport closed");
+                tracing::warn!(
+                    "LXMF identity announce handler registration failed: transport closed"
+                );
                 return;
             }
 
@@ -1042,9 +1039,8 @@ impl LiveBridge {
 
     /// Refresh outbound path table from transport when GetPathTable succeeds.
     async fn refresh_outbound_path_table(&self) -> bool {
-        let Some(TransportQueryResponse::PathTable(entries)) = self
-            .query_control_timed(TransportQuery::GetPathTable)
-            .await
+        let Some(TransportQueryResponse::PathTable(entries)) =
+            self.query_control_timed(TransportQuery::GetPathTable).await
         else {
             return false;
         };
@@ -1102,7 +1098,10 @@ impl LiveBridge {
 
     /// Ensure destination public key is known before choosing Direct delivery.
     async fn ensure_identity_for_direct(&self, destination_hex: &str) -> bool {
-        if self.hydrate_identity_from_recent_announces(destination_hex).await {
+        if self
+            .hydrate_identity_from_recent_announces(destination_hex)
+            .await
+        {
             return true;
         }
         let Ok(dest) = parse_hash16(destination_hex) else {
@@ -1125,7 +1124,9 @@ impl LiveBridge {
             {
                 return true;
             }
-            let _ = self.hydrate_identity_from_recent_announces(destination_hex).await;
+            let _ = self
+                .hydrate_identity_from_recent_announces(destination_hex)
+                .await;
             if self
                 .outbound
                 .lock()
@@ -1192,9 +1193,10 @@ impl LiveBridge {
             method,
         );
         apply_reply_fields(&mut msg, reply_to, reply_quote);
-        let signing_key = self.identity.get_signing_key().ok_or_else(|| {
-            "lxmf sign: identity has no signing key".to_string()
-        })?;
+        let signing_key = self
+            .identity
+            .get_signing_key()
+            .ok_or_else(|| "lxmf sign: identity has no signing key".to_string())?;
         msg.sign(&signing_key)
             .map_err(|e| format!("lxmf sign: {e:?}"))?;
         let hash_hex = msg
@@ -1230,14 +1232,8 @@ impl LiveBridge {
             }
         };
 
-        let (msg, message_hash_hex) = self.prepare_signed_outbound_lxmf(
-            dest,
-            "",
-            &req.emoji,
-            delivery_method,
-            None,
-            None,
-        )?;
+        let (msg, message_hash_hex) =
+            self.prepare_signed_outbound_lxmf(dest, "", &req.emoji, delivery_method, None, None)?;
         let mut router = self.router.lock().await;
         router
             .try_send(msg)
@@ -1329,14 +1325,13 @@ impl LiveBridge {
             return Err("PROPAGATION_TARGET_NOT_PN".into());
         }
         let peering = self.resolve_propagation_peering(&dest_hex).await?;
-        self.sync_cancel.store(false, std::sync::atomic::Ordering::SeqCst);
+        self.sync_cancel
+            .store(false, std::sync::atomic::Ordering::SeqCst);
         if !self.propagation.start_sync(hash, Some(peering)) {
             return Err("propagation sync unavailable".into());
         }
-        self.propagation.spawn_sync_progress_emitter(
-            self.event_tx.clone(),
-            Arc::clone(&self.sync_cancel),
-        );
+        self.propagation
+            .spawn_sync_progress_emitter(self.event_tx.clone(), Arc::clone(&self.sync_cancel));
         Ok(())
     }
 
@@ -1409,6 +1404,7 @@ impl LiveBridge {
         self.propagation.is_local_serving()
     }
 
+    #[allow(clippy::unused_async)] // async matches StackHandle propagation cancel API
     pub async fn cancel_propagation_sync(&self) {
         self.sync_cancel
             .store(true, std::sync::atomic::Ordering::SeqCst);
@@ -1424,7 +1420,8 @@ impl LiveBridge {
     }
 
     pub async fn fetch_interfaces(&self) -> Result<Vec<InterfaceRow>, String> {
-        let config_rows = super::config::interfaces_from_config_dir(&self.config_dir).unwrap_or_default();
+        let config_rows =
+            super::config::interfaces_from_config_dir(&self.config_dir).unwrap_or_default();
         let resp = self
             .query_control_timed(TransportQuery::GetInterfaceStats)
             .await;
@@ -1491,9 +1488,7 @@ impl LiveBridge {
                 }
             }
         }
-        let resp = self
-            .query_control_timed(TransportQuery::GetPathTable)
-            .await;
+        let resp = self.query_control_timed(TransportQuery::GetPathTable).await;
         let Some(TransportQueryResponse::PathTable(entries)) = resp else {
             return Err("path table query timed out or unavailable".into());
         };
@@ -1573,9 +1568,7 @@ impl LiveBridge {
 
         let preferred_pn_hash = {
             let router = self.router.lock().await;
-            router
-                .outbound_propagation_node
-                .map(hex::encode)
+            router.outbound_propagation_node.map(hex::encode)
         };
         let preferred_pn_set = preferred_pn_hash.is_some();
 
@@ -1590,21 +1583,19 @@ impl LiveBridge {
             identity_known = self.ensure_identity_for_direct(&req.destination_hash).await;
         }
 
-        let delivery_method = match lxmf_outbound::choose_lxmf_send_route(
-            has_path,
-            identity_known,
-            preferred_pn_set,
-        ) {
-            lxmf_outbound::LxmfSendRoute::Direct => DeliveryMethod::Direct,
-            lxmf_outbound::LxmfSendRoute::Propagated => DeliveryMethod::Propagated,
-            lxmf_outbound::LxmfSendRoute::NoPropagationNode => {
-                return Ok(serde_json::json!({
-                    "ok": false,
-                    "error": "no_propagation_node",
-                    "destination_hash": req.destination_hash,
-                }));
-            }
-        };
+        let delivery_method =
+            match lxmf_outbound::choose_lxmf_send_route(has_path, identity_known, preferred_pn_set)
+            {
+                lxmf_outbound::LxmfSendRoute::Direct => DeliveryMethod::Direct,
+                lxmf_outbound::LxmfSendRoute::Propagated => DeliveryMethod::Propagated,
+                lxmf_outbound::LxmfSendRoute::NoPropagationNode => {
+                    return Ok(serde_json::json!({
+                        "ok": false,
+                        "error": "no_propagation_node",
+                        "destination_hash": req.destination_hash,
+                    }));
+                }
+            };
         let delivery_method_str = match delivery_method {
             DeliveryMethod::Direct => "direct",
             DeliveryMethod::Propagated => "propagated",
@@ -1649,7 +1640,9 @@ impl LiveBridge {
             .unwrap_or_default()
             .as_secs()
             * 1000) as i64;
-        let reply_to_hash_echo = reply_to.map(hex::encode).or_else(|| req.reply_to_hash.clone());
+        let reply_to_hash_echo = reply_to
+            .map(hex::encode)
+            .or_else(|| req.reply_to_hash.clone());
         let mut payload = serde_json::json!({
             "sender_hash": self.lxmf_hash_hex,
             "sender_name": self.display_name,
@@ -1756,8 +1749,7 @@ impl LiveBridge {
             .as_millis() as u64;
 
         let text = format!("[file:{}:{}]", req.file_name, req.mime_type);
-        let attachment_msgpack =
-            build_file_attachment_msgpack(&req.file_name, &file_bytes)?;
+        let attachment_msgpack = build_file_attachment_msgpack(&req.file_name, &file_bytes)?;
 
         let reply_to = parse_optional_reply_to_hash(req.reply_to_hash.as_deref());
         let reply_quote = req.reply_preview_text.as_deref();
@@ -1772,9 +1764,10 @@ impl LiveBridge {
         apply_reply_fields(&mut msg, reply_to, reply_quote);
         msg.set_msgpack_field(FIELD_FILE_ATTACHMENTS, attachment_msgpack)
             .map_err(|e| format!("attachment field: {e:?}"))?;
-        let signing_key = self.identity.get_signing_key().ok_or_else(|| {
-            "lxmf attachment sign: identity has no signing key".to_string()
-        })?;
+        let signing_key = self
+            .identity
+            .get_signing_key()
+            .ok_or_else(|| "lxmf attachment sign: identity has no signing key".to_string())?;
         msg.sign(&signing_key)
             .map_err(|e| format!("lxmf attachment sign: {e:?}"))?;
         let message_hash_hex = msg
@@ -1793,7 +1786,9 @@ impl LiveBridge {
             .as_secs()
             * 1000) as i64;
         let attachment_b64 = base64::engine::general_purpose::STANDARD.encode(&file_bytes);
-        let reply_to_hash_echo = reply_to.map(hex::encode).or_else(|| req.reply_to_hash.clone());
+        let reply_to_hash_echo = reply_to
+            .map(hex::encode)
+            .or_else(|| req.reply_to_hash.clone());
         let mut payload = serde_json::json!({
             "sender_hash": self.lxmf_hash_hex,
             "sender_name": self.display_name,
@@ -1916,13 +1911,7 @@ impl LiveBridge {
     #[cfg(feature = "rns-ble")]
     async fn spawn_ble_peer_for_row(&self, row: &InterfaceRow) -> Result<u64, String> {
         let identity_hash = self.identity.hash.to_vec();
-        let foreground_wake = {
-            self.ble_peer_state
-                .lock()
-                .await
-                .foreground_wake
-                .clone()
-        };
+        let foreground_wake = { self.ble_peer_state.lock().await.foreground_wake.clone() };
         reticulum::spawn_ble_peer_runtime(
             &self.handle,
             &row.name,
@@ -1949,6 +1938,7 @@ impl LiveBridge {
         }
     }
 
+    #[allow(clippy::needless_pass_by_value)] // payload is moved into the broadcast frame
     fn emit_event(&self, event_type: &str, payload: serde_json::Value) {
         let msg = serde_json::json!({ "type": event_type, "payload": payload });
         let _ = self.event_tx.send(msg.to_string());
@@ -2033,7 +2023,10 @@ pub(super) fn lxmf_payload_from_message(
                 serde_json::Value::String(reply.reply_to_hash),
             );
             if let Some(quote) = reply.reply_preview_text {
-                obj.insert("reply_preview_text".into(), serde_json::Value::String(quote));
+                obj.insert(
+                    "reply_preview_text".into(),
+                    serde_json::Value::String(quote),
+                );
             }
         }
     }
@@ -2171,6 +2164,7 @@ fn attachment_json_from_message(msg: &LxMessage) -> Option<serde_json::Value> {
     }))
 }
 
+#[allow(clippy::needless_pass_by_value)] // payload is moved into the broadcast frame
 pub(super) fn emit_lxmf_event(event_tx: &broadcast::Sender<String>, payload: serde_json::Value) {
     let frame = serde_json::json!({
         "type": "lxmf_message",
@@ -2309,8 +2303,7 @@ fn is_plausible_display_name(s: &str) -> bool {
     if s.is_empty() || s.len() > 128 {
         return false;
     }
-    s.chars()
-        .all(|c| !c.is_control() || c == ' ' || c == '\t')
+    s.chars().all(|c| !c.is_control() || c == ' ' || c == '\t')
 }
 
 fn nomad_name_from_msgpack_value(value: &rmpv::Value) -> Option<String> {
@@ -2345,14 +2338,12 @@ fn contacts_to_name_map(contacts: &[ContactRow]) -> HashMap<String, String> {
         .collect()
 }
 
+#[cfg(test)]
 fn resolve_inbound_sender_name(contacts: &[ContactRow], sender_hash: &str) -> String {
     resolve_inbound_sender_name_map(&contacts_to_name_map(contacts), sender_hash)
 }
 
-fn resolve_inbound_sender_name_map(
-    names: &HashMap<String, String>,
-    sender_hash: &str,
-) -> String {
+fn resolve_inbound_sender_name_map(names: &HashMap<String, String>, sender_hash: &str) -> String {
     let prefix = sender_hash.get(..12).unwrap_or(sender_hash);
     names
         .get(sender_hash)
@@ -2392,9 +2383,7 @@ pub(super) fn parse_hash32(hex_str: &str) -> Result<[u8; 32], String> {
 
 /// Parse optional reply parent hash; invalid lengths are omitted (plain DM) with a warning log.
 fn parse_optional_reply_to_hash(hex_str: Option<&str>) -> Option<[u8; 32]> {
-    let Some(raw) = hex_str.map(str::trim).filter(|s| !s.is_empty()) else {
-        return None;
-    };
+    let raw = hex_str.map(str::trim).filter(|s| !s.is_empty())?;
     match parse_hash32(raw) {
         Ok(bytes) => Some(bytes),
         Err(err) => {
@@ -2615,10 +2604,7 @@ mod announce_display_name_tests {
 
     #[test]
     fn parse_announce_display_name_rejects_unknown_json_object() {
-        assert_eq!(
-            parse_announce_display_name(Some(br#"{"foo":"bar"}"#)),
-            None
-        );
+        assert_eq!(parse_announce_display_name(Some(br#"{"foo":"bar"}"#)), None);
     }
 
     #[test]
@@ -2649,7 +2635,10 @@ mod announce_display_name_tests {
     fn resolve_inbound_sender_name_falls_back_to_hash_prefix() {
         let contacts = vec![];
         let hash = "deadbeef".repeat(4);
-        assert_eq!(resolve_inbound_sender_name(&contacts, &hash), "deadbeefdead");
+        assert_eq!(
+            resolve_inbound_sender_name(&contacts, &hash),
+            "deadbeefdead"
+        );
     }
 
     #[test]
@@ -2666,7 +2655,7 @@ mod announce_display_name_tests {
     fn path_table_added_hashes_capped_truncates_large_deltas() {
         let prev: HashSet<String> = HashSet::new();
         let next: HashSet<String> = (0..(MAX_PEERS_UPDATED_ADDED + 10))
-            .map(|i| format!("{:032x}", i))
+            .map(|i| format!("{i:032x}"))
             .collect();
         let added = path_table_added_hashes_capped(&prev, &next);
         assert_eq!(added.len(), MAX_PEERS_UPDATED_ADDED);
@@ -2681,11 +2670,17 @@ mod announce_display_name_tests {
         assert_eq!(cache.len(), MAX_DISPLAY_NAME_CACHE);
         insert_display_name_bounded(&mut cache, "ff".repeat(16), "overflow".into());
         assert_eq!(cache.len(), MAX_DISPLAY_NAME_CACHE);
-        assert_eq!(cache.get(&"ff".repeat(16)).map(String::as_str), Some("overflow"));
+        assert_eq!(
+            cache.get(&"ff".repeat(16)).map(String::as_str),
+            Some("overflow")
+        );
         // Refresh of existing key must not grow past the cap.
         insert_display_name_bounded(&mut cache, "ff".repeat(16), "renamed".into());
         assert_eq!(cache.len(), MAX_DISPLAY_NAME_CACHE);
-        assert_eq!(cache.get(&"ff".repeat(16)).map(String::as_str), Some("renamed"));
+        assert_eq!(
+            cache.get(&"ff".repeat(16)).map(String::as_str),
+            Some("renamed")
+        );
     }
 }
 
@@ -2708,13 +2703,7 @@ mod icon_appearance_tests {
         )
         .expect("encode icon appearance");
 
-        let mut msg = LxMessage::new(
-            [0u8; 16],
-            [1u8; 16],
-            "",
-            "hello",
-            DeliveryMethod::Direct,
-        );
+        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "hello", DeliveryMethod::Direct);
         msg.set_field(FIELD_ICON_APPEARANCE, buf);
         let json = icon_appearance_json_from_message(&msg).expect("icon json");
         assert_eq!(json["icon_name"], "hiking");
@@ -2778,13 +2767,7 @@ mod reply_field_tests {
 
     #[test]
     fn reply_fields_omit_invalid_length_reply_to() {
-        let mut msg = LxMessage::new(
-            [0u8; 16],
-            [1u8; 16],
-            "",
-            "hi",
-            DeliveryMethod::Direct,
-        );
+        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "hi", DeliveryMethod::Direct);
         msg.set_field(FIELD_REPLY_TO, vec![0u8; 16]);
         assert!(reply_fields_from_message(&msg).is_none());
     }
@@ -2793,17 +2776,14 @@ mod reply_field_tests {
     fn apply_reply_fields_caps_quote_length() {
         let parent_id = [0x22u8; 32];
         let long = "x".repeat(REPLY_QUOTE_MAX_CHARS + 40);
-        let mut msg = LxMessage::new(
-            [0u8; 16],
-            [1u8; 16],
-            "",
-            "reply",
-            DeliveryMethod::Direct,
-        );
+        let mut msg = LxMessage::new([0u8; 16], [1u8; 16], "", "reply", DeliveryMethod::Direct);
         apply_reply_fields(&mut msg, Some(parent_id), Some(&long));
         let fields = reply_fields_from_message(&msg).expect("reply fields");
         assert_eq!(
-            fields.reply_preview_text.as_ref().map(|s| s.chars().count()),
+            fields
+                .reply_preview_text
+                .as_ref()
+                .map(|s| s.chars().count()),
             Some(REPLY_QUOTE_MAX_CHARS)
         );
     }

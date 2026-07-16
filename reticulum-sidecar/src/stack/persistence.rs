@@ -6,7 +6,10 @@ use uuid::Uuid;
 
 use serde::Deserialize;
 
-use super::types::*;
+use super::types::{
+    AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfResourceRequest,
+    LxmfSendRequest, NomadNodeRow, PeerRow, PropagationRow, RrcHubRow, StackIdentity,
+};
 use super::via::resolve_outbound_sent_via;
 
 const STATE_FILE: &str = "mesh_client_stack.json";
@@ -78,6 +81,7 @@ impl PersistedState {
     }
 
     /// No-op: curated RRC hub catalog is empty (Favourites are user-starred only).
+    #[allow(clippy::unused_self)] // method slot on PersistedState for future default seeding
     pub fn seed_rrc_default_hubs(&mut self) {
         let _ = super::rrc_defaults::RRC_DEFAULT_HUBS;
     }
@@ -143,7 +147,7 @@ impl PersistedState {
         let syncing = self
             .propagation_sync
             .get("active")
-            .and_then(|v| v.as_bool())
+            .and_then(serde_json::Value::as_bool)
             .unwrap_or(false)
             && self
                 .propagation_sync
@@ -170,7 +174,7 @@ impl PersistedState {
         if trimmed.is_empty() {
             return Err("name must not be empty".into());
         }
-        if trimmed.chars().any(|c| c.is_control()) {
+        if trimmed.chars().any(char::is_control) {
             return Err("name must not contain control characters".into());
         }
         if trimmed.chars().count() > 128 {
@@ -202,7 +206,6 @@ impl PersistedState {
             .as_secs()
     }
 
-
     pub fn export_identity_backup(&self, passphrase: &str) -> Result<serde_json::Value, String> {
         if !self.identity.configured {
             return Err("no identity configured".into());
@@ -217,6 +220,7 @@ impl PersistedState {
         }))
     }
 
+    #[allow(clippy::needless_pass_by_value)] // backup JSON is consumed by format-specific import paths
     pub fn import_identity_backup(
         &mut self,
         backup: serde_json::Value,
@@ -254,6 +258,8 @@ impl PersistedState {
         Ok(self.identity.clone())
     }
 
+    /// Stub-stack interface CRUD (live stack uses config file writes).
+    #[allow(dead_code)]
     pub fn add_interface(&mut self, req: AddInterfaceRequest) -> Result<InterfaceRow, String> {
         if !self.identity.configured {
             return Err("identity not configured".into());
@@ -295,6 +301,7 @@ impl PersistedState {
         Ok(row)
     }
 
+    #[allow(dead_code)]
     pub fn set_interface_enabled(&mut self, id: &str, enabled: bool) -> Result<(), String> {
         let iface = self
             .interfaces
@@ -458,14 +465,11 @@ impl PersistedState {
                 hub.identity_hash = identity_hash;
             }
             if let Some(ref name) = display_name {
-                let prev_src = hub
-                    .name_source
-                    .as_deref()
-                    .unwrap_or(if hub.recommended {
-                        "recommended"
-                    } else {
-                        "announce"
-                    });
+                let prev_src = hub.name_source.as_deref().unwrap_or(if hub.recommended {
+                    "recommended"
+                } else {
+                    "announce"
+                });
                 let allow = name_pri(incoming_name_source) >= name_pri(prev_src)
                     || hub.display_name.is_none();
                 // Never let announce clobber a curated recommended label.
@@ -479,13 +483,11 @@ impl PersistedState {
             if hops.is_some() {
                 hub.hops = hops;
             }
-            if source == "discovered" || source == "manual" {
-                if hub.source != "recommended" || source == "discovered" {
-                    if hub.source == "recommended" && source == "discovered" {
-                        hub.source = "discovered".into();
-                    } else if hub.source != "discovered" {
-                        hub.source = source.into();
-                    }
+            if source == "discovered" || (source == "manual" && hub.source != "recommended") {
+                if hub.source == "recommended" && source == "discovered" {
+                    hub.source = "discovered".into();
+                } else if hub.source != "discovered" {
+                    hub.source = source.into();
                 }
             }
             hub.recommended = hub.recommended || recommended;
@@ -555,7 +557,7 @@ impl PersistedState {
                 .iter_mut()
                 .find(|p| p.destination_hash.eq_ignore_ascii_case(&hash))
             {
-                if peer.display_name.as_ref().map_or(true, |n| n.is_empty()) {
+                if peer.display_name.as_ref().is_none_or(String::is_empty) {
                     if let Some(name) = contact.display_name.filter(|n| !n.is_empty()) {
                         peer.display_name = Some(name);
                     }
@@ -616,7 +618,7 @@ impl PersistedState {
     pub fn upsert_contact_with_name_cache(
         &mut self,
         hash: &str,
-        name: Option<String>,
+        name: Option<&str>,
         name_cache: &std::collections::HashMap<String, String>,
     ) {
         let hash = super::topology::canonicalize_destination_hash(hash)
@@ -637,7 +639,7 @@ impl PersistedState {
             .map(String::as_str);
         let resolved = super::topology::resolve_contact_name_for_upsert(
             &hash,
-            name.as_deref().or(stored.as_deref()),
+            name.or(stored.as_deref()),
             cache,
         );
         self.upsert_contact(&hash, resolved);
@@ -684,6 +686,7 @@ impl PersistedState {
         Ok(payload)
     }
 
+    #[allow(clippy::unnecessary_wraps)] // Result matches other LXMF send helpers for uniform ? handling
     pub fn send_reaction(
         &mut self,
         req: &LxmfReactionRequest,
@@ -700,6 +703,7 @@ impl PersistedState {
         }))
     }
 
+    #[allow(clippy::unnecessary_wraps)] // Result matches factory_reset callers that use ?
     pub fn factory_reset_state(&mut self) -> Result<(), String> {
         let interfaces = self.interfaces.clone();
         *self = Self::default_empty();
@@ -754,6 +758,7 @@ impl PersistedState {
         Ok(payload)
     }
 
+    #[allow(clippy::unnecessary_wraps)] // Result matches delete_message_by_hash callers that use ?
     pub fn delete_message_by_hash(&mut self, message_hash: &str) -> Result<bool, String> {
         let before = self.messages.len();
         self.messages
@@ -763,10 +768,10 @@ impl PersistedState {
 }
 
 pub(crate) fn stable_hash(s: &str) -> u128 {
-    let mut h: u128 = 0xcbf29ce484222325;
+    let mut h: u128 = 0xcbf2_9ce4_8422_2325;
     for b in s.bytes() {
         h ^= b as u128;
-        h = h.wrapping_mul(0x100000001b3);
+        h = h.wrapping_mul(0x0100_0000_01b3);
     }
     h
 }
@@ -903,7 +908,7 @@ mod tests {
         state.upsert_contact(hash, Some("aabbccddeeff".into()));
         let mut cache = HashMap::new();
         cache.insert(hash.into(), "Cached Alias".into());
-        state.upsert_contact_with_name_cache(hash, Some("aabbccddeeff".into()), &cache);
+        state.upsert_contact_with_name_cache(hash, Some("aabbccddeeff"), &cache);
         assert_eq!(
             state.contacts[0].display_name.as_deref(),
             Some("Cached Alias")
@@ -937,9 +942,7 @@ mod tests {
             .add_propagation_node("aabbccddeeff00112233445566778899", Some("Remote".into()))
             .expect("add");
         state.preferred_propagation_id = Some(row.id.clone());
-        state
-            .start_propagation_sync(&row.id)
-            .expect("start sync");
+        state.start_propagation_sync(&row.id).expect("start sync");
         state.remove_propagation_node(&row.id).expect("remove");
         assert!(!state.propagation.iter().any(|p| p.id == row.id));
         assert!(state.preferred_propagation_id.is_none());
@@ -947,7 +950,7 @@ mod tests {
             state
                 .propagation_sync
                 .get("active")
-                .and_then(|v| v.as_bool()),
+                .and_then(serde_json::Value::as_bool),
             Some(false)
         );
     }
@@ -971,15 +974,17 @@ mod tests {
         );
         assert!(state.rename_propagation_node("local-prop", "Nope").is_err());
         assert!(state.rename_propagation_node(&row.id, "   ").is_err());
-        assert!(state
-            .rename_propagation_node("not-a-pn", "Nope")
-            .is_err());
-        assert!(state
-            .rename_propagation_node(&row.id, "bad\u{0001}name")
-            .is_err());
-        assert!(state
-            .rename_propagation_node(&row.id, &"x".repeat(129))
-            .is_err());
+        assert!(state.rename_propagation_node("not-a-pn", "Nope").is_err());
+        assert!(
+            state
+                .rename_propagation_node(&row.id, "bad\u{0001}name")
+                .is_err()
+        );
+        assert!(
+            state
+                .rename_propagation_node(&row.id, &"x".repeat(129))
+                .is_err()
+        );
     }
 
     #[test]

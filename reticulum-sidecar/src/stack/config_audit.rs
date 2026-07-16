@@ -6,7 +6,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 use super::config::{
-    self, interface_id_from_name, list_interface_ini_blocks_for_audit, StackSettings,
+    self, StackSettings, interface_id_from_name, list_interface_ini_blocks_for_audit,
 };
 use super::rf_profiles::{match_params_to_profile, rf_profile_by_id};
 use super::types::InterfaceRow;
@@ -170,7 +170,9 @@ pub fn audit_config(
         }
     }
 
-    let shared_live = live_interfaces.iter().find(|i| i.name == SHARED_INSTANCE_NAME);
+    let shared_live = live_interfaces
+        .iter()
+        .find(|i| i.name == SHARED_INSTANCE_NAME);
     if let Some(client) = shared_client_live {
         issues.push(issue(
             "shared_instance_client",
@@ -209,12 +211,9 @@ pub fn audit_config(
     if enabled_rnodes.len() >= 2 {
         let mut keys = HashSet::new();
         for r in &enabled_rnodes {
-            if let Some(p) = match_params_to_profile(
-                r.frequency,
-                r.bandwidth,
-                r.spreading_factor,
-                r.coding_rate,
-            ) {
+            if let Some(p) =
+                match_params_to_profile(r.frequency, r.bandwidth, r.spreading_factor, r.coding_rate)
+            {
                 keys.insert(p.id);
             } else {
                 keys.insert(format!(
@@ -238,12 +237,9 @@ pub fn audit_config(
     }
 
     for r in &enabled_rnodes {
-        if let Some(profile) = match_params_to_profile(
-            r.frequency,
-            r.bandwidth,
-            r.spreading_factor,
-            r.coding_rate,
-        ) {
+        if let Some(profile) =
+            match_params_to_profile(r.frequency, r.bandwidth, r.spreading_factor, r.coding_rate)
+        {
             if profile.tier == "fallback" {
                 issues.push(issue(
                     "rf_using_fallback",
@@ -266,14 +262,19 @@ pub fn audit_config(
 }
 
 fn is_valid_lat_lon(lat: f64, lon: f64) -> bool {
-    lat.is_finite() && (-90.0..=90.0).contains(&lat) && lon.is_finite() && (-180.0..=180.0).contains(&lon)
+    lat.is_finite()
+        && (-90.0..=90.0).contains(&lat)
+        && lon.is_finite()
+        && (-180.0..=180.0).contains(&lon)
 }
 
 fn is_local_rnode_publish_target(row: &InterfaceRow) -> bool {
     if row.iface_type != "rnode" && row.iface_type != "rnode_multi" && row.iface_type != "kiss" {
         return row.iface_type == "ble_peer";
     }
-    row.serial_port.as_ref().is_some_and(|p| !p.trim().is_empty())
+    row.serial_port
+        .as_ref()
+        .is_some_and(|p| !p.trim().is_empty())
 }
 
 fn audit_rmap_discovery(
@@ -347,7 +348,8 @@ fn audit_rmap_discovery(
             "warning",
             None,
             None,
-            "Discoverable local RNode has no enabled TCP client hub for internet reachability".into(),
+            "Discoverable local RNode has no enabled TCP client hub for internet reachability"
+                .into(),
             Some("edit"),
         ));
     }
@@ -368,7 +370,10 @@ fn audit_rnode_row(row: &InterfaceRow, issues: &mut Vec<ConfigAuditIssue>) {
                     "warning",
                     Some(row.id.clone()),
                     Some(row.name.clone()),
-                    format!("RNode \"{}\" params differ from preset {}", row.name, preset),
+                    format!(
+                        "RNode \"{}\" params differ from preset {}",
+                        row.name, preset
+                    ),
                     Some("apply_preset"),
                 ));
             }
@@ -432,13 +437,14 @@ pub fn repair_config(
     config_dir: &Path,
     request: &ConfigRepairRequest,
 ) -> Result<(Vec<String>, bool), String> {
-    let kinds: HashSet<&str> = request.repair_kinds.iter().map(|s| s.as_str()).collect();
+    let kinds: HashSet<&str> = request.repair_kinds.iter().map(String::as_str).collect();
     let repair_all = kinds.is_empty();
     let mut repaired = Vec::new();
     let mut restart_required = false;
 
     let run_repair_config = repair_all || kinds.contains("repair_config");
-    let run_apply_preset = repair_all || kinds.contains("apply_preset") || kinds.contains("repair_config");
+    let run_apply_preset =
+        repair_all || kinds.contains("apply_preset") || kinds.contains("repair_config");
 
     if run_repair_config {
         for name in config::repair_tcp_blocks_in_config(config_dir)? {
@@ -456,11 +462,10 @@ pub fn repair_config(
             restart_required = true;
         }
     }
-    if repair_all || kinds.contains("add_auto") {
-        if config::add_default_auto_interface(config_dir)? {
-            repaired.push("add_auto:Default Interface".into());
-            restart_required = true;
-        }
+    if (repair_all || kinds.contains("add_auto")) && config::add_default_auto_interface(config_dir)?
+    {
+        repaired.push("add_auto:Default Interface".into());
+        restart_required = true;
     }
     if repair_all || kinds.contains("disable_share_instance") {
         let mut settings = config::get_stack_settings(config_dir)?;
@@ -476,9 +481,7 @@ pub fn repair_config(
 }
 
 /// Offline config lint: parse + audit without a live stack (for validate-config CLI).
-pub fn validate_config_offline(
-    config_dir: &Path,
-) -> Result<Vec<ConfigAuditIssue>, String> {
+pub fn validate_config_offline(config_dir: &Path) -> Result<Vec<ConfigAuditIssue>, String> {
     config::parse_config_dir(config_dir)?;
     let settings = config::get_stack_settings(config_dir)?;
     audit_config(config_dir, &[], &settings, false)

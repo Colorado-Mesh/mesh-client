@@ -56,14 +56,11 @@ export const usePositionHistoryStore = create<PositionHistoryState>((set, get) =
       pruned.push({ t: now, lat, lon });
       added = true;
       // Fire-and-forget DB write; never block the position update
-      try {
-        window.electronAPI.db
-          .savePositionHistory(nodeId, lat, lon, now, source)
-          .catch((err: unknown) => {
-            console.warn('[positionHistory] DB write failed: ' + errLikeToLogString(err));
-          });
-      } catch {
-        // catch-no-log-ok electronAPI not available in test/storybook contexts
+      const save = window.electronAPI?.db?.savePositionHistory;
+      if (typeof save === 'function') {
+        save(nodeId, lat, lon, now, source).catch((err: unknown) => {
+          console.warn('[positionHistory] DB write failed: ' + errLikeToLogString(err));
+        });
       }
     }
     if (pruned.length > MAX_POINTS_PER_NODE) {
@@ -87,17 +84,17 @@ export const usePositionHistoryStore = create<PositionHistoryState>((set, get) =
 
   clearHistory() {
     set({ history: new Map() });
-    try {
-      window.electronAPI.db.clearPositionHistory().catch((err: unknown) => {
-        console.warn(
-          '[positionHistory] clearPositionHistory DB failed: ' + errLikeToLogString(err),
-        );
-      });
-    } catch (e) {
+    const clear = window.electronAPI?.db?.clearPositionHistory;
+    if (typeof clear !== 'function') {
       console.warn(
-        '[positionHistory] clearPositionHistory IPC bridge error: ' + errLikeToLogString(e),
+        '[positionHistory] clearPositionHistory IPC bridge error: ' +
+          errLikeToLogString(new Error('electronAPI.db.clearPositionHistory unavailable')),
       );
+      return;
     }
+    clear().catch((err: unknown) => {
+      console.warn('[positionHistory] clearPositionHistory DB failed: ' + errLikeToLogString(err));
+    });
   },
 
   setShowPaths(enabled) {

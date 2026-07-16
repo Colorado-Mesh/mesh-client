@@ -405,7 +405,7 @@ export function findMeshcoreParentMessageForReply(
   }
   if (matches.length === 0) return undefined;
   if (matches.length === 1) return matches[0];
-  return matches.reduce((a, b) => (a.timestamp >= b.timestamp ? a : b));
+  return matches.reduce((a, b) => (a.timestamp >= b.timestamp ? a : b), matches[0]);
 }
 
 /**

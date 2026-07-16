@@ -107,6 +107,8 @@ If you use Homebrew only, `pnpm run update` will try `brew upgrade rust` when ru
 
 Linux and Windows: use rustup; on Windows you may also need [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the C++ workload (same as native Node modules).
 
+[`reticulum-sidecar/rust-toolchain.toml`](../reticulum-sidecar/rust-toolchain.toml) pins **`stable`** and installs `clippy`, `rustfmt`, and `llvm-tools-preview` on the first `cargo` command run inside `reticulum-sidecar/` (rustup auto-install). When `cargo` is on your `PATH`, pre-commit runs `pnpm run check:reticulum-sidecar` (stub fmt + Clippy + test — no coverage).
+
 #### Build the sidecar
 
 From the repo root:
@@ -141,7 +143,17 @@ In Electron dev: open the **Reticulum** protocol pill (amber) → **Connection**
 1. Runs `rustup update` (or `brew upgrade rust` if you use Homebrew rust without rustup)
 2. Rebuilds the sidecar with `cargo build` in `reticulum-sidecar/`
 
-**Scope:** `pnpm update` / `pnpm-lock.yaml` changes are **repo-local** (commit the lockfile on your branch). The sidecar rebuild writes only to gitignored `reticulum-sidecar/target/`. **Rust toolchain updates are not repo-scoped** — `rustup update` refreshes the toolchain in your user profile (`~/.rustup`, `~/.cargo/bin`), shared by any Rust project on the machine. It does not modify committed files unless you later add a `rust-toolchain.toml` pin.
+**Scope:** `pnpm update` / `pnpm-lock.yaml` changes are **repo-local** (commit the lockfile on your branch). The sidecar rebuild writes only to gitignored `reticulum-sidecar/target/`. **Rust toolchain updates are not repo-scoped** — `rustup update` refreshes the toolchain in your user profile (`~/.rustup`, `~/.cargo/bin`), shared by any Rust project on the machine. The committed [`rust-toolchain.toml`](../reticulum-sidecar/rust-toolchain.toml) selects `stable` and required components for this crate; rustup applies it when you build or lint inside `reticulum-sidecar/`.
+
+#### Lint and coverage (sidecar)
+
+| Command                                  | When                                                         |
+| ---------------------------------------- | ------------------------------------------------------------ |
+| `pnpm run check:reticulum-sidecar`       | Pre-commit stub fmt + Clippy + test (when `cargo` on `PATH`) |
+| `pnpm run reticulum:sidecar:clippy:full` | Before PR when editing `reticulum-sidecar/**`                |
+| `pnpm run reticulum:sidecar:coverage`    | Optional local HTML report (`cargo install cargo-llvm-cov`)  |
+
+CI: full-feature lint in [`reticulum-sidecar.yaml`](../.github/workflows/reticulum-sidecar.yaml); line-coverage threshold in [`tests.yaml`](../.github/workflows/tests.yaml) when sidecar paths change (not pre-commit).
 
 #### Further reading
 
@@ -183,6 +195,9 @@ pnpm run clean
 # Reticulum sidecar (optional; requires Rust)
 pnpm run reticulum:sidecar:build
 pnpm run reticulum:sidecar:dev
+pnpm run check:reticulum-sidecar
+pnpm run reticulum:sidecar:clippy:full
+pnpm run reticulum:sidecar:coverage
 
 # Docs
 pnpm run docs:install
@@ -350,27 +365,29 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 #### Quality checks
 
-| Script                            | Description                                                            |
-| --------------------------------- | ---------------------------------------------------------------------- |
-| `check:codeql-extensions`         | Verify CodeQL extension allowlist for custom queries                   |
-| `check:console-log`               | Fail on bare `console.log` in production paths                         |
-| `check:db-migrations`             | Verify SQLite migrations are valid                                     |
-| `check:electron-security`         | Verify Electron security settings (CSP, sandbox, etc.)                 |
-| `check:environment`               | Verify local dev prerequisites (run after clone)                       |
-| `check:flatpak`                   | Lint Flatpak manifest and wrapper scripts                              |
-| `check:i18n`                      | Verify English keys, unused keys, and locale quality rules             |
-| `check:i18n:branch`               | Run i18n quality checks on keys new/changed vs `HEAD` only             |
-| `check:insecure-temp-files`       | Predictable `os.tmpdir()` writes (CodeQL `js/insecure-temporary-file`) |
-| `check:ipc-contract`              | Verify IPC channel contracts between main/preload/renderer             |
-| `check:licenses`                  | Summarize dependency licenses (`license-checker-rseidelsohn`)          |
-| `check:log-injection`             | Detect unsanitized user data in log calls                              |
-| `check:log-panel-filter`          | Verify log panel filter wiring                                         |
-| `check:log-service-sinks`         | Verify log service sink configuration                                  |
-| `check:protocol-string-gates`     | Enforce protocol capability gates over string compares                 |
-| `check:reticulum-interface-modes` | Keep TS/Rust Reticulum interface-mode catalogs aligned                 |
-| `check:silent-catches`            | Detect empty or unlogged catch blocks                                  |
-| `check:url-hostname-sanitization` | Verify URL hostname sanitization helpers                               |
-| `check:xss-patterns`              | Detect risky DOM/HTML sink patterns                                    |
+| Script                                | Description                                                            |
+| ------------------------------------- | ---------------------------------------------------------------------- |
+| `check:codeql-extensions`             | Verify CodeQL extension allowlist for custom queries                   |
+| `check:console-log`                   | Fail on bare `console.log` in production paths                         |
+| `check:db-migrations`                 | Verify SQLite migrations are valid                                     |
+| `check:electron-security`             | Verify Electron security settings (CSP, sandbox, etc.)                 |
+| `check:environment`                   | Verify local dev prerequisites (run after clone)                       |
+| `check:flatpak`                       | Lint Flatpak manifest and wrapper scripts                              |
+| `check:i18n`                          | Verify English keys, unused keys, and locale quality rules             |
+| `check:i18n:branch`                   | Run i18n quality checks on keys new/changed vs `HEAD` only             |
+| `check:insecure-temp-files`           | Predictable `os.tmpdir()` writes (CodeQL `js/insecure-temporary-file`) |
+| `check:ipc-contract`                  | Verify IPC channel contracts between main/preload/renderer             |
+| `check:licenses`                      | Summarize dependency licenses (`license-checker-rseidelsohn`)          |
+| `check:log-injection`                 | Detect unsanitized user data in log calls                              |
+| `check:log-panel-filter`              | Verify log panel filter wiring                                         |
+| `check:log-service-sinks`             | Verify log service sink configuration                                  |
+| `check:protocol-string-gates`         | Enforce protocol capability gates over string compares                 |
+| `check:reticulum-decommissioned-hubs` | Keep TS/Rust decommissioned hub lists aligned                          |
+| `check:reticulum-interface-modes`     | Keep TS/Rust Reticulum interface-mode catalogs aligned                 |
+| `check:reticulum-sidecar`             | Stub `cargo fmt` + Clippy + test (skips when `cargo` missing)          |
+| `check:silent-catches`                | Detect empty or unlogged catch blocks                                  |
+| `check:url-hostname-sanitization`     | Verify URL hostname sanitization helpers                               |
+| `check:xss-patterns`                  | Detect risky DOM/HTML sink patterns                                    |
 
 #### Documentation
 
@@ -400,20 +417,27 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 #### Setup / helpers
 
-| Script                    | Description                                                |
-| ------------------------- | ---------------------------------------------------------- |
-| `clean`                   | Remove `dist-electron`, `dist`, and `node_modules`         |
-| `dedupe:dist`             | Dedupe dependency tree before packaging (`predist` hook)   |
-| `i18n:auto-translate`     | Machine-translate missing locale keys (MyMemory default)   |
-| `i18n:prune-unused`       | Remove orphaned translation keys from locale files         |
-| `rebuild`                 | Rebuild native Node modules for Electron                   |
-| `release`                 | Maintainer release script (`scripts/release.sh`)           |
-| `reticulum:sidecar:build` | Build debug `mesh-client-reticulum` (requires `cargo`)     |
-| `reticulum:sidecar:dev`   | Run sidecar standalone on `127.0.0.1:19437`                |
-| `setup:actionlint`        | Install actionlint for GitHub workflow linting             |
-| `setup:build-deps`        | Install native build dependencies                          |
-| `setup:dialout`           | Add user to dialout group for serial port access (Linux)   |
-| `update`                  | Update pnpm deps, Rust toolchain (rustup), rebuild sidecar |
+| Script                          | Description                                                    |
+| ------------------------------- | -------------------------------------------------------------- |
+| `clean`                         | Remove `dist-electron`, `dist`, and `node_modules`             |
+| `dedupe:dist`                   | Dedupe dependency tree before packaging (`predist` hook)       |
+| `i18n:auto-translate`           | Machine-translate missing locale keys (MyMemory default)       |
+| `i18n:prune-unused`             | Remove orphaned translation keys from locale files             |
+| `rebuild`                       | Rebuild native Node modules for Electron                       |
+| `release`                       | Maintainer release script (`scripts/release.sh`)               |
+| `reticulum:sidecar:build`       | Build debug `mesh-client-reticulum` (requires `cargo`)         |
+| `reticulum:sidecar:clippy`      | Clippy stub build (`-D warnings`)                              |
+| `reticulum:sidecar:clippy:full` | Clippy with `rns-stack,rns-ble,rns-rnode-tcp`                  |
+| `reticulum:sidecar:coverage`    | Optional HTML coverage via `cargo llvm-cov` (no CI threshold)  |
+| `reticulum:sidecar:dev`         | Run sidecar standalone on `127.0.0.1:19437`                    |
+| `reticulum:sidecar:fmt`         | `cargo fmt` in `reticulum-sidecar/`                            |
+| `reticulum:sidecar:fmt:check`   | `cargo fmt --check`                                            |
+| `reticulum:sidecar:test`        | Full-feature `cargo test` (clones Ratspeak siblings if needed) |
+| `reticulum:sidecar:test:full`   | Alias for `reticulum:sidecar:test`                             |
+| `setup:actionlint`              | Install actionlint for GitHub workflow linting                 |
+| `setup:build-deps`              | Install native build dependencies                              |
+| `setup:dialout`                 | Add user to dialout group for serial port access (Linux)       |
+| `update`                        | Update pnpm deps, Rust toolchain (rustup), rebuild sidecar     |
 
 #### Lifecycle (automatic)
 
@@ -462,7 +486,7 @@ Not installed by pnpm (install separately when needed):
 
 - `actionlint` (recommended for workflow linting; run `pnpm run setup:actionlint` or install system-wide)
 - `yamllint` (required for YAML linting; install via `pip install yamllint` or `brew install yamllint` on macOS)
-- **Rust / `cargo`** (optional; only for Reticulum sidecar — see [Reticulum sidecar](#reticulum-sidecar-optional); prefer [rustup](https://rustup.rs/), or `brew install rust` on macOS without rustup)
+- **Rust / `cargo`** (optional; Reticulum sidecar — see [Reticulum sidecar](#reticulum-sidecar-optional); prefer [rustup](https://rustup.rs/)). `rust-toolchain.toml` installs clippy/rustfmt/llvm-tools-preview on first build in `reticulum-sidecar/`. Optional: `cargo install cargo-llvm-cov` for `pnpm run reticulum:sidecar:coverage`.
 - `docker` and `act` (optional for container CI — `act:*`; host CI uses `act:*:native` without Docker)
 - Python 3 + `venv` + MkDocs Python deps (for docs checks/builds)
 
@@ -497,6 +521,9 @@ pnpm run lint:md
 pnpm run typecheck
 pnpm run format:check
 pnpm run check:i18n
+# Reticulum sidecar (when editing reticulum-sidecar/**)
+pnpm run reticulum:sidecar:clippy:full
+pnpm run reticulum:sidecar:test
 ```
 
 Other useful commands:
@@ -506,6 +533,7 @@ Other useful commands:
 - `pnpm run test:ui` / `test:logic` / `test:main` (single Vitest project)
 - `pnpm run test:coverage` (CI coverage report; used by `act:tests:native`)
 - `pnpm run test:coverage:merge` (merge sharded CI blob reports locally)
+- `pnpm run reticulum:sidecar:coverage` (optional local HTML; CI threshold in `tests.yaml`)
 - `pnpm run test:verbose` (verbose failures)
 - `pnpm run check:i18n:branch` (i18n quality on branch-diff keys only)
 - `pnpm run i18n:auto-translate` (fill missing keys)
@@ -568,7 +596,7 @@ Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-comm
 5. When `src/renderer/locales/en/translation.json` is staged: `pnpm run i18n:auto-translate` (incremental vs `HEAD` English, not `--all`) and re-stage `src/renderer/locales/` — see [Internationalization](#9-internationalization-i18n)
 6. `pnpm run lint`
 7. `pnpm run typecheck`
-8. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:insecure-temp-files`, `check:db-migrations`, `check:ipc-contract`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:reticulum-interface-modes`, `check:i18n` when English locale is staged else `check:i18n:branch`, `check:licenses`
+8. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:insecure-temp-files`, `check:db-migrations`, `check:ipc-contract`, `check:reticulum-interface-modes`, `check:reticulum-decommissioned-hubs`, `check:reticulum-sidecar` when `cargo` is on `PATH`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:i18n` when English locale is staged else `check:i18n:branch`, `check:licenses`
 9. `pnpm audit --audit-level=high`
 10. `actionlint` when `.github/workflows/*` is staged; `yamllint` when any `*.yaml` / `*.yml` is staged
 11. `pnpm run test:run -- --changed HEAD --bail 1` (full suite when vitest config, shared/preload, vitest setup mocks, or dependency manifests change)

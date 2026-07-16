@@ -843,7 +843,7 @@ export default function RawPacketLogPanel(props: Props) {
         );
       }
       if (activeChips.size > 0) {
-        rows = rows.filter(matchesMeshcoreChips);
+        rows = rows.filter((p) => matchesMeshcoreChips(p));
       }
       return sortMeshcorePackets(rows, sort);
     }
@@ -871,7 +871,7 @@ export default function RawPacketLogPanel(props: Props) {
         });
       }
       if (activeChips.size > 0) {
-        rows = rows.filter(matchesReticulumChips);
+        rows = rows.filter((p) => matchesReticulumChips(p));
       }
       return sortReticulumPackets(rows, sort);
     }
@@ -889,7 +889,7 @@ export default function RawPacketLogPanel(props: Props) {
       );
     }
     if (activeChips.size > 0) {
-      rows = rows.filter(matchesMeshtasticChips);
+      rows = rows.filter((p) => matchesMeshtasticChips(p));
     }
     return sortMeshtasticPackets(rows, sort);
   }, [

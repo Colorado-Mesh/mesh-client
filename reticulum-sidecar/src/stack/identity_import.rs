@@ -12,16 +12,14 @@ pub fn decode_private_key_input(input: &str) -> Result<[u8; RNS_PRIVATE_KEY_LEN]
         return Err("private key is empty".into());
     }
 
-    if trimmed.len() == RNS_PRIVATE_KEY_LEN * 2
-        && trimmed.chars().all(|c| c.is_ascii_hexdigit())
-    {
+    if trimmed.len() == RNS_PRIVATE_KEY_LEN * 2 && trimmed.chars().all(|c| c.is_ascii_hexdigit()) {
         let bytes = hex::decode(trimmed).map_err(|e| format!("invalid hex private key: {e}"))?;
-        return bytes_to_key(bytes);
+        return bytes_to_key(&bytes);
     }
 
     for engine in [STANDARD, URL_SAFE, URL_SAFE_NO_PAD] {
         if let Ok(bytes) = engine.decode(trimmed.as_bytes()) {
-            if let Ok(key) = bytes_to_key(bytes) {
+            if let Ok(key) = bytes_to_key(&bytes) {
                 return Ok(key);
             }
         }
@@ -33,11 +31,12 @@ pub fn decode_private_key_input(input: &str) -> Result<[u8; RNS_PRIVATE_KEY_LEN]
 }
 
 /// Decode exactly 64 raw bytes (e.g. from Electron file picker).
+#[allow(dead_code)] // binary import API used by identity_import_private_bytes
 pub fn decode_private_key_bytes(data: &[u8]) -> Result<[u8; RNS_PRIVATE_KEY_LEN], String> {
-    bytes_to_key(data.to_vec())
+    bytes_to_key(data)
 }
 
-fn bytes_to_key(bytes: Vec<u8>) -> Result<[u8; RNS_PRIVATE_KEY_LEN], String> {
+fn bytes_to_key(bytes: &[u8]) -> Result<[u8; RNS_PRIVATE_KEY_LEN], String> {
     if bytes.len() != RNS_PRIVATE_KEY_LEN {
         return Err(format!(
             "invalid private key length: expected {RNS_PRIVATE_KEY_LEN}, got {}",
@@ -45,7 +44,7 @@ fn bytes_to_key(bytes: Vec<u8>) -> Result<[u8; RNS_PRIVATE_KEY_LEN], String> {
         ));
     }
     let mut key = [0u8; RNS_PRIVATE_KEY_LEN];
-    key.copy_from_slice(&bytes);
+    key.copy_from_slice(bytes);
     Ok(key)
 }
 

@@ -91,7 +91,14 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
 
   it('skips Noble yield nudge when reconnect is already in progress', () => {
     expect(SOURCE).toMatch(
-      /onNobleYieldReleased[\s\S]*?isReconnectingRef\.current[\s\S]*?skip nudge \(reconnect in progress\)/,
+      /onNobleYieldReleased[\s\S]*?isReconnectingRef\.current \|\| bleConnectInProgressRef\.current[\s\S]*?skip nudge \(reconnect in progress\)/,
+    );
+  });
+
+  it('defers Noble disconnect reconnect while intentional BLE connect is in progress', () => {
+    expect(SOURCE).toContain('bleConnectInProgressRef');
+    expect(SOURCE).toMatch(
+      /onNobleBleDisconnected[\s\S]*?bleConnectInProgressRef\.current[\s\S]*?defer reconnect until connect settles/,
     );
   });
 

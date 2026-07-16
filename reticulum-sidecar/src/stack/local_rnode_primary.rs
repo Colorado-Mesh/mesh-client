@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use super::config::{self, interface_id_from_name};
+use super::config;
 use super::types::InterfaceRow;
 
 const LOCAL_SERIAL_TYPES: [&str; 3] = ["rnode", "rnode_multi", "kiss"];
@@ -68,7 +68,7 @@ fn parse_ipv6_hextets(host: &str) -> Option<[u16; 8]> {
         }
         let mut expanded: Vec<&str> = Vec::with_capacity(8);
         expanded.extend(head.iter().copied());
-        expanded.extend(std::iter::repeat("0").take(missing));
+        expanded.extend(std::iter::repeat_n("0", missing));
         expanded.extend(tail.iter().copied());
         (expanded, Vec::new())
     } else {
@@ -94,9 +94,7 @@ pub fn is_private_network_host(host: &str) -> bool {
         return false;
     };
     let [a, b, _, _] = octets;
-    a == 10
-        || (a == 172 && (16..=31).contains(&b))
-        || (a == 192 && b == 168)
+    a == 10 || (a == 172 && (16..=31).contains(&b)) || (a == 192 && b == 168)
 }
 
 pub fn is_unique_local_ipv6(host: &str) -> bool {
@@ -172,7 +170,7 @@ fn parse_rnode_tcp_host(serial_port: &str) -> Option<String> {
             let sep = rest.rfind(':')?;
             let maybe_port = &rest[sep + 1..];
             if maybe_port.chars().all(|c| c.is_ascii_digit())
-                && maybe_port.len() > 0
+                && !maybe_port.is_empty()
                 && maybe_port.parse::<u32>().ok()? > 255
             {
                 rest[..sep].to_string()
@@ -209,7 +207,9 @@ pub fn is_locally_connected_serial_interface(row: &InterfaceRow) -> bool {
     true
 }
 
-pub fn pick_default_primary_local_serial_interface_id(interfaces: &[InterfaceRow]) -> Option<String> {
+pub fn pick_default_primary_local_serial_interface_id(
+    interfaces: &[InterfaceRow],
+) -> Option<String> {
     interfaces
         .iter()
         .find(|row| row.enabled && is_locally_connected_serial_interface(row))
@@ -275,9 +275,15 @@ pub fn ensure_primary_local_serial_order(
 mod tests {
     use super::*;
     use crate::stack::config;
+    use crate::stack::config::interface_id_from_name;
     use std::fs;
 
-    fn sample_row(id: &str, iface_type: &str, enabled: bool, serial_port: Option<&str>) -> InterfaceRow {
+    fn sample_row(
+        id: &str,
+        iface_type: &str,
+        enabled: bool,
+        serial_port: Option<&str>,
+    ) -> InterfaceRow {
         InterfaceRow {
             id: id.into(),
             name: id.into(),
@@ -340,10 +346,8 @@ mod tests {
 
     #[test]
     fn reorder_moves_primary_before_other_local_serial_blocks() {
-        let dir = std::env::temp_dir().join(format!(
-            "mesh-client-primary-rnode-{}",
-            std::process::id()
-        ));
+        let dir =
+            std::env::temp_dir().join(format!("mesh-client-primary-rnode-{}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(&dir).unwrap();
         let content = r#"[reticulum]

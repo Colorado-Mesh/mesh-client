@@ -97,7 +97,7 @@ import {
 import { rrcRoomsMatch } from '../lib/rrcRoomName';
 import type { DeviceState, MeshNode } from '../lib/types';
 import { useBlockStore } from '../stores/blockStore';
-import { setConnection } from '../stores/connectionStore';
+import { setConnection, useConnectionStore } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useIdentityStore } from '../stores/identityStore';
 import {
@@ -955,6 +955,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
       unsubEventRef.current = window.electronAPI.reticulum.onEvent(handleSidecarEvent);
       const lxmfHash = await refreshIdentityFromSidecar();
       const connectedNodeId = lxmfHash ? reticulumHashToNodeId(lxmfHash) : 0;
+      if (connectedNodeId > 0) {
+        syncConnectionStore({ myNodeNum: connectedNodeId });
+      }
       await refreshContactsFromSidecar();
       await refreshLocalInterfacesFromSidecar();
       await syncDiagnosticsFromSidecar();
@@ -1139,8 +1142,15 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (!next?.lxmf_hash) return;
       setSelfLxmfHash(next.lxmf_hash);
       syncSelfNodeFromIdentityStatus(next.lxmf_hash, next.display_name?.trim() || null);
+      const nodeId = reticulumHashToNodeId(next.lxmf_hash);
+      if (nodeId > 0 && identityId) {
+        const connStatus = useConnectionStore.getState().connections[identityId]?.status;
+        if (connStatus && connStatus !== 'disconnected') {
+          setConnection(identityId, { myNodeNum: nodeId });
+        }
+      }
     });
-  }, [syncSelfNodeFromIdentityStatus]);
+  }, [identityId, syncSelfNodeFromIdentityStatus]);
 
   useEffect(() => {
     if (state.status !== 'configured' && state.status !== 'connected' && state.status !== 'stale') {

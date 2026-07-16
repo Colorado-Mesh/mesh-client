@@ -10,12 +10,12 @@ use lxmf_core::message::LxMessage;
 use lxmf_core::router::LxmRouter;
 use rns_identity::announce::AnnounceData;
 use rns_identity::identity::Identity;
-use rns_runtime::link_manager::{register_destination, LinkManager};
+use rns_runtime::link_manager::{LinkManager, register_destination};
 use rns_transport::messages::{OutboundRequest, TransportMessage};
 use rns_wire::context::PacketContext;
 use rns_wire::flags::{DestinationType, HeaderType, PacketFlags, PacketType, TransportType};
 use rns_wire::header::PacketHeader;
-use tokio::sync::{mpsc, Mutex as TokioMutex, RwLock};
+use tokio::sync::{Mutex as TokioMutex, RwLock, mpsc};
 
 use super::config;
 use super::persistence::PersistedState;
@@ -125,10 +125,7 @@ pub fn spawn_lxmf_announce_loop(
             )
             .await
             {
-                Ok(()) => tracing::debug!(
-                    interval_sec,
-                    "LXMF delivery periodic announce sent"
-                ),
+                Ok(()) => tracing::debug!(interval_sec, "LXMF delivery periodic announce sent"),
                 Err(e) => tracing::warn!("LXMF delivery periodic announce failed: {e}"),
             }
         }
@@ -218,7 +215,7 @@ async fn handle_link_delivered_data(
         len = msg.content.len(),
         "inbound LXMF message via link"
     );
-    let mut router = router.lock().await;
+    let router = router.lock().await;
     if let Some(ref cb) = router.delivery_callback {
         cb(&msg);
     }
@@ -233,8 +230,7 @@ mod tests {
     #[test]
     fn build_announce_packet_is_non_empty_announce() {
         let identity = Identity::new();
-        let lxmf_hash =
-            Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity.hash));
+        let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity.hash));
         let raw =
             build_lxmf_delivery_announce_packet(&identity, lxmf_hash, Some("Test Peer")).unwrap();
         assert!(raw.len() > 16);
@@ -243,8 +239,7 @@ mod tests {
     #[test]
     fn build_announce_allows_nil_display_name() {
         let identity = Identity::new();
-        let lxmf_hash =
-            Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity.hash));
+        let lxmf_hash = Destination::hash_from_name_and_identity(LXMF_APP, Some(&identity.hash));
         let raw = build_lxmf_delivery_announce_packet(&identity, lxmf_hash, None).unwrap();
         assert!(raw.len() > 16);
     }

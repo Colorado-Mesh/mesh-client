@@ -17,6 +17,7 @@ export const RoomsPanel = lazy(() => import('./components/RoomsPanel'));
 export const SecurityPanel = lazy(() => import('./components/SecurityPanel'));
 export const TelemetryPanel = lazy(() => import('./components/TelemetryPanel'));
 export const PacketDistributionPanel = lazy(() => import('./components/PacketDistributionPanel'));
+export const ChannelUtilizationChart = lazy(() => import('./components/ChannelUtilizationChart'));
 /** Sniffer tab in the UI (keyboard help: Packet Sniffer). */
 export const RawPacketLogPanel = lazy(() => import('./components/RawPacketLogPanel'));
 export const RFHistogramsPanel = lazy(() => import('./components/RFHistogramsPanel'));

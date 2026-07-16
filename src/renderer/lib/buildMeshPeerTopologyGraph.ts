@@ -368,7 +368,7 @@ export function buildMeshPeerTopologyGraph(
     forceEdges.push({
       source: edgeSource,
       target: String(peer.node_id),
-      kind: edgeSource === String(myNodeId) ? 'relay' : 'relay',
+      kind: 'relay',
       springLength: edgeSource === String(myNodeId) ? 200 : 120,
     });
   }

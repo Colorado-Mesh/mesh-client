@@ -487,6 +487,17 @@ function ensureColumns(db: NodeSqliteDB): void {
 
 /** Legacy meshcore_messages dedup index lacked payload; drop, dedupe, then recreate (historical v17). */
 function ensureMeshcoreMessagesDedupIndex(db: NodeSqliteDB): void {
+  // Fast path: both unique indexes already present — skip DROP/DELETE/recreate on every startup.
+  const hasDedup = db
+    .prepare(`SELECT 1 FROM sqlite_master WHERE type='index' AND name='idx_mc_msg_dedup' LIMIT 1`)
+    .get();
+  const hasNullSenderDedup = db
+    .prepare(
+      `SELECT 1 FROM sqlite_master WHERE type='index' AND name='idx_mc_msg_dedup_null_sender' LIMIT 1`,
+    )
+    .get();
+  if (hasDedup !== undefined && hasNullSenderDedup !== undefined) return;
+
   db.execScript('DROP INDEX IF EXISTS idx_mc_msg_dedup');
   db.execScript('DROP INDEX IF EXISTS idx_mc_msg_dedup_null_sender');
   if (tableExists(db, 'meshcore_messages')) {
@@ -685,10 +696,13 @@ function repairNodesLastHeardUnits(db: NodeSqliteDB): void {
 
 /**
  * Delete orphan optimistic `sending` rows when an acked twin exists; promote aged lone sends to failed.
- * Idempotent — safe on every startup.
+ * Skips the expensive self-join when no `sending` rows exist.
  */
 function repairMeshtasticOrphanSendingMessages(db: NodeSqliteDB): void {
   if (!tableExists(db, 'messages')) return;
+
+  const hasSending = db.prepare(`SELECT 1 FROM messages WHERE status = 'sending' LIMIT 1`).get();
+  if (hasSending === undefined) return;
 
   db.prepare(
     `DELETE FROM messages
@@ -714,10 +728,15 @@ function repairMeshtasticOrphanSendingMessages(db: NodeSqliteDB): void {
 /**
  * Delete orphan optimistic MeshCore `sending` rows when an acked/failed twin exists; promote stale
  * room posts to acked; fail aged lone sends (mirrors Meshtastic repair + hydration threshold).
- * Idempotent — safe on every startup.
+ * Skips the expensive self-join when no `sending` rows exist.
  */
 function repairMeshcoreOrphanSendingMessages(db: NodeSqliteDB): void {
   if (!tableExists(db, 'meshcore_messages')) return;
+
+  const hasSending = db
+    .prepare(`SELECT 1 FROM meshcore_messages WHERE status = 'sending' LIMIT 1`)
+    .get();
+  if (hasSending === undefined) return;
 
   db.prepare(
     `DELETE FROM meshcore_messages
@@ -853,10 +872,18 @@ function seedAppSettings(db: NodeSqliteDB): void {
 
 /**
  * Collapse case-variant reticulum_destinations rows onto a single lowercase 32-hex PK.
- * Idempotent — safe on every startup (schema v43).
+ * Fast-path: skip full table load when every hash is already lowercase.
  */
 function repairReticulumDestinationHashCasing(db: NodeSqliteDB): void {
   if (!tableExists(db, 'reticulum_destinations')) return;
+  const needsRepair = db
+    .prepare(
+      `SELECT 1 FROM reticulum_destinations
+       WHERE destination_hash != lower(destination_hash) LIMIT 1`,
+    )
+    .get();
+  if (needsRepair === undefined) return;
+
   const rows = db
     .prepare(
       `SELECT destination_hash, display_name, last_heard, favorited, icon_name, icon_color

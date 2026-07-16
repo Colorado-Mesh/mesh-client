@@ -43,7 +43,8 @@
     "scrollToTop": "↑ 맨 위로",
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
-    "footerWebsiteTitle": "Colorado Mesh website"
+    "footerWebsiteTitle": "Colorado Mesh website",
+    "loadingApp": "메시 클라이언트 로드 중"
   },
   "appPanel": {
     "failedSaveRetention": "메시지 보관 설정을 저장하지 못했습니다.",
@@ -1137,7 +1138,8 @@
     "maxRetriesHelpConnected": {
       "meshcore": "포기하기 전에 다시 연결해 보세요 (1– {{max}}). 설정으로 저장되었습니다. 변경 후 Connect (연결) 을 다시 눌러 메인 프로세스가 픽업할 수 있도록 합니다.",
       "meshtastic": "두 프로토콜 모두 1– {{max}} 을 허용합니다. 설정과 함께 저장되었습니다. 연결을 끊고 다시 연결하여 실행 중인 세션이 새 값을 사용하도록 합니다."
-    }
+    },
+    "reticulumStackRunningAs": "달리기 — {{name}}"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",

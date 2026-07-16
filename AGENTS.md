@@ -90,6 +90,7 @@ Adding a cross-boundary feature:
 ## 5. Testing
 
 - Renderer: jsdom (`src/renderer/**/*.test.{ts,tsx}`). Main: node (`src/main/**/*.test.ts`).
+- **Reticulum sidecar (Rust):** Clippy + rustfmt via `pnpm run check:reticulum-sidecar` (stub build in pre-commit when `cargo` is on `PATH`) and full-feature lint in `reticulum-sidecar.yaml`. Coverage threshold (`cargo llvm-cov --fail-under-lines`) is enforced only in `tests.yaml` when sidecar paths change — not in pre-commit.
 - **Temp dirs in tests:** Use `mkdtempSync(path.join(os.tmpdir(), 'prefix-'))` — never write to a fixed name under `os.tmpdir()` (CodeQL + `check:insecure-temp-files`).
 - Vitest worker pool sizes and shared Vite dep inline lists live in `vitest.harness.ts` — update when adding deps that need inlining.
 - Prefer `mockConsoleWarn` / `withMockedConsoleWarn` from `src/renderer/lib/vitestConsoleMock.ts` over ad-hoc `vi.spyOn(console, 'warn')` in renderer tests.
@@ -110,7 +111,7 @@ Adding a cross-boundary feature:
 
 ## 6. Commands & CI Checks
 
-**Key commands:** `pnpm run dev`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:run`, `pnpm run update`.
+**Key commands:** `pnpm run dev`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:run`, `pnpm run update`. Reticulum sidecar: `pnpm run check:reticulum-sidecar` (pre-commit stub), `pnpm run reticulum:sidecar:clippy:full`, `pnpm run reticulum:sidecar:test`.
 
 **Local Linux CI (optional):** Container mode — `act:ci`, `act:tests`, `act:pr`, … (needs Docker + act). Host mode — `act:ci:native`, `act:tests:native`, … (no Docker). See [docs/ci-cd.md](docs/ci-cd.md). macOS/Windows packaging uses native `dist:mac` / `dist:win`. **`dist:mac`** / **`dist:mac:publish`** always run **`scripts/verify-mac-packaging.mjs`** (ZIP + DMG symlink asserts, no raw `.app` CI uploads). macOS signing env (`CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`, `CSC_IDENTITY_AUTO_DISCOVERY`) is scoped to **`macos-latest`** jobs in `release.yaml` / `build.yaml`; partial-secret validation fails the release job when `CSC_LINK` is set but notarization secrets are missing.
 
@@ -123,7 +124,7 @@ Adding a cross-boundary feature:
 3. markdownlint on **staged** `.md` files only
 4. When dependency manifests staged: `pnpm dedupe`, re-stage lockfile and originally staged paths
 5. When `en/translation.json` is staged: `pnpm run i18n:auto-translate` and re-stage `src/renderer/locales/`
-6. `pnpm run lint`, `pnpm run typecheck`, full `check:*` chain (`check:i18n` when English locale staged, else `check:i18n:branch`)
+6. `pnpm run lint`, `pnpm run typecheck`, full `check:*` chain (`check:reticulum-sidecar` when `cargo` is on `PATH`; `check:i18n` when English locale staged, else `check:i18n:branch`)
 7. `pnpm audit --audit-level=high`
 8. `actionlint` when workflows staged; `yamllint` when YAML staged
 9. `pnpm run test:run -- --changed HEAD --bail 1` (full suite when vitest/shared/preload/setup mocks or deps change)
