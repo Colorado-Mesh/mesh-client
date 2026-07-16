@@ -4267,6 +4267,34 @@
       "awaiting_welcome": "Waiting for hub…",
       "active": "Connected",
       "reconnecting": "Reconnecting…"
+    },
+    "expandRooms": "Zimmerliste erweitern",
+    "collapseRooms": "Raumliste ausblenden",
+    "joinedRooms": "Beigetreten",
+    "suggestedRooms": "Empfohlen",
+    "recentRooms": "Letzte",
+    "roomKeyOptional": "Zimmerschlüssel (optional)",
+    "joinRoomHelp": "Räume sind Live-Gruppen auf diesem Hub. Melden Sie sich mit Namen an, versuchen Sie es mit Vorgeschlagen oder geben Sie/list und /help ein.",
+    "listHint": "Tipp: /list zeigt registrierte öffentliche Räume auf rrcd-Hubs an. /help für Befehle.",
+    "slash": {
+      "helpIntro": "=== RRC-Hilfe ===",
+      "helpClient": "Client-Befehle:",
+      "helpNick": "/nick NAME — Spitznamen ändern",
+      "helpJoin": "/de/join ROOM [key] — einem Raum beitreten (optional + k-Taste)",
+      "helpPart": "/Teil [Raum] — Raum verlassen (Standard: aktiv)",
+      "helpMe": "/me ACTION — AKTIONSEMOTE SENDEN",
+      "helpClear": "/clear — klares lokales Transkript für diesen Raum",
+      "helpQuit": "/quit — Verbindung zum Hub trennen",
+      "helpHub": "Hub-Befehle (rrcd; gesendet als MSG):",
+      "helpList": "/list — registrierte öffentliche Räume auflisten",
+      "helpWho": "/who [room] — Mitglieder auflisten",
+      "helpTopic": "/topic, /mode, /kick, /op, … — Raummoderation (ops)",
+      "helpNote": "Andere Hubs unterstützen möglicherweise keine Hub-Slash-Befehle.",
+      "usageNick": "Verwendung: /nick NAME",
+      "usageJoin": "Verwendung: /join ROOM [key]",
+      "usageMe": "Verwendung: /me ACTION",
+      "nickChanged": "Spitzname auf {{name}} gesetzt",
+      "commandSent": "Befehl gesendet: {{cmd}}"
     }
   }
 }

@@ -57,4 +57,29 @@ describe('rrcHubStore', () => {
       .upsertManual('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'Manual');
     expect(hub?.destination_hash).toBe('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
   });
+
+  it('does not let announce overwrite recommended display names', () => {
+    const [community] = RRC_DEFAULT_HUBS;
+    const before = useRrcHubStore.getState().getHub(community.destinationHash)?.display_name;
+    useRrcHubStore.getState().upsertFromEvent({
+      destination_hash: community.destinationHash,
+      display_name: 'LXMF Operator Name',
+      source: 'discovered',
+      name_source: 'announce',
+    });
+    expect(useRrcHubStore.getState().getHub(community.destinationHash)?.display_name).toBe(before);
+  });
+
+  it('applies WELCOME hub name over announce', () => {
+    useRrcHubStore.getState().upsertFromEvent({
+      destination_hash: 'cccccccccccccccccccccccccccccccc',
+      display_name: 'LXMF Name',
+      source: 'discovered',
+      name_source: 'announce',
+    });
+    useRrcHubStore.getState().applyWelcomeName('cccccccccccccccccccccccccccccccc', 'RNS Community');
+    expect(useRrcHubStore.getState().getHub('cccccccccccccccccccccccccccccccc')?.display_name).toBe(
+      'RNS Community',
+    );
+  });
 });

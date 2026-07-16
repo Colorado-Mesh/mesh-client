@@ -4267,6 +4267,34 @@
       "awaiting_welcome": "Waiting for hub…",
       "active": "Connected",
       "reconnecting": "Reconnecting…"
+    },
+    "expandRooms": "방 목록 펼치기",
+    "collapseRooms": "방 목록 접기",
+    "joinedRooms": "가입일",
+    "suggestedRooms": "권장",
+    "recentRooms": "최근",
+    "roomKeyOptional": "객실 열쇠 (선택 사항)",
+    "joinRoomHelp": "침실은 이 허브의 라이브 그룹입니다. 이름으로 가입하거나, 제안을 시도하거나,/list 및/help를 입력하십시오.",
+    "listHint": "팁:/list는 rrcd 허브에 등록된 공개 룸을 표시합니다./help for commands.",
+    "slash": {
+      "helpIntro": "= = = RRC 도움말 = = =",
+      "helpClient": "클라이언트 명령:",
+      "helpNick": "/nick NAME — 닉네임 변경",
+      "helpJoin": "/join ROOM [key] — 룸 가입 (선택 사항 + k 키)",
+      "helpPart": "/part [room] — leave room (기본값: 활성)",
+      "helpMe": "/me ACTION — 액션 이모티콘 보내기",
+      "helpClear": "/clear — 이 강의실의 현지 성적 증명서 지우기",
+      "helpQuit": "/quit — 허브에서 연결 해제",
+      "helpHub": "허브 명령 (rrcd; MSG로 전송):",
+      "helpList": "/list — 등록된 공개 객실 목록",
+      "helpWho": "/who [room] — 회원 목록",
+      "helpTopic": "/topic,/mode,/kick,/op, … — 룸 조정 (운영)",
+      "helpNote": "다른 허브는 허브 슬래시 명령을 지원하지 않을 수 있습니다.",
+      "usageNick": "사용법:/nick NAME",
+      "usageJoin": "사용법:/join ROOM [key]",
+      "usageMe": "용도:/me ACTION",
+      "nickChanged": "별명이 {{name}} (으) 로 설정됨",
+      "commandSent": "전송된 명령: {{cmd}}"
     }
   }
 }

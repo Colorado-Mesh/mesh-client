@@ -4267,6 +4267,34 @@
       "awaiting_welcome": "Waiting for hub…",
       "active": "Connected",
       "reconnecting": "Reconnecting…"
+    },
+    "expandRooms": "Perluas daftar kamar",
+    "collapseRooms": "Ciutkan daftar kamar",
+    "joinedRooms": "Sudah bergabung",
+    "suggestedRooms": "Disarankan",
+    "recentRooms": "Terkini",
+    "roomKeyOptional": "Kunci kamar (opsional)",
+    "joinRoomHelp": "Kamar adalah grup live di hub ini. Gabung berdasarkan nama, coba Disarankan, atau ketik /daftar dan /bantuan.",
+    "listHint": "Kiat: /daftar menunjukkan ruang publik terdaftar di hub rrcd. /bantuan untuk perintah.",
+    "slash": {
+      "helpIntro": "=== Bantuan RRC ===",
+      "helpClient": "Perintah klien:",
+      "helpNick": "/nick NAME — ubah nama panggilan",
+      "helpJoin": "/join ROOM [key] — bergabung dengan ruangan (opsional + kunci k)",
+      "helpPart": "/part [room] — leave room (default:aktif)",
+      "helpMe": "/me ACTION — send ACTION EMOTE",
+      "helpClear": "/clear — hapus transkrip lokal untuk ruangan ini",
+      "helpQuit": "/quit — putuskan sambungan dari hub",
+      "helpHub": "Perintah hub (rrcd; dikirim sebagai MSG):",
+      "helpList": "/list — daftar ruang publik terdaftar",
+      "helpWho": "/who [room] — daftar anggota",
+      "helpTopic": "/topic, /mode, /kick, /op, … — moderasi ruangan (ops)",
+      "helpNote": "Hub lain mungkin tidak mendukung perintah garis miring hub.",
+      "usageNick": "Penggunaan: /nick NAME",
+      "usageJoin": "Penggunaan: /join ROOM [key]",
+      "usageMe": "Penggunaan: /me ACTION",
+      "nickChanged": "Nama panggilan diatur ke {{name}}",
+      "commandSent": "Perintah dikirim: {{cmd}}"
     }
   }
 }

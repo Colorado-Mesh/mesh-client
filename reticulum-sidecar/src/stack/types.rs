@@ -134,6 +134,9 @@ pub struct RrcHubRow {
     #[serde(default)]
     pub identity_hash: Option<String>,
     pub display_name: Option<String>,
+    /// recommended | welcome | manual | announce — higher wins when merging names.
+    #[serde(default)]
+    pub name_source: Option<String>,
     pub last_seen: Option<u64>,
     #[serde(default)]
     pub favorited: bool,

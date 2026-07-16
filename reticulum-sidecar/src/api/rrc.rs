@@ -28,11 +28,12 @@ pub struct RrcConnectBody {
 #[derive(Debug, Deserialize)]
 pub struct RrcRoomBody {
     pub room: String,
+    pub key: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct RrcSendBody {
-    pub room: String,
+    pub room: Option<String>,
     pub body: String,
     #[serde(rename = "type")]
     pub msg_type: Option<String>,
@@ -85,7 +86,7 @@ pub async fn rrc_join(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<RrcRoomBody>,
 ) -> Json<serde_json::Value> {
-    Json(stack.rrc_join(&body.room).await)
+    Json(stack.rrc_join(&body.room, body.key.as_deref()).await)
 }
 
 pub async fn rrc_part(
@@ -101,7 +102,7 @@ pub async fn rrc_send(
 ) -> Json<serde_json::Value> {
     Json(
         stack
-            .rrc_send(&body.room, &body.body, body.msg_type.as_deref())
+            .rrc_send(body.room.as_deref(), &body.body, body.msg_type.as_deref())
             .await,
     )
 }

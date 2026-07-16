@@ -753,8 +753,11 @@ impl LiveBridge {
         self.rrc_session.status_snapshot().await
     }
 
-    pub async fn rrc_join(&self, room: &str) -> serde_json::Value {
-        match self.rrc_session.join(room.to_string()).await {
+    pub async fn rrc_join(&self, room: &str, key: Option<&str>) -> serde_json::Value {
+        let key = key
+            .map(|k| k.trim().to_string())
+            .filter(|k| !k.is_empty());
+        match self.rrc_session.join(room.to_string(), key).await {
             Ok(()) => serde_json::json!({ "ok": true }),
             Err(e) => serde_json::json!({ "ok": false, "error": e }),
         }
@@ -767,10 +770,13 @@ impl LiveBridge {
         }
     }
 
-    pub async fn rrc_send(&self, room: &str, body: &str, kind: &str) -> serde_json::Value {
+    pub async fn rrc_send(&self, room: Option<&str>, body: &str, kind: &str) -> serde_json::Value {
+        let room = room
+            .map(|r| r.trim().to_string())
+            .filter(|r| !r.is_empty());
         match self
             .rrc_session
-            .send_chat(room.to_string(), body.to_string(), kind)
+            .send_chat(room, body.to_string(), kind)
             .await
         {
             Ok(()) => serde_json::json!({ "ok": true }),

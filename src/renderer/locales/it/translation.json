@@ -4267,6 +4267,34 @@
       "awaiting_welcome": "Waiting for hub…",
       "active": "Connected",
       "reconnecting": "Reconnecting…"
+    },
+    "expandRooms": "Espandi l'elenco delle stanze",
+    "collapseRooms": "Comprimi l'elenco delle stanze",
+    "joinedRooms": "Unito",
+    "suggestedRooms": "Suggerito",
+    "recentRooms": "Recenti",
+    "roomKeyOptional": "Chiave della camera (opzionale)",
+    "joinRoomHelp": "Le camere sono gruppi dal vivo su questo hub. Unisciti per nome, prova Suggerito o digita /list e /help.",
+    "listHint": "Suggerimento: /list mostra le sale pubbliche registrate sugli hub rrcd. /help per i comandi.",
+    "slash": {
+      "helpIntro": "=== Guida RRC ===",
+      "helpClient": "Comandi client:",
+      "helpNick": "/nick NAME — cambia nick",
+      "helpJoin": "/join ROOM [key] — entra in una stanza (opzionale + tasto k)",
+      "helpPart": "/part [room] — lascia spazio (default: attivo)",
+      "helpMe": "/me ACTION — invia AZIONE EMOTE",
+      "helpClear": "/clear — cancella trascrizione locale per questa stanza",
+      "helpQuit": "/quit — disconnettersi dall'hub",
+      "helpHub": "Comandi hub (rrcd; inviati come MSG):",
+      "helpList": "/list — elenca i locali pubblici registrati",
+      "helpWho": "/who [room] — elenco membri",
+      "helpTopic": "/topic, /mode, /kick, /op, … — room moderation (ops)",
+      "helpNote": "Altri hub potrebbero non supportare i comandi di barra dell'hub.",
+      "usageNick": "Utilizzo: /nick NAME",
+      "usageJoin": "Uso: /join ROOM [key]",
+      "usageMe": "Uso: /me ACTION",
+      "nickChanged": "Nickname impostato su {{name}}",
+      "commandSent": "Comando inviato: {{cmd}}"
     }
   }
 }

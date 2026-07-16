@@ -1110,7 +1110,14 @@ impl StackHandle {
             return Err("dest_hash must be 32 hex characters".into());
         }
         let mut inner = self.inner.write().await;
-        inner.upsert_rrc_hub(&clean, None, label, None, "manual");
+        inner.upsert_rrc_hub_named(
+            &clean,
+            None,
+            label.clone(),
+            None,
+            "manual",
+            label.as_deref().map(|_| "manual"),
+        );
         if let Some(fav) = favorited {
             inner.set_rrc_favorite(&clean, fav);
         }
@@ -1198,12 +1205,12 @@ impl StackHandle {
         })
     }
 
-    pub async fn rrc_join(&self, room: &str) -> serde_json::Value {
+    pub async fn rrc_join(&self, room: &str, key: Option<&str>) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            return live.rrc_join(room).await;
+            return live.rrc_join(room, key).await;
         }
-        let _ = room;
+        let _ = (room, key);
         serde_json::json!({ "ok": false, "error": "rrc requires live rns-stack sidecar" })
     }
 
@@ -1216,7 +1223,12 @@ impl StackHandle {
         serde_json::json!({ "ok": false, "error": "rrc requires live rns-stack sidecar" })
     }
 
-    pub async fn rrc_send(&self, room: &str, body: &str, kind: Option<&str>) -> serde_json::Value {
+    pub async fn rrc_send(
+        &self,
+        room: Option<&str>,
+        body: &str,
+        kind: Option<&str>,
+    ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             return live.rrc_send(room, body, kind.unwrap_or("msg")).await;

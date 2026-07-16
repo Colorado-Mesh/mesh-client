@@ -1035,11 +1035,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/connect', opts),
       disconnect: () => ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/disconnect', {}),
       getStatus: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rrc/status'),
-      join: (opts: { room: string }) =>
+      join: (opts: { room: string; key?: string }) =>
         ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/join', opts),
       part: (opts: { room: string }) =>
         ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/part', opts),
-      send: (opts: { room: string; body: string; type?: string }) =>
+      send: (opts: { room?: string; body: string; type?: string }) =>
         ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/send', opts),
       getRooms: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rrc/rooms'),
     },

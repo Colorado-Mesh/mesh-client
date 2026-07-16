@@ -4267,6 +4267,34 @@
       "awaiting_welcome": "Waiting for hub…",
       "active": "Connected",
       "reconnecting": "Reconnecting…"
+    },
+    "expandRooms": "Rozwiń listę pokoi",
+    "collapseRooms": "Zwiń listę pokoi",
+    "joinedRooms": "Dołączono",
+    "suggestedRooms": "Sugerowana",
+    "recentRooms": "Ostatnie",
+    "roomKeyOptional": "Klucz do pokoju (opcjonalnie)",
+    "joinRoomHelp": "Pokoje są grupami na żywo w tym centrum. Dołącz według nazwy, wypróbuj Sugerowane lub wpisz /lista i /pomoc.",
+    "listHint": "Wskazówka: /lista pokazuje zarejestrowane pokoje publiczne w centrach rrcd. /pomoc dla poleceń.",
+    "slash": {
+      "helpIntro": "=== RRC help ===",
+      "helpClient": "Polecenia klienta:",
+      "helpNick": "/nick NAME — zmień pseudonim",
+      "helpJoin": "/join ROOM [key] — dołącz do pokoju (opcjonalnie + klucz k)",
+      "helpPart": "/część [pokój] — opuść pokój (domyślnie: aktywny)",
+      "helpMe": "/me ACTION — wyślij emotikonę DZIAŁANIA",
+      "helpClear": "/Clear — czysta lokalna transkrypcja dla tego pokoju",
+      "helpQuit": "/wyjdź — odłącz od koncentratora",
+      "helpHub": "Polecenia Hub (rrcd; wysłane jako MSG):",
+      "helpList": "/list — lista zarejestrowanych pokoi ogólnodostępnych",
+      "helpWho": "/who [room] — lista członków",
+      "helpTopic": "/topic, /mode, /kick, /op, … — moderacja pokoju (ops)",
+      "helpNote": "Inne koncentratory mogą nie obsługiwać poleceń ukośnika w koncentratorze.",
+      "usageNick": "Użycie: /nick NAME",
+      "usageJoin": "Użycie: /join ROOM [key]",
+      "usageMe": "Użycie: /me ACTION",
+      "nickChanged": "Pseudonim ustawiony na {{name}}",
+      "commandSent": "Wysłano polecenie: {{cmd}}"
     }
   }
 }

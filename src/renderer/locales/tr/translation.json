@@ -4267,6 +4267,34 @@
       "awaiting_welcome": "Waiting for hub…",
       "active": "Connected",
       "reconnecting": "Reconnecting…"
+    },
+    "expandRooms": "Oda listesini genişlet",
+    "collapseRooms": "Oda listesini daralt",
+    "joinedRooms": "katıldı",
+    "suggestedRooms": "Önerildi",
+    "recentRooms": "Güncel",
+    "roomKeyOptional": "Oda anahtarı (isteğe bağlı)",
+    "joinRoomHelp": "Odalar bu merkezdeki canlı gruplardır. Ada göre katılın, Önerilen'i deneyin veya yazın /listeleyin ve /yardım edin.",
+    "listHint": "İpucu: /list, rrcd hub'larındaki kayıtlı genel odaları gösterir. /help for commands.",
+    "slash": {
+      "helpIntro": "=== RRC yardımı ===",
+      "helpClient": "İstemci komutları:",
+      "helpNick": "/nick NAME — takma adı değiştir",
+      "helpJoin": "/join ROOM [key] — bir odaya katılın (isteğe bağlı +k tuşu)",
+      "helpPart": "/part [oda] — odayı terk et (varsayılan: aktif)",
+      "helpMe": "/me ACTION — EYLEM ifadesi gönder",
+      "helpClear": "/clear — bu odanın yerel transkriptini temizle",
+      "helpQuit": "/quit — dağıtıcı ile bağlantıyı kes",
+      "helpHub": "Hub komutları (rrcd; MSG olarak gönderilir):",
+      "helpList": "/list — kayıtlı umumi odaları listele",
+      "helpWho": "/who [oda] — üyeleri listele",
+      "helpTopic": "/topic, /mode, /kick, /op ,… — oda moderasyonu (ops)",
+      "helpNote": "Diğer hub'lar hub eğik çizgi komutlarını desteklemeyebilir.",
+      "usageNick": "Kullanımı: /nick NAME",
+      "usageJoin": "Kullanım: /join ROOM [key]",
+      "usageMe": "Kullanımı: /me ACTION",
+      "nickChanged": "Takma ad {{name}} olarak ayarlandı",
+      "commandSent": "Komut gönderildi: {{cmd}}"
     }
   }
 }

@@ -7,10 +7,15 @@ export type RrcSessionStatus =
 
 export type RrcChatMessageKind = 'msg' | 'notice' | 'action' | 'error' | 'system';
 
+/** How the current display_name was obtained (higher wins when merging). */
+export type RrcHubNameSource = 'recommended' | 'welcome' | 'manual' | 'announce';
+
 export interface RrcHubInfo {
   destination_hash: string;
   identity_hash?: string | null;
   display_name?: string | null;
+  /** Priority for display_name: recommended > welcome > manual > announce. */
+  name_source?: RrcHubNameSource;
   last_seen?: number | null;
   favorited?: boolean;
   hops?: number | null;
@@ -45,6 +50,7 @@ export interface RrcSessionSnapshot {
   status: RrcSessionStatus;
   hub_dest_hash?: string | null;
   hub_name?: string | null;
+  identity_hash?: string | null;
   nickname?: string | null;
   rooms: RrcRoomInfo[];
   error?: string | null;
@@ -57,6 +63,8 @@ export interface RrcConnectRequest {
 
 export interface RrcJoinRequest {
   room: string;
+  /** Optional room key for rrcd +k rooms (JOIN body). */
+  key?: string;
 }
 
 export interface RrcPartRequest {
@@ -64,7 +72,8 @@ export interface RrcPartRequest {
 }
 
 export interface RrcSendRequest {
-  room: string;
+  /** Omit or empty for hub-global slash commands when no room is joined. */
+  room?: string;
   body: string;
   /** msg | notice | action — default msg */
   type?: 'msg' | 'notice' | 'action';

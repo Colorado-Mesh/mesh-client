@@ -542,6 +542,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
             display_name: p.display_name,
             hops: p.hops,
             source: (p.source as 'discovered' | undefined) ?? 'discovered',
+            name_source: p.display_name ? 'announce' : undefined,
           });
         }
       }
@@ -558,6 +559,19 @@ export function useReticulumRuntime(): ProtocolRuntime {
               ? 'active'
               : 'awaiting_welcome';
         useRrcSessionStore.getState().applyStatus(st, p.hub_dest_hash ?? null, p.hub_name ?? null);
+        if (st === 'active' && p.hub_dest_hash && p.hub_name) {
+          useRrcHubStore.getState().applyWelcomeName(p.hub_dest_hash, p.hub_name);
+        }
+        void window.electronAPI.reticulum.rrc
+          .getStatus()
+          .then((snap) => {
+            if (typeof snap.identity_hash === 'string' && snap.identity_hash) {
+              useRrcSessionStore.getState().setLocalIdentityHash(snap.identity_hash);
+            }
+          })
+          .catch((e: unknown) => {
+            console.debug('[useReticulumRuntime] rrc getStatus identity ' + errLikeToLogString(e));
+          });
       }
       if (evt.type === 'rrc.disconnected' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { reason?: string };
@@ -594,30 +608,55 @@ export function useReticulumRuntime(): ProtocolRuntime {
           sender_hash?: string | null;
           nickname?: string | null;
           timestamp?: number;
+          hub_dest_hash?: string | null;
         };
-        if (typeof p.room === 'string' && typeof p.body === 'string') {
-          const kind =
-            p.kind === 'notice' || p.kind === 'action' || p.kind === 'error' || p.kind === 'system'
-              ? p.kind
-              : 'msg';
-          useRrcSessionStore.getState().addMessage(
-            {
-              id: typeof p.id === 'string' ? p.id : `rrc-${Date.now()}`,
-              room: p.room,
-              kind,
-              body: p.body,
-              sender_hash: p.sender_hash,
-              nickname: p.nickname,
-              timestamp: typeof p.timestamp === 'number' ? p.timestamp : Date.now(),
-            },
-            { bumpUnread: true },
-          );
+        if (typeof p.body === 'string') {
+          const session = useRrcSessionStore.getState();
+          const hubMismatch =
+            Boolean(p.hub_dest_hash) &&
+            Boolean(session.hubDestHash) &&
+            p.hub_dest_hash!.toLowerCase() !== session.hubDestHash!.toLowerCase();
+          if (!hubMismatch) {
+            const kind =
+              p.kind === 'notice' ||
+              p.kind === 'action' ||
+              p.kind === 'error' ||
+              p.kind === 'system'
+                ? p.kind
+                : 'msg';
+            const room =
+              typeof p.room === 'string' && p.room.trim()
+                ? p.room
+                : (session.activeRoom ?? '[hub]');
+            session.addMessage(
+              {
+                id: typeof p.id === 'string' ? p.id : `rrc-${Date.now()}`,
+                room,
+                kind,
+                body: p.body,
+                sender_hash: p.sender_hash,
+                nickname: p.nickname,
+                timestamp: typeof p.timestamp === 'number' ? p.timestamp : Date.now(),
+              },
+              { bumpUnread: true },
+            );
+          }
         }
       }
       if (evt.type === 'rrc.error' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { message?: string };
         if (typeof p.message === 'string') {
-          useRrcSessionStore.getState().setError(p.message);
+          const session = useRrcSessionStore.getState();
+          session.setError(p.message);
+          if (session.hubDestHash) {
+            session.addMessage({
+              id: `err-${Date.now()}`,
+              room: session.activeRoom ?? '[hub]',
+              kind: 'error',
+              body: p.message,
+              timestamp: Date.now(),
+            });
+          }
         }
       }
       const refreshActions = reticulumSidecarEventRefreshActions(evt.type);

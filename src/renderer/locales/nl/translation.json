@@ -4267,6 +4267,34 @@
       "awaiting_welcome": "Waiting for hub…",
       "active": "Connected",
       "reconnecting": "Reconnecting…"
+    },
+    "expandRooms": "Ruimtelijst uitbreiden",
+    "collapseRooms": "Lijst met kamers samenvouwen",
+    "joinedRooms": "Toegetreden",
+    "suggestedRooms": "Voorgesteld",
+    "recentRooms": "Recent",
+    "roomKeyOptional": "Sleutel kamer (optioneel)",
+    "joinRoomHelp": "Kamers zijn live groepen op deze hub. Doe mee op naam, probeer Aanbevolen of typ /list en /help.",
+    "listHint": "Tip: /list toont geregistreerde openbare ruimtes op rrcd-hubs. /help voor opdrachten.",
+    "slash": {
+      "helpIntro": "=== RRC-hulp ===",
+      "helpClient": "Clientcommando's:",
+      "helpNick": "/nick NAME — bijnaam wijzigen",
+      "helpJoin": "/join ROOM [key] — word lid van een kamer (optioneel + k-toets)",
+      "helpPart": "/part [room] — verlaat de kamer (standaard: actief)",
+      "helpMe": "/me ACTION — stuur ACTIE EMOTE",
+      "helpClear": "/Clear — duidelijk lokaal transcript voor deze kamer",
+      "helpQuit": "/quit — loskoppelen van hub",
+      "helpHub": "Hub-opdrachten (rrcd; verzonden als MSG):",
+      "helpList": "/list — lijst geregistreerde openbare ruimtes",
+      "helpWho": "/who [room] — lijst leden",
+      "helpTopic": "/topic, /mode, /kick, /op, … — kamer moderatie (ops)",
+      "helpNote": "Andere hubs ondersteunen mogelijk geen hub slash-opdrachten.",
+      "usageNick": "Gebruik: /nick NAME",
+      "usageJoin": "Gebruik: /join ROOM [sleutel]",
+      "usageMe": "Gebruik: /me ACTION",
+      "nickChanged": "Bijnaam ingesteld op {{name}}",
+      "commandSent": "Opdracht verzonden: {{cmd}}"
     }
   }
 }

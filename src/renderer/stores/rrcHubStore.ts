@@ -5,8 +5,15 @@ import {
   isReticulumSidecarExpectedProxyError,
   isReticulumSidecarRunning,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
-import type { RrcHubInfo } from '@/shared/rrc-types';
+import type { RrcHubInfo, RrcHubNameSource } from '@/shared/rrc-types';
 import { RRC_DEFAULT_HUBS } from '@/shared/rrcDefaultHubs';
+
+const NAME_PRIORITY: Record<RrcHubNameSource, number> = {
+  recommended: 40,
+  welcome: 30,
+  manual: 20,
+  announce: 10,
+};
 
 function seedRecommended(): Map<string, RrcHubInfo> {
   const map = new Map<string, RrcHubInfo>();
@@ -14,6 +21,7 @@ function seedRecommended(): Map<string, RrcHubInfo> {
     map.set(hub.destinationHash, {
       destination_hash: hub.destinationHash,
       display_name: hub.label,
+      name_source: 'recommended',
       source: 'recommended',
       recommended: true,
       favorited: false,
@@ -23,15 +31,46 @@ function seedRecommended(): Map<string, RrcHubInfo> {
   return map;
 }
 
-function mergeHub(prev: RrcHubInfo | undefined, next: RrcHubInfo): RrcHubInfo {
+function resolveNameSource(hub: RrcHubInfo): RrcHubNameSource {
+  if (hub.name_source) return hub.name_source;
+  if (hub.recommended) return 'recommended';
+  if (hub.source === 'manual') return 'manual';
+  return 'announce';
+}
+
+export function mergeRrcHub(prev: RrcHubInfo | undefined, next: RrcHubInfo): RrcHubInfo {
   const recommended =
     Boolean(prev?.recommended) ||
     Boolean(next.recommended) ||
     RRC_DEFAULT_HUBS.some((h) => h.destinationHash === next.destination_hash.toLowerCase());
+
+  const prevSource = prev ? resolveNameSource(prev) : undefined;
+  const nextSource = resolveNameSource(next);
+  let display_name = prev?.display_name ?? null;
+  let name_source = prevSource;
+
+  if (next.display_name) {
+    const nextPri = NAME_PRIORITY[nextSource];
+    const prevPri = prevSource ? NAME_PRIORITY[prevSource] : 0;
+    if (!display_name || nextPri >= prevPri) {
+      display_name = next.display_name;
+      name_source = nextSource;
+    }
+  }
+
+  if (recommended && prev?.name_source === 'recommended' && prev.display_name) {
+    // Never let announce/manual clobber curated Recommended labels.
+    if (nextSource === 'announce' || (nextSource === 'manual' && !next.display_name)) {
+      display_name = prev.display_name;
+      name_source = 'recommended';
+    }
+  }
+
   return {
     destination_hash: next.destination_hash.toLowerCase(),
     identity_hash: next.identity_hash ?? prev?.identity_hash ?? null,
-    display_name: next.display_name ?? prev?.display_name ?? null,
+    display_name,
+    name_source,
     last_seen: next.last_seen ?? prev?.last_seen ?? null,
     favorited: next.favorited ?? prev?.favorited ?? false,
     hops: next.hops ?? prev?.hops ?? null,
@@ -46,6 +85,7 @@ interface RrcHubStoreState {
   lastRefreshAt: number | null;
   refreshFromSidecar: () => Promise<void>;
   upsertFromEvent: (hub: RrcHubInfo) => void;
+  applyWelcomeName: (hash: string, hubName: string) => void;
   toggleFavorite: (hash: string, favorited: boolean) => Promise<void>;
   upsertManual: (hash: string, label?: string) => Promise<RrcHubInfo | null>;
   getHub: (hash: string) => RrcHubInfo | undefined;
@@ -65,7 +105,7 @@ export const useRrcHubStore = create<RrcHubStoreState>((set, get) => ({
       const map = seedRecommended();
       for (const hub of body.hubs ?? []) {
         const key = hub.destination_hash.toLowerCase();
-        map.set(key, mergeHub(map.get(key), { ...hub, destination_hash: key }));
+        map.set(key, mergeRrcHub(map.get(key), { ...hub, destination_hash: key }));
       }
       set({ hubs: map, lastRefreshAt: Date.now() });
     } catch (e) {
@@ -79,9 +119,35 @@ export const useRrcHubStore = create<RrcHubStoreState>((set, get) => ({
     const key = hub.destination_hash.toLowerCase();
     set((s) => {
       const next = new Map(s.hubs);
-      next.set(key, mergeHub(next.get(key), { ...hub, destination_hash: key }));
+      next.set(key, mergeRrcHub(next.get(key), { ...hub, destination_hash: key }));
       return { hubs: next };
     });
+  },
+
+  applyWelcomeName: (hash, hubName) => {
+    const name = hubName.trim();
+    if (!name) return;
+    const key = hash.toLowerCase();
+    set((s) => {
+      const next = new Map(s.hubs);
+      const prev = next.get(key);
+      next.set(
+        key,
+        mergeRrcHub(prev, {
+          destination_hash: key,
+          display_name: name,
+          name_source: 'welcome',
+          recommended: prev?.recommended,
+          source: prev?.source ?? 'discovered',
+        }),
+      );
+      return { hubs: next };
+    });
+    void window.electronAPI.reticulum.rrc
+      .upsertHub({ dest_hash: key, label: name })
+      .catch((e: unknown) => {
+        console.debug('[rrcHubStore] welcome name persist ' + errLikeToLogString(e));
+      });
   },
 
   toggleFavorite: async (hash, favorited) => {
@@ -111,12 +177,17 @@ export const useRrcHubStore = create<RrcHubStoreState>((set, get) => ({
         label,
       })) as { ok?: boolean; hub?: RrcHubInfo };
       if (res.hub) {
-        get().upsertFromEvent({ ...res.hub, source: 'manual' });
+        get().upsertFromEvent({
+          ...res.hub,
+          source: 'manual',
+          name_source: label ? 'manual' : res.hub.name_source,
+        });
         return get().getHub(clean) ?? null;
       }
       get().upsertFromEvent({
         destination_hash: clean,
         display_name: label ?? null,
+        name_source: label ? 'manual' : undefined,
         source: 'manual',
         recommended: RRC_DEFAULT_HUBS.some((h) => h.destinationHash === clean),
       });

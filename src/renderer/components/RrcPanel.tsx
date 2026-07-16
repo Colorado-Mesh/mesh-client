@@ -17,15 +17,32 @@ import { useTranslation } from 'react-i18next';
 import { loadMutedViews, saveMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import {
+  loadRrcRecentRooms,
+  pushRrcRecentRoom,
+  RRC_SUGGESTED_ROOMS,
+} from '@/renderer/lib/rrcRecentRooms';
+import {
+  normalizeRrcRoomName,
+  parseRrcSlashInput,
+  RRC_HELP_I18N_KEYS,
+} from '@/renderer/lib/rrcSlashCommands';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
-import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
+import { RRC_HUB_STREAM_ROOM, useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 import type { RrcHubInfo } from '@/shared/rrc-types';
 
 const COLLAPSED_KEY = 'mesh-client:rrcHubListCollapsed';
+const ROOM_LIST_COLLAPSED_KEY = 'mesh-client:rrc:roomListCollapsed';
 const NICK_KEY = 'mesh-client:rrcNickname';
 
 function formatHash(hash: string): string {
   return hash.slice(0, 8);
+}
+
+function roomCollapsedLabel(name: string): string {
+  const cleaned = name.replace(/^#/, '').trim();
+  if (!cleaned) return '??';
+  return cleaned.slice(0, 2).toUpperCase();
 }
 
 function hubMatchesSearch(hub: RrcHubInfo, q: string): boolean {
@@ -35,6 +52,15 @@ function hubMatchesSearch(hub: RrcHubInfo, q: string): boolean {
     hub.destination_hash.includes(needle) ||
     (hub.display_name?.toLowerCase().includes(needle) ?? false)
   );
+}
+
+function readCollapsed(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === '1';
+  } catch {
+    // catch-no-log-ok localStorage may be unavailable
+    return false;
+  }
 }
 
 export interface RrcPanelProps {
@@ -62,20 +88,22 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
   const setActiveRoom = useRrcSessionStore((s) => s.setActiveRoom);
   const setShowTimestamps = useRrcSessionStore((s) => s.setShowTimestamps);
   const clearUnread = useRrcSessionStore((s) => s.clearUnread);
+  const clearActiveRoomMessages = useRrcSessionStore((s) => s.clearActiveRoomMessages);
+  const addMessage = useRrcSessionStore((s) => s.addMessage);
+  const messagesForActiveRoom = useRrcSessionStore((s) => s.messagesForActiveRoom);
 
   const [sidecarRunning, setSidecarRunning] = useState(false);
-  const [collapsed, setCollapsed] = useState(() => {
-    try {
-      return localStorage.getItem(COLLAPSED_KEY) === '1';
-    } catch {
-      // catch-no-log-ok localStorage may be unavailable
-      return false;
-    }
-  });
+  const [collapsed, setCollapsed] = useState(() => readCollapsed(COLLAPSED_KEY));
+  const [roomListCollapsed, setRoomListCollapsed] = useState(() =>
+    readCollapsed(ROOM_LIST_COLLAPSED_KEY),
+  );
   const [hubSearch, setHubSearch] = useState('');
   const [roomSearch, setRoomSearch] = useState('');
   const [manualHash, setManualHash] = useState('');
   const [joinRoomName, setJoinRoomName] = useState('#lobby');
+  const [joinRoomKey, setJoinRoomKey] = useState('');
+  /** Bumps when we push a recent room so the memo reloads from localStorage. */
+  const [recentRoomsEpoch, setRecentRoomsEpoch] = useState(0);
   const [busy, setBusy] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const [mutedViews, setMutedViews] = useState(() => loadMutedViews('reticulum'));
@@ -89,6 +117,12 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
       // catch-no-log-ok localStorage may be unavailable
     }
   }, [setNickname]);
+
+  const recentRooms = useMemo(() => {
+    if (!hubDestHash) return [];
+    void recentRoomsEpoch;
+    return loadRrcRecentRooms(hubDestHash);
+  }, [hubDestHash, recentRoomsEpoch]);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,20 +165,49 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
     return [...rooms.values()].filter((r) => !q || r.name.toLowerCase().includes(q));
   }, [rooms, roomSearch]);
 
-  const activeMessages = activeRoom ? (messages.get(activeRoom) ?? []) : [];
+  const joinedKeys = useMemo(() => new Set([...rooms.keys()].map((k) => k.toLowerCase())), [rooms]);
+
+  const suggestedRooms = useMemo(
+    () => RRC_SUGGESTED_ROOMS.filter((r) => !joinedKeys.has(r.toLowerCase())),
+    [joinedKeys],
+  );
+
+  const recentNotJoined = useMemo(
+    () =>
+      recentRooms.filter(
+        (r) =>
+          !joinedKeys.has(r.toLowerCase()) &&
+          !RRC_SUGGESTED_ROOMS.some((s) => s.toLowerCase() === r.toLowerCase()),
+      ),
+    [recentRooms, joinedKeys],
+  );
+
+  const activeMessages = messagesForActiveRoom();
   const activeRoomInfo = activeRoom ? rooms.get(activeRoom) : undefined;
   const muteKey = hubDestHash && activeRoom ? `rrc:${hubDestHash}:${activeRoom}` : null;
   const isMuted = muteKey ? mutedViews.has(muteKey) : false;
   const connected = status === 'active' || status === 'awaiting_welcome';
 
+  const persistCollapsed = (key: string, next: boolean) => {
+    try {
+      localStorage.setItem(key, next ? '1' : '0');
+    } catch {
+      // catch-no-log-ok localStorage may be unavailable
+    }
+  };
+
   const toggleCollapsed = () => {
     setCollapsed((c) => {
       const next = !c;
-      try {
-        localStorage.setItem(COLLAPSED_KEY, next ? '1' : '0');
-      } catch {
-        // catch-no-log-ok
-      }
+      persistCollapsed(COLLAPSED_KEY, next);
+      return next;
+    });
+  };
+
+  const toggleRoomListCollapsed = () => {
+    setRoomListCollapsed((c) => {
+      const next = !c;
+      persistCollapsed(ROOM_LIST_COLLAPSED_KEY, next);
       return next;
     });
   };
@@ -192,60 +255,191 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
     await handleConnect(hub.destination_hash);
   }, [manualHash, upsertManual, handleConnect, t]);
 
-  const handleJoin = useCallback(async () => {
-    const room = joinRoomName.trim();
-    if (!room) return;
-    setBusy(true);
-    try {
-      const res = await window.electronAPI.reticulum.rrc.join({ room });
-      if (!res.ok) {
-        useRrcSessionStore.getState().setError(res.error ?? t('rrc.joinFailed'));
-      } else {
-        setActiveRoom(room);
+  const joinRoom = useCallback(
+    async (roomRaw: string, key?: string) => {
+      const room = roomRaw.trim();
+      if (!room) return;
+      setBusy(true);
+      try {
+        const res = await window.electronAPI.reticulum.rrc.join({
+          room,
+          key: key?.trim() || undefined,
+        });
+        if (!res.ok) {
+          useRrcSessionStore.getState().setError(res.error ?? t('rrc.joinFailed'));
+        } else {
+          setActiveRoom(room);
+          if (hubDestHash) {
+            pushRrcRecentRoom(hubDestHash, normalizeRrcRoomName(room));
+            setRecentRoomsEpoch((n) => n + 1);
+          }
+        }
+      } catch (e) {
+        // catch-no-log-ok error surfaced via setError
+        useRrcSessionStore.getState().setError(errLikeToLogString(e));
+      } finally {
+        setBusy(false);
       }
-    } catch (e) {
-      // catch-no-log-ok error surfaced via setError
-      useRrcSessionStore.getState().setError(errLikeToLogString(e));
-    } finally {
-      setBusy(false);
-    }
-  }, [joinRoomName, setActiveRoom, t]);
+    },
+    [hubDestHash, setActiveRoom, t],
+  );
 
-  const handlePart = useCallback(async () => {
-    if (!activeRoom) return;
-    setBusy(true);
-    try {
-      await window.electronAPI.reticulum.rrc.part({ room: activeRoom });
-    } catch (e) {
-      console.warn('[RrcPanel] part ' + errLikeToLogString(e));
-    } finally {
-      setBusy(false);
-    }
-  }, [activeRoom]);
+  const handleJoin = useCallback(async () => {
+    await joinRoom(joinRoomName, joinRoomKey);
+  }, [joinRoom, joinRoomName, joinRoomKey]);
+
+  const handlePart = useCallback(
+    async (room?: string) => {
+      const target = (room ?? activeRoom)?.trim();
+      if (!target) return;
+      setBusy(true);
+      try {
+        await window.electronAPI.reticulum.rrc.part({ room: target });
+      } catch (e) {
+        console.warn('[RrcPanel] part ' + errLikeToLogString(e));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [activeRoom],
+  );
+
+  const appendSystemLines = useCallback(
+    (lines: string[]) => {
+      const room = activeRoom ?? RRC_HUB_STREAM_ROOM;
+      if (!activeRoom) setActiveRoom(RRC_HUB_STREAM_ROOM);
+      for (const line of lines) {
+        addMessage({
+          id: `sys-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          room,
+          kind: 'system',
+          body: line,
+          timestamp: Date.now(),
+        });
+      }
+    },
+    [activeRoom, addMessage, setActiveRoom],
+  );
 
   const handleSend = useCallback(
     async (text: string) => {
-      if (!activeRoom || !text.trim()) return;
+      const parsed = parseRrcSlashInput(text);
+      if (!parsed) return;
+
+      if (parsed.kind === 'local') {
+        if (parsed.command === 'help') {
+          appendSystemLines(RRC_HELP_I18N_KEYS.map((k) => t(k)));
+          setDraft('');
+          return;
+        }
+        if (parsed.command === 'usage') {
+          useRrcSessionStore.getState().setError(t(parsed.messageKey));
+          return;
+        }
+        if (parsed.command === 'nick') {
+          setNickname(parsed.nickname);
+          try {
+            localStorage.setItem(NICK_KEY, parsed.nickname);
+          } catch {
+            // catch-no-log-ok
+          }
+          appendSystemLines([t('rrc.slash.nickChanged', { name: parsed.nickname })]);
+          setDraft('');
+          return;
+        }
+        if (parsed.command === 'join') {
+          await joinRoom(parsed.room, parsed.key);
+          setDraft('');
+          return;
+        }
+        if (parsed.command === 'part') {
+          await handlePart(parsed.room);
+          setDraft('');
+          return;
+        }
+        if (parsed.command === 'me') {
+          if (status !== 'active') {
+            useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
+            return;
+          }
+          if (!activeRoom) {
+            useRrcSessionStore.getState().setError(t('rrc.joinRoomPrompt'));
+            return;
+          }
+          const res = await window.electronAPI.reticulum.rrc.send({
+            room: activeRoom,
+            body: parsed.action,
+            type: 'action',
+          });
+          if (!res.ok) {
+            useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
+            return;
+          }
+          setDraft('');
+          return;
+        }
+        if (parsed.command === 'clear') {
+          clearActiveRoomMessages();
+          setDraft('');
+          return;
+        }
+        if (parsed.command === 'quit') {
+          await handleDisconnect();
+          setDraft('');
+          return;
+        }
+      }
+
+      if (parsed.kind === 'hub') {
+        if (status !== 'active') {
+          useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
+          return;
+        }
+        const res = await window.electronAPI.reticulum.rrc.send({
+          room: activeRoom ?? undefined,
+          body: parsed.body,
+          type: 'msg',
+        });
+        if (!res.ok) {
+          useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
+          return;
+        }
+        appendSystemLines([t('rrc.slash.commandSent', { cmd: parsed.body })]);
+        setDraft('');
+        return;
+      }
+
+      // Normal chat — wait for hub echo (no optimistic local append).
+      if (!activeRoom) {
+        useRrcSessionStore.getState().setError(t('rrc.joinRoomPrompt'));
+        return;
+      }
+      if (status !== 'active') {
+        useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
+        return;
+      }
       const res = await window.electronAPI.reticulum.rrc.send({
         room: activeRoom,
-        body: text.trim(),
+        body: parsed.body,
         type: 'msg',
       });
       if (!res.ok) {
         useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
         return;
       }
-      useRrcSessionStore.getState().addMessage({
-        id: `local-${Date.now()}`,
-        room: activeRoom,
-        kind: 'msg',
-        body: text.trim(),
-        nickname,
-        timestamp: Date.now(),
-      });
       setDraft('');
     },
-    [activeRoom, nickname, t],
+    [
+      activeRoom,
+      appendSystemLines,
+      clearActiveRoomMessages,
+      handleDisconnect,
+      handlePart,
+      joinRoom,
+      setNickname,
+      status,
+      t,
+    ],
   );
 
   const toggleMute = () => {
@@ -265,7 +459,15 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
         <ul className="space-y-0.5">
           {rows.map((hub) => {
             const selected = hubDestHash?.toLowerCase() === hub.destination_hash.toLowerCase();
-            const label = hub.display_name ?? formatHash(hub.destination_hash);
+            const announceOnly = hub.name_source === 'announce' && !hub.recommended;
+            const label = announceOnly
+              ? formatHash(hub.destination_hash)
+              : (hub.display_name ?? formatHash(hub.destination_hash));
+            const secondary = announceOnly
+              ? (hub.display_name ?? null)
+              : hub.display_name
+                ? formatHash(hub.destination_hash)
+                : null;
             return (
               <li key={hub.destination_hash}>
                 <div
@@ -284,7 +486,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
                   >
                     <div className="truncate font-medium text-gray-100">{label}</div>
                     <div className="truncate text-xs text-gray-500">
-                      {formatHash(hub.destination_hash)}
+                      {secondary ?? formatHash(hub.destination_hash)}
                       {hub.hops != null ? ` · ${t('rrc.hopsAway', { count: hub.hops })}` : ''}
                     </div>
                   </button>
@@ -302,6 +504,61 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
           })}
         </ul>
       </div>
+    );
+  };
+
+  const renderRoomButton = (name: string, opts?: { unread?: number; joined?: boolean }) => {
+    const key = name.trim().toLowerCase();
+    const selected = activeRoom === key;
+    const unread = opts?.unread ?? 0;
+    if (roomListCollapsed) {
+      return (
+        <li key={key}>
+          <button
+            type="button"
+            className={`relative flex w-full flex-col items-center gap-0.5 rounded px-1 py-1.5 ${
+              selected
+                ? 'border-bright-green bg-sidebar-active-bg border-l-2'
+                : 'hover:bg-slate-700/60'
+            }`}
+            title={name}
+            aria-label={t('rrc.selectRoom', { name })}
+            onClick={() => {
+              if (opts?.joined === false) void joinRoom(name);
+              else setActiveRoom(name);
+            }}
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gray-800/80 text-[10px] font-semibold">
+              {roomCollapsedLabel(name)}
+            </span>
+            {unread > 0 && !selected && (
+              <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-red-600" />
+            )}
+          </button>
+        </li>
+      );
+    }
+    return (
+      <li key={key}>
+        <button
+          type="button"
+          className={`flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm ${
+            selected ? 'bg-sidebar-active-bg text-white' : 'hover:bg-slate-700/60'
+          }`}
+          aria-label={t('rrc.selectRoom', { name })}
+          onClick={() => {
+            if (opts?.joined === false) void joinRoom(name);
+            else setActiveRoom(name);
+          }}
+        >
+          <span className="truncate">{name}</span>
+          {unread > 0 && !selected && (
+            <span className="ml-1 rounded-full bg-red-600 px-1.5 text-[10px] text-white">
+              {unread > 99 ? '99+' : unread}
+            </span>
+          )}
+        </button>
+      </li>
     );
   };
 
@@ -405,70 +662,97 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
       </aside>
 
       {connected && (
-        <aside className="bg-secondary-dark/80 flex w-48 shrink-0 flex-col border-r border-slate-700">
-          <div className="border-b border-slate-700 p-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
-            {t('rrc.rooms')}
+        <aside
+          className={`bg-secondary-dark/80 flex shrink-0 flex-col border-r border-slate-700 ${
+            roomListCollapsed ? 'w-16' : 'w-48'
+          }`}
+        >
+          <div className="flex items-center justify-between gap-1 border-b border-slate-700 p-2">
+            {!roomListCollapsed && (
+              <span className="text-xs font-semibold tracking-wide text-gray-400 uppercase">
+                {t('rrc.rooms')}
+              </span>
+            )}
+            <button
+              type="button"
+              className="rounded p-1 hover:bg-slate-700"
+              aria-label={roomListCollapsed ? t('rrc.expandRooms') : t('rrc.collapseRooms')}
+              aria-expanded={!roomListCollapsed}
+              onClick={toggleRoomListCollapsed}
+            >
+              {roomListCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+            </button>
           </div>
-          <div className="space-y-2 p-2">
-            <input
-              type="search"
-              value={roomSearch}
-              onChange={(e) => {
-                setRoomSearch(e.target.value);
-              }}
-              placeholder={t('rrc.searchRooms')}
-              aria-label={t('rrc.searchRooms')}
-              className="w-full rounded border border-slate-600 bg-slate-800 px-2 py-1 text-xs"
-            />
-            <div className="flex gap-1">
+          {!roomListCollapsed && (
+            <div className="space-y-2 p-2">
               <input
-                type="text"
-                value={joinRoomName}
+                type="search"
+                value={roomSearch}
                 onChange={(e) => {
-                  setJoinRoomName(e.target.value);
+                  setRoomSearch(e.target.value);
                 }}
-                aria-label={t('rrc.joinRoom')}
-                className="min-w-0 flex-1 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-xs"
+                placeholder={t('rrc.searchRooms')}
+                aria-label={t('rrc.searchRooms')}
+                className="w-full rounded border border-slate-600 bg-slate-800 px-2 py-1 text-xs"
               />
-              <button
-                type="button"
-                className="rounded bg-slate-600 px-2 py-1 text-xs"
-                aria-label={t('rrc.join')}
-                disabled={busy}
-                onClick={() => void handleJoin()}
-              >
-                <LogIn size={14} />
-              </button>
+              <div className="flex gap-1">
+                <input
+                  type="text"
+                  value={joinRoomName}
+                  onChange={(e) => {
+                    setJoinRoomName(e.target.value);
+                  }}
+                  aria-label={t('rrc.joinRoom')}
+                  className="min-w-0 flex-1 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-xs"
+                />
+                <button
+                  type="button"
+                  className="rounded bg-slate-600 px-2 py-1 text-xs"
+                  aria-label={t('rrc.join')}
+                  disabled={busy}
+                  onClick={() => void handleJoin()}
+                >
+                  <LogIn size={14} />
+                </button>
+              </div>
+              <input
+                type="password"
+                value={joinRoomKey}
+                onChange={(e) => {
+                  setJoinRoomKey(e.target.value);
+                }}
+                placeholder={t('rrc.roomKeyOptional')}
+                aria-label={t('rrc.roomKeyOptional')}
+                className="w-full rounded border border-slate-600 bg-slate-800 px-2 py-1 text-xs"
+              />
+              <p className="text-[10px] leading-snug text-gray-500">{t('rrc.listHint')}</p>
             </div>
-          </div>
+          )}
           <ul className="min-h-0 flex-1 overflow-y-auto px-1 pb-2">
-            {roomList.map((room) => {
-              const key = room.name.trim().toLowerCase();
-              const selected = activeRoom === key;
-              const unread = unreadByRoom.get(key) ?? 0;
-              return (
-                <li key={key}>
-                  <button
-                    type="button"
-                    className={`flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm ${
-                      selected ? 'bg-sidebar-active-bg text-white' : 'hover:bg-slate-700/60'
-                    }`}
-                    aria-label={t('rrc.selectRoom', { name: room.name })}
-                    onClick={() => {
-                      setActiveRoom(room.name);
-                    }}
-                  >
-                    <span className="truncate">{room.name}</span>
-                    {unread > 0 && !selected && (
-                      <span className="ml-1 rounded-full bg-red-600 px-1.5 text-[10px] text-white">
-                        {unread > 99 ? '99+' : unread}
-                      </span>
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-            {roomList.length === 0 && (
+            {!roomListCollapsed && roomList.length > 0 && (
+              <li className="px-2 py-1 text-[10px] tracking-wide text-gray-500 uppercase">
+                {t('rrc.joinedRooms')}
+              </li>
+            )}
+            {roomList.map((room) =>
+              renderRoomButton(room.name, {
+                unread: unreadByRoom.get(room.name.trim().toLowerCase()) ?? 0,
+                joined: true,
+              }),
+            )}
+            {!roomListCollapsed && suggestedRooms.length > 0 && (
+              <li className="mt-2 px-2 py-1 text-[10px] tracking-wide text-gray-500 uppercase">
+                {t('rrc.suggestedRooms')}
+              </li>
+            )}
+            {suggestedRooms.map((name) => renderRoomButton(name, { joined: false }))}
+            {!roomListCollapsed && recentNotJoined.length > 0 && (
+              <li className="mt-2 px-2 py-1 text-[10px] tracking-wide text-gray-500 uppercase">
+                {t('rrc.recentRooms')}
+              </li>
+            )}
+            {recentNotJoined.map((name) => renderRoomButton(name, { joined: false }))}
+            {roomList.length === 0 && !roomListCollapsed && (
               <li className="px-2 text-xs text-gray-500">{t('rrc.noRoomsJoined')}</li>
             )}
           </ul>
@@ -517,7 +801,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
               >
                 <Users size={16} />
               </button>
-              {activeRoom && (
+              {activeRoom && activeRoom !== RRC_HUB_STREAM_ROOM && (
                 <button
                   type="button"
                   className="rounded p-1.5 hover:bg-slate-700"
@@ -552,48 +836,56 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
                 {t('rrc.selectHubPrompt')}
               </div>
             )}
-            {connected && !activeRoom && (
-              <div className="flex flex-1 items-center justify-center p-6 text-sm text-gray-400">
-                {t('rrc.joinRoomPrompt')}
-              </div>
-            )}
-            {connected && activeRoom && (
+            {connected && (
               <>
                 <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
-                  {activeMessages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`rounded px-2 py-1 text-sm ${
-                        msg.kind === 'notice'
-                          ? 'text-amber-200'
-                          : msg.kind === 'action'
-                            ? 'text-cyan-200 italic'
-                            : 'text-gray-100'
-                      }`}
-                    >
-                      <div className="flex items-start gap-2">
-                        <div className="min-w-0 flex-1">
-                          <span className="font-medium text-gray-300">
-                            {msg.nickname || formatHash(msg.sender_hash ?? '')}
-                          </span>
-                          {showTimestamps && (
-                            <span className="ml-2 text-[10px] text-gray-500">
-                              {new Date(msg.timestamp).toLocaleTimeString()}
-                            </span>
-                          )}
-                          <div className="break-words whitespace-pre-wrap">{msg.body}</div>
-                        </div>
-                        <button
-                          type="button"
-                          className="shrink-0 p-1 text-gray-500 hover:text-gray-200"
-                          aria-label={t('rrc.copyMessage')}
-                          onClick={() => void navigator.clipboard.writeText(msg.body)}
-                        >
-                          <Copy size={12} />
-                        </button>
-                      </div>
+                  {!activeRoom && (
+                    <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-gray-400">
+                      <p>{t('rrc.joinRoomPrompt')}</p>
+                      <p className="max-w-md text-xs text-gray-500">{t('rrc.joinRoomHelp')}</p>
                     </div>
-                  ))}
+                  )}
+                  {activeRoom &&
+                    activeMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`rounded px-2 py-1 text-sm ${
+                          msg.kind === 'notice' || msg.kind === 'system'
+                            ? 'text-amber-200'
+                            : msg.kind === 'action'
+                              ? 'text-cyan-200 italic'
+                              : msg.kind === 'error'
+                                ? 'text-red-300'
+                                : 'text-gray-100'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <div className="min-w-0 flex-1">
+                            {msg.kind !== 'system' && msg.kind !== 'error' && (
+                              <span className="font-medium text-gray-300">
+                                {msg.kind === 'action'
+                                  ? `* ${msg.nickname || formatHash(msg.sender_hash ?? '')}`
+                                  : msg.nickname || formatHash(msg.sender_hash ?? '')}
+                              </span>
+                            )}
+                            {showTimestamps && (
+                              <span className="ml-2 text-[10px] text-gray-500">
+                                {new Date(msg.timestamp).toLocaleTimeString()}
+                              </span>
+                            )}
+                            <div className="break-words whitespace-pre-wrap">{msg.body}</div>
+                          </div>
+                          <button
+                            type="button"
+                            className="shrink-0 p-1 text-gray-500 hover:text-gray-200"
+                            aria-label={t('rrc.copyMessage')}
+                            onClick={() => void navigator.clipboard.writeText(msg.body)}
+                          >
+                            <Copy size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                 </div>
                 <div className="flex gap-2 border-t border-slate-700 p-2">
                   <textarea

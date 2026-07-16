@@ -9,19 +9,39 @@ import type {
 
 const MAX_MESSAGES_PER_ROOM = 500;
 
+/** Synthetic room key for hub-scoped NOTICE/ERROR with no K_ROOM. */
+export const RRC_HUB_STREAM_ROOM = '[hub]';
+
+function normRoom(room: string): string {
+  return room.trim().toLowerCase();
+}
+
+function normHub(hub: string | null | undefined): string | null {
+  if (!hub) return null;
+  const h = hub.trim().toLowerCase();
+  return h || null;
+}
+
+function msgKey(hub: string, room: string): string {
+  return `${hub}::${normRoom(room)}`;
+}
+
 interface RrcSessionStoreState {
   status: RrcSessionStatus;
   hubDestHash: string | null;
   hubName: string | null;
   nickname: string;
+  /** Local Reticulum identity hash (hex) for self-echo unread suppression. */
+  localIdentityHash: string | null;
   rooms: Map<string, RrcRoomInfo>;
-  /** Volatile messages keyed by normalized room name. */
+  /** Volatile messages keyed by `${hub}::${room}`. */
   messages: Map<string, RrcChatMessage[]>;
   activeRoom: string | null;
   lastError: string | null;
   unreadByRoom: Map<string, number>;
   showTimestamps: boolean;
   setNickname: (nick: string) => void;
+  setLocalIdentityHash: (hash: string | null) => void;
   setActiveRoom: (room: string | null) => void;
   setShowTimestamps: (show: boolean) => void;
   applyStatus: (
@@ -34,12 +54,11 @@ interface RrcSessionStoreState {
   roomParted: (room: string) => void;
   addMessage: (msg: RrcChatMessage, opts?: { bumpUnread?: boolean }) => void;
   clearUnread: (room: string) => void;
+  clearActiveRoomMessages: () => void;
   clearSession: () => void;
   totalUnread: () => number;
-}
-
-function normRoom(room: string): string {
-  return room.trim().toLowerCase();
+  messagesForActiveRoom: () => RrcChatMessage[];
+  roomMessageKey: (room: string) => string | null;
 }
 
 export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
@@ -47,6 +66,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   hubDestHash: null,
   hubName: null,
   nickname: 'mesh-client',
+  localIdentityHash: null,
   rooms: new Map(),
   messages: new Map(),
   activeRoom: null,
@@ -56,6 +76,10 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
 
   setNickname: (nick) => {
     set({ nickname: nick.trim() || 'mesh-client' });
+  },
+
+  setLocalIdentityHash: (hash) => {
+    set({ localIdentityHash: hash ? hash.trim().toLowerCase() : null });
   },
 
   setActiveRoom: (room) => {
@@ -76,14 +100,25 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   applyStatus: (status, hubDestHash, hubName) => {
-    set((s) => ({
-      status,
-      hubDestHash: hubDestHash !== undefined ? hubDestHash : s.hubDestHash,
-      hubName: hubName !== undefined ? hubName : s.hubName,
-      ...(status === 'disconnected'
-        ? { rooms: new Map(), messages: new Map(), activeRoom: null, unreadByRoom: new Map() }
-        : {}),
-    }));
+    set((s) => {
+      const nextHub = hubDestHash !== undefined ? normHub(hubDestHash) : s.hubDestHash;
+      const hubChanged = nextHub != null && s.hubDestHash != null && nextHub !== s.hubDestHash;
+      const disconnecting = status === 'disconnected';
+      const wipeVolatile = disconnecting || hubChanged;
+      return {
+        status,
+        hubDestHash: nextHub !== undefined ? nextHub : s.hubDestHash,
+        hubName: hubName !== undefined ? hubName : s.hubName,
+        ...(wipeVolatile
+          ? {
+              rooms: new Map(),
+              messages: new Map(),
+              activeRoom: null,
+              unreadByRoom: new Map(),
+            }
+          : {}),
+      };
+    });
   },
 
   setError: (message) => {
@@ -111,8 +146,9 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     set((s) => {
       const rooms = new Map(s.rooms);
       rooms.delete(key);
+      const hub = s.hubDestHash;
       const messages = new Map(s.messages);
-      messages.delete(key);
+      if (hub) messages.delete(msgKey(hub, key));
       const unread = new Map(s.unreadByRoom);
       unread.delete(key);
       return {
@@ -125,14 +161,28 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   addMessage: (msg, opts) => {
-    const key = normRoom(msg.room);
     set((s) => {
+      const hub = s.hubDestHash;
+      if (!hub) return s;
+      const room = msg.room?.trim() ? msg.room : RRC_HUB_STREAM_ROOM;
+      const roomKey = normRoom(room);
+      const key = msgKey(hub, roomKey);
       const messages = new Map(s.messages);
-      const list = [...(messages.get(key) ?? []), msg].slice(-MAX_MESSAGES_PER_ROOM);
+      const existing = messages.get(key) ?? [];
+      if (msg.id && existing.some((m) => m.id === msg.id)) {
+        return s;
+      }
+      const list = [...existing, { ...msg, room: roomKey }].slice(-MAX_MESSAGES_PER_ROOM);
       messages.set(key, list);
+
+      const selfHash = s.localIdentityHash;
+      const isSelf =
+        Boolean(selfHash && msg.sender_hash?.toLowerCase() === selfHash) ||
+        Boolean(msg.nickname && msg.nickname === s.nickname && !msg.sender_hash);
+
       const unread = new Map(s.unreadByRoom);
-      if (opts?.bumpUnread && s.activeRoom !== key) {
-        unread.set(key, (unread.get(key) ?? 0) + 1);
+      if (opts?.bumpUnread && !isSelf && s.activeRoom !== roomKey) {
+        unread.set(roomKey, (unread.get(roomKey) ?? 0) + 1);
       }
       return { messages, unreadByRoom: unread };
     });
@@ -144,6 +194,17 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       const unread = new Map(s.unreadByRoom);
       unread.delete(key);
       return { unreadByRoom: unread };
+    });
+  },
+
+  clearActiveRoomMessages: () => {
+    set((s) => {
+      const hub = s.hubDestHash;
+      const room = s.activeRoom;
+      if (!hub || !room) return s;
+      const messages = new Map(s.messages);
+      messages.delete(msgKey(hub, room));
+      return { messages };
     });
   },
 
@@ -164,5 +225,19 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     let n = 0;
     for (const v of get().unreadByRoom.values()) n += v;
     return n;
+  },
+
+  messagesForActiveRoom: () => {
+    const s = get();
+    const hub = s.hubDestHash;
+    const room = s.activeRoom;
+    if (!hub || !room) return [];
+    return s.messages.get(msgKey(hub, room)) ?? [];
+  },
+
+  roomMessageKey: (room) => {
+    const hub = get().hubDestHash;
+    if (!hub) return null;
+    return msgKey(hub, room);
   },
 }));

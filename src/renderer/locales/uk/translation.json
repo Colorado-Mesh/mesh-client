@@ -4267,6 +4267,34 @@
       "awaiting_welcome": "Waiting for hub…",
       "active": "Connected",
       "reconnecting": "Reconnecting…"
+    },
+    "expandRooms": "Розгорнути список кімнат",
+    "collapseRooms": "Згорнути список кімнат",
+    "joinedRooms": "Приєднався",
+    "suggestedRooms": "Можливі завдання",
+    "recentRooms": "Останні",
+    "roomKeyOptional": "Ключ від номера (необов'язково)",
+    "joinRoomHelp": "Кімнати - це живі групи в цьому центрі. Приєднайтеся за іменем, спробуйте Suggested або введіть /list і /help.",
+    "listHint": "Порада: /list показує зареєстровані громадські кімнати на концентраторах rrcd. /help для команд.",
+    "slash": {
+      "helpIntro": "=== Довідка RRC ===",
+      "helpClient": "Клієнтські команди:",
+      "helpNick": "/nick NAME — змінити псевдонім",
+      "helpJoin": "/join ROOM [key] — приєднатися до кімнати (необов'язково +k key)",
+      "helpPart": "/part [room] — залишити кімнату (за замовчуванням: активний)",
+      "helpMe": "/me ACTION — надіслати емоцію ДІЇ",
+      "helpClear": "/clear — чітка локальна стенограма для цієї кімнати",
+      "helpQuit": "/quit — від'єднатися від концентратора",
+      "helpHub": "Команди концентратора (rrcd; відправлено як MSG):",
+      "helpList": "/list — список зареєстрованих громадських приміщень",
+      "helpWho": "/who [кімната] — члени списку",
+      "helpTopic": "/topic, /mode, /kick, /op, … — модерація кімнати (ops)",
+      "helpNote": "Інші концентратори можуть не підтримувати команди косої риси концентратора.",
+      "usageNick": "Використання: /nick NAME",
+      "usageJoin": "Використання: /join ROOM [key]",
+      "usageMe": "Використання: /me ACTION",
+      "nickChanged": "Псевдонім встановлено на {{name}}",
+      "commandSent": "Команда надіслана: {{cmd}}"
     }
   }
 }

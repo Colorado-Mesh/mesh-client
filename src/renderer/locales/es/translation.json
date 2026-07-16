@@ -4267,6 +4267,34 @@
       "awaiting_welcome": "Waiting for hub…",
       "active": "Connected",
       "reconnecting": "Reconnecting…"
+    },
+    "expandRooms": "Expandir la lista de habitaciones",
+    "collapseRooms": "Contraer lista de habitaciones",
+    "joinedRooms": "Se unió",
+    "suggestedRooms": "Sugerido",
+    "recentRooms": "Reciente",
+    "roomKeyOptional": "Llave de la habitación (opcional)",
+    "joinRoomHelp": "Las habitaciones son grupos en vivo en este centro. Únase por su nombre, pruebe Sugerido o escriba /list y /help.",
+    "listHint": "Sugerencia: /list muestra las salas públicas registradas en los concentradores rrcd. /help para comandos.",
+    "slash": {
+      "helpIntro": "=== Ayuda RRC ===",
+      "helpClient": "Órdenes del cliente:",
+      "helpNick": "/nick NAME — cambiar apodo",
+      "helpJoin": "/join ROOM [key] — unirse a una sala (opcional +k key)",
+      "helpPart": "/parte [habitación] — salir de la habitación (predeterminado: activo)",
+      "helpMe": "/me ACTION — enviar emoticono DE ACCIÓN",
+      "helpClear": "/clear — borrar la transcripción local de esta sala",
+      "helpQuit": "/quit — desconectar del hub",
+      "helpHub": "Comandos del hub (rrcd; enviado como MSG):",
+      "helpList": "/list — listar salas públicas registradas",
+      "helpWho": "/who [room] — listar miembros",
+      "helpTopic": "/topic, /mode, /kick, /op, … — moderación de sala (ops)",
+      "helpNote": "Es posible que otros concentradores no admitan comandos de barra diagonal del concentrador.",
+      "usageNick": "Uso: /nick NAME",
+      "usageJoin": "Uso: /join ROOM [key]",
+      "usageMe": "Uso: /me ACTION",
+      "nickChanged": "Apodo establecido en {{name}}",
+      "commandSent": "Comando enviado: {{cmd}}"
     }
   }
 }

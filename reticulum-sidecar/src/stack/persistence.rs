@@ -88,6 +88,11 @@ impl PersistedState {
                 existing.recommended = true;
                 if existing.display_name.is_none() {
                     existing.display_name = Some(hub.label.to_string());
+                    existing.name_source = Some("recommended".into());
+                } else if existing.name_source.as_deref() == Some("announce") {
+                    // Restore curated label over LXMF-style announce names.
+                    existing.display_name = Some(hub.label.to_string());
+                    existing.name_source = Some("recommended".into());
                 }
                 if existing.source == "discovered" || existing.source.is_empty() {
                     // Keep discovered metadata; mark recommended badge.
@@ -97,6 +102,7 @@ impl PersistedState {
                     destination_hash: hub.destination_hash.to_string(),
                     identity_hash: None,
                     display_name: Some(hub.label.to_string()),
+                    name_source: Some("recommended".into()),
                     last_seen: None,
                     favorited: false,
                     hops: None,
@@ -443,11 +449,38 @@ impl PersistedState {
         hops: Option<u8>,
         source: &str,
     ) {
+        self.upsert_rrc_hub_named(hash, identity_hash, display_name, hops, source, None);
+    }
+
+    /// `name_source`: recommended | welcome | manual | announce (defaults from `source`).
+    pub fn upsert_rrc_hub_named(
+        &mut self,
+        hash: &str,
+        identity_hash: Option<String>,
+        display_name: Option<String>,
+        hops: Option<u8>,
+        source: &str,
+        name_source: Option<&str>,
+    ) {
         let key = hash.to_lowercase();
         let now = Self::now_secs();
         let recommended = super::rrc_defaults::RRC_DEFAULT_HUBS
             .iter()
             .any(|h| h.destination_hash.eq_ignore_ascii_case(&key));
+        let incoming_name_source = name_source.unwrap_or(match source {
+            "recommended" => "recommended",
+            "manual" => "manual",
+            "welcome" => "welcome",
+            _ => "announce",
+        });
+        let name_pri = |s: &str| -> u8 {
+            match s {
+                "recommended" => 40,
+                "welcome" => 30,
+                "manual" => 20,
+                _ => 10,
+            }
+        };
         if let Some(hub) = self
             .rrc_hubs
             .iter_mut()
@@ -456,15 +489,30 @@ impl PersistedState {
             if identity_hash.is_some() {
                 hub.identity_hash = identity_hash;
             }
-            if display_name.is_some() {
-                hub.display_name = display_name;
+            if let Some(ref name) = display_name {
+                let prev_src = hub
+                    .name_source
+                    .as_deref()
+                    .unwrap_or(if hub.recommended {
+                        "recommended"
+                    } else {
+                        "announce"
+                    });
+                let allow = name_pri(incoming_name_source) >= name_pri(prev_src)
+                    || hub.display_name.is_none();
+                // Never let announce clobber a curated recommended label.
+                let block_announce_on_recommended =
+                    hub.recommended && incoming_name_source == "announce";
+                if allow && !block_announce_on_recommended {
+                    hub.display_name = Some(name.clone());
+                    hub.name_source = Some(incoming_name_source.into());
+                }
             }
             if hops.is_some() {
                 hub.hops = hops;
             }
             if source == "discovered" || source == "manual" {
                 if hub.source != "recommended" || source == "discovered" {
-                    // Prefer discovered live metadata over pure recommended placeholder.
                     if hub.source == "recommended" && source == "discovered" {
                         hub.source = "discovered".into();
                     } else if hub.source != "discovered" {
@@ -481,6 +529,7 @@ impl PersistedState {
             destination_hash: hash.to_string(),
             identity_hash,
             display_name,
+            name_source: Some(incoming_name_source.into()),
             last_seen: Some(now),
             favorited: false,
             hops,
@@ -511,6 +560,7 @@ impl PersistedState {
             destination_hash: hash.to_string(),
             identity_hash: None,
             display_name: None,
+            name_source: None,
             last_seen: Some(Self::now_secs()),
             favorited,
             hops: None,

@@ -78,6 +78,7 @@ enum SessionCommand {
     },
     Join {
         room: String,
+        key: Option<String>,
         reply: oneshot::Sender<Result<(), String>>,
     },
     Part {
@@ -85,7 +86,8 @@ enum SessionCommand {
         reply: oneshot::Sender<Result<(), String>>,
     },
     Send {
-        room: String,
+        /// Empty / None omits K_ROOM (hub-global slash commands).
+        room: Option<String>,
         body: String,
         msg_type: u8,
         reply: oneshot::Sender<Result<(), String>>,
@@ -137,6 +139,7 @@ impl RrcSessionManager {
             "status": g.status.as_str(),
             "hub_dest_hash": g.hub_dest_hash,
             "hub_name": g.hub_name,
+            "identity_hash": hex::encode(g.identity_hash),
             "nickname": g.nickname,
             "rooms": rooms,
             "error": g.last_error,
@@ -195,10 +198,10 @@ impl RrcSessionManager {
         }
     }
 
-    pub async fn join(&self, room: String) -> Result<(), String> {
+    pub async fn join(&self, room: String, key: Option<String>) -> Result<(), String> {
         let (reply, rx) = oneshot::channel();
         self.cmd_tx
-            .send(SessionCommand::Join { room, reply })
+            .send(SessionCommand::Join { room, key, reply })
             .await
             .map_err(|_| "rrc session task stopped".to_string())?;
         rx.await.map_err(|_| "rrc session task stopped".to_string())?
@@ -215,7 +218,7 @@ impl RrcSessionManager {
 
     pub async fn send_chat(
         &self,
-        room: String,
+        room: Option<String>,
         body: String,
         kind: &str,
     ) -> Result<(), String> {
@@ -348,13 +351,13 @@ async fn session_loop(
                         );
                         let _ = reply.send(());
                     }
-                    SessionCommand::Join { room, reply } => {
+                    SessionCommand::Join { room, key, reply } => {
                         let result = send_room_control(
                             &mut link,
                             &inner,
-                            room.clone(),
+                            Some(room.clone()),
                             msg_type::JOIN,
-                            None,
+                            key,
                         )
                         .await;
                         if result.is_ok() {
@@ -366,7 +369,7 @@ async fn session_loop(
                         let result = send_room_control(
                             &mut link,
                             &inner,
-                            room.clone(),
+                            Some(room.clone()),
                             msg_type::PART,
                             None,
                         )
@@ -459,7 +462,7 @@ async fn session_loop(
                                         let _ = send_room_control(
                                             &mut link,
                                             &inner,
-                                            room,
+                                            Some(room),
                                             msg_type::JOIN,
                                             None,
                                         )
@@ -578,7 +581,7 @@ async fn establish_session(
 async fn send_room_control(
     link: &mut Option<RrcLinkHandle>,
     inner: &Arc<Mutex<RrcSessionInner>>,
-    room: String,
+    room: Option<String>,
     msg_type_val: u8,
     body: Option<String>,
 ) -> Result<(), String> {
@@ -589,12 +592,15 @@ async fn send_room_control(
     if status != RrcSessionStatus::Active && status != RrcSessionStatus::AwaitingWelcome {
         return Err(format!("rrc session not active ({})", status.as_str()));
     }
+    let room_name = room
+        .map(|r| r.trim().to_string())
+        .filter(|r| !r.is_empty());
     let env = {
         let g = inner.lock().await;
         RrcEnvelope::new(
             msg_type_val,
             g.identity_hash,
-            Some(room),
+            room_name,
             body.map(|b| text_body(&b)),
             g.nickname.clone(),
         )
@@ -656,6 +662,10 @@ async fn handle_inbound(
             };
             let room = env.room_name.clone().unwrap_or_default();
             let body = body_as_text(&env.body).unwrap_or_default();
+            let hub_dest_hash = {
+                let g = inner.lock().await;
+                g.hub_dest_hash.clone()
+            };
             emit(
                 event_tx,
                 "rrc.message",
@@ -667,6 +677,7 @@ async fn handle_inbound(
                     "sender_hash": hex::encode(env.sender_identity),
                     "nickname": env.nickname,
                     "timestamp": env.timestamp,
+                    "hub_dest_hash": hub_dest_hash,
                 }),
             );
         }

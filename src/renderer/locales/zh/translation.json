@@ -4267,6 +4267,34 @@
       "awaiting_welcome": "Waiting for hub…",
       "active": "Connected",
       "reconnecting": "Reconnecting…"
+    },
+    "expandRooms": "展开房间列表",
+    "collapseRooms": "折叠房间列表",
+    "joinedRooms": "已加入",
+    "suggestedRooms": "建议",
+    "recentRooms": "最近",
+    "roomKeyOptional": "房间钥匙（选填）",
+    "joinRoomHelp": "房间是这个中心的现场群组。按姓名加入，试试Suggested ，或键入/list和/help。",
+    "listHint": "提示：/list显示rrcd集线器上已注册的公共房间。/help命令。",
+    "slash": {
+      "helpIntro": "= = = RRC帮助= = =",
+      "helpClient": "客户端命令：",
+      "helpNick": "/nick NAME —更改昵称",
+      "helpJoin": "/join ROOM [key] —加入房间（可选+ k键）",
+      "helpPart": "/part [room] —离开房间（默认：活动）",
+      "helpMe": "/me ACTION —发送动作表情",
+      "helpClear": "/clear —清除此房间的本地文字记录",
+      "helpQuit": "/quit —断开与集线器的连接",
+      "helpHub": "集线器命令（ rrcd;作为味精发送） ：",
+      "helpList": "/list —列出已注册的公共房间",
+      "helpWho": "/who [room] —列出成员",
+      "helpTopic": "/topic,/mode,/kick,/op, … —房间审核(ops)",
+      "helpNote": "其他集线器可能不支持集线器斜杠命令。",
+      "usageNick": "用法：/nick NAME",
+      "usageJoin": "用法：/join ROOM [key]",
+      "usageMe": "用法：/me ACTION",
+      "nickChanged": "昵称设置为{{name}}",
+      "commandSent": "命令已发送： {{cmd}}"
     }
   }
 }

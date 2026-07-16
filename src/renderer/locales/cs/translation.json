@@ -4267,6 +4267,34 @@
       "awaiting_welcome": "Waiting for hub…",
       "active": "Connected",
       "reconnecting": "Reconnecting…"
+    },
+    "expandRooms": "Rozbalit seznam místností",
+    "collapseRooms": "Sbalit seznam místností",
+    "joinedRooms": "Připojen",
+    "suggestedRooms": "Navržené",
+    "recentRooms": "Nedávné",
+    "roomKeyOptional": "Klíč od pokoje (volitelné)",
+    "joinRoomHelp": "Pokoje jsou v tomto centru živé skupiny. Připojte se podle jména, zkuste Navrhované nebo napište /list a /help.",
+    "listHint": "Tip: /seznam zobrazuje registrované veřejné místnosti na rozbočovačích RRCD. /nápověda pro příkazy.",
+    "slash": {
+      "helpIntro": "=== RRC help ===",
+      "helpClient": "Příkazy klienta:",
+      "helpNick": "/nick NAME — změna přezdívky",
+      "helpJoin": "/join ROOM [key] — připojit se k místnosti (volitelné +k klíč)",
+      "helpPart": "/část [pokoj] — nechte prostor (výchozí: aktivní)",
+      "helpMe": "/me ACTION — send ACTION EMOTE",
+      "helpClear": "/clear — vymazat místní přepis této místnosti",
+      "helpQuit": "/quit — odpojit od rozbočovače",
+      "helpHub": "Příkazy rozbočovače (rrcd; odeslané jako MSG):",
+      "helpList": "/list — seznam registrovaných veřejných místností",
+      "helpWho": "/who [pokoj] — seznam členů",
+      "helpTopic": "/topic, /mode, /kick, /op, … — moderování místnosti (ops)",
+      "helpNote": "Jiné rozbočovače nemusí podporovat příkazy lomítka rozbočovače.",
+      "usageNick": "Použití: /nick NAME",
+      "usageJoin": "Použití: /join ROOM [key]",
+      "usageMe": "Použití: /me ACTION",
+      "nickChanged": "Přezdívka nastavena na {{name}}",
+      "commandSent": "Příkaz odeslán: {{cmd}}"
     }
   }
 }

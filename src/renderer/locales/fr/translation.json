@@ -4267,6 +4267,34 @@
       "awaiting_welcome": "Waiting for hub…",
       "active": "Connected",
       "reconnecting": "Reconnecting…"
+    },
+    "expandRooms": "Élargir la liste des chambres",
+    "collapseRooms": "Réduire la liste des pièces",
+    "joinedRooms": "Souscrit le",
+    "suggestedRooms": "Suggéré",
+    "recentRooms": "Récent",
+    "roomKeyOptional": "Clé de la chambre (en option)",
+    "joinRoomHelp": "Les chambres sont des groupes en direct sur ce hub. Inscrivez-vous par nom, essayez Suggestions ou tapez /list et /help.",
+    "listHint": "Astuce : /list affiche les salles publiques enregistrées sur les concentrateurs rrcd. /help pour les commandes.",
+    "slash": {
+      "helpIntro": "=== Aide RRC ===",
+      "helpClient": "Commandes client :",
+      "helpNick": "/nick NAME — changer le pseudo",
+      "helpJoin": "/join ROOM [key] — rejoindre une pièce (en option + clé k)",
+      "helpPart": "/part [room] — laisser de la place (par défaut : actif)",
+      "helpMe": "/me ACTION — envoyer une émoticône D'ACTION",
+      "helpClear": "/effacer — effacer la transcription locale pour cette pièce",
+      "helpQuit": "/quit — se déconnecter du hub",
+      "helpHub": "Commandes Hub (rrcd ; envoyées en MSG) :",
+      "helpList": "/list — liste des salles publiques enregistrées",
+      "helpWho": "/who [room] — liste des membres",
+      "helpTopic": "/topic, /mode, /kick, /op, … — modération de salle (ops)",
+      "helpNote": "Les autres moyeux peuvent ne pas prendre en charge les commandes de barre oblique du moyeu.",
+      "usageNick": "Utilisation : /nick NAME",
+      "usageJoin": "Utilisation : /join ROOM [key]",
+      "usageMe": "Utilisation : /me ACTION",
+      "nickChanged": "Pseudonyme défini sur {{name}}",
+      "commandSent": "Commande envoyée : {{cmd}}"
     }
   }
 }
