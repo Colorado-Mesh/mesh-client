@@ -95,7 +95,12 @@ export async function syncReticulumNobleBleYield(
     state.yieldActive = true;
   }
 
-  if (state.yieldActive && (!hasEnabledBleRnode || bleRnodeOnline || graceExpired)) {
+  // Empty interface lists are common on the first post-start fetch. Treating that as
+  // "no BLE RNode" released the sidecar-start Noble yield, Meshtastic began discovery,
+  // then the next tick re-yielded for an offline RNode and killed the scan →
+  // "BLE peripheral not found".
+  const confirmedNoEnabledBleRnode = !hasEnabledBleRnode && interfaces.length > 0;
+  if (state.yieldActive && (bleRnodeOnline || graceExpired || confirmedNoEnabledBleRnode)) {
     state.yieldActive = false;
     state.lastPrepareFailedAtMs = undefined;
     await releaseReticulumBleRnodeConnect();
