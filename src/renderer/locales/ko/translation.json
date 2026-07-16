@@ -4220,10 +4220,8 @@
   "rrc": {
     "hubsTitle": "RRC Hubs",
     "hubs": {
-      "recommended": "Recommended",
       "favourites": "Favourites",
-      "discovered": "Discovered",
-      "manual": "Manual"
+      "discovered": "Discovered"
     },
     "searchHubs": "Search hubs…",
     "searchRooms": "Search rooms…",
@@ -4337,6 +4335,7 @@
       "connecting": "Connecting",
       "autoJoin": "자동 참여 활성화됨",
       "idle": "연결되지 않음"
-    }
+    },
+    "noFavouriteHubs": "아직 즐겨찾는 RRC 허브가 없습니다. 디스커버드에서 또는 해시로 연결한 후 허브에 별표를 표시합니다."
   }
 }

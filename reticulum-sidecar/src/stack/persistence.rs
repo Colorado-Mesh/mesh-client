@@ -77,41 +77,9 @@ impl PersistedState {
         self.seed_rrc_default_hubs();
     }
 
+    /// No-op: curated RRC hub catalog is empty (Favourites are user-starred only).
     pub fn seed_rrc_default_hubs(&mut self) {
-        for hub in super::rrc_defaults::RRC_DEFAULT_HUBS {
-            let key = hub.destination_hash.to_lowercase();
-            if let Some(existing) = self
-                .rrc_hubs
-                .iter_mut()
-                .find(|h| h.destination_hash.to_lowercase() == key)
-            {
-                existing.recommended = true;
-                if existing.display_name.is_none() {
-                    existing.display_name = Some(hub.label.to_string());
-                    existing.name_source = Some("recommended".into());
-                } else if existing.name_source.as_deref() == Some("announce") {
-                    // Restore curated label over LXMF-style announce names.
-                    existing.display_name = Some(hub.label.to_string());
-                    existing.name_source = Some("recommended".into());
-                }
-                if existing.source == "discovered" || existing.source.is_empty() {
-                    // Keep discovered metadata; mark recommended badge.
-                }
-            } else {
-                self.rrc_hubs.push(RrcHubRow {
-                    destination_hash: hub.destination_hash.to_string(),
-                    identity_hash: None,
-                    display_name: Some(hub.label.to_string()),
-                    name_source: Some("recommended".into()),
-                    last_seen: None,
-                    favorited: false,
-                    hops: None,
-                    status: Some("recommended".into()),
-                    source: "recommended".into(),
-                    recommended: true,
-                });
-            }
-        }
+        let _ = super::rrc_defaults::RRC_DEFAULT_HUBS;
     }
 
     pub fn sync_local_propagation_hash(&mut self) {

@@ -4220,10 +4220,8 @@
   "rrc": {
     "hubsTitle": "RRC Hubs",
     "hubs": {
-      "recommended": "Recommended",
       "favourites": "Favourites",
-      "discovered": "Discovered",
-      "manual": "Manual"
+      "discovered": "Discovered"
     },
     "searchHubs": "Search hubs…",
     "searchRooms": "Search rooms…",
@@ -4337,6 +4335,7 @@
       "connecting": "Sambungkan",
       "autoJoin": "Bergabung otomatis diaktifkan",
       "idle": "Tidak terhubung"
-    }
+    },
+    "noFavouriteHubs": "Belum ada hub RRC favorit. Beri bintang hub dari Discovered atau setelah menghubungkan dengan hash."
   }
 }

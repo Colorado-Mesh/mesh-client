@@ -4220,10 +4220,8 @@
   "rrc": {
     "hubsTitle": "RRC Hubs",
     "hubs": {
-      "recommended": "Recommended",
       "favourites": "Favourites",
-      "discovered": "Discovered",
-      "manual": "Manual"
+      "discovered": "Discovered"
     },
     "searchHubs": "Search hubs…",
     "searchRooms": "Search rooms…",
@@ -4337,6 +4335,7 @@
       "connecting": "Соединительная",
       "autoJoin": "Автосоединение включено",
       "idle": "Нет подключения"
-    }
+    },
+    "noFavouriteHubs": "Пока нет любимых концентраторов RRC. Отметьте звездочкой концентратор из «Обнаружено» или после подключения по хэшу."
   }
 }

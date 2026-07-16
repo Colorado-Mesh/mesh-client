@@ -1,4 +1,5 @@
-//! Curated RRC hub destination hashes (keep in sync with `src/shared/rrcDefaultHubs.ts`).
+//! Optional curated RRC hub catalog (keep in sync with `src/shared/rrcDefaultHubs.ts`).
+//! Empty: Favourites are user-starred only; discovery uses `RRC_HUB_ASPECT`.
 
 pub const RRC_HUB_ASPECT: &str = "rrc.hub";
 
@@ -9,15 +10,5 @@ pub struct RrcDefaultHub {
     pub destination_hash: &'static str,
 }
 
-pub const RRC_DEFAULT_HUBS: &[RrcDefaultHub] = &[
-    RrcDefaultHub {
-        id: "rns-community",
-        label: "RNS Community",
-        destination_hash: "28c7c1a68c735693aa8e6b8193ed44b2",
-    },
-    RrcDefaultHub {
-        id: "rns-moscow",
-        label: "RNS Moscow",
-        destination_hash: "42a97b1b07147b898f78a610dfbba587",
-    },
-];
+/// No predefined hubs — users favourite from discovery or manual connect.
+pub const RRC_DEFAULT_HUBS: &[RrcDefaultHub] = &[];

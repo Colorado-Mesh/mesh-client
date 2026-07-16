@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { RRC_DEFAULT_HUBS } from '@/shared/rrcDefaultHubs';
-
 import { useRrcHubStore } from './rrcHubStore';
 
 describe('rrcHubStore', () => {
@@ -35,11 +33,8 @@ describe('rrcHubStore', () => {
     });
   });
 
-  it('seeds recommended hubs', () => {
-    const hubs = useRrcHubStore.getState().hubs;
-    const [community, moscow] = RRC_DEFAULT_HUBS;
-    expect(hubs.has(community.destinationHash)).toBe(true);
-    expect(hubs.has(moscow.destinationHash)).toBe(true);
+  it('starts with an empty hub map (no curated seed)', () => {
+    expect(useRrcHubStore.getState().hubs.size).toBe(0);
   });
 
   it('merges discovered hubs from refresh', async () => {
@@ -47,8 +42,7 @@ describe('rrcHubStore', () => {
     const hub = useRrcHubStore.getState().getHub('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
     expect(hub?.display_name).toBe('Live Hub');
     expect(hub?.hops).toBe(2);
-    const [community] = RRC_DEFAULT_HUBS;
-    expect(useRrcHubStore.getState().hubs.has(community.destinationHash)).toBe(true);
+    expect(useRrcHubStore.getState().hubs.size).toBe(1);
   });
 
   it('upserts manual hubs', async () => {
@@ -58,16 +52,16 @@ describe('rrcHubStore', () => {
     expect(hub?.destination_hash).toBe('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
   });
 
-  it('does not let announce overwrite recommended display names', () => {
-    const [community] = RRC_DEFAULT_HUBS;
-    const before = useRrcHubStore.getState().getHub(community.destinationHash)?.display_name;
+  it('lets announce set display name when no higher-priority name exists', () => {
     useRrcHubStore.getState().upsertFromEvent({
-      destination_hash: community.destinationHash,
+      destination_hash: 'dddddddddddddddddddddddddddddddd',
       display_name: 'LXMF Operator Name',
       source: 'discovered',
       name_source: 'announce',
     });
-    expect(useRrcHubStore.getState().getHub(community.destinationHash)?.display_name).toBe(before);
+    expect(useRrcHubStore.getState().getHub('dddddddddddddddddddddddddddddddd')?.display_name).toBe(
+      'LXMF Operator Name',
+    );
   });
 
   it('applies WELCOME hub name over announce', () => {

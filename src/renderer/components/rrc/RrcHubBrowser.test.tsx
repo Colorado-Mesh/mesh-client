@@ -10,17 +10,26 @@ import { RrcHubBrowser } from './RrcHubBrowser';
 const hubA: RrcHubInfo = {
   destination_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
   display_name: 'Hub A',
-  recommended: true,
-  favorited: false,
-  source: 'manual',
+  recommended: false,
+  favorited: true,
+  source: 'discovered',
 };
 
 const hubB: RrcHubInfo = {
   destination_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
   display_name: 'Hub B',
-  recommended: true,
-  favorited: false,
+  recommended: false,
+  favorited: true,
   source: 'manual',
+};
+
+const hubC: RrcHubInfo = {
+  destination_hash: 'cccccccccccccccccccccccccccccccc',
+  display_name: 'Hub C',
+  recommended: false,
+  favorited: false,
+  source: 'discovered',
+  hops: 1,
 };
 
 function renderBrowser(
@@ -35,17 +44,15 @@ function renderBrowser(
       onHubSearchChange={() => {}}
       nickname="tester"
       onNicknameChange={() => {}}
-      recommended={[hubA, hubB]}
-      favourites={[]}
-      discovered={[]}
-      manual={[]}
+      favourites={[hubA, hubB]}
+      discovered={[hubC]}
       hubDestHash={hubA.destination_hash}
       unreadForHub={() => 0}
       statusForHub={() => null}
       isHubAutoJoin={() => false}
       manualHash=""
       onManualHashChange={() => {}}
-      hubTab="recommended"
+      hubTab="favourites"
       onHubTabChange={() => {}}
       onRefresh={() => {}}
       onConnect={() => {}}
@@ -58,6 +65,32 @@ function renderBrowser(
 }
 
 describe('RrcHubBrowser', () => {
+  it('shows favourites on the Favourites tab and not discovered hubs', () => {
+    renderBrowser();
+    expect(screen.getByRole('button', { name: /Select hub Hub A/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Select hub Hub B/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Select hub Hub C/i })).not.toBeInTheDocument();
+  });
+
+  it('shows discovered hubs only on the Discovered tab', () => {
+    renderBrowser({ hubTab: 'discovered' });
+    expect(screen.getByRole('button', { name: /Select hub Hub C/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Select hub Hub A/i })).not.toBeInTheDocument();
+  });
+
+  it('requests Discovered tab via onHubTabChange', async () => {
+    const user = userEvent.setup();
+    const onHubTabChange = vi.fn();
+    renderBrowser({ onHubTabChange });
+    await user.click(screen.getByRole('button', { name: 'Discovered' }));
+    expect(onHubTabChange).toHaveBeenCalledWith('discovered');
+  });
+
+  it('shows empty Favourites copy when there are no starred hubs', () => {
+    renderBrowser({ favourites: [] });
+    expect(screen.getByText(/No favourite RRC hubs yet/i)).toBeInTheDocument();
+  });
+
   it('keeps hub rows clickable while a prior connect is in flight', async () => {
     const user = userEvent.setup();
     const onConnect = vi.fn();

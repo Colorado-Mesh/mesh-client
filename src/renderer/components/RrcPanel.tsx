@@ -124,7 +124,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
   const [nickListCollapsed, setNickListCollapsed] = useState(() =>
     readCollapsed(NICK_LIST_COLLAPSED_KEY),
   );
-  const [hubTab, setHubTab] = useState<'recommended' | 'discovered'>('recommended');
+  const [hubTab, setHubTab] = useState<'favourites' | 'discovered'>('favourites');
   const [hubSearch, setHubSearch] = useState('');
   const [roomSearch, setRoomSearch] = useState('');
   const [manualHash, setManualHash] = useState('');
@@ -294,15 +294,11 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
 
   const hubList = useMemo(() => {
     const all = [...hubs.values()].filter((h) => hubMatchesSearch(h, hubSearch));
-    const recommended = all.filter((h) => h.recommended);
-    const favourites = all.filter((h) => h.favorited && !h.recommended);
+    const favourites = all.filter((h) => h.favorited);
     const discovered = all.filter(
-      (h) => !h.recommended && !h.favorited && (h.source === 'discovered' || h.hops != null),
+      (h) => !h.favorited && (h.source === 'discovered' || h.source === 'manual' || h.hops != null),
     );
-    const manual = all.filter(
-      (h) => !h.recommended && !h.favorited && h.source === 'manual' && h.hops == null,
-    );
-    return { recommended, favourites, discovered, manual };
+    return { favourites, discovered };
   }, [hubs, hubSearch]);
 
   const roomList = useMemo(() => {
@@ -840,10 +836,8 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
             // catch-no-log-ok
           }
         }}
-        recommended={hubList.recommended}
         favourites={hubList.favourites}
         discovered={hubList.discovered}
-        manual={hubList.manual}
         hubDestHash={hubDestHash}
         unreadForHub={unreadForHub}
         statusForHub={(hash) => {

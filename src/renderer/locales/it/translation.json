@@ -4220,10 +4220,8 @@
   "rrc": {
     "hubsTitle": "RRC Hubs",
     "hubs": {
-      "recommended": "Recommended",
       "favourites": "Favourites",
-      "discovered": "Discovered",
-      "manual": "Manual"
+      "discovered": "Discovered"
     },
     "searchHubs": "Search hubs…",
     "searchRooms": "Search rooms…",
@@ -4337,6 +4335,7 @@
       "connecting": "Connessione",
       "autoJoin": "Auto-join abilitato",
       "idle": "Nessuna connessione attiva"
-    }
+    },
+    "noFavouriteHubs": "Ancora nessun hub RRC preferito. Metti in evidenza un hub da Scoperto o dopo la connessione tramite hash."
   }
 }

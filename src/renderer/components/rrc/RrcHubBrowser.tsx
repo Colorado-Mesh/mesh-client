@@ -16,10 +16,8 @@ export interface RrcHubBrowserProps {
   onHubSearchChange: (v: string) => void;
   nickname: string;
   onNicknameChange: (v: string) => void;
-  recommended: RrcHubInfo[];
   favourites: RrcHubInfo[];
   discovered: RrcHubInfo[];
-  manual: RrcHubInfo[];
   hubDestHash: string | null;
   /** Unread count per hub destination hash (lowercase keys preferred). */
   unreadForHub: (hubHash: string) => number;
@@ -29,8 +27,8 @@ export interface RrcHubBrowserProps {
   isHubAutoJoin: (hubHash: string) => boolean;
   manualHash: string;
   onManualHashChange: (v: string) => void;
-  hubTab: 'recommended' | 'discovered';
-  onHubTabChange: (tab: 'recommended' | 'discovered') => void;
+  hubTab: 'favourites' | 'discovered';
+  onHubTabChange: (tab: 'favourites' | 'discovered') => void;
   onRefresh: () => void;
   onConnect: (hash: string) => void;
   onToggleFavorite: (hash: string, favorited: boolean) => void;
@@ -140,6 +138,54 @@ function HubRow({
   );
 }
 
+function HubList({
+  rows,
+  hubDestHash,
+  sidecarRunning,
+  unreadForHub,
+  statusForHub,
+  isHubAutoJoin,
+  onConnect,
+  onToggleFavorite,
+  onToggleAutoJoin,
+}: {
+  rows: RrcHubInfo[];
+  hubDestHash: string | null;
+  sidecarRunning: boolean;
+  unreadForHub: (hubHash: string) => number;
+  statusForHub: (hubHash: string) => string | null;
+  isHubAutoJoin: (hubHash: string) => boolean;
+  onConnect: (hash: string) => void;
+  onToggleFavorite: (hash: string, favorited: boolean) => void;
+  onToggleAutoJoin: (hash: string) => void;
+}) {
+  return (
+    <ul className="space-y-0.5">
+      {rows.map((hub) => {
+        const autoJoin = isHubAutoJoin(hub.destination_hash);
+        const marker = resolveRrcHubSidebarMarker({
+          status: statusForHub(hub.destination_hash),
+          autoJoin,
+        });
+        return (
+          <HubRow
+            key={hub.destination_hash}
+            hub={hub}
+            selected={hubDestHash?.toLowerCase() === hub.destination_hash.toLowerCase()}
+            sidecarRunning={sidecarRunning}
+            unread={unreadForHub(hub.destination_hash)}
+            marker={marker}
+            autoJoin={autoJoin}
+            onConnect={onConnect}
+            onToggleFavorite={onToggleFavorite}
+            onToggleAutoJoin={onToggleAutoJoin}
+          />
+        );
+      })}
+    </ul>
+  );
+}
+
 export function RrcHubBrowser({
   collapsed,
   onToggleCollapsed,
@@ -148,10 +194,8 @@ export function RrcHubBrowser({
   onHubSearchChange,
   nickname,
   onNicknameChange,
-  recommended,
   favourites,
   discovered,
-  manual,
   hubDestHash,
   unreadForHub,
   statusForHub,
@@ -167,40 +211,7 @@ export function RrcHubBrowser({
   onManualConnect,
 }: RrcHubBrowserProps) {
   const { t } = useTranslation();
-
-  const renderSection = (title: string, rows: RrcHubInfo[]) => {
-    if (rows.length === 0) return null;
-    return (
-      <div className="mb-3">
-        <div className="px-2 py-1 text-[10px] tracking-wide text-amber-500/70 uppercase">
-          {title}
-        </div>
-        <ul className="space-y-0.5">
-          {rows.map((hub) => {
-            const autoJoin = isHubAutoJoin(hub.destination_hash);
-            const marker = resolveRrcHubSidebarMarker({
-              status: statusForHub(hub.destination_hash),
-              autoJoin,
-            });
-            return (
-              <HubRow
-                key={hub.destination_hash}
-                hub={hub}
-                selected={hubDestHash?.toLowerCase() === hub.destination_hash.toLowerCase()}
-                sidecarRunning={sidecarRunning}
-                unread={unreadForHub(hub.destination_hash)}
-                marker={marker}
-                autoJoin={autoJoin}
-                onConnect={onConnect}
-                onToggleFavorite={onToggleFavorite}
-                onToggleAutoJoin={onToggleAutoJoin}
-              />
-            );
-          })}
-        </ul>
-      </div>
-    );
-  };
+  const rows = hubTab === 'favourites' ? favourites : discovered;
 
   return (
     <aside
@@ -246,16 +257,16 @@ export function RrcHubBrowser({
             <button
               type="button"
               className={`flex-1 rounded px-1 py-1 ${
-                hubTab === 'recommended'
+                hubTab === 'favourites'
                   ? 'bg-amber-800/60 text-amber-50'
                   : 'text-amber-200/60 hover:bg-amber-950/40'
               }`}
-              aria-label={t('rrc.hubs.recommended')}
+              aria-label={t('rrc.hubs.favourites')}
               onClick={() => {
-                onHubTabChange('recommended');
+                onHubTabChange('favourites');
               }}
             >
-              {t('rrc.hubs.recommended')}
+              {t('rrc.hubs.favourites')}
             </button>
             <button
               type="button"
@@ -294,20 +305,22 @@ export function RrcHubBrowser({
               className="mt-0.5 w-full rounded border border-amber-800/50 bg-slate-900/80 px-2 py-1 text-xs text-amber-50"
             />
           </label>
-          {hubTab === 'recommended' && (
-            <>
-              {renderSection(t('rrc.hubs.recommended'), recommended)}
-              {renderSection(t('rrc.hubs.favourites'), favourites)}
-              {renderSection(t('rrc.hubs.manual'), manual)}
-            </>
-          )}
-          {hubTab === 'discovered' && (
-            <>
-              {renderSection(t('rrc.hubs.discovered'), discovered)}
-              {discovered.length === 0 && (
-                <p className="px-2 text-xs text-amber-200/40">{t('rrc.noDiscoveredHubs')}</p>
-              )}
-            </>
+          {rows.length > 0 ? (
+            <HubList
+              rows={rows}
+              hubDestHash={hubDestHash}
+              sidecarRunning={sidecarRunning}
+              unreadForHub={unreadForHub}
+              statusForHub={statusForHub}
+              isHubAutoJoin={isHubAutoJoin}
+              onConnect={onConnect}
+              onToggleFavorite={onToggleFavorite}
+              onToggleAutoJoin={onToggleAutoJoin}
+            />
+          ) : (
+            <p className="px-2 text-xs text-amber-200/40">
+              {hubTab === 'favourites' ? t('rrc.noFavouriteHubs') : t('rrc.noDiscoveredHubs')}
+            </p>
           )}
           <div className="mt-auto space-y-1 border-t border-amber-800/40 pt-2">
             <input
