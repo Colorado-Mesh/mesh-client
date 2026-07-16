@@ -114,6 +114,8 @@ import {
   reticulumSelfIdentityToNodeRecord,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
+import { useRrcHubStore } from '../stores/rrcHubStore';
+import { useRrcSessionStore } from '../stores/rrcSessionStore';
 import type { ProtocolRuntime } from './protocolRuntime';
 
 /** Safety poll interval when the path table is large. */
@@ -524,6 +526,99 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (evt.type === 'nomadnetwork.node') {
         void useNomadNetworkStore.getState().refreshFromSidecar();
         recordAnnounceActivity(evt.payload, 'nomadnetwork.node');
+      }
+      if (evt.type === 'rrc.hub' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          destination_hash?: string;
+          identity_hash?: string | null;
+          display_name?: string | null;
+          hops?: number | null;
+          source?: string;
+        };
+        if (typeof p.destination_hash === 'string') {
+          useRrcHubStore.getState().upsertFromEvent({
+            destination_hash: p.destination_hash,
+            identity_hash: p.identity_hash,
+            display_name: p.display_name,
+            hops: p.hops,
+            source: (p.source as 'discovered' | undefined) ?? 'discovered',
+          });
+        }
+      }
+      if (evt.type === 'rrc.connected' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          hub_dest_hash?: string;
+          hub_name?: string | null;
+          status?: string;
+        };
+        const st =
+          p.status === 'connecting'
+            ? 'connecting'
+            : p.status === 'active'
+              ? 'active'
+              : 'awaiting_welcome';
+        useRrcSessionStore.getState().applyStatus(st, p.hub_dest_hash ?? null, p.hub_name ?? null);
+      }
+      if (evt.type === 'rrc.disconnected' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as { reason?: string };
+        const session = useRrcSessionStore.getState();
+        if (p.reason === 'local_disconnect') {
+          session.clearSession();
+        } else {
+          // Sidecar auto-reconnects unintended drops; keep volatile rooms until reconnect settles.
+          session.applyStatus('reconnecting');
+          if (p.reason) session.setError(p.reason);
+        }
+      }
+      if (evt.type === 'rrc.room.joined' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          room?: string;
+          members?: { identity_hash: string; nickname?: string | null }[];
+        };
+        if (typeof p.room === 'string') {
+          useRrcSessionStore.getState().roomJoined(p.room, p.members);
+        }
+      }
+      if (evt.type === 'rrc.room.parted' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as { room?: string };
+        if (typeof p.room === 'string') {
+          useRrcSessionStore.getState().roomParted(p.room);
+        }
+      }
+      if (evt.type === 'rrc.message' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          id?: string;
+          room?: string;
+          kind?: string;
+          body?: string;
+          sender_hash?: string | null;
+          nickname?: string | null;
+          timestamp?: number;
+        };
+        if (typeof p.room === 'string' && typeof p.body === 'string') {
+          const kind =
+            p.kind === 'notice' || p.kind === 'action' || p.kind === 'error' || p.kind === 'system'
+              ? p.kind
+              : 'msg';
+          useRrcSessionStore.getState().addMessage(
+            {
+              id: typeof p.id === 'string' ? p.id : `rrc-${Date.now()}`,
+              room: p.room,
+              kind,
+              body: p.body,
+              sender_hash: p.sender_hash,
+              nickname: p.nickname,
+              timestamp: typeof p.timestamp === 'number' ? p.timestamp : Date.now(),
+            },
+            { bumpUnread: true },
+          );
+        }
+      }
+      if (evt.type === 'rrc.error' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as { message?: string };
+        if (typeof p.message === 'string') {
+          useRrcSessionStore.getState().setError(p.message);
+        }
       }
       const refreshActions = reticulumSidecarEventRefreshActions(evt.type);
       if (refreshActions.interfaces) {

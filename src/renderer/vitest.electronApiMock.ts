@@ -363,6 +363,21 @@ export function createElectronAPIMock(): ElectronAPI {
       validateConfig: vi.fn().mockResolvedValue({ ok: true, issues: [] }),
       onEvent: vi.fn().mockReturnValue(() => {}),
       onStatus: vi.fn().mockReturnValue(() => {}),
+      rrc: {
+        listHubs: vi.fn().mockResolvedValue({ hubs: [] }),
+        upsertHub: vi.fn().mockResolvedValue({ ok: true }),
+        setFavorite: vi.fn().mockResolvedValue({ ok: true }),
+        connect: vi.fn().mockResolvedValue({ ok: true }),
+        disconnect: vi.fn().mockResolvedValue({ ok: true }),
+        getStatus: vi.fn().mockResolvedValue({
+          status: 'disconnected',
+          rooms: [],
+        }),
+        join: vi.fn().mockResolvedValue({ ok: true }),
+        part: vi.fn().mockResolvedValue({ ok: true }),
+        send: vi.fn().mockResolvedValue({ ok: true }),
+        getRooms: vi.fn().mockResolvedValue({ rooms: [] }),
+      },
     },
     vault: {
       setPasscode: vi.fn().mockResolvedValue({ ok: true }),

@@ -128,6 +128,7 @@ import {
   ReticulumTopologyPanel,
   RFHistogramsPanel,
   RoomsPanel,
+  RrcPanel,
   SecurityPanel,
   TakServerPanel,
   TelemetryPanel,
@@ -135,17 +136,26 @@ import {
 import { protocolRecord, selectByProtocol } from './lib/appProtocolSelect';
 import { getAppSettingsRaw } from './lib/appSettingsStorage';
 import {
+  ADMIN_PANEL_INDEX,
   APP_PANEL_INDEX,
   computeTabMappings,
+  DIAGNOSTICS_PANEL_INDEX,
   findFilteredTabIndexForPanel,
+  GRAPH_PANEL_INDEX,
   MAP_TAB_PANEL_INDEX,
   MODULES_PANEL_INDEX,
   NODES_PANEL_INDEX,
   NOMAD_NETWORK_PANEL_INDEX,
   RADIO_TAB_PANEL_INDEX,
   resolveSavedTabOnProtocolSwitch,
+  RF_PANEL_INDEX,
   ROOMS_PANEL_INDEX,
+  RRC_PANEL_INDEX,
   SECURITY_PANEL_INDEX,
+  SNIFFER_PANEL_INDEX,
+  STATS_PANEL_INDEX,
+  TAK_PANEL_INDEX,
+  TELEMETRY_PANEL_INDEX,
   TOPOLOGY_PANEL_INDEX,
 } from './lib/appTabMappings';
 import { dedupeChannelPillsByIndex } from './lib/channelListDedupe';
@@ -1690,6 +1700,7 @@ function AppContent() {
 
   const [chatTabVisited, setChatTabVisited] = useState(false);
   const [roomsTabVisited, setRoomsTabVisited] = useState(false);
+  const [rrcTabVisited, setRrcTabVisited] = useState(false);
   const [nomadTabVisited, setNomadTabVisited] = useState(false);
   const [peersTabVisited, setPeersTabVisited] = useState(false);
   const [appTabVisited, setAppTabVisited] = useState(false);
@@ -1705,6 +1716,8 @@ function AppContent() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- protocol switch clears tab visit state
     setChatTabVisited(false);
     setRoomsTabVisited(false);
+    setRrcTabVisited(false);
+    setNomadTabVisited(false);
     setPeersTabVisited(false);
     setAppTabVisited(false);
   }, [protocol]);
@@ -1715,6 +1728,13 @@ function AppContent() {
       setRoomsTabVisited(true);
     }
   }, [activePanelIndex, capabilities.hasRoomServersPanel]);
+
+  useEffect(() => {
+    if (activePanelIndex === RRC_PANEL_INDEX) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- track RRC tab visit for keep-alive mount
+      setRrcTabVisited(true);
+    }
+  }, [activePanelIndex]);
 
   useEffect(() => {
     if (activePanelIndex === NOMAD_NETWORK_PANEL_INDEX) {
@@ -2755,7 +2775,33 @@ function AppContent() {
                       </div>
                     )}
                     <div
-                      id="panel-2"
+                      id={`panel-${RRC_PANEL_INDEX}`}
+                      role="tabpanel"
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), RRC_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== RRC_PANEL_INDEX}
+                      className="h-full w-full min-w-0"
+                    >
+                      {(activePanelIndex === RRC_PANEL_INDEX || rrcTabVisited) && (
+                        <ErrorBoundary>
+                          <Suspense fallback={<PanelSkeleton />}>
+                            <div
+                              className="h-full w-full min-w-0"
+                              hidden={
+                                activePanelIndex !== RRC_PANEL_INDEX || !capabilities.hasRrcPanel
+                              }
+                            >
+                              <RrcPanel
+                                isActive={
+                                  activePanelIndex === RRC_PANEL_INDEX && capabilities.hasRrcPanel
+                                }
+                              />
+                            </div>
+                          </Suspense>
+                        </ErrorBoundary>
+                      )}
+                    </div>
+                    <div
+                      id={`panel-${NOMAD_NETWORK_PANEL_INDEX}`}
                       role="tabpanel"
                       aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), NOMAD_NETWORK_PANEL_INDEX))}`}
                       hidden={activePanelIndex !== NOMAD_NETWORK_PANEL_INDEX}
@@ -2784,7 +2830,7 @@ function AppContent() {
                       )}
                     </div>
                     <div
-                      id="panel-3"
+                      id={`panel-${NODES_PANEL_INDEX}`}
                       role="tabpanel"
                       aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), NODES_PANEL_INDEX))}`}
                       hidden={activePanelIndex !== NODES_PANEL_INDEX}
@@ -2886,13 +2932,13 @@ function AppContent() {
                       )}
                     </div>
                     <div
-                      id="panel-4"
+                      id={`panel-${MAP_TAB_PANEL_INDEX}`}
                       role="tabpanel"
-                      aria-labelledby="tab-3"
-                      hidden={activePanelIndex !== 4}
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), MAP_TAB_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== MAP_TAB_PANEL_INDEX}
                       className="h-full w-full min-w-0"
                     >
-                      {activePanelIndex === 4 ? (
+                      {activePanelIndex === MAP_TAB_PANEL_INDEX ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             {protocol === 'reticulum' && capabilities.hasReticulumDiscoveryMap ? (
@@ -2948,13 +2994,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-5"
+                      id={`panel-${RADIO_TAB_PANEL_INDEX}`}
                       role="tabpanel"
-                      aria-labelledby="tab-4"
-                      hidden={activePanelIndex !== 5}
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), RADIO_TAB_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== RADIO_TAB_PANEL_INDEX}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 5 ? (
+                      {activePanelIndex === RADIO_TAB_PANEL_INDEX ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             {capabilities.hasReticulumNetworkPanel ? (
@@ -3164,13 +3210,14 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-6"
+                      id={`panel-${MODULES_PANEL_INDEX}`}
                       role="tabpanel"
-                      aria-labelledby="tab-5"
-                      hidden={activePanelIndex !== 6}
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), MODULES_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== MODULES_PANEL_INDEX}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 6 && capabilities.modulesTabUsesRepeatersLabel ? (
+                      {activePanelIndex === MODULES_PANEL_INDEX &&
+                      capabilities.modulesTabUsesRepeatersLabel ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <RepeatersPanel
@@ -3205,7 +3252,8 @@ function AppContent() {
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}
-                      {activePanelIndex === 6 && !capabilities.modulesTabUsesRepeatersLabel ? (
+                      {activePanelIndex === MODULES_PANEL_INDEX &&
+                      !capabilities.modulesTabUsesRepeatersLabel ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             {configureNodeSelector}
@@ -3258,13 +3306,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-7"
+                      id={`panel-${ADMIN_PANEL_INDEX}`}
                       role="tabpanel"
-                      aria-labelledby="tab-6"
-                      hidden={activePanelIndex !== 7}
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), ADMIN_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== ADMIN_PANEL_INDEX}
                       className="h-full w-full min-w-0"
                     >
-                      {activePanelIndex === 7 ? (
+                      {activePanelIndex === ADMIN_PANEL_INDEX ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             {capabilities.hasReticulumAdminPanel ? (
@@ -3319,10 +3367,10 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-8"
+                      id={`panel-${ROOMS_PANEL_INDEX}`}
                       role="tabpanel"
-                      aria-labelledby="tab-7"
-                      hidden={activePanelIndex !== 8}
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), ROOMS_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== ROOMS_PANEL_INDEX}
                       className="h-full w-full min-w-0"
                     >
                       {(activePanelIndex === ROOMS_PANEL_INDEX || roomsTabVisited) &&
@@ -3363,13 +3411,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-9"
+                      id={`panel-${TELEMETRY_PANEL_INDEX}`}
                       role="tabpanel"
-                      aria-labelledby="tab-8"
-                      hidden={activePanelIndex !== 9}
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), TELEMETRY_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== TELEMETRY_PANEL_INDEX}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 9 ? (
+                      {activePanelIndex === TELEMETRY_PANEL_INDEX ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <TelemetryPanel
@@ -3392,13 +3440,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-10"
+                      id={`panel-${SECURITY_PANEL_INDEX}`}
                       role="tabpanel"
-                      aria-labelledby="tab-9"
-                      hidden={activePanelIndex !== 10}
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), SECURITY_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== SECURITY_PANEL_INDEX}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 10 ? (
+                      {activePanelIndex === SECURITY_PANEL_INDEX ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             {configureNodeSelector}
@@ -3451,13 +3499,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-11"
+                      id={`panel-${TAK_PANEL_INDEX}`}
                       role="tabpanel"
-                      aria-labelledby="tab-10"
-                      hidden={activePanelIndex !== 11}
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), TAK_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== TAK_PANEL_INDEX}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 11 ? (
+                      {activePanelIndex === TAK_PANEL_INDEX ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <TakServerPanel
@@ -3469,9 +3517,9 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-12"
+                      id={`panel-${APP_PANEL_INDEX}`}
                       role="tabpanel"
-                      aria-labelledby="tab-11"
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), APP_PANEL_INDEX))}`}
                       hidden={activePanelIndex !== APP_PANEL_INDEX}
                       className="w-full min-w-0"
                     >
@@ -3548,13 +3596,13 @@ function AppContent() {
                       )}
                     </div>
                     <div
-                      id="panel-13"
+                      id={`panel-${DIAGNOSTICS_PANEL_INDEX}`}
                       role="tabpanel"
-                      aria-labelledby="tab-12"
-                      hidden={activePanelIndex !== 13}
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), DIAGNOSTICS_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== DIAGNOSTICS_PANEL_INDEX}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 13 ? (
+                      {activePanelIndex === DIAGNOSTICS_PANEL_INDEX ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <DiagnosticsPanel
@@ -3605,13 +3653,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-14"
+                      id={`panel-${STATS_PANEL_INDEX}`}
                       role="tabpanel"
-                      aria-labelledby="tab-13"
-                      hidden={activePanelIndex !== 14}
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), STATS_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== STATS_PANEL_INDEX}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 14 && capabilities.hasRawPacketLog ? (
+                      {activePanelIndex === STATS_PANEL_INDEX && capabilities.hasRawPacketLog ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <div className="p-4">
@@ -3644,14 +3692,14 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-15"
+                      id={`panel-${SNIFFER_PANEL_INDEX}`}
                       role="tabpanel"
-                      aria-labelledby="tab-14"
-                      hidden={activePanelIndex !== 15}
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), SNIFFER_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== SNIFFER_PANEL_INDEX}
                       className="h-full w-full min-w-0"
                       style={{ height: 'calc(100vh - 140px)' }}
                     >
-                      {activePanelIndex === 15 && capabilities.hasRawPacketLog ? (
+                      {activePanelIndex === SNIFFER_PANEL_INDEX && capabilities.hasRawPacketLog ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <div className="flex h-full min-h-0 flex-col">
@@ -3692,13 +3740,13 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-16"
+                      id={`panel-${RF_PANEL_INDEX}`}
                       role="tabpanel"
-                      aria-labelledby="tab-15"
-                      hidden={activePanelIndex !== 16}
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), RF_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== RF_PANEL_INDEX}
                       className="w-full min-w-0"
                     >
-                      {activePanelIndex === 16 ? (
+                      {activePanelIndex === RF_PANEL_INDEX ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <RFHistogramsPanel nodes={nodesForUi} />
@@ -3707,14 +3755,14 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-17"
+                      id={`panel-${GRAPH_PANEL_INDEX}`}
                       role="tabpanel"
-                      aria-labelledby="tab-16"
-                      hidden={activePanelIndex !== 17}
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), GRAPH_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== GRAPH_PANEL_INDEX}
                       className="w-full min-w-0"
                       style={{ height: 'calc(100vh - 140px)' }}
                     >
-                      {activePanelIndex === 17 &&
+                      {activePanelIndex === GRAPH_PANEL_INDEX &&
                       (capabilities.hasNeighborInfo ||
                         capabilities.nodeListTabUsesContactsLabel) ? (
                         <ErrorBoundary>
@@ -3729,7 +3777,7 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
-                      id="panel-18"
+                      id={`panel-${TOPOLOGY_PANEL_INDEX}`}
                       role="tabpanel"
                       aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), TOPOLOGY_PANEL_INDEX))}`}
                       hidden={activePanelIndex !== TOPOLOGY_PANEL_INDEX}

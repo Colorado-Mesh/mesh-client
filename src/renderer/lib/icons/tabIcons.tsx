@@ -36,6 +36,8 @@ export function TabIcon({ name }: { name: string }) {
       return <Link2 {...p} />;
     case 'Chat':
       return <MessageCircle {...p} />;
+    case 'RRC':
+      return <Radio {...p} />;
     case 'NomadNetwork':
       return <Globe {...p} />;
     case 'Nodes':

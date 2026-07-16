@@ -4089,7 +4089,8 @@
     "peers": "통신자",
     "nomadnetwork": "Nomad Network",
     "topology": "네트워크 토폴로지",
-    "network": "회로망"
+    "network": "회로망",
+    "rrc": "RRC"
   },
   "takServerPanel": {
     "title": "TAK 서버",
@@ -4214,6 +4215,58 @@
       "noDiscoveries": "아직 RMAP 검색 인터페이스가 들리지 않았습니다.",
       "filterEmpty": "이 필터와 일치하는 인터페이스가 없습니다.",
       "hint": "노드는 작업자가 검색 가능 = 예 를 사용하도록 설정한 경우에만 나타납니다. LoRa 경로는 알림을 릴레이하려면 TCP 허브 (예: rmap.world: 4242) 가 필요합니다. 전 세계에 적용하려면 전 세계 지도 링크를 사용하세요."
+    }
+  },
+  "rrc": {
+    "hubsTitle": "RRC Hubs",
+    "hubs": {
+      "recommended": "Recommended",
+      "favourites": "Favourites",
+      "discovered": "Discovered",
+      "manual": "Manual"
+    },
+    "searchHubs": "Search hubs…",
+    "searchRooms": "Search rooms…",
+    "nickname": "Nickname",
+    "refreshHubs": "Refresh hubs",
+    "expandSidebar": "Expand hub list",
+    "collapseSidebar": "Collapse hub list",
+    "manualHashPlaceholder": "Hub destination hash (32 hex)",
+    "connectManual": "Connect to hash",
+    "invalidHubHash": "Enter a valid 32-character hex destination hash.",
+    "connectFailed": "Could not connect to RRC hub.",
+    "joinFailed": "Could not join room.",
+    "sendFailed": "Could not send message.",
+    "selectHub": "Select hub {{name}}",
+    "selectHubPrompt": "Select an RRC hub to connect.",
+    "favoriteHub": "Favourite hub",
+    "unfavoriteHub": "Remove hub favourite",
+    "hopsAway_one": "{{count}}홉 거리",
+    "hopsAway_other": "{{count}}홉 거리",
+    "noDiscoveredHubs": "No live RRC hubs discovered yet. Keep the stack running to listen for announces.",
+    "rooms": "Rooms",
+    "joinRoom": "Room name",
+    "join": "Join room",
+    "joinRoomPrompt": "Join a room to start chatting.",
+    "noRoomsJoined": "No rooms joined yet.",
+    "selectRoom": "Open room {{name}}",
+    "leaveRoom": "Leave room",
+    "disconnect": "Disconnect",
+    "toggleTimestamps": "Toggle timestamps",
+    "muteRoom": "Mute room",
+    "unmuteRoom": "Unmute room",
+    "toggleMembers": "Show room members",
+    "members": "Members",
+    "noMembers": "No member list from hub.",
+    "copyMessage": "Copy message",
+    "messagePlaceholder": "Type a message…",
+    "send": "Send",
+    "status": {
+      "disconnected": "Disconnected",
+      "connecting": "Connecting…",
+      "awaiting_welcome": "Waiting for hub…",
+      "active": "Connected",
+      "reconnecting": "Reconnecting…"
     }
   }
 }

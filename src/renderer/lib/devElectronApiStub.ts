@@ -307,6 +307,21 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       showConfigImportDialog: async () => ({ path: null, content: null }),
       onEvent: noopUnsub,
       onStatus: noopUnsub,
+      rrc: {
+        listHubs: async () => ({ hubs: [] }),
+        upsertHub: async () => ({ ok: true }),
+        setFavorite: async () => ({ ok: true }),
+        connect: async () => ({ ok: false, error: 'stub' }),
+        disconnect: async () => ({ ok: true }),
+        getStatus: async () => ({
+          status: 'disconnected',
+          rooms: [],
+        }),
+        join: async () => ({ ok: false, error: 'stub' }),
+        part: async () => ({ ok: false, error: 'stub' }),
+        send: async () => ({ ok: false, error: 'stub' }),
+        getRooms: async () => ({ rooms: [] }),
+      },
     },
     vault: {
       setPasscode: async () => ({ ok: true }),

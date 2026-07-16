@@ -463,11 +463,14 @@ export class ReticulumSidecarManager extends EventEmitter {
     }
     const normalized = assertReticulumProxyPath(apiPath);
     assertProxyBodySize(body);
+    const pathOnly = normalized.split('?')[0] ?? normalized;
+    // RRC connect includes path discovery + Link handshake + WELCOME wait.
+    const postTimeoutMs = pathOnly === '/api/v1/rrc/connect' ? 60_000 : 30_000;
     const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body ?? {}),
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(postTimeoutMs),
     });
     if (!res.ok) {
       throw new Error(`sidecar POST ${normalized} failed: ${res.status}`);

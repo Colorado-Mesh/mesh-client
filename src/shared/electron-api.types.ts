@@ -7,6 +7,15 @@ import type {
   ReticulumSidecarStartOptions,
   ReticulumSidecarStatus,
 } from './reticulum-types';
+import type {
+  RrcConnectRequest,
+  RrcHubInfo,
+  RrcJoinRequest,
+  RrcPartRequest,
+  RrcSendRequest,
+  RrcSessionSnapshot,
+  RrcUpsertHubRequest,
+} from './rrc-types';
 import type { SupportBundleMode } from './support-bundle.types';
 import type { TAKClientInfo, TAKServerStatus, TAKSettings } from './tak-types';
 
@@ -924,6 +933,24 @@ export interface ElectronAPI {
     validateConfig: () => Promise<ReticulumConfigValidateResult>;
     onEvent: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
     onStatus: (cb: (status: ReticulumSidecarStatus) => void) => () => void;
+    /** Thin typed wrappers over proxyGet/proxyPost for RRC. */
+    rrc: {
+      listHubs: () => Promise<{ hubs: RrcHubInfo[] }>;
+      upsertHub: (
+        opts: RrcUpsertHubRequest,
+      ) => Promise<{ ok: boolean; hub?: RrcHubInfo; error?: string }>;
+      setFavorite: (
+        destHash: string,
+        favorited: boolean,
+      ) => Promise<{ ok: boolean; error?: string }>;
+      connect: (opts: RrcConnectRequest) => Promise<{ ok: boolean; error?: string }>;
+      disconnect: () => Promise<{ ok: boolean }>;
+      getStatus: () => Promise<RrcSessionSnapshot>;
+      join: (opts: RrcJoinRequest) => Promise<{ ok: boolean; error?: string }>;
+      part: (opts: RrcPartRequest) => Promise<{ ok: boolean; error?: string }>;
+      send: (opts: RrcSendRequest) => Promise<{ ok: boolean; error?: string }>;
+      getRooms: () => Promise<{ rooms: RrcSessionSnapshot['rooms'] }>;
+    };
   };
 
   // ─── Reticulum identity vault ────────────────────────────────────────────────

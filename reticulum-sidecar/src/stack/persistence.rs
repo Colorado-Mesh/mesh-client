@@ -25,6 +25,7 @@ pub struct PersistedState {
     pub propagation_sync: serde_json::Value,
     pub auto_sync_interval_sec: u32,
     pub nomad_nodes: Vec<NomadNodeRow>,
+    pub rrc_hubs: Vec<RrcHubRow>,
 }
 
 impl PersistedState {
@@ -57,6 +58,7 @@ impl PersistedState {
             propagation_sync: serde_json::Value::Null,
             auto_sync_interval_sec: 3600,
             nomad_nodes: Vec::new(),
+            rrc_hubs: Vec::new(),
         }
     }
 
@@ -72,6 +74,38 @@ impl PersistedState {
             });
         }
         self.sync_local_propagation_hash();
+        self.seed_rrc_default_hubs();
+    }
+
+    pub fn seed_rrc_default_hubs(&mut self) {
+        for hub in super::rrc_defaults::RRC_DEFAULT_HUBS {
+            let key = hub.destination_hash.to_lowercase();
+            if let Some(existing) = self
+                .rrc_hubs
+                .iter_mut()
+                .find(|h| h.destination_hash.to_lowercase() == key)
+            {
+                existing.recommended = true;
+                if existing.display_name.is_none() {
+                    existing.display_name = Some(hub.label.to_string());
+                }
+                if existing.source == "discovered" || existing.source.is_empty() {
+                    // Keep discovered metadata; mark recommended badge.
+                }
+            } else {
+                self.rrc_hubs.push(RrcHubRow {
+                    destination_hash: hub.destination_hash.to_string(),
+                    identity_hash: None,
+                    display_name: Some(hub.label.to_string()),
+                    last_seen: None,
+                    favorited: false,
+                    hops: None,
+                    status: Some("recommended".into()),
+                    source: "recommended".into(),
+                    recommended: true,
+                });
+            }
+        }
     }
 
     pub fn sync_local_propagation_hash(&mut self) {
@@ -401,6 +435,91 @@ impl PersistedState {
         });
     }
 
+    pub fn upsert_rrc_hub(
+        &mut self,
+        hash: &str,
+        identity_hash: Option<String>,
+        display_name: Option<String>,
+        hops: Option<u8>,
+        source: &str,
+    ) {
+        let key = hash.to_lowercase();
+        let now = Self::now_secs();
+        let recommended = super::rrc_defaults::RRC_DEFAULT_HUBS
+            .iter()
+            .any(|h| h.destination_hash.eq_ignore_ascii_case(&key));
+        if let Some(hub) = self
+            .rrc_hubs
+            .iter_mut()
+            .find(|h| h.destination_hash.to_lowercase() == key)
+        {
+            if identity_hash.is_some() {
+                hub.identity_hash = identity_hash;
+            }
+            if display_name.is_some() {
+                hub.display_name = display_name;
+            }
+            if hops.is_some() {
+                hub.hops = hops;
+            }
+            if source == "discovered" || source == "manual" {
+                if hub.source != "recommended" || source == "discovered" {
+                    // Prefer discovered live metadata over pure recommended placeholder.
+                    if hub.source == "recommended" && source == "discovered" {
+                        hub.source = "discovered".into();
+                    } else if hub.source != "discovered" {
+                        hub.source = source.into();
+                    }
+                }
+            }
+            hub.recommended = hub.recommended || recommended;
+            hub.last_seen = Some(now);
+            hub.status = Some("online".into());
+            return;
+        }
+        self.rrc_hubs.push(RrcHubRow {
+            destination_hash: hash.to_string(),
+            identity_hash,
+            display_name,
+            last_seen: Some(now),
+            favorited: false,
+            hops,
+            status: Some("online".into()),
+            source: if recommended && source != "manual" {
+                "recommended".into()
+            } else {
+                source.into()
+            },
+            recommended,
+        });
+    }
+
+    pub fn set_rrc_favorite(&mut self, hash: &str, favorited: bool) {
+        let key = hash.to_lowercase();
+        if let Some(hub) = self
+            .rrc_hubs
+            .iter_mut()
+            .find(|h| h.destination_hash.to_lowercase() == key)
+        {
+            hub.favorited = favorited;
+            return;
+        }
+        let recommended = super::rrc_defaults::RRC_DEFAULT_HUBS
+            .iter()
+            .any(|h| h.destination_hash.eq_ignore_ascii_case(&key));
+        self.rrc_hubs.push(RrcHubRow {
+            destination_hash: hash.to_string(),
+            identity_hash: None,
+            display_name: None,
+            last_seen: Some(Self::now_secs()),
+            favorited,
+            hops: None,
+            status: Some("unknown".into()),
+            source: "manual".into(),
+            recommended,
+        });
+    }
+
     pub fn clear_peers(&mut self) {
         self.peers.clear();
     }
@@ -640,7 +759,7 @@ impl serde::Serialize for PersistedState {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut s = serializer.serialize_struct("PersistedState", 13)?;
+        let mut s = serializer.serialize_struct("PersistedState", 14)?;
         s.serialize_field("identity", &self.identity)?;
         s.serialize_field("interfaces", &self.interfaces)?;
         s.serialize_field("contacts", &self.contacts)?;
@@ -657,6 +776,7 @@ impl serde::Serialize for PersistedState {
         s.serialize_field("propagation_sync", &self.propagation_sync)?;
         s.serialize_field("auto_sync_interval_sec", &self.auto_sync_interval_sec)?;
         s.serialize_field("nomad_nodes", &self.nomad_nodes)?;
+        s.serialize_field("rrc_hubs", &self.rrc_hubs)?;
         s.end()
     }
 }
@@ -686,6 +806,8 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             auto_sync_interval_sec: u32,
             #[serde(default)]
             nomad_nodes: Vec<NomadNodeRow>,
+            #[serde(default)]
+            rrc_hubs: Vec<RrcHubRow>,
         }
         let raw = Raw::deserialize(deserializer)?;
         Ok(Self {
@@ -706,6 +828,7 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             },
             auto_sync_interval_sec: raw.auto_sync_interval_sec,
             nomad_nodes: raw.nomad_nodes,
+            rrc_hubs: raw.rrc_hubs,
         })
     }
 }

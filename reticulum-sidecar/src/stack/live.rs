@@ -46,6 +46,8 @@ use super::packet_log::{
 };
 use super::persistence::PersistedState;
 use super::propagation_bridge::PropagationBridge;
+use super::rrc_defaults::RRC_HUB_ASPECT;
+use super::rrc_session::RrcSessionManager;
 use super::types::{InterfaceRow, LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, PeerRow, ContactRow};
 use super::via::{
     classify_path_interface_name, merge_live_interfaces_with_config, merge_observed_egress_vias,
@@ -91,6 +93,7 @@ pub struct LiveBridge {
     /// Serialize Nomad Link queries — transport actor is single-threaded and
     /// overlapping page/file fetches contend with path/pubkey discovery.
     nomad_link_lock: Arc<tokio::sync::Mutex<()>>,
+    rrc_session: Arc<RrcSessionManager>,
     #[cfg(feature = "rns-ble")]
     ble_peer_state: Arc<tokio::sync::Mutex<BlePeerRuntimeState>>,
 }
@@ -386,6 +389,11 @@ impl LiveBridge {
             event_tx: event_tx.clone(),
             packet_log,
             nomad_link_lock: Arc::new(tokio::sync::Mutex::new(())),
+            rrc_session: Arc::new(RrcSessionManager::spawn(
+                handle.transport_tx.clone(),
+                identity.clone(),
+                event_tx.clone(),
+            )),
             #[cfg(feature = "rns-ble")]
             ble_peer_state: Arc::new(tokio::sync::Mutex::new(BlePeerRuntimeState {
                 spawned: HashMap::new(),
@@ -662,6 +670,116 @@ impl LiveBridge {
                 let _ = event_tx.send(frame.to_string());
             }
         });
+    }
+
+    pub fn register_rrc_announce_handler(
+        &self,
+        inner: Arc<RwLock<PersistedState>>,
+        config_dir: PathBuf,
+        storage_dir: PathBuf,
+    ) {
+        let transport_tx = self.handle.transport_tx.clone();
+        let event_tx = self.event_tx.clone();
+        tokio::spawn(async move {
+            let (callback_tx, mut callback_rx) =
+                tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(64);
+            if transport_tx
+                .send(TransportMessage::RegisterAnnounceHandler {
+                    aspect_filter: Some(RRC_HUB_ASPECT.to_string()),
+                    receive_path_responses: false,
+                    callback_tx,
+                })
+                .await
+                .is_err()
+            {
+                tracing::warn!("rrc announce handler registration failed: transport closed");
+                return;
+            }
+
+            while let Some(evt) = callback_rx.recv().await {
+                let hash_hex = hex::encode(evt.destination_hash);
+                let identity_hash_hex = evt.identity_hash.map(hex::encode);
+                let display_name = parse_announce_display_name(evt.app_data.as_deref());
+                let hops = Some(evt.hops);
+                let payload = {
+                    let mut state = inner.write().await;
+                    state.upsert_rrc_hub(
+                        &hash_hex,
+                        identity_hash_hex.clone(),
+                        display_name.clone(),
+                        hops,
+                        "discovered",
+                    );
+                    if let Err(e) = state.save(&config_dir, &storage_dir) {
+                        tracing::warn!("rrc hub persist failed: {e}");
+                    }
+                    serde_json::json!({
+                        "destination_hash": hash_hex,
+                        "identity_hash": identity_hash_hex,
+                        "display_name": display_name,
+                        "hops": evt.hops,
+                        "source": "discovered",
+                    })
+                };
+                let frame = serde_json::json!({ "type": "rrc.hub", "payload": payload });
+                let _ = event_tx.send(frame.to_string());
+            }
+        });
+    }
+
+    pub async fn rrc_connect(
+        &self,
+        dest_hash: [u8; 16],
+        dest_hash_hex: String,
+        hops: u8,
+        nickname: String,
+    ) -> serde_json::Value {
+        match self
+            .rrc_session
+            .connect(dest_hash, dest_hash_hex, hops, nickname)
+            .await
+        {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rrc_disconnect(&self) -> serde_json::Value {
+        self.rrc_session.disconnect().await;
+        serde_json::json!({ "ok": true })
+    }
+
+    pub async fn rrc_status(&self) -> serde_json::Value {
+        self.rrc_session.status_snapshot().await
+    }
+
+    pub async fn rrc_join(&self, room: &str) -> serde_json::Value {
+        match self.rrc_session.join(room.to_string()).await {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rrc_part(&self, room: &str) -> serde_json::Value {
+        match self.rrc_session.part(room.to_string()).await {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rrc_send(&self, room: &str, body: &str, kind: &str) -> serde_json::Value {
+        match self
+            .rrc_session
+            .send_chat(room.to_string(), body.to_string(), kind)
+            .await
+        {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rrc_rooms(&self) -> serde_json::Value {
+        self.rrc_session.rooms_snapshot().await
     }
 
     fn spawn_maintenance(&self, _event_tx: broadcast::Sender<String>) {

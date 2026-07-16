@@ -4089,7 +4089,8 @@
     "peers": "Collega's",
     "nomadnetwork": "Nomad Network",
     "topology": "Netwerktopologie",
-    "network": "Netwerk"
+    "network": "Netwerk",
+    "rrc": "RRC"
   },
   "takServerPanel": {
     "title": "TAK-server",
@@ -4214,6 +4215,58 @@
       "noDiscoveries": "Nog geen RMAP-detectie-interfaces gehoord.",
       "filterEmpty": "Er komen geen interfaces overeen met dit filter.",
       "hint": "Knooppunten worden alleen weergegeven wanneer operators detecteerbaar inschakelen =ja. LoRa-paden hebben een TCP-hub nodig (bijvoorbeeld rmap.world:4242) om aankondigingen door te geven. Gebruik de wereldwijde kaartlink voor wereldwijde dekking."
+    }
+  },
+  "rrc": {
+    "hubsTitle": "RRC Hubs",
+    "hubs": {
+      "recommended": "Recommended",
+      "favourites": "Favourites",
+      "discovered": "Discovered",
+      "manual": "Manual"
+    },
+    "searchHubs": "Search hubs…",
+    "searchRooms": "Search rooms…",
+    "nickname": "Nickname",
+    "refreshHubs": "Refresh hubs",
+    "expandSidebar": "Expand hub list",
+    "collapseSidebar": "Collapse hub list",
+    "manualHashPlaceholder": "Hub destination hash (32 hex)",
+    "connectManual": "Connect to hash",
+    "invalidHubHash": "Enter a valid 32-character hex destination hash.",
+    "connectFailed": "Could not connect to RRC hub.",
+    "joinFailed": "Could not join room.",
+    "sendFailed": "Could not send message.",
+    "selectHub": "Select hub {{name}}",
+    "selectHubPrompt": "Select an RRC hub to connect.",
+    "favoriteHub": "Favourite hub",
+    "unfavoriteHub": "Remove hub favourite",
+    "hopsAway_one": "{{count}} hop verderop",
+    "hopsAway_other": "{{count}} hops verderop",
+    "noDiscoveredHubs": "No live RRC hubs discovered yet. Keep the stack running to listen for announces.",
+    "rooms": "Rooms",
+    "joinRoom": "Room name",
+    "join": "Join room",
+    "joinRoomPrompt": "Join a room to start chatting.",
+    "noRoomsJoined": "No rooms joined yet.",
+    "selectRoom": "Open room {{name}}",
+    "leaveRoom": "Leave room",
+    "disconnect": "Disconnect",
+    "toggleTimestamps": "Toggle timestamps",
+    "muteRoom": "Mute room",
+    "unmuteRoom": "Unmute room",
+    "toggleMembers": "Show room members",
+    "members": "Members",
+    "noMembers": "No member list from hub.",
+    "copyMessage": "Copy message",
+    "messagePlaceholder": "Type a message…",
+    "send": "Send",
+    "status": {
+      "disconnected": "Disconnected",
+      "connecting": "Connecting…",
+      "awaiting_welcome": "Waiting for hub…",
+      "active": "Connected",
+      "reconnecting": "Reconnecting…"
     }
   }
 }

@@ -142,6 +142,7 @@ export interface ProtocolCapabilities {
   hasReticulumPeerDetailModal: boolean;
   /** Reticulum: Nomad Network sidebar tab */
   hasNomadNetworkPanel: boolean;
+  hasRrcPanel: boolean;
   /** Reticulum: Administration tab (flasher, factory reset) */
   hasReticulumAdminPanel: boolean;
   /** DM composer payload limit (Reticulum LXMF only) */
@@ -216,6 +217,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasLxmfDeliveryStatus: false,
   hasReticulumPeerDetailModal: false,
   hasNomadNetworkPanel: false,
+  hasRrcPanel: false,
   hasReticulumAdminPanel: false,
 };
 
@@ -288,6 +290,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasLxmfDeliveryStatus: false,
   hasReticulumPeerDetailModal: false,
   hasNomadNetworkPanel: false,
+  hasRrcPanel: false,
   hasReticulumAdminPanel: false,
 };
 
@@ -360,6 +363,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasLxmfDeliveryStatus: true,
   hasReticulumPeerDetailModal: true,
   hasNomadNetworkPanel: true,
+  hasRrcPanel: true,
   hasReticulumAdminPanel: true,
   lxmfPayloadLimit: RETICULUM_LXMF_PAYLOAD_LIMIT,
 };

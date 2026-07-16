@@ -339,6 +339,7 @@ vi.mock('./lazyTabPanels', () => ({
   RawPacketLogPanel: () => null,
   RepeatersPanel: () => null,
   RFHistogramsPanel: () => null,
+  RrcPanel: () => null,
   SecurityPanel: () => null,
   TakServerPanel: () => null,
   TelemetryPanel: () => null,

@@ -128,6 +128,28 @@ pub struct NomadNodeRow {
     pub status: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RrcHubRow {
+    pub destination_hash: String,
+    #[serde(default)]
+    pub identity_hash: Option<String>,
+    pub display_name: Option<String>,
+    pub last_seen: Option<u64>,
+    #[serde(default)]
+    pub favorited: bool,
+    pub hops: Option<u8>,
+    pub status: Option<String>,
+    /// recommended | discovered | manual
+    #[serde(default = "default_rrc_source")]
+    pub source: String,
+    #[serde(default)]
+    pub recommended: bool,
+}
+
+fn default_rrc_source() -> String {
+    "discovered".into()
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct AddInterfaceRequest {
     #[serde(rename = "type")]

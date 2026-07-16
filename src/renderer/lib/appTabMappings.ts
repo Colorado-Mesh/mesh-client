@@ -4,6 +4,7 @@ import type { ProtocolCapabilities } from './radio/BaseRadioProvider';
 import { TAB_SLOT_IDS, type TabIconSlotId } from './tabSlotIds';
 import type { MeshProtocol } from './types';
 
+export const RRC_PANEL_INDEX = TAB_SLOT_IDS.indexOf('RRC');
 export const NOMAD_NETWORK_PANEL_INDEX = TAB_SLOT_IDS.indexOf('NomadNetwork');
 export const TOPOLOGY_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Topology');
 export const NODES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Nodes');
@@ -11,14 +12,23 @@ export const MAP_TAB_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Map');
 export const ROOMS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Rooms');
 export const RADIO_TAB_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Radio');
 export const MODULES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Modules');
+export const ADMIN_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Admin');
+export const TELEMETRY_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Telemetry');
 export const SECURITY_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Security');
+export const TAK_PANEL_INDEX = TAB_SLOT_IDS.indexOf('TAK');
 export const APP_PANEL_INDEX = TAB_SLOT_IDS.indexOf('App');
+export const DIAGNOSTICS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Diagnostics');
+export const STATS_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Stats');
+export const SNIFFER_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Sniffer');
+export const RF_PANEL_INDEX = TAB_SLOT_IDS.indexOf('RF');
+export const GRAPH_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Graph');
 
 type TabCapabilityRequirement = keyof ProtocolCapabilities | { or: (keyof ProtocolCapabilities)[] };
 
 const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [
   undefined, // Connection
   undefined, // Chat
+  'hasRrcPanel', // RRC
   'hasNomadNetworkPanel', // Nomad Network
   undefined, // Nodes/Contacts
   { or: ['hasFullPositionConfig', 'nodeListTabUsesContactsLabel', 'hasReticulumDiscoveryMap'] }, // Map

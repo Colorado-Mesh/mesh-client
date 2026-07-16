@@ -7,6 +7,7 @@ mod lxmf;
 mod nomad;
 mod propagation;
 mod rmap;
+mod rrc;
 mod status;
 mod system;
 mod ws;
@@ -146,6 +147,15 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             "/api/v1/nomadnetwork/file/{hash}",
             get(nomad::get_nomad_file),
         )
+        .route("/api/v1/rrc/hubs", get(rrc::list_rrc_hubs).post(rrc::upsert_rrc_hub))
+        .route("/api/v1/rrc/hubs/favorite", post(rrc::favorite_rrc_hub))
+        .route("/api/v1/rrc/connect", post(rrc::rrc_connect))
+        .route("/api/v1/rrc/disconnect", post(rrc::rrc_disconnect))
+        .route("/api/v1/rrc/status", get(rrc::rrc_status))
+        .route("/api/v1/rrc/join", post(rrc::rrc_join))
+        .route("/api/v1/rrc/part", post(rrc::rrc_part))
+        .route("/api/v1/rrc/send", post(rrc::rrc_send))
+        .route("/api/v1/rrc/rooms", get(rrc::rrc_rooms))
         .route("/api/v1/stack/restart", post(system::stack_restart))
         .route("/api/v1/system/factory-reset", post(system::factory_reset))
         .route("/api/v1/diagnostics", get(system::diagnostics))
