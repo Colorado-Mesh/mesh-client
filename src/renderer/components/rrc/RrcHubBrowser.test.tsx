@@ -131,8 +131,17 @@ describe('RrcHubBrowser', () => {
     const onToggleAutoJoin = vi.fn();
     renderBrowser({ onToggleAutoJoin });
 
-    await user.click(screen.getAllByRole('button', { name: 'Enable hub auto-join' })[0]);
+    await user.click(screen.getAllByRole('button', { name: 'Turn on hub auto-join' })[0]);
     expect(onToggleAutoJoin).toHaveBeenCalledWith(hubA.destination_hash);
+  });
+
+  it('shows pressed state when hub auto-join is enabled', () => {
+    renderBrowser({
+      isHubAutoJoin: (hash) => hash === hubA.destination_hash,
+    });
+    const onBtn = screen.getByRole('button', { name: 'Turn off hub auto-join' });
+    expect(onBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(onBtn).toHaveAttribute('title', expect.stringMatching(/click to turn off/i));
   });
 
   it('clicking a connected hub still invokes onConnect (panel focuses without IPC)', async () => {

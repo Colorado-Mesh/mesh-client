@@ -4268,7 +4268,6 @@
     "expandRooms": "Perluas daftar kamar",
     "collapseRooms": "Ciutkan daftar kamar",
     "joinedRooms": "Sudah bergabung",
-    "suggestedRooms": "Disarankan",
     "recentRooms": "Terkini",
     "roomKeyOptional": "Kunci kamar (opsional)",
     "joinRoomHelp": "Kamar adalah grup live di hub ini. Gabung berdasarkan nama, coba Disarankan, atau ketik /daftar dan /bantuan.",
@@ -4301,7 +4300,6 @@
     "refreshRoomList": "Segarkan daftar kamar (/ list)",
     "favoriteRoom": "Kamar favorit",
     "unfavoriteRoom": "Hapus kamar favorit",
-    "autoJoin": "Bergabung otomatis saat tersambung",
     "enableAutoJoin": "Aktifkan bergabung otomatis",
     "disableAutoJoin": "Nonaktifkan auto - join",
     "noTopic": "Tidak ada topik",
@@ -4326,7 +4324,6 @@
     "collapseMembers": "Ciutkan daftar anggota",
     "cancelConnect": "Batal",
     "maxHubsConnected": "Anda dapat tetap terhubung ke paling banyak 8 hub RRC. Putuskan sambungan terlebih dahulu.",
-    "hubAutoJoin": "Gabung otomatis ke hub saat tumpukan sedang berjalan",
     "enableHubAutoJoin": "Aktifkan hub auto - join",
     "disableHubAutoJoin": "Nonaktifkan hub auto - join",
     "hubLegend": "● terhubung · ◌ terhubung · bergabung ◐ otomatis · ○ menganggur · A = bergabung otomatis",
@@ -4336,6 +4333,11 @@
       "autoJoin": "Bergabung otomatis diaktifkan",
       "idle": "Tidak terhubung"
     },
-    "noFavouriteHubs": "Belum ada hub RRC favorit. Beri bintang hub dari Discovered atau setelah menghubungkan dengan hash."
+    "noFavouriteHubs": "Belum ada hub RRC favorit. Beri bintang hub dari Discovered atau setelah menghubungkan dengan hash.",
+    "hubAutoJoinOnHint": "Bergabung otomatis — klik untuk menonaktifkan",
+    "hubAutoJoinOffHint": "Gabung otomatis — klik untuk menghubungkan hub ini saat tumpukan dimulai",
+    "roomAutoJoinOnHint": "Bergabung otomatis — klik untuk menonaktifkan",
+    "roomAutoJoinOffHint": "Gabung otomatis — klik untuk bergabung dengan ruangan ini saat hub terhubung",
+    "roomLegend": "★ favorit · A toggles auto - join"
   }
 }

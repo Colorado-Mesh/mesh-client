@@ -112,11 +112,14 @@ function HubRow({
         </button>
         <button
           type="button"
-          className={`shrink-0 px-1 text-[10px] font-semibold ${
-            autoJoin ? 'text-amber-300' : 'text-amber-200/30'
-          }`}
+          className={
+            autoJoin
+              ? 'shrink-0 rounded border border-amber-400 bg-amber-800/80 px-1.5 py-0.5 text-[10px] font-bold text-amber-50'
+              : 'shrink-0 rounded border border-dashed border-amber-700/60 px-1.5 py-0.5 text-[10px] font-semibold text-amber-200/45 hover:border-amber-500 hover:text-amber-200'
+          }
           aria-label={autoJoin ? t('rrc.disableHubAutoJoin') : t('rrc.enableHubAutoJoin')}
-          title={t('rrc.hubAutoJoin')}
+          aria-pressed={autoJoin}
+          title={autoJoin ? t('rrc.hubAutoJoinOnHint') : t('rrc.hubAutoJoinOffHint')}
           onClick={() => {
             onToggleAutoJoin(hub.destination_hash);
           }}

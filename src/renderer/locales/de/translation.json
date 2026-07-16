@@ -4268,7 +4268,6 @@
     "expandRooms": "Zimmerliste erweitern",
     "collapseRooms": "Raumliste ausblenden",
     "joinedRooms": "Beigetreten",
-    "suggestedRooms": "Empfohlen",
     "recentRooms": "Letzte",
     "roomKeyOptional": "Zimmerschlüssel (optional)",
     "joinRoomHelp": "Räume sind Live-Gruppen auf diesem Hub. Melden Sie sich mit Namen an, versuchen Sie es mit Vorgeschlagen oder geben Sie/list und /help ein.",
@@ -4301,7 +4300,6 @@
     "refreshRoomList": "Raumliste aktualisieren (/list)",
     "favoriteRoom": "Lieblingszimmer",
     "unfavoriteRoom": "Zimmerfavorit entfernen",
-    "autoJoin": "Kanal bei Verbindungsaufbau betreten",
     "enableAutoJoin": "Auto-Join aktivieren",
     "disableAutoJoin": "Auto-Join deaktivieren",
     "noTopic": "Lektion",
@@ -4326,7 +4324,6 @@
     "collapseMembers": "Mitgliederliste ausblenden",
     "cancelConnect": "Abbrechen",
     "maxHubsConnected": "Sie können mit höchstens 8 RRC-Hubs verbunden bleiben. Trennen Sie zuerst eine Verbindung.",
-    "hubAutoJoin": "Auto-Join-Hub bei laufendem Stack",
     "enableHubAutoJoin": "Aktivieren Sie die automatische Hub-Verbindung",
     "disableHubAutoJoin": "Deaktivieren Sie die automatische Hub-Verbindung",
     "hubLegend": "● connected · ◌ connecting · ◐ auto-join · ○ idle · A = auto-join",
@@ -4336,6 +4333,11 @@
       "autoJoin": "Auto-Join aktiviert",
       "idle": "Nicht verbunden"
     },
-    "noFavouriteHubs": "Noch keine Lieblings-RRC-Hubs. Markieren Sie einen Hub von Discovered oder nach der Verbindung per Hash."
+    "noFavouriteHubs": "Noch keine Lieblings-RRC-Hubs. Markieren Sie einen Hub von Discovered oder nach der Verbindung per Hash.",
+    "hubAutoJoinOnHint": "Automatisch beitreten — zum Ausschalten klicken",
+    "hubAutoJoinOffHint": "Auto-join off — Klicken Sie hier, um diesen Hub zu verbinden, wenn der Stack startet",
+    "roomAutoJoinOnHint": "Automatisch beitreten — zum Ausschalten klicken",
+    "roomAutoJoinOffHint": "Automatisch beitreten — Klicken Sie hier, um diesem Raum beizutreten, wenn der Hub eine Verbindung herstellt",
+    "roomLegend": "★ favorit · A wechselt die automatische Verbindung"
   }
 }

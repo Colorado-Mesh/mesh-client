@@ -4268,7 +4268,6 @@
     "expandRooms": "Ruimtelijst uitbreiden",
     "collapseRooms": "Lijst met kamers samenvouwen",
     "joinedRooms": "Toegetreden",
-    "suggestedRooms": "Voorgesteld",
     "recentRooms": "Recent",
     "roomKeyOptional": "Sleutel kamer (optioneel)",
     "joinRoomHelp": "Kamers zijn live groepen op deze hub. Doe mee op naam, probeer Aanbevolen of typ /list en /help.",
@@ -4301,7 +4300,6 @@
     "refreshRoomList": "Lijst met kamers vernieuwen (/list)",
     "favoriteRoom": "Favoriete kamer",
     "unfavoriteRoom": "Kamerfavoriet verwijderen",
-    "autoJoin": "_Automatisch binnengaan bij verbinden",
     "enableAutoJoin": "Automatisch aanmelden inschakelen",
     "disableAutoJoin": "Automatisch aanmelden uitschakelen",
     "noTopic": "(geen onderwerp ingesteld)",
@@ -4326,7 +4324,6 @@
     "collapseMembers": "Ledenlijst samenvouwen",
     "cancelConnect": "Annuleren",
     "maxHubsConnected": "U kunt verbonden blijven met maximaal 8 RRC-hubs. Koppel er eerst een los.",
-    "hubAutoJoin": "Auto-join hub wanneer stack actief is",
     "enableHubAutoJoin": "Schakel automatisch samenvoegen van hubs in",
     "disableHubAutoJoin": "Schakel automatisch samenvoegen van hub uit",
     "hubLegend": "● connected · ◌ connecting · ◐ auto-join · ○ idle · A = auto-join",
@@ -4336,6 +4333,11 @@
       "autoJoin": "Automatisch deelnemen ingeschakeld",
       "idle": "Niet verbonden"
     },
-    "noFavouriteHubs": "Nog geen favoriete RRC-hubs. Star een hub van Discovered of na het verbinden via hash."
+    "noFavouriteHubs": "Nog geen favoriete RRC-hubs. Star een hub van Discovered of na het verbinden via hash.",
+    "hubAutoJoinOnHint": "Automatisch aanmelden — klik om uit te schakelen",
+    "hubAutoJoinOffHint": "Automatisch afmelden — klik om deze hub aan te sluiten wanneer de stapel begint",
+    "roomAutoJoinOnHint": "Automatisch aanmelden — klik om uit te schakelen",
+    "roomAutoJoinOffHint": "Automatisch afmelden — klik om lid te worden van deze ruimte wanneer de hub verbinding maakt",
+    "roomLegend": "★ favoriet · A schakelt automatisch inloggen in"
   }
 }

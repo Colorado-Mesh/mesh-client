@@ -4268,7 +4268,6 @@
     "expandRooms": "展开房间列表",
     "collapseRooms": "折叠房间列表",
     "joinedRooms": "已加入",
-    "suggestedRooms": "建议",
     "recentRooms": "最近",
     "roomKeyOptional": "房间钥匙（选填）",
     "joinRoomHelp": "房间是这个中心的现场群组。按姓名加入，试试Suggested ，或键入/list和/help。",
@@ -4301,7 +4300,6 @@
     "refreshRoomList": "刷新房间列表(/list)",
     "favoriteRoom": "最喜爱的房间",
     "unfavoriteRoom": "删除房间收藏夹",
-    "autoJoin": "连接时加入",
     "enableAutoJoin": "启用自动加入",
     "disableAutoJoin": "禁用自动加入",
     "noTopic": "无帖子",
@@ -4326,7 +4324,6 @@
     "collapseMembers": "折叠成员列表",
     "cancelConnect": "取消推荐",
     "maxHubsConnected": "您最多可以连接8个RRC集线器。先断开一个。",
-    "hubAutoJoin": "堆栈运行时自动连接集线器",
     "enableHubAutoJoin": "启用集线器自动连接",
     "disableHubAutoJoin": "禁用集线器自动连接",
     "hubLegend": "● cONNECTED · ◌ CONNECTING ·◐自动加入· ○ IDLE · A =自动加入",
@@ -4336,6 +4333,11 @@
       "autoJoin": "自动加入已启用",
       "idle": "未连接"
     },
-    "noFavouriteHubs": "还没有收藏的RRC集线器。从发现或通过哈希连接后为集线器加星标。"
+    "noFavouriteHubs": "还没有收藏的RRC集线器。从发现或通过哈希连接后为集线器加星标。",
+    "hubAutoJoinOnHint": "自动加入开启—点击关闭",
+    "hubAutoJoinOffHint": "自动连接关闭—单击以在堆栈启动时连接此集线器",
+    "roomAutoJoinOnHint": "自动加入开启—点击关闭",
+    "roomAutoJoinOffHint": "自动加入关闭—当集线器连接时，单击以加入此房间",
+    "roomLegend": "★ 收藏夹· A切换自动联接"
   }
 }

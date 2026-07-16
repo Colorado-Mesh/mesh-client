@@ -4268,7 +4268,6 @@
     "expandRooms": "Expandir la lista de habitaciones",
     "collapseRooms": "Contraer lista de habitaciones",
     "joinedRooms": "Se unió",
-    "suggestedRooms": "Sugerido",
     "recentRooms": "Reciente",
     "roomKeyOptional": "Llave de la habitación (opcional)",
     "joinRoomHelp": "Las habitaciones son grupos en vivo en este centro. Únase por su nombre, pruebe Sugerido o escriba /list y /help.",
@@ -4301,7 +4300,6 @@
     "refreshRoomList": "Actualizar la lista de habitaciones (/list)",
     "favoriteRoom": "Habitación favorita",
     "unfavoriteRoom": "Eliminar habitación favorita",
-    "autoJoin": "Unirse al conectar",
     "enableAutoJoin": "Habilitar la unión automática",
     "disableAutoJoin": "Desactivar la unión automática",
     "noTopic": "Sin tema",
@@ -4326,7 +4324,6 @@
     "collapseMembers": "Contraer lista de miembros",
     "cancelConnect": "Cancelar",
     "maxHubsConnected": "Puedes mantenerte conectado a un máximo de 8 centros de RRC. Desconecta uno primero.",
-    "hubAutoJoin": "Concentrador de unión automática cuando la pila se está ejecutando",
     "enableHubAutoJoin": "Habilitar la unión automática del hub",
     "disableHubAutoJoin": "Desactivar la unión automática del hub",
     "hubLegend": "● conectado · ◌ conexión · ◐ unión automática · ○ inactivo · A = unión automática",
@@ -4336,6 +4333,11 @@
       "autoJoin": "Unión automática habilitada",
       "idle": "No conectado"
     },
-    "noFavouriteHubs": "Aún no hay hubs RRC favoritos. Destaca un hub de Discovered o después de conectarte por hash."
+    "noFavouriteHubs": "Aún no hay hubs RRC favoritos. Destaca un hub de Discovered o después de conectarte por hash.",
+    "hubAutoJoinOnHint": "Unión automática activada: haga clic para desactivar",
+    "hubAutoJoinOffHint": "Auto-join off — haga clic para conectar este hub cuando se inicie la pila",
+    "roomAutoJoinOnHint": "Unión automática activada: haga clic para desactivar",
+    "roomAutoJoinOffHint": "Auto-join OFF — haga clic para unirse a esta sala cuando el hub se conecte",
+    "roomLegend": "★ favorito · A toggles auto-join"
   }
 }

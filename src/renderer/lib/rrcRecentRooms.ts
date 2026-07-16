@@ -3,9 +3,6 @@ import { rrcRoomMatchKey, rrcRoomsMatch } from './rrcRoomName';
 const RECENT_PREFIX = 'mesh-client:rrc:recentRooms:';
 const MAX_RECENT = 10;
 
-/** Common rrcd registry names (no forced `#` — matches hub `_norm_room`). */
-export const RRC_SUGGESTED_ROOMS = ['lobby', 'general'] as const;
-
 function canonicalizeRecent(rooms: string[]): string[] {
   const out: string[] = [];
   const seen = new Set<string>();

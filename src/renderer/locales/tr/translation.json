@@ -4268,7 +4268,6 @@
     "expandRooms": "Oda listesini genişlet",
     "collapseRooms": "Oda listesini daralt",
     "joinedRooms": "katıldı",
-    "suggestedRooms": "Önerildi",
     "recentRooms": "Güncel",
     "roomKeyOptional": "Oda anahtarı (isteğe bağlı)",
     "joinRoomHelp": "Odalar bu merkezdeki canlı gruplardır. Ada göre katılın, Önerilen'i deneyin veya yazın /listeleyin ve /yardım edin.",
@@ -4301,7 +4300,6 @@
     "refreshRoomList": "Oda listesini yenile (/ list)",
     "favoriteRoom": "Favori oda",
     "unfavoriteRoom": "Odanın favorisini kaldır",
-    "autoJoin": "Bağlanıldığında Katıl",
     "enableAutoJoin": "Otomatik birleştirmeyi etkinleştir",
     "disableAutoJoin": "Otomatik katılmayı devre dışı bırak",
     "noTopic": "Başlık yok",
@@ -4326,7 +4324,6 @@
     "collapseMembers": "Üye listesini daralt",
     "cancelConnect": "İptal",
     "maxHubsConnected": "En fazla 8 RRC hub'ına bağlı kalabilirsiniz. Önce birini ayırın.",
-    "hubAutoJoin": "Yığın çalışırken göbeğe otomatik olarak katıl",
     "enableHubAutoJoin": "Hub'a otomatik katılmayı etkinleştir",
     "disableHubAutoJoin": "Hub'a otomatik katılmayı devre dışı bırak",
     "hubLegend": "● connected · ◌ connecting · ◐ auto - join · ○ idle · A = auto - join",
@@ -4336,6 +4333,11 @@
       "autoJoin": "Otomatik katılma etkinleştirildi",
       "idle": "Bağlı değil"
     },
-    "noFavouriteHubs": "Henüz favori RRC hub'ı yok. Discovered'dan veya hash ile bağlandıktan sonra bir hub'a yıldız verin."
+    "noFavouriteHubs": "Henüz favori RRC hub'ı yok. Discovered'dan veya hash ile bağlandıktan sonra bir hub'a yıldız verin.",
+    "hubAutoJoinOnHint": "Otomatik olarak katılın — kapatmak için tıklayın",
+    "hubAutoJoinOffHint": "Otomatik birleştirme kapalı — yığın başladığında bu hub'ı bağlamak için tıklayın",
+    "roomAutoJoinOnHint": "Otomatik olarak katılın — kapatmak için tıklayın",
+    "roomAutoJoinOffHint": "Otomatik olarak katılma — hub bağlandığında bu odaya katılmak için tıklayın",
+    "roomLegend": "★ favori · A geçişleri otomatik katılma"
   }
 }

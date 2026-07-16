@@ -17,11 +17,7 @@ import {
   toggleRrcHubAutoJoin,
 } from '@/renderer/lib/rrcHubPrefs';
 import { isRrcHubLinked } from '@/renderer/lib/rrcHubSession';
-import {
-  loadRrcRecentRooms,
-  pushRrcRecentRoom,
-  RRC_SUGGESTED_ROOMS,
-} from '@/renderer/lib/rrcRecentRooms';
+import { loadRrcRecentRooms, pushRrcRecentRoom } from '@/renderer/lib/rrcRecentRooms';
 import { dedupeRrcMembers, rrcIdentityHashesMatch } from '@/renderer/lib/rrcRoomMembers';
 import { resolveRrcJoinRoomName, rrcRoomMatchKey, rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import {
@@ -339,18 +335,11 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
     [rooms],
   );
 
-  const suggestedRooms = useMemo(
-    () => RRC_SUGGESTED_ROOMS.filter((r) => !joinedKeys.has(rrcRoomMatchKey(r))),
-    [joinedKeys],
-  );
-
   const recentNotJoined = useMemo(
     () =>
       recentRooms.filter(
         (r) =>
-          !joinedKeys.has(rrcRoomMatchKey(r)) &&
-          !RRC_SUGGESTED_ROOMS.some((s) => rrcRoomsMatch(s, r)) &&
-          !listedRooms.some((l) => rrcRoomsMatch(l.name, r)),
+          !joinedKeys.has(rrcRoomMatchKey(r)) && !listedRooms.some((l) => rrcRoomsMatch(l.name, r)),
       ),
     [recentRooms, joinedKeys, listedRooms],
   );
@@ -884,7 +873,6 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
           joined={roomList}
           listed={listedRooms}
           favourites={roomFavourites}
-          suggested={suggestedRooms}
           recent={recentNotJoined}
           activeRoom={activeRoom}
           unreadByRoom={unreadByRoom}

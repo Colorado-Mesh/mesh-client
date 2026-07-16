@@ -4268,7 +4268,6 @@
     "expandRooms": "Élargir la liste des chambres",
     "collapseRooms": "Réduire la liste des pièces",
     "joinedRooms": "Souscrit le",
-    "suggestedRooms": "Suggéré",
     "recentRooms": "Récent",
     "roomKeyOptional": "Clé de la chambre (en option)",
     "joinRoomHelp": "Les chambres sont des groupes en direct sur ce hub. Inscrivez-vous par nom, essayez Suggestions ou tapez /list et /help.",
@@ -4301,7 +4300,6 @@
     "refreshRoomList": "Actualiser la liste des chambres (/list)",
     "favoriteRoom": "Chambre préférée",
     "unfavoriteRoom": "Supprimer le favori de la chambre",
-    "autoJoin": "Rejoindre à la connexion",
     "enableAutoJoin": "Activer la connexion automatique",
     "disableAutoJoin": "Désactiver Rejoindre automatiquement",
     "noTopic": "Aucun Topic",
@@ -4326,7 +4324,6 @@
     "collapseMembers": "Réduire la liste des membres",
     "cancelConnect": "Annuler",
     "maxHubsConnected": "Vous pouvez rester connecté à un maximum de 8 hubs RRC. Déconnectez-en un d'abord.",
-    "hubAutoJoin": "Jointure automatique du concentrateur lorsque la pile est en cours d'exécution",
     "enableHubAutoJoin": "Activer la connexion automatique au hub",
     "disableHubAutoJoin": "Désactiver Rejoindre automatiquement",
     "hubLegend": "● connecté · ◌ connexion · ◐ auto-assemblage · ○ inactif · A = auto-assemblage",
@@ -4336,6 +4333,11 @@
       "autoJoin": "Connexion automatique activée",
       "idle": "Non connecté"
     },
-    "noFavouriteHubs": "Pas encore de hubs RRC préférés. Étoilez un hub de Découverte ou après vous être connecté par hachage."
+    "noFavouriteHubs": "Pas encore de hubs RRC préférés. Étoilez un hub de Découverte ou après vous être connecté par hachage.",
+    "hubAutoJoinOnHint": "Connexion automatique activée — cliquez pour désactiver",
+    "hubAutoJoinOffHint": "Auto-join off — cliquez pour connecter ce concentrateur lorsque la pile démarre",
+    "roomAutoJoinOnHint": "Connexion automatique activée — cliquez pour désactiver",
+    "roomAutoJoinOffHint": "Auto-join off — cliquez pour rejoindre cette salle lorsque le hub se connecte",
+    "roomLegend": "★ favori · A toggles auto-join"
   }
 }

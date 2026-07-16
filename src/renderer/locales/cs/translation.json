@@ -4268,7 +4268,6 @@
     "expandRooms": "Rozbalit seznam místností",
     "collapseRooms": "Sbalit seznam místností",
     "joinedRooms": "Připojen",
-    "suggestedRooms": "Navržené",
     "recentRooms": "Nedávné",
     "roomKeyOptional": "Klíč od pokoje (volitelné)",
     "joinRoomHelp": "Pokoje jsou v tomto centru živé skupiny. Připojte se podle jména, zkuste Navrhované nebo napište /list a /help.",
@@ -4301,7 +4300,6 @@
     "refreshRoomList": "Aktualizovat seznam místností (/list)",
     "favoriteRoom": "Oblíbený pokoj",
     "unfavoriteRoom": "Odebrat oblíbený pokoj",
-    "autoJoin": "Připojit se při startu",
     "enableAutoJoin": "Povolit automatické členství",
     "disableAutoJoin": "Zakázat automatické připojení",
     "noTopic": "Žádné téma",
@@ -4326,7 +4324,6 @@
     "collapseMembers": "Sbalit seznam členů",
     "cancelConnect": "Zrušit",
     "maxHubsConnected": "Můžete zůstat ve spojení maximálně s 8 rozbočovači RRC. Nejprve jeden odpojte.",
-    "hubAutoJoin": "Automaticky připojit rozbočovač, když je spuštěn zásobník",
     "enableHubAutoJoin": "Povolit automatické členství",
     "disableHubAutoJoin": "Zakázat automatické připojení k rozbočovači",
     "hubLegend": "● connected · ◌ connection · ◐ auto-join · ○ idle · A = auto-join",
@@ -4336,6 +4333,11 @@
       "autoJoin": "Automatické členství je povoleno",
       "idle": "Nepřipojeno"
     },
-    "noFavouriteHubs": "Zatím žádné oblíbené rozbočovače RRC. Označte hvězdičkou rozbočovač z Discovered nebo po připojení hashem."
+    "noFavouriteHubs": "Zatím žádné oblíbené rozbočovače RRC. Označte hvězdičkou rozbočovač z Discovered nebo po připojení hashem.",
+    "hubAutoJoinOnHint": "Automatické připojení zapnuto — kliknutím vypnete",
+    "hubAutoJoinOffHint": "Automatické připojení vypnuto — klikněte pro připojení tohoto rozbočovače při spuštění zásobníku",
+    "roomAutoJoinOnHint": "Automatické připojení zapnuto — kliknutím vypnete",
+    "roomAutoJoinOffHint": "Automatické připojení vypnuto — kliknutím se připojíš k této místnosti, jakmile se rozbočovač připojí",
+    "roomLegend": "★ oblíbené · Přepíná automatické připojení"
   }
 }

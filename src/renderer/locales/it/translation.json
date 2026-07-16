@@ -4268,7 +4268,6 @@
     "expandRooms": "Espandi l'elenco delle stanze",
     "collapseRooms": "Comprimi l'elenco delle stanze",
     "joinedRooms": "Unito",
-    "suggestedRooms": "Suggerito",
     "recentRooms": "Recenti",
     "roomKeyOptional": "Chiave della camera (opzionale)",
     "joinRoomHelp": "Le camere sono gruppi dal vivo su questo hub. Unisciti per nome, prova Suggerito o digita /list e /help.",
@@ -4301,7 +4300,6 @@
     "refreshRoomList": "Aggiorna l'elenco delle stanze (/list)",
     "favoriteRoom": "favourite room",
     "unfavoriteRoom": "Rimuovi camera preferita",
-    "autoJoin": "Unisciti automaticamente alla connessione",
     "enableAutoJoin": "Abilita auto-join",
     "disableAutoJoin": "Disabilita auto-join",
     "noTopic": "Nessun argomento impostato",
@@ -4326,7 +4324,6 @@
     "collapseMembers": "Comprimi l'elenco dei membri",
     "cancelConnect": "Annulla",
     "maxHubsConnected": "Puoi rimanere connesso a un massimo di 8 hub RRC. Prima scollegane uno.",
-    "hubAutoJoin": "Unisci automaticamente l'hub quando lo stack è in esecuzione",
     "enableHubAutoJoin": "Abilita auto-join hub",
     "disableHubAutoJoin": "Disabilita l'auto-join dell'hub",
     "hubLegend": "● connesso · ◌ connessione · ◐ auto-join · ○ inattivo · A = auto-join",
@@ -4336,6 +4333,11 @@
       "autoJoin": "Auto-join abilitato",
       "idle": "Nessuna connessione attiva"
     },
-    "noFavouriteHubs": "Ancora nessun hub RRC preferito. Metti in evidenza un hub da Scoperto o dopo la connessione tramite hash."
+    "noFavouriteHubs": "Ancora nessun hub RRC preferito. Metti in evidenza un hub da Scoperto o dopo la connessione tramite hash.",
+    "hubAutoJoinOnHint": "Unisciti automaticamente su — fai clic per disattivare",
+    "hubAutoJoinOffHint": "Auto-join disattivato: fai clic per connettere questo hub all'avvio dello stack",
+    "roomAutoJoinOnHint": "Unisciti automaticamente su — fai clic per disattivare",
+    "roomAutoJoinOffHint": "Auto-join disattivato: fai clic per unirti a questa stanza quando l'hub si connette",
+    "roomLegend": "★ preferito · A attiva/disattiva l'auto-join"
   }
 }

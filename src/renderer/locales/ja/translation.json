@@ -4268,7 +4268,6 @@
     "expandRooms": "部屋リストを拡大",
     "collapseRooms": "ルームリストを折りたたむ",
     "joinedRooms": "結合",
-    "suggestedRooms": "推奨",
     "recentRooms": "最近",
     "roomKeyOptional": "部屋の鍵（任意）",
     "joinRoomHelp": "客室はこのハブのライブグループです。名前で参加するか、Suggestedを試すか、/listと/helpと入力してください。",
@@ -4301,7 +4300,6 @@
     "refreshRoomList": "部屋リストを更新(/ list)",
     "favoriteRoom": "お気に入りの部屋",
     "unfavoriteRoom": "お気に入りの部屋を削除",
-    "autoJoin": "接続時に自動結合",
     "enableAutoJoin": "自動結合を有効にする",
     "disableAutoJoin": "自動参加を無効にする",
     "noTopic": "トピックなし",
@@ -4326,7 +4324,6 @@
     "collapseMembers": "メンバーリストを折りたたむ",
     "cancelConnect": "取り消す",
     "maxHubsConnected": "最大8つのRRCハブに接続できます。最初に1つを切断します。",
-    "hubAutoJoin": "スタックが実行されているときにハブを自動結合",
     "enableHubAutoJoin": "ハブの自動結合を有効にする",
     "disableHubAutoJoin": "ハブの自動結合を無効にする",
     "hubLegend": "● 接続・◌接続・◐自動結合・○アイドル・A =自動結合",
@@ -4336,6 +4333,11 @@
       "autoJoin": "自動参加が有効になっています",
       "idle": "未接続"
     },
-    "noFavouriteHubs": "お気に入りのRRCハブはまだありません。Discoveredから、またはハッシュで接続した後、ハブにスターを付けます。"
+    "noFavouriteHubs": "お気に入りのRRCハブはまだありません。Discoveredから、またはハッシュで接続した後、ハブにスターを付けます。",
+    "hubAutoJoinOnHint": "オートジョインオン—クリックしてオフ",
+    "hubAutoJoinOffHint": "オートジョインオフ—スタック開始時にこのハブを接続するにはクリックしてください",
+    "roomAutoJoinOnHint": "オートジョインオン—クリックしてオフ",
+    "roomAutoJoinOffHint": "オートジョインオフ—ハブが接続されたときにクリックしてこの部屋に参加します",
+    "roomLegend": "★ お気に入り·自動結合を切り替える"
   }
 }

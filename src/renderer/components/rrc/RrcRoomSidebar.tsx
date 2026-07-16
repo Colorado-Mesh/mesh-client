@@ -55,7 +55,6 @@ export interface RrcRoomSidebarProps {
   joined: RrcRoomInfo[];
   listed: RrcListedRoom[];
   favourites: string[];
-  suggested: string[];
   recent: string[];
   activeRoom: string | null;
   unreadByRoom: Map<string, number>;
@@ -80,7 +79,6 @@ export function RrcRoomSidebar({
   joined,
   listed,
   favourites,
-  suggested,
   recent,
   activeRoom,
   unreadByRoom,
@@ -180,9 +178,14 @@ export function RrcRoomSidebar({
           </button>
           <button
             type="button"
-            className={`shrink-0 px-1 text-[9px] ${isAuto ? 'text-amber-300' : 'text-amber-200/30'}`}
+            className={
+              isAuto
+                ? 'shrink-0 rounded border border-amber-400 bg-amber-800/80 px-1.5 py-0.5 text-[9px] font-bold text-amber-50'
+                : 'shrink-0 rounded border border-dashed border-amber-700/60 px-1.5 py-0.5 text-[9px] font-semibold text-amber-200/45 hover:border-amber-500 hover:text-amber-200'
+            }
             aria-label={isAuto ? t('rrc.disableAutoJoin') : t('rrc.enableAutoJoin')}
-            title={t('rrc.autoJoin')}
+            aria-pressed={isAuto}
+            title={isAuto ? t('rrc.roomAutoJoinOnHint') : t('rrc.roomAutoJoinOffHint')}
             onClick={() => {
               onToggleAutoJoin(name);
             }}
@@ -206,23 +209,13 @@ export function RrcRoomSidebar({
         !listedMatchKeys.has(rrcRoomMatchKey(r)),
     ),
   );
-  const suggestedVisible = dedupeByMatchKey(
-    suggested.filter(
-      (r) =>
-        filterName(r) &&
-        !joinedKeys.has(rrcRoomMatchKey(r)) &&
-        !listedMatchKeys.has(rrcRoomMatchKey(r)) &&
-        !favNotJoined.some((f) => rrcRoomsMatch(f, r)),
-    ),
-  );
   const recentVisible = dedupeByMatchKey(
     recent.filter(
       (r) =>
         filterName(r) &&
         !joinedKeys.has(rrcRoomMatchKey(r)) &&
         !listedMatchKeys.has(rrcRoomMatchKey(r)) &&
-        !favNotJoined.some((f) => rrcRoomsMatch(f, r)) &&
-        !suggestedVisible.some((s) => rrcRoomsMatch(s, r)),
+        !favNotJoined.some((f) => rrcRoomsMatch(f, r)),
     ),
   );
 
@@ -260,6 +253,7 @@ export function RrcRoomSidebar({
             aria-label={t('rrc.searchRooms')}
             className="w-full rounded border border-amber-800/50 bg-slate-900/80 px-2 py-1 text-xs text-amber-50"
           />
+          <p className="px-1 text-[10px] leading-snug text-amber-200/45">{t('rrc.roomLegend')}</p>
           <div className="flex gap-1">
             <input
               type="text"
@@ -325,12 +319,6 @@ export function RrcRoomSidebar({
         {!collapsed &&
           listedNotJoined.map((r) => renderRoomButton(r.name, { joined: false, topic: r.topic }))}
         {!collapsed && favNotJoined.map((name) => renderRoomButton(name, { joined: false }))}
-        {!collapsed && suggestedVisible.length > 0 && (
-          <li className="mt-2 px-2 py-1 text-[10px] tracking-wide text-amber-500/70 uppercase">
-            {t('rrc.suggestedRooms')}
-          </li>
-        )}
-        {!collapsed && suggestedVisible.map((name) => renderRoomButton(name, { joined: false }))}
         {!collapsed && recentVisible.length > 0 && (
           <li className="mt-2 px-2 py-1 text-[10px] tracking-wide text-amber-500/70 uppercase">
             {t('rrc.recentRooms')}
