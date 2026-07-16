@@ -4255,7 +4255,6 @@
     "toggleTimestamps": "Toggle timestamps",
     "muteRoom": "Mute room",
     "unmuteRoom": "Unmute room",
-    "toggleMembers": "Show room members",
     "members": "Members",
     "noMembers": "No member list from hub.",
     "copyMessage": "Copy message",
@@ -4294,7 +4293,31 @@
       "usageJoin": "Kullanım: /join ROOM [key]",
       "usageMe": "Kullanımı: /me ACTION",
       "nickChanged": "Takma ad {{name}} olarak ayarlandı",
-      "commandSent": "Komut gönderildi: {{cmd}}"
+      "commandSent": "Komut gönderildi: {{cmd}}",
+      "helpMsg": "/msg NICK|KARMA metin — doğrudan BİLDİRİM fısıltısı (rrcd)",
+      "usageMsg": "Kullanım: /msg NICK|KARMA METİN",
+      "msgTargetNotFound": "/msg hedefi tam kimlik karmasına çözülemedi. Bir odaya katılın veya tam karmayı kullanın.",
+      "msgSent": "→ {{name}}: {{text}}"
+    },
+    "listedRooms": "Listelenmiş",
+    "refreshRoomList": "Oda listesini yenile (/ list)",
+    "favoriteRoom": "Favori oda",
+    "unfavoriteRoom": "Odanın favorisini kaldır",
+    "autoJoin": "Bağlanıldığında Katıl",
+    "enableAutoJoin": "Otomatik birleştirmeyi etkinleştir",
+    "disableAutoJoin": "Otomatik katılmayı devre dışı bırak",
+    "noTopic": "Başlık yok",
+    "memberCount_one": "{{count}} üye",
+    "memberCount_other": "{{count}} üye",
+    "userCount_one": "{{count}} kullanıcı",
+    "userCount_other": "{{count}} kullanıcı",
+    "refreshWho": "Üyeleri yenile (/ who)",
+    "msgNick": "Mesaj {{name}}",
+    "dismissBanner": "Bildirimi kapat",
+    "directNoticeUnsupported": "Bu merkez doğrudan BİLDİRİMİ (/ msg) desteklemiyor.",
+    "capDirectNotice": "doğrudan msg",
+    "moderation": {
+      "removedFromRoom": "Göbek tarafından odadan çıkarılır (tekme, yasak veya uzak kısım)."
     }
   }
 }

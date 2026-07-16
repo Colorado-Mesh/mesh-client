@@ -770,13 +770,13 @@ impl LiveBridge {
         }
     }
 
-    pub async fn rrc_send(&self, room: Option<&str>, body: &str, kind: &str) -> serde_json::Value {
+    pub async fn rrc_send(&self, room: Option<&str>, body: &str, kind: &str, dst_hash: Option<&str>) -> serde_json::Value {
         let room = room
             .map(|r| r.trim().to_string())
             .filter(|r| !r.is_empty());
         match self
             .rrc_session
-            .send_chat(room, body.to_string(), kind)
+            .send_chat(room, body.to_string(), kind, dst_hash)
             .await
         {
             Ok(()) => serde_json::json!({ "ok": true }),

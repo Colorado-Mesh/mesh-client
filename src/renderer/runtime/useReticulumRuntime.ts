@@ -85,6 +85,12 @@ import type { ReticulumSidecarEvent, ReticulumWirePacketRow } from '@/shared/ret
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
+import {
+  isRrcModerationLanguage,
+  parseRrcListNotice,
+  parseRrcTopicNotice,
+  parseRrcWhoNotice,
+} from '../lib/rrcNoticeParsers';
 import type { DeviceState, MeshNode } from '../lib/types';
 import { useBlockStore } from '../stores/blockStore';
 import { setConnection } from '../stores/connectionStore';
@@ -115,7 +121,11 @@ import {
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
 import { useRrcHubStore } from '../stores/rrcHubStore';
-import { useRrcSessionStore } from '../stores/rrcSessionStore';
+import {
+  RRC_HUB_STREAM_ROOM,
+  RRC_WHISPERS_ROOM,
+  useRrcSessionStore,
+} from '../stores/rrcSessionStore';
 import type { ProtocolRuntime } from './protocolRuntime';
 
 /** Safety poll interval when the path table is large. */
@@ -551,6 +561,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
           hub_dest_hash?: string;
           hub_name?: string | null;
           status?: string;
+          capabilities?: {
+            direct_notice?: boolean;
+            action?: boolean;
+            resource_envelope?: boolean;
+          };
         };
         const st =
           p.status === 'connecting'
@@ -559,6 +574,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
               ? 'active'
               : 'awaiting_welcome';
         useRrcSessionStore.getState().applyStatus(st, p.hub_dest_hash ?? null, p.hub_name ?? null);
+        if (p.capabilities) {
+          useRrcSessionStore.getState().setCapabilities({
+            direct_notice: Boolean(p.capabilities.direct_notice),
+            action: Boolean(p.capabilities.action),
+            resource_envelope: Boolean(p.capabilities.resource_envelope),
+          });
+        }
         if (st === 'active' && p.hub_dest_hash && p.hub_name) {
           useRrcHubStore.getState().applyWelcomeName(p.hub_dest_hash, p.hub_name);
         }
@@ -568,6 +590,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
             if (typeof snap.identity_hash === 'string' && snap.identity_hash) {
               useRrcSessionStore.getState().setLocalIdentityHash(snap.identity_hash);
             }
+            if (snap.capabilities) {
+              useRrcSessionStore.getState().setCapabilities({
+                direct_notice: Boolean(snap.capabilities.direct_notice),
+                action: Boolean(snap.capabilities.action),
+                resource_envelope: Boolean(snap.capabilities.resource_envelope),
+              });
+            }
           })
           .catch((e: unknown) => {
             console.debug('[useReticulumRuntime] rrc getStatus identity ' + errLikeToLogString(e));
@@ -576,12 +605,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (evt.type === 'rrc.disconnected' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { reason?: string };
         const session = useRrcSessionStore.getState();
-        if (p.reason === 'local_disconnect') {
+        if (p.reason === 'local_disconnect' || session.disconnectIntent) {
           session.clearSession();
         } else {
           // Sidecar auto-reconnects unintended drops; keep volatile rooms until reconnect settles.
           session.applyStatus('reconnecting');
           if (p.reason) session.setError(p.reason);
+          session.setModerationBanner(null);
         }
       }
       if (evt.type === 'rrc.room.joined' && evt.payload && typeof evt.payload === 'object') {
@@ -596,7 +626,20 @@ export function useReticulumRuntime(): ProtocolRuntime {
       if (evt.type === 'rrc.room.parted' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { room?: string };
         if (typeof p.room === 'string') {
-          useRrcSessionStore.getState().roomParted(p.room);
+          const session = useRrcSessionStore.getState();
+          const roomKey = p.room.trim().toLowerCase();
+          const voluntary = session.partIntentRooms.has(roomKey);
+          if (!voluntary) {
+            session.setModerationBanner('rrc.moderation.removedFromRoom');
+            session.addMessage({
+              id: `part-${Date.now()}`,
+              room: session.activeRoom ?? RRC_HUB_STREAM_ROOM,
+              kind: 'system',
+              body: `Removed from ${p.room}`,
+              timestamp: Date.now(),
+            });
+          }
+          session.roomParted(p.room, { forced: !voluntary });
         }
       }
       if (evt.type === 'rrc.message' && evt.payload && typeof evt.payload === 'object') {
@@ -609,6 +652,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
           nickname?: string | null;
           timestamp?: number;
           hub_dest_hash?: string | null;
+          dst_hash?: string | null;
         };
         if (typeof p.body === 'string') {
           const session = useRrcSessionStore.getState();
@@ -624,10 +668,25 @@ export function useReticulumRuntime(): ProtocolRuntime {
               p.kind === 'system'
                 ? p.kind
                 : 'msg';
-            const room =
-              typeof p.room === 'string' && p.room.trim()
+            const isDirect = Boolean(p.dst_hash);
+            const room = isDirect
+              ? RRC_WHISPERS_ROOM
+              : typeof p.room === 'string' && p.room.trim()
                 ? p.room
-                : (session.activeRoom ?? '[hub]');
+                : (session.activeRoom ?? RRC_HUB_STREAM_ROOM);
+
+            if (kind === 'notice') {
+              const listed = parseRrcListNotice(p.body);
+              if (listed) session.setListedRooms(listed);
+              const who = parseRrcWhoNotice(p.body);
+              if (who) session.mergeRoomMembers(who.room, who.members, 'merge');
+              const topic = parseRrcTopicNotice(p.body);
+              if (topic) session.setRoomTopic(topic.room, topic.topic || null);
+              if (isRrcModerationLanguage(p.body)) {
+                session.setModerationBanner(p.body);
+              }
+            }
+
             session.addMessage(
               {
                 id: typeof p.id === 'string' ? p.id : `rrc-${Date.now()}`,
@@ -637,6 +696,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
                 sender_hash: p.sender_hash,
                 nickname: p.nickname,
                 timestamp: typeof p.timestamp === 'number' ? p.timestamp : Date.now(),
+                dst_hash: p.dst_hash,
               },
               { bumpUnread: true },
             );
@@ -648,10 +708,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
         if (typeof p.message === 'string') {
           const session = useRrcSessionStore.getState();
           session.setError(p.message);
+          if (isRrcModerationLanguage(p.message)) {
+            session.setModerationBanner(p.message);
+          }
           if (session.hubDestHash) {
             session.addMessage({
               id: `err-${Date.now()}`,
-              room: session.activeRoom ?? '[hub]',
+              room: session.activeRoom ?? RRC_HUB_STREAM_ROOM,
               kind: 'error',
               body: p.message,
               timestamp: Date.now(),

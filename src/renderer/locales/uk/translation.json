@@ -4255,7 +4255,6 @@
     "toggleTimestamps": "Toggle timestamps",
     "muteRoom": "Mute room",
     "unmuteRoom": "Unmute room",
-    "toggleMembers": "Show room members",
     "members": "Members",
     "noMembers": "No member list from hub.",
     "copyMessage": "Copy message",
@@ -4294,7 +4293,31 @@
       "usageJoin": "Використання: /join ROOM [key]",
       "usageMe": "Використання: /me ACTION",
       "nickChanged": "Псевдонім встановлено на {{name}}",
-      "commandSent": "Команда надіслана: {{cmd}}"
+      "commandSent": "Команда надіслана: {{cmd}}",
+      "helpMsg": "/msg НІК|ХЕШ-ТЕКСТ — пошепки з прямим ПОВІДОМЛЕННЯМ (rrcd)",
+      "usageMsg": "Використання: /msg НІК| хеш-текст",
+      "msgTargetNotFound": "Не вдалося розв'язати ціль/msg до повного хешу ідентичності. Приєднуйтеся до кімнати або використовуйте повний хеш.",
+      "msgSent": "→ {{name}}: {{text}}"
+    },
+    "listedRooms": "Включені до переліку?",
+    "refreshRoomList": "Оновити список кімнат (/list)",
+    "favoriteRoom": "Улюблена кімната",
+    "unfavoriteRoom": "Видалити вибране кімнати",
+    "autoJoin": "Приєднатися після з’ єднання",
+    "enableAutoJoin": "Увімкнути автоматичне приєднання",
+    "disableAutoJoin": "Вимкнути автоматичне приєднання",
+    "noTopic": "Немає теми",
+    "memberCount_one": "{{count}} учасник",
+    "memberCount_other": "{{count}} учасників",
+    "userCount_one": "{{count}} користувач",
+    "userCount_other": "{{count}} користувачів",
+    "refreshWho": "Оновити учасників (/ВООЗ)",
+    "msgNick": "Повідомлення {{name}}",
+    "dismissBanner": "Відхилити це повідомлення",
+    "directNoticeUnsupported": "Цей концентратор не підтримує пряме СПОВІЩЕННЯ (/msg).",
+    "capDirectNotice": "пряме повідомлення",
+    "moderation": {
+      "removedFromRoom": "Вилучено з приміщення за допомогою концентратора (удар, заборона або віддалена частина)."
     }
   }
 }

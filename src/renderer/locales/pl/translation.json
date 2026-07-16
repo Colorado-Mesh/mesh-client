@@ -4255,7 +4255,6 @@
     "toggleTimestamps": "Toggle timestamps",
     "muteRoom": "Mute room",
     "unmuteRoom": "Unmute room",
-    "toggleMembers": "Show room members",
     "members": "Members",
     "noMembers": "No member list from hub.",
     "copyMessage": "Copy message",
@@ -4294,7 +4293,31 @@
       "usageJoin": "Użycie: /join ROOM [key]",
       "usageMe": "Użycie: /me ACTION",
       "nickChanged": "Pseudonim ustawiony na {{name}}",
-      "commandSent": "Wysłano polecenie: {{cmd}}"
+      "commandSent": "Wysłano polecenie: {{cmd}}",
+      "helpMsg": "/msg NICK|HASH text — direct NOTICE whisper (rrcd)",
+      "usageMsg": "Użycie: /msg NICK|HASH TEXT",
+      "msgTargetNotFound": "Nie można rozwiązać celu/msg do pełnego skrótu tożsamości. Dołącz do pokoju lub użyj pełnego skrótu.",
+      "msgSent": "→ {{name}}: {{text}}"
+    },
+    "listedRooms": "Wylistowany",
+    "refreshRoomList": "Odśwież listę pokoi (/list)",
+    "favoriteRoom": "Ulubiony pokój",
+    "unfavoriteRoom": "Usuń ulubiony pokój",
+    "autoJoin": "Dołącz podczas ustanowienia połączenia",
+    "enableAutoJoin": "Włącz automatyczne dołączanie",
+    "disableAutoJoin": "Wyłącz automatyczne dołączanie",
+    "noTopic": "Brak tematu",
+    "memberCount_one": "{{count}} członek",
+    "memberCount_other": "Członkowie: {{count}}",
+    "userCount_one": "Użytkownik {{count}}",
+    "userCount_other": "Użytkownicy: {{count}}",
+    "refreshWho": "Odśwież członków (/who)",
+    "msgNick": "Wiadomość {{name}}",
+    "dismissBanner": "Ukryj powiadomienie",
+    "directNoticeUnsupported": "Ten koncentrator nie obsługuje POWIADOMIEŃ bezpośrednich (/msg).",
+    "capDirectNotice": "direct msg",
+    "moderation": {
+      "removedFromRoom": "Usunięty z pokoju przez piastę (kopnięcie, zakaz lub część zdalna)."
     }
   }
 }

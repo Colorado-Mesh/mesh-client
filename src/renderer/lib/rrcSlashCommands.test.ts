@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { normalizeRrcRoomName, parseRrcSlashInput } from './rrcSlashCommands';
+import { normalizeRrcRoomName, parseRrcSlashInput, resolveRrcMsgTarget } from './rrcSlashCommands';
 
 describe('parseRrcSlashInput', () => {
   it('returns chat for plain text', () => {
@@ -36,6 +36,12 @@ describe('parseRrcSlashInput', () => {
       command: 'me',
       action: 'waves',
     });
+    expect(parseRrcSlashInput('/msg alice hi there')).toEqual({
+      kind: 'local',
+      command: 'msg',
+      target: 'alice',
+      text: 'hi there',
+    });
     expect(parseRrcSlashInput('/clear')).toEqual({ kind: 'local', command: 'clear' });
     expect(parseRrcSlashInput('/quit')).toEqual({ kind: 'local', command: 'quit' });
   });
@@ -47,5 +53,23 @@ describe('parseRrcSlashInput', () => {
 
   it('normalizes room names', () => {
     expect(normalizeRrcRoomName('  #Lobby ')).toBe('#lobby');
+  });
+});
+
+describe('resolveRrcMsgTarget', () => {
+  const members = [
+    { identity_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', nickname: 'Alice' },
+    { identity_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', nickname: 'Bob' },
+  ];
+
+  it('resolves by nick and full hash', () => {
+    expect(resolveRrcMsgTarget('alice', members)?.identity_hash).toBe(
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    );
+    expect(resolveRrcMsgTarget('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', members)?.nickname).toBe('Bob');
+  });
+
+  it('resolves unique hash prefix', () => {
+    expect(resolveRrcMsgTarget('aaaa', members)?.nickname).toBe('Alice');
   });
 });

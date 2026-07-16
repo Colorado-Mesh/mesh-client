@@ -1039,7 +1039,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/join', opts),
       part: (opts: { room: string }) =>
         ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/part', opts),
-      send: (opts: { room?: string; body: string; type?: string }) =>
+      send: (opts: { room?: string; body: string; type?: string; dst_hash?: string }) =>
         ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/send', opts),
       getRooms: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rrc/rooms'),
     },

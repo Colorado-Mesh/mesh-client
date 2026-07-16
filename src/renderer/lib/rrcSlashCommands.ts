@@ -9,6 +9,7 @@ export type RrcSlashResult =
   | { kind: 'local'; command: 'join'; room: string; key?: string }
   | { kind: 'local'; command: 'part'; room?: string }
   | { kind: 'local'; command: 'me'; action: string }
+  | { kind: 'local'; command: 'msg'; target: string; text: string }
   | { kind: 'local'; command: 'clear' }
   | { kind: 'local'; command: 'quit' }
   | { kind: 'local'; command: 'usage'; messageKey: string }
@@ -53,6 +54,15 @@ export function parseRrcSlashInput(raw: string): RrcSlashResult | null {
     if (!arg) return { kind: 'local', command: 'usage', messageKey: 'rrc.slash.usageMe' };
     return { kind: 'local', command: 'me', action: arg };
   }
+  if (cmd === '/msg' || cmd === '/query' || cmd === '/whisper') {
+    const msgParts = arg.split(/\s+/);
+    const target = msgParts[0] ?? '';
+    const msgText = arg.slice(target.length).trim();
+    if (!target || !msgText) {
+      return { kind: 'local', command: 'usage', messageKey: 'rrc.slash.usageMsg' };
+    }
+    return { kind: 'local', command: 'msg', target, text: msgText };
+  }
   if (cmd === '/clear') {
     return { kind: 'local', command: 'clear' };
   }
@@ -64,6 +74,31 @@ export function parseRrcSlashInput(raw: string): RrcSlashResult | null {
   return { kind: 'hub', body: text };
 }
 
+/**
+ * Resolve `/msg` target (nick or hash/prefix) against room members.
+ * Prefers exact nick (case-insensitive), then full hash, then hash prefix.
+ */
+export function resolveRrcMsgTarget(
+  target: string,
+  members: { identity_hash: string; nickname?: string | null }[],
+): { identity_hash: string; nickname?: string | null } | null {
+  const t = target.trim().toLowerCase();
+  if (!t) return null;
+  if (/^[0-9a-f]{32}$/i.test(t)) {
+    const full = members.find((m) => m.identity_hash.toLowerCase() === t);
+    return full ?? { identity_hash: t, nickname: null };
+  }
+  const byNick = members.find((m) => (m.nickname ?? '').toLowerCase() === t);
+  if (byNick && !byNick.identity_hash.startsWith('nick:')) return byNick;
+  if (/^[0-9a-f]{4,31}$/i.test(t)) {
+    const matches = members.filter(
+      (m) => m.identity_hash.toLowerCase().startsWith(t) && !m.identity_hash.startsWith('nick:'),
+    );
+    if (matches.length === 1) return matches[0] ?? null;
+  }
+  return byNick && !byNick.identity_hash.startsWith('nick:') ? byNick : null;
+}
+
 /** Static English help lines (rendered via i18n keys in the panel). */
 export const RRC_HELP_I18N_KEYS = [
   'rrc.slash.helpIntro',
@@ -72,6 +107,7 @@ export const RRC_HELP_I18N_KEYS = [
   'rrc.slash.helpJoin',
   'rrc.slash.helpPart',
   'rrc.slash.helpMe',
+  'rrc.slash.helpMsg',
   'rrc.slash.helpClear',
   'rrc.slash.helpQuit',
   'rrc.slash.helpHub',

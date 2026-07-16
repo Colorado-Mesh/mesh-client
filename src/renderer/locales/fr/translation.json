@@ -4255,7 +4255,6 @@
     "toggleTimestamps": "Toggle timestamps",
     "muteRoom": "Mute room",
     "unmuteRoom": "Unmute room",
-    "toggleMembers": "Show room members",
     "members": "Members",
     "noMembers": "No member list from hub.",
     "copyMessage": "Copy message",
@@ -4294,7 +4293,31 @@
       "usageJoin": "Utilisation : /join ROOM [key]",
       "usageMe": "Utilisation : /me ACTION",
       "nickChanged": "Pseudonyme défini sur {{name}}",
-      "commandSent": "Commande envoyée : {{cmd}}"
+      "commandSent": "Commande envoyée : {{cmd}}",
+      "helpMsg": "/msg NICK| texte DE HACHAGE — murmure d'AVIS direct (rrcd)",
+      "usageMsg": "Utilisation : /msg NICK| texte DE HACHAGE",
+      "msgTargetNotFound": "Impossible de résoudre la cible/msg vers un hachage d'identité complet. Rejoignez une pièce ou utilisez le hachage complet.",
+      "msgSent": "→ {{name}} : {{text}}"
+    },
+    "listedRooms": "Liste",
+    "refreshRoomList": "Actualiser la liste des chambres (/list)",
+    "favoriteRoom": "Chambre préférée",
+    "unfavoriteRoom": "Supprimer le favori de la chambre",
+    "autoJoin": "Rejoindre à la connexion",
+    "enableAutoJoin": "Activer la connexion automatique",
+    "disableAutoJoin": "Désactiver Rejoindre automatiquement",
+    "noTopic": "Aucun Topic",
+    "memberCount_one": "{{count}} membre",
+    "memberCount_other": "{{count}} membres",
+    "userCount_one": "{{count}} utilisateur",
+    "userCount_other": "{{count}} utilisateurs",
+    "refreshWho": "Actualiser les membres (/qui)",
+    "msgNick": "Message {{name}}",
+    "dismissBanner": "Ignorer cet Avertissement",
+    "directNoticeUnsupported": "Ce hub ne prend pas en charge la NOTIFICATION directe (/msg).",
+    "capDirectNotice": "msg direct",
+    "moderation": {
+      "removedFromRoom": "Retiré de la pièce par le moyeu (coup de pied, bannissement ou pièce distante)."
     }
   }
 }

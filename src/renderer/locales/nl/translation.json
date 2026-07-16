@@ -4255,7 +4255,6 @@
     "toggleTimestamps": "Toggle timestamps",
     "muteRoom": "Mute room",
     "unmuteRoom": "Unmute room",
-    "toggleMembers": "Show room members",
     "members": "Members",
     "noMembers": "No member list from hub.",
     "copyMessage": "Copy message",
@@ -4294,7 +4293,31 @@
       "usageJoin": "Gebruik: /join ROOM [sleutel]",
       "usageMe": "Gebruik: /me ACTION",
       "nickChanged": "Bijnaam ingesteld op {{name}}",
-      "commandSent": "Opdracht verzonden: {{cmd}}"
+      "commandSent": "Opdracht verzonden: {{cmd}}",
+      "helpMsg": "/msg NICK|HASH tekst — directe KENNISGEVING fluisteren (rrcd)",
+      "usageMsg": "Gebruik: /msg NICK|HASH TEKST",
+      "msgTargetNotFound": "Kan/msg-doel niet omzetten naar een volledige identiteitshash. Ga naar een kamer of gebruik de volledige hash.",
+      "msgSent": "→ {{name}}: {{text}}"
+    },
+    "listedRooms": "Vermeld.",
+    "refreshRoomList": "Lijst met kamers vernieuwen (/list)",
+    "favoriteRoom": "Favoriete kamer",
+    "unfavoriteRoom": "Kamerfavoriet verwijderen",
+    "autoJoin": "_Automatisch binnengaan bij verbinden",
+    "enableAutoJoin": "Automatisch aanmelden inschakelen",
+    "disableAutoJoin": "Automatisch aanmelden uitschakelen",
+    "noTopic": "(geen onderwerp ingesteld)",
+    "memberCount_one": "{{count}} lid",
+    "memberCount_other": "{{count}} leden",
+    "userCount_one": "{{count}} gebruiker",
+    "userCount_other": "{{count}} gebruikers",
+    "refreshWho": "Leden vernieuwen (/wie)",
+    "msgNick": "Bericht {{name}}",
+    "dismissBanner": "Kennisgeving afwijzen",
+    "directNoticeUnsupported": "Deze hub ondersteunt geen directe KENNISGEVING (/msg).",
+    "capDirectNotice": "direct msg",
+    "moderation": {
+      "removedFromRoom": "Verwijderd uit de kamer door de hub (kick, ban of extern deel)."
     }
   }
 }

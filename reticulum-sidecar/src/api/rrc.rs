@@ -37,6 +37,8 @@ pub struct RrcSendBody {
     pub body: String,
     #[serde(rename = "type")]
     pub msg_type: Option<String>,
+    /// When set, send rrcd direct NOTICE (K_DST); room must be omitted.
+    pub dst_hash: Option<String>,
 }
 
 pub async fn list_rrc_hubs(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
@@ -102,7 +104,12 @@ pub async fn rrc_send(
 ) -> Json<serde_json::Value> {
     Json(
         stack
-            .rrc_send(body.room.as_deref(), &body.body, body.msg_type.as_deref())
+            .rrc_send(
+                body.room.as_deref(),
+                &body.body,
+                body.msg_type.as_deref(),
+                body.dst_hash.as_deref(),
+            )
             .await,
     )
 }

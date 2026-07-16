@@ -4255,7 +4255,6 @@
     "toggleTimestamps": "Toggle timestamps",
     "muteRoom": "Mute room",
     "unmuteRoom": "Unmute room",
-    "toggleMembers": "Show room members",
     "members": "Members",
     "noMembers": "No member list from hub.",
     "copyMessage": "Copy message",
@@ -4294,7 +4293,31 @@
       "usageJoin": "用法：/join ROOM [key]",
       "usageMe": "用法：/me ACTION",
       "nickChanged": "昵称设置为{{name}}",
-      "commandSent": "命令已发送： {{cmd}}"
+      "commandSent": "命令已发送： {{cmd}}",
+      "helpMsg": "/msg NICK |哈希文本—直接通知私语(rrcd)",
+      "usageMsg": "用法：/msg NICK |哈希文本",
+      "msgTargetNotFound": "无法将/msg目标解析为完整的身份哈希。加入房间或使用完整的哈希值。",
+      "msgSent": "→ {{name}} ： {{text}}"
+    },
+    "listedRooms": "已上市",
+    "refreshRoomList": "刷新房间列表(/list)",
+    "favoriteRoom": "最喜爱的房间",
+    "unfavoriteRoom": "删除房间收藏夹",
+    "autoJoin": "连接时加入",
+    "enableAutoJoin": "启用自动加入",
+    "disableAutoJoin": "禁用自动加入",
+    "noTopic": "无帖子",
+    "memberCount_one": "{{count}}会员",
+    "memberCount_other": "{{count}}成员",
+    "userCount_one": "{{count}}用户",
+    "userCount_other": "{{count}}用户",
+    "refreshWho": "刷新成员（/who ）",
+    "msgNick": "消息{{name}}",
+    "dismissBanner": "關閉通知",
+    "directNoticeUnsupported": "此集线器不支持直接通知(/msg)。",
+    "capDirectNotice": "direct msg",
+    "moderation": {
+      "removedFromRoom": "由轮毂从房间移除（踢出、禁止或远程部分）。"
     }
   }
 }

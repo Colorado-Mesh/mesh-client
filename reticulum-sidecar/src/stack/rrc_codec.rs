@@ -27,6 +27,13 @@ pub mod msg_type {
     pub const ERROR: u8 = 40;
 }
 
+/// rrcd WELCOME capability map keys (advisory bool values).
+pub mod cap {
+    pub const RESOURCE_ENVELOPE: u64 = 0;
+    pub const ACTION: u64 = 1;
+    pub const DIRECT_NOTICE: u64 = 2;
+}
+
 #[derive(Debug, Error)]
 pub enum RrcCodecError {
     #[error("cbor encode failed: {0}")]
@@ -49,6 +56,8 @@ pub struct RrcEnvelope {
     pub room_name: Option<String>,
     pub body: Option<Value>,
     pub nickname: Option<String>,
+    /// rrcd extension: K_DST = 8 — direct NOTICE destination identity.
+    pub dst_identity: Option<[u8; RRC_IDENTITY_HASH_LEN]>,
 }
 
 impl RrcEnvelope {
@@ -70,7 +79,13 @@ impl RrcEnvelope {
             room_name,
             body,
             nickname,
+            dst_identity: None,
         }
+    }
+
+    pub fn with_dst(mut self, dst: [u8; RRC_IDENTITY_HASH_LEN]) -> Self {
+        self.dst_identity = Some(dst);
+        self
     }
 }
 
@@ -102,6 +117,9 @@ pub fn encode_envelope(env: &RrcEnvelope) -> Result<Vec<u8>, RrcCodecError> {
     if let Some(nick) = &env.nickname {
         map.push((Value::Integer(7.into()), Value::Text(nick.clone())));
     }
+    if let Some(dst) = &env.dst_identity {
+        map.push((Value::Integer(8.into()), Value::Bytes(dst.to_vec())));
+    }
     let mut out = Vec::new();
     ciborium::into_writer(&Value::Map(map), &mut out)
         .map_err(|e| RrcCodecError::Encode(e.to_string()))?;
@@ -130,6 +148,14 @@ pub fn decode_envelope(bytes: &[u8]) -> Result<RrcEnvelope, RrcCodecError> {
     let room_name = fields.get(&5).and_then(as_text).map(str::to_string);
     let body = fields.get(&6).cloned();
     let nickname = fields.get(&7).and_then(as_text).map(str::to_string);
+    let dst_identity = fields.get(&8).and_then(|v| match v {
+        Value::Bytes(b) if b.len() == RRC_IDENTITY_HASH_LEN => {
+            let mut arr = [0u8; RRC_IDENTITY_HASH_LEN];
+            arr.copy_from_slice(b);
+            Some(arr)
+        }
+        _ => None,
+    });
 
     Ok(RrcEnvelope {
         version,
@@ -140,6 +166,7 @@ pub fn decode_envelope(bytes: &[u8]) -> Result<RrcEnvelope, RrcCodecError> {
         room_name,
         body,
         nickname,
+        dst_identity,
     })
 }
 
@@ -167,6 +194,68 @@ pub fn parse_welcome_hub_name(body: &Option<Value>) -> Option<String> {
         }
     }
     None
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct RrcWelcomeCapabilities {
+    pub direct_notice: bool,
+    pub action: bool,
+    pub resource_envelope: bool,
+}
+
+/// Parse WELCOME body key 2 (capabilities map with integer keys).
+pub fn parse_welcome_capabilities(body: &Option<Value>) -> RrcWelcomeCapabilities {
+    let mut out = RrcWelcomeCapabilities::default();
+    let Some(Value::Map(entries)) = body else {
+        return out;
+    };
+    let caps_value = entries.iter().find_map(|(k, v)| {
+        if integer_key(k) == Some(2) {
+            Some(v)
+        } else {
+            None
+        }
+    });
+    let Some(caps_value) = caps_value else {
+        return out;
+    };
+    match caps_value {
+        Value::Map(caps) => {
+            for (k, v) in caps {
+                let Some(key) = integer_key(k) else { continue };
+                let enabled = match v {
+                    Value::Bool(b) => *b,
+                    Value::Integer(i) => u64::try_from(*i).ok().unwrap_or(0) != 0,
+                    _ => false,
+                };
+                if !enabled {
+                    continue;
+                }
+                match key {
+                    cap::DIRECT_NOTICE => out.direct_notice = true,
+                    cap::ACTION => out.action = true,
+                    cap::RESOURCE_ENVELOPE => out.resource_envelope = true,
+                    _ => {}
+                }
+            }
+        }
+        Value::Array(items) => {
+            for item in items {
+                if let Some(name) = as_text(item) {
+                    match name.to_ascii_lowercase().as_str() {
+                        "direct_notice" | "cap_direct_notice" => out.direct_notice = true,
+                        "action" | "cap_action" => out.action = true,
+                        "resource_envelope" | "cap_resource_envelope" => {
+                            out.resource_envelope = true
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+        _ => {}
+    }
+    out
 }
 
 pub fn parse_joined_members(body: &Option<Value>) -> Vec<(String, Option<String>)> {

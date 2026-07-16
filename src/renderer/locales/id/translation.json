@@ -4255,7 +4255,6 @@
     "toggleTimestamps": "Toggle timestamps",
     "muteRoom": "Mute room",
     "unmuteRoom": "Unmute room",
-    "toggleMembers": "Show room members",
     "members": "Members",
     "noMembers": "No member list from hub.",
     "copyMessage": "Copy message",
@@ -4294,7 +4293,31 @@
       "usageJoin": "Penggunaan: /join ROOM [key]",
       "usageMe": "Penggunaan: /me ACTION",
       "nickChanged": "Nama panggilan diatur ke {{name}}",
-      "commandSent": "Perintah dikirim: {{cmd}}"
+      "commandSent": "Perintah dikirim: {{cmd}}",
+      "helpMsg": "/msg NICK| teks HASH — bisikan PEMBERITAHUAN langsung (rrcd)",
+      "usageMsg": "Penggunaan: /msg NICK|HASH TEXT",
+      "msgTargetNotFound": "Tidak dapat menyelesaikan target/msg ke hash identitas penuh. Gabung ke kamar atau gunakan hash lengkap.",
+      "msgSent": "→ {{name}}: {{text}}"
+    },
+    "listedRooms": "tercantum",
+    "refreshRoomList": "Segarkan daftar kamar (/ list)",
+    "favoriteRoom": "Kamar favorit",
+    "unfavoriteRoom": "Hapus kamar favorit",
+    "autoJoin": "Bergabung otomatis saat tersambung",
+    "enableAutoJoin": "Aktifkan bergabung otomatis",
+    "disableAutoJoin": "Nonaktifkan auto - join",
+    "noTopic": "Tidak ada topik",
+    "memberCount_one": "{{count}} anggota",
+    "memberCount_other": "{{count}} anggota",
+    "userCount_one": "{{count}} pengguna",
+    "userCount_other": "{{count}} pengguna",
+    "refreshWho": "Segarkan anggota (/siapa)",
+    "msgNick": "Pesan {{name}}",
+    "dismissBanner": "Abaikan pemberitahuan ini",
+    "directNoticeUnsupported": "Hub ini tidak mendukung PEMBERITAHUAN langsung (/ msg).",
+    "capDirectNotice": "direct msg",
+    "moderation": {
+      "removedFromRoom": "Dilepaskan dari ruangan oleh hub (kick, ban, atau remote part)."
     }
   }
 }

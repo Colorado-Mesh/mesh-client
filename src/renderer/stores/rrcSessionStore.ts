@@ -2,6 +2,8 @@ import { create } from 'zustand';
 
 import type {
   RrcChatMessage,
+  RrcHubCapabilities,
+  RrcListedRoom,
   RrcRoomInfo,
   RrcRoomMember,
   RrcSessionStatus,
@@ -11,6 +13,9 @@ const MAX_MESSAGES_PER_ROOM = 500;
 
 /** Synthetic room key for hub-scoped NOTICE/ERROR with no K_ROOM. */
 export const RRC_HUB_STREAM_ROOM = '[hub]';
+
+/** Synthetic room for direct NOTICE whispers (K_DST). */
+export const RRC_WHISPERS_ROOM = '[whispers]';
 
 function normRoom(room: string): string {
   return room.trim().toLowerCase();
@@ -33,17 +38,33 @@ interface RrcSessionStoreState {
   nickname: string;
   /** Local Reticulum identity hash (hex) for self-echo unread suppression. */
   localIdentityHash: string | null;
+  capabilities: RrcHubCapabilities;
   rooms: Map<string, RrcRoomInfo>;
+  listedRooms: RrcListedRoom[];
   /** Volatile messages keyed by `${hub}::${room}`. */
   messages: Map<string, RrcChatMessage[]>;
   activeRoom: string | null;
   lastError: string | null;
+  /** Sticky moderation / remote-takedown banner. */
+  moderationBanner: string | null;
   unreadByRoom: Map<string, number>;
   showTimestamps: boolean;
+  /** True while a local PART is in flight (voluntary leave). */
+  partIntentRooms: Set<string>;
+  /** True when user requested disconnect (not hub drop). */
+  disconnectIntent: boolean;
   setNickname: (nick: string) => void;
   setLocalIdentityHash: (hash: string | null) => void;
   setActiveRoom: (room: string | null) => void;
   setShowTimestamps: (show: boolean) => void;
+  setCapabilities: (caps: RrcHubCapabilities) => void;
+  setListedRooms: (rooms: RrcListedRoom[]) => void;
+  setRoomTopic: (room: string, topic: string | null) => void;
+  mergeRoomMembers: (room: string, members: RrcRoomMember[], mode?: 'replace' | 'merge') => void;
+  markPartIntent: (room: string) => void;
+  clearPartIntent: (room: string) => void;
+  setDisconnectIntent: (intent: boolean) => void;
+  setModerationBanner: (message: string | null) => void;
   applyStatus: (
     status: RrcSessionStatus,
     hubDestHash?: string | null,
@@ -51,7 +72,11 @@ interface RrcSessionStoreState {
   ) => void;
   setError: (message: string | null) => void;
   roomJoined: (room: string, members?: RrcRoomMember[]) => void;
-  roomParted: (room: string) => void;
+  /**
+   * Remove room membership. When `forced`, treat as remote takedown and keep
+   * a system trail (caller should set moderationBanner).
+   */
+  roomParted: (room: string, opts?: { forced?: boolean }) => void;
   addMessage: (msg: RrcChatMessage, opts?: { bumpUnread?: boolean }) => void;
   clearUnread: (room: string) => void;
   clearActiveRoomMessages: () => void;
@@ -67,12 +92,17 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   hubName: null,
   nickname: 'mesh-client',
   localIdentityHash: null,
+  capabilities: {},
   rooms: new Map(),
+  listedRooms: [],
   messages: new Map(),
   activeRoom: null,
   lastError: null,
+  moderationBanner: null,
   unreadByRoom: new Map(),
   showTimestamps: false,
+  partIntentRooms: new Set(),
+  disconnectIntent: false,
 
   setNickname: (nick) => {
     set({ nickname: nick.trim() || 'mesh-client' });
@@ -99,6 +129,97 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     set({ showTimestamps: show });
   },
 
+  setCapabilities: (caps) => {
+    set({ capabilities: caps });
+  },
+
+  setListedRooms: (rooms) => {
+    set({ listedRooms: rooms });
+  },
+
+  setRoomTopic: (room, topic) => {
+    const key = normRoom(room);
+    set((s) => {
+      const rooms = new Map(s.rooms);
+      const existing = rooms.get(key);
+      if (existing) {
+        rooms.set(key, { ...existing, topic: topic || null });
+      }
+      const listedRooms = s.listedRooms.map((r) =>
+        normRoom(r.name) === key ? { ...r, topic: topic || undefined } : r,
+      );
+      return { rooms, listedRooms };
+    });
+  },
+
+  mergeRoomMembers: (room, members, mode = 'replace') => {
+    const key = normRoom(room);
+    set((s) => {
+      const rooms = new Map(s.rooms);
+      const existing = rooms.get(key);
+      let nextMembers = members;
+      if (mode === 'merge' && existing?.members?.length) {
+        const byHash = new Map<string, RrcRoomMember>();
+        for (const m of existing.members) {
+          byHash.set(m.identity_hash.toLowerCase(), m);
+        }
+        for (const m of members) {
+          const h = m.identity_hash.toLowerCase();
+          const prev = [...byHash.values()].find(
+            (p) =>
+              p.identity_hash.toLowerCase() === h ||
+              (h.length >= 8 &&
+                !h.startsWith('nick:') &&
+                p.identity_hash.toLowerCase().startsWith(h)) ||
+              (Boolean(m.nickname) && p.nickname?.toLowerCase() === m.nickname?.toLowerCase()),
+          );
+          if (prev?.identity_hash.length === 32 && h.length < 32) {
+            byHash.set(prev.identity_hash.toLowerCase(), {
+              ...prev,
+              nickname: m.nickname ?? prev.nickname,
+            });
+          } else {
+            byHash.set(h, m);
+          }
+        }
+        nextMembers = [...byHash.values()];
+      }
+      rooms.set(key, {
+        name: existing?.name ?? room,
+        topic: existing?.topic,
+        members: nextMembers,
+        member_count: nextMembers.length,
+      });
+      return { rooms };
+    });
+  },
+
+  markPartIntent: (room) => {
+    const key = normRoom(room);
+    set((s) => {
+      const next = new Set(s.partIntentRooms);
+      next.add(key);
+      return { partIntentRooms: next };
+    });
+  },
+
+  clearPartIntent: (room) => {
+    const key = normRoom(room);
+    set((s) => {
+      const next = new Set(s.partIntentRooms);
+      next.delete(key);
+      return { partIntentRooms: next };
+    });
+  },
+
+  setDisconnectIntent: (intent) => {
+    set({ disconnectIntent: intent });
+  },
+
+  setModerationBanner: (message) => {
+    set({ moderationBanner: message });
+  },
+
   applyStatus: (status, hubDestHash, hubName) => {
     set((s) => {
       const nextHub = hubDestHash !== undefined ? normHub(hubDestHash) : s.hubDestHash;
@@ -115,6 +236,10 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
               messages: new Map(),
               activeRoom: null,
               unreadByRoom: new Map(),
+              listedRooms: [],
+              capabilities: {},
+              moderationBanner: null,
+              partIntentRooms: new Set(),
             }
           : {}),
       };
@@ -133,6 +258,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         name: room,
         members: members ?? rooms.get(key)?.members ?? [],
         member_count: members?.length ?? rooms.get(key)?.member_count,
+        topic: rooms.get(key)?.topic ?? null,
       });
       return {
         rooms,
@@ -141,20 +267,23 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     });
   },
 
-  roomParted: (room) => {
+  roomParted: (room, opts) => {
     const key = normRoom(room);
     set((s) => {
       const rooms = new Map(s.rooms);
       rooms.delete(key);
       const hub = s.hubDestHash;
       const messages = new Map(s.messages);
-      if (hub) messages.delete(msgKey(hub, key));
+      if (hub && !opts?.forced) messages.delete(msgKey(hub, key));
       const unread = new Map(s.unreadByRoom);
       unread.delete(key);
+      const partIntentRooms = new Set(s.partIntentRooms);
+      partIntentRooms.delete(key);
       return {
         rooms,
         messages,
         unreadByRoom: unread,
+        partIntentRooms,
         activeRoom: s.activeRoom === key ? null : s.activeRoom,
       };
     });
@@ -217,7 +346,12 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       messages: new Map(),
       activeRoom: null,
       lastError: null,
+      moderationBanner: null,
       unreadByRoom: new Map(),
+      listedRooms: [],
+      capabilities: {},
+      partIntentRooms: new Set(),
+      disconnectIntent: false,
     });
   },
 

@@ -1,27 +1,28 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
+
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
+import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 
 import RrcPanel from './RrcPanel';
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
+vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
+  isReticulumSidecarRunning: vi.fn(() => Promise.resolve(false)),
 }));
 
 describe('RrcPanel', () => {
   beforeEach(() => {
-    window.electronAPI.reticulum.getStatus = vi
-      .fn()
-      .mockResolvedValue({ running: true, port: 1, pid: 1 });
-    window.electronAPI.reticulum.onStatus = vi.fn().mockReturnValue(() => {});
-    window.electronAPI.reticulum.rrc.listHubs = vi.fn().mockResolvedValue({ hubs: [] });
+    useRrcSessionStore.getState().clearSession();
+    useRrcHubStore.setState({ hubs: new Map() });
+    hydrateAxeThemeColors(document.documentElement);
   });
 
-  it('renders recommended hub section and manual connect', async () => {
-    render(<RrcPanel isActive />);
-    expect(await screen.findByText('rrc.hubs.recommended')).toBeInTheDocument();
-    expect(screen.getByLabelText('rrc.manualHashPlaceholder')).toBeInTheDocument();
-    expect(screen.getByLabelText('rrc.connectManual')).toBeInTheDocument();
+  it('renders amber hub chrome and select-hub prompt', async () => {
+    const { container } = render(<RrcPanel isActive />);
+    expect(screen.getAllByText(/Select an RRC hub/i).length).toBeGreaterThan(0);
+    expect(container.querySelector('[class*="border-amber"]')).toBeTruthy();
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

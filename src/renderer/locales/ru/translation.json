@@ -4255,7 +4255,6 @@
     "toggleTimestamps": "Toggle timestamps",
     "muteRoom": "Mute room",
     "unmuteRoom": "Unmute room",
-    "toggleMembers": "Show room members",
     "members": "Members",
     "noMembers": "No member list from hub.",
     "copyMessage": "Copy message",
@@ -4294,7 +4293,31 @@
       "usageJoin": "Использование: /join ROOM [key]",
       "usageMe": "Использование: /me ACTION",
       "nickChanged": "Псевдоним: {{name}}",
-      "commandSent": "Команда отправлена: {{cmd}}"
+      "commandSent": "Команда отправлена: {{cmd}}",
+      "helpMsg": "/msg NICK|HASH text — direct NOTICE whisper (rrcd)",
+      "usageMsg": "Использование: /msg NICK| текст ХЕША",
+      "msgTargetNotFound": "Не удалось разрешить цель/msg до полного хэша удостоверения. Присоединяйтесь к комнате или используйте полный хэш.",
+      "msgSent": "→ {{name}}: {{text}}"
+    },
+    "listedRooms": "Внесен",
+    "refreshRoomList": "Обновить список комнат (/list)",
+    "favoriteRoom": "Любимый номер",
+    "unfavoriteRoom": "Удалить избранное из комнаты",
+    "autoJoin": "Заходить при подключении",
+    "enableAutoJoin": "Включить автоматическое присоединение",
+    "disableAutoJoin": "Отключить автоматическое присоединение",
+    "noTopic": "Нет темы",
+    "memberCount_one": "{{count}} участник",
+    "memberCount_other": "{{count}} участников",
+    "userCount_one": "{{count}} пользователь",
+    "userCount_other": "{{count}} пользователей",
+    "refreshWho": "Обновить участников (/ВОЗ)",
+    "msgNick": "Сообщение {{name}}",
+    "dismissBanner": "Уведомление об отклонении",
+    "directNoticeUnsupported": "Этот концентратор не поддерживает прямое УВЕДОМЛЕНИЕ (/msg).",
+    "capDirectNotice": "direct msg",
+    "moderation": {
+      "removedFromRoom": "Удаляется из помещения ступицей (удар, блокировка или удаленная часть)."
     }
   }
 }

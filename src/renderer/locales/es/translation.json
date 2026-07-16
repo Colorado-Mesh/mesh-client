@@ -4255,7 +4255,6 @@
     "toggleTimestamps": "Toggle timestamps",
     "muteRoom": "Mute room",
     "unmuteRoom": "Unmute room",
-    "toggleMembers": "Show room members",
     "members": "Members",
     "noMembers": "No member list from hub.",
     "copyMessage": "Copy message",
@@ -4294,7 +4293,31 @@
       "usageJoin": "Uso: /join ROOM [key]",
       "usageMe": "Uso: /me ACTION",
       "nickChanged": "Apodo establecido en {{name}}",
-      "commandSent": "Comando enviado: {{cmd}}"
+      "commandSent": "Comando enviado: {{cmd}}",
+      "helpMsg": "/msg NICK| texto HASH — susurro de AVISO directo (rrcd)",
+      "usageMsg": "Uso: /msg NICK|HASH TEXT",
+      "msgTargetNotFound": "No se ha podido resolver el objetivo/msg a un hash de identidad completo. Únete a una sala o usa el hash completo.",
+      "msgSent": "→ {{name}}: {{text}}"
+    },
+    "listedRooms": "Anuncio",
+    "refreshRoomList": "Actualizar la lista de habitaciones (/list)",
+    "favoriteRoom": "Habitación favorita",
+    "unfavoriteRoom": "Eliminar habitación favorita",
+    "autoJoin": "Unirse al conectar",
+    "enableAutoJoin": "Habilitar la unión automática",
+    "disableAutoJoin": "Desactivar la unión automática",
+    "noTopic": "Sin tema",
+    "memberCount_one": "{{count}} miembro",
+    "memberCount_other": "{{count}} miembros",
+    "userCount_one": "{{count}} usuario",
+    "userCount_other": "{{count}} usuarios",
+    "refreshWho": "Actualizar miembros (/who)",
+    "msgNick": "Mensaje {{name}}",
+    "dismissBanner": "Descartar aviso",
+    "directNoticeUnsupported": "Este concentrador no admite NOTIFICACIÓN directa (/msg).",
+    "capDirectNotice": "msg directo",
+    "moderation": {
+      "removedFromRoom": "Eliminado de la habitación por el centro (patada, prohibición o parte remota)."
     }
   }
 }

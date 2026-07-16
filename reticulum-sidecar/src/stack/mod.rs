@@ -1228,12 +1228,15 @@ impl StackHandle {
         room: Option<&str>,
         body: &str,
         kind: Option<&str>,
+        dst_hash: Option<&str>,
     ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            return live.rrc_send(room, body, kind.unwrap_or("msg")).await;
+            return live
+                .rrc_send(room, body, kind.unwrap_or("msg"), dst_hash)
+                .await;
         }
-        let _ = (room, body, kind);
+        let _ = (room, body, kind, dst_hash);
         serde_json::json!({ "ok": false, "error": "rrc requires live rns-stack sidecar" })
     }
 

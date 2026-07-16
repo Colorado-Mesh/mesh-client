@@ -23,17 +23,27 @@ export interface RrcHubInfo {
   source?: RrcHubSource;
   /** True when hash is in the curated Recommended catalog. */
   recommended?: boolean;
+  /** Optional hub description when present in NOTICE/extensions. */
+  description?: string | null;
+  /** Optional connected user count when present in NOTICE/extensions. */
+  user_count?: number | null;
 }
 
 export interface RrcRoomInfo {
   name: string;
   members?: RrcRoomMember[];
   member_count?: number;
+  topic?: string | null;
 }
 
 export interface RrcRoomMember {
   identity_hash: string;
   nickname?: string | null;
+}
+
+export interface RrcListedRoom {
+  name: string;
+  topic?: string;
 }
 
 export interface RrcChatMessage {
@@ -44,6 +54,14 @@ export interface RrcChatMessage {
   sender_hash?: string | null;
   nickname?: string | null;
   timestamp: number;
+  /** Present on direct NOTICE (K_DST) whispers. */
+  dst_hash?: string | null;
+}
+
+export interface RrcHubCapabilities {
+  direct_notice?: boolean;
+  action?: boolean;
+  resource_envelope?: boolean;
 }
 
 export interface RrcSessionSnapshot {
@@ -54,6 +72,7 @@ export interface RrcSessionSnapshot {
   nickname?: string | null;
   rooms: RrcRoomInfo[];
   error?: string | null;
+  capabilities?: RrcHubCapabilities | null;
 }
 
 export interface RrcConnectRequest {
@@ -77,6 +96,11 @@ export interface RrcSendRequest {
   body: string;
   /** msg | notice | action — default msg */
   type?: 'msg' | 'notice' | 'action';
+  /**
+   * When set, send a direct NOTICE (rrcd K_DST) and omit K_ROOM.
+   * Requires hub CAP_DIRECT_NOTICE.
+   */
+  dst_hash?: string;
 }
 
 export interface RrcUpsertHubRequest {

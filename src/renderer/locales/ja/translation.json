@@ -4255,7 +4255,6 @@
     "toggleTimestamps": "Toggle timestamps",
     "muteRoom": "Mute room",
     "unmuteRoom": "Unmute room",
-    "toggleMembers": "Show room members",
     "members": "Members",
     "noMembers": "No member list from hub.",
     "copyMessage": "Copy message",
@@ -4294,7 +4293,31 @@
       "usageJoin": "使用方法：/ join ROOM [key]",
       "usageMe": "使い方：/ me ACTION",
       "nickChanged": "ニックネームを{{name}}に設定しました",
-      "commandSent": "コマンドが送信されました： {{cmd}}"
+      "commandSent": "コマンドが送信されました： {{cmd}}",
+      "helpMsg": "/msg NICK |ハッシュテキスト—直接通知ウィスパー(rrcd)",
+      "usageMsg": "使用法:/msg NICK |ハッシュテキスト",
+      "msgTargetNotFound": "/msgターゲットを完全なIDハッシュに解決できませんでした。部屋に参加するか、完全なハッシュを使用してください。",
+      "msgSent": "→ {{name}} ： {{text}}"
+    },
+    "listedRooms": "掲載中",
+    "refreshRoomList": "部屋リストを更新(/ list)",
+    "favoriteRoom": "お気に入りの部屋",
+    "unfavoriteRoom": "お気に入りの部屋を削除",
+    "autoJoin": "接続時に自動結合",
+    "enableAutoJoin": "自動結合を有効にする",
+    "disableAutoJoin": "自動参加を無効にする",
+    "noTopic": "トピックなし",
+    "memberCount_one": "{{count}}メンバー",
+    "memberCount_other": "{{count}}メンバー",
+    "userCount_one": "{{count}}ユーザー",
+    "userCount_other": "{{count}}ユーザー",
+    "refreshWho": "メンバーを更新する(/ who)",
+    "msgNick": "Message {{name}}",
+    "dismissBanner": "通知を非表示",
+    "directNoticeUnsupported": "このハブは直接通知（/ msg ）をサポートしていません。",
+    "capDirectNotice": "direct msg",
+    "moderation": {
+      "removedFromRoom": "ハブによって部屋から取り除かれました（キック、禁止、またはリモートパーツ）。"
     }
   }
 }

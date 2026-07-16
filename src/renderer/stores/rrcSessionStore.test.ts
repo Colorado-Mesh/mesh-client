@@ -110,4 +110,47 @@ describe('rrcSessionStore', () => {
     expect(useRrcSessionStore.getState().rooms.size).toBe(0);
     expect(useRrcSessionStore.getState().messages.size).toBe(0);
   });
+
+  it('stores listed rooms and topics from /list parse', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');
+    store.setListedRooms([{ name: '#lobby', topic: 'hello' }, { name: '#general' }]);
+    expect(useRrcSessionStore.getState().listedRooms).toHaveLength(2);
+    store.roomJoined('#lobby');
+    store.setRoomTopic('#lobby', 'updated');
+    expect(useRrcSessionStore.getState().rooms.get('#lobby')?.topic).toBe('updated');
+  });
+
+  it('distinguishes forced part from voluntary part intent', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    store.addMessage({
+      id: '1',
+      room: '#lobby',
+      kind: 'msg',
+      body: 'hi',
+      timestamp: 1,
+    });
+    store.markPartIntent('#lobby');
+    expect(useRrcSessionStore.getState().partIntentRooms.has('#lobby')).toBe(true);
+    store.roomParted('#lobby');
+    expect(useRrcSessionStore.getState().rooms.has('#lobby')).toBe(false);
+    expect(useRrcSessionStore.getState().partIntentRooms.has('#lobby')).toBe(false);
+
+    store.roomJoined('#ops');
+    store.setActiveRoom('#ops');
+    store.addMessage({
+      id: '2',
+      room: '#ops',
+      kind: 'msg',
+      body: 'secret',
+      timestamp: 2,
+    });
+    const key = useRrcSessionStore.getState().roomMessageKey('#ops')!;
+    store.roomParted('#ops', { forced: true });
+    expect(useRrcSessionStore.getState().rooms.has('#ops')).toBe(false);
+    expect(useRrcSessionStore.getState().messages.get(key)?.[0]?.body).toBe('secret');
+  });
 });

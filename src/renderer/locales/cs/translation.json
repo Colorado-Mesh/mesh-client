@@ -4255,7 +4255,6 @@
     "toggleTimestamps": "Toggle timestamps",
     "muteRoom": "Mute room",
     "unmuteRoom": "Unmute room",
-    "toggleMembers": "Show room members",
     "members": "Members",
     "noMembers": "No member list from hub.",
     "copyMessage": "Copy message",
@@ -4294,7 +4293,31 @@
       "usageJoin": "Použití: /join ROOM [key]",
       "usageMe": "Použití: /me ACTION",
       "nickChanged": "Přezdívka nastavena na {{name}}",
-      "commandSent": "Příkaz odeslán: {{cmd}}"
+      "commandSent": "Příkaz odeslán: {{cmd}}",
+      "helpMsg": "/msg NICK|HASH text — přímé OZNÁMENÍ šeptem (rrcd)",
+      "usageMsg": "Použití: /msg NICK|HASH TEXT",
+      "msgTargetNotFound": "Nelze přeložit /msg cíl na úplný hash identity. Připojte se k místnosti nebo použijte celý hash.",
+      "msgSent": "→ {{name}}: {{text}}"
+    },
+    "listedRooms": "Uvedeno",
+    "refreshRoomList": "Aktualizovat seznam místností (/list)",
+    "favoriteRoom": "Oblíbený pokoj",
+    "unfavoriteRoom": "Odebrat oblíbený pokoj",
+    "autoJoin": "Připojit se při startu",
+    "enableAutoJoin": "Povolit automatické členství",
+    "disableAutoJoin": "Zakázat automatické připojení",
+    "noTopic": "Žádné téma",
+    "memberCount_one": "{{count}} člen",
+    "memberCount_other": "{{count}} členů",
+    "userCount_one": "{{count}} uživatel",
+    "userCount_other": "{{count}} uživatelé",
+    "refreshWho": "Obnovit členy (/kdo)",
+    "msgNick": "Zpráva {{name}}",
+    "dismissBanner": "Zavřít oznámení",
+    "directNoticeUnsupported": "Tento rozbočovač nepodporuje přímé OZNÁMENÍ (/msg).",
+    "capDirectNotice": "direct msg",
+    "moderation": {
+      "removedFromRoom": "Odstraněno z místnosti nábojem (kop, zákaz nebo vzdálená část)."
     }
   }
 }

@@ -12,7 +12,8 @@ use tracing::{debug, warn};
 
 use super::rrc_codec::{
     body_as_text, decode_envelope, encode_envelope, hello_body, msg_type, parse_joined_members,
-    parse_welcome_hub_name, text_body, RrcEnvelope,
+    parse_welcome_capabilities, parse_welcome_hub_name, text_body, RrcEnvelope,
+    RrcWelcomeCapabilities, RRC_IDENTITY_HASH_LEN,
 };
 use super::rrc_link::{open_rrc_link, RrcLinkError, RrcLinkEvent, RrcLinkHandle};
 
@@ -63,6 +64,7 @@ struct RrcSessionInner {
     desired_rooms: HashSet<String>,
     last_error: Option<String>,
     identity_hash: [u8; 16],
+    capabilities: RrcWelcomeCapabilities,
 }
 
 enum SessionCommand {
@@ -90,6 +92,8 @@ enum SessionCommand {
         room: Option<String>,
         body: String,
         msg_type: u8,
+        /// When set, send NOTICE with K_DST and omit K_ROOM (rrcd direct NOTICE).
+        dst_identity: Option<[u8; RRC_IDENTITY_HASH_LEN]>,
         reply: oneshot::Sender<Result<(), String>>,
     },
 }
@@ -110,6 +114,7 @@ impl RrcSessionManager {
             desired_rooms: HashSet::new(),
             last_error: None,
             identity_hash,
+            capabilities: RrcWelcomeCapabilities::default(),
         }));
         let (cmd_tx, cmd_rx) = mpsc::channel(32);
         let manager_inner = inner.clone();
@@ -143,6 +148,11 @@ impl RrcSessionManager {
             "nickname": g.nickname,
             "rooms": rooms,
             "error": g.last_error,
+            "capabilities": {
+                "direct_notice": g.capabilities.direct_notice,
+                "action": g.capabilities.action,
+                "resource_envelope": g.capabilities.resource_envelope,
+            },
         })
     }
 
@@ -221,18 +231,36 @@ impl RrcSessionManager {
         room: Option<String>,
         body: String,
         kind: &str,
+        dst_hash_hex: Option<&str>,
     ) -> Result<(), String> {
-        let msg_type = match kind {
-            "notice" => msg_type::NOTICE,
-            "action" => msg_type::ACTION,
-            _ => msg_type::MSG,
+        let dst_identity = if let Some(hex_str) = dst_hash_hex {
+            let clean = hex_str.trim().to_lowercase();
+            if clean.len() != 32 || !clean.chars().all(|c| c.is_ascii_hexdigit()) {
+                return Err("dst_hash must be 32 hex characters".into());
+            }
+            let bytes = hex::decode(&clean).map_err(|e| e.to_string())?;
+            let mut arr = [0u8; RRC_IDENTITY_HASH_LEN];
+            arr.copy_from_slice(&bytes);
+            Some(arr)
+        } else {
+            None
+        };
+        let msg_type = if dst_identity.is_some() {
+            msg_type::NOTICE
+        } else {
+            match kind {
+                "notice" => msg_type::NOTICE,
+                "action" => msg_type::ACTION,
+                _ => msg_type::MSG,
+            }
         };
         let (reply, rx) = oneshot::channel();
         self.cmd_tx
             .send(SessionCommand::Send {
-                room,
+                room: if dst_identity.is_some() { None } else { room },
                 body,
                 msg_type,
+                dst_identity,
                 reply,
             })
             .await
@@ -276,6 +304,7 @@ async fn session_loop(
                             g.rooms.clear();
                             g.desired_rooms.clear();
                             g.last_error = None;
+                            g.capabilities = RrcWelcomeCapabilities::default();
                         }
                         emit(
                             &event_tx,
@@ -386,10 +415,18 @@ async fn session_loop(
                         room,
                         body,
                         msg_type,
+                        dst_identity,
                         reply,
                     } => {
-                        let result =
-                            send_room_control(&mut link, &inner, room, msg_type, Some(body)).await;
+                        let result = send_envelope(
+                            &mut link,
+                            &inner,
+                            room,
+                            msg_type,
+                            Some(body),
+                            dst_identity,
+                        )
+                        .await;
                         let _ = reply.send(result);
                     }
                 }
@@ -542,10 +579,12 @@ async fn establish_session(
                 };
                 if env.msg_type == msg_type::WELCOME {
                     let hub_name = parse_welcome_hub_name(&env.body);
+                    let capabilities = parse_welcome_capabilities(&env.body);
                     {
                         let mut g = inner.lock().await;
                         g.status = RrcSessionStatus::Active;
                         g.hub_name = hub_name.clone();
+                        g.capabilities = capabilities.clone();
                         g.last_error = None;
                     }
                     emit(
@@ -555,6 +594,11 @@ async fn establish_session(
                             "hub_dest_hash": dest_hash_hex,
                             "hub_name": hub_name,
                             "status": "active",
+                            "capabilities": {
+                                "direct_notice": capabilities.direct_notice,
+                                "action": capabilities.action,
+                                "resource_envelope": capabilities.resource_envelope,
+                            },
                         }),
                     );
                     return Ok(handle);
@@ -585,6 +629,17 @@ async fn send_room_control(
     msg_type_val: u8,
     body: Option<String>,
 ) -> Result<(), String> {
+    send_envelope(link, inner, room, msg_type_val, body, None).await
+}
+
+async fn send_envelope(
+    link: &mut Option<RrcLinkHandle>,
+    inner: &Arc<Mutex<RrcSessionInner>>,
+    room: Option<String>,
+    msg_type_val: u8,
+    body: Option<String>,
+    dst_identity: Option<[u8; RRC_IDENTITY_HASH_LEN]>,
+) -> Result<(), String> {
     let Some(handle) = link.as_ref() else {
         return Err("not connected to an RRC hub".into());
     };
@@ -592,18 +647,40 @@ async fn send_room_control(
     if status != RrcSessionStatus::Active && status != RrcSessionStatus::AwaitingWelcome {
         return Err(format!("rrc session not active ({})", status.as_str()));
     }
-    let room_name = room
-        .map(|r| r.trim().to_string())
-        .filter(|r| !r.is_empty());
+    if dst_identity.is_some() {
+        if msg_type_val != msg_type::NOTICE {
+            return Err("direct destination requires NOTICE type".into());
+        }
+        if !inner.lock().await.capabilities.direct_notice {
+            return Err("hub does not advertise CAP_DIRECT_NOTICE".into());
+        }
+        if room
+            .as_ref()
+            .map(|r| !r.trim().is_empty())
+            .unwrap_or(false)
+        {
+            return Err("direct NOTICE must omit K_ROOM".into());
+        }
+    }
+    let room_name = if dst_identity.is_some() {
+        None
+    } else {
+        room.map(|r| r.trim().to_string())
+            .filter(|r| !r.is_empty())
+    };
     let env = {
         let g = inner.lock().await;
-        RrcEnvelope::new(
+        let mut envelope = RrcEnvelope::new(
             msg_type_val,
             g.identity_hash,
             room_name,
             body.map(|b| text_body(&b)),
             g.nickname.clone(),
-        )
+        );
+        if let Some(dst) = dst_identity {
+            envelope = envelope.with_dst(dst);
+        }
+        envelope
     };
     let bytes = encode_envelope(&env).map_err(|e| e.to_string())?;
     handle.send(bytes).await.map_err(|e| e.to_string())
@@ -662,6 +739,7 @@ async fn handle_inbound(
             };
             let room = env.room_name.clone().unwrap_or_default();
             let body = body_as_text(&env.body).unwrap_or_default();
+            let dst_hash = env.dst_identity.map(hex::encode);
             let hub_dest_hash = {
                 let g = inner.lock().await;
                 g.hub_dest_hash.clone()
@@ -678,6 +756,7 @@ async fn handle_inbound(
                     "nickname": env.nickname,
                     "timestamp": env.timestamp,
                     "hub_dest_hash": hub_dest_hash,
+                    "dst_hash": dst_hash,
                 }),
             );
         }
@@ -697,10 +776,12 @@ async fn handle_inbound(
         }
         msg_type::WELCOME => {
             let hub_name = parse_welcome_hub_name(&env.body);
+            let capabilities = parse_welcome_capabilities(&env.body);
             let mut g = inner.lock().await;
             if let Some(name) = hub_name {
                 g.hub_name = Some(name);
             }
+            g.capabilities = capabilities;
             g.status = RrcSessionStatus::Active;
         }
         _ => {}

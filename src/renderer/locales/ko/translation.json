@@ -4255,7 +4255,6 @@
     "toggleTimestamps": "Toggle timestamps",
     "muteRoom": "Mute room",
     "unmuteRoom": "Unmute room",
-    "toggleMembers": "Show room members",
     "members": "Members",
     "noMembers": "No member list from hub.",
     "copyMessage": "Copy message",
@@ -4294,7 +4293,31 @@
       "usageJoin": "사용법:/join ROOM [key]",
       "usageMe": "용도:/me ACTION",
       "nickChanged": "별명이 {{name}} (으) 로 설정됨",
-      "commandSent": "전송된 명령: {{cmd}}"
+      "commandSent": "전송된 명령: {{cmd}}",
+      "helpMsg": "/msg NICK | 해시 텍스트 — 직접 알림 속삭임 (rrcd)",
+      "usageMsg": "사용법:/msg NICK | 해시 텍스트",
+      "msgTargetNotFound": "/msg 대상을 전체 ID 해시로 해결할 수 없습니다. 방에 가입하거나 전체 해시를 사용하세요.",
+      "msgSent": "→ {{name}}: {{text}}"
+    },
+    "listedRooms": "등재됨",
+    "refreshRoomList": "객실 목록 새로 고침 (/list)",
+    "favoriteRoom": "즐겨찾는 방",
+    "unfavoriteRoom": "객실 즐겨찾기 삭제",
+    "autoJoin": "연결 시 자동 가입",
+    "enableAutoJoin": "자동 참여 활성화",
+    "disableAutoJoin": "자동 참여 비활성화",
+    "noTopic": "주제 없음",
+    "memberCount_one": "{{count}} 회원",
+    "memberCount_other": "회원 {{count}} 명",
+    "userCount_one": "{{count}} 사용자",
+    "userCount_other": "{{count}} 사용자",
+    "refreshWho": "멤버 새로 고침 (/who)",
+    "msgNick": "메시지 {{name}}",
+    "dismissBanner": "공지 무시하기",
+    "directNoticeUnsupported": "이 허브는 직접 고지 (/msg) 를 지원하지 않습니다.",
+    "capDirectNotice": "direct msg",
+    "moderation": {
+      "removedFromRoom": "허브에 의해 공간에서 제거됨 (킥, 금지 또는 원격 부품)."
     }
   }
 }

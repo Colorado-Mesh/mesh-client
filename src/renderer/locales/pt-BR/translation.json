@@ -4255,7 +4255,6 @@
     "toggleTimestamps": "Toggle timestamps",
     "muteRoom": "Mute room",
     "unmuteRoom": "Unmute room",
-    "toggleMembers": "Show room members",
     "members": "Members",
     "noMembers": "No member list from hub.",
     "copyMessage": "Copy message",
@@ -4294,7 +4293,31 @@
       "usageJoin": "Uso: /join ROOM [key]",
       "usageMe": "Uso: /me ACTION",
       "nickChanged": "Apelido definido como {{name}}",
-      "commandSent": "Comando enviado: {{cmd}}"
+      "commandSent": "Comando enviado: {{cmd}}",
+      "helpMsg": "/msg NICK|HASH text — sussurro de AVISO direto (rrcd)",
+      "usageMsg": "Uso: /msg NICK|HASH TEXT",
+      "msgTargetNotFound": "Não foi possível resolver o destino/msg para um hash de identidade completo. Junte-se a uma sala ou use o hash completo.",
+      "msgSent": "→ {{name}}: {{text}}"
+    },
+    "listedRooms": "Listada",
+    "refreshRoomList": "Atualizar lista de quartos (/list)",
+    "favoriteRoom": "Quarto favorito",
+    "unfavoriteRoom": "Remover favorito do quarto",
+    "autoJoin": "Ingressar automaticamente ao conectar",
+    "enableAutoJoin": "Ativar adesão automática",
+    "disableAutoJoin": "Desativar adesão automática",
+    "noTopic": "Nenhum tópico está definido",
+    "memberCount_one": "{{count}} membro",
+    "memberCount_other": "{{count}} membros",
+    "userCount_one": "{{count}} usuário",
+    "userCount_other": "{{count}} usuários",
+    "refreshWho": "Atualizar membros (/quem)",
+    "msgNick": "Enviar mensagem para {{name}}",
+    "dismissBanner": "Dispensar Aviso",
+    "directNoticeUnsupported": "Este hub não suporta AVISO direto (/msg).",
+    "capDirectNotice": "msg direto",
+    "moderation": {
+      "removedFromRoom": "Removido da sala pelo hub (kick, ban ou peça remota)."
     }
   }
 }
