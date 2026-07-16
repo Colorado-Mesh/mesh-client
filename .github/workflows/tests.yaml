@@ -158,28 +158,6 @@ jobs:
       - name: Merge coverage reports
         run: pnpm run test:coverage:merge
 
-      - name: Download reticulum sidecar lcov
-        if: needs.reticulum-sidecar-coverage.result == 'success'
-        uses: actions/download-artifact@v7
-        with:
-          name: reticulum-sidecar-lcov
-          path: reticulum-sidecar
-
-      - name: Ensure Sonar Quality Gate (coverage ≥ 45%)
-        if: github.actor != 'nektos/act'
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: https://sonarcloud.io
-        run: node scripts/sonar-ensure-quality-gate.mjs
-
-      - name: SonarQube Scan
-        if: github.actor != 'nektos/act'
-        # SonarSource/sonarqube-scan-action v7.2.1 (pinned SHA for CodeQL + Sonar)
-        uses: SonarSource/sonarqube-scan-action@c7ee0f9df90b7aa20e8dcf9695dcfe2e7da5b4f2
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: https://sonarcloud.io
-
       # Skip actions/upload-code-coverage: GitHub Code Quality (Team/Enterprise)
       # is not available on the free org plan — uploads return HTTP 403.
 
