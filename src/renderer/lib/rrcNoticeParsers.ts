@@ -125,6 +125,11 @@ export function parseRrcTopicNotice(body: string): { room: string; topic: string
   return null;
 }
 
+/** True when NOTICE is rrcd join-ack (`room X: registered; mode=…; topic=…`). */
+export function isRrcJoinInfoNotice(body: string): boolean {
+  return JOIN_INFO_TOPIC.test(body.trim());
+}
+
 /** Heuristic: hub ERROR/NOTICE text that indicates ban / kick / key refusal. */
 export function isRrcModerationLanguage(text: string): boolean {
   const t = text.toLowerCase();

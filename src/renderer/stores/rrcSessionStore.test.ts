@@ -310,4 +310,24 @@ describe('rrcSessionStore', () => {
       { identity_hash: 'bbbbbbbbbbbb', nickname: 'Bob' },
     ]);
   });
+
+  it('drops consecutive duplicate notice bodies', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');
+    store.roomJoined('general');
+    store.setActiveRoom('general');
+    const notice = {
+      room: 'general',
+      kind: 'notice' as const,
+      body: 'room general: registered; mode=+nrt; topic=(none)',
+      timestamp: 1,
+    };
+    store.addMessage({ ...notice, id: 'a' });
+    store.addMessage({ ...notice, id: 'b' });
+    expect(
+      useRrcSessionStore
+        .getState()
+        .messages.get(useRrcSessionStore.getState().roomMessageKey('general')!),
+    ).toHaveLength(1);
+  });
 });

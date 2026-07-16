@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  isRrcJoinInfoNotice,
   isRrcModerationLanguage,
   parseRrcListNotice,
   parseRrcTopicNotice,
@@ -66,6 +67,13 @@ describe('parseRrcTopicNotice', () => {
       room: 'lobby',
       topic: '',
     });
+  });
+});
+
+describe('isRrcJoinInfoNotice', () => {
+  it('detects rrcd join-info NOTICE lines', () => {
+    expect(isRrcJoinInfoNotice('room general: registered; mode=+nrt; topic=(none)')).toBe(true);
+    expect(isRrcJoinInfoNotice('hello everyone')).toBe(false);
   });
 });
 

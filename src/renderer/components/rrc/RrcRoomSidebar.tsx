@@ -317,14 +317,26 @@ export function RrcRoomSidebar({
           </li>
         )}
         {!collapsed &&
-          listedNotJoined.map((r) => renderRoomButton(r.name, { joined: false, topic: r.topic }))}
-        {!collapsed && favNotJoined.map((name) => renderRoomButton(name, { joined: false }))}
+          listedNotJoined.map((r) =>
+            renderRoomButton(r.name, {
+              unread: unreadFor(r.name),
+              joined: false,
+              topic: r.topic,
+            }),
+          )}
+        {!collapsed &&
+          favNotJoined.map((name) =>
+            renderRoomButton(name, { unread: unreadFor(name), joined: false }),
+          )}
         {!collapsed && recentVisible.length > 0 && (
           <li className="mt-2 px-2 py-1 text-[10px] tracking-wide text-amber-500/70 uppercase">
             {t('rrc.recentRooms')}
           </li>
         )}
-        {!collapsed && recentVisible.map((name) => renderRoomButton(name, { joined: false }))}
+        {!collapsed &&
+          recentVisible.map((name) =>
+            renderRoomButton(name, { unread: unreadFor(name), joined: false }),
+          )}
         {joinedDeduped.length === 0 && !collapsed && (
           <li className="px-2 text-xs text-amber-200/40">{t('rrc.noRoomsJoined')}</li>
         )}

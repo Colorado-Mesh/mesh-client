@@ -26,6 +26,7 @@ use super::rrc_codec::{
 };
 use super::rrc_link::{open_rrc_link, RrcLinkError, RrcLinkEvent, RrcLinkHandle};
 
+
 const CLIENT_NAME: &str = "mesh-client";
 const CLIENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const WELCOME_TIMEOUT: Duration = Duration::from_secs(20);
@@ -766,7 +767,20 @@ async fn session_loop(
             } => {
                 match ev {
                     Some(RrcLinkEvent::Data(bytes)) => {
-                        handle_inbound(&inner, &event_tx, &hex, &bytes).await;
+                        if let Some(reply) =
+                            handle_inbound(&inner, &event_tx, &hex, &bytes).await
+                        {
+                            if let Some(handle) = link.as_ref() {
+                                match encode_envelope(&reply) {
+                                    Ok(out) => {
+                                        if let Err(e) = handle.send(out).await {
+                                            warn!("rrc PONG send failed: {e}");
+                                        }
+                                    }
+                                    Err(e) => warn!("rrc PONG encode failed: {e}"),
+                                }
+                            }
+                        }
                     }
                     Some(RrcLinkEvent::Closed { reason }) => {
                         link = None;
@@ -791,12 +805,24 @@ async fn session_loop(
                             }),
                         );
                         if should_reconnect {
-                            if let Some((dest_hash, dest_hash_hex, hops, _stale_nick)) =
+                            if let Some((dest_hash, dest_hash_hex, hops, intent_nick)) =
                                 reconnect_intent.clone()
                             {
                                 let nickname = {
                                     let g = inner.lock().await;
-                                    g.nickname.clone().unwrap_or_else(|| "mesh-client".into())
+                                    g.nickname
+                                        .as_ref()
+                                        .map(|n| n.trim())
+                                        .filter(|n| !n.is_empty())
+                                        .map(|n| n.to_string())
+                                        .unwrap_or_else(|| {
+                                            let trimmed = intent_nick.trim();
+                                            if trimmed.is_empty() {
+                                                "mesh-client".into()
+                                            } else {
+                                                trimmed.to_string()
+                                            }
+                                        })
                                 };
                                 let delay = backoff_ms;
                                 debug!(
@@ -989,14 +1015,16 @@ async fn send_envelope(
     handle.send(bytes).await.map_err(|e| e.to_string())
 }
 
+/// Handles an inbound RRC envelope. Returns a reply envelope when the peer
+/// must be answered on the wire (PING → PONG).
 async fn handle_inbound(
     inner: &Arc<Mutex<RrcSessionInner>>,
     event_tx: &broadcast::Sender<String>,
     hub_dest_hash: &str,
     bytes: &[u8],
-) {
+) -> Option<RrcEnvelope> {
     let Ok(env) = decode_envelope(bytes) else {
-        return;
+        return None;
     };
     match env.msg_type {
         msg_type::JOINED => {
@@ -1023,6 +1051,7 @@ async fn handle_inbound(
                     "members": members_json(&members),
                 }),
             );
+            None
         }
         msg_type::PARTED => {
             let room = env.room_name.clone().unwrap_or_default();
@@ -1036,6 +1065,7 @@ async fn handle_inbound(
                 "rrc.room.parted",
                 json!({ "hub_dest_hash": hub_dest_hash, "room": room }),
             );
+            None
         }
         msg_type::MSG | msg_type::NOTICE | msg_type::ACTION => {
             let kind = match env.msg_type {
@@ -1061,12 +1091,19 @@ async fn handle_inbound(
                     "dst_hash": dst_hash,
                 }),
             );
+            None
         }
         msg_type::PING => {
-            // Respond with PONG echoing body.
-            // Outbound PONG is best-effort from session_loop via a fire-and-forget;
-            // hubs tolerate missed PONGs.
-            let _ = env;
+            // Spec (4-RRC): clients must reply to PING with PONG; hubs may close
+            // the Link if the client stays silent.
+            let g = inner.lock().await;
+            Some(RrcEnvelope::new(
+                msg_type::PONG,
+                g.identity_hash,
+                None,
+                env.body.clone(),
+                g.nickname.clone(),
+            ))
         }
         msg_type::ERROR => {
             let message = body_as_text(&env.body).unwrap_or_else(|| "hub error".into());
@@ -1079,6 +1116,7 @@ async fn handle_inbound(
                 "rrc.error",
                 json!({ "message": message, "hub_dest_hash": hub_dest_hash }),
             );
+            None
         }
         msg_type::WELCOME => {
             let hub_name = parse_welcome_hub_name(&env.body);
@@ -1089,8 +1127,9 @@ async fn handle_inbound(
             }
             g.capabilities = capabilities;
             g.status = RrcSessionStatus::Active;
+            None
         }
-        _ => {}
+        _ => None
     }
 }
 

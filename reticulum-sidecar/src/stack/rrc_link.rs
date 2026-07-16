@@ -6,6 +6,7 @@ use std::time::{Duration, Instant};
 use bytes::Bytes;
 use rns_crypto::ed25519::Ed25519PublicKey;
 use rns_identity::identity::Identity;
+use rns_link::constants::KEEPALIVE_REQUEST;
 use rns_link::link::{CloseReason, Link, LinkAction};
 use rns_transport::await_path::{await_path, AwaitPathError};
 use rns_transport::link_messages::DestinationEvent;
@@ -162,20 +163,13 @@ pub async fn open_rrc_link(
             tokio::select! {
                 _ = tick.tick() => {
                     match link.tick() {
-                        LinkAction::None | LinkAction::TransitionedToStale => {}
+                        LinkAction::None => {}
+                        LinkAction::TransitionedToStale => {
+                            // Match link_manager: initiator double-sends keepalive on stale.
+                            send_keepalive_packet(&transport_for_task, link_id);
+                        }
                         LinkAction::SendKeepalive => {
-                            // Keepalives are not encrypted (RNS Packet.py).
-                            let pkt = build_data_packet(
-                                link_id,
-                                rns_wire::context::PacketContext::Keepalive,
-                                &[],
-                            );
-                            let _ = transport_for_task.try_send(TransportMessage::Outbound(
-                                OutboundRequest {
-                                    raw: pkt,
-                                    destination_hash: link_id,
-                                },
-                            ));
+                            send_keepalive_packet(&transport_for_task, link_id);
                         }
                         LinkAction::SendTeardownAndClose(data) => {
                             let pkt = build_data_packet(
@@ -222,13 +216,18 @@ pub async fn open_rrc_link(
                                         rns_wire::context::PacketContext::None,
                                         &cipher,
                                     );
-                                    transport_for_task
+                                    let raw_len = pkt.len();
+                                    let send_result = transport_for_task
                                         .send(TransportMessage::Outbound(OutboundRequest {
                                             raw: pkt,
                                             destination_hash: link_id,
                                         }))
                                         .await
-                                        .map_err(|_| RrcLinkError::TransportUnavailable)
+                                        .map_err(|_| RrcLinkError::TransportUnavailable);
+                                    if send_result.is_ok() {
+                                        link.record_tx(raw_len);
+                                    }
+                                    send_result
                                 }
                                 Err(e) => Err(RrcLinkError::LinkCrypto(format!("{e:?}"))),
                             };
@@ -297,13 +296,17 @@ pub async fn open_rrc_link(
                                         return;
                                     }
                                 }
-                                rns_wire::context::PacketContext::None
-                                | rns_wire::context::PacketContext::Keepalive => {
+                                rns_wire::context::PacketContext::Keepalive => {
+                                    // Keepalives are NOT encrypted (RNS Packet.py).
+                                    // Must refresh inbound clock or the initiator
+                                    // watchdog tears the link down as stale.
+                                    link.record_inbound();
+                                }
+                                rns_wire::context::PacketContext::None => {
                                     if let Ok(plain) = link.decrypt(body) {
-                                        if header.context
-                                            == rns_wire::context::PacketContext::None
-                                            && !plain.is_empty()
-                                        {
+                                        link.record_inbound();
+                                        link.record_rx(body.len());
+                                        if !plain.is_empty() {
                                             if event_tx
                                                 .send(RrcLinkEvent::Data(plain))
                                                 .await
@@ -486,6 +489,19 @@ async fn send_close(
         }),
     )
     .await
+}
+
+/// Initiator keepalive: unencrypted CONTEXT_KEEPALIVE + 0xFF (matches link_manager).
+fn send_keepalive_packet(transport_tx: &mpsc::Sender<TransportMessage>, link_id: [u8; 16]) {
+    let pkt = build_data_packet(
+        link_id,
+        rns_wire::context::PacketContext::Keepalive,
+        &[KEEPALIVE_REQUEST],
+    );
+    let _ = transport_tx.try_send(TransportMessage::Outbound(OutboundRequest {
+        raw: pkt,
+        destination_hash: link_id,
+    }));
 }
 
 async fn send_msg(

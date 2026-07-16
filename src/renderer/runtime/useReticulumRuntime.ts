@@ -88,6 +88,7 @@ import type { ReticulumSidecarEvent, ReticulumWirePacketRow } from '@/shared/ret
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import {
+  isRrcJoinInfoNotice,
   isRrcModerationLanguage,
   parseRrcListNotice,
   parseRrcTopicNotice,
@@ -727,6 +728,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
             if (who) session.mergeRoomMembers(who.room, who.members, 'replace', hubDestHash);
             const topic = parseRrcTopicNotice(p.body);
             if (topic) session.setRoomTopic(topic.room, topic.topic || null, hubDestHash);
+            // rrcd may emit join-info NOTICE without a usable JOINED member list —
+            // treat it as membership so JOINED UI + `/who` can run.
+            if (isRrcJoinInfoNotice(p.body) && topic) {
+              session.roomJoined(topic.room, undefined, hubDestHash);
+            }
             if (isRrcModerationLanguage(p.body)) {
               session.setModerationBanner(p.body, hubDestHash);
             }

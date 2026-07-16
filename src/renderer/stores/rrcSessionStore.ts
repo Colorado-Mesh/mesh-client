@@ -286,10 +286,22 @@ interface RrcSessionStoreState {
   roomMessageKey: (room: string, hubHash?: string) => string | null;
 }
 
+export const RRC_NICKNAME_STORAGE_KEY = 'mesh-client:rrcNickname';
+
+function loadInitialRrcNickname(): string {
+  try {
+    const nick = localStorage.getItem(RRC_NICKNAME_STORAGE_KEY)?.trim();
+    if (nick) return nick;
+  } catch {
+    // catch-no-log-ok localStorage may be unavailable (tests / SSR)
+  }
+  return 'mesh-client';
+}
+
 export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   sessionsByHub: new Map(),
   focusedHubHash: null,
-  nickname: 'mesh-client',
+  nickname: loadInitialRrcNickname(),
   localIdentityHash: null,
   messages: new Map(),
   unreadByHub: new Map(),
@@ -601,6 +613,15 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       const messages = new Map(s.messages);
       const existing = messages.get(key) ?? [];
       if (msg.id && existing.some((m) => m.id === msg.id)) {
+        return {};
+      }
+      // Hub often re-acks the same join-info / status NOTICE; keep one line.
+      if (
+        (msg.kind === 'notice' || msg.kind === 'system') &&
+        existing.length > 0 &&
+        existing[existing.length - 1]?.kind === msg.kind &&
+        existing[existing.length - 1]?.body === msg.body
+      ) {
         return {};
       }
       const list = [...existing, { ...msg, room: roomKey }].slice(-MAX_MESSAGES_PER_ROOM);

@@ -35,6 +35,7 @@ import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import {
   MAX_RRC_HUB_SESSIONS,
   RRC_HUB_STREAM_ROOM,
+  RRC_NICKNAME_STORAGE_KEY,
   RRC_WHISPERS_ROOM,
   useRrcSessionStore,
 } from '@/renderer/stores/rrcSessionStore';
@@ -43,7 +44,7 @@ import type { RrcHubInfo, RrcRoomMember } from '@/shared/rrc-types';
 const COLLAPSED_KEY = 'mesh-client:rrcHubListCollapsed';
 const ROOM_LIST_COLLAPSED_KEY = 'mesh-client:rrc:roomListCollapsed';
 const NICK_LIST_COLLAPSED_KEY = 'mesh-client:rrc:nickListCollapsed';
-const NICK_KEY = 'mesh-client:rrcNickname';
+const NICK_KEY = RRC_NICKNAME_STORAGE_KEY;
 
 function hubMatchesSearch(hub: RrcHubInfo, q: string): boolean {
   if (!q) return true;
