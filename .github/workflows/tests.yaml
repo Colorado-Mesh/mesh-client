@@ -125,15 +125,17 @@ jobs:
 
   merge-reports:
     name: Merge coverage
-    needs: tests
+    needs: [tests, reticulum-sidecar-coverage]
     if: always() && !cancelled() && needs.tests.result != 'cancelled'
     permissions:
       contents: read
+      pull-requests: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
@@ -155,6 +157,13 @@ jobs:
 
       - name: Merge coverage reports
         run: pnpm run test:coverage:merge
+
+      - name: Download reticulum sidecar lcov
+        if: needs.reticulum-sidecar-coverage.result == 'success'
+        uses: actions/download-artifact@v7
+        with:
+          name: reticulum-sidecar-lcov
+          path: reticulum-sidecar
 
       - name: SonarQube Scan
         if: github.actor != 'nektos/act'
