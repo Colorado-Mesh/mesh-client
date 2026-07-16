@@ -47,15 +47,8 @@ function HubRow({
   onToggleFavorite: (hash: string, favorited: boolean) => void;
 }) {
   const { t } = useTranslation();
-  const announceOnly = hub.name_source === 'announce' && !hub.recommended;
-  const label = announceOnly
-    ? formatHash(hub.destination_hash)
-    : (hub.display_name ?? formatHash(hub.destination_hash));
-  const secondary = announceOnly
-    ? (hub.display_name ?? null)
-    : hub.display_name
-      ? formatHash(hub.destination_hash)
-      : null;
+  const label = hub.display_name?.trim() || formatHash(hub.destination_hash);
+  const secondary = hub.display_name?.trim() ? formatHash(hub.destination_hash) : null;
 
   return (
     <li>

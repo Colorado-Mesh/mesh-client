@@ -41,6 +41,11 @@ pub struct RrcSendBody {
     pub dst_hash: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct RrcNickBody {
+    pub nickname: String,
+}
+
 pub async fn list_rrc_hubs(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
     let hubs = stack.list_rrc_hubs().await;
     Json(serde_json::json!({ "hubs": hubs }))
@@ -112,6 +117,13 @@ pub async fn rrc_send(
             )
             .await,
     )
+}
+
+pub async fn rrc_set_nick(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<RrcNickBody>,
+) -> Json<serde_json::Value> {
+    Json(stack.rrc_set_nick(&body.nickname).await)
 }
 
 pub async fn rrc_rooms(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {

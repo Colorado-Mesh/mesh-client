@@ -1240,6 +1240,15 @@ impl StackHandle {
         serde_json::json!({ "ok": false, "error": "rrc requires live rns-stack sidecar" })
     }
 
+    pub async fn rrc_set_nick(&self, nickname: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rrc_set_nick(nickname).await;
+        }
+        let _ = nickname;
+        serde_json::json!({ "ok": false, "error": "rrc requires live rns-stack sidecar" })
+    }
+
     pub async fn rrc_rooms(&self) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {

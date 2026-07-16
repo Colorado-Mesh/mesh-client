@@ -376,6 +376,7 @@ export function createElectronAPIMock(): ElectronAPI {
         join: vi.fn().mockResolvedValue({ ok: true }),
         part: vi.fn().mockResolvedValue({ ok: true }),
         send: vi.fn().mockResolvedValue({ ok: true }),
+        setNickname: vi.fn().mockResolvedValue({ ok: true }),
         getRooms: vi.fn().mockResolvedValue({ rooms: [] }),
       },
     },

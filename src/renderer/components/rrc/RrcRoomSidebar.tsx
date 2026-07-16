@@ -255,20 +255,23 @@ export function RrcRoomSidebar({
             {t('rrc.listedRooms')}
           </li>
         )}
-        {listedNotJoined.map((r) => renderRoomButton(r.name, { joined: false, topic: r.topic }))}
-        {favNotJoined.map((name) => renderRoomButton(name, { joined: false }))}
+        {!collapsed &&
+          listedNotJoined.map((r) => renderRoomButton(r.name, { joined: false, topic: r.topic }))}
+        {!collapsed && favNotJoined.map((name) => renderRoomButton(name, { joined: false }))}
         {!collapsed && suggested.filter(filterName).length > 0 && (
           <li className="mt-2 px-2 py-1 text-[10px] tracking-wide text-amber-500/70 uppercase">
             {t('rrc.suggestedRooms')}
           </li>
         )}
-        {suggested.filter(filterName).map((name) => renderRoomButton(name, { joined: false }))}
+        {!collapsed &&
+          suggested.filter(filterName).map((name) => renderRoomButton(name, { joined: false }))}
         {!collapsed && recent.filter(filterName).length > 0 && (
           <li className="mt-2 px-2 py-1 text-[10px] tracking-wide text-amber-500/70 uppercase">
             {t('rrc.recentRooms')}
           </li>
         )}
-        {recent.filter(filterName).map((name) => renderRoomButton(name, { joined: false }))}
+        {!collapsed &&
+          recent.filter(filterName).map((name) => renderRoomButton(name, { joined: false }))}
         {joined.length === 0 && !collapsed && (
           <li className="px-2 text-xs text-amber-200/40">{t('rrc.noRoomsJoined')}</li>
         )}

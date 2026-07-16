@@ -155,6 +155,7 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/rrc/join", post(rrc::rrc_join))
         .route("/api/v1/rrc/part", post(rrc::rrc_part))
         .route("/api/v1/rrc/send", post(rrc::rrc_send))
+        .route("/api/v1/rrc/nick", post(rrc::rrc_set_nick))
         .route("/api/v1/rrc/rooms", get(rrc::rrc_rooms))
         .route("/api/v1/stack/restart", post(system::stack_restart))
         .route("/api/v1/system/factory-reset", post(system::factory_reset))

@@ -4318,6 +4318,11 @@
     "capDirectNotice": "doğrudan msg",
     "moderation": {
       "removedFromRoom": "Göbek tarafından odadan çıkarılır (tekme, yasak veya uzak kısım)."
+    },
+    "errors": {
+      "linkProofTimeout": "Göbek bağlantısını beklerken zaman aşımına uğradı (bağlantı kanıtı). Tekrar deneyin veya merkeze giden yolu/durakları kontrol edin.",
+      "pathTimeout": "Hub'a giden bir yol bulunamadı. Daha yeni bir duyuru bekleyin, ardından yeniden bağlanın.",
+      "welcomeTimeout": "Bağlantı kuruldu ancak merkez zamanında KARŞILAMA göndermedi. Tekrar deneyin."
     }
   }
 }

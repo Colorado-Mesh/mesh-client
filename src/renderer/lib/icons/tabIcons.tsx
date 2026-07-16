@@ -7,6 +7,7 @@ import {
   FileChartColumn,
   GitBranch,
   Globe,
+  Hash,
   House,
   Link2,
   Lock,
@@ -37,7 +38,7 @@ export function TabIcon({ name }: { name: string }) {
     case 'Chat':
       return <MessageCircle {...p} />;
     case 'RRC':
-      return <Radio {...p} />;
+      return <Hash {...p} />;
     case 'NomadNetwork':
       return <Globe {...p} />;
     case 'Nodes':

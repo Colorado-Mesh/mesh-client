@@ -10,6 +10,7 @@ import { RrcTopicBar } from '@/renderer/components/rrc/RrcTopicBar';
 import { loadMutedViews, saveMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { formatRrcErrorMessage } from '@/renderer/lib/rrcErrorHumanize';
 import {
   loadRrcRecentRooms,
   pushRrcRecentRoom,
@@ -97,8 +98,10 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
   const addMessage = useRrcSessionStore((s) => s.addMessage);
   const messagesForActiveRoom = useRrcSessionStore((s) => s.messagesForActiveRoom);
   const markPartIntent = useRrcSessionStore((s) => s.markPartIntent);
+  const localIdentityHash = useRrcSessionStore((s) => s.localIdentityHash);
   const setDisconnectIntent = useRrcSessionStore((s) => s.setDisconnectIntent);
   const setModerationBanner = useRrcSessionStore((s) => s.setModerationBanner);
+  const setError = useRrcSessionStore((s) => s.setError);
 
   const [sidecarRunning, setSidecarRunning] = useState(false);
   const [collapsed, setCollapsed] = useState(() => readCollapsed(COLLAPSED_KEY));
@@ -113,7 +116,8 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
   const [joinRoomKey, setJoinRoomKey] = useState('');
   const [recentRoomsEpoch, setRecentRoomsEpoch] = useState(0);
   const [prefsEpoch, setPrefsEpoch] = useState(0);
-  const [busy, setBusy] = useState(false);
+  /** Short-lived join/part only — never block the whole panel on connect. */
+  const [actionBusy, setActionBusy] = useState(false);
   const [mutedViews, setMutedViews] = useState(() => loadMutedViews('reticulum'));
   const [draft, setDraft] = useState('');
   const listSentForHubRef = useRef<string | null>(null);
@@ -246,66 +250,82 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
   const isMuted = muteKey ? mutedViews.has(muteKey) : false;
   const connected =
     status === 'active' || status === 'awaiting_welcome' || status === 'reconnecting';
+  const connectInFlight = status === 'connecting' || status === 'awaiting_welcome';
+  const panelBusy = actionBusy || connectInFlight;
   const showNicklist =
     Boolean(activeRoom) && activeRoom !== RRC_HUB_STREAM_ROOM && !activeRoom?.startsWith('[');
 
+  const nicklistMembers = useMemo(() => {
+    const members = [...(activeRoomInfo?.members ?? [])];
+    if (!localIdentityHash) return members;
+    const selfIdx = members.findIndex(
+      (m) => m.identity_hash.toLowerCase() === localIdentityHash.toLowerCase(),
+    );
+    if (selfIdx >= 0) {
+      const cur = members[selfIdx];
+      if (cur) {
+        members[selfIdx] = { ...cur, nickname: nickname || cur.nickname };
+      }
+    } else if (nickname) {
+      members.unshift({ identity_hash: localIdentityHash, nickname });
+    }
+    return members;
+  }, [activeRoomInfo?.members, localIdentityHash, nickname]);
+
+  const displayError = lastError ? formatRrcErrorMessage(lastError, t) : null;
+
   const handleConnect = useCallback(
     async (hash: string) => {
-      setBusy(true);
       setDisconnectIntent(false);
+      setError(null);
       try {
         const res = await window.electronAPI.reticulum.rrc.connect({
           dest_hash: hash,
           nickname,
         });
         if (!res.ok) {
-          useRrcSessionStore.getState().setError(res.error ?? t('rrc.connectFailed'));
+          setError(formatRrcErrorMessage(res.error ?? t('rrc.connectFailed'), t));
         }
       } catch (e) {
         // catch-no-log-ok error surfaced via setError
-        useRrcSessionStore.getState().setError(errLikeToLogString(e));
-      } finally {
-        setBusy(false);
+        setError(formatRrcErrorMessage(errLikeToLogString(e), t));
       }
     },
-    [nickname, setDisconnectIntent, t],
+    [nickname, setDisconnectIntent, setError, t],
   );
 
   const handleDisconnect = useCallback(async () => {
-    setBusy(true);
     setDisconnectIntent(true);
     try {
       await window.electronAPI.reticulum.rrc.disconnect();
       useRrcSessionStore.getState().clearSession();
     } catch (e) {
       console.warn('[RrcPanel] disconnect ' + errLikeToLogString(e));
-    } finally {
-      setBusy(false);
     }
   }, [setDisconnectIntent]);
 
   const handleManualConnect = useCallback(async () => {
     const hub = await upsertManual(manualHash);
     if (!hub) {
-      useRrcSessionStore.getState().setError(t('rrc.invalidHubHash'));
+      setError(t('rrc.invalidHubHash'));
       return;
     }
     setManualHash('');
     await handleConnect(hub.destination_hash);
-  }, [manualHash, upsertManual, handleConnect, t]);
+  }, [manualHash, upsertManual, handleConnect, setError, t]);
 
   const joinRoom = useCallback(
     async (roomRaw: string, key?: string) => {
       const room = roomRaw.trim();
       if (!room) return;
-      setBusy(true);
+      setActionBusy(true);
       try {
         const res = await window.electronAPI.reticulum.rrc.join({
           room,
           key: key?.trim() || undefined,
         });
         if (!res.ok) {
-          useRrcSessionStore.getState().setError(res.error ?? t('rrc.joinFailed'));
+          setError(formatRrcErrorMessage(res.error ?? t('rrc.joinFailed'), t));
         } else {
           setActiveRoom(room);
           if (hubDestHash) {
@@ -315,12 +335,12 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
         }
       } catch (e) {
         // catch-no-log-ok error surfaced via setError
-        useRrcSessionStore.getState().setError(errLikeToLogString(e));
+        setError(formatRrcErrorMessage(errLikeToLogString(e), t));
       } finally {
-        setBusy(false);
+        setActionBusy(false);
       }
     },
-    [hubDestHash, setActiveRoom, t],
+    [hubDestHash, setActiveRoom, setError, t],
   );
 
   const handlePart = useCallback(
@@ -328,14 +348,14 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
       const target = (room ?? activeRoom)?.trim();
       if (!target || target.startsWith('[')) return;
       markPartIntent(target);
-      setBusy(true);
+      setActionBusy(true);
       try {
         await window.electronAPI.reticulum.rrc.part({ room: target });
       } catch (e) {
         console.warn('[RrcPanel] part ' + errLikeToLogString(e));
         useRrcSessionStore.getState().clearPartIntent(target);
       } finally {
-        setBusy(false);
+        setActionBusy(false);
       }
     },
     [activeRoom, markPartIntent],
@@ -379,6 +399,29 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
             localStorage.setItem(NICK_KEY, parsed.nickname);
           } catch {
             // catch-no-log-ok
+          }
+          if (status === 'active') {
+            const nickRes = await window.electronAPI.reticulum.rrc.setNickname(parsed.nickname);
+            if (!nickRes.ok) {
+              useRrcSessionStore.getState().setError(nickRes.error ?? t('rrc.sendFailed'));
+              return;
+            }
+            // Push K_NICK to the hub so /who and member lists pick up the new nick.
+            void sendHubCommand('/who').catch((e: unknown) => {
+              console.debug('[RrcPanel] nick /who ' + errLikeToLogString(e));
+            });
+          }
+          // Update local nicklist entry for self immediately.
+          const selfHash = useRrcSessionStore.getState().localIdentityHash;
+          if (selfHash && activeRoom && !activeRoom.startsWith('[')) {
+            const members = activeRoomInfo?.members ?? [];
+            const next = members.map((m) =>
+              m.identity_hash.toLowerCase() === selfHash ? { ...m, nickname: parsed.nickname } : m,
+            );
+            if (!next.some((m) => m.identity_hash.toLowerCase() === selfHash)) {
+              next.push({ identity_hash: selfHash, nickname: parsed.nickname });
+            }
+            useRrcSessionStore.getState().mergeRoomMembers(activeRoom, next, 'replace');
           }
           appendSystemLines([t('rrc.slash.nickChanged', { name: parsed.nickname })]);
           setDraft('');
@@ -514,6 +557,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
       handlePart,
       joinRoom,
       rooms,
+      sendHubCommand,
       setActiveRoom,
       setNickname,
       status,
@@ -564,7 +608,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
         discovered={hubList.discovered}
         manual={hubList.manual}
         hubDestHash={hubDestHash}
-        busy={busy}
+        busy={panelBusy}
         manualHash={manualHash}
         onManualHashChange={setManualHash}
         hubTab={hubTab}
@@ -591,7 +635,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
           onJoinRoomNameChange={setJoinRoomName}
           joinRoomKey={joinRoomKey}
           onJoinRoomKeyChange={setJoinRoomKey}
-          busy={busy}
+          busy={actionBusy}
           onJoin={() => void joinRoom(joinRoomName, joinRoomKey)}
           onRefreshList={() => void sendHubCommand('/list')}
           joined={roomList}
@@ -657,7 +701,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
                   type="button"
                   className="rounded p-1.5 text-amber-200/60 hover:bg-amber-950/50"
                   aria-label={t('rrc.leaveRoom')}
-                  disabled={busy}
+                  disabled={actionBusy}
                   onClick={() => void handlePart()}
                 >
                   <LogOut size={16} />
@@ -667,7 +711,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
                 type="button"
                 className="rounded bg-amber-900/60 px-2 py-1 text-xs text-amber-100"
                 aria-label={t('rrc.disconnect')}
-                disabled={busy}
+                disabled={actionBusy}
                 onClick={() => void handleDisconnect()}
               >
                 {t('rrc.disconnect')}
@@ -690,9 +734,19 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
             </button>
           </div>
         )}
-        {lastError && (
-          <div className="border-b border-red-800/50 bg-red-900/30 px-3 py-1.5 text-xs text-red-200">
-            {lastError}
+        {displayError && (
+          <div className="flex items-start gap-2 border-b border-red-800/50 bg-red-900/30 px-3 py-1.5 text-xs text-red-200">
+            <span className="min-w-0 flex-1">{displayError}</span>
+            <button
+              type="button"
+              className="shrink-0 p-0.5 text-red-200/70 hover:text-red-50"
+              aria-label={t('rrc.dismissBanner')}
+              onClick={() => {
+                setError(null);
+              }}
+            >
+              <X size={14} />
+            </button>
           </div>
         )}
         <RrcTopicBar
@@ -714,8 +768,8 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
           />
           {showNicklist && (
             <RrcNickList
-              members={activeRoomInfo?.members ?? []}
-              busy={busy}
+              members={nicklistMembers}
+              busy={actionBusy}
               onRefreshWho={() => {
                 const room = activeRoom;
                 if (!room || room.startsWith('[')) return;

@@ -574,6 +574,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
               ? 'active'
               : 'awaiting_welcome';
         useRrcSessionStore.getState().applyStatus(st, p.hub_dest_hash ?? null, p.hub_name ?? null);
+        if (st === 'active') {
+          useRrcSessionStore.getState().setError(null);
+        }
         if (p.capabilities) {
           useRrcSessionStore.getState().setCapabilities({
             direct_notice: Boolean(p.capabilities.direct_notice),
@@ -707,6 +710,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         const p = evt.payload as { message?: string };
         if (typeof p.message === 'string') {
           const session = useRrcSessionStore.getState();
+          // Keep raw message; panel humanizes for display. Do not freeze UI on timeouts.
           session.setError(p.message);
           if (isRrcModerationLanguage(p.message)) {
             session.setModerationBanner(p.message);

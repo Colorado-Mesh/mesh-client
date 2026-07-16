@@ -699,7 +699,7 @@ impl LiveBridge {
             while let Some(evt) = callback_rx.recv().await {
                 let hash_hex = hex::encode(evt.destination_hash);
                 let identity_hash_hex = evt.identity_hash.map(hex::encode);
-                let display_name = parse_announce_display_name(evt.app_data.as_deref());
+                let display_name = parse_rrc_hub_announce_name(evt.app_data.as_deref());
                 let hops = Some(evt.hops);
                 let payload = {
                     let mut state = inner.write().await;
@@ -779,6 +779,13 @@ impl LiveBridge {
             .send_chat(room, body.to_string(), kind, dst_hash)
             .await
         {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rrc_set_nick(&self, nickname: &str) -> serde_json::Value {
+        match self.rrc_session.set_nickname(nickname.to_string()).await {
             Ok(()) => serde_json::json!({ "ok": true }),
             Err(e) => serde_json::json!({ "ok": false, "error": e }),
         }
@@ -2157,6 +2164,55 @@ pub(super) fn emit_lxmf_event(event_tx: &broadcast::Sender<String>, payload: ser
     let _ = event_tx.send(frame.to_string());
 }
 
+/// rrcd announces `app_data` as CBOR `{"proto":"rrc","v":1,"hub":"<name>"}`.
+fn parse_rrc_hub_announce_name(app_data: Option<&[u8]>) -> Option<String> {
+    let bytes = app_data?;
+    if bytes.is_empty() {
+        return None;
+    }
+    if let Ok(value) = ciborium::from_reader::<ciborium::Value, _>(std::io::Cursor::new(bytes)) {
+        if let Some(name) = rrc_hub_name_from_cbor(&value) {
+            return sanitize_rrc_hub_display_name(&name);
+        }
+    }
+    // Fallback for non-rrcd hubs that use LXMF/Nomad-style announce payloads.
+    parse_announce_display_name(app_data).and_then(|n| sanitize_rrc_hub_display_name(&n))
+}
+
+fn rrc_hub_name_from_cbor(value: &ciborium::Value) -> Option<String> {
+    let ciborium::Value::Map(entries) = value else {
+        return None;
+    };
+    for (k, v) in entries {
+        let key = match k {
+            ciborium::Value::Text(t) => t.as_str(),
+            _ => continue,
+        };
+        if key != "hub" && key != "name" && key != "hub_name" {
+            continue;
+        }
+        if let ciborium::Value::Text(name) = v {
+            let trimmed = name.trim();
+            if !trimmed.is_empty() {
+                return Some(trimmed.to_string());
+            }
+        }
+    }
+    None
+}
+
+fn sanitize_rrc_hub_display_name(s: &str) -> Option<String> {
+    let trimmed = s.trim();
+    if !is_plausible_display_name(trimmed) {
+        return None;
+    }
+    // Reject protocol/aspect noise often mis-parsed from foreign announce payloads.
+    match trimmed.to_ascii_lowercase().as_str() {
+        "lxmf" | "rrc" | "proto" | "reticulum" | "rrc.hub" | "lxmf.delivery" => None,
+        _ => Some(trimmed.to_string()),
+    }
+}
+
 /// LXMF / Nomad announces encode display names in app_data as msgpack
 /// `[display_name_bytes, ...]`, msgpack maps, JSON objects (`server_name`), or raw UTF-8.
 fn parse_announce_display_name(app_data: Option<&[u8]>) -> Option<String> {
@@ -2463,6 +2519,35 @@ mod announce_display_name_tests {
         let prev: HashSet<String> = ["aa".into()].into_iter().collect();
         let next: HashSet<String> = ["aa".into()].into_iter().collect();
         assert!(path_table_added_hashes(&prev, &next).is_empty());
+    }
+
+    #[test]
+    fn parse_rrc_hub_announce_name_cbor_hub_key() {
+        let mut buf = Vec::new();
+        let map = ciborium::Value::Map(vec![
+            (
+                ciborium::Value::Text("proto".into()),
+                ciborium::Value::Text("rrc".into()),
+            ),
+            (
+                ciborium::Value::Text("v".into()),
+                ciborium::Value::Integer(1.into()),
+            ),
+            (
+                ciborium::Value::Text("hub".into()),
+                ciborium::Value::Text("rnscommunity".into()),
+            ),
+        ]);
+        ciborium::into_writer(&map, &mut buf).unwrap();
+        assert_eq!(
+            parse_rrc_hub_announce_name(Some(&buf)),
+            Some("rnscommunity".into())
+        );
+    }
+
+    #[test]
+    fn parse_rrc_hub_announce_name_rejects_lxmf_noise() {
+        assert_eq!(parse_rrc_hub_announce_name(Some(b"LXMF")), None);
     }
 
     #[test]

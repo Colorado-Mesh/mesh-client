@@ -4318,6 +4318,11 @@
     "capDirectNotice": "msg diretto",
     "moderation": {
       "removedFromRoom": "Rimosso dalla stanza dall'hub (kick, ban o parte remota)."
+    },
+    "errors": {
+      "linkProofTimeout": "Tempo scaduto in attesa del collegamento hub (prova del collegamento). Riprova o controlla il percorso/salti verso l'hub.",
+      "pathTimeout": "Impossibile trovare un percorso per l'hub. Attendi un annuncio più fresco, quindi riconnettiti.",
+      "welcomeTimeout": "Connesso ma l'hub non ha inviato IL BENVENUTO in tempo. Riprova."
     }
   }
 }

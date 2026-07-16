@@ -949,6 +949,7 @@ export interface ElectronAPI {
       join: (opts: RrcJoinRequest) => Promise<{ ok: boolean; error?: string }>;
       part: (opts: RrcPartRequest) => Promise<{ ok: boolean; error?: string }>;
       send: (opts: RrcSendRequest) => Promise<{ ok: boolean; error?: string }>;
+      setNickname: (nickname: string) => Promise<{ ok: boolean; error?: string }>;
       getRooms: () => Promise<{ rooms: RrcSessionSnapshot['rooms'] }>;
     };
   };

@@ -4318,6 +4318,11 @@
     "capDirectNotice": "direct msg",
     "moderation": {
       "removedFromRoom": "Dilepaskan dari ruangan oleh hub (kick, ban, atau remote part)."
+    },
+    "errors": {
+      "linkProofTimeout": "Waktu habis menunggu tautan hub (bukti tautan). Coba lagi, atau periksa jalur/hop ke hub.",
+      "pathTimeout": "Tidak dapat menemukan jalur ke hub. Tunggu pengumuman yang lebih segar, lalu sambungkan kembali.",
+      "welcomeTimeout": "Terhubung tetapi hub tidak mengirim SAMBUTAN tepat waktu. Coba lagi."
     }
   }
 }

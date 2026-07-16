@@ -87,6 +87,10 @@ enum SessionCommand {
         room: String,
         reply: oneshot::Sender<Result<(), String>>,
     },
+    SetNickname {
+        nickname: String,
+        reply: oneshot::Sender<Result<(), String>>,
+    },
     Send {
         /// Empty / None omits K_ROOM (hub-global slash commands).
         room: Option<String>,
@@ -221,6 +225,22 @@ impl RrcSessionManager {
         let (reply, rx) = oneshot::channel();
         self.cmd_tx
             .send(SessionCommand::Part { room, reply })
+            .await
+            .map_err(|_| "rrc session task stopped".to_string())?;
+        rx.await.map_err(|_| "rrc session task stopped".to_string())?
+    }
+
+    pub async fn set_nickname(&self, nickname: String) -> Result<(), String> {
+        let nick = nickname.trim().to_string();
+        if nick.is_empty() {
+            return Err("nickname must not be empty".into());
+        }
+        let (reply, rx) = oneshot::channel();
+        self.cmd_tx
+            .send(SessionCommand::SetNickname {
+                nickname: nick,
+                reply,
+            })
             .await
             .map_err(|_| "rrc session task stopped".to_string())?;
         rx.await.map_err(|_| "rrc session task stopped".to_string())?
@@ -411,6 +431,17 @@ async fn session_loop(
                         }
                         let _ = reply.send(result);
                     }
+                    SessionCommand::SetNickname { nickname, reply } => {
+                        {
+                            let mut g = inner.lock().await;
+                            g.nickname = Some(nickname.clone());
+                        }
+                        // Keep reconnect HELLO in sync with the live nickname.
+                        if let Some((_, _, _, nick)) = reconnect_intent.as_mut() {
+                            *nick = nickname;
+                        }
+                        let _ = reply.send(Ok(()));
+                    }
                     SessionCommand::Send {
                         room,
                         body,
@@ -464,9 +495,13 @@ async fn session_loop(
                                 "reason": reason,
                             }),
                         );
-                        if let Some((dest_hash, dest_hash_hex, hops, nickname)) =
+                        if let Some((dest_hash, dest_hash_hex, hops, _stale_nick)) =
                             reconnect_intent.clone()
                         {
+                            let nickname = {
+                                let g = inner.lock().await;
+                                g.nickname.clone().unwrap_or_else(|| "mesh-client".into())
+                            };
                             debug!(
                                 "rrc reconnecting to {dest_hash_hex} in {backoff_ms}ms"
                             );
@@ -495,6 +530,8 @@ async fn session_loop(
                                         g.desired_rooms.iter().cloned().collect()
                                     };
                                     link = Some(handle);
+                                    reconnect_intent =
+                                        Some((dest_hash, dest_hash_hex, hops, nickname));
                                     for room in rooms {
                                         let _ = send_room_control(
                                             &mut link,
