@@ -4265,13 +4265,13 @@
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
-    "expandRooms": "Perluas daftar kamar",
-    "collapseRooms": "Ciutkan daftar kamar",
+    "expandRooms": "Perluas daftar ruangan",
+    "collapseRooms": "Ciutkan daftar ruangan",
     "joinedRooms": "Sudah bergabung",
     "recentRooms": "Terkini",
-    "roomKeyOptional": "Kunci kamar (opsional)",
-    "joinRoomHelp": "Kamar adalah grup live di hub ini. Gabung berdasarkan nama, coba Disarankan, atau ketik /daftar dan /bantuan.",
-    "listHint": "Kiat: /daftar menunjukkan ruang publik terdaftar di hub rrcd. /bantuan untuk perintah.",
+    "roomKeyOptional": "Kunci ruangan (opsional)",
+    "joinRoomHelp": "Rooms are live groups on this hub. Join by name, try Listed, or type /list and /help.",
+    "listHint": "Tip: /list shows registered public rooms on rrcd hubs. /help for commands.",
     "slash": {
       "helpIntro": "=== Bantuan RRC ===",
       "helpClient": "Perintah klien:",
@@ -4293,13 +4293,13 @@
       "commandSent": "Perintah dikirim: {{cmd}}",
       "helpMsg": "/msg NICK| teks HASH — bisikan PEMBERITAHUAN langsung (rrcd)",
       "usageMsg": "Penggunaan: /msg NICK|HASH TEXT",
-      "msgTargetNotFound": "Tidak dapat menyelesaikan target/msg ke hash identitas penuh. Gabung ke kamar atau gunakan hash lengkap.",
+      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash.",
       "msgSent": "→ {{name}}: {{text}}"
     },
     "listedRooms": "tercantum",
-    "refreshRoomList": "Segarkan daftar kamar (/ list)",
-    "favoriteRoom": "Kamar favorit",
-    "unfavoriteRoom": "Hapus kamar favorit",
+    "refreshRoomList": "Segarkan daftar ruangan (/list)",
+    "favoriteRoom": "ruangan favorit",
+    "unfavoriteRoom": "Hapus ruangan favorit",
     "enableAutoJoin": "Aktifkan bergabung otomatis",
     "disableAutoJoin": "Nonaktifkan auto - join",
     "noTopic": "Tidak ada topik",
@@ -4307,10 +4307,10 @@
     "memberCount_other": "{{count}} anggota",
     "userCount_one": "{{count}} pengguna",
     "userCount_other": "{{count}} pengguna",
-    "refreshWho": "Segarkan anggota (/siapa)",
+    "refreshWho": "Refresh members (/who)",
     "msgNick": "Pesan {{name}}",
     "dismissBanner": "Abaikan pemberitahuan ini",
-    "directNoticeUnsupported": "Hub ini tidak mendukung PEMBERITAHUAN langsung (/ msg).",
+    "directNoticeUnsupported": "Hub ini tidak mendukung PEMBERITAHUAN langsung (/msg).",
     "capDirectNotice": "direct msg",
     "moderation": {
       "removedFromRoom": "Dilepaskan dari ruangan oleh hub (kick, ban, atau remote part)."
@@ -4338,6 +4338,9 @@
     "hubAutoJoinOffHint": "Gabung otomatis — klik untuk menghubungkan hub ini saat tumpukan dimulai",
     "roomAutoJoinOnHint": "Bergabung otomatis — klik untuk menonaktifkan",
     "roomAutoJoinOffHint": "Gabung otomatis — klik untuk bergabung dengan ruangan ini saat hub terhubung",
-    "roomLegend": "★ favorit · A toggles auto - join"
+    "roomLegend": "★ favorit · A toggles auto - join",
+    "disconnectFailed": "Could not disconnect from RRC hub.",
+    "partFailed": "Could not leave room.",
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
   }
 }

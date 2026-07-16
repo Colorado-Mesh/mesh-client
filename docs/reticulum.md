@@ -16,7 +16,7 @@ Related docs: [README — Reticulum Features](../README.md#reticulum-features), 
 2. **Connection** → **Start stack** (optional **Auto-start** for next launch).
 3. **Network** → generate or import your LXMF identity (stack must be running).
 4. **Connection → Interfaces** → add and enable transports (TCP hub, I2P, Auto, or RNode over USB / BLE / Wi‑Fi). Use **Add default network hubs** to sync community backbone presets (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World — adds missing rows disabled, repairs mismatched endpoints, disables decommissioned official testnet hubs, skips correct ones) after identity is configured.
-5. **Chat** → LXMF direct messages. **Peers** and **Topology** for path-table visibility. **Nomad Network** → browse announced nodes (Micron pages, back/forward, session cache).
+5. **Chat** → LXMF direct messages. **RRC** → multi-hub relay chat (rooms, nicklists, slash commands). **Peers** and **Topology** for path-table visibility. **Nomad Network** → browse announced nodes (Micron pages, back/forward, session cache).
 
 After changing interfaces on a live network, **restart the stack** so RNS picks up transport changes.
 
@@ -30,6 +30,7 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 | Interfaces      | TCP client, I2P (`peers`), Auto discovery, RNode (USB serial, `ble://…`, Wi‑Fi `tcp://host:7633`); default hub presets (US-East + I2P + Yggdrasil Ashburn VA + Ratspeak + RMAP World, added disabled; button syncs/repairs by endpoint and disables decommissioned testnet hubs)                                                                                                                                                                                                                                                                                               |
 | Identity        | Generate / import mnemonic; display name; encrypted export; **identity vault** passcode on Network tab                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | LXMF chat       | DM-only text and reactions (file/voice attachments deferred)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| RRC             | Reticulum Relay Chat — discovered/manual/favourite hubs, up to **8** concurrent sessions, hub/room auto-join, rooms, nicklists, slash commands (`/list`, `/who`, `/join`, …), @mention unread badges, toasts when the RRC tab is inactive, automatic reconnect with backoff                                                                                                                                                                                                                                                                                                    |
 | Delivery        | **Direct** when destination is in path table, **Propagated (PN)** when offline and a preferred propagation node is set; path presence and transport badges (RF/BLE/TCP/NET, explicit multi like RF+TCP, PN) indicate **observed / path-table egress**, not “interfaces enabled” and not final LXMF delivery — UI stays **Sending** until `lxmf_outbound_status` (`delivered` / `failed`); terminal status persists in SQLite. Inbound `received_via` / TCP badges use the matching local interface **config type**, not its display name, so a hub named “RNS Testnet” is TCP. |
 | Peers           | RNS path table + LXMF contacts (Peers tab sub-tabs); probe and peer detail modal                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Topology        | Best-effort graph from path-table next hops (not a full multi-hop trace)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -41,7 +42,7 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 | Sniffer / Stats | Reticulum packet log tab (`rawPacketLog.reticulum.*`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | Coexistence     | BLE on a **different** MAC from Meshtastic/MeshCore; scan mutex; **Noble BLE yield** when an enabled BLE RNode is in config (sidecar suspends Noble on macOS/Windows so btleplug can pair)                                                                                                                                                                                                                                                                                                                                                                                     |
 
-**Not in Reticulum mode:** Meshtastic/MeshCore-style RF channel chat, MQTT broker card, Meshtastic/MeshCore LoRa node position map, Rooms BBS, TAK, Meshtastic PKI Security tab, Hop Goblins routing diagnostics.
+**Not in Reticulum mode:** Meshtastic/MeshCore-style RF channel chat, MQTT broker card, Meshtastic/MeshCore LoRa node position map, Rooms BBS, TAK, Meshtastic PKI Security tab, Hop Goblins routing diagnostics. (RRC is hub room chat over Reticulum Links — not LoRa RF channels.)
 
 ---
 
@@ -50,7 +51,8 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 | Tab             | Role                                                                                                                                                                                      |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Connection      | Stack start/stop, auto-start, interfaces CRUD, interface health, sidecar interface-issue banner (clears when hubs are disabled/removed), **Pick device** (serial / BLE)                   |
-| Chat            | LXMF DMs (only chat mode for Reticulum)                                                                                                                                                   |
+| Chat            | LXMF DMs                                                                                                                                                                                  |
+| RRC             | Multi-hub relay chat (`RrcPanel`): favourites/discovered hubs, rooms, nicklist, slash commands, reconnect                                                                                 |
 | Nomad Network   | Favourites, announces, Micron page browser (dual-axis scroll shell, fit-width default + open-width toggle, navigation, cache, file downloads); lazy-mount keep-alive after first visit    |
 | Peers           | Path-table peers and LXMF contacts (sidebar label **Peers**; Meshtastic/MeshCore use **Nodes**)                                                                                           |
 | Network         | Identity, stack settings, announces, propagation (preferred, sync, rename/delete remote nodes), config import/export, identity vault (sidebar label **Network**; LoRa tabs use **Radio**) |
@@ -212,12 +214,22 @@ When multiple enabled local RNode interfaces are connected, the interface list s
 
 ## Chat (LXMF)
 
-- **DM-only** — no RF channel pills
+- **DM-only** on the Chat tab — no RF channel pills (RRC covers hub rooms separately)
 - Text and emoji reactions. **File and voice attachments are not offered in the UI** (deferred redesign); historic `[file:name:mime]` bubbles still render as a read-only label
 - **Replies:** outbound DMs stamp LXMF `FIELD_REPLY_TO` (0x30) and optional `FIELD_REPLY_QUOTE` (0x31, capped) before sign so peers see structured replies; ingest/Chat use `reticulum_reply_to_hash` plus quote preview (store parent when present, else wire quote) and jump-to-parent by message hash
 - Outbound **Sending** until sidecar emits `lxmf_outbound_status` (`delivered` / `failed`); `/api/v1/lxmf/send` may return `delivery_status: "queued"` or `"sending"` — that is enqueue/acceptance, not delivery confirmation
 - Terminal **Completes** / **Failed** from `lxmf_outbound_status` are persisted to SQLite (`delivery_status` on `reticulum_messages`) via `applyReticulumOutboundDeliveryStatus.ts` so restart/DB hydration does not regress delivered rows; early WS events before provisional id→hash rekey are buffered
 - **DM path reachability:** active DM header shows a reachability badge (`ReticulumDmPathReachabilityBadge` + `useReticulumDmPathProbe`) seeded from path-table/contact hops, then settled by peer probe; when settled, **Request path** / **Probe** use the same sidecar endpoints as the Peers tab. Chat **Probe** mirrors Peer List UX: stack-running check → `/probe` → toast → peer refresh; `onProbeSettled` / `applyProbeResult(forHash, …)` applies the result without a second `/probe` (stale hashes after DM switch are ignored); manual reprobe forces Checking… even when passive hops already look reachable
+
+## RRC (Reticulum Relay Chat)
+
+IRC-style multi-pane client (`RrcPanel` + `rrcHubStore` / `rrcSessionStore`):
+
+- Discover hubs from announces, connect by hash, or favourite hubs (Nomad-style). Soft cap **8** concurrent hub sessions.
+- Per-hub rooms, nicklists (`/who`), topics, slash commands (`/help`, `/join`, `/part`, `/list`, `/msg`, …). Hub and room **auto-join** prefs in localStorage.
+- Unintended link drops enter **reconnecting** (backoff 2–30 s), preserve desired rooms (including join keys), and rejoin after WELCOME. Explicit **Disconnect** / **Cancel** clears that hub (`will_reconnect: false`).
+- @mention unread badges and inactive-tab toasts; muted views use the shared Chat mute storage keyed as `rrc:<hub>:<room>`.
+- Sidecar modules: `rrc_codec`, `rrc_link`, `rrc_session`, `rrc_defaults`; REST under `/api/v1/rrc/*` (see [sidecar IPC](reticulum-sidecar-ipc.md)).
 
 ### Delivery modes
 

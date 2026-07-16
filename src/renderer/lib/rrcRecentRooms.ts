@@ -1,3 +1,4 @@
+import { loadCanonicalStringList, writeStringList } from './localStorageList';
 import { rrcRoomMatchKey, rrcRoomsMatch } from './rrcRoomName';
 
 const RECENT_PREFIX = 'mesh-client:rrc:recentRooms:';
@@ -17,21 +18,7 @@ function canonicalizeRecent(rooms: string[]): string[] {
 }
 
 export function loadRrcRecentRooms(hubHash: string): string[] {
-  try {
-    const storageKey = RECENT_PREFIX + hubHash.toLowerCase();
-    const raw = localStorage.getItem(storageKey);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    const rooms = canonicalizeRecent(parsed.filter((x): x is string => typeof x === 'string'));
-    if (raw !== JSON.stringify(rooms)) {
-      localStorage.setItem(storageKey, JSON.stringify(rooms));
-    }
-    return rooms;
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable
-    return [];
-  }
+  return loadCanonicalStringList(RECENT_PREFIX + hubHash.toLowerCase(), canonicalizeRecent);
 }
 
 export function pushRrcRecentRoom(hubHash: string, room: string): string[] {
@@ -39,10 +26,6 @@ export function pushRrcRecentRoom(hubHash: string, room: string): string[] {
   if (!key) return loadRrcRecentRooms(hubHash);
   const prev = loadRrcRecentRooms(hubHash).filter((r) => !rrcRoomsMatch(r, key));
   const next = [key, ...prev].slice(0, MAX_RECENT);
-  try {
-    localStorage.setItem(RECENT_PREFIX + hubHash.toLowerCase(), JSON.stringify(next));
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable
-  }
+  writeStringList(RECENT_PREFIX + hubHash.toLowerCase(), next);
   return next;
 }

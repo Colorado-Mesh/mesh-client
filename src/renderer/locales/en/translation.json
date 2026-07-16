@@ -2707,6 +2707,7 @@
     "connectManual": "Connect to hash",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
     "connectFailed": "Could not connect to RRC hub.",
+    "disconnectFailed": "Could not disconnect from RRC hub.",
     "maxHubsConnected": "You can stay connected to at most 8 RRC hubs. Disconnect one first.",
     "enableHubAutoJoin": "Turn on hub auto-join",
     "disableHubAutoJoin": "Turn off hub auto-join",
@@ -2720,8 +2721,10 @@
       "idle": "Not connected"
     },
     "joinFailed": "Could not join room.",
+    "partFailed": "Could not leave room.",
     "sendFailed": "Could not send message.",
     "selectHub": "Select hub {{name}}",
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
     "selectHubPrompt": "Select an RRC hub to connect.",
     "favoriteHub": "Favourite hub",
     "unfavoriteHub": "Remove hub favourite",

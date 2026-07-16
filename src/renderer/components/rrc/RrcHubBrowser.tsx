@@ -84,7 +84,11 @@ function HubRow({
           className="relative min-w-0 flex-1 text-left"
           aria-label={
             unread > 0
-              ? `${t('rrc.selectHub', { name: label })} ${markerTitle} ${unread > 99 ? '99+' : unread} unread`
+              ? t('rrc.selectHubUnread', {
+                  name: label,
+                  marker: markerTitle,
+                  count: unread > 99 ? '99+' : unread,
+                })
               : `${t('rrc.selectHub', { name: label })} ${markerTitle}`
           }
           onClick={() => {

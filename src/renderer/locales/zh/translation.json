@@ -4270,7 +4270,7 @@
     "joinedRooms": "已加入",
     "recentRooms": "最近",
     "roomKeyOptional": "房间钥匙（选填）",
-    "joinRoomHelp": "房间是这个中心的现场群组。按姓名加入，试试Suggested ，或键入/list和/help。",
+    "joinRoomHelp": "房间是这个中心的现场群组。按姓名加入，试试Listed ，或键入/list和/help。",
     "listHint": "提示：/list显示rrcd集线器上已注册的公共房间。/help命令。",
     "slash": {
       "helpIntro": "= = = RRC帮助= = =",
@@ -4338,6 +4338,9 @@
     "hubAutoJoinOffHint": "自动连接关闭—单击以在堆栈启动时连接此集线器",
     "roomAutoJoinOnHint": "自动加入开启—点击关闭",
     "roomAutoJoinOffHint": "自动加入关闭—当集线器连接时，单击以加入此房间",
-    "roomLegend": "★ 收藏夹· A切换自动联接"
+    "roomLegend": "★ 收藏夹· A切换自动联接",
+    "disconnectFailed": "Could not disconnect from RRC hub.",
+    "partFailed": "Could not leave room.",
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
   }
 }

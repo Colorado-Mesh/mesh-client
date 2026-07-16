@@ -843,7 +843,29 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 ## Reticulum
 
-AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, and RNode Wi‑Fi. See also [reticulum.md](reticulum.md) and [Reticulum sidecar IPC](reticulum-sidecar-ipc.md).
+AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, RRC, and RNode Wi‑Fi. See also [reticulum.md](reticulum.md) and [Reticulum sidecar IPC](reticulum-sidecar-ipc.md).
+
+### RRC connect stuck / Cancel
+
+**Symptoms**: Hub stays on **Connecting…** / **Awaiting welcome**; Cancel appears in the RRC header.
+
+**Cause**: Path discovery, Link handshake, and WELCOME can take up to the proxy timeout (~60 s). A previous connect may still be aborting.
+
+**What to do**:
+
+1. Click **Cancel** — renderer sets disconnect intent and calls `POST /api/v1/rrc/disconnect` for that hub hash so the in-flight connect is aborted.
+2. Confirm the destination hash is 32 hex and the stack has a path (Peers / Topology).
+3. Retry connect; check sidecar logs for `rrc` timeouts (`path lookup`, `link proof`, `WELCOME`).
+
+### RRC hub dropped vs Disconnect
+
+**Symptoms**: Hub shows **Reconnecting…** with an error, rooms still listed; or the hub disappears after you clicked Disconnect.
+
+**What to do**:
+
+1. **Unintended drop** (`will_reconnect: true`): sidecar retries with backoff (~2–30 s), preserves desired rooms (including join keys), and rejoins after WELCOME. Wait for **Active** or check `rrc.error` / link-close reasons in the log.
+2. **Explicit Disconnect / Cancel** (`local_disconnect` or `will_reconnect: false`): that hub session is removed from the UI. Reconnect manually or rely on hub auto-join when the stack starts.
+3. Failed initial connect also clears the hub slot so it cannot exhaust the 8-session cap.
 
 ### Reticulum sidecar won't start or health poll times out
 

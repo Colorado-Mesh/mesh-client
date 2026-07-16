@@ -4293,7 +4293,7 @@
       "commandSent": "Opdracht verzonden: {{cmd}}",
       "helpMsg": "/msg NICK|HASH tekst — directe KENNISGEVING fluisteren (rrcd)",
       "usageMsg": "Gebruik: /msg NICK|HASH TEKST",
-      "msgTargetNotFound": "Kan/msg-doel niet omzetten naar een volledige identiteitshash. Ga naar een kamer of gebruik de volledige hash.",
+      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash.",
       "msgSent": "→ {{name}}: {{text}}"
     },
     "listedRooms": "Vermeld.",
@@ -4307,7 +4307,7 @@
     "memberCount_other": "{{count}} leden",
     "userCount_one": "{{count}} gebruiker",
     "userCount_other": "{{count}} gebruikers",
-    "refreshWho": "Leden vernieuwen (/wie)",
+    "refreshWho": "Refresh members (/who)",
     "msgNick": "Bericht {{name}}",
     "dismissBanner": "Kennisgeving afwijzen",
     "directNoticeUnsupported": "Deze hub ondersteunt geen directe KENNISGEVING (/msg).",
@@ -4338,6 +4338,9 @@
     "hubAutoJoinOffHint": "Automatisch afmelden — klik om deze hub aan te sluiten wanneer de stapel begint",
     "roomAutoJoinOnHint": "Automatisch aanmelden — klik om uit te schakelen",
     "roomAutoJoinOffHint": "Automatisch afmelden — klik om lid te worden van deze ruimte wanneer de hub verbinding maakt",
-    "roomLegend": "★ favoriet · A schakelt automatisch inloggen in"
+    "roomLegend": "★ favoriet · A schakelt automatisch inloggen in",
+    "disconnectFailed": "Could not disconnect from RRC hub.",
+    "partFailed": "Could not leave room.",
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
   }
 }

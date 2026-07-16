@@ -1,25 +1,6 @@
+import { loadCanonicalStringList, readRawStringList, writeStringList } from './localStorageList';
+
 const HUB_AUTO_JOIN_KEY = 'mesh-client:rrc:hubAutoJoin';
-
-function readRawStringList(key: string): string[] {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((x): x is string => typeof x === 'string');
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable
-    return [];
-  }
-}
-
-function writeStringList(key: string, hubs: string[]): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(hubs));
-  } catch {
-    // catch-no-log-ok localStorage may be unavailable
-  }
-}
 
 function canonicalizeHubList(hubs: string[]): string[] {
   return [
@@ -35,16 +16,7 @@ function canonicalizeHubList(hubs: string[]): string[] {
 export const MAX_RRC_HUB_SESSIONS = 8;
 
 export function loadRrcHubAutoJoin(): string[] {
-  const hubs = canonicalizeHubList(readRawStringList(HUB_AUTO_JOIN_KEY));
-  try {
-    const raw = localStorage.getItem(HUB_AUTO_JOIN_KEY);
-    if (raw !== JSON.stringify(hubs)) {
-      writeStringList(HUB_AUTO_JOIN_KEY, hubs);
-    }
-  } catch {
-    // catch-no-log-ok
-  }
-  return hubs;
+  return loadCanonicalStringList(HUB_AUTO_JOIN_KEY, canonicalizeHubList);
 }
 
 export function saveRrcHubAutoJoin(hubs: string[]): void {
@@ -90,3 +62,6 @@ export function resolveRrcHubSidebarMarker(opts: {
   }
   return { kind: 'idle', glyph: '○', colorClass: 'text-gray-500' };
 }
+
+// Re-export for callers that need raw helpers in tests.
+export { readRawStringList, writeStringList };

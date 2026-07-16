@@ -3466,6 +3466,119 @@ function checkReticulumMapIssues(ctx) {
   return issues;
 }
 
+/** RRC chat rooms — not hotel rooms; slash commands must stay wire tokens. */
+export const RRC_PREFIX = 'rrc.';
+
+/** Reuse MeshCore room false-friend patterns for RRC chat-room wording. */
+export const RRC_ROOM_FALSE_FRIENDS = {
+  ...ROOMS_PANEL_FALSE_FRIENDS,
+  de: [
+    ...(ROOMS_PANEL_FALSE_FRIENDS.de ?? []),
+    { re: /\bZimmer/i, hint: 'use "Raum"/"Chatraum" for RRC room, not hotel "Zimmer"' },
+  ],
+  ja: [
+    ...(ROOMS_PANEL_FALSE_FRIENDS.ja ?? []),
+    { re: /客室/, hint: 'use "ルーム" for RRC room, not guest-room 客室' },
+  ],
+};
+
+/** Known MT garbage for specific RRC leaves. */
+export const RRC_LEAF_FORBIDDEN = {
+  'rrc.listedRooms': [
+    { re: /^Anuncio$/i, hint: 'use "Listed"/sala pública list label, not "Anuncio"' },
+    { re: /Veröffentlicht/i, hint: 'use "Listed"/listed rooms, not "Veröffentlicht am"' },
+  ],
+  'rrc.noTopic': [{ re: /^Lektion$/i, hint: 'use "No topic" wording, not "Lektion"' }],
+  'rrc.joinRoomHelp': [
+    {
+      re: /Suggested|Vorgeschlagen|Sugerid/i,
+      hint: 'English dropped Suggested rooms — use Listed',
+    },
+  ],
+};
+
+/** IRC-style RRC commands that must stay verbatim in help/UI copy. */
+export const RRC_SLASH_COMMAND_TOKENS = new Set([
+  '/nick',
+  '/join',
+  '/part',
+  '/me',
+  '/msg',
+  '/list',
+  '/who',
+  '/help',
+  '/clear',
+  '/quit',
+  '/topic',
+]);
+
+/**
+ * Slash-command tokens that must appear exactly as in English (no translation, no CJK spaces).
+ * @param {string} enVal
+ * @returns {string[]}
+ */
+export function extractSlashCommandTokens(enVal) {
+  const tokens = enVal.match(/\/[a-z][a-z0-9_-]*/gi) ?? [];
+  return [
+    ...new Set(tokens.map((t) => t.toLowerCase()).filter((t) => RRC_SLASH_COMMAND_TOKENS.has(t))),
+  ];
+}
+
+/**
+ * True when `haystack` contains `token` as a slash-command word (not a longer path).
+ * @param {string} haystack
+ * @param {string} token lowercase slash token like "/list"
+ */
+export function localeContainsSlashToken(haystack, token) {
+  const lower = haystack.toLowerCase();
+  let from = 0;
+  while (from <= lower.length) {
+    const idx = lower.indexOf(token, from);
+    if (idx < 0) return false;
+    const before = idx === 0 ? '' : lower[idx - 1];
+    const afterIdx = idx + token.length;
+    const after = afterIdx >= lower.length ? '' : lower[afterIdx];
+    const beforeOk = !before || !/[\w/]/.test(before);
+    const afterOk = !after || !/\w/.test(after);
+    if (beforeOk && afterOk) return true;
+    from = idx + 1;
+  }
+  return false;
+}
+
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkRrcPanelQualityIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith(RRC_PREFIX) || locale === 'en') return issues;
+
+  for (const { re, hint } of RRC_ROOM_FALSE_FRIENDS[locale] ?? []) {
+    if (re.test(val)) {
+      issues.push(`rrc false friend: ${hint}`);
+    }
+  }
+
+  for (const { re, hint } of RRC_LEAF_FORBIDDEN[flatKey] ?? []) {
+    if (re.test(val)) {
+      issues.push(`rrc ${flatKey}: ${hint}`);
+    }
+  }
+
+  const tokens = extractSlashCommandTokens(enVal);
+  for (const token of tokens) {
+    if (!localeContainsSlashToken(val, token)) {
+      issues.push(
+        `rrc slash token: must preserve "${token}" from English (do not translate or space it)`,
+      );
+    }
+  }
+
+  return issues;
+}
+
 const LOCALE_STRING_QUALITY_CHECKS = [
   checkCatEncodingAndMeshtasticIssues,
   checkMustTranslateAndFormFieldIssues,
@@ -3493,6 +3606,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkHopAwayVerbFalseFriendIssues,
   checkAirTimeFalseFriendIssues,
   checkWireTokenLiteralPreservedIssues,
+  checkRrcPanelQualityIssues,
 ];
 
 /**

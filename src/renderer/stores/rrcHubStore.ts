@@ -69,8 +69,8 @@ export const useRrcHubStore = create<RrcHubStoreState>((set, get) => ({
   lastRefreshAt: null,
 
   refreshFromSidecar: async () => {
-    if (!(await isReticulumSidecarRunning())) return;
     try {
+      if (!(await isReticulumSidecarRunning())) return;
       const body = (await window.electronAPI.reticulum.rrc.listHubs()) as {
         hubs?: RrcHubInfo[];
       };
@@ -124,17 +124,38 @@ export const useRrcHubStore = create<RrcHubStoreState>((set, get) => ({
 
   toggleFavorite: async (hash, favorited) => {
     const key = hash.toLowerCase();
+    const prev = get().hubs.get(key);
     set((s) => {
       const next = new Map(s.hubs);
-      const prev = next.get(key);
-      if (prev) next.set(key, { ...prev, favorited });
+      const cur = next.get(key);
+      if (cur) next.set(key, { ...cur, favorited });
       return { hubs: next };
     });
     try {
-      await window.electronAPI.reticulum.rrc.setFavorite(key, favorited);
+      const res = await window.electronAPI.reticulum.rrc.setFavorite(key, favorited);
+      if (!res.ok) {
+        console.warn('[rrcHubStore] favorite not ok ' + (res.error ?? ''));
+        if (prev) {
+          set((s) => {
+            const next = new Map(s.hubs);
+            next.set(key, prev);
+            return { hubs: next };
+          });
+        } else {
+          void get().refreshFromSidecar();
+        }
+      }
     } catch (e) {
       console.warn('[rrcHubStore] favorite ' + errLikeToLogString(e));
-      void get().refreshFromSidecar();
+      if (prev) {
+        set((s) => {
+          const next = new Map(s.hubs);
+          next.set(key, prev);
+          return { hubs: next };
+        });
+      } else {
+        void get().refreshFromSidecar();
+      }
     }
   },
 
@@ -147,7 +168,11 @@ export const useRrcHubStore = create<RrcHubStoreState>((set, get) => ({
       const res = (await window.electronAPI.reticulum.rrc.upsertHub({
         dest_hash: clean,
         label,
-      })) as { ok?: boolean; hub?: RrcHubInfo };
+      })) as { ok?: boolean; hub?: RrcHubInfo; error?: string };
+      if (res.ok === false) {
+        console.warn('[rrcHubStore] upsertManual not ok ' + (res.error ?? ''));
+        return null;
+      }
       if (res.hub) {
         get().upsertFromEvent({
           ...res.hub,
@@ -156,13 +181,8 @@ export const useRrcHubStore = create<RrcHubStoreState>((set, get) => ({
         });
         return get().getHub(clean) ?? null;
       }
-      get().upsertFromEvent({
-        destination_hash: clean,
-        display_name: label ?? null,
-        name_source: label ? 'manual' : undefined,
-        source: 'manual',
-        recommended: false,
-      });
+      // Sidecar accepted but omitted hub payload — refresh rather than fabricate.
+      await get().refreshFromSidecar();
       return get().getHub(clean) ?? null;
     } catch (e) {
       console.warn('[rrcHubStore] upsertManual ' + errLikeToLogString(e));

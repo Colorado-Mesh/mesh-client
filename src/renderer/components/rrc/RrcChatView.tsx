@@ -152,7 +152,11 @@ export function RrcChatView({
                   type="button"
                   className="shrink-0 p-0.5 text-amber-200/20 opacity-0 group-hover:opacity-100 hover:text-amber-100"
                   aria-label={t('rrc.copyMessage')}
-                  onClick={() => void navigator.clipboard.writeText(msg.body)}
+                  onClick={() => {
+                    void navigator.clipboard.writeText(msg.body).catch((e: unknown) => {
+                      console.debug('[RrcChatView] clipboard ' + String(e));
+                    });
+                  }}
                 >
                   <Copy size={11} />
                 </button>

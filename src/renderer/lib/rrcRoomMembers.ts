@@ -41,9 +41,10 @@ function preferNickname(
  * Build the visible roster from a `/who` (or JOINED) snapshot while preserving
  * fuller identity hashes and nicknames learned from live chat.
  *
- * When `keepUnmatchedExisting` is true (default for replace/`/who`), peers we
- * already know who are missing from a truncated hub NOTICE stay listed, with
- * hub rows still winning for matching identities.
+ * When `keepUnmatchedExisting` is true (default), peers we already know who are
+ * missing from a truncated hub NOTICE stay listed, with hub rows still winning
+ * for matching identities. Store `/who` replace mode passes `false` so departed
+ * nicks disappear on a full snapshot.
  */
 export function coalesceRrcMemberRoster(
   incoming: RrcRoomMember[],

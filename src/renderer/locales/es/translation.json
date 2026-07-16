@@ -4244,8 +4244,8 @@
     "noDiscoveredHubs": "No live RRC hubs discovered yet. Keep the stack running to listen for announces.",
     "rooms": "Rooms",
     "joinRoom": "Room name",
-    "join": "Join room",
-    "joinRoomPrompt": "Join a room to start chatting.",
+    "join": "Unirse a la sala",
+    "joinRoomPrompt": "Únete a una sala para empezar a chatear.",
     "noRoomsJoined": "No rooms joined yet.",
     "selectRoom": "Open room {{name}}",
     "leaveRoom": "Leave room",
@@ -4265,19 +4265,19 @@
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
-    "expandRooms": "Expandir la lista de habitaciones",
-    "collapseRooms": "Contraer lista de habitaciones",
+    "expandRooms": "Expandir salas",
+    "collapseRooms": "Contraer salas",
     "joinedRooms": "Se unió",
     "recentRooms": "Reciente",
-    "roomKeyOptional": "Llave de la habitación (opcional)",
-    "joinRoomHelp": "Las habitaciones son grupos en vivo en este centro. Únase por su nombre, pruebe Sugerido o escriba /list y /help.",
+    "roomKeyOptional": "Clave de sala (opcional)",
+    "joinRoomHelp": "Las salas son grupos en vivo en este hub. Únete por nombre, prueba Listadas, o escribe /list y /help.",
     "listHint": "Sugerencia: /list muestra las salas públicas registradas en los concentradores rrcd. /help para comandos.",
     "slash": {
       "helpIntro": "=== Ayuda RRC ===",
       "helpClient": "Órdenes del cliente:",
       "helpNick": "/nick NAME — cambiar apodo",
       "helpJoin": "/join ROOM [key] — unirse a una sala (opcional +k key)",
-      "helpPart": "/parte [habitación] — salir de la habitación (predeterminado: activo)",
+      "helpPart": "/part [room] — leave room (default: active)",
       "helpMe": "/me ACTION — enviar emoticono DE ACCIÓN",
       "helpClear": "/clear — borrar la transcripción local de esta sala",
       "helpQuit": "/quit — desconectar del hub",
@@ -4293,13 +4293,13 @@
       "commandSent": "Comando enviado: {{cmd}}",
       "helpMsg": "/msg NICK| texto HASH — susurro de AVISO directo (rrcd)",
       "usageMsg": "Uso: /msg NICK|HASH TEXT",
-      "msgTargetNotFound": "No se ha podido resolver el objetivo/msg a un hash de identidad completo. Únete a una sala o usa el hash completo.",
+      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash.",
       "msgSent": "→ {{name}}: {{text}}"
     },
-    "listedRooms": "Anuncio",
-    "refreshRoomList": "Actualizar la lista de habitaciones (/list)",
-    "favoriteRoom": "Habitación favorita",
-    "unfavoriteRoom": "Eliminar habitación favorita",
+    "listedRooms": "Listadas",
+    "refreshRoomList": "Actualizar la lista de salas (/list)",
+    "favoriteRoom": "Sala favorita",
+    "unfavoriteRoom": "Quitar sala de favoritos",
     "enableAutoJoin": "Habilitar la unión automática",
     "disableAutoJoin": "Desactivar la unión automática",
     "noTopic": "Sin tema",
@@ -4313,7 +4313,7 @@
     "directNoticeUnsupported": "Este concentrador no admite NOTIFICACIÓN directa (/msg).",
     "capDirectNotice": "msg directo",
     "moderation": {
-      "removedFromRoom": "Eliminado de la habitación por el centro (patada, prohibición o parte remota)."
+      "removedFromRoom": "Eliminado de la sala por el centro (patada, prohibición o parte remota)."
     },
     "errors": {
       "linkProofTimeout": "Se agotó el tiempo de espera para el enlace del hub (prueba del enlace). Inténtalo de nuevo o comprueba la ruta/saltos al centro.",
@@ -4338,6 +4338,9 @@
     "hubAutoJoinOffHint": "Auto-join off — haga clic para conectar este hub cuando se inicie la pila",
     "roomAutoJoinOnHint": "Unión automática activada: haga clic para desactivar",
     "roomAutoJoinOffHint": "Auto-join OFF — haga clic para unirse a esta sala cuando el hub se conecte",
-    "roomLegend": "★ favorito · A toggles auto-join"
+    "roomLegend": "★ favorito · A toggles auto-join",
+    "disconnectFailed": "Could not disconnect from RRC hub.",
+    "partFailed": "Could not leave room.",
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
   }
 }

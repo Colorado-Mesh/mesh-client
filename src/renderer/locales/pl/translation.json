@@ -4270,17 +4270,17 @@
     "joinedRooms": "Dołączono",
     "recentRooms": "Ostatnie",
     "roomKeyOptional": "Klucz do pokoju (opcjonalnie)",
-    "joinRoomHelp": "Pokoje są grupami na żywo w tym centrum. Dołącz według nazwy, wypróbuj Sugerowane lub wpisz /lista i /pomoc.",
-    "listHint": "Wskazówka: /lista pokazuje zarejestrowane pokoje publiczne w centrach rrcd. /pomoc dla poleceń.",
+    "joinRoomHelp": "Rooms are live groups on this hub. Join by name, try Listed, or type /list and /help.",
+    "listHint": "Tip: /list shows registered public rooms on rrcd hubs. /help for commands.",
     "slash": {
       "helpIntro": "=== RRC help ===",
       "helpClient": "Polecenia klienta:",
       "helpNick": "/nick NAME — zmień pseudonim",
       "helpJoin": "/join ROOM [key] — dołącz do pokoju (opcjonalnie + klucz k)",
-      "helpPart": "/część [pokój] — opuść pokój (domyślnie: aktywny)",
+      "helpPart": "/part [room] — leave room (default: active)",
       "helpMe": "/me ACTION — wyślij emotikonę DZIAŁANIA",
       "helpClear": "/Clear — czysta lokalna transkrypcja dla tego pokoju",
-      "helpQuit": "/wyjdź — odłącz od koncentratora",
+      "helpQuit": "/quit — disconnect from hub",
       "helpHub": "Polecenia Hub (rrcd; wysłane jako MSG):",
       "helpList": "/list — lista zarejestrowanych pokoi ogólnodostępnych",
       "helpWho": "/who [room] — lista członków",
@@ -4293,7 +4293,7 @@
       "commandSent": "Wysłano polecenie: {{cmd}}",
       "helpMsg": "/msg NICK|HASH text — direct NOTICE whisper (rrcd)",
       "usageMsg": "Użycie: /msg NICK|HASH TEXT",
-      "msgTargetNotFound": "Nie można rozwiązać celu/msg do pełnego skrótu tożsamości. Dołącz do pokoju lub użyj pełnego skrótu.",
+      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash.",
       "msgSent": "→ {{name}}: {{text}}"
     },
     "listedRooms": "Wylistowany",
@@ -4338,6 +4338,9 @@
     "hubAutoJoinOffHint": "Automatyczne łączenie wyłączone — kliknij, aby połączyć to centrum po rozpoczęciu stosu",
     "roomAutoJoinOnHint": "Automatyczne łączenie włączone — kliknij, aby wyłączyć",
     "roomAutoJoinOffHint": "Automatyczne dołączanie wyłączone — kliknij, aby dołączyć do tego pokoju, gdy połączy się koncentrator",
-    "roomLegend": "★ ulubione · Automatyczne łączenie przełączników"
+    "roomLegend": "★ ulubione · Automatyczne łączenie przełączników",
+    "disconnectFailed": "Could not disconnect from RRC hub.",
+    "partFailed": "Could not leave room.",
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
   }
 }

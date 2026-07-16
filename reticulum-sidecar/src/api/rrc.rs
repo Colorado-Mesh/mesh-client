@@ -90,10 +90,29 @@ pub async fn favorite_rrc_hub(
     }
 }
 
+/// Field length limits for RRC HTTP bodies (UTF-8 character count).
+const MAX_NICK_CHARS: usize = 64;
+const MAX_ROOM_CHARS: usize = 128;
+const MAX_ROOM_KEY_CHARS: usize = 128;
+const MAX_BODY_CHARS: usize = 8_192;
+
+fn reject_oversize(label: &str, value: &str, max: usize) -> Option<String> {
+    if value.chars().count() > max {
+        Some(format!("{label} exceeds maximum length of {max} characters"))
+    } else {
+        None
+    }
+}
+
 pub async fn rrc_connect(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<RrcConnectBody>,
 ) -> Json<serde_json::Value> {
+    if let Some(nick) = body.nickname.as_deref() {
+        if let Some(err) = reject_oversize("nickname", nick, MAX_NICK_CHARS) {
+            return Json(serde_json::json!({ "ok": false, "error": err }));
+        }
+    }
     Json(stack.rrc_connect(&body.dest_hash, body.nickname).await)
 }
 
@@ -113,6 +132,14 @@ pub async fn rrc_join(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<RrcRoomBody>,
 ) -> Json<serde_json::Value> {
+    if let Some(err) = reject_oversize("room", &body.room, MAX_ROOM_CHARS) {
+        return Json(serde_json::json!({ "ok": false, "error": err }));
+    }
+    if let Some(key) = body.key.as_deref() {
+        if let Some(err) = reject_oversize("room key", key, MAX_ROOM_KEY_CHARS) {
+            return Json(serde_json::json!({ "ok": false, "error": err }));
+        }
+    }
     Json(
         stack
             .rrc_join(&body.hub_dest_hash, &body.room, body.key.as_deref())
@@ -124,6 +151,9 @@ pub async fn rrc_part(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<RrcRoomBody>,
 ) -> Json<serde_json::Value> {
+    if let Some(err) = reject_oversize("room", &body.room, MAX_ROOM_CHARS) {
+        return Json(serde_json::json!({ "ok": false, "error": err }));
+    }
     Json(stack.rrc_part(&body.hub_dest_hash, &body.room).await)
 }
 
@@ -131,6 +161,14 @@ pub async fn rrc_send(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<RrcSendBody>,
 ) -> Json<serde_json::Value> {
+    if let Some(err) = reject_oversize("body", &body.body, MAX_BODY_CHARS) {
+        return Json(serde_json::json!({ "ok": false, "error": err }));
+    }
+    if let Some(room) = body.room.as_deref() {
+        if let Some(err) = reject_oversize("room", room, MAX_ROOM_CHARS) {
+            return Json(serde_json::json!({ "ok": false, "error": err }));
+        }
+    }
     Json(
         stack
             .rrc_send(
@@ -148,6 +186,9 @@ pub async fn rrc_set_nick(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<RrcNickBody>,
 ) -> Json<serde_json::Value> {
+    if let Some(err) = reject_oversize("nickname", &body.nickname, MAX_NICK_CHARS) {
+        return Json(serde_json::json!({ "ok": false, "error": err }));
+    }
     let hub_dest_hash = body.hub_dest_hash.as_deref().filter(|h| !h.trim().is_empty());
     Json(stack.rrc_set_nick(hub_dest_hash, &body.nickname).await)
 }

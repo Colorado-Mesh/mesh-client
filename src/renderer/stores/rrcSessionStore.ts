@@ -6,6 +6,7 @@ import {
   rrcIdentityHashesMatch,
 } from '@/renderer/lib/rrcRoomMembers';
 import { rrcRoomMatchKey, rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
+import { MAX_RRC_MEMBERS_PER_ROOM, MAX_RRC_ROOMS_PER_HUB } from '@/renderer/lib/sessionMemoryCaps';
 import type {
   RrcChatMessage,
   RrcHubCapabilities,
@@ -16,6 +17,8 @@ import type {
 } from '@/shared/rrc-types';
 
 const MAX_MESSAGES_PER_ROOM = 500;
+const MAX_ROOMS_PER_HUB = MAX_RRC_ROOMS_PER_HUB;
+const MAX_MEMBERS_PER_ROOM = MAX_RRC_MEMBERS_PER_ROOM;
 
 /** Soft cap on simultaneous connected hub sessions — mirrors sidecar `MAX_HUB_SESSIONS`. */
 export const MAX_RRC_HUB_SESSIONS = 8;
@@ -34,6 +37,21 @@ function normHub(hub: string | null | undefined): string | null {
   if (!hub) return null;
   const h = hub.trim().toLowerCase();
   return h || null;
+}
+
+/** Evict oldest room entries when a hub exceeds the soft room cap. */
+function trimRoomMap(rooms: Map<string, RrcRoomInfo>): Map<string, RrcRoomInfo> {
+  if (rooms.size <= MAX_ROOMS_PER_HUB) return rooms;
+  const next = new Map(rooms);
+  const overflow = next.size - MAX_ROOMS_PER_HUB;
+  let dropped = 0;
+  for (const key of next.keys()) {
+    if (dropped >= overflow) break;
+    if (key.startsWith('[')) continue; // keep synthetic streams
+    next.delete(key);
+    dropped += 1;
+  }
+  return next;
 }
 
 /**
@@ -423,16 +441,19 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
           // Empty `/who` (or parse miss) must not wipe a known roster.
           nextMembers = existing!.members!;
         } else {
-          // `/who` snapshot: hub membership + upgrade prefixes/nicks from live chat.
-          nextMembers = coalesceRrcMemberRoster(members, existing?.members);
+          // Authoritative `/who` snapshot: drop peers absent from the notice so
+          // departed nicks disappear. Truncated notices should use merge mode.
+          nextMembers = coalesceRrcMemberRoster(members, existing?.members, {
+            keepUnmatchedExisting: false,
+          });
         }
         rooms.set(key, {
           name: existing?.name ?? room,
           topic: existing?.topic,
-          members: nextMembers,
-          member_count: nextMembers.length,
+          members: nextMembers.slice(0, MAX_MEMBERS_PER_ROOM),
+          member_count: Math.min(nextMembers.length, MAX_MEMBERS_PER_ROOM),
         });
-        return { ...session, rooms };
+        return { ...session, rooms: trimRoomMap(rooms) };
       }),
     );
   },
@@ -553,15 +574,15 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         }
         rooms.set(key, {
           name: existing?.name && rrcRoomsMatch(existing.name, key) ? existing.name : room,
-          members: nextMembers,
-          member_count: nextMembers.length,
+          members: nextMembers.slice(0, MAX_MEMBERS_PER_ROOM),
+          member_count: Math.min(nextMembers.length, MAX_MEMBERS_PER_ROOM),
           topic: existing?.topic ?? null,
         });
         const activeRoom =
           session.activeRoom && rrcRoomsMatch(session.activeRoom, key)
             ? key
             : (session.activeRoom ?? key);
-        return { ...session, rooms, activeRoom };
+        return { ...session, rooms: trimRoomMap(rooms), activeRoom };
       }),
     );
   },
@@ -632,7 +653,12 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       const isSelf =
         Boolean(selfHash && msg.sender_hash?.toLowerCase() === selfHash) ||
         Boolean(msg.nickname && msg.nickname === s.nickname && !msg.sender_hash);
-      const viewing = session.activeRoom != null && rrcRoomsMatch(session.activeRoom, roomKey);
+      // Only the focused hub+room counts as "viewing" — a background hub's
+      // activeRoom must not suppress unread for that hub.
+      const viewing =
+        hub === s.focusedHubHash &&
+        session.activeRoom != null &&
+        rrcRoomsMatch(session.activeRoom, roomKey);
 
       let nextSession = session;
       if (opts?.bumpUnread && !isSelf && !viewing) {

@@ -311,6 +311,28 @@ describe('rrcSessionStore', () => {
     ]);
   });
 
+  it('drops departed nicks on authoritative /who replace', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');
+    store.roomJoined('lobby');
+    store.mergeRoomMembers(
+      'lobby',
+      [
+        { identity_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', nickname: 'Alice' },
+        { identity_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', nickname: 'Bob' },
+      ],
+      'replace',
+    );
+    store.mergeRoomMembers(
+      'lobby',
+      [{ identity_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', nickname: 'Alice' }],
+      'replace',
+    );
+    expect(useRrcSessionStore.getState().rooms.get('lobby')?.members).toEqual([
+      { identity_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', nickname: 'Alice' },
+    ]);
+  });
+
   it('drops consecutive duplicate notice bodies', () => {
     const store = useRrcSessionStore.getState();
     store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');
@@ -329,5 +351,64 @@ describe('rrcSessionStore', () => {
         .getState()
         .messages.get(useRrcSessionStore.getState().roomMessageKey('general')!),
     ).toHaveLength(1);
+  });
+
+  it('refocuses and stashes unread when the focused hub is removed', () => {
+    const store = useRrcSessionStore.getState();
+    const hubA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const hubB = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#other');
+    store.addMessage(
+      {
+        id: '1',
+        room: '#lobby',
+        kind: 'msg',
+        body: 'hi',
+        sender_hash: 'cccccccccccccccccccccccccccccccc',
+        timestamp: 1,
+      },
+      { bumpUnread: true },
+    );
+    store.applyStatus('active', hubB, 'Hub B');
+    store.setFocusedHub(hubA);
+    store.clearHubSession(hubA);
+    const state = useRrcSessionStore.getState();
+    expect(state.focusedHubHash).toBe(hubB);
+    expect(state.sessionsByHub.has(hubA)).toBe(false);
+    expect(state.sessionsByHub.get(hubB)?.status).toBe('active');
+    expect(state.unreadForHub(hubA)).toBe(1);
+  });
+
+  it('routes background-hub room ops without changing the focused mirror', () => {
+    const store = useRrcSessionStore.getState();
+    const hubA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const hubB = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('#alpha');
+    store.setActiveRoom('#alpha');
+    store.applyStatus('active', hubB, 'Hub B');
+    store.roomJoined('#beta', undefined, hubB);
+    store.setFocusedHub(hubA);
+    store.setActiveRoom('#alpha');
+    store.addMessage(
+      {
+        id: 'bg-1',
+        room: '#beta',
+        kind: 'msg',
+        body: 'from B',
+        sender_hash: 'cccccccccccccccccccccccccccccccc',
+        timestamp: 1,
+      },
+      { bumpUnread: true, hubDestHash: hubB },
+    );
+    const state = useRrcSessionStore.getState();
+    expect(state.focusedHubHash).toBe(hubA);
+    expect(state.activeRoom).toBe('#alpha');
+    expect(state.rooms.has('#alpha')).toBe(true);
+    expect(state.sessionsByHub.get(hubB)?.rooms.has('#beta')).toBe(true);
+    expect(state.unreadForHub(hubB)).toBe(1);
+    expect(state.unreadForHub(hubA)).toBe(0);
   });
 });

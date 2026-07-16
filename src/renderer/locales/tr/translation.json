@@ -4270,7 +4270,7 @@
     "joinedRooms": "katıldı",
     "recentRooms": "Güncel",
     "roomKeyOptional": "Oda anahtarı (isteğe bağlı)",
-    "joinRoomHelp": "Odalar bu merkezdeki canlı gruplardır. Ada göre katılın, Önerilen'i deneyin veya yazın /listeleyin ve /yardım edin.",
+    "joinRoomHelp": "Rooms are live groups on this hub. Join by name, try Listed, or type /list and /help.",
     "listHint": "İpucu: /list, rrcd hub'larındaki kayıtlı genel odaları gösterir. /help for commands.",
     "slash": {
       "helpIntro": "=== RRC yardımı ===",
@@ -4297,7 +4297,7 @@
       "msgSent": "→ {{name}}: {{text}}"
     },
     "listedRooms": "Listelenmiş",
-    "refreshRoomList": "Oda listesini yenile (/ list)",
+    "refreshRoomList": "Oda listesini yenile (/list)",
     "favoriteRoom": "Favori oda",
     "unfavoriteRoom": "Odanın favorisini kaldır",
     "enableAutoJoin": "Otomatik birleştirmeyi etkinleştir",
@@ -4307,10 +4307,10 @@
     "memberCount_other": "{{count}} üye",
     "userCount_one": "{{count}} kullanıcı",
     "userCount_other": "{{count}} kullanıcı",
-    "refreshWho": "Üyeleri yenile (/ who)",
+    "refreshWho": "Üyeleri yenile (/who)",
     "msgNick": "Mesaj {{name}}",
     "dismissBanner": "Bildirimi kapat",
-    "directNoticeUnsupported": "Bu merkez doğrudan BİLDİRİMİ (/ msg) desteklemiyor.",
+    "directNoticeUnsupported": "Bu merkez doğrudan BİLDİRİMİ (/msg) desteklemiyor.",
     "capDirectNotice": "doğrudan msg",
     "moderation": {
       "removedFromRoom": "Göbek tarafından odadan çıkarılır (tekme, yasak veya uzak kısım)."
@@ -4338,6 +4338,9 @@
     "hubAutoJoinOffHint": "Otomatik birleştirme kapalı — yığın başladığında bu hub'ı bağlamak için tıklayın",
     "roomAutoJoinOnHint": "Otomatik olarak katılın — kapatmak için tıklayın",
     "roomAutoJoinOffHint": "Otomatik olarak katılma — hub bağlandığında bu odaya katılmak için tıklayın",
-    "roomLegend": "★ favori · A geçişleri otomatik katılma"
+    "roomLegend": "★ favori · A geçişleri otomatik katılma",
+    "disconnectFailed": "Could not disconnect from RRC hub.",
+    "partFailed": "Could not leave room.",
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
   }
 }

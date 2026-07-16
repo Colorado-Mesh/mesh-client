@@ -4269,8 +4269,8 @@
     "collapseRooms": "Comprimi l'elenco delle stanze",
     "joinedRooms": "Unito",
     "recentRooms": "Recenti",
-    "roomKeyOptional": "Chiave della camera (opzionale)",
-    "joinRoomHelp": "Le camere sono gruppi dal vivo su questo hub. Unisciti per nome, prova Suggerito o digita /list e /help.",
+    "roomKeyOptional": "Chiave della sala (opzionale)",
+    "joinRoomHelp": "Le sale sono gruppi dal vivo su questo hub. Unisciti per nome, prova Suggerito o digita /list e /help.",
     "listHint": "Suggerimento: /list mostra le sale pubbliche registrate sugli hub rrcd. /help per i comandi.",
     "slash": {
       "helpIntro": "=== Guida RRC ===",
@@ -4293,13 +4293,13 @@
       "commandSent": "Comando inviato: {{cmd}}",
       "helpMsg": "/msg NICK| testo HASH — sussurro AVVISO diretto (rrcd)",
       "usageMsg": "Sintassi: /msg NICK|HASH TEXT",
-      "msgTargetNotFound": "Impossibile risolvere la destinazione/msg in un hash di identità completo. Unisciti a una stanza o usa l'hash completo.",
+      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash.",
       "msgSent": "→ {{name}}: {{text}}"
     },
     "listedRooms": "Quotazioni",
     "refreshRoomList": "Aggiorna l'elenco delle stanze (/list)",
     "favoriteRoom": "favourite room",
-    "unfavoriteRoom": "Rimuovi camera preferita",
+    "unfavoriteRoom": "Rimuovi sala preferita",
     "enableAutoJoin": "Abilita auto-join",
     "disableAutoJoin": "Disabilita auto-join",
     "noTopic": "Nessun argomento impostato",
@@ -4338,6 +4338,9 @@
     "hubAutoJoinOffHint": "Auto-join disattivato: fai clic per connettere questo hub all'avvio dello stack",
     "roomAutoJoinOnHint": "Unisciti automaticamente su — fai clic per disattivare",
     "roomAutoJoinOffHint": "Auto-join disattivato: fai clic per unirti a questa stanza quando l'hub si connette",
-    "roomLegend": "★ preferito · A attiva/disattiva l'auto-join"
+    "roomLegend": "★ preferito · A attiva/disattiva l'auto-join",
+    "disconnectFailed": "Could not disconnect from RRC hub.",
+    "partFailed": "Could not leave room.",
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
   }
 }

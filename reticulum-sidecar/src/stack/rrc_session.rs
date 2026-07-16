@@ -7,7 +7,7 @@
 //! `RrcSessionInner` (read directly for snapshots — no round trip through the
 //! command channel is needed for status/rooms reads).
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -70,7 +70,8 @@ struct RrcSessionInner {
     hub_name: Option<String>,
     nickname: Option<String>,
     rooms: HashMap<String, RrcRoomState>,
-    desired_rooms: HashSet<String>,
+    /// Normalized room name → optional join key retained for reconnect.
+    desired_rooms: HashMap<String, Option<String>>,
     last_error: Option<String>,
     identity_hash: [u8; 16],
     capabilities: RrcWelcomeCapabilities,
@@ -83,10 +84,30 @@ impl RrcSessionInner {
             hub_name: None,
             nickname: None,
             rooms: HashMap::new(),
-            desired_rooms: HashSet::new(),
+            desired_rooms: HashMap::new(),
             last_error: None,
             identity_hash,
             capabilities: RrcWelcomeCapabilities::default(),
+        }
+    }
+
+    fn remember_desired_room(&mut self, room: &str, key: Option<String>) {
+        let norm = normalize_room(room);
+        if norm.is_empty() {
+            return;
+        }
+        let key = key
+            .map(|k| k.trim().to_string())
+            .filter(|k| !k.is_empty());
+        match self.desired_rooms.get_mut(&norm) {
+            Some(existing) => {
+                if key.is_some() {
+                    *existing = key;
+                }
+            }
+            None => {
+                self.desired_rooms.insert(norm, key);
+            }
         }
     }
 }
@@ -263,17 +284,23 @@ impl RrcSessionManager {
     /// `None` (or empty) tears down every tracked hub session; `Some(hex)`
     /// tears down only that hub. Either way the hub's task frees its slot.
     pub async fn disconnect(&self, dest_hash_hex: Option<&str>) {
-        let targets: Vec<HubHandle> = match normalize_hex(dest_hash_hex) {
+        let targets: Vec<(String, HubHandle)> = match normalize_hex(dest_hash_hex) {
             Some(hex) => {
                 let hubs = self.shared.hubs.lock().await;
-                hubs.get(&hex).cloned().into_iter().collect()
+                hubs.get(&hex)
+                    .cloned()
+                    .map(|h| (hex, h))
+                    .into_iter()
+                    .collect()
             }
             None => {
                 let hubs = self.shared.hubs.lock().await;
-                hubs.values().cloned().collect()
+                hubs.iter()
+                    .map(|(hex, h)| (hex.clone(), h.clone()))
+                    .collect()
             }
         };
-        for handle in targets {
+        for (hex, handle) in targets {
             let (reply, rx) = oneshot::channel();
             if handle
                 .cmd_tx
@@ -282,6 +309,9 @@ impl RrcSessionManager {
                 .is_ok()
             {
                 let _ = rx.await;
+            } else {
+                // Dead command channel — free the slot so it cannot zombie-cap.
+                self.shared.hubs.lock().await.remove(&hex);
             }
         }
     }
@@ -471,7 +501,9 @@ fn cancel_connect_job(job: &mut Option<ConnectJob>) {
         if let Some(reply) = prev.reply {
             let _ = reply.send(Err("cancelled".into()));
         }
-        // Dropping `fut` aborts establish_session; RrcLinkHandle Drop closes the link task.
+        // Dropping `fut` aborts establish_session. If a link was already open,
+        // dropping RrcLinkHandle closes cmd_tx so the link task deregisters.
+        // Mid-handshake registration is cleaned by DestinationRegistrationGuard.
     }
 }
 
@@ -613,12 +645,14 @@ async fn session_loop(
                             json!({
                                 "hub_dest_hash": hex,
                                 "reason": "local_disconnect",
+                                "will_reconnect": false,
                             }),
                         );
                         let _ = reply.send(());
                         terminate = true;
                     }
                     SessionCommand::Join { room, key, reply } => {
+                        let join_key = key.clone();
                         let result = send_room_control(
                             &mut link,
                             &inner,
@@ -628,7 +662,10 @@ async fn session_loop(
                         )
                         .await;
                         if result.is_ok() {
-                            inner.lock().await.desired_rooms.insert(normalize_room(&room));
+                            inner
+                                .lock()
+                                .await
+                                .remember_desired_room(&room, join_key);
                         }
                         let _ = reply.send(result);
                     }
@@ -698,63 +735,115 @@ async fn session_loop(
                 match result {
                     Ok(handle) => {
                         link = Some(handle);
+                        let hub_hex = dest_hash_hex.clone();
                         reconnect_intent =
                             Some((dest_hash, dest_hash_hex, hops, nickname.clone()));
                         backoff_ms = RECONNECT_BASE_MS;
                         // Re-join desired rooms after welcome (reconnect path).
-                        let rooms: Vec<String> = {
+                        let rooms: Vec<(String, Option<String>)> = {
                             let g = inner.lock().await;
-                            g.desired_rooms.iter().cloned().collect()
+                            g.desired_rooms
+                                .iter()
+                                .map(|(room, key)| (room.clone(), key.clone()))
+                                .collect()
                         };
-                        for room in rooms {
-                            let _ = send_room_control(
+                        for (room, key) in rooms {
+                            let rejoin = send_room_control(
                                 &mut link,
                                 &inner,
-                                Some(room),
+                                Some(room.clone()),
                                 msg_type::JOIN,
-                                None,
+                                key,
                             )
                             .await;
+                            if let Err(e) = rejoin {
+                                warn!("rrc rejoin {room} failed: {e}");
+                                {
+                                    let mut g = inner.lock().await;
+                                    g.rooms.remove(&normalize_room(&room));
+                                }
+                                emit(
+                                    &event_tx,
+                                    "rrc.error",
+                                    json!({
+                                        "message": format!("rejoin {room} failed: {e}"),
+                                        "hub_dest_hash": hub_hex,
+                                    }),
+                                );
+                            }
                         }
                         if let Some(reply) = reply {
                             let _ = reply.send(Ok(()));
                         }
                     }
                     Err(e) => {
+                        let is_user_connect = reply.is_some();
+                        let should_retry =
+                            !is_user_connect && reconnect_intent.is_some();
                         {
                             let mut g = inner.lock().await;
-                            // Keep reconnecting only when auto-reconnect still intended.
-                            if reconnect_intent.is_some() && reply.is_none() {
+                            if should_retry {
                                 g.status = RrcSessionStatus::Reconnecting;
                             } else {
                                 g.status = RrcSessionStatus::Disconnected;
                             }
                             g.last_error = Some(e.clone());
                         }
-                        if reply.is_some() {
-                            emit(
-                                &event_tx,
-                                "rrc.error",
-                                json!({ "message": e, "hub_dest_hash": dest_hash_hex }),
-                            );
-                            emit(
-                                &event_tx,
-                                "rrc.disconnected",
-                                json!({
-                                    "hub_dest_hash": dest_hash_hex,
-                                    "reason": e,
-                                }),
-                            );
-                        } else {
-                            warn!("rrc reconnect failed: {e}");
-                            emit(
-                                &event_tx,
-                                "rrc.error",
-                                json!({ "message": e, "hub_dest_hash": dest_hash_hex }),
-                            );
-                        }
+                        emit(
+                            &event_tx,
+                            "rrc.error",
+                            json!({ "message": e, "hub_dest_hash": dest_hash_hex }),
+                        );
+                        emit(
+                            &event_tx,
+                            "rrc.disconnected",
+                            json!({
+                                "hub_dest_hash": dest_hash_hex,
+                                "reason": e,
+                                "will_reconnect": should_retry,
+                            }),
+                        );
                         if let Some(reply) = reply {
                             let _ = reply.send(Err(e));
+                        } else if should_retry {
+                            warn!("rrc reconnect failed; scheduling retry");
+                        }
+                        if should_retry {
+                            if let Some((
+                                retry_dest,
+                                retry_hex,
+                                retry_hops,
+                                intent_nick,
+                            )) = reconnect_intent.clone()
+                            {
+                                let nickname = resolve_reconnect_nickname(
+                                    &inner,
+                                    &intent_nick,
+                                )
+                                .await;
+                                let delay = backoff_ms;
+                                debug!(
+                                    "rrc reconnecting to {retry_hex} in {delay}ms after failure"
+                                );
+                                backoff_ms =
+                                    (backoff_ms.saturating_mul(2)).min(RECONNECT_MAX_MS);
+                                connect_job = Some(spawn_connect_job(
+                                    transport_tx.clone(),
+                                    identity.clone(),
+                                    Arc::clone(&inner),
+                                    event_tx.clone(),
+                                    retry_dest,
+                                    retry_hex,
+                                    retry_hops,
+                                    nickname,
+                                    delay,
+                                    None,
+                                ));
+                            }
+                        } else if is_user_connect {
+                            // Initial connect failed — free the hub slot so
+                            // failed hubs cannot exhaust MAX_HUB_SESSIONS.
+                            terminate = true;
                         }
                     }
                 }
@@ -802,28 +891,15 @@ async fn session_loop(
                             json!({
                                 "hub_dest_hash": hex,
                                 "reason": reason,
+                                "will_reconnect": should_reconnect,
                             }),
                         );
                         if should_reconnect {
                             if let Some((dest_hash, dest_hash_hex, hops, intent_nick)) =
                                 reconnect_intent.clone()
                             {
-                                let nickname = {
-                                    let g = inner.lock().await;
-                                    g.nickname
-                                        .as_ref()
-                                        .map(|n| n.trim())
-                                        .filter(|n| !n.is_empty())
-                                        .map(|n| n.to_string())
-                                        .unwrap_or_else(|| {
-                                            let trimmed = intent_nick.trim();
-                                            if trimmed.is_empty() {
-                                                "mesh-client".into()
-                                            } else {
-                                                trimmed.to_string()
-                                            }
-                                        })
-                                };
+                                let nickname =
+                                    resolve_reconnect_nickname(&inner, &intent_nick).await;
                                 let delay = backoff_ms;
                                 debug!(
                                     "rrc reconnecting to {dest_hash_hex} in {delay}ms"
@@ -1040,7 +1116,7 @@ async fn handle_inbound(
                         members: members.clone(),
                     },
                 );
-                g.desired_rooms.insert(key);
+                g.remember_desired_room(&room, None);
             }
             emit(
                 event_tx,
@@ -1137,7 +1213,59 @@ fn normalize_room(room: &str) -> String {
     room.trim().to_lowercase()
 }
 
+async fn resolve_reconnect_nickname(
+    inner: &Arc<Mutex<RrcSessionInner>>,
+    intent_nick: &str,
+) -> String {
+    let g = inner.lock().await;
+    g.nickname
+        .as_ref()
+        .map(|n| n.trim())
+        .filter(|n| !n.is_empty())
+        .map(|n| n.to_string())
+        .unwrap_or_else(|| {
+            let trimmed = intent_nick.trim();
+            if trimmed.is_empty() {
+                "mesh-client".into()
+            } else {
+                trimmed.to_string()
+            }
+        })
+}
+
 fn emit(event_tx: &broadcast::Sender<String>, event_type: &str, payload: serde_json::Value) {
     let frame = json!({ "type": event_type, "payload": payload });
     let _ = event_tx.send(frame.to_string());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn remember_desired_room_keeps_join_key() {
+        let mut inner = RrcSessionInner::new([0u8; 16]);
+        inner.remember_desired_room("#Lobby", Some("secret".into()));
+        assert_eq!(
+            inner.desired_rooms.get("#lobby").cloned().flatten().as_deref(),
+            Some("secret")
+        );
+        // JOINED without key must not wipe the stored key.
+        inner.remember_desired_room("#lobby", None);
+        assert_eq!(
+            inner.desired_rooms.get("#lobby").cloned().flatten().as_deref(),
+            Some("secret")
+        );
+        // Explicit new key replaces.
+        inner.remember_desired_room("#lobby", Some("newkey".into()));
+        assert_eq!(
+            inner.desired_rooms.get("#lobby").cloned().flatten().as_deref(),
+            Some("newkey")
+        );
+    }
+
+    #[test]
+    fn normalize_room_trims_and_lowercases() {
+        assert_eq!(normalize_room("  #General "), "#general");
+    }
 }

@@ -75,6 +75,34 @@ impl RrcLinkHandle {
     }
 }
 
+/// Deregisters a destination hash if dropped before the link task takes ownership.
+/// Failure point: handshake error after `RegisterDestination`. Fallback: Drop
+/// sends `DeregisterDestination`. Logging: best-effort try_send (no log).
+struct DestinationRegistrationGuard {
+    transport_tx: mpsc::Sender<TransportMessage>,
+    link_id: [u8; 16],
+    armed: bool,
+}
+
+impl DestinationRegistrationGuard {
+    fn disarm(&mut self) {
+        self.armed = false;
+    }
+}
+
+impl Drop for DestinationRegistrationGuard {
+    fn drop(&mut self) {
+        if !self.armed {
+            return;
+        }
+        let _ = self
+            .transport_tx
+            .try_send(TransportMessage::DeregisterDestination {
+                hash: self.link_id,
+            });
+    }
+}
+
 pub async fn open_rrc_link(
     transport_tx: mpsc::Sender<TransportMessage>,
     identity: Identity,
@@ -99,6 +127,13 @@ pub async fn open_rrc_link(
         },
     )
     .await?;
+    // Failure point: handshake/send after RegisterDestination. Fallback: Drop
+    // deregisters so a cancelled or failed establish does not leak a destination.
+    let mut registration = DestinationRegistrationGuard {
+        transport_tx: transport_tx.clone(),
+        link_id,
+        armed: true,
+    };
 
     let req_pkt = build_link_request_packet(dest_hash, &request_data);
     send_msg(
@@ -156,6 +191,9 @@ pub async fn open_rrc_link(
     let (cmd_tx, mut cmd_rx) = mpsc::channel::<RrcLinkCommand>(32);
     let (event_tx, event_rx) = mpsc::channel::<RrcLinkEvent>(128);
     let transport_for_task = transport_tx.clone();
+
+    // Link task owns deregistration from here on.
+    registration.disarm();
 
     tokio::spawn(async move {
         let mut tick = tokio::time::interval(TICK_INTERVAL);
@@ -563,4 +601,41 @@ fn build_data_packet(
     let mut raw = header.pack();
     raw.extend_from_slice(body);
     Bytes::from(raw)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn registration_guard_deregisters_when_armed() {
+        let (tx, mut rx) = mpsc::channel::<TransportMessage>(4);
+        {
+            let _guard = DestinationRegistrationGuard {
+                transport_tx: tx,
+                link_id: [0xab; 16],
+                armed: true,
+            };
+        }
+        match rx.try_recv() {
+            Ok(TransportMessage::DeregisterDestination { hash }) => {
+                assert_eq!(hash, [0xab; 16]);
+            }
+            other => panic!("expected DeregisterDestination, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn registration_guard_skips_when_disarmed() {
+        let (tx, mut rx) = mpsc::channel::<TransportMessage>(4);
+        {
+            let mut guard = DestinationRegistrationGuard {
+                transport_tx: tx,
+                link_id: [0xcd; 16],
+                armed: true,
+            };
+            guard.disarm();
+        }
+        assert!(rx.try_recv().is_err());
+    }
 }

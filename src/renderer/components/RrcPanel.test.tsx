@@ -87,4 +87,57 @@ describe('RrcPanel', () => {
     await new Promise((r) => setTimeout(r, 20));
     expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
   });
+
+  it('Cancel disconnects a connecting hub and sets disconnect intent', async () => {
+    vi.mocked(window.electronAPI.reticulum.rrc.disconnect).mockResolvedValue({ ok: true });
+    useRrcSessionStore.getState().applyStatus('connecting', hubA, 'Slow Hub');
+    useRrcHubStore.setState({
+      hubs: new Map([
+        [
+          hubA,
+          {
+            destination_hash: hubA,
+            display_name: 'Slow Hub',
+            source: 'manual',
+            recommended: false,
+          },
+        ],
+      ]),
+    });
+    render(<RrcPanel isActive />);
+    screen.getByRole('button', { name: 'Cancel' }).click();
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.rrc.disconnect).toHaveBeenCalledWith({
+        dest_hash: hubA,
+      });
+    });
+    expect(useRrcSessionStore.getState().sessionsByHub.has(hubA)).toBe(false);
+  });
+
+  it('resets disconnect intent when disconnect IPC fails', async () => {
+    vi.mocked(window.electronAPI.reticulum.rrc.disconnect).mockResolvedValue({
+      ok: false,
+    });
+    useRrcSessionStore.getState().applyStatus('active', hubA, 'Hub A');
+    useRrcHubStore.setState({
+      hubs: new Map([
+        [
+          hubA,
+          {
+            destination_hash: hubA,
+            display_name: 'Hub A',
+            source: 'manual',
+            recommended: false,
+          },
+        ],
+      ]),
+    });
+    render(<RrcPanel isActive />);
+    screen.getByRole('button', { name: /Disconnect/i }).click();
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.rrc.disconnect).toHaveBeenCalled();
+    });
+    expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.disconnectIntent).toBe(false);
+    expect(useRrcSessionStore.getState().sessionsByHub.has(hubA)).toBe(true);
+  });
 });

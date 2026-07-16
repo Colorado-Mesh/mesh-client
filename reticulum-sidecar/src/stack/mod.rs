@@ -1132,8 +1132,12 @@ impl StackHandle {
     }
 
     pub async fn set_rrc_favorite(&self, hash: &str, favorited: bool) -> Result<(), String> {
+        let clean = hash.trim().to_lowercase().replace(':', "");
+        if clean.len() != 32 || !clean.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err("dest_hash must be 32 hex characters".into());
+        }
         let mut inner = self.inner.write().await;
-        inner.set_rrc_favorite(hash, favorited);
+        inner.set_rrc_favorite(&clean, favorited);
         inner.save(&self.config_dir, &self.storage_dir)?;
         Ok(())
     }

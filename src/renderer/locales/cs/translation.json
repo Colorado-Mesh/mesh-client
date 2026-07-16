@@ -4271,13 +4271,13 @@
     "recentRooms": "Nedávné",
     "roomKeyOptional": "Klíč od pokoje (volitelné)",
     "joinRoomHelp": "Pokoje jsou v tomto centru živé skupiny. Připojte se podle jména, zkuste Navrhované nebo napište /list a /help.",
-    "listHint": "Tip: /seznam zobrazuje registrované veřejné místnosti na rozbočovačích RRCD. /nápověda pro příkazy.",
+    "listHint": "Tip: /list shows registered public rooms on rrcd hubs. /help for commands.",
     "slash": {
       "helpIntro": "=== RRC help ===",
       "helpClient": "Příkazy klienta:",
       "helpNick": "/nick NAME — změna přezdívky",
       "helpJoin": "/join ROOM [key] — připojit se k místnosti (volitelné +k klíč)",
-      "helpPart": "/část [pokoj] — nechte prostor (výchozí: aktivní)",
+      "helpPart": "/part [room] — leave room (default: active)",
       "helpMe": "/me ACTION — send ACTION EMOTE",
       "helpClear": "/clear — vymazat místní přepis této místnosti",
       "helpQuit": "/quit — odpojit od rozbočovače",
@@ -4307,7 +4307,7 @@
     "memberCount_other": "{{count}} členů",
     "userCount_one": "{{count}} uživatel",
     "userCount_other": "{{count}} uživatelé",
-    "refreshWho": "Obnovit členy (/kdo)",
+    "refreshWho": "Refresh members (/who)",
     "msgNick": "Zpráva {{name}}",
     "dismissBanner": "Zavřít oznámení",
     "directNoticeUnsupported": "Tento rozbočovač nepodporuje přímé OZNÁMENÍ (/msg).",
@@ -4338,6 +4338,9 @@
     "hubAutoJoinOffHint": "Automatické připojení vypnuto — klikněte pro připojení tohoto rozbočovače při spuštění zásobníku",
     "roomAutoJoinOnHint": "Automatické připojení zapnuto — kliknutím vypnete",
     "roomAutoJoinOffHint": "Automatické připojení vypnuto — kliknutím se připojíš k této místnosti, jakmile se rozbočovač připojí",
-    "roomLegend": "★ oblíbené · Přepíná automatické připojení"
+    "roomLegend": "★ oblíbené · Přepíná automatické připojení",
+    "disconnectFailed": "Could not disconnect from RRC hub.",
+    "partFailed": "Could not leave room.",
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
   }
 }

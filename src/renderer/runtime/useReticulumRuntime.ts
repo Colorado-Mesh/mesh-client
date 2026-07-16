@@ -644,19 +644,31 @@ export function useReticulumRuntime(): ProtocolRuntime {
           });
       }
       if (evt.type === 'rrc.disconnected' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { reason?: string; hub_dest_hash?: string | null };
+        const p = evt.payload as {
+          reason?: string;
+          hub_dest_hash?: string | null;
+          will_reconnect?: boolean;
+        };
         const hubDestHash = p.hub_dest_hash ?? undefined;
         if (hubDestHash) {
           const session = useRrcSessionStore.getState();
           const hubSession = session.sessionsByHub.get(hubDestHash.toLowerCase());
           const disconnectIntentForHub = hubSession?.disconnectIntent ?? false;
-          if (p.reason === 'local_disconnect' || disconnectIntentForHub) {
+          const willReconnect = p.will_reconnect === true;
+          if (
+            p.reason === 'local_disconnect' ||
+            disconnectIntentForHub ||
+            p.will_reconnect === false
+          ) {
             session.clearHubSession(hubDestHash);
-          } else {
+          } else if (willReconnect || p.will_reconnect === undefined) {
             // Sidecar auto-reconnects unintended drops; keep volatile rooms until reconnect settles.
+            // Older sidecars omit will_reconnect — treat as reconnecting unless local disconnect.
             session.applyStatus('reconnecting', hubDestHash);
             if (p.reason) session.setError(p.reason, hubDestHash);
             session.setModerationBanner(null, hubDestHash);
+          } else {
+            session.clearHubSession(hubDestHash);
           }
         }
       }

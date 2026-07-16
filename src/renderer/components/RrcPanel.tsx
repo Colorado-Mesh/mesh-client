@@ -94,7 +94,6 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
   const lastError = useRrcSessionStore((s) => s.lastError);
   const moderationBanner = useRrcSessionStore((s) => s.moderationBanner);
   const unreadByRoom = useRrcSessionStore((s) => s.unreadByRoom);
-  const unreadByHub = useRrcSessionStore((s) => s.unreadByHub);
   const sessionsByHub = useRrcSessionStore((s) => s.sessionsByHub);
   const showTimestamps = useRrcSessionStore((s) => s.showTimestamps);
   const capabilities = useRrcSessionStore((s) => s.capabilities);
@@ -171,15 +170,23 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const running = await isReticulumSidecarRunning();
-      if (!cancelled) {
-        setSidecarRunning(running);
-        if (running) void refreshFromSidecar();
+      try {
+        const running = await isReticulumSidecarRunning();
+        if (!cancelled) {
+          setSidecarRunning(running);
+          if (running) await refreshFromSidecar();
+        }
+      } catch (e) {
+        console.debug('[RrcPanel] sidecar status ' + errLikeToLogString(e));
       }
     })();
     const unsub = window.electronAPI.reticulum.onStatus((s) => {
       setSidecarRunning(s.running);
-      if (s.running) void refreshFromSidecar();
+      if (s.running) {
+        void refreshFromSidecar().catch((e: unknown) => {
+          console.debug('[RrcPanel] refresh on status ' + errLikeToLogString(e));
+        });
+      }
     });
     return () => {
       cancelled = true;
@@ -216,6 +223,12 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
             body: '/list',
             type: 'msg',
           })
+          .then((res) => {
+            if (!res.ok) {
+              listSentForHubRef.current.delete(hub);
+              console.debug('[RrcPanel] auto /list not ok ' + (res.error ?? ''));
+            }
+          })
           .catch((e: unknown) => {
             listSentForHubRef.current.delete(hub);
             console.debug('[RrcPanel] auto /list ' + errLikeToLogString(e));
@@ -225,17 +238,28 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
         roomAutoJoinDoneRef.current.add(hub);
         const roomsToJoin = loadRrcAutoJoinRooms(hub);
         const hubSession = useRrcSessionStore.getState().sessionsByHub.get(hub);
-        for (const room of roomsToJoin) {
+        let anyJoinFailed = false;
+        const joinTasks = roomsToJoin.map((room) => {
           const resolved = resolveRrcJoinRoomName(room, {
             listed: hubSession?.listedRooms ?? [],
             joined: hubSession ? [...hubSession.rooms.values()] : [],
           });
-          void window.electronAPI.reticulum.rrc
+          return window.electronAPI.reticulum.rrc
             .join({ hub_dest_hash: hub, room: resolved })
+            .then((res) => {
+              if (!res.ok) {
+                anyJoinFailed = true;
+                console.debug('[RrcPanel] auto-join not ok ' + (res.error ?? ''));
+              }
+            })
             .catch((e: unknown) => {
+              anyJoinFailed = true;
               console.debug('[RrcPanel] auto-join ' + errLikeToLogString(e));
             });
-        }
+        });
+        void Promise.all(joinTasks).then(() => {
+          if (anyJoinFailed) roomAutoJoinDoneRef.current.delete(hub);
+        });
       }
     }
     // Drop bookkeeping for hubs that left the session map.
@@ -317,19 +341,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
     return list;
   }, [rooms, unreadByRoom, activeRoom]);
 
-  const unreadForHub = useCallback(
-    (hash: string) => {
-      const hub = hash.trim().toLowerCase();
-      const session = sessionsByHub.get(hub);
-      if (session) {
-        let fromRooms = 0;
-        for (const v of session.unreadByRoom.values()) fromRooms += v;
-        if (fromRooms > 0) return fromRooms;
-      }
-      return unreadByHub.get(hub) ?? 0;
-    },
-    [sessionsByHub, unreadByHub],
-  );
+  const unreadForHub = useRrcSessionStore((s) => s.unreadForHub);
 
   const joinedKeys = useMemo(
     () => new Set([...rooms.keys()].map((k) => rrcRoomMatchKey(k))),
@@ -438,12 +450,21 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
           // Superseded by Cancel or a newer hub selection — not a user-facing failure.
           if (/cancelled/i.test(err)) return;
           setError(formatRrcErrorMessage(err, t), target);
+          // Sidecar may not emit disconnect for HTTP-level reject; clear optimistic connecting.
+          const cur = useRrcSessionStore.getState().sessionsByHub.get(target);
+          if (cur?.status === 'connecting' || cur?.status === 'awaiting_welcome') {
+            useRrcSessionStore.getState().clearHubSession(target);
+          }
         }
       } catch (e) {
         const msg = errLikeToLogString(e);
         if (/cancelled/i.test(msg)) return;
         // catch-no-log-ok error surfaced via setError
         setError(formatRrcErrorMessage(msg, t), target);
+        const cur = useRrcSessionStore.getState().sessionsByHub.get(target);
+        if (cur?.status === 'connecting' || cur?.status === 'awaiting_welcome') {
+          useRrcSessionStore.getState().clearHubSession(target);
+        }
       }
     },
     [nickname, setDisconnectIntent, setError, setFocusedHub, t],
@@ -490,12 +511,19 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
     if (!target) return;
     setDisconnectIntent(true, target);
     try {
-      await window.electronAPI.reticulum.rrc.disconnect({ dest_hash: target });
+      const res = await window.electronAPI.reticulum.rrc.disconnect({ dest_hash: target });
+      if (!res.ok) {
+        setDisconnectIntent(false, target);
+        setError(t('rrc.disconnectFailed'), target);
+        return;
+      }
       clearHubSession(target);
     } catch (e) {
       console.warn('[RrcPanel] disconnect ' + errLikeToLogString(e));
+      setDisconnectIntent(false, target);
+      setError(formatRrcErrorMessage(errLikeToLogString(e), t), target);
     }
-  }, [clearHubSession, hubDestHash, setDisconnectIntent]);
+  }, [clearHubSession, hubDestHash, setDisconnectIntent, setError, t]);
 
   const handleManualConnect = useCallback(async () => {
     const hub = await upsertManual(manualHash);
@@ -565,15 +593,23 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
       markPartIntent(target);
       setActionBusy(true);
       try {
-        await window.electronAPI.reticulum.rrc.part({ hub_dest_hash: hubDestHash, room: target });
+        const res = await window.electronAPI.reticulum.rrc.part({
+          hub_dest_hash: hubDestHash,
+          room: target,
+        });
+        if (!res.ok) {
+          useRrcSessionStore.getState().clearPartIntent(target);
+          setError(formatRrcErrorMessage(res.error ?? t('rrc.partFailed'), t));
+        }
       } catch (e) {
         console.warn('[RrcPanel] part ' + errLikeToLogString(e));
         useRrcSessionStore.getState().clearPartIntent(target);
+        setError(formatRrcErrorMessage(errLikeToLogString(e), t));
       } finally {
         setActionBusy(false);
       }
     },
-    [activeRoom, hubDestHash, listedRooms, markPartIntent, rooms],
+    [activeRoom, hubDestHash, listedRooms, markPartIntent, rooms, setError, t],
   );
 
   const appendSystemLines = useCallback(
@@ -595,147 +631,173 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
 
   const handleSend = useCallback(
     async (text: string) => {
-      const parsed = parseRrcSlashInput(text);
-      if (!parsed) return;
+      try {
+        const parsed = parseRrcSlashInput(text);
+        if (!parsed) return;
 
-      if (parsed.kind === 'local') {
-        if (parsed.command === 'help') {
-          appendSystemLines(RRC_HELP_I18N_KEYS.map((k) => t(k)));
-          setDraft('');
-          return;
-        }
-        if (parsed.command === 'usage') {
-          useRrcSessionStore.getState().setError(t(parsed.messageKey));
-          return;
-        }
-        if (parsed.command === 'nick') {
-          setNickname(parsed.nickname);
-          try {
-            localStorage.setItem(NICK_KEY, parsed.nickname);
-          } catch {
-            // catch-no-log-ok
+        if (parsed.kind === 'local') {
+          if (parsed.command === 'help') {
+            appendSystemLines(RRC_HELP_I18N_KEYS.map((k) => t(k)));
+            setDraft('');
+            return;
           }
-          if (status === 'active' && hubDestHash) {
-            const nickRes = await window.electronAPI.reticulum.rrc.setNickname({
-              nickname: parsed.nickname,
-              hub_dest_hash: hubDestHash,
-            });
-            if (!nickRes.ok) {
-              useRrcSessionStore.getState().setError(nickRes.error ?? t('rrc.sendFailed'));
+          if (parsed.command === 'usage') {
+            useRrcSessionStore.getState().setError(t(parsed.messageKey));
+            return;
+          }
+          if (parsed.command === 'nick') {
+            setNickname(parsed.nickname);
+            try {
+              localStorage.setItem(NICK_KEY, parsed.nickname);
+            } catch {
+              // catch-no-log-ok
+            }
+            if (status === 'active' && hubDestHash) {
+              const nickRes = await window.electronAPI.reticulum.rrc.setNickname({
+                nickname: parsed.nickname,
+                hub_dest_hash: hubDestHash,
+              });
+              if (!nickRes.ok) {
+                useRrcSessionStore.getState().setError(nickRes.error ?? t('rrc.sendFailed'));
+                return;
+              }
+              // Push K_NICK to the hub so /who and member lists pick up the new nick.
+              void sendHubCommand('/who').catch((e: unknown) => {
+                console.debug('[RrcPanel] nick /who ' + errLikeToLogString(e));
+              });
+            }
+            // Update local nicklist entry for self immediately.
+            const selfHash = useRrcSessionStore.getState().localIdentityHash;
+            if (selfHash && activeRoom && !activeRoom.startsWith('[')) {
+              const members = activeRoomInfo?.members ?? [];
+              const next = members.map((m) =>
+                m.identity_hash.toLowerCase() === selfHash
+                  ? { ...m, nickname: parsed.nickname }
+                  : m,
+              );
+              if (!next.some((m) => m.identity_hash.toLowerCase() === selfHash)) {
+                next.push({ identity_hash: selfHash, nickname: parsed.nickname });
+              }
+              useRrcSessionStore.getState().mergeRoomMembers(activeRoom, next, 'replace');
+            }
+            appendSystemLines([t('rrc.slash.nickChanged', { name: parsed.nickname })]);
+            setDraft('');
+            return;
+          }
+          if (parsed.command === 'join') {
+            await joinRoom(parsed.room, parsed.key);
+            setDraft('');
+            return;
+          }
+          if (parsed.command === 'part') {
+            await handlePart(parsed.room);
+            setDraft('');
+            return;
+          }
+          if (parsed.command === 'me') {
+            if (status !== 'active' || !hubDestHash) {
+              useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
               return;
             }
-            // Push K_NICK to the hub so /who and member lists pick up the new nick.
-            void sendHubCommand('/who').catch((e: unknown) => {
-              console.debug('[RrcPanel] nick /who ' + errLikeToLogString(e));
-            });
-          }
-          // Update local nicklist entry for self immediately.
-          const selfHash = useRrcSessionStore.getState().localIdentityHash;
-          if (selfHash && activeRoom && !activeRoom.startsWith('[')) {
-            const members = activeRoomInfo?.members ?? [];
-            const next = members.map((m) =>
-              m.identity_hash.toLowerCase() === selfHash ? { ...m, nickname: parsed.nickname } : m,
-            );
-            if (!next.some((m) => m.identity_hash.toLowerCase() === selfHash)) {
-              next.push({ identity_hash: selfHash, nickname: parsed.nickname });
+            if (!activeRoom || activeRoom.startsWith('[')) {
+              useRrcSessionStore.getState().setError(t('rrc.joinRoomPrompt'));
+              return;
             }
-            useRrcSessionStore.getState().mergeRoomMembers(activeRoom, next, 'replace');
-          }
-          appendSystemLines([t('rrc.slash.nickChanged', { name: parsed.nickname })]);
-          setDraft('');
-          return;
-        }
-        if (parsed.command === 'join') {
-          await joinRoom(parsed.room, parsed.key);
-          setDraft('');
-          return;
-        }
-        if (parsed.command === 'part') {
-          await handlePart(parsed.room);
-          setDraft('');
-          return;
-        }
-        if (parsed.command === 'me') {
-          if (status !== 'active' || !hubDestHash) {
-            useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
+            const res = await window.electronAPI.reticulum.rrc.send({
+              hub_dest_hash: hubDestHash,
+              room: activeRoom,
+              body: parsed.action,
+              type: 'action',
+            });
+            if (!res.ok) {
+              useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
+              return;
+            }
+            setDraft('');
             return;
           }
-          if (!activeRoom || activeRoom.startsWith('[')) {
-            useRrcSessionStore.getState().setError(t('rrc.joinRoomPrompt'));
+          if (parsed.command === 'msg') {
+            if (status !== 'active' || !hubDestHash) {
+              useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
+              return;
+            }
+            if (!capabilities.direct_notice) {
+              useRrcSessionStore.getState().setError(t('rrc.directNoticeUnsupported'));
+              return;
+            }
+            const members = activeRoomInfo?.members ?? [];
+            const allMembers = [...members, ...[...rooms.values()].flatMap((r) => r.members ?? [])];
+            const resolved = resolveRrcMsgTarget(parsed.target, allMembers);
+            if (resolved?.identity_hash.length !== 32) {
+              useRrcSessionStore.getState().setError(t('rrc.slash.msgTargetNotFound'));
+              return;
+            }
+            const res = await window.electronAPI.reticulum.rrc.send({
+              hub_dest_hash: hubDestHash,
+              body: parsed.text,
+              type: 'notice',
+              dst_hash: resolved.identity_hash,
+            });
+            if (!res.ok) {
+              useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
+              return;
+            }
+            const label = resolved.nickname || resolved.identity_hash.slice(0, 8);
+            if (activeRoom !== RRC_WHISPERS_ROOM) setActiveRoom(RRC_WHISPERS_ROOM);
+            addMessage({
+              id: `whisper-out-${Date.now()}`,
+              room: RRC_WHISPERS_ROOM,
+              kind: 'system',
+              body: t('rrc.slash.msgSent', { name: label, text: parsed.text }),
+              timestamp: Date.now(),
+              dst_hash: resolved.identity_hash,
+            });
+            setDraft('');
             return;
           }
-          const res = await window.electronAPI.reticulum.rrc.send({
-            hub_dest_hash: hubDestHash,
-            room: activeRoom,
-            body: parsed.action,
-            type: 'action',
-          });
-          if (!res.ok) {
-            useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
+          if (parsed.command === 'clear') {
+            clearActiveRoomMessages();
+            setDraft('');
             return;
           }
-          setDraft('');
-          return;
+          if (parsed.command === 'quit') {
+            await handleDisconnect();
+            setDraft('');
+            return;
+          }
         }
-        if (parsed.command === 'msg') {
-          if (status !== 'active' || !hubDestHash) {
-            useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
-            return;
-          }
-          if (!capabilities.direct_notice) {
-            useRrcSessionStore.getState().setError(t('rrc.directNoticeUnsupported'));
-            return;
-          }
-          const members = activeRoomInfo?.members ?? [];
-          const allMembers = [...members, ...[...rooms.values()].flatMap((r) => r.members ?? [])];
-          const resolved = resolveRrcMsgTarget(parsed.target, allMembers);
-          if (resolved?.identity_hash.length !== 32) {
-            useRrcSessionStore.getState().setError(t('rrc.slash.msgTargetNotFound'));
-            return;
-          }
-          const res = await window.electronAPI.reticulum.rrc.send({
-            hub_dest_hash: hubDestHash,
-            body: parsed.text,
-            type: 'notice',
-            dst_hash: resolved.identity_hash,
-          });
-          if (!res.ok) {
-            useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
-            return;
-          }
-          const label = resolved.nickname || resolved.identity_hash.slice(0, 8);
-          if (activeRoom !== RRC_WHISPERS_ROOM) setActiveRoom(RRC_WHISPERS_ROOM);
-          addMessage({
-            id: `whisper-out-${Date.now()}`,
-            room: RRC_WHISPERS_ROOM,
-            kind: 'system',
-            body: t('rrc.slash.msgSent', { name: label, text: parsed.text }),
-            timestamp: Date.now(),
-            dst_hash: resolved.identity_hash,
-          });
-          setDraft('');
-          return;
-        }
-        if (parsed.command === 'clear') {
-          clearActiveRoomMessages();
-          setDraft('');
-          return;
-        }
-        if (parsed.command === 'quit') {
-          await handleDisconnect();
-          setDraft('');
-          return;
-        }
-      }
 
-      if (parsed.kind === 'hub') {
+        if (parsed.kind === 'hub') {
+          if (status !== 'active' || !hubDestHash) {
+            useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
+            return;
+          }
+          const res = await window.electronAPI.reticulum.rrc.send({
+            hub_dest_hash: hubDestHash,
+            room: activeRoom && !activeRoom.startsWith('[') ? activeRoom : undefined,
+            body: parsed.body,
+            type: 'msg',
+          });
+          if (!res.ok) {
+            useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
+            return;
+          }
+          appendSystemLines([t('rrc.slash.commandSent', { cmd: parsed.body })]);
+          setDraft('');
+          return;
+        }
+
+        if (!activeRoom || activeRoom.startsWith('[')) {
+          useRrcSessionStore.getState().setError(t('rrc.joinRoomPrompt'));
+          return;
+        }
         if (status !== 'active' || !hubDestHash) {
           useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
           return;
         }
         const res = await window.electronAPI.reticulum.rrc.send({
           hub_dest_hash: hubDestHash,
-          room: activeRoom && !activeRoom.startsWith('[') ? activeRoom : undefined,
+          room: activeRoom,
           body: parsed.body,
           type: 'msg',
         });
@@ -743,34 +805,15 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
           useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
           return;
         }
-        appendSystemLines([t('rrc.slash.commandSent', { cmd: parsed.body })]);
         setDraft('');
-        return;
+      } catch (e) {
+        console.warn('[RrcPanel] send ' + errLikeToLogString(e));
+        useRrcSessionStore.getState().setError(formatRrcErrorMessage(errLikeToLogString(e), t));
       }
-
-      if (!activeRoom || activeRoom.startsWith('[')) {
-        useRrcSessionStore.getState().setError(t('rrc.joinRoomPrompt'));
-        return;
-      }
-      if (status !== 'active' || !hubDestHash) {
-        useRrcSessionStore.getState().setError(t('rrc.sendFailed'));
-        return;
-      }
-      const res = await window.electronAPI.reticulum.rrc.send({
-        hub_dest_hash: hubDestHash,
-        room: activeRoom,
-        body: parsed.body,
-        type: 'msg',
-      });
-      if (!res.ok) {
-        useRrcSessionStore.getState().setError(res.error ?? t('rrc.sendFailed'));
-        return;
-      }
-      setDraft('');
     },
     [
       activeRoom,
-      activeRoomInfo?.members,
+      activeRoomInfo,
       addMessage,
       appendSystemLines,
       capabilities.direct_notice,

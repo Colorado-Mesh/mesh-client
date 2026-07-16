@@ -112,7 +112,7 @@ describe('RrcHubBrowser', () => {
 
     expect(screen.getByText('4')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /Select hub Hub A .* 4 unread/i }),
+      screen.getByRole('button', { name: /Select hub Hub A, .+, 4 unread/i }),
     ).toBeInTheDocument();
   });
 
