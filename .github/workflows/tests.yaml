@@ -97,8 +97,6 @@ jobs:
           file: coverage/cobertura-coverage.xml
           language: JavaScript
           label: code-coverage/vitest
-          # Repo may not have Code Quality enabled (HTTP 403); do not fail the job.
-          fail-on-error: false
 
       - name: Upload test results
         if: always() && github.actor != 'nektos/act'
