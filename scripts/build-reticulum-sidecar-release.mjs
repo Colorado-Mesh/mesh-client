@@ -56,12 +56,12 @@ function cloneRatspeakStack() {
   const bash =
     process.platform === 'win32'
       ? [
-          'C:\\Program Files\\Git\\bin\\bash.exe',
-          'C:\\Program Files (x86)\\Git\\bin\\bash.exe',
+          String.raw`C:\Program Files\Git\bin\bash.exe`,
+          String.raw`C:\Program Files (x86)\Git\bin\bash.exe`,
         ].find((candidate) => existsSync(candidate))
       : '/bin/bash';
   if (!bash) {
-    fail('Git bash not found (expected under Program Files\\Git\\bin\\bash.exe)');
+    fail(String.raw`Git bash not found (expected under Program Files\Git\bin\bash.exe)`);
   }
   const result = spawnSync(bash, [scriptPath], {
     cwd: projectRoot,

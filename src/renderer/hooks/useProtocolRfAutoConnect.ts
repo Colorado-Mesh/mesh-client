@@ -56,6 +56,23 @@ async function waitForProtocolSession(protocol: 'meshtastic' | 'meshcore'): Prom
   return false;
 }
 
+function notifyPrimaryAutoConnectSettledIfNeeded(protocol: MeshProtocol): void {
+  if (dualNobleBleBothRadiosConfigured() && getNobleBleDualRadioPrimaryProtocol() === protocol) {
+    notifyNobleBlePrimaryAutoConnectSettled();
+  }
+}
+
+/** Attach primary-settle side effects without nesting promise handlers inside the BLE callback. */
+function watchPrimaryAutoConnectAttempt(protocol: MeshProtocol, attempt: Promise<unknown>): void {
+  attempt
+    .finally(() => {
+      notifyPrimaryAutoConnectSettledIfNeeded(protocol);
+    })
+    .catch(() => {
+      // catch-no-log-ok — reconnectBleWithScan awaits this rejected attempt
+    });
+}
+
 /**
  * Starts a remembered serial or Noble BLE RF connection once per mounted protocol.
  *
@@ -144,20 +161,33 @@ export function useProtocolRfAutoConnect({
           dualNobleBleBothRadiosConfigured() &&
           getNobleBleDualRadioPrimaryProtocol() === protocol
         ) {
-          void attempt
-            .finally(() => {
-              notifyPrimaryAutoConnectSettledIfNeeded(protocol);
-            })
-            .catch(() => {
-              // catch-no-log-ok — reconnectBleWithScan awaits this rejected attempt
-            });
+          watchPrimaryAutoConnectAttempt(protocol, attempt);
         }
         return attempt;
       });
       clearAutoConnectTimeout();
     };
 
-    void (async () => {
+    const onSerialAutoConnectFailed = (error: unknown) => {
+      if (cancelled) return;
+      if (lastBleId && !isLinux) {
+        console.warn(
+          `[useProtocolRfAutoConnect] serial auto-connect failed for ${protocol}; falling back to BLE noble scan: ${errLikeToLogString(error)}`,
+        );
+        const bleLast: LastConnection = {
+          type: 'ble',
+          bleDeviceId: lastBleId,
+          bleDeviceName: lastConnection.bleDeviceName,
+        };
+        saveLastConnection(protocol, bleLast);
+        runBleAutoConnect(lastBleId).catch(onAutoConnectFailed);
+        return;
+      }
+      onAutoConnectFailed(error, 'serial');
+      notifyPrimaryAutoConnectSettledIfNeeded(protocol);
+    };
+
+    const runStartupAutoConnect = async (): Promise<void> => {
       const ready = await waitForProtocolSession(protocol);
       if (cancelled) return;
       if (!ready) {
@@ -170,36 +200,25 @@ export function useProtocolRfAutoConnect({
 
       if (lastConnection.type === 'serial') {
         startAutoConnectTimeout();
-        void connectAutomaticRef
+        connectAutomaticRef
           .current('serial', undefined, lastConnection.serialPortId)
-          .catch((error: unknown) => {
-            if (cancelled) return;
-            if (lastBleId && !isLinux) {
-              console.warn(
-                `[useProtocolRfAutoConnect] serial auto-connect failed for ${protocol}; falling back to BLE noble scan: ${errLikeToLogString(error)}`,
-              );
-              const bleLast: LastConnection = {
-                type: 'ble',
-                bleDeviceId: lastBleId,
-                bleDeviceName: lastConnection.bleDeviceName,
-              };
-              saveLastConnection(protocol, bleLast);
-              void runBleAutoConnect(lastBleId).catch(onAutoConnectFailed);
-              return;
-            }
-            onAutoConnectFailed(error, 'serial');
-            notifyPrimaryAutoConnectSettledIfNeeded(protocol);
-          });
+          .catch(onSerialAutoConnectFailed);
         return;
       }
 
       if (lastConnection.type === 'ble' && lastBleId && !isLinux) {
-        void runBleAutoConnect(lastBleId).catch(onAutoConnectFailed);
+        runBleAutoConnect(lastBleId).catch(onAutoConnectFailed);
         return;
       }
 
       notifyPrimaryAutoConnectSettledIfNeeded(protocol);
-    })();
+    };
+
+    runStartupAutoConnect().catch((error: unknown) => {
+      if (cancelled) return;
+      onAutoConnectFailed(error);
+      notifyPrimaryAutoConnectSettledIfNeeded(protocol);
+    });
 
     return () => {
       cancelled = true;
@@ -219,10 +238,4 @@ export function useProtocolRfAutoConnect({
       timeoutRef.current = null;
     }
   }, [state.status]);
-}
-
-function notifyPrimaryAutoConnectSettledIfNeeded(protocol: MeshProtocol): void {
-  if (dualNobleBleBothRadiosConfigured() && getNobleBleDualRadioPrimaryProtocol() === protocol) {
-    notifyNobleBlePrimaryAutoConnectSettled();
-  }
 }

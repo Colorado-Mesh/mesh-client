@@ -213,28 +213,27 @@ export function ReticulumStackPanel({
     lxmfHash: identity?.lxmf_hash ?? null,
   });
 
+  let stackStatusClass = 'text-gray-400';
+  if (sidecarUiRunning) {
+    stackStatusClass = 'text-brand-green';
+  } else if (connecting) {
+    stackStatusClass = 'animate-pulse text-yellow-400';
+  }
+
+  let stackStatusText = t('connectionPanel.disconnected');
+  if (sidecarUiRunning) {
+    stackStatusText = stackStatusIdentityLabel
+      ? t('connectionPanel.reticulumStackRunningAs', { name: stackStatusIdentityLabel })
+      : t('connectionPanel.reticulumStackRunning');
+  } else if (connecting) {
+    stackStatusText = t('connectionPanel.connecting');
+  }
+
   return (
     <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
       <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
         <h2 className="font-medium text-gray-200">{t('connectionPanel.reticulumStackTitle')}</h2>
-        <span
-          className={`text-xs font-medium ${
-            sidecarUiRunning
-              ? 'text-brand-green'
-              : connecting
-                ? 'animate-pulse text-yellow-400'
-                : 'text-gray-400'
-          }`}
-        >
-          ●{' '}
-          {sidecarUiRunning
-            ? stackStatusIdentityLabel
-              ? t('connectionPanel.reticulumStackRunningAs', { name: stackStatusIdentityLabel })
-              : t('connectionPanel.reticulumStackRunning')
-            : connecting
-              ? t('connectionPanel.connecting')
-              : t('connectionPanel.disconnected')}
-        </span>
+        <span className={`text-xs font-medium ${stackStatusClass}`}>● {stackStatusText}</span>
       </div>
       <div className="space-y-3 p-4">
         <p className="text-muted text-xs">{t('connectionPanel.reticulumStackHint')}</p>

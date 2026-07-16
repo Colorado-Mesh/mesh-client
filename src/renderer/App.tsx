@@ -1387,16 +1387,15 @@ function AppContent() {
     [reticulumOwnNodeIdSet],
   );
   const reticulumIdentityForHeader = useReticulumIdentityStore((s) => s.identity);
-  const headerMyNodeNum =
-    protocol === 'reticulum'
-      ? Math.max(
-          activeConnectionView.state.myNodeNum,
-          typeof reticulumRuntime.selfNodeId === 'number' ? reticulumRuntime.selfNodeId : 0,
-          reticulumIdentityForHeader?.lxmf_hash
-            ? reticulumHashToNodeId(reticulumIdentityForHeader.lxmf_hash)
-            : 0,
-        )
-      : activeConnectionView.state.myNodeNum;
+  const headerMyNodeNum = (() => {
+    if (protocol !== 'reticulum') return activeConnectionView.state.myNodeNum;
+    const fromRuntime =
+      typeof reticulumRuntime.selfNodeId === 'number' ? reticulumRuntime.selfNodeId : 0;
+    const fromIdentity = reticulumIdentityForHeader?.lxmf_hash
+      ? reticulumHashToNodeId(reticulumIdentityForHeader.lxmf_hash)
+      : 0;
+    return Math.max(activeConnectionView.state.myNodeNum, fromRuntime, fromIdentity);
+  })();
   const headerSelfNodeLabel = (() => {
     if (protocol === 'reticulum') {
       const selfId = headerMyNodeNum;

@@ -22,10 +22,10 @@ const App = lazy(() => import('./App'));
 function AppBootSplash() {
   return (
     <main className="bg-app-bg flex h-screen w-screen items-center justify-center">
-      <div role="status" aria-busy="true">
+      <output className="block" aria-busy="true">
         <h1 className="sr-only">{i18n.t('app.loadingApp')}</h1>
         <div className="h-8 w-8 animate-pulse rounded-full bg-gray-700" aria-hidden />
-      </div>
+      </output>
     </main>
   );
 }

@@ -18,58 +18,64 @@ import {
 
 let hubAutoConnectBusy = false;
 
+function isRrcHubLinkedNow(hub: string): boolean {
+  const s = useRrcSessionStore.getState().sessionsByHub.get(hub);
+  return !!s && isRrcHubLinked(s.status);
+}
+
+/** Roll a hub session back to idle when a connect attempt fails mid-handshake. */
+function clearRrcHubIfStillConnecting(hub: string, err: string): void {
+  useRrcSessionStore.getState().setError(err, hub);
+  const cur = useRrcSessionStore.getState().sessionsByHub.get(hub);
+  if (cur?.status === 'connecting' || cur?.status === 'awaiting_welcome') {
+    useRrcSessionStore.getState().clearHubSession(hub);
+  }
+}
+
+/** Connect one hub. Returns false when the session cap blocks further attempts. */
+async function connectRrcHubForAutoJoin(hub: string, nickname: string): Promise<boolean> {
+  const session = useRrcSessionStore.getState();
+  if (isRrcHubLinkedNow(hub)) return true;
+  if (!session.sessionsByHub.has(hub) && session.sessionsByHub.size >= MAX_RRC_HUB_SESSIONS) {
+    return false;
+  }
+  if (!session.focusedHubHash) {
+    useRrcSessionStore.getState().setFocusedHub(hub);
+  }
+  useRrcSessionStore.getState().applyStatus('connecting', hub, null);
+  useRrcSessionStore.getState().setDisconnectIntent(false, hub);
+  useRrcSessionStore.getState().setError(null, hub);
+
+  try {
+    const res = await window.electronAPI.reticulum.rrc.connect({ dest_hash: hub, nickname });
+    if (!res.ok) {
+      const err = res.error ?? 'connect failed';
+      if (!/cancelled/i.test(err)) clearRrcHubIfStillConnecting(hub, err);
+    }
+  } catch (e: unknown) {
+    const msg = errLikeToLogString(e);
+    if (!/cancelled/i.test(msg)) {
+      console.debug(`[useRrcStartupAutoConnect] hub connect failed: ${msg}`);
+      clearRrcHubIfStillConnecting(hub, msg);
+    }
+  }
+  return true;
+}
+
 /** Connect hubs marked for auto-join (no focus steal). Safe to call from panel + App. */
 export async function runRrcHubAutoConnectBatch(nickname: string): Promise<void> {
   if (hubAutoConnectBusy) return;
   const wanted = loadRrcHubAutoJoin();
   if (wanted.length === 0) return;
 
-  const isLinked = (hub: string): boolean => {
-    const s = useRrcSessionStore.getState().sessionsByHub.get(hub);
-    return !!s && isRrcHubLinked(s.status);
-  };
-
-  const pending = wanted.filter((hub) => !isLinked(hub));
+  const pending = wanted.filter((hub) => !isRrcHubLinkedNow(hub));
   if (pending.length === 0) return;
 
   hubAutoConnectBusy = true;
   try {
     for (const hub of pending) {
-      const session = useRrcSessionStore.getState();
-      if (isLinked(hub)) continue;
-      if (!session.sessionsByHub.has(hub) && session.sessionsByHub.size >= MAX_RRC_HUB_SESSIONS) {
-        break;
-      }
-      if (!session.focusedHubHash) {
-        useRrcSessionStore.getState().setFocusedHub(hub);
-      }
-      useRrcSessionStore.getState().applyStatus('connecting', hub, null);
-      useRrcSessionStore.getState().setDisconnectIntent(false, hub);
-      useRrcSessionStore.getState().setError(null, hub);
-      try {
-        const res = await window.electronAPI.reticulum.rrc.connect({
-          dest_hash: hub,
-          nickname,
-        });
-        if (!res.ok) {
-          const err = res.error ?? 'connect failed';
-          if (/cancelled/i.test(err)) continue;
-          useRrcSessionStore.getState().setError(err, hub);
-          const cur = useRrcSessionStore.getState().sessionsByHub.get(hub);
-          if (cur?.status === 'connecting' || cur?.status === 'awaiting_welcome') {
-            useRrcSessionStore.getState().clearHubSession(hub);
-          }
-        }
-      } catch (e: unknown) {
-        const msg = errLikeToLogString(e);
-        if (/cancelled/i.test(msg)) continue;
-        console.debug(`[useRrcStartupAutoConnect] hub connect failed: ${msg}`);
-        useRrcSessionStore.getState().setError(msg, hub);
-        const cur = useRrcSessionStore.getState().sessionsByHub.get(hub);
-        if (cur?.status === 'connecting' || cur?.status === 'awaiting_welcome') {
-          useRrcSessionStore.getState().clearHubSession(hub);
-        }
-      }
+      const canContinue = await connectRrcHubForAutoJoin(hub, nickname);
+      if (!canContinue) break;
     }
   } finally {
     hubAutoConnectBusy = false;
@@ -164,10 +170,10 @@ export function useRrcStartupAutoConnect(): void {
         });
       }
     }
-    for (const hub of [...listSentForHubRef.current]) {
+    for (const hub of listSentForHubRef.current) {
       if (!sessionsByHub.has(hub)) listSentForHubRef.current.delete(hub);
     }
-    for (const hub of [...roomAutoJoinDoneRef.current]) {
+    for (const hub of roomAutoJoinDoneRef.current) {
       if (!sessionsByHub.has(hub)) roomAutoJoinDoneRef.current.delete(hub);
     }
   }, [sessionsByHub]);
