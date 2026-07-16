@@ -53,7 +53,9 @@ function runSidecarTests() {
 function cloneRatspeakStack() {
   const scriptPath = path.join(projectRoot, 'scripts', 'clone-ratspeak-stack.sh');
   const shell = 'bash';
+  // Maintainer release helper: inherit host PATH so cargo/bash resolve normally.
   const result = spawnSync(shell, [scriptPath], {
+    // NOSONAR — bash via PATH; intentional for local/CI (javascript:S4036)
     cwd: projectRoot,
     stdio: 'inherit',
     env: {

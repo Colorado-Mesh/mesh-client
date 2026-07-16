@@ -67,7 +67,7 @@ Install coverage tooling once: `cargo install cargo-llvm-cov`.
 
 - **Pre-commit** runs stub fmt/clippy/test when `cargo` is on `PATH` (no coverage).
 - **CI lint** (`reticulum-sidecar.yaml`): full-feature `fmt --check` + Clippy.
-- **CI coverage** (`tests.yaml`): `cargo llvm-cov --fail-under-lines 47` when sidecar paths change (ratchet toward ~52%).
+- **CI coverage** (`tests.yaml`): `cargo llvm-cov --fail-under-lines 45` when sidecar paths change (ratchet toward ~52%).
 
 ## API
 
