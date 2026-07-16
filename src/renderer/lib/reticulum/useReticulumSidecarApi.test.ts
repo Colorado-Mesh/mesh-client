@@ -12,6 +12,10 @@ vi.mock('@/renderer/lib/appSettingsStorage', () => ({
   setReticulumAutostartEnabled: vi.fn(),
 }));
 
+vi.mock('@/renderer/lib/sessions/reticulumSession', () => ({
+  tryGetReticulumSession: vi.fn(() => ({ connectAutomatic: vi.fn() })),
+}));
+
 import { isReticulumAutostartEnabled } from '@/renderer/lib/appSettingsStorage';
 import {
   resetReticulumIdentityStoreForTests,

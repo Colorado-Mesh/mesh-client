@@ -319,6 +319,10 @@ export function useMeshtasticRuntime() {
   /** Cleared on successful connect; set when user explicitly disconnects (blocks auto-reconnect). */
   const meshtasticExplicitDisconnectRef = useRef(false);
   const isReconnectingRef = useRef<boolean>(false);
+  /** True while an intentional BLE connect (manual or auto) owns the Noble session. */
+  const bleConnectInProgressRef = useRef(false);
+  /** Disconnect during connect — run handleConnectionLost after connect settles. */
+  const meshtasticDeferredReconnectRef = useRef(false);
   const reconnectGenerationRef = useRef<number>(0);
   const postRebootRecoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const postRebootRecoveryScheduledRef = useRef(false);
@@ -2078,6 +2082,17 @@ export function useMeshtasticRuntime() {
   useEffect(() => {
     return window.electronAPI.onNobleBleDisconnected((sessionId) => {
       if (sessionId !== 'meshtastic') return;
+      if (
+        bleConnectInProgressRef.current &&
+        !meshtasticDriverConnectedRef.current &&
+        !deviceRef.current
+      ) {
+        meshtasticDeferredReconnectRef.current = true;
+        console.debug(
+          '[useMeshtasticRuntime] Noble BLE disconnected — defer reconnect until connect settles',
+        );
+        return;
+      }
       if (!connectionParamsRef.current) {
         if (meshtasticExplicitDisconnectRef.current) {
           console.debug(
@@ -2109,7 +2124,7 @@ export function useMeshtasticRuntime() {
       if (meshtasticDriverConnectedRef.current && deviceConfiguredRef.current) {
         return;
       }
-      if (isReconnectingRef.current) {
+      if (isReconnectingRef.current || bleConnectInProgressRef.current) {
         console.debug(
           '[useMeshtasticRuntime] Noble BLE yield released — skip nudge (reconnect in progress)',
         );
@@ -2171,6 +2186,10 @@ export function useMeshtasticRuntime() {
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
       reconnectGenerationRef.current++;
+      if (type === 'ble') {
+        bleConnectInProgressRef.current = true;
+        meshtasticDeferredReconnectRef.current = false;
+      }
       setState((s) => ({
         ...s,
         status: 'connecting',
@@ -2206,6 +2225,9 @@ export function useMeshtasticRuntime() {
         );
       }
       deviceRef.current = activeDevice;
+      if (type === 'ble') {
+        bleConnectInProgressRef.current = false;
+      }
       if (type === 'serial' && connectionParamsRef.current) {
         connectionParamsRef.current.serialPort = getSerialPortFromMeshTransport(
           activeDevice.transport,
@@ -2287,6 +2309,7 @@ export function useMeshtasticRuntime() {
       }
       meshtasticPendingDriverIdentityRef.current = null;
       meshtasticDriverConnectedRef.current = false;
+      bleConnectInProgressRef.current = false;
       setState({
         status: 'disconnected',
         myNodeNum: 0,
@@ -2363,6 +2386,7 @@ export function useMeshtasticRuntime() {
       const serialPortId = type === 'serial' ? loadLastSerialPortId() : undefined;
       await prepareRfConnect(type, httpAddress, blePeripheralId, serialPortId);
       let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
+      let connectSucceeded = false;
       try {
         console.debug('[useMeshtasticRuntime] connect', type, httpAddress ?? blePeripheralId);
         opened =
@@ -2380,9 +2404,23 @@ export function useMeshtasticRuntime() {
                 lastSerialPortId: serialPortId,
               });
         await attachRfSession(opened.driverIdentityId, type, opened.device);
+        connectSucceeded = true;
       } catch (err) {
         await handleRfConnectFailure(opened?.driverIdentityId, err);
         throw err;
+      } finally {
+        if (type === 'ble') {
+          bleConnectInProgressRef.current = false;
+          if (meshtasticDeferredReconnectRef.current) {
+            meshtasticDeferredReconnectRef.current = false;
+            if (!connectSucceeded) {
+              console.debug(
+                '[useMeshtasticRuntime] connect settled — running deferred reconnect after Noble drop',
+              );
+              queueMicrotask(() => handleConnectionLostRef.current());
+            }
+          }
+        }
       }
     },
     [prepareRfConnect, attachRfSession, handleRfConnectFailure, openMeshtasticTransport],
@@ -2402,6 +2440,7 @@ export function useMeshtasticRuntime() {
     ) => {
       await prepareRfConnect(type, httpAddress, blePeripheralId, lastSerialPortId);
       let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
+      let connectSucceeded = false;
       const openAndAttach = async () => {
         opened =
           type === 'ble' && isRendererNobleBlePlatform()
@@ -2440,9 +2479,23 @@ export function useMeshtasticRuntime() {
           opened = undefined;
           await openAndAttach();
         }
+        connectSucceeded = true;
       } catch (err) {
         await handleRfConnectFailure(opened?.driverIdentityId, err);
         throw err;
+      } finally {
+        if (type === 'ble') {
+          bleConnectInProgressRef.current = false;
+          if (meshtasticDeferredReconnectRef.current) {
+            meshtasticDeferredReconnectRef.current = false;
+            if (!connectSucceeded) {
+              console.debug(
+                '[useMeshtasticRuntime] connectAutomatic settled — running deferred reconnect after Noble drop',
+              );
+              queueMicrotask(() => handleConnectionLostRef.current());
+            }
+          }
+        }
       }
     },
     [prepareRfConnect, attachRfSession, handleRfConnectFailure, openMeshtasticTransport],

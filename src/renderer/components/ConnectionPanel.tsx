@@ -340,6 +340,8 @@ interface Props {
   onOpenReticulumRmapSettings?: () => void;
   /** Reticulum: open App tab GPS settings for RMAP coordinates. */
   onOpenAppGpsSettings?: () => void;
+  /** Auto-connect is owned by ProtocolAutoConnectCoordinator when panels are tab-mounted. */
+  suppressMountAutoConnect?: boolean;
 }
 
 export default function ConnectionPanel({
@@ -358,6 +360,7 @@ export default function ConnectionPanel({
   onStartReticulumStack,
   onOpenReticulumRmapSettings,
   onOpenAppGpsSettings,
+  suppressMountAutoConnect = false,
 }: Props) {
   const { t } = useTranslation();
   const capabilities = useRadioProvider(protocol);
@@ -1339,6 +1342,7 @@ export default function ConnectionPanel({
   // Serial and BLE use gesture-free reconnect when the platform remembers the device.
   // HTTP still uses the one-click reconnect card (no autoconnect on mount).
   useEffect(() => {
+    if (suppressMountAutoConnect) return;
     initNobleBleDualRadioStartup();
 
     const notifyPrimaryAutoConnectSettledIfNeeded = () => {
@@ -1568,7 +1572,7 @@ export default function ConnectionPanel({
       maybeNotifyPrimaryBleAutoConnectSettled();
     }
     // HTTP: do not auto-trigger — show one-click reconnect card instead
-  }, [protocol, isLinux, t, capabilities.hasReticulumInterfaceConfig]);
+  }, [protocol, isLinux, t, capabilities.hasReticulumInterfaceConfig, suppressMountAutoConnect]);
 
   // Cleanup timeout on unmount
   useEffect(

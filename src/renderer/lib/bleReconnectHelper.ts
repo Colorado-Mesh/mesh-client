@@ -146,9 +146,12 @@ export async function reconnectBleWithScan(
     if (isMeshcoreSetupAbortError(err)) {
       throw err;
     }
-    console.debug(
-      '[bleReconnectHelper] immediate connect failed — scanning ' + errLikeToLogString(err),
-    );
+    const message = errLikeToLogString(err);
+    // Session not registered yet — scanning cannot help and steals the BLE mutex from Reticulum.
+    if (message.includes('runtime is not mounted')) {
+      throw err instanceof Error ? err : new Error(message);
+    }
+    console.debug('[bleReconnectHelper] immediate connect failed — scanning ' + message);
   }
 
   const sessionId: NobleBleSessionId = protocol;

@@ -61,7 +61,8 @@ export function ReticulumStackPanel({
   } = useReticulumSidecarApi({
     connecting,
     onStartStack,
-    enableAutostart: true,
+    // Autostart is owned by ReticulumStackAutostartCoordinator (always mounted).
+    enableAutostart: false,
     onEvent: (evt) => {
       sidecarEventRef.current(evt);
     },

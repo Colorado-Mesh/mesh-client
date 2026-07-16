@@ -7,15 +7,12 @@ import { RrcHubBrowser } from '@/renderer/components/rrc/RrcHubBrowser';
 import { RrcNickList } from '@/renderer/components/rrc/RrcNickList';
 import { RrcRoomSidebar } from '@/renderer/components/rrc/RrcRoomSidebar';
 import { RrcTopicBar } from '@/renderer/components/rrc/RrcTopicBar';
+import { runRrcHubAutoConnectBatch } from '@/renderer/hooks/useRrcStartupAutoConnect';
 import { loadMutedViews, saveMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { formatRrcErrorMessage } from '@/renderer/lib/rrcErrorHumanize';
-import {
-  isRrcHubAutoJoin,
-  loadRrcHubAutoJoin,
-  toggleRrcHubAutoJoin,
-} from '@/renderer/lib/rrcHubPrefs';
+import { isRrcHubAutoJoin, toggleRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
 import { isRrcHubLinked } from '@/renderer/lib/rrcHubSession';
 import { loadRrcRecentRooms, pushRrcRecentRoom } from '@/renderer/lib/rrcRecentRooms';
 import { dedupeRrcMembers, rrcIdentityHashesMatch } from '@/renderer/lib/rrcRoomMembers';
@@ -133,10 +130,6 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
   const [actionBusy, setActionBusy] = useState(false);
   const [mutedViews, setMutedViews] = useState(() => loadMutedViews('reticulum'));
   const [draft, setDraft] = useState('');
-  const listSentForHubRef = useRef(new Set<string>());
-  const roomAutoJoinDoneRef = useRef(new Set<string>());
-  /** Serializes hub auto-connect so we do not stampede the sidecar. */
-  const hubAutoConnectBusyRef = useRef(false);
   /** Per-hub room keys we already requested `/who` for (rrcd JOINED often has no roster). */
   const whoRequestedRef = useRef(new Set<string>());
 
@@ -211,64 +204,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
     [activeRoom, hubDestHash, status],
   );
 
-  // Auto /list + room auto-join for every hub that becomes active (not only focused).
   useEffect(() => {
-    for (const [hub, session] of sessionsByHub) {
-      if (session.status !== 'active') continue;
-      if (!listSentForHubRef.current.has(hub)) {
-        listSentForHubRef.current.add(hub);
-        void window.electronAPI.reticulum.rrc
-          .send({
-            hub_dest_hash: hub,
-            body: '/list',
-            type: 'msg',
-          })
-          .then((res) => {
-            if (!res.ok) {
-              listSentForHubRef.current.delete(hub);
-              console.debug('[RrcPanel] auto /list not ok ' + (res.error ?? ''));
-            }
-          })
-          .catch((e: unknown) => {
-            listSentForHubRef.current.delete(hub);
-            console.debug('[RrcPanel] auto /list ' + errLikeToLogString(e));
-          });
-      }
-      if (!roomAutoJoinDoneRef.current.has(hub)) {
-        roomAutoJoinDoneRef.current.add(hub);
-        const roomsToJoin = loadRrcAutoJoinRooms(hub);
-        const hubSession = useRrcSessionStore.getState().sessionsByHub.get(hub);
-        let anyJoinFailed = false;
-        const joinTasks = roomsToJoin.map((room) => {
-          const resolved = resolveRrcJoinRoomName(room, {
-            listed: hubSession?.listedRooms ?? [],
-            joined: hubSession ? [...hubSession.rooms.values()] : [],
-          });
-          return window.electronAPI.reticulum.rrc
-            .join({ hub_dest_hash: hub, room: resolved })
-            .then((res) => {
-              if (!res.ok) {
-                anyJoinFailed = true;
-                console.debug('[RrcPanel] auto-join not ok ' + (res.error ?? ''));
-              }
-            })
-            .catch((e: unknown) => {
-              anyJoinFailed = true;
-              console.debug('[RrcPanel] auto-join ' + errLikeToLogString(e));
-            });
-        });
-        void Promise.all(joinTasks).then(() => {
-          if (anyJoinFailed) roomAutoJoinDoneRef.current.delete(hub);
-        });
-      }
-    }
-    // Drop bookkeeping for hubs that left the session map.
-    for (const hub of [...listSentForHubRef.current]) {
-      if (!sessionsByHub.has(hub)) listSentForHubRef.current.delete(hub);
-    }
-    for (const hub of [...roomAutoJoinDoneRef.current]) {
-      if (!sessionsByHub.has(hub)) roomAutoJoinDoneRef.current.delete(hub);
-    }
     if (sessionsByHub.size === 0) {
       whoRequestedRef.current.clear();
     }
@@ -471,40 +407,12 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
   );
 
   // Batch-connect hubs marked for auto-join when the Reticulum stack is up.
+  // Shared with App-level useRrcStartupAutoConnect so cold start works without this panel.
   useEffect(() => {
     if (!sidecarRunning) return;
-    if (hubAutoConnectBusyRef.current) return;
     void hubAutoJoinEpoch;
-    const wanted = loadRrcHubAutoJoin();
-    if (wanted.length === 0) return;
-
-    const isLinked = (hub: string): boolean => {
-      const s = useRrcSessionStore.getState().sessionsByHub.get(hub);
-      return !!s && isRrcHubLinked(s.status);
-    };
-
-    const pending = wanted.filter((hub) => !isLinked(hub));
-    if (pending.length === 0) return;
-
-    hubAutoConnectBusyRef.current = true;
-    void (async () => {
-      try {
-        for (const hub of pending) {
-          const session = useRrcSessionStore.getState();
-          if (isLinked(hub)) continue;
-          if (
-            !session.sessionsByHub.has(hub) &&
-            session.sessionsByHub.size >= MAX_RRC_HUB_SESSIONS
-          ) {
-            break;
-          }
-          await handleConnect(hub, { focus: false });
-        }
-      } finally {
-        hubAutoConnectBusyRef.current = false;
-      }
-    })();
-  }, [sidecarRunning, hubAutoJoinEpoch, handleConnect, sessionsByHub]);
+    void runRrcHubAutoConnectBatch(nickname);
+  }, [sidecarRunning, hubAutoJoinEpoch, nickname, sessionsByHub]);
 
   const handleDisconnect = useCallback(async () => {
     const target = hubDestHash;

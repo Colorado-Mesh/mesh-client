@@ -43,7 +43,8 @@
     "scrollToTop": "↑ 顶部",
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
-    "footerWebsiteTitle": "Colorado Mesh website"
+    "footerWebsiteTitle": "Colorado Mesh website",
+    "loadingApp": "正在加载网格客户端"
   },
   "appPanel": {
     "failedSaveRetention": "无法保存邮件保留设置。",

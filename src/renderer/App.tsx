@@ -68,7 +68,6 @@ import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
 import BootSequence from './components/BootSequence';
-import ChannelUtilizationChart from './components/ChannelUtilizationChart';
 import ConfigureNodeSelector from './components/ConfigureNodeSelector';
 import ErrorBoundary from './components/ErrorBoundary';
 import { FirmwareUpdateNotifier } from './components/FirmwareUpdateNotifier';
@@ -77,8 +76,10 @@ import { HelpTooltip } from './components/HelpTooltip';
 import { InactiveProtocolNotifier } from './components/InactiveProtocolNotifier';
 import LanguageSelector from './components/LanguageSelector';
 import { MeshcoreWaitingMessagesHeaderIndicator } from './components/MeshcoreWaitingMessagesHeaderIndicator';
+import { ProtocolAutoConnectCoordinator } from './components/ProtocolAutoConnectCoordinator';
 import { ProtocolSwitcher } from './components/ProtocolSwitcher';
 import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
+import { ReticulumStackAutostartCoordinator } from './components/ReticulumStackAutostartCoordinator';
 import Sidebar from './components/Sidebar';
 import { LinkIcon } from './components/SignalBars';
 import { ToastProvider, useToast } from './components/Toast';
@@ -106,6 +107,7 @@ import {
 import { useProtocolFacade } from './hooks/useProtocolFacade';
 import { useRendererHeartbeat } from './hooks/useRendererHeartbeat';
 import type { useReticulumPanelActions } from './hooks/useReticulumPanelActions';
+import { useRrcStartupAutoConnect } from './hooks/useRrcStartupAutoConnect';
 import { useSendMessage } from './hooks/useSendMessage';
 import { useSerialServiceListeners } from './hooks/useSerialServiceListeners';
 import { useSpellcheckReplaceSync } from './hooks/useSpellcheckReplaceSync';
@@ -115,6 +117,7 @@ import { ContactGroupsModal, NodeDetailModal, ReticulumPeerDetailModal } from '.
 import {
   AdminPanel,
   AppPanel,
+  ChannelUtilizationChart,
   DiagnosticsPanel,
   MapPanel,
   ModulePanel,
@@ -203,7 +206,9 @@ import type { ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
 import { openReticulumDmFromHash } from './lib/reticulum/reticulumDestinationInput';
 import { resolveReticulumSelfHeaderLabel } from './lib/reticulum/reticulumSelfNodeLabel';
+import { skipReticulumStartupAutostartGate } from './lib/reticulum/reticulumStartupAutostartGate';
 import { logRfReconnectFailure, reconnectRfFromLastConnection } from './lib/rfReconnectHelper';
+import { scheduleReticulumVacuumIfNeeded } from './lib/startupDbPrune';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
 import {
   messageRecordsToChatMessages,
@@ -679,7 +684,27 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    void usePathHistoryStore.getState().loadAllFromDb();
+    // Defer MeshCore path-history warm load until after first paint (idle).
+    const run = (): void => {
+      void usePathHistoryStore.getState().loadAllFromDb();
+    };
+    const ric = (
+      window as Window & {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      }
+    ).requestIdleCallback;
+    if (typeof ric === 'function') {
+      const id = ric(run, { timeout: 15_000 });
+      return () => {
+        const cancel = (window as Window & { cancelIdleCallback?: (id: number) => void })
+          .cancelIdleCallback;
+        cancel?.(id);
+      };
+    }
+    const t = setTimeout(run, 2_000);
+    return () => {
+      clearTimeout(t);
+    };
   }, []);
 
   useLayoutEffect(() => {
@@ -697,6 +722,10 @@ function AppContent() {
   const meshtasticConnection = useProtocolConnectionActions('meshtastic');
   const meshcoreConnection = useProtocolConnectionActions('meshcore');
   const reticulumConnection = useProtocolConnectionActions('reticulum');
+  const startReticulumStack = useCallback(
+    () => reticulumConnection.connectAutomatic('http'),
+    [reticulumConnection],
+  );
 
   usePowerRecovery({
     callbacksByProtocol: {
@@ -806,21 +835,60 @@ function AppContent() {
   const reticulumDbRefresh = useProtocolDbRefresh('reticulum', reticulumIdentityId);
   const { refreshAllFromDb: refreshMeshtasticAllFromDb } = meshtasticDbRefresh;
   const { refreshAllFromDb: refreshMeshcoreAllFromDb } = meshcoreDbRefresh;
+  const { refreshAllFromDb: refreshReticulumAllFromDb } = reticulumDbRefresh;
+
+  // Wait for startup prune before first hydrate (avoids double hydrate). Stagger active protocol first.
+  const [startupPruneDone, setStartupPruneDone] = useState(false);
+  const hydratedProtocolsRef = useRef(new Set<MeshProtocol>());
+
+  useAppStartupDbPrune(
+    useCallback(() => {
+      ensureOfflineProtocolIdentities();
+      setStartupPruneDone(true);
+      scheduleReticulumVacuumIfNeeded();
+    }, []),
+  );
 
   useEffect(() => {
-    if (!meshtasticIdentityId) return;
-    void refreshMeshtasticAllFromDb();
-  }, [meshtasticIdentityId, refreshMeshtasticAllFromDb]);
-
-  useEffect(() => {
-    if (!meshcoreIdentityId) return;
-    void refreshMeshcoreAllFromDb();
-  }, [meshcoreIdentityId, refreshMeshcoreAllFromDb]);
-
-  useEffect(() => {
-    if (!reticulumIdentityId) return;
-    void reticulumDbRefresh.refreshAllFromDb();
-  }, [reticulumIdentityId, reticulumDbRefresh]);
+    if (!startupPruneDone) return;
+    let cancelled = false;
+    const identityByProtocol: Record<MeshProtocol, string | null | undefined> = {
+      meshtastic: meshtasticIdentityId,
+      meshcore: meshcoreIdentityId,
+      reticulum: reticulumIdentityId,
+    };
+    const refreshByProtocol: Record<MeshProtocol, () => Promise<void>> = {
+      meshtastic: refreshMeshtasticAllFromDb,
+      meshcore: refreshMeshcoreAllFromDb,
+      reticulum: refreshReticulumAllFromDb,
+    };
+    void (async () => {
+      const order: MeshProtocol[] = [
+        protocol,
+        ...REGISTERED_MESH_PROTOCOLS.filter((p) => p !== protocol),
+      ];
+      for (const p of order) {
+        if (cancelled) return;
+        if (hydratedProtocolsRef.current.has(p)) continue;
+        const id = identityByProtocol[p];
+        if (!id) continue;
+        hydratedProtocolsRef.current.add(p);
+        await refreshByProtocol[p]();
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    startupPruneDone,
+    protocol,
+    meshtasticIdentityId,
+    meshcoreIdentityId,
+    reticulumIdentityId,
+    refreshMeshtasticAllFromDb,
+    refreshMeshcoreAllFromDb,
+    refreshReticulumAllFromDb,
+  ]);
 
   useEffect(() => {
     if (!meshcoreIdentityId) return;
@@ -829,6 +897,8 @@ function AppContent() {
       persistMeshcoreSelfNodeId(selfNum);
     }
   }, [meshcoreIdentityId]);
+
+  useRrcStartupAutoConnect();
   const sendMessage = useSendMessage(focusedIdentityId);
   const meshtasticConnectionView = useConnectionView(meshtasticIdentityId);
   const meshcoreConnectionView = useConnectionView(meshcoreIdentityId);
@@ -837,6 +907,11 @@ function AppContent() {
   const meshtasticCapabilities = useRadioProvider('meshtastic');
   const meshcoreCapabilities = useRadioProvider('meshcore');
   const reticulumCapabilities = useRadioProvider('reticulum');
+  useEffect(() => {
+    if (!reticulumCapabilities.hasReticulumInterfaceConfig) {
+      skipReticulumStartupAutostartGate();
+    }
+  }, [reticulumCapabilities.hasReticulumInterfaceConfig]);
   const capabilitiesByProtocol = useMemo(
     () => protocolRecord(meshtasticCapabilities, meshcoreCapabilities, reticulumCapabilities),
     [meshtasticCapabilities, meshcoreCapabilities, reticulumCapabilities],
@@ -1940,26 +2015,6 @@ function AppContent() {
     ],
   );
 
-  const postStartupPruneHydrateRef = useRef<() => void>(() => {});
-  useLayoutEffect(() => {
-    postStartupPruneHydrateRef.current = () => {
-      ensureOfflineProtocolIdentities();
-      if (meshtasticIdentityId) void refreshMeshtasticAllFromDb();
-      if (meshcoreIdentityId) void refreshMeshcoreAllFromDb();
-    };
-  }, [
-    meshtasticIdentityId,
-    meshcoreIdentityId,
-    refreshMeshtasticAllFromDb,
-    refreshMeshcoreAllFromDb,
-  ]);
-
-  useAppStartupDbPrune(
-    useCallback(() => {
-      postStartupPruneHydrateRef.current();
-    }, []),
-  );
-
   // Dual-mode: each protocol manages its own MQTT connection independently.
   // Meshtastic MQTT disconnects when switching to MeshCore without an RF radio.
 
@@ -2694,6 +2749,22 @@ function AppContent() {
               <div ref={mainViewportRef} className="bg-app-bg h-full w-full overflow-auto">
                 {/* Content wrapper - padding lives here, not on the scroll container */}
                 <div className="h-full min-h-full min-w-0 px-8 pt-8 pb-8">
+                  <ProtocolAutoConnectCoordinator
+                    meshtastic={{
+                      state: meshtasticConnection.state,
+                      connectAutomatic: meshtasticConnection.connectAutomatic,
+                    }}
+                    meshcore={{
+                      state: meshcoreConnection.state,
+                      connectAutomatic: meshcoreConnection.connectAutomatic,
+                    }}
+                  />
+                  {reticulumCapabilities.hasReticulumInterfaceConfig ? (
+                    <ReticulumStackAutostartCoordinator
+                      connecting={reticulumConnection.state.status === 'connecting'}
+                      onStartStack={startReticulumStack}
+                    />
+                  ) : null}
                   <ErrorBoundary>
                     <div
                       id="panel-0"
@@ -2702,9 +2773,8 @@ function AppContent() {
                       hidden={activePanelIndex !== 0}
                       className="w-full min-w-0"
                     >
-                      {/* Both panels are always mounted so each protocol auto-connects at startup */}
                       <Suspense fallback={<PanelSkeleton />}>
-                        <div hidden={!capabilities.hasChannelConfig}>
+                        {protocol === 'meshtastic' && capabilities.hasChannelConfig && (
                           <ConnectionPanel
                             state={meshtasticConnection.state}
                             onConnect={meshtasticConnection.connect}
@@ -2736,44 +2806,49 @@ function AppContent() {
                                   }
                                 : undefined
                             }
+                            suppressMountAutoConnect
                           />
-                        </div>
-                        <div hidden={!capabilities.prefersDeviceOwnerLongNameInHeader}>
-                          <ConnectionPanel
-                            state={meshcoreConnection.state}
-                            onConnect={meshcoreConnection.connect}
-                            onAutoConnect={meshcoreConnection.connectAutomatic}
-                            onDisconnect={meshcoreConnection.disconnect}
-                            mqttStatus={meshcoreConnection.mqttStatus}
-                            myNodeLabel={
-                              meshcoreRuntime.state.myNodeNum > 0
-                                ? meshcoreRuntime.getPickerStyleNodeLabel(
-                                    meshcoreRuntime.state.myNodeNum,
-                                  )
-                                : undefined
-                            }
-                            protocol="meshcore"
-                            ensureMeshcoreMqttIdentity={meshcoreRuntime.ensureMeshcoreMqttIdentity}
-                            firmwareCheckState={
-                              meshcoreCapabilities.hasFirmwareUpdateCheck &&
-                              capabilities.prefersDeviceOwnerLongNameInHeader
-                                ? firmwareCheckState
-                                : undefined
-                            }
-                            onOpenFirmwareReleases={
-                              meshcoreCapabilities.hasFirmwareUpdateCheck &&
-                              capabilities.prefersDeviceOwnerLongNameInHeader
-                                ? () => {
-                                    void window.electronAPI.update.openReleases(
-                                      firmwareCheckState.releaseUrl ??
-                                        MESHCORE_FIRMWARE_RELEASES_URL,
-                                    );
-                                  }
-                                : undefined
-                            }
-                          />
-                        </div>
-                        <div hidden={!capabilities.hasReticulumInterfaceConfig}>
+                        )}
+                        {protocol === 'meshcore' &&
+                          capabilities.prefersDeviceOwnerLongNameInHeader && (
+                            <ConnectionPanel
+                              state={meshcoreConnection.state}
+                              onConnect={meshcoreConnection.connect}
+                              onAutoConnect={meshcoreConnection.connectAutomatic}
+                              onDisconnect={meshcoreConnection.disconnect}
+                              mqttStatus={meshcoreConnection.mqttStatus}
+                              myNodeLabel={
+                                meshcoreRuntime.state.myNodeNum > 0
+                                  ? meshcoreRuntime.getPickerStyleNodeLabel(
+                                      meshcoreRuntime.state.myNodeNum,
+                                    )
+                                  : undefined
+                              }
+                              protocol="meshcore"
+                              ensureMeshcoreMqttIdentity={
+                                meshcoreRuntime.ensureMeshcoreMqttIdentity
+                              }
+                              firmwareCheckState={
+                                meshcoreCapabilities.hasFirmwareUpdateCheck &&
+                                capabilities.prefersDeviceOwnerLongNameInHeader
+                                  ? firmwareCheckState
+                                  : undefined
+                              }
+                              onOpenFirmwareReleases={
+                                meshcoreCapabilities.hasFirmwareUpdateCheck &&
+                                capabilities.prefersDeviceOwnerLongNameInHeader
+                                  ? () => {
+                                      void window.electronAPI.update.openReleases(
+                                        firmwareCheckState.releaseUrl ??
+                                          MESHCORE_FIRMWARE_RELEASES_URL,
+                                      );
+                                    }
+                                  : undefined
+                              }
+                              suppressMountAutoConnect
+                            />
+                          )}
+                        {protocol === 'reticulum' && capabilities.hasReticulumInterfaceConfig && (
                           <ConnectionPanel
                             state={reticulumConnection.state}
                             onConnect={reticulumConnection.connect}
@@ -2797,8 +2872,9 @@ function AppContent() {
                                 setActiveTab(appTabIdx);
                               }
                             }}
+                            suppressMountAutoConnect
                           />
-                        </div>
+                        )}
                       </Suspense>
                     </div>
                     {(activePanelIndex === 1 || chatTabVisited) && (

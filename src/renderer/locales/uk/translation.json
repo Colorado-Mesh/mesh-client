@@ -43,7 +43,8 @@
     "scrollToTop": "↑ Вгору",
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh на GitHub",
-    "footerWebsiteTitle": "Веб-сайт Colorado Mesh"
+    "footerWebsiteTitle": "Веб-сайт Colorado Mesh",
+    "loadingApp": "Завантаження клієнта сіті"
   },
   "appPanel": {
     "failedSaveRetention": "Не вдалося зберегти налаштування збереження повідомлень.",

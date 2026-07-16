@@ -7,6 +7,9 @@ import {
   setReticulumAutostartEnabled,
 } from '@/renderer/lib/appSettingsStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { isBleScanBusyErrorMessage } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
+import { notifyReticulumStartupAutostartSettled } from '@/renderer/lib/reticulum/reticulumStartupAutostartGate';
+import { tryGetReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
 import type { ReticulumIdentityStatus } from '@/renderer/stores/reticulumIdentityStore';
 import {
   beginReticulumIdentityFetch,
@@ -24,6 +27,24 @@ export interface UseReticulumSidecarApiOptions {
   onEvent?: (evt: ReticulumSidecarEvent) => void;
   /** Only Connection tab should auto-start the stack. */
   enableAutostart?: boolean;
+}
+
+const SESSION_READY_POLL_MS = 50;
+const SESSION_READY_MAX_WAIT_MS = 8_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function waitForReticulumSession(): Promise<boolean> {
+  const deadline = Date.now() + SESSION_READY_MAX_WAIT_MS;
+  while (Date.now() < deadline) {
+    if (tryGetReticulumSession()) return true;
+    await sleep(SESSION_READY_POLL_MS);
+  }
+  return false;
 }
 
 export function useReticulumSidecarApi({
@@ -45,6 +66,7 @@ export function useReticulumSidecarApi({
   const statusHydratedRef = useRef(false);
   const sidecarRunningRef = useRef(false);
   const connectingRef = useRef(connecting);
+  const onStartStackRef = useRef(onStartStack);
   const identity = useReticulumIdentityStore((state) => state.identity);
   const [statsSummary, setStatsSummary] = useState<string | null>(null);
   const [appInfo, setAppInfo] = useState<{ sidecar_version?: string; rns_version?: string } | null>(
@@ -57,6 +79,10 @@ export function useReticulumSidecarApi({
   useEffect(() => {
     connectingRef.current = connecting;
   }, [connecting]);
+
+  useEffect(() => {
+    onStartStackRef.current = onStartStack;
+  }, [onStartStack]);
 
   useEffect(() => {
     sidecarRunningRef.current = sidecarStatus.running;
@@ -128,20 +154,77 @@ export function useReticulumSidecarApi({
   }, [refreshSidecarStatus]);
 
   useEffect(() => {
+    // Only the autostart-owning mount may settle the RF BLE gate when the user has
+    // disabled stack autostart. StackPanel/Admin/Network use enableAutostart:false and
+    // must not unblock Noble while ReticulumStackAutostartCoordinator still starts the
+    // sidecar + BLE RNode (otherwise CoreBluetooth "Event receiver died").
+    if (enableAutostart && !autoStart) {
+      notifyReticulumStartupAutostartSettled();
+    }
+  }, [enableAutostart, autoStart]);
+
+  useEffect(() => {
     if (!enableAutostart || !autoStart || autostartAttemptedRef.current) return;
     if (manualStopSuppressRef.current) return;
     if (sidecarStatus.running || connecting || startInFlightRef.current) return;
     autostartAttemptedRef.current = true;
     startInFlightRef.current = true;
-    void onStartStack()
-      .catch((e: unknown) => {
-        console.warn('[useReticulumSidecarApi] autostart failed ' + errLikeToLogString(e));
+    let cancelled = false;
+    void (async () => {
+      const ready = await waitForReticulumSession();
+      if (cancelled) {
+        // Effect re-ran (unstable callback) before start — allow a fresh attempt.
         autostartAttemptedRef.current = false;
-      })
-      .finally(() => {
         startInFlightRef.current = false;
-      });
-  }, [enableAutostart, autoStart, connecting, onStartStack, sidecarStatus.running]);
+        return;
+      }
+      if (!ready) {
+        console.warn(
+          '[useReticulumSidecarApi] autostart skipped — Reticulum runtime session never registered',
+        );
+        autostartAttemptedRef.current = false;
+        startInFlightRef.current = false;
+        notifyReticulumStartupAutostartSettled();
+        return;
+      }
+      try {
+        await onStartStackRef.current();
+        // Confirm sidecar actually came up — connect() can no-op coalesce.
+        const status = await window.electronAPI.reticulum.getStatus().catch(() => null);
+        const running = Boolean(status && typeof status === 'object' && status.running);
+        if (!running) {
+          console.warn(
+            '[useReticulumSidecarApi] autostart resolved but sidecar not running — will retry',
+          );
+          autostartAttemptedRef.current = false;
+        } else if (status) {
+          applySidecarStatus(status);
+          notifyReticulumStartupAutostartSettled();
+        }
+      } catch (e: unknown) {
+        const msg = errLikeToLogString(e);
+        console.warn('[useReticulumSidecarApi] autostart failed ' + msg);
+        const isBusy = isBleScanBusyErrorMessage(msg);
+        const notMounted = msg.includes('runtime is not mounted');
+        if (isBusy || notMounted) {
+          window.setTimeout(() => {
+            if (!manualStopSuppressRef.current && !sidecarRunningRef.current) {
+              autostartAttemptedRef.current = false;
+            }
+          }, 1_500);
+          return;
+        }
+        autostartAttemptedRef.current = false;
+        notifyReticulumStartupAutostartSettled();
+      } finally {
+        startInFlightRef.current = false;
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // onStartStack is read via ref — do not re-fire on inline callback identity churn.
+  }, [enableAutostart, autoStart, connecting, sidecarStatus.running, applySidecarStatus]);
 
   const notifyManualStackStop = useCallback(() => {
     manualStopSuppressRef.current = true;

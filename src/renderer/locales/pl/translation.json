@@ -43,7 +43,8 @@
     "scrollToTop": "↑ Góra",
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
-    "footerWebsiteTitle": "Witryna internetowa Colorado Mesh"
+    "footerWebsiteTitle": "Witryna internetowa Colorado Mesh",
+    "loadingApp": "Wczytywanie klienta siatki"
   },
   "appPanel": {
     "failedSaveRetention": "Nie udało się zapisać ustawienia przechowywania wiadomości.",

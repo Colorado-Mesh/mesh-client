@@ -43,7 +43,8 @@
     "scrollToTop": "↑トップへ",
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
-    "footerWebsiteTitle": "Colorado Mesh website"
+    "footerWebsiteTitle": "Colorado Mesh website",
+    "loadingApp": "メッシュクライアントを読み込んでいます"
   },
   "appPanel": {
     "failedSaveRetention": "メッセージ保持設定の保存に失敗しました。",

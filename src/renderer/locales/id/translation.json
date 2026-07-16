@@ -43,7 +43,8 @@
     "scrollToTop": "^ Atas",
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh di GitHub",
-    "footerWebsiteTitle": "Laman web Colorado Mesh"
+    "footerWebsiteTitle": "Laman web Colorado Mesh",
+    "loadingApp": "Memuat Klien Mesh"
   },
   "appPanel": {
     "failedSaveRetention": "Gagal menyimpan setelan retensi pesan.",

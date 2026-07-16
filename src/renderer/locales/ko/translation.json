@@ -43,7 +43,8 @@
     "scrollToTop": "↑ 맨 위로",
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
-    "footerWebsiteTitle": "Colorado Mesh website"
+    "footerWebsiteTitle": "Colorado Mesh website",
+    "loadingApp": "메시 클라이언트 로드 중"
   },
   "appPanel": {
     "failedSaveRetention": "메시지 보관 설정을 저장하지 못했습니다.",

@@ -43,7 +43,8 @@
     "scrollToTop": "↑ Nahoru",
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh on GitHub",
-    "footerWebsiteTitle": "Webové stránky Colorado Mesh"
+    "footerWebsiteTitle": "Webové stránky Colorado Mesh",
+    "loadingApp": "Načítání klienta Mesh"
   },
   "appPanel": {
     "failedSaveRetention": "Nastavení uchovávání zpráv se nepodařilo uložit.",

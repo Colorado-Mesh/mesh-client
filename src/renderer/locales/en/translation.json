@@ -12,6 +12,7 @@
   "app": {
     "loadingPanel": "Loading panel",
     "loadingDialog": "Loading dialog",
+    "loadingApp": "Loading Mesh Client",
     "meshtasticQueueTooltip": "Transmit queue: packets waiting to be sent. Green = low, amber = filling up, red = congested.",
     "meshcoreQueueTooltip": "Because MeshCore sends messages rapidly, and we poll every 30 seconds, this should always be 0. If not 0, there is congestion.",
     "takRunning": "TAK running",

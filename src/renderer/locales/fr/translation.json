@@ -43,7 +43,8 @@
     "scrollToTop": "↑ Haut",
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh sur GitHub",
-    "footerWebsiteTitle": "Site Web du Colorado Mesh"
+    "footerWebsiteTitle": "Site Web du Colorado Mesh",
+    "loadingApp": "Chargement du client de maillage"
   },
   "appPanel": {
     "failedSaveRetention": "Impossible d'enregistrer le paramètre de rétention des messages.",

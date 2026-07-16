@@ -43,7 +43,8 @@
     "scrollToTop": "↑ Üst",
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "GitHub'da Colorado Mesh",
-    "footerWebsiteTitle": "Colorado Mesh web sitesi"
+    "footerWebsiteTitle": "Colorado Mesh web sitesi",
+    "loadingApp": "Mesh İstemcisi Yükleniyor"
   },
   "appPanel": {
     "failedSaveRetention": "Mesaj saklama ayarı kaydedilemedi.",
