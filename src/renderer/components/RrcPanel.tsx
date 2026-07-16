@@ -526,7 +526,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
       if (!activeRoom) setActiveRoom(RRC_HUB_STREAM_ROOM);
       for (const line of lines) {
         addMessage({
-          id: `sys-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          id: `sys-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, // NOSONAR non-crypto local UI row id
           room,
           kind: 'system',
           body: line,

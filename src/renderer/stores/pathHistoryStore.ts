@@ -198,23 +198,15 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
     set({ records: newRecords, lruOrder: newLru });
 
     // Fire-and-forget DB persist
-    try {
-      window.electronAPI.db
-        .upsertMeshcorePathHistory(
-          nodeId,
-          pathHash,
-          hopCount,
-          pathBytes,
-          wasFloodDiscovery,
-          routeWeight,
-        )
-        .catch((err: unknown) => {
+    const persist = window.electronAPI?.db?.upsertMeshcorePathHistory;
+    if (typeof persist === 'function') {
+      persist(nodeId, pathHash, hopCount, pathBytes, wasFloodDiscovery, routeWeight).catch(
+        (err: unknown) => {
           console.warn(
             '[pathHistory] upsertMeshcorePathHistory failed: ' + errLikeToLogString(err),
           );
-        });
-    } catch {
-      // catch-no-log-ok electronAPI unavailable in tests
+        },
+      );
     }
   },
 
@@ -254,16 +246,11 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
     set({ records: newRecords });
 
     // Fire-and-forget DB persist
-    try {
-      window.electronAPI.db
-        .recordMeshcorePathOutcome(nodeId, pathHash, success, tripTimeMs)
-        .catch((err: unknown) => {
-          console.warn(
-            '[pathHistory] recordMeshcorePathOutcome failed: ' + errLikeToLogString(err),
-          );
-        });
-    } catch {
-      // catch-no-log-ok electronAPI unavailable in tests
+    const persist = window.electronAPI?.db?.recordMeshcorePathOutcome;
+    if (typeof persist === 'function') {
+      persist(nodeId, pathHash, success, tripTimeMs).catch((err: unknown) => {
+        console.warn('[pathHistory] recordMeshcorePathOutcome failed: ' + errLikeToLogString(err));
+      });
     }
   },
 
@@ -365,27 +352,25 @@ export const usePathHistoryStore = create<PathHistoryState>((set, get) => ({
     newRecords.delete(nodeId);
     const newLru = get().lruOrder.filter((id) => id !== nodeId);
     set({ records: newRecords, lruOrder: newLru });
-    try {
-      window.electronAPI.db.deleteMeshcorePathHistoryForNode(nodeId).catch((err: unknown) => {
+    const deleteForNode = window.electronAPI?.db?.deleteMeshcorePathHistoryForNode;
+    if (typeof deleteForNode === 'function') {
+      deleteForNode(nodeId).catch((err: unknown) => {
         console.warn(
           '[pathHistory] deleteMeshcorePathHistoryForNode failed: ' + errLikeToLogString(err),
         );
       });
-    } catch {
-      // catch-no-log-ok electronAPI unavailable in tests
     }
   },
 
   clearAll() {
     set({ records: new Map(), lruOrder: [] });
-    try {
-      window.electronAPI.db.deleteAllMeshcorePathHistory().catch((err: unknown) => {
+    const deleteAll = window.electronAPI?.db?.deleteAllMeshcorePathHistory;
+    if (typeof deleteAll === 'function') {
+      deleteAll().catch((err: unknown) => {
         console.warn(
           '[pathHistory] deleteAllMeshcorePathHistory failed: ' + errLikeToLogString(err),
         );
       });
-    } catch {
-      // catch-no-log-ok electronAPI unavailable in tests
     }
   },
 }));

@@ -52,7 +52,7 @@ function runSidecarTests() {
 
 function cloneRatspeakStack() {
   const scriptPath = path.join(projectRoot, 'scripts', 'clone-ratspeak-stack.sh');
-  const shell = process.platform === 'win32' ? 'bash' : 'bash';
+  const shell = 'bash';
   const result = spawnSync(shell, [scriptPath], {
     cwd: projectRoot,
     stdio: 'inherit',

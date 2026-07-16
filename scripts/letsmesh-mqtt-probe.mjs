@@ -36,7 +36,7 @@ const client = mqtt.connect({
   host,
   port,
   path: '/mqtt',
-  clientId: `probe-${Math.random().toString(36).slice(2, 10)}`,
+  clientId: `probe-${Math.random().toString(36).slice(2, 10)}`, // NOSONAR non-crypto dev probe client id
   username,
   password,
   clean: true,

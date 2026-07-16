@@ -467,9 +467,7 @@ export default function DiagnosticsPanel({
 
   const anomalyList = visibleDiagnosticRows.filter(matchesSearchRow).sort((a, b) => {
     const order = (s: string) => (s === 'error' ? 0 : s === 'warning' ? 1 : 2);
-    const sevA = a.kind === 'routing' ? a.severity : a.severity;
-    const sevB = b.kind === 'routing' ? b.severity : b.severity;
-    return order(sevA) - order(sevB);
+    return order(a.severity) - order(b.severity);
   });
 
   const selfRows = anomalyList.filter((r) => r.nodeId === myNodeNum && !isForeignLoraRfRow(r));
@@ -532,7 +530,7 @@ export default function DiagnosticsPanel({
   };
 
   const renderTableBody = (list: DiagnosticRow[]) => {
-    const severityOf = (r: DiagnosticRow) => (r.kind === 'routing' ? r.severity : r.severity);
+    const severityOf = (r: DiagnosticRow) => r.severity;
     const countSev = (sev: string) => list.filter((r) => severityOf(r) === sev).length;
     let lastSeverity: string | null = null;
     return list.flatMap((row) => {

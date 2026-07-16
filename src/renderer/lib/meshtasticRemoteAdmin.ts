@@ -801,10 +801,10 @@ export class MeshtasticRemoteAdminClient {
       const id =
         device?.generateRandId != null
           ? device.generateRandId() >>> 0
-          : Math.floor(Math.random() * 0xffffffff) >>> 0;
+          : Math.floor(Math.random() * 0xffffffff) >>> 0; // NOSONAR non-crypto RPC correlation id
       if (id !== 0 && !this.pending.has(id)) return id;
     }
-    return (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0;
+    return (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0; // NOSONAR non-crypto RPC correlation id
   }
 
   private attachSessionPasskey(

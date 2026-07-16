@@ -753,57 +753,47 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   loadMeshcorePathHistory(nodeId: number) {
     const dbApi = window.electronAPI?.db;
     if (!dbApi) return;
-    try {
-      dbApi
-        .getMeshcoreHopHistory(nodeId)
-        .then((hopRow) => {
-          if (hopRow) {
-            set((state) => {
-              const newMap = new Map(state.meshcoreHopHistory);
-              newMap.set(nodeId, {
-                timestamp: hopRow.timestamp,
-                hops: hopRow.hops,
-                snr: hopRow.snr,
-                rssi: hopRow.rssi,
-              });
-              return { meshcoreHopHistory: newMap };
+    dbApi
+      .getMeshcoreHopHistory(nodeId)
+      .then((hopRow) => {
+        if (hopRow) {
+          set((state) => {
+            const newMap = new Map(state.meshcoreHopHistory);
+            newMap.set(nodeId, {
+              timestamp: hopRow.timestamp,
+              hops: hopRow.hops,
+              snr: hopRow.snr,
+              rssi: hopRow.rssi,
             });
-          }
-        })
-        .catch((e: unknown) => {
-          console.warn('[diagnosticsStore] loadMeshcoreHopHistory failed ' + errLikeToLogString(e));
-        });
-    } catch (e) {
-      console.warn('[diagnosticsStore] loadMeshcoreHopHistory failed ' + errLikeToLogString(e));
-    }
-    try {
-      dbApi
-        .getMeshcoreTraceHistory(nodeId)
-        .then((traceRows) => {
-          if (traceRows && traceRows.length > 0) {
-            const parsed = traceRows.map((traceRow) => ({
-              id: traceRow.id,
-              timestamp: traceRow.timestamp,
-              pathLen: traceRow.path_len,
-              pathSnrs: meshcoreTracePathSnrsFromDbJson(traceRow.path_snrs),
-              lastSnr: traceRow.last_snr,
-              tag: traceRow.tag,
-            }));
-            set((state) => {
-              const newMap = new Map(state.meshcoreTraceHistory);
-              newMap.set(nodeId, parsed);
-              return { meshcoreTraceHistory: newMap };
-            });
-          }
-        })
-        .catch((e: unknown) => {
-          console.warn(
-            '[diagnosticsStore] loadMeshcoreTraceHistory failed ' + errLikeToLogString(e),
-          );
-        });
-    } catch (e) {
-      console.warn('[diagnosticsStore] loadMeshcoreTraceHistory failed ' + errLikeToLogString(e));
-    }
+            return { meshcoreHopHistory: newMap };
+          });
+        }
+      })
+      .catch((e: unknown) => {
+        console.warn('[diagnosticsStore] loadMeshcoreHopHistory failed ' + errLikeToLogString(e));
+      });
+    dbApi
+      .getMeshcoreTraceHistory(nodeId)
+      .then((traceRows) => {
+        if (traceRows && traceRows.length > 0) {
+          const parsed = traceRows.map((traceRow) => ({
+            id: traceRow.id,
+            timestamp: traceRow.timestamp,
+            pathLen: traceRow.path_len,
+            pathSnrs: meshcoreTracePathSnrsFromDbJson(traceRow.path_snrs),
+            lastSnr: traceRow.last_snr,
+            tag: traceRow.tag,
+          }));
+          set((state) => {
+            const newMap = new Map(state.meshcoreTraceHistory);
+            newMap.set(nodeId, parsed);
+            return { meshcoreTraceHistory: newMap };
+          });
+        }
+      })
+      .catch((e: unknown) => {
+        console.warn('[diagnosticsStore] loadMeshcoreTraceHistory failed ' + errLikeToLogString(e));
+      });
   },
 
   async saveMeshcoreHopHistory(

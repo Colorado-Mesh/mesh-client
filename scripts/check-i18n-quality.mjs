@@ -1803,8 +1803,8 @@ export function interpolationPlaceholderIssues(enVal, val) {
   const enPh = placeholderNameSet(enVal);
   const locPh = placeholderNameSet(val);
   if (setsEqualStrings(enPh, locPh)) return [];
-  const enList = [...enPh].sort().join(', ') || '(none)';
-  const locList = [...locPh].sort().join(', ') || '(none)';
+  const enList = [...enPh].sort((a, b) => a.localeCompare(b)).join(', ') || '(none)';
+  const locList = [...locPh].sort((a, b) => a.localeCompare(b)).join(', ') || '(none)';
   return [`i18next placeholder names must match English (EN: {${enList}}, locale: {${locList}})`];
 }
 

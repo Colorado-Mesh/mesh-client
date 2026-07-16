@@ -37,7 +37,9 @@ function extractRustHubs(src) {
   const groupRe = /\(\s*&\[([\s\S]*?)\]\s*,\s*(\d+)\s*,?\s*\)/g;
   let m;
   while ((m = groupRe.exec(block[1])) !== null) {
-    const hosts = [...m[1].matchAll(/"([^"]+)"/g)].map((x) => x[1].toLowerCase()).sort();
+    const hosts = [...m[1].matchAll(/"([^"]+)"/g)]
+      .map((x) => x[1].toLowerCase())
+      .sort((a, b) => a.localeCompare(b));
     entries.push({ hosts, port: Number(m[2]) });
   }
   if (entries.length === 0) {
@@ -64,7 +66,9 @@ function extractTsHubs(src) {
     const portMatch = body.match(/port:\s*(\d+)/);
     const hostsBlock = body.match(/hosts:\s*\[([\s\S]*?)\]/);
     if (!portMatch || !hostsBlock) continue;
-    const hosts = [...hostsBlock[1].matchAll(/'([^']+)'/g)].map((x) => x[1].toLowerCase()).sort();
+    const hosts = [...hostsBlock[1].matchAll(/'([^']+)'/g)]
+      .map((x) => x[1].toLowerCase())
+      .sort((a, b) => a.localeCompare(b));
     entries.push({ hosts, port: Number(portMatch[1]) });
   }
   if (entries.length === 0) {

@@ -1180,11 +1180,7 @@ export default function RadioPanel({
                   : pubArr
                     ? Array.from(pubArr)
                     : cfg.public_key;
-                const privateKeyJson = privArr
-                  ? Array.from(privArr)
-                  : Array.isArray(cfg.private_key)
-                    ? cfg.private_key
-                    : cfg.private_key;
+                const privateKeyJson = privArr ? Array.from(privArr) : cfg.private_key;
                 localStorage.setItem(
                   'mesh-client:meshcoreIdentity',
                   JSON.stringify({ public_key: publicKeyJson, private_key: privateKeyJson }),

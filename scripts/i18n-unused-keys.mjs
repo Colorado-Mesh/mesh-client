@@ -175,7 +175,7 @@ export function collectUsedI18nKeys(
     }
   }
 
-  const unused = [...enKeys].filter((k) => !used.has(k)).sort();
+  const unused = [...enKeys].filter((k) => !used.has(k)).sort((a, b) => a.localeCompare(b));
   return {
     enKeys,
     usedStatic,

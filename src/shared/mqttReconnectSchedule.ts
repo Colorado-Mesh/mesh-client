@@ -23,7 +23,7 @@ export const MQTT_RECONNECT_MESHCORE_IMMEDIATE_JITTER_MS = 2000;
 function applyPositiveJitterMs(delayMs: number): number {
   const spread = Math.floor(delayMs * 0.1);
   if (spread <= 0) return delayMs;
-  return delayMs + Math.floor(Math.random() * (spread + 1));
+  return delayMs + Math.floor(Math.random() * (spread + 1)); // NOSONAR non-crypto reconnect jitter
 }
 
 /** Exponential delay for attempt ≥ 1 (post-increment counter). */
@@ -59,7 +59,7 @@ export function computeMqttReconnectDelayMs(p: ComputeMqttReconnectDelayParams):
   ) {
     return (
       MQTT_RECONNECT_MESHCORE_IMMEDIATE_BASE_MS +
-      Math.floor(Math.random() * MQTT_RECONNECT_MESHCORE_IMMEDIATE_JITTER_MS)
+      Math.floor(Math.random() * MQTT_RECONNECT_MESHCORE_IMMEDIATE_JITTER_MS) // NOSONAR non-crypto reconnect jitter
     );
   }
   return computeMqttExponentialReconnectDelayMs(p.attempt);

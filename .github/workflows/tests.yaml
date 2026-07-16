@@ -156,6 +156,12 @@ jobs:
       - name: Merge coverage reports
         run: pnpm run test:coverage:merge
 
+      - name: SonarQube Scan
+        if: github.actor != 'nektos/act'
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
       # Skip actions/upload-code-coverage: GitHub Code Quality (Team/Enterprise)
       # is not available on the free org plan — uploads return HTTP 403.
 

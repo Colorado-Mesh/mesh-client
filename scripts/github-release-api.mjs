@@ -14,8 +14,20 @@ export function versionFromTag(tag) {
   return tag.startsWith('v') ? tag.slice(1) : tag;
 }
 
+/**
+ * Strip control chars (incl. newlines) and collapse whitespace before logging so
+ * user/CLI-controlled text can't inject fake log lines (jssecurity:S5145). Mirrors
+ * src/main/sanitize-log-message.ts's sanitizeForLogSink pattern for this standalone script.
+ */
+function sanitizeForLog(message) {
+  return String(message)
+    .replace(/[\x00-\x1F\x7F\u2028\u2029]+/g, ' ') // eslint-disable-line no-control-regex
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function fail(message) {
-  console.error(`[github-release] ${message}`);
+  console.error(`[github-release] ${sanitizeForLog(message)}`);
   process.exit(1);
 }
 

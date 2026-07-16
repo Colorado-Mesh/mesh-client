@@ -196,6 +196,7 @@ describe('meshcoreDualNobleBleInit', () => {
     });
     await vi.advanceTimersByTimeAsync(200);
     await settlePromise;
+    expect(nobleBleConfigureBusyForProtocol('meshcore')).toBe(false);
     vi.useRealTimers();
   });
 

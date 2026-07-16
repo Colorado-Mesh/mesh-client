@@ -197,7 +197,7 @@ export function resolveDockerSocket(options = {}) {
 }
 
 /**
- * @param {{ hostArch?: string, dockerSocket?: string, passthrough?: string[] }} [options]
+ * @param {{ hostArch?: string, dockerSocket?: string | null, passthrough?: string[] }} [options]
  * @returns {string | undefined}
  */
 export function resolveContainerArch(options = {}) {
@@ -206,7 +206,7 @@ export function resolveContainerArch(options = {}) {
 }
 
 /**
- * @param {{ hostArch?: string, dockerSocket?: string, passthrough?: string[] }} [options]
+ * @param {{ hostArch?: string, dockerSocket?: string | null, passthrough?: string[] }} [options]
  * @returns {string[]}
  */
 export function buildActBaseArgs(options = {}) {
@@ -230,7 +230,7 @@ export function buildActBaseArgs(options = {}) {
 
 /**
  * @param {ActInvocation} invocation
- * @param {{ hostArch?: string, dockerSocket?: string, passthrough?: string[] }} [options]
+ * @param {{ hostArch?: string, dockerSocket?: string | null, passthrough?: string[] }} [options]
  * @returns {string[]}
  */
 export function buildActArgs(invocation, options = {}) {
@@ -419,7 +419,7 @@ function pullImages() {
 
 /**
  * @param {ActInvocation} invocation
- * @param {{ passthrough?: string[], dockerSocket?: string }} [options]
+ * @param {{ passthrough?: string[], dockerSocket?: string | null }} [options]
  * @returns {number}
  */
 function runInvocation(invocation, options = {}) {
@@ -429,7 +429,7 @@ function runInvocation(invocation, options = {}) {
 
 /**
  * @param {string} target
- * @param {{ mode?: ActMode, passthrough?: string[], dockerSocket?: string }} [options]
+ * @param {{ mode?: ActMode, passthrough?: string[], dockerSocket?: string | null }} [options]
  * @returns {number}
  */
 export function runActTarget(target, options = {}) {

@@ -259,8 +259,7 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       const db = getDbForIpc('db:upsertReticulumDestination');
       if (!db) return { changes: 0 };
       const favoritedProvided = Object.prototype.hasOwnProperty.call(r, 'favorited');
-      const favoritedForInsert =
-        r.favorited === true || r.favorited === 1 ? 1 : favoritedProvided ? 0 : 0;
+      const favoritedForInsert = r.favorited === true || r.favorited === 1 ? 1 : 0;
       db.prepareOnce(
         `INSERT INTO reticulum_destinations (destination_hash, display_name, last_heard, favorited, icon_name, icon_color)
          VALUES (?, ?, ?, ?, ?, ?)

@@ -234,14 +234,14 @@ export class ReticulumSidecarInterfaceIssueTracker {
       return null;
     }
 
-    const tcpConnectFailed = [...this.tcpConnectFailed.keys()].sort();
+    const tcpConnectFailed = [...this.tcpConnectFailed.keys()].sort((a, b) => a.localeCompare(b));
     const txQueueDrops = [...this.txQueueDrops.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([name, entry]) => ({ name, dropCount: entry.count }));
     const linkDeliveryTimeouts = [...this.linkDeliveryTimeouts.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([destinationHash, entry]) => ({ destinationHash, count: entry.count }));
-    const bleBondRemoved = [...this.bleBondRemoved.keys()].sort();
+    const bleBondRemoved = [...this.bleBondRemoved.keys()].sort((a, b) => a.localeCompare(b));
 
     if (
       tcpConnectFailed.length === 0 &&

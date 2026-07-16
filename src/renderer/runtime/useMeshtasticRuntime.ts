@@ -252,7 +252,7 @@ function getOrCreateVirtualNodeId(): number {
     window.crypto.getRandomValues(buf);
     id = randomMqttVirtualNodeId(buf[0]);
   } else {
-    id = randomMqttVirtualNodeId((Math.random() * 0xffffffff) >>> 0);
+    id = randomMqttVirtualNodeId((Math.random() * 0xffffffff) >>> 0); // NOSONAR non-crypto fallback id when getRandomValues is unavailable
   }
   localStorage.setItem(key, String(id));
   return id;
@@ -1638,7 +1638,7 @@ export function useMeshtasticRuntime() {
         }
       }
 
-      const packetId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0;
+      const packetId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0; // NOSONAR non-crypto Meshtastic packet id
       const toRadioBytes = buildStoreForwardHistoryToRadioBytes({
         from: myNode,
         to: serverNodeId,
@@ -2627,7 +2627,7 @@ export function useMeshtasticRuntime() {
         myNodeNumRef.current = from;
         setState((prev) => ({ ...prev, myNodeNum: from }));
       }
-      const tempId = Math.floor(Math.random() * 0xffffffff);
+      const tempId = Math.floor(Math.random() * 0xffffffff); // NOSONAR non-crypto local temp message id
 
       let wireReplyId: number | undefined;
       if (replyId != null) {
@@ -3807,7 +3807,7 @@ export function useMeshtasticRuntime() {
       };
 
       if (identityId) {
-        const reactionTempId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0;
+        const reactionTempId = (Math.floor(Math.random() * 0xfffffffe) + 1) >>> 0; // NOSONAR non-crypto local temp reaction id
         upsertMessage(identityId, {
           id: String(reactionTempId),
           from,

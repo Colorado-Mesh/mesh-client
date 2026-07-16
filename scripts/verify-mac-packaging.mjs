@@ -119,9 +119,11 @@ function collectArchives(dir, ext) {
  * @param {string[]} archives @returns {string}
  */
 function pickPrimaryArchive(archives) {
-  return archives
-    .map((filePath) => ({ filePath, size: statSync(filePath).size }))
-    .reduce((largest, current) => (current.size > largest.size ? current : largest)).filePath;
+  const sized = archives.map((filePath) => ({ filePath, size: statSync(filePath).size }));
+  return sized.reduce(
+    (largest, current) => (current.size > largest.size ? current : largest),
+    sized[0],
+  ).filePath;
 }
 
 /** @param {string} bundleRoot @param {string} label */
