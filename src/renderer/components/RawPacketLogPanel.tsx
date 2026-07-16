@@ -9,6 +9,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useTranslation } from 'react-i18next';
 
 import { formatLogTimeOfDay } from '../../shared/formatLogTimestamp';
+import { bytesToHex as toHex } from '../../shared/hexBytes';
 import type { NodeHashCandidate } from '../../shared/meshcoreNodeHash';
 import {
   meshCoreTransportCodeMatchesRegion,
@@ -243,12 +244,6 @@ function formatReticulumDestinationLabel(
 ): string | null {
   if (typeof reticulumDestinationColumnText !== 'function') return null;
   return reticulumDestinationColumnText(destinationHash, getNodeLabel, reticulumHashToNodeId);
-}
-
-function toHex(bytes: Uint8Array): string {
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
 }
 
 function formatTs(ts: number): string {

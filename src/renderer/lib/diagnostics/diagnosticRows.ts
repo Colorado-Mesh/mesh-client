@@ -1,3 +1,5 @@
+import { MS_PER_HOUR } from '@/shared/timeConstants';
+
 import type {
   DiagnosticRow,
   MeshProtocol,
@@ -19,9 +21,9 @@ export const FOREIGN_LORA_RF_CONDITIONS = new Set([
 ]);
 
 /** Align with hop/CU history windows in diagnosticsStore. */
-export const DEFAULT_ROUTING_DIAGNOSTIC_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+export const DEFAULT_ROUTING_DIAGNOSTIC_MAX_AGE_MS = 24 * MS_PER_HOUR;
 /** RF findings are telemetry snapshots — shorter TTL reduces stale Mesh Congestion etc. */
-export const DEFAULT_RF_DIAGNOSTIC_MAX_AGE_MS = 60 * 60 * 1000;
+export const DEFAULT_RF_DIAGNOSTIC_MAX_AGE_MS = MS_PER_HOUR;
 
 /**
  * Scope diagnostic rows to the active protocol tab.

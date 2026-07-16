@@ -744,7 +744,7 @@
     "stageCheckingPairing": "Bluetooth のペアリングを確認しています…",
     "stageEnterPinLinux": "デバイスに表示されている PIN を入力します (最初に Linux とペアリングします)",
     "stageReconnecting": "最後の Bluetooth デバイスに再接続しています…",
-    "pinPlaceholder": "ピン",
+    "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",
       "serial": {
@@ -1133,6 +1133,10 @@
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
+    },
+    "maxRetriesHelpConnected": {
+      "meshcore": "諦める前に再接続を試みます（ 1 - {{max}} ）。設定が保存されました。変更後にもう一度接続を押して、メインプロセスがそれをピックアップします。",
+      "meshtastic": "どちらのプロトコルも1 - {{max}}を許可します。設定とともに保存されました。接続を解除してもう一度接続すると、実行中のセッションが新しい値を使用します。"
     }
   },
   "contactGroupsModal": {
@@ -1150,7 +1154,13 @@
     "noContactsYet": "まだ連絡先がありません。",
     "noGroupsYet": "まだグループはありません。上に作成します。",
     "memberCount_one": "{{count}} メンバー",
-    "memberCount_other": "{{count}} メンバー"
+    "memberCount_other": "{{count}} メンバー",
+    "title": "グループに連絡",
+    "addButton": "追加",
+    "confirmDeleteButton": "削除しますか？",
+    "manageMembersOf": "{{name}}のメンバーを管理する",
+    "renameGroupNamed": "{{name}}の名前を変更",
+    "deleteGroupNamed": "{{name}}を削除"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}} 時間より古いルーティング行を削除 (1 ～ 168)",
@@ -2688,8 +2698,8 @@
     "unavailable": "Nomad Network APIは利用できません。Reticulumサイドカーを再構築し、スタックを再起動します。",
     "selectNode": "リストからノードを選択して、そのページを参照します。",
     "lastSeen": "最後に聞いたのは{{time}}",
-    "hopsAway_one": "{{count}} 飛び降りる",
-    "hopsAway_other": "{{count}} が飛び降りる",
+    "hopsAway_one": "{{count}} ホップ先",
+    "hopsAway_other": "{{count}} ホップ先",
     "openNode": "{{name}}を参照",
     "pagePath": "ページパス",
     "homePage": "ホームページ",
@@ -4079,7 +4089,8 @@
     "peers": "ピア",
     "nomadnetwork": "Nomad Network",
     "topology": "ネットワーク・トポロジー",
-    "network": "ネットワーク"
+    "network": "ネットワーク",
+    "rrc": "RRC"
   },
   "takServerPanel": {
     "title": "TAKサーバー",
@@ -4205,5 +4216,131 @@
       "filterEmpty": "このフィルターに一致するインターフェースはありません。",
       "hint": "ノードは、オペレータがRMAP公開を有効にした場合にのみ表示されます。LoRaパスは、アナウンスをリレーするためにTCPハブ（例えば、rmap.world:4242）を必要とします。全世界をカバーするには、グローバルマップリンクを使用してください。"
     }
+  },
+  "rrc": {
+    "hubsTitle": "RRC Hubs",
+    "hubs": {
+      "favourites": "Favourites",
+      "discovered": "Discovered"
+    },
+    "searchHubs": "Search hubs…",
+    "searchRooms": "Search rooms…",
+    "nickname": "Nickname",
+    "refreshHubs": "Refresh hubs",
+    "expandSidebar": "Expand hub list",
+    "collapseSidebar": "Collapse hub list",
+    "manualHashPlaceholder": "Hub destination hash (32 hex)",
+    "connectManual": "Connect to hash",
+    "invalidHubHash": "Enter a valid 32-character hex destination hash.",
+    "connectFailed": "Could not connect to RRC hub.",
+    "joinFailed": "Could not join room.",
+    "sendFailed": "Could not send message.",
+    "selectHub": "Select hub {{name}}",
+    "selectHubPrompt": "Select an RRC hub to connect.",
+    "favoriteHub": "Favourite hub",
+    "unfavoriteHub": "Remove hub favourite",
+    "hopsAway_one": "{{count}} ホップ先",
+    "hopsAway_other": "{{count}} ホップ先",
+    "noDiscoveredHubs": "No live RRC hubs discovered yet. Keep the stack running to listen for announces.",
+    "rooms": "Rooms",
+    "joinRoom": "Room name",
+    "join": "ルームに参加",
+    "joinRoomPrompt": "チャットを始めるにはルームに参加してください。",
+    "noRoomsJoined": "No rooms joined yet.",
+    "selectRoom": "Open room {{name}}",
+    "leaveRoom": "Leave room",
+    "disconnect": "Disconnect",
+    "toggleTimestamps": "Toggle timestamps",
+    "muteRoom": "Mute room",
+    "unmuteRoom": "Unmute room",
+    "members": "Members",
+    "noMembers": "No member list from hub.",
+    "copyMessage": "Copy message",
+    "messagePlaceholder": "Type a message…",
+    "send": "Send",
+    "status": {
+      "disconnected": "Disconnected",
+      "connecting": "Connecting…",
+      "awaiting_welcome": "Waiting for hub…",
+      "active": "Connected",
+      "reconnecting": "Reconnecting…"
+    },
+    "expandRooms": "ルームを展開",
+    "collapseRooms": "ルームを折りたたむ",
+    "joinedRooms": "結合",
+    "recentRooms": "最近",
+    "roomKeyOptional": "ルームキー（任意）",
+    "joinRoomHelp": "ルームはこのハブ上のライブグループです。名前で参加、公開を試す、または /list と /help を入力。",
+    "listHint": "ヒント：/listは、rrcdハブに登録されているパブリックルームを表示します。/helpはコマンド用です。",
+    "slash": {
+      "helpIntro": "=== RRCヘルプ===",
+      "helpClient": "クライアントコマンド：",
+      "helpNick": "/nick NAME —ニックネームを変更する",
+      "helpJoin": "/join ROOM [key] —ルームに参加する（オプション+ kキー）",
+      "helpPart": "/part [room] —ルームを離れる（デフォルト：アクティブ）",
+      "helpMe": "/me ACTION —アクションエモートを送る",
+      "helpClear": "/clear —このルームのローカルトランスクリプトをクリア",
+      "helpQuit": "/quit —ハブから切断",
+      "helpHub": "ハブコマンド(rrcd; MSGとして送信):",
+      "helpList": "/list —登録されたパブリックルームを一覧表示する",
+      "helpWho": "/who [room] —メンバーのリスト",
+      "helpTopic": "/topic ,/mode ,/kick ,/op ,…-ルームモデレーション(ops)",
+      "helpNote": "他のハブは、ハブスラッシュコマンドをサポートしていない場合があります。",
+      "usageNick": "使用法：/nick NAME",
+      "usageJoin": "使用方法：/join ROOM [key]",
+      "usageMe": "使い方：/me ACTION",
+      "nickChanged": "ニックネームを{{name}}に設定しました",
+      "commandSent": "コマンドが送信されました： {{cmd}}",
+      "helpMsg": "/msg NICK |ハッシュテキスト—直接通知ウィスパー(rrcd)",
+      "usageMsg": "使用法:/msg NICK |ハッシュテキスト",
+      "msgTargetNotFound": "/msgターゲットを完全なIDハッシュに解決できませんでした。ルームに参加するか、完全なハッシュを使用してください。",
+      "msgSent": "→ {{name}} ： {{text}}"
+    },
+    "listedRooms": "公開",
+    "refreshRoomList": "ルームリストを更新(/list)",
+    "favoriteRoom": "お気に入りルーム",
+    "unfavoriteRoom": "ルームのお気に入りを解除",
+    "enableAutoJoin": "自動結合を有効にする",
+    "disableAutoJoin": "自動参加を無効にする",
+    "noTopic": "トピックなし",
+    "memberCount_one": "{{count}}メンバー",
+    "memberCount_other": "{{count}}メンバー",
+    "userCount_one": "{{count}}ユーザー",
+    "userCount_other": "{{count}}ユーザー",
+    "refreshWho": "メンバーを更新 (/who)",
+    "msgNick": "Message {{name}}",
+    "dismissBanner": "通知を非表示",
+    "directNoticeUnsupported": "このハブは直接通知（/msg ）をサポートしていません。",
+    "capDirectNotice": "direct msg",
+    "moderation": {
+      "removedFromRoom": "ハブによってルームから取り除かれました（キック、禁止、またはリモートパーツ）。"
+    },
+    "errors": {
+      "linkProofTimeout": "ハブリンク（リンクプルーフ）の待機中にタイムアウトしました。もう一度試すか、ハブへのパス/ホップを確認してください。",
+      "pathTimeout": "ハブへのパスが見つかりませんでした。新鮮なお知らせを待ってから、再接続してください。",
+      "welcomeTimeout": "接続されていますが、ハブが時間内にウェルカムを送信しませんでした。もう一度やり直してください。"
+    },
+    "expandMembers": "メンバーリストを展開",
+    "collapseMembers": "メンバーリストを折りたたむ",
+    "cancelConnect": "取り消す",
+    "maxHubsConnected": "最大8つのRRCハブに接続できます。最初に1つを切断します。",
+    "enableHubAutoJoin": "ハブの自動結合を有効にする",
+    "disableHubAutoJoin": "ハブの自動結合を無効にする",
+    "hubLegend": "● 接続・◌接続・◐自動結合・○アイドル・A =自動結合",
+    "hubMarker": {
+      "connected": "接続済み",
+      "connecting": "接続中",
+      "autoJoin": "自動参加が有効になっています",
+      "idle": "未接続"
+    },
+    "noFavouriteHubs": "お気に入りのRRCハブはまだありません。Discoveredから、またはハッシュで接続した後、ハブにスターを付けます。",
+    "hubAutoJoinOnHint": "オートジョインオン—クリックしてオフ",
+    "hubAutoJoinOffHint": "オートジョインオフ—スタック開始時にこのハブを接続するにはクリックしてください",
+    "roomAutoJoinOnHint": "オートジョインオン—クリックしてオフ",
+    "roomAutoJoinOffHint": "オートジョインオフ—ハブが接続されたときにクリックしてこのルームに参加します",
+    "roomLegend": "★ お気に入り·自動結合を切り替える",
+    "disconnectFailed": "Could not disconnect from RRC hub.",
+    "partFailed": "Could not leave room.",
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
   }
 }

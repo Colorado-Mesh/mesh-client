@@ -1,10 +1,11 @@
 import { meshtasticNodeLacksDisplayIdentity } from '@/shared/nodeNameUtils';
+import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 import { effectiveLastHeardMs } from '../nodeStatus';
 import type { MeshNode } from '../types';
 
 /** Match legacy NODEINFO debounce window in meshtasticLegacyWireSubscriptions. */
-export const MESHTASTIC_NODEINFO_AWAIT_MS = 5 * 60 * 1000;
+export const MESHTASTIC_NODEINFO_AWAIT_MS = 5 * MS_PER_MINUTE;
 
 /**
  * True only while we may still receive a NodeInfo reply (recent traffic + connected radio).

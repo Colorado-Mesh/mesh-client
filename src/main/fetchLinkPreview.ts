@@ -23,6 +23,24 @@ export const LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS = 5 * 60 * 1000;
 const LINK_PREVIEW_IMAGE_MAX_REDIRECTS = 5;
 const LINK_PREVIEW_MAX_CACHE_ENTRIES = 256;
 const LINK_PREVIEW_MAX_IMAGE_CACHE_ENTRIES = 128;
+/**
+ * Raster-only allowlist for preview images rendered via `<img src={data:...}>`.
+ * Excludes `image/svg+xml`: SVG is XML that can carry `<script>`/event-handler
+ * payloads and unbounded nested references (XML "billion laughs"-style
+ * amplification), which is unnecessary defense-in-depth risk for a chat link
+ * preview thumbnail. Modern Chromium does not execute script for `<img>` SVGs,
+ * but rejecting outright avoids relying on that renderer-specific behavior.
+ */
+const LINK_PREVIEW_ALLOWED_IMAGE_MIME_TYPES: ReadonlySet<string> = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/avif',
+  'image/bmp',
+  'image/x-icon',
+  'image/vnd.microsoft.icon',
+]);
 
 function evictOldestCacheEntry<K, V>(cache: Map<K, V>, maxEntries: number): void {
   while (cache.size >= maxEntries) {
@@ -268,14 +286,14 @@ async function fetchPreviewImageAsDataUrl(imageUrl: string): Promise<string | un
         return undefined;
       }
       const contentType = response.headers.get('content-type') ?? '';
-      if (!contentType.startsWith('image/')) return undefined;
+      const mime = contentType.split(';')[0]?.trim().toLowerCase() ?? '';
+      if (!LINK_PREVIEW_ALLOWED_IMAGE_MIME_TYPES.has(mime)) return undefined;
 
       const reader = response.body?.getReader();
       if (!reader) return undefined;
       const bytes = await readResponseBodyUpTo(reader, LINK_PREVIEW_IMAGE_MAX_BYTES);
       if (!bytes) return undefined;
 
-      const mime = contentType.split(';')[0]?.trim() || 'image/jpeg';
       const dataUrl = `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`;
       evictOldestCacheEntry(imageCache, LINK_PREVIEW_MAX_IMAGE_CACHE_ENTRIES);
       imageCache.set(imageUrl, { value: dataUrl, expires: now + LINK_PREVIEW_CACHE_TTL_MS });

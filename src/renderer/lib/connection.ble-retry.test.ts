@@ -41,6 +41,7 @@ vi.mock('./transportWebBluetoothIpc', () => ({
 
 import { MeshDevice } from '@meshtastic/core';
 
+import { BLE_SCAN_BUSY_MAX_WAIT_MS, BLE_SCAN_BUSY_RETRY_INTERVAL_MS } from './bleReconnectHelper';
 import { createBleConnection } from './connection';
 
 describe('createBleConnection retry behavior', () => {
@@ -111,6 +112,53 @@ describe('createBleConnection retry behavior', () => {
 
     await expect(createBleConnection('ble-device-2', 'meshtastic')).rejects.toThrow(
       'Bluetooth adapter is not available',
+    );
+    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits out reticulum scan yield then connects (dual-Noble primary race)', async () => {
+    vi.useFakeTimers();
+    vi.mocked(window.electronAPI.connectNobleBle)
+      .mockResolvedValueOnce({
+        ok: false,
+        error: 'Bluetooth scan in progress (reticulum)',
+      })
+      .mockResolvedValueOnce({ ok: true });
+
+    const pending = createBleConnection('ble-device-yield', 'meshtastic');
+    await vi.advanceTimersByTimeAsync(BLE_SCAN_BUSY_RETRY_INTERVAL_MS);
+    const device = await pending;
+
+    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
+    expect(device).toBeTruthy();
+    vi.useRealTimers();
+  });
+
+  it('fails createBleConnection after scan-busy max wait without a second timeout attempt', async () => {
+    vi.useFakeTimers();
+    vi.mocked(window.electronAPI.connectNobleBle).mockResolvedValue({
+      ok: false,
+      error: 'Bluetooth scan in progress (reticulum)',
+    });
+
+    const pending = createBleConnection('ble-device-stuck-yield', 'meshtastic');
+    const rejection = expect(pending).rejects.toThrow(/Bluetooth scan in progress \(reticulum\)/);
+    await vi.advanceTimersByTimeAsync(BLE_SCAN_BUSY_MAX_WAIT_MS + BLE_SCAN_BUSY_RETRY_INTERVAL_MS);
+    await rejection;
+
+    // Scan-busy wait is one logical connect attempt — do not burn BLE_CONNECT_MAX_ATTEMPTS.
+    expect(vi.mocked(window.electronAPI.connectNobleBle).mock.calls.length).toBeGreaterThan(1);
+    vi.useRealTimers();
+  });
+
+  it('does not wait on peripheral conflict errors', async () => {
+    vi.mocked(window.electronAPI.connectNobleBle).mockResolvedValue({
+      ok: false,
+      error: 'BLE peripheral aa:bb:cc:dd:ee:ff already claimed by noble:meshcore',
+    });
+
+    await expect(createBleConnection('conflict-dev', 'meshtastic')).rejects.toThrow(
+      /already claimed/,
     );
     expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(1);
   });

@@ -131,6 +131,41 @@ describe('attachMeshtasticIngest', () => {
     session.detach();
   });
 
+  it('does not treat a different sender reusing a packet id as an already-seen duplicate', () => {
+    const session = attachMeshtasticIngest(ID, {
+      getIsConfiguring: () => false,
+      getMyNodeNum: () => 0,
+    });
+    // Sender A's packet id 5 was previously marked seen (e.g. an MQTT-echo dedup elsewhere).
+    session.markPacketSeen(1, 5);
+
+    // Sender B independently generates the same 32-bit packet id — a real, unrelated message
+    // must still be saved, not silently swallowed by a dedup cache keyed on packetId alone.
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: '5',
+          from: 2,
+          to: 0xffffffff,
+          payload: 'brand new message from a different node',
+          channelIndex: 0,
+          timestamp: 9000,
+        },
+      },
+      ID,
+    );
+
+    expect(updateReceivedVia).not.toHaveBeenCalled();
+    expect(saveMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sender_id: 2,
+        payload: 'brand new message from a different node',
+      }),
+    );
+    session.detach();
+  });
+
   it('exposes hopCount as rxHops through store adapter round-trip', () => {
     const session = attachMeshtasticIngest(ID, {
       getIsConfiguring: () => false,

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isReticulumAutostartEnabled } from '@/renderer/lib/appSettingsStorage';
 import { BatchedRingBufferAppender } from '@/renderer/lib/batchedRingBufferAppender';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
+import { loadMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
 import {
   buildReticulumDiagnosticRows,
   mergeReticulumDiagnosticRows,
@@ -71,6 +72,7 @@ import {
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
+import { isRrcRoomMuted } from '@/renderer/lib/rrcMention';
 import { LARGE_MESH_NODE_THRESHOLD } from '@/renderer/lib/sessionMemoryCaps';
 import { registerReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
 import {
@@ -85,6 +87,14 @@ import type { ReticulumSidecarEvent, ReticulumWirePacketRow } from '@/shared/ret
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
+import {
+  isRrcJoinInfoNotice,
+  isRrcModerationLanguage,
+  parseRrcListNotice,
+  parseRrcTopicNotice,
+  parseRrcWhoNotice,
+} from '../lib/rrcNoticeParsers';
+import { rrcRoomsMatch } from '../lib/rrcRoomName';
 import type { DeviceState, MeshNode } from '../lib/types';
 import { useBlockStore } from '../stores/blockStore';
 import { setConnection } from '../stores/connectionStore';
@@ -114,6 +124,12 @@ import {
   reticulumSelfIdentityToNodeRecord,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
+import { useRrcHubStore } from '../stores/rrcHubStore';
+import {
+  RRC_HUB_STREAM_ROOM,
+  RRC_WHISPERS_ROOM,
+  useRrcSessionStore,
+} from '../stores/rrcSessionStore';
 import type { ProtocolRuntime } from './protocolRuntime';
 
 /** Safety poll interval when the path table is large. */
@@ -124,6 +140,28 @@ const INITIAL_STATE: DeviceState = {
   myNodeNum: 0,
   connectionType: null,
 };
+
+/**
+ * Read the room/hub context an RRC WS event should apply to: the explicit `hub_dest_hash` from
+ * the event payload, or — for legacy events that omit it — the currently focused hub's mirror.
+ */
+function resolveRrcHubView(hubHash: string | undefined): {
+  hub: string | null;
+  activeRoom: string | null;
+  partIntentRooms: Set<string>;
+} {
+  const s = useRrcSessionStore.getState();
+  if (!hubHash) {
+    return { hub: s.focusedHubHash, activeRoom: s.activeRoom, partIntentRooms: s.partIntentRooms };
+  }
+  const hub = hubHash.toLowerCase();
+  const session = s.sessionsByHub.get(hub);
+  return {
+    hub,
+    activeRoom: session?.activeRoom ?? null,
+    partIntentRooms: session?.partIntentRooms ?? new Set<string>(),
+  };
+}
 
 const UINT8_BASE64_CHUNK_SIZE = 0x8000;
 
@@ -159,6 +197,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const connectInFlightRef = useRef(false);
   const connectInFlightDoneRef = useRef<Promise<void> | null>(null);
   const suppressReconnectRef = useRef(false);
+  /**
+   * Bumped on every power-suspend so a `connect()` flight started before an earlier suspend
+   * (and still in flight when a *later* suspend/resume pair fires) can detect it has been
+   * superseded and skip finalizing a stale "configured" state. Independent of `suppressReconnectRef`
+   * (B1's sticky user-disconnect): that flag decides whether to reconnect at all; this one decides
+   * whether an already-in-flight connect's result is still safe to apply.
+   */
+  const resumeGenerationRef = useRef(0);
   const peerRefreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const diagnosticsRefreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localInterfaceBurstCancelRef = useRef<(() => void) | null>(null);
@@ -517,6 +563,259 @@ export function useReticulumRuntime(): ProtocolRuntime {
         void useNomadNetworkStore.getState().refreshFromSidecar();
         recordAnnounceActivity(evt.payload, 'nomadnetwork.node');
       }
+      if (evt.type === 'rrc.hub' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          destination_hash?: string;
+          identity_hash?: string | null;
+          display_name?: string | null;
+          hops?: number | null;
+          source?: string;
+        };
+        if (typeof p.destination_hash === 'string') {
+          useRrcHubStore.getState().upsertFromEvent({
+            destination_hash: p.destination_hash,
+            identity_hash: p.identity_hash,
+            display_name: p.display_name,
+            hops: p.hops,
+            source: (p.source as 'discovered' | undefined) ?? 'discovered',
+            name_source: p.display_name ? 'announce' : undefined,
+          });
+        }
+      }
+      if (evt.type === 'rrc.connected' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          hub_dest_hash?: string;
+          hub_name?: string | null;
+          status?: string;
+          capabilities?: {
+            direct_notice?: boolean;
+            action?: boolean;
+            resource_envelope?: boolean;
+          };
+        };
+        const hubDestHash = p.hub_dest_hash ?? undefined;
+        const st =
+          p.status === 'connecting'
+            ? 'connecting'
+            : p.status === 'active'
+              ? 'active'
+              : 'awaiting_welcome';
+        useRrcSessionStore.getState().applyStatus(st, hubDestHash ?? null, p.hub_name ?? null);
+        if (st === 'active') {
+          useRrcSessionStore.getState().setError(null, hubDestHash);
+        }
+        if (p.capabilities) {
+          useRrcSessionStore.getState().setCapabilities(
+            {
+              direct_notice: Boolean(p.capabilities.direct_notice),
+              action: Boolean(p.capabilities.action),
+              resource_envelope: Boolean(p.capabilities.resource_envelope),
+            },
+            hubDestHash,
+          );
+        }
+        if (st === 'active' && hubDestHash && p.hub_name) {
+          useRrcHubStore.getState().applyWelcomeName(hubDestHash, p.hub_name);
+        }
+        void window.electronAPI.reticulum.rrc
+          .getStatus()
+          .then((snap) => {
+            if (typeof snap.identity_hash === 'string' && snap.identity_hash) {
+              useRrcSessionStore.getState().setLocalIdentityHash(snap.identity_hash);
+            }
+            const sessionSnap = hubDestHash
+              ? snap.sessions?.find(
+                  (s) => s.hub_dest_hash?.toLowerCase() === hubDestHash.toLowerCase(),
+                )
+              : undefined;
+            if (sessionSnap?.capabilities) {
+              useRrcSessionStore.getState().setCapabilities(
+                {
+                  direct_notice: Boolean(sessionSnap.capabilities.direct_notice),
+                  action: Boolean(sessionSnap.capabilities.action),
+                  resource_envelope: Boolean(sessionSnap.capabilities.resource_envelope),
+                },
+                hubDestHash,
+              );
+            }
+          })
+          .catch((e: unknown) => {
+            console.debug('[useReticulumRuntime] rrc getStatus identity ' + errLikeToLogString(e));
+          });
+      }
+      if (evt.type === 'rrc.disconnected' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          reason?: string;
+          hub_dest_hash?: string | null;
+          will_reconnect?: boolean;
+        };
+        const hubDestHash = p.hub_dest_hash ?? undefined;
+        if (hubDestHash) {
+          const session = useRrcSessionStore.getState();
+          const hubSession = session.sessionsByHub.get(hubDestHash.toLowerCase());
+          const disconnectIntentForHub = hubSession?.disconnectIntent ?? false;
+          const willReconnect = p.will_reconnect === true;
+          if (
+            p.reason === 'local_disconnect' ||
+            disconnectIntentForHub ||
+            p.will_reconnect === false
+          ) {
+            session.clearHubSession(hubDestHash);
+          } else if (willReconnect || p.will_reconnect === undefined) {
+            // Sidecar auto-reconnects unintended drops; keep volatile rooms until reconnect settles.
+            // Older sidecars omit will_reconnect — treat as reconnecting unless local disconnect.
+            session.applyStatus('reconnecting', hubDestHash);
+            if (p.reason) session.setError(p.reason, hubDestHash);
+            session.setModerationBanner(null, hubDestHash);
+          } else {
+            session.clearHubSession(hubDestHash);
+          }
+        }
+      }
+      if (evt.type === 'rrc.room.joined' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          room?: string;
+          members?: { identity_hash: string; nickname?: string | null }[];
+          hub_dest_hash?: string | null;
+        };
+        if (typeof p.room === 'string') {
+          useRrcSessionStore.getState().roomJoined(p.room, p.members, p.hub_dest_hash ?? undefined);
+        }
+      }
+      if (evt.type === 'rrc.room.parted' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as { room?: string; hub_dest_hash?: string | null };
+        if (typeof p.room === 'string') {
+          const hubDestHash = p.hub_dest_hash ?? undefined;
+          const view = resolveRrcHubView(hubDestHash);
+          const session = useRrcSessionStore.getState();
+          const voluntary = [...view.partIntentRooms].some((k) => rrcRoomsMatch(k, p.room!));
+          if (!voluntary) {
+            session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
+            session.addMessage(
+              {
+                id: `part-${Date.now()}`,
+                room: view.activeRoom ?? RRC_HUB_STREAM_ROOM,
+                kind: 'system',
+                body: `Removed from ${p.room}`,
+                timestamp: Date.now(),
+              },
+              { hubDestHash },
+            );
+          }
+          session.roomParted(p.room, { forced: !voluntary }, hubDestHash);
+        }
+      }
+      if (evt.type === 'rrc.message' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          id?: string;
+          room?: string;
+          kind?: string;
+          body?: string;
+          sender_hash?: string | null;
+          nickname?: string | null;
+          timestamp?: number;
+          hub_dest_hash?: string | null;
+          dst_hash?: string | null;
+        };
+        if (typeof p.body === 'string') {
+          const hubDestHash = p.hub_dest_hash ?? undefined;
+          const view = resolveRrcHubView(hubDestHash);
+          const session = useRrcSessionStore.getState();
+          const kind =
+            p.kind === 'notice' || p.kind === 'action' || p.kind === 'error' || p.kind === 'system'
+              ? p.kind
+              : 'msg';
+          const isDirect = Boolean(p.dst_hash);
+          const room = isDirect
+            ? RRC_WHISPERS_ROOM
+            : typeof p.room === 'string' && p.room.trim()
+              ? p.room
+              : (view.activeRoom ?? RRC_HUB_STREAM_ROOM);
+
+          if (kind === 'notice') {
+            const listed = parseRrcListNotice(p.body);
+            if (listed) session.setListedRooms(listed, hubDestHash);
+            const who = parseRrcWhoNotice(p.body);
+            // Full roster snapshot — replace so departed nicks disappear.
+            if (who) session.mergeRoomMembers(who.room, who.members, 'replace', hubDestHash);
+            const topic = parseRrcTopicNotice(p.body);
+            if (topic) session.setRoomTopic(topic.room, topic.topic || null, hubDestHash);
+            // rrcd may emit join-info NOTICE without a usable JOINED member list —
+            // treat it as membership so JOINED UI + `/who` can run.
+            if (isRrcJoinInfoNotice(p.body) && topic) {
+              session.roomJoined(topic.room, undefined, hubDestHash);
+            }
+            if (isRrcModerationLanguage(p.body)) {
+              session.setModerationBanner(p.body, hubDestHash);
+            }
+          }
+
+          // Opportunistic nicklist: room chat reveals senders even before `/who`.
+          if (
+            (kind === 'msg' || kind === 'action') &&
+            !isDirect &&
+            typeof p.sender_hash === 'string' &&
+            p.sender_hash.length >= 8 &&
+            typeof room === 'string' &&
+            !room.startsWith('[')
+          ) {
+            session.mergeRoomMembers(
+              room,
+              [
+                {
+                  identity_hash: p.sender_hash.toLowerCase(),
+                  nickname: typeof p.nickname === 'string' ? p.nickname : null,
+                },
+              ],
+              'merge',
+              hubDestHash,
+            );
+          }
+
+          session.addMessage(
+            {
+              id: typeof p.id === 'string' ? p.id : `rrc-${Date.now()}`,
+              room,
+              kind,
+              body: p.body,
+              sender_hash: p.sender_hash,
+              nickname: p.nickname,
+              timestamp: typeof p.timestamp === 'number' ? p.timestamp : Date.now(),
+              dst_hash: p.dst_hash,
+            },
+            {
+              bumpUnread:
+                Boolean(view.hub) && !isRrcRoomMuted(view.hub!, room, loadMutedViews('reticulum')),
+              hubDestHash,
+            },
+          );
+        }
+      }
+      if (evt.type === 'rrc.error' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as { message?: string; hub_dest_hash?: string | null };
+        if (typeof p.message === 'string') {
+          const hubDestHash = p.hub_dest_hash ?? undefined;
+          const view = resolveRrcHubView(hubDestHash);
+          const session = useRrcSessionStore.getState();
+          // Keep raw message; panel humanizes for display. Do not freeze UI on timeouts.
+          session.setError(p.message, hubDestHash);
+          if (isRrcModerationLanguage(p.message)) {
+            session.setModerationBanner(p.message, hubDestHash);
+          }
+          if (view.hub) {
+            session.addMessage(
+              {
+                id: `err-${Date.now()}`,
+                room: view.activeRoom ?? RRC_HUB_STREAM_ROOM,
+                kind: 'error',
+                body: p.message,
+                timestamp: Date.now(),
+              },
+              { hubDestHash },
+            );
+          }
+        }
+      }
       const refreshActions = reticulumSidecarEventRefreshActions(evt.type);
       if (refreshActions.interfaces) {
         logReticulumInterfaceStateEvent(evt.payload);
@@ -598,7 +897,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
         stateRef.current.status === 'stale';
       if (wasActive) {
         tearDownFromSidecarStop();
-        if (isReticulumAutostartEnabled() && !suppressReconnectRef.current) {
+        // Consume the suppress flag only when there was an active session to react to —
+        // a stray "not running" status while the stack is already off must not clear a
+        // suppression set by an earlier manual disconnect (would let a later unrelated
+        // stop autostart the stack again).
+        if (suppressReconnectRef.current) {
+          suppressReconnectRef.current = false;
+        } else if (isReticulumAutostartEnabled()) {
           void connectRef.current?.().catch((e: unknown) => {
             console.warn(
               '[useReticulumRuntime] autostart reconnect failed ' + errLikeToLogString(e),
@@ -606,7 +911,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
           });
         }
       }
-      suppressReconnectRef.current = false;
     });
     return () => {
       unsubStatus();
@@ -642,6 +946,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       throw new Error('Reticulum connect already in progress');
     }
     connectInFlightRef.current = true;
+    const generation = resumeGenerationRef.current;
     const flight = (async () => {
       setState((s) => ({ ...s, status: 'connecting', connectionType: null }));
       syncConnectionStore({ status: 'connecting', connectionType: null });
@@ -658,6 +963,15 @@ export function useReticulumRuntime(): ProtocolRuntime {
         await markStaleReticulumOutboundMessages(identityId, RETICULUM_STALE_OUTBOUND_MS);
         markStaleReticulumOutboundInStore(identityId, RETICULUM_STALE_OUTBOUND_MS);
         await refreshMessagesFromDb();
+      }
+      if (resumeGenerationRef.current !== generation) {
+        // A later power-suspend fired while this connect attempt was still in flight — the
+        // sidecar keeps running (no RF link to go stale), but a fresher resume/suspend cycle
+        // now owns the UI state; applying this stale "configured" result could clobber it.
+        console.debug(
+          '[useReticulumRuntime] connect superseded by newer power-suspend generation — skip applying stale configured state',
+        );
+        return;
       }
       setState({ status: 'configured', myNodeNum: connectedNodeId, connectionType: null });
       syncConnectionStore({
@@ -1095,6 +1409,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
     [identityId],
   );
 
+  const onPowerSuspend = useCallback(() => {
+    resumeGenerationRef.current += 1;
+  }, []);
+
   const onPowerResume = useCallback(() => {
     if (suppressReconnectRef.current) {
       console.debug('[useReticulumRuntime] power resume — skip reconnect (user disconnect)');
@@ -1134,7 +1452,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       connectAutomatic,
       disconnect,
       restartStack,
-      onPowerSuspend: () => {},
+      onPowerSuspend,
       onPowerResume,
       prepareRfConnect: async () => {},
       attachRfSession: async () => {},
@@ -1165,6 +1483,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       connectAutomatic,
       disconnect,
       restartStack,
+      onPowerSuspend,
       onPowerResume,
       clearRawPackets,
       rawPackets,

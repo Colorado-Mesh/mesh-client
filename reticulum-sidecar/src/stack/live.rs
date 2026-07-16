@@ -46,6 +46,8 @@ use super::packet_log::{
 };
 use super::persistence::PersistedState;
 use super::propagation_bridge::PropagationBridge;
+use super::rrc_defaults::RRC_HUB_ASPECT;
+use super::rrc_session::RrcSessionManager;
 use super::types::{InterfaceRow, LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, PeerRow, ContactRow};
 use super::via::{
     classify_path_interface_name, merge_live_interfaces_with_config, merge_observed_egress_vias,
@@ -91,6 +93,7 @@ pub struct LiveBridge {
     /// Serialize Nomad Link queries — transport actor is single-threaded and
     /// overlapping page/file fetches contend with path/pubkey discovery.
     nomad_link_lock: Arc<tokio::sync::Mutex<()>>,
+    rrc_session: Arc<RrcSessionManager>,
     #[cfg(feature = "rns-ble")]
     ble_peer_state: Arc<tokio::sync::Mutex<BlePeerRuntimeState>>,
 }
@@ -386,6 +389,11 @@ impl LiveBridge {
             event_tx: event_tx.clone(),
             packet_log,
             nomad_link_lock: Arc::new(tokio::sync::Mutex::new(())),
+            rrc_session: Arc::new(RrcSessionManager::spawn(
+                handle.transport_tx.clone(),
+                identity.clone(),
+                event_tx.clone(),
+            )),
             #[cfg(feature = "rns-ble")]
             ble_peer_state: Arc::new(tokio::sync::Mutex::new(BlePeerRuntimeState {
                 spawned: HashMap::new(),
@@ -662,6 +670,144 @@ impl LiveBridge {
                 let _ = event_tx.send(frame.to_string());
             }
         });
+    }
+
+    pub fn register_rrc_announce_handler(
+        &self,
+        inner: Arc<RwLock<PersistedState>>,
+        config_dir: PathBuf,
+        storage_dir: PathBuf,
+    ) {
+        let transport_tx = self.handle.transport_tx.clone();
+        let event_tx = self.event_tx.clone();
+        tokio::spawn(async move {
+            let (callback_tx, mut callback_rx) =
+                tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(64);
+            if transport_tx
+                .send(TransportMessage::RegisterAnnounceHandler {
+                    aspect_filter: Some(RRC_HUB_ASPECT.to_string()),
+                    receive_path_responses: false,
+                    callback_tx,
+                })
+                .await
+                .is_err()
+            {
+                tracing::warn!("rrc announce handler registration failed: transport closed");
+                return;
+            }
+
+            while let Some(evt) = callback_rx.recv().await {
+                let hash_hex = hex::encode(evt.destination_hash);
+                let identity_hash_hex = evt.identity_hash.map(hex::encode);
+                let display_name = parse_rrc_hub_announce_name(evt.app_data.as_deref());
+                let hops = Some(evt.hops);
+                let payload = {
+                    let mut state = inner.write().await;
+                    state.upsert_rrc_hub(
+                        &hash_hex,
+                        identity_hash_hex.clone(),
+                        display_name.clone(),
+                        hops,
+                        "discovered",
+                    );
+                    if let Err(e) = state.save(&config_dir, &storage_dir) {
+                        tracing::warn!("rrc hub persist failed: {e}");
+                    }
+                    serde_json::json!({
+                        "destination_hash": hash_hex,
+                        "identity_hash": identity_hash_hex,
+                        "display_name": display_name,
+                        "hops": evt.hops,
+                        "source": "discovered",
+                    })
+                };
+                let frame = serde_json::json!({ "type": "rrc.hub", "payload": payload });
+                let _ = event_tx.send(frame.to_string());
+            }
+        });
+    }
+
+    pub async fn rrc_connect(
+        &self,
+        dest_hash: [u8; 16],
+        dest_hash_hex: String,
+        hops: u8,
+        nickname: String,
+    ) -> serde_json::Value {
+        match self
+            .rrc_session
+            .connect(dest_hash, dest_hash_hex, hops, nickname)
+            .await
+        {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rrc_disconnect(&self, dest_hash_hex: Option<&str>) -> serde_json::Value {
+        self.rrc_session.disconnect(dest_hash_hex).await;
+        serde_json::json!({ "ok": true })
+    }
+
+    pub async fn rrc_status(&self) -> serde_json::Value {
+        self.rrc_session.status_snapshot().await
+    }
+
+    pub async fn rrc_join(&self, hub_dest_hash: &str, room: &str, key: Option<&str>) -> serde_json::Value {
+        let key = key
+            .map(|k| k.trim().to_string())
+            .filter(|k| !k.is_empty());
+        match self
+            .rrc_session
+            .join(hub_dest_hash, room.to_string(), key)
+            .await
+        {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rrc_part(&self, hub_dest_hash: &str, room: &str) -> serde_json::Value {
+        match self.rrc_session.part(hub_dest_hash, room.to_string()).await {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rrc_send(
+        &self,
+        hub_dest_hash: &str,
+        room: Option<&str>,
+        body: &str,
+        kind: &str,
+        dst_hash: Option<&str>,
+    ) -> serde_json::Value {
+        let room = room
+            .map(|r| r.trim().to_string())
+            .filter(|r| !r.is_empty());
+        match self
+            .rrc_session
+            .send_chat(hub_dest_hash, room, body.to_string(), kind, dst_hash)
+            .await
+        {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rrc_set_nick(&self, hub_dest_hash: Option<&str>, nickname: &str) -> serde_json::Value {
+        match self
+            .rrc_session
+            .set_nickname(hub_dest_hash, nickname.to_string())
+            .await
+        {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rrc_rooms(&self, hub_dest_hash: Option<&str>) -> serde_json::Value {
+        self.rrc_session.rooms_snapshot(hub_dest_hash).await
     }
 
     fn spawn_maintenance(&self, _event_tx: broadcast::Sender<String>) {
@@ -2033,6 +2179,55 @@ pub(super) fn emit_lxmf_event(event_tx: &broadcast::Sender<String>, payload: ser
     let _ = event_tx.send(frame.to_string());
 }
 
+/// rrcd announces `app_data` as CBOR `{"proto":"rrc","v":1,"hub":"<name>"}`.
+fn parse_rrc_hub_announce_name(app_data: Option<&[u8]>) -> Option<String> {
+    let bytes = app_data?;
+    if bytes.is_empty() {
+        return None;
+    }
+    if let Ok(value) = ciborium::from_reader::<ciborium::Value, _>(std::io::Cursor::new(bytes)) {
+        if let Some(name) = rrc_hub_name_from_cbor(&value) {
+            return sanitize_rrc_hub_display_name(&name);
+        }
+    }
+    // Fallback for non-rrcd hubs that use LXMF/Nomad-style announce payloads.
+    parse_announce_display_name(app_data).and_then(|n| sanitize_rrc_hub_display_name(&n))
+}
+
+fn rrc_hub_name_from_cbor(value: &ciborium::Value) -> Option<String> {
+    let ciborium::Value::Map(entries) = value else {
+        return None;
+    };
+    for (k, v) in entries {
+        let key = match k {
+            ciborium::Value::Text(t) => t.as_str(),
+            _ => continue,
+        };
+        if key != "hub" && key != "name" && key != "hub_name" {
+            continue;
+        }
+        if let ciborium::Value::Text(name) = v {
+            let trimmed = name.trim();
+            if !trimmed.is_empty() {
+                return Some(trimmed.to_string());
+            }
+        }
+    }
+    None
+}
+
+fn sanitize_rrc_hub_display_name(s: &str) -> Option<String> {
+    let trimmed = s.trim();
+    if !is_plausible_display_name(trimmed) {
+        return None;
+    }
+    // Reject protocol/aspect noise often mis-parsed from foreign announce payloads.
+    match trimmed.to_ascii_lowercase().as_str() {
+        "lxmf" | "rrc" | "proto" | "reticulum" | "rrc.hub" | "lxmf.delivery" => None,
+        _ => Some(trimmed.to_string()),
+    }
+}
+
 /// LXMF / Nomad announces encode display names in app_data as msgpack
 /// `[display_name_bytes, ...]`, msgpack maps, JSON objects (`server_name`), or raw UTF-8.
 fn parse_announce_display_name(app_data: Option<&[u8]>) -> Option<String> {
@@ -2339,6 +2534,35 @@ mod announce_display_name_tests {
         let prev: HashSet<String> = ["aa".into()].into_iter().collect();
         let next: HashSet<String> = ["aa".into()].into_iter().collect();
         assert!(path_table_added_hashes(&prev, &next).is_empty());
+    }
+
+    #[test]
+    fn parse_rrc_hub_announce_name_cbor_hub_key() {
+        let mut buf = Vec::new();
+        let map = ciborium::Value::Map(vec![
+            (
+                ciborium::Value::Text("proto".into()),
+                ciborium::Value::Text("rrc".into()),
+            ),
+            (
+                ciborium::Value::Text("v".into()),
+                ciborium::Value::Integer(1.into()),
+            ),
+            (
+                ciborium::Value::Text("hub".into()),
+                ciborium::Value::Text("rnscommunity".into()),
+            ),
+        ]);
+        ciborium::into_writer(&map, &mut buf).unwrap();
+        assert_eq!(
+            parse_rrc_hub_announce_name(Some(&buf)),
+            Some("rnscommunity".into())
+        );
+    }
+
+    #[test]
+    fn parse_rrc_hub_announce_name_rejects_lxmf_noise() {
+        assert_eq!(parse_rrc_hub_announce_name(Some(b"LXMF")), None);
     }
 
     #[test]

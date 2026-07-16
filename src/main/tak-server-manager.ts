@@ -152,14 +152,66 @@ export class TakServerManager extends EventEmitter {
     return generateDataPackage(this.certBundle, this.settings);
   }
 
+  /**
+   * Regenerates the TAK server's TLS certificate/key pair.
+   *
+   * Failure point: `regenerateCerts()` (crypto/fs failure) or the subsequent
+   * `start()` (e.g. port bind failure) can throw after `stop()` has already
+   * torn down the running server.
+   * Fallback: on cert-gen failure, record an explicit error status instead of
+   * leaving `{running:false}` unexplained; on restart failure after a
+   * successful regen, retry once with the previous (still-valid) certificate
+   * bundle so the server doesn't stay down solely because of the new pair.
+   * Logging: failures are logged via `console.error`/`console.warn` with
+   * sanitized messages before rethrowing, so the IPC caller/UI always learns
+   * the concrete cause.
+   */
   async regenerateCertificates(): Promise<void> {
     const serverName = this.settings?.serverName ?? 'mesh-client';
     const wasRunning = this._status.running;
+    const previousCertBundle = this.certBundle;
 
     if (wasRunning) this.stop();
-    this.certBundle = await regenerateCerts(serverName);
-    if (wasRunning && this.settings) {
+
+    let newCertBundle: CertBundle;
+    try {
+      newCertBundle = await regenerateCerts(serverName);
+    } catch (err) {
+      const msg = `Certificate regeneration failed: ${String(err)}`;
+      console.error('[TakServer]', sanitizeLogMessage(msg));
+      this._status = {
+        running: false,
+        port: this.settings?.port ?? this._status.port,
+        clientCount: 0,
+        error: msg,
+      };
+      this.emit('status', this.getStatus());
+      throw err instanceof Error ? err : new Error(msg);
+    }
+    this.certBundle = newCertBundle;
+
+    if (!wasRunning || !this.settings) return;
+
+    try {
       await this.start(this.settings);
+    } catch (startErr) {
+      // start() already recorded a stopped+error status for this attempt.
+      // Best-effort: fall back to the previous certificate bundle so a bad
+      // new cert/key pair doesn't leave the server down when it was running
+      // before regeneration was requested.
+      if (previousCertBundle) {
+        this.certBundle = previousCertBundle;
+        try {
+          await this.start(this.settings);
+          console.warn(
+            '[TakServer] Restart with regenerated certificates failed; restored previous certificate bundle and restarted',
+          );
+          return;
+        } catch {
+          // catch-no-log-ok: fallback restart failed too; start() already recorded status/error for this attempt
+        }
+      }
+      throw startErr;
     }
   }
 

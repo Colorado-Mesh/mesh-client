@@ -111,6 +111,26 @@ The Connection tab UI edits a subset: **name** and **mode** for all types; **hos
 | GET    | `/api/v1/nomadnetwork/page/{hash}?path=…` |                       | page payload                          |
 | GET    | `/api/v1/nomadnetwork/file/{hash}?path=…` |                       | `{ ok, file_name?, content_base64? }` |
 
+### RRC (Reticulum Relay Chat)
+
+Multi-hub sessions are keyed by lowercase 32-hex `hub_dest_hash`. Soft cap: **8** simultaneous hubs. Nick / room / body lengths are capped at the API boundary.
+
+| Method | Path                        | Body / notes                                                       | Response                          |
+| ------ | --------------------------- | ------------------------------------------------------------------ | --------------------------------- |
+| GET    | `/api/v1/rrc/hubs`          |                                                                    | `{ hubs: RrcHubInfo[] }`          |
+| POST   | `/api/v1/rrc/hubs`          | `{ dest_hash, label?, favorited? }`                                | `{ ok, hub? }`                    |
+| POST   | `/api/v1/rrc/hubs/favorite` | `{ dest_hash, favorited }` — `dest_hash` must be exact 32 hex      | `{ ok }`                          |
+| POST   | `/api/v1/rrc/connect`       | `{ dest_hash, nickname? }`                                         | `{ ok }` / `{ ok: false, error }` |
+| POST   | `/api/v1/rrc/disconnect`    | `{ dest_hash? }` — omit/empty tears down every hub                 | `{ ok }`                          |
+| GET    | `/api/v1/rrc/status`        |                                                                    | `{ sessions: [], identity_hash }` |
+| POST   | `/api/v1/rrc/join`          | `{ hub_dest_hash, room, key? }`                                    | `{ ok }`                          |
+| POST   | `/api/v1/rrc/part`          | `{ hub_dest_hash, room }`                                          | `{ ok }`                          |
+| POST   | `/api/v1/rrc/send`          | `{ hub_dest_hash, room?, body, type?, dst_hash? }`                 | `{ ok }`                          |
+| POST   | `/api/v1/rrc/nick`          | `{ nickname, hub_dest_hash? }` — omit hub applies to every session | `{ ok }`                          |
+| GET    | `/api/v1/rrc/rooms`         | `?hub_dest_hash=` optional                                         | `{ rooms: [] }`                   |
+
+Typed renderer wrappers: `electronAPI.reticulum.rrc.*` (`listHubs`, `upsertHub`, `setFavorite`, `connect`, `disconnect`, `getStatus`, `join`, `part`, `send`, `setNickname`, `getRooms`).
+
 ### System
 
 | Method | Path                           | Body / notes      | Response                         |
@@ -130,7 +150,9 @@ The Connection tab UI edits a subset: **name** and **mode** for all types; **hos
 { "type": "lxmf_message", "payload": { ... } }
 ```
 
-Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`, `rmap.discovery` (payload `{ discovered: RmapDiscoveredWireRow[] }`).
+Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`, `rmap.discovery` (payload `{ discovered: RmapDiscoveredWireRow[] }`), plus RRC: `rrc.hub`, `rrc.connected`, `rrc.disconnected`, `rrc.room.joined`, `rrc.room.parted`, `rrc.message`, `rrc.error`.
+
+- **`rrc.disconnected`:** payload `{ hub_dest_hash, reason, will_reconnect? }`. When `will_reconnect` is `false` (or `reason` is `local_disconnect`), the renderer drops that hub session. When `true` (or omitted on older sidecars), the UI shows reconnecting and keeps volatile rooms until WELCOME.
 
 - **`lxmf_outbound_status`:** authoritative outbound delivery updates. Payload: `{ message_hash, status, delivery_method?, to_hash? }` where `status` is `delivered` or `failed` (intermediate states are not emitted on WS). mesh-client maps `delivered` → UI Completes (`acked`) and persists `delivery_status` to SQLite; `failed` → Failed. Do **not** treat `/api/v1/lxmf/send` response `delivery_status` (`queued`/`sending`) as terminal.
 - **`announce.received`:** emitted for every LXMF identity announce / path response the sidecar observes (named or nameless). Payload: `{ destination_hash, display_name?, hops }`. Display names update the peer-label cache only — announces do **not** auto-create LXMF contacts. That cache is overlayed onto `GET /api/v1/peers` / topology rows **and** onto nameless/hash-prefix rows from `GET /api/v1/contacts` (`list_contacts` may persist those fills) so path-table and contact refreshes keep announce aliases.

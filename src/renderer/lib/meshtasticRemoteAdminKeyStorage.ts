@@ -1,3 +1,5 @@
+import { hexToBytesExact } from '@/shared/hexBytes';
+
 import { getAppSettingsRaw, mergeAppSetting } from './appSettingsStorage';
 import { errLikeToLogString } from './errLikeToLogString';
 import { parseStoredJson } from './parseStoredJson';
@@ -44,12 +46,8 @@ export function normalizeMeshtasticAdminKeyInput(raw: string): string | undefine
   s = s.replace(/\s+/g, '');
 
   if (/^[0-9a-fA-F]{64}$/.test(s)) {
-    const bytes = new Uint8Array(32);
-    for (let i = 0; i < 32; i++) {
-      const byte = Number.parseInt(s.slice(i * 2, i * 2 + 2), 16);
-      if (!Number.isFinite(byte)) return undefined;
-      bytes[i] = byte;
-    }
+    const bytes = hexToBytesExact(s, 32);
+    if (!bytes) return undefined;
     return bytesToCanonicalAdminKeyBase64(bytes);
   }
 

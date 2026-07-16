@@ -1750,6 +1750,26 @@ export const I18N_ANGLE_BRACKET_PLACEHOLDER_KEYS = new Set([
   'connectionPanel.meshcoreMqttIdentity.usernameBuildFailed',
 ]);
 
+/**
+ * MQTT LetsMesh username wire format is literal "v1_<public key>" — the "v1_" prefix must
+ * survive translation verbatim (only the human-readable "<public key>" placeholder text may
+ * be localized). Checked on I18N_ANGLE_BRACKET_PLACEHOLDER_KEYS.
+ *
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkWireTokenLiteralPreservedIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (locale === 'en' || !I18N_ANGLE_BRACKET_PLACEHOLDER_KEYS.has(flatKey)) return issues;
+  if (enVal.includes('v1_') && !val.includes('v1_')) {
+    issues.push(
+      'must preserve the literal wire-format prefix "v1_" from English (do not translate it)',
+    );
+  }
+  return issues;
+}
+
 /** i18next interpolation names in appearance order (for duplicate names, set dedupes). */
 const placeholderNameSetCache = new Map();
 
@@ -3052,6 +3072,73 @@ function checkMeshcoreOpenWireIssues(ctx) {
   return issues;
 }
 
+/** Pluralized hop-count leaf keys where MT/CAT frequently swaps the routing noun
+ * ("N hops away") for an imperative/conjugated jump verb ("Jump away!" / "it hops away"). */
+const HOP_AWAY_VERB_LEAF_KEYS = new Set([
+  'hopsAway_one',
+  'hopsAway_other',
+  'hopLabel_one',
+  'hopLabel_other',
+]);
+
+/** Known jump/hop-away verb false friends per locale for HOP_AWAY_VERB_LEAF_KEYS. */
+const HOP_AWAY_VERB_FALSE_FRIENDS = {
+  cs: [{ re: /skoč|odskoč/i, hint: 'use noun "skok/skoků", not imperative "skočit/odskočit"' }],
+  de: [{ re: /hüpf/i, hint: 'use noun "Hop(s)", not verb "hüpfen"' }],
+  es: [{ re: /\bsalta\b|saltando/i, hint: 'use noun "salto(s)", not verb "saltar"' }],
+  fr: [{ re: /\bsaute\b/i, hint: 'use noun "saut(s)", not verb "sauter"' }],
+  id: [{ re: /melompat/i, hint: 'use noun "hop", not verb "melompat"' }],
+  it: [{ re: /\bsalta\b/i, hint: 'use noun "salto/salti", not verb "saltare"' }],
+  ko: [{ re: /뛰어내려|깡충깡충/, hint: 'use noun "홉", not a jumping verb/onomatopoeia' }],
+  nl: [{ re: /spring/i, hint: 'use noun "hop(s)", not verb "springen"' }],
+  pl: [{ re: /odskocz|przeskakuje|odskakuje/i, hint: 'use noun "przeskok(ów)", not a hop verb' }],
+  'pt-BR': [{ re: /\bpule\b|\bpula\b/i, hint: 'use noun "salto(s)", not verb "pular"' }],
+  ru: [{ re: /убегай|упрыгивает/i, hint: 'use noun "хоп(ов)", not a fleeing/hopping verb' }],
+  tr: [{ re: /^\{\{count\}\} atla$|uzaklaşır/i, hint: 'use noun phrase, not imperative "atla"' }],
+  uk: [{ re: /стрибай|стрибає/i, hint: 'use noun "хоп(и)", not verb "стрибати"' }],
+  zh: [{ re: /跳走|跳开/, hint: 'use "跳之外" (hops away), not "jump away/apart"' }],
+  ja: [{ re: /飛び降り/, hint: 'use "ホップ先" (hops away), not verb "飛び降りる"' }],
+};
+
+/** LoRa channel-utilization "Air Time" leaf keys (radioPanel / diagnostics metrics). */
+const AIR_TIME_LEAF_KEYS = new Set(['airTimeLabel', 'txAirTimeLabel', 'rxAirTimeLabel']);
+
+/** MT reliably mis-parses the "TX"/"RX" radio abbreviations as the US state "Texas", and
+ * "Air Time" (LoRa duty-cycle metric) as literal aviation/hang-time or phone-plan minutes. */
+const AIR_TIME_FALSE_FRIEND_RE = /Техас|Teksas|텍사스|德克萨斯|Bodenberührung|飞跃时刻|通话时间/i;
+
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkAirTimeFalseFriendIssues(ctx) {
+  const { locale, leafKey, val } = ctx;
+  const issues = [];
+  if (locale === 'en' || !AIR_TIME_LEAF_KEYS.has(leafKey)) return issues;
+  if (AIR_TIME_FALSE_FRIEND_RE.test(val)) {
+    issues.push(
+      `${leafKey} air-time false friend: "TX"/"RX" are radio transmit/receive abbreviations (not the US state "Texas"), and Air Time is LoRa duty-cycle usage (not aviation hang-time or phone-plan minutes)`,
+    );
+  }
+  return issues;
+}
+
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkHopAwayVerbFalseFriendIssues(ctx) {
+  const { locale, leafKey, val } = ctx;
+  const issues = [];
+  if (!HOP_AWAY_VERB_LEAF_KEYS.has(leafKey)) return issues;
+  for (const { re, hint } of HOP_AWAY_VERB_FALSE_FRIENDS[locale] ?? []) {
+    if (re.test(val)) {
+      issues.push(`${leafKey} hop-away verb false friend: ${hint}`);
+    }
+  }
+  return issues;
+}
+
 /**
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
@@ -3379,6 +3466,119 @@ function checkReticulumMapIssues(ctx) {
   return issues;
 }
 
+/** RRC chat rooms — not hotel rooms; slash commands must stay wire tokens. */
+export const RRC_PREFIX = 'rrc.';
+
+/** Reuse MeshCore room false-friend patterns for RRC chat-room wording. */
+export const RRC_ROOM_FALSE_FRIENDS = {
+  ...ROOMS_PANEL_FALSE_FRIENDS,
+  de: [
+    ...(ROOMS_PANEL_FALSE_FRIENDS.de ?? []),
+    { re: /\bZimmer/i, hint: 'use "Raum"/"Chatraum" for RRC room, not hotel "Zimmer"' },
+  ],
+  ja: [
+    ...(ROOMS_PANEL_FALSE_FRIENDS.ja ?? []),
+    { re: /客室/, hint: 'use "ルーム" for RRC room, not guest-room 客室' },
+  ],
+};
+
+/** Known MT garbage for specific RRC leaves. */
+export const RRC_LEAF_FORBIDDEN = {
+  'rrc.listedRooms': [
+    { re: /^Anuncio$/i, hint: 'use "Listed"/sala pública list label, not "Anuncio"' },
+    { re: /Veröffentlicht/i, hint: 'use "Listed"/listed rooms, not "Veröffentlicht am"' },
+  ],
+  'rrc.noTopic': [{ re: /^Lektion$/i, hint: 'use "No topic" wording, not "Lektion"' }],
+  'rrc.joinRoomHelp': [
+    {
+      re: /Suggested|Vorgeschlagen|Sugerid/i,
+      hint: 'English dropped Suggested rooms — use Listed',
+    },
+  ],
+};
+
+/** IRC-style RRC commands that must stay verbatim in help/UI copy. */
+export const RRC_SLASH_COMMAND_TOKENS = new Set([
+  '/nick',
+  '/join',
+  '/part',
+  '/me',
+  '/msg',
+  '/list',
+  '/who',
+  '/help',
+  '/clear',
+  '/quit',
+  '/topic',
+]);
+
+/**
+ * Slash-command tokens that must appear exactly as in English (no translation, no CJK spaces).
+ * @param {string} enVal
+ * @returns {string[]}
+ */
+export function extractSlashCommandTokens(enVal) {
+  const tokens = enVal.match(/\/[a-z][a-z0-9_-]*/gi) ?? [];
+  return [
+    ...new Set(tokens.map((t) => t.toLowerCase()).filter((t) => RRC_SLASH_COMMAND_TOKENS.has(t))),
+  ];
+}
+
+/**
+ * True when `haystack` contains `token` as a slash-command word (not a longer path).
+ * @param {string} haystack
+ * @param {string} token lowercase slash token like "/list"
+ */
+export function localeContainsSlashToken(haystack, token) {
+  const lower = haystack.toLowerCase();
+  let from = 0;
+  while (from <= lower.length) {
+    const idx = lower.indexOf(token, from);
+    if (idx < 0) return false;
+    const before = idx === 0 ? '' : lower[idx - 1];
+    const afterIdx = idx + token.length;
+    const after = afterIdx >= lower.length ? '' : lower[afterIdx];
+    const beforeOk = !before || !/[\w/]/.test(before);
+    const afterOk = !after || !/\w/.test(after);
+    if (beforeOk && afterOk) return true;
+    from = idx + 1;
+  }
+  return false;
+}
+
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkRrcPanelQualityIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (!flatKey.startsWith(RRC_PREFIX) || locale === 'en') return issues;
+
+  for (const { re, hint } of RRC_ROOM_FALSE_FRIENDS[locale] ?? []) {
+    if (re.test(val)) {
+      issues.push(`rrc false friend: ${hint}`);
+    }
+  }
+
+  for (const { re, hint } of RRC_LEAF_FORBIDDEN[flatKey] ?? []) {
+    if (re.test(val)) {
+      issues.push(`rrc ${flatKey}: ${hint}`);
+    }
+  }
+
+  const tokens = extractSlashCommandTokens(enVal);
+  for (const token of tokens) {
+    if (!localeContainsSlashToken(val, token)) {
+      issues.push(
+        `rrc slash token: must preserve "${token}" from English (do not translate or space it)`,
+      );
+    }
+  }
+
+  return issues;
+}
+
 const LOCALE_STRING_QUALITY_CHECKS = [
   checkCatEncodingAndMeshtasticIssues,
   checkMustTranslateAndFormFieldIssues,
@@ -3403,6 +3603,10 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkReticulumDefaultHubKeyIssues,
   checkRepeatersCliIssues,
   checkReticulumMapIssues,
+  checkHopAwayVerbFalseFriendIssues,
+  checkAirTimeFalseFriendIssues,
+  checkWireTokenLiteralPreservedIssues,
+  checkRrcPanelQualityIssues,
 ];
 
 /**

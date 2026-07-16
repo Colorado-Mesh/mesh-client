@@ -1,7 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import {
   buildDefaultHubAddRequest,
   RETICULUM_DEFAULT_HUB_PRESETS,
@@ -48,6 +50,7 @@ describe('ReticulumInterfacesPanel', () => {
     window.electronAPI.reticulum.proxyPost = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.reticulum.proxyDelete = vi.fn().mockResolvedValue({ ok: true });
+    hydrateAxeThemeColors(document.documentElement);
     window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
       if (path === '/api/v1/serial/ports') {
         return Promise.resolve({ ports: [] });
@@ -89,17 +92,19 @@ describe('ReticulumInterfacesPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('links to the Reticulum backbone directory next to Interfaces', () => {
-    render(<ReticulumInterfacesPanel {...defaultProps} />);
+  it('links to the Reticulum backbone directory in the Interfaces body (not nested in summary)', async () => {
+    const { container } = render(<ReticulumInterfacesPanel {...defaultProps} />);
     const link = screen.getByRole('link', {
       name: 'connectionPanel.reticulumInterfaces.backboneDirectoryLinkAria',
     });
     expect(link).toHaveAttribute('href', RETICULUM_BACKBONE_DIRECTORY_URL);
     expect(link).toHaveAttribute('target', '_blank');
+    expect(link.closest('summary')).toBeNull();
     expect(RETICULUM_DEFAULT_HUB_PRESETS.some((p) => p.host.includes('dublin'))).toBe(false);
     expect(RETICULUM_DEFAULT_HUB_PRESETS.some((p) => p.host.includes('betweentheborders'))).toBe(
       false,
     );
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('does not flag BLE RNode interface rows as stale USB serial ports', () => {

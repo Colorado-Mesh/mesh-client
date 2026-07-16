@@ -1,6 +1,6 @@
 import type { NobleBleSessionId, NobleBleStartScanResult } from '@/shared/electron-api.types';
 
-import { MESHCORE_SETUP_ABORT_MESSAGE } from './bleConnectErrors';
+import { isMeshcoreSetupAbortError } from './bleConnectErrors';
 import { errLikeToLogString } from './errLikeToLogString';
 import { isBleScanBusyErrorMessage } from './reticulum/reticulumBleAdapterLease';
 import type { MeshProtocol } from './types';
@@ -10,8 +10,12 @@ export const BLE_RECONNECT_SCAN_TIMEOUT_MS = 30_000;
 /** Poll interval while waiting for Reticulum/external BLE scan to release the adapter. */
 export const BLE_SCAN_BUSY_RETRY_INTERVAL_MS = 250;
 
-/** Max wait for scan mutex before failing Noble reconnect scan fallback. */
-export const BLE_SCAN_BUSY_MAX_WAIT_MS = 20_000;
+/**
+ * Max wait for scan mutex before failing Noble reconnect / connect retry.
+ * Keep >= Reticulum BLE RNode connect grace (30s in reticulumLocalInterfaceRefresh)
+ * so Meshtastic primary auto-connect can wait out a start yield.
+ */
+export const BLE_SCAN_BUSY_MAX_WAIT_MS = 30_000;
 
 /** Noble wait-for-peripheral + scan fallback; ConnectionPanel must not use a shorter UI timeout. */
 export const BLE_NOBLE_AUTO_CONNECT_MAX_MS = 30_000 + BLE_RECONNECT_SCAN_TIMEOUT_MS + 15_000;
@@ -22,14 +26,6 @@ function isLinuxPlatform(): boolean {
 
 function isLinuxWebBluetoothPlatform(): boolean {
   return typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('linux');
-}
-
-function isMeshcoreSetupAbortError(err: unknown): boolean {
-  return (
-    err instanceof DOMException &&
-    err.name === 'AbortError' &&
-    err.message === MESHCORE_SETUP_ABORT_MESSAGE
-  );
 }
 
 function isNobleBleStartScanBusyResult(
@@ -75,6 +71,40 @@ export async function startNobleBleScanningWithRetry(
   }
 
   throw new Error(nobleBleStartScanBusyMessage(lastOwner));
+}
+
+/**
+ * Noble GATT connect; retry when Reticulum (or another owner) holds the scan yield.
+ * Meshtastic dual-Noble auto-connect is primary and often races a short RNode yield —
+ * hard-failing here left MeshCore able to connect after release while Meshtastic stayed down.
+ */
+export async function connectNobleBleWithScanBusyRetry(
+  sessionId: NobleBleSessionId,
+  peripheralId: string,
+  opts?: { maxWaitMs?: number; retryIntervalMs?: number },
+): Promise<void> {
+  const maxWaitMs = opts?.maxWaitMs ?? BLE_SCAN_BUSY_MAX_WAIT_MS;
+  const retryIntervalMs = opts?.retryIntervalMs ?? BLE_SCAN_BUSY_RETRY_INTERVAL_MS;
+  const deadline = Date.now() + maxWaitMs;
+  let lastError = 'BLE connect failed';
+
+  while (Date.now() < deadline) {
+    const result = await window.electronAPI.connectNobleBle(sessionId, peripheralId);
+    if (result.ok) {
+      return;
+    }
+    const message = result.error || 'BLE connect failed';
+    lastError = message;
+    if (!isBleScanBusyErrorMessage(message)) {
+      throw new Error(message);
+    }
+    console.debug(
+      `[bleReconnectHelper] connect scan busy — retrying in ${retryIntervalMs}ms (${message})`,
+    );
+    await sleep(retryIntervalMs);
+  }
+
+  throw new Error(lastError);
 }
 
 /** Verify Noble BLE GATT is still connected after configure (macOS/Windows). */

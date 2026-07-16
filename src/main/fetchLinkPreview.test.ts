@@ -313,6 +313,45 @@ describe('fetchLinkPreview', () => {
     });
   });
 
+  it('rejects image/svg+xml og:image responses (XML script/entity risk)', async () => {
+    const html = [
+      `<meta property="og:title" content="SVG trap">`,
+      `<meta property="og:image" content="https://example.com/img.svg">`,
+    ].join('\n');
+    const svgBytes = new TextEncoder().encode('<svg onload="alert(1)"></svg>');
+    mockFetch.mockImplementation(((input: string | URL | Request) => {
+      const host = fetchRequestHostname(input);
+      const href =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      let path = '';
+      try {
+        path = new URL(href).pathname;
+      } catch {
+        // catch-no-log-ok test mock may receive partial URLs
+      }
+      if (host === 'example.com' && path.endsWith('/img.svg')) {
+        return Promise.resolve(
+          mockUndiciResponse({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'image/svg+xml' }),
+            body: new ReadableStream<Uint8Array>({
+              start(c) {
+                c.enqueue(svgBytes);
+                c.close();
+              },
+            }),
+          }),
+        );
+      }
+      return Promise.resolve(makeStreamResponse(html));
+    }) as typeof undiciFetch);
+
+    const result = await fetchLinkPreview('https://example.com');
+    expect(result?.title).toBe('SVG trap');
+    expect(result?.image).toBeUndefined();
+  });
+
   it('blocks proxied image fetch when og:image hostname resolves to private IPv4', async () => {
     const pageHtml = [
       `<meta property="og:title" content="DNS trap">`,

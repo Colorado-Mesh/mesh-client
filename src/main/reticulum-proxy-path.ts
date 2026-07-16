@@ -33,6 +33,9 @@ function computeReticulumProxyGetTimeoutMs(apiPath: string): number {
   ) {
     return nomadPageProxyTimeoutMsFromApiPath(trimmed);
   }
+  if (normalized === '/api/v1/rrc/status' || normalized === '/api/v1/rrc/rooms') {
+    return RETICULUM_TRANSPORT_QUERY_GET_TIMEOUT_MS;
+  }
   if (isReticulumTransportQueryGetPath(normalized)) {
     return RETICULUM_TRANSPORT_QUERY_GET_TIMEOUT_MS;
   }

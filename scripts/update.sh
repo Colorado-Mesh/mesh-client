@@ -118,6 +118,136 @@ warn_box() {
   echo ''
 }
 
+# Query GitHub PR state for ratspeak overlays (merged|open|closed|unknown).
+# Uses `gh` when available, otherwise unauthenticated api.github.com.
+github_pr_state() {
+  local repo="$1" pr="$2"
+  local json=''
+  if command -v gh > /dev/null 2>&1; then
+    json="$(gh api "repos/${repo}/pulls/${pr}" 2> /dev/null || true)"
+  elif command -v curl > /dev/null 2>&1; then
+    json="$(
+      curl -fsSL \
+        -H 'Accept: application/vnd.github+json' \
+        -H 'User-Agent: mesh-client-update' \
+        "https://api.github.com/repos/${repo}/pulls/${pr}" 2> /dev/null || true
+    )"
+  else
+    echo 'unknown'
+    return 0
+  fi
+  if [ -z "${json}" ]; then
+    echo 'unknown'
+    return 0
+  fi
+  printf '%s' "${json}" | node -e '
+let s = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (c) => { s += c; });
+process.stdin.on("end", () => {
+  try {
+    const j = JSON.parse(s);
+    if (j.merged === true || j.merged_at) process.stdout.write("merged");
+    else if (j.state === "open") process.stdout.write("open");
+    else if (j.state === "closed") process.stdout.write("closed");
+    else process.stdout.write("unknown");
+  } catch {
+    process.stdout.write("unknown");
+  }
+});
+' 2> /dev/null || echo 'unknown'
+}
+
+# Warn when local Ratspeak overlays may be obsolete after upstream merges.
+# Keep in sync with reticulum-sidecar/patches/*.patch and patches/README.md.
+check_ratspeak_patches() {
+  # Format: "patch-basename|github-owner/repo|pr-number-or-empty|display-label|review-url"
+  local RATSPEAK_PATCH_ENTRIES=(
+    'rsReticulum-packet-tap.patch|ratspeak/rsReticulum|10|rsReticulum packet-tap|https://github.com/ratspeak/rsReticulum/pull/10'
+    'rsReticulum-auto-beacon-utun.patch|ratspeak/rsReticulum||rsReticulum auto-beacon utun|https://github.com/ratspeak/rsReticulum'
+    'rsReticulum-link-client-nomad.patch|ratspeak/rsReticulum|14|rsReticulum LinkClient Nomad|https://github.com/ratspeak/rsReticulum/pull/14'
+    'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF||rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF'
+  )
+  local patches_dir='reticulum-sidecar/patches'
+  local has_ratspeak_warning=0
+
+  echo ''
+  echo 'Checking Ratspeak overlay patches (rsReticulum / rsLXMF)...'
+
+  if [ ! -d "${patches_dir}" ]; then
+    echo "  ${patches_dir} missing — skip."
+    return 0
+  fi
+
+  # Flag patch files not listed in RATSPEAK_PATCH_ENTRIES (same sync rule as WATCH_ENTRIES).
+  local known_basenames=()
+  local entry
+  for entry in "${RATSPEAK_PATCH_ENTRIES[@]}"; do
+    IFS='|' read -r patch_base _rest <<< "${entry}"
+    known_basenames+=("${patch_base}")
+  done
+  local patch_path
+  for patch_path in "${patches_dir}"/*.patch; do
+    [ -f "${patch_path}" ] || continue
+    local base
+    base="$(basename "${patch_path}")"
+    local found=0
+    local known
+    for known in "${known_basenames[@]}"; do
+      if [ "${known}" = "${base}" ]; then
+        found=1
+        break
+      fi
+    done
+    if [ "${found}" -eq 0 ]; then
+      echo -e "  ${YELLOW}Untracked overlay:${NC} ${base} — add to RATSPEAK_PATCH_ENTRIES in scripts/update.sh"
+      has_ratspeak_warning=1
+      HAS_WARNING=1
+    fi
+  done
+
+  for entry in "${RATSPEAK_PATCH_ENTRIES[@]}"; do
+    IFS='|' read -r patch_base repo pr label url <<< "${entry}"
+    local file="${patches_dir}/${patch_base}"
+    if [ ! -f "${file}" ]; then
+      echo "  ${label}: patch file absent (${patch_base}) — already removed?"
+      continue
+    fi
+    if [ -z "${pr}" ]; then
+      echo "  ${label}: local overlay present; no tracked PR — review ${url}"
+      echo "    See reticulum-sidecar/patches/README.md (sunset when upstream lands)."
+      continue
+    fi
+    local state
+    state="$(github_pr_state "${repo}" "${pr}")"
+    case "${state}" in
+      merged)
+        warn_box "${label} (Ratspeak overlay)" "local patch" "upstream MERGED" "${url}"
+        echo "  Reason tracked: ${repo}#${pr} merged — remove ${file} and drop apply steps"
+        echo "    (clone-ratspeak-stack.sh / ensure-rsReticulum-patches.sh / apply-*.sh)."
+        has_ratspeak_warning=1
+        HAS_WARNING=1
+        ;;
+      open)
+        echo "  ${label}: upstream PR still open — ${url}"
+        ;;
+      closed)
+        warn_box "${label} (Ratspeak overlay)" "local patch" "PR closed (not merged?)" "${url}"
+        echo "  Reason tracked: ${repo}#${pr} closed without merge — verify overlay still needed."
+        has_ratspeak_warning=1
+        HAS_WARNING=1
+        ;;
+      *)
+        echo "  ${label}: could not query ${repo}#${pr} (install gh or check network) — ${url}"
+        ;;
+    esac
+  done
+
+  if [ "${has_ratspeak_warning}" -eq 0 ]; then
+    echo '  Ratspeak overlay check complete (no merge-ready removals detected).'
+  fi
+}
+
 # --- Guard: must be project root ---
 if [ ! -f "${LOCKFILE}" ]; then
   echo "Error: ${LOCKFILE} not found. Run this script from the project root." >&2
@@ -205,6 +335,8 @@ for i in "${!KEYS[@]}"; do
     HAS_WARNING=1
   fi
 done
+
+check_ratspeak_patches
 
 if [ "${HAS_WARNING}" -eq 0 ]; then
   echo 'No updates to watched packages — safe to proceed.'

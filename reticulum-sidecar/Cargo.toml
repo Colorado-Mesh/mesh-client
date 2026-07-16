@@ -20,6 +20,8 @@ rns-stack = [
     "dep:rns-wire",
     "dep:rns-ratkey",
     "dep:rns-transport",
+    "dep:rns-link",
+    "dep:rns-crypto",
     "dep:rmpv",
     "dep:tempfile",
 ]
@@ -45,6 +47,9 @@ rmpv = { version = "1", optional = true }
 
 base64 = "0.22"
 bytes = "1"
+ciborium = "0.2"
+rand = "0.8"
+thiserror = "2"
 
 [dependencies.rns-runtime]
 package = "rns-runtime"
@@ -83,3 +88,13 @@ package = "rns-interface"
 path = "../../rsReticulum/crates/rns-interface"
 optional = true
 features = ["ble"]
+
+[dependencies.rns-link]
+package = "rns-link"
+path = "../../rsReticulum/crates/rns-link"
+optional = true
+
+[dependencies.rns-crypto]
+package = "rns-crypto"
+path = "../../rsReticulum/crates/rns-crypto"
+optional = true

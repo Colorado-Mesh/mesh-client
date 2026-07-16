@@ -89,6 +89,21 @@ describe('computeTabMappings', () => {
     expect(meshtasticTabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('NomadNetwork'));
   });
 
+  it('shows RRC tab after Chat and before Nomad for Reticulum only', () => {
+    const reticulumTabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
+    const rrcIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(TAB_SLOT_IDS.indexOf('RRC'));
+    const chatIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(TAB_SLOT_IDS.indexOf('Chat'));
+    const nomadIndex = reticulumTabs.tabIndexToPanelIndex.indexOf(
+      TAB_SLOT_IDS.indexOf('NomadNetwork'),
+    );
+    expect(rrcIndex).toBeGreaterThan(chatIndex);
+    expect(nomadIndex).toBeGreaterThan(rrcIndex);
+    expect(reticulumTabs.displayTabLabels[rrcIndex]).toBe('tabs.rrc');
+
+    const meshtasticTabs = computeTabMappings(identityT, 'meshtastic', MESHTASTIC_CAPABILITIES);
+    expect(meshtasticTabs.tabIndexToPanelIndex).not.toContain(TAB_SLOT_IDS.indexOf('RRC'));
+  });
+
   it('shows Meshtastic sidebar panels including Radio, Map, and Modules', () => {
     const tabs = computeTabMappings(identityT, 'meshtastic', MESHTASTIC_CAPABILITIES);
     const expectedSlots: (typeof TAB_SLOT_IDS)[number][] = [

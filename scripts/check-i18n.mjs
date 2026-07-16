@@ -175,6 +175,13 @@ function collectFiles(dir) {
 // Match t('some.key') / i18n.t('some.key') — only static string literals.
 const T_STATIC_RE = /\b(?:t|i18n\.t)\(\s*['"]([^'"]+)['"]\s*[),]/g;
 
+// Hardcoded English in aria-label/title JSX attributes — these must always go through t().
+// Plain-string form: aria-label="Some text" (excludes aria-label="" and empty/whitespace-only).
+const HARDCODED_ARIA_TITLE_STRING_RE = /\b(?:aria-label|title)="([A-Za-z][^"]*)"/g;
+// Template-literal form starting with literal English prose rather than an interpolation or
+// a lowercase/data token, e.g. aria-label={`Manage members of ${name}`} (see ContactGroupsModal).
+const HARDCODED_ARIA_TITLE_TEMPLATE_RE = /\b(?:aria-label|title)=\{`([A-Z][a-zA-Z][^`]*)`\}/g;
+
 // Match t(`prefix.${expr}`) or i18n.t(`prefix.${expr}`) — dynamic keys with registered prefixes.
 const T_TEMPLATE_RE = /\b(?:t|i18n\.t)\(\s*`([^`]*)\$\{[^}]+\}([^`]*)`\s*[),]/g;
 
@@ -300,6 +307,20 @@ for (const file of files) {
       );
       errors++;
     }
+    if (!file.includes('.test.')) {
+      for (const m of line.matchAll(HARDCODED_ARIA_TITLE_STRING_RE)) {
+        console.error(
+          `Hardcoded English in aria-label/title at ${relative(join(__dirname, '..'), file)}:${idx + 1} — use t() (found: "${m[1]}")`,
+        );
+        errors++;
+      }
+      for (const m of line.matchAll(HARDCODED_ARIA_TITLE_TEMPLATE_RE)) {
+        console.error(
+          `Hardcoded English in aria-label/title template literal at ${relative(join(__dirname, '..'), file)}:${idx + 1} — use t() with interpolation (found: "${m[1]}")`,
+        );
+        errors++;
+      }
+    }
   });
 }
 
@@ -373,6 +394,7 @@ const VERBATIM_KEY_NAMES = new Set([
   'floodAdvertSection', // same
   'buttonFloodAdvert', // same
   'sendButtonDm', // "DM" — direct-message abbreviation, used verbatim internationally
+  'pinPlaceholder', // numeric pairing-code input placeholder — "PIN" the acronym, not a sewing/hair pin
 ]);
 
 // "Hops" in mesh routing keeps tripping auto-translators into the brewing
@@ -389,11 +411,16 @@ const FORBIDDEN_HOP_TOKENS = [
   // fr
   'Houblon',
   'houblon',
-  // it
+  // it (include plural, MT sometimes emits "luppoli" instead of singular)
   'Luppolo',
   'luppolo',
-  // tr
+  'Luppoli',
+  'luppoli',
+  // tr (include the commonly mistyped two-word spacing "Şerbetçi otu")
   'Şerbetçiotu',
+  'Şerbetçi otu',
+  'şerbetçiotu',
+  'şerbetçi otu',
   // ru / uk / pl / cs (include declined forms that stem-only checks miss)
   'Хмель',
   'хмель',
@@ -402,6 +429,10 @@ const FORBIDDEN_HOP_TOKENS = [
   'хміль',
   'Chmiel',
   'chmiel',
+  // cs (Czech beer-hop plant "chmel", distinct from Polish "Chmiel" — substring
+  // match also catches declined forms: chmele, chmelu, chmelů, chmeli, chmelem)
+  'Chmel',
+  'chmel',
   // zh: 酒花 = beer hops; 链路数目 (number of links) is the correct routing term.
   '酒花',
 ];

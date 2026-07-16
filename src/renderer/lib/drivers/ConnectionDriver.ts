@@ -46,6 +46,7 @@ function transportTypeToConnectionType(type: TransportType): ConnectionType | nu
     case 'ble':
     case 'serial':
     case 'http':
+    case 'tcp':
       return type;
     default:
       return null;

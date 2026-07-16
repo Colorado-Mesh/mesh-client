@@ -25,6 +25,7 @@ import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import type { RfConnectAutomaticFn, RfConnectFn } from '@/renderer/lib/rfConnectionTypes';
 import { isPairingRelatedError } from '@/shared/blePairingError';
 import {
+  clampMqttMaxRetries,
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
   MQTT_MAX_RECONNECT_ATTEMPTS,
 } from '@/shared/meshtasticMqttReconnect';
@@ -1390,6 +1391,13 @@ export default function ConnectionPanel({
       isAutoConnectingRef.current = false;
       setIsAutoConnecting(false);
       setAutoConnectBleTarget(null);
+      setConnecting(false);
+      setConnectionStage('');
+      // Setup AbortError is intentional (disconnect / superseded connect) — not a user-facing failure.
+      if (transport === 'ble' && humanizeBleError(err, t) === '') {
+        console.debug('[ConnectionPanel] auto-connect cancelled ' + errLikeToLogString(err));
+        return;
+      }
       const errMsg =
         err instanceof Error
           ? transport === 'serial'
@@ -1397,8 +1405,6 @@ export default function ConnectionPanel({
             : humanizeBleError(err, t)
           : t('connectionPanel.error.autoConnectFailed');
       setError(errMsg || t('connectionPanel.error.autoConnectFailed'));
-      setConnecting(false);
-      setConnectionStage('');
     };
 
     const maybeNotifyPrimaryBleAutoConnectSettled = notifyPrimaryAutoConnectSettledIfNeeded;
@@ -1428,7 +1434,11 @@ export default function ConnectionPanel({
             dualNobleBleBothRadiosConfigured() &&
             getNobleBleDualRadioPrimaryProtocol() === protocol
           ) {
-            void attempt.finally(maybeNotifyPrimaryBleAutoConnectSettled);
+            // `finally` returns a new promise; voiding it without catch surfaces the same
+            // rejection again as unhandledrejection even when `attempt` is awaited below.
+            void attempt.finally(maybeNotifyPrimaryBleAutoConnectSettled).catch(() => {
+              // catch-no-log-ok — rejection is handled by reconnectBleWithScan's await of `attempt`
+            });
           }
           return attempt;
         });
@@ -2135,8 +2145,12 @@ export default function ConnectionPanel({
               <HelpTooltip
                 text={
                   protocol === 'meshcore'
-                    ? `Reconnect tries before giving up (1–${MQTT_MAX_RECONNECT_ATTEMPTS}). Saved with settings; press Connect again after changing so the main process picks it up.`
-                    : `Both protocols allow 1–${MQTT_MAX_RECONNECT_ATTEMPTS}. Saved with settings; disconnect and Connect again so the running session uses the new value.`
+                    ? t('connectionPanel.maxRetriesHelpConnected.meshcore', {
+                        max: MQTT_MAX_RECONNECT_ATTEMPTS,
+                      })
+                    : t('connectionPanel.maxRetriesHelpConnected.meshtastic', {
+                        max: MQTT_MAX_RECONNECT_ATTEMPTS,
+                      })
                 }
               />
             </div>
@@ -2148,11 +2162,7 @@ export default function ConnectionPanel({
               max={MQTT_MAX_RECONNECT_ATTEMPTS}
               value={activeMqttSettings.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS}
               onChange={(e) => {
-                const fallback = MQTT_DEFAULT_RECONNECT_ATTEMPTS;
-                const cap = MQTT_MAX_RECONNECT_ATTEMPTS;
-                const n = parseInt(e.target.value, 10);
-                const v = Number.isFinite(n) ? Math.min(cap, Math.max(1, n)) : fallback;
-                updateMqtt('maxRetries', v, false);
+                updateMqtt('maxRetries', clampMqttMaxRetries(e.target.value), false);
               }}
               className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
             />
@@ -2599,11 +2609,7 @@ export default function ConnectionPanel({
               max={MQTT_MAX_RECONNECT_ATTEMPTS}
               value={activeMqttSettings.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS}
               onChange={(e) => {
-                const fallback = MQTT_DEFAULT_RECONNECT_ATTEMPTS;
-                const cap = MQTT_MAX_RECONNECT_ATTEMPTS;
-                const n = parseInt(e.target.value, 10);
-                const v = Number.isFinite(n) ? Math.min(cap, Math.max(1, n)) : fallback;
-                updateMqtt('maxRetries', v, false);
+                updateMqtt('maxRetries', clampMqttMaxRetries(e.target.value), false);
               }}
               className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
             />

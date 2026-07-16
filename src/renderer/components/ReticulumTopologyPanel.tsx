@@ -31,6 +31,7 @@ import type { ReticulumPeerWireRow } from '@/shared/reticulum-types';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import { resolveReticulumPeerLabel, useReticulumPeerStore } from '../stores/reticulumPeerStore';
+import { TopologyHopFilterControls } from './TopologyHopFilterControls';
 
 /** Cap path-table rows rendered in the topology force graph (sidecar also caps at 2000). */
 const TOPOLOGY_PEER_RENDER_CAP = 800;
@@ -468,37 +469,16 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
         >
           {t('common.refresh')}
         </button>
-        <label className="flex items-center gap-1.5 text-slate-400">
-          <input
-            type="checkbox"
-            checked={includeDistantPeers}
-            onChange={(e) => {
-              setIncludeDistantPeers(e.target.checked);
-            }}
-            aria-label={t('reticulumTopology.showDistantPeers')}
-            className="accent-brand-green h-3.5 w-3.5 rounded"
-          />
-          {t('reticulumTopology.showDistantPeers')}
-        </label>
-        <label className="flex items-center gap-1.5 text-slate-400">
-          <span>{t('reticulumTopology.maxHopsFilter')}</span>
-          <select
-            value={maxHops ?? 'all'}
-            onChange={(e) => {
-              const value = e.target.value;
-              setMaxHops(value === 'all' ? null : Number.parseInt(value, 10));
-            }}
-            aria-label={t('reticulumTopology.maxHopsFilter')}
-            className="rounded border border-slate-600 bg-slate-800 px-2 py-0.5 text-xs text-slate-200"
-          >
-            <option value="all">{t('reticulumTopology.maxHopsAll')}</option>
-            {[1, 2, 3, 5, 8].map((hops) => (
-              <option key={hops} value={hops}>
-                {t('reticulumTopology.maxHopsOption', { count: hops })}
-              </option>
-            ))}
-          </select>
-        </label>
+        <TopologyHopFilterControls
+          includeDistantPeers={includeDistantPeers}
+          onIncludeDistantPeersChange={setIncludeDistantPeers}
+          maxHops={maxHops}
+          onMaxHopsChange={setMaxHops}
+          showDistantPeersLabel={t('reticulumTopology.showDistantPeers')}
+          maxHopsFilterLabel={t('reticulumTopology.maxHopsFilter')}
+          maxHopsAllLabel={t('reticulumTopology.maxHopsAll')}
+          maxHopsOptionLabel={(hops) => t('reticulumTopology.maxHopsOption', { count: hops })}
+        />
         {hasGraph && (
           <span className="text-slate-500">
             {t('reticulumTopology.interfaceStatus', {

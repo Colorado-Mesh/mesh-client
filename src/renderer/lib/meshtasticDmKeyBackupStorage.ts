@@ -1,9 +1,6 @@
+import { createEncryptedKeyBackupStorage } from './encryptedKeyBackupStorage';
 import { errLikeToLogString } from './errLikeToLogString';
-import {
-  keyBackupBase64ToBytes,
-  keyBackupBytesToBase64,
-  nodeNumDisplayHex,
-} from './keyBackupBytes';
+import { nodeNumDisplayHex } from './keyBackupBytes';
 
 export const LEGACY_MESHTASTIC_DM_KEY_BACKUP_KEY = 'mesh-client:key-backup';
 export const MESHTASTIC_DM_KEY_BACKUP_PREFIX = 'mesh-client:meshtastic-dm-key-backup:';
@@ -27,14 +24,6 @@ export interface MeshtasticDmKeyBackupIndexEntry {
   backedUpAt: number;
 }
 
-function normalizeNodeNum(nodeNum: number): number {
-  return nodeNum >>> 0;
-}
-
-export function meshtasticDmKeyBackupStorageKey(nodeNum: number): string {
-  return `${MESHTASTIC_DM_KEY_BACKUP_PREFIX}${String(normalizeNodeNum(nodeNum))}`;
-}
-
 function validateMeshtasticKeyPair(publicKey: Uint8Array, privateKey: Uint8Array): void {
   if (publicKey.length !== MESHTASTIC_KEY_LEN) {
     throw new Error('Meshtastic backup: public key must be 32 bytes');
@@ -44,114 +33,47 @@ function validateMeshtasticKeyPair(publicKey: Uint8Array, privateKey: Uint8Array
   }
 }
 
-function parsePayload(raw: string): MeshtasticDmKeyBackupPayload {
-  const parsed = JSON.parse(raw) as MeshtasticDmKeyBackupPayload;
-  if (parsed.protocol !== 'meshtastic') {
-    throw new Error('Meshtastic backup: invalid protocol');
-  }
-  const publicKey = keyBackupBase64ToBytes(parsed.publicKey);
-  const privateKey = keyBackupBase64ToBytes(parsed.privateKey);
-  validateMeshtasticKeyPair(publicKey, privateKey);
-  if (typeof parsed.nodeNum !== 'number') {
-    throw new Error('Meshtastic backup: nodeNum missing');
-  }
-  return parsed;
-}
+const backup = createEncryptedKeyBackupStorage({
+  prefix: MESHTASTIC_DM_KEY_BACKUP_PREFIX,
+  indexKey: MESHTASTIC_DM_KEY_BACKUP_INDEX_KEY,
+  protocol: 'meshtastic',
+  idField: 'nodeNum',
+  validateKeyPair: validateMeshtasticKeyPair,
+});
 
-function readIndex(): MeshtasticDmKeyBackupIndexEntry[] {
-  try {
-    const raw = localStorage.getItem(MESHTASTIC_DM_KEY_BACKUP_INDEX_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as MeshtasticDmKeyBackupIndexEntry[];
-    if (!Array.isArray(parsed)) {
-      console.warn(
-        'Meshtastic backup: index JSON is valid but not an array; resetting in-memory index view.',
-      );
-      return [];
-    }
-    return parsed;
-  } catch {
-    // catch-no-log-ok corrupt index JSON — ensureMeshtasticDmKeyBackupIndex rebuilds async
-    return [];
-  }
-}
-
-function writeIndex(entries: MeshtasticDmKeyBackupIndexEntry[]): void {
-  localStorage.setItem(MESHTASTIC_DM_KEY_BACKUP_INDEX_KEY, JSON.stringify(entries));
-}
-
-function listBackupStorageKeys(): string[] {
-  const keys: string[] = [];
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith(MESHTASTIC_DM_KEY_BACKUP_PREFIX)) keys.push(key);
-    }
-  } catch {
-    // catch-no-log-ok localStorage iteration
-  }
-  return keys;
+export function meshtasticDmKeyBackupStorageKey(nodeNum: number): string {
+  return backup.storageKey(nodeNum);
 }
 
 /** Decrypt per-node slots and rewrite the index (missing or corrupt index). */
 export async function rebuildMeshtasticDmKeyBackupIndex(): Promise<
   MeshtasticDmKeyBackupIndexEntry[]
 > {
-  const entries: MeshtasticDmKeyBackupIndexEntry[] = [];
-  for (const key of listBackupStorageKeys()) {
-    const ciphertext = localStorage.getItem(key);
-    if (!ciphertext) continue;
-    try {
-      const decrypted = await window.electronAPI.safeStorage.decrypt(ciphertext);
-      if (!decrypted) continue;
-      const payload = parsePayload(decrypted);
-      entries.push({
-        nodeNum: normalizeNodeNum(payload.nodeNum),
-        nodeLabel: payload.nodeLabel,
-        publicKeyB64: payload.publicKey,
-        backedUpAt: payload.backedUpAt,
-      });
-    } catch {
-      // catch-no-log-ok skip corrupt slot during rebuild
-    }
-  }
-  entries.sort((a, b) => b.backedUpAt - a.backedUpAt);
-  writeIndex(entries);
-  return entries;
-}
-
-function indexNeedsRebuild(index: MeshtasticDmKeyBackupIndexEntry[]): boolean {
-  const slotKeys = listBackupStorageKeys();
-  if (slotKeys.length === 0) return false;
-  if (index.length === 0) return true;
-  const indexedNums = new Set(index.map((e) => normalizeNodeNum(e.nodeNum)));
-  return slotKeys.some((key) => {
-    const suffix = key.slice(MESHTASTIC_DM_KEY_BACKUP_PREFIX.length);
-    const nodeNum = Number(suffix);
-    return Number.isFinite(nodeNum) && !indexedNums.has(normalizeNodeNum(nodeNum));
-  });
+  const entries = await backup.rebuildIndexFromSlots();
+  return entries.map((e) => ({
+    nodeNum: e.id,
+    nodeLabel: e.nodeLabel,
+    publicKeyB64: e.publicKeyB64,
+    backedUpAt: e.backedUpAt,
+  }));
 }
 
 /** Rebuild index from encrypted slots when missing, corrupt, or out of sync. */
 export async function ensureMeshtasticDmKeyBackupIndex(): Promise<void> {
-  if (!indexNeedsRebuild(readIndex())) return;
-  await rebuildMeshtasticDmKeyBackupIndex();
-}
-
-function upsertIndexEntry(entry: MeshtasticDmKeyBackupIndexEntry): void {
-  const nodeNum = normalizeNodeNum(entry.nodeNum);
-  const next = readIndex().filter((e) => normalizeNodeNum(e.nodeNum) !== nodeNum);
-  next.push({ ...entry, nodeNum });
-  next.sort((a, b) => b.backedUpAt - a.backedUpAt);
-  writeIndex(next);
+  await backup.ensureIndex();
 }
 
 export function listMeshtasticDmKeyBackups(): MeshtasticDmKeyBackupIndexEntry[] {
-  return readIndex();
+  return backup.list().map((e) => ({
+    nodeNum: e.id,
+    nodeLabel: e.nodeLabel,
+    publicKeyB64: e.publicKeyB64,
+    backedUpAt: e.backedUpAt,
+  }));
 }
 
 export function hasMeshtasticDmKeyBackup(nodeNum: number): boolean {
-  return localStorage.getItem(meshtasticDmKeyBackupStorageKey(nodeNum)) !== null;
+  return backup.has(nodeNum);
 }
 
 export async function saveMeshtasticDmKeyBackup(options: {
@@ -160,24 +82,11 @@ export async function saveMeshtasticDmKeyBackup(options: {
   privateKey: Uint8Array;
   nodeLabel?: string;
 }): Promise<void> {
-  validateMeshtasticKeyPair(options.publicKey, options.privateKey);
-  const nodeNum = normalizeNodeNum(options.nodeNum);
-  const payload: MeshtasticDmKeyBackupPayload = {
-    protocol: 'meshtastic',
-    nodeNum,
-    publicKey: keyBackupBytesToBase64(options.publicKey),
-    privateKey: keyBackupBytesToBase64(options.privateKey),
-    nodeLabel: options.nodeLabel?.trim() || undefined,
-    backedUpAt: Date.now(),
-  };
-  const encrypted = await window.electronAPI.safeStorage.encrypt(JSON.stringify(payload));
-  if (!encrypted) throw new Error('Encryption failed');
-  localStorage.setItem(meshtasticDmKeyBackupStorageKey(nodeNum), encrypted);
-  upsertIndexEntry({
-    nodeNum,
-    nodeLabel: payload.nodeLabel,
-    publicKeyB64: payload.publicKey,
-    backedUpAt: payload.backedUpAt,
+  await backup.save({
+    id: options.nodeNum,
+    publicKey: options.publicKey,
+    privateKey: options.privateKey,
+    nodeLabel: options.nodeLabel,
   });
 }
 
@@ -186,40 +95,31 @@ export async function loadMeshtasticDmKeyBackup(nodeNum: number): Promise<{
   privateKey: Uint8Array;
   payload: MeshtasticDmKeyBackupPayload;
 } | null> {
-  const ciphertext = localStorage.getItem(meshtasticDmKeyBackupStorageKey(nodeNum));
-  if (!ciphertext) return null;
-  const decrypted = await window.electronAPI.safeStorage.decrypt(ciphertext);
-  if (!decrypted) throw new Error('Decryption failed');
-  const payload = parsePayload(decrypted);
+  const loaded = await backup.load(nodeNum);
+  if (!loaded) return null;
+  const { payload } = loaded;
   return {
-    publicKey: keyBackupBase64ToBytes(payload.publicKey),
-    privateKey: keyBackupBase64ToBytes(payload.privateKey),
-    payload,
+    publicKey: loaded.publicKey,
+    privateKey: loaded.privateKey,
+    payload: {
+      protocol: 'meshtastic',
+      nodeNum: payload.id,
+      publicKey: payload.publicKey,
+      privateKey: payload.privateKey,
+      nodeLabel: payload.nodeLabel,
+      backedUpAt: payload.backedUpAt,
+    },
   };
 }
 
 export function deleteMeshtasticDmKeyBackup(nodeNum: number): void {
-  const normalized = normalizeNodeNum(nodeNum);
-  localStorage.removeItem(meshtasticDmKeyBackupStorageKey(normalized));
-  writeIndex(readIndex().filter((e) => normalizeNodeNum(e.nodeNum) !== normalized));
+  backup.remove(nodeNum);
 }
 
 /** Migrate legacy single-slot backup when it contains a valid pair. */
 export async function migrateLegacyMeshtasticDmKeyBackup(nodeNum: number): Promise<boolean> {
-  if (hasMeshtasticDmKeyBackup(nodeNum)) return false;
-  const legacy = localStorage.getItem(LEGACY_MESHTASTIC_DM_KEY_BACKUP_KEY);
-  if (!legacy) return false;
   try {
-    const decrypted = await window.electronAPI.safeStorage.decrypt(legacy);
-    if (!decrypted) return false;
-    const parsed = JSON.parse(decrypted) as { publicKey?: string; privateKey?: string };
-    if (!parsed.publicKey || !parsed.privateKey) return false;
-    const publicKey = keyBackupBase64ToBytes(parsed.publicKey);
-    const privateKey = keyBackupBase64ToBytes(parsed.privateKey);
-    validateMeshtasticKeyPair(publicKey, privateKey);
-    await saveMeshtasticDmKeyBackup({ nodeNum, publicKey, privateKey });
-    localStorage.removeItem(LEGACY_MESHTASTIC_DM_KEY_BACKUP_KEY);
-    return true;
+    return await backup.migrateLegacySingleSlot(LEGACY_MESHTASTIC_DM_KEY_BACKUP_KEY, nodeNum);
   } catch (err) {
     console.warn('[meshtasticDmKeyBackupStorage] legacy migrate failed ' + errLikeToLogString(err));
     return false;

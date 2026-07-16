@@ -7,6 +7,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { extractUseCallbackBody } from '../lib/sourceContractTestHelpers';
+
 const TEST_DIR = import.meta.dirname ?? __dirname;
 const SOURCE = readFileSync(join(TEST_DIR, 'useReticulumRuntime.ts'), 'utf-8');
 
@@ -63,7 +65,25 @@ describe('useReticulumRuntime manual disconnect must not auto-reconnect', () => 
   });
 
   it('sidecar stop autostart reconnect respects suppressReconnect', () => {
-    expect(SOURCE).toMatch(/isReticulumAutostartEnabled\(\) && !suppressReconnectRef\.current/);
+    expect(SOURCE).toMatch(
+      /if \(suppressReconnectRef\.current\) \{[\s\S]*?\} else if \(isReticulumAutostartEnabled\(\)\) \{/,
+    );
+  });
+
+  it('only clears suppressReconnect when an active session actually stopped', () => {
+    // Regression: clearing the flag unconditionally after every "not running" status (even
+    // when nothing was active) let a later, unrelated sidecar stop autostart the stack again
+    // after the user had explicitly disconnected. The reset must live inside `if (wasActive)`
+    // and only fire when the flag was actually consumed (i.e. it was true).
+    const onStatusRe =
+      /window\.electronAPI\.reticulum\.onStatus\(\(status\) => \{[\s\S]*?\n {4}\}\);/;
+    const onStatusBody = onStatusRe.exec(SOURCE)?.[0];
+    expect(onStatusBody).toBeDefined();
+    expect(onStatusBody).toMatch(
+      /if \(wasActive\) \{[\s\S]*?if \(suppressReconnectRef\.current\) \{\s*suppressReconnectRef\.current = false;/,
+    );
+    // The old buggy shape reset the flag unconditionally right after the `if (wasActive)` block.
+    expect(onStatusBody).not.toMatch(/\n\s*\}\n\s*suppressReconnectRef\.current = false;/);
   });
 
   it('onPowerResume skips reconnect after explicit user disconnect', () => {
@@ -73,6 +93,54 @@ describe('useReticulumRuntime manual disconnect must not auto-reconnect', () => 
     expect(resumeBody).toMatch(
       /suppressReconnectRef\.current[\s\S]*?skip reconnect \(user disconnect\)/,
     );
+  });
+});
+
+describe('useReticulumRuntime resume-generation cancel (H7)', () => {
+  it('onPowerSuspend bumps resumeGenerationRef instead of being a no-op', () => {
+    expect(SOURCE).toMatch(
+      /const onPowerSuspend = useCallback\(\(\) => \{\s*resumeGenerationRef\.current \+= 1;\s*\}, \[\]\);/,
+    );
+    // Regression: the runtime object used to return a literal no-op for onPowerSuspend.
+    expect(SOURCE).not.toMatch(/onPowerSuspend: \(\) => \{\},/);
+  });
+
+  it('wires the real onPowerSuspend callback into the returned runtime object', () => {
+    expect(SOURCE).toMatch(/restartStack,\s*onPowerSuspend,\s*onPowerResume,/);
+  });
+
+  it('connect captures the resume generation before starting the async flight', () => {
+    const connectBody = extractUseCallbackBody(SOURCE, 'connect');
+    expect(connectBody).toMatch(
+      /connectInFlightRef\.current = true;\s*const generation = resumeGenerationRef\.current;\s*const flight = \(async \(\) => \{/,
+    );
+  });
+
+  it('connect skips applying a stale configured state when superseded by a newer suspend', () => {
+    const connectBody = extractUseCallbackBody(SOURCE, 'connect');
+    expect(connectBody).toMatch(
+      /if \(resumeGenerationRef\.current !== generation\) \{[\s\S]*?return;\s*\}/,
+    );
+    const guardIndex = connectBody.indexOf('if (resumeGenerationRef.current !== generation)');
+    const configuredIndex = connectBody.indexOf("status: 'configured'");
+    expect(guardIndex).toBeGreaterThan(-1);
+    expect(configuredIndex).toBeGreaterThan(guardIndex);
+  });
+
+  it('does not gate the connect failure catch block on the resume generation (unrelated to suspend races)', () => {
+    const connectBody = extractUseCallbackBody(SOURCE, 'connect');
+    const catchRe = /\} catch \(e\) \{[\s\S]*?connectInFlightRef\.current = false;/;
+    const catchBlock = catchRe.exec(connectBody)?.[0];
+    expect(catchBlock).toBeDefined();
+    expect(catchBlock).not.toContain('resumeGenerationRef');
+  });
+
+  it('keeps B1 sticky user-disconnect (suppressReconnectRef) independent of the resume generation', () => {
+    const resumeRe = /const onPowerResume = useCallback\([\s\S]*?\}, \[connect\]\);/;
+    const resumeBody = resumeRe.exec(SOURCE)?.[0];
+    expect(resumeBody).toBeDefined();
+    expect(resumeBody).toContain('suppressReconnectRef.current');
+    expect(resumeBody).not.toContain('resumeGenerationRef');
   });
 });
 

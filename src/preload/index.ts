@@ -1022,6 +1022,40 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('reticulum:status', handler);
       return () => ipcRenderer.off('reticulum:status', handler);
     },
+    rrc: {
+      listHubs: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rrc/hubs'),
+      upsertHub: (opts: { dest_hash: string; label?: string; favorited?: boolean }) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/hubs', opts),
+      setFavorite: (destHash: string, favorited: boolean) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/hubs/favorite', {
+          dest_hash: destHash,
+          favorited,
+        }),
+      connect: (opts: { dest_hash: string; nickname?: string }) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/connect', opts),
+      disconnect: (opts?: { dest_hash?: string }) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/disconnect', opts ?? {}),
+      getStatus: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rrc/status'),
+      join: (opts: { hub_dest_hash: string; room: string; key?: string }) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/join', opts),
+      part: (opts: { hub_dest_hash: string; room: string }) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/part', opts),
+      send: (opts: {
+        hub_dest_hash: string;
+        room?: string;
+        body: string;
+        type?: string;
+        dst_hash?: string;
+      }) => ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/send', opts),
+      setNickname: (opts: { nickname: string; hub_dest_hash?: string }) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/nick', opts),
+      getRooms: (hubDestHash?: string) => {
+        const q = hubDestHash?.trim()
+          ? `?hub_dest_hash=${encodeURIComponent(hubDestHash.trim().toLowerCase())}`
+          : '';
+        return ipcRenderer.invoke('reticulum:proxyGet', `/api/v1/rrc/rooms${q}`);
+      },
+    },
   },
 
   // ─── Reticulum identity vault ────────────────────────────────────

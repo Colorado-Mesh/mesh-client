@@ -1,4 +1,0 @@
-paths:
-  .github/workflows/**/*.{yml,yaml}:
-    ignore:
-      - 'unknown permission scope "code-quality"'

@@ -10,6 +10,7 @@ import { formatHostForSocket } from '@/shared/connectHost';
 
 import { withTimeout } from '../../../../shared/withTimeout';
 import { isMeshcoreRetryableBleErrorMessage } from '../../bleConnectErrors';
+import { connectNobleBleWithScanBusyRetry } from '../../bleReconnectHelper';
 import { closeSerialPortIfOpen } from '../../connection';
 import { patchMeshcoreCompanionTxEchoFilter } from '../../meshcoreCompanionTxEchoFilter';
 import { notifyNobleBlePrimaryRfLinkReady } from '../../meshcoreDualNobleBleInit';
@@ -314,9 +315,7 @@ class IpcNobleConnection {
 
       try {
         await withTimeout(
-          window.electronAPI.connectNobleBle(sessionId, this.peripheralId).then((result) => {
-            if (!result.ok) throw new Error(result.error || 'BLE connect failed');
-          }),
+          connectNobleBleWithScanBusyRetry(sessionId, this.peripheralId),
           NOBLE_IPC_CONNECT_TIMEOUT_MS,
           'MeshCore BLE IPC open',
         );

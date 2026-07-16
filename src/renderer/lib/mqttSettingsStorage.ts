@@ -1,6 +1,6 @@
 import {
+  clampMqttMaxRetries,
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
-  MQTT_MAX_RECONNECT_ATTEMPTS,
 } from '@/shared/meshtasticMqttReconnect';
 
 import type { MQTTSettings } from './types';
@@ -15,10 +15,9 @@ export function readMqttSettingsFromStorage(
     if (!raw) return { ...defaults };
     const parsed = JSON.parse(raw) as Partial<MQTTSettings>;
     const merged = { ...defaults, ...parsed };
-    const r = merged.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS;
     return {
       ...merged,
-      maxRetries: Math.min(MQTT_MAX_RECONNECT_ATTEMPTS, Math.max(1, r)),
+      maxRetries: clampMqttMaxRetries(merged.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS),
     };
   } catch {
     // catch-no-log-ok corrupt localStorage JSON — fall back to defaults

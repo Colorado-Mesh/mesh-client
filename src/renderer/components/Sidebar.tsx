@@ -17,6 +17,8 @@ interface SidebarProps {
   chatUnread?: number;
   /** Unread room BBS post count for Rooms tab badge (MeshCore); 0 hides badge */
   roomsUnread?: number;
+  /** Unread RRC message count for RRC tab badge; 0 hides badge */
+  rrcUnread?: number;
   /** Set of tab indices that are disabled (greyed out, non-clickable) */
   disabledTabs?: Set<number>;
   collapsed: boolean;
@@ -30,6 +32,7 @@ export default function Sidebar({
   onChange,
   chatUnread = 0,
   roomsUnread = 0,
+  rrcUnread = 0,
   disabledTabs,
   collapsed,
   onToggle,
@@ -60,8 +63,15 @@ export default function Sidebar({
           const isDisabled = disabledTabs?.has(i) ?? false;
           const showChatBadge = slotId === 'Chat' && chatUnread > 0;
           const showRoomsBadge = slotId === 'Rooms' && roomsUnread > 0;
-          const badgeCount = showChatBadge ? chatUnread : showRoomsBadge ? roomsUnread : 0;
-          const showBadge = showChatBadge || showRoomsBadge;
+          const showRrcBadge = slotId === 'RRC' && rrcUnread > 0;
+          const badgeCount = showChatBadge
+            ? chatUnread
+            : showRoomsBadge
+              ? roomsUnread
+              : showRrcBadge
+                ? rrcUnread
+                : 0;
+          const showBadge = showChatBadge || showRoomsBadge || showRrcBadge;
           const tabAriaLabel = showBadge
             ? `${displayLabel} ${badgeCount > 99 ? '99+' : badgeCount} unread`
             : displayLabel;

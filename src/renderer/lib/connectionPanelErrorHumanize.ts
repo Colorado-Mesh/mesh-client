@@ -7,7 +7,7 @@ import {
 } from '@/shared/connectHost';
 import type { BlePeripheralOwner } from '@/shared/electron-api.types';
 
-import { MESHCORE_SETUP_ABORT_MESSAGE } from './bleConnectErrors';
+import { isMeshcoreSetupAbortError } from './bleConnectErrors';
 import { isMeshcoreI18nKey } from './meshcore/meshcoreMessageI18n';
 import {
   bleOwnerI18nKey,
@@ -118,11 +118,7 @@ export function humanizeHttpError(address: string, err: unknown, t: TFunction): 
 }
 
 export function humanizeBleError(err: unknown, t: TFunction): string {
-  if (
-    err instanceof DOMException &&
-    err.name === 'AbortError' &&
-    err.message === MESHCORE_SETUP_ABORT_MESSAGE
-  ) {
+  if (isMeshcoreSetupAbortError(err)) {
     return '';
   }
   const msg =

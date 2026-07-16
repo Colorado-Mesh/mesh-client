@@ -5,6 +5,7 @@ import { isPairingRelatedError } from '@/shared/blePairingError';
 import { formatHostForSocket, formatHostForUrl, parseConnectHostPort } from '@/shared/connectHost';
 
 import { isMainProcessBleTimeoutMessage } from './bleConnectErrors';
+import { connectNobleBleWithScanBusyRetry } from './bleReconnectHelper';
 import {
   assertMeshtasticSerialWebStreamsAvailable,
   assertTransportReadyForMeshDevice,
@@ -229,10 +230,9 @@ export async function createBleConnection(
     for (let attempt = 1; attempt <= BLE_CONNECT_MAX_ATTEMPTS; attempt++) {
       const attemptStartedAt = Date.now();
       try {
-        const connectResult = await window.electronAPI.connectNobleBle(sessionId, peripheralId);
-        if (!connectResult.ok) {
-          throw new Error(connectResult.error || 'BLE connect failed');
-        }
+        // Waits out short Reticulum Noble yields (BLE RNode) instead of hard-failing;
+        // peripheral conflict and other errors still fail immediately.
+        await connectNobleBleWithScanBusyRetry(sessionId, peripheralId);
         notifyNobleBlePrimaryRfLinkReady(sessionId);
         if (attempt > 1) {
           console.info(
@@ -253,7 +253,8 @@ export async function createBleConnection(
         lastError = err;
         const message = err instanceof Error ? err.message : String(err);
         const isTimeout = isMainProcessBleTimeoutMessage(message) || /timed out/i.test(message);
-        const reticulumAdapterBusy =
+        // Scan-busy already waited up to BLE_SCAN_BUSY_MAX_WAIT_MS; conflict is terminal.
+        const noMoreAttempts =
           isBleScanBusyErrorMessage(message) || isBlePeripheralConflictErrorMessage(message);
         console.warn(
           `[connection] createBleConnection attempt failed ${formatJsonForRendererLog({
@@ -267,7 +268,7 @@ export async function createBleConnection(
             message,
           })}`,
         );
-        if (reticulumAdapterBusy || !isTimeout || attempt >= BLE_CONNECT_MAX_ATTEMPTS) {
+        if (noMoreAttempts || !isTimeout || attempt >= BLE_CONNECT_MAX_ATTEMPTS) {
           break;
         }
         await new Promise<void>((r) => setTimeout(r, BLE_CONNECT_RETRY_DELAY_MS));

@@ -2,6 +2,8 @@ import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import type { MeshDevice } from '@meshtastic/core';
 import { Admin, Mesh, Portnums } from '@meshtastic/protobufs';
 
+import { hexToBytesExact } from '@/shared/hexBytes';
+
 import { errLikeToLogString } from './errLikeToLogString';
 import { writeToRadioWithoutQueue } from './meshtasticBacklogUtils';
 import { parseMeshtasticAdminKeyBase64 } from './meshtasticRemoteAdminKeyStorage';
@@ -198,14 +200,7 @@ export function resolveMeshtasticDestPublicKeyBytes(params: {
 export function meshtasticNodePublicKeyBytesFromHex(
   hex: string | undefined,
 ): Uint8Array | undefined {
-  if (hex?.length !== 64) return undefined;
-  const bytes = new Uint8Array(32);
-  for (let i = 0; i < 32; i++) {
-    const byte = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-    if (!Number.isFinite(byte) || byte < 0 || byte > 255) return undefined;
-    bytes[i] = byte;
-  }
-  return bytes;
+  return hexToBytesExact(hex, 32);
 }
 
 export type RemoteAdminSessionStatus = 'none' | 'active' | 'stale';

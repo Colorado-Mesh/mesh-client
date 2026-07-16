@@ -41,6 +41,8 @@ export const DYNAMIC_T_PREFIXES = [
   { prefix: 'connectionPanel.bleOwner.', leafKeys: true },
   { prefix: 'reticulumMap.filter.', leafKeys: true },
   { prefix: 'reticulumMap.empty.', leafKeys: true },
+  { prefix: 'rrc.status.', leafKeys: true },
+  { prefix: 'rrc.slash.', leafKeys: true },
 ];
 
 export function flatten(obj, prefix = '') {

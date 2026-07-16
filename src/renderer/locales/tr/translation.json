@@ -1133,6 +1133,10 @@
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
+    },
+    "maxRetriesHelpConnected": {
+      "meshcore": "Vazgeçmeden önce denemeleri yeniden bağlayın (1 -{{max}}). Ayarlar ile kaydedildi; değiştirdikten sonra Bağlan'a tekrar basın, böylece ana işlem onu alır.",
+      "meshtastic": "Her iki protokol de 1 -{{max}} 'a izin verir. Ayarlar ile kaydedildi; bağlantıyı kesin ve tekrar bağlanın, böylece çalışan oturum yeni değeri kullanır."
     }
   },
   "contactGroupsModal": {
@@ -1150,7 +1154,13 @@
     "noContactsYet": "Henüz kişi yok.",
     "noGroupsYet": "Henüz grup yok. Yukarıda bir tane oluşturun.",
     "memberCount_one": "{{count}} üye",
-    "memberCount_other": "{{count}} üyeler"
+    "memberCount_other": "{{count}} üyeler",
+    "title": "Kişi Grupları",
+    "addButton": "Ekle",
+    "confirmDeleteButton": "Sil?",
+    "manageMembersOf": "{{name}} üyelerini yönet",
+    "renameGroupNamed": "{{name}} yeniden adlandır",
+    "deleteGroupNamed": "{{name}} silin"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}} saatten (1-168) daha eski olan yönlendirme satırlarını bırak",
@@ -1471,7 +1481,7 @@
     "runOnce": "Bir kez ping yap",
     "colSeq": "#",
     "colRtt": "RTT",
-    "colHops": "Şerbetçi otu",
+    "colHops": "Atlama",
     "colStatus": "Durum",
     "rttMs": "{{ms}} ms",
     "statusOk": "Tamam",
@@ -2688,8 +2698,8 @@
     "unavailable": "Nomad Network API'si kullanılamıyor. Reticulum sepetini yeniden oluştur ve yığını yeniden başlat.",
     "selectNode": "Sayfalarına göz atmak için listeden bir düğüm seçin.",
     "lastSeen": "Son duyulan {{time}}",
-    "hopsAway_one": "{{count}} atla",
-    "hopsAway_other": "{{count}} atlayarak uzaklaşır",
+    "hopsAway_one": "{{count}} atlama uzakta",
+    "hopsAway_other": "{{count}} atlama uzakta",
     "openNode": "{{name}}'a göz atın",
     "pagePath": "Sayfa yolu",
     "homePage": "Ana sayfa",
@@ -3807,7 +3817,7 @@
     "rssiTitle": "RSSI Dağılımı",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Hop Sayısı Dağılımı",
-    "hopAxis": "Şerbetçi otu"
+    "hopAxis": "Atlama"
   },
   "roleInfo": {
     "placeholderDash": "-",
@@ -4079,7 +4089,8 @@
     "peers": "Meslektaşlar",
     "nomadnetwork": "Nomad Network",
     "topology": "Ağ topolojisi",
-    "network": "Ağ"
+    "network": "Ağ",
+    "rrc": "RRC"
   },
   "takServerPanel": {
     "title": "TAK Sunucusu",
@@ -4205,5 +4216,131 @@
       "filterEmpty": "Bu filtreyle eşleşen arabirim yok.",
       "hint": "Düğümler yalnızca operatörler bulunabilir=evet'i etkinleştirdiğinde görünür. LoRa yolları, duyuruları aktarmak için bir TCP hub'ına (örneğin rmap.world:4242) ihtiyaç duyar. Dünya çapında kapsama alanı için küresel harita bağlantısını kullanın."
     }
+  },
+  "rrc": {
+    "hubsTitle": "RRC Hubs",
+    "hubs": {
+      "favourites": "Favourites",
+      "discovered": "Discovered"
+    },
+    "searchHubs": "Search hubs…",
+    "searchRooms": "Search rooms…",
+    "nickname": "Nickname",
+    "refreshHubs": "Refresh hubs",
+    "expandSidebar": "Expand hub list",
+    "collapseSidebar": "Collapse hub list",
+    "manualHashPlaceholder": "Hub destination hash (32 hex)",
+    "connectManual": "Connect to hash",
+    "invalidHubHash": "Enter a valid 32-character hex destination hash.",
+    "connectFailed": "Could not connect to RRC hub.",
+    "joinFailed": "Could not join room.",
+    "sendFailed": "Could not send message.",
+    "selectHub": "Select hub {{name}}",
+    "selectHubPrompt": "Select an RRC hub to connect.",
+    "favoriteHub": "Favourite hub",
+    "unfavoriteHub": "Remove hub favourite",
+    "hopsAway_one": "{{count}} atlama uzakta",
+    "hopsAway_other": "{{count}} atlama uzakta",
+    "noDiscoveredHubs": "No live RRC hubs discovered yet. Keep the stack running to listen for announces.",
+    "rooms": "Rooms",
+    "joinRoom": "Room name",
+    "join": "Join room",
+    "joinRoomPrompt": "Join a room to start chatting.",
+    "noRoomsJoined": "No rooms joined yet.",
+    "selectRoom": "Open room {{name}}",
+    "leaveRoom": "Leave room",
+    "disconnect": "Disconnect",
+    "toggleTimestamps": "Toggle timestamps",
+    "muteRoom": "Mute room",
+    "unmuteRoom": "Unmute room",
+    "members": "Members",
+    "noMembers": "No member list from hub.",
+    "copyMessage": "Copy message",
+    "messagePlaceholder": "Type a message…",
+    "send": "Send",
+    "status": {
+      "disconnected": "Disconnected",
+      "connecting": "Connecting…",
+      "awaiting_welcome": "Waiting for hub…",
+      "active": "Connected",
+      "reconnecting": "Reconnecting…"
+    },
+    "expandRooms": "Oda listesini genişlet",
+    "collapseRooms": "Oda listesini daralt",
+    "joinedRooms": "katıldı",
+    "recentRooms": "Güncel",
+    "roomKeyOptional": "Oda anahtarı (isteğe bağlı)",
+    "joinRoomHelp": "Rooms are live groups on this hub. Join by name, try Listed, or type /list and /help.",
+    "listHint": "İpucu: /list, rrcd hub'larındaki kayıtlı genel odaları gösterir. /help for commands.",
+    "slash": {
+      "helpIntro": "=== RRC yardımı ===",
+      "helpClient": "İstemci komutları:",
+      "helpNick": "/nick NAME — takma adı değiştir",
+      "helpJoin": "/join ROOM [key] — bir odaya katılın (isteğe bağlı +k tuşu)",
+      "helpPart": "/part [oda] — odayı terk et (varsayılan: aktif)",
+      "helpMe": "/me ACTION — EYLEM ifadesi gönder",
+      "helpClear": "/clear — bu odanın yerel transkriptini temizle",
+      "helpQuit": "/quit — dağıtıcı ile bağlantıyı kes",
+      "helpHub": "Hub komutları (rrcd; MSG olarak gönderilir):",
+      "helpList": "/list — kayıtlı umumi odaları listele",
+      "helpWho": "/who [oda] — üyeleri listele",
+      "helpTopic": "/topic, /mode, /kick, /op ,… — oda moderasyonu (ops)",
+      "helpNote": "Diğer hub'lar hub eğik çizgi komutlarını desteklemeyebilir.",
+      "usageNick": "Kullanımı: /nick NAME",
+      "usageJoin": "Kullanım: /join ROOM [key]",
+      "usageMe": "Kullanımı: /me ACTION",
+      "nickChanged": "Takma ad {{name}} olarak ayarlandı",
+      "commandSent": "Komut gönderildi: {{cmd}}",
+      "helpMsg": "/msg NICK|KARMA metin — doğrudan BİLDİRİM fısıltısı (rrcd)",
+      "usageMsg": "Kullanım: /msg NICK|KARMA METİN",
+      "msgTargetNotFound": "/msg hedefi tam kimlik karmasına çözülemedi. Bir odaya katılın veya tam karmayı kullanın.",
+      "msgSent": "→ {{name}}: {{text}}"
+    },
+    "listedRooms": "Listelenmiş",
+    "refreshRoomList": "Oda listesini yenile (/list)",
+    "favoriteRoom": "Favori oda",
+    "unfavoriteRoom": "Odanın favorisini kaldır",
+    "enableAutoJoin": "Otomatik birleştirmeyi etkinleştir",
+    "disableAutoJoin": "Otomatik katılmayı devre dışı bırak",
+    "noTopic": "Başlık yok",
+    "memberCount_one": "{{count}} üye",
+    "memberCount_other": "{{count}} üye",
+    "userCount_one": "{{count}} kullanıcı",
+    "userCount_other": "{{count}} kullanıcı",
+    "refreshWho": "Üyeleri yenile (/who)",
+    "msgNick": "Mesaj {{name}}",
+    "dismissBanner": "Bildirimi kapat",
+    "directNoticeUnsupported": "Bu merkez doğrudan BİLDİRİMİ (/msg) desteklemiyor.",
+    "capDirectNotice": "doğrudan msg",
+    "moderation": {
+      "removedFromRoom": "Göbek tarafından odadan çıkarılır (tekme, yasak veya uzak kısım)."
+    },
+    "errors": {
+      "linkProofTimeout": "Göbek bağlantısını beklerken zaman aşımına uğradı (bağlantı kanıtı). Tekrar deneyin veya merkeze giden yolu/durakları kontrol edin.",
+      "pathTimeout": "Hub'a giden bir yol bulunamadı. Daha yeni bir duyuru bekleyin, ardından yeniden bağlanın.",
+      "welcomeTimeout": "Bağlantı kuruldu ancak merkez zamanında KARŞILAMA göndermedi. Tekrar deneyin."
+    },
+    "expandMembers": "Üye listesini genişlet",
+    "collapseMembers": "Üye listesini daralt",
+    "cancelConnect": "İptal",
+    "maxHubsConnected": "En fazla 8 RRC hub'ına bağlı kalabilirsiniz. Önce birini ayırın.",
+    "enableHubAutoJoin": "Hub'a otomatik katılmayı etkinleştir",
+    "disableHubAutoJoin": "Hub'a otomatik katılmayı devre dışı bırak",
+    "hubLegend": "● connected · ◌ connecting · ◐ auto - join · ○ idle · A = auto - join",
+    "hubMarker": {
+      "connected": "Bağlandı",
+      "connecting": "Bağlanıyor",
+      "autoJoin": "Otomatik katılma etkinleştirildi",
+      "idle": "Bağlı değil"
+    },
+    "noFavouriteHubs": "Henüz favori RRC hub'ı yok. Discovered'dan veya hash ile bağlandıktan sonra bir hub'a yıldız verin.",
+    "hubAutoJoinOnHint": "Otomatik olarak katılın — kapatmak için tıklayın",
+    "hubAutoJoinOffHint": "Otomatik birleştirme kapalı — yığın başladığında bu hub'ı bağlamak için tıklayın",
+    "roomAutoJoinOnHint": "Otomatik olarak katılın — kapatmak için tıklayın",
+    "roomAutoJoinOffHint": "Otomatik olarak katılma — hub bağlandığında bu odaya katılmak için tıklayın",
+    "roomLegend": "★ favori · A geçişleri otomatik katılma",
+    "disconnectFailed": "Could not disconnect from RRC hub.",
+    "partFailed": "Could not leave room.",
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
   }
 }

@@ -530,22 +530,22 @@ Local/private targets include RFC1918 IPv4 (`10.x`, `172.16–31.x`, `192.168.x`
 
 ### macOS sleep / wake and auto-reconnect
 
-After the lid closes or the Mac sleeps, mesh-client pauses reconnect backoff and MQTT I/O until the OS resumes. Expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later (plus up to **30 seconds** while MeshCore waits for Meshtastic Noble configure to finish when both use BLE).
+After the lid closes or the Mac sleeps, mesh-client pauses reconnect backoff and MQTT I/O until the OS resumes. Recovery is **Meshtastic-first**: expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later. When both protocols use Noble BLE, MeshCore's auto-reconnect additionally waits (up to **30 seconds**) for the Meshtastic BLE link's GATT connection + protocol handshake to settle — not for full device configure — before it starts its own connect.
 
 - **Noble BLE:** The client tries an immediate connect (main-process peripheral cache) before scanning up to **30 seconds** for a new advertisement.
 - **Stuck “reconnecting” banner:** During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use **Disconnect & Quit** from the Connection tab or quit the app and reconnect manually.
-- **Dual-protocol BLE (Meshtastic + MeshCore):** After wake, connect **MeshCore first**, then Meshtastic, if auto-reconnect does not restore both within ~30 seconds. Concurrent Noble scans from both tabs can block recovery.
+- **Dual-protocol BLE (Meshtastic + MeshCore):** Auto-reconnect is already staggered Meshtastic-first (see above); manually forcing MeshCore to reconnect before Meshtastic is not necessary and does not match the recovery order. If both protocols are still down after ~30 seconds, use **Connect** on each tab in the same Meshtastic-then-MeshCore order. Concurrent Noble scans from both tabs can block recovery.
 - **BLE stack stuck after wake** (`unknown peripheral`, `connectAsync timed out`, `peripheral not found` in the app log): **Quit mesh-client fully** (Cmd+Q), toggle **Bluetooth off → on** in System Settings (or power-cycle the radios), reopen the app, wait ~5 seconds, then use **Connect** on the Connection tab.
 - **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
 - **Renderer hung after wake:** If the log shows `[main] System resumed` followed by `[main] renderer unresponsive after system resume (no heartbeat within 30s)` and **no** `[usePowerRecovery]` lines, the renderer event loop was already dead before wake recovery ran. **Quit mesh-client fully** and relaunch — do not rely on Disconnect alone.
 
 ### Windows sleep / wake and auto-reconnect
 
-After sleep or hibernate, mesh-client uses the same resume path as macOS: reconnect backoff and MQTT I/O pause until the OS resumes. Expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later (plus up to **30 seconds** while MeshCore waits for Meshtastic Noble configure to finish when both use BLE over Noble IPC).
+After sleep or hibernate, mesh-client uses the same resume path as macOS: reconnect backoff and MQTT I/O pause until the OS resumes. Recovery is **Meshtastic-first**: expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later. When both protocols use Noble BLE over Noble IPC, MeshCore's auto-reconnect additionally waits (up to **30 seconds**) for the Meshtastic BLE link's GATT connection + protocol handshake to settle — not for full device configure — before it starts its own connect.
 
 - **Noble BLE:** Same immediate-connect-then-scan behavior as macOS (peripheral cache, then up to **30 seconds** scanning for a new advertisement).
 - **Stuck “reconnecting” banner:** During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use **Disconnect & Quit** from the Connection tab or exit the app fully and reconnect manually.
-- **Dual-protocol BLE (Meshtastic + MeshCore):** After wake, connect **MeshCore first**, then Meshtastic, if auto-reconnect does not restore both within ~30 seconds. Concurrent Noble scans from both tabs can block recovery.
+- **Dual-protocol BLE (Meshtastic + MeshCore):** Auto-reconnect is already staggered Meshtastic-first (see above); manually forcing MeshCore to reconnect before Meshtastic is not necessary and does not match the recovery order. If both protocols are still down after ~30 seconds, use **Connect** on each tab in the same Meshtastic-then-MeshCore order. Concurrent Noble scans from both tabs can block recovery.
 - **MeshCore pairing after wake:** If BLE appears connected but the MeshCore handshake or GATT notify never completes, confirm the radio is **paired in Settings → Bluetooth & devices** before using **Connect** in mesh-client (MeshCore requires OS-level pairing on Windows).
 - **BLE stuck after wake** (`connectAsync timed out`, `peripheral not found`, or GATT notify watchdog messages in the app log): **Exit mesh-client fully**, toggle **Bluetooth off → on** in **Settings → Bluetooth & devices** (or disable/enable the adapter in **Device Manager**), wait a few seconds, reopen the app, then use **Connect**. If disconnects persist, update the Bluetooth driver in Device Manager.
 - **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
@@ -843,7 +843,29 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 ## Reticulum
 
-AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, and RNode Wi‑Fi. See also [reticulum.md](reticulum.md) and [Reticulum sidecar IPC](reticulum-sidecar-ipc.md).
+AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, RRC, and RNode Wi‑Fi. See also [reticulum.md](reticulum.md) and [Reticulum sidecar IPC](reticulum-sidecar-ipc.md).
+
+### RRC connect stuck / Cancel
+
+**Symptoms**: Hub stays on **Connecting…** / **Awaiting welcome**; Cancel appears in the RRC header.
+
+**Cause**: Path discovery, Link handshake, and WELCOME can take up to the proxy timeout (~60 s). A previous connect may still be aborting.
+
+**What to do**:
+
+1. Click **Cancel** — renderer sets disconnect intent and calls `POST /api/v1/rrc/disconnect` for that hub hash so the in-flight connect is aborted.
+2. Confirm the destination hash is 32 hex and the stack has a path (Peers / Topology).
+3. Retry connect; check sidecar logs for `rrc` timeouts (`path lookup`, `link proof`, `WELCOME`).
+
+### RRC hub dropped vs Disconnect
+
+**Symptoms**: Hub shows **Reconnecting…** with an error, rooms still listed; or the hub disappears after you clicked Disconnect.
+
+**What to do**:
+
+1. **Unintended drop** (`will_reconnect: true`): sidecar retries with backoff (~2–30 s), preserves desired rooms (including join keys), and rejoins after WELCOME. Wait for **Active** or check `rrc.error` / link-close reasons in the log.
+2. **Explicit Disconnect / Cancel** (`local_disconnect` or `will_reconnect: false`): that hub session is removed from the UI. Reconnect manually or rely on hub auto-join when the stack starts.
+3. Failed initial connect also clears the hub slot so it cannot exhaust the 8-session cap.
 
 ### Reticulum sidecar won't start or health poll times out
 

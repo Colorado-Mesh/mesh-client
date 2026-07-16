@@ -744,7 +744,7 @@
     "stageCheckingPairing": "Vérification du couplage Bluetooth…",
     "stageEnterPinLinux": "Entrez le code PIN affiché sur votre appareil (appairez-le d'abord avec Linux)",
     "stageReconnecting": "Reconnexion au dernier appareil Bluetooth…",
-    "pinPlaceholder": "ÉPINGLE",
+    "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",
       "serial": {
@@ -1133,6 +1133,10 @@
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
+    },
+    "maxRetriesHelpConnected": {
+      "meshcore": "Reconnectez-vous avant d'abandonner (1–{{max}}). Enregistré avec les paramètres ; appuyez à nouveau sur Connecter après la modification pour que le processus principal le récupère.",
+      "meshtastic": "Les deux protocoles permettent 1–{{max}}. Enregistré avec les paramètres ; déconnectez-vous et reconnectez-vous afin que la session en cours d'exécution utilise la nouvelle valeur."
     }
   },
   "contactGroupsModal": {
@@ -1150,7 +1154,13 @@
     "noContactsYet": "Aucun contact pour l'instant.",
     "noGroupsYet": "Aucun groupe pour l'instant. Créez-en un ci-dessus.",
     "memberCount_one": "Membre {{count}}",
-    "memberCount_other": "Membres {{count}}"
+    "memberCount_other": "Membres {{count}}",
+    "title": "Groupes de contact",
+    "addButton": "Ajouter",
+    "confirmDeleteButton": "Supprimer ?",
+    "manageMembersOf": "Gérer les membres de {{name}}",
+    "renameGroupNamed": "Renommer {{name}}",
+    "deleteGroupNamed": "Supprimer {{name}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Collectez lignes de routage de plus de {{hours}} heures (1–168)",
@@ -2688,8 +2698,8 @@
     "unavailable": "L'API Nomad Network n'est pas disponible. Reconstruisez le sidecar Reticulum et redémarrez la pile.",
     "selectNode": "Sélectionnez un nœud dans la liste pour parcourir ses pages.",
     "lastSeen": "Dernière écoute {{time}}",
-    "hopsAway_one": "{{count}} saute",
-    "hopsAway_other": "{{count}} saute",
+    "hopsAway_one": "à {{count}} saut",
+    "hopsAway_other": "à {{count}} sauts",
     "openNode": "Parcourir {{name}}",
     "pagePath": "Chemin de la page",
     "homePage": "Page d'accueil",
@@ -4079,7 +4089,8 @@
     "peers": "Pairs",
     "nomadnetwork": "Nomad Network",
     "topology": "Topologie de réseau",
-    "network": "Réseau"
+    "network": "Réseau",
+    "rrc": "RRC"
   },
   "takServerPanel": {
     "title": "Serveur TAK",
@@ -4205,5 +4216,131 @@
       "filterEmpty": "Aucune interface ne correspond à ce filtre.",
       "hint": "Les nœuds n'apparaissent que lorsque les opérateurs activent découvrable=oui. Les chemins LoRa nécessitent un concentrateur TCP (par exemple rmap.world :4242) pour relayer les annonces. Pour une couverture mondiale, utilisez le lien de la carte mondiale."
     }
+  },
+  "rrc": {
+    "hubsTitle": "RRC Hubs",
+    "hubs": {
+      "favourites": "Favourites",
+      "discovered": "Discovered"
+    },
+    "searchHubs": "Search hubs…",
+    "searchRooms": "Search rooms…",
+    "nickname": "Nickname",
+    "refreshHubs": "Refresh hubs",
+    "expandSidebar": "Expand hub list",
+    "collapseSidebar": "Collapse hub list",
+    "manualHashPlaceholder": "Hub destination hash (32 hex)",
+    "connectManual": "Connect to hash",
+    "invalidHubHash": "Enter a valid 32-character hex destination hash.",
+    "connectFailed": "Could not connect to RRC hub.",
+    "joinFailed": "Could not join room.",
+    "sendFailed": "Could not send message.",
+    "selectHub": "Select hub {{name}}",
+    "selectHubPrompt": "Select an RRC hub to connect.",
+    "favoriteHub": "Favourite hub",
+    "unfavoriteHub": "Remove hub favourite",
+    "hopsAway_one": "à {{count}} saut",
+    "hopsAway_other": "à {{count}} sauts",
+    "noDiscoveredHubs": "No live RRC hubs discovered yet. Keep the stack running to listen for announces.",
+    "rooms": "Rooms",
+    "joinRoom": "Room name",
+    "join": "Join room",
+    "joinRoomPrompt": "Join a room to start chatting.",
+    "noRoomsJoined": "No rooms joined yet.",
+    "selectRoom": "Open room {{name}}",
+    "leaveRoom": "Leave room",
+    "disconnect": "Disconnect",
+    "toggleTimestamps": "Toggle timestamps",
+    "muteRoom": "Mute room",
+    "unmuteRoom": "Unmute room",
+    "members": "Members",
+    "noMembers": "No member list from hub.",
+    "copyMessage": "Copy message",
+    "messagePlaceholder": "Type a message…",
+    "send": "Send",
+    "status": {
+      "disconnected": "Disconnected",
+      "connecting": "Connecting…",
+      "awaiting_welcome": "Waiting for hub…",
+      "active": "Connected",
+      "reconnecting": "Reconnecting…"
+    },
+    "expandRooms": "Élargir la liste des salles",
+    "collapseRooms": "Réduire la liste des pièces",
+    "joinedRooms": "Souscrit le",
+    "recentRooms": "Récent",
+    "roomKeyOptional": "Clé de la salle (en option)",
+    "joinRoomHelp": "Les salles sont des groupes en direct sur ce hub. Inscrivez-vous par nom, essayez Suggestions ou tapez /list et /help.",
+    "listHint": "Astuce : /list affiche les salles publiques enregistrées sur les concentrateurs rrcd. /help pour les commandes.",
+    "slash": {
+      "helpIntro": "=== Aide RRC ===",
+      "helpClient": "Commandes client :",
+      "helpNick": "/nick NAME — changer le pseudo",
+      "helpJoin": "/join ROOM [key] — rejoindre une pièce (en option + clé k)",
+      "helpPart": "/part [room] — laisser de la place (par défaut : actif)",
+      "helpMe": "/me ACTION — envoyer une émoticône D'ACTION",
+      "helpClear": "/clear — clear local transcript for this room",
+      "helpQuit": "/quit — se déconnecter du hub",
+      "helpHub": "Commandes Hub (rrcd ; envoyées en MSG) :",
+      "helpList": "/list — liste des salles publiques enregistrées",
+      "helpWho": "/who [room] — liste des membres",
+      "helpTopic": "/topic, /mode, /kick, /op, … — modération de salle (ops)",
+      "helpNote": "Les autres moyeux peuvent ne pas prendre en charge les commandes de barre oblique du moyeu.",
+      "usageNick": "Utilisation : /nick NAME",
+      "usageJoin": "Utilisation : /join ROOM [key]",
+      "usageMe": "Utilisation : /me ACTION",
+      "nickChanged": "Pseudonyme défini sur {{name}}",
+      "commandSent": "Commande envoyée : {{cmd}}",
+      "helpMsg": "/msg NICK| texte DE HACHAGE — murmure d'AVIS direct (rrcd)",
+      "usageMsg": "Utilisation : /msg NICK| texte DE HACHAGE",
+      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash.",
+      "msgSent": "→ {{name}} : {{text}}"
+    },
+    "listedRooms": "Liste",
+    "refreshRoomList": "Actualiser la liste des salles (/list)",
+    "favoriteRoom": "salle préférée",
+    "unfavoriteRoom": "Supprimer le favori de la salle",
+    "enableAutoJoin": "Activer la connexion automatique",
+    "disableAutoJoin": "Désactiver Rejoindre automatiquement",
+    "noTopic": "Aucun Topic",
+    "memberCount_one": "{{count}} membre",
+    "memberCount_other": "{{count}} membres",
+    "userCount_one": "{{count}} utilisateur",
+    "userCount_other": "{{count}} utilisateurs",
+    "refreshWho": "Refresh members (/who)",
+    "msgNick": "Message {{name}}",
+    "dismissBanner": "Ignorer cet Avertissement",
+    "directNoticeUnsupported": "Ce hub ne prend pas en charge la NOTIFICATION directe (/msg).",
+    "capDirectNotice": "msg direct",
+    "moderation": {
+      "removedFromRoom": "Retiré de la pièce par le moyeu (coup de pied, bannissement ou pièce distante)."
+    },
+    "errors": {
+      "linkProofTimeout": "Délai expiré en attendant le lien du hub (preuve de lien). Réessayez ou vérifiez le chemin/les sauts vers le hub.",
+      "pathTimeout": "Impossible de trouver un chemin vers le hub. Attendez une annonce plus fraîche, puis reconnectez-vous.",
+      "welcomeTimeout": "Connecté mais le hub n'a pas envoyé l'ACCUEIL à temps. Réessayez."
+    },
+    "expandMembers": "Élargir la liste des membres",
+    "collapseMembers": "Réduire la liste des membres",
+    "cancelConnect": "Annuler",
+    "maxHubsConnected": "Vous pouvez rester connecté à un maximum de 8 hubs RRC. Déconnectez-en un d'abord.",
+    "enableHubAutoJoin": "Activer la connexion automatique au hub",
+    "disableHubAutoJoin": "Désactiver Rejoindre automatiquement",
+    "hubLegend": "● connecté · ◌ connexion · ◐ auto-assemblage · ○ inactif · A = auto-assemblage",
+    "hubMarker": {
+      "connected": "Connecté",
+      "connecting": "Connecter",
+      "autoJoin": "Connexion automatique activée",
+      "idle": "Non connecté"
+    },
+    "noFavouriteHubs": "Pas encore de hubs RRC préférés. Étoilez un hub de Découverte ou après vous être connecté par hachage.",
+    "hubAutoJoinOnHint": "Connexion automatique activée — cliquez pour désactiver",
+    "hubAutoJoinOffHint": "Auto-join off — cliquez pour connecter ce concentrateur lorsque la pile démarre",
+    "roomAutoJoinOnHint": "Connexion automatique activée — cliquez pour désactiver",
+    "roomAutoJoinOffHint": "Auto-join off — cliquez pour rejoindre cette salle lorsque le hub se connecte",
+    "roomLegend": "★ favori · A toggles auto-join",
+    "disconnectFailed": "Could not disconnect from RRC hub.",
+    "partFailed": "Could not leave room.",
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
   }
 }

@@ -1,4 +1,5 @@
 import type { MeshProtocol } from '@/shared/meshProtocol';
+import { MS_PER_DAY, MS_PER_HOUR } from '@/shared/timeConstants';
 
 import { RETICULUM_LXMF_PAYLOAD_LIMIT } from '../chatComposerLimits';
 
@@ -141,6 +142,7 @@ export interface ProtocolCapabilities {
   hasReticulumPeerDetailModal: boolean;
   /** Reticulum: Nomad Network sidebar tab */
   hasNomadNetworkPanel: boolean;
+  hasRrcPanel: boolean;
   /** Reticulum: Administration tab (flasher, factory reset) */
   hasReticulumAdminPanel: boolean;
   /** DM composer payload limit (Reticulum LXMF only) */
@@ -198,8 +200,8 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   modulesTabUsesRepeatersLabel: false,
   hasRoomServersPanel: false,
   hasJsonRadioConfigImport: false,
-  nodeStaleThresholdMs: 2 * 60 * 60 * 1000, // 2 hours
-  nodeOfflineThresholdMs: 7 * 24 * 60 * 60 * 1000, // 7 days
+  nodeStaleThresholdMs: 2 * MS_PER_HOUR,
+  nodeOfflineThresholdMs: 7 * MS_PER_DAY,
   hasFirmwareUpdateCheck: true,
   dedupeQueueBadgeForLocalSending: true,
   prefersDeviceOwnerLongNameInHeader: false,
@@ -215,6 +217,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasLxmfDeliveryStatus: false,
   hasReticulumPeerDetailModal: false,
   hasNomadNetworkPanel: false,
+  hasRrcPanel: false,
   hasReticulumAdminPanel: false,
 };
 
@@ -270,8 +273,8 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   modulesTabUsesRepeatersLabel: true,
   hasRoomServersPanel: true,
   hasJsonRadioConfigImport: true,
-  nodeStaleThresholdMs: 48 * 60 * 60 * 1000, // 48 hours
-  nodeOfflineThresholdMs: 96 * 60 * 60 * 1000, // 96 hours
+  nodeStaleThresholdMs: 48 * MS_PER_HOUR,
+  nodeOfflineThresholdMs: 96 * MS_PER_HOUR,
   hasFirmwareUpdateCheck: true,
   dedupeQueueBadgeForLocalSending: false,
   prefersDeviceOwnerLongNameInHeader: true,
@@ -287,6 +290,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasLxmfDeliveryStatus: false,
   hasReticulumPeerDetailModal: false,
   hasNomadNetworkPanel: false,
+  hasRrcPanel: false,
   hasReticulumAdminPanel: false,
 };
 
@@ -341,8 +345,8 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   modulesTabUsesRepeatersLabel: false,
   hasRoomServersPanel: false,
   hasJsonRadioConfigImport: true,
-  nodeStaleThresholdMs: 7 * 24 * 60 * 60 * 1000,
-  nodeOfflineThresholdMs: 30 * 24 * 60 * 60 * 1000,
+  nodeStaleThresholdMs: 7 * MS_PER_DAY,
+  nodeOfflineThresholdMs: 30 * MS_PER_DAY,
   hasFirmwareUpdateCheck: false,
   dedupeQueueBadgeForLocalSending: false,
   prefersDeviceOwnerLongNameInHeader: false,
@@ -359,6 +363,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasLxmfDeliveryStatus: true,
   hasReticulumPeerDetailModal: true,
   hasNomadNetworkPanel: true,
+  hasRrcPanel: true,
   hasReticulumAdminPanel: true,
   lxmfPayloadLimit: RETICULUM_LXMF_PAYLOAD_LIMIT,
 };

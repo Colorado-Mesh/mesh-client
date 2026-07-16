@@ -145,6 +145,52 @@ describe('syncReticulumNobleBleYield', () => {
     expect(state.yieldActive).toBe(false);
   });
 
+  it('does not release main-process yield on empty interfaces during grace', async () => {
+    vi.mocked(window.electronAPI.bleCoexistence.getState).mockResolvedValue({
+      connections: [],
+      scanOwner: 'reticulum',
+    });
+    const state = { yieldActive: false };
+    await syncReticulumNobleBleYield(
+      {
+        sidecarActive: true,
+        interfaces: [],
+        nowMs: Date.now(),
+        bleConnectGraceExpiresAt: Date.now() + 30_000,
+      },
+      state,
+    );
+    expect(state.yieldActive).toBe(true);
+    expect(releaseReticulumBleRnodeConnect).not.toHaveBeenCalled();
+  });
+
+  it('releases yield when a non-empty snapshot confirms no enabled BLE RNode', async () => {
+    vi.mocked(window.electronAPI.bleCoexistence.getState).mockResolvedValue({
+      connections: [],
+      scanOwner: 'reticulum',
+    });
+    const state = { yieldActive: true };
+    await syncReticulumNobleBleYield(
+      {
+        sidecarActive: true,
+        interfaces: [
+          {
+            id: 'tcp-hub',
+            name: 'TCP',
+            type: 'tcpclient',
+            enabled: true,
+            status: 'up',
+          },
+        ],
+        nowMs: Date.now(),
+        bleConnectGraceExpiresAt: Date.now() + 30_000,
+      },
+      state,
+    );
+    expect(releaseReticulumBleRnodeConnect).toHaveBeenCalled();
+    expect(state.yieldActive).toBe(false);
+  });
+
   it('releases yield when sidecar becomes inactive', async () => {
     const state = { yieldActive: true };
     await syncReticulumNobleBleYield(

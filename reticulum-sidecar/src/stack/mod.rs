@@ -15,6 +15,8 @@ mod nomad_timeouts;
 mod packet_log;
 mod persistence;
 mod rmap_discovery;
+mod rrc_codec;
+mod rrc_defaults;
 mod topology;
 mod types;
 mod via;
@@ -25,6 +27,10 @@ mod live;
 mod lxmf_delivery;
 #[cfg(feature = "rns-stack")]
 mod propagation_bridge;
+#[cfg(feature = "rns-stack")]
+mod rrc_link;
+#[cfg(feature = "rns-stack")]
+mod rrc_session;
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -36,7 +42,7 @@ use persistence::PersistedState;
 use tokio::sync::{RwLock, broadcast};
 pub use types::{
     AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfResourceRequest,
-    LxmfSendRequest, NomadNodeRow, PeerRow, StackIdentity,
+    LxmfSendRequest, NomadNodeRow, PeerRow, RrcHubRow, StackIdentity,
 };
 
 pub struct StackHandle {
@@ -167,6 +173,11 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &handle.live {
             live.register_nomad_announce_handler(
+                handle.inner.clone(),
+                handle.config_dir.clone(),
+                handle.storage_dir.clone(),
+            );
+            live.register_rrc_announce_handler(
                 handle.inner.clone(),
                 handle.config_dir.clone(),
                 handle.storage_dir.clone(),
@@ -1080,6 +1091,173 @@ impl StackHandle {
         inner.set_nomad_favorite(hash, favorited);
         inner.save(&self.config_dir, &self.storage_dir)?;
         Ok(())
+    }
+
+    pub async fn list_rrc_hubs(&self) -> Vec<RrcHubRow> {
+        let mut inner = self.inner.write().await;
+        inner.seed_rrc_default_hubs();
+        inner.rrc_hubs.clone()
+    }
+
+    pub async fn upsert_rrc_hub(
+        &self,
+        hash: &str,
+        label: Option<String>,
+        favorited: Option<bool>,
+    ) -> Result<RrcHubRow, String> {
+        let clean = hash.trim().to_lowercase().replace(':', "");
+        if clean.len() != 32 || !clean.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err("dest_hash must be 32 hex characters".into());
+        }
+        let mut inner = self.inner.write().await;
+        inner.upsert_rrc_hub_named(
+            &clean,
+            None,
+            label.clone(),
+            None,
+            "manual",
+            label.as_deref().map(|_| "manual"),
+        );
+        if let Some(fav) = favorited {
+            inner.set_rrc_favorite(&clean, fav);
+        }
+        inner.save(&self.config_dir, &self.storage_dir)?;
+        let hub = inner
+            .rrc_hubs
+            .iter()
+            .find(|h| h.destination_hash.eq_ignore_ascii_case(&clean))
+            .cloned()
+            .ok_or_else(|| "hub upsert failed".to_string())?;
+        Ok(hub)
+    }
+
+    pub async fn set_rrc_favorite(&self, hash: &str, favorited: bool) -> Result<(), String> {
+        let clean = hash.trim().to_lowercase().replace(':', "");
+        if clean.len() != 32 || !clean.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err("dest_hash must be 32 hex characters".into());
+        }
+        let mut inner = self.inner.write().await;
+        inner.set_rrc_favorite(&clean, favorited);
+        inner.save(&self.config_dir, &self.storage_dir)?;
+        Ok(())
+    }
+
+    pub async fn rrc_connect(&self, dest_hash: &str, nickname: Option<String>) -> serde_json::Value {
+        let clean = dest_hash.trim().to_lowercase().replace(':', "");
+        if clean.len() != 32 || !clean.chars().all(|c| c.is_ascii_hexdigit()) {
+            return serde_json::json!({ "ok": false, "error": "dest_hash must be 32 hex characters" });
+        }
+        let bytes = match hex::decode(&clean) {
+            Ok(b) if b.len() == 16 => {
+                let mut arr = [0u8; 16];
+                arr.copy_from_slice(&b);
+                arr
+            }
+            _ => {
+                return serde_json::json!({ "ok": false, "error": "invalid dest_hash" });
+            }
+        };
+        let nick = nickname
+            .map(|n| n.trim().to_string())
+            .filter(|n| !n.is_empty())
+            .unwrap_or_else(|| "mesh-client".into());
+        let hops = {
+            let inner = self.inner.read().await;
+            inner
+                .rrc_hubs
+                .iter()
+                .find(|h| h.destination_hash.eq_ignore_ascii_case(&clean))
+                .and_then(|h| h.hops)
+                .unwrap_or(8)
+        };
+        {
+            let mut inner = self.inner.write().await;
+            inner.upsert_rrc_hub(&clean, None, None, Some(hops), "manual");
+            let _ = inner.save(&self.config_dir, &self.storage_dir);
+        }
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rrc_connect(bytes, clean, hops, nick).await;
+        }
+        let _ = (bytes, nick, hops);
+        serde_json::json!({
+            "ok": false,
+            "error": "rrc connect requires live rns-stack sidecar"
+        })
+    }
+
+    pub async fn rrc_disconnect(&self, dest_hash_hex: Option<&str>) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rrc_disconnect(dest_hash_hex).await;
+        }
+        let _ = dest_hash_hex;
+        serde_json::json!({ "ok": true })
+    }
+
+    pub async fn rrc_status(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rrc_status().await;
+        }
+        serde_json::json!({
+            "sessions": [],
+            "identity_hash": null,
+        })
+    }
+
+    pub async fn rrc_join(&self, hub_dest_hash: &str, room: &str, key: Option<&str>) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rrc_join(hub_dest_hash, room, key).await;
+        }
+        let _ = (hub_dest_hash, room, key);
+        serde_json::json!({ "ok": false, "error": "rrc requires live rns-stack sidecar" })
+    }
+
+    pub async fn rrc_part(&self, hub_dest_hash: &str, room: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rrc_part(hub_dest_hash, room).await;
+        }
+        let _ = (hub_dest_hash, room);
+        serde_json::json!({ "ok": false, "error": "rrc requires live rns-stack sidecar" })
+    }
+
+    pub async fn rrc_send(
+        &self,
+        hub_dest_hash: &str,
+        room: Option<&str>,
+        body: &str,
+        kind: Option<&str>,
+        dst_hash: Option<&str>,
+    ) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live
+                .rrc_send(hub_dest_hash, room, body, kind.unwrap_or("msg"), dst_hash)
+                .await;
+        }
+        let _ = (hub_dest_hash, room, body, kind, dst_hash);
+        serde_json::json!({ "ok": false, "error": "rrc requires live rns-stack sidecar" })
+    }
+
+    pub async fn rrc_set_nick(&self, hub_dest_hash: Option<&str>, nickname: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rrc_set_nick(hub_dest_hash, nickname).await;
+        }
+        let _ = (hub_dest_hash, nickname);
+        serde_json::json!({ "ok": false, "error": "rrc requires live rns-stack sidecar" })
+    }
+
+    pub async fn rrc_rooms(&self, hub_dest_hash: Option<&str>) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rrc_rooms(hub_dest_hash).await;
+        }
+        let _ = hub_dest_hash;
+        serde_json::json!({ "rooms": [] })
     }
 
     #[cfg(feature = "rns-stack")]

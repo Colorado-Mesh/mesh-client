@@ -85,6 +85,21 @@ describe('ConnectionDriver', () => {
     expect(useConnectionStore.getState().connections[identityId]?.status).toBe('disconnected');
   });
 
+  it('connect maps a tcp transport to a tcp connectionType, not null', async () => {
+    const host = `tcp-host-${Date.now()}`;
+    const params: TransportParams = { type: 'tcp', host };
+    const fakeHandle = { kind: 'mock-tcp-device' } as unknown as MeshDevice;
+
+    vi.spyOn(meshtasticProtocol, 'createDevice').mockResolvedValue(fakeHandle);
+    vi.spyOn(meshtasticProtocol, 'subscribe').mockReturnValue(() => {});
+    vi.spyOn(meshtasticProtocol, 'destroyDevice').mockResolvedValue(undefined);
+
+    const identityId = await connectionDriver.connect('meshtastic', params);
+    expect(useConnectionStore.getState().connections[identityId]?.connectionType).toBe('tcp');
+
+    await connectionDriver.disconnect(identityId);
+  });
+
   it('connect reuses identity when transport key was remapped to node signature', async () => {
     const peripheralId = `reuse-${Date.now()}`;
     const params: TransportParams = { type: 'ble', peripheralId };

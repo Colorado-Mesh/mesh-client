@@ -551,7 +551,10 @@ export class MeshCoreProtocol implements Protocol {
       {
         type: 'text_message',
         payload: {
-          id: `ch:${d.channelIdx}:${d.senderTimestamp}`,
+          // Companion channel events carry no sender id — the wire text itself (which embeds
+          // the sender name, e.g. "Alice: hello") is the only available disambiguator so two
+          // different senders posting in the same channel/second don't collide on one store id.
+          id: `ch:${d.channelIdx}:${d.senderTimestamp}:${d.text}`,
           from: 0,
           to: 0,
           payload: d.text,
