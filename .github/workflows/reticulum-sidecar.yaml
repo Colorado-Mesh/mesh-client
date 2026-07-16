@@ -25,6 +25,31 @@ on:
       - 'scripts/apply-rsLXMF-propagation-sync-peering.sh'
 
 jobs:
+  lint:
+    name: fmt + clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+        shell: bash
+        env:
+          WORKSPACE_ROOT: ${{ github.workspace }}/..
+        run: bash scripts/clone-ratspeak-stack.sh
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          components: clippy, rustfmt
+      - name: Install Linux BLE build deps
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
+      - name: cargo fmt --check
+        working-directory: reticulum-sidecar
+        run: cargo fmt --check
+      - name: cargo clippy (rns-stack)
+        working-directory: reticulum-sidecar
+        run: >-
+          cargo clippy --all-targets
+          --features rns-stack,rns-ble,rns-rnode-tcp
+          -- -D warnings
+
   build:
     strategy:
       matrix:

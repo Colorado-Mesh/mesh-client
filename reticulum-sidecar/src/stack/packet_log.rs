@@ -98,10 +98,10 @@ pub fn collect_tx_interface_names_for_egress(
             _ => {}
         }
     }
-    if !matched.is_empty() {
-        matched
-    } else {
+    if matched.is_empty() {
         pathless
+    } else {
+        matched
     }
 }
 
@@ -147,7 +147,7 @@ mod tests {
             q: None,
             packet_type: None,
             header_type: None,
-            destination_hash: dest.map(|d| d.into()),
+            destination_hash: dest.map(Into::into),
             transport_type: None,
             context: None,
         }

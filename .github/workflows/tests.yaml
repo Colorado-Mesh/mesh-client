@@ -11,6 +11,32 @@ on:
   workflow_dispatch:
 
 jobs:
+  changes:
+    name: Detect sidecar changes
+    permissions:
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    outputs:
+      reticulum-sidecar: ${{ steps.filter.outputs.reticulum-sidecar }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      # dorny/paths-filter v4.0.0
+      - uses: dorny/paths-filter@9d7afb8d214ad99e78fbd4247752c4caed2b6e4c
+        id: filter
+        with:
+          filters: |
+            reticulum-sidecar:
+              - 'reticulum-sidecar/**'
+              - 'scripts/clone-ratspeak-stack.sh'
+              - 'scripts/ensure-rsReticulum-patches.sh'
+              - 'scripts/apply-rsReticulum-*.sh'
+              - 'scripts/apply-rsLXMF-*.sh'
+              - 'scripts/check-reticulum-sidecar.sh'
+              - '.github/workflows/tests.yaml'
+
   tests:
     name: Coverage (${{ matrix.project }})
     permissions:
@@ -55,6 +81,47 @@ jobs:
           include-hidden-files: true
           retention-days: 1
           if-no-files-found: error
+
+  reticulum-sidecar-coverage:
+    name: Reticulum sidecar coverage
+    needs: changes
+    if: needs.changes.outputs.reticulum-sidecar == 'true'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+        shell: bash
+        env:
+          WORKSPACE_ROOT: ${{ github.workspace }}/..
+        run: bash scripts/clone-ratspeak-stack.sh
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          components: llvm-tools-preview
+      - name: Install Linux BLE build deps
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov --locked
+      - name: cargo llvm-cov (threshold)
+        working-directory: reticulum-sidecar
+        # Baseline ~47% lines (2026-07); ratchet toward Vitest-aligned 52% over time.
+        run: >-
+          cargo llvm-cov
+          --features rns-stack,rns-ble,rns-rnode-tcp
+          --ignore-filename-regex 'rsReticulum|rsLXMF'
+          --fail-under-lines 47
+          --lcov --output-path lcov.info
+      - name: Upload lcov
+        if: always() && github.actor != 'nektos/act'
+        uses: actions/upload-artifact@v7
+        with:
+          name: reticulum-sidecar-lcov
+          path: reticulum-sidecar/lcov.info
+          retention-days: 7
+          if-no-files-found: warn
 
   merge-reports:
     name: Merge coverage

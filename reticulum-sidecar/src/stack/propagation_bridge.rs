@@ -2,8 +2,8 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use lxmf_core::propagation_node::{PropagationNode, PropagationNodeConfig};
@@ -69,14 +69,14 @@ impl PropagationBridge {
             .unwrap_or((0, 0))
     }
 
+    #[allow(clippy::type_complexity)] // peering tuple mirrors RNS PropagationSyncTask::configure_peering
     pub fn start_sync(
         &self,
         remote_hash: [u8; 16],
         peering: Option<([u8; 16], [u8; 16], u8, Option<Vec<u8>>)>,
     ) -> bool {
-        let mut task = match self.sync_task.lock() {
-            Ok(task) => task,
-            Err(_) => return false,
+        let Ok(mut task) = self.sync_task.lock() else {
+            return false;
         };
         if let Some((local_id, peer_id, cost, key)) = peering {
             task.configure_peering(local_id, peer_id, cost, key);
@@ -111,15 +111,17 @@ impl PropagationBridge {
     }
 
     pub fn sync_progress(&self) -> f64 {
-        self.sync_task.lock().map(|task| match task.state {
-            SyncTaskState::Idle => 0.0,
-            SyncTaskState::Establishing => 10.0,
-            SyncTaskState::Offering => 25.0,
-            SyncTaskState::AwaitingResponse => 40.0,
-            SyncTaskState::Transferring => 70.0,
-            SyncTaskState::Complete => 100.0,
-            SyncTaskState::Failed => 0.0,
-        }).unwrap_or(0.0)
+        self.sync_task
+            .lock()
+            .map(|task| match task.state {
+                SyncTaskState::Establishing => 10.0,
+                SyncTaskState::Offering => 25.0,
+                SyncTaskState::AwaitingResponse => 40.0,
+                SyncTaskState::Transferring => 70.0,
+                SyncTaskState::Complete => 100.0,
+                SyncTaskState::Idle | SyncTaskState::Failed => 0.0,
+            })
+            .unwrap_or(0.0)
     }
 
     pub fn last_offer_error(&self) -> Option<&'static str> {
@@ -151,9 +153,9 @@ impl PropagationBridge {
     ) {
         let bridge = Arc::clone(self);
         tokio::spawn(async move {
+            const SYNC_STALL_TIMEOUT: Duration = Duration::from_secs(60);
             let mut interval = tokio::time::interval(Duration::from_millis(500));
             let started = Instant::now();
-            const SYNC_STALL_TIMEOUT: Duration = Duration::from_secs(60);
             loop {
                 interval.tick().await;
                 if cancel.load(Ordering::SeqCst) {
@@ -165,14 +167,14 @@ impl PropagationBridge {
                 let offer_error = bridge.last_offer_error();
                 // Complete/Failed immediately collapse to Idle (progress 0). Use sticky
                 // last_finished_ok so success (e.g. HaveAll) is not reported as failure.
-                let progress = if !active {
+                let progress = if active {
+                    bridge.sync_progress()
+                } else {
                     match finished_ok {
                         Some(true) => 100.0,
                         Some(false) => 0.0,
                         None => bridge.sync_progress(),
                     }
-                } else {
-                    bridge.sync_progress()
                 };
                 if active && progress <= 10.0 && started.elapsed() > SYNC_STALL_TIMEOUT {
                     bridge.cancel_sync();
@@ -230,23 +232,23 @@ mod tests {
 
     #[test]
     fn should_emit_terminal_success_skips_explicit_failure() {
-        assert!(!PropagationBridge::should_emit_terminal_success(Some(false)));
+        assert!(!PropagationBridge::should_emit_terminal_success(Some(
+            false
+        )));
         assert!(PropagationBridge::should_emit_terminal_success(Some(true)));
         assert!(PropagationBridge::should_emit_terminal_success(None));
     }
 
     #[test]
     fn cancel_sync_sets_sticky_failure() {
-        let dir = std::env::temp_dir().join(format!(
-            "mesh-prop-bridge-cancel-{}",
-            std::process::id()
-        ));
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-bridge-cancel-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).expect("tmpdir");
         let (tx, _rx) = mpsc::channel(8);
         let identity = rns_identity::identity::Identity::new();
-        let bridge = PropagationBridge::new(tx, [0xab; 16], dir.clone(), &identity)
-            .expect("bridge");
+        let bridge =
+            PropagationBridge::new(tx, [0xab; 16], dir.clone(), &identity).expect("bridge");
         bridge.cancel_sync();
         assert_eq!(bridge.last_finished_ok(), Some(false));
         assert!(!bridge.sync_active());

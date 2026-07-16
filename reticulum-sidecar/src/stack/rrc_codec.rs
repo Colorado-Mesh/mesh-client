@@ -90,24 +90,22 @@ impl RrcEnvelope {
 }
 
 pub fn encode_envelope(env: &RrcEnvelope) -> Result<Vec<u8>, RrcCodecError> {
-    let mut map = Vec::new();
-    map.push((Value::Integer(0.into()), Value::Integer(env.version.into())));
-    map.push((
-        Value::Integer(1.into()),
-        Value::Integer(env.msg_type.into()),
-    ));
-    map.push((
-        Value::Integer(2.into()),
-        Value::Bytes(env.msg_id.to_vec()),
-    ));
-    map.push((
-        Value::Integer(3.into()),
-        Value::Integer(env.timestamp.into()),
-    ));
-    map.push((
-        Value::Integer(4.into()),
-        Value::Bytes(env.sender_identity.to_vec()),
-    ));
+    let mut map = vec![
+        (Value::Integer(0.into()), Value::Integer(env.version.into())),
+        (
+            Value::Integer(1.into()),
+            Value::Integer(env.msg_type.into()),
+        ),
+        (Value::Integer(2.into()), Value::Bytes(env.msg_id.to_vec())),
+        (
+            Value::Integer(3.into()),
+            Value::Integer(env.timestamp.into()),
+        ),
+        (
+            Value::Integer(4.into()),
+            Value::Bytes(env.sender_identity.to_vec()),
+        ),
+    ];
     if let Some(room) = &env.room_name {
         map.push((Value::Integer(5.into()), Value::Text(room.clone())));
     }
@@ -173,10 +171,7 @@ pub fn decode_envelope(bytes: &[u8]) -> Result<RrcEnvelope, RrcCodecError> {
 pub fn hello_body(client_name: &str, client_version: &str) -> Value {
     Value::Map(vec![
         (Value::Integer(0.into()), Value::Text(client_name.into())),
-        (
-            Value::Integer(1.into()),
-            Value::Text(client_version.into()),
-        ),
+        (Value::Integer(1.into()), Value::Text(client_version.into())),
     ])
 }
 
@@ -184,7 +179,7 @@ pub fn text_body(text: &str) -> Value {
     Value::Text(text.to_string())
 }
 
-pub fn parse_welcome_hub_name(body: &Option<Value>) -> Option<String> {
+pub fn parse_welcome_hub_name(body: Option<&Value>) -> Option<String> {
     let Some(Value::Map(entries)) = body else {
         return None;
     };
@@ -204,7 +199,7 @@ pub struct RrcWelcomeCapabilities {
 }
 
 /// Parse WELCOME body key 2 (capabilities map with integer keys).
-pub fn parse_welcome_capabilities(body: &Option<Value>) -> RrcWelcomeCapabilities {
+pub fn parse_welcome_capabilities(body: Option<&Value>) -> RrcWelcomeCapabilities {
     let mut out = RrcWelcomeCapabilities::default();
     let Some(Value::Map(entries)) = body else {
         return out;
@@ -246,7 +241,7 @@ pub fn parse_welcome_capabilities(body: &Option<Value>) -> RrcWelcomeCapabilitie
                         "direct_notice" | "cap_direct_notice" => out.direct_notice = true,
                         "action" | "cap_action" => out.action = true,
                         "resource_envelope" | "cap_resource_envelope" => {
-                            out.resource_envelope = true
+                            out.resource_envelope = true;
                         }
                         _ => {}
                     }
@@ -258,7 +253,7 @@ pub fn parse_welcome_capabilities(body: &Option<Value>) -> RrcWelcomeCapabilitie
     out
 }
 
-pub fn parse_joined_members(body: &Option<Value>) -> Vec<(String, Option<String>)> {
+pub fn parse_joined_members(body: Option<&Value>) -> Vec<(String, Option<String>)> {
     let Some(Value::Array(items)) = body else {
         return Vec::new();
     };
@@ -299,7 +294,7 @@ pub fn parse_joined_members(body: &Option<Value>) -> Vec<(String, Option<String>
     out
 }
 
-pub fn body_as_text(body: &Option<Value>) -> Option<String> {
+pub fn body_as_text(body: Option<&Value>) -> Option<String> {
     match body {
         Some(Value::Text(t)) => Some(t.clone()),
         Some(Value::Map(entries)) => {
@@ -396,12 +391,15 @@ mod tests {
         assert_eq!(decoded.sender_identity, sender);
         assert_eq!(decoded.room_name.as_deref(), Some("#lobby"));
         assert_eq!(decoded.nickname.as_deref(), Some("alice"));
-        assert_eq!(body_as_text(&decoded.body).as_deref(), Some("Hello, world!"));
+        assert_eq!(
+            body_as_text(decoded.body.as_ref()).as_deref(),
+            Some("Hello, world!")
+        );
     }
 
     #[test]
     fn ignores_unknown_envelope_keys() {
-        let mut map = vec![
+        let map = vec![
             (Value::Integer(0.into()), Value::Integer(1.into())),
             (Value::Integer(1.into()), Value::Integer(20.into())),
             (Value::Integer(2.into()), Value::Bytes(vec![1; 8])),

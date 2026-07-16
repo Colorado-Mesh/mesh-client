@@ -88,7 +88,10 @@ pub fn build_topology(peers: &[PeerRow]) -> (Vec<PeerRow>, Vec<TopologyEdge>) {
 }
 
 /// When a relay is only referenced as `via` (not its own path-table row), link it to self.
-fn infer_self_to_via_edges(edges: &mut Vec<TopologyEdge>, edge_keys: &mut HashSet<(String, String)>) {
+fn infer_self_to_via_edges(
+    edges: &mut Vec<TopologyEdge>,
+    edge_keys: &mut HashSet<(String, String)>,
+) {
     let mut has_incoming = HashSet::new();
     let mut non_self_sources = HashSet::new();
     for edge in edges.iter() {
@@ -97,7 +100,10 @@ fn infer_self_to_via_edges(edges: &mut Vec<TopologyEdge>, edge_keys: &mut HashSe
             non_self_sources.insert(edge.source.clone());
         }
     }
-    for via in non_self_sources.into_iter().filter(|via| !has_incoming.contains(via)) {
+    for via in non_self_sources
+        .into_iter()
+        .filter(|via| !has_incoming.contains(via))
+    {
         let key = (SELF_ID.into(), via.clone());
         if edge_keys.insert(key) {
             edges.push(TopologyEdge {
@@ -186,8 +192,8 @@ pub fn is_hash_prefix_alias(hash: &str, name: &str) -> bool {
     }
     let hex: String = canonicalize_destination_hash(hash).unwrap_or_else(|| {
         hash.chars()
-            .filter(|c| c.is_ascii_hexdigit())
-            .flat_map(|c| c.to_lowercase())
+            .filter(char::is_ascii_hexdigit)
+            .flat_map(char::to_lowercase)
             .collect()
     });
     let prefix: String = hex.chars().take(12).collect();
@@ -290,10 +296,7 @@ mod tests {
     fn multi_hop_chain_uses_via_as_edge_source() {
         let hub = "hub11111111111111";
         let leaf = "leaf22222222222222";
-        let (nodes, edges) = build_topology(&[
-            peer(hub, 1, None),
-            peer(leaf, 2, Some(hub)),
-        ]);
+        let (nodes, edges) = build_topology(&[peer(hub, 1, None), peer(leaf, 2, Some(hub))]);
         assert_eq!(nodes.len(), 2);
         assert!(edges.iter().any(|e| e.source == "self" && e.target == hub));
         assert!(edges.iter().any(|e| e.source == hub && e.target == leaf));
@@ -315,7 +318,11 @@ mod tests {
         let relay = "relay5555555555555";
         let leaf = "leaf66666666666666";
         let (_, edges) = build_topology(&[peer(leaf, 3, Some(relay))]);
-        assert!(edges.iter().any(|e| e.source == "self" && e.target == relay));
+        assert!(
+            edges
+                .iter()
+                .any(|e| e.source == "self" && e.target == relay)
+        );
         assert!(edges.iter().any(|e| e.source == relay && e.target == leaf));
     }
 
@@ -405,7 +412,11 @@ mod tests {
             peer(leaf, 2, Some(hub)),
         ]);
         assert_eq!(nodes.len(), 3);
-        assert!(edges.iter().any(|e| e.source == "self" && e.target == "direct99"));
+        assert!(
+            edges
+                .iter()
+                .any(|e| e.source == "self" && e.target == "direct99")
+        );
         assert!(edges.iter().any(|e| e.source == "self" && e.target == hub));
         assert!(edges.iter().any(|e| e.source == hub && e.target == leaf));
     }

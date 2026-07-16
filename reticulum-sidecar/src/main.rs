@@ -2,11 +2,28 @@
 //!
 //! IPC contract aligns with Ratspeak `ratspeak-tauri` commands (see docs/reticulum-sidecar-ipc.md).
 
+// Stub build (no rns-stack): live modules compile as stubs; many symbols are unused until
+// the full feature set is enabled. Full-feature Clippy stays strict (-D warnings).
+#![cfg_attr(
+    not(feature = "rns-stack"),
+    allow(
+        dead_code,
+        unused_imports,
+        unused_variables,
+        unused_mut,
+        unused_assignments,
+        clippy::unused_async,
+        clippy::unused_self,
+        clippy::unnecessary_wraps,
+        clippy::needless_pass_by_value,
+    )
+)]
+
 mod api;
 mod stack;
 
 use std::net::SocketAddr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::sync::Arc;
 
@@ -14,8 +31,8 @@ use clap::{Parser, Subcommand};
 use tokio::sync::broadcast;
 use tracing::{error, info};
 
-use crate::stack::config_audit::validate_config_offline;
 use crate::stack::StackHandle;
+use crate::stack::config_audit::validate_config_offline;
 
 #[derive(Parser, Debug)]
 #[command(name = "mesh-client-reticulum")]
@@ -51,8 +68,8 @@ fn is_loopback_host(host: &str) -> bool {
     matches!(host, "127.0.0.1" | "localhost" | "::1" | "[::1]")
 }
 
-fn run_validate_config(config_dir: PathBuf, json: bool) -> ExitCode {
-    match validate_config_offline(&config_dir) {
+fn run_validate_config(config_dir: &Path, json: bool) -> ExitCode {
+    match validate_config_offline(config_dir) {
         Ok(issues) => {
             let has_error = issues.iter().any(|i| i.severity == "error");
             if json {
@@ -65,10 +82,7 @@ fn run_validate_config(config_dir: PathBuf, json: bool) -> ExitCode {
                 eprintln!("validate-config: ok ({})", config_dir.display());
             } else {
                 for issue in &issues {
-                    eprintln!(
-                        "[{}] {}: {}",
-                        issue.severity, issue.kind, issue.message
-                    );
+                    eprintln!("[{}] {}: {}", issue.severity, issue.kind, issue.message);
                 }
             }
             if has_error {
@@ -114,7 +128,7 @@ async fn main() -> ExitCode {
                 .or(cli.reticulum_config_dir)
                 .unwrap_or_else(|| "./reticulum-config".into()),
         );
-        return run_validate_config(config_dir, json);
+        return run_validate_config(&config_dir, json);
     }
 
     if cli.headless {

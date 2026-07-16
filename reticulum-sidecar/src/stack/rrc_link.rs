@@ -8,7 +8,7 @@ use rns_crypto::ed25519::Ed25519PublicKey;
 use rns_identity::identity::Identity;
 use rns_link::constants::KEEPALIVE_REQUEST;
 use rns_link::link::{CloseReason, Link, LinkAction};
-use rns_transport::await_path::{await_path, AwaitPathError};
+use rns_transport::await_path::{AwaitPathError, await_path};
 use rns_transport::link_messages::DestinationEvent;
 use rns_transport::messages::{
     AnnounceHandlerEvent, OutboundRequest, TransportMessage, TransportQuery, TransportQueryResponse,
@@ -49,6 +49,7 @@ pub enum RrcLinkEvent {
 pub struct RrcLinkHandle {
     cmd_tx: mpsc::Sender<RrcLinkCommand>,
     pub event_rx: mpsc::Receiver<RrcLinkEvent>,
+    #[allow(dead_code)] // exposed for session correlation / debugging
     pub link_id: [u8; 16],
 }
 
@@ -97,9 +98,7 @@ impl Drop for DestinationRegistrationGuard {
         }
         let _ = self
             .transport_tx
-            .try_send(TransportMessage::DeregisterDestination {
-                hash: self.link_id,
-            });
+            .try_send(TransportMessage::DeregisterDestination { hash: self.link_id });
     }
 }
 
@@ -344,24 +343,23 @@ pub async fn open_rrc_link(
                                     if let Ok(plain) = link.decrypt(body) {
                                         link.record_inbound();
                                         link.record_rx(body.len());
-                                        if !plain.is_empty() {
-                                            if event_tx
+                                        if !plain.is_empty()
+                                            && event_tx
                                                 .send(RrcLinkEvent::Data(plain))
                                                 .await
                                                 .is_err()
-                                            {
-                                                let _ = send_close(
-                                                    &transport_for_task,
-                                                    &mut link,
-                                                )
-                                                .await;
-                                                let _ = transport_for_task.try_send(
-                                                    TransportMessage::DeregisterDestination {
-                                                        hash: link_id,
-                                                    },
-                                                );
-                                                return;
-                                            }
+                                        {
+                                            let _ = send_close(
+                                                &transport_for_task,
+                                                &mut link,
+                                            )
+                                            .await;
+                                            let _ = transport_for_task.try_send(
+                                                TransportMessage::DeregisterDestination {
+                                                    hash: link_id,
+                                                },
+                                            );
+                                            return;
                                         }
                                     }
                                 }
@@ -484,9 +482,9 @@ async fn wait_for_proof(
                     return Err(RrcLinkError::HandshakeFailed("link closed".into()));
                 }
                 DestinationEvent::InboundPacket { raw, .. } => {
-                    let (header, data_offset) = match rns_wire::header::PacketHeader::unpack(&raw) {
-                        Ok(h) => h,
-                        Err(_) => continue,
+                    let Ok((header, data_offset)) = rns_wire::header::PacketHeader::unpack(&raw)
+                    else {
+                        continue;
                     };
                     let is_proof = header.flags.packet_type == rns_wire::flags::PacketType::Proof
                         && header.destination_hash == link_id;

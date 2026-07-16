@@ -15,6 +15,7 @@ pub struct StatusResponse {
 }
 
 #[derive(Serialize)]
+#[allow(clippy::struct_field_names)] // JSON wire field names match mesh-client IPC contract
 pub struct AppInfoResponse {
     pub sidecar_version: String,
     pub rns_version: Option<String>,

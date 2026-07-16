@@ -80,9 +80,8 @@ pub fn list_discovered_wire_rows_from_store(
 fn discovery_status_str(status: Option<DiscoveryStatus>) -> &'static str {
     match status {
         Some(DiscoveryStatus::Available) => "available",
-        Some(DiscoveryStatus::Unknown) => "unknown",
+        Some(DiscoveryStatus::Unknown) | None => "unknown",
         Some(DiscoveryStatus::Stale) => "stale",
-        None => "unknown",
     }
 }
 

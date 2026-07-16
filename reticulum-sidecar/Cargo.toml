@@ -98,3 +98,23 @@ optional = true
 package = "rns-crypto"
 path = "../../rsReticulum/crates/rns-crypto"
 optional = true
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+# Groups at lower priority so individual allows below can override.
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# High-churn pedantic style (ratchet down over time). Protocol casts and large
+# modules are intentional; INI fixtures keep raw-string hashes for clarity.
+doc_markdown = "allow"
+needless_raw_string_hashes = "allow"
+too_many_lines = "allow"
+cast_possible_truncation = "allow"
+cast_possible_wrap = "allow"
+cast_sign_loss = "allow"
+cast_lossless = "allow"
+assigning_clones = "allow"
+map_unwrap_or = "allow"
+case_sensitive_file_extension_comparisons = "allow"

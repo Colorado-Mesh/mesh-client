@@ -16,16 +16,15 @@ use std::time::Duration;
 use rns_identity::identity::Identity;
 use rns_transport::messages::TransportMessage;
 use serde_json::json;
-use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
+use tokio::sync::{Mutex, broadcast, mpsc, oneshot};
 use tracing::{debug, warn};
 
 use super::rrc_codec::{
-    body_as_text, decode_envelope, encode_envelope, hello_body, msg_type, parse_joined_members,
-    parse_welcome_capabilities, parse_welcome_hub_name, text_body, RrcEnvelope,
-    RrcWelcomeCapabilities, RRC_IDENTITY_HASH_LEN,
+    RRC_IDENTITY_HASH_LEN, RrcEnvelope, RrcWelcomeCapabilities, body_as_text, decode_envelope,
+    encode_envelope, hello_body, msg_type, parse_joined_members, parse_welcome_capabilities,
+    parse_welcome_hub_name, text_body,
 };
-use super::rrc_link::{open_rrc_link, RrcLinkError, RrcLinkEvent, RrcLinkHandle};
-
+use super::rrc_link::{RrcLinkError, RrcLinkEvent, RrcLinkHandle, open_rrc_link};
 
 const CLIENT_NAME: &str = "mesh-client";
 const CLIENT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -96,9 +95,7 @@ impl RrcSessionInner {
         if norm.is_empty() {
             return;
         }
-        let key = key
-            .map(|k| k.trim().to_string())
-            .filter(|k| !k.is_empty());
+        let key = key.map(|k| k.trim().to_string()).filter(|k| !k.is_empty());
         match self.desired_rooms.get_mut(&norm) {
             Some(existing) => {
                 if key.is_some() {
@@ -202,30 +199,27 @@ impl RrcSessionManager {
     /// `hub_dest_hash = None` aggregates every hub's rooms with a `"hub"`
     /// field; `Some(hex)` returns that hub's rooms alone (unchanged shape).
     pub async fn rooms_snapshot(&self, hub_dest_hash: Option<&str>) -> serde_json::Value {
-        match normalize_hex(hub_dest_hash) {
-            Some(hex) => {
-                let Some(handle) = self.get_handle(&hex).await else {
-                    return json!({ "rooms": [] });
-                };
+        if let Some(hex) = normalize_hex(hub_dest_hash) {
+            let Some(handle) = self.get_handle(&hex).await else {
+                return json!({ "rooms": [] });
+            };
+            let g = handle.inner.lock().await;
+            json!({ "rooms": rooms_json(&g.rooms) })
+        } else {
+            let hubs = self.shared.hubs.lock().await;
+            let mut rooms = Vec::new();
+            for (hex, handle) in hubs.iter() {
                 let g = handle.inner.lock().await;
-                json!({ "rooms": rooms_json(&g.rooms) })
-            }
-            None => {
-                let hubs = self.shared.hubs.lock().await;
-                let mut rooms = Vec::new();
-                for (hex, handle) in hubs.iter() {
-                    let g = handle.inner.lock().await;
-                    for r in g.rooms.values() {
-                        rooms.push(json!({
-                            "hub": hex,
-                            "name": r.name,
-                            "member_count": r.members.len(),
-                            "members": members_json(&r.members),
-                        }));
-                    }
+                for r in g.rooms.values() {
+                    rooms.push(json!({
+                        "hub": hex,
+                        "name": r.name,
+                        "member_count": r.members.len(),
+                        "members": members_json(&r.members),
+                    }));
                 }
-                json!({ "rooms": rooms })
             }
+            json!({ "rooms": rooms })
         }
     }
 
@@ -278,27 +272,25 @@ impl RrcSessionManager {
             })
             .await
             .map_err(|_| "rrc session task stopped".to_string())?;
-        rx.await.map_err(|_| "rrc session task stopped".to_string())?
+        rx.await
+            .map_err(|_| "rrc session task stopped".to_string())?
     }
 
     /// `None` (or empty) tears down every tracked hub session; `Some(hex)`
     /// tears down only that hub. Either way the hub's task frees its slot.
     pub async fn disconnect(&self, dest_hash_hex: Option<&str>) {
-        let targets: Vec<(String, HubHandle)> = match normalize_hex(dest_hash_hex) {
-            Some(hex) => {
-                let hubs = self.shared.hubs.lock().await;
-                hubs.get(&hex)
-                    .cloned()
-                    .map(|h| (hex, h))
-                    .into_iter()
-                    .collect()
-            }
-            None => {
-                let hubs = self.shared.hubs.lock().await;
-                hubs.iter()
-                    .map(|(hex, h)| (hex.clone(), h.clone()))
-                    .collect()
-            }
+        let targets: Vec<(String, HubHandle)> = if let Some(hex) = normalize_hex(dest_hash_hex) {
+            let hubs = self.shared.hubs.lock().await;
+            hubs.get(&hex)
+                .cloned()
+                .map(|h| (hex, h))
+                .into_iter()
+                .collect()
+        } else {
+            let hubs = self.shared.hubs.lock().await;
+            hubs.iter()
+                .map(|(hex, h)| (hex.clone(), h.clone()))
+                .collect()
         };
         for (hex, handle) in targets {
             let (reply, rx) = oneshot::channel();
@@ -316,7 +308,12 @@ impl RrcSessionManager {
         }
     }
 
-    pub async fn join(&self, hub_dest_hash: &str, room: String, key: Option<String>) -> Result<(), String> {
+    pub async fn join(
+        &self,
+        hub_dest_hash: &str,
+        room: String,
+        key: Option<String>,
+    ) -> Result<(), String> {
         let handle = self.require_handle(hub_dest_hash).await?;
         let (reply, rx) = oneshot::channel();
         handle
@@ -324,7 +321,8 @@ impl RrcSessionManager {
             .send(SessionCommand::Join { room, key, reply })
             .await
             .map_err(|_| "rrc session task stopped".to_string())?;
-        rx.await.map_err(|_| "rrc session task stopped".to_string())?
+        rx.await
+            .map_err(|_| "rrc session task stopped".to_string())?
     }
 
     pub async fn part(&self, hub_dest_hash: &str, room: String) -> Result<(), String> {
@@ -335,7 +333,8 @@ impl RrcSessionManager {
             .send(SessionCommand::Part { room, reply })
             .await
             .map_err(|_| "rrc session task stopped".to_string())?;
-        rx.await.map_err(|_| "rrc session task stopped".to_string())?
+        rx.await
+            .map_err(|_| "rrc session task stopped".to_string())?
     }
 
     /// `hub_dest_hash = None` sets the nickname on every tracked hub (used
@@ -422,7 +421,8 @@ impl RrcSessionManager {
             })
             .await
             .map_err(|_| "rrc session task stopped".to_string())?;
-        rx.await.map_err(|_| "rrc session task stopped".to_string())?
+        rx.await
+            .map_err(|_| "rrc session task stopped".to_string())?
     }
 
     async fn get_handle(&self, hub_dest_hash: &str) -> Option<HubHandle> {
@@ -431,9 +431,12 @@ impl RrcSessionManager {
     }
 
     async fn require_handle(&self, hub_dest_hash: &str) -> Result<HubHandle, String> {
-        self.get_handle(hub_dest_hash)
-            .await
-            .ok_or_else(|| format!("no active rrc session for hub {}", hub_dest_hash.trim().to_lowercase()))
+        self.get_handle(hub_dest_hash).await.ok_or_else(|| {
+            format!(
+                "no active rrc session for hub {}",
+                hub_dest_hash.trim().to_lowercase()
+            )
+        })
     }
 }
 
@@ -507,6 +510,7 @@ fn cancel_connect_job(job: &mut Option<ConnectJob>) {
     }
 }
 
+#[allow(clippy::too_many_arguments)] // connect job bundles transport + session state for one spawn site
 fn spawn_connect_job(
     transport_tx: mpsc::Sender<TransportMessage>,
     identity: Identity,
@@ -935,6 +939,7 @@ async fn session_loop(
     }
 }
 
+#[allow(clippy::too_many_arguments)] // handshake needs transport, identity, and hub metadata together
 async fn establish_session(
     transport_tx: &mpsc::Sender<TransportMessage>,
     identity: Identity,
@@ -983,8 +988,8 @@ async fn establish_session(
                     continue;
                 };
                 if env.msg_type == msg_type::WELCOME {
-                    let hub_name = parse_welcome_hub_name(&env.body);
-                    let capabilities = parse_welcome_capabilities(&env.body);
+                    let hub_name = parse_welcome_hub_name(env.body.as_ref());
+                    let capabilities = parse_welcome_capabilities(env.body.as_ref());
                     {
                         let mut g = inner.lock().await;
                         g.status = RrcSessionStatus::Active;
@@ -1009,7 +1014,7 @@ async fn establish_session(
                     return Ok(handle);
                 }
                 if env.msg_type == msg_type::ERROR {
-                    let msg = body_as_text(&env.body).unwrap_or_else(|| "hub ERROR".into());
+                    let msg = body_as_text(env.body.as_ref()).unwrap_or_else(|| "hub ERROR".into());
                     handle.close().await;
                     return Err(msg);
                 }
@@ -1059,19 +1064,14 @@ async fn send_envelope(
         if !inner.lock().await.capabilities.direct_notice {
             return Err("hub does not advertise CAP_DIRECT_NOTICE".into());
         }
-        if room
-            .as_ref()
-            .map(|r| !r.trim().is_empty())
-            .unwrap_or(false)
-        {
+        if room.as_ref().map(|r| !r.trim().is_empty()).unwrap_or(false) {
             return Err("direct NOTICE must omit K_ROOM".into());
         }
     }
     let room_name = if dst_identity.is_some() {
         None
     } else {
-        room.map(|r| r.trim().to_string())
-            .filter(|r| !r.is_empty())
+        room.map(|r| r.trim().to_string()).filter(|r| !r.is_empty())
     };
     let env = {
         let g = inner.lock().await;
@@ -1106,7 +1106,7 @@ async fn handle_inbound(
         msg_type::JOINED => {
             let room = env.room_name.clone().unwrap_or_default();
             let key = normalize_room(&room);
-            let members = parse_joined_members(&env.body);
+            let members = parse_joined_members(env.body.as_ref());
             {
                 let mut g = inner.lock().await;
                 g.rooms.insert(
@@ -1150,7 +1150,7 @@ async fn handle_inbound(
                 _ => "msg",
             };
             let room = env.room_name.clone().unwrap_or_default();
-            let body = body_as_text(&env.body).unwrap_or_default();
+            let body = body_as_text(env.body.as_ref()).unwrap_or_default();
             let dst_hash = env.dst_identity.map(hex::encode);
             emit(
                 event_tx,
@@ -1182,7 +1182,7 @@ async fn handle_inbound(
             ))
         }
         msg_type::ERROR => {
-            let message = body_as_text(&env.body).unwrap_or_else(|| "hub error".into());
+            let message = body_as_text(env.body.as_ref()).unwrap_or_else(|| "hub error".into());
             {
                 let mut g = inner.lock().await;
                 g.last_error = Some(message.clone());
@@ -1195,8 +1195,8 @@ async fn handle_inbound(
             None
         }
         msg_type::WELCOME => {
-            let hub_name = parse_welcome_hub_name(&env.body);
-            let capabilities = parse_welcome_capabilities(&env.body);
+            let hub_name = parse_welcome_hub_name(env.body.as_ref());
+            let capabilities = parse_welcome_capabilities(env.body.as_ref());
             let mut g = inner.lock().await;
             if let Some(name) = hub_name {
                 g.hub_name = Some(name);
@@ -1205,7 +1205,7 @@ async fn handle_inbound(
             g.status = RrcSessionStatus::Active;
             None
         }
-        _ => None
+        _ => None,
     }
 }
 
@@ -1222,7 +1222,7 @@ async fn resolve_reconnect_nickname(
         .as_ref()
         .map(|n| n.trim())
         .filter(|n| !n.is_empty())
-        .map(|n| n.to_string())
+        .map(str::to_string)
         .unwrap_or_else(|| {
             let trimmed = intent_nick.trim();
             if trimmed.is_empty() {
@@ -1233,6 +1233,7 @@ async fn resolve_reconnect_nickname(
         })
 }
 
+#[allow(clippy::needless_pass_by_value)] // payload is moved into the broadcast frame
 fn emit(event_tx: &broadcast::Sender<String>, event_type: &str, payload: serde_json::Value) {
     let frame = json!({ "type": event_type, "payload": payload });
     let _ = event_tx.send(frame.to_string());
@@ -1247,19 +1248,34 @@ mod tests {
         let mut inner = RrcSessionInner::new([0u8; 16]);
         inner.remember_desired_room("#Lobby", Some("secret".into()));
         assert_eq!(
-            inner.desired_rooms.get("#lobby").cloned().flatten().as_deref(),
+            inner
+                .desired_rooms
+                .get("#lobby")
+                .cloned()
+                .flatten()
+                .as_deref(),
             Some("secret")
         );
         // JOINED without key must not wipe the stored key.
         inner.remember_desired_room("#lobby", None);
         assert_eq!(
-            inner.desired_rooms.get("#lobby").cloned().flatten().as_deref(),
+            inner
+                .desired_rooms
+                .get("#lobby")
+                .cloned()
+                .flatten()
+                .as_deref(),
             Some("secret")
         );
         // Explicit new key replaces.
         inner.remember_desired_room("#lobby", Some("newkey".into()));
         assert_eq!(
-            inner.desired_rooms.get("#lobby").cloned().flatten().as_deref(),
+            inner
+                .desired_rooms
+                .get("#lobby")
+                .cloned()
+                .flatten()
+                .as_deref(),
             Some("newkey")
         );
     }

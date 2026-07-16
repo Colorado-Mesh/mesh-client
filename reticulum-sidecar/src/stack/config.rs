@@ -1,6 +1,7 @@
 //! rnsd-style INI config read/write (ConfigObj subset used by Reticulum).
 
 use std::collections::HashMap;
+use std::fmt::Write;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -176,9 +177,10 @@ pub fn set_stack_settings(config_dir: &Path, settings: &StackSettings) -> Result
     parsed
         .logging
         .set("loglevel", &settings.loglevel.to_string());
-    parsed
-        .reticulum
-        .set("announce_interval_sec", &settings.announce_interval_sec.to_string());
+    parsed.reticulum.set(
+        "announce_interval_sec",
+        &settings.announce_interval_sec.to_string(),
+    );
     write_config(config_dir, &serialize_config(&parsed))
 }
 
@@ -192,6 +194,8 @@ pub fn interfaces_from_config_dir(config_dir: &Path) -> Result<Vec<InterfaceRow>
     interfaces_from_config(&content)
 }
 
+/// Bulk-write interface rows back to config (used by stub persistence paths).
+#[allow(dead_code)]
 pub fn sync_config_interfaces(
     config_dir: &Path,
     interfaces: &[InterfaceRow],
@@ -285,7 +289,7 @@ fn interfaces_from_parsed(parsed: &ParsedConfig) -> Vec<InterfaceRow> {
     parsed
         .interfaces
         .iter()
-        .filter_map(|block| interface_block_to_row(block))
+        .filter_map(interface_block_to_row)
         .collect()
 }
 
@@ -358,9 +362,10 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         coding_rate: block.get("codingrate").and_then(|v| v.parse().ok()),
         callsign: block.get("callsign").map(str::to_string),
         id_interval: block.get("id_interval").and_then(|v| v.parse().ok()),
-        mode: block.get("mode").and_then(|m| match normalize_interface_mode(m) {
-            Ok(normalized) => normalized,
-            Err(_) => {
+        mode: block.get("mode").and_then(|m| {
+            if let Ok(normalized) = normalize_interface_mode(m) {
+                normalized
+            } else {
                 // Preserve unrecognized third-party/typo modes across RMW
                 // (enable/disable/rename) so we do not silently strip them.
                 // API writes that set `mode` still validate via resolve_interface_mode.
@@ -382,9 +387,7 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         longitude: block.get("longitude").and_then(|v| v.parse().ok()),
         height: block.get("height").and_then(|v| v.parse().ok()),
         discovery_name: block.get("discovery_name").map(str::to_string),
-        announce_interval_min: block
-            .get("announce_interval")
-            .and_then(|v| v.parse().ok()),
+        announce_interval_min: block.get("announce_interval").and_then(|v| v.parse().ok()),
         connectable: block.get_bool("connectable"),
         reachable_on: block.get("reachable_on").map(str::to_string),
     })
@@ -505,10 +508,10 @@ const I2P_PEERS_MAX_LEN: usize = 512;
 const REACHABLE_ON_MAX_LEN: usize = 256;
 
 pub fn validate_lat_lon(lat: f64, lon: f64) -> Result<(), String> {
-    if !lat.is_finite() || lat < -90.0 || lat > 90.0 {
+    if !lat.is_finite() || !(-90.0..=90.0).contains(&lat) {
         return Err("invalid latitude".into());
     }
-    if !lon.is_finite() || lon < -180.0 || lon > 180.0 {
+    if !lon.is_finite() || !(-180.0..=180.0).contains(&lon) {
         return Err("invalid longitude".into());
     }
     Ok(())
@@ -528,7 +531,10 @@ pub fn validate_reachable_on(value: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn apply_discovery_patch(row: &mut InterfaceRow, patch: &UpdateInterfacePatch) -> Result<(), String> {
+fn apply_discovery_patch(
+    row: &mut InterfaceRow,
+    patch: &UpdateInterfacePatch,
+) -> Result<(), String> {
     if patch.discoverable.is_some() {
         row.discoverable = patch.discoverable;
     }
@@ -634,7 +640,11 @@ pub fn add_interface_to_config(
         name,
         iface_type: req.iface_type.clone(),
         enabled,
-        status: if enabled { "pending".into() } else { "down".into() },
+        status: if enabled {
+            "pending".into()
+        } else {
+            "down".into()
+        },
         host: req.host.clone(),
         port: req.port,
         preset: req.preset.clone(),
@@ -880,7 +890,10 @@ fn rnode_needs_preset_expansion(row: &InterfaceRow) -> bool {
         return false;
     }
     let preset = row.preset.as_deref().unwrap_or("");
-    if !crate::stack::rf_profiles::known_preset_ids().iter().any(|id| id == preset) {
+    if !crate::stack::rf_profiles::known_preset_ids()
+        .iter()
+        .any(|id| id == preset)
+    {
         return false;
     }
     row.frequency.is_none()
@@ -896,6 +909,7 @@ fn apply_preset_defaults(row: &mut InterfaceRow) {
 
 /// INI block metadata for config audit (TCP enable-key checks).
 #[derive(Debug, Clone)]
+#[allow(clippy::struct_excessive_bools)] // audit flags mirror INI key presence checks
 pub struct ConfigAuditIniBlock {
     pub name: String,
     pub iface_type: Option<String>,
@@ -905,7 +919,9 @@ pub struct ConfigAuditIniBlock {
     pub has_name_field: bool,
 }
 
-pub fn list_interface_ini_blocks_for_audit(config_dir: &Path) -> Result<Vec<ConfigAuditIniBlock>, String> {
+pub fn list_interface_ini_blocks_for_audit(
+    config_dir: &Path,
+) -> Result<Vec<ConfigAuditIniBlock>, String> {
     let content = read_config(config_dir)?;
     let parsed = parse_config(&content)?;
     Ok(parsed
@@ -1212,10 +1228,10 @@ fn serialize_config(parsed: &ParsedConfig) -> String {
     write_block_section(&mut out, "logging", &parsed.logging);
     out.push_str("\n[interfaces]\n\n");
     for iface in &parsed.interfaces {
-        out.push_str(&format!("[[{}]]\n", iface.name));
+        let _ = writeln!(out, "[[{}]]", iface.name);
         for key in &iface.order {
             if let Some(value) = iface.values.get(key) {
-                out.push_str(&format!("{key} = {value}\n"));
+                let _ = writeln!(out, "{key} = {value}");
             }
         }
         out.push('\n');
@@ -1228,10 +1244,10 @@ fn serialize_config(parsed: &ParsedConfig) -> String {
 }
 
 fn write_block_section(out: &mut String, section: &str, block: &IniBlock) {
-    out.push_str(&format!("[{section}]\n"));
+    let _ = writeln!(out, "[{section}]");
     for key in &block.order {
         if let Some(value) = block.values.get(key) {
-            out.push_str(&format!("{key} = {value}\n"));
+            let _ = writeln!(out, "{key} = {value}");
         }
     }
 }
@@ -1245,9 +1261,10 @@ pub fn ensure_announce_interval_sec_default(config_dir: &Path) -> Result<bool, S
     if parsed.reticulum.get("announce_interval_sec").is_some() {
         return Ok(false);
     }
-    parsed
-        .reticulum
-        .set("announce_interval_sec", &DEFAULT_ANNOUNCE_INTERVAL_SEC.to_string());
+    parsed.reticulum.set(
+        "announce_interval_sec",
+        &DEFAULT_ANNOUNCE_INTERVAL_SEC.to_string(),
+    );
     write_config(config_dir, &serialize_config(&parsed))?;
     Ok(true)
 }
@@ -1279,10 +1296,7 @@ const DECOMMISSIONED_TCP_HUBS: &[(&[&str], u16)] = &[
     (&["dublin.connect.reticulum.network"], 4965),
     (&["amsterdam.connect.reticulum.network"], 4965),
     (
-        &[
-            "reticulum.betweentheborders.com",
-            "betweentheborders.com",
-        ],
+        &["reticulum.betweentheborders.com", "betweentheborders.com"],
         4242,
     ),
 ];
@@ -1300,7 +1314,10 @@ fn normalize_tcp_hub_host(host: &str) -> String {
 fn tcp_hub_is_decommissioned(host: &str, port: u16) -> bool {
     let normalized = normalize_tcp_hub_host(host);
     DECOMMISSIONED_TCP_HUBS.iter().any(|(hosts, ep_port)| {
-        *ep_port == port && hosts.iter().any(|h| normalize_tcp_hub_host(h) == normalized)
+        *ep_port == port
+            && hosts
+                .iter()
+                .any(|h| normalize_tcp_hub_host(h) == normalized)
     })
 }
 
@@ -1324,10 +1341,7 @@ pub fn ensure_decommissioned_hubs_disabled(config_dir: &Path) -> Result<Vec<Stri
         let Some(host) = block.get("target_host") else {
             continue;
         };
-        let Some(port) = block
-            .get("target_port")
-            .and_then(|p| p.parse::<u16>().ok())
-        else {
+        let Some(port) = block.get("target_port").and_then(|p| p.parse::<u16>().ok()) else {
             continue;
         };
         if !tcp_hub_is_decommissioned(host, port) {
@@ -1542,7 +1556,10 @@ txpower = 17
         let parsed = parse_config(content).unwrap();
         let rows = interfaces_from_parsed(&parsed);
         let rnode = rows.iter().find(|r| r.iface_type == "rnode").unwrap();
-        assert_eq!(rnode.serial_port.as_deref(), Some("tcp://192.168.1.10:7633"));
+        assert_eq!(
+            rnode.serial_port.as_deref(),
+            Some("tcp://192.168.1.10:7633")
+        );
 
         let block = interface_row_to_block(rnode);
         assert_eq!(block.get("port"), Some("tcp://192.168.1.10:7633"));
@@ -1613,7 +1630,10 @@ future_key = future_value
         assert!(!settings.enable_transport);
         assert!(settings.share_instance);
         assert_eq!(settings.loglevel, 4);
-        assert_eq!(settings.announce_interval_sec, DEFAULT_ANNOUNCE_INTERVAL_SEC);
+        assert_eq!(
+            settings.announce_interval_sec,
+            DEFAULT_ANNOUNCE_INTERVAL_SEC
+        );
     }
 
     #[test]
@@ -1745,7 +1765,11 @@ target_port = 4965
         assert!(content.contains("interface_enabled = No"));
         assert!(content.contains("45.77.109.86"));
         // Second pass is a no-op.
-        assert!(ensure_decommissioned_hubs_disabled(&dir).unwrap().is_empty());
+        assert!(
+            ensure_decommissioned_hubs_disabled(&dir)
+                .unwrap()
+                .is_empty()
+        );
         let _ = fs::remove_dir_all(&dir);
     }
 
@@ -2374,7 +2398,7 @@ mode = boundary
             &dir,
             "ratspeak",
             &UpdateInterfacePatch {
-                mode: Some("".into()),
+                mode: Some(String::new()),
                 ..Default::default()
             },
         )

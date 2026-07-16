@@ -63,6 +63,7 @@ pub fn classify_path_interface_name(
 
 /// Resolve transport for a peer destination hash from a path-table interface name.
 /// Prefer [`resolve_path_sent_via`] when local interface rows are available.
+#[allow(dead_code)] // legacy path-table helper; live stack uses resolve_path_sent_via
 pub fn resolve_peer_sent_via(peer_interface: Option<&str>) -> &'static str {
     match peer_interface {
         Some(name) if !name.is_empty() => classify_interface(name),
@@ -116,6 +117,7 @@ pub fn resolve_lxmf_sent_via(
 }
 
 /// Pick the primary outbound transport from enabled stub interfaces.
+#[allow(dead_code)] // stub-stack egress; live stack uses resolve_outbound_sent_via_with_primary
 pub fn resolve_stub_sent_via(interfaces: &[InterfaceRow]) -> &'static str {
     resolve_outbound_sent_via_with_primary(interfaces, None)
 }
@@ -133,7 +135,11 @@ pub fn resolve_outbound_sent_via_with_primary(
 ) -> &'static str {
     if let Some(primary_id) = primary_local_serial_id {
         if let Some(iface) = interfaces.iter().find(|i| i.id == primary_id && i.enabled) {
-            let via = classify_interface_row(&iface.iface_type, &iface.name, iface.serial_port.as_deref());
+            let via = classify_interface_row(
+                &iface.iface_type,
+                &iface.name,
+                iface.serial_port.as_deref(),
+            );
             if via == "rf" || via == "ble" {
                 return via;
             }
@@ -248,7 +254,13 @@ mod tests {
     use super::*;
     use crate::stack::types::InterfaceRow;
 
-    fn sample_iface(id: &str, name: &str, iface_type: &str, enabled: bool, status: &str) -> InterfaceRow {
+    fn sample_iface(
+        id: &str,
+        name: &str,
+        iface_type: &str,
+        enabled: bool,
+        status: &str,
+    ) -> InterfaceRow {
         InterfaceRow {
             id: id.into(),
             name: name.into(),
@@ -342,10 +354,7 @@ mod tests {
         // same path→config-row matching as outbound (live delivery callback).
         let ifaces = vec![sample_iface("tcp", "RNS Testnet", "tcp", true, "up")];
         assert_eq!(classify_interface("RNS Testnet"), "network");
-        assert_eq!(
-            classify_path_interface_name("RNS Testnet", &ifaces),
-            "tcp"
-        );
+        assert_eq!(classify_path_interface_name("RNS Testnet", &ifaces), "tcp");
     }
 
     #[test]
@@ -365,7 +374,10 @@ mod tests {
     fn merge_observed_egress_vias_joins_explicit_atoms() {
         assert_eq!(merge_observed_egress_vias(["rf"]), "rf");
         assert_eq!(merge_observed_egress_vias(["tcp", "rf"]), "rf+tcp");
-        assert_eq!(merge_observed_egress_vias(["network", "ble", "tcp"]), "ble+tcp+network");
+        assert_eq!(
+            merge_observed_egress_vias(["network", "ble", "tcp"]),
+            "ble+tcp+network"
+        );
         assert_eq!(merge_observed_egress_vias(["both", "mqtt"]), "network");
     }
 

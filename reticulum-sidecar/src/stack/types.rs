@@ -1,24 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct StackIdentity {
     pub configured: bool,
     pub identity_hash: String,
     pub lxmf_hash: String,
     pub display_name: Option<String>,
     pub mnemonic: Option<String>,
-}
-
-impl Default for StackIdentity {
-    fn default() -> Self {
-        Self {
-            configured: false,
-            identity_hash: String::new(),
-            lxmf_hash: String::new(),
-            display_name: None,
-            mnemonic: None,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -62,6 +50,7 @@ pub struct InterfaceRow {
 }
 
 /// Discovery-related defaults for `InterfaceRow` struct literals outside config parse.
+#[allow(dead_code, clippy::type_complexity)]
 pub fn interface_discovery_defaults() -> (
     Option<bool>,
     Option<f64>,
@@ -153,7 +142,7 @@ fn default_rrc_source() -> String {
     "discovered".into()
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 pub struct AddInterfaceRequest {
     #[serde(rename = "type")]
     pub iface_type: String,
@@ -190,37 +179,6 @@ pub struct AddInterfaceRequest {
     pub connectable: Option<bool>,
     #[serde(default)]
     pub reachable_on: Option<String>,
-}
-
-impl Default for AddInterfaceRequest {
-    fn default() -> Self {
-        Self {
-            iface_type: String::new(),
-            name: None,
-            enabled: None,
-            host: None,
-            port: None,
-            preset: None,
-            serial_port: None,
-            frequency: None,
-            bandwidth: None,
-            txpower: None,
-            spreading_factor: None,
-            coding_rate: None,
-            callsign: None,
-            id_interval: None,
-            mode: None,
-            seed_addresses: Vec::new(),
-            discoverable: None,
-            latitude: None,
-            longitude: None,
-            height: None,
-            discovery_name: None,
-            announce_interval_min: None,
-            connectable: None,
-            reachable_on: None,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Deserialize)]

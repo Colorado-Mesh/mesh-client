@@ -48,8 +48,11 @@ pub struct ListPeersQuery {
 /// Parse `?refresh=` for live path-table bypass (`1` / `true` / `yes`, case- and whitespace-tolerant).
 pub fn peers_query_forces_refresh(refresh: Option<&str>) -> bool {
     matches!(
-        refresh.map(str::trim).map(|s| s.to_ascii_lowercase()).as_deref(),
-        Some("1") | Some("true") | Some("yes")
+        refresh
+            .map(str::trim)
+            .map(str::to_ascii_lowercase)
+            .as_deref(),
+        Some("1" | "true" | "yes")
     )
 }
 

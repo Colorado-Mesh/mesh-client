@@ -6,15 +6,15 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 ## Workflows
 
-| Workflow                 | Trigger                         | Purpose                                             |
-| ------------------------ | ------------------------------- | --------------------------------------------------- |
-| `ci.yaml`                | Push/PR to `main`               | Lint, typecheck, build, Flatpak manifest validation |
-| `tests.yaml`             | Push/PR to `main`               | Coverage tests + Cobertura upload                   |
-| `build.yaml`             | Manual `workflow_dispatch`      | Native 3-OS packaging smoke build                   |
-| `reticulum-sidecar.yaml` | Path-filtered push/PR to `main` | Sidecar Rust matrix build/test                      |
-| `release.yaml`           | Version tags (`v*`)             | Build & publish releases (AppImage/deb/rpm)         |
-| `flatpak.yaml`           | Version tags (`v*`), manual     | Build Flatpak; publish to release on tags           |
-| `docs.yml`               | Push to `main`                  | Deploy MkDocs to GitHub Pages                       |
+| Workflow                 | Trigger                         | Purpose                                                                         |
+| ------------------------ | ------------------------------- | ------------------------------------------------------------------------------- |
+| `ci.yaml`                | Push/PR to `main`               | Lint, typecheck, build, Flatpak manifest validation                             |
+| `tests.yaml`             | Push/PR to `main`               | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
+| `build.yaml`             | Manual `workflow_dispatch`      | Native 3-OS packaging smoke build                                               |
+| `reticulum-sidecar.yaml` | Path-filtered push/PR to `main` | Sidecar fmt + Clippy (ubuntu); multi-OS matrix build/test                       |
+| `release.yaml`           | Version tags (`v*`)             | Build & publish releases (AppImage/deb/rpm)                                     |
+| `flatpak.yaml`           | Version tags (`v*`), manual     | Build Flatpak; publish to release on tags                                       |
+| `docs.yml`               | Push to `main`                  | Deploy MkDocs to GitHub Pages                                                   |
 
 ---
 
@@ -43,10 +43,20 @@ Runs on every push and pull request to `main`:
 1. Checkout code, setup pnpm + Node 22, install dependencies
 2. **Parallel matrix** — coverage per Vitest project (`renderer-ui`, `renderer-logic`, `main`) with blob reporter (`VITEST_COVERAGE_SHARD=1` skips per-shard threshold checks)
 3. **Merge job** — downloads blob artifacts, runs `pnpm run test:coverage:merge` (enforces global coverage thresholds)
-4. Upload Cobertura coverage to GitHub Code Coverage (non-fork PRs / pushes)
-5. Upload merged test results artifact (retained 7 days)
+4. **`reticulum-sidecar-coverage`** (when `reticulum-sidecar/**` or related scripts change, via `paths-filter`) — clones Ratspeak siblings, runs `cargo llvm-cov --fail-under-lines 47` on ubuntu-latest; uploads `lcov.info` artifact (no Codecov upload on free org plan)
+5. Upload Cobertura coverage to GitHub Code Coverage (non-fork PRs / pushes) — Vitest merge job only
+6. Upload merged test results artifact (retained 7 days)
 
 Test results are available as a downloadable artifact from the workflow run.
+
+### Reticulum sidecar (`reticulum-sidecar.yaml`)
+
+Path-filtered on `reticulum-sidecar/**` and related scripts:
+
+1. **`lint` job (ubuntu-latest)** — `cargo fmt --check` + `cargo clippy` with `rns-stack,rns-ble,rns-rnode-tcp` (`-D warnings`)
+2. **Build matrix** — stub + full-stack `cargo test` and release builds on Linux, macOS, and Windows (including WoA arm64 jobs)
+
+Local parity: `pnpm run reticulum:sidecar:clippy:full`, `pnpm run check:reticulum-sidecar` (pre-commit stub). See [development-environment.md](development-environment.md#reticulum-sidecar-optional).
 
 ---
 
