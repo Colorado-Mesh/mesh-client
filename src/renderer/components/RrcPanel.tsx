@@ -305,7 +305,13 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
   const connected =
     status === 'active' || status === 'awaiting_welcome' || status === 'reconnecting';
   const connectInFlight = status === 'connecting' || status === 'awaiting_welcome';
-  const panelBusy = actionBusy || connectInFlight;
+  /** Cancel/disconnect while connecting — hubs stay clickable (do not gate on connectInFlight). */
+  const canCancelSession =
+    status === 'connecting' ||
+    status === 'awaiting_welcome' ||
+    status === 'reconnecting' ||
+    status === 'active';
+  const cancelSessionLabel = connectInFlight || status === 'reconnecting';
   const showNicklist =
     Boolean(activeRoom) && activeRoom !== RRC_HUB_STREAM_ROOM && !activeRoom?.startsWith('[');
 
@@ -351,19 +357,38 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
 
   const handleConnect = useCallback(
     async (hash: string) => {
+      const target = hash.trim().toLowerCase();
+      if (!target) return;
+      // Same hub already connecting/active — ignore duplicate clicks.
+      const session = useRrcSessionStore.getState();
+      if (
+        session.hubDestHash?.toLowerCase() === target &&
+        (session.status === 'connecting' ||
+          session.status === 'awaiting_welcome' ||
+          session.status === 'active')
+      ) {
+        return;
+      }
       setDisconnectIntent(false);
       setError(null);
+      // Optimistic UI so Cancel appears immediately (sidecar may still be aborting prior connect).
+      useRrcSessionStore.getState().applyStatus('connecting', target, null);
       try {
         const res = await window.electronAPI.reticulum.rrc.connect({
-          dest_hash: hash,
+          dest_hash: target,
           nickname,
         });
         if (!res.ok) {
-          setError(formatRrcErrorMessage(res.error ?? t('rrc.connectFailed'), t));
+          const err = res.error ?? t('rrc.connectFailed');
+          // Superseded by Cancel or a newer hub selection — not a user-facing failure.
+          if (/cancelled/i.test(err)) return;
+          setError(formatRrcErrorMessage(err, t));
         }
       } catch (e) {
+        const msg = errLikeToLogString(e);
+        if (/cancelled/i.test(msg)) return;
         // catch-no-log-ok error surfaced via setError
-        setError(formatRrcErrorMessage(errLikeToLogString(e), t));
+        setError(formatRrcErrorMessage(msg, t));
       }
     },
     [nickname, setDisconnectIntent, setError, t],
@@ -704,7 +729,6 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
         discovered={hubList.discovered}
         manual={hubList.manual}
         hubDestHash={hubDestHash}
-        busy={panelBusy}
         manualHash={manualHash}
         onManualHashChange={setManualHash}
         hubTab={hubTab}
@@ -807,16 +831,18 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
                   <LogOut size={16} />
                 </button>
               )}
-              <button
-                type="button"
-                className="rounded bg-amber-900/60 px-2 py-1 text-xs text-amber-100"
-                aria-label={t('rrc.disconnect')}
-                disabled={actionBusy}
-                onClick={() => void handleDisconnect()}
-              >
-                {t('rrc.disconnect')}
-              </button>
             </>
+          )}
+          {canCancelSession && (
+            <button
+              type="button"
+              className="rounded bg-amber-900/60 px-2 py-1 text-xs text-amber-100"
+              aria-label={cancelSessionLabel ? t('rrc.cancelConnect') : t('rrc.disconnect')}
+              disabled={actionBusy}
+              onClick={() => void handleDisconnect()}
+            >
+              {cancelSessionLabel ? t('rrc.cancelConnect') : t('rrc.disconnect')}
+            </button>
           )}
         </header>
         {bannerText && (

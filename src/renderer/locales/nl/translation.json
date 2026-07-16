@@ -4325,6 +4325,7 @@
       "welcomeTimeout": "Verbonden, maar de hub heeft niet op tijd een WELKOMSTBERICHT gestuurd. Probeer het opnieuw."
     },
     "expandMembers": "Ledenlijst uitvouwen",
-    "collapseMembers": "Ledenlijst samenvouwen"
+    "collapseMembers": "Ledenlijst samenvouwen",
+    "cancelConnect": "Annuleren"
   }
 }

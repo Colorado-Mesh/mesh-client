@@ -4325,6 +4325,7 @@
       "welcomeTimeout": "Terhubung tetapi hub tidak mengirim SAMBUTAN tepat waktu. Coba lagi."
     },
     "expandMembers": "Perluas daftar anggota",
-    "collapseMembers": "Ciutkan daftar anggota"
+    "collapseMembers": "Ciutkan daftar anggota",
+    "cancelConnect": "Batal"
   }
 }

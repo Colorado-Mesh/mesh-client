@@ -2743,6 +2743,7 @@
     "selectRoom": "Open room {{name}}",
     "leaveRoom": "Leave room",
     "disconnect": "Disconnect",
+    "cancelConnect": "Cancel",
     "toggleTimestamps": "Toggle timestamps",
     "muteRoom": "Mute room",
     "unmuteRoom": "Unmute room",

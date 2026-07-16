@@ -25,4 +25,13 @@ describe('RrcPanel', () => {
     expect(container.querySelector('[class*="border-amber"]')).toBeTruthy();
     expect(await axe(container)).toHaveNoViolations();
   });
+
+  it('shows Cancel while connecting so a stuck hub connect can be aborted', () => {
+    useRrcSessionStore
+      .getState()
+      .applyStatus('connecting', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'Slow Hub');
+    render(<RrcPanel isActive />);
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+    expect(screen.getByText(/Connecting/i)).toBeInTheDocument();
+  });
 });

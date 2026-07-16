@@ -4325,6 +4325,7 @@
       "welcomeTimeout": "Connecté mais le hub n'a pas envoyé l'ACCUEIL à temps. Réessayez."
     },
     "expandMembers": "Élargir la liste des membres",
-    "collapseMembers": "Réduire la liste des membres"
+    "collapseMembers": "Réduire la liste des membres",
+    "cancelConnect": "Annuler"
   }
 }

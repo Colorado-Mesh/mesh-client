@@ -20,7 +20,6 @@ export interface RrcHubBrowserProps {
   discovered: RrcHubInfo[];
   manual: RrcHubInfo[];
   hubDestHash: string | null;
-  busy: boolean;
   manualHash: string;
   onManualHashChange: (v: string) => void;
   hubTab: 'recommended' | 'discovered';
@@ -34,14 +33,12 @@ export interface RrcHubBrowserProps {
 function HubRow({
   hub,
   selected,
-  busy,
   sidecarRunning,
   onConnect,
   onToggleFavorite,
 }: {
   hub: RrcHubInfo;
   selected: boolean;
-  busy: boolean;
   sidecarRunning: boolean;
   onConnect: (hash: string) => void;
   onToggleFavorite: (hash: string, favorited: boolean) => void;
@@ -64,7 +61,7 @@ function HubRow({
           onClick={() => {
             onConnect(hub.destination_hash);
           }}
-          disabled={busy || !sidecarRunning}
+          disabled={!sidecarRunning}
         >
           <div className="truncate font-medium text-amber-50">{label}</div>
           <div className="truncate text-xs text-amber-200/50">
@@ -104,7 +101,6 @@ export function RrcHubBrowser({
   discovered,
   manual,
   hubDestHash,
-  busy,
   manualHash,
   onManualHashChange,
   hubTab,
@@ -129,7 +125,6 @@ export function RrcHubBrowser({
               key={hub.destination_hash}
               hub={hub}
               selected={hubDestHash?.toLowerCase() === hub.destination_hash.toLowerCase()}
-              busy={busy}
               sidecarRunning={sidecarRunning}
               onConnect={onConnect}
               onToggleFavorite={onToggleFavorite}
@@ -261,7 +256,7 @@ export function RrcHubBrowser({
               type="button"
               className="w-full rounded bg-amber-700 px-2 py-1 text-xs font-medium text-white hover:bg-amber-600 disabled:opacity-50"
               aria-label={t('rrc.connectManual')}
-              disabled={busy || !sidecarRunning || !manualHash.trim()}
+              disabled={!sidecarRunning || !manualHash.trim()}
               onClick={onManualConnect}
             >
               {t('rrc.connectManual')}

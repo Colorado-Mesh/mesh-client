@@ -4325,6 +4325,7 @@
       "welcomeTimeout": "Conectado, mas o hub não enviou BOAS-VINDAS a tempo. Tente novamente."
     },
     "expandMembers": "Expandir lista de membros",
-    "collapseMembers": "Recolher lista de membros"
+    "collapseMembers": "Recolher lista de membros",
+    "cancelConnect": "Cancelar"
   }
 }

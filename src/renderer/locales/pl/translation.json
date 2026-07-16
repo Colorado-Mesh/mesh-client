@@ -4325,6 +4325,7 @@
       "welcomeTimeout": "Połączono, ale centrum nie wysłało POWITANIA na czas. Spróbuj ponownie."
     },
     "expandMembers": "Rozwiń listę członków",
-    "collapseMembers": "Zwiń listę członków"
+    "collapseMembers": "Zwiń listę członków",
+    "cancelConnect": "Anuluj"
   }
 }

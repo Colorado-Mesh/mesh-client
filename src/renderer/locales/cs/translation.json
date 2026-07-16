@@ -4325,6 +4325,7 @@
       "welcomeTimeout": "Připojeno, ale centrum neposlalo UVÍTÁNÍ včas. Zkuste to znovu."
     },
     "expandMembers": "Rozbalit seznam členů",
-    "collapseMembers": "Sbalit seznam členů"
+    "collapseMembers": "Sbalit seznam členů",
+    "cancelConnect": "Zrušit"
   }
 }

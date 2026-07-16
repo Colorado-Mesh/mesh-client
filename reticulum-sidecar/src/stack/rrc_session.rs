@@ -1,6 +1,8 @@
 //! High-level RRC session (HELLO → WELCOME → rooms) over a persistent Link.
 
 use std::collections::{HashMap, HashSet};
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -289,6 +291,69 @@ impl RrcSessionManager {
     }
 }
 
+/// In-flight establish (user connect or auto-reconnect). Dropping cancels the
+/// future so Disconnect / a new Connect can run without waiting for WELCOME.
+struct ConnectJob {
+    fut: Pin<Box<dyn Future<Output = Result<RrcLinkHandle, String>> + Send>>,
+    reply: Option<oneshot::Sender<Result<(), String>>>,
+    dest_hash: [u8; 16],
+    dest_hash_hex: String,
+    hops: u8,
+    nickname: String,
+}
+
+fn cancel_connect_job(job: &mut Option<ConnectJob>) {
+    if let Some(prev) = job.take() {
+        if let Some(reply) = prev.reply {
+            let _ = reply.send(Err("cancelled".into()));
+        }
+        // Dropping `fut` aborts establish_session; RrcLinkHandle Drop closes the link task.
+    }
+}
+
+fn spawn_connect_job(
+    transport_tx: mpsc::Sender<TransportMessage>,
+    identity: Identity,
+    inner: Arc<Mutex<RrcSessionInner>>,
+    event_tx: broadcast::Sender<String>,
+    dest_hash: [u8; 16],
+    dest_hash_hex: String,
+    hops: u8,
+    nickname: String,
+    delay_ms: u64,
+    reply: Option<oneshot::Sender<Result<(), String>>>,
+) -> ConnectJob {
+    let hex_for_fut = dest_hash_hex.clone();
+    let nick_for_fut = nickname.clone();
+    ConnectJob {
+        fut: Box::pin(async move {
+            if delay_ms > 0 {
+                tokio::time::sleep(Duration::from_millis(delay_ms)).await;
+            }
+            {
+                let mut g = inner.lock().await;
+                g.status = RrcSessionStatus::Connecting;
+            }
+            establish_session(
+                &transport_tx,
+                identity,
+                &inner,
+                &event_tx,
+                dest_hash,
+                &hex_for_fut,
+                hops,
+                &nick_for_fut,
+            )
+            .await
+        }),
+        reply,
+        dest_hash,
+        dest_hash_hex,
+        hops,
+        nickname,
+    }
+}
+
 async fn session_loop(
     transport_tx: mpsc::Sender<TransportMessage>,
     identity: Identity,
@@ -299,6 +364,7 @@ async fn session_loop(
     let mut link: Option<RrcLinkHandle> = None;
     let mut reconnect_intent: Option<( [u8; 16], String, u8, String )> = None;
     let mut backoff_ms = RECONNECT_BASE_MS;
+    let mut connect_job: Option<ConnectJob> = None;
 
     loop {
         tokio::select! {
@@ -312,9 +378,12 @@ async fn session_loop(
                         nickname,
                         reply,
                     } => {
+                        cancel_connect_job(&mut connect_job);
                         if let Some(existing) = link.take() {
                             existing.close().await;
                         }
+                        reconnect_intent = None;
+                        backoff_ms = RECONNECT_BASE_MS;
                         {
                             let mut g = inner.lock().await;
                             g.status = RrcSessionStatus::Connecting;
@@ -334,50 +403,23 @@ async fn session_loop(
                                 "status": "connecting",
                             }),
                         );
-                        match establish_session(
-                            &transport_tx,
+                        connect_job = Some(spawn_connect_job(
+                            transport_tx.clone(),
                             identity.clone(),
-                            &inner,
-                            &event_tx,
+                            Arc::clone(&inner),
+                            event_tx.clone(),
                             dest_hash,
-                            &dest_hash_hex,
+                            dest_hash_hex,
                             hops,
-                            &nickname,
-                        )
-                        .await
-                        {
-                            Ok(handle) => {
-                                link = Some(handle);
-                                reconnect_intent =
-                                    Some((dest_hash, dest_hash_hex, hops, nickname));
-                                backoff_ms = RECONNECT_BASE_MS;
-                                let _ = reply.send(Ok(()));
-                            }
-                            Err(e) => {
-                                {
-                                    let mut g = inner.lock().await;
-                                    g.status = RrcSessionStatus::Disconnected;
-                                    g.last_error = Some(e.clone());
-                                }
-                                emit(
-                                    &event_tx,
-                                    "rrc.error",
-                                    json!({ "message": e }),
-                                );
-                                emit(
-                                    &event_tx,
-                                    "rrc.disconnected",
-                                    json!({
-                                        "hub_dest_hash": dest_hash_hex,
-                                        "reason": e,
-                                    }),
-                                );
-                                let _ = reply.send(Err(e));
-                            }
-                        }
+                            nickname,
+                            0,
+                            Some(reply),
+                        ));
                     }
                     SessionCommand::Disconnect { reply } => {
+                        cancel_connect_job(&mut connect_job);
                         reconnect_intent = None;
+                        backoff_ms = RECONNECT_BASE_MS;
                         if let Some(existing) = link.take() {
                             existing.close().await;
                         }
@@ -462,6 +504,85 @@ async fn session_loop(
                     }
                 }
             }
+            result = async {
+                match connect_job.as_mut() {
+                    Some(job) => job.fut.as_mut().await,
+                    None => std::future::pending().await,
+                }
+            } => {
+                let Some(job) = connect_job.take() else { continue };
+                let ConnectJob {
+                    reply,
+                    dest_hash,
+                    dest_hash_hex,
+                    hops,
+                    nickname,
+                    ..
+                } = job;
+                match result {
+                    Ok(handle) => {
+                        link = Some(handle);
+                        reconnect_intent =
+                            Some((dest_hash, dest_hash_hex, hops, nickname.clone()));
+                        backoff_ms = RECONNECT_BASE_MS;
+                        // Re-join desired rooms after welcome (reconnect path).
+                        let rooms: Vec<String> = {
+                            let g = inner.lock().await;
+                            g.desired_rooms.iter().cloned().collect()
+                        };
+                        for room in rooms {
+                            let _ = send_room_control(
+                                &mut link,
+                                &inner,
+                                Some(room),
+                                msg_type::JOIN,
+                                None,
+                            )
+                            .await;
+                        }
+                        if let Some(reply) = reply {
+                            let _ = reply.send(Ok(()));
+                        }
+                    }
+                    Err(e) => {
+                        {
+                            let mut g = inner.lock().await;
+                            // Keep reconnecting only when auto-reconnect still intended.
+                            if reconnect_intent.is_some() && reply.is_none() {
+                                g.status = RrcSessionStatus::Reconnecting;
+                            } else {
+                                g.status = RrcSessionStatus::Disconnected;
+                            }
+                            g.last_error = Some(e.clone());
+                        }
+                        if reply.is_some() {
+                            emit(
+                                &event_tx,
+                                "rrc.error",
+                                json!({ "message": e }),
+                            );
+                            emit(
+                                &event_tx,
+                                "rrc.disconnected",
+                                json!({
+                                    "hub_dest_hash": dest_hash_hex,
+                                    "reason": e,
+                                }),
+                            );
+                        } else {
+                            warn!("rrc reconnect failed: {e}");
+                            emit(
+                                &event_tx,
+                                "rrc.error",
+                                json!({ "message": e }),
+                            );
+                        }
+                        if let Some(reply) = reply {
+                            let _ = reply.send(Err(e));
+                        }
+                    }
+                }
+            }
             ev = async {
                 match link.as_mut() {
                     Some(l) => l.event_rx.recv().await,
@@ -474,13 +595,14 @@ async fn session_loop(
                     }
                     Some(RrcLinkEvent::Closed { reason }) => {
                         link = None;
-                        let should_reconnect = reconnect_intent.is_some();
+                        let should_reconnect =
+                            reconnect_intent.is_some() && connect_job.is_none();
                         let hub = {
                             let mut g = inner.lock().await;
                             let hub = g.hub_dest_hash.clone();
                             if should_reconnect {
                                 g.status = RrcSessionStatus::Reconnecting;
-                            } else {
+                            } else if connect_job.is_none() {
                                 g.status = RrcSessionStatus::Disconnected;
                                 g.rooms.clear();
                             }
@@ -495,66 +617,32 @@ async fn session_loop(
                                 "reason": reason,
                             }),
                         );
-                        if let Some((dest_hash, dest_hash_hex, hops, _stale_nick)) =
-                            reconnect_intent.clone()
-                        {
-                            let nickname = {
-                                let g = inner.lock().await;
-                                g.nickname.clone().unwrap_or_else(|| "mesh-client".into())
-                            };
-                            debug!(
-                                "rrc reconnecting to {dest_hash_hex} in {backoff_ms}ms"
-                            );
-                            tokio::time::sleep(Duration::from_millis(backoff_ms)).await;
-                            backoff_ms = (backoff_ms.saturating_mul(2)).min(RECONNECT_MAX_MS);
+                        if should_reconnect {
+                            if let Some((dest_hash, dest_hash_hex, hops, _stale_nick)) =
+                                reconnect_intent.clone()
                             {
-                                let mut g = inner.lock().await;
-                                g.status = RrcSessionStatus::Connecting;
-                            }
-                            match establish_session(
-                                &transport_tx,
-                                identity.clone(),
-                                &inner,
-                                &event_tx,
-                                dest_hash,
-                                &dest_hash_hex,
-                                hops,
-                                &nickname,
-                            )
-                            .await
-                            {
-                                Ok(handle) => {
-                                    // Re-join desired rooms after welcome.
-                                    let rooms: Vec<String> = {
-                                        let g = inner.lock().await;
-                                        g.desired_rooms.iter().cloned().collect()
-                                    };
-                                    link = Some(handle);
-                                    reconnect_intent =
-                                        Some((dest_hash, dest_hash_hex, hops, nickname));
-                                    for room in rooms {
-                                        let _ = send_room_control(
-                                            &mut link,
-                                            &inner,
-                                            Some(room),
-                                            msg_type::JOIN,
-                                            None,
-                                        )
-                                        .await;
-                                    }
-                                    backoff_ms = RECONNECT_BASE_MS;
-                                }
-                                Err(e) => {
-                                    warn!("rrc reconnect failed: {e}");
-                                    let mut g = inner.lock().await;
-                                    g.status = RrcSessionStatus::Reconnecting;
-                                    g.last_error = Some(e.clone());
-                                    emit(
-                                        &event_tx,
-                                        "rrc.error",
-                                        json!({ "message": e }),
-                                    );
-                                }
+                                let nickname = {
+                                    let g = inner.lock().await;
+                                    g.nickname.clone().unwrap_or_else(|| "mesh-client".into())
+                                };
+                                let delay = backoff_ms;
+                                debug!(
+                                    "rrc reconnecting to {dest_hash_hex} in {delay}ms"
+                                );
+                                backoff_ms =
+                                    (backoff_ms.saturating_mul(2)).min(RECONNECT_MAX_MS);
+                                connect_job = Some(spawn_connect_job(
+                                    transport_tx.clone(),
+                                    identity.clone(),
+                                    Arc::clone(&inner),
+                                    event_tx.clone(),
+                                    dest_hash,
+                                    dest_hash_hex,
+                                    hops,
+                                    nickname,
+                                    delay,
+                                    None,
+                                ));
                             }
                         }
                     }

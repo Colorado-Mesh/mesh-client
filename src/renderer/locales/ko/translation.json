@@ -4325,6 +4325,7 @@
       "welcomeTimeout": "연결되었지만 허브가 제시간에 환영 인사를 보내지 않았습니다. 다시 시도하십시오."
     },
     "expandMembers": "구성원 목록 펼치기",
-    "collapseMembers": "회원 목록 접기"
+    "collapseMembers": "회원 목록 접기",
+    "cancelConnect": "취소"
   }
 }

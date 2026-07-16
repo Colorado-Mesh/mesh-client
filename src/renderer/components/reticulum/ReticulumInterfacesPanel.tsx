@@ -1571,21 +1571,7 @@ function InterfacesSection({
   return (
     <details className="group bg-deep-black/40 rounded-lg border border-gray-700">
       <summary className="flex cursor-pointer items-center justify-between rounded-lg px-3 py-3 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-800">
-        <span className="flex items-center gap-3">
-          <span>{t('connectionPanel.reticulumInterfaces.title')}</span>
-          <a
-            href={RETICULUM_BACKBONE_DIRECTORY_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-brand-green text-xs font-normal text-gray-300 transition-colors"
-            aria-label={t('connectionPanel.reticulumInterfaces.backboneDirectoryLinkAria')}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            {t('connectionPanel.reticulumInterfaces.backboneDirectoryLink')}
-          </a>
-        </span>
+        <span>{t('connectionPanel.reticulumInterfaces.title')}</span>
         <DetailsChevron />
       </summary>
       <div className="space-y-3 px-3 pb-3">
@@ -1594,7 +1580,16 @@ function InterfacesSection({
             {t('connectionPanel.reticulumInterfaces.defaultHubsLabel')}
           </p>
           <p className="text-muted text-xs">
-            {t('connectionPanel.reticulumInterfaces.backboneDirectoryHint')}
+            {t('connectionPanel.reticulumInterfaces.backboneDirectoryHint')}{' '}
+            <a
+              href={RETICULUM_BACKBONE_DIRECTORY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-brand-green text-gray-300 underline transition-colors"
+              aria-label={t('connectionPanel.reticulumInterfaces.backboneDirectoryLinkAria')}
+            >
+              {t('connectionPanel.reticulumInterfaces.backboneDirectoryLink')}
+            </a>
           </p>
           {!identityConfigured ? (
             <p className="text-xs text-amber-300" role="status">

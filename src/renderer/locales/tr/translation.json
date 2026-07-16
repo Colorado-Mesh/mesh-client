@@ -4325,6 +4325,7 @@
       "welcomeTimeout": "Bağlantı kuruldu ancak merkez zamanında KARŞILAMA göndermedi. Tekrar deneyin."
     },
     "expandMembers": "Üye listesini genişlet",
-    "collapseMembers": "Üye listesini daralt"
+    "collapseMembers": "Üye listesini daralt",
+    "cancelConnect": "İptal"
   }
 }

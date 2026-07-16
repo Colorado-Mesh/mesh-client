@@ -4325,6 +4325,7 @@
       "welcomeTimeout": "Verbunden, aber der Hub hat die BEGRÜSSUNG nicht rechtzeitig gesendet. Versuchen Sie es erneut."
     },
     "expandMembers": "Mitgliederliste erweitern",
-    "collapseMembers": "Mitgliederliste ausblenden"
+    "collapseMembers": "Mitgliederliste ausblenden",
+    "cancelConnect": "Abbrechen"
   }
 }

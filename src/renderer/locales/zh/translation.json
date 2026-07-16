@@ -4325,6 +4325,7 @@
       "welcomeTimeout": "已连接，但集线器未及时发送欢迎。请重试。"
     },
     "expandMembers": "扩大成员",
-    "collapseMembers": "折叠成员列表"
+    "collapseMembers": "折叠成员列表",
+    "cancelConnect": "取消推荐"
   }
 }

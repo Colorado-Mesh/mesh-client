@@ -4325,6 +4325,7 @@
       "welcomeTimeout": "接続されていますが、ハブが時間内にウェルカムを送信しませんでした。もう一度やり直してください。"
     },
     "expandMembers": "メンバーリストを展開",
-    "collapseMembers": "メンバーリストを折りたたむ"
+    "collapseMembers": "メンバーリストを折りたたむ",
+    "cancelConnect": "取り消す"
   }
 }
