@@ -149,7 +149,9 @@ async function ensureCoverageThreshold(gateName) {
   });
 }
 
-async function selectGateForProject(gateName) {
+async function selectGateForProject(gate) {
+  const gateName = gate.name;
+  const gateId = String(gate.id);
   const current = await sonar('GET', '/api/qualitygates/get_by_project', {
     project: PROJECT_KEY,
   });
@@ -159,10 +161,11 @@ async function selectGateForProject(gateName) {
     return;
   }
   console.log(
-    `[sonar-ensure-quality-gate] selecting gate "${gateName}" for ${PROJECT_KEY} (was "${currentName ?? 'default'}")`,
+    `[sonar-ensure-quality-gate] selecting gate "${gateName}" (id=${gateId}) for ${PROJECT_KEY} (was "${currentName ?? 'default'}")`,
   );
+  // SonarCloud requires gateId (gateName alone returns HTTP 400).
   await sonar('POST', '/api/qualitygates/select', {
-    gateName,
+    gateId,
     projectKey: PROJECT_KEY,
   });
 }
@@ -182,9 +185,9 @@ async function main() {
       );
     }
   }
-  await ensureGateExists(gates);
+  const gate = await ensureGateExists(gates);
   await ensureCoverageThreshold(GATE_NAME);
-  await selectGateForProject(GATE_NAME);
+  await selectGateForProject(gate);
   console.log('[sonar-ensure-quality-gate] done');
 }
 
