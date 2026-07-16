@@ -4323,6 +4323,8 @@
       "linkProofTimeout": "Time-out bij het wachten op de hublink (linkbewijs). Probeer het opnieuw of controleer het pad/de hops naar de hub.",
       "pathTimeout": "Kon geen pad naar de hub vinden. Wacht op een versere aankondiging en maak vervolgens opnieuw verbinding.",
       "welcomeTimeout": "Verbonden, maar de hub heeft niet op tijd een WELKOMSTBERICHT gestuurd. Probeer het opnieuw."
-    }
+    },
+    "expandMembers": "Ledenlijst uitvouwen",
+    "collapseMembers": "Ledenlijst samenvouwen"
   }
 }

@@ -4323,6 +4323,8 @@
       "linkProofTimeout": "Délai expiré en attendant le lien du hub (preuve de lien). Réessayez ou vérifiez le chemin/les sauts vers le hub.",
       "pathTimeout": "Impossible de trouver un chemin vers le hub. Attendez une annonce plus fraîche, puis reconnectez-vous.",
       "welcomeTimeout": "Connecté mais le hub n'a pas envoyé l'ACCUEIL à temps. Réessayez."
-    }
+    },
+    "expandMembers": "Élargir la liste des membres",
+    "collapseMembers": "Réduire la liste des membres"
   }
 }

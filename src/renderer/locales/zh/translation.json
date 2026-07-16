@@ -4323,6 +4323,8 @@
       "linkProofTimeout": "等待集线器链接（链接证明）超时。重试，或检查到集线器的路径/跳数。",
       "pathTimeout": "找不到集线器的路径。等待更新的公告，然后重新连接。",
       "welcomeTimeout": "已连接，但集线器未及时发送欢迎。请重试。"
-    }
+    },
+    "expandMembers": "扩大成员",
+    "collapseMembers": "折叠成员列表"
   }
 }

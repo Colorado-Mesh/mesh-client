@@ -16,9 +16,7 @@ export type RrcSlashResult =
   | { kind: 'hub'; body: string }
   | { kind: 'chat'; body: string };
 
-export function normalizeRrcRoomName(room: string): string {
-  return room.trim().toLowerCase();
-}
+export { normalizeRrcRoomName } from './rrcRoomName';
 
 /** Parse composer input. Empty/whitespace returns null (caller ignores). */
 export function parseRrcSlashInput(raw: string): RrcSlashResult | null {

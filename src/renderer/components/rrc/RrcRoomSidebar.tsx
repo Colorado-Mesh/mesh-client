@@ -1,12 +1,43 @@
 import { ChevronLeft, ChevronRight, LogIn, Star } from 'lucide-react-motion';
 import { useTranslation } from 'react-i18next';
 
+import { rrcRoomMatchKey, rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import type { RrcListedRoom, RrcRoomInfo } from '@/shared/rrc-types';
 
 function roomCollapsedLabel(name: string): string {
   const cleaned = name.replace(/^#/, '').trim();
   if (!cleaned) return '??';
   return cleaned.slice(0, 2).toUpperCase();
+}
+
+/** Prefer hub/joined spelling; collapse `#foo` / `foo` duplicates. */
+function dedupeByMatchKey(names: string[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const name of names) {
+    const key = rrcRoomMatchKey(name);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(name);
+  }
+  return out;
+}
+
+function dedupeJoinedRooms(joined: RrcRoomInfo[]): RrcRoomInfo[] {
+  const byKey = new Map<string, RrcRoomInfo>();
+  for (const room of joined) {
+    const key = rrcRoomMatchKey(room.name);
+    const prev = byKey.get(key);
+    if (!prev) {
+      byKey.set(key, room);
+      continue;
+    }
+    // Prefer the entry that already has members / topic.
+    const prevScore = (prev.members?.length ?? 0) + (prev.topic ? 1 : 0);
+    const nextScore = (room.members?.length ?? 0) + (room.topic ? 1 : 0);
+    if (nextScore > prevScore) byKey.set(key, room);
+  }
+  return [...byKey.values()];
 }
 
 export interface RrcRoomSidebarProps {
@@ -60,19 +91,30 @@ export function RrcRoomSidebar({
 }: RrcRoomSidebarProps) {
   const { t } = useTranslation();
   const q = roomSearch.trim().toLowerCase();
-  const joinedKeys = new Set(joined.map((r) => r.name.trim().toLowerCase()));
+  const joinedDeduped = dedupeJoinedRooms(joined);
+  const joinedKeys = new Set(joinedDeduped.map((r) => rrcRoomMatchKey(r.name)));
+  const activeKey = activeRoom ? rrcRoomMatchKey(activeRoom) : null;
 
   const filterName = (name: string) => !q || name.toLowerCase().includes(q);
+
+  const unreadFor = (name: string): number => {
+    const match = rrcRoomMatchKey(name);
+    let total = 0;
+    for (const [room, count] of unreadByRoom) {
+      if (rrcRoomMatchKey(room) === match) total += count;
+    }
+    return total;
+  };
 
   const renderRoomButton = (
     name: string,
     opts?: { unread?: number; joined?: boolean; topic?: string },
   ) => {
-    const key = name.trim().toLowerCase();
-    const selected = activeRoom === key;
+    const key = rrcRoomMatchKey(name);
+    const selected = activeKey != null && activeKey === key;
     const unread = opts?.unread ?? 0;
-    const isFav = favourites.includes(key);
-    const isAuto = autoJoin.includes(key);
+    const isFav = favourites.some((f) => rrcRoomsMatch(f, name));
+    const isAuto = autoJoin.some((a) => rrcRoomsMatch(a, name));
 
     if (collapsed) {
       return (
@@ -153,10 +195,35 @@ export function RrcRoomSidebar({
   };
 
   const listedNotJoined = listed.filter(
-    (r) => filterName(r.name) && !joinedKeys.has(r.name.trim().toLowerCase()),
+    (r) => filterName(r.name) && !joinedKeys.has(rrcRoomMatchKey(r.name)),
   );
-  const favNotJoined = favourites.filter(
-    (r) => filterName(r) && !joinedKeys.has(r) && !listedNotJoined.some((l) => l.name === r),
+  const listedMatchKeys = new Set(listedNotJoined.map((r) => rrcRoomMatchKey(r.name)));
+  const favNotJoined = dedupeByMatchKey(
+    favourites.filter(
+      (r) =>
+        filterName(r) &&
+        !joinedKeys.has(rrcRoomMatchKey(r)) &&
+        !listedMatchKeys.has(rrcRoomMatchKey(r)),
+    ),
+  );
+  const suggestedVisible = dedupeByMatchKey(
+    suggested.filter(
+      (r) =>
+        filterName(r) &&
+        !joinedKeys.has(rrcRoomMatchKey(r)) &&
+        !listedMatchKeys.has(rrcRoomMatchKey(r)) &&
+        !favNotJoined.some((f) => rrcRoomsMatch(f, r)),
+    ),
+  );
+  const recentVisible = dedupeByMatchKey(
+    recent.filter(
+      (r) =>
+        filterName(r) &&
+        !joinedKeys.has(rrcRoomMatchKey(r)) &&
+        !listedMatchKeys.has(rrcRoomMatchKey(r)) &&
+        !favNotJoined.some((f) => rrcRoomsMatch(f, r)) &&
+        !suggestedVisible.some((s) => rrcRoomsMatch(s, r)),
+    ),
   );
 
   return (
@@ -236,16 +303,16 @@ export function RrcRoomSidebar({
         </div>
       )}
       <ul className="min-h-0 flex-1 overflow-y-auto px-1 pb-2">
-        {!collapsed && joined.filter((r) => filterName(r.name)).length > 0 && (
+        {!collapsed && joinedDeduped.filter((r) => filterName(r.name)).length > 0 && (
           <li className="px-2 py-1 text-[10px] tracking-wide text-amber-500/70 uppercase">
             {t('rrc.joinedRooms')}
           </li>
         )}
-        {joined
+        {joinedDeduped
           .filter((r) => filterName(r.name))
           .map((room) =>
             renderRoomButton(room.name, {
-              unread: unreadByRoom.get(room.name.trim().toLowerCase()) ?? 0,
+              unread: unreadFor(room.name),
               joined: true,
               topic: room.topic ?? undefined,
             }),
@@ -258,21 +325,19 @@ export function RrcRoomSidebar({
         {!collapsed &&
           listedNotJoined.map((r) => renderRoomButton(r.name, { joined: false, topic: r.topic }))}
         {!collapsed && favNotJoined.map((name) => renderRoomButton(name, { joined: false }))}
-        {!collapsed && suggested.filter(filterName).length > 0 && (
+        {!collapsed && suggestedVisible.length > 0 && (
           <li className="mt-2 px-2 py-1 text-[10px] tracking-wide text-amber-500/70 uppercase">
             {t('rrc.suggestedRooms')}
           </li>
         )}
-        {!collapsed &&
-          suggested.filter(filterName).map((name) => renderRoomButton(name, { joined: false }))}
-        {!collapsed && recent.filter(filterName).length > 0 && (
+        {!collapsed && suggestedVisible.map((name) => renderRoomButton(name, { joined: false }))}
+        {!collapsed && recentVisible.length > 0 && (
           <li className="mt-2 px-2 py-1 text-[10px] tracking-wide text-amber-500/70 uppercase">
             {t('rrc.recentRooms')}
           </li>
         )}
-        {!collapsed &&
-          recent.filter(filterName).map((name) => renderRoomButton(name, { joined: false }))}
-        {joined.length === 0 && !collapsed && (
+        {!collapsed && recentVisible.map((name) => renderRoomButton(name, { joined: false }))}
+        {joinedDeduped.length === 0 && !collapsed && (
           <li className="px-2 text-xs text-amber-200/40">{t('rrc.noRoomsJoined')}</li>
         )}
       </ul>

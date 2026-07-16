@@ -1,5 +1,11 @@
 import { create } from 'zustand';
 
+import {
+  coalesceRrcMemberRoster,
+  dedupeRrcMembers,
+  rrcIdentityHashesMatch,
+} from '@/renderer/lib/rrcRoomMembers';
+import { rrcRoomMatchKey, rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import type {
   RrcChatMessage,
   RrcHubCapabilities,
@@ -27,8 +33,50 @@ function normHub(hub: string | null | undefined): string | null {
   return h || null;
 }
 
+/**
+ * Soft storage key for messages/unread so `#lobby` and `lobby` share one bucket.
+ * Synthetic rooms keep their exact spelling.
+ */
+function roomStorageKey(room: string): string {
+  return rrcRoomMatchKey(room) || normRoom(room);
+}
+
 function msgKey(hub: string, room: string): string {
-  return `${hub}::${normRoom(room)}`;
+  return `${hub}::${roomStorageKey(room)}`;
+}
+
+/**
+ * Coalesce `#name` / `name` onto one map entry.
+ * Keep the first already-joined key so PART uses the same spelling as JOIN.
+ */
+function coalesceRoomAliases(
+  rooms: Map<string, RrcRoomInfo>,
+  incomingRoom: string,
+): { key: string; existing: RrcRoomInfo | undefined; rooms: Map<string, RrcRoomInfo> } {
+  const incomingKey = normRoom(incomingRoom);
+  const existingKeys = [...rooms.keys()].filter((k) => rrcRoomsMatch(k, incomingKey));
+  const key = existingKeys[0] ?? incomingKey;
+  const aliases = [...existingKeys];
+  if (!aliases.includes(incomingKey)) aliases.push(incomingKey);
+  let existing: RrcRoomInfo | undefined;
+  const next = new Map(rooms);
+  for (const alias of aliases) {
+    const info = next.get(alias);
+    if (!info) continue;
+    if (!existing) {
+      existing = info;
+    } else {
+      const union = dedupeRrcMembers([...(existing.members ?? []), ...(info.members ?? [])]);
+      existing = {
+        name: existing.name ?? info.name,
+        members: union,
+        member_count: union.length,
+        topic: existing.topic ?? info.topic ?? null,
+      };
+    }
+    if (alias !== key) next.delete(alias);
+  }
+  return { key, existing, rooms: next };
 }
 
 interface RrcSessionStoreState {
@@ -117,10 +165,13 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       set({ activeRoom: null });
       return;
     }
-    const key = normRoom(room);
     set((s) => {
+      const soft = [...s.rooms.keys()].find((k) => rrcRoomsMatch(k, room));
+      const key = soft ?? normRoom(room);
       const unread = new Map(s.unreadByRoom);
-      unread.delete(key);
+      for (const [rk] of unread) {
+        if (rrcRoomsMatch(rk, key)) unread.delete(rk);
+      }
       return { activeRoom: key, unreadByRoom: unread };
     });
   },
@@ -138,51 +189,64 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   setRoomTopic: (room, topic) => {
-    const key = normRoom(room);
     set((s) => {
-      const rooms = new Map(s.rooms);
-      const existing = rooms.get(key);
-      if (existing) {
-        rooms.set(key, { ...existing, topic: topic || null });
+      const { key, existing, rooms } = coalesceRoomAliases(s.rooms, room);
+      if (existing || rooms.has(key)) {
+        const cur = rooms.get(key) ?? existing;
+        rooms.set(key, {
+          name: cur?.name ?? room,
+          members: cur?.members,
+          member_count: cur?.member_count,
+          topic: topic || null,
+        });
       }
       const listedRooms = s.listedRooms.map((r) =>
-        normRoom(r.name) === key ? { ...r, topic: topic || undefined } : r,
+        rrcRoomsMatch(r.name, room) ? { ...r, topic: topic || undefined } : r,
       );
       return { rooms, listedRooms };
     });
   },
 
   mergeRoomMembers: (room, members, mode = 'replace') => {
-    const key = normRoom(room);
     set((s) => {
-      const rooms = new Map(s.rooms);
-      const existing = rooms.get(key);
-      let nextMembers = members;
-      if (mode === 'merge' && existing?.members?.length) {
-        const byHash = new Map<string, RrcRoomMember>();
-        for (const m of existing.members) {
-          byHash.set(m.identity_hash.toLowerCase(), m);
-        }
-        for (const m of members) {
-          const h = m.identity_hash.toLowerCase();
-          const prev = [...byHash.values()].find(
-            (p) =>
-              p.identity_hash.toLowerCase() === h ||
-              (h.length >= 8 &&
-                !h.startsWith('nick:') &&
-                p.identity_hash.toLowerCase().startsWith(h)) ||
-              (Boolean(m.nickname) && p.nickname?.toLowerCase() === m.nickname?.toLowerCase()),
-          );
-          if (prev?.identity_hash.length === 32 && h.length < 32) {
-            byHash.set(prev.identity_hash.toLowerCase(), {
-              ...prev,
-              nickname: m.nickname ?? prev.nickname,
-            });
-          } else {
-            byHash.set(h, m);
+      const { key, existing, rooms } = coalesceRoomAliases(s.rooms, room);
+      let nextMembers: RrcRoomMember[];
+      if (mode === 'merge') {
+        const prior = existing?.members ?? [];
+        if (prior.length === 0) {
+          nextMembers = coalesceRrcMemberRoster(members, undefined);
+        } else {
+          const byHash = new Map<string, RrcRoomMember>();
+          for (const m of prior) {
+            byHash.set(m.identity_hash.toLowerCase(), m);
           }
+          for (const m of members) {
+            const prev = [...byHash.values()].find(
+              (p) =>
+                rrcIdentityHashesMatch(p.identity_hash, m.identity_hash) ||
+                (Boolean(m.nickname?.trim()) &&
+                  Boolean(p.nickname?.trim()) &&
+                  m.nickname!.trim().toLowerCase() === p.nickname!.trim().toLowerCase()),
+            );
+            if (prev) {
+              byHash.delete(prev.identity_hash.toLowerCase());
+              const [upgraded] = coalesceRrcMemberRoster([m], [prev]);
+              if (upgraded) byHash.set(upgraded.identity_hash.toLowerCase(), upgraded);
+            } else {
+              byHash.set(m.identity_hash.toLowerCase(), {
+                identity_hash: m.identity_hash.toLowerCase(),
+                nickname: m.nickname ?? null,
+              });
+            }
+          }
+          nextMembers = [...byHash.values()];
         }
-        nextMembers = [...byHash.values()];
+      } else if (members.length === 0 && (existing?.members?.length ?? 0) > 0) {
+        // Empty `/who` (or parse miss) must not wipe a known roster.
+        nextMembers = existing!.members!;
+      } else {
+        // `/who` snapshot: hub membership + upgrade prefixes/nicks from live chat.
+        nextMembers = coalesceRrcMemberRoster(members, existing?.members);
       }
       rooms.set(key, {
         name: existing?.name ?? room,
@@ -195,7 +259,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   markPartIntent: (room) => {
-    const key = normRoom(room);
+    const key = rrcRoomMatchKey(room) || normRoom(room);
     set((s) => {
       const next = new Set(s.partIntentRooms);
       next.add(key);
@@ -204,10 +268,11 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   clearPartIntent: (room) => {
-    const key = normRoom(room);
     set((s) => {
       const next = new Set(s.partIntentRooms);
-      next.delete(key);
+      for (const k of [...next]) {
+        if (rrcRoomsMatch(k, room)) next.delete(k);
+      }
       return { partIntentRooms: next };
     });
   },
@@ -251,10 +316,8 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   roomJoined: (room, members) => {
-    const key = normRoom(room);
     set((s) => {
-      const rooms = new Map(s.rooms);
-      const existing = rooms.get(key);
+      const { key, existing, rooms } = coalesceRoomAliases(s.rooms, room);
       const incoming = members ?? [];
       // rrcd defaults `include_joined_member_list=false`, so JOINED body is often empty.
       // Empty must not wipe a roster filled by `/who`. Non-empty JOINED (full list or
@@ -274,45 +337,68 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         }
         for (const m of incoming) {
           const h = m.identity_hash.toLowerCase();
-          const prev = byHash.get(h);
-          byHash.set(h, {
-            identity_hash: h,
-            nickname: m.nickname ?? prev?.nickname,
-          });
+          const prev = [...byHash.values()].find(
+            (p) =>
+              rrcIdentityHashesMatch(p.identity_hash, h) ||
+              (Boolean(m.nickname?.trim()) &&
+                Boolean(p.nickname?.trim()) &&
+                m.nickname!.trim().toLowerCase() === p.nickname!.trim().toLowerCase()),
+          );
+          if (prev) {
+            byHash.delete(prev.identity_hash.toLowerCase());
+            const [upgraded] = coalesceRrcMemberRoster([m], [prev], {
+              keepUnmatchedExisting: false,
+            });
+            if (upgraded) byHash.set(upgraded.identity_hash.toLowerCase(), upgraded);
+          } else {
+            byHash.set(h, {
+              identity_hash: h,
+              nickname: m.nickname ?? null,
+            });
+          }
         }
         nextMembers = [...byHash.values()];
       }
       rooms.set(key, {
-        name: existing?.name ?? room,
+        name: existing?.name && rrcRoomsMatch(existing.name, key) ? existing.name : room,
         members: nextMembers,
         member_count: nextMembers.length,
         topic: existing?.topic ?? null,
       });
+      const activeRoom =
+        s.activeRoom && rrcRoomsMatch(s.activeRoom, key) ? key : (s.activeRoom ?? key);
       return {
         rooms,
-        activeRoom: s.activeRoom ?? key,
+        activeRoom,
       };
     });
   },
 
   roomParted: (room, opts) => {
-    const key = normRoom(room);
     set((s) => {
       const rooms = new Map(s.rooms);
-      rooms.delete(key);
+      const aliases = [...rooms.keys()].filter((k) => rrcRoomsMatch(k, room));
+      for (const alias of aliases) rooms.delete(alias);
       const hub = s.hubDestHash;
       const messages = new Map(s.messages);
-      if (hub && !opts?.forced) messages.delete(msgKey(hub, key));
       const unread = new Map(s.unreadByRoom);
-      unread.delete(key);
       const partIntentRooms = new Set(s.partIntentRooms);
-      partIntentRooms.delete(key);
+      for (const alias of aliases) {
+        if (hub && !opts?.forced) messages.delete(msgKey(hub, alias));
+      }
+      for (const [rk] of unread) {
+        if (rrcRoomsMatch(rk, room)) unread.delete(rk);
+      }
+      for (const k of [...partIntentRooms]) {
+        if (rrcRoomsMatch(k, room)) partIntentRooms.delete(k);
+      }
+      const activeGone = s.activeRoom != null && rrcRoomsMatch(s.activeRoom, room);
       return {
         rooms,
         messages,
         unreadByRoom: unread,
         partIntentRooms,
-        activeRoom: s.activeRoom === key ? null : s.activeRoom,
+        activeRoom: activeGone ? null : s.activeRoom,
       };
     });
   },
@@ -322,7 +408,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       const hub = s.hubDestHash;
       if (!hub) return s;
       const room = msg.room?.trim() ? msg.room : RRC_HUB_STREAM_ROOM;
-      const roomKey = normRoom(room);
+      const roomKey = roomStorageKey(room);
       const key = msgKey(hub, roomKey);
       const messages = new Map(s.messages);
       const existing = messages.get(key) ?? [];
@@ -338,7 +424,8 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         Boolean(msg.nickname && msg.nickname === s.nickname && !msg.sender_hash);
 
       const unread = new Map(s.unreadByRoom);
-      if (opts?.bumpUnread && !isSelf && s.activeRoom !== roomKey) {
+      const viewing = s.activeRoom != null && rrcRoomsMatch(s.activeRoom, roomKey);
+      if (opts?.bumpUnread && !isSelf && !viewing) {
         unread.set(roomKey, (unread.get(roomKey) ?? 0) + 1);
       }
       return { messages, unreadByRoom: unread };
@@ -346,10 +433,11 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   clearUnread: (room) => {
-    const key = normRoom(room);
     set((s) => {
       const unread = new Map(s.unreadByRoom);
-      unread.delete(key);
+      for (const [rk] of unread) {
+        if (rrcRoomsMatch(rk, room)) unread.delete(rk);
+      }
       return { unreadByRoom: unread };
     });
   },

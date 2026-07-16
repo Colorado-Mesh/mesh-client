@@ -31,7 +31,7 @@ describe('rrcSessionStore', () => {
         .getState()
         .messages.get(useRrcSessionStore.getState().roomMessageKey('#lobby')!),
     ).toHaveLength(1);
-    expect(useRrcSessionStore.getState().unreadByRoom.get('#lobby')).toBe(1);
+    expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBe(1);
     expect(useRrcSessionStore.getState().totalUnread()).toBe(1);
   });
 
@@ -51,7 +51,7 @@ describe('rrcSessionStore', () => {
       },
       { bumpUnread: true },
     );
-    expect(useRrcSessionStore.getState().unreadByRoom.get('#lobby')).toBeUndefined();
+    expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBeUndefined();
   });
 
   it('isolates messages across hubs with the same room name', () => {
@@ -134,10 +134,10 @@ describe('rrcSessionStore', () => {
       timestamp: 1,
     });
     store.markPartIntent('#lobby');
-    expect(useRrcSessionStore.getState().partIntentRooms.has('#lobby')).toBe(true);
+    expect(useRrcSessionStore.getState().partIntentRooms.has('lobby')).toBe(true);
     store.roomParted('#lobby');
     expect(useRrcSessionStore.getState().rooms.has('#lobby')).toBe(false);
-    expect(useRrcSessionStore.getState().partIntentRooms.has('#lobby')).toBe(false);
+    expect(useRrcSessionStore.getState().partIntentRooms.has('lobby')).toBe(false);
 
     store.roomJoined('#ops');
     store.setActiveRoom('#ops');
@@ -184,5 +184,47 @@ describe('rrcSessionStore', () => {
     const members = useRrcSessionStore.getState().rooms.get('lobby')?.members ?? [];
     expect(members).toHaveLength(2);
     expect(members.map((m) => m.nickname).sort()).toEqual(['Alice', 'Bob']);
+  });
+
+  it('coalesces #general and general into one joined room', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');
+    store.roomJoined('#general', [
+      { identity_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', nickname: 'Alice' },
+    ]);
+    store.roomJoined('general', [
+      { identity_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', nickname: 'Bob' },
+    ]);
+    const state = useRrcSessionStore.getState();
+    expect(state.rooms.size).toBe(1);
+    // Keep the first JOIN spelling so PART matches the wire room.
+    expect(state.rooms.has('#general')).toBe(true);
+    expect(state.rooms.get('#general')?.members).toHaveLength(2);
+    store.setActiveRoom('general');
+    expect(useRrcSessionStore.getState().activeRoom).toBe('#general');
+  });
+
+  it('preserves full hashes and nicks when /who replace uses prefixes', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', '28c7c1a68c735693aa8e6b8193ed44b2', 'Community');
+    store.roomJoined('lobby');
+    store.mergeRoomMembers(
+      'lobby',
+      [{ identity_hash: 'aabbccddeeff00112233445566778899', nickname: 'Alice' }],
+      'merge',
+    );
+    store.mergeRoomMembers(
+      'lobby',
+      [
+        { identity_hash: 'aabbccddeeff', nickname: 'Anonymous' },
+        { identity_hash: 'bbbbbbbbbbbb', nickname: 'Bob' },
+      ],
+      'replace',
+    );
+    const members = useRrcSessionStore.getState().rooms.get('lobby')?.members ?? [];
+    expect(members).toEqual([
+      { identity_hash: 'aabbccddeeff00112233445566778899', nickname: 'Alice' },
+      { identity_hash: 'bbbbbbbbbbbb', nickname: 'Bob' },
+    ]);
   });
 });

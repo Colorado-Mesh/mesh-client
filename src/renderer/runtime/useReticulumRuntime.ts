@@ -91,6 +91,7 @@ import {
   parseRrcTopicNotice,
   parseRrcWhoNotice,
 } from '../lib/rrcNoticeParsers';
+import { rrcRoomsMatch } from '../lib/rrcRoomName';
 import type { DeviceState, MeshNode } from '../lib/types';
 import { useBlockStore } from '../stores/blockStore';
 import { setConnection } from '../stores/connectionStore';
@@ -630,8 +631,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         const p = evt.payload as { room?: string };
         if (typeof p.room === 'string') {
           const session = useRrcSessionStore.getState();
-          const roomKey = p.room.trim().toLowerCase();
-          const voluntary = session.partIntentRooms.has(roomKey);
+          const voluntary = [...session.partIntentRooms].some((k) => rrcRoomsMatch(k, p.room!));
           if (!voluntary) {
             session.setModerationBanner('rrc.moderation.removedFromRoom');
             session.addMessage({

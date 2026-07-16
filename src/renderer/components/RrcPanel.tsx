@@ -16,6 +16,8 @@ import {
   pushRrcRecentRoom,
   RRC_SUGGESTED_ROOMS,
 } from '@/renderer/lib/rrcRecentRooms';
+import { dedupeRrcMembers, rrcIdentityHashesMatch } from '@/renderer/lib/rrcRoomMembers';
+import { resolveRrcJoinRoomName, rrcRoomMatchKey, rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import {
   loadRrcAutoJoinRooms,
   loadRrcRoomFavourites,
@@ -23,7 +25,6 @@ import {
   toggleRrcRoomFavourite,
 } from '@/renderer/lib/rrcRoomPrefs';
 import {
-  normalizeRrcRoomName,
   parseRrcSlashInput,
   resolveRrcMsgTarget,
   RRC_HELP_I18N_KEYS,
@@ -38,6 +39,7 @@ import type { RrcHubInfo, RrcRoomMember } from '@/shared/rrc-types';
 
 const COLLAPSED_KEY = 'mesh-client:rrcHubListCollapsed';
 const ROOM_LIST_COLLAPSED_KEY = 'mesh-client:rrc:roomListCollapsed';
+const NICK_LIST_COLLAPSED_KEY = 'mesh-client:rrc:nickListCollapsed';
 const NICK_KEY = 'mesh-client:rrcNickname';
 
 function hubMatchesSearch(hub: RrcHubInfo, q: string): boolean {
@@ -107,6 +109,9 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
   const [collapsed, setCollapsed] = useState(() => readCollapsed(COLLAPSED_KEY));
   const [roomListCollapsed, setRoomListCollapsed] = useState(() =>
     readCollapsed(ROOM_LIST_COLLAPSED_KEY),
+  );
+  const [nickListCollapsed, setNickListCollapsed] = useState(() =>
+    readCollapsed(NICK_LIST_COLLAPSED_KEY),
   );
   const [hubTab, setHubTab] = useState<'recommended' | 'discovered'>('recommended');
   const [hubSearch, setHubSearch] = useState('');
@@ -207,12 +212,37 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
       autoJoinDoneRef.current = hubDestHash;
       const roomsToJoin = loadRrcAutoJoinRooms(hubDestHash);
       for (const room of roomsToJoin) {
-        void window.electronAPI.reticulum.rrc.join({ room }).catch((e: unknown) => {
+        const resolved = resolveRrcJoinRoomName(room, {
+          listed: useRrcSessionStore.getState().listedRooms,
+          joined: [...useRrcSessionStore.getState().rooms.values()],
+        });
+        void window.electronAPI.reticulum.rrc.join({ room: resolved }).catch((e: unknown) => {
           console.debug('[RrcPanel] auto-join ' + errLikeToLogString(e));
         });
       }
     }
   }, [status, hubDestHash, sendHubCommand]);
+
+  const requestRoomWho = useCallback(
+    (roomRaw: string, force = false) => {
+      if (status !== 'active' || !hubDestHash) return;
+      const room = resolveRrcJoinRoomName(roomRaw, {
+        listed: listedRooms,
+        joined: [...rooms.keys()].map((name) => ({ name })),
+      });
+      if (!room || room.startsWith('[')) return;
+      const reqKey = `${hubDestHash}::${rrcRoomMatchKey(room)}`;
+      if (!force && whoRequestedRef.current.has(reqKey)) return;
+      whoRequestedRef.current.add(reqKey);
+      void window.electronAPI.reticulum.rrc
+        .send({ room, body: `/who ${room}`, type: 'msg' })
+        .catch((e: unknown) => {
+          whoRequestedRef.current.delete(reqKey);
+          console.debug('[RrcPanel] /who ' + errLikeToLogString(e));
+        });
+    },
+    [status, hubDestHash, listedRooms, rooms],
+  );
 
   // rrcd JOINED member lists are optional (off by default) — request `/who` per joined room.
   useEffect(() => {
@@ -220,16 +250,9 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
     const live = new Set<string>();
     for (const key of rooms.keys()) {
       if (!key || key.startsWith('[')) continue;
-      const reqKey = `${hubDestHash}::${key}`;
+      const reqKey = `${hubDestHash}::${rrcRoomMatchKey(key)}`;
       live.add(reqKey);
-      if (whoRequestedRef.current.has(reqKey)) continue;
-      whoRequestedRef.current.add(reqKey);
-      void window.electronAPI.reticulum.rrc
-        .send({ room: key, body: `/who ${key}`, type: 'msg' })
-        .catch((e: unknown) => {
-          whoRequestedRef.current.delete(reqKey);
-          console.debug('[RrcPanel] auto /who ' + errLikeToLogString(e));
-        });
+      requestRoomWho(key, false);
     }
     // Drop parted rooms so a later re-join triggers a fresh `/who`.
     for (const prev of [...whoRequestedRef.current]) {
@@ -237,7 +260,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
         whoRequestedRef.current.delete(prev);
       }
     }
-  }, [status, hubDestHash, rooms]);
+  }, [status, hubDestHash, rooms, requestRoomWho]);
 
   const hubList = useMemo(() => {
     const all = [...hubs.values()].filter((h) => hubMatchesSearch(h, hubSearch));
@@ -254,10 +277,13 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
 
   const roomList = useMemo(() => [...rooms.values()], [rooms]);
 
-  const joinedKeys = useMemo(() => new Set([...rooms.keys()].map((k) => k.toLowerCase())), [rooms]);
+  const joinedKeys = useMemo(
+    () => new Set([...rooms.keys()].map((k) => rrcRoomMatchKey(k))),
+    [rooms],
+  );
 
   const suggestedRooms = useMemo(
-    () => RRC_SUGGESTED_ROOMS.filter((r) => !joinedKeys.has(r.toLowerCase())),
+    () => RRC_SUGGESTED_ROOMS.filter((r) => !joinedKeys.has(rrcRoomMatchKey(r))),
     [joinedKeys],
   );
 
@@ -265,9 +291,9 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
     () =>
       recentRooms.filter(
         (r) =>
-          !joinedKeys.has(r.toLowerCase()) &&
-          !RRC_SUGGESTED_ROOMS.some((s) => s.toLowerCase() === r.toLowerCase()) &&
-          !listedRooms.some((l) => l.name.toLowerCase() === r.toLowerCase()),
+          !joinedKeys.has(rrcRoomMatchKey(r)) &&
+          !RRC_SUGGESTED_ROOMS.some((s) => rrcRoomsMatch(s, r)) &&
+          !listedRooms.some((l) => rrcRoomsMatch(l.name, r)),
       ),
     [recentRooms, joinedKeys, listedRooms],
   );
@@ -284,25 +310,39 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
     Boolean(activeRoom) && activeRoom !== RRC_HUB_STREAM_ROOM && !activeRoom?.startsWith('[');
 
   const nicklistMembers = useMemo(() => {
-    const members = [...(activeRoomInfo?.members ?? [])];
-    if (localIdentityHash) {
-      const selfIdx = members.findIndex(
-        (m) => m.identity_hash.toLowerCase() === localIdentityHash.toLowerCase(),
-      );
+    let members = dedupeRrcMembers([...(activeRoomInfo?.members ?? [])]);
+    if (localIdentityHash || nickname) {
+      const selfIdx = members.findIndex((m) => {
+        if (localIdentityHash && rrcIdentityHashesMatch(m.identity_hash, localIdentityHash)) {
+          return true;
+        }
+        return Boolean(
+          nickname && m.nickname?.trim().toLowerCase() === nickname.trim().toLowerCase(),
+        );
+      });
       if (selfIdx >= 0) {
         const cur = members[selfIdx];
         if (cur) {
-          members[selfIdx] = { ...cur, nickname: nickname || cur.nickname };
+          members[selfIdx] = {
+            identity_hash:
+              localIdentityHash && rrcIdentityHashesMatch(cur.identity_hash, localIdentityHash)
+                ? localIdentityHash.length >= cur.identity_hash.length
+                  ? localIdentityHash
+                  : cur.identity_hash
+                : cur.identity_hash,
+            nickname: nickname || cur.nickname,
+          };
         }
       } else if (nickname) {
-        members.unshift({ identity_hash: localIdentityHash, nickname });
+        members = [
+          {
+            identity_hash: localIdentityHash ?? `nick:${nickname.toLowerCase()}`,
+            nickname,
+          },
+          ...members,
+        ];
       }
-    } else if (
-      nickname &&
-      !members.some((m) => (m.nickname ?? '').toLowerCase() === nickname.toLowerCase())
-    ) {
-      // Identity hash may arrive after WELCOME; still show self nick immediately.
-      members.unshift({ identity_hash: `nick:${nickname.toLowerCase()}`, nickname });
+      members = dedupeRrcMembers(members);
     }
     return members;
   }, [activeRoomInfo?.members, localIdentityHash, nickname]);
@@ -351,8 +391,18 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
 
   const joinRoom = useCallback(
     async (roomRaw: string, key?: string) => {
-      const room = roomRaw.trim();
+      const room = resolveRrcJoinRoomName(roomRaw, {
+        listed: listedRooms,
+        joined: [...rooms.keys()].map((name) => ({ name })),
+      });
       if (!room) return;
+      // Already in this channel (possibly under `#name` vs `name`) — focus + refresh roster.
+      const existingKey = [...rooms.keys()].find((k) => rrcRoomsMatch(k, room));
+      if (existingKey) {
+        setActiveRoom(existingKey);
+        requestRoomWho(existingKey, true);
+        return;
+      }
       setActionBusy(true);
       try {
         const res = await window.electronAPI.reticulum.rrc.join({
@@ -364,9 +414,11 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
         } else {
           setActiveRoom(room);
           if (hubDestHash) {
-            pushRrcRecentRoom(hubDestHash, normalizeRrcRoomName(room));
+            pushRrcRecentRoom(hubDestHash, rrcRoomMatchKey(room));
             setRecentRoomsEpoch((n) => n + 1);
           }
+          // Always refresh people list — rrcd JOINED often has no member body.
+          requestRoomWho(room, true);
         }
       } catch (e) {
         // catch-no-log-ok error surfaced via setError
@@ -375,13 +427,22 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
         setActionBusy(false);
       }
     },
-    [hubDestHash, setActiveRoom, setError, t],
+    [hubDestHash, listedRooms, rooms, requestRoomWho, setActiveRoom, setError, t],
   );
 
   const handlePart = useCallback(
     async (room?: string) => {
-      const target = (room ?? activeRoom)?.trim();
-      if (!target || target.startsWith('[')) return;
+      const raw = (room ?? activeRoom)?.trim();
+      if (!raw || raw.startsWith('[')) return;
+      // Wire PART must use the same spelling as JOIN (rrcd treats #general ≠ general).
+      const joinedKey = [...rooms.keys()].find((k) => rrcRoomsMatch(k, raw));
+      const target =
+        joinedKey ??
+        resolveRrcJoinRoomName(raw, {
+          listed: listedRooms,
+          joined: [...rooms.values()],
+        });
+      if (!target) return;
       markPartIntent(target);
       setActionBusy(true);
       try {
@@ -393,7 +454,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
         setActionBusy(false);
       }
     },
-    [activeRoom, markPartIntent],
+    [activeRoom, listedRooms, markPartIntent, rooms],
   );
 
   const appendSystemLines = useCallback(
@@ -681,8 +742,12 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
           activeRoom={activeRoom}
           unreadByRoom={unreadByRoom}
           onSelectRoom={(name, opts) => {
-            if (opts?.join) void joinRoom(name);
-            else setActiveRoom(name);
+            if (opts?.join) {
+              void joinRoom(name);
+              return;
+            }
+            const existingKey = [...rooms.keys()].find((k) => rrcRoomsMatch(k, name));
+            setActiveRoom(existingKey ?? name);
           }}
           onToggleFavourite={(name) => {
             if (!hubDestHash) return;
@@ -803,12 +868,20 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
           />
           {showNicklist && (
             <RrcNickList
+              collapsed={nickListCollapsed}
+              onToggleCollapsed={() => {
+                setNickListCollapsed((c) => {
+                  const next = !c;
+                  persistCollapsed(NICK_LIST_COLLAPSED_KEY, next);
+                  return next;
+                });
+              }}
               members={nicklistMembers}
               busy={actionBusy}
               onRefreshWho={() => {
                 const room = activeRoom;
                 if (!room || room.startsWith('[')) return;
-                void sendHubCommand(`/who ${room}`);
+                requestRoomWho(room, true);
               }}
               onNickClick={(member: RrcRoomMember) => {
                 const label = member.nickname || member.identity_hash.slice(0, 8);

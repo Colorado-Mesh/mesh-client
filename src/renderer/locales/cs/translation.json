@@ -4323,6 +4323,8 @@
       "linkProofTimeout": "Vypršel časový limit čekání na odkaz na centrum (důkaz odkazu). Zkuste to znovu nebo zkontrolujte cestu/přechody k rozbočovači.",
       "pathTimeout": "Nelze najít cestu k rozbočovači. Počkej na čerstvější oznámení a pak se znovu připoj.",
       "welcomeTimeout": "Připojeno, ale centrum neposlalo UVÍTÁNÍ včas. Zkuste to znovu."
-    }
+    },
+    "expandMembers": "Rozbalit seznam členů",
+    "collapseMembers": "Sbalit seznam členů"
   }
 }
