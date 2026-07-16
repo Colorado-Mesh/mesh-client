@@ -1033,17 +1033,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
         }),
       connect: (opts: { dest_hash: string; nickname?: string }) =>
         ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/connect', opts),
-      disconnect: () => ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/disconnect', {}),
+      disconnect: (opts?: { dest_hash?: string }) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/disconnect', opts ?? {}),
       getStatus: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rrc/status'),
-      join: (opts: { room: string; key?: string }) =>
+      join: (opts: { hub_dest_hash: string; room: string; key?: string }) =>
         ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/join', opts),
-      part: (opts: { room: string }) =>
+      part: (opts: { hub_dest_hash: string; room: string }) =>
         ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/part', opts),
-      send: (opts: { room?: string; body: string; type?: string; dst_hash?: string }) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/send', opts),
-      setNickname: (nickname: string) =>
-        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/nick', { nickname }),
-      getRooms: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rrc/rooms'),
+      send: (opts: {
+        hub_dest_hash: string;
+        room?: string;
+        body: string;
+        type?: string;
+        dst_hash?: string;
+      }) => ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/send', opts),
+      setNickname: (opts: { nickname: string; hub_dest_hash?: string }) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rrc/nick', opts),
+      getRooms: (hubDestHash?: string) => {
+        const q = hubDestHash?.trim()
+          ? `?hub_dest_hash=${encodeURIComponent(hubDestHash.trim().toLowerCase())}`
+          : '';
+        return ipcRenderer.invoke('reticulum:proxyGet', `/api/v1/rrc/rooms${q}`);
+      },
     },
   },
 

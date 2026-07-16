@@ -75,22 +75,36 @@ export interface RrcSessionSnapshot {
   capabilities?: RrcHubCapabilities | null;
 }
 
+/** Multi-hub status from sidecar `GET /rrc/status`. */
+export interface RrcMultiSessionSnapshot {
+  sessions: RrcSessionSnapshot[];
+  identity_hash?: string | null;
+}
+
 export interface RrcConnectRequest {
   dest_hash: string;
   nickname?: string;
 }
 
+export interface RrcDisconnectRequest {
+  /** Omit or empty to disconnect every hub session. */
+  dest_hash?: string;
+}
+
 export interface RrcJoinRequest {
+  hub_dest_hash: string;
   room: string;
   /** Optional room key for rrcd +k rooms (JOIN body). */
   key?: string;
 }
 
 export interface RrcPartRequest {
+  hub_dest_hash: string;
   room: string;
 }
 
 export interface RrcSendRequest {
+  hub_dest_hash: string;
   /** Omit or empty for hub-global slash commands when no room is joined. */
   room?: string;
   body: string;
@@ -101,6 +115,12 @@ export interface RrcSendRequest {
    * Requires hub CAP_DIRECT_NOTICE.
    */
   dst_hash?: string;
+}
+
+export interface RrcSetNicknameRequest {
+  nickname: string;
+  /** Omit to set nickname on every tracked hub. */
+  hub_dest_hash?: string;
 }
 
 export interface RrcUpsertHubRequest {

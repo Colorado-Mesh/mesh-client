@@ -2708,6 +2708,17 @@
     "connectManual": "Connect to hash",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
     "connectFailed": "Could not connect to RRC hub.",
+    "maxHubsConnected": "You can stay connected to at most 8 RRC hubs. Disconnect one first.",
+    "hubAutoJoin": "Auto-join hub when stack is running",
+    "enableHubAutoJoin": "Enable hub auto-join",
+    "disableHubAutoJoin": "Disable hub auto-join",
+    "hubLegend": "● connected · ◌ connecting · ◐ auto-join · ○ idle · A = auto-join",
+    "hubMarker": {
+      "connected": "Connected",
+      "connecting": "Connecting",
+      "autoJoin": "Auto-join enabled",
+      "idle": "Not connected"
+    },
     "joinFailed": "Could not join room.",
     "sendFailed": "Could not send message.",
     "selectHub": "Select hub {{name}}",

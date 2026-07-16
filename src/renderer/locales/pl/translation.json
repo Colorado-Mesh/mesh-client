@@ -4326,6 +4326,17 @@
     },
     "expandMembers": "Rozwiń listę członków",
     "collapseMembers": "Zwiń listę członków",
-    "cancelConnect": "Anuluj"
+    "cancelConnect": "Anuluj",
+    "maxHubsConnected": "Możesz pozostać w kontakcie z co najwyżej 8 koncentratorami RRC. Najpierw odłącz jeden.",
+    "hubAutoJoin": "Koncentrator automatycznego łączenia, gdy stos jest uruchomiony",
+    "enableHubAutoJoin": "Włącz automatyczne dołączanie do piasty",
+    "disableHubAutoJoin": "Wyłącz automatyczne dołączanie do centrum",
+    "hubLegend": "● podłączony · ◌ łączenie · ◐ automatyczne łączenie · ○ bezczynność · A = automatyczne łączenie",
+    "hubMarker": {
+      "connected": "Połączono",
+      "connecting": "Łączenie",
+      "autoJoin": "Automatyczne łączenie włączone",
+      "idle": "Nie połączono"
+    }
   }
 }

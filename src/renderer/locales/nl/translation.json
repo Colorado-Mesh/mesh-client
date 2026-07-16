@@ -4326,6 +4326,17 @@
     },
     "expandMembers": "Ledenlijst uitvouwen",
     "collapseMembers": "Ledenlijst samenvouwen",
-    "cancelConnect": "Annuleren"
+    "cancelConnect": "Annuleren",
+    "maxHubsConnected": "U kunt verbonden blijven met maximaal 8 RRC-hubs. Koppel er eerst een los.",
+    "hubAutoJoin": "Auto-join hub wanneer stack actief is",
+    "enableHubAutoJoin": "Schakel automatisch samenvoegen van hubs in",
+    "disableHubAutoJoin": "Schakel automatisch samenvoegen van hub uit",
+    "hubLegend": "● connected · ◌ connecting · ◐ auto-join · ○ idle · A = auto-join",
+    "hubMarker": {
+      "connected": "Verbonden",
+      "connecting": "Verbinden",
+      "autoJoin": "Automatisch deelnemen ingeschakeld",
+      "idle": "Niet verbonden"
+    }
   }
 }

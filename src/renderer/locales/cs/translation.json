@@ -4326,6 +4326,17 @@
     },
     "expandMembers": "Rozbalit seznam členů",
     "collapseMembers": "Sbalit seznam členů",
-    "cancelConnect": "Zrušit"
+    "cancelConnect": "Zrušit",
+    "maxHubsConnected": "Můžete zůstat ve spojení maximálně s 8 rozbočovači RRC. Nejprve jeden odpojte.",
+    "hubAutoJoin": "Automaticky připojit rozbočovač, když je spuštěn zásobník",
+    "enableHubAutoJoin": "Povolit automatické členství",
+    "disableHubAutoJoin": "Zakázat automatické připojení k rozbočovači",
+    "hubLegend": "● connected · ◌ connection · ◐ auto-join · ○ idle · A = auto-join",
+    "hubMarker": {
+      "connected": "Připojeno",
+      "connecting": "Spojuji",
+      "autoJoin": "Automatické členství je povoleno",
+      "idle": "Nepřipojeno"
+    }
   }
 }

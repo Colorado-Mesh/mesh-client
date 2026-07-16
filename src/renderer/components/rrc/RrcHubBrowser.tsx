@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, RefreshCw, Star } from 'lucide-react-motion';
 import { useTranslation } from 'react-i18next';
 
+import { resolveRrcHubSidebarMarker, type RrcHubSidebarMarker } from '@/renderer/lib/rrcHubPrefs';
 import type { RrcHubInfo } from '@/shared/rrc-types';
 
 function formatHash(hash: string): string {
@@ -22,6 +23,10 @@ export interface RrcHubBrowserProps {
   hubDestHash: string | null;
   /** Unread count per hub destination hash (lowercase keys preferred). */
   unreadForHub: (hubHash: string) => number;
+  /** Session status per hub (active/connecting/…). */
+  statusForHub: (hubHash: string) => string | null;
+  /** Whether hub is in the auto-join list. */
+  isHubAutoJoin: (hubHash: string) => boolean;
   manualHash: string;
   onManualHashChange: (v: string) => void;
   hubTab: 'recommended' | 'discovered';
@@ -29,6 +34,7 @@ export interface RrcHubBrowserProps {
   onRefresh: () => void;
   onConnect: (hash: string) => void;
   onToggleFavorite: (hash: string, favorited: boolean) => void;
+  onToggleAutoJoin: (hash: string) => void;
   onManualConnect: () => void;
 }
 
@@ -37,19 +43,33 @@ function HubRow({
   selected,
   sidecarRunning,
   unread,
+  marker,
+  autoJoin,
   onConnect,
   onToggleFavorite,
+  onToggleAutoJoin,
 }: {
   hub: RrcHubInfo;
   selected: boolean;
   sidecarRunning: boolean;
   unread: number;
+  marker: RrcHubSidebarMarker;
+  autoJoin: boolean;
   onConnect: (hash: string) => void;
   onToggleFavorite: (hash: string, favorited: boolean) => void;
+  onToggleAutoJoin: (hash: string) => void;
 }) {
   const { t } = useTranslation();
   const label = hub.display_name?.trim() || formatHash(hub.destination_hash);
   const secondary = hub.display_name?.trim() ? formatHash(hub.destination_hash) : null;
+  const markerTitle =
+    marker.kind === 'connected'
+      ? t('rrc.hubMarker.connected')
+      : marker.kind === 'connecting'
+        ? t('rrc.hubMarker.connecting')
+        : marker.kind === 'autoJoinNotConnected'
+          ? t('rrc.hubMarker.autoJoin')
+          : t('rrc.hubMarker.idle');
 
   return (
     <li>
@@ -58,18 +78,22 @@ function HubRow({
           selected ? 'border-l-2 border-amber-400 bg-amber-950/40' : 'hover:bg-amber-950/25'
         }`}
       >
+        <span className={`shrink-0 text-xs ${marker.colorClass}`} title={markerTitle} aria-hidden>
+          {marker.glyph}
+        </span>
         <button
           type="button"
           className="relative min-w-0 flex-1 text-left"
           aria-label={
             unread > 0
-              ? `${t('rrc.selectHub', { name: label })} ${unread > 99 ? '99+' : unread} unread`
-              : t('rrc.selectHub', { name: label })
+              ? `${t('rrc.selectHub', { name: label })} ${markerTitle} ${unread > 99 ? '99+' : unread} unread`
+              : `${t('rrc.selectHub', { name: label })} ${markerTitle}`
           }
           onClick={() => {
             onConnect(hub.destination_hash);
           }}
-          disabled={!sidecarRunning}
+          // Focus-only for already-linked hubs even if the stack status poll is stale.
+          disabled={!sidecarRunning && marker.kind !== 'connected' && marker.kind !== 'connecting'}
         >
           <div className="flex items-center justify-between gap-1">
             <div className="truncate font-medium text-amber-50">{label}</div>
@@ -87,6 +111,19 @@ function HubRow({
           {hub.description ? (
             <div className="truncate text-[10px] text-amber-200/40">{hub.description}</div>
           ) : null}
+        </button>
+        <button
+          type="button"
+          className={`shrink-0 px-1 text-[10px] font-semibold ${
+            autoJoin ? 'text-amber-300' : 'text-amber-200/30'
+          }`}
+          aria-label={autoJoin ? t('rrc.disableHubAutoJoin') : t('rrc.enableHubAutoJoin')}
+          title={t('rrc.hubAutoJoin')}
+          onClick={() => {
+            onToggleAutoJoin(hub.destination_hash);
+          }}
+        >
+          A
         </button>
         <button
           type="button"
@@ -117,6 +154,8 @@ export function RrcHubBrowser({
   manual,
   hubDestHash,
   unreadForHub,
+  statusForHub,
+  isHubAutoJoin,
   manualHash,
   onManualHashChange,
   hubTab,
@@ -124,6 +163,7 @@ export function RrcHubBrowser({
   onRefresh,
   onConnect,
   onToggleFavorite,
+  onToggleAutoJoin,
   onManualConnect,
 }: RrcHubBrowserProps) {
   const { t } = useTranslation();
@@ -136,17 +176,27 @@ export function RrcHubBrowser({
           {title}
         </div>
         <ul className="space-y-0.5">
-          {rows.map((hub) => (
-            <HubRow
-              key={hub.destination_hash}
-              hub={hub}
-              selected={hubDestHash?.toLowerCase() === hub.destination_hash.toLowerCase()}
-              sidecarRunning={sidecarRunning}
-              unread={unreadForHub(hub.destination_hash)}
-              onConnect={onConnect}
-              onToggleFavorite={onToggleFavorite}
-            />
-          ))}
+          {rows.map((hub) => {
+            const autoJoin = isHubAutoJoin(hub.destination_hash);
+            const marker = resolveRrcHubSidebarMarker({
+              status: statusForHub(hub.destination_hash),
+              autoJoin,
+            });
+            return (
+              <HubRow
+                key={hub.destination_hash}
+                hub={hub}
+                selected={hubDestHash?.toLowerCase() === hub.destination_hash.toLowerCase()}
+                sidecarRunning={sidecarRunning}
+                unread={unreadForHub(hub.destination_hash)}
+                marker={marker}
+                autoJoin={autoJoin}
+                onConnect={onConnect}
+                onToggleFavorite={onToggleFavorite}
+                onToggleAutoJoin={onToggleAutoJoin}
+              />
+            );
+          })}
         </ul>
       </div>
     );
@@ -191,6 +241,7 @@ export function RrcHubBrowser({
               {t('connectionPanel.reticulumIdentity.startStackFirst')}
             </div>
           )}
+          <p className="px-1 text-[10px] leading-snug text-amber-200/45">{t('rrc.hubLegend')}</p>
           <div className="flex gap-1 rounded border border-amber-800/40 p-0.5 text-[10px]">
             <button
               type="button"

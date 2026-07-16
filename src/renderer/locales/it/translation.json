@@ -4326,6 +4326,17 @@
     },
     "expandMembers": "Espandi l'elenco dei membri",
     "collapseMembers": "Comprimi l'elenco dei membri",
-    "cancelConnect": "Annulla"
+    "cancelConnect": "Annulla",
+    "maxHubsConnected": "Puoi rimanere connesso a un massimo di 8 hub RRC. Prima scollegane uno.",
+    "hubAutoJoin": "Unisci automaticamente l'hub quando lo stack è in esecuzione",
+    "enableHubAutoJoin": "Abilita auto-join hub",
+    "disableHubAutoJoin": "Disabilita l'auto-join dell'hub",
+    "hubLegend": "● connesso · ◌ connessione · ◐ auto-join · ○ inattivo · A = auto-join",
+    "hubMarker": {
+      "connected": "Connesso",
+      "connecting": "Connessione",
+      "autoJoin": "Auto-join abilitato",
+      "idle": "Nessuna connessione attiva"
+    }
   }
 }

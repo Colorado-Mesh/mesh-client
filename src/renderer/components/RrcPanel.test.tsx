@@ -1,8 +1,10 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { saveRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 
@@ -12,11 +14,18 @@ vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
   isReticulumSidecarRunning: vi.fn(() => Promise.resolve(false)),
 }));
 
+const hubA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const hubB = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
 describe('RrcPanel', () => {
   beforeEach(() => {
     useRrcSessionStore.getState().clearSession();
     useRrcHubStore.setState({ hubs: new Map() });
     hydrateAxeThemeColors(document.documentElement);
+    vi.mocked(isReticulumSidecarRunning).mockResolvedValue(false);
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({ ok: true });
+    localStorage.removeItem('mesh-client:rrc:hubAutoJoin');
   });
 
   it('renders amber hub chrome and select-hub prompt', async () => {
@@ -27,11 +36,55 @@ describe('RrcPanel', () => {
   });
 
   it('shows Cancel while connecting so a stuck hub connect can be aborted', () => {
-    useRrcSessionStore
-      .getState()
-      .applyStatus('connecting', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'Slow Hub');
+    useRrcSessionStore.getState().applyStatus('connecting', hubA, 'Slow Hub');
     render(<RrcPanel isActive />);
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
-    expect(screen.getByText(/Connecting/i)).toBeInTheDocument();
+    expect(screen.getByText('Connecting…')).toBeInTheDocument();
+  });
+
+  it('keeps sibling hub sessions when focusing another connected hub', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('#lobby');
+    store.setFocusedHub(hubA);
+    store.applyStatus('active', hubB, 'Hub B');
+    store.setFocusedHub(hubB);
+
+    const state = useRrcSessionStore.getState();
+    expect(state.focusedHubHash).toBe(hubB);
+    expect(state.sessionsByHub.get(hubA)?.status).toBe('active');
+    expect(state.sessionsByHub.get(hubA)?.rooms.has('#lobby')).toBe(true);
+    expect(state.sessionsByHub.get(hubB)?.status).toBe('active');
+  });
+
+  it('batch-connects auto-join hubs when the sidecar becomes ready', async () => {
+    vi.mocked(isReticulumSidecarRunning).mockResolvedValue(true);
+    saveRrcHubAutoJoin([hubA, hubB]);
+
+    render(<RrcPanel isActive />);
+
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.rrc.connect).toHaveBeenCalled();
+    });
+    const hashes = vi
+      .mocked(window.electronAPI.reticulum.rrc.connect)
+      .mock.calls.map((c) => (c[0] as { dest_hash: string }).dest_hash)
+      .sort();
+    expect(hashes).toEqual([hubA, hubB]);
+  });
+
+  it('skips auto-join connect for hubs already active', async () => {
+    vi.mocked(isReticulumSidecarRunning).mockResolvedValue(true);
+    saveRrcHubAutoJoin([hubA]);
+    useRrcSessionStore.getState().applyStatus('active', hubA, 'Hub A');
+
+    render(<RrcPanel isActive />);
+
+    await waitFor(() => {
+      expect(isReticulumSidecarRunning).toHaveBeenCalled();
+    });
+    // Give the auto-connect effect a tick; it should no-op because hub A is linked.
+    await new Promise((r) => setTimeout(r, 20));
+    expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
   });
 });

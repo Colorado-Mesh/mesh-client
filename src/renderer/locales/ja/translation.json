@@ -4326,6 +4326,17 @@
     },
     "expandMembers": "メンバーリストを展開",
     "collapseMembers": "メンバーリストを折りたたむ",
-    "cancelConnect": "取り消す"
+    "cancelConnect": "取り消す",
+    "maxHubsConnected": "最大8つのRRCハブに接続できます。最初に1つを切断します。",
+    "hubAutoJoin": "スタックが実行されているときにハブを自動結合",
+    "enableHubAutoJoin": "ハブの自動結合を有効にする",
+    "disableHubAutoJoin": "ハブの自動結合を無効にする",
+    "hubLegend": "● 接続・◌接続・◐自動結合・○アイドル・A =自動結合",
+    "hubMarker": {
+      "connected": "接続済み",
+      "connecting": "接続中",
+      "autoJoin": "自動参加が有効になっています",
+      "idle": "未接続"
+    }
   }
 }

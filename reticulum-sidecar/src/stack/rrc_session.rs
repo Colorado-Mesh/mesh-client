@@ -1,4 +1,11 @@
 //! High-level RRC session (HELLO → WELCOME → rooms) over a persistent Link.
+//!
+//! Multi-hub: each connected hub gets its own spawned task (own Link, own
+//! connect job, own reconnect loop) so a Connect to hub B never touches hub
+//! A's link. `RrcSessionManager` is a thin router keyed by lowercase
+//! `hub_dest_hash` hex; per-hub state lives in that hub's task via
+//! `RrcSessionInner` (read directly for snapshots — no round trip through the
+//! command channel is needed for status/rooms reads).
 
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
@@ -24,6 +31,9 @@ const CLIENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const WELCOME_TIMEOUT: Duration = Duration::from_secs(20);
 const RECONNECT_BASE_MS: u64 = 2_000;
 const RECONNECT_MAX_MS: u64 = 30_000;
+/// Soft cap on simultaneous hub sessions. Reconnecting an already-tracked hub
+/// never counts as a new session, so it is exempt from this cap.
+const MAX_HUB_SESSIONS: usize = 8;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RrcSessionStatus {
@@ -52,14 +62,10 @@ pub struct RrcRoomState {
     pub members: Vec<(String, Option<String>)>,
 }
 
-pub struct RrcSessionManager {
-    inner: Arc<Mutex<RrcSessionInner>>,
-    cmd_tx: mpsc::Sender<SessionCommand>,
-}
-
+/// Per-hub session state, mutated by that hub's task and read directly by the
+/// manager for snapshots (`Arc<Mutex<_>>` shared between the two).
 struct RrcSessionInner {
     status: RrcSessionStatus,
-    hub_dest_hash: Option<String>,
     hub_name: Option<String>,
     nickname: Option<String>,
     rooms: HashMap<String, RrcRoomState>,
@@ -67,6 +73,41 @@ struct RrcSessionInner {
     last_error: Option<String>,
     identity_hash: [u8; 16],
     capabilities: RrcWelcomeCapabilities,
+}
+
+impl RrcSessionInner {
+    fn new(identity_hash: [u8; 16]) -> Self {
+        Self {
+            status: RrcSessionStatus::Disconnected,
+            hub_name: None,
+            nickname: None,
+            rooms: HashMap::new(),
+            desired_rooms: HashSet::new(),
+            last_error: None,
+            identity_hash,
+            capabilities: RrcWelcomeCapabilities::default(),
+        }
+    }
+}
+
+/// Handle to one hub's session task: a command channel for actions that must
+/// run on that hub's Link, plus direct shared-state access for cheap reads.
+#[derive(Clone)]
+struct HubHandle {
+    cmd_tx: mpsc::Sender<SessionCommand>,
+    inner: Arc<Mutex<RrcSessionInner>>,
+}
+
+struct ManagerShared {
+    transport_tx: mpsc::Sender<TransportMessage>,
+    identity: Identity,
+    event_tx: broadcast::Sender<String>,
+    identity_hash: [u8; 16],
+    hubs: Mutex<HashMap<String, HubHandle>>,
+}
+
+pub struct RrcSessionManager {
+    shared: Arc<ManagerShared>,
 }
 
 enum SessionCommand {
@@ -111,76 +152,65 @@ impl RrcSessionManager {
         event_tx: broadcast::Sender<String>,
     ) -> Self {
         let identity_hash = identity.hash;
-        let inner = Arc::new(Mutex::new(RrcSessionInner {
-            status: RrcSessionStatus::Disconnected,
-            hub_dest_hash: None,
-            hub_name: None,
-            nickname: None,
-            rooms: HashMap::new(),
-            desired_rooms: HashSet::new(),
-            last_error: None,
+        let shared = Arc::new(ManagerShared {
+            transport_tx,
+            identity,
+            event_tx,
             identity_hash,
-            capabilities: RrcWelcomeCapabilities::default(),
-        }));
-        let (cmd_tx, cmd_rx) = mpsc::channel(32);
-        let manager_inner = inner.clone();
-        tokio::spawn(async move {
-            session_loop(transport_tx, identity, event_tx, manager_inner, cmd_rx).await;
+            hubs: Mutex::new(HashMap::new()),
         });
-        Self { inner, cmd_tx }
+        Self { shared }
     }
 
+    /// `{ "sessions": [ {status, hub_dest_hash, hub_name, identity_hash,
+    /// nickname, rooms, error, capabilities}, ... ], "identity_hash": "..." }`
     pub async fn status_snapshot(&self) -> serde_json::Value {
-        let g = self.inner.lock().await;
-        let rooms: Vec<serde_json::Value> = g
-            .rooms
-            .values()
-            .map(|r| {
-                json!({
-                    "name": r.name,
-                    "member_count": r.members.len(),
-                    "members": r.members.iter().map(|(h, n)| json!({
-                        "identity_hash": h,
-                        "nickname": n,
-                    })).collect::<Vec<_>>(),
-                })
-            })
-            .collect();
+        let hubs = self.shared.hubs.lock().await;
+        let mut sessions = Vec::with_capacity(hubs.len());
+        for (hex, handle) in hubs.iter() {
+            let g = handle.inner.lock().await;
+            sessions.push(session_json(hex, &g));
+        }
         json!({
-            "status": g.status.as_str(),
-            "hub_dest_hash": g.hub_dest_hash,
-            "hub_name": g.hub_name,
-            "identity_hash": hex::encode(g.identity_hash),
-            "nickname": g.nickname,
-            "rooms": rooms,
-            "error": g.last_error,
-            "capabilities": {
-                "direct_notice": g.capabilities.direct_notice,
-                "action": g.capabilities.action,
-                "resource_envelope": g.capabilities.resource_envelope,
-            },
+            "sessions": sessions,
+            "identity_hash": hex::encode(self.shared.identity_hash),
         })
     }
 
-    pub async fn rooms_snapshot(&self) -> serde_json::Value {
-        let g = self.inner.lock().await;
-        let rooms: Vec<serde_json::Value> = g
-            .rooms
-            .values()
-            .map(|r| {
-                json!({
-                    "name": r.name,
-                    "member_count": r.members.len(),
-                    "members": r.members.iter().map(|(h, n)| json!({
-                        "identity_hash": h,
-                        "nickname": n,
-                    })).collect::<Vec<_>>(),
-                })
-            })
-            .collect();
-        json!({ "rooms": rooms })
+    /// `hub_dest_hash = None` aggregates every hub's rooms with a `"hub"`
+    /// field; `Some(hex)` returns that hub's rooms alone (unchanged shape).
+    pub async fn rooms_snapshot(&self, hub_dest_hash: Option<&str>) -> serde_json::Value {
+        match normalize_hex(hub_dest_hash) {
+            Some(hex) => {
+                let Some(handle) = self.get_handle(&hex).await else {
+                    return json!({ "rooms": [] });
+                };
+                let g = handle.inner.lock().await;
+                json!({ "rooms": rooms_json(&g.rooms) })
+            }
+            None => {
+                let hubs = self.shared.hubs.lock().await;
+                let mut rooms = Vec::new();
+                for (hex, handle) in hubs.iter() {
+                    let g = handle.inner.lock().await;
+                    for r in g.rooms.values() {
+                        rooms.push(json!({
+                            "hub": hex,
+                            "name": r.name,
+                            "member_count": r.members.len(),
+                            "members": members_json(&r.members),
+                        }));
+                    }
+                }
+                json!({ "rooms": rooms })
+            }
+        }
     }
 
+    /// Connects to a hub. Reconnecting an already-tracked hub (connecting,
+    /// active, or reconnecting) routes to that hub's existing task and never
+    /// consumes a new slot; a brand-new hub is rejected once
+    /// `MAX_HUB_SESSIONS` are tracked.
     pub async fn connect(
         &self,
         dest_hash: [u8; 16],
@@ -188,11 +218,38 @@ impl RrcSessionManager {
         hops: u8,
         nickname: String,
     ) -> Result<(), String> {
+        let hex_key = dest_hash_hex.trim().to_lowercase();
+        let handle = {
+            let mut hubs = self.shared.hubs.lock().await;
+            if let Some(existing) = hubs.get(&hex_key) {
+                existing.clone()
+            } else {
+                if hubs.len() >= MAX_HUB_SESSIONS {
+                    return Err(format!(
+                        "max_hubs: maximum of {MAX_HUB_SESSIONS} RRC hubs connected"
+                    ));
+                }
+                let inner = Arc::new(Mutex::new(RrcSessionInner::new(self.shared.identity_hash)));
+                let (cmd_tx, cmd_rx) = mpsc::channel(32);
+                let handle = HubHandle {
+                    cmd_tx,
+                    inner: inner.clone(),
+                };
+                hubs.insert(hex_key.clone(), handle.clone());
+                let shared = Arc::clone(&self.shared);
+                let hex_for_task = hex_key.clone();
+                tokio::spawn(async move {
+                    session_loop(shared, hex_for_task, inner, cmd_rx).await;
+                });
+                handle
+            }
+        };
         let (reply, rx) = oneshot::channel();
-        self.cmd_tx
+        handle
+            .cmd_tx
             .send(SessionCommand::Connect {
                 dest_hash,
-                dest_hash_hex,
+                dest_hash_hex: hex_key,
                 hops,
                 nickname,
                 reply,
@@ -202,59 +259,105 @@ impl RrcSessionManager {
         rx.await.map_err(|_| "rrc session task stopped".to_string())?
     }
 
-    pub async fn disconnect(&self) {
-        let (reply, rx) = oneshot::channel();
-        if self
-            .cmd_tx
-            .send(SessionCommand::Disconnect { reply })
-            .await
-            .is_ok()
-        {
-            let _ = rx.await;
+    /// `None` (or empty) tears down every tracked hub session; `Some(hex)`
+    /// tears down only that hub. Either way the hub's task frees its slot.
+    pub async fn disconnect(&self, dest_hash_hex: Option<&str>) {
+        let targets: Vec<HubHandle> = match normalize_hex(dest_hash_hex) {
+            Some(hex) => {
+                let hubs = self.shared.hubs.lock().await;
+                hubs.get(&hex).cloned().into_iter().collect()
+            }
+            None => {
+                let hubs = self.shared.hubs.lock().await;
+                hubs.values().cloned().collect()
+            }
+        };
+        for handle in targets {
+            let (reply, rx) = oneshot::channel();
+            if handle
+                .cmd_tx
+                .send(SessionCommand::Disconnect { reply })
+                .await
+                .is_ok()
+            {
+                let _ = rx.await;
+            }
         }
     }
 
-    pub async fn join(&self, room: String, key: Option<String>) -> Result<(), String> {
+    pub async fn join(&self, hub_dest_hash: &str, room: String, key: Option<String>) -> Result<(), String> {
+        let handle = self.require_handle(hub_dest_hash).await?;
         let (reply, rx) = oneshot::channel();
-        self.cmd_tx
+        handle
+            .cmd_tx
             .send(SessionCommand::Join { room, key, reply })
             .await
             .map_err(|_| "rrc session task stopped".to_string())?;
         rx.await.map_err(|_| "rrc session task stopped".to_string())?
     }
 
-    pub async fn part(&self, room: String) -> Result<(), String> {
+    pub async fn part(&self, hub_dest_hash: &str, room: String) -> Result<(), String> {
+        let handle = self.require_handle(hub_dest_hash).await?;
         let (reply, rx) = oneshot::channel();
-        self.cmd_tx
+        handle
+            .cmd_tx
             .send(SessionCommand::Part { room, reply })
             .await
             .map_err(|_| "rrc session task stopped".to_string())?;
         rx.await.map_err(|_| "rrc session task stopped".to_string())?
     }
 
-    pub async fn set_nickname(&self, nickname: String) -> Result<(), String> {
+    /// `hub_dest_hash = None` sets the nickname on every tracked hub (used
+    /// for the next HELLO / reconnect on each); `Some(hex)` targets one hub.
+    pub async fn set_nickname(
+        &self,
+        hub_dest_hash: Option<&str>,
+        nickname: String,
+    ) -> Result<(), String> {
         let nick = nickname.trim().to_string();
         if nick.is_empty() {
             return Err("nickname must not be empty".into());
         }
-        let (reply, rx) = oneshot::channel();
-        self.cmd_tx
-            .send(SessionCommand::SetNickname {
-                nickname: nick,
-                reply,
-            })
-            .await
-            .map_err(|_| "rrc session task stopped".to_string())?;
-        rx.await.map_err(|_| "rrc session task stopped".to_string())?
+        let targets: Vec<HubHandle> = match normalize_hex(hub_dest_hash) {
+            Some(hex) => vec![self.require_handle(&hex).await?],
+            None => self.shared.hubs.lock().await.values().cloned().collect(),
+        };
+        let mut last_err: Option<String> = None;
+        for handle in targets {
+            let (reply, rx) = oneshot::channel();
+            if handle
+                .cmd_tx
+                .send(SessionCommand::SetNickname {
+                    nickname: nick.clone(),
+                    reply,
+                })
+                .await
+                .is_err()
+            {
+                last_err = Some("rrc session task stopped".into());
+                continue;
+            }
+            match rx.await {
+                Ok(Ok(())) => {}
+                Ok(Err(e)) => last_err = Some(e),
+                Err(_) => last_err = Some("rrc session task stopped".into()),
+            }
+        }
+        match last_err {
+            Some(e) => Err(e),
+            None => Ok(()),
+        }
     }
 
     pub async fn send_chat(
         &self,
+        hub_dest_hash: &str,
         room: Option<String>,
         body: String,
         kind: &str,
         dst_hash_hex: Option<&str>,
     ) -> Result<(), String> {
+        let handle = self.require_handle(hub_dest_hash).await?;
         let dst_identity = if let Some(hex_str) = dst_hash_hex {
             let clean = hex_str.trim().to_lowercase();
             if clean.len() != 32 || !clean.chars().all(|c| c.is_ascii_hexdigit()) {
@@ -277,7 +380,8 @@ impl RrcSessionManager {
             }
         };
         let (reply, rx) = oneshot::channel();
-        self.cmd_tx
+        handle
+            .cmd_tx
             .send(SessionCommand::Send {
                 room: if dst_identity.is_some() { None } else { room },
                 body,
@@ -289,6 +393,65 @@ impl RrcSessionManager {
             .map_err(|_| "rrc session task stopped".to_string())?;
         rx.await.map_err(|_| "rrc session task stopped".to_string())?
     }
+
+    async fn get_handle(&self, hub_dest_hash: &str) -> Option<HubHandle> {
+        let hex = hub_dest_hash.trim().to_lowercase();
+        self.shared.hubs.lock().await.get(&hex).cloned()
+    }
+
+    async fn require_handle(&self, hub_dest_hash: &str) -> Result<HubHandle, String> {
+        self.get_handle(hub_dest_hash)
+            .await
+            .ok_or_else(|| format!("no active rrc session for hub {}", hub_dest_hash.trim().to_lowercase()))
+    }
+}
+
+fn normalize_hex(hub_dest_hash: Option<&str>) -> Option<String> {
+    hub_dest_hash
+        .map(|h| h.trim().to_lowercase())
+        .filter(|h| !h.is_empty())
+}
+
+fn members_json(members: &[(String, Option<String>)]) -> Vec<serde_json::Value> {
+    members
+        .iter()
+        .map(|(h, n)| {
+            json!({
+                "identity_hash": h,
+                "nickname": n,
+            })
+        })
+        .collect()
+}
+
+fn rooms_json(rooms: &HashMap<String, RrcRoomState>) -> Vec<serde_json::Value> {
+    rooms
+        .values()
+        .map(|r| {
+            json!({
+                "name": r.name,
+                "member_count": r.members.len(),
+                "members": members_json(&r.members),
+            })
+        })
+        .collect()
+}
+
+fn session_json(hex: &str, g: &RrcSessionInner) -> serde_json::Value {
+    json!({
+        "status": g.status.as_str(),
+        "hub_dest_hash": hex,
+        "hub_name": g.hub_name,
+        "identity_hash": hex::encode(g.identity_hash),
+        "nickname": g.nickname,
+        "rooms": rooms_json(&g.rooms),
+        "error": g.last_error,
+        "capabilities": {
+            "direct_notice": g.capabilities.direct_notice,
+            "action": g.capabilities.action,
+            "resource_envelope": g.capabilities.resource_envelope,
+        },
+    })
 }
 
 /// In-flight establish (user connect or auto-reconnect). Dropping cancels the
@@ -354,22 +517,36 @@ fn spawn_connect_job(
     }
 }
 
+/// Owns one hub's Link lifecycle end to end: connect, HELLO/WELCOME,
+/// room (re)join, auto-reconnect with backoff, and teardown. Runs until this
+/// hub receives an explicit Disconnect, at which point it removes itself
+/// from `shared.hubs` (freeing its `MAX_HUB_SESSIONS` slot) and returns.
 async fn session_loop(
-    transport_tx: mpsc::Sender<TransportMessage>,
-    identity: Identity,
-    event_tx: broadcast::Sender<String>,
+    shared: Arc<ManagerShared>,
+    hex: String,
     inner: Arc<Mutex<RrcSessionInner>>,
     mut cmd_rx: mpsc::Receiver<SessionCommand>,
 ) {
+    let transport_tx = shared.transport_tx.clone();
+    let identity = shared.identity.clone();
+    let event_tx = shared.event_tx.clone();
+
     let mut link: Option<RrcLinkHandle> = None;
-    let mut reconnect_intent: Option<( [u8; 16], String, u8, String )> = None;
+    let mut reconnect_intent: Option<([u8; 16], String, u8, String)> = None;
     let mut backoff_ms = RECONNECT_BASE_MS;
     let mut connect_job: Option<ConnectJob> = None;
+    let mut terminate = false;
 
     loop {
         tokio::select! {
             cmd = cmd_rx.recv() => {
-                let Some(cmd) = cmd else { break };
+                let Some(cmd) = cmd else {
+                    // Sender side (HubHandle) dropped without an explicit
+                    // Disconnect — should not happen while tracked, but clean
+                    // up defensively so the slot isn't leaked.
+                    shared.hubs.lock().await.remove(&hex);
+                    break;
+                };
                 match cmd {
                     SessionCommand::Connect {
                         dest_hash,
@@ -387,7 +564,6 @@ async fn session_loop(
                         {
                             let mut g = inner.lock().await;
                             g.status = RrcSessionStatus::Connecting;
-                            g.hub_dest_hash = Some(dest_hash_hex.clone());
                             g.nickname = Some(nickname.clone());
                             g.hub_name = None;
                             g.rooms.clear();
@@ -423,24 +599,23 @@ async fn session_loop(
                         if let Some(existing) = link.take() {
                             existing.close().await;
                         }
-                        let hub = {
+                        {
                             let mut g = inner.lock().await;
-                            let hub = g.hub_dest_hash.clone();
                             g.status = RrcSessionStatus::Disconnected;
                             g.rooms.clear();
                             g.desired_rooms.clear();
                             g.hub_name = None;
-                            hub
-                        };
+                        }
                         emit(
                             &event_tx,
                             "rrc.disconnected",
                             json!({
-                                "hub_dest_hash": hub,
+                                "hub_dest_hash": hex,
                                 "reason": "local_disconnect",
                             }),
                         );
                         let _ = reply.send(());
+                        terminate = true;
                     }
                     SessionCommand::Join { room, key, reply } => {
                         let result = send_room_control(
@@ -559,7 +734,7 @@ async fn session_loop(
                             emit(
                                 &event_tx,
                                 "rrc.error",
-                                json!({ "message": e }),
+                                json!({ "message": e, "hub_dest_hash": dest_hash_hex }),
                             );
                             emit(
                                 &event_tx,
@@ -574,7 +749,7 @@ async fn session_loop(
                             emit(
                                 &event_tx,
                                 "rrc.error",
-                                json!({ "message": e }),
+                                json!({ "message": e, "hub_dest_hash": dest_hash_hex }),
                             );
                         }
                         if let Some(reply) = reply {
@@ -591,15 +766,14 @@ async fn session_loop(
             } => {
                 match ev {
                     Some(RrcLinkEvent::Data(bytes)) => {
-                        handle_inbound(&inner, &event_tx, &bytes).await;
+                        handle_inbound(&inner, &event_tx, &hex, &bytes).await;
                     }
                     Some(RrcLinkEvent::Closed { reason }) => {
                         link = None;
                         let should_reconnect =
                             reconnect_intent.is_some() && connect_job.is_none();
-                        let hub = {
+                        {
                             let mut g = inner.lock().await;
-                            let hub = g.hub_dest_hash.clone();
                             if should_reconnect {
                                 g.status = RrcSessionStatus::Reconnecting;
                             } else if connect_job.is_none() {
@@ -607,13 +781,12 @@ async fn session_loop(
                                 g.rooms.clear();
                             }
                             g.last_error = Some(reason.clone());
-                            hub
-                        };
+                        }
                         emit(
                             &event_tx,
                             "rrc.disconnected",
                             json!({
-                                "hub_dest_hash": hub,
+                                "hub_dest_hash": hex,
                                 "reason": reason,
                             }),
                         );
@@ -651,6 +824,11 @@ async fn session_loop(
                     }
                 }
             }
+        }
+
+        if terminate {
+            shared.hubs.lock().await.remove(&hex);
+            break;
         }
     }
 }
@@ -814,6 +992,7 @@ async fn send_envelope(
 async fn handle_inbound(
     inner: &Arc<Mutex<RrcSessionInner>>,
     event_tx: &broadcast::Sender<String>,
+    hub_dest_hash: &str,
     bytes: &[u8],
 ) {
     let Ok(env) = decode_envelope(bytes) else {
@@ -839,11 +1018,9 @@ async fn handle_inbound(
                 event_tx,
                 "rrc.room.joined",
                 json!({
+                    "hub_dest_hash": hub_dest_hash,
                     "room": room,
-                    "members": members.iter().map(|(h, n)| json!({
-                        "identity_hash": h,
-                        "nickname": n,
-                    })).collect::<Vec<_>>(),
+                    "members": members_json(&members),
                 }),
             );
         }
@@ -854,7 +1031,11 @@ async fn handle_inbound(
                 let mut g = inner.lock().await;
                 g.rooms.remove(&key);
             }
-            emit(event_tx, "rrc.room.parted", json!({ "room": room }));
+            emit(
+                event_tx,
+                "rrc.room.parted",
+                json!({ "hub_dest_hash": hub_dest_hash, "room": room }),
+            );
         }
         msg_type::MSG | msg_type::NOTICE | msg_type::ACTION => {
             let kind = match env.msg_type {
@@ -865,10 +1046,6 @@ async fn handle_inbound(
             let room = env.room_name.clone().unwrap_or_default();
             let body = body_as_text(&env.body).unwrap_or_default();
             let dst_hash = env.dst_identity.map(hex::encode);
-            let hub_dest_hash = {
-                let g = inner.lock().await;
-                g.hub_dest_hash.clone()
-            };
             emit(
                 event_tx,
                 "rrc.message",
@@ -897,7 +1074,11 @@ async fn handle_inbound(
                 let mut g = inner.lock().await;
                 g.last_error = Some(message.clone());
             }
-            emit(event_tx, "rrc.error", json!({ "message": message }));
+            emit(
+                event_tx,
+                "rrc.error",
+                json!({ "message": message, "hub_dest_hash": hub_dest_hash }),
+            );
         }
         msg_type::WELCOME => {
             let hub_name = parse_welcome_hub_name(&env.body);

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::Json;
-use axum::extract::State;
+use axum::extract::{Query, State};
 use serde::Deserialize;
 
 use crate::stack::StackHandle;
@@ -25,14 +25,22 @@ pub struct RrcConnectBody {
     pub nickname: Option<String>,
 }
 
+/// `dest_hash: None` (or empty) tears down every tracked hub session.
+#[derive(Debug, Deserialize)]
+pub struct RrcDisconnectBody {
+    pub dest_hash: Option<String>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct RrcRoomBody {
+    pub hub_dest_hash: String,
     pub room: String,
     pub key: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct RrcSendBody {
+    pub hub_dest_hash: String,
     pub room: Option<String>,
     pub body: String,
     #[serde(rename = "type")]
@@ -41,9 +49,17 @@ pub struct RrcSendBody {
     pub dst_hash: Option<String>,
 }
 
+/// `hub_dest_hash: None` sets the nickname on every tracked hub session.
 #[derive(Debug, Deserialize)]
 pub struct RrcNickBody {
+    pub hub_dest_hash: Option<String>,
     pub nickname: String,
+}
+
+/// `hub_dest_hash: None` (or empty) aggregates rooms across every hub.
+#[derive(Debug, Deserialize, Default)]
+pub struct RrcRoomsQuery {
+    pub hub_dest_hash: Option<String>,
 }
 
 pub async fn list_rrc_hubs(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
@@ -81,8 +97,12 @@ pub async fn rrc_connect(
     Json(stack.rrc_connect(&body.dest_hash, body.nickname).await)
 }
 
-pub async fn rrc_disconnect(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
-    Json(stack.rrc_disconnect().await)
+pub async fn rrc_disconnect(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<RrcDisconnectBody>,
+) -> Json<serde_json::Value> {
+    let dest_hash = body.dest_hash.as_deref().filter(|h| !h.trim().is_empty());
+    Json(stack.rrc_disconnect(dest_hash).await)
 }
 
 pub async fn rrc_status(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
@@ -93,14 +113,18 @@ pub async fn rrc_join(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<RrcRoomBody>,
 ) -> Json<serde_json::Value> {
-    Json(stack.rrc_join(&body.room, body.key.as_deref()).await)
+    Json(
+        stack
+            .rrc_join(&body.hub_dest_hash, &body.room, body.key.as_deref())
+            .await,
+    )
 }
 
 pub async fn rrc_part(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<RrcRoomBody>,
 ) -> Json<serde_json::Value> {
-    Json(stack.rrc_part(&body.room).await)
+    Json(stack.rrc_part(&body.hub_dest_hash, &body.room).await)
 }
 
 pub async fn rrc_send(
@@ -110,6 +134,7 @@ pub async fn rrc_send(
     Json(
         stack
             .rrc_send(
+                &body.hub_dest_hash,
                 body.room.as_deref(),
                 &body.body,
                 body.msg_type.as_deref(),
@@ -123,9 +148,17 @@ pub async fn rrc_set_nick(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<RrcNickBody>,
 ) -> Json<serde_json::Value> {
-    Json(stack.rrc_set_nick(&body.nickname).await)
+    let hub_dest_hash = body.hub_dest_hash.as_deref().filter(|h| !h.trim().is_empty());
+    Json(stack.rrc_set_nick(hub_dest_hash, &body.nickname).await)
 }
 
-pub async fn rrc_rooms(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
-    Json(stack.rrc_rooms().await)
+pub async fn rrc_rooms(
+    State(stack): State<Arc<StackHandle>>,
+    Query(query): Query<RrcRoomsQuery>,
+) -> Json<serde_json::Value> {
+    let hub_dest_hash = query
+        .hub_dest_hash
+        .as_deref()
+        .filter(|h| !h.trim().is_empty());
+    Json(stack.rrc_rooms(hub_dest_hash).await)
 }

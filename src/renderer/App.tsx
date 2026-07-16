@@ -1153,6 +1153,7 @@ function AppContent() {
 
   const rrcUnreadByRoom = useRrcSessionStore((s) => s.unreadByRoom);
   const rrcUnreadByHub = useRrcSessionStore((s) => s.unreadByHub);
+  const rrcSessionsByHub = useRrcSessionStore((s) => s.sessionsByHub);
   const rrcMessages = useRrcSessionStore((s) => s.messages);
   const rrcNickname = useRrcSessionStore((s) => s.nickname);
   const rrcHubDestHash = useRrcSessionStore((s) => s.hubDestHash);
@@ -1160,8 +1161,10 @@ function AppContent() {
   const rrcUnread = useMemo(() => {
     void rrcUnreadByRoom;
     void rrcUnreadByHub;
+    // Non-focused hubs only touch `sessionsByHub`, not the focused-hub mirror fields above.
+    void rrcSessionsByHub;
     return useRrcSessionStore.getState().totalUnread();
-  }, [rrcUnreadByRoom, rrcUnreadByHub]);
+  }, [rrcUnreadByRoom, rrcUnreadByHub, rrcSessionsByHub]);
   const rrcMessageFlat = useMemo(() => {
     const out: RrcChatMessage[] = [];
     for (const list of rrcMessages.values()) out.push(...list);

@@ -4326,6 +4326,17 @@
     },
     "expandMembers": "Perluas daftar anggota",
     "collapseMembers": "Ciutkan daftar anggota",
-    "cancelConnect": "Batal"
+    "cancelConnect": "Batal",
+    "maxHubsConnected": "Anda dapat tetap terhubung ke paling banyak 8 hub RRC. Putuskan sambungan terlebih dahulu.",
+    "hubAutoJoin": "Gabung otomatis ke hub saat tumpukan sedang berjalan",
+    "enableHubAutoJoin": "Aktifkan hub auto - join",
+    "disableHubAutoJoin": "Nonaktifkan hub auto - join",
+    "hubLegend": "● terhubung · ◌ terhubung · bergabung ◐ otomatis · ○ menganggur · A = bergabung otomatis",
+    "hubMarker": {
+      "connected": "Tersambung",
+      "connecting": "Sambungkan",
+      "autoJoin": "Bergabung otomatis diaktifkan",
+      "idle": "Tidak terhubung"
+    }
   }
 }

@@ -79,9 +79,11 @@ describe('rrcSessionStore', () => {
     expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBeUndefined();
   });
 
-  it('isolates messages across hubs with the same room name', () => {
+  it('isolates messages across hubs with the same room name, and focus switch preserves both', () => {
+    const hubA = '11111111111111111111111111111111';
+    const hubB = '22222222222222222222222222222222';
     const store = useRrcSessionStore.getState();
-    store.applyStatus('active', '11111111111111111111111111111111', 'HubA');
+    store.applyStatus('active', hubA, 'HubA');
     store.roomJoined('#lobby');
     store.setActiveRoom('#lobby');
     store.addMessage({
@@ -93,8 +95,10 @@ describe('rrcSessionStore', () => {
     });
     expect(store.messagesForActiveRoom()).toHaveLength(1);
 
-    store.applyStatus('connecting', '22222222222222222222222222222222', 'HubB');
-    store.applyStatus('active', '22222222222222222222222222222222', 'HubB');
+    // Focus hub B (as RrcPanel.handleConnect does) before its own applyStatus arrives.
+    store.setFocusedHub(hubB);
+    store.applyStatus('connecting', hubB, 'HubB');
+    store.applyStatus('active', hubB, 'HubB');
     store.roomJoined('#lobby');
     store.setActiveRoom('#lobby');
     expect(useRrcSessionStore.getState().messagesForActiveRoom()).toHaveLength(0);
@@ -107,6 +111,60 @@ describe('rrcSessionStore', () => {
     });
     expect(useRrcSessionStore.getState().messagesForActiveRoom()).toHaveLength(1);
     expect(useRrcSessionStore.getState().messagesForActiveRoom()[0]?.body).toBe('from B');
+
+    // Switching focus back to hub A must not have lost its room or message history.
+    useRrcSessionStore.getState().setFocusedHub(hubA);
+    const back = useRrcSessionStore.getState();
+    expect(back.rooms.has('#lobby')).toBe(true);
+    expect(back.activeRoom).toBe('#lobby');
+    expect(back.messagesForActiveRoom()).toHaveLength(1);
+    expect(back.messagesForActiveRoom()[0]?.body).toBe('from A');
+
+    // Hub B is untouched by the round-trip.
+    expect(back.sessionsByHub.get(hubB)?.rooms.has('#lobby')).toBe(true);
+    expect(back.sessionsByHub.get(hubB)?.status).toBe('active');
+  });
+
+  it('disconnecting one hub leaves the other connected', () => {
+    const hubA = '11111111111111111111111111111111';
+    const hubB = '22222222222222222222222222222222';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'HubA');
+    store.roomJoined('#lobby');
+    store.setFocusedHub(hubB);
+    store.applyStatus('active', hubB, 'HubB');
+    store.roomJoined('#ops');
+
+    store.clearHubSession(hubA);
+
+    const state = useRrcSessionStore.getState();
+    expect(state.sessionsByHub.has(hubA)).toBe(false);
+    expect(state.sessionsByHub.has(hubB)).toBe(true);
+    // Hub B was not the removed hub, so focus and its mirror stay put.
+    expect(state.focusedHubHash).toBe(hubB);
+    expect(state.status).toBe('active');
+    expect(state.rooms.has('#ops')).toBe(true);
+  });
+
+  it('applyStatus connecting for hub B does not wipe hub A', () => {
+    const hubA = '11111111111111111111111111111111';
+    const hubB = '22222222222222222222222222222222';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'HubA');
+    store.roomJoined('#lobby');
+    store.addMessage({ id: 'a1', room: '#lobby', kind: 'msg', body: 'from A', timestamp: 1 });
+
+    // No setFocusedHub call here — a background WS `rrc.connected` for hub B must not steal focus.
+    store.applyStatus('connecting', hubB, 'HubB');
+
+    const state = useRrcSessionStore.getState();
+    expect(state.focusedHubHash).toBe(hubA);
+    expect(state.status).toBe('active');
+    expect(state.hubName).toBe('HubA');
+    expect(state.rooms.has('#lobby')).toBe(true);
+    expect(state.messages.get(state.roomMessageKey('#lobby')!)).toHaveLength(1);
+    expect(state.sessionsByHub.get(hubB)?.status).toBe('connecting');
+    expect(state.sessionsByHub.get(hubA)?.rooms.has('#lobby')).toBe(true);
   });
 
   it('dedupes by wire message id', () => {

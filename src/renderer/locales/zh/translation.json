@@ -4326,6 +4326,17 @@
     },
     "expandMembers": "扩大成员",
     "collapseMembers": "折叠成员列表",
-    "cancelConnect": "取消推荐"
+    "cancelConnect": "取消推荐",
+    "maxHubsConnected": "您最多可以连接8个RRC集线器。先断开一个。",
+    "hubAutoJoin": "堆栈运行时自动连接集线器",
+    "enableHubAutoJoin": "启用集线器自动连接",
+    "disableHubAutoJoin": "禁用集线器自动连接",
+    "hubLegend": "● cONNECTED · ◌ CONNECTING ·◐自动加入· ○ IDLE · A =自动加入",
+    "hubMarker": {
+      "connected": "已連線",
+      "connecting": "连接",
+      "autoJoin": "自动加入已启用",
+      "idle": "未连接"
+    }
   }
 }

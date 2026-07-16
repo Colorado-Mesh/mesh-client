@@ -9,11 +9,14 @@ import type {
 } from './reticulum-types';
 import type {
   RrcConnectRequest,
+  RrcDisconnectRequest,
   RrcHubInfo,
   RrcJoinRequest,
+  RrcMultiSessionSnapshot,
   RrcPartRequest,
   RrcSendRequest,
   RrcSessionSnapshot,
+  RrcSetNicknameRequest,
   RrcUpsertHubRequest,
 } from './rrc-types';
 import type { SupportBundleMode } from './support-bundle.types';
@@ -944,13 +947,13 @@ export interface ElectronAPI {
         favorited: boolean,
       ) => Promise<{ ok: boolean; error?: string }>;
       connect: (opts: RrcConnectRequest) => Promise<{ ok: boolean; error?: string }>;
-      disconnect: () => Promise<{ ok: boolean }>;
-      getStatus: () => Promise<RrcSessionSnapshot>;
+      disconnect: (opts?: RrcDisconnectRequest) => Promise<{ ok: boolean }>;
+      getStatus: () => Promise<RrcMultiSessionSnapshot>;
       join: (opts: RrcJoinRequest) => Promise<{ ok: boolean; error?: string }>;
       part: (opts: RrcPartRequest) => Promise<{ ok: boolean; error?: string }>;
       send: (opts: RrcSendRequest) => Promise<{ ok: boolean; error?: string }>;
-      setNickname: (nickname: string) => Promise<{ ok: boolean; error?: string }>;
-      getRooms: () => Promise<{ rooms: RrcSessionSnapshot['rooms'] }>;
+      setNickname: (opts: RrcSetNicknameRequest) => Promise<{ ok: boolean; error?: string }>;
+      getRooms: (hubDestHash?: string) => Promise<{ rooms: RrcSessionSnapshot['rooms'] }>;
     };
   };
 

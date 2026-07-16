@@ -4326,6 +4326,17 @@
     },
     "expandMembers": "Üye listesini genişlet",
     "collapseMembers": "Üye listesini daralt",
-    "cancelConnect": "İptal"
+    "cancelConnect": "İptal",
+    "maxHubsConnected": "En fazla 8 RRC hub'ına bağlı kalabilirsiniz. Önce birini ayırın.",
+    "hubAutoJoin": "Yığın çalışırken göbeğe otomatik olarak katıl",
+    "enableHubAutoJoin": "Hub'a otomatik katılmayı etkinleştir",
+    "disableHubAutoJoin": "Hub'a otomatik katılmayı devre dışı bırak",
+    "hubLegend": "● connected · ◌ connecting · ◐ auto - join · ○ idle · A = auto - join",
+    "hubMarker": {
+      "connected": "Bağlandı",
+      "connecting": "Bağlanıyor",
+      "autoJoin": "Otomatik katılma etkinleştirildi",
+      "idle": "Bağlı değil"
+    }
   }
 }

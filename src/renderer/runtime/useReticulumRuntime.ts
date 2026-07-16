@@ -140,6 +140,28 @@ const INITIAL_STATE: DeviceState = {
   connectionType: null,
 };
 
+/**
+ * Read the room/hub context an RRC WS event should apply to: the explicit `hub_dest_hash` from
+ * the event payload, or — for legacy events that omit it — the currently focused hub's mirror.
+ */
+function resolveRrcHubView(hubHash: string | undefined): {
+  hub: string | null;
+  activeRoom: string | null;
+  partIntentRooms: Set<string>;
+} {
+  const s = useRrcSessionStore.getState();
+  if (!hubHash) {
+    return { hub: s.focusedHubHash, activeRoom: s.activeRoom, partIntentRooms: s.partIntentRooms };
+  }
+  const hub = hubHash.toLowerCase();
+  const session = s.sessionsByHub.get(hub);
+  return {
+    hub,
+    activeRoom: session?.activeRoom ?? null,
+    partIntentRooms: session?.partIntentRooms ?? new Set<string>(),
+  };
+}
+
 const UINT8_BASE64_CHUNK_SIZE = 0x8000;
 
 function uint8ArrayToBase64(bytes: Uint8Array): string {
@@ -570,25 +592,29 @@ export function useReticulumRuntime(): ProtocolRuntime {
             resource_envelope?: boolean;
           };
         };
+        const hubDestHash = p.hub_dest_hash ?? undefined;
         const st =
           p.status === 'connecting'
             ? 'connecting'
             : p.status === 'active'
               ? 'active'
               : 'awaiting_welcome';
-        useRrcSessionStore.getState().applyStatus(st, p.hub_dest_hash ?? null, p.hub_name ?? null);
+        useRrcSessionStore.getState().applyStatus(st, hubDestHash ?? null, p.hub_name ?? null);
         if (st === 'active') {
-          useRrcSessionStore.getState().setError(null);
+          useRrcSessionStore.getState().setError(null, hubDestHash);
         }
         if (p.capabilities) {
-          useRrcSessionStore.getState().setCapabilities({
-            direct_notice: Boolean(p.capabilities.direct_notice),
-            action: Boolean(p.capabilities.action),
-            resource_envelope: Boolean(p.capabilities.resource_envelope),
-          });
+          useRrcSessionStore.getState().setCapabilities(
+            {
+              direct_notice: Boolean(p.capabilities.direct_notice),
+              action: Boolean(p.capabilities.action),
+              resource_envelope: Boolean(p.capabilities.resource_envelope),
+            },
+            hubDestHash,
+          );
         }
-        if (st === 'active' && p.hub_dest_hash && p.hub_name) {
-          useRrcHubStore.getState().applyWelcomeName(p.hub_dest_hash, p.hub_name);
+        if (st === 'active' && hubDestHash && p.hub_name) {
+          useRrcHubStore.getState().applyWelcomeName(hubDestHash, p.hub_name);
         }
         void window.electronAPI.reticulum.rrc
           .getStatus()
@@ -596,12 +622,20 @@ export function useReticulumRuntime(): ProtocolRuntime {
             if (typeof snap.identity_hash === 'string' && snap.identity_hash) {
               useRrcSessionStore.getState().setLocalIdentityHash(snap.identity_hash);
             }
-            if (snap.capabilities) {
-              useRrcSessionStore.getState().setCapabilities({
-                direct_notice: Boolean(snap.capabilities.direct_notice),
-                action: Boolean(snap.capabilities.action),
-                resource_envelope: Boolean(snap.capabilities.resource_envelope),
-              });
+            const sessionSnap = hubDestHash
+              ? snap.sessions?.find(
+                  (s) => s.hub_dest_hash?.toLowerCase() === hubDestHash.toLowerCase(),
+                )
+              : undefined;
+            if (sessionSnap?.capabilities) {
+              useRrcSessionStore.getState().setCapabilities(
+                {
+                  direct_notice: Boolean(sessionSnap.capabilities.direct_notice),
+                  action: Boolean(sessionSnap.capabilities.action),
+                  resource_envelope: Boolean(sessionSnap.capabilities.resource_envelope),
+                },
+                hubDestHash,
+              );
             }
           })
           .catch((e: unknown) => {
@@ -609,42 +643,53 @@ export function useReticulumRuntime(): ProtocolRuntime {
           });
       }
       if (evt.type === 'rrc.disconnected' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { reason?: string };
-        const session = useRrcSessionStore.getState();
-        if (p.reason === 'local_disconnect' || session.disconnectIntent) {
-          session.clearSession();
-        } else {
-          // Sidecar auto-reconnects unintended drops; keep volatile rooms until reconnect settles.
-          session.applyStatus('reconnecting');
-          if (p.reason) session.setError(p.reason);
-          session.setModerationBanner(null);
+        const p = evt.payload as { reason?: string; hub_dest_hash?: string | null };
+        const hubDestHash = p.hub_dest_hash ?? undefined;
+        if (hubDestHash) {
+          const session = useRrcSessionStore.getState();
+          const hubSession = session.sessionsByHub.get(hubDestHash.toLowerCase());
+          const disconnectIntentForHub = hubSession?.disconnectIntent ?? false;
+          if (p.reason === 'local_disconnect' || disconnectIntentForHub) {
+            session.clearHubSession(hubDestHash);
+          } else {
+            // Sidecar auto-reconnects unintended drops; keep volatile rooms until reconnect settles.
+            session.applyStatus('reconnecting', hubDestHash);
+            if (p.reason) session.setError(p.reason, hubDestHash);
+            session.setModerationBanner(null, hubDestHash);
+          }
         }
       }
       if (evt.type === 'rrc.room.joined' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as {
           room?: string;
           members?: { identity_hash: string; nickname?: string | null }[];
+          hub_dest_hash?: string | null;
         };
         if (typeof p.room === 'string') {
-          useRrcSessionStore.getState().roomJoined(p.room, p.members);
+          useRrcSessionStore.getState().roomJoined(p.room, p.members, p.hub_dest_hash ?? undefined);
         }
       }
       if (evt.type === 'rrc.room.parted' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { room?: string };
+        const p = evt.payload as { room?: string; hub_dest_hash?: string | null };
         if (typeof p.room === 'string') {
+          const hubDestHash = p.hub_dest_hash ?? undefined;
+          const view = resolveRrcHubView(hubDestHash);
           const session = useRrcSessionStore.getState();
-          const voluntary = [...session.partIntentRooms].some((k) => rrcRoomsMatch(k, p.room!));
+          const voluntary = [...view.partIntentRooms].some((k) => rrcRoomsMatch(k, p.room!));
           if (!voluntary) {
-            session.setModerationBanner('rrc.moderation.removedFromRoom');
-            session.addMessage({
-              id: `part-${Date.now()}`,
-              room: session.activeRoom ?? RRC_HUB_STREAM_ROOM,
-              kind: 'system',
-              body: `Removed from ${p.room}`,
-              timestamp: Date.now(),
-            });
+            session.setModerationBanner('rrc.moderation.removedFromRoom', hubDestHash);
+            session.addMessage(
+              {
+                id: `part-${Date.now()}`,
+                room: view.activeRoom ?? RRC_HUB_STREAM_ROOM,
+                kind: 'system',
+                body: `Removed from ${p.room}`,
+                timestamp: Date.now(),
+              },
+              { hubDestHash },
+            );
           }
-          session.roomParted(p.room, { forced: !voluntary });
+          session.roomParted(p.room, { forced: !voluntary }, hubDestHash);
         }
       }
       if (evt.type === 'rrc.message' && evt.payload && typeof evt.payload === 'object') {
@@ -660,97 +705,96 @@ export function useReticulumRuntime(): ProtocolRuntime {
           dst_hash?: string | null;
         };
         if (typeof p.body === 'string') {
+          const hubDestHash = p.hub_dest_hash ?? undefined;
+          const view = resolveRrcHubView(hubDestHash);
           const session = useRrcSessionStore.getState();
-          const hubMismatch =
-            Boolean(p.hub_dest_hash) &&
-            Boolean(session.hubDestHash) &&
-            p.hub_dest_hash!.toLowerCase() !== session.hubDestHash!.toLowerCase();
-          if (!hubMismatch) {
-            const kind =
-              p.kind === 'notice' ||
-              p.kind === 'action' ||
-              p.kind === 'error' ||
-              p.kind === 'system'
-                ? p.kind
-                : 'msg';
-            const isDirect = Boolean(p.dst_hash);
-            const room = isDirect
-              ? RRC_WHISPERS_ROOM
-              : typeof p.room === 'string' && p.room.trim()
-                ? p.room
-                : (session.activeRoom ?? RRC_HUB_STREAM_ROOM);
+          const kind =
+            p.kind === 'notice' || p.kind === 'action' || p.kind === 'error' || p.kind === 'system'
+              ? p.kind
+              : 'msg';
+          const isDirect = Boolean(p.dst_hash);
+          const room = isDirect
+            ? RRC_WHISPERS_ROOM
+            : typeof p.room === 'string' && p.room.trim()
+              ? p.room
+              : (view.activeRoom ?? RRC_HUB_STREAM_ROOM);
 
-            if (kind === 'notice') {
-              const listed = parseRrcListNotice(p.body);
-              if (listed) session.setListedRooms(listed);
-              const who = parseRrcWhoNotice(p.body);
-              // Full roster snapshot — replace so departed nicks disappear.
-              if (who) session.mergeRoomMembers(who.room, who.members, 'replace');
-              const topic = parseRrcTopicNotice(p.body);
-              if (topic) session.setRoomTopic(topic.room, topic.topic || null);
-              if (isRrcModerationLanguage(p.body)) {
-                session.setModerationBanner(p.body);
-              }
+          if (kind === 'notice') {
+            const listed = parseRrcListNotice(p.body);
+            if (listed) session.setListedRooms(listed, hubDestHash);
+            const who = parseRrcWhoNotice(p.body);
+            // Full roster snapshot — replace so departed nicks disappear.
+            if (who) session.mergeRoomMembers(who.room, who.members, 'replace', hubDestHash);
+            const topic = parseRrcTopicNotice(p.body);
+            if (topic) session.setRoomTopic(topic.room, topic.topic || null, hubDestHash);
+            if (isRrcModerationLanguage(p.body)) {
+              session.setModerationBanner(p.body, hubDestHash);
             }
+          }
 
-            // Opportunistic nicklist: room chat reveals senders even before `/who`.
-            if (
-              (kind === 'msg' || kind === 'action') &&
-              !isDirect &&
-              typeof p.sender_hash === 'string' &&
-              p.sender_hash.length >= 8 &&
-              typeof room === 'string' &&
-              !room.startsWith('[')
-            ) {
-              session.mergeRoomMembers(
-                room,
-                [
-                  {
-                    identity_hash: p.sender_hash.toLowerCase(),
-                    nickname: typeof p.nickname === 'string' ? p.nickname : null,
-                  },
-                ],
-                'merge',
-              );
-            }
-
-            session.addMessage(
-              {
-                id: typeof p.id === 'string' ? p.id : `rrc-${Date.now()}`,
-                room,
-                kind,
-                body: p.body,
-                sender_hash: p.sender_hash,
-                nickname: p.nickname,
-                timestamp: typeof p.timestamp === 'number' ? p.timestamp : Date.now(),
-                dst_hash: p.dst_hash,
-              },
-              {
-                bumpUnread:
-                  Boolean(session.hubDestHash) &&
-                  !isRrcRoomMuted(session.hubDestHash!, room, loadMutedViews('reticulum')),
-              },
+          // Opportunistic nicklist: room chat reveals senders even before `/who`.
+          if (
+            (kind === 'msg' || kind === 'action') &&
+            !isDirect &&
+            typeof p.sender_hash === 'string' &&
+            p.sender_hash.length >= 8 &&
+            typeof room === 'string' &&
+            !room.startsWith('[')
+          ) {
+            session.mergeRoomMembers(
+              room,
+              [
+                {
+                  identity_hash: p.sender_hash.toLowerCase(),
+                  nickname: typeof p.nickname === 'string' ? p.nickname : null,
+                },
+              ],
+              'merge',
+              hubDestHash,
             );
           }
+
+          session.addMessage(
+            {
+              id: typeof p.id === 'string' ? p.id : `rrc-${Date.now()}`,
+              room,
+              kind,
+              body: p.body,
+              sender_hash: p.sender_hash,
+              nickname: p.nickname,
+              timestamp: typeof p.timestamp === 'number' ? p.timestamp : Date.now(),
+              dst_hash: p.dst_hash,
+            },
+            {
+              bumpUnread:
+                Boolean(view.hub) && !isRrcRoomMuted(view.hub!, room, loadMutedViews('reticulum')),
+              hubDestHash,
+            },
+          );
         }
       }
       if (evt.type === 'rrc.error' && evt.payload && typeof evt.payload === 'object') {
-        const p = evt.payload as { message?: string };
+        const p = evt.payload as { message?: string; hub_dest_hash?: string | null };
         if (typeof p.message === 'string') {
+          const hubDestHash = p.hub_dest_hash ?? undefined;
+          const view = resolveRrcHubView(hubDestHash);
           const session = useRrcSessionStore.getState();
           // Keep raw message; panel humanizes for display. Do not freeze UI on timeouts.
-          session.setError(p.message);
+          session.setError(p.message, hubDestHash);
           if (isRrcModerationLanguage(p.message)) {
-            session.setModerationBanner(p.message);
+            session.setModerationBanner(p.message, hubDestHash);
           }
-          if (session.hubDestHash) {
-            session.addMessage({
-              id: `err-${Date.now()}`,
-              room: session.activeRoom ?? RRC_HUB_STREAM_ROOM,
-              kind: 'error',
-              body: p.message,
-              timestamp: Date.now(),
-            });
+          if (view.hub) {
+            session.addMessage(
+              {
+                id: `err-${Date.now()}`,
+                room: view.activeRoom ?? RRC_HUB_STREAM_ROOM,
+                kind: 'error',
+                body: p.message,
+                timestamp: Date.now(),
+              },
+              { hubDestHash },
+            );
           }
         }
       }

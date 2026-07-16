@@ -744,8 +744,8 @@ impl LiveBridge {
         }
     }
 
-    pub async fn rrc_disconnect(&self) -> serde_json::Value {
-        self.rrc_session.disconnect().await;
+    pub async fn rrc_disconnect(&self, dest_hash_hex: Option<&str>) -> serde_json::Value {
+        self.rrc_session.disconnect(dest_hash_hex).await;
         serde_json::json!({ "ok": true })
     }
 
@@ -753,30 +753,13 @@ impl LiveBridge {
         self.rrc_session.status_snapshot().await
     }
 
-    pub async fn rrc_join(&self, room: &str, key: Option<&str>) -> serde_json::Value {
+    pub async fn rrc_join(&self, hub_dest_hash: &str, room: &str, key: Option<&str>) -> serde_json::Value {
         let key = key
             .map(|k| k.trim().to_string())
             .filter(|k| !k.is_empty());
-        match self.rrc_session.join(room.to_string(), key).await {
-            Ok(()) => serde_json::json!({ "ok": true }),
-            Err(e) => serde_json::json!({ "ok": false, "error": e }),
-        }
-    }
-
-    pub async fn rrc_part(&self, room: &str) -> serde_json::Value {
-        match self.rrc_session.part(room.to_string()).await {
-            Ok(()) => serde_json::json!({ "ok": true }),
-            Err(e) => serde_json::json!({ "ok": false, "error": e }),
-        }
-    }
-
-    pub async fn rrc_send(&self, room: Option<&str>, body: &str, kind: &str, dst_hash: Option<&str>) -> serde_json::Value {
-        let room = room
-            .map(|r| r.trim().to_string())
-            .filter(|r| !r.is_empty());
         match self
             .rrc_session
-            .send_chat(room, body.to_string(), kind, dst_hash)
+            .join(hub_dest_hash, room.to_string(), key)
             .await
         {
             Ok(()) => serde_json::json!({ "ok": true }),
@@ -784,15 +767,47 @@ impl LiveBridge {
         }
     }
 
-    pub async fn rrc_set_nick(&self, nickname: &str) -> serde_json::Value {
-        match self.rrc_session.set_nickname(nickname.to_string()).await {
+    pub async fn rrc_part(&self, hub_dest_hash: &str, room: &str) -> serde_json::Value {
+        match self.rrc_session.part(hub_dest_hash, room.to_string()).await {
             Ok(()) => serde_json::json!({ "ok": true }),
             Err(e) => serde_json::json!({ "ok": false, "error": e }),
         }
     }
 
-    pub async fn rrc_rooms(&self) -> serde_json::Value {
-        self.rrc_session.rooms_snapshot().await
+    pub async fn rrc_send(
+        &self,
+        hub_dest_hash: &str,
+        room: Option<&str>,
+        body: &str,
+        kind: &str,
+        dst_hash: Option<&str>,
+    ) -> serde_json::Value {
+        let room = room
+            .map(|r| r.trim().to_string())
+            .filter(|r| !r.is_empty());
+        match self
+            .rrc_session
+            .send_chat(hub_dest_hash, room, body.to_string(), kind, dst_hash)
+            .await
+        {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rrc_set_nick(&self, hub_dest_hash: Option<&str>, nickname: &str) -> serde_json::Value {
+        match self
+            .rrc_session
+            .set_nickname(hub_dest_hash, nickname.to_string())
+            .await
+        {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rrc_rooms(&self, hub_dest_hash: Option<&str>) -> serde_json::Value {
+        self.rrc_session.rooms_snapshot(hub_dest_hash).await
     }
 
     fn spawn_maintenance(&self, _event_tx: broadcast::Sender<String>) {

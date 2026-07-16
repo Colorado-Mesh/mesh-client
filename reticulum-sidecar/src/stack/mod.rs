@@ -1182,11 +1182,12 @@ impl StackHandle {
         })
     }
 
-    pub async fn rrc_disconnect(&self) -> serde_json::Value {
+    pub async fn rrc_disconnect(&self, dest_hash_hex: Option<&str>) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            return live.rrc_disconnect().await;
+            return live.rrc_disconnect(dest_hash_hex).await;
         }
+        let _ = dest_hash_hex;
         serde_json::json!({ "ok": true })
     }
 
@@ -1196,35 +1197,32 @@ impl StackHandle {
             return live.rrc_status().await;
         }
         serde_json::json!({
-            "status": "disconnected",
-            "hub_dest_hash": null,
-            "hub_name": null,
-            "nickname": null,
-            "rooms": [],
-            "error": null,
+            "sessions": [],
+            "identity_hash": null,
         })
     }
 
-    pub async fn rrc_join(&self, room: &str, key: Option<&str>) -> serde_json::Value {
+    pub async fn rrc_join(&self, hub_dest_hash: &str, room: &str, key: Option<&str>) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            return live.rrc_join(room, key).await;
+            return live.rrc_join(hub_dest_hash, room, key).await;
         }
-        let _ = (room, key);
+        let _ = (hub_dest_hash, room, key);
         serde_json::json!({ "ok": false, "error": "rrc requires live rns-stack sidecar" })
     }
 
-    pub async fn rrc_part(&self, room: &str) -> serde_json::Value {
+    pub async fn rrc_part(&self, hub_dest_hash: &str, room: &str) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            return live.rrc_part(room).await;
+            return live.rrc_part(hub_dest_hash, room).await;
         }
-        let _ = room;
+        let _ = (hub_dest_hash, room);
         serde_json::json!({ "ok": false, "error": "rrc requires live rns-stack sidecar" })
     }
 
     pub async fn rrc_send(
         &self,
+        hub_dest_hash: &str,
         room: Option<&str>,
         body: &str,
         kind: Option<&str>,
@@ -1233,27 +1231,28 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             return live
-                .rrc_send(room, body, kind.unwrap_or("msg"), dst_hash)
+                .rrc_send(hub_dest_hash, room, body, kind.unwrap_or("msg"), dst_hash)
                 .await;
         }
-        let _ = (room, body, kind, dst_hash);
+        let _ = (hub_dest_hash, room, body, kind, dst_hash);
         serde_json::json!({ "ok": false, "error": "rrc requires live rns-stack sidecar" })
     }
 
-    pub async fn rrc_set_nick(&self, nickname: &str) -> serde_json::Value {
+    pub async fn rrc_set_nick(&self, hub_dest_hash: Option<&str>, nickname: &str) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            return live.rrc_set_nick(nickname).await;
+            return live.rrc_set_nick(hub_dest_hash, nickname).await;
         }
-        let _ = nickname;
+        let _ = (hub_dest_hash, nickname);
         serde_json::json!({ "ok": false, "error": "rrc requires live rns-stack sidecar" })
     }
 
-    pub async fn rrc_rooms(&self) -> serde_json::Value {
+    pub async fn rrc_rooms(&self, hub_dest_hash: Option<&str>) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
-            return live.rrc_rooms().await;
+            return live.rrc_rooms(hub_dest_hash).await;
         }
+        let _ = hub_dest_hash;
         serde_json::json!({ "rooms": [] })
     }
 

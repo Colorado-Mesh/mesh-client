@@ -370,8 +370,8 @@ export function createElectronAPIMock(): ElectronAPI {
         connect: vi.fn().mockResolvedValue({ ok: true }),
         disconnect: vi.fn().mockResolvedValue({ ok: true }),
         getStatus: vi.fn().mockResolvedValue({
-          status: 'disconnected',
-          rooms: [],
+          sessions: [],
+          identity_hash: null,
         }),
         join: vi.fn().mockResolvedValue({ ok: true }),
         part: vi.fn().mockResolvedValue({ ok: true }),
