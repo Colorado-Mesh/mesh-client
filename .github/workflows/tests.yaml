@@ -62,7 +62,6 @@ jobs:
     if: always() && !cancelled() && needs.tests.result != 'cancelled'
     permissions:
       contents: read
-      code-quality: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -90,13 +89,8 @@ jobs:
       - name: Merge coverage reports
         run: pnpm run test:coverage:merge
 
-      - name: Upload coverage report to GitHub
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        uses: actions/upload-code-coverage@v1
-        with:
-          file: coverage/cobertura-coverage.xml
-          language: JavaScript
-          label: code-coverage/vitest
+      # Skip actions/upload-code-coverage: GitHub Code Quality (Team/Enterprise)
+      # is not available on the free org plan — uploads return HTTP 403.
 
       - name: Upload test results
         if: always() && github.actor != 'nektos/act'
