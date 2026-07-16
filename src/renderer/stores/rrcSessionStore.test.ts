@@ -4,6 +4,7 @@ import { useRrcSessionStore } from './rrcSessionStore';
 
 describe('rrcSessionStore', () => {
   beforeEach(() => {
+    useRrcSessionStore.setState({ unreadByHub: new Map(), unreadByRoom: new Map() });
     useRrcSessionStore.getState().clearSession();
     useRrcSessionStore.getState().setNickname('tester');
     useRrcSessionStore.getState().setLocalIdentityHash('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
@@ -32,6 +33,30 @@ describe('rrcSessionStore', () => {
         .messages.get(useRrcSessionStore.getState().roomMessageKey('#lobby')!),
     ).toHaveLength(1);
     expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBe(1);
+    expect(useRrcSessionStore.getState().totalUnread()).toBe(1);
+    expect(useRrcSessionStore.getState().unreadForHub('28c7c1a68c735693aa8e6b8193ed44b2')).toBe(1);
+  });
+
+  it('stashes hub unread across disconnect wipe', () => {
+    const store = useRrcSessionStore.getState();
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#other');
+    store.addMessage(
+      {
+        id: '1',
+        room: '#lobby',
+        kind: 'msg',
+        body: 'hi',
+        sender_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        timestamp: 1,
+      },
+      { bumpUnread: true },
+    );
+    store.applyStatus('disconnected');
+    expect(useRrcSessionStore.getState().unreadByRoom.size).toBe(0);
+    expect(useRrcSessionStore.getState().unreadForHub(hub)).toBe(1);
     expect(useRrcSessionStore.getState().totalUnread()).toBe(1);
   });
 

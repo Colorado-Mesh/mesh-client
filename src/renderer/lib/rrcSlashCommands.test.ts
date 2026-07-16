@@ -72,4 +72,11 @@ describe('resolveRrcMsgTarget', () => {
   it('resolves unique hash prefix', () => {
     expect(resolveRrcMsgTarget('aaaa', members)?.nickname).toBe('Alice');
   });
+
+  it('strips leading @ from nick targets', () => {
+    expect(resolveRrcMsgTarget('@alice', members)?.identity_hash).toBe(
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    );
+    expect(resolveRrcMsgTarget('@Alice', members)?.nickname).toBe('Alice');
+  });
 });

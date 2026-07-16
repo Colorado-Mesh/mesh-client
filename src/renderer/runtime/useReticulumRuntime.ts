@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isReticulumAutostartEnabled } from '@/renderer/lib/appSettingsStorage';
 import { BatchedRingBufferAppender } from '@/renderer/lib/batchedRingBufferAppender';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
+import { loadMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
 import {
   buildReticulumDiagnosticRows,
   mergeReticulumDiagnosticRows,
@@ -71,6 +72,7 @@ import {
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
+import { isRrcRoomMuted } from '@/renderer/lib/rrcMention';
 import { LARGE_MESH_NODE_THRESHOLD } from '@/renderer/lib/sessionMemoryCaps';
 import { registerReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
 import {
@@ -723,7 +725,11 @@ export function useReticulumRuntime(): ProtocolRuntime {
                 timestamp: typeof p.timestamp === 'number' ? p.timestamp : Date.now(),
                 dst_hash: p.dst_hash,
               },
-              { bumpUnread: true },
+              {
+                bumpUnread:
+                  Boolean(session.hubDestHash) &&
+                  !isRrcRoomMuted(session.hubDestHash!, room, loadMutedViews('reticulum')),
+              },
             );
           }
         }

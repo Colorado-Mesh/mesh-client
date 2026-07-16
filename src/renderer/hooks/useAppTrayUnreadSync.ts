@@ -5,6 +5,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 const MESHTASTIC_UNREAD_KEY = 'mesh-client:meshtasticChatUnread';
 const MESHCORE_UNREAD_KEY = 'mesh-client:meshcoreChatUnread';
 const MESHCORE_ROOMS_UNREAD_KEY = 'mesh-client:meshcoreRoomsUnread';
+const RRC_UNREAD_KEY = 'mesh-client:rrcUnread';
 
 function persistUnread(protocol: 'meshtastic' | 'meshcore', count: number): void {
   try {
@@ -25,12 +26,22 @@ function persistMeshcoreRoomsUnread(count: number): void {
   }
 }
 
+function persistRrcUnread(count: number): void {
+  try {
+    const n = Math.max(0, Math.min(Math.floor(count) || 0, 99999));
+    localStorage.setItem(RRC_UNREAD_KEY, String(n));
+  } catch (e) {
+    console.debug('[App] persistRrcUnread quota/private mode ' + errLikeToLogString(e));
+  }
+}
+
 /** Persist per-protocol unread counts and sync combined total to the macOS tray badge. */
 export function useAppTrayUnreadSync(
   meshtasticChatUnread: number,
   meshcoreChatUnread: number,
   meshcoreRoomsUnread: number,
   reticulumChatUnread = 0,
+  rrcUnread = 0,
 ): void {
   useEffect(() => {
     persistUnread('meshtastic', meshtasticChatUnread);
@@ -45,8 +56,22 @@ export function useAppTrayUnreadSync(
   }, [meshcoreRoomsUnread]);
 
   useEffect(() => {
+    persistRrcUnread(rrcUnread);
+  }, [rrcUnread]);
+
+  useEffect(() => {
     window.electronAPI.setTrayUnread(
-      meshtasticChatUnread + meshcoreChatUnread + meshcoreRoomsUnread + reticulumChatUnread,
+      meshtasticChatUnread +
+        meshcoreChatUnread +
+        meshcoreRoomsUnread +
+        reticulumChatUnread +
+        rrcUnread,
     );
-  }, [meshtasticChatUnread, meshcoreChatUnread, meshcoreRoomsUnread, reticulumChatUnread]);
+  }, [
+    meshtasticChatUnread,
+    meshcoreChatUnread,
+    meshcoreRoomsUnread,
+    reticulumChatUnread,
+    rrcUnread,
+  ]);
 }

@@ -3,6 +3,8 @@
  * Client-local commands are handled in-app; everything else is hub pass-through MSG.
  */
 
+import { stripRrcMsgTargetAt } from './rrcMention';
+
 export type RrcSlashResult =
   | { kind: 'local'; command: 'help' }
   | { kind: 'local'; command: 'nick'; nickname: string }
@@ -75,12 +77,13 @@ export function parseRrcSlashInput(raw: string): RrcSlashResult | null {
 /**
  * Resolve `/msg` target (nick or hash/prefix) against room members.
  * Prefers exact nick (case-insensitive), then full hash, then hash prefix.
+ * Leading `@` on nick targets is stripped (`@nv0n` → `nv0n`).
  */
 export function resolveRrcMsgTarget(
   target: string,
   members: { identity_hash: string; nickname?: string | null }[],
 ): { identity_hash: string; nickname?: string | null } | null {
-  const t = target.trim().toLowerCase();
+  const t = stripRrcMsgTargetAt(target).toLowerCase();
   if (!t) return null;
   if (/^[0-9a-f]{32}$/i.test(t)) {
     const full = members.find((m) => m.identity_hash.toLowerCase() === t);

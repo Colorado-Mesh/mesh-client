@@ -9,6 +9,7 @@ export function clearReticulumSessionStores(): void {
   useReticulumDiscoveryMapStore.getState().clear();
   useReticulumPeerStore.getState().clearPeers();
   useRrcSessionStore.getState().clearSession();
+  useRrcSessionStore.setState({ unreadByHub: new Map() });
   useRrcHubStore.getState().clear();
   void releaseReticulumBleRnodeConnect();
 }

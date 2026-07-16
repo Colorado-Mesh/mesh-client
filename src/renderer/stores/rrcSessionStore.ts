@@ -96,6 +96,8 @@ interface RrcSessionStoreState {
   /** Sticky moderation / remote-takedown banner. */
   moderationBanner: string | null;
   unreadByRoom: Map<string, number>;
+  /** Per-hub unread totals (survives disconnect wipe of room maps). */
+  unreadByHub: Map<string, number>;
   showTimestamps: boolean;
   /** True while a local PART is in flight (voluntary leave). */
   partIntentRooms: Set<string>;
@@ -129,7 +131,9 @@ interface RrcSessionStoreState {
   clearUnread: (room: string) => void;
   clearActiveRoomMessages: () => void;
   clearSession: () => void;
+  /** Sum of live room unreads, or stashed hub totals when rooms were wiped. */
   totalUnread: () => number;
+  unreadForHub: (hubHash: string) => number;
   messagesForActiveRoom: () => RrcChatMessage[];
   roomMessageKey: (room: string) => string | null;
 }
@@ -148,6 +152,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   lastError: null,
   moderationBanner: null,
   unreadByRoom: new Map(),
+  unreadByHub: new Map(),
   showTimestamps: false,
   partIntentRooms: new Set(),
   disconnectIntent: false,
@@ -169,10 +174,21 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       const soft = [...s.rooms.keys()].find((k) => rrcRoomsMatch(k, room));
       const key = soft ?? normRoom(room);
       const unread = new Map(s.unreadByRoom);
-      for (const [rk] of unread) {
-        if (rrcRoomsMatch(rk, key)) unread.delete(rk);
+      let cleared = 0;
+      for (const [rk, count] of unread) {
+        if (rrcRoomsMatch(rk, key)) {
+          cleared += count;
+          unread.delete(rk);
+        }
       }
-      return { activeRoom: key, unreadByRoom: unread };
+      const unreadByHub = new Map(s.unreadByHub);
+      const hub = s.hubDestHash;
+      if (hub && cleared > 0) {
+        const next = Math.max(0, (unreadByHub.get(hub) ?? 0) - cleared);
+        if (next === 0) unreadByHub.delete(hub);
+        else unreadByHub.set(hub, next);
+      }
+      return { activeRoom: key, unreadByRoom: unread, unreadByHub };
     });
   },
 
@@ -291,6 +307,19 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       const hubChanged = nextHub != null && s.hubDestHash != null && nextHub !== s.hubDestHash;
       const disconnecting = status === 'disconnected';
       const wipeVolatile = disconnecting || hubChanged;
+      let unreadByHub = s.unreadByHub;
+      if (wipeVolatile) {
+        unreadByHub = new Map(s.unreadByHub);
+        // Stash live room unreads onto the hub that is going away.
+        const stashHub = hubChanged ? s.hubDestHash : disconnecting ? s.hubDestHash : null;
+        if (stashHub) {
+          let roomTotal = 0;
+          for (const v of s.unreadByRoom.values()) roomTotal += v;
+          if (roomTotal > 0) {
+            unreadByHub.set(stashHub, Math.max(unreadByHub.get(stashHub) ?? 0, roomTotal));
+          }
+        }
+      }
       return {
         status,
         hubDestHash: nextHub !== undefined ? nextHub : s.hubDestHash,
@@ -301,6 +330,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
               messages: new Map(),
               activeRoom: null,
               unreadByRoom: new Map(),
+              unreadByHub,
               listedRooms: [],
               capabilities: {},
               moderationBanner: null,
@@ -425,20 +455,34 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
 
       const unread = new Map(s.unreadByRoom);
       const viewing = s.activeRoom != null && rrcRoomsMatch(s.activeRoom, roomKey);
+      let unreadByHub = s.unreadByHub;
       if (opts?.bumpUnread && !isSelf && !viewing) {
         unread.set(roomKey, (unread.get(roomKey) ?? 0) + 1);
+        unreadByHub = new Map(s.unreadByHub);
+        unreadByHub.set(hub, (unreadByHub.get(hub) ?? 0) + 1);
       }
-      return { messages, unreadByRoom: unread };
+      return { messages, unreadByRoom: unread, unreadByHub };
     });
   },
 
   clearUnread: (room) => {
     set((s) => {
       const unread = new Map(s.unreadByRoom);
-      for (const [rk] of unread) {
-        if (rrcRoomsMatch(rk, room)) unread.delete(rk);
+      let cleared = 0;
+      for (const [rk, count] of unread) {
+        if (rrcRoomsMatch(rk, room)) {
+          cleared += count;
+          unread.delete(rk);
+        }
       }
-      return { unreadByRoom: unread };
+      const unreadByHub = new Map(s.unreadByHub);
+      const hub = s.hubDestHash;
+      if (hub && cleared > 0) {
+        const next = Math.max(0, (unreadByHub.get(hub) ?? 0) - cleared);
+        if (next === 0) unreadByHub.delete(hub);
+        else unreadByHub.set(hub, next);
+      }
+      return { unreadByRoom: unread, unreadByHub };
     });
   },
 
@@ -454,27 +498,54 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   clearSession: () => {
-    set({
-      status: 'disconnected',
-      hubDestHash: null,
-      hubName: null,
-      rooms: new Map(),
-      messages: new Map(),
-      activeRoom: null,
-      lastError: null,
-      moderationBanner: null,
-      unreadByRoom: new Map(),
-      listedRooms: [],
-      capabilities: {},
-      partIntentRooms: new Set(),
-      disconnectIntent: false,
+    set((s) => {
+      const unreadByHub = new Map(s.unreadByHub);
+      if (s.hubDestHash) {
+        let roomTotal = 0;
+        for (const v of s.unreadByRoom.values()) roomTotal += v;
+        if (roomTotal > 0) {
+          unreadByHub.set(s.hubDestHash, Math.max(unreadByHub.get(s.hubDestHash) ?? 0, roomTotal));
+        }
+      }
+      return {
+        status: 'disconnected',
+        hubDestHash: null,
+        hubName: null,
+        rooms: new Map(),
+        messages: new Map(),
+        activeRoom: null,
+        lastError: null,
+        moderationBanner: null,
+        unreadByRoom: new Map(),
+        unreadByHub,
+        listedRooms: [],
+        capabilities: {},
+        partIntentRooms: new Set(),
+        disconnectIntent: false,
+      };
     });
   },
 
   totalUnread: () => {
-    let n = 0;
-    for (const v of get().unreadByRoom.values()) n += v;
-    return n;
+    const s = get();
+    let fromRooms = 0;
+    for (const v of s.unreadByRoom.values()) fromRooms += v;
+    if (fromRooms > 0) return fromRooms;
+    let fromHubs = 0;
+    for (const v of s.unreadByHub.values()) fromHubs += v;
+    return fromHubs;
+  },
+
+  unreadForHub: (hubHash) => {
+    const hub = normHub(hubHash);
+    if (!hub) return 0;
+    const s = get();
+    if (s.hubDestHash === hub) {
+      let fromRooms = 0;
+      for (const v of s.unreadByRoom.values()) fromRooms += v;
+      if (fromRooms > 0) return fromRooms;
+    }
+    return s.unreadByHub.get(hub) ?? 0;
   },
 
   messagesForActiveRoom: () => {

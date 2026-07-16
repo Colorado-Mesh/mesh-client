@@ -1,11 +1,60 @@
 import { Copy } from 'lucide-react-motion';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ChatPayloadText } from '@/renderer/components/ChatPayloadText';
+import { bodyMentionsRrcNick, findNextRrcNickMention } from '@/renderer/lib/rrcMention';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
 function formatHash(hash: string): string {
   return hash.slice(0, 8);
+}
+
+/** Highlight IRC-style @nick tokens that match the local nickname. */
+function highlightRrcSelfMentions(text: string, nickname: string): ReactNode {
+  const nick = nickname.trim();
+  if (!nick || !bodyMentionsRrcNick(text, nick)) {
+    return <ChatPayloadText text={text} query="" loadLinkPreviews={false} />;
+  }
+  const nodes: ReactNode[] = [];
+  let last = 0;
+  let cursor = 0;
+  let match = findNextRrcNickMention(text, nick, cursor);
+  while (match) {
+    if (match.start > last) {
+      nodes.push(
+        <ChatPayloadText
+          key={`t-${last}`}
+          text={text.slice(last, match.start)}
+          query=""
+          loadLinkPreviews={false}
+        />,
+      );
+    }
+    nodes.push(
+      <mark key={`m-${match.start}`} className="rounded bg-amber-500/35 px-0.5 text-amber-100">
+        {text.slice(match.start, match.end)}
+      </mark>,
+    );
+    last = match.end;
+    cursor = match.end;
+    match = findNextRrcNickMention(text, nick, cursor);
+  }
+  if (last < text.length) {
+    nodes.push(
+      <ChatPayloadText
+        key={`t-${last}`}
+        text={text.slice(last)}
+        query=""
+        loadLinkPreviews={false}
+      />,
+    );
+  }
+  return nodes.length > 0 ? (
+    <>{nodes}</>
+  ) : (
+    <ChatPayloadText text={text} query="" loadLinkPreviews={false} />
+  );
 }
 
 export interface RrcChatViewProps {
@@ -18,6 +67,8 @@ export interface RrcChatViewProps {
   onSend: (text: string) => void;
   canSend: boolean;
   isMuted: boolean;
+  /** Local session nick — used to highlight @mentions of self. */
+  nickname?: string;
 }
 
 export function RrcChatView({
@@ -30,6 +81,7 @@ export function RrcChatView({
   onSend,
   canSend,
   isMuted,
+  nickname = '',
 }: RrcChatViewProps) {
   const { t } = useTranslation();
 
@@ -68,6 +120,7 @@ export function RrcChatView({
                   : msg.kind === 'error'
                     ? 'text-red-300'
                     : 'text-amber-50/90';
+            const body = highlightRrcSelfMentions(msg.body, nickname);
 
             return (
               <div
@@ -78,7 +131,7 @@ export function RrcChatView({
                 <div className="min-w-0 flex-1 break-words whitespace-pre-wrap">
                   {msg.kind === 'action' ? (
                     <>
-                      * {nick} <ChatPayloadText text={msg.body} query="" loadLinkPreviews={false} />
+                      * {nick} {body}
                     </>
                   ) : msg.kind === 'notice' || msg.kind === 'system' || msg.kind === 'error' ? (
                     <>
@@ -87,12 +140,11 @@ export function RrcChatView({
                       ) : (
                         <span className="text-amber-500/70">* </span>
                       )}
-                      <ChatPayloadText text={msg.body} query="" loadLinkPreviews={false} />
+                      {body}
                     </>
                   ) : (
                     <>
-                      <span className="font-semibold text-amber-200">&lt;{nick}&gt;</span>{' '}
-                      <ChatPayloadText text={msg.body} query="" loadLinkPreviews={false} />
+                      <span className="font-semibold text-amber-200">&lt;{nick}&gt;</span> {body}
                     </>
                   )}
                 </div>

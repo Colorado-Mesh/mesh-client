@@ -61,8 +61,11 @@ import { meshcoreWaitingMessagesVisibleForProtocol } from '@/renderer/lib/meshco
 import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
 import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
+import { resolveInactiveRrcNotificationType } from '@/renderer/lib/rrcInactiveNotifications';
+import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
+import type { RrcChatMessage } from '@/shared/rrc-types';
 
 import BootSequence from './components/BootSequence';
 import ChannelUtilizationChart from './components/ChannelUtilizationChart';
@@ -235,6 +238,7 @@ import { usePathHistoryStore } from './stores/pathHistoryStore';
 import { usePositionHistoryStore } from './stores/positionHistoryStore';
 import { useReticulumIdentityStore } from './stores/reticulumIdentityStore';
 import { useReticulumPeerStore } from './stores/reticulumPeerStore';
+import { useRrcSessionStore } from './stores/rrcSessionStore';
 
 // Tabs capability filtering lives in appTabMappings.ts (computeTabMappings).
 
@@ -567,8 +571,12 @@ function AppContent() {
   const [logPanelVisible, setLogPanelVisible] = useState(readLogPanelVisible);
   const prevMeshtasticMsgCountRef = useRef(0);
   const prevMeshcoreMsgCountRef = useRef(0);
+  const prevReticulumMsgCountRef = useRef(0);
+  const prevRrcMsgCountRef = useRef(0);
   const isMeshtasticInitialRef = useRef(true);
   const isMeshcoreInitialRef = useRef(true);
+  const isReticulumInitialRef = useRef(true);
+  const isRrcInitialRef = useRef(true);
   const mainViewportRef = useRef<HTMLDivElement>(null);
   const activePanelIndexRef = useRef(0);
   const scrollToTopChatRef = useRef<(() => void) | null>(null);
@@ -970,8 +978,11 @@ function AppContent() {
   const lastPanelByProtocol = useRef(new Map<MeshProtocol, number | null>());
   const meshtasticMsgsRef = useRef(meshtasticUiMessages);
   const meshcoreMsgsRef = useRef(meshcoreUiMessages);
+  const reticulumMsgsRef = useRef(reticulumUiMessages);
+  const rrcMsgsRef = useRef<RrcChatMessage[]>([]);
   const meshtasticMyNodeNumRef = useRef(meshtasticRuntime.state.myNodeNum);
   const meshcoreSelfIdRef = useRef(meshcoreRuntime.selfNodeId);
+  const reticulumOwnNodeIdSetRef = useRef<ReadonlySet<number>>(new Set());
 
   useEffect(() => {
     return subscribePersistedLastRead((changedProtocol) => {
@@ -1139,6 +1150,23 @@ function AppContent() {
     reticulumOwnNodeIdSet,
     reticulumUiMessages,
   ]);
+
+  const rrcUnreadByRoom = useRrcSessionStore((s) => s.unreadByRoom);
+  const rrcUnreadByHub = useRrcSessionStore((s) => s.unreadByHub);
+  const rrcMessages = useRrcSessionStore((s) => s.messages);
+  const rrcNickname = useRrcSessionStore((s) => s.nickname);
+  const rrcHubDestHash = useRrcSessionStore((s) => s.hubDestHash);
+  const rrcLocalIdentityHash = useRrcSessionStore((s) => s.localIdentityHash);
+  const rrcUnread = useMemo(() => {
+    void rrcUnreadByRoom;
+    void rrcUnreadByHub;
+    return useRrcSessionStore.getState().totalUnread();
+  }, [rrcUnreadByRoom, rrcUnreadByHub]);
+  const rrcMessageFlat = useMemo(() => {
+    const out: RrcChatMessage[] = [];
+    for (const list of rrcMessages.values()) out.push(...list);
+    return out;
+  }, [rrcMessages]);
 
   const meshcoreRoomsUnread = useMemo(() => {
     void roomsLastReadRevision;
@@ -1326,10 +1354,13 @@ function AppContent() {
     protocolRef.current = protocol;
     meshtasticMsgsRef.current = meshtasticUiMessages;
     meshcoreMsgsRef.current = meshcoreUiMessages;
+    reticulumMsgsRef.current = reticulumUiMessages;
+    rrcMsgsRef.current = rrcMessageFlat;
     meshtasticMyNodeNumRef.current = meshtasticRuntime.state.myNodeNum;
     meshtasticOwnNodeIdSetRef.current = meshtasticOwnNodeIdSet;
     meshcoreSelfIdRef.current = meshcoreRuntime.selfNodeId;
     meshcoreOwnNodeIdSetRef.current = meshcoreOwnNodeIdSet;
+    reticulumOwnNodeIdSetRef.current = reticulumOwnNodeIdSet;
     meshcoreChatUnreadDmOptionsRef.current = meshcoreChatUnreadDmOptions;
     lastTabByProtocol.current.set(protocol, activeTab);
     lastPanelByProtocol.current.set(protocol, activePanelIndex);
@@ -1345,6 +1376,9 @@ function AppContent() {
     meshcoreRuntime.selfNodeId,
     meshcoreOwnNodeIdSet,
     meshcoreChatUnreadDmOptions,
+    reticulumUiMessages,
+    reticulumOwnNodeIdSet,
+    rrcMessageFlat,
   ]);
 
   // Reset activeTab if it's out of bounds (e.g., switching to meshcore while on Security tab)
@@ -2119,11 +2153,79 @@ function AppContent() {
     prevMeshcoreMsgCountRef.current = count;
   }, [meshcoreUiMessages.length, capabilitiesByProtocol]);
 
+  // ─── Track Reticulum LXMF Chat messages arriving while inactive ──
+  useEffect(() => {
+    const count = reticulumUiMessages.length;
+    if (isReticulumInitialRef.current) {
+      prevReticulumMsgCountRef.current = count;
+      if (count > 0) isReticulumInitialRef.current = false;
+      return;
+    }
+    const isActiveAndChatOpen =
+      protocolRef.current === 'reticulum' && activePanelIndexRef.current === 1 && !document.hidden;
+    if (count > prevReticulumMsgCountRef.current && !isActiveAndChatOpen) {
+      const newMsgs = reticulumMsgsRef.current.slice(prevReticulumMsgCountRef.current);
+      const ownNodes = reticulumOwnNodeIdSetRef.current;
+      const ownSenderId = [...ownNodes][0] ?? 0;
+      const type = resolveInactiveChatNotificationType({
+        newMessages: newMsgs,
+        allMessages: reticulumMsgsRef.current,
+        protocol: 'reticulum',
+        ownNodeIds: ownNodes,
+        ownSenderId,
+        mutedViews: loadMutedViews('reticulum'),
+        notifGloballyMuted: localStorage.getItem('mesh-client:notifMuted') === '1',
+      });
+      if (type) playMessageNotification(type);
+    }
+    prevReticulumMsgCountRef.current = count;
+  }, [reticulumUiMessages.length]);
+
+  // ─── Track RRC messages arriving while inactive ──────────────────
+  useEffect(() => {
+    const count = rrcMessageFlat.length;
+    if (isRrcInitialRef.current) {
+      prevRrcMsgCountRef.current = count;
+      if (count > 0) isRrcInitialRef.current = false;
+      return;
+    }
+    if (count <= prevRrcMsgCountRef.current) {
+      prevRrcMsgCountRef.current = count;
+      return;
+    }
+    const delta = count - prevRrcMsgCountRef.current;
+    prevRrcMsgCountRef.current = count;
+    // Flat map order is room-keyed, not append order — use newest by timestamp.
+    const sorted = [...rrcMsgsRef.current].sort((a, b) => a.timestamp - b.timestamp);
+    const newMsgs = sorted.slice(-delta);
+
+    const onRrcPanel =
+      protocolRef.current === 'reticulum' && activePanelIndexRef.current === RRC_PANEL_INDEX;
+    const activeRoom = useRrcSessionStore.getState().activeRoom;
+    const forOtherRoom = newMsgs.some((m) => {
+      const room = m.room?.trim() || '[hub]';
+      return activeRoom == null || !rrcRoomsMatch(activeRoom, room);
+    });
+    // Match ChatPanel: notify when off panel, window hidden, or another room received traffic.
+    if (onRrcPanel && !document.hidden && !forOtherRoom) return;
+
+    const type = resolveInactiveRrcNotificationType({
+      newMessages: newMsgs,
+      nickname: rrcNickname,
+      hubDestHash: rrcHubDestHash,
+      mutedViews: loadMutedViews('reticulum'),
+      notifGloballyMuted: localStorage.getItem('mesh-client:notifMuted') === '1',
+      localIdentityHash: rrcLocalIdentityHash,
+    });
+    if (type) playMessageNotification(type);
+  }, [rrcMessageFlat.length, rrcNickname, rrcHubDestHash, rrcLocalIdentityHash]);
+
   useAppTrayUnreadSync(
     meshtasticChatUnread,
     meshcoreChatUnread,
     meshcoreRoomsUnread,
     reticulumChatUnread,
+    rrcUnread,
   );
 
   // ─── Auto flood advert (MeshCore) ────────────────────────────────
@@ -2575,6 +2677,7 @@ function AppContent() {
               onChange={setActiveTab}
               chatUnread={chatUnread}
               roomsUnread={roomsUnread}
+              rrcUnread={rrcUnread}
               collapsed={sidebarCollapsed}
               onToggle={handleSidebarToggle}
             />

@@ -218,6 +218,40 @@ describe('Sidebar', () => {
     expect(screen.getByRole('tab', { name: 'Rooms 3 unread' })).toBeInTheDocument();
   });
 
+  it('shows RRC unread badge when rrcUnread > 0', () => {
+    const onChange = vi.fn();
+    render(
+      <Sidebar
+        tabs={['RRC']}
+        tabSlotIds={['RRC']}
+        active={0}
+        onChange={onChange}
+        rrcUnread={7}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('7')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'RRC 7 unread' })).toBeInTheDocument();
+  });
+
+  it('hides RRC unread badge when rrcUnread is 0', () => {
+    const onChange = vi.fn();
+    render(
+      <Sidebar
+        tabs={['RRC']}
+        tabSlotIds={['RRC']}
+        active={0}
+        onChange={onChange}
+        rrcUnread={0}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('tab', { name: 'RRC' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /RRC.*unread/ })).not.toBeInTheDocument();
+  });
+
   it('hides Rooms unread badge when roomsUnread is 0', () => {
     const onChange = vi.fn();
     render(

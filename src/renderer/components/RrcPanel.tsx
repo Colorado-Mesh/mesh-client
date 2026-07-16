@@ -90,6 +90,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
   const lastError = useRrcSessionStore((s) => s.lastError);
   const moderationBanner = useRrcSessionStore((s) => s.moderationBanner);
   const unreadByRoom = useRrcSessionStore((s) => s.unreadByRoom);
+  const unreadByHub = useRrcSessionStore((s) => s.unreadByHub);
   const showTimestamps = useRrcSessionStore((s) => s.showTimestamps);
   const capabilities = useRrcSessionStore((s) => s.capabilities);
   const setNickname = useRrcSessionStore((s) => s.setNickname);
@@ -275,7 +276,37 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
     return { recommended, favourites, discovered, manual };
   }, [hubs, hubSearch]);
 
-  const roomList = useMemo(() => [...rooms.values()], [rooms]);
+  const roomList = useMemo(() => {
+    const list = [...rooms.values()];
+    const keys = new Set(list.map((r) => rrcRoomMatchKey(r.name)));
+    const ensureSynthetic = (name: string) => {
+      if (keys.has(rrcRoomMatchKey(name))) return;
+      let unread = 0;
+      for (const [room, count] of unreadByRoom) {
+        if (rrcRoomMatchKey(room) === rrcRoomMatchKey(name)) unread += count;
+      }
+      if (unread > 0 || (activeRoom != null && rrcRoomsMatch(activeRoom, name))) {
+        list.push({ name, members: [], member_count: 0 });
+        keys.add(rrcRoomMatchKey(name));
+      }
+    };
+    ensureSynthetic(RRC_WHISPERS_ROOM);
+    ensureSynthetic(RRC_HUB_STREAM_ROOM);
+    return list;
+  }, [rooms, unreadByRoom, activeRoom]);
+
+  const unreadForHub = useCallback(
+    (hash: string) => {
+      const hub = hash.trim().toLowerCase();
+      if (hubDestHash === hub) {
+        let fromRooms = 0;
+        for (const v of unreadByRoom.values()) fromRooms += v;
+        if (fromRooms > 0) return fromRooms;
+      }
+      return unreadByHub.get(hub) ?? 0;
+    },
+    [hubDestHash, unreadByHub, unreadByRoom],
+  );
 
   const joinedKeys = useMemo(
     () => new Set([...rooms.keys()].map((k) => rrcRoomMatchKey(k))),
@@ -729,6 +760,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
         discovered={hubList.discovered}
         manual={hubList.manual}
         hubDestHash={hubDestHash}
+        unreadForHub={unreadForHub}
         manualHash={manualHash}
         onManualHashChange={setManualHash}
         hubTab={hubTab}
@@ -891,6 +923,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
             onSend={(text) => void handleSend(text)}
             canSend={status === 'active'}
             isMuted={isMuted}
+            nickname={nickname}
           />
           {showNicklist && (
             <RrcNickList

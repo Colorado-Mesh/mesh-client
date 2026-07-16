@@ -20,6 +20,8 @@ export interface RrcHubBrowserProps {
   discovered: RrcHubInfo[];
   manual: RrcHubInfo[];
   hubDestHash: string | null;
+  /** Unread count per hub destination hash (lowercase keys preferred). */
+  unreadForHub: (hubHash: string) => number;
   manualHash: string;
   onManualHashChange: (v: string) => void;
   hubTab: 'recommended' | 'discovered';
@@ -34,12 +36,14 @@ function HubRow({
   hub,
   selected,
   sidecarRunning,
+  unread,
   onConnect,
   onToggleFavorite,
 }: {
   hub: RrcHubInfo;
   selected: boolean;
   sidecarRunning: boolean;
+  unread: number;
   onConnect: (hash: string) => void;
   onToggleFavorite: (hash: string, favorited: boolean) => void;
 }) {
@@ -56,14 +60,25 @@ function HubRow({
       >
         <button
           type="button"
-          className="min-w-0 flex-1 text-left"
-          aria-label={t('rrc.selectHub', { name: label })}
+          className="relative min-w-0 flex-1 text-left"
+          aria-label={
+            unread > 0
+              ? `${t('rrc.selectHub', { name: label })} ${unread > 99 ? '99+' : unread} unread`
+              : t('rrc.selectHub', { name: label })
+          }
           onClick={() => {
             onConnect(hub.destination_hash);
           }}
           disabled={!sidecarRunning}
         >
-          <div className="truncate font-medium text-amber-50">{label}</div>
+          <div className="flex items-center justify-between gap-1">
+            <div className="truncate font-medium text-amber-50">{label}</div>
+            {unread > 0 && (
+              <span className="shrink-0 rounded-full bg-red-600 px-1.5 text-[10px] text-white">
+                {unread > 99 ? '99+' : unread}
+              </span>
+            )}
+          </div>
           <div className="truncate text-xs text-amber-200/50">
             {secondary ?? formatHash(hub.destination_hash)}
             {hub.hops != null ? ` · ${t('rrc.hopsAway', { count: hub.hops })}` : ''}
@@ -101,6 +116,7 @@ export function RrcHubBrowser({
   discovered,
   manual,
   hubDestHash,
+  unreadForHub,
   manualHash,
   onManualHashChange,
   hubTab,
@@ -126,6 +142,7 @@ export function RrcHubBrowser({
               hub={hub}
               selected={hubDestHash?.toLowerCase() === hub.destination_hash.toLowerCase()}
               sidecarRunning={sidecarRunning}
+              unread={unreadForHub(hub.destination_hash)}
               onConnect={onConnect}
               onToggleFavorite={onToggleFavorite}
             />
