@@ -1322,7 +1322,7 @@ export function useMeshtasticRuntime() {
             }
           }
         }
-        meshtasticIngestSessionRef.current?.markPacketSeen(packetId);
+        meshtasticIngestSessionRef.current?.markPacketSeen(msg.sender_id, packetId);
         if (packetId !== 0) void window.electronAPI.db.updateMessageReceivedVia(packetId);
         return;
       }
@@ -1381,7 +1381,7 @@ export function useMeshtasticRuntime() {
             : normalizeMeshtasticPacketId(crossDup.packetId);
         if (pid !== undefined && pid !== 0) {
           isDuplicate(mqttWithPreviews.sender_id, pid); // registers as seen to suppress future duplicates
-          meshtasticIngestSessionRef.current?.markPacketSeen(pid);
+          meshtasticIngestSessionRef.current?.markPacketSeen(mqttWithPreviews.sender_id, pid);
           void window.electronAPI.db.updateMessageReceivedVia(pid);
         }
         return;

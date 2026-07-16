@@ -1,3 +1,5 @@
+import { MS_PER_MINUTE } from '@/shared/timeConstants';
+
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import type { DiagnosticTextI18n, MeshNode } from '../types';
 import { snrMeaningfulForNodeDiagnostics } from './snrMeaningfulForNodeDiagnostics';
@@ -46,9 +48,9 @@ const HIDDEN_TERMINAL_BAD_MIN = 0.05;
 
 // CU spike gates (Risk 1)
 const MIN_CU_SAMPLES = 12;
-const MIN_CU_SPAN_MS = 30 * 60 * 1000; // 30 min
+const MIN_CU_SPAN_MS = 30 * MS_PER_MINUTE;
 const MIN_CU_AVERAGE = 1; // percent — below this baseline is too noisy for 2× rule
-const CU_SPIKE_COOLDOWN_MS = 15 * 60 * 1000; // Risk 1-D: suppress repeat spike for same node
+const CU_SPIKE_COOLDOWN_MS = 15 * MS_PER_MINUTE; // Risk 1-D: suppress repeat spike for same node
 
 const cuSpikeLastFired = new Map<number, number>();
 

@@ -50,6 +50,12 @@ export function usePowerRecovery(
       : {
           meshtastic: options.meshtastic,
           meshcore: options.meshcore,
+          // Legacy shape (no explicit Reticulum entry) is test-only today — production wiring
+          // (App.tsx) always passes `callbacksByProtocol` with a real Reticulum entry. The real
+          // `useReticulumRuntime.onPowerSuspend` bumps a `resumeGenerationRef` (mirroring
+          // Meshtastic/MeshCore's `reconnectGenerationRef`) so a stale in-flight `connect()`
+          // started before an earlier suspend can't clobber a fresher post-resume state; this
+          // no-op fallback only applies when a caller opts into the legacy two-protocol shape.
           reticulum: { onPowerSuspend: () => {}, onPowerResume: () => {} },
         };
   const resumeSchedule =

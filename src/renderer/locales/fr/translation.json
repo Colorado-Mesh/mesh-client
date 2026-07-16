@@ -744,7 +744,7 @@
     "stageCheckingPairing": "Vérification du couplage Bluetooth…",
     "stageEnterPinLinux": "Entrez le code PIN affiché sur votre appareil (appairez-le d'abord avec Linux)",
     "stageReconnecting": "Reconnexion au dernier appareil Bluetooth…",
-    "pinPlaceholder": "ÉPINGLE",
+    "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",
       "serial": {
@@ -1133,6 +1133,10 @@
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
+    },
+    "maxRetriesHelpConnected": {
+      "meshcore": "Reconnectez-vous avant d'abandonner (1–{{max}}). Enregistré avec les paramètres ; appuyez à nouveau sur Connecter après la modification pour que le processus principal le récupère.",
+      "meshtastic": "Les deux protocoles permettent 1–{{max}}. Enregistré avec les paramètres ; déconnectez-vous et reconnectez-vous afin que la session en cours d'exécution utilise la nouvelle valeur."
     }
   },
   "contactGroupsModal": {
@@ -1150,7 +1154,13 @@
     "noContactsYet": "Aucun contact pour l'instant.",
     "noGroupsYet": "Aucun groupe pour l'instant. Créez-en un ci-dessus.",
     "memberCount_one": "Membre {{count}}",
-    "memberCount_other": "Membres {{count}}"
+    "memberCount_other": "Membres {{count}}",
+    "title": "Groupes de contact",
+    "addButton": "Ajouter",
+    "confirmDeleteButton": "Supprimer ?",
+    "manageMembersOf": "Gérer les membres de {{name}}",
+    "renameGroupNamed": "Renommer {{name}}",
+    "deleteGroupNamed": "Supprimer {{name}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Collectez lignes de routage de plus de {{hours}} heures (1–168)",
@@ -2688,8 +2698,8 @@
     "unavailable": "L'API Nomad Network n'est pas disponible. Reconstruisez le sidecar Reticulum et redémarrez la pile.",
     "selectNode": "Sélectionnez un nœud dans la liste pour parcourir ses pages.",
     "lastSeen": "Dernière écoute {{time}}",
-    "hopsAway_one": "{{count}} saute",
-    "hopsAway_other": "{{count}} saute",
+    "hopsAway_one": "à {{count}} saut",
+    "hopsAway_other": "à {{count}} sauts",
     "openNode": "Parcourir {{name}}",
     "pagePath": "Chemin de la page",
     "homePage": "Page d'accueil",

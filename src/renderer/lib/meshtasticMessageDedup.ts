@@ -1,9 +1,10 @@
 import { meshtasticWireUint32AllowZero } from '@/shared/reactionEmoji';
+import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 import type { ChatMessage } from './types';
 
 /** Align with seenPacketIds TTL in useMeshtasticRuntime. */
-export const MESHTASTIC_CROSS_TRANSPORT_DEDUP_WINDOW_MS = 10 * 60 * 1000;
+export const MESHTASTIC_CROSS_TRANSPORT_DEDUP_WINDOW_MS = 10 * MS_PER_MINUTE;
 
 const CROSS_TRANSPORT_SCAN_LIMIT = 200;
 
@@ -151,7 +152,15 @@ export function findMeshtasticStoreForwardDuplicate(
   return undefined;
 }
 
-/** Upgrade the matching row to `receivedVia: 'both'` when the other transport already has this message. */
+/**
+ * Upgrade the single nearest matching row to `receivedVia: 'both'` when the other transport
+ * already has this message.
+ *
+ * Only the row returned by `findMeshtasticCrossTransportDuplicate` is upgraded — matching by
+ * content predicate over the whole array would upgrade every row with identical sender/channel/
+ * payload within the window (e.g. the same text repeated a few times), silently merging distinct
+ * messages and writing the same resolved packetId onto multiple SQLite rows.
+ */
 export function mapMeshtasticCrossTransportUpgrade(
   messages: readonly ChatMessage[],
   incoming: ChatMessage,
@@ -162,21 +171,18 @@ export function mapMeshtasticCrossTransportUpgrade(
     return { messages: [...messages], matched: false };
   }
   const packetIdForDb = resolveMeshtasticCrossTransportPacketId(hit, incoming);
-  let matched = false;
   const next = messages.map((m) => {
-    if (!meshtasticCrossTransportMatch(m, incoming, windowMs)) return m;
-    matched = true;
-    const packetId = resolveMeshtasticCrossTransportPacketId(m, incoming);
+    if (m !== hit) return m;
     return {
       ...m,
       receivedVia: 'both' as const,
       rxHops: m.rxHops ?? incoming.rxHops,
-      ...(packetId !== undefined ? { packetId } : {}),
+      ...(packetIdForDb !== undefined ? { packetId: packetIdForDb } : {}),
     };
   });
   return {
-    messages: matched ? next : [...messages],
-    matched,
+    messages: next,
+    matched: true,
     packetIdForDb,
   };
 }

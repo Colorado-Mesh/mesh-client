@@ -24,7 +24,41 @@ vi.mock('./tak/certificate-manager', () => ({
   regenerateCerts: vi.fn(),
 }));
 
+import { regenerateCerts } from './tak/certificate-manager';
 import { TakServerManager } from './tak-server-manager';
+
+interface CertBundleLike {
+  caCert: string;
+  caKey: string;
+  serverCert: string;
+  serverKey: string;
+  clientCert: string;
+  clientKey: string;
+}
+
+const OLD_CERT_BUNDLE: CertBundleLike = {
+  caCert: 'old-ca',
+  caKey: 'old-ca-key',
+  serverCert: 'old-server-cert',
+  serverKey: 'old-server-key',
+  clientCert: 'old-client-cert',
+  clientKey: 'old-client-key',
+};
+
+const NEW_CERT_BUNDLE: CertBundleLike = {
+  caCert: 'new-ca',
+  caKey: 'new-ca-key',
+  serverCert: 'new-server-cert',
+  serverKey: 'new-server-key',
+  clientCert: 'new-client-cert',
+  clientKey: 'new-client-key',
+};
+
+interface TakServerManagerInternals {
+  _status: { running: boolean; port: number; clientCount: number; error?: string };
+  settings: { serverName: string; port: number; requireClientCert: boolean } | null;
+  certBundle: CertBundleLike | null;
+}
 
 function mockTlsSocket(): tls.TLSSocket {
   const emitter = new EventEmitter();
@@ -76,5 +110,79 @@ describe('TakServerManager client limits', () => {
     expect(clients.clients.size).toBe(1);
     vi.advanceTimersByTime(24 * 60 * 60 * 1000 + 1);
     expect(socket.destroy).toHaveBeenCalled();
+  });
+});
+
+describe('TakServerManager.regenerateCertificates', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function seedRunningManager(manager: TakServerManager): TakServerManagerInternals {
+    const internal = manager as unknown as TakServerManagerInternals;
+    internal._status = { running: true, port: 8089, clientCount: 0 };
+    internal.settings = { serverName: 'mesh-client-test', port: 8089, requireClientCert: false };
+    internal.certBundle = OLD_CERT_BUNDLE;
+    vi.spyOn(manager, 'stop').mockImplementation(() => {
+      internal._status = { running: false, port: 8089, clientCount: 0 };
+    });
+    return internal;
+  }
+
+  it('records an explicit error status (not a silent stop) when cert regeneration fails', async () => {
+    const manager = new TakServerManager();
+    seedRunningManager(manager);
+    vi.mocked(regenerateCerts).mockRejectedValueOnce(new Error('keygen boom'));
+
+    await expect(manager.regenerateCertificates()).rejects.toThrow('keygen boom');
+
+    const status = manager.getStatus();
+    expect(status.running).toBe(false);
+    expect(status.error).toContain('Certificate regeneration failed');
+    expect(status.error).toContain('keygen boom');
+  });
+
+  it('falls back to the previous certificate bundle when restart fails with the new certs', async () => {
+    const manager = new TakServerManager();
+    const internal = seedRunningManager(manager);
+    vi.mocked(regenerateCerts).mockResolvedValueOnce(NEW_CERT_BUNDLE);
+    const startSpy = vi
+      .spyOn(manager, 'start')
+      .mockRejectedValueOnce(new Error('port in use'))
+      .mockResolvedValueOnce(undefined);
+
+    await expect(manager.regenerateCertificates()).resolves.toBeUndefined();
+
+    expect(startSpy).toHaveBeenCalledTimes(2);
+    // Restored the last-known-good bundle rather than staying on the broken new pair.
+    expect(internal.certBundle).toEqual(OLD_CERT_BUNDLE);
+  });
+
+  it('rethrows the original start failure when the fallback restart also fails', async () => {
+    const manager = new TakServerManager();
+    seedRunningManager(manager);
+    vi.mocked(regenerateCerts).mockResolvedValueOnce(NEW_CERT_BUNDLE);
+    const startSpy = vi
+      .spyOn(manager, 'start')
+      .mockRejectedValueOnce(new Error('port in use'))
+      .mockRejectedValueOnce(new Error('still in use'));
+
+    await expect(manager.regenerateCertificates()).rejects.toThrow('port in use');
+    expect(startSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('regenerates certs without restarting when the server was not running', async () => {
+    const manager = new TakServerManager();
+    const internal = manager as unknown as TakServerManagerInternals;
+    internal._status = { running: false, port: 8089, clientCount: 0 };
+    internal.settings = { serverName: 'mesh-client-test', port: 8089, requireClientCert: false };
+    internal.certBundle = OLD_CERT_BUNDLE;
+    vi.mocked(regenerateCerts).mockResolvedValueOnce(NEW_CERT_BUNDLE);
+    const startSpy = vi.spyOn(manager, 'start');
+
+    await expect(manager.regenerateCertificates()).resolves.toBeUndefined();
+
+    expect(startSpy).not.toHaveBeenCalled();
+    expect(internal.certBundle).toEqual(NEW_CERT_BUNDLE);
   });
 });

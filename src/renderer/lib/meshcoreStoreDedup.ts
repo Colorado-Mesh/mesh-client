@@ -32,7 +32,14 @@ import {
 } from './storeRecordAdapters';
 import type { ChatMessage, IdentityId } from './types';
 
-export function meshcoreChannelMessageStoreId(channel: number, timestampSec: number): string {
+export function meshcoreChannelMessageStoreId(
+  channel: number,
+  timestampSec: number,
+  senderId?: number,
+): string {
+  if (senderId != null && senderId > 0) {
+    return `ch:${channel}:${senderId}:${timestampSec}`;
+  }
   return `ch:${channel}:${timestampSec}`;
 }
 
@@ -69,7 +76,11 @@ export function meshcoreMessageStoreId(msg: ChatMessage): string {
     );
   }
   if (msg.channel != null && msg.channel >= 0) {
-    return meshcoreChannelMessageStoreId(msg.channel, meshcoreTimestampSec(msg.timestamp));
+    return meshcoreChannelMessageStoreId(
+      msg.channel,
+      meshcoreTimestampSec(msg.timestamp),
+      msg.sender_id > 0 ? msg.sender_id : undefined,
+    );
   }
   return `${msg.sender_id}-${msg.timestamp}-${msg.channel ?? -1}`;
 }

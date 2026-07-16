@@ -39,15 +39,37 @@ vi.mock('./reticulum-ble-rnode-config', () => ({
   reticulumConfigDirHasEnabledBleRnode: vi.fn().mockReturnValue(false),
 }));
 
+const mockWsInstances: MockWebSocketInstance[] = [];
+
+interface MockWebSocketInstance {
+  handlers: Map<string, (...args: unknown[]) => void>;
+  close: ReturnType<typeof vi.fn>;
+  options: unknown;
+}
+
 vi.mock('ws', () => ({
   default: class MockWebSocket {
-    on = vi.fn();
+    handlers = new Map<string, (...args: unknown[]) => void>();
     close = vi.fn();
+    constructor(
+      public url: string,
+      public options?: unknown,
+    ) {
+      mockWsInstances.push(this as unknown as MockWebSocketInstance);
+    }
+    on(event: string, handler: (...args: unknown[]) => void): this {
+      this.handlers.set(event, handler);
+      return this;
+    }
   },
 }));
 
 import fs from 'fs';
 
+import {
+  RETICULUM_PROXY_MAX_RESPONSE_BYTES,
+  RETICULUM_WS_MAX_MESSAGE_BYTES,
+} from '../shared/reticulumProxyLimits';
 import { reticulumConfigDirHasEnabledBleRnode } from './reticulum-ble-rnode-config';
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
 import { ensureDevSidecarBinary } from './reticulum-sidecar-path';
@@ -70,6 +92,7 @@ function mockSidecarProc(
 
 describe('ReticulumSidecarManager', () => {
   beforeEach(() => {
+    mockWsInstances.length = 0;
     spawnMock.mockReset();
     suspendNobleMock.mockClear();
     releaseScanMock.mockClear();
@@ -271,6 +294,7 @@ describe('ReticulumSidecarManager', () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       headers: { get: () => 'application/json' },
+      text: () => Promise.resolve(JSON.stringify({ status: 'ok' })),
       json: () => Promise.resolve({ status: 'ok' }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -295,6 +319,8 @@ describe('ReticulumSidecarManager', () => {
   it('proxyPost sends JSON when running', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      headers: { get: () => null },
+      text: () => Promise.resolve(JSON.stringify({ ok: true })),
       json: () => Promise.resolve({ ok: true }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -328,6 +354,83 @@ describe('ReticulumSidecarManager', () => {
       'http://127.0.0.1:59477/api/v1/interfaces/abc',
       expect.objectContaining({ method: 'DELETE' }),
     );
+  });
+
+  it('proxyGet rejects a response whose declared Content-Length exceeds the cap', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: {
+        get: (name: string) =>
+          name === 'content-length'
+            ? String(RETICULUM_PROXY_MAX_RESPONSE_BYTES + 1)
+            : 'application/json',
+      },
+      text: () => Promise.resolve('{}'),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const manager = new ReticulumSidecarManager();
+    setRunning(manager, 59477);
+    await expect(manager.proxyGet('/api/v1/status')).rejects.toThrow('byte cap');
+  });
+
+  it('proxyGet rejects a streamed response body that exceeds the cap (no Content-Length)', async () => {
+    const oversized = new Uint8Array(RETICULUM_PROXY_MAX_RESPONSE_BYTES + 1);
+    const reader = {
+      read: vi
+        .fn()
+        .mockResolvedValueOnce({ done: false, value: oversized })
+        .mockResolvedValueOnce({ done: true, value: undefined }),
+      cancel: vi.fn().mockResolvedValue(undefined),
+    };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => null },
+      body: { getReader: () => reader },
+      text: () => Promise.resolve(''),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const manager = new ReticulumSidecarManager();
+    setRunning(manager, 59477);
+    await expect(manager.proxyGet('/api/v1/status')).rejects.toThrow('byte cap');
+    expect(reader.cancel).toHaveBeenCalled();
+  });
+
+  it('connectWs enforces maxPayload and drops oversized ws frames', async () => {
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    const proc = mockSidecarProc();
+    proc.kill.mockImplementation(() => {
+      proc.emit('exit', 0, null);
+    });
+    spawnMock.mockReturnValue(proc);
+    const manager = new ReticulumSidecarManager();
+    await manager.start();
+
+    expect(mockWsInstances.length).toBeGreaterThan(0);
+    const wsInstance = mockWsInstances[mockWsInstances.length - 1];
+    expect(wsInstance.options).toEqual({ maxPayload: RETICULUM_WS_MAX_MESSAGE_BYTES });
+
+    const events: unknown[] = [];
+    manager.on('event', (e) => events.push(e));
+
+    const messageHandler = wsInstance.handlers.get('message');
+    expect(messageHandler).toBeDefined();
+
+    // Oversized frame is dropped, not forwarded as an 'event'.
+    const oversized = Buffer.alloc(RETICULUM_WS_MAX_MESSAGE_BYTES + 1, 0x41);
+    messageHandler?.(oversized);
+    expect(events).toHaveLength(0);
+
+    // Normal frame still forwards as before.
+    const normal = Buffer.from(JSON.stringify({ type: 'status', payload: { ok: true } }));
+    messageHandler?.(normal);
+    expect(events).toEqual([{ type: 'status', payload: { ok: true } }]);
+
+    await manager.stop();
+    existsSpy.mockRestore();
+    mkdirSpy.mockRestore();
   });
 
   it('yields Noble BLE when config has enabled ble RNode before spawn', async () => {

@@ -11,7 +11,11 @@ import type {
   ReticulumSidecarStatus,
   ReticulumStatusResponse,
 } from '../shared/reticulum-types';
-import { RETICULUM_PROXY_MAX_BODY_BYTES } from '../shared/reticulumProxyLimits';
+import {
+  RETICULUM_PROXY_MAX_BODY_BYTES,
+  RETICULUM_PROXY_MAX_RESPONSE_BYTES,
+  RETICULUM_WS_MAX_MESSAGE_BYTES,
+} from '../shared/reticulumProxyLimits';
 import { MS_PER_SECOND } from '../shared/timeConstants';
 import { bleCoexistenceCoordinator } from './ble-coexistence-coordinator';
 import { sanitizeLogMessage } from './log-service';
@@ -55,6 +59,57 @@ function assertProxyBodySize(body: unknown): void {
   if (json.length > RETICULUM_PROXY_MAX_BODY_BYTES) {
     throw new Error('Reticulum proxy body too large');
   }
+}
+
+/**
+ * Reads a fetch Response body up to `maxBytes` and returns it as text.
+ * Rejects fast via Content-Length when present; otherwise streams with a
+ * hard cap so a misbehaving sidecar can't balloon main-process memory or
+ * fan out an oversized payload over IPC. Throws (does not silently
+ * truncate) so callers never parse a partial/corrupt JSON response.
+ */
+async function readResponseTextUpTo(res: Response, maxBytes: number): Promise<string> {
+  const contentLengthHeader = res.headers.get('content-length');
+  if (contentLengthHeader != null) {
+    const declared = Number(contentLengthHeader);
+    if (Number.isFinite(declared) && declared > maxBytes) {
+      throw new Error(`sidecar response exceeded ${maxBytes} byte cap`);
+    }
+  }
+  const reader = res.body?.getReader();
+  if (!reader) {
+    const text = await res.text();
+    if (text.length > maxBytes) {
+      throw new Error(`sidecar response exceeded ${maxBytes} byte cap`);
+    }
+    return text;
+  }
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done || !value) break;
+      total += value.length;
+      if (total > maxBytes) {
+        throw new Error(`sidecar response exceeded ${maxBytes} byte cap`);
+      }
+      chunks.push(value);
+    }
+  } finally {
+    try {
+      await reader.cancel();
+    } catch {
+      // catch-no-log-ok: stream may already be closed/aborted by this point
+    }
+  }
+  const merged = new Uint8Array(total);
+  let pos = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, pos);
+    pos += chunk.length;
+  }
+  return Buffer.from(merged).toString('utf8');
 }
 
 async function findFreePort(host = '127.0.0.1'): Promise<number> {
@@ -387,8 +442,8 @@ export class ReticulumSidecarManager extends EventEmitter {
       throw new Error(`sidecar GET ${normalized} failed: ${res.status}`);
     }
     const contentType = res.headers.get('content-type') ?? '';
+    const text = await readResponseTextUpTo(res, RETICULUM_PROXY_MAX_RESPONSE_BYTES);
     if (!contentType.includes('application/json')) {
-      const text = await res.text();
       if (!text) return { ok: true };
       try {
         return JSON.parse(text) as unknown;
@@ -397,7 +452,8 @@ export class ReticulumSidecarManager extends EventEmitter {
         return { ok: true, body: text };
       }
     }
-    return res.json();
+    if (!text) return {};
+    return JSON.parse(text) as unknown;
   }
 
   async proxyPost(apiPath: string, body: unknown): Promise<unknown> {
@@ -416,7 +472,8 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (!res.ok) {
       throw new Error(`sidecar POST ${normalized} failed: ${res.status}`);
     }
-    return res.json();
+    const text = await readResponseTextUpTo(res, RETICULUM_PROXY_MAX_RESPONSE_BYTES);
+    return text ? (JSON.parse(text) as unknown) : {};
   }
 
   async proxyPut(apiPath: string, body: unknown): Promise<unknown> {
@@ -435,7 +492,8 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (!res.ok) {
       throw new Error(`sidecar PUT ${normalized} failed: ${res.status}`);
     }
-    return res.json();
+    const text = await readResponseTextUpTo(res, RETICULUM_PROXY_MAX_RESPONSE_BYTES);
+    return text ? (JSON.parse(text) as unknown) : {};
   }
 
   async proxyDelete(apiPath: string): Promise<unknown> {
@@ -451,7 +509,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     if (!res.ok) {
       throw new Error(`sidecar DELETE ${normalized} failed: ${res.status}`);
     }
-    const text = await res.text();
+    const text = await readResponseTextUpTo(res, RETICULUM_PROXY_MAX_RESPONSE_BYTES);
     if (!text) return { ok: true };
     try {
       return JSON.parse(text) as unknown;
@@ -464,8 +522,16 @@ export class ReticulumSidecarManager extends EventEmitter {
   private connectWs(port: number): void {
     this.teardownWs();
     try {
-      const socket = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+      const socket = new WebSocket(`ws://127.0.0.1:${port}/ws`, {
+        maxPayload: RETICULUM_WS_MAX_MESSAGE_BYTES,
+      });
       socket.on('message', (data: Buffer) => {
+        if (data.length > RETICULUM_WS_MAX_MESSAGE_BYTES) {
+          console.warn(
+            `[ReticulumSidecar] ws message exceeded ${RETICULUM_WS_MAX_MESSAGE_BYTES} byte cap, dropping`,
+          );
+          return;
+        }
         const text = data.toString('utf8');
         try {
           const parsed = JSON.parse(text) as { type?: string; payload?: unknown };

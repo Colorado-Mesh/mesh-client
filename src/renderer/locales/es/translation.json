@@ -744,7 +744,7 @@
     "stageCheckingPairing": "Comprobando el emparejamiento de Bluetooth...",
     "stageEnterPinLinux": "Ingrese el PIN que se muestra en su dispositivo (empareje con Linux primero)",
     "stageReconnecting": "Reconectándose al último dispositivo Bluetooth...",
-    "pinPlaceholder": "ALFILER",
+    "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",
       "serial": {
@@ -1133,6 +1133,10 @@
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
+    },
+    "maxRetriesHelpConnected": {
+      "meshcore": "Vuelve a conectar los intentos antes de darte por vencido (1–{{max}}). Guardado con la configuración; pulse Conectar de nuevo después de cambiar para que el proceso principal lo recoja.",
+      "meshtastic": "Ambos protocolos permiten 1–{{max}}. Guardado con la configuración; desconéctese y conéctese de nuevo para que la sesión en ejecución use el nuevo valor."
     }
   },
   "contactGroupsModal": {
@@ -1150,7 +1154,13 @@
     "noContactsYet": "Aún no hay contactos.",
     "noGroupsYet": "Aún no hay grupos. Crea uno arriba.",
     "memberCount_one": "{{count}} miembro",
-    "memberCount_other": "{{count}} miembros"
+    "memberCount_other": "{{count}} miembros",
+    "title": "Grupos de Contacto",
+    "addButton": "Añadir",
+    "confirmDeleteButton": "¿Eliminar?",
+    "manageMembersOf": "Gestionar miembros de {{name}}",
+    "renameGroupNamed": "Cambiar nombre {{name}}",
+    "deleteGroupNamed": "Eliminar {{name}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Filas de enrutamiento de más de {{hours}} horas (1–168)",
@@ -2419,7 +2429,7 @@
     "dupsDirectFloodLabel": "DUPS (directo / inundación)",
     "radioStatsLocalHeading": "Estadísticas de radio (local)",
     "txAirTimeLabel": "Tiempo de aire de TX",
-    "rxAirTimeLabel": "RX Air Time",
+    "rxAirTimeLabel": "Tiempo de aire de RX",
     "requestPosition": "📍 Solicitar puesto",
     "traceRoute": "Trazar ruta",
     "tracingEllipsis": "Localización",
@@ -2688,8 +2698,8 @@
     "unavailable": "La API de Nomad Network no está disponible. Reconstruya el sidecar Reticulum y reinicie la pila.",
     "selectNode": "Seleccione un nodo de la lista para explorar sus páginas.",
     "lastSeen": "Escuchado por última vez {{time}}",
-    "hopsAway_one": "{{count}} salta lejos",
-    "hopsAway_other": "{{count}} se aleja saltando",
+    "hopsAway_one": "{{count}} salto de distancia",
+    "hopsAway_other": "{{count}} saltos de distancia",
     "openNode": "Explorar {{name}}",
     "pagePath": "Ruta de la página",
     "homePage": "pagina de inicio",

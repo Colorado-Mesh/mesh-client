@@ -230,7 +230,7 @@ export default function ContactGroupsModal({
             </div>
           ) : (
             <h2 id="groups-modal-title" className="text-lg font-semibold text-gray-100">
-              Contact Groups
+              {t('contactGroupsModal.title')}
             </h2>
           )}
           <button
@@ -301,7 +301,7 @@ export default function ContactGroupsModal({
                   disabled={!newGroupName.trim() || busy}
                   className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Add
+                  {t('contactGroupsModal.addButton')}
                 </button>
               </div>
 
@@ -378,7 +378,9 @@ export default function ContactGroupsModal({
                           <button
                             type="button"
                             onClick={() => void handleOpenMembers(group)}
-                            aria-label={`Manage members of ${group.name}`}
+                            aria-label={t('contactGroupsModal.manageMembersOf', {
+                              name: group.name,
+                            })}
                             title={t('contactGroupsModal.manageMembers')}
                             {...{ [PARENT_HOVER_ATTR]: '' }}
                             className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
@@ -396,7 +398,9 @@ export default function ContactGroupsModal({
                               setEditingGroupId(group.group_id);
                               setEditingName(group.name);
                             }}
-                            aria-label={`Rename ${group.name}`}
+                            aria-label={t('contactGroupsModal.renameGroupNamed', {
+                              name: group.name,
+                            })}
                             title={t('contactGroupsModal.rename')}
                             {...{ [PARENT_HOVER_ATTR]: '' }}
                             className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
@@ -417,7 +421,7 @@ export default function ContactGroupsModal({
                                 aria-label={t('contactGroupsModal.confirmDelete')}
                                 className="rounded bg-red-600/30 px-2 py-0.5 text-xs text-red-400 transition-colors hover:bg-red-600/50 disabled:opacity-40"
                               >
-                                Delete?
+                                {t('contactGroupsModal.confirmDeleteButton')}
                               </button>
                               <button
                                 type="button"
@@ -442,7 +446,9 @@ export default function ContactGroupsModal({
                               onClick={() => {
                                 setDeleteConfirmId(group.group_id);
                               }}
-                              aria-label={`Delete ${group.name}`}
+                              aria-label={t('contactGroupsModal.deleteGroupNamed', {
+                                name: group.name,
+                              })}
                               title={t('contactGroupsModal.deleteGroup')}
                               {...{ [PARENT_HOVER_ATTR]: '' }}
                               className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-red-400"

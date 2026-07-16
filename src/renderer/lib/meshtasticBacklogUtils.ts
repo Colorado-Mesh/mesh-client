@@ -2,6 +2,8 @@ import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import type { MeshDevice } from '@meshtastic/core';
 import { Mesh, Portnums, StoreForward } from '@meshtastic/protobufs';
 
+import { MS_PER_MINUTE } from '@/shared/timeConstants';
+
 /** Duration after MQTT connect during which inbound messages are treated as backlog. */
 export const MQTT_RECONNECT_BACKLOG_MS = 30_000;
 
@@ -12,10 +14,10 @@ export const SF_AUTO_HISTORY_MESSAGE_CAP = 50;
 export const SF_MANUAL_HISTORY_MESSAGE_CAP = 100;
 
 /** Skip auto-fetch if last successful fetch for this server was within this window. */
-export const SF_AUTO_HISTORY_COOLDOWN_MS = 15 * 60 * 1000;
+export const SF_AUTO_HISTORY_COOLDOWN_MS = 15 * MS_PER_MINUTE;
 
 /** Require RF to have been disconnected at least this long before auto-fetch. */
-export const SF_AUTO_HISTORY_OFFLINE_MIN_MS = 5 * 60 * 1000;
+export const SF_AUTO_HISTORY_OFFLINE_MIN_MS = 5 * MS_PER_MINUTE;
 
 /** When router heartbeat period is 0, use this window instead of server default. */
 export const SF_AUTO_HISTORY_WINDOW_CAP_MIN = 120;

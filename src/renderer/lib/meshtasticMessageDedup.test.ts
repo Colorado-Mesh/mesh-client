@@ -153,6 +153,38 @@ describe('mapMeshtasticCrossTransportUpgrade', () => {
     expect(messages[0].packetId).toBe(0x99999999);
   });
 
+  it('upgrades only the single nearest match, not every row with identical content', () => {
+    // Regression: a naive content-predicate .map() would flip every row sharing the same
+    // sender/channel/payload within the window to 'both' and stamp them all with the same
+    // resolved packetId — silently merging unrelated repeated messages.
+    const mqttFirst = baseMsg({
+      packetId: 0x11111111,
+      receivedVia: 'mqtt',
+      timestamp: 1_700_000_000_000,
+    });
+    const mqttSecond = baseMsg({
+      packetId: 0x22222222,
+      receivedVia: 'mqtt',
+      timestamp: 1_700_000_030_000,
+    });
+    const rf = baseMsg({
+      packetId: 0x33333333,
+      receivedVia: 'rf',
+      timestamp: 1_700_000_031_000,
+    });
+    const { messages, matched, packetIdForDb } = mapMeshtasticCrossTransportUpgrade(
+      [mqttFirst, mqttSecond],
+      rf,
+    );
+    expect(matched).toBe(true);
+    // Only the nearest-timestamp match (mqttSecond) is upgraded.
+    expect(messages[0]).toBe(mqttFirst);
+    expect(messages[0].receivedVia).toBe('mqtt');
+    expect(messages[1].receivedVia).toBe('both');
+    expect(messages[1].packetId).toBe(0x33333333);
+    expect(packetIdForDb).toBe(0x33333333);
+  });
+
   it('matches outbound RF optimistic row with MQTT echo when receivedVia is set', () => {
     const outbound = baseMsg({
       packetId: 0x99999999,

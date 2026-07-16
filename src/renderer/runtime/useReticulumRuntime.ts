@@ -159,6 +159,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const connectInFlightRef = useRef(false);
   const connectInFlightDoneRef = useRef<Promise<void> | null>(null);
   const suppressReconnectRef = useRef(false);
+  /**
+   * Bumped on every power-suspend so a `connect()` flight started before an earlier suspend
+   * (and still in flight when a *later* suspend/resume pair fires) can detect it has been
+   * superseded and skip finalizing a stale "configured" state. Independent of `suppressReconnectRef`
+   * (B1's sticky user-disconnect): that flag decides whether to reconnect at all; this one decides
+   * whether an already-in-flight connect's result is still safe to apply.
+   */
+  const resumeGenerationRef = useRef(0);
   const peerRefreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const diagnosticsRefreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localInterfaceBurstCancelRef = useRef<(() => void) | null>(null);
@@ -598,7 +606,13 @@ export function useReticulumRuntime(): ProtocolRuntime {
         stateRef.current.status === 'stale';
       if (wasActive) {
         tearDownFromSidecarStop();
-        if (isReticulumAutostartEnabled() && !suppressReconnectRef.current) {
+        // Consume the suppress flag only when there was an active session to react to —
+        // a stray "not running" status while the stack is already off must not clear a
+        // suppression set by an earlier manual disconnect (would let a later unrelated
+        // stop autostart the stack again).
+        if (suppressReconnectRef.current) {
+          suppressReconnectRef.current = false;
+        } else if (isReticulumAutostartEnabled()) {
           void connectRef.current?.().catch((e: unknown) => {
             console.warn(
               '[useReticulumRuntime] autostart reconnect failed ' + errLikeToLogString(e),
@@ -606,7 +620,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
           });
         }
       }
-      suppressReconnectRef.current = false;
     });
     return () => {
       unsubStatus();
@@ -642,6 +655,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       throw new Error('Reticulum connect already in progress');
     }
     connectInFlightRef.current = true;
+    const generation = resumeGenerationRef.current;
     const flight = (async () => {
       setState((s) => ({ ...s, status: 'connecting', connectionType: null }));
       syncConnectionStore({ status: 'connecting', connectionType: null });
@@ -658,6 +672,15 @@ export function useReticulumRuntime(): ProtocolRuntime {
         await markStaleReticulumOutboundMessages(identityId, RETICULUM_STALE_OUTBOUND_MS);
         markStaleReticulumOutboundInStore(identityId, RETICULUM_STALE_OUTBOUND_MS);
         await refreshMessagesFromDb();
+      }
+      if (resumeGenerationRef.current !== generation) {
+        // A later power-suspend fired while this connect attempt was still in flight — the
+        // sidecar keeps running (no RF link to go stale), but a fresher resume/suspend cycle
+        // now owns the UI state; applying this stale "configured" result could clobber it.
+        console.debug(
+          '[useReticulumRuntime] connect superseded by newer power-suspend generation — skip applying stale configured state',
+        );
+        return;
       }
       setState({ status: 'configured', myNodeNum: connectedNodeId, connectionType: null });
       syncConnectionStore({
@@ -1095,6 +1118,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
     [identityId],
   );
 
+  const onPowerSuspend = useCallback(() => {
+    resumeGenerationRef.current += 1;
+  }, []);
+
   const onPowerResume = useCallback(() => {
     if (suppressReconnectRef.current) {
       console.debug('[useReticulumRuntime] power resume — skip reconnect (user disconnect)');
@@ -1134,7 +1161,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       connectAutomatic,
       disconnect,
       restartStack,
-      onPowerSuspend: () => {},
+      onPowerSuspend,
       onPowerResume,
       prepareRfConnect: async () => {},
       attachRfSession: async () => {},
@@ -1165,6 +1192,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
       connectAutomatic,
       disconnect,
       restartStack,
+      onPowerSuspend,
       onPowerResume,
       clearRawPackets,
       rawPackets,

@@ -15,6 +15,8 @@ import {
 import type { MeshNode } from '@/renderer/lib/types';
 import { useSvgPanZoom } from '@/renderer/lib/useSvgPanZoom';
 
+import { TopologyHopFilterControls } from './TopologyHopFilterControls';
+
 interface PeerGraphPanelProps {
   nodes: Map<number, MeshNode>;
   myNodeId: number;
@@ -218,37 +220,16 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
     <div className="flex h-full flex-col">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 text-xs text-slate-400">
         <span className="font-medium text-slate-300">{t('peerGraph.title')}</span>
-        <label className="flex items-center gap-1.5 text-slate-400">
-          <input
-            type="checkbox"
-            checked={includeDistantPeers}
-            onChange={(e) => {
-              setIncludeDistantPeers(e.target.checked);
-            }}
-            aria-label={t('peerGraph.showDistantPeers')}
-            className="accent-brand-green h-3.5 w-3.5 rounded"
-          />
-          {t('peerGraph.showDistantPeers')}
-        </label>
-        <label className="flex items-center gap-1.5 text-slate-400">
-          <span>{t('peerGraph.maxHopsFilter')}</span>
-          <select
-            value={maxHops ?? 'all'}
-            onChange={(e) => {
-              const value = e.target.value;
-              setMaxHops(value === 'all' ? null : Number.parseInt(value, 10));
-            }}
-            aria-label={t('peerGraph.maxHopsFilter')}
-            className="rounded border border-slate-600 bg-slate-800 px-2 py-0.5 text-xs text-slate-200"
-          >
-            <option value="all">{t('peerGraph.maxHopsAll')}</option>
-            {[1, 2, 3, 5, 8].map((hops) => (
-              <option key={hops} value={hops}>
-                {t('peerGraph.maxHopsOption', { count: hops })}
-              </option>
-            ))}
-          </select>
-        </label>
+        <TopologyHopFilterControls
+          includeDistantPeers={includeDistantPeers}
+          onIncludeDistantPeersChange={setIncludeDistantPeers}
+          maxHops={maxHops}
+          onMaxHopsChange={setMaxHops}
+          showDistantPeersLabel={t('peerGraph.showDistantPeers')}
+          maxHopsFilterLabel={t('peerGraph.maxHopsFilter')}
+          maxHopsAllLabel={t('peerGraph.maxHopsAll')}
+          maxHopsOptionLabel={(hops) => t('peerGraph.maxHopsOption', { count: hops })}
+        />
         <button
           type="button"
           className="text-slate-400 hover:text-slate-200"

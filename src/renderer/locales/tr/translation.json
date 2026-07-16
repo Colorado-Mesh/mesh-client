@@ -1133,6 +1133,10 @@
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
+    },
+    "maxRetriesHelpConnected": {
+      "meshcore": "Vazgeçmeden önce denemeleri yeniden bağlayın (1 -{{max}}). Ayarlar ile kaydedildi; değiştirdikten sonra Bağlan'a tekrar basın, böylece ana işlem onu alır.",
+      "meshtastic": "Her iki protokol de 1 -{{max}} 'a izin verir. Ayarlar ile kaydedildi; bağlantıyı kesin ve tekrar bağlanın, böylece çalışan oturum yeni değeri kullanır."
     }
   },
   "contactGroupsModal": {
@@ -1150,7 +1154,13 @@
     "noContactsYet": "Henüz kişi yok.",
     "noGroupsYet": "Henüz grup yok. Yukarıda bir tane oluşturun.",
     "memberCount_one": "{{count}} üye",
-    "memberCount_other": "{{count}} üyeler"
+    "memberCount_other": "{{count}} üyeler",
+    "title": "Kişi Grupları",
+    "addButton": "Ekle",
+    "confirmDeleteButton": "Sil?",
+    "manageMembersOf": "{{name}} üyelerini yönet",
+    "renameGroupNamed": "{{name}} yeniden adlandır",
+    "deleteGroupNamed": "{{name}} silin"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}} saatten (1-168) daha eski olan yönlendirme satırlarını bırak",
@@ -1471,7 +1481,7 @@
     "runOnce": "Bir kez ping yap",
     "colSeq": "#",
     "colRtt": "RTT",
-    "colHops": "Şerbetçi otu",
+    "colHops": "Atlama",
     "colStatus": "Durum",
     "rttMs": "{{ms}} ms",
     "statusOk": "Tamam",
@@ -2688,8 +2698,8 @@
     "unavailable": "Nomad Network API'si kullanılamıyor. Reticulum sepetini yeniden oluştur ve yığını yeniden başlat.",
     "selectNode": "Sayfalarına göz atmak için listeden bir düğüm seçin.",
     "lastSeen": "Son duyulan {{time}}",
-    "hopsAway_one": "{{count}} atla",
-    "hopsAway_other": "{{count}} atlayarak uzaklaşır",
+    "hopsAway_one": "{{count}} atlama uzakta",
+    "hopsAway_other": "{{count}} atlama uzakta",
     "openNode": "{{name}}'a göz atın",
     "pagePath": "Sayfa yolu",
     "homePage": "Ana sayfa",
@@ -3807,7 +3817,7 @@
     "rssiTitle": "RSSI Dağılımı",
     "rssiAxis": "RSSI (dBm)",
     "hopTitle": "Hop Sayısı Dağılımı",
-    "hopAxis": "Şerbetçi otu"
+    "hopAxis": "Atlama"
   },
   "roleInfo": {
     "placeholderDash": "-",

@@ -14,6 +14,7 @@ import { ensureMeshtasticChatSenderInNodeStore } from '../meshtastic/meshtasticC
 import {
   findMeshtasticCrossTransportDuplicate,
   mapMeshtasticCrossTransportUpgrade,
+  meshtasticPacketDedupKey,
   meshtasticPacketIdsEqual,
   normalizeMeshtasticPacketId,
 } from '../meshtasticMessageDedup';
@@ -37,21 +38,23 @@ export interface MeshtasticIngestSession {
   detach: () => void;
   setConfiguring: (value: boolean) => void;
   /** Register a packet id as seen (e.g. after MQTT ingest) to suppress duplicate RF rows. */
-  markPacketSeen: (packetId: number) => void;
+  markPacketSeen: (senderId: number, packetId: number) => void;
 }
 
-function pruneSeenPackets(seen: Map<number, number>, now: number): void {
-  for (const [id, ts] of seen) {
-    if (now - ts > SEEN_PACKET_TTL_MS) seen.delete(id);
+function pruneSeenPackets(seen: Map<string, number>, now: number): void {
+  for (const [key, ts] of seen) {
+    if (now - ts > SEEN_PACKET_TTL_MS) seen.delete(key);
   }
 }
 
-function isPacketSeen(seen: Map<number, number>, packetId: number): boolean {
+/** Packet ids may collide across different senders — dedup key is always sender-scoped. */
+function isPacketSeen(seen: Map<string, number>, senderId: number, packetId: number): boolean {
   const now = Date.now();
   pruneSeenPackets(seen, now);
-  const ts = seen.get(packetId);
+  const key = meshtasticPacketDedupKey(senderId, packetId);
+  const ts = seen.get(key);
   if (ts != null && now - ts <= SEEN_PACKET_TTL_MS) return true;
-  seen.set(packetId, now);
+  seen.set(key, now);
   return false;
 }
 
@@ -73,7 +76,7 @@ function persistNode(identityId: IdentityId, nodeId: number): void {
 function handleTextMessage(
   identityId: IdentityId,
   event: Extract<DomainEvent, { type: 'text_message' }>,
-  seenPacketIds: Map<number, number>,
+  seenPacketIds: Map<string, number>,
   options: MeshtasticIngestOptions,
 ): void {
   if (options.getIsConfiguring()) return;
@@ -107,20 +110,21 @@ function handleTextMessage(
   const messages = listChatMessages(identityId);
 
   if (packetId != null && packetId !== 0 && !incoming.emoji) {
+    // Packet ids may collide across different senders — always scope the match to the
+    // same sender, mirroring `meshtasticPacketDedupKey` used by useMeshtasticRuntime.
+    const isSamePacket = (m: (typeof messages)[number]): boolean =>
+      meshtasticPacketIdsEqual(m.packetId, packetId) && m.sender_id === incoming.sender_id;
     const alreadySeen = messages.some(
-      (m) =>
-        meshtasticPacketIdsEqual(m.packetId, packetId) &&
-        m.receivedVia != null &&
-        m.receivedVia !== 'rf',
+      (m) => isSamePacket(m) && m.receivedVia != null && m.receivedVia !== 'rf',
     );
-    if (alreadySeen || isPacketSeen(seenPacketIds, packetId)) {
+    if (alreadySeen || isPacketSeen(seenPacketIds, incoming.sender_id, packetId)) {
       const upgraded = messages.map((m) =>
-        meshtasticPacketIdsEqual(m.packetId, packetId) && m.receivedVia === 'mqtt'
+        isSamePacket(m) && m.receivedVia === 'mqtt'
           ? { ...m, receivedVia: 'both' as const, rxHops: m.rxHops ?? incoming.rxHops }
           : m,
       );
       for (const m of upgraded) {
-        if (meshtasticPacketIdsEqual(m.packetId, packetId) && m.receivedVia === 'both') {
+        if (isSamePacket(m) && m.receivedVia === 'both') {
           upsertMessage(identityId, chatMessageToMessageRecord(m));
         }
       }
@@ -150,7 +154,7 @@ function handleTextMessage(
           }
         }
         if (packetIdForDb != null && packetIdForDb !== 0) {
-          isPacketSeen(seenPacketIds, packetIdForDb);
+          isPacketSeen(seenPacketIds, incoming.sender_id, packetIdForDb);
           void window.electronAPI.db
             .updateMessageReceivedVia(packetIdForDb, incoming.rxHops)
             .catch((e: unknown) => {
@@ -171,7 +175,7 @@ function handleTextMessage(
 
 function createListener(
   identityId: IdentityId,
-  seenPacketIds: Map<number, number>,
+  seenPacketIds: Map<string, number>,
   options: MeshtasticIngestOptions,
 ): PacketRouterListener {
   return (event, routedIdentityId) => {
@@ -199,7 +203,7 @@ export function attachMeshtasticIngest(
   identityId: IdentityId,
   options: MeshtasticIngestOptions,
 ): MeshtasticIngestSession {
-  const seenPacketIds = new Map<number, number>();
+  const seenPacketIds = new Map<string, number>();
   let configuring = false;
   const opts: MeshtasticIngestOptions = {
     getIsConfiguring: () => configuring || options.getIsConfiguring(),
@@ -211,8 +215,8 @@ export function attachMeshtasticIngest(
     setConfiguring: (value: boolean) => {
       configuring = value;
     },
-    markPacketSeen: (packetId: number) => {
-      if (packetId !== 0) isPacketSeen(seenPacketIds, packetId);
+    markPacketSeen: (senderId: number, packetId: number) => {
+      if (packetId !== 0) isPacketSeen(seenPacketIds, senderId, packetId);
     },
   };
 }

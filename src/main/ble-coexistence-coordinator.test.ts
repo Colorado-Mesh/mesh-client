@@ -54,7 +54,37 @@ describe('BleCoexistenceCoordinator', () => {
     expect(coordinator.getState().scanOwner).toBeNull();
   });
 
-  it('suspendNobleForReticulumBleConnect acquires reticulum scan and disconnects noble sessions on darwin', async () => {
+  it.each(['darwin', 'win32'] as const)(
+    'suspendNobleForReticulumBleConnect acquires reticulum scan and disconnects noble sessions on %s',
+    async (platform) => {
+      const noble = {
+        pauseScanningForExternalScan: vi.fn().mockResolvedValue(undefined),
+        resumeScanningAfterExternalScan: vi.fn().mockResolvedValue(undefined),
+        disconnectAllSessions: vi.fn().mockResolvedValue(undefined),
+      };
+      const coordinator = new BleCoexistenceCoordinator();
+      coordinator.setNobleManager(noble as never);
+
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', { value: platform, configurable: true });
+
+      try {
+        await coordinator.suspendNobleForReticulumBleConnect();
+        expect(coordinator.getState().scanOwner).toBe('reticulum');
+        expect(noble.pauseScanningForExternalScan).toHaveBeenCalled();
+        expect(noble.disconnectAllSessions).toHaveBeenCalled();
+      } finally {
+        Object.defineProperty(process, 'platform', {
+          value: originalPlatform,
+          configurable: true,
+        });
+      }
+    },
+  );
+
+  it('suspendNobleForReticulumBleConnect acquires reticulum scan but does not disconnect noble sessions on linux', async () => {
+    // Linux mesh BLE uses Web Bluetooth (no Noble GATT sessions to contend with); only
+    // macOS/Windows CoreBluetooth/WinRT need the disconnect-all handshake before btleplug connects.
     const noble = {
       pauseScanningForExternalScan: vi.fn().mockResolvedValue(undefined),
       resumeScanningAfterExternalScan: vi.fn().mockResolvedValue(undefined),
@@ -64,44 +94,50 @@ describe('BleCoexistenceCoordinator', () => {
     coordinator.setNobleManager(noble as never);
 
     const originalPlatform = process.platform;
-    Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
 
     try {
       await coordinator.suspendNobleForReticulumBleConnect();
       expect(coordinator.getState().scanOwner).toBe('reticulum');
       expect(noble.pauseScanningForExternalScan).toHaveBeenCalled();
-      expect(noble.disconnectAllSessions).toHaveBeenCalled();
+      expect(noble.disconnectAllSessions).not.toHaveBeenCalled();
     } finally {
       Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
     }
   });
 
-  it('suspendNobleForReticulumBleConnect releases yield when Noble disconnect times out', async () => {
-    const noble = {
-      pauseScanningForExternalScan: vi.fn().mockResolvedValue(undefined),
-      resumeScanningAfterExternalScan: vi.fn().mockResolvedValue(undefined),
-      disconnectAllSessions: vi.fn().mockImplementation(
-        () => new Promise(() => undefined), // never resolves
-      ),
-    };
-    const coordinator = new BleCoexistenceCoordinator();
-    coordinator.setNobleManager(noble as never);
+  it.each(['darwin', 'win32'] as const)(
+    'suspendNobleForReticulumBleConnect releases yield when Noble disconnect times out on %s',
+    async (platform) => {
+      const noble = {
+        pauseScanningForExternalScan: vi.fn().mockResolvedValue(undefined),
+        resumeScanningAfterExternalScan: vi.fn().mockResolvedValue(undefined),
+        disconnectAllSessions: vi.fn().mockImplementation(
+          () => new Promise(() => undefined), // never resolves
+        ),
+      };
+      const coordinator = new BleCoexistenceCoordinator();
+      coordinator.setNobleManager(noble as never);
 
-    const originalPlatform = process.platform;
-    Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
-    vi.useFakeTimers();
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', { value: platform, configurable: true });
+      vi.useFakeTimers();
 
-    try {
-      const pending = coordinator.suspendNobleForReticulumBleConnect();
-      const expectation = expect(pending).rejects.toThrow(/Noble disconnectAll timeout/);
-      await vi.advanceTimersByTimeAsync(30_000);
-      await expectation;
-      expect(coordinator.getState().scanOwner).toBeNull();
-    } finally {
-      vi.useRealTimers();
-      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
-    }
-  });
+      try {
+        const pending = coordinator.suspendNobleForReticulumBleConnect();
+        const expectation = expect(pending).rejects.toThrow(/Noble disconnectAll timeout/);
+        await vi.advanceTimersByTimeAsync(30_000);
+        await expectation;
+        expect(coordinator.getState().scanOwner).toBeNull();
+      } finally {
+        vi.useRealTimers();
+        Object.defineProperty(process, 'platform', {
+          value: originalPlatform,
+          configurable: true,
+        });
+      }
+    },
+  );
 
   it('assertCanConnect rejects Noble while reticulum holds the scan yield', async () => {
     const coordinator = new BleCoexistenceCoordinator();

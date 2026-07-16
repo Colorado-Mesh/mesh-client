@@ -611,7 +611,7 @@
     "days": "-Tage",
     "emDash": "—",
     "saving": "Speichern…",
-    "peers": "Kollegen",
+    "peers": "Peers",
     "colorGreen": "Grün",
     "colorCyan": "Cyan",
     "colorAmber": "amber (Bernstein)",
@@ -744,7 +744,7 @@
     "stageCheckingPairing": "Bluetooth-Kopplung wird überprüft…",
     "stageEnterPinLinux": "Geben Sie die auf Ihrem Gerät angezeigte PIN ein (zuerst mit Linux koppeln).",
     "stageReconnecting": "Verbindung zum letzten Bluetooth-Gerät wird wiederhergestellt…",
-    "pinPlaceholder": "STIFT",
+    "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",
       "serial": {
@@ -1035,7 +1035,7 @@
     "stageWaitingNobleBleMeshcore": "Warten auf die Fertigstellung von MeshCore Bluetooth — Meshtastic verbindet sich automatisch mit {{deviceName}}, wenn es fertig ist…",
     "reticulumStats": {
       "interfaces": "{{count}} Schnittstellen",
-      "peers": "{{count}} Kollegen"
+      "peers": "{{count}} Peers"
     },
     "bleOwner": {
       "meshtastic": "Meshtastic",
@@ -1133,6 +1133,10 @@
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
+    },
+    "maxRetriesHelpConnected": {
+      "meshcore": "Versuche erneut verbinden, bevor du aufgibst (1–{{max}}). Mit Einstellungen gespeichert; drücken Sie nach dem Ändern erneut auf Verbinden, damit der Hauptprozess ihn aufnimmt.",
+      "meshtastic": "Beide Protokolle erlauben 1–{{max}}. Mit Einstellungen gespeichert; trennen und erneut verbinden, damit die laufende Sitzung den neuen Wert verwendet."
     }
   },
   "contactGroupsModal": {
@@ -1150,7 +1154,13 @@
     "noContactsYet": "Noch keine Kontakte.",
     "noGroupsYet": "Noch keine Gruppen. Erstellen Sie oben eines.",
     "memberCount_one": "{{count}}-Mitglied",
-    "memberCount_other": "{{count}} Mitglieder"
+    "memberCount_other": "{{count}} Mitglieder",
+    "title": "Kontakt Gruppen",
+    "addButton": "Hinzufügen",
+    "confirmDeleteButton": "Löschen?",
+    "manageMembersOf": "Mitglieder von {{name}} verwalten",
+    "renameGroupNamed": "{{name}} umbenennen",
+    "deleteGroupNamed": "{{name}} löschen"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Wirf Routingreihen, die älter als {{hours}} Stunden (1-168) sind",
@@ -2410,7 +2420,7 @@
     "lastRssiLabel": "Letztes RSSI",
     "lastSnrLabel": "Letzte SNR",
     "pktsRecvSentLabel": "Pkts Recv / Sent",
-    "airTimeLabel": "ZEIT OHNE BODENBERÜHRUNG",
+    "airTimeLabel": "Sendezeit",
     "uptimeLabel": "Verfügbarkeit",
     "txQueueLabel": "TX-Warteschlange",
     "floodDirectSentLabel": "Hochwasser / Direkt verschickt",
@@ -2418,7 +2428,7 @@
     "errorsLabel": "Fehler",
     "dupsDirectFloodLabel": "Dups (direkt / Hochwasser)",
     "radioStatsLocalHeading": "Radiostatistiken (lokal)",
-    "txAirTimeLabel": "TX Air Time",
+    "txAirTimeLabel": "TX Sendezeit",
     "rxAirTimeLabel": "RX Sendezeit",
     "requestPosition": "Anfrage \tPositionstext",
     "traceRoute": "Strecke verfolgen",
@@ -2688,8 +2698,8 @@
     "unavailable": "Nomad Network API is unavailable. Rebuild the Reticulum sidecar and restart the stack.",
     "selectNode": "Wählen Sie einen Knoten aus der Liste aus, um seine Seiten zu durchsuchen.",
     "lastSeen": "Zuletzt gehört {{time}}",
-    "hopsAway_one": "{{count}} hüpf weg",
-    "hopsAway_other": "{{count}} hüpft davon",
+    "hopsAway_one": "{{count}} Hop entfernt",
+    "hopsAway_other": "{{count}} Hops entfernt",
     "openNode": "Durchsuchen {{name}}",
     "pagePath": "Seitenpfad",
     "homePage": "Startseite",
@@ -2785,27 +2795,27 @@
     "relayHub": "Direktrelais",
     "relayCount": "{{count}} Relaisnaben",
     "hopBadge": "{{count}}h",
-    "showDistantPeers": "Entfernte Kollegen anzeigen",
+    "showDistantPeers": "Entfernte Peers anzeigen",
     "maxHopsFilter": "Max. Hops",
     "maxHopsAll": "Alle Hops",
     "maxHopsOption": "{{count}} Hops",
     "resetView": "Ansicht zurücksetzen",
-    "compactLeafCount": "{{count}} COMPACT-Direktkollegen"
+    "compactLeafCount": "{{count}} kompakte Direkt-Peers"
   },
   "peerListPanel": {
-    "heading": "Kollegen",
-    "tabPeers": "Kollegen",
+    "heading": "Peers",
+    "tabPeers": "Peers",
     "tabContacts": "Kontakte",
     "searchPlaceholder": "Nach Namen oder Hash suchen...",
-    "searchAria": "Kollegen suchen",
+    "searchAria": "Peers suchen",
     "colName": "Name / Hash",
     "colLastSeen": "Zuletzt gesehen",
     "colInterface": "Schnittstelle (Interface)",
     "colFavorite": "Favorit",
     "toggleFavorite": "Ihren Favoriten hinzufügen",
     "openChat": "Chat öffnen",
-    "emptyPeers": "Noch keine Kollegen entdeckt. Senden Sie eine Ansage oder warten Sie auf den Netzwerkverkehr.",
-    "emptyContacts": "Noch keine Kontakte — senden Sie eine Nachricht an einen Kollegen, um ihn hier hinzuzufügen.",
+    "emptyPeers": "Noch keine Peers entdeckt. Senden Sie eine Ansage oder warten Sie auf den Netzwerkverkehr.",
+    "emptyContacts": "Noch keine Kontakte — senden Sie eine Nachricht an einen Peer, um ihn hier hinzuzufügen.",
     "groupFilterAria": "Kontakte nach Gruppe filtern",
     "allGroups": "Alle Gruppen",
     "manageGroups": "Gruppen verwalten",
@@ -2814,7 +2824,7 @@
     "contactYes": "Ja",
     "contactNo": "Nr.",
     "tabFavorites": "Favoriten",
-    "emptyFavorites": "Noch keine Lieblingskollegen — markieren Sie einen Kontakt oder Kollegen, um ihn hier anzuheften.",
+    "emptyFavorites": "Noch keine Lieblings-Peers — markieren Sie einen Kontakt oder Peer, um ihn hier anzuheften.",
     "lookupPlaceholder": "Nachschlageziel-Hash...",
     "lookupAria": "Peer anhand des Ziel-Hash suchen",
     "lookupSubmit": "Suchen",
@@ -3777,7 +3787,7 @@
     "edgeCount": "{{count}}-Links",
     "hiddenCount": "Zeigt {{shown}} von {{total}} Knoten (entfernte Peers ausgeblendet)",
     "legendSelf": "Dieser Knoten",
-    "showDistantPeers": "Entfernte Kollegen anzeigen",
+    "showDistantPeers": "Entfernte Peers anzeigen",
     "maxHopsFilter": "Max. Hops",
     "maxHopsAll": "Alle Hops",
     "maxHopsOption": "{{count}} Hops",
@@ -4076,7 +4086,7 @@
     "tak": "TAK",
     "rooms": "Räume",
     "admin": "Verwaltung",
-    "peers": "Kollegen",
+    "peers": "Peers",
     "nomadnetwork": "Nomad Network",
     "topology": "Netzwerk-Topologie",
     "network": "Netzwerk"

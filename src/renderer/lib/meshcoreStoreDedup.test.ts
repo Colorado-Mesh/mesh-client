@@ -27,6 +27,43 @@ describe('meshcoreStoreDedup', () => {
     expect(meshcoreChannelMessageStoreId(0, 1_700_000_010)).toBe('ch:0:1700000010');
   });
 
+  it('includes sender in the channel store id to avoid same-second collisions', () => {
+    expect(meshcoreChannelMessageStoreId(0, 1_700_000_010, 0x11)).toBe('ch:0:17:1700000010');
+    // No sender provided (or sender 0/unknown) keeps the legacy id shape.
+    expect(meshcoreChannelMessageStoreId(0, 1_700_000_010, 0)).toBe('ch:0:1700000010');
+  });
+
+  it('keeps two channel posts in the same UTC second from different senders (no preferredId)', () => {
+    // Real ingest (useMeshcoreRuntime) calls upsertMeshcoreMessageWithDedup without a
+    // preferredId, so the fallback `meshcoreMessageStoreId` must disambiguate by sender itself.
+    const tsMs = 1_700_000_006_000;
+
+    upsertMeshcoreMessageWithDedup(
+      ID,
+      buildMeshcoreChannelIncomingMessage([], {
+        rawText: 'Alice: hi from Alice',
+        senderId: 0x11,
+        displayName: 'Alice',
+        channel: 0,
+        timestamp: tsMs,
+        receivedVia: 'rf',
+      }),
+    );
+    upsertMeshcoreMessageWithDedup(
+      ID,
+      buildMeshcoreChannelIncomingMessage([], {
+        rawText: 'Bob: hi from Bob',
+        senderId: 0x22,
+        displayName: 'Bob',
+        channel: 0,
+        timestamp: tsMs,
+        receivedVia: 'rf',
+      }),
+    );
+
+    expect(Object.values(useMessageStore.getState().messages[ID] ?? {})).toHaveLength(2);
+  });
+
   it('merges RF store row with MQTT duplicate into one entry', () => {
     const tsSec = 1_700_000_010;
     const tsMs = tsSec * 1000;

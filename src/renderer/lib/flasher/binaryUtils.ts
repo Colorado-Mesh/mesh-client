@@ -1,19 +1,11 @@
 /** Binary helpers ported from liamcottle/rnode-flasher Utils. */
 
+export { bytesToHex } from '@/shared/hexBytes';
+
 export function sleepMillis(millis: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, millis);
   });
-}
-
-export function bytesToHex(bytes: number[] | Uint8Array): string {
-  const hex: string[] = [];
-  for (const byte of bytes) {
-    const current = byte < 0 ? byte + 256 : byte;
-    hex.push((current >>> 4).toString(16));
-    hex.push((current & 0xf).toString(16));
-  }
-  return hex.join('');
 }
 
 export function packUInt32BE(value: number): Uint8Array {

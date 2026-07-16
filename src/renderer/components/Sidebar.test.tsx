@@ -201,6 +201,107 @@ describe('Sidebar', () => {
     expect(await axe(screen.getByText('99+'))).toHaveNoViolations();
   });
 
+  it('shows Rooms unread badge when roomsUnread > 0', () => {
+    const onChange = vi.fn();
+    render(
+      <Sidebar
+        tabs={['Rooms']}
+        tabSlotIds={['Rooms']}
+        active={0}
+        onChange={onChange}
+        roomsUnread={3}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Rooms 3 unread' })).toBeInTheDocument();
+  });
+
+  it('hides Rooms unread badge when roomsUnread is 0', () => {
+    const onChange = vi.fn();
+    render(
+      <Sidebar
+        tabs={['Rooms']}
+        tabSlotIds={['Rooms']}
+        active={0}
+        onChange={onChange}
+        roomsUnread={0}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('tab', { name: 'Rooms' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Rooms.*unread/ })).not.toBeInTheDocument();
+  });
+
+  it('caps Rooms unread badge at 99+', () => {
+    const onChange = vi.fn();
+    render(
+      <Sidebar
+        tabs={['Rooms']}
+        tabSlotIds={['Rooms']}
+        active={0}
+        onChange={onChange}
+        roomsUnread={150}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('99+')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Rooms 99+ unread' })).toBeInTheDocument();
+  });
+
+  it('has no axe violations when Rooms unread badge shows', async () => {
+    const onChange = vi.fn();
+    render(
+      <Sidebar
+        tabs={['Rooms']}
+        tabSlotIds={['Rooms']}
+        active={0}
+        onChange={onChange}
+        roomsUnread={3}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(await axe(screen.getByText('3'))).toHaveNoViolations();
+  });
+
+  it('has no axe violations when Rooms unread badge shows 99+', async () => {
+    const onChange = vi.fn();
+    render(
+      <Sidebar
+        tabs={['Rooms']}
+        tabSlotIds={['Rooms']}
+        active={0}
+        onChange={onChange}
+        roomsUnread={150}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(await axe(screen.getByText('99+'))).toHaveNoViolations();
+  });
+
+  it('does not show Chat and Rooms badges on the same tab (mutually exclusive slot ids)', () => {
+    const onChange = vi.fn();
+    render(
+      <Sidebar
+        tabs={['Chat', 'Rooms']}
+        tabSlotIds={['Chat', 'Rooms']}
+        active={0}
+        onChange={onChange}
+        chatUnread={2}
+        roomsUnread={4}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('tab', { name: 'Chat 2 unread' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Rooms 4 unread' })).toBeInTheDocument();
+  });
+
   it('does not invoke onChange for disabled tabs', () => {
     const onChange = vi.fn();
     render(

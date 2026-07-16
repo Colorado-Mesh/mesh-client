@@ -744,7 +744,7 @@
     "stageCheckingPairing": "正在检查蓝牙配对...",
     "stageEnterPinLinux": "输入设备上显示的 PIN（首先与 Linux 配对）",
     "stageReconnecting": "正在重新连接到最后一个蓝牙设备...",
-    "pinPlaceholder": "别针",
+    "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",
       "serial": {
@@ -1133,6 +1133,10 @@
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
+    },
+    "maxRetriesHelpConnected": {
+      "meshcore": "在放弃前尝试重新连接（ 1– {{max}} ）。已保存设置；更改后再次按“连接” ，以便主进程将其拾取。",
+      "meshtastic": "两种方案均允许1– {{max}}。已使用设置保存；断开连接并再次连接，以便正在运行的会话使用新值。"
     }
   },
   "contactGroupsModal": {
@@ -1150,7 +1154,13 @@
     "noContactsYet": "还没有联系方式。",
     "noGroupsYet": "还没有组。在上面创建一个。",
     "memberCount_one": "{{count}} 成员",
-    "memberCount_other": "{{count}} 成员"
+    "memberCount_other": "{{count}} 成员",
+    "title": "联系人分组",
+    "addButton": "新增",
+    "confirmDeleteButton": "删除？",
+    "manageMembersOf": "管理{{name}}的成员",
+    "renameGroupNamed": "重命名{{name}}",
+    "deleteGroupNamed": "删除{{name}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "删除早于{{hours}}小时的路由行(1–168)",
@@ -2410,7 +2420,7 @@
     "lastRssiLabel": "上次RSSI",
     "lastSnrLabel": "上次信噪比",
     "pktsRecvSentLabel": "Pkts接收/发送",
-    "airTimeLabel": "飞跃时刻",
+    "airTimeLabel": "空中时间",
     "uptimeLabel": "运行时间",
     "txQueueLabel": "TX队列",
     "floodDirectSentLabel": "洪水/直接发送",
@@ -2418,8 +2428,8 @@
     "errorsLabel": "失誤",
     "dupsDirectFloodLabel": "DUPS （直接/洪水）",
     "radioStatsLocalHeading": "无线电统计（本地）",
-    "txAirTimeLabel": "德克萨斯州通话时间",
-    "rxAirTimeLabel": "RX通话时间",
+    "txAirTimeLabel": "TX空中时间",
+    "rxAirTimeLabel": "RX空中时间",
     "requestPosition": "📍 请求位置",
     "traceRoute": "🛤 跟踪路由",
     "tracingEllipsis": "追查",
@@ -2688,8 +2698,8 @@
     "unavailable": "Nomad Network API不可用。重建Reticulum侧车并重新启动堆栈。",
     "selectNode": "从列表中选择一个节点以浏览其页面。",
     "lastSeen": "最后一次听到 {{time}}",
-    "hopsAway_one": "{{count}} 跳走",
-    "hopsAway_other": "{{count}} 跳开",
+    "hopsAway_one": "{{count}} 跳之外",
+    "hopsAway_other": "{{count}} 跳之外",
     "openNode": "浏览{{name}}",
     "pagePath": "页面路径",
     "homePage": "主页",

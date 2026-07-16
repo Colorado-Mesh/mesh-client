@@ -94,6 +94,25 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toMatch(/traceRoute: no live conn — scheduling reconnect/);
   });
 
+  it('skips reconnect on connection loss before first configure when there is no stored session', () => {
+    const lostBody = extractUseCallbackBody(RUNTIME_SOURCE, 'handleMeshcoreConnectionLost');
+    expect(lostBody).toMatch(
+      /if \(\s*!meshcoreEverConfiguredRef\.current &&[\s\S]*?!meshcoreIsReconnectingRef\.current\s*\) \{[\s\S]*?if \(!hasStoredSession\) \{[\s\S]*?skip reconnect \(auto-connect owns retry\)[\s\S]*?return;/,
+    );
+    // Auto-connect (ConnectionPanel) owns the retry in this case — the reconnect loop must
+    // not also kick off attemptMeshcoreReconnect for a session that never configured.
+    const skipBranch = /if \(!hasStoredSession\) \{[\s\S]*?return;\s*\}/.exec(lostBody)?.[0];
+    expect(skipBranch).toBeDefined();
+    expect(skipBranch).not.toContain('attemptMeshcoreReconnect');
+  });
+
+  it('derives hasStoredSession from live params or rehydrated storage before deciding to skip', () => {
+    const lostBody = extractUseCallbackBody(RUNTIME_SOURCE, 'handleMeshcoreConnectionLost');
+    expect(lostBody).toMatch(
+      /const hasStoredSession =\s*meshcoreConnectionParamsRef\.current != null \|\|\s*rehydrateMeshcoreConnectionParamsFromStorage\(\) != null;/,
+    );
+  });
+
   it('fast-fails ping when flood prime exhausts even if stale path history exists', () => {
     expect(RUNTIME_SOURCE).toMatch(
       /const shouldAbortPing = evaluateMeshcorePingRouteAbort\(\{[\s\S]*?floodPrimeExhausted[\s\S]*?pathResolvedComposed: pathResolved\.composed/,

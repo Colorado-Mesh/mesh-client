@@ -49,7 +49,7 @@ The panel also shows a breakdown of error and warning counts, and a "This node" 
 
 ## 2. Routing Anomalies
 
-Routing anomaly detection runs on Meshtastic nodes. For MeshCore, hop-based anomalies require `hasHopCount` capability; if absent, they are skipped.
+Routing anomaly detection runs on Meshtastic nodes. MeshCore also has `hasHopCount: true` (hops via `outPathLen`), so the same hop-based anomalies run for MeshCore contacts; only protocols where `hasHopCount` is `false` (currently Reticulum) skip them.
 
 Detection is run in priority order; first match wins:
 
@@ -104,7 +104,7 @@ If your GPS source is IP-geolocation (low accuracy), the distance threshold is d
 
 **Meaning:** Either the GPS coordinates are stale or wrong, or the hop-count metadata is unreliable for this node. The node's position data should be treated with suspicion.
 
-**Note:** Skipped for MeshCore nodes without `hasHopCount` capability.
+**Note:** Skipped for protocols without `hasHopCount` capability (currently Reticulum only — MeshCore has `hasHopCount: true` and is subject to this check).
 
 ---
 
@@ -476,7 +476,7 @@ This section documents the exact protocol and hardware mechanisms behind each di
 
 ---
 
-### 17.1 RF Findings: Connected Node
+### 18.1 RF Findings: Connected Node
 
 #### Utilization vs. TX
 
@@ -576,7 +576,7 @@ This section documents the exact protocol and hardware mechanisms behind each di
 
 ---
 
-### 17.2 RF Findings: Remote Nodes
+### 18.2 RF Findings: Remote Nodes
 
 SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snrMeaningfulForNodeDiagnostics` returns `true`; which requires that the remote node is a 0-hop direct RF neighbor, ensuring the SNR value reflects the actual link to your node rather than a multi-hop path.
 
@@ -614,7 +614,7 @@ SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snr
 
 ---
 
-### 17.3 Routing Anomalies
+### 18.3 Routing Anomalies
 
 #### hop_goblin (`RoutingDiagnosticEngine.detectHopGoblin()`)
 
@@ -644,7 +644,7 @@ SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snr
 
 **Why this happens:** On MQTT, `hops_away` is derived from packet `hopStart - hopLimit`; when equal, the bridge reports 0 hops (heard directly by the gateway). That is not comparable to RF distance to your device. MQTT-only nodes are excluded via `hopCountMeaningfulForNodeDiagnostics()`. Can also indicate stale GPS on RF-heard nodes where a node moved but has not updated its position.
 
-**MeshCore skip:** `capabilities?.hasHopCount === false` causes this check to be bypassed entirely.
+**Capability skip:** `capabilities?.hasHopCount === false` causes this check to be bypassed entirely. MeshCore's capability is `true` (hops via `outPathLen`), so this only skips for Reticulum today.
 
 ---
 
@@ -658,7 +658,7 @@ SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snr
 
 ---
 
-### 17.4 Foreign LoRa Detection
+### 18.4 Foreign LoRa Detection
 
 #### Packet classification
 
@@ -708,7 +708,7 @@ A module-level `RollingRateCounter(60_000)` counts MeshCore-class packets in the
 
 ---
 
-### 17.5 Packet Redundancy
+### 18.5 Packet Redundancy
 
 #### Data model
 

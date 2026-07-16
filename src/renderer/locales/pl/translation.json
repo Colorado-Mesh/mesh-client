@@ -531,7 +531,7 @@
     "voiceRecordingTooLong": "Klip głosowy osiągnął limit 60 sekund i został wysłany.",
     "reticulumSendAttachmentFailed": "Nie udało się wysłać załącznika.",
     "reticulumSendAttachmentNoIdentity": "Tożsamość Reticulum nie jest gotowa — najpierw połącz i skonfiguruj tożsamość",
-    "dmPeerInfoAria": "Informacje o rówieśnikach DM",
+    "dmPeerInfoAria": "Informacje o partnerze DM",
     "clearDateAria": "Wyczyść datę",
     "readOnlyDisconnected": "Brak połączenia — wiadomości są tylko do odczytu",
     "starredDm": "DM: {{name}}",
@@ -744,7 +744,7 @@
     "stageCheckingPairing": "Sprawdzam parowanie Bluetooth…",
     "stageEnterPinLinux": "Wprowadź PIN widoczny na Twoim urządzeniu (najpierw sparuj z Linuksem)",
     "stageReconnecting": "Ponowne łączenie z ostatnim urządzeniem Bluetooth…",
-    "pinPlaceholder": "SZPILKA",
+    "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",
       "serial": {
@@ -1035,7 +1035,7 @@
     "stageWaitingNobleBleMeshcore": "Oczekiwanie na zakończenie połączenia Bluetooth MeshCore — po zakończeniu Meshtastic automatycznie połączy się z {{deviceName}}…",
     "reticulumStats": {
       "interfaces": "Interfejsy {{count}}",
-      "peers": "{{count}} rówieśnicy"
+      "peers": "{{count}} partnerzy"
     },
     "bleOwner": {
       "meshtastic": "Meshtastic",
@@ -1133,6 +1133,10 @@
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
+    },
+    "maxRetriesHelpConnected": {
+      "meshcore": "Ponownie połącz próby przed rezygnacją (1–{{max}}). Zapisano z ustawieniami; naciśnij ponownie Połącz po zmianie, aby główny proces go podniósł.",
+      "meshtastic": "Oba protokoły umożliwiają 1–{{max}}. Zapisano z ustawieniami; odłącz i połącz ponownie, aby uruchomiona sesja używała nowej wartości."
     }
   },
   "contactGroupsModal": {
@@ -1150,7 +1154,13 @@
     "noContactsYet": "Nie ma jeszcze żadnych kontaktów.",
     "noGroupsYet": "Nie ma jeszcze grup. Utwórz jeden powyżej.",
     "memberCount_one": "{{count}} członek",
-    "memberCount_other": "{{count}} członków"
+    "memberCount_other": "{{count}} członków",
+    "title": "Grupy kontaktowe",
+    "addButton": "Dodaj",
+    "confirmDeleteButton": "Usunąć?",
+    "manageMembersOf": "Zarządzaj członkami {{name}}",
+    "renameGroupNamed": "Zmień nazwę {{name}}",
+    "deleteGroupNamed": "Usuń {{name}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Usuń wiersze routingu starsze niż {{hours}} godzin (1–168)",
@@ -2380,7 +2390,7 @@
     "hopsFromTraceTitle": "Przeskoki z ostatniego śladu (pasuje do ścieżki Path Trace poniżej)",
     "hopsFromRoutingTitle": "Przeskakuje (z routingu kontaktów, gdy nie ma jeszcze śladu)",
     "hopLabel_one": "{{count}} przeskok",
-    "hopLabel_other": "{{count}} przeskakuje",
+    "hopLabel_other": "{{count}} przeskoków",
     "positionUpdated": "Pozycja zaktualizowana",
     "positionRequestTimedOut": "Upłynął limit czasu żądania pozycji",
     "traceRouteTimedOut": "Przekroczono limit czasu śledzenia trasy",
@@ -2418,7 +2428,7 @@
     "errorsLabel": "Błędy",
     "dupsDirectFloodLabel": "Dups (bezpośrednie / powodziowe)",
     "radioStatsLocalHeading": "Statystyki radiowe (lokalne)",
-    "txAirTimeLabel": "Czas antenowy w Teksasie",
+    "txAirTimeLabel": "Czas antenowy TX",
     "rxAirTimeLabel": "Czas antenowy RX",
     "requestPosition": "📍 Poproś o stanowisko",
     "traceRoute": "🛤 Śledź trasę",
@@ -2688,8 +2698,8 @@
     "unavailable": "Nomad Network API is unavailable. Rebuild the Reticulum sidecar and restart the stack.",
     "selectNode": "Wybierz węzeł z listy, aby przeglądać jego strony.",
     "lastSeen": "Ostatnio słyszałem {{time}}",
-    "hopsAway_one": "{{count}} odskocz",
-    "hopsAway_other": "{{count}} odskakuje",
+    "hopsAway_one": "{{count}} przeskok dalej",
+    "hopsAway_other": "{{count}} przeskoków dalej",
     "openNode": "Przeglądaj {{name}}",
     "pagePath": "Ścieżka strony",
     "homePage": "Strona główna",
@@ -2756,7 +2766,7 @@
     "probeLocal": "Sonda OK (tryb {{mode}}).",
     "probeFailed": "Sonda nie powiodła się: {{error}}",
     "iconColor": "Kolor awatara",
-    "iconColorAria": "Kolor awatara rówieśniczego",
+    "iconColorAria": "Kolor awatara partnera",
     "saveContact": "Zapisz jako kontakt",
     "removeContact": "Zdjąć soczewki kontaktowe,",
     "removeContactConfirmTitle": "Zdjąć soczewki kontaktowe,",
@@ -2768,11 +2778,11 @@
     "serviceBadgeTitle": "{{aspect}} — ostatnio widziany {{seen}}"
   },
   "peerGraph": {
-    "title": "Wykres komunikacji koleżeńskiej",
+    "title": "Wykres komunikacji z partnerami",
     "noNodes": "Nie zaobserwowano jeszcze węzłów",
     "nodeCount": "Węzły {{count}}",
     "edgeCount": "Linki: {{count}}",
-    "ariaLabel": "Wykres sieci komunikacji rówieśniczej",
+    "ariaLabel": "Wykres sieci komunikacji z partnerami",
     "good": "Dobry sygnał",
     "warn": "Sygnał krańcowy",
     "poor": "Słaby sygnał",
@@ -2781,31 +2791,31 @@
     "relayLink": "Przez przekaźnik (1 przeskok)",
     "hiddenCount": "Wyświetlanie {{shown}} z węzłów {{total}} (niepołączone węzły ukryte)",
     "noConnectedNodes": "Brak połączonych partnerów do wyświetlenia — dostosuj filtry lub poczekaj na ruch sieciowy.",
-    "meShort": "Możesz pobrać",
+    "meShort": "Ty",
     "relayHub": "Przekaźnik bezpośredni",
     "relayCount": "Koncentratory przekaźników {{count}}",
     "hopBadge": "{{count}}h",
-    "showDistantPeers": "Pokaż odległych rówieśników",
+    "showDistantPeers": "Pokaż odległych partnerów",
     "maxHopsFilter": "Maks. hops",
     "maxHopsAll": "Wszystkie hops",
     "maxHopsOption": "{{count}} hops",
     "resetView": "Odśwież widok",
-    "compactLeafCount": "{{count}} kompaktowych rówieśników bezpośrednich"
+    "compactLeafCount": "{{count}} kompaktowych partnerów bezpośrednich"
   },
   "peerListPanel": {
     "heading": "Partnerzy",
     "tabPeers": "Partnerzy",
     "tabContacts": "Kontakty",
     "searchPlaceholder": "Szukaj według nazwy lub skrótu…",
-    "searchAria": "Szukaj współpracowników",
+    "searchAria": "Szukaj partnerów",
     "colName": "Imię / skrót",
     "colLastSeen": "Ostatnio oglądane",
     "colInterface": "Interfejs",
     "colFavorite": "Ulubione",
     "toggleFavorite": "Przełącz ulubione",
     "openChat": "Otwórz czat",
-    "emptyPeers": "Nie odkryto jeszcze żadnych rówieśników. Wyślij ogłoszenie lub poczekaj na ruch sieciowy.",
-    "emptyContacts": "Brak kontaktów — wyślij wiadomość do współpracownika, aby dodać je tutaj.",
+    "emptyPeers": "Nie odkryto jeszcze żadnych partnerów. Wyślij ogłoszenie lub poczekaj na ruch sieciowy.",
+    "emptyContacts": "Brak kontaktów — wyślij wiadomość do partnera, aby dodać je tutaj.",
     "groupFilterAria": "Filtruj kontakty według grupy",
     "allGroups": "Wszystkie grupy",
     "manageGroups": "Zarządzaj grupami",
@@ -2814,13 +2824,13 @@
     "contactYes": "Tak",
     "contactNo": "Nr",
     "tabFavorites": "Ulubione",
-    "emptyFavorites": "Nie ma jeszcze ulubionych rówieśników — oznacz kontakt lub rówieśnika, aby ich tu przypiąć.",
+    "emptyFavorites": "Nie ma jeszcze ulubionych partnerów — oznacz kontakt lub partnera, aby ich tu przypiąć.",
     "lookupPlaceholder": "Wyszukaj skrót miejsca docelowego…",
     "lookupAria": "Wyszukaj peer według hasha docelowego",
     "lookupSubmit": "Wyszukaj",
     "lookupSubmitAria": "Poproś o ścieżkę i zbadaj hash docelowy",
     "lookupInvalid": "Wprowadź prawidłowy 32-znakowy hash docelowy LXMF lub łącze lxmf://.",
-    "lookupHint": "Poproś o ścieżkę do skrótu, który nie znajduje się jeszcze na liście rówieśników (na przykład rówieśnik w centrum, które udostępniasz)."
+    "lookupHint": "Poproś o ścieżkę do skrótu, który nie znajduje się jeszcze na liście partnerów (na przykład partner w centrum, które udostępniasz)."
   },
   "radioPanel": {
     "offloadedContacts": "Przeniesiono kontakty {{count}} do bazy danych.",
@@ -3653,7 +3663,7 @@
   },
   "reticulumProfileIcon": {
     "iconName": "Ikona awatara",
-    "iconNameAria": "Ikona awatara rówieśniczego",
+    "iconNameAria": "Ikona awatara partnera",
     "iconCircle": "Koło",
     "iconStar": "Ocena",
     "iconHeart": "Serce",
@@ -3778,7 +3788,7 @@
     "hiddenCount": "Wyświetlanie {{shown}} z {{total}} węzłów (ukryte odległe urządzenia równorzędne)",
     "legendSelf": "Ten węzeł",
     "centerRns": "RNS",
-    "showDistantPeers": "Pokaż odległych rówieśników",
+    "showDistantPeers": "Pokaż odległych partnerów",
     "maxHopsFilter": "Maks. hops",
     "maxHopsAll": "Wszystkie hops",
     "maxHopsOption": "{{count}} hops",
@@ -3786,10 +3796,10 @@
     "unassignedInterface": "Inne ścieżki",
     "legendInterfaceOnline": "Interfejs online",
     "legendInterfaceOffline": "Interfejs offline",
-    "legendPeerUser": "Rówieśnik LXMF",
+    "legendPeerUser": "Partner LXMF",
     "legendPeerServer": "Węzeł Nomad",
     "interfaceLink": "Łącze interfejsu",
-    "peerLink": "Powiązanie z rówieśnikiem",
+    "peerLink": "Powiązanie z partnerem",
     "interfaceTooltip": "{{name}} — {{status}}",
     "interfaceStatusOnline": "online",
     "interfaceStatusOffline": "offline",

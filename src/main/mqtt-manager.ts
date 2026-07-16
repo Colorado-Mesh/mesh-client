@@ -515,7 +515,7 @@ export class MQTTManager extends EventEmitter {
           }
         } else {
           this.retryCount = 0;
-          console.debug('[Meshtastic MQTT] Subscribed to', topic); // log-filter-ok Meshtastic MQTT logs → App log panel
+          console.debug('[Meshtastic MQTT] Subscribed to', sanitizeLogMessage(topic)); // log-filter-ok Meshtastic MQTT logs → App log panel
         }
       });
     };
@@ -1354,7 +1354,7 @@ export class MQTTManager extends EventEmitter {
 
     if (bytes[0] !== 0x0a) {
       console.debug(
-        `[Meshtastic MQTT] Unknown message format, firstByte=0x${bytes[0].toString(16)} topic=${topic} bytes=${bytes.length}`,
+        `[Meshtastic MQTT] Unknown message format, firstByte=0x${bytes[0].toString(16)} topic=${sanitizeLogMessage(topic)} bytes=${bytes.length}`,
       ); // log-filter-ok Meshtastic MQTT logs → App log panel
       return;
     }
@@ -1405,7 +1405,9 @@ export class MQTTManager extends EventEmitter {
     const envelope = fromBinary(ServiceEnvelopeSchema, bytes);
     const packet = envelope.packet;
     if (!packet?.from) {
-      console.debug(`[Meshtastic MQTT] ServiceEnvelope has no packet.from, topic=${topic}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+      console.debug(
+        `[Meshtastic MQTT] ServiceEnvelope has no packet.from, topic=${sanitizeLogMessage(topic)}`,
+      ); // log-filter-ok Meshtastic MQTT logs → App log panel
       return;
     }
 
@@ -1508,29 +1510,38 @@ export class MQTTManager extends EventEmitter {
    * Returns null when the field is missing or unparseable.
    */
   private parseFromNodeId(fromRaw: unknown, handler: string): number | null {
+    // `handler` may embed the MQTT topic (attacker-controlled on shared brokers) — sanitize
+    // once here rather than at every call site.
+    const safeHandler = sanitizeLogMessage(handler);
     if (fromRaw == null) {
-      console.debug(`[Meshtastic MQTT] JSON ${handler} missing "from" field`); // log-filter-ok Meshtastic MQTT logs → App log panel
+      console.debug(`[Meshtastic MQTT] JSON ${safeHandler} missing "from" field`); // log-filter-ok Meshtastic MQTT logs → App log panel
       return null;
     }
     if (typeof fromRaw === 'number') {
       return fromRaw >>> 0;
     }
     if (typeof fromRaw !== 'string') {
-      console.debug(`[Meshtastic MQTT] JSON ${handler} unexpected from type: ${typeof fromRaw}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+      console.debug(
+        `[Meshtastic MQTT] JSON ${safeHandler} unexpected from type: ${typeof fromRaw}`,
+      ); // log-filter-ok Meshtastic MQTT logs → App log panel
       return null;
     }
     const fromStr = fromRaw;
     if (fromStr.startsWith('!')) {
       const nodeId = parseInt(fromStr.slice(1), 16);
       if (isNaN(nodeId)) {
-        console.debug(`[Meshtastic MQTT] JSON ${handler} invalid from hex: ${fromStr}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+        console.debug(
+          `[Meshtastic MQTT] JSON ${safeHandler} invalid from hex: ${sanitizeLogMessage(fromStr)}`,
+        ); // log-filter-ok Meshtastic MQTT logs → App log panel
         return null;
       }
       return nodeId >>> 0;
     }
     const nodeId = parseInt(fromStr, 10);
     if (isNaN(nodeId)) {
-      console.debug(`[Meshtastic MQTT] JSON ${handler} invalid from: ${fromStr}`); // log-filter-ok Meshtastic MQTT logs → App log panel
+      console.debug(
+        `[Meshtastic MQTT] JSON ${safeHandler} invalid from: ${sanitizeLogMessage(fromStr)}`,
+      ); // log-filter-ok Meshtastic MQTT logs → App log panel
       return null;
     }
     return nodeId >>> 0;

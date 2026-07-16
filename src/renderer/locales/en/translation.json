@@ -704,6 +704,10 @@
       "meshtastic": "Reconnect attempts (1–{{max}}) before giving up.",
       "meshcore": "Reconnect attempts (1–20) before giving up."
     },
+    "maxRetriesHelpConnected": {
+      "meshcore": "Reconnect tries before giving up (1–{{max}}). Saved with settings; press Connect again after changing so the main process picks it up.",
+      "meshtastic": "Both protocols allow 1–{{max}}. Saved with settings; disconnect and Connect again so the running session uses the new value."
+    },
     "meshtasticPreset": {
       "officialPlain": "MQTT :1883",
       "liam": "Liam's",
@@ -1136,17 +1140,23 @@
     }
   },
   "contactGroupsModal": {
+    "title": "Contact Groups",
+    "addButton": "Add",
     "failedLoadMembers": "Failed to load members: {{message}}",
     "failedUpdateMember": "Failed to update member: {{message}}",
     "backToGroups": "Back to groups",
     "saveName": "Save name",
     "cancelRename": "Cancel rename",
     "confirmDelete": "Confirm delete",
+    "confirmDeleteButton": "Delete?",
     "cancelDelete": "Cancel delete",
     "newGroupNamePlaceholder": "New group name…",
     "manageMembers": "Manage members",
+    "manageMembersOf": "Manage members of {{name}}",
     "rename": "Rename",
+    "renameGroupNamed": "Rename {{name}}",
     "deleteGroup": "Delete group",
+    "deleteGroupNamed": "Delete {{name}}",
     "noContactsYet": "No contacts yet.",
     "noGroupsYet": "No groups yet. Create one above.",
     "memberCount_one": "{{count}} member",

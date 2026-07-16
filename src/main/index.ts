@@ -2087,7 +2087,8 @@ ipcMain.on('bluetooth-device-cancelled', () => {
 
 // ─── IPC: Unpair Bluetooth device (Linux only — bluetoothctl remove) ──
 // Not used on routine disconnect; only ConnectionPanel manual re-pair flow.
-ipcMain.handle('bluetooth-unpair', async (_event, macAddress: unknown) => {
+ipcMain.handle('bluetooth-unpair', async (event, macAddress: unknown) => {
+  assertIpcSender(event, 'bluetooth-unpair');
   if (typeof macAddress !== 'string') {
     throw new Error('bluetooth-unpair: macAddress must be a string');
   }
@@ -2145,8 +2146,11 @@ ipcMain.handle('bluetooth-unpair', async (_event, macAddress: unknown) => {
 
 // ─── IPC: Start BLE scan (Linux) ─────────────────────────────────────
 const BLUETOOTH_START_SCAN_TIMEOUT_MS = 15_000;
+const BLUETOOTH_STOP_SCAN_TIMEOUT_MS = 5_000;
+const BLUETOOTH_GET_INFO_TIMEOUT_MS = 5_000;
 
-ipcMain.handle('bluetooth-start-scan', async () => {
+ipcMain.handle('bluetooth-start-scan', async (event) => {
+  assertIpcSender(event, 'bluetooth-start-scan');
   console.debug('[IPC] bluetooth-start-scan');
   return new Promise<void>((resolve, reject) => {
     const proc = spawn('bluetoothctl', ['scan', 'on']);
@@ -2186,26 +2190,40 @@ ipcMain.handle('bluetooth-start-scan', async () => {
 });
 
 // ─── IPC: Stop BLE scan (Linux) ──────────────────────────────────────
-ipcMain.handle('bluetooth-stop-scan', async () => {
+ipcMain.handle('bluetooth-stop-scan', async (event) => {
+  assertIpcSender(event, 'bluetooth-stop-scan');
   console.debug('[IPC] bluetooth-stop-scan');
   return new Promise<void>((resolve) => {
+    let settled = false;
+    const finish = (): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(() => {
+      console.warn('[IPC] bluetooth-stop-scan: timed out after 5 s, killing process');
+      proc.kill();
+      finish(); // Don't reject - stop scan failure is not critical
+    }, BLUETOOTH_STOP_SCAN_TIMEOUT_MS);
     const proc = spawn('bluetoothctl', ['scan', 'off']);
     proc.on('close', () => {
       console.debug('[IPC] bluetooth-stop-scan done');
-      resolve();
+      finish();
     });
     proc.on('error', (err) => {
       console.warn(
         '[IPC] bluetooth-stop-scan error:',
         sanitizeLogMessage(err?.message ?? String(err)),
       );
-      resolve(); // Don't reject - stop scan failure is not critical
+      finish(); // Don't reject - stop scan failure is not critical
     });
   });
 });
 
 // ─── IPC: Pair Bluetooth device (Linux) ───────────────────────────────
-ipcMain.handle('bluetooth-pair', async (_event, macAddress: unknown, pin: unknown) => {
+ipcMain.handle('bluetooth-pair', async (event, macAddress: unknown, pin: unknown) => {
+  assertIpcSender(event, 'bluetooth-pair');
   if (typeof macAddress !== 'string') {
     throw new Error('bluetooth-pair: macAddress must be a string');
   }
@@ -2388,7 +2406,8 @@ ipcMain.handle('bluetooth-pair', async (_event, macAddress: unknown, pin: unknow
 });
 
 // ─── IPC: Connect Bluetooth device (Linux) ────────────────────────────
-ipcMain.handle('bluetooth-connect', async (_event, macAddress: unknown) => {
+ipcMain.handle('bluetooth-connect', async (event, macAddress: unknown) => {
+  assertIpcSender(event, 'bluetooth-connect');
   if (typeof macAddress !== 'string') {
     throw new Error('bluetooth-connect: macAddress must be a string');
   }
@@ -2426,7 +2445,8 @@ ipcMain.handle('bluetooth-connect', async (_event, macAddress: unknown) => {
 
 // ─── IPC: Untrust Bluetooth device (Linux) ────────────────────────────
 // This is best-effort - failures are ignored
-ipcMain.handle('bluetooth-untrust', async (_event, macAddress: unknown) => {
+ipcMain.handle('bluetooth-untrust', async (event, macAddress: unknown) => {
+  assertIpcSender(event, 'bluetooth-untrust');
   if (typeof macAddress !== 'string') {
     throw new Error('bluetooth-untrust: macAddress must be a string');
   }
@@ -2465,7 +2485,8 @@ ipcMain.handle('bluetooth-untrust', async (_event, macAddress: unknown) => {
   });
 });
 
-ipcMain.handle('bluetooth-get-info', async (_event, macAddress: unknown) => {
+ipcMain.handle('bluetooth-get-info', async (event, macAddress: unknown) => {
+  assertIpcSender(event, 'bluetooth-get-info');
   if (typeof macAddress !== 'string') {
     throw new Error('bluetooth-get-info: macAddress must be a string');
   }
@@ -2473,6 +2494,18 @@ ipcMain.handle('bluetooth-get-info', async (_event, macAddress: unknown) => {
     throw new Error('bluetooth-get-info: invalid MAC address format');
   }
   return new Promise<string>((resolve) => {
+    let settled = false;
+    const finish = (value: string): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(value);
+    };
+    const timer = setTimeout(() => {
+      console.warn('[IPC] bluetooth-get-info: timed out after 5 s, killing process');
+      proc.kill();
+      finish('bluetooth-get-info: timed out after 5 s');
+    }, BLUETOOTH_GET_INFO_TIMEOUT_MS);
     const proc = spawn('bluetoothctl', ['info', macAddress]);
     let stdout = '';
     let stderr = '';
@@ -2484,11 +2517,11 @@ ipcMain.handle('bluetooth-get-info', async (_event, macAddress: unknown) => {
     });
     proc.on('close', (code) => {
       const output = (stdout.trim() || stderr.trim() || `code ${code}`).slice(-2000);
-      resolve(output);
+      finish(output);
     });
     proc.on('error', (err) => {
       const msg = err?.message ?? String(err);
-      resolve(msg);
+      finish(msg);
     });
   });
 });
@@ -2894,7 +2927,8 @@ ipcMain.handle('mqtt:disconnect', (event, protocol?: MeshProtocol) => {
     throw err;
   }
 });
-ipcMain.handle('mqtt:powerResume', () => {
+ipcMain.handle('mqtt:powerResume', (event) => {
+  assertIpcSender(event, 'mqtt:powerResume');
   try {
     console.debug('[IPC] mqtt:powerResume');
     mqttManager.handlePowerResume();
@@ -2907,7 +2941,8 @@ ipcMain.handle('mqtt:powerResume', () => {
     throw err;
   }
 });
-ipcMain.handle('mqtt:powerSuspend', () => {
+ipcMain.handle('mqtt:powerSuspend', (event) => {
+  assertIpcSender(event, 'mqtt:powerSuspend');
   try {
     console.debug('[IPC] mqtt:powerSuspend');
     mqttManager.handlePowerSuspend();
@@ -2936,9 +2971,12 @@ ipcMain.handle('mqtt:getClientId', (_event, protocol?: MeshProtocol) => {
     throw err;
   }
 });
-ipcMain.handle('mqtt:refreshMeshcoreToken', (_event, serverHost: string) => {
+const MQTT_MESHCORE_TOKEN_MAX_LENGTH = 8192;
+
+ipcMain.handle('mqtt:refreshMeshcoreToken', (event, serverHost: string) => {
+  assertIpcSender(event, 'mqtt:refreshMeshcoreToken');
   try {
-    console.debug('[IPC] mqtt:refreshMeshcoreToken', serverHost);
+    console.debug('[IPC] mqtt:refreshMeshcoreToken', sanitizeLogMessage(serverHost));
     return meshcoreMqttAdapter.getTokenInfo(serverHost);
   } catch (err) {
     console.error(
@@ -2950,8 +2988,18 @@ ipcMain.handle('mqtt:refreshMeshcoreToken', (_event, serverHost: string) => {
 });
 ipcMain.handle(
   'mqtt:updateMeshcoreToken',
-  (_event, { token, expiresAt }: { token: string; expiresAt: number }) => {
+  (event, { token, expiresAt }: { token: string; expiresAt: number }) => {
+    assertIpcSender(event, 'mqtt:updateMeshcoreToken');
     try {
+      if (typeof token !== 'string' || token.length === 0) {
+        throw new Error('mqtt:updateMeshcoreToken: token must be a non-empty string');
+      }
+      if (token.length > MQTT_MESHCORE_TOKEN_MAX_LENGTH) {
+        throw new Error('mqtt:updateMeshcoreToken: token too long');
+      }
+      if (typeof expiresAt !== 'number' || !Number.isFinite(expiresAt)) {
+        throw new Error('mqtt:updateMeshcoreToken: expiresAt must be a finite number');
+      }
       console.debug('[IPC] mqtt:updateMeshcoreToken', expiresAt);
       meshcoreMqttAdapter.updateToken(token, expiresAt);
     } catch (err) {
@@ -2963,7 +3011,8 @@ ipcMain.handle(
     }
   },
 );
-ipcMain.handle('mqtt:updateChannelKeys', (_event, args) => {
+ipcMain.handle('mqtt:updateChannelKeys', (event, args) => {
+  assertIpcSender(event, 'mqtt:updateChannelKeys');
   try {
     console.debug('[IPC] mqtt:updateChannelKeys');
     validateMqttUpdateChannelKeysArgs(args);
@@ -2977,7 +3026,8 @@ ipcMain.handle('mqtt:updateChannelKeys', (_event, args) => {
     throw err;
   }
 });
-ipcMain.handle('mqtt:updateTopicPrefix', (_event, args) => {
+ipcMain.handle('mqtt:updateTopicPrefix', (event, args) => {
+  assertIpcSender(event, 'mqtt:updateTopicPrefix');
   try {
     console.debug('[IPC] mqtt:updateTopicPrefix');
     validateMqttUpdateTopicPrefixArgs(args);
@@ -3131,7 +3181,8 @@ ipcMain.handle('mqtt:getCachedNodes', () => {
     throw err;
   }
 });
-ipcMain.handle('mqtt:publishNodeInfo', (_event, args) => {
+ipcMain.handle('mqtt:publishNodeInfo', (event, args) => {
+  assertIpcSender(event, 'mqtt:publishNodeInfo');
   try {
     const a = args as {
       from: number;
@@ -3174,7 +3225,8 @@ ipcMain.handle('mqtt:publishNodeInfo', (_event, args) => {
     throw err;
   }
 });
-ipcMain.handle('mqtt:publishPosition', (_event, args) => {
+ipcMain.handle('mqtt:publishPosition', (event, args) => {
+  assertIpcSender(event, 'mqtt:publishPosition');
   try {
     const a = args as {
       from: number;
@@ -3218,7 +3270,8 @@ ipcMain.handle('mqtt:publishPosition', (_event, args) => {
   }
 });
 
-ipcMain.handle('mqtt:publishWaypoint', (_event, args) => {
+ipcMain.handle('mqtt:publishWaypoint', (event, args) => {
+  assertIpcSender(event, 'mqtt:publishWaypoint');
   try {
     console.debug('[IPC] mqtt:publishWaypoint');
     validateMqttPublishWaypointArgs(args);
@@ -3339,7 +3392,8 @@ ipcMain.handle('app:getLoginItem', () => {
   }
 });
 
-ipcMain.handle('app:setLoginItem', (_event, openAtLogin: unknown) => {
+ipcMain.handle('app:setLoginItem', (event, openAtLogin: unknown) => {
+  assertIpcSender(event, 'app:setLoginItem');
   if (typeof openAtLogin !== 'boolean')
     throw new Error('app:setLoginItem: openAtLogin must be a boolean');
   try {
@@ -3764,7 +3818,8 @@ ipcMain.handle('db:saveNodePath', (event, nodeId: number, lastHeard: number, buf
   }
 });
 
-ipcMain.handle('db:setNodeFavorited', (_event, nodeId: number, favorited: boolean) => {
+ipcMain.handle('db:setNodeFavorited', (event, nodeId: number, favorited: boolean) => {
+  if (!validateIpcSender(event)) throw new Error('db:setNodeFavorited: unauthorized sender');
   try {
     const id = safeNonNegativeInt(nodeId);
     if (typeof favorited !== 'boolean')
@@ -3792,7 +3847,8 @@ ipcMain.handle('db:getNodeNote', (_event, nodeId: number) => {
   }
 });
 
-ipcMain.handle('db:setNodeNote', (_event, nodeId: number, note: string) => {
+ipcMain.handle('db:setNodeNote', (event, nodeId: number, note: string) => {
+  if (!validateIpcSender(event)) throw new Error('db:setNodeNote: unauthorized sender');
   try {
     const id = safeNonNegativeInt(nodeId);
     if (typeof note !== 'string') throw new Error('db:setNodeNote: note must be a string');
@@ -3847,7 +3903,8 @@ ipcMain.handle('db:clearNodes', (event) => {
   }
 });
 
-ipcMain.handle('db:clearNodePositions', () => {
+ipcMain.handle('db:clearNodePositions', (event) => {
+  if (!validateIpcSender(event)) throw new Error('db:clearNodePositions: unauthorized sender');
   try {
     const db = getDbForIpc('db:clearNodePositions');
     if (!db) return { changes: 0 };
@@ -3925,7 +3982,8 @@ ipcMain.handle('db:deleteNodesByAge', (event, days: number) => {
   }
 });
 
-ipcMain.handle('db:pruneNodesByCount', (_event, maxCount: number) => {
+ipcMain.handle('db:pruneNodesByCount', (event, maxCount: number) => {
+  if (!validateIpcSender(event)) throw new Error('db:pruneNodesByCount: unauthorized sender');
   try {
     const db = getDbForIpc('db:pruneNodesByCount');
     if (!db) return 0;
@@ -3963,7 +4021,8 @@ ipcMain.handle('db:pruneNodesByCount', (_event, maxCount: number) => {
   }
 });
 
-ipcMain.handle('db:pruneMessagesByCount', (_event, maxCount: number) => {
+ipcMain.handle('db:pruneMessagesByCount', (event, maxCount: number) => {
+  if (!validateIpcSender(event)) throw new Error('db:pruneMessagesByCount: unauthorized sender');
   try {
     const db = getDbForIpc('db:pruneMessagesByCount');
     if (!db) return 0;
@@ -3986,7 +4045,9 @@ ipcMain.handle('db:pruneMessagesByCount', (_event, maxCount: number) => {
   }
 });
 
-ipcMain.handle('db:pruneMeshcoreMessagesByCount', (_event, maxCount: number) => {
+ipcMain.handle('db:pruneMeshcoreMessagesByCount', (event, maxCount: number) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:pruneMeshcoreMessagesByCount: unauthorized sender');
   try {
     const db = getDbForIpc('db:pruneMeshcoreMessagesByCount');
     if (!db) return 0;
@@ -4079,7 +4140,8 @@ ipcMain.handle('db:deleteNodesBySource', (event, source: string) => {
   }
 });
 
-ipcMain.handle('db:migrateRfStubNodes', () => {
+ipcMain.handle('db:migrateRfStubNodes', (event) => {
+  if (!validateIpcSender(event)) throw new Error('db:migrateRfStubNodes: unauthorized sender');
   try {
     if (!getDbForIpc('db:migrateRfStubNodes')) return 0;
     const changes = migrateRfStubNodes();
@@ -4108,7 +4170,8 @@ ipcMain.handle('db:deleteNodesWithoutLongname', (event) => {
   }
 });
 
-ipcMain.handle('db:prunePositionHistory', (_event, days: number) => {
+ipcMain.handle('db:prunePositionHistory', (event, days: number) => {
+  if (!validateIpcSender(event)) throw new Error('db:prunePositionHistory: unauthorized sender');
   try {
     if (!getDbForIpc('db:prunePositionHistory')) return 0;
     const safeDays = typeof days === 'number' && days > 0 ? Math.floor(days) : 30;
@@ -4124,7 +4187,9 @@ ipcMain.handle('db:prunePositionHistory', (_event, days: number) => {
   }
 });
 
-ipcMain.handle('db:prunePositionHistoryPerNode', (_event, maxPerNode: number) => {
+ipcMain.handle('db:prunePositionHistoryPerNode', (event, maxPerNode: number) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:prunePositionHistoryPerNode: unauthorized sender');
   try {
     if (!getDbForIpc('db:prunePositionHistoryPerNode')) return 0;
     const cap = typeof maxPerNode === 'number' && maxPerNode > 0 ? Math.floor(maxPerNode) : 2000;
@@ -4140,7 +4205,9 @@ ipcMain.handle('db:prunePositionHistoryPerNode', (_event, maxPerNode: number) =>
   }
 });
 
-ipcMain.handle('db:deleteMeshcoreContactsNeverAdvertised', () => {
+ipcMain.handle('db:deleteMeshcoreContactsNeverAdvertised', (event) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:deleteMeshcoreContactsNeverAdvertised: unauthorized sender');
   try {
     if (!getDbForIpc('db:deleteMeshcoreContactsNeverAdvertised')) return 0;
     const changes = deleteMeshcoreContactsNeverAdvertised();
@@ -4153,7 +4220,9 @@ ipcMain.handle('db:deleteMeshcoreContactsNeverAdvertised', () => {
   }
 });
 
-ipcMain.handle('db:deleteMeshcoreContactsByAge', (_event, days: number) => {
+ipcMain.handle('db:deleteMeshcoreContactsByAge', (event, days: number) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:deleteMeshcoreContactsByAge: unauthorized sender');
   try {
     if (!getDbForIpc('db:deleteMeshcoreContactsByAge')) return 0;
     const safeDays = typeof days === 'number' && days > 0 ? Math.floor(days) : 30;
@@ -4169,7 +4238,9 @@ ipcMain.handle('db:deleteMeshcoreContactsByAge', (_event, days: number) => {
   }
 });
 
-ipcMain.handle('db:pruneMeshcoreContactsByCount', (_event, maxCount: number) => {
+ipcMain.handle('db:pruneMeshcoreContactsByCount', (event, maxCount: number) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:pruneMeshcoreContactsByCount: unauthorized sender');
   try {
     if (!getDbForIpc('db:pruneMeshcoreContactsByCount')) return 0;
     const safeMax = typeof maxCount === 'number' && maxCount > 0 ? Math.floor(maxCount) : 5000;
@@ -4193,7 +4264,8 @@ function capStatusString(label: string, value: string | undefined | null): strin
 // ─── IPC: Update message delivery status ────────────────────────────
 ipcMain.handle(
   'db:updateMessageStatus',
-  (_event, packetId: number, status: string, error?: string, mqttStatus?: string) => {
+  (event, packetId: number, status: string, error?: string, mqttStatus?: string) => {
+    if (!validateIpcSender(event)) throw new Error('db:updateMessageStatus: unauthorized sender');
     try {
       const pid = safeNonNegativeInt(packetId);
       if (typeof status !== 'string')
@@ -4222,32 +4294,32 @@ ipcMain.handle(
 );
 
 // ─── IPC: Upgrade received_via to 'both' when packet arrives on second transport ─
-ipcMain.handle(
-  'db:updateMessageReceivedVia',
-  (_event, packetId: number, rxHops?: number | null) => {
-    try {
-      const pid = safeNonNegativeInt(packetId);
-      const db = getDbForIpc('db:updateMessageReceivedVia');
-      if (!db) return { changes: 0 };
-      const hopBind =
-        rxHops != null && typeof rxHops === 'number' && Number.isFinite(rxHops)
-          ? Math.trunc(rxHops)
-          : null;
-      return db
-        .prepareOnce(
-          "UPDATE messages SET received_via = 'both', rx_hops = COALESCE(?, rx_hops) WHERE packet_id = ? AND received_via != 'both'",
-        )
-        .run(hopBind, pid);
-    } catch (err) {
-      finishDbIpcHandler('db:updateMessageReceivedVia', err);
-    }
-  },
-);
+ipcMain.handle('db:updateMessageReceivedVia', (event, packetId: number, rxHops?: number | null) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:updateMessageReceivedVia: unauthorized sender');
+  try {
+    const pid = safeNonNegativeInt(packetId);
+    const db = getDbForIpc('db:updateMessageReceivedVia');
+    if (!db) return { changes: 0 };
+    const hopBind =
+      rxHops != null && typeof rxHops === 'number' && Number.isFinite(rxHops)
+        ? Math.trunc(rxHops)
+        : null;
+    return db
+      .prepareOnce(
+        "UPDATE messages SET received_via = 'both', rx_hops = COALESCE(?, rx_hops) WHERE packet_id = ? AND received_via != 'both'",
+      )
+      .run(hopBind, pid);
+  } catch (err) {
+    finishDbIpcHandler('db:updateMessageReceivedVia', err);
+  }
+});
 
 /** Replace optimistic temp `packet_id` with the real mesh id from `sendText()` (tapbacks key on `reply_id`). */
 ipcMain.handle(
   'db:updateMessagePacketId',
-  (_event, oldPacketId: number, newPacketId: number, senderId?: number) => {
+  (event, oldPacketId: number, newPacketId: number, senderId?: number) => {
+    if (!validateIpcSender(event)) throw new Error('db:updateMessagePacketId: unauthorized sender');
     const oldPid = safeNonNegativeInt(oldPacketId);
     const newPid = safeNonNegativeInt(newPacketId);
     if (oldPid === newPid) return;
@@ -4282,7 +4354,8 @@ ipcMain.handle(
 );
 
 // ─── IPC: Export database ───────────────────────────────────────────
-ipcMain.handle('db:export', async () => {
+ipcMain.handle('db:export', async (event) => {
+  if (!validateIpcSender(event)) throw new Error('db:export: unauthorized sender');
   try {
     if (!getDbForIpc('db:export')) return null;
     if (!mainWindow) return null;
@@ -4302,7 +4375,8 @@ ipcMain.handle('db:export', async () => {
 });
 
 // ─── IPC: Import / merge database ───────────────────────────────────
-ipcMain.handle('db:import', async () => {
+ipcMain.handle('db:import', async (event) => {
+  if (!validateIpcSender(event)) throw new Error('db:import: unauthorized sender');
   try {
     if (!getDbForIpc('db:import')) return null;
     if (!mainWindow) return null;
@@ -4384,7 +4458,8 @@ ipcMain.handle('log:clear', (event) => {
   }
 });
 
-ipcMain.handle('log:device-connection', (_event, detail: unknown) => {
+ipcMain.handle('log:device-connection', (event, detail: unknown) => {
+  if (!validateIpcSender(event)) return;
   if (typeof detail !== 'string' || detail.length > 8192) return;
   logDeviceConnection(detail);
 });
@@ -4786,7 +4861,8 @@ ipcMain.handle('db:getMeshcoreContacts', () => {
   }
 });
 
-ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
+ipcMain.handle('db:saveMeshcoreMessage', (event, message) => {
+  if (!validateIpcSender(event)) throw new Error('db:saveMeshcoreMessage: unauthorized sender');
   try {
     validateSaveMeshcoreMessage(message);
     const m = message as Record<string, unknown>;
@@ -4876,7 +4952,8 @@ ipcMain.handle('db:saveMeshcoreMessage', (_event, message) => {
   }
 });
 
-ipcMain.handle('db:saveMeshcoreContact', (_event, contact) => {
+ipcMain.handle('db:saveMeshcoreContact', (event, contact) => {
+  if (!validateIpcSender(event)) throw new Error('db:saveMeshcoreContact: unauthorized sender');
   try {
     if (!getDbForIpc('db:saveMeshcoreContact')) return { changes: 0 };
     validateSaveMeshcoreContact(contact);
@@ -4886,7 +4963,9 @@ ipcMain.handle('db:saveMeshcoreContact', (_event, contact) => {
   }
 });
 
-ipcMain.handle('db:saveMeshcoreContactsBatch', (_event, contacts: unknown) => {
+ipcMain.handle('db:saveMeshcoreContactsBatch', (event, contacts: unknown) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:saveMeshcoreContactsBatch: unauthorized sender');
   try {
     if (!getDbForIpc('db:saveMeshcoreContactsBatch')) return { changes: 0 };
     if (!Array.isArray(contacts)) {
@@ -4908,7 +4987,9 @@ ipcMain.handle('db:saveMeshcoreContactsBatch', (_event, contacts: unknown) => {
 
 ipcMain.handle(
   'db:updateMeshcoreContactRfTransport',
-  (_event, nodeId: number, transportScope: unknown, transportReturn: unknown) => {
+  (event, nodeId: number, transportScope: unknown, transportReturn: unknown) => {
+    if (!validateIpcSender(event))
+      throw new Error('db:updateMeshcoreContactRfTransport: unauthorized sender');
     try {
       const db = getDbForIpc('db:updateMeshcoreContactRfTransport');
       if (!db) return { changes: 0 };
@@ -4936,7 +5017,9 @@ ipcMain.handle(
 
 ipcMain.handle(
   'db:updateMeshcoreContactNickname',
-  (_event, nodeId: number, nickname: string | null) => {
+  (event, nodeId: number, nickname: string | null) => {
+    if (!validateIpcSender(event))
+      throw new Error('db:updateMeshcoreContactNickname: unauthorized sender');
     try {
       const db = getDbForIpc('db:updateMeshcoreContactNickname');
       if (!db) return { changes: 0 };
@@ -4955,7 +5038,9 @@ ipcMain.handle(
 
 ipcMain.handle(
   'db:updateMeshcoreContactFavorited',
-  (_event, nodeId: number, favorited: boolean, publicKeyHex?: string | null) => {
+  (event, nodeId: number, favorited: boolean, publicKeyHex?: string | null) => {
+    if (!validateIpcSender(event))
+      throw new Error('db:updateMeshcoreContactFavorited: unauthorized sender');
     try {
       const id = safeNonNegativeInt(nodeId);
       if (typeof favorited !== 'boolean') {
@@ -5014,7 +5099,9 @@ ipcMain.handle('meshcore:openJsonFile', async () => {
 
 ipcMain.handle(
   'db:updateMeshcoreMessageSender',
-  (_event, messageId: number, senderId: number, senderName: string) => {
+  (event, messageId: number, senderId: number, senderName: string) => {
+    if (!validateIpcSender(event))
+      throw new Error('db:updateMeshcoreMessageSender: unauthorized sender');
     try {
       const id = messageId;
       const sid = senderId;
@@ -5039,7 +5126,9 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle('db:updateMeshcoreMessageStatus', (_event, packetId: number, status: string) => {
+ipcMain.handle('db:updateMeshcoreMessageStatus', (event, packetId: number, status: string) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:updateMeshcoreMessageStatus: unauthorized sender');
   try {
     const db = getDbForIpc('db:updateMeshcoreMessageStatus');
     if (!db) return { changes: 0 };
@@ -5058,13 +5147,15 @@ ipcMain.handle('db:updateMeshcoreMessageStatus', (_event, packetId: number, stat
 ipcMain.handle(
   'db:updateMeshcoreMessageStatusByKey',
   (
-    _event,
+    event,
     senderId: number,
     timestamp: number,
     channelIdx: number,
     payload: string,
     status: string,
   ) => {
+    if (!validateIpcSender(event))
+      throw new Error('db:updateMeshcoreMessageStatusByKey: unauthorized sender');
     try {
       const db = getDbForIpc('db:updateMeshcoreMessageStatusByKey');
       if (!db) return { changes: 0 };
@@ -5095,7 +5186,8 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle('db:deleteMeshcoreContact', (_event, nodeId: number) => {
+ipcMain.handle('db:deleteMeshcoreContact', (event, nodeId: number) => {
+  if (!validateIpcSender(event)) throw new Error('db:deleteMeshcoreContact: unauthorized sender');
   try {
     const db = getDbForIpc('db:deleteMeshcoreContact');
     if (!db) return { changes: 0 };
@@ -5179,7 +5271,9 @@ ipcMain.handle('db:clearMeshcoreRepeaters', (event) => {
 });
 
 // Marks all contacts as not on radio (on_radio = 0).
-ipcMain.handle('db:markAllMeshcoreContactsOffRadio', () => {
+ipcMain.handle('db:markAllMeshcoreContactsOffRadio', (event) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:markAllMeshcoreContactsOffRadio: unauthorized sender');
   try {
     const db = getDbForIpc('db:markAllMeshcoreContactsOffRadio');
     if (!db) return { changes: 0 };
@@ -5204,7 +5298,9 @@ ipcMain.handle('db:getMeshcoreContactCount', () => {
 });
 
 // Deletes contacts without pubkey, excluding chat stub nodes. Returns { deleted, excludedStubCount }.
-ipcMain.handle('db:deleteMeshcoreContactsWithoutPubkey', () => {
+ipcMain.handle('db:deleteMeshcoreContactsWithoutPubkey', (event) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:deleteMeshcoreContactsWithoutPubkey: unauthorized sender');
   try {
     const db = getDbForIpc('db:deleteMeshcoreContactsWithoutPubkey');
     if (!db) return { changes: 0 };
@@ -5232,7 +5328,9 @@ ipcMain.handle('db:deleteMeshcoreContactsWithoutPubkey', () => {
 });
 
 // Offloads all contacts with pubkey from radio (sets on_radio = 0). Returns count offloaded.
-ipcMain.handle('db:offloadAllMeshcoreContacts', () => {
+ipcMain.handle('db:offloadAllMeshcoreContacts', (event) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:offloadAllMeshcoreContacts: unauthorized sender');
   try {
     const db = getDbForIpc('db:offloadAllMeshcoreContacts');
     if (!db) return { changes: 0 };
@@ -5273,7 +5371,8 @@ ipcMain.handle('db:getContactGroups', (_event, selfNodeId: number) => {
   }
 });
 
-ipcMain.handle('db:createContactGroup', (_event, selfNodeId: number, name: string) => {
+ipcMain.handle('db:createContactGroup', (event, selfNodeId: number, name: string) => {
+  if (!validateIpcSender(event)) throw new Error('db:createContactGroup: unauthorized sender');
   try {
     if (!getDbForIpc('db:createContactGroup')) return null;
     const id = safeNonNegativeInt(selfNodeId);
@@ -5286,7 +5385,8 @@ ipcMain.handle('db:createContactGroup', (_event, selfNodeId: number, name: strin
   }
 });
 
-ipcMain.handle('db:updateContactGroup', (_event, groupId: number, name: string) => {
+ipcMain.handle('db:updateContactGroup', (event, groupId: number, name: string) => {
+  if (!validateIpcSender(event)) throw new Error('db:updateContactGroup: unauthorized sender');
   try {
     if (!getDbForIpc('db:updateContactGroup')) return;
     const id = safeNonNegativeInt(groupId);
@@ -5299,7 +5399,8 @@ ipcMain.handle('db:updateContactGroup', (_event, groupId: number, name: string) 
   }
 });
 
-ipcMain.handle('db:deleteContactGroup', (_event, groupId: number) => {
+ipcMain.handle('db:deleteContactGroup', (event, groupId: number) => {
+  if (!validateIpcSender(event)) throw new Error('db:deleteContactGroup: unauthorized sender');
   try {
     if (!getDbForIpc('db:deleteContactGroup')) return;
     deleteContactGroup(safeNonNegativeInt(groupId));
@@ -5308,7 +5409,8 @@ ipcMain.handle('db:deleteContactGroup', (_event, groupId: number) => {
   }
 });
 
-ipcMain.handle('db:addContactToGroup', (_event, groupId: number, contactNodeId: number) => {
+ipcMain.handle('db:addContactToGroup', (event, groupId: number, contactNodeId: number) => {
+  if (!validateIpcSender(event)) throw new Error('db:addContactToGroup: unauthorized sender');
   try {
     if (!getDbForIpc('db:addContactToGroup')) return;
     addContactToGroup(safeNonNegativeInt(groupId), safeNonNegativeInt(contactNodeId));
@@ -5317,7 +5419,8 @@ ipcMain.handle('db:addContactToGroup', (_event, groupId: number, contactNodeId: 
   }
 });
 
-ipcMain.handle('db:removeContactFromGroup', (_event, groupId: number, contactNodeId: number) => {
+ipcMain.handle('db:removeContactFromGroup', (event, groupId: number, contactNodeId: number) => {
+  if (!validateIpcSender(event)) throw new Error('db:removeContactFromGroup: unauthorized sender');
   try {
     if (!getDbForIpc('db:removeContactFromGroup')) return;
     removeContactFromGroup(safeNonNegativeInt(groupId), safeNonNegativeInt(contactNodeId));
@@ -5338,13 +5441,15 @@ ipcMain.handle('db:getContactGroupMembers', (_event, groupId: number) => {
 ipcMain.handle(
   'db:updateMeshcoreContactAdvert',
   (
-    _e,
+    event,
     nodeId: number,
     lastAdvert: number | null,
     advLat: number | null,
     advLon: number | null,
     advName?: string | null,
   ) => {
+    if (!validateIpcSender(event))
+      throw new Error('db:updateMeshcoreContactAdvert: unauthorized sender');
     try {
       const safeNodeId = safeNonNegativeInt(nodeId);
       if (advName != null && (typeof advName !== 'string' || advName.length > MAX_NODE_STRING)) {
@@ -5373,7 +5478,9 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle('db:updateMeshcoreContactType', (_e, nodeId: number, contactType: number) => {
+ipcMain.handle('db:updateMeshcoreContactType', (event, nodeId: number, contactType: number) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:updateMeshcoreContactType: unauthorized sender');
   try {
     const db = getDbForIpc('db:updateMeshcoreContactType');
     if (!db) return { changes: 0 };
@@ -5395,13 +5502,15 @@ ipcMain.handle('db:updateMeshcoreContactType', (_e, nodeId: number, contactType:
 ipcMain.handle(
   'db:updateMeshcoreContactLastRf',
   (
-    _e,
+    event,
     nodeId: number,
     lastSnr: number,
     lastRssi: number,
     hops?: number | null,
     timestamp?: number | null,
   ) => {
+    if (!validateIpcSender(event))
+      throw new Error('db:updateMeshcoreContactLastRf: unauthorized sender');
     try {
       const db = getDbForIpc('db:updateMeshcoreContactLastRf');
       if (!db) return { changes: 0 };
@@ -5444,7 +5553,8 @@ ipcMain.handle(
 // ─── IPC: Position history ────────────────────────────────────────
 ipcMain.handle(
   'db:savePositionHistory',
-  (_event, nodeId: number, lat: number, lon: number, recordedAt: number, source: string) => {
+  (event, nodeId: number, lat: number, lon: number, recordedAt: number, source: string) => {
+    if (!validateIpcSender(event)) throw new Error('db:savePositionHistory: unauthorized sender');
     try {
       const db = getDbForIpc('db:savePositionHistory');
       if (!db) return { changes: 0 };
@@ -5483,7 +5593,8 @@ ipcMain.handle('db:getPositionHistory', (_event, sinceMs: number) => {
   }
 });
 
-ipcMain.handle('db:clearPositionHistory', () => {
+ipcMain.handle('db:clearPositionHistory', (event) => {
+  if (!validateIpcSender(event)) throw new Error('db:clearPositionHistory: unauthorized sender');
   try {
     const db = getDbForIpc('db:clearPositionHistory');
     if (!db) return { changes: 0 };
@@ -5498,13 +5609,15 @@ ipcMain.handle('db:clearPositionHistory', () => {
 ipcMain.handle(
   'db:saveMeshcoreHopHistory',
   (
-    _event,
+    event,
     nodeId: number,
     timestamp: number,
     hops: number | null,
     snr: number | null,
     rssi: number | null,
   ) => {
+    if (!validateIpcSender(event))
+      throw new Error('db:saveMeshcoreHopHistory: unauthorized sender');
     try {
       if (!getDbForIpc('db:saveMeshcoreHopHistory')) return false;
       saveMeshcoreHopHistory(nodeId, timestamp, hops, snr, rssi);
@@ -5536,7 +5649,7 @@ ipcMain.handle('db:getAllMeshcoreHopHistory', () => {
 ipcMain.handle(
   'db:saveMeshcoreTraceHistory',
   (
-    _event,
+    event,
     nodeId: number,
     timestamp: number,
     pathLen: number | null,
@@ -5544,6 +5657,8 @@ ipcMain.handle(
     lastSnr: number | null,
     tag: number,
   ) => {
+    if (!validateIpcSender(event))
+      throw new Error('db:saveMeshcoreTraceHistory: unauthorized sender');
     try {
       if (!getDbForIpc('db:saveMeshcoreTraceHistory')) return false;
       saveMeshcoreTraceHistory(nodeId, timestamp, pathLen, pathSnrs, lastSnr, tag);
@@ -5563,7 +5678,9 @@ ipcMain.handle('db:getMeshcoreTraceHistory', (_event, nodeId: number) => {
   }
 });
 
-ipcMain.handle('db:pruneMeshcorePathHistory', (_event, nodeId: number) => {
+ipcMain.handle('db:pruneMeshcorePathHistory', (event, nodeId: number) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:pruneMeshcorePathHistory: unauthorized sender');
   try {
     if (!getDbForIpc('db:pruneMeshcorePathHistory')) return false;
     pruneMeshcorePathHistory(nodeId);
@@ -5576,7 +5693,7 @@ ipcMain.handle('db:pruneMeshcorePathHistory', (_event, nodeId: number) => {
 ipcMain.handle(
   'db:upsertMeshcorePathHistory',
   (
-    _event,
+    event,
     nodeId: number,
     pathHash: string,
     hopCount: number,
@@ -5584,6 +5701,8 @@ ipcMain.handle(
     wasFloodDiscovery: boolean,
     routeWeight: number,
   ) => {
+    if (!validateIpcSender(event))
+      throw new Error('db:upsertMeshcorePathHistory: unauthorized sender');
     try {
       if (!getDbForIpc('db:upsertMeshcorePathHistory')) return false;
       upsertMeshcorePathHistory(
@@ -5603,7 +5722,9 @@ ipcMain.handle(
 
 ipcMain.handle(
   'db:recordMeshcorePathOutcome',
-  (_event, nodeId: number, pathHash: string, success: boolean, tripTimeMs?: number) => {
+  (event, nodeId: number, pathHash: string, success: boolean, tripTimeMs?: number) => {
+    if (!validateIpcSender(event))
+      throw new Error('db:recordMeshcorePathOutcome: unauthorized sender');
     try {
       if (!getDbForIpc('db:recordMeshcorePathOutcome')) return false;
       recordMeshcorePathOutcome(nodeId, pathHash, success, tripTimeMs);
@@ -5632,7 +5753,9 @@ ipcMain.handle('db:getMeshcorePathHistory', (_event, nodeId: number) => {
   }
 });
 
-ipcMain.handle('db:deleteMeshcorePathHistoryForNode', (_event, nodeId: number) => {
+ipcMain.handle('db:deleteMeshcorePathHistoryForNode', (event, nodeId: number) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:deleteMeshcorePathHistoryForNode: unauthorized sender');
   try {
     if (!getDbForIpc('db:deleteMeshcorePathHistoryForNode')) return false;
     deleteMeshcorePathHistoryForNode(nodeId);
@@ -5642,7 +5765,9 @@ ipcMain.handle('db:deleteMeshcorePathHistoryForNode', (_event, nodeId: number) =
   }
 });
 
-ipcMain.handle('db:deleteAllMeshcorePathHistory', () => {
+ipcMain.handle('db:deleteAllMeshcorePathHistory', (event) => {
+  if (!validateIpcSender(event))
+    throw new Error('db:deleteAllMeshcorePathHistory: unauthorized sender');
   try {
     if (!getDbForIpc('db:deleteAllMeshcorePathHistory')) return false;
     deleteAllMeshcorePathHistory();
@@ -5876,6 +6001,53 @@ let httpDevice: {
 
 const HTTP_FETCH_INTERVAL_MS = 3000;
 const HTTP_FETCH_TIMEOUT_MS = 10_000;
+/** Meshtastic protobuf frames over HTTP are small (<= a few KB); a well-behaved
+ * radio never approaches this. Caps main-process memory against a misbehaving
+ * or malicious HTTP peer streaming an unbounded fromradio response body. */
+const HTTP_FROMRADIO_MAX_RESPONSE_BYTES = 1 * 1024 * 1024;
+
+/** Reads a fetch Response body up to `maxBytes`; throws if the stream exceeds
+ * the cap instead of silently truncating (a truncated protobuf frame would
+ * corrupt downstream parsing). Falls back to `arrayBuffer()` when the
+ * environment lacks a streamable body (defense-in-depth, not expected in Electron/Node). */
+class ResponseSizeCapExceededError extends Error {}
+
+async function readBoundedArrayBuffer(response: Response, maxBytes: number): Promise<ArrayBuffer> {
+  const reader = response.body?.getReader();
+  if (!reader) {
+    const buf = await response.arrayBuffer();
+    if (buf.byteLength > maxBytes) {
+      throw new ResponseSizeCapExceededError(`response body exceeded ${maxBytes} byte cap`);
+    }
+    return buf;
+  }
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done || !value) break;
+      total += value.length;
+      if (total > maxBytes) {
+        throw new ResponseSizeCapExceededError(`response body exceeded ${maxBytes} byte cap`);
+      }
+      chunks.push(value);
+    }
+  } finally {
+    try {
+      await reader.cancel();
+    } catch {
+      // catch-no-log-ok: stream may already be closed/aborted by this point
+    }
+  }
+  const merged = new Uint8Array(total);
+  let pos = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, pos);
+    pos += chunk.length;
+  }
+  return merged.buffer;
+}
 const MESHCORE_TCP_CONNECT_TIMEOUT_MS = 20_000;
 const MESHTASTIC_TCP_CONNECT_TIMEOUT_MS = 20_000;
 /** Max Meshtastic TCP toRadio write payload (aligned with meshcore:tcp-write cap). */
@@ -5955,7 +6127,7 @@ ipcMain.handle('http:connect', async (event, host: unknown, tls: unknown) => {
             },
             signal: AbortSignal.timeout(HTTP_FETCH_TIMEOUT_MS),
           });
-          readBuffer = await response.arrayBuffer();
+          readBuffer = await readBoundedArrayBuffer(response, HTTP_FROMRADIO_MAX_RESPONSE_BYTES);
           if (readBuffer.byteLength > 0) {
             const data = new Uint8Array(readBuffer);
             mainWindow?.webContents.send('http:data', data);
@@ -5966,6 +6138,16 @@ ipcMain.handle('http:connect', async (event, host: unknown, tls: unknown) => {
           '[IPC] http:connect read error:',
           sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
         );
+        // Fail closed only for an oversized/garbled fromradio body — the peer is
+        // misbehaving and a truncated protobuf frame would corrupt downstream
+        // parsing. Transient network/timeout errors keep retrying as before.
+        if (err instanceof ResponseSizeCapExceededError) {
+          console.error('[IPC] http:connect: fromradio response exceeded size cap, disconnecting');
+          if (httpDevice) {
+            clearInterval(httpDevice.intervalId);
+            httpDevice = null;
+          }
+        }
       } finally {
         if (httpDevice) httpDevice.fetchInFlight = false;
       }

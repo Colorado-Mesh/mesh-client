@@ -744,7 +744,7 @@
     "stageCheckingPairing": "Verificando o emparelhamento Bluetooth…",
     "stageEnterPinLinux": "Digite o PIN mostrado no seu dispositivo (emparelhe primeiro com o Linux)",
     "stageReconnecting": "Reconectando ao último dispositivo Bluetooth…",
-    "pinPlaceholder": "ALFINETE",
+    "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",
       "serial": {
@@ -1133,6 +1133,10 @@
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
+    },
+    "maxRetriesHelpConnected": {
+      "meshcore": "Reconecte as tentativas antes de desistir (1–{{max}}). Salvo com as configurações; pressione Conectar novamente depois de alterar para que o processo principal o pegue.",
+      "meshtastic": "Ambos os protocolos permitem 1–{{max}}. Salvo com configurações; desconecte e conecte novamente para que a sessão em execução use o novo valor."
     }
   },
   "contactGroupsModal": {
@@ -1150,7 +1154,13 @@
     "noContactsYet": "Nenhum contato ainda.",
     "noGroupsYet": "Ainda não há grupos. Crie um acima.",
     "memberCount_one": "{{count}} membro",
-    "memberCount_other": "{{count}} membros"
+    "memberCount_other": "{{count}} membros",
+    "title": "Grupos de contato",
+    "addButton": "Adicionar",
+    "confirmDeleteButton": "Excluir?",
+    "manageMembersOf": "Gerenciar membros de {{name}}",
+    "renameGroupNamed": "Renomear {{name}}",
+    "deleteGroupNamed": "Excluir {{name}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Remova as linhas de roteamento com mais de {{hours}} horas (1–168)",
@@ -2418,8 +2428,8 @@
     "errorsLabel": "Erros",
     "dupsDirectFloodLabel": "Dups (direto / inundação)",
     "radioStatsLocalHeading": "Estatísticas de Rádio (Local)",
-    "txAirTimeLabel": "TX Air Time",
-    "rxAirTimeLabel": "RX Air Time",
+    "txAirTimeLabel": "Tempo no ar de TX",
+    "rxAirTimeLabel": "Tempo no ar de RX",
     "requestPosition": "📍 Solicitar posição",
     "traceRoute": "🛤 Traçar rota",
     "tracingEllipsis": "Traçado",
@@ -2688,8 +2698,8 @@
     "unavailable": "A API Nomad Network não está disponível. Reconstrua o sidecar Reticulum e reinicie a stack.",
     "selectNode": "Selecione um nó da lista para navegar em suas páginas.",
     "lastSeen": "Ouvido pela última vez {{time}}",
-    "hopsAway_one": "{{count}} pule para longe",
-    "hopsAway_other": "{{count}} pula para longe",
+    "hopsAway_one": "{{count}} salto de distância",
+    "hopsAway_other": "{{count}} saltos de distância",
     "openNode": "Navegar {{name}}",
     "pagePath": "Caminho da página",
     "homePage": "Página inicial",

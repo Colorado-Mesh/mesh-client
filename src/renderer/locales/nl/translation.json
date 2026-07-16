@@ -1133,6 +1133,10 @@
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
+    },
+    "maxRetriesHelpConnected": {
+      "meshcore": "Probeer het opnieuw voordat je het opgeeft (1–{{max}}). Opgeslagen met instellingen; druk opnieuw op Verbinden na het wijzigen, zodat het hoofdproces het oppikt.",
+      "meshtastic": "Beide protocollen staan 1–{{max}} toe. Opgeslagen met instellingen; verbreek de verbinding en maak opnieuw verbinding, zodat de lopende sessie de nieuwe waarde gebruikt."
     }
   },
   "contactGroupsModal": {
@@ -1150,7 +1154,13 @@
     "noContactsYet": "Nog geen contacten.",
     "noGroupsYet": "Nog geen groepen. Maak er hierboven één aan.",
     "memberCount_one": "{{count}} lid",
-    "memberCount_other": "{{count}} leden"
+    "memberCount_other": "{{count}} leden",
+    "title": "Contactgroepen",
+    "addButton": "Toevoegen",
+    "confirmDeleteButton": "Verwijderen?",
+    "manageMembersOf": "Leden van {{name}} beheren",
+    "renameGroupNamed": "Hernoem {{name}}",
+    "deleteGroupNamed": "{{name}} verwijderen"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Rijen voor droprouting die ouder zijn dan {{hours}} uur (1–168)",
@@ -2380,7 +2390,7 @@
     "hopsFromTraceTitle": "Hop van laatste spoor (komt overeen met Path Trace hieronder)",
     "hopsFromRoutingTitle": "Hop weg (van contactroutering als er nog geen spoor is)",
     "hopLabel_one": "{{count}} hop",
-    "hopLabel_other": "{{count}} springt",
+    "hopLabel_other": "{{count}} hops",
     "positionUpdated": "Positie bijgewerkt",
     "positionRequestTimedOut": "Er is een time-out opgetreden voor het positieverzoek",
     "traceRouteTimedOut": "Er is een time-out opgetreden voor de traceerroute",
@@ -2688,8 +2698,8 @@
     "unavailable": "Nomad Network API is niet beschikbaar. Bouw de Reticulum sidecar opnieuw op en start de stack opnieuw.",
     "selectNode": "Selecteer een knooppunt uit de lijst om door de pagina's ervan te bladeren.",
     "lastSeen": "Laatst gehoord {{time}}",
-    "hopsAway_one": "{{count}} spring weg",
-    "hopsAway_other": "{{count}} springt weg",
+    "hopsAway_one": "{{count}} hop verderop",
+    "hopsAway_other": "{{count}} hops verderop",
     "openNode": "Blader door {{name}}",
     "pagePath": "Paginapad",
     "homePage": "Startpagina",

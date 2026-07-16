@@ -744,7 +744,7 @@
     "stageCheckingPairing": "블루투스 페어링 확인 중…",
     "stageEnterPinLinux": "장치에 표시된 PIN을 입력하세요(먼저 Linux와 페어링).",
     "stageReconnecting": "마지막 블루투스 기기에 다시 연결하는 중…",
-    "pinPlaceholder": "핀",
+    "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",
       "serial": {
@@ -1133,6 +1133,10 @@
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
+    },
+    "maxRetriesHelpConnected": {
+      "meshcore": "포기하기 전에 다시 연결해 보세요 (1– {{max}}). 설정으로 저장되었습니다. 변경 후 Connect (연결) 을 다시 눌러 메인 프로세스가 픽업할 수 있도록 합니다.",
+      "meshtastic": "두 프로토콜 모두 1– {{max}} 을 허용합니다. 설정과 함께 저장되었습니다. 연결을 끊고 다시 연결하여 실행 중인 세션이 새 값을 사용하도록 합니다."
     }
   },
   "contactGroupsModal": {
@@ -1150,7 +1154,13 @@
     "noContactsYet": "아직 연락처가 없습니다.",
     "noGroupsYet": "아직 그룹이 없습니다. 위에서 하나를 만듭니다.",
     "memberCount_one": "{{count}} 회원",
-    "memberCount_other": "{{count}} 회원"
+    "memberCount_other": "{{count}} 회원",
+    "title": "연락처 그룹",
+    "addButton": "추가",
+    "confirmDeleteButton": "삭제하시겠어요?",
+    "manageMembersOf": "{{name}} 회원 관리",
+    "renameGroupNamed": "이름 바꾸기 {{name}}",
+    "deleteGroupNamed": "{{name}} 삭제"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "{{hours}}시간(1~168)보다 오래된 라우팅 행 삭제",
@@ -2418,7 +2428,7 @@
     "errorsLabel": "오류",
     "dupsDirectFloodLabel": "Dups(직접/홍수)",
     "radioStatsLocalHeading": "라디오 통계(로컬)",
-    "txAirTimeLabel": "텍사스 방송 시간",
+    "txAirTimeLabel": "TX 방송 시간",
     "rxAirTimeLabel": "RX 방송 시간",
     "requestPosition": "📍 위치 요청",
     "traceRoute": "🛤 경로 추적",
@@ -2688,8 +2698,8 @@
     "unavailable": "Nomad Network API를 사용할 수 없습니다. Reticulum 사이드카를 재구축하고 스택을 다시 시작하십시오.",
     "selectNode": "목록에서 노드를 선택하여 해당 페이지를 찾아보세요.",
     "lastSeen": "마지막으로 들어본 날짜: {{time}}",
-    "hopsAway_one": "{{count}} 뛰어내려",
-    "hopsAway_other": "{{count}} 깡충깡충 뛰다",
+    "hopsAway_one": "{{count}}홉 거리",
+    "hopsAway_other": "{{count}}홉 거리",
     "openNode": "{{name}} 찾아보기",
     "pagePath": "페이지 경로",
     "homePage": "홈페이지",

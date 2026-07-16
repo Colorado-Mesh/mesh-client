@@ -1133,6 +1133,10 @@
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
+    },
+    "maxRetriesHelpConnected": {
+      "meshcore": "Sambungkan kembali percobaan sebelum menyerah (1 -{{max}}). Disimpan dengan pengaturan; tekan Hubungkan lagi setelah berubah sehingga proses utama mengambilnya.",
+      "meshtastic": "Kedua protokol mengizinkan 1 -{{max}}. Disimpan dengan pengaturan; putuskan dan Hubungkan lagi sehingga sesi yang sedang berjalan menggunakan nilai baru."
     }
   },
   "contactGroupsModal": {
@@ -1150,7 +1154,13 @@
     "noContactsYet": "Belum ada kontak.",
     "noGroupsYet": "Belum ada grup. Buat satu di atas.",
     "memberCount_one": "{{count}} anggota",
-    "memberCount_other": "{{count}} anggota"
+    "memberCount_other": "{{count}} anggota",
+    "title": "Grup Kontak",
+    "addButton": "Tambahkan",
+    "confirmDeleteButton": "Hapus?",
+    "manageMembersOf": "Kelola anggota {{name}}",
+    "renameGroupNamed": "Ganti nama {{name}}",
+    "deleteGroupNamed": "Hapus {{name}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Hapus baris perutean yang lebih lama dari {{hours}} jam (1–168)",
@@ -2379,8 +2389,8 @@
     "radioCapacityTitle": "Radio mendekati kapasitas: {{current}}/{{max}}",
     "hopsFromTraceTitle": "Lompatan dari jejak terakhir (cocok dengan Jejak Jalur di bawah)",
     "hopsFromRoutingTitle": "Melompat jauh (dari perutean kontak ketika belum ada jejak)",
-    "hopLabel_one": "{{count}} melompat",
-    "hopLabel_other": "{{count}} melompat",
+    "hopLabel_one": "{{count}} hop",
+    "hopLabel_other": "{{count}} hop",
     "positionUpdated": "Posisi diperbarui",
     "positionRequestTimedOut": "Batas waktu permintaan posisi telah habis",
     "traceRouteTimedOut": "Waktu rute pelacakan habis",
@@ -2688,8 +2698,8 @@
     "unavailable": "Api Nomad Network tidak tersedia. Bangun kembali sidecar Reticulum dan mulai ulang tumpukan.",
     "selectNode": "Pilih node dari daftar untuk menelusuri halamannya.",
     "lastSeen": "Terakhir terdengar {{time}}",
-    "hopsAway_one": "{{count}} melompat menjauh",
-    "hopsAway_other": "{{count}} melompat menjauh",
+    "hopsAway_one": "{{count}} hop jauh",
+    "hopsAway_other": "{{count}} hop jauh",
     "openNode": "Telusuri {{name}}",
     "pagePath": "Jalur halaman",
     "homePage": "Halaman beranda",

@@ -89,6 +89,30 @@ describe('MeshCoreProtocol.subscribe', () => {
     teardown();
   });
 
+  it('assigns distinct ids to different senders sharing a channel/second', () => {
+    // Companion channel events carry no sender id, only the raw wire text — two different
+    // senders posting in the same channel within the same second must not collide on id.
+    const conn = mockMeshCoreConnection();
+    const events: DomainEvent[] = [];
+    const teardown = meshcoreProtocol.subscribe(conn, (e) => events.push(e));
+    conn.emit(EVENT_CHANNEL_MESSAGE, {
+      channelIdx: 0,
+      text: 'Alice: hello mesh',
+      senderTimestamp: 1_700_000,
+    });
+    conn.emit(EVENT_CHANNEL_MESSAGE, {
+      channelIdx: 0,
+      text: 'Bob: hello mesh',
+      senderTimestamp: 1_700_000,
+    });
+    const ids = events
+      .filter((e) => e.type === 'text_message')
+      .map((e) => (e.type === 'text_message' ? e.payload.id : undefined));
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+    teardown();
+  });
+
   it('maps channel pathLen to hopCount (0xFF = direct)', () => {
     const conn = mockMeshCoreConnection();
     const events: DomainEvent[] = [];

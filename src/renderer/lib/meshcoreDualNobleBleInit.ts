@@ -263,6 +263,11 @@ export function subscribeNobleBleConnectMutexWait(listener: () => void): () => v
  * Run one Noble BLE RF connect at a time in the renderer. The main process also serializes GATT
  * setup, but parallel renderer connects still raced during auto-connect before connectionStore
  * reflected `connecting` — Meshtastic could start while MeshCore was mid-handshake.
+ *
+ * The secondary's peer-wait must resolve *before* it enqueues itself on `nobleBleConnectChain`.
+ * If the secondary inserted itself into the chain first and then awaited the primary's settle
+ * signal, a primary call arriving afterward would queue behind the secondary's unresolved link
+ * and could never reach the `work()` that emits that settle signal — deadlocking both sides.
  */
 export async function withNobleBleConnectMutex<T>(
   protocol: MeshProtocol,
@@ -271,15 +276,15 @@ export async function withNobleBleConnectMutex<T>(
   if (!isRendererNobleBlePlatform()) {
     return work();
   }
+  setNobleBleMutexSnapshot(
+    buildNobleBleMutexSnapshot({ queued: protocol, active: nobleBleMutexSnapshot.active }),
+  );
+  await awaitNobleBlePeerBeforeConnect(protocol);
   const prev = nobleBleConnectChain;
   let release!: () => void;
   nobleBleConnectChain = new Promise<void>((resolve) => {
     release = resolve;
   });
-  setNobleBleMutexSnapshot(
-    buildNobleBleMutexSnapshot({ queued: protocol, active: nobleBleMutexSnapshot.active }),
-  );
-  await awaitNobleBlePeerBeforeConnect(protocol);
   await prev;
   setNobleBleMutexSnapshot(buildNobleBleMutexSnapshot({ queued: null, active: protocol }));
   try {

@@ -1,3 +1,5 @@
+import { MS_PER_MINUTE } from '@/shared/timeConstants';
+
 import { haversineDistanceKm } from '../nodeStatus';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import type { HopHistoryPoint, MeshNode, NodeAnomaly } from '../types';
@@ -165,7 +167,7 @@ export function detectRouteFlapping(
   nodeId: number,
   hopHistory: HopHistoryPoint[],
 ): NodeAnomaly | null {
-  const tenMinAgo = Date.now() - 10 * 60 * 1000;
+  const tenMinAgo = Date.now() - 10 * MS_PER_MINUTE;
   const recent = hopHistory.filter((p) => p.t >= tenMinAgo);
   if (recent.length < 2) return null;
   let changes = 0;
@@ -196,7 +198,7 @@ export function detectPathInstability(
   nodeId: number,
   pathUpdatedTimestamps: number[],
 ): NodeAnomaly | null {
-  const tenMinAgo = Date.now() - 10 * 60 * 1000;
+  const tenMinAgo = Date.now() - 10 * MS_PER_MINUTE;
   const recent = pathUpdatedTimestamps.filter((t) => t >= tenMinAgo);
   if (recent.length <= 3) return null;
   return {

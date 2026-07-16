@@ -174,6 +174,55 @@ describe('bluetooth-pair input validation (source contract)', () => {
   });
 });
 
+// ─── H1: bluetooth-* IPC sender validation ──────────────────────────
+
+describe('bluetooth IPC sender validation (source contract, H1)', () => {
+  const bluetoothChannels = [
+    'bluetooth-unpair',
+    'bluetooth-start-scan',
+    'bluetooth-stop-scan',
+    'bluetooth-pair',
+    'bluetooth-connect',
+    'bluetooth-untrust',
+    'bluetooth-get-info',
+  ] as const;
+
+  it.each(bluetoothChannels)('%s calls assertIpcSender', (channel) => {
+    const handlerIdx = INDEX_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
+    expect(handlerBody).toContain(`assertIpcSender(event, '${channel}')`);
+  });
+});
+
+// ─── H4: bluetoothctl stop-scan / get-info hang guards ──────────────
+
+describe('bluetoothctl timeout hardening (source contract, H4)', () => {
+  it('defines 5s timeouts for stop-scan and get-info', () => {
+    expect(INDEX_SOURCE).toContain('const BLUETOOTH_STOP_SCAN_TIMEOUT_MS = 5_000;');
+    expect(INDEX_SOURCE).toContain('const BLUETOOTH_GET_INFO_TIMEOUT_MS = 5_000;');
+  });
+
+  it('bluetooth-stop-scan kills the process and settles the promise on timeout', () => {
+    const idx = INDEX_SOURCE.indexOf("ipcMain.handle('bluetooth-stop-scan'");
+    expect(idx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(idx, idx + 1200);
+    expect(body).toContain('BLUETOOTH_STOP_SCAN_TIMEOUT_MS');
+    expect(body).toContain('proc.kill()');
+    // Must not leave the returned Promise pending forever — timeout resolves it.
+    expect(body).toMatch(/setTimeout\(\(\) => \{[\s\S]*?proc\.kill\(\);[\s\S]*?finish\(\);/);
+  });
+
+  it('bluetooth-get-info kills the process and resolves on timeout', () => {
+    const idx = INDEX_SOURCE.indexOf("ipcMain.handle('bluetooth-get-info'");
+    expect(idx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(idx, idx + 1500);
+    expect(body).toContain('BLUETOOTH_GET_INFO_TIMEOUT_MS');
+    expect(body).toContain('proc.kill()');
+    expect(body).toMatch(/setTimeout\(\(\) => \{[\s\S]*?proc\.kill\(\);[\s\S]*?finish\(/);
+  });
+});
+
 // ─── BrowserWindow security settings ────────────────────────────────
 
 describe('BrowserWindow webPreferences (source contract)', () => {
@@ -451,6 +500,232 @@ describe('privileged IPC sender validation (source contract)', () => {
     expect(handlerIdx).toBeGreaterThan(-1);
     const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
     expect(body).toContain('validateIpcSender(event)');
+  });
+});
+
+// ─── H3: db:* mutator + app:setLoginItem + log:device-connection sender checks ─
+
+describe('db mutator IPC sender validation (source contract, H3)', () => {
+  const dbMutatorChannels = [
+    'db:setNodeFavorited',
+    'db:setNodeNote',
+    'db:clearNodePositions',
+    'db:clearMessages',
+    'db:clearNodes',
+    'db:pruneNodesByCount',
+    'db:pruneMessagesByCount',
+    'db:pruneMeshcoreMessagesByCount',
+    'db:prunePositionHistory',
+    'db:prunePositionHistoryPerNode',
+    'db:deleteMeshcoreContactsNeverAdvertised',
+    'db:deleteMeshcoreContactsByAge',
+    'db:pruneMeshcoreContactsByCount',
+    'db:updateMessageStatus',
+    'db:updateMessageReceivedVia',
+    'db:updateMessagePacketId',
+    'db:export',
+    'db:import',
+    'db:saveMeshcoreMessage',
+    'db:saveMeshcoreContact',
+    'db:saveMeshcoreContactsBatch',
+    'db:updateMeshcoreContactRfTransport',
+    'db:updateMeshcoreContactNickname',
+    'db:updateMeshcoreContactFavorited',
+    'db:updateMeshcoreContactAdvert',
+    'db:updateMeshcoreContactType',
+    'db:updateMeshcoreContactLastRf',
+    'db:savePositionHistory',
+    'db:clearPositionHistory',
+    'db:saveMeshcoreHopHistory',
+    'db:saveMeshcoreTraceHistory',
+    'db:pruneMeshcorePathHistory',
+    'db:upsertMeshcorePathHistory',
+    'db:recordMeshcorePathOutcome',
+    'db:deleteMeshcorePathHistoryForNode',
+    'db:deleteAllMeshcorePathHistory',
+    'db:markAllMeshcoreContactsOffRadio',
+    'db:deleteMeshcoreContactsWithoutPubkey',
+    'db:offloadAllMeshcoreContacts',
+    'db:createContactGroup',
+    'db:updateContactGroup',
+    'db:deleteContactGroup',
+    'db:addContactToGroup',
+    'db:removeContactFromGroup',
+    'db:updateMeshcoreMessageSender',
+    'db:updateMeshcoreMessageStatus',
+    'db:updateMeshcoreMessageStatusByKey',
+    'db:migrateRfStubNodes',
+    'db:deleteMeshcoreContact',
+  ] as const;
+
+  it.each(dbMutatorChannels)('%s calls validateIpcSender', (channel) => {
+    const handlerIdx = INDEX_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
+    if (handlerIdx === -1) {
+      const multilineIdx = INDEX_SOURCE.indexOf(`ipcMain.handle(\n  '${channel}'`);
+      expect(multilineIdx).toBeGreaterThan(-1);
+      const handlerBody = INDEX_SOURCE.slice(multilineIdx, multilineIdx + 400);
+      expect(handlerBody).toContain('validateIpcSender(event)');
+      return;
+    }
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
+    expect(handlerBody).toContain('validateIpcSender(event)');
+  });
+
+  it('app:setLoginItem calls assertIpcSender', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('app:setLoginItem'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
+    expect(body).toContain("assertIpcSender(event, 'app:setLoginItem')");
+  });
+
+  it('log:device-connection validates IPC sender', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('log:device-connection'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
+    expect(body).toContain('validateIpcSender(event)');
+  });
+
+  it('regression: no db:* mutator (non-get/search) is missing a sender check', () => {
+    // Any db:* handler whose name is not a read-only getter/search must call
+    // assertIpcSender or validateIpcSender within the first 400 chars of its body.
+    const re = /ipcMain\.handle\(\s*\n?\s*'(db:[a-zA-Z]+)'/g;
+    const readOnlyPrefixes = ['db:get', 'db:search'];
+    const missing: string[] = [];
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(INDEX_SOURCE))) {
+      const channel = m[1];
+      if (readOnlyPrefixes.some((p) => channel.startsWith(p))) continue;
+      const body = INDEX_SOURCE.slice(m.index, m.index + 400);
+      const hasCheck =
+        body.includes('assertIpcSender(event') || body.includes('validateIpcSender(event)');
+      if (!hasCheck) missing.push(channel);
+    }
+    expect(missing).toEqual([]);
+  });
+});
+
+// ─── H2: MQTT mutator IPC sender validation + token hardening ───────
+
+describe('MQTT mutator IPC sender validation (source contract, H2)', () => {
+  const mqttMutatorChannels = [
+    'mqtt:powerResume',
+    'mqtt:powerSuspend',
+    'mqtt:refreshMeshcoreToken',
+    'mqtt:updateMeshcoreToken',
+    'mqtt:updateChannelKeys',
+    'mqtt:updateTopicPrefix',
+    'mqtt:publishNodeInfo',
+    'mqtt:publishPosition',
+    'mqtt:publishWaypoint',
+  ] as const;
+
+  it.each(mqttMutatorChannels)('%s calls assertIpcSender', (channel) => {
+    const handlerIdx = INDEX_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
+    if (handlerIdx === -1) {
+      // mqtt:updateMeshcoreToken's ipcMain.handle( call wraps the channel name onto its own
+      // line — fall back to the multiline shape.
+      const multilineIdx = INDEX_SOURCE.indexOf(`ipcMain.handle(\n  '${channel}'`);
+      expect(multilineIdx).toBeGreaterThan(-1);
+      const handlerBody = INDEX_SOURCE.slice(multilineIdx, multilineIdx + 400);
+      expect(handlerBody).toContain(`assertIpcSender(event, '${channel}')`);
+      return;
+    }
+    const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
+    expect(handlerBody).toContain(`assertIpcSender(event, '${channel}')`);
+  });
+
+  it('mqtt:updateMeshcoreToken validates token is a non-empty, length-capped string', () => {
+    const idx = INDEX_SOURCE.indexOf("'mqtt:updateMeshcoreToken'");
+    expect(idx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(idx, idx + 700);
+    expect(INDEX_SOURCE).toContain('const MQTT_MESHCORE_TOKEN_MAX_LENGTH = 8192;');
+    expect(body).toContain("typeof token !== 'string' || token.length === 0");
+    expect(body).toContain('token.length > MQTT_MESHCORE_TOKEN_MAX_LENGTH');
+  });
+
+  it('mqtt:updateMeshcoreToken validates expiresAt is a finite number', () => {
+    const idx = INDEX_SOURCE.indexOf("'mqtt:updateMeshcoreToken'");
+    expect(idx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(idx, idx + 700);
+    expect(body).toContain("typeof expiresAt !== 'number' || !Number.isFinite(expiresAt)");
+  });
+});
+
+// ─── H5: Meshtastic HTTP fromradio response size cap ────────────────
+
+describe('HTTP fromradio response size cap (source contract, H5)', () => {
+  it('defines a 1 MB response cap', () => {
+    expect(INDEX_SOURCE).toContain('const HTTP_FROMRADIO_MAX_RESPONSE_BYTES = 1 * 1024 * 1024;');
+  });
+
+  it('readBoundedArrayBuffer throws ResponseSizeCapExceededError when the cap is exceeded', () => {
+    expect(INDEX_SOURCE).toContain('class ResponseSizeCapExceededError extends Error {}');
+    const fnIdx = INDEX_SOURCE.indexOf('async function readBoundedArrayBuffer(');
+    expect(fnIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(fnIdx, fnIdx + 1200);
+    expect(body).toContain('throw new ResponseSizeCapExceededError(');
+  });
+
+  it('http:connect fromradio poll uses readBoundedArrayBuffer with the cap', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /fromradio\?all=false[\s\S]{0,400}readBoundedArrayBuffer\(response, HTTP_FROMRADIO_MAX_RESPONSE_BYTES\)/,
+    );
+  });
+
+  it('disconnects httpDevice on oversized fromradio response but keeps retrying transient errors', () => {
+    const idx = INDEX_SOURCE.indexOf(
+      'readBoundedArrayBuffer(response, HTTP_FROMRADIO_MAX_RESPONSE_BYTES)',
+    );
+    expect(idx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(idx, idx + 1000);
+    expect(body).toContain('if (err instanceof ResponseSizeCapExceededError)');
+    expect(body).toContain('httpDevice = null');
+  });
+});
+
+// ─── H6: Reticulum sidecar proxy/WS response caps ────────────────────
+
+describe('Reticulum sidecar proxy/WS caps (source contract, H6)', () => {
+  it('defines proxy response and WS message byte caps in shared limits', () => {
+    const limitsSource = readFileSync(
+      join(__dirname, '../shared/reticulumProxyLimits.ts'),
+      'utf-8',
+    );
+    expect(limitsSource).toContain(
+      'export const RETICULUM_PROXY_MAX_RESPONSE_BYTES = 16 * 1024 * 1024;',
+    );
+    expect(limitsSource).toContain(
+      'export const RETICULUM_WS_MAX_MESSAGE_BYTES = 2 * 1024 * 1024;',
+    );
+  });
+
+  it('reticulum-sidecar-manager imports and applies both caps', () => {
+    const sidecarSource = readFileSync(join(__dirname, 'reticulum-sidecar-manager.ts'), 'utf-8');
+    expect(sidecarSource).toContain('RETICULUM_PROXY_MAX_RESPONSE_BYTES');
+    expect(sidecarSource).toContain('RETICULUM_WS_MAX_MESSAGE_BYTES');
+    expect(sidecarSource).toContain('maxPayload: RETICULUM_WS_MAX_MESSAGE_BYTES');
+  });
+});
+
+// ─── H9: log injection hardening (MQTT topic / from-node handler tag) ─
+
+describe('MQTT log injection hardening (source contract, H9)', () => {
+  it('mqtt-manager sanitizes topic before interpolating into unknown-format debug log', () => {
+    const mqttManagerSource = readFileSync(join(__dirname, 'mqtt-manager.ts'), 'utf-8');
+    expect(mqttManagerSource).toMatch(
+      /Unknown message format, firstByte=0x\$\{bytes\[0\]\.toString\(16\)\} topic=\$\{sanitizeLogMessage\(topic\)\}/,
+    );
+  });
+
+  it('parseFromNodeId sanitizes the handler tag (which embeds the MQTT topic) before logging', () => {
+    const mqttManagerSource = readFileSync(join(__dirname, 'mqtt-manager.ts'), 'utf-8');
+    const fnIdx = mqttManagerSource.indexOf('private parseFromNodeId(');
+    expect(fnIdx).toBeGreaterThan(-1);
+    const body = mqttManagerSource.slice(fnIdx, fnIdx + 400);
+    expect(body).toContain('const safeHandler = sanitizeLogMessage(handler);');
+    // Every JSON debug log inside parseFromNodeId must use the sanitized copy, not raw `handler`.
+    const wholeFn = mqttManagerSource.slice(fnIdx, fnIdx + 1600);
+    expect(wholeFn).not.toMatch(/console\.debug\(`\[Meshtastic MQTT\] JSON \$\{handler\}/);
   });
 });
 

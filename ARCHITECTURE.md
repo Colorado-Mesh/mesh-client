@@ -6,11 +6,11 @@ Project layout, data flow, and code placement for human reference. For AI coding
 
 Path alias `@/*` maps to `src/*` (see `tsconfig.json`).
 
-| Boundary | Path            | Role                                                                                                                                                                                                                  |
-| -------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Main     | `src/main/`     | SQLite (`database.ts`, `db-compat.ts`), BLE (`noble-ble-manager.ts`), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`), IPC handlers, window, GPS, updater |
-| Preload  | `src/preload/`  | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                    |
-| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/` (protocol runtimes, single mount), `stores/`, `lib/`, `locales/`, `workers/`                                                                           |
+| Boundary | Path            | Role                                                                                                                                                                                                                                                                                                |
+| -------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Main     | `src/main/`     | SQLite (`database.ts`, `db-compat.ts`), BLE (`noble-ble-manager.ts`), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`), IPC handlers (`index.ts` plus namespaced modules in `src/main/ipc/` — Reticulum, TAK, GPS), window, GPS, updater |
+| Preload  | `src/preload/`  | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                                                                                                  |
+| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/` (protocol runtimes, single mount), `stores/`, `lib/`, `locales/`, `workers/`                                                                                                                                                         |
 
 | Shared | `src/shared/` | IPC contracts (`electron-api.types.ts`), protocol-neutral helpers |
 
@@ -31,7 +31,7 @@ Path alias `@/*` maps to `src/*` (see `tsconfig.json`).
 
 ## Multi-protocol (Meshtastic + MeshCore + Reticulum)
 
-All three stacks can run at once: independent sessions, header switcher for focus (green / cyan / amber), inactive protocols stay connected, per-protocol unread badges. Meshtastic and MeshCore use `ConnectionDriver` for RF/MQTT; Reticulum uses the AGPL sidecar (`useReticulumRuntime`, no Noble/MQTT on that tab). Capabilities differ (e.g. Meshtastic: full Security PKI/Modules/TAK; MeshCore: partial Security backup/restore, Repeaters, **Rooms** BBS; Reticulum: LXMF DMs, propagation, RNode flasher, **Map** (RMAP v4 discovery), Topology). Sidebar tab slots are fixed in `src/renderer/lib/tabSlotIds.ts`; visibility is computed in `src/renderer/lib/appTabMappings.ts` (`computeTabMappings()` consumed from `App.tsx`); **Rooms** requires `hasRoomServersPanel`, Reticulum panels gate on `hasReticulumNetworkPanel` / `hasReticulumInterfaceConfig` / `hasReticulumDiscoveryMap`, **Security**/`TAK` require capability flags (~16 visible tabs per LoRa protocol; MeshCore hides TAK; Reticulum hides LoRa-specific tabs).
+All three stacks can run at once: independent sessions, header switcher for focus (green / cyan / amber), inactive protocols stay connected, per-protocol unread badges. Meshtastic and MeshCore use `ConnectionDriver` for RF/MQTT; Reticulum uses the AGPL sidecar (`useReticulumRuntime`; no Noble/MQTT for Reticulum's own connections — the sidecar owns BLE RNode via `btleplug`). A Reticulum BLE RNode connect on macOS/Windows may still briefly suspend/yield Noble so it does not contend with the sidecar's BLE scan (see [AGENTS.md](AGENTS.md) **Multi-protocol BLE**). Capabilities differ (e.g. Meshtastic: full Security PKI/Modules/TAK; MeshCore: partial Security backup/restore, Repeaters, **Rooms** BBS; Reticulum: LXMF DMs, propagation, RNode flasher, **Map** (RMAP v4 discovery), Topology). Sidebar tab slots are fixed in `src/renderer/lib/tabSlotIds.ts`; visibility is computed in `src/renderer/lib/appTabMappings.ts` (`computeTabMappings()` consumed from `App.tsx`); **Rooms** requires `hasRoomServersPanel`, Reticulum panels gate on `hasReticulumNetworkPanel` / `hasReticulumInterfaceConfig` / `hasReticulumDiscoveryMap`, **Security**/`TAK` require capability flags (~16 visible tabs per LoRa protocol; MeshCore hides TAK; Reticulum hides LoRa-specific tabs).
 
 **Feature gating:** use `ProtocolCapabilities` via `useRadioProvider(protocol)` from `src/renderer/lib/radio/providerFactory.ts`; do not branch on raw `protocol === 'meshcore'` strings.
 
@@ -46,7 +46,7 @@ const capabilities = useRadioProvider(protocol);
 Adding a cross-boundary feature:
 
 1. Types in `src/shared/electron-api.types.ts`.
-2. `ipcMain.handle('namespace:action', ...)` in `src/main/index.ts` (mirror existing patterns).
+2. `ipcMain.handle('namespace:action', ...)` in `src/main/index.ts`, or in a namespaced module under `src/main/ipc/` (e.g. `reticulum-handlers.ts`, `tak-handlers.ts`, `gps-handlers.ts`) registered from `index.ts` (mirror existing patterns).
 3. Expose on `electronAPI` in `src/preload/index.ts` via `ipcRenderer.invoke`.
 4. Call from renderer: `window.electronAPI....`
 

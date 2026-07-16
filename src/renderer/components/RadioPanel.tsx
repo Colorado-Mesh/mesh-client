@@ -15,6 +15,7 @@ import {
   meshtasticConfigSliceHydrated,
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
+import { bytesToHex, hexToBytesExactOrThrow } from '@/shared/hexBytes';
 import {
   formatMeshtasticBluetoothPin,
   parseMeshtasticBluetoothPin,
@@ -3477,27 +3478,7 @@ function ChannelSection({
 
 // ─── MeshCore Channel Management Section ─────────────────────────────────
 function hexToBytes(hex: string): Uint8Array {
-  // Validate hex string
-  if (!/^[0-9a-fA-F]{32}$/.test(hex)) {
-    throw new Error('Invalid hex string. Must be exactly 32 hexadecimal characters.');
-  }
-
-  const bytes = new Uint8Array(16);
-  for (let i = 0; i < 16; i++) {
-    const byteStr = hex.slice(i * 2, i * 2 + 2);
-    const byte = parseInt(byteStr, 16);
-    if (isNaN(byte) || byte < 0 || byte > 255) {
-      throw new Error(`Invalid hex byte: ${byteStr} at position ${i}`);
-    }
-    bytes[i] = byte;
-  }
-  return bytes;
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+  return hexToBytesExactOrThrow(hex, 16);
 }
 
 function MeshcoreChannelSection({

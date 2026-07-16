@@ -611,7 +611,7 @@
     "days": "дни",
     "emDash": "—",
     "saving": "Сохранение...",
-    "peers": "Равные наставники",
+    "peers": "Пиры",
     "colorGreen": "Зеленый",
     "colorCyan": "Голубой",
     "colorAmber": "Желтый",
@@ -744,7 +744,7 @@
     "stageCheckingPairing": "Проверка сопряжения Bluetooth…",
     "stageEnterPinLinux": "Введите PIN-код, указанный на вашем устройстве (сначала выполните сопряжение с Linux).",
     "stageReconnecting": "Повторное подключение к последнему устройству Bluetooth…",
-    "pinPlaceholder": "ПРИКОЛОТЬ",
+    "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",
       "serial": {
@@ -1133,6 +1133,10 @@
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
+    },
+    "maxRetriesHelpConnected": {
+      "meshcore": "Повторно подключитесь, прежде чем сдаваться (1–{{max}}). Сохранено с настройками; нажмите «Подключиться» еще раз после изменения, чтобы основной процесс забрал его.",
+      "meshtastic": "Оба протокола допускают 1–{{max}}. Сохранено с настройками; отключите и снова подключитесь, чтобы сеанс работы использовал новое значение."
     }
   },
   "contactGroupsModal": {
@@ -1150,7 +1154,13 @@
     "noContactsYet": "Контактов пока нет.",
     "noGroupsYet": "Группы пока нет. Создайте один выше.",
     "memberCount_one": "{{count}} участник",
-    "memberCount_other": "{{count}} участников"
+    "memberCount_other": "{{count}} участников",
+    "title": "Контактные группы",
+    "addButton": "Добавить",
+    "confirmDeleteButton": "Удалить?",
+    "manageMembersOf": "Управление участниками {{name}}",
+    "renameGroupNamed": "Переименовать {{name}}",
+    "deleteGroupNamed": "Удалить {{name}}"
   },
   "diagnosticsPanel": {
     "dropRoutingRows": "Удалить строки маршрутизации старше {{hours}} часов (1–168).",
@@ -2418,7 +2428,7 @@
     "errorsLabel": "Ошибки",
     "dupsDirectFloodLabel": "Дупы (прямые/флуд)",
     "radioStatsLocalHeading": "Статистика радио (локальная)",
-    "txAirTimeLabel": "Техасское эфирное время",
+    "txAirTimeLabel": "Время передачи в эфире",
     "rxAirTimeLabel": "Время приема в эфире",
     "requestPosition": "📍 Запросить позицию",
     "traceRoute": "🛤 Отследить маршрут",
@@ -2688,8 +2698,8 @@
     "unavailable": "Nomad Network API недоступен. Восстановите коляску Reticulum и перезапустите стек.",
     "selectNode": "Выберите узел из списка, чтобы просмотреть его страницы.",
     "lastSeen": "Последний раз слышали {{time}}",
-    "hopsAway_one": "{{count}} убегай",
-    "hopsAway_other": "{{count}} упрыгивает",
+    "hopsAway_one": "На расстоянии {{count}} хопа",
+    "hopsAway_other": "На расстоянии {{count}} хопов",
     "openNode": "Просмотр {{name}}",
     "pagePath": "Путь к странице",
     "homePage": "Домашняя страница",
@@ -2785,7 +2795,7 @@
     "relayHub": "Прямое реле",
     "relayCount": "{{count}} ступицы реле",
     "hopBadge": "{{count}}h",
-    "showDistantPeers": "Показать удаленных коллег",
+    "showDistantPeers": "Показать удалённые пиры",
     "maxHopsFilter": "Макс. hops",
     "maxHopsAll": "Все hops",
     "maxHopsOption": "{{count}} hops",
@@ -2793,19 +2803,19 @@
     "compactLeafCount": "{{count}} компактные прямые одноранговые узлы"
   },
   "peerListPanel": {
-    "heading": "Равные наставники",
-    "tabPeers": "Равные наставники",
+    "heading": "Пиры",
+    "tabPeers": "Пиры",
     "tabContacts": "Контакты",
     "searchPlaceholder": "Поиск по имени или хэшу...",
-    "searchAria": "Поиск коллег",
+    "searchAria": "Поиск пиров",
     "colName": "Имя / Хэш",
     "colLastSeen": "Последний просмотр",
     "colInterface": "Интерфейс",
     "colFavorite": "Избранное",
     "toggleFavorite": "Переключить избранное",
     "openChat": "Открыть чат",
-    "emptyPeers": "Коллеги пока не обнаружены. Отправьте объявление или дождитесь сетевого трафика.",
-    "emptyContacts": "Контактов пока нет — напишите коллеге, чтобы добавить их сюда.",
+    "emptyPeers": "Пиры пока не обнаружены. Отправьте объявление или дождитесь сетевого трафика.",
+    "emptyContacts": "Контактов пока нет — напишите пиру, чтобы добавить их сюда.",
     "groupFilterAria": "Фильтровать контакты по группе",
     "allGroups": "Все группы",
     "manageGroups": "Управление группами",
@@ -3778,7 +3788,7 @@
     "hiddenCount": "Показаны {{shown}} из {{total}} узлов (удаленные узлы скрыты)",
     "legendSelf": "Этот узел",
     "centerRns": "RNS",
-    "showDistantPeers": "Показать удаленных коллег",
+    "showDistantPeers": "Показать удалённые пиры",
     "maxHopsFilter": "Макс. hops",
     "maxHopsAll": "Все hops",
     "maxHopsOption": "{{count}} hops",
@@ -4076,7 +4086,7 @@
     "graph": "График",
     "rooms": "Комнаты",
     "admin": "Администрирование",
-    "peers": "Равные наставники",
+    "peers": "Пиры",
     "nomadnetwork": "Nomad Network",
     "topology": "Топология сети",
     "network": "Сеть"

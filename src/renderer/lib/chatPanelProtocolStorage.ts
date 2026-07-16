@@ -1,10 +1,21 @@
-import { chatViewKeyForMessage } from '@/renderer/lib/chatUnreadCounts';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
+import {
+  type ChatLastReadSanitizeMessage,
+  maxMessageTimestampByViewKey,
+  maxRoomPostTimestampByServerId,
+  sanitizeNumericKeyLastRead,
+  sanitizeViewKeyLastRead,
+} from './chatLastReadSanitize';
 import { loadPersistedMeshcoreSelfNodeId } from './meshcoreLastSelfNodeId';
-import { clampReadWatermarkMs, effectiveMessageTimestampMs } from './nodeStatus';
 import { parseStoredJson } from './parseStoredJson';
-import type { ChatMessage, MeshProtocol } from './types';
+import type { MeshProtocol } from './types';
+
+export {
+  type ChatLastReadSanitizeMessage,
+  maxMessageTimestampByViewKey,
+  maxRoomPostTimestampByServerId,
+} from './chatLastReadSanitize';
 
 const LEGACY_OPEN_DM_TABS_KEY = 'mesh-client:openDmTabs';
 const LEGACY_LAST_READ_KEY = 'mesh-client:lastRead';
@@ -361,42 +372,6 @@ export function subscribePersistedRoomsLastRead(listener: () => void): () => voi
   };
 }
 
-type ChatLastReadSanitizeMessage = Pick<ChatMessage, 'channel' | 'timestamp'> & {
-  to?: number | null;
-  sender_id?: number;
-  reticulum_sender_hash?: string;
-};
-
-/** Max message timestamp per chat view key (`ch:N`, `dm:peer`). */
-export function maxMessageTimestampByViewKey(
-  messages: readonly ChatLastReadSanitizeMessage[],
-  protocol: 'meshcore' | 'meshtastic' | 'reticulum' = 'meshtastic',
-  ownNodeIds: ReadonlySet<number> = new Set(),
-): Record<string, number> {
-  const maxByKey: Record<string, number> = {};
-  for (const msg of messages) {
-    const key =
-      msg.sender_id != null
-        ? chatViewKeyForMessage(
-            {
-              channel: msg.channel,
-              to: msg.to ?? undefined,
-              sender_id: msg.sender_id,
-              reticulum_sender_hash: msg.reticulum_sender_hash,
-            },
-            protocol,
-            ownNodeIds,
-          )
-        : msg.to != null
-          ? `dm:${msg.to >>> 0}`
-          : `ch:${msg.channel}`;
-    const ts = effectiveMessageTimestampMs(msg.timestamp);
-    const prev = maxByKey[key] ?? 0;
-    if (ts > prev) maxByKey[key] = ts;
-  }
-  return maxByKey;
-}
-
 /**
  * Clamp MeshCore chat last-read watermarks that exceed device message times or client clock
  * (legacy pre-#490 Date.now() bumps suppressed sidebar badges).
@@ -408,21 +383,7 @@ export function sanitizeMeshcoreChatLastRead(
   const persistedSelf = loadPersistedMeshcoreSelfNodeId();
   const ownNodeIds = new Set(persistedSelf > 0 ? [persistedSelf] : []);
   const maxByKey = maxMessageTimestampByViewKey(messages, 'meshcore', ownNodeIds);
-  const now = Date.now();
-  let changed = false;
-  const next: Record<string, number> = { ...persisted };
-  for (const [key, watermark] of Object.entries(persisted)) {
-    if (!key.startsWith('ch:') && !key.startsWith('dm:')) continue;
-    const maxMsg = maxByKey[key] ?? 0;
-    let clamped = clampReadWatermarkMs(watermark, now);
-    if (watermark > now) clamped = maxMsg;
-    else if (maxMsg > 0 && clamped > maxMsg) clamped = maxMsg;
-    if (clamped !== watermark) {
-      next[key] = clamped;
-      changed = true;
-    }
-  }
-  return changed ? next : persisted;
+  return sanitizeViewKeyLastRead(persisted, maxByKey);
 }
 
 /** Clamp Meshtastic chat last-read watermarks that exceed message times or client clock. */
@@ -432,21 +393,7 @@ export function sanitizeMeshtasticChatLastRead(
   ownNodeIds: ReadonlySet<number> = new Set(),
 ): Record<string, number> {
   const maxByKey = maxMessageTimestampByViewKey(messages, 'meshtastic', ownNodeIds);
-  const now = Date.now();
-  let changed = false;
-  const next: Record<string, number> = { ...persisted };
-  for (const [key, watermark] of Object.entries(persisted)) {
-    if (!key.startsWith('ch:') && !key.startsWith('dm:')) continue;
-    const maxMsg = maxByKey[key] ?? 0;
-    let clamped = clampReadWatermarkMs(watermark, now);
-    if (watermark > now) clamped = maxMsg;
-    else if (maxMsg > 0 && clamped > maxMsg) clamped = maxMsg;
-    if (clamped !== watermark) {
-      next[key] = clamped;
-      changed = true;
-    }
-  }
-  return changed ? next : persisted;
+  return sanitizeViewKeyLastRead(persisted, maxByKey);
 }
 
 /** Ongoing sanitize for Meshtastic chat lastRead (sidebar/tray badges). */
@@ -475,21 +422,7 @@ export function sanitizeReticulumChatLastRead(
   ownNodeIds: ReadonlySet<number> = new Set(),
 ): Record<string, number> {
   const maxByKey = maxMessageTimestampByViewKey(messages, 'reticulum', ownNodeIds);
-  const now = Date.now();
-  let changed = false;
-  const next: Record<string, number> = { ...persisted };
-  for (const [key, watermark] of Object.entries(persisted)) {
-    if (!key.startsWith('ch:') && !key.startsWith('dm:')) continue;
-    const maxMsg = maxByKey[key] ?? 0;
-    let clamped = clampReadWatermarkMs(watermark, now);
-    if (watermark > now) clamped = maxMsg;
-    else if (maxMsg > 0 && clamped > maxMsg) clamped = maxMsg;
-    if (clamped !== watermark) {
-      next[key] = clamped;
-      changed = true;
-    }
-  }
-  return changed ? next : persisted;
+  return sanitizeViewKeyLastRead(persisted, maxByKey);
 }
 
 /** Ongoing sanitize for Reticulum LXMF chat lastRead (sidebar/tray badges). */
@@ -559,42 +492,13 @@ export function ensureReticulumChatLastReadSanitized(
   return sanitized;
 }
 
-/** Max clamped post timestamp per room server node id. */
-export function maxRoomPostTimestampByServerId(
-  messages: readonly { roomServerId?: number; timestamp: number }[],
-): Record<number, number> {
-  const maxById: Record<number, number> = {};
-  for (const msg of messages) {
-    if (msg.roomServerId == null) continue;
-    const ts = effectiveMessageTimestampMs(msg.timestamp);
-    const id = msg.roomServerId >>> 0;
-    if (ts > (maxById[id] ?? 0)) maxById[id] = ts;
-  }
-  return maxById;
-}
-
 /** Clamp MeshCore room last-read watermarks that exceed post times or client clock. */
 export function sanitizeMeshcoreRoomsLastRead(
   persisted: Readonly<Record<number, number>>,
   messages: readonly { roomServerId?: number; timestamp: number }[],
 ): Record<number, number> {
   const maxById = maxRoomPostTimestampByServerId(messages);
-  const now = Date.now();
-  let changed = false;
-  const next: Record<number, number> = { ...persisted };
-  for (const [k, watermark] of Object.entries(persisted)) {
-    const nodeId = Number(k) >>> 0;
-    if (!Number.isFinite(nodeId)) continue;
-    const maxMsg = maxById[nodeId] ?? 0;
-    let clamped = clampReadWatermarkMs(watermark, now);
-    if (watermark > now) clamped = maxMsg;
-    else if (maxMsg > 0 && clamped > maxMsg) clamped = maxMsg;
-    if (clamped !== watermark) {
-      next[nodeId] = clamped;
-      changed = true;
-    }
-  }
-  return changed ? next : persisted;
+  return sanitizeNumericKeyLastRead(persisted, maxById);
 }
 
 export function getSanitizedMeshcoreRoomsLastRead(

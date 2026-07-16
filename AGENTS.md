@@ -30,12 +30,12 @@ Electron: `src/main/` (Node, SQLite, BLE, MQTT), `src/preload/` (bridge), `src/r
 
 Path alias `@/*` → `src/*` (see `tsconfig.json`).
 
-| Boundary | Path            | Role                                                                                                                                                                                                                  |
-| -------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Main     | `src/main/`     | SQLite (`database.ts`, `db-compat.ts`), BLE (`noble-ble-manager.ts`), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`), IPC handlers, window, GPS, updater |
-| Preload  | `src/preload/`  | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                    |
-| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/`, `stores/`, `lib/` (includes `lib/diagnostics/`, `lib/meshcore/`, `lib/radio/`, `lib/transport/`), `workers/`                                          |
-| Shared   | `src/shared/`   | IPC contracts (`electron-api.types.ts`), protocol-neutral helpers                                                                                                                                                     |
+| Boundary | Path            | Role                                                                                                                                                                                                                                                                                                |
+| -------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Main     | `src/main/`     | SQLite (`database.ts`, `db-compat.ts`), BLE (`noble-ble-manager.ts`), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`), IPC handlers (`index.ts` plus namespaced modules in `src/main/ipc/` — Reticulum, TAK, GPS), window, GPS, updater |
+| Preload  | `src/preload/`  | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                                                                                                  |
+| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/`, `stores/`, `lib/` (includes `lib/diagnostics/`, `lib/meshcore/`, `lib/radio/`, `lib/transport/`), `workers/`                                                                                                                        |
+| Shared   | `src/shared/`   | IPC contracts (`electron-api.types.ts`), protocol-neutral helpers                                                                                                                                                                                                                                   |
 
 Entry points: `src/main/index.ts`, `src/preload/index.ts`, `src/renderer/main.tsx`, `src/renderer/App.tsx`.
 
@@ -63,7 +63,7 @@ const capabilities = useRadioProvider(protocol);
 Adding a cross-boundary feature:
 
 1. Types in `src/shared/electron-api.types.ts`.
-2. `ipcMain.handle('namespace:action', ...)` in `src/main/index.ts`.
+2. `ipcMain.handle('namespace:action', ...)` in `src/main/index.ts` — or in a namespaced module under `src/main/ipc/` (e.g. `reticulum-handlers.ts`, `tak-handlers.ts`, `gps-handlers.ts`) registered from `index.ts` when the handler set is large enough to warrant its own file.
 3. Expose on `electronAPI` in `src/preload/index.ts` via `ipcRenderer.invoke`.
 4. Call from renderer: `window.electronAPI...`
 
@@ -159,7 +159,7 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 - **Gating:** `hasReticulumDiscoveryMap` (Map tab); `hasReticulumInterfaceConfig` / `hasReticulumNetworkPanel` / `ProtocolCapabilities`
 - **Runtime:** `useReticulumRuntime`, `reticulumSession.ts`, `reticulumIngest.ts`; connect starts sidecar, not `ConnectionDriver` RF
 - **Diagnostics:** `ReticulumDiagnosticEngine.ts` (Reticulum-native rows; no LoRa hop-goblin semantics)
-- **No Noble/MQTT** for Reticulum tab; gate UI with `hasReticulumInterfaceConfig` / `hasReticulumNetworkPanel` / `ProtocolCapabilities`
+- **No Noble/MQTT** for Reticulum's own connections (sidecar owns BLE RNode via `btleplug`); gate UI with `hasReticulumInterfaceConfig` / `hasReticulumNetworkPanel` / `ProtocolCapabilities`. On macOS/Windows, connecting a Reticulum BLE RNode may still **suspend/yield Noble** so it does not contend with the sidecar's BLE scan — see **Multi-protocol BLE** below.
 - **Multi-protocol BLE:** Meshtastic, MeshCore, and Reticulum (BLE Peer + `ble://` RNode) may connect to **different** BLE devices at once on all platforms. Coexistence: `ble-coexistence-coordinator.ts` (peripheral MAC registry + scan-only mutex); Linux mesh uses Web Bluetooth + sidecar `btleplug`. Same MAC rejected; scans serialized—never disconnect unrelated GATT for scans. **Reticulum BLE RNode** on macOS/Windows may **suspend Noble** (`suspendNobleForReticulumBleConnect`, `reticulum-ble-rnode-config.ts`, `reticulumNobleBleYield.ts`, `useReticulumNobleBleYieldWatcher`); while yield holds the scan, Noble connect is rejected; post-grace yield stops re-contending; disconnect timeout fails closed (releases scan). Sidecar may latch **`bleBondRemoved`** for stale OS bonds — Forget/re-pair. Release dispatches `mesh-client:nobleBleYieldReleased` for Meshtastic/MeshCore reconnect.
 - **Docs:** [docs/reticulum.md](docs/reticulum.md), [docs/reticulum-sidecar-ipc.md](docs/reticulum-sidecar-ipc.md)
 
