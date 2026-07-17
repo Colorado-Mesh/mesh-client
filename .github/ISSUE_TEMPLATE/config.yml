@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Vote on Backlog Ideas
+    url: https://github.com/Colorado-Mesh/mesh-client/issues?q=is%3Aclosed+label%3A%22needs+interest%22
+    about: Browse parked feature ideas and cast your vote with a thumbs-up reaction.
