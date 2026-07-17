@@ -44,6 +44,8 @@ export default function NomadPageServerPanel({
   const [copied, setCopied] = useState(false);
   const refreshInFlightRef = useRef(false);
   const refreshSeqRef = useRef(0);
+  /** Prefer local edits over poll/status refresh until Start/Stop serving succeeds. */
+  const displayNameDirtyRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const refresh = useCallback(async () => {
@@ -60,7 +62,11 @@ export default function NomadPageServerPanel({
       setSidecarRunning(true);
       if (statusRes.ok && statusRes.serving) {
         setStatus(statusRes.serving);
-        setDisplayName(statusRes.serving.display_name ?? '');
+        // Failure point: reticulum onStatus / list refresh races while typing.
+        // Fallback: keep the in-progress draft until Start/Stop applies it.
+        if (!displayNameDirtyRef.current) {
+          setDisplayName(statusRes.serving.display_name ?? '');
+        }
       } else if (!statusRes.ok) {
         setError(humanizeNomadPageError(statusRes.error, t));
       }
@@ -84,6 +90,13 @@ export default function NomadPageServerPanel({
       }
     }
   }, [t]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    // Allow sidecar hydrate only when the panel becomes active — not on every
+    // refresh() identity change (which would wipe in-progress name edits).
+    displayNameDirtyRef.current = false;
+  }, [isActive]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -127,10 +140,16 @@ export default function NomadPageServerPanel({
   );
 
   const setServing = async (enabled: boolean) => {
-    await runServingAction(
-      () => setServingApi({ enabled, displayName }),
-      'nomadNetwork.serving.failed',
-    );
+    await runServingAction(async () => {
+      const body = await setServingApi({ enabled, displayName });
+      if (body.ok) {
+        displayNameDirtyRef.current = false;
+        if (body.serving?.display_name != null) {
+          setDisplayName(body.serving.display_name);
+        }
+      }
+      return body;
+    }, 'nomadNetwork.serving.failed');
   };
 
   const loadPage = async (path: string) => {
@@ -259,6 +278,7 @@ export default function NomadPageServerPanel({
           value={displayName}
           disabled={busy || !sidecarRunning}
           onChange={(e) => {
+            displayNameDirtyRef.current = true;
             setDisplayName(e.target.value);
           }}
           aria-label={t('nomadNetwork.serving.displayName')}

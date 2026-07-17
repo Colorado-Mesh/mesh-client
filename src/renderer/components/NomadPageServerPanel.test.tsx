@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -131,6 +131,50 @@ describe('NomadPageServerPanel', () => {
         '/api/v1/nomadnetwork/serving/files?path=readme.txt',
       );
     });
+  });
+
+  it('keeps an in-progress display name across status refresh', async () => {
+    let statusListener: ((s: { running: boolean; port: number }) => void) | undefined;
+    onReticulumStatus.mockImplementation((cb: (s: { running: boolean; port: number }) => void) => {
+      statusListener = cb;
+      return () => {};
+    });
+    render(<NomadPageServerPanel isActive />);
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Home')).toBeInTheDocument();
+    });
+
+    const input = screen.getByLabelText('nomadNetwork.serving.displayName');
+    fireEvent.change(input, { target: { value: 'My Node' } });
+    expect(input).toHaveValue('My Node');
+
+    proxyGet.mockImplementation((path: string) => {
+      if (path === '/api/v1/nomadnetwork/serving') {
+        return Promise.resolve({
+          ok: true,
+          serving: { ...servingStatus, display_name: 'Nomad node' },
+        });
+      }
+      if (path === '/api/v1/nomadnetwork/serving/pages') {
+        return Promise.resolve({ ok: true, pages: [{ path: 'index.mu', size: 12 }] });
+      }
+      if (path === '/api/v1/nomadnetwork/serving/files') {
+        return Promise.resolve({ ok: true, files: [] });
+      }
+      return Promise.resolve({ ok: false, error: 'unexpected' });
+    });
+    const servingCallsBefore = proxyGet.mock.calls.filter(
+      (c) => c[0] === '/api/v1/nomadnetwork/serving',
+    ).length;
+    statusListener?.({ running: true, port: 7700 });
+
+    await waitFor(() => {
+      const servingCalls = proxyGet.mock.calls.filter(
+        (c) => c[0] === '/api/v1/nomadnetwork/serving',
+      ).length;
+      expect(servingCalls).toBeGreaterThan(servingCallsBefore);
+    });
+    expect(screen.getByDisplayValue('My Node')).toBeInTheDocument();
   });
 
   it('surfaces pages-list errors instead of clearing them', async () => {
