@@ -2760,7 +2760,18 @@
       "failed": "Nomad sunumu güncellenemedi.",
       "loadPageFailed": "Sayfa yüklenemedi.",
       "saveFailed": "Sayfa kaydedilemedi.",
-      "deleteFailed": "Sayfa silinemedi."
+      "deleteFailed": "Sayfa silinemedi.",
+      "previewSite": "Tarayıcıda aç",
+      "previewSiteAria": "Barındırılan bu Nomad sitesini tarayıcıda önizleyin",
+      "myFiles": "Yerel dosyalar",
+      "noFiles": "Henüz dosya yok./file /… altında sunulacak küçük bir dosya yükleyin.",
+      "uploadFile": "Dosya yükle",
+      "uploadFileAria": "/file/altında ana bilgisayara bir dosya yükle",
+      "deleteFile": "{{path}} silin",
+      "fileTooLarge": "Dosya yüklenemeyecek kadar büyük (uygulama üzerinden maksimum yaklaşık 3 MB).",
+      "invalidFilePath": "Klasörler veya .. segmentler olmadan basit bir dosya adı seçin.",
+      "uploadFailed": "BitiÅten Sonra",
+      "deleteFileFailed": "Dosya silinemedi."
     }
   },
   "packetDistribution": {

@@ -2760,7 +2760,18 @@
       "failed": "Nie można zaktualizować usługi Nomad.",
       "loadPageFailed": "Nie można załadować strony.",
       "saveFailed": "Nie można zapisać strony.",
-      "deleteFailed": "Nie udało się usunąć strony."
+      "deleteFailed": "Nie udało się usunąć strony.",
+      "previewSite": "Otwórz w przeglądarce",
+      "previewSiteAria": "Podgląd tej hostowanej witryny Nomad w przeglądarce",
+      "myFiles": "Pliki lokalne",
+      "noFiles": "Nie ma jeszcze plików. Prześlij mały plik do obsługi pod /file/…",
+      "uploadFile": "Prześlij plik",
+      "uploadFileAria": "Prześlij plik do hosta pod /file/",
+      "deleteFile": "Usuń {{path}}",
+      "fileTooLarge": "Plik jest zbyt duży, aby go przesłać (maksymalnie około 3 MB za pośrednictwem aplikacji).",
+      "invalidFilePath": "Wybierz prostą nazwę pliku bez folderów lub .. segmentów.",
+      "uploadFailed": "Nie można wysłać pliku.",
+      "deleteFileFailed": "Nie udało się usunąć"
     }
   },
   "packetDistribution": {

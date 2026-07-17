@@ -1189,6 +1189,23 @@ impl StackHandle {
                         tracing::warn!("nomad re-announce failed: {e}");
                     }
                 }
+                // Refresh local host row when already running (start path upserts on spawn).
+                let status = live.nomad_serving_status().await;
+                if let (Some(dest), Some(id_hash)) = (
+                    status.destination_hash.as_ref(),
+                    status.identity_hash.as_ref(),
+                ) {
+                    let mut inner = self.inner.write().await;
+                    inner.upsert_nomad_node(
+                        dest,
+                        Some(id_hash.clone()),
+                        Some(status.display_name.clone()),
+                        Some(0),
+                    );
+                    if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                        tracing::warn!("nomad local host persist failed: {e}");
+                    }
+                }
             } else {
                 live.stop_nomad_serving().await?;
             }

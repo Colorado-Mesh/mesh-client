@@ -2760,7 +2760,18 @@
       "failed": "Nomad 제공을 업데이트할 수 없습니다.",
       "loadPageFailed": "페이지를 로드할 수 없습니다.",
       "saveFailed": "페이지를 저장할 수 없습니다.",
-      "deleteFailed": "페이지를 삭제할 수 없습니다."
+      "deleteFailed": "페이지를 삭제할 수 없습니다.",
+      "previewSite": "브라우저에서 열기",
+      "previewSiteAria": "브라우저에서 이 호스팅된 Nomad 사이트 미리보기",
+      "myFiles": "로컬 파일( L)",
+      "noFiles": "아직 파일이 없습니다./file/… 아래에 작은 파일을 업로드하십시오.",
+      "uploadFile": "파일 업로드",
+      "uploadFileAria": "/file/아래에 호스팅할 파일 업로드",
+      "deleteFile": "{{path}} 삭제",
+      "fileTooLarge": "파일이 너무 커서 업로드할 수 없습니다 (앱을 통해 최대 약 3MB).",
+      "invalidFilePath": "폴더 또는.. 세그먼트가 없는 간단한 파일 이름을 선택하십시오.",
+      "uploadFailed": "찾기( F)",
+      "deleteFileFailed": "% 1 파일을 삭제할 수 없습니다."
     }
   },
   "packetDistribution": {

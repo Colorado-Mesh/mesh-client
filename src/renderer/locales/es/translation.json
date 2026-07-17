@@ -2760,7 +2760,18 @@
       "failed": "No se pudo actualizar el servicio Nomad.",
       "loadPageFailed": "No se pudo cargar la página.",
       "saveFailed": "No se pudo guardar la página.",
-      "deleteFailed": "No se pudo eliminar la página."
+      "deleteFailed": "No se pudo eliminar la página.",
+      "previewSite": "Abrir en el navegador",
+      "previewSiteAria": "Vista previa de este sitio Nomad alojado en el navegador",
+      "myFiles": "Archivos locales",
+      "noFiles": "Aún no hay archivos. Cargue un pequeño archivo para servir en /file/...",
+      "uploadFile": "Cargar archivo",
+      "uploadFileAria": "Sube un archivo al host en /file/",
+      "deleteFile": "Eliminar {{path}}",
+      "fileTooLarge": "El archivo es demasiado grande para cargarlo (máximo unos 3 MB a través de la aplicación).",
+      "invalidFilePath": "Elija un nombre de archivo simple sin carpetas o .. segmentos.",
+      "uploadFailed": "No se puede enviar el archivo. @item: intable Image file name",
+      "deleteFileFailed": "No se ha podido eliminar el archivo."
     }
   },
   "packetDistribution": {

@@ -345,16 +345,17 @@ mesh-client can **host** a static Nomad site (not only browse peers):
 
 1. Start the Reticulum stack and ensure an identity exists.
 2. Open **Nomad Network** → **My Pages**.
-3. Set a display name, **Start serving**, edit `.mu` pages, save.
-4. Peers discover the node via `nomadnetwork.node` announces; browse `/page/index.mu` from NomadNet / MeshChat / another mesh-client.
+3. Set a display name, **Start serving**, edit `.mu` pages, upload small files under **Local files**, save.
+4. Use **Open in browser** to self-preview `index.mu` without a second peer.
+5. Peers discover the node via `nomadnetwork.node` announces; browse `/page/index.mu` from NomadNet / MeshChat / another mesh-client.
 
-Implementation: sibling [rsNomad](https://github.com/Colorado-Mesh/rsNomad) (`nomad-core`) inside the AGPL sidecar. Content lives under the sidecar storage dir `nomadnetwork/{pages,files}/`. Serving is **off by default**. Preference persists as `nomad_serving_enabled` / `nomad_serving_display_name` and auto-restores on stack start when enabled. CGI/executable pages are not supported.
+Implementation: sibling [rsNomad](https://github.com/Colorado-Mesh/rsNomad) (`nomad-core`) inside the AGPL sidecar. Content lives under the sidecar storage dir `nomadnetwork/{pages,files}/`. Serving is **off by default**. Preference persists as `nomad_serving_enabled` / `nomad_serving_display_name` and auto-restores on stack start when enabled. CGI/executable pages are not supported. Dotfiles and `*.allowed` paths are not listed or served (NomadNet parity). Request handling is concurrency-bounded in `nomad-core`.
 
-**Limits / UI notes:** PUT page/file bodies are bounded by the sidecar global **4 MiB** JSON body limit; page content is also capped near **512 KiB** in `nomad-core`. The node re-announces about every **1 hour**. `index.mu` is auto-seeded and cannot be deleted from the UI. The **My Pages** panel edits **pages** today; serving **files** APIs exist but there is no file-upload UI yet.
+**Limits / UI notes:** PUT page/file bodies are bounded by the sidecar global **4 MiB** JSON body limit; the My Pages upload UI caps files near **3 MiB** so base64+JSON fits that body. Page content is also capped near **512 KiB** in `nomad-core`. The node re-announces about every **1 hour**. `index.mu` is auto-seeded and cannot be deleted from the UI.
 
-**Follow-ups (not in #613 MVP):** Markdown→Micron CMS, theme/nav editors, Nomad chat rooms, forums — see [rsNomad ROADMAP](https://github.com/Colorado-Mesh/rsNomad/blob/main/ROADMAP.md).
+**Follow-ups:** Markdown→Micron CMS, theme/nav editors, Nomad chat rooms, forums, streaming large files — see [rsNomad ROADMAP](https://github.com/Colorado-Mesh/rsNomad/blob/main/ROADMAP.md).
 
-**Manual interop check:** enable hosting → confirm announce in Nomad node list → open the destination from Python NomadNet or a second peer → fetch `/page/index.mu` and a small `/file/...` download.
+**Live interop:** see [nomad-hosting-interop.md](nomad-hosting-interop.md) (announce + page + file against NomadNet / MeshChat / second mesh-client).
 
 ---
 

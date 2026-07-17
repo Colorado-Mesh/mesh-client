@@ -2760,7 +2760,18 @@
       "failed": "Kan Nomad-hosting niet bijwerken.",
       "loadPageFailed": "Kan pagina niet laden.",
       "saveFailed": "Kon pagina niet opslaan.",
-      "deleteFailed": "Kan pagina niet verwijderen."
+      "deleteFailed": "Kan pagina niet verwijderen.",
+      "previewSite": "Openen in browser",
+      "previewSiteAria": "Bekijk een voorbeeld van deze gehoste Nomad-site in de browser",
+      "myFiles": "Lokale bestanden",
+      "noFiles": "Nog geen bestanden. Upload een klein bestand om te serveren onder /file/…",
+      "uploadFile": "Upload bestand",
+      "uploadFileAria": "Upload een bestand naar host onder /file/",
+      "deleteFile": "{{path}} verwijderen",
+      "fileTooLarge": "Bestand is te groot om te uploaden (max ongeveer 3 MB via de app).",
+      "invalidFilePath": "Kies een eenvoudige bestandsnaam zonder mappen of .. segmenten.",
+      "uploadFailed": "Kan het bestand niet uploaden.",
+      "deleteFileFailed": "Kan het bestand niet verwijderen."
     }
   },
   "packetDistribution": {

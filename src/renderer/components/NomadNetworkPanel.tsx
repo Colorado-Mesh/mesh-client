@@ -471,6 +471,18 @@ export default function NomadNetworkPanel({
     [loadNodePage],
   );
 
+  const handlePreviewHostedSite = useCallback(
+    (hash: string) => {
+      setActiveTab('announces');
+      void (async () => {
+        await refreshFromSidecar();
+        if (!mountedRef.current) return;
+        void loadNodePage(hash, DEFAULT_NOMAD_NODE_PAGE_PATH, { forceReload: true });
+      })();
+    },
+    [loadNodePage, refreshFromSidecar],
+  );
+
   const handleToggleFavorite = useCallback(
     (hash: string, favorited: boolean) => {
       void toggleFavorite(hash, favorited);
@@ -700,7 +712,10 @@ export default function NomadNetworkPanel({
 
         <div className="bg-secondary-dark flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-700">
           {activeTab === 'myPages' ? (
-            <NomadPageServerPanel isActive={isActive} />
+            <NomadPageServerPanel
+              isActive={isActive}
+              onPreviewHostedSite={handlePreviewHostedSite}
+            />
           ) : !selectedNode ? (
             <p className="text-muted m-auto max-w-sm p-6 text-center text-sm">
               {t('nomadNetwork.selectNode')}

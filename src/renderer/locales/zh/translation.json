@@ -2760,7 +2760,18 @@
       "failed": "无法更新 Nomad 服务。",
       "loadPageFailed": "无法加载页面。",
       "saveFailed": "无法保存页面。",
-      "deleteFailed": "无法删除页面。"
+      "deleteFailed": "无法删除页面。",
+      "previewSite": "在浏览器中打开",
+      "previewSiteAria": "在浏览器中预览此托管Nomad网站",
+      "myFiles": "本地文件( L)",
+      "noFiles": "还没有文件。上传一个小文件，在/file/…下提供服务",
+      "uploadFile": "上传文件",
+      "uploadFileAria": "在/file/下上传文件到主机",
+      "deleteFile": "删除{{path}}",
+      "fileTooLarge": "文件太大，无法上传（通过应用程序最大约3 MB ）。",
+      "invalidFilePath": "选择一个不带文件夹或..段的简单文件名。",
+      "uploadFailed": "无法上传文件 。 @ item: intable Image file name",
+      "deleteFileFailed": "无法删除 %s 文件。"
     }
   },
   "packetDistribution": {

@@ -3,11 +3,15 @@ import { useTranslation } from 'react-i18next';
 
 import { humanizeNomadPageError } from '@/renderer/lib/nomad/nomadPageErrorHumanize';
 import {
+  deleteServingFile,
   deleteServingPage,
+  encodeServingFileUpload,
   getServingStatus,
+  listServingFiles,
   listServingPages,
   readServingPage,
   setServing as setServingApi,
+  writeServingFile,
   writeServingPage,
 } from '@/renderer/lib/nomad/nomadServingApi';
 import type { NomadServingPageEntry, NomadServingStatus } from '@/shared/nomad-types';
@@ -18,11 +22,19 @@ const DEFAULT_PAGE_CONTENT = `#!c=30
 Edit this Micron page, then save.
 `;
 
-export default function NomadPageServerPanel({ isActive }: { isActive?: boolean }) {
+export default function NomadPageServerPanel({
+  isActive,
+  onPreviewHostedSite,
+}: {
+  isActive?: boolean;
+  /** Open the local hosted destination in the Nomad browser. */
+  onPreviewHostedSite?: (destinationHash: string) => void;
+}) {
   const { t } = useTranslation();
   const [sidecarRunning, setSidecarRunning] = useState(false);
   const [status, setStatus] = useState<NomadServingStatus | null>(null);
   const [pages, setPages] = useState<NomadServingPageEntry[]>([]);
+  const [files, setFiles] = useState<NomadServingPageEntry[]>([]);
   const [displayName, setDisplayName] = useState('');
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [editorContent, setEditorContent] = useState('');
@@ -32,6 +44,7 @@ export default function NomadPageServerPanel({ isActive }: { isActive?: boolean 
   const [copied, setCopied] = useState(false);
   const refreshInFlightRef = useRef(false);
   const refreshSeqRef = useRef(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const refresh = useCallback(async () => {
     if (refreshInFlightRef.current) return;
@@ -52,13 +65,18 @@ export default function NomadPageServerPanel({ isActive }: { isActive?: boolean 
         setError(humanizeNomadPageError(statusRes.error, t));
       }
 
-      const pagesRes = await listServingPages();
+      const [pagesRes, filesRes] = await Promise.all([listServingPages(), listServingFiles()]);
       if (seq !== refreshSeqRef.current) return;
       if (pagesRes.ok && pagesRes.pages) {
         setPages(pagesRes.pages);
         if (statusRes.ok) setError(null);
       } else if (!pagesRes.ok) {
         setError(humanizeNomadPageError(pagesRes.error, t));
+      }
+      if (filesRes.ok && filesRes.files) {
+        setFiles(filesRes.files);
+      } else if (!filesRes.ok) {
+        setError(humanizeNomadPageError(filesRes.error, t));
       }
     } finally {
       if (seq === refreshSeqRef.current) {
@@ -170,6 +188,35 @@ export default function NomadPageServerPanel({ isActive }: { isActive?: boolean 
     }, 'nomadNetwork.serving.deleteFailed');
   };
 
+  const uploadFile = async (fileList: FileList | null) => {
+    const file = fileList?.[0];
+    if (!file) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const encoded = await encodeServingFileUpload(file);
+      if (!encoded.ok) {
+        setError(
+          humanizeNomadPageError(encoded.error, t) || t('nomadNetwork.serving.uploadFailed'),
+        );
+        return;
+      }
+      const body = await writeServingFile(encoded.path, encoded.contentBase64);
+      if (!body.ok) {
+        setError(humanizeNomadPageError(body.error, t) || t('nomadNetwork.serving.uploadFailed'));
+        return;
+      }
+      await refresh();
+    } finally {
+      setBusy(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const deleteFile = async (path: string) => {
+    await runServingAction(() => deleteServingFile(path), 'nomadNetwork.serving.deleteFileFailed');
+  };
+
   const copyHash = async () => {
     const hash = status?.destination_hash;
     if (!hash) return;
@@ -187,6 +234,8 @@ export default function NomadPageServerPanel({ isActive }: { isActive?: boolean 
 
   const serving = status?.running === true;
   const stats = status?.stats;
+  const canPreview =
+    serving && Boolean(status?.destination_hash) && typeof onPreviewHostedSite === 'function';
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
@@ -240,6 +289,20 @@ export default function NomadPageServerPanel({ isActive }: { isActive?: boolean 
         >
           {t('nomadNetwork.serving.disable')}
         </button>
+        {canPreview ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              const hash = status?.destination_hash;
+              if (hash) onPreviewHostedSite?.(hash);
+            }}
+            aria-label={t('nomadNetwork.serving.previewSiteAria')}
+            className="rounded border border-purple-600 px-3 py-1.5 text-xs text-purple-300 hover:bg-purple-900/30 disabled:opacity-40"
+          >
+            {t('nomadNetwork.serving.previewSite')}
+          </button>
+        ) : null}
       </div>
 
       {status?.destination_hash ? (
@@ -364,6 +427,56 @@ export default function NomadPageServerPanel({ isActive }: { isActive?: boolean 
             </button>
           </div>
         ) : null}
+      </div>
+
+      <div className="border-t border-gray-700 pt-3">
+        <h4 className="mb-2 text-sm font-medium text-gray-100">
+          {t('nomadNetwork.serving.myFiles')}
+        </h4>
+        <ul className="mb-3 space-y-1">
+          {files.length === 0 ? (
+            <li className="text-muted text-sm">{t('nomadNetwork.serving.noFiles')}</li>
+          ) : (
+            files.map((file) => (
+              <li key={file.path} className="flex items-center gap-2 text-sm">
+                <span className="truncate text-gray-200">{file.path}</span>
+                <span className="text-muted shrink-0 text-[10px]">{file.size} B</span>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    void deleteFile(file.path);
+                  }}
+                  aria-label={t('nomadNetwork.serving.deleteFile', { path: file.path })}
+                  className="text-red-400 hover:underline disabled:opacity-30"
+                >
+                  {t('common.delete')}
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          aria-hidden
+          tabIndex={-1}
+          onChange={(e) => {
+            void uploadFile(e.target.files);
+          }}
+        />
+        <button
+          type="button"
+          disabled={busy || !sidecarRunning}
+          onClick={() => {
+            fileInputRef.current?.click();
+          }}
+          aria-label={t('nomadNetwork.serving.uploadFileAria')}
+          className="rounded border border-gray-600 px-3 py-1.5 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+        >
+          {t('nomadNetwork.serving.uploadFile')}
+        </button>
       </div>
     </div>
   );

@@ -2760,7 +2760,18 @@
       "failed": "Nelze aktualizovat službu Nomad.",
       "loadPageFailed": "Stránku se nepodařilo načíst.",
       "saveFailed": "Nelze uložit stránku.",
-      "deleteFailed": "Nelze odstranit stránku."
+      "deleteFailed": "Nelze odstranit stránku.",
+      "previewSite": "Otevřít v prohlížeči",
+      "previewSiteAria": "Náhled tohoto hostovaného webu Nomad v prohlížeči",
+      "myFiles": "& Místní soubory",
+      "noFiles": "Zatím žádné soubory. Nahrajte malý soubor, který chcete zobrazit pod /file/…",
+      "uploadFile": "Nahrát soubor",
+      "uploadFileAria": "Nahraj soubor, který chceš hostit pod /file/",
+      "deleteFile": "Smazat {{path}}",
+      "fileTooLarge": "Soubor je příliš velký na nahrání (max. 3 MB přes aplikaci).",
+      "invalidFilePath": "Vyberte jednoduchý název souboru bez složek nebo .. segmentů.",
+      "uploadFailed": "Nelze nahrát soubor.",
+      "deleteFileFailed": "Nelze odstranit"
     }
   },
   "packetDistribution": {

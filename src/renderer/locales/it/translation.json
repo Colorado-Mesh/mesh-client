@@ -2760,7 +2760,18 @@
       "failed": "Impossibile aggiornare il servizio Nomad.",
       "loadPageFailed": "Impossibile caricare la pagina.",
       "saveFailed": "Impossibile salvare la pagina.",
-      "deleteFailed": "Impossibile eliminare la pagina."
+      "deleteFailed": "Impossibile eliminare la pagina.",
+      "previewSite": "Apri nel browser",
+      "previewSiteAria": "Visualizza l'anteprima di questo sito Nomad ospitato nel browser",
+      "myFiles": "File locali",
+      "noFiles": "Ancora nessun file. Carica un file piccolo da servire in /file/...",
+      "uploadFile": "Carica file",
+      "uploadFileAria": "Carica un file sull'host in /file/",
+      "deleteFile": "Elimina {{path}}",
+      "fileTooLarge": "Il file è troppo grande per essere caricato (massimo circa 3 MB tramite l'app).",
+      "invalidFilePath": "Scegli un nome di file semplice senza cartelle o .. segmenti.",
+      "uploadFailed": "Impossibile caricare il file.",
+      "deleteFileFailed": "Impossibile eliminare il file."
     }
   },
   "packetDistribution": {

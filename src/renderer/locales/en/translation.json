@@ -2886,7 +2886,18 @@
       "failed": "Could not update Nomad serving.",
       "loadPageFailed": "Could not load page.",
       "saveFailed": "Could not save page.",
-      "deleteFailed": "Could not delete page."
+      "deleteFailed": "Could not delete page.",
+      "previewSite": "Open in browser",
+      "previewSiteAria": "Preview this hosted Nomad site in the browser",
+      "myFiles": "Local files",
+      "noFiles": "No files yet. Upload a small file to serve under /file/…",
+      "uploadFile": "Upload file",
+      "uploadFileAria": "Upload a file to host under /file/",
+      "deleteFile": "Delete {{path}}",
+      "fileTooLarge": "File is too large to upload (max about 3 MB via the app).",
+      "invalidFilePath": "Choose a simple file name without folders or .. segments.",
+      "uploadFailed": "Could not upload file.",
+      "deleteFileFailed": "Could not delete file."
     }
   },
   "packetDistribution": {

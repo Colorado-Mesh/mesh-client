@@ -2760,7 +2760,18 @@
       "failed": "Tidak dapat memperbarui layanan Nomad.",
       "loadPageFailed": "Tidak dapat memuat halaman.",
       "saveFailed": "Tidak dapat menyimpan halaman.",
-      "deleteFailed": "Tidak dapat menghapus halaman."
+      "deleteFailed": "Tidak dapat menghapus halaman.",
+      "previewSite": "Buka di Peramban",
+      "previewSiteAria": "Pratinjau situs Nomad yang dihosting ini di browser",
+      "myFiles": "Berkas Lokal",
+      "noFiles": "Belum ada file. Unggah file kecil untuk ditayangkan di bawah /file /…",
+      "uploadFile": "Unggah file",
+      "uploadFileAria": "Unggah file ke host di bawah /file/",
+      "deleteFile": "Hapus {{path}}",
+      "fileTooLarge": "File terlalu besar untuk diunggah (maks sekitar 3 MB melalui aplikasi).",
+      "invalidFilePath": "Pilih nama file sederhana tanpa folder atau .. segmen.",
+      "uploadFailed": "Tidak dapat mengunggah file.",
+      "deleteFileFailed": "Tidak dapat menghapus file."
     }
   },
   "packetDistribution": {

@@ -5,7 +5,10 @@ use std::time::Duration;
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
-use nomad_core::{NomadContentRoots, NomadContentStore, NomadNode, NomadNodeConfig};
+use nomad_core::{
+    NomadContentRoots, NomadContentStore, NomadNode, NomadNodeConfig, normalize_file_route,
+    normalize_page_route,
+};
 use rns_identity::identity::Identity;
 use rns_transport::messages::TransportMessage;
 use tokio::sync::Mutex;
@@ -116,6 +119,38 @@ impl NomadServerHandle {
             return Err("nomad serving is not running".into());
         };
         node.announce_now().await.map_err(|e| e.to_string())
+    }
+
+    /// Serve a page/file from the local host when `dest_hash` matches this node.
+    /// Used for self-preview without a Link round-trip to ourselves.
+    pub async fn try_read_local_route(
+        &self,
+        dest_hash: &str,
+        path: &str,
+    ) -> Option<Result<Vec<u8>, String>> {
+        let guard = self.inner.lock().await;
+        let node = guard.as_ref()?;
+        let local = node.destination_hash_hex();
+        let clean = dest_hash
+            .chars()
+            .filter(|c| c.is_ascii_hexdigit())
+            .collect::<String>();
+        if !local.eq_ignore_ascii_case(&clean) {
+            return None;
+        }
+        let trimmed = path.trim();
+        let read = if trimmed.starts_with("/file/") {
+            match normalize_file_route(trimmed) {
+                Ok(route) => node.store().read_file_route(&route),
+                Err(e) => return Some(Err(e.to_string())),
+            }
+        } else {
+            match normalize_page_route(trimmed) {
+                Ok(route) => node.store().read_page_route(&route),
+                Err(e) => return Some(Err(e.to_string())),
+            }
+        };
+        Some(read.map_err(|e| e.to_string()))
     }
 
     pub async fn list_pages(&self) -> Result<Vec<nomad_core::NomadPageEntry>, String> {

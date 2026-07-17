@@ -81,6 +81,12 @@ describe('NomadPageServerPanel', () => {
           ],
         });
       }
+      if (path === '/api/v1/nomadnetwork/serving/files') {
+        return Promise.resolve({
+          ok: true,
+          files: [{ path: 'readme.txt', size: 4 }],
+        });
+      }
       if (path.startsWith('/api/v1/nomadnetwork/serving/page?')) {
         return Promise.resolve({ ok: true, content: '> hi' });
       }
@@ -88,14 +94,43 @@ describe('NomadPageServerPanel', () => {
     });
   });
 
-  it('loads serving status and pages when active', async () => {
+  it('loads serving status, pages, and files when active', async () => {
     render(<NomadPageServerPanel isActive />);
     await waitFor(() => {
       expect(screen.getByText('index.mu')).toBeInTheDocument();
     });
     expect(screen.getByText('about.mu')).toBeInTheDocument();
+    expect(screen.getByText('readme.txt')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Home')).toBeInTheDocument();
     expect(screen.getByText('nomadNetwork.serving.servingChip')).toBeInTheDocument();
+  });
+
+  it('invokes preview callback for the local destination', async () => {
+    const user = userEvent.setup();
+    const onPreviewHostedSite = vi.fn();
+    render(<NomadPageServerPanel isActive onPreviewHostedSite={onPreviewHostedSite} />);
+    await waitFor(() => {
+      expect(screen.getByText('nomadNetwork.serving.servingChip')).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.serving.previewSiteAria' }));
+    expect(onPreviewHostedSite).toHaveBeenCalledWith('aabbccddeeff00112233445566778899');
+  });
+
+  it('deletes a hosted file', async () => {
+    const user = userEvent.setup();
+    proxyDelete.mockResolvedValue({ ok: true });
+    render(<NomadPageServerPanel isActive />);
+    await waitFor(() => {
+      expect(screen.getByText('readme.txt')).toBeInTheDocument();
+    });
+    await user.click(
+      screen.getByRole('button', { name: 'nomadNetwork.serving.deleteFile:readme.txt' }),
+    );
+    await waitFor(() => {
+      expect(proxyDelete).toHaveBeenCalledWith(
+        '/api/v1/nomadnetwork/serving/files?path=readme.txt',
+      );
+    });
   });
 
   it('surfaces pages-list errors instead of clearing them', async () => {
@@ -108,6 +143,9 @@ describe('NomadPageServerPanel', () => {
       }
       if (path === '/api/v1/nomadnetwork/serving/pages') {
         return Promise.resolve({ ok: false, error: 'nomad_busy' });
+      }
+      if (path === '/api/v1/nomadnetwork/serving/files') {
+        return Promise.resolve({ ok: true, files: [] });
       }
       return Promise.resolve({ ok: false, error: 'unexpected' });
     });

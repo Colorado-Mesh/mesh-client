@@ -2760,7 +2760,18 @@
       "failed": "Nomad の配信を更新できませんでした。",
       "loadPageFailed": "ページを読み込めませんでした。",
       "saveFailed": "ページを保存できませんでした。",
-      "deleteFailed": "ページを削除できませんでした。"
+      "deleteFailed": "ページを削除できませんでした。",
+      "previewSite": "ブラウザーで開く",
+      "previewSiteAria": "このホストされたNomadサイトをブラウザでプレビューする",
+      "myFiles": "ローカルファイル(L)",
+      "noFiles": "ファイルはまだありません。/file/で提供する小さなファイルをアップロードしてください…",
+      "uploadFile": "ファイルをアップロードする",
+      "uploadFileAria": "/file/でホストにファイルをアップロードする",
+      "deleteFile": "{{path}}を削除",
+      "fileTooLarge": "ファイルが大きすぎてアップロードできません（アプリ経由で最大約3 MB ）。",
+      "invalidFilePath": "フォルダまたは..セグメントを含まない単純なファイル名を選択します。",
+      "uploadFailed": "ファイルをアップロードできませんでした。",
+      "deleteFileFailed": "ファイル %1を削除できませんでした。"
     }
   },
   "packetDistribution": {

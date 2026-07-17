@@ -4,11 +4,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  deleteServingFile,
   deleteServingPage,
+  encodeServingFileUpload,
   getServingStatus,
+  listServingFiles,
   listServingPages,
+  NOMAD_SERVING_FILE_UPLOAD_MAX_BYTES,
   readServingPage,
   setServing,
+  writeServingFile,
   writeServingPage,
 } from '@/renderer/lib/nomad/nomadServingApi';
 import type { NomadServingStatus } from '@/shared/nomad-types';
@@ -122,6 +127,53 @@ describe('nomadServingApi', () => {
     await expect(getServingStatus()).resolves.toEqual({
       ok: false,
       error: 'proxy timeout',
+    });
+  });
+
+  it('lists, writes, and deletes hosted files', async () => {
+    const proxyGet = window.electronAPI.reticulum.proxyGet as ReturnType<typeof vi.fn>;
+    const proxyPut = window.electronAPI.reticulum.proxyPut as ReturnType<typeof vi.fn>;
+    const proxyDelete = window.electronAPI.reticulum.proxyDelete as ReturnType<typeof vi.fn>;
+    proxyGet.mockResolvedValueOnce({
+      ok: true,
+      files: [{ path: 'readme.txt', size: 4 }],
+    });
+    proxyPut.mockResolvedValueOnce({ ok: true });
+    proxyDelete.mockResolvedValueOnce({ ok: true });
+
+    await expect(listServingFiles()).resolves.toEqual({
+      ok: true,
+      files: [{ path: 'readme.txt', size: 4 }],
+    });
+    expect(proxyGet).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/files');
+
+    await expect(writeServingFile('readme.txt', 'YWJjZA==')).resolves.toEqual({ ok: true });
+    expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/files', {
+      path: 'readme.txt',
+      content_base64: 'YWJjZA==',
+    });
+
+    await expect(deleteServingFile('readme.txt')).resolves.toEqual({ ok: true });
+    expect(proxyDelete).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/files?path=readme.txt');
+  });
+
+  it('rejects oversize uploads before proxying', async () => {
+    const big = new File([new Uint8Array(NOMAD_SERVING_FILE_UPLOAD_MAX_BYTES + 1)], 'big.bin');
+    await expect(encodeServingFileUpload(big)).resolves.toEqual({
+      ok: false,
+      error: 'file_too_large',
+    });
+  });
+
+  it('encodes a small file for upload', async () => {
+    const file = new File([new Uint8Array([1, 2, 3])], 'a.bin', {
+      type: 'application/octet-stream',
+    });
+    const encoded = await encodeServingFileUpload(file);
+    expect(encoded).toEqual({
+      ok: true,
+      path: 'a.bin',
+      contentBase64: btoa(String.fromCharCode(1, 2, 3)),
     });
   });
 });

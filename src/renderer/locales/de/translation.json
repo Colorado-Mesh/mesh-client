@@ -2760,7 +2760,18 @@
       "failed": "Nomad-Bereitstellung konnte nicht aktualisiert werden.",
       "loadPageFailed": "Seite konnte nicht geladen werden.",
       "saveFailed": "Seite konnte nicht gespeichert werden.",
-      "deleteFailed": "Seite konnte nicht gelöscht werden."
+      "deleteFailed": "Seite konnte nicht gelöscht werden.",
+      "previewSite": "In Browser öffnen",
+      "previewSiteAria": "Vorschau dieser gehosteten Nomad-Website im Browser anzeigen",
+      "myFiles": "Lokale Dateien",
+      "noFiles": "Noch keine Dateien. Laden Sie eine kleine Datei hoch, die unter /file/bereitgestellt werden soll...",
+      "uploadFile": "Datei hochladen",
+      "uploadFileAria": "Laden Sie eine Datei hoch, um sie unter /file/zu hosten",
+      "deleteFile": "{{path}} löschen",
+      "fileTooLarge": "Datei ist zu groß zum Hochladen (max ca. 3 MB über die App).",
+      "invalidFilePath": "Wählen Sie einen einfachen Dateinamen ohne Ordner oder .. -Segmente.",
+      "uploadFailed": "Datei konnte nicht hochgeladen werden.",
+      "deleteFileFailed": "Datei konnte nicht gelöscht werden"
     }
   },
   "packetDistribution": {
