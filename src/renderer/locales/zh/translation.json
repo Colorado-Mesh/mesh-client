@@ -1731,8 +1731,8 @@
         "label": "USB串行重新连接"
       },
       "reticulum-nomad-hosting": {
-        "label": "Nomad页面出租问题",
-        "recommendation": "Nomad My Pages托管失败或内容文件夹不可用。打开Nomad Network → My Pages ，重新选择页面文件夹（如果已移动） ，然后开始提供服务。详细信息在日志中显示为[Nomad-serving]/[NomadHosting]。"
+        "label": "Nomad 页面托管问题",
+        "recommendation": "Nomad My Pages 托管失败或内容文件夹不可用。打开 Nomad Network → My Pages，如果页面文件夹已移动请重新选择，然后开始提供服务。详细信息在日志中显示为 [nomad-serving] / [NomadHosting]。"
       }
     },
     "recommendationGroups": {
@@ -2756,8 +2756,8 @@
       "failed": "无法更新 Nomad 服务。",
       "previewSite": "在浏览器中打开",
       "previewSiteAria": "在浏览器中预览此托管Nomad网站",
-      "myFiles": "本地文件( L)",
-      "folderHint": "从磁盘上的文件夹提供Micron页面（推荐）。选择具有页面/目录的站点根目录，或页面目录本身。磁盘上的编辑会自动拾取。",
+      "myFiles": "本地文件",
+      "folderHint": "从磁盘上的文件夹提供 Micron 页面（推荐）。选择包含 pages/ 目录的站点根目录，或 pages 目录本身。磁盘上的编辑会自动生效。",
       "chooseFolder": "选择文件夹",
       "chooseFolderAria": "选择一个文件夹来托管Nomad页面",
       "clearFolder": "使用托管存储",
@@ -2767,13 +2767,14 @@
       "contentSourceUnavailable": "所选页面文件夹缺失或不可用。再次选择文件夹。",
       "contentSourceNotDirectory": "选择一个目录，而不是文件。",
       "contentSourceUnreadable": "无法读取所选文件夹。",
-      "invalidContentSource": "文件夹必须包含页面/目录或.mu页面文件。",
+      "invalidContentSource": "文件夹必须包含 pages/ 目录或 .mu 页面文件。",
       "contentSourceFailed": "无法设置内容文件夹。",
       "watcherDegraded": "文件夹监视已降级；页面列表可能会延迟，直到文件夹再次可读。",
       "reloadFromDisk": "从磁盘重新加载",
       "reloadFromDiskAria": "从磁盘重新加载托管页面",
       "noPages": "还没有页面。将.mu文件添加到所选文件夹（例如index.mu ）。",
-      "noFiles": "还没有文件。将文件放置在站点文件/文件夹中，以便在/file/…下提供服务"
+      "noFiles": "还没有文件。将文件放在站点的 files/ 文件夹中，以便在 /file/… 下提供服务。",
+      "contentSourceNotFromPicker": "在应用文件夹之前，选择带有“选择文件夹”的文件夹。"
     }
   },
   "packetDistribution": {

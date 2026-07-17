@@ -111,10 +111,11 @@ export async function setServingContentSource(
     return { ok: false, error: 'sidecar_not_running' };
   }
   try {
-    const body = (await window.electronAPI.reticulum.proxyPut(
-      '/api/v1/nomadnetwork/serving/content-source',
-      { path },
-    )) as { ok?: boolean; serving?: NomadServingStatus; error?: string };
+    const body = (await window.electronAPI.reticulum.setNomadContentSource(path)) as {
+      ok?: boolean;
+      serving?: NomadServingStatus;
+      error?: string;
+    };
     if (body.ok === false) {
       return {
         ok: false,

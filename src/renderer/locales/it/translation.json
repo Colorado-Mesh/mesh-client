@@ -2757,7 +2757,7 @@
       "previewSite": "Apri nel browser",
       "previewSiteAria": "Visualizza l'anteprima di questo sito Nomad ospitato nel browser",
       "myFiles": "File locali",
-      "folderHint": "Servire le pagine Micron da una cartella su disco (consigliato). Scegli una radice del sito con una pagina/ directory o la directory delle pagine stessa. Le modifiche su disco vengono raccolte automaticamente.",
+      "folderHint": "Servi pagine Micron da una cartella su disco (consigliato). Scegli una root del sito con una directory pages/, o la directory pages stessa. Le modifiche su disco vengono rilevate automaticamente.",
       "chooseFolder": "Seleziona cartella",
       "chooseFolderAria": "Scegli una cartella da cui ospitare le pagine Nomad",
       "clearFolder": "Utilizza storage gestito",
@@ -2767,13 +2767,14 @@
       "contentSourceUnavailable": "La cartella delle pagine scelta è mancante o non disponibile. Scegliere di nuovo la cartella.",
       "contentSourceNotDirectory": "Scegli una directory, non un file.",
       "contentSourceUnreadable": "Impossibile leggere la cartella scelta.",
-      "invalidContentSource": "La cartella deve contenere una pagina/ directory o file di pagina .mu.",
+      "invalidContentSource": "La cartella deve contenere una directory pages/ o file di pagina .mu.",
       "contentSourceFailed": "Impossibile impostare la cartella del contenuto.",
       "watcherDegraded": "La visualizzazione delle cartelle è degradata; l'elenco delle pagine potrebbe essere in ritardo fino a quando la cartella non sarà di nuovo leggibile.",
       "reloadFromDisk": "Ricarica dal disco",
       "reloadFromDiskAria": "Ricarica le pagine ospitate dal disco",
       "noPages": "Ancora nessuna pagina. Aggiungi file .mu alla cartella scelta (ad esempio index.mu).",
-      "noFiles": "Ancora nessun file. Posiziona i file nei file/ cartelle del sito da servire in /file/..."
+      "noFiles": "Ancora nessun file. Posiziona i file nella cartella files/ del sito da servire in /file/…",
+      "contentSourceNotFromPicker": "Scegliere la cartella con la cartella Scegli prima di applicarla."
     }
   },
   "packetDistribution": {

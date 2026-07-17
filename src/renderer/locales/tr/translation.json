@@ -2757,7 +2757,7 @@
       "previewSite": "Tarayıcıda aç",
       "previewSiteAria": "Barındırılan bu Nomad sitesini tarayıcıda önizleyin",
       "myFiles": "Yerel dosyalar",
-      "folderHint": "Micron sayfalarını diskteki bir klasörden sunun (önerilir). Sayfa/ dizin içeren bir site kökü veya sayfa dizinini seçin. Diskteki düzenlemeler otomatik olarak alınır.",
+      "folderHint": "Diskteki bir klasörden Micron sayfaları sunun (önerilir). pages/ dizini içeren bir site kökü veya pages dizininin kendisini seçin. Diskteki düzenlemeler otomatik alınır.",
       "chooseFolder": "Klasör seçin...",
       "chooseFolderAria": "Nomad sayfalarını barındırmak için bir klasör seçin",
       "clearFolder": "Yönetilen depolamayı kullan",
@@ -2767,13 +2767,14 @@
       "contentSourceUnavailable": "Seçilen sayfalar klasörü eksik veya kullanılamıyor. Klasörü tekrar seçin.",
       "contentSourceNotDirectory": "Bir dosya değil, bir dizin seçin.",
       "contentSourceUnreadable": "Seçilen klasör okunamadı.",
-      "invalidContentSource": "Klasör bir pages/ directory veya .mu sayfa dosyası içermelidir.",
+      "invalidContentSource": "Klasör bir pages/ dizini veya .mu sayfa dosyaları içermelidir.",
       "contentSourceFailed": "İçerik klasörü ayarlanamadı.",
       "watcherDegraded": "Klasör izleme bozulmuş; klasör tekrar okunabilir olana kadar sayfa listesi gecikebilir.",
       "reloadFromDisk": "Diskten yeniden yükle",
       "reloadFromDiskAria": "Barındırılan sayfaları diskten yeniden yükleyin",
       "noPages": "Henüz sayfa yok. Seçilen klasöre .mu dosyaları ekleyin (örneğin index.mu).",
-      "noFiles": "Henüz dosya yok./file /… altında sunulacak dosyaları site dosyalarına/ klasörüne yerleştirin."
+      "noFiles": "Henüz dosya yok. /file/… altında sunmak için site files/ klasörüne dosya koyun.",
+      "contentSourceNotFromPicker": "Uygulamadan önce Klasör seç ile klasörü seçin."
     }
   },
   "packetDistribution": {

@@ -142,6 +142,9 @@ export default function NomadPageServerPanel({
           if (opts?.onOk) await opts.onOk();
         }
         if (!opts?.skipRefresh) await refresh();
+      } catch (e) {
+        // catch-no-log-ok surfaced in the panel error state
+        setError(humanizeNomadPageError(String(e), t) || t(failKey));
       } finally {
         setBusy(false);
       }

@@ -48,6 +48,19 @@ pub use types::{
 };
 
 const NOMAD_REQUIRES_STACK: &str = "Nomad serving requires an rns-stack sidecar build";
+const NOMAD_DISPLAY_NAME_MAX_CHARS: usize = 128;
+
+/// Trim, reject control characters, and cap length for announce/UI display names.
+fn sanitize_nomad_display_name(name: &str) -> Result<String, String> {
+    let trimmed = name.trim();
+    if trimmed.chars().any(char::is_control) {
+        return Err("display_name_invalid".into());
+    }
+    if trimmed.chars().count() > NOMAD_DISPLAY_NAME_MAX_CHARS {
+        return Err("display_name_too_long".into());
+    }
+    Ok(trimmed.to_string())
+}
 
 pub struct StackHandle {
     pub config_dir: PathBuf,
@@ -1162,6 +1175,10 @@ impl StackHandle {
                 .as_ref()
                 .filter(|p| !p.trim().is_empty())
                 .map(std::path::PathBuf::from);
+            let previous_source = {
+                let inner = self.inner.read().await;
+                inner.nomad_serving_content_source.clone()
+            };
             // Validate before persisting.
             let resolved = live
                 .nomad_server()
@@ -1173,7 +1190,16 @@ impl StackHandle {
                     .content_source
                     .as_ref()
                     .map(|p| p.display().to_string());
-                inner.save(&self.config_dir, &self.storage_dir)?;
+                if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                    // Roll back in-memory content source to match disk.
+                    let _ = live
+                        .nomad_server()
+                        .set_content_source_path(
+                            previous_source.as_ref().map(std::path::PathBuf::from),
+                        )
+                        .await;
+                    return Err(e);
+                }
             }
             // Restart host if running so the store opens under the new roots.
             if live.nomad_server().is_running().await {
@@ -1186,7 +1212,21 @@ impl StackHandle {
                         .unwrap_or_else(|| "Nomad node".into())
                 };
                 live.stop_nomad_serving().await?;
-                live.start_nomad_serving(name).await?;
+                if let Err(e) = live.start_nomad_serving(name).await {
+                    // Restore previous content source preference after a failed restart.
+                    let prev_buf = previous_source.as_ref().map(std::path::PathBuf::from);
+                    let _ = live.nomad_server().set_content_source_path(prev_buf).await;
+                    {
+                        let mut inner = self.inner.write().await;
+                        inner.nomad_serving_content_source = previous_source;
+                        if let Err(save_err) = inner.save(&self.config_dir, &self.storage_dir) {
+                            tracing::warn!(
+                                "nomad content-source rollback persist failed: {save_err}"
+                            );
+                        }
+                    }
+                    return Err(e);
+                }
             }
             return Ok(live.nomad_serving_status().await);
         }
@@ -1207,7 +1247,7 @@ impl StackHandle {
         {
             let mut inner = self.inner.write().await;
             if let Some(name) = display_name {
-                let trimmed = name.trim().to_string();
+                let trimmed = sanitize_nomad_display_name(&name)?;
                 if trimmed.is_empty() {
                     inner.nomad_serving_display_name = None;
                 } else {
@@ -1262,6 +1302,8 @@ impl StackHandle {
                     }
                 }
             } else {
+                // If stop fails, skip persisting enabled=false — leave sticky true
+                // so restart can retry disable (mirrors enable-after-start-success).
                 live.stop_nomad_serving().await?;
             }
             {

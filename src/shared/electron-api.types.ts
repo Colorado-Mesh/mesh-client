@@ -935,6 +935,11 @@ export interface ElectronAPI {
     showIdentityImportDialog: () => Promise<ReticulumIdentityImportDialogResult>;
     /** Pick a Nomad site root or pages directory for watched hosting. */
     showNomadContentSourceDialog: () => Promise<{ canceled: boolean; path: string | null }>;
+    /**
+     * Apply Nomad content source. Non-null paths must match the last
+     * {@link showNomadContentSourceDialog} result (picker capability).
+     */
+    setNomadContentSource: (path: string | null) => Promise<unknown>;
     validateConfig: () => Promise<ReticulumConfigValidateResult>;
     onEvent: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
     onStatus: (cb: (status: ReticulumSidecarStatus) => void) => () => void;

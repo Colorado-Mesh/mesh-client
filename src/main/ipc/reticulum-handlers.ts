@@ -4,6 +4,9 @@ import { ipcMain } from 'electron';
 import type { ReticulumSidecarStatus } from '../../shared/reticulum-types';
 import { sanitizeLogMessage } from '../log-service';
 import {
+  isAllowedNomadContentSourcePath,
+  isNomadContentSourceApiPath,
+  NOMAD_CONTENT_SOURCE_API_PATH,
   readFirstExistingConfig,
   showNomadContentSourceDialog,
   showReticulumConfigImportDialog,
@@ -111,6 +114,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   ipcMain.handle('reticulum:proxyPut', async (event, apiPath: unknown, body: unknown) => {
     assertIpcSender(event, 'reticulum:proxyPut');
     const pathArg = assertProxyApiPath(apiPath);
+    if (isNomadContentSourceApiPath(pathArg)) {
+      throw new Error(
+        'Nomad content-source changes require reticulum:setNomadContentSource (picker-backed)',
+      );
+    }
     try {
       const m = ensureManager();
       return await m.proxyPut(pathArg, body);
@@ -150,6 +158,36 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   ipcMain.handle('reticulum:showNomadContentSourceDialog', async (event) => {
     assertIpcSender(event, 'reticulum:showNomadContentSourceDialog');
     return showNomadContentSourceDialog();
+  });
+
+  /**
+   * Apply Nomad content source. Non-null paths must match the last native folder
+   * picker result so a compromised renderer cannot expose arbitrary directories.
+   */
+  ipcMain.handle('reticulum:setNomadContentSource', async (event, pathArg: unknown) => {
+    assertIpcSender(event, 'reticulum:setNomadContentSource');
+    let pathVal: string | null = null;
+    if (pathArg !== null && pathArg !== undefined) {
+      if (typeof pathArg !== 'string') {
+        throw new Error('Nomad content source path must be a string or null');
+      }
+      const trimmed = pathArg.trim();
+      pathVal = trimmed === '' ? null : trimmed;
+    }
+    if (!isAllowedNomadContentSourcePath(pathVal)) {
+      console.warn(
+        '[ReticulumIPC] setNomadContentSource rejected path not from folder picker:',
+        sanitizeLogMessage(pathVal ?? ''),
+      );
+      return { ok: false, error: 'content_source_not_from_picker' };
+    }
+    try {
+      const m = ensureManager();
+      return await m.proxyPut(NOMAD_CONTENT_SOURCE_API_PATH, { path: pathVal });
+    } catch (err) {
+      logReticulumProxyFailure('setNomadContentSource', err, NOMAD_CONTENT_SOURCE_API_PATH);
+      throw err;
+    }
   });
 
   ipcMain.handle('reticulum:validateConfig', async (event) => {

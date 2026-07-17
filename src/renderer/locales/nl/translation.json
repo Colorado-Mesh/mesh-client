@@ -2757,7 +2757,7 @@
       "previewSite": "Openen in browser",
       "previewSiteAria": "Bekijk een voorbeeld van deze gehoste Nomad-site in de browser",
       "myFiles": "Lokale bestanden",
-      "folderHint": "Serveer Micron-pagina's vanuit een map op schijf (aanbevolen). Kies een site root met een pagina's/ directory, of de pagina's directory zelf. Bewerkingen op schijf worden automatisch opgehaald.",
+      "folderHint": "Serveer Micron-pagina’s vanaf een map op schijf (aanbevolen). Kies een siteroot met een pages/-map, of de pages-map zelf. Wijzigingen op schijf worden automatisch opgepikt.",
       "chooseFolder": "Map kiezen",
       "chooseFolderAria": "Kies een map om Nomad-pagina's uit te hosten",
       "clearFolder": "Managed storage gebruiken",
@@ -2767,13 +2767,14 @@
       "contentSourceUnavailable": "De gekozen paginamap ontbreekt of is niet beschikbaar. Kies de map opnieuw.",
       "contentSourceNotDirectory": "Kies een map, geen bestand.",
       "contentSourceUnreadable": "Kon de gekozen map niet lezen.",
-      "invalidContentSource": "Map moet een pagina/ map of .mu-paginabestanden bevatten.",
+      "invalidContentSource": "Map moet een pages/-directory of .mu-paginabestanden bevatten.",
       "contentSourceFailed": "Kon de inhoudsmap niet instellen.",
       "watcherDegraded": "Het bekijken van mappen is gedegradeerd; de paginalijst kan vertraging oplopen totdat de map weer leesbaar is.",
-      "reloadFromDisk": "Huidig bestand opnieuw van schijf laden",
+      "reloadFromDisk": "Opnieuw laden vanaf schijf",
       "reloadFromDiskAria": "Herlaad gehoste pagina's vanaf schijf",
       "noPages": "Nog geen pagina's. Voeg .mu-bestanden toe aan de gekozen map (bijvoorbeeld index.mu).",
-      "noFiles": "Nog geen bestanden. Plaats bestanden in de sitebestanden/ map om te serveren onder /file/…"
+      "noFiles": "Nog geen bestanden. Plaats bestanden in de files/ map van de site om te serveren onder /file/…",
+      "contentSourceNotFromPicker": "Kies de map met Map kiezen voordat u deze toepast."
     }
   },
   "packetDistribution": {

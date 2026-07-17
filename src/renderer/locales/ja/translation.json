@@ -1732,7 +1732,7 @@
       },
       "reticulum-nomad-hosting": {
         "label": "Nomadページのホスティングに関する問題",
-        "recommendation": "Nomadマイページホスティングに失敗したか、コンテンツフォルダが利用できません。Nomad Network → My Pagesを開き、移動した場合はpagesフォルダーを再選択してから、サービスを開始します。詳細はログに[NOMAD - SERVING ]/[ NOMADHOSTING]と表示されます。"
+        "recommendation": "Nomad My Pages のホスティングに失敗したか、コンテンツフォルダーを利用できません。Nomad Network → My Pages を開き、移動した場合は pages フォルダーを選び直してから Start serving してください。詳細はログに [nomad-serving] / [NomadHosting] と表示されます。"
       }
     },
     "recommendationGroups": {
@@ -2756,8 +2756,8 @@
       "failed": "Nomad の配信を更新できませんでした。",
       "previewSite": "ブラウザーで開く",
       "previewSiteAria": "このホストされたNomadサイトをブラウザでプレビューする",
-      "myFiles": "ローカルファイル(L)",
-      "folderHint": "ディスク上のフォルダから Micron ページを提供します（推奨）。pages/ ディレクトリを持つサイトルート、または pages ディレクトリ自体を選択します。ディスク上の編集は自動的に反映されます。",
+      "myFiles": "ローカルファイル",
+      "folderHint": "ディスク上のフォルダーから Micron ページを提供します（推奨）。pages/ ディレクトリを含むサイトルート、または pages ディレクトリ自体を選択してください。ディスク上の編集は自動的に反映されます。",
       "chooseFolder": "フォルダの選択",
       "chooseFolderAria": "Nomadページをホストするフォルダを選択してください",
       "clearFolder": "マネージドストレージを使用する",
@@ -2773,7 +2773,8 @@
       "reloadFromDisk": "ディスクから再読み込み",
       "reloadFromDiskAria": "ホストされているページをディスクから再読み込みする",
       "noPages": "ページはまだありません。選択したフォルダー（ index.muなど）に.muファイルを追加します。",
-      "noFiles": "ファイルはまだありません。/file/で提供するサイトファイル/フォルダーにファイルを配置します…"
+      "noFiles": "ファイルはまだありません。サイトの files/ フォルダーにファイルを置くと /file/… で提供されます。",
+      "contentSourceNotFromPicker": "適用する前に、[フォルダーの選択]でフォルダーを選択します。"
     }
   },
   "packetDistribution": {

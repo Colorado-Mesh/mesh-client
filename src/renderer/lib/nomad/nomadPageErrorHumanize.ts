@@ -16,6 +16,7 @@ const NOMAD_ERROR_I18N_KEYS: Record<string, string> = {
   invalid_content_source: 'nomadNetwork.serving.invalidContentSource',
   watcher_init_failed: 'nomadNetwork.serving.watcherDegraded',
   content_source_update_failed: 'nomadNetwork.serving.contentSourceFailed',
+  content_source_not_from_picker: 'nomadNetwork.serving.contentSourceNotFromPicker',
 };
 
 export function nomadPageErrorI18nKey(error: string | null | undefined): string | null {

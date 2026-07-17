@@ -64,5 +64,45 @@ export async function showNomadContentSourceDialog(): Promise<{
   if (result.canceled || result.filePaths.length === 0) {
     return { canceled: true, path: null };
   }
-  return { canceled: false, path: result.filePaths[0] };
+  const picked = path.resolve(result.filePaths[0]);
+  rememberNomadContentSourcePick(picked);
+  return { canceled: false, path: picked };
+}
+
+/** Last directory returned by {@link showNomadContentSourceDialog} (capability allowlist). */
+let lastPickedNomadContentSource: string | null = null;
+
+/** Record a picker result so {@link isAllowedNomadContentSourcePath} can authorize apply. */
+export function rememberNomadContentSourcePick(pickedPath: string): void {
+  lastPickedNomadContentSource = path.resolve(pickedPath);
+}
+
+/** Clear the picker allowlist (tests / logout). */
+export function clearNomadContentSourcePick(): void {
+  lastPickedNomadContentSource = null;
+}
+
+/**
+ * True when `candidate` is null/empty (managed storage) or matches the last
+ * native folder-picker result. Blocks arbitrary filesystem paths via proxy.
+ */
+export function isAllowedNomadContentSourcePath(candidate: string | null): boolean {
+  if (candidate == null || candidate.trim() === '') {
+    return true;
+  }
+  if (lastPickedNomadContentSource == null) {
+    return false;
+  }
+  return path.resolve(candidate) === lastPickedNomadContentSource;
+}
+
+/** Sidecar HTTP path for Nomad content-source mutations (must not go through generic proxyPut). */
+export const NOMAD_CONTENT_SOURCE_API_PATH = '/api/v1/nomadnetwork/serving/content-source';
+
+export function isNomadContentSourceApiPath(apiPath: string): boolean {
+  const normalized = apiPath.split('?')[0]?.replace(/\/+$/, '') ?? apiPath;
+  return (
+    normalized === NOMAD_CONTENT_SOURCE_API_PATH ||
+    normalized.endsWith('/nomadnetwork/serving/content-source')
+  );
 }

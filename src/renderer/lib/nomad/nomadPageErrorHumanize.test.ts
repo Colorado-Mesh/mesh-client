@@ -23,6 +23,9 @@ describe('nomadPageErrorHumanize', () => {
     expect(nomadPageErrorI18nKey('invalid_content_source')).toBe(
       'nomadNetwork.serving.invalidContentSource',
     );
+    expect(nomadPageErrorI18nKey('content_source_not_from_picker')).toBe(
+      'nomadNetwork.serving.contentSourceNotFromPicker',
+    );
   });
 
   it('humanizes known codes and passes through unknown', () => {

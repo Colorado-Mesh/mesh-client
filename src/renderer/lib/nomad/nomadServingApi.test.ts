@@ -30,6 +30,7 @@ describe('nomadServingApi', () => {
           proxyPut: vi.fn(),
           proxyDelete: vi.fn(),
           showNomadContentSourceDialog: vi.fn(),
+          setNomadContentSource: vi.fn(),
         },
       },
     });
@@ -88,21 +89,19 @@ describe('nomadServingApi', () => {
   });
 
   it('sets and clears the content source folder', async () => {
-    const proxyPut = window.electronAPI.reticulum.proxyPut as ReturnType<typeof vi.fn>;
-    proxyPut.mockResolvedValueOnce({
+    const setSource = window.electronAPI.reticulum.setNomadContentSource as ReturnType<
+      typeof vi.fn
+    >;
+    setSource.mockResolvedValueOnce({
       ok: true,
       serving: { content_source: '/tmp/nomad-page', content_layout: 'site_root' },
     });
     await expect(setServingContentSource('/tmp/nomad-page')).resolves.toMatchObject({ ok: true });
-    expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/content-source', {
-      path: '/tmp/nomad-page',
-    });
+    expect(setSource).toHaveBeenCalledWith('/tmp/nomad-page');
 
-    proxyPut.mockResolvedValueOnce({ ok: true, serving: { content_source: null } });
+    setSource.mockResolvedValueOnce({ ok: true, serving: { content_source: null } });
     await expect(setServingContentSource(null)).resolves.toMatchObject({ ok: true });
-    expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/content-source', {
-      path: null,
-    });
+    expect(setSource).toHaveBeenCalledWith(null);
   });
 
   it('picks a content source directory via the main dialog', async () => {

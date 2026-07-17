@@ -2883,6 +2883,7 @@
       "contentSourceUnreadable": "Could not read the chosen folder.",
       "invalidContentSource": "Folder must contain a pages/ directory or .mu page files.",
       "contentSourceFailed": "Could not set the content folder.",
+      "contentSourceNotFromPicker": "Choose the folder with Choose folder before applying it.",
       "watcherDegraded": "Folder watching is degraded; page list may lag until the folder is readable again.",
       "reloadFromDisk": "Reload from disk",
       "reloadFromDiskAria": "Reload hosted pages from disk",

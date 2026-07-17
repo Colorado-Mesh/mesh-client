@@ -23,6 +23,7 @@ const onReticulumStatus = vi.fn();
 const proxyGet = vi.fn();
 const proxyPut = vi.fn();
 const showNomadContentSourceDialog = vi.fn();
+const setNomadContentSource = vi.fn();
 
 vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
   isReticulumSidecarRunning: () => isReticulumSidecarRunning(),
@@ -61,6 +62,7 @@ describe('NomadPageServerPanel', () => {
     proxyGet.mockReset();
     proxyPut.mockReset();
     showNomadContentSourceDialog.mockReset();
+    setNomadContentSource.mockReset();
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
       value: {
@@ -69,6 +71,7 @@ describe('NomadPageServerPanel', () => {
           proxyGet,
           proxyPut,
           showNomadContentSourceDialog,
+          setNomadContentSource,
         },
       },
     });
@@ -132,7 +135,7 @@ describe('NomadPageServerPanel', () => {
       canceled: false,
       path: '/Users/me/repos/nomad-page',
     });
-    proxyPut.mockResolvedValue({
+    setNomadContentSource.mockResolvedValue({
       ok: true,
       serving: { ...servingStatus, content_source: '/Users/me/repos/nomad-page' },
     });
@@ -142,15 +145,13 @@ describe('NomadPageServerPanel', () => {
     });
     await user.click(screen.getByRole('button', { name: 'nomadNetwork.serving.chooseFolderAria' }));
     await waitFor(() => {
-      expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/content-source', {
-        path: '/Users/me/repos/nomad-page',
-      });
+      expect(setNomadContentSource).toHaveBeenCalledWith('/Users/me/repos/nomad-page');
     });
   });
 
   it('clears the content folder back to managed storage', async () => {
     const user = userEvent.setup();
-    proxyPut.mockResolvedValue({
+    setNomadContentSource.mockResolvedValue({
       ok: true,
       serving: { ...servingStatus, content_source: null, content_layout: 'managed' },
     });
@@ -160,9 +161,7 @@ describe('NomadPageServerPanel', () => {
     });
     await user.click(screen.getByRole('button', { name: 'nomadNetwork.serving.clearFolderAria' }));
     await waitFor(() => {
-      expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/content-source', {
-        path: null,
-      });
+      expect(setNomadContentSource).toHaveBeenCalledWith(null);
     });
   });
 

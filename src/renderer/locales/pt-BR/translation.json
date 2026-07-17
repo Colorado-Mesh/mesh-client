@@ -2756,8 +2756,8 @@
       "failed": "Não foi possível atualizar o serviço Nomad.",
       "previewSite": "Abra no Navegador",
       "previewSiteAria": "Visualize este site Nomad hospedado no navegador",
-      "myFiles": "Ficheiros Locais",
-      "folderHint": "Servir páginas da Micron a partir de uma pasta no disco (recomendado). Escolha uma raiz de site com um diretório pages/ou o próprio diretório pages. As edições no disco são captadas automaticamente.",
+      "myFiles": "Arquivos locais",
+      "folderHint": "Sirva páginas Micron de uma pasta no disco (recomendado). Escolha uma raiz do site com um diretório pages/, ou o próprio diretório pages. Edições no disco são detectadas automaticamente.",
       "chooseFolder": "Escolher pasta",
       "chooseFolderAria": "Escolha uma pasta para hospedar páginas Nomad",
       "clearFolder": "Usar armazenamento gerenciado",
@@ -2767,13 +2767,14 @@
       "contentSourceUnavailable": "A pasta de páginas escolhidas está ausente ou indisponível. Escolha a pasta novamente.",
       "contentSourceNotDirectory": "Escolha um diretório, não um arquivo.",
       "contentSourceUnreadable": "Não foi possível ler a pasta escolhida.",
-      "invalidContentSource": "A pasta deve conter uma página/ diretório ou arquivos de página .mu.",
+      "invalidContentSource": "A pasta deve conter um diretório pages/ ou arquivos de página .mu.",
       "contentSourceFailed": "Não foi possível definir a pasta de conteúdo.",
       "watcherDegraded": "A observação de pastas está degradada; a lista de páginas pode ficar atrasada até que a pasta esteja legível novamente.",
       "reloadFromDisk": "Recarregar a partir do disco",
       "reloadFromDiskAria": "Recarregar páginas hospedadas do disco",
       "noPages": "Ainda não há páginas. Adicione arquivos .mu à pasta escolhida (por exemplo, index.mu).",
-      "noFiles": "Ainda não há arquivos. Coloque arquivos nos arquivos/ pasta do site para servir em /file/…"
+      "noFiles": "Ainda não há arquivos. Coloque arquivos na pasta files/ do site para servir em /file/…",
+      "contentSourceNotFromPicker": "Escolha a pasta com Escolher pasta antes de aplicá-la."
     }
   },
   "packetDistribution": {

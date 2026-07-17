@@ -2756,8 +2756,8 @@
       "failed": "Nelze aktualizovat službu Nomad.",
       "previewSite": "Otevřít v prohlížeči",
       "previewSiteAria": "Náhled tohoto hostovaného webu Nomad v prohlížeči",
-      "myFiles": "& Místní soubory",
-      "folderHint": "Podávejte stránky Micron ze složky na disku (doporučeno). Vyberte kořenový adresář webu s adresářem pages/ nebo samotný adresář stránek. Úpravy na disku se načítají automaticky.",
+      "myFiles": "Místní soubory",
+      "folderHint": "Hostujte stránky Micron ze složky na disku (doporučeno). Vyberte kořen webu s adresářem pages/, nebo přímo adresář pages. Úpravy na disku se načtou automaticky.",
       "chooseFolder": "Vyberte složku",
       "chooseFolderAria": "Vyberte složku, ze které chcete hostit stránky Nomad",
       "clearFolder": "Použít spravované úložiště",
@@ -2767,13 +2767,14 @@
       "contentSourceUnavailable": "Zvolená složka stránek chybí nebo není k dispozici. Zvolte složku znovu.",
       "contentSourceNotDirectory": "Vyberte adresář, nikoli soubor.",
       "contentSourceUnreadable": "Nelze přečíst vybranou složku.",
-      "invalidContentSource": "Složka musí obsahovat soubory pages/ directory nebo .mu page.",
+      "invalidContentSource": "Složka musí obsahovat adresář pages/ nebo soubory stránek .mu.",
       "contentSourceFailed": "Nelze nastavit složku obsahu.",
       "watcherDegraded": "Sledování složky je degradováno; seznam stránek se může zpozdit, dokud nebude složka opět čitelná.",
       "reloadFromDisk": "Znovu načíst z disku",
       "reloadFromDiskAria": "Znovu načíst hostované stránky z disku",
       "noPages": "Zatím žádné stránky. Přidejte soubory .mu do zvolené složky (například index.mu).",
-      "noFiles": "Zatím žádné soubory. Umístěte soubory do složky site files/, kterou chcete zobrazit pod adresářem/file/…"
+      "noFiles": "Zatím žádné soubory. Umístěte soubory do složky files/ webu, které se mají zobrazit pod /file/…",
+      "contentSourceNotFromPicker": "Před použitím vyberte složku pomocí tlačítka Vybrat složku."
     }
   },
   "packetDistribution": {

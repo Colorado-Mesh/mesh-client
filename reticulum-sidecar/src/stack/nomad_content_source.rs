@@ -75,6 +75,32 @@ fn is_pages_named(path: &Path) -> bool {
         .is_some_and(|n| n.eq_ignore_ascii_case("pages"))
 }
 
+/// Reject symlink entries that would escape the selected root when followed.
+fn reject_symlink(path: &Path) -> Result<(), ContentSourceError> {
+    match fs::symlink_metadata(path) {
+        Ok(meta) if meta.file_type().is_symlink() => Err(ContentSourceError::InvalidLayout),
+        Ok(_) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(_) => Err(ContentSourceError::Unreadable),
+    }
+}
+
+/// Ensure `child` resolves under `root` (both should already be canonical when possible).
+fn ensure_contained(root: &Path, child: &Path) -> Result<PathBuf, ContentSourceError> {
+    reject_symlink(child)?;
+    let child_canon = fs::canonicalize(child).map_err(|e| {
+        if e.kind() == std::io::ErrorKind::NotFound {
+            ContentSourceError::NotFound
+        } else {
+            ContentSourceError::Unreadable
+        }
+    })?;
+    if !child_canon.starts_with(root) {
+        return Err(ContentSourceError::InvalidLayout);
+    }
+    Ok(child_canon)
+}
+
 /// Auto-detect whether `selected` is a site root (`pages/` child) or a pages directory.
 pub fn detect_layout(selected: &Path) -> Result<NomadContentLayout, ContentSourceError> {
     if !selected.exists() {
@@ -89,11 +115,15 @@ pub fn detect_layout(selected: &Path) -> Result<NomadContentLayout, ContentSourc
     }
 
     let pages_child = selected.join("pages");
-    if pages_child.is_dir() {
-        if fs::read_dir(&pages_child).is_err() {
-            return Err(ContentSourceError::Unreadable);
+    if pages_child.exists() {
+        // Symlink `pages/` can escape the selected root on init writes.
+        reject_symlink(&pages_child)?;
+        if pages_child.is_dir() {
+            if fs::read_dir(&pages_child).is_err() {
+                return Err(ContentSourceError::Unreadable);
+            }
+            return Ok(NomadContentLayout::SiteRoot);
         }
-        return Ok(NomadContentLayout::SiteRoot);
     }
 
     if is_pages_named(selected) || dir_has_mu_files(selected) {
@@ -138,10 +168,15 @@ pub fn resolve_content_roots(
     let layout = detect_layout(&canonical)?;
     match layout {
         NomadContentLayout::SiteRoot => {
-            let pages_dir = canonical.join("pages");
+            let pages_dir = ensure_contained(&canonical, &canonical.join("pages"))?;
             let site_files = canonical.join("files");
-            let files_dir = if site_files.is_dir() {
-                site_files
+            let files_dir = if site_files.exists() {
+                reject_symlink(&site_files)?;
+                if site_files.is_dir() {
+                    ensure_contained(&canonical, &site_files)?
+                } else {
+                    managed_files
+                }
             } else {
                 managed_files
             };
@@ -279,5 +314,42 @@ mod tests {
         let err = resolve_content_roots(&managed, Some(&missing)).unwrap_err();
         assert_eq!(err, ContentSourceError::NotFound);
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn not_directory_rejected() {
+        let dir = test_root("file");
+        let file = dir.join("not-a-dir");
+        fs::write(&file, b"x").unwrap();
+        let managed = dir.join("nomadnetwork");
+        let err = resolve_content_roots(&managed, Some(&file)).unwrap_err();
+        assert_eq!(err, ContentSourceError::NotDirectory);
+        assert_eq!(err.as_str(), "content_source_not_directory");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn pages_symlink_rejected() {
+        let dir = test_root("symlink_pages");
+        let site = dir.join("site");
+        let outside = dir.join("outside");
+        fs::create_dir_all(&site).unwrap();
+        fs::create_dir_all(&outside).unwrap();
+        fs::write(outside.join("index.mu"), b"> leak").unwrap();
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(&outside, site.join("pages")).unwrap();
+            let managed = dir.join("nomadnetwork");
+            let err = resolve_content_roots(&managed, Some(&site)).unwrap_err();
+            assert_eq!(err, ContentSourceError::InvalidLayout);
+        }
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn layout_label_covers_all_variants() {
+        assert_eq!(layout_label(NomadContentLayout::SiteRoot), "site_root");
+        assert_eq!(layout_label(NomadContentLayout::PagesDir), "pages_dir");
+        assert_eq!(layout_label(NomadContentLayout::Managed), "managed");
     }
 }

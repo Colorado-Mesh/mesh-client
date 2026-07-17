@@ -31,6 +31,8 @@ struct WatcherState {
 }
 
 pub struct NomadServerHandle {
+    /// Serializes start/stop/reconfigure so concurrent callers cannot double-spawn.
+    lifecycle: Mutex<()>,
     inner: Mutex<Option<NomadNode>>,
     managed_base: PathBuf,
     content_source: Mutex<Option<PathBuf>>,
@@ -44,6 +46,7 @@ pub struct NomadServerHandle {
 impl NomadServerHandle {
     pub fn new(storage_dir: impl AsRef<Path>) -> Self {
         Self {
+            lifecycle: Mutex::new(()),
             inner: Mutex::new(None),
             managed_base: storage_dir.as_ref().join("nomadnetwork"),
             content_source: Mutex::new(None),
@@ -148,6 +151,7 @@ impl NomadServerHandle {
         identity: Identity,
         display_name: String,
     ) -> Result<NomadServingStatus, String> {
+        let _lifecycle = self.lifecycle.lock().await;
         {
             let guard = self.inner.lock().await;
             if guard.is_some() {
@@ -205,6 +209,7 @@ impl NomadServerHandle {
     }
 
     pub async fn stop(&self) -> Result<(), String> {
+        let _lifecycle = self.lifecycle.lock().await;
         self.stop_watcher().await;
         let mut guard = self.inner.lock().await;
         if let Some(node) = guard.take() {
@@ -428,16 +433,18 @@ impl NomadServerHandle {
         let files_external = resolved.files_dir != self.managed_base.join("files");
         let files_dir = files_external.then(|| resolved.files_dir.clone());
 
-        let (event_tx, mut event_rx) = mpsc::unbounded_channel::<()>();
+        // Capacity-1 so filesystem floods coalesce instead of growing unbounded.
+        let (event_tx, mut event_rx) = mpsc::channel::<()>(1);
         let (cancel_tx, mut cancel_rx) = tokio::sync::watch::channel(false);
 
         let event_tx_cb = event_tx.clone();
         let watcher_result = RecommendedWatcher::new(
             move |res: Result<Event, notify::Error>| {
                 if let Err(e) = &res {
+                    // Avoid dumping absolute paths / hostile filenames at warn level.
                     tracing::debug!("[nomad-serving] watcher event error: {e}");
                 }
-                let _ = event_tx_cb.send(());
+                let _ = event_tx_cb.try_send(());
             },
             notify::Config::default(),
         );
@@ -460,15 +467,18 @@ impl NomadServerHandle {
                 .await;
             return;
         }
+        let mut degraded = false;
         if let Some(ref files) = files_dir {
             if files.exists() {
                 if let Err(e) = watcher.watch(files, RecursiveMode::Recursive) {
                     tracing::warn!("[nomad-serving] watcher init failed on files: {e}");
-                    *self.watcher_status.lock().await = "degraded".into();
+                    degraded = true;
                 }
             }
         }
-        *self.watcher_status.lock().await = "ok".into();
+        // Keep degraded when pages watch succeeded but files watch failed — do not
+        // overwrite with "ok" (UI relies on watcher_status for Reload from disk).
+        *self.watcher_status.lock().await = initial_watcher_status_after_watches(degraded).into();
 
         *self.watcher.lock().await = Some(WatcherState {
             _watcher: watcher,
@@ -576,6 +586,12 @@ fn stats_row(stats: &nomad_core::NomadServeStats) -> NomadServeStatsRow {
     }
 }
 
+/// Initial watcher status after pages watch succeeded.
+/// Files-dir watch failure must leave the status degraded (not silently ok).
+fn initial_watcher_status_after_watches(files_watch_failed: bool) -> &'static str {
+    if files_watch_failed { "degraded" } else { "ok" }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -620,5 +636,75 @@ mod tests {
         let status = handle.status(false, "N").await;
         assert!(status.content_source.is_some());
         assert_eq!(status.content_layout.as_deref(), Some("site_root"));
+    }
+
+    #[test]
+    fn files_watch_failure_keeps_watcher_degraded() {
+        assert_eq!(initial_watcher_status_after_watches(true), "degraded");
+        assert_eq!(initial_watcher_status_after_watches(false), "ok");
+    }
+
+    #[tokio::test]
+    async fn page_file_round_trip_offline() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let handle = Arc::new(NomadServerHandle::new(dir.path().to_path_buf()));
+        handle
+            .write_page("index.mu", "> hello")
+            .await
+            .expect("write page");
+        let pages = handle.list_pages().await.expect("list pages");
+        assert!(
+            pages
+                .iter()
+                .any(|p| p.path == "index.mu" || p.path.ends_with("index.mu")),
+            "{pages:?}"
+        );
+        let content = handle.read_page("index.mu").await.expect("read page");
+        assert!(content.contains("hello"), "{content}");
+        handle.delete_page("index.mu").await.expect("delete page");
+        let pages_after = handle.list_pages().await.expect("list after delete");
+        assert!(!pages_after.iter().any(|p| p.path.contains("index.mu")));
+
+        handle
+            .write_file_base64("note.txt", &BASE64.encode(b"file-bytes"))
+            .await
+            .expect("write file");
+        let files = handle.list_files().await.expect("list files");
+        assert!(
+            files.iter().any(|f| f.path.contains("note.txt")),
+            "{files:?}"
+        );
+        handle.delete_file("note.txt").await.expect("delete file");
+        let status = handle.status(false, "N").await;
+        assert_eq!(status.page_count, 0);
+    }
+
+    #[tokio::test]
+    async fn set_content_source_clears_matching_last_error() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let site = dir.path().join("site");
+        std::fs::create_dir_all(site.join("pages")).unwrap();
+        std::fs::write(site.join("pages/index.mu"), b"> hi").unwrap();
+        let handle = Arc::new(NomadServerHandle::new(dir.path().to_path_buf()));
+        handle
+            .set_last_error(Some("content_source_unavailable".into()))
+            .await;
+        handle
+            .set_content_source_path(Some(site))
+            .await
+            .expect("set source");
+        let status = handle.status(false, "N").await;
+        assert!(status.last_error.is_none());
+
+        handle
+            .set_last_error(Some("watcher_init_failed".into()))
+            .await;
+        handle
+            .set_content_source_path(None)
+            .await
+            .expect("clear to managed");
+        let status2 = handle.status(false, "N").await;
+        assert_eq!(status2.last_error.as_deref(), Some("watcher_init_failed"));
+        assert_eq!(status2.content_layout.as_deref(), Some("managed"));
     }
 }

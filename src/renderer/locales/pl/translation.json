@@ -2757,7 +2757,7 @@
       "previewSite": "Otwórz w przeglądarce",
       "previewSiteAria": "Podgląd tej hostowanej witryny Nomad w przeglądarce",
       "myFiles": "Pliki lokalne",
-      "folderHint": "Serwuj strony Micron z folderu na dysku (zalecane). Wybierz katalog główny witryny ze stronami/ katalogiem lub sam katalog stron. Zmiany na dysku są pobierane automatycznie.",
+      "folderHint": "Udostępniaj strony Micron z folderu na dysku (zalecane). Wybierz katalog główny witryny z katalogiem pages/ lub sam katalog pages. Zmiany na dysku są wykrywane automatycznie.",
       "chooseFolder": "Wybierz folder",
       "chooseFolderAria": "Wybierz folder, z którego chcesz hostować strony Nomad",
       "clearFolder": "Użyj zarządzanej pamięci masowej",
@@ -2767,13 +2767,14 @@
       "contentSourceUnavailable": "Brak wybranego folderu stron lub jest on niedostępny. Ponownie wybierz folder.",
       "contentSourceNotDirectory": "Wybierz katalog, a nie plik.",
       "contentSourceUnreadable": "Nie można odczytać wybranego folderu.",
-      "invalidContentSource": "Folder musi zawierać strony/ katalog lub pliki stron .mu.",
+      "invalidContentSource": "Folder musi zawierać katalog pages/ lub pliki stron .mu.",
       "contentSourceFailed": "Nie można ustawić folderu zawartości.",
       "watcherDegraded": "Obserwacja folderu jest zdegradowana; lista stron może być opóźniona, dopóki folder nie będzie ponownie czytelny.",
       "reloadFromDisk": "Załaduj ponownie z dysku",
       "reloadFromDiskAria": "Załaduj ponownie hostowane strony z dysku",
       "noPages": "Brak stron. Dodaj pliki .mu do wybranego folderu (na przykład index.mu).",
-      "noFiles": "Nie ma jeszcze plików. Umieść pliki w plikach/ folderze witryny, które mają być obsługiwane pod /file/…"
+      "noFiles": "Nie ma jeszcze plików. Umieść pliki w folderze files/ witryny, które mają być obsługiwane pod /file/…",
+      "contentSourceNotFromPicker": "Przed zastosowaniem wybierz folder z opcją Wybierz folder."
     }
   },
   "packetDistribution": {

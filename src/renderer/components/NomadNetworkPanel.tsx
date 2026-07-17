@@ -475,9 +475,14 @@ export default function NomadNetworkPanel({
     (hash: string) => {
       setActiveTab('announces');
       void (async () => {
-        await refreshFromSidecar();
-        if (!mountedRef.current) return;
-        void loadNodePage(hash, DEFAULT_NOMAD_NODE_PAGE_PATH, { forceReload: true });
+        try {
+          await refreshFromSidecar();
+          if (!mountedRef.current) return;
+          void loadNodePage(hash, DEFAULT_NOMAD_NODE_PAGE_PATH, { forceReload: true });
+        } catch (e) {
+          // catch-no-log-ok surfaced via page error when load fails; refresh failure is non-fatal
+          console.warn('[NomadNetwork] preview hosted site refresh failed:', e);
+        }
       })();
     },
     [loadNodePage, refreshFromSidecar],

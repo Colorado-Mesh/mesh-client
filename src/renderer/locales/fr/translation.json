@@ -2757,23 +2757,24 @@
       "previewSite": "Ouvrir dans le navigateur",
       "previewSiteAria": "Prévisualisez ce site Nomad hébergé dans le navigateur",
       "myFiles": "Fichiers locaux",
-      "folderHint": "Servir des pages Micron à partir d'un dossier sur disque (recommandé). Choisissez une racine de site avec un répertoire de pages/, ou le répertoire de pages lui-même. Les modifications sur le disque sont détectées automatiquement.",
+      "folderHint": "Servez des pages Micron depuis un dossier sur le disque (recommandé). Choisissez une racine de site avec un répertoire pages/, ou le répertoire pages lui-même. Les modifications sur disque sont prises en compte automatiquement.",
       "chooseFolder": "Choisir le dossier",
       "chooseFolderAria": "Choisissez un dossier à partir duquel héberger les pages Nomad",
       "clearFolder": "Utiliser le stockage géré",
       "clearFolderAria": "Effacer le dossier choisi et utiliser le stockage géré",
-      "contentSource": "Dossier Content",
+      "contentSource": "Dossier de contenu",
       "contentSourceManaged": "Stockage géré (par défaut)",
       "contentSourceUnavailable": "Le dossier de pages choisi est manquant ou indisponible. Choisissez à nouveau le dossier.",
       "contentSourceNotDirectory": "Choisissez un répertoire, pas un fichier.",
       "contentSourceUnreadable": "Impossible de lire le dossier choisi.",
-      "invalidContentSource": "Le dossier doit contenir des pages/ répertoires ou des fichiers de page .mu.",
+      "invalidContentSource": "Le dossier doit contenir un répertoire pages/ ou des fichiers de page .mu.",
       "contentSourceFailed": "Impossible de définir le dossier de contenu.",
       "watcherDegraded": "Le suivi des dossiers est dégradé ; la liste des pages peut être retardée jusqu'à ce que le dossier soit à nouveau lisible.",
       "reloadFromDisk": "Recharger à partir du disque",
       "reloadFromDiskAria": "Recharger les pages hébergées à partir du disque",
       "noPages": "Pas encore de pages. Ajoutez des fichiers .mu au dossier choisi (par exemple index.mu).",
-      "noFiles": "Pas encore de fichiers. Placez les fichiers dans les fichiers/ dossiers du site à servir sous /file/…"
+      "noFiles": "Pas encore de fichiers. Placez les fichiers dans le dossier files/ du site à servir sous /file/…",
+      "contentSourceNotFromPicker": "Choisissez le dossier avec Choisir un dossier avant de l'appliquer."
     }
   },
   "packetDistribution": {
