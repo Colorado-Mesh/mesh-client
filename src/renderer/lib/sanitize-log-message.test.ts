@@ -104,67 +104,92 @@ describe('sanitizeLogPayloadForDisk (log file sink, MaD file-content-store barri
 describe('CodeQL extensions layout', () => {
   it('embedded model pack under .github/codeql/extensions is valid', () => {
     const projectRoot = path.resolve(import.meta.dirname ?? __dirname, '..', '..', '..');
-    execFileSync('node', [path.join(projectRoot, 'scripts', 'check-codeql-extensions.mjs')], {
-      encoding: 'utf8',
-      stdio: 'pipe',
-      cwd: projectRoot,
-    });
-    expect(true).toBe(true);
+    const checkOutput = execFileSync(
+      'node',
+      [path.join(projectRoot, 'scripts', 'check-codeql-extensions.mjs')],
+      {
+        encoding: 'utf8',
+        stdio: 'pipe',
+        cwd: projectRoot,
+      },
+    );
+
+    expect(typeof checkOutput).toBe('string');
   });
 });
 
 describe('log-injection check (main process)', () => {
   it('main process has no unsanitized console.*(..., err|e|error|reason) calls', () => {
     const projectRoot = path.resolve(import.meta.dirname ?? __dirname, '..', '..', '..');
-    execFileSync('node', [path.join(projectRoot, 'scripts', 'check-log-injection.mjs')], {
-      encoding: 'utf8',
-      stdio: 'pipe',
-      cwd: projectRoot,
-    });
-    expect(true).toBe(true);
+    const checkOutput = execFileSync(
+      'node',
+      [path.join(projectRoot, 'scripts', 'check-log-injection.mjs')],
+      {
+        encoding: 'utf8',
+        stdio: 'pipe',
+        cwd: projectRoot,
+      },
+    );
+
+    expect(typeof checkOutput).toBe('string');
   });
 });
 
 describe('silent-catch check (main process + renderer)', () => {
   it('no catch block swallows errors without logging or rethrowing', () => {
     const projectRoot = path.resolve(import.meta.dirname ?? __dirname, '..', '..', '..');
-    execFileSync('node', [path.join(projectRoot, 'scripts', 'check-silent-catches.mjs')], {
-      encoding: 'utf8',
-      stdio: 'pipe',
-      cwd: projectRoot,
-    });
-    expect(true).toBe(true);
+    const checkOutput = execFileSync(
+      'node',
+      [path.join(projectRoot, 'scripts', 'check-silent-catches.mjs')],
+      {
+        encoding: 'utf8',
+        stdio: 'pipe',
+        cwd: projectRoot,
+      },
+    );
+
+    expect(typeof checkOutput).toBe('string');
   });
 });
 
 describe('console-log check (main process + renderer)', () => {
   it('no bare console.log() calls — use console.debug/warn/error instead', () => {
     const projectRoot = path.resolve(import.meta.dirname ?? __dirname, '..', '..', '..');
-    execFileSync('node', [path.join(projectRoot, 'scripts', 'check-console-log.mjs')], {
-      encoding: 'utf8',
-      stdio: 'pipe',
-      cwd: projectRoot,
-    });
-    expect(true).toBe(true);
+    const checkOutput = execFileSync(
+      'node',
+      [path.join(projectRoot, 'scripts', 'check-console-log.mjs')],
+      {
+        encoding: 'utf8',
+        stdio: 'pipe',
+        cwd: projectRoot,
+      },
+    );
+
+    expect(typeof checkOutput).toBe('string');
   });
 });
 
 describe('xss-patterns check (all source)', () => {
   it('no XSS-risk patterns in source files', () => {
     const projectRoot = path.resolve(import.meta.dirname ?? __dirname, '..', '..', '..');
-    execFileSync('node', [path.join(projectRoot, 'scripts', 'check-xss-patterns.mjs')], {
-      encoding: 'utf8',
-      stdio: 'pipe',
-      cwd: projectRoot,
-    });
-    expect(true).toBe(true);
+    const checkOutput = execFileSync(
+      'node',
+      [path.join(projectRoot, 'scripts', 'check-xss-patterns.mjs')],
+      {
+        encoding: 'utf8',
+        stdio: 'pipe',
+        cwd: projectRoot,
+      },
+    );
+
+    expect(typeof checkOutput).toBe('string');
   });
 });
 
 describe('url-hostname-sanitization check (main, preload, renderer)', () => {
   it('no hostname substring checks on URL-like values', () => {
     const projectRoot = path.resolve(import.meta.dirname ?? __dirname, '..', '..', '..');
-    execFileSync(
+    const checkOutput = execFileSync(
       'node',
       [path.join(projectRoot, 'scripts', 'check-url-hostname-sanitization.mjs')],
       {
@@ -173,6 +198,7 @@ describe('url-hostname-sanitization check (main, preload, renderer)', () => {
         cwd: projectRoot,
       },
     );
-    expect(true).toBe(true);
+
+    expect(typeof checkOutput).toBe('string');
   });
 });

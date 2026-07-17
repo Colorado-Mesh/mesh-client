@@ -132,6 +132,7 @@ export default function LogAnalyzeModal({
             {t('logAnalyzeModal.title')}
           </h2>
           <button
+            type="button"
             onClick={onClose}
             aria-label={t('aria.closeDialog')}
             {...{ [PARENT_HOVER_ATTR]: '' }}

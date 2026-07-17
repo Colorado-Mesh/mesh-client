@@ -1293,7 +1293,9 @@ export class NobleBleManager extends EventEmitter {
             `[BLE:${sessionId}] fromRadio subscribe failed; falling back to read-pump (hasNotify=${fromRadioSupportsNotify} canRead=${fromRadioCanRead}):`,
             sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
           );
-          if (IS_WIN32 && sessionId === 'meshcore' && fromRadioSupportsNotify) {
+          // fromRadioSupportsNotify is always true here (outer `if`); Win32+meshcore
+          // cannot fall back to read-pump after a failed notify subscribe.
+          if (IS_WIN32 && sessionId === 'meshcore') {
             console.warn(
               `[BLE:meshcore] subscribe failed on Win32 with notify-capable NUS TX (read fallback would hit WinRT protocol errors). Pair the device in Windows Settings → Bluetooth first (PIN shown on the radio), then retry Connect.`,
             );

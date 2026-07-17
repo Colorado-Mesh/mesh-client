@@ -389,6 +389,7 @@ function ConfigToggle({
       <div className="flex items-center justify-between">
         <label className="text-muted text-sm">{label}</label>
         <button
+          type="button"
           onClick={() => {
             onChange(!checked);
           }}
@@ -524,6 +525,7 @@ function ConfigSection({
         {children}
         {onApply && !hideApply && (
           <button
+            type="button"
             onClick={onApply}
             disabled={disabled || applying}
             className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
@@ -2159,6 +2161,7 @@ export default function RadioPanel({
               />
             </div>
             <button
+              type="button"
               onClick={async () => {
                 if (!onSendPositionToDevice) return;
                 const lat = parseFloat(latStr);
@@ -3226,6 +3229,7 @@ function ChannelSection({
                       : t('radioPanel.channelRoleDisabled');
             return (
               <button
+                type="button"
                 key={i}
                 onClick={() => {
                   setSelectedIndex(i);
@@ -3407,6 +3411,7 @@ function ChannelSection({
                 />
                 {isAesKey && (
                   <button
+                    type="button"
                     onClick={() => {
                       setEditPskB64(
                         pskToBase64(generateRandomPsk(editKeySize === 'aes128' ? 16 : 32)),
@@ -3463,6 +3468,7 @@ function ChannelSection({
             {/* Actions */}
             <div className="flex gap-2 pt-1">
               <button
+                type="button"
                 onClick={saveChannel}
                 disabled={disabled || saving}
                 className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted flex-1 rounded px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:bg-gray-600"
@@ -3470,6 +3476,7 @@ function ChannelSection({
                 {saving ? t('radioPanel.savingChannel') : t('radioPanel.saveChannel')}
               </button>
               <button
+                type="button"
                 onClick={resetChannel}
                 disabled={disabled || saving}
                 className="rounded bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-600 disabled:opacity-50"
@@ -3646,6 +3653,7 @@ function MeshcoreChannelSection({
                   {revealed ? bytesToHex(ch.secret) : '••••••••••••••••'}
                 </span>
                 <button
+                  type="button"
                   onClick={() => {
                     setRevealedIdx((prev) => {
                       const next = new Set(prev);
@@ -3673,6 +3681,7 @@ function MeshcoreChannelSection({
                 {confirmDeleteIdx === ch.index ? (
                   <span className="flex items-center gap-1">
                     <button
+                      type="button"
                       onClick={() => handleDelete(ch.index)}
                       disabled={disabled || saving}
                       className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
@@ -3680,6 +3689,7 @@ function MeshcoreChannelSection({
                       {t('common.confirm')}
                     </button>
                     <button
+                      type="button"
                       onClick={() => {
                         setConfirmDeleteIdx(null);
                       }}
@@ -3690,6 +3700,7 @@ function MeshcoreChannelSection({
                   </span>
                 ) : (
                   <button
+                    type="button"
                     onClick={() => {
                       setConfirmDeleteIdx(ch.index);
                     }}
@@ -3811,6 +3822,7 @@ function MeshcoreChannelSection({
 
             <div className="flex gap-2 pt-1">
               <button
+                type="button"
                 onClick={handleSave}
                 disabled={disabled || saving || !isValidHex || (addingNew && newIdx === '')}
                 className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted flex-1 rounded px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:bg-gray-600"
@@ -3818,6 +3830,7 @@ function MeshcoreChannelSection({
                 {saving ? t('common.saving') : t('common.save')}
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setEditingIdx(null);
                   setAddingNew(false);
@@ -3832,6 +3845,7 @@ function MeshcoreChannelSection({
 
         {!showForm && (
           <button
+            type="button"
             onClick={openAdd}
             disabled={disabled}
             className="text-muted w-full rounded border border-dashed border-gray-600 px-3 py-1.5 text-xs transition-colors hover:border-gray-400 hover:text-gray-300 disabled:opacity-50"

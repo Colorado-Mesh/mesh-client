@@ -346,12 +346,10 @@ html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-off .cm-waterma
   width: 100%;
   max-width: 100%;
   overflow-wrap: anywhere;
-  word-break: break-word;
 }
 .nomad-micron-page--fit-width pre,
 .nomad-micron-page--fit-width code {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  word-break: break-word;
   max-width: 100%;
 }

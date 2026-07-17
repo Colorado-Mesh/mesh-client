@@ -182,6 +182,7 @@ function WatchToggleButton({ nodeId }: { nodeId: number }) {
   const toggleWatch = useWatchedNodesStore((s) => s.toggleWatch);
   return (
     <button
+      type="button"
       aria-label={isWatched ? t('nodeDetailModal.unwatchNode') : t('nodeDetailModal.watchNode')}
       aria-pressed={isWatched}
       className={`hover:bg-secondary-dark shrink-0 rounded-lg px-2 py-1 text-xs font-medium transition-colors ${isWatched ? 'text-blue-400' : 'text-gray-500 hover:text-blue-400'}`}
@@ -701,6 +702,7 @@ export default function NodeDetailModal({
                   }
                 />
                 <button
+                  type="button"
                   onClick={() => {
                     onToggleFavorite(node.node_id, !node.favorited);
                   }}
@@ -720,6 +722,7 @@ export default function NodeDetailModal({
                   </span>
                 </button>
                 <button
+                  type="button"
                   ref={closeButtonRef}
                   onClick={onClose}
                   aria-label={t('aria.closeDialog')}
@@ -847,6 +850,7 @@ export default function NodeDetailModal({
                         {new Date(meshcoreNodeTelemetry.fetchedAt).toLocaleTimeString()}
                       </span>
                       <button
+                        type="button"
                         onClick={() => {
                           setShowTelemetry(false);
                         }}
@@ -930,6 +934,7 @@ export default function NodeDetailModal({
                         })}
                       </h4>
                       <button
+                        type="button"
                         onClick={() => {
                           setShowMeshcoreNeighbors(false);
                         }}
@@ -1072,6 +1077,7 @@ export default function NodeDetailModal({
                         {t('nodeDetailModal.repeaterStatusHeading')}
                       </h4>
                       <button
+                        type="button"
                         onClick={() => {
                           setShowRepeaterStats(false);
                         }}
@@ -1657,6 +1663,7 @@ export default function NodeDetailModal({
               <div className="flex flex-wrap items-center gap-2 border-t border-gray-700 px-5 py-3">
                 {protocol !== 'meshcore' && (
                   <button
+                    type="button"
                     onClick={handleRequestPosition}
                     disabled={!isConnected || positionRequestedAt !== null}
                     className="bg-secondary-dark min-w-[8rem] flex-1 rounded-lg px-3 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
@@ -1693,6 +1700,7 @@ export default function NodeDetailModal({
                 )}
                 {protocol === 'meshcore' && onRequestRepeaterStatus && (
                   <button
+                    type="button"
                     onClick={async () => {
                       if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin')))
                         return;
@@ -1756,6 +1764,7 @@ export default function NodeDetailModal({
                 )}
                 {protocol === 'meshcore' && onRequestNeighbors && node.hw_model === 'Repeater' && (
                   <button
+                    type="button"
                     onClick={async () => {
                       if (
                         node.hops_away != null &&
@@ -1806,6 +1815,7 @@ export default function NodeDetailModal({
                 )}
                 {onOpenRoom && protocol === 'meshcore' && node.hw_model === 'Room' && (
                   <button
+                    type="button"
                     onClick={() => {
                       onOpenRoom(node.node_id);
                       onClose();
@@ -1819,6 +1829,7 @@ export default function NodeDetailModal({
                 )}
                 {onMessageNode && !(protocol === 'meshcore' && node.hw_model === 'Room') && (
                   <button
+                    type="button"
                     onClick={() => {
                       onMessageNode(node.node_id);
                       onClose();
@@ -1836,6 +1847,7 @@ export default function NodeDetailModal({
                 )}
                 {protocol === 'meshcore' && onExportContact && (
                   <button
+                    type="button"
                     onClick={async () => {
                       if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin')))
                         return;
@@ -1873,6 +1885,7 @@ export default function NodeDetailModal({
                 )}
                 {protocol === 'meshcore' && onShareContact && (
                   <button
+                    type="button"
                     onClick={async () => {
                       if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin')))
                         return;
@@ -1906,6 +1919,7 @@ export default function NodeDetailModal({
                 )}
                 {protocol === 'meshcore' && contactPubkey && contactOnRadio === false && (
                   <button
+                    type="button"
                     onClick={async () => {
                       setAddRemoveLoading(true);
                       setActionStatus(t('nodeDetailModal.addingToRadio'));
@@ -1942,6 +1956,7 @@ export default function NodeDetailModal({
                 )}
                 {protocol === 'meshcore' && contactPubkey && contactOnRadio === true && (
                   <button
+                    type="button"
                     onClick={async () => {
                       setAddRemoveLoading(true);
                       setActionStatus(t('nodeDetailModal.removingFromRadio'));
@@ -1991,6 +2006,7 @@ export default function NodeDetailModal({
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => {
                   setNodeMqttIgnored(node.node_id, !mqttIgnoredNodes.has(node.node_id));
                 }}
@@ -2057,6 +2073,7 @@ export default function NodeDetailModal({
             <div className="shrink-0 px-5 pb-4">
               {!showDeleteConfirm ? (
                 <button
+                  type="button"
                   onClick={() => {
                     setShowDeleteConfirm(true);
                   }}
@@ -2071,6 +2088,7 @@ export default function NodeDetailModal({
                   </p>
                   <div className="flex gap-2">
                     <button
+                      type="button"
                       onClick={() => {
                         setShowDeleteConfirm(false);
                       }}
@@ -2079,6 +2097,7 @@ export default function NodeDetailModal({
                       {t('nodeDetailModal.cancel')}
                     </button>
                     <button
+                      type="button"
                       onClick={() => {
                         onDeleteNode?.(node.node_id)
                           .then(onClose)

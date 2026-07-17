@@ -1779,42 +1779,40 @@ function InterfacesSection({
           ) : null}
           {showSerial &&
           !(ifaceType === 'rnode' && (rnodeTransport === 'ble' || rnodeTransport === 'wifi')) ? (
-            <>
-              <label className="text-xs text-gray-400">
-                {t('connectionPanel.reticulumInterfaces.serialPort')}
-                {serialPorts.length > 0 ? (
-                  <select
-                    value={serialPort}
-                    disabled={actionsDisabled}
-                    onChange={(e) => {
-                      const path = e.target.value;
-                      onSerialPortChange(path);
-                      const port = serialPorts.find((p) => p.path === path);
-                      onRnodeDeviceNameChange(port?.label?.trim() || path);
-                    }}
-                    className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
-                  >
-                    <option value="">{t('common.emDash')}</option>
-                    {serialPorts.map((p) => (
-                      <option key={p.path} value={p.path}>
-                        {p.label ?? p.path}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    value={serialPort}
-                    disabled={actionsDisabled}
-                    onChange={(e) => {
-                      const path = e.target.value;
-                      onSerialPortChange(path);
-                      onRnodeDeviceNameChange(path);
-                    }}
-                    className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
-                  />
-                )}
-              </label>
-            </>
+            <label className="text-xs text-gray-400">
+              {t('connectionPanel.reticulumInterfaces.serialPort')}
+              {serialPorts.length > 0 ? (
+                <select
+                  value={serialPort}
+                  disabled={actionsDisabled}
+                  onChange={(e) => {
+                    const path = e.target.value;
+                    onSerialPortChange(path);
+                    const port = serialPorts.find((p) => p.path === path);
+                    onRnodeDeviceNameChange(port?.label?.trim() || path);
+                  }}
+                  className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                >
+                  <option value="">{t('common.emDash')}</option>
+                  {serialPorts.map((p) => (
+                    <option key={p.path} value={p.path}>
+                      {p.label ?? p.path}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  value={serialPort}
+                  disabled={actionsDisabled}
+                  onChange={(e) => {
+                    const path = e.target.value;
+                    onSerialPortChange(path);
+                    onRnodeDeviceNameChange(path);
+                  }}
+                  className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                />
+              )}
+            </label>
           ) : null}
           {showBlePeer ? (
             <label className="text-xs text-gray-400">

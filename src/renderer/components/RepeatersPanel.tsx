@@ -743,9 +743,8 @@ export default function RepeatersPanel({
                 {shouldVirtualizeRepeaterRows &&
                   virtualRepeaterRows.length > 0 &&
                   virtualRepeaterRows[0].start > 0 && (
-                    <tr>
+                    <tr role="presentation">
                       <td
-                        aria-hidden="true"
                         colSpan={10}
                         style={{ height: virtualRepeaterRows[0].start, padding: 0, border: 0 }}
                       />
@@ -1203,6 +1202,7 @@ export default function RepeatersPanel({
                                 </button>
                               ))}
                             <button
+                              type="button"
                               onClick={() => void handleDelete(node.node_id)}
                               disabled={isDeleteLoading}
                               onBlur={() => {
@@ -1527,9 +1527,8 @@ export default function RepeatersPanel({
                   );
                 })}
                 {shouldVirtualizeRepeaterRows && virtualRepeaterRows.length > 0 && (
-                  <tr>
+                  <tr role="presentation">
                     <td
-                      aria-hidden="true"
                       colSpan={10}
                       style={{
                         height: Math.max(

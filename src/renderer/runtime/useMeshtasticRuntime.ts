@@ -1453,14 +1453,7 @@ export function useMeshtasticRuntime() {
         routeBack: payload.routeBack as readonly number[],
       };
       setTraceRouteResults((prev) =>
-        mergeMeshtasticTraceRouteIntoResultsMap(
-          prev,
-          payload.meshFrom,
-          rd,
-          undefined,
-          undefined,
-          undefined,
-        ),
+        mergeMeshtasticTraceRouteIntoResultsMap(prev, payload.meshFrom, rd, undefined),
       );
     });
 

@@ -207,6 +207,7 @@ export default function TelemetryPanel({
         <div className="flex items-center gap-2">
           {showEnvironment && (hasTemp || hasMcuTemp) && (
             <button
+              type="button"
               onClick={onToggleFahrenheit}
               title={t('telemetryPanel.toggleTempUnit')}
               className="rounded bg-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-600"
@@ -218,6 +219,7 @@ export default function TelemetryPanel({
             signalTelemetry.length > 0 ||
             environmentTelemetry.length > 0) && (
             <button
+              type="button"
               onClick={handleExportCsv}
               {...{ [PARENT_HOVER_ATTR]: '' }}
               className="flex items-center gap-1.5 rounded-lg bg-gray-700 px-3 py-1.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"

@@ -234,6 +234,7 @@ export default function ContactGroupsModal({
             </h2>
           )}
           <button
+            type="button"
             onClick={onClose}
             aria-label={t('aria.closeDialog')}
             {...{ [PARENT_HOVER_ATTR]: '' }}

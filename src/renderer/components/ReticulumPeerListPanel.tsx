@@ -831,12 +831,8 @@ export default function ReticulumPeerListPanel({
           </thead>
           <tbody>
             {shouldVirtualize && virtualRows.length > 0 ? (
-              <tr>
-                <td
-                  aria-hidden="true"
-                  colSpan={tableColSpan}
-                  style={{ height: virtualRows[0]?.start ?? 0 }}
-                />
+              <tr role="presentation">
+                <td colSpan={tableColSpan} style={{ height: virtualRows[0]?.start ?? 0 }} />
               </tr>
             ) : null}
             {sortedRows.length === 0 ? (
@@ -846,9 +842,8 @@ export default function ReticulumPeerListPanel({
                 </td>
               </tr>
             ) : shouldVirtualize && virtualRows.length === 0 ? (
-              <tr>
+              <tr role="presentation">
                 <td
-                  aria-hidden="true"
                   colSpan={tableColSpan}
                   style={{
                     height:
@@ -896,9 +891,8 @@ export default function ReticulumPeerListPanel({
               })
             )}
             {shouldVirtualize && virtualRows.length > 0 ? (
-              <tr>
+              <tr role="presentation">
                 <td
-                  aria-hidden="true"
                   colSpan={tableColSpan}
                   style={{
                     height:

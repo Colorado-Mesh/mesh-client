@@ -625,6 +625,7 @@ export default function NodeListPanel({
           ) : null}
           {mode === 'meshcore' && onImportContacts ? (
             <button
+              type="button"
               onClick={handleImport}
               disabled={importLoading}
               className="bg-brand-green/20 text-brand-green border-brand-green/30 hover:bg-brand-green/30 flex w-full items-center justify-center gap-2 rounded border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 min-[480px]:w-auto"
@@ -638,6 +639,7 @@ export default function NodeListPanel({
             <div className="hidden min-w-0 min-[480px]:block" aria-hidden />
           )}
           <button
+            type="button"
             aria-label={t('nodeListPanel.buttonExportJson')}
             className="flex w-full items-center justify-center gap-2 rounded border border-gray-600/50 px-3 py-1.5 text-sm font-medium text-gray-400 transition-colors hover:border-gray-500 hover:text-gray-200 min-[480px]:w-auto"
             onClick={() => {
@@ -993,31 +995,29 @@ export default function NodeListPanel({
                   <SortIcon field="longitude" sortField={sortField} sortAsc={sortAsc} />
                 </th>
               )}
-              <>
-                <th
-                  scope="col"
-                  aria-sort={sortField === 'rssi' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
-                  className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
-                  onClick={() => {
-                    handleSort('rssi');
-                  }}
-                >
-                  {t('nodeListPanel.columnSignal')}{' '}
-                  <SortIcon field="rssi" sortField={sortField} sortAsc={sortAsc} />
-                </th>
-                <th
-                  scope="col"
-                  aria-sort={sortField === 'snr' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
-                  className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
-                  onClick={() => {
-                    handleSort('snr');
-                  }}
-                  title={t('nodeListPanel.snrTooltip')}
-                >
-                  {t('nodeListPanel.columnSnr')}{' '}
-                  <SortIcon field="snr" sortField={sortField} sortAsc={sortAsc} />
-                </th>
-              </>
+              <th
+                scope="col"
+                aria-sort={sortField === 'rssi' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
+                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                onClick={() => {
+                  handleSort('rssi');
+                }}
+              >
+                {t('nodeListPanel.columnSignal')}{' '}
+                <SortIcon field="rssi" sortField={sortField} sortAsc={sortAsc} />
+              </th>
+              <th
+                scope="col"
+                aria-sort={sortField === 'snr' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
+                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                onClick={() => {
+                  handleSort('snr');
+                }}
+                title={t('nodeListPanel.snrTooltip')}
+              >
+                {t('nodeListPanel.columnSnr')}{' '}
+                <SortIcon field="snr" sortField={sortField} sortAsc={sortAsc} />
+              </th>
               <th
                 scope="col"
                 aria-sort={
@@ -1121,9 +1121,8 @@ export default function NodeListPanel({
                 {shouldVirtualizeNodeRows &&
                   virtualNodeRows.length > 0 &&
                   virtualNodeRows[0].start > 0 && (
-                    <tr>
+                    <tr role="presentation">
                       <td
-                        aria-hidden="true"
                         colSpan={nodeTableColSpan}
                         style={{ height: virtualNodeRows[0].start, padding: 0, border: 0 }}
                       />
@@ -1226,6 +1225,7 @@ export default function NodeListPanel({
                       >
                         {!isSelf && (
                           <button
+                            type="button"
                             onClick={() => {
                               onToggleFavorite(node.node_id, !node.favorited);
                             }}
@@ -1452,33 +1452,31 @@ export default function NodeListPanel({
                           </>
                         );
                       })()}
-                      <>
-                        <td className="px-3 py-2 text-right">
-                          <div className="flex justify-end">
-                            {node.heard_via_mqtt_only ? (
-                              <span className="text-muted text-xs">—</span>
-                            ) : isSelf || snrMeaningfulForNodeDiagnostics(node, capabilities) ? (
-                              <SignalBars rssi={node.rssi} isSelf={isSelf} />
-                            ) : (
-                              <span
-                                className="text-muted text-xs"
-                                title={t('nodeListPanel.signalBarsTooltip')}
-                              >
-                                —
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="text-muted px-3 py-2 text-right font-mono text-xs">
-                          {node.heard_via_mqtt_only
-                            ? '—'
-                            : isSelf || snrMeaningfulForNodeDiagnostics(node, capabilities)
-                              ? node.snr != null && node.snr !== 0
-                                ? `${node.snr.toFixed(1)} dB`
-                                : '—'
-                              : '—'}
-                        </td>
-                      </>
+                      <td className="px-3 py-2 text-right">
+                        <div className="flex justify-end">
+                          {node.heard_via_mqtt_only ? (
+                            <span className="text-muted text-xs">—</span>
+                          ) : isSelf || snrMeaningfulForNodeDiagnostics(node, capabilities) ? (
+                            <SignalBars rssi={node.rssi} isSelf={isSelf} />
+                          ) : (
+                            <span
+                              className="text-muted text-xs"
+                              title={t('nodeListPanel.signalBarsTooltip')}
+                            >
+                              —
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="text-muted px-3 py-2 text-right font-mono text-xs">
+                        {node.heard_via_mqtt_only
+                          ? '—'
+                          : isSelf || snrMeaningfulForNodeDiagnostics(node, capabilities)
+                            ? node.snr != null && node.snr !== 0
+                              ? `${node.snr.toFixed(1)} dB`
+                              : '—'
+                            : '—'}
+                      </td>
                       <td className="px-3 py-2 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           {node.battery > 0 && (
@@ -1554,9 +1552,8 @@ export default function NodeListPanel({
                   );
                 })}
                 {shouldVirtualizeNodeRows && virtualNodeRows.length > 0 && (
-                  <tr>
+                  <tr role="presentation">
                     <td
-                      aria-hidden="true"
                       colSpan={nodeTableColSpan}
                       style={{
                         height:

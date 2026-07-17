@@ -353,6 +353,7 @@ export default function PacketDistributionPanel({
             ] as const
           ).map(({ value, label }) => (
             <button
+              type="button"
               key={value}
               onClick={() => {
                 setMainView(value);
@@ -394,6 +395,7 @@ export default function PacketDistributionPanel({
               }[value];
               return (
                 <button
+                  type="button"
                   key={value}
                   onClick={() => {
                     setTimeFilter(value);

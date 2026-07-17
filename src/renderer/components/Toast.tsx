@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -35,8 +43,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  const contextValue = useMemo(() => ({ addToast }), [addToast]);
+
   return (
-    <ToastContext.Provider value={{ addToast }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       {/* Toast container — fixed bottom-right */}
       <div className="pointer-events-none fixed right-4 bottom-4 z-50 flex flex-col gap-2">
@@ -95,6 +105,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
       <span className="shrink-0 text-base">{icon}</span>
       <span className="flex-1">{toast.message}</span>
       <button
+        type="button"
         onClick={() => {
           clearTimeout(timerRef.current);
           setVisible(false);

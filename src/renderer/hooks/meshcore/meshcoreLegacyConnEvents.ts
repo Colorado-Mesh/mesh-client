@@ -588,7 +588,7 @@ export function attachMeshcoreLegacyConnEvents(
       const next = new Map(prev);
       const existing = prev.get(nodeWithNick.node_id);
       next.set(nodeWithNick.node_id, {
-        ...(existing ?? {}),
+        ...existing,
         ...nodeWithNick,
         hw_model: mergeHwModelOnContactUpdate(existing?.hw_model, nodeWithNick.hw_model),
         hops_away: meshcoreMergeContactHopsAwayFromPrevious(

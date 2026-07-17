@@ -691,6 +691,7 @@ export default function NodeInfoBody({
               return (
                 <div className="mt-1.5">
                   <button
+                    type="button"
                     onClick={() => {
                       setPathHistoryOpen((o) => !o);
                     }}

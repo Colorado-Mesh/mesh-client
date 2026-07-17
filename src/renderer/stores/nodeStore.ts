@@ -246,7 +246,7 @@ export function upsertNodeRecord(identityId: IdentityId, record: NodeRecord): vo
 export function upsertNodeRecordsForIdentity(identityId: IdentityId, records: NodeRecord[]): void {
   if (records.length === 0) return;
   useNodeStore.setState((s) => {
-    const byId = { ...(s.nodes[identityId] ?? {}) };
+    const byId = { ...s.nodes[identityId] };
     for (const record of records) {
       const { nodeId, ...patch } = record;
       byId[nodeId] = mergeNode(byId[nodeId], nodeId, patch);
@@ -334,7 +334,7 @@ export function bumpMeshtasticNodesLastHeardAt(
 ): void {
   if (getIdentity(identityId)?.protocol.type !== 'meshtastic' || nodeIds.length === 0) return;
   useNodeStore.setState((s) => {
-    const byId = { ...(s.nodes[identityId] ?? {}) };
+    const byId = { ...s.nodes[identityId] };
     let changed = false;
     for (const nodeId of nodeIds) {
       if (nodeId <= 0) continue;
@@ -437,7 +437,7 @@ export function upsertWaypoint(identityId: IdentityId, event: WaypointEvent): vo
   useNodeStore.setState((s) => ({
     waypoints: {
       ...s.waypoints,
-      [identityId]: { ...(s.waypoints[identityId] ?? {}), [event.id]: event },
+      [identityId]: { ...s.waypoints[identityId], [event.id]: event },
     },
   }));
 }
@@ -447,7 +447,7 @@ export function upsertNeighborInfo(identityId: IdentityId, event: NeighborInfoEv
     neighborInfo: {
       ...s.neighborInfo,
       [identityId]: {
-        ...(s.neighborInfo[identityId] ?? {}),
+        ...s.neighborInfo[identityId],
         [event.nodeId]: event,
       },
     },

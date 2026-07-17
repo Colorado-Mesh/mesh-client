@@ -201,6 +201,7 @@ export default function SearchModal({
             <span className="h-4 w-4 shrink-0 animate-spin rounded-full border border-gray-400 border-t-transparent" />
           )}
           <button
+            type="button"
             onClick={onClose}
             className="text-lg leading-none text-gray-500 hover:text-gray-300"
           >
@@ -218,6 +219,7 @@ export default function SearchModal({
           )}
           {results.map((r) => (
             <button
+              type="button"
               key={r.id}
               onClick={() => {
                 handleResultClick(r);

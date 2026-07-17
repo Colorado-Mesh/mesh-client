@@ -750,6 +750,7 @@ export default function DiagnosticsPanel({
                     ))}
                   </div>
                   <button
+                    type="button"
                     onClick={() => handleTraceRoute(anomaly.nodeId)}
                     disabled={!isConnected}
                     className="bg-secondary-dark mt-1 rounded px-2 py-0.5 text-[10px] text-gray-400 hover:bg-gray-600 disabled:opacity-40"
@@ -759,6 +760,7 @@ export default function DiagnosticsPanel({
                 </div>
               ) : (
                 <button
+                  type="button"
                   onClick={() => handleTraceRoute(anomaly.nodeId)}
                   disabled={!isConnected || tracePendingNodes.has(anomaly.nodeId)}
                   title={isFailed ? t('diagnosticsPanel.traceRouteTimeoutHint') : undefined}
@@ -774,6 +776,7 @@ export default function DiagnosticsPanel({
               {showMqttControls &&
                 (mqttIgnoredNodes.has(anomaly.nodeId) ? (
                   <button
+                    type="button"
                     onClick={() => {
                       setNodeMqttIgnored(anomaly.nodeId, false);
                     }}
@@ -784,6 +787,7 @@ export default function DiagnosticsPanel({
                   </button>
                 ) : (
                   <button
+                    type="button"
                     onClick={() => {
                       setNodeMqttIgnored(anomaly.nodeId, true);
                     }}
@@ -1233,6 +1237,7 @@ export default function DiagnosticsPanel({
                     ] as const
                   ).map(({ mode, label }, i) => (
                     <button
+                      type="button"
                       key={mode}
                       onClick={() => {
                         setEnvMode(mode);
@@ -1300,6 +1305,7 @@ export default function DiagnosticsPanel({
                     >
                       {label}
                       <button
+                        type="button"
                         onClick={() => {
                           setNodeMqttIgnored(nodeId, false);
                         }}

@@ -235,7 +235,7 @@ function mergeExactKeyDuplicate(existing: ChatMessage, incoming: ChatMessage): C
   return {
     ...existing,
     ...incoming,
-    ...(replyFields ?? {}),
+    ...replyFields,
     receivedVia: mergedReceivedVia,
     status: statusAdvances ? incoming.status : (existing.status ?? incoming.status),
     packetId: incoming.packetId ?? existing.packetId,
@@ -412,7 +412,7 @@ export function upsertMeshcoreMessageWithDedup(
       msg.timestamp !== crossDup.timestamp;
     const merged: ChatMessage = {
       ...crossDup,
-      ...(meshcorePreferIncomingReplyFields(crossDup, msg) ?? {}),
+      ...meshcorePreferIncomingReplyFields(crossDup, msg),
       receivedVia: mergeMeshcoreReceivedVia(crossDup.receivedVia, msg.receivedVia),
       rxHops: crossDup.rxHops ?? msg.rxHops,
       ...(adoptChannelTimestamp ? { timestamp: msg.timestamp } : {}),
@@ -437,7 +437,7 @@ export function upsertMeshcoreMessageWithDedup(
   if (dmRfDup) {
     const merged: ChatMessage = {
       ...dmRfDup,
-      ...(meshcorePreferIncomingReplyFields(dmRfDup, msg) ?? {}),
+      ...meshcorePreferIncomingReplyFields(dmRfDup, msg),
       receivedVia: mergeMeshcoreReceivedVia(dmRfDup.receivedVia, msg.receivedVia),
       rxHops: dmRfDup.rxHops ?? msg.rxHops,
     };
@@ -461,7 +461,7 @@ export function upsertMeshcoreMessageWithDedup(
   if (channelRfDup) {
     const merged: ChatMessage = {
       ...channelRfDup,
-      ...(meshcorePreferIncomingReplyFields(channelRfDup, msg) ?? {}),
+      ...meshcorePreferIncomingReplyFields(channelRfDup, msg),
       receivedVia: mergeMeshcoreReceivedVia(channelRfDup.receivedVia, msg.receivedVia),
       rxHops: channelRfDup.rxHops ?? msg.rxHops,
     };
