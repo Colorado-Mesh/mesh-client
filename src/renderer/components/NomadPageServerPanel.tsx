@@ -3,6 +3,10 @@ import { useTranslation } from 'react-i18next';
 
 import { humanizeNomadPageError } from '@/renderer/lib/nomad/nomadPageErrorHumanize';
 import {
+  planServingListsApply,
+  planServingStatusApply,
+} from '@/renderer/lib/nomad/nomadPageServerRefresh';
+import {
   getServingStatus,
   listServingFiles,
   listServingPages,
@@ -18,11 +22,11 @@ let lastLoggedHostingError: string | null = null;
 export default function NomadPageServerPanel({
   isActive,
   onPreviewHostedSite,
-}: {
+}: Readonly<{
   isActive?: boolean;
   /** Open the local hosted destination in the Nomad browser. */
   onPreviewHostedSite?: (destinationHash: string) => void;
-}) {
+}>) {
   const { t } = useTranslation();
   const [sidecarRunning, setSidecarRunning] = useState(false);
   const [status, setStatus] = useState<NomadServingStatus | null>(null);
@@ -57,39 +61,42 @@ export default function NomadPageServerPanel({
     try {
       const statusRes = await getServingStatus();
       if (seq !== refreshSeqRef.current) return;
-      if (statusRes.error === 'sidecar_not_running') {
+
+      const statusPlan = planServingStatusApply(statusRes, displayNameDirtyRef.current);
+      if (statusPlan.kind === 'sidecar_down') {
         setSidecarRunning(false);
         return;
       }
       setSidecarRunning(true);
-      if (statusRes.ok && statusRes.serving) {
-        setStatus(statusRes.serving);
-        // Failure point: reticulum onStatus / list refresh races while typing.
-        // Fallback: keep the in-progress draft until Start/Stop applies it.
-        if (!displayNameDirtyRef.current) {
-          setDisplayName(statusRes.serving.display_name ?? '');
+      if (statusPlan.kind === 'status') {
+        setStatus(statusPlan.serving as NomadServingStatus);
+        if (statusPlan.displayName !== undefined) {
+          setDisplayName(statusPlan.displayName);
         }
-        if (statusRes.serving.last_error) {
-          applyStatusError(statusRes.serving);
-        } else if (statusRes.ok) {
+        if (statusPlan.statusError) {
+          applyStatusError(statusPlan.serving as NomadServingStatus);
+        } else if (statusPlan.clearHostingErrorLog) {
           lastLoggedHostingError = null;
         }
-      } else if (!statusRes.ok) {
-        setError(humanizeNomadPageError(statusRes.error, t));
+      } else if (statusPlan.kind === 'status_error') {
+        setError(humanizeNomadPageError(statusPlan.error, t));
       }
 
       const [pagesRes, filesRes] = await Promise.all([listServingPages(), listServingFiles()]);
       if (seq !== refreshSeqRef.current) return;
-      if (pagesRes.ok && pagesRes.pages) {
-        setPages(pagesRes.pages);
-        if (statusRes.ok && !statusRes.serving?.last_error) setError(null);
-      } else if (!pagesRes.ok) {
-        setError(humanizeNomadPageError(pagesRes.error, t));
+      const listsPlan = planServingListsApply(statusRes, pagesRes, filesRes);
+      if (listsPlan.pages) {
+        setPages(listsPlan.pages as NomadServingPageEntry[]);
       }
-      if (filesRes.ok && filesRes.files) {
-        setFiles(filesRes.files);
-      } else if (!filesRes.ok) {
-        setError(humanizeNomadPageError(filesRes.error, t));
+      if (listsPlan.files) {
+        setFiles(listsPlan.files as NomadServingPageEntry[]);
+      }
+      if (listsPlan.clearError) {
+        setError(null);
+      } else if (listsPlan.pagesError) {
+        setError(humanizeNomadPageError(listsPlan.pagesError, t));
+      } else if (listsPlan.filesError) {
+        setError(humanizeNomadPageError(listsPlan.filesError, t));
       }
     } finally {
       if (seq === refreshSeqRef.current) {

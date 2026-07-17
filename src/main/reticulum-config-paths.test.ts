@@ -7,6 +7,7 @@ import {
   defaultReticulumConfigPaths,
   isAllowedNomadContentSourcePath,
   isNomadContentSourceApiPath,
+  normalizeNomadContentSourceApiPath,
   rememberNomadContentSourcePick,
 } from './reticulum-config-paths';
 
@@ -43,6 +44,19 @@ describe('Nomad content-source picker allowlist', () => {
 
   it('detects the content-source API path', () => {
     expect(isNomadContentSourceApiPath('/api/v1/nomadnetwork/serving/content-source')).toBe(true);
+    expect(isNomadContentSourceApiPath('/api/v1/nomadnetwork/serving/content-source/')).toBe(true);
+    expect(isNomadContentSourceApiPath('/api/v1/nomadnetwork/serving/content-source?x=1')).toBe(
+      true,
+    );
     expect(isNomadContentSourceApiPath('/api/v1/nomadnetwork/serving')).toBe(false);
+  });
+
+  it('normalizes API paths without regex backtracking', () => {
+    expect(
+      normalizeNomadContentSourceApiPath('/api/v1/nomadnetwork/serving/content-source///'),
+    ).toBe('/api/v1/nomadnetwork/serving/content-source');
+    expect(
+      normalizeNomadContentSourceApiPath('/api/v1/nomadnetwork/serving/content-source?foo=1'),
+    ).toBe('/api/v1/nomadnetwork/serving/content-source');
   });
 });

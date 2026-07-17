@@ -99,8 +99,19 @@ export function isAllowedNomadContentSourcePath(candidate: string | null): boole
 /** Sidecar HTTP path for Nomad content-source mutations (must not go through generic proxyPut). */
 export const NOMAD_CONTENT_SOURCE_API_PATH = '/api/v1/nomadnetwork/serving/content-source';
 
+/** Strip query string and trailing slashes without regex backtracking. */
+export function normalizeNomadContentSourceApiPath(apiPath: string): string {
+  const q = apiPath.indexOf('?');
+  const withoutQuery = q === -1 ? apiPath : apiPath.slice(0, q);
+  let end = withoutQuery.length;
+  while (end > 0 && withoutQuery.charAt(end - 1) === '/') {
+    end -= 1;
+  }
+  return withoutQuery.slice(0, end);
+}
+
 export function isNomadContentSourceApiPath(apiPath: string): boolean {
-  const normalized = apiPath.split('?')[0]?.replace(/\/+$/, '') ?? apiPath;
+  const normalized = normalizeNomadContentSourceApiPath(apiPath);
   return (
     normalized === NOMAD_CONTENT_SOURCE_API_PATH ||
     normalized.endsWith('/nomadnetwork/serving/content-source')

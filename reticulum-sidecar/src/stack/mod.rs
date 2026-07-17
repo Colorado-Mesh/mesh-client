@@ -47,6 +47,7 @@ pub use types::{
     LxmfSendRequest, NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, StackIdentity,
 };
 
+#[cfg(not(feature = "rns-stack"))]
 const NOMAD_REQUIRES_STACK: &str = "Nomad serving requires an rns-stack sidecar build";
 const NOMAD_DISPLAY_NAME_MAX_CHARS: usize = 128;
 
@@ -1344,7 +1345,7 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         {
             let pages = self.require_live()?.nomad_server().list_pages().await?;
-            return Ok(pages.into_iter().map(serving_entry_json).collect());
+            Ok(pages.into_iter().map(|e| serving_entry_json(&e)).collect())
         }
         #[cfg(not(feature = "rns-stack"))]
         {
@@ -1396,7 +1397,7 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         {
             let files = self.require_live()?.nomad_server().list_files().await?;
-            return Ok(files.into_iter().map(serving_entry_json).collect());
+            Ok(files.into_iter().map(|e| serving_entry_json(&e)).collect())
         }
         #[cfg(not(feature = "rns-stack"))]
         {
@@ -1902,7 +1903,7 @@ impl StackHandle {
 }
 
 #[cfg(feature = "rns-stack")]
-fn serving_entry_json(entry: nomad_core::NomadPageEntry) -> serde_json::Value {
+fn serving_entry_json(entry: &nomad_core::NomadPageEntry) -> serde_json::Value {
     serde_json::json!({
         "path": entry.path,
         "size": entry.size,

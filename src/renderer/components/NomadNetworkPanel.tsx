@@ -14,6 +14,13 @@ import {
 } from '@/renderer/lib/nomad/micronParser';
 import { downloadNomadFileFromBase64 } from '@/renderer/lib/nomad/nomadFileDownload';
 import {
+  type NomadListTab,
+  nomadNetworkActiveTabCount,
+  nomadNetworkActiveTabLabelKey,
+  nomadNetworkEmptyListKey,
+  nomadNetworkSearchPlaceholderKey,
+} from '@/renderer/lib/nomad/nomadNetworkTabHelpers';
+import {
   clearNomadPageCache,
   getNomadPageCache,
   MAX_NOMAD_PAGE_CACHE_CHARS,
@@ -26,8 +33,6 @@ import type { NomadNodeRow, NomadPageRequestData } from '@/shared/nomad-types';
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import NomadMicronPageView from './NomadMicronPageView';
 import NomadPageServerPanel from './NomadPageServerPanel';
-
-type NomadListTab = 'favourites' | 'announces' | 'myPages';
 
 interface NomadHistoryEntry {
   hash: string;
@@ -509,24 +514,65 @@ export default function NomadNetworkPanel({
     [downloadNodeFile],
   );
 
-  const searchPlaceholder =
-    activeTab === 'favourites'
-      ? t('nomadNetwork.searchFavourites', { count: favouritesCount })
-      : t('nomadNetwork.searchAnnounces', { count: allRows.length });
+  const searchPlaceholder = t(nomadNetworkSearchPlaceholderKey(activeTab), {
+    count: activeTab === 'favourites' ? favouritesCount : allRows.length,
+  });
 
-  const emptyKey =
-    activeTab === 'favourites' ? 'nomadNetwork.emptyFavourites' : 'nomadNetwork.emptyAnnounces';
+  const emptyKey = nomadNetworkEmptyListKey(activeTab);
 
-  const activeTabCount =
-    activeTab === 'favourites' ? favouritesCount : activeTab === 'myPages' ? 0 : allRows.length;
-  const activeTabLabel =
-    activeTab === 'favourites'
-      ? t('nomadNetwork.favourites')
-      : activeTab === 'myPages'
-        ? t('nomadNetwork.myPagesTab')
-        : t('nomadNetwork.announces');
+  const activeTabCount = nomadNetworkActiveTabCount(activeTab, favouritesCount, allRows.length);
+  const activeTabLabel = t(nomadNetworkActiveTabLabelKey(activeTab));
 
   const showStartStackBanner = !sidecarRunning && lastRefreshAt == null && allRows.length === 0;
+
+  const renderNodeListBody = () => {
+    if (activeTab === 'myPages') {
+      return <p className="text-muted px-3 pb-3 text-sm">{t('nomadNetwork.serving.title')}</p>;
+    }
+    if (!nodeListCollapsed && filteredRows.length === 0) {
+      return <p className="text-muted px-3 pb-3 text-sm">{t(emptyKey)}</p>;
+    }
+    return filteredRows.map((node) => {
+      const isSelected = selectedHash?.toLowerCase() === node.destination_hash.toLowerCase();
+      const label = node.display_name ?? node.destination_hash.slice(0, 16);
+      const openNodeLabel = t('nomadNetwork.openNode', { name: label });
+
+      if (nodeListCollapsed) {
+        return (
+          <NomadCollapsedNodeItem
+            key={node.destination_hash}
+            node={node}
+            isSelected={isSelected}
+            openNodeLabel={openNodeLabel}
+            onOpenNode={handleOpenNode}
+          />
+        );
+      }
+
+      return (
+        <NomadExpandedNodeItem
+          key={node.destination_hash}
+          node={node}
+          isSelected={isSelected}
+          openNodeLabel={openNodeLabel}
+          toggleFavoriteLabel={t('nomadNetwork.toggleFavorite')}
+          onOpenNode={handleOpenNode}
+          onToggleFavorite={handleToggleFavorite}
+          formatHash={formatNomadHash}
+          hopsAwayLabel={
+            node.hops != null ? t('nomadNetwork.hopsAway', { count: node.hops }) : null
+          }
+          lastSeenLabel={
+            node.last_seen
+              ? t('nomadNetwork.lastSeen', {
+                  time: formatRelativeOrIsoDate(node.last_seen * 1000, t),
+                })
+              : null
+          }
+        />
+      );
+    });
+  };
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col p-4">
@@ -636,55 +682,7 @@ export default function NomadNetworkPanel({
             </>
           )}
 
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            {activeTab === 'myPages' ? (
-              <p className="text-muted px-3 pb-3 text-sm">{t('nomadNetwork.serving.title')}</p>
-            ) : !nodeListCollapsed && filteredRows.length === 0 ? (
-              <p className="text-muted px-3 pb-3 text-sm">{t(emptyKey)}</p>
-            ) : (
-              filteredRows.map((node) => {
-                const isSelected =
-                  selectedHash?.toLowerCase() === node.destination_hash.toLowerCase();
-                const label = node.display_name ?? node.destination_hash.slice(0, 16);
-                const openNodeLabel = t('nomadNetwork.openNode', { name: label });
-
-                if (nodeListCollapsed) {
-                  return (
-                    <NomadCollapsedNodeItem
-                      key={node.destination_hash}
-                      node={node}
-                      isSelected={isSelected}
-                      openNodeLabel={openNodeLabel}
-                      onOpenNode={handleOpenNode}
-                    />
-                  );
-                }
-
-                return (
-                  <NomadExpandedNodeItem
-                    key={node.destination_hash}
-                    node={node}
-                    isSelected={isSelected}
-                    openNodeLabel={openNodeLabel}
-                    toggleFavoriteLabel={t('nomadNetwork.toggleFavorite')}
-                    onOpenNode={handleOpenNode}
-                    onToggleFavorite={handleToggleFavorite}
-                    formatHash={formatNomadHash}
-                    hopsAwayLabel={
-                      node.hops != null ? t('nomadNetwork.hopsAway', { count: node.hops }) : null
-                    }
-                    lastSeenLabel={
-                      node.last_seen
-                        ? t('nomadNetwork.lastSeen', {
-                            time: formatRelativeOrIsoDate(node.last_seen * 1000, t),
-                          })
-                        : null
-                    }
-                  />
-                );
-              })
-            )}
-          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto">{renderNodeListBody()}</div>
 
           <button
             type="button"
@@ -721,11 +719,13 @@ export default function NomadNetworkPanel({
               isActive={isActive}
               onPreviewHostedSite={handlePreviewHostedSite}
             />
-          ) : !selectedNode ? (
+          ) : null}
+          {activeTab !== 'myPages' && !selectedNode ? (
             <p className="text-muted m-auto max-w-sm p-6 text-center text-sm">
               {t('nomadNetwork.selectNode')}
             </p>
-          ) : (
+          ) : null}
+          {activeTab !== 'myPages' && selectedNode ? (
             <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-700/60 p-2">
                 <span className="truncate font-medium text-gray-100">
@@ -918,7 +918,7 @@ export default function NomadNetworkPanel({
                 </div>
               </div>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

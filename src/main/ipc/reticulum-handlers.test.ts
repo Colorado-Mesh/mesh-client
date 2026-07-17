@@ -314,6 +314,16 @@ describe('registerReticulumIpcHandlers', () => {
       expect(manager.proxyPut).not.toHaveBeenCalled();
     });
 
+    it('setNomadContentSource throws TypeError for non-string paths', async () => {
+      await expect(handlers.get('reticulum:setNomadContentSource')?.(event, 42)).rejects.toThrow(
+        TypeError,
+      );
+      await expect(handlers.get('reticulum:setNomadContentSource')?.(event, null)).rejects.toThrow(
+        /must be a string/,
+      );
+      expect(manager.proxyPut).not.toHaveBeenCalled();
+    });
+
     it('setNomadContentSource rejects paths not from the folder picker', async () => {
       isAllowedNomadContentSourcePathMock.mockReturnValue(false);
       const result = await handlers.get('reticulum:setNomadContentSource')?.(event, '/evil/path');

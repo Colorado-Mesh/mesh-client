@@ -168,7 +168,7 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   ipcMain.handle('reticulum:setNomadContentSource', async (event, pathArg: unknown) => {
     assertIpcSender(event, 'reticulum:setNomadContentSource');
     if (typeof pathArg !== 'string') {
-      throw new Error('Nomad content source path must be a string');
+      throw new TypeError('Nomad content source path must be a string');
     }
     const pathVal = pathArg.trim();
     if (!pathVal) {
