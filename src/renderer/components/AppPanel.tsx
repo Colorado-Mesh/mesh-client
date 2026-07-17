@@ -160,6 +160,7 @@ function ConfirmModal({
         <p className="text-muted text-sm leading-relaxed">{message}</p>
         <div className="flex gap-3 pt-2">
           <button
+            type="button"
             onClick={onCancel}
             aria-label={t('common.cancel')}
             className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
@@ -167,6 +168,7 @@ function ConfirmModal({
             {t('common.cancel')}
           </button>
           <button
+            type="button"
             onClick={onConfirm}
             aria-label={confirmLabel}
             className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors ${
@@ -861,6 +863,7 @@ export default function AppPanel({
             </div>
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={saveStaticPosition}
                 aria-label={t('appPanel.saveStaticPosition')}
                 className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 border-brand-green/40 flex-1 rounded border px-3 py-1.5 text-sm font-medium transition-colors"
@@ -869,6 +872,7 @@ export default function AppPanel({
               </button>
               {hasStaticPosition && (
                 <button
+                  type="button"
                   onClick={clearStaticPosition}
                   aria-label={t('common.clear')}
                   className="bg-secondary-dark rounded px-3 py-1.5 text-sm font-medium text-gray-400 transition-colors hover:bg-gray-600"
@@ -923,6 +927,7 @@ export default function AppPanel({
             </select>
           </div>
           <button
+            type="button"
             onClick={() => onRefreshGps?.()}
             disabled={gpsLoading}
             aria-label={gpsLoading ? t('appPanel.gpsRefreshing') : t('appPanel.gpsRefreshNow')}
@@ -1743,6 +1748,7 @@ export default function AppPanel({
         <p className="text-muted text-xs">{t('appPanel.dataManagementDesc')}</p>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           <button
+            type="button"
             aria-label={t('appPanel.exportDatabase')}
             onClick={async () => {
               try {
@@ -1767,6 +1773,7 @@ export default function AppPanel({
           </button>
 
           <button
+            type="button"
             aria-label={t('appPanel.copyDebugSnapshot')}
             onClick={async () => {
               try {
@@ -1787,6 +1794,7 @@ export default function AppPanel({
           </button>
 
           <button
+            type="button"
             aria-label={t('appPanel.importMerge')}
             onClick={async () => {
               try {

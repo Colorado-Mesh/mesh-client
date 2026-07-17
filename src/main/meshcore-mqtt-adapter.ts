@@ -250,7 +250,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       forceEndMqttClient(this.client);
       this.client = null;
     }
-    const isV1Username = /^v1_[0-9A-Fa-f]{64}$/i.test(settings.username ?? '');
+    const isV1Username = /^v1_[0-9a-f]{64}$/i.test(settings.username ?? '');
     const clientId = isV1Username
       ? settings.username
       : settings.clientId?.trim() || `meshcore-mqtt-${randomBytes(4).toString('hex')}`;
@@ -556,7 +556,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       throw new Error('MeshCore MQTT not connected');
     }
     const base = normalizePrefix(this.lastSettings.topicPrefix || 'msh');
-    const v1Pattern = /^v1_([0-9A-Fa-f]{64})$/i;
+    const v1Pattern = /^v1_([0-9a-f]{64})$/i;
     const pubKey = v1Pattern.exec(this.lastSettings.username ?? '')?.[1]?.toUpperCase();
     const topic = pubKey ? `${base}/${pubKey}/chat` : `${base}/meshcore/chat`;
     const payload = JSON.stringify(pubKey ? { origin_id: pubKey, ...envelope } : envelope);
@@ -584,7 +584,7 @@ export class MeshcoreMqttAdapter extends EventEmitter {
     }
     if (!this.lastSettings.meshcorePacketLoggerEnabled) return;
     const base = normalizePrefix(this.lastSettings.topicPrefix || 'msh');
-    const pubKey = /^v1_([0-9A-Fa-f]{64})$/i
+    const pubKey = /^v1_([0-9a-f]{64})$/i
       .exec(this.lastSettings.username ?? '')?.[1]
       ?.toUpperCase();
     const topic = pubKey ? `${base}/${pubKey}/packets` : `${base}/meshcore/packets`;

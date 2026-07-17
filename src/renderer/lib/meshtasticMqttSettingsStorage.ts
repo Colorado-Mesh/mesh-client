@@ -40,7 +40,7 @@ function recoverMeshtasticChannelPsksFromLegacyMigration(): void {
 
   const merged: MqttSettingsWithPsks = {
     ...MESHTASTIC_OFFICIAL_PRESET_DEFAULTS,
-    ...(meshtastic ?? {}),
+    ...meshtastic,
     channelPsks: psks,
   };
   localStorage.setItem(MESHTASTIC_MQTT_SETTINGS_KEY, JSON.stringify(merged));

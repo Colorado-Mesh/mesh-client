@@ -80,12 +80,11 @@ mod rns {
         Identity::from_file(&path).map_err(|e| format!("load identity: {e}"))
     }
 
-    #[allow(clippy::needless_pass_by_value)] // Identity is moved into to_file on the live stack path
     pub fn apply_unified_identity(
         state: &mut PersistedState,
         config_dir: &Path,
         storage_dir: &Path,
-        identity: Identity,
+        identity: &Identity,
         display_name: Option<String>,
         mnemonic: Option<String>,
     ) -> Result<StackIdentity, String> {
@@ -105,7 +104,7 @@ mod rns {
         state: &mut PersistedState,
         config_dir: &Path,
         storage_dir: &Path,
-        identity: Identity,
+        identity: &Identity,
         display_name: Option<String>,
         mnemonic: Option<String>,
         slot_id: Option<&str>,
@@ -113,7 +112,7 @@ mod rns {
         identity
             .to_file(&identity_file_path(config_dir))
             .map_err(|e| format!("save identity: {e}"))?;
-        state.identity = stack_identity_from_rns(&identity, display_name, mnemonic);
+        state.identity = stack_identity_from_rns(identity, display_name, mnemonic);
         state.rns_ready = true;
         state.lxmf_ready = true;
         state.sync_local_propagation_hash();
@@ -228,7 +227,7 @@ mod tests {
             &mut state,
             &config_dir,
             &storage_dir,
-            identity,
+            &identity,
             Some("Test".into()),
             Some(mnemonic.clone()),
         )
@@ -252,7 +251,7 @@ mod tests {
 
         let mut state = PersistedState::default_empty();
         let (imported, _) = identity_from_mnemonic(&mnemonic).unwrap();
-        apply_unified_identity(&mut state, &config_dir, &storage_dir, imported, None, None)
+        apply_unified_identity(&mut state, &config_dir, &storage_dir, &imported, None, None)
             .unwrap();
 
         assert_eq!(state.identity.identity_hash, expected.identity_hash);
@@ -268,7 +267,7 @@ mod tests {
             &mut state,
             &config_dir,
             &storage_dir,
-            identity,
+            &identity,
             Some("Name".into()),
             None,
         )

@@ -287,7 +287,7 @@ export default function QrIngestControl({
           aria-label={t('qrIngest.cameraPreviewAria')}
         />
       ) : (
-        <video ref={videoRef} className="hidden" muted playsInline aria-hidden />
+        <video ref={videoRef} className="hidden" muted playsInline tabIndex={-1} aria-hidden />
       )}
       {status ? (
         <p className="text-xs text-amber-400" role="status">

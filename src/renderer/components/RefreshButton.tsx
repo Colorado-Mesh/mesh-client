@@ -48,6 +48,7 @@ export default function RefreshButton({
 
   return (
     <button
+      type="button"
       onClick={handleClick}
       disabled={disabled || spinning}
       title={t('common.refresh')}

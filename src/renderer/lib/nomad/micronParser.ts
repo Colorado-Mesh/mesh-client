@@ -315,7 +315,7 @@ export function buildNomadLinkRequest(
       attrSpec?.fieldNames === '*' || embeddedSpec.fieldNames === '*'
         ? '*'
         : [...(attrSpec?.fieldNames ?? []), ...embeddedSpec.fieldNames],
-    requestVars: { ...embeddedSpec.requestVars, ...(attrSpec?.requestVars ?? {}) },
+    requestVars: { ...embeddedSpec.requestVars, ...attrSpec?.requestVars },
   };
 
   const requestData =

@@ -264,6 +264,7 @@ function OutboxBubble({
           )}
           {(row.status === 'failed' || row.status === 'blocked') && (
             <button
+              type="button"
               aria-label={t('chatPanel.retryOutboxMessage')}
               onClick={() => {
                 onRetry(row.id);
@@ -274,6 +275,7 @@ function OutboxBubble({
             </button>
           )}
           <button
+            type="button"
             aria-label={t('chatPanel.cancelOutboxMessage')}
             onClick={() => {
               onCancel(row.id);
@@ -1876,6 +1878,7 @@ function ChatPanel({
                     : '';
                 return (
                   <button
+                    type="button"
                     key={`ch-${ch.index}-${chIdx}-${ch.name}`}
                     aria-label={`${ch.name}${channelUnreadSuffix}`}
                     onClick={() => {
@@ -2261,6 +2264,7 @@ function ChatPanel({
                       </div>
                       <div className="flex shrink-0 flex-col gap-1">
                         <button
+                          type="button"
                           onClick={() => {
                             const [type, raw] = s.viewKey.split(':');
                             if (type === 'dm' && raw) {
@@ -2283,6 +2287,7 @@ function ChatPanel({
                           />
                         </button>
                         <button
+                          type="button"
                           onClick={() => {
                             setStarred((prev) => prev.filter((x) => x.starId !== s.starId));
                           }}
@@ -2436,6 +2441,7 @@ function ChatPanel({
                             {!isContinuation && (
                               <div className="mb-0.5 flex items-center gap-2">
                                 <button
+                                  type="button"
                                   onClick={() => {
                                     if (protocol === 'reticulum' && onPeerClick) {
                                       const rawHash =
@@ -2674,6 +2680,7 @@ function ChatPanel({
                                   (msg.status === 'failed' ||
                                     (protocol === 'reticulum' && msg.status === 'sending')) && (
                                     <button
+                                      type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         onResend(msg);
@@ -2753,6 +2760,7 @@ function ChatPanel({
                             {isConnected && (
                               <>
                                 <button
+                                  type="button"
                                   onClick={() => {
                                     setReplyTo(msg);
                                     composerInputRef.current?.focus();
@@ -2771,6 +2779,7 @@ function ChatPanel({
                                 </button>
                                 {/* React */}
                                 <button
+                                  type="button"
                                   onMouseDown={(e) => {
                                     e.preventDefault();
                                     if (!chatPanelIsLinux())
@@ -2809,6 +2818,7 @@ function ChatPanel({
                                 {/* Quick DM */}
                                 {!isOwn && (
                                   <button
+                                    type="button"
                                     onClick={() => {
                                       openDmTo(msg.sender_id);
                                     }}
@@ -2830,6 +2840,7 @@ function ChatPanel({
                                   const isStarred = starredIdSet.has(starId);
                                   return (
                                     <button
+                                      type="button"
                                       onClick={() => {
                                         toggleStar(msg);
                                       }}
@@ -2930,6 +2941,7 @@ function ChatPanel({
         {/* Scroll to unread / bottom button */}
         {showScrollButton && (
           <button
+            type="button"
             onClick={() => {
               scrollToUnreadOrBottom();
             }}

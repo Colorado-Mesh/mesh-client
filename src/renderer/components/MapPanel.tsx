@@ -1134,6 +1134,7 @@ export default function MapPanel({
                   </div>
                   {onDeleteWaypoint && (
                     <button
+                      type="button"
                       onClick={() => onDeleteWaypoint(wp.id)}
                       className="mt-1 w-full rounded border border-red-800/50 bg-red-900/40 px-2 py-1 text-xs text-red-300 transition-colors hover:bg-red-900/60"
                     >

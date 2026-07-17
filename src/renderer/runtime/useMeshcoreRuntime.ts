@@ -413,6 +413,33 @@ export type { CliHistoryEntry } from '../lib/repeaterCommandService';
 
 const MESHCORE_MAX_RECONNECT_ATTEMPTS = 5;
 
+/** Wait for companion OK (event 0) / ERR (event 1) after sending a config frame. */
+async function awaitMeshcoreCompanionConfigAck(
+  conn: Pick<Connection, 'once' | 'off' | 'sendToRadioFrame'>,
+  frame: Uint8Array,
+  rejectedMessage: string,
+): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const onOk = () => {
+      conn.off(0, onOk);
+      conn.off(1, onErr);
+      resolve();
+    };
+    const onErr = () => {
+      conn.off(0, onOk);
+      conn.off(1, onErr);
+      reject(new Error(rejectedMessage));
+    };
+    conn.once(0, onOk);
+    conn.once(1, onErr);
+    void conn.sendToRadioFrame(frame).catch((e: unknown) => {
+      conn.off(0, onOk);
+      conn.off(1, onErr);
+      reject(e instanceof Error ? e : new Error(String(e)));
+    });
+  });
+}
+
 export function useMeshcoreRuntime() {
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
   const [queueStatus, setQueueStatus] = useState<{
@@ -1402,7 +1429,7 @@ export function useMeshcoreRuntime() {
             hops_away: 0,
             latitude: storedStatic?.lat ?? fromSelfAdv.lat ?? selfNode.latitude ?? null,
             longitude: storedStatic?.lon ?? fromSelfAdv.lon ?? selfNode.longitude ?? null,
-            ...(fromSelfBattery ?? {}),
+            ...fromSelfBattery,
           });
         } else {
           nextNodes.set(myNodeId, {
@@ -5510,25 +5537,11 @@ export function useMeshcoreRuntime() {
         s.advertLocPolicy ?? 0,
         s.multiAcks ?? 0,
       );
-      await new Promise<void>((resolve, reject) => {
-        const onOk = () => {
-          conn.off(0, onOk);
-          conn.off(1, onErr);
-          resolve();
-        };
-        const onErr = () => {
-          conn.off(0, onOk);
-          conn.off(1, onErr);
-          reject(new Error('MeshCore rejected telemetry privacy settings'));
-        };
-        conn.once(0, onOk);
-        conn.once(1, onErr);
-        void conn.sendToRadioFrame(frame).catch((e: unknown) => {
-          conn.off(0, onOk);
-          conn.off(1, onErr);
-          reject(e instanceof Error ? e : new Error(String(e)));
-        });
-      });
+      await awaitMeshcoreCompanionConfigAck(
+        conn,
+        frame,
+        'MeshCore rejected telemetry privacy settings',
+      );
       setSelfInfo((prev) =>
         prev
           ? {
@@ -5578,25 +5591,11 @@ export function useMeshcoreRuntime() {
       });
       const hops = Math.max(0, Math.min(params.maxHopsWire, 64));
       const frame = buildSetAutoaddConfigFrame(configByte, hops);
-      await new Promise<void>((resolve, reject) => {
-        const onOk = () => {
-          conn.off(0, onOk);
-          conn.off(1, onErr);
-          resolve();
-        };
-        const onErr = () => {
-          conn.off(0, onOk);
-          conn.off(1, onErr);
-          reject(new Error('MeshCore rejected contact auto-add settings'));
-        };
-        conn.once(0, onOk);
-        conn.once(1, onErr);
-        void conn.sendToRadioFrame(frame).catch((e: unknown) => {
-          conn.off(0, onOk);
-          conn.off(1, onErr);
-          reject(e instanceof Error ? e : new Error(String(e)));
-        });
-      });
+      await awaitMeshcoreCompanionConfigAck(
+        conn,
+        frame,
+        'MeshCore rejected contact auto-add settings',
+      );
       setMeshcoreAutoadd({ autoaddConfig: configByte, autoaddMaxHops: hops });
     },
     [],

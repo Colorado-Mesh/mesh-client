@@ -2116,7 +2116,7 @@ export default function ConnectionPanel({
             </span>
           </div>
           {protocol === 'meshcore' &&
-            /^v1_[0-9A-Fa-f]{64}$/i.test(activeMqttSettings.username ?? '') && (
+            /^v1_[0-9a-f]{64}$/i.test(activeMqttSettings.username ?? '') && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted">{t('connectionPanel.from')}</span>
                 <span className="font-mono text-xs text-gray-200">
@@ -2172,6 +2172,7 @@ export default function ConnectionPanel({
             />
           </div>
           <button
+            type="button"
             onClick={() => {
               markMqttUserDisconnect();
               window.electronAPI.mqtt
@@ -2692,6 +2693,7 @@ export default function ConnectionPanel({
               </button>
             )}
             <button
+              type="button"
               onClick={async () => {
                 setMqttError(null);
                 const committedPsks = commitChannelPskDraft();
@@ -2976,6 +2978,7 @@ export default function ConnectionPanel({
               </div>
             )}
             <button
+              type="button"
               onClick={onDisconnect}
               className="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500"
             >

@@ -11,7 +11,7 @@ const MESHTASTIC_CLIENT_ID_PREFIX = 'meshtastic-electron-';
 const MESHCORE_CLIENT_ID_PREFIX = 'meshcore-mqtt-';
 const CLIENT_ID_HEX_BYTES = 8;
 
-const V1_USERNAME_PATTERN = /^v1_[0-9A-Fa-f]{64}$/i;
+const V1_USERNAME_PATTERN = /^v1_[0-9a-f]{64}$/i;
 
 function readAppSetting(key: string): string | null {
   try {

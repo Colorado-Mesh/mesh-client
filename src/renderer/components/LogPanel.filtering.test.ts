@@ -11,12 +11,17 @@ function entry(source: string, message: string, level = 'log') {
 describe('log-panel filter contract', () => {
   it('all [TAG] prefixes in device source files are registered in isDeviceEntry', () => {
     const projectRoot = path.resolve(import.meta.dirname ?? __dirname, '..', '..', '..');
-    execFileSync('node', [path.join(projectRoot, 'scripts', 'check-log-panel-filter.mjs')], {
-      encoding: 'utf8',
-      stdio: 'pipe',
-      cwd: projectRoot,
-    });
-    expect(true).toBe(true);
+    const checkOutput = execFileSync(
+      'node',
+      [path.join(projectRoot, 'scripts', 'check-log-panel-filter.mjs')],
+      {
+        encoding: 'utf8',
+        stdio: 'pipe',
+        cwd: projectRoot,
+      },
+    );
+
+    expect(typeof checkOutput).toBe('string');
   });
 });
 

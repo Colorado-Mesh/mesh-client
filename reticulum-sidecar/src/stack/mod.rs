@@ -424,7 +424,7 @@ impl StackHandle {
                 &mut inner,
                 &self.config_dir,
                 &self.storage_dir,
-                rns_identity,
+                &rns_identity,
                 display_name,
                 Some(mnemonic),
             )?;
@@ -454,7 +454,7 @@ impl StackHandle {
                 &mut inner,
                 &self.config_dir,
                 &self.storage_dir,
-                rns_identity,
+                &rns_identity,
                 display_name,
                 Some(normalized),
             )?;
@@ -485,7 +485,7 @@ impl StackHandle {
                 &mut inner,
                 &self.config_dir,
                 &self.storage_dir,
-                rns_identity,
+                &rns_identity,
                 display_name,
                 None,
             )?;
@@ -518,7 +518,7 @@ impl StackHandle {
                 &mut inner,
                 &self.config_dir,
                 &self.storage_dir,
-                rns_identity,
+                &rns_identity,
                 display_name,
                 None,
             )?;
@@ -1918,7 +1918,7 @@ impl StackHandle {
                     &mut inner,
                     &self.config_dir,
                     &self.storage_dir,
-                    rns_identity,
+                    &rns_identity,
                     display_name.clone(),
                     Some(mnemonic),
                     Some(new_id.as_str()),
