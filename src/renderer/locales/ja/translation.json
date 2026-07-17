@@ -2756,7 +2756,6 @@
       "failed": "Nomad の配信を更新できませんでした。",
       "previewSite": "ブラウザーで開く",
       "previewSiteAria": "このホストされたNomadサイトをブラウザでプレビューする",
-      "myFiles": "ローカルファイル",
       "folderHint": "ディスク上のフォルダーから Micron ページを提供します（推奨）。pages/ ディレクトリを含むサイトルート、または pages ディレクトリ自体を選択してください。ディスク上の編集は自動的に反映されます。",
       "chooseFolder": "フォルダの選択",
       "chooseFolderAria": "Nomadページをホストするフォルダを選択してください",
@@ -2770,7 +2769,6 @@
       "reloadFromDisk": "ディスクから再読み込み",
       "reloadFromDiskAria": "ホストされているページをディスクから再読み込みする",
       "noPages": "ページはまだありません。選択したフォルダー（ index.muなど）に.muファイルを追加します。",
-      "noFiles": "ファイルはまだありません。サイトの files/ フォルダーにファイルを置くと /file/… で提供されます。",
       "contentSourceNotFromPicker": "適用する前に、[フォルダーの選択]でフォルダーを選択します。",
       "contentSourceNone": "フォルダーが選択されていません",
       "contentSourceRequired": "Nomadホスティングを開始する前に、ページフォルダを選択します。"

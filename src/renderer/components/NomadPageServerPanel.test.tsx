@@ -88,29 +88,24 @@ describe('NomadPageServerPanel', () => {
           ],
         });
       }
-      if (path === '/api/v1/nomadnetwork/serving/files') {
-        return Promise.resolve({
-          ok: true,
-          files: [{ path: 'readme.txt', size: 4 }],
-        });
-      }
       return Promise.resolve({ ok: false, error: 'unexpected' });
     });
   });
 
-  it('loads serving status, pages, and files when active', async () => {
+  it('loads serving status and pages when active', async () => {
     render(<NomadPageServerPanel isActive />);
     await waitFor(() => {
       expect(screen.getByText('index.mu')).toBeInTheDocument();
     });
     expect(screen.getByText('about.mu')).toBeInTheDocument();
-    expect(screen.getByText('readme.txt')).toBeInTheDocument();
+    expect(screen.queryByText('readme.txt')).toBeNull();
+    expect(screen.queryByText('nomadNetwork.serving.myFiles')).toBeNull();
     expect(screen.getByDisplayValue('Home')).toBeInTheDocument();
     expect(screen.getByText('nomadNetwork.serving.servingChip')).toBeInTheDocument();
     expect(screen.getByText('/tmp/nomad-page')).toBeInTheDocument();
   });
 
-  it('does not expose create, edit, upload, or delete controls', async () => {
+  it('does not expose create, edit, upload, delete, or local-files list UI', async () => {
     render(<NomadPageServerPanel isActive />);
     await waitFor(() => {
       expect(screen.getByText('index.mu')).toBeInTheDocument();
@@ -123,9 +118,8 @@ describe('NomadPageServerPanel', () => {
     expect(
       screen.queryByRole('button', { name: 'nomadNetwork.serving.deletePage:about.mu' }),
     ).toBeNull();
-    expect(
-      screen.queryByRole('button', { name: 'nomadNetwork.serving.deleteFile:readme.txt' }),
-    ).toBeNull();
+    expect(screen.queryByText('nomadNetwork.serving.myFiles')).toBeNull();
+    expect(screen.queryByText('nomadNetwork.serving.noFiles')).toBeNull();
     expect(screen.queryByRole('textbox', { name: /nomadNetwork.serving.editorAria/ })).toBeNull();
   });
 
@@ -177,9 +171,6 @@ describe('NomadPageServerPanel', () => {
       if (path === '/api/v1/nomadnetwork/serving/pages') {
         return Promise.resolve({ ok: true, pages: [] });
       }
-      if (path === '/api/v1/nomadnetwork/serving/files') {
-        return Promise.resolve({ ok: true, files: [] });
-      }
       return Promise.resolve({ ok: false, error: 'unexpected' });
     });
     render(<NomadPageServerPanel isActive />);
@@ -203,9 +194,6 @@ describe('NomadPageServerPanel', () => {
       }
       if (path === '/api/v1/nomadnetwork/serving/pages') {
         return Promise.resolve({ ok: true, pages: [] });
-      }
-      if (path === '/api/v1/nomadnetwork/serving/files') {
-        return Promise.resolve({ ok: true, files: [] });
       }
       return Promise.resolve({ ok: false, error: 'unexpected' });
     });
@@ -251,9 +239,6 @@ describe('NomadPageServerPanel', () => {
       if (path === '/api/v1/nomadnetwork/serving/pages') {
         return Promise.resolve({ ok: true, pages: [{ path: 'index.mu', size: 12 }] });
       }
-      if (path === '/api/v1/nomadnetwork/serving/files') {
-        return Promise.resolve({ ok: true, files: [] });
-      }
       return Promise.resolve({ ok: false, error: 'unexpected' });
     });
     const servingCallsBefore = proxyGet.mock.calls.filter(
@@ -280,9 +265,6 @@ describe('NomadPageServerPanel', () => {
       }
       if (path === '/api/v1/nomadnetwork/serving/pages') {
         return Promise.resolve({ ok: false, error: 'nomad_busy' });
-      }
-      if (path === '/api/v1/nomadnetwork/serving/files') {
-        return Promise.resolve({ ok: true, files: [] });
       }
       return Promise.resolve({ ok: false, error: 'unexpected' });
     });

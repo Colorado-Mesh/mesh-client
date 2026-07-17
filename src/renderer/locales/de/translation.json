@@ -2756,7 +2756,6 @@
       "failed": "Nomad-Bereitstellung konnte nicht aktualisiert werden.",
       "previewSite": "In Browser öffnen",
       "previewSiteAria": "Vorschau dieser gehosteten Nomad-Website im Browser anzeigen",
-      "myFiles": "Lokale Dateien",
       "folderHint": "Stellen Sie Micron-Seiten aus einem Ordner auf dem Datenträger bereit (empfohlen). Wählen Sie eine Site-Root mit pages/-Verzeichnis oder das pages-Verzeichnis selbst. Änderungen auf dem Datenträger werden automatisch übernommen.",
       "chooseFolder": "Ordner auswählen",
       "chooseFolderAria": "Ordner zum Hosten von Nomad-Seiten auswählen",
@@ -2770,7 +2769,6 @@
       "reloadFromDisk": "Von der Festplatte neu laden",
       "reloadFromDiskAria": "Gehostete Seiten von der Festplatte neu laden",
       "noPages": "Noch keine Seiten. Fügen Sie dem ausgewählten Ordner .mu-Dateien hinzu (z. B. index.mu).",
-      "noFiles": "Noch keine Dateien. Legen Sie Dateien in den files/ Ordner der Site, die unter /file/… bereitgestellt werden sollen.",
       "contentSourceNotFromPicker": "Wählen Sie den Ordner mit Ordner auswählen aus, bevor Sie ihn anwenden.",
       "contentSourceNone": "Kein Ordner ausgewählt",
       "contentSourceRequired": "Wählen Sie einen Seitenordner aus, bevor Sie mit dem Nomad-Hosting beginnen."

@@ -2756,7 +2756,6 @@
       "failed": "Tidak dapat memperbarui layanan Nomad.",
       "previewSite": "Buka di Peramban",
       "previewSiteAria": "Pratinjau situs Nomad yang dihosting ini di browser",
-      "myFiles": "Berkas Lokal",
       "folderHint": "Sajikan halaman Micron dari folder di disk (disarankan). Pilih root situs dengan direktori pages/, atau direktori pages itu sendiri. Perubahan di disk diambil secara otomatis.",
       "chooseFolder": "Pilih Folder",
       "chooseFolderAria": "Pilih folder untuk menampung halaman Nomad",
@@ -2770,7 +2769,6 @@
       "reloadFromDisk": "Muat ulang dari disk",
       "reloadFromDiskAria": "Muat ulang halaman yang dihosting dari disk",
       "noPages": "Belum ada halaman. Tambahkan file .mu ke folder yang dipilih (misalnya index.mu).",
-      "noFiles": "Belum ada file. Letakkan file di folder files/ situs untuk disajikan di bawah /file/…",
       "contentSourceNotFromPicker": "Pilih folder dengan Pilih folder sebelum menerapkannya.",
       "contentSourceNone": "Tidak ada folder yang dipilih",
       "contentSourceRequired": "Pilih folder halaman sebelum memulai Nomad hosting."

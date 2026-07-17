@@ -2897,9 +2897,7 @@
       "noPages": "No pages yet. Add .mu files to the chosen folder (for example index.mu).",
       "failed": "Could not update Nomad serving.",
       "previewSite": "Open in browser",
-      "previewSiteAria": "Preview this hosted Nomad site in the browser",
-      "myFiles": "Local files",
-      "noFiles": "No files yet. Place files in the site files/ folder to serve under /file/…"
+      "previewSiteAria": "Preview this hosted Nomad site in the browser"
     }
   },
   "packetDistribution": {

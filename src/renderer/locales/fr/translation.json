@@ -2756,7 +2756,6 @@
       "failed": "Impossible de mettre à jour le service Nomad.",
       "previewSite": "Ouvrir dans le navigateur",
       "previewSiteAria": "Prévisualisez ce site Nomad hébergé dans le navigateur",
-      "myFiles": "Fichiers locaux",
       "folderHint": "Servez des pages Micron depuis un dossier sur le disque (recommandé). Choisissez une racine de site avec un répertoire pages/, ou le répertoire pages lui-même. Les modifications sur disque sont prises en compte automatiquement.",
       "chooseFolder": "Choisir le dossier",
       "chooseFolderAria": "Choisissez un dossier à partir duquel héberger les pages Nomad",
@@ -2770,7 +2769,6 @@
       "reloadFromDisk": "Recharger à partir du disque",
       "reloadFromDiskAria": "Recharger les pages hébergées à partir du disque",
       "noPages": "Pas encore de pages. Ajoutez des fichiers .mu au dossier choisi (par exemple index.mu).",
-      "noFiles": "Pas encore de fichiers. Placez les fichiers dans le dossier files/ du site à servir sous /file/…",
       "contentSourceNotFromPicker": "Choisissez le dossier avec Choisir un dossier avant de l'appliquer.",
       "contentSourceNone": "Aucun dossier choisi",
       "contentSourceRequired": "Choisissez un dossier de pages avant de commencer l'hébergement Nomad."
