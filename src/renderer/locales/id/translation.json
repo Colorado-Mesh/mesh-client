@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "Sambungkan Ulang Serial USB"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Masalah Menerima Tamu di Halaman Nomad",
+        "recommendation": "Hosting Nomad Halaman Saya gagal atau folder konten tidak tersedia. Buka Nomad Network Halaman → Saya, pilih kembali folder halaman jika dipindahkan, lalu Mulai melayani. Detail muncul sebagai [nomad - serving ]/[ NomadHosting] di log."
       }
     },
     "recommendationGroups": {
@@ -2771,7 +2775,22 @@
       "fileTooLarge": "File terlalu besar untuk diunggah (maks sekitar 3 MB melalui aplikasi).",
       "invalidFilePath": "Pilih nama file sederhana tanpa folder atau .. segmen.",
       "uploadFailed": "Tidak dapat mengunggah file.",
-      "deleteFileFailed": "Tidak dapat menghapus file."
+      "deleteFileFailed": "Tidak dapat menghapus file.",
+      "folderHint": "Sajikan halaman Micron dari folder pada disk (disarankan). Pilih akar situs dengan halaman/ direktori, atau direktori halaman itu sendiri. Pengeditan pada disk diambil secara otomatis.",
+      "chooseFolder": "Pilih Folder",
+      "chooseFolderAria": "Pilih folder untuk menampung halaman Nomad",
+      "clearFolder": "Gunakan penyimpanan terkelola",
+      "clearFolderAria": "Hapus folder yang dipilih dan gunakan penyimpanan terkelola",
+      "contentSource": "Folder konten",
+      "contentSourceManaged": "Penyimpanan terkelola (default)",
+      "contentSourceUnavailable": "Folder halaman yang dipilih tidak ada atau tidak tersedia. Pilih folder lagi.",
+      "contentSourceNotDirectory": "Pilih direktori, bukan file.",
+      "contentSourceUnreadable": "Tidak dapat membaca folder yang dipilih.",
+      "invalidContentSource": "Folder harus berisi halaman/ direktori atau file halaman .mu.",
+      "contentSourceFailed": "Tidak dapat mengatur folder konten.",
+      "watcherDegraded": "Menonton folder terdegradasi; daftar halaman mungkin tertinggal sampai folder dapat dibaca lagi.",
+      "reloadFromDisk": "Muat ulang dari disk",
+      "reloadFromDiskAria": "Muat ulang halaman yang dihosting dari disk"
     }
   },
   "packetDistribution": {

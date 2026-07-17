@@ -17,10 +17,19 @@ describe('nomadPageErrorHumanize', () => {
     expect(nomadPageErrorI18nKey('sidecar_not_running')).toBe(
       'nomadNetwork.errors.sidecarNotRunning',
     );
+    expect(nomadPageErrorI18nKey('content_source_unavailable')).toBe(
+      'nomadNetwork.serving.contentSourceUnavailable',
+    );
+    expect(nomadPageErrorI18nKey('invalid_content_source')).toBe(
+      'nomadNetwork.serving.invalidContentSource',
+    );
   });
 
   it('humanizes known codes and passes through unknown', () => {
     expect(humanizeNomadPageError('path_timeout', t)).toBe('t:nomadNetwork.errors.pathTimeout');
+    expect(humanizeNomadPageError('content_source_unavailable', t)).toBe(
+      't:nomadNetwork.serving.contentSourceUnavailable',
+    );
     expect(humanizeNomadPageError('weird failure', t)).toBe('weird failure');
     expect(humanizeNomadPageError(null, t)).toBe('t:common.error');
   });

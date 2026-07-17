@@ -51,3 +51,18 @@ export async function showReticulumConfigImportDialog(): Promise<{
     return { path: filePath, content: null };
   }
 }
+
+/** Pick a Nomad site root or pages directory for live watched hosting. */
+export async function showNomadContentSourceDialog(): Promise<{
+  canceled: boolean;
+  path: string | null;
+}> {
+  const result = await dialog.showOpenDialog({
+    title: 'Choose Nomad pages folder',
+    properties: ['openDirectory'],
+  });
+  if (result.canceled || result.filePaths.length === 0) {
+    return { canceled: true, path: null };
+  }
+  return { canceled: false, path: result.filePaths[0] };
+}

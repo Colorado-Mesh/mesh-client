@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "USB Seri Yeniden Bağlantı"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Nomad Sayfası Barındırma Sorunları",
+        "recommendation": "Nomad Sayfalarım barındırma başarısız oldu veya içerik klasörü kullanılamıyor. Nomad Network → Sayfalarım bölümünü açın, taşınmışsa pages klasörünü yeniden seçin ve ardından hizmeti başlatın. Ayrıntılar günlükte [nomad-serving] / [NomadHosting] olarak görünür."
       }
     },
     "recommendationGroups": {
@@ -2771,7 +2775,22 @@
       "fileTooLarge": "Dosya yüklenemeyecek kadar büyük (uygulama üzerinden maksimum yaklaşık 3 MB).",
       "invalidFilePath": "Klasörler veya .. segmentler olmadan basit bir dosya adı seçin.",
       "uploadFailed": "BitiÅten Sonra",
-      "deleteFileFailed": "Dosya silinemedi."
+      "deleteFileFailed": "Dosya silinemedi.",
+      "folderHint": "Micron sayfalarını diskteki bir klasörden sunun (önerilir). Sayfa/ dizin içeren bir site kökü veya sayfa dizinini seçin. Diskteki düzenlemeler otomatik olarak alınır.",
+      "chooseFolder": "Klasör seçin...",
+      "chooseFolderAria": "Nomad sayfalarını barındırmak için bir klasör seçin",
+      "clearFolder": "Yönetilen depolamayı kullan",
+      "clearFolderAria": "Seçilen klasörü temizleyin ve yönetilen depolama alanını kullanın",
+      "contentSource": "İçerik Klasörü",
+      "contentSourceManaged": "Yönetilen depolama (varsayılan)",
+      "contentSourceUnavailable": "Seçilen sayfalar klasörü eksik veya kullanılamıyor. Klasörü tekrar seçin.",
+      "contentSourceNotDirectory": "Bir dosya değil, bir dizin seçin.",
+      "contentSourceUnreadable": "Seçilen klasör okunamadı.",
+      "invalidContentSource": "Klasör bir pages/ directory veya .mu sayfa dosyası içermelidir.",
+      "contentSourceFailed": "İçerik klasörü ayarlanamadı.",
+      "watcherDegraded": "Klasör izleme bozulmuş; klasör tekrar okunabilir olana kadar sayfa listesi gecikebilir.",
+      "reloadFromDisk": "Diskten yeniden yükle",
+      "reloadFromDiskAria": "Barındırılan sayfaları diskten yeniden yükleyin"
     }
   },
   "packetDistribution": {

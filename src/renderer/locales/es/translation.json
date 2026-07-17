@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "Reconexión serie USB"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Problemas con el alojamiento de páginas Nomad",
+        "recommendation": "El alojamiento de Nomad My Pages ha fallado o la carpeta de contenido no está disponible. Abra Nomad Network → My Pages, vuelva a elegir la carpeta pages si se movió y, a continuación, comience a servir. Los detalles aparecen como [nomad-serving] / [NomadHosting] en el registro."
       }
     },
     "recommendationGroups": {
@@ -2771,7 +2775,22 @@
       "fileTooLarge": "El archivo es demasiado grande para cargarlo (máximo unos 3 MB a través de la aplicación).",
       "invalidFilePath": "Elija un nombre de archivo simple sin carpetas o .. segmentos.",
       "uploadFailed": "No se puede enviar el archivo. @item: intable Image file name",
-      "deleteFileFailed": "No se ha podido eliminar el archivo."
+      "deleteFileFailed": "No se ha podido eliminar el archivo.",
+      "folderHint": "Servir páginas Micron desde una carpeta en el disco (recomendado). Elija una raíz del sitio con un directorio pages/, o el propio directorio pages. Las ediciones en el disco se recogen automáticamente.",
+      "chooseFolder": "Elegir carpeta",
+      "chooseFolderAria": "Elige una carpeta para alojar páginas de Nomad",
+      "clearFolder": "Almacenamiento gestionado.",
+      "clearFolderAria": "Borrar la carpeta elegida y utilizar el almacenamiento gestionado",
+      "contentSource": "Carpeta content",
+      "contentSourceManaged": "Almacenamiento gestionado (predeterminado)",
+      "contentSourceUnavailable": "Falta la carpeta de páginas elegida o no está disponible. Vuelva a elegir la carpeta.",
+      "contentSourceNotDirectory": "Elija un directorio, no un archivo.",
+      "contentSourceUnreadable": "No se ha podido leer la carpeta elegida.",
+      "invalidContentSource": "La carpeta debe contener una página/ directorio o archivos de página .mu.",
+      "contentSourceFailed": "No se ha podido establecer la carpeta de contenido.",
+      "watcherDegraded": "La visualización de carpetas se degrada; la lista de páginas puede retrasarse hasta que la carpeta sea legible de nuevo.",
+      "reloadFromDisk": "Volver a cargar desde el disco",
+      "reloadFromDiskAria": "Volver a cargar páginas alojadas desde el disco"
     }
   },
   "packetDistribution": {

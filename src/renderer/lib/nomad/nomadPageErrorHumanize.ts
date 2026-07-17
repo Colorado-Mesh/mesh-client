@@ -12,6 +12,12 @@ const NOMAD_ERROR_I18N_KEYS: Record<string, string> = {
   nomad_busy: 'nomadNetwork.errors.nomadBusy',
   file_too_large: 'nomadNetwork.serving.fileTooLarge',
   invalid_file_path: 'nomadNetwork.serving.invalidFilePath',
+  content_source_unavailable: 'nomadNetwork.serving.contentSourceUnavailable',
+  content_source_not_directory: 'nomadNetwork.serving.contentSourceNotDirectory',
+  content_source_unreadable: 'nomadNetwork.serving.contentSourceUnreadable',
+  invalid_content_source: 'nomadNetwork.serving.invalidContentSource',
+  watcher_init_failed: 'nomadNetwork.serving.watcherDegraded',
+  content_source_update_failed: 'nomadNetwork.serving.contentSourceFailed',
 };
 
 export function nomadPageErrorI18nKey(error: string | null | undefined): string | null {

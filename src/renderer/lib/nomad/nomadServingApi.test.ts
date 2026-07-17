@@ -11,8 +11,10 @@ import {
   listServingFiles,
   listServingPages,
   NOMAD_SERVING_FILE_UPLOAD_MAX_BYTES,
+  pickServingContentSource,
   readServingPage,
   setServing,
+  setServingContentSource,
   writeServingFile,
   writeServingPage,
 } from '@/renderer/lib/nomad/nomadServingApi';
@@ -34,6 +36,7 @@ describe('nomadServingApi', () => {
           proxyGet: vi.fn(),
           proxyPut: vi.fn(),
           proxyDelete: vi.fn(),
+          showNomadContentSourceDialog: vi.fn(),
         },
       },
     });
@@ -89,6 +92,34 @@ describe('nomadServingApi', () => {
       display_name: 'Home',
     });
     expect(body.ok).toBe(true);
+  });
+
+  it('sets and clears the content source folder', async () => {
+    const proxyPut = window.electronAPI.reticulum.proxyPut as ReturnType<typeof vi.fn>;
+    proxyPut.mockResolvedValueOnce({
+      ok: true,
+      serving: { content_source: '/tmp/nomad-page', content_layout: 'site_root' },
+    });
+    await expect(setServingContentSource('/tmp/nomad-page')).resolves.toMatchObject({ ok: true });
+    expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/content-source', {
+      path: '/tmp/nomad-page',
+    });
+
+    proxyPut.mockResolvedValueOnce({ ok: true, serving: { content_source: null } });
+    await expect(setServingContentSource(null)).resolves.toMatchObject({ ok: true });
+    expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/content-source', {
+      path: null,
+    });
+  });
+
+  it('picks a content source directory via the main dialog', async () => {
+    const dialog = window.electronAPI.reticulum.showNomadContentSourceDialog as ReturnType<
+      typeof vi.fn
+    >;
+    dialog.mockResolvedValueOnce({ canceled: false, path: '/tmp/site' });
+    await expect(pickServingContentSource()).resolves.toEqual({ ok: true, path: '/tmp/site' });
+    dialog.mockResolvedValueOnce({ canceled: true, path: null });
+    await expect(pickServingContentSource()).resolves.toEqual({ ok: false, canceled: true });
   });
 
   it('lists pages and normalizes list errors', async () => {

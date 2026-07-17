@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "Sériové připojení USB"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Problémy s hostitelstvím na stránce Nomad",
+        "recommendation": "Hostování služby Nomad My Pages se nezdařilo nebo složka s obsahem není k dispozici. Otevřete Nomad Network → My Pages, znovu vyberte složku stránek, pokud se přesunula, a poté Spustit zobrazování. Podrobnosti se v protokolu zobrazí jako [nomad-serving] / [NomadHosting]."
       }
     },
     "recommendationGroups": {
@@ -2771,7 +2775,22 @@
       "fileTooLarge": "Soubor je příliš velký na nahrání (max. 3 MB přes aplikaci).",
       "invalidFilePath": "Vyberte jednoduchý název souboru bez složek nebo .. segmentů.",
       "uploadFailed": "Nelze nahrát soubor.",
-      "deleteFileFailed": "Nelze odstranit"
+      "deleteFileFailed": "Nelze odstranit",
+      "folderHint": "Podávejte stránky Micron ze složky na disku (doporučeno). Vyberte kořenový adresář webu s adresářem pages/ nebo samotný adresář stránek. Úpravy na disku se načítají automaticky.",
+      "chooseFolder": "Vyberte složku",
+      "chooseFolderAria": "Vyberte složku, ze které chcete hostit stránky Nomad",
+      "clearFolder": "Použít spravované úložiště",
+      "clearFolderAria": "Vymazat vybranou složku a použít spravované úložiště",
+      "contentSource": "Složka s obsahem",
+      "contentSourceManaged": "Spravované úložiště (výchozí)",
+      "contentSourceUnavailable": "Zvolená složka stránek chybí nebo není k dispozici. Zvolte složku znovu.",
+      "contentSourceNotDirectory": "Vyberte adresář, nikoli soubor.",
+      "contentSourceUnreadable": "Nelze přečíst vybranou složku.",
+      "invalidContentSource": "Složka musí obsahovat soubory pages/ directory nebo .mu page.",
+      "contentSourceFailed": "Nelze nastavit složku obsahu.",
+      "watcherDegraded": "Sledování složky je degradováno; seznam stránek se může zpozdit, dokud nebude složka opět čitelná.",
+      "reloadFromDisk": "Znovu načíst z disku",
+      "reloadFromDiskAria": "Znovu načíst hostované stránky z disku"
     }
   },
   "packetDistribution": {

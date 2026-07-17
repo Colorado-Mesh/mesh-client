@@ -177,3 +177,19 @@ pub async fn delete_nomad_serving_file(
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
 }
+
+#[derive(Debug, Deserialize)]
+pub struct NomadServingContentSourceBody {
+    /// Absolute directory path, or null/absent to clear (managed storage).
+    pub path: Option<String>,
+}
+
+pub async fn put_nomad_serving_content_source(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<NomadServingContentSourceBody>,
+) -> Json<serde_json::Value> {
+    match stack.set_nomad_content_source(body.path).await {
+        Ok(serving) => Json(serde_json::json!({ "ok": true, "serving": serving })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}

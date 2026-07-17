@@ -174,6 +174,10 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
                 .delete(nomad::delete_nomad_serving_file),
         )
         .route(
+            "/api/v1/nomadnetwork/serving/content-source",
+            put(nomad::put_nomad_serving_content_source),
+        )
+        .route(
             "/api/v1/rrc/hubs",
             get(rrc::list_rrc_hubs).post(rrc::upsert_rrc_hub),
         )

@@ -933,6 +933,8 @@ export interface ElectronAPI {
     readDefaultConfigFile: () => Promise<{ path: string | null; content: string | null }>;
     showConfigImportDialog: () => Promise<{ path: string | null; content: string | null }>;
     showIdentityImportDialog: () => Promise<ReticulumIdentityImportDialogResult>;
+    /** Pick a Nomad site root or pages directory for watched hosting. */
+    showNomadContentSourceDialog: () => Promise<{ canceled: boolean; path: string | null }>;
     validateConfig: () => Promise<ReticulumConfigValidateResult>;
     onEvent: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
     onStatus: (cb: (status: ReticulumSidecarStatus) => void) => () => void;

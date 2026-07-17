@@ -213,6 +213,47 @@ export async function deleteServingFile(path: string): Promise<NomadServingApiRe
   }
 }
 
+export async function setServingContentSource(
+  path: string | null,
+): Promise<NomadServingApiResponse> {
+  if (!(await isReticulumSidecarRunning())) {
+    return { ok: false, error: 'sidecar_not_running' };
+  }
+  try {
+    const body = (await window.electronAPI.reticulum.proxyPut(
+      '/api/v1/nomadnetwork/serving/content-source',
+      { path },
+    )) as { ok?: boolean; serving?: NomadServingStatus; error?: string };
+    if (body.ok === false) {
+      return {
+        ok: false,
+        error: body.error ?? 'content_source_update_failed',
+        serving: body.serving,
+      };
+    }
+    return { ok: true, serving: body.serving };
+  } catch (e) {
+    // catch-no-log-ok returned to caller for panel UI
+    return asApiError(e);
+  }
+}
+
+/** Open a directory picker for the Nomad content source (main-process dialog). */
+export async function pickServingContentSource(): Promise<
+  { ok: true; path: string } | { ok: false; canceled: true } | { ok: false; error: string }
+> {
+  try {
+    const result = await window.electronAPI.reticulum.showNomadContentSourceDialog();
+    if (result.canceled || !result.path) {
+      return { ok: false, canceled: true };
+    }
+    return { ok: true, path: result.path };
+  } catch (e) {
+    // catch-no-log-ok returned to caller for panel UI
+    return { ok: false, error: errLikeToLogString(e) };
+  }
+}
+
 /** Encode a File for serving upload; rejects oversize before base64 work. */
 export async function encodeServingFileUpload(
   file: File,

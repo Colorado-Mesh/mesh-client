@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "USB-serieel opnieuw verbinden"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Problemen met Nomad-pagina's",
+        "recommendation": "Het hosten van Nomad My Pages is mislukt of de inhoudsmap is niet beschikbaar. Open Nomad Network → My Pages, kies de paginamap opnieuw als deze is verplaatst en start vervolgens met serveren. Details verschijnen als [nomad-serving] / [NomadHosting] in het logboek."
       }
     },
     "recommendationGroups": {
@@ -2771,7 +2775,22 @@
       "fileTooLarge": "Bestand is te groot om te uploaden (max ongeveer 3 MB via de app).",
       "invalidFilePath": "Kies een eenvoudige bestandsnaam zonder mappen of .. segmenten.",
       "uploadFailed": "Kan het bestand niet uploaden.",
-      "deleteFileFailed": "Kan het bestand niet verwijderen."
+      "deleteFileFailed": "Kan het bestand niet verwijderen.",
+      "folderHint": "Serveer Micron-pagina's vanuit een map op schijf (aanbevolen). Kies een site root met een pagina's/ directory, of de pagina's directory zelf. Bewerkingen op schijf worden automatisch opgehaald.",
+      "chooseFolder": "Map kiezen",
+      "chooseFolderAria": "Kies een map om Nomad-pagina's uit te hosten",
+      "clearFolder": "Managed storage gebruiken",
+      "clearFolderAria": "Wis de gekozen map en gebruik beheerde opslag",
+      "contentSource": "Inhoudsmap",
+      "contentSourceManaged": "Beheerde opslag (standaard)",
+      "contentSourceUnavailable": "De gekozen paginamap ontbreekt of is niet beschikbaar. Kies de map opnieuw.",
+      "contentSourceNotDirectory": "Kies een map, geen bestand.",
+      "contentSourceUnreadable": "Kon de gekozen map niet lezen.",
+      "invalidContentSource": "Map moet een pagina/ map of .mu-paginabestanden bevatten.",
+      "contentSourceFailed": "Kon de inhoudsmap niet instellen.",
+      "watcherDegraded": "Het bekijken van mappen is gedegradeerd; de paginalijst kan vertraging oplopen totdat de map weer leesbaar is.",
+      "reloadFromDisk": "Huidig bestand opnieuw van schijf laden",
+      "reloadFromDiskAria": "Herlaad gehoste pagina's vanaf schijf"
     }
   },
   "packetDistribution": {

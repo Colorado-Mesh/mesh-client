@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "Reconexão serial USB"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Problemas de hospedagem de página Nomad",
+        "recommendation": "A hospedagem do Nomad My Pages falhou ou a pasta de conteúdo não está disponível. Abra Nomad Network → My Pages, escolha novamente a pasta pages se ela for movida e, em seguida, comece a servir. Os detalhes aparecem como [nomad-serving] / [NomadHosting] no registro."
       }
     },
     "recommendationGroups": {
@@ -2771,7 +2775,22 @@
       "fileTooLarge": "O arquivo é muito grande para carregar (máximo de cerca de 3 MB através do aplicativo).",
       "invalidFilePath": "Escolha um nome de arquivo simples sem pastas ou .. segmentos.",
       "uploadFailed": "Não foi possível enviar o arquivo",
-      "deleteFileFailed": "Não foi possível apagar"
+      "deleteFileFailed": "Não foi possível apagar",
+      "folderHint": "Servir páginas da Micron a partir de uma pasta no disco (recomendado). Escolha uma raiz de site com um diretório pages/ou o próprio diretório pages. As edições no disco são captadas automaticamente.",
+      "chooseFolder": "Escolher pasta",
+      "chooseFolderAria": "Escolha uma pasta para hospedar páginas Nomad",
+      "clearFolder": "Usar armazenamento gerenciado",
+      "clearFolderAria": "Limpe a pasta escolhida e use o armazenamento gerenciado",
+      "contentSource": "Pasta de Conteúdo",
+      "contentSourceManaged": "Armazenamento gerenciado (padrão)",
+      "contentSourceUnavailable": "A pasta de páginas escolhidas está ausente ou indisponível. Escolha a pasta novamente.",
+      "contentSourceNotDirectory": "Escolha um diretório, não um arquivo.",
+      "contentSourceUnreadable": "Não foi possível ler a pasta escolhida.",
+      "invalidContentSource": "A pasta deve conter uma página/ diretório ou arquivos de página .mu.",
+      "contentSourceFailed": "Não foi possível definir a pasta de conteúdo.",
+      "watcherDegraded": "A observação de pastas está degradada; a lista de páginas pode ficar atrasada até que a pasta esteja legível novamente.",
+      "reloadFromDisk": "Recarregar a partir do disco",
+      "reloadFromDiskAria": "Recarregar páginas hospedadas do disco"
     }
   },
   "packetDistribution": {

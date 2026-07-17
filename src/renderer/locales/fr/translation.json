@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "USB Serial Reconnect"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Problèmes d'hébergement de la page Nomad",
+        "recommendation": "L'hébergement de Nomad My Pages a échoué ou le dossier de contenu n'est pas disponible. Ouvrez Nomad Network → My Pages, choisissez à nouveau le dossier des pages s'il a été déplacé, puis commencez à servir. Les détails apparaissent sous la forme [nomad-serving] / [NomadHosting] dans le journal."
       }
     },
     "recommendationGroups": {
@@ -2771,7 +2775,22 @@
       "fileTooLarge": "Le fichier est trop volumineux pour être téléchargé (environ 3 Mo maximum via l'application).",
       "invalidFilePath": "Choisissez un nom de fichier simple sans dossiers ou .. segments.",
       "uploadFailed": "Le fichier ne peut pas être téléchargé.",
-      "deleteFileFailed": "Impossible de supprimer le fichier."
+      "deleteFileFailed": "Impossible de supprimer le fichier.",
+      "folderHint": "Servir des pages Micron à partir d'un dossier sur disque (recommandé). Choisissez une racine de site avec un répertoire de pages/, ou le répertoire de pages lui-même. Les modifications sur le disque sont détectées automatiquement.",
+      "chooseFolder": "Choisir le dossier",
+      "chooseFolderAria": "Choisissez un dossier à partir duquel héberger les pages Nomad",
+      "clearFolder": "Utiliser le stockage géré",
+      "clearFolderAria": "Effacer le dossier choisi et utiliser le stockage géré",
+      "contentSource": "Dossier Content",
+      "contentSourceManaged": "Stockage géré (par défaut)",
+      "contentSourceUnavailable": "Le dossier de pages choisi est manquant ou indisponible. Choisissez à nouveau le dossier.",
+      "contentSourceNotDirectory": "Choisissez un répertoire, pas un fichier.",
+      "contentSourceUnreadable": "Impossible de lire le dossier choisi.",
+      "invalidContentSource": "Le dossier doit contenir des pages/ répertoires ou des fichiers de page .mu.",
+      "contentSourceFailed": "Impossible de définir le dossier de contenu.",
+      "watcherDegraded": "Le suivi des dossiers est dégradé ; la liste des pages peut être retardée jusqu'à ce que le dossier soit à nouveau lisible.",
+      "reloadFromDisk": "Recharger à partir du disque",
+      "reloadFromDiskAria": "Recharger les pages hébergées à partir du disque"
     }
   },
   "packetDistribution": {

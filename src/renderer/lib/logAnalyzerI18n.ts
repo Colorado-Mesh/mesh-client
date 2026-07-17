@@ -23,6 +23,7 @@ export const LOG_ANALYZER_CATEGORY_LABEL_KEYS: Record<string, string> = {
   'serial-reconnect': 'logAnalyzer.categories.serial-reconnect.label',
   'sdk-meshtastic': 'logAnalyzer.categories.sdk-meshtastic.label',
   'sdk-meshcore': 'logAnalyzer.categories.sdk-meshcore.label',
+  'reticulum-nomad-hosting': 'logAnalyzer.categories.reticulum-nomad-hosting.label',
 };
 
 export const LOG_ANALYZER_CATEGORY_RECOMMENDATION_KEYS: Record<string, string> = {
@@ -47,6 +48,7 @@ export const LOG_ANALYZER_CATEGORY_RECOMMENDATION_KEYS: Record<string, string> =
   'store-forward': 'logAnalyzer.categories.store-forward.recommendation',
   'sdk-meshtastic': 'logAnalyzer.categories.sdk-meshtastic.recommendation',
   'sdk-meshcore': 'logAnalyzer.categories.sdk-meshcore.recommendation',
+  'reticulum-nomad-hosting': 'logAnalyzer.categories.reticulum-nomad-hosting.recommendation',
 };
 
 /** Used only by unit tests merging synthetic categories in `dedupeRecommendations`. */

@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "USBシリアル再接続"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Nomadページのホスティングに関する問題",
+        "recommendation": "Nomadマイページホスティングに失敗したか、コンテンツフォルダが利用できません。Nomad Network → My Pagesを開き、移動した場合はpagesフォルダーを再選択してから、サービスを開始します。詳細はログに[NOMAD - SERVING ]/[ NOMADHOSTING]と表示されます。"
       }
     },
     "recommendationGroups": {
@@ -2771,7 +2775,22 @@
       "fileTooLarge": "ファイルが大きすぎてアップロードできません（アプリ経由で最大約3 MB ）。",
       "invalidFilePath": "フォルダまたは..セグメントを含まない単純なファイル名を選択します。",
       "uploadFailed": "ファイルをアップロードできませんでした。",
-      "deleteFileFailed": "ファイル %1を削除できませんでした。"
+      "deleteFileFailed": "ファイル %1を削除できませんでした。",
+      "folderHint": "ディスク上のフォルダから Micron ページを提供します（推奨）。pages/ ディレクトリを持つサイトルート、または pages ディレクトリ自体を選択します。ディスク上の編集は自動的に反映されます。",
+      "chooseFolder": "フォルダの選択",
+      "chooseFolderAria": "Nomadページをホストするフォルダを選択してください",
+      "clearFolder": "マネージドストレージを使用する",
+      "clearFolderAria": "選択したフォルダーをクリアし、管理されたストレージを使用する",
+      "contentSource": "コンテンツフォルダ",
+      "contentSourceManaged": "管理ストレージ（デフォルト）",
+      "contentSourceUnavailable": "選択したページフォルダが見つからないか、使用できません。もう一度フォルダーを選択します。",
+      "contentSourceNotDirectory": "ファイルではなくディレクトリを選択してください。",
+      "contentSourceUnreadable": "選択したフォルダを読み取れませんでした。",
+      "invalidContentSource": "フォルダには、pages/ディレクトリまたは.muページファイルが含まれている必要があります。",
+      "contentSourceFailed": "コンテンツフォルダを設定できませんでした。",
+      "watcherDegraded": "フォルダのウォッチは低下します。ページリストは、フォルダが再び読み取り可能になるまで遅れることがあります。",
+      "reloadFromDisk": "ディスクから再読み込み",
+      "reloadFromDiskAria": "ホストされているページをディスクから再読み込みする"
     }
   },
   "packetDistribution": {

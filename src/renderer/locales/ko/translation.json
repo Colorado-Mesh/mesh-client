@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "USB 직렬 재연결"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Nomad 페이지 호스팅 문제",
+        "recommendation": "Nomad 내 페이지 호스팅에 실패했거나 콘텐츠 폴더를 사용할 수 없습니다. Nomad Network → My Pages를 열고 페이지 폴더가 이동되면 다시 선택한 다음 서비스를 시작합니다. 세부 정보는 로그에 [nomad-serving]/[NomadHosting] 으로 표시됩니다."
       }
     },
     "recommendationGroups": {
@@ -2771,7 +2775,22 @@
       "fileTooLarge": "파일이 너무 커서 업로드할 수 없습니다 (앱을 통해 최대 약 3MB).",
       "invalidFilePath": "폴더 또는.. 세그먼트가 없는 간단한 파일 이름을 선택하십시오.",
       "uploadFailed": "찾기( F)",
-      "deleteFileFailed": "% 1 파일을 삭제할 수 없습니다."
+      "deleteFileFailed": "% 1 파일을 삭제할 수 없습니다.",
+      "folderHint": "디스크의 폴더에서 Micron 페이지를 제공합니다 (권장). 페이지/디렉토리가 있는 사이트 루트 또는 페이지 디렉토리 자체를 선택합니다. 디스크의 수정 사항은 자동으로 픽업됩니다.",
+      "chooseFolder": "폴더 선택",
+      "chooseFolderAria": "Nomad 페이지를 호스팅할 폴더 선택",
+      "clearFolder": "관리 스토리지 사용",
+      "clearFolderAria": "선택한 폴더를 지우고 관리되는 저장소를 사용하십시오",
+      "contentSource": "콘텐츠 폴더",
+      "contentSourceManaged": "관리형 스토리지 (기본값)",
+      "contentSourceUnavailable": "선택한 페이지 폴더가 없거나 사용할 수 없습니다. 폴더를 다시 선택하십시오.",
+      "contentSourceNotDirectory": "파일이 아닌 디렉토리를 선택하십시오.",
+      "contentSourceUnreadable": "선택한 폴더를 읽을 수 없습니다.",
+      "invalidContentSource": "폴더에는 페이지/디렉토리 또는 .mu 페이지 파일이 포함되어야 합니다.",
+      "contentSourceFailed": "콘텐츠 폴더를 설정할 수 없습니다.",
+      "watcherDegraded": "폴더 감시 기능이 저하되었습니다. 폴더를 다시 읽을 수 있을 때까지 페이지 목록이 지연될 수 있습니다.",
+      "reloadFromDisk": "디스크에서 모두 다시 로드",
+      "reloadFromDiskAria": "디스크에서 호스팅된 페이지 다시 로드"
     }
   },
   "packetDistribution": {

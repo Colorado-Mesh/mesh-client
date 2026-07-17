@@ -21,6 +21,7 @@ vi.mock('../log-service', () => ({
 vi.mock('../reticulum-config-paths', () => ({
   readFirstExistingConfig: vi.fn(),
   showReticulumConfigImportDialog: vi.fn(),
+  showNomadContentSourceDialog: vi.fn(),
 }));
 
 vi.mock('../reticulum-config-validate', () => ({
@@ -33,6 +34,7 @@ vi.mock('../reticulum-identity-import', () => ({
 
 import {
   readFirstExistingConfig,
+  showNomadContentSourceDialog,
   showReticulumConfigImportDialog,
 } from '../reticulum-config-paths';
 import { validateReticulumUserConfig } from '../reticulum-config-validate';
@@ -45,6 +47,7 @@ type IpcHandler = (event: unknown, ...args: unknown[]) => unknown;
 const assertIpcSenderMock = vi.mocked(assertIpcSender);
 const readFirstExistingConfigMock = vi.mocked(readFirstExistingConfig);
 const showReticulumConfigImportDialogMock = vi.mocked(showReticulumConfigImportDialog);
+const showNomadContentSourceDialogMock = vi.mocked(showNomadContentSourceDialog);
 const validateReticulumUserConfigMock = vi.mocked(validateReticulumUserConfig);
 const showReticulumIdentityImportDialogMock = vi.mocked(showReticulumIdentityImportDialog);
 
@@ -101,6 +104,7 @@ describe('registerReticulumIpcHandlers', () => {
         'reticulum:readDefaultConfigFile',
         'reticulum:showConfigImportDialog',
         'reticulum:showIdentityImportDialog',
+        'reticulum:showNomadContentSourceDialog',
         'reticulum:validateConfig',
       ]),
     );
@@ -119,9 +123,10 @@ describe('registerReticulumIpcHandlers', () => {
       handlers.get('reticulum:readDefaultConfigFile')?.(event);
       await handlers.get('reticulum:showConfigImportDialog')?.(event);
       await handlers.get('reticulum:showIdentityImportDialog')?.(event);
+      await handlers.get('reticulum:showNomadContentSourceDialog')?.(event);
       await handlers.get('reticulum:validateConfig')?.(event);
 
-      expect(assertIpcSenderMock).toHaveBeenCalledTimes(12);
+      expect(assertIpcSenderMock).toHaveBeenCalledTimes(13);
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:start');
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:proxyPost');
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:validateConfig');
@@ -277,6 +282,15 @@ describe('registerReticulumIpcHandlers', () => {
       showReticulumIdentityImportDialogMock.mockResolvedValue({ canceled: true } as never);
       const result = await handlers.get('reticulum:showIdentityImportDialog')?.(event);
       expect(result).toEqual({ canceled: true });
+    });
+
+    it('showNomadContentSourceDialog delegates to showNomadContentSourceDialog', async () => {
+      showNomadContentSourceDialogMock.mockResolvedValue({
+        canceled: false,
+        path: '/tmp/nomad-page',
+      });
+      const result = await handlers.get('reticulum:showNomadContentSourceDialog')?.(event);
+      expect(result).toEqual({ canceled: false, path: '/tmp/nomad-page' });
     });
 
     it('validateConfig returns the validator result on success', async () => {

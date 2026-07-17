@@ -5,6 +5,7 @@ import type { ReticulumSidecarStatus } from '../../shared/reticulum-types';
 import { sanitizeLogMessage } from '../log-service';
 import {
   readFirstExistingConfig,
+  showNomadContentSourceDialog,
   showReticulumConfigImportDialog,
 } from '../reticulum-config-paths';
 import { validateReticulumUserConfig } from '../reticulum-config-validate';
@@ -144,6 +145,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   ipcMain.handle('reticulum:showIdentityImportDialog', async (event) => {
     assertIpcSender(event, 'reticulum:showIdentityImportDialog');
     return showReticulumIdentityImportDialog();
+  });
+
+  ipcMain.handle('reticulum:showNomadContentSourceDialog', async (event) => {
+    assertIpcSender(event, 'reticulum:showNomadContentSourceDialog');
+    return showNomadContentSourceDialog();
   });
 
   ipcMain.handle('reticulum:validateConfig', async (event) => {

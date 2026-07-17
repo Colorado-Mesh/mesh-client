@@ -381,6 +381,34 @@ describe('analyzeLogs', () => {
     expect(sdk?.count).toBe(1);
   });
 
+  it('detects Nomad hosting failures for reticulum', () => {
+    const entries: LogEntry[] = [
+      makeEntry(
+        '[ReticulumSidecar] WARN [nomad-serving] failed to restore Nomad serving: content_source_unavailable',
+        'warn',
+      ),
+      makeEntry('[NomadHosting] content_source_unavailable', 'warn'),
+    ];
+    const result = analyzeLogs(entries, 'reticulum');
+    const cat = result.categories.find((c) => c.id === 'reticulum-nomad-hosting');
+    expect(cat).toBeDefined();
+    expect(cat?.count).toBe(2);
+    expect(cat?.severity).toBe('warning');
+  });
+
+  it('does not flag Nomad hosting debug noise or other protocols', () => {
+    const entries: LogEntry[] = [
+      makeEntry('[nomad-serving] content store unavailable for status counts', 'debug'),
+      makeEntry('[NomadHosting] content_source_unavailable', 'warn'),
+    ];
+    expect(
+      analyzeLogs(entries, 'meshtastic').categories.find((c) => c.id === 'reticulum-nomad-hosting'),
+    ).toBeUndefined();
+    const reticulum = analyzeLogs(entries, 'reticulum');
+    const cat = reticulum.categories.find((c) => c.id === 'reticulum-nomad-hosting');
+    expect(cat?.count).toBe(1);
+  });
+
   it('detects watchdog triggers', () => {
     const entries: LogEntry[] = [
       makeEntry('watchdog: BLE dead for 30000ms, triggering reconnect'),

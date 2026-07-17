@@ -23,6 +23,7 @@ const onReticulumStatus = vi.fn();
 const proxyGet = vi.fn();
 const proxyPut = vi.fn();
 const proxyDelete = vi.fn();
+const showNomadContentSourceDialog = vi.fn();
 
 vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
   isReticulumSidecarRunning: () => isReticulumSidecarRunning(),
@@ -48,6 +49,10 @@ const servingStatus = {
     last_request_ms: null,
   },
   content_root: '/tmp/nomadnetwork',
+  content_source: '/tmp/nomad-page',
+  content_layout: 'site_root',
+  watcher_status: 'ok',
+  last_error: null,
 };
 
 describe('NomadPageServerPanel', () => {
@@ -57,6 +62,7 @@ describe('NomadPageServerPanel', () => {
     proxyGet.mockReset();
     proxyPut.mockReset();
     proxyDelete.mockReset();
+    showNomadContentSourceDialog.mockReset();
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
       value: {
@@ -65,6 +71,7 @@ describe('NomadPageServerPanel', () => {
           proxyGet,
           proxyPut,
           proxyDelete,
+          showNomadContentSourceDialog,
         },
       },
     });
@@ -103,6 +110,73 @@ describe('NomadPageServerPanel', () => {
     expect(screen.getByText('readme.txt')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Home')).toBeInTheDocument();
     expect(screen.getByText('nomadNetwork.serving.servingChip')).toBeInTheDocument();
+    expect(screen.getByText('/tmp/nomad-page')).toBeInTheDocument();
+  });
+
+  it('chooses a content folder via the dialog', async () => {
+    const user = userEvent.setup();
+    showNomadContentSourceDialog.mockResolvedValue({
+      canceled: false,
+      path: '/Users/me/repos/nomad-page',
+    });
+    proxyPut.mockResolvedValue({
+      ok: true,
+      serving: { ...servingStatus, content_source: '/Users/me/repos/nomad-page' },
+    });
+    render(<NomadPageServerPanel isActive />);
+    await waitFor(() => {
+      expect(screen.getByText('index.mu')).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.serving.chooseFolderAria' }));
+    await waitFor(() => {
+      expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/content-source', {
+        path: '/Users/me/repos/nomad-page',
+      });
+    });
+  });
+
+  it('clears the content folder back to managed storage', async () => {
+    const user = userEvent.setup();
+    proxyPut.mockResolvedValue({
+      ok: true,
+      serving: { ...servingStatus, content_source: null, content_layout: 'managed' },
+    });
+    render(<NomadPageServerPanel isActive />);
+    await waitFor(() => {
+      expect(screen.getByText('/tmp/nomad-page')).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.serving.clearFolderAria' }));
+    await waitFor(() => {
+      expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/content-source', {
+        path: null,
+      });
+    });
+  });
+
+  it('surfaces last_error from serving status', async () => {
+    proxyGet.mockImplementation((path: string) => {
+      if (path === '/api/v1/nomadnetwork/serving') {
+        return Promise.resolve({
+          ok: true,
+          serving: {
+            ...servingStatus,
+            running: false,
+            last_error: 'content_source_unavailable',
+          },
+        });
+      }
+      if (path === '/api/v1/nomadnetwork/serving/pages') {
+        return Promise.resolve({ ok: true, pages: [] });
+      }
+      if (path === '/api/v1/nomadnetwork/serving/files') {
+        return Promise.resolve({ ok: true, files: [] });
+      }
+      return Promise.resolve({ ok: false, error: 'unexpected' });
+    });
+    render(<NomadPageServerPanel isActive />);
+    await waitFor(() => {
+      expect(screen.getByText('nomadNetwork.serving.contentSourceUnavailable')).toBeInTheDocument();
+    });
   });
 
   it('invokes preview callback for the local destination', async () => {

@@ -6,6 +6,7 @@ pub mod config_audit;
 mod identity_apply;
 mod identity_import;
 mod local_rnode_primary;
+mod nomad_content_source;
 mod nomad_file;
 mod nomad_link_errors;
 #[cfg(feature = "rns-stack")]
@@ -1139,6 +1140,60 @@ impl StackHandle {
             file_count: 0,
             stats: types::NomadServeStatsRow::default(),
             content_root: self.storage_dir.join("nomadnetwork").display().to_string(),
+            content_source: inner.nomad_serving_content_source.clone(),
+            content_layout: Some(if inner.nomad_serving_content_source.is_some() {
+                "site_root".into()
+            } else {
+                "managed".into()
+            }),
+            watcher_status: Some("ok".into()),
+            last_error: None,
+        }
+    }
+
+    pub async fn set_nomad_content_source(
+        &self,
+        path: Option<String>,
+    ) -> Result<NomadServingStatus, String> {
+        #[cfg(feature = "rns-stack")]
+        {
+            let live = self.require_live()?;
+            let path_buf = path
+                .as_ref()
+                .filter(|p| !p.trim().is_empty())
+                .map(std::path::PathBuf::from);
+            // Validate before persisting.
+            let resolved = live
+                .nomad_server()
+                .set_content_source_path(path_buf)
+                .await?;
+            {
+                let mut inner = self.inner.write().await;
+                inner.nomad_serving_content_source = resolved
+                    .content_source
+                    .as_ref()
+                    .map(|p| p.display().to_string());
+                inner.save(&self.config_dir, &self.storage_dir)?;
+            }
+            // Restart host if running so the store opens under the new roots.
+            if live.nomad_server().is_running().await {
+                let name = {
+                    let inner = self.inner.read().await;
+                    inner
+                        .nomad_serving_display_name
+                        .clone()
+                        .filter(|n| !n.trim().is_empty())
+                        .unwrap_or_else(|| "Nomad node".into())
+                };
+                live.stop_nomad_serving().await?;
+                live.start_nomad_serving(name).await?;
+            }
+            return Ok(live.nomad_serving_status().await);
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = path;
+            Err(NOMAD_REQUIRES_STACK.into())
         }
     }
 
@@ -1181,13 +1236,13 @@ impl StackHandle {
                         })
                         .unwrap_or_else(|| "Nomad node".into())
                 };
-                if !live.nomad_server().is_running().await {
-                    live.start_nomad_serving(name).await?;
-                } else {
+                if live.nomad_server().is_running().await {
                     live.nomad_server().set_display_name(&name).await;
                     if let Err(e) = live.nomad_server().announce_now().await {
                         tracing::warn!("nomad re-announce failed: {e}");
                     }
+                } else {
+                    live.start_nomad_serving(name).await?;
                 }
                 // Refresh local host row when already running (start path upserts on spawn).
                 let status = live.nomad_serving_status().await;

@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "USB串行重新连接"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Nomad页面出租问题",
+        "recommendation": "Nomad My Pages托管失败或内容文件夹不可用。打开Nomad Network → My Pages ，重新选择页面文件夹（如果已移动） ，然后开始提供服务。详细信息在日志中显示为[Nomad-serving]/[NomadHosting]。"
       }
     },
     "recommendationGroups": {
@@ -2771,7 +2775,22 @@
       "fileTooLarge": "文件太大，无法上传（通过应用程序最大约3 MB ）。",
       "invalidFilePath": "选择一个不带文件夹或..段的简单文件名。",
       "uploadFailed": "无法上传文件 。 @ item: intable Image file name",
-      "deleteFileFailed": "无法删除 %s 文件。"
+      "deleteFileFailed": "无法删除 %s 文件。",
+      "folderHint": "从磁盘上的文件夹提供Micron页面（推荐）。选择具有页面/目录的站点根目录，或页面目录本身。磁盘上的编辑会自动拾取。",
+      "chooseFolder": "选择文件夹",
+      "chooseFolderAria": "选择一个文件夹来托管Nomad页面",
+      "clearFolder": "使用托管存储",
+      "clearFolderAria": "清除所选文件夹并使用托管存储",
+      "contentSource": "内容文件夹",
+      "contentSourceManaged": "托管存储（默认）",
+      "contentSourceUnavailable": "所选页面文件夹缺失或不可用。再次选择文件夹。",
+      "contentSourceNotDirectory": "选择一个目录，而不是文件。",
+      "contentSourceUnreadable": "无法读取所选文件夹。",
+      "invalidContentSource": "文件夹必须包含页面/目录或.mu页面文件。",
+      "contentSourceFailed": "无法设置内容文件夹。",
+      "watcherDegraded": "文件夹监视已降级；页面列表可能会延迟，直到文件夹再次可读。",
+      "reloadFromDisk": "从磁盘重新加载",
+      "reloadFromDiskAria": "从磁盘重新加载托管页面"
     }
   },
   "packetDistribution": {

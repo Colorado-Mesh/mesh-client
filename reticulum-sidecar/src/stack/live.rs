@@ -458,7 +458,7 @@ impl LiveBridge {
             state.lxmf_ready = true;
         }
 
-        let (nomad_enabled, nomad_name) = {
+        let (nomad_enabled, nomad_name, nomad_content_source) = {
             let state = inner.read().await;
             let name = state
                 .nomad_serving_display_name
@@ -472,11 +472,23 @@ impl LiveBridge {
                         .filter(|n| !n.trim().is_empty() && n != "Self")
                 })
                 .unwrap_or_else(|| "Nomad node".into());
-            (state.nomad_serving_enabled, name)
+            (
+                state.nomad_serving_enabled,
+                name,
+                state.nomad_serving_content_source.clone(),
+            )
         };
+        // Load remembered content folder before auto-restore so start uses it.
+        if let Some(path) = nomad_content_source {
+            bridge
+                .nomad_server
+                .load_content_source_path(Some(std::path::PathBuf::from(path)))
+                .await;
+        }
         if nomad_enabled {
             if let Err(e) = bridge.start_nomad_serving(nomad_name).await {
-                tracing::warn!("failed to restore Nomad serving: {e}");
+                tracing::warn!("[nomad-serving] failed to restore Nomad serving: {e}");
+                bridge.nomad_server.set_last_error(Some(e.clone())).await;
             }
         }
 

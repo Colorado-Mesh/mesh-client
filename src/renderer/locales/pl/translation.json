@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "Ponowne połączenie szeregowe USB"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Problemy z hostingiem strony Nomad",
+        "recommendation": "Hosting Nomad My Pages nie powiódł się lub folder treści jest niedostępny. Otwórz Nomad Network → My Pages, ponownie wybierz folder stron, jeśli został przeniesiony, a następnie rozpocznij serwowanie. Szczegóły pojawiają się jako [nomad-serving] / [NomadHosting] w dzienniku."
       }
     },
     "recommendationGroups": {
@@ -2771,7 +2775,22 @@
       "fileTooLarge": "Plik jest zbyt duży, aby go przesłać (maksymalnie około 3 MB za pośrednictwem aplikacji).",
       "invalidFilePath": "Wybierz prostą nazwę pliku bez folderów lub .. segmentów.",
       "uploadFailed": "Nie można wysłać pliku.",
-      "deleteFileFailed": "Nie udało się usunąć"
+      "deleteFileFailed": "Nie udało się usunąć",
+      "folderHint": "Serwuj strony Micron z folderu na dysku (zalecane). Wybierz katalog główny witryny ze stronami/ katalogiem lub sam katalog stron. Zmiany na dysku są pobierane automatycznie.",
+      "chooseFolder": "Wybierz folder",
+      "chooseFolderAria": "Wybierz folder, z którego chcesz hostować strony Nomad",
+      "clearFolder": "Użyj zarządzanej pamięci masowej",
+      "clearFolderAria": "Wyczyść wybrany folder i użyj zarządzanej pamięci",
+      "contentSource": "Folder treści",
+      "contentSourceManaged": "Zarządzana pamięć masowa (domyślnie)",
+      "contentSourceUnavailable": "Brak wybranego folderu stron lub jest on niedostępny. Ponownie wybierz folder.",
+      "contentSourceNotDirectory": "Wybierz katalog, a nie plik.",
+      "contentSourceUnreadable": "Nie można odczytać wybranego folderu.",
+      "invalidContentSource": "Folder musi zawierać strony/ katalog lub pliki stron .mu.",
+      "contentSourceFailed": "Nie można ustawić folderu zawartości.",
+      "watcherDegraded": "Obserwacja folderu jest zdegradowana; lista stron może być opóźniona, dopóki folder nie będzie ponownie czytelny.",
+      "reloadFromDisk": "Załaduj ponownie z dysku",
+      "reloadFromDiskAria": "Załaduj ponownie hostowane strony z dysku"
     }
   },
   "packetDistribution": {

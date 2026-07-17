@@ -9,8 +9,10 @@ import {
   getServingStatus,
   listServingFiles,
   listServingPages,
+  pickServingContentSource,
   readServingPage,
   setServing as setServingApi,
+  setServingContentSource,
   writeServingFile,
   writeServingPage,
 } from '@/renderer/lib/nomad/nomadServingApi';
@@ -21,6 +23,9 @@ const DEFAULT_PAGE_CONTENT = `#!c=30
 
 Edit this Micron page, then save.
 `;
+
+/** Avoid repeating the same hosting failure warn on every poll. */
+let lastLoggedHostingError: string | null = null;
 
 export default function NomadPageServerPanel({
   isActive,
@@ -48,6 +53,19 @@ export default function NomadPageServerPanel({
   const displayNameDirtyRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const applyStatusError = useCallback(
+    (serving: NomadServingStatus | null | undefined) => {
+      const code = serving?.last_error?.trim();
+      if (!code) return;
+      if (lastLoggedHostingError !== code) {
+        lastLoggedHostingError = code;
+        console.warn('[NomadHosting]', code);
+      }
+      setError(humanizeNomadPageError(code, t));
+    },
+    [t],
+  );
+
   const refresh = useCallback(async () => {
     if (refreshInFlightRef.current) return;
     refreshInFlightRef.current = true;
@@ -67,6 +85,11 @@ export default function NomadPageServerPanel({
         if (!displayNameDirtyRef.current) {
           setDisplayName(statusRes.serving.display_name ?? '');
         }
+        if (statusRes.serving.last_error) {
+          applyStatusError(statusRes.serving);
+        } else if (statusRes.ok) {
+          lastLoggedHostingError = null;
+        }
       } else if (!statusRes.ok) {
         setError(humanizeNomadPageError(statusRes.error, t));
       }
@@ -75,7 +98,7 @@ export default function NomadPageServerPanel({
       if (seq !== refreshSeqRef.current) return;
       if (pagesRes.ok && pagesRes.pages) {
         setPages(pagesRes.pages);
-        if (statusRes.ok) setError(null);
+        if (statusRes.ok && !statusRes.serving?.last_error) setError(null);
       } else if (!pagesRes.ok) {
         setError(humanizeNomadPageError(pagesRes.error, t));
       }
@@ -89,7 +112,7 @@ export default function NomadPageServerPanel({
         refreshInFlightRef.current = false;
       }
     }
-  }, [t]);
+  }, [applyStatusError, t]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -128,7 +151,10 @@ export default function NomadPageServerPanel({
         if (!body.ok) {
           setError(humanizeNomadPageError(body.error, t) || t(failKey));
         } else {
-          if (body.serving) setStatus(body.serving);
+          if (body.serving) {
+            setStatus(body.serving);
+            applyStatusError(body.serving);
+          }
           if (opts?.onOk) await opts.onOk();
         }
         if (!opts?.skipRefresh) await refresh();
@@ -136,7 +162,7 @@ export default function NomadPageServerPanel({
         setBusy(false);
       }
     },
-    [refresh, t],
+    [applyStatusError, refresh, t],
   );
 
   const setServing = async (enabled: boolean) => {
@@ -150,6 +176,38 @@ export default function NomadPageServerPanel({
       }
       return body;
     }, 'nomadNetwork.serving.failed');
+  };
+
+  const chooseFolder = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const picked = await pickServingContentSource();
+      if (!picked.ok) {
+        if ('canceled' in picked && picked.canceled) return;
+        setError(humanizeNomadPageError('error' in picked ? picked.error : null, t));
+        return;
+      }
+      const body = await setServingContentSource(picked.path);
+      if (!body.ok) {
+        console.warn('[NomadHosting] content source set failed:', body.error);
+        setError(
+          humanizeNomadPageError(body.error, t) || t('nomadNetwork.serving.contentSourceFailed'),
+        );
+        return;
+      }
+      if (body.serving) setStatus(body.serving);
+      await refresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const clearFolder = async () => {
+    await runServingAction(
+      () => setServingContentSource(null),
+      'nomadNetwork.serving.contentSourceFailed',
+    );
   };
 
   const loadPage = async (path: string) => {
@@ -255,6 +313,10 @@ export default function NomadPageServerPanel({
   const stats = status?.stats;
   const canPreview =
     serving && Boolean(status?.destination_hash) && typeof onPreviewHostedSite === 'function';
+  const contentSourceLabel =
+    status?.content_source?.trim() || t('nomadNetwork.serving.contentSourceManaged');
+  const watcherDegraded =
+    status?.watcher_status === 'degraded' || status?.watcher_status === 'unavailable';
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
@@ -270,6 +332,52 @@ export default function NomadPageServerPanel({
       {!sidecarRunning ? (
         <p className="text-muted text-sm">{t('nomadNetwork.serving.sidecarRequired')}</p>
       ) : null}
+
+      <p className="text-muted text-xs">{t('nomadNetwork.serving.folderHint')}</p>
+
+      <div className="flex flex-col gap-1 text-sm text-gray-200">
+        <span>{t('nomadNetwork.serving.contentSource')}</span>
+        <code className="truncate font-mono text-xs text-gray-300" title={contentSourceLabel}>
+          {contentSourceLabel}
+        </code>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busy || !sidecarRunning}
+            onClick={() => {
+              void chooseFolder();
+            }}
+            aria-label={t('nomadNetwork.serving.chooseFolderAria')}
+            className="border-bright-green/60 text-bright-green hover:bg-bright-green/10 rounded border px-3 py-1.5 text-xs disabled:opacity-40"
+          >
+            {t('nomadNetwork.serving.chooseFolder')}
+          </button>
+          <button
+            type="button"
+            disabled={busy || !sidecarRunning || !status?.content_source}
+            onClick={() => {
+              void clearFolder();
+            }}
+            aria-label={t('nomadNetwork.serving.clearFolderAria')}
+            className="rounded border border-gray-600 px-3 py-1.5 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+          >
+            {t('nomadNetwork.serving.clearFolder')}
+          </button>
+          {watcherDegraded ? (
+            <button
+              type="button"
+              disabled={busy || !sidecarRunning}
+              onClick={() => {
+                void refresh();
+              }}
+              aria-label={t('nomadNetwork.serving.reloadFromDiskAria')}
+              className="rounded border border-amber-600 px-3 py-1.5 text-xs text-amber-300 hover:bg-amber-900/30 disabled:opacity-40"
+            >
+              {t('nomadNetwork.serving.reloadFromDisk')}
+            </button>
+          ) : null}
+        </div>
+      </div>
 
       <label className="flex flex-col gap-1 text-sm text-gray-200">
         <span>{t('nomadNetwork.serving.displayName')}</span>

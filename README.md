@@ -328,7 +328,7 @@ Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGP
 - **Peers** tab: RNS path-table peers and LXMF contacts (separate sub-tabs); virtualized large lists, path probe, and peer detail modal
 - **Map** tab: local RMAP v4 discovery map (Leaflet + OSM basemaps; heard opt-in interfaces with GPS; interface-type filters; reachable vs heard-only sidebar list; publish via Network + Connection); **Global map** link to [rmap.world](https://rmap.world/) — no position trails or waypoints (contrast with Meshtastic/MeshCore Map)
 - **Topology** tab: best-effort graph from the RNS path table (next-hop edges, force layout)
-- **Nomad Network** tab: collapsible favourites/announces list (default **Favourites** sub-tab); **My Pages** hosts a static Nomad site (rsNomad `nomad-core`) — set a display name, Start serving, edit `.mu` pages (off by default); fit-width pages by default with an open-width toggle; panel lazy-mounts after first visit and keeps browse state across tab switches (`mesh-client:nomadNodeListCollapsed` for sidebar width)
+- **Nomad Network** tab: collapsible favourites/announces list (default **Favourites** sub-tab); **My Pages** hosts a static Nomad site (rsNomad `nomad-core`) — **Choose folder** for a watched site root (e.g. sibling `nomad-page` with `pages/*.mu`) or pages directory, set a display name, Start serving (off by default; auto-restores when the stack comes back up); optional in-folder Micron editor; fit-width pages by default with an open-width toggle; panel lazy-mounts after first visit and keeps browse state across tab switches (`mesh-client:nomadNodeListCollapsed` for sidebar width)
 
 **Admin & hardware**
 

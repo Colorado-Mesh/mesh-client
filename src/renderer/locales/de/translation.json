@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "USB-Serielle Wiederverbindung"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Probleme beim Hosting von Nomad-Seiten",
+        "recommendation": "Das Hosting von Nomad My Pages ist fehlgeschlagen oder der Inhaltsordner ist nicht verfügbar. Öffnen Sie Nomad Network → My Pages, wählen Sie den Seitenordner erneut aus, wenn er verschoben wurde, und beginnen Sie mit der Bereitstellung. Details erscheinen als [nomad-serving] / [NomadHosting] im Protokoll."
       }
     },
     "recommendationGroups": {
@@ -2771,7 +2775,22 @@
       "fileTooLarge": "Datei ist zu groß zum Hochladen (max ca. 3 MB über die App).",
       "invalidFilePath": "Wählen Sie einen einfachen Dateinamen ohne Ordner oder .. -Segmente.",
       "uploadFailed": "Datei konnte nicht hochgeladen werden.",
-      "deleteFileFailed": "Datei konnte nicht gelöscht werden"
+      "deleteFileFailed": "Datei konnte nicht gelöscht werden",
+      "folderHint": "Servieren Sie Micron-Seiten aus einem Ordner auf der Festplatte (empfohlen). Wählen Sie ein Site-Stammverzeichnis mit einem pages/ -Verzeichnis oder das pages -Verzeichnis selbst. Bearbeitungen auf der Festplatte werden automatisch abgeholt.",
+      "chooseFolder": "Ordner auswählen",
+      "chooseFolderAria": "Ordner zum Hosten von Nomad-Seiten auswählen",
+      "clearFolder": "Managed Storage",
+      "clearFolderAria": "Löschen Sie den ausgewählten Ordner und verwenden Sie verwalteten Speicher",
+      "contentSource": "Content-Ordner",
+      "contentSourceManaged": "Verwalteter Speicher (Standard)",
+      "contentSourceUnavailable": "Der ausgewählte Seitenordner fehlt oder ist nicht verfügbar. Wählen Sie den Ordner erneut aus.",
+      "contentSourceNotDirectory": "Wählen Sie ein Verzeichnis, keine Datei.",
+      "contentSourceUnreadable": "Der ausgewählte Ordner konnte nicht gelesen werden.",
+      "invalidContentSource": "Ordner muss Seiten/ Verzeichnisse oder .mu-Seitendateien enthalten.",
+      "contentSourceFailed": "Der Inhaltsordner konnte nicht festgelegt werden.",
+      "watcherDegraded": "Die Ordnerüberwachung ist beeinträchtigt; die Seitenliste kann verzögert werden, bis der Ordner wieder lesbar ist.",
+      "reloadFromDisk": "Von der Festplatte neu laden",
+      "reloadFromDiskAria": "Gehostete Seiten von der Festplatte neu laden"
     }
   },
   "packetDistribution": {

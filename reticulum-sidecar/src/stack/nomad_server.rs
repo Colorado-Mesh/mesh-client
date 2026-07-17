@@ -1,7 +1,8 @@
 //! Local Nomad Network page/file hosting via `nomad-core` / rsNomad.
 
-use std::path::PathBuf;
-use std::time::Duration;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
@@ -9,24 +10,48 @@ use nomad_core::{
     NomadContentRoots, NomadContentStore, NomadNode, NomadNodeConfig, normalize_file_route,
     normalize_page_route,
 };
+use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use rns_identity::identity::Identity;
 use rns_transport::messages::TransportMessage;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, mpsc};
 
+use super::nomad_content_source::{
+    NomadContentLayout, ResolvedNomadContentRoots, layout_label, resolve_content_roots,
+};
 use super::types::{NomadServeStatsRow, NomadServingStatus};
 
 const DEFAULT_ANNOUNCE_INTERVAL_SECS: u64 = 3600;
+const WATCHER_DEBOUNCE: Duration = Duration::from_millis(200);
+const WATCHER_RECONCILE: Duration = Duration::from_secs(45);
+const WATCHER_WARN_INTERVAL: Duration = Duration::from_secs(60);
+
+struct WatcherState {
+    _watcher: RecommendedWatcher,
+    cancel: tokio::sync::watch::Sender<bool>,
+}
 
 pub struct NomadServerHandle {
     inner: Mutex<Option<NomadNode>>,
-    content_base: PathBuf,
+    managed_base: PathBuf,
+    content_source: Mutex<Option<PathBuf>>,
+    last_error: Mutex<Option<String>>,
+    watcher_status: Mutex<String>,
+    watcher: Mutex<Option<WatcherState>>,
+    last_watcher_warn: Mutex<Option<Instant>>,
+    watcher_warn_suppressed: Mutex<u32>,
 }
 
 impl NomadServerHandle {
-    pub fn new(storage_dir: PathBuf) -> Self {
+    pub fn new(storage_dir: impl AsRef<Path>) -> Self {
         Self {
             inner: Mutex::new(None),
-            content_base: storage_dir.join("nomadnetwork"),
+            managed_base: storage_dir.as_ref().join("nomadnetwork"),
+            content_source: Mutex::new(None),
+            last_error: Mutex::new(None),
+            watcher_status: Mutex::new("ok".into()),
+            watcher: Mutex::new(None),
+            last_watcher_warn: Mutex::new(None),
+            watcher_warn_suppressed: Mutex::new(0),
         }
     }
 
@@ -34,13 +59,69 @@ impl NomadServerHandle {
         self.inner.lock().await.is_some()
     }
 
+    /// Configure the external content source path (None = managed).
+    pub async fn set_content_source_path(
+        self: &Arc<Self>,
+        path: Option<PathBuf>,
+    ) -> Result<ResolvedNomadContentRoots, String> {
+        let resolved = resolve_content_roots(&self.managed_base, path.as_deref())
+            .map_err(|e| e.as_str().to_string())?;
+        {
+            let mut guard = self.content_source.lock().await;
+            *guard = resolved.content_source.clone();
+        }
+        {
+            let mut err = self.last_error.lock().await;
+            if err
+                .as_deref()
+                .is_some_and(|e| e.starts_with("content_source") || e == "invalid_content_source")
+            {
+                *err = None;
+            }
+        }
+        // Roots are bound into NomadContentStore at start — callers must restart
+        // the host node when serving is already running (see set_nomad_content_source).
+        if !self.is_running().await {
+            // Keep watcher stopped while offline.
+            self.stop_watcher().await;
+        }
+        Ok(resolved)
+    }
+
+    /// Restore a previously persisted content source without validating restart.
+    pub async fn load_content_source_path(&self, path: Option<PathBuf>) {
+        *self.content_source.lock().await = path;
+    }
+
+    pub async fn set_last_error(&self, code: Option<String>) {
+        *self.last_error.lock().await = code;
+    }
+
+    pub async fn resolve_roots(&self) -> Result<ResolvedNomadContentRoots, String> {
+        let src = self.content_source.lock().await.clone();
+        resolve_content_roots(&self.managed_base, src.as_deref())
+            .map_err(|e| e.as_str().to_string())
+    }
+
+    fn roots_from_resolved(resolved: &ResolvedNomadContentRoots) -> NomadContentRoots {
+        // Match NomadContentRoots::under defaults (512 KiB pages / 4 MiB files).
+        NomadContentRoots {
+            pages_dir: resolved.pages_dir.clone(),
+            files_dir: resolved.files_dir.clone(),
+            max_page_bytes: 512 * 1024,
+            max_file_bytes: 4 * 1024 * 1024,
+        }
+    }
+
     pub async fn status(&self, enabled_pref: bool, display_name_pref: &str) -> NomadServingStatus {
         let guard = self.inner.lock().await;
         if let Some(node) = guard.as_ref() {
-            return self.status_from_node(node, true);
+            return self.status_from_node(node, true).await;
         }
         drop(guard);
-        let (page_count, file_count) = self.content_counts_offline();
+        let (page_count, file_count, content_meta) = self.content_counts_offline().await;
+        let last_error = self.last_error.lock().await.clone();
+        let watcher_status = self.watcher_status.lock().await.clone();
         NomadServingStatus {
             enabled: enabled_pref,
             running: false,
@@ -50,12 +131,19 @@ impl NomadServerHandle {
             page_count,
             file_count,
             stats: NomadServeStatsRow::default(),
-            content_root: self.content_base.display().to_string(),
+            content_root: content_meta.content_root.display().to_string(),
+            content_source: content_meta
+                .content_source
+                .as_ref()
+                .map(|p| p.display().to_string()),
+            content_layout: Some(layout_label(content_meta.layout).into()),
+            watcher_status: Some(watcher_status),
+            last_error,
         }
     }
 
     pub async fn start(
-        &self,
+        self: &Arc<Self>,
         transport_tx: tokio::sync::mpsc::Sender<TransportMessage>,
         identity: Identity,
         display_name: String,
@@ -67,13 +155,24 @@ impl NomadServerHandle {
             }
         }
 
-        let store = NomadContentStore::new(NomadContentRoots::under(&self.content_base))
-            .map_err(|e| e.to_string())?;
+        let resolved = match self.resolve_roots().await {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::warn!("[nomad-serving] content source unavailable before start: {e}");
+                self.set_last_error(Some(e.clone())).await;
+                *self.watcher_status.lock().await = "unavailable".into();
+                return Err(e);
+            }
+        };
+
+        let store = NomadContentStore::new(Self::roots_from_resolved(&resolved)).map_err(|e| {
+            tracing::error!("[nomad-serving] content store open failed: {e}");
+            e.to_string()
+        })?;
         store
             .ensure_default_index(&display_name)
             .map_err(|e| e.to_string())?;
 
-        // Spawn without holding the lifecycle mutex so status/list reads are not stalled.
         let node = NomadNode::spawn(
             transport_tx,
             identity,
@@ -85,24 +184,33 @@ impl NomadServerHandle {
             },
         )
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| {
+            tracing::warn!("[nomad-serving] start failed: {e}");
+            e.to_string()
+        })?;
 
         let mut guard = self.inner.lock().await;
         if guard.is_some() {
-            // Another start won the race; shut down the node we just spawned.
             node.shutdown();
             return Err("nomad serving already running".into());
         }
-        let status = self.status_from_node(&node, true);
+        let status = self.status_from_node_sync(&node, true, &resolved).await;
         *guard = Some(node);
+        drop(guard);
+
+        self.set_last_error(None).await;
+        *self.watcher_status.lock().await = "ok".into();
+        self.start_watcher().await;
         Ok(status)
     }
 
     pub async fn stop(&self) -> Result<(), String> {
+        self.stop_watcher().await;
         let mut guard = self.inner.lock().await;
         if let Some(node) = guard.take() {
             node.shutdown();
         }
+        *self.watcher_status.lock().await = "ok".into();
         Ok(())
     }
 
@@ -121,8 +229,6 @@ impl NomadServerHandle {
         node.announce_now().await.map_err(|e| e.to_string())
     }
 
-    /// Serve a page/file from the local host when `dest_hash` matches this node.
-    /// Used for self-preview without a Link round-trip to ourselves.
     pub async fn try_read_local_route(
         &self,
         dest_hash: &str,
@@ -133,7 +239,7 @@ impl NomadServerHandle {
         let local = node.destination_hash_hex();
         let clean = dest_hash
             .chars()
-            .filter(|c| c.is_ascii_hexdigit())
+            .filter(char::is_ascii_hexdigit)
             .collect::<String>();
         if !local.eq_ignore_ascii_case(&clean) {
             return None;
@@ -198,9 +304,30 @@ impl NomadServerHandle {
             .await
     }
 
-    fn status_from_node(&self, node: &NomadNode, enabled: bool) -> NomadServingStatus {
+    async fn status_from_node(&self, node: &NomadNode, enabled: bool) -> NomadServingStatus {
+        let resolved = self
+            .resolve_roots()
+            .await
+            .unwrap_or_else(|_| ResolvedNomadContentRoots {
+                layout: NomadContentLayout::Managed,
+                content_source: None,
+                pages_dir: self.managed_base.join("pages"),
+                files_dir: self.managed_base.join("files"),
+                content_root: self.managed_base.clone(),
+            });
+        self.status_from_node_sync(node, enabled, &resolved).await
+    }
+
+    async fn status_from_node_sync(
+        &self,
+        node: &NomadNode,
+        enabled: bool,
+        resolved: &ResolvedNomadContentRoots,
+    ) -> NomadServingStatus {
         let page_count = node.store().list_pages().map(|p| p.len()).unwrap_or(0);
         let file_count = node.store().list_files().map(|f| f.len()).unwrap_or(0);
+        let last_error = self.last_error.lock().await.clone();
+        let watcher_status = self.watcher_status.lock().await.clone();
         NomadServingStatus {
             enabled,
             running: true,
@@ -210,20 +337,37 @@ impl NomadServerHandle {
             page_count,
             file_count,
             stats: stats_row(&node.stats()),
-            content_root: self.content_base.display().to_string(),
+            content_root: resolved.content_root.display().to_string(),
+            content_source: resolved
+                .content_source
+                .as_ref()
+                .map(|p| p.display().to_string()),
+            content_layout: Some(layout_label(resolved.layout).into()),
+            watcher_status: Some(watcher_status),
+            last_error,
         }
     }
 
-    fn content_counts_offline(&self) -> (usize, usize) {
-        match NomadContentStore::new(NomadContentRoots::under(&self.content_base)) {
+    async fn content_counts_offline(&self) -> (usize, usize, ResolvedNomadContentRoots) {
+        let resolved = match self.resolve_roots().await {
+            Ok(r) => r,
+            Err(_) => ResolvedNomadContentRoots {
+                layout: NomadContentLayout::Managed,
+                content_source: self.content_source.lock().await.clone(),
+                pages_dir: self.managed_base.join("pages"),
+                files_dir: self.managed_base.join("files"),
+                content_root: self.managed_base.clone(),
+            },
+        };
+        match NomadContentStore::new(Self::roots_from_resolved(&resolved)) {
             Ok(store) => {
                 let page_count = store.list_pages().map(|p| p.len()).unwrap_or(0);
                 let file_count = store.list_files().map(|f| f.len()).unwrap_or(0);
-                (page_count, file_count)
+                (page_count, file_count, resolved)
             }
             Err(e) => {
-                tracing::debug!("nomad content store unavailable for status counts: {e}");
-                (0, 0)
+                tracing::debug!("[nomad-serving] content store unavailable for status counts: {e}");
+                (0, 0, resolved)
             }
         }
     }
@@ -232,7 +376,8 @@ impl NomadServerHandle {
         &self,
         f: impl FnOnce(&NomadContentStore) -> Result<(), String>,
     ) -> Result<(), String> {
-        let store = NomadContentStore::new(NomadContentRoots::under(&self.content_base))
+        let resolved = self.resolve_roots().await?;
+        let store = NomadContentStore::new(Self::roots_from_resolved(&resolved))
             .map_err(|e| e.to_string())?;
         f(&store)?;
         self.reload_routes_if_running().await
@@ -255,9 +400,169 @@ impl NomadServerHandle {
             return f(node.store());
         }
         drop(guard);
-        let store = NomadContentStore::new(NomadContentRoots::under(&self.content_base))
+        let resolved = self.resolve_roots().await?;
+        let store = NomadContentStore::new(Self::roots_from_resolved(&resolved))
             .map_err(|e| e.to_string())?;
         f(&store)
+    }
+
+    async fn stop_watcher(&self) {
+        let mut guard = self.watcher.lock().await;
+        if let Some(state) = guard.take() {
+            let _ = state.cancel.send(true);
+        }
+    }
+
+    async fn start_watcher(self: &Arc<Self>) {
+        self.stop_watcher().await;
+
+        let Ok(resolved) = self.resolve_roots().await else {
+            return;
+        };
+        if resolved.layout == NomadContentLayout::Managed {
+            *self.watcher_status.lock().await = "ok".into();
+            return;
+        }
+
+        let pages_dir = resolved.pages_dir.clone();
+        let files_external = resolved.files_dir != self.managed_base.join("files");
+        let files_dir = files_external.then(|| resolved.files_dir.clone());
+
+        let (event_tx, mut event_rx) = mpsc::unbounded_channel::<()>();
+        let (cancel_tx, mut cancel_rx) = tokio::sync::watch::channel(false);
+
+        let event_tx_cb = event_tx.clone();
+        let watcher_result = RecommendedWatcher::new(
+            move |res: Result<Event, notify::Error>| {
+                if let Err(e) = &res {
+                    tracing::debug!("[nomad-serving] watcher event error: {e}");
+                }
+                let _ = event_tx_cb.send(());
+            },
+            notify::Config::default(),
+        );
+
+        let mut watcher = match watcher_result {
+            Ok(w) => w,
+            Err(e) => {
+                tracing::warn!("[nomad-serving] watcher init failed: {e}");
+                *self.watcher_status.lock().await = "degraded".into();
+                self.set_last_error(Some("watcher_init_failed".into()))
+                    .await;
+                return;
+            }
+        };
+
+        if let Err(e) = watcher.watch(&pages_dir, RecursiveMode::Recursive) {
+            tracing::warn!("[nomad-serving] watcher init failed on pages: {e}");
+            *self.watcher_status.lock().await = "degraded".into();
+            self.set_last_error(Some("watcher_init_failed".into()))
+                .await;
+            return;
+        }
+        if let Some(ref files) = files_dir {
+            if files.exists() {
+                if let Err(e) = watcher.watch(files, RecursiveMode::Recursive) {
+                    tracing::warn!("[nomad-serving] watcher init failed on files: {e}");
+                    *self.watcher_status.lock().await = "degraded".into();
+                }
+            }
+        }
+        *self.watcher_status.lock().await = "ok".into();
+
+        *self.watcher.lock().await = Some(WatcherState {
+            _watcher: watcher,
+            cancel: cancel_tx,
+        });
+
+        let this = Arc::clone(self);
+        tokio::spawn(async move {
+            let mut pending = false;
+            let mut debounce = tokio::time::interval(WATCHER_DEBOUNCE);
+            debounce.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+            let mut reconcile = tokio::time::interval(WATCHER_RECONCILE);
+            reconcile.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+
+            loop {
+                tokio::select! {
+                    _ = cancel_rx.changed() => {
+                        if *cancel_rx.borrow() {
+                            break;
+                        }
+                    }
+                    msg = event_rx.recv() => {
+                        if msg.is_none() {
+                            break;
+                        }
+                        pending = true;
+                    }
+                    _ = debounce.tick() => {
+                        if pending {
+                            pending = false;
+                            if let Err(e) = this.reload_routes_if_running().await {
+                                this.warn_watcher_rate_limited(&format!(
+                                    "[nomad-serving] route reload after FS change failed: {e}"
+                                ))
+                                .await;
+                                *this.watcher_status.lock().await = "degraded".into();
+                            }
+                        }
+                    }
+                    _ = reconcile.tick() => {
+                        if !this.is_running().await {
+                            continue;
+                        }
+                        if let Err(e) = this.reload_routes_if_running().await {
+                            this.warn_watcher_rate_limited(&format!(
+                                "[nomad-serving] route reconcile failed: {e}"
+                            ))
+                            .await;
+                            *this.watcher_status.lock().await = "degraded".into();
+                            continue;
+                        }
+                        match this.resolve_roots().await {
+                            Ok(r) if !r.pages_dir.exists() => {
+                                this.warn_watcher_rate_limited(
+                                    "[nomad-serving] content source unavailable (pages missing)",
+                                )
+                                .await;
+                                this.set_last_error(Some("content_source_unavailable".into()))
+                                    .await;
+                                *this.watcher_status.lock().await = "unavailable".into();
+                            }
+                            Ok(_) => {
+                                *this.watcher_status.lock().await = "ok".into();
+                            }
+                            Err(e) => {
+                                this.warn_watcher_rate_limited(&format!(
+                                    "[nomad-serving] content source unavailable: {e}"
+                                ))
+                                .await;
+                                this.set_last_error(Some(e)).await;
+                                *this.watcher_status.lock().await = "unavailable".into();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    async fn warn_watcher_rate_limited(&self, message: &str) {
+        let now = Instant::now();
+        let mut last = self.last_watcher_warn.lock().await;
+        let mut suppressed = self.watcher_warn_suppressed.lock().await;
+        if last.is_none_or(|t| now.duration_since(t) >= WATCHER_WARN_INTERVAL) {
+            if *suppressed > 0 {
+                tracing::warn!("{message} (suppressed {suppressed} similar warnings)");
+            } else {
+                tracing::warn!("{message}");
+            }
+            *last = Some(now);
+            *suppressed = 0;
+        } else {
+            *suppressed += 1;
+        }
     }
 }
 
@@ -277,19 +582,19 @@ mod tests {
 
     #[tokio::test]
     async fn start_rejects_double_start_without_live_transport() {
-        // Constructing a handle alone must report not running.
         let dir = tempfile::tempdir().expect("tempdir");
-        let handle = NomadServerHandle::new(dir.path().to_path_buf());
+        let handle = Arc::new(NomadServerHandle::new(dir.path().to_path_buf()));
         assert!(!handle.is_running().await);
         let status = handle.status(false, "Test").await;
         assert!(!status.running);
         assert_eq!(status.display_name, "Test");
+        assert_eq!(status.content_layout.as_deref(), Some("managed"));
     }
 
     #[test]
     fn invalid_base64_is_rejected() {
         let dir = tempfile::tempdir().expect("tempdir");
-        let handle = NomadServerHandle::new(dir.path().to_path_buf());
+        let handle = Arc::new(NomadServerHandle::new(dir.path().to_path_buf()));
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -298,5 +603,22 @@ mod tests {
             .block_on(handle.write_file_base64("x.bin", "!!!not-base64!!!"))
             .expect_err("invalid base64");
         assert!(err.contains("invalid base64"), "{err}");
+    }
+
+    #[tokio::test]
+    async fn set_content_source_site_root() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let site = dir.path().join("site");
+        std::fs::create_dir_all(site.join("pages")).unwrap();
+        std::fs::write(site.join("pages/index.mu"), b"> hi").unwrap();
+        let handle = Arc::new(NomadServerHandle::new(dir.path().to_path_buf()));
+        let resolved = handle
+            .set_content_source_path(Some(site.clone()))
+            .await
+            .expect("set source");
+        assert_eq!(resolved.layout, NomadContentLayout::SiteRoot);
+        let status = handle.status(false, "N").await;
+        assert!(status.content_source.is_some());
+        assert_eq!(status.content_layout.as_deref(), Some("site_root"));
     }
 }

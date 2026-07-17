@@ -1729,6 +1729,10 @@
       "sdk-meshcore": {
         "label": "MeshCore SDK Warnings/Errors",
         "recommendation": "MeshCore stack reported a warning or error. If it repeats, check BLE pairing, MQTT settings, and reconnect."
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Nomad Page Hosting Issues",
+        "recommendation": "Nomad My Pages hosting failed or the content folder is unavailable. Open Nomad Network → My Pages, re-choose the pages folder if it moved, then Start serving. Details appear as [nomad-serving] / [NomadHosting] in the log."
       }
     },
     "recommendationGroups": {
@@ -2867,6 +2871,21 @@
       "title": "Host Nomad pages",
       "servingChip": "Serving to network",
       "sidecarRequired": "Start the Reticulum stack to host Nomad pages.",
+      "folderHint": "Serve Micron pages from a folder on disk (recommended). Choose a site root with a pages/ directory, or the pages directory itself. Edits on disk are picked up automatically.",
+      "chooseFolder": "Choose folder",
+      "chooseFolderAria": "Choose a folder to host Nomad pages from",
+      "clearFolder": "Use managed storage",
+      "clearFolderAria": "Clear the chosen folder and use managed storage",
+      "contentSource": "Content folder",
+      "contentSourceManaged": "Managed storage (default)",
+      "contentSourceUnavailable": "The chosen pages folder is missing or unavailable. Choose the folder again.",
+      "contentSourceNotDirectory": "Choose a directory, not a file.",
+      "contentSourceUnreadable": "Could not read the chosen folder.",
+      "invalidContentSource": "Folder must contain a pages/ directory or .mu page files.",
+      "contentSourceFailed": "Could not set the content folder.",
+      "watcherDegraded": "Folder watching is degraded; page list may lag until the folder is readable again.",
+      "reloadFromDisk": "Reload from disk",
+      "reloadFromDiskAria": "Reload hosted pages from disk",
       "displayName": "Node display name",
       "enable": "Start serving",
       "disable": "Stop serving",
@@ -2875,7 +2894,7 @@
       "copied": "Copied",
       "stats": "{{pages}} pages · {{files}} files · {{requests}} requests",
       "myPages": "Local pages",
-      "noPages": "No pages yet. Create index.mu or add a new page.",
+      "noPages": "No pages yet. Add .mu files to the chosen folder or create index.mu here.",
       "newPagePlaceholder": "path e.g. about.mu",
       "createPage": "Create page",
       "editPage": "Edit {{path}}",
