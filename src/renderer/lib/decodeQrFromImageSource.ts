@@ -14,8 +14,7 @@ export function decodeQrFromImageData(imageData: ImageData): string | null {
   const code = jsQR(imageData.data, imageData.width, imageData.height, {
     inversionAttempts: 'attemptBoth',
   });
-  const text = code?.data?.trim();
-  return text ? text : null;
+  return code?.data?.trim() || null;
 }
 
 function assertDecodableBlob(blob: Blob): void {

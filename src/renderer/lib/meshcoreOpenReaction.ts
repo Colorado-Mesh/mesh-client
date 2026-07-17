@@ -221,7 +221,7 @@ function finalizeDartHash(hash: number, hashBits: number): number {
     hash = hash & ((1 << hashBits) - 1);
   }
   const finalized = hash === 0 ? 1 : hash;
-  return finalized > 0x7fffffff ? finalized - 0x1_0000_0000 : finalized;
+  return finalized > 0x7fffffff ? finalized - 0x100000000 : finalized;
 }
 
 /** 4-char hex reaction target hash (MeshCore Open). */

@@ -1555,7 +1555,7 @@ function InterfacesSection({
     if (health === 'enabled_down') {
       const kind = reticulumLocalOfflineDisplayKind(iface);
       if (kind === 'ble') {
-        if (bleBondRemovedNames?.some((n) => n === iface.name)) {
+        if (bleBondRemovedNames?.includes(iface.name)) {
           return t('connectionPanel.reticulumInterfaces.localOfflineRowBleBondStale');
         }
         return t('connectionPanel.reticulumInterfaces.localOfflineRowBle');

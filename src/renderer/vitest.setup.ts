@@ -19,7 +19,7 @@ afterEach(() => {
 /** Fail tests on [object Object] in console.warn (use mockConsoleWarn when expecting warnings). */
 const originalConsoleWarn = console.warn.bind(console);
 console.warn = (...args: Parameters<typeof console.warn>) => {
-  const text = args.map((a) => String(a)).join(' ');
+  const text = args.map(String).join(' ');
   if (text.includes('[object Object]')) {
     throw new Error(`Unexpected console.warn containing [object Object]: ${text}`);
   }

@@ -1113,10 +1113,9 @@ export default function RadioPanel({
     input.onchange = () => {
       const file = input.files?.[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
+      void (async () => {
         try {
-          const cfg = JSON.parse(ev.target?.result as string);
+          const cfg = JSON.parse(await file.text());
           console.debug('[RadioPanel] parsed config JSON:', cfg);
           console.debug(
             `[RadioPanel] current device state before import: radioFreqHz=${radioFreqHz} bandwidth=${bandwidth}`,
@@ -1278,8 +1277,7 @@ export default function RadioPanel({
             'error',
           );
         }
-      };
-      reader.readAsText(file);
+      })();
     };
     input.click();
   }, [addToast, onSetOwner, onApplyLoraParams, shortName, isLicensed, bandwidth, radioFreqHz, t]);

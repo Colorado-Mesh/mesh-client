@@ -207,7 +207,7 @@ export function parseConnectHostPort(
     const sep = addr.lastIndexOf(':');
     const maybePort = addr.slice(sep + 1);
     const port = parseTrailingPort(maybePort);
-    if (port !== null && maybePort.length > 0 && /^[0-9]+$/.test(maybePort) && port > 255) {
+    if (port !== null && maybePort.length > 0 && /^\d+$/.test(maybePort) && port > 255) {
       const host = addr.slice(0, sep);
       if (host) {
         return { host, port };

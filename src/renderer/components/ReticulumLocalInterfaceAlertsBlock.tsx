@@ -27,7 +27,7 @@ function ifaceHasBleBondRemoved(
   bleBondRemovedNames: readonly string[] | undefined,
 ): boolean {
   if (!bleBondRemovedNames || bleBondRemovedNames.length === 0) return false;
-  return bleBondRemovedNames.some((n) => n === ifaceName);
+  return bleBondRemovedNames.includes(ifaceName);
 }
 
 /** User-visible summary when local/USB Reticulum interfaces need attention. */

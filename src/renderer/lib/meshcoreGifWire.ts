@@ -5,7 +5,7 @@
 
 const MESHCORE_GIF_SHORT_WIRE = /^g:([A-Za-z0-9_-]+)$/;
 const MESHCORE_GIF_ID = /^[A-Za-z0-9_-]+$/;
-const MESHCORE_GIF_PAGE_ID = /^[A-Za-z0-9_]+$/;
+const MESHCORE_GIF_PAGE_ID = /^\w+$/;
 
 const GIPHY_MEDIA_ORIGIN = 'https://media.giphy.com';
 const GIPHY_PAGE_ORIGIN = 'https://giphy.com';

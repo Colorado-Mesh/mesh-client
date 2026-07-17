@@ -113,7 +113,7 @@ export default function NomadMicronPageView({
       if (!element || !container.contains(element)) return;
       const href = element.getAttribute('href') ?? '';
       const title = element.getAttribute('title') ?? '';
-      const dataDestination = element.getAttribute('data-destination') ?? '';
+      const dataDestination = element.dataset.destination ?? '';
       // In-page Micron anchors (`#slug`) — let the browser scroll; do not treat as Nomad nav.
       if (href.startsWith('#') || dataDestination.startsWith('#')) {
         return;
@@ -123,7 +123,7 @@ export default function NomadMicronPageView({
       const lxmfSource = [href, title].find((v) => v && isReticulumLxmfLink(v));
       const destination = (lxmfSource ?? dataDestination) || href;
       if (!destination) return;
-      const dataFields = element.getAttribute('data-fields');
+      const dataFields = element.dataset.fields;
       handleNomadLink(destination, dataFields);
     };
     container.addEventListener('click', onActivate);

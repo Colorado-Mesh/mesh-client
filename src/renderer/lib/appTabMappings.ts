@@ -114,7 +114,7 @@ export function findFilteredTabIndexForPanel(
   tabs: ProtocolTabMappings,
   panelIndex: number,
 ): number {
-  return tabs.tabIndexToPanelIndex.findIndex((p) => p === panelIndex);
+  return tabs.tabIndexToPanelIndex.indexOf(panelIndex);
 }
 
 export function resolveSavedTabOnProtocolSwitch(

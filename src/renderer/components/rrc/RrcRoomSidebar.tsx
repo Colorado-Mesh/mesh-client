@@ -297,7 +297,7 @@ export function RrcRoomSidebar({
         </div>
       )}
       <ul className="min-h-0 flex-1 overflow-y-auto px-1 pb-2">
-        {!collapsed && joinedDeduped.filter((r) => filterName(r.name)).length > 0 && (
+        {!collapsed && joinedDeduped.some((r) => filterName(r.name)) && (
           <li className="px-2 py-1 text-[10px] tracking-wide text-amber-500/70 uppercase">
             {t('rrc.joinedRooms')}
           </li>

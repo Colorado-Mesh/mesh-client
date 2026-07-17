@@ -39,23 +39,22 @@ function splitByUrls(text: string): ChatMentionSegment[] {
  * Split `input` into plain text runs, `mention` runs (brackets stripped for display),
  * and `url` runs (http/https links). Unclosed `@[` is left as plain text.
  */
-export function parseChatMentionSegments(input: string): ChatMentionSegment[] {
-  const s = input ?? '';
-  if (!s) return [];
+export function parseChatMentionSegments(input = ''): ChatMentionSegment[] {
+  if (!input) return [];
 
   const out: ChatMentionSegment[] = [];
   let last = 0;
   BRACKET_MENTION.lastIndex = 0;
   let m: RegExpExecArray | null;
-  while ((m = BRACKET_MENTION.exec(s)) !== null) {
+  while ((m = BRACKET_MENTION.exec(input)) !== null) {
     if (m.index > last) {
-      out.push(...splitByUrls(s.slice(last, m.index)));
+      out.push(...splitByUrls(input.slice(last, m.index)));
     }
     out.push({ kind: 'mention', label: (m[1] ?? '').trim() });
     last = m.index + m[0].length;
   }
-  if (last < s.length) {
-    out.push(...splitByUrls(s.slice(last)));
+  if (last < input.length) {
+    out.push(...splitByUrls(input.slice(last)));
   }
   return out;
 }

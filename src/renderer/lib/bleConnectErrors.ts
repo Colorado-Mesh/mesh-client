@@ -52,7 +52,7 @@ const BLUEZ_PAIRING_ERROR_RE =
  * - SecurityError: Authentication failure, permission denied
  * - NetworkError: Connection attempt failed (includes BlueZ pairing failures)
  */
-const CHROME_PAIRING_ERROR_NAMES = ['SecurityError', 'NetworkError'];
+const CHROME_PAIRING_ERROR_NAMES = new Set(['SecurityError', 'NetworkError']);
 
 /**
  * Check if a DOMException from Web Bluetooth is likely a pairing-related error.
@@ -60,7 +60,7 @@ const CHROME_PAIRING_ERROR_NAMES = ['SecurityError', 'NetworkError'];
  */
 export function isWebBluetoothPairingError(err: unknown): boolean {
   if (err instanceof DOMException) {
-    if (CHROME_PAIRING_ERROR_NAMES.includes(err.name)) {
+    if (CHROME_PAIRING_ERROR_NAMES.has(err.name)) {
       return true;
     }
     if (BLUEZ_PAIRING_ERROR_RE.test(err.message)) {

@@ -113,7 +113,7 @@ function meshcoreContactTypeLabel(
 }
 
 /** Sort fields that do not apply when the Nodes table is in MeshCore (contacts) layout. */
-const MESHCORE_INAPPLICABLE_SORT_FIELDS: readonly SortField[] = [
+const MESHCORE_INAPPLICABLE_SORT_FIELDS: ReadonlySet<SortField> = new Set([
   'short_name',
   'role',
   'via_mqtt',
@@ -122,7 +122,7 @@ const MESHCORE_INAPPLICABLE_SORT_FIELDS: readonly SortField[] = [
   'air_util_tx',
   'altitude',
   'redundancy',
-];
+]);
 
 function SortIcon({
   field,
@@ -234,7 +234,7 @@ export default function NodeListPanel({
   } = useMeshcoreContactCapacity({ enabled: mode === 'meshcore' });
 
   useEffect(() => {
-    if (mode === 'meshcore' && MESHCORE_INAPPLICABLE_SORT_FIELDS.includes(sortField)) {
+    if (mode === 'meshcore' && MESHCORE_INAPPLICABLE_SORT_FIELDS.has(sortField)) {
       setSortField('last_heard');
       setSortAsc(false);
     }
