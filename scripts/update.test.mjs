@@ -11,10 +11,11 @@ describe('update.sh Reticulum stack functionality check', () => {
 
     expect(rebuildFunction).toBeDefined();
     expect(rebuildFunction).toContain('bash scripts/clone-ratspeak-stack.sh');
-    expect(rebuildFunction).toContain('../rsReticulum/crates/rns-runtime/Cargo.toml');
-    expect(rebuildFunction).toContain('../rsLXMF/crates/lxmf-core/Cargo.toml');
-    expect(rebuildFunction).toContain('../rsNomad/crates/nomad-core/Cargo.toml');
+    expect(rebuildFunction).toContain('../../rsReticulum/crates/rns-runtime/Cargo.toml');
+    expect(rebuildFunction).toContain('../../rsLXMF/crates/lxmf-core/Cargo.toml');
+    expect(rebuildFunction).toContain('../../rsNomad/crates/nomad-core/Cargo.toml');
     expect(rebuildFunction).toContain('cargo build --features rns-stack,rns-ble,rns-rnode-tcp');
+    expect(rebuildFunction).not.toMatch(/['"]\.\.\/rs(?:Reticulum|LXMF|Nomad)\//);
     expect(rebuildFunction).not.toContain('cargo build)');
   });
 });

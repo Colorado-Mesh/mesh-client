@@ -85,9 +85,10 @@ rebuild_reticulum_sidecar() {
   fi
   echo 'Preparing rsReticulum, rsLXMF, and rsNomad functionality check...'
   local sidecar_dir='reticulum-sidecar'
-  local rns_runtime='../rsReticulum/crates/rns-runtime/Cargo.toml'
-  local lxmf_core='../rsLXMF/crates/lxmf-core/Cargo.toml'
-  local nomad_core='../rsNomad/crates/nomad-core/Cargo.toml'
+  # Paths match reticulum-sidecar/Cargo.toml (../../rs* from the sidecar dir).
+  local rns_runtime='../../rsReticulum/crates/rns-runtime/Cargo.toml'
+  local lxmf_core='../../rsLXMF/crates/lxmf-core/Cargo.toml'
+  local nomad_core='../../rsNomad/crates/nomad-core/Cargo.toml'
   bash scripts/clone-ratspeak-stack.sh
   local missing_manifest=''
   local manifest
