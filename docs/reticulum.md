@@ -201,8 +201,10 @@ When multiple enabled local RNode interfaces are connected, the interface list s
 ## Network tab
 
 - **Identity:** generate BIP-39 recovery phrase, import **private key** (paste or file picker via `reticulum:showIdentityImportDialog`), import **backup JSON**, export with passphrase, display name; **replace identity** confirm when keys already exist (`replace: true` on generate/import)
+- **Identity slots:** Network panel lists local slots (`GET /api/v1/identities`), create / switch / delete (`POST /api/v1/identities`, `/switch`, `/delete`). Create/switch are serialized and commit the active pointer only after the working key is applied; the sidecar restarts after a successful change. Soft cap **16** slots; display names are sanitized (control chars rejected, max 128 chars).
+- **Identity / contact QR:** share via `QrCodeImage` (`lxm://identity/…`, `lxm://contact/…`); ingest via paste/file/camera (`QrIngestControl`). OS deep links use the registered **`lxm://`** scheme (`electron-builder.yml`); external contact imports require confirmation (`MeshClientDeepLinkHost`). Encrypted LXMF paper messages are not supported yet.
+- **Peer fingerprint verification:** Peer detail can mark a contact verified (pins `verified_identity_hash` + `verified_at` in SQLite via `db:setReticulumDestinationVerified`) and warns on mismatch when the live announce hash drifts.
 - **Header self label:** when configured, the app header shows your Network **display name** (`reticulumSelfNodeLabel.ts`) — not a hash-prefix stub; omit the `Node:` label when no real name is set
-- **Note:** `GET /api/v1/identities` and `POST /api/v1/identities/switch` remain sidecar APIs; mesh-client UI uses a single unified identity (no in-app identity switcher)
 - **Identity vault:** optional passcode (minimum 8 characters) to encrypt secrets in the main process; unlock is rate-limited
 - **Stack settings:** `enable_transport`, `share_instance`, `loglevel` via `PUT /api/v1/stack/settings` (UI merge-reads so `announce_interval_sec` is not cleared accidentally); missing `share_instance` defaults to **off**
 - **Config validate:** Electron IPC `reticulum:validateConfig` → one-shot sidecar `validate-config --json` against `userData/reticulum/config`

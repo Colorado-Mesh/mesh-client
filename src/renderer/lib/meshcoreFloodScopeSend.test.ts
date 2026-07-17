@@ -1,6 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { withMeshcoreFloodScopeOverride } from './meshcoreFloodScopeSend';
+import {
+  isMeshcoreFloodScopeOverrideActive,
+  withMeshcoreFloodScopeOverride,
+} from './meshcoreFloodScopeSend';
+
+vi.mock('./meshcoreRepeaterRpcInFlight', () => ({
+  meshcoreCompanionRepeaterRfBusy: vi.fn(() => false),
+}));
+
+import { meshcoreCompanionRepeaterRfBusy } from './meshcoreRepeaterRpcInFlight';
 
 describe('withMeshcoreFloodScopeOverride', () => {
   it('skips apply when no override', async () => {
@@ -26,5 +35,28 @@ describe('withMeshcoreFloodScopeOverride', () => {
     const send = vi.fn().mockResolvedValue(undefined);
     await withMeshcoreFloodScopeOverride(apply, '', '#denver', send);
     expect(apply.mock.calls).toEqual([['#denver'], ['']]);
+  });
+
+  it('refuses override while companion RF is busy', async () => {
+    vi.mocked(meshcoreCompanionRepeaterRfBusy).mockReturnValueOnce(true);
+    const apply = vi.fn();
+    const send = vi.fn();
+    await expect(
+      withMeshcoreFloodScopeOverride(apply, '#colorado', '#denver', send),
+    ).rejects.toThrow('meshcore.errors.floodScopeBusy');
+    expect(apply).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('marks override active during send', async () => {
+    const apply = vi.fn().mockResolvedValue(undefined);
+    let sawActive = false;
+    const send = vi.fn().mockImplementation(() => {
+      sawActive = isMeshcoreFloodScopeOverrideActive();
+      return Promise.resolve();
+    });
+    await withMeshcoreFloodScopeOverride(apply, '', '#denver', send);
+    expect(sawActive).toBe(true);
+    expect(isMeshcoreFloodScopeOverrideActive()).toBe(false);
   });
 });

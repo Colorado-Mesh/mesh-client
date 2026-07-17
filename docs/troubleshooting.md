@@ -216,6 +216,13 @@ If Reticulum voice recording still fails with microphone permission denied after
 - **Windows:** Settings → Privacy & security → Microphone — allow desktop apps / Mesh-client. The app opens this page when OS status is `denied`.
 - **Linux:** Ensure PulseAudio or PipeWire can capture; Flatpak builds already include `--socket=pulseaudio`. AppImage/deb use the host audio stack.
 
+If QR camera scanning fails with camera permission denied:
+
+- **macOS:** System Settings → Privacy & Security → Camera — allow Mesh-client (packaged builds include `NSCameraUsageDescription`). `media:ensureCameraAccess` opens the privacy pane when denied.
+- **Windows:** Settings → Privacy & security → Camera — allow desktop apps / Mesh-client.
+- **Linux:** Chromium/portal behavior; no separate Electron privacy deep link.
+- Streams are stopped after a successful decode, Stop camera, and component unmount (no orphaned tracks).
+
 ## Installation and packaged apps
 
 Installers, Flatpak, Gatekeeper, and first-launch failures.

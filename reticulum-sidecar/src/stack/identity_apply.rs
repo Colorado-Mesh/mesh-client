@@ -89,6 +89,27 @@ mod rns {
         display_name: Option<String>,
         mnemonic: Option<String>,
     ) -> Result<StackIdentity, String> {
+        apply_unified_identity_to_slot(
+            state,
+            config_dir,
+            storage_dir,
+            identity,
+            display_name,
+            mnemonic,
+            None,
+        )
+    }
+
+    /// Apply identity to the working file; sync into `slot_id` when set, otherwise the active slot.
+    pub fn apply_unified_identity_to_slot(
+        state: &mut PersistedState,
+        config_dir: &Path,
+        storage_dir: &Path,
+        identity: Identity,
+        display_name: Option<String>,
+        mnemonic: Option<String>,
+        slot_id: Option<&str>,
+    ) -> Result<StackIdentity, String> {
         identity
             .to_file(&identity_file_path(config_dir))
             .map_err(|e| format!("save identity: {e}"))?;
@@ -97,13 +118,23 @@ mod rns {
         state.lxmf_ready = true;
         state.sync_local_propagation_hash();
         state.save(config_dir, storage_dir)?;
-        if let Err(e) = crate::stack::identity_slots::sync_active_slot_from_working(
-            config_dir,
-            state.identity.display_name.as_deref(),
-            Some(state.identity.identity_hash.as_str()),
-            Some(state.identity.lxmf_hash.as_str()),
-        ) {
-            tracing::warn!("identity slot sync after apply failed: {e}");
+        let sync_result = match slot_id {
+            Some(id) => crate::stack::identity_slots::sync_slot_from_working(
+                config_dir,
+                id,
+                state.identity.display_name.as_deref(),
+                Some(state.identity.identity_hash.as_str()),
+                Some(state.identity.lxmf_hash.as_str()),
+            ),
+            None => crate::stack::identity_slots::sync_active_slot_from_working(
+                config_dir,
+                state.identity.display_name.as_deref(),
+                Some(state.identity.identity_hash.as_str()),
+                Some(state.identity.lxmf_hash.as_str()),
+            ),
+        };
+        if let Err(e) = sync_result {
+            return Err(format!("identity slot sync after apply failed: {e}"));
         }
         Ok(state.identity.clone())
     }

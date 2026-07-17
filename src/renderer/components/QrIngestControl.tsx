@@ -27,15 +27,32 @@ export default function QrIngestControl({
   const { t } = useTranslation();
   const [status, setStatus] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [starting, setStarting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
   const onDecodedRef = useRef(onDecoded);
+  const startGenerationRef = useRef(0);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
     onDecodedRef.current = onDecoded;
   }, [onDecoded]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const stopTracks = useCallback((stream: MediaStream | null) => {
+    if (!stream) return;
+    for (const track of stream.getTracks()) {
+      track.stop();
+    }
+  }, []);
 
   const stopCamera = useCallback(() => {
     if (rafRef.current != null) {
@@ -44,19 +61,17 @@ export default function QrIngestControl({
     }
     const stream = streamRef.current;
     streamRef.current = null;
-    if (stream) {
-      for (const track of stream.getTracks()) {
-        track.stop();
-      }
-    }
+    stopTracks(stream);
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
     setScanning(false);
-  }, []);
+    setStarting(false);
+  }, [stopTracks]);
 
   useEffect(() => {
     return () => {
+      startGenerationRef.current += 1;
       stopCamera();
     };
   }, [stopCamera]);
@@ -118,24 +133,39 @@ export default function QrIngestControl({
   );
 
   const startCamera = useCallback(async () => {
-    if (disabled || scanning) return;
+    if (disabled || scanning || starting) return;
     setStatus(null);
+    setStarting(true);
+    const generation = ++startGenerationRef.current;
     try {
       const access = await window.electronAPI?.media?.ensureCameraAccess?.();
+      if (generation !== startGenerationRef.current || !mountedRef.current) {
+        return;
+      }
       if (access && !access.granted) {
         setStatus(t('qrIngest.cameraDenied'));
+        setStarting(false);
         return;
       }
       if (!navigator.mediaDevices?.getUserMedia) {
         setStatus(t('qrIngest.cameraUnavailable'));
+        setStarting(false);
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' } },
         audio: false,
       });
+      if (generation !== startGenerationRef.current || !mountedRef.current) {
+        // Stale start after unmount/cancel — release tracks immediately.
+        stopTracks(stream);
+        return;
+      }
+      // Replace any leftover stream without orphaning tracks.
+      stopTracks(streamRef.current);
       streamRef.current = stream;
       setScanning(true);
+      setStarting(false);
       const video = videoRef.current;
       if (!video) {
         stopCamera();
@@ -144,26 +174,44 @@ export default function QrIngestControl({
       }
       video.srcObject = stream;
       await video.play();
+      if (generation !== startGenerationRef.current || !mountedRef.current) {
+        stopCamera();
+        return;
+      }
 
       const canvas = document.createElement('canvas');
+      let lastScanAt = 0;
+      const SCAN_MIN_INTERVAL_MS = 200;
       const tick = () => {
+        if (generation !== startGenerationRef.current) return;
         const v = videoRef.current;
         if (!v || v.readyState < 2) {
           rafRef.current = requestAnimationFrame(tick);
           return;
         }
-        canvas.width = v.videoWidth;
-        canvas.height = v.videoHeight;
-        if (canvas.width < 2 || canvas.height < 2) {
+        const now = performance.now();
+        if (now - lastScanAt < SCAN_MIN_INTERVAL_MS) {
           rafRef.current = requestAnimationFrame(tick);
           return;
         }
+        lastScanAt = now;
+        // Cap decode resolution to limit CPU/memory on high-res cameras.
+        const maxDim = 960;
+        const srcW = v.videoWidth;
+        const srcH = v.videoHeight;
+        if (srcW < 2 || srcH < 2) {
+          rafRef.current = requestAnimationFrame(tick);
+          return;
+        }
+        const scale = Math.min(1, maxDim / Math.max(srcW, srcH));
+        canvas.width = Math.max(2, Math.floor(srcW * scale));
+        canvas.height = Math.max(2, Math.floor(srcH * scale));
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (!ctx) {
           rafRef.current = requestAnimationFrame(tick);
           return;
         }
-        ctx.drawImage(v, 0, 0);
+        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
         const text = decodeQrFromImageData(ctx.getImageData(0, 0, canvas.width, canvas.height));
         if (text) {
           emitDecoded(text);
@@ -173,11 +221,14 @@ export default function QrIngestControl({
       };
       rafRef.current = requestAnimationFrame(tick);
     } catch (err) {
+      if (generation !== startGenerationRef.current || !mountedRef.current) {
+        return;
+      }
       console.warn('[QrIngestControl] camera start failed: ' + errLikeToLogString(err));
       stopCamera();
       setStatus(t('qrIngest.cameraUnavailable'));
     }
-  }, [disabled, emitDecoded, scanning, stopCamera, t]);
+  }, [disabled, emitDecoded, scanning, starting, stopCamera, stopTracks, t]);
 
   return (
     <div className={`space-y-2 ${className}`} onPaste={handlePaste}>
@@ -193,7 +244,7 @@ export default function QrIngestControl({
         </button>
         <button
           type="button"
-          disabled={disabled || scanning}
+          disabled={disabled || scanning || starting}
           className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
           aria-label={t('qrIngest.scanCameraAria')}
           onClick={() => {

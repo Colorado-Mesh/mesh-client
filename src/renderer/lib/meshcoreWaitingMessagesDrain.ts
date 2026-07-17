@@ -1,5 +1,6 @@
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
+import { isMeshcoreFloodScopeOverrideActive } from './meshcoreFloodScopeSend';
 import { meshcoreCompanionRepeaterRfBusy } from './meshcoreRepeaterRpcInFlight';
 import { meshcoreTraceResponsesInFlightCount } from './meshcoreTracePathMultiplex';
 import {
@@ -82,7 +83,11 @@ export function shouldActivateWaitingMessagesBanner(
 
 /** True when companion admin/trace work will likely stall getWaitingMessages / syncNextMessage. */
 export function isMeshcoreCompanionDrainDeferred(): boolean {
-  return meshcoreTraceResponsesInFlightCount() > 0 || meshcoreCompanionRepeaterRfBusy();
+  return (
+    meshcoreTraceResponsesInFlightCount() > 0 ||
+    meshcoreCompanionRepeaterRfBusy() ||
+    isMeshcoreFloodScopeOverrideActive()
+  );
 }
 
 /** Silent auto-drain timeouts during BLE congestion are expected — log at debug, not warn. */

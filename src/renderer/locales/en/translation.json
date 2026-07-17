@@ -1841,6 +1841,7 @@
       "pingNoRoute": "No route from radio yet — multi-hop trace needs a synced path. Wait for contact updates or reconnect.",
       "pingFailed": "Ping failed",
       "cliDangerNotConfirmed": "Destructive CLI commands require confirmation in the Repeaters panel.",
+      "floodScopeBusy": "Flood scope override is unavailable while repeater admin or traceroute is in progress. Try again when idle.",
       "bleNoDetails": "BLE connection failed (no error details from device). Try again or use Serial/USB.",
       "bleAlreadyInProgress": "Bluetooth connection already in progress. Wait for it to finish or try Serial/USB instead.",
       "bleMissingServices": "Device does not support the MeshCore BLE protocol. Make sure the device is running MeshCore firmware.",
@@ -2984,7 +2985,8 @@
     "verifiedBadge": "Verified",
     "shareContactQr": "Share contact QR",
     "shareContactQrAria": "Show QR code for this contact",
-    "verifiedRowAria": "Contact verified"
+    "verifiedRowAria": "Contact verified",
+    "renameFailed": "Could not save the display name."
   },
   "peerGraph": {
     "title": "Peer Communication Graph",
@@ -4441,7 +4443,10 @@
     "noQrFound": "No QR code found in that image",
     "decodeFailed": "Could not read QR code from image",
     "cameraDenied": "Camera permission denied — enable it in system privacy settings",
-    "cameraUnavailable": "Camera is not available on this device"
+    "cameraUnavailable": "Camera is not available on this device",
+    "confirmContactImportTitle": "Import contact?",
+    "confirmContactImportBody": "Add {{name}} from an external link to your Reticulum contacts?",
+    "confirmContactImportAction": "Import contact"
   },
   "toasts": {
     "firmwareAvailable": "Firmware update available: v{{version}}",

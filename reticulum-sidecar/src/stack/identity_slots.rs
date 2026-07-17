@@ -70,8 +70,16 @@ pub fn write_active_id(config_dir: &Path, id: &str) -> Result<(), String> {
     if !is_safe_slot_id(id) {
         return Err("invalid identity_id".into());
     }
-    fs::write(active_identity_path(config_dir), id)
-        .map_err(|e| format!("write active_identity: {e}"))
+    let path = active_identity_path(config_dir);
+    let tmp = config_dir.join(format!(
+        ".{ACTIVE_IDENTITY_FILE}.{}.tmp",
+        std::process::id()
+    ));
+    fs::write(&tmp, id).map_err(|e| format!("write active_identity temp: {e}"))?;
+    fs::rename(&tmp, &path).map_err(|e| {
+        let _ = fs::remove_file(&tmp);
+        format!("write active_identity: {e}")
+    })
 }
 
 fn files_differ(a: &Path, b: &Path) -> bool {
@@ -144,6 +152,31 @@ pub fn ensure_slot_layout(config_dir: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Mirror the working identity file + hashes into a specific slot (not necessarily active).
+pub fn sync_slot_from_working(
+    config_dir: &Path,
+    slot_id: &str,
+    display_name: Option<&str>,
+    identity_hash: Option<&str>,
+    lxmf_hash: Option<&str>,
+) -> Result<(), String> {
+    if !is_safe_slot_id(slot_id) {
+        return Err("invalid identity_id".into());
+    }
+    ensure_slot_layout(config_dir)?;
+    let working = working_identity_path(config_dir);
+    if !working.exists() {
+        return Ok(());
+    }
+    let dest = slot_identity_path(config_dir, slot_id);
+    if let Some(parent) = dest.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("create slot: {e}"))?;
+    }
+    fs::copy(&working, &dest).map_err(|e| format!("copy to slot: {e}"))?;
+    write_slot_meta(config_dir, slot_id, display_name, identity_hash, lxmf_hash)?;
+    Ok(())
+}
+
 /// Mirror the working identity file + hashes into the active slot.
 pub fn sync_active_slot_from_working(
     config_dir: &Path,
@@ -151,19 +184,8 @@ pub fn sync_active_slot_from_working(
     identity_hash: Option<&str>,
     lxmf_hash: Option<&str>,
 ) -> Result<(), String> {
-    ensure_slot_layout(config_dir)?;
     let active = read_active_id(config_dir);
-    let working = working_identity_path(config_dir);
-    if !working.exists() {
-        return Ok(());
-    }
-    let dest = slot_identity_path(config_dir, &active);
-    if let Some(parent) = dest.parent() {
-        fs::create_dir_all(parent).map_err(|e| format!("create active slot: {e}"))?;
-    }
-    fs::copy(&working, &dest).map_err(|e| format!("copy to slot: {e}"))?;
-    write_slot_meta(config_dir, &active, display_name, identity_hash, lxmf_hash)?;
-    Ok(())
+    sync_slot_from_working(config_dir, &active, display_name, identity_hash, lxmf_hash)
 }
 
 fn new_slot_id() -> String {
@@ -179,7 +201,9 @@ pub fn list_slot_rows(
     config_dir: &Path,
     active_identity: &StackIdentity,
 ) -> Vec<serde_json::Value> {
-    let _ = ensure_slot_layout(config_dir);
+    if let Err(e) = ensure_slot_layout(config_dir) {
+        tracing::warn!("identity slot layout before list failed: {e}");
+    }
     let active_id = read_active_id(config_dir);
     let mut rows: Vec<serde_json::Value> = Vec::new();
     let root = identities_root(config_dir);
@@ -260,6 +284,9 @@ pub fn list_slot_rows(
 /// Create an empty slot directory and return its id (does not switch).
 pub fn create_empty_slot(config_dir: &Path, display_name: Option<&str>) -> Result<String, String> {
     ensure_slot_layout(config_dir)?;
+    if count_slot_dirs(config_dir) >= MAX_IDENTITY_SLOTS {
+        return Err("identity_slot_limit_reached".into());
+    }
     let mut id = new_slot_id();
     while slot_dir(config_dir, &id).exists() {
         id = new_slot_id();
@@ -296,8 +323,8 @@ pub fn stash_working_into_active_slot(
     Ok(())
 }
 
-/// Activate a configured slot by copying its key into the working identity path.
-pub fn activate_slot(config_dir: &Path, identity_id: &str) -> Result<(), String> {
+/// Copy a configured slot's key into the working identity path (does not change the active pointer).
+pub fn install_slot_to_working(config_dir: &Path, identity_id: &str) -> Result<(), String> {
     if !is_safe_slot_id(identity_id) {
         return Err("invalid identity_id".into());
     }
@@ -308,7 +335,42 @@ pub fn activate_slot(config_dir: &Path, identity_id: &str) -> Result<(), String>
     }
     let working = working_identity_path(config_dir);
     fs::copy(&src, &working).map_err(|e| format!("activate identity: {e}"))?;
+    Ok(())
+}
+
+/// Activate a configured slot by copying its key into the working identity path, then committing the pointer.
+pub fn activate_slot(config_dir: &Path, identity_id: &str) -> Result<(), String> {
+    install_slot_to_working(config_dir, identity_id)?;
     write_active_id(config_dir, identity_id)?;
+    Ok(())
+}
+
+/// Soft cap on stored identity slots (create refuses beyond this).
+pub const MAX_IDENTITY_SLOTS: usize = 16;
+
+pub fn count_slot_dirs(config_dir: &Path) -> usize {
+    let root = identities_root(config_dir);
+    let Ok(entries) = fs::read_dir(root) else {
+        return 0;
+    };
+    entries
+        .flatten()
+        .filter(|e| {
+            let id = e.file_name().to_string_lossy().to_string();
+            is_safe_slot_id(&id) && e.path().is_dir()
+        })
+        .count()
+}
+
+/// Remove a slot directory without active/last-configured checks (rollback helper).
+pub fn remove_slot_dir_force(config_dir: &Path, identity_id: &str) -> Result<(), String> {
+    if !is_safe_slot_id(identity_id) {
+        return Err("invalid identity_id".into());
+    }
+    let dir = slot_dir(config_dir, identity_id);
+    if dir.exists() {
+        fs::remove_dir_all(&dir).map_err(|e| format!("delete identity: {e}"))?;
+    }
     Ok(())
 }
 

@@ -395,6 +395,7 @@ const VERBATIM_KEY_NAMES = new Set([
   'buttonFloodAdvert', // same
   'sendButtonDm', // "DM" — direct-message abbreviation, used verbatim internationally
   'pinPlaceholder', // numeric pairing-code input placeholder — "PIN" the acronym, not a sewing/hair pin
+  'channelPsksPlaceholder', // MQTT ChannelName@index= syntax sample — must match English exactly
 ]);
 
 // "Hops" in mesh routing keeps tripping auto-translators into the brewing
@@ -476,6 +477,29 @@ for (const dir of localeDirs) {
         `Trailing whitespace in "${dir}" key "${key}": value=${JSON.stringify(val)} (English has none).`,
       );
       errors++;
+    }
+    const enNewlines = (enVal.match(/\n/g) ?? []).length;
+    const locNewlines = (val.match(/\n/g) ?? []).length;
+    if (enNewlines !== locNewlines) {
+      console.error(
+        `Newline count mismatch in "${dir}" key "${key}": locale has ${locNewlines}, English has ${enNewlines}.`,
+      );
+      errors++;
+    }
+
+    // Soft signal: multi-word English prose left byte-identical in a locale.
+    // Hard-fail would block commits until every key is translated; warn so
+    // `i18n:auto-translate --audit` gaps stay visible. Verbatim keys are exempt.
+    const untranslatedLeafKey = key.split('.').pop() ?? key;
+    if (
+      !VERBATIM_KEY_NAMES.has(untranslatedLeafKey) &&
+      val === enVal &&
+      enVal.trim().split(/\s+/).length >= 3 &&
+      /\b(the|and|or|for|with|from|this|that|are|is|not|you|your)\b/i.test(enVal)
+    ) {
+      console.warn(
+        `Untranslated English prose in "${dir}" key "${key}" (identical to en). Run pnpm run i18n:auto-translate --audit.`,
+      );
     }
 
     for (const issue of protectedBrandIssues(enVal, val)) {

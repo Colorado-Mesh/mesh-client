@@ -805,7 +805,7 @@
     "ripplePresetConfirm": "A predefinição do Ripple usa credenciais compartilhadas da comunidade e desabilita a verificação do certificado TLS. Use isso apenas em uma rede confiável. Continuar?",
     "meshcorePort": "Porto",
     "channelPsksHelp": "Chaves AES-128 (16 bytes) ou AES-256 (32 bytes) base64, uma por linha. ChannelName opcional =base64 apenas para MQTT. O padrão LongFast é sempre tentado. As teclas da guia Rádio são sincronizadas automaticamente quando o rádio está conectado.",
-    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksPlaceholder": "LongFast@0=yourPrimary256Key==, HamNet@2=yourBase64KeyHere",
     "channelPsksInvalidLength": "Cada chave deve decodificar para 16 bytes (AES-128) ou 32 bytes (AES-256).",
     "channelPsksInvalidBase64": "Base64 inválida em uma linha PSK do canal.",
     "mqttTlsEnabled": "Ativar TLS (mqtts / wss)",
@@ -1873,7 +1873,8 @@
       },
       "repeaterRpcInProgress": "Uma solicitação para este repetidor já está em andamento",
       "cliDangerNotConfirmed": "Comandos CLI destrutivos requerem confirmação no painel Repetidores.",
-      "pingFailed": "Falha no ping"
+      "pingFailed": "Falha no ping",
+      "floodScopeBusy": "A substituição do escopo de inundação não está disponível enquanto o administrador do repetidor ou o traceroute estão em andamento. Tente novamente quando estiver inativo."
     },
     "mqttHints": {
       "notAuthorized": "Verifique o nome de usuário v1_, assinatura de token e público JWT versus corretor; consulte documentos/letsmesh-mqtt-auth.md. Use Personalizado para colar um token emitido pelo operador, se necessário.",
@@ -2858,7 +2859,8 @@
     "verifiedBadge": "Verificado",
     "shareContactQr": "Partilhar contacto",
     "shareContactQrAria": "Mostrar código QR para este contato",
-    "verifiedRowAria": "Contato verificado"
+    "verifiedRowAria": "Contato verificado",
+    "renameFailed": "Não foi possível salvar o nome de exibição."
   },
   "peerGraph": {
     "title": "Gráfico de Comunicação entre Pares",
@@ -4467,6 +4469,9 @@
     "noQrFound": "Nenhum código QR encontrado nessa imagem",
     "decodeFailed": "Não foi possível ler o código QR da imagem",
     "cameraDenied": "Permissão da câmera negada — habilite-a nas configurações de privacidade do sistema",
-    "cameraUnavailable": "A câmera não está disponível neste dispositivo"
+    "cameraUnavailable": "A câmera não está disponível neste dispositivo",
+    "confirmContactImportTitle": "Importar contato?",
+    "confirmContactImportBody": "Adicionar {{name}} de um link externo aos seus contatos do Reticulum?",
+    "confirmContactImportAction": "Importar contato"
   }
 }

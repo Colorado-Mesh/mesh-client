@@ -805,7 +805,7 @@
     "ripplePresetConfirm": "Die Ripple-Voreinstellung verwendet gemeinsam genutzte Community-Anmeldeinformationen und deaktiviert die TLS-Zertifikatüberprüfung. Nur in einem vertrauenswürdigen Netzwerk verwenden. Fortfahren?",
     "meshcorePort": "Port",
     "channelPsksHelp": "AES-128 (16 Byte) oder AES-256 (32 Byte) Base64-Schlüssel, einer pro Zeile. Optionaler ChannelName=base64 nur für MQTT. LongFast-Standard wird immer versucht. Die Tasten auf der Registerkarte Radio werden automatisch synchronisiert, wenn das Radio angeschlossen ist.",
-    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksPlaceholder": "LongFast@0=yourPrimary256Key==, HamNet@2=yourBase64KeyHere",
     "channelPsksInvalidLength": "Jeder Schlüssel muss auf 16 Byte (AES-128) oder 32 Byte (AES-256) decodiert werden.",
     "channelPsksInvalidBase64": "Ungültiges base64 auf einer Kanal-PSK-Leitung.",
     "mqttTlsEnabled": "TLS aktivieren (mqtts / wss)",
@@ -1873,7 +1873,8 @@
       },
       "repeaterRpcInProgress": "Eine Anfrage für diesen Repeater ist bereits in Bearbeitung",
       "cliDangerNotConfirmed": "Destruktive CLI-Befehle müssen im Repeater-Panel bestätigt werden.",
-      "pingFailed": "Ping fehlgeschlagenComment"
+      "pingFailed": "Ping fehlgeschlagenComment",
+      "floodScopeBusy": "Das Überschreiben des Flood-Bereichs ist nicht verfügbar, während die Repeater-Administration oder Traceroute ausgeführt wird. Versuchen Sie es im Ruhezustand erneut."
     },
     "mqttHints": {
       "notAuthorized": "Überprüfen Sie v1_-Benutzernamen, Token-Signatur und JWT-Zielgruppe im Vergleich zum Broker. siehe docs/letsmesh-mqtt-auth.md. Verwenden Sie „Benutzerdefiniert“, um bei Bedarf ein vom Bediener ausgestelltes Token einzufügen.",
@@ -2858,7 +2859,8 @@
     "verifiedBadge": "Verified",
     "shareContactQr": "Kontakt teilen",
     "shareContactQrAria": "QR-Code für diesen Kontakt anzeigen",
-    "verifiedRowAria": "Kontakt verifiziert"
+    "verifiedRowAria": "Kontakt verifiziert",
+    "renameFailed": "Der Anzeigename konnte nicht gespeichert werden."
   },
   "peerGraph": {
     "title": "Peer-Kommunikationsgrafik",
@@ -4467,6 +4469,9 @@
     "noQrFound": "Kein QR-Code in diesem Bild gefunden",
     "decodeFailed": "QR-Code aus Bild konnte nicht gelesen werden",
     "cameraDenied": "Kameraberechtigung verweigert — in den Datenschutzeinstellungen des Systems aktivieren",
-    "cameraUnavailable": "Die Kamera ist auf diesem Gerät nicht verfügbar"
+    "cameraUnavailable": "Die Kamera ist auf diesem Gerät nicht verfügbar",
+    "confirmContactImportTitle": "Kontakt importieren?",
+    "confirmContactImportBody": "{{name}} über einen externen Link zu Ihren Reticulum-Kontakten hinzufügen?",
+    "confirmContactImportAction": "Kontakt importieren"
   }
 }

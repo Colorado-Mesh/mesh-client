@@ -805,7 +805,7 @@
     "ripplePresetConfirm": "Ripple预设使用共享社区凭据并禁用TLS证书验证。仅在受信任的网络上使用此功能。是否继续？",
     "meshcorePort": "端口",
     "channelPsksHelp": "AES-128 （ 16字节）或AES-256 （ 32字节） base64密钥，每行一个。仅限MQTT的可选ChannelName = base64。始终尝试LongFast默认值。当收音机连接时， “收音机”选项卡中的按键会自动同步。",
-    "channelPsksPlaceholder": "1PG7OiApB1nwvP + rz05pAQ = =\nHamNet = yourBase64KeyHere",
+    "channelPsksPlaceholder": "LongFast@0=yourPrimary256Key==, HamNet@2=yourBase64KeyHere",
     "channelPsksInvalidLength": "每个密钥必须解码为16字节（ AES-128 ）或32字节（ AES-256 ）。",
     "channelPsksInvalidBase64": "通道PSK线上的base64无效。",
     "mqttTlsEnabled": "启用TLS (mqtts/wss)",
@@ -1873,7 +1873,8 @@
       },
       "repeaterRpcInProgress": "对此转发器的请求已在进行中",
       "cliDangerNotConfirmed": "破坏性CLI命令需要在Repeaters （中继器）面板中确认。",
-      "pingFailed": "Ping失败"
+      "pingFailed": "Ping失败",
+      "floodScopeBusy": "当中继器管理或跟踪路由正在进行时，泛洪范围覆盖不可用。空闲时再试一次。"
     },
     "mqttHints": {
       "notAuthorized": "验证 v1_ 用户名、令牌签名和 JWT 受众与经纪人；请参阅 docs/letsmesh-mqtt-auth.md。如果需要，使用自定义粘贴操作员颁发的令牌。",
@@ -2858,7 +2859,8 @@
     "verifiedBadge": "已驗證",
     "shareContactQr": "分享联系人",
     "shareContactQrAria": "显示此联系人的二维码",
-    "verifiedRowAria": "已验证联系人48"
+    "verifiedRowAria": "已验证联系人48",
+    "renameFailed": "无法保存显示名称。"
   },
   "peerGraph": {
     "title": "同行沟通图表",
@@ -4467,6 +4469,9 @@
     "noQrFound": "该图片中未找到二维码",
     "decodeFailed": "无法从图像中读取二维码",
     "cameraDenied": "摄像头权限被拒绝—在系统隐私设置中启用",
-    "cameraUnavailable": "摄像头在此设备上不可用"
+    "cameraUnavailable": "摄像头在此设备上不可用",
+    "confirmContactImportTitle": "导入联系人？",
+    "confirmContactImportBody": "将外部链接中的 {{name}} 添加到您的 Reticulum 联系人中？",
+    "confirmContactImportAction": "导入联系人"
   }
 }

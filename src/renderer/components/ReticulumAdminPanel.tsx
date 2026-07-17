@@ -63,7 +63,7 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
   const handleFactoryReset = async () => {
     setResetInFlight(true);
     try {
-      await window.electronAPI.reticulum.proxyPost('/api/v1/system/factory-reset', {});
+      await window.electronAPI.reticulum.factoryReset();
       setShowFactoryResetConfirm(false);
       await refreshIdentity();
       await refreshInterfaces();

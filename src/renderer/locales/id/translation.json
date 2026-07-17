@@ -805,7 +805,7 @@
     "ripplePresetConfirm": "Preset Ripple menggunakan kredensial komunitas bersama dan menonaktifkan verifikasi sertifikat TLS. Hanya gunakan ini di jaringan tepercaya. Lanjutkan?",
     "meshcorePort": "Pelabuhan",
     "channelPsksHelp": "Tombol base64 AES -128 (16 - byte) atau AES -256 (32 - byte), satu per baris. Nama Saluran Opsional=base64 hanya untuk MQTT. LongFast default selalu dicoba. Tombol dari tab Radio disinkronkan secara otomatis saat radio terhubung.",
-    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksPlaceholder": "LongFast@0=yourPrimary256Key==, HamNet@2=yourBase64KeyHere",
     "channelPsksInvalidLength": "Setiap kunci harus diterjemahkan menjadi 16 byte (AES -128) atau 32 byte (AES -256).",
     "channelPsksInvalidBase64": "Base64 tidak valid pada saluran PSK.",
     "mqttTlsEnabled": "Aktifkan TLS (mqtts / wss)",
@@ -1873,7 +1873,8 @@
       },
       "repeaterRpcInProgress": "Permintaan untuk repeater ini sedang dalam proses",
       "cliDangerNotConfirmed": "Perintah CLI yang merusak memerlukan konfirmasi di panel Repeater.",
-      "pingFailed": "Ping gagal"
+      "pingFailed": "Ping gagal",
+      "floodScopeBusy": "Penggantian cakupan banjir tidak tersedia saat admin pengulang atau traceroute sedang berlangsung. Coba lagi saat menganggur."
     },
     "mqttHints": {
       "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker; lihat dokumen/letsmesh-mqtt-auth.md. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",
@@ -2858,7 +2859,8 @@
     "verifiedBadge": "Terverifikasi",
     "shareContactQr": "Bagikan kontak QR",
     "shareContactQrAria": "Tampilkan kode QR untuk kontak ini",
-    "verifiedRowAria": "Kontak terverifikasi"
+    "verifiedRowAria": "Kontak terverifikasi",
+    "renameFailed": "Tidak dapat menyimpan nama tampilan."
   },
   "peerGraph": {
     "title": "Grafik Komunikasi Rekan",
@@ -4467,6 +4469,9 @@
     "noQrFound": "Tidak ada kode QR yang ditemukan pada gambar itu",
     "decodeFailed": "Tidak dapat membaca kode QR dari gambar",
     "cameraDenied": "Izin kamera ditolak — aktifkan di pengaturan privasi sistem",
-    "cameraUnavailable": "Kamera tidak tersedia di perangkat ini"
+    "cameraUnavailable": "Kamera tidak tersedia di perangkat ini",
+    "confirmContactImportTitle": "Impor kontak?",
+    "confirmContactImportBody": "Tambahkan {{name}} dari tautan eksternal ke kontak Reticulum Anda?",
+    "confirmContactImportAction": "Impor kontak"
   }
 }

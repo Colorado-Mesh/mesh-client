@@ -1,15 +1,7 @@
 import type { MeshNode } from '../../renderer/lib/types';
+import { escapeXml } from '../../shared/xmlEscape';
 
 const TEN_MINUTES_MS = 10 * 60 * 1000;
-
-function escapeXml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
 
 export function meshNodeToCot(node: MeshNode): string | null {
   if (node.latitude == null || node.longitude == null) return null;

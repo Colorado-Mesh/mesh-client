@@ -805,7 +805,7 @@
     "ripplePresetConfirm": "Ustawienie wstępne Ripple wykorzystuje udostępnione poświadczenia społeczności i wyłącza weryfikację certyfikatu TLS. Używaj tego tylko w zaufanej sieci. Kontynuować?",
     "meshcorePort": "Port",
     "channelPsksHelp": "Klawisze AES-128 (16-bajtowe) lub AES-256 (32-bajtowe) Base64, po jednym w wierszu. Opcjonalny ChannelName=base64 tylko dla MQTT. Domyślne ustawienie LongFast jest zawsze próbowane. Klawisze z zakładki Radio synchronizują się automatycznie po podłączeniu radia.",
-    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksPlaceholder": "LongFast@0=yourPrimary256Key==, HamNet@2=yourBase64KeyHere",
     "channelPsksInvalidLength": "Każdy klucz musi dekodować do 16 bajtów (AES-128) lub 32 bajtów (AES-256).",
     "channelPsksInvalidBase64": "Nieprawidłowy base64 na kanale PSK.",
     "mqttTlsEnabled": "Włącz TLS (mqtts / wss)",
@@ -1873,7 +1873,8 @@
       },
       "repeaterRpcInProgress": "Żądanie dotyczące tego wzmacniaka jest już w toku",
       "cliDangerNotConfirmed": "Niszczące polecenia CLI wymagają potwierdzenia w panelu Przemienniki.",
-      "pingFailed": "PING nie powiódł się"
+      "pingFailed": "PING nie powiódł się",
+      "floodScopeBusy": "Zastąpienie zakresu Flood jest niedostępne, gdy trwa administracja wzmacniaka lub funkcja Traroute. Spróbuj ponownie w stanie bezczynności."
     },
     "mqttHints": {
       "notAuthorized": "Zweryfikuj nazwę użytkownika v1_, podpis tokena i odbiorców JWT w porównaniu z brokerem; zobacz dokumentacja/letsmesh-mqtt-auth.md. W razie potrzeby użyj opcji Niestandardowy, aby wkleić token wydany przez operatora.",
@@ -2858,7 +2859,8 @@
     "verifiedBadge": "Weryfikacja",
     "shareContactQr": "Udostępnij kontaktowy QR",
     "shareContactQrAria": "Pokaż kod QR dla tego kontaktu",
-    "verifiedRowAria": "Kontakt zweryfikowany"
+    "verifiedRowAria": "Kontakt zweryfikowany",
+    "renameFailed": "Nie można zapisać nazwy wyświetlanej."
   },
   "peerGraph": {
     "title": "Wykres komunikacji z partnerami",
@@ -4467,6 +4469,9 @@
     "noQrFound": "Nie znaleziono kodu QR na tym obrazie",
     "decodeFailed": "Nie można odczytać kodu QR z obrazu",
     "cameraDenied": "Odmowa dostępu do kamery — włącz ją w ustawieniach prywatności systemu",
-    "cameraUnavailable": "Kamera nie jest dostępna na tym urządzeniu"
+    "cameraUnavailable": "Kamera nie jest dostępna na tym urządzeniu",
+    "confirmContactImportTitle": "Zaimportować kontakt?",
+    "confirmContactImportBody": "Dodać {{name}} z zewnętrznego łącza do kontaktów Reticulum?",
+    "confirmContactImportAction": "Importuj kontakt"
   }
 }

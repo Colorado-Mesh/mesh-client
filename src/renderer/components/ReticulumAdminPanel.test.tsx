@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
@@ -38,6 +38,7 @@ describe('ReticulumAdminPanel', () => {
     refreshIdentity.mockReset();
     window.electronAPI.reticulum.proxyGet = vi.fn().mockResolvedValue({ interfaces: [] });
     window.electronAPI.reticulum.proxyPost = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.reticulum.factoryReset = vi.fn().mockResolvedValue({ ok: true });
   });
 
   it('renders flasher and factory reset danger zone', () => {
@@ -83,10 +84,7 @@ describe('ReticulumAdminPanel', () => {
     );
 
     await waitFor(() => {
-      expect(window.electronAPI.reticulum.proxyPost).toHaveBeenCalledWith(
-        '/api/v1/system/factory-reset',
-        {},
-      );
+      expect(window.electronAPI.reticulum.factoryReset).toHaveBeenCalled();
     });
     expect(refreshIdentity).toHaveBeenCalled();
   });

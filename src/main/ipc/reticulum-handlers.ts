@@ -111,6 +111,18 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     }
   });
 
+  ipcMain.handle('reticulum:factoryReset', async (event) => {
+    assertIpcSender(event, 'reticulum:factoryReset');
+    try {
+      const m = ensureManager();
+      console.warn('[ReticulumIPC] factoryReset invoked');
+      return await m.factoryReset();
+    } catch (err) {
+      logReticulumProxyFailure('factoryReset', err, '/api/v1/system/factory-reset');
+      throw err;
+    }
+  });
+
   ipcMain.handle('reticulum:proxyPut', async (event, apiPath: unknown, body: unknown) => {
     assertIpcSender(event, 'reticulum:proxyPut');
     const pathArg = assertProxyApiPath(apiPath);

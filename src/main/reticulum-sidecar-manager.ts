@@ -21,7 +21,11 @@ import { bleCoexistenceCoordinator } from './ble-coexistence-coordinator';
 import { sanitizeLogMessage } from './log-service';
 import { reticulumConfigDirHasEnabledBleRnode } from './reticulum-ble-rnode-config';
 import { disableDecommissionedReticulumHubsInConfigDir } from './reticulum-decommissioned-hubs';
-import { assertReticulumProxyPath, reticulumProxyGetTimeoutMs } from './reticulum-proxy-path';
+import {
+  assertReticulumProxyPath,
+  RETICULUM_FACTORY_RESET_PATH,
+  reticulumProxyGetTimeoutMs,
+} from './reticulum-proxy-path';
 import { ensureDevSidecarBinary, resolveSidecarBinaryPath } from './reticulum-sidecar-path';
 import { ReticulumSidecarAutoBeaconTracker } from './reticulumSidecarAutoBeaconTracker';
 import { ReticulumSidecarInterfaceIssueTracker } from './reticulumSidecarIssueTracker';
@@ -471,6 +475,28 @@ export class ReticulumSidecarManager extends EventEmitter {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body ?? {}),
       signal: AbortSignal.timeout(postTimeoutMs),
+    });
+    if (!res.ok) {
+      throw new Error(`sidecar POST ${normalized} failed: ${res.status}`);
+    }
+    const text = await readResponseTextUpTo(res, RETICULUM_PROXY_MAX_RESPONSE_BYTES);
+    return text ? (JSON.parse(text) as unknown) : {};
+  }
+
+  /** Dedicated factory-reset POST (blocked on the generic proxy path validator). */
+  async factoryReset(): Promise<unknown> {
+    const status = this.getStatus();
+    if (!status.running || status.port <= 0) {
+      throw new Error('Reticulum sidecar is not running');
+    }
+    const normalized = assertReticulumProxyPath(RETICULUM_FACTORY_RESET_PATH, {
+      allowFactoryReset: true,
+    });
+    const res = await fetch(`http://127.0.0.1:${status.port}${normalized}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+      signal: AbortSignal.timeout(30_000),
     });
     if (!res.ok) {
       throw new Error(`sidecar POST ${normalized} failed: ${res.status}`);

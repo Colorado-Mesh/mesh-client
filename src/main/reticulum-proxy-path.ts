@@ -3,6 +3,9 @@ import { nomadPageProxyTimeoutMsFromApiPath } from '../shared/reticulumNomadTime
 /** Allowed Reticulum sidecar HTTP paths for renderer IPC proxy. */
 const RETICULUM_PROXY_PATH_PREFIX = '/api/v1/';
 
+/** Destructive system route — only via dedicated factoryReset IPC. */
+export const RETICULUM_FACTORY_RESET_PATH = '/api/v1/system/factory-reset';
+
 export const RETICULUM_PROXY_GET_TIMEOUT_MS = 10_000;
 
 /** Routes that query the live RNS transport (path table, interface stats). */
@@ -55,7 +58,10 @@ export function reticulumProxyGetTimeoutMs(apiPath: string): number {
  * Failure point: malformed or traversal paths from a compromised renderer.
  * Fallback: reject with Error (caller surfaces to UI).
  */
-export function assertReticulumProxyPath(apiPath: string): string {
+export function assertReticulumProxyPath(
+  apiPath: string,
+  opts?: { allowFactoryReset?: boolean },
+): string {
   const trimmed = apiPath.trim();
   if (!trimmed) {
     throw new Error('Reticulum proxy path is required');
@@ -76,6 +82,12 @@ export function assertReticulumProxyPath(apiPath: string): string {
   }
   if (normalized.includes('..') || normalized.includes('\\') || normalized.includes('\0')) {
     throw new Error('Reticulum proxy path contains invalid segments');
+  }
+  // Destructive system routes must use dedicated IPC (confirmation + audit), not the generic proxy.
+  if (normalized === RETICULUM_FACTORY_RESET_PATH && !opts?.allowFactoryReset) {
+    throw new Error(
+      'Reticulum factory reset requires electronAPI.reticulum.factoryReset (not generic proxy)',
+    );
   }
   return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
 }

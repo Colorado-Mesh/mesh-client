@@ -564,7 +564,8 @@ export function ReticulumNetworkPanel({
                     await window.electronAPI.db.upsertReticulumDestination({
                       destination_hash: parsed.destinationHash,
                       display_name: parsed.name ?? null,
-                      last_heard: Date.now(),
+                      // reticulum_destinations.last_heard is Unix seconds (retention prune).
+                      last_heard: Math.floor(Date.now() / 1000),
                     });
                     addToast(t('qrIngest.contactImported'), 'success');
                     void refreshReticulumPeersFromSidecar({ forceRefresh: true });

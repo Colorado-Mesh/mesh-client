@@ -805,7 +805,7 @@
     "ripplePresetConfirm": "Ripple ön ayarı, paylaşılan topluluk kimlik bilgilerini kullanır ve TLS sertifika doğrulamasını devre dışı bırakır. Bunu yalnızca güvenilir bir ağda kullanın. Devam edilsin mi?",
     "meshcorePort": "Liman",
     "channelPsksHelp": "AES -128 (16 bayt) veya AES -256 (32 bayt) base64 tuşları, satır başına bir adet. İsteğe bağlı ChannelName= yalnızca MQTT için base64. LongFast varsayılanı her zaman denenir. Radyo sekmesindeki tuşlar, radyo bağlandığında otomatik olarak senkronize edilir.",
-    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksPlaceholder": "LongFast@0=yourPrimary256Key==, HamNet@2=yourBase64KeyHere",
     "channelPsksInvalidLength": "Her anahtarın kodu 16 bayta (AES -128) veya 32 bayta (AES -256) kadar çözülmelidir.",
     "channelPsksInvalidBase64": "Bir kanal PSK hattında geçersiz base64.",
     "mqttTlsEnabled": "TLS'yi etkinleştir (mqtts / wss)",
@@ -1873,7 +1873,8 @@
       },
       "repeaterRpcInProgress": "Bu tekrarlayıcı için bir istek zaten devam ediyor",
       "cliDangerNotConfirmed": "Yıkıcı CLI komutları Tekrarlayıcılar panelinde onay gerektirir.",
-      "pingFailed": "Ping başarısız olduComment"
+      "pingFailed": "Ping başarısız olduComment",
+      "floodScopeBusy": "Tekrarlayıcı yönetimi veya traceroute devam ederken taşma kapsamını geçersiz kılma kullanılamaz. Boştayken tekrar deneyin."
     },
     "mqttHints": {
       "notAuthorized": "v1_ kullanıcı adını, belirteç imzasını ve JWT hedef kitlesi ile aracının karşılaştırmasını doğrulayın; docs/letsmesh-mqtt-auth.md'ye bakın. Gerekirse operatör tarafından verilen belirteci yapıştırmak için Özel'i kullanın.",
@@ -2858,7 +2859,8 @@
     "verifiedBadge": "Doğrulandı",
     "shareContactQr": "Kişi QR'sini paylaşın",
     "shareContactQrAria": "Bu kişiye ait QR kodunu göster",
-    "verifiedRowAria": "Kişi doğrulandı"
+    "verifiedRowAria": "Kişi doğrulandı",
+    "renameFailed": "Görünen ad kaydedilemedi."
   },
   "peerGraph": {
     "title": "Akran İletişim Grafiği",
@@ -4467,6 +4469,9 @@
     "noQrFound": "Bu görselde QR kodu bulunamadı",
     "decodeFailed": "Resimden QR kodu okunamadı",
     "cameraDenied": "Kamera izni reddedildi — bunu sistem gizlilik ayarlarından etkinleştirin",
-    "cameraUnavailable": "Bu cihazda kamera kullanılamıyor"
+    "cameraUnavailable": "Bu cihazda kamera kullanılamıyor",
+    "confirmContactImportTitle": "Kişi içe aktarılsın mı?",
+    "confirmContactImportBody": "{{name}} harici bir bağlantıdan Reticulum kişilerinize eklensin mi?",
+    "confirmContactImportAction": "Kişiyi içe aktar"
   }
 }

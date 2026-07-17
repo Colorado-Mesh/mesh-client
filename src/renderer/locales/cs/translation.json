@@ -805,7 +805,7 @@
     "ripplePresetConfirm": "Přednastavení Ripple používá sdílené přihlašovací údaje komunity a zakazuje ověření certifikátu TLS. Použít pouze v důvěryhodné síti. Pokračovat?",
     "meshcorePort": "Port",
     "channelPsksHelp": "Klávesy AES-128 (16 bajtů) nebo AES-256 (32 bajtů) base64, jeden na řádek. Volitelný název kanálu=base64 pouze pro MQTT. Výchozí hodnota LongFast je vždy vyzkoušena. Klávesy z karty Rádio se automaticky synchronizují, když je rádio připojeno.",
-    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksPlaceholder": "LongFast@0=yourPrimary256Key==, HamNet@2=yourBase64KeyHere",
     "channelPsksInvalidLength": "Každý klíč musí dekódovat na 16 bajtů (AES-128) nebo 32 bajtů (AES-256).",
     "channelPsksInvalidBase64": "Neplatná base64 na kanálu PSK linky.",
     "mqttTlsEnabled": "Povolit TLS (mqtts / wss)",
@@ -1873,7 +1873,8 @@
       },
       "repeaterRpcInProgress": "Žádost o tento opakovač již probíhá",
       "cliDangerNotConfirmed": "Destruktivní příkazy CLI vyžadují potvrzení na panelu Opakovače.",
-      "pingFailed": "Ping selhalComment"
+      "pingFailed": "Ping selhalComment",
+      "floodScopeBusy": "Potlačení rozsahu zaplavení není dostupné, když probíhá správa opakovače nebo traceroute. Zkuste to znovu při nečinnosti."
     },
     "mqttHints": {
       "notAuthorized": "Ověřte uživatelské jméno v1_, podpis tokenu a publikum JWT vs. makléř; viz docs/letsmesh-mqtt-auth.md. V případě potřeby použijte Vlastní k vložení tokenu vydaného operátorem.",
@@ -2858,7 +2859,8 @@
     "verifiedBadge": "Potvrzeno",
     "shareContactQr": "Sdílet kontakt",
     "shareContactQrAria": "Zobrazit QR kód pro tento kontakt",
-    "verifiedRowAria": "Kontakt ověřen"
+    "verifiedRowAria": "Kontakt ověřen",
+    "renameFailed": "Zobrazovaný název nelze uložit."
   },
   "peerGraph": {
     "title": "Graf vzájemné komunikace",
@@ -4467,6 +4469,9 @@
     "noQrFound": "Na obrázku nebyl nalezen žádný QR kód",
     "decodeFailed": "Nelze přečíst QR kód z obrázku",
     "cameraDenied": "Oprávnění fotoaparátu odepřeno — povoleno v nastavení ochrany osobních údajů systému",
-    "cameraUnavailable": "Fotoaparát není na tomto zařízení k dispozici"
+    "cameraUnavailable": "Fotoaparát není na tomto zařízení k dispozici",
+    "confirmContactImportTitle": "Importovat kontakt?",
+    "confirmContactImportBody": "Přidat {{name}} z externího odkazu do vašich kontaktů Reticulum?",
+    "confirmContactImportAction": "Import kontaktu"
   }
 }

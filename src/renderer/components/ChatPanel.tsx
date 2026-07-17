@@ -1422,12 +1422,21 @@ function ChatPanel({
         applyMeshcoreFloodScopeHashtag &&
         opts?.floodScopeOverride !== undefined
       ) {
-        await withMeshcoreFloodScopeOverride(
-          applyMeshcoreFloodScopeHashtag,
-          meshcoreFloodScopeHashtag,
-          opts.floodScopeOverride,
-          doSend,
-        );
+        try {
+          await withMeshcoreFloodScopeOverride(
+            applyMeshcoreFloodScopeHashtag,
+            meshcoreFloodScopeHashtag,
+            opts.floodScopeOverride,
+            doSend,
+          );
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : '';
+          if (msg === 'meshcore.errors.floodScopeBusy') {
+            setChatActionError({ message: t('meshcore.errors.floodScopeBusy'), viewKey });
+            return;
+          }
+          throw err;
+        }
         return;
       }
       await doSend();

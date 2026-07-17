@@ -945,6 +945,8 @@ export interface ElectronAPI {
     proxyPost: (apiPath: string, body: unknown) => Promise<unknown>;
     proxyPut: (apiPath: string, body: unknown) => Promise<unknown>;
     proxyDelete: (apiPath: string) => Promise<unknown>;
+    /** Dedicated factory reset (blocked on generic proxyPost). UI must confirm first. */
+    factoryReset: () => Promise<unknown>;
     readDefaultConfigFile: () => Promise<{ path: string | null; content: string | null }>;
     showConfigImportDialog: () => Promise<{ path: string | null; content: string | null }>;
     showIdentityImportDialog: () => Promise<ReticulumIdentityImportDialogResult>;

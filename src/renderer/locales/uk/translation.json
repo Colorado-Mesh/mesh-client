@@ -805,7 +805,7 @@
     "ripplePresetConfirm": "Попереднє налаштування Ripple використовує облікові дані спільноти та вимикає перевірку сертифіката TLS. Використовуйте цю функцію лише в надійній мережі. Продовжити?",
     "meshcorePort": "Порт",
     "channelPsksHelp": "Ключі AES-128 (16 байт) або AES-256 (32 байт) base64, по одному на рядок. Необов'язкове ім'я каналу=base64 лише для MQTT. Завжди пробується LongFast за замовчуванням. Клавіші на вкладці Radio (Радіо) синхронізуються автоматично під час підключення радіоприймача.",
-    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksPlaceholder": "LongFast@0=yourPrimary256Key==, HamNet@2=yourBase64KeyHere",
     "channelPsksInvalidLength": "Кожен ключ повинен декодуватися до 16 байтів (AES-128) або 32 байтів (AES-256).",
     "channelPsksInvalidBase64": "Недійсна base64 на лінії PSK каналу.",
     "mqttTlsEnabled": "Увімкнути TLS (mqtts / wss)",
@@ -1873,7 +1873,8 @@
       },
       "repeaterRpcInProgress": "Запит на цей ретранслятор уже виконується",
       "cliDangerNotConfirmed": "Деструктивні команди CLI вимагають підтвердження на панелі повторювачів.",
-      "pingFailed": "Невдалий тест на відгукComment"
+      "pingFailed": "Невдалий тест на відгукComment",
+      "floodScopeBusy": "Перевизначення обсягу затоплення недоступне, поки виконується адміністрування повторювача або трасування. Повторіть спробу під час очікування."
     },
     "mqttHints": {
       "notAuthorized": "Перевірте ім’я користувача v1_, підпис маркера та аудиторію JWT проти брокера; див. docs/letsmesh-mqtt-auth.md. За потреби вставте маркер, виданий оператором, за допомогою Custom.",
@@ -2858,7 +2859,8 @@
     "verifiedBadge": "Підтверджений",
     "shareContactQr": "Поділитися контактним QR-кодом",
     "shareContactQrAria": "Показати QR-код для цього контакту",
-    "verifiedRowAria": "Контакт підтверджено"
+    "verifiedRowAria": "Контакт підтверджено",
+    "renameFailed": "Не вдалося зберегти відображуване ім'я."
   },
   "peerGraph": {
     "title": "Графік однорангової комунікації",
@@ -4467,6 +4469,9 @@
     "noQrFound": "На цьому зображенні не знайдено QR-коду",
     "decodeFailed": "Не вдалося прочитати QR-код із зображення",
     "cameraDenied": "Дозвіл на доступ до камери заборонено — увімкніть його в налаштуваннях конфіден",
-    "cameraUnavailable": "Камера недоступна на цьому пристрої"
+    "cameraUnavailable": "Камера недоступна на цьому пристрої",
+    "confirmContactImportTitle": "Імпортувати контакт?",
+    "confirmContactImportBody": "Додати {{name}} із зовнішнього посилання до ваших контактів Reticulum?",
+    "confirmContactImportAction": "Імпортувати контакт"
   }
 }

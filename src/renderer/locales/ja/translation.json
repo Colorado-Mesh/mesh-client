@@ -805,7 +805,7 @@
     "ripplePresetConfirm": "Rippleプリセットは、共有コミュニティ資格情報を使用し、TLS証明書の検証を無効にします。これは信頼できるネットワークでのみ使用します。続行しますか？",
     "meshcorePort": "ポート",
     "channelPsksHelp": "AES -128 （ 16バイト）またはAES -256 （ 32バイト）ベース64キー、1行に1つ。MQTTのみの場合、オプションのChannelName = base 64。LongFastのデフォルトは常に試されます。ラジオタブのキーは、ラジオが接続されると自動的に同期されます。",
-    "channelPsksPlaceholder": "1 PG 7 OiApB 1 nwvP + rz 05 pAQ ==\nHamNet = yourBase 64 KeyHere",
+    "channelPsksPlaceholder": "LongFast@0=yourPrimary256Key==, HamNet@2=yourBase64KeyHere",
     "channelPsksInvalidLength": "各キーは、16バイト（ AES -128 ）または32バイト（ AES -256 ）にデコードする必要があります。",
     "channelPsksInvalidBase64": "チャネルPSK回線上のbase 64が無効です。",
     "mqttTlsEnabled": "TLSを有効にする(mqtts/wss)",
@@ -1873,7 +1873,8 @@
       },
       "repeaterRpcInProgress": "このリピーターに対するリクエストはすでに進行中です",
       "cliDangerNotConfirmed": "破壊的なCLIコマンドは、リピーターパネルで確認する必要があります。",
-      "pingFailed": "Ping 失敗Comment"
+      "pingFailed": "Ping 失敗Comment",
+      "floodScopeBusy": "リピーター管理またはトレースルートの進行中は、フラッド スコープのオーバーライドは使用できません。アイドル状態のときに再試行してください。"
     },
     "mqttHints": {
       "notAuthorized": "v1_ ユーザー名、トークン署名、JWT オーディエンスとブローカーを検証します。 docs/letsmesh-mqtt-auth.md を参照してください。必要に応じて、カスタムを使用してオペレーター発行のトークンを貼り付けます。",
@@ -2858,7 +2859,8 @@
     "verifiedBadge": "確認済み",
     "shareContactQr": "連絡先QRを共有",
     "shareContactQrAria": "この連絡先のQRコードを表示",
-    "verifiedRowAria": "連絡先が認証されました"
+    "verifiedRowAria": "連絡先が認証されました",
+    "renameFailed": "表示名を保存できませんでした。"
   },
   "peerGraph": {
     "title": "ピアコミュニケーショングラフ",
@@ -4467,6 +4469,9 @@
     "noQrFound": "その画像には QR コードが見つかりませんでした",
     "decodeFailed": "画像からQRコードを読み取れませんでした",
     "cameraDenied": "カメラの許可が拒否されました - システムのプライバシー設定で有効にします",
-    "cameraUnavailable": "このデバイスではカメラが利用できません"
+    "cameraUnavailable": "このデバイスではカメラが利用できません",
+    "confirmContactImportTitle": "連絡先をインポートしますか?",
+    "confirmContactImportBody": "外部リンクから {{name}} を Reticulum の連絡先に追加しますか?",
+    "confirmContactImportAction": "連絡先をインポートする"
   }
 }

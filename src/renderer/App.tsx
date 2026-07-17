@@ -92,7 +92,7 @@ import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
 import { useLongSessionMaintenance } from './hooks/useLongSessionMaintenance';
-import { useMeshClientDeepLink } from './hooks/useMeshClientDeepLink';
+import { MeshClientDeepLinkHost } from './hooks/useMeshClientDeepLink';
 import { useMeshcoreDistanceFilterHint } from './hooks/useMeshcoreDistanceFilterHint';
 import type { useMeshcorePanelActions } from './hooks/useMeshcorePanelActions';
 import type { useMeshtasticPanelActions } from './hooks/useMeshtasticPanelActions';
@@ -753,7 +753,6 @@ function AppContent() {
   });
   useLongSessionMaintenance();
   useRendererHeartbeat();
-  useMeshClientDeepLink();
   useSerialServiceListeners();
   useSpellcheckReplaceSync();
 
@@ -2497,6 +2496,7 @@ function AppContent() {
   return (
     <>
       <GlobalInstantTooltip />
+      <MeshClientDeepLinkHost />
       {/* Global assertive live region for critical announcements */}
       <div aria-live="assertive" aria-atomic="true" className="sr-only" id="app-announcer" />
       {/* Passive notifications for inactive protocol activity */}

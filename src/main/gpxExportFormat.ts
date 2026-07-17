@@ -1,5 +1,7 @@
 /** Pure GPX 1.1 track formatter for position_history rows. */
 
+import { escapeXml } from '../shared/xmlEscape';
+
 export interface GpxTrackPoint {
   node_id: number;
   latitude: number;
@@ -10,17 +12,27 @@ export interface GpxTrackPoint {
 
 export const GPX_EXPORT_MAX_POINTS = 50_000;
 
-function escapeXml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+function toIsoUtc(ms: number): string | null {
+  if (!Number.isFinite(ms)) return null;
+  // ECMAScript Date valid range roughly ±100M days from epoch.
+  if (Math.abs(ms) > 8.64e15) return null;
+  try {
+    return new Date(ms).toISOString();
+  } catch {
+    // catch-no-log-ok Invalid Date range — skip point in caller.
+    return null;
+  }
 }
 
-function toIsoUtc(ms: number): string {
-  return new Date(ms).toISOString();
+function isValidLatLon(lat: number, lon: number): boolean {
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lon) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lon >= -180 &&
+    lon <= 180
+  );
 }
 
 /**
@@ -33,8 +45,10 @@ export function formatGpxTracks(
   const creator = escapeXml(opts?.creator ?? 'mesh-client');
   const byNode = new Map<number, GpxTrackPoint[]>();
   for (const p of points) {
-    if (!Number.isFinite(p.latitude) || !Number.isFinite(p.longitude)) continue;
+    if (!Number.isFinite(p.node_id) || !Number.isInteger(p.node_id)) continue;
+    if (!isValidLatLon(p.latitude, p.longitude)) continue;
     if (!Number.isFinite(p.recorded_at)) continue;
+    if (toIsoUtc(p.recorded_at) == null) continue;
     const list = byNode.get(p.node_id) ?? [];
     list.push(p);
     byNode.set(p.node_id, list);
@@ -45,13 +59,18 @@ export function formatGpxTracks(
     const sorted = [...pts].sort((a, b) => a.recorded_at - b.recorded_at);
     const name = sorted.find((p) => p.name?.trim())?.name?.trim() || `node-${nodeId.toString(16)}`;
     const seg = sorted
-      .map(
-        (p) =>
+      .map((p) => {
+        const time = toIsoUtc(p.recorded_at);
+        if (!time) return null;
+        return (
           `      <trkpt lat="${p.latitude}" lon="${p.longitude}">\n` +
-          `        <time>${toIsoUtc(p.recorded_at)}</time>\n` +
-          `      </trkpt>`,
-      )
+          `        <time>${time}</time>\n` +
+          `      </trkpt>`
+        );
+      })
+      .filter((line): line is string => line != null)
       .join('\n');
+    if (!seg) continue;
     tracks.push(
       `  <trk>\n` +
         `    <name>${escapeXml(name)}</name>\n` +

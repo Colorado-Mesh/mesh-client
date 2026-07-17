@@ -805,7 +805,7 @@
     "ripplePresetConfirm": "De Ripple-voorinstelling gebruikt gedeelde gemeenschapsreferenties en schakelt TLS-certificaatverificatie uit. Gebruik dit alleen op een vertrouwd netwerk. Doorgaan?",
     "meshcorePort": "Poort",
     "channelPsksHelp": "AES-128 (16-byte) of AES-256 (32-byte) base64-toetsen, één per regel. Optionele kanaalnaam=base64 voor alleen MQTT. LongFast-standaard wordt altijd geprobeerd. Toetsen van het tabblad Radio worden automatisch gesynchroniseerd wanneer de radio is aangesloten.",
-    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksPlaceholder": "LongFast@0=yourPrimary256Key==, HamNet@2=yourBase64KeyHere",
     "channelPsksInvalidLength": "Elke sleutel moet worden gedecodeerd tot 16 bytes (AES-128) of 32 bytes (AES-256).",
     "channelPsksInvalidBase64": "Ongeldige base64 op een PSK-kanaalregel.",
     "mqttTlsEnabled": "TLS (mqtts/ wss) inschakelen",
@@ -1873,7 +1873,8 @@
       },
       "repeaterRpcInProgress": "Er is al een aanvraag voor deze repeater in behandeling",
       "cliDangerNotConfirmed": "Destructieve CLI-opdrachten moeten worden bevestigd in het paneel Herhalers.",
-      "pingFailed": "Ping mislukt"
+      "pingFailed": "Ping mislukt",
+      "floodScopeBusy": "Het overschrijven van de overstromingsscope is niet beschikbaar terwijl repeaterbeheer of traceroute bezig is. Probeer het opnieuw wanneer het apparaat inactief is."
     },
     "mqttHints": {
       "notAuthorized": "Controleer v1_ gebruikersnaam, tokenhandtekening en JWT-doelgroep versus makelaar; zie docs/letsmesh-mqtt-auth.md. Gebruik Aangepast om indien nodig een door de operator uitgegeven token te plakken.",
@@ -2858,7 +2859,8 @@
     "verifiedBadge": "Geverifieerd",
     "shareContactQr": "Contact-QR delen",
     "shareContactQrAria": "Toon QR-code voor dit contact",
-    "verifiedRowAria": "Contact geverifieerd"
+    "verifiedRowAria": "Contact geverifieerd",
+    "renameFailed": "Kan de weergavenaam niet opslaan."
   },
   "peerGraph": {
     "title": "Peer-communicatiegrafiek",
@@ -4467,6 +4469,9 @@
     "noQrFound": "Er is geen QR-code gevonden in die afbeelding",
     "decodeFailed": "Kon de QR-code van de afbeelding niet lezen",
     "cameraDenied": "Cameratoestemming geweigerd: schakel deze in in de privacy-instellingen van het systeem",
-    "cameraUnavailable": "Camera is niet beschikbaar op dit apparaat"
+    "cameraUnavailable": "Camera is niet beschikbaar op dit apparaat",
+    "confirmContactImportTitle": "Contactpersoon importeren?",
+    "confirmContactImportBody": "{{name}} van een externe link toevoegen aan uw Reticulum-contacten?",
+    "confirmContactImportAction": "Contactpersoon importeren"
   }
 }

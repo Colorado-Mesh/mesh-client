@@ -805,7 +805,7 @@
     "ripplePresetConfirm": "리플 사전 설정은 공유 커뮤니티 자격 증명을 사용하고 TLS 인증서 확인을 비활성화합니다. 신뢰할 수 있는 네트워크에서만 사용하십시오. 계속하시겠습니까?",
     "meshcorePort": "포팅하기",
     "channelPsksHelp": "AES-128 (16바이트) 또는 AES-256 (32바이트) base64 키 (한 줄에 하나씩). 선택적 ChannelName = MQTT 전용 base64. LongFast 기본값은 항상 시도됩니다. 라디오 탭의 키는 라디오가 연결될 때 자동으로 동기화됩니다.",
-    "channelPsksPlaceholder": "1PG7OiApB1nwvP + rz05pAQ = =\nHamNet = yourBase64KeyHere",
+    "channelPsksPlaceholder": "LongFast@0=yourPrimary256Key==, HamNet@2=yourBase64KeyHere",
     "channelPsksInvalidLength": "각 키는 16바이트 (AES-128) 또는 32바이트 (AES-256) 로 디코딩해야 합니다.",
     "channelPsksInvalidBase64": "채널 PSK 라인에서 유효하지 않은 base64.",
     "mqttTlsEnabled": "TLS 활성화 (mqtts/wss)",
@@ -1873,7 +1873,8 @@
       },
       "repeaterRpcInProgress": "이 중계기에 대한 요청이 이미 진행 중입니다.",
       "cliDangerNotConfirmed": "파괴적인 CLI 명령은 반복기 패널에서 확인해야 합니다.",
-      "pingFailed": "핑 실패"
+      "pingFailed": "핑 실패",
+      "floodScopeBusy": "리피터 관리 또는 경로 추적이 진행 중인 동안에는 플러드 범위 재정의를 사용할 수 없습니다. 유휴 상태일 때 다시 시도하세요."
     },
     "mqttHints": {
       "notAuthorized": "v1_ 사용자 이름, 토큰 서명, JWT 대상 및 브로커를 확인하세요. docs/letsmesh-mqtt-auth.md를 참조하세요. 필요한 경우 사용자 지정을 사용하여 운영자가 발급한 토큰을 붙여넣습니다.",
@@ -2858,7 +2859,8 @@
     "verifiedBadge": "확인됨",
     "shareContactQr": "연락처 QR 공유",
     "shareContactQrAria": "이 연락처의 QR 코드 표시",
-    "verifiedRowAria": "연락처가 확인되었습니다."
+    "verifiedRowAria": "연락처가 확인되었습니다.",
+    "renameFailed": "표시 이름을 저장할 수 없습니다."
   },
   "peerGraph": {
     "title": "동료 커뮤니케이션 그래프",
@@ -4467,6 +4469,9 @@
     "noQrFound": "해당 이미지에는 QR 코드가 없습니다.",
     "decodeFailed": "이미지에서 QR 코드를 읽을 수 없습니다.",
     "cameraDenied": "카메라 권한이 거부되었습니다. 시스템 개인 정보 보호 설정에서 활성화하세요.",
-    "cameraUnavailable": "이 기기에서는 카메라를 사용할 수 없습니다"
+    "cameraUnavailable": "이 기기에서는 카메라를 사용할 수 없습니다",
+    "confirmContactImportTitle": "연락처를 가져오시겠습니까?",
+    "confirmContactImportBody": "외부 링크의 {{name}}을(를) Reticulum 연락처에 추가하시겠습니까?",
+    "confirmContactImportAction": "연락처 가져오기"
   }
 }

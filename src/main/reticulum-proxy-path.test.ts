@@ -39,6 +39,16 @@ describe('assertReticulumProxyPath', () => {
   it('rejects paths with fragments in the path segment', () => {
     expect(assertReticulumProxyPath('/api/v1/peers#frag')).toBe('/api/v1/peers#frag');
   });
+
+  it('rejects factory-reset on the generic proxy path', () => {
+    expect(() => assertReticulumProxyPath('/api/v1/system/factory-reset')).toThrow(/factoryReset/);
+  });
+
+  it('allows factory-reset when explicitly opted in', () => {
+    expect(
+      assertReticulumProxyPath('/api/v1/system/factory-reset', { allowFactoryReset: true }),
+    ).toBe('/api/v1/system/factory-reset');
+  });
 });
 
 describe('reticulumProxyGetTimeoutMs', () => {

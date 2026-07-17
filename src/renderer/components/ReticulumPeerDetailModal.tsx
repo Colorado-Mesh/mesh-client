@@ -36,6 +36,7 @@ import {
   ReticulumProfileIcon,
   type ReticulumProfileIconName,
 } from './ReticulumProfileIcon';
+import { useToast } from './Toast';
 
 export interface ReticulumPeerDetailModalProps {
   peerHash: string;
@@ -49,6 +50,7 @@ export default function ReticulumPeerDetailModal({
   onSendMessage,
 }: ReticulumPeerDetailModalProps) {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const dialogRef = useRef<HTMLDivElement>(null);
   const peer = useReticulumPeerStore((s) => s.getPeer(peerHash));
   const isContact = useReticulumPeerStore((s) => s.isContact(peerHash));
@@ -141,25 +143,36 @@ export default function ReticulumPeerDetailModal({
   useEffect(() => {
     const key = canonicalizeReticulumDestinationHash(peerHash);
     if (!key) return;
-    void window.electronAPI.db.getReticulumDestinations().then((rows) => {
-      const list = rows as {
-        destination_hash?: string;
-        icon_name?: string | null;
-        icon_color?: string | null;
-      }[];
-      const row = list.find(
-        (r) =>
-          typeof r.destination_hash === 'string' &&
-          canonicalizeReticulumDestinationHash(r.destination_hash) === key,
-      );
-      if (row?.icon_color) setIconColor(row.icon_color);
-      if (
-        row?.icon_name &&
-        RETICULUM_PROFILE_ICON_NAMES.includes(row.icon_name as ReticulumProfileIconName)
-      ) {
-        setIconName(row.icon_name as ReticulumProfileIconName);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const rows = (await window.electronAPI.db.getReticulumDestinations()) as {
+          destination_hash?: string;
+          icon_name?: string | null;
+          icon_color?: string | null;
+        }[];
+        if (cancelled) return;
+        const row = rows.find(
+          (r) =>
+            typeof r.destination_hash === 'string' &&
+            canonicalizeReticulumDestinationHash(r.destination_hash) === key,
+        );
+        if (row?.icon_color) setIconColor(row.icon_color);
+        if (
+          row?.icon_name &&
+          RETICULUM_PROFILE_ICON_NAMES.includes(row.icon_name as ReticulumProfileIconName)
+        ) {
+          setIconName(row.icon_name as ReticulumProfileIconName);
+        }
+      } catch (err) {
+        console.warn(
+          '[ReticulumPeerDetailModal] load icon appearance failed: ' + errLikeToLogString(err),
+        );
       }
-    });
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [peerHash]);
 
   const saveIconAppearance = async (patch: { icon_color?: string; icon_name?: string }) => {
@@ -231,8 +244,14 @@ export default function ReticulumPeerDetailModal({
   };
 
   const saveName = async () => {
-    await setCustomDisplayName(peerHash, nameDraft);
-    setEditingName(false);
+    try {
+      await setCustomDisplayName(peerHash, nameDraft);
+    } catch (err) {
+      console.warn('[ReticulumPeerDetailModal] save name failed: ' + errLikeToLogString(err));
+      addToast(t('peerDetailModal.renameFailed'), 'error');
+    } finally {
+      setEditingName(false);
+    }
   };
 
   const lastSeenMs = peer

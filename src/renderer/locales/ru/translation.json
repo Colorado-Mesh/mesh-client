@@ -805,7 +805,7 @@
     "ripplePresetConfirm": "Предустановка Ripple использует учетные данные общего сообщества и отключает проверку сертификата TLS. Используйте только в доверенной сети. Продолжить?",
     "meshcorePort": "Порт",
     "channelPsksHelp": "Ключи AES-128 (16 байт) или AES-256 (32 байт) base64, по одному на строку. Необязательное имя канала=base64 только для MQTT. LongFast по умолчанию всегда пробуется. Клавиши на вкладке Radio (Радио) синхронизируются автоматически при подключении радиоприемника.",
-    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet= yourBase64KeyHere;",
+    "channelPsksPlaceholder": "LongFast@0=yourPrimary256Key==, HamNet@2=yourBase64KeyHere",
     "channelPsksInvalidLength": "Каждый ключ должен декодироваться до 16 байт (AES-128) или 32 байт (AES-256).",
     "channelPsksInvalidBase64": "Недопустимый base64 в линии PSK канала.",
     "mqttTlsEnabled": "Включить TLS (mqtts / wss)",
@@ -1873,7 +1873,8 @@
       },
       "repeaterRpcInProgress": "Запрос на этот ретранслятор уже обрабатывается",
       "cliDangerNotConfirmed": "Деструктивные команды CLI требуют подтверждения на панели повторителей.",
-      "pingFailed": "Comment"
+      "pingFailed": "Comment",
+      "floodScopeBusy": "Переопределение области флуда недоступно, пока выполняется администрирование ретранслятора или трассировка. Попробуйте еще раз во время простоя."
     },
     "mqttHints": {
       "notAuthorized": "Проверьте имя пользователя v1_, подпись токена и аудиторию JWT по сравнению с брокером; см. документы/letsmesh-mqtt-auth.md. При необходимости используйте Custom, чтобы вставить токен, выданный оператором.",
@@ -2858,7 +2859,8 @@
     "verifiedBadge": "Проверено",
     "shareContactQr": "Поделиться контактным QR",
     "shareContactQrAria": "Показать QR-код для этого контакта",
-    "verifiedRowAria": "Контакт подтвержден"
+    "verifiedRowAria": "Контакт подтвержден",
+    "renameFailed": "Не удалось сохранить отображаемое имя."
   },
   "peerGraph": {
     "title": "График одноранговой связи",
@@ -4467,6 +4469,9 @@
     "noQrFound": "На этом изображении не найден QR-код",
     "decodeFailed": "Не удалось прочитать QR-код с изображения.",
     "cameraDenied": "Доступ к камере запрещен — включите его в настройках конфиденциальности системы.",
-    "cameraUnavailable": "Камера недоступна на этом устройстве"
+    "cameraUnavailable": "Камера недоступна на этом устройстве",
+    "confirmContactImportTitle": "Импортировать контакт?",
+    "confirmContactImportBody": "Добавить {{name}} по внешней ссылке в контакты Reticulum?",
+    "confirmContactImportAction": "Импортировать контакт"
   }
 }

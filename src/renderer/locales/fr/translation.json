@@ -805,7 +805,7 @@
     "ripplePresetConfirm": "Le préréglage Ripple utilise les informations d'identification de la communauté partagée et désactive la vérification du certificat TLS. Utilisez-le uniquement sur un réseau de confiance. Continuer ?",
     "meshcorePort": "Port",
     "channelPsksHelp": "Clés AES-128 (16 octets) ou AES-256 (32 octets) base64, une par ligne. Nom de canal facultatif =base64 pour MQTT uniquement. La valeur par défaut LongFast est toujours essayée. Les touches de l'onglet Radio se synchronisent automatiquement lorsque la radio est connectée.",
-    "channelPsksPlaceholder": "1PG7OiApB1nwvP+rz05pAQ==\nHamNet=yourBase64KeyHere",
+    "channelPsksPlaceholder": "LongFast@0=yourPrimary256Key==, HamNet@2=yourBase64KeyHere",
     "channelPsksInvalidLength": "Chaque clé doit décoder à 16 octets (AES-128) ou 32 octets (AES-256).",
     "channelPsksInvalidBase64": "Base64 non valide sur une ligne PSK de canal.",
     "mqttTlsEnabled": "Activer TLS (mqtts / wss)",
@@ -1873,7 +1873,8 @@
       },
       "repeaterRpcInProgress": "Une demande pour ce répéteur est déjà en cours",
       "cliDangerNotConfirmed": "Les commandes CLI destructives nécessitent une confirmation dans le panneau Répéteurs.",
-      "pingFailed": "Échec de la réponseComment"
+      "pingFailed": "Échec de la réponseComment",
+      "floodScopeBusy": "Le remplacement de la portée d'inondation n'est pas disponible pendant que l'administration du répéteur ou le traceroute est en cours. Réessayez lorsque vous êtes inactif."
     },
     "mqttHints": {
       "notAuthorized": "Vérifiez le nom d'utilisateur v1_, la signature du jeton et l'audience JWT par rapport au courtier ; voir docs/letsmesh-mqtt-auth.md. Utilisez Personnalisé pour coller un jeton émis par l'opérateur si nécessaire.",
@@ -2858,7 +2859,8 @@
     "verifiedBadge": "Vérifié",
     "shareContactQr": "Partager le contact via",
     "shareContactQrAria": "Afficher le code QR pour ce contact",
-    "verifiedRowAria": "Contact vérifié"
+    "verifiedRowAria": "Contact vérifié",
+    "renameFailed": "Impossible d'enregistrer le nom d'affichage."
   },
   "peerGraph": {
     "title": "Graphique de communication par les pairs",
@@ -4467,6 +4469,9 @@
     "noQrFound": "Aucun code QR trouvé dans cette image",
     "decodeFailed": "Impossible de lire le code QR à partir de l'image",
     "cameraDenied": "Autorisation de caméra refusée — activez-la dans les paramètres de confidentialité du système",
-    "cameraUnavailable": "L'appareil photo n'est pas disponible sur cet appareil"
+    "cameraUnavailable": "L'appareil photo n'est pas disponible sur cet appareil",
+    "confirmContactImportTitle": "Importer un contact ?",
+    "confirmContactImportBody": "Ajouter {{name}} depuis un lien externe à vos contacts Reticulum ?",
+    "confirmContactImportAction": "Importer un contact"
   }
 }

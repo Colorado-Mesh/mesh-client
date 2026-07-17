@@ -36,13 +36,14 @@ mod rrc_link;
 #[cfg(feature = "rns-stack")]
 mod rrc_session;
 
+use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 pub use config::{ImportMode, ImportResult, StackSettings, UpdateInterfacePatch};
 use packet_log::{MAX_WIRE_PACKET_LOG, PacketLogBuffer, WirePacketRow};
 use persistence::PersistedState;
-use tokio::sync::{RwLock, broadcast};
+use tokio::sync::{Mutex, RwLock, broadcast};
 pub use types::{
     AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfResourceRequest,
     LxmfSendRequest, NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, StackIdentity,
@@ -72,6 +73,8 @@ pub struct StackHandle {
     packet_log: Arc<PacketLogBuffer>,
     /// When true, `list_contacts` must retry persisting contact name overlays after a prior save failure.
     contact_name_persist_dirty: std::sync::atomic::AtomicBool,
+    /// Serializes create / switch / delete so on-disk slot state cannot interleave.
+    identity_op_lock: Mutex<()>,
     #[cfg(feature = "rns-stack")]
     live: Option<Arc<live::LiveBridge>>,
 }
@@ -189,6 +192,7 @@ impl StackHandle {
             event_tx: event_tx.clone(),
             packet_log,
             contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
+            identity_op_lock: Mutex::new(()),
             live,
         };
         #[cfg(not(feature = "rns-stack"))]
@@ -199,6 +203,7 @@ impl StackHandle {
             event_tx,
             packet_log: Arc::new(PacketLogBuffer::new(MAX_WIRE_PACKET_LOG)),
             contact_name_persist_dirty: std::sync::atomic::AtomicBool::new(false),
+            identity_op_lock: Mutex::new(()),
         };
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &handle.live {
@@ -1888,32 +1893,95 @@ impl StackHandle {
         display_name: Option<String>,
     ) -> Result<serde_json::Value, String> {
         identity_apply::identity_requires_rns_stack()?;
+        let display_name = match display_name {
+            Some(name) => Some(sanitize_nomad_display_name(&name)?),
+            None => None,
+        };
         #[cfg(feature = "rns-stack")]
         {
+            let _op = self.identity_op_lock.lock().await;
+            let previous_active = identity_slots::read_active_id(&self.config_dir);
+            let working_path = identity_slots::working_identity_path(&self.config_dir);
+            let previous_working = fs::read(&working_path).ok();
             {
                 let inner = self.inner.read().await;
                 identity_slots::stash_working_into_active_slot(&self.config_dir, &inner.identity)?;
             }
             let new_id =
                 identity_slots::create_empty_slot(&self.config_dir, display_name.as_deref())?;
-            identity_slots::set_active_slot_pointer(&self.config_dir, &new_id)?;
-            let (rns_identity, mnemonic) = identity_apply::generate_identity_with_mnemonic()?;
-            let mut inner = self.inner.write().await;
-            let identity = identity_apply::apply_unified_identity(
-                &mut inner,
-                &self.config_dir,
-                &self.storage_dir,
-                rns_identity,
-                display_name,
-                Some(mnemonic),
-            )?;
-            drop(inner);
-            self.maybe_emit_identity_restart();
-            Ok(serde_json::json!({
-                "ok": true,
-                "id": new_id,
-                "identity": identity,
-            }))
+
+            let applied = async {
+                // Generate and apply into the staged slot first; commit active_identity last.
+                let (rns_identity, mnemonic) = identity_apply::generate_identity_with_mnemonic()?;
+                let mut inner = self.inner.write().await;
+                let identity = identity_apply::apply_unified_identity_to_slot(
+                    &mut inner,
+                    &self.config_dir,
+                    &self.storage_dir,
+                    rns_identity,
+                    display_name.clone(),
+                    Some(mnemonic),
+                    Some(new_id.as_str()),
+                )?;
+                drop(inner);
+                identity_slots::set_active_slot_pointer(&self.config_dir, &new_id)?;
+                Ok::<_, String>(identity)
+            }
+            .await;
+
+            match applied {
+                Ok(identity) => {
+                    self.maybe_emit_identity_restart();
+                    Ok(serde_json::json!({
+                        "ok": true,
+                        "id": new_id,
+                        "identity": identity,
+                    }))
+                }
+                Err(e) => {
+                    // Failure point: generate/apply after empty slot create.
+                    // Fallback: restore prior active pointer + working key; drop staged slot.
+                    if let Err(rb) =
+                        identity_slots::write_active_id(&self.config_dir, &previous_active)
+                    {
+                        tracing::error!(
+                            "create_identity_slot rollback active pointer failed: {rb} (original: {e})"
+                        );
+                    }
+                    match &previous_working {
+                        Some(bytes) => {
+                            if let Err(rb) = fs::write(&working_path, bytes) {
+                                tracing::error!(
+                                    "create_identity_slot rollback working identity failed: {rb} (original: {e})"
+                                );
+                            }
+                        }
+                        None => {
+                            let _ = fs::remove_file(&working_path);
+                        }
+                    }
+                    if let Err(rb) =
+                        identity_slots::remove_slot_dir_force(&self.config_dir, &new_id)
+                    {
+                        tracing::error!(
+                            "create_identity_slot rollback remove slot failed: {rb} (original: {e})"
+                        );
+                    }
+                    {
+                        let mut inner = self.inner.write().await;
+                        if let Err(rb) = identity_apply::reconcile_persisted_identity_from_file(
+                            &mut inner,
+                            &self.config_dir,
+                            &self.storage_dir,
+                        ) {
+                            tracing::error!(
+                                "create_identity_slot rollback reconcile failed: {rb} (original: {e})"
+                            );
+                        }
+                    }
+                    Err(e)
+                }
+            }
         }
         #[cfg(not(feature = "rns-stack"))]
         {
@@ -1926,23 +1994,58 @@ impl StackHandle {
         identity_apply::identity_requires_rns_stack()?;
         #[cfg(feature = "rns-stack")]
         {
+            let _op = self.identity_op_lock.lock().await;
+            let previous_active = identity_slots::read_active_id(&self.config_dir);
+            if previous_active == identity_id {
+                return Ok(());
+            }
+            let working_path = identity_slots::working_identity_path(&self.config_dir);
+            let previous_working = fs::read(&working_path).ok();
             {
                 let inner = self.inner.read().await;
-                if identity_slots::read_active_id(&self.config_dir) == identity_id {
-                    return Ok(());
-                }
                 identity_slots::stash_working_into_active_slot(&self.config_dir, &inner.identity)?;
             }
-            identity_slots::activate_slot(&self.config_dir, identity_id)?;
-            let mut inner = self.inner.write().await;
-            identity_apply::reconcile_persisted_identity_from_file(
-                &mut inner,
-                &self.config_dir,
-                &self.storage_dir,
-            )?;
-            drop(inner);
-            self.maybe_emit_identity_restart();
-            Ok(())
+            // Install target key first; commit active pointer only after reconcile succeeds.
+            identity_slots::install_slot_to_working(&self.config_dir, identity_id)?;
+            let reconciled = {
+                let mut inner = self.inner.write().await;
+                identity_apply::reconcile_persisted_identity_from_file(
+                    &mut inner,
+                    &self.config_dir,
+                    &self.storage_dir,
+                )
+            };
+            match reconciled {
+                Ok(_) => {
+                    identity_slots::write_active_id(&self.config_dir, identity_id)?;
+                    self.maybe_emit_identity_restart();
+                    Ok(())
+                }
+                Err(e) => {
+                    if let Some(bytes) = previous_working {
+                        if let Err(rb) = fs::write(&working_path, bytes) {
+                            tracing::error!(
+                                "switch_identity rollback working identity failed: {rb} (original: {e})"
+                            );
+                        }
+                    }
+                    {
+                        let mut inner = self.inner.write().await;
+                        if let Err(rb) = identity_apply::reconcile_persisted_identity_from_file(
+                            &mut inner,
+                            &self.config_dir,
+                            &self.storage_dir,
+                        ) {
+                            tracing::error!(
+                                "switch_identity rollback reconcile failed: {rb} (original: {e})"
+                            );
+                        }
+                    }
+                    // Pointer was never advanced; leave previous_active as-is.
+                    let _ = previous_active;
+                    Err(e)
+                }
+            }
         }
         #[cfg(not(feature = "rns-stack"))]
         {
@@ -1953,6 +2056,7 @@ impl StackHandle {
 
     #[allow(clippy::unused_async)] // async matches StackHandle identity API awaited by HTTP handlers
     pub async fn delete_identity_slot(&self, identity_id: &str) -> Result<(), String> {
+        let _op = self.identity_op_lock.lock().await;
         identity_slots::delete_slot(&self.config_dir, identity_id)
     }
 
