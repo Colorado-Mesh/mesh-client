@@ -16,7 +16,7 @@ use rns_transport::messages::TransportMessage;
 use tokio::sync::{Mutex, mpsc};
 
 use super::nomad_content_source::{
-    NomadContentLayout, ResolvedNomadContentRoots, layout_label, resolve_content_roots,
+    ContentSourceError, ResolvedNomadContentRoots, layout_label, resolve_content_roots,
 };
 use super::types::{NomadServeStatsRow, NomadServingStatus};
 
@@ -34,7 +34,6 @@ pub struct NomadServerHandle {
     /// Serializes start/stop/reconfigure so concurrent callers cannot double-spawn.
     lifecycle: Mutex<()>,
     inner: Mutex<Option<NomadNode>>,
-    managed_base: PathBuf,
     content_source: Mutex<Option<PathBuf>>,
     last_error: Mutex<Option<String>>,
     watcher_status: Mutex<String>,
@@ -44,11 +43,10 @@ pub struct NomadServerHandle {
 }
 
 impl NomadServerHandle {
-    pub fn new(storage_dir: impl AsRef<Path>) -> Self {
+    pub fn new() -> Self {
         Self {
             lifecycle: Mutex::new(()),
             inner: Mutex::new(None),
-            managed_base: storage_dir.as_ref().join("nomadnetwork"),
             content_source: Mutex::new(None),
             last_error: Mutex::new(None),
             watcher_status: Mutex::new("ok".into()),
@@ -62,16 +60,15 @@ impl NomadServerHandle {
         self.inner.lock().await.is_some()
     }
 
-    /// Configure the external content source path (None = managed).
+    /// Configure the required external content source path (watched folder).
     pub async fn set_content_source_path(
         self: &Arc<Self>,
-        path: Option<PathBuf>,
+        path: PathBuf,
     ) -> Result<ResolvedNomadContentRoots, String> {
-        let resolved = resolve_content_roots(&self.managed_base, path.as_deref())
-            .map_err(|e| e.as_str().to_string())?;
+        let resolved = resolve_content_roots(&path).map_err(|e| e.as_str().to_string())?;
         {
             let mut guard = self.content_source.lock().await;
-            *guard = resolved.content_source.clone();
+            *guard = Some(resolved.content_source.clone());
         }
         {
             let mut err = self.last_error.lock().await;
@@ -102,8 +99,10 @@ impl NomadServerHandle {
 
     pub async fn resolve_roots(&self) -> Result<ResolvedNomadContentRoots, String> {
         let src = self.content_source.lock().await.clone();
-        resolve_content_roots(&self.managed_base, src.as_deref())
-            .map_err(|e| e.as_str().to_string())
+        let Some(path) = src else {
+            return Err(ContentSourceError::Required.as_str().to_string());
+        };
+        resolve_content_roots(&path).map_err(|e| e.as_str().to_string())
     }
 
     fn roots_from_resolved(resolved: &ResolvedNomadContentRoots) -> NomadContentRoots {
@@ -125,23 +124,43 @@ impl NomadServerHandle {
         let (page_count, file_count, content_meta) = self.content_counts_offline().await;
         let last_error = self.last_error.lock().await.clone();
         let watcher_status = self.watcher_status.lock().await.clone();
-        NomadServingStatus {
-            enabled: enabled_pref,
-            running: false,
-            destination_hash: None,
-            identity_hash: None,
-            display_name: display_name_pref.to_string(),
-            page_count,
-            file_count,
-            stats: NomadServeStatsRow::default(),
-            content_root: content_meta.content_root.display().to_string(),
-            content_source: content_meta
-                .content_source
-                .as_ref()
-                .map(|p| p.display().to_string()),
-            content_layout: Some(layout_label(content_meta.layout).into()),
-            watcher_status: Some(watcher_status),
-            last_error,
+        let content_source = self
+            .content_source
+            .lock()
+            .await
+            .as_ref()
+            .map(|p| p.display().to_string());
+        match content_meta {
+            Some(meta) => NomadServingStatus {
+                enabled: enabled_pref,
+                running: false,
+                destination_hash: None,
+                identity_hash: None,
+                display_name: display_name_pref.to_string(),
+                page_count,
+                file_count,
+                stats: NomadServeStatsRow::default(),
+                content_root: meta.content_root.display().to_string(),
+                content_source: Some(meta.content_source.display().to_string()),
+                content_layout: Some(layout_label(meta.layout).into()),
+                watcher_status: Some(watcher_status),
+                last_error,
+            },
+            None => NomadServingStatus {
+                enabled: enabled_pref,
+                running: false,
+                destination_hash: None,
+                identity_hash: None,
+                display_name: display_name_pref.to_string(),
+                page_count: 0,
+                file_count: 0,
+                stats: NomadServeStatsRow::default(),
+                content_root: String::new(),
+                content_source,
+                content_layout: None,
+                watcher_status: Some(watcher_status),
+                last_error,
+            },
         }
     }
 
@@ -198,7 +217,7 @@ impl NomadServerHandle {
             node.shutdown();
             return Err("nomad serving already running".into());
         }
-        let status = self.status_from_node_sync(&node, true, &resolved).await;
+        let status = self.status_from_resolved_node(&node, true, &resolved).await;
         *guard = Some(node);
         drop(guard);
 
@@ -310,20 +329,39 @@ impl NomadServerHandle {
     }
 
     async fn status_from_node(&self, node: &NomadNode, enabled: bool) -> NomadServingStatus {
-        let resolved = self
-            .resolve_roots()
+        if let Ok(resolved) = self.resolve_roots().await {
+            return self
+                .status_from_resolved_node(node, enabled, &resolved)
+                .await;
+        }
+        let page_count = node.store().list_pages().map(|p| p.len()).unwrap_or(0);
+        let file_count = node.store().list_files().map(|f| f.len()).unwrap_or(0);
+        let last_error = self.last_error.lock().await.clone();
+        let watcher_status = self.watcher_status.lock().await.clone();
+        let content_source = self
+            .content_source
+            .lock()
             .await
-            .unwrap_or_else(|_| ResolvedNomadContentRoots {
-                layout: NomadContentLayout::Managed,
-                content_source: None,
-                pages_dir: self.managed_base.join("pages"),
-                files_dir: self.managed_base.join("files"),
-                content_root: self.managed_base.clone(),
-            });
-        self.status_from_node_sync(node, enabled, &resolved).await
+            .as_ref()
+            .map(|p| p.display().to_string());
+        NomadServingStatus {
+            enabled,
+            running: true,
+            destination_hash: Some(node.destination_hash_hex()),
+            identity_hash: Some(node.identity_hash_hex()),
+            display_name: node.display_name(),
+            page_count,
+            file_count,
+            stats: stats_row(&node.stats()),
+            content_root: content_source.clone().unwrap_or_default(),
+            content_source,
+            content_layout: None,
+            watcher_status: Some(watcher_status),
+            last_error,
+        }
     }
 
-    async fn status_from_node_sync(
+    async fn status_from_resolved_node(
         &self,
         node: &NomadNode,
         enabled: bool,
@@ -343,38 +381,22 @@ impl NomadServerHandle {
             file_count,
             stats: stats_row(&node.stats()),
             content_root: resolved.content_root.display().to_string(),
-            content_source: resolved
-                .content_source
-                .as_ref()
-                .map(|p| p.display().to_string()),
+            content_source: Some(resolved.content_source.display().to_string()),
             content_layout: Some(layout_label(resolved.layout).into()),
             watcher_status: Some(watcher_status),
             last_error,
         }
     }
 
-    async fn content_counts_offline(&self) -> (usize, usize, ResolvedNomadContentRoots) {
-        let resolved = match self.resolve_roots().await {
-            Ok(r) => r,
-            Err(_) => ResolvedNomadContentRoots {
-                layout: NomadContentLayout::Managed,
-                content_source: self.content_source.lock().await.clone(),
-                pages_dir: self.managed_base.join("pages"),
-                files_dir: self.managed_base.join("files"),
-                content_root: self.managed_base.clone(),
-            },
+    /// Offline page/file counts without opening NomadContentStore (avoids creating
+    /// a missing sibling `files/` directory during status polls).
+    async fn content_counts_offline(&self) -> (usize, usize, Option<ResolvedNomadContentRoots>) {
+        let Ok(resolved) = self.resolve_roots().await else {
+            return (0, 0, None);
         };
-        match NomadContentStore::new(Self::roots_from_resolved(&resolved)) {
-            Ok(store) => {
-                let page_count = store.list_pages().map(|p| p.len()).unwrap_or(0);
-                let file_count = store.list_files().map(|f| f.len()).unwrap_or(0);
-                (page_count, file_count, resolved)
-            }
-            Err(e) => {
-                tracing::debug!("[nomad-serving] content store unavailable for status counts: {e}");
-                (0, 0, resolved)
-            }
-        }
+        let page_count = count_entries_if_dir(&resolved.pages_dir);
+        let file_count = count_entries_if_dir(&resolved.files_dir);
+        (page_count, file_count, Some(resolved))
     }
 
     async fn mutate_store(
@@ -424,14 +446,12 @@ impl NomadServerHandle {
         let Ok(resolved) = self.resolve_roots().await else {
             return;
         };
-        if resolved.layout == NomadContentLayout::Managed {
-            *self.watcher_status.lock().await = "ok".into();
-            return;
-        }
 
         let pages_dir = resolved.pages_dir.clone();
-        let files_external = resolved.files_dir != self.managed_base.join("files");
-        let files_dir = files_external.then(|| resolved.files_dir.clone());
+        let files_dir = resolved
+            .files_dir
+            .exists()
+            .then(|| resolved.files_dir.clone());
 
         // Capacity-1 so filesystem floods coalesce instead of growing unbounded.
         let (event_tx, mut event_rx) = mpsc::channel::<()>(1);
@@ -592,50 +612,90 @@ fn initial_watcher_status_after_watches(files_watch_failed: bool) -> &'static st
     if files_watch_failed { "degraded" } else { "ok" }
 }
 
+fn count_entries_if_dir(dir: &Path) -> usize {
+    fn walk(path: &Path, depth: usize) -> usize {
+        if depth > 32 {
+            return 0;
+        }
+        let Ok(entries) = std::fs::read_dir(path) else {
+            return 0;
+        };
+        let mut n = 0;
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.is_dir() {
+                n += walk(&p, depth + 1);
+            } else if p.is_file() {
+                n += 1;
+            }
+        }
+        n
+    }
+    if !dir.is_dir() {
+        return 0;
+    }
+    walk(dir, 0)
+}
+
 #[cfg(test)]
 mod tests {
+    use super::super::nomad_content_source::NomadContentLayout;
     use super::*;
 
-    #[tokio::test]
-    async fn start_rejects_double_start_without_live_transport() {
+    async fn handle_with_site() -> (tempfile::TempDir, Arc<NomadServerHandle>, PathBuf) {
         let dir = tempfile::tempdir().expect("tempdir");
-        let handle = Arc::new(NomadServerHandle::new(dir.path().to_path_buf()));
+        let site = dir.path().join("site");
+        std::fs::create_dir_all(site.join("pages")).unwrap();
+        std::fs::write(site.join("pages/index.mu"), b"> hi").unwrap();
+        let handle = Arc::new(NomadServerHandle::new());
+        handle
+            .set_content_source_path(site.clone())
+            .await
+            .expect("set source");
+        (dir, handle, site)
+    }
+
+    #[tokio::test]
+    async fn status_without_content_source_has_no_layout() {
+        let handle = Arc::new(NomadServerHandle::new());
         assert!(!handle.is_running().await);
         let status = handle.status(false, "Test").await;
         assert!(!status.running);
         assert_eq!(status.display_name, "Test");
-        assert_eq!(status.content_layout.as_deref(), Some("managed"));
+        assert!(status.content_layout.is_none());
+        assert!(status.content_source.is_none());
+        assert!(status.content_root.is_empty());
     }
 
     #[test]
     fn invalid_base64_is_rejected() {
-        let dir = tempfile::tempdir().expect("tempdir");
-        let handle = Arc::new(NomadServerHandle::new(dir.path().to_path_buf()));
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .expect("runtime");
-        let err = rt
-            .block_on(handle.write_file_base64("x.bin", "!!!not-base64!!!"))
-            .expect_err("invalid base64");
+        let err = rt.block_on(async {
+            let (_dir, handle, _) = handle_with_site().await;
+            handle
+                .write_file_base64("x.bin", "!!!not-base64!!!")
+                .await
+                .expect_err("invalid base64")
+        });
         assert!(err.contains("invalid base64"), "{err}");
     }
 
     #[tokio::test]
     async fn set_content_source_site_root() {
-        let dir = tempfile::tempdir().expect("tempdir");
-        let site = dir.path().join("site");
-        std::fs::create_dir_all(site.join("pages")).unwrap();
-        std::fs::write(site.join("pages/index.mu"), b"> hi").unwrap();
-        let handle = Arc::new(NomadServerHandle::new(dir.path().to_path_buf()));
-        let resolved = handle
-            .set_content_source_path(Some(site.clone()))
-            .await
-            .expect("set source");
-        assert_eq!(resolved.layout, NomadContentLayout::SiteRoot);
+        let (_dir, handle, _site) = handle_with_site().await;
         let status = handle.status(false, "N").await;
         assert!(status.content_source.is_some());
         assert_eq!(status.content_layout.as_deref(), Some("site_root"));
+    }
+
+    #[tokio::test]
+    async fn resolve_roots_requires_content_source() {
+        let handle = Arc::new(NomadServerHandle::new());
+        let err = handle.resolve_roots().await.expect_err("required");
+        assert_eq!(err, "content_source_required");
     }
 
     #[test]
@@ -646,8 +706,7 @@ mod tests {
 
     #[tokio::test]
     async fn page_file_round_trip_offline() {
-        let dir = tempfile::tempdir().expect("tempdir");
-        let handle = Arc::new(NomadServerHandle::new(dir.path().to_path_buf()));
+        let (_dir, handle, _) = handle_with_site().await;
         handle
             .write_page("index.mu", "> hello")
             .await
@@ -685,26 +744,31 @@ mod tests {
         let site = dir.path().join("site");
         std::fs::create_dir_all(site.join("pages")).unwrap();
         std::fs::write(site.join("pages/index.mu"), b"> hi").unwrap();
-        let handle = Arc::new(NomadServerHandle::new(dir.path().to_path_buf()));
+        let handle = Arc::new(NomadServerHandle::new());
         handle
             .set_last_error(Some("content_source_unavailable".into()))
             .await;
-        handle
-            .set_content_source_path(Some(site))
+        let resolved = handle
+            .set_content_source_path(site)
             .await
             .expect("set source");
+        assert_eq!(resolved.layout, NomadContentLayout::SiteRoot);
         let status = handle.status(false, "N").await;
         assert!(status.last_error.is_none());
 
         handle
             .set_last_error(Some("watcher_init_failed".into()))
             .await;
+        let site2 = dir.path().join("site2");
+        std::fs::create_dir_all(site2.join("pages")).unwrap();
+        std::fs::write(site2.join("pages/index.mu"), b"> hi").unwrap();
         handle
-            .set_content_source_path(None)
+            .set_content_source_path(site2)
             .await
-            .expect("clear to managed");
+            .expect("set second source");
         let status2 = handle.status(false, "N").await;
+        // Unrelated last_error codes are preserved across content-source updates.
         assert_eq!(status2.last_error.as_deref(), Some("watcher_init_failed"));
-        assert_eq!(status2.content_layout.as_deref(), Some("managed"));
+        assert_eq!(status2.content_layout.as_deref(), Some("site_root"));
     }
 }

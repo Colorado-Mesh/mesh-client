@@ -137,10 +137,10 @@ pub struct NomadServingStatus {
     pub file_count: usize,
     pub stats: NomadServeStatsRow,
     pub content_root: String,
-    /// Absolute path the user chose as the content source (None → managed).
+    /// Absolute path the user chose as the watched content source.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub content_source: Option<String>,
-    /// `managed` | `site_root` | `pages_dir`
+    /// `site_root` | `pages_dir`
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub content_layout: Option<String>,
     /// `ok` | `degraded` | `unavailable` — watcher / content-source health.

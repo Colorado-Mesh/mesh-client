@@ -22,7 +22,7 @@ vi.mock('../reticulum-config-paths', () => ({
   readFirstExistingConfig: vi.fn(),
   showReticulumConfigImportDialog: vi.fn(),
   showNomadContentSourceDialog: vi.fn(),
-  isAllowedNomadContentSourcePath: vi.fn((path: string | null) => path == null || path === ''),
+  isAllowedNomadContentSourcePath: vi.fn((path: string | null) => Boolean(path?.trim())),
   isNomadContentSourceApiPath: vi.fn(
     (apiPath: string) =>
       apiPath === '/api/v1/nomadnetwork/serving/content-source' ||
@@ -90,7 +90,7 @@ describe('registerReticulumIpcHandlers', () => {
     assertIpcSenderMock.mockReset();
     isAllowedNomadContentSourcePathMock
       .mockReset()
-      .mockImplementation((path: string | null) => path == null || path === '');
+      .mockImplementation((path: string | null) => Boolean(path?.trim()));
     manager = createManagerStub();
     getManagerResult = manager;
 
@@ -137,7 +137,7 @@ describe('registerReticulumIpcHandlers', () => {
       await handlers.get('reticulum:showConfigImportDialog')?.(event);
       await handlers.get('reticulum:showIdentityImportDialog')?.(event);
       await handlers.get('reticulum:showNomadContentSourceDialog')?.(event);
-      await handlers.get('reticulum:setNomadContentSource')?.(event, null);
+      await handlers.get('reticulum:setNomadContentSource')?.(event, '/tmp/site');
       await handlers.get('reticulum:validateConfig')?.(event);
 
       expect(assertIpcSenderMock).toHaveBeenCalledTimes(14);
@@ -306,6 +306,12 @@ describe('registerReticulumIpcHandlers', () => {
       });
       const result = await handlers.get('reticulum:showNomadContentSourceDialog')?.(event);
       expect(result).toEqual({ canceled: false, path: '/tmp/nomad-page' });
+    });
+
+    it('setNomadContentSource rejects empty paths', async () => {
+      const result = await handlers.get('reticulum:setNomadContentSource')?.(event, '   ');
+      expect(result).toEqual({ ok: false, error: 'content_source_required' });
+      expect(manager.proxyPut).not.toHaveBeenCalled();
     });
 
     it('setNomadContentSource rejects paths not from the folder picker', async () => {

@@ -942,14 +942,14 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 ### Nomad My Pages hosting enabled but not serving
 
-**Symptoms**: After relaunch, **Nomad Network → My Pages** shows no green **Serving to network** chip even though you left serving on; or Start serving fails after choosing a folder. Status may show `last_error` such as `content_source_unavailable` / `invalid_content_source`.
+**Symptoms**: After relaunch, **Nomad Network → My Pages** shows no green **Serving to network** chip even though you left serving on; or Start serving fails after choosing a folder. Status may show `last_error` such as `content_source_required` / `content_source_unavailable` / `invalid_content_source`.
 
-**Cause**: The remembered content folder moved or was deleted, layout auto-detect failed (folder has neither `pages/` nor `.mu` files), or auto-restore failed after the Reticulum stack came up. Preference `nomad_serving_enabled` stays true so hosting can retry once the folder is fixed.
+**Cause**: Hosting requires a watched folder. The remembered content folder is missing, moved, or invalid (neither `pages/` nor `.mu` files), serving was enabled without a content source, or auto-restore failed after the Reticulum stack came up. Preference `nomad_serving_enabled` may stay true so hosting can retry once the folder is fixed.
 
 **Fix**:
 
 1. Open **My Pages**, click **Choose folder**, and select the site root (directory with `pages/`) or the `pages/` directory.
-2. Click **Start serving** if it did not auto-resume.
+2. Click **Start serving** if it did not auto-resume (Start stays disabled until a folder is chosen).
 3. Check **Log → Analyze** (Reticulum protocol) for **Nomad Page Hosting Issues** (`[nomad-serving]` / `[NomadHosting]`), or **Export for GitHub** — those lines are in `mesh-client.log`.
 
 ### Nomad Network pages hang or almost never load

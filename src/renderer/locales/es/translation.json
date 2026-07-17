@@ -2760,10 +2760,7 @@
       "folderHint": "Sirva páginas Micron desde una carpeta en disco (recomendado). Elija una raíz del sitio con un directorio pages/, o el directorio pages en sí. Las ediciones en disco se detectan automáticamente.",
       "chooseFolder": "Elegir carpeta",
       "chooseFolderAria": "Elige una carpeta para alojar páginas de Nomad",
-      "clearFolder": "Usar almacenamiento gestionado",
-      "clearFolderAria": "Borrar la carpeta elegida y utilizar el almacenamiento gestionado",
       "contentSource": "Carpeta de contenido",
-      "contentSourceManaged": "Almacenamiento gestionado (predeterminado)",
       "contentSourceUnavailable": "Falta la carpeta de páginas elegida o no está disponible. Vuelva a elegir la carpeta.",
       "contentSourceNotDirectory": "Elija un directorio, no un archivo.",
       "contentSourceUnreadable": "No se ha podido leer la carpeta elegida.",
@@ -2774,7 +2771,9 @@
       "reloadFromDiskAria": "Volver a cargar páginas alojadas desde el disco",
       "noPages": "Aún no hay páginas. Añada archivos .mu a la carpeta elegida (por ejemplo, index.mu).",
       "noFiles": "Aún no hay archivos. Coloque los archivos en la carpeta files/ del sitio para servir en /file/…",
-      "contentSourceNotFromPicker": "Elija la carpeta con Elegir carpeta antes de aplicarla."
+      "contentSourceNotFromPicker": "Elija la carpeta con Elegir carpeta antes de aplicarla.",
+      "contentSourceNone": "No se eligieron carpetas",
+      "contentSourceRequired": "Elige una carpeta de páginas antes de comenzar a hospedar en Nomad."
     }
   },
   "packetDistribution": {

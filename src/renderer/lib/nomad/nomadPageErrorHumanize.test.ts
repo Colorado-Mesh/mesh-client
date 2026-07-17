@@ -17,6 +17,9 @@ describe('nomadPageErrorHumanize', () => {
     expect(nomadPageErrorI18nKey('sidecar_not_running')).toBe(
       'nomadNetwork.errors.sidecarNotRunning',
     );
+    expect(nomadPageErrorI18nKey('content_source_required')).toBe(
+      'nomadNetwork.serving.contentSourceRequired',
+    );
     expect(nomadPageErrorI18nKey('content_source_unavailable')).toBe(
       'nomadNetwork.serving.contentSourceUnavailable',
     );

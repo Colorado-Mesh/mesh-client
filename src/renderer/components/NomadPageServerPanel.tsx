@@ -190,13 +190,6 @@ export default function NomadPageServerPanel({
     }
   };
 
-  const clearFolder = async () => {
-    await runServingAction(
-      () => setServingContentSource(null),
-      'nomadNetwork.serving.contentSourceFailed',
-    );
-  };
-
   const copyHash = async () => {
     const hash = status?.destination_hash;
     if (!hash) return;
@@ -216,8 +209,9 @@ export default function NomadPageServerPanel({
   const stats = status?.stats;
   const canPreview =
     serving && Boolean(status?.destination_hash) && typeof onPreviewHostedSite === 'function';
+  const hasContentSource = Boolean(status?.content_source?.trim());
   const contentSourceLabel =
-    status?.content_source?.trim() || t('nomadNetwork.serving.contentSourceManaged');
+    status?.content_source?.trim() || t('nomadNetwork.serving.contentSourceNone');
   const watcherDegraded =
     status?.watcher_status === 'degraded' || status?.watcher_status === 'unavailable';
 
@@ -255,17 +249,6 @@ export default function NomadPageServerPanel({
           >
             {t('nomadNetwork.serving.chooseFolder')}
           </button>
-          <button
-            type="button"
-            disabled={busy || !sidecarRunning || !status?.content_source}
-            onClick={() => {
-              void clearFolder();
-            }}
-            aria-label={t('nomadNetwork.serving.clearFolderAria')}
-            className="rounded border border-gray-600 px-3 py-1.5 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
-          >
-            {t('nomadNetwork.serving.clearFolder')}
-          </button>
           {watcherDegraded ? (
             <button
               type="button"
@@ -300,7 +283,7 @@ export default function NomadPageServerPanel({
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          disabled={busy || !sidecarRunning || serving}
+          disabled={busy || !sidecarRunning || serving || !hasContentSource}
           onClick={() => {
             void setServing(true);
           }}

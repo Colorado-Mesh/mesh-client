@@ -2760,10 +2760,7 @@
       "folderHint": "ディスク上のフォルダーから Micron ページを提供します（推奨）。pages/ ディレクトリを含むサイトルート、または pages ディレクトリ自体を選択してください。ディスク上の編集は自動的に反映されます。",
       "chooseFolder": "フォルダの選択",
       "chooseFolderAria": "Nomadページをホストするフォルダを選択してください",
-      "clearFolder": "マネージドストレージを使用する",
-      "clearFolderAria": "選択したフォルダーをクリアし、管理されたストレージを使用する",
       "contentSource": "コンテンツフォルダ",
-      "contentSourceManaged": "管理ストレージ（デフォルト）",
       "contentSourceUnavailable": "選択したページフォルダが見つからないか、使用できません。もう一度フォルダーを選択します。",
       "contentSourceNotDirectory": "ファイルではなくディレクトリを選択してください。",
       "contentSourceUnreadable": "選択したフォルダを読み取れませんでした。",
@@ -2774,7 +2771,9 @@
       "reloadFromDiskAria": "ホストされているページをディスクから再読み込みする",
       "noPages": "ページはまだありません。選択したフォルダー（ index.muなど）に.muファイルを追加します。",
       "noFiles": "ファイルはまだありません。サイトの files/ フォルダーにファイルを置くと /file/… で提供されます。",
-      "contentSourceNotFromPicker": "適用する前に、[フォルダーの選択]でフォルダーを選択します。"
+      "contentSourceNotFromPicker": "適用する前に、[フォルダーの選択]でフォルダーを選択します。",
+      "contentSourceNone": "フォルダーが選択されていません",
+      "contentSourceRequired": "Nomadホスティングを開始する前に、ページフォルダを選択します。"
     }
   },
   "packetDistribution": {

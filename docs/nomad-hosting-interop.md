@@ -44,7 +44,7 @@ Note date, hub/interface used, peer software versions, and pass/fail for page + 
 When NomadNet / MeshChat are not installed in the environment:
 
 - `nomad-core` tests: Link request handler serves page + file by path hash; request budget rejects over-concurrency; listing skips dotfiles/`*.allowed`
-- mesh-client Vitest: My Pages folder choose/clear, read-only page/file lists, and **Open in browser** wiring
+- mesh-client Vitest: My Pages folder choose, start gated on content source, read-only page/file lists, and **Open in browser** wiring
 - Sidecar: content-source layout resolve + persistence of `nomad_serving_content_source`
 
 Treat the peer table above as the release gate for cross-client hosting.

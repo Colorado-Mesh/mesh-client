@@ -104,9 +104,7 @@ export async function listServingFiles(): Promise<NomadServingApiResponse> {
   }
 }
 
-export async function setServingContentSource(
-  path: string | null,
-): Promise<NomadServingApiResponse> {
+export async function setServingContentSource(path: string): Promise<NomadServingApiResponse> {
   if (!(await isReticulumSidecarRunning())) {
     return { ok: false, error: 'sidecar_not_running' };
   }

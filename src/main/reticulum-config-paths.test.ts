@@ -27,10 +27,10 @@ describe('Nomad content-source picker allowlist', () => {
     clearNomadContentSourcePick();
   });
 
-  it('allows managed clear (null / empty) without a prior pick', () => {
-    expect(isAllowedNomadContentSourcePath(null)).toBe(true);
-    expect(isAllowedNomadContentSourcePath('')).toBe(true);
-    expect(isAllowedNomadContentSourcePath('   ')).toBe(true);
+  it('rejects null / empty (watched folder required)', () => {
+    expect(isAllowedNomadContentSourcePath(null)).toBe(false);
+    expect(isAllowedNomadContentSourcePath('')).toBe(false);
+    expect(isAllowedNomadContentSourcePath('   ')).toBe(false);
   });
 
   it('rejects arbitrary paths until a picker result is remembered', () => {

@@ -83,12 +83,12 @@ export function clearNomadContentSourcePick(): void {
 }
 
 /**
- * True when `candidate` is null/empty (managed storage) or matches the last
- * native folder-picker result. Blocks arbitrary filesystem paths via proxy.
+ * True when `candidate` matches the last native folder-picker result.
+ * Blocks arbitrary filesystem paths and rejects null/empty (watch folder required).
  */
 export function isAllowedNomadContentSourcePath(candidate: string | null): boolean {
   if (candidate == null || candidate.trim() === '') {
-    return true;
+    return false;
   }
   if (lastPickedNomadContentSource == null) {
     return false;

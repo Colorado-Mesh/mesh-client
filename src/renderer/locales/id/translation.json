@@ -2760,10 +2760,7 @@
       "folderHint": "Sajikan halaman Micron dari folder di disk (disarankan). Pilih root situs dengan direktori pages/, atau direktori pages itu sendiri. Perubahan di disk diambil secara otomatis.",
       "chooseFolder": "Pilih Folder",
       "chooseFolderAria": "Pilih folder untuk menampung halaman Nomad",
-      "clearFolder": "Gunakan penyimpanan terkelola",
-      "clearFolderAria": "Hapus folder yang dipilih dan gunakan penyimpanan terkelola",
       "contentSource": "Folder konten",
-      "contentSourceManaged": "Penyimpanan terkelola (default)",
       "contentSourceUnavailable": "Folder halaman yang dipilih tidak ada atau tidak tersedia. Pilih folder lagi.",
       "contentSourceNotDirectory": "Pilih direktori, bukan file.",
       "contentSourceUnreadable": "Tidak dapat membaca folder yang dipilih.",
@@ -2774,7 +2771,9 @@
       "reloadFromDiskAria": "Muat ulang halaman yang dihosting dari disk",
       "noPages": "Belum ada halaman. Tambahkan file .mu ke folder yang dipilih (misalnya index.mu).",
       "noFiles": "Belum ada file. Letakkan file di folder files/ situs untuk disajikan di bawah /file/…",
-      "contentSourceNotFromPicker": "Pilih folder dengan Pilih folder sebelum menerapkannya."
+      "contentSourceNotFromPicker": "Pilih folder dengan Pilih folder sebelum menerapkannya.",
+      "contentSourceNone": "Tidak ada folder yang dipilih",
+      "contentSourceRequired": "Pilih folder halaman sebelum memulai Nomad hosting."
     }
   },
   "packetDistribution": {

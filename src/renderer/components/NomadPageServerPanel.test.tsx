@@ -149,20 +149,44 @@ describe('NomadPageServerPanel', () => {
     });
   });
 
-  it('clears the content folder back to managed storage', async () => {
-    const user = userEvent.setup();
-    setNomadContentSource.mockResolvedValue({
-      ok: true,
-      serving: { ...servingStatus, content_source: null, content_layout: 'managed' },
-    });
+  it('does not offer a clear-folder control once a content source is set', async () => {
     render(<NomadPageServerPanel isActive />);
     await waitFor(() => {
       expect(screen.getByText('/tmp/nomad-page')).toBeInTheDocument();
     });
-    await user.click(screen.getByRole('button', { name: 'nomadNetwork.serving.clearFolderAria' }));
-    await waitFor(() => {
-      expect(setNomadContentSource).toHaveBeenCalledWith(null);
+    expect(
+      screen.getByRole('button', { name: 'nomadNetwork.serving.chooseFolderAria' }),
+    ).toBeTruthy();
+    const labels = screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? '');
+    expect(labels.some((label) => /clearFolder/i.test(label))).toBe(false);
+  });
+
+  it('disables start serving until a content folder is chosen', async () => {
+    proxyGet.mockImplementation((path: string) => {
+      if (path === '/api/v1/nomadnetwork/serving') {
+        return Promise.resolve({
+          ok: true,
+          serving: {
+            ...servingStatus,
+            running: false,
+            content_source: null,
+            content_layout: null,
+          },
+        });
+      }
+      if (path === '/api/v1/nomadnetwork/serving/pages') {
+        return Promise.resolve({ ok: true, pages: [] });
+      }
+      if (path === '/api/v1/nomadnetwork/serving/files') {
+        return Promise.resolve({ ok: true, files: [] });
+      }
+      return Promise.resolve({ ok: false, error: 'unexpected' });
     });
+    render(<NomadPageServerPanel isActive />);
+    await waitFor(() => {
+      expect(screen.getByText('nomadNetwork.serving.contentSourceNone')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: 'nomadNetwork.serving.enable' })).toBeDisabled();
   });
 
   it('surfaces last_error from serving status', async () => {

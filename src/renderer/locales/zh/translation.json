@@ -2760,10 +2760,7 @@
       "folderHint": "从磁盘上的文件夹提供 Micron 页面（推荐）。选择包含 pages/ 目录的站点根目录，或 pages 目录本身。磁盘上的编辑会自动生效。",
       "chooseFolder": "选择文件夹",
       "chooseFolderAria": "选择一个文件夹来托管Nomad页面",
-      "clearFolder": "使用托管存储",
-      "clearFolderAria": "清除所选文件夹并使用托管存储",
       "contentSource": "内容文件夹",
-      "contentSourceManaged": "托管存储（默认）",
       "contentSourceUnavailable": "所选页面文件夹缺失或不可用。再次选择文件夹。",
       "contentSourceNotDirectory": "选择一个目录，而不是文件。",
       "contentSourceUnreadable": "无法读取所选文件夹。",
@@ -2774,7 +2771,9 @@
       "reloadFromDiskAria": "从磁盘重新加载托管页面",
       "noPages": "还没有页面。将.mu文件添加到所选文件夹（例如index.mu ）。",
       "noFiles": "还没有文件。将文件放在站点的 files/ 文件夹中，以便在 /file/… 下提供服务。",
-      "contentSourceNotFromPicker": "在应用文件夹之前，选择带有“选择文件夹”的文件夹。"
+      "contentSourceNotFromPicker": "在应用文件夹之前，选择带有“选择文件夹”的文件夹。",
+      "contentSourceNone": "没有选择文件夹",
+      "contentSourceRequired": "在开始Nomad托管之前，请选择一个页面文件夹。"
     }
   },
   "packetDistribution": {

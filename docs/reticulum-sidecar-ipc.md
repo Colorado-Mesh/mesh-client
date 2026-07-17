@@ -112,7 +112,7 @@ The Connection tab UI edits a subset: **name** and **mode** for all types; **hos
 | GET    | `/api/v1/nomadnetwork/file/{hash}?path=…`     |                              | `{ ok, file_name?, content_base64? }`                                                                              |
 | GET    | `/api/v1/nomadnetwork/serving`                |                              | `{ ok, serving }` (local host status; includes `content_source`, `content_layout`, `watcher_status`, `last_error`) |
 | PUT    | `/api/v1/nomadnetwork/serving`                | `{ enabled, display_name? }` | `{ ok, serving }`                                                                                                  |
-| PUT    | `/api/v1/nomadnetwork/serving/content-source` | `{ path: string \| null }`   | `{ ok, serving }` — set/clear watched folder (site root or pages dir); restarts host if running                    |
+| PUT    | `/api/v1/nomadnetwork/serving/content-source` | `{ path: string }`           | `{ ok, serving }` — set watched folder (site root or pages dir); required before start; restarts host if running   |
 | GET    | `/api/v1/nomadnetwork/serving/pages`          |                              | `{ ok, pages: [] }` — My Pages lists these read-only; edit pages on disk in the watched folder                     |
 | PUT    | `/api/v1/nomadnetwork/serving/pages`          | `{ path, content }`          | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
 | DELETE | `/api/v1/nomadnetwork/serving/pages?path=…`   |                              | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
@@ -121,7 +121,7 @@ The Connection tab UI edits a subset: **name** and **mode** for all types; **hos
 | PUT    | `/api/v1/nomadnetwork/serving/files`          | `{ path, content_base64 }`   | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
 | DELETE | `/api/v1/nomadnetwork/serving/files?path=…`   |                              | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
 
-Auto-restore order when the live stack comes up: load `nomad_serving_content_source` → if `nomad_serving_enabled`, start hosting → start FS watcher on external `pages/` (and external `files/` when used). Failures keep `enabled=true` with `running=false` and `last_error` set; logs use the `[nomad-serving]` tag.
+Auto-restore order when the live stack comes up: load `nomad_serving_content_source` → if `nomad_serving_enabled` and a content source is set, start hosting → start FS watcher on `pages/` (and `files/` when that directory exists). If enabled without a content source, set `last_error=content_source_required` and do not start. Other failures keep `enabled=true` with `running=false` and `last_error` set; logs use the `[nomad-serving]` tag.
 
 ### RRC (Reticulum Relay Chat)
 
@@ -188,7 +188,7 @@ Renderer calls `electronAPI.reticulum.*`; main process proxies to this API (sand
 | `reticulum:showConfigImportDialog`                              | Native file picker for config import                                                                         |
 | `reticulum:showIdentityImportDialog`                            | Native file picker for 64-byte private key (`.retid`, `.key`, …)                                             |
 | `reticulum:showNomadContentSourceDialog`                        | Native folder picker for Nomad My Pages content source (site root or `pages/` dir); records picker allowlist |
-| `reticulum:setNomadContentSource`                               | Apply Nomad content source; non-null paths must match last folder-picker result (blocks arbitrary proxyPut)  |
+| `reticulum:setNomadContentSource`                               | Apply Nomad watched content source; path must match last folder-picker result (blocks arbitrary proxyPut)    |
 | `reticulum:onEvent` / `onStatus`                                | WS events and sidecar status                                                                                 |
 
 `getStatus` / `onStatus` may include `interfaceIssueAlert` (TCP connect failures, TX queue drops, link-delivery timeouts, transport saturation / slow queries, **`bleBondRemoved`** stale RNode bonds). Per-entry latch timestamps use a **5-minute** stale window (`RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS`). Connection syncs **enabled** interface names via `syncInterfaceIssueScope` so disabling or removing an interface clears that name immediately and rejects re-latch from lagging log lines. Stopping the stack (or unexpected process exit) clears the tracker.

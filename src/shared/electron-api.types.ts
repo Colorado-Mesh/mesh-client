@@ -936,10 +936,10 @@ export interface ElectronAPI {
     /** Pick a Nomad site root or pages directory for watched hosting. */
     showNomadContentSourceDialog: () => Promise<{ canceled: boolean; path: string | null }>;
     /**
-     * Apply Nomad content source. Non-null paths must match the last
+     * Apply Nomad watched content source. Path must match the last
      * {@link showNomadContentSourceDialog} result (picker capability).
      */
-    setNomadContentSource: (path: string | null) => Promise<unknown>;
+    setNomadContentSource: (path: string) => Promise<unknown>;
     validateConfig: () => Promise<ReticulumConfigValidateResult>;
     onEvent: (cb: (event: ReticulumSidecarEvent) => void) => () => void;
     onStatus: (cb: (status: ReticulumSidecarStatus) => void) => () => void;

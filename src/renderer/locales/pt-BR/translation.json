@@ -2760,10 +2760,7 @@
       "folderHint": "Sirva páginas Micron de uma pasta no disco (recomendado). Escolha uma raiz do site com um diretório pages/, ou o próprio diretório pages. Edições no disco são detectadas automaticamente.",
       "chooseFolder": "Escolher pasta",
       "chooseFolderAria": "Escolha uma pasta para hospedar páginas Nomad",
-      "clearFolder": "Usar armazenamento gerenciado",
-      "clearFolderAria": "Limpe a pasta escolhida e use o armazenamento gerenciado",
       "contentSource": "Pasta de Conteúdo",
-      "contentSourceManaged": "Armazenamento gerenciado (padrão)",
       "contentSourceUnavailable": "A pasta de páginas escolhidas está ausente ou indisponível. Escolha a pasta novamente.",
       "contentSourceNotDirectory": "Escolha um diretório, não um arquivo.",
       "contentSourceUnreadable": "Não foi possível ler a pasta escolhida.",
@@ -2774,7 +2771,9 @@
       "reloadFromDiskAria": "Recarregar páginas hospedadas do disco",
       "noPages": "Ainda não há páginas. Adicione arquivos .mu à pasta escolhida (por exemplo, index.mu).",
       "noFiles": "Ainda não há arquivos. Coloque arquivos na pasta files/ do site para servir em /file/…",
-      "contentSourceNotFromPicker": "Escolha a pasta com Escolher pasta antes de aplicá-la."
+      "contentSourceNotFromPicker": "Escolha a pasta com Escolher pasta antes de aplicá-la.",
+      "contentSourceNone": "Nenhuma pasta escolhida",
+      "contentSourceRequired": "Escolha uma pasta de páginas antes de iniciar a hospedagem Nomad."
     }
   },
   "packetDistribution": {

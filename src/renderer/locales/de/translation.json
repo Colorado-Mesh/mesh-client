@@ -2760,10 +2760,7 @@
       "folderHint": "Stellen Sie Micron-Seiten aus einem Ordner auf dem Datenträger bereit (empfohlen). Wählen Sie eine Site-Root mit pages/-Verzeichnis oder das pages-Verzeichnis selbst. Änderungen auf dem Datenträger werden automatisch übernommen.",
       "chooseFolder": "Ordner auswählen",
       "chooseFolderAria": "Ordner zum Hosten von Nomad-Seiten auswählen",
-      "clearFolder": "Verwalteten Speicher verwenden",
-      "clearFolderAria": "Löschen Sie den ausgewählten Ordner und verwenden Sie verwalteten Speicher",
       "contentSource": "Inhaltsordner",
-      "contentSourceManaged": "Verwalteter Speicher (Standard)",
       "contentSourceUnavailable": "Der ausgewählte Seitenordner fehlt oder ist nicht verfügbar. Wählen Sie den Ordner erneut aus.",
       "contentSourceNotDirectory": "Wählen Sie ein Verzeichnis, keine Datei.",
       "contentSourceUnreadable": "Der ausgewählte Ordner konnte nicht gelesen werden.",
@@ -2774,7 +2771,9 @@
       "reloadFromDiskAria": "Gehostete Seiten von der Festplatte neu laden",
       "noPages": "Noch keine Seiten. Fügen Sie dem ausgewählten Ordner .mu-Dateien hinzu (z. B. index.mu).",
       "noFiles": "Noch keine Dateien. Legen Sie Dateien in den files/ Ordner der Site, die unter /file/… bereitgestellt werden sollen.",
-      "contentSourceNotFromPicker": "Wählen Sie den Ordner mit Ordner auswählen aus, bevor Sie ihn anwenden."
+      "contentSourceNotFromPicker": "Wählen Sie den Ordner mit Ordner auswählen aus, bevor Sie ihn anwenden.",
+      "contentSourceNone": "Kein Ordner ausgewählt",
+      "contentSourceRequired": "Wählen Sie einen Seitenordner aus, bevor Sie mit dem Nomad-Hosting beginnen."
     }
   },
   "packetDistribution": {

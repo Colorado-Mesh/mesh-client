@@ -161,23 +161,23 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   });
 
   /**
-   * Apply Nomad content source. Non-null paths must match the last native folder
-   * picker result so a compromised renderer cannot expose arbitrary directories.
+   * Apply Nomad content source. Path must be a non-empty string matching the last
+   * native folder picker result so a compromised renderer cannot expose arbitrary
+   * directories.
    */
   ipcMain.handle('reticulum:setNomadContentSource', async (event, pathArg: unknown) => {
     assertIpcSender(event, 'reticulum:setNomadContentSource');
-    let pathVal: string | null = null;
-    if (pathArg !== null && pathArg !== undefined) {
-      if (typeof pathArg !== 'string') {
-        throw new Error('Nomad content source path must be a string or null');
-      }
-      const trimmed = pathArg.trim();
-      pathVal = trimmed === '' ? null : trimmed;
+    if (typeof pathArg !== 'string') {
+      throw new Error('Nomad content source path must be a string');
+    }
+    const pathVal = pathArg.trim();
+    if (!pathVal) {
+      return { ok: false, error: 'content_source_required' };
     }
     if (!isAllowedNomadContentSourcePath(pathVal)) {
       console.warn(
         '[ReticulumIPC] setNomadContentSource rejected path not from folder picker:',
-        sanitizeLogMessage(pathVal ?? ''),
+        sanitizeLogMessage(pathVal),
       );
       return { ok: false, error: 'content_source_not_from_picker' };
     }

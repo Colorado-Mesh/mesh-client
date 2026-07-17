@@ -44,9 +44,9 @@ export interface NomadServingStatus {
   file_count: number;
   stats: NomadServeStats;
   content_root: string;
-  /** Absolute path of the user-selected content folder (absent = managed). */
+  /** Absolute path of the user-selected watched content folder. */
   content_source?: string | null;
-  /** `managed` | `site_root` | `pages_dir` */
+  /** `site_root` | `pages_dir` */
   content_layout?: string | null;
   /** `ok` | `degraded` | `unavailable` */
   watcher_status?: string | null;

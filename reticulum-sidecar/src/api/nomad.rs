@@ -180,8 +180,8 @@ pub async fn delete_nomad_serving_file(
 
 #[derive(Debug, Deserialize)]
 pub struct NomadServingContentSourceBody {
-    /// Absolute directory path, or null/absent to clear (managed storage).
-    pub path: Option<String>,
+    /// Absolute directory path of the watched Nomad content folder.
+    pub path: String,
 }
 
 pub async fn put_nomad_serving_content_source(

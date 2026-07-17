@@ -2760,10 +2760,7 @@
       "folderHint": "Servez des pages Micron depuis un dossier sur le disque (recommandé). Choisissez une racine de site avec un répertoire pages/, ou le répertoire pages lui-même. Les modifications sur disque sont prises en compte automatiquement.",
       "chooseFolder": "Choisir le dossier",
       "chooseFolderAria": "Choisissez un dossier à partir duquel héberger les pages Nomad",
-      "clearFolder": "Utiliser le stockage géré",
-      "clearFolderAria": "Effacer le dossier choisi et utiliser le stockage géré",
       "contentSource": "Dossier de contenu",
-      "contentSourceManaged": "Stockage géré (par défaut)",
       "contentSourceUnavailable": "Le dossier de pages choisi est manquant ou indisponible. Choisissez à nouveau le dossier.",
       "contentSourceNotDirectory": "Choisissez un répertoire, pas un fichier.",
       "contentSourceUnreadable": "Impossible de lire le dossier choisi.",
@@ -2774,7 +2771,9 @@
       "reloadFromDiskAria": "Recharger les pages hébergées à partir du disque",
       "noPages": "Pas encore de pages. Ajoutez des fichiers .mu au dossier choisi (par exemple index.mu).",
       "noFiles": "Pas encore de fichiers. Placez les fichiers dans le dossier files/ du site à servir sous /file/…",
-      "contentSourceNotFromPicker": "Choisissez le dossier avec Choisir un dossier avant de l'appliquer."
+      "contentSourceNotFromPicker": "Choisissez le dossier avec Choisir un dossier avant de l'appliquer.",
+      "contentSourceNone": "Aucun dossier choisi",
+      "contentSourceRequired": "Choisissez un dossier de pages avant de commencer l'hébergement Nomad."
     }
   },
   "packetDistribution": {

@@ -2760,10 +2760,7 @@
       "folderHint": "디스크의 폴더에서 Micron 페이지를 제공합니다(권장). pages/ 디렉터리가 있는 사이트 루트 또는 pages 디렉터리 자체를 선택하세요. 디스크의 편집 내용은 자동으로 반영됩니다.",
       "chooseFolder": "폴더 선택",
       "chooseFolderAria": "Nomad 페이지를 호스팅할 폴더 선택",
-      "clearFolder": "관리 스토리지 사용",
-      "clearFolderAria": "선택한 폴더를 지우고 관리되는 저장소를 사용하십시오",
       "contentSource": "콘텐츠 폴더",
-      "contentSourceManaged": "관리형 스토리지 (기본값)",
       "contentSourceUnavailable": "선택한 페이지 폴더가 없거나 사용할 수 없습니다. 폴더를 다시 선택하십시오.",
       "contentSourceNotDirectory": "파일이 아닌 디렉토리를 선택하십시오.",
       "contentSourceUnreadable": "선택한 폴더를 읽을 수 없습니다.",
@@ -2774,7 +2771,9 @@
       "reloadFromDiskAria": "디스크에서 호스팅된 페이지 다시 로드",
       "noPages": "아직 페이지가 없습니다. 선택한 폴더에 .mu 파일을 추가하십시오 (예: index.mu).",
       "noFiles": "아직 파일이 없습니다. /file/… 아래에 제공할 파일을 사이트의 files/ 폴더에 배치하십시오.",
-      "contentSourceNotFromPicker": "적용하기 전에 Choose 폴더가 있는 폴더를 선택하십시오."
+      "contentSourceNotFromPicker": "적용하기 전에 Choose 폴더가 있는 폴더를 선택하십시오.",
+      "contentSourceNone": "선택된 폴더 없음",
+      "contentSourceRequired": "Nomad 호스팅을 시작하기 전에 페이지 폴더를 선택하세요."
     }
   },
   "packetDistribution": {

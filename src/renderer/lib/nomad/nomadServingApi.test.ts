@@ -88,7 +88,7 @@ describe('nomadServingApi', () => {
     expect(body.ok).toBe(true);
   });
 
-  it('sets and clears the content source folder', async () => {
+  it('sets the content source folder', async () => {
     const setSource = window.electronAPI.reticulum.setNomadContentSource as ReturnType<
       typeof vi.fn
     >;
@@ -98,10 +98,6 @@ describe('nomadServingApi', () => {
     });
     await expect(setServingContentSource('/tmp/nomad-page')).resolves.toMatchObject({ ok: true });
     expect(setSource).toHaveBeenCalledWith('/tmp/nomad-page');
-
-    setSource.mockResolvedValueOnce({ ok: true, serving: { content_source: null } });
-    await expect(setServingContentSource(null)).resolves.toMatchObject({ ok: true });
-    expect(setSource).toHaveBeenCalledWith(null);
   });
 
   it('picks a content source directory via the main dialog', async () => {

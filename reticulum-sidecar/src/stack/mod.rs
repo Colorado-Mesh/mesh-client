@@ -1152,29 +1152,35 @@ impl StackHandle {
             page_count: 0,
             file_count: 0,
             stats: types::NomadServeStatsRow::default(),
-            content_root: self.storage_dir.join("nomadnetwork").display().to_string(),
+            content_root: String::new(),
             content_source: inner.nomad_serving_content_source.clone(),
-            content_layout: Some(if inner.nomad_serving_content_source.is_some() {
-                "site_root".into()
-            } else {
-                "managed".into()
-            }),
+            content_layout: inner
+                .nomad_serving_content_source
+                .as_ref()
+                .map(|_| "site_root".into()),
             watcher_status: Some("ok".into()),
-            last_error: None,
+            last_error: if inner.nomad_serving_content_source.is_none()
+                && inner.nomad_serving_enabled
+            {
+                Some("content_source_required".into())
+            } else {
+                None
+            },
         }
     }
 
     pub async fn set_nomad_content_source(
         &self,
-        path: Option<String>,
+        path: String,
     ) -> Result<NomadServingStatus, String> {
+        let trimmed = path.trim();
+        if trimmed.is_empty() {
+            return Err("content_source_required".into());
+        }
         #[cfg(feature = "rns-stack")]
         {
             let live = self.require_live()?;
-            let path_buf = path
-                .as_ref()
-                .filter(|p| !p.trim().is_empty())
-                .map(std::path::PathBuf::from);
+            let path_buf = std::path::PathBuf::from(trimmed);
             let previous_source = {
                 let inner = self.inner.read().await;
                 inner.nomad_serving_content_source.clone()
@@ -1186,18 +1192,18 @@ impl StackHandle {
                 .await?;
             {
                 let mut inner = self.inner.write().await;
-                inner.nomad_serving_content_source = resolved
-                    .content_source
-                    .as_ref()
-                    .map(|p| p.display().to_string());
+                inner.nomad_serving_content_source =
+                    Some(resolved.content_source.display().to_string());
                 if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
                     // Roll back in-memory content source to match disk.
-                    let _ = live
-                        .nomad_server()
-                        .set_content_source_path(
-                            previous_source.as_ref().map(std::path::PathBuf::from),
-                        )
-                        .await;
+                    if let Some(prev) = previous_source.as_ref() {
+                        let _ = live
+                            .nomad_server()
+                            .set_content_source_path(std::path::PathBuf::from(prev))
+                            .await;
+                    } else {
+                        live.nomad_server().load_content_source_path(None).await;
+                    }
                     return Err(e);
                 }
             }
@@ -1214,8 +1220,14 @@ impl StackHandle {
                 live.stop_nomad_serving().await?;
                 if let Err(e) = live.start_nomad_serving(name).await {
                     // Restore previous content source preference after a failed restart.
-                    let prev_buf = previous_source.as_ref().map(std::path::PathBuf::from);
-                    let _ = live.nomad_server().set_content_source_path(prev_buf).await;
+                    if let Some(prev) = previous_source.as_ref() {
+                        let _ = live
+                            .nomad_server()
+                            .set_content_source_path(std::path::PathBuf::from(prev))
+                            .await;
+                    } else {
+                        live.nomad_server().load_content_source_path(None).await;
+                    }
                     {
                         let mut inner = self.inner.write().await;
                         inner.nomad_serving_content_source = previous_source;
@@ -1232,7 +1244,7 @@ impl StackHandle {
         }
         #[cfg(not(feature = "rns-stack"))]
         {
-            let _ = path;
+            let _ = trimmed;
             Err(NOMAD_REQUIRES_STACK.into())
         }
     }

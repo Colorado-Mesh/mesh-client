@@ -401,7 +401,7 @@ impl LiveBridge {
                 identity.clone(),
                 event_tx.clone(),
             )),
-            nomad_server: Arc::new(NomadServerHandle::new(storage_dir.clone())),
+            nomad_server: Arc::new(NomadServerHandle::new()),
             persisted: inner.clone(),
             #[cfg(feature = "rns-ble")]
             ble_peer_state: Arc::new(tokio::sync::Mutex::new(BlePeerRuntimeState {
@@ -479,13 +479,25 @@ impl LiveBridge {
             )
         };
         // Load remembered content folder before auto-restore so start uses it.
-        if let Some(path) = nomad_content_source {
-            bridge
-                .nomad_server
-                .load_content_source_path(Some(std::path::PathBuf::from(path)))
-                .await;
+        match &nomad_content_source {
+            Some(path) => {
+                bridge
+                    .nomad_server
+                    .load_content_source_path(Some(std::path::PathBuf::from(path)))
+                    .await;
+            }
+            None if nomad_enabled => {
+                tracing::warn!(
+                    "[nomad-serving] failed to restore Nomad serving: content_source_required"
+                );
+                bridge
+                    .nomad_server
+                    .set_last_error(Some("content_source_required".into()))
+                    .await;
+            }
+            None => {}
         }
-        if nomad_enabled {
+        if nomad_enabled && nomad_content_source.is_some() {
             if let Err(e) = bridge.start_nomad_serving(nomad_name).await {
                 tracing::warn!("[nomad-serving] failed to restore Nomad serving: {e}");
                 bridge.nomad_server.set_last_error(Some(e.clone())).await;
