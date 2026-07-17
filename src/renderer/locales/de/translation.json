@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "USB-Serielle Wiederverbindung"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Probleme beim Hosting von Nomad-Seiten",
+        "recommendation": "Das Hosting von Nomad My Pages ist fehlgeschlagen oder der Inhaltsordner ist nicht verfügbar. Öffnen Sie Nomad Network → My Pages, wählen Sie den Seitenordner erneut aus, wenn er verschoben wurde, und beginnen Sie mit der Bereitstellung. Details erscheinen als [nomad-serving] / [NomadHosting] im Protokoll."
       }
     },
     "recommendationGroups": {
@@ -2725,17 +2729,52 @@
     "expandNodeList": "Knotenliste erweitern",
     "errors": {
       "pathTimeout": "Keine Route zu diesem Knoten (Pfadabfrage zeitüberschritten). Versuche einen näheren Knoten oder warte auf einen aktuelleren Announce.",
-      "pubkeyNotFound": "Der Identitätsschlüssel dieses Knotens konnte nicht gefunden werden. Warten Sie auf die Ankündigung eines Nomaden und versuchen Sie es dann erneut.",
+      "pubkeyNotFound": "Der Identitätsschlüssel dieses Knotens konnte nicht gefunden werden. Warten Sie auf eine Nomad-Ankündigung und versuchen Sie es dann erneut.",
       "linkTimeout": "Verbindung zum Knoten konnte nicht rechtzeitig hergestellt werden.",
       "responseTimeout": "Der Knoten hat den Link akzeptiert, aber die Seite nicht rechtzeitig zurückgegeben.",
-      "missingIdentity": "Dieser Knoten hat noch keine erinnerte Identität. Warten Sie auf die Ankündigung eines Nomaden und versuchen Sie es dann erneut.",
+      "missingIdentity": "Dieser Knoten hat noch keine gespeicherte Identität. Warten Sie auf eine Nomad-Ankündigung und versuchen Sie es dann erneut.",
       "transportUnavailable": "Reticulum-Transport ist nicht verfügbar. Starten Sie den Stack neu und versuchen Sie es erneut.",
       "sidecarNotRunning": "Reticulum-Sidecar läuft nicht. Starten Sie den Stack unter Verbindung und versuchen Sie es erneut.",
       "responseTooLarge": "Der Knoten hat mehr Daten zurückgegeben, als mesh-client für diese Anfrage akzeptiert.",
       "nomadBusy": "Eine andere Nomad-Seiten- oder Dateianfrage läuft noch. Versuche es gleich noch einmal."
     },
     "fitWidth": "An Fenster anpassen",
-    "openWidth": "Seitenbreite"
+    "openWidth": "Seitenbreite",
+    "myPagesTab": "Meine Seiten",
+    "serving": {
+      "title": "Nomad-Seiten hosten",
+      "servingChip": "Bereitstellung im Netzwerk",
+      "sidecarRequired": "Starten Sie den Reticulum-Stack, um Nomad-Seiten zu hosten.",
+      "displayName": "Anzeigename des Knotens",
+      "enable": "Bereitstellung starten",
+      "disable": "Bereitstellung beenden",
+      "destinationHash": "Ziel",
+      "copyHash": "Hash kopieren",
+      "copied": "Kopiert",
+      "stats": "{{pages}} Seiten · {{files}} Dateien · {{requests}} Anfragen",
+      "myPages": "Lokale Seiten",
+      "failed": "Nomad-Bereitstellung konnte nicht aktualisiert werden.",
+      "previewSite": "In Browser öffnen",
+      "previewSiteAria": "Vorschau dieser gehosteten Nomad-Website im Browser anzeigen",
+      "myFiles": "Lokale Dateien",
+      "folderHint": "Stellen Sie Micron-Seiten aus einem Ordner auf dem Datenträger bereit (empfohlen). Wählen Sie eine Site-Root mit pages/-Verzeichnis oder das pages-Verzeichnis selbst. Änderungen auf dem Datenträger werden automatisch übernommen.",
+      "chooseFolder": "Ordner auswählen",
+      "chooseFolderAria": "Ordner zum Hosten von Nomad-Seiten auswählen",
+      "contentSource": "Inhaltsordner",
+      "contentSourceUnavailable": "Der ausgewählte Seitenordner fehlt oder ist nicht verfügbar. Wählen Sie den Ordner erneut aus.",
+      "contentSourceNotDirectory": "Wählen Sie ein Verzeichnis, keine Datei.",
+      "contentSourceUnreadable": "Der ausgewählte Ordner konnte nicht gelesen werden.",
+      "invalidContentSource": "Der Ordner muss ein pages/-Verzeichnis oder .mu-Seitendateien enthalten.",
+      "contentSourceFailed": "Der Inhaltsordner konnte nicht festgelegt werden.",
+      "watcherDegraded": "Die Ordnerüberwachung ist beeinträchtigt; die Seitenliste kann verzögert werden, bis der Ordner wieder lesbar ist.",
+      "reloadFromDisk": "Von der Festplatte neu laden",
+      "reloadFromDiskAria": "Gehostete Seiten von der Festplatte neu laden",
+      "noPages": "Noch keine Seiten. Fügen Sie dem ausgewählten Ordner .mu-Dateien hinzu (z. B. index.mu).",
+      "noFiles": "Noch keine Dateien. Legen Sie Dateien in den files/ Ordner der Site, die unter /file/… bereitgestellt werden sollen.",
+      "contentSourceNotFromPicker": "Wählen Sie den Ordner mit Ordner auswählen aus, bevor Sie ihn anwenden.",
+      "contentSourceNone": "Kein Ordner ausgewählt",
+      "contentSourceRequired": "Wählen Sie einen Seitenordner aus, bevor Sie mit dem Nomad-Hosting beginnen."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Gesamtverteilung",
@@ -3799,7 +3838,7 @@
     "legendInterfaceOnline": "Schnittstelle online",
     "legendInterfaceOffline": "Schnittstelle offline",
     "legendPeerUser": "LXMF-Peer",
-    "legendPeerServer": "Nomadenknoten",
+    "legendPeerServer": "Nomad-Knoten",
     "interfaceLink": "Schnittstellenlink",
     "peerLink": "Peer-Link",
     "glyphSerial": "Serielle Schnittstelle",

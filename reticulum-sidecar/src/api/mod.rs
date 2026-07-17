@@ -154,6 +154,30 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             get(nomad::get_nomad_file),
         )
         .route(
+            "/api/v1/nomadnetwork/serving",
+            get(nomad::get_nomad_serving).put(nomad::put_nomad_serving),
+        )
+        .route(
+            "/api/v1/nomadnetwork/serving/pages",
+            get(nomad::list_nomad_serving_pages)
+                .put(nomad::put_nomad_serving_page)
+                .delete(nomad::delete_nomad_serving_page),
+        )
+        .route(
+            "/api/v1/nomadnetwork/serving/page",
+            get(nomad::get_nomad_serving_page),
+        )
+        .route(
+            "/api/v1/nomadnetwork/serving/files",
+            get(nomad::list_nomad_serving_files)
+                .put(nomad::put_nomad_serving_file)
+                .delete(nomad::delete_nomad_serving_file),
+        )
+        .route(
+            "/api/v1/nomadnetwork/serving/content-source",
+            put(nomad::put_nomad_serving_content_source),
+        )
+        .route(
             "/api/v1/rrc/hubs",
             get(rrc::list_rrc_hubs).post(rrc::upsert_rrc_hub),
         )

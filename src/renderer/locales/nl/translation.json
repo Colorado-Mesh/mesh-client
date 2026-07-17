@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "USB-serieel opnieuw verbinden"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Problemen met Nomad-pagina's",
+        "recommendation": "Het hosten van Nomad My Pages is mislukt of de inhoudsmap is niet beschikbaar. Open Nomad Network → My Pages, kies de paginamap opnieuw als deze is verplaatst en start vervolgens met serveren. Details verschijnen als [nomad-serving] / [NomadHosting] in het logboek."
       }
     },
     "recommendationGroups": {
@@ -2717,7 +2721,7 @@
     "fileDownloadInProgress": "Er wordt al een bestand gedownload.",
     "sendMessage": "Bericht",
     "sendMessageAria": "Stuur bericht naar {{name}}",
-    "urlBarAria": "Adres van de nomadenpagina",
+    "urlBarAria": "Nomad-paginaadres",
     "back": "Rug",
     "forward": "Vooruit",
     "invalidUrl": "Ongeldig Nomad-paginaadres",
@@ -2732,10 +2736,45 @@
       "transportUnavailable": "Reticulum-transport is niet beschikbaar. Start de stack opnieuw en probeer het opnieuw.",
       "sidecarNotRunning": "Reticulum-sidecar draait niet. Start de stack vanuit Verbinding en probeer het opnieuw.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
+      "nomadBusy": "Een ander Nomad-pagina- of bestandsverzoek is nog bezig. Probeer het zo opnieuw."
     },
     "fitWidth": "In venster passen",
-    "openWidth": "Paginabreedte"
+    "openWidth": "Paginabreedte",
+    "myPagesTab": "Mijn pagina's",
+    "serving": {
+      "title": "Nomad-pagina's hosten",
+      "servingChip": "Beschikbaar op het netwerk",
+      "sidecarRequired": "Start de Reticulum-stack om Nomad-pagina's te hosten.",
+      "displayName": "Weergavenaam van knooppunt",
+      "enable": "Hosting starten",
+      "disable": "Hosting stoppen",
+      "destinationHash": "Bestemming",
+      "copyHash": "Hash kopiëren",
+      "copied": "Gekopieerd",
+      "stats": "{{pages}} pagina's · {{files}} bestanden · {{requests}} verzoeken",
+      "myPages": "Lokale pagina's",
+      "failed": "Kan Nomad-hosting niet bijwerken.",
+      "previewSite": "Openen in browser",
+      "previewSiteAria": "Bekijk een voorbeeld van deze gehoste Nomad-site in de browser",
+      "myFiles": "Lokale bestanden",
+      "folderHint": "Serveer Micron-pagina’s vanaf een map op schijf (aanbevolen). Kies een siteroot met een pages/-map, of de pages-map zelf. Wijzigingen op schijf worden automatisch opgepikt.",
+      "chooseFolder": "Map kiezen",
+      "chooseFolderAria": "Kies een map om Nomad-pagina's uit te hosten",
+      "contentSource": "Inhoudsmap",
+      "contentSourceUnavailable": "De gekozen paginamap ontbreekt of is niet beschikbaar. Kies de map opnieuw.",
+      "contentSourceNotDirectory": "Kies een map, geen bestand.",
+      "contentSourceUnreadable": "Kon de gekozen map niet lezen.",
+      "invalidContentSource": "Map moet een pages/-directory of .mu-paginabestanden bevatten.",
+      "contentSourceFailed": "Kon de inhoudsmap niet instellen.",
+      "watcherDegraded": "Het bekijken van mappen is gedegradeerd; de paginalijst kan vertraging oplopen totdat de map weer leesbaar is.",
+      "reloadFromDisk": "Opnieuw laden vanaf schijf",
+      "reloadFromDiskAria": "Herlaad gehoste pagina's vanaf schijf",
+      "noPages": "Nog geen pagina's. Voeg .mu-bestanden toe aan de gekozen map (bijvoorbeeld index.mu).",
+      "noFiles": "Nog geen bestanden. Plaats bestanden in de files/ map van de site om te serveren onder /file/…",
+      "contentSourceNotFromPicker": "Kies de map met Map kiezen voordat u deze toepast.",
+      "contentSourceNone": "Geen map gekozen",
+      "contentSourceRequired": "Kies een paginamap voordat je Nomad-hosting start."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",

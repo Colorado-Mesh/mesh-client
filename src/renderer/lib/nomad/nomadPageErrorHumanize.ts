@@ -10,6 +10,14 @@ const NOMAD_ERROR_I18N_KEYS: Record<string, string> = {
   sidecar_not_running: 'nomadNetwork.errors.sidecarNotRunning',
   response_too_large: 'nomadNetwork.errors.responseTooLarge',
   nomad_busy: 'nomadNetwork.errors.nomadBusy',
+  content_source_required: 'nomadNetwork.serving.contentSourceRequired',
+  content_source_unavailable: 'nomadNetwork.serving.contentSourceUnavailable',
+  content_source_not_directory: 'nomadNetwork.serving.contentSourceNotDirectory',
+  content_source_unreadable: 'nomadNetwork.serving.contentSourceUnreadable',
+  invalid_content_source: 'nomadNetwork.serving.invalidContentSource',
+  watcher_init_failed: 'nomadNetwork.serving.watcherDegraded',
+  content_source_update_failed: 'nomadNetwork.serving.contentSourceFailed',
+  content_source_not_from_picker: 'nomadNetwork.serving.contentSourceNotFromPicker',
 };
 
 export function nomadPageErrorI18nKey(error: string | null | undefined): string | null {

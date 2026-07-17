@@ -8,18 +8,19 @@ Install Rust (**1.85+**, edition 2024). Prefer [rustup](https://rustup.rs/). See
 
 ## Build
 
-**Default (stub stack)** — builds without `--features rns-stack`; Cargo still requires sibling `rsReticulum` and `rsLXMF` directories on disk (CI checkouts them automatically; locally clone both next to `mesh-client`):
+**Default (stub stack)** — builds without `--features rns-stack`; Cargo still requires sibling `rsReticulum`, `rsLXMF`, and `rsNomad` directories on disk (CI checkouts them automatically; locally clone next to `mesh-client`):
 
 ```bash
 pnpm run reticulum:sidecar:build
 ```
 
-**Full rsReticulum + rsLXMF** — sibling checkout (Ratspeak layout):
+**Full rsReticulum + rsLXMF + rsNomad** — sibling checkout (Ratspeak layout + Colorado-Mesh rsNomad):
 
 ```
 parent/
   rsReticulum/
   rsLXMF/
+  rsNomad/
   mesh-client/reticulum-sidecar/
 ```
 
@@ -60,14 +61,17 @@ Toolchain components (`clippy`, `rustfmt`, `llvm-tools-preview`) come from [`rus
 | `pnpm run reticulum:sidecar:fmt:check` | `cargo fmt --check` |
 | `pnpm run reticulum:sidecar:clippy` | Clippy stub build (`-D warnings`) |
 | `pnpm run reticulum:sidecar:clippy:full` | Clippy with `rns-stack,rns-ble,rns-rnode-tcp` |
-| `pnpm run check:reticulum-sidecar` | Pre-commit: fmt + stub clippy + stub test |
+| `pnpm run reticulum:rsnomad:fmt:check` | Sibling `rsNomad` `cargo fmt --check` |
+| `pnpm run reticulum:rsnomad:clippy` | Sibling `rsNomad` Clippy (`-D warnings`) |
+| `pnpm run check:reticulum-sidecar` | Pre-commit: rsNomad + sidecar fmt/clippy/test |
 | `pnpm run reticulum:sidecar:coverage` | Optional local HTML coverage (`cargo llvm-cov`; no threshold) |
 
 Install coverage tooling once: `cargo install cargo-llvm-cov`.
 
-- **Pre-commit** runs stub fmt/clippy/test when `cargo` is on `PATH` (no coverage).
-- **CI lint** (`reticulum-sidecar.yaml`): full-feature `fmt --check` + Clippy.
-- **CI coverage** (`tests.yaml`): `cargo llvm-cov --fail-under-lines 45` when sidecar paths change (ratchet toward ~52%).
+- **Pre-commit** runs sibling `rsNomad` fmt/clippy plus sidecar stub fmt/clippy/test when `cargo` is on `PATH` (no coverage).
+- **CI lint** (`reticulum-sidecar.yaml`): `rsNomad` fmt/clippy, then full-feature sidecar `fmt --check` + Clippy.
+- **CI coverage** (`tests.yaml`): `cargo llvm-cov --fail-under-lines 45` when sidecar paths change (ratchet toward ~52%; ignores `rsReticulum`/`rsLXMF`/`rsNomad` path deps).
+- **`rsNomad` pin:** `scripts/clone-ratspeak-stack.sh` checks out `RS_NOMAD_REF` (override or `RS_NOMAD_SKIP_PIN=1` for local work).
 
 ## API
 

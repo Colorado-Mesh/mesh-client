@@ -29,6 +29,12 @@ pub struct PersistedState {
     pub auto_sync_interval_sec: u32,
     pub nomad_nodes: Vec<NomadNodeRow>,
     pub rrc_hubs: Vec<RrcHubRow>,
+    /// User preference: start Nomad page hosting when the live stack is up.
+    pub nomad_serving_enabled: bool,
+    /// Display name announced for the local Nomad node (falls back to identity name).
+    pub nomad_serving_display_name: Option<String>,
+    /// Absolute path to an external Nomad content folder (site root or pages dir).
+    pub nomad_serving_content_source: Option<String>,
 }
 
 impl PersistedState {
@@ -62,6 +68,9 @@ impl PersistedState {
             auto_sync_interval_sec: 3600,
             nomad_nodes: Vec::new(),
             rrc_hubs: Vec::new(),
+            nomad_serving_enabled: false,
+            nomad_serving_display_name: None,
+            nomad_serving_content_source: None,
         }
     }
 
@@ -782,7 +791,7 @@ impl serde::Serialize for PersistedState {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut s = serializer.serialize_struct("PersistedState", 14)?;
+        let mut s = serializer.serialize_struct("PersistedState", 17)?;
         s.serialize_field("identity", &self.identity)?;
         s.serialize_field("interfaces", &self.interfaces)?;
         s.serialize_field("contacts", &self.contacts)?;
@@ -800,6 +809,15 @@ impl serde::Serialize for PersistedState {
         s.serialize_field("auto_sync_interval_sec", &self.auto_sync_interval_sec)?;
         s.serialize_field("nomad_nodes", &self.nomad_nodes)?;
         s.serialize_field("rrc_hubs", &self.rrc_hubs)?;
+        s.serialize_field("nomad_serving_enabled", &self.nomad_serving_enabled)?;
+        s.serialize_field(
+            "nomad_serving_display_name",
+            &self.nomad_serving_display_name,
+        )?;
+        s.serialize_field(
+            "nomad_serving_content_source",
+            &self.nomad_serving_content_source,
+        )?;
         s.end()
     }
 }
@@ -831,6 +849,12 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             nomad_nodes: Vec<NomadNodeRow>,
             #[serde(default)]
             rrc_hubs: Vec<RrcHubRow>,
+            #[serde(default)]
+            nomad_serving_enabled: bool,
+            #[serde(default)]
+            nomad_serving_display_name: Option<String>,
+            #[serde(default)]
+            nomad_serving_content_source: Option<String>,
         }
         let raw = Raw::deserialize(deserializer)?;
         Ok(Self {
@@ -852,6 +876,9 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             auto_sync_interval_sec: raw.auto_sync_interval_sec,
             nomad_nodes: raw.nomad_nodes,
             rrc_hubs: raw.rrc_hubs,
+            nomad_serving_enabled: raw.nomad_serving_enabled,
+            nomad_serving_display_name: raw.nomad_serving_display_name,
+            nomad_serving_content_source: raw.nomad_serving_content_source,
         })
     }
 }
@@ -992,5 +1019,33 @@ mod tests {
         let mut state = PersistedState::default_empty();
         assert!(state.remove_propagation_node("pn-short").is_err());
         assert!(state.remove_propagation_node("evil-id").is_err());
+    }
+
+    #[test]
+    fn nomad_serving_fields_round_trip_and_default_when_absent() {
+        let mut state = PersistedState::default_empty();
+        state.nomad_serving_enabled = true;
+        state.nomad_serving_display_name = Some("Home".into());
+        state.nomad_serving_content_source = Some("/tmp/nomad-page".into());
+        let json = serde_json::to_string(&state).expect("serialize");
+        let loaded: PersistedState = serde_json::from_str(&json).expect("deserialize");
+        assert!(loaded.nomad_serving_enabled);
+        assert_eq!(loaded.nomad_serving_display_name.as_deref(), Some("Home"));
+        assert_eq!(
+            loaded.nomad_serving_content_source.as_deref(),
+            Some("/tmp/nomad-page")
+        );
+
+        // Strip the new keys from a valid serialized document (older clients).
+        let mut value: serde_json::Value = serde_json::from_str(&json).expect("value");
+        let obj = value.as_object_mut().expect("object");
+        obj.remove("nomad_serving_enabled");
+        obj.remove("nomad_serving_display_name");
+        obj.remove("nomad_serving_content_source");
+        let legacy_state: PersistedState =
+            serde_json::from_value(value).expect("legacy without serving keys");
+        assert!(!legacy_state.nomad_serving_enabled);
+        assert!(legacy_state.nomad_serving_display_name.is_none());
+        assert!(legacy_state.nomad_serving_content_source.is_none());
     }
 }

@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "USB串行重新连接"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Nomad 页面托管问题",
+        "recommendation": "Nomad My Pages 托管失败或内容文件夹不可用。打开 Nomad Network → My Pages，如果页面文件夹已移动请重新选择，然后开始提供服务。详细信息在日志中显示为 [nomad-serving] / [NomadHosting]。"
       }
     },
     "recommendationGroups": {
@@ -2717,7 +2721,7 @@
     "fileDownloadInProgress": "文件下载已在进行中。",
     "sendMessage": "信息",
     "sendMessageAria": "发送消息至 {{name}}",
-    "urlBarAria": "游牧页面地址",
+    "urlBarAria": "Nomad 页面地址",
     "back": "后退",
     "forward": "向前",
     "invalidUrl": "Nomad 页面地址无效",
@@ -2725,17 +2729,52 @@
     "expandNodeList": "展开节点列表",
     "errors": {
       "pathTimeout": "无法到达此节点（路径查找超时）。请尝试更近的节点，或等待更新的 announce。",
-      "pubkeyNotFound": "找不到此节点的标识密钥。等待游牧公告，然后重试。",
+      "pubkeyNotFound": "找不到此节点的标识密钥。等待 Nomad 公告，然后重试。",
       "linkTimeout": "无法及时建立到节点的链接。",
       "responseTimeout": "节点接受了链接，但没有及时返回页面。",
-      "missingIdentity": "此节点尚未记住身份。等待游牧公告，然后重试。",
+      "missingIdentity": "此节点尚未记住身份。等待 Nomad 公告，然后重试。",
       "transportUnavailable": "Reticulum 传输不可用。请重新启动协议栈后重试。",
       "sidecarNotRunning": "Reticulum sidecar 未运行。请从 Connection 启动协议栈，然后重试。",
       "responseTooLarge": "该节点返回的数据超出了 mesh-client 对此请求的接受上限。",
       "nomadBusy": "另一个 Nomad 页面或文件请求仍在进行中。请稍后再试。"
     },
     "fitWidth": "适合窗口",
-    "openWidth": "图框宽度"
+    "openWidth": "图框宽度",
+    "myPagesTab": "我的页面",
+    "serving": {
+      "title": "托管 Nomad 页面",
+      "servingChip": "正在向网络提供",
+      "sidecarRequired": "启动 Reticulum 堆栈以托管 Nomad 页面。",
+      "displayName": "节点显示名称",
+      "enable": "开始提供",
+      "disable": "停止提供",
+      "destinationHash": "目标",
+      "copyHash": "复制哈希",
+      "copied": "已复制",
+      "stats": "{{pages}} 页面 · {{files}} 文件 · {{requests}} 请求",
+      "myPages": "本地页面",
+      "failed": "无法更新 Nomad 服务。",
+      "previewSite": "在浏览器中打开",
+      "previewSiteAria": "在浏览器中预览此托管Nomad网站",
+      "myFiles": "本地文件",
+      "folderHint": "从磁盘上的文件夹提供 Micron 页面（推荐）。选择包含 pages/ 目录的站点根目录，或 pages 目录本身。磁盘上的编辑会自动生效。",
+      "chooseFolder": "选择文件夹",
+      "chooseFolderAria": "选择一个文件夹来托管Nomad页面",
+      "contentSource": "内容文件夹",
+      "contentSourceUnavailable": "所选页面文件夹缺失或不可用。再次选择文件夹。",
+      "contentSourceNotDirectory": "选择一个目录，而不是文件。",
+      "contentSourceUnreadable": "无法读取所选文件夹。",
+      "invalidContentSource": "文件夹必须包含 pages/ 目录或 .mu 页面文件。",
+      "contentSourceFailed": "无法设置内容文件夹。",
+      "watcherDegraded": "文件夹监视已降级；页面列表可能会延迟，直到文件夹再次可读。",
+      "reloadFromDisk": "从磁盘重新加载",
+      "reloadFromDiskAria": "从磁盘重新加载托管页面",
+      "noPages": "还没有页面。将.mu文件添加到所选文件夹（例如index.mu ）。",
+      "noFiles": "还没有文件。将文件放在站点的 files/ 文件夹中，以便在 /file/… 下提供服务。",
+      "contentSourceNotFromPicker": "在应用文件夹之前，选择带有“选择文件夹”的文件夹。",
+      "contentSourceNone": "没有选择文件夹",
+      "contentSourceRequired": "在开始Nomad托管之前，请选择一个页面文件夹。"
+    }
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",
@@ -3799,7 +3838,7 @@
     "legendInterfaceOnline": "在线界面",
     "legendInterfaceOffline": "接口离线",
     "legendPeerUser": "LXMF对等点",
-    "legendPeerServer": "游牧节点",
+    "legendPeerServer": "Nomad 节点",
     "interfaceLink": "链接",
     "peerLink": "对等链接",
     "interfaceTooltip": "{{name}} — {{status}}",

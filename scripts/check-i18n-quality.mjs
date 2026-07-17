@@ -1770,6 +1770,37 @@ function checkWireTokenLiteralPreservedIssues(ctx) {
   return issues;
 }
 
+/** Nomad My Pages UI / diagnostics — keep on-disk and log literals verbatim. */
+const NOMAD_HOSTING_LITERAL_KEY_RE =
+  /^(nomadNetwork\.serving\.|logAnalyzer\.categories\.reticulum-nomad-hosting\.)/;
+
+/**
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkNomadHostingLiteralIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (locale === 'en' || !NOMAD_HOSTING_LITERAL_KEY_RE.test(flatKey)) return issues;
+
+  if (enVal.includes('[nomad-serving]') && !val.includes('[nomad-serving]')) {
+    issues.push('must preserve log tag "[nomad-serving]" exactly (no spaces or case changes)');
+  }
+  if (enVal.includes('[NomadHosting]') && !val.includes('[NomadHosting]')) {
+    issues.push('must preserve log tag "[NomadHosting]" exactly');
+  }
+  if (enVal.includes('/file/') && !val.includes('/file/')) {
+    issues.push('must preserve Nomad file route "/file/" exactly');
+  }
+  if (/\bpages\//.test(enVal) && !/\bpages\//.test(val)) {
+    issues.push('must preserve on-disk folder name "pages/" exactly');
+  }
+  if (/\bfiles\//.test(enVal) && !/\bfiles\//.test(val)) {
+    issues.push('must preserve on-disk folder name "files/" exactly');
+  }
+  return issues;
+}
+
 /** i18next interpolation names in appearance order (for duplicate names, set dedupes). */
 const placeholderNameSetCache = new Map();
 
@@ -1851,6 +1882,8 @@ export const PROTECTED_BRANDS = [
   'MeshMapper',
   'Ripple Networks',
   'Nomad Network',
+  'Nomad',
+  'Micron',
   'mesh-client',
   'Giphy',
   'GitHub',
@@ -1874,6 +1907,8 @@ const BRAND_WORD_RES = new Map([
   ['MeshMapper', /\bMeshMapper\b/g],
   ['Ripple Networks', /Ripple Networks/g],
   ['Nomad Network', /Nomad Network/g],
+  ['Nomad', /\bNomad\b/g],
+  ['Micron', /\bMicron\b/g],
   ['mesh-client', /mesh-client/gi],
   ['Giphy', /\bGiphy\b/g],
   ['GitHub', /\bGitHub\b/g],
@@ -3606,6 +3641,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkHopAwayVerbFalseFriendIssues,
   checkAirTimeFalseFriendIssues,
   checkWireTokenLiteralPreservedIssues,
+  checkNomadHostingLiteralIssues,
   checkRrcPanelQualityIssues,
 ];
 

@@ -6,6 +6,7 @@ pub mod config_audit;
 mod identity_apply;
 mod identity_import;
 mod local_rnode_primary;
+mod nomad_content_source;
 mod nomad_file;
 mod nomad_link_errors;
 #[cfg(feature = "rns-stack")]
@@ -26,6 +27,8 @@ mod live;
 #[cfg(feature = "rns-stack")]
 mod lxmf_delivery;
 #[cfg(feature = "rns-stack")]
+mod nomad_server;
+#[cfg(feature = "rns-stack")]
 mod propagation_bridge;
 #[cfg(feature = "rns-stack")]
 mod rrc_link;
@@ -41,8 +44,24 @@ use persistence::PersistedState;
 use tokio::sync::{RwLock, broadcast};
 pub use types::{
     AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfResourceRequest,
-    LxmfSendRequest, NomadNodeRow, PeerRow, RrcHubRow, StackIdentity,
+    LxmfSendRequest, NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, StackIdentity,
 };
+
+#[cfg(not(feature = "rns-stack"))]
+const NOMAD_REQUIRES_STACK: &str = "Nomad serving requires an rns-stack sidecar build";
+const NOMAD_DISPLAY_NAME_MAX_CHARS: usize = 128;
+
+/// Trim, reject control characters, and cap length for announce/UI display names.
+fn sanitize_nomad_display_name(name: &str) -> Result<String, String> {
+    let trimmed = name.trim();
+    if trimmed.chars().any(char::is_control) {
+        return Err("display_name_invalid".into());
+    }
+    if trimmed.chars().count() > NOMAD_DISPLAY_NAME_MAX_CHARS {
+        return Err("display_name_too_long".into());
+    }
+    Ok(trimmed.to_string())
+}
 
 pub struct StackHandle {
     pub config_dir: PathBuf,
@@ -1109,6 +1128,315 @@ impl StackHandle {
         Ok(())
     }
 
+    #[cfg(feature = "rns-stack")]
+    fn require_live(&self) -> Result<&Arc<live::LiveBridge>, String> {
+        self.live
+            .as_ref()
+            .ok_or_else(|| "Nomad serving requires a live RNS stack".into())
+    }
+
+    pub async fn nomad_serving_status(&self) -> NomadServingStatus {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.nomad_serving_status().await;
+        }
+        let inner = self.inner.read().await;
+        NomadServingStatus {
+            enabled: inner.nomad_serving_enabled,
+            running: false,
+            destination_hash: None,
+            identity_hash: None,
+            display_name: inner
+                .nomad_serving_display_name
+                .clone()
+                .unwrap_or_else(|| "Nomad node".into()),
+            page_count: 0,
+            file_count: 0,
+            stats: types::NomadServeStatsRow::default(),
+            content_root: String::new(),
+            content_source: inner.nomad_serving_content_source.clone(),
+            content_layout: inner
+                .nomad_serving_content_source
+                .as_ref()
+                .map(|_| "site_root".into()),
+            watcher_status: Some("ok".into()),
+            last_error: if inner.nomad_serving_content_source.is_none()
+                && inner.nomad_serving_enabled
+            {
+                Some("content_source_required".into())
+            } else {
+                None
+            },
+        }
+    }
+
+    pub async fn set_nomad_content_source(
+        &self,
+        path: String,
+    ) -> Result<NomadServingStatus, String> {
+        let trimmed = path.trim();
+        if trimmed.is_empty() {
+            return Err("content_source_required".into());
+        }
+        #[cfg(feature = "rns-stack")]
+        {
+            let live = self.require_live()?;
+            let path_buf = std::path::PathBuf::from(trimmed);
+            let previous_source = {
+                let inner = self.inner.read().await;
+                inner.nomad_serving_content_source.clone()
+            };
+            // Validate before persisting.
+            let resolved = live
+                .nomad_server()
+                .set_content_source_path(path_buf)
+                .await?;
+            {
+                let mut inner = self.inner.write().await;
+                inner.nomad_serving_content_source =
+                    Some(resolved.content_source.display().to_string());
+                if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                    // Roll back in-memory content source to match disk.
+                    if let Some(prev) = previous_source.as_ref() {
+                        let _ = live
+                            .nomad_server()
+                            .set_content_source_path(std::path::PathBuf::from(prev))
+                            .await;
+                    } else {
+                        live.nomad_server().load_content_source_path(None).await;
+                    }
+                    return Err(e);
+                }
+            }
+            // Restart host if running so the store opens under the new roots.
+            if live.nomad_server().is_running().await {
+                let name = {
+                    let inner = self.inner.read().await;
+                    inner
+                        .nomad_serving_display_name
+                        .clone()
+                        .filter(|n| !n.trim().is_empty())
+                        .unwrap_or_else(|| "Nomad node".into())
+                };
+                live.stop_nomad_serving().await?;
+                if let Err(e) = live.start_nomad_serving(name).await {
+                    // Restore previous content source preference after a failed restart.
+                    if let Some(prev) = previous_source.as_ref() {
+                        let _ = live
+                            .nomad_server()
+                            .set_content_source_path(std::path::PathBuf::from(prev))
+                            .await;
+                    } else {
+                        live.nomad_server().load_content_source_path(None).await;
+                    }
+                    {
+                        let mut inner = self.inner.write().await;
+                        inner.nomad_serving_content_source = previous_source;
+                        if let Err(save_err) = inner.save(&self.config_dir, &self.storage_dir) {
+                            tracing::warn!(
+                                "nomad content-source rollback persist failed: {save_err}"
+                            );
+                        }
+                    }
+                    return Err(e);
+                }
+            }
+            return Ok(live.nomad_serving_status().await);
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = trimmed;
+            Err(NOMAD_REQUIRES_STACK.into())
+        }
+    }
+
+    pub async fn set_nomad_serving(
+        &self,
+        enabled: bool,
+        display_name: Option<String>,
+    ) -> Result<NomadServingStatus, String> {
+        // Persist display-name preference immediately; persist `enabled` only after
+        // start/stop succeeds so a failed start cannot leave a sticky enabled=true.
+        {
+            let mut inner = self.inner.write().await;
+            if let Some(name) = display_name {
+                let trimmed = sanitize_nomad_display_name(&name)?;
+                if trimmed.is_empty() {
+                    inner.nomad_serving_display_name = None;
+                } else {
+                    inner.nomad_serving_display_name = Some(trimmed);
+                }
+                inner.save(&self.config_dir, &self.storage_dir)?;
+            }
+        }
+
+        #[cfg(feature = "rns-stack")]
+        {
+            let live = self.require_live()?;
+            if enabled {
+                let name = {
+                    let inner = self.inner.read().await;
+                    inner
+                        .nomad_serving_display_name
+                        .clone()
+                        .filter(|n| !n.trim().is_empty())
+                        .or_else(|| {
+                            inner
+                                .identity
+                                .display_name
+                                .clone()
+                                .filter(|n| !n.trim().is_empty() && n != "Self")
+                        })
+                        .unwrap_or_else(|| "Nomad node".into())
+                };
+                if live.nomad_server().is_running().await {
+                    live.nomad_server().set_display_name(&name).await;
+                    if let Err(e) = live.nomad_server().announce_now().await {
+                        tracing::warn!("nomad re-announce failed: {e}");
+                    }
+                } else {
+                    live.start_nomad_serving(name).await?;
+                }
+                // Refresh local host row when already running (start path upserts on spawn).
+                let status = live.nomad_serving_status().await;
+                if let (Some(dest), Some(id_hash)) = (
+                    status.destination_hash.as_ref(),
+                    status.identity_hash.as_ref(),
+                ) {
+                    let mut inner = self.inner.write().await;
+                    inner.upsert_nomad_node(
+                        dest,
+                        Some(id_hash.clone()),
+                        Some(status.display_name.clone()),
+                        Some(0),
+                    );
+                    if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                        tracing::warn!("nomad local host persist failed: {e}");
+                    }
+                }
+            } else {
+                // If stop fails, skip persisting enabled=false — leave sticky true
+                // so restart can retry disable (mirrors enable-after-start-success).
+                live.stop_nomad_serving().await?;
+            }
+            {
+                let mut inner = self.inner.write().await;
+                inner.nomad_serving_enabled = enabled;
+                inner.save(&self.config_dir, &self.storage_dir)?;
+            }
+            return Ok(live.nomad_serving_status().await);
+        }
+
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            if enabled {
+                return Err(NOMAD_REQUIRES_STACK.into());
+            }
+            {
+                let mut inner = self.inner.write().await;
+                inner.nomad_serving_enabled = false;
+                inner.save(&self.config_dir, &self.storage_dir)?;
+            }
+            Ok(self.nomad_serving_status().await)
+        }
+    }
+
+    pub async fn list_nomad_serving_pages(&self) -> Result<Vec<serde_json::Value>, String> {
+        #[cfg(feature = "rns-stack")]
+        {
+            let pages = self.require_live()?.nomad_server().list_pages().await?;
+            Ok(pages.into_iter().map(|e| serving_entry_json(&e)).collect())
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            Err(NOMAD_REQUIRES_STACK.into())
+        }
+    }
+
+    pub async fn read_nomad_serving_page(&self, path: &str) -> Result<String, String> {
+        #[cfg(feature = "rns-stack")]
+        {
+            return self.require_live()?.nomad_server().read_page(path).await;
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = path;
+            Err(NOMAD_REQUIRES_STACK.into())
+        }
+    }
+
+    pub async fn write_nomad_serving_page(&self, path: &str, content: &str) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        {
+            return self
+                .require_live()?
+                .nomad_server()
+                .write_page(path, content)
+                .await;
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = (path, content);
+            Err(NOMAD_REQUIRES_STACK.into())
+        }
+    }
+
+    pub async fn delete_nomad_serving_page(&self, path: &str) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        {
+            return self.require_live()?.nomad_server().delete_page(path).await;
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = path;
+            Err(NOMAD_REQUIRES_STACK.into())
+        }
+    }
+
+    pub async fn list_nomad_serving_files(&self) -> Result<Vec<serde_json::Value>, String> {
+        #[cfg(feature = "rns-stack")]
+        {
+            let files = self.require_live()?.nomad_server().list_files().await?;
+            Ok(files.into_iter().map(|e| serving_entry_json(&e)).collect())
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            Err(NOMAD_REQUIRES_STACK.into())
+        }
+    }
+
+    pub async fn write_nomad_serving_file(
+        &self,
+        path: &str,
+        content_base64: &str,
+    ) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        {
+            return self
+                .require_live()?
+                .nomad_server()
+                .write_file_base64(path, content_base64)
+                .await;
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = (path, content_base64);
+            Err(NOMAD_REQUIRES_STACK.into())
+        }
+    }
+
+    pub async fn delete_nomad_serving_file(&self, path: &str) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        {
+            return self.require_live()?.nomad_server().delete_file(path).await;
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = path;
+            Err(NOMAD_REQUIRES_STACK.into())
+        }
+    }
+
     pub async fn list_rrc_hubs(&self) -> Vec<RrcHubRow> {
         let mut inner = self.inner.write().await;
         inner.seed_rrc_default_hubs();
@@ -1572,6 +1900,15 @@ impl StackHandle {
             None
         }
     }
+}
+
+#[cfg(feature = "rns-stack")]
+fn serving_entry_json(entry: &nomad_core::NomadPageEntry) -> serde_json::Value {
+    serde_json::json!({
+        "path": entry.path,
+        "size": entry.size,
+        "modified_ms": entry.modified_ms,
+    })
 }
 
 fn enumerate_serial_ports() -> Vec<serde_json::Value> {

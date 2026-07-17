@@ -104,12 +104,24 @@ The Connection tab UI edits a subset: **name** and **mode** for all types; **hos
 
 ### Nomad Network
 
-| Method | Path                                      | Body / notes          | Response                              |
-| ------ | ----------------------------------------- | --------------------- | ------------------------------------- |
-| GET    | `/api/v1/nomadnetwork/nodes`              |                       | `{ nodes: [] }`                       |
-| POST   | `/api/v1/nomadnetwork/nodes/favorite`     | `{ hash, favorited }` | `{ ok }`                              |
-| GET    | `/api/v1/nomadnetwork/page/{hash}?path=…` |                       | page payload                          |
-| GET    | `/api/v1/nomadnetwork/file/{hash}?path=…` |                       | `{ ok, file_name?, content_base64? }` |
+| Method | Path                                          | Body / notes                 | Response                                                                                                           |
+| ------ | --------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/api/v1/nomadnetwork/nodes`                  |                              | `{ nodes: [] }`                                                                                                    |
+| POST   | `/api/v1/nomadnetwork/nodes/favorite`         | `{ hash, favorited }`        | `{ ok }`                                                                                                           |
+| GET    | `/api/v1/nomadnetwork/page/{hash}?path=…`     |                              | page payload                                                                                                       |
+| GET    | `/api/v1/nomadnetwork/file/{hash}?path=…`     |                              | `{ ok, file_name?, content_base64? }`                                                                              |
+| GET    | `/api/v1/nomadnetwork/serving`                |                              | `{ ok, serving }` (local host status; includes `content_source`, `content_layout`, `watcher_status`, `last_error`) |
+| PUT    | `/api/v1/nomadnetwork/serving`                | `{ enabled, display_name? }` | `{ ok, serving }`                                                                                                  |
+| PUT    | `/api/v1/nomadnetwork/serving/content-source` | `{ path: string }`           | `{ ok, serving }` — set watched folder (site root or pages dir); required before start; restarts host if running   |
+| GET    | `/api/v1/nomadnetwork/serving/pages`          |                              | `{ ok, pages: [] }` — My Pages lists these read-only; edit pages on disk in the watched folder                     |
+| PUT    | `/api/v1/nomadnetwork/serving/pages`          | `{ path, content }`          | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
+| DELETE | `/api/v1/nomadnetwork/serving/pages?path=…`   |                              | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
+| GET    | `/api/v1/nomadnetwork/serving/page?path=…`    |                              | `{ ok, path, content }`                                                                                            |
+| GET    | `/api/v1/nomadnetwork/serving/files`          |                              | `{ ok, files: [] }` — My Pages lists these read-only                                                               |
+| PUT    | `/api/v1/nomadnetwork/serving/files`          | `{ path, content_base64 }`   | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
+| DELETE | `/api/v1/nomadnetwork/serving/files?path=…`   |                              | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                            |
+
+Auto-restore order when the live stack comes up: load `nomad_serving_content_source` → if `nomad_serving_enabled` and a content source is set, start hosting → start FS watcher on `pages/` (and `files/` when that directory exists). If enabled without a content source, set `last_error=content_source_required` and do not start. Other failures keep `enabled=true` with `running=false` and `last_error` set; logs use the `[nomad-serving]` tag.
 
 ### RRC (Reticulum Relay Chat)
 
@@ -150,7 +162,7 @@ Typed renderer wrappers: `electronAPI.reticulum.rrc.*` (`listHubs`, `upsertHub`,
 { "type": "lxmf_message", "payload": { ... } }
 ```
 
-Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`, `rmap.discovery` (payload `{ discovered: RmapDiscoveredWireRow[] }`), plus RRC: `rrc.hub`, `rrc.connected`, `rrc.disconnected`, `rrc.room.joined`, `rrc.room.parted`, `rrc.message`, `rrc.error`.
+Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`, `rmap.discovery` (payload `{ discovered: RmapDiscoveredWireRow[] }`), `nomadnetwork.node` (Nomad peer announce heard), `nomad.serving_start` / `nomad.serving_stop` (local hosting lifecycle; payload includes `destination_hash` / `display_name` on start — renderer currently polls serving status via HTTP), plus RRC: `rrc.hub`, `rrc.connected`, `rrc.disconnected`, `rrc.room.joined`, `rrc.room.parted`, `rrc.message`, `rrc.error`.
 
 - **`rrc.disconnected`:** payload `{ hub_dest_hash, reason, will_reconnect? }`. When `will_reconnect` is `false` (or `reason` is `local_disconnect`), the renderer drops that hub session. When `true` (or omitted on older sidecars), the UI shows reconnecting and keeps volatile rooms until WELCOME.
 
@@ -166,16 +178,18 @@ Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers
 
 Renderer calls `electronAPI.reticulum.*`; main process proxies to this API (sandboxed renderer cannot reach localhost directly).
 
-| IPC channel                                                     | Role                                                                                                      |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `reticulum:start` / `stop` / `getStatus`                        | Sidecar lifecycle                                                                                         |
-| `reticulum:syncInterfaceIssueScope`                             | Drop TCP/TX latch entries for disabled/removed interfaces; sticky enabled-name filter for later log lines |
-| `reticulum:proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete` | HTTP proxy to paths above                                                                                 |
-| `reticulum:validateConfig`                                      | One-shot `validate-config --json` against `userData/reticulum/config` (read-only; safe while stack runs)  |
-| `reticulum:readDefaultConfigFile`                               | Read first existing system rnsd config path                                                               |
-| `reticulum:showConfigImportDialog`                              | Native file picker for config import                                                                      |
-| `reticulum:showIdentityImportDialog`                            | Native file picker for 64-byte private key (`.retid`, `.key`, …)                                          |
-| `reticulum:onEvent` / `onStatus`                                | WS events and sidecar status                                                                              |
+| IPC channel                                                     | Role                                                                                                         |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `reticulum:start` / `stop` / `getStatus`                        | Sidecar lifecycle                                                                                            |
+| `reticulum:syncInterfaceIssueScope`                             | Drop TCP/TX latch entries for disabled/removed interfaces; sticky enabled-name filter for later log lines    |
+| `reticulum:proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete` | HTTP proxy to paths above                                                                                    |
+| `reticulum:validateConfig`                                      | One-shot `validate-config --json` against `userData/reticulum/config` (read-only; safe while stack runs)     |
+| `reticulum:readDefaultConfigFile`                               | Read first existing system rnsd config path                                                                  |
+| `reticulum:showConfigImportDialog`                              | Native file picker for config import                                                                         |
+| `reticulum:showIdentityImportDialog`                            | Native file picker for 64-byte private key (`.retid`, `.key`, …)                                             |
+| `reticulum:showNomadContentSourceDialog`                        | Native folder picker for Nomad My Pages content source (site root or `pages/` dir); records picker allowlist |
+| `reticulum:setNomadContentSource`                               | Apply Nomad watched content source; path must match last folder-picker result (blocks arbitrary proxyPut)    |
+| `reticulum:onEvent` / `onStatus`                                | WS events and sidecar status                                                                                 |
 
 `getStatus` / `onStatus` may include `interfaceIssueAlert` (TCP connect failures, TX queue drops, link-delivery timeouts, transport saturation / slow queries, **`bleBondRemoved`** stale RNode bonds). Per-entry latch timestamps use a **5-minute** stale window (`RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS`). Connection syncs **enabled** interface names via `syncInterfaceIssueScope` so disabling or removing an interface clears that name immediately and rejects re-latch from lagging log lines. Stopping the stack (or unexpected process exit) clears the tracker.
 

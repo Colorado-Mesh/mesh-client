@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "USB 직렬 재연결"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Nomad 페이지 호스팅 문제",
+        "recommendation": "Nomad My Pages 호스팅에 실패했거나 콘텐츠 폴더를 사용할 수 없습니다. Nomad Network → My Pages를 열고 페이지 폴더가 이동되면 다시 선택한 다음 서비스를 시작합니다. 세부 정보는 로그에 [nomad-serving] / [NomadHosting] 으로 표시됩니다."
       }
     },
     "recommendationGroups": {
@@ -2717,7 +2721,7 @@
     "fileDownloadInProgress": "파일 다운로드가 이미 진행 중입니다.",
     "sendMessage": "메시지",
     "sendMessageAria": "{{name}}에 메시지 보내기",
-    "urlBarAria": "노마드 페이지 주소",
+    "urlBarAria": "Nomad 페이지 주소",
     "back": "뒤쪽에",
     "forward": "앞으로",
     "invalidUrl": "잘못된 Nomad 페이지 주소",
@@ -2725,17 +2729,52 @@
     "expandNodeList": "노드 목록 펼치기",
     "errors": {
       "pathTimeout": "이 노드로 가는 경로가 없습니다(경로 조회 시간 초과). 더 가까운 노드를 시도하거나 새 announce를 기다리세요.",
-      "pubkeyNotFound": "이 노드의 ID 키를 찾을 수 없습니다. 유랑민 발표를 기다렸다가 다시 시도하십시오.",
+      "pubkeyNotFound": "이 노드의 ID 키를 찾을 수 없습니다. Nomad 공지를 기다렸다가 다시 시도하세요.",
       "linkTimeout": "노드에 대한 링크를 제시간에 설정할 수 없습니다.",
       "responseTimeout": "노드가 링크를 수락했지만 제시간에 페이지를 반환하지 않았습니다.",
-      "missingIdentity": "이 노드는 아직 기억된 ID가 없습니다. 유랑민 발표를 기다렸다가 다시 시도하십시오.",
+      "missingIdentity": "이 노드에는 아직 기억된 ID가 없습니다. Nomad 공지를 기다렸다가 다시 시도하세요.",
       "transportUnavailable": "Reticulum 전송을 사용할 수 없습니다. 스택을 다시 시작한 다음 다시 시도하십시오.",
       "sidecarNotRunning": "Reticulum 사이드카가 실행되고 있지 않습니다. Connection에서 스택을 시작한 다음 다시 시도하십시오.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
+      "nomadBusy": "다른 Nomad 페이지 또는 파일 요청이 아직 진행 중입니다. 잠시 후 다시 시도하세요."
     },
     "fitWidth": "창에 맞춤",
-    "openWidth": "페이지 폭"
+    "openWidth": "페이지 폭",
+    "myPagesTab": "내 페이지",
+    "serving": {
+      "title": "Nomad 페이지 호스팅",
+      "servingChip": "네트워크에 제공 중",
+      "sidecarRequired": "Reticulum 스택을 시작하여 Nomad 페이지를 호스팅하세요.",
+      "displayName": "노드 표시 이름",
+      "enable": "제공 시작",
+      "disable": "제공 중지",
+      "destinationHash": "대상",
+      "copyHash": "해시 복사",
+      "copied": "복사됨",
+      "stats": "{{pages}} 페이지 · {{files}} 파일 · {{requests}} 요청",
+      "myPages": "로컬 페이지",
+      "failed": "Nomad 제공을 업데이트할 수 없습니다.",
+      "previewSite": "브라우저에서 열기",
+      "previewSiteAria": "브라우저에서 이 호스팅된 Nomad 사이트 미리보기",
+      "myFiles": "로컬 파일",
+      "folderHint": "디스크의 폴더에서 Micron 페이지를 제공합니다(권장). pages/ 디렉터리가 있는 사이트 루트 또는 pages 디렉터리 자체를 선택하세요. 디스크의 편집 내용은 자동으로 반영됩니다.",
+      "chooseFolder": "폴더 선택",
+      "chooseFolderAria": "Nomad 페이지를 호스팅할 폴더 선택",
+      "contentSource": "콘텐츠 폴더",
+      "contentSourceUnavailable": "선택한 페이지 폴더가 없거나 사용할 수 없습니다. 폴더를 다시 선택하십시오.",
+      "contentSourceNotDirectory": "파일이 아닌 디렉토리를 선택하십시오.",
+      "contentSourceUnreadable": "선택한 폴더를 읽을 수 없습니다.",
+      "invalidContentSource": "폴더에 pages/ 디렉터리 또는 .mu 페이지 파일이 있어야 합니다.",
+      "contentSourceFailed": "콘텐츠 폴더를 설정할 수 없습니다.",
+      "watcherDegraded": "폴더 감시 기능이 저하되었습니다. 폴더를 다시 읽을 수 있을 때까지 페이지 목록이 지연될 수 있습니다.",
+      "reloadFromDisk": "디스크에서 다시 로드",
+      "reloadFromDiskAria": "디스크에서 호스팅된 페이지 다시 로드",
+      "noPages": "아직 페이지가 없습니다. 선택한 폴더에 .mu 파일을 추가하십시오 (예: index.mu).",
+      "noFiles": "아직 파일이 없습니다. /file/… 아래에 제공할 파일을 사이트의 files/ 폴더에 배치하십시오.",
+      "contentSourceNotFromPicker": "적용하기 전에 Choose 폴더가 있는 폴더를 선택하십시오.",
+      "contentSourceNone": "선택된 폴더 없음",
+      "contentSourceRequired": "Nomad 호스팅을 시작하기 전에 페이지 폴더를 선택하세요."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",
@@ -3799,7 +3838,7 @@
     "legendInterfaceOnline": "온라인 인터페이스",
     "legendInterfaceOffline": "오프라인 인터페이스",
     "legendPeerUser": "LXMF 피어",
-    "legendPeerServer": "노마드 노드",
+    "legendPeerServer": "Nomad 노드",
     "interfaceLink": "인터페이스 링크",
     "peerLink": "피어 링크",
     "interfaceTooltip": "{{name}} — {{status}}",

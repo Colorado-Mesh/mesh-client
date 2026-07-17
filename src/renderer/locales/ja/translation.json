@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "USBシリアル再接続"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Nomadページのホスティングに関する問題",
+        "recommendation": "Nomad My Pages のホスティングに失敗したか、コンテンツフォルダーを利用できません。Nomad Network → My Pages を開き、移動した場合は pages フォルダーを選び直してから Start serving してください。詳細はログに [nomad-serving] / [NomadHosting] と表示されます。"
       }
     },
     "recommendationGroups": {
@@ -2717,7 +2721,7 @@
     "fileDownloadInProgress": "ファイルのダウンロードはすでに進行中です。",
     "sendMessage": "メッセージ",
     "sendMessageAria": "{{name}} にメッセージを送信",
-    "urlBarAria": "ノマドページのアドレス",
+    "urlBarAria": "Nomad ページのアドレス",
     "back": "戻る",
     "forward": "フォワード",
     "invalidUrl": "Nomad ページのアドレスが無効です",
@@ -2725,17 +2729,52 @@
     "expandNodeList": "ノードリストを展開",
     "errors": {
       "pathTimeout": "このノードへの経路がありません（パス検索がタイムアウトしました）。近いノードを試すか、新しいannounceを待ってください。",
-      "pubkeyNotFound": "このノードのIDキーが見つかりませんでした。放浪者の発表を待ってから、もう一度やり直してください。",
+      "pubkeyNotFound": "このノードの ID キーが見つかりませんでした。Nomad アナウンスを待ってから、もう一度お試しください。",
       "linkTimeout": "ノードへのリンクを時間内に確立できませんでした。",
       "responseTimeout": "ノードはリンクを受け入れましたが、時間内にページを返しませんでした。",
-      "missingIdentity": "このノードにはまだ記憶されている身元がありません。放浪者の発表を待ってから、もう一度やり直してください。",
+      "missingIdentity": "このノードにはまだ記憶されている身元がありません。Nomad アナウンスを待ってから、もう一度お試しください。",
       "transportUnavailable": "Reticulum トランスポートは利用できません。スタックを再起動してもう一度お試しください。",
       "sidecarNotRunning": "Reticulum サイドカーが実行されていません。接続からスタックを開始してから、もう一度お試しください。",
       "responseTooLarge": "ノードが返すデータ量が、この要求で mesh-client が受け入れる上限を超えました。",
       "nomadBusy": "別の Nomad ページまたはファイル要求が処理中です。しばらくしてから再試行してください。"
     },
     "fitWidth": "ウィンドウに適合",
-    "openWidth": "ページ幅"
+    "openWidth": "ページ幅",
+    "myPagesTab": "マイページ",
+    "serving": {
+      "title": "Nomad ページをホスト",
+      "servingChip": "ネットワークに配信中",
+      "sidecarRequired": "Reticulum スタックを起動して Nomad ページをホストします。",
+      "displayName": "ノード表示名",
+      "enable": "配信を開始",
+      "disable": "配信を停止",
+      "destinationHash": "宛先",
+      "copyHash": "ハッシュをコピー",
+      "copied": "コピーしました",
+      "stats": "{{pages}} ページ · {{files}} ファイル · {{requests}} リクエスト",
+      "myPages": "ローカルページ",
+      "failed": "Nomad の配信を更新できませんでした。",
+      "previewSite": "ブラウザーで開く",
+      "previewSiteAria": "このホストされたNomadサイトをブラウザでプレビューする",
+      "myFiles": "ローカルファイル",
+      "folderHint": "ディスク上のフォルダーから Micron ページを提供します（推奨）。pages/ ディレクトリを含むサイトルート、または pages ディレクトリ自体を選択してください。ディスク上の編集は自動的に反映されます。",
+      "chooseFolder": "フォルダの選択",
+      "chooseFolderAria": "Nomadページをホストするフォルダを選択してください",
+      "contentSource": "コンテンツフォルダ",
+      "contentSourceUnavailable": "選択したページフォルダが見つからないか、使用できません。もう一度フォルダーを選択します。",
+      "contentSourceNotDirectory": "ファイルではなくディレクトリを選択してください。",
+      "contentSourceUnreadable": "選択したフォルダを読み取れませんでした。",
+      "invalidContentSource": "フォルダには、pages/ディレクトリまたは.muページファイルが含まれている必要があります。",
+      "contentSourceFailed": "コンテンツフォルダを設定できませんでした。",
+      "watcherDegraded": "フォルダのウォッチは低下します。ページリストは、フォルダが再び読み取り可能になるまで遅れることがあります。",
+      "reloadFromDisk": "ディスクから再読み込み",
+      "reloadFromDiskAria": "ホストされているページをディスクから再読み込みする",
+      "noPages": "ページはまだありません。選択したフォルダー（ index.muなど）に.muファイルを追加します。",
+      "noFiles": "ファイルはまだありません。サイトの files/ フォルダーにファイルを置くと /file/… で提供されます。",
+      "contentSourceNotFromPicker": "適用する前に、[フォルダーの選択]でフォルダーを選択します。",
+      "contentSourceNone": "フォルダーが選択されていません",
+      "contentSourceRequired": "Nomadホスティングを開始する前に、ページフォルダを選択します。"
+    }
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",
@@ -3799,7 +3838,7 @@
     "legendInterfaceOnline": "インターフェースオンライン",
     "legendInterfaceOffline": "オフラインインターフェース",
     "legendPeerUser": "LXMFピア",
-    "legendPeerServer": "放浪者ノード",
+    "legendPeerServer": "Nomad ノード",
     "interfaceLink": "インターフェースリンク",
     "peerLink": "ピアリンク",
     "interfaceTooltip": "{{name}} — {{status}}",

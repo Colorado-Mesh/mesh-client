@@ -4,7 +4,11 @@ import { ipcMain } from 'electron';
 import type { ReticulumSidecarStatus } from '../../shared/reticulum-types';
 import { sanitizeLogMessage } from '../log-service';
 import {
+  isAllowedNomadContentSourcePath,
+  isNomadContentSourceApiPath,
+  NOMAD_CONTENT_SOURCE_API_PATH,
   readFirstExistingConfig,
+  showNomadContentSourceDialog,
   showReticulumConfigImportDialog,
 } from '../reticulum-config-paths';
 import { validateReticulumUserConfig } from '../reticulum-config-validate';
@@ -110,6 +114,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   ipcMain.handle('reticulum:proxyPut', async (event, apiPath: unknown, body: unknown) => {
     assertIpcSender(event, 'reticulum:proxyPut');
     const pathArg = assertProxyApiPath(apiPath);
+    if (isNomadContentSourceApiPath(pathArg)) {
+      throw new Error(
+        'Nomad content-source changes require reticulum:setNomadContentSource (picker-backed)',
+      );
+    }
     try {
       const m = ensureManager();
       return await m.proxyPut(pathArg, body);
@@ -144,6 +153,41 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   ipcMain.handle('reticulum:showIdentityImportDialog', async (event) => {
     assertIpcSender(event, 'reticulum:showIdentityImportDialog');
     return showReticulumIdentityImportDialog();
+  });
+
+  ipcMain.handle('reticulum:showNomadContentSourceDialog', async (event) => {
+    assertIpcSender(event, 'reticulum:showNomadContentSourceDialog');
+    return showNomadContentSourceDialog();
+  });
+
+  /**
+   * Apply Nomad content source. Path must be a non-empty string matching the last
+   * native folder picker result so a compromised renderer cannot expose arbitrary
+   * directories.
+   */
+  ipcMain.handle('reticulum:setNomadContentSource', async (event, pathArg: unknown) => {
+    assertIpcSender(event, 'reticulum:setNomadContentSource');
+    if (typeof pathArg !== 'string') {
+      throw new TypeError('Nomad content source path must be a string');
+    }
+    const pathVal = pathArg.trim();
+    if (!pathVal) {
+      return { ok: false, error: 'content_source_required' };
+    }
+    if (!isAllowedNomadContentSourcePath(pathVal)) {
+      console.warn(
+        '[ReticulumIPC] setNomadContentSource rejected path not from folder picker:',
+        sanitizeLogMessage(pathVal),
+      );
+      return { ok: false, error: 'content_source_not_from_picker' };
+    }
+    try {
+      const m = ensureManager();
+      return await m.proxyPut(NOMAD_CONTENT_SOURCE_API_PATH, { path: pathVal });
+    } catch (err) {
+      logReticulumProxyFailure('setNomadContentSource', err, NOMAD_CONTENT_SOURCE_API_PATH);
+      throw err;
+    }
   });
 
   ipcMain.handle('reticulum:validateConfig', async (event) => {

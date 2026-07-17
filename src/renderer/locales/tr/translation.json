@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "USB Seri Yeniden Bağlantı"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Nomad Sayfası Barındırma Sorunları",
+        "recommendation": "Nomad Sayfalarım barındırma başarısız oldu veya içerik klasörü kullanılamıyor. Nomad Network → Sayfalarım bölümünü açın, taşınmışsa pages klasörünü yeniden seçin ve ardından hizmeti başlatın. Ayrıntılar günlükte [nomad-serving] / [NomadHosting] olarak görünür."
       }
     },
     "recommendationGroups": {
@@ -2717,25 +2721,60 @@
     "fileDownloadInProgress": "Bir dosya indirme işlemi zaten devam ediyor.",
     "sendMessage": "Mesaj",
     "sendMessageAria": "{{name}} adresine mesaj gönder",
-    "urlBarAria": "Göçebe sayfa adresi",
+    "urlBarAria": "Nomad sayfa adresi",
     "back": "Geri",
     "forward": "İleri",
-    "invalidUrl": "Geçersiz Göçebe sayfa adresi",
+    "invalidUrl": "Geçersiz Nomad sayfa adresi",
     "collapseNodeList": "Düğüm listesini daralt",
     "expandNodeList": "Düğüm listesini genişlet",
     "errors": {
       "pathTimeout": "Bu düğüme rota yok (yol araması zaman aşımına uğradı). Daha yakın bir düğüm deneyin veya daha yeni bir announce bekleyin.",
-      "pubkeyNotFound": "Bu düğümün kimlik anahtarı bulunamadı. Bir Göçebe duyurusunu bekleyin, sonra tekrar deneyin.",
+      "pubkeyNotFound": "Bu düğümün kimlik anahtarı bulunamadı. Bir Nomad duyurusunu bekleyin, sonra tekrar deneyin.",
       "linkTimeout": "Düğüme bağlantı zamanında kurulamadı.",
       "responseTimeout": "Düğüm bağlantıyı kabul etti ancak sayfayı zamanında döndürmedi.",
-      "missingIdentity": "Bu düğümün henüz hatırlanan bir kimliği yok. Bir Göçebe duyurusunu bekleyin, sonra tekrar deneyin.",
+      "missingIdentity": "Bu düğümün henüz hatırlanan bir kimliği yok. Bir Nomad duyurusunu bekleyin, sonra tekrar deneyin.",
       "transportUnavailable": "Reticulum taşıması kullanılamıyor. Yığını yeniden başlatın ve tekrar deneyin.",
       "sidecarNotRunning": "Reticulum sidecar çalışmıyor. Bağlantı bölümünden yığını başlatın, sonra tekrar deneyin.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
+      "nomadBusy": "Başka bir Nomad sayfa veya dosya isteği hâlâ devam ediyor. Biraz sonra tekrar deneyin."
     },
     "fitWidth": "Pencereye sığdır",
-    "openWidth": "Sayfa Genişliği"
+    "openWidth": "Sayfa Genişliği",
+    "myPagesTab": "Sayfalarım",
+    "serving": {
+      "title": "Nomad sayfalarını barındır",
+      "servingChip": "Ağa sunuluyor",
+      "sidecarRequired": "Nomad sayfalarını barındırmak için Reticulum yığınını başlatın.",
+      "displayName": "Düğüm görünen adı",
+      "enable": "Sunmaya başla",
+      "disable": "Sunmayı durdur",
+      "destinationHash": "Hedef",
+      "copyHash": "Hash'i kopyala",
+      "copied": "Kopyalandı",
+      "stats": "{{pages}} sayfa · {{files}} dosya · {{requests}} istek",
+      "myPages": "Yerel sayfalar",
+      "failed": "Nomad sunumu güncellenemedi.",
+      "previewSite": "Tarayıcıda aç",
+      "previewSiteAria": "Barındırılan bu Nomad sitesini tarayıcıda önizleyin",
+      "myFiles": "Yerel dosyalar",
+      "folderHint": "Diskteki bir klasörden Micron sayfaları sunun (önerilir). pages/ dizini içeren bir site kökü veya pages dizininin kendisini seçin. Diskteki düzenlemeler otomatik alınır.",
+      "chooseFolder": "Klasör seçin...",
+      "chooseFolderAria": "Nomad sayfalarını barındırmak için bir klasör seçin",
+      "contentSource": "İçerik Klasörü",
+      "contentSourceUnavailable": "Seçilen sayfalar klasörü eksik veya kullanılamıyor. Klasörü tekrar seçin.",
+      "contentSourceNotDirectory": "Bir dosya değil, bir dizin seçin.",
+      "contentSourceUnreadable": "Seçilen klasör okunamadı.",
+      "invalidContentSource": "Klasör bir pages/ dizini veya .mu sayfa dosyaları içermelidir.",
+      "contentSourceFailed": "İçerik klasörü ayarlanamadı.",
+      "watcherDegraded": "Klasör izleme bozulmuş; klasör tekrar okunabilir olana kadar sayfa listesi gecikebilir.",
+      "reloadFromDisk": "Diskten yeniden yükle",
+      "reloadFromDiskAria": "Barındırılan sayfaları diskten yeniden yükleyin",
+      "noPages": "Henüz sayfa yok. Seçilen klasöre .mu dosyaları ekleyin (örneğin index.mu).",
+      "noFiles": "Henüz dosya yok. /file/… altında sunmak için site files/ klasörüne dosya koyun.",
+      "contentSourceNotFromPicker": "Uygulamadan önce Klasör seç ile klasörü seçin.",
+      "contentSourceNone": "Klasör seçilmedi",
+      "contentSourceRequired": "Nomad ev sahipliğine başlamadan önce bir sayfa klasörü seçin."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",
@@ -3799,7 +3838,7 @@
     "legendInterfaceOnline": "Çevrimiçi arayüz",
     "legendInterfaceOffline": "Arayüz çevrimdışı",
     "legendPeerUser": "LXMF akran",
-    "legendPeerServer": "Göçebe düğüm",
+    "legendPeerServer": "Nomad düğüm",
     "interfaceLink": "Arayüz bağlantısı",
     "peerLink": "Akran bağlantısı",
     "interfaceTooltip": "{{name}} — {{status}}",

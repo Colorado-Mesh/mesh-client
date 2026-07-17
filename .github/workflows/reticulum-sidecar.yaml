@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad)
         shell: bash
         env:
           WORKSPACE_ROOT: ${{ github.workspace }}/..
@@ -40,6 +40,13 @@ jobs:
           components: clippy, rustfmt
       - name: Install Linux BLE build deps
         run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
+      - name: cargo fmt --check (rsNomad)
+        working-directory: ${{ github.workspace }}/../rsNomad
+        # Format only workspace members — `--all` also walks path deps into rsReticulum.
+        run: cargo fmt -p nomad-core -- --check
+      - name: cargo clippy (rsNomad)
+        working-directory: ${{ github.workspace }}/../rsNomad
+        run: cargo clippy --workspace --all-targets -- -D warnings
       - name: cargo fmt --check
         working-directory: reticulum-sidecar
         run: cargo fmt --check
@@ -68,7 +75,7 @@ jobs:
       - uses: actions/checkout@v6
       # Optional rns-stack path deps must exist on disk even for the default stub build.
       # checkout@v6 only allows paths under GITHUB_WORKSPACE; Cargo expects Ratspeak siblings.
-      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad)
         shell: bash
         env:
           WORKSPACE_ROOT: ${{ github.workspace }}/..
@@ -108,7 +115,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
-      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad)
         shell: bash
         env:
           WORKSPACE_ROOT: ${{ github.workspace }}/..
@@ -139,7 +146,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       # Optional rns-stack path deps must exist on disk even for the default stub build.
-      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad)
         shell: bash
         env:
           WORKSPACE_ROOT: ${{ github.workspace }}/..
@@ -166,7 +173,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad)
         shell: bash
         env:
           WORKSPACE_ROOT: ${{ github.workspace }}/..

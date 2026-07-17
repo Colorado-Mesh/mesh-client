@@ -1729,6 +1729,10 @@
       "sdk-meshcore": {
         "label": "MeshCore SDK Warnings/Errors",
         "recommendation": "MeshCore stack reported a warning or error. If it repeats, check BLE pairing, MQTT settings, and reconnect."
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Nomad Page Hosting Issues",
+        "recommendation": "Nomad My Pages hosting failed or the content folder is unavailable. Open Nomad Network → My Pages, re-choose the pages folder if it moved, then Start serving. Details appear as [nomad-serving] / [NomadHosting] in the log."
       }
     },
     "recommendationGroups": {
@@ -2861,7 +2865,42 @@
     "sendMessage": "Message",
     "sendMessageAria": "Send message to {{name}}",
     "collapseNodeList": "Collapse node list",
-    "expandNodeList": "Expand node list"
+    "expandNodeList": "Expand node list",
+    "myPagesTab": "My Pages",
+    "serving": {
+      "title": "Host Nomad pages",
+      "servingChip": "Serving to network",
+      "sidecarRequired": "Start the Reticulum stack to host Nomad pages.",
+      "folderHint": "Serve Micron pages from a folder on disk. Choose a site root with a pages/ directory, or the pages directory itself. Edits on disk are picked up automatically.",
+      "chooseFolder": "Choose folder",
+      "chooseFolderAria": "Choose a folder to host Nomad pages from",
+      "contentSource": "Content folder",
+      "contentSourceNone": "No folder chosen",
+      "contentSourceRequired": "Choose a pages folder before starting Nomad hosting.",
+      "contentSourceUnavailable": "The chosen pages folder is missing or unavailable. Choose the folder again.",
+      "contentSourceNotDirectory": "Choose a directory, not a file.",
+      "contentSourceUnreadable": "Could not read the chosen folder.",
+      "invalidContentSource": "Folder must contain a pages/ directory or .mu page files.",
+      "contentSourceFailed": "Could not set the content folder.",
+      "contentSourceNotFromPicker": "Choose the folder with Choose folder before applying it.",
+      "watcherDegraded": "Folder watching is degraded; page list may lag until the folder is readable again.",
+      "reloadFromDisk": "Reload from disk",
+      "reloadFromDiskAria": "Reload hosted pages from disk",
+      "displayName": "Node display name",
+      "enable": "Start serving",
+      "disable": "Stop serving",
+      "destinationHash": "Destination",
+      "copyHash": "Copy hash",
+      "copied": "Copied",
+      "stats": "{{pages}} pages · {{files}} files · {{requests}} requests",
+      "myPages": "Local pages",
+      "noPages": "No pages yet. Add .mu files to the chosen folder (for example index.mu).",
+      "failed": "Could not update Nomad serving.",
+      "previewSite": "Open in browser",
+      "previewSiteAria": "Preview this hosted Nomad site in the browser",
+      "myFiles": "Local files",
+      "noFiles": "No files yet. Place files in the site files/ folder to serve under /file/…"
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Overall Distribution",

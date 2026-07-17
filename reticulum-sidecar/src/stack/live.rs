@@ -39,6 +39,7 @@ use super::lxmf_delivery::{
 use super::nomad_file::nomad_file_name_from_path;
 use super::nomad_link_errors::map_nomad_link_error;
 use super::nomad_request_payload::nomad_page_request_payload;
+use super::nomad_server::NomadServerHandle;
 use super::nomad_timeouts;
 use super::packet_log::{
     PacketLogBuffer, collect_tx_interface_names_for_egress, emit_wire_packet_event,
@@ -48,6 +49,7 @@ use super::persistence::PersistedState;
 use super::propagation_bridge::PropagationBridge;
 use super::rrc_defaults::RRC_HUB_ASPECT;
 use super::rrc_session::RrcSessionManager;
+use super::types::NomadServingStatus;
 use super::types::{
     ContactRow, InterfaceRow, LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, PeerRow,
 };
@@ -96,6 +98,10 @@ pub struct LiveBridge {
     /// overlapping page/file fetches contend with path/pubkey discovery.
     nomad_link_lock: Arc<tokio::sync::Mutex<()>>,
     rrc_session: Arc<RrcSessionManager>,
+    /// Local Nomad page/file host (rsNomad / nomad-core).
+    nomad_server: Arc<NomadServerHandle>,
+    /// Shared persisted stack state (Nomad node list, prefs).
+    persisted: Arc<RwLock<PersistedState>>,
     #[cfg(feature = "rns-ble")]
     ble_peer_state: Arc<tokio::sync::Mutex<BlePeerRuntimeState>>,
 }
@@ -395,6 +401,8 @@ impl LiveBridge {
                 identity.clone(),
                 event_tx.clone(),
             )),
+            nomad_server: Arc::new(NomadServerHandle::new()),
+            persisted: inner.clone(),
             #[cfg(feature = "rns-ble")]
             ble_peer_state: Arc::new(tokio::sync::Mutex::new(BlePeerRuntimeState {
                 spawned: HashMap::new(),
@@ -450,7 +458,116 @@ impl LiveBridge {
             state.lxmf_ready = true;
         }
 
+        let (nomad_enabled, nomad_name, nomad_content_source) = {
+            let state = inner.read().await;
+            let name = state
+                .nomad_serving_display_name
+                .clone()
+                .filter(|n| !n.trim().is_empty())
+                .or_else(|| {
+                    state
+                        .identity
+                        .display_name
+                        .clone()
+                        .filter(|n| !n.trim().is_empty() && n != "Self")
+                })
+                .unwrap_or_else(|| "Nomad node".into());
+            (
+                state.nomad_serving_enabled,
+                name,
+                state.nomad_serving_content_source.clone(),
+            )
+        };
+        // Load remembered content folder before auto-restore so start uses it.
+        match &nomad_content_source {
+            Some(path) => {
+                bridge
+                    .nomad_server
+                    .load_content_source_path(Some(std::path::PathBuf::from(path)))
+                    .await;
+            }
+            None if nomad_enabled => {
+                tracing::warn!(
+                    "[nomad-serving] failed to restore Nomad serving: content_source_required"
+                );
+                bridge
+                    .nomad_server
+                    .set_last_error(Some("content_source_required".into()))
+                    .await;
+            }
+            None => {}
+        }
+        if nomad_enabled && nomad_content_source.is_some() {
+            if let Err(e) = bridge.start_nomad_serving(nomad_name).await {
+                tracing::warn!("[nomad-serving] failed to restore Nomad serving: {e}");
+                bridge.nomad_server.set_last_error(Some(e.clone())).await;
+            }
+        }
+
         Ok(bridge)
+    }
+
+    pub async fn nomad_serving_status(&self) -> NomadServingStatus {
+        let state = PersistedState::load(&self.config_dir, &self.storage_dir);
+        let name = state
+            .nomad_serving_display_name
+            .as_deref()
+            .filter(|n| !n.trim().is_empty())
+            .unwrap_or("Nomad node");
+        self.nomad_server
+            .status(state.nomad_serving_enabled, name)
+            .await
+    }
+
+    pub async fn start_nomad_serving(
+        &self,
+        display_name: String,
+    ) -> Result<NomadServingStatus, String> {
+        let status = self
+            .nomad_server
+            .start(
+                self.handle.transport_tx.clone(),
+                self.identity.clone(),
+                display_name,
+            )
+            .await?;
+        // Register ourselves in the Nomad node list so page fetch has identity_hash
+        // and the UI can open self-preview without waiting for announce echo.
+        if let (Some(dest), Some(id_hash)) = (&status.destination_hash, &status.identity_hash) {
+            let mut state = self.persisted.write().await;
+            state.upsert_nomad_node(
+                dest,
+                Some(id_hash.clone()),
+                Some(status.display_name.clone()),
+                Some(0),
+            );
+            if let Err(e) = state.save(&self.config_dir, &self.storage_dir) {
+                tracing::warn!("nomad local host persist failed: {e}");
+            }
+        }
+        let msg = serde_json::json!({
+            "type": "nomad.serving_start",
+            "payload": {
+                "destination_hash": status.destination_hash,
+                "display_name": status.display_name,
+            }
+        });
+        let _ = self.event_tx.send(msg.to_string());
+        Ok(status)
+    }
+
+    pub async fn stop_nomad_serving(&self) -> Result<(), String> {
+        self.nomad_server.stop().await?;
+        let msg = serde_json::json!({
+            "type": "nomad.serving_stop",
+            "payload": {}
+        });
+        let _ = self.event_tx.send(msg.to_string());
+        Ok(())
+    }
+
+    pub fn nomad_server(&self) -> Arc<NomadServerHandle> {
+        self.nomad_server.clone()
     }
 
     /// Emit an LXMF delivery announce now (Network → Announce now / POST /api/v1/announces).
@@ -516,6 +633,24 @@ impl LiveBridge {
         path: &str,
         interfaces: &[InterfaceRow],
     ) -> serde_json::Value {
+        if let Some(local) = self.nomad_server.try_read_local_route(hash_hex, path).await {
+            return match local {
+                Ok(bytes) => {
+                    if bytes.len() > NOMAD_FILE_MAX_BYTES {
+                        return serde_json::json!({ "ok": false, "error": "response_too_large" });
+                    }
+                    let file_name = nomad_file_name_from_path(path);
+                    let content_base64 =
+                        base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &bytes);
+                    serde_json::json!({
+                        "ok": true,
+                        "file_name": file_name,
+                        "content_base64": content_base64,
+                    })
+                }
+                Err(e) => serde_json::json!({ "ok": false, "error": e }),
+            };
+        }
         let Some(identity_hash_hex) = identity_hash_hex.filter(|s| !s.is_empty()) else {
             return serde_json::json!({ "ok": false, "error": "missing_identity_hash" });
         };
@@ -552,6 +687,29 @@ impl LiveBridge {
         data_b64: Option<&str>,
         interfaces: &[InterfaceRow],
     ) -> serde_json::Value {
+        // Self-preview: read hosted content without a Link query to ourselves.
+        if let Some(local) = self.nomad_server.try_read_local_route(hash_hex, path).await {
+            return match local {
+                Ok(bytes) => {
+                    if bytes.len() > NOMAD_PAGE_MAX_BYTES {
+                        return serde_json::json!({ "ok": false, "error": "response_too_large" });
+                    }
+                    let content = String::from_utf8_lossy(&bytes).into_owned();
+                    let content_type = if path.split('`').next().is_some_and(|p| p.ends_with(".mu"))
+                    {
+                        "micron"
+                    } else {
+                        "text"
+                    };
+                    serde_json::json!({
+                        "ok": true,
+                        "content": content,
+                        "content_type": content_type,
+                    })
+                }
+                Err(e) => serde_json::json!({ "ok": false, "error": e }),
+            };
+        }
         let Some(identity_hash_hex) = identity_hash_hex.filter(|s| !s.is_empty()) else {
             return serde_json::json!({ "ok": false, "error": "missing_identity_hash" });
         };

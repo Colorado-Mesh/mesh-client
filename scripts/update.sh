@@ -83,16 +83,27 @@ rebuild_reticulum_sidecar() {
     echo 'cargo not on PATH — skipping Reticulum sidecar rebuild.'
     return 0
   fi
-  echo 'Rebuilding Reticulum sidecar (cargo build)...'
+  echo 'Preparing rsReticulum, rsLXMF, and rsNomad functionality check...'
   local sidecar_dir='reticulum-sidecar'
-  local rns_runtime='../rsReticulum/crates/rns-runtime/Cargo.toml'
-  local lxmf_core='../rsLXMF/crates/lxmf-core/Cargo.toml'
-  bash scripts/ensure-rsReticulum-patches.sh
-  if [ -f "${sidecar_dir}/${rns_runtime}" ] && [ -f "${sidecar_dir}/${lxmf_core}" ]; then
-    (cd reticulum-sidecar && cargo build --features rns-stack,rns-ble,rns-rnode-tcp)
-  else
-    (cd reticulum-sidecar && cargo build)
+  # Paths match reticulum-sidecar/Cargo.toml (../../rs* from the sidecar dir).
+  local rns_runtime='../../rsReticulum/crates/rns-runtime/Cargo.toml'
+  local lxmf_core='../../rsLXMF/crates/lxmf-core/Cargo.toml'
+  local nomad_core='../../rsNomad/crates/nomad-core/Cargo.toml'
+  bash scripts/clone-ratspeak-stack.sh
+  local missing_manifest=''
+  local manifest
+  for manifest in "${rns_runtime}" "${lxmf_core}" "${nomad_core}"; do
+    if [ ! -f "${sidecar_dir}/${manifest}" ]; then
+      missing_manifest="${sidecar_dir}/${manifest}"
+      break
+    fi
+  done
+  if [ -n "${missing_manifest}" ]; then
+    echo "Error: required rs stack manifest missing after preparation: ${missing_manifest}" >&2
+    return 1
   fi
+  echo 'Checking rsReticulum, rsLXMF, and rsNomad via full-feature sidecar build...'
+  (cd "${sidecar_dir}" && cargo build --features rns-stack,rns-ble,rns-rnode-tcp)
 }
 
 # Print a highlighted warning box for an updated package

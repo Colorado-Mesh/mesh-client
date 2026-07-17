@@ -1,10 +1,13 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 
 import {
+  bindNomadMicronPartials,
   buildNomadLinkRequest,
   isExternalHttpUrl,
   isNomadFilePath,
+  loadNomadMicronPartial,
   mountNomadMicronHtml,
+  type NomadMicronPartialPageResult,
   parseNomadNetworkLinkUrl,
   renderNomadMicronPage,
 } from '@/renderer/lib/nomad/micronParser';
@@ -22,6 +25,12 @@ interface NomadMicronPageViewProps {
   onNavigate: (hash: string, path: string, requestData?: Record<string, string>) => void;
   onDownloadFile: (hash: string, path: string) => void;
   onOpenDm?: (destinationHash: string) => void;
+  /** Fetch Micron partial page content (same path as full Nomad page loads). */
+  onFetchPartial?: (
+    hash: string,
+    path: string,
+    requestData?: Record<string, string>,
+  ) => Promise<NomadMicronPartialPageResult>;
 }
 
 export default function NomadMicronPageView({
@@ -32,6 +41,7 @@ export default function NomadMicronPageView({
   onNavigate,
   onDownloadFile,
   onOpenDm,
+  onFetchPartial,
 }: NomadMicronPageViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   // Keep latest link handlers/context in a ref so Micron remounts only when `content` changes.
@@ -43,6 +53,7 @@ export default function NomadMicronPageView({
     onNavigate,
     onDownloadFile,
     onOpenDm,
+    onFetchPartial,
   });
   useLayoutEffect(() => {
     linkContextRef.current = {
@@ -51,8 +62,9 @@ export default function NomadMicronPageView({
       onNavigate,
       onDownloadFile,
       onOpenDm,
+      onFetchPartial,
     };
-  }, [defaultPagePath, selectedHash, onNavigate, onDownloadFile, onOpenDm]);
+  }, [defaultPagePath, selectedHash, onNavigate, onDownloadFile, onOpenDm, onFetchPartial]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -93,28 +105,56 @@ export default function NomadMicronPageView({
       );
     };
 
-    const links = container.querySelectorAll<HTMLElement>('[data-action="openNode"]');
-    const cleanups: (() => void)[] = [];
-    for (const element of links) {
-      const onActivate = (event: Event) => {
-        event.preventDefault();
-        const href = element.getAttribute('href') ?? '';
-        const title = element.getAttribute('title') ?? '';
-        const dataDestination = element.getAttribute('data-destination') ?? '';
-        // micron-parser strips lxmf:// from data-destination; href/title keep the scheme.
-        const lxmfSource = [href, title].find((v) => v && isReticulumLxmfLink(v));
-        const destination = (lxmfSource ?? dataDestination) || href;
-        if (!destination) return;
-        const dataFields = element.getAttribute('data-fields');
-        handleNomadLink(destination, dataFields);
-      };
-      element.addEventListener('click', onActivate);
-      cleanups.push(() => {
-        element.removeEventListener('click', onActivate);
+    // Event delegation so links inside async-loaded partials keep working.
+    const onActivate = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const element = target.closest<HTMLElement>('[data-action="openNode"]');
+      if (!element || !container.contains(element)) return;
+      const href = element.getAttribute('href') ?? '';
+      const title = element.getAttribute('title') ?? '';
+      const dataDestination = element.getAttribute('data-destination') ?? '';
+      // In-page Micron anchors (`#slug`) — let the browser scroll; do not treat as Nomad nav.
+      if (href.startsWith('#') || dataDestination.startsWith('#')) {
+        return;
+      }
+      event.preventDefault();
+      // micron-parser strips lxmf:// from data-destination; href/title keep the scheme.
+      const lxmfSource = [href, title].find((v) => v && isReticulumLxmfLink(v));
+      const destination = (lxmfSource ?? dataDestination) || href;
+      if (!destination) return;
+      const dataFields = element.getAttribute('data-fields');
+      handleNomadLink(destination, dataFields);
+    };
+    container.addEventListener('click', onActivate);
+
+    let unbindPartials: (() => void) | undefined;
+    if (linkContextRef.current.onFetchPartial) {
+      unbindPartials = bindNomadMicronPartials(container, async (info) => {
+        const ctx = linkContextRef.current;
+        const fetchPage = ctx.onFetchPartial;
+        if (!fetchPage) return null;
+        try {
+          return await loadNomadMicronPartial({
+            destination: info.destination,
+            fields: info.fields,
+            signal: info.signal,
+            defaultPagePath: ctx.defaultPagePath,
+            selectedHash: ctx.selectedHash,
+            formContainer: containerRef.current,
+            fetchPage,
+          });
+        } catch (e) {
+          if (e instanceof DOMException && e.name === 'AbortError') throw e;
+          console.warn('[NomadMicronPageView] partial fetch failed', e);
+          throw e;
+        }
       });
     }
+
     return () => {
-      for (const cleanup of cleanups) cleanup();
+      container.removeEventListener('click', onActivate);
+      unbindPartials?.();
     };
   }, [content]);
 

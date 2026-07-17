@@ -19,6 +19,26 @@ vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
   isReticulumSidecarRunning: () => isReticulumSidecarRunning(),
 }));
 
+vi.mock('./NomadPageServerPanel', () => ({
+  default: ({
+    isActive,
+    onPreviewHostedSite,
+  }: {
+    isActive?: boolean;
+    onPreviewHostedSite?: (hash: string) => void;
+  }) => (
+    <div data-testid="nomad-page-server-panel" data-active={String(Boolean(isActive))}>
+      <button
+        type="button"
+        aria-label="preview-hosted"
+        onClick={() => onPreviewHostedSite?.('aabbccddeeff00112233445566778899')}
+      >
+        preview
+      </button>
+    </div>
+  ),
+}));
+
 import { clearNomadPageCache } from '@/renderer/lib/nomad/nomadPageCache';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
@@ -87,6 +107,44 @@ describe('NomadNetworkPanel', () => {
     await user.type(search, 'topics');
     expect(screen.getByText('TOPICS! The Nomad Forum')).toBeInTheDocument();
     expect(screen.queryByText('Announce only')).not.toBeInTheDocument();
+  });
+
+  it('shows My Pages hosting panel and hides search when selected', async () => {
+    const user = userEvent.setup();
+    render(<NomadNetworkPanel />);
+
+    expect(screen.queryByTestId('nomad-page-server-panel')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'nomadNetwork.myPagesTab' }));
+
+    expect(screen.getByRole('tab', { name: 'nomadNetwork.myPagesTab' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByTestId('nomad-page-server-panel')).toHaveAttribute('data-active', 'true');
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.queryByText('TOPICS! The Nomad Forum')).not.toBeInTheDocument();
+  });
+
+  it('preview from My Pages switches to announces and refreshes', async () => {
+    const user = userEvent.setup();
+    const refreshFromSidecar = vi.fn().mockResolvedValue(undefined);
+    const fetchNomadPage = vi.fn().mockResolvedValue({ ok: true, content: 'hosted' });
+    useNomadNetworkStore.setState({ refreshFromSidecar, fetchNomadPage });
+
+    render(<NomadNetworkPanel />);
+    await user.click(screen.getByRole('tab', { name: 'nomadNetwork.myPagesTab' }));
+    await user.click(screen.getByRole('button', { name: 'preview-hosted' }));
+
+    expect(screen.getByRole('tab', { name: 'nomadNetwork.announces' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await waitFor(() => {
+      expect(refreshFromSidecar).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(fetchNomadPage).toHaveBeenCalled();
+    });
   });
 
   it('renders formatted micron page content', async () => {

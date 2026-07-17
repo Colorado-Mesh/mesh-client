@@ -21,6 +21,14 @@ vi.mock('../log-service', () => ({
 vi.mock('../reticulum-config-paths', () => ({
   readFirstExistingConfig: vi.fn(),
   showReticulumConfigImportDialog: vi.fn(),
+  showNomadContentSourceDialog: vi.fn(),
+  isAllowedNomadContentSourcePath: vi.fn((path: string | null) => Boolean(path?.trim())),
+  isNomadContentSourceApiPath: vi.fn(
+    (apiPath: string) =>
+      apiPath === '/api/v1/nomadnetwork/serving/content-source' ||
+      apiPath.endsWith('/nomadnetwork/serving/content-source'),
+  ),
+  NOMAD_CONTENT_SOURCE_API_PATH: '/api/v1/nomadnetwork/serving/content-source',
 }));
 
 vi.mock('../reticulum-config-validate', () => ({
@@ -32,7 +40,9 @@ vi.mock('../reticulum-identity-import', () => ({
 }));
 
 import {
+  isAllowedNomadContentSourcePath,
   readFirstExistingConfig,
+  showNomadContentSourceDialog,
   showReticulumConfigImportDialog,
 } from '../reticulum-config-paths';
 import { validateReticulumUserConfig } from '../reticulum-config-validate';
@@ -45,6 +55,8 @@ type IpcHandler = (event: unknown, ...args: unknown[]) => unknown;
 const assertIpcSenderMock = vi.mocked(assertIpcSender);
 const readFirstExistingConfigMock = vi.mocked(readFirstExistingConfig);
 const showReticulumConfigImportDialogMock = vi.mocked(showReticulumConfigImportDialog);
+const showNomadContentSourceDialogMock = vi.mocked(showNomadContentSourceDialog);
+const isAllowedNomadContentSourcePathMock = vi.mocked(isAllowedNomadContentSourcePath);
 const validateReticulumUserConfigMock = vi.mocked(validateReticulumUserConfig);
 const showReticulumIdentityImportDialogMock = vi.mocked(showReticulumIdentityImportDialog);
 
@@ -76,6 +88,9 @@ describe('registerReticulumIpcHandlers', () => {
       handlers.set(channel, fn);
     });
     assertIpcSenderMock.mockReset();
+    isAllowedNomadContentSourcePathMock
+      .mockReset()
+      .mockImplementation((path: string | null) => Boolean(path?.trim()));
     manager = createManagerStub();
     getManagerResult = manager;
 
@@ -101,6 +116,8 @@ describe('registerReticulumIpcHandlers', () => {
         'reticulum:readDefaultConfigFile',
         'reticulum:showConfigImportDialog',
         'reticulum:showIdentityImportDialog',
+        'reticulum:showNomadContentSourceDialog',
+        'reticulum:setNomadContentSource',
         'reticulum:validateConfig',
       ]),
     );
@@ -119,11 +136,14 @@ describe('registerReticulumIpcHandlers', () => {
       handlers.get('reticulum:readDefaultConfigFile')?.(event);
       await handlers.get('reticulum:showConfigImportDialog')?.(event);
       await handlers.get('reticulum:showIdentityImportDialog')?.(event);
+      await handlers.get('reticulum:showNomadContentSourceDialog')?.(event);
+      await handlers.get('reticulum:setNomadContentSource')?.(event, '/tmp/site');
       await handlers.get('reticulum:validateConfig')?.(event);
 
-      expect(assertIpcSenderMock).toHaveBeenCalledTimes(12);
+      expect(assertIpcSenderMock).toHaveBeenCalledTimes(14);
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:start');
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:proxyPost');
+      expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:setNomadContentSource');
       expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:validateConfig');
     });
 
@@ -277,6 +297,60 @@ describe('registerReticulumIpcHandlers', () => {
       showReticulumIdentityImportDialogMock.mockResolvedValue({ canceled: true } as never);
       const result = await handlers.get('reticulum:showIdentityImportDialog')?.(event);
       expect(result).toEqual({ canceled: true });
+    });
+
+    it('showNomadContentSourceDialog delegates to showNomadContentSourceDialog', async () => {
+      showNomadContentSourceDialogMock.mockResolvedValue({
+        canceled: false,
+        path: '/tmp/nomad-page',
+      });
+      const result = await handlers.get('reticulum:showNomadContentSourceDialog')?.(event);
+      expect(result).toEqual({ canceled: false, path: '/tmp/nomad-page' });
+    });
+
+    it('setNomadContentSource rejects empty paths', async () => {
+      const result = await handlers.get('reticulum:setNomadContentSource')?.(event, '   ');
+      expect(result).toEqual({ ok: false, error: 'content_source_required' });
+      expect(manager.proxyPut).not.toHaveBeenCalled();
+    });
+
+    it('setNomadContentSource throws TypeError for non-string paths', async () => {
+      await expect(handlers.get('reticulum:setNomadContentSource')?.(event, 42)).rejects.toThrow(
+        TypeError,
+      );
+      await expect(handlers.get('reticulum:setNomadContentSource')?.(event, null)).rejects.toThrow(
+        /must be a string/,
+      );
+      expect(manager.proxyPut).not.toHaveBeenCalled();
+    });
+
+    it('setNomadContentSource rejects paths not from the folder picker', async () => {
+      isAllowedNomadContentSourcePathMock.mockReturnValue(false);
+      const result = await handlers.get('reticulum:setNomadContentSource')?.(event, '/evil/path');
+      expect(result).toEqual({ ok: false, error: 'content_source_not_from_picker' });
+      expect(manager.proxyPut).not.toHaveBeenCalled();
+    });
+
+    it('setNomadContentSource applies picker-backed paths via sidecar', async () => {
+      isAllowedNomadContentSourcePathMock.mockReturnValue(true);
+      manager.proxyPut.mockResolvedValueOnce({
+        ok: true,
+        serving: { content_source: '/tmp/site' },
+      });
+      const result = await handlers.get('reticulum:setNomadContentSource')?.(event, '/tmp/site');
+      expect(manager.proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/content-source', {
+        path: '/tmp/site',
+      });
+      expect(result).toEqual({ ok: true, serving: { content_source: '/tmp/site' } });
+    });
+
+    it('proxyPut rejects Nomad content-source mutations', async () => {
+      await expect(
+        handlers.get('reticulum:proxyPut')?.(event, '/api/v1/nomadnetwork/serving/content-source', {
+          path: '/tmp/x',
+        }),
+      ).rejects.toThrow(/setNomadContentSource/);
+      expect(manager.proxyPut).not.toHaveBeenCalled();
     });
 
     it('validateConfig returns the validator result on success', async () => {

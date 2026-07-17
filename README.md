@@ -303,7 +303,7 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 
 ### Reticulum Features
 
-Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGPL Rust sidecar** (`mesh-client-reticulum`) spawned by Electron main; the MIT renderer talks to it through `electronAPI.reticulum` (HTTP/WS proxy). Chat history and LXMF contacts persist in SQLite. Primary interop target: [Ratspeak](https://github.com/ratspeak/Ratspeak) peers on rsReticulum/rsLXMF. Architecture and API details: [docs/reticulum.md](docs/reticulum.md).
+Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGPL Rust sidecar** (`mesh-client-reticulum`) spawned by Electron main; the MIT renderer talks to it through `electronAPI.reticulum` (HTTP/WS proxy). Chat history and LXMF contacts persist in SQLite. Primary interop target: [Ratspeak](https://github.com/ratspeak/Ratspeak) peers on rsReticulum/rsLXMF; Nomad page hosting uses sibling [rsNomad](https://github.com/Colorado-Mesh/rsNomad). Architecture and API details: [docs/reticulum.md](docs/reticulum.md).
 
 **Stack & interfaces (Connection tab)**
 
@@ -328,7 +328,7 @@ Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGP
 - **Peers** tab: RNS path-table peers and LXMF contacts (separate sub-tabs); virtualized large lists, path probe, and peer detail modal
 - **Map** tab: local RMAP v4 discovery map (Leaflet + OSM basemaps; heard opt-in interfaces with GPS; interface-type filters; reachable vs heard-only sidebar list; publish via Network + Connection); **Global map** link to [rmap.world](https://rmap.world/) — no position trails or waypoints (contrast with Meshtastic/MeshCore Map)
 - **Topology** tab: best-effort graph from the RNS path table (next-hop edges, force layout)
-- **Nomad Network** tab: collapsible favourites/announces list (default **Favourites** sub-tab); fit-width pages by default with an open-width toggle; panel lazy-mounts after first visit and keeps browse state across tab switches (`mesh-client:nomadNodeListCollapsed` for sidebar width)
+- **Nomad Network** tab: collapsible favourites/announces list (default **Favourites** sub-tab); **My Pages** hosts a static Nomad site (rsNomad `nomad-core`) — **Choose folder** for a watched site root (e.g. sibling `nomad-page` with `pages/*.mu`) or pages directory, set a display name, Start serving (off by default; auto-restores when the stack comes back up); edit pages on disk (read-only list in the UI); fit-width pages by default with an open-width toggle; panel lazy-mounts after first visit and keeps browse state across tab switches (`mesh-client:nomadNodeListCollapsed` for sidebar width)
 
 **Admin & hardware**
 
@@ -501,7 +501,7 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 | Windows  | Yes        | Yes              | Yes              | Yes       | Yes                         |
 | Linux    | Yes        | Yes              | Yes              | Yes       | Yes                         |
 
-Sidecar dev build: `pnpm run reticulum:sidecar:build` ([Rust](https://rustup.rs/) required). Full stack needs sibling checkouts `../rsReticulum` and `../rsLXMF` — see [docs/reticulum.md](docs/reticulum.md#building-the-sidecar).
+Sidecar dev build: `pnpm run reticulum:sidecar:build` ([Rust](https://rustup.rs/) required). Full stack needs sibling checkouts `../rsReticulum`, `../rsLXMF`, and `../rsNomad` — see [docs/reticulum.md](docs/reticulum.md#building-the-sidecar).
 
 ### Tech Stack
 
@@ -513,7 +513,7 @@ Sidecar dev build: `pnpm run reticulum:sidecar:build` ([Rust](https://rustup.rs/
 | Localization | i18next + react-i18next; 16 languages; static JSON bundles                                                                                                    |
 | Meshtastic   | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via @stoprocent/noble (macOS/Windows) and Web Bluetooth (Linux)                            |
 | MeshCore     | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                                                                                           |
-| Reticulum    | `mesh-client-reticulum` sidecar (Rust, rsReticulum/rsLXMF); `reticulum:*` IPC proxy; LXMF in SQLite (`reticulum_messages`, `reticulum_destinations`)          |
+| Reticulum    | `mesh-client-reticulum` sidecar (Rust, rsReticulum/rsLXMF/rsNomad); `reticulum:*` IPC proxy; LXMF in SQLite (`reticulum_messages`, `reticulum_destinations`)  |
 | Maps         | Leaflet + OpenStreetMap (Meshtastic/MeshCore node positions; Reticulum **Map** = local RMAP v4 discovery + link to rmap.world; **Topology** = RNS path graph) |
 | Charts       | Recharts                                                                                                                                                      |
 | Database     | SQLite (node:sqlite built-in, via db-compat.ts shim)                                                                                                          |

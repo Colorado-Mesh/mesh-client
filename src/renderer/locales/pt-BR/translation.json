@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "Reconexão serial USB"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Problemas de hospedagem de página Nomad",
+        "recommendation": "A hospedagem do Nomad My Pages falhou ou a pasta de conteúdo não está disponível. Abra Nomad Network → My Pages, escolha novamente a pasta pages se ela for movida e, em seguida, comece a servir. Os detalhes aparecem como [nomad-serving] / [NomadHosting] no registro."
       }
     },
     "recommendationGroups": {
@@ -2717,7 +2721,7 @@
     "fileDownloadInProgress": "Um download de arquivo já está em andamento.",
     "sendMessage": "Mensagem",
     "sendMessageAria": "Enviar mensagem para {{name}}",
-    "urlBarAria": "Endereço da página nômade",
+    "urlBarAria": "Endereço da página Nomad",
     "back": "Voltar",
     "forward": "Avançar",
     "invalidUrl": "Endereço de página Nomad inválido",
@@ -2735,7 +2739,42 @@
       "nomadBusy": "Outra solicitação de página ou arquivo Nomad ainda está em andamento. Tente novamente em um momento."
     },
     "fitWidth": "Encaixar na janela",
-    "openWidth": "Largura da Página"
+    "openWidth": "Largura da Página",
+    "myPagesTab": "Minhas páginas",
+    "serving": {
+      "title": "Hospedar páginas Nomad",
+      "servingChip": "Servindo à rede",
+      "sidecarRequired": "Inicie a pilha Reticulum para hospedar páginas Nomad.",
+      "displayName": "Nome de exibição do nó",
+      "enable": "Iniciar hospedagem",
+      "disable": "Parar hospedagem",
+      "destinationHash": "Destino",
+      "copyHash": "Copiar hash",
+      "copied": "Copiado",
+      "stats": "{{pages}} páginas · {{files}} arquivos · {{requests}} solicitações",
+      "myPages": "Páginas locais",
+      "failed": "Não foi possível atualizar o serviço Nomad.",
+      "previewSite": "Abra no Navegador",
+      "previewSiteAria": "Visualize este site Nomad hospedado no navegador",
+      "myFiles": "Arquivos locais",
+      "folderHint": "Sirva páginas Micron de uma pasta no disco (recomendado). Escolha uma raiz do site com um diretório pages/, ou o próprio diretório pages. Edições no disco são detectadas automaticamente.",
+      "chooseFolder": "Escolher pasta",
+      "chooseFolderAria": "Escolha uma pasta para hospedar páginas Nomad",
+      "contentSource": "Pasta de Conteúdo",
+      "contentSourceUnavailable": "A pasta de páginas escolhidas está ausente ou indisponível. Escolha a pasta novamente.",
+      "contentSourceNotDirectory": "Escolha um diretório, não um arquivo.",
+      "contentSourceUnreadable": "Não foi possível ler a pasta escolhida.",
+      "invalidContentSource": "A pasta deve conter um diretório pages/ ou arquivos de página .mu.",
+      "contentSourceFailed": "Não foi possível definir a pasta de conteúdo.",
+      "watcherDegraded": "A observação de pastas está degradada; a lista de páginas pode ficar atrasada até que a pasta esteja legível novamente.",
+      "reloadFromDisk": "Recarregar a partir do disco",
+      "reloadFromDiskAria": "Recarregar páginas hospedadas do disco",
+      "noPages": "Ainda não há páginas. Adicione arquivos .mu à pasta escolhida (por exemplo, index.mu).",
+      "noFiles": "Ainda não há arquivos. Coloque arquivos na pasta files/ do site para servir em /file/…",
+      "contentSourceNotFromPicker": "Escolha a pasta com Escolher pasta antes de aplicá-la.",
+      "contentSourceNone": "Nenhuma pasta escolhida",
+      "contentSourceRequired": "Escolha uma pasta de páginas antes de iniciar a hospedagem Nomad."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Distribuição Geral",
@@ -3799,7 +3838,7 @@
     "legendInterfaceOnline": "Interface online",
     "legendInterfaceOffline": "Interface offline",
     "legendPeerUser": "LXMF peer",
-    "legendPeerServer": "Nó nômade",
+    "legendPeerServer": "Nó Nomad",
     "interfaceLink": "Link da interface",
     "peerLink": "entre pares",
     "interfaceTooltip": "{{name}} — {{status}}",

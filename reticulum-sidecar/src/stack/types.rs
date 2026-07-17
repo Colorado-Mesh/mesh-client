@@ -117,6 +117,40 @@ pub struct NomadNodeRow {
     pub status: Option<String>,
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct NomadServeStatsRow {
+    pub request_count: u64,
+    pub page_hits: u64,
+    pub file_hits: u64,
+    pub not_found_count: u64,
+    pub last_request_ms: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NomadServingStatus {
+    pub enabled: bool,
+    pub running: bool,
+    pub destination_hash: Option<String>,
+    pub identity_hash: Option<String>,
+    pub display_name: String,
+    pub page_count: usize,
+    pub file_count: usize,
+    pub stats: NomadServeStatsRow,
+    pub content_root: String,
+    /// Absolute path the user chose as the watched content source.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub content_source: Option<String>,
+    /// `site_root` | `pages_dir`
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub content_layout: Option<String>,
+    /// `ok` | `degraded` | `unavailable` — watcher / content-source health.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub watcher_status: Option<String>,
+    /// Stable error code when enabled but not running, or watcher degraded.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RrcHubRow {
     pub destination_hash: String,

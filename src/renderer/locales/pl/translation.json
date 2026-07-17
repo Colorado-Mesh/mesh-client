@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "Ponowne połączenie szeregowe USB"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Problemy z hostingiem strony Nomad",
+        "recommendation": "Hosting Nomad My Pages nie powiódł się lub folder treści jest niedostępny. Otwórz Nomad Network → My Pages, ponownie wybierz folder stron, jeśli został przeniesiony, a następnie rozpocznij serwowanie. Szczegóły pojawiają się jako [nomad-serving] / [NomadHosting] w dzienniku."
       }
     },
     "recommendationGroups": {
@@ -2717,25 +2721,60 @@
     "fileDownloadInProgress": "Pobieranie pliku już trwa.",
     "sendMessage": "Wiadomość",
     "sendMessageAria": "Wyślij wiadomość do {{name}}",
-    "urlBarAria": "Adres strony Nomada",
+    "urlBarAria": "Adres strony Nomad",
     "back": "Z powrotem",
     "forward": "Do przodu",
-    "invalidUrl": "Nieprawidłowy adres strony Nomada",
+    "invalidUrl": "Nieprawidłowy adres strony Nomad",
     "collapseNodeList": "Zwiń listę węzłów",
     "expandNodeList": "Rozwiń listę węzłów",
     "errors": {
       "pathTimeout": "Brak trasy do tego węzła (przekroczono limit czasu wyszukiwania ścieżki). Spróbuj bliższego węzła lub poczekaj na nowszy announce.",
-      "pubkeyNotFound": "Nie można znaleźć klucza tożsamości tego węzła. Poczekaj na ogłoszenie Nomada, a następnie spróbuj ponownie.",
+      "pubkeyNotFound": "Nie można znaleźć klucza tożsamości tego węzła. Poczekaj na ogłoszenie Nomad, a następnie spróbuj ponownie.",
       "linkTimeout": "Połączenie z węzłem nie mogło zostać ustanowione na czas.",
       "responseTimeout": "Węzeł zaakceptował link, ale nie zwrócił strony na czas.",
-      "missingIdentity": "Ten węzeł nie ma jeszcze zapamiętanej tożsamości. Poczekaj na ogłoszenie Nomada, a następnie spróbuj ponownie.",
+      "missingIdentity": "Ten węzeł nie ma jeszcze zapamiętanej tożsamości. Poczekaj na ogłoszenie Nomad, a następnie spróbuj ponownie.",
       "transportUnavailable": "Transport Reticulum jest niedostępny. Uruchom ponownie stos i spróbuj ponownie.",
       "sidecarNotRunning": "Sidecar Reticulum nie działa. Uruchom stos z Połączenia, a następnie spróbuj ponownie.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
+      "nomadBusy": "Inne żądanie strony lub pliku Nomad jest nadal w toku. Spróbuj ponownie za chwilę."
     },
     "fitWidth": "Dopasuj do okna",
-    "openWidth": "Szerokość strony"
+    "openWidth": "Szerokość strony",
+    "myPagesTab": "Moje strony",
+    "serving": {
+      "title": "Hostuj strony Nomad",
+      "servingChip": "Udostępnianie w sieci",
+      "sidecarRequired": "Uruchom stos Reticulum, aby hostować strony Nomad.",
+      "displayName": "Nazwa wyświetlana węzła",
+      "enable": "Rozpocznij udostępnianie",
+      "disable": "Zatrzymaj udostępnianie",
+      "destinationHash": "Cel",
+      "copyHash": "Kopiuj hash",
+      "copied": "Skopiowano",
+      "stats": "{{pages}} stron · {{files}} plików · {{requests}} żądań",
+      "myPages": "Strony lokalne",
+      "failed": "Nie można zaktualizować usługi Nomad.",
+      "previewSite": "Otwórz w przeglądarce",
+      "previewSiteAria": "Podgląd tej hostowanej witryny Nomad w przeglądarce",
+      "myFiles": "Pliki lokalne",
+      "folderHint": "Udostępniaj strony Micron z folderu na dysku (zalecane). Wybierz katalog główny witryny z katalogiem pages/ lub sam katalog pages. Zmiany na dysku są wykrywane automatycznie.",
+      "chooseFolder": "Wybierz folder",
+      "chooseFolderAria": "Wybierz folder, z którego chcesz hostować strony Nomad",
+      "contentSource": "Folder treści",
+      "contentSourceUnavailable": "Brak wybranego folderu stron lub jest on niedostępny. Ponownie wybierz folder.",
+      "contentSourceNotDirectory": "Wybierz katalog, a nie plik.",
+      "contentSourceUnreadable": "Nie można odczytać wybranego folderu.",
+      "invalidContentSource": "Folder musi zawierać katalog pages/ lub pliki stron .mu.",
+      "contentSourceFailed": "Nie można ustawić folderu zawartości.",
+      "watcherDegraded": "Obserwacja folderu jest zdegradowana; lista stron może być opóźniona, dopóki folder nie będzie ponownie czytelny.",
+      "reloadFromDisk": "Załaduj ponownie z dysku",
+      "reloadFromDiskAria": "Załaduj ponownie hostowane strony z dysku",
+      "noPages": "Brak stron. Dodaj pliki .mu do wybranego folderu (na przykład index.mu).",
+      "noFiles": "Nie ma jeszcze plików. Umieść pliki w folderze files/ witryny, które mają być obsługiwane pod /file/…",
+      "contentSourceNotFromPicker": "Przed zastosowaniem wybierz folder z opcją Wybierz folder.",
+      "contentSourceNone": "Nie wybrano folderu",
+      "contentSourceRequired": "Wybierz folder stron przed uruchomieniem hostingu Nomad."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",

@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "Ricollegamento seriale USB"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Problemi di hosting della pagina Nomad",
+        "recommendation": "L'hosting di Nomad My Pages non è riuscito o la cartella dei contenuti non è disponibile. Apri Nomad Network → My Pages, seleziona nuovamente la cartella delle pagine se si è spostata, quindi inizia a servire. I dettagli appaiono come [nomad-serving] / [NomadHosting] nel registro."
       }
     },
     "recommendationGroups": {
@@ -2717,7 +2721,7 @@
     "fileDownloadInProgress": "È già in corso il download di un file.",
     "sendMessage": "Messaggio",
     "sendMessageAria": "Invia messaggio a {{name}}",
-    "urlBarAria": "Indirizzo della pagina nomade",
+    "urlBarAria": "Indirizzo della pagina Nomad",
     "back": "Indietro",
     "forward": "Inoltrare",
     "invalidUrl": "Indirizzo della pagina Nomad non valido",
@@ -2725,17 +2729,52 @@
     "expandNodeList": "Espandi elenco nodi",
     "errors": {
       "pathTimeout": "Nessun percorso verso questo nodo (timeout ricerca percorso). Prova un nodo più vicino o attendi un announce più recente.",
-      "pubkeyNotFound": "Impossibile trovare la chiave di identità di questo nodo. Attendi l'annuncio di un Nomade, quindi riprova.",
+      "pubkeyNotFound": "Impossibile trovare la chiave di identità di questo nodo. Attendi un annuncio Nomad, quindi riprova.",
       "linkTimeout": "Impossibile stabilire in tempo il collegamento al nodo.",
       "responseTimeout": "Il nodo ha accettato il collegamento ma non ha restituito la pagina in tempo.",
-      "missingIdentity": "Questo nodo non ha ancora un'identità ricordata. Attendi l'annuncio di un Nomade, quindi riprova.",
+      "missingIdentity": "Questo nodo non ha ancora un'identità memorizzata. Attendi un annuncio Nomad, quindi riprova.",
       "transportUnavailable": "Il trasporto Reticulum non è disponibile. Riavviare lo stack e riprovare.",
       "sidecarNotRunning": "Il sidecar Reticulum non è in esecuzione. Avviare lo stack da Connessione, quindi riprovare.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
+      "nomadBusy": "Un'altra richiesta di pagina o file Nomad è ancora in corso. Riprova tra un momento."
     },
     "fitWidth": "Adatta alla finestra",
-    "openWidth": "Larghezza pagina"
+    "openWidth": "Larghezza pagina",
+    "myPagesTab": "Le mie pagine",
+    "serving": {
+      "title": "Ospitare pagine Nomad",
+      "servingChip": "In servizio sulla rete",
+      "sidecarRequired": "Avvia lo stack Reticulum per ospitare le pagine Nomad.",
+      "displayName": "Nome visualizzato del nodo",
+      "enable": "Avvia la pubblicazione",
+      "disable": "Interrompi la pubblicazione",
+      "destinationHash": "Destinazione",
+      "copyHash": "Copia hash",
+      "copied": "Copiato",
+      "stats": "{{pages}} pagine · {{files}} file · {{requests}} richieste",
+      "myPages": "Pagine locali",
+      "failed": "Impossibile aggiornare il servizio Nomad.",
+      "previewSite": "Apri nel browser",
+      "previewSiteAria": "Visualizza l'anteprima di questo sito Nomad ospitato nel browser",
+      "myFiles": "File locali",
+      "folderHint": "Servi pagine Micron da una cartella su disco (consigliato). Scegli una root del sito con una directory pages/, o la directory pages stessa. Le modifiche su disco vengono rilevate automaticamente.",
+      "chooseFolder": "Seleziona cartella",
+      "chooseFolderAria": "Scegli una cartella da cui ospitare le pagine Nomad",
+      "contentSource": "Cartella Contenuti",
+      "contentSourceUnavailable": "La cartella delle pagine scelta è mancante o non disponibile. Scegliere di nuovo la cartella.",
+      "contentSourceNotDirectory": "Scegli una directory, non un file.",
+      "contentSourceUnreadable": "Impossibile leggere la cartella scelta.",
+      "invalidContentSource": "La cartella deve contenere una directory pages/ o file di pagina .mu.",
+      "contentSourceFailed": "Impossibile impostare la cartella del contenuto.",
+      "watcherDegraded": "La visualizzazione delle cartelle è degradata; l'elenco delle pagine potrebbe essere in ritardo fino a quando la cartella non sarà di nuovo leggibile.",
+      "reloadFromDisk": "Ricarica dal disco",
+      "reloadFromDiskAria": "Ricarica le pagine ospitate dal disco",
+      "noPages": "Ancora nessuna pagina. Aggiungi file .mu alla cartella scelta (ad esempio index.mu).",
+      "noFiles": "Ancora nessun file. Posiziona i file nella cartella files/ del sito da servire in /file/…",
+      "contentSourceNotFromPicker": "Scegliere la cartella con la cartella Scegli prima di applicarla.",
+      "contentSourceNone": "Nessuna cartella scelta",
+      "contentSourceRequired": "Scegli una cartella di pagine prima di iniziare l'hosting Nomad."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Distribuzione complessiva",
@@ -3799,7 +3838,7 @@
     "legendInterfaceOnline": "Interfaccia online",
     "legendInterfaceOffline": "Interfaccia offline",
     "legendPeerUser": "LXMF peer",
-    "legendPeerServer": "Nodo nomade",
+    "legendPeerServer": "Nodo Nomad",
     "interfaceLink": "Collegamento interfaccia",
     "peerLink": "Collegamento peer",
     "interfaceTooltip": "{{name}} — {{status}}",

@@ -135,4 +135,49 @@ describe('NomadMicronPageView', () => {
       'nomad-micron-page--fit-width',
     );
   });
+
+  it('fetches and mounts Micron partial content via onFetchPartial', async () => {
+    const onFetchPartial = vi.fn().mockResolvedValue({
+      ok: true,
+      content: '`!Loaded partial:`!',
+    });
+    render(
+      <NomadMicronPageView
+        {...defaultProps}
+        onFetchPartial={onFetchPartial}
+        content="`{:/page/partial.mu}"
+      />,
+    );
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Loaded partial');
+    });
+    expect(onFetchPartial).toHaveBeenCalledWith(
+      defaultProps.selectedHash,
+      '/page/partial.mu',
+      undefined,
+    );
+  });
+
+  it('navigates links that appear inside loaded partial markup', async () => {
+    const onNavigate = vi.fn();
+    const onFetchPartial = vi.fn().mockResolvedValue({
+      ok: true,
+      content: '`[Inner`:/page/inner.mu`]',
+    });
+    render(
+      <NomadMicronPageView
+        {...defaultProps}
+        onNavigate={onNavigate}
+        onFetchPartial={onFetchPartial}
+        content="`{:/page/partial.mu}"
+      />,
+    );
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('[data-action="openNode"]')).not.toBeNull();
+    });
+    fireEvent.click(document.querySelector('[data-action="openNode"]')!);
+    expect(onNavigate).toHaveBeenCalledWith(defaultProps.selectedHash, '/page/inner.mu', undefined);
+  });
 });

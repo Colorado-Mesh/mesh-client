@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "Sériové připojení USB"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Problémy s hostitelstvím na stránce Nomad",
+        "recommendation": "Hostování služby Nomad My Pages se nezdařilo nebo složka s obsahem není k dispozici. Otevřete Nomad Network → My Pages, znovu vyberte složku stránek, pokud se přesunula, a poté Spustit zobrazování. Podrobnosti se v protokolu zobrazí jako [nomad-serving] / [NomadHosting]."
       }
     },
     "recommendationGroups": {
@@ -2717,7 +2721,7 @@
     "fileDownloadInProgress": "Stahování souboru již probíhá.",
     "sendMessage": "Zpráva",
     "sendMessageAria": "Odeslat zprávu na {{name}}",
-    "urlBarAria": "Adresa stránky Nomád",
+    "urlBarAria": "Adresa stránky Nomad",
     "back": "Zadní",
     "forward": "Vpřed",
     "invalidUrl": "Neplatná adresa stránky Nomad",
@@ -2725,17 +2729,52 @@
     "expandNodeList": "Rozbalit seznam uzlů",
     "errors": {
       "pathTimeout": "K tomuto uzlu neexistuje cesta (vypršel časový limit vyhledávání cesty). Zkuste bližší uzel nebo počkejte na novější announce.",
-      "pubkeyNotFound": "Nelze najít identifikační klíč tohoto uzlu. Počkej na oznámení Nomáda a zkus to znovu.",
+      "pubkeyNotFound": "Nelze najít identifikační klíč tohoto uzlu. Počkejte na oznámení Nomad a zkuste to znovu.",
       "linkTimeout": "Propojení s uzlem se nepodařilo navázat včas.",
       "responseTimeout": "Uzel přijal odkaz, ale stránku nevrátil včas.",
-      "missingIdentity": "Tento uzel zatím nemá zapamatovanou identitu. Počkej na oznámení Nomáda a zkus to znovu.",
+      "missingIdentity": "Tento uzel zatím nemá zapamatovanou identitu. Počkejte na oznámení Nomad a zkuste to znovu.",
       "transportUnavailable": "Transport Reticulum není k dispozici. Restartujte zásobník a zkuste to znovu.",
       "sidecarNotRunning": "Reticulum sidecar neběží. Spusťte zásobník z Připojení a zkuste to znovu.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
+      "nomadBusy": "Jiný požadavek na stránku nebo soubor Nomad stále probíhá. Zkuste to znovu za chvíli."
     },
     "fitWidth": "Přizpůsobit stránku oknu",
-    "openWidth": "Šířka stránky"
+    "openWidth": "Šířka stránky",
+    "myPagesTab": "Moje stránky",
+    "serving": {
+      "title": "Hostovat stránky Nomad",
+      "servingChip": "Poskytování do sítě",
+      "sidecarRequired": "Spusťte zásobník Reticulum, abyste mohli hostit stránky Nomad.",
+      "displayName": "Zobrazovaný název uzlu",
+      "enable": "Spustit poskytování",
+      "disable": "Zastavit poskytování",
+      "destinationHash": "Cíl",
+      "copyHash": "Kopírovat hash",
+      "copied": "Zkopírováno",
+      "stats": "{{pages}} stránek · {{files}} souborů · {{requests}} požadavků",
+      "myPages": "Místní stránky",
+      "failed": "Nelze aktualizovat službu Nomad.",
+      "previewSite": "Otevřít v prohlížeči",
+      "previewSiteAria": "Náhled tohoto hostovaného webu Nomad v prohlížeči",
+      "myFiles": "Místní soubory",
+      "folderHint": "Hostujte stránky Micron ze složky na disku (doporučeno). Vyberte kořen webu s adresářem pages/, nebo přímo adresář pages. Úpravy na disku se načtou automaticky.",
+      "chooseFolder": "Vyberte složku",
+      "chooseFolderAria": "Vyberte složku, ze které chcete hostit stránky Nomad",
+      "contentSource": "Složka s obsahem",
+      "contentSourceUnavailable": "Zvolená složka stránek chybí nebo není k dispozici. Zvolte složku znovu.",
+      "contentSourceNotDirectory": "Vyberte adresář, nikoli soubor.",
+      "contentSourceUnreadable": "Nelze přečíst vybranou složku.",
+      "invalidContentSource": "Složka musí obsahovat adresář pages/ nebo soubory stránek .mu.",
+      "contentSourceFailed": "Nelze nastavit složku obsahu.",
+      "watcherDegraded": "Sledování složky je degradováno; seznam stránek se může zpozdit, dokud nebude složka opět čitelná.",
+      "reloadFromDisk": "Znovu načíst z disku",
+      "reloadFromDiskAria": "Znovu načíst hostované stránky z disku",
+      "noPages": "Zatím žádné stránky. Přidejte soubory .mu do zvolené složky (například index.mu).",
+      "noFiles": "Zatím žádné soubory. Umístěte soubory do složky files/ webu, které se mají zobrazit pod /file/…",
+      "contentSourceNotFromPicker": "Před použitím vyberte složku pomocí tlačítka Vybrat složku.",
+      "contentSourceNone": "Nebyla vybrána žádná složka",
+      "contentSourceRequired": "Před zahájením hostování Nomad vyberte složku stránek."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",
@@ -3799,7 +3838,7 @@
     "legendInterfaceOnline": "Rozhraní online",
     "legendInterfaceOffline": "Rozhraní offline",
     "legendPeerUser": "LXMF peer",
-    "legendPeerServer": "Nomádský uzel",
+    "legendPeerServer": "Uzel Nomad",
     "interfaceLink": "Propojení rozhraní",
     "peerLink": "Odkaz na protějšek",
     "interfaceTooltip": "{{name}} — {{status}}",

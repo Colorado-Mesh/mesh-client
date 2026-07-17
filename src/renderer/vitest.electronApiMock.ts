@@ -360,6 +360,8 @@ export function createElectronAPIMock(): ElectronAPI {
       showIdentityImportDialog: vi
         .fn()
         .mockResolvedValue({ path: null, contentBase64: null, byteLength: null, error: null }),
+      showNomadContentSourceDialog: vi.fn().mockResolvedValue({ canceled: true, path: null }),
+      setNomadContentSource: vi.fn().mockResolvedValue({ ok: true }),
       validateConfig: vi.fn().mockResolvedValue({ ok: true, issues: [] }),
       onEvent: vi.fn().mockReturnValue(() => {}),
       onStatus: vi.fn().mockReturnValue(() => {}),

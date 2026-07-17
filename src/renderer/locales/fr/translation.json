@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "USB Serial Reconnect"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Problèmes d'hébergement de la page Nomad",
+        "recommendation": "L'hébergement de Nomad My Pages a échoué ou le dossier de contenu n'est pas disponible. Ouvrez Nomad Network → My Pages, choisissez à nouveau le dossier des pages s'il a été déplacé, puis commencez à servir. Les détails apparaissent sous la forme [nomad-serving] / [NomadHosting] dans le journal."
       }
     },
     "recommendationGroups": {
@@ -2717,7 +2721,7 @@
     "fileDownloadInProgress": "Un téléchargement de fichier est déjà en cours.",
     "sendMessage": "Message",
     "sendMessageAria": "Envoyer un message à {{name}}",
-    "urlBarAria": "Adresse de la page nomade",
+    "urlBarAria": "Adresse de la page Nomad",
     "back": "Dos",
     "forward": "Avant",
     "invalidUrl": "Adresse de la page Nomad invalide",
@@ -2735,7 +2739,42 @@
       "nomadBusy": "Une autre requête de page ou de fichier Nomad est encore en cours. Réessayez dans un instant."
     },
     "fitWidth": "Ajuster la page à la fenêtre",
-    "openWidth": "Largeur de la page"
+    "openWidth": "Largeur de la page",
+    "myPagesTab": "Mes pages",
+    "serving": {
+      "title": "Héberger des pages Nomad",
+      "servingChip": "Diffusion sur le réseau",
+      "sidecarRequired": "Démarrez la pile Reticulum pour héberger les pages Nomad.",
+      "displayName": "Nom d'affichage du nœud",
+      "enable": "Démarrer la diffusion",
+      "disable": "Arrêter la diffusion",
+      "destinationHash": "Destination",
+      "copyHash": "Copier le hash",
+      "copied": "Copié",
+      "stats": "{{pages}} pages · {{files}} fichiers · {{requests}} requêtes",
+      "myPages": "Pages locales",
+      "failed": "Impossible de mettre à jour le service Nomad.",
+      "previewSite": "Ouvrir dans le navigateur",
+      "previewSiteAria": "Prévisualisez ce site Nomad hébergé dans le navigateur",
+      "myFiles": "Fichiers locaux",
+      "folderHint": "Servez des pages Micron depuis un dossier sur le disque (recommandé). Choisissez une racine de site avec un répertoire pages/, ou le répertoire pages lui-même. Les modifications sur disque sont prises en compte automatiquement.",
+      "chooseFolder": "Choisir le dossier",
+      "chooseFolderAria": "Choisissez un dossier à partir duquel héberger les pages Nomad",
+      "contentSource": "Dossier de contenu",
+      "contentSourceUnavailable": "Le dossier de pages choisi est manquant ou indisponible. Choisissez à nouveau le dossier.",
+      "contentSourceNotDirectory": "Choisissez un répertoire, pas un fichier.",
+      "contentSourceUnreadable": "Impossible de lire le dossier choisi.",
+      "invalidContentSource": "Le dossier doit contenir un répertoire pages/ ou des fichiers de page .mu.",
+      "contentSourceFailed": "Impossible de définir le dossier de contenu.",
+      "watcherDegraded": "Le suivi des dossiers est dégradé ; la liste des pages peut être retardée jusqu'à ce que le dossier soit à nouveau lisible.",
+      "reloadFromDisk": "Recharger à partir du disque",
+      "reloadFromDiskAria": "Recharger les pages hébergées à partir du disque",
+      "noPages": "Pas encore de pages. Ajoutez des fichiers .mu au dossier choisi (par exemple index.mu).",
+      "noFiles": "Pas encore de fichiers. Placez les fichiers dans le dossier files/ du site à servir sous /file/…",
+      "contentSourceNotFromPicker": "Choisissez le dossier avec Choisir un dossier avant de l'appliquer.",
+      "contentSourceNone": "Aucun dossier choisi",
+      "contentSourceRequired": "Choisissez un dossier de pages avant de commencer l'hébergement Nomad."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",
@@ -3799,7 +3838,7 @@
     "legendInterfaceOnline": "Interface en ligne",
     "legendInterfaceOffline": "Interface hors ligne",
     "legendPeerUser": "LXMF pair",
-    "legendPeerServer": "Nœud nomade",
+    "legendPeerServer": "Nœud Nomad",
     "interfaceLink": "Liaison interface",
     "peerLink": "Lien avec les pairs",
     "interfaceTooltip": "{{name}} — {{status}}",

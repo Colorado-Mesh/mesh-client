@@ -1729,6 +1729,10 @@
       },
       "serial-reconnect": {
         "label": "Послідовне повторне підключення USB"
+      },
+      "reticulum-nomad-hosting": {
+        "label": "Проблеми з хостингом сторінок Nomad",
+        "recommendation": "Помилка хостингу Nomad My Pages або папка вмісту недоступна. Відкрийте Nomad Network → My Pages, повторно виберіть папку сторінок, якщо вона перемістилася, а потім почніть обслуговування. Деталі відображаються як [nomad-serving] / [NomadHosting] у журналі."
       }
     },
     "recommendationGroups": {
@@ -2732,10 +2736,45 @@
       "transportUnavailable": "Транспорт Reticulum недоступний. Перезапустіть стек і спробуйте ще раз.",
       "sidecarNotRunning": "Sidecar Reticulum не працює. Запустіть стек із Підключення, а потім спробуйте ще раз.",
       "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
-      "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
+      "nomadBusy": "Інший запит сторінки або файлу Nomad ще виконується. Спробуйте знову за мить."
     },
     "fitWidth": "Вмістити у вікно",
-    "openWidth": "Відкрити ширину сторінки"
+    "openWidth": "Відкрити ширину сторінки",
+    "myPagesTab": "Мої сторінки",
+    "serving": {
+      "title": "Розміщувати сторінки Nomad",
+      "servingChip": "Публікація в мережі",
+      "sidecarRequired": "Запустіть стек Reticulum для розміщення сторінок Nomad.",
+      "displayName": "Відображувана назва вузла",
+      "enable": "Почати публікацію",
+      "disable": "Зупинити публікацію",
+      "destinationHash": "Призначення",
+      "copyHash": "Копіювати хеш",
+      "copied": "Скопійовано",
+      "stats": "{{pages}} сторінок · {{files}} файлів · {{requests}} запитів",
+      "myPages": "Локальні сторінки",
+      "failed": "Не вдалося оновити публікацію Nomad.",
+      "previewSite": "Відкрити у переглядачі",
+      "previewSiteAria": "Попередній перегляд цього розміщеного сайту Nomad у браузері",
+      "myFiles": "Локальні файли",
+      "folderHint": "Публікуйте сторінки Micron з папки на диску (рекомендовано). Виберіть корінь сайту з каталогом pages/ або сам каталог pages. Зміни на диску підхоплюються автоматично.",
+      "chooseFolder": "Вибрати папку",
+      "chooseFolderAria": "Виберіть папку для розміщення сторінок Nomad",
+      "contentSource": "Папка вмісту",
+      "contentSourceUnavailable": "Вибрана папка сторінок відсутня або недоступна. Виберіть папку знову.",
+      "contentSourceNotDirectory": "Виберіть каталог, а не файл.",
+      "contentSourceUnreadable": "Не вдалося прочитати вибрану папку.",
+      "invalidContentSource": "Папка повинна містити каталог pages/ або файли сторінок .mu.",
+      "contentSourceFailed": "Не вдалося встановити папку вмісту.",
+      "watcherDegraded": "Перегляд папок погіршується; список сторінок може затримуватися, поки папку знову не буде прочитано.",
+      "reloadFromDisk": "Перезавантажити з диска",
+      "reloadFromDiskAria": "Перезавантажити розміщені сторінки з диска",
+      "noPages": "Сторінок ще немає. Додайте файли .mu до вибраної папки (наприклад, index.mu).",
+      "noFiles": "Поки що немає файлів. Помістіть файли в папку files/ сайту для обслуговування під /file/…",
+      "contentSourceNotFromPicker": "Перш ніж застосувати папку, виберіть її за допомогою пункту Вибрати.",
+      "contentSourceNone": "Не вибрано жодної папки",
+      "contentSourceRequired": "Виберіть папку сторінок, перш ніж розпочати прийом гостей Nomad."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Загальний розподіл",

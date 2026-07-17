@@ -257,6 +257,19 @@ const PATTERN_CATEGORIES: PatternCategory[] = [
     protocols: ['meshcore'],
     requireWarnOrError: true,
   },
+  {
+    id: 'reticulum-nomad-hosting',
+    patterns: [
+      /\[nomad-serving\]/i,
+      /\[NomadHosting\]/i,
+      /nomad.*content source (?:unavailable|missing)/i,
+      /failed to restore Nomad serving/i,
+      /nomad serving watcher/i,
+    ],
+    severity: 'warning',
+    protocols: ['reticulum'],
+    requireWarnOrError: true,
+  },
 ];
 
 function isWarnOrErrorLevel(level: string): boolean {
