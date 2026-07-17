@@ -1121,7 +1121,7 @@ export default function NodeListPanel({
                 {shouldVirtualizeNodeRows &&
                   virtualNodeRows.length > 0 &&
                   virtualNodeRows[0].start > 0 && (
-                    <tr role="presentation">
+                    <tr>
                       <td
                         colSpan={nodeTableColSpan}
                         style={{ height: virtualNodeRows[0].start, padding: 0, border: 0 }}
@@ -1552,7 +1552,7 @@ export default function NodeListPanel({
                   );
                 })}
                 {shouldVirtualizeNodeRows && virtualNodeRows.length > 0 && (
-                  <tr role="presentation">
+                  <tr>
                     <td
                       colSpan={nodeTableColSpan}
                       style={{
