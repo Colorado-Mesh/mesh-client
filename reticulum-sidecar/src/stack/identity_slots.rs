@@ -338,13 +338,6 @@ pub fn install_slot_to_working(config_dir: &Path, identity_id: &str) -> Result<(
     Ok(())
 }
 
-/// Activate a configured slot by copying its key into the working identity path, then committing the pointer.
-pub fn activate_slot(config_dir: &Path, identity_id: &str) -> Result<(), String> {
-    install_slot_to_working(config_dir, identity_id)?;
-    write_active_id(config_dir, identity_id)?;
-    Ok(())
-}
-
 /// Soft cap on stored identity slots (create refuses beyond this).
 pub const MAX_IDENTITY_SLOTS: usize = 16;
 
@@ -489,7 +482,8 @@ mod tests {
             },
         )
         .unwrap();
-        activate_slot(&config_dir, other).unwrap();
+        install_slot_to_working(&config_dir, other).unwrap();
+        write_active_id(&config_dir, other).unwrap();
         assert_eq!(read_active_id(&config_dir), other);
         assert_eq!(fs::read(working_identity_path(&config_dir)).unwrap()[0], 2);
     }
