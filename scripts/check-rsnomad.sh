@@ -18,5 +18,6 @@ if [[ ! -d "${NOMAD_DIR}/.git" ]]; then
 fi
 
 cd "${NOMAD_DIR}"
-cargo fmt --all -- --check
+# Format only workspace members — `--all` also walks path deps into rsReticulum.
+cargo fmt -p nomad-core -- --check
 cargo clippy --workspace --all-targets -- -D warnings

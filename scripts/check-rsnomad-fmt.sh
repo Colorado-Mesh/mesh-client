@@ -12,4 +12,5 @@ if [[ ! -d "${NOMAD_DIR}/.git" ]]; then
   exit 1
 fi
 cd "${NOMAD_DIR}"
-cargo fmt --all -- --check
+# Format only workspace members — `--all` also walks path deps into rsReticulum.
+cargo fmt -p nomad-core -- --check

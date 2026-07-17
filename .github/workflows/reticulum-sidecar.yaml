@@ -42,7 +42,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
       - name: cargo fmt --check (rsNomad)
         working-directory: ${{ github.workspace }}/../rsNomad
-        run: cargo fmt --all -- --check
+        # Format only workspace members — `--all` also walks path deps into rsReticulum.
+        run: cargo fmt -p nomad-core -- --check
       - name: cargo clippy (rsNomad)
         working-directory: ${{ github.workspace }}/../rsNomad
         run: cargo clippy --workspace --all-targets -- -D warnings
