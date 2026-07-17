@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { isRrcHubDisconnectSuppressed } from '@/renderer/lib/rrcHubDisconnectSuppress';
 import { loadRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
 import { isRrcHubLinked } from '@/renderer/lib/rrcHubSession';
 import { resolveRrcJoinRoomName } from '@/renderer/lib/rrcRoomName';
@@ -36,6 +37,8 @@ function clearRrcHubIfStillConnecting(hub: string, err: string): void {
 async function connectRrcHubForAutoJoin(hub: string, nickname: string): Promise<boolean> {
   const session = useRrcSessionStore.getState();
   if (isRrcHubLinkedNow(hub)) return true;
+  // Manual Disconnect suppress — do not clear; only explicit Connect clears it.
+  if (isRrcHubDisconnectSuppressed(hub)) return true;
   if (!session.sessionsByHub.has(hub) && session.sessionsByHub.size >= MAX_RRC_HUB_SESSIONS) {
     return false;
   }
@@ -68,7 +71,9 @@ export async function runRrcHubAutoConnectBatch(nickname: string): Promise<void>
   const wanted = loadRrcHubAutoJoin();
   if (wanted.length === 0) return;
 
-  const pending = wanted.filter((hub) => !isRrcHubLinkedNow(hub));
+  const pending = wanted.filter(
+    (hub) => !isRrcHubLinkedNow(hub) && !isRrcHubDisconnectSuppressed(hub),
+  );
   if (pending.length === 0) return;
 
   hubAutoConnectBusy = true;

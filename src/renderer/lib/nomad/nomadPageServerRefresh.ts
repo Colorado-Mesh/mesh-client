@@ -3,7 +3,6 @@
 export interface NomadServingListResult {
   ok: boolean;
   pages?: unknown[];
-  files?: unknown[];
   error?: string;
 }
 
@@ -53,16 +52,14 @@ export function planServingStatusApply(
 
 export interface ServingListsApply {
   pages?: unknown[];
-  files?: unknown[];
   clearError?: boolean;
   pagesError?: string;
-  filesError?: string;
 }
 
+/** Pages-only list plan — My Pages is folder-hosted; no local files list UI. */
 export function planServingListsApply(
   statusRes: NomadServingStatusResult,
   pagesRes: NomadServingListResult,
-  filesRes: NomadServingListResult,
 ): ServingListsApply {
   const out: ServingListsApply = {};
   if (pagesRes.ok && pagesRes.pages) {
@@ -72,11 +69,6 @@ export function planServingListsApply(
     }
   } else if (!pagesRes.ok) {
     out.pagesError = pagesRes.error;
-  }
-  if (filesRes.ok && filesRes.files) {
-    out.files = filesRes.files;
-  } else if (!filesRes.ok) {
-    out.filesError = filesRes.error;
   }
   return out;
 }

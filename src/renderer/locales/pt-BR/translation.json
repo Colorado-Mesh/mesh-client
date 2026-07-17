@@ -2756,7 +2756,6 @@
       "failed": "Não foi possível atualizar o serviço Nomad.",
       "previewSite": "Abra no Navegador",
       "previewSiteAria": "Visualize este site Nomad hospedado no navegador",
-      "myFiles": "Arquivos locais",
       "folderHint": "Sirva páginas Micron de uma pasta no disco (recomendado). Escolha uma raiz do site com um diretório pages/, ou o próprio diretório pages. Edições no disco são detectadas automaticamente.",
       "chooseFolder": "Escolher pasta",
       "chooseFolderAria": "Escolha uma pasta para hospedar páginas Nomad",
@@ -2770,7 +2769,6 @@
       "reloadFromDisk": "Recarregar a partir do disco",
       "reloadFromDiskAria": "Recarregar páginas hospedadas do disco",
       "noPages": "Ainda não há páginas. Adicione arquivos .mu à pasta escolhida (por exemplo, index.mu).",
-      "noFiles": "Ainda não há arquivos. Coloque arquivos na pasta files/ do site para servir em /file/…",
       "contentSourceNotFromPicker": "Escolha a pasta com Escolher pasta antes de aplicá-la.",
       "contentSourceNone": "Nenhuma pasta escolhida",
       "contentSourceRequired": "Escolha uma pasta de páginas antes de iniciar a hospedagem Nomad."

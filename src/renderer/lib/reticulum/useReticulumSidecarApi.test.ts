@@ -22,6 +22,7 @@ import {
   useReticulumIdentityStore,
 } from '@/renderer/stores/reticulumIdentityStore';
 
+import { resetReticulumManualStackStopSuppressForTests } from './reticulumManualStackStopSuppress';
 import { useReticulumSidecarApi } from './useReticulumSidecarApi';
 
 describe('useReticulumSidecarApi', () => {
@@ -30,6 +31,7 @@ describe('useReticulumSidecarApi', () => {
     onStatus.mockReset();
     onEvent.mockReset();
     onStartStack.mockReset();
+    resetReticulumManualStackStopSuppressForTests();
     vi.mocked(isReticulumAutostartEnabled).mockReturnValue(false);
     resetReticulumIdentityStoreForTests();
     onStartStack.mockResolvedValue(undefined);
@@ -315,6 +317,79 @@ describe('useReticulumSidecarApi', () => {
     resolveStart?.();
     await waitFor(() => {
       expect(onStartStack).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('panel notifyManualStackStop suppresses AutostartCoordinator restart', async () => {
+    vi.mocked(isReticulumAutostartEnabled).mockReturnValue(true);
+
+    const statusHandlers: ((status: {
+      running: boolean;
+      port: number;
+      pid: number | null;
+    }) => void)[] = [];
+    const coordinatorStart = vi.fn().mockResolvedValue(undefined);
+    getStatus.mockResolvedValue({ running: true, port: 59477, pid: 42 });
+    onStatus.mockImplementation((handler) => {
+      statusHandlers.push(handler);
+      return () => {};
+    });
+
+    const panel = renderHook(() =>
+      useReticulumSidecarApi({
+        connecting: false,
+        enableAutostart: false,
+        onStartStack,
+      }),
+    );
+    renderHook(() =>
+      useReticulumSidecarApi({
+        connecting: false,
+        enableAutostart: true,
+        onStartStack: coordinatorStart,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(panel.result.current.sidecarUiRunning).toBe(true);
+    });
+    // Ignore any mount-race autostart; the regression is restart after Stop.
+    coordinatorStart.mockClear();
+
+    act(() => {
+      panel.result.current.notifyManualStackStop();
+    });
+    getStatus.mockResolvedValue({ running: false, port: 0, pid: null });
+    act(() => {
+      for (const handler of statusHandlers) {
+        handler({ running: false, port: 0, pid: null });
+      }
+    });
+
+    await new Promise((r) => setTimeout(r, 50));
+    expect(coordinatorStart).not.toHaveBeenCalled();
+
+    // Explicit Start clears shared suppress; a later unexpected stop may autostart again.
+    act(() => {
+      panel.result.current.notifyManualStackStart();
+    });
+    act(() => {
+      for (const handler of statusHandlers) {
+        handler({ running: true, port: 59477, pid: 42 });
+      }
+    });
+    coordinatorStart.mockImplementation(() => {
+      getStatus.mockResolvedValue({ running: true, port: 59477, pid: 42 });
+      return Promise.resolve();
+    });
+    act(() => {
+      for (const handler of statusHandlers) {
+        handler({ running: false, port: 0, pid: null });
+      }
+    });
+
+    await waitFor(() => {
+      expect(coordinatorStart).toHaveBeenCalled();
     });
   });
 });

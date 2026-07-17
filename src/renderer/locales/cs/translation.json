@@ -2756,7 +2756,6 @@
       "failed": "Nelze aktualizovat službu Nomad.",
       "previewSite": "Otevřít v prohlížeči",
       "previewSiteAria": "Náhled tohoto hostovaného webu Nomad v prohlížeči",
-      "myFiles": "Místní soubory",
       "folderHint": "Hostujte stránky Micron ze složky na disku (doporučeno). Vyberte kořen webu s adresářem pages/, nebo přímo adresář pages. Úpravy na disku se načtou automaticky.",
       "chooseFolder": "Vyberte složku",
       "chooseFolderAria": "Vyberte složku, ze které chcete hostit stránky Nomad",
@@ -2770,7 +2769,6 @@
       "reloadFromDisk": "Znovu načíst z disku",
       "reloadFromDiskAria": "Znovu načíst hostované stránky z disku",
       "noPages": "Zatím žádné stránky. Přidejte soubory .mu do zvolené složky (například index.mu).",
-      "noFiles": "Zatím žádné soubory. Umístěte soubory do složky files/ webu, které se mají zobrazit pod /file/…",
       "contentSourceNotFromPicker": "Před použitím vyberte složku pomocí tlačítka Vybrat složku.",
       "contentSourceNone": "Nebyla vybrána žádná složka",
       "contentSourceRequired": "Před zahájením hostování Nomad vyberte složku stránek."

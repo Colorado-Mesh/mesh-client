@@ -2756,7 +2756,6 @@
       "failed": "Impossibile aggiornare il servizio Nomad.",
       "previewSite": "Apri nel browser",
       "previewSiteAria": "Visualizza l'anteprima di questo sito Nomad ospitato nel browser",
-      "myFiles": "File locali",
       "folderHint": "Servi pagine Micron da una cartella su disco (consigliato). Scegli una root del sito con una directory pages/, o la directory pages stessa. Le modifiche su disco vengono rilevate automaticamente.",
       "chooseFolder": "Seleziona cartella",
       "chooseFolderAria": "Scegli una cartella da cui ospitare le pagine Nomad",
@@ -2770,7 +2769,6 @@
       "reloadFromDisk": "Ricarica dal disco",
       "reloadFromDiskAria": "Ricarica le pagine ospitate dal disco",
       "noPages": "Ancora nessuna pagina. Aggiungi file .mu alla cartella scelta (ad esempio index.mu).",
-      "noFiles": "Ancora nessun file. Posiziona i file nella cartella files/ del sito da servire in /file/…",
       "contentSourceNotFromPicker": "Scegliere la cartella con la cartella Scegli prima di applicarla.",
       "contentSourceNone": "Nessuna cartella scelta",
       "contentSourceRequired": "Scegli una cartella di pagine prima di iniziare l'hosting Nomad."

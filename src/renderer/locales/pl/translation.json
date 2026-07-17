@@ -2756,7 +2756,6 @@
       "failed": "Nie można zaktualizować usługi Nomad.",
       "previewSite": "Otwórz w przeglądarce",
       "previewSiteAria": "Podgląd tej hostowanej witryny Nomad w przeglądarce",
-      "myFiles": "Pliki lokalne",
       "folderHint": "Udostępniaj strony Micron z folderu na dysku (zalecane). Wybierz katalog główny witryny z katalogiem pages/ lub sam katalog pages. Zmiany na dysku są wykrywane automatycznie.",
       "chooseFolder": "Wybierz folder",
       "chooseFolderAria": "Wybierz folder, z którego chcesz hostować strony Nomad",
@@ -2770,7 +2769,6 @@
       "reloadFromDisk": "Załaduj ponownie z dysku",
       "reloadFromDiskAria": "Załaduj ponownie hostowane strony z dysku",
       "noPages": "Brak stron. Dodaj pliki .mu do wybranego folderu (na przykład index.mu).",
-      "noFiles": "Nie ma jeszcze plików. Umieść pliki w folderze files/ witryny, które mają być obsługiwane pod /file/…",
       "contentSourceNotFromPicker": "Przed zastosowaniem wybierz folder z opcją Wybierz folder.",
       "contentSourceNone": "Nie wybrano folderu",
       "contentSourceRequired": "Wybierz folder stron przed uruchomieniem hostingu Nomad."

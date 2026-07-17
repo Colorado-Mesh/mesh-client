@@ -4,6 +4,10 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import {
+  isRrcHubDisconnectSuppressed,
+  resetRrcHubDisconnectSuppressForTests,
+} from '@/renderer/lib/rrcHubDisconnectSuppress';
 import { saveRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
@@ -21,10 +25,13 @@ describe('RrcPanel', () => {
   beforeEach(() => {
     useRrcSessionStore.getState().clearSession();
     useRrcHubStore.setState({ hubs: new Map() });
+    resetRrcHubDisconnectSuppressForTests();
     hydrateAxeThemeColors(document.documentElement);
     vi.mocked(isReticulumSidecarRunning).mockResolvedValue(false);
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.reticulum.rrc.disconnect).mockReset();
+    vi.mocked(window.electronAPI.reticulum.rrc.disconnect).mockResolvedValue({ ok: true });
     localStorage.removeItem('mesh-client:rrc:hubAutoJoin');
   });
 
@@ -139,5 +146,43 @@ describe('RrcPanel', () => {
     });
     expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.disconnectIntent).toBe(false);
     expect(useRrcSessionStore.getState().sessionsByHub.has(hubA)).toBe(true);
+    expect(isRrcHubDisconnectSuppressed(hubA)).toBe(false);
+  });
+
+  it('Disconnect with hub auto-join does not reconnect via rrc.connect', async () => {
+    vi.mocked(isReticulumSidecarRunning).mockResolvedValue(true);
+    saveRrcHubAutoJoin([hubA]);
+    useRrcSessionStore.getState().applyStatus('active', hubA, 'Hub A');
+    useRrcHubStore.setState({
+      hubs: new Map([
+        [
+          hubA,
+          {
+            destination_hash: hubA,
+            display_name: 'Hub A',
+            source: 'manual',
+            recommended: false,
+          },
+        ],
+      ]),
+    });
+    render(<RrcPanel isActive />);
+    // Initial mount may attempt batch for other hubs; clear before Disconnect.
+    await waitFor(() => {
+      expect(isReticulumSidecarRunning).toHaveBeenCalled();
+    });
+    vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
+
+    screen.getByRole('button', { name: /Disconnect/i }).click();
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.rrc.disconnect).toHaveBeenCalledWith({
+        dest_hash: hubA,
+      });
+    });
+    expect(useRrcSessionStore.getState().sessionsByHub.has(hubA)).toBe(false);
+    expect(isRrcHubDisconnectSuppressed(hubA)).toBe(true);
+
+    await new Promise((r) => setTimeout(r, 50));
+    expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
   });
 });

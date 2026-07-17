@@ -8,7 +8,6 @@ import {
 } from '@/renderer/lib/nomad/nomadPageServerRefresh';
 import {
   getServingStatus,
-  listServingFiles,
   listServingPages,
   pickServingContentSource,
   setServing as setServingApi,
@@ -31,7 +30,6 @@ export default function NomadPageServerPanel({
   const [sidecarRunning, setSidecarRunning] = useState(false);
   const [status, setStatus] = useState<NomadServingStatus | null>(null);
   const [pages, setPages] = useState<NomadServingPageEntry[]>([]);
-  const [files, setFiles] = useState<NomadServingPageEntry[]>([]);
   const [displayName, setDisplayName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,21 +80,16 @@ export default function NomadPageServerPanel({
         setError(humanizeNomadPageError(statusPlan.error, t));
       }
 
-      const [pagesRes, filesRes] = await Promise.all([listServingPages(), listServingFiles()]);
+      const pagesRes = await listServingPages();
       if (seq !== refreshSeqRef.current) return;
-      const listsPlan = planServingListsApply(statusRes, pagesRes, filesRes);
+      const listsPlan = planServingListsApply(statusRes, pagesRes);
       if (listsPlan.pages) {
         setPages(listsPlan.pages as NomadServingPageEntry[]);
-      }
-      if (listsPlan.files) {
-        setFiles(listsPlan.files as NomadServingPageEntry[]);
       }
       if (listsPlan.clearError) {
         setError(null);
       } else if (listsPlan.pagesError) {
         setError(humanizeNomadPageError(listsPlan.pagesError, t));
-      } else if (listsPlan.filesError) {
-        setError(humanizeNomadPageError(listsPlan.filesError, t));
       }
     } finally {
       if (seq === refreshSeqRef.current) {
@@ -367,24 +360,6 @@ export default function NomadPageServerPanel({
               <li key={page.path} className="flex items-center gap-2 text-sm">
                 <span className="truncate text-gray-200">{page.path}</span>
                 <span className="text-muted shrink-0 text-[10px]">{page.size} B</span>
-              </li>
-            ))
-          )}
-        </ul>
-      </div>
-
-      <div className="border-t border-gray-700 pt-3">
-        <h4 className="mb-2 text-sm font-medium text-gray-100">
-          {t('nomadNetwork.serving.myFiles')}
-        </h4>
-        <ul className="mb-3 space-y-1">
-          {files.length === 0 ? (
-            <li className="text-muted text-sm">{t('nomadNetwork.serving.noFiles')}</li>
-          ) : (
-            files.map((file) => (
-              <li key={file.path} className="flex items-center gap-2 text-sm">
-                <span className="truncate text-gray-200">{file.path}</span>
-                <span className="text-muted shrink-0 text-[10px]">{file.size} B</span>
               </li>
             ))
           )}

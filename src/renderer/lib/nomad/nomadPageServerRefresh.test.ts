@@ -34,27 +34,23 @@ describe('nomadPageServerRefresh', () => {
     });
   });
 
-  it('plans list updates and surfaces list errors', () => {
+  it('plans page list updates and surfaces pages-list errors', () => {
     expect(
       planServingListsApply(
         { ok: true, serving: { last_error: null } },
         { ok: true, pages: [{ path: 'index.mu' }] },
-        { ok: true, files: [] },
       ),
     ).toEqual({
       pages: [{ path: 'index.mu' }],
-      files: [],
       clearError: true,
     });
     expect(
       planServingListsApply(
         { ok: true, serving: { last_error: 'watcher_init_failed' } },
         { ok: false, error: 'nomad_busy' },
-        { ok: false, error: 'serving_files_unavailable' },
       ),
     ).toEqual({
       pagesError: 'nomad_busy',
-      filesError: 'serving_files_unavailable',
     });
   });
 });

@@ -58,6 +58,7 @@ describe('useReticulumRuntime manual disconnect must not auto-reconnect', () => 
     const disconnectBody = disconnectRe.exec(SOURCE)?.[0];
     expect(disconnectBody).toBeDefined();
     expect(disconnectBody).toContain('suppressReconnectRef.current = true');
+    expect(disconnectBody).toContain('setReticulumManualStackStopSuppress(true)');
     const suppressIndex = disconnectBody!.indexOf('suppressReconnectRef.current = true');
     const stopIndex = disconnectBody!.indexOf('reticulum.stop()');
     expect(suppressIndex).toBeGreaterThanOrEqual(0);
@@ -66,24 +67,27 @@ describe('useReticulumRuntime manual disconnect must not auto-reconnect', () => 
 
   it('sidecar stop autostart reconnect respects suppressReconnect', () => {
     expect(SOURCE).toMatch(
-      /if \(suppressReconnectRef\.current\) \{[\s\S]*?\} else if \(isReticulumAutostartEnabled\(\)\) \{/,
+      /if \(!suppressReconnectRef\.current && isReticulumAutostartEnabled\(\)\) \{/,
     );
   });
 
-  it('only clears suppressReconnect when an active session actually stopped', () => {
-    // Regression: clearing the flag unconditionally after every "not running" status (even
-    // when nothing was active) let a later, unrelated sidecar stop autostart the stack again
-    // after the user had explicitly disconnected. The reset must live inside `if (wasActive)`
-    // and only fire when the flag was actually consumed (i.e. it was true).
+  it('keeps suppressReconnect sticky across sidecar stop (cleared only by connect)', () => {
+    // Manual Stop/Disconnect must stay suppressed through stop status and power resume
+    // until an intentional connect() clears the flag.
     const onStatusRe =
       /window\.electronAPI\.reticulum\.onStatus\(\(status\) => \{[\s\S]*?\n {4}\}\);/;
     const onStatusBody = onStatusRe.exec(SOURCE)?.[0];
     expect(onStatusBody).toBeDefined();
     expect(onStatusBody).toMatch(
-      /if \(wasActive\) \{[\s\S]*?if \(suppressReconnectRef\.current\) \{\s*suppressReconnectRef\.current = false;/,
+      /if \(wasActive\) \{[\s\S]*?if \(!suppressReconnectRef\.current && isReticulumAutostartEnabled\(\)\) \{/,
     );
-    // The old buggy shape reset the flag unconditionally right after the `if (wasActive)` block.
-    expect(onStatusBody).not.toMatch(/\n\s*\}\n\s*suppressReconnectRef\.current = false;/);
+    expect(onStatusBody).not.toMatch(/suppressReconnectRef\.current = false/);
+
+    const connectBody = extractUseCallbackBody(SOURCE, 'connect');
+    expect(connectBody).toMatch(/isReticulumManualStackStopSuppress\(\)/);
+    expect(connectBody).toMatch(
+      /suppressReconnectRef\.current = false;\s*connectInFlightRef\.current = true;/,
+    );
   });
 
   it('onPowerResume skips reconnect after explicit user disconnect', () => {

@@ -47,6 +47,10 @@ import {
   pickReticulumLocalHealthPollMs,
   scheduleReticulumLocalInterfaceBurst,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
+import {
+  isReticulumManualStackStopSuppress,
+  setReticulumManualStackStopSuppress,
+} from '@/renderer/lib/reticulum/reticulumManualStackStopSuppress';
 import { failReticulumSendingOutboundToDestHash } from '@/renderer/lib/reticulum/reticulumOutboundFailureBridge';
 import { applyPropagationSyncEvent } from '@/renderer/lib/reticulum/reticulumPropagationSync';
 import { reticulumWireRowToEntry } from '@/renderer/lib/reticulum/reticulumRawPacketLog';
@@ -897,13 +901,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
         stateRef.current.status === 'stale';
       if (wasActive) {
         tearDownFromSidecarStop();
-        // Consume the suppress flag only when there was an active session to react to —
-        // a stray "not running" status while the stack is already off must not clear a
-        // suppression set by an earlier manual disconnect (would let a later unrelated
-        // stop autostart the stack again).
-        if (suppressReconnectRef.current) {
-          suppressReconnectRef.current = false;
-        } else if (isReticulumAutostartEnabled()) {
+        // Sticky until intentional connect() — do not clear here or power-resume /
+        // later stop events can restart after a manual Disconnect/Stop.
+        if (!suppressReconnectRef.current && isReticulumAutostartEnabled()) {
           void connectRef.current?.().catch((e: unknown) => {
             console.warn(
               '[useReticulumRuntime] autostart reconnect failed ' + errLikeToLogString(e),
@@ -945,6 +945,14 @@ export function useReticulumRuntime(): ProtocolRuntime {
       }
       throw new Error('Reticulum connect already in progress');
     }
+    // Defense in depth: AutostartCoordinator (or any stale caller) must not defeat Stop.
+    // Intentional Start clears this via notifyManualStackStart / clear helpers first.
+    if (isReticulumManualStackStopSuppress()) {
+      console.debug('[useReticulumRuntime] connect skipped — manual stack stop suppress');
+      return;
+    }
+    // Intentional Start / reconnect clears sticky user-disconnect suppress.
+    suppressReconnectRef.current = false;
     connectInFlightRef.current = true;
     const generation = resumeGenerationRef.current;
     const flight = (async () => {
@@ -1011,6 +1019,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const disconnect = useCallback(async () => {
     suppressReconnectRef.current = true;
+    // Same latch as Stop button — covers any disconnect path (panel, protocol facade, etc.).
+    setReticulumManualStackStopSuppress(true);
     if (peerRefreshDebounceRef.current) {
       clearTimeout(peerRefreshDebounceRef.current);
       peerRefreshDebounceRef.current = null;
