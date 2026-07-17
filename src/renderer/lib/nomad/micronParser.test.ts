@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
+  bindNomadMicronPartials,
   buildNomadLinkRequest,
   collectNomadFormFieldValues,
   isNomadFilePath,
   isNomadMicronPage,
+  loadNomadMicronPartial,
   mountNomadMicronHtml,
   parseNomadLinkFieldsSpec,
   parseNomadNetworkLinkUrl,
@@ -37,6 +39,118 @@ describe('renderNomadMicronPage', () => {
     expect(plainText).toContain('Libretranslate');
     expect(html).toContain('https://libretranslate.com/');
     expect(html.toLowerCase()).not.toContain('<script');
+  });
+
+  it('renders Micron tables as HTML table elements', () => {
+    const markup = ['`t', 'Name | Status', '--- | ---', 'Alpha | Up', 'Beta | Down', '`t'].join(
+      '\n',
+    );
+    const html = renderNomadMicronPage(markup);
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    expect(container.querySelector('table')).not.toBeNull();
+    expect(container.textContent).toContain('Alpha');
+    expect(container.textContent).toContain('Down');
+  });
+
+  it('emits header anchors for Micron section headings', () => {
+    const html = renderNomadMicronPage('> Section Title');
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    const anchor = container.querySelector('.micron-header-anchor');
+    expect(anchor).not.toBeNull();
+    expect(anchor?.id).toBe('section-title');
+  });
+
+  it('emits Mu-partial placeholders for embedded partials', () => {
+    const hash = 'a'.repeat(32);
+    const html = renderNomadMicronPage(`\`{${hash}:/page/partial.mu}`);
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    const partial = container.querySelector('.Mu-partial');
+    expect(partial).not.toBeNull();
+    expect(partial?.getAttribute('data-partial-destination')).toBe(`${hash}:/page/partial.mu`);
+    expect(partial?.textContent).toContain('⧖');
+  });
+});
+
+describe('loadNomadMicronPartial', () => {
+  it('fetches, renders Micron markup, and includes form field request data', async () => {
+    const hash = 'b'.repeat(32);
+    const formContainer = document.createElement('div');
+    formContainer.innerHTML = '<input name="user_name" value="joey">';
+    const fetchPage = vi.fn().mockResolvedValue({
+      ok: true,
+      content: '`!Partial body:`!',
+    });
+
+    const result = await loadNomadMicronPartial({
+      destination: `${hash}:/page/hello_partial.mu`,
+      fields: ['pid=32', 'user_name', 'mode=live'],
+      signal: null,
+      defaultPagePath: '/page/index.mu',
+      selectedHash: 'c'.repeat(32),
+      formContainer,
+      fetchPage,
+    });
+
+    expect(fetchPage).toHaveBeenCalledWith(
+      hash,
+      '/page/hello_partial.mu',
+      expect.objectContaining({
+        field_user_name: 'joey',
+        var_mode: 'live',
+      }),
+    );
+    expect(result.markup).toContain('Partial body');
+    expect(result.markup.toLowerCase()).not.toContain('<script');
+  });
+
+  it('throws when the page fetch fails', async () => {
+    await expect(
+      loadNomadMicronPartial({
+        destination: ':/page/missing.mu',
+        fields: [],
+        signal: null,
+        defaultPagePath: '/page/index.mu',
+        selectedHash: 'd'.repeat(32),
+        formContainer: null,
+        fetchPage: vi.fn().mockResolvedValue({ ok: false, error: 'not_found' }),
+      }),
+    ).rejects.toThrow('not_found');
+  });
+});
+
+describe('bindNomadMicronPartials', () => {
+  it('loads partial content and cleans up refresh timers', async () => {
+    vi.useFakeTimers();
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, renderNomadMicronPage('`{:/page/tick.mu`1}'));
+    const fetchPage = vi.fn().mockResolvedValue({
+      ok: true,
+      content: 'TICK_CONTENT_UNIQUE',
+    });
+    const cleanup = bindNomadMicronPartials(container, async (info) =>
+      loadNomadMicronPartial({
+        destination: info.destination,
+        fields: info.fields,
+        signal: info.signal,
+        defaultPagePath: '/page/index.mu',
+        selectedHash: 'e'.repeat(32),
+        formContainer: container,
+        fetchPage,
+      }),
+    );
+
+    await vi.waitFor(() => {
+      expect(container.textContent).toContain('TICK_CONTENT_UNIQUE');
+    });
+    expect(fetchPage).toHaveBeenCalledTimes(1);
+
+    cleanup();
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(fetchPage).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
   });
 });
 

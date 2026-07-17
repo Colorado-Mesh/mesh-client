@@ -1,4 +1,11 @@
-import MicronParser from 'micron-parser';
+import MicronParser, {
+  type MicronPartialCleanup,
+  type MicronPartialFetchResult,
+  type MicronPartialInfo,
+} from './vendor/micron-parser.js';
+
+export type { MicronPartialCleanup, MicronPartialFetchResult, MicronPartialInfo };
+export { MicronParser };
 
 export const DEFAULT_NOMAD_NODE_PAGE_PATH = '/page/index.mu';
 
@@ -17,6 +24,109 @@ function getMicronParser(): MicronParser {
 /** Returns DOMPurify-sanitized HTML from Micron (.mu) markup. */
 export function renderNomadMicronPage(content: string): string {
   return getMicronParser().convertMicronToHtml(content);
+}
+
+export interface NomadMicronPartialPageResult {
+  ok: boolean;
+  content?: string;
+  error?: string;
+}
+
+/**
+ * Resolve a Micron partial destination and fetch/render its content.
+ * Failure point: sidecar/page fetch fails or destination is invalid.
+ * Fallback: throw so bindPartials records data-partial-error on the placeholder.
+ */
+export async function loadNomadMicronPartial(options: {
+  destination: string;
+  fields: string[];
+  signal: AbortSignal | null;
+  defaultPagePath: string;
+  selectedHash: string;
+  formContainer: HTMLElement | null;
+  fetchPage: (
+    hash: string,
+    path: string,
+    requestData?: Record<string, string>,
+  ) => Promise<NomadMicronPartialPageResult>;
+}): Promise<{ markup: string }> {
+  const { destination, fields, signal, defaultPagePath, selectedHash, formContainer, fetchPage } =
+    options;
+
+  let parsed = parseNomadNetworkLinkUrl(destination, defaultPagePath);
+  if (!parsed && destination.trim().startsWith('/')) {
+    parsed = {
+      destination_hash: null,
+      path: normalizeNomadPagePath(destination),
+    };
+  }
+  if (!parsed) {
+    throw new Error('invalid_partial_destination');
+  }
+
+  const fieldsSpec = parseNomadLinkFieldsSpec(
+    fields.filter((entry) => !entry.startsWith('pid=')).join('|'),
+  );
+  const requestData = formContainer
+    ? collectNomadFormFieldValues(formContainer, fieldsSpec)
+    : {
+        ...Object.fromEntries(
+          Object.entries(fieldsSpec.requestVars).map(([k, v]) => [`var_${k}`, v]),
+        ),
+      };
+
+  if (signal?.aborted) {
+    throw new DOMException('Aborted', 'AbortError');
+  }
+
+  const hash = parsed.destination_hash ?? selectedHash;
+  const res = await fetchPage(
+    hash,
+    parsed.path,
+    Object.keys(requestData).length > 0 ? requestData : undefined,
+  );
+
+  if (signal?.aborted) {
+    throw new DOMException('Aborted', 'AbortError');
+  }
+  if (!res.ok || res.content == null) {
+    throw new Error(res.error || 'partial_fetch_failed');
+  }
+
+  return { markup: renderNomadMicronPage(res.content) };
+}
+
+/** Bind Micron partial placeholders; rebinds nested partials after each load. */
+export function bindNomadMicronPartials(
+  root: HTMLElement,
+  fetcher: (info: MicronPartialInfo) => Promise<MicronPartialFetchResult>,
+): MicronPartialCleanup {
+  const nestedCleanups: (() => void)[] = [];
+
+  const bindRoot = (scope: ParentNode): MicronPartialCleanup => {
+    const cleanup = MicronParser.bindPartials(scope, fetcher);
+    nestedCleanups.push(cleanup);
+    return cleanup;
+  };
+
+  const topCleanup = bindRoot(root);
+
+  const onPartialLoaded = (event: Event) => {
+    const el = event.target;
+    if (!(el instanceof HTMLElement) || !el.classList.contains('Mu-partial')) return;
+    if (!root.contains(el)) return;
+    bindRoot(el);
+  };
+  root.addEventListener('partial-loaded', onPartialLoaded);
+
+  const cleanup: MicronPartialCleanup = () => {
+    root.removeEventListener('partial-loaded', onPartialLoaded);
+    for (const nested of nestedCleanups.splice(0).reverse()) {
+      nested();
+    }
+  };
+  cleanup.reload = topCleanup.reload;
+  return cleanup;
 }
 
 /** Mount sanitized HTML into a container without assigning innerHTML (XSS check safe). */

@@ -901,6 +901,7 @@ export default function NomadNetworkPanel({
                         onNavigate={handleMicronNavigate}
                         onDownloadFile={handleMicronDownload}
                         onOpenDm={onOpenDm}
+                        onFetchPartial={fetchNomadPage}
                       />
                     ) : (
                       <pre

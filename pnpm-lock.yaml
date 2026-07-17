@@ -91,9 +91,6 @@ importers:
       mgrs:
         specifier: ^2.2.0
         version: 2.2.0
-      micron-parser:
-        specifier: ^1.0.3
-        version: 1.0.3
       motion:
         specifier: ^12.42.2
         version: 12.42.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -3246,9 +3243,6 @@ packages:
   micromatch@4.0.8:
     resolution: {integrity: sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==}
     engines: {node: '>=8.6'}
-
-  micron-parser@1.0.3:
-    resolution: {integrity: sha512-6BKZa6eoS2AeFkjfQ5pZp7qoFNhI/N/3cZAiD9gp7bVkwjRi2+Wc7SV7np6DL9hkOmy+BGBcysbX86ygYRYhKg==}
 
   mime-db@1.52.0:
     resolution: {integrity: sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg==}
@@ -7919,10 +7913,6 @@ snapshots:
     dependencies:
       braces: 3.0.3
       picomatch: 2.3.2
-
-  micron-parser@1.0.3:
-    dependencies:
-      dompurify: 3.4.12
 
   mime-db@1.52.0: {}
 

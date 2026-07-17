@@ -57,7 +57,7 @@ Exact semver ranges live in [`package.json`](https://github.com/Colorado-Mesh/me
 | leaflet.markercluster | ^1.5.3                                   | MIT                     | Leaflet marker clustering                 |
 | lucide-react-motion   | ^0.4.0                                   | MIT                     | Animated Lucide icons                     |
 | mgrs                  | ^2.1.0                                   | MIT                     | Military Grid Reference System            |
-| micron-parser         | ^1.0.3                                   | MIT                     | Micron unit parsing                       |
+| micron-parser-js      | vendored (RFnexus)                       | MIT                     | Nomad Micron (.mu) → HTML                 |
 | motion                | ^12.42.2                                 | MIT                     | Animation library                         |
 | mqtt                  | ^5.15.1                                  | MIT                     | MQTT client                               |
 | node-forge            | ^1.4.0                                   | BSD-3-Clause OR GPL-2.0 | Crypto utilities                          |
