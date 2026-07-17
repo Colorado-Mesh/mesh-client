@@ -12,6 +12,7 @@ import { loadMutedViews, saveMutedViews } from '@/renderer/lib/chatPanelProtocol
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { formatRrcErrorMessage } from '@/renderer/lib/rrcErrorHumanize';
+import { setRrcHubDisconnectSuppressed } from '@/renderer/lib/rrcHubDisconnectSuppress';
 import { isRrcHubAutoJoin, toggleRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
 import { isRrcHubLinked } from '@/renderer/lib/rrcHubSession';
 import { loadRrcRecentRooms, pushRrcRecentRoom } from '@/renderer/lib/rrcRecentRooms';
@@ -374,6 +375,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
       // Optimistic UI so Cancel appears immediately (sidecar may still be aborting prior connect);
       // this also creates the hub's session before the intent/error mutations below.
       useRrcSessionStore.getState().applyStatus('connecting', target, null);
+      setRrcHubDisconnectSuppressed(target, false);
       setDisconnectIntent(false, target);
       setError(null, target);
       try {
@@ -412,7 +414,8 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
     if (!sidecarRunning) return;
     void hubAutoJoinEpoch;
     void runRrcHubAutoConnectBatch(nickname);
-  }, [sidecarRunning, hubAutoJoinEpoch, nickname, sessionsByHub]);
+    // Do not depend on sessionsByHub — clearHubSession after Disconnect must not re-fire auto-join.
+  }, [sidecarRunning, hubAutoJoinEpoch, nickname]);
 
   const handleDisconnect = useCallback(async () => {
     const target = hubDestHash;
@@ -425,6 +428,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
         setError(t('rrc.disconnectFailed'), target);
         return;
       }
+      setRrcHubDisconnectSuppressed(target, true);
       clearHubSession(target);
     } catch (e) {
       console.warn('[RrcPanel] disconnect ' + errLikeToLogString(e));

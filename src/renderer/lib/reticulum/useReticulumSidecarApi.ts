@@ -8,6 +8,10 @@ import {
 } from '@/renderer/lib/appSettingsStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { isBleScanBusyErrorMessage } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
+import {
+  isReticulumManualStackStopSuppress,
+  setReticulumManualStackStopSuppress,
+} from '@/renderer/lib/reticulum/reticulumManualStackStopSuppress';
 import { fetchReticulumIdentityStatus } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { notifyReticulumStartupAutostartSettled } from '@/renderer/lib/reticulum/reticulumStartupAutostartGate';
 import { tryGetReticulumSession } from '@/renderer/lib/sessions/reticulumSession';
@@ -62,7 +66,6 @@ export function useReticulumSidecarApi({
   const [autoStart, setAutoStart] = useState(isReticulumAutostartEnabled);
   const autostartAttemptedRef = useRef(false);
   const startInFlightRef = useRef(false);
-  const manualStopSuppressRef = useRef(false);
   const statusHydratedRef = useRef(false);
   const sidecarRunningRef = useRef(false);
   const connectingRef = useRef(connecting);
@@ -168,7 +171,7 @@ export function useReticulumSidecarApi({
         bumpReticulumIdentityFetchGeneration();
       }
       setSidecarStatus(status);
-      if (!status.running && !manualStopSuppressRef.current && !startInFlightRef.current) {
+      if (!status.running && !isReticulumManualStackStopSuppress() && !startInFlightRef.current) {
         autostartAttemptedRef.current = false;
       }
     });
@@ -187,7 +190,7 @@ export function useReticulumSidecarApi({
 
   useEffect(() => {
     if (!enableAutostart || !autoStart || autostartAttemptedRef.current) return;
-    if (manualStopSuppressRef.current) return;
+    if (isReticulumManualStackStopSuppress()) return;
     if (sidecarStatus.running || connecting || startInFlightRef.current) return;
     autostartAttemptedRef.current = true;
     startInFlightRef.current = true;
@@ -195,8 +198,15 @@ export function useReticulumSidecarApi({
     void (async () => {
       const ready = await waitForReticulumSession();
       if (cancelled) {
-        // Effect re-ran (unstable callback) before start — allow a fresh attempt.
-        autostartAttemptedRef.current = false;
+        // Effect re-ran (unstable callback) before start — allow a fresh attempt unless Stop latched.
+        if (!isReticulumManualStackStopSuppress()) {
+          autostartAttemptedRef.current = false;
+        }
+        startInFlightRef.current = false;
+        return;
+      }
+      if (isReticulumManualStackStopSuppress()) {
+        autostartAttemptedRef.current = true;
         startInFlightRef.current = false;
         return;
       }
@@ -210,15 +220,28 @@ export function useReticulumSidecarApi({
         return;
       }
       try {
+        if (isReticulumManualStackStopSuppress()) {
+          autostartAttemptedRef.current = true;
+          return;
+        }
         await onStartStackRef.current();
+        if (isReticulumManualStackStopSuppress()) {
+          // Stop won the race after start was invoked — keep suppress sticky.
+          autostartAttemptedRef.current = true;
+          return;
+        }
         // Confirm sidecar actually came up — connect() can no-op coalesce.
         const status = await window.electronAPI.reticulum.getStatus().catch(() => null);
         const running = Boolean(status && typeof status === 'object' && status.running);
         if (!running) {
-          console.warn(
-            '[useReticulumSidecarApi] autostart resolved but sidecar not running — will retry',
-          );
-          autostartAttemptedRef.current = false;
+          if (isReticulumManualStackStopSuppress()) {
+            autostartAttemptedRef.current = true;
+          } else {
+            console.warn(
+              '[useReticulumSidecarApi] autostart resolved but sidecar not running — will retry',
+            );
+            autostartAttemptedRef.current = false;
+          }
         } else if (status) {
           applySidecarStatus(status);
           notifyReticulumStartupAutostartSettled();
@@ -226,11 +249,15 @@ export function useReticulumSidecarApi({
       } catch (e: unknown) {
         const msg = errLikeToLogString(e);
         console.warn('[useReticulumSidecarApi] autostart failed ' + msg);
+        if (isReticulumManualStackStopSuppress()) {
+          autostartAttemptedRef.current = true;
+          return;
+        }
         const isBusy = isBleScanBusyErrorMessage(msg);
         const notMounted = msg.includes('runtime is not mounted');
         if (isBusy || notMounted) {
           window.setTimeout(() => {
-            if (!manualStopSuppressRef.current && !sidecarRunningRef.current) {
+            if (!isReticulumManualStackStopSuppress() && !sidecarRunningRef.current) {
               autostartAttemptedRef.current = false;
             }
           }, 1_500);
@@ -249,12 +276,12 @@ export function useReticulumSidecarApi({
   }, [enableAutostart, autoStart, connecting, sidecarStatus.running, applySidecarStatus]);
 
   const notifyManualStackStop = useCallback(() => {
-    manualStopSuppressRef.current = true;
+    setReticulumManualStackStopSuppress(true);
     autostartAttemptedRef.current = true;
   }, []);
 
   const notifyManualStackStart = useCallback(() => {
-    manualStopSuppressRef.current = false;
+    setReticulumManualStackStopSuppress(false);
     autostartAttemptedRef.current = false;
   }, []);
 

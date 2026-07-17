@@ -206,6 +206,7 @@ import type { ReticulumRawPacketEntry } from './lib/rawPacketLogConstants';
 import { repairMeshtasticReplyPreviews } from './lib/replyPreview';
 import { reticulumHashToNodeId } from './lib/reticulum/destHash';
 import { openReticulumDmFromHash } from './lib/reticulum/reticulumDestinationInput';
+import { setReticulumManualStackStopSuppress } from './lib/reticulum/reticulumManualStackStopSuppress';
 import { resolveReticulumSelfHeaderLabel } from './lib/reticulum/reticulumSelfNodeLabel';
 import { skipReticulumStartupAutostartGate } from './lib/reticulum/reticulumStartupAutostartGate';
 import { logRfReconnectFailure, reconnectRfFromLastConnection } from './lib/rfReconnectHelper';
@@ -727,6 +728,11 @@ function AppContent() {
     () => reticulumConnection.connectAutomatic('http'),
     [reticulumConnection],
   );
+  /** UI Start after Stop — clears shared suppress so connect() is allowed. Autostart must not use this. */
+  const startReticulumStackManual = useCallback(() => {
+    setReticulumManualStackStopSuppress(false);
+    return reticulumConnection.connectAutomatic('http');
+  }, [reticulumConnection]);
 
   usePowerRecovery({
     callbacksByProtocol: {
@@ -3199,7 +3205,7 @@ function AppContent() {
                             {capabilities.hasReticulumNetworkPanel ? (
                               <ReticulumNetworkPanel
                                 connecting={reticulumConnectionView.state.status === 'connecting'}
-                                onStartStack={() => reticulumConnection.connectAutomatic('http')}
+                                onStartStack={startReticulumStackManual}
                                 propagationSectionOpenKey={reticulumPropagationNavKey}
                                 onOpenAppGpsSettings={() => {
                                   const appTabIdx = tabSlotIds.indexOf('App');
@@ -3511,7 +3517,7 @@ function AppContent() {
                             {capabilities.hasReticulumAdminPanel ? (
                               <ReticulumAdminPanel
                                 connecting={reticulumConnectionView.state.status === 'connecting'}
-                                onStartStack={() => reticulumConnection.connectAutomatic('http')}
+                                onStartStack={startReticulumStackManual}
                               />
                             ) : (
                               <AdminPanel

@@ -64,6 +64,8 @@ vi.mock('ws', () => ({
   },
 }));
 
+import { join } from 'node:path';
+
 import fs from 'fs';
 
 import {
@@ -73,6 +75,11 @@ import {
 import { reticulumConfigDirHasEnabledBleRnode } from './reticulum-ble-rnode-config';
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
 import { ensureDevSidecarBinary } from './reticulum-sidecar-path';
+
+const SIDECAR_MANAGER_SOURCE = fs.readFileSync(
+  join(import.meta.dirname ?? __dirname, 'reticulum-sidecar-manager.ts'),
+  'utf-8',
+);
 
 function mockSidecarProc(
   pid = 4242,
@@ -475,5 +482,23 @@ describe('ReticulumSidecarManager', () => {
     const manager = new ReticulumSidecarManager();
     await manager.stop();
     expect(releaseScanMock).toHaveBeenCalledWith('reticulum');
+  });
+
+  it('does not auto-respawn the sidecar after process exit or stop', () => {
+    // User Stop / crash must not schedule start() — renderer owns intentional restart.
+    const exitHandler = /proc\.on\('exit', \(code, signal\) => \{[\s\S]*?\n {4}\}\);/.exec(
+      SIDECAR_MANAGER_SOURCE,
+    )?.[0];
+    expect(exitHandler).toBeDefined();
+    expect(exitHandler).toContain("this.emit('status', this.getStatus())");
+    expect(exitHandler).not.toMatch(/\.start\(/);
+    expect(exitHandler).not.toMatch(/setTimeout|setInterval/);
+
+    const stopProc = /private async stopProc\(\): Promise<void> \{[\s\S]*?\n {2}\}/.exec(
+      SIDECAR_MANAGER_SOURCE,
+    )?.[0];
+    expect(stopProc).toBeDefined();
+    expect(stopProc).toContain('finalizeStopped()');
+    expect(stopProc).not.toMatch(/\.start\(/);
   });
 });
