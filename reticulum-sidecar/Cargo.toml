@@ -16,6 +16,7 @@ default = []
 rns-stack = [
     "dep:rns-runtime",
     "dep:lxmf-core",
+    "dep:nomad-core",
     "dep:rns-identity",
     "dep:rns-wire",
     "dep:rns-ratkey",
@@ -81,6 +82,11 @@ optional = true
 [dependencies.lxmf-core]
 package = "lxmf-core"
 path = "../../rsLXMF/crates/lxmf-core"
+optional = true
+
+[dependencies.nomad-core]
+package = "nomad-core"
+path = "../../rsNomad/crates/nomad-core"
 optional = true
 
 [dependencies.rns-interface]

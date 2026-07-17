@@ -2735,7 +2735,33 @@
       "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     },
     "fitWidth": "Уместить в окне",
-    "openWidth": "ширина страницы"
+    "openWidth": "ширина страницы",
+    "myPagesTab": "Мои страницы",
+    "serving": {
+      "title": "Страницы Host Nomad",
+      "servingChip": "Обслуживание сети",
+      "sidecarRequired": "Запустите стек Reticulum для размещения страниц Nomad.",
+      "displayName": "Отображаемое имя",
+      "enable": "Начать подачу",
+      "disable": "Прекратить подачу",
+      "destinationHash": "Адрес назначения",
+      "copyHash": "Копировать хэш",
+      "copied": "Скопировано",
+      "stats": "{{pages}} pages · {{files}} files · {{requests}} requests",
+      "myPages": "ЛОКАЛЬНЫЕ СТРАНИЦЫ",
+      "noPages": "Пока нет страниц. Создайте index.mu или добавьте новую страницу.",
+      "newPagePlaceholder": "путь, например, about.mu",
+      "createPage": "Создание страницы",
+      "editPage": "Редактировать {{path}}",
+      "deletePage": "Удалить {{path}}",
+      "editing": "Редактирование {{path}}",
+      "editorAria": "Микронный источник для {{path}}",
+      "savePage": "Сохранить страницу",
+      "failed": "Не удалось обновить подачу Nomad.",
+      "loadPageFailed": "Не удалось загрузить страницу.",
+      "saveFailed": "Не удаётся открыть \"% 1\".",
+      "deleteFailed": "Не удалось удалить страницу."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",

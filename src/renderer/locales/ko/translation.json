@@ -2735,7 +2735,33 @@
       "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     },
     "fitWidth": "창에 맞춤",
-    "openWidth": "페이지 폭"
+    "openWidth": "페이지 폭",
+    "myPagesTab": "내 페이지",
+    "serving": {
+      "title": "호스트 노마드 페이지",
+      "servingChip": "네트워크에 봉사하기",
+      "sidecarRequired": "Reticulum 스택을 시작하여 Nomad 페이지를 호스팅합니다.",
+      "displayName": "디스플레이 이름",
+      "enable": "서빙 시작",
+      "disable": "서비스 중지",
+      "destinationHash": "대상",
+      "copyHash": "해시 복사",
+      "copied": "복사됨",
+      "stats": "{{pages}} 페이지 · {{files}} 파일 · {{requests}} 요청",
+      "myPages": "로컬 페이지",
+      "noPages": "아직 페이지가 없습니다. index.mu를 만들거나 새 페이지를 추가하십시오.",
+      "newPagePlaceholder": "경로 예: about.mu",
+      "createPage": "페이지 만들기",
+      "editPage": "{{path}} 편집",
+      "deletePage": "{{path}} 삭제",
+      "editing": "편집 {{path}}",
+      "editorAria": "{{path}} 에 대한 마이크론 소스",
+      "savePage": "페이지 저장",
+      "failed": "Nomad 서빙을 업데이트할 수 없습니다.",
+      "loadPageFailed": "페이지를 로드할 수 없습니다.",
+      "saveFailed": "저장할 수 없습니다.",
+      "deleteFailed": "페이지를 삭제할 수 없습니다."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",

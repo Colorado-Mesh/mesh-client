@@ -2735,7 +2735,33 @@
       "nomadBusy": "Otra solicitud de página o archivo Nomad aún está en curso. Inténtalo de nuevo en un momento."
     },
     "fitWidth": "Ajustar a la ventana",
-    "openWidth": "Anchura de la página"
+    "openWidth": "Anchura de la página",
+    "myPagesTab": "Mis Paginas",
+    "serving": {
+      "title": "Páginas de Host Nomad",
+      "servingChip": "Servir a la red",
+      "sidecarRequired": "Inicie la pila Reticulum para alojar páginas Nomad.",
+      "displayName": "Nombre mostrado",
+      "enable": "Empezar a servir",
+      "disable": "Dejar de servir",
+      "destinationHash": "Destination",
+      "copyHash": "Copiar hash",
+      "copied": "Copiado",
+      "stats": "{{pages}} páginas · {{files}} archivos · {{requests}} solicitudes",
+      "myPages": "Páginas locales",
+      "noPages": "Aún no hay páginas. Crea index.mu o añade una nueva página.",
+      "newPagePlaceholder": "ruta, por ejemplo, about.mu",
+      "createPage": "Crear página",
+      "editPage": "Editar {{path}}",
+      "deletePage": "Eliminar {{path}}",
+      "editing": "Editando {{path}}",
+      "editorAria": "Fuente de micrones para {{path}}",
+      "savePage": "Guardar página",
+      "failed": "No se ha podido actualizar la porción de Nomad.",
+      "loadPageFailed": "No se pudo cargar la página",
+      "saveFailed": "La página no se ha podido guardar",
+      "deleteFailed": "No se ha podido borrar"
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Distribución general",

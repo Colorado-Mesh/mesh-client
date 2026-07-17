@@ -104,12 +104,21 @@ The Connection tab UI edits a subset: **name** and **mode** for all types; **hos
 
 ### Nomad Network
 
-| Method | Path                                      | Body / notes          | Response                              |
-| ------ | ----------------------------------------- | --------------------- | ------------------------------------- |
-| GET    | `/api/v1/nomadnetwork/nodes`              |                       | `{ nodes: [] }`                       |
-| POST   | `/api/v1/nomadnetwork/nodes/favorite`     | `{ hash, favorited }` | `{ ok }`                              |
-| GET    | `/api/v1/nomadnetwork/page/{hash}?path=…` |                       | page payload                          |
-| GET    | `/api/v1/nomadnetwork/file/{hash}?path=…` |                       | `{ ok, file_name?, content_base64? }` |
+| Method | Path                                        | Body / notes                 | Response                              |
+| ------ | ------------------------------------------- | ---------------------------- | ------------------------------------- |
+| GET    | `/api/v1/nomadnetwork/nodes`                |                              | `{ nodes: [] }`                       |
+| POST   | `/api/v1/nomadnetwork/nodes/favorite`       | `{ hash, favorited }`        | `{ ok }`                              |
+| GET    | `/api/v1/nomadnetwork/page/{hash}?path=…`   |                              | page payload                          |
+| GET    | `/api/v1/nomadnetwork/file/{hash}?path=…`   |                              | `{ ok, file_name?, content_base64? }` |
+| GET    | `/api/v1/nomadnetwork/serving`              |                              | `{ ok, serving }` (local host status) |
+| PUT    | `/api/v1/nomadnetwork/serving`              | `{ enabled, display_name? }` | `{ ok, serving }`                     |
+| GET    | `/api/v1/nomadnetwork/serving/pages`        |                              | `{ ok, pages: [] }`                   |
+| PUT    | `/api/v1/nomadnetwork/serving/pages`        | `{ path, content }`          | `{ ok }`                              |
+| DELETE | `/api/v1/nomadnetwork/serving/pages?path=…` |                              | `{ ok }`                              |
+| GET    | `/api/v1/nomadnetwork/serving/page?path=…`  |                              | `{ ok, path, content }`               |
+| GET    | `/api/v1/nomadnetwork/serving/files`        |                              | `{ ok, files: [] }`                   |
+| PUT    | `/api/v1/nomadnetwork/serving/files`        | `{ path, content_base64 }`   | `{ ok }`                              |
+| DELETE | `/api/v1/nomadnetwork/serving/files?path=…` |                              | `{ ok }`                              |
 
 ### RRC (Reticulum Relay Chat)
 

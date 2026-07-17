@@ -1341,6 +1341,7 @@ dependencies = [
  "hex",
  "http",
  "lxmf-core",
+ "nomad-core",
  "rand 0.8.6",
  "rmpv",
  "rns-crypto",
@@ -1400,6 +1401,25 @@ dependencies = [
  "cfg-if",
  "cfg_aliases",
  "libc",
+]
+
+[[package]]
+name = "nomad-core"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "hex",
+ "rmpv",
+ "rns-crypto",
+ "rns-identity",
+ "rns-runtime",
+ "rns-transport",
+ "rns-wire",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

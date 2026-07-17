@@ -2735,7 +2735,33 @@
       "nomadBusy": "另一个 Nomad 页面或文件请求仍在进行中。请稍后再试。"
     },
     "fitWidth": "适合窗口",
-    "openWidth": "图框宽度"
+    "openWidth": "图框宽度",
+    "myPagesTab": "我的页面",
+    "serving": {
+      "title": "房东/体验达人游牧民页面",
+      "servingChip": "服务于网络",
+      "sidecarRequired": "启动Reticulum堆栈以托管游牧页面。",
+      "displayName": "显示名称",
+      "enable": "开始供应",
+      "disable": "停止供应",
+      "destinationHash": "目标",
+      "copyHash": "复制哈希",
+      "copied": "已复制",
+      "stats": "{{pages}}页面· {{files}}文件· {{requests}}请求",
+      "myPages": "本地页面",
+      "noPages": "还没有页面。创建index.mu或添加新页面。",
+      "newPagePlaceholder": "路径，例如about.mu",
+      "createPage": "创建页面",
+      "editPage": "编辑{{path}}",
+      "deletePage": "删除{{path}}",
+      "editing": "编辑{{path}}",
+      "editorAria": "{{path}}的微米源",
+      "savePage": "儲存",
+      "failed": "无法更新Nomad服务。",
+      "loadPageFailed": "无法加载页面。",
+      "saveFailed": "无法保存 。",
+      "deleteFailed": "无法删除"
+    }
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",

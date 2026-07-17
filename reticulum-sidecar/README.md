@@ -8,18 +8,19 @@ Install Rust (**1.85+**, edition 2024). Prefer [rustup](https://rustup.rs/). See
 
 ## Build
 
-**Default (stub stack)** — builds without `--features rns-stack`; Cargo still requires sibling `rsReticulum` and `rsLXMF` directories on disk (CI checkouts them automatically; locally clone both next to `mesh-client`):
+**Default (stub stack)** — builds without `--features rns-stack`; Cargo still requires sibling `rsReticulum`, `rsLXMF`, and `rsNomad` directories on disk (CI checkouts them automatically; locally clone next to `mesh-client`):
 
 ```bash
 pnpm run reticulum:sidecar:build
 ```
 
-**Full rsReticulum + rsLXMF** — sibling checkout (Ratspeak layout):
+**Full rsReticulum + rsLXMF + rsNomad** — sibling checkout (Ratspeak layout + Colorado-Mesh rsNomad):
 
 ```
 parent/
   rsReticulum/
   rsLXMF/
+  rsNomad/
   mesh-client/reticulum-sidecar/
 ```
 

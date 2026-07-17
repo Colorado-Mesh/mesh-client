@@ -29,6 +29,10 @@ pub struct PersistedState {
     pub auto_sync_interval_sec: u32,
     pub nomad_nodes: Vec<NomadNodeRow>,
     pub rrc_hubs: Vec<RrcHubRow>,
+    /// User preference: start Nomad page hosting when the live stack is up.
+    pub nomad_serving_enabled: bool,
+    /// Display name announced for the local Nomad node (falls back to identity name).
+    pub nomad_serving_display_name: Option<String>,
 }
 
 impl PersistedState {
@@ -62,6 +66,8 @@ impl PersistedState {
             auto_sync_interval_sec: 3600,
             nomad_nodes: Vec::new(),
             rrc_hubs: Vec::new(),
+            nomad_serving_enabled: false,
+            nomad_serving_display_name: None,
         }
     }
 
@@ -782,7 +788,7 @@ impl serde::Serialize for PersistedState {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut s = serializer.serialize_struct("PersistedState", 14)?;
+        let mut s = serializer.serialize_struct("PersistedState", 16)?;
         s.serialize_field("identity", &self.identity)?;
         s.serialize_field("interfaces", &self.interfaces)?;
         s.serialize_field("contacts", &self.contacts)?;
@@ -800,6 +806,11 @@ impl serde::Serialize for PersistedState {
         s.serialize_field("auto_sync_interval_sec", &self.auto_sync_interval_sec)?;
         s.serialize_field("nomad_nodes", &self.nomad_nodes)?;
         s.serialize_field("rrc_hubs", &self.rrc_hubs)?;
+        s.serialize_field("nomad_serving_enabled", &self.nomad_serving_enabled)?;
+        s.serialize_field(
+            "nomad_serving_display_name",
+            &self.nomad_serving_display_name,
+        )?;
         s.end()
     }
 }
@@ -831,6 +842,10 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             nomad_nodes: Vec<NomadNodeRow>,
             #[serde(default)]
             rrc_hubs: Vec<RrcHubRow>,
+            #[serde(default)]
+            nomad_serving_enabled: bool,
+            #[serde(default)]
+            nomad_serving_display_name: Option<String>,
         }
         let raw = Raw::deserialize(deserializer)?;
         Ok(Self {
@@ -852,6 +867,8 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             auto_sync_interval_sec: raw.auto_sync_interval_sec,
             nomad_nodes: raw.nomad_nodes,
             rrc_hubs: raw.rrc_hubs,
+            nomad_serving_enabled: raw.nomad_serving_enabled,
+            nomad_serving_display_name: raw.nomad_serving_display_name,
         })
     }
 }

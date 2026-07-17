@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad)
         shell: bash
         env:
           WORKSPACE_ROOT: ${{ github.workspace }}/..
@@ -68,7 +68,7 @@ jobs:
       - uses: actions/checkout@v6
       # Optional rns-stack path deps must exist on disk even for the default stub build.
       # checkout@v6 only allows paths under GITHUB_WORKSPACE; Cargo expects Ratspeak siblings.
-      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad)
         shell: bash
         env:
           WORKSPACE_ROOT: ${{ github.workspace }}/..
@@ -108,7 +108,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
-      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad)
         shell: bash
         env:
           WORKSPACE_ROOT: ${{ github.workspace }}/..
@@ -139,7 +139,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       # Optional rns-stack path deps must exist on disk even for the default stub build.
-      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad)
         shell: bash
         env:
           WORKSPACE_ROOT: ${{ github.workspace }}/..
@@ -166,7 +166,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Clone Ratspeak stack (rsReticulum, rsLXMF)
+      - name: Clone Ratspeak stack (rsReticulum, rsLXMF, rsNomad)
         shell: bash
         env:
           WORKSPACE_ROOT: ${{ github.workspace }}/..

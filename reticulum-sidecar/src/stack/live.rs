@@ -39,6 +39,7 @@ use super::lxmf_delivery::{
 use super::nomad_file::nomad_file_name_from_path;
 use super::nomad_link_errors::map_nomad_link_error;
 use super::nomad_request_payload::nomad_page_request_payload;
+use super::nomad_server::NomadServerHandle;
 use super::nomad_timeouts;
 use super::packet_log::{
     PacketLogBuffer, collect_tx_interface_names_for_egress, emit_wire_packet_event,
@@ -48,6 +49,7 @@ use super::persistence::PersistedState;
 use super::propagation_bridge::PropagationBridge;
 use super::rrc_defaults::RRC_HUB_ASPECT;
 use super::rrc_session::RrcSessionManager;
+use super::types::NomadServingStatus;
 use super::types::{
     ContactRow, InterfaceRow, LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, PeerRow,
 };
@@ -96,6 +98,8 @@ pub struct LiveBridge {
     /// overlapping page/file fetches contend with path/pubkey discovery.
     nomad_link_lock: Arc<tokio::sync::Mutex<()>>,
     rrc_session: Arc<RrcSessionManager>,
+    /// Local Nomad page/file host (rsNomad / nomad-core).
+    nomad_server: Arc<NomadServerHandle>,
     #[cfg(feature = "rns-ble")]
     ble_peer_state: Arc<tokio::sync::Mutex<BlePeerRuntimeState>>,
 }
@@ -395,6 +399,7 @@ impl LiveBridge {
                 identity.clone(),
                 event_tx.clone(),
             )),
+            nomad_server: Arc::new(NomadServerHandle::new(storage_dir.clone())),
             #[cfg(feature = "rns-ble")]
             ble_peer_state: Arc::new(tokio::sync::Mutex::new(BlePeerRuntimeState {
                 spawned: HashMap::new(),
@@ -450,7 +455,78 @@ impl LiveBridge {
             state.lxmf_ready = true;
         }
 
+        let (nomad_enabled, nomad_name) = {
+            let state = inner.read().await;
+            let name = state
+                .nomad_serving_display_name
+                .clone()
+                .filter(|n| !n.trim().is_empty())
+                .or_else(|| {
+                    state
+                        .identity
+                        .display_name
+                        .clone()
+                        .filter(|n| !n.trim().is_empty() && n != "Self")
+                })
+                .unwrap_or_else(|| "Nomad node".into());
+            (state.nomad_serving_enabled, name)
+        };
+        if nomad_enabled {
+            if let Err(e) = bridge.start_nomad_serving(nomad_name).await {
+                tracing::warn!("failed to restore Nomad serving: {e}");
+            }
+        }
+
         Ok(bridge)
+    }
+
+    pub async fn nomad_serving_status(&self) -> NomadServingStatus {
+        let state = PersistedState::load(&self.config_dir, &self.storage_dir);
+        let name = state
+            .nomad_serving_display_name
+            .as_deref()
+            .filter(|n| !n.trim().is_empty())
+            .unwrap_or("Nomad node");
+        self.nomad_server
+            .status(state.nomad_serving_enabled, name)
+            .await
+    }
+
+    pub async fn start_nomad_serving(
+        &self,
+        display_name: String,
+    ) -> Result<NomadServingStatus, String> {
+        let status = self
+            .nomad_server
+            .start(
+                self.handle.transport_tx.clone(),
+                self.identity.clone(),
+                display_name,
+            )
+            .await?;
+        let msg = serde_json::json!({
+            "type": "nomad.serving_start",
+            "payload": {
+                "destination_hash": status.destination_hash,
+                "display_name": status.display_name,
+            }
+        });
+        let _ = self.event_tx.send(msg.to_string());
+        Ok(status)
+    }
+
+    pub async fn stop_nomad_serving(&self) -> Result<(), String> {
+        self.nomad_server.stop().await?;
+        let msg = serde_json::json!({
+            "type": "nomad.serving_stop",
+            "payload": {}
+        });
+        let _ = self.event_tx.send(msg.to_string());
+        Ok(())
+    }
+
+    pub fn nomad_server(&self) -> Arc<NomadServerHandle> {
+        self.nomad_server.clone()
     }
 
     /// Emit an LXMF delivery announce now (Network → Announce now / POST /api/v1/announces).

@@ -2735,7 +2735,33 @@
       "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     },
     "fitWidth": "Adatta alla finestra",
-    "openWidth": "Larghezza pagina"
+    "openWidth": "Larghezza pagina",
+    "myPagesTab": "Le mie pagine",
+    "serving": {
+      "title": "Pagine Nomade dell'host",
+      "servingChip": "Serving to network",
+      "sidecarRequired": "Avvia lo stack Reticulum per ospitare le pagine Nomad.",
+      "displayName": "Nome visualizzato",
+      "enable": "Inizia a servire",
+      "disable": "Interrompi il servizio",
+      "destinationHash": "Destinazione",
+      "copyHash": "Copia hash",
+      "copied": "Copiati",
+      "stats": "{{pages}} pagine · {{files}} file · {{requests}} richieste",
+      "myPages": "Pagine locali",
+      "noPages": "Ancora nessuna pagina. Crea index.mu o aggiungi una nuova pagina.",
+      "newPagePlaceholder": "percorso ad es. about.mu",
+      "createPage": "Crea pagina",
+      "editPage": "Modifica {{path}}",
+      "deletePage": "Elimina {{path}}",
+      "editing": "Modifica di {{path}}",
+      "editorAria": "Fonte di micron per {{path}}",
+      "savePage": "Salva pagina",
+      "failed": "Impossibile aggiornare la porzione Nomad.",
+      "loadPageFailed": "Impossibile caricare",
+      "saveFailed": "Impossibile salvare la pagina.",
+      "deleteFailed": "Impossibile eliminare"
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Distribuzione complessiva",

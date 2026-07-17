@@ -2735,7 +2735,33 @@
       "nomadBusy": "Une autre requête de page ou de fichier Nomad est encore en cours. Réessayez dans un instant."
     },
     "fitWidth": "Ajuster la page à la fenêtre",
-    "openWidth": "Largeur de la page"
+    "openWidth": "Largeur de la page",
+    "myPagesTab": "Mé paz",
+    "serving": {
+      "title": "Pages Host Nomad",
+      "servingChip": "Servir au réseau",
+      "sidecarRequired": "Démarrez la pile Reticulum pour héberger les pages Nomad.",
+      "displayName": "afficher un nom/nom d'affichage",
+      "enable": "Commencer à servir",
+      "disable": "Cessez de servir.",
+      "destinationHash": "Destination",
+      "copyHash": "Copier le hachage",
+      "copied": "Copié",
+      "stats": "{{pages}} pages · {{files}} fichiers · {{requests}} demandes",
+      "myPages": "Local pages",
+      "noPages": "Aucune page pour le moment. Créez index.mu ou ajoutez une nouvelle page.",
+      "newPagePlaceholder": "chemin, par exemple about.mu",
+      "createPage": "Créer une page",
+      "editPage": "Modifier {{path}}",
+      "deletePage": "Supprimer {{path}}",
+      "editing": "Modification {{path}}",
+      "editorAria": "Source micronique pour {{path}}",
+      "savePage": "Enregistrer la page",
+      "failed": "Impossible de mettre à jour le service Nomad.",
+      "loadPageFailed": "Impossible de télécharger",
+      "saveFailed": "Impossible d’enregistrer la page.",
+      "deleteFailed": "Impossible de supprimer."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",

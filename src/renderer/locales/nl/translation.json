@@ -2735,7 +2735,33 @@
       "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     },
     "fitWidth": "In venster passen",
-    "openWidth": "Paginabreedte"
+    "openWidth": "Paginabreedte",
+    "myPagesTab": "Mijn Pagina's",
+    "serving": {
+      "title": "Nomad-pagina's voor hosts",
+      "servingChip": "Dienen aan netwerk",
+      "sidecarRequired": "Start de Reticulum-stack om Nomad-pagina's te hosten.",
+      "displayName": "Display Naam",
+      "enable": "Begin met serveren",
+      "disable": "Stop met serveren",
+      "destinationHash": "Bestemming",
+      "copyHash": "Hash kopiëren",
+      "copied": "Gekopieerd",
+      "stats": "{{pages}} pages · {{files}} files · {{requests}} aanvragen",
+      "myPages": "Lokale pagina's",
+      "noPages": "Nog geen pagina's. Maak index.mu of voeg een nieuwe pagina toe.",
+      "newPagePlaceholder": "pad bijv. about.mu",
+      "createPage": "Pagina maken",
+      "editPage": "{{path}} bewerken",
+      "deletePage": "{{path}} verwijderen",
+      "editing": "{{path}} bewerken",
+      "editorAria": "Micronbron voor {{path}}",
+      "savePage": "Pagina opslaan",
+      "failed": "Kan Nomad-service niet bijwerken.",
+      "loadPageFailed": "Kan pagina niet laden.",
+      "saveFailed": "Kon niet opslaan.",
+      "deleteFailed": "Kan  niet verwijderen"
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",

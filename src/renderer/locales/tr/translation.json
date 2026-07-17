@@ -2735,7 +2735,33 @@
       "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     },
     "fitWidth": "Pencereye sığdır",
-    "openWidth": "Sayfa Genişliği"
+    "openWidth": "Sayfa Genişliği",
+    "myPagesTab": "Sayfalarım",
+    "serving": {
+      "title": "Ev Sahibi Göçebe sayfaları",
+      "servingChip": "Ağa hizmet etme",
+      "sidecarRequired": "Göçebe sayfalarını barındırmak için Reticulum yığınını başlat.",
+      "displayName": "Görünüm Adı",
+      "enable": "Servis yapmaya başlayın",
+      "disable": "Servis yapmayı bırak",
+      "destinationHash": ":",
+      "copyHash": "Karmayı kopyala",
+      "copied": "Kopyalandı",
+      "stats": "{{pages}} sayfalar · {{files}} dosyalar · {{requests}} istekler",
+      "myPages": "Yerel sayfalar",
+      "noPages": "Henüz sayfa yok. index.mu oluşturun veya yeni bir sayfa ekleyin.",
+      "newPagePlaceholder": "yol örn. about.mu",
+      "createPage": "Sayfa oluştur",
+      "editPage": "Düzenle {{path}}",
+      "deletePage": "{{path}} silin",
+      "editing": "{{path}} düzenleniyor",
+      "editorAria": "{{path}} için mikron kaynağı",
+      "savePage": "Sayfayı Kaydet",
+      "failed": "Göçebe sunumu güncellenemedi.",
+      "loadPageFailed": "Sayfa yüklenemedi.",
+      "saveFailed": "Bu sayfa kaydedilemedi.",
+      "deleteFailed": "Sayfa silinemedi."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",

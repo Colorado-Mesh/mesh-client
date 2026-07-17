@@ -2735,7 +2735,33 @@
       "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     },
     "fitWidth": "Přizpůsobit stránku oknu",
-    "openWidth": "Šířka stránky"
+    "openWidth": "Šířka stránky",
+    "myPagesTab": "Moje stránky",
+    "serving": {
+      "title": "Hostitelské Nomádské stránky",
+      "servingChip": "Podávání do sítě",
+      "sidecarRequired": "Spusťte zásobník Reticulum, abyste mohli hostit stránky Nomad.",
+      "displayName": "Zobrazovaný název",
+      "enable": "Začněte podávat",
+      "disable": "Přestat podávat",
+      "destinationHash": "Cíl",
+      "copyHash": "Kopírovat hash",
+      "copied": "Zkopírováno",
+      "stats": "{{pages}} pages · {{files}} files · {{requests}} žádosti",
+      "myPages": "Místní stránky",
+      "noPages": "Zatím žádné stránky. Vytvořte index.mu nebo přidejte novou stránku.",
+      "newPagePlaceholder": "cesta např. about.mu",
+      "createPage": "Vytvořit stránku",
+      "editPage": "Upravit {{path}}",
+      "deletePage": "Smazat {{path}}",
+      "editing": "Úprava {{path}}",
+      "editorAria": "Mikronový zdroj pro {{path}}",
+      "savePage": "Uložit pro offline čtení",
+      "failed": "Nelze aktualizovat službu Nomad.",
+      "loadPageFailed": "Stránku se nepodařilo načíst.",
+      "saveFailed": "Nelze uložit",
+      "deleteFailed": "Nelze odstranit"
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",

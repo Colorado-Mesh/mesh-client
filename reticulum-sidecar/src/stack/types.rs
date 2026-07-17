@@ -117,6 +117,28 @@ pub struct NomadNodeRow {
     pub status: Option<String>,
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct NomadServeStatsRow {
+    pub request_count: u64,
+    pub page_hits: u64,
+    pub file_hits: u64,
+    pub not_found_count: u64,
+    pub last_request_ms: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NomadServingStatus {
+    pub enabled: bool,
+    pub running: bool,
+    pub destination_hash: Option<String>,
+    pub identity_hash: Option<String>,
+    pub display_name: String,
+    pub page_count: usize,
+    pub file_count: usize,
+    pub stats: NomadServeStatsRow,
+    pub content_root: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RrcHubRow {
     pub destination_hash: String,

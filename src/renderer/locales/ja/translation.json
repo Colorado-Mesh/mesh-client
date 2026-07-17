@@ -2735,7 +2735,33 @@
       "nomadBusy": "別の Nomad ページまたはファイル要求が処理中です。しばらくしてから再試行してください。"
     },
     "fitWidth": "ウィンドウに適合",
-    "openWidth": "ページ幅"
+    "openWidth": "ページ幅",
+    "myPagesTab": "マイページ",
+    "serving": {
+      "title": "ホストノマドページ",
+      "servingChip": "ネットワークへの貢献",
+      "sidecarRequired": "Reticulumスタックを起動して、Nomadページをホストします。",
+      "displayName": "列名",
+      "enable": "お召し上がりください",
+      "disable": "提供を停止する",
+      "destinationHash": "移動先",
+      "copyHash": "ハッシュをコピー",
+      "copied": "コピーしました",
+      "stats": "{{pages}}ページ· {{files}}ファイル· {{requests}}リクエスト",
+      "myPages": "ローカルページ",
+      "noPages": "ページはまだありません。index.muを作成するか、新しいページを追加してください。",
+      "newPagePlaceholder": "パス例： about.mu",
+      "createPage": "ページ作成",
+      "editPage": "{{path}}を編集",
+      "deletePage": "{{path}}を削除",
+      "editing": "{{path}}の編集",
+      "editorAria": "{{path}}用ミクロンソース",
+      "savePage": "ページの保存",
+      "failed": "Nomadサービングを更新できませんでした。",
+      "loadPageFailed": "ページを読み込めませんでした。",
+      "saveFailed": "保存できませんでした。",
+      "deleteFailed": "レコードを削除できませんでした!"
+    }
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",

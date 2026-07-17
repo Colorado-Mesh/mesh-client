@@ -2735,7 +2735,33 @@
       "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     },
     "fitWidth": "Вмістити у вікно",
-    "openWidth": "Відкрити ширину сторінки"
+    "openWidth": "Відкрити ширину сторінки",
+    "myPagesTab": "Мої сторінки",
+    "serving": {
+      "title": "Сторінки кочівників господарів",
+      "servingChip": "Обслуговування мережі",
+      "sidecarRequired": "Запустіть стек Reticulum для розміщення сторінок Nomad.",
+      "displayName": "Відображувана назва",
+      "enable": "Почати подавати",
+      "disable": "Припинити подачу",
+      "destinationHash": "Призначення",
+      "copyHash": "Копіювати хеш",
+      "copied": "Скопійовано",
+      "stats": "{{pages}} сторінок · {{files}} файлів · {{requests}} запитів",
+      "myPages": "Локальні сторінки",
+      "noPages": "Сторінок ще немає. Створіть index.mu або додайте нову сторінку.",
+      "newPagePlaceholder": "шлях, наприклад, about.mu",
+      "createPage": "Створити сторінку",
+      "editPage": "Редагувати {{path}}",
+      "deletePage": "Видалити {{path}}",
+      "editing": "Редагування {{path}}",
+      "editorAria": "Мікронне джерело для {{path}}",
+      "savePage": "Зберегти сторінку",
+      "failed": "Не вдалося оновити подачу Nomad.",
+      "loadPageFailed": "Не вдалося завантажити  {}",
+      "saveFailed": "Не вдалося зберегти.",
+      "deleteFailed": "Не вдалося видалити сторінку."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Загальний розподіл",

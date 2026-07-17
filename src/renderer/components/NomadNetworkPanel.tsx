@@ -25,8 +25,9 @@ import type { NomadNodeRow, NomadPageRequestData } from '@/shared/nomad-types';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import NomadMicronPageView from './NomadMicronPageView';
+import NomadPageServerPanel from './NomadPageServerPanel';
 
-type NomadListTab = 'favourites' | 'announces';
+type NomadListTab = 'favourites' | 'announces' | 'myPages';
 
 interface NomadHistoryEntry {
   hash: string;
@@ -288,6 +289,9 @@ export default function NomadNetworkPanel({
   const allRows = useMemo(() => [...nodes.values()], [nodes]);
 
   const tabRows = useMemo(() => {
+    if (activeTab === 'myPages') {
+      return [];
+    }
     if (activeTab === 'favourites') {
       return allRows.filter((node) => node.favorited);
     }
@@ -496,9 +500,14 @@ export default function NomadNetworkPanel({
   const emptyKey =
     activeTab === 'favourites' ? 'nomadNetwork.emptyFavourites' : 'nomadNetwork.emptyAnnounces';
 
-  const activeTabCount = activeTab === 'favourites' ? favouritesCount : allRows.length;
+  const activeTabCount =
+    activeTab === 'favourites' ? favouritesCount : activeTab === 'myPages' ? 0 : allRows.length;
   const activeTabLabel =
-    activeTab === 'favourites' ? t('nomadNetwork.favourites') : t('nomadNetwork.announces');
+    activeTab === 'favourites'
+      ? t('nomadNetwork.favourites')
+      : activeTab === 'myPages'
+        ? t('nomadNetwork.myPagesTab')
+        : t('nomadNetwork.announces');
 
   const showStartStackBanner = !sidecarRunning && lastRefreshAt == null && allRows.length === 0;
 
@@ -576,25 +585,44 @@ export default function NomadNetworkPanel({
                 >
                   {t('nomadNetwork.announces')}
                 </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'myPages'}
+                  className={`border-b-2 pb-2 ${
+                    activeTab === 'myPages'
+                      ? 'border-bright-green text-bright-green'
+                      : 'text-muted border-transparent'
+                  }`}
+                  onClick={() => {
+                    setActiveTab('myPages');
+                  }}
+                >
+                  {t('nomadNetwork.myPagesTab')}
+                </button>
               </div>
 
-              <div className="px-3 pt-3">
-                <input
-                  type="search"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                  }}
-                  placeholder={searchPlaceholder}
-                  aria-label={searchPlaceholder}
-                  className="mb-3 w-full rounded border border-gray-600 bg-slate-900 px-3 py-2 text-sm text-gray-200"
-                />
-              </div>
+              {activeTab !== 'myPages' ? (
+                <div className="px-3 pt-3">
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                    }}
+                    placeholder={searchPlaceholder}
+                    aria-label={searchPlaceholder}
+                    className="mb-3 w-full rounded border border-gray-600 bg-slate-900 px-3 py-2 text-sm text-gray-200"
+                  />
+                </div>
+              ) : null}
             </>
           )}
 
           <div className="min-h-0 flex-1 overflow-y-auto">
-            {!nodeListCollapsed && filteredRows.length === 0 ? (
+            {activeTab === 'myPages' ? (
+              <p className="text-muted px-3 pb-3 text-sm">{t('nomadNetwork.serving.title')}</p>
+            ) : !nodeListCollapsed && filteredRows.length === 0 ? (
               <p className="text-muted px-3 pb-3 text-sm">{t(emptyKey)}</p>
             ) : (
               filteredRows.map((node) => {
@@ -671,7 +699,9 @@ export default function NomadNetworkPanel({
         </div>
 
         <div className="bg-secondary-dark flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-700">
-          {!selectedNode ? (
+          {activeTab === 'myPages' ? (
+            <NomadPageServerPanel isActive={isActive} />
+          ) : !selectedNode ? (
             <p className="text-muted m-auto max-w-sm p-6 text-center text-sm">
               {t('nomadNetwork.selectNode')}
             </p>

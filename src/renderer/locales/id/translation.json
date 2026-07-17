@@ -2735,7 +2735,33 @@
       "nomadBusy": "Another Nomad page or file request is still in progress. Try again in a moment."
     },
     "fitWidth": "Muat halaman ke jendela",
-    "openWidth": "Buka lebar halaman"
+    "openWidth": "Buka lebar halaman",
+    "myPagesTab": "Halaman Saya",
+    "serving": {
+      "title": "Halaman Nomad Tuan Rumah",
+      "servingChip": "Menyajikan ke jaringan",
+      "sidecarRequired": "Mulai tumpukan Reticulum untuk meng - host halaman Nomad.",
+      "displayName": "Nama tampil",
+      "enable": "Mulai melayani",
+      "disable": "Hentikan penyajian",
+      "destinationHash": "Destinasi",
+      "copyHash": "Salin Hash",
+      "copied": "Disalin",
+      "stats": "{{pages}} pages · {{files}} files · {{requests}} requests",
+      "myPages": "Halaman lokal",
+      "noPages": "Belum ada halaman. Buat index.mu atau tambahkan halaman baru.",
+      "newPagePlaceholder": "path mis. about.mu",
+      "createPage": "Buat Halaman",
+      "editPage": "Edit {{path}}",
+      "deletePage": "Hapus {{path}}",
+      "editing": "Mengedit {{path}}",
+      "editorAria": "Sumber mikron untuk {{path}}",
+      "savePage": "Simpan halaman",
+      "failed": "Tidak dapat memperbarui penyajian Nomad.",
+      "loadPageFailed": "Tidak dapat memuat halaman.",
+      "saveFailed": "Tidak dapat menyimpan halaman.",
+      "deleteFailed": "Tidak dapat menghapus halaman."
+    }
   },
   "packetDistribution": {
     "overallDistribution": "Distribusi Keseluruhan",

@@ -26,6 +26,8 @@ mod live;
 #[cfg(feature = "rns-stack")]
 mod lxmf_delivery;
 #[cfg(feature = "rns-stack")]
+mod nomad_server;
+#[cfg(feature = "rns-stack")]
 mod propagation_bridge;
 #[cfg(feature = "rns-stack")]
 mod rrc_link;
@@ -41,7 +43,7 @@ use persistence::PersistedState;
 use tokio::sync::{RwLock, broadcast};
 pub use types::{
     AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfResourceRequest,
-    LxmfSendRequest, NomadNodeRow, PeerRow, RrcHubRow, StackIdentity,
+    LxmfSendRequest, NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, StackIdentity,
 };
 
 pub struct StackHandle {
@@ -1107,6 +1109,172 @@ impl StackHandle {
         inner.set_nomad_favorite(hash, favorited);
         inner.save(&self.config_dir, &self.storage_dir)?;
         Ok(())
+    }
+
+    pub async fn nomad_serving_status(&self) -> NomadServingStatus {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.nomad_serving_status().await;
+        }
+        let inner = self.inner.read().await;
+        NomadServingStatus {
+            enabled: inner.nomad_serving_enabled,
+            running: false,
+            destination_hash: None,
+            identity_hash: None,
+            display_name: inner
+                .nomad_serving_display_name
+                .clone()
+                .unwrap_or_else(|| "Nomad node".into()),
+            page_count: 0,
+            file_count: 0,
+            stats: types::NomadServeStatsRow::default(),
+            content_root: self.storage_dir.join("nomadnetwork").display().to_string(),
+        }
+    }
+
+    pub async fn set_nomad_serving(
+        &self,
+        enabled: bool,
+        display_name: Option<String>,
+    ) -> Result<NomadServingStatus, String> {
+        {
+            let mut inner = self.inner.write().await;
+            inner.nomad_serving_enabled = enabled;
+            if let Some(name) = display_name {
+                let trimmed = name.trim().to_string();
+                if trimmed.is_empty() {
+                    inner.nomad_serving_display_name = None;
+                } else {
+                    inner.nomad_serving_display_name = Some(trimmed);
+                }
+            }
+            inner.save(&self.config_dir, &self.storage_dir)?;
+        }
+
+        #[cfg(feature = "rns-stack")]
+        {
+            let Some(live) = &self.live else {
+                return Err("Nomad serving requires a live RNS stack".into());
+            };
+            if enabled {
+                let name = {
+                    let inner = self.inner.read().await;
+                    inner
+                        .nomad_serving_display_name
+                        .clone()
+                        .filter(|n| !n.trim().is_empty())
+                        .or_else(|| {
+                            inner
+                                .identity
+                                .display_name
+                                .clone()
+                                .filter(|n| !n.trim().is_empty() && n != "Self")
+                        })
+                        .unwrap_or_else(|| "Nomad node".into())
+                };
+                if !live.nomad_server().is_running().await {
+                    live.start_nomad_serving(name).await?;
+                } else {
+                    live.nomad_server().set_display_name(&name).await;
+                    let _ = live.nomad_server().announce_now().await;
+                }
+            } else {
+                live.stop_nomad_serving().await?;
+            }
+            return Ok(live.nomad_serving_status().await);
+        }
+
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            if enabled {
+                return Err("Nomad serving requires an rns-stack sidecar build".into());
+            }
+            Ok(self.nomad_serving_status().await)
+        }
+    }
+
+    pub async fn list_nomad_serving_pages(&self) -> Result<Vec<serde_json::Value>, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            let pages = live.nomad_server().list_pages().await?;
+            return Ok(pages
+                .into_iter()
+                .map(|p| {
+                    serde_json::json!({
+                        "path": p.path,
+                        "size": p.size,
+                        "modified_ms": p.modified_ms,
+                    })
+                })
+                .collect());
+        }
+        Err("Nomad serving requires an rns-stack sidecar build".into())
+    }
+
+    pub async fn read_nomad_serving_page(&self, path: &str) -> Result<String, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.nomad_server().read_page(path).await;
+        }
+        Err("Nomad serving requires an rns-stack sidecar build".into())
+    }
+
+    pub async fn write_nomad_serving_page(&self, path: &str, content: &str) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.nomad_server().write_page(path, content).await;
+        }
+        Err("Nomad serving requires an rns-stack sidecar build".into())
+    }
+
+    pub async fn delete_nomad_serving_page(&self, path: &str) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.nomad_server().delete_page(path).await;
+        }
+        Err("Nomad serving requires an rns-stack sidecar build".into())
+    }
+
+    pub async fn list_nomad_serving_files(&self) -> Result<Vec<serde_json::Value>, String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            let files = live.nomad_server().list_files().await?;
+            return Ok(files
+                .into_iter()
+                .map(|p| {
+                    serde_json::json!({
+                        "path": p.path,
+                        "size": p.size,
+                        "modified_ms": p.modified_ms,
+                    })
+                })
+                .collect());
+        }
+        Err("Nomad serving requires an rns-stack sidecar build".into())
+    }
+
+    pub async fn write_nomad_serving_file(
+        &self,
+        path: &str,
+        content_base64: &str,
+    ) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live
+                .nomad_server()
+                .write_file_base64(path, content_base64)
+                .await;
+        }
+        Err("Nomad serving requires an rns-stack sidecar build".into())
+    }
+
+    pub async fn delete_nomad_serving_file(&self, path: &str) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.nomad_server().delete_file(path).await;
+        }
+        Err("Nomad serving requires an rns-stack sidecar build".into())
     }
 
     pub async fn list_rrc_hubs(&self) -> Vec<RrcHubRow> {
