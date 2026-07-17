@@ -14,9 +14,7 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(rebuildFunction).toContain('../rsReticulum/crates/rns-runtime/Cargo.toml');
     expect(rebuildFunction).toContain('../rsLXMF/crates/lxmf-core/Cargo.toml');
     expect(rebuildFunction).toContain('../rsNomad/crates/nomad-core/Cargo.toml');
-    expect(rebuildFunction).toContain(
-      'cargo build --features rns-stack,rns-ble,rns-rnode-tcp',
-    );
+    expect(rebuildFunction).toContain('cargo build --features rns-stack,rns-ble,rns-rnode-tcp');
     expect(rebuildFunction).not.toContain('cargo build)');
   });
 });
