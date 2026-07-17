@@ -1,8 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { humanizeNomadPageError } from '@/renderer/lib/nomad/nomadPageErrorHumanize';
+import {
+  deleteServingPage,
+  getServingStatus,
+  listServingPages,
+  readServingPage,
+  setServing as setServingApi,
+  writeServingPage,
+} from '@/renderer/lib/nomad/nomadServingApi';
 import type { NomadServingPageEntry, NomadServingStatus } from '@/shared/nomad-types';
 
 const DEFAULT_PAGE_CONTENT = `#!c=30
@@ -23,108 +30,113 @@ export default function NomadPageServerPanel({ isActive }: { isActive?: boolean 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const refreshInFlightRef = useRef(false);
+  const refreshSeqRef = useRef(0);
 
   const refresh = useCallback(async () => {
-    if (!(await isReticulumSidecarRunning())) {
-      setSidecarRunning(false);
-      return;
-    }
-    setSidecarRunning(true);
+    if (refreshInFlightRef.current) return;
+    refreshInFlightRef.current = true;
+    const seq = ++refreshSeqRef.current;
     try {
-      const body = (await window.electronAPI.reticulum.proxyGet(
-        '/api/v1/nomadnetwork/serving',
-      )) as { ok?: boolean; serving?: NomadServingStatus; error?: string };
-      if (body.serving) {
-        setStatus(body.serving);
-        setDisplayName(body.serving.display_name ?? '');
+      const statusRes = await getServingStatus();
+      if (seq !== refreshSeqRef.current) return;
+      if (statusRes.error === 'sidecar_not_running') {
+        setSidecarRunning(false);
+        return;
       }
-      const pagesBody = (await window.electronAPI.reticulum.proxyGet(
-        '/api/v1/nomadnetwork/serving/pages',
-      )) as { ok?: boolean; pages?: NomadServingPageEntry[]; error?: string };
-      if (pagesBody.ok && pagesBody.pages) {
-        setPages(pagesBody.pages);
+      setSidecarRunning(true);
+      if (statusRes.ok && statusRes.serving) {
+        setStatus(statusRes.serving);
+        setDisplayName(statusRes.serving.display_name ?? '');
+      } else if (!statusRes.ok) {
+        setError(humanizeNomadPageError(statusRes.error, t));
       }
-      setError(null);
-    } catch (e) {
-      // catch-no-log-ok surfaced in the panel error state
-      setError(errLikeToLogString(e));
+
+      const pagesRes = await listServingPages();
+      if (seq !== refreshSeqRef.current) return;
+      if (pagesRes.ok && pagesRes.pages) {
+        setPages(pagesRes.pages);
+        if (statusRes.ok) setError(null);
+      } else if (!pagesRes.ok) {
+        setError(humanizeNomadPageError(pagesRes.error, t));
+      }
+    } finally {
+      if (seq === refreshSeqRef.current) {
+        refreshInFlightRef.current = false;
+      }
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!isActive) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate from sidecar when this keep-alive panel becomes active
+    let cancelled = false;
     void refresh();
     const unsub = window.electronAPI.reticulum.onStatus((s) => {
+      if (cancelled) return;
       setSidecarRunning(s.running && s.port > 0);
       if (s.running) void refresh();
     });
-    return unsub;
+    return () => {
+      cancelled = true;
+      refreshSeqRef.current += 1;
+      refreshInFlightRef.current = false;
+      unsub();
+    };
   }, [isActive, refresh]);
 
-  const setServing = async (enabled: boolean) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const body = (await window.electronAPI.reticulum.proxyPut('/api/v1/nomadnetwork/serving', {
-        enabled,
-        display_name: displayName.trim() || undefined,
-      })) as { ok?: boolean; serving?: NomadServingStatus; error?: string };
-      if (!body.ok) {
-        setError(body.error ?? t('nomadNetwork.serving.failed'));
-      } else if (body.serving) {
-        setStatus(body.serving);
+  const runServingAction = useCallback(
+    async (
+      fn: () => Promise<{ ok: boolean; error?: string; serving?: NomadServingStatus }>,
+      failKey: string,
+      opts?: { skipRefresh?: boolean; onOk?: () => void | Promise<void> },
+    ) => {
+      setBusy(true);
+      setError(null);
+      try {
+        const body = await fn();
+        if (!body.ok) {
+          setError(humanizeNomadPageError(body.error, t) || t(failKey));
+        } else {
+          if (body.serving) setStatus(body.serving);
+          if (opts?.onOk) await opts.onOk();
+        }
+        if (!opts?.skipRefresh) await refresh();
+      } finally {
+        setBusy(false);
       }
-      await refresh();
-    } catch (e) {
-      // catch-no-log-ok surfaced in the panel error state
-      setError(errLikeToLogString(e));
-    } finally {
-      setBusy(false);
-    }
+    },
+    [refresh, t],
+  );
+
+  const setServing = async (enabled: boolean) => {
+    await runServingAction(
+      () => setServingApi({ enabled, displayName }),
+      'nomadNetwork.serving.failed',
+    );
   };
 
   const loadPage = async (path: string) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const qs = new URLSearchParams({ path });
-      const body = (await window.electronAPI.reticulum.proxyGet(
-        `/api/v1/nomadnetwork/serving/page?${qs.toString()}`,
-      )) as { ok?: boolean; content?: string; error?: string };
-      if (!body.ok || body.content == null) {
-        setError(body.error ?? t('nomadNetwork.serving.loadPageFailed'));
-        return;
-      }
-      setSelectedPath(path);
-      setEditorContent(body.content);
-    } catch (e) {
-      // catch-no-log-ok surfaced in the panel error state
-      setError(errLikeToLogString(e));
-    } finally {
-      setBusy(false);
-    }
+    await runServingAction(
+      async () => {
+        const body = await readServingPage(path);
+        if (!body.ok || body.content == null) {
+          return { ok: false, error: body.error };
+        }
+        setSelectedPath(path);
+        setEditorContent(body.content);
+        return { ok: true };
+      },
+      'nomadNetwork.serving.loadPageFailed',
+      { skipRefresh: true },
+    );
   };
 
   const savePage = async () => {
     if (!selectedPath) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const body = (await window.electronAPI.reticulum.proxyPut(
-        '/api/v1/nomadnetwork/serving/pages',
-        { path: selectedPath, content: editorContent },
-      )) as { ok?: boolean; error?: string };
-      if (!body.ok) {
-        setError(body.error ?? t('nomadNetwork.serving.saveFailed'));
-      }
-      await refresh();
-    } catch (e) {
-      // catch-no-log-ok surfaced in the panel error state
-      setError(errLikeToLogString(e));
-    } finally {
-      setBusy(false);
-    }
+    await runServingAction(
+      () => writeServingPage(selectedPath, editorContent),
+      'nomadNetwork.serving.saveFailed',
+    );
   };
 
   const createPage = async () => {
@@ -133,47 +145,29 @@ export default function NomadPageServerPanel({ isActive }: { isActive?: boolean 
     setBusy(true);
     setError(null);
     try {
-      const body = (await window.electronAPI.reticulum.proxyPut(
-        '/api/v1/nomadnetwork/serving/pages',
-        { path, content: DEFAULT_PAGE_CONTENT },
-      )) as { ok?: boolean; error?: string };
+      const body = await writeServingPage(path, DEFAULT_PAGE_CONTENT);
       if (!body.ok) {
-        setError(body.error ?? t('nomadNetwork.serving.saveFailed'));
+        setError(humanizeNomadPageError(body.error, t) || t('nomadNetwork.serving.saveFailed'));
         return;
       }
       setNewPagePath('');
       await refresh();
       await loadPage(path);
-    } catch (e) {
-      // catch-no-log-ok surfaced in the panel error state
-      setError(errLikeToLogString(e));
     } finally {
       setBusy(false);
     }
   };
 
   const deletePage = async (path: string) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const qs = new URLSearchParams({ path });
-      const body = (await window.electronAPI.reticulum.proxyDelete(
-        `/api/v1/nomadnetwork/serving/pages?${qs.toString()}`,
-      )) as { ok?: boolean; error?: string };
-      if (!body.ok) {
-        setError(body.error ?? t('nomadNetwork.serving.deleteFailed'));
-      }
+    await runServingAction(async () => {
+      const body = await deleteServingPage(path);
+      if (!body.ok) return body;
       if (selectedPath === path) {
         setSelectedPath(null);
         setEditorContent('');
       }
-      await refresh();
-    } catch (e) {
-      // catch-no-log-ok surfaced in the panel error state
-      setError(errLikeToLogString(e));
-    } finally {
-      setBusy(false);
-    }
+      return body;
+    }, 'nomadNetwork.serving.deleteFailed');
   };
 
   const copyHash = async () => {
@@ -187,7 +181,7 @@ export default function NomadPageServerPanel({ isActive }: { isActive?: boolean 
       }, 1500);
     } catch (e) {
       // catch-no-log-ok surfaced in the panel error state
-      setError(errLikeToLogString(e));
+      setError(humanizeNomadPageError(String(e), t));
     }
   };
 

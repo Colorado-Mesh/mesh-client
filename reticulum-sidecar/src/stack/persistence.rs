@@ -1010,4 +1010,25 @@ mod tests {
         assert!(state.remove_propagation_node("pn-short").is_err());
         assert!(state.remove_propagation_node("evil-id").is_err());
     }
+
+    #[test]
+    fn nomad_serving_fields_round_trip_and_default_when_absent() {
+        let mut state = PersistedState::default_empty();
+        state.nomad_serving_enabled = true;
+        state.nomad_serving_display_name = Some("Home".into());
+        let json = serde_json::to_string(&state).expect("serialize");
+        let loaded: PersistedState = serde_json::from_str(&json).expect("deserialize");
+        assert!(loaded.nomad_serving_enabled);
+        assert_eq!(loaded.nomad_serving_display_name.as_deref(), Some("Home"));
+
+        // Strip the new keys from a valid serialized document (older clients).
+        let mut value: serde_json::Value = serde_json::from_str(&json).expect("value");
+        let obj = value.as_object_mut().expect("object");
+        obj.remove("nomad_serving_enabled");
+        obj.remove("nomad_serving_display_name");
+        let legacy_state: PersistedState =
+            serde_json::from_value(value).expect("legacy without serving keys");
+        assert!(!legacy_state.nomad_serving_enabled);
+        assert!(legacy_state.nomad_serving_display_name.is_none());
+    }
 }

@@ -3,10 +3,25 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  deleteServingPage,
+  getServingStatus,
+  listServingPages,
+  readServingPage,
+  setServing,
+  writeServingPage,
+} from '@/renderer/lib/nomad/nomadServingApi';
 import type { NomadServingStatus } from '@/shared/nomad-types';
 
-describe('nomad serving API contract', () => {
+vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
+  isReticulumSidecarRunning: vi.fn(() => Promise.resolve(true)),
+}));
+
+import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+
+describe('nomadServingApi', () => {
   beforeEach(() => {
+    vi.mocked(isReticulumSidecarRunning).mockResolvedValue(true);
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
       value: {
@@ -17,6 +32,15 @@ describe('nomad serving API contract', () => {
         },
       },
     });
+  });
+
+  it('returns sidecar_not_running when the stack is down', async () => {
+    vi.mocked(isReticulumSidecarRunning).mockResolvedValue(false);
+    await expect(getServingStatus()).resolves.toEqual({
+      ok: false,
+      error: 'sidecar_not_running',
+    });
+    expect(window.electronAPI.reticulum.proxyGet).not.toHaveBeenCalled();
   });
 
   it('reads serving status from sidecar', async () => {
@@ -40,14 +64,10 @@ describe('nomad serving API contract', () => {
     const proxyGet = window.electronAPI.reticulum.proxyGet as ReturnType<typeof vi.fn>;
     proxyGet.mockResolvedValueOnce({ ok: true, serving });
 
-    const body = (await window.electronAPI.reticulum.proxyGet('/api/v1/nomadnetwork/serving')) as {
-      ok: boolean;
-      serving: NomadServingStatus;
-    };
+    const body = await getServingStatus();
 
     expect(proxyGet).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving');
-    expect(body.serving.running).toBe(true);
-    expect(body.serving.destination_hash).toHaveLength(32);
+    expect(body).toEqual({ ok: true, serving });
   });
 
   it('enables serving with display name', async () => {
@@ -57,24 +77,51 @@ describe('nomad serving API contract', () => {
       serving: { enabled: true, running: true, display_name: 'Home' },
     });
 
-    await window.electronAPI.reticulum.proxyPut('/api/v1/nomadnetwork/serving', {
-      enabled: true,
-      display_name: 'Home',
-    });
+    const body = await setServing({ enabled: true, displayName: 'Home' });
 
     expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving', {
       enabled: true,
       display_name: 'Home',
     });
+    expect(body.ok).toBe(true);
   });
 
-  it('deletes pages via query path', async () => {
+  it('lists pages and normalizes list errors', async () => {
+    const proxyGet = window.electronAPI.reticulum.proxyGet as ReturnType<typeof vi.fn>;
+    proxyGet.mockResolvedValueOnce({ ok: false, error: 'nomad_busy' });
+    await expect(listServingPages()).resolves.toEqual({ ok: false, error: 'nomad_busy' });
+  });
+
+  it('reads a page via query path', async () => {
+    const proxyGet = window.electronAPI.reticulum.proxyGet as ReturnType<typeof vi.fn>;
+    proxyGet.mockResolvedValueOnce({ ok: true, content: '> hi' });
+    const body = await readServingPage('index.mu');
+    expect(proxyGet).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/page?path=index.mu');
+    expect(body).toEqual({ ok: true, content: '> hi' });
+  });
+
+  it('writes and deletes pages via serving routes', async () => {
+    const proxyPut = window.electronAPI.reticulum.proxyPut as ReturnType<typeof vi.fn>;
     const proxyDelete = window.electronAPI.reticulum.proxyDelete as ReturnType<typeof vi.fn>;
+    proxyPut.mockResolvedValueOnce({ ok: true });
     proxyDelete.mockResolvedValueOnce({ ok: true });
-    const qs = new URLSearchParams({ path: 'about.mu' });
-    await window.electronAPI.reticulum.proxyDelete(
-      `/api/v1/nomadnetwork/serving/pages?${qs.toString()}`,
-    );
+
+    await expect(writeServingPage('about.mu', '> about')).resolves.toEqual({ ok: true });
+    expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/pages', {
+      path: 'about.mu',
+      content: '> about',
+    });
+
+    await expect(deleteServingPage('about.mu')).resolves.toEqual({ ok: true });
     expect(proxyDelete).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/pages?path=about.mu');
+  });
+
+  it('normalizes thrown proxy errors', async () => {
+    const proxyGet = window.electronAPI.reticulum.proxyGet as ReturnType<typeof vi.fn>;
+    proxyGet.mockRejectedValueOnce(new Error('proxy timeout'));
+    await expect(getServingStatus()).resolves.toEqual({
+      ok: false,
+      error: 'proxy timeout',
+    });
   });
 });

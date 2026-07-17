@@ -159,7 +159,7 @@ Typed renderer wrappers: `electronAPI.reticulum.rrc.*` (`listHubs`, `upsertHub`,
 { "type": "lxmf_message", "payload": { ... } }
 ```
 
-Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`, `rmap.discovery` (payload `{ discovered: RmapDiscoveredWireRow[] }`), plus RRC: `rrc.hub`, `rrc.connected`, `rrc.disconnected`, `rrc.room.joined`, `rrc.room.parted`, `rrc.message`, `rrc.error`.
+Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`, `rmap.discovery` (payload `{ discovered: RmapDiscoveredWireRow[] }`), `nomadnetwork.node` (Nomad peer announce heard), `nomad.serving_start` / `nomad.serving_stop` (local hosting lifecycle; payload includes `destination_hash` / `display_name` on start — renderer currently polls serving status via HTTP), plus RRC: `rrc.hub`, `rrc.connected`, `rrc.disconnected`, `rrc.room.joined`, `rrc.room.parted`, `rrc.message`, `rrc.error`.
 
 - **`rrc.disconnected`:** payload `{ hub_dest_hash, reason, will_reconnect? }`. When `will_reconnect` is `false` (or `reason` is `local_disconnect`), the renderer drops that hub session. When `true` (or omitted on older sidecars), the UI shows reconnecting and keeps volatile rooms until WELCOME.
 

@@ -348,7 +348,9 @@ mesh-client can **host** a static Nomad site (not only browse peers):
 3. Set a display name, **Start serving**, edit `.mu` pages, save.
 4. Peers discover the node via `nomadnetwork.node` announces; browse `/page/index.mu` from NomadNet / MeshChat / another mesh-client.
 
-Implementation: sibling [rsNomad](https://github.com/Colorado-Mesh/rsNomad) (`nomad-core`) inside the AGPL sidecar. Content lives under the sidecar storage dir `nomadnetwork/{pages,files}/`. Serving is **off by default**. CGI/executable pages are not supported.
+Implementation: sibling [rsNomad](https://github.com/Colorado-Mesh/rsNomad) (`nomad-core`) inside the AGPL sidecar. Content lives under the sidecar storage dir `nomadnetwork/{pages,files}/`. Serving is **off by default**. Preference persists as `nomad_serving_enabled` / `nomad_serving_display_name` and auto-restores on stack start when enabled. CGI/executable pages are not supported.
+
+**Limits / UI notes:** PUT page/file bodies are bounded by the sidecar global **4 MiB** JSON body limit; page content is also capped near **512 KiB** in `nomad-core`. The node re-announces about every **1 hour**. `index.mu` is auto-seeded and cannot be deleted from the UI. The **My Pages** panel edits **pages** today; serving **files** APIs exist but there is no file-upload UI yet.
 
 **Follow-ups (not in #613 MVP):** Markdown→Micron CMS, theme/nav editors, Nomad chat rooms, forums — see [rsNomad ROADMAP](https://github.com/Colorado-Mesh/rsNomad/blob/main/ROADMAP.md).
 

@@ -34,43 +34,20 @@ impl NomadServerHandle {
     pub async fn status(&self, enabled_pref: bool, display_name_pref: &str) -> NomadServingStatus {
         let guard = self.inner.lock().await;
         if let Some(node) = guard.as_ref() {
-            let stats = stats_row(&node.stats());
-            let page_count = node.store().list_pages().map(|p| p.len()).unwrap_or(0);
-            let file_count = node.store().list_files().map(|f| f.len()).unwrap_or(0);
-            NomadServingStatus {
-                enabled: true,
-                running: true,
-                destination_hash: Some(node.destination_hash_hex()),
-                identity_hash: Some(node.identity_hash_hex()),
-                display_name: node.display_name(),
-                page_count,
-                file_count,
-                stats,
-                content_root: self.content_base.display().to_string(),
-            }
-        } else {
-            let store = NomadContentStore::new(NomadContentRoots::under(&self.content_base)).ok();
-            let page_count = store
-                .as_ref()
-                .and_then(|s| s.list_pages().ok())
-                .map(|p| p.len())
-                .unwrap_or(0);
-            let file_count = store
-                .as_ref()
-                .and_then(|s| s.list_files().ok())
-                .map(|f| f.len())
-                .unwrap_or(0);
-            NomadServingStatus {
-                enabled: enabled_pref,
-                running: false,
-                destination_hash: None,
-                identity_hash: None,
-                display_name: display_name_pref.to_string(),
-                page_count,
-                file_count,
-                stats: NomadServeStatsRow::default(),
-                content_root: self.content_base.display().to_string(),
-            }
+            return self.status_from_node(node, true);
+        }
+        drop(guard);
+        let (page_count, file_count) = self.content_counts_offline();
+        NomadServingStatus {
+            enabled: enabled_pref,
+            running: false,
+            destination_hash: None,
+            identity_hash: None,
+            display_name: display_name_pref.to_string(),
+            page_count,
+            file_count,
+            stats: NomadServeStatsRow::default(),
+            content_root: self.content_base.display().to_string(),
         }
     }
 
@@ -80,15 +57,20 @@ impl NomadServerHandle {
         identity: Identity,
         display_name: String,
     ) -> Result<NomadServingStatus, String> {
-        let mut guard = self.inner.lock().await;
-        if guard.is_some() {
-            return Err("nomad serving already running".into());
+        {
+            let guard = self.inner.lock().await;
+            if guard.is_some() {
+                return Err("nomad serving already running".into());
+            }
         }
+
         let store = NomadContentStore::new(NomadContentRoots::under(&self.content_base))
             .map_err(|e| e.to_string())?;
         store
             .ensure_default_index(&display_name)
             .map_err(|e| e.to_string())?;
+
+        // Spawn without holding the lifecycle mutex so status/list reads are not stalled.
         let node = NomadNode::spawn(
             transport_tx,
             identity,
@@ -101,17 +83,14 @@ impl NomadServerHandle {
         )
         .await
         .map_err(|e| e.to_string())?;
-        let status = NomadServingStatus {
-            enabled: true,
-            running: true,
-            destination_hash: Some(node.destination_hash_hex()),
-            identity_hash: Some(node.identity_hash_hex()),
-            display_name: node.display_name(),
-            page_count: node.store().list_pages().map(|p| p.len()).unwrap_or(0),
-            file_count: node.store().list_files().map(|f| f.len()).unwrap_or(0),
-            stats: stats_row(&node.stats()),
-            content_root: self.content_base.display().to_string(),
-        };
+
+        let mut guard = self.inner.lock().await;
+        if guard.is_some() {
+            // Another start won the race; shut down the node we just spawned.
+            node.shutdown();
+            return Err("nomad serving already running".into());
+        }
+        let status = self.status_from_node(&node, true);
         *guard = Some(node);
         Ok(status)
     }
@@ -158,45 +137,69 @@ impl NomadServerHandle {
     }
 
     pub async fn write_page(&self, rel: &str, content: &str) -> Result<(), String> {
-        {
-            let store = NomadContentStore::new(NomadContentRoots::under(&self.content_base))
-                .map_err(|e| e.to_string())?;
+        self.mutate_store(|store| {
             store
                 .write_page_rel(rel, content.as_bytes())
-                .map_err(|e| e.to_string())?;
-        }
-        self.reload_routes_if_running().await
+                .map_err(|e| e.to_string())
+        })
+        .await
     }
 
     pub async fn delete_page(&self, rel: &str) -> Result<(), String> {
-        {
-            let store = NomadContentStore::new(NomadContentRoots::under(&self.content_base))
-                .map_err(|e| e.to_string())?;
-            store.delete_page_rel(rel).map_err(|e| e.to_string())?;
-        }
-        self.reload_routes_if_running().await
+        self.mutate_store(|store| store.delete_page_rel(rel).map_err(|e| e.to_string()))
+            .await
     }
 
     pub async fn write_file_base64(&self, rel: &str, content_base64: &str) -> Result<(), String> {
         let bytes = BASE64
             .decode(content_base64)
             .map_err(|e| format!("invalid base64: {e}"))?;
-        {
-            let store = NomadContentStore::new(NomadContentRoots::under(&self.content_base))
-                .map_err(|e| e.to_string())?;
-            store
-                .write_file_rel(rel, &bytes)
-                .map_err(|e| e.to_string())?;
-        }
-        self.reload_routes_if_running().await
+        self.mutate_store(|store| store.write_file_rel(rel, &bytes).map_err(|e| e.to_string()))
+            .await
     }
 
     pub async fn delete_file(&self, rel: &str) -> Result<(), String> {
-        {
-            let store = NomadContentStore::new(NomadContentRoots::under(&self.content_base))
-                .map_err(|e| e.to_string())?;
-            store.delete_file_rel(rel).map_err(|e| e.to_string())?;
+        self.mutate_store(|store| store.delete_file_rel(rel).map_err(|e| e.to_string()))
+            .await
+    }
+
+    fn status_from_node(&self, node: &NomadNode, enabled: bool) -> NomadServingStatus {
+        let page_count = node.store().list_pages().map(|p| p.len()).unwrap_or(0);
+        let file_count = node.store().list_files().map(|f| f.len()).unwrap_or(0);
+        NomadServingStatus {
+            enabled,
+            running: true,
+            destination_hash: Some(node.destination_hash_hex()),
+            identity_hash: Some(node.identity_hash_hex()),
+            display_name: node.display_name(),
+            page_count,
+            file_count,
+            stats: stats_row(&node.stats()),
+            content_root: self.content_base.display().to_string(),
         }
+    }
+
+    fn content_counts_offline(&self) -> (usize, usize) {
+        match NomadContentStore::new(NomadContentRoots::under(&self.content_base)) {
+            Ok(store) => {
+                let page_count = store.list_pages().map(|p| p.len()).unwrap_or(0);
+                let file_count = store.list_files().map(|f| f.len()).unwrap_or(0);
+                (page_count, file_count)
+            }
+            Err(e) => {
+                tracing::debug!("nomad content store unavailable for status counts: {e}");
+                (0, 0)
+            }
+        }
+    }
+
+    async fn mutate_store(
+        &self,
+        f: impl FnOnce(&NomadContentStore) -> Result<(), String>,
+    ) -> Result<(), String> {
+        let store = NomadContentStore::new(NomadContentRoots::under(&self.content_base))
+            .map_err(|e| e.to_string())?;
+        f(&store)?;
         self.reload_routes_if_running().await
     }
 
@@ -230,5 +233,35 @@ fn stats_row(stats: &nomad_core::NomadServeStats) -> NomadServeStatsRow {
         file_hits: stats.file_hits,
         not_found_count: stats.not_found_count,
         last_request_ms: stats.last_request_ms,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn start_rejects_double_start_without_live_transport() {
+        // Constructing a handle alone must report not running.
+        let dir = tempfile::tempdir().expect("tempdir");
+        let handle = NomadServerHandle::new(dir.path().to_path_buf());
+        assert!(!handle.is_running().await);
+        let status = handle.status(false, "Test").await;
+        assert!(!status.running);
+        assert_eq!(status.display_name, "Test");
+    }
+
+    #[test]
+    fn invalid_base64_is_rejected() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let handle = NomadServerHandle::new(dir.path().to_path_buf());
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let err = rt
+            .block_on(handle.write_file_base64("x.bin", "!!!not-base64!!!"))
+            .expect_err("invalid base64");
+        assert!(err.contains("invalid base64"), "{err}");
     }
 }
