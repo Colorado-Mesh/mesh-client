@@ -1,17 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/require-await -- Reticulum uses sidecar IPC, not RF transports */
 import { RETICULUM_CAPABILITIES } from '../radio/BaseRadioProvider';
 import type { TransportParams } from '../types';
-import type {
-  DiscoveryInfo,
-  DomainEvent,
-  Protocol,
-  SendMessageOptions,
-  SendPositionOptions,
-  SendResult,
-  SendWaypointOptions,
-  SetChannelOptions,
-  SetOwnerOptions,
-} from './Protocol';
+import type { DomainEvent, Protocol, SendMessageOptions, SendResult } from './Protocol';
 import { UnsupportedOperation } from './Protocol';
 
 const unsupported = () => {

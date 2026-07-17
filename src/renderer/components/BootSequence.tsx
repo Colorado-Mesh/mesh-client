@@ -497,6 +497,7 @@ export default function BootSequence({
     <canvas
       ref={canvasRef}
       aria-hidden="true"
+      tabIndex={-1}
       className="pointer-events-none fixed inset-0 z-[9999]"
     />
   );

@@ -76,6 +76,10 @@ export class RNode {
   ) {
     this.reader = reader;
     this.writable = writable;
+  }
+
+  /** Start the KISS read loop (must run after construction; not in the constructor). */
+  private startReadLoop(): void {
     void this.readLoop();
   }
 
@@ -88,7 +92,9 @@ export class RNode {
       await RNode.drainBootOutput(serialPort, options.bootDrainMs);
     }
     const reader = serialPort.readable!.getReader();
-    return new RNode(serialPort, reader, serialPort.writable!);
+    const rnode = new RNode(serialPort, reader, serialPort.writable!);
+    rnode.startReadLoop();
+    return rnode;
   }
 
   /** Discard ESP32 boot console bytes before KISS detect (meshchat: user delay; Reticulum: ~2s). */

@@ -261,8 +261,7 @@ export function pubkeyToNodeId(key: Uint8Array): number {
   if (key.length !== 32) return 0;
   let result = 0;
   for (let i = 0; i < key.length; i += 4) {
-    const word =
-      key[i] | 0 | ((key[i + 1] | 0) << 8) | ((key[i + 2] | 0) << 16) | ((key[i + 3] | 0) << 24);
+    const word = key[i] | (key[i + 1] << 8) | (key[i + 2] << 16) | (key[i + 3] << 24);
     result = (result ^ word) >>> 0;
   }
   return result >>> 0;

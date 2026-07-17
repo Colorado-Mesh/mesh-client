@@ -493,13 +493,14 @@ describe('BootSequence component', () => {
     expect(container.querySelector('canvas')).toBeInTheDocument();
   });
 
-  it('is aria-hidden', () => {
+  it('hides the decorative canvas from accessibility and keyboard navigation', () => {
     const { container } = renderBootSequence({
       protocol: 'meshtastic',
       phraseSeed: 0,
       identityId: null,
     });
     expect(container.querySelector('canvas')).toHaveAttribute('aria-hidden', 'true');
+    expect(container.querySelector('canvas')).toHaveAttribute('tabindex', '-1');
   });
 
   it('calls onComplete on unmount when animation has not finished', () => {

@@ -210,10 +210,8 @@ export function applyReticulumOutboundDeliveryStatus(
     pendingDeliveryByKey.delete(pendingDeliveryKey(identityId, messageHash));
     return;
   }
-  if (isTerminalStatus(status)) {
-    bufferPendingDeliveryStatus(identityId, messageHash, wireStatus, opts?.sentVia ?? undefined);
-  } else if (sentVia != null) {
-    // Egress upgrade before rekey: buffer sent_via with sending so flush can apply later.
+  // Terminal status, or egress upgrade before rekey (sent_via with sending for later flush).
+  if (isTerminalStatus(status) || sentVia != null) {
     bufferPendingDeliveryStatus(identityId, messageHash, wireStatus, opts?.sentVia ?? undefined);
   }
 }

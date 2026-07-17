@@ -307,8 +307,8 @@ export function findMeshcoreOpenReactionParent(
     if (m.timestamp >= opts.beforeTimestamp) continue;
     if (opts.isDm) {
       if (m.channel !== -1) continue;
-    } else {
-      if (m.channel !== opts.channel || m.to != null) continue;
+    } else if (m.channel !== opts.channel || m.to != null) {
+      continue;
     }
     if (m.emoji != null && m.replyId != null) continue;
     const tsSec = Math.floor(m.timestamp / 1000);

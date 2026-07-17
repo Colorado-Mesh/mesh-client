@@ -270,7 +270,7 @@ interface RrcSessionStoreState {
   mergeRoomMembers: (
     room: string,
     members: RrcRoomMember[],
-    mode?: 'replace' | 'merge',
+    mode: 'replace' | 'merge',
     hubHash?: string,
   ) => void;
   markPartIntent: (room: string, hubHash?: string) => void;
@@ -402,7 +402,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     );
   },
 
-  mergeRoomMembers: (room, members, mode = 'replace', hubHash) => {
+  mergeRoomMembers: (room, members, mode, hubHash) => {
     set((s) =>
       mutateHubSession(s, hubHash, (session) => {
         const { key, existing, rooms } = coalesceRoomAliases(session.rooms, room);

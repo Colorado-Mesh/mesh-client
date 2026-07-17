@@ -70,13 +70,15 @@ export function attachGlobalInstantTooltipListeners(
     }
   };
 
-  const onMouseOut = (event: MouseEvent): void => {
-    if (!activeHost) return;
+  const shouldHideFromEvent = (event: MouseEvent | FocusEvent): boolean => {
+    if (!activeHost) return false;
     const related = event.relatedTarget;
-    if (related instanceof Node && activeHost.contains(related)) return;
-    if (event.target === activeHost || activeHost.contains(event.target as Node)) {
-      hide();
-    }
+    if (related instanceof Node && activeHost.contains(related)) return false;
+    return event.target === activeHost || activeHost.contains(event.target as Node);
+  };
+
+  const onMouseOut = (event: MouseEvent): void => {
+    if (shouldHideFromEvent(event)) hide();
   };
 
   const onFocusIn = (event: FocusEvent): void => {
@@ -85,12 +87,7 @@ export function attachGlobalInstantTooltipListeners(
   };
 
   const onFocusOut = (event: FocusEvent): void => {
-    if (!activeHost) return;
-    const related = event.relatedTarget;
-    if (related instanceof Node && activeHost.contains(related)) return;
-    if (event.target === activeHost || activeHost.contains(event.target as Node)) {
-      hide();
-    }
+    if (shouldHideFromEvent(event)) hide();
   };
 
   const onReposition = (): void => {

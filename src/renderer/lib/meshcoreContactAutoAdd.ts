@@ -15,7 +15,7 @@ export const MESHCORE_ERR_UNSUPPORTED_CMD = 1;
 export const MESHCORE_AUTOADD_GET_TIMEOUT_MS = 8_000;
 
 /** Bit 0: overwrite oldest non-favourite when contacts storage is full */
-export const MESHCORE_AUTO_ADD_OVERWRITE_OLDEST = 1 << 0;
+export const MESHCORE_AUTO_ADD_OVERWRITE_OLDEST = 1;
 /** Bits 1–4: auto-add these advert types when manual_add_contacts LSB = 1 */
 export const MESHCORE_AUTO_ADD_CHAT = 1 << 1;
 export const MESHCORE_AUTO_ADD_REPEATER = 1 << 2;
@@ -116,11 +116,8 @@ export function fetchMeshcoreAutoaddConfigFromConn(
       const parsed = parseAutoaddConfigResponse(frame);
       if (parsed) {
         finish({ kind: 'ok', state: parsed });
-        return;
-      }
-      if (isMeshcoreAutoaddGetUnsupportedErrFrame(frame)) {
+      } else if (isMeshcoreAutoaddGetUnsupportedErrFrame(frame)) {
         finish({ kind: 'unsupported' });
-        return;
       }
     };
 
@@ -131,7 +128,6 @@ export function fetchMeshcoreAutoaddConfigFromConn(
           : undefined;
       if (errCode === MESHCORE_ERR_UNSUPPORTED_CMD) {
         finish({ kind: 'unsupported' });
-        return;
       }
     };
 
