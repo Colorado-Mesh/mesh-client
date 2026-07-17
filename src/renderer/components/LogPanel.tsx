@@ -108,6 +108,7 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
       entry.source.includes('reticulum') ||
       entry.message.includes('[ReticulumSidecar]') ||
       entry.message.includes('[ReticulumNetworkPanel]') ||
+      entry.message.includes('[IdentitySlotsSection]') ||
       entry.message.includes('[useReticulumRuntime]') ||
       entry.message.includes('[useReticulumSidecarApi]') ||
       entry.message.includes('[ReticulumIPC]') ||
@@ -131,6 +132,7 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
     entry.message.includes('[MeshCore MQTT]') ||
     entry.message.includes('[ReticulumSidecar]') ||
     entry.message.includes('[ReticulumNetworkPanel]') ||
+    entry.message.includes('[IdentitySlotsSection]') ||
     entry.message.includes('[ReticulumIPC]') ||
     entry.message.includes('[Reticulum]') ||
     entry.message.includes('[reticulumSidecarReads]') ||

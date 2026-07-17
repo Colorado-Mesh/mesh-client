@@ -35,6 +35,20 @@ pub async fn list_identities(State(stack): State<Arc<StackHandle>>) -> Json<serd
     Json(stack.list_identities().await)
 }
 
+pub async fn create_identity(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<serde_json::Value>,
+) -> Json<serde_json::Value> {
+    let display_name = body
+        .get("display_name")
+        .and_then(|v| v.as_str())
+        .map(str::to_string);
+    match stack.create_identity_slot(display_name).await {
+        Ok(v) => Json(v),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
 pub async fn switch_identity(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<serde_json::Value>,
@@ -43,6 +57,19 @@ pub async fn switch_identity(
         return Json(serde_json::json!({ "ok": false, "error": "identity_id required" }));
     };
     match stack.switch_identity(id).await {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn delete_identity(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<serde_json::Value>,
+) -> Json<serde_json::Value> {
+    let Some(id) = body.get("identity_id").and_then(|v| v.as_str()) else {
+        return Json(serde_json::json!({ "ok": false, "error": "identity_id required" }));
+    };
+    match stack.delete_identity_slot(id).await {
         Ok(()) => Json(serde_json::json!({ "ok": true })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }

@@ -1,5 +1,5 @@
 import { Copy, MessageCircle, Star, X } from 'lucide-react-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -25,9 +25,12 @@ import {
   resolveReticulumPeerLabel,
   useReticulumPeerStore,
 } from '@/renderer/stores/reticulumPeerStore';
+import { buildLxmContactUri } from '@/shared/meshClientDeepLink';
 import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
+import { formatReticulumIdentityFingerprint } from '@/shared/reticulumIdentityFingerprint';
 
 import { ConfirmModal } from './ConfirmModal';
+import QrCodeImage from './QrCodeImage';
 import {
   RETICULUM_PROFILE_ICON_NAMES,
   ReticulumProfileIcon,
@@ -69,11 +72,71 @@ export default function ReticulumPeerDetailModal({
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [showContactQr, setShowContactQr] = useState(false);
   const [pathStatus, setPathStatus] = useState<string | null>(null);
   const [probeStatus, setProbeStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [iconColor, setIconColor] = useState('green');
   const [iconName, setIconName] = useState<ReticulumProfileIconName>('circle');
+  const [verified, setVerified] = useState(false);
+  const [verifiedIdentityHash, setVerifiedIdentityHash] = useState<string | null>(null);
+
+  const liveIdentityHash = useMemo(() => {
+    const rows = activityRows ?? [];
+    for (const row of rows) {
+      const h = typeof row.identity_hash === 'string' ? row.identity_hash.trim().toLowerCase() : '';
+      if (h) return h;
+    }
+    return '';
+  }, [activityRows]);
+
+  const verificationMismatch =
+    verified &&
+    Boolean(verifiedIdentityHash) &&
+    Boolean(liveIdentityHash) &&
+    verifiedIdentityHash !== liveIdentityHash;
+
+  const fingerprint = formatReticulumIdentityFingerprint(liveIdentityHash || peerHash);
+
+  const contactQrUri = useMemo(() => {
+    try {
+      const label = peer ? resolveReticulumPeerLabel(peer) : peerHash.slice(0, 12);
+      return buildLxmContactUri(peerHash, label);
+    } catch {
+      // catch-no-log-ok Invalid destination hashes simply hide the optional contact QR.
+      return null;
+    }
+  }, [peer, peerHash]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const rows = (await window.electronAPI.db.getReticulumDestinations()) as Record<
+          string,
+          unknown
+        >[];
+        const key = canonicalizeReticulumDestinationHash(peerHash);
+        const row = rows.find(
+          (r) =>
+            typeof r.destination_hash === 'string' &&
+            canonicalizeReticulumDestinationHash(r.destination_hash) === key,
+        );
+        if (cancelled || !row) return;
+        setVerified(row.verified === 1 || row.verified === true);
+        setVerifiedIdentityHash(
+          typeof row.verified_identity_hash === 'string' ? row.verified_identity_hash : null,
+        );
+      } catch (err) {
+        console.warn(
+          '[ReticulumPeerDetailModal] load verified state failed: ' + errLikeToLogString(err),
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [peerHash]);
 
   useEffect(() => {
     const key = canonicalizeReticulumDestinationHash(peerHash);
@@ -318,6 +381,16 @@ export default function ReticulumPeerDetailModal({
               >
                 {isContact ? t('peerListPanel.contactYes') : t('peerListPanel.contactNo')}
               </span>
+              {verified && !verificationMismatch ? (
+                <span className="rounded bg-cyan-600/30 px-1.5 py-0.5 font-sans text-[10px] font-medium text-cyan-200">
+                  {t('peerDetailModal.verifiedBadge')}
+                </span>
+              ) : null}
+              {verificationMismatch ? (
+                <span className="rounded bg-red-900/50 px-1.5 py-0.5 font-sans text-[10px] font-medium text-red-300">
+                  {t('peerDetailModal.verifyMismatch')}
+                </span>
+              ) : null}
               <button
                 type="button"
                 className="shrink-0 text-amber-400 hover:text-amber-300"
@@ -328,6 +401,89 @@ export default function ReticulumPeerDetailModal({
               >
                 <Copy className="h-3.5 w-3.5" />
               </button>
+            </div>
+            <div className="mt-2 space-y-1 rounded border border-gray-700/60 p-2">
+              <div className="text-muted text-[10px] tracking-wide uppercase">
+                {t('peerDetailModal.verifyFingerprint')}
+              </div>
+              <div className="font-mono text-xs break-all text-gray-200">{fingerprint}</div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button
+                  type="button"
+                  className="rounded bg-cyan-800/60 px-2 py-1 text-xs text-cyan-100 hover:bg-cyan-700/60"
+                  disabled={!liveIdentityHash || busy}
+                  onClick={() => {
+                    void (async () => {
+                      setBusy(true);
+                      try {
+                        await window.electronAPI.db.setReticulumDestinationVerified({
+                          destination_hash: peerHash,
+                          verified: true,
+                          identity_hash: liveIdentityHash,
+                        });
+                        setVerified(true);
+                        setVerifiedIdentityHash(liveIdentityHash);
+                      } catch (err) {
+                        console.error(
+                          '[ReticulumPeerDetailModal] verify failed: ' + errLikeToLogString(err),
+                        );
+                      } finally {
+                        setBusy(false);
+                      }
+                    })();
+                  }}
+                >
+                  {t('peerDetailModal.verifyMark')}
+                </button>
+                <button
+                  type="button"
+                  className="rounded bg-slate-700 px-2 py-1 text-xs text-gray-200 hover:bg-slate-600"
+                  disabled={!verified || busy}
+                  onClick={() => {
+                    void (async () => {
+                      setBusy(true);
+                      try {
+                        await window.electronAPI.db.setReticulumDestinationVerified({
+                          destination_hash: peerHash,
+                          verified: false,
+                        });
+                        setVerified(false);
+                        setVerifiedIdentityHash(null);
+                      } catch (err) {
+                        console.error(
+                          '[ReticulumPeerDetailModal] revoke verify failed: ' +
+                            errLikeToLogString(err),
+                        );
+                      } finally {
+                        setBusy(false);
+                      }
+                    })();
+                  }}
+                >
+                  {t('peerDetailModal.verifyRevoke')}
+                </button>
+                {contactQrUri ? (
+                  <button
+                    type="button"
+                    className="rounded bg-slate-700 px-2 py-1 text-xs text-gray-200 hover:bg-slate-600"
+                    aria-label={t('peerDetailModal.shareContactQrAria')}
+                    onClick={() => {
+                      setShowContactQr((v) => !v);
+                    }}
+                  >
+                    {t('peerDetailModal.shareContactQr')}
+                  </button>
+                ) : null}
+              </div>
+              {showContactQr && contactQrUri ? (
+                <div className="pt-2">
+                  <QrCodeImage
+                    value={contactQrUri}
+                    size={160}
+                    ariaLabel={t('peerDetailModal.shareContactQrAria')}
+                  />
+                </div>
+              ) : null}
             </div>
             <div className="mt-2 flex flex-wrap gap-3">
               <label className="block text-xs text-gray-400" htmlFor="peer-icon-name">

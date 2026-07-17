@@ -35,6 +35,14 @@ import {
   MESHCORE_MAX_CONTACTS,
   meshcoreTracePathLenToHops,
 } from '../lib/meshcoreUtils';
+import {
+  bytesToHex,
+  computeRangeTestLossRate,
+  latestPaxPoint,
+  type ModulePortEvent,
+  parseRangeTestPayload,
+  type PaxCounterPoint,
+} from '../lib/meshtastic/meshtasticModuleEvents';
 import { meshtasticNodeAwaitingNodeInfo } from '../lib/meshtastic/meshtasticNodeAwaitingNodeInfo';
 import { Z_NODE_DETAIL_MODAL } from '../lib/modalZIndex';
 import { getNodeStatus } from '../lib/nodeStatus';
@@ -91,10 +99,12 @@ interface NodeDetailModalProps {
   meshcoreNeighbors?: MeshCoreNeighborResult;
   onRequestNeighbors?: (nodeId: number) => Promise<void>;
   meshcoreNeighborError?: string;
-  /** PaxCounter data from Meshtastic (seen count per node) */
-  paxCounterData?: Map<number, { from: number; count: number; timestamp: number }>;
-  /** DetectionSensor events from Meshtastic (raw bytes per node) */
-  detectionSensorEvents?: Map<number, { from: number; data: Uint8Array; timestamp: number }[]>;
+  /** PaxCounter history from Meshtastic (capped session series per node) */
+  paxCounterData?: Map<number, PaxCounterPoint[]>;
+  /** DetectionSensor events from Meshtastic (capped session list per node) */
+  detectionSensorEvents?: Map<number, ModulePortEvent[]>;
+  /** Range Test packets from Meshtastic (capped session list per node) */
+  rangeTestPackets?: Map<number, ModulePortEvent[]>;
   /** MapReport data from Meshtastic (location/position reports per node) */
   mapReports?: Map<number, { from: number; data: unknown; timestamp: number }>;
   /** Export contact advert bytes (MeshCore only) */
@@ -216,6 +226,7 @@ export default function NodeDetailModal({
   meshcoreNeighborError,
   paxCounterData,
   detectionSensorEvents,
+  rangeTestPackets,
   mapReports,
   onExportContact,
   onShareContact,
@@ -1219,8 +1230,11 @@ export default function NodeDetailModal({
               {protocol === 'meshtastic' &&
                 paxCounterData &&
                 (() => {
-                  const paxData = paxCounterData.get(node.node_id);
-                  if (!paxData) return null;
+                  const history = paxCounterData.get(node.node_id);
+                  const paxData = latestPaxPoint(paxCounterData, node.node_id);
+                  if (!paxData || !history?.length) return null;
+                  const recent = history.slice(-12);
+                  const maxCount = Math.max(...recent.map((p) => p.count), 1);
                   return (
                     <div className="space-y-2 px-5 pb-2">
                       <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
@@ -1238,6 +1252,24 @@ export default function NodeDetailModal({
                             t,
                           )}
                         </div>
+                        <div className="text-muted">{t('nodeDetailModal.paxCounter.samples')}</div>
+                        <div className="font-mono text-gray-200">{history.length}</div>
+                      </div>
+                      <div
+                        className="bg-secondary-dark flex h-10 items-end gap-0.5 rounded p-2"
+                        role="img"
+                        aria-label={t('nodeDetailModal.paxCounter.historyChartAria')}
+                      >
+                        {recent.map((point) => (
+                          <div
+                            key={point.timestamp}
+                            className="bg-readable-green min-w-0 flex-1 rounded-sm"
+                            style={{
+                              height: `${Math.max(8, Math.round((point.count / maxCount) * 100))}%`,
+                            }}
+                            title={String(point.count)}
+                          />
+                        ))}
                       </div>
                     </div>
                   );
@@ -1250,6 +1282,7 @@ export default function NodeDetailModal({
                   const sensorEvents = detectionSensorEvents.get(node.node_id);
                   if (!sensorEvents || sensorEvents.length === 0) return null;
                   const latestEvent = sensorEvents[sensorEvents.length - 1];
+                  const list = [...sensorEvents].reverse().slice(0, 20);
                   return (
                     <div className="space-y-2 px-5 pb-2">
                       <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
@@ -1275,15 +1308,108 @@ export default function NodeDetailModal({
                             count: latestEvent.data.length,
                           })}
                         </div>
-                        <div className="text-muted col-span-2">
-                          {t('nodeDetailModal.detectionSensor.rawDataHex')}
-                        </div>
-                        <div className="col-span-2 font-mono text-[10px] break-all text-gray-200">
-                          {Array.from(latestEvent.data)
-                            .map((b) => b.toString(16).padStart(2, '0'))
-                            .join(' ')}
-                        </div>
                       </div>
+                      <ul
+                        className="bg-secondary-dark max-h-40 space-y-1 overflow-y-auto rounded p-2 text-xs"
+                        aria-label={t('nodeDetailModal.detectionSensor.eventLogAria')}
+                      >
+                        {list.map((ev) => (
+                          <li
+                            key={`${ev.timestamp}-${ev.data.length}`}
+                            className="border-border/40 border-b pb-1 last:border-0"
+                          >
+                            <div className="text-muted font-mono text-[10px]">
+                              {formatIsoDateTime(ev.timestamp)}
+                            </div>
+                            <div className="font-mono break-all text-gray-200">
+                              {ev.text ?? bytesToHex(ev.data)}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
+
+              {/* Range Test section (Meshtastic only) */}
+              {protocol === 'meshtastic' &&
+                rangeTestPackets &&
+                (() => {
+                  const packets = rangeTestPackets.get(node.node_id);
+                  if (!packets || packets.length === 0) return null;
+                  const latest = packets[packets.length - 1];
+                  const decoded = parseRangeTestPayload(latest.data);
+                  const lossRate = computeRangeTestLossRate(packets);
+                  const list = [...packets].reverse().slice(0, 20);
+                  return (
+                    <div className="space-y-2 px-5 pb-2">
+                      <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                        {t('nodeDetailModal.rangeTest.heading', { count: packets.length })}
+                      </h4>
+                      <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
+                        <div className="text-muted">
+                          {t('nodeDetailModal.rangeTest.lastPacket')}
+                        </div>
+                        <div className="font-mono text-gray-200">
+                          {formatSecondsAgo(
+                            Math.max(0, Math.floor((Date.now() - latest.timestamp) / 1000)),
+                            t,
+                          )}
+                        </div>
+                        {decoded.sequence !== undefined && (
+                          <>
+                            <div className="text-muted">
+                              {t('nodeDetailModal.rangeTest.sequence')}
+                            </div>
+                            <div className="font-mono text-gray-200">{decoded.sequence}</div>
+                          </>
+                        )}
+                        {decoded.snr !== undefined && (
+                          <>
+                            <div className="text-muted">{t('nodeDetailModal.rangeTest.snr')}</div>
+                            <div className="font-mono text-gray-200">{decoded.snr}</div>
+                          </>
+                        )}
+                        {decoded.rssi !== undefined && (
+                          <>
+                            <div className="text-muted">{t('nodeDetailModal.rangeTest.rssi')}</div>
+                            <div className="font-mono text-gray-200">{decoded.rssi}</div>
+                          </>
+                        )}
+                        {lossRate !== undefined && (
+                          <>
+                            <div className="text-muted">
+                              {t('nodeDetailModal.rangeTest.lossRate')}
+                            </div>
+                            <div className="font-mono text-gray-200">
+                              {t('nodeDetailModal.rangeTest.lossRatePercent', {
+                                percent: Math.round(lossRate * 100),
+                              })}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <ul
+                        className="bg-secondary-dark max-h-40 space-y-1 overflow-y-auto rounded p-2 text-xs"
+                        aria-label={t('nodeDetailModal.rangeTest.packetLogAria')}
+                      >
+                        {list.map((ev) => {
+                          const d = parseRangeTestPayload(ev.data);
+                          return (
+                            <li
+                              key={`${ev.timestamp}-${ev.data.length}`}
+                              className="border-border/40 border-b pb-1 last:border-0"
+                            >
+                              <div className="text-muted font-mono text-[10px]">
+                                {formatIsoDateTime(ev.timestamp)}
+                              </div>
+                              <div className="font-mono break-all text-gray-200">
+                                {d.rawText ?? bytesToHex(ev.data)}
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
                     </div>
                   );
                 })()}

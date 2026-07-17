@@ -32,6 +32,8 @@ export interface MeshCoreNodeTelemetry {
   fetchedAt: number;
   entries: CayenneLppEntry[];
   temperature?: number;
+  /** Internal MCU temperature (°C) when reported on a non-env Cayenne channel. */
+  mcuTemperature?: number;
   relativeHumidity?: number;
   barometricPressure?: number;
   voltage?: number;

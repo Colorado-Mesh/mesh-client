@@ -98,6 +98,7 @@ import {
   attachMeshtasticLegacyWireSubscriptions,
   type MeshtasticLegacyWireSubscriptionDeps,
 } from '../lib/meshtastic/meshtasticLegacyWireSubscriptions';
+import type { ModulePortEvent, PaxCounterPoint } from '../lib/meshtastic/meshtasticModuleEvents';
 import { normalizeMeshtasticMqttChatMessage } from '../lib/meshtastic/meshtasticMqttChatNormalize';
 import { MeshtasticMqttClientProxyBridge } from '../lib/meshtastic/meshtasticMqttClientProxy';
 import {
@@ -490,7 +491,7 @@ export function useMeshtasticRuntime() {
     Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
   >(new Map());
   const [detectionSensorEvents, setDetectionSensorEvents] = useState<
-    Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
+    Map<number, ModulePortEvent[]>
   >(new Map());
   const [pingResponses, setPingResponses] = useState<
     Map<number, { from: number; data: Uint8Array; timestamp: number }>
@@ -498,9 +499,7 @@ export function useMeshtasticRuntime() {
   const [ipTunnelMessages, setIpTunnelMessages] = useState<
     Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
   >(new Map());
-  const [paxCounterData, setPaxCounterData] = useState<
-    Map<number, { from: number; count: number; timestamp: number }>
-  >(new Map());
+  const [paxCounterData, setPaxCounterData] = useState<Map<number, PaxCounterPoint[]>>(new Map());
   const [serialMessages, setSerialMessages] = useState<
     Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
   >(new Map());
@@ -508,9 +507,9 @@ export function useMeshtasticRuntime() {
     Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
   >(new Map());
   const storeForwardMessagesRef = useRef(storeForwardMessages);
-  const [rangeTestPackets, setRangeTestPackets] = useState<
-    Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
-  >(new Map());
+  const [rangeTestPackets, setRangeTestPackets] = useState<Map<number, ModulePortEvent[]>>(
+    new Map(),
+  );
   const [zpsMessages, setZpsMessages] = useState<
     Map<number, { from: number; data: Uint8Array; timestamp: number }[]>
   >(new Map());

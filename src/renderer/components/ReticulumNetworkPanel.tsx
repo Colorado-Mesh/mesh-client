@@ -1,19 +1,27 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { Copy } from 'lucide-react-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { translateReticulumAuditIssue } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import { reticulumSidecarEventRefreshActions } from '@/renderer/lib/reticulum/reticulumSidecarPeerRefreshEvents';
-import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import {
+  createReticulumIdentitySlot,
+  deleteReticulumIdentitySlot,
+  invalidateReticulumInterfacesCache,
+  listReticulumIdentities,
+  type ReticulumSidecarIdentityRow,
+  switchReticulumIdentity,
+} from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import {
   type ReticulumIdentityStatus,
   useReticulumSidecarApi,
 } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
+import { buildLxmIdentityUri, classifyMeshClientDeepLink } from '@/shared/meshClientDeepLink';
 import type {
   ReticulumConfigValidateResult,
   ReticulumSidecarEvent,
@@ -22,9 +30,12 @@ import type {
 import { refreshReticulumPeersFromSidecar } from '../stores/reticulumPeerStore';
 import { ConfirmModal } from './ConfirmModal';
 import { IdentityVaultPanel } from './IdentityVaultPanel';
+import QrCodeImage from './QrCodeImage';
+import QrIngestControl from './QrIngestControl';
 import { ReticulumAnnounceControls } from './ReticulumAnnounceControls';
 import ReticulumPropagationSection from './ReticulumPropagationSection';
 import { ReticulumRmapDiscoveryControls } from './ReticulumRmapDiscoveryControls';
+import { useToast } from './Toast';
 
 type IdentityReplaceAction = 'generate' | 'importPhrase' | 'importBackup' | 'importPrivate';
 
@@ -97,6 +108,7 @@ export function ReticulumNetworkPanel({
   propagationSectionOpenKey = 0,
 }: ReticulumNetworkPanelProps) {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const sidecarEventRef = useRef<(evt: ReticulumSidecarEvent) => void>(() => {});
 
   const { sidecarApiReady, sidecarUiRunning, identity, statsSummary, appInfo, refreshIdentity } =
@@ -536,19 +548,74 @@ export function ReticulumNetworkPanel({
             {identityError}
           </p>
         ) : null}
-        {identityReady ? (
-          <IdentityConfiguredView
-            identity={identity}
-            exportPassphrase={exportPassphrase}
-            exportJson={exportJson}
-            exportDisabled={!sidecarApiReady}
-            saveDisabled={!sidecarApiReady}
-            onExportPassphraseChange={setExportPassphrase}
-            onExport={() => {
-              void handleExportIdentity();
+        <div className="mt-2">
+          <p className="text-muted mb-1 text-[11px]">{t('qrIngest.pasteImageHint')}</p>
+          <QrIngestControl
+            disabled={!sidecarApiReady}
+            onDecoded={(text) => {
+              void (async () => {
+                const parsed = classifyMeshClientDeepLink(text);
+                if (parsed.kind === 'lxmPaperUnsupported') {
+                  addToast(t('qrIngest.paperUnsupported'), 'error');
+                  return;
+                }
+                if (parsed.kind === 'lxmContact') {
+                  try {
+                    await window.electronAPI.db.upsertReticulumDestination({
+                      destination_hash: parsed.destinationHash,
+                      display_name: parsed.name ?? null,
+                      last_heard: Date.now(),
+                    });
+                    addToast(t('qrIngest.contactImported'), 'success');
+                    void refreshReticulumPeersFromSidecar({ forceRefresh: true });
+                  } catch (err) {
+                    console.error(
+                      '[ReticulumNetworkPanel] QR contact upsert failed: ' +
+                        errLikeToLogString(err),
+                    );
+                    addToast(t('qrIngest.contactImportFailed'), 'error');
+                  }
+                  return;
+                }
+                if (parsed.kind === 'lxmIdentity') {
+                  addToast(t('qrIngest.identityShown'), 'success');
+                  return;
+                }
+                addToast(t('qrIngest.unknownLink'), 'error');
+              })();
             }}
-            onSaveDisplayName={(name) => handleSaveDisplayName(name)}
           />
+        </div>
+        {identityReady ? (
+          <>
+            <IdentitySlotsSection
+              disabled={!sidecarApiReady}
+              onError={setIdentityError}
+              onChanged={async () => {
+                await refreshIdentity();
+                void refreshReticulumPeersFromSidecar({ forceRefresh: true }).catch(
+                  (err: unknown) => {
+                    console.warn(
+                      '[ReticulumNetworkPanel] peer refresh after identity change failed: ' +
+                        errLikeToLogString(err),
+                    );
+                  },
+                );
+              }}
+            />
+            <IdentityConfiguredView
+              identity={identity}
+              exportPassphrase={exportPassphrase}
+              exportJson={exportJson}
+              exportDisabled={!sidecarApiReady}
+              saveDisabled={!sidecarApiReady}
+              onExportPassphraseChange={setExportPassphrase}
+              onExport={() => {
+                void handleExportIdentity();
+              }}
+              onSaveDisplayName={(name) => handleSaveDisplayName(name)}
+            />
+          </>
         ) : (
           <IdentitySetupView
             displayName={displayName}
@@ -873,6 +940,217 @@ function IdentityImportExtras({
   );
 }
 
+function IdentitySlotsSection({
+  disabled,
+  onError,
+  onChanged,
+}: {
+  disabled: boolean;
+  onError: (msg: string | null) => void;
+  onChanged: () => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const [slots, setSlots] = useState<ReticulumSidecarIdentityRow[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [switchTarget, setSwitchTarget] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const reload = useCallback(async () => {
+    try {
+      setSlots(await listReticulumIdentities());
+    } catch (err) {
+      console.warn('[IdentitySlotsSection] list failed: ' + errLikeToLogString(err));
+      onError(
+        t('connectionPanel.reticulumIdentity.slotActionFailed', {
+          error: errLikeToLogString(err),
+        }),
+      );
+    }
+  }, [onError, t]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  const runCreate = useCallback(async () => {
+    setBusy(true);
+    onError(null);
+    try {
+      await createReticulumIdentitySlot();
+      setNotice(t('connectionPanel.reticulumIdentity.slotCreated'));
+      await onChanged();
+      await reload();
+    } catch (err) {
+      console.warn('[IdentitySlotsSection] create failed: ' + errLikeToLogString(err));
+      onError(
+        t('connectionPanel.reticulumIdentity.slotActionFailed', {
+          error: errLikeToLogString(err),
+        }),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }, [onChanged, onError, reload, t]);
+
+  const runSwitch = useCallback(async () => {
+    if (!switchTarget) return;
+    setBusy(true);
+    onError(null);
+    try {
+      await switchReticulumIdentity(switchTarget);
+      setNotice(t('connectionPanel.reticulumIdentity.slotSwitched'));
+      setSwitchTarget(null);
+      await onChanged();
+      await reload();
+    } catch (err) {
+      console.warn('[IdentitySlotsSection] switch failed: ' + errLikeToLogString(err));
+      onError(
+        t('connectionPanel.reticulumIdentity.slotActionFailed', {
+          error: errLikeToLogString(err),
+        }),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }, [onChanged, onError, reload, switchTarget, t]);
+
+  const runDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setBusy(true);
+    onError(null);
+    try {
+      await deleteReticulumIdentitySlot(deleteTarget);
+      setNotice(t('connectionPanel.reticulumIdentity.slotDeleted'));
+      setDeleteTarget(null);
+      await reload();
+    } catch (err) {
+      console.warn('[IdentitySlotsSection] delete failed: ' + errLikeToLogString(err));
+      onError(
+        t('connectionPanel.reticulumIdentity.slotActionFailed', {
+          error: errLikeToLogString(err),
+        }),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }, [deleteTarget, onError, reload, t]);
+
+  return (
+    <div className="mb-3 space-y-2 rounded border border-gray-700/70 p-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-xs font-medium text-gray-300">
+            {t('connectionPanel.reticulumIdentity.slotsTitle')}
+          </p>
+          <p className="text-muted text-[11px]">
+            {t('connectionPanel.reticulumIdentity.slotsHint')}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={disabled || busy}
+          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+          aria-label={t('connectionPanel.reticulumIdentity.slotCreateAria')}
+          onClick={() => {
+            void runCreate();
+          }}
+        >
+          {t('connectionPanel.reticulumIdentity.slotCreate')}
+        </button>
+      </div>
+      <ul className="space-y-1">
+        {slots.map((slot) => {
+          const label =
+            slot.display_name?.trim() ||
+            slot.lxmf_hash?.slice(0, 8) ||
+            t('connectionPanel.reticulumIdentity.slotUnnamed');
+          return (
+            <li
+              key={slot.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded bg-slate-900/50 px-2 py-1.5 text-xs"
+            >
+              <div className="min-w-0">
+                <span className="font-medium text-gray-200">{label}</span>
+                {slot.active ? (
+                  <span className="text-readable-green ml-2 text-[10px]">
+                    {t('connectionPanel.reticulumIdentity.slotActive')}
+                  </span>
+                ) : null}
+                <p className="text-muted truncate font-mono text-[10px]">{slot.id}</p>
+              </div>
+              <div className="flex gap-1">
+                {!slot.active && slot.configured ? (
+                  <button
+                    type="button"
+                    disabled={disabled || busy}
+                    className="rounded border border-gray-600 px-2 py-0.5 text-[11px] text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+                    aria-label={t('connectionPanel.reticulumIdentity.slotSwitchAria', {
+                      id: slot.id,
+                    })}
+                    onClick={() => {
+                      setSwitchTarget(slot.id);
+                    }}
+                  >
+                    {t('connectionPanel.reticulumIdentity.slotSwitch')}
+                  </button>
+                ) : null}
+                {!slot.active ? (
+                  <button
+                    type="button"
+                    disabled={disabled || busy}
+                    className="rounded border border-red-900/60 px-2 py-0.5 text-[11px] text-red-300 hover:bg-red-950/40 disabled:opacity-40"
+                    aria-label={t('connectionPanel.reticulumIdentity.slotDeleteAria', {
+                      id: slot.id,
+                    })}
+                    onClick={() => {
+                      setDeleteTarget(slot.id);
+                    }}
+                  >
+                    {t('connectionPanel.reticulumIdentity.slotDelete')}
+                  </button>
+                ) : null}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {notice ? (
+        <p className="text-readable-green text-[11px]" role="status">
+          {notice}
+        </p>
+      ) : null}
+      {switchTarget ? (
+        <ConfirmModal
+          title={t('connectionPanel.reticulumIdentity.slotSwitchConfirmTitle')}
+          message={t('connectionPanel.reticulumIdentity.slotSwitchConfirmMessage')}
+          confirmLabel={t('connectionPanel.reticulumIdentity.slotSwitchConfirmAction')}
+          onConfirm={() => {
+            void runSwitch();
+          }}
+          onCancel={() => {
+            setSwitchTarget(null);
+          }}
+        />
+      ) : null}
+      {deleteTarget ? (
+        <ConfirmModal
+          title={t('connectionPanel.reticulumIdentity.slotDeleteConfirmTitle')}
+          message={t('connectionPanel.reticulumIdentity.slotDeleteConfirmMessage')}
+          confirmLabel={t('connectionPanel.reticulumIdentity.slotDeleteConfirmAction')}
+          danger
+          onConfirm={() => {
+            void runDelete();
+          }}
+          onCancel={() => {
+            setDeleteTarget(null);
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
 function IdentityConfiguredView({
   identity,
   exportPassphrase,
@@ -902,6 +1180,21 @@ function IdentityConfiguredView({
   }, [identity?.display_name]);
 
   const lxmfHash = identity?.lxmf_hash?.trim() ?? '';
+  const [showIdentityQr, setShowIdentityQr] = useState(false);
+  const identityQrUri = useMemo(() => {
+    const idHash = identity?.identity_hash?.trim();
+    if (!idHash) return null;
+    try {
+      return buildLxmIdentityUri({
+        identityHash: idHash,
+        lxmfHash: lxmfHash || null,
+        name: identity?.display_name ?? null,
+      });
+    } catch {
+      // catch-no-log-ok Invalid or incomplete identity hashes simply hide the optional QR.
+      return null;
+    }
+  }, [identity, lxmfHash]);
 
   const copyLxmfHash = useCallback(async () => {
     if (!lxmfHash) return;
@@ -944,7 +1237,28 @@ function IdentityConfiguredView({
             <Copy className="h-3.5 w-3.5" />
           </button>
         ) : null}
+        {identityQrUri ? (
+          <button
+            type="button"
+            className="rounded border border-gray-600 px-2 py-0.5 text-xs text-gray-300 hover:bg-slate-800"
+            aria-label={t('qrIngest.showIdentityQrAria')}
+            onClick={() => {
+              setShowIdentityQr((v) => !v);
+            }}
+          >
+            {t('qrIngest.showIdentityQr')}
+          </button>
+        ) : null}
       </div>
+      {showIdentityQr && identityQrUri ? (
+        <div className="mt-2">
+          <QrCodeImage
+            value={identityQrUri}
+            size={160}
+            ariaLabel={t('qrIngest.showIdentityQrAria')}
+          />
+        </div>
+      ) : null}
       <label className="mt-2 block text-xs text-gray-400">
         {t('connectionPanel.reticulumIdentity.displayName')}
         <input

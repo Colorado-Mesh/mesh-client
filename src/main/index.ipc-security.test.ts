@@ -276,6 +276,11 @@ describe('session permission whitelist (source contract)', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('media:ensureMicrophoneAccess'");
     expect(INDEX_SOURCE).toContain('ensureMicrophoneAccess(');
   });
+
+  it('registers media:ensureCameraAccess IPC handler', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('media:ensureCameraAccess'");
+    expect(INDEX_SOURCE).toContain('ensureCameraAccess(');
+  });
 });
 
 // ─── meshcore:tcp-connect hostname validation ────────────────────────

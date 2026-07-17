@@ -571,7 +571,11 @@
     "receivedViaBle": "Bluetooth ile alındı",
     "receivedViaMultiple": "{{vias}} ile alındı",
     "sentViaBle": "Bluetooth ile gönderilir",
-    "sentViaMultiple": "{{vias}} ile gönderildi"
+    "sentViaMultiple": "{{vias}} ile gönderildi",
+    "floodScopeOverrideLabel": "Bu mesajın Flood kapsamı",
+    "floodScopeOverrideAria": "İleti başına taşma kapsamını geçersiz kılma",
+    "floodScopeOverrideDefault": "Varsayılan kapsam",
+    "floodScopeOverrideUnscoped": "Kapsam dışı"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -856,7 +860,27 @@
       "saveDisplayName": "Görünen adı kaydet",
       "saveDisplayNameFailed": "Görünen ad kaydedilemedi.",
       "displayNameSaved": "Görünen ad kaydedildi.",
-      "copyLxmfHash": "LXMF karmasını kopyala"
+      "copyLxmfHash": "LXMF karmasını kopyala",
+      "slotsTitle": "Kimlikler",
+      "slotsHint": "Ek kimlikler oluşturun ve bunlar arasında geçiş yapın. Geçiş Reticulum yığınını yeniden başlatır.",
+      "slotActive": "Aktif",
+      "slotSwitch": "Anahtar",
+      "slotSwitchAria": "{{id}} kimliğine geç",
+      "slotDelete": "Silmek",
+      "slotDeleteAria": "{{id}} kimliğini sil",
+      "slotCreate": "Yeni kimlik",
+      "slotCreateAria": "Yeni bir Reticulum kimliği oluşturun",
+      "slotSwitchConfirmTitle": "Reticulum kimliği değiştirilsin mi?",
+      "slotSwitchConfirmMessage": "Yığın seçilen kimlikle yeniden başlatılacaktır. Uçuş sırasında mesajlar kesilebilir.",
+      "slotSwitchConfirmAction": "Kimliği değiştir",
+      "slotDeleteConfirmTitle": "Kimlik yuvası silinsin mi?",
+      "slotDeleteConfirmMessage": "Bu, kullanılmayan kimlik anahtarını bu cihazdan kalıcı olarak kaldırır. Etkin kimlik silinemez.",
+      "slotDeleteConfirmAction": "Kimliği sil",
+      "slotSwitched": "Değiştirilen kimlik — yığın yeniden başlatılıyor.",
+      "slotCreated": "Yeni kimlik oluşturuldu.",
+      "slotDeleted": "Kimlik silindi.",
+      "slotActionFailed": "Kimlik işlemi başarısız oldu: {{error}}",
+      "slotUnnamed": "İsimsiz"
     },
     "reticulumInterfaces": {
       "title": "Ara birimler",
@@ -2522,16 +2546,28 @@
     "paxCounter": {
       "heading": "Yolcu Sayacı",
       "detectedCount": "Tespit Edilen Sayım",
-      "lastSeen": "Son Görülme"
+      "lastSeen": "Son Görülme",
+      "samples": "Örnekler",
+      "historyChartAria": "Pax sayacının yakın geçmişi"
     },
     "detectionSensor": {
       "heading": "Algılama Sensörü ({{count}})",
       "lastDetection": "Son Tespit",
       "dataSize": "Veri Boyutu",
       "dataSizeBytes": "{{count}} bayt",
-      "rawDataHex": "Ham Veri (onaltılık)"
+      "eventLogAria": "Algılama sensörü olay günlüğü"
     },
-    "neighborsHopTooFar": "Tekrarlayıcılar için komşular mevcut değil {{hops}}+ USB seri üzerinden atlıyor"
+    "neighborsHopTooFar": "Tekrarlayıcılar için komşular mevcut değil {{hops}}+ USB seri üzerinden atlıyor",
+    "rangeTest": {
+      "heading": "Menzil Testi ({{count}})",
+      "lastPacket": "Son Paket",
+      "sequence": "Sekans",
+      "snr": "SNR",
+      "rssi": "RSSI",
+      "lossRate": "Tahmini Kayıp",
+      "lossRatePercent": "{{percent}}%",
+      "packetLogAria": "Aralık testi paket günlüğü"
+    }
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",
@@ -2814,7 +2850,15 @@
     "blockContact": "Kişiyi & Engelle",
     "unblockContact": "& Kişinin Engellemesini Kaldır",
     "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — son görülme {{seen}}"
+    "serviceBadgeTitle": "{{aspect}} — son görülme {{seen}}",
+    "verifyMark": "Doğrulandı olarak işaretle",
+    "verifyRevoke": "Doğrulamayı iptal et",
+    "verifyFingerprint": "Kimlik parmak izi",
+    "verifyMismatch": "Doğrulamadan bu yana kimlik karması değişti",
+    "verifiedBadge": "Doğrulandı",
+    "shareContactQr": "Kişi QR'sini paylaşın",
+    "shareContactQrAria": "Bu kişiye ait QR kodunu göster",
+    "verifiedRowAria": "Kişi doğrulandı"
   },
   "peerGraph": {
     "title": "Akran İletişim Grafiği",
@@ -3175,7 +3219,9 @@
       "parseFailed": "Geçersiz kanal URL'si: {{message}}",
       "applying": "Uygulayan",
       "unnamedChannel": "(isimsiz)",
-      "applySuccessWithSkipped": "Uygulanan {{applied}} kanal(lar); {{skipped}} çift veya isimsiz olarak atlandı."
+      "applySuccessWithSkipped": "Uygulanan {{applied}} kanal(lar); {{skipped}} çift veya isimsiz olarak atlandı.",
+      "qrHeading": "QR kodu (web bağlantısı)",
+      "qrAria": "Kanal yapılandırması QR kodu"
     },
     "channelLoading": "Yükleniyor…",
     "channelLoadFailed": "Yükleme başarısız",
@@ -4195,7 +4241,10 @@
     "footerBattery": "Pil: {{count}} puan",
     "footerSignal": "Sinyal: {{count}} puan",
     "footerEnv": "Zarf: {{count}} puan",
-    "footerMax": "(her biri en fazla 50)"
+    "footerMax": "(her biri en fazla 50)",
+    "sectionTemperatureHumidity": "Sıcaklık ve Nem",
+    "seriesMcuTempF": "MCU °F",
+    "seriesMcuTempC": "MCU °C"
   },
   "toasts": {
     "firmwareAvailable": "Ürün yazılımı güncellemesi mevcut: v{{version}}",
@@ -4381,5 +4430,43 @@
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
     "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+  },
+  "signalMeter": {
+    "rssi": "RSSI",
+    "snr": "SNR",
+    "rssiValue": "{{value}} dBm",
+    "noData": "—",
+    "aria": "Sinyal ölçer: RSSI {{rssi}}, SNR {{snr}}, seviye {{level}}"
+  },
+  "gpxExport": {
+    "button": "GPX'i dışa aktar",
+    "buttonAria": "Konum geçmişini GPX olarak dışa aktar",
+    "success": "GPX dışa aktarıldı",
+    "failed": "GPX dışa aktarımı başarısız oldu",
+    "empty": "Dışa aktarılacak konum geçmişi yok"
+  },
+  "qrIngest": {
+    "qrImageAlt": "QR kodu",
+    "encodeFailed": "QR kodu oluşturulamadı",
+    "paperUnsupported": "Şifrelenmiş LXMF kağıt mesajları henüz desteklenmiyor",
+    "contactImported": "Kişi derin bağlantıdan eklendi",
+    "contactImportFailed": "Bağlantıdaki kişi içe aktarılamadı",
+    "unknownLink": "Tanınmayan bağlantı",
+    "identityShown": "Kimlik paylaşım bağlantısı açıldı",
+    "channelLinkReceived": "Kanal bağlantısı açıldı — Radyo sekmesinde içe aktarmayı inceleyin",
+    "showIdentityQr": "Kimlik QR'sini göster",
+    "showIdentityQrAria": "Bu kimlik için QR kodunu göster",
+    "chooseImage": "Görüntüyü tara…",
+    "chooseImageAria": "QR kodu içeren bir resim dosyası seçin",
+    "scanCamera": "Kamerayla tarayın",
+    "scanCameraAria": "Kamerayla bir QR kodunu tarayın",
+    "stopCamera": "Kamerayı durdur",
+    "stopCameraAria": "Kamera QR taramasını durdur",
+    "pasteImageHint": "Ayrıca buraya bir QR resmi yapıştırabilirsiniz (Ctrl/Cmd+V).",
+    "cameraPreviewAria": "QR taraması için kamera önizlemesi",
+    "noQrFound": "Bu görselde QR kodu bulunamadı",
+    "decodeFailed": "Resimden QR kodu okunamadı",
+    "cameraDenied": "Kamera izni reddedildi — bunu sistem gizlilik ayarlarından etkinleştirin",
+    "cameraUnavailable": "Bu cihazda kamera kullanılamıyor"
   }
 }

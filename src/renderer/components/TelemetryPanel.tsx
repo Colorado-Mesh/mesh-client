@@ -18,6 +18,7 @@ import { downloadBlob } from '../lib/downloadBlob';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { EnvironmentTelemetryPoint, MeshCoreLocalStats, TelemetryPoint } from '../lib/types';
 import RefreshButton from './RefreshButton';
+import SignalMeter from './SignalMeter';
 
 function toF(c: number) {
   return (c * 9) / 5 + 32;
@@ -103,6 +104,12 @@ export default function TelemetryPanel({
               ? parseFloat(toF(t.temperature).toFixed(1))
               : parseFloat(t.temperature.toFixed(1))
             : undefined,
+        mcuTemperature:
+          t.mcuTemperature !== undefined
+            ? useFahrenheit
+              ? parseFloat(toF(t.mcuTemperature).toFixed(1))
+              : parseFloat(t.mcuTemperature.toFixed(1))
+            : undefined,
         humidity: t.relativeHumidity,
         pressure: t.barometricPressure,
         iaq: t.iaq,
@@ -111,9 +118,13 @@ export default function TelemetryPanel({
   );
 
   const hasTemp = envChartData.some((d) => d.temperature !== undefined);
+  const hasMcuTemp = envChartData.some((d) => d.mcuTemperature !== undefined);
   const hasHumidity = envChartData.some((d) => d.humidity !== undefined);
   const hasPressure = envChartData.some((d) => d.pressure !== undefined);
   const hasIaq = envChartData.some((d) => d.iaq !== undefined);
+  const latestSignal =
+    signalTelemetry.length > 0 ? signalTelemetry[signalTelemetry.length - 1] : null;
+  const showLiveSignalMeter = capabilities?.hasRfStats === true;
 
   const handleExportCsv = useCallback(() => {
     if (telemetry.length === 0 && signalTelemetry.length === 0 && environmentTelemetry.length === 0)
@@ -132,6 +143,7 @@ export default function TelemetryPanel({
       'snr',
       'rssi',
       'env_temperature_c',
+      'mcu_temperature_c',
       'env_humidity_pct',
       'env_pressure_hpa',
       'env_iaq',
@@ -141,6 +153,7 @@ export default function TelemetryPanel({
       escapeCsvCell('battery'),
       escapeCsvCell(t.batteryLevel),
       escapeCsvCell(t.voltage),
+      escapeCsvCell(''),
       escapeCsvCell(''),
       escapeCsvCell(''),
       escapeCsvCell(''),
@@ -159,6 +172,7 @@ export default function TelemetryPanel({
       escapeCsvCell(''),
       escapeCsvCell(''),
       escapeCsvCell(''),
+      escapeCsvCell(''),
     ]);
     const envRows = environmentTelemetry.map((t) => [
       escapeCsvCell(new Date(t.timestamp).toISOString()),
@@ -168,6 +182,7 @@ export default function TelemetryPanel({
       escapeCsvCell(''),
       escapeCsvCell(''),
       escapeCsvCell(t.temperature),
+      escapeCsvCell(t.mcuTemperature),
       escapeCsvCell(t.relativeHumidity),
       escapeCsvCell(t.barometricPressure),
       escapeCsvCell(t.iaq),
@@ -184,10 +199,13 @@ export default function TelemetryPanel({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-200">{t('telemetryPanel.title')}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-xl font-semibold text-gray-200">{t('telemetryPanel.title')}</h2>
+          {showLiveSignalMeter && <SignalMeter rssi={latestSignal?.rssi} snr={latestSignal?.snr} />}
+        </div>
         <div className="flex items-center gap-2">
-          {showEnvironment && hasTemp && (
+          {showEnvironment && (hasTemp || hasMcuTemp) && (
             <button
               onClick={onToggleFahrenheit}
               title={t('telemetryPanel.toggleTempUnit')}
@@ -359,16 +377,16 @@ export default function TelemetryPanel({
           )}
 
           {/* Temperature & Humidity Chart */}
-          {showEnvironment && (hasTemp || hasHumidity) && (
+          {showEnvironment && (hasTemp || hasMcuTemp || hasHumidity) && (
             <div className="bg-deep-black rounded-lg p-4">
               <h3 className="text-muted mb-3 text-sm font-medium">
-                Temperature {hasHumidity ? '& Humidity' : ''}
+                {t('telemetryPanel.sectionTemperatureHumidity')}
               </h3>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={envChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
-                  {hasTemp && (
+                  {(hasTemp || hasMcuTemp) && (
                     <YAxis
                       yAxisId="temp"
                       stroke="#f59e0b"
@@ -415,6 +433,22 @@ export default function TelemetryPanel({
                           : t('telemetryPanel.seriesTempC')
                       }
                       stroke="#f59e0b"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  )}
+                  {hasMcuTemp && (
+                    <Line
+                      yAxisId="temp"
+                      type="monotone"
+                      dataKey="mcuTemperature"
+                      name={
+                        useFahrenheit
+                          ? t('telemetryPanel.seriesMcuTempF')
+                          : t('telemetryPanel.seriesMcuTempC')
+                      }
+                      stroke="#fb923c"
                       strokeWidth={2}
                       dot={false}
                       connectNulls

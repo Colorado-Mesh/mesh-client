@@ -430,6 +430,8 @@ export interface EnvironmentTelemetryPoint {
   timestamp: number;
   nodeNum: number;
   temperature?: number; // °C
+  /** MeshCore Cayenne MCU/internal temperature (°C), when distinct from env. */
+  mcuTemperature?: number;
   relativeHumidity?: number; // %
   barometricPressure?: number; // hPa
   gasResistance?: number; // MOhm

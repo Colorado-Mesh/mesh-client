@@ -195,8 +195,12 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/diagnostics", get(system::diagnostics))
         .route("/api/v1/voice/status", get(system::voice_status))
         .route("/api/v1/games/status", get(system::games_status))
-        .route("/api/v1/identities", get(system::list_identities))
+        .route(
+            "/api/v1/identities",
+            get(system::list_identities).post(system::create_identity),
+        )
         .route("/api/v1/identities/switch", post(system::switch_identity))
+        .route("/api/v1/identities/delete", post(system::delete_identity))
         .route("/ws", get(ws::ws_handler))
         .layer(DefaultBodyLimit::max(4 * 1024 * 1024))
         .layer(localhost_cors_layer())

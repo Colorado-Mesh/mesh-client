@@ -30,6 +30,7 @@ import type { MQTTSettings } from '../renderer/lib/types';
 import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
 import { formatHostForSocket, parseConnectHostPort } from '../shared/connectHost';
 import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
+import { findLxmUrlInArgv } from '../shared/meshClientDeepLink';
 import {
   sanitizeMeshcoreAdvLatLonForDb,
   sanitizeMeshcoreLastAdvertForDb,
@@ -51,6 +52,7 @@ import {
   BleScanBusyError,
   type BleScanOwner,
 } from './ble-coexistence-coordinator';
+import { ensureCameraAccess, isAllowedCameraPrivacySettingsUrl } from './cameraAccess';
 import { formatChatExportLines } from './chatExportFormat';
 import {
   addContactToGroup,
@@ -95,6 +97,7 @@ import {
 import { finishDbIpcHandler, finishDbIpcReadHandler, getDbForIpc } from './db-ipc-lifecycle';
 import { formatDatabaseSchemaTooNewMessage, showFatalStartupError } from './fatal-startup-dialog';
 import { fetchLinkPreview } from './fetchLinkPreview';
+import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
 import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
@@ -1607,6 +1610,7 @@ function createWindow() {
   configureRendererSpellcheck(win.webContents.session);
   win.webContents.once('did-finish-load', () => {
     retryRendererSpellcheck(win.webContents.session);
+    flushPendingOpenUrl();
   });
 
   // Electron does not show any context menu by default — we must call menu.popup().
@@ -3580,6 +3584,30 @@ ipcMain.handle('media:ensureMicrophoneAccess', async (event) => {
   }
 });
 
+ipcMain.handle('media:ensureCameraAccess', async (event) => {
+  assertIpcSender(event, 'media:ensureCameraAccess');
+  try {
+    return await ensureCameraAccess({
+      platform: process.platform,
+      getMediaAccessStatus: (mediaType) => systemPreferences.getMediaAccessStatus(mediaType),
+      askForMediaAccess: (mediaType) => systemPreferences.askForMediaAccess(mediaType),
+      openExternal: (url) => {
+        const validateUrl = isAllowedCameraPrivacySettingsUrl;
+        if (!validateUrl(url)) {
+          return Promise.reject(new Error('Blocked unexpected camera privacy settings URL'));
+        }
+        return shell.openExternal(url);
+      },
+    });
+  } catch (e) {
+    console.warn(
+      '[IPC] media:ensureCameraAccess failed:',
+      sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+    );
+    return { granted: false, status: 'denied' };
+  }
+});
+
 ipcMain.handle('app:quit', async (event) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');
@@ -4550,6 +4578,56 @@ ipcMain.handle('chat:export', async (event, messages: unknown) => {
   } catch (err) {
     console.error(
       '[IPC] chat:export failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('gps:exportGpx', async (event, opts: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  const o = opts && typeof opts === 'object' ? (opts as Record<string, unknown>) : {};
+  const nodeId = typeof o.nodeId === 'number' && Number.isFinite(o.nodeId) ? o.nodeId : undefined;
+  const sinceMs =
+    typeof o.sinceMs === 'number' && Number.isFinite(o.sinceMs) && o.sinceMs >= 0 ? o.sinceMs : 0;
+  try {
+    const db = getDbForIpc('gps:exportGpx');
+    if (!db) return { success: false, reason: 'no_db' as const };
+    if (!mainWindow) return { success: false, reason: 'no_window' as const };
+    let rows: {
+      node_id: number;
+      latitude: number;
+      longitude: number;
+      recorded_at: number;
+      source: string;
+    }[];
+    if (nodeId !== undefined) {
+      rows = db
+        .prepareOnce(
+          'SELECT node_id, latitude, longitude, recorded_at, source FROM position_history WHERE recorded_at >= ? AND node_id = ? ORDER BY recorded_at ASC LIMIT ?',
+        )
+        .all(sinceMs, nodeId, GPX_EXPORT_MAX_POINTS) as typeof rows;
+    } else {
+      rows = db
+        .prepareOnce(
+          'SELECT node_id, latitude, longitude, recorded_at, source FROM position_history WHERE recorded_at >= ? ORDER BY node_id, recorded_at ASC LIMIT ?',
+        )
+        .all(sinceMs, GPX_EXPORT_MAX_POINTS) as typeof rows;
+    }
+    if (rows.length === 0) return { success: false, reason: 'empty' as const };
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export GPX',
+      defaultPath: `mesh-track-${new Date().toISOString().slice(0, 10)}.gpx`,
+      filters: [{ name: 'GPX', extensions: ['gpx'] }],
+    });
+    if (result.canceled || !result.filePath)
+      return { success: false, reason: 'cancelled' as const };
+    const xml = formatGpxTracks(rows);
+    await fs.promises.writeFile(result.filePath, xml, 'utf8');
+    return { success: true, path: result.filePath };
+  } catch (err) {
+    console.error(
+      '[IPC] gps:exportGpx failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;
@@ -6201,10 +6279,38 @@ registerReticulumDbIpcHandlers({ ipcMain });
 registerReticulumIdentityIpcHandlers({ ipcMain });
 
 // ─── App lifecycle ─────────────────────────────────────────────────
+/** Pending lxm:// URL until mainWindow is ready (cold start / race). */
+let pendingOpenUrl: string | null = null;
+
+function forwardOpenUrlToRenderer(url: string): void {
+  const trimmed = url.trim();
+  if (!trimmed) return;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('mesh-client:openUrl', trimmed);
+    return;
+  }
+  pendingOpenUrl = trimmed;
+}
+
+function flushPendingOpenUrl(): void {
+  if (!pendingOpenUrl || !mainWindow || mainWindow.isDestroyed()) return;
+  const url = pendingOpenUrl;
+  pendingOpenUrl = null;
+  mainWindow.webContents.send('mesh-client:openUrl', url);
+}
+
+// macOS: custom protocol open-url (must register before ready).
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  forwardOpenUrlToRenderer(url);
+});
+
 // ─── Second-instance handler ────────────────────────────────────────
 // Registered here (before whenReady) so it's ready before any second
 // instance can send its data.
-app.on('second-instance', () => {
+app.on('second-instance', (_event, argv) => {
+  const url = findLxmUrlInArgv(argv);
+  if (url) forwardOpenUrlToRenderer(url);
   if (mainWindow) {
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.show();
@@ -6233,6 +6339,17 @@ void app.whenReady().then(() => {
         sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
       );
     }
+
+    // Register lxm:// deep links (dev + packaged). OS-specific: argv in defaultApp.
+    if (process.defaultApp) {
+      if (process.argv.length >= 2) {
+        app.setAsDefaultProtocolClient('lxm', process.execPath, [path.resolve(process.argv[1])]);
+      }
+    } else {
+      app.setAsDefaultProtocolClient('lxm');
+    }
+    const coldStartUrl = findLxmUrlInArgv(process.argv);
+    if (coldStartUrl) pendingOpenUrl = coldStartUrl;
 
     initDatabase();
 

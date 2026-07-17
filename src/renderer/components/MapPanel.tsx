@@ -50,6 +50,7 @@ import {
   LocateMeControl,
   MapViewportSaver,
 } from './map/leafletMapControls';
+import { useToast } from './Toast';
 
 const WAYPOINT_MARKER_ICON = L.divIcon({
   className: '',
@@ -641,8 +642,32 @@ export default function MapPanel({
   const overlayColors = useMemo(() => getMapOverlayColors(basemap.isDark), [basemap.isDark]);
 
   const [showRouteWeights, setShowRouteWeights] = useState(false);
+  const [gpxExporting, setGpxExporting] = useState(false);
+  const { addToast } = useToast();
   const routeWeightLoadedNodeIdsRef = useRef<Set<number>>(new Set());
   const routeWeightsSupported = protocol === 'meshcore';
+
+  const handleExportGpx = useCallback(async () => {
+    if (gpxExporting) return;
+    setGpxExporting(true);
+    try {
+      const result = await window.electronAPI.gps.exportGpx({ sinceMs: 0 });
+      if (result.success) {
+        addToast(t('gpxExport.success'), 'success');
+      } else if (result.reason === 'empty') {
+        addToast(t('gpxExport.empty'), 'error');
+      } else if (result.reason === 'cancelled') {
+        // catch-no-log-ok user dismissed save dialog
+      } else {
+        addToast(t('gpxExport.failed'), 'error');
+      }
+    } catch (err) {
+      console.error('[MapPanel] GPX export failed', err);
+      addToast(t('gpxExport.failed'), 'error');
+    } finally {
+      setGpxExporting(false);
+    }
+  }, [addToast, gpxExporting, t]);
 
   const routeWeightPolylines = useMemo(() => {
     if (!showNodes || !routeWeightsSupported || !showRouteWeights) return null;
@@ -1014,6 +1039,15 @@ export default function MapPanel({
           showRouteWeights={showRouteWeights}
           onToggleRouteWeights={setShowRouteWeights}
         />
+        <button
+          type="button"
+          onClick={() => void handleExportGpx()}
+          disabled={gpxExporting}
+          aria-label={t('gpxExport.buttonAria')}
+          className="bg-deep-black/80 rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-200 backdrop-blur-sm hover:bg-slate-800 disabled:opacity-50"
+        >
+          {t('gpxExport.button')}
+        </button>
       </div>
 
       <MapContainer

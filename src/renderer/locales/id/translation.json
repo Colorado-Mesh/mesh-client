@@ -571,7 +571,11 @@
     "receivedViaBle": "Diterima melalui Bluetooth",
     "receivedViaMultiple": "Diterima melalui {{vias}}",
     "sentViaBle": "Dikirim melalui Bluetooth",
-    "sentViaMultiple": "Dikirim melalui {{vias}}"
+    "sentViaMultiple": "Dikirim melalui {{vias}}",
+    "floodScopeOverrideLabel": "Cakupan banjir untuk pesan ini",
+    "floodScopeOverrideAria": "Penggantian cakupan banjir per pesan",
+    "floodScopeOverrideDefault": "Cakupan bawaan",
+    "floodScopeOverrideUnscoped": "Tidak tercakup"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -856,7 +860,27 @@
       "saveDisplayName": "Simpan nama tampilan",
       "saveDisplayNameFailed": "Gagal menyimpan nama tampilan.",
       "displayNameSaved": "Nama tampilan disimpan.",
-      "copyLxmfHash": "Salin hash LXMF"
+      "copyLxmfHash": "Salin hash LXMF",
+      "slotsTitle": "Identitas",
+      "slotsHint": "Buat identitas tambahan dan beralih di antara identitas tersebut. Peralihan akan memulai ulang tumpukan Retikulum.",
+      "slotActive": "Aktif",
+      "slotSwitch": "Mengalihkan",
+      "slotSwitchAria": "Beralih ke identitas {{id}}",
+      "slotDelete": "Menghapus",
+      "slotDeleteAria": "Hapus identitas {{id}}",
+      "slotCreate": "Identitas baru",
+      "slotCreateAria": "Buat identitas Retikulum baru",
+      "slotSwitchConfirmTitle": "Ganti identitas Retikulum?",
+      "slotSwitchConfirmMessage": "Tumpukan akan dimulai ulang dengan identitas yang dipilih. Pesan dalam penerbangan mungkin terganggu.",
+      "slotSwitchConfirmAction": "Ganti identitas",
+      "slotDeleteConfirmTitle": "Hapus slot identitas?",
+      "slotDeleteConfirmMessage": "Tindakan ini akan menghapus secara permanen kunci identitas yang tidak digunakan dari perangkat ini. Identitas aktif tidak dapat dihapus.",
+      "slotDeleteConfirmAction": "Hapus identitas",
+      "slotSwitched": "Identitas yang dialihkan — tumpukan dimulai ulang.",
+      "slotCreated": "Identitas baru tercipta.",
+      "slotDeleted": "Identitas dihapus.",
+      "slotActionFailed": "Tindakan identitas gagal: {{error}}",
+      "slotUnnamed": "Tanpa nama"
     },
     "reticulumInterfaces": {
       "title": "Interface",
@@ -2522,16 +2546,28 @@
     "paxCounter": {
       "heading": "Penghitung Pax",
       "detectedCount": "Jumlah Terdeteksi",
-      "lastSeen": "Terakhir terlihat"
+      "lastSeen": "Terakhir terlihat",
+      "samples": "Sampel",
+      "historyChartAria": "Pax melawan sejarah terkini"
     },
     "detectionSensor": {
       "heading": "Sensor Deteksi ({{count}})",
       "lastDetection": "Deteksi Terakhir",
       "dataSize": "Ukuran Data",
       "dataSizeBytes": "{{count}} byte",
-      "rawDataHex": "Data Mentah (hex)"
+      "eventLogAria": "Log peristiwa sensor deteksi"
     },
-    "neighborsHopTooFar": "Tetangga tidak tersedia untuk repeater {{hops}}+ melompat ke serial USB"
+    "neighborsHopTooFar": "Tetangga tidak tersedia untuk repeater {{hops}}+ melompat ke serial USB",
+    "rangeTest": {
+      "heading": "Uji Jarak ({{count}})",
+      "lastPacket": "Paket Terakhir",
+      "sequence": "Urutan",
+      "snr": "SNR",
+      "rssi": "RSSI",
+      "lossRate": "Perkiraan Kerugian",
+      "lossRatePercent": "{{percent}}%",
+      "packetLogAria": "Log paket uji jangkauan"
+    }
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",
@@ -2814,7 +2850,15 @@
     "blockContact": "Blokir kontak",
     "unblockContact": "Buka blokir kontak",
     "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — terakhir terlihat {{seen}}"
+    "serviceBadgeTitle": "{{aspect}} — terakhir terlihat {{seen}}",
+    "verifyMark": "Tandai terverifikasi",
+    "verifyRevoke": "Cabut verifikasi",
+    "verifyFingerprint": "Sidik jari identitas",
+    "verifyMismatch": "Hash identitas berubah sejak verifikasi",
+    "verifiedBadge": "Terverifikasi",
+    "shareContactQr": "Bagikan kontak QR",
+    "shareContactQrAria": "Tampilkan kode QR untuk kontak ini",
+    "verifiedRowAria": "Kontak terverifikasi"
   },
   "peerGraph": {
     "title": "Grafik Komunikasi Rekan",
@@ -3175,7 +3219,9 @@
       "parseFailed": "URL saluran tidak valid: {{message}}",
       "applying": "Menerapkan",
       "unnamedChannel": "Tanpa nama",
-      "applySuccessWithSkipped": "Terapan {{applied}} saluran; dilewati {{skipped}} duplikat atau tanpa nama."
+      "applySuccessWithSkipped": "Terapan {{applied}} saluran; dilewati {{skipped}} duplikat atau tanpa nama.",
+      "qrHeading": "Kode QR (tautan web)",
+      "qrAria": "Kode QR konfigurasi saluran"
     },
     "channelLoading": "Memuat…",
     "channelLoadFailed": "Pemuatan gagal",
@@ -4195,7 +4241,10 @@
     "footerBattery": "Baterai: {{count}} poin",
     "footerSignal": "Sinyal: {{count}} poin",
     "footerEnv": "Env: {{count}} poin",
-    "footerMax": "(maks 50 masing-masing)"
+    "footerMax": "(maks 50 masing-masing)",
+    "sectionTemperatureHumidity": "Suhu & Kelembaban",
+    "seriesMcuTempF": "MCU °F",
+    "seriesMcuTempC": "MCU °C"
   },
   "toasts": {
     "firmwareAvailable": "Pembaruan firmware tersedia: v{{version}}",
@@ -4381,5 +4430,43 @@
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
     "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+  },
+  "signalMeter": {
+    "rssi": "RSSI",
+    "snr": "SNR",
+    "rssiValue": "{{value}} dBm",
+    "noData": "—",
+    "aria": "Pengukur sinyal: RSSI {{rssi}}, SNR {{snr}}, level {{level}}"
+  },
+  "gpxExport": {
+    "button": "Ekspor GPX",
+    "buttonAria": "Ekspor riwayat posisi sebagai GPX",
+    "success": "GPX diekspor",
+    "failed": "Ekspor GPX gagal",
+    "empty": "Tidak ada riwayat posisi untuk diekspor"
+  },
+  "qrIngest": {
+    "qrImageAlt": "kode QR",
+    "encodeFailed": "Tidak dapat membuat kode QR",
+    "paperUnsupported": "Pesan kertas LXMF terenkripsi belum didukung",
+    "contactImported": "Kontak ditambahkan dari tautan dalam",
+    "contactImportFailed": "Tidak dapat mengimpor kontak dari tautan",
+    "unknownLink": "Tautan tidak dikenal",
+    "identityShown": "Membuka tautan berbagi identitas",
+    "channelLinkReceived": "Tautan saluran dibuka — tinjau impor di tab Radio",
+    "showIdentityQr": "Tunjukkan identitas QR",
+    "showIdentityQrAria": "Tunjukkan kode QR untuk identitas ini",
+    "chooseImage": "Pindai gambar…",
+    "chooseImageAria": "Pilih file gambar yang berisi kode QR",
+    "scanCamera": "Pindai dengan kamera",
+    "scanCameraAria": "Pindai kode QR dengan kamera",
+    "stopCamera": "Hentikan kamera",
+    "stopCameraAria": "Hentikan pemindaian QR kamera",
+    "pasteImageHint": "Anda juga dapat menempelkan gambar QR di sini (Ctrl/Cmd+V).",
+    "cameraPreviewAria": "Pratinjau kamera untuk pemindaian QR",
+    "noQrFound": "Tidak ada kode QR yang ditemukan pada gambar itu",
+    "decodeFailed": "Tidak dapat membaca kode QR dari gambar",
+    "cameraDenied": "Izin kamera ditolak — aktifkan di pengaturan privasi sistem",
+    "cameraUnavailable": "Kamera tidak tersedia di perangkat ini"
   }
 }

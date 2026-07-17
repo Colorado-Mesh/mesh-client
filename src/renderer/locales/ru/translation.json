@@ -571,7 +571,11 @@
     "receivedViaBle": "Получено через Bluetooth",
     "receivedViaMultiple": "Получено через {{vias}}",
     "sentViaBle": "По Bluetooth",
-    "sentViaMultiple": "Отправлено через {{vias}}"
+    "sentViaMultiple": "Отправлено через {{vias}}",
+    "floodScopeOverrideLabel": "Область действия флуда для этого сообщения",
+    "floodScopeOverrideAria": "Переопределение области флуда для каждого сообщения",
+    "floodScopeOverrideDefault": "Область действия по умолчанию",
+    "floodScopeOverrideUnscoped": "Без области действия"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -856,7 +860,27 @@
       "saveDisplayName": "Сохранить отображаемое имя",
       "saveDisplayNameFailed": "Не удалось сохранить отображаемое имя.",
       "displayNameSaved": "Отображаемое имя сохранено.",
-      "copyLxmfHash": "Копировать хэш LXMF"
+      "copyLxmfHash": "Копировать хэш LXMF",
+      "slotsTitle": "Личности",
+      "slotsHint": "Создавайте дополнительные удостоверения и переключайтесь между ними. Переключение перезапускает стек Reticulum.",
+      "slotActive": "Активный",
+      "slotSwitch": "Выключатель",
+      "slotSwitchAria": "Переключиться на личность {{id}}",
+      "slotDelete": "Удалить",
+      "slotDeleteAria": "Удалить личность {{id}}",
+      "slotCreate": "Новая личность",
+      "slotCreateAria": "Создайте новую личность Reticulum",
+      "slotSwitchConfirmTitle": "Сменить личность Reticulum?",
+      "slotSwitchConfirmMessage": "Стек перезапустится с выбранным идентификатором. Сообщения в полете могут быть прерваны.",
+      "slotSwitchConfirmAction": "Сменить личность",
+      "slotDeleteConfirmTitle": "Удалить идентификационный слот?",
+      "slotDeleteConfirmMessage": "При этом неиспользуемый идентификационный ключ будет удален с этого устройства навсегда. Активное удостоверение не может быть удалено.",
+      "slotDeleteConfirmAction": "Удалить личность",
+      "slotSwitched": "Переключена идентичность — перезапуск стека.",
+      "slotCreated": "Создана новая личность.",
+      "slotDeleted": "Личность удалена.",
+      "slotActionFailed": "Не удалось выполнить действие с идентификацией: {{error}}.",
+      "slotUnnamed": "Безымянный"
     },
     "reticulumInterfaces": {
       "title": "Интерфейсы",
@@ -2522,16 +2546,28 @@
     "paxCounter": {
       "heading": "Счетчик Пакс",
       "detectedCount": "Обнаружено количество",
-      "lastSeen": "Последний визит"
+      "lastSeen": "Последний визит",
+      "samples": "Образцы",
+      "historyChartAria": "Счетчик Pax новейшая история"
     },
     "detectionSensor": {
       "heading": "Датчик обнаружения ({{count}})",
       "lastDetection": "Последнее обнаружение",
       "dataSize": "Размер данных",
       "dataSizeBytes": "{{count}} байт",
-      "rawDataHex": "Необработанные данные (шестнадцатеричный)"
+      "eventLogAria": "Журнал событий датчика обнаружения"
     },
-    "neighborsHopTooFar": "Соседи недоступны для повторителей {{hops}}+ переключается по последовательному порту USB"
+    "neighborsHopTooFar": "Соседи недоступны для повторителей {{hops}}+ переключается по последовательному порту USB",
+    "rangeTest": {
+      "heading": "Тест дальности ({{count}})",
+      "lastPacket": "Последний пакет",
+      "sequence": "Последовательность",
+      "snr": "ОСШ",
+      "rssi": "РССИ",
+      "lossRate": "Предполагаемая потеря",
+      "lossRatePercent": "{{percent}}%",
+      "packetLogAria": "Журнал пакетов проверки дальности"
+    }
   },
   "nodeInfoBody": {
     "longName": "Длинное имя",
@@ -2814,7 +2850,15 @@
     "blockContact": "Заблокировать контакт",
     "unblockContact": "Разблокировать контакт",
     "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — последний раз видели {{seen}}"
+    "serviceBadgeTitle": "{{aspect}} — последний раз видели {{seen}}",
+    "verifyMark": "Отметить как проверенный",
+    "verifyRevoke": "Отменить подтверждение",
+    "verifyFingerprint": "Идентификационный отпечаток пальца",
+    "verifyMismatch": "Хэш личности изменился после проверки",
+    "verifiedBadge": "Проверено",
+    "shareContactQr": "Поделиться контактным QR",
+    "shareContactQrAria": "Показать QR-код для этого контакта",
+    "verifiedRowAria": "Контакт подтвержден"
   },
   "peerGraph": {
     "title": "График одноранговой связи",
@@ -3175,7 +3219,9 @@
       "parseFailed": "Недопустимый URL канала: {{message}}",
       "applying": "Применение…",
       "unnamedChannel": "(без имени)",
-      "applySuccessWithSkipped": "Применены каналы {{applied}}; дубликат {{skipped}} пропущен или не назван."
+      "applySuccessWithSkipped": "Применены каналы {{applied}}; дубликат {{skipped}} пропущен или не назван.",
+      "qrHeading": "QR-код (веб-ссылка)",
+      "qrAria": "QR-код конфигурации канала"
     },
     "channelLoading": "Загрузка…",
     "channelLoadFailed": "Загрузка не удалась",
@@ -4195,7 +4241,10 @@
     "footerBattery": "Батарея: {{count}} баллов",
     "footerSignal": "Сигнал: {{count}} пунктов",
     "footerEnv": "Конверт: {{count}} баллов",
-    "footerMax": "(максимум 50 каждый)"
+    "footerMax": "(максимум 50 каждый)",
+    "sectionTemperatureHumidity": "Температура и влажность",
+    "seriesMcuTempF": "MCU °F",
+    "seriesMcuTempC": "МК °С"
   },
   "toasts": {
     "firmwareAvailable": "Доступно обновление прошивки: v{{version}}",
@@ -4381,5 +4430,43 @@
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
     "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+  },
+  "signalMeter": {
+    "rssi": "РССИ",
+    "snr": "ОСШ",
+    "rssiValue": "{{value}} дБм",
+    "noData": "—",
+    "aria": "Измеритель сигнала: RSSI {{rssi}}, SNR {{snr}}, уровень {{level}}"
+  },
+  "gpxExport": {
+    "button": "Экспорт GPX",
+    "buttonAria": "Экспортировать историю позиций в формате GPX",
+    "success": "GPX экспортирован",
+    "failed": "Экспорт GPX не удался",
+    "empty": "Нет истории позиций для экспорта"
+  },
+  "qrIngest": {
+    "qrImageAlt": "QR-код",
+    "encodeFailed": "Не удалось сгенерировать QR-код",
+    "paperUnsupported": "Зашифрованные бумажные сообщения LXMF пока не поддерживаются.",
+    "contactImported": "Контакт добавлен из глубокой ссылки",
+    "contactImportFailed": "Не удалось импортировать контакт по ссылке.",
+    "unknownLink": "Неопознанная ссылка",
+    "identityShown": "Открыта ссылка на общий доступ к идентификационным данным",
+    "channelLinkReceived": "Ссылка на канал открыта — проверьте импорт на вкладке «Радио».",
+    "showIdentityQr": "Показать QR-код удостоверения личности",
+    "showIdentityQrAria": "Показать QR-код для этого удостоверения",
+    "chooseImage": "Сканировать изображение…",
+    "chooseImageAria": "Выберите файл изображения, содержащий QR-код.",
+    "scanCamera": "Сканировать с помощью камеры",
+    "scanCameraAria": "Отсканируйте QR-код с помощью камеры",
+    "stopCamera": "Остановить камеру",
+    "stopCameraAria": "Остановить QR-сканирование камеры",
+    "pasteImageHint": "Вы также можете вставить сюда QR-изображение (Ctrl/Cmd+V).",
+    "cameraPreviewAria": "Предварительный просмотр камеры для QR-сканирования",
+    "noQrFound": "На этом изображении не найден QR-код",
+    "decodeFailed": "Не удалось прочитать QR-код с изображения.",
+    "cameraDenied": "Доступ к камере запрещен — включите его в настройках конфиденциальности системы.",
+    "cameraUnavailable": "Камера недоступна на этом устройстве"
   }
 }

@@ -66,6 +66,8 @@ import {
   MeshcoreFloodScopeSection,
 } from './MeshcoreFloodScopeSection';
 import MeshcoreTelemetryPrivacySection from './MeshcoreTelemetryPrivacySection';
+import QrCodeImage from './QrCodeImage';
+import QrIngestControl from './QrIngestControl';
 import { RadioXmodemSection } from './RadioXmodemSection';
 import { useToast } from './Toast';
 
@@ -2778,6 +2780,19 @@ function ChannelUrlImportExport({
     };
   }, [importUrl, t]);
 
+  useEffect(() => {
+    const onChannelDeepLink = (ev: Event) => {
+      const detail = (ev as CustomEvent<string>).detail;
+      if (typeof detail === 'string' && detail.trim()) {
+        setImportUrl(detail.trim());
+      }
+    };
+    window.addEventListener('mesh-client:meshtasticChannelUrl', onChannelDeepLink);
+    return () => {
+      window.removeEventListener('mesh-client:meshtasticChannelUrl', onChannelDeepLink);
+    };
+  }, []);
+
   const runApply = async (target: ParsedChannelSet) => {
     if (!onApplyChannelSet) return;
     setApplying(true);
@@ -2887,12 +2902,26 @@ function ChannelUrlImportExport({
                 {t('radioPanel.channelUrl.copyMeshtastic')}
               </button>
             </div>
+            <div className="space-y-1">
+              <p className="text-muted text-xs">{t('radioPanel.channelUrl.qrHeading')}</p>
+              <QrCodeImage
+                value={httpsUrl}
+                ariaLabel={t('radioPanel.channelUrl.qrAria')}
+                size={160}
+              />
+            </div>
           </div>
         )}
       </div>
 
       <div className="space-y-2">
         <p className="text-muted text-xs font-medium">{t('radioPanel.channelUrl.importTitle')}</p>
+        <QrIngestControl
+          disabled={disabled || applying}
+          onDecoded={(text) => {
+            setImportUrl(text);
+          }}
+        />
         <label className="text-muted text-xs">{t('radioPanel.channelUrl.pasteUrlLabel')}</label>
         <input
           type="text"

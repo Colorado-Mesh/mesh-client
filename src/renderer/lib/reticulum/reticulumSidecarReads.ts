@@ -333,3 +333,30 @@ export async function switchReticulumIdentity(identityId: string): Promise<boole
   }
   return Boolean(res?.ok);
 }
+
+export async function createReticulumIdentitySlot(
+  displayName?: string | null,
+): Promise<{ id: string }> {
+  if (!(await isReticulumSidecarRunning())) {
+    throw new Error('sidecar_not_running');
+  }
+  const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identities', {
+    display_name: displayName?.trim() || undefined,
+  })) as { ok?: boolean; id?: string; error?: string };
+  if (res?.ok === false || !res?.id) {
+    throw new Error(res?.error ?? 'identity create failed');
+  }
+  return { id: res.id };
+}
+
+export async function deleteReticulumIdentitySlot(identityId: string): Promise<void> {
+  if (!(await isReticulumSidecarRunning())) {
+    throw new Error('sidecar_not_running');
+  }
+  const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/identities/delete', {
+    identity_id: identityId,
+  })) as { ok?: boolean; error?: string };
+  if (res?.ok === false) {
+    throw new Error(res.error ?? 'identity delete failed');
+  }
+}

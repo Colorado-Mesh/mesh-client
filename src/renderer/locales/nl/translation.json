@@ -571,7 +571,11 @@
     "receivedViaBle": "Ontvangen via Bluetooth",
     "receivedViaMultiple": "Ontvangen via {{vias}}",
     "sentViaBle": "Verzonden via Bluetooth",
-    "sentViaMultiple": "Verzonden via {{vias}}"
+    "sentViaMultiple": "Verzonden via {{vias}}",
+    "floodScopeOverrideLabel": "Overstromingsbereik voor dit bericht",
+    "floodScopeOverrideAria": "Overschrijving van overstromingsbereik per bericht",
+    "floodScopeOverrideDefault": "Standaardbereik",
+    "floodScopeOverrideUnscoped": "Niet-bereikt"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -856,7 +860,27 @@
       "saveDisplayName": "Weergavenaam opslaan",
       "saveDisplayNameFailed": "Kan weergavenaam niet opslaan.",
       "displayNameSaved": "Weergavenaam opgeslagen.",
-      "copyLxmfHash": "Kopieer LXMF-hash"
+      "copyLxmfHash": "Kopieer LXMF-hash",
+      "slotsTitle": "Identiteiten",
+      "slotsHint": "Creëer extra identiteiten en schakel ertussen. Als u overschakelt, wordt de Reticulum-stapel opnieuw gestart.",
+      "slotActive": "Actief",
+      "slotSwitch": "Schakelaar",
+      "slotSwitchAria": "Schakel over naar identiteit {{id}}",
+      "slotDelete": "Verwijderen",
+      "slotDeleteAria": "Identiteit verwijderen {{id}}",
+      "slotCreate": "Nieuwe identiteit",
+      "slotCreateAria": "Creëer een nieuwe Reticulum-identiteit",
+      "slotSwitchConfirmTitle": "Reticulum-identiteit wijzigen?",
+      "slotSwitchConfirmMessage": "De stapel wordt opnieuw opgestart met de geselecteerde identiteit. Berichten tijdens de vlucht kunnen worden onderbroken.",
+      "slotSwitchConfirmAction": "Verander van identiteit",
+      "slotDeleteConfirmTitle": "Identiteitsslot verwijderen?",
+      "slotDeleteConfirmMessage": "Hiermee wordt de ongebruikte identiteitssleutel permanent van dit apparaat verwijderd. De actieve identiteit kan niet worden verwijderd.",
+      "slotDeleteConfirmAction": "Identiteit verwijderen",
+      "slotSwitched": "Gewisselde identiteit - herstart van de stapel.",
+      "slotCreated": "Nieuwe identiteit gecreëerd.",
+      "slotDeleted": "Identiteit verwijderd.",
+      "slotActionFailed": "Identiteitsactie mislukt: {{error}}",
+      "slotUnnamed": "Naamloos"
     },
     "reticulumInterfaces": {
       "title": "Raakvlakken",
@@ -2522,16 +2546,28 @@
     "paxCounter": {
       "heading": "Pax-teller",
       "detectedCount": "Gedetecteerde telling",
-      "lastSeen": "Laatst gezien"
+      "lastSeen": "Laatst gezien",
+      "samples": "Monsters",
+      "historyChartAria": "Pax gaat de recente geschiedenis tegen"
     },
     "detectionSensor": {
       "heading": "Detectiesensor ({{count}})",
       "lastDetection": "Laatste detectie",
       "dataSize": "Gegevensgrootte",
       "dataSizeBytes": "{{count}} bytes",
-      "rawDataHex": "Ruwe gegevens (hexadecimaal)"
+      "eventLogAria": "Gebeurtenislogboek van detectiesensor"
     },
-    "neighborsHopTooFar": "Buren niet beschikbaar voor repeaters {{hops}}+ springt weg op USB-serieel"
+    "neighborsHopTooFar": "Buren niet beschikbaar voor repeaters {{hops}}+ springt weg op USB-serieel",
+    "rangeTest": {
+      "heading": "Bereiktest ({{count}})",
+      "lastPacket": "Laatste pakket",
+      "sequence": "Reeks",
+      "snr": "SNR",
+      "rssi": "RSSI",
+      "lossRate": "Geschat verlies",
+      "lossRatePercent": "{{percent}}%",
+      "packetLogAria": "Pakketlogboek voor bereiktest"
+    }
   },
   "nodeInfoBody": {
     "longName": "Lange naam",
@@ -2814,7 +2850,15 @@
     "blockContact": "Contactpersoon blokkeren",
     "unblockContact": "Contactpersoon deblokkeren",
     "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — laatst gezien {{seen}}"
+    "serviceBadgeTitle": "{{aspect}} — laatst gezien {{seen}}",
+    "verifyMark": "Markeer geverifieerd",
+    "verifyRevoke": "Verificatie intrekken",
+    "verifyFingerprint": "Identiteit vingerafdruk",
+    "verifyMismatch": "Identiteitshash is gewijzigd sinds verificatie",
+    "verifiedBadge": "Geverifieerd",
+    "shareContactQr": "Contact-QR delen",
+    "shareContactQrAria": "Toon QR-code voor dit contact",
+    "verifiedRowAria": "Contact geverifieerd"
   },
   "peerGraph": {
     "title": "Peer-communicatiegrafiek",
@@ -3175,7 +3219,9 @@
       "parseFailed": "Ongeldige kanaal-URL: {{message}}",
       "applying": "Toepassen…",
       "unnamedChannel": "(naamloos)",
-      "applySuccessWithSkipped": "Toegepast {{applied}} kanaal/kanalen; {{skipped}} duplicaat of naamloos overgeslagen."
+      "applySuccessWithSkipped": "Toegepast {{applied}} kanaal/kanalen; {{skipped}} duplicaat of naamloos overgeslagen.",
+      "qrHeading": "QR-code (weblink)",
+      "qrAria": "Kanaalconfiguratie QR-code"
     },
     "channelLoading": "Laden…",
     "channelLoadFailed": "Laden mislukt",
@@ -4195,7 +4241,10 @@
     "footerBattery": "Batterij: {{count}} punten",
     "footerSignal": "Signaal: {{count}} punten",
     "footerEnv": "Env: {{count}} punten",
-    "footerMax": "(max. 50 per stuk)"
+    "footerMax": "(max. 50 per stuk)",
+    "sectionTemperatureHumidity": "Temperatuur en vochtigheid",
+    "seriesMcuTempF": "MCU °F",
+    "seriesMcuTempC": "MCU °C"
   },
   "toasts": {
     "firmwareAvailable": "Firmware-update beschikbaar: v{{version}}",
@@ -4381,5 +4430,43 @@
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
     "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+  },
+  "signalMeter": {
+    "rssi": "RSSI",
+    "snr": "SNR",
+    "rssiValue": "{{value}} dBm",
+    "noData": "—",
+    "aria": "Signaalmeter: RSSI {{rssi}}, SNR {{snr}}, niveau {{level}}"
+  },
+  "gpxExport": {
+    "button": "GPX exporteren",
+    "buttonAria": "Exporteer positiegeschiedenis als GPX",
+    "success": "GPX geëxporteerd",
+    "failed": "GPX-export mislukt",
+    "empty": "Geen positiegeschiedenis om te exporteren"
+  },
+  "qrIngest": {
+    "qrImageAlt": "QR-code",
+    "encodeFailed": "Kon geen QR-code genereren",
+    "paperUnsupported": "Gecodeerde papieren LXMF-berichten worden nog niet ondersteund",
+    "contactImported": "Contact toegevoegd via deep link",
+    "contactImportFailed": "Kan contactpersoon uit link niet importeren",
+    "unknownLink": "Onbekende link",
+    "identityShown": "Link voor het delen van identiteit geopend",
+    "channelLinkReceived": "Kanaallink geopend: bekijk de import op het tabblad Radio",
+    "showIdentityQr": "Toon identiteit QR",
+    "showIdentityQrAria": "Toon QR-code voor deze identiteit",
+    "chooseImage": "Afbeelding scannen…",
+    "chooseImageAria": "Kies een afbeeldingsbestand met een QR-code",
+    "scanCamera": "Scannen met camera",
+    "scanCameraAria": "Scan een QR-code met de camera",
+    "stopCamera": "Camera stoppen",
+    "stopCameraAria": "Stop de QR-scan van de camera",
+    "pasteImageHint": "U kunt hier ook een QR-afbeelding plakken (Ctrl/Cmd+V).",
+    "cameraPreviewAria": "Cameravoorbeeld voor QR-scannen",
+    "noQrFound": "Er is geen QR-code gevonden in die afbeelding",
+    "decodeFailed": "Kon de QR-code van de afbeelding niet lezen",
+    "cameraDenied": "Cameratoestemming geweigerd: schakel deze in in de privacy-instellingen van het systeem",
+    "cameraUnavailable": "Camera is niet beschikbaar op dit apparaat"
   }
 }

@@ -5,6 +5,7 @@ pub mod config;
 pub mod config_audit;
 mod identity_apply;
 mod identity_import;
+mod identity_slots;
 mod local_rnode_primary;
 mod nomad_content_source;
 mod nomad_file;
@@ -124,12 +125,25 @@ impl StackHandle {
 
         #[cfg(feature = "rns-stack")]
         {
+            if let Err(e) = identity_slots::ensure_slot_layout(&config_dir) {
+                tracing::warn!("identity slot layout on bootstrap failed: {e}");
+            }
             if let Err(e) = identity_apply::reconcile_persisted_identity_from_file(
                 &mut persisted,
                 &config_dir,
                 &storage_dir,
             ) {
                 tracing::warn!("identity reconcile on bootstrap failed: {e}");
+            }
+            if persisted.identity.configured {
+                if let Err(e) = identity_slots::sync_active_slot_from_working(
+                    &config_dir,
+                    persisted.identity.display_name.as_deref(),
+                    Some(persisted.identity.identity_hash.as_str()),
+                    Some(persisted.identity.lxmf_hash.as_str()),
+                ) {
+                    tracing::warn!("identity slot sync on bootstrap failed: {e}");
+                }
             }
         }
 
@@ -570,6 +584,22 @@ impl StackHandle {
         let mut inner = self.inner.write().await;
         inner.identity.display_name = Some(name.to_string());
         inner.save(&self.config_dir, &self.storage_dir)?;
+        let active = identity_slots::read_active_id(&self.config_dir);
+        let _ = identity_slots::write_slot_meta(
+            &self.config_dir,
+            &active,
+            Some(name),
+            if inner.identity.configured {
+                Some(inner.identity.identity_hash.as_str())
+            } else {
+                None
+            },
+            if inner.identity.configured {
+                Some(inner.identity.lxmf_hash.as_str())
+            } else {
+                None
+            },
+        );
         Ok(())
     }
 
@@ -1849,24 +1879,81 @@ impl StackHandle {
 
     pub async fn list_identities(&self) -> serde_json::Value {
         let identity = self.inner.read().await.identity.clone();
-        serde_json::json!({
-            "identities": [{
-                "id": "default",
-                "display_name": identity.display_name,
-                "identity_hash": identity.identity_hash,
-                "lxmf_hash": identity.lxmf_hash,
-                "active": true,
-                "configured": identity.configured,
-            }]
-        })
+        let identities = identity_slots::list_slot_rows(&self.config_dir, &identity);
+        serde_json::json!({ "identities": identities })
+    }
+
+    pub async fn create_identity_slot(
+        &self,
+        display_name: Option<String>,
+    ) -> Result<serde_json::Value, String> {
+        identity_apply::identity_requires_rns_stack()?;
+        #[cfg(feature = "rns-stack")]
+        {
+            {
+                let inner = self.inner.read().await;
+                identity_slots::stash_working_into_active_slot(&self.config_dir, &inner.identity)?;
+            }
+            let new_id =
+                identity_slots::create_empty_slot(&self.config_dir, display_name.as_deref())?;
+            identity_slots::set_active_slot_pointer(&self.config_dir, &new_id)?;
+            let (rns_identity, mnemonic) = identity_apply::generate_identity_with_mnemonic()?;
+            let mut inner = self.inner.write().await;
+            let identity = identity_apply::apply_unified_identity(
+                &mut inner,
+                &self.config_dir,
+                &self.storage_dir,
+                rns_identity,
+                display_name,
+                Some(mnemonic),
+            )?;
+            drop(inner);
+            self.maybe_emit_identity_restart();
+            Ok(serde_json::json!({
+                "ok": true,
+                "id": new_id,
+                "identity": identity,
+            }))
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = display_name;
+            Err("identity operations require an rns-stack sidecar build".into())
+        }
+    }
+
+    pub async fn switch_identity(&self, identity_id: &str) -> Result<(), String> {
+        identity_apply::identity_requires_rns_stack()?;
+        #[cfg(feature = "rns-stack")]
+        {
+            {
+                let inner = self.inner.read().await;
+                if identity_slots::read_active_id(&self.config_dir) == identity_id {
+                    return Ok(());
+                }
+                identity_slots::stash_working_into_active_slot(&self.config_dir, &inner.identity)?;
+            }
+            identity_slots::activate_slot(&self.config_dir, identity_id)?;
+            let mut inner = self.inner.write().await;
+            identity_apply::reconcile_persisted_identity_from_file(
+                &mut inner,
+                &self.config_dir,
+                &self.storage_dir,
+            )?;
+            drop(inner);
+            self.maybe_emit_identity_restart();
+            Ok(())
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = identity_id;
+            Err("identity operations require an rns-stack sidecar build".into())
+        }
     }
 
     #[allow(clippy::unused_async)] // async matches StackHandle identity API awaited by HTTP handlers
-    pub async fn switch_identity(&self, identity_id: &str) -> Result<(), String> {
-        if identity_id != "default" {
-            return Err("only default identity is available in this build".into());
-        }
-        Ok(())
+    pub async fn delete_identity_slot(&self, identity_id: &str) -> Result<(), String> {
+        identity_slots::delete_slot(&self.config_dir, identity_id)
     }
 
     pub async fn rns_ready(&self) -> bool {

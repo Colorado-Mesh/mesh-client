@@ -20,6 +20,7 @@ import {
   splitChatMessage,
 } from '../lib/chatComposerLimits';
 import { clearDraft, loadDraftsInitial, saveDraft } from '../lib/chatPanelProtocolStorage';
+import { MESHCORE_FLOOD_SCOPE_PRESETS } from '../lib/meshcoreFloodScope';
 import {
   formatMeshcoreGifWire,
   meshcoreGiphyMediaUrl,
@@ -43,6 +44,8 @@ export interface ChatComposerSendOpts {
   /** Reticulum ratspeak.chat.v2 reply target (LXMF message hash). */
   replyHash?: string;
   chunkIndex?: number;
+  /** MeshCore: ephemeral flood-scope hashtag for this send only (not persisted). */
+  floodScopeOverride?: string;
 }
 
 export interface ChatComposerProps {
@@ -81,6 +84,8 @@ export interface ChatComposerProps {
   onSendSuccess?: () => void;
   /** Use LXMF message hash for reply threading (Reticulum). */
   lxmfReplyHashReplies?: boolean;
+  /** MeshCore: show per-message flood-scope override control. */
+  showFloodScopeOverride?: boolean;
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
   className?: string;
 }
@@ -110,6 +115,7 @@ export function ChatComposer({
   onSendAttachment,
   onSendSuccess,
   lxmfReplyHashReplies = false,
+  showFloodScopeOverride = false,
   textareaRef,
   className,
 }: ChatComposerProps) {
@@ -119,6 +125,7 @@ export function ChatComposer({
   const maxVoiceRecordMs = 60_000;
   const limitHintId = useId();
   const counterLiveId = useId();
+  const floodScopeSelectId = useId();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -126,6 +133,7 @@ export function ChatComposer({
   const recordChunksRef = useRef<Blob[]>([]);
   const recordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [input, setInput] = useState('');
+  const [floodScopeOverride, setFloodScopeOverride] = useState('');
   const [sending, setSending] = useState(false);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [chatActionError, setChatActionError] = useState<{
@@ -478,6 +486,12 @@ export function ChatComposer({
           replyId: i === 0 && typeof replyKey === 'number' ? replyKey : undefined,
           replyHash: i === 0 ? reticulumReplyHash : undefined,
           chunkIndex: i,
+          floodScopeOverride:
+            floodScopeOverride === '__unscoped__'
+              ? ''
+              : floodScopeOverride
+                ? floodScopeOverride
+                : undefined,
         });
       }
       clearSentDraft(draftSnapshot);
@@ -523,6 +537,7 @@ export function ChatComposer({
     allowOutbox,
     clearSentDraft,
     disabled,
+    floodScopeOverride,
     input,
     isConnected,
     isMqttOnly,
@@ -1023,6 +1038,32 @@ export function ChatComposer({
             </button>
           </HelpTooltip>
         )}
+        {showFloodScopeOverride ? (
+          <label
+            className="text-muted flex items-center gap-1 text-[10px]"
+            htmlFor={floodScopeSelectId}
+          >
+            <span className="sr-only">{t('chatPanel.floodScopeOverrideLabel')}</span>
+            <select
+              id={floodScopeSelectId}
+              value={floodScopeOverride}
+              onChange={(e) => {
+                setFloodScopeOverride(e.target.value);
+              }}
+              disabled={disabled || sending}
+              aria-label={t('chatPanel.floodScopeOverrideAria')}
+              className="bg-secondary-dark max-w-[7rem] rounded border border-slate-600 px-1 py-0.5 text-[10px] text-gray-200"
+            >
+              <option value="">{t('chatPanel.floodScopeOverrideDefault')}</option>
+              {MESHCORE_FLOOD_SCOPE_PRESETS.map((tag) => (
+                <option key={tag} value={tag}>
+                  {tag}
+                </option>
+              ))}
+              <option value="__unscoped__">{t('chatPanel.floodScopeOverrideUnscoped')}</option>
+            </select>
+          </label>
+        ) : null}
         <button
           type="button"
           onMouseDown={(e) => {

@@ -240,6 +240,50 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
     }
   });
 
+  ipcMain.handle('db:setReticulumDestinationVerified', (event, opts: unknown) => {
+    try {
+      assertIpcSender(event, 'db:setReticulumDestinationVerified');
+      if (!opts || typeof opts !== 'object') {
+        throw new Error('db:setReticulumDestinationVerified: opts must be an object');
+      }
+      const o = opts as Record<string, unknown>;
+      const hash = canonicalizeReticulumDestinationHash(
+        typeof o.destination_hash === 'string' ? o.destination_hash : '',
+      );
+      if (!hash) {
+        throw new Error('db:setReticulumDestinationVerified: destination_hash invalid');
+      }
+      const verified = o.verified === true || o.verified === 1;
+      const identityHash =
+        typeof o.identity_hash === 'string'
+          ? o.identity_hash
+              .trim()
+              .toLowerCase()
+              .replace(/[^0-9a-f]/g, '')
+              .slice(0, 64)
+          : '';
+      if (verified && !identityHash) {
+        throw new Error(
+          'db:setReticulumDestinationVerified: identity_hash required when verifying',
+        );
+      }
+      const db = getDbForIpc('db:setReticulumDestinationVerified');
+      if (!db) return { changes: 0 };
+      const result = db
+        .prepareOnce(
+          `UPDATE reticulum_destinations
+           SET verified = ?,
+               verified_identity_hash = ?,
+               verified_at = ?
+           WHERE destination_hash = ?`,
+        )
+        .run(verified ? 1 : 0, verified ? identityHash : null, verified ? Date.now() : null, hash);
+      return { changes: result.changes ?? 0 };
+    } catch (err) {
+      finishDbIpcHandler('db:setReticulumDestinationVerified', err);
+    }
+  });
+
   ipcMain.handle('db:upsertReticulumDestination', (event, row: unknown) => {
     try {
       assertIpcSender(event, 'db:upsertReticulumDestination');

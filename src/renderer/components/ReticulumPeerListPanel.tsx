@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as NodeListPanel */
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { MessageCircle, RefreshCw, Star } from 'lucide-react-motion';
+import { Check, MessageCircle, RefreshCw, Star } from 'lucide-react-motion';
 import {
   memo,
   type ReactNode,
@@ -86,6 +86,7 @@ interface PeerTableRowProps {
   activeTab: PeerListTab;
   busy: boolean;
   contacted: boolean;
+  verified: boolean;
   showIcon: boolean;
   iconName?: string | null;
   iconColor?: string | null;
@@ -94,7 +95,7 @@ interface PeerTableRowProps {
   onPeerClick: (hash: string) => void;
   onToggleFavorite: (peer: ReticulumPeer) => void;
   renderActionButtons: (peer: ReticulumPeer, busy: boolean) => ReactNode;
-  t: (key: string) => string;
+  t: (key: string, opts?: Record<string, string>) => string;
 }
 
 const PeerTableRow = memo(function PeerTableRow({
@@ -102,6 +103,7 @@ const PeerTableRow = memo(function PeerTableRow({
   activeTab,
   busy,
   contacted,
+  verified,
   showIcon,
   iconName,
   iconColor,
@@ -126,6 +128,12 @@ const PeerTableRow = memo(function PeerTableRow({
             <ReticulumProfileIcon iconName={iconName} iconColor={iconColor} size={14} />
           ) : null}
           <span className="truncate">{displayLabel}</span>
+          {verified ? (
+            <Check
+              className="text-readable-green h-3.5 w-3.5 shrink-0"
+              aria-label={t('peerDetailModal.verifiedRowAria')}
+            />
+          ) : null}
         </span>
       </td>
       {activeTab === 'peers' ? (
@@ -250,9 +258,42 @@ export default function ReticulumPeerListPanel({
   const [refreshing, setRefreshing] = useState(false);
   const [actionBusyHash, setActionBusyHash] = useState<string | null>(null);
   const [sortedRows, setSortedRows] = useState<PreparedReticulumPeerRow[]>([]);
+  const [verifiedHashes, setVerifiedHashes] = useState<Set<string>>(() => new Set());
 
   const tableScrollRef = useRef<HTMLDivElement>(null);
   const sortedRowsPrepGenRef = useRef(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const rows = await window.electronAPI.db.getReticulumDestinations();
+        if (cancelled) return;
+        const next = new Set<string>();
+        for (const row of rows) {
+          const r = row as {
+            destination_hash?: unknown;
+            verified?: unknown;
+          };
+          if (
+            (r.verified === 1 || r.verified === true) &&
+            typeof r.destination_hash === 'string' &&
+            r.destination_hash
+          ) {
+            next.add(r.destination_hash.toLowerCase());
+          }
+        }
+        setVerifiedHashes(next);
+      } catch (err) {
+        console.warn(
+          '[ReticulumPeerListPanel] load verified destinations failed: ' + errLikeToLogString(err),
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [peersRevision, contacts]);
 
   const runForcedRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -828,6 +869,7 @@ export default function ReticulumPeerListPanel({
                   iconMeta?.icon_color,
                 );
                 const contacted = isContact(peer.destination_hash);
+                const verified = verifiedHashes.has(peer.destination_hash.toLowerCase());
                 const displayLabel =
                   activeTab === 'peers' ? resolvePeerLabel(peer) : prepared.label;
                 return (
@@ -837,6 +879,7 @@ export default function ReticulumPeerListPanel({
                     activeTab={activeTab}
                     busy={busy}
                     contacted={contacted}
+                    verified={verified}
                     showIcon={showIcon}
                     iconName={iconMeta?.icon_name}
                     iconColor={iconMeta?.icon_color}

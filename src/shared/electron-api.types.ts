@@ -317,6 +317,11 @@ export interface ElectronAPI {
       icon_name?: string | null;
       icon_color?: string | null;
     }) => Promise<void>;
+    setReticulumDestinationVerified: (opts: {
+      destination_hash: string;
+      verified: boolean;
+      identity_hash?: string;
+    }) => Promise<{ changes: number }>;
     getBlockedContacts: (
       protocol: string,
       identityId: string,
@@ -821,9 +826,10 @@ export interface ElectronAPI {
   getPlatform: () => string;
   showEmojiPanel: () => Promise<void>;
 
-  // ─── Microphone (Reticulum voice clips; OS privacy + Chromium media) ─────────
+  // ─── Microphone / camera (OS privacy + Chromium media) ───────────────────────
   media: {
     ensureMicrophoneAccess: () => Promise<{ granted: boolean; status: string }>;
+    ensureCameraAccess: () => Promise<{ granted: boolean; status: string }>;
   };
 
   // ─── System clipboard (main process; renderer Async Clipboard API is unreliable in Electron) ─
@@ -873,6 +879,15 @@ export interface ElectronAPI {
       onData: (cb: (bytes: Uint8Array) => void) => () => void;
       onDisconnected: (cb: () => void) => () => void;
     };
+  };
+
+  // ─── GPS / position export ───────────────────────────────────────────────────
+  gps: {
+    exportGpx: (opts?: { nodeId?: number; sinceMs?: number }) => Promise<{
+      success: boolean;
+      path?: string;
+      reason?: 'empty' | 'cancelled' | 'no_db' | 'no_window';
+    }>;
   };
 
   // ─── Chat export ─────────────────────────────────────────────────────────────
@@ -970,6 +985,11 @@ export interface ElectronAPI {
     unlock: (passcode: string) => Promise<IdentityVaultActionResult>;
     lock: () => Promise<IdentityVaultActionResult>;
     status: () => Promise<IdentityVaultStatus>;
+  };
+
+  // ─── Deep links (custom protocol) ───────────────────────────────────────────
+  deepLink: {
+    onOpenUrl: (cb: (url: string) => void) => () => void;
   };
 
   // ─── Support / bug-report bundles ───────────────────────────────────────────

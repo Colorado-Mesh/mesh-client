@@ -145,14 +145,16 @@ Typed renderer wrappers: `electronAPI.reticulum.rrc.*` (`listHubs`, `upsertHub`,
 
 ### System
 
-| Method | Path                           | Body / notes      | Response                         |
-| ------ | ------------------------------ | ----------------- | -------------------------------- |
-| GET    | `/api/v1/diagnostics`          |                   | Reticulum-native health snapshot |
-| POST   | `/api/v1/system/factory-reset` |                   | `{ ok }`                         |
-| GET    | `/api/v1/voice/status`         |                   | LXST stub status                 |
-| GET    | `/api/v1/games/status`         |                   | LRGP stub status                 |
-| GET    | `/api/v1/identities`           |                   | `{ identities: [] }`             |
-| POST   | `/api/v1/identities/switch`    | `{ identity_id }` | `{ ok }`                         |
+| Method | Path                           | Body / notes        | Response                                                                                                                                                                                             |
+| ------ | ------------------------------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/diagnostics`          |                     | Reticulum-native health snapshot                                                                                                                                                                     |
+| POST   | `/api/v1/system/factory-reset` |                     | `{ ok }`                                                                                                                                                                                             |
+| GET    | `/api/v1/voice/status`         |                     | LXST stub status                                                                                                                                                                                     |
+| GET    | `/api/v1/games/status`         |                     | LRGP stub status                                                                                                                                                                                     |
+| GET    | `/api/v1/identities`           |                     | `{ identities: [{ id, display_name, identity_hash, lxmf_hash, active, configured }] }` — slots under `config/identities/<id>/` with `active_identity` pointer; working key remains `config/identity` |
+| POST   | `/api/v1/identities`           | `{ display_name? }` | `{ ok, id, identity }` — create slot, generate keys, activate, emit `stack_restart_requested`                                                                                                        |
+| POST   | `/api/v1/identities/switch`    | `{ identity_id }`   | `{ ok }` — stash active, copy target → working, reconcile, emit restart                                                                                                                              |
+| POST   | `/api/v1/identities/delete`    | `{ identity_id }`   | `{ ok }` — refuses active / last configured slot                                                                                                                                                     |
 
 ## WebSocket
 

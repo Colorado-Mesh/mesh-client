@@ -40,6 +40,7 @@ import { useTranslation } from 'react-i18next';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
 import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { withMeshcoreFloodScopeOverride } from '@/renderer/lib/meshcoreFloodScopeSend';
 import {
   MeshtasticHybridPathIcons,
   MeshtasticMqttPathIcon,
@@ -490,6 +491,10 @@ export interface ChatPanelProps {
   onOpenPropagationSettings?: () => void;
   /** Reticulum: stack is configured and sidecar is live. */
   reticulumStackLive?: boolean;
+  /** MeshCore: radio-wide flood scope to restore after a per-message override. */
+  meshcoreFloodScopeHashtag?: string;
+  /** MeshCore: apply flood scope on the connected radio. */
+  applyMeshcoreFloodScopeHashtag?: (hashtag: string) => Promise<void>;
 }
 
 function ChatPanel({
@@ -521,6 +526,8 @@ function ChatPanel({
   showLxmfAttachmentLine = false,
   composerPayloadLimit,
   lxmfReplyHashReplies = false,
+  meshcoreFloodScopeHashtag = '',
+  applyMeshcoreFloodScopeHashtag,
   onSendAttachment,
   onOpenPropagationSettings,
   reticulumStackLive = false,
@@ -1401,15 +1408,43 @@ function ChatPanel({
         await onReact(text, opts.replyId, sendChannel);
         return;
       }
-      const sendOutcome = onSend(
-        text,
-        sendChannel,
-        destination,
-        opts?.replyHash ?? opts?.replyId ?? undefined,
-      );
-      await Promise.resolve(sendOutcome);
+      const doSend = async () => {
+        const sendOutcome = onSend(
+          text,
+          sendChannel,
+          destination,
+          opts?.replyHash ?? opts?.replyId ?? undefined,
+        );
+        await Promise.resolve(sendOutcome);
+      };
+      if (
+        protocol === 'meshcore' &&
+        applyMeshcoreFloodScopeHashtag &&
+        opts?.floodScopeOverride !== undefined
+      ) {
+        await withMeshcoreFloodScopeOverride(
+          applyMeshcoreFloodScopeHashtag,
+          meshcoreFloodScopeHashtag,
+          opts.floodScopeOverride,
+          doSend,
+        );
+        return;
+      }
+      await doSend();
     },
-    [activeDmNode, channel, dmOnlyChat, onReact, onSend, protocol, t, viewKey, viewMode],
+    [
+      activeDmNode,
+      applyMeshcoreFloodScopeHashtag,
+      channel,
+      dmOnlyChat,
+      meshcoreFloodScopeHashtag,
+      onReact,
+      onSend,
+      protocol,
+      t,
+      viewKey,
+      viewMode,
+    ],
   );
 
   const handleReact = async (glyph: string, packetId: number, msgChannel: number) => {
@@ -2935,6 +2970,7 @@ function ChatPanel({
         onSendAttachment={onSendAttachment}
         payloadLimit={composerPayloadLimit}
         lxmfReplyHashReplies={lxmfReplyHashReplies}
+        showFloodScopeOverride={typeof applyMeshcoreFloodScopeHashtag === 'function'}
         onSendSuccess={() => {
           setUnreadDividerTimestamp(0);
         }}

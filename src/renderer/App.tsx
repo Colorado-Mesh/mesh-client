@@ -92,6 +92,7 @@ import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
 import { useLongSessionMaintenance } from './hooks/useLongSessionMaintenance';
+import { useMeshClientDeepLink } from './hooks/useMeshClientDeepLink';
 import { useMeshcoreDistanceFilterHint } from './hooks/useMeshcoreDistanceFilterHint';
 import type { useMeshcorePanelActions } from './hooks/useMeshcorePanelActions';
 import type { useMeshtasticPanelActions } from './hooks/useMeshtasticPanelActions';
@@ -752,6 +753,7 @@ function AppContent() {
   });
   useLongSessionMaintenance();
   useRendererHeartbeat();
+  useMeshClientDeepLink();
   useSerialServiceListeners();
   useSpellcheckReplaceSync();
 
@@ -2950,6 +2952,16 @@ function AppContent() {
                             scrollToTopRef={scrollToTopChatRef}
                             outerScrollMetricsRootRef={mainViewportRef}
                             compactMode={chatCompactMode}
+                            meshcoreFloodScopeHashtag={
+                              capabilities.modulesTabUsesRepeatersLabel
+                                ? meshcoreFloodScopeHashtag
+                                : undefined
+                            }
+                            applyMeshcoreFloodScopeHashtag={
+                              capabilities.modulesTabUsesRepeatersLabel
+                                ? meshcorePanelActions.applyMeshcoreFloodScopeHashtag
+                                : undefined
+                            }
                             onFetchStoreForwardHistory={
                               capabilities.hasStoreForward
                                 ? () =>
@@ -4259,6 +4271,9 @@ function AppContent() {
               detailModalProtocol === 'meshtastic'
                 ? meshtasticRuntime.detectionSensorEvents
                 : undefined
+            }
+            rangeTestPackets={
+              detailModalProtocol === 'meshtastic' ? meshtasticRuntime.rangeTestPackets : undefined
             }
             mapReports={
               detailModalProtocol === 'meshtastic' ? meshtasticRuntime.mapReports : undefined

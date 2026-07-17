@@ -571,7 +571,11 @@
     "receivedViaBle": "Recibido a través de Bluetooth",
     "receivedViaMultiple": "Recibido a través de {{vias}}",
     "sentViaBle": "Enviado por Bluetooth",
-    "sentViaMultiple": "Enviado a través de {{vias}}"
+    "sentViaMultiple": "Enviado a través de {{vias}}",
+    "floodScopeOverrideLabel": "Alcance de la inundación para este mensaje",
+    "floodScopeOverrideAria": "Anulación del alcance de inundación por mensaje",
+    "floodScopeOverrideDefault": "Alcance predeterminado",
+    "floodScopeOverrideUnscoped": "Sin alcance"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -856,7 +860,27 @@
       "saveDisplayName": "Guardar nombre para mostrar",
       "saveDisplayNameFailed": "Error al guardar el nombre para mostrar.",
       "displayNameSaved": "Nombre para mostrar guardado.",
-      "copyLxmfHash": "Copiar hash LXMF"
+      "copyLxmfHash": "Copiar hash LXMF",
+      "slotsTitle": "Identidades",
+      "slotsHint": "Cree identidades adicionales y cambie entre ellas. La conmutación reinicia la pila de retículo.",
+      "slotActive": "Activo",
+      "slotSwitch": "Cambiar",
+      "slotSwitchAria": "Cambiar a la identidad {{id}}",
+      "slotDelete": "Eliminar",
+      "slotDeleteAria": "Eliminar identidad {{id}}",
+      "slotCreate": "Nueva identidad",
+      "slotCreateAria": "Crear una nueva identidad",
+      "slotSwitchConfirmTitle": "¿Cambiar la identidad del retículo?",
+      "slotSwitchConfirmMessage": "La pila se reiniciará con la identidad seleccionada. Es posible que se interrumpan los mensajes durante el vuelo.",
+      "slotSwitchConfirmAction": "Cambiar identidad",
+      "slotDeleteConfirmTitle": "Borrar la identidad",
+      "slotDeleteConfirmMessage": "Esto elimina permanentemente la clave de identidad no utilizada de este dispositivo. La identidad activa no se puede eliminar.",
+      "slotDeleteConfirmAction": "Borrar la identidad",
+      "slotSwitched": "Identidad conmutada: reinicio de la pila.",
+      "slotCreated": "Nueva identidad creada.",
+      "slotDeleted": "Identidad eliminada.",
+      "slotActionFailed": "Error en la acción de identidad: {{error}}",
+      "slotUnnamed": "Sin nombre"
     },
     "reticulumInterfaces": {
       "title": "Interfaces",
@@ -2522,16 +2546,28 @@
     "paxCounter": {
       "heading": "Contador de pasajeros",
       "detectedCount": "Recuento detectado",
-      "lastSeen": "Visto por última vez"
+      "lastSeen": "Visto por última vez",
+      "samples": "Muestras",
+      "historyChartAria": "Historia reciente del contador Pax"
     },
     "detectionSensor": {
       "heading": "Sensor de detección ({{count}})",
       "lastDetection": "Última detección",
       "dataSize": "Tamaño de datos",
       "dataSizeBytes": "{{count}} bytes",
-      "rawDataHex": "Datos sin procesar (hexadecimal)"
+      "eventLogAria": "Registro de eventos del sensor de detección"
     },
-    "neighborsHopTooFar": "Vecinos no disponibles para repetidores {{hops}}+ salta en serie USB"
+    "neighborsHopTooFar": "Vecinos no disponibles para repetidores {{hops}}+ salta en serie USB",
+    "rangeTest": {
+      "heading": "Prueba de rango ({{count}})",
+      "lastPacket": "Último paquete",
+      "sequence": "Secuencia",
+      "snr": "SNR",
+      "rssi": "RSSI",
+      "lossRate": "Pérdidas estimadas (en dólares EE.UU.)",
+      "lossRatePercent": "{{percent}} %",
+      "packetLogAria": "Registro de paquetes de prueba de rango"
+    }
   },
   "nodeInfoBody": {
     "longName": "Nombre largo",
@@ -2814,7 +2850,15 @@
     "blockContact": "Bloquear contacto",
     "unblockContact": "Desbloquear contacto",
     "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — visto por última vez {{seen}}"
+    "serviceBadgeTitle": "{{aspect}} — visto por última vez {{seen}}",
+    "verifyMark": "Marcar como verificado",
+    "verifyRevoke": "Revocar verificación",
+    "verifyFingerprint": "Huella dactilar de identidad",
+    "verifyMismatch": "Hash de identidad cambiado desde la verificación",
+    "verifiedBadge": "Verificado",
+    "shareContactQr": "Compartir contacto",
+    "shareContactQrAria": "Mostrar código QR para este contacto",
+    "verifiedRowAria": "Contacto no verificado"
   },
   "peerGraph": {
     "title": "Gráfico de comunicación con los compañeros",
@@ -3175,7 +3219,9 @@
       "parseFailed": "URL de canal no válida: {{message}}",
       "applying": "Aplicando…",
       "unnamedChannel": "(sin nombre)",
-      "applySuccessWithSkipped": "Se aplicaron {{applied}} canal(es); se omitieron {{skipped}} duplicado(s) o sin nombre."
+      "applySuccessWithSkipped": "Se aplicaron {{applied}} canal(es); se omitieron {{skipped}} duplicado(s) o sin nombre.",
+      "qrHeading": "Código QR (enlace web)",
+      "qrAria": "Código QR de configuración de canales"
     },
     "channelLoading": "Cargando…",
     "channelLoadFailed": "Fallo al cargar",
@@ -4195,7 +4241,10 @@
     "footerBattery": "Batería: {{count}} pts",
     "footerSignal": "Señal: {{count}} pts",
     "footerEnv": "Env: {{count}} pts",
-    "footerMax": "(máximo 50 cada uno)"
+    "footerMax": "(máximo 50 cada uno)",
+    "sectionTemperatureHumidity": "Temperatura, humedad",
+    "seriesMcuTempF": "MCU °F",
+    "seriesMcuTempC": "MCU °C"
   },
   "toasts": {
     "firmwareAvailable": "Actualización de firmware disponible: v{{version}}",
@@ -4381,5 +4430,43 @@
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
     "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+  },
+  "signalMeter": {
+    "rssi": "RSSI",
+    "snr": "SNR",
+    "rssiValue": "{{value}} dBm",
+    "noData": "—",
+    "aria": "Medidor de señal: RSSI {{rssi}}, SNR {{snr}}, nivel {{level}}"
+  },
+  "gpxExport": {
+    "button": "Exportar GPX",
+    "buttonAria": "Exportar historial de posiciones como GPX",
+    "success": "GPX exportado",
+    "failed": "Fallo en la exportación",
+    "empty": "No hay historial de posiciones para exportar"
+  },
+  "qrIngest": {
+    "qrImageAlt": "Código QR",
+    "encodeFailed": "No se pudo generar código",
+    "paperUnsupported": "Los mensajes en papel LXMF cifrados aún no son compatibles",
+    "contactImported": "Contacto añadido desde el enlace profundo",
+    "contactImportFailed": "No se ha podido importar el contacto desde el enlace",
+    "unknownLink": "Enlace no reconocido",
+    "identityShown": "Enlace para compartir identidad abierto",
+    "channelLinkReceived": "Enlace de canal abierto — revisar importación en la pestaña Radio",
+    "showIdentityQr": "Mostrar identidad QR",
+    "showIdentityQrAria": "Mostrar código QR para esta identidad",
+    "chooseImage": "Digitalizar la imagen",
+    "chooseImageAria": "Elige un archivo de imagen que contenga un código QR",
+    "scanCamera": "Escanear código con cámara:",
+    "scanCameraAria": "Escanea un código QR con la cámara",
+    "stopCamera": "&Parada de cámara",
+    "stopCameraAria": "Detener el escaneo QR de la cámara",
+    "pasteImageHint": "También puedes pegar una imagen QR aquí (Ctrl/Cmd+V).",
+    "cameraPreviewAria": "Vista previa de la cámara para el escaneo QR",
+    "noQrFound": "No se ha encontrado ningún código QR en esa imagen",
+    "decodeFailed": "No se ha podido leer el código QR de la imagen",
+    "cameraDenied": "Permiso de cámara denegado: habilítelo en la configuración de privacidad del sistema",
+    "cameraUnavailable": "La cámara no está disponible en este dispositivo"
   }
 }

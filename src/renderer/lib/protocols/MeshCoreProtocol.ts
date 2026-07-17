@@ -106,6 +106,7 @@ export interface MeshCoreNodeTelemetry {
   fetchedAt: number;
   entries: CayenneLppEntry[];
   temperature?: number;
+  mcuTemperature?: number;
   relativeHumidity?: number;
   barometricPressure?: number;
   voltage?: number;

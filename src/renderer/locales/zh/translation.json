@@ -571,7 +571,11 @@
     "receivedViaBle": "通过蓝牙接收",
     "receivedViaMultiple": "通过{{vias}}接收",
     "sentViaBle": "通过蓝牙发送",
-    "sentViaMultiple": "已通过{{vias}}发送"
+    "sentViaMultiple": "已通过{{vias}}发送",
+    "floodScopeOverrideLabel": "此消息的泛滥范围",
+    "floodScopeOverrideAria": "按消息泛洪作用域覆盖",
+    "floodScopeOverrideDefault": "默认范围",
+    "floodScopeOverrideUnscoped": "未限定范围"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -856,7 +860,27 @@
       "saveDisplayName": "保存显示名称",
       "saveDisplayNameFailed": "保存显示名称失败。",
       "displayNameSaved": "显示名称已保存。",
-      "copyLxmfHash": "复制LXMF哈希"
+      "copyLxmfHash": "复制LXMF哈希",
+      "slotsTitle": "标识",
+      "slotsHint": "创建其他身份并在它们之间切换。切换将重新启动网状堆栈。",
+      "slotActive": "Active",
+      "slotSwitch": "开关",
+      "slotSwitchAria": "切换到身份{{id}}",
+      "slotDelete": "删除",
+      "slotDeleteAria": "删除身份{{id}}",
+      "slotCreate": "新建身份标识",
+      "slotCreateAria": "新建身份",
+      "slotSwitchConfirmTitle": "切换网状标识？",
+      "slotSwitchConfirmMessage": "堆栈将使用所选标识重新启动。机上信息可能会被打断。",
+      "slotSwitchConfirmAction": "切换身份",
+      "slotDeleteConfirmTitle": "删除身份",
+      "slotDeleteConfirmMessage": "这将从此设备中永久删除未使用的身份密钥。无法删除活动身份。",
+      "slotDeleteConfirmAction": "删除身份",
+      "slotSwitched": "交换身份—堆栈重新启动。",
+      "slotCreated": "新身份已创建。",
+      "slotDeleted": "身份已删除。",
+      "slotActionFailed": "身份操作失败： {{error}}",
+      "slotUnnamed": "未命名"
     },
     "reticulumInterfaces": {
       "title": "接口",
@@ -2522,16 +2546,28 @@
     "paxCounter": {
       "heading": "客流量柜台",
       "detectedCount": "检测数",
-      "lastSeen": "最后一次出现"
+      "lastSeen": "最后一次出现",
+      "samples": "示例",
+      "historyChartAria": "PAX计数器近期历史记录"
     },
     "detectionSensor": {
       "heading": "检测传感器 ({{count}})",
       "lastDetection": "最后一次检测",
       "dataSize": "数据大小",
       "dataSizeBytes": "{{count}} 字节",
-      "rawDataHex": "原始数据（十六进制）"
+      "eventLogAria": "检测传感器事件日志"
     },
-    "neighborsHopTooFar": "邻居无法使用中继器 {{hops}}+ 通过 USB 串行跳远"
+    "neighborsHopTooFar": "邻居无法使用中继器 {{hops}}+ 通过 USB 串行跳远",
+    "rangeTest": {
+      "heading": "量程测试（ {{count}} ）",
+      "lastPacket": "最后一个数据包",
+      "sequence": "Sequence",
+      "snr": "信噪比",
+      "rssi": "RSSI",
+      "lossRate": "估计损失",
+      "lossRatePercent": "{{percent}} %",
+      "packetLogAria": "测距测试数据包日志"
+    }
   },
   "nodeInfoBody": {
     "longName": "长名称",
@@ -2814,7 +2850,15 @@
     "blockContact": "阻止联系人",
     "unblockContact": "取消阻止联系人",
     "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} —最后一次出现{{seen}}"
+    "serviceBadgeTitle": "{{aspect}} —最后一次出现{{seen}}",
+    "verifyMark": "标记已验证",
+    "verifyRevoke": "撤销验证",
+    "verifyFingerprint": "身份指纹",
+    "verifyMismatch": "身份哈希自验证后已更改",
+    "verifiedBadge": "已驗證",
+    "shareContactQr": "分享联系人",
+    "shareContactQrAria": "显示此联系人的二维码",
+    "verifiedRowAria": "已验证联系人48"
   },
   "peerGraph": {
     "title": "同行沟通图表",
@@ -3175,7 +3219,9 @@
       "parseFailed": "频道 URL 无效：{{message}}",
       "applying": "正在应用…",
       "unnamedChannel": "（未命名）",
-      "applySuccessWithSkipped": "已应用 {{applied}} 个频道；已跳过 {{skipped}} 个重复或未命名频道。"
+      "applySuccessWithSkipped": "已应用 {{applied}} 个频道；已跳过 {{skipped}} 个重复或未命名频道。",
+      "qrHeading": "二维码（网页链接）",
+      "qrAria": "渠道配置二维码"
     },
     "channelLoading": "加载中…",
     "channelLoadFailed": "加载失败",
@@ -4195,7 +4241,10 @@
     "footerBattery": "电池： {{count}}分",
     "footerSignal": "信号： {{count}}分",
     "footerEnv": "信封： {{count}}分",
-    "footerMax": "（每个最多50个）"
+    "footerMax": "（每个最多50个）",
+    "sectionTemperatureHumidity": "温度、湿度",
+    "seriesMcuTempF": "MCU °F",
+    "seriesMcuTempC": "MCU °C"
   },
   "toasts": {
     "firmwareAvailable": "固件更新可用： v {{version}}",
@@ -4381,5 +4430,43 @@
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
     "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+  },
+  "signalMeter": {
+    "rssi": "RSSI",
+    "snr": "信噪比",
+    "rssiValue": "{{value}} dBm",
+    "noData": "—",
+    "aria": "信号表： RSSI {{rssi}} ， SNR {{snr}} ， LEVEL {{level}}"
+  },
+  "gpxExport": {
+    "button": "导出GPX",
+    "buttonAria": "将位置历史记录导出为GPX",
+    "success": "GPX已导出",
+    "failed": "导出失败",
+    "empty": "没有要导出的职位历史记录"
+  },
+  "qrIngest": {
+    "qrImageAlt": "QR Code",
+    "encodeFailed": "无法生成 QR 码。",
+    "paperUnsupported": "尚不支持加密的LXMF纸质消息",
+    "contactImported": "从深度链接添加的联系人",
+    "contactImportFailed": "无法从链接导入联系人",
+    "unknownLink": "无法识别的链接",
+    "identityShown": "已打开身份共享链接",
+    "channelLinkReceived": "频道链接已打开—在“广播”选项卡上查看导入",
+    "showIdentityQr": "显示身份信息二维码",
+    "showIdentityQrAria": "显示此身份证件的二维码",
+    "chooseImage": "扫描图像",
+    "chooseImageAria": "选择包含二维码的图像文件",
+    "scanCamera": "使用相机扫描",
+    "scanCameraAria": "使用相机扫描二维码",
+    "stopCamera": "停止相机 (&S)",
+    "stopCameraAria": "停止相机二维码扫描",
+    "pasteImageHint": "您也可以在此处粘贴二维码图像（ Ctrl/Cmd + V ）。",
+    "cameraPreviewAria": "用于二维码扫描的相机预览",
+    "noQrFound": "该图片中未找到二维码",
+    "decodeFailed": "无法从图像中读取二维码",
+    "cameraDenied": "摄像头权限被拒绝—在系统隐私设置中启用",
+    "cameraUnavailable": "摄像头在此设备上不可用"
   }
 }

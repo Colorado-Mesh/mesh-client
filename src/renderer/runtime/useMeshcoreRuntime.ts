@@ -101,6 +101,7 @@ import {
   meshcoreIdentityHasFullKeyPair,
   tryPersistMeshcorePublicKeyFromRadio,
 } from '../lib/letsMeshJwt';
+import { assignCayenneTemperatureFields } from '../lib/meshcore/meshcoreCayenneTemperature';
 import { ensureMeshcoreChatSenderInNodeStore } from '../lib/meshcore/meshcoreChatSenderNode';
 import type {
   CayenneLppEntry,
@@ -4411,9 +4412,12 @@ export function useMeshcoreRuntime() {
               }
             }
             const result: MeshCoreNodeTelemetry = { fetchedAt: Date.now(), entries };
+            const temps = assignCayenneTemperatureFields(entries, CayenneLpp.LPP_TEMPERATURE);
+            result.temperature = temps.temperature;
+            result.mcuTemperature = temps.mcuTemperature;
             for (const entry of entries) {
-              if (entry.type === CayenneLpp.LPP_TEMPERATURE && typeof entry.value === 'number') {
-                result.temperature = entry.value;
+              if (entry.type === CayenneLpp.LPP_TEMPERATURE) {
+                // handled above (env vs MCU by channel)
               } else if (
                 entry.type === CayenneLpp.LPP_RELATIVE_HUMIDITY &&
                 typeof entry.value === 'number'
@@ -4446,6 +4450,7 @@ export function useMeshcoreRuntime() {
             });
             const hasEnv =
               result.temperature != null ||
+              result.mcuTemperature != null ||
               result.relativeHumidity != null ||
               result.barometricPressure != null;
             if (hasEnv) {
@@ -4453,6 +4458,7 @@ export function useMeshcoreRuntime() {
                 timestamp: result.fetchedAt,
                 nodeNum: nodeId,
                 temperature: result.temperature,
+                mcuTemperature: result.mcuTemperature,
                 relativeHumidity: result.relativeHumidity,
                 barometricPressure: result.barometricPressure,
               };

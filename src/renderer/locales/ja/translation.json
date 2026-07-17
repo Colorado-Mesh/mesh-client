@@ -571,7 +571,11 @@
     "receivedViaBle": "Bluetooth経由で受信",
     "receivedViaMultiple": "{{vias}}経由で受け取りました",
     "sentViaBle": "Bluetooth経由で送信",
-    "sentViaMultiple": "{{vias}}経由で送信"
+    "sentViaMultiple": "{{vias}}経由で送信",
+    "floodScopeOverrideLabel": "このメッセージのFloodスコープ",
+    "floodScopeOverrideAria": "メッセージごとのフラッドスコープのオーバーライド",
+    "floodScopeOverrideDefault": "既定のスコープ",
+    "floodScopeOverrideUnscoped": "非スコープ"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -856,7 +860,27 @@
       "saveDisplayName": "表示名を保存",
       "saveDisplayNameFailed": "表示名の保存に失敗しました。",
       "displayNameSaved": "表示名を保存しました。",
-      "copyLxmfHash": "LXMFハッシュをコピー"
+      "copyLxmfHash": "LXMFハッシュをコピー",
+      "slotsTitle": "アイデンティティー",
+      "slotsHint": "追加のIDを作成し、それらを切り替えます。切り替えると、網膜スタックが再起動します。",
+      "slotActive": "有効",
+      "slotSwitch": "スイッチ",
+      "slotSwitchAria": "ID {{id}}に切り替える",
+      "slotDelete": "削除",
+      "slotDeleteAria": "ID {{id}}を削除",
+      "slotCreate": "新しい個人情報",
+      "slotCreateAria": "新しい個人情報を作成する",
+      "slotSwitchConfirmTitle": "レティキュラムのアイデンティティを切り替えますか？",
+      "slotSwitchConfirmMessage": "スタックは、選択したIDで再起動します。機内メッセージが中断されることがあります。",
+      "slotSwitchConfirmAction": "IDを切り替える",
+      "slotDeleteConfirmTitle": "åäººæå ±ãåé¤",
+      "slotDeleteConfirmMessage": "これにより、このデバイスから未使用のIDキーが完全に削除されます。アクティブなIDは削除できません。",
+      "slotDeleteConfirmAction": "åäººæå ±ãåé¤",
+      "slotSwitched": "スイッチドアイデンティティ—スタックの再起動。",
+      "slotCreated": "新しいIDが作成されました。",
+      "slotDeleted": "IDが削除されました。",
+      "slotActionFailed": "IDアクションに失敗しました: {{error}}",
+      "slotUnnamed": "無記名"
     },
     "reticulumInterfaces": {
       "title": "インターフェース",
@@ -2522,16 +2546,28 @@
     "paxCounter": {
       "heading": "パックスカウンター",
       "detectedCount": "検出数",
-      "lastSeen": "最後に見たもの"
+      "lastSeen": "最後に見たもの",
+      "samples": "サンプル",
+      "historyChartAria": "PAXカウンターの最近の履歴"
     },
     "detectionSensor": {
       "heading": "検出センサー ({{count}})",
       "lastDetection": "最後の検出",
       "dataSize": "データサイズ",
       "dataSizeBytes": "{{count}}バイト",
-      "rawDataHex": "生データ (16 進数)"
+      "eventLogAria": "検出センサイベントログ"
     },
-    "neighborsHopTooFar": "ネイバーはリピーターに利用できません {{hops}}+ は USB シリアルでホップします"
+    "neighborsHopTooFar": "ネイバーはリピーターに利用できません {{hops}}+ は USB シリアルでホップします",
+    "rangeTest": {
+      "heading": "範囲テスト（ {{count}} ）",
+      "lastPacket": "最後のパケット",
+      "sequence": "順番",
+      "snr": "SNR",
+      "rssi": "RSSI",
+      "lossRate": "推定損失",
+      "lossRatePercent": "{{percent}} %",
+      "packetLogAria": "範囲テストパケットログ"
+    }
   },
   "nodeInfoBody": {
     "longName": "長い名前",
@@ -2814,7 +2850,15 @@
     "blockContact": "連絡先をブロックする",
     "unblockContact": "連絡先のブロックを解除する",
     "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} —最終閲覧{{seen}}"
+    "serviceBadgeTitle": "{{aspect}} —最終閲覧{{seen}}",
+    "verifyMark": "承認としてマーク",
+    "verifyRevoke": "認証の取り消し",
+    "verifyFingerprint": "IDフィンガープリント",
+    "verifyMismatch": "認証後にIDハッシュが変更されました",
+    "verifiedBadge": "確認済み",
+    "shareContactQr": "連絡先QRを共有",
+    "shareContactQrAria": "この連絡先のQRコードを表示",
+    "verifiedRowAria": "連絡先が認証されました"
   },
   "peerGraph": {
     "title": "ピアコミュニケーショングラフ",
@@ -3175,7 +3219,9 @@
       "parseFailed": "無効なチャンネルURL: {{message}}",
       "applying": "適用中…",
       "unnamedChannel": "(名称なし)",
-      "applySuccessWithSkipped": "{{applied}}件のチャンネルを適用しました。{{skipped}}件の重複または無名をスキップしました。"
+      "applySuccessWithSkipped": "{{applied}}件のチャンネルを適用しました。{{skipped}}件の重複または無名をスキップしました。",
+      "qrHeading": "QRコード（ウェブリンク）",
+      "qrAria": "チャンネル構成QRコード"
     },
     "channelLoading": "読み込み中…",
     "channelLoadFailed": "読み込み失敗",
@@ -4195,7 +4241,10 @@
     "footerBattery": "バッテリー: {{count}} 点",
     "footerSignal": "シグナル: {{count}} ポイント",
     "footerEnv": "環境: {{count}} ポイント",
-    "footerMax": "(それぞれ最大50個)"
+    "footerMax": "(それぞれ最大50個)",
+    "sectionTemperatureHumidity": "温度/湿度",
+    "seriesMcuTempF": "MCU °F",
+    "seriesMcuTempC": "MCU °C"
   },
   "toasts": {
     "firmwareAvailable": "利用可能なファームウェアアップデート: v{{version}}",
@@ -4381,5 +4430,43 @@
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
     "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+  },
+  "signalMeter": {
+    "rssi": "RSSI",
+    "snr": "SNR",
+    "rssiValue": "{{value}} dBm",
+    "noData": "—",
+    "aria": "信号計： RSSI {{rssi}}、SNR {{snr}}、レベル{{level}}"
+  },
+  "gpxExport": {
+    "button": "GPXをエクスポート",
+    "buttonAria": "ポジション履歴をGPXとしてエクスポート",
+    "success": "GPXがエクスポートされました",
+    "failed": "書き出せませんでした",
+    "empty": "エクスポートするポジション履歴がありません"
+  },
+  "qrIngest": {
+    "qrImageAlt": "QRコード",
+    "encodeFailed": "QRコードを生成できませんでした",
+    "paperUnsupported": "暗号化されたLXMFペーパーメッセージはまだサポートされていません",
+    "contactImported": "ディープリンクから追加された連絡先",
+    "contactImportFailed": "リンクから連絡先をインポートできませんでした",
+    "unknownLink": "認識されないリンク",
+    "identityShown": "ID 共有リンクを開きました",
+    "channelLinkReceived": "チャンネル リンクが開かれました — [ラジオ] タブでインポートを確認してください",
+    "showIdentityQr": "ID QR を表示",
+    "showIdentityQrAria": "この ID の QR コードを表示します",
+    "chooseImage": "画像をスキャン…",
+    "chooseImageAria": "QRコードを含む画像ファイルを選択してください",
+    "scanCamera": "カメラでスキャン",
+    "scanCameraAria": "カメラで QR コードをスキャンします",
+    "stopCamera": "カメラを停止します",
+    "stopCameraAria": "カメラの QR スキャンを停止する",
+    "pasteImageHint": "ここに QR 画像を貼り付けることもできます (Ctrl/Cmd+V)。",
+    "cameraPreviewAria": "QR スキャン用のカメラ プレビュー",
+    "noQrFound": "その画像には QR コードが見つかりませんでした",
+    "decodeFailed": "画像からQRコードを読み取れませんでした",
+    "cameraDenied": "カメラの許可が拒否されました - システムのプライバシー設定で有効にします",
+    "cameraUnavailable": "このデバイスではカメラが利用できません"
   }
 }

@@ -526,7 +526,13 @@ describe('NodeDetailModal MeshCore actions', () => {
         homeNode={null}
         paxCounterData={
           new Map([
-            [mockNode.node_id, { from: mockNode.node_id, count: 12, timestamp: Date.now() }],
+            [
+              mockNode.node_id,
+              [
+                { from: mockNode.node_id, count: 8, timestamp: Date.now() - 1000 },
+                { from: mockNode.node_id, count: 12, timestamp: Date.now() },
+              ],
+            ],
           ])
         }
       />,
@@ -535,5 +541,60 @@ describe('NodeDetailModal MeshCore actions', () => {
     expect(screen.getByText('Pax Counter')).toBeInTheDocument();
     expect(screen.getByText('Detected Count')).toBeInTheDocument();
     expect(screen.getByText('12')).toBeInTheDocument();
+    expect(screen.getByLabelText('Pax counter recent history')).toBeInTheDocument();
+  });
+
+  it('renders Detection Sensor event log and Range Test section', () => {
+    const now = Date.now();
+    const textBytes = new TextEncoder().encode('motion detected');
+    const rangeBytes = new TextEncoder().encode('seq=1 snr=5.5 rssi=-80');
+    render(
+      <NodeDetailModal
+        node={mockNode}
+        protocol="meshtastic"
+        onClose={vi.fn()}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={vi.fn().mockResolvedValue(undefined)}
+        onToggleFavorite={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+        detectionSensorEvents={
+          new Map([
+            [
+              mockNode.node_id,
+              [
+                {
+                  from: mockNode.node_id,
+                  data: textBytes,
+                  timestamp: now,
+                  text: 'motion detected',
+                },
+              ],
+            ],
+          ])
+        }
+        rangeTestPackets={
+          new Map([
+            [
+              mockNode.node_id,
+              [
+                {
+                  from: mockNode.node_id,
+                  data: new TextEncoder().encode('seq=1 snr=5 rssi=-90'),
+                  timestamp: now - 2000,
+                },
+                { from: mockNode.node_id, data: rangeBytes, timestamp: now },
+              ],
+            ],
+          ])
+        }
+      />,
+    );
+
+    expect(screen.getByText(/Detection Sensor/)).toBeInTheDocument();
+    expect(screen.getByText('motion detected')).toBeInTheDocument();
+    expect(screen.getByText(/Range Test/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Range test packet log')).toBeInTheDocument();
   });
 });

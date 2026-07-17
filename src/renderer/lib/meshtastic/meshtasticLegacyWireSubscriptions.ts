@@ -96,6 +96,12 @@ import type {
 import { recordMeshtasticClientNotification } from './meshtasticClientNotification';
 import { pushMeshtasticTransportSideEffectUnsubs } from './meshtasticLegacyDeviceEvents';
 import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraConfig';
+import {
+  appendModulePortEvent,
+  appendPaxHistory,
+  type ModulePortEvent,
+  type PaxCounterPoint,
+} from './meshtasticModuleEvents';
 import type { MeshtasticMqttClientProxyBridge } from './meshtasticMqttClientProxy';
 import { parseMeshtasticRawPacketExpand } from './meshtasticRawPacketExpand';
 import {
@@ -299,27 +305,21 @@ export interface MeshtasticLegacyWireSubscriptionDeps {
   setAudioMessages: Dispatch<
     SetStateAction<Map<number, { from: number; data: Uint8Array; timestamp: number }[]>>
   >;
-  setDetectionSensorEvents: Dispatch<
-    SetStateAction<Map<number, { from: number; data: Uint8Array; timestamp: number }[]>>
-  >;
+  setDetectionSensorEvents: Dispatch<SetStateAction<Map<number, ModulePortEvent[]>>>;
   setPingResponses: Dispatch<
     SetStateAction<Map<number, { from: number; data: Uint8Array; timestamp: number }>>
   >;
   setIpTunnelMessages: Dispatch<
     SetStateAction<Map<number, { from: number; data: Uint8Array; timestamp: number }[]>>
   >;
-  setPaxCounterData: Dispatch<
-    SetStateAction<Map<number, { from: number; count: number; timestamp: number }>>
-  >;
+  setPaxCounterData: Dispatch<SetStateAction<Map<number, PaxCounterPoint[]>>>;
   setSerialMessages: Dispatch<
     SetStateAction<Map<number, { from: number; data: Uint8Array; timestamp: number }[]>>
   >;
   setStoreForwardMessages: Dispatch<
     SetStateAction<Map<number, { from: number; data: Uint8Array; timestamp: number }[]>>
   >;
-  setRangeTestPackets: Dispatch<
-    SetStateAction<Map<number, { from: number; data: Uint8Array; timestamp: number }[]>>
-  >;
+  setRangeTestPackets: Dispatch<SetStateAction<Map<number, ModulePortEvent[]>>>;
   setZpsMessages: Dispatch<
     SetStateAction<Map<number, { from: number; data: Uint8Array; timestamp: number }[]>>
   >;
@@ -2033,16 +2033,13 @@ export function attachMeshtasticLegacyWireSubscriptions(
   // ─── Detection Sensor packets ─────────────────────────────────
   const unsubDetectionSensor = device.events.onDetectionSensorPacket.subscribe((packet) => {
     touchLastData();
-    setDetectionSensorEvents((prev) => {
-      const updated = new Map(prev);
-      const from = packet.from;
-      const existing = updated.get(from) ?? [];
-      updated.set(from, [
-        ...existing.slice(-100),
-        { from, data: packet.data, timestamp: Date.now() },
-      ]);
-      return updated;
-    });
+    setDetectionSensorEvents((prev) =>
+      appendModulePortEvent(prev, {
+        from: packet.from,
+        data: packet.data,
+        timestamp: Date.now(),
+      }),
+    );
   });
   unsubscribesRef.current.push(unsubDetectionSensor);
 
@@ -2081,15 +2078,13 @@ export function attachMeshtasticLegacyWireSubscriptions(
   const unsubPaxcounter = device.events.onPaxcounterPacket.subscribe((packet) => {
     touchLastData();
     const pax = packet.data as { count?: number };
-    setPaxCounterData((prev) => {
-      const updated = new Map(prev);
-      updated.set(packet.from, {
+    setPaxCounterData((prev) =>
+      appendPaxHistory(prev, {
         from: packet.from,
         count: pax.count ?? 0,
         timestamp: Date.now(),
-      });
-      return updated;
-    });
+      }),
+    );
   });
   unsubscribesRef.current.push(unsubPaxcounter);
 
@@ -2158,16 +2153,13 @@ export function attachMeshtasticLegacyWireSubscriptions(
   // ─── Range Test packets ────────────────────────────────────────
   const unsubRangeTest = device.events.onRangeTestPacket.subscribe((packet) => {
     touchLastData();
-    setRangeTestPackets((prev) => {
-      const updated = new Map(prev);
-      const from = packet.from;
-      const existing = updated.get(from) ?? [];
-      updated.set(from, [
-        ...existing.slice(-100),
-        { from, data: packet.data, timestamp: Date.now() },
-      ]);
-      return updated;
-    });
+    setRangeTestPackets((prev) =>
+      appendModulePortEvent(prev, {
+        from: packet.from,
+        data: packet.data,
+        timestamp: Date.now(),
+      }),
+    );
   });
   unsubscribesRef.current.push(unsubRangeTest);
 

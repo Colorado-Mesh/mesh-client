@@ -571,7 +571,11 @@
     "receivedViaBle": "Отримано через Bluetooth",
     "receivedViaMultiple": "Отримано через {{vias}}",
     "sentViaBle": "Надіслано через Bluetooth",
-    "sentViaMultiple": "Надіслано через {{vias}}"
+    "sentViaMultiple": "Надіслано через {{vias}}",
+    "floodScopeOverrideLabel": "Обсяг повені для цього повідомлення",
+    "floodScopeOverrideAria": "Перевизначення обсягу повені для кожного повідомлення",
+    "floodScopeOverrideDefault": "Область застосування за замовчуванням",
+    "floodScopeOverrideUnscoped": "Без діапазону"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -856,7 +860,27 @@
       "saveDisplayName": "Зберегти відображуване ім’я",
       "saveDisplayNameFailed": "Не вдалося зберегти відображуване ім'я.",
       "displayNameSaved": "Відображуване ім'я збережено.",
-      "copyLxmfHash": "Скопіювати хеш LXMF"
+      "copyLxmfHash": "Скопіювати хеш LXMF",
+      "slotsTitle": "Профілі",
+      "slotsHint": "Створіть додаткові профілі та перемикайтеся між ними. Перемикання перезапускає стек ретикулуму.",
+      "slotActive": "Активний",
+      "slotSwitch": "Перемкнути",
+      "slotSwitchAria": "Змінити на особу {{id}}",
+      "slotDelete": "Видалити",
+      "slotDeleteAria": "Видалити особу {{id}}",
+      "slotCreate": "Новий профіль",
+      "slotCreateAria": "Створити новий профіль",
+      "slotSwitchConfirmTitle": "Змінити ідентичність ретикулуму?",
+      "slotSwitchConfirmMessage": "Стек буде перезапущений з вибраним профілем. Повідомлення в польоті можуть бути перервані.",
+      "slotSwitchConfirmAction": "Змінити особу",
+      "slotDeleteConfirmTitle": "Вилучити профіль",
+      "slotDeleteConfirmMessage": "Це назавжди видалить невикористаний ідентифікаційний ключ з цього пристрою. Активний профіль не можна видалити.",
+      "slotDeleteConfirmAction": "Вилучити профіль",
+      "slotSwitched": "Переключення посвідчення особи — перезапуск стека.",
+      "slotCreated": "Створено нову особу.",
+      "slotDeleted": "Особу видалено.",
+      "slotActionFailed": "Помилка дії з ідентифікацією: {{error}}",
+      "slotUnnamed": "Без імені"
     },
     "reticulumInterfaces": {
       "title": "Інтерфейси",
@@ -2522,16 +2546,28 @@
     "paxCounter": {
       "heading": "Лічильник Pax",
       "detectedCount": "Виявлена ​​кількість",
-      "lastSeen": "Останній раз"
+      "lastSeen": "Останній раз",
+      "samples": "Зразки",
+      "historyChartAria": "Недавня історія лічильника Pax"
     },
     "detectionSensor": {
       "heading": "Датчик виявлення ({{count}})",
       "lastDetection": "Останнє виявлення",
       "dataSize": "Розмір даних",
       "dataSizeBytes": "{{count}} байт",
-      "rawDataHex": "Необроблені дані (шістнадцятковий)"
+      "eventLogAria": "Журнал подій датчика виявлення"
     },
-    "neighborsHopTooFar": "Сусіди недоступні для повторювачів {{hops}}+ перемикаються через послідовний USB-порт"
+    "neighborsHopTooFar": "Сусіди недоступні для повторювачів {{hops}}+ перемикаються через послідовний USB-порт",
+    "rangeTest": {
+      "heading": "Випробування діапазону ({{count}})",
+      "lastPacket": "Останній пакет",
+      "sequence": "Послідовність",
+      "snr": "Відношення сигнал/ шум",
+      "rssi": "RSSI (індикатор потужності прийнятого сигналу)",
+      "lossRate": "Орієнтовний збиток",
+      "lossRatePercent": "{{percent}}%",
+      "packetLogAria": "Журнал пакетів тестування діапазону"
+    }
   },
   "nodeInfoBody": {
     "longName": "Довге ім'я",
@@ -2814,7 +2850,15 @@
     "blockContact": "& Заблокувати контакт",
     "unblockContact": "& Розблокувати контакт",
     "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — останній раз бачили {{seen}}"
+    "serviceBadgeTitle": "{{aspect}} — останній раз бачили {{seen}}",
+    "verifyMark": "Позначити як перевірений",
+    "verifyRevoke": "Відкликати підтвердження",
+    "verifyFingerprint": "Відбиток особи",
+    "verifyMismatch": "Хеш посвідчення особи змінено після підтвердження",
+    "verifiedBadge": "Підтверджений",
+    "shareContactQr": "Поділитися контактним QR-кодом",
+    "shareContactQrAria": "Показати QR-код для цього контакту",
+    "verifiedRowAria": "Контакт підтверджено"
   },
   "peerGraph": {
     "title": "Графік однорангової комунікації",
@@ -3175,7 +3219,9 @@
       "parseFailed": "Недійсна URL-адреса каналу: {{message}}",
       "applying": "Застосування…",
       "unnamedChannel": "(без імені)",
-      "applySuccessWithSkipped": "Застосовано канали {{applied}}; пропущено дублікат {{skipped}} або без назви."
+      "applySuccessWithSkipped": "Застосовано канали {{applied}}; пропущено дублікат {{skipped}} або без назви.",
+      "qrHeading": "QR-код (веб-посилання)",
+      "qrAria": "QR-код конфігурації каналу"
     },
     "channelLoading": "Завантаження…",
     "channelLoadFailed": "Помилка завантаження",
@@ -4195,7 +4241,10 @@
     "footerBattery": "Акумулятор: {{count}} балів",
     "footerSignal": "Сигнал: {{count}} балів",
     "footerEnv": "Env: {{count}} балів",
-    "footerMax": "(макс. 50 кожна)"
+    "footerMax": "(макс. 50 кожна)",
+    "sectionTemperatureHumidity": "Температура Вологість",
+    "seriesMcuTempF": "MCU °F",
+    "seriesMcuTempC": "MCU °C"
   },
   "toasts": {
     "firmwareAvailable": "Доступне оновлення прошивки: v{{version}}",
@@ -4381,5 +4430,43 @@
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
     "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+  },
+  "signalMeter": {
+    "rssi": "RSSI (індикатор потужності прийнятого сигналу)",
+    "snr": "Відношення сигнал/ шум",
+    "rssiValue": "{{value}} дБм",
+    "noData": "-",
+    "aria": "Вимірювач сигналу: RSSI {{rssi}}, SNR {{snr}}, рівень {{level}}"
+  },
+  "gpxExport": {
+    "button": "Експортувати GPX",
+    "buttonAria": "Експортувати історію позицій як GPX",
+    "success": "GPX експортовано",
+    "failed": "Помилка при експорті",
+    "empty": "Немає історії позицій для експорту"
+  },
+  "qrIngest": {
+    "qrImageAlt": "QR-код",
+    "encodeFailed": "Не вдалося згенерувати QR-код",
+    "paperUnsupported": "Зашифровані паперові повідомлення LXMF ще не підтримуються",
+    "contactImported": "Контакт додано з глибокого посилання",
+    "contactImportFailed": "Не вдалося імпортувати контакт з посилання",
+    "unknownLink": "Нерозпізнане посилання",
+    "identityShown": "Відкрите посилання для спільного доступу до посвідчення особи",
+    "channelLinkReceived": "Посилання на канал відкрито — перегляньте імпорт на вкладці \"Радіо\"",
+    "showIdentityQr": "Показати ідентифікаційний QR-код",
+    "showIdentityQrAria": "Показати QR-код для цієї особи",
+    "chooseImage": "Сканувати зображення",
+    "chooseImageAria": "Виберіть файл зображення, що містить QR-код",
+    "scanCamera": "Сканування за допомогою камери",
+    "scanCameraAria": "Відскануйте QR-код за допомогою камери",
+    "stopCamera": "Зупинити камеру",
+    "stopCameraAria": "Зупинити QR-сканування камери",
+    "pasteImageHint": "Тут також можна вставити QR-зображення (Ctrl/Cmd+V).",
+    "cameraPreviewAria": "Попередній перегляд камери для QR-сканування",
+    "noQrFound": "На цьому зображенні не знайдено QR-коду",
+    "decodeFailed": "Не вдалося прочитати QR-код із зображення",
+    "cameraDenied": "Дозвіл на доступ до камери заборонено — увімкніть його в налаштуваннях конфіден",
+    "cameraUnavailable": "Камера недоступна на цьому пристрої"
   }
 }

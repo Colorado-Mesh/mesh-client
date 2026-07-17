@@ -225,6 +225,12 @@ describe('isDeviceEntry — Reticulum protocol', () => {
     ).toBe(true);
   });
 
+  it('classifies [IdentitySlotsSection] message as Reticulum device entry', () => {
+    expect(
+      isDeviceEntry(entry('renderer', '[IdentitySlotsSection] switch failed'), 'reticulum'),
+    ).toBe(true);
+  });
+
   it('classifies [ReticulumIPC] message as Reticulum device entry', () => {
     expect(isDeviceEntry(entry('main', '[ReticulumIPC] start'), 'reticulum')).toBe(true);
   });

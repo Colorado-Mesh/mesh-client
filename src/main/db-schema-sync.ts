@@ -18,7 +18,7 @@ import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 43;
+export const CURRENT_SCHEMA_VERSION = 44;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -195,7 +195,10 @@ export const CANONICAL_TABLES_DDL = `
         last_heard       INTEGER,
         favorited        INTEGER DEFAULT 0,
         icon_name        TEXT,
-        icon_color       TEXT
+        icon_color       TEXT,
+        verified         INTEGER DEFAULT 0,
+        verified_identity_hash TEXT,
+        verified_at      INTEGER
       );
 
       CREATE TABLE IF NOT EXISTS reticulum_messages (
@@ -449,6 +452,9 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     favorited: 'INTEGER DEFAULT 0',
     icon_name: 'TEXT',
     icon_color: 'TEXT',
+    verified: 'INTEGER DEFAULT 0',
+    verified_identity_hash: 'TEXT',
+    verified_at: 'INTEGER',
   },
 };
 

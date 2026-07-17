@@ -70,6 +70,7 @@ export function createElectronAPIMock(): ElectronAPI {
       markStaleReticulumOutbound: vi.fn().mockResolvedValue({ changes: 0 }),
       vacuumReticulumTables: vi.fn().mockResolvedValue({ ok: true }),
       getReticulumDestinations: vi.fn().mockResolvedValue([]),
+      setReticulumDestinationVerified: vi.fn().mockResolvedValue({ changes: 1 }),
       deleteReticulumDestination: vi.fn().mockResolvedValue({ changes: 1 }),
       upsertReticulumDestination: vi.fn().mockResolvedValue(undefined),
       getBlockedContacts: vi.fn().mockResolvedValue([]),
@@ -212,6 +213,7 @@ export function createElectronAPIMock(): ElectronAPI {
     showEmojiPanel: vi.fn().mockResolvedValue(undefined),
     media: {
       ensureMicrophoneAccess: vi.fn().mockResolvedValue({ granted: true, status: 'granted' }),
+      ensureCameraAccess: vi.fn().mockResolvedValue({ granted: true, status: 'granted' }),
     },
     clipboard: {
       writeText: vi.fn().mockResolvedValue(undefined),
@@ -387,6 +389,12 @@ export function createElectronAPIMock(): ElectronAPI {
       unlock: vi.fn().mockResolvedValue({ ok: true }),
       lock: vi.fn().mockResolvedValue({ ok: true }),
       status: vi.fn().mockResolvedValue({ configured: false, unlocked: false }),
+    },
+    deepLink: {
+      onOpenUrl: vi.fn().mockReturnValue(() => {}),
+    },
+    gps: {
+      exportGpx: vi.fn().mockResolvedValue({ success: false, reason: 'cancelled' }),
     },
   } satisfies ElectronAPI;
 }

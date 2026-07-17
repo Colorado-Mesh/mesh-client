@@ -571,7 +571,11 @@
     "receivedViaBle": "Odebrano przez Bluetooth",
     "receivedViaMultiple": "Otrzymano za pośrednictwem {{vias}}",
     "sentViaBle": "Wysłane przez Bluetooth",
-    "sentViaMultiple": "Wysłano przez {{vias}}"
+    "sentViaMultiple": "Wysłano przez {{vias}}",
+    "floodScopeOverrideLabel": "Zakres powodzi dla tej wiadomości",
+    "floodScopeOverrideAria": "Nadpisanie zakresu zalania dla każdej wiadomości",
+    "floodScopeOverrideDefault": "Zakres domyślny",
+    "floodScopeOverrideUnscoped": "Nieobjęte zakresem"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -856,7 +860,27 @@
       "saveDisplayName": "Zapisz wyświetlaną nazwę",
       "saveDisplayNameFailed": "Nie udało się zapisać wyświetlanej nazwy.",
       "displayNameSaved": "Nazwa wyświetlana zapisana.",
-      "copyLxmfHash": "Skopiuj skrót LXMF"
+      "copyLxmfHash": "Skopiuj skrót LXMF",
+      "slotsTitle": "Tożsamość",
+      "slotsHint": "Twórz dodatkowe tożsamości i przełączaj się między nimi. Przełączanie restartuje stos Siatkówki.",
+      "slotActive": "Aktywna",
+      "slotSwitch": "Przełącznik",
+      "slotSwitchAria": "Przełącz na tożsamość {{id}}",
+      "slotDelete": "Delete",
+      "slotDeleteAria": "Usuń tożsamość {{id}}",
+      "slotCreate": "Nowa tożsamość",
+      "slotCreateAria": "Utwórz nowa tożsamość",
+      "slotSwitchConfirmTitle": "Zmienić tożsamość siatkową?",
+      "slotSwitchConfirmMessage": "Stos zostanie ponownie uruchomiony z wybraną tożsamością. Komunikaty podczas lotu mogą zostać przerwane.",
+      "slotSwitchConfirmAction": "Zmień tożsamość",
+      "slotDeleteConfirmTitle": "Usuń tożsamość",
+      "slotDeleteConfirmMessage": "Spowoduje to trwałe usunięcie nieużywanego klucza tożsamości z tego urządzenia. Nie można usunąć aktywnej tożsamości.",
+      "slotDeleteConfirmAction": "Usuń tożsamość",
+      "slotSwitched": "Przełączona tożsamość — ponowne uruchamianie stosu.",
+      "slotCreated": "Utworzono nową tożsamość.",
+      "slotDeleted": "Tożsamość usunięta.",
+      "slotActionFailed": "Akcja tożsamości nie powiodła się: {{error}}",
+      "slotUnnamed": "Anonimowy"
     },
     "reticulumInterfaces": {
       "title": "Interfejsy",
@@ -2522,16 +2546,28 @@
     "paxCounter": {
       "heading": "Licznik Pax",
       "detectedCount": "Wykryta liczba",
-      "lastSeen": "Ostatnio widziany"
+      "lastSeen": "Ostatnio widziany",
+      "samples": "Przykłady edycji zdjęć",
+      "historyChartAria": "Najnowsza historia licznika pasażerów"
     },
     "detectionSensor": {
       "heading": "Czujnik wykrywania ({{count}})",
       "lastDetection": "Ostatnie wykrycie",
       "dataSize": "Rozmiar danych",
       "dataSizeBytes": "{{count}} bajtów",
-      "rawDataHex": "Surowe dane (szesnastkowo)"
+      "eventLogAria": "Dziennik zdarzeń czujnika detekcji"
     },
-    "neighborsHopTooFar": "Sąsiedzi niedostępni dla przemienników {{hops}}+ przeskakuje przez port szeregowy USB"
+    "neighborsHopTooFar": "Sąsiedzi niedostępni dla przemienników {{hops}}+ przeskakuje przez port szeregowy USB",
+    "rangeTest": {
+      "heading": "Test zakresu ({{count}})",
+      "lastPacket": "Ostatni pakiet",
+      "sequence": "Kolejność",
+      "snr": "SNR",
+      "rssi": "RSSI",
+      "lossRate": "Szacowana strata",
+      "lossRatePercent": "{{percent}}%",
+      "packetLogAria": "Dziennik pakietów testowych zakresu"
+    }
   },
   "nodeInfoBody": {
     "longName": "Długie imię",
@@ -2814,7 +2850,15 @@
     "blockContact": "Blokuj kontakt",
     "unblockContact": "Odblokuj kontakt",
     "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — ostatnio widziany {{seen}}"
+    "serviceBadgeTitle": "{{aspect}} — ostatnio widziany {{seen}}",
+    "verifyMark": "Oznacz jako zweryfikowane",
+    "verifyRevoke": "Cofnij weryfikację",
+    "verifyFingerprint": "Tożsamość odcisku palca",
+    "verifyMismatch": "Hasz tożsamości zmienił się od czasu weryfikacji",
+    "verifiedBadge": "Weryfikacja",
+    "shareContactQr": "Udostępnij kontaktowy QR",
+    "shareContactQrAria": "Pokaż kod QR dla tego kontaktu",
+    "verifiedRowAria": "Kontakt zweryfikowany"
   },
   "peerGraph": {
     "title": "Wykres komunikacji z partnerami",
@@ -3175,7 +3219,9 @@
       "parseFailed": "Nieprawidłowy adres URL kanału: {{message}}",
       "applying": "Stosowanie…",
       "unnamedChannel": "(bez nazwy)",
-      "applySuccessWithSkipped": "Zastosowano kanał(y) {{applied}}; pominięto duplikat lub nienazwany kanał (y) {{skipped}}."
+      "applySuccessWithSkipped": "Zastosowano kanał(y) {{applied}}; pominięto duplikat lub nienazwany kanał (y) {{skipped}}.",
+      "qrHeading": "Kod QR (link internetowy)",
+      "qrAria": "Kod QR konfiguracji kanału"
     },
     "channelLoading": "Wczytywanie…",
     "channelLoadFailed": "Wczytywanie nieudane",
@@ -4195,7 +4241,10 @@
     "footerBattery": "Bateria: {{count}} pkt",
     "footerSignal": "Sygnał: {{count}} pkt",
     "footerEnv": "Kop.: {{count}} pkt",
-    "footerMax": "(maks. 50 każdy)"
+    "footerMax": "(maks. 50 każdy)",
+    "sectionTemperatureHumidity": "Temperatura: Wilgotność:",
+    "seriesMcuTempF": "MCU °F",
+    "seriesMcuTempC": "MCU °C"
   },
   "toasts": {
     "firmwareAvailable": "Dostępna aktualizacja oprogramowania sprzętowego: v{{version}}",
@@ -4381,5 +4430,43 @@
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
     "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+  },
+  "signalMeter": {
+    "rssi": "RSSI",
+    "snr": "SNR",
+    "rssiValue": "{{value}} dBm",
+    "noData": "—",
+    "aria": "Miernik sygnału: RSSI {{rssi}}, SNR {{snr}}, poziom {{level}}"
+  },
+  "gpxExport": {
+    "button": "Eksportuj GPX",
+    "buttonAria": "Eksportuj historię pozycji jako GPX",
+    "success": "Wyeksportowano GPX",
+    "failed": "Eksport nie powiódł się",
+    "empty": "Brak historii pozycji do wyeksportowania"
+  },
+  "qrIngest": {
+    "qrImageAlt": "kodem QR",
+    "encodeFailed": "Nie można wygenerować kodu QR",
+    "paperUnsupported": "Szyfrowane wiadomości papierowe LXMF nie są jeszcze obsługiwane",
+    "contactImported": "Kontakt dodany z deep linku",
+    "contactImportFailed": "Nie można zaimportować kontaktu z linku",
+    "unknownLink": "Nierozpoznany link",
+    "identityShown": "Otwarty link do udostępniania tożsamości",
+    "channelLinkReceived": "Otwarto link do kanału — sprawdź import na karcie Radio",
+    "showIdentityQr": "Pokaż kod QR tożsamości",
+    "showIdentityQrAria": "Pokaż kod QR dla tej tożsamości",
+    "chooseImage": "Skanuj zdjęcie",
+    "chooseImageAria": "Wybierz plik obrazu zawierający kod QR",
+    "scanCamera": "Skanuj za pomocą aparatu",
+    "scanCameraAria": "Zeskanuj kod QR za pomocą aparatu",
+    "stopCamera": "&Kamera stop",
+    "stopCameraAria": "Zatrzymaj skanowanie QR kamery",
+    "pasteImageHint": "Możesz również wkleić tutaj obraz QR (Ctrl/Cmd+V).",
+    "cameraPreviewAria": "Podgląd kamery do skanowania QR",
+    "noQrFound": "Nie znaleziono kodu QR na tym obrazie",
+    "decodeFailed": "Nie można odczytać kodu QR z obrazu",
+    "cameraDenied": "Odmowa dostępu do kamery — włącz ją w ustawieniach prywatności systemu",
+    "cameraUnavailable": "Kamera nie jest dostępna na tym urządzeniu"
   }
 }

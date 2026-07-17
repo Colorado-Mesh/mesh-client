@@ -1,5 +1,9 @@
 appId: com.mesh-client.app
 productName: Mesh-client
+protocols:
+  - name: Mesh Client LXMF
+    schemes:
+      - lxm
 directories:
   buildResources: resources
   output: release
@@ -42,6 +46,7 @@ mac:
   extendInfo:
     NSBluetoothAlwaysUsageDescription: 'Mesh-client needs Bluetooth to communicate with Meshtastic devices.'
     NSMicrophoneUsageDescription: 'Mesh-client needs the microphone to record Reticulum voice clips.'
+    NSCameraUsageDescription: 'Mesh-client needs the camera to scan QR codes for channel and contact sharing.'
   target:
     - dmg
     - zip

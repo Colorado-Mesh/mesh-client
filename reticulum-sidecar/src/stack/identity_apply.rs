@@ -97,6 +97,14 @@ mod rns {
         state.lxmf_ready = true;
         state.sync_local_propagation_hash();
         state.save(config_dir, storage_dir)?;
+        if let Err(e) = crate::stack::identity_slots::sync_active_slot_from_working(
+            config_dir,
+            state.identity.display_name.as_deref(),
+            Some(state.identity.identity_hash.as_str()),
+            Some(state.identity.lxmf_hash.as_str()),
+        ) {
+            tracing::warn!("identity slot sync after apply failed: {e}");
+        }
         Ok(state.identity.clone())
     }
 

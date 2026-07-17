@@ -571,7 +571,11 @@
     "receivedViaBle": "블루투스를 통해 수신됨",
     "receivedViaMultiple": "{{vias}} 을 (를) 통해 수신됨",
     "sentViaBle": "블루투스를 통해 전송됨",
-    "sentViaMultiple": "{{vias}} 을 (를) 통해 전송됨"
+    "sentViaMultiple": "{{vias}} 을 (를) 통해 전송됨",
+    "floodScopeOverrideLabel": "이 메시지의 플러드 범위",
+    "floodScopeOverrideAria": "메시지별 플러드 범위 재정의",
+    "floodScopeOverrideDefault": "기본 범위",
+    "floodScopeOverrideUnscoped": "범위가 지정되지 않음"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -856,7 +860,27 @@
       "saveDisplayName": "표시 이름 저장",
       "saveDisplayNameFailed": "표시 이름을 저장하지 못했습니다.",
       "displayNameSaved": "표시 이름이 저장되었습니다.",
-      "copyLxmfHash": "LXMF 해시 복사"
+      "copyLxmfHash": "LXMF 해시 복사",
+      "slotsTitle": "신원",
+      "slotsHint": "추가 ID를 생성하고 ID 간에 전환합니다. 전환하면 Reticulum 스택이 다시 시작됩니다.",
+      "slotActive": "활동적인",
+      "slotSwitch": "스위치",
+      "slotSwitchAria": "ID {{id}}(으)로 전환",
+      "slotDelete": "삭제",
+      "slotDeleteAria": "ID 삭제 {{id}}",
+      "slotCreate": "새로운 정체성",
+      "slotCreateAria": "새로운 Reticulum ID 생성",
+      "slotSwitchConfirmTitle": "레티큘럼 ID를 전환하시겠습니까?",
+      "slotSwitchConfirmMessage": "선택한 ID로 스택이 다시 시작됩니다. 기내 메시지가 중단될 수 있습니다.",
+      "slotSwitchConfirmAction": "ID 전환",
+      "slotDeleteConfirmTitle": "ID 슬롯을 삭제하시겠습니까?",
+      "slotDeleteConfirmMessage": "이렇게 하면 이 장치에서 사용되지 않은 ID 키가 영구적으로 제거됩니다. 활성 ID는 삭제할 수 없습니다.",
+      "slotDeleteConfirmAction": "신원 삭제",
+      "slotSwitched": "ID 전환 — 스택 다시 시작.",
+      "slotCreated": "새로운 ID가 생성되었습니다.",
+      "slotDeleted": "신원이 삭제되었습니다.",
+      "slotActionFailed": "신원 작업 실패: {{error}}",
+      "slotUnnamed": "이름 없음"
     },
     "reticulumInterfaces": {
       "title": "연계 문서",
@@ -2522,16 +2546,28 @@
     "paxCounter": {
       "heading": "팍스 카운터",
       "detectedCount": "감지된 개수",
-      "lastSeen": "마지막으로 본"
+      "lastSeen": "마지막으로 본",
+      "samples": "샘플",
+      "historyChartAria": "팍스 카운터 최근 이력"
     },
     "detectionSensor": {
       "heading": "감지 센서({{count}})",
       "lastDetection": "마지막 감지",
       "dataSize": "데이터 크기",
       "dataSizeBytes": "{{count}}바이트",
-      "rawDataHex": "원시 데이터(16진수)"
+      "eventLogAria": "감지 센서 이벤트 로그"
     },
-    "neighborsHopTooFar": "리피터에 사용할 수 없는 이웃 {{hops}}+ USB 직렬로 홉 이동"
+    "neighborsHopTooFar": "리피터에 사용할 수 없는 이웃 {{hops}}+ USB 직렬로 홉 이동",
+    "rangeTest": {
+      "heading": "범위 테스트({{count}})",
+      "lastPacket": "마지막 패킷",
+      "sequence": "순서",
+      "snr": "SNR",
+      "rssi": "RSSI",
+      "lossRate": "예상 손실",
+      "lossRatePercent": "{{percent}}%",
+      "packetLogAria": "범위 테스트 패킷 로그"
+    }
   },
   "nodeInfoBody": {
     "longName": "긴 이름",
@@ -2814,7 +2850,15 @@
     "blockContact": "대화 상대 차단( B)",
     "unblockContact": "대화 상대 차단 해제( B)",
     "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — 마지막 확인 {{seen}}"
+    "serviceBadgeTitle": "{{aspect}} — 마지막 확인 {{seen}}",
+    "verifyMark": "확인됨으로 표시",
+    "verifyRevoke": "인증 취소",
+    "verifyFingerprint": "신원 지문",
+    "verifyMismatch": "확인 후 신원 해시가 변경되었습니다.",
+    "verifiedBadge": "확인됨",
+    "shareContactQr": "연락처 QR 공유",
+    "shareContactQrAria": "이 연락처의 QR 코드 표시",
+    "verifiedRowAria": "연락처가 확인되었습니다."
   },
   "peerGraph": {
     "title": "동료 커뮤니케이션 그래프",
@@ -3175,7 +3219,9 @@
       "parseFailed": "유효하지 않은 채널 URL: {{message}}",
       "applying": "적용 중…",
       "unnamedChannel": "(이름 없음)",
-      "applySuccessWithSkipped": "{{applied}}개 채널을 적용했습니다. {{skipped}}개의 중복 또는 이름 없는 채널을 건너뛰었습니다."
+      "applySuccessWithSkipped": "{{applied}}개 채널을 적용했습니다. {{skipped}}개의 중복 또는 이름 없는 채널을 건너뛰었습니다.",
+      "qrHeading": "QR 코드(웹 링크)",
+      "qrAria": "채널 구성 QR 코드"
     },
     "channelLoading": "로드 중…",
     "channelLoadFailed": "불러오기 실패",
@@ -4195,7 +4241,10 @@
     "footerBattery": "배터리: {{count}}포인트",
     "footerSignal": "신호: {{count}} 포인트",
     "footerEnv": "환경: {{count}} 포인트",
-    "footerMax": "(각각 최대 50개)"
+    "footerMax": "(각각 최대 50개)",
+    "sectionTemperatureHumidity": "온도 및 습도",
+    "seriesMcuTempF": "MCU °F",
+    "seriesMcuTempC": "MCU ℃"
   },
   "toasts": {
     "firmwareAvailable": "사용 가능한 펌웨어 업데이트: v{{version}}",
@@ -4381,5 +4430,43 @@
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
     "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+  },
+  "signalMeter": {
+    "rssi": "RSSI",
+    "snr": "SNR",
+    "rssiValue": "{{value}}dBm",
+    "noData": "—",
+    "aria": "신호 측정기: RSSI {{rssi}}, SNR {{snr}}, 레벨 {{level}}"
+  },
+  "gpxExport": {
+    "button": "GPX 내보내기",
+    "buttonAria": "직위 기록을 GPX로 내보내기",
+    "success": "GPX 내보내기",
+    "failed": "GPX 내보내기 실패",
+    "empty": "내보낼 직책 기록이 없습니다."
+  },
+  "qrIngest": {
+    "qrImageAlt": "QR 코드",
+    "encodeFailed": "QR 코드를 생성할 수 없습니다.",
+    "paperUnsupported": "암호화된 LXMF 종이 메시지는 아직 지원되지 않습니다.",
+    "contactImported": "딥 링크에서 추가된 연락처",
+    "contactImportFailed": "링크에서 연락처를 가져올 수 없습니다.",
+    "unknownLink": "인식할 수 없는 링크",
+    "identityShown": "ID 공유 링크 열림",
+    "channelLinkReceived": "채널 링크가 열렸습니다. 라디오 탭에서 가져오기를 검토하세요.",
+    "showIdentityQr": "신원 QR 표시",
+    "showIdentityQrAria": "이 ID에 대한 QR 코드 표시",
+    "chooseImage": "이미지 스캔…",
+    "chooseImageAria": "QR 코드가 포함된 이미지 파일을 선택하세요",
+    "scanCamera": "카메라로 스캔",
+    "scanCameraAria": "카메라로 QR 코드 스캔",
+    "stopCamera": "카메라 중지",
+    "stopCameraAria": "카메라 QR 스캔 중지",
+    "pasteImageHint": "여기에 QR 이미지를 붙여넣을 수도 있습니다(Ctrl/Cmd+V).",
+    "cameraPreviewAria": "QR 스캔을 위한 카메라 미리보기",
+    "noQrFound": "해당 이미지에는 QR 코드가 없습니다.",
+    "decodeFailed": "이미지에서 QR 코드를 읽을 수 없습니다.",
+    "cameraDenied": "카메라 권한이 거부되었습니다. 시스템 개인 정보 보호 설정에서 활성화하세요.",
+    "cameraUnavailable": "이 기기에서는 카메라를 사용할 수 없습니다"
   }
 }

@@ -159,6 +159,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
       icon_name?: string | null;
       icon_color?: string | null;
     }) => ipcRenderer.invoke('db:upsertReticulumDestination', row),
+    setReticulumDestinationVerified: (opts: {
+      destination_hash: string;
+      verified: boolean;
+      identity_hash?: string;
+    }) =>
+      ipcRenderer.invoke('db:setReticulumDestinationVerified', opts) as Promise<{
+        changes: number;
+      }>,
     getBlockedContacts: (protocol: string, identityId: string) =>
       ipcRenderer.invoke('db:getBlockedContacts', protocol, identityId),
     blockContact: (protocol: string, identityId: string, blockedHash: string) =>
@@ -823,10 +831,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPlatform: () => process.platform,
   showEmojiPanel: () => ipcRenderer.invoke('app:showEmojiPanel'),
 
-  // ─── Microphone (Reticulum voice clips) ─────────────────────────────────────
+  // ─── Microphone / camera ─────────────────────────────────────────────────────
   media: {
     ensureMicrophoneAccess: (): Promise<{ granted: boolean; status: string }> =>
       ipcRenderer.invoke('media:ensureMicrophoneAccess'),
+    ensureCameraAccess: (): Promise<{ granted: boolean; status: string }> =>
+      ipcRenderer.invoke('media:ensureCameraAccess'),
   },
 
   // ─── System clipboard (main process; preload direct access is unreliable on macOS) ─
@@ -1072,6 +1082,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // ─── Chat export ─────────────────────────────────────────────────
+  gps: {
+    exportGpx: (opts?: { nodeId?: number; sinceMs?: number }) =>
+      ipcRenderer.invoke('gps:exportGpx', opts ?? {}) as Promise<{
+        success: boolean;
+        path?: string;
+        reason?: 'empty' | 'cancelled' | 'no_db' | 'no_window';
+      }>,
+  },
   chat: {
     export: (messages: unknown[]) =>
       ipcRenderer.invoke('chat:export', messages) as Promise<{ success: boolean; path?: string }>,
@@ -1136,6 +1154,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   support: {
     exportBundle: (mode: 'github' | 'developer', debugSnapshotJson: string) =>
       ipcRenderer.invoke('support:exportBundle', mode, debugSnapshotJson),
+  },
+
+  deepLink: {
+    onOpenUrl: (cb: (url: string) => void) => {
+      const handler = (_: unknown, url: string) => {
+        if (typeof url === 'string') cb(url);
+      };
+      ipcRenderer.on('mesh-client:openUrl', handler);
+      return () => ipcRenderer.off('mesh-client:openUrl', handler);
+    },
   },
 
   // ─── Log panel ───────────────────────────────────────────────────

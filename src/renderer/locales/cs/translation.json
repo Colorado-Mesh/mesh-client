@@ -571,7 +571,11 @@
     "receivedViaBle": "Přijato přes Bluetooth",
     "receivedViaMultiple": "Přijato prostřednictvím {{vias}}",
     "sentViaBle": "Odesláno přes Bluetooth",
-    "sentViaMultiple": "Odesláno prostřednictvím {{vias}}"
+    "sentViaMultiple": "Odesláno prostřednictvím {{vias}}",
+    "floodScopeOverrideLabel": "Rozsah povodně pro tuto zprávu",
+    "floodScopeOverrideAria": "Přepsání rozsahu povodně podle zprávy",
+    "floodScopeOverrideDefault": "Výchozí rozsah",
+    "floodScopeOverrideUnscoped": "Unscoped"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -856,7 +860,27 @@
       "saveDisplayName": "Uložit zobrazované jméno",
       "saveDisplayNameFailed": "Nepodařilo se uložit zobrazované jméno.",
       "displayNameSaved": "Zobrazované jméno uloženo.",
-      "copyLxmfHash": "Kopírovat hash LXMF"
+      "copyLxmfHash": "Kopírovat hash LXMF",
+      "slotsTitle": "Identita",
+      "slotsHint": "Vytvořte další identity a přepínejte mezi nimi. Přepínání restartuje zásobník retikula.",
+      "slotActive": "Aktivní",
+      "slotSwitch": "Přepínač",
+      "slotSwitchAria": "Přepnout na identitu {{id}}",
+      "slotDelete": "Odstranit",
+      "slotDeleteAria": "Smazat totožnost {{id}}",
+      "slotCreate": "Nová identita",
+      "slotCreateAria": "Vytvořit novou identitu retikula",
+      "slotSwitchConfirmTitle": "Přepnout identitu retikula?",
+      "slotSwitchConfirmMessage": "Zásobník se restartuje s vybranou identitou. Zprávy za letu mohou být přerušeny.",
+      "slotSwitchConfirmAction": "Přepnout identitu",
+      "slotDeleteConfirmTitle": "Smazat identitu",
+      "slotDeleteConfirmMessage": "Tím se trvale odstraní nepoužitý identifikační klíč z tohoto zařízení. Aktivní identitu nelze odstranit.",
+      "slotDeleteConfirmAction": "Smazat identitu",
+      "slotSwitched": "Přepnutá identita — restartování zásobníku.",
+      "slotCreated": "Byla vytvořena nová identita.",
+      "slotDeleted": "Identita smazána.",
+      "slotActionFailed": "Akce identity se nezdařila: {{error}}",
+      "slotUnnamed": "Nepojmenovaná"
     },
     "reticulumInterfaces": {
       "title": "Rozhraní",
@@ -2522,16 +2546,28 @@
     "paxCounter": {
       "heading": "Počítadlo počtu osob",
       "detectedCount": "Zjištěný počet",
-      "lastSeen": "Naposledy viděno"
+      "lastSeen": "Naposledy viděno",
+      "samples": "Vzorky",
+      "historyChartAria": "Nedávná historie počítadla Pax"
     },
     "detectionSensor": {
       "heading": "Detekční senzor ({{count}})",
       "lastDetection": "Poslední detekce",
       "dataSize": "Velikost dat",
       "dataSizeBytes": "{{count}} bajtů",
-      "rawDataHex": "Nezpracovaná data (hexadecimální)"
+      "eventLogAria": "Protokol událostí detekčního senzoru"
     },
-    "neighborsHopTooFar": "Neighbors nedostupní pro opakovače {{hops}}+ přeskakuje na sériovém USB"
+    "neighborsHopTooFar": "Neighbors nedostupní pro opakovače {{hops}}+ přeskakuje na sériovém USB",
+    "rangeTest": {
+      "heading": "Test rozsahu ({{count}})",
+      "lastPacket": "Poslední paket",
+      "sequence": "Postup",
+      "snr": "SNR",
+      "rssi": "\"RSSI\"",
+      "lossRate": "Odhadovaná ztráta",
+      "lossRatePercent": "{{percent}} %",
+      "packetLogAria": "Protokol testovacího paketu rozsahu"
+    }
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",
@@ -2814,7 +2850,15 @@
     "blockContact": "Zablokovat kontakt",
     "unblockContact": "Odblokovat kontakt",
     "serviceBadge": "{{service}}",
-    "serviceBadgeTitle": "{{aspect}} — naposledy viděn/a {{seen}}"
+    "serviceBadgeTitle": "{{aspect}} — naposledy viděn/a {{seen}}",
+    "verifyMark": "Označit jako ověřené",
+    "verifyRevoke": "Odvolat žádost o ověření",
+    "verifyFingerprint": "Otisk prstu totožnosti",
+    "verifyMismatch": "Hash identity se od ověření změnil",
+    "verifiedBadge": "Potvrzeno",
+    "shareContactQr": "Sdílet kontakt",
+    "shareContactQrAria": "Zobrazit QR kód pro tento kontakt",
+    "verifiedRowAria": "Kontakt ověřen"
   },
   "peerGraph": {
     "title": "Graf vzájemné komunikace",
@@ -3175,7 +3219,9 @@
       "parseFailed": "Neplatná adresa URL kanálu: {{message}}",
       "applying": "Uplatňuje se...",
       "unnamedChannel": "(nepojmenované)",
-      "applySuccessWithSkipped": "Aplikováno {{applied}} kanálů; přeskočeno {{skipped}} duplikát nebo nepojmenováno."
+      "applySuccessWithSkipped": "Aplikováno {{applied}} kanálů; přeskočeno {{skipped}} duplikát nebo nepojmenováno.",
+      "qrHeading": "QR kód (webový odkaz)",
+      "qrAria": "QR kód konfigurace kanálu"
     },
     "channelLoading": "Načítání…",
     "channelLoadFailed": "Načítání selhalo",
@@ -4195,7 +4241,10 @@
     "footerBattery": "Baterie: {{count}} bodů",
     "footerSignal": "Signál: {{count}} bodů",
     "footerEnv": "Env: {{count}} b",
-    "footerMax": "(každý max 50)"
+    "footerMax": "(každý max 50)",
+    "sectionTemperatureHumidity": "Teplota, vlhkost",
+    "seriesMcuTempF": "MCU °F",
+    "seriesMcuTempC": "MCU °C"
   },
   "toasts": {
     "firmwareAvailable": "Dostupná aktualizace firmwaru: v{{version}}",
@@ -4381,5 +4430,43 @@
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
     "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+  },
+  "signalMeter": {
+    "rssi": "\"RSSI\"",
+    "snr": "SNR",
+    "rssiValue": "{{value}} dBm",
+    "noData": "—",
+    "aria": "Měřič signálu: RSSI {{rssi}}, SNR {{snr}}, level {{level}}"
+  },
+  "gpxExport": {
+    "button": "Exportovat GPX",
+    "buttonAria": "Exportovat historii pozic jako GPX",
+    "success": "GPX exportováno",
+    "failed": "Export neuspěl",
+    "empty": "Žádná historie pozic k exportu"
+  },
+  "qrIngest": {
+    "qrImageAlt": "QR kód",
+    "encodeFailed": "Nelze vygenerovat QR kód",
+    "paperUnsupported": "Šifrované papírové zprávy LXMF zatím nejsou podporovány",
+    "contactImported": "Kontakt přidán z hlubokého odkazu",
+    "contactImportFailed": "Nelze importovat kontakt z odkazu",
+    "unknownLink": "Nerozpoznaný odkaz",
+    "identityShown": "Otevřený odkaz na sdílení identity",
+    "channelLinkReceived": "Otevřený odkaz na kanál — kontrola importu na kartě Rádio",
+    "showIdentityQr": "Zobrazit QR identity",
+    "showIdentityQrAria": "Zobrazit QR kód pro tuto totožnost",
+    "chooseImage": "Naskenovat obrázek",
+    "chooseImageAria": "Vyberte obrazový soubor obsahující QR kód",
+    "scanCamera": "Skenovat kamerou",
+    "scanCameraAria": "Naskenujte QR kód fotoaparátem",
+    "stopCamera": "Zastavit kameru",
+    "stopCameraAria": "Zastavit QR skenování kamery",
+    "pasteImageHint": "Zde můžete také vložit obrázek QR (Ctrl/Cmd+V).",
+    "cameraPreviewAria": "Náhled kamery pro skenování QR",
+    "noQrFound": "Na obrázku nebyl nalezen žádný QR kód",
+    "decodeFailed": "Nelze přečíst QR kód z obrázku",
+    "cameraDenied": "Oprávnění fotoaparátu odepřeno — povoleno v nastavení ochrany osobních údajů systému",
+    "cameraUnavailable": "Fotoaparát není na tomto zařízení k dispozici"
   }
 }
