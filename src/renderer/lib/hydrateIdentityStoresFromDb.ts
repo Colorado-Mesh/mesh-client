@@ -110,7 +110,7 @@ export async function hydrateMeshtasticMessagesFromDb(
 ): Promise<void> {
   const msgs = await window.electronAPI.db.getMessages(undefined, getMeshtasticMessageLoadLimit());
   const sanitized = dedupeMeshtasticHydrationOrphanSends(msgs.map(savedMessageToChatMessage));
-  const reversed = sanitized.reverse();
+  const reversed = sanitized.toReversed();
   const trimmed = trimChatMessagesToMax(reversed, MAX_IN_MEMORY_CHAT_MESSAGES);
   const records = trimmed.map((msg) => chatMessageToMessageRecord(msg));
   if (messagesMode === 'replace') {

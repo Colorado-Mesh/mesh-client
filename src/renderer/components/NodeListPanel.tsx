@@ -1121,8 +1121,9 @@ export default function NodeListPanel({
                 {shouldVirtualizeNodeRows &&
                   virtualNodeRows.length > 0 &&
                   virtualNodeRows[0].start > 0 && (
-                    <tr aria-hidden="true">
+                    <tr>
                       <td
+                        aria-hidden="true"
                         colSpan={nodeTableColSpan}
                         style={{ height: virtualNodeRows[0].start, padding: 0, border: 0 }}
                       />
@@ -1553,8 +1554,9 @@ export default function NodeListPanel({
                   );
                 })}
                 {shouldVirtualizeNodeRows && virtualNodeRows.length > 0 && (
-                  <tr aria-hidden="true">
+                  <tr>
                     <td
+                      aria-hidden="true"
                       colSpan={nodeTableColSpan}
                       style={{
                         height:

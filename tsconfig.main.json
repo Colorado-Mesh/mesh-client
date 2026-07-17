@@ -2,7 +2,7 @@
   "compilerOptions": {
     "ignoreDeprecations": "6.0",
     "types": ["node"],
-    "target": "ES2022",
+    "target": "ES2023",
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,

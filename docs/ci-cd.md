@@ -47,7 +47,7 @@ Runs on every push and pull request to `main`:
 5. Upload Cobertura coverage to GitHub Code Coverage (non-fork PRs / pushes) — Vitest merge job only
 6. Upload merged test results artifact (retained 7 days)
 
-SonarQube Cloud is **not** run from GitHub Actions (org Free plan cannot modify Quality Gates via API). Use SonarCloud dashboard Autoscan; `sonar-project.properties` still configures scope and issue suppressions.
+SonarQube Cloud uses **Automatic Analysis (Autoscan)** — not GitHub Actions — because the Free plan Sonar Way quality gate includes cognitive-complexity thresholds we cannot customize, and CI scanning would fail PRs on that gate. Keep **Automatic Analysis enabled**. Scope and issue suppressions are configured in `sonar-project.properties` / `.sonarcloud.properties` and (for multicriteria under Autoscan) the SonarCloud project Analysis Scope UI.
 
 Test results are available as a downloadable artifact from the workflow run.
 

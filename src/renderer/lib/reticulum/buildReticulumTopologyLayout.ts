@@ -241,9 +241,7 @@ export function filterReticulumVisibleNodeIds(
 
   const visible = new Set<string>();
   for (const id of filteredIds) {
-    if (isReticulumHubNode(id, edges)) {
-      visible.add(id);
-    } else if ((depths.get(id) ?? 99) === 1) {
+    if (isReticulumHubNode(id, edges) || (depths.get(id) ?? 99) === 1) {
       visible.add(id);
     }
   }

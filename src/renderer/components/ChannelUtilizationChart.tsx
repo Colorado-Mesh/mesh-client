@@ -22,7 +22,7 @@ export default function ChannelUtilizationChart({ nodes }: ChannelUtilizationCha
         out.push({ name, pct });
       }
     }
-    return out.sort((a, b) => b.pct - a.pct).slice(0, 30);
+    return out.toSorted((a, b) => b.pct - a.pct).slice(0, 30);
   }, [nodes]);
 
   if (rows.length === 0) {

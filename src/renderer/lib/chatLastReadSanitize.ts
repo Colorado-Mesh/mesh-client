@@ -69,8 +69,7 @@ export function sanitizeViewKeyLastRead(
     if (!key.startsWith('ch:') && !key.startsWith('dm:')) continue;
     const maxMsg = maxByKey[key] ?? 0;
     let clamped = clampReadWatermarkMs(watermark, now);
-    if (watermark > now) clamped = maxMsg;
-    else if (maxMsg > 0 && clamped > maxMsg) clamped = maxMsg;
+    if (watermark > now || (maxMsg > 0 && clamped > maxMsg)) clamped = maxMsg;
     if (clamped !== watermark) {
       next[key] = clamped;
       changed = true;
@@ -92,8 +91,7 @@ export function sanitizeNumericKeyLastRead(
     if (!Number.isFinite(nodeId)) continue;
     const maxMsg = maxById[nodeId] ?? 0;
     let clamped = clampReadWatermarkMs(watermark, now);
-    if (watermark > now) clamped = maxMsg;
-    else if (maxMsg > 0 && clamped > maxMsg) clamped = maxMsg;
+    if (watermark > now || (maxMsg > 0 && clamped > maxMsg)) clamped = maxMsg;
     if (clamped !== watermark) {
       next[nodeId] = clamped;
       changed = true;
