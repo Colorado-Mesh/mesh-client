@@ -339,7 +339,7 @@ const IDENTITY_STORE_HYDRATORS: Record<MeshProtocol, IdentityHydratorFn> = {
 export async function hydrateIdentityStoresFromDb(
   protocol: MeshProtocol,
   identityId: IdentityId,
-  opts: HydrateIdentityStoresOptions = { nodes: true, messages: true },
+  opts: HydrateIdentityStoresOptions = {},
 ): Promise<void> {
   const loadNodes = opts.nodes !== false;
   const loadMessages = opts.messages !== false;

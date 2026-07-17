@@ -5396,8 +5396,8 @@ export function useMeshcoreRuntime() {
         let result: { expectedAckCrc?: number; estTimeout?: number };
         try {
           result = await runPostRpc(sendOnce);
-        } catch (first: unknown) {
-          const postErr = meshcoreRoomPostSendErrorMessage(first);
+        } catch (error_: unknown) {
+          const postErr = meshcoreRoomPostSendErrorMessage(error_);
           const adminPassword = session?.adminPassword?.trim() ?? '';
           if (
             adminPassword.length > 0 &&
@@ -5420,7 +5420,7 @@ export function useMeshcoreRuntime() {
             });
             result = await runPostRpc(sendOnce);
           } else {
-            throw first;
+            throw error_;
           }
         }
         void fetchAndUpdateLocalStats().catch((e: unknown) => {

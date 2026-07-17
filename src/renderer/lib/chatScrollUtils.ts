@@ -145,7 +145,7 @@ export function createStableChatMeasureElement(
 
     if (instance.scrollDirection === 'backward' && hasMeasuredSize) {
       // Allow growth (async previews, layout) but prevent shrink jitter while scrolling up.
-      return domSize > cached ? domSize : cached;
+      return Math.max(domSize, cached);
     }
 
     return domSize;

@@ -78,7 +78,7 @@ function withGattTimeout<T>(promise: Promise<T>, ms: number, context: string): P
 }
 
 // Chrome DOMException names that often indicate pairing issues on Linux
-const CHROME_PAIRING_ERROR_NAMES = ['SecurityError', 'NetworkError'];
+const CHROME_PAIRING_ERROR_NAMES = new Set(['SecurityError', 'NetworkError']);
 
 /**
  * Chromium exposes `maximumWriteValueLength` on some builds; Web Bluetooth has no standard negotiated-MTU API.
@@ -98,7 +98,7 @@ export function probeWebBluetoothToRadioChunkLimitBytes(
 
 export function isWebBluetoothPairingError(err: unknown): boolean {
   if (err instanceof DOMException) {
-    if (CHROME_PAIRING_ERROR_NAMES.includes(err.name)) {
+    if (CHROME_PAIRING_ERROR_NAMES.has(err.name)) {
       return true;
     }
     if (BLUEZ_PAIRING_ERROR_RE.test(err.message)) {

@@ -10,16 +10,16 @@ import type { WorkerCommand, WorkerEvent } from '../lib/transport/types';
 const TEXT_MESSAGE_APP = Portnums.PortNum.TEXT_MESSAGE_APP;
 
 // Only accept messages from our renderer (Electron: file/null in prod, localhost in dev).
-const ALLOWED_ORIGINS = [
+const ALLOWED_ORIGINS = new Set([
   'null',
   'file://',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://127.0.0.1:5173',
-];
+]);
 
 self.onmessage = (event: MessageEvent<WorkerCommand>) => {
-  if (!ALLOWED_ORIGINS.includes(event.origin)) {
+  if (!ALLOWED_ORIGINS.has(event.origin)) {
     return;
   }
   const data: unknown = event.data;
