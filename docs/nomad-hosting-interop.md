@@ -15,7 +15,7 @@ Manual verification that mesh-client’s static Nomad host interops with other N
 2. Click **Choose folder** and select a site root (directory containing `pages/`) or the `pages/` directory itself.
 3. Set a display name → **Start serving**.
 4. Confirm destination hash is shown and **Serving to network** chip appears.
-5. Edit a `.mu` file on disk in that folder (or use the in-app editor) — no re-upload required.
+5. Edit a `.mu` file on disk in that folder — the watcher reloads routes without further UI action.
 6. Click **Open in browser** — local `index.mu` should load without a second peer.
 7. Quit the app (or stop/start the stack), relaunch, start the stack — hosting should resume automatically without toggling Start serving.
 
@@ -44,7 +44,7 @@ Note date, hub/interface used, peer software versions, and pass/fail for page + 
 When NomadNet / MeshChat are not installed in the environment:
 
 - `nomad-core` tests: Link request handler serves page + file by path hash; request budget rejects over-concurrency; listing skips dotfiles/`*.allowed`
-- mesh-client Vitest: My Pages folder choose/clear, file list/delete, and **Open in browser** wiring
+- mesh-client Vitest: My Pages folder choose/clear, read-only page/file lists, and **Open in browser** wiring
 - Sidecar: content-source layout resolve + persistence of `nomad_serving_content_source`
 
 Treat the peer table above as the release gate for cross-client hosting.

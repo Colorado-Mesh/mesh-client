@@ -22,7 +22,6 @@ const isReticulumSidecarRunning = vi.fn();
 const onReticulumStatus = vi.fn();
 const proxyGet = vi.fn();
 const proxyPut = vi.fn();
-const proxyDelete = vi.fn();
 const showNomadContentSourceDialog = vi.fn();
 
 vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
@@ -61,7 +60,6 @@ describe('NomadPageServerPanel', () => {
     onReticulumStatus.mockReturnValue(() => {});
     proxyGet.mockReset();
     proxyPut.mockReset();
-    proxyDelete.mockReset();
     showNomadContentSourceDialog.mockReset();
     Object.defineProperty(window, 'electronAPI', {
       configurable: true,
@@ -70,7 +68,6 @@ describe('NomadPageServerPanel', () => {
           onStatus: onReticulumStatus,
           proxyGet,
           proxyPut,
-          proxyDelete,
           showNomadContentSourceDialog,
         },
       },
@@ -94,9 +91,6 @@ describe('NomadPageServerPanel', () => {
           files: [{ path: 'readme.txt', size: 4 }],
         });
       }
-      if (path.startsWith('/api/v1/nomadnetwork/serving/page?')) {
-        return Promise.resolve({ ok: true, content: '> hi' });
-      }
       return Promise.resolve({ ok: false, error: 'unexpected' });
     });
   });
@@ -111,6 +105,25 @@ describe('NomadPageServerPanel', () => {
     expect(screen.getByDisplayValue('Home')).toBeInTheDocument();
     expect(screen.getByText('nomadNetwork.serving.servingChip')).toBeInTheDocument();
     expect(screen.getByText('/tmp/nomad-page')).toBeInTheDocument();
+  });
+
+  it('does not expose create, edit, upload, or delete controls', async () => {
+    render(<NomadPageServerPanel isActive />);
+    await waitFor(() => {
+      expect(screen.getByText('index.mu')).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: 'nomadNetwork.serving.createPage' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'nomadNetwork.serving.savePage' })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'nomadNetwork.serving.uploadFileAria' }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'nomadNetwork.serving.deletePage:about.mu' }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'nomadNetwork.serving.deleteFile:readme.txt' }),
+    ).toBeNull();
+    expect(screen.queryByRole('textbox', { name: /nomadNetwork.serving.editorAria/ })).toBeNull();
   });
 
   it('chooses a content folder via the dialog', async () => {
@@ -190,23 +203,6 @@ describe('NomadPageServerPanel', () => {
     expect(onPreviewHostedSite).toHaveBeenCalledWith('aabbccddeeff00112233445566778899');
   });
 
-  it('deletes a hosted file', async () => {
-    const user = userEvent.setup();
-    proxyDelete.mockResolvedValue({ ok: true });
-    render(<NomadPageServerPanel isActive />);
-    await waitFor(() => {
-      expect(screen.getByText('readme.txt')).toBeInTheDocument();
-    });
-    await user.click(
-      screen.getByRole('button', { name: 'nomadNetwork.serving.deleteFile:readme.txt' }),
-    );
-    await waitFor(() => {
-      expect(proxyDelete).toHaveBeenCalledWith(
-        '/api/v1/nomadnetwork/serving/files?path=readme.txt',
-      );
-    });
-  });
-
   it('keeps an in-progress display name across status refresh', async () => {
     let statusListener: ((s: { running: boolean; port: number }) => void) | undefined;
     onReticulumStatus.mockImplementation((cb: (s: { running: boolean; port: number }) => void) => {
@@ -270,27 +266,6 @@ describe('NomadPageServerPanel', () => {
     render(<NomadPageServerPanel isActive />);
     await waitFor(() => {
       expect(screen.getByText('nomadNetwork.errors.nomadBusy')).toBeInTheDocument();
-    });
-  });
-
-  it('disables delete for index.mu and deletes other pages', async () => {
-    const user = userEvent.setup();
-    proxyDelete.mockResolvedValue({ ok: true });
-    render(<NomadPageServerPanel isActive />);
-    await waitFor(() => {
-      expect(screen.getByText('index.mu')).toBeInTheDocument();
-    });
-
-    const indexDelete = screen.getByRole('button', {
-      name: 'nomadNetwork.serving.deletePage:index.mu',
-    });
-    expect(indexDelete).toBeDisabled();
-
-    await user.click(
-      screen.getByRole('button', { name: 'nomadNetwork.serving.deletePage:about.mu' }),
-    );
-    await waitFor(() => {
-      expect(proxyDelete).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/pages?path=about.mu');
     });
   });
 

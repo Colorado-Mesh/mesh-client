@@ -3,26 +3,14 @@ import { useTranslation } from 'react-i18next';
 
 import { humanizeNomadPageError } from '@/renderer/lib/nomad/nomadPageErrorHumanize';
 import {
-  deleteServingFile,
-  deleteServingPage,
-  encodeServingFileUpload,
   getServingStatus,
   listServingFiles,
   listServingPages,
   pickServingContentSource,
-  readServingPage,
   setServing as setServingApi,
   setServingContentSource,
-  writeServingFile,
-  writeServingPage,
 } from '@/renderer/lib/nomad/nomadServingApi';
 import type { NomadServingPageEntry, NomadServingStatus } from '@/shared/nomad-types';
-
-const DEFAULT_PAGE_CONTENT = `#!c=30
-> New page
-
-Edit this Micron page, then save.
-`;
 
 /** Avoid repeating the same hosting failure warn on every poll. */
 let lastLoggedHostingError: string | null = null;
@@ -41,9 +29,6 @@ export default function NomadPageServerPanel({
   const [pages, setPages] = useState<NomadServingPageEntry[]>([]);
   const [files, setFiles] = useState<NomadServingPageEntry[]>([]);
   const [displayName, setDisplayName] = useState('');
-  const [selectedPath, setSelectedPath] = useState<string | null>(null);
-  const [editorContent, setEditorContent] = useState('');
-  const [newPagePath, setNewPagePath] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -51,7 +36,6 @@ export default function NomadPageServerPanel({
   const refreshSeqRef = useRef(0);
   /** Prefer local edits over poll/status refresh until Start/Stop serving succeeds. */
   const displayNameDirtyRef = useRef(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const applyStatusError = useCallback(
     (serving: NomadServingStatus | null | undefined) => {
@@ -208,90 +192,6 @@ export default function NomadPageServerPanel({
       () => setServingContentSource(null),
       'nomadNetwork.serving.contentSourceFailed',
     );
-  };
-
-  const loadPage = async (path: string) => {
-    await runServingAction(
-      async () => {
-        const body = await readServingPage(path);
-        if (!body.ok || body.content == null) {
-          return { ok: false, error: body.error };
-        }
-        setSelectedPath(path);
-        setEditorContent(body.content);
-        return { ok: true };
-      },
-      'nomadNetwork.serving.loadPageFailed',
-      { skipRefresh: true },
-    );
-  };
-
-  const savePage = async () => {
-    if (!selectedPath) return;
-    await runServingAction(
-      () => writeServingPage(selectedPath, editorContent),
-      'nomadNetwork.serving.saveFailed',
-    );
-  };
-
-  const createPage = async () => {
-    const path = newPagePath.trim().replace(/^\/+/, '');
-    if (!path) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const body = await writeServingPage(path, DEFAULT_PAGE_CONTENT);
-      if (!body.ok) {
-        setError(humanizeNomadPageError(body.error, t) || t('nomadNetwork.serving.saveFailed'));
-        return;
-      }
-      setNewPagePath('');
-      await refresh();
-      await loadPage(path);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const deletePage = async (path: string) => {
-    await runServingAction(async () => {
-      const body = await deleteServingPage(path);
-      if (!body.ok) return body;
-      if (selectedPath === path) {
-        setSelectedPath(null);
-        setEditorContent('');
-      }
-      return body;
-    }, 'nomadNetwork.serving.deleteFailed');
-  };
-
-  const uploadFile = async (fileList: FileList | null) => {
-    const file = fileList?.[0];
-    if (!file) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const encoded = await encodeServingFileUpload(file);
-      if (!encoded.ok) {
-        setError(
-          humanizeNomadPageError(encoded.error, t) || t('nomadNetwork.serving.uploadFailed'),
-        );
-        return;
-      }
-      const body = await writeServingFile(encoded.path, encoded.contentBase64);
-      if (!body.ok) {
-        setError(humanizeNomadPageError(body.error, t) || t('nomadNetwork.serving.uploadFailed'));
-        return;
-      }
-      await refresh();
-    } finally {
-      setBusy(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const deleteFile = async (path: string) => {
-    await runServingAction(() => deleteServingFile(path), 'nomadNetwork.serving.deleteFileFailed');
   };
 
   const copyHash = async () => {
@@ -472,89 +372,12 @@ export default function NomadPageServerPanel({
           ) : (
             pages.map((page) => (
               <li key={page.path} className="flex items-center gap-2 text-sm">
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => {
-                    void loadPage(page.path);
-                  }}
-                  aria-label={t('nomadNetwork.serving.editPage', { path: page.path })}
-                  className={`hover:text-bright-green truncate text-left ${
-                    selectedPath === page.path ? 'text-bright-green' : 'text-gray-200'
-                  }`}
-                >
-                  {page.path}
-                </button>
+                <span className="truncate text-gray-200">{page.path}</span>
                 <span className="text-muted shrink-0 text-[10px]">{page.size} B</span>
-                <button
-                  type="button"
-                  disabled={busy || page.path === 'index.mu'}
-                  onClick={() => {
-                    void deletePage(page.path);
-                  }}
-                  aria-label={t('nomadNetwork.serving.deletePage', { path: page.path })}
-                  className="text-red-400 hover:underline disabled:opacity-30"
-                >
-                  {t('common.delete')}
-                </button>
               </li>
             ))
           )}
         </ul>
-
-        <div className="mb-3 flex flex-wrap gap-2">
-          <input
-            type="text"
-            value={newPagePath}
-            disabled={busy || !sidecarRunning}
-            onChange={(e) => {
-              setNewPagePath(e.target.value);
-            }}
-            placeholder={t('nomadNetwork.serving.newPagePlaceholder')}
-            aria-label={t('nomadNetwork.serving.newPagePlaceholder')}
-            className="min-w-0 flex-1 rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm"
-          />
-          <button
-            type="button"
-            disabled={busy || !sidecarRunning || !newPagePath.trim()}
-            onClick={() => {
-              void createPage();
-            }}
-            aria-label={t('nomadNetwork.serving.createPage')}
-            className="rounded border border-gray-600 px-3 py-1.5 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
-          >
-            {t('nomadNetwork.serving.createPage')}
-          </button>
-        </div>
-
-        {selectedPath ? (
-          <div className="flex min-h-0 flex-col gap-2">
-            <label className="flex flex-col gap-1 text-sm text-gray-200">
-              <span>{t('nomadNetwork.serving.editing', { path: selectedPath })}</span>
-              <textarea
-                value={editorContent}
-                disabled={busy}
-                onChange={(e) => {
-                  setEditorContent(e.target.value);
-                }}
-                aria-label={t('nomadNetwork.serving.editorAria', { path: selectedPath })}
-                rows={12}
-                className="rounded border border-gray-600 bg-slate-900 px-3 py-2 font-mono text-xs"
-              />
-            </label>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                void savePage();
-              }}
-              aria-label={t('nomadNetwork.serving.savePage')}
-              className="border-bright-green/60 text-bright-green hover:bg-bright-green/10 self-start rounded border px-3 py-1.5 text-xs disabled:opacity-40"
-            >
-              {t('nomadNetwork.serving.savePage')}
-            </button>
-          </div>
-        ) : null}
       </div>
 
       <div className="border-t border-gray-700 pt-3">
@@ -569,42 +392,10 @@ export default function NomadPageServerPanel({
               <li key={file.path} className="flex items-center gap-2 text-sm">
                 <span className="truncate text-gray-200">{file.path}</span>
                 <span className="text-muted shrink-0 text-[10px]">{file.size} B</span>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => {
-                    void deleteFile(file.path);
-                  }}
-                  aria-label={t('nomadNetwork.serving.deleteFile', { path: file.path })}
-                  className="text-red-400 hover:underline disabled:opacity-30"
-                >
-                  {t('common.delete')}
-                </button>
               </li>
             ))
           )}
         </ul>
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          aria-hidden
-          tabIndex={-1}
-          onChange={(e) => {
-            void uploadFile(e.target.files);
-          }}
-        />
-        <button
-          type="button"
-          disabled={busy || !sidecarRunning}
-          onClick={() => {
-            fileInputRef.current?.click();
-          }}
-          aria-label={t('nomadNetwork.serving.uploadFileAria')}
-          className="rounded border border-gray-600 px-3 py-1.5 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
-        >
-          {t('nomadNetwork.serving.uploadFile')}
-        </button>
       </div>
     </div>
   );

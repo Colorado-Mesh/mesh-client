@@ -10,8 +10,6 @@ const NOMAD_ERROR_I18N_KEYS: Record<string, string> = {
   sidecar_not_running: 'nomadNetwork.errors.sidecarNotRunning',
   response_too_large: 'nomadNetwork.errors.responseTooLarge',
   nomad_busy: 'nomadNetwork.errors.nomadBusy',
-  file_too_large: 'nomadNetwork.serving.fileTooLarge',
-  invalid_file_path: 'nomadNetwork.serving.invalidFilePath',
   content_source_unavailable: 'nomadNetwork.serving.contentSourceUnavailable',
   content_source_not_directory: 'nomadNetwork.serving.contentSourceNotDirectory',
   content_source_unreadable: 'nomadNetwork.serving.contentSourceUnreadable',

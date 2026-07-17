@@ -345,13 +345,13 @@ mesh-client can **host** a static Nomad site (not only browse peers):
 
 1. Start the Reticulum stack and ensure an identity exists.
 2. Open **Nomad Network** → **My Pages**.
-3. **Choose folder** (site root with `pages/` or the pages directory itself), set a display name, **Start serving**. Edit `.mu` files on disk (watcher picks up changes) or use the optional in-folder editor; optional small files under **Local files**.
+3. **Choose folder** (site root with `pages/` or the pages directory itself), set a display name, **Start serving**. Edit `.mu` files (and optional `files/`) on disk — the watcher picks up changes. My Pages lists hosted paths read-only.
 4. Use **Open in browser** to self-preview `index.mu` without a second peer.
 5. Peers discover the node via `nomadnetwork.node` announces; browse `/page/index.mu` from NomadNet / MeshChat / another mesh-client.
 
 Implementation: sibling [rsNomad](https://github.com/Colorado-Mesh/rsNomad) (`nomad-core`) inside the AGPL sidecar. Default managed content lives under the sidecar storage dir `nomadnetwork/{pages,files}/`. Prefer a watched external folder via **Choose folder** (`nomad_serving_content_source`): site roots use `pages/` (and existing `files/` when present; otherwise files stay managed so empty `files/` is not created in the repo). Serving is **off by default**. Preferences persist as `nomad_serving_enabled` / `nomad_serving_display_name` / `nomad_serving_content_source` and auto-restores hosting on stack start when enabled. Failures surface in My Pages (`last_error`), as `[nomad-serving]` / `[NomadHosting]` log warnings (Analyze category `reticulum-nomad-hosting`), and in Export for GitHub/Developer. CGI/executable pages are not supported. Dotfiles and `*.allowed` paths are not listed or served (NomadNet parity). Request handling is concurrency-bounded in `nomad-core`.
 
-**Limits / UI notes:** PUT page/file bodies are bounded by the sidecar global **4 MiB** JSON body limit; the My Pages upload UI caps files near **3 MiB** so base64+JSON fits that body. Page content is also capped near **512 KiB** in `nomad-core`. The node re-announces about every **1 hour**. `index.mu` is auto-seeded when missing and cannot be deleted from the UI.
+**Limits / UI notes:** Page content is capped near **512 KiB** and files near **4 MiB** in `nomad-core`. The node re-announces about every **1 hour**. `index.mu` is auto-seeded under managed storage when missing.
 
 **Follow-ups:** Markdown→Micron CMS, theme/nav editors, Nomad chat rooms, forums, streaming large files — see [rsNomad ROADMAP](https://github.com/Colorado-Mesh/rsNomad/blob/main/ROADMAP.md).
 
