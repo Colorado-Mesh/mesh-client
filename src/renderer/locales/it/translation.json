@@ -593,7 +593,8 @@
     "shareLocationLabel": "📍Posizione condivisa",
     "shareLocationHint": "Invia la tua attuale posizione GPS o statica come messaggio di chat",
     "shareLocationUnavailable": "Posizione non disponibile: controlla le impostazioni GPS",
-    "floodScopeOverrideHint": "Ambito di inondazione regionale solo per questo messaggio. L'ambito predefinito utilizza l'impostazione salvata della radio; un hashtag limita l'invio a quella regione; Invii senza ambito senza filtro regionale. L'ambito salvato viene ripristinato dopo l'invio."
+    "floodScopeOverrideHint": "Ambito di inondazione regionale solo per questo messaggio. L'ambito predefinito utilizza l'impostazione salvata della radio; un hashtag limita l'invio a quella regione; Invii senza ambito senza filtro regionale. L'ambito salvato viene ripristinato dopo l'invio.",
+    "floodScopeOverrideMenuButton": "Modifica l'ambito dell'inondazione per questo messaggio"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

@@ -593,7 +593,8 @@
     "shareLocationLabel": "📍 Geteilter Standort",
     "shareLocationHint": "Senden Sie Ihre aktuelle GPS- oder statische Position als Chat-Nachricht",
     "shareLocationUnavailable": "Standort nicht verfügbar – überprüfen Sie die GPS-Einstellungen",
-    "floodScopeOverrideHint": "Nur regionaler Überschwemmungsbereich für diese Nachricht. Der Standardbereich verwendet die gespeicherte Einstellung des Radios. ein Hashtag begrenzt diesen Versand auf diese Region; Versendungen ohne Bereichseinschränkung ohne Regionsfilter. Ihr gespeicherter Umfang wird nach dem Absenden wiederhergestellt."
+    "floodScopeOverrideHint": "Nur regionaler Überschwemmungsbereich für diese Nachricht. Der Standardbereich verwendet die gespeicherte Einstellung des Radios. ein Hashtag begrenzt diesen Versand auf diese Region; Versendungen ohne Bereichseinschränkung ohne Regionsfilter. Ihr gespeicherter Umfang wird nach dem Absenden wiederhergestellt.",
+    "floodScopeOverrideMenuButton": "Ändern Sie den Flood-Bereich für diese Nachricht"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

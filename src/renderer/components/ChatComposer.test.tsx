@@ -25,6 +25,11 @@ vi.mock('react-i18next', () => ({
         'chatPanel.meshcoreGifButton': 'Insert Giphy GIF',
         'chatPanel.meshcoreGifPlaceholder': 'Giphy URL or id',
         'chatPanel.meshcoreGifSend': 'Send GIF',
+        'chatPanel.floodScopeOverrideDefault': 'Default scope',
+        'chatPanel.floodScopeOverrideUnscoped': 'Unscoped',
+        'chatPanel.floodScopeOverrideAria': 'Per-message flood scope override',
+        'chatPanel.floodScopeOverrideMenuButton': 'Change flood scope for this message',
+        'chatPanel.floodScopeOverrideHint': 'Regional flood scope for this message only.',
         'common.cancel': 'Cancel',
       };
       if (key === 'chatPanel.composeLimit.approaching') {
@@ -346,6 +351,150 @@ describe('ChatComposer', () => {
     await user.click(screen.getByRole('button', { name: 'Send GIF' }));
     await waitFor(() => {
       expect(onSendChunk).toHaveBeenCalledWith('g:a5viI92PAF89q');
+    });
+  });
+
+  it('hides flood-scope menu button when showFloodScopeOverride is false', () => {
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={vi.fn()}
+      />,
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Change flood scope for this message' }),
+    ).toBeNull();
+  });
+
+  it('shows flood-scope menu button when showFloodScopeOverride is true', () => {
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        showFloodScopeOverride
+        onSendChunk={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: 'Change flood scope for this message' }),
+    ).toBeInTheDocument();
+  });
+
+  it('sends with preset floodScopeOverride after selecting from menu', async () => {
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        showFloodScopeOverride
+        onSendChunk={onSendChunk}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Change flood scope for this message' }));
+    // fireEvent: portaled menu is off-screen in jsdom (zero button rect).
+    fireEvent.click(screen.getByRole('button', { name: '#colorado' }));
+    expect(
+      screen.getByRole('button', {
+        name: 'Change flood scope for this message: #colorado',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('#colorado')).toBeInTheDocument();
+
+    const textarea = screen.getByRole('textbox');
+    await user.type(textarea, 'scoped hello');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledWith('scoped hello', {
+        replyId: undefined,
+        chunkIndex: 0,
+        floodScopeOverride: '#colorado',
+      });
+    });
+  });
+
+  it('sends empty floodScopeOverride for Unscoped selection', async () => {
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        showFloodScopeOverride
+        onSendChunk={onSendChunk}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Change flood scope for this message' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Unscoped' }));
+    expect(
+      screen.getByRole('button', {
+        name: 'Change flood scope for this message: Unscoped',
+      }),
+    ).toBeInTheDocument();
+
+    const textarea = screen.getByRole('textbox');
+    await user.type(textarea, 'unscoped hello');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledWith('unscoped hello', {
+        replyId: undefined,
+        chunkIndex: 0,
+        floodScopeOverride: '',
+      });
+    });
+  });
+
+  it('omits floodScopeOverride when Default scope is selected', async () => {
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        showFloodScopeOverride
+        onSendChunk={onSendChunk}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Change flood scope for this message' }));
+    fireEvent.click(screen.getByRole('button', { name: '#denver' }));
+    expect(
+      screen.getByRole('button', {
+        name: 'Change flood scope for this message: #denver',
+      }),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Change flood scope for this message: #denver',
+      }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Default scope' }));
+    expect(
+      screen.getByRole('button', { name: 'Change flood scope for this message' }),
+    ).toBeInTheDocument();
+
+    const textarea = screen.getByRole('textbox');
+    await user.type(textarea, 'default hello');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() => {
+      expect(onSendChunk).toHaveBeenCalledWith(
+        'default hello',
+        expect.objectContaining({
+          replyId: undefined,
+          chunkIndex: 0,
+          floodScopeOverride: undefined,
+        }),
+      );
     });
   });
 });

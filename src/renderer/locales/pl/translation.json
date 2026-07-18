@@ -593,7 +593,8 @@
     "shareLocationLabel": "📍 Udostępniona lokalizacja",
     "shareLocationHint": "Wyślij swoją aktualną pozycję GPS lub pozycję statyczną jako wiadomość na czacie",
     "shareLocationUnavailable": "Lokalizacja niedostępna — sprawdź ustawienia GPS",
-    "floodScopeOverrideHint": "Regionalny zakres powodzi tylko dla tej wiadomości. Domyślny zakres wykorzystuje zapisane ustawienia radia; hashtag ogranicza tę wysyłkę do tego regionu; Wysyłanie bez zakresu bez filtru regionu. Zapisany zakres zostanie przywrócony po wysłaniu."
+    "floodScopeOverrideHint": "Regionalny zakres powodzi tylko dla tej wiadomości. Domyślny zakres wykorzystuje zapisane ustawienia radia; hashtag ogranicza tę wysyłkę do tego regionu; Wysyłanie bez zakresu bez filtru regionu. Zapisany zakres zostanie przywrócony po wysłaniu.",
+    "floodScopeOverrideMenuButton": "Zmień zakres zalewu tej wiadomości"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

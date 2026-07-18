@@ -417,6 +417,7 @@
     "floodScopeOverrideAria": "Per-message flood scope override",
     "floodScopeOverrideDefault": "Default scope",
     "floodScopeOverrideUnscoped": "Unscoped",
+    "floodScopeOverrideMenuButton": "Change flood scope for this message",
     "floodScopeOverrideHint": "Regional flood scope for this message only. Default scope uses the radio's saved setting; a hashtag limits this send to that region; Unscoped sends without a region filter. Your saved scope is restored after sending.",
     "channels": "Channels",
     "dms": "DMs",

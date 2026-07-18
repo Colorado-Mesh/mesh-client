@@ -1,8 +1,9 @@
 /* eslint-disable react-hooks/refs */
 import 'emoji-picker-element';
 
-import { CornerUpLeft, MapPin } from 'lucide-react-motion';
+import { ChevronDown, ChevronUp, CornerUpLeft, MapPin } from 'lucide-react-motion';
 import { type RefObject, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -139,10 +140,15 @@ export function ChatComposer({
   const isLinux = useMemo(() => window.electronAPI.getPlatform() === 'linux', []);
   const limitHintId = useId();
   const counterLiveId = useId();
-  const floodScopeSelectId = useId();
+  const floodScopeListboxId = useId();
 
   const [input, setInput] = useState('');
   const [floodScopeOverride, setFloodScopeOverride] = useState('');
+  const [floodScopeMenuOpen, setFloodScopeMenuOpen] = useState(false);
+  const [floodScopeMenuPos, setFloodScopeMenuPos] = useState<{
+    bottom: number;
+    right: number;
+  } | null>(null);
   const [sending, setSending] = useState(false);
   const [chatActionError, setChatActionError] = useState<{
     message: string;
@@ -158,9 +164,50 @@ export function ChatComposer({
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const emojiPickerRef = useRef<HTMLElement | null>(null);
+  const floodScopeMenuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const floodScopeMenuRef = useRef<HTMLUListElement | null>(null);
+  const floodScopeSplitRef = useRef<HTMLDivElement | null>(null);
   const inputValueRef = useRef(input);
   inputValueRef.current = input;
   const prevViewKeyRef = useRef<string | null>(null);
+
+  const closeFloodScopeMenu = useCallback(() => {
+    setFloodScopeMenuOpen(false);
+    setFloodScopeMenuPos(null);
+  }, []);
+
+  // Close flood-scope menu on outside click (split button + portaled menu).
+  useEffect(() => {
+    if (!floodScopeMenuOpen) return;
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        floodScopeSplitRef.current?.contains(target) ||
+        floodScopeMenuRef.current?.contains(target)
+      ) {
+        return;
+      }
+      closeFloodScopeMenu();
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+    };
+  }, [closeFloodScopeMenu, floodScopeMenuOpen]);
+
+  // Close on scroll/resize so fixed menu does not drift from the trigger.
+  useEffect(() => {
+    if (!floodScopeMenuOpen) return;
+    const handleDismiss = () => {
+      closeFloodScopeMenu();
+    };
+    window.addEventListener('scroll', handleDismiss, true);
+    window.addEventListener('resize', handleDismiss);
+    return () => {
+      window.removeEventListener('scroll', handleDismiss, true);
+      window.removeEventListener('resize', handleDismiss);
+    };
+  }, [closeFloodScopeMenu, floodScopeMenuOpen]);
 
   const replyToSenderName = replyTo?.sender_name;
   const meshcoreOpenWireCompat =
@@ -720,16 +767,37 @@ export function ChatComposer({
             : 'bg-secondary-dark/80 focus:border-brand-green/50 focus:ring-brand-green/30 border-gray-600/50 focus:ring-1'
         }`;
 
-  const sendButtonClass =
+  const floodScopeOverrideActive = floodScopeOverride !== '';
+  const floodScopeOverrideIndicator =
+    floodScopeOverride === '__unscoped__'
+      ? t('chatPanel.floodScopeOverrideUnscoped')
+      : floodScopeOverride || null;
+
+  const sendButtonToneClass =
     variant === 'room'
-      ? 'bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 rounded border px-4 py-2 text-sm font-medium disabled:opacity-40'
-      : `rounded-xl px-5 py-2.5 font-medium transition-colors ${
+      ? 'bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 border text-sm font-medium disabled:opacity-40'
+      : `font-medium transition-colors ${
           showQueueButton
             ? 'disabled:text-muted bg-slate-600 text-white hover:bg-slate-500 disabled:bg-gray-600'
             : isDmMode
               ? 'disabled:text-muted bg-purple-600 text-white hover:bg-purple-500 disabled:bg-gray-600'
               : 'disabled:text-muted bg-green-500 text-white hover:bg-green-400 disabled:bg-gray-600'
         }`;
+
+  const sendButtonClass =
+    variant === 'room'
+      ? `${sendButtonToneClass} rounded px-4 py-2`
+      : `${sendButtonToneClass} rounded-xl px-5 py-2.5`;
+
+  const sendButtonSplitMainClass =
+    variant === 'room'
+      ? `${sendButtonToneClass} rounded-l border-r-0 px-4 py-2`
+      : `${sendButtonToneClass} rounded-l-xl px-5 py-2.5`;
+
+  const sendButtonSplitChevronClass =
+    variant === 'room'
+      ? `${sendButtonToneClass} rounded-r border-l border-l-black/20 px-1.5 py-2`
+      : `${sendButtonToneClass} rounded-r-xl border-l border-l-black/20 px-1.5 py-2.5`;
 
   const emojiButtonClass =
     variant === 'room'
@@ -973,47 +1041,149 @@ export function ChatComposer({
           </HelpTooltip>
         )}
         {showFloodScopeOverride ? (
-          <HelpTooltip text={t('chatPanel.floodScopeOverrideHint')} nonFocusableWrapper>
-            <label
-              className="text-muted flex items-center gap-1 text-[10px]"
-              htmlFor={floodScopeSelectId}
+          <div ref={floodScopeSplitRef} className="inline-flex shrink-0 items-stretch">
+            <span className="sr-only">{t('chatPanel.floodScopeOverrideLabel')}</span>
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+              }}
+              onClick={() => {
+                void handleSend();
+              }}
+              disabled={!input.trim() || sending || inputChunks === null || disabled}
+              aria-label={sendLabel}
+              className={sendButtonSplitMainClass}
             >
-              <span className="sr-only">{t('chatPanel.floodScopeOverrideLabel')}</span>
-              <select
-                id={floodScopeSelectId}
-                value={floodScopeOverride}
-                onChange={(e) => {
-                  setFloodScopeOverride(e.target.value);
-                }}
-                disabled={disabled || sending}
-                aria-label={t('chatPanel.floodScopeOverrideAria')}
-                className="bg-secondary-dark max-w-[7rem] rounded border border-slate-600 px-1 py-0.5 text-[10px] text-gray-200"
-              >
-                <option value="">{t('chatPanel.floodScopeOverrideDefault')}</option>
-                {MESHCORE_FLOOD_SCOPE_PRESETS.map((tag) => (
-                  <option key={tag} value={tag}>
-                    {tag}
-                  </option>
-                ))}
-                <option value="__unscoped__">{t('chatPanel.floodScopeOverrideUnscoped')}</option>
-              </select>
-            </label>
-          </HelpTooltip>
-        ) : null}
-        <button
-          type="button"
-          onMouseDown={(e) => {
-            e.preventDefault();
-          }}
-          onClick={() => {
-            void handleSend();
-          }}
-          disabled={!input.trim() || sending || inputChunks === null || disabled}
-          aria-label={sendLabel}
-          className={sendButtonClass}
-        >
-          {sendLabel}
-        </button>
+              {sendLabel}
+            </button>
+            <button
+              ref={floodScopeMenuButtonRef}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+              }}
+              onClick={() => {
+                if (floodScopeMenuOpen) {
+                  closeFloodScopeMenu();
+                  return;
+                }
+                const button = floodScopeMenuButtonRef.current;
+                if (button) {
+                  const rect = button.getBoundingClientRect();
+                  setFloodScopeMenuPos({
+                    bottom: window.innerHeight - rect.top + 4,
+                    right: window.innerWidth - rect.right,
+                  });
+                }
+                setFloodScopeMenuOpen(true);
+              }}
+              disabled={disabled || sending}
+              aria-label={
+                floodScopeOverrideIndicator
+                  ? `${t('chatPanel.floodScopeOverrideMenuButton')}: ${floodScopeOverrideIndicator}`
+                  : t('chatPanel.floodScopeOverrideMenuButton')
+              }
+              aria-haspopup="listbox"
+              aria-expanded={floodScopeMenuOpen}
+              aria-controls={floodScopeMenuOpen ? floodScopeListboxId : undefined}
+              title={floodScopeMenuOpen ? undefined : t('chatPanel.floodScopeOverrideHint')}
+              {...(floodScopeMenuOpen ? { 'data-no-instant-tooltip': '' } : {})}
+              className={`${sendButtonSplitChevronClass} inline-flex max-w-[5.5rem] items-center gap-0.5`}
+            >
+              {floodScopeOverrideActive && floodScopeOverrideIndicator ? (
+                <span className="truncate text-[10px] leading-none font-normal">
+                  {floodScopeOverrideIndicator}
+                </span>
+              ) : null}
+              {floodScopeMenuOpen ? (
+                <ChevronUp
+                  aria-hidden
+                  className="h-3.5 w-3.5 shrink-0"
+                  trigger={iconTrigger}
+                  size={14}
+                />
+              ) : (
+                <ChevronDown
+                  aria-hidden
+                  className="h-3.5 w-3.5 shrink-0"
+                  trigger={iconTrigger}
+                  size={14}
+                />
+              )}
+            </button>
+            {floodScopeMenuOpen && floodScopeMenuPos
+              ? createPortal(
+                  <ul
+                    ref={floodScopeMenuRef}
+                    id={floodScopeListboxId}
+                    role="listbox"
+                    aria-label={t('chatPanel.floodScopeOverrideAria')}
+                    style={{
+                      position: 'fixed',
+                      bottom: floodScopeMenuPos.bottom,
+                      right: floodScopeMenuPos.right,
+                    }}
+                    className="bg-deep-black z-50 max-h-72 min-w-[10rem] overflow-y-auto rounded-lg border border-gray-700 py-1 shadow-xl"
+                  >
+                    {(
+                      [
+                        { value: '', label: t('chatPanel.floodScopeOverrideDefault') },
+                        ...MESHCORE_FLOOD_SCOPE_PRESETS.map((tag) => ({
+                          value: tag,
+                          label: tag,
+                        })),
+                        {
+                          value: '__unscoped__',
+                          label: t('chatPanel.floodScopeOverrideUnscoped'),
+                        },
+                      ] as const
+                    ).map((option) => {
+                      const selected = floodScopeOverride === option.value;
+                      return (
+                        <li
+                          key={option.value || '__default__'}
+                          role="option"
+                          aria-selected={selected}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFloodScopeOverride(option.value);
+                              closeFloodScopeMenu();
+                            }}
+                            className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
+                              selected
+                                ? 'text-brand-green bg-gray-800'
+                                : 'text-gray-300 hover:bg-gray-800 hover:text-gray-100'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>,
+                  document.body,
+                )
+              : null}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+            }}
+            onClick={() => {
+              void handleSend();
+            }}
+            disabled={!input.trim() || sending || inputChunks === null || disabled}
+            aria-label={sendLabel}
+            className={sendButtonClass}
+          >
+            {sendLabel}
+          </button>
+        )}
       </div>
 
       {showCounter && (

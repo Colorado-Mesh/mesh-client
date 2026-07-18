@@ -593,7 +593,8 @@
     "shareLocationLabel": "📍 Gedeelde locatie",
     "shareLocationHint": "Stuur uw huidige GPS- of statische positie als chatbericht",
     "shareLocationUnavailable": "Locatie niet beschikbaar: controleer de GPS-instellingen",
-    "floodScopeOverrideHint": "Regionaal overstromingsbereik alleen voor dit bericht. Standaard bereik gebruikt de opgeslagen instelling van de radio; een hashtag beperkt deze verzending tot die regio; Unscoped verzendt zonder regiofilter. Uw opgeslagen scope wordt na verzending hersteld."
+    "floodScopeOverrideHint": "Regionaal overstromingsbereik alleen voor dit bericht. Standaard bereik gebruikt de opgeslagen instelling van de radio; een hashtag beperkt deze verzending tot die regio; Unscoped verzendt zonder regiofilter. Uw opgeslagen scope wordt na verzending hersteld.",
+    "floodScopeOverrideMenuButton": "Wijzig het overstromingsbereik voor dit bericht"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

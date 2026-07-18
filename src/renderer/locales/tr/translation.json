@@ -593,7 +593,8 @@
     "shareLocationLabel": "📍 Paylaşılan konum",
     "shareLocationHint": "Mevcut GPS'inizi veya statik konumunuzu sohbet mesajı olarak gönderin",
     "shareLocationUnavailable": "Konum kullanılamıyor — GPS ayarlarını kontrol edin",
-    "floodScopeOverrideHint": "Yalnızca bu ileti için bölgesel sel kapsamı. Varsayılan kapsam radyonun kayıtlı ayarını kullanır; bir hashtag bu gönderimi o bölgeye sınırlandırır; Kapsam dışı gönderimler, bölge filtresi olmadan yapılır. Kaydedilen kapsamınız gönderildikten sonra geri yüklenir."
+    "floodScopeOverrideHint": "Yalnızca bu ileti için bölgesel sel kapsamı. Varsayılan kapsam radyonun kayıtlı ayarını kullanır; bir hashtag bu gönderimi o bölgeye sınırlandırır; Kapsam dışı gönderimler, bölge filtresi olmadan yapılır. Kaydedilen kapsamınız gönderildikten sonra geri yüklenir.",
+    "floodScopeOverrideMenuButton": "Bu mesajın Flood kapsamını değiştirin"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
