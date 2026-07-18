@@ -2209,7 +2209,7 @@ function ChatPanel({
           const pathActions =
             showPathUi && reticulumDmDestinationHash ? (
               <ReticulumDmPathActions
-                key={reticulumDmDestinationHash}
+                key={`dm-path-${reticulumDmDestinationHash}`}
                 destinationHash={reticulumDmDestinationHash}
                 status={reticulumDmPathProbe.status}
                 onReprobe={reticulumDmPathProbe.reprobe}
@@ -2219,7 +2219,7 @@ function ChatPanel({
           const rncpControl =
             protocol === 'reticulum' && hasRncpTransfer && reticulumDmDestinationHash != null ? (
               <ChatDmRncpControl
-                key={reticulumDmDestinationHash}
+                key={`dm-rncp-${reticulumDmDestinationHash}`}
                 lxmfPeerHash={reticulumDmDestinationHash}
                 peerLabel={dmNodeName}
                 sidecarRunning={reticulumStackLive}
