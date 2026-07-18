@@ -54,6 +54,12 @@ describe('rnshSessionStore', () => {
     expect(session?.error).toBe('boom');
   });
 
+  it('seeds reconnectAttempts when adding a session after reconnect', () => {
+    const store = useRnshSessionStore.getState();
+    store.addSession('s2', DEST, { reconnectAttempts: 3 });
+    expect(useRnshSessionStore.getState().sessions.get('s2')?.reconnectAttempts).toBe(3);
+  });
+
   it('increments and resets reconnect attempts', () => {
     const store = useRnshSessionStore.getState();
     store.addSession('s1', DEST);

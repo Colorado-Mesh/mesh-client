@@ -801,6 +801,37 @@ export const RETICULUM_PROBE_FALSE_FRIEND_RES = [
   },
 ];
 
+/** Remote-panel Shell section is a command shell (rnsh), not a physical casing/seashell. */
+export const RETICULUM_REMOTE_SHELL_SECTION_KEY = 'reticulumRemote.sections.shell';
+
+export const RETICULUM_REMOTE_SHELL_FALSE_FRIENDS = {
+  de: [
+    { re: /Gehäuse/i, hint: 'use command shell "Shell"/"Konsole", not device casing "Gehäuse"' },
+  ],
+  es: [{ re: /Cascar[óo]n/i, hint: 'use command shell "Shell", not eggshell "Cascarón"' }],
+  it: [{ re: /Guscio/i, hint: 'use command shell "Shell", not seashell "Guscio"' }],
+  pl: [{ re: /Muszla/i, hint: 'use command shell "Powłoka"/"Shell", not seashell "Muszla"' }],
+  ja: [{ re: /貝殻/, hint: 'use command shell シェル, not seashell 貝殻' }],
+  zh: [{ re: /壳体|貝殼/, hint: 'use command shell "Shell", not physical casing 壳体' }],
+  ko: [{ re: /껍데기|조개/, hint: 'use command shell 셸, not seashell 껍데기' }],
+  ru: [
+    { re: /Обечайк/i, hint: 'use command shell "Shell"/"Оболочка", not vessel shell "Обечайка"' },
+  ],
+  uk: [{ re: /Контур/i, hint: 'use command shell "Оболонка"/"Shell", not contour "Контур"' }],
+  nl: [{ re: /Schelp/i, hint: 'use command shell "Shell", not seashell "Schelp"' }],
+  id: [{ re: /Kerang/i, hint: 'use command shell "Shell", not seashell "Kerang"' }],
+};
+
+/** Reticulum utility names (rnsh remote shell, rncp file copy) must survive translation verbatim. */
+export const RETICULUM_REMOTE_WIRE_TOKENS = [
+  // Sentence-initial capitalization is fine; translating or dropping the token is not.
+  { token: 'rncp', re: /\brncp\b/i },
+  { token: 'rnsh', re: /\brnsh\b/i },
+];
+
+/** Keys carrying rncp/rnsh literals: Remote panel + Chat DM send-file control. */
+export const RETICULUM_REMOTE_WIRE_TOKEN_KEY_RE = /^(reticulumRemote\.|chatPanel\.rncp\.)/;
+
 /** MT turns "other peers" into office colleagues on stack transport toggle. */
 export const RETICULUM_OTHER_PEERS_COLLEAGUE_RES = [
   { re: /\bKollegen\b/i, hint: 'use networking "Peers", not German office colleague "Kollegen"' },
@@ -821,6 +852,8 @@ export function isReticulumUiFlatKey(flatKey) {
   if (flatKey.startsWith('connectionPanel.reticulum')) return true;
   if (flatKey.startsWith('networkPanel.reticulum')) return true;
   if (flatKey.startsWith('adminPanel.reticulum')) return true;
+  if (flatKey.startsWith('reticulumRemote.')) return true;
+  if (flatKey.startsWith('chatPanel.rncp.')) return true;
   return false;
 }
 
@@ -957,7 +990,9 @@ function checkReticulumConnectionPanelIssues(ctx) {
   const isNestedReticulum =
     flatKey.startsWith('connectionPanel.reticulum') ||
     flatKey.startsWith('networkPanel.reticulum') ||
-    flatKey.startsWith('adminPanel.reticulum');
+    flatKey.startsWith('adminPanel.reticulum') ||
+    flatKey.startsWith('reticulumRemote.') ||
+    flatKey.startsWith('chatPanel.rncp.');
 
   if (
     !isConnectionTopLevel &&
@@ -1113,6 +1148,38 @@ function checkReticulumConnectionPanelIssues(ctx) {
 
   if (leafKey === 'reticulumSidecarStartFailed' && locale === 'ja' && /網膜/.test(val)) {
     issues.push('reticulumSidecarStartFailed uses 網膜 (retina) — use Reticulum stack wording');
+  }
+
+  return issues;
+}
+
+/**
+ * Remote panel (rnsh shell + rncp transfer) and Chat DM rncp control quality checks.
+ *
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkReticulumRemoteIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (locale === 'en') return issues;
+
+  if (flatKey === RETICULUM_REMOTE_SHELL_SECTION_KEY) {
+    for (const { re, hint } of RETICULUM_REMOTE_SHELL_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`reticulumRemote shell false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (RETICULUM_REMOTE_WIRE_TOKEN_KEY_RE.test(flatKey)) {
+    for (const { token, re } of RETICULUM_REMOTE_WIRE_TOKENS) {
+      if (re.test(enVal) && !re.test(val)) {
+        issues.push(
+          `must preserve Reticulum utility name "${token}" from English (do not translate it)`,
+        );
+      }
+    }
   }
 
   return issues;
@@ -3629,6 +3696,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkAppPanelReduceMotionAndBrandIssues,
   checkMeshcoreOpenWireIssues,
   checkReticulumConnectionPanelIssues,
+  checkReticulumRemoteIssues,
   checkReticulumPeerAndPingIssues,
   checkUkrainianApostropheIssues,
   checkMeshcoreReactionAndConnectionIssues,

@@ -112,4 +112,33 @@ describe('serialPortAutoRediscovery', () => {
     await vi.advanceTimersByTimeAsync(SERIAL_REDISCOVERY_POLL_MS * 2);
     expect(getPorts.mock.calls.length).toBe(before);
   });
+
+  it('does not call onFound after cleanup races with in-flight getPorts', async () => {
+    let resolvePorts: (ports: SerialPort[]) => void = () => {};
+    const getPorts = vi.fn(
+      () =>
+        new Promise<SerialPort[]>((resolve) => {
+          resolvePorts = resolve;
+        }),
+    );
+    Object.defineProperty(navigator, 'serial', {
+      value: { getPorts },
+      configurable: true,
+      writable: true,
+    });
+
+    const onFound = vi.fn();
+    const stop = startSerialRediscovery({
+      signature: { usbVendorId: 1, usbProductId: 2 },
+      onFound,
+    });
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(getPorts).toHaveBeenCalled();
+    stop();
+    resolvePorts([mockPort({ portId: 'p1', usbVendorId: 1, usbProductId: 2 })]);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(onFound).not.toHaveBeenCalled();
+  });
 });

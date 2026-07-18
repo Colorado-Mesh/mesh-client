@@ -645,7 +645,7 @@
     "colorRed": "Červené",
     "colorPurple": "Fialová",
     "delete": "Vymazat",
-    "copy": "Kopírování",
+    "copy": "Kopírovat",
     "copied": "Zkopírováno"
   },
   "configApplyNotice": {
@@ -4203,7 +4203,7 @@
     "topology": "topologie sítě",
     "network": "Síť",
     "rrc": "RRC",
-    "remote": "Dálkový ovladač"
+    "remote": "Vzdálený přístup"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -4540,7 +4540,7 @@
       "addressAria": "rnsh cílový hash",
       "selectSavedAddress": "Použít uloženou adresu {{label}}",
       "connectAria": "Připojit vzdálený shell",
-      "connect": "Připojení",
+      "connect": "Připojit",
       "connecting": "Připojování…",
       "connectFailed": "Připojení se nezdařilo: {{error}}",
       "maxSessions": "Bylo dosaženo maximálního počtu relací shellu {{count}}.",
@@ -4568,7 +4568,7 @@
     "transfer": {
       "myIdentity": "Moje totožnost:",
       "copyIdentityAria": "Zkopírovat hash mé totožnosti",
-      "myReceiveDest": "Můj rncp obdrží cíl:",
+      "myReceiveDest": "Cíl příjmu rncp:",
       "copyReceiveDestAria": "Zkopírujte můj cíl příjmu rncp",
       "pendingOffersTitle": "Čekající příchozí soubory",
       "pendingOffersBadgeAria_one": "{{count}} čekající nabídka příchozího souboru",
@@ -4590,7 +4590,7 @@
       "modeFetch": "Stáhnout",
       "destinationPlaceholder": "Cílový hash (32 hexadecimálních znaků)",
       "destinationAria": "rncp cílový hash",
-      "notAllowedHint": "Převody nejsou na této cestě k dispozici: {{reason}}",
+      "notAllowedHint": "Přenosy nejsou na této cestě k dispozici: {{reason}}",
       "chooseFileAria": "Vyberte místní soubor k odeslání",
       "chooseFile": "Vyberte soubor…",
       "noFileChosen": "Není vybraný žádný soubor",
@@ -4606,7 +4606,7 @@
       "fetch": "Stáhnout",
       "fetchFailed": "Nepodařilo se načíst: {{error}}",
       "acceptFailed": "Nepodařilo se přijmout soubor: {{error}}",
-      "listTitle": "Převody",
+      "listTitle": "Přenosy",
       "listEmpty": "Zatím žádné převody.",
       "kind": {
         "send": "Odeslat",
@@ -4648,6 +4648,7 @@
       "enabled": "Příjem souboru je povolen.",
       "enableFailed": "Nelze povolit příjem souboru: {{error}}",
       "saveDirRequired": "Chcete-li povolit příjem, vyberte složku pro uložení.",
+      "identityUnknown": "Hash identity tohoto peera se zatím nepodařilo zjistit — příchozí dotazování je povoleno, ale peer nebyl přidán na seznam povolených. Zkuste to znovu, až dorazí cesta nebo oznámení.",
       "lxmfBody": "Povolte příjem souborů (rncp), pokud používáte mesh-client: Remote → Settings → Inbound file offers. Nebo spusťte rncp/rncp-rs v režimu poslechu."
     },
     "saved": {
@@ -4675,6 +4676,10 @@
         "allow_all_listed": "Povolit pouze uvedené"
       },
       "allowFetch": "Povolit vzdáleným kolegům načítat soubory ode mě",
+      "chooseSaveDirAria": "Vyberte složku pro příchozí přenosy souborů",
+      "chooseSaveDir": "Vybrat složku pro ukládání…",
+      "noSaveDir": "Není vybrána složka pro ukládání",
+      "fetchJailRequired": "Před povolením vzdáleného stahování vyberte složku pro stahování.",
       "chooseFetchJailAria": "Vyberte složku, kterou mohou vzdálení vrstevníci načíst z",
       "chooseFetchJail": "Vyberte složku pro načtení...",
       "noFetchJail": "Nebyla vybrána žádná složka pro načt",
@@ -4690,7 +4695,8 @@
       "reliabilityTitle": "Spolehlivost",
       "autoReconnectShell": "Automaticky znovu připojte vzdálený shell po neočekávaném odpojení",
       "autoRetryTransfer": "Automaticky opakovat neúspěšné přenosy",
-      "identityTitle": "Moje totožnost"
+      "identityTitle": "Moje totožnost",
+      "myIdentity": "Moje totožnost:"
     }
   }
 }

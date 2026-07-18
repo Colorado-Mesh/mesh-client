@@ -3,9 +3,32 @@ import { useTranslation } from 'react-i18next';
 
 import { useToast } from '@/renderer/components/Toast';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { rememberRncpListenerDirs } from '@/renderer/lib/pushRncpListenerPolicy';
+import { policiesToRncpLists } from '@/renderer/lib/rncpInboundPolicyLists';
+import { useReticulumIdentityActivityStore } from '@/renderer/stores/reticulumIdentityActivityStore';
 import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInboundPolicyStore';
 import { useRncpEnableRequestStore } from '@/renderer/stores/rncpEnableRequestStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
+import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
+
+/**
+ * Resolve a Reticulum **identity** hash for an LXMF delivery destination hash.
+ * rncp LinkIdentify gates on identity_hash, which is not the LXMF sender dest.
+ */
+async function resolveIdentityHashForLxmfPeer(peerDestHash: string): Promise<string | null> {
+  const dest = canonicalizeReticulumDestinationHash(peerDestHash);
+  if (!dest) return null;
+  const store = useReticulumIdentityActivityStore.getState();
+  let rows = store.getActivity(dest);
+  if (rows.length === 0) {
+    rows = await store.loadForDestination(dest);
+  }
+  for (const row of rows) {
+    const id = row.identity_hash ? canonicalizeReticulumDestinationHash(row.identity_hash) : null;
+    if (id) return id;
+  }
+  return null;
+}
 
 /**
  * Modal shown when a peer sends an LXMF DM containing
@@ -30,10 +53,30 @@ export function RncpEnableRequestModal() {
           addToast(t('reticulumRemote.enableRequest.saveDirRequired'), 'info');
           return;
         }
+
+        let identityHash: string | null = null;
+        if (allowIdentity) {
+          identityHash = await resolveIdentityHashForLxmfPeer(current.peerHash);
+          if (!identityHash) {
+            addToast(t('reticulumRemote.enableRequest.identityUnknown'), 'info');
+          } else {
+            await upsertPolicy({
+              identity_hash: identityHash,
+              decision: 'allow',
+              label: current.peerLabel,
+            });
+          }
+        }
+
+        const { allowed, blocked } = policiesToRncpLists(
+          useReticulumInboundPolicyStore.getState().policies,
+        );
         setInboundModeOptimistic('ask');
         const res = await window.electronAPI.reticulum.rncp.setListener({
           enabled: true,
           save_dir: dir.path,
+          allowed,
+          blocked,
         });
         if (!res.ok) {
           addToast(
@@ -44,13 +87,11 @@ export function RncpEnableRequestModal() {
           );
           return;
         }
-        if (allowIdentity) {
-          await upsertPolicy({
-            identity_hash: current.peerHash,
-            decision: 'allow',
-            label: current.peerLabel,
-          });
-        }
+        rememberRncpListenerDirs({
+          inboundMode: 'ask',
+          lastSaveDir: dir.path,
+          allowFetch: false,
+        });
         const listener = await window.electronAPI.reticulum.rncp.getListener();
         useRncpTransferStore.getState().setListener(listener);
         addToast(t('reticulumRemote.enableRequest.enabled'), 'success');

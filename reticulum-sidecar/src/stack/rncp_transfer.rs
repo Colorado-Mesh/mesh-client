@@ -47,6 +47,10 @@ const MAX_ACTIVE_RNCP_TRANSFERS: usize = 3;
 /// files (checked after the fact — the underlying resource transfer has no
 /// pre-flight size veto).
 const MAX_RNCP_FILE_BYTES: u64 = 25 * 1024 * 1024;
+/// Cap on staged ask-mode inbound offers awaiting accept()/reject(); further
+/// completed transfers are deleted and reported as failed until the backlog
+/// drains (prevents unbounded disk growth in the hidden staging dir).
+const MAX_PENDING_RNCP_OFFERS: usize = 16;
 const RNCP_PATH_WAIT: Duration = Duration::from_secs(30);
 /// Generous ceiling for a bounded (25 MiB) transfer over a possibly
 /// RF-speed-constrained Reticulum path.
@@ -528,6 +532,13 @@ impl RncpTransferManager {
     ) -> Result<serde_json::Value, String> {
         self.stop_listener().await;
 
+        if allow_fetch && fetch_jail.is_none() {
+            return Err(
+                "allow_fetch requires fetch_jail (refuse open fetch without a jail directory)"
+                    .into(),
+            );
+        }
+
         let policy = self.policy.lock().await.clone();
         let (allow_all, allowed) = match policy.mode {
             InboundMode::Off => {
@@ -673,6 +684,15 @@ async fn handle_rncp_event(
             link_id,
             identity_hash,
         } => {
+            // Blocked identities are still tracked so `Completed` can clean up
+            // their file — we cannot abort the link mid-transfer without
+            // library support; size/block enforcement happens on Completed.
+            if policy.is_blocked(&hex::encode(identity_hash)) {
+                tracing::debug!(
+                    identity_hash = %hex::encode(identity_hash),
+                    "rncp sender identified as blocked; transfer will be discarded on completion"
+                );
+            }
             link_identities.insert(link_id, identity_hash);
         }
         RncpEvent::SenderDenied { link_id, .. } => {
@@ -697,8 +717,30 @@ async fn handle_rncp_event(
                 .as_deref()
                 .is_some_and(|h| policy.is_allowed(h));
 
+            // The underlying resource transfer has no pre-flight size veto —
+            // enforce the cap after the fact, before the file becomes visible
+            // (directly or as an offer).
+            if (bytes as u64) > MAX_RNCP_FILE_BYTES {
+                if let Err(e) = tokio::fs::remove_file(&saved_path).await {
+                    tracing::debug!("rncp oversize inbound remove failed: {e}");
+                }
+                emit(
+                    event_tx,
+                    "rncp.failed",
+                    json!({
+                        "reason": "file_too_large",
+                        "file_name": file_name,
+                        "bytes": bytes,
+                        "identity_hash": identity_hex,
+                    }),
+                );
+                return;
+            }
+
             if is_blocked {
-                let _ = tokio::fs::remove_file(&saved_path).await;
+                if let Err(e) = tokio::fs::remove_file(&saved_path).await {
+                    tracing::debug!("rncp blocked inbound remove failed: {e}");
+                }
                 emit(
                     event_tx,
                     "rncp.failed",
@@ -728,6 +770,22 @@ async fn handle_rncp_event(
             // Ask-mode, unlisted sender: the file is already fully received
             // (see module docs) — stage it under `save_dir` so it does not
             // appear in the real inbox until accept().
+            if pending_offers.lock().await.len() >= MAX_PENDING_RNCP_OFFERS {
+                if let Err(e) = tokio::fs::remove_file(&saved_path).await {
+                    tracing::debug!("rncp over-cap inbound remove failed: {e}");
+                }
+                emit(
+                    event_tx,
+                    "rncp.failed",
+                    json!({
+                        "reason": "too_many_pending",
+                        "file_name": file_name,
+                        "bytes": bytes,
+                        "identity_hash": identity_hex,
+                    }),
+                );
+                return;
+            }
             if let Err(e) = tokio::fs::create_dir_all(staging_dir).await {
                 tracing::warn!("rncp staging dir create failed: {e}");
                 emit(
@@ -840,4 +898,60 @@ fn prune_finished_transfers(active: &mut HashMap<String, ActiveTransfer>) {
 fn emit(event_tx: &broadcast::Sender<String>, event_type: &str, payload: serde_json::Value) {
     let frame = json!({ "type": event_type, "payload": payload });
     let _ = event_tx.send(frame.to_string());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn inbound_mode_parse() {
+        assert_eq!(InboundMode::parse("off"), Ok(InboundMode::Off));
+        assert_eq!(InboundMode::parse("ask"), Ok(InboundMode::Ask));
+        assert_eq!(
+            InboundMode::parse("allow_all_listed"),
+            Ok(InboundMode::AllowAllListed)
+        );
+        assert!(InboundMode::parse("bogus").is_err());
+        assert_eq!(InboundMode::Off.as_str(), "off");
+        assert_eq!(InboundMode::Ask.as_str(), "ask");
+        assert_eq!(InboundMode::AllowAllListed.as_str(), "allow_all_listed");
+    }
+
+    #[test]
+    fn policy_allowed_blocked() {
+        let policy = PolicyState {
+            mode: InboundMode::Ask,
+            allowed: HashSet::from(["aa".to_string()]),
+            blocked: HashSet::from(["bb".to_string()]),
+        };
+        assert!(policy.is_allowed("aa"));
+        assert!(!policy.is_allowed("bb"));
+        assert!(policy.is_blocked("bb"));
+        assert!(!policy.is_blocked("aa"));
+
+        let default = PolicyState::default();
+        assert_eq!(default.mode, InboundMode::Off);
+        assert!(!default.is_allowed("aa"));
+        assert!(!default.is_blocked("bb"));
+    }
+
+    #[test]
+    fn sanitize_filename_strips_path() {
+        assert_eq!(sanitize_filename("/etc/passwd"), "passwd");
+        assert_eq!(sanitize_filename("../x"), "x");
+        assert_eq!(sanitize_filename("nested/dir/file.txt"), "file.txt");
+        assert_eq!(sanitize_filename(""), "rncp_file");
+        assert_eq!(sanitize_filename("   "), "rncp_file");
+    }
+
+    #[test]
+    fn max_file_bytes_is_25_mib() {
+        assert_eq!(MAX_RNCP_FILE_BYTES, 25 * 1024 * 1024);
+    }
+
+    #[test]
+    fn pending_offer_cap_is_bounded() {
+        assert_eq!(MAX_PENDING_RNCP_OFFERS, 16);
+    }
 }

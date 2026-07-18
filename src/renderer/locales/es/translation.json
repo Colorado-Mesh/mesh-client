@@ -645,7 +645,7 @@
     "colorRed": "Rojo",
     "colorPurple": "Morado",
     "delete": "Borrar",
-    "copy": "Copy",
+    "copy": "Copiar",
     "copied": "Copiado"
   },
   "configApplyNotice": {
@@ -4504,7 +4504,7 @@
     "navAria": "Secciones remotas",
     "sidecarNotRunning": "Inicie la pila Reticulum para utilizar el shell remoto y la transferencia de archivos.",
     "sections": {
-      "shell": "Cascarón",
+      "shell": "Shell",
       "transfer": "Transferencia",
       "saved": "Guardado",
       "settings": "Ajustes"
@@ -4532,7 +4532,7 @@
         "high": "Fast Path",
         "constrained": "Ruta restringida",
         "mixed": "trayecto mixto",
-        "unknown": "El camino desconocido"
+        "unknown": "Ruta desconocida"
       }
     },
     "shell": {
@@ -4566,7 +4566,7 @@
       "fingerprintConfirm": "Conectar"
     },
     "transfer": {
-      "myIdentity": "My Identity.",
+      "myIdentity": "Mi identidad:",
       "copyIdentityAria": "Copiar mi hash de identidad",
       "myReceiveDest": "Mi destino de recepción rncp:",
       "copyReceiveDestAria": "Copiar mi destino de recepción rncp",
@@ -4587,7 +4587,7 @@
       "modeSendAria": "Cambiar a modo",
       "modeSend": "Enviar",
       "modeFetchAria": "Cambiar al modo de búsqueda",
-      "modeFetch": "Extraer",
+      "modeFetch": "Recuperar",
       "destinationPlaceholder": "Hash de destino (32 caracteres hexadecimales)",
       "destinationAria": "hash de destino rncp",
       "notAllowedHint": "Las transferencias no están disponibles en esta ruta: {{reason}}",
@@ -4597,20 +4597,20 @@
       "sendAria": "Enviar fichero",
       "send": "Enviar",
       "sendFailed": "Error al enviar: {{error}}",
-      "remotePathPlaceholder": "La ruta del archivo remoto.",
+      "remotePathPlaceholder": "Ruta del archivo remoto",
       "remotePathAria": "Ruta del archivo remoto a recuperar",
       "chooseSaveDirAria": "Elige una carpeta local en la que guardar",
-      "chooseSaveDir": "Elija guardar carpeta...",
+      "chooseSaveDir": "Elegir carpeta de guardado…",
       "defaultSaveDir": "Carpeta de descarga predeterminada",
       "fetchAria": "Obtener archivo",
-      "fetch": "Extraer",
+      "fetch": "Recuperar",
       "fetchFailed": "Error al obtener: {{error}}",
       "acceptFailed": "Error al aceptar el archivo: {{error}}",
-      "listTitle": "Traslados",
+      "listTitle": "Transferencias",
       "listEmpty": "Aún no hay transferencias.",
       "kind": {
         "send": "Enviar",
-        "fetch": "Extraer"
+        "fetch": "Recuperar"
       },
       "status": {
         "active": "En curso",
@@ -4648,6 +4648,7 @@
       "enabled": "La recepción de archivos está habilitada.",
       "enableFailed": "No se ha podido habilitar la recepción de archivos: {{error}}",
       "saveDirRequired": "Elija una carpeta de guardado para habilitar la recepción.",
+      "identityUnknown": "Aún no se pudo resolver el hash de identidad de este par — el modo Preguntar está activado, pero no se añadió a la lista de permitidos. Inténtalo de nuevo cuando llegue una ruta o un anuncio.",
       "lxmfBody": "Habilite la recepción de archivos (rncp) si utiliza mesh-client: → Configuración remota Ofertas de archivos → entrantes. O ejecute rncp/rncp-rs en modo de escucha."
     },
     "saved": {
@@ -4671,10 +4672,14 @@
       "inboundTitle": "Transferencias de archivos entrantes",
       "inboundMode": {
         "off": "Apagado",
-        "ask": "Pregúntate",
+        "ask": "Preguntar",
         "allow_all_listed": "Permitir solo listados"
       },
       "allowFetch": "Permitir que los compañeros remotos obtengan archivos de mí",
+      "chooseSaveDirAria": "Elige la carpeta para las transferencias de archivos entrantes",
+      "chooseSaveDir": "Elegir carpeta de guardado…",
+      "noSaveDir": "No se ha elegido carpeta de guardado",
+      "fetchJailRequired": "Elige una carpeta de recuperación antes de activar la recuperación remota.",
       "chooseFetchJailAria": "Elija la carpeta de la que pueden obtener los compañeros remotos",
       "chooseFetchJail": "Elige la carpeta de búsqueda...",
       "noFetchJail": "No se ha elegido ninguna carpeta de búsqueda",
@@ -4690,7 +4695,8 @@
       "reliabilityTitle": "Fiabilidad",
       "autoReconnectShell": "Vuelva a conectar automáticamente el shell remoto después de una desconexión inesperada",
       "autoRetryTransfer": "Reintentar automáticamente las conexiones fallidas",
-      "identityTitle": "My Identity."
+      "identityTitle": "Mi identidad",
+      "myIdentity": "Mi identidad:"
     }
   }
 }

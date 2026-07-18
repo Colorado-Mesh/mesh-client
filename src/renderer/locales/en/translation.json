@@ -4512,6 +4512,7 @@
       "enabled": "File receiving is enabled.",
       "enableFailed": "Could not enable file receiving: {{error}}",
       "saveDirRequired": "Choose a save folder to enable receiving.",
+      "identityUnknown": "Could not resolve this peer's identity hash yet — inbound Ask is enabled, but they were not added to the allow list. Try again after a path or announce arrives.",
       "lxmfBody": "Please enable file receiving (rncp) if you use mesh-client: Remote → Settings → Inbound file offers. Or run rncp/rncp-rs in listen mode."
     },
     "saved": {
@@ -4539,6 +4540,10 @@
         "allow_all_listed": "Allow listed only"
       },
       "allowFetch": "Allow remote peers to fetch files from me",
+      "chooseSaveDirAria": "Choose the folder for inbound file transfers",
+      "chooseSaveDir": "Choose save folder…",
+      "noSaveDir": "No save folder chosen",
+      "fetchJailRequired": "Choose a fetch folder before enabling remote fetch.",
       "chooseFetchJailAria": "Choose the folder remote peers may fetch from",
       "chooseFetchJail": "Choose fetch folder…",
       "noFetchJail": "No fetch folder chosen",
@@ -4554,7 +4559,8 @@
       "reliabilityTitle": "Reliability",
       "autoReconnectShell": "Automatically reconnect the remote shell after an unexpected disconnect",
       "autoRetryTransfer": "Automatically retry failed transfers",
-      "identityTitle": "My identity"
+      "identityTitle": "My identity",
+      "myIdentity": "My identity:"
     }
   },
   "takServerPanel": {

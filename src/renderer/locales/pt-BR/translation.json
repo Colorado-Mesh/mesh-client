@@ -578,7 +578,7 @@
       "sendFileAria": "Enviar arquivo para {{name}} via rncp",
       "pendingOffersBadgeAria_one": "{{count}} oferta de arquivo de entrada pendente deste colega",
       "pendingOffersBadgeAria_other": "{{count}} ofertas de arquivos de entrada pendentes deste colega",
-      "destinationLabel": "Hash de destino",
+      "destinationLabel": "Hash de destino rncp",
       "rememberAddress": "Lembrar este endereço",
       "rememberAddressAria": "Lembre-se deste destino rncp para este par",
       "chooseAndSend": "Escolher arquivo e enviar...",
@@ -4532,12 +4532,12 @@
         "high": "Caminho rápido",
         "constrained": "Caminho restrito",
         "mixed": "Caminho misto",
-        "unknown": "Caminho de arquivo desconhecido"
+        "unknown": "Caminho desconhecido"
       }
     },
     "shell": {
       "addressPlaceholder": "Hash de destino (32 caracteres hexadecimais)",
-      "addressAria": "Hash de destino",
+      "addressAria": "Hash de destino rnsh",
       "selectSavedAddress": "Usar endereço salvo {{label}}",
       "connectAria": "Conectar shell remoto",
       "connect": "Conectar",
@@ -4566,7 +4566,7 @@
       "fingerprintConfirm": "Conectar"
     },
     "transfer": {
-      "myIdentity": "A minha identidade",
+      "myIdentity": "Minha identidade:",
       "copyIdentityAria": "Copiar o hash da minha identidade",
       "myReceiveDest": "Meu destino de recebimento rncp:",
       "copyReceiveDestAria": "Copiar meu destino de recebimento rncp",
@@ -4587,9 +4587,9 @@
       "modeSendAria": "Mudar para o modo de envio",
       "modeSend": "Enviar",
       "modeFetchAria": "Mudar para o modo de busca",
-      "modeFetch": "Apanhador",
+      "modeFetch": "Buscar",
       "destinationPlaceholder": "Hash de destino (32 caracteres hexadecimais)",
-      "destinationAria": "Hash de destino",
+      "destinationAria": "Hash de destino rncp",
       "notAllowedHint": "As transferências não estão disponíveis neste caminho: {{reason}}",
       "chooseFileAria": "Escolha um arquivo local para enviar",
       "chooseFile": "Escolher arquivo",
@@ -4597,20 +4597,20 @@
       "sendAria": "Enviar arquivo",
       "send": "Enviar",
       "sendFailed": "Falha ao enviar: {{error}}",
-      "remotePathPlaceholder": "Arquivo Remoto",
+      "remotePathPlaceholder": "Caminho do arquivo remoto",
       "remotePathAria": "Caminho do arquivo remoto para buscar",
       "chooseSaveDirAria": "Escolha uma pasta local para salvar",
       "chooseSaveDir": "Escolher pasta de gravação...",
       "defaultSaveDir": "Pasta de download padrão",
       "fetchAria": "Buscar arquivo",
-      "fetch": "Apanhador",
+      "fetch": "Buscar",
       "fetchFailed": "Falha ao buscar: {{error}}",
       "acceptFailed": "Falha ao aceitar o arquivo: {{error}}",
       "listTitle": "Transferências",
       "listEmpty": "Ainda não há transferências.",
       "kind": {
         "send": "Enviar",
-        "fetch": "Apanhador"
+        "fetch": "Buscar"
       },
       "status": {
         "active": "Em andamento",
@@ -4648,6 +4648,7 @@
       "enabled": "O recebimento de arquivos está ativado.",
       "enableFailed": "Não foi possível ativar o recebimento de arquivos: {{error}}",
       "saveDirRequired": "Escolha uma pasta de salvamento para ativar o recebimento.",
+      "identityUnknown": "Ainda não foi possível resolver o hash de identidade deste par — o modo Perguntar foi ativado, mas ele não foi adicionado à lista de permitidos. Tente novamente quando um caminho ou anúncio chegar.",
       "lxmfBody": "Ative o recebimento de arquivos (rncp) se você usar mesh-client: Remote → Settings → Inbound file offers. Ou execute rncp/rncp-rs no modo de escuta."
     },
     "saved": {
@@ -4675,6 +4676,10 @@
         "allow_all_listed": "Permitir apenas os listados"
       },
       "allowFetch": "Permitir que colegas remotos busquem arquivos de mim",
+      "chooseSaveDirAria": "Escolha a pasta para transferências de arquivos recebidas",
+      "chooseSaveDir": "Escolher pasta de salvamento…",
+      "noSaveDir": "Nenhuma pasta de salvamento escolhida",
+      "fetchJailRequired": "Escolha uma pasta de busca antes de ativar a busca remota.",
       "chooseFetchJailAria": "Escolha a pasta que os pares remotos podem buscar",
       "chooseFetchJail": "Escolher pasta de busca...",
       "noFetchJail": "Nenhuma pasta de busca escolhida",
@@ -4690,7 +4695,8 @@
       "reliabilityTitle": "Confiabilidade",
       "autoReconnectShell": "Reconecte automaticamente o shell remoto após uma desconexão inesperada",
       "autoRetryTransfer": "Repetir automaticamente transferências com falha",
-      "identityTitle": "A minha identidade"
+      "identityTitle": "A minha identidade",
+      "myIdentity": "Minha identidade:"
     }
   }
 }

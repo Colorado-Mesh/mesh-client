@@ -1187,7 +1187,7 @@
       "meshcore": "Probeer het opnieuw voordat je het opgeeft (1–{{max}}). Opgeslagen met instellingen; druk opnieuw op Verbinden na het wijzigen, zodat het hoofdproces het oppikt.",
       "meshtastic": "Beide protocollen staan 1–{{max}} toe. Opgeslagen met instellingen; verbreek de verbinding en maak opnieuw verbinding, zodat de lopende sessie de nieuwe waarde gebruikt."
     },
-    "reticulumStackRunningAs": "Hardlopen — {{name}}",
+    "reticulumStackRunningAs": "Actief — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Reticulum-stack reageert niet — opnieuw opstarten…"
   },
   "contactGroupsModal": {
@@ -4504,7 +4504,7 @@
     "navAria": "Secties op afstand",
     "sidecarNotRunning": "Start de Reticulum-stack om de externe shell en bestandsoverdracht te gebruiken.",
     "sections": {
-      "shell": "Schelp",
+      "shell": "Shell",
       "transfer": "Overdracht",
       "saved": "Opgeslagen",
       "settings": "Instellingen"
@@ -4587,10 +4587,10 @@
       "modeSendAria": "Wisselen naar modus:",
       "modeSend": "Verzenden",
       "modeFetchAria": "Overschakelen naar ophaalmodus",
-      "modeFetch": "Fetch",
+      "modeFetch": "Ophalen",
       "destinationPlaceholder": "Bestemmingshash (32 hex-tekens)",
       "destinationAria": "rncp destination hash",
-      "notAllowedHint": "Overboekingen zijn niet beschikbaar op dit pad: {{reason}}",
+      "notAllowedHint": "Overdrachten zijn niet beschikbaar op dit pad: {{reason}}",
       "chooseFileAria": "Kies een lokaal bestand om te verzenden",
       "chooseFile": "Kies bestand…",
       "noFileChosen": "Geen bestand gekozen",
@@ -4648,6 +4648,7 @@
       "enabled": "Bestandsontvangst is ingeschakeld.",
       "enableFailed": "Kon het ontvangen van bestanden niet inschakelen: {{error}}",
       "saveDirRequired": "Kies een opslagmap om ontvangst in te schakelen.",
+      "identityUnknown": "De identiteitshash van deze peer kon nog niet worden bepaald — inkomend vragen is ingeschakeld, maar de peer is niet aan de toestaanlijst toegevoegd. Probeer het opnieuw nadat een pad of aankondiging is ontvangen.",
       "lxmfBody": "Schakel bestandsontvangst (rncp) in als u mesh-client gebruikt: Extern → Instellingen → Inkomende bestandsaanbiedingen. Of voer rncp/rncp-rs uit in de luistermodus."
     },
     "saved": {
@@ -4675,6 +4676,10 @@
         "allow_all_listed": "Alleen vermeld toestaan"
       },
       "allowFetch": "Sta externe collega's toe bestanden van mij op te halen",
+      "chooseSaveDirAria": "Kies de map voor inkomende bestandsoverdrachten",
+      "chooseSaveDir": "Kies opslagmap…",
+      "noSaveDir": "Geen opslagmap gekozen",
+      "fetchJailRequired": "Kies een ophaalmap voordat je extern ophalen inschakelt.",
       "chooseFetchJailAria": "Kies de map waaruit externe peers mogen ophalen",
       "chooseFetchJail": "Kies map ophalen...",
       "noFetchJail": "Geen ophaalmap gekozen",
@@ -4690,7 +4695,8 @@
       "reliabilityTitle": "Betrouwbaarheid",
       "autoReconnectShell": "Maak automatisch opnieuw verbinding met de externe shell na een onverwachte verbinding",
       "autoRetryTransfer": "Probeer mislukte overdrachten automatisch opnieuw",
-      "identityTitle": "Mijn identiteit"
+      "identityTitle": "Mijn identiteit",
+      "myIdentity": "Mijn identiteit:"
     }
   }
 }

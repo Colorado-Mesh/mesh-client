@@ -4504,8 +4504,8 @@
     "navAria": "リモートセクション",
     "sidecarNotRunning": "リモートシェルとファイル転送を使用するには、Reticulumスタックを起動します。",
     "sections": {
-      "shell": "貝殻",
-      "transfer": "移動",
+      "shell": "シェル",
+      "transfer": "転送",
       "saved": "セーブ",
       "settings": "設定"
     },
@@ -4561,14 +4561,14 @@
       "reconnectingBanner": "自動再接続しています（ {{max}}の{{attempt}}をお試しください）。リモートセッションの状態が失われました。",
       "fingerprintTitle": "リモートIDを確認する",
       "fingerprintMessage": "{{address}}に接続しています。報告された身元： {{identity}}。フィンガープリント： {{fingerprint}}。続行する前に、これが予想されるIDであることを確認してください。",
-      "unknownIdentity": "不明な証明書です",
+      "unknownIdentity": "不明なID",
       "unknownFingerprint": "不明なフィンガープリント",
       "fingerprintConfirm": "接続"
     },
     "transfer": {
       "myIdentity": "私のアイデンティティ：",
       "copyIdentityAria": "IDハッシュをコピーする",
-      "myReceiveDest": "私のrncpは宛先を受信します：",
+      "myReceiveDest": "自分のrncp受信宛先:",
       "copyReceiveDestAria": "私のrncp受信先をコピー",
       "pendingOffersTitle": "保留中の受信ファイル",
       "pendingOffersBadgeAria_one": "{{count}}保留中のインバウンドファイルオファー",
@@ -4590,14 +4590,14 @@
       "modeFetch": "取得",
       "destinationPlaceholder": "宛先ハッシュ（ 32文字の16進数）",
       "destinationAria": "rncp宛先ハッシュ",
-      "notAllowedHint": "こちらのパスでは送迎をご利用いただけません： {{reason}}",
+      "notAllowedHint": "このパスではファイル転送を利用できません: {{reason}}",
       "chooseFileAria": "送信するローカルファイルを選択してください",
       "chooseFile": "ファイルを選択",
       "noFileChosen": "ファイルが選択されていません",
       "sendAria": "ファイルの送信",
       "send": "送信",
       "sendFailed": "次の送信に失敗しました： {{error}}",
-      "remotePathPlaceholder": "リモートファイル",
+      "remotePathPlaceholder": "リモートファイルのパス",
       "remotePathAria": "フェッチするリモートファイルのパス",
       "chooseSaveDirAria": "保存先のローカルフォルダを選択してください",
       "chooseSaveDir": "フォルダの保存を選択…",
@@ -4606,7 +4606,7 @@
       "fetch": "取得",
       "fetchFailed": "取得に失敗しました: {{error}}",
       "acceptFailed": "ファイルの受け入れに失敗しました： {{error}}",
-      "listTitle": "送金",
+      "listTitle": "転送",
       "listEmpty": "まだ送金はありません。",
       "kind": {
         "send": "送信",
@@ -4641,13 +4641,14 @@
       "enableAskAria": "インバウンドファイルのオファーを有効にし、承認する前に尋ねる",
       "enableAllow": "このIDを有効にして許可する",
       "enableAllowAria": "受信ファイルのオファーを有効にし、この送信者を許可する",
-      "notNow": "今ではない",
+      "notNow": "後で",
       "notNowAria": "有効化リクエストを閉じる",
       "dontAsk": "この同僚に次回から確認しない",
       "dontAskAria": "このピアからの有効化リクエストを完全に却下する",
       "enabled": "ファイル受信が有効になっています。",
       "enableFailed": "ファイル受信を有効にできませんでした： {{error}}",
       "saveDirRequired": "受信を有効にする保存フォルダを選択します。",
+      "identityUnknown": "このピアのIDハッシュをまだ解決できませんでした。受信時の確認は有効になりましたが、許可リストには追加されていません。パスまたはアナウンスの到着後にもう一度お試しください。",
       "lxmfBody": "mesh-clientをご利用の場合はファイル受信（rncp）を有効にしてください: Remote → Settings → Inbound file offers。またはリッスンモードで rncp/rncp-rs を実行してください。"
     },
     "saved": {
@@ -4671,10 +4672,14 @@
       "inboundTitle": "インバウンドファイル転送",
       "inboundMode": {
         "off": "OFF",
-        "ask": "ニュースをニュースする",
+        "ask": "確認",
         "allow_all_listed": "一覧表示のみ許可する"
       },
       "allowFetch": "リモートピアが自分からファイルをフェッチできるようにする",
+      "chooseSaveDirAria": "受信ファイル転送の保存先フォルダーを選択",
+      "chooseSaveDir": "保存フォルダーを選択…",
+      "noSaveDir": "保存フォルダーが選択されていません",
+      "fetchJailRequired": "リモート取得を有効にする前に取得フォルダーを選択してください。",
       "chooseFetchJailAria": "リモートピアが取得する可能性のあるフォルダを選択します",
       "chooseFetchJail": "フェッチフォルダを選択…",
       "noFetchJail": "フェッチフォルダが選択されていません",
@@ -4690,7 +4695,8 @@
       "reliabilityTitle": "信頼性",
       "autoReconnectShell": "予期しない切断後にリモートシェルを自動的に再接続する",
       "autoRetryTransfer": "失敗した転送を自動的に再試行する",
-      "identityTitle": "私のアイデンティティ"
+      "identityTitle": "私のアイデンティティ",
+      "myIdentity": "私のアイデンティティ："
     }
   }
 }

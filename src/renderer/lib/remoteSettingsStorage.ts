@@ -13,6 +13,12 @@ export interface RemoteSettings {
   autoRetryTransfer: boolean;
   maxRetryAttempts: number;
   inboundMode: RncpInboundMode;
+  /** Last picker-backed inbound save directory (needed to re-push allow/block lists). */
+  lastSaveDir: string | null;
+  /** Last picker-backed fetch jail directory. */
+  lastFetchJail: string | null;
+  allowFetch: boolean;
+  overwriteOnReceive: boolean;
 }
 
 export const DEFAULT_REMOTE_SETTINGS: RemoteSettings = {
@@ -22,6 +28,10 @@ export const DEFAULT_REMOTE_SETTINGS: RemoteSettings = {
   maxRetryAttempts: 3,
   // Secure default: no inbound rnsh/rncp until the user opts in.
   inboundMode: 'off',
+  lastSaveDir: null,
+  lastFetchJail: null,
+  allowFetch: false,
+  overwriteOnReceive: false,
 };
 
 function sanitize(raw: unknown): RemoteSettings {
@@ -49,6 +59,15 @@ function sanitize(raw: unknown): RemoteSettings {
         ? Math.max(0, Math.min(10, Math.trunc(r.maxRetryAttempts)))
         : DEFAULT_REMOTE_SETTINGS.maxRetryAttempts,
     inboundMode,
+    lastSaveDir: typeof r.lastSaveDir === 'string' && r.lastSaveDir.trim() ? r.lastSaveDir : null,
+    lastFetchJail:
+      typeof r.lastFetchJail === 'string' && r.lastFetchJail.trim() ? r.lastFetchJail : null,
+    allowFetch:
+      typeof r.allowFetch === 'boolean' ? r.allowFetch : DEFAULT_REMOTE_SETTINGS.allowFetch,
+    overwriteOnReceive:
+      typeof r.overwriteOnReceive === 'boolean'
+        ? r.overwriteOnReceive
+        : DEFAULT_REMOTE_SETTINGS.overwriteOnReceive,
   };
 }
 

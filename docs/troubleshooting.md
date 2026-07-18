@@ -496,6 +496,14 @@ If auto-recovery does not help:
 
 This applies on **Windows, macOS, and Linux** (same Web Serial stack). Linux **permission denied** before the first connect is a separate issue — see [Linux: serial port access denied](#linux-serial-port-access-denied).
 
+### Serial port auto-rediscovery after reconnect exhaustion
+
+**Symptoms**: After the port permission is revoked (step 3 above) the device reconnects on its own without a manual **Select serial port**, or it does not and you are prompted after ~1 minute.
+
+**Cause**: `serialPortAutoRediscovery.ts` captures the port signature before escalate clears saved identity, then polls granted Web Serial ports every **5 s** for up to a **60 s** window, matching by signature (or Chromium `portId`). A match reconnects automatically; the window expiring calls `onTimeout` (forget port + picker).
+
+**What to do**: Leave the device plugged in for the ~1 minute window. If it still doesn't rediscover, use **Select serial port** to re-grant the port.
+
 ## Wi-Fi, HTTP, and TCP
 
 ### HTTP / WiFi connection issues
@@ -1201,6 +1209,38 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 | **`NRF52_DFU_STALLED`**     | nRF52 DFU wrote no progress for **60 s**                                             | Same cable/port/bootloader steps as ESP32; confirm you selected the DFU-capable port.                                                                                                                                                                                  |
 
 **Before flashing**: stop the Reticulum stack or disable the RNode interface — the sidecar holds the serial port while the stack runs (`flasher.errors.blockedByStack`). After a failed flash, power-cycle the board and re-enter bootloader if the port disappears.
+
+### Reticulum Remote transfer fails or `path_constrained`
+
+**Symptoms**: **Reticulum → Remote** rnsh/rncp (or Chat DM send-file) fails with `Path constrained`, `Path unknown`, `Not announced`, or `Timeout`; the path-capability chip is red.
+
+**Cause**: rnsh/rncp gate on the destination's link speed and path table (`stack::path_speed::PathCapability`). A `path_constrained` reason means the known path is too slow/limited for the transfer; other reasons map to `reticulumRemote.reasons.*` via `useRemotePathCapability`.
+
+**What to do**:
+
+1. Confirm the destination is announced and has a path (Peers / Topology); **Probe** it if the chip is stale.
+2. For `path_constrained`, prefer a faster interface or wait for a better path; large files over slow links may not be attempted.
+3. Check sidecar logs for `rnsh`/`rncp` link errors; the `reticulum:rncpSend` / `rncpFetch` IPC returns the reason key surfaced in the toast.
+
+### Reticulum Remote inbound rncp blocked (Ask mode / policy)
+
+**Symptoms**: Incoming file offers never arrive, or an offer is auto-declined; a peer reports their send was rejected.
+
+**Cause**: Inbound rncp is gated by the listener mode (`RncpInboundMode`: `off` / `ask` / `allow_all_listed`) plus a per-identity allow/block policy (`reticulumInboundPolicyStore`, persisted via `db:*ReticulumInboundPolicy`). `off` drops all offers; `ask` prompts (`RncpEnableRequestModal`); `allow_all_listed` accepts only allow-listed identities.
+
+**What to do**:
+
+1. **Reticulum → Remote → settings**: set the inbound mode and review the allow/block list.
+2. In **Ask** mode, respond to the enable-request prompt; a blocked identity stays blocked until you change its policy row.
+3. The listener config persists in `mesh_client_stack.json` (`rncp_listener_*`) and restores on live stack start — re-enable after a factory reset.
+
+### Reticulum hung-sidecar watchdog restart
+
+**Symptoms**: Logs show `[reticulumSidecarWatchdog] hung poll failure` then `restarting hung sidecar`; the stack briefly drops and recovers on its own.
+
+**Cause**: The main-process watchdog (`reticulumSidecarWatchdog.ts`) polls `/api/v1/status` every **30 s** while the sidecar process is alive. After **2** consecutive unresponsive polls (5 s fetch timeout) it attempts **one** restart. Process-exit crashes are not handled here — those are owned by the renderer autostart path.
+
+**What to do**: Usually no action; the watchdog recovers a wedged-but-alive sidecar. If restarts loop, check for a stuck link/interface or resource exhaustion in the sidecar log and **Stop stack** to clear state.
 
 ## Chat, nodes, and notifications
 

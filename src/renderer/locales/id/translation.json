@@ -4203,7 +4203,7 @@
     "topology": "Topologi jaringan",
     "network": "Jaringan",
     "rrc": "RRC",
-    "remote": "Terpencil"
+    "remote": "Jarak jauh"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -4504,7 +4504,7 @@
     "navAria": "Bagian terpencil",
     "sidecarNotRunning": "Mulai tumpukan Reticulum untuk menggunakan shell jarak jauh dan transfer file.",
     "sections": {
-      "shell": "Kerang",
+      "shell": "Shell",
       "transfer": "Transfer",
       "saved": "Disimpan",
       "settings": "Pengaturan"
@@ -4568,7 +4568,7 @@
     "transfer": {
       "myIdentity": "Identitas saya:",
       "copyIdentityAria": "Salin hash identitas saya",
-      "myReceiveDest": "Rncp saya menerima tujuan:",
+      "myReceiveDest": "Tujuan penerimaan rncp saya:",
       "copyReceiveDestAria": "Salin tujuan penerimaan rncp saya",
       "pendingOffersTitle": "File masuk yang tertunda",
       "pendingOffersBadgeAria_one": "{{count}} menunggu tawaran file masuk",
@@ -4648,6 +4648,7 @@
       "enabled": "Penerimaan file diaktifkan.",
       "enableFailed": "Tidak dapat mengaktifkan penerimaan file: {{error}}",
       "saveDirRequired": "Pilih folder penyimpanan untuk mengaktifkan penerimaan.",
+      "identityUnknown": "Hash identitas peer ini belum dapat ditentukan — mode Tanya untuk file masuk sudah aktif, tetapi peer belum ditambahkan ke daftar izin. Coba lagi setelah jalur atau pengumuman diterima.",
       "lxmfBody": "Harap aktifkan penerimaan file (rncp) jika Anda menggunakan mesh-client: Remote → Settings → Inbound file offers. Atau jalankan rncp/rncp-rs dalam mode mendengarkan."
     },
     "saved": {
@@ -4675,6 +4676,10 @@
         "allow_all_listed": "Izinkan yang terdaftar saja"
       },
       "allowFetch": "Izinkan rekan jarak jauh mengambil file dari saya",
+      "chooseSaveDirAria": "Pilih folder untuk transfer file masuk",
+      "chooseSaveDir": "Pilih folder penyimpanan…",
+      "noSaveDir": "Belum ada folder penyimpanan yang dipilih",
+      "fetchJailRequired": "Pilih folder pengambilan sebelum mengaktifkan pengambilan jarak jauh.",
       "chooseFetchJailAria": "Pilih folder tempat rekan jarak jauh dapat mengambil",
       "chooseFetchJail": "Pilih ambil folder…",
       "noFetchJail": "Tidak ada folder pengambilan yang dipilih",
@@ -4690,7 +4695,8 @@
       "reliabilityTitle": "Keandalan",
       "autoReconnectShell": "Sambungkan kembali shell jarak jauh secara otomatis setelah pemutusan sambungan yang tidak terduga",
       "autoRetryTransfer": "Secara otomatis mencoba lagi transfer yang gagal",
-      "identityTitle": "Identitas saya"
+      "identityTitle": "Identitas saya",
+      "myIdentity": "Identitas saya:"
     }
   }
 }

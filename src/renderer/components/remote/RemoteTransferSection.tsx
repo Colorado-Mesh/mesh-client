@@ -6,9 +6,11 @@ import { useToast } from '@/renderer/components/Toast';
 import { useRemotePathCapability } from '@/renderer/hooks/useRemotePathCapability';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import i18n from '@/renderer/lib/i18n';
+import { pushRncpListenerPolicy } from '@/renderer/lib/pushRncpListenerPolicy';
 import type { RemoteSettings } from '@/renderer/lib/remoteSettingsStorage';
 import { parseReticulumDestinationInput } from '@/renderer/lib/reticulum/reticulumDestinationInput';
 import { sendRncpRequestEnable } from '@/renderer/lib/sendRncpRequestEnable';
+import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInboundPolicyStore';
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import {
@@ -269,6 +271,10 @@ export function RemoteTransferSection({ sidecarRunning, settings }: RemoteTransf
     async (identityHash: string | null | undefined, decision: 'allow' | 'block') => {
       if (!identityHash) return;
       await upsertInboundPolicy({ identity_hash: identityHash, decision });
+      const push = await pushRncpListenerPolicy();
+      if (!push.ok) {
+        console.warn('[RemoteTransferSection] pushPolicy ' + (push.error ?? ''));
+      }
       addToast(
         decision === 'allow'
           ? t('reticulumRemote.transfer.alwaysAllowSaved')
@@ -282,7 +288,7 @@ export function RemoteTransferSection({ sidecarRunning, settings }: RemoteTransf
   const copy = useCallback(
     (value: string | null | undefined) => {
       if (!value) return;
-      void navigator.clipboard.writeText(value).catch((e: unknown) => {
+      void writeClipboardText(value).catch((e: unknown) => {
         console.debug('[RemoteTransferSection] clipboard ' + errLikeToLogString(e));
       });
       addToast(t('common.copied'), 'success');
@@ -316,7 +322,7 @@ export function RemoteTransferSection({ sidecarRunning, settings }: RemoteTransf
     const text = buildRncpRequestEnableMessageBody(
       i18n.t('reticulumRemote.enableRequest.lxmfBody'),
     );
-    void navigator.clipboard.writeText(text).catch((e: unknown) => {
+    void writeClipboardText(text).catch((e: unknown) => {
       console.debug('[RemoteTransferSection] clipboard ' + errLikeToLogString(e));
     });
     addToast(t('reticulumRemote.transfer.instructionsCopied'), 'success');

@@ -481,6 +481,25 @@ describe('registerReticulumIpcHandlers', () => {
       expect(manager.proxyPost).not.toHaveBeenCalled();
     });
 
+    it('setRncpListener rejects enabled without save_dir', async () => {
+      const result = await handlers.get('reticulum:setRncpListener')?.(event, {
+        enabled: true,
+      });
+      expect(result).toEqual({ ok: false, error: 'save_dir_required' });
+      expect(manager.proxyPost).not.toHaveBeenCalled();
+    });
+
+    it('setRncpListener rejects allow_fetch without fetch_jail', async () => {
+      isAllowedRncpSaveDirectoryPathMock.mockReturnValue(true);
+      const result = await handlers.get('reticulum:setRncpListener')?.(event, {
+        enabled: true,
+        save_dir: '/tmp/recv',
+        allow_fetch: true,
+      });
+      expect(result).toEqual({ ok: false, error: 'fetch_jail_required' });
+      expect(manager.proxyPost).not.toHaveBeenCalled();
+    });
+
     it('setRncpListener rejects a save_dir not from the folder picker', async () => {
       isAllowedRncpSaveDirectoryPathMock.mockReturnValue(false);
       const result = await handlers.get('reticulum:setRncpListener')?.(event, {

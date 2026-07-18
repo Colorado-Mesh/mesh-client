@@ -578,7 +578,7 @@
       "sendFileAria": "Envoyer le fichier à {{name}} via rncp",
       "pendingOffersBadgeAria_one": "{{count}} offre de fichier entrant en attente de ce pair",
       "pendingOffersBadgeAria_other": "{{count}} en attente des offres de fichiers entrants de ce pair",
-      "destinationLabel": "Hash de Destination",
+      "destinationLabel": "Hash de destination rncp",
       "rememberAddress": "Mémoriser cette adresse",
       "rememberAddressAria": "Mémoriser cette destination rncp pour cet homologue",
       "chooseAndSend": "Choisissez le fichier et envoyez…",
@@ -4532,15 +4532,15 @@
         "high": "Chemin rapide",
         "constrained": "Chemin contraint",
         "mixed": "trajet mixte",
-        "unknown": "Chemin de fichier inconnu"
+        "unknown": "Chemin inconnu"
       }
     },
     "shell": {
       "addressPlaceholder": "Hachage de destination (32 caractères hexadécimaux)",
-      "addressAria": "Hash de Destination",
+      "addressAria": "Hash de destination rnsh",
       "selectSavedAddress": "Utiliser l'adresse enregistrée {{label}}",
       "connectAria": "Connecter le shell distant",
-      "connect": "Connect",
+      "connect": "Connecter",
       "connecting": "Connexion…",
       "connectFailed": "Échec de la connexion : {{error}}",
       "maxSessions": "Maximum de {{count}} sessions shell atteintes.",
@@ -4587,9 +4587,9 @@
       "modeSendAria": "Passer en mode",
       "modeSend": "Envoyer",
       "modeFetchAria": "Passer en mode de récupération",
-      "modeFetch": "Rapporter",
+      "modeFetch": "Récupérer",
       "destinationPlaceholder": "Hachage de destination (32 caractères hexadécimaux)",
-      "destinationAria": "Hash de Destination",
+      "destinationAria": "Hash de destination rncp",
       "notAllowedHint": "Les transferts ne sont pas disponibles sur ce chemin : {{reason}}",
       "chooseFileAria": "Choisissez un fichier local à envoyer",
       "chooseFile": "Choisir un fichier",
@@ -4597,20 +4597,20 @@
       "sendAria": "Envoyer le fichier",
       "send": "Envoyer",
       "sendFailed": "Échec de l'envoi : {{error}}",
-      "remotePathPlaceholder": "Fichier distant",
+      "remotePathPlaceholder": "Chemin du fichier distant",
       "remotePathAria": "Chemin du fichier distant à récupérer",
       "chooseSaveDirAria": "Choisissez un dossier local dans lequel enregistrer",
       "chooseSaveDir": "Choisissez le dossier de sauvegarde…",
       "defaultSaveDir": "Dossier de téléchargement par défaut",
       "fetchAria": "Récupérer le fichier",
-      "fetch": "Rapporter",
+      "fetch": "Récupérer",
       "fetchFailed": "Échec de la récupération : {{error}}",
       "acceptFailed": "Impossible d'accepter le fichier : {{error}}",
       "listTitle": "Transferts",
       "listEmpty": "Aucun transfert.",
       "kind": {
         "send": "Envoyer",
-        "fetch": "Rapporter"
+        "fetch": "Récupérer"
       },
       "status": {
         "active": "En cours",
@@ -4648,6 +4648,7 @@
       "enabled": "La réception de fichiers est activée.",
       "enableFailed": "Impossible d'activer la réception du fichier : {{error}}",
       "saveDirRequired": "Choisissez un dossier de sauvegarde pour activer la réception.",
+      "identityUnknown": "Impossible de résoudre le hachage d'identité de ce pair pour le moment — le mode Demander est activé, mais il n'a pas été ajouté à la liste d'autorisation. Réessayez après l'arrivée d'un chemin ou d'une annonce.",
       "lxmfBody": "Veuillez activer la réception de fichiers (rncp) si vous utilisez mesh-client : Remote → Settings → Inbound file offers. Ou exécutez rncp/rncp-rs en mode écoute."
     },
     "saved": {
@@ -4671,10 +4672,14 @@
       "inboundTitle": "Transferts de fichiers entrants",
       "inboundMode": {
         "off": "Arrêt",
-        "ask": "Posez des questions",
+        "ask": "Demander",
         "allow_all_listed": "Autoriser uniquement les interfaces listées"
       },
       "allowFetch": "Autoriser les pairs distants à me récupérer des fichiers",
+      "chooseSaveDirAria": "Choisir le dossier des transferts de fichiers entrants",
+      "chooseSaveDir": "Choisir le dossier d'enregistrement…",
+      "noSaveDir": "Aucun dossier d'enregistrement choisi",
+      "fetchJailRequired": "Choisissez un dossier de récupération avant d'activer la récupération à distance.",
       "chooseFetchJailAria": "Choisissez le dossier dans lequel les pairs distants peuvent aller chercher",
       "chooseFetchJail": "Choisissez le dossier de récupération…",
       "noFetchJail": "Aucun dossier de récupération choisi",
@@ -4690,7 +4695,8 @@
       "reliabilityTitle": "Fiabilité",
       "autoReconnectShell": "Reconnecter automatiquement le shell distant après une déconnexion inattendue",
       "autoRetryTransfer": "Réessayer automatiquement les transferts interrompus",
-      "identityTitle": "Mon identité"
+      "identityTitle": "Mon identité",
+      "myIdentity": "Mon identité :"
     }
   }
 }

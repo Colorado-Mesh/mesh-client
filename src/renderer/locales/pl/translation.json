@@ -1187,7 +1187,7 @@
       "meshcore": "Ponownie połącz próby przed rezygnacją (1–{{max}}). Zapisano z ustawieniami; naciśnij ponownie Połącz po zmianie, aby główny proces go podniósł.",
       "meshtastic": "Oba protokoły umożliwiają 1–{{max}}. Zapisano z ustawieniami; odłącz i połącz ponownie, aby uruchomiona sesja używała nowej wartości."
     },
-    "reticulumStackRunningAs": "Uruchamianie — {{name}}",
+    "reticulumStackRunningAs": "Działa — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Stos Reticulum nie odpowiada — uruchamiam ponownie…"
   },
   "contactGroupsModal": {
@@ -4203,7 +4203,7 @@
     "topology": "Topologia sieci",
     "network": "Sieć",
     "rrc": "RRC",
-    "remote": "Pilot"
+    "remote": "Zdalny"
   },
   "takServerPanel": {
     "title": "Serwer TAK",
@@ -4504,7 +4504,7 @@
     "navAria": "Sekcje zdalne",
     "sidecarNotRunning": "Uruchom stos Reticulum, aby użyć zdalnej powłoki i transferu plików.",
     "sections": {
-      "shell": "Muszla",
+      "shell": "Powłoka",
       "transfer": "Transfer",
       "saved": "Zapisane",
       "settings": "Ustawienia"
@@ -4590,14 +4590,14 @@
       "modeFetch": "Pobierz",
       "destinationPlaceholder": "Skrót miejsca docelowego (32 znaki szesnastkowe)",
       "destinationAria": "hasz docelowy rncp",
-      "notAllowedHint": "Przelewy nie są dostępne na tej ścieżce: {{reason}}",
+      "notAllowedHint": "Transfery nie są dostępne na tej ścieżce: {{reason}}",
       "chooseFileAria": "Wybierz plik lokalny do wysłania",
       "chooseFile": "Wybierz plik",
       "noFileChosen": "Nie wybrano pliku",
       "sendAria": "Wyślij plik",
       "send": "Wyślij",
       "sendFailed": "Nie udało się wysłać: {{error}}",
-      "remotePathPlaceholder": "Plik wirtualny",
+      "remotePathPlaceholder": "Zdalna ścieżka pliku",
       "remotePathAria": "Zdalna ścieżka pliku do pobrania",
       "chooseSaveDirAria": "Wybierz lokalny folder, w którym chcesz zapisać",
       "chooseSaveDir": "Wybierz zapisz folder…",
@@ -4606,14 +4606,14 @@
       "fetch": "Pobierz",
       "fetchFailed": "Nie udało się pobrać: {{error}}",
       "acceptFailed": "Nie można zaakceptować pliku: {{error}}",
-      "listTitle": "Przekazy",
+      "listTitle": "Transfery",
       "listEmpty": "Nie ma jeszcze żadnych transferów.",
       "kind": {
         "send": "Wyślij",
         "fetch": "Pobierz"
       },
       "status": {
-        "active": "Weryfikacja w toku",
+        "active": "W toku",
         "completed": "Projekt zakończony",
         "failed": "Zakończone niepowodzeniem",
         "cancelled": "Anulowane"
@@ -4648,6 +4648,7 @@
       "enabled": "Odbiór plików jest włączony.",
       "enableFailed": "Nie można włączyć odbierania plików: {{error}}",
       "saveDirRequired": "Wybierz folder zapisu, aby włączyć odbiór.",
+      "identityUnknown": "Nie udało się jeszcze ustalić skrótu tożsamości tego peera — tryb pytania jest włączony, ale nie dodano go do listy dozwolonych. Spróbuj ponownie, gdy nadejdzie ścieżka lub ogłoszenie.",
       "lxmfBody": "Włącz odbieranie plików (rncp), jeśli używasz funkcji mesh-client: Remote → Settings → Inbound file offers. Lub uruchom rncp/rncp-rs w trybie słuchania."
     },
     "saved": {
@@ -4675,6 +4676,10 @@
         "allow_all_listed": "Zezwalaj tylko na listę"
       },
       "allowFetch": "Zezwalaj zdalnym rówieśnikom na pobieranie ode mnie plików",
+      "chooseSaveDirAria": "Wybierz folder dla przychodzących transferów plików",
+      "chooseSaveDir": "Wybierz folder zapisu…",
+      "noSaveDir": "Nie wybrano folderu zapisu",
+      "fetchJailRequired": "Wybierz folder pobierania, zanim włączysz zdalne pobieranie.",
       "chooseFetchJailAria": "Wybierz folder, z którego mogą pobierać zdalni partnerzy",
       "chooseFetchJail": "Wybierz folder pobierania…",
       "noFetchJail": "Nie wybrano folderu pobierania",
@@ -4690,7 +4695,8 @@
       "reliabilityTitle": "Rzetelność",
       "autoReconnectShell": "Automatycznie ponownie podłącz zdalną obudowę po nieoczekiwanym rozłączeniu",
       "autoRetryTransfer": "Wznawiaj automatycznie gdy zawiodło pobieranie",
-      "identityTitle": "Moja tożsamość"
+      "identityTitle": "Moja tożsamość",
+      "myIdentity": "Moja tożsamość:"
     }
   }
 }

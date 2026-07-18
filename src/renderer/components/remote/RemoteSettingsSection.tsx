@@ -4,9 +4,14 @@ import { useTranslation } from 'react-i18next';
 import { useToast } from '@/renderer/components/Toast';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { RemoteSettings } from '@/renderer/lib/remoteSettingsStorage';
+import { policiesToRncpLists } from '@/renderer/lib/rncpInboundPolicyLists';
+import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInboundPolicyStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
 import type { RncpInboundMode } from '@/shared/remote-types';
+
+/** Sidecar outbound + inbound hard cap (see `MAX_RNCP_FILE_BYTES` in rncp_transfer.rs). */
+export const RNCP_MAX_FILE_SIZE_LABEL = '25 MiB';
 
 export interface RemoteSettingsSectionProps {
   sidecarRunning: boolean;
@@ -33,6 +38,7 @@ export function RemoteSettingsSection({
 
   const [allowFetch, setAllowFetch] = useState(false);
   const [fetchJail, setFetchJail] = useState<string | null>(null);
+  const [saveDir, setSaveDir] = useState<string | null>(null);
   const [overwrite, setOverwrite] = useState(false);
   const [identity, setIdentity] = useState<{
     identity_hash: string | null;
@@ -44,15 +50,12 @@ export function RemoteSettingsSection({
     try {
       const status = await window.electronAPI.reticulum.rncp.getListener();
       setListener(status);
-      setAllowFetch(false);
-      setOverwrite(false);
     } catch (e) {
       console.debug('[RemoteSettingsSection] getListener ' + errLikeToLogString(e));
     }
   }, [setListener, sidecarRunning]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate listener status + saved policies on mount / sidecar restart
     void refreshListener();
     void hydratePolicies();
   }, [refreshListener, hydratePolicies]);
@@ -73,16 +76,56 @@ export function RemoteSettingsSection({
 
   const applyListener = useCallback(
     async (mode: RncpInboundMode) => {
+      if (mode !== 'off') {
+        if (allowFetch && !fetchJail) {
+          addToast(t('reticulumRemote.settings.fetchJailRequired'), 'error');
+          return;
+        }
+        let dir = saveDir;
+        if (!dir) {
+          const picked = await window.electronAPI.reticulum.rncp.showSaveDirectoryDialog();
+          if (picked.canceled || !picked.path) {
+            addToast(t('reticulumRemote.enableRequest.saveDirRequired'), 'info');
+            return;
+          }
+          dir = picked.path;
+          setSaveDir(dir);
+        }
+        setInboundModeOptimistic(mode);
+        onSettingsChange({ inboundMode: mode });
+        const { allowed, blocked } = policiesToRncpLists(policies);
+        try {
+          const res = await window.electronAPI.reticulum.rncp.setListener({
+            enabled: true,
+            save_dir: dir,
+            allow_fetch: allowFetch,
+            fetch_jail: fetchJail ?? undefined,
+            overwrite,
+            allowed,
+            blocked,
+          });
+          if (!res.ok) {
+            addToast(
+              t('reticulumRemote.settings.applyFailed', { error: res.error ?? '' }),
+              'error',
+            );
+          }
+          await refreshListener();
+        } catch (e) {
+          console.debug('[RemoteSettingsSection] apply ' + errLikeToLogString(e));
+          addToast(
+            t('reticulumRemote.settings.applyFailed', { error: errLikeToLogString(e) }),
+            'error',
+          );
+        }
+        return;
+      }
+
       setInboundModeOptimistic(mode);
       onSettingsChange({ inboundMode: mode });
       try {
         const res = await window.electronAPI.reticulum.rncp.setListener({
-          enabled: mode !== 'off',
-          allow_fetch: allowFetch,
-          fetch_jail: fetchJail ?? undefined,
-          overwrite,
-          allowed: listener?.allowed,
-          blocked: listener?.blocked,
+          enabled: false,
         });
         if (!res.ok) {
           addToast(t('reticulumRemote.settings.applyFailed', { error: res.error ?? '' }), 'error');
@@ -100,13 +143,52 @@ export function RemoteSettingsSection({
       addToast,
       allowFetch,
       fetchJail,
-      listener,
       onSettingsChange,
       overwrite,
+      policies,
       refreshListener,
+      saveDir,
       setInboundModeOptimistic,
       t,
     ],
+  );
+
+  const pushPolicyListsToSidecar = useCallback(async () => {
+    if (!sidecarRunning || !listener?.enabled || !saveDir) return;
+    if (allowFetch && !fetchJail) return;
+    const { allowed, blocked } = policiesToRncpLists(
+      useReticulumInboundPolicyStore.getState().policies,
+    );
+    try {
+      await window.electronAPI.reticulum.rncp.setListener({
+        enabled: true,
+        save_dir: saveDir,
+        allow_fetch: allowFetch,
+        fetch_jail: fetchJail ?? undefined,
+        overwrite,
+        allowed,
+        blocked,
+      });
+      await refreshListener();
+    } catch (e) {
+      console.warn('[RemoteSettingsSection] pushPolicy ' + errLikeToLogString(e));
+    }
+  }, [
+    allowFetch,
+    fetchJail,
+    listener?.enabled,
+    overwrite,
+    refreshListener,
+    saveDir,
+    sidecarRunning,
+  ]);
+
+  const handleRemovePolicy = useCallback(
+    async (identityHash: string) => {
+      await removePolicy(identityHash);
+      await pushPolicyListsToSidecar();
+    },
+    [pushPolicyListsToSidecar, removePolicy],
   );
 
   const handlePickFetchJail = useCallback(async () => {
@@ -114,10 +196,15 @@ export function RemoteSettingsSection({
     if (!res.canceled && res.path) setFetchJail(res.path);
   }, []);
 
+  const handlePickSaveDir = useCallback(async () => {
+    const res = await window.electronAPI.reticulum.rncp.showSaveDirectoryDialog();
+    if (!res.canceled && res.path) setSaveDir(res.path);
+  }, []);
+
   const copy = useCallback(
     (value: string | null | undefined) => {
       if (!value) return;
-      void navigator.clipboard.writeText(value).catch((e: unknown) => {
+      void writeClipboardText(value).catch((e: unknown) => {
         console.debug('[RemoteSettingsSection] clipboard ' + errLikeToLogString(e));
       });
       addToast(t('common.copied'), 'success');
@@ -151,6 +238,20 @@ export function RemoteSettingsSection({
               {t(`reticulumRemote.settings.inboundMode.${mode}`)}
             </button>
           ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            aria-label={t('reticulumRemote.settings.chooseSaveDirAria')}
+            onClick={() => void handlePickSaveDir()}
+            className="rounded bg-gray-700/60 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-600"
+          >
+            {t('reticulumRemote.settings.chooseSaveDir')}
+          </button>
+          <span className="text-muted text-xs">
+            {saveDir ?? t('reticulumRemote.settings.noSaveDir')}
+          </span>
         </div>
 
         <label className="flex items-center gap-2 text-xs text-gray-300">
@@ -193,7 +294,7 @@ export function RemoteSettingsSection({
           {t('reticulumRemote.settings.overwrite')}
         </label>
         <p className="text-muted text-xs">
-          {t('reticulumRemote.settings.maxSizeInfo', { size: '1 GB' })}
+          {t('reticulumRemote.settings.maxSizeInfo', { size: RNCP_MAX_FILE_SIZE_LABEL })}
         </p>
       </section>
 
@@ -224,7 +325,7 @@ export function RemoteSettingsSection({
                 aria-label={t('reticulumRemote.settings.removePolicyAria', {
                   label: p.label ?? p.identity_hash,
                 })}
-                onClick={() => void removePolicy(p.identity_hash)}
+                onClick={() => void handleRemovePolicy(p.identity_hash)}
                 className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600"
               >
                 {t('common.delete')}
@@ -269,31 +370,31 @@ export function RemoteSettingsSection({
           {t('reticulumRemote.settings.identityTitle')}
         </h3>
         <div className="flex flex-wrap items-center gap-2 text-xs text-gray-300">
-          <span>{t('reticulumRemote.transfer.myIdentity')}</span>
-          <code className="text-gray-200">{identity?.identity_hash ?? '—'}</code>
+          <span>{t('reticulumRemote.settings.myIdentity')}</span>
+          <code className="min-w-0 flex-1 truncate">{identity?.identity_hash ?? '—'}</code>
           <button
             type="button"
-            aria-label={t('reticulumRemote.transfer.copyIdentityAria')}
+            aria-label={t('common.copy')}
+            disabled={!identity?.identity_hash}
             onClick={() => {
               copy(identity?.identity_hash);
             }}
-            disabled={!identity?.identity_hash}
-            className="text-blue-400 hover:text-blue-300"
+            className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600 disabled:opacity-40"
           >
             {t('common.copy')}
           </button>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs text-gray-300">
           <span>{t('reticulumRemote.transfer.myReceiveDest')}</span>
-          <code className="text-gray-200">{identity?.rncp_receive_hash ?? '—'}</code>
+          <code className="min-w-0 flex-1 truncate">{identity?.rncp_receive_hash ?? '—'}</code>
           <button
             type="button"
-            aria-label={t('reticulumRemote.transfer.copyReceiveDestAria')}
+            aria-label={t('common.copy')}
+            disabled={!identity?.rncp_receive_hash}
             onClick={() => {
               copy(identity?.rncp_receive_hash);
             }}
-            disabled={!identity?.rncp_receive_hash}
-            className="text-blue-400 hover:text-blue-300"
+            className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600 disabled:opacity-40"
           >
             {t('common.copy')}
           </button>

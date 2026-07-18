@@ -46,8 +46,6 @@ export function RemoteShellSection({
   const addSession = useRnshSessionStore((s) => s.addSession);
   const removeSession = useRnshSessionStore((s) => s.removeSession);
   const setDisconnectIntent = useRnshSessionStore((s) => s.setDisconnectIntent);
-  const incrementReconnectAttempts = useRnshSessionStore((s) => s.incrementReconnectAttempts);
-
   const savedAddresses = useReticulumRemoteAddressStore((s) => s.addresses);
   const rnshAddresses = useMemo(
     () => [...savedAddresses.values()].filter((a) => a.service === 'rnsh'),
@@ -75,7 +73,10 @@ export function RemoteShellSection({
   const confirmedFingerprintsRef = useRef(new Map<string, ConfirmedFingerprint>());
 
   const finalizeConnect = useCallback(
-    async (destinationHash: string, opts?: { autoReconnect?: boolean }) => {
+    async (
+      destinationHash: string,
+      opts?: { autoReconnect?: boolean; reconnectAttempts?: number },
+    ) => {
       setConnecting(true);
       try {
         const res = await window.electronAPI.reticulum.rnsh.connect({
@@ -94,9 +95,11 @@ export function RemoteShellSection({
           known != null &&
           (known.identityHash ?? '') === (res.identity_hash ?? '') &&
           (known.fingerprint ?? '') === (res.fingerprint ?? '');
+        const reconnectAttempts = opts?.reconnectAttempts ?? 0;
         if (sameIdentity) {
           // Previously confirmed identity for this destination — reconnect without re-prompting.
-          addSession(res.session_id, destinationHash);
+          // Seed reconnectAttempts so the auto-reconnect cap survives session_id churn.
+          addSession(res.session_id, destinationHash, { reconnectAttempts });
           setFocusedSession(res.session_id);
           return;
         }
@@ -170,36 +173,39 @@ export function RemoteShellSection({
 
   const handleReconnect = useCallback(
     async (sessionId: string, destinationHash: string, opts?: { autoReconnect?: boolean }) => {
+      // Read attempt count before removeSession — increment after remove is a no-op.
+      const prior = useRnshSessionStore.getState().getSession(sessionId)?.reconnectAttempts ?? 0;
+      const nextAttempts = prior + 1;
       removeSession(sessionId);
-      incrementReconnectAttempts(sessionId);
-      await finalizeConnect(destinationHash, opts);
+      await finalizeConnect(destinationHash, {
+        ...opts,
+        reconnectAttempts: nextAttempts,
+      });
     },
-    [finalizeConnect, incrementReconnectAttempts, removeSession],
+    [finalizeConnect, removeSession],
   );
 
   // Auto-reconnect once per unexpected closed/error session, up to the configured cap.
   // Only reconnects silently when the reconnect response's identity/fingerprint matches the
   // last user-confirmed value for that destination — otherwise it falls back to a fresh
   // fingerprint prompt so a changed remote identity is never trusted implicitly.
-  const autoReconnectedRef = useRef(new Set<string>());
+  // Gate by destination_hash (not session_id): each reconnect allocates a new session_id, so
+  // a session_id gate would never trip the maxReconnectAttempts cap.
+  const autoReconnectedDestRef = useRef(new Set<string>());
   useEffect(() => {
     if (!settings.autoReconnectShell) return;
     for (const session of sessionList) {
       if (session.disconnectIntent) continue;
       if (session.status !== 'closed' && session.status !== 'error') continue;
       if (session.reconnectAttempts >= settings.maxReconnectAttempts) continue;
-      if (autoReconnectedRef.current.has(session.session_id)) continue;
-      autoReconnectedRef.current.add(session.session_id);
-      void handleReconnect(session.session_id, session.destination_hash, { autoReconnect: true });
+      const dest = session.destination_hash;
+      if (autoReconnectedDestRef.current.has(dest)) continue;
+      autoReconnectedDestRef.current.add(dest);
+      void handleReconnect(session.session_id, dest, { autoReconnect: true }).finally(() => {
+        autoReconnectedDestRef.current.delete(dest);
+      });
     }
   }, [sessionList, settings.autoReconnectShell, settings.maxReconnectAttempts, handleReconnect]);
-
-  useEffect(() => {
-    const liveIds = new Set(sessionList.map((s) => s.session_id));
-    for (const id of [...autoReconnectedRef.current]) {
-      if (!liveIds.has(id)) autoReconnectedRef.current.delete(id);
-    }
-  }, [sessionList]);
 
   return (
     <div className="flex h-full min-w-0 flex-col gap-3 p-3">

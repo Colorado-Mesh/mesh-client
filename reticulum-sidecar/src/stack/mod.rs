@@ -1816,10 +1816,13 @@ impl StackHandle {
             {
                 return serde_json::json!({ "ok": false, "error": e });
             }
-            let save_dir_path = save_dir
-                .clone()
-                .map(PathBuf::from)
-                .unwrap_or_else(|| self.storage_dir.join("rncp_inbox"));
+            let Some(save_dir_str) = save_dir.clone() else {
+                return serde_json::json!({ "ok": false, "error": "save_dir_required" });
+            };
+            let save_dir_path = PathBuf::from(save_dir_str);
+            if allow_fetch && fetch_jail.is_none() {
+                return serde_json::json!({ "ok": false, "error": "fetch_jail_required" });
+            }
             let fetch_jail_path = fetch_jail.clone().map(PathBuf::from);
             let result = live
                 .rncp_start_listener(save_dir_path, allow_fetch, fetch_jail_path, overwrite)

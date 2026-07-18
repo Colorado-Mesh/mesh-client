@@ -4540,7 +4540,7 @@
       "addressAria": "rnsh hedef karması",
       "selectSavedAddress": "{{label}} kayıtlı adresini kullan",
       "connectAria": "Uzak kabuğu bağlayın",
-      "connect": "Bağlamak",
+      "connect": "Bağlan",
       "connecting": "Bağlanıyor…",
       "connectFailed": "Bağlantı başarısız oldu: {{error}}",
       "maxSessions": "Maksimum {{count}} kabuk oturumuna ulaşıldı.",
@@ -4568,7 +4568,7 @@
     "transfer": {
       "myIdentity": "Kimliğim:",
       "copyIdentityAria": "Kimlik karmamı kopyala",
-      "myReceiveDest": "Rncp alma hedefim:",
+      "myReceiveDest": "rncp alma hedefim:",
       "copyReceiveDestAria": "Rncp alma hedefimi kopyala",
       "pendingOffersTitle": "Bekleyen gelen dosyalar",
       "pendingOffersBadgeAria_one": "{{count}} gelen dosya teklifi bekleniyor",
@@ -4587,7 +4587,7 @@
       "modeSendAria": "Gönderme moduna geç",
       "modeSend": "Göndermek",
       "modeFetchAria": "Getirme moduna geç",
-      "modeFetch": "Gidip getirmek",
+      "modeFetch": "Getir",
       "destinationPlaceholder": "Hedef karması (32 onaltılık karakter)",
       "destinationAria": "rncp hedef karması",
       "notAllowedHint": "Bu yolda transfer yapılamıyor: {{reason}}",
@@ -4603,14 +4603,14 @@
       "chooseSaveDir": "Klasörü kaydetmeyi seçin…",
       "defaultSaveDir": "Varsayılan indirme klasörü",
       "fetchAria": "Dosyayı getir",
-      "fetch": "Gidip getirmek",
+      "fetch": "Getir",
       "fetchFailed": "Getirilemedi: {{error}}",
       "acceptFailed": "Dosya kabul edilemedi: {{error}}",
       "listTitle": "Transferler",
       "listEmpty": "Henüz transfer yok.",
       "kind": {
         "send": "Göndermek",
-        "fetch": "Gidip getirmek"
+        "fetch": "Getir"
       },
       "status": {
         "active": "Devam etmekte",
@@ -4619,7 +4619,7 @@
         "cancelled": "İptal edildi"
       },
       "cancelAria": "{{file}} aktarımını iptal et",
-      "cancel": "İptal etmek",
+      "cancel": "İptal",
       "retryAria": "{{file}} aktarımını yeniden deneyin",
       "retry": "Yeniden dene",
       "revealAria": "Klasördeki {{file}}'yi göster",
@@ -4648,6 +4648,7 @@
       "enabled": "Dosya alma etkinleştirildi.",
       "enableFailed": "Dosya alımı etkinleştirilemedi: {{error}}",
       "saveDirRequired": "Alımı etkinleştirmek için bir kaydetme klasörü seçin.",
+      "identityUnknown": "Bu eşin kimlik karması henüz çözülemedi — gelen Sor modu etkinleştirildi ancak eş izin listesine eklenmedi. Bir yol veya duyuru geldikten sonra tekrar deneyin.",
       "lxmfBody": "Mesh-client kullanıyorsanız lütfen dosya almayı (rncp) etkinleştirin: Uzak → Ayarlar → Gelen dosya teklifleri. Veya rncp/rncp-rs'yi dinleme modunda çalıştırın."
     },
     "saved": {
@@ -4671,10 +4672,14 @@
       "inboundTitle": "Gelen dosya aktarımları",
       "inboundMode": {
         "off": "Kapalı",
-        "ask": "Sormak",
+        "ask": "Sor",
         "allow_all_listed": "Yalnızca listelenenlere izin ver"
       },
       "allowFetch": "Uzaktaki eşlerin benden dosya almasına izin ver",
+      "chooseSaveDirAria": "Gelen dosya aktarımları için klasörü seçin",
+      "chooseSaveDir": "Kayıt klasörünü seç…",
+      "noSaveDir": "Kayıt klasörü seçilmedi",
+      "fetchJailRequired": "Uzaktan almayı etkinleştirmeden önce bir alma klasörü seçin.",
       "chooseFetchJailAria": "Uzak eşlerin getirebileceği klasörü seçin",
       "chooseFetchJail": "Getirme klasörünü seçin…",
       "noFetchJail": "Getirme klasörü seçilmedi",
@@ -4690,7 +4695,8 @@
       "reliabilityTitle": "Güvenilirlik",
       "autoReconnectShell": "Beklenmeyen bir bağlantı kesilmesinin ardından uzak kabuğu otomatik olarak yeniden bağlayın",
       "autoRetryTransfer": "Başarısız aktarımları otomatik olarak yeniden dene",
-      "identityTitle": "Kimliğim"
+      "identityTitle": "Kimliğim",
+      "myIdentity": "Kimliğim:"
     }
   }
 }

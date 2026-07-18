@@ -53,7 +53,11 @@ interface RnshSessionStoreState {
   /** Per-session stdout/stderr fan-out — panels subscribe imperatively instead of storing scrollback in state. */
   outputListeners: Map<string, Set<RnshOutputListener>>;
 
-  addSession: (sessionId: string, destinationHash: string) => void;
+  addSession: (
+    sessionId: string,
+    destinationHash: string,
+    opts?: { reconnectAttempts?: number },
+  ) => void;
   removeSession: (sessionId: string) => void;
   setFocusedSession: (sessionId: string | null) => void;
   setDisconnectIntent: (sessionId: string, intent: boolean) => void;
@@ -73,10 +77,14 @@ export const useRnshSessionStore = create<RnshSessionStoreState>((set, get) => (
   focusedSessionId: null,
   outputListeners: new Map(),
 
-  addSession: (sessionId, destinationHash) => {
+  addSession: (sessionId, destinationHash, opts) => {
     set((s) => {
       const sessions = new Map(s.sessions);
       const now = Date.now();
+      const reconnectAttempts =
+        typeof opts?.reconnectAttempts === 'number' && opts.reconnectAttempts > 0
+          ? Math.floor(opts.reconnectAttempts)
+          : 0;
       sessions.set(sessionId, {
         session_id: sessionId,
         destination_hash: destinationHash.toLowerCase(),
@@ -84,7 +92,7 @@ export const useRnshSessionStore = create<RnshSessionStoreState>((set, get) => (
         return_code: null,
         reason_key: null,
         error: null,
-        reconnectAttempts: 0,
+        reconnectAttempts,
         disconnectIntent: false,
         createdAt: now,
         updatedAt: now,

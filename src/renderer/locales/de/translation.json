@@ -645,7 +645,7 @@
     "colorRed": "Rot",
     "colorPurple": "Violett",
     "delete": "Löschen",
-    "copy": "Kopie",
+    "copy": "Kopieren",
     "copied": "Kopiert"
   },
   "configApplyNotice": {
@@ -1187,7 +1187,7 @@
       "meshcore": "Versuche erneut verbinden, bevor du aufgibst (1–{{max}}). Mit Einstellungen gespeichert; drücken Sie nach dem Ändern erneut auf Verbinden, damit der Hauptprozess ihn aufnimmt.",
       "meshtastic": "Beide Protokolle erlauben 1–{{max}}. Mit Einstellungen gespeichert; trennen und erneut verbinden, damit die laufende Sitzung den neuen Wert verwendet."
     },
-    "reticulumStackRunningAs": "Laufen — {{name}}",
+    "reticulumStackRunningAs": "Läuft — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Reticulum-Stack reagiert nicht – Neustart…"
   },
   "contactGroupsModal": {
@@ -4203,7 +4203,7 @@
     "topology": "Netzwerk-Topologie",
     "network": "Netzwerk",
     "rrc": "RRC",
-    "remote": "Fernbedienung"
+    "remote": "Remote"
   },
   "takServerPanel": {
     "title": "TAK-Server",
@@ -4504,7 +4504,7 @@
     "navAria": "Entfernte Abschnitte",
     "sidecarNotRunning": "Starten Sie den Reticulum-Stack, um die Remote-Shell und die Dateiübertragung zu verwenden.",
     "sections": {
-      "shell": "Gehäuse",
+      "shell": "Shell",
       "transfer": "Transfer",
       "saved": "Gespeichert",
       "settings": "Einstellungen"
@@ -4514,7 +4514,7 @@
     },
     "reasons": {
       "pathConstrained": "Pfad ist eingeschränkt (geringe Bandbreite)",
-      "pathUnknown": "Bahngeschwindigkeit ist unbekannt",
+      "pathUnknown": "Pfadgeschwindigkeit ist unbekannt",
       "notAnnounced": "Ziel hat noch nicht bekannt gegeben",
       "timeout": "Anfrage zeitlich abgelaufen",
       "notAllowed": "Nicht erlaubt",
@@ -4532,7 +4532,7 @@
         "high": "Schneller Weg",
         "constrained": "Eingeschränkter Pfad",
         "mixed": "Gemischter Pfad",
-        "unknown": "Unbekannter Dateipfad"
+        "unknown": "Unbekannter Pfad"
       }
     },
     "shell": {
@@ -4579,7 +4579,7 @@
       "rejectAria": "Ablehnen {{file}}",
       "reject": "Ablehnen",
       "alwaysAllowAria": "Diesen Absender immer für {{file}} zulassen",
-      "alwaysAllow": "Erforderlich",
+      "alwaysAllow": "Immer zulassen",
       "alwaysBlockAria": "Diesen Absender immer für {{file}} sperren",
       "alwaysBlock": "Immer blockieren",
       "alwaysAllowSaved": "Absender zur Zulassungsliste hinzugefügt.",
@@ -4587,7 +4587,7 @@
       "modeSendAria": "In den Sendemodus wechseln",
       "modeSend": "Senden",
       "modeFetchAria": "In den Abholmodus wechseln",
-      "modeFetch": "Fetch",
+      "modeFetch": "Abrufen",
       "destinationPlaceholder": "Ziel-Hash (32 Hex-Zeichen)",
       "destinationAria": "rncp-Ziel-Hash",
       "notAllowedHint": "Auf diesem Weg sind keine Transfers verfügbar: {{reason}}",
@@ -4597,20 +4597,20 @@
       "sendAria": "Datei versenden",
       "send": "Senden",
       "sendFailed": "Senden fehlgeschlagen: {{error}}",
-      "remotePathPlaceholder": "Remote Datei",
+      "remotePathPlaceholder": "Entfernter Dateipfad",
       "remotePathAria": "Remote-Dateipfad zum Abrufen",
       "chooseSaveDirAria": "Wählen Sie einen lokalen Ordner aus, in dem Sie speichern möchten",
       "chooseSaveDir": "Ordner speichern auswählen...",
       "defaultSaveDir": "Standard-Download-Ordner",
       "fetchAria": "Datei abrufen",
-      "fetch": "Fetch",
+      "fetch": "Abrufen",
       "fetchFailed": "Abrufen fehlgeschlagen: {{error}}",
       "acceptFailed": "Datei: {{error}} konnte nicht akzeptiert werden",
-      "listTitle": "Umbuchungen",
+      "listTitle": "Übertragungen",
       "listEmpty": "Keine Transfers.",
       "kind": {
         "send": "Senden",
-        "fetch": "Fetch"
+        "fetch": "Abrufen"
       },
       "status": {
         "active": "Laufend",
@@ -4648,6 +4648,7 @@
       "enabled": "Der Dateiempfang ist aktiviert.",
       "enableFailed": "Dateiempfang konnte nicht aktiviert werden: {{error}}",
       "saveDirRequired": "Wählen Sie einen Speicherordner aus, um den Empfang zu aktivieren.",
+      "identityUnknown": "Der Identitäts-Hash dieses Peers konnte noch nicht aufgelöst werden — eingehendes Nachfragen ist aktiviert, aber der Peer wurde nicht zur Erlaubnisliste hinzugefügt. Versuche es erneut, sobald ein Pfad oder ein Announce eintrifft.",
       "lxmfBody": "Bitte aktivieren Sie den Dateiempfang (rncp), wenn Sie mesh-client: Remote → Settings → Inbound file offers verwenden. Oder führen Sie rncp/rncp-rs im Listen-Modus aus."
     },
     "saved": {
@@ -4675,6 +4676,10 @@
         "allow_all_listed": "Nur aufgelistete zulassen"
       },
       "allowFetch": "Remote-Kollegen erlauben, Dateien von mir abzurufen",
+      "chooseSaveDirAria": "Ordner für eingehende Dateiübertragungen auswählen",
+      "chooseSaveDir": "Speicherordner auswählen…",
+      "noSaveDir": "Kein Speicherordner ausgewählt",
+      "fetchJailRequired": "Wähle einen Abruf-Ordner, bevor du den Remote-Abruf aktivierst.",
       "chooseFetchJailAria": "Wählen Sie den Ordner aus, aus dem entfernte Kollegen abrufen können",
       "chooseFetchJail": "Ordner abrufen auswählen...",
       "noFetchJail": "Kein Abrufordner ausgewählt",
@@ -4690,7 +4695,8 @@
       "reliabilityTitle": "Zuverlässigkeit",
       "autoReconnectShell": "Automatische Wiederverbindung der Remote-Shell nach einer unerwarteten Trennung",
       "autoRetryTransfer": "Fehlgeschlagenen Übertragungen automatisch wiederholen",
-      "identityTitle": "Meine Identität"
+      "identityTitle": "Meine Identität",
+      "myIdentity": "Meine Identität:"
     }
   }
 }

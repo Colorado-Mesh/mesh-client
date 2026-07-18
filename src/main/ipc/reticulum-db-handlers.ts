@@ -19,12 +19,9 @@ import { assertIpcSender } from '../validate-ipc-sender';
 const REMOTE_ADDRESS_SERVICES = new Set<RemoteAddressService>(['rnsh', 'rncp']);
 const REMOTE_INBOUND_DECISIONS = new Set<RemoteInboundDecision>(['allow', 'block']);
 
-/** 32-hex identity/destination hash, case-insensitive; matches sidecar `parse_hash16()`. */
+/** 32-hex identity/destination hash — delegates to shared helper (matches sidecar `parse_hash16()`). */
 function canonicalizeHash32(raw: unknown): string | null {
-  if (typeof raw !== 'string') return null;
-  const trimmed = raw.trim();
-  if (!/^[0-9a-fA-F]{32}$/.test(trimmed)) return null;
-  return trimmed.toLowerCase();
+  return typeof raw === 'string' ? canonicalizeReticulumDestinationHash(raw) : null;
 }
 
 const ALLOWED_DELIVERY_STATUS = new Set([

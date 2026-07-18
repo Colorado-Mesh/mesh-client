@@ -23,6 +23,10 @@ describe('remoteSettingsStorage', () => {
       autoRetryTransfer: false,
       maxRetryAttempts: 1,
       inboundMode: 'ask',
+      lastSaveDir: '/tmp/inbox',
+      lastFetchJail: '/tmp/jail',
+      allowFetch: true,
+      overwriteOnReceive: true,
     });
     expect(loadRemoteSettings()).toEqual({
       autoReconnectShell: false,
@@ -30,6 +34,10 @@ describe('remoteSettingsStorage', () => {
       autoRetryTransfer: false,
       maxRetryAttempts: 1,
       inboundMode: 'ask',
+      lastSaveDir: '/tmp/inbox',
+      lastFetchJail: '/tmp/jail',
+      allowFetch: true,
+      overwriteOnReceive: true,
     });
   });
 

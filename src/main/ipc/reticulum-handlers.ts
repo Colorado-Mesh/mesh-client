@@ -323,11 +323,10 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   });
 
   /**
-   * Picker-gated rncp listener config: `save_dir` / `fetch_jail` (when set)
-   * must fall under the last {@link showRncpSaveDirectoryDialog} result —
-   * `fetch_jail` in particular controls which local files remote peers may
-   * read via rncp fetch, so it is exactly as sensitive as Nomad's watched
-   * content-source directory.
+   * Picker-gated rncp listener config: when enabling, `save_dir` is required and
+   * must fall under the last {@link showRncpSaveDirectoryDialog} result.
+   * `fetch_jail` is required whenever `allow_fetch` is true (remote peers may
+   * otherwise read arbitrary absolute paths) and is gated the same way.
    */
   ipcMain.handle('reticulum:setRncpListener', async (event, opts: unknown) => {
     assertIpcSender(event, 'reticulum:setRncpListener');
@@ -335,9 +334,21 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       throw new TypeError('setRncpListener: opts must be an object');
     }
     const o = opts as Record<string, unknown>;
+    const enabled = o.enabled === true;
+    const allowFetch = o.allow_fetch === true;
     const saveDir = typeof o.save_dir === 'string' && o.save_dir.trim() ? o.save_dir : undefined;
     const fetchJail =
       typeof o.fetch_jail === 'string' && o.fetch_jail.trim() ? o.fetch_jail : undefined;
+    if (enabled && saveDir == null) {
+      console.warn('[ReticulumIPC] setRncpListener rejected: save_dir required when enabled');
+      return { ok: false, error: 'save_dir_required' };
+    }
+    if (allowFetch && fetchJail == null) {
+      console.warn(
+        '[ReticulumIPC] setRncpListener rejected: fetch_jail required when allow_fetch is true',
+      );
+      return { ok: false, error: 'fetch_jail_required' };
+    }
     if (saveDir != null && !isAllowedRncpSaveDirectoryPath(saveDir)) {
       console.warn(
         '[ReticulumIPC] setRncpListener rejected save_dir not from picker:',
@@ -361,9 +372,9 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     try {
       const m = ensureManager();
       return await m.proxyPost('/api/v1/rncp/listener', {
-        enabled: o.enabled === true,
+        enabled,
         save_dir: saveDir,
-        allow_fetch: o.allow_fetch === true,
+        allow_fetch: allowFetch,
         fetch_jail: fetchJail,
         overwrite: o.overwrite === true,
         allowed,
