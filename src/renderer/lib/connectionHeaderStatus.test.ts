@@ -12,8 +12,14 @@ import {
   isMqttErrorDisconnect,
   isTakErrorDisconnect,
   mqttHeaderVariant,
+  reconnectBannerMaxAttempts,
   takHeaderVariant,
 } from './connectionHeaderStatus';
+import {
+  RF_MAX_RECONNECT_ATTEMPTS,
+  RF_MAX_RECONNECT_ATTEMPTS_BLE,
+  RF_MAX_RECONNECT_ATTEMPTS_SERIAL,
+} from './rfReconnectShared';
 
 describe('connectionHeaderStatus', () => {
   describe('isMqttErrorDisconnect', () => {
@@ -104,6 +110,18 @@ describe('connectionHeaderStatus', () => {
     it('tak running ok is green', () => {
       expect(takHeaderVariant(true, false, false)).toBe('ok');
       expect(headerTextClass('ok')).toContain('text-brand-green');
+    });
+  });
+
+  describe('reconnectBannerMaxAttempts', () => {
+    it.each([
+      ['ble', RF_MAX_RECONNECT_ATTEMPTS_BLE],
+      ['serial', RF_MAX_RECONNECT_ATTEMPTS_SERIAL],
+      ['http', RF_MAX_RECONNECT_ATTEMPTS],
+      ['tcp', RF_MAX_RECONNECT_ATTEMPTS],
+      [null, RF_MAX_RECONNECT_ATTEMPTS],
+    ] as const)('maps %s → %s', (type, expected) => {
+      expect(reconnectBannerMaxAttempts(type)).toBe(expected);
     });
   });
 });

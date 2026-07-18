@@ -354,7 +354,14 @@
     "reticulumCapDestinationsLabel": "メモリと SQLite の宛先 / ピア数を制限し、最後に受信したものを保持",
     "reticulumCapDestinationsCountAria": "宛先数を制限し、最後に受信した {{count}} 件を保持",
     "reticulumDestinationsUnit_one": "宛先",
-    "reticulumDestinationsUnit_other": "宛先"
+    "reticulumDestinationsUnit_other": "宛先",
+    "storeForwardHistoryProfileLabel": "ストア＆フォワードのキャッチアッププロファイル",
+    "storeForwardHistoryProfileAria": "ストア＆フォワード履歴のキャッチアップの積極性",
+    "storeForwardHistoryProfileConservative": "保守的 (ビジーメッシュに優しい)",
+    "storeForwardHistoryProfileAggressive": "アグレッシブ（むらのあるカバレッジ）",
+    "storeForwardHistoryProfileHint": "保守的な場合は、より長いオフライン ゲートとクールダウンを使用します。短時間の切断後すぐに積極的にフェッチし、より多くのメッセージを要求します。通信時間が許す場合にのみ使用してください。",
+    "shareLocationSendWaypoint": "位置情報を共有するときにマップピン（ウェイポイント）も送信します",
+    "shareLocationSendWaypointHint": "有効にすると、Meshtastic 位置情報共有はテキスト メッセージとウェイポイント パケットの両方を送信するため、公式アプリにマップ ピンが表示されます。ビジーメッシュでテキストのみを送信するには無効にします。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -581,12 +588,20 @@
       "newOfferToast": "{{peer}}様からファイルのお送りをご希望です: {{file}}",
       "requestEnable": "リクエストの有効化",
       "requestEnableAria": "このピアにファイル受信を有効にするように依頼します"
-    }
+    },
+    "shareLocation": "位置情報を共有する",
+    "shareLocationLabel": "📍 共有場所",
+    "shareLocationHint": "現在の GPS または静的位置をチャット メッセージとして送信します",
+    "shareLocationUnavailable": "位置情報が利用できません - GPS 設定を確認してください"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Giphyで開く"
+    "meshcoreGifOpen": "Giphyで開く",
+    "locationCard": {
+      "alt": "共有ロケーションマップタイル",
+      "openMaps": "マップで開く"
+    }
   },
   "common": {
     "close": "近い",
@@ -1171,7 +1186,8 @@
       "meshcore": "諦める前に再接続を試みます（ 1 - {{max}} ）。設定が保存されました。変更後にもう一度接続を押して、メインプロセスがそれをピックアップします。",
       "meshtastic": "どちらのプロトコルも1 - {{max}}を許可します。設定とともに保存されました。接続を解除してもう一度接続すると、実行中のセッションが新しい値を使用します。"
     },
-    "reticulumStackRunningAs": "実行中— {{name}}"
+    "reticulumStackRunningAs": "実行中— {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Reticulum スタックが応答なし — 再起動中…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

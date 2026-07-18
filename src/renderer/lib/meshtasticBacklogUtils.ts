@@ -7,8 +7,11 @@ import { MS_PER_MINUTE } from '@/shared/timeConstants';
 /** Duration after MQTT connect during which inbound messages are treated as backlog. */
 export const MQTT_RECONNECT_BACKLOG_MS = 30_000;
 
-/** Max messages for automatic CLIENT_HISTORY (Android uses ~25). */
+/** Max messages for automatic CLIENT_HISTORY (Android uses ~25). Conservative default. */
 export const SF_AUTO_HISTORY_MESSAGE_CAP = 50;
+
+/** Aggressive catch-up message cap (user opt-in via App settings). */
+export const SF_AUTO_HISTORY_MESSAGE_CAP_AGGRESSIVE = 75;
 
 /** Max messages for manual “catch up” CLIENT_HISTORY. */
 export const SF_MANUAL_HISTORY_MESSAGE_CAP = 100;
@@ -16,8 +19,38 @@ export const SF_MANUAL_HISTORY_MESSAGE_CAP = 100;
 /** Skip auto-fetch if last successful fetch for this server was within this window. */
 export const SF_AUTO_HISTORY_COOLDOWN_MS = 15 * MS_PER_MINUTE;
 
+/** Aggressive catch-up cooldown (user opt-in). */
+export const SF_AUTO_HISTORY_COOLDOWN_AGGRESSIVE_MS = 10 * MS_PER_MINUTE;
+
 /** Require RF to have been disconnected at least this long before auto-fetch. */
 export const SF_AUTO_HISTORY_OFFLINE_MIN_MS = 5 * MS_PER_MINUTE;
+
+/** Aggressive offline gate (user opt-in). */
+export const SF_AUTO_HISTORY_OFFLINE_MIN_AGGRESSIVE_MS = 2 * MS_PER_MINUTE;
+
+export interface StoreForwardHistoryTuning {
+  cooldownMs: number;
+  offlineMinMs: number;
+  messageCap: number;
+}
+
+/** Resolve S&F auto-history gates for the selected App-tab profile. */
+export function resolveStoreForwardHistoryTuning(
+  profile: 'conservative' | 'aggressive' = 'conservative',
+): StoreForwardHistoryTuning {
+  if (profile === 'aggressive') {
+    return {
+      cooldownMs: SF_AUTO_HISTORY_COOLDOWN_AGGRESSIVE_MS,
+      offlineMinMs: SF_AUTO_HISTORY_OFFLINE_MIN_AGGRESSIVE_MS,
+      messageCap: SF_AUTO_HISTORY_MESSAGE_CAP_AGGRESSIVE,
+    };
+  }
+  return {
+    cooldownMs: SF_AUTO_HISTORY_COOLDOWN_MS,
+    offlineMinMs: SF_AUTO_HISTORY_OFFLINE_MIN_MS,
+    messageCap: SF_AUTO_HISTORY_MESSAGE_CAP,
+  };
+}
 
 /** When router heartbeat period is 0, use this window instead of server default. */
 export const SF_AUTO_HISTORY_WINDOW_CAP_MIN = 120;

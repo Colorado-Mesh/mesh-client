@@ -354,7 +354,14 @@
     "reticulumCapDestinationsLabel": "Ogranicz miejsca docelowe / peery w pamięci i SQLite, zachowaj ostatnio słyszane",
     "reticulumCapDestinationsCountAria": "Ogranicz miejsca docelowe, zachowaj {{count}} ostatnio słyszanych",
     "reticulumDestinationsUnit_one": "miejsce docelowe",
-    "reticulumDestinationsUnit_other": "miejsca docelowego"
+    "reticulumDestinationsUnit_other": "miejsca docelowego",
+    "storeForwardHistoryProfileLabel": "Zachowaj i przekaż profil nadrabiania zaległości",
+    "storeForwardHistoryProfileAria": "Agresywność nadrabiania zaległości w historii przechowywania i przesyłania dalej",
+    "storeForwardHistoryProfileConservative": "Konserwatywny (przyjazny dla zajętych sieci)",
+    "storeForwardHistoryProfileAggressive": "Agresywny (nierówne pokrycie)",
+    "storeForwardHistoryProfileHint": "Konserwatywny używa dłuższej bramy offline i czasu odnowienia. Agresywne pobieranie następuje wcześniej po krótkich rozłączeniach i żąda większej liczby wiadomości — używaj tylko wtedy, gdy pozwala na to czas antenowy.",
+    "shareLocationSendWaypoint": "Podczas udostępniania lokalizacji wyślij także pinezkę do mapy (Waypoint).",
+    "shareLocationSendWaypointHint": "Po włączeniu udostępnianie lokalizacji Meshtastic wysyła zarówno wiadomość tekstową, jak i pakiet Waypoint, dzięki czemu oficjalne aplikacje pokazują pinezkę na mapie. Wyłącz w przypadku zajętych sieci, aby wysyłać tylko tekst."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -581,12 +588,20 @@
       "newOfferToast": "{{peer}} chce wysłać Ci plik: {{file}}",
       "requestEnable": "Włącz żądanie",
       "requestEnableAria": "Poproś tego partnera, aby włączył odbieranie plików"
-    }
+    },
+    "shareLocation": "Udostępnij lokalizację",
+    "shareLocationLabel": "📍 Udostępniona lokalizacja",
+    "shareLocationHint": "Wyślij swoją aktualną pozycję GPS lub pozycję statyczną jako wiadomość na czacie",
+    "shareLocationUnavailable": "Lokalizacja niedostępna — sprawdź ustawienia GPS"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Otwórz na Giphy"
+    "meshcoreGifOpen": "Otwórz na Giphy",
+    "locationCard": {
+      "alt": "Udostępniony kafelek mapy lokalizacji",
+      "openMaps": "Otwórz w Mapach"
+    }
   },
   "common": {
     "close": "Zamknij",
@@ -1171,7 +1186,8 @@
       "meshcore": "Ponownie połącz próby przed rezygnacją (1–{{max}}). Zapisano z ustawieniami; naciśnij ponownie Połącz po zmianie, aby główny proces go podniósł.",
       "meshtastic": "Oba protokoły umożliwiają 1–{{max}}. Zapisano z ustawieniami; odłącz i połącz ponownie, aby uruchomiona sesja używała nowej wartości."
     },
-    "reticulumStackRunningAs": "Uruchamianie — {{name}}"
+    "reticulumStackRunningAs": "Uruchamianie — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Stos Reticulum nie odpowiada — uruchamiam ponownie…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",

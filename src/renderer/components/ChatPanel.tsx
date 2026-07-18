@@ -498,6 +498,13 @@ export interface ChatPanelProps {
   meshcoreFloodScopeHashtag?: string;
   /** MeshCore: apply flood scope on the connected radio. */
   applyMeshcoreFloodScopeHashtag?: (hashtag: string) => Promise<void>;
+  /** Resolve GPS/static position for one-click location share. */
+  resolveShareLocation?: () => Promise<{ lat: number; lon: number } | null>;
+  /**
+   * Meshtastic: dual-send Waypoint after location text (gated by app setting).
+   * Channel index is passed so the pin matches the chat view.
+   */
+  onSendLocationWaypoint?: (lat: number, lon: number, channel: number) => Promise<void>;
 }
 
 function ChatPanel({
@@ -534,6 +541,8 @@ function ChatPanel({
   onOpenPropagationSettings,
   reticulumStackLive = false,
   hasRncpTransfer = false,
+  resolveShareLocation,
+  onSendLocationWaypoint,
 }: ChatPanelProps) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
@@ -3002,6 +3011,14 @@ function ChatPanel({
         payloadLimit={composerPayloadLimit}
         lxmfReplyHashReplies={lxmfReplyHashReplies}
         showFloodScopeOverride={typeof applyMeshcoreFloodScopeHashtag === 'function'}
+        resolveShareLocation={resolveShareLocation}
+        onSendLocationWaypoint={
+          onSendLocationWaypoint
+            ? async (lat, lon) => {
+                await onSendLocationWaypoint(lat, lon, channel === -1 ? 0 : channel);
+              }
+            : undefined
+        }
         onSendSuccess={() => {
           setUnreadDividerTimestamp(0);
         }}

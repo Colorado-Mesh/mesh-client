@@ -53,8 +53,13 @@ export async function forgetGrantedSerialPortBestEffort(port: SerialPort | null)
 
 export async function escalateSerialReconnectExhaustion(
   port: SerialPort | null | undefined,
+  opts?: { forgetPort?: boolean },
 ): Promise<void> {
-  await forgetGrantedSerialPortBestEffort(port ?? null);
+  // When post-exhaustion rediscovery will poll getPorts(), skip forget so Chromium
+  // keeps the grant and the radio can reappear after USB re-enumeration.
+  if (opts?.forgetPort !== false) {
+    await forgetGrantedSerialPortBestEffort(port ?? null);
+  }
   clearPersistedSerialPortIdentity();
 }
 

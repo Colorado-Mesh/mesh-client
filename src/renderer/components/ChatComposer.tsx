@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/refs */
 import 'emoji-picker-element';
 
-import { CornerUpLeft } from 'lucide-react-motion';
+import { CornerUpLeft, MapPin } from 'lucide-react-motion';
 import { type RefObject, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,7 +11,10 @@ import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
 import type { ChatMessage, MeshNode, MeshProtocol } from '@/renderer/lib/types';
 import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types';
 
-import { isMeshcoreOpenWireCompatEnabled } from '../lib/appSettingsStorage';
+import {
+  isMeshcoreOpenWireCompatEnabled,
+  isShareLocationSendWaypointEnabled,
+} from '../lib/appSettingsStorage';
 import {
   type ComposerWireContext,
   computeComposerLimitStatus,
@@ -19,6 +22,7 @@ import {
   MAX_CHUNKS,
   splitChatMessage,
 } from '../lib/chatComposerLimits';
+import { formatLocationMessage } from '../lib/chatLocationUtils';
 import { clearDraft, loadDraftsInitial, saveDraft } from '../lib/chatPanelProtocolStorage';
 import { MESHCORE_FLOOD_SCOPE_PRESETS } from '../lib/meshcoreFloodScope';
 import {
@@ -29,6 +33,7 @@ import {
 } from '../lib/meshcoreGifWire';
 import { HelpTooltip } from './HelpTooltip';
 import MentionAutocomplete, { buildMentionCandidates } from './MentionAutocomplete';
+import { useToast } from './Toast';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -84,6 +89,16 @@ export interface ChatComposerProps {
   lxmfReplyHashReplies?: boolean;
   /** MeshCore: show per-message flood-scope override control. */
   showFloodScopeOverride?: boolean;
+  /**
+   * Resolve GPS/static position for one-click location share.
+   * Sourced from runtime `refreshOurPosition` (Composer has no nodesRef access).
+   */
+  resolveShareLocation?: () => Promise<{ lat: number; lon: number } | null>;
+  /**
+   * Meshtastic dual-send: after the text location message, send a Waypoint packet.
+   * Omitted / no-op for MeshCore and Reticulum. Channel is closed over by ChatPanel.
+   */
+  onSendLocationWaypoint?: (lat: number, lon: number) => Promise<void>;
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
   className?: string;
 }
@@ -113,10 +128,13 @@ export function ChatComposer({
   onSendSuccess,
   lxmfReplyHashReplies = false,
   showFloodScopeOverride = false,
+  resolveShareLocation,
+  onSendLocationWaypoint,
   textareaRef,
   className,
 }: ChatComposerProps) {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const iconTrigger = useIconTrigger();
   const isLinux = useMemo(() => window.electronAPI.getPlatform() === 'linux', []);
   const limitHintId = useId();
@@ -462,6 +480,115 @@ export function ChatComposer({
     void sendGifWire(formatMeshcoreGifWire(gifId));
   }, [gifInput, sendGifWire, t, viewKey]);
 
+  const handleShareLocation = useCallback(async () => {
+    if (sending || disabled || !resolveShareLocation) return;
+    if (!isConnected && !allowOutbox) {
+      setChatActionError({
+        message: t('chatPanel.composePlaceholderConnectFirst'),
+        viewKey,
+      });
+      return;
+    }
+    setSending(true);
+    setChatActionError(null);
+    let text = '';
+    try {
+      const pos = await resolveShareLocation();
+      if (pos == null) {
+        addToast(t('chatPanel.shareLocationUnavailable'), 'warning');
+        return;
+      }
+      text = formatLocationMessage(pos.lat, pos.lon, t('chatPanel.shareLocationLabel'));
+      const shouldQueue = allowOutbox && (!isConnected || (isMqttOnly && protocol === 'meshcore'));
+      const enqueue = queueOutboxProp ?? queueOutbox;
+      if (shouldQueue) {
+        if (!enqueue) return;
+        await enqueue({
+          protocol,
+          viewKey,
+          channel: outboxChannel,
+          toNode: outboxDestination ?? null,
+          payload: text,
+          replyId: null,
+          status: 'queued',
+          error: null,
+          nextRetryAt: null,
+          groupId: null,
+          groupIndex: null,
+          groupTotal: null,
+        });
+        onSendSuccess?.();
+        return;
+      }
+      await onSendChunk(text);
+      if (
+        protocol === 'meshtastic' &&
+        isShareLocationSendWaypointEnabled() &&
+        onSendLocationWaypoint &&
+        isConnected
+      ) {
+        try {
+          await onSendLocationWaypoint(pos.lat, pos.lon);
+        } catch (wpErr) {
+          console.warn('[ChatComposer] location waypoint send failed ' + errLikeToLogString(wpErr));
+        }
+      }
+      onSendSuccess?.();
+    } catch (err) {
+      console.error('[ChatComposer] Share location failed: ' + errLikeToLogString(err));
+      const enqueue = queueOutboxProp ?? queueOutbox;
+      // Failure point: live send failed; fallback: enqueue text for later drain.
+      if (allowOutbox && enqueue && text) {
+        try {
+          await enqueue({
+            protocol,
+            viewKey,
+            channel: outboxChannel,
+            toNode: outboxDestination ?? null,
+            payload: text,
+            replyId: null,
+            status: 'queued',
+            error: null,
+            nextRetryAt: null,
+            groupId: null,
+            groupIndex: null,
+            groupTotal: null,
+          });
+          onSendSuccess?.();
+          return;
+        } catch (queueErr) {
+          console.warn(
+            '[ChatComposer] location outbox enqueue failed ' + errLikeToLogString(queueErr),
+          );
+        }
+      }
+      setChatActionError({
+        message: err instanceof Error ? err.message : t('chatPanel.sendFailed'),
+        viewKey,
+      });
+    } finally {
+      setSending(false);
+    }
+  }, [
+    addToast,
+    allowOutbox,
+    disabled,
+    isConnected,
+    isMqttOnly,
+    onSendChunk,
+    onSendLocationWaypoint,
+    onSendSuccess,
+    outboxChannel,
+    outboxDestination,
+    protocol,
+    queueOutbox,
+    queueOutboxProp,
+    resolveShareLocation,
+    sending,
+    t,
+    viewKey,
+  ]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (mentionQuery != null && mentionCandidates.length > 0) {
@@ -619,6 +746,7 @@ export function ChatComposer({
 
   const showMeshcoreGifButton =
     protocol === 'meshcore' && meshcoreOpenWireCompat && variant === 'chat';
+  const showShareLocationButton = variant === 'chat' && typeof resolveShareLocation === 'function';
 
   return (
     <div className={className}>
@@ -826,6 +954,21 @@ export function ChatComposer({
               className={emojiButtonClass}
             >
               GIF
+            </button>
+          </HelpTooltip>
+        )}
+        {showShareLocationButton && (
+          <HelpTooltip text={t('chatPanel.shareLocationHint')}>
+            <button
+              type="button"
+              onClick={() => {
+                void handleShareLocation();
+              }}
+              disabled={disabled || (!isConnected && !allowOutbox) || sending}
+              aria-label={t('chatPanel.shareLocation')}
+              className={emojiButtonClass}
+            >
+              <MapPin aria-hidden className="h-4 w-4" trigger={iconTrigger} size={16} />
             </button>
           </HelpTooltip>
         )}

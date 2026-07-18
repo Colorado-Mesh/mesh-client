@@ -354,7 +354,14 @@
     "reticulumCapDestinationsLabel": "Limiter les destinations / pairs en mémoire et dans SQLite, conserver les plus récemment entendus",
     "reticulumCapDestinationsCountAria": "Limiter les destinations, conserver les {{count}} plus récemment entendues",
     "reticulumDestinationsUnit_one": "destination",
-    "reticulumDestinationsUnit_other": "destinations"
+    "reticulumDestinationsUnit_other": "destinations",
+    "storeForwardHistoryProfileLabel": "Profil de rattrapage Store & Forward",
+    "storeForwardHistoryProfileAria": "Agressivité de rattrapage de l’historique Store & Forward",
+    "storeForwardHistoryProfileConservative": "Conservateur (convivial pour les maillages occupés)",
+    "storeForwardHistoryProfileAggressive": "Agressif (couverture inégale)",
+    "storeForwardHistoryProfileHint": "Conservateur utilise une porte hors ligne et un temps de recharge plus longs. Agressif récupère plus tôt après de courtes déconnexions et demande plus de messages - à utiliser uniquement lorsque le temps d'antenne le permet.",
+    "shareLocationSendWaypoint": "Envoyez également un repère de carte (Waypoint) lors du partage de position",
+    "shareLocationSendWaypointHint": "Lorsqu'ils sont activés, les partages de localisation Meshtastic envoient à la fois un message texte et un paquet Waypoint afin que les applications officielles affichent une épingle de carte. Désactivez-le sur les maillages occupés pour envoyer du texte uniquement."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -581,12 +588,20 @@
       "newOfferToast": "{{peer}} souhaite vous envoyer un fichier : {{file}}",
       "requestEnable": "Demander l'activation",
       "requestEnableAria": "Demandez à cet homologue d'activer la réception de fichiers"
-    }
+    },
+    "shareLocation": "Partager l'emplacement",
+    "shareLocationLabel": "📍 Emplacement partagé",
+    "shareLocationHint": "Envoyez votre GPS actuel ou votre position statique sous forme de message de discussion",
+    "shareLocationUnavailable": "Localisation indisponible : vérifiez les paramètres GPS"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Ouvrir sur Giphy"
+    "meshcoreGifOpen": "Ouvrir sur Giphy",
+    "locationCard": {
+      "alt": "Tuile de carte de localisation partagée",
+      "openMaps": "Ouvrir dans Maps"
+    }
   },
   "common": {
     "close": "Fermer",
@@ -1171,7 +1186,8 @@
       "meshcore": "Reconnectez-vous avant d'abandonner (1–{{max}}). Enregistré avec les paramètres ; appuyez à nouveau sur Connecter après la modification pour que le processus principal le récupère.",
       "meshtastic": "Les deux protocoles permettent 1–{{max}}. Enregistré avec les paramètres ; déconnectez-vous et reconnectez-vous afin que la session en cours d'exécution utilise la nouvelle valeur."
     },
-    "reticulumStackRunningAs": "En cours — {{name}}"
+    "reticulumStackRunningAs": "En cours — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "La pile Reticulum ne répond pas – redémarrage…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",

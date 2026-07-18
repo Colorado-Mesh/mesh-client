@@ -354,7 +354,14 @@
     "reticulumCapDestinationsLabel": "Ограничить пункты назначения / одноранговые узлы в памяти и SQLite, сохранять последние полученные",
     "reticulumCapDestinationsCountAria": "Ограничить пункты назначения, сохранять последние полученные {{count}}",
     "reticulumDestinationsUnit_one": "пункт назначения",
-    "reticulumDestinationsUnit_other": "пункта назначения"
+    "reticulumDestinationsUnit_other": "пункта назначения",
+    "storeForwardHistoryProfileLabel": "Дополнительный профиль Store & Forward",
+    "storeForwardHistoryProfileAria": "Догоняющая агрессивность истории Store & Forward",
+    "storeForwardHistoryProfileConservative": "Консервативный (дружественный к загруженной сети)",
+    "storeForwardHistoryProfileAggressive": "Агрессивный (пятнистый охват)",
+    "storeForwardHistoryProfileHint": "Консерватор использует более длительные автономные ворота и время восстановления. Агрессивная выборка выполняется раньше после коротких отключений и запрашивает больше сообщений — используйте только тогда, когда позволяет эфирное время.",
+    "shareLocationSendWaypoint": "Также отправьте метку на карте (путевую точку), когда делитесь местоположением.",
+    "shareLocationSendWaypointHint": "Если эта функция включена, Meshtastic отправляет как текстовое сообщение, так и пакет путевых точек, поэтому официальные приложения показывают отметку на карте. Отключите на занятых сетках, чтобы отправлять только текст."
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -581,12 +588,20 @@
       "newOfferToast": "{{peer}} хочет отправить вам файл: {{file}}",
       "requestEnable": "Включить запрос",
       "requestEnableAria": "Попросите этого однорангового узла включить получение файлов"
-    }
+    },
+    "shareLocation": "Поделиться местоположением",
+    "shareLocationLabel": "📍 Общая локация",
+    "shareLocationHint": "Отправьте свое текущее местоположение GPS или статическое местоположение в виде сообщения в чате.",
+    "shareLocationUnavailable": "Местоположение недоступно — проверьте настройки GPS."
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Открыть на Giphy"
+    "meshcoreGifOpen": "Открыть на Giphy",
+    "locationCard": {
+      "alt": "Общий фрагмент карты местоположений",
+      "openMaps": "Открыть в Картах"
+    }
   },
   "common": {
     "close": "Закрывать",
@@ -1171,7 +1186,8 @@
       "meshcore": "Повторно подключитесь, прежде чем сдаваться (1–{{max}}). Сохранено с настройками; нажмите «Подключиться» еще раз после изменения, чтобы основной процесс забрал его.",
       "meshtastic": "Оба протокола допускают 1–{{max}}. Сохранено с настройками; отключите и снова подключитесь, чтобы сеанс работы использовал новое значение."
     },
-    "reticulumStackRunningAs": "Работает — {{name}}"
+    "reticulumStackRunningAs": "Работает — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Стек Reticulum не отвечает — перезапуск…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",

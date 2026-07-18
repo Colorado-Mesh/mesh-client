@@ -10,6 +10,13 @@ export interface ReticulumSidecarStatus {
   port: number;
   pid: number | null;
   lastError?: string;
+  /**
+   * False when the hung-sidecar watchdog sees unresponsive HTTP while the
+   * process is still alive. Undefined/true when healthy or not yet polled.
+   */
+  healthy?: boolean;
+  /** Epoch ms when `healthy` last flipped to false (hung detection). */
+  unhealthySince?: number;
   autoBeaconAlert?: ReticulumAutoBeaconAlert | null;
   interfaceIssueAlert?: ReticulumInterfaceIssueAlert | null;
 }

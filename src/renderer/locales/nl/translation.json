@@ -354,7 +354,14 @@
     "reticulumCapDestinationsLabel": "Bestemmingen / peers in geheugen en SQLite begrenzen, de meest recent gehoorde behouden",
     "reticulumCapDestinationsCountAria": "Bestemmingen begrenzen, de {{count}} meest recent gehoorde behouden",
     "reticulumDestinationsUnit_one": "bestemming",
-    "reticulumDestinationsUnit_other": "bestemmingen"
+    "reticulumDestinationsUnit_other": "bestemmingen",
+    "storeForwardHistoryProfileLabel": "Store & Forward inhaalprofiel",
+    "storeForwardHistoryProfileAria": "Store & Forward-geschiedenis inhaal-agressiviteit",
+    "storeForwardHistoryProfileConservative": "Conservatief (druk-mesh-vriendelijk)",
+    "storeForwardHistoryProfileAggressive": "Agressief (vlekkerige dekking)",
+    "storeForwardHistoryProfileHint": "Conservatief gebruikt een langere offline poort en cooldown. Agressief haalt sneller op na korte verbroken verbindingen en vraagt ​​om meer berichten - gebruik dit alleen als de zendtijd dit toelaat.",
+    "shareLocationSendWaypoint": "Stuur ook een kaartpin (Waypoint) wanneer u uw locatie deelt",
+    "shareLocationSendWaypointHint": "Indien ingeschakeld, verzenden Meshtastic-locatieshares zowel een sms-bericht als een Waypoint-pakket, zodat officiële apps een kaartspeld tonen. Schakel uit bij drukke meshes om alleen tekst te verzenden."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -581,12 +588,20 @@
       "newOfferToast": "{{peer}} wil je een bestand sturen: {{file}}",
       "requestEnable": "Aanvraag inschakelen",
       "requestEnableAria": "Vraag deze collega om bestandsontvangst in te schakelen"
-    }
+    },
+    "shareLocation": "Deel locatie",
+    "shareLocationLabel": "📍 Gedeelde locatie",
+    "shareLocationHint": "Stuur uw huidige GPS- of statische positie als chatbericht",
+    "shareLocationUnavailable": "Locatie niet beschikbaar: controleer de GPS-instellingen"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Openen op Giphy"
+    "meshcoreGifOpen": "Openen op Giphy",
+    "locationCard": {
+      "alt": "Tegel met gedeelde locatiekaart",
+      "openMaps": "Openen in Kaarten"
+    }
   },
   "common": {
     "close": "Dichtbij",
@@ -1171,7 +1186,8 @@
       "meshcore": "Probeer het opnieuw voordat je het opgeeft (1–{{max}}). Opgeslagen met instellingen; druk opnieuw op Verbinden na het wijzigen, zodat het hoofdproces het oppikt.",
       "meshtastic": "Beide protocollen staan 1–{{max}} toe. Opgeslagen met instellingen; verbreek de verbinding en maak opnieuw verbinding, zodat de lopende sessie de nieuwe waarde gebruikt."
     },
-    "reticulumStackRunningAs": "Hardlopen — {{name}}"
+    "reticulumStackRunningAs": "Hardlopen — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Reticulum-stack reageert niet — opnieuw opstarten…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

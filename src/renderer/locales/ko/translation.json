@@ -354,7 +354,14 @@
     "reticulumCapDestinationsLabel": "메모리와 SQLite의 목적지 / 피어 수를 제한하고 가장 최근에 수신한 항목 유지",
     "reticulumCapDestinationsCountAria": "목적지 수를 제한하고 가장 최근에 수신한 {{count}}개 유지",
     "reticulumDestinationsUnit_one": "목적지",
-    "reticulumDestinationsUnit_other": "목적지"
+    "reticulumDestinationsUnit_other": "목적지",
+    "storeForwardHistoryProfileLabel": "저장 및 전달 캐치업 프로필",
+    "storeForwardHistoryProfileAria": "Store & Forward 이력 캐치업 공격성",
+    "storeForwardHistoryProfileConservative": "보수적(바쁜 메시 친화적)",
+    "storeForwardHistoryProfileAggressive": "공격적(얼룩이 있는 적용 범위)",
+    "storeForwardHistoryProfileHint": "Conservative는 더 긴 오프라인 게이트와 쿨다운을 사용합니다. 짧은 연결 끊김 후 더 빨리 공격적인 가져오기를 수행하고 더 많은 메시지를 요청합니다. 방송 시간이 허용되는 경우에만 사용하세요.",
+    "shareLocationSendWaypoint": "위치를 공유할 때 지도 핀(Waypoint)도 보냅니다.",
+    "shareLocationSendWaypointHint": "활성화되면 Meshtastic 위치 공유는 문자 메시지와 Waypoint 패킷을 모두 보내 공식 앱에 지도 핀이 표시됩니다. 바쁜 메시를 비활성화하면 텍스트만 보낼 수 있습니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -581,12 +588,20 @@
       "newOfferToast": "{{peer}}이(가) 당신에게 파일을 보내려고 합니다: {{file}}",
       "requestEnable": "활성화 요청",
       "requestEnableAria": "이 피어에게 파일 수신을 활성화하도록 요청"
-    }
+    },
+    "shareLocation": "위치 공유",
+    "shareLocationLabel": "📍 공유 위치",
+    "shareLocationHint": "현재 GPS 또는 정적 위치를 채팅 메시지로 보내기",
+    "shareLocationUnavailable": "위치를 확인할 수 없음 - GPS 설정을 확인하세요"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
     "meshcoreGif": "Gif",
-    "meshcoreGifOpen": "Giphy에서 열기"
+    "meshcoreGifOpen": "Giphy에서 열기",
+    "locationCard": {
+      "alt": "공유 위치 지도 타일",
+      "openMaps": "지도에서 열기"
+    }
   },
   "common": {
     "close": "닫다",
@@ -1171,7 +1186,8 @@
       "meshcore": "포기하기 전에 다시 연결해 보세요 (1– {{max}}). 설정으로 저장되었습니다. 변경 후 Connect (연결) 을 다시 눌러 메인 프로세스가 픽업할 수 있도록 합니다.",
       "meshtastic": "두 프로토콜 모두 1– {{max}} 을 허용합니다. 설정과 함께 저장되었습니다. 연결을 끊고 다시 연결하여 실행 중인 세션이 새 값을 사용하도록 합니다."
     },
-    "reticulumStackRunningAs": "달리기 — {{name}}"
+    "reticulumStackRunningAs": "달리기 — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Reticulum 스택이 응답하지 않음 — 다시 시작 중…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",

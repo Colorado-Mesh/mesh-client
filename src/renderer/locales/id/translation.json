@@ -354,7 +354,14 @@
     "reticulumCapDestinationsLabel": "Batasi destinasi / peer di memori dan SQLite, pertahankan yang terakhir terdengar",
     "reticulumCapDestinationsCountAria": "Batasi destinasi, pertahankan {{count}} yang terakhir terdengar",
     "reticulumDestinationsUnit_one": "destinasi",
-    "reticulumDestinationsUnit_other": "destinasi"
+    "reticulumDestinationsUnit_other": "destinasi",
+    "storeForwardHistoryProfileLabel": "Profil pengejar Simpan & Teruskan",
+    "storeForwardHistoryProfileAria": "Simpan & Teruskan sejarah mengejar keagresifan",
+    "storeForwardHistoryProfileConservative": "Konservatif (ramah bagi orang-orang yang sibuk)",
+    "storeForwardHistoryProfileAggressive": "Agresif (cakupan jerawatan)",
+    "storeForwardHistoryProfileHint": "Konservatif menggunakan gerbang offline dan cooldown yang lebih lama. Pengambilan agresif terjadi lebih cepat setelah pemutusan hubungan singkat dan meminta lebih banyak pesan — gunakan hanya jika waktu tayang memungkinkan.",
+    "shareLocationSendWaypoint": "Kirimkan juga pin peta (Waypoint) saat berbagi lokasi",
+    "shareLocationSendWaypointHint": "Saat diaktifkan, pembagian lokasi Meshtastic mengirimkan pesan teks dan paket Waypoint sehingga aplikasi resmi menampilkan pin peta. Nonaktifkan pada jerat sibuk untuk mengirim teks saja."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -581,12 +588,20 @@
       "newOfferToast": "{{peer}} ingin mengirimi Anda file: {{file}}",
       "requestEnable": "Minta pengaktifan",
       "requestEnableAria": "Minta rekan ini untuk mengaktifkan penerimaan file"
-    }
+    },
+    "shareLocation": "Bagikan lokasi",
+    "shareLocationLabel": "📍 Lokasi bersama",
+    "shareLocationHint": "Kirim GPS atau posisi statis Anda saat ini sebagai pesan obrolan",
+    "shareLocationUnavailable": "Lokasi tidak tersedia — periksa pengaturan GPS"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Buka di Giphy"
+    "meshcoreGifOpen": "Buka di Giphy",
+    "locationCard": {
+      "alt": "Ubin peta lokasi bersama",
+      "openMaps": "Buka di Peta"
+    }
   },
   "common": {
     "close": "Menutup",
@@ -1171,7 +1186,8 @@
       "meshcore": "Sambungkan kembali percobaan sebelum menyerah (1 -{{max}}). Disimpan dengan pengaturan; tekan Hubungkan lagi setelah berubah sehingga proses utama mengambilnya.",
       "meshtastic": "Kedua protokol mengizinkan 1 -{{max}}. Disimpan dengan pengaturan; putuskan dan Hubungkan lagi sehingga sesi yang sedang berjalan menggunakan nilai baru."
     },
-    "reticulumStackRunningAs": "Berjalan — {{name}}"
+    "reticulumStackRunningAs": "Berjalan — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Stack Reticulum tidak responsif — memulai ulang…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

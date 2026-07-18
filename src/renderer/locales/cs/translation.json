@@ -354,7 +354,14 @@
     "reticulumCapDestinationsLabel": "Omezit cíle / peery v paměti a SQLite, zachovat naposledy slyšené",
     "reticulumCapDestinationsCountAria": "Omezit cíle, zachovat {{count}} naposledy slyšených",
     "reticulumDestinationsUnit_one": "cíl",
-    "reticulumDestinationsUnit_other": "cílů"
+    "reticulumDestinationsUnit_other": "cílů",
+    "storeForwardHistoryProfileLabel": "Store & Forward catch-up profile",
+    "storeForwardHistoryProfileAria": "Agresivita dohánění historie Store & Forward",
+    "storeForwardHistoryProfileConservative": "Konzervativní (přátelské k rušné síti)",
+    "storeForwardHistoryProfileAggressive": "Agresivní (flekaté pokrytí)",
+    "storeForwardHistoryProfileHint": "Konzervativní používá delší offline bránu a cooldown. Agresivní načítání po krátkých odpojeních a žádostech o další zprávy dříve — používejte pouze tehdy, když to umožňuje vysílací čas.",
+    "shareLocationSendWaypoint": "Při sdílení polohy také odešlete špendlík na mapě (bod na trase).",
+    "shareLocationSendWaypointHint": "Pokud je povoleno, sdílení polohy Meshtastic posílá textovou zprávu i paket navigačních bodů, takže oficiální aplikace zobrazují špendlík na mapě. Chcete-li odesílat pouze text, vypněte u zaneprázdněných sítí."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -581,12 +588,20 @@
       "newOfferToast": "{{peer}} ti chce poslat soubor: {{file}}",
       "requestEnable": "Požádat o povolení",
       "requestEnableAria": "Požádejte tohoto kolegu, aby povolil příjem souboru"
-    }
+    },
+    "shareLocation": "Sdílejte polohu",
+    "shareLocationLabel": "📍 Sdílená poloha",
+    "shareLocationHint": "Odešlete svou aktuální GPS nebo statickou polohu jako zprávu chatu",
+    "shareLocationUnavailable": "Poloha není k dispozici – zkontrolujte nastavení GPS"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Otevřít na Giphy"
+    "meshcoreGifOpen": "Otevřít na Giphy",
+    "locationCard": {
+      "alt": "Dlaždice mapy sdílené polohy",
+      "openMaps": "Otevřít v Mapách"
+    }
   },
   "common": {
     "close": "Blízko",
@@ -1171,7 +1186,8 @@
       "meshcore": "Pokus o opětovné připojení před vzdáním se (1–{{max}}). Uloženo s nastavením; po změně znovu stiskněte tlačítko Připojit, aby jej hlavní proces zvedl.",
       "meshtastic": "Oba protokoly umožňují 1–{{max}}. Uloženo s nastavením; odpojte a znovu připojte, aby běžící relace používala novou hodnotu."
     },
-    "reticulumStackRunningAs": "Běží — {{name}}"
+    "reticulumStackRunningAs": "Běží — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Zásobník Reticulum nereaguje – restartování…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

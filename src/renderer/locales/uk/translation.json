@@ -354,7 +354,14 @@
     "reticulumCapDestinationsLabel": "Обмежити пункти призначення / однорангові вузли в пам'яті та SQLite, зберігати останні отримані",
     "reticulumCapDestinationsCountAria": "Обмежити пункти призначення, зберігати останні отримані {{count}}",
     "reticulumDestinationsUnit_one": "пункт призначення",
-    "reticulumDestinationsUnit_other": "пункта призначення"
+    "reticulumDestinationsUnit_other": "пункта призначення",
+    "storeForwardHistoryProfileLabel": "Профіль наздоганяння Store & Forward",
+    "storeForwardHistoryProfileAria": "Агресивність наздоганяння історії Store & Forward",
+    "storeForwardHistoryProfileConservative": "Консервативний (дружній до зайнятості)",
+    "storeForwardHistoryProfileAggressive": "Агресивний (плямисте покриття)",
+    "storeForwardHistoryProfileHint": "Conservative використовує довші офлайнові ворота та час відновлення. Агресивний завантажує швидше після коротких розривів зв’язку та запитує більше повідомлень — використовуйте лише тоді, коли дозволяє ефірний час.",
+    "shareLocationSendWaypoint": "Також надішліть маркер на карті (Waypoint) під час обміну інформацією про місцезнаходження",
+    "shareLocationSendWaypointHint": "Коли ввімкнено, Meshtastic надсилає як текстове повідомлення, так і пакет Waypoint, щоб офіційні програми показували маркер на карті. Вимкніть на зайнятих сітках, щоб надсилати лише текст."
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -581,12 +588,20 @@
       "newOfferToast": "{{peer}} хоче надіслати вам файл: {{file}}",
       "requestEnable": "Увімкнути запит",
       "requestEnableAria": "Попросіть цього вузла увімкнути отримання файлів"
-    }
+    },
+    "shareLocation": "Поділіться місцем розташування",
+    "shareLocationLabel": "📍 Спільне розташування",
+    "shareLocationHint": "Надішліть свою поточну GPS або статичну позицію як повідомлення чату",
+    "shareLocationUnavailable": "Місцезнаходження недоступне — перевірте налаштування GPS"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Відкрити на Giphy"
+    "meshcoreGifOpen": "Відкрити на Giphy",
+    "locationCard": {
+      "alt": "Плитка карти спільного розташування",
+      "openMaps": "Відкрити в Картах"
+    }
   },
   "common": {
     "close": "Закрити",
@@ -1171,7 +1186,8 @@
       "meshcore": "Перш ніж відмовитися, повторіть спробу підключення (1–{{max}}). Збережено з налаштуваннями; натисніть Connect ще раз після зміни, щоб основний процес забрав його.",
       "meshtastic": "Обидва протоколи дозволяють 1–{{max}}. Збережено з налаштуваннями; від'єднайтеся та підключіться знову, щоб сеанс роботи використовував нове значення."
     },
-    "reticulumStackRunningAs": "Триває — {{name}}"
+    "reticulumStackRunningAs": "Триває — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Стек Reticulum не відповідає — перезапуск…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",

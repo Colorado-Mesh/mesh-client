@@ -1,5 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
+
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 
 import { ChatPayloadText } from './ChatPayloadText';
 
@@ -30,6 +33,39 @@ describe('ChatPayloadText', () => {
       'href',
       'https://giphy.com/gifs/a5viI92PAF89q',
     );
+  });
+
+  it('renders shared location OSM messages as a LocationCard', () => {
+    render(
+      <ChatPayloadText
+        text={
+          '📍 Shared location: 39.7392, -104.9903\nhttps://www.openstreetmap.org/?mlat=39.7392&mlon=-104.9903'
+        }
+        query=""
+        loadLinkPreviews={false}
+      />,
+    );
+    expect(screen.getByText(/39\.7392, -104\.9903/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open in Maps' })).toHaveAttribute(
+      'href',
+      'https://www.openstreetmap.org/?mlat=39.7392&mlon=-104.9903',
+    );
+    const tile = screen.getByRole('img', { name: 'Shared location map tile' });
+    expect(tile.getAttribute('src')).toContain('tile.openstreetmap.org');
+  });
+
+  it('LocationCard has no axe violations for cyan card contrast', async () => {
+    const { container } = render(
+      <ChatPayloadText
+        text={
+          '📍 Shared location: 39.7392, -104.9903\nhttps://www.openstreetmap.org/?mlat=39.7392&mlon=-104.9903'
+        }
+        query=""
+        loadLinkPreviews={false}
+      />,
+    );
+    hydrateAxeThemeColors(document.documentElement);
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('renders URLs as clickable links', () => {

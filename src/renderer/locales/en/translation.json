@@ -250,7 +250,14 @@
     "reduceMotion": "Reduce motion",
     "reduceMotionDesc": "Disables animated icons and decorative effects. Loading spinners and connection status indicators still animate.",
     "storeForwardAutoFetchHistory": "Automatically fetch Store & Forward chat history on connect",
-    "storeForwardAutoFetchHistoryHint": "On RF connect, request up to 50 messages (15 min cooldown between fetches). Turn off if your gateway MQTT bridge is overloaded.",
+    "storeForwardAutoFetchHistoryHint": "On RF connect, request chat history with the selected catch-up profile. Turn off if your gateway MQTT bridge is overloaded.",
+    "storeForwardHistoryProfileLabel": "Store & Forward catch-up profile",
+    "storeForwardHistoryProfileAria": "Store & Forward history catch-up aggressiveness",
+    "storeForwardHistoryProfileConservative": "Conservative (busy-mesh friendly)",
+    "storeForwardHistoryProfileAggressive": "Aggressive (spotty coverage)",
+    "storeForwardHistoryProfileHint": "Conservative uses a longer offline gate and cooldown. Aggressive fetches sooner after short disconnects and requests more messages — use only when airtime allows.",
+    "shareLocationSendWaypoint": "Also send a map pin (Waypoint) when sharing location",
+    "shareLocationSendWaypointHint": "When enabled, Meshtastic location shares send both a text message and a Waypoint packet so official apps show a map pin. Disable on busy meshes to send text only.",
     "notificationsSection": "Notifications",
     "soundNotifications": "Sound notifications",
     "unknownError": "Unknown error",
@@ -478,6 +485,10 @@
     "cancelReply": "Cancel reply",
     "replyRequiresPacketId": "Reply requires the message RF packet id (wait for send ack or refresh chat).",
     "insertEmoji": "Insert emoji",
+    "shareLocation": "Share location",
+    "shareLocationLabel": "📍 Shared location",
+    "shareLocationHint": "Send your current GPS or static position as a chat message",
+    "shareLocationUnavailable": "Location unavailable — check GPS settings",
     "meshcoreGifButton": "Insert Giphy GIF",
     "meshcoreGifButtonHint": "Send a Giphy GIF as MeshCore Open g: wire",
     "meshcoreGifTitle": "Send Giphy GIF",
@@ -586,7 +597,11 @@
   "chatPayload": {
     "mention": "Mention {{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Open on Giphy"
+    "meshcoreGifOpen": "Open on Giphy",
+    "locationCard": {
+      "alt": "Shared location map tile",
+      "openMaps": "Open in Maps"
+    }
   },
   "common": {
     "close": "Close",
@@ -746,6 +761,7 @@
     "reticulumAutostart": "Auto-start stack when opening Connection",
     "reticulumStackRunning": "Stack running",
     "reticulumStackRunningAs": "Running — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Reticulum stack unresponsive — restarting…",
     "reticulumLocalInterfaces": {
       "needsAttention": "{{count}} local interface(s) need attention",
       "stalePort": "{{name}}: serial port {{port}} not found",

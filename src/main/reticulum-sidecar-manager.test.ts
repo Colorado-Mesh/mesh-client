@@ -130,6 +130,8 @@ describe('ReticulumSidecarManager', () => {
       running: false,
       port: 0,
       pid: null,
+      healthy: true,
+      unhealthySince: undefined,
       autoBeaconAlert: null,
       interfaceIssueAlert: null,
     });
@@ -161,6 +163,8 @@ describe('ReticulumSidecarManager', () => {
       running: false,
       port: 0,
       pid: null,
+      healthy: true,
+      unhealthySince: undefined,
       autoBeaconAlert: null,
       interfaceIssueAlert: null,
     });
@@ -168,6 +172,8 @@ describe('ReticulumSidecarManager', () => {
       running: false,
       port: 0,
       pid: null,
+      healthy: true,
+      unhealthySince: undefined,
       autoBeaconAlert: null,
       interfaceIssueAlert: null,
     });
@@ -184,6 +190,8 @@ describe('ReticulumSidecarManager', () => {
       running: false,
       port: 0,
       pid: null,
+      healthy: true,
+      unhealthySince: undefined,
       autoBeaconAlert: null,
       interfaceIssueAlert: null,
     });
@@ -191,6 +199,8 @@ describe('ReticulumSidecarManager', () => {
       running: false,
       port: 0,
       pid: null,
+      healthy: true,
+      unhealthySince: undefined,
       autoBeaconAlert: null,
       interfaceIssueAlert: null,
     });

@@ -354,7 +354,14 @@
     "reticulumCapDestinationsLabel": "限制内存和 SQLite 中的目的地 / 对等节点总数，保留最近收到的项目",
     "reticulumCapDestinationsCountAria": "限制目的地总数，保留最近收到的 {{count}} 个",
     "reticulumDestinationsUnit_one": "目的地",
-    "reticulumDestinationsUnit_other": "目的地"
+    "reticulumDestinationsUnit_other": "目的地",
+    "storeForwardHistoryProfileLabel": "存储并转发追赶配置文件",
+    "storeForwardHistoryProfileAria": "存储并转发历史追赶攻击性",
+    "storeForwardHistoryProfileConservative": "保守（繁忙网络友好）",
+    "storeForwardHistoryProfileAggressive": "攻击性（覆盖范围参差不齐）",
+    "storeForwardHistoryProfileHint": "保守派使用更长的离线门和冷却时间。短暂断开连接后，主动获取会更快并请求更多消息 - 仅在通话时间允许时使用。",
+    "shareLocationSendWaypoint": "共享位置时还发送地图图钉（航点）",
+    "shareLocationSendWaypointHint": "启用后，Meshtastic 位置共享会发送短信和航点数据包，以便官方应用程序显示地图图钉。在繁忙的网格上禁用以仅发送文本。"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -581,12 +588,20 @@
       "newOfferToast": "{{peer}}想向您发送文件： {{file}}",
       "requestEnable": "请求启用",
       "requestEnableAria": "要求此同行启用文件接收"
-    }
+    },
+    "shareLocation": "分享位置",
+    "shareLocationLabel": "📍 共享位置",
+    "shareLocationHint": "将您当前的 GPS 或静态位置作为聊天消息发送",
+    "shareLocationUnavailable": "位置不可用 — 检查 GPS 设置"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "在Giphy上打开"
+    "meshcoreGifOpen": "在Giphy上打开",
+    "locationCard": {
+      "alt": "共享位置地图图块",
+      "openMaps": "在地图中打开"
+    }
   },
   "common": {
     "close": "关闭",
@@ -1171,7 +1186,8 @@
       "meshcore": "在放弃前尝试重新连接（ 1– {{max}} ）。已保存设置；更改后再次按“连接” ，以便主进程将其拾取。",
       "meshtastic": "两种方案均允许1– {{max}}。已使用设置保存；断开连接并再次连接，以便正在运行的会话使用新值。"
     },
-    "reticulumStackRunningAs": "跑步— {{name}}"
+    "reticulumStackRunningAs": "跑步— {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Reticulum 堆栈无响应 — 正在重新启动..."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",

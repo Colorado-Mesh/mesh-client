@@ -213,6 +213,8 @@ interface AppSettings {
   meshcoreFloodScopeHashtag: string;
   chatCompactMode: boolean;
   storeForwardAutoFetchHistory: boolean;
+  storeForwardHistoryProfile: 'conservative' | 'aggressive';
+  shareLocationSendWaypoint: boolean;
   reduceMotion: boolean;
   meshcoreOpenWireCompatEnabled: boolean;
   meshcorePathHashMode: 0 | 1 | 2;
@@ -1674,34 +1676,88 @@ export default function AppPanel({
             </label>
           </div>
           {protocol === 'meshtastic' && (
-            <div className="flex items-center gap-2 pt-2">
-              <input
-                type="checkbox"
-                id="storeForwardAutoFetchHistory"
-                checked={settings.storeForwardAutoFetchHistory}
-                onChange={(e) => {
-                  const enabled = e.target.checked;
-                  updateSetting('storeForwardAutoFetchHistory', enabled);
-                  void window.electronAPI.appSettings
-                    .set('storeForwardAutoFetchHistory', enabled ? 'true' : 'false')
-                    .catch((err: unknown) => {
-                      console.warn(
-                        '[AppPanel] storeForwardAutoFetchHistory persist failed ' +
-                          errLikeToLogString(err),
-                      );
-                    });
-                }}
-                aria-label={t('appPanel.storeForwardAutoFetchHistory')}
-                className="accent-brand-green"
-              />
-              <label
-                htmlFor="storeForwardAutoFetchHistory"
-                className="cursor-pointer text-sm text-gray-300"
-              >
-                {t('appPanel.storeForwardAutoFetchHistory')}
-              </label>
-              <HelpTooltip text={t('appPanel.storeForwardAutoFetchHistoryHint')} />
-            </div>
+            <>
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="storeForwardAutoFetchHistory"
+                  checked={settings.storeForwardAutoFetchHistory}
+                  onChange={(e) => {
+                    const enabled = e.target.checked;
+                    updateSetting('storeForwardAutoFetchHistory', enabled);
+                    void window.electronAPI.appSettings
+                      .set('storeForwardAutoFetchHistory', enabled ? 'true' : 'false')
+                      .catch((err: unknown) => {
+                        console.warn(
+                          '[AppPanel] storeForwardAutoFetchHistory persist failed ' +
+                            errLikeToLogString(err),
+                        );
+                      });
+                  }}
+                  aria-label={t('appPanel.storeForwardAutoFetchHistory')}
+                  className="accent-brand-green"
+                />
+                <label
+                  htmlFor="storeForwardAutoFetchHistory"
+                  className="cursor-pointer text-sm text-gray-300"
+                >
+                  {t('appPanel.storeForwardAutoFetchHistory')}
+                </label>
+                <HelpTooltip text={t('appPanel.storeForwardAutoFetchHistoryHint')} />
+              </div>
+              {settings.storeForwardAutoFetchHistory && (
+                <div className="flex flex-wrap items-center gap-2 pl-6">
+                  <label htmlFor="storeForwardHistoryProfile" className="text-sm text-gray-300">
+                    {t('appPanel.storeForwardHistoryProfileLabel')}
+                  </label>
+                  <select
+                    id="storeForwardHistoryProfile"
+                    value={settings.storeForwardHistoryProfile}
+                    onChange={(e) => {
+                      const value = e.target.value === 'aggressive' ? 'aggressive' : 'conservative';
+                      updateSetting('storeForwardHistoryProfile', value);
+                      void window.electronAPI.appSettings
+                        .set('storeForwardHistoryProfile', value)
+                        .catch((err: unknown) => {
+                          console.warn(
+                            '[AppPanel] storeForwardHistoryProfile persist failed ' +
+                              errLikeToLogString(err),
+                          );
+                        });
+                    }}
+                    aria-label={t('appPanel.storeForwardHistoryProfileAria')}
+                    className="bg-secondary-dark rounded border border-slate-600 px-2 py-1 text-sm text-gray-200"
+                  >
+                    <option value="conservative">
+                      {t('appPanel.storeForwardHistoryProfileConservative')}
+                    </option>
+                    <option value="aggressive">
+                      {t('appPanel.storeForwardHistoryProfileAggressive')}
+                    </option>
+                  </select>
+                  <HelpTooltip text={t('appPanel.storeForwardHistoryProfileHint')} />
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="shareLocationSendWaypoint"
+                  checked={settings.shareLocationSendWaypoint}
+                  onChange={(e) => {
+                    updateSetting('shareLocationSendWaypoint', e.target.checked);
+                  }}
+                  aria-label={t('appPanel.shareLocationSendWaypoint')}
+                  className="accent-brand-green"
+                />
+                <label
+                  htmlFor="shareLocationSendWaypoint"
+                  className="cursor-pointer text-sm text-gray-300"
+                >
+                  {t('appPanel.shareLocationSendWaypoint')}
+                </label>
+                <HelpTooltip text={t('appPanel.shareLocationSendWaypointHint')} />
+              </div>
+            </>
           )}
         </div>
       </div>

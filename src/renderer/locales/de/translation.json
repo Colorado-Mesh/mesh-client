@@ -354,7 +354,14 @@
     "reticulumCapDestinationsLabel": "Ziele / Peers im Speicher und SQLite begrenzen, zuletzt gehörte behalten",
     "reticulumCapDestinationsCountAria": "Ziele begrenzen, die zuletzt gehörten {{count}} behalten",
     "reticulumDestinationsUnit_one": "Ziel",
-    "reticulumDestinationsUnit_other": "Ziele"
+    "reticulumDestinationsUnit_other": "Ziele",
+    "storeForwardHistoryProfileLabel": "Store & Forward-Nachholprofil",
+    "storeForwardHistoryProfileAria": "Aggressivität beim Aufholen des Store & Forward-Verlaufs",
+    "storeForwardHistoryProfileConservative": "Konservativ (Busy-Mesh-freundlich)",
+    "storeForwardHistoryProfileAggressive": "Aggressiv (fleckige Abdeckung)",
+    "storeForwardHistoryProfileHint": "Konservativ verwendet ein längeres Offline-Gate und eine längere Abklingzeit. Aggressiv ruft nach kurzen Verbindungsabbrüchen früher ab und fordert mehr Nachrichten an – nur verwenden, wenn die Sendezeit dies zulässt.",
+    "shareLocationSendWaypoint": "Senden Sie beim Teilen des Standorts auch eine Kartennadel (Wegpunkt).",
+    "shareLocationSendWaypointHint": "Wenn aktiviert, senden Meshtastic-Standortfreigaben sowohl eine Textnachricht als auch ein Wegpunktpaket, sodass offizielle Apps eine Kartennadel anzeigen. Bei ausgelasteten Meshes deaktivieren, um nur Text zu senden."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -581,12 +588,20 @@
       "newOfferToast": "{{peer}} möchte dir eine Datei senden: {{file}}",
       "requestEnable": "Aktivieren anfordern",
       "requestEnableAria": "Bitten Sie diesen Kollegen, den Dateiempfang zu aktivieren"
-    }
+    },
+    "shareLocation": "Standort teilen",
+    "shareLocationLabel": "📍 Geteilter Standort",
+    "shareLocationHint": "Senden Sie Ihre aktuelle GPS- oder statische Position als Chat-Nachricht",
+    "shareLocationUnavailable": "Standort nicht verfügbar – überprüfen Sie die GPS-Einstellungen"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Auf Giphy öffnen"
+    "meshcoreGifOpen": "Auf Giphy öffnen",
+    "locationCard": {
+      "alt": "Geteilte Standortkartenkachel",
+      "openMaps": "In Karten öffnen"
+    }
   },
   "common": {
     "close": "Schließen",
@@ -1171,7 +1186,8 @@
       "meshcore": "Versuche erneut verbinden, bevor du aufgibst (1–{{max}}). Mit Einstellungen gespeichert; drücken Sie nach dem Ändern erneut auf Verbinden, damit der Hauptprozess ihn aufnimmt.",
       "meshtastic": "Beide Protokolle erlauben 1–{{max}}. Mit Einstellungen gespeichert; trennen und erneut verbinden, damit die laufende Sitzung den neuen Wert verwendet."
     },
-    "reticulumStackRunningAs": "Laufen — {{name}}"
+    "reticulumStackRunningAs": "Laufen — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Reticulum-Stack reagiert nicht – Neustart…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",

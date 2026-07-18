@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { buildStaticTileUrl, parseLocationMessage } from '@/renderer/lib/chatLocationUtils';
 import { isSafeChatUrl, parseChatMentionSegments } from '@/renderer/lib/chatMentionSegments';
 import {
   meshcoreGiphyMediaUrl,
@@ -158,6 +159,54 @@ function MeshcoreGifEmbed({
   );
 }
 
+function LocationCard({
+  lat,
+  lon,
+  mapUrl,
+  query,
+  onContentResize,
+}: {
+  lat: number;
+  lon: number;
+  mapUrl: string;
+  query: string;
+  onContentResize?: () => void;
+}) {
+  const { t } = useTranslation();
+  const [tileFailed, setTileFailed] = useState(false);
+  const tileUrl = buildStaticTileUrl(lat, lon);
+  const coordLabel = `${lat}, ${lon}`;
+
+  return (
+    <div className="space-y-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 p-2">
+      {!tileFailed && (
+        <img
+          src={tileUrl}
+          alt={t('chatPayload.locationCard.alt')}
+          className="h-32 w-full rounded object-cover"
+          onLoad={() => {
+            onContentResize?.();
+          }}
+          onError={() => {
+            setTileFailed(true);
+          }}
+        />
+      )}
+      <div className="text-xs text-cyan-100/90">
+        📍 {highlightCaseInsensitive(coordLabel, query)}
+      </div>
+      <a
+        href={mapUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="text-xs text-cyan-400 underline hover:text-cyan-300"
+      >
+        {t('chatPayload.locationCard.openMaps')}
+      </a>
+    </div>
+  );
+}
+
 export interface ChatPayloadTextProps {
   text: string;
   query: string;
@@ -184,6 +233,20 @@ export function ChatPayloadText({
     return (
       <div>
         <MeshcoreGifEmbed gifId={gifId} query={query} onContentResize={onContentResize} />
+      </div>
+    );
+  }
+  const location = parseLocationMessage(text);
+  if (location) {
+    return (
+      <div>
+        <LocationCard
+          lat={location.lat}
+          lon={location.lon}
+          mapUrl={location.mapUrl}
+          query={query}
+          onContentResize={onContentResize}
+        />
       </div>
     );
   }

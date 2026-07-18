@@ -354,7 +354,14 @@
     "reticulumCapDestinationsLabel": "Bellekteki ve SQLite'daki hedef noktaları / eşleri sınırlayın, en son duyulanları saklayın",
     "reticulumCapDestinationsCountAria": "Varış noktalarını sınırlayın, en son duyulanları tutun {{count}}",
     "reticulumDestinationsUnit_one": "hedef",
-    "reticulumDestinationsUnit_other": "hedef"
+    "reticulumDestinationsUnit_other": "hedef",
+    "storeForwardHistoryProfileLabel": "Sakla ve İlet yakalama profili",
+    "storeForwardHistoryProfileAria": "Sakla ve İlet geçmişini yakalama agresifliği",
+    "storeForwardHistoryProfileConservative": "Muhafazakar (meşgul ağ dostu)",
+    "storeForwardHistoryProfileAggressive": "Agresif (sivilceli kapsama)",
+    "storeForwardHistoryProfileHint": "Muhafazakar, daha uzun bir çevrimdışı geçit ve bekleme süresi kullanır. Agresif, kısa süreli bağlantı kesintilerinden sonra daha kısa sürede getirilir ve daha fazla mesaj ister; yalnızca yayın süresi izin verdiğinde kullanın.",
+    "shareLocationSendWaypoint": "Konumu paylaşırken ayrıca bir harita işaretçisi (Yol noktası) gönderin",
+    "shareLocationSendWaypointHint": "Etkinleştirildiğinde, Meshtastic konum paylaşımları hem kısa mesaj hem de Yol Noktası paketi göndererek resmi uygulamaların bir harita işaretçisi göstermesini sağlar. Yalnızca metin göndermek için meşgul ağlarda devre dışı bırakın."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -581,12 +588,20 @@
       "newOfferToast": "{{peer}} size bir dosya göndermek istiyor: {{file}}",
       "requestEnable": "Etkinleştirme isteği",
       "requestEnableAria": "Bu eşten dosya almayı etkinleştirmesini isteyin"
-    }
+    },
+    "shareLocation": "Konumu paylaş",
+    "shareLocationLabel": "📍 Paylaşılan konum",
+    "shareLocationHint": "Mevcut GPS'inizi veya statik konumunuzu sohbet mesajı olarak gönderin",
+    "shareLocationUnavailable": "Konum kullanılamıyor — GPS ayarlarını kontrol edin"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Giphy'de aç"
+    "meshcoreGifOpen": "Giphy'de aç",
+    "locationCard": {
+      "alt": "Paylaşılan konum haritası döşemesi",
+      "openMaps": "Haritalar'da aç"
+    }
   },
   "common": {
     "close": "Kapalı",
@@ -1171,7 +1186,8 @@
       "meshcore": "Vazgeçmeden önce denemeleri yeniden bağlayın (1 -{{max}}). Ayarlar ile kaydedildi; değiştirdikten sonra Bağlan'a tekrar basın, böylece ana işlem onu alır.",
       "meshtastic": "Her iki protokol de 1 -{{max}} 'a izin verir. Ayarlar ile kaydedildi; bağlantıyı kesin ve tekrar bağlanın, böylece çalışan oturum yeni değeri kullanır."
     },
-    "reticulumStackRunningAs": "Çalışıyor — {{name}}"
+    "reticulumStackRunningAs": "Çalışıyor — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Reticulum yığını yanıt vermiyor — yeniden başlatılıyor…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

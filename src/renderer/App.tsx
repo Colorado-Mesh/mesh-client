@@ -45,6 +45,7 @@ import {
 } from '@/renderer/lib/debugSnapshotMeshtasticContext';
 import { setDebugSnapshotUiContext } from '@/renderer/lib/debugSnapshotUiContext';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { readStoredStaticGps, resolveOurPosition } from '@/renderer/lib/gpsSource';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { ConnectIcon } from '@/renderer/lib/icons/connectIcon';
 import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
@@ -176,6 +177,7 @@ import {
   headerIconClass,
   headerTextClass,
   mqttHeaderVariant,
+  reconnectBannerMaxAttempts,
   takHeaderVariant,
 } from './lib/connectionHeaderStatus';
 import { DEFAULT_APP_SETTINGS_SHARED } from './lib/defaultAppSettings';
@@ -3007,6 +3009,46 @@ function AppContent() {
                                 reticulumConnectionView.state.status === 'connected' ||
                                 reticulumConnectionView.state.status === 'stale')
                             }
+                            resolveShareLocation={async () => {
+                              if (protocol === 'meshtastic') {
+                                const pos = await meshtasticPanelActions.refreshOurPosition();
+                                return pos ? { lat: pos.lat, lon: pos.lon } : null;
+                              }
+                              if (protocol === 'meshcore') {
+                                const pos = await meshcorePanelActions.refreshOurPosition();
+                                return pos ? { lat: pos.lat, lon: pos.lon } : null;
+                              }
+                              // Reticulum: no RF self-node GPS — use static / OS / IP waterfall.
+                              const stored = readStoredStaticGps();
+                              const pos = await resolveOurPosition(
+                                undefined,
+                                undefined,
+                                stored?.lat,
+                                stored?.lon,
+                              );
+                              return pos ? { lat: pos.lat, lon: pos.lon } : null;
+                            }}
+                            onSendLocationWaypoint={
+                              protocol === 'meshtastic'
+                                ? async (lat, lon, channel) => {
+                                    const id =
+                                      crypto.getRandomValues(new Uint32Array(1))[0] >>> 0 || 1;
+                                    await meshtasticPanelActions.sendWaypoint(
+                                      {
+                                        id,
+                                        latitude: lat,
+                                        longitude: lon,
+                                        name: t('chatPanel.shareLocationLabel'),
+                                        description: '',
+                                        expire: 0,
+                                        lockedTo: 0,
+                                      },
+                                      0xffffffff,
+                                      channel,
+                                    );
+                                  }
+                                : undefined
+                            }
                           />
                         </Suspense>
                       </div>
@@ -4475,7 +4517,7 @@ function ConnectionBanner({
         <span className="text-sm text-orange-200">
           {t('connectionBanner.reconnectingAttempt', {
             attempt: reconnectAttempt ?? 1,
-            max: 5,
+            max: reconnectBannerMaxAttempts(connectionType),
           })}
         </span>
       </div>

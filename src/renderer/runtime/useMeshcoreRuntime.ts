@@ -344,14 +344,20 @@ import {
   type RepeaterCommandService,
 } from '../lib/repeaterCommandService';
 import { createRepeaterRemoteRpcQueue } from '../lib/repeaterRemoteRpcQueue';
+import { rfMaxReconnectAttemptsForTransport } from '../lib/rfReconnectShared';
 import { registerMeshcoreSerialDisconnectTarget } from '../lib/serialDisconnectRouter';
 import {
+  captureSerialIdentityForRediscovery,
+  startSerialRediscovery,
+} from '../lib/serialPortAutoRediscovery';
+import {
   escalateSerialReconnectExhaustion,
+  forgetGrantedSerialPortBestEffort,
   SERIAL_DEAD_THRESHOLD_MS,
   SERIAL_STALE_THRESHOLD_MS,
   SERIAL_WATCHDOG_INTERVAL_MS,
 } from '../lib/serialPortRecovery';
-import { LAST_SERIAL_PORT_KEY } from '../lib/serialPortSignature';
+import { LAST_SERIAL_PORT_KEY, persistSerialPortIdentity } from '../lib/serialPortSignature';
 import { registerMeshcoreSession } from '../lib/sessions/meshcoreSession';
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import { messageRecordsToChatMessages, nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
@@ -410,8 +416,6 @@ export type {
   RxPacketEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
 export type { CliHistoryEntry } from '../lib/repeaterCommandService';
-
-const MESHCORE_MAX_RECONNECT_ATTEMPTS = 5;
 
 /** Wait for companion OK (event 0) / ERR (event 1) after sending a config frame. */
 async function awaitMeshcoreCompanionConfigAck(
@@ -537,6 +541,8 @@ export function useMeshcoreRuntime() {
   const meshcoreReconnectAttemptRef = useRef(0);
   const meshcoreReconnectGenerationRef = useRef(0);
   const meshcoreIsReconnectingRef = useRef(false);
+  /** Cleanup for post-exhaustion serial port rediscovery poll. */
+  const serialRediscoveryStopRef = useRef<(() => void) | null>(null);
   const meshcoreLastDataReceivedRef = useRef<number>(Date.now());
   const meshcoreSerialWatchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const meshcoreSerialLossCleanupRef = useRef<(() => void) | null>(null);
@@ -2417,6 +2423,11 @@ export function useMeshcoreRuntime() {
         });
       }
       meshcoreConnectTypeRef.current = type;
+      // Manual / new connect cancels background serial rediscovery.
+      if (!opts?.preserveReconnectState) {
+        serialRediscoveryStopRef.current?.();
+        serialRediscoveryStopRef.current = null;
+      }
       setState({
         status: 'connecting',
         myNodeNum: 0,
@@ -2610,7 +2621,8 @@ export function useMeshcoreRuntime() {
       return;
     }
 
-    if (meshcoreReconnectAttemptRef.current >= MESHCORE_MAX_RECONNECT_ATTEMPTS) {
+    const maxReconnectAttempts = rfMaxReconnectAttemptsForTransport(params.rfType);
+    if (meshcoreReconnectAttemptRef.current >= maxReconnectAttempts) {
       meshcoreIsReconnectingRef.current = false;
       meshcoreReconnectAttemptRef.current = 0;
       if (params.rfType === 'ble') {
@@ -2618,7 +2630,32 @@ export function useMeshcoreRuntime() {
       }
       stopMeshcoreSerialWatchdog();
       if (params.rfType === 'serial') {
-        await escalateSerialReconnectExhaustion(params.serialPort ?? null);
+        const exhaustedSerialPort = params.serialPort ?? null;
+        const captured = captureSerialIdentityForRediscovery(exhaustedSerialPort);
+        await escalateSerialReconnectExhaustion(exhaustedSerialPort, { forgetPort: false });
+        serialRediscoveryStopRef.current?.();
+        serialRediscoveryStopRef.current = startSerialRediscovery({
+          signature: captured.signature,
+          portId: captured.portId,
+          onFound: (port) => {
+            persistSerialPortIdentity(port);
+            if (meshcoreConnectionParamsRef.current?.rfType === 'serial') {
+              meshcoreConnectionParamsRef.current.serialPort = port;
+            }
+            setState((s) => ({
+              ...s,
+              serialNeedsReselect: false,
+              connectionLoss: true,
+              status: 'reconnecting',
+            }));
+            meshcoreIsReconnectingRef.current = true;
+            meshcoreReconnectAttemptRef.current = 0;
+            void attemptMeshcoreReconnectRef.current();
+          },
+          onTimeout: () => {
+            void forgetGrantedSerialPortBestEffort(exhaustedSerialPort);
+          },
+        });
       }
       setState((s) => ({
         ...s,
@@ -2644,7 +2681,7 @@ export function useMeshcoreRuntime() {
       MESHCORE_MAX_RECONNECT_DELAY_MS,
     );
     console.debug(
-      `[useMeshcoreRuntime] reconnect: waiting ${delay}ms before attempt ${meshcoreReconnectAttemptRef.current}/${MESHCORE_MAX_RECONNECT_ATTEMPTS}`,
+      `[useMeshcoreRuntime] reconnect: waiting ${delay}ms before attempt ${meshcoreReconnectAttemptRef.current}/${maxReconnectAttempts}`,
     );
     const delayResult = await delayUnlessSuspended(delay, () =>
       !meshcoreIsReconnectingRef.current
@@ -2708,6 +2745,7 @@ export function useMeshcoreRuntime() {
         serialNeedsReselect: false,
         connectionLoss: false,
       }));
+      requestChatOutboxDrain('meshcore');
     } catch (err) {
       if (isMeshcoreSetupAbortError(err)) {
         console.debug('[useMeshcoreRuntime] reconnect aborted (setup superseded)');
@@ -2799,6 +2837,8 @@ export function useMeshcoreRuntime() {
   // Cleanup on unmount — tear down listeners and release connection/driver.
   useEffect(() => {
     return () => {
+      serialRediscoveryStopRef.current?.();
+      serialRediscoveryStopRef.current = null;
       teardownMeshcoreConnEventListeners({ driverDisconnect: true });
       const conn = connRef.current;
       connRef.current = null;
