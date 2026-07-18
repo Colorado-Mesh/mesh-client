@@ -207,30 +207,37 @@ Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers
 
 Renderer calls `electronAPI.reticulum.*`; main process proxies to this API (sandboxed renderer cannot reach localhost directly).
 
-| IPC channel                                                     | Role                                                                                                         |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `reticulum:start` / `stop` / `getStatus`                        | Sidecar lifecycle                                                                                            |
-| `reticulum:syncInterfaceIssueScope`                             | Drop TCP/TX latch entries for disabled/removed interfaces; sticky enabled-name filter for later log lines    |
-| `reticulum:proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete` | HTTP proxy to paths above                                                                                    |
-| `reticulum:validateConfig`                                      | One-shot `validate-config --json` against `userData/reticulum/config` (read-only; safe while stack runs)     |
-| `reticulum:readDefaultConfigFile`                               | Read first existing system rnsd config path                                                                  |
-| `reticulum:showConfigImportDialog`                              | Native file picker for config import                                                                         |
-| `reticulum:showIdentityImportDialog`                            | Native file picker for 64-byte private key (`.retid`, `.key`, …)                                             |
-| `reticulum:showNomadContentSourceDialog`                        | Native folder picker for Nomad My Pages content source (site root or `pages/` dir); records picker allowlist |
-| `reticulum:setNomadContentSource`                               | Apply Nomad watched content source; path must match last folder-picker result (blocks arbitrary proxyPut)    |
-| `reticulum:onEvent` / `onStatus`                                | WS events and sidecar status                                                                                 |
+| IPC channel                                                        | Role                                                                                                         |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `reticulum:start` / `stop` / `getStatus`                           | Sidecar lifecycle                                                                                            |
+| `reticulum:syncInterfaceIssueScope`                                | Drop TCP/TX latch entries for disabled/removed interfaces; sticky enabled-name filter for later log lines    |
+| `reticulum:proxyGet` / `proxyPost` / `proxyPut` / `proxyDelete`    | HTTP proxy to paths above                                                                                    |
+| `reticulum:validateConfig`                                         | One-shot `validate-config --json` against `userData/reticulum/config` (read-only; safe while stack runs)     |
+| `reticulum:readDefaultConfigFile`                                  | Read first existing system rnsd config path                                                                  |
+| `reticulum:showConfigImportDialog`                                 | Native file picker for config import                                                                         |
+| `reticulum:showIdentityImportDialog`                               | Native file picker for 64-byte private key (`.retid`, `.key`, …)                                             |
+| `reticulum:showNomadContentSourceDialog`                           | Native folder picker for Nomad My Pages content source (site root or `pages/` dir); records picker allowlist |
+| `reticulum:setNomadContentSource`                                  | Apply Nomad watched content source; path must match last folder-picker result (blocks arbitrary proxyPut)    |
+| `reticulum:rncpSend` / `rncpFetch` / `setRncpListener`             | Picker-gated rncp send/fetch/listener (path must match `reticulum-remote-paths` allowlist)                   |
+| `reticulum:showRncpOpenFileDialog` / `showRncpSaveDirectoryDialog` | Native pickers that seed the rncp send-file / save-dir+fetch-jail allowlists                                 |
+| `reticulum:revealInFolder`                                         | Reveal a path in the OS file manager when it matches an rncp picker allowlist                                |
+| `reticulum:onEvent` / `onStatus`                                   | WS events and sidecar status                                                                                 |
 
 `getStatus` / `onStatus` may include `interfaceIssueAlert` (TCP connect failures, TX queue drops, link-delivery timeouts, transport saturation / slow queries, **`bleBondRemoved`** stale RNode bonds). Per-entry latch timestamps use a **5-minute** stale window (`RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS`). Connection syncs **enabled** interface names via `syncInterfaceIssueScope` so disabling or removing an interface clears that name immediately and rejects re-latch from lagging log lines. Stopping the stack (or unexpected process exit) clears the tracker.
 
 **`propagation_sync` WebSocket payload:** `{ active: boolean, progress: number, message: string | null }`. Progress uses 0–100 (Establishing ≈10, Offering ≈25, …, Complete ≈100). Sticky success after HaveAll emits `active:false, progress:100`; cancel/stall/failure emit `active:false, progress:0` (and must not emit a trailing 100). Sync `POST /api/v1/propagation/sync` may return `PROPAGATION_IDENTITY_UNKNOWN`, `PROPAGATION_TARGET_NOT_PN`, `PROPAGATION_PEERING_STAMP_FAILED`, or `LOCAL_PROPAGATION_SYNC_UNSUPPORTED`.
 
-SQLite chat history uses separate `db:*` handlers (`getReticulumMessages`, `saveReticulumMessage`, `searchReticulumMessages`, `deleteReticulumMessage`, destination upserts), not sidecar HTTP.
+SQLite chat history uses separate `db:*` handlers (`getReticulumMessages`, `saveReticulumMessage`, `searchReticulumMessages`, `deleteReticulumMessage`, destination upserts), not sidecar HTTP. Remote saved addresses / inbound policy and RRC room history also use dedicated `db:*` handlers (not sidecar HTTP).
 
-| IPC channel                               | Reticulum maintenance behavior                                                               |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `db:pruneReticulumDestinationsByCount`    | Prunes excess non-favorited destinations by oldest `last_heard`; favorites are preserved.    |
-| `db:deleteReticulumDestinationsByAge`     | Deletes non-favorited destinations before a calculated Unix-**seconds** `last_heard` cutoff. |
-| `db:pruneReticulumIdentityActivityByAge`  | Deletes identity-activity rows before an epoch-**milliseconds** `last_seen` cutoff.          |
-| `db:upsertReticulumIdentityActivityBatch` | Validates and upserts at most **500** activity rows per call.                                |
+| IPC channel                                                           | Reticulum maintenance behavior                                                               |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `db:pruneReticulumDestinationsByCount`                                | Prunes excess non-favorited destinations by oldest `last_heard`; favorites are preserved.    |
+| `db:deleteReticulumDestinationsByAge`                                 | Deletes non-favorited destinations before a calculated Unix-**seconds** `last_heard` cutoff. |
+| `db:pruneReticulumIdentityActivityByAge`                              | Deletes identity-activity rows before an epoch-**milliseconds** `last_seen` cutoff.          |
+| `db:upsertReticulumIdentityActivityBatch`                             | Validates and upserts at most **500** activity rows per call.                                |
+| `db:listReticulumRemoteAddresses` / upsert / delete                   | Saved Remote (rnsh/rncp) addresses.                                                          |
+| `db:listReticulumInboundPolicy` / upsert / delete                     | Per-identity inbound allow/block policy for rncp.                                            |
+| `db:listRrcMessages` / `insertRrcMessage` / `deleteRrcMessagesByRoom` | Persist / clear RRC room history (`rrc_messages`).                                           |
+| `db:pruneRrcMessagesByCount` / `db:pruneRrcMessagesByAge`             | RRC retention (default enabled, 10,000 count / 30-day age).                                  |
 
-Reticulum startup maintenance runs the destination age/count prune and message retention independently. `VACUUM` runs only after the Reticulum startup prune, never on the six-hour session tick.
+Reticulum startup maintenance runs the destination age/count prune, Reticulum message retention, and RRC message retention independently. `VACUUM` runs only after the Reticulum startup prune, never on the six-hour session tick.

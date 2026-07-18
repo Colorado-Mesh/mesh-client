@@ -50,6 +50,19 @@ describe('reticulum-remote-paths picker allowlist', () => {
     expect(isAllowedRncpSaveDirectoryPath('/tmp/other')).toBe(false);
   });
 
+  it('keeps both save_dir and fetch_jail authorized after two distinct directory picks', async () => {
+    showOpenDialogMock.mockResolvedValue({ canceled: false, filePaths: ['/tmp/rncp-inbox'] });
+    await showRncpSaveDirectoryDialog();
+    showOpenDialogMock.mockResolvedValue({ canceled: false, filePaths: ['/tmp/rncp-jail'] });
+    await showRncpSaveDirectoryDialog();
+
+    expect(isAllowedRncpSaveDirectoryPath('/tmp/rncp-inbox')).toBe(true);
+    expect(isAllowedRncpSaveDirectoryPath('/tmp/rncp-inbox/file.bin')).toBe(true);
+    expect(isAllowedRncpSaveDirectoryPath('/tmp/rncp-jail')).toBe(true);
+    expect(isAllowedRncpSaveDirectoryPath('/tmp/rncp-jail/read.bin')).toBe(true);
+    expect(isAllowedRncpSaveDirectoryPath('/tmp/unrelated')).toBe(false);
+  });
+
   it('rejects null/empty candidates and unset pickers', () => {
     expect(isAllowedRncpSendFilePath(null)).toBe(false);
     expect(isAllowedRncpSendFilePath('')).toBe(false);

@@ -171,7 +171,9 @@ export function RemoteTransferSection({ sidecarRunning, settings }: RemoteTransf
     async (transferId: string) => {
       const transfer = transfers.get(transferId);
       if (!transfer?.retryArgs) return;
-      incrementRetry(transferId);
+      // Sidecar returns a new transfer_id on each resubmit — seed the next
+      // record with the incremented count so auto-retry still honors maxRetry.
+      const nextRetryCount = incrementRetry(transferId);
       try {
         if ('path' in transfer.retryArgs) {
           const res = await window.electronAPI.reticulum.rncp.send({
@@ -185,6 +187,7 @@ export function RemoteTransferSection({ sidecarRunning, settings }: RemoteTransf
               destination_hash: transfer.destination_hash,
               file_name: transfer.file_name,
               retryArgs: transfer.retryArgs,
+              retryCount: nextRetryCount,
             });
           }
         } else {
@@ -200,6 +203,7 @@ export function RemoteTransferSection({ sidecarRunning, settings }: RemoteTransf
               destination_hash: transfer.destination_hash,
               file_name: transfer.file_name,
               retryArgs: transfer.retryArgs,
+              retryCount: nextRetryCount,
             });
           }
         }

@@ -362,9 +362,9 @@
     "storeForwardHistoryProfileHint": "Konservatif menggunakan gerbang offline dan cooldown yang lebih lama. Pengambilan agresif terjadi lebih cepat setelah pemutusan hubungan singkat dan meminta lebih banyak pesan — gunakan hanya jika waktu tayang memungkinkan.",
     "shareLocationSendWaypoint": "Kirimkan juga pin peta (Waypoint) saat berbagi lokasi",
     "shareLocationSendWaypointHint": "Saat diaktifkan, pembagian lokasi Meshtastic mengirimkan pesan teks dan paket Waypoint sehingga aplikasi resmi menampilkan pin peta. Nonaktifkan pada jerat sibuk untuk mengirim teks saja.",
-    "capStoredRrcMessages": "Tutup riwayat ruang RRC yang disimpan, simpan yang terbaru",
-    "capStoredRrcMessagesLabel": "Tutup riwayat ruang RRC yang disimpan, simpan yang terbaru",
-    "capStoredRrcMessagesCountAria": "Tutup riwayat ruang RRC yang disimpan, simpan pesan {{count}} terbaru"
+    "capStoredRrcMessages": "Batasi riwayat ruang RRC yang disimpan, simpan yang terbaru",
+    "capStoredRrcMessagesLabel": "Batasi riwayat ruang RRC yang disimpan, simpan yang terbaru",
+    "capStoredRrcMessagesCountAria": "Batasi riwayat ruang RRC yang disimpan, simpan pesan {{count}} terbaru"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -575,8 +575,8 @@
     "receivedViaMultiple": "Diterima melalui {{vias}}",
     "sentViaBle": "Dikirim melalui Bluetooth",
     "sentViaMultiple": "Dikirim melalui {{vias}}",
-    "floodScopeOverrideLabel": "Cakupan banjir untuk pesan ini",
-    "floodScopeOverrideAria": "Penggantian cakupan banjir per pesan",
+    "floodScopeOverrideLabel": "Cakupan Flood untuk pesan ini",
+    "floodScopeOverrideAria": "Penggantian cakupan Flood per pesan",
     "floodScopeOverrideDefault": "Cakupan bawaan",
     "floodScopeOverrideUnscoped": "Tidak tercakup",
     "rncp": {
@@ -599,11 +599,11 @@
     "shareLocationLabel": "📍 Lokasi bersama",
     "shareLocationHint": "Kirim GPS atau posisi statis Anda saat ini sebagai pesan obrolan",
     "shareLocationUnavailable": "Lokasi tidak tersedia — periksa pengaturan GPS",
-    "floodScopeOverrideHint": "Cakupan banjir regional hanya untuk pesan ini. Cakupan default menggunakan pengaturan radio yang disimpan; hashtag membatasi pengiriman ini ke wilayah tersebut; Pengiriman tanpa cakupan tanpa filter wilayah. Cakupan tersimpan Anda dipulihkan setelah pengiriman.",
-    "floodScopeOverrideMenuButton": "Ubah cakupan banjir untuk pesan ini",
+    "floodScopeOverrideHint": "Cakupan Flood regional hanya untuk pesan ini. Cakupan default menggunakan pengaturan radio yang disimpan; hashtag membatasi pengiriman ini ke wilayah tersebut; pengiriman tanpa cakupan tanpa filter wilayah. Cakupan tersimpan Anda dipulihkan setelah pengiriman.",
+    "floodScopeOverrideMenuButton": "Ubah cakupan Flood untuk pesan ini",
     "shareLocationWaypointFailed": "Pin peta (Waypoint) tidak diakui — teks lokasi mungkin masih terkirim.",
     "floodScopeOverrideCustom": "Cakupan khusus…",
-    "floodScopeOverrideCustomLabel": "Hashtag cakupan banjir khusus",
+    "floodScopeOverrideCustomLabel": "Hashtag cakupan Flood khusus",
     "floodScopeOverrideCustomPlaceholder": "#wilayahku",
     "floodScopeOverrideCustomApply": "Gunakan ruang lingkup",
     "floodScopeOverrideCustomInvalid": "Masukkan hashtag wilayah yang valid (misalnya #wilayahsaya)."
@@ -1915,7 +1915,7 @@
       "repeaterRpcInProgress": "Permintaan untuk repeater ini sedang dalam proses",
       "cliDangerNotConfirmed": "Perintah CLI yang merusak memerlukan konfirmasi di panel Repeater.",
       "pingFailed": "Ping gagal",
-      "floodScopeBusy": "Penggantian cakupan banjir tidak tersedia saat admin pengulang atau traceroute sedang berlangsung. Coba lagi saat menganggur."
+      "floodScopeBusy": "Penggantian cakupan Flood tidak tersedia saat admin pengulang atau traceroute sedang berlangsung. Coba lagi saat menganggur."
     },
     "mqttHints": {
       "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker; lihat dokumen/letsmesh-mqtt-auth.md. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",
@@ -3414,14 +3414,14 @@
     "xmodemFailed": "XMODEM gagal: {{message}}",
     "zeroHopAdvertButton": "Zero-hop Advert",
     "zeroHopAdvertSent": "Zero-hop advert terkirim",
-    "floodScopeTitle": "Lingkup banjir regional",
-    "floodScopeHelp": "Batasi lalu lintas banjir ke wilayah tagar (firmware v8+). Membutuhkan meshcore.js setFloodScope; sambungkan kembali penerapan ruang lingkup yang disimpan.",
+    "floodScopeTitle": "Lingkup Flood regional",
+    "floodScopeHelp": "Batasi lalu lintas Flood ke wilayah tagar (firmware v8+). Membutuhkan meshcore.js setFloodScope; sambungkan kembali penerapan ruang lingkup yang disimpan.",
     "floodScopeNone": "Tidak ada (lingkup yang jelas)",
     "floodScopeCustom": "Tagar kustom",
     "floodScopeCustomPlaceholder": "#wilayahku",
-    "floodScopeApply": "Terapkan cakupan banjir",
-    "floodScopeApplySuccess": "Ruang lingkup banjir diterapkan",
-    "floodScopeApplyFailed": "Ruang lingkup banjir gagal: {{message}}",
+    "floodScopeApply": "Terapkan cakupan Flood",
+    "floodScopeApplySuccess": "Ruang lingkup Flood diterapkan",
+    "floodScopeApplyFailed": "Ruang lingkup Flood gagal: {{message}}",
     "advertisedPositionLabel": "Posisi yang diiklankan: {{lat}}, {{lon}}",
     "txPowerMax": "Mengirimkan daya (maks {{max}} dBm per radio)",
     "txPowerMaxUnknown": "Memancarkan daya (dibatasi pada {{max}} dBm hingga firmware melaporkan maksimum radio)",

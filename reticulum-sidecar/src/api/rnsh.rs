@@ -5,10 +5,10 @@ use axum::extract::State;
 use base64::Engine as _;
 use serde::Deserialize;
 
+use crate::api::validate::{MAX_DEST_HASH_CHARS, reject_oversize};
 use crate::stack::StackHandle;
 
 /// Field length limits for rnsh HTTP bodies.
-const MAX_DEST_HASH_CHARS: usize = 64;
 const MAX_SESSION_ID_CHARS: usize = 64;
 /// One rnsh input chunk; generous for paste-bursts while bounding request size
 /// well under the router's 4 MiB body limit.
@@ -39,16 +39,6 @@ pub struct RnshResizeBody {
 #[derive(Debug, Deserialize)]
 pub struct RnshDisconnectBody {
     pub session_id: String,
-}
-
-fn reject_oversize(label: &str, value: &str, max: usize) -> Option<String> {
-    if value.chars().count() > max {
-        Some(format!(
-            "{label} exceeds maximum length of {max} characters"
-        ))
-    } else {
-        None
-    }
 }
 
 pub async fn rnsh_connect(

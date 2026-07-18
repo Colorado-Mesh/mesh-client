@@ -2007,4 +2007,34 @@ describe('sniffer tab and MQTT channel PSK i18n quality', () => {
     });
     expectIssue(issues, 'flood-routing false friend');
   });
+
+  it('flags water-flood wording on chatPanel floodScope keys', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'chatPanel.floodScopeOverrideHint',
+      enVal: 'Regional flood scope for this message only.',
+      val: 'Alcance de inundación regional solo para este mensaje.',
+    });
+    expectIssue(issues, 'flood-routing false friend');
+  });
+
+  it('flags Cap=hat mistranslation on appPanel.capStoredRrcMessages', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ru',
+      flatKey: 'appPanel.capStoredRrcMessages',
+      enVal: 'Cap stored RRC room history, keep newest',
+      val: 'Кепка хранит историю комнат RRC, сохраняет самые новые',
+    });
+    expectIssue(issues, 'Cap false friend');
+  });
+
+  it('flags French pièce as RRC room false friend', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'rrc.clearHistoryTitle',
+      enVal: 'Clear room history',
+      val: "Effacer l'historique de la pièce",
+    });
+    expectIssue(issues, 'rrc false friend');
+  });
 });

@@ -108,7 +108,7 @@ The **Map** tab shows **local** RMAP v4 discovery data — interfaces your stack
 
 ### App → Retention & limits
 
-Reticulum destination age prune is enabled by default at **30 days** and affects only non-favorited destinations. The destination count cap is also enabled by default at **10,000** (maximum **50,000**); favorites are preserved. Reticulum message retention is independently configurable and defaults to keeping the newest **4,000** messages.
+Reticulum destination age prune is enabled by default at **30 days** and affects only non-favorited destinations. The destination count cap is also enabled by default at **10,000** (maximum **50,000**); favorites are preserved. Reticulum message retention is independently configurable and defaults to keeping the newest **4,000** messages. RRC room history retention is independently enabled by default (newest **10,000** messages; **30-day** age prune) and is controlled from App → Retention (`rrcMessageRetentionEnabled` / `rrcMessageRetentionCount`).
 
 **Config audit kinds:** `rmap_missing_coordinates`, `rmap_no_tcp_hub`, `rmap_transport_disabled`, `rmap_i2p_not_connectable`.
 

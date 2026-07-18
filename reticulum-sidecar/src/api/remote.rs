@@ -6,9 +6,8 @@ use axum::Json;
 use axum::extract::State;
 use serde::Deserialize;
 
+use crate::api::validate::{MAX_DEST_HASH_CHARS, reject_oversize};
 use crate::stack::StackHandle;
-
-const MAX_DEST_HASH_CHARS: usize = 64;
 
 #[derive(Debug, Deserialize)]
 pub struct PathCapabilityBody {
@@ -19,13 +18,12 @@ pub async fn path_capability(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<PathCapabilityBody>,
 ) -> Json<serde_json::Value> {
-    if body.destination_hash.chars().count() > MAX_DEST_HASH_CHARS {
-        return Json(serde_json::json!({
-            "ok": false,
-            "error": format!(
-                "destination_hash exceeds maximum length of {MAX_DEST_HASH_CHARS} characters"
-            ),
-        }));
+    if let Some(err) = reject_oversize(
+        "destination_hash",
+        &body.destination_hash,
+        MAX_DEST_HASH_CHARS,
+    ) {
+        return Json(serde_json::json!({ "ok": false, "error": err }));
     }
     Json(stack.path_capability(&body.destination_hash))
 }

@@ -5,10 +5,10 @@ use serde::Deserialize;
 
 use axum::extract::State;
 
+use crate::api::validate::{MAX_DEST_HASH_CHARS, reject_oversize, reject_oversize_list};
 use crate::stack::StackHandle;
 
 /// Field length limits for rncp HTTP bodies.
-const MAX_DEST_HASH_CHARS: usize = 64;
 const MAX_TRANSFER_ID_CHARS: usize = 64;
 /// Local/remote path fields never carry file contents — only a filesystem
 /// path string — so a generous but bounded cap is enough to stop abuse.
@@ -48,23 +48,8 @@ pub struct RncpListenerBody {
     pub blocked: Vec<String>,
 }
 
-fn reject_oversize(label: &str, value: &str, max: usize) -> Option<String> {
-    if value.chars().count() > max {
-        Some(format!(
-            "{label} exceeds maximum length of {max} characters"
-        ))
-    } else {
-        None
-    }
-}
-
-fn reject_oversize_list(label: &str, values: &[String], max: usize) -> Option<String> {
-    if values.len() > max {
-        return Some(format!("{label} exceeds maximum of {max} entries"));
-    }
-    values
-        .iter()
-        .find_map(|v| reject_oversize(label, v, MAX_DEST_HASH_CHARS))
+fn reject_oversize_list_hashes(label: &str, values: &[String]) -> Option<String> {
+    reject_oversize_list(label, values, MAX_ALLOWED_LIST_LEN, MAX_DEST_HASH_CHARS)
 }
 
 pub async fn rncp_send(
@@ -162,10 +147,10 @@ pub async fn set_rncp_listener(
             return Json(serde_json::json!({ "ok": false, "error": err }));
         }
     }
-    if let Some(err) = reject_oversize_list("allowed", &body.allowed, MAX_ALLOWED_LIST_LEN) {
+    if let Some(err) = reject_oversize_list_hashes("allowed", &body.allowed) {
         return Json(serde_json::json!({ "ok": false, "error": err }));
     }
-    if let Some(err) = reject_oversize_list("blocked", &body.blocked, MAX_ALLOWED_LIST_LEN) {
+    if let Some(err) = reject_oversize_list_hashes("blocked", &body.blocked) {
         return Json(serde_json::json!({ "ok": false, "error": err }));
     }
     Json(

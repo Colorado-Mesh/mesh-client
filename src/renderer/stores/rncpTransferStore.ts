@@ -46,6 +46,8 @@ interface RncpTransferStoreState {
     destination_hash: string;
     file_name?: string | null;
     retryArgs?: RncpTransferRecord['retryArgs'];
+    /** Carry retry count across transfer_id churn (sidecar returns a new id each resubmit). */
+    retryCount?: number;
   }) => void;
   applyProgress: (transferId: string, progress: number) => void;
   applyCompleted: (payload: {
@@ -95,7 +97,7 @@ export const useRncpTransferStore = create<RncpTransferStoreState>((set) => ({
   pendingOffers: new Map(),
   listener: null,
 
-  startTransfer: ({ transfer_id, kind, destination_hash, file_name, retryArgs }) => {
+  startTransfer: ({ transfer_id, kind, destination_hash, file_name, retryArgs, retryCount }) => {
     set((s) => {
       const transfers = new Map(s.transfers);
       const now = Date.now();
@@ -112,7 +114,7 @@ export const useRncpTransferStore = create<RncpTransferStoreState>((set) => ({
         error: null,
         reason_key: null,
         identity_hash: existing?.identity_hash ?? null,
-        retryCount: existing?.retryCount ?? 0,
+        retryCount: retryCount ?? existing?.retryCount ?? 0,
         retryArgs: retryArgs ?? existing?.retryArgs,
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,

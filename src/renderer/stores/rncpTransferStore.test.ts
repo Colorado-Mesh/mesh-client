@@ -69,6 +69,30 @@ describe('rncpTransferStore', () => {
     expect(useRncpTransferStore.getState().transfers.get('t1')?.retryCount).toBe(2);
   });
 
+  it('seeds retryCount when starting a transfer under a new transfer_id', () => {
+    const store = useRncpTransferStore.getState();
+    store.startTransfer({
+      transfer_id: 't1',
+      kind: 'send',
+      destination_hash: DEST,
+      file_name: 'a.txt',
+      retryArgs: { path: '/tmp/a.txt' },
+    });
+    store.applyFailed({ transfer_id: 't1', error: 'boom' });
+    const next = store.incrementRetry('t1');
+    expect(next).toBe(1);
+    // Sidecar returns a fresh id on resubmit — seed the carried count so auto-retry caps work.
+    store.startTransfer({
+      transfer_id: 't2',
+      kind: 'send',
+      destination_hash: DEST,
+      file_name: 'a.txt',
+      retryArgs: { path: '/tmp/a.txt' },
+      retryCount: next,
+    });
+    expect(useRncpTransferStore.getState().transfers.get('t2')?.retryCount).toBe(1);
+  });
+
   it('applies cancellation and clears a pending offer for the same transfer', () => {
     const store = useRncpTransferStore.getState();
     store.applyOffer({ transfer_id: 't1', file_name: 'a.txt', bytes: 10 });

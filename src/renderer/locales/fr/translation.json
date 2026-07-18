@@ -362,9 +362,9 @@
     "storeForwardHistoryProfileHint": "Conservateur utilise une porte hors ligne et un temps de recharge plus longs. Agressif récupère plus tôt après de courtes déconnexions et demande plus de messages - à utiliser uniquement lorsque le temps d'antenne le permet.",
     "shareLocationSendWaypoint": "Envoyez également un repère de carte (Waypoint) lors du partage de position",
     "shareLocationSendWaypointHint": "Lorsqu'ils sont activés, les partages de localisation Meshtastic envoient à la fois un message texte et un paquet Waypoint afin que les applications officielles affichent une épingle de carte. Désactivez-le sur les maillages occupés pour envoyer du texte uniquement.",
-    "capStoredRrcMessages": "Limiter l'historique des chambres RRC stockées, conserver les plus récentes",
-    "capStoredRrcMessagesLabel": "Limiter l'historique des chambres RRC stockées, conserver les plus récentes",
-    "capStoredRrcMessagesCountAria": "Limiter l'historique des chambres RRC stockées, conserver les messages {{count}} les plus récents"
+    "capStoredRrcMessages": "Limiter l'historique des salles RRC stockées, conserver les plus récentes",
+    "capStoredRrcMessagesLabel": "Limiter l'historique des salles RRC stockées, conserver les plus récentes",
+    "capStoredRrcMessagesCountAria": "Limiter l'historique des salles RRC stockées, conserver les messages {{count}} les plus récents"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -575,8 +575,8 @@
     "receivedViaMultiple": "Reçu via {{vias}}",
     "sentViaBle": "Envoyé via Bluetooth",
     "sentViaMultiple": "Envoyé via {{vias}}",
-    "floodScopeOverrideLabel": "Portée d'inondation pour ce message",
-    "floodScopeOverrideAria": "Contournement de la portée de l'inondation par message",
+    "floodScopeOverrideLabel": "Portée Flood pour ce message",
+    "floodScopeOverrideAria": "Contournement de la portée Flood par message",
     "floodScopeOverrideDefault": "Périmètre par défaut",
     "floodScopeOverrideUnscoped": "Sans portée",
     "rncp": {
@@ -599,11 +599,11 @@
     "shareLocationLabel": "📍 Emplacement partagé",
     "shareLocationHint": "Envoyez votre GPS actuel ou votre position statique sous forme de message de discussion",
     "shareLocationUnavailable": "Localisation indisponible : vérifiez les paramètres GPS",
-    "floodScopeOverrideHint": "Portée des inondations régionales pour ce message uniquement. La portée par défaut utilise les paramètres enregistrés de la radio ; un hashtag limite cet envoi à cette région ; Envois non ciblés sans filtre de région. Votre portée enregistrée est restaurée après l'envoi.",
-    "floodScopeOverrideMenuButton": "Modifier la portée de l'inondation pour ce message",
+    "floodScopeOverrideHint": "Portée Flood régionale pour ce message uniquement. La portée par défaut utilise les paramètres enregistrés de la radio ; un hashtag limite cet envoi à cette région ; envois non ciblés sans filtre de région. Votre portée enregistrée est restaurée après l’envoi.",
+    "floodScopeOverrideMenuButton": "Modifier la portée Flood pour ce message",
     "shareLocationWaypointFailed": "Le repère de la carte (Waypoint) n'a pas été reconnu — le texte de localisation a peut-être encore été envoyé.",
     "floodScopeOverrideCustom": "Portée personnalisée…",
-    "floodScopeOverrideCustomLabel": "Hashtag de portée d'inondation personnalisé",
+    "floodScopeOverrideCustomLabel": "Hashtag de portée Flood personnalisé",
     "floodScopeOverrideCustomPlaceholder": "#marégion",
     "floodScopeOverrideCustomApply": "Utiliser la portée",
     "floodScopeOverrideCustomInvalid": "Saisissez un hashtag de région valide (par exemple #myregion)."
@@ -1915,7 +1915,7 @@
       "repeaterRpcInProgress": "Une demande pour ce répéteur est déjà en cours",
       "cliDangerNotConfirmed": "Les commandes CLI destructives nécessitent une confirmation dans le panneau Répéteurs.",
       "pingFailed": "Échec de la réponseComment",
-      "floodScopeBusy": "Le remplacement de la portée d'inondation n'est pas disponible pendant que l'administration du répéteur ou le traceroute est en cours. Réessayez lorsque vous êtes inactif."
+      "floodScopeBusy": "Le remplacement de la portée Flood n'est pas disponible pendant que l'administration du répéteur ou le traceroute est en cours. Réessayez lorsque vous êtes inactif."
     },
     "mqttHints": {
       "notAuthorized": "Vérifiez le nom d'utilisateur v1_, la signature du jeton et l'audience JWT par rapport au courtier ; voir docs/letsmesh-mqtt-auth.md. Utilisez Personnalisé pour coller un jeton émis par l'opérateur si nécessaire.",
@@ -3414,14 +3414,14 @@
     "xmodemFailed": "XMODEM a échoué : {{message}}",
     "zeroHopAdvertButton": "Zero-hop Advert",
     "zeroHopAdvertSent": "Zero-hop advert envoyé",
-    "floodScopeTitle": "Champ d'application régional des inondations",
-    "floodScopeHelp": "Limitez le trafic d'inondation à une région de hashtag (firmware v8+). Nécessite meshcore.js setFloodScope ; la reconnexion réapplique l'étendue enregistrée.",
+    "floodScopeTitle": "Champ d'application régional des Flood",
+    "floodScopeHelp": "Limitez le trafic d'Flood à une région de hashtag (firmware v8+). Nécessite meshcore.js setFloodScope ; la reconnexion réapplique l'étendue enregistrée.",
     "floodScopeNone": "Aucun (champ d'application clair)",
     "floodScopeCustom": "Hashtag personnalisé",
     "floodScopeCustomPlaceholder": "#myregion",
     "floodScopeApply": "Appliquer la portée de l'inond",
-    "floodScopeApplySuccess": "Portée de l'inondation appliquée",
-    "floodScopeApplyFailed": "Échec de la portée de l'inondation : {{message}}",
+    "floodScopeApplySuccess": "Portée de l'Flood appliquée",
+    "floodScopeApplyFailed": "Échec de la portée de l'Flood : {{message}}",
     "advertisedPositionLabel": "Poste annoncé : {{lat}}, {{lon}}",
     "txPowerMax": "Puissance d'émission (max {{max}} dBm par radio)",
     "txPowerMaxUnknown": "Puissance d'émission (plafonnée à {{max}} dBm jusqu'à ce que le micrologiciel signale la radio max)",
@@ -4420,7 +4420,7 @@
       "helpIntro": "=== Aide RRC ===",
       "helpClient": "Commandes client :",
       "helpNick": "/nick NAME — changer le pseudo",
-      "helpJoin": "/join ROOM [key] — rejoindre une pièce (en option + clé k)",
+      "helpJoin": "/join ROOM [key] — rejoindre une salle (en option + clé k)",
       "helpPart": "/part [room] — laisser de la place (par défaut : actif)",
       "helpMe": "/me ACTION — envoyer une émoticône D'ACTION",
       "helpClear": "/clear — clear local transcript for this room",
@@ -4457,7 +4457,7 @@
     "directNoticeUnsupported": "Ce hub ne prend pas en charge la NOTIFICATION directe (/msg).",
     "capDirectNotice": "msg direct",
     "moderation": {
-      "removedFromRoom": "Retiré de la pièce par le moyeu (coup de pied, bannissement ou pièce distante)."
+      "removedFromRoom": "Retiré de la salle par le moyeu (coup de pied, bannissement ou salle distante)."
     },
     "errors": {
       "linkProofTimeout": "Délai expiré en attendant le lien du hub (preuve de lien). Réessayez ou vérifiez le chemin/les sauts vers le hub.",
@@ -4487,7 +4487,7 @@
     "partFailed": "Could not leave room.",
     "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
     "clearHistory": "Effacer l'historique",
-    "clearHistoryTitle": "Effacer l'historique de la pièce",
+    "clearHistoryTitle": "Effacer l'historique de la salle",
     "clearHistoryConfirm": "Supprimer tout l'historique des messages enregistrés pour {{room}} ? Cela ne peut pas être annulé.",
     "clearHistoryConfirmAction": "Supprimer l'historique"
   },

@@ -4,6 +4,7 @@ use axum::Json;
 use axum::extract::{Query, State};
 use serde::Deserialize;
 
+use crate::api::validate::reject_oversize;
 use crate::stack::StackHandle;
 
 #[derive(Debug, Deserialize)]
@@ -98,16 +99,6 @@ const MAX_NICK_CHARS: usize = 64;
 const MAX_ROOM_CHARS: usize = 128;
 const MAX_ROOM_KEY_CHARS: usize = 128;
 const MAX_BODY_CHARS: usize = 8_192;
-
-fn reject_oversize(label: &str, value: &str, max: usize) -> Option<String> {
-    if value.chars().count() > max {
-        Some(format!(
-            "{label} exceeds maximum length of {max} characters"
-        ))
-    } else {
-        None
-    }
-}
 
 pub async fn rrc_connect(
     State(stack): State<Arc<StackHandle>>,

@@ -624,7 +624,7 @@ SNR-based findings (`Wideband Noise Floor`, `Fringe`) are only emitted when `snr
 
 **Why GPS is required:** Earlier implementations used SNR + hops heuristics, but `rxSnr` is last-hop only (meaningless for multi-hop originators and MQTT-only nodes). GPS distance is the only reliable proxy for expected hop count.
 
-**Note on `distanceOffsetKm`:** This parameter is `0` in the current implementation. Only `distanceMultiplier` varies by environment profile. The offset exists as a code provision for future user-adjustable baseline correction.
+**Note on `distanceOffsetKm`:** User-adjustable in Diagnostics (0–50 km, step 0.5; persisted in `app_settings`). It raises the GPS-distance floor used by hop-goblin / bad-route thresholds and complements the environment profile’s `distanceMultiplier`. Default is `0` (no extra baseline).
 
 ---
 

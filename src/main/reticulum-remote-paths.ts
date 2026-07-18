@@ -15,8 +15,12 @@ import path from 'path';
 
 /** Last file returned by {@link showRncpOpenFileDialog} (rncp send allowlist). */
 let lastPickedRncpSendFile: string | null = null;
-/** Last directory returned by {@link showRncpSaveDirectoryDialog} (save_dir / fetch_jail allowlist). */
-let lastPickedRncpSaveDirectory: string | null = null;
+/**
+ * Recently picked directories from {@link showRncpSaveDirectoryDialog}.
+ * A Set (not a single slot) so distinct `save_dir` and `fetch_jail` picks can
+ * both remain authorized — the second dialog must not revoke the first.
+ */
+const lastPickedRncpSaveDirectories = new Set<string>();
 
 /** Pick a local file to send via rncp. */
 export async function showRncpOpenFileDialog(): Promise<{
@@ -48,14 +52,14 @@ export async function showRncpSaveDirectoryDialog(): Promise<{
     return { canceled: true, path: null };
   }
   const picked = path.resolve(result.filePaths[0]);
-  lastPickedRncpSaveDirectory = picked;
+  lastPickedRncpSaveDirectories.add(picked);
   return { canceled: false, path: picked };
 }
 
 /** Clear the picker allowlist (tests / logout). */
 export function clearRncpPickerAllowlist(): void {
   lastPickedRncpSendFile = null;
-  lastPickedRncpSaveDirectory = null;
+  lastPickedRncpSaveDirectories.clear();
 }
 
 /** True when `candidate` is exactly the last file returned by {@link showRncpOpenFileDialog}. */
@@ -66,16 +70,20 @@ export function isAllowedRncpSendFilePath(candidate: string | null | undefined):
 }
 
 /**
- * True when `candidate` is the last directory returned by
- * {@link showRncpSaveDirectoryDialog}, or a path nested under it (e.g. a
- * fetch `save_path` naming a file inside that directory).
+ * True when `candidate` is any directory returned by
+ * {@link showRncpSaveDirectoryDialog}, or a path nested under one of them
+ * (e.g. a fetch `save_path` naming a file inside that directory).
  */
 export function isAllowedRncpSaveDirectoryPath(candidate: string | null | undefined): boolean {
   if (candidate == null || candidate.trim() === '') return false;
-  if (lastPickedRncpSaveDirectory == null) return false;
+  if (lastPickedRncpSaveDirectories.size === 0) return false;
   const resolved = path.resolve(candidate);
-  const dir = lastPickedRncpSaveDirectory;
-  return resolved === dir || resolved.startsWith(`${dir}${path.sep}`);
+  for (const dir of lastPickedRncpSaveDirectories) {
+    if (resolved === dir || resolved.startsWith(`${dir}${path.sep}`)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /** True when `candidate` matches either picker allowlist (used to gate `reticulum:revealInFolder`). */

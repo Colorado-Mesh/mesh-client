@@ -13,6 +13,7 @@ mod rnsh;
 mod rrc;
 mod status;
 mod system;
+pub(crate) mod validate;
 mod ws;
 
 use std::sync::Arc;

@@ -34,6 +34,21 @@ export function RemoteXtermView({
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
+  // Session mounts as connecting (readOnly=true) then flips to active without remounting —
+  // keep refs so onData/onResize see the latest values without re-creating the Terminal.
+  const readOnlyRef = useRef(readOnly);
+  const onInputBase64Ref = useRef(onInputBase64);
+  const onResizeRef = useRef(onResize);
+
+  useEffect(() => {
+    readOnlyRef.current = readOnly;
+  }, [readOnly]);
+  useEffect(() => {
+    onInputBase64Ref.current = onInputBase64;
+  }, [onInputBase64]);
+  useEffect(() => {
+    onResizeRef.current = onResize;
+  }, [onResize]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -56,11 +71,11 @@ export function RemoteXtermView({
     }
 
     const dataDisposable = term.onData((data) => {
-      if (readOnly) return;
-      onInputBase64(bytesToBase64(new TextEncoder().encode(data)));
+      if (readOnlyRef.current) return;
+      onInputBase64Ref.current(bytesToBase64(new TextEncoder().encode(data)));
     });
     const resizeDisposable = term.onResize(({ rows, cols }) => {
-      onResize(rows, cols);
+      onResizeRef.current(rows, cols);
     });
 
     const unsubscribe = useRnshSessionStore.getState().subscribeOutput(sessionId, (chunk) => {
@@ -75,7 +90,6 @@ export function RemoteXtermView({
       termRef.current = null;
       fitRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- terminal instance is keyed by sessionId; input/resize callbacks read via closure intentionally
   }, [sessionId]);
 
   const fitNow = () => {
