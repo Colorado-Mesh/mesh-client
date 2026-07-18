@@ -18,7 +18,7 @@ export interface RemoteXtermViewProps {
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = '';
   for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
+    binary += String.fromCodePoint(byte);
   }
   return btoa(binary);
 }
@@ -30,7 +30,7 @@ export function RemoteXtermView({
   readOnly,
   onInputBase64,
   onResize,
-}: RemoteXtermViewProps) {
+}: Readonly<RemoteXtermViewProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);

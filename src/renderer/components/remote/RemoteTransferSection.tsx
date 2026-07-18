@@ -15,6 +15,7 @@ import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInbou
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import {
   DEFAULT_RNCP_MAX_RETRY_ATTEMPTS,
+  type RncpTransferUiStatus,
   useRncpTransferStore,
 } from '@/renderer/stores/rncpTransferStore';
 import { resolveRemoteReasonI18nKey } from '@/shared/remote-types';
@@ -25,6 +26,13 @@ export interface RemoteTransferSectionProps {
   settings: RemoteSettings;
 }
 
+const TRANSFER_STATUS_BADGE_CLASS: Record<RncpTransferUiStatus, string> = {
+  completed: 'bg-green-900/40 text-green-300',
+  failed: 'bg-red-900/40 text-red-300',
+  cancelled: 'bg-gray-700/60 text-gray-300',
+  active: 'bg-blue-900/40 text-blue-300',
+};
+
 function formatBytes(bytes: number | null): string {
   if (bytes == null) return '';
   if (bytes < 1024) return `${bytes} B`;
@@ -33,7 +41,10 @@ function formatBytes(bytes: number | null): string {
 }
 
 /** Reticulum Remote → Transfer: rncp send/fetch, transfer list, inbound offers. */
-export function RemoteTransferSection({ sidecarRunning, settings }: RemoteTransferSectionProps) {
+export function RemoteTransferSection({
+  sidecarRunning,
+  settings,
+}: Readonly<RemoteTransferSectionProps>) {
   const { t } = useTranslation();
   const { addToast } = useToast();
 
@@ -229,7 +240,8 @@ export function RemoteTransferSection({ sidecarRunning, settings }: RemoteTransf
 
   useEffect(() => {
     const liveIds = new Set(transferList.map((t) => t.transfer_id));
-    for (const id of [...autoRetriedRef.current]) {
+    // Deleting during Set iteration is safe per spec (visited entries only).
+    for (const id of autoRetriedRef.current) {
       if (!liveIds.has(id)) autoRetriedRef.current.delete(id);
     }
   }, [transferList]);
@@ -577,15 +589,7 @@ export function RemoteTransferSection({ sidecarRunning, settings }: RemoteTransf
               </span>
               <span className="text-muted">{formatBytes(transfer.bytes)}</span>
               <span
-                className={`rounded px-1.5 py-0.5 ${
-                  transfer.status === 'completed'
-                    ? 'bg-green-900/40 text-green-300'
-                    : transfer.status === 'failed'
-                      ? 'bg-red-900/40 text-red-300'
-                      : transfer.status === 'cancelled'
-                        ? 'bg-gray-700/60 text-gray-300'
-                        : 'bg-blue-900/40 text-blue-300'
-                }`}
+                className={`rounded px-1.5 py-0.5 ${TRANSFER_STATUS_BADGE_CLASS[transfer.status]}`}
               >
                 {transfer.status === 'active'
                   ? `${transfer.progress}%`

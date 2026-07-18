@@ -50,7 +50,7 @@ function readAppSettingsRecord(parseContext: string): Record<string, unknown> {
  */
 export function loadMeshcoreFloodScopePresets(): string[] {
   const settings = readAppSettingsRecord('loadMeshcoreFloodScopePresets');
-  if (Object.prototype.hasOwnProperty.call(settings, MESHCORE_FLOOD_SCOPE_PRESETS_SETTING_KEY)) {
+  if (Object.hasOwn(settings, MESHCORE_FLOOD_SCOPE_PRESETS_SETTING_KEY)) {
     return sanitizeMeshcoreFloodScopePresets(settings[MESHCORE_FLOOD_SCOPE_PRESETS_SETTING_KEY]);
   }
 

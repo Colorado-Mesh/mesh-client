@@ -24,6 +24,12 @@ interface ConfirmedFingerprint {
   fingerprint?: string;
 }
 
+/** Session tab status dot color; closed/error fall back to red. */
+const SESSION_STATUS_DOT_CLASS: Partial<Record<string, string>> = {
+  active: 'bg-green-500',
+  connecting: 'bg-amber-400',
+};
+
 export interface RemoteShellSectionProps {
   sidecarRunning: boolean;
   settings: RemoteSettings;
@@ -36,7 +42,7 @@ export function RemoteShellSection({
   sidecarRunning,
   settings,
   isActive,
-}: RemoteShellSectionProps) {
+}: Readonly<RemoteShellSectionProps>) {
   const { t } = useTranslation();
   const { addToast } = useToast();
 
@@ -286,13 +292,7 @@ export function RemoteShellSection({
                 className="flex items-center gap-1"
               >
                 <span
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    session.status === 'active'
-                      ? 'bg-green-500'
-                      : session.status === 'connecting'
-                        ? 'bg-amber-400'
-                        : 'bg-red-500'
-                  }`}
+                  className={`h-1.5 w-1.5 rounded-full ${SESSION_STATUS_DOT_CLASS[session.status] ?? 'bg-red-500'}`}
                   aria-hidden="true"
                 />
                 {session.destination_hash.slice(0, 8)}

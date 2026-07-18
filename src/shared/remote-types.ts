@@ -44,7 +44,7 @@ export const REMOTE_REASON_I18N_KEYS: Readonly<Record<RemoteReasonKey, string>> 
 };
 
 function isKnownRemoteReasonKey(value: string): value is RemoteReasonKey {
-  return Object.prototype.hasOwnProperty.call(REMOTE_REASON_I18N_KEYS, value);
+  return Object.hasOwn(REMOTE_REASON_I18N_KEYS, value);
 }
 
 /** Resolves a sidecar reason key to its i18n key, defaulting unknown values to the generic error key. */

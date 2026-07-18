@@ -24,6 +24,7 @@ import {
   buildMeshcorePathChainSegments,
   buildMeshcorePathResolutionFromNodes,
   meshcoreDisplayRouteFromPathSelection,
+  meshcoreHopSegmentTooltip,
   meshcorePathBytesEqual,
   meshcoreTraceHopDisplayRows,
 } from '../lib/meshcorePathChainDisplay';
@@ -1281,18 +1282,7 @@ export default function RepeatersPanel({
                                       <span className="text-gray-600">→</span>
                                       <span
                                         className="rounded bg-blue-900/40 px-1.5 py-0.5 font-mono text-blue-300"
-                                        title={
-                                          hop.hex
-                                            ? hop.label && hop.label !== hop.hex
-                                              ? t('meshcoreRoute.segmentResolvedTooltip', {
-                                                  hex: hop.hex,
-                                                  name: hop.label,
-                                                })
-                                              : t('meshcoreRoute.segmentTooltip', {
-                                                  hex: hop.hex,
-                                                })
-                                            : undefined
-                                        }
+                                        title={meshcoreHopSegmentTooltip(t, hop)}
                                       >
                                         {hop.label ||
                                           `${hop.snr > 0 ? '+' : ''}${hop.snr.toFixed(2)} dB`}

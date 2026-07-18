@@ -114,21 +114,16 @@ export class TransportManager {
         })
         .catch((err: unknown) => {
           const pe = err as { id?: number; packetId?: number; error?: unknown };
-          const packetId =
-            typeof pe.packetId === 'number'
-              ? pe.packetId
-              : typeof pe.id === 'number'
-                ? pe.id
-                : undefined;
+          let packetId: number | undefined;
+          if (typeof pe.packetId === 'number') packetId = pe.packetId;
+          else if (typeof pe.id === 'number') packetId = pe.id;
           // SDK queue rejections carry a numeric Routing.Error — surface readable
           // text (e.g. "recipient public key is missing") instead of a bare code.
-          const error =
-            humanizeMeshtasticSdkQueueRejectionError(err) ??
-            (typeof pe.error === 'string'
-              ? pe.error
-              : pe.error != null
-                ? errLikeToLogString(pe.error)
-                : errLikeToLogString(err));
+          let fallbackError: string;
+          if (typeof pe.error === 'string') fallbackError = pe.error;
+          else if (pe.error != null) fallbackError = errLikeToLogString(pe.error);
+          else fallbackError = errLikeToLogString(err);
+          const error = humanizeMeshtasticSdkQueueRejectionError(err) ?? fallbackError;
           console.warn('[useMeshtasticRuntime] sendText failed ' + errLikeToLogString(err));
           onStatusUpdateRef.current({
             tempId,

@@ -569,6 +569,30 @@ export function ChatComposer({
     void sendGifWire(formatMeshcoreGifWire(gifId));
   }, [gifInput, sendGifWire, t, viewKey]);
 
+  /** Enqueue shared-location text into the chat outbox; false when no enqueue fn is wired. */
+  const enqueueLocationText = useCallback(
+    async (text: string): Promise<boolean> => {
+      const enqueue = queueOutboxProp ?? queueOutbox;
+      if (!enqueue) return false;
+      await enqueue({
+        protocol,
+        viewKey,
+        channel: outboxChannel,
+        toNode: outboxDestination ?? null,
+        payload: text,
+        replyId: null,
+        status: 'queued',
+        error: null,
+        nextRetryAt: null,
+        groupId: null,
+        groupIndex: null,
+        groupTotal: null,
+      });
+      return true;
+    },
+    [outboxChannel, outboxDestination, protocol, queueOutbox, queueOutboxProp, viewKey],
+  );
+
   const handleShareLocation = useCallback(async () => {
     if (sending || disabled || !resolveShareLocation) return;
     if (!isConnected && !allowOutbox) {
@@ -589,24 +613,8 @@ export function ChatComposer({
       }
       text = formatLocationMessage(pos.lat, pos.lon, t('chatPanel.shareLocationLabel'));
       const shouldQueue = allowOutbox && (!isConnected || (isMqttOnly && protocol === 'meshcore'));
-      const enqueue = queueOutboxProp ?? queueOutbox;
       if (shouldQueue) {
-        if (!enqueue) return;
-        await enqueue({
-          protocol,
-          viewKey,
-          channel: outboxChannel,
-          toNode: outboxDestination ?? null,
-          payload: text,
-          replyId: null,
-          status: 'queued',
-          error: null,
-          nextRetryAt: null,
-          groupId: null,
-          groupIndex: null,
-          groupTotal: null,
-        });
-        onSendSuccess?.();
+        if (await enqueueLocationText(text)) onSendSuccess?.();
         return;
       }
       await onSendChunk(text);
@@ -627,31 +635,16 @@ export function ChatComposer({
       onSendSuccess?.();
     } catch (err) {
       console.error('[ChatComposer] Share location failed: ' + errLikeToLogString(err));
-      const enqueue = queueOutboxProp ?? queueOutbox;
       // Failure point: live send failed; fallback: enqueue text for later drain.
-      if (allowOutbox && enqueue && text) {
-        try {
-          await enqueue({
-            protocol,
-            viewKey,
-            channel: outboxChannel,
-            toNode: outboxDestination ?? null,
-            payload: text,
-            replyId: null,
-            status: 'queued',
-            error: null,
-            nextRetryAt: null,
-            groupId: null,
-            groupIndex: null,
-            groupTotal: null,
-          });
+      try {
+        if (allowOutbox && text && (await enqueueLocationText(text))) {
           onSendSuccess?.();
           return;
-        } catch (queueErr) {
-          console.warn(
-            '[ChatComposer] location outbox enqueue failed ' + errLikeToLogString(queueErr),
-          );
         }
+      } catch (queueErr) {
+        console.warn(
+          '[ChatComposer] location outbox enqueue failed ' + errLikeToLogString(queueErr),
+        );
       }
       setChatActionError({
         message: err instanceof Error ? err.message : t('chatPanel.sendFailed'),
@@ -664,16 +657,13 @@ export function ChatComposer({
     addToast,
     allowOutbox,
     disabled,
+    enqueueLocationText,
     isConnected,
     isMqttOnly,
     onSendChunk,
     onSendLocationWaypoint,
     onSendSuccess,
-    outboxChannel,
-    outboxDestination,
     protocol,
-    queueOutbox,
-    queueOutboxProp,
     resolveShareLocation,
     sending,
     t,
@@ -842,6 +832,9 @@ export function ChatComposer({
     variant === 'room'
       ? `${sendButtonToneClass} rounded-r border-l border-l-black/20 px-1.5 py-2`
       : `${sendButtonToneClass} rounded-r-xl border-l border-l-black/20 px-1.5 py-2.5`;
+
+  // Suppress the hover tooltip while the scope menu is open so it cannot cover the options.
+  const floodScopeChevronTooltipProps = floodScopeMenuOpen ? { 'data-no-instant-tooltip': '' } : {};
 
   const emojiButtonClass =
     variant === 'room'
@@ -1132,7 +1125,7 @@ export function ChatComposer({
               aria-expanded={floodScopeMenuOpen}
               aria-controls={floodScopeMenuOpen ? floodScopeListboxId : undefined}
               title={floodScopeMenuOpen ? undefined : t('chatPanel.floodScopeOverrideHint')}
-              {...(floodScopeMenuOpen ? { 'data-no-instant-tooltip': '' } : {})}
+              {...floodScopeChevronTooltipProps}
               className={`${sendButtonSplitChevronClass} inline-flex max-w-[5.5rem] items-center gap-0.5`}
             >
               {floodScopeOverrideActive && floodScopeOverrideIndicator ? (

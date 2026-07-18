@@ -16,7 +16,10 @@ export interface RemotePathCapabilityChipProps {
 }
 
 /** Small chip surfacing rnsh/rncp path-speed gating; soft-warns on constrained/unknown paths. */
-export function RemotePathCapabilityChip({ capability, loading }: RemotePathCapabilityChipProps) {
+export function RemotePathCapabilityChip({
+  capability,
+  loading,
+}: Readonly<RemotePathCapabilityChipProps>) {
   const { t } = useTranslation();
 
   if (loading) {

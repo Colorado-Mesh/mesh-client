@@ -27,7 +27,7 @@ export function ChatDmRncpControl({
   lxmfPeerHash,
   peerLabel,
   sidecarRunning,
-}: ChatDmRncpControlProps) {
+}: Readonly<ChatDmRncpControlProps>) {
   const { t } = useTranslation();
   const { addToast } = useToast();
 

@@ -489,15 +489,7 @@ export default function AppPanel({
       const previous = retention;
       const next = { ...previous, [`${which}Enabled`]: enabled };
       setRetention(next);
-      const debouncedKey =
-        which === 'meshtastic'
-          ? 'meshtasticEnabled'
-          : which === 'meshcore'
-            ? 'meshcoreEnabled'
-            : which === 'rrc'
-              ? 'rrcEnabled'
-              : 'reticulumEnabled';
-      persistRetention(debouncedKey, enabled ? '1' : '0', previous);
+      persistRetention(`${which}Enabled` as const, enabled ? '1' : '0', previous);
     },
     [retention, persistRetention],
   );
@@ -511,14 +503,7 @@ export default function AppPanel({
       const previous = retention;
       const next = { ...previous, [`${which}Count`]: clamped };
       setRetention(next);
-      const stateKey =
-        which === 'meshtastic'
-          ? 'meshtasticCount'
-          : which === 'meshcore'
-            ? 'meshcoreCount'
-            : which === 'rrc'
-              ? 'rrcCount'
-              : 'reticulumCount';
+      const stateKey = `${which}Count` as const;
 
       if (retentionSaveTimerRef.current) clearTimeout(retentionSaveTimerRef.current);
       retentionSaveTimerRef.current = setTimeout(() => {
@@ -1652,7 +1637,7 @@ export default function AppPanel({
                   onChange={(e) => {
                     updateRetentionCount(
                       'rrc',
-                      parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
+                      Number.parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
                     );
                   }}
                   disabled={!retention.rrcEnabled}

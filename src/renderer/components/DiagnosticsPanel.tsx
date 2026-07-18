@@ -1272,7 +1272,7 @@ export default function DiagnosticsPanel({
                   step={0.5}
                   value={distanceOffsetKm}
                   onChange={(e) => {
-                    const v = parseFloat(e.target.value);
+                    const v = Number.parseFloat(e.target.value);
                     if (Number.isFinite(v)) setDistanceOffsetKm(v);
                   }}
                   aria-label={t('diagnosticsPanel.distanceOffsetKm')}

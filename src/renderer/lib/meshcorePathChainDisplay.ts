@@ -10,6 +10,9 @@ export interface MeshcorePathChainSegment {
   resolvedLabel: string | null;
 }
 
+/** On-air path hash segment width in bytes. */
+export type MeshcoreHashSizeBytes = 1 | 2 | 3;
+
 /** Uppercase hex for one on-air path hash segment (1–3 bytes). */
 export function formatMeshcorePathSegmentHex(segment: Uint8Array): string {
   return Array.from(segment, (b) => b.toString(16).toUpperCase().padStart(2, '0')).join('');
@@ -17,7 +20,7 @@ export function formatMeshcorePathSegmentHex(segment: Uint8Array): string {
 
 export interface BuildMeshcorePathChainOpts {
   pathBytes: readonly number[];
-  hashSizeBytes: 1 | 2 | 3;
+  hashSizeBytes: MeshcoreHashSizeBytes;
   getNodeLabel: (nodeId: number) => string;
   pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
   candidates?: readonly NodeHashCandidate[];
@@ -62,7 +65,7 @@ function parsePublicKeyHex(hex: string | null | undefined): Uint8Array | null {
   if (hex?.length !== 64) return null;
   const bytes = new Uint8Array(32);
   for (let i = 0; i < 32; i++) {
-    const b = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+    const b = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
     if (!Number.isFinite(b)) return null;
     bytes[i] = b;
   }
@@ -100,7 +103,7 @@ export function buildMeshcorePathResolutionFromNodes(
 export function meshcoreOutPathHashSizeBytes(
   pathBytes: readonly number[],
   hopCount: number,
-): 1 | 2 | 3 {
+): MeshcoreHashSizeBytes {
   const len = pathBytes.length;
   if (len <= 0) return 1;
 
@@ -121,7 +124,7 @@ export function meshcoreOutPathHashSizeBytes(
 export interface MeshcoreDisplayRoute {
   pathBytes: number[];
   hopCount: number;
-  hashSizeBytes: 1 | 2 | 3;
+  hashSizeBytes: MeshcoreHashSizeBytes;
 }
 
 /**
@@ -158,13 +161,26 @@ export function meshcorePathBytesEqual(
 }
 
 /**
+ * Tooltip for one trace hop row: resolved "hex → name" when a contact matched, bare hex otherwise.
+ */
+export function meshcoreHopSegmentTooltip(
+  t: (key: string, opts?: Record<string, unknown>) => string,
+  hop: { hex: string; label?: string | null },
+): string | undefined {
+  if (!hop.hex) return undefined;
+  return hop.label && hop.label !== hop.hex
+    ? t('meshcoreRoute.segmentResolvedTooltip', { hex: hop.hex, name: hop.label })
+    : t('meshcoreRoute.segmentTooltip', { hex: hop.hex });
+}
+
+/**
  * Trace hop rows for UI: pair each pathSnrs entry with a path segment label.
  * Suppresses the final segment when it resolves to the destination (Dest row already names it).
  */
 export function meshcoreTraceHopDisplayRows(opts: {
   pathHashes: readonly number[];
   pathSnrs: readonly number[];
-  hashSizeBytes: 1 | 2 | 3;
+  hashSizeBytes: MeshcoreHashSizeBytes;
   destNodeId?: number | null;
   getNodeLabel: (nodeId: number) => string;
   pubKeyByNodeId?: ReadonlyMap<number, Uint8Array>;
@@ -180,9 +196,7 @@ export function meshcoreTraceHopDisplayRows(opts: {
   const snrs = Array.isArray(opts.pathSnrs) ? opts.pathSnrs : [];
   const destId = opts.destNodeId ?? null;
   const lastSegIsDest =
-    destId != null &&
-    segments.length > 0 &&
-    segments[segments.length - 1]?.resolvedNodeId === destId;
+    destId != null && segments.length > 0 && segments.at(-1)?.resolvedNodeId === destId;
 
   const rows: { snr: number; label: string; hex: string }[] = [];
   for (let i = 0; i < snrs.length; i++) {

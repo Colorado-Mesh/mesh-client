@@ -39,29 +39,39 @@ export function parseLocationMessage(text: string): ParsedLocationMessage | null
   return parseLabeledCoordLocationMessage(text);
 }
 
+/** Walk back from the host marker to find the https?:// start of this URL (bounded scan). */
+function findOsmUrlStart(text: string, hostIdx: number): number {
+  let urlStart = hostIdx;
+  while (urlStart > 0) {
+    const prev = text.charAt(urlStart - 1);
+    if (/\s/.test(prev)) break;
+    urlStart -= 1;
+    if (hostIdx - urlStart > 16) break;
+  }
+  return urlStart;
+}
+
+/** Walk forward from the host marker to the end of the URL (bounded scan). */
+function findOsmUrlEnd(text: string, hostIdx: number, urlStart: number): number {
+  let urlEnd = hostIdx + OSM_HOST_MARKER.length;
+  while (urlEnd < text.length) {
+    const ch = text.charAt(urlEnd);
+    if (/[\s<>"']/.test(ch)) break;
+    urlEnd += 1;
+    if (urlEnd - urlStart > 512) break;
+  }
+  return urlEnd;
+}
+
 function parseOsmLocationMessage(text: string): ParsedLocationMessage | null {
   const lower = text.toLowerCase();
   let searchFrom = 0;
   while (searchFrom < lower.length) {
     const hostIdx = lower.indexOf(OSM_HOST_MARKER, searchFrom);
     if (hostIdx < 0) return null;
-    // Walk back to find https?:// start of this URL.
-    let urlStart = hostIdx;
-    while (urlStart > 0) {
-      const prev = text.charAt(urlStart - 1);
-      if (/\s/.test(prev)) break;
-      urlStart -= 1;
-      if (hostIdx - urlStart > 16) break;
-    }
-    let urlEnd = hostIdx + OSM_HOST_MARKER.length;
-    while (urlEnd < text.length) {
-      const ch = text.charAt(urlEnd);
-      if (/[\s<>"']/.test(ch)) break;
-      urlEnd += 1;
-      if (urlEnd - urlStart > 512) break;
-    }
-    const url = text.slice(urlStart, urlEnd);
-    const coords = parseOsmMlatMlon(url);
+    const urlStart = findOsmUrlStart(text, hostIdx);
+    const urlEnd = findOsmUrlEnd(text, hostIdx, urlStart);
+    const coords = parseOsmMlatMlon(text.slice(urlStart, urlEnd));
     if (coords) {
       return { lat: coords.lat, lon: coords.lon, mapUrl: buildOsmMapUrl(coords.lat, coords.lon) };
     }
@@ -93,37 +103,36 @@ function parseLabeledCoordLocationMessage(text: string): ParsedLocationMessage |
   return null;
 }
 
+/** Index after the run of ASCII digits starting at `start` (equal to `start` when none). */
+function scanDigits(s: string, start: number): number {
+  let i = start;
+  while (i < s.length && s.charAt(i) >= '0' && s.charAt(i) <= '9') {
+    i += 1;
+  }
+  return i;
+}
+
 /** True when `s` is exactly one finite number (no trailing junk). */
 function isExactNumberToken(s: string): boolean {
   if (!s) return false;
-  const n = Number.parseFloat(s);
-  if (!Number.isFinite(n)) return false;
+  if (!Number.isFinite(Number.parseFloat(s))) return false;
   // Number.parseFloat stops at the first non-numeric char — reject leftovers.
-  let i = 0;
-  if (s.startsWith('+') || s.startsWith('-')) i = 1;
-  let sawDigit = false;
-  while (i < s.length && s.charAt(i) >= '0' && s.charAt(i) <= '9') {
-    sawDigit = true;
-    i += 1;
-  }
-  if (i < s.length && s.charAt(i) === '.') {
-    i += 1;
-    while (i < s.length && s.charAt(i) >= '0' && s.charAt(i) <= '9') {
-      sawDigit = true;
-      i += 1;
-    }
+  let i = s.startsWith('+') || s.startsWith('-') ? 1 : 0;
+  const intEnd = scanDigits(s, i);
+  let sawDigit = intEnd > i;
+  i = intEnd;
+  if (s.charAt(i) === '.') {
+    const fracEnd = scanDigits(s, i + 1);
+    sawDigit = sawDigit || fracEnd > i + 1;
+    i = fracEnd;
   }
   if (!sawDigit) return false;
-  if (i < s.length && (s.charAt(i) === 'e' || s.charAt(i) === 'E')) {
+  if (s.charAt(i) === 'e' || s.charAt(i) === 'E') {
     let j = i + 1;
-    if (j < s.length && (s.charAt(j) === '+' || s.charAt(j) === '-')) j += 1;
-    let expDigit = false;
-    while (j < s.length && s.charAt(j) >= '0' && s.charAt(j) <= '9') {
-      expDigit = true;
-      j += 1;
-    }
-    if (!expDigit) return false;
-    i = j;
+    if (s.charAt(j) === '+' || s.charAt(j) === '-') j += 1;
+    const expEnd = scanDigits(s, j);
+    if (expEnd === j) return false;
+    i = expEnd;
   }
   return i === s.length;
 }

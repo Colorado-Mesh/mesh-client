@@ -22,7 +22,7 @@ export function MeshcoreRouteChain({
   destLabel,
   treatSingleSegmentAsDirect = true,
   className = '',
-}: MeshcoreRouteChainProps) {
+}: Readonly<MeshcoreRouteChainProps>) {
   const { t } = useTranslation();
 
   if (segments.length === 0 || (treatSingleSegmentAsDirect && segments.length <= 1)) {

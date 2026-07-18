@@ -32,6 +32,7 @@ import {
   buildMeshcorePathChainSegments,
   buildMeshcorePathResolutionFromNodes,
   meshcoreDisplayRouteFromPathSelection,
+  meshcoreHopSegmentTooltip,
   meshcorePathBytesEqual,
   meshcoreTraceHopDisplayRows,
 } from '../lib/meshcorePathChainDisplay';
@@ -892,16 +893,7 @@ export default function NodeDetailModal({
                       <div key={i} className="flex items-center gap-2 text-xs">
                         <span
                           className="text-muted max-w-[10rem] min-w-10 truncate"
-                          title={
-                            hop.hex
-                              ? hop.label && hop.label !== hop.hex
-                                ? t('meshcoreRoute.segmentResolvedTooltip', {
-                                    hex: hop.hex,
-                                    name: hop.label,
-                                  })
-                                : t('meshcoreRoute.segmentTooltip', { hex: hop.hex })
-                              : undefined
-                          }
+                          title={meshcoreHopSegmentTooltip(t, hop)}
                         >
                           {hop.label
                             ? t('nodeDetailModal.hopNameLabel', { name: hop.label })

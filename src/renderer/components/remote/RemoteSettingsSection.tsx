@@ -24,7 +24,7 @@ export function RemoteSettingsSection({
   sidecarRunning,
   settings,
   onSettingsChange,
-}: RemoteSettingsSectionProps) {
+}: Readonly<RemoteSettingsSectionProps>) {
   const { t } = useTranslation();
   const { addToast } = useToast();
 

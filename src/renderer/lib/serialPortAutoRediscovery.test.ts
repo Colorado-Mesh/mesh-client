@@ -91,7 +91,7 @@ describe('serialPortAutoRediscovery', () => {
     expect(onFound).not.toHaveBeenCalled();
     const callsAfterTimeout = getPorts.mock.calls.length;
     await vi.advanceTimersByTimeAsync(SERIAL_REDISCOVERY_POLL_MS * 3);
-    expect(getPorts.mock.calls.length).toBe(callsAfterTimeout);
+    expect(getPorts.mock.calls).toHaveLength(callsAfterTimeout);
   });
 
   it('cleanup cancels further polls', async () => {
@@ -110,7 +110,7 @@ describe('serialPortAutoRediscovery', () => {
     const before = getPorts.mock.calls.length;
     stop();
     await vi.advanceTimersByTimeAsync(SERIAL_REDISCOVERY_POLL_MS * 2);
-    expect(getPorts.mock.calls.length).toBe(before);
+    expect(getPorts.mock.calls).toHaveLength(before);
   });
 
   it('does not call onFound after cleanup races with in-flight getPorts', async () => {

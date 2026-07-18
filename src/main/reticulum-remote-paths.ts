@@ -10,8 +10,9 @@
  * `fetch_jail`), so these are gated the same way Nomad's watched content
  * source directory is.
  */
+import path from 'node:path';
+
 import { dialog } from 'electron';
-import path from 'path';
 
 /** Last file returned by {@link showRncpOpenFileDialog} (rncp send allowlist). */
 let lastPickedRncpSendFile: string | null = null;

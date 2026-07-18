@@ -25,7 +25,7 @@ export interface ReticulumRemotePanelProps {
 }
 
 /** Reticulum Remote tab: rnsh remote shell + rncp file transfer (Shell | Transfer | Saved | Settings). */
-export default function ReticulumRemotePanel({ isActive }: ReticulumRemotePanelProps) {
+export default function ReticulumRemotePanel({ isActive }: Readonly<ReticulumRemotePanelProps>) {
   const { t } = useTranslation();
 
   const [section, setSection] = useState<RemoteSection>('shell');

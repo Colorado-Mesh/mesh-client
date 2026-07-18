@@ -28,6 +28,54 @@ function normalizeRoom(raw: unknown): string | null {
   return room;
 }
 
+interface ValidatedRrcInsert {
+  hub: string;
+  room: string;
+  messageId: string;
+  kind: string;
+  body: string;
+  timestamp: number;
+  senderHash: string | null;
+  nickname: string | null;
+}
+
+/** Validate and normalize an inbound `db:insertRrcMessage` payload (throws on invalid fields). */
+function validateRrcInsertMessage(message: unknown): ValidatedRrcInsert {
+  if (!message || typeof message !== 'object') {
+    throw new TypeError('db:insertRrcMessage: message must be an object');
+  }
+  const m = message as Record<string, unknown>;
+  const hub = canonicalizeHubHash(m.hub_hash);
+  const room = normalizeRoom(m.room);
+  const messageId = typeof m.message_id === 'string' ? m.message_id.trim() : '';
+  const kind = typeof m.kind === 'string' ? m.kind : '';
+  const body = typeof m.body === 'string' ? m.body : '';
+  const timestamp = Number(m.timestamp);
+  if (!hub) throw new Error('db:insertRrcMessage: hub_hash invalid');
+  if (!room) throw new Error('db:insertRrcMessage: room invalid');
+  if (!messageId || messageId.length > MAX_MESSAGE_ID_LEN) {
+    throw new Error('db:insertRrcMessage: message_id invalid');
+  }
+  if (!ALLOWED_KINDS.has(kind as RrcChatMessageKind)) {
+    throw new Error('db:insertRrcMessage: kind invalid');
+  }
+  if (!body || body.length > MAX_BODY_LEN) {
+    throw new Error('db:insertRrcMessage: body invalid');
+  }
+  if (!Number.isFinite(timestamp)) {
+    throw new TypeError('db:insertRrcMessage: timestamp invalid');
+  }
+  const senderHash =
+    typeof m.sender_hash === 'string' && m.sender_hash.trim()
+      ? (canonicalizeReticulumDestinationHash(m.sender_hash) ?? m.sender_hash.slice(0, 64))
+      : null;
+  const nickname =
+    typeof m.nickname === 'string' && m.nickname.trim()
+      ? m.nickname.trim().slice(0, MAX_NICK_LEN)
+      : null;
+  return { hub, room, messageId, kind, body, timestamp, senderHash, nickname };
+}
+
 export interface RrcDbIpcDeps {
   ipcMain: IpcMain;
 }
@@ -61,39 +109,7 @@ export function registerRrcDbIpcHandlers({ ipcMain }: RrcDbIpcDeps): void {
   ipcMain.handle('db:insertRrcMessage', (event, message: unknown) => {
     try {
       assertIpcSender(event, 'db:insertRrcMessage');
-      if (!message || typeof message !== 'object') {
-        throw new Error('db:insertRrcMessage: message must be an object');
-      }
-      const m = message as Record<string, unknown>;
-      const hub = canonicalizeHubHash(m.hub_hash);
-      const room = normalizeRoom(m.room);
-      const messageId = typeof m.message_id === 'string' ? m.message_id.trim() : '';
-      const kind = typeof m.kind === 'string' ? m.kind : '';
-      const body = typeof m.body === 'string' ? m.body : '';
-      const timestamp = Number(m.timestamp);
-      if (!hub) throw new Error('db:insertRrcMessage: hub_hash invalid');
-      if (!room) throw new Error('db:insertRrcMessage: room invalid');
-      if (!messageId || messageId.length > MAX_MESSAGE_ID_LEN) {
-        throw new Error('db:insertRrcMessage: message_id invalid');
-      }
-      if (!ALLOWED_KINDS.has(kind as RrcChatMessageKind)) {
-        throw new Error('db:insertRrcMessage: kind invalid');
-      }
-      if (!body || body.length > MAX_BODY_LEN) {
-        throw new Error('db:insertRrcMessage: body invalid');
-      }
-      if (!Number.isFinite(timestamp)) {
-        throw new Error('db:insertRrcMessage: timestamp invalid');
-      }
-      const senderHash =
-        typeof m.sender_hash === 'string' && m.sender_hash.trim()
-          ? (canonicalizeReticulumDestinationHash(m.sender_hash) ?? m.sender_hash.slice(0, 64))
-          : null;
-      const nickname =
-        typeof m.nickname === 'string' && m.nickname.trim()
-          ? m.nickname.trim().slice(0, MAX_NICK_LEN)
-          : null;
-
+      const v = validateRrcInsertMessage(message);
       const db = getDbForIpc('db:insertRrcMessage');
       if (!db) return { changes: 0 };
       const result = db
@@ -102,7 +118,16 @@ export function registerRrcDbIpcHandlers({ ipcMain }: RrcDbIpcDeps): void {
             (message_id, hub_hash, room, sender_hash, nickname, kind, body, timestamp)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         )
-        .run(messageId, hub, room, senderHash, nickname, kind, body, Math.floor(timestamp));
+        .run(
+          v.messageId,
+          v.hub,
+          v.room,
+          v.senderHash,
+          v.nickname,
+          v.kind,
+          v.body,
+          Math.floor(v.timestamp),
+        );
       return { changes: Number(result.changes) };
     } catch (err) {
       finishDbIpcHandler('db:insertRrcMessage', err);

@@ -261,8 +261,6 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
                 `[App] ${label} pruneRrcMessagesByCount failed ` + errLikeToLogString(e),
               );
             }),
-          );
-          innerOps.push(
             window.electronAPI.db
               .pruneRrcMessagesByAge(RRC_MESSAGE_RETENTION_DEFAULT_AGE_DAYS)
               .catch((e: unknown) => {

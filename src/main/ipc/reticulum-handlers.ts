@@ -57,6 +57,44 @@ function assertProxyApiPath(apiPath: unknown): string {
   return apiPath;
 }
 
+/**
+ * Requirement + picker-allowlist checks for `reticulum:setRncpListener` dirs.
+ * Returns the rejection error code, or null when the config is acceptable.
+ */
+function validateRncpListenerDirs(opts: {
+  enabled: boolean;
+  allowFetch: boolean;
+  saveDir?: string;
+  fetchJail?: string;
+}): string | null {
+  const { enabled, allowFetch, saveDir, fetchJail } = opts;
+  if (enabled && saveDir == null) {
+    console.warn('[ReticulumIPC] setRncpListener rejected: save_dir required when enabled');
+    return 'save_dir_required';
+  }
+  if (allowFetch && fetchJail == null) {
+    console.warn(
+      '[ReticulumIPC] setRncpListener rejected: fetch_jail required when allow_fetch is true',
+    );
+    return 'fetch_jail_required';
+  }
+  if (saveDir != null && !isAllowedRncpSaveDirectoryPath(saveDir)) {
+    console.warn(
+      '[ReticulumIPC] setRncpListener rejected save_dir not from picker:',
+      sanitizeLogMessage(saveDir),
+    );
+    return 'save_dir_not_from_picker';
+  }
+  if (fetchJail != null && !isAllowedRncpSaveDirectoryPath(fetchJail)) {
+    console.warn(
+      '[ReticulumIPC] setRncpListener rejected fetch_jail not from picker:',
+      sanitizeLogMessage(fetchJail),
+    );
+    return 'fetch_jail_not_from_picker';
+  }
+  return null;
+}
+
 /** Register Reticulum sidecar IPC handlers (`reticulum:*`). */
 export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   const { idleStatus, ensureManager, getManager } = deps;
@@ -339,30 +377,8 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
     const saveDir = typeof o.save_dir === 'string' && o.save_dir.trim() ? o.save_dir : undefined;
     const fetchJail =
       typeof o.fetch_jail === 'string' && o.fetch_jail.trim() ? o.fetch_jail : undefined;
-    if (enabled && saveDir == null) {
-      console.warn('[ReticulumIPC] setRncpListener rejected: save_dir required when enabled');
-      return { ok: false, error: 'save_dir_required' };
-    }
-    if (allowFetch && fetchJail == null) {
-      console.warn(
-        '[ReticulumIPC] setRncpListener rejected: fetch_jail required when allow_fetch is true',
-      );
-      return { ok: false, error: 'fetch_jail_required' };
-    }
-    if (saveDir != null && !isAllowedRncpSaveDirectoryPath(saveDir)) {
-      console.warn(
-        '[ReticulumIPC] setRncpListener rejected save_dir not from picker:',
-        sanitizeLogMessage(saveDir),
-      );
-      return { ok: false, error: 'save_dir_not_from_picker' };
-    }
-    if (fetchJail != null && !isAllowedRncpSaveDirectoryPath(fetchJail)) {
-      console.warn(
-        '[ReticulumIPC] setRncpListener rejected fetch_jail not from picker:',
-        sanitizeLogMessage(fetchJail),
-      );
-      return { ok: false, error: 'fetch_jail_not_from_picker' };
-    }
+    const dirError = validateRncpListenerDirs({ enabled, allowFetch, saveDir, fetchJail });
+    if (dirError) return { ok: false, error: dirError };
     const allowed = Array.isArray(o.allowed)
       ? o.allowed.filter((v): v is string => typeof v === 'string')
       : [];

@@ -7,6 +7,9 @@ export const DEFAULT_RNCP_MAX_RETRY_ATTEMPTS = 3;
 
 export type RncpTransferUiStatus = 'active' | 'completed' | 'failed' | 'cancelled';
 
+/** Original send/fetch args — needed to resubmit on manual retry or auto-retry. */
+export type RncpRetryArgs = { path: string } | { remote_path: string; save_path?: string };
+
 export interface RncpTransferRecord {
   transfer_id: string;
   kind: RncpTransferKind;
@@ -21,8 +24,7 @@ export interface RncpTransferRecord {
   reason_key: string | null;
   identity_hash: string | null;
   retryCount: number;
-  /** Original send/fetch args — needed to resubmit on manual retry or auto-retry. */
-  retryArgs?: { path: string } | { remote_path: string; save_path?: string };
+  retryArgs?: RncpRetryArgs;
   createdAt: number;
   updatedAt: number;
 }
@@ -45,7 +47,7 @@ interface RncpTransferStoreState {
     kind: RncpTransferKind;
     destination_hash: string;
     file_name?: string | null;
-    retryArgs?: RncpTransferRecord['retryArgs'];
+    retryArgs?: RncpRetryArgs;
     /** Carry retry count across transfer_id churn (sidecar returns a new id each resubmit). */
     retryCount?: number;
   }) => void;

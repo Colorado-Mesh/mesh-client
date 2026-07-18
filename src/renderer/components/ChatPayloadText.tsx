@@ -165,13 +165,13 @@ function LocationCard({
   mapUrl,
   query,
   onContentResize,
-}: {
+}: Readonly<{
   lat: number;
   lon: number;
   mapUrl: string;
   query: string;
   onContentResize?: () => void;
-}) {
+}>) {
   const { t } = useTranslation();
   const [tileFailed, setTileFailed] = useState(false);
   const tileUrl = buildStaticTileUrl(lat, lon);
