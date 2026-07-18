@@ -8,6 +8,10 @@ import type { ChatMessage } from '@/renderer/lib/types';
 import { updateMessageStatus, useMessageStore } from '@/renderer/stores/messageStore';
 
 import { meshtasticRoutingErrorName } from './meshtasticApplyErrorMessage';
+import {
+  hasMeshtasticNonChatOutboundInFlight,
+  isMeshtasticNonChatWirePacketId,
+} from './meshtasticOutboundCoordination';
 
 const SDK_ROUTING_ERROR_RE = /Error received for packet (\d+): ([A-Z0-9_]+)/;
 const SDK_PACKET_TIMEOUT_RE = /Packet (\d+) of type \w+ timed out/;
@@ -149,6 +153,10 @@ function findOutboundTargetForWirePacketId(
     if (fromStore) return fromStore;
   }
 
+  // An unmatched wire id may belong to a non-chat wantAck packet (e.g. the
+  // share-location Waypoint) — do not misattribute its NAK to a pending chat row.
+  if (hasMeshtasticNonChatOutboundInFlight()) return undefined;
+
   return findFallbackSendingOutbound(messagesRef.current, myNodeNum);
 }
 
@@ -180,6 +188,12 @@ export function applyMeshtasticOutboundRoutingError(
   }
   const errorText = i18n.t(i18nKey);
   const { myNodeNum, identityId, setMessages, tempIdToWirePacketId } = ctx;
+  // Known non-chat packet (e.g. share-location Waypoint): its NAK must never be
+  // applied to a chat row — the same log line is re-applied asynchronously via
+  // the main-process log echo after the in-flight window closes.
+  if (isMeshtasticNonChatWirePacketId(parsed.packetId)) {
+    return false;
+  }
   const target = findOutboundTargetForWirePacketId(parsed.packetId, ctx);
   if (!target) {
     return false;

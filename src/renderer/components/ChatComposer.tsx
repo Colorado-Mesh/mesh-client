@@ -574,11 +574,13 @@ export function ChatComposer({
         onSendLocationWaypoint &&
         isConnected
       ) {
-        try {
-          await onSendLocationWaypoint(pos.lat, pos.lon);
-        } catch (wpErr) {
+        // Fire-and-forget: the waypoint wantAck promise can take up to 60s to
+        // settle — do not hold the composer. Failure point: waypoint NAK/timeout;
+        // fallback: text already sent, surface a warning toast only.
+        void onSendLocationWaypoint(pos.lat, pos.lon).catch((wpErr: unknown) => {
           console.warn('[ChatComposer] location waypoint send failed ' + errLikeToLogString(wpErr));
-        }
+          addToast(t('chatPanel.shareLocationWaypointFailed'), 'warning');
+        });
       }
       onSendSuccess?.();
     } catch (err) {

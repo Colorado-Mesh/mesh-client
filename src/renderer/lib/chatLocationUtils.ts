@@ -14,20 +14,32 @@ export interface WebMercatorTile {
 
 const OSM_HOST_MARKER = 'openstreetmap.org/?';
 
+/** Build the OSM map URL for a coordinate pair (local UI / outbound link). */
+export function buildOsmMapUrl(lat: number, lon: number): string {
+  return `https://www.openstreetmap.org/?mlat=${formatCoord(lat)}&mlon=${formatCoord(lon)}`;
+}
+
 /** Build the two-line shared-location text message (label is caller-localized). */
 export function formatLocationMessage(lat: number, lon: number, label: string): string {
   const latStr = formatCoord(lat);
   const lonStr = formatCoord(lon);
-  const mapUrl = `https://www.openstreetmap.org/?mlat=${latStr}&mlon=${lonStr}`;
-  return `${label}: ${latStr}, ${lonStr}\n${mapUrl}`;
+  return `${label}: ${latStr}, ${lonStr}\n${buildOsmMapUrl(lat, lon)}`;
 }
 
 /**
- * Detect a shared-location message via the locale-independent OSM `mlat`/`mlon` URL.
+ * Detect a shared-location message.
+ * Prefer the locale-independent OSM `mlat`/`mlon` URL (two-line wire form),
+ * then fall back to a labeled `lat, lon` pair (`Label: 40.1, -105.0`).
  * Uses string/URLSearchParams parsing (no nested-quantifier regex).
  */
 export function parseLocationMessage(text: string): ParsedLocationMessage | null {
   if (!text) return null;
+  const fromOsm = parseOsmLocationMessage(text);
+  if (fromOsm) return fromOsm;
+  return parseLabeledCoordLocationMessage(text);
+}
+
+function parseOsmLocationMessage(text: string): ParsedLocationMessage | null {
   const lower = text.toLowerCase();
   let searchFrom = 0;
   while (searchFrom < lower.length) {
@@ -51,12 +63,69 @@ export function parseLocationMessage(text: string): ParsedLocationMessage | null
     const url = text.slice(urlStart, urlEnd);
     const coords = parseOsmMlatMlon(url);
     if (coords) {
-      const mapUrl = `https://www.openstreetmap.org/?mlat=${formatCoord(coords.lat)}&mlon=${formatCoord(coords.lon)}`;
-      return { lat: coords.lat, lon: coords.lon, mapUrl };
+      return { lat: coords.lat, lon: coords.lon, mapUrl: buildOsmMapUrl(coords.lat, coords.lon) };
     }
     searchFrom = hostIdx + OSM_HOST_MARKER.length;
   }
   return null;
+}
+
+/**
+ * Labeled coords form: `…: lat, lon` (optionally with trailing whitespace / more lines).
+ * Requires a colon before the pair so bare "1, 2" chat does not false-positive.
+ */
+function parseLabeledCoordLocationMessage(text: string): ParsedLocationMessage | null {
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.trim();
+    const colon = line.lastIndexOf(':');
+    if (colon < 0) continue;
+    const after = line.slice(colon + 1).trim();
+    const comma = after.indexOf(',');
+    if (comma < 0) continue;
+    const latToken = after.slice(0, comma).trim();
+    const lonToken = after.slice(comma + 1).trim();
+    if (!isExactNumberToken(latToken) || !isExactNumberToken(lonToken)) continue;
+    const lat = Number.parseFloat(latToken);
+    const lon = Number.parseFloat(lonToken);
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
+    return { lat, lon, mapUrl: buildOsmMapUrl(lat, lon) };
+  }
+  return null;
+}
+
+/** True when `s` is exactly one finite number (no trailing junk). */
+function isExactNumberToken(s: string): boolean {
+  if (!s) return false;
+  const n = Number.parseFloat(s);
+  if (!Number.isFinite(n)) return false;
+  // Number.parseFloat stops at the first non-numeric char — reject leftovers.
+  let i = 0;
+  if (s.startsWith('+') || s.startsWith('-')) i = 1;
+  let sawDigit = false;
+  while (i < s.length && s.charAt(i) >= '0' && s.charAt(i) <= '9') {
+    sawDigit = true;
+    i += 1;
+  }
+  if (i < s.length && s.charAt(i) === '.') {
+    i += 1;
+    while (i < s.length && s.charAt(i) >= '0' && s.charAt(i) <= '9') {
+      sawDigit = true;
+      i += 1;
+    }
+  }
+  if (!sawDigit) return false;
+  if (i < s.length && (s.charAt(i) === 'e' || s.charAt(i) === 'E')) {
+    let j = i + 1;
+    if (j < s.length && (s.charAt(j) === '+' || s.charAt(j) === '-')) j += 1;
+    let expDigit = false;
+    while (j < s.length && s.charAt(j) >= '0' && s.charAt(j) <= '9') {
+      expDigit = true;
+      j += 1;
+    }
+    if (!expDigit) return false;
+    i = j;
+  }
+  return i === s.length;
 }
 
 function parseOsmMlatMlon(url: string): { lat: number; lon: number } | null {

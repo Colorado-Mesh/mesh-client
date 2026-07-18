@@ -491,6 +491,7 @@
     "shareLocationLabel": "📍 Shared location",
     "shareLocationHint": "Send your current GPS or static position as a chat message",
     "shareLocationUnavailable": "Location unavailable — check GPS settings",
+    "shareLocationWaypointFailed": "Map pin (Waypoint) was not acknowledged — the location text may still have been sent.",
     "meshcoreGifButton": "Insert Giphy GIF",
     "meshcoreGifButtonHint": "Send a Giphy GIF as MeshCore Open g: wire",
     "meshcoreGifTitle": "Send Giphy GIF",

@@ -594,7 +594,8 @@
     "shareLocationHint": "Envía tu GPS actual o posición estática como mensaje de chat",
     "shareLocationUnavailable": "Ubicación no disponible: verifique la configuración del GPS",
     "floodScopeOverrideHint": "Alcance de inundación regional solo para este mensaje. El alcance predeterminado utiliza la configuración guardada de la radio; un hashtag limita este envío a esa región; Envíos sin alcance sin filtro de región. Su alcance guardado se restaura después del envío.",
-    "floodScopeOverrideMenuButton": "Cambiar el alcance de la inundación para este mensaje"
+    "floodScopeOverrideMenuButton": "Cambiar el alcance de la inundación para este mensaje",
+    "shareLocationWaypointFailed": "No se reconoció el pin del mapa (Waypoint); es posible que aún se haya enviado el texto de la ubicación."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

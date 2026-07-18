@@ -14,6 +14,12 @@ vi.mock('@/renderer/stores/messageStore', () => ({
 import { updateMessageStatus } from '@/renderer/stores/messageStore';
 
 import {
+  beginMeshtasticNonChatOutbound,
+  endMeshtasticNonChatOutbound,
+  registerMeshtasticNonChatWirePacketId,
+  resetMeshtasticOutboundCoordinationForTests,
+} from './meshtasticOutboundCoordination';
+import {
   installMeshtasticSdkRoutingErrorConsoleHook,
   installMeshtasticSdkRoutingErrorUnhandledRejectionHandler,
 } from './meshtasticSdkRoutingErrorConsoleHook';
@@ -28,11 +34,16 @@ import {
 
 describe('meshtasticSdkRoutingErrorLog', () => {
   beforeEach(() => {
+    resetMeshtasticOutboundCoordinationForTests();
     vi.stubGlobal('window', {
       electronAPI: {
         db: { updateMessageStatus: vi.fn().mockResolvedValue(undefined) },
       },
     });
+  });
+
+  afterEach(() => {
+    resetMeshtasticOutboundCoordinationForTests();
   });
 
   it('parses SDK packet timeout log lines', () => {
@@ -191,6 +202,67 @@ describe('meshtasticSdkRoutingErrorLog', () => {
       'failed',
       'chatPanel.routingErrors.pkiMissingRecipientKey',
     );
+  });
+
+  it('does not misattribute a registered non-chat wire id to a sending chat row', () => {
+    registerMeshtasticNonChatWirePacketId(883268679);
+    const messagesRef = {
+      current: [
+        {
+          id: 1,
+          sender_id: 42,
+          sender_name: 'Me',
+          packetId: 1979522383,
+          payload: '📍 Shared location: 40.1, -105.0',
+          status: 'sending' as const,
+          channel: 1,
+          timestamp: Date.now(),
+        },
+      ],
+    };
+    const setMessages = vi.fn();
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      'Error received for packet 883268679: MAX_RETRANSMIT',
+      {
+        myNodeNum: 42,
+        identityId: null,
+        messagesRef,
+        setMessages,
+      },
+    );
+    expect(applied).toBe(false);
+    expect(setMessages).not.toHaveBeenCalled();
+  });
+
+  it('skips the single-sending fallback while a non-chat outbound is in flight', () => {
+    beginMeshtasticNonChatOutbound();
+    const messagesRef = {
+      current: [
+        {
+          id: 1,
+          sender_id: 42,
+          sender_name: 'Me',
+          packetId: 1979522383,
+          payload: '📍 Shared location: 40.1, -105.0',
+          status: 'sending' as const,
+          channel: 1,
+          timestamp: Date.now(),
+        },
+      ],
+    };
+    const setMessages = vi.fn();
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      'Error received for packet 883268679: MAX_RETRANSMIT',
+      {
+        myNodeNum: 42,
+        identityId: null,
+        messagesRef,
+        setMessages,
+      },
+    );
+    expect(applied).toBe(false);
+    expect(setMessages).not.toHaveBeenCalled();
+    endMeshtasticNonChatOutbound();
   });
 
   it('humanizes queue rejections to chat i18n text or routing error name', () => {

@@ -594,7 +594,8 @@
     "shareLocationHint": "Stuur uw huidige GPS- of statische positie als chatbericht",
     "shareLocationUnavailable": "Locatie niet beschikbaar: controleer de GPS-instellingen",
     "floodScopeOverrideHint": "Regionaal overstromingsbereik alleen voor dit bericht. Standaard bereik gebruikt de opgeslagen instelling van de radio; een hashtag beperkt deze verzending tot die regio; Unscoped verzendt zonder regiofilter. Uw opgeslagen scope wordt na verzending hersteld.",
-    "floodScopeOverrideMenuButton": "Wijzig het overstromingsbereik voor dit bericht"
+    "floodScopeOverrideMenuButton": "Wijzig het overstromingsbereik voor dit bericht",
+    "shareLocationWaypointFailed": "Kaartpin (Waypoint) is niet bevestigd: de locatietekst is mogelijk nog verzonden."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

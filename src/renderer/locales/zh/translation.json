@@ -594,7 +594,8 @@
     "shareLocationHint": "将您当前的 GPS 或静态位置作为聊天消息发送",
     "shareLocationUnavailable": "位置不可用 — 检查 GPS 设置",
     "floodScopeOverrideHint": "仅此消息的区域洪水范围。默认范围使用无线电的已保存设置；主题标签限制此发送到该区域；不带区域过滤器的无范围发送。发送后将恢复您保存的范围。",
-    "floodScopeOverrideMenuButton": "更改此消息的泛洪范围"
+    "floodScopeOverrideMenuButton": "更改此消息的泛洪范围",
+    "shareLocationWaypointFailed": "地图图钉（航点）未得到确认 - 位置文本可能仍已发送。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

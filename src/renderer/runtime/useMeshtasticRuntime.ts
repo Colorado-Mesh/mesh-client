@@ -110,6 +110,11 @@ import {
   overlayMeshtasticMqttTopicPrefixForRadio,
 } from '../lib/meshtastic/meshtasticMqttTopicPrefixOverlay';
 import {
+  beginMeshtasticNonChatOutbound,
+  endMeshtasticNonChatOutbound,
+  registerMeshtasticNonChatWirePacketId,
+} from '../lib/meshtastic/meshtasticOutboundCoordination';
+import {
   meshtasticXmodemDownload,
   meshtasticXmodemUpload,
 } from '../lib/meshtastic/meshtasticXmodemTransfer';
@@ -3407,7 +3412,21 @@ export function useMeshtasticRuntime() {
         lockedTo: wp.lockedTo ?? 0,
         expire: wp.expire ?? 0,
       }) as WaypointType;
-      await deviceRef.current.sendWaypoint(waypoint, dest, channel);
+      beginMeshtasticNonChatOutbound();
+      try {
+        const wpWireId = await deviceRef.current.sendWaypoint(waypoint, dest, channel);
+        registerMeshtasticNonChatWirePacketId(wpWireId);
+      } catch (wpErr) {
+        // Routing NAK rejections carry the waypoint's wire id — register it so the
+        // chat routing-error fallback never attributes this NAK to a chat row.
+        const wpRej = wpErr as { id?: number; packetId?: number };
+        registerMeshtasticNonChatWirePacketId(
+          typeof wpRej.id === 'number' ? wpRej.id : wpRej.packetId,
+        );
+        throw wpErr;
+      } finally {
+        endMeshtasticNonChatOutbound();
+      }
 
       const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
       const fromNum = resolveMeshtasticOutboundFromNodeId({

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildOsmMapUrl,
   buildStaticTileUrl,
   formatLocationMessage,
   latLonToTile,
@@ -26,14 +27,28 @@ describe('chatLocationUtils', () => {
     });
   });
 
+  it('parses labeled lat/lon without OSM URL (inbound fallback)', () => {
+    const text = 'Ubicación compartida: 39.7392, -104.9903';
+    const parsed = parseLocationMessage(text);
+    expect(parsed).toEqual({
+      lat: 39.7392,
+      lon: -104.9903,
+      mapUrl: buildOsmMapUrl(39.7392, -104.9903),
+    });
+  });
+
   it('returns null for non-location text', () => {
     expect(parseLocationMessage('hello world')).toBeNull();
     expect(parseLocationMessage('https://example.com/?lat=1&lon=2')).toBeNull();
+    expect(parseLocationMessage('testing 1, 2')).toBeNull();
+    expect(parseLocationMessage('score: 1, 2 more text')).toBeNull();
   });
 
   it('rejects out-of-range coordinates', () => {
     expect(parseLocationMessage('https://www.openstreetmap.org/?mlat=91&mlon=0')).toBeNull();
     expect(parseLocationMessage('https://www.openstreetmap.org/?mlat=0&mlon=181')).toBeNull();
+    expect(parseLocationMessage('Shared: 91, 0')).toBeNull();
+    expect(parseLocationMessage('Shared: 0, 181')).toBeNull();
   });
 
   it('computes web mercator tiles and static URL', () => {
@@ -50,5 +65,6 @@ describe('chatLocationUtils', () => {
     const parsed = parseLocationMessage(text);
     expect(parsed?.lat).toBe(0);
     expect(parsed?.lon).toBe(0);
+    expect(parsed?.mapUrl).toBe(buildOsmMapUrl(0, 0));
   });
 });
