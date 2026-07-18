@@ -1,7 +1,8 @@
-import { Bell, BellOff, Clock, LogOut, X } from 'lucide-react-motion';
+import { Bell, BellOff, Clock, LogOut, Trash2, X } from 'lucide-react-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import { RrcChatView } from '@/renderer/components/rrc/RrcChatView';
 import { RrcHubBrowser } from '@/renderer/components/rrc/RrcHubBrowser';
 import { RrcNickList } from '@/renderer/components/rrc/RrcNickList';
@@ -15,6 +16,7 @@ import { formatRrcErrorMessage } from '@/renderer/lib/rrcErrorHumanize';
 import { setRrcHubDisconnectSuppressed } from '@/renderer/lib/rrcHubDisconnectSuppress';
 import { isRrcHubAutoJoin, toggleRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
 import { isRrcHubLinked } from '@/renderer/lib/rrcHubSession';
+import { clearRrcRoomHistory, hydrateRrcRoomMessages } from '@/renderer/lib/rrcMessagePersist';
 import { loadRrcRecentRooms, pushRrcRecentRoom } from '@/renderer/lib/rrcRecentRooms';
 import { dedupeRrcMembers, rrcIdentityHashesMatch } from '@/renderer/lib/rrcRoomMembers';
 import { resolveRrcJoinRoomName, rrcRoomMatchKey, rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
@@ -131,6 +133,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
   const [actionBusy, setActionBusy] = useState(false);
   const [mutedViews, setMutedViews] = useState(() => loadMutedViews('reticulum'));
   const [draft, setDraft] = useState('');
+  const [confirmClearHistory, setConfirmClearHistory] = useState(false);
   /** Per-hub room keys we already requested `/who` for (rrcd JOINED often has no roster). */
   const whoRequestedRef = useRef(new Set<string>());
 
@@ -142,6 +145,11 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
       // catch-no-log-ok localStorage may be unavailable
     }
   }, [setNickname]);
+
+  useEffect(() => {
+    if (!hubDestHash || !activeRoom) return;
+    void hydrateRrcRoomMessages(hubDestHash, activeRoom);
+  }, [hubDestHash, activeRoom]);
 
   const recentRooms = useMemo(() => {
     if (!hubDestHash) return [];
@@ -887,6 +895,19 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
               >
                 {isMuted ? <BellOff size={16} /> : <Bell size={16} />}
               </button>
+              {activeRoom && (
+                <button
+                  type="button"
+                  className="rounded p-1.5 text-amber-200/60 hover:bg-amber-950/50"
+                  aria-label={t('rrc.clearHistory')}
+                  disabled={actionBusy}
+                  onClick={() => {
+                    setConfirmClearHistory(true);
+                  }}
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
               {activeRoom && !activeRoom.startsWith('[') && (
                 <button
                   type="button"
@@ -985,6 +1006,21 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
           )}
         </div>
       </main>
+      {confirmClearHistory && hubDestHash && activeRoom && (
+        <ConfirmModal
+          title={t('rrc.clearHistoryTitle')}
+          message={t('rrc.clearHistoryConfirm', { room: activeRoom })}
+          confirmLabel={t('rrc.clearHistoryConfirmAction')}
+          danger
+          onCancel={() => {
+            setConfirmClearHistory(false);
+          }}
+          onConfirm={() => {
+            setConfirmClearHistory(false);
+            void clearRrcRoomHistory(hubDestHash, activeRoom);
+          }}
+        />
+      )}
     </div>
   );
 }

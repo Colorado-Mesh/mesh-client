@@ -20,21 +20,39 @@ describe('ProtocolSwitcher', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: /Meshtastic/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Switch to Meshtastic' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    expect(screen.getByRole('button', { name: /MeshCore/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Switch to MeshCore, 3 unread' })).toHaveAttribute(
       'aria-pressed',
       'false',
     );
-    expect(screen.getByRole('button', { name: /Reticulum/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Switch to Reticulum, 1 unread' })).toHaveAttribute(
       'aria-pressed',
       'false',
     );
 
-    await user.click(screen.getByRole('button', { name: /MeshCore/i }));
+    await user.click(screen.getByRole('button', { name: 'Switch to MeshCore, 3 unread' }));
     expect(onProtocolChange).toHaveBeenCalledWith('meshcore');
+  });
+
+  it('includes unread count in inactive protocol aria-label', () => {
+    render(
+      <ProtocolSwitcher
+        protocol="reticulum"
+        chatUnreadByProtocol={{ meshtastic: 12, meshcore: 0, reticulum: 5 }}
+        onProtocolChange={() => {}}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Switch to Meshtastic, 12 unread' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Switch to MeshCore' })).toBeTruthy();
+    // Active protocol never shows unread in the badge/label even if store has a count.
+    expect(screen.getByRole('button', { name: 'Switch to Reticulum' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   it('has no serious axe violations with three protocol pills', async () => {

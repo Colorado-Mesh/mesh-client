@@ -513,7 +513,9 @@ describe('ModulePanel', () => {
     await user.click(rhDetails!.querySelector('summary')!);
     await user.click(rhDetails!.querySelectorAll('[role="switch"]')[0]);
 
-    expect(screen.getByRole('dialog', { name: 'Enable Remote Hardware?' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('alertdialog', { name: 'Enable Remote Hardware?' }),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Enable' }));
     expect(rhDetails!.querySelectorAll('[role="switch"]')[0]).toHaveAttribute(
       'aria-checked',

@@ -37,6 +37,8 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
       'meshtasticMessageRetentionEnabled',
       'reticulumMessageRetentionCount',
       'reticulumMessageRetentionEnabled',
+      'rrcMessageRetentionCount',
+      'rrcMessageRetentionEnabled',
     ]);
     db.close();
   });

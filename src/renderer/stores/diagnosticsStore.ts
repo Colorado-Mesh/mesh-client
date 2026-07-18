@@ -390,6 +390,23 @@ function loadDiagnosticRowsMaxAgeHours(): number {
   return 24;
 }
 
+const DISTANCE_OFFSET_KM_MIN = 0;
+const DISTANCE_OFFSET_KM_MAX = 50;
+
+/** Absolute distance floor (km) added to hop-goblin / bad-route thresholds; default 0. */
+function loadDistanceOffsetKm(): number {
+  const raw = getAppSettingsRaw();
+  const o = parseStoredJson<{ distanceOffsetKm?: number }>(
+    raw,
+    'diagnosticsStore loadDistanceOffsetKm',
+  );
+  const km = o?.distanceOffsetKm;
+  if (typeof km === 'number' && Number.isFinite(km)) {
+    return Math.min(DISTANCE_OFFSET_KM_MAX, Math.max(DISTANCE_OFFSET_KM_MIN, km));
+  }
+  return 0;
+}
+
 function loadDiagnosticRowsSnapshot(): { rows: DiagnosticRow[]; savedAt: number } | null {
   const raw = localStorage.getItem(DIAGNOSTIC_ROWS_STORAGE_KEY);
   const parsed = parseStoredJson<DiagnosticRowsSnapshot>(
@@ -543,6 +560,12 @@ interface DiagnosticsState {
   diagnosticRowsMaxAgeHours: number;
   /** Persist max age (hours) for routing diagnostic rows; 1–168; RF stays 1h. */
   setDiagnosticRowsMaxAgeHours(hours: number): void;
+  /**
+   * Absolute km floor added to distance-based routing thresholds (hop goblin / bad route).
+   * Persisted 0–50; complements envMode distanceMultiplier.
+   */
+  distanceOffsetKm: number;
+  setDistanceOffsetKm(km: number): void;
   clearDiagnostics(options?: { preserveForeignLora?: boolean }): void;
   /** Clear persisted snapshot only (rows unchanged until next analysis). */
   clearDiagnosticRowsSnapshot(): void;
@@ -724,6 +747,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   ourPositionSource: null,
   envMode: loadEnvMode(),
   diagnosticRowsMaxAgeHours: loadDiagnosticRowsMaxAgeHours(),
+  distanceOffsetKm: loadDistanceOffsetKm(),
   foreignLoraDetections: initialForeignLora,
   meshcoreHopHistory: new Map(),
   meshcoreTraceHistory: new Map(),
@@ -952,7 +976,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
             history,
             ignoreMqtt,
             distanceMultiplier,
-            0,
+            s.distanceOffsetKm,
             hopsThreshold,
             capabilities,
             noiseData,
@@ -1375,7 +1399,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
             history,
             ignoreMqtt,
             distanceMultiplier,
-            0,
+            state.distanceOffsetKm,
             hopsThreshold,
             capabilities,
             noiseData,
@@ -1555,6 +1579,13 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
       ),
     }));
     schedulePersistDiagnosticRows(() => get().diagnosticRows);
+  },
+
+  setDistanceOffsetKm(km: number) {
+    if (!Number.isFinite(km)) return;
+    const clamped = Math.min(DISTANCE_OFFSET_KM_MAX, Math.max(DISTANCE_OFFSET_KM_MIN, km));
+    mergeAppSetting('distanceOffsetKm', clamped, 'diagnosticsStore setDistanceOffsetKm');
+    set({ distanceOffsetKm: clamped });
   },
 
   getCuStats24h(nodeId: number) {

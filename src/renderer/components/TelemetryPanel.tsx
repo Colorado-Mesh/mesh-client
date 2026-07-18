@@ -24,6 +24,22 @@ function toF(c: number) {
   return (c * 9) / 5 + 32;
 }
 
+/** Latest finite number for `key` walking chart rows newest-first. */
+function latestDefinedNumber(
+  rows: readonly Record<string, unknown>[],
+  key: string,
+): number | undefined {
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const v = rows[i]?.[key];
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+  }
+  return undefined;
+}
+
+function formatChartValue(value: number | undefined, fallback: string): string {
+  return value === undefined ? fallback : String(value);
+}
+
 interface Props {
   telemetry: TelemetryPoint[];
   signalTelemetry: TelemetryPoint[];
@@ -125,6 +141,39 @@ export default function TelemetryPanel({
   const latestSignal =
     signalTelemetry.length > 0 ? signalTelemetry[signalTelemetry.length - 1] : null;
   const showLiveSignalMeter = capabilities?.hasRfStats === true;
+  const chartValueUnavailable = t('telemetryPanel.chartValueUnavailable');
+  const batteryChartAria = t('telemetryPanel.chartAriaBattery', {
+    battery: formatChartValue(latestDefinedNumber(chartData, 'battery'), chartValueUnavailable),
+    voltage: formatChartValue(latestDefinedNumber(chartData, 'voltage'), chartValueUnavailable),
+    count: chartData.length,
+  });
+  const signalChartAria = t('telemetryPanel.chartAriaSignal', {
+    snr: formatChartValue(latestDefinedNumber(signalChartData, 'snr'), chartValueUnavailable),
+    rssi: formatChartValue(latestDefinedNumber(signalChartData, 'rssi'), chartValueUnavailable),
+    count: signalChartData.length,
+  });
+  const tempHumidityChartAria = t('telemetryPanel.chartAriaTempHumidity', {
+    temperature: formatChartValue(
+      latestDefinedNumber(envChartData, 'temperature'),
+      chartValueUnavailable,
+    ),
+    humidity: formatChartValue(
+      latestDefinedNumber(envChartData, 'humidity'),
+      chartValueUnavailable,
+    ),
+    count: envChartData.length,
+  });
+  const pressureChartAria = t('telemetryPanel.chartAriaPressure', {
+    pressure: formatChartValue(
+      latestDefinedNumber(envChartData, 'pressure'),
+      chartValueUnavailable,
+    ),
+    count: envChartData.length,
+  });
+  const iaqChartAria = t('telemetryPanel.chartAriaIaq', {
+    iaq: formatChartValue(latestDefinedNumber(envChartData, 'iaq'), chartValueUnavailable),
+    count: envChartData.length,
+  });
 
   const handleExportCsv = useCallback(() => {
     if (telemetry.length === 0 && signalTelemetry.length === 0 && environmentTelemetry.length === 0)
@@ -250,65 +299,67 @@ export default function TelemetryPanel({
               <h3 className="text-muted mb-3 text-sm font-medium">
                 {t('telemetryPanel.sectionBatteryVoltage')}
               </h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
-                  <YAxis
-                    yAxisId="battery"
-                    domain={[0, 100]}
-                    stroke="#3b82f6"
-                    tick={{ fontSize: 11 }}
-                    label={{
-                      value: '%',
-                      angle: -90,
-                      position: 'insideLeft',
-                      style: { fill: '#3b82f6' },
-                    }}
-                  />
-                  <YAxis
-                    yAxisId="voltage"
-                    orientation="right"
-                    domain={[3.0, 4.5]}
-                    stroke="#8b5cf6"
-                    tick={{ fontSize: 11 }}
-                    label={{
-                      value: 'V',
-                      angle: 90,
-                      position: 'insideRight',
-                      style: { fill: '#8b5cf6' },
-                    }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: '#0f172a',
-                      border: '1px solid #334155',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Legend />
-                  <Line
-                    yAxisId="battery"
-                    type="monotone"
-                    dataKey="battery"
-                    name={t('telemetryPanel.seriesBatteryPct')}
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                    dot={false}
-                    connectNulls
-                  />
-                  <Line
-                    yAxisId="voltage"
-                    type="monotone"
-                    dataKey="voltage"
-                    name={t('telemetryPanel.seriesVoltage')}
-                    stroke="#8b5cf6"
-                    strokeWidth={2}
-                    dot={false}
-                    connectNulls
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <div role="img" aria-label={batteryChartAria}>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
+                    <YAxis
+                      yAxisId="battery"
+                      domain={[0, 100]}
+                      stroke="#3b82f6"
+                      tick={{ fontSize: 11 }}
+                      label={{
+                        value: '%',
+                        angle: -90,
+                        position: 'insideLeft',
+                        style: { fill: '#3b82f6' },
+                      }}
+                    />
+                    <YAxis
+                      yAxisId="voltage"
+                      orientation="right"
+                      domain={[3.0, 4.5]}
+                      stroke="#8b5cf6"
+                      tick={{ fontSize: 11 }}
+                      label={{
+                        value: 'V',
+                        angle: 90,
+                        position: 'insideRight',
+                        style: { fill: '#8b5cf6' },
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: '#0f172a',
+                        border: '1px solid #334155',
+                        borderRadius: '8px',
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      yAxisId="battery"
+                      type="monotone"
+                      dataKey="battery"
+                      name={t('telemetryPanel.seriesBatteryPct')}
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                    <Line
+                      yAxisId="voltage"
+                      type="monotone"
+                      dataKey="voltage"
+                      name={t('telemetryPanel.seriesVoltage')}
+                      stroke="#8b5cf6"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           )}
 
@@ -318,63 +369,65 @@ export default function TelemetryPanel({
               <h3 className="text-muted mb-3 text-sm font-medium">
                 {t('telemetryPanel.sectionSignalQuality')}
               </h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={signalChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
-                  <YAxis
-                    yAxisId="snr"
-                    stroke="#ef4444"
-                    tick={{ fontSize: 11 }}
-                    label={{
-                      value: 'dB',
-                      angle: -90,
-                      position: 'insideLeft',
-                      style: { fill: '#ef4444' },
-                    }}
-                  />
-                  <YAxis
-                    yAxisId="rssi"
-                    orientation="right"
-                    stroke="#f97316"
-                    tick={{ fontSize: 11 }}
-                    label={{
-                      value: 'dBm',
-                      angle: 90,
-                      position: 'insideRight',
-                      style: { fill: '#f97316' },
-                    }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: '#0f172a',
-                      border: '1px solid #334155',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Legend />
-                  <Line
-                    yAxisId="snr"
-                    type="monotone"
-                    dataKey="snr"
-                    name={t('telemetryPanel.seriesSnr')}
-                    stroke="#f97316"
-                    strokeWidth={2}
-                    dot={false}
-                    connectNulls
-                  />
-                  <Line
-                    yAxisId="rssi"
-                    type="monotone"
-                    dataKey="rssi"
-                    name={t('telemetryPanel.seriesRssi')}
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                    dot={false}
-                    connectNulls
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <div role="img" aria-label={signalChartAria}>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={signalChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
+                    <YAxis
+                      yAxisId="snr"
+                      stroke="#ef4444"
+                      tick={{ fontSize: 11 }}
+                      label={{
+                        value: 'dB',
+                        angle: -90,
+                        position: 'insideLeft',
+                        style: { fill: '#ef4444' },
+                      }}
+                    />
+                    <YAxis
+                      yAxisId="rssi"
+                      orientation="right"
+                      stroke="#f97316"
+                      tick={{ fontSize: 11 }}
+                      label={{
+                        value: 'dBm',
+                        angle: 90,
+                        position: 'insideRight',
+                        style: { fill: '#f97316' },
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: '#0f172a',
+                        border: '1px solid #334155',
+                        borderRadius: '8px',
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      yAxisId="snr"
+                      type="monotone"
+                      dataKey="snr"
+                      name={t('telemetryPanel.seriesSnr')}
+                      stroke="#f97316"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                    <Line
+                      yAxisId="rssi"
+                      type="monotone"
+                      dataKey="rssi"
+                      name={t('telemetryPanel.seriesRssi')}
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           )}
 
@@ -384,92 +437,94 @@ export default function TelemetryPanel({
               <h3 className="text-muted mb-3 text-sm font-medium">
                 {t('telemetryPanel.sectionTemperatureHumidity')}
               </h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={envChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
-                  {(hasTemp || hasMcuTemp) && (
-                    <YAxis
-                      yAxisId="temp"
-                      stroke="#f59e0b"
-                      tick={{ fontSize: 11 }}
-                      label={{
-                        value: useFahrenheit ? '°F' : '°C',
-                        angle: -90,
-                        position: 'insideLeft',
-                        style: { fill: '#f59e0b' },
+              <div role="img" aria-label={tempHumidityChartAria}>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={envChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
+                    {(hasTemp || hasMcuTemp) && (
+                      <YAxis
+                        yAxisId="temp"
+                        stroke="#f59e0b"
+                        tick={{ fontSize: 11 }}
+                        label={{
+                          value: useFahrenheit ? '°F' : '°C',
+                          angle: -90,
+                          position: 'insideLeft',
+                          style: { fill: '#f59e0b' },
+                        }}
+                      />
+                    )}
+                    {hasHumidity && (
+                      <YAxis
+                        yAxisId="humidity"
+                        orientation="right"
+                        domain={[0, 100]}
+                        stroke="#06b6d4"
+                        tick={{ fontSize: 11 }}
+                        label={{
+                          value: '%',
+                          angle: 90,
+                          position: 'insideRight',
+                          style: { fill: '#06b6d4' },
+                        }}
+                      />
+                    )}
+                    <Tooltip
+                      contentStyle={{
+                        background: '#0f172a',
+                        border: '1px solid #334155',
+                        borderRadius: '8px',
                       }}
                     />
-                  )}
-                  {hasHumidity && (
-                    <YAxis
-                      yAxisId="humidity"
-                      orientation="right"
-                      domain={[0, 100]}
-                      stroke="#06b6d4"
-                      tick={{ fontSize: 11 }}
-                      label={{
-                        value: '%',
-                        angle: 90,
-                        position: 'insideRight',
-                        style: { fill: '#06b6d4' },
-                      }}
-                    />
-                  )}
-                  <Tooltip
-                    contentStyle={{
-                      background: '#0f172a',
-                      border: '1px solid #334155',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Legend />
-                  {hasTemp && (
-                    <Line
-                      yAxisId="temp"
-                      type="monotone"
-                      dataKey="temperature"
-                      name={
-                        useFahrenheit
-                          ? t('telemetryPanel.seriesTempF')
-                          : t('telemetryPanel.seriesTempC')
-                      }
-                      stroke="#f59e0b"
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls
-                    />
-                  )}
-                  {hasMcuTemp && (
-                    <Line
-                      yAxisId="temp"
-                      type="monotone"
-                      dataKey="mcuTemperature"
-                      name={
-                        useFahrenheit
-                          ? t('telemetryPanel.seriesMcuTempF')
-                          : t('telemetryPanel.seriesMcuTempC')
-                      }
-                      stroke="#fb923c"
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls
-                    />
-                  )}
-                  {hasHumidity && (
-                    <Line
-                      yAxisId="humidity"
-                      type="monotone"
-                      dataKey="humidity"
-                      name={t('telemetryPanel.seriesHumidityPct')}
-                      stroke="#06b6d4"
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls
-                    />
-                  )}
-                </LineChart>
-              </ResponsiveContainer>
+                    <Legend />
+                    {hasTemp && (
+                      <Line
+                        yAxisId="temp"
+                        type="monotone"
+                        dataKey="temperature"
+                        name={
+                          useFahrenheit
+                            ? t('telemetryPanel.seriesTempF')
+                            : t('telemetryPanel.seriesTempC')
+                        }
+                        stroke="#f59e0b"
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls
+                      />
+                    )}
+                    {hasMcuTemp && (
+                      <Line
+                        yAxisId="temp"
+                        type="monotone"
+                        dataKey="mcuTemperature"
+                        name={
+                          useFahrenheit
+                            ? t('telemetryPanel.seriesMcuTempF')
+                            : t('telemetryPanel.seriesMcuTempC')
+                        }
+                        stroke="#fb923c"
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls
+                      />
+                    )}
+                    {hasHumidity && (
+                      <Line
+                        yAxisId="humidity"
+                        type="monotone"
+                        dataKey="humidity"
+                        name={t('telemetryPanel.seriesHumidityPct')}
+                        stroke="#06b6d4"
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls
+                      />
+                    )}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           )}
 
@@ -479,41 +534,43 @@ export default function TelemetryPanel({
               <h3 className="text-muted mb-3 text-sm font-medium">
                 {t('telemetryPanel.sectionBarometricPressure')}
               </h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={envChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
-                  <YAxis
-                    yAxisId="pressure"
-                    stroke="#a78bfa"
-                    tick={{ fontSize: 11 }}
-                    label={{
-                      value: 'hPa',
-                      angle: -90,
-                      position: 'insideLeft',
-                      style: { fill: '#a78bfa' },
-                    }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: '#0f172a',
-                      border: '1px solid #334155',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Legend />
-                  <Line
-                    yAxisId="pressure"
-                    type="monotone"
-                    dataKey="pressure"
-                    name={t('telemetryPanel.seriesPressureHpa')}
-                    stroke="#a78bfa"
-                    strokeWidth={2}
-                    dot={false}
-                    connectNulls
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <div role="img" aria-label={pressureChartAria}>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={envChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
+                    <YAxis
+                      yAxisId="pressure"
+                      stroke="#a78bfa"
+                      tick={{ fontSize: 11 }}
+                      label={{
+                        value: 'hPa',
+                        angle: -90,
+                        position: 'insideLeft',
+                        style: { fill: '#a78bfa' },
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: '#0f172a',
+                        border: '1px solid #334155',
+                        borderRadius: '8px',
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      yAxisId="pressure"
+                      type="monotone"
+                      dataKey="pressure"
+                      name={t('telemetryPanel.seriesPressureHpa')}
+                      stroke="#a78bfa"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           )}
 
@@ -523,42 +580,44 @@ export default function TelemetryPanel({
               <h3 className="text-muted mb-3 text-sm font-medium">
                 {t('telemetryPanel.sectionAirQuality')}
               </h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={envChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
-                  <YAxis
-                    yAxisId="iaq"
-                    domain={[0, 500]}
-                    stroke="#34d399"
-                    tick={{ fontSize: 11 }}
-                    label={{
-                      value: 'IAQ',
-                      angle: -90,
-                      position: 'insideLeft',
-                      style: { fill: '#34d399' },
-                    }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: '#0f172a',
-                      border: '1px solid #334155',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Legend />
-                  <Line
-                    yAxisId="iaq"
-                    type="monotone"
-                    dataKey="iaq"
-                    name={t('telemetryPanel.seriesIaq')}
-                    stroke="#34d399"
-                    strokeWidth={2}
-                    dot={false}
-                    connectNulls
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <div role="img" aria-label={iaqChartAria}>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={envChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="time" stroke="#6b7280" tick={{ fontSize: 11 }} />
+                    <YAxis
+                      yAxisId="iaq"
+                      domain={[0, 500]}
+                      stroke="#34d399"
+                      tick={{ fontSize: 11 }}
+                      label={{
+                        value: 'IAQ',
+                        angle: -90,
+                        position: 'insideLeft',
+                        style: { fill: '#34d399' },
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: '#0f172a',
+                        border: '1px solid #334155',
+                        borderRadius: '8px',
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      yAxisId="iaq"
+                      type="monotone"
+                      dataKey="iaq"
+                      name={t('telemetryPanel.seriesIaq')}
+                      stroke="#34d399"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           )}
 

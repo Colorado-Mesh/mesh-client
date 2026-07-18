@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { persistRrcMessage } from '@/renderer/lib/rrcMessagePersist';
 import {
   coalesceRrcMemberRoster,
   dedupeRrcMembers,
@@ -238,7 +239,7 @@ interface RrcSessionStoreState {
   nickname: string;
   /** Local Reticulum identity hash (hex) for self-echo unread suppression. */
   localIdentityHash: string | null;
-  /** Volatile messages keyed by `${hub}::${room}`, shared across all hub sessions. */
+  /** Live + hydrated messages keyed by `${hub}::${room}`, shared across all hub sessions. */
   messages: Map<string, RrcChatMessage[]>;
   /** Per-hub unread totals stashed when a hub session is removed (survives disconnect). */
   unreadByHub: Map<string, number>;
@@ -291,6 +292,12 @@ interface RrcSessionStoreState {
    */
   roomParted: (room: string, opts?: { forced?: boolean }, hubHash?: string) => void;
   addMessage: (msg: RrcChatMessage, opts?: { bumpUnread?: boolean; hubDestHash?: string }) => void;
+  /**
+   * Merge SQLite history ahead of live messages (dedup by id). Does not re-persist.
+   */
+  mergeHistoryMessages: (hubHash: string, room: string, history: RrcChatMessage[]) => void;
+  /** Clear in-memory messages for one hub room (DB clear is a separate IPC call). */
+  clearRoomMessages: (hubHash: string, room: string) => void;
   clearUnread: (room: string, hubHash?: string) => void;
   clearActiveRoomMessages: (hubHash?: string) => void;
   /** Tear down every tracked hub (stack teardown). */
@@ -625,6 +632,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   addMessage: (msg, opts) => {
+    const toPersist: { hub: string; msg: RrcChatMessage }[] = [];
     set((s) => {
       const hub = opts?.hubDestHash !== undefined ? normHub(opts.hubDestHash) : s.focusedHubHash;
       if (!hub) return {};
@@ -645,8 +653,10 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       ) {
         return {};
       }
-      const list = [...existing, { ...msg, room: roomKey }].slice(-MAX_MESSAGES_PER_ROOM);
+      const stored: RrcChatMessage = { ...msg, room: roomKey };
+      const list = [...existing, stored].slice(-MAX_MESSAGES_PER_ROOM);
       messages.set(key, list);
+      toPersist.push({ hub, msg: stored });
 
       const session = s.sessionsByHub.get(hub) ?? emptyHubSession();
       const selfHash = s.localIdentityHash;
@@ -670,6 +680,40 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       sessionsByHub.set(hub, nextSession);
       const mirror = hub === s.focusedHubHash ? mirrorFromSession(hub, nextSession) : {};
       return { messages, sessionsByHub, ...mirror };
+    });
+    for (const item of toPersist) {
+      persistRrcMessage(item.hub, item.msg);
+    }
+  },
+
+  mergeHistoryMessages: (hubHash, room, history) => {
+    set((s) => {
+      const hub = normHub(hubHash);
+      if (!hub || history.length === 0) return {};
+      const roomKey = roomStorageKey(room);
+      const key = msgKey(hub, roomKey);
+      const messages = new Map(s.messages);
+      const existing = messages.get(key) ?? [];
+      const seen = new Set(existing.map((m) => m.id).filter(Boolean));
+      const incoming = history
+        .filter((m) => m.id && !seen.has(m.id))
+        .map((m) => ({ ...m, room: roomKey }));
+      if (incoming.length === 0) return {};
+      const merged = [...incoming, ...existing]
+        .sort((a, b) => a.timestamp - b.timestamp || a.id.localeCompare(b.id))
+        .slice(-MAX_MESSAGES_PER_ROOM);
+      messages.set(key, merged);
+      return { messages };
+    });
+  },
+
+  clearRoomMessages: (hubHash, room) => {
+    set((s) => {
+      const hub = normHub(hubHash);
+      if (!hub) return {};
+      const messages = new Map(s.messages);
+      messages.delete(msgKey(hub, room));
+      return { messages };
     });
   },
 

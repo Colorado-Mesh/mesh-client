@@ -347,12 +347,14 @@ describe('ConnectionPanel MeshCore MQTT presets', () => {
       />,
     );
 
-    const dialog = await screen.findByRole('dialog', { name: 'Colorado Mesh MQTT' });
+    const dialog = await screen.findByRole('alertdialog', { name: 'Colorado Mesh MQTT' });
     expect(dialog).toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Switch to LetsMesh' }));
     expect(localStorage.getItem('mesh-client:coloradoMqttRegionAck-v1')).toBe('1');
     expect(localStorage.getItem('mesh-client:mqttPreset:meshcore')).toBe('letsmesh');
-    expect(screen.queryByRole('dialog', { name: 'Colorado Mesh MQTT' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('alertdialog', { name: 'Colorado Mesh MQTT' }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows Colorado region gate even when MQTT is already connected', async () => {
@@ -387,7 +389,9 @@ describe('ConnectionPanel MeshCore MQTT presets', () => {
       />,
     );
 
-    expect(await screen.findByRole('dialog', { name: 'Colorado Mesh MQTT' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('alertdialog', { name: 'Colorado Mesh MQTT' }),
+    ).toBeInTheDocument();
   });
 });
 

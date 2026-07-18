@@ -265,6 +265,35 @@ export interface ElectronAPI {
     pruneMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
     pruneMeshcoreMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
     pruneReticulumMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
+    listRrcMessages: (
+      hubHash: string,
+      room: string,
+      limit?: number,
+    ) => Promise<
+      {
+        message_id: string;
+        hub_hash: string;
+        room: string;
+        sender_hash: string | null;
+        nickname: string | null;
+        kind: string;
+        body: string;
+        timestamp: number;
+      }[]
+    >;
+    insertRrcMessage: (message: {
+      message_id: string;
+      hub_hash: string;
+      room: string;
+      sender_hash?: string | null;
+      nickname?: string | null;
+      kind: string;
+      body: string;
+      timestamp: number;
+    }) => Promise<{ changes: number }>;
+    deleteRrcMessagesByRoom: (hubHash: string, room: string) => Promise<{ changes: number }>;
+    pruneRrcMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
+    pruneRrcMessagesByAge: (maxAgeDays: number) => Promise<DbPruneResult>;
     pruneReticulumDestinationsByCount: (maxCount: number) => Promise<DbPruneResult>;
     deleteReticulumDestinationsByAge: (days: number) => Promise<DbPruneResult>;
     pruneReticulumIdentityActivityByAge: (days: number) => Promise<DbPruneResult>;

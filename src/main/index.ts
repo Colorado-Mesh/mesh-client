@@ -103,6 +103,7 @@ import { registerGpsIpcHandlers } from './ipc/gps-handlers';
 import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
 import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './ipc/reticulum-handlers';
 import { registerReticulumIdentityIpcHandlers } from './ipc/reticulum-identity-handlers';
+import { registerRrcDbIpcHandlers } from './ipc/rrc-db-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
 import {
   clearLogFile,
@@ -3420,6 +3421,8 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshcoreMessageRetentionCount',
   'reticulumMessageRetentionEnabled',
   'reticulumMessageRetentionCount',
+  'rrcMessageRetentionEnabled',
+  'rrcMessageRetentionCount',
   'locale',
   'mapBasemapId',
   'meshtasticMqttClientId',
@@ -6276,6 +6279,7 @@ registerReticulumIpcHandlers({
   getMainWindow: () => mainWindow,
 });
 registerReticulumDbIpcHandlers({ ipcMain });
+registerRrcDbIpcHandlers({ ipcMain });
 registerReticulumIdentityIpcHandlers({ ipcMain });
 
 // ─── App lifecycle ─────────────────────────────────────────────────

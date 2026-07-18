@@ -361,7 +361,10 @@
     "storeForwardHistoryProfileAggressive": "Agresif (cakupan jerawatan)",
     "storeForwardHistoryProfileHint": "Konservatif menggunakan gerbang offline dan cooldown yang lebih lama. Pengambilan agresif terjadi lebih cepat setelah pemutusan hubungan singkat dan meminta lebih banyak pesan — gunakan hanya jika waktu tayang memungkinkan.",
     "shareLocationSendWaypoint": "Kirimkan juga pin peta (Waypoint) saat berbagi lokasi",
-    "shareLocationSendWaypointHint": "Saat diaktifkan, pembagian lokasi Meshtastic mengirimkan pesan teks dan paket Waypoint sehingga aplikasi resmi menampilkan pin peta. Nonaktifkan pada jerat sibuk untuk mengirim teks saja."
+    "shareLocationSendWaypointHint": "Saat diaktifkan, pembagian lokasi Meshtastic mengirimkan pesan teks dan paket Waypoint sehingga aplikasi resmi menampilkan pin peta. Nonaktifkan pada jerat sibuk untuk mengirim teks saja.",
+    "capStoredRrcMessages": "Tutup riwayat ruang RRC yang disimpan, simpan yang terbaru",
+    "capStoredRrcMessagesLabel": "Tutup riwayat ruang RRC yang disimpan, simpan yang terbaru",
+    "capStoredRrcMessagesCountAria": "Tutup riwayat ruang RRC yang disimpan, simpan pesan {{count}} terbaru"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -376,7 +379,10 @@
     "switchToMeshCore": "Beralih ke MeshCore",
     "backToTop": "Kembali ke atas",
     "switchToReticulum": "Beralih ke Reticulum",
-    "languageSelectorHint": "Klik untuk memilih bahasa"
+    "languageSelectorHint": "Klik untuk memilih bahasa",
+    "switchToMeshtasticWithUnread": "Beralih ke Meshtastic, {{count}} belum dibaca",
+    "switchToMeshCoreWithUnread": "Beralih ke MeshCore, {{count}} belum dibaca",
+    "switchToReticulumWithUnread": "Beralih ke Reticulum, {{count}} belum dibaca"
   },
   "battery": {
     "percentCharging": "Baterai {{percent}} persen, sedang diisi",
@@ -1524,7 +1530,10 @@
     "senderLabel": "Pengirim",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "SNR {{snr}} dB"
+    "snrDb": "SNR {{snr}} dB",
+    "distanceOffsetKm": "Pengimbangan jarak",
+    "km": "km",
+    "distanceOffsetHelp": "Menambahkan lantai km datar ke ambang batas jarak hop-goblin dan rute buruk (0–50)."
   },
   "diagnosticsPing": {
     "title": "Ping berkelanjutan",
@@ -4285,7 +4294,13 @@
     "footerMax": "(maks 50 masing-masing)",
     "sectionTemperatureHumidity": "Suhu & Kelembaban",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "tidak ada",
+    "chartAriaBattery": "Bagan baterai dan voltase: baterai terbaru {{battery}} persen, voltase {{voltage}} V, {{count}} poin",
+    "chartAriaSignal": "Grafik kualitas sinyal: SNR terbaru {{snr}} dB, RSSI {{rssi}} dBm, {{count}} poin",
+    "chartAriaTempHumidity": "Grafik suhu dan kelembapan: suhu terkini {{temperature}}, kelembapan {{humidity}} persen, {{count}} poin",
+    "chartAriaPressure": "Grafik tekanan barometrik: {{pressure}} hPa terbaru, {{count}} poin",
+    "chartAriaIaq": "Grafik kualitas udara: IAQ {{iaq}}, {{count}} poin terbaru"
   },
   "toasts": {
     "firmwareAvailable": "Pembaruan firmware tersedia: v{{version}}",
@@ -4470,7 +4485,11 @@
     "roomLegend": "★ favorit · A toggles auto - join",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Hapus riwayat",
+    "clearHistoryTitle": "Hapus riwayat ruangan",
+    "clearHistoryConfirm": "Hapus semua riwayat pesan tersimpan untuk {{room}}? Hal ini tidak dapat dibatalkan.",
+    "clearHistoryConfirmAction": "Hapus riwayat"
   },
   "signalMeter": {
     "rssi": "RSSI",

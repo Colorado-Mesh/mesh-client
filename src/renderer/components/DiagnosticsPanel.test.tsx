@@ -53,6 +53,8 @@ vi.mock('../stores/diagnosticsStore', async (importOriginal) => {
         runReanalysis: vi.fn(),
         diagnosticRowsMaxAgeHours: 24,
         setDiagnosticRowsMaxAgeHours: vi.fn(),
+        distanceOffsetKm: 0,
+        setDistanceOffsetKm: vi.fn(),
         foreignLoraDetections: diagnosticsStoreState.foreignLoraDetections,
         cuHistory: new Map(),
       };
@@ -92,6 +94,24 @@ describe('DiagnosticsPanel accessibility', () => {
     );
     const results = await axe(container);
     expect(results).toHaveNoViolations();
+  });
+
+  it('renders distance offset input with default 0', () => {
+    diagnosticsStoreState.diagnosticRows = [];
+    render(
+      <DiagnosticsPanel
+        nodes={new Map()}
+        myNodeNum={0}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={false}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
+        protocol="meshtastic"
+      />,
+    );
+    const input = screen.getByLabelText(/distance offset/i);
+    expect(input).toBeInTheDocument();
+    expect(input).toHaveValue(0);
   });
 });
 

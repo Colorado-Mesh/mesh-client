@@ -361,7 +361,10 @@
     "storeForwardHistoryProfileAggressive": "Agresif (sivilceli kapsama)",
     "storeForwardHistoryProfileHint": "Muhafazakar, daha uzun bir çevrimdışı geçit ve bekleme süresi kullanır. Agresif, kısa süreli bağlantı kesintilerinden sonra daha kısa sürede getirilir ve daha fazla mesaj ister; yalnızca yayın süresi izin verdiğinde kullanın.",
     "shareLocationSendWaypoint": "Konumu paylaşırken ayrıca bir harita işaretçisi (Yol noktası) gönderin",
-    "shareLocationSendWaypointHint": "Etkinleştirildiğinde, Meshtastic konum paylaşımları hem kısa mesaj hem de Yol Noktası paketi göndererek resmi uygulamaların bir harita işaretçisi göstermesini sağlar. Yalnızca metin göndermek için meşgul ağlarda devre dışı bırakın."
+    "shareLocationSendWaypointHint": "Etkinleştirildiğinde, Meshtastic konum paylaşımları hem kısa mesaj hem de Yol Noktası paketi göndererek resmi uygulamaların bir harita işaretçisi göstermesini sağlar. Yalnızca metin göndermek için meşgul ağlarda devre dışı bırakın.",
+    "capStoredRrcMessages": "Saklanan RRC oda geçmişini sınırlayın, en yeniyi koruyun",
+    "capStoredRrcMessagesLabel": "Saklanan RRC oda geçmişini sınırlayın, en yeniyi koruyun",
+    "capStoredRrcMessagesCountAria": "Saklanan RRC oda geçmişini sınırlayın, en yeni {{count}} mesajlarını saklayın"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -376,7 +379,10 @@
     "switchToMeshCore": "MeshCore'a geç",
     "backToTop": "Başa dön",
     "switchToReticulum": "Reticulum'a geç",
-    "languageSelectorHint": "Dili seçmek için tıklayın"
+    "languageSelectorHint": "Dili seçmek için tıklayın",
+    "switchToMeshtasticWithUnread": "Meshtastic'e geç, {{count}} okunmadı",
+    "switchToMeshCoreWithUnread": "MeshCore'a geç, {{count}} okunmadı",
+    "switchToReticulumWithUnread": "Reticulum'a geç, {{count}} okunmadı"
   },
   "battery": {
     "percentCharging": "Pil yüzde {{percent}}, şarj oluyor",
@@ -1524,7 +1530,10 @@
     "senderLabel": "Gönderen",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "SNR {{snr}} dB"
+    "snrDb": "SNR {{snr}} dB",
+    "distanceOffsetKm": "Mesafe ofseti",
+    "km": "kilometre",
+    "distanceOffsetHelp": "Hop-goblin ve kötü rota mesafe eşiklerine (0-50) düz bir kilometre tabanı ekler."
   },
   "diagnosticsPing": {
     "title": "Sürekli ping",
@@ -4285,7 +4294,13 @@
     "footerMax": "(her biri en fazla 50)",
     "sectionTemperatureHumidity": "Sıcaklık ve Nem",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "yok",
+    "chartAriaBattery": "Pil ve voltaj tablosu: en son pil yüzde {{battery}}, voltaj {{voltage}} V, {{count}} puan",
+    "chartAriaSignal": "Sinyal kalitesi tablosu: en son SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} noktaları",
+    "chartAriaTempHumidity": "Sıcaklık ve nem tablosu: en son sıcaklık {{temperature}}, nem {{humidity}} yüzde, {{count}} puan",
+    "chartAriaPressure": "Barometrik basınç tablosu: en son {{pressure}} hPa, {{count}} noktaları",
+    "chartAriaIaq": "Hava kalitesi tablosu: en son IAQ {{iaq}}, {{count}} noktaları"
   },
   "toasts": {
     "firmwareAvailable": "Ürün yazılımı güncellemesi mevcut: v{{version}}",
@@ -4470,7 +4485,11 @@
     "roomLegend": "★ favori · A geçişleri otomatik katılma",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Geçmişi temizle",
+    "clearHistoryTitle": "Oda geçmişini temizle",
+    "clearHistoryConfirm": "{{room}} için kayıtlı tüm mesaj geçmişi silinsin mi? Bu geri alınamaz.",
+    "clearHistoryConfirmAction": "Geçmişi sil"
   },
   "signalMeter": {
     "rssi": "RSSI",

@@ -361,7 +361,10 @@
     "storeForwardHistoryProfileAggressive": "Agressif (couverture inégale)",
     "storeForwardHistoryProfileHint": "Conservateur utilise une porte hors ligne et un temps de recharge plus longs. Agressif récupère plus tôt après de courtes déconnexions et demande plus de messages - à utiliser uniquement lorsque le temps d'antenne le permet.",
     "shareLocationSendWaypoint": "Envoyez également un repère de carte (Waypoint) lors du partage de position",
-    "shareLocationSendWaypointHint": "Lorsqu'ils sont activés, les partages de localisation Meshtastic envoient à la fois un message texte et un paquet Waypoint afin que les applications officielles affichent une épingle de carte. Désactivez-le sur les maillages occupés pour envoyer du texte uniquement."
+    "shareLocationSendWaypointHint": "Lorsqu'ils sont activés, les partages de localisation Meshtastic envoient à la fois un message texte et un paquet Waypoint afin que les applications officielles affichent une épingle de carte. Désactivez-le sur les maillages occupés pour envoyer du texte uniquement.",
+    "capStoredRrcMessages": "Limiter l'historique des chambres RRC stockées, conserver les plus récentes",
+    "capStoredRrcMessagesLabel": "Limiter l'historique des chambres RRC stockées, conserver les plus récentes",
+    "capStoredRrcMessagesCountAria": "Limiter l'historique des chambres RRC stockées, conserver les messages {{count}} les plus récents"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -376,7 +379,10 @@
     "switchToMeshCore": "Passer à MeshCore",
     "backToTop": "Retour en haut",
     "switchToReticulum": "Passer à Reticulum",
-    "languageSelectorHint": "Cliquez pour sélectionner la langue"
+    "languageSelectorHint": "Cliquez pour sélectionner la langue",
+    "switchToMeshtasticWithUnread": "Passer à Meshtastic, {{count}} non lu",
+    "switchToMeshCoreWithUnread": "Passer à MeshCore, {{count}} non lu",
+    "switchToReticulumWithUnread": "Passer à Reticulum, {{count}} non lu"
   },
   "battery": {
     "percentCharging": "Batterie {{percent}} pour cent, en charge",
@@ -1524,7 +1530,10 @@
     "senderLabel": "Expéditeur",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "SNR {{snr}} dB"
+    "snrDb": "SNR {{snr}} dB",
+    "distanceOffsetKm": "Décalage de distance",
+    "km": "kilomètres",
+    "distanceOffsetHelp": "Ajoute un plancher de km plat aux seuils de distance hop-gobelin et mauvais itinéraire (0–50)."
   },
   "diagnosticsPing": {
     "title": "Ping continu",
@@ -4285,7 +4294,13 @@
     "footerMax": "(max 50 chacun)",
     "sectionTemperatureHumidity": "Température Humidité",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "n / A",
+    "chartAriaBattery": "Tableau de batterie et de tension : dernière batterie {{battery}} pour cent, tension {{voltage}} V, {{count}} points",
+    "chartAriaSignal": "Tableau de qualité du signal : dernier SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} points",
+    "chartAriaTempHumidity": "Tableau de température et d'humidité : dernière température {{temperature}}, humidité {{humidity}} pour cent, {{count}} points",
+    "chartAriaPressure": "Graphique de pression barométrique : derniers {{pressure}} hPa, {{count}} points",
+    "chartAriaIaq": "Charte de la qualité de l'air : derniers points QAI {{iaq}}, {{count}}"
   },
   "toasts": {
     "firmwareAvailable": "Mise à jour du micrologiciel disponible : v{{version}}",
@@ -4470,7 +4485,11 @@
     "roomLegend": "★ favori · A toggles auto-join",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Effacer l'historique",
+    "clearHistoryTitle": "Effacer l'historique de la pièce",
+    "clearHistoryConfirm": "Supprimer tout l'historique des messages enregistrés pour {{room}} ? Cela ne peut pas être annulé.",
+    "clearHistoryConfirmAction": "Supprimer l'historique"
   },
   "signalMeter": {
     "rssi": "RSSI",

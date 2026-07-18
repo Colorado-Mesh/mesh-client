@@ -298,6 +298,36 @@ describe('diagnosticsStore analysis timers', () => {
   });
 });
 
+describe('diagnosticsStore distanceOffsetKm', () => {
+  afterEach(() => {
+    useDiagnosticsStore.getState().setDistanceOffsetKm(0);
+  });
+
+  it('setDistanceOffsetKm clamps to 0–50', () => {
+    useDiagnosticsStore.getState().setDistanceOffsetKm(-5);
+    expect(useDiagnosticsStore.getState().distanceOffsetKm).toBe(0);
+    useDiagnosticsStore.getState().setDistanceOffsetKm(50.5);
+    expect(useDiagnosticsStore.getState().distanceOffsetKm).toBe(50);
+    useDiagnosticsStore.getState().setDistanceOffsetKm(12.5);
+    expect(useDiagnosticsStore.getState().distanceOffsetKm).toBe(12.5);
+  });
+
+  it('setDistanceOffsetKm ignores non-finite values', () => {
+    useDiagnosticsStore.getState().setDistanceOffsetKm(3);
+    useDiagnosticsStore.getState().setDistanceOffsetKm(Number.NaN);
+    expect(useDiagnosticsStore.getState().distanceOffsetKm).toBe(3);
+  });
+
+  it('analyzeNode call sites pass store distanceOffsetKm not a hardcoded 0', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { resolve } = await import('node:path');
+    const src = readFileSync(resolve(__dirname, 'diagnosticsStore.ts'), 'utf8');
+    expect(src).toMatch(/analyzeNode\([\s\S]*?s\.distanceOffsetKm/);
+    expect(src).toMatch(/analyzeNode\([\s\S]*?state\.distanceOffsetKm/);
+    expect(src).not.toMatch(/analyzeNode\([\s\S]*?distanceMultiplier,\s*0,/);
+  });
+});
+
 describe('computeCuStats24h', () => {
   it('returns null for empty samples', () => {
     expect(computeCuStats24h([])).toBeNull();

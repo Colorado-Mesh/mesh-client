@@ -30,7 +30,7 @@ vi.mock('./ConfirmModal', () => ({
     onConfirm: () => void;
     onCancel: () => void;
   }) => (
-    <div role="dialog" aria-label={title}>
+    <div role="alertdialog" aria-label={title}>
       <p>{message}</p>
       <button type="button" onClick={onConfirm}>
         {confirmLabel}
@@ -128,7 +128,7 @@ describe('ReticulumPropagationSection', () => {
     await user.click(
       screen.getByRole('button', { name: 'reticulumPropagation.deleteAria:Remote hub' }),
     );
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'reticulumPropagation.deleteConfirm' }));
 
@@ -136,7 +136,7 @@ describe('ReticulumPropagationSection', () => {
       expect(removePropagationNode).toHaveBeenCalledWith('pn-aabb1111');
     });
     await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     });
   });
 
@@ -156,7 +156,7 @@ describe('ReticulumPropagationSection', () => {
     await waitFor(() => {
       expect(addToast).toHaveBeenCalledWith('reticulumPropagation.deleteFailed', 'error');
     });
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
   });
 
   it('saves renamed display name', async () => {

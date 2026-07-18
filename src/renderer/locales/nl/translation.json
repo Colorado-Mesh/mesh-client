@@ -361,7 +361,10 @@
     "storeForwardHistoryProfileAggressive": "Agressief (vlekkerige dekking)",
     "storeForwardHistoryProfileHint": "Conservatief gebruikt een langere offline poort en cooldown. Agressief haalt sneller op na korte verbroken verbindingen en vraagt ​​om meer berichten - gebruik dit alleen als de zendtijd dit toelaat.",
     "shareLocationSendWaypoint": "Stuur ook een kaartpin (Waypoint) wanneer u uw locatie deelt",
-    "shareLocationSendWaypointHint": "Indien ingeschakeld, verzenden Meshtastic-locatieshares zowel een sms-bericht als een Waypoint-pakket, zodat officiële apps een kaartspeld tonen. Schakel uit bij drukke meshes om alleen tekst te verzenden."
+    "shareLocationSendWaypointHint": "Indien ingeschakeld, verzenden Meshtastic-locatieshares zowel een sms-bericht als een Waypoint-pakket, zodat officiële apps een kaartspeld tonen. Schakel uit bij drukke meshes om alleen tekst te verzenden.",
+    "capStoredRrcMessages": "Cap opgeslagen RRC-kamergeschiedenis, bewaar de nieuwste",
+    "capStoredRrcMessagesLabel": "Cap opgeslagen RRC-kamergeschiedenis, bewaar de nieuwste",
+    "capStoredRrcMessagesCountAria": "Beperk de opgeslagen RRC-ruimtegeschiedenis, bewaar de nieuwste {{count}}-berichten"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -376,7 +379,10 @@
     "switchToMeshCore": "Schakel over naar MeshCore",
     "backToTop": "Terug naar boven",
     "switchToReticulum": "Overschakelen naar Reticulum",
-    "languageSelectorHint": "Klik om de taal te selecteren"
+    "languageSelectorHint": "Klik om de taal te selecteren",
+    "switchToMeshtasticWithUnread": "Schakel over naar Meshtastic, {{count}} ongelezen",
+    "switchToMeshCoreWithUnread": "Schakel over naar MeshCore, {{count}} ongelezen",
+    "switchToReticulumWithUnread": "Schakel over naar Reticulum, {{count}} ongelezen"
   },
   "battery": {
     "percentCharging": "Batterij {{percent}} procent, bezig met opladen",
@@ -1524,7 +1530,10 @@
     "senderLabel": "Afzender",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "SNR {{snr}} dB"
+    "snrDb": "SNR {{snr}} dB",
+    "distanceOffsetKm": "Afstandsverschuiving",
+    "km": "km",
+    "distanceOffsetHelp": "Voegt een vlakke km-vloer toe aan de afstandsdrempels voor hop-goblin en slechte route (0-50)."
   },
   "diagnosticsPing": {
     "title": "Continue ping",
@@ -4285,7 +4294,13 @@
     "footerMax": "(max. 50 per stuk)",
     "sectionTemperatureHumidity": "Temperatuur en vochtigheid",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "n.v.t",
+    "chartAriaBattery": "Batterij- en spanningstabel: nieuwste batterij {{battery}} procent, spanning {{voltage}} V, {{count}} punten",
+    "chartAriaSignal": "Signaalkwaliteitsgrafiek: nieuwste SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} punten",
+    "chartAriaTempHumidity": "Temperatuur- en vochtigheidsgrafiek: laatste temperatuur {{temperature}}, vochtigheid {{humidity}} procent, {{count}} punten",
+    "chartAriaPressure": "Luchtdrukgrafiek: laatste {{pressure}} hPa, {{count}} punten",
+    "chartAriaIaq": "Luchtkwaliteitsgrafiek: laatste IAQ {{iaq}}, {{count}} punten"
   },
   "toasts": {
     "firmwareAvailable": "Firmware-update beschikbaar: v{{version}}",
@@ -4470,7 +4485,11 @@
     "roomLegend": "★ favoriet · A schakelt automatisch inloggen in",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Geschiedenis wissen",
+    "clearHistoryTitle": "Kamergeschiedenis wissen",
+    "clearHistoryConfirm": "Alle opgeslagen berichtgeschiedenis voor {{room}} verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    "clearHistoryConfirmAction": "Geschiedenis verwijderen"
   },
   "signalMeter": {
     "rssi": "RSSI",

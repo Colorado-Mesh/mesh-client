@@ -361,7 +361,10 @@
     "storeForwardHistoryProfileAggressive": "Agresywny (nierówne pokrycie)",
     "storeForwardHistoryProfileHint": "Konserwatywny używa dłuższej bramy offline i czasu odnowienia. Agresywne pobieranie następuje wcześniej po krótkich rozłączeniach i żąda większej liczby wiadomości — używaj tylko wtedy, gdy pozwala na to czas antenowy.",
     "shareLocationSendWaypoint": "Podczas udostępniania lokalizacji wyślij także pinezkę do mapy (Waypoint).",
-    "shareLocationSendWaypointHint": "Po włączeniu udostępnianie lokalizacji Meshtastic wysyła zarówno wiadomość tekstową, jak i pakiet Waypoint, dzięki czemu oficjalne aplikacje pokazują pinezkę na mapie. Wyłącz w przypadku zajętych sieci, aby wysyłać tylko tekst."
+    "shareLocationSendWaypointHint": "Po włączeniu udostępnianie lokalizacji Meshtastic wysyła zarówno wiadomość tekstową, jak i pakiet Waypoint, dzięki czemu oficjalne aplikacje pokazują pinezkę na mapie. Wyłącz w przypadku zajętych sieci, aby wysyłać tylko tekst.",
+    "capStoredRrcMessages": "Cap przechowuje historię pokoi RRC, przechowuj najnowsze",
+    "capStoredRrcMessagesLabel": "Cap przechowuje historię pokoi RRC, przechowuj najnowsze",
+    "capStoredRrcMessagesCountAria": "Ogranicz zapisaną historię pokoju RRC, zachowaj najnowsze wiadomości {{count}}"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -376,7 +379,10 @@
     "switchToMeshCore": "Przełącz na MeshCore",
     "backToTop": "Powrót do góry",
     "switchToReticulum": "Przełącz na Reticulum",
-    "languageSelectorHint": "Kliknij, aby wybrać język"
+    "languageSelectorHint": "Kliknij, aby wybrać język",
+    "switchToMeshtasticWithUnread": "Przełącz na Meshtastic, {{count}} nieprzeczytane",
+    "switchToMeshCoreWithUnread": "Przełącz na MeshCore, {{count}} nieprzeczytane",
+    "switchToReticulumWithUnread": "Przełącz na Reticulum, {{count}} nieprzeczytane"
   },
   "battery": {
     "percentCharging": "Bateria {{percent}} procent, ładowanie",
@@ -1524,7 +1530,10 @@
     "senderLabel": "Nadawca",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "SNR {{snr}} dB"
+    "snrDb": "SNR {{snr}} dB",
+    "distanceOffsetKm": "Przesunięcie odległości",
+    "km": "km",
+    "distanceOffsetHelp": "Dodaje płaski kilometr do progów odległości hop-goblina i złej trasy (0–50)."
   },
   "diagnosticsPing": {
     "title": "Ciągły ping",
@@ -4285,7 +4294,13 @@
     "footerMax": "(maks. 50 każdy)",
     "sectionTemperatureHumidity": "Temperatura: Wilgotność:",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "nie dotyczy",
+    "chartAriaBattery": "Wykres baterii i napięcia: najnowsza bateria {{battery}} procent, napięcie {{voltage}} V, {{count}} punktów",
+    "chartAriaSignal": "Wykres jakości sygnału: najnowszy SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} punktów",
+    "chartAriaTempHumidity": "Wykres temperatury i wilgotności: ostatnia temperatura {{temperature}}, wilgotność {{humidity}} procent, {{count}} punktów",
+    "chartAriaPressure": "Wykres ciśnienia barometrycznego: najnowszy {{pressure}} hPa, {{count}} punktów",
+    "chartAriaIaq": "Wykres jakości powietrza: najnowsze IAQ {{iaq}}, {{count}} punktów"
   },
   "toasts": {
     "firmwareAvailable": "Dostępna aktualizacja oprogramowania sprzętowego: v{{version}}",
@@ -4470,7 +4485,11 @@
     "roomLegend": "★ ulubione · Automatyczne łączenie przełączników",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Wyczyść historię",
+    "clearHistoryTitle": "Wyczyść historię pokoju",
+    "clearHistoryConfirm": "Usunąć całą zapisaną historię wiadomości dla {{room}}? Tego nie można cofnąć.",
+    "clearHistoryConfirmAction": "Usuń historię"
   },
   "signalMeter": {
     "rssi": "RSSI",

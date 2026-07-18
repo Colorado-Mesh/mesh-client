@@ -361,7 +361,10 @@
     "storeForwardHistoryProfileAggressive": "攻击性（覆盖范围参差不齐）",
     "storeForwardHistoryProfileHint": "保守派使用更长的离线门和冷却时间。短暂断开连接后，主动获取会更快并请求更多消息 - 仅在通话时间允许时使用。",
     "shareLocationSendWaypoint": "共享位置时还发送地图图钉（航点）",
-    "shareLocationSendWaypointHint": "启用后，Meshtastic 位置共享会发送短信和航点数据包，以便官方应用程序显示地图图钉。在繁忙的网格上禁用以仅发送文本。"
+    "shareLocationSendWaypointHint": "启用后，Meshtastic 位置共享会发送短信和航点数据包，以便官方应用程序显示地图图钉。在繁忙的网格上禁用以仅发送文本。",
+    "capStoredRrcMessages": "存储RRC房间历史上限，保持最新",
+    "capStoredRrcMessagesLabel": "存储RRC房间历史上限，保持最新",
+    "capStoredRrcMessagesCountAria": "限制存储的 RRC 房间历史记录，保留最新的 {{count}} 消息"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -376,7 +379,10 @@
     "switchToMeshCore": "切换到MeshCore",
     "backToTop": "返回顶部",
     "switchToReticulum": "切换到 Reticulum",
-    "languageSelectorHint": "单击以选择语言"
+    "languageSelectorHint": "单击以选择语言",
+    "switchToMeshtasticWithUnread": "切换到 Meshtastic，{{count}} 未读",
+    "switchToMeshCoreWithUnread": "切换到MeshCore，{{count}}未读",
+    "switchToReticulumWithUnread": "切换到 Reticulum，{{count}} 未读"
   },
   "battery": {
     "percentCharging": "电池{{percent}}百分比，正在充电",
@@ -1524,7 +1530,10 @@
     "senderLabel": "发件人",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "信噪比{{snr}}分贝"
+    "snrDb": "信噪比{{snr}}分贝",
+    "distanceOffsetKm": "距离偏移",
+    "km": "公里",
+    "distanceOffsetHelp": "为跳妖精和不良路线距离阈值添加平坦的公里下限 (0–50)。"
   },
   "diagnosticsPing": {
     "title": "持续ping",
@@ -4285,7 +4294,13 @@
     "footerMax": "（每个最多50个）",
     "sectionTemperatureHumidity": "温度、湿度",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "不适用",
+    "chartAriaBattery": "电池及电压图表：最新电池{{battery}}百分比，电压{{voltage}} V，{{count}}点",
+    "chartAriaSignal": "信号质量图表：最新SNR {{snr}} dB、RSSI {{rssi}} dBm、{{count}}点",
+    "chartAriaTempHumidity": "温湿度图：最新温度{{temperature}}、湿度{{humidity}}%、{{count}}点",
+    "chartAriaPressure": "气压图：最新{{pressure}} hPa、{{count}}点",
+    "chartAriaIaq": "空气质量图表：最新IAQ {{iaq}}、{{count}}点"
   },
   "toasts": {
     "firmwareAvailable": "固件更新可用： v {{version}}",
@@ -4470,7 +4485,11 @@
     "roomLegend": "★ 收藏夹· A切换自动联接",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "清除历史记录",
+    "clearHistoryTitle": "清除房间历史记录",
+    "clearHistoryConfirm": "删除 {{room}} 的所有已保存消息历史记录？此操作无法撤消。",
+    "clearHistoryConfirmAction": "删除历史记录"
   },
   "signalMeter": {
     "rssi": "RSSI",

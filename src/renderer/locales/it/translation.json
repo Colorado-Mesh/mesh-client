@@ -361,7 +361,10 @@
     "storeForwardHistoryProfileAggressive": "Aggressivo (copertura irregolare)",
     "storeForwardHistoryProfileHint": "Conservativo utilizza un gate offline e un tempo di recupero più lunghi. Recuperi aggressivi subito dopo brevi disconnessioni e richieste di più messaggi: da utilizzare solo quando il tempo di trasmissione lo consente.",
     "shareLocationSendWaypoint": "Invia anche un segnaposto sulla mappa (Waypoint) quando condividi la posizione",
-    "shareLocationSendWaypointHint": "Se abilitate, le condivisioni di posizione Meshtastic inviano sia un messaggio di testo che un pacchetto Waypoint in modo che le app ufficiali mostrino un segnaposto sulla mappa. Disabilita su mesh occupate per inviare solo testo."
+    "shareLocationSendWaypointHint": "Se abilitate, le condivisioni di posizione Meshtastic inviano sia un messaggio di testo che un pacchetto Waypoint in modo che le app ufficiali mostrino un segnaposto sulla mappa. Disabilita su mesh occupate per inviare solo testo.",
+    "capStoredRrcMessages": "Limita la cronologia delle stanze RRC memorizzata e mantieni le più recenti",
+    "capStoredRrcMessagesLabel": "Limita la cronologia delle stanze RRC memorizzata e mantieni le più recenti",
+    "capStoredRrcMessagesCountAria": "Limita la cronologia delle stanze RRC memorizzata e conserva i messaggi {{count}} più recenti"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -376,7 +379,10 @@
     "switchToMeshCore": "Passa a MeshCore",
     "backToTop": "Torna all'inizio",
     "switchToReticulum": "Passa a Reticulum",
-    "languageSelectorHint": "Clicca per selezionare la lingua"
+    "languageSelectorHint": "Clicca per selezionare la lingua",
+    "switchToMeshtasticWithUnread": "Passa a Meshtastic, {{count}} non letto",
+    "switchToMeshCoreWithUnread": "Passa a MeshCore, {{count}} non letto",
+    "switchToReticulumWithUnread": "Passa a Reticulum, {{count}} non letto"
   },
   "battery": {
     "percentCharging": "Batteria {{percent}} percento, in carica",
@@ -1524,7 +1530,10 @@
     "senderLabel": "Mittente",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "SNR {{snr}} dB"
+    "snrDb": "SNR {{snr}} dB",
+    "distanceOffsetKm": "Compensazione della distanza",
+    "km": "km",
+    "distanceOffsetHelp": "Aggiunge un limite di km piatto alle soglie di distanza hop-goblin e percorso errato (0–50)."
   },
   "diagnosticsPing": {
     "title": "Ping continuo",
@@ -4285,7 +4294,13 @@
     "footerMax": "(max 50 cad.)",
     "sectionTemperatureHumidity": "Temperatura/umidità",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "n / a",
+    "chartAriaBattery": "Grafico batteria e voltaggio: batteria più recente {{battery}} percentuale, voltaggio {{voltage}} V, {{count}} punti",
+    "chartAriaSignal": "Grafico della qualità del segnale: ultimo SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} punti",
+    "chartAriaTempHumidity": "Grafico della temperatura e dell'umidità: ultima temperatura {{temperature}}, umidità {{humidity}} percentuale, {{count}} punti",
+    "chartAriaPressure": "Grafico della pressione barometrica: ultimi {{pressure}} hPa, {{count}} punti",
+    "chartAriaIaq": "Grafico della qualità dell'aria: ultima IAQ {{iaq}}, {{count}} punti"
   },
   "toasts": {
     "firmwareAvailable": "Aggiornamento firmware disponibile: v{{version}}",
@@ -4470,7 +4485,11 @@
     "roomLegend": "★ preferito · A attiva/disattiva l'auto-join",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Cancella cronologia",
+    "clearHistoryTitle": "Cancella la cronologia della stanza",
+    "clearHistoryConfirm": "Eliminare tutta la cronologia dei messaggi salvati per {{room}}? Questa operazione non può essere annullata.",
+    "clearHistoryConfirmAction": "Elimina la cronologia"
   },
   "signalMeter": {
     "rssi": "RSSI",

@@ -361,7 +361,10 @@
     "storeForwardHistoryProfileAggressive": "Agresivo (cobertura irregular)",
     "storeForwardHistoryProfileHint": "Conservador utiliza una puerta fuera de línea y un tiempo de reutilización más largos. La opción agresiva se recupera antes después de breves desconexiones y solicita más mensajes; utilícela solo cuando el tiempo de uso lo permita.",
     "shareLocationSendWaypoint": "También envíe un marcador de mapa (Waypoint) al compartir la ubicación",
-    "shareLocationSendWaypointHint": "Cuando están habilitados, los recursos compartidos de ubicación de Meshtastic envían un mensaje de texto y un paquete de Waypoint para que las aplicaciones oficiales muestren un marcador en el mapa. Desactívelo en mallas ocupadas para enviar solo texto."
+    "shareLocationSendWaypointHint": "Cuando están habilitados, los recursos compartidos de ubicación de Meshtastic envían un mensaje de texto y un paquete de Waypoint para que las aplicaciones oficiales muestren un marcador en el mapa. Desactívelo en mallas ocupadas para enviar solo texto.",
+    "capStoredRrcMessages": "Tapar el historial de sala RRC almacenado, mantener el más reciente",
+    "capStoredRrcMessagesLabel": "Tapar el historial de sala RRC almacenado, mantener el más reciente",
+    "capStoredRrcMessagesCountAria": "Limitar el historial de sala RRC almacenado, conservar los mensajes {{count}} más recientes"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -376,7 +379,10 @@
     "switchToMeshCore": "Cambiar a MeshCore",
     "backToTop": "Volver al inicio",
     "switchToReticulum": "Cambiar a Reticulum",
-    "languageSelectorHint": "Haga clic aquí para seleccionar"
+    "languageSelectorHint": "Haga clic aquí para seleccionar",
+    "switchToMeshtasticWithUnread": "Cambiar a Meshtastic, {{count}} no leído",
+    "switchToMeshCoreWithUnread": "Cambiar a MeshCore, {{count}} no leído",
+    "switchToReticulumWithUnread": "Cambiar a Reticulum, {{count}} sin leer"
   },
   "battery": {
     "percentCharging": "Batería {{percent}} por ciento, cargando",
@@ -1524,7 +1530,10 @@
     "senderLabel": "Remitente",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "SNR {{snr}} dB"
+    "snrDb": "SNR {{snr}} dB",
+    "distanceOffsetKm": "Compensación de distancia",
+    "km": "kilómetros",
+    "distanceOffsetHelp": "Agrega un piso de kilómetros plano a los umbrales de distancia de salto-duende y mala ruta (0-50)."
   },
   "diagnosticsPing": {
     "title": "Ping continuo",
@@ -4285,7 +4294,13 @@
     "footerMax": "(máximo 50 cada uno)",
     "sectionTemperatureHumidity": "Temperatura, humedad",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "n / A",
+    "chartAriaBattery": "Tabla de batería y voltaje: batería más reciente {{battery}} por ciento, voltaje {{voltage}} V, {{count}} puntos",
+    "chartAriaSignal": "Tabla de calidad de la señal: última SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} puntos",
+    "chartAriaTempHumidity": "Tabla de temperatura y humedad: última temperatura {{temperature}}, humedad {{humidity}} por ciento, {{count}} puntos",
+    "chartAriaPressure": "Tabla de presión barométrica: últimos {{pressure}} hPa, {{count}} puntos",
+    "chartAriaIaq": "Gráfico de calidad del aire: últimos puntos IAQ {{iaq}}, {{count}}"
   },
   "toasts": {
     "firmwareAvailable": "Actualización de firmware disponible: v{{version}}",
@@ -4470,7 +4485,11 @@
     "roomLegend": "★ favorito · A toggles auto-join",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Borrar historial",
+    "clearHistoryTitle": "Borrar historial de sala",
+    "clearHistoryConfirm": "¿Eliminar todo el historial de mensajes guardados para {{room}}? Esto no se puede deshacer.",
+    "clearHistoryConfirmAction": "Eliminar historial"
   },
   "signalMeter": {
     "rssi": "RSSI",

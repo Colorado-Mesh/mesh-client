@@ -34,7 +34,11 @@ export function ProtocolSwitcher({
             <button
               type="button"
               aria-pressed={protocol === proto}
-              aria-label={t(theme.ariaSwitchKey)}
+              aria-label={
+                unread > 0 && protocol !== proto
+                  ? t(theme.ariaSwitchWithUnreadKey, { count: unread })
+                  : t(theme.ariaSwitchKey)
+              }
               onClick={() => {
                 onProtocolChange(proto);
               }}

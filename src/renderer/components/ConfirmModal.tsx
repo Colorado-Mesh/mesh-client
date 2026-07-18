@@ -32,12 +32,17 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   const { t } = useTranslation();
   const titleId = useId();
+  const messageId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const resolvedCancelLabel = cancelLabel ?? t('common.cancel');
 
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;
+
+    previouslyFocusedRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     const focusables = () =>
       [...panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].filter(
@@ -80,6 +85,10 @@ export function ConfirmModal({
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
+      const prev = previouslyFocusedRef.current;
+      if (prev && document.contains(prev)) {
+        prev.focus();
+      }
     };
   }, [onCancel]);
 
@@ -93,15 +102,18 @@ export function ConfirmModal({
       />
       <div
         ref={panelRef}
-        role="dialog"
+        role="alertdialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        aria-describedby={messageId}
         className="bg-deep-black relative mx-4 w-full max-w-sm space-y-4 rounded-xl border border-gray-600 p-6 shadow-2xl"
       >
         <h3 id={titleId} className="text-lg font-semibold text-gray-200">
           {title}
         </h3>
-        <p className="text-muted text-sm leading-relaxed">{message}</p>
+        <p id={messageId} className="text-muted text-sm leading-relaxed">
+          {message}
+        </p>
         {onPreserveFavoritesChange != null && (
           <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
             <input

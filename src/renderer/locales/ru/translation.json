@@ -361,7 +361,10 @@
     "storeForwardHistoryProfileAggressive": "Агрессивный (пятнистый охват)",
     "storeForwardHistoryProfileHint": "Консерватор использует более длительные автономные ворота и время восстановления. Агрессивная выборка выполняется раньше после коротких отключений и запрашивает больше сообщений — используйте только тогда, когда позволяет эфирное время.",
     "shareLocationSendWaypoint": "Также отправьте метку на карте (путевую точку), когда делитесь местоположением.",
-    "shareLocationSendWaypointHint": "Если эта функция включена, Meshtastic отправляет как текстовое сообщение, так и пакет путевых точек, поэтому официальные приложения показывают отметку на карте. Отключите на занятых сетках, чтобы отправлять только текст."
+    "shareLocationSendWaypointHint": "Если эта функция включена, Meshtastic отправляет как текстовое сообщение, так и пакет путевых точек, поэтому официальные приложения показывают отметку на карте. Отключите на занятых сетках, чтобы отправлять только текст.",
+    "capStoredRrcMessages": "Кепка хранит историю комнат RRC, сохраняет самые новые",
+    "capStoredRrcMessagesLabel": "Кепка хранит историю комнат RRC, сохраняет самые новые",
+    "capStoredRrcMessagesCountAria": "Ограничить сохраненную историю комнат RRC, сохранять новейшие сообщения {{count}}"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -376,7 +379,10 @@
     "switchToMeshCore": "Переключиться на MeshCore",
     "backToTop": "Вернуться наверх",
     "switchToReticulum": "Переключиться на Reticulum",
-    "languageSelectorHint": "Нажмите здесь, чтобы выбрать набор"
+    "languageSelectorHint": "Нажмите здесь, чтобы выбрать набор",
+    "switchToMeshtasticWithUnread": "Переключиться на Meshtastic, {{count}} непрочитано",
+    "switchToMeshCoreWithUnread": "Переключиться на MeshCore, {{count}} непрочитано",
+    "switchToReticulumWithUnread": "Переключиться на Reticulum, {{count}} непрочитано"
   },
   "battery": {
     "percentCharging": "Аккумулятор {{percent}} процентов, зарядка",
@@ -1524,7 +1530,10 @@
     "senderLabel": "Отправитель",
     "rssiShort": "РССИ {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} дБм",
-    "snrDb": "Отношение сигнал/шум {{snr}} дБ"
+    "snrDb": "Отношение сигнал/шум {{snr}} дБ",
+    "distanceOffsetKm": "Смещение расстояния",
+    "km": "км",
+    "distanceOffsetHelp": "Добавляет плоский километраж к порогам расстояния прыжка-гоблина и плохого маршрута (0–50)."
   },
   "diagnosticsPing": {
     "title": "Непрерывный пинг",
@@ -4285,7 +4294,13 @@
     "footerMax": "(максимум 50 каждый)",
     "sectionTemperatureHumidity": "Температура и влажность",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "МК °С"
+    "seriesMcuTempC": "МК °С",
+    "chartValueUnavailable": "н/д",
+    "chartAriaBattery": "Диаграмма батареи и напряжения: последняя батарея {{battery}} процентов, напряжение {{voltage}} В, {{count}} точек",
+    "chartAriaSignal": "Диаграмма качества сигнала: последнее соотношение сигнал/шум {{snr}} дБ, RSSI {{rssi}} дБм, {{count}} баллов",
+    "chartAriaTempHumidity": "График температуры и влажности: последняя температура {{temperature}}, влажность {{humidity}} процентов, {{count}} баллов.",
+    "chartAriaPressure": "График атмосферного давления: последние {{pressure}} гПа, {{count}} пунктов.",
+    "chartAriaIaq": "Диаграмма качества воздуха: последний показатель IAQ {{iaq}}, {{count}} баллов."
   },
   "toasts": {
     "firmwareAvailable": "Доступно обновление прошивки: v{{version}}",
@@ -4470,7 +4485,11 @@
     "roomLegend": "★ избранное · A переключает автоматическое присоединение",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Очистить историю",
+    "clearHistoryTitle": "Очистить историю комнаты",
+    "clearHistoryConfirm": "Удалить всю сохраненную историю сообщений для {{room}}? Это невозможно отменить.",
+    "clearHistoryConfirmAction": "Удалить историю"
   },
   "signalMeter": {
     "rssi": "РССИ",

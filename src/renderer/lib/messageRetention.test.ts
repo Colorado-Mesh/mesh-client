@@ -8,6 +8,7 @@ import {
   MESSAGE_RETENTION_MAX_COUNT,
   MESSAGE_RETENTION_MIN_COUNT,
   parseMessageRetention,
+  RRC_MESSAGE_RETENTION_DEFAULT_COUNT,
 } from './messageRetention';
 
 describe('parseMessageRetention', () => {
@@ -81,6 +82,8 @@ describe('fetchMessageRetention', () => {
       meshcoreCount: 7500,
       reticulumEnabled: true,
       reticulumCount: MESSAGE_RETENTION_DEFAULT_COUNT,
+      rrcEnabled: true,
+      rrcCount: RRC_MESSAGE_RETENTION_DEFAULT_COUNT,
     });
   });
 

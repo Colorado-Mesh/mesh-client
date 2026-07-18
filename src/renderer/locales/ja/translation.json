@@ -361,7 +361,10 @@
     "storeForwardHistoryProfileAggressive": "アグレッシブ（むらのあるカバレッジ）",
     "storeForwardHistoryProfileHint": "保守的な場合は、より長いオフライン ゲートとクールダウンを使用します。短時間の切断後すぐに積極的にフェッチし、より多くのメッセージを要求します。通信時間が許す場合にのみ使用してください。",
     "shareLocationSendWaypoint": "位置情報を共有するときにマップピン（ウェイポイント）も送信します",
-    "shareLocationSendWaypointHint": "有効にすると、Meshtastic 位置情報共有はテキスト メッセージとウェイポイント パケットの両方を送信するため、公式アプリにマップ ピンが表示されます。ビジーメッシュでテキストのみを送信するには無効にします。"
+    "shareLocationSendWaypointHint": "有効にすると、Meshtastic 位置情報共有はテキスト メッセージとウェイポイント パケットの両方を送信するため、公式アプリにマップ ピンが表示されます。ビジーメッシュでテキストのみを送信するには無効にします。",
+    "capStoredRrcMessages": "保存される RRC ルーム履歴に上限を設け、最新の状態に保つ",
+    "capStoredRrcMessagesLabel": "保存される RRC ルーム履歴に上限を設け、最新の状態に保つ",
+    "capStoredRrcMessagesCountAria": "保存されている RRC ルーム履歴を制限し、最新の {{count}} メッセージを保持します"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -376,7 +379,10 @@
     "switchToMeshCore": "MeshCore に切り替える",
     "backToTop": "トップに戻る",
     "switchToReticulum": "Reticulumに切り替える",
-    "languageSelectorHint": "クリックして言語を選択"
+    "languageSelectorHint": "クリックして言語を選択",
+    "switchToMeshtasticWithUnread": "Meshtastic に切り替え、{{count}} は未読",
+    "switchToMeshCoreWithUnread": "MeshCore に切り替え、{{count}} 未読",
+    "switchToReticulumWithUnread": "Reticulum に切り替え、{{count}} 未読"
   },
   "battery": {
     "percentCharging": "バッテリー {{percent}} パーセント、充電中",
@@ -1524,7 +1530,10 @@
     "senderLabel": "送信者",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "SNR {{snr}} dB"
+    "snrDb": "SNR {{snr}} dB",
+    "distanceOffsetKm": "距離オフセット",
+    "km": "km",
+    "distanceOffsetHelp": "ホップゴブリンおよび不良ルートの距離しきい値 (0 ～ 50) にフラット km フロアを追加します。"
   },
   "diagnosticsPing": {
     "title": "連続ping",
@@ -4285,7 +4294,13 @@
     "footerMax": "(それぞれ最大50個)",
     "sectionTemperatureHumidity": "温度/湿度",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "該当なし",
+    "chartAriaBattery": "バッテリーと電圧のグラフ: 最新のバッテリー {{battery}} パーセント、電圧 {{voltage}} V、{{count}} ポイント",
+    "chartAriaSignal": "信号品質チャート: 最新の SNR {{snr}} dB、RSSI {{rssi}} dBm、{{count}} ポイント",
+    "chartAriaTempHumidity": "温度と湿度のグラフ: 最新の温度 {{temperature}}、湿度 {{humidity}} パーセント、{{count}} ポイント",
+    "chartAriaPressure": "気圧グラフ: 最新の{{pressure}} hPa、{{count}} ポイント",
+    "chartAriaIaq": "大気質チャート: 最新の IAQ {{iaq}}、{{count}} ポイント"
   },
   "toasts": {
     "firmwareAvailable": "利用可能なファームウェアアップデート: v{{version}}",
@@ -4470,7 +4485,11 @@
     "roomLegend": "★ お気に入り·自動結合を切り替える",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "履歴をクリアする",
+    "clearHistoryTitle": "ルームの履歴をクリアする",
+    "clearHistoryConfirm": "{{room}} の保存されているメッセージ履歴をすべて削除しますか?これを元に戻すことはできません。",
+    "clearHistoryConfirmAction": "履歴の削除"
   },
   "signalMeter": {
     "rssi": "RSSI",

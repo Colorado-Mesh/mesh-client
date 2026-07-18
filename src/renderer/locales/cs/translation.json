@@ -361,7 +361,10 @@
     "storeForwardHistoryProfileAggressive": "Agresivní (flekaté pokrytí)",
     "storeForwardHistoryProfileHint": "Konzervativní používá delší offline bránu a cooldown. Agresivní načítání po krátkých odpojeních a žádostech o další zprávy dříve — používejte pouze tehdy, když to umožňuje vysílací čas.",
     "shareLocationSendWaypoint": "Při sdílení polohy také odešlete špendlík na mapě (bod na trase).",
-    "shareLocationSendWaypointHint": "Pokud je povoleno, sdílení polohy Meshtastic posílá textovou zprávu i paket navigačních bodů, takže oficiální aplikace zobrazují špendlík na mapě. Chcete-li odesílat pouze text, vypněte u zaneprázdněných sítí."
+    "shareLocationSendWaypointHint": "Pokud je povoleno, sdílení polohy Meshtastic posílá textovou zprávu i paket navigačních bodů, takže oficiální aplikace zobrazují špendlík na mapě. Chcete-li odesílat pouze text, vypněte u zaneprázdněných sítí.",
+    "capStoredRrcMessages": "Uzavřete historii místnosti RRC, uchovávejte nejnovější",
+    "capStoredRrcMessagesLabel": "Uzavřete historii místnosti RRC, uchovávejte nejnovější",
+    "capStoredRrcMessagesCountAria": "Uzavřít uloženou historii místnosti RRC, ponechat nejnovější zprávy {{count}}"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -376,7 +379,10 @@
     "switchToMeshCore": "Přepněte na MeshCore",
     "backToTop": "Zpět nahoru",
     "switchToReticulum": "Přepnout na Reticulum",
-    "languageSelectorHint": "Kliknutím vyberte jazyk"
+    "languageSelectorHint": "Kliknutím vyberte jazyk",
+    "switchToMeshtasticWithUnread": "Přepnout na Meshtastic, {{count}} nepřečteno",
+    "switchToMeshCoreWithUnread": "Přepnout na MeshCore, {{count}} nepřečteno",
+    "switchToReticulumWithUnread": "Přepnout na Reticulum, {{count}} nepřečteno"
   },
   "battery": {
     "percentCharging": "Baterie {{percent}} procent, nabíjí se",
@@ -1524,7 +1530,10 @@
     "senderLabel": "Odesílatel",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "SNR {{snr}} dB"
+    "snrDb": "SNR {{snr}} dB",
+    "distanceOffsetKm": "Posun vzdálenosti",
+    "km": "km",
+    "distanceOffsetHelp": "Přidá rovnou podlahu km k prahovým hodnotám vzdálenosti hop-goblin a špatným trasám (0–50)."
   },
   "diagnosticsPing": {
     "title": "Kontinuální ping",
@@ -4285,7 +4294,13 @@
     "footerMax": "(každý max 50)",
     "sectionTemperatureHumidity": "Teplota, vlhkost",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "n/a",
+    "chartAriaBattery": "Tabulka baterie a napětí: nejnovější baterie {{battery}} procent, napětí {{voltage}} V, {{count}} bodů",
+    "chartAriaSignal": "Tabulka kvality signálu: nejnovější SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} bodů",
+    "chartAriaTempHumidity": "Tabulka teploty a vlhkosti: nejnovější teplota {{temperature}}, vlhkost {{humidity}} procent, {{count}} bodů",
+    "chartAriaPressure": "Graf barometrického tlaku: nejnovější {{pressure}} hPa, {{count}} bodů",
+    "chartAriaIaq": "Tabulka kvality vzduchu: nejnovější IAQ {{iaq}}, {{count}} bodů"
   },
   "toasts": {
     "firmwareAvailable": "Dostupná aktualizace firmwaru: v{{version}}",
@@ -4470,7 +4485,11 @@
     "roomLegend": "★ oblíbené · Přepíná automatické připojení",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Vymazat historii",
+    "clearHistoryTitle": "Vymazat historii místnosti",
+    "clearHistoryConfirm": "Smazat veškerou uloženou historii zpráv pro {{room}}? Toto nelze vrátit zpět.",
+    "clearHistoryConfirmAction": "Smazat historii"
   },
   "signalMeter": {
     "rssi": "\"RSSI\"",

@@ -287,7 +287,7 @@ describe('RepeatersPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: /Send/i }));
 
     expect(onSendCliCommand).not.toHaveBeenCalled();
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Run command' }));
     expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'reboot', {

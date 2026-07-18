@@ -485,7 +485,7 @@ export default function AppPanel({
   );
 
   const updateRetentionEnabled = useCallback(
-    (which: 'meshtastic' | 'meshcore' | 'reticulum', enabled: boolean) => {
+    (which: 'meshtastic' | 'meshcore' | 'reticulum' | 'rrc', enabled: boolean) => {
       const previous = retention;
       const next = { ...previous, [`${which}Enabled`]: enabled };
       setRetention(next);
@@ -494,14 +494,16 @@ export default function AppPanel({
           ? 'meshtasticEnabled'
           : which === 'meshcore'
             ? 'meshcoreEnabled'
-            : 'reticulumEnabled';
+            : which === 'rrc'
+              ? 'rrcEnabled'
+              : 'reticulumEnabled';
       persistRetention(debouncedKey, enabled ? '1' : '0', previous);
     },
     [retention, persistRetention],
   );
 
   const updateRetentionCount = useCallback(
-    (which: 'meshtastic' | 'meshcore' | 'reticulum', count: number) => {
+    (which: 'meshtastic' | 'meshcore' | 'reticulum' | 'rrc', count: number) => {
       const clamped = Math.max(
         MESSAGE_RETENTION_MIN_COUNT,
         Math.min(MESSAGE_RETENTION_MAX_COUNT, Math.floor(count) || MESSAGE_RETENTION_MIN_COUNT),
@@ -514,7 +516,9 @@ export default function AppPanel({
           ? 'meshtasticCount'
           : which === 'meshcore'
             ? 'meshcoreCount'
-            : 'reticulumCount';
+            : which === 'rrc'
+              ? 'rrcCount'
+              : 'reticulumCount';
 
       if (retentionSaveTimerRef.current) clearTimeout(retentionSaveTimerRef.current);
       retentionSaveTimerRef.current = setTimeout(() => {
@@ -1581,45 +1585,86 @@ export default function AppPanel({
               <span className="text-sm text-gray-300">{t('common.messages')}</span>
             </div>
           ) : protocol === 'reticulum' ? (
-            <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
-              <input
-                type="checkbox"
-                id="messageRetentionReticulum"
-                checked={retention.reticulumEnabled}
-                onChange={(e) => {
-                  updateRetentionEnabled('reticulum', e.target.checked);
-                }}
-                aria-label={t('appPanel.capStoredMessages')}
-                className="accent-brand-green"
-              />
-              <label
-                id="apppanel-message-retention-reticulum-label"
-                htmlFor="messageRetentionReticulum"
-                className="flex-1 cursor-pointer text-sm text-gray-300"
-              >
-                {t('appPanel.capStoredMessagesLabel')}
-              </label>
-              <input
-                id="apppanel-message-retention-reticulum-count"
-                type="number"
-                min={MESSAGE_RETENTION_MIN_COUNT}
-                max={MESSAGE_RETENTION_MAX_COUNT}
-                value={retention.reticulumCount}
-                onChange={(e) => {
-                  updateRetentionCount(
-                    'reticulum',
-                    parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
-                  );
-                }}
-                disabled={!retention.reticulumEnabled}
-                aria-labelledby="apppanel-message-retention-reticulum-label"
-                aria-label={t('appPanel.capStoredMessagesCountAria', {
-                  count: retention.reticulumCount,
-                })}
-                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
-              />
-              <span className="text-sm text-gray-300">{t('common.messages')}</span>
-            </div>
+            <>
+              <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
+                <input
+                  type="checkbox"
+                  id="messageRetentionReticulum"
+                  checked={retention.reticulumEnabled}
+                  onChange={(e) => {
+                    updateRetentionEnabled('reticulum', e.target.checked);
+                  }}
+                  aria-label={t('appPanel.capStoredMessages')}
+                  className="accent-brand-green"
+                />
+                <label
+                  id="apppanel-message-retention-reticulum-label"
+                  htmlFor="messageRetentionReticulum"
+                  className="flex-1 cursor-pointer text-sm text-gray-300"
+                >
+                  {t('appPanel.capStoredMessagesLabel')}
+                </label>
+                <input
+                  id="apppanel-message-retention-reticulum-count"
+                  type="number"
+                  min={MESSAGE_RETENTION_MIN_COUNT}
+                  max={MESSAGE_RETENTION_MAX_COUNT}
+                  value={retention.reticulumCount}
+                  onChange={(e) => {
+                    updateRetentionCount(
+                      'reticulum',
+                      parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
+                    );
+                  }}
+                  disabled={!retention.reticulumEnabled}
+                  aria-labelledby="apppanel-message-retention-reticulum-label"
+                  aria-label={t('appPanel.capStoredMessagesCountAria', {
+                    count: retention.reticulumCount,
+                  })}
+                  className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                />
+                <span className="text-sm text-gray-300">{t('common.messages')}</span>
+              </div>
+              <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
+                <input
+                  type="checkbox"
+                  id="messageRetentionRrc"
+                  checked={retention.rrcEnabled}
+                  onChange={(e) => {
+                    updateRetentionEnabled('rrc', e.target.checked);
+                  }}
+                  aria-label={t('appPanel.capStoredRrcMessages')}
+                  className="accent-brand-green"
+                />
+                <label
+                  id="apppanel-message-retention-rrc-label"
+                  htmlFor="messageRetentionRrc"
+                  className="flex-1 cursor-pointer text-sm text-gray-300"
+                >
+                  {t('appPanel.capStoredRrcMessagesLabel')}
+                </label>
+                <input
+                  id="apppanel-message-retention-rrc-count"
+                  type="number"
+                  min={MESSAGE_RETENTION_MIN_COUNT}
+                  max={MESSAGE_RETENTION_MAX_COUNT}
+                  value={retention.rrcCount}
+                  onChange={(e) => {
+                    updateRetentionCount(
+                      'rrc',
+                      parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
+                    );
+                  }}
+                  disabled={!retention.rrcEnabled}
+                  aria-labelledby="apppanel-message-retention-rrc-label"
+                  aria-label={t('appPanel.capStoredRrcMessagesCountAria', {
+                    count: retention.rrcCount,
+                  })}
+                  className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                />
+                <span className="text-sm text-gray-300">{t('common.messages')}</span>
+              </div>
+            </>
           ) : (
             <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
               <input

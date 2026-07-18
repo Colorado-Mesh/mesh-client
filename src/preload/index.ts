@@ -68,6 +68,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:pruneMeshcoreMessagesByCount', maxCount),
     pruneReticulumMessagesByCount: (maxCount: number) =>
       ipcRenderer.invoke('db:pruneReticulumMessagesByCount', maxCount),
+    listRrcMessages: (hubHash: string, room: string, limit?: number) =>
+      ipcRenderer.invoke('db:listRrcMessages', hubHash, room, limit),
+    insertRrcMessage: (message: {
+      message_id: string;
+      hub_hash: string;
+      room: string;
+      sender_hash?: string | null;
+      nickname?: string | null;
+      kind: string;
+      body: string;
+      timestamp: number;
+    }) => ipcRenderer.invoke('db:insertRrcMessage', message),
+    deleteRrcMessagesByRoom: (hubHash: string, room: string) =>
+      ipcRenderer.invoke('db:deleteRrcMessagesByRoom', hubHash, room),
+    pruneRrcMessagesByCount: (maxCount: number) =>
+      ipcRenderer.invoke('db:pruneRrcMessagesByCount', maxCount),
+    pruneRrcMessagesByAge: (maxAgeDays: number) =>
+      ipcRenderer.invoke('db:pruneRrcMessagesByAge', maxAgeDays),
     pruneReticulumDestinationsByCount: (maxCount: number) =>
       ipcRenderer.invoke('db:pruneReticulumDestinationsByCount', maxCount),
     deleteReticulumDestinationsByAge: (days: number) =>

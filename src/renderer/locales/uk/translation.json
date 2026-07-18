@@ -361,7 +361,10 @@
     "storeForwardHistoryProfileAggressive": "Агресивний (плямисте покриття)",
     "storeForwardHistoryProfileHint": "Conservative використовує довші офлайнові ворота та час відновлення. Агресивний завантажує швидше після коротких розривів зв’язку та запитує більше повідомлень — використовуйте лише тоді, коли дозволяє ефірний час.",
     "shareLocationSendWaypoint": "Також надішліть маркер на карті (Waypoint) під час обміну інформацією про місцезнаходження",
-    "shareLocationSendWaypointHint": "Коли ввімкнено, Meshtastic надсилає як текстове повідомлення, так і пакет Waypoint, щоб офіційні програми показували маркер на карті. Вимкніть на зайнятих сітках, щоб надсилати лише текст."
+    "shareLocationSendWaypointHint": "Коли ввімкнено, Meshtastic надсилає як текстове повідомлення, так і пакет Waypoint, щоб офіційні програми показували маркер на карті. Вимкніть на зайнятих сітках, щоб надсилати лише текст.",
+    "capStoredRrcMessages": "Cap зберігає історію кімнат RRC, зберігає найновіші",
+    "capStoredRrcMessagesLabel": "Cap зберігає історію кімнат RRC, зберігає найновіші",
+    "capStoredRrcMessagesCountAria": "Обмежити збережену історію кімнат RRC, зберігати найновіші {{count}} повідомлення"
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -376,7 +379,10 @@
     "switchToMeshCore": "Перемкнутися на MeshCore",
     "backToTop": "Догори",
     "switchToReticulum": "Перемкнутися на Reticulum",
-    "languageSelectorHint": "Натисніть, щоб вибрати мову"
+    "languageSelectorHint": "Натисніть, щоб вибрати мову",
+    "switchToMeshtasticWithUnread": "Перейти на Meshtastic, {{count}} непрочитано",
+    "switchToMeshCoreWithUnread": "Перейти на MeshCore, {{count}} непрочитано",
+    "switchToReticulumWithUnread": "Переключитися на Reticulum, {{count}} непрочитано"
   },
   "battery": {
     "percentCharging": "Акумулятор {{percent}} відсотків, заряджання",
@@ -1524,7 +1530,10 @@
     "senderLabel": "Відправник",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} дБм",
-    "snrDb": "SNR {{snr}} дБ"
+    "snrDb": "SNR {{snr}} дБ",
+    "distanceOffsetKm": "Зміщення відстані",
+    "km": "км",
+    "distanceOffsetHelp": "Додає рівні кілометри до порогових значень дистанції стрибка-гобліна та поганого маршруту (0–50)."
   },
   "diagnosticsPing": {
     "title": "Безперервний пінг",
@@ -4285,7 +4294,13 @@
     "footerMax": "(макс. 50 кожна)",
     "sectionTemperatureHumidity": "Температура Вологість",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "n/a",
+    "chartAriaBattery": "Графік батареї та напруги: остання батарея {{battery}} відсотків, напруга {{voltage}} В, {{count}} балів",
+    "chartAriaSignal": "Графік якості сигналу: останній SNR {{snr}} дБ, RSSI {{rssi}} дБм, {{count}} балів",
+    "chartAriaTempHumidity": "Графік температури та вологості: остання температура {{temperature}}, вологість {{humidity}} відсотків, {{count}} балів",
+    "chartAriaPressure": "Графік барометричного тиску: останні {{pressure}} гПа, {{count}} балів",
+    "chartAriaIaq": "Таблиця якості повітря: останній IAQ {{iaq}}, {{count}} балів"
   },
   "toasts": {
     "firmwareAvailable": "Доступне оновлення прошивки: v{{version}}",
@@ -4470,7 +4485,11 @@
     "roomLegend": "★ вибране · A перемикає автоматичне приєднання",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Очистити історію",
+    "clearHistoryTitle": "Очистити історію кімнати",
+    "clearHistoryConfirm": "Видалити всю збережену історію повідомлень для {{room}}? Це неможливо скасувати.",
+    "clearHistoryConfirmAction": "Видалити історію"
   },
   "signalMeter": {
     "rssi": "RSSI (індикатор потужності прийнятого сигналу)",
