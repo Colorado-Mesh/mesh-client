@@ -318,6 +318,8 @@ export interface MeshcoreMessageDbRow {
 export interface MeshcoreTraceResultEntry {
   pathLen: number;
   pathHashes: number[];
+  /** Hash size from TraceData flags; needed to split {@link pathHashes} into hop segments. */
+  hashSizeBytes: 1 | 2 | 3;
   pathSnrs: number[];
   lastSnr: number;
   tag: number;

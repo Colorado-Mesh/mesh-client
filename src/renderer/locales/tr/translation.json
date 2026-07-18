@@ -2600,7 +2600,9 @@
       "lossRate": "Tahmini Kayıp",
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Aralık testi paket günlüğü"
-    }
+    },
+    "currentRouteHeading": "Mevcut rota",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",
@@ -3723,7 +3725,6 @@
     "pathHashCliSet2": "Yol karma modunu ayarla 3 bayt",
     "pathLabel": "Yol:",
     "hopMe": "● Ben",
-    "hopN": "● Atla {{n}}",
     "noNeighborsReported": "Hiçbir komşu bildirilmedi",
     "fetchingTelemetry": "Telemetri getiriliyor…",
     "telemetryBattery": "Pil: {{voltage}}V",
@@ -3769,7 +3770,8 @@
     "cliDangerConfirmAction": "Komut çalıştır",
     "cliAutoPingToast": "CLI öncesi Ping ile rota oluşturuluyor…",
     "cliAutoPingFailed": "Ping başarısız oldu; çok atlama tekrarlayıcılarda CLI'yi yeniden denemeden önce Ping'i manuel olarak çalıştırın.",
-    "cliCommandTooLong": "CLI komutu çok uzun (en fazla {{max}} karakter)."
+    "cliCommandTooLong": "CLI komutu çok uzun (en fazla {{max}} karakter).",
+    "currentRouteLabel": "Mevcut rota:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Anons aralığı (saniye)",
@@ -4709,5 +4711,11 @@
       "identityTitle": "Kimliğim",
       "myIdentity": "Kimliğim:"
     }
+  },
+  "meshcoreRoute": {
+    "me": "● Ben",
+    "direct": "Doğrudan",
+    "segmentTooltip": "Yol karması {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

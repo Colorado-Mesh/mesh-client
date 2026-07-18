@@ -2600,7 +2600,9 @@
       "lossRate": "Орієнтовний збиток",
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Журнал пакетів тестування діапазону"
-    }
+    },
+    "currentRouteHeading": "Поточний маршрут",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "Довге ім'я",
@@ -3723,7 +3725,6 @@
     "pathHashCliSet2": "Встановити 3-байтовий режим хешування шляху",
     "pathLabel": "Шлях:",
     "hopMe": "● Я",
-    "hopN": "● Хоп {{n}}",
     "noNeighborsReported": "Сусіди не повідомляли",
     "fetchingTelemetry": "Отримання телеметрії…",
     "telemetryBattery": "Акумулятор: {{voltage}}V",
@@ -3769,7 +3770,8 @@
     "cliDangerConfirmAction": "Виконати команду",
     "cliAutoPingToast": "Встановлення маршруту за допомогою Ping перед CLI...",
     "cliAutoPingFailed": "Не вдалося виконати Ping; запустіть Ping вручну, перш ніж повторити спробу CLI на ретрансляторах з декількома стрибками.",
-    "cliCommandTooLong": "Команда CLI задовга (макс. {{max}} символів)."
+    "cliCommandTooLong": "Команда CLI задовга (макс. {{max}} символів).",
+    "currentRouteLabel": "Поточний маршрут:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Інтервал оголошення (секунди)",
@@ -4709,5 +4711,11 @@
       "identityTitle": "Моя особа",
       "myIdentity": "Моя особа:"
     }
+  },
+  "meshcoreRoute": {
+    "me": "● Я",
+    "direct": "Прямий",
+    "segmentTooltip": "Хеш шляху {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

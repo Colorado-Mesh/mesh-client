@@ -2600,7 +2600,9 @@
       "lossRate": "예상 손실",
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "범위 테스트 패킷 로그"
-    }
+    },
+    "currentRouteHeading": "현재 경로",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "긴 이름",
@@ -3723,7 +3725,6 @@
     "pathHashCliSet2": "경로 해시 모드 3바이트 설정",
     "pathLabel": "길:",
     "hopMe": "● 나",
-    "hopN": "● 홉 {{n}}",
     "noNeighborsReported": "신고된 이웃 없음",
     "fetchingTelemetry": "원격 분석을 가져오는 중…",
     "telemetryBattery": "배터리: {{voltage}}V",
@@ -3769,7 +3770,8 @@
     "cliDangerConfirmAction": "실행 명령",
     "cliAutoPingToast": "CLI 전에 Ping으로 경로 설정 중...",
     "cliAutoPingFailed": "핑 실패. 멀티 홉 리피터에서 CLI를 다시 시도하기 전에 수동으로 핑을 실행하십시오.",
-    "cliCommandTooLong": "CLI 명령이 너무 깁니다(최대 {{max}}자)."
+    "cliCommandTooLong": "CLI 명령이 너무 깁니다(최대 {{max}}자).",
+    "currentRouteLabel": "현재 경로:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",
@@ -4709,5 +4711,11 @@
       "identityTitle": "나의 정체성",
       "myIdentity": "내 신원:"
     }
+  },
+  "meshcoreRoute": {
+    "me": "● 나",
+    "direct": "직접",
+    "segmentTooltip": "경로 해시 {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

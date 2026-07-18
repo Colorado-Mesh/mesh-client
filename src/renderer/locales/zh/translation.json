@@ -2600,7 +2600,9 @@
       "lossRate": "估计损失",
       "lossRatePercent": "{{percent}} %",
       "packetLogAria": "测距测试数据包日志"
-    }
+    },
+    "currentRouteHeading": "当前路线",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "长名称",
@@ -3723,7 +3725,6 @@
     "pathHashCliSet2": "设置路径哈希模式3字节",
     "pathLabel": "小路：",
     "hopMe": "● 我",
-    "hopN": "● 跳{{n}}",
     "noNeighborsReported": "没有邻居报告",
     "fetchingTelemetry": "正在获取遥测数据...",
     "telemetryBattery": "电池：{{voltage}}V",
@@ -3769,7 +3770,8 @@
     "cliDangerConfirmAction": "运行命令",
     "cliAutoPingToast": "在CLI之前使用Ping建立路由…",
     "cliAutoPingFailed": "Ping失败；在多跳中继器上重试CLI之前手动运行Ping。",
-    "cliCommandTooLong": "CLI命令太长（最多{{max}}个字符）。"
+    "cliCommandTooLong": "CLI命令太长（最多{{max}}个字符）。",
+    "currentRouteLabel": "当前路线："
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",
@@ -4709,5 +4711,11 @@
       "identityTitle": "我的身份",
       "myIdentity": "我的身份："
     }
+  },
+  "meshcoreRoute": {
+    "me": "● 我",
+    "direct": "直接的",
+    "segmentTooltip": "路径哈希 {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

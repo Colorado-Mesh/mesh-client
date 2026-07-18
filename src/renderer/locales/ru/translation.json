@@ -2600,7 +2600,9 @@
       "lossRate": "Предполагаемая потеря",
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Журнал пакетов проверки дальности"
-    }
+    },
+    "currentRouteHeading": "Текущий маршрут",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "Длинное имя",
@@ -3723,7 +3725,6 @@
     "pathHashCliSet2": "Установить режим хеширования пути 3 байта",
     "pathLabel": "Путь:",
     "hopMe": "● Я",
-    "hopN": "● Переход {{n}}",
     "noNeighborsReported": "Соседи не сообщили",
     "fetchingTelemetry": "Получение телеметрии…",
     "telemetryBattery": "Батарея: {{voltage}}V",
@@ -3769,7 +3770,8 @@
     "cliDangerConfirmAction": "Выполнить команду",
     "cliAutoPingToast": "Создание маршрута с помощью Ping перед CLI...",
     "cliAutoPingFailed": "Не удалось выполнить Ping; запустите Ping вручную, прежде чем повторить попытку CLI на многоузловых повторителях.",
-    "cliCommandTooLong": "Слишком длинная команда CLI (максимум {{max}} символов)."
+    "cliCommandTooLong": "Слишком длинная команда CLI (максимум {{max}} символов).",
+    "currentRouteLabel": "Текущий маршрут:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Интервал объявления (секунды)",
@@ -4709,5 +4711,11 @@
       "identityTitle": "Моя личность",
       "myIdentity": "Моя личность:"
     }
+  },
+  "meshcoreRoute": {
+    "me": "● Я",
+    "direct": "Прямой",
+    "segmentTooltip": "Хэш пути {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

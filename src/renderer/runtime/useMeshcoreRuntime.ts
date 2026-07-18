@@ -18,6 +18,7 @@ import {
   isMeshcorePathHashMode,
   meshcoreFirmwareSupportsMultibytePathHash,
   type MeshcorePathHashMode,
+  meshcorePathHashSizeFromTraceFlags,
 } from '../../shared/meshcorePathHash';
 import { withTimeout } from '../../shared/withTimeout';
 import {
@@ -4201,6 +4202,7 @@ export function useMeshcoreRuntime() {
               next.set(nodeId, {
                 pathLen: result.pathLen,
                 pathHashes: result.pathHashes ?? [],
+                hashSizeBytes: meshcorePathHashSizeFromTraceFlags(result.flags),
                 pathSnrs: convertedSnrs,
                 lastSnr: convertedLastSnr,
                 tag: result.tag,

@@ -2600,7 +2600,9 @@
       "lossRate": "Odhadovaná ztráta",
       "lossRatePercent": "{{percent}} %",
       "packetLogAria": "Protokol testovacího paketu rozsahu"
-    }
+    },
+    "currentRouteHeading": "Aktuální trasa",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",
@@ -3723,7 +3725,6 @@
     "pathHashCliSet2": "Nastavte režim cesty hash 3-bajt",
     "pathLabel": "Cesta:",
     "hopMe": "● Já",
-    "hopN": "● Hop {{n}}",
     "noNeighborsReported": "Nehlásili se žádní sousedé",
     "fetchingTelemetry": "Načítání telemetrie…",
     "telemetryBattery": "Baterie: {{voltage}}V",
@@ -3769,7 +3770,8 @@
     "cliDangerConfirmAction": "Spustit příkaz",
     "cliAutoPingToast": "Vytvoření trasy s Ping před CLI...",
     "cliAutoPingFailed": "Ping se nezdařil; spusťte Ping ručně před opakováním CLI na opakovačích multi-hop.",
-    "cliCommandTooLong": "Příkaz CLI je příliš dlouhý (max {{max}} znaků)."
+    "cliCommandTooLong": "Příkaz CLI je příliš dlouhý (max {{max}} znaků).",
+    "currentRouteLabel": "Aktuální trasa:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",
@@ -4709,5 +4711,11 @@
       "identityTitle": "Moje totožnost",
       "myIdentity": "Moje totožnost:"
     }
+  },
+  "meshcoreRoute": {
+    "me": "● Já",
+    "direct": "Řídit",
+    "segmentTooltip": "Hash cesty {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

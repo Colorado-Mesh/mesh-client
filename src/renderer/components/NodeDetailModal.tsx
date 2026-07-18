@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
 import { PARENT_HOVER_ATTR, X } from 'lucide-react-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -25,8 +25,16 @@ import type {
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
+  MeshcoreTraceResultEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
+import {
+  buildMeshcorePathChainSegments,
+  buildMeshcorePathResolutionFromNodes,
+  meshcoreDisplayRouteFromPathSelection,
+  meshcorePathBytesEqual,
+  meshcoreTraceHopDisplayRows,
+} from '../lib/meshcorePathChainDisplay';
 import { meshcoreGetRoomSession, meshcoreIsRoomLoggedIn } from '../lib/meshcoreRoomSession';
 import {
   MESHCORE_CHAT_STUB_ID_MAX,
@@ -53,9 +61,11 @@ import { useBlockStore } from '../stores/blockStore';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useNodeStore } from '../stores/nodeStore';
+import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useWatchedNodesStore } from '../stores/watchedNodesStore';
 import { HelpTooltip } from './HelpTooltip';
 import { MeshcoreRepeaterPasswordControls } from './MeshcoreRepeaterPasswordControls';
+import { MeshcoreRouteChain } from './MeshcoreRouteChain';
 import NodeInfoBody, { formatSecondsAgo } from './NodeInfoBody';
 import SnrIndicator from './SnrIndicator';
 
@@ -88,7 +98,7 @@ interface NodeDetailModalProps {
   neighborInfo?: Map<number, NeighborInfoRecord>;
   useFahrenheit?: boolean;
   protocol?: MeshProtocol;
-  meshcoreTraceResult?: { pathLen: number; pathSnrs: number[]; lastSnr: number };
+  meshcoreTraceResult?: MeshcoreTraceResultEntry;
   meshcorePingError?: string;
   meshcoreRepeaterStatus?: MeshCoreRepeaterStatus;
   meshcoreStatusError?: string;
@@ -254,6 +264,47 @@ export default function NodeDetailModal({
     if (!meshcoreIdentityId || node == null) return undefined;
     return s.nodes[meshcoreIdentityId]?.[node.node_id]?.publicKey;
   });
+
+  const pathHistoryRecordsForNode = usePathHistoryStore((s) =>
+    protocol === 'meshcore' && node != null ? (s.records.get(node.node_id) ?? null) : null,
+  );
+  const pathResolution = useMemo(
+    () => buildMeshcorePathResolutionFromNodes(nodes ?? new Map()),
+    [nodes],
+  );
+  const currentRoute = useMemo(() => {
+    if (protocol !== 'meshcore' || node == null || !pathHistoryRecordsForNode?.length) return null;
+    return meshcoreDisplayRouteFromPathSelection(
+      usePathHistoryStore.getState().selectBestPath(node.node_id),
+    );
+  }, [protocol, node, pathHistoryRecordsForNode]);
+  const currentRouteSegments = useMemo(() => {
+    if (!currentRoute) return [];
+    return buildMeshcorePathChainSegments({
+      pathBytes: currentRoute.pathBytes,
+      hashSizeBytes: currentRoute.hashSizeBytes,
+      getNodeLabel: pathResolution.getNodeLabel,
+      pubKeyByNodeId: pathResolution.pubKeyByNodeId,
+      candidates: pathResolution.candidates,
+    });
+  }, [currentRoute, pathResolution]);
+  const traceMatchesCurrentRoute =
+    meshcoreTraceResult != null &&
+    currentRoute != null &&
+    meshcorePathBytesEqual(meshcoreTraceResult.pathHashes, currentRoute.pathBytes);
+  const traceHopRows = useMemo(() => {
+    if (!meshcoreTraceResult || !node) return [];
+    const hashSizeBytes = meshcoreTraceResult.hashSizeBytes ?? 1;
+    return meshcoreTraceHopDisplayRows({
+      pathHashes: meshcoreTraceResult.pathHashes ?? [],
+      pathSnrs: meshcoreTraceResult.pathSnrs ?? [],
+      hashSizeBytes,
+      destNodeId: node.node_id,
+      getNodeLabel: pathResolution.getNodeLabel,
+      pubKeyByNodeId: pathResolution.pubKeyByNodeId,
+      candidates: pathResolution.candidates,
+    });
+  }, [meshcoreTraceResult, node, pathResolution]);
 
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
@@ -806,6 +857,24 @@ export default function NodeDetailModal({
                   </div>
                 )}
 
+              {/* MeshCore: live outbound route (no trace required) */}
+              {protocol === 'meshcore' &&
+                !isOurNode &&
+                currentRoute &&
+                !traceMatchesCurrentRoute && (
+                  <div className="mt-3 space-y-1">
+                    <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+                      {t('nodeDetailModal.currentRouteHeading')}
+                    </h4>
+                    <div className="bg-secondary-dark rounded p-2">
+                      <MeshcoreRouteChain
+                        segments={currentRouteSegments}
+                        destLabel={node.long_name}
+                      />
+                    </div>
+                  </div>
+                )}
+
               {/* MeshCore: trace path result */}
               {protocol === 'meshcore' && !isOurNode && meshcoreTraceResult && (
                 <div className="mt-3 space-y-1">
@@ -819,22 +888,46 @@ export default function NodeDetailModal({
                     </span>
                   </div>
                   <div className="bg-secondary-dark space-y-1 rounded p-2">
-                    {(Array.isArray(meshcoreTraceResult.pathSnrs)
-                      ? meshcoreTraceResult.pathSnrs
-                      : []
-                    ).map((hop, i) => (
+                    {traceHopRows.map((hop, i) => (
                       <div key={i} className="flex items-center gap-2 text-xs">
-                        <span className="text-muted w-10">
-                          {t('nodeDetailModal.hopNLabel', { n: i + 1 })}
+                        <span
+                          className="text-muted max-w-[10rem] min-w-10 truncate"
+                          title={
+                            hop.hex
+                              ? hop.label && hop.label !== hop.hex
+                                ? t('meshcoreRoute.segmentResolvedTooltip', {
+                                    hex: hop.hex,
+                                    name: hop.label,
+                                  })
+                                : t('meshcoreRoute.segmentTooltip', { hex: hop.hex })
+                              : undefined
+                          }
+                        >
+                          {hop.label
+                            ? t('nodeDetailModal.hopNameLabel', { name: hop.label })
+                            : t('nodeDetailModal.hopNLabel', { n: i + 1 })}
                         </span>
-                        <SnrIndicator snr={hop} />
+                        <SnrIndicator snr={hop.snr} />
                       </div>
                     ))}
                     <div className="flex items-center gap-2 border-t border-gray-700 pt-1 text-xs">
-                      <span className="text-muted w-10">{t('nodeDetailModal.destLabel')}</span>
+                      <span
+                        className="text-muted max-w-[10rem] min-w-10 truncate"
+                        title={node.long_name}
+                      >
+                        {node.long_name || t('nodeDetailModal.destLabel')}
+                      </span>
                       <SnrIndicator snr={meshcoreTraceResult.lastSnr} />
                     </div>
                   </div>
+                  {traceMatchesCurrentRoute && currentRouteSegments.length > 0 ? (
+                    <div className="pt-1">
+                      <MeshcoreRouteChain
+                        segments={currentRouteSegments}
+                        destLabel={node.long_name}
+                      />
+                    </div>
+                  ) : null}
                 </div>
               )}
 

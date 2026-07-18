@@ -2600,7 +2600,9 @@
       "lossRate": "Szacowana strata",
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Dziennik pakietów testowych zakresu"
-    }
+    },
+    "currentRouteHeading": "Aktualna trasa",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "Długie imię",
@@ -3723,7 +3725,6 @@
     "pathHashCliSet2": "Ustaw tryb skrótu ścieżki 3-bajtowy",
     "pathLabel": "Ścieżka:",
     "hopMe": "● Ja",
-    "hopN": "● Przeskocz {{n}}",
     "noNeighborsReported": "Nie zgłoszono żadnych sąsiadów",
     "fetchingTelemetry": "Pobieram dane telemetryczne…",
     "telemetryBattery": "Bateria: {{voltage}}V",
@@ -3769,7 +3770,8 @@
     "cliDangerConfirmAction": "Uruchom polecenie",
     "cliAutoPingToast": "Ustalanie trasy za pomocą polecenia ping przed CLI…",
     "cliAutoPingFailed": "Ping nie powiódł się; uruchom Ping ręcznie przed ponowną próbą CLI na repeaterach wielokrotnych przeskoków.",
-    "cliCommandTooLong": "Polecenie CLI jest zbyt długie (maks. {{max}} znaków)."
+    "cliCommandTooLong": "Polecenie CLI jest zbyt długie (maks. {{max}} znaków).",
+    "currentRouteLabel": "Aktualna trasa:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",
@@ -4709,5 +4711,11 @@
       "identityTitle": "Moja tożsamość",
       "myIdentity": "Moja tożsamość:"
     }
+  },
+  "meshcoreRoute": {
+    "me": "● Ja",
+    "direct": "Bezpośredni",
+    "segmentTooltip": "Hash ścieżki {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

@@ -17,6 +17,7 @@ import {
 } from '../lib/offlineProtocolIdentities';
 import type { MeshNode } from '../lib/types';
 import { useNodeStore } from '../stores/nodeStore';
+import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import NodeDetailModal from './NodeDetailModal';
 
 vi.mock('../lib/downloadBlob', () => ({
@@ -596,5 +597,70 @@ describe('NodeDetailModal MeshCore actions', () => {
     expect(screen.getByText('motion detected')).toBeInTheDocument();
     expect(screen.getByText(/Range Test/)).toBeInTheDocument();
     expect(screen.getByLabelText('Range test packet log')).toBeInTheDocument();
+  });
+});
+
+describe('NodeDetailModal MeshCore path names', () => {
+  beforeEach(() => {
+    usePathHistoryStore.setState({ records: new Map(), lruOrder: [] });
+  });
+
+  it('shows resolved repeater names in Path Trace rows', () => {
+    const relayId = 0xaa;
+    const destId = 0xbb;
+    const dest: MeshNode = {
+      ...meshcoreRepeaterNode,
+      node_id: destId,
+      long_name: 'Dest Node',
+    };
+    const relay: MeshNode = {
+      ...meshcoreRepeaterNode,
+      node_id: relayId,
+      long_name: 'Relay Alpha',
+    };
+    renderMeshcoreModal({
+      node: dest,
+      nodes: new Map([
+        [destId, dest],
+        [relayId, relay],
+      ]),
+      meshcoreTraceResult: {
+        pathLen: 2,
+        pathHashes: [0xaa, 0xbb],
+        hashSizeBytes: 1,
+        pathSnrs: [4.5, 3],
+        lastSnr: 2.5,
+        tag: 1,
+      },
+    });
+    expect(screen.getByText('Path Trace')).toBeInTheDocument();
+    expect(screen.getByTitle('AA → Relay Alpha')).toHaveTextContent('Relay Alpha');
+    expect(screen.getByTitle('Dest Node')).toHaveTextContent('Dest Node');
+  });
+
+  it('shows Current route from path history when trace is absent', () => {
+    const relayId = 0xee;
+    const destId = 0xdd;
+    const dest: MeshNode = {
+      ...meshcoreRepeaterNode,
+      node_id: destId,
+      long_name: 'Dest Node',
+    };
+    const relay: MeshNode = {
+      ...meshcoreRepeaterNode,
+      node_id: relayId,
+      long_name: 'Via Relay',
+    };
+    usePathHistoryStore.getState().recordPathUpdated(destId, [0xee, 0xdd], 1, false);
+    renderMeshcoreModal({
+      node: dest,
+      nodes: new Map([
+        [destId, dest],
+        [relayId, relay],
+      ]),
+    });
+    expect(screen.getByText('Current route')).toBeInTheDocument();
+    expect(screen.getByTitle('EE → Via Relay')).toHaveTextContent('Via Relay');
+    expect(screen.getByText(/▣\s*Dest Node/)).toBeInTheDocument();
   });
 });

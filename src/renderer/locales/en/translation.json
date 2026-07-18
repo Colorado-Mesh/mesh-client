@@ -1859,6 +1859,12 @@
     "originatorPacket": "packet",
     "originatorPackets": "packets"
   },
+  "meshcoreRoute": {
+    "me": "● Me",
+    "direct": "Direct",
+    "segmentTooltip": "Path hash {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
+  },
   "meshcore": {
     "errors": {
       "repeaterAuthHint": "Set or change the repeater admin password from the Repeaters panel. Use Remember to save across app restarts.",
@@ -2463,8 +2469,10 @@
     "connectRadioFirst": "Connect to the radio first.",
     "remoteAuthCancelled": "Remote access cancelled.",
     "pathTraceHeading": "Path Trace",
+    "currentRouteHeading": "Current route",
     "hopsLabel": "Hops:",
     "hopNLabel": "Hop {{n}}",
+    "hopNameLabel": "{{name}}",
     "destLabel": "Dest",
     "sensorTelemetryHeading": "Sensor telemetry (LPP)",
     "temperatureLabel": "Temperature",
@@ -3879,8 +3887,8 @@
     "telemetryError": "Sensor error: {{error}}",
     "neighborsHeading": "Neighbors ({{count}} total):",
     "pathLabel": "Path:",
+    "currentRouteLabel": "Current route:",
     "hopMe": "● Me",
-    "hopN": "● Hop {{n}}",
     "noNeighborsReported": "No neighbors reported",
     "fetchingTelemetry": "Fetching telemetry…",
     "telemetryBattery": "Battery: {{voltage}}V",

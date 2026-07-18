@@ -2600,7 +2600,9 @@
       "lossRate": "Geschat verlies",
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Pakketlogboek voor bereiktest"
-    }
+    },
+    "currentRouteHeading": "Huidige route",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "Lange naam",
@@ -3723,7 +3725,6 @@
     "pathHashCliSet2": "Stel pad hash-modus in op 3 bytes",
     "pathLabel": "Pad:",
     "hopMe": "● Ik",
-    "hopN": "● Hop {{n}}",
     "noNeighborsReported": "Geen buren gemeld",
     "fetchingTelemetry": "Telemetrie ophalen…",
     "telemetryBattery": "Batterij: {{voltage}}V",
@@ -3769,7 +3770,8 @@
     "cliDangerConfirmAction": "Opdracht uitvoeren",
     "cliAutoPingToast": "Route vaststellen met Ping vóór CLI...",
     "cliAutoPingFailed": "Ping mislukt; voer Ping handmatig uit voordat u CLI opnieuw probeert op multi-hop repeaters.",
-    "cliCommandTooLong": "CLI-opdracht is te lang (max {{max}} tekens)."
+    "cliCommandTooLong": "CLI-opdracht is te lang (max {{max}} tekens).",
+    "currentRouteLabel": "Huidig ​​traject:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",
@@ -4709,5 +4711,11 @@
       "identityTitle": "Mijn identiteit",
       "myIdentity": "Mijn identiteit:"
     }
+  },
+  "meshcoreRoute": {
+    "me": "● Ik",
+    "direct": "Direct",
+    "segmentTooltip": "Pad-hash {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

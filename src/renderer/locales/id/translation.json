@@ -2600,7 +2600,9 @@
       "lossRate": "Perkiraan Kerugian",
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Log paket uji jangkauan"
-    }
+    },
+    "currentRouteHeading": "Rute saat ini",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",
@@ -3723,7 +3725,6 @@
     "pathHashCliSet2": "Atur mode hash jalur 3 - byte",
     "pathLabel": "Jalur:",
     "hopMe": "● Saya",
-    "hopN": "● Lompat {{n}}",
     "noNeighborsReported": "Tidak ada tetangga yang melaporkan",
     "fetchingTelemetry": "Mengambil telemetri…",
     "telemetryBattery": "Baterai: {{voltage}}V",
@@ -3769,7 +3770,8 @@
     "cliDangerConfirmAction": "Jalankan perintah",
     "cliAutoPingToast": "Menetapkan rute dengan Ping sebelum CLI…",
     "cliAutoPingFailed": "Ping gagal; jalankan Ping secara manual sebelum mencoba kembali CLI pada repeater multi - hop.",
-    "cliCommandTooLong": "Perintah CLI terlalu panjang (maks {{max}} karakter)."
+    "cliCommandTooLong": "Perintah CLI terlalu panjang (maks {{max}} karakter).",
+    "currentRouteLabel": "Rute saat ini:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",
@@ -4709,5 +4711,11 @@
       "identityTitle": "Identitas saya",
       "myIdentity": "Identitas saya:"
     }
+  },
+  "meshcoreRoute": {
+    "me": "● Saya",
+    "direct": "Langsung",
+    "segmentTooltip": "Hash jalur {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

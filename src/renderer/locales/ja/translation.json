@@ -2600,7 +2600,9 @@
       "lossRate": "推定損失",
       "lossRatePercent": "{{percent}} %",
       "packetLogAria": "範囲テストパケットログ"
-    }
+    },
+    "currentRouteHeading": "現在のルート",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "長い名前",
@@ -3723,7 +3725,6 @@
     "pathHashCliSet2": "パスハッシュモード3バイトを設定",
     "pathLabel": "パス：",
     "hopMe": "●私",
-    "hopN": "● ホップ {{n}}",
     "noNeighborsReported": "近隣住民は報告されていません",
     "fetchingTelemetry": "テレメトリを取得中…",
     "telemetryBattery": "バッテリー: {{voltage}}V",
@@ -3769,7 +3770,8 @@
     "cliDangerConfirmAction": "コマンドを実行",
     "cliAutoPingToast": "CLIの前にPingでルートを確立しています...",
     "cliAutoPingFailed": "Pingに失敗しました。マルチホップリピーターでCLIを再試行する前に、手動でPingを実行してください。",
-    "cliCommandTooLong": "CLIコマンドが長すぎます（最大{{max}}文字）。"
+    "cliCommandTooLong": "CLIコマンドが長すぎます（最大{{max}}文字）。",
+    "currentRouteLabel": "現在のルート:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",
@@ -4709,5 +4711,11 @@
       "identityTitle": "私のアイデンティティ",
       "myIdentity": "私のアイデンティティ："
     }
+  },
+  "meshcoreRoute": {
+    "me": "●私",
+    "direct": "直接",
+    "segmentTooltip": "パスハッシュ {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

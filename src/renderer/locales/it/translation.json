@@ -2600,7 +2600,9 @@
       "lossRate": "Perdita stimata",
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Registro dei pacchetti di test di intervallo"
-    }
+    },
+    "currentRouteHeading": "Percorso attuale",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "Nome lungo",
@@ -3723,7 +3725,6 @@
     "pathHashCliSet2": "Imposta la modalità hash del percorso a 3 byte",
     "pathLabel": "Sentiero:",
     "hopMe": "● Io",
-    "hopN": "● Salta {{n}}",
     "noNeighborsReported": "Nessun vicino segnalato",
     "fetchingTelemetry": "Recupero telemetria…",
     "telemetryBattery": "Batteria: {{voltage}}V",
@@ -3769,7 +3770,8 @@
     "cliDangerConfirmAction": "Esegui comando",
     "cliAutoPingToast": "Stabilire il percorso con Ping prima di CLI...",
     "cliAutoPingFailed": "Ping non riuscito; eseguire Ping manualmente prima di riprovare CLI su ripetitori multi-hop.",
-    "cliCommandTooLong": "Il comando CLI è troppo lungo (max {{max}} caratteri)."
+    "cliCommandTooLong": "Il comando CLI è troppo lungo (max {{max}} caratteri).",
+    "currentRouteLabel": "Itinerario attuale:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervallo annunci (secondi)",
@@ -4709,5 +4711,11 @@
       "identityTitle": "La mia identità",
       "myIdentity": "La mia identità:"
     }
+  },
+  "meshcoreRoute": {
+    "me": "● Io",
+    "direct": "Diretto",
+    "segmentTooltip": "Hash del percorso {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }
