@@ -30,8 +30,8 @@ const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [
   undefined, // Connection
   undefined, // Chat
   'hasRrcPanel', // RRC
-  'hasReticulumRemotePanel', // Remote
   'hasNomadNetworkPanel', // Nomad Network
+  'hasReticulumRemotePanel', // Remote
   undefined, // Nodes/Contacts
   { or: ['hasFullPositionConfig', 'nodeListTabUsesContactsLabel', 'hasReticulumDiscoveryMap'] }, // Map
   { or: ['hasChannelConfig', 'hasReticulumNetworkPanel', 'hasJsonRadioConfigImport'] }, // Radio
