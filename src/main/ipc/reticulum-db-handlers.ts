@@ -1,12 +1,31 @@
+import { randomUUID } from 'node:crypto';
+
 import type { IpcMain } from 'electron';
 
 import { isMeshProtocol } from '../../shared/meshProtocol';
+import type {
+  RemoteAddressBookRow,
+  RemoteAddressService,
+  RemoteInboundDecision,
+  RemoteInboundPolicyRow,
+} from '../../shared/remote-types';
 import { canonicalizeReticulumDestinationHash } from '../../shared/reticulumDestinationHash';
 import { sanitizeReticulumDisplayNameForDb } from '../../shared/reticulumDisplayName';
 import { finishDbIpcHandler, getDbForIpc } from '../db-ipc-lifecycle';
 import { buildFtsMatchQuery, isMessageFtsReady } from '../messageFts';
 import { sanitizeReticulumAttachmentPathForDb } from '../reticulum-attachment-path';
 import { assertIpcSender } from '../validate-ipc-sender';
+
+const REMOTE_ADDRESS_SERVICES = new Set<RemoteAddressService>(['rnsh', 'rncp']);
+const REMOTE_INBOUND_DECISIONS = new Set<RemoteInboundDecision>(['allow', 'block']);
+
+/** 32-hex identity/destination hash, case-insensitive; matches sidecar `parse_hash16()`. */
+function canonicalizeHash32(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!/^[0-9a-fA-F]{32}$/.test(trimmed)) return null;
+  return trimmed.toLowerCase();
+}
 
 const ALLOWED_DELIVERY_STATUS = new Set([
   'sending',
@@ -684,6 +703,155 @@ export function registerReticulumDbIpcHandlers({ ipcMain }: ReticulumDbIpcDeps):
       return { changes: parsed.length };
     } catch (err) {
       finishDbIpcHandler('db:upsertReticulumIdentityActivityBatch', err);
+    }
+  });
+
+  // ─── Remote address book (reticulum_remote_addresses) ─────────────────────
+
+  ipcMain.handle('db:listReticulumRemoteAddresses', (event) => {
+    try {
+      assertIpcSender(event, 'db:listReticulumRemoteAddresses');
+      const db = getDbForIpc('db:listReticulumRemoteAddresses');
+      if (!db) return [];
+      return db
+        .prepareOnce('SELECT * FROM reticulum_remote_addresses ORDER BY updated_at DESC')
+        .all() as RemoteAddressBookRow[];
+    } catch (err) {
+      finishDbIpcHandler('db:listReticulumRemoteAddresses', err);
+    }
+  });
+
+  ipcMain.handle('db:upsertReticulumRemoteAddress', (event, row: unknown) => {
+    try {
+      assertIpcSender(event, 'db:upsertReticulumRemoteAddress');
+      if (!row || typeof row !== 'object') {
+        throw new Error('db:upsertReticulumRemoteAddress: row must be an object');
+      }
+      const r = row as Record<string, unknown>;
+      const destinationHash = canonicalizeHash32(r.destination_hash);
+      if (!destinationHash) {
+        throw new Error('db:upsertReticulumRemoteAddress: destination_hash invalid');
+      }
+      const service = r.service;
+      if (
+        typeof service !== 'string' ||
+        !REMOTE_ADDRESS_SERVICES.has(service as RemoteAddressService)
+      ) {
+        throw new Error('db:upsertReticulumRemoteAddress: service invalid');
+      }
+      const label = typeof r.label === 'string' ? r.label.trim().slice(0, 128) : '';
+      if (!label) {
+        throw new Error('db:upsertReticulumRemoteAddress: label required');
+      }
+      const identityHash = r.identity_hash != null ? canonicalizeHash32(r.identity_hash) : null;
+      const lxmfPeerHash =
+        typeof r.lxmf_peer_hash === 'string' ? r.lxmf_peer_hash.slice(0, 128) : null;
+      const lastUsedAt =
+        r.last_used_at != null && Number.isFinite(Number(r.last_used_at))
+          ? Math.trunc(Number(r.last_used_at))
+          : null;
+      const id = typeof r.id === 'string' && r.id.trim() ? r.id.trim().slice(0, 64) : randomUUID();
+      const now = Date.now();
+      const db = getDbForIpc('db:upsertReticulumRemoteAddress');
+      if (!db) return { changes: 0 };
+      db.prepareOnce(
+        `INSERT INTO reticulum_remote_addresses
+           (id, label, service, destination_hash, identity_hash, lxmf_peer_hash, created_at, updated_at, last_used_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(service, destination_hash) DO UPDATE SET
+           label = excluded.label,
+           identity_hash = COALESCE(excluded.identity_hash, reticulum_remote_addresses.identity_hash),
+           lxmf_peer_hash = COALESCE(excluded.lxmf_peer_hash, reticulum_remote_addresses.lxmf_peer_hash),
+           updated_at = excluded.updated_at,
+           last_used_at = COALESCE(excluded.last_used_at, reticulum_remote_addresses.last_used_at)`,
+      ).run(id, label, service, destinationHash, identityHash, lxmfPeerHash, now, now, lastUsedAt);
+      return { changes: 1 };
+    } catch (err) {
+      finishDbIpcHandler('db:upsertReticulumRemoteAddress', err);
+    }
+  });
+
+  ipcMain.handle('db:deleteReticulumRemoteAddress', (event, id: string) => {
+    try {
+      assertIpcSender(event, 'db:deleteReticulumRemoteAddress');
+      if (typeof id !== 'string' || !id.trim() || id.length > 64) return { changes: 0 };
+      const db = getDbForIpc('db:deleteReticulumRemoteAddress');
+      if (!db) return { changes: 0 };
+      const result = db.prepareOnce('DELETE FROM reticulum_remote_addresses WHERE id = ?').run(id);
+      return { changes: result.changes ?? 0 };
+    } catch (err) {
+      finishDbIpcHandler('db:deleteReticulumRemoteAddress', err);
+    }
+  });
+
+  // ─── Inbound policy (reticulum_inbound_policy) ─────────────────────────────
+
+  ipcMain.handle('db:listReticulumInboundPolicy', (event) => {
+    try {
+      assertIpcSender(event, 'db:listReticulumInboundPolicy');
+      const db = getDbForIpc('db:listReticulumInboundPolicy');
+      if (!db) return [];
+      return db
+        .prepareOnce('SELECT * FROM reticulum_inbound_policy ORDER BY updated_at DESC')
+        .all() as RemoteInboundPolicyRow[];
+    } catch (err) {
+      finishDbIpcHandler('db:listReticulumInboundPolicy', err);
+    }
+  });
+
+  ipcMain.handle('db:upsertReticulumInboundPolicy', (event, row: unknown) => {
+    try {
+      assertIpcSender(event, 'db:upsertReticulumInboundPolicy');
+      if (!row || typeof row !== 'object') {
+        throw new Error('db:upsertReticulumInboundPolicy: row must be an object');
+      }
+      const r = row as Record<string, unknown>;
+      const identityHash = canonicalizeHash32(r.identity_hash);
+      if (!identityHash) {
+        throw new Error('db:upsertReticulumInboundPolicy: identity_hash invalid');
+      }
+      const decision = r.decision;
+      if (
+        typeof decision !== 'string' ||
+        !REMOTE_INBOUND_DECISIONS.has(decision as RemoteInboundDecision)
+      ) {
+        throw new Error('db:upsertReticulumInboundPolicy: decision invalid');
+      }
+      const label = typeof r.label === 'string' ? r.label.trim().slice(0, 128) : null;
+      const autoSaveDir =
+        typeof r.auto_save_dir === 'string' ? r.auto_save_dir.slice(0, 4096) : null;
+      const now = Date.now();
+      const db = getDbForIpc('db:upsertReticulumInboundPolicy');
+      if (!db) return { changes: 0 };
+      db.prepareOnce(
+        `INSERT INTO reticulum_inbound_policy
+           (identity_hash, decision, label, auto_save_dir, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(identity_hash) DO UPDATE SET
+           decision = excluded.decision,
+           label = COALESCE(excluded.label, reticulum_inbound_policy.label),
+           auto_save_dir = COALESCE(excluded.auto_save_dir, reticulum_inbound_policy.auto_save_dir),
+           updated_at = excluded.updated_at`,
+      ).run(identityHash, decision, label, autoSaveDir, now, now);
+      return { changes: 1 };
+    } catch (err) {
+      finishDbIpcHandler('db:upsertReticulumInboundPolicy', err);
+    }
+  });
+
+  ipcMain.handle('db:deleteReticulumInboundPolicy', (event, identityHash: string) => {
+    try {
+      assertIpcSender(event, 'db:deleteReticulumInboundPolicy');
+      const hash = canonicalizeHash32(identityHash);
+      if (!hash) return { changes: 0 };
+      const db = getDbForIpc('db:deleteReticulumInboundPolicy');
+      if (!db) return { changes: 0 };
+      const result = db
+        .prepareOnce('DELETE FROM reticulum_inbound_policy WHERE identity_hash = ?')
+        .run(hash);
+      return { changes: result.changes ?? 0 };
+    } catch (err) {
+      finishDbIpcHandler('db:deleteReticulumInboundPolicy', err);
     }
   });
 }

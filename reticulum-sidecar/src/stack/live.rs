@@ -45,8 +45,11 @@ use super::packet_log::{
     PacketLogBuffer, collect_tx_interface_names_for_egress, emit_wire_packet_event,
     wire_packet_from_tap,
 };
+use super::path_speed;
 use super::persistence::PersistedState;
 use super::propagation_bridge::PropagationBridge;
+use super::rncp_transfer::RncpTransferManager;
+use super::rnsh_session::RnshSessionManager;
 use super::rrc_defaults::RRC_HUB_ASPECT;
 use super::rrc_session::RrcSessionManager;
 use super::types::NomadServingStatus;
@@ -96,6 +99,8 @@ pub struct LiveBridge {
     /// overlapping page/file fetches contend with path/pubkey discovery.
     nomad_link_lock: Arc<tokio::sync::Mutex<()>>,
     rrc_session: Arc<RrcSessionManager>,
+    rnsh_session: Arc<RnshSessionManager>,
+    rncp_transfer: Arc<RncpTransferManager>,
     /// Local Nomad page/file host (rsNomad / nomad-core).
     nomad_server: Arc<NomadServerHandle>,
     /// Shared persisted stack state (Nomad node list, prefs).
@@ -398,6 +403,17 @@ impl LiveBridge {
                 handle.transport_tx.clone(),
                 identity.clone(),
                 event_tx.clone(),
+            )),
+            rnsh_session: Arc::new(RnshSessionManager::spawn(
+                handle.transport_tx.clone(),
+                identity.clone(),
+                event_tx.clone(),
+            )),
+            rncp_transfer: Arc::new(RncpTransferManager::spawn(
+                handle.transport_tx.clone(),
+                identity.clone(),
+                event_tx.clone(),
+                storage_dir.clone(),
             )),
             nomad_server: Arc::new(NomadServerHandle::new()),
             persisted: inner.clone(),
@@ -961,6 +977,181 @@ impl LiveBridge {
 
     pub async fn rrc_rooms(&self, hub_dest_hash: Option<&str>) -> serde_json::Value {
         self.rrc_session.rooms_snapshot(hub_dest_hash).await
+    }
+
+    pub async fn rnsh_connect(&self, destination_hash_hex: &str) -> serde_json::Value {
+        match self.rnsh_session.connect(destination_hash_hex).await {
+            Ok(mut payload) => {
+                if let Some(map) = payload.as_object_mut() {
+                    map.insert("ok".into(), serde_json::Value::Bool(true));
+                }
+                payload
+            }
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rnsh_input(&self, session_id: &str, data: Vec<u8>) -> serde_json::Value {
+        match self.rnsh_session.input(session_id, data).await {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rnsh_resize(
+        &self,
+        session_id: &str,
+        rows: Option<u32>,
+        cols: Option<u32>,
+    ) -> serde_json::Value {
+        match self.rnsh_session.resize(session_id, rows, cols).await {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rnsh_disconnect(&self, session_id: &str) -> serde_json::Value {
+        match self.rnsh_session.disconnect(session_id).await {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rnsh_status(&self) -> serde_json::Value {
+        self.rnsh_session.status_snapshot().await
+    }
+
+    pub async fn rncp_send(&self, destination_hash_hex: &str, path: &str) -> serde_json::Value {
+        match self.rncp_transfer.send(destination_hash_hex, path).await {
+            Ok(transfer_id) => serde_json::json!({ "ok": true, "transfer_id": transfer_id }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rncp_fetch(
+        &self,
+        destination_hash_hex: &str,
+        remote_path: &str,
+        save_dir: PathBuf,
+    ) -> serde_json::Value {
+        match self
+            .rncp_transfer
+            .fetch(destination_hash_hex, remote_path, save_dir)
+            .await
+        {
+            Ok(transfer_id) => serde_json::json!({ "ok": true, "transfer_id": transfer_id }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rncp_cancel(&self, transfer_id: &str) -> serde_json::Value {
+        match self.rncp_transfer.cancel(transfer_id).await {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rncp_accept(&self, transfer_id: &str) -> serde_json::Value {
+        match self.rncp_transfer.accept(transfer_id).await {
+            Ok(mut payload) => {
+                if let Some(map) = payload.as_object_mut() {
+                    map.insert("ok".into(), serde_json::Value::Bool(true));
+                }
+                payload
+            }
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rncp_reject(&self, transfer_id: &str) -> serde_json::Value {
+        match self.rncp_transfer.reject(transfer_id).await {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rncp_status(&self) -> serde_json::Value {
+        self.rncp_transfer.status().await
+    }
+
+    pub async fn rncp_configure_policy(
+        &self,
+        mode: &str,
+        allowed: Vec<String>,
+        blocked: Vec<String>,
+    ) -> Result<(), String> {
+        self.rncp_transfer
+            .configure_policy(mode, allowed, blocked)
+            .await
+    }
+
+    pub async fn rncp_start_listener(
+        &self,
+        save_dir: PathBuf,
+        allow_fetch: bool,
+        fetch_jail: Option<PathBuf>,
+        overwrite: bool,
+    ) -> serde_json::Value {
+        match self
+            .rncp_transfer
+            .start_listener(save_dir, allow_fetch, fetch_jail, overwrite)
+            .await
+        {
+            Ok(mut payload) => {
+                if let Some(map) = payload.as_object_mut() {
+                    map.insert("ok".into(), serde_json::Value::Bool(true));
+                }
+                payload
+            }
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rncp_stop_listener(&self) {
+        self.rncp_transfer.stop_listener().await;
+    }
+
+    pub async fn rncp_listener_status(&self) -> serde_json::Value {
+        self.rncp_transfer.listener_status().await
+    }
+
+    pub async fn rncp_receive_destination_hash(&self) -> Option<String> {
+        self.rncp_transfer.receive_destination_hash().await
+    }
+
+    pub fn identity_hash_hex(&self) -> String {
+        hex::encode(self.identity.hash)
+    }
+
+    /// rnsh/rncp gating decision for `destination_hash_hex`: resolves the
+    /// path-table egress interface (if known) to a transport atom via
+    /// [`super::via::classify_path_interface_name`] and buckets it with
+    /// [`path_speed::path_capability_from_atoms`]. Uses config interface
+    /// rows (cheap, no transport round-trip) rather than [`Self::fetch_interfaces`].
+    pub fn path_capability(&self, destination_hash_hex: &str) -> serde_json::Value {
+        let clean = destination_hash_hex.trim().to_lowercase();
+        let peer = self
+            .path_peer_cache
+            .lock()
+            .ok()
+            .and_then(|cache| cache.iter().find(|p| p.destination_hash == clean).cloned());
+        let config_rows = config::interfaces_from_config_dir(&self.config_dir).unwrap_or_default();
+        let atoms: Vec<&'static str> = peer
+            .as_ref()
+            .and_then(|p| p.interface.as_deref())
+            .map(|name| vec![classify_path_interface_name(name, &config_rows)])
+            .unwrap_or_default();
+        let hops = peer.as_ref().and_then(|p| p.hops).map(u32::from);
+        let cap = path_speed::path_capability_from_atoms(&clean, &atoms, hops);
+        serde_json::json!({
+            "destination_hash": cap.destination_hash,
+            "speed": cap.speed.as_str(),
+            "via_atoms": cap.via_atoms,
+            "hops": cap.hops,
+            "transfer_allowed": cap.transfer_allowed,
+            "shell_allowed": cap.shell_allowed,
+            "reason_key": cap.reason_key,
+        })
     }
 
     fn spawn_maintenance(&self, _event_tx: broadcast::Sender<String>) {

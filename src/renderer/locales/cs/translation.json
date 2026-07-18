@@ -565,7 +565,23 @@
     "floodScopeOverrideLabel": "Rozsah povodně pro tuto zprávu",
     "floodScopeOverrideAria": "Přepsání rozsahu povodně podle zprávy",
     "floodScopeOverrideDefault": "Výchozí rozsah",
-    "floodScopeOverrideUnscoped": "Unscoped"
+    "floodScopeOverrideUnscoped": "Unscoped",
+    "rncp": {
+      "sendFile": "Odeslat soubor",
+      "sendFileAria": "Odeslat soubor na {{name}} pomocí rncp",
+      "pendingOffersBadgeAria_one": "{{count}} čeká na nabídku příchozího souboru od tohoto kolegy",
+      "pendingOffersBadgeAria_other": "{{count}} čekající nabídky příchozích souborů od tohoto kolegy",
+      "destinationLabel": "rncp cílový hash",
+      "rememberAddress": "Zapamatovat si tuto adresu",
+      "rememberAddressAria": "Zapamatovat si tento cíl RNCP pro tohoto kolegu",
+      "chooseAndSend": "Vyberte soubor a odešlete...",
+      "sending": "Odesílání...",
+      "sendStarted": "Odesílání {{file}}…",
+      "sendFailed": "Odeslání se nezdařilo: {{error}}",
+      "newOfferToast": "{{peer}} ti chce poslat soubor: {{file}}",
+      "requestEnable": "Požádat o povolení",
+      "requestEnableAria": "Požádejte tohoto kolegu, aby povolil příjem souboru"
+    }
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -612,7 +628,9 @@
     "colorAmber": "Žlutá",
     "colorRed": "Červené",
     "colorPurple": "Fialová",
-    "delete": "Vymazat"
+    "delete": "Vymazat",
+    "copy": "Kopírování",
+    "copied": "Zkopírováno"
   },
   "configApplyNotice": {
     "persistNote": "Použitá nastavení jsou uložena do flash paměti zařízení a přetrvávají při restartu.",
@@ -4167,7 +4185,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "topologie sítě",
     "network": "Síť",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "Dálkový ovladač"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -4463,5 +4482,198 @@
     "confirmContactImportTitle": "Importovat kontakt?",
     "confirmContactImportBody": "Přidat {{name}} z externího odkazu do vašich kontaktů Reticulum?",
     "confirmContactImportAction": "Import kontaktu"
+  },
+  "reticulumRemote": {
+    "navAria": "Vzdálené úseky",
+    "sidecarNotRunning": "Spusťte zásobník Reticulum pro použití vzdáleného shellu a přenosu souborů.",
+    "sections": {
+      "shell": "Shell",
+      "transfer": "Přenos",
+      "saved": "Uloženo",
+      "settings": "Nastavení"
+    },
+    "errors": {
+      "invalidAddress": "Zadejte platný 32místný hexadecimální cílový hash."
+    },
+    "reasons": {
+      "pathConstrained": "Cesta je omezena (nízká šířka pásma)",
+      "pathUnknown": "Rychlost cesty není známa",
+      "notAnnounced": "Cíl nebyl oznámen",
+      "timeout": "Žádost vypršela.",
+      "notAllowed": "Není povoleno",
+      "versionMismatch": "Vzdálená verze se neshoduje",
+      "stagingFailed": "Fáze příchozího souboru se nezdařila",
+      "cancelled": "Zrušeno",
+      "rejected": "Zamítnuté",
+      "error": "Chyba"
+    },
+    "pathCapability": {
+      "checking": "Kontroluje se cesta...",
+      "hops_one": "{{count}} hop",
+      "hops_other": "{{count}} hops",
+      "speed": {
+        "high": "Rychlá cesta",
+        "constrained": "Omezená cesta",
+        "mixed": "Smíšená cesta",
+        "unknown": "Neznámá cesta"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "Cílový hash (32 hexadecimálních znaků)",
+      "addressAria": "rnsh cílový hash",
+      "selectSavedAddress": "Použít uloženou adresu {{label}}",
+      "connectAria": "Připojit vzdálený shell",
+      "connect": "Připojení",
+      "connecting": "Připojování…",
+      "connectFailed": "Připojení se nezdařilo: {{error}}",
+      "maxSessions": "Bylo dosaženo maximálního počtu relací shellu {{count}}.",
+      "focusSession": "Přepnout na relaci {{address}}",
+      "closeSession": "Ukončit relaci {{address}}",
+      "emptyState": "Žádné aktivní relace vzdáleného shellu. Pro připojení zadejte výše uvedený cílový hash.",
+      "status": {
+        "connecting": "Připojování…",
+        "active": "Připojeno",
+        "closed": "Zavřeno",
+        "error": "Chyba"
+      },
+      "reconnectAria": "Znovu připojit tuto relaci",
+      "reconnect": "Znovu připojit",
+      "disconnectAria": "Odpojit tuto relaci",
+      "disconnect": "Odpojení",
+      "reconnectExhausted": "Automatické připojení se vzdalo po dosažení limitu opakování. Stav vzdálené relace byl ztracen.",
+      "reconnectingBanner": "Automatické připojení (pokus {{attempt}} z {{max}}). Stav vzdálené relace byl ztracen.",
+      "fingerprintTitle": "Potvrdit vzdálenou identitu",
+      "fingerprintMessage": "Připojení k {{address}}. Nahlášená identita: {{identity}}. Otisk prstu: {{fingerprint}}. Před pokračováním potvrď, že se jedná o totožnost, kterou očekáváš.",
+      "unknownIdentity": "neznámá totožnost",
+      "unknownFingerprint": "neznámý otisk prstu",
+      "fingerprintConfirm": "Připojení"
+    },
+    "transfer": {
+      "myIdentity": "Moje totožnost:",
+      "copyIdentityAria": "Zkopírovat hash mé totožnosti",
+      "myReceiveDest": "Můj rncp obdrží cíl:",
+      "copyReceiveDestAria": "Zkopírujte můj cíl příjmu rncp",
+      "pendingOffersTitle": "Čekající příchozí soubory",
+      "pendingOffersBadgeAria_one": "{{count}} čekající nabídka příchozího souboru",
+      "pendingOffersBadgeAria_other": "{{count}} čekající nabídky příchozích souborů",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "Přijmout {{file}}",
+      "accept": "Přijmout",
+      "rejectAria": "Odmítnout {{file}}",
+      "reject": "Zamítnout",
+      "alwaysAllowAria": "Vždy povolit tomuto odesílateli {{file}}",
+      "alwaysAllow": "Vždy povolit",
+      "alwaysBlockAria": "Vždy blokovat tohoto odesílatele pro {{file}}",
+      "alwaysBlock": "Vždy blokovat",
+      "alwaysAllowSaved": "Odesílatel byl přidán do seznamu povolených.",
+      "alwaysBlockSaved": "Odesílatel přidán do seznamu bloků.",
+      "modeSendAria": "Přepnout do režimu odesílání",
+      "modeSend": "Odeslat",
+      "modeFetchAria": "Přepnout do režimu načítání",
+      "modeFetch": "Stáhnout",
+      "destinationPlaceholder": "Cílový hash (32 hexadecimálních znaků)",
+      "destinationAria": "rncp cílový hash",
+      "notAllowedHint": "Převody nejsou na této cestě k dispozici: {{reason}}",
+      "chooseFileAria": "Vyberte místní soubor k odeslání",
+      "chooseFile": "Vyberte soubor…",
+      "noFileChosen": "Není vybraný žádný soubor",
+      "sendAria": "Odeslat soubor",
+      "send": "Odeslat",
+      "sendFailed": "Odeslání se nezdařilo: {{error}}",
+      "remotePathPlaceholder": "Vzdálená cesta k souboru",
+      "remotePathAria": "Vzdálená cesta k načtení souboru",
+      "chooseSaveDirAria": "Vyberte místní složku, do které chcete uložit",
+      "chooseSaveDir": "Zvolte uložit složku...",
+      "defaultSaveDir": "Výchozí adresář pro stahování",
+      "fetchAria": "Načíst soubor",
+      "fetch": "Stáhnout",
+      "fetchFailed": "Nepodařilo se načíst: {{error}}",
+      "acceptFailed": "Nepodařilo se přijmout soubor: {{error}}",
+      "listTitle": "Převody",
+      "listEmpty": "Zatím žádné převody.",
+      "kind": {
+        "send": "Odeslat",
+        "fetch": "Stáhnout"
+      },
+      "status": {
+        "active": "Probíhající",
+        "completed": "Dokončeno",
+        "failed": "Nezdařilo se",
+        "cancelled": "Zrušeno"
+      },
+      "cancelAria": "Zrušit převod {{file}}",
+      "cancel": "Zrušit",
+      "retryAria": "Zkusit převod {{file}}",
+      "retry": "Zkusit znovu",
+      "revealAria": "Odhalit {{file}} ve složce",
+      "reveal": "Odhalit ve složce",
+      "requestEnableAria": "Požádat, aby tento partner umožnil příjem souboru",
+      "requestEnable": "Požádat o povolení",
+      "requestEnableSent": "Požádal kolegu, aby povolil příjem souboru.",
+      "requestEnableRateLimited": "Nedávno jsi již odeslal/a žádost. Zkuste to znovu později.",
+      "requestEnableFailed": "Žádost o povolení se nepodařilo odeslat: {{error}}",
+      "offerToast": "Příchozí nabídka souboru: {{file}}",
+      "copyInstructionsAria": "Kopírovat pokyny pro povolení příjmu souboru",
+      "copyInstructions": "Kopírovat pokyny",
+      "instructionsCopied": "Pokyny zkopírovány."
+    },
+    "enableRequest": {
+      "title": "Povolit příjem souborů?",
+      "body": "{{peer}} tě požádal/a o zapnutí příjmu souboru rncp, aby ti mohl/a poslat soubor.",
+      "enableAsk": "Povolit (pokaždé se zeptat)",
+      "enableAskAria": "Povolit nabídky příchozích souborů a požádat před přijetím",
+      "enableAllow": "Povolit a povolit tuto identitu",
+      "enableAllowAria": "Povolit nabídky příchozích souborů a povolit tomuto odesílateli",
+      "notNow": "Nyní ne",
+      "notNowAria": "Zamítnout žádost o povolení",
+      "dontAsk": "Neptat se znovu od tohoto kolegy",
+      "dontAskAria": "Trvale zamítnout žádosti o povolení od tohoto kolegy",
+      "enabled": "Příjem souboru je povolen.",
+      "enableFailed": "Nelze povolit příjem souboru: {{error}}",
+      "saveDirRequired": "Chcete-li povolit příjem, vyberte složku pro uložení.",
+      "lxmfBody": "Povolte příjem souborů (rncp), pokud používáte mesh-client: Remote → Settings → Inbound file offers. Nebo spusťte rncp/rncp-rs v režimu poslechu."
+    },
+    "saved": {
+      "labelPlaceholder": "Označení",
+      "labelAria": "Uložený adresní štítek",
+      "labelRequired": "Zadejte štítek pro tuto adresu.",
+      "hashPlaceholder": "Cílový hash (32 hexadecimálních znaků)",
+      "hashAria": "Uložený hash cílové adresy",
+      "serviceAria": "Uložená adresní služba",
+      "serviceRnsh": "Shell (rnsh)",
+      "serviceRncp": "Převod (rncp)",
+      "saveAria": "Uložit adresu",
+      "add": "Přidat",
+      "saveFailed": "Nepodařilo se uložit adresu: {{error}}",
+      "empty": "Zatím nejsou uloženy žádné adresy.",
+      "editAria": "Upravit uloženou adresu {{label}}",
+      "deleteAria": "Smazat uloženou adresu {{label}}"
+    },
+    "settings": {
+      "applyFailed": "Nepodařilo se použít nastavení: {{error}}",
+      "inboundTitle": "Příchozí přenosy souborů",
+      "inboundMode": {
+        "off": "Vypnuto",
+        "ask": "Dotázat",
+        "allow_all_listed": "Povolit pouze uvedené"
+      },
+      "allowFetch": "Povolit vzdáleným kolegům načítat soubory ode mě",
+      "chooseFetchJailAria": "Vyberte složku, kterou mohou vzdálení vrstevníci načíst z",
+      "chooseFetchJail": "Vyberte složku pro načtení...",
+      "noFetchJail": "Nebyla vybrána žádná složka pro načt",
+      "overwrite": "Přepsat existující soubory při přijetí",
+      "maxSizeInfo": "Maximální velikost příchozího souboru: {{size}}",
+      "allowBlockListTitle": "Povolit / blokovat seznam",
+      "allowBlockListEmpty": "Zatím nejsou uložena žádná rozhodnutí o povolení/blokování. U nabídky příchozího souboru použijte „Vždy povolit“ nebo „Vždy blokovat“.",
+      "decision": {
+        "allow": "Povoleno",
+        "block": "Blokován"
+      },
+      "removePolicyAria": "Odstranit uložené rozhodnutí pro {{label}}",
+      "reliabilityTitle": "Spolehlivost",
+      "autoReconnectShell": "Automaticky znovu připojte vzdálený shell po neočekávaném odpojení",
+      "autoRetryTransfer": "Automaticky opakovat neúspěšné přenosy",
+      "identityTitle": "Moje totožnost"
+    }
   }
 }

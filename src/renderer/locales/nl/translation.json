@@ -565,7 +565,23 @@
     "floodScopeOverrideLabel": "Overstromingsbereik voor dit bericht",
     "floodScopeOverrideAria": "Overschrijving van overstromingsbereik per bericht",
     "floodScopeOverrideDefault": "Standaardbereik",
-    "floodScopeOverrideUnscoped": "Niet-bereikt"
+    "floodScopeOverrideUnscoped": "Niet-bereikt",
+    "rncp": {
+      "sendFile": "Bestand sturen",
+      "sendFileAria": "Bestand verzenden naar {{name}} via rncp",
+      "pendingOffersBadgeAria_one": "{{count}} in afwachting van aanbieding voor inkomende bestanden van deze collega",
+      "pendingOffersBadgeAria_other": "{{count}} lopende aanbiedingen voor inkomende bestanden van deze collega",
+      "destinationLabel": "rncp destination hash",
+      "rememberAddress": "Dit adres onthouden",
+      "rememberAddressAria": "Onthoud deze rncp-bestemming voor deze collega",
+      "chooseAndSend": "Bestand kiezen en verzenden...",
+      "sending": "Versturen...",
+      "sendStarted": "{{file}} verzenden…",
+      "sendFailed": "Verzenden mislukt: {{error}}",
+      "newOfferToast": "{{peer}} wil je een bestand sturen: {{file}}",
+      "requestEnable": "Aanvraag inschakelen",
+      "requestEnableAria": "Vraag deze collega om bestandsontvangst in te schakelen"
+    }
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -612,7 +628,9 @@
     "colorAmber": "Amber",
     "colorRed": "Rood",
     "colorPurple": "Paars",
-    "delete": "Verwijderen"
+    "delete": "Verwijderen",
+    "copy": "Kopiëren",
+    "copied": "Gekopieerd"
   },
   "configApplyNotice": {
     "persistNote": "Toegepaste instellingen worden opgeslagen in het flashgeheugen van het apparaat en blijven bestaan tijdens het opnieuw opstarten.",
@@ -4167,7 +4185,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "Netwerktopologie",
     "network": "Netwerk",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "Op afstand"
   },
   "takServerPanel": {
     "title": "TAK-server",
@@ -4463,5 +4482,198 @@
     "confirmContactImportTitle": "Contactpersoon importeren?",
     "confirmContactImportBody": "{{name}} van een externe link toevoegen aan uw Reticulum-contacten?",
     "confirmContactImportAction": "Contactpersoon importeren"
+  },
+  "reticulumRemote": {
+    "navAria": "Secties op afstand",
+    "sidecarNotRunning": "Start de Reticulum-stack om de externe shell en bestandsoverdracht te gebruiken.",
+    "sections": {
+      "shell": "Schelp",
+      "transfer": "Overdracht",
+      "saved": "Opgeslagen",
+      "settings": "Instellingen"
+    },
+    "errors": {
+      "invalidAddress": "Voer een geldige hex-bestemmingshash van 32 tekens in."
+    },
+    "reasons": {
+      "pathConstrained": "Pad is beperkt (lage bandbreedte)",
+      "pathUnknown": "Padsnelheid is onbekend",
+      "notAnnounced": "Bestemming is niet aangekondigd",
+      "timeout": "Er is een time-out van aanvraag",
+      "notAllowed": "Niet-toegestaan",
+      "versionMismatch": "Versie op afstand komt niet overeen",
+      "stagingFailed": "Kan inkomend bestand niet faseren",
+      "cancelled": "Geannuleerd",
+      "rejected": "Rejected",
+      "error": "Fout"
+    },
+    "pathCapability": {
+      "checking": "Pad controleren...",
+      "hops_one": "{{count}} hop",
+      "hops_other": "{{count}} hop",
+      "speed": {
+        "high": "Snel pad",
+        "constrained": "Beperkt pad",
+        "mixed": "gemengd pad",
+        "unknown": "Onbekend pad"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "Bestemmingshash (32 hex-tekens)",
+      "addressAria": "rnsh bestemming hash",
+      "selectSavedAddress": "Gebruik opgeslagen adres {{label}}",
+      "connectAria": "Sluit de externe behuizing aan",
+      "connect": "Verbinden",
+      "connecting": "Verbinden…",
+      "connectFailed": "Kan geen verbinding maken: {{error}}",
+      "maxSessions": "Maximaal {{count}} shell-sessies bereikt.",
+      "focusSession": "Overschakelen naar sessie {{address}}",
+      "closeSession": "Sessie {{address}} sluiten",
+      "emptyState": "Geen actieve externe shell-sessies. Voer hierboven een bestemmingshash in om verbinding te maken.",
+      "status": {
+        "connecting": "Verbinden…",
+        "active": "Verbonden",
+        "closed": "Gesloten",
+        "error": "Fout"
+      },
+      "reconnectAria": "Sluit deze sessie opnieuw aan",
+      "reconnect": "Opnieuw verbinding maken",
+      "disconnectAria": "Verbreek deze sessie",
+      "disconnect": "Verbinding verbreken",
+      "reconnectExhausted": "Automatisch opnieuw verbinden opgegeven na het bereiken van de limiet voor opnieuw proberen. Externe sessiestatus is verloren gegaan.",
+      "reconnectingBanner": "Automatisch opnieuw verbinden (poging {{attempt}} van {{max}}). Externe sessiestatus is verloren gegaan.",
+      "fingerprintTitle": "Identiteit op afstand bevestigen",
+      "fingerprintMessage": "Verbinding maken met {{address}}. Gemelde identiteit: {{identity}}. Vingerafdruk: {{fingerprint}}. Controleer of dit de identiteit is die je verwacht voordat je doorgaat.",
+      "unknownIdentity": "onbekende identiteit",
+      "unknownFingerprint": "onbekende vingerafdruk",
+      "fingerprintConfirm": "Verbinden"
+    },
+    "transfer": {
+      "myIdentity": "Mijn identiteit:",
+      "copyIdentityAria": "Kopieer mijn identiteitshash",
+      "myReceiveDest": "Mijn rncp-ontvangstbestemming:",
+      "copyReceiveDestAria": "Kopieer mijn rncp-ontvangstbestemming",
+      "pendingOffersTitle": "In afwachting van inkomende bestanden",
+      "pendingOffersBadgeAria_one": "{{count}} aanbieding voor inkomend bestand in behandeling",
+      "pendingOffersBadgeAria_other": "{{count}} in afwachting van aanbiedingen voor inkomende bestanden",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "{{file}} accepteren",
+      "accept": "Aanvaarden",
+      "rejectAria": "Afwijzen {{file}}",
+      "reject": "Afwijzen",
+      "alwaysAllowAria": "Sta deze afzender altijd toe voor {{file}}",
+      "alwaysAllow": "Altijd toestaan",
+      "alwaysBlockAria": "Blokkeer deze afzender altijd voor {{file}}",
+      "alwaysBlock": "Altijd blokkeren",
+      "alwaysAllowSaved": "Afzender toegevoegd aan de toestemmingslijst.",
+      "alwaysBlockSaved": "Afzender toegevoegd aan de blokkeerlijst.",
+      "modeSendAria": "Wisselen naar modus:",
+      "modeSend": "Verzenden",
+      "modeFetchAria": "Overschakelen naar ophaalmodus",
+      "modeFetch": "Fetch",
+      "destinationPlaceholder": "Bestemmingshash (32 hex-tekens)",
+      "destinationAria": "rncp destination hash",
+      "notAllowedHint": "Overboekingen zijn niet beschikbaar op dit pad: {{reason}}",
+      "chooseFileAria": "Kies een lokaal bestand om te verzenden",
+      "chooseFile": "Kies bestand…",
+      "noFileChosen": "Geen bestand gekozen",
+      "sendAria": "Bestand verzenden",
+      "send": "Versturen",
+      "sendFailed": "Kan niet verzenden: {{error}}",
+      "remotePathPlaceholder": "Bestandspad op afstand",
+      "remotePathAria": "Extern bestandspad dat moet worden opgehaald",
+      "chooseSaveDirAria": "Kies een lokale map waarin u wilt opslaan",
+      "chooseSaveDir": "Kies map voor opslaan...",
+      "defaultSaveDir": "Standaard downloadmap",
+      "fetchAria": "Bestand ophalen",
+      "fetch": "Ophalen",
+      "fetchFailed": "Kan niet worden opgehaald: {{error}}",
+      "acceptFailed": "Kan bestand niet accepteren: {{error}}",
+      "listTitle": "Overdrachten",
+      "listEmpty": "Nog geen overdrachten.",
+      "kind": {
+        "send": "Versturen",
+        "fetch": "Ophalen"
+      },
+      "status": {
+        "active": "In uitvoering",
+        "completed": "Voltooid",
+        "failed": "Mislukt",
+        "cancelled": "Geannuleerd"
+      },
+      "cancelAria": "Overdracht van {{file}} annuleren",
+      "cancel": "Annuleren",
+      "retryAria": "Probeer de overdracht van {{file}} opnieuw",
+      "retry": "Opnieuw proberen",
+      "revealAria": "Onthul {{file}} in de map",
+      "reveal": "Onthullen in map",
+      "requestEnableAria": "Verzoek dat deze peer het ontvangen van bestanden inschakelt",
+      "requestEnable": "Vraag inschakeling aan",
+      "requestEnableSent": "De peer gevraagd om het ontvangen van bestanden in te schakelen.",
+      "requestEnableRateLimited": "U heeft onlangs al een verzoek verzonden. Probeer het later opnieuw.",
+      "requestEnableFailed": "Kon het inschakelverzoek niet verzenden: {{error}}",
+      "offerToast": "Inkomende bestandsaanbieding: {{file}}",
+      "copyInstructionsAria": "Kopieer instructies voor het inschakelen van bestandsontvangst",
+      "copyInstructions": "Kopieer instructies",
+      "instructionsCopied": "Instructies gekopieerd."
+    },
+    "enableRequest": {
+      "title": "Bestandsontvangst inschakelen?",
+      "body": "{{peer}} heeft je gevraagd om de ontvangst van rncp-bestanden in te schakelen, zodat ze je een bestand kunnen sturen.",
+      "enableAsk": "Inschakelen (elke keer vragen)",
+      "enableAskAria": "Schakel aanbiedingen voor inkomende bestanden in en vraag ernaar voordat u deze accepteert",
+      "enableAllow": "Schakel deze identiteit in en sta deze toe",
+      "enableAllowAria": "Schakel aanbiedingen voor inkomende bestanden in en sta deze afzender toe",
+      "notNow": "Niet nu",
+      "notNowAria": "Inschakelverzoek afwijzen",
+      "dontAsk": "Vraag het niet opnieuw aan deze collega",
+      "dontAskAria": "Wijs inschakelverzoeken van deze peer definitief af",
+      "enabled": "Bestandsontvangst is ingeschakeld.",
+      "enableFailed": "Kon het ontvangen van bestanden niet inschakelen: {{error}}",
+      "saveDirRequired": "Kies een opslagmap om ontvangst in te schakelen.",
+      "lxmfBody": "Schakel bestandsontvangst (rncp) in als u mesh-client gebruikt: Extern → Instellingen → Inkomende bestandsaanbiedingen. Of voer rncp/rncp-rs uit in de luistermodus."
+    },
+    "saved": {
+      "labelPlaceholder": "Label",
+      "labelAria": "Opgeslagen adreslabel",
+      "labelRequired": "Voer een label in voor dit adres.",
+      "hashPlaceholder": "Bestemmingshash (32 hexadecimale tekens)",
+      "hashAria": "Opgeslagen adresbestemmingshash",
+      "serviceAria": "Opgeslagen adresservice",
+      "serviceRnsh": "Shell (rnsh)",
+      "serviceRncp": "Overdracht (rncp)",
+      "saveAria": "Adres opslaan",
+      "add": "Toevoegen",
+      "saveFailed": "Kan adres niet opslaan: {{error}}",
+      "empty": "Nog geen opgeslagen adressen.",
+      "editAria": "Bewerk opgeslagen adres {{label}}",
+      "deleteAria": "Verwijder opgeslagen adres {{label}}"
+    },
+    "settings": {
+      "applyFailed": "Kan instelling niet toepassen: {{error}}",
+      "inboundTitle": "Inkomende bestandsoverdrachten",
+      "inboundMode": {
+        "off": "Uit",
+        "ask": "Vragen",
+        "allow_all_listed": "Alleen vermeld toestaan"
+      },
+      "allowFetch": "Sta externe collega's toe bestanden van mij op te halen",
+      "chooseFetchJailAria": "Kies de map waaruit externe peers mogen ophalen",
+      "chooseFetchJail": "Kies map ophalen...",
+      "noFetchJail": "Geen ophaalmap gekozen",
+      "overwrite": "Bestaande bestanden bij ontvangst overschrijven",
+      "maxSizeInfo": "Maximale bestandsgrootte voor inkomend verkeer: {{size}}",
+      "allowBlockListTitle": "Lijst toestaan/blokkeren",
+      "allowBlockListEmpty": "Er zijn nog geen opgeslagen beslissingen over toestaan/blokkeren. Gebruik 'Altijd toestaan' of 'Altijd blokkeren' bij een aanbieding voor inkomende bestanden.",
+      "decision": {
+        "allow": "Toegestaan",
+        "block": "Geblokkeerd"
+      },
+      "removePolicyAria": "Opgeslagen beslissing voor {{label}} verwijderen",
+      "reliabilityTitle": "Betrouwbaarheid",
+      "autoReconnectShell": "Maak automatisch opnieuw verbinding met de externe shell na een onverwachte verbinding",
+      "autoRetryTransfer": "Probeer mislukte overdrachten automatisch opnieuw",
+      "identityTitle": "Mijn identiteit"
+    }
   }
 }

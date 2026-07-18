@@ -565,7 +565,23 @@
     "floodScopeOverrideLabel": "이 메시지의 플러드 범위",
     "floodScopeOverrideAria": "메시지별 플러드 범위 재정의",
     "floodScopeOverrideDefault": "기본 범위",
-    "floodScopeOverrideUnscoped": "범위가 지정되지 않음"
+    "floodScopeOverrideUnscoped": "범위가 지정되지 않음",
+    "rncp": {
+      "sendFile": "파일 보내기",
+      "sendFileAria": "rncp를 통해 {{name}}에 파일 보내기",
+      "pendingOffersBadgeAria_one": "{{count}} 이 피어로부터 인바운드 파일 제공을 보류 중입니다.",
+      "pendingOffersBadgeAria_other": "{{count}} 이 피어로부터 보류 중인 인바운드 파일 제안",
+      "destinationLabel": "rncp 대상 해시",
+      "rememberAddress": "이 주소를 기억하세요",
+      "rememberAddressAria": "이 피어에 대한 이 rncp 대상을 기억하십시오.",
+      "chooseAndSend": "파일을 선택하고 보내세요...",
+      "sending": "배상…",
+      "sendStarted": "{{file}} 보내는 중…",
+      "sendFailed": "전송 실패: {{error}}",
+      "newOfferToast": "{{peer}}이(가) 당신에게 파일을 보내려고 합니다: {{file}}",
+      "requestEnable": "활성화 요청",
+      "requestEnableAria": "이 피어에게 파일 수신을 활성화하도록 요청"
+    }
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -612,7 +628,9 @@
     "colorAmber": "애쉬틴",
     "colorRed": "빨간색",
     "colorPurple": "자색",
-    "delete": "삭제"
+    "delete": "삭제",
+    "copy": "복사",
+    "copied": "복사됨"
   },
   "configApplyNotice": {
     "persistNote": "적용된 설정은 장치의 플래시 메모리에 저장되며 재부팅 시에도 지속됩니다.",
@@ -4167,7 +4185,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "네트워크 토폴로지",
     "network": "회로망",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "원격"
   },
   "takServerPanel": {
     "title": "TAK 서버",
@@ -4463,5 +4482,198 @@
     "confirmContactImportTitle": "연락처를 가져오시겠습니까?",
     "confirmContactImportBody": "외부 링크의 {{name}}을(를) Reticulum 연락처에 추가하시겠습니까?",
     "confirmContactImportAction": "연락처 가져오기"
+  },
+  "reticulumRemote": {
+    "navAria": "원격 섹션",
+    "sidecarNotRunning": "원격 셸 및 파일 전송을 사용하려면 Reticulum 스택을 시작합니다.",
+    "sections": {
+      "shell": "껍데기",
+      "transfer": "옮기다",
+      "saved": "저장됨",
+      "settings": "설정"
+    },
+    "errors": {
+      "invalidAddress": "유효한 32자의 16진수 대상 해시를 입력하세요."
+    },
+    "reasons": {
+      "pathConstrained": "경로가 제한됨(낮은 대역폭)",
+      "pathUnknown": "경로 속도를 알 수 없습니다.",
+      "notAnnounced": "목적지는 발표되지 않았습니다",
+      "timeout": "요청 시간이 초과되었습니다.",
+      "notAllowed": "허용되지 않음",
+      "versionMismatch": "원격 버전 불일치",
+      "stagingFailed": "인바운드 파일을 준비하지 못했습니다.",
+      "cancelled": "취소",
+      "rejected": "거부됨",
+      "error": "오류"
+    },
+    "pathCapability": {
+      "checking": "경로 확인 중…",
+      "hops_one": "{{count}} 홉",
+      "hops_other": "{{count}} 홉",
+      "speed": {
+        "high": "빠른 경로",
+        "constrained": "제한된 경로",
+        "mixed": "혼합 경로",
+        "unknown": "알 수 없는 경로"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "대상 해시(16진수 32자)",
+      "addressAria": "rnsh 대상 해시",
+      "selectSavedAddress": "저장된 주소 사용 {{label}}",
+      "connectAria": "원격 셸 연결",
+      "connect": "연결하다",
+      "connecting": "연결 중…",
+      "connectFailed": "연결 실패: {{error}}",
+      "maxSessions": "최대 {{count}} 셸 세션에 도달했습니다.",
+      "focusSession": "{{address}} 세션으로 전환",
+      "closeSession": "세션 닫기 {{address}}",
+      "emptyState": "활성 원격 셸 세션이 없습니다. 연결하려면 위에 대상 해시를 입력하세요.",
+      "status": {
+        "connecting": "연결 중…",
+        "active": "연결됨",
+        "closed": "닫은",
+        "error": "오류"
+      },
+      "reconnectAria": "이 세션을 다시 연결하세요",
+      "reconnect": "다시 연결",
+      "disconnectAria": "이 세션 연결 끊기",
+      "disconnect": "연결 끊기",
+      "reconnectExhausted": "재시도 제한에 도달한 후 자동 재연결이 중단되었습니다. 원격 세션 상태가 손실되었습니다.",
+      "reconnectingBanner": "자동 재연결 중({{max}} 중 {{attempt}} 시도) 원격 세션 상태가 손실되었습니다.",
+      "fingerprintTitle": "원격 신원 확인",
+      "fingerprintMessage": "{{address}}에 연결 중입니다. 신고된 신원: {{identity}}. 지문: {{fingerprint}}. 계속하기 전에 예상한 ID가 맞는지 확인하세요.",
+      "unknownIdentity": "알 수 없는 신원",
+      "unknownFingerprint": "알 수 없는 지문",
+      "fingerprintConfirm": "연결하다"
+    },
+    "transfer": {
+      "myIdentity": "내 신분:",
+      "copyIdentityAria": "내 신원 해시 복사",
+      "myReceiveDest": "내 rncp 수신 대상:",
+      "copyReceiveDestAria": "내 rncp 수신 대상 복사",
+      "pendingOffersTitle": "보류 중인 인바운드 파일",
+      "pendingOffersBadgeAria_one": "{{count}} 인바운드 파일 제공 보류 중",
+      "pendingOffersBadgeAria_other": "{{count}} 보류 중인 인바운드 파일 제안",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "{{file}} 수락",
+      "accept": "수용하다",
+      "rejectAria": "거부 {{file}}",
+      "reject": "거부하다",
+      "alwaysAllowAria": "{{file}}에 대해 이 발신자를 항상 허용합니다.",
+      "alwaysAllow": "항상 허용",
+      "alwaysBlockAria": "{{file}}에 대해 이 발신자를 항상 차단합니다.",
+      "alwaysBlock": "항상 차단",
+      "alwaysAllowSaved": "보낸 사람이 허용 목록에 추가되었습니다.",
+      "alwaysBlockSaved": "보낸 사람이 차단 목록에 추가되었습니다.",
+      "modeSendAria": "전송 모드로 전환",
+      "modeSend": "보내다",
+      "modeFetchAria": "가져오기 모드로 전환",
+      "modeFetch": "술책",
+      "destinationPlaceholder": "대상 해시(16진수 32자)",
+      "destinationAria": "rncp 대상 해시",
+      "notAllowedHint": "다음 경로에서는 환승이 불가능합니다: {{reason}}",
+      "chooseFileAria": "보낼 로컬 파일을 선택하세요",
+      "chooseFile": "파일 선택…",
+      "noFileChosen": "선택한 파일이 없습니다.",
+      "sendAria": "파일 보내기",
+      "send": "보내다",
+      "sendFailed": "전송 실패: {{error}}",
+      "remotePathPlaceholder": "원격 파일 경로",
+      "remotePathAria": "가져올 원격 파일 경로",
+      "chooseSaveDirAria": "저장할 로컬 폴더를 선택하세요.",
+      "chooseSaveDir": "저장 폴더 선택…",
+      "defaultSaveDir": "기본 다운로드 폴더",
+      "fetchAria": "파일 가져오기",
+      "fetch": "술책",
+      "fetchFailed": "가져오지 못했습니다: {{error}}",
+      "acceptFailed": "파일을 수락하지 못했습니다: {{error}}",
+      "listTitle": "환승",
+      "listEmpty": "아직 전송이 없습니다.",
+      "kind": {
+        "send": "보내다",
+        "fetch": "술책"
+      },
+      "status": {
+        "active": "진행 중",
+        "completed": "완전한",
+        "failed": "실패한",
+        "cancelled": "취소"
+      },
+      "cancelAria": "{{file}} 이전 취소",
+      "cancel": "취소",
+      "retryAria": "{{file}} 전송 재시도",
+      "retry": "다시 해 보다",
+      "revealAria": "폴더에 {{file}} 표시",
+      "reveal": "폴더에 공개",
+      "requestEnableAria": "이 피어가 파일 수신을 활성화하도록 요청",
+      "requestEnable": "활성화 요청",
+      "requestEnableSent": "피어에게 파일 수신을 활성화하도록 요청했습니다.",
+      "requestEnableRateLimited": "최근에 이미 요청을 보냈습니다. 나중에 다시 시도하세요.",
+      "requestEnableFailed": "활성화 요청을 보낼 수 없습니다: {{error}}",
+      "offerToast": "수신 파일 제공: {{file}}",
+      "copyInstructionsAria": "파일 수신 활성화를 위한 지침 복사",
+      "copyInstructions": "지침 복사",
+      "instructionsCopied": "지침이 복사되었습니다."
+    },
+    "enableRequest": {
+      "title": "파일 수신을 활성화하시겠습니까?",
+      "body": "{{peer}}이(가) 파일을 보낼 수 있도록 rncp 파일 수신을 켜달라고 요청했습니다.",
+      "enableAsk": "활성화(매번 확인)",
+      "enableAskAria": "인바운드 파일 제안을 활성화하고 수락하기 전에 물어보십시오.",
+      "enableAllow": "이 ID 활성화 및 허용",
+      "enableAllowAria": "인바운드 파일 제공을 활성화하고 이 발신자를 허용합니다.",
+      "notNow": "지금은 아님",
+      "notNowAria": "활성화 요청 닫기",
+      "dontAsk": "이 피어에게 다시 묻지 않음",
+      "dontAskAria": "이 피어의 활성화 요청을 영구적으로 무시합니다.",
+      "enabled": "파일 수신이 활성화되었습니다.",
+      "enableFailed": "파일 수신을 활성화할 수 없습니다: {{error}}",
+      "saveDirRequired": "수신을 활성화하려면 저장 폴더를 선택하세요.",
+      "lxmfBody": "mesh-client를 사용하는 경우 파일 수신(rncp)을 활성화하십시오: 원격 → 설정 → 인바운드 파일 제공. 또는 청취 모드에서 rncp/rncp-rs를 실행하십시오."
+    },
+    "saved": {
+      "labelPlaceholder": "상표",
+      "labelAria": "저장된 주소 라벨",
+      "labelRequired": "이 주소에 대한 라벨을 입력하세요.",
+      "hashPlaceholder": "대상 해시(16진수 32자)",
+      "hashAria": "저장된 주소 대상 해시",
+      "serviceAria": "저장된 주소 서비스",
+      "serviceRnsh": "쉘(rnsh)",
+      "serviceRncp": "전송(rncp)",
+      "saveAria": "주소 저장",
+      "add": "추가하다",
+      "saveFailed": "주소 저장 실패: {{error}}",
+      "empty": "아직 저장된 주소가 없습니다.",
+      "editAria": "저장된 주소 수정 {{label}}",
+      "deleteAria": "저장된 주소 삭제 {{label}}"
+    },
+    "settings": {
+      "applyFailed": "설정을 적용하지 못했습니다: {{error}}",
+      "inboundTitle": "인바운드 파일 전송",
+      "inboundMode": {
+        "off": "끄다",
+        "ask": "묻다",
+        "allow_all_listed": "나열된 것만 허용"
+      },
+      "allowFetch": "원격 피어가 나에게서 파일을 가져오도록 허용",
+      "chooseFetchJailAria": "원격 피어가 가져올 수 있는 폴더를 선택하세요.",
+      "chooseFetchJail": "가져오기 폴더 선택…",
+      "noFetchJail": "선택한 가져오기 폴더가 없습니다.",
+      "overwrite": "수신 시 기존 파일 덮어쓰기",
+      "maxSizeInfo": "최대 인바운드 파일 크기: {{size}}",
+      "allowBlockListTitle": "허용/차단 목록",
+      "allowBlockListEmpty": "아직 저장된 허용/차단 결정이 없습니다. 인바운드 파일 제안에 대해 \"항상 허용\" 또는 \"항상 차단\"을 사용하십시오.",
+      "decision": {
+        "allow": "허용된",
+        "block": "막힌"
+      },
+      "removePolicyAria": "{{label}}에 대해 저장된 결정 삭제",
+      "reliabilityTitle": "신뢰할 수 있음",
+      "autoReconnectShell": "예기치 않은 연결 끊김 후 원격 셸을 자동으로 다시 연결",
+      "autoRetryTransfer": "실패한 전송을 자동으로 재시도",
+      "identityTitle": "나의 정체성"
+    }
   }
 }

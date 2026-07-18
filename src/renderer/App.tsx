@@ -78,6 +78,7 @@ import LanguageSelector from './components/LanguageSelector';
 import { MeshcoreWaitingMessagesHeaderIndicator } from './components/MeshcoreWaitingMessagesHeaderIndicator';
 import { ProtocolAutoConnectCoordinator } from './components/ProtocolAutoConnectCoordinator';
 import { ProtocolSwitcher } from './components/ProtocolSwitcher';
+import { RncpEnableRequestModal } from './components/remote/RncpEnableRequestModal';
 import RemoteAdminErrorNotifier from './components/RemoteAdminErrorNotifier';
 import { ReticulumStackAutostartCoordinator } from './components/ReticulumStackAutostartCoordinator';
 import Sidebar from './components/Sidebar';
@@ -132,6 +133,7 @@ import {
   ReticulumMapPanel,
   ReticulumNetworkPanel,
   ReticulumPeerListPanel,
+  ReticulumRemotePanel,
   ReticulumTopologyPanel,
   RFHistogramsPanel,
   RoomsPanel,
@@ -154,6 +156,7 @@ import {
   NODES_PANEL_INDEX,
   NOMAD_NETWORK_PANEL_INDEX,
   RADIO_TAB_PANEL_INDEX,
+  REMOTE_PANEL_INDEX,
   resolveSavedTabOnProtocolSwitch,
   RF_PANEL_INDEX,
   ROOMS_PANEL_INDEX,
@@ -461,6 +464,7 @@ export default function App() {
     <ProtocolRuntimeProvider value={runtimeMap}>
       <ToastProvider>
         <AppContent />
+        <RncpEnableRequestModal />
       </ToastProvider>
     </ProtocolRuntimeProvider>
   );
@@ -469,6 +473,18 @@ export default function App() {
 function AppContent() {
   const { t } = useTranslation();
   const { addToast } = useToast();
+  useEffect(() => {
+    const onOffer = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ file_name?: string }>).detail;
+      if (detail?.file_name) {
+        addToast(t('reticulumRemote.transfer.offerToast', { file: detail.file_name }), 'info');
+      }
+    };
+    window.addEventListener('mesh-client:rncp-offer', onOffer);
+    return () => {
+      window.removeEventListener('mesh-client:rncp-offer', onOffer);
+    };
+  }, [addToast, t]);
   const runtimes = useAllRuntimes();
   const meshtasticRuntime = runtimes.meshtastic as unknown as MeshtasticRuntime;
   const meshcoreRuntime = runtimes.meshcore as unknown as MeshcoreRuntime;
@@ -1829,6 +1845,7 @@ function AppContent() {
   const [chatTabVisited, setChatTabVisited] = useState(false);
   const [roomsTabVisited, setRoomsTabVisited] = useState(false);
   const [rrcTabVisited, setRrcTabVisited] = useState(false);
+  const [remoteTabVisited, setRemoteTabVisited] = useState(false);
   const [nomadTabVisited, setNomadTabVisited] = useState(false);
   const [peersTabVisited, setPeersTabVisited] = useState(false);
   const [appTabVisited, setAppTabVisited] = useState(false);
@@ -1845,6 +1862,7 @@ function AppContent() {
     setChatTabVisited(false);
     setRoomsTabVisited(false);
     setRrcTabVisited(false);
+    setRemoteTabVisited(false);
     setNomadTabVisited(false);
     setPeersTabVisited(false);
     setAppTabVisited(false);
@@ -1861,6 +1879,13 @@ function AppContent() {
     if (activePanelIndex === RRC_PANEL_INDEX) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- track RRC tab visit for keep-alive mount
       setRrcTabVisited(true);
+    }
+  }, [activePanelIndex]);
+
+  useEffect(() => {
+    if (activePanelIndex === REMOTE_PANEL_INDEX) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- track Remote tab visit for keep-alive mount
+      setRemoteTabVisited(true);
     }
   }, [activePanelIndex]);
 
@@ -2945,6 +2970,7 @@ function AppContent() {
                             isActive={activePanelIndex === 1}
                             protocol={protocol}
                             dmOnlyChat={capabilities.hasReticulumInterfaceConfig}
+                            hasRncpTransfer={capabilities.hasRncpTransfer}
                             showLxmfDeliveryStatus={capabilities.hasLxmfDeliveryStatus}
                             showLxmfAttachmentLine={capabilities.hasReticulumInterfaceConfig}
                             composerPayloadLimit={capabilities.lxmfPayloadLimit}
@@ -3004,6 +3030,34 @@ function AppContent() {
                               <RrcPanel
                                 isActive={
                                   activePanelIndex === RRC_PANEL_INDEX && capabilities.hasRrcPanel
+                                }
+                              />
+                            </div>
+                          </Suspense>
+                        </ErrorBoundary>
+                      )}
+                    </div>
+                    <div
+                      id={`panel-${REMOTE_PANEL_INDEX}`}
+                      role="tabpanel"
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), REMOTE_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== REMOTE_PANEL_INDEX}
+                      className="h-full w-full min-w-0"
+                    >
+                      {(activePanelIndex === REMOTE_PANEL_INDEX || remoteTabVisited) && (
+                        <ErrorBoundary>
+                          <Suspense fallback={<PanelSkeleton />}>
+                            <div
+                              className="h-full w-full min-w-0"
+                              hidden={
+                                activePanelIndex !== REMOTE_PANEL_INDEX ||
+                                !capabilities.hasReticulumRemotePanel
+                              }
+                            >
+                              <ReticulumRemotePanel
+                                isActive={
+                                  activePanelIndex === REMOTE_PANEL_INDEX &&
+                                  capabilities.hasReticulumRemotePanel
                                 }
                               />
                             </div>

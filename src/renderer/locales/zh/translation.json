@@ -565,7 +565,23 @@
     "floodScopeOverrideLabel": "此消息的泛滥范围",
     "floodScopeOverrideAria": "按消息泛洪作用域覆盖",
     "floodScopeOverrideDefault": "默认范围",
-    "floodScopeOverrideUnscoped": "未限定范围"
+    "floodScopeOverrideUnscoped": "未限定范围",
+    "rncp": {
+      "sendFile": "发送文件",
+      "sendFileAria": "通过rncp将文件发送到{{name}}",
+      "pendingOffersBadgeAria_one": "{{count}}等待来自此同行的入站文件报价",
+      "pendingOffersBadgeAria_other": "{{count}}来自此同行的待处理入站文件报价",
+      "destinationLabel": "rncp目的地哈希",
+      "rememberAddress": "记住此地址",
+      "rememberAddressAria": "记住此节点的此rncp目标",
+      "chooseAndSend": "选择文件并发送…",
+      "sending": "发送中…",
+      "sendStarted": "正在发送{{file}} …",
+      "sendFailed": "发送失败： {{error}}",
+      "newOfferToast": "{{peer}}想向您发送文件： {{file}}",
+      "requestEnable": "请求启用",
+      "requestEnableAria": "要求此同行启用文件接收"
+    }
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -612,7 +628,9 @@
     "colorAmber": "琥珀色",
     "colorRed": "红色",
     "colorPurple": "紫色",
-    "delete": "删除"
+    "delete": "删除",
+    "copy": "复制",
+    "copied": "已复制"
   },
   "configApplyNotice": {
     "persistNote": "应用的设置将保存到设备的闪存中，并在重新启动后保持不变。",
@@ -4167,7 +4185,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "网络拓扑图",
     "network": "网络",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "远方"
   },
   "takServerPanel": {
     "title": "TAK服务器",
@@ -4463,5 +4482,198 @@
     "confirmContactImportTitle": "导入联系人？",
     "confirmContactImportBody": "将外部链接中的 {{name}} 添加到您的 Reticulum 联系人中？",
     "confirmContactImportAction": "导入联系人"
+  },
+  "reticulumRemote": {
+    "navAria": "远程部分",
+    "sidecarNotRunning": "启动Reticulum堆栈以使用远程shell和文件传输。",
+    "sections": {
+      "shell": "壳体",
+      "transfer": "移交",
+      "saved": "保存成功",
+      "settings": "设置"
+    },
+    "errors": {
+      "invalidAddress": "输入有效的32个字符的十六进制目标哈希。"
+    },
+    "reasons": {
+      "pathConstrained": "路径受限（低带宽）",
+      "pathUnknown": "路径速度未知",
+      "notAnnounced": "目的地尚未公布",
+      "timeout": "请求超时",
+      "notAllowed": "不允许",
+      "versionMismatch": "远程版本不匹配",
+      "stagingFailed": "暂存入站文件失败",
+      "cancelled": "已取消",
+      "rejected": "已拒绝",
+      "error": "错误"
+    },
+    "pathCapability": {
+      "checking": "正在检查路径…",
+      "hops_one": "{{count}}跳",
+      "hops_other": "{{count}}跳",
+      "speed": {
+        "high": "快速路径",
+        "constrained": "受限路径",
+        "mixed": "混合路径",
+        "unknown": "未知路径"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "目标哈希（ 32个十六进制字符）",
+      "addressAria": "rnsh目的地哈希",
+      "selectSavedAddress": "使用已保存的地址{{label}}",
+      "connectAria": "连接远程外壳",
+      "connect": "连接",
+      "connecting": "正在连接...",
+      "connectFailed": "连接失败： {{error}}",
+      "maxSessions": "已达到最大{{count}} shell会话数。",
+      "focusSession": "切换到会话{{address}}",
+      "closeSession": "关闭会话{{address}}",
+      "emptyState": "没有活动的远程shell会话。在上面输入目标哈希以进行连接。",
+      "status": {
+        "connecting": "正在连接...",
+        "active": "已連線",
+        "closed": "已关闭",
+        "error": "错误"
+      },
+      "reconnectAria": "重新连接此会话",
+      "reconnect": "重新连接",
+      "disconnectAria": "断开此会话的连接",
+      "disconnect": "断开连接",
+      "reconnectExhausted": "达到重试限制后，自动重新连接放弃。远程会话状态已丢失。",
+      "reconnectingBanner": "自动重新连接（尝试{{attempt}}/{{max}} ）。远程会话状态已丢失。",
+      "fingerprintTitle": "确认远程身份",
+      "fingerprintMessage": "正在连接至{{address}}。举报身份： {{identity}}。指纹： {{fingerprint}}。请确认这是您期望的身份，然后再继续操作。",
+      "unknownIdentity": "未知身份",
+      "unknownFingerprint": "未知指纹",
+      "fingerprintConfirm": "连接"
+    },
+    "transfer": {
+      "myIdentity": "我的身份：",
+      "copyIdentityAria": "复制我的身份信息哈希",
+      "myReceiveDest": "我的rncp接收目的地：",
+      "copyReceiveDestAria": "复制我的rncp接收目的地",
+      "pendingOffersTitle": "待处理的入站文件",
+      "pendingOffersBadgeAria_one": "{{count}}待处理入站文件报价",
+      "pendingOffersBadgeAria_other": "{{count}}待处理入站文件报价",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "接受{{file}}",
+      "accept": "接受",
+      "rejectAria": "拒绝{{file}}",
+      "reject": "不同意",
+      "alwaysAllowAria": "始终允许此发件人进入{{file}}",
+      "alwaysAllow": "始终允许",
+      "alwaysBlockAria": "始终屏蔽此发件人{{file}}",
+      "alwaysBlock": "总是阻止",
+      "alwaysAllowSaved": "发件人已添加到允许列表。",
+      "alwaysBlockSaved": "发件人已添加到阻止列表。",
+      "modeSendAria": "切换到发送模式",
+      "modeSend": "傳送",
+      "modeFetchAria": "切换到获取模式",
+      "modeFetch": "获取",
+      "destinationPlaceholder": "目标哈希（ 32个十六进制字符）",
+      "destinationAria": "rncp目的地哈希",
+      "notAllowedHint": "以下路径不提供接送服务： {{reason}}",
+      "chooseFileAria": "选择要发送的本地文件",
+      "chooseFile": "选择文件",
+      "noFileChosen": "未選擇檔案",
+      "sendAria": "发送文件",
+      "send": "傳送",
+      "sendFailed": "发送失败： {{error}}",
+      "remotePathPlaceholder": "远程文件",
+      "remotePathAria": "要获取的远程文件路径",
+      "chooseSaveDirAria": "选择要保存到的本地文件夹",
+      "chooseSaveDir": "选择保存文件夹…",
+      "defaultSaveDir": "默認下載目錄",
+      "fetchAria": "提取文件",
+      "fetch": "获取",
+      "fetchFailed": "获取失败： {{error}}",
+      "acceptFailed": "无法接受文件： {{error}}",
+      "listTitle": "调职",
+      "listEmpty": "还没有转账。",
+      "kind": {
+        "send": "傳送",
+        "fetch": "获取"
+      },
+      "status": {
+        "active": "正在进行",
+        "completed": "已完成",
+        "failed": "失败",
+        "cancelled": "已取消"
+      },
+      "cancelAria": "取消转账{{file}}",
+      "cancel": "取消推荐",
+      "retryAria": "重试转账{{file}}",
+      "retry": "再次挑战",
+      "revealAria": "在文件夹中显示 {{file}}",
+      "reveal": "在文件夹中显示",
+      "requestEnableAria": "请求此对等体启用文件接收",
+      "requestEnable": "请求启用",
+      "requestEnableSent": "要求对等端启用文件接收。",
+      "requestEnableRateLimited": "您最近已经发送了申请。请稍后重试。",
+      "requestEnableFailed": "无法发送启用请求： {{error}}",
+      "offerToast": "传入文件报价： {{file}}",
+      "copyInstructionsAria": "复制启用文件接收的说明",
+      "copyInstructions": "复制说明",
+      "instructionsCopied": "说明已复制。"
+    },
+    "enableRequest": {
+      "title": "启用文件接收？",
+      "body": "{{peer}}要求您开启rncp文件接收功能，以便他们向您发送文件。",
+      "enableAsk": "启用（每次询问）",
+      "enableAskAria": "启用入站文件报价并在接受前询问",
+      "enableAllow": "启用和允许此标识",
+      "enableAllowAria": "启用入站文件优惠并允许此发件人",
+      "notNow": "立即购买",
+      "notNowAria": "关闭启用请求",
+      "dontAsk": "不再询问此同行",
+      "dontAskAria": "永久驳回来自此同行的启用请求",
+      "enabled": "文件接收已启用。",
+      "enableFailed": "无法启用文件接收： {{error}}",
+      "saveDirRequired": "选择一个保存文件夹以启用接收。",
+      "lxmfBody": "如果您使用mesh-client ：远程→设置→入站文件提供，请启用文件接收（ rncp ）。或者在监听模式下运行rncp/rncp-rs。"
+    },
+    "saved": {
+      "labelPlaceholder": "标号",
+      "labelAria": "已保存的地址标签",
+      "labelRequired": "输入此地址的标签。",
+      "hashPlaceholder": "目标哈希（ 32个十六进制字符）",
+      "hashAria": "已保存的地址目标哈希",
+      "serviceAria": "已保存的地址服务",
+      "serviceRnsh": "Shell (rnsh)",
+      "serviceRncp": "传输(rncp)",
+      "saveAria": "保存设置",
+      "add": "新增",
+      "saveFailed": "保存地址失败： {{error}}",
+      "empty": "尚未保存地址。",
+      "editAria": "编辑已保存的地址{{label}}",
+      "deleteAria": "删除保存的地址{{label}}"
+    },
+    "settings": {
+      "applyFailed": "应用设置失败： {{error}}",
+      "inboundTitle": "入站文件传输",
+      "inboundMode": {
+        "off": "关闭",
+        "ask": "發問",
+        "allow_all_listed": "仅允许列出"
+      },
+      "allowFetch": "允许远程同行从我这里获取文件",
+      "chooseFetchJailAria": "选择远程对等体可以从中获取的文件夹",
+      "chooseFetchJail": "选择提取文件夹…",
+      "noFetchJail": "未选择提取文件夹",
+      "overwrite": "在收据上覆盖现有文件",
+      "maxSizeInfo": "最大入站文件大小： {{size}}",
+      "allowBlockListTitle": "允许/阻止列表",
+      "allowBlockListEmpty": "尚未保存允许/阻止决策。在入站文件报价上使用“始终允许”或“始终阻止”。",
+      "decision": {
+        "allow": "合适",
+        "block": "封锁"
+      },
+      "removePolicyAria": "移除{{label}}的已保存决定",
+      "reliabilityTitle": "可靠性",
+      "autoReconnectShell": "意外断开连接后自动重新连接远程shell",
+      "autoRetryTransfer": "自动重试失败的传输",
+      "identityTitle": "我的身份"
+    }
   }
 }

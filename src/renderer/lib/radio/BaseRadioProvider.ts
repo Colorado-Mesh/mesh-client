@@ -143,6 +143,10 @@ export interface ProtocolCapabilities {
   hasRrcPanel: boolean;
   /** Reticulum: Administration tab (flasher, factory reset) */
   hasReticulumAdminPanel: boolean;
+  /** Reticulum: Remote tab (rnsh remote shell + rncp file transfer) */
+  hasReticulumRemotePanel: boolean;
+  /** Reticulum: rncp file transfer available from Chat DM header */
+  hasRncpTransfer: boolean;
   /** DM composer payload limit (Reticulum LXMF only) */
   lxmfPayloadLimit?: number;
 }
@@ -216,6 +220,8 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasNomadNetworkPanel: false,
   hasRrcPanel: false,
   hasReticulumAdminPanel: false,
+  hasReticulumRemotePanel: false,
+  hasRncpTransfer: false,
 };
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
@@ -288,6 +294,8 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasNomadNetworkPanel: false,
   hasRrcPanel: false,
   hasReticulumAdminPanel: false,
+  hasReticulumRemotePanel: false,
+  hasRncpTransfer: false,
 };
 
 export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
@@ -359,5 +367,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasNomadNetworkPanel: true,
   hasRrcPanel: true,
   hasReticulumAdminPanel: true,
+  hasReticulumRemotePanel: true,
+  hasRncpTransfer: true,
   lxmfPayloadLimit: RETICULUM_LXMF_PAYLOAD_LIMIT,
 };

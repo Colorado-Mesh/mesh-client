@@ -565,7 +565,23 @@
     "floodScopeOverrideLabel": "Escopo de inundação para esta mensagem",
     "floodScopeOverrideAria": "Substituição do escopo de inundação por mensagem",
     "floodScopeOverrideDefault": "Escopo padrão",
-    "floodScopeOverrideUnscoped": "Sem escopo"
+    "floodScopeOverrideUnscoped": "Sem escopo",
+    "rncp": {
+      "sendFile": "Enviar arquivo",
+      "sendFileAria": "Enviar arquivo para {{name}} via rncp",
+      "pendingOffersBadgeAria_one": "{{count}} oferta de arquivo de entrada pendente deste colega",
+      "pendingOffersBadgeAria_other": "{{count}} ofertas de arquivos de entrada pendentes deste colega",
+      "destinationLabel": "Hash de destino",
+      "rememberAddress": "Lembrar este endereço",
+      "rememberAddressAria": "Lembre-se deste destino rncp para este par",
+      "chooseAndSend": "Escolher arquivo e enviar...",
+      "sending": "Enviando…",
+      "sendStarted": "Enviando {{file}}…",
+      "sendFailed": "Falha ao enviar: {{error}}",
+      "newOfferToast": "{{peer}} deseja enviar-lhe um arquivo: {{file}}",
+      "requestEnable": "Solicitar ativação",
+      "requestEnableAria": "Peça a este colega para habilitar o recebimento de arquivos"
+    }
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -612,7 +628,9 @@
     "colorAmber": "Âmbar",
     "colorRed": "Vermelho",
     "colorPurple": "Roxo",
-    "delete": "Excluir"
+    "delete": "Excluir",
+    "copy": "Copiar",
+    "copied": "Copiado"
   },
   "configApplyNotice": {
     "persistNote": "As configurações aplicadas são salvas na memória flash do dispositivo e persistem nas reinicializações.",
@@ -4167,7 +4185,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "Topologia de rede",
     "network": "Rede",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "Remoto"
   },
   "takServerPanel": {
     "title": "Servidor TAK",
@@ -4463,5 +4482,198 @@
     "confirmContactImportTitle": "Importar contato?",
     "confirmContactImportBody": "Adicionar {{name}} de um link externo aos seus contatos do Reticulum?",
     "confirmContactImportAction": "Importar contato"
+  },
+  "reticulumRemote": {
+    "navAria": "Seções remotas",
+    "sidecarNotRunning": "Inicie a pilha Reticulum para usar o shell remoto e a transferência de arquivos.",
+    "sections": {
+      "shell": "Shell",
+      "transfer": "Transferir",
+      "saved": "Salva",
+      "settings": "Configurações"
+    },
+    "errors": {
+      "invalidAddress": "Insira um hash de destino hexadecimal válido de 32 caracteres."
+    },
+    "reasons": {
+      "pathConstrained": "O caminho é restrito (baixa largura de banda)",
+      "pathUnknown": "A velocidade do caminho é desconhecida",
+      "notAnnounced": "O destino não foi anunciado",
+      "timeout": "Solicitação expirada",
+      "notAllowed": "Não permitido",
+      "versionMismatch": "Incompatibilidade de versão remota",
+      "stagingFailed": "Falha ao preparar o arquivo de entrada",
+      "cancelled": "Cancelado",
+      "rejected": "Reprovado",
+      "error": "Erro"
+    },
+    "pathCapability": {
+      "checking": "Verificando caminho...",
+      "hops_one": "{{count}} hop",
+      "hops_other": "{{count}} saltos",
+      "speed": {
+        "high": "Caminho rápido",
+        "constrained": "Caminho restrito",
+        "mixed": "Caminho misto",
+        "unknown": "Caminho de arquivo desconhecido"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "Hash de destino (32 caracteres hexadecimais)",
+      "addressAria": "Hash de destino",
+      "selectSavedAddress": "Usar endereço salvo {{label}}",
+      "connectAria": "Conectar shell remoto",
+      "connect": "Conectar",
+      "connecting": "Conectando…",
+      "connectFailed": "Falha ao conectar: {{error}}",
+      "maxSessions": "Máximo de sessões de shell {{count}} atingidas.",
+      "focusSession": "Mudar para a sessão {{address}}",
+      "closeSession": "Fechar sessão {{address}}",
+      "emptyState": "Nenhuma sessão de shell remota ativa. Insira um hash de destino acima para se conectar.",
+      "status": {
+        "connecting": "Conectando…",
+        "active": "Conectado",
+        "closed": "Fechado",
+        "error": "Erro"
+      },
+      "reconnectAria": "Reconectar esta sessão",
+      "reconnect": "Reconectar",
+      "disconnectAria": "Desconectar esta sessão",
+      "disconnect": "Desconectar",
+      "reconnectExhausted": "A reconexão automática desistiu depois de atingir o limite de repetição. O estado da sessão remota foi perdido.",
+      "reconnectingBanner": "Reconexão automática (tentativa {{attempt}} de {{max}}). O estado da sessão remota foi perdido.",
+      "fingerprintTitle": "Confirmar identidade remota",
+      "fingerprintMessage": "Conectando-se a {{address}}. Identidade denunciada: {{identity}}. Impressão digital: {{fingerprint}}. Confirme que esta é a identidade que você espera antes de continuar.",
+      "unknownIdentity": "Identidade desconhecida",
+      "unknownFingerprint": "Padrão OTR desconhecido",
+      "fingerprintConfirm": "Conectar"
+    },
+    "transfer": {
+      "myIdentity": "A minha identidade",
+      "copyIdentityAria": "Copiar o hash da minha identidade",
+      "myReceiveDest": "Meu destino de recebimento rncp:",
+      "copyReceiveDestAria": "Copiar meu destino de recebimento rncp",
+      "pendingOffersTitle": "Arquivos de entrada pendentes",
+      "pendingOffersBadgeAria_one": "{{count}} oferta de arquivo de entrada pendente",
+      "pendingOffersBadgeAria_other": "{{count}} ofertas de arquivos de entrada pendentes",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "Aceitar {{file}}",
+      "accept": "Aceitar",
+      "rejectAria": "Rejeitar {{file}}",
+      "reject": "Rejeitar",
+      "alwaysAllowAria": "Sempre permitir este remetente para {{file}}",
+      "alwaysAllow": "Permitir sempre",
+      "alwaysBlockAria": "Sempre bloqueie este remetente para {{file}}",
+      "alwaysBlock": "Bloquear sempre",
+      "alwaysAllowSaved": "Remetente adicionado à lista de permissões.",
+      "alwaysBlockSaved": "Remetente adicionado à lista de bloqueio.",
+      "modeSendAria": "Mudar para o modo de envio",
+      "modeSend": "Enviar",
+      "modeFetchAria": "Mudar para o modo de busca",
+      "modeFetch": "Apanhador",
+      "destinationPlaceholder": "Hash de destino (32 caracteres hexadecimais)",
+      "destinationAria": "Hash de destino",
+      "notAllowedHint": "As transferências não estão disponíveis neste caminho: {{reason}}",
+      "chooseFileAria": "Escolha um arquivo local para enviar",
+      "chooseFile": "Escolher arquivo",
+      "noFileChosen": "Nenhum Arquivo Selecionado",
+      "sendAria": "Enviar arquivo",
+      "send": "Enviar",
+      "sendFailed": "Falha ao enviar: {{error}}",
+      "remotePathPlaceholder": "Arquivo Remoto",
+      "remotePathAria": "Caminho do arquivo remoto para buscar",
+      "chooseSaveDirAria": "Escolha uma pasta local para salvar",
+      "chooseSaveDir": "Escolher pasta de gravação...",
+      "defaultSaveDir": "Pasta de download padrão",
+      "fetchAria": "Buscar arquivo",
+      "fetch": "Apanhador",
+      "fetchFailed": "Falha ao buscar: {{error}}",
+      "acceptFailed": "Falha ao aceitar o arquivo: {{error}}",
+      "listTitle": "Transferências",
+      "listEmpty": "Ainda não há transferências.",
+      "kind": {
+        "send": "Enviar",
+        "fetch": "Apanhador"
+      },
+      "status": {
+        "active": "Em andamento",
+        "completed": "Concluído",
+        "failed": "Falha",
+        "cancelled": "Cancelado"
+      },
+      "cancelAria": "Cancelar transferência de {{file}}",
+      "cancel": "Cancelar",
+      "retryAria": "Repetir transferência de {{file}}",
+      "retry": "Tentar novamente",
+      "revealAria": "Revelar {{file}} na pasta",
+      "reveal": "Revelar na pasta",
+      "requestEnableAria": "Solicitar que este peer habilite o recebimento de arquivos",
+      "requestEnable": "Solicitar ativação",
+      "requestEnableSent": "Pediu ao colega para habilitar o recebimento de arquivos.",
+      "requestEnableRateLimited": "Você já enviou uma solicitação recentemente. Tente novamente mais tarde.",
+      "requestEnableFailed": "Não foi possível enviar o pedido de ativação: {{error}}",
+      "offerToast": "Oferta de arquivo recebida: {{file}}",
+      "copyInstructionsAria": "Copie as instruções para ativar o recebimento de arquivos",
+      "copyInstructions": "Copiar instruções",
+      "instructionsCopied": "Instruções copiadas."
+    },
+    "enableRequest": {
+      "title": "Habilitar recebimento de arquivos?",
+      "body": "{{peer}} pediu para você ativar o recebimento de arquivos rncp para que eles possam lhe enviar um arquivo.",
+      "enableAsk": "Ativar (pergunte sempre)",
+      "enableAskAria": "Ativar ofertas de arquivos de entrada e perguntar antes de aceitar",
+      "enableAllow": "Ativar e permitir esta identidade",
+      "enableAllowAria": "Ativar ofertas de arquivos de entrada e permitir que este remetente",
+      "notNow": "Agora não",
+      "notNowAria": "Dispensar solicitação de ativação",
+      "dontAsk": "Não pergunte novamente a este colega",
+      "dontAskAria": "Dispensar permanentemente as solicitações de habilitação deste par",
+      "enabled": "O recebimento de arquivos está ativado.",
+      "enableFailed": "Não foi possível ativar o recebimento de arquivos: {{error}}",
+      "saveDirRequired": "Escolha uma pasta de salvamento para ativar o recebimento.",
+      "lxmfBody": "Ative o recebimento de arquivos (rncp) se você usar mesh-client: Remote → Settings → Inbound file offers. Ou execute rncp/rncp-rs no modo de escuta."
+    },
+    "saved": {
+      "labelPlaceholder": "Etiqueta",
+      "labelAria": "Etiqueta de endereço guardada",
+      "labelRequired": "Insira uma etiqueta para este endereço.",
+      "hashPlaceholder": "Hash de destino (32 caracteres hexadecimais)",
+      "hashAria": "Hash de destino do endereço salvo",
+      "serviceAria": "Serviço de endereço salvo",
+      "serviceRnsh": "Shell (rnsh)",
+      "serviceRncp": "Transferência (rncp)",
+      "saveAria": "Salvar Endereço",
+      "add": "Adicionar",
+      "saveFailed": "Falha ao guardar endereço: {{error}}",
+      "empty": "Ainda não há endereços salvos.",
+      "editAria": "Editar endereço salvo {{label}}",
+      "deleteAria": "Excluir endereço salvo {{label}}"
+    },
+    "settings": {
+      "applyFailed": "Falha ao aplicar a configuração: {{error}}",
+      "inboundTitle": "Transferências de arquivos de entrada",
+      "inboundMode": {
+        "off": "Desligado",
+        "ask": "Pergunte",
+        "allow_all_listed": "Permitir apenas os listados"
+      },
+      "allowFetch": "Permitir que colegas remotos busquem arquivos de mim",
+      "chooseFetchJailAria": "Escolha a pasta que os pares remotos podem buscar",
+      "chooseFetchJail": "Escolher pasta de busca...",
+      "noFetchJail": "Nenhuma pasta de busca escolhida",
+      "overwrite": "Substituir arquivos existentes no recebimento",
+      "maxSizeInfo": "Tamanho máximo do arquivo de entrada: {{size}}",
+      "allowBlockListTitle": "Allow/Block (Permitir/Bloquear)",
+      "allowBlockListEmpty": "Nenhuma decisão de permissão/bloqueio salva ainda. Use \"Sempre permitir\" ou \"Sempre bloquear\" em uma oferta de arquivo de entrada.",
+      "decision": {
+        "allow": "Permitido",
+        "block": "Bloqueado"
+      },
+      "removePolicyAria": "Remover decisão guardada para {{label}}",
+      "reliabilityTitle": "Confiabilidade",
+      "autoReconnectShell": "Reconecte automaticamente o shell remoto após uma desconexão inesperada",
+      "autoRetryTransfer": "Repetir automaticamente transferências com falha",
+      "identityTitle": "A minha identidade"
+    }
   }
 }

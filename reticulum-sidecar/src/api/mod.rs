@@ -6,7 +6,10 @@ mod interfaces;
 mod lxmf;
 mod nomad;
 mod propagation;
+mod remote;
 mod rmap;
+mod rncp;
+mod rnsh;
 mod rrc;
 mod status;
 mod system;
@@ -189,6 +192,26 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         .route("/api/v1/rrc/send", post(rrc::rrc_send))
         .route("/api/v1/rrc/nick", post(rrc::rrc_set_nick))
         .route("/api/v1/rrc/rooms", get(rrc::rrc_rooms))
+        .route("/api/v1/rnsh/connect", post(rnsh::rnsh_connect))
+        .route("/api/v1/rnsh/input", post(rnsh::rnsh_input))
+        .route("/api/v1/rnsh/resize", post(rnsh::rnsh_resize))
+        .route("/api/v1/rnsh/disconnect", post(rnsh::rnsh_disconnect))
+        .route("/api/v1/rnsh/status", get(rnsh::rnsh_status))
+        .route("/api/v1/rncp/send", post(rncp::rncp_send))
+        .route("/api/v1/rncp/fetch", post(rncp::rncp_fetch))
+        .route("/api/v1/rncp/cancel", post(rncp::rncp_cancel))
+        .route("/api/v1/rncp/accept", post(rncp::rncp_accept))
+        .route("/api/v1/rncp/reject", post(rncp::rncp_reject))
+        .route("/api/v1/rncp/status", get(rncp::rncp_status))
+        .route(
+            "/api/v1/rncp/listener",
+            get(rncp::get_rncp_listener).post(rncp::set_rncp_listener),
+        )
+        .route(
+            "/api/v1/remote/path-capability",
+            post(remote::path_capability),
+        )
+        .route("/api/v1/remote/identity", get(remote::remote_identity))
         .route("/api/v1/stack/restart", post(system::stack_restart))
         .route("/api/v1/system/factory-reset", post(system::factory_reset))
         .route("/api/v1/diagnostics", get(system::diagnostics))

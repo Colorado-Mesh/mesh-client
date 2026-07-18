@@ -142,6 +142,32 @@ Multi-hub sessions are keyed by lowercase 32-hex `hub_dest_hash`. Soft cap: **8*
 
 Typed renderer wrappers: `electronAPI.reticulum.rrc.*` (`listHubs`, `upsertHub`, `setFavorite`, `connect`, `disconnect`, `getStatus`, `join`, `part`, `send`, `setNickname`, `getRooms`).
 
+### Remote — rnsh (shell) and rncp (file transfer)
+
+Stock Reticulum utility clients hosted by the sidecar. Paths are filesystem paths only (never file bytes in JSON). Electron gates `rncp.send` / `rncp.fetch` / `rncp.listener` mutations behind picker-allowlisted IPC (`electronAPI.reticulum.rncp.*`).
+
+| Method | Path                             | Body / notes                                                                        | Response                                                                                         |
+| ------ | -------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| POST   | `/api/v1/rnsh/connect`           | `{ destination_hash }`                                                              | `{ ok, session_id?, identity_hash?, fingerprint?, error? }`                                      |
+| POST   | `/api/v1/rnsh/input`             | `{ session_id, data, encoding? }` — `encoding: "base64"` optional                   | `{ ok, error? }`                                                                                 |
+| POST   | `/api/v1/rnsh/resize`            | `{ session_id, rows?, cols? }`                                                      | `{ ok, error? }`                                                                                 |
+| POST   | `/api/v1/rnsh/disconnect`        | `{ session_id }`                                                                    | `{ ok, error? }`                                                                                 |
+| GET    | `/api/v1/rnsh/status`            |                                                                                     | `{ sessions: [] }`                                                                               |
+| POST   | `/api/v1/rncp/send`              | `{ destination_hash, path }`                                                        | `{ ok, transfer_id?, error? }`                                                                   |
+| POST   | `/api/v1/rncp/fetch`             | `{ destination_hash, remote_path, save_path? }`                                     | `{ ok, transfer_id?, error? }`                                                                   |
+| POST   | `/api/v1/rncp/cancel`            | `{ transfer_id }`                                                                   | `{ ok, error? }`                                                                                 |
+| POST   | `/api/v1/rncp/accept`            | `{ transfer_id }`                                                                   | `{ ok, … }` / `{ ok: false, error }`                                                             |
+| POST   | `/api/v1/rncp/reject`            | `{ transfer_id }`                                                                   | `{ ok, error? }`                                                                                 |
+| GET    | `/api/v1/rncp/status`            |                                                                                     | `{ transfers: [] }`                                                                              |
+| GET    | `/api/v1/rncp/listener`          |                                                                                     | `{ enabled, destination_hash?, inbound_mode, allowed, blocked }`                                 |
+| POST   | `/api/v1/rncp/listener`          | `{ enabled, save_dir?, allow_fetch?, fetch_jail?, overwrite?, allowed?, blocked? }` | `{ ok, error? }`                                                                                 |
+| POST   | `/api/v1/remote/path-capability` | `{ destination_hash }`                                                              | `PathCapability` JSON (`speed`, `via_atoms`, `transfer_allowed`, `shell_allowed`, `reason_key?`) |
+| GET    | `/api/v1/remote/identity`        |                                                                                     | `{ identity_hash, rncp_receive_hash? }`                                                          |
+
+WS event types (in addition to the list below): `rnsh.stdout`, `rnsh.stderr`, `rnsh.status`, `rnsh.closed`, `rnsh.error`, `rncp.offer`, `rncp.progress`, `rncp.completed`, `rncp.failed`, `rncp.cancelled`. Payloads always include `session_id` or `transfer_id`.
+
+Caps (local policy): max **8** shells, max **3** concurrent transfers, default **25 MiB** file size; LoRa/BLE-only destinations refuse transfers (`path_constrained`) before opening a link.
+
 ### System
 
 | Method | Path                           | Body / notes        | Response                                                                                                                                                                                                                               |
@@ -163,7 +189,7 @@ Typed renderer wrappers: `electronAPI.reticulum.rrc.*` (`listHubs`, `upsertHub`,
 { "type": "lxmf_message", "payload": { ... } }
 ```
 
-Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`, `rmap.discovery` (payload `{ discovered: RmapDiscoveredWireRow[] }`), `nomadnetwork.node` (Nomad peer announce heard), `nomad.serving_start` / `nomad.serving_stop` (local hosting lifecycle; payload includes `destination_hash` / `display_name` on start — renderer currently polls serving status via HTTP), plus RRC: `rrc.hub`, `rrc.connected`, `rrc.disconnected`, `rrc.room.joined`, `rrc.room.parted`, `rrc.message`, `rrc.error`.
+Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`, `rmap.discovery` (payload `{ discovered: RmapDiscoveredWireRow[] }`), `nomadnetwork.node` (Nomad peer announce heard), `nomad.serving_start` / `nomad.serving_stop` (local hosting lifecycle; payload includes `destination_hash` / `display_name` on start — renderer currently polls serving status via HTTP), RRC: `rrc.hub`, `rrc.connected`, `rrc.disconnected`, `rrc.room.joined`, `rrc.room.parted`, `rrc.message`, `rrc.error`, plus Remote: `rnsh.stdout` / `rnsh.stderr` / `rnsh.status` / `rnsh.closed` / `rnsh.error`, `rncp.offer` / `rncp.progress` / `rncp.completed` / `rncp.failed` / `rncp.cancelled`.
 
 - **`rrc.disconnected`:** payload `{ hub_dest_hash, reason, will_reconnect? }`. When `will_reconnect` is `false` (or `reason` is `local_disconnect`), the renderer drops that hub session. When `true` (or omitted on older sidecars), the UI shows reconnecting and keeps volatile rooms until WELCOME.
 

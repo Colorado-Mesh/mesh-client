@@ -148,6 +148,7 @@ import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
+import { ChatDmRncpControl } from './remote/ChatDmRncpControl';
 import { ReticulumAttachmentLine } from './ReticulumAttachmentLine';
 import {
   ReticulumDmPathActions,
@@ -491,6 +492,8 @@ export interface ChatPanelProps {
   onOpenPropagationSettings?: () => void;
   /** Reticulum: stack is configured and sidecar is live. */
   reticulumStackLive?: boolean;
+  /** Reticulum: rncp file transfer available — shows the DM header "Send file" control. */
+  hasRncpTransfer?: boolean;
   /** MeshCore: radio-wide flood scope to restore after a per-message override. */
   meshcoreFloodScopeHashtag?: string;
   /** MeshCore: apply flood scope on the connected radio. */
@@ -530,6 +533,7 @@ function ChatPanel({
   applyMeshcoreFloodScopeHashtag,
   onOpenPropagationSettings,
   reticulumStackLive = false,
+  hasRncpTransfer = false,
 }: ChatPanelProps) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
@@ -2212,12 +2216,22 @@ function ChatPanel({
                 onProbeSettled={reticulumDmPathProbe.applyProbeResult}
               />
             ) : null;
-          if (!pathBadge && !dmNode) return null;
+          const rncpControl =
+            protocol === 'reticulum' && hasRncpTransfer && reticulumDmDestinationHash != null ? (
+              <ChatDmRncpControl
+                key={reticulumDmDestinationHash}
+                lxmfPeerHash={reticulumDmDestinationHash}
+                peerLabel={dmNodeName}
+                sidecarRunning={reticulumStackLive}
+              />
+            ) : null;
+          if (!pathBadge && !dmNode && !rncpControl) return null;
           return (
             <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
               {pathBadge}
               {pathActions}
               {dmNode ? <DmPeerInfoBar dmNode={dmNode} nowMs={nowMs} t={t} /> : null}
+              {rncpControl}
             </div>
           );
         })()}

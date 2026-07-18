@@ -565,7 +565,23 @@
     "floodScopeOverrideLabel": "Cakupan banjir untuk pesan ini",
     "floodScopeOverrideAria": "Penggantian cakupan banjir per pesan",
     "floodScopeOverrideDefault": "Cakupan bawaan",
-    "floodScopeOverrideUnscoped": "Tidak tercakup"
+    "floodScopeOverrideUnscoped": "Tidak tercakup",
+    "rncp": {
+      "sendFile": "Kirim berkas",
+      "sendFileAria": "Kirim file ke {{name}} melalui rncp",
+      "pendingOffersBadgeAria_one": "{{count}} menunggu tawaran file masuk dari rekan ini",
+      "pendingOffersBadgeAria_other": "{{count}} menunggu penawaran file masuk dari rekan ini",
+      "destinationLabel": "hash tujuan rncp",
+      "rememberAddress": "Ingat alamat ini",
+      "rememberAddressAria": "Ingat tujuan rncp untuk rekan ini",
+      "chooseAndSend": "Pilih file & kirim…",
+      "sending": "Mengirim…",
+      "sendStarted": "Mengirim {{file}}…",
+      "sendFailed": "Gagal mengirim: {{error}}",
+      "newOfferToast": "{{peer}} ingin mengirimi Anda file: {{file}}",
+      "requestEnable": "Minta pengaktifan",
+      "requestEnableAria": "Minta rekan ini untuk mengaktifkan penerimaan file"
+    }
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -612,7 +628,9 @@
     "colorAmber": "Kuning sawo",
     "colorRed": "Merah",
     "colorPurple": "Ungu",
-    "delete": "Menghapus"
+    "delete": "Menghapus",
+    "copy": "Menyalin",
+    "copied": "Disalin"
   },
   "configApplyNotice": {
     "persistNote": "Pengaturan yang diterapkan disimpan ke memori flash perangkat dan bertahan selama reboot.",
@@ -4167,7 +4185,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "Topologi jaringan",
     "network": "Jaringan",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "Terpencil"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -4463,5 +4482,198 @@
     "confirmContactImportTitle": "Impor kontak?",
     "confirmContactImportBody": "Tambahkan {{name}} dari tautan eksternal ke kontak Reticulum Anda?",
     "confirmContactImportAction": "Impor kontak"
+  },
+  "reticulumRemote": {
+    "navAria": "Bagian terpencil",
+    "sidecarNotRunning": "Mulai tumpukan Reticulum untuk menggunakan shell jarak jauh dan transfer file.",
+    "sections": {
+      "shell": "Kerang",
+      "transfer": "Transfer",
+      "saved": "Disimpan",
+      "settings": "Pengaturan"
+    },
+    "errors": {
+      "invalidAddress": "Masukkan hash tujuan hex 32 karakter yang valid."
+    },
+    "reasons": {
+      "pathConstrained": "Jalur dibatasi (bandwidth rendah)",
+      "pathUnknown": "Kecepatan jalur tidak diketahui",
+      "notAnnounced": "Tujuan belum diumumkan",
+      "timeout": "Waktu permintaan habis",
+      "notAllowed": "Tidak diperbolehkan",
+      "versionMismatch": "Ketidakcocokan versi jarak jauh",
+      "stagingFailed": "Gagal menampilkan file masuk",
+      "cancelled": "Dibatalkan",
+      "rejected": "Ditolak",
+      "error": "Kesalahan"
+    },
+    "pathCapability": {
+      "checking": "Memeriksa jalur…",
+      "hops_one": "{{count}} melompat",
+      "hops_other": "{{count}} melompat",
+      "speed": {
+        "high": "Jalur cepat",
+        "constrained": "Jalur yang dibatasi",
+        "mixed": "Jalur campuran",
+        "unknown": "Jalur tidak diketahui"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "Hash tujuan (32 karakter hex)",
+      "addressAria": "hash tujuan rnsh",
+      "selectSavedAddress": "Gunakan alamat tersimpan {{label}}",
+      "connectAria": "Hubungkan shell jarak jauh",
+      "connect": "Menghubungkan",
+      "connecting": "Menghubungkan…",
+      "connectFailed": "Gagal terhubung: {{error}}",
+      "maxSessions": "Maksimal {{count}} sesi shell tercapai.",
+      "focusSession": "Beralih ke sesi {{address}}",
+      "closeSession": "Tutup sesi {{address}}",
+      "emptyState": "Tidak ada sesi shell jarak jauh yang aktif. Masukkan hash tujuan di atas untuk terhubung.",
+      "status": {
+        "connecting": "Menghubungkan…",
+        "active": "Terhubung",
+        "closed": "Tertutup",
+        "error": "Kesalahan"
+      },
+      "reconnectAria": "Hubungkan kembali sesi ini",
+      "reconnect": "Hubungkan kembali",
+      "disconnectAria": "Putuskan sambungan sesi ini",
+      "disconnect": "Memutuskan",
+      "reconnectExhausted": "Sambungan ulang otomatis menyerah setelah mencapai batas coba lagi. Status sesi jarak jauh telah hilang.",
+      "reconnectingBanner": "Menyambungkan kembali secara otomatis (percobaan {{attempt}} dari {{max}}). Status sesi jarak jauh telah hilang.",
+      "fingerprintTitle": "Konfirmasikan identitas jarak jauh",
+      "fingerprintMessage": "Menghubungkan ke {{address}}. Identitas yang dilaporkan: {{identity}}. Sidik jari: {{fingerprint}}. Konfirmasikan ini adalah identitas yang Anda harapkan sebelum melanjutkan.",
+      "unknownIdentity": "identitas yang tidak diketahui",
+      "unknownFingerprint": "sidik jari yang tidak diketahui",
+      "fingerprintConfirm": "Menghubungkan"
+    },
+    "transfer": {
+      "myIdentity": "Identitas saya:",
+      "copyIdentityAria": "Salin hash identitas saya",
+      "myReceiveDest": "Rncp saya menerima tujuan:",
+      "copyReceiveDestAria": "Salin tujuan penerimaan rncp saya",
+      "pendingOffersTitle": "File masuk yang tertunda",
+      "pendingOffersBadgeAria_one": "{{count}} menunggu tawaran file masuk",
+      "pendingOffersBadgeAria_other": "{{count}} penawaran file masuk yang tertunda",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "Terima {{file}}",
+      "accept": "Menerima",
+      "rejectAria": "Tolak {{file}}",
+      "reject": "Menolak",
+      "alwaysAllowAria": "Selalu izinkan pengirim ini untuk {{file}}",
+      "alwaysAllow": "Selalu izinkan",
+      "alwaysBlockAria": "Selalu blokir pengirim ini untuk {{file}}",
+      "alwaysBlock": "Selalu blokir",
+      "alwaysAllowSaved": "Pengirim ditambahkan ke daftar izin.",
+      "alwaysBlockSaved": "Pengirim ditambahkan ke daftar blokir.",
+      "modeSendAria": "Beralih ke mode kirim",
+      "modeSend": "Mengirim",
+      "modeFetchAria": "Beralih ke mode pengambilan",
+      "modeFetch": "Mengambil",
+      "destinationPlaceholder": "Hash tujuan (32 karakter hex)",
+      "destinationAria": "hash tujuan rncp",
+      "notAllowedHint": "Transfer tidak tersedia di jalur ini: {{reason}}",
+      "chooseFileAria": "Pilih file lokal untuk dikirim",
+      "chooseFile": "Pilih berkas…",
+      "noFileChosen": "Tidak ada file yang dipilih",
+      "sendAria": "Kirim berkas",
+      "send": "Mengirim",
+      "sendFailed": "Gagal mengirim: {{error}}",
+      "remotePathPlaceholder": "Jalur file jarak jauh",
+      "remotePathAria": "Jalur file jarak jauh untuk diambil",
+      "chooseSaveDirAria": "Pilih folder lokal untuk menyimpan",
+      "chooseSaveDir": "Pilih simpan folder…",
+      "defaultSaveDir": "Folder unduhan bawaan",
+      "fetchAria": "Ambil berkas",
+      "fetch": "Mengambil",
+      "fetchFailed": "Gagal mengambil: {{error}}",
+      "acceptFailed": "Gagal menerima file: {{error}}",
+      "listTitle": "Transfer",
+      "listEmpty": "Belum ada transfer.",
+      "kind": {
+        "send": "Mengirim",
+        "fetch": "Mengambil"
+      },
+      "status": {
+        "active": "Sedang berlangsung",
+        "completed": "Selesai",
+        "failed": "Gagal",
+        "cancelled": "Dibatalkan"
+      },
+      "cancelAria": "Batalkan transfer {{file}}",
+      "cancel": "Membatalkan",
+      "retryAria": "Coba lagi transfer {{file}}",
+      "retry": "Mencoba kembali",
+      "revealAria": "Buka {{file}} di folder",
+      "reveal": "Buka di folder",
+      "requestEnableAria": "Minta rekan ini mengaktifkan penerimaan file",
+      "requestEnable": "Minta pengaktifan",
+      "requestEnableSent": "Meminta rekan untuk mengaktifkan penerimaan file.",
+      "requestEnableRateLimited": "Anda sudah mengirimkan permintaan baru-baru ini. Coba lagi nanti.",
+      "requestEnableFailed": "Tidak dapat mengirim permintaan pengaktifan: {{error}}",
+      "offerToast": "Penawaran file masuk: {{file}}",
+      "copyInstructionsAria": "Salin instruksi untuk mengaktifkan penerimaan file",
+      "copyInstructions": "Salin instruksi",
+      "instructionsCopied": "Instruksi disalin."
+    },
+    "enableRequest": {
+      "title": "Aktifkan penerimaan file?",
+      "body": "{{peer}} meminta Anda untuk mengaktifkan penerimaan file rncp sehingga mereka dapat mengirimi Anda file.",
+      "enableAsk": "Aktifkan (Tanyakan setiap kali)",
+      "enableAskAria": "Aktifkan penawaran file masuk dan tanyakan sebelum menerima",
+      "enableAllow": "Aktifkan dan izinkan identitas ini",
+      "enableAllowAria": "Aktifkan penawaran file masuk dan izinkan pengirim ini",
+      "notNow": "Tidak sekarang",
+      "notNowAria": "Tolak permintaan pengaktifan",
+      "dontAsk": "Jangan tanya lagi pada rekan ini",
+      "dontAskAria": "Tutup secara permanen permintaan pengaktifan dari rekan ini",
+      "enabled": "Penerimaan file diaktifkan.",
+      "enableFailed": "Tidak dapat mengaktifkan penerimaan file: {{error}}",
+      "saveDirRequired": "Pilih folder penyimpanan untuk mengaktifkan penerimaan.",
+      "lxmfBody": "Harap aktifkan penerimaan file (rncp) jika Anda menggunakan mesh-client: Remote → Settings → Inbound file offers. Atau jalankan rncp/rncp-rs dalam mode mendengarkan."
+    },
+    "saved": {
+      "labelPlaceholder": "Label",
+      "labelAria": "Label alamat tersimpan",
+      "labelRequired": "Masukkan label untuk alamat ini.",
+      "hashPlaceholder": "Hash tujuan (32 karakter hex)",
+      "hashAria": "Hash tujuan alamat yang disimpan",
+      "serviceAria": "Layanan alamat tersimpan",
+      "serviceRnsh": "cangkang (rnsh)",
+      "serviceRncp": "Pemindahan (rncp)",
+      "saveAria": "Simpan alamat",
+      "add": "Menambahkan",
+      "saveFailed": "Gagal menyimpan alamat: {{error}}",
+      "empty": "Belum ada alamat yang disimpan.",
+      "editAria": "Edit alamat tersimpan {{label}}",
+      "deleteAria": "Hapus alamat tersimpan {{label}}"
+    },
+    "settings": {
+      "applyFailed": "Gagal menerapkan pengaturan: {{error}}",
+      "inboundTitle": "Transfer file masuk",
+      "inboundMode": {
+        "off": "Mati",
+        "ask": "Bertanya",
+        "allow_all_listed": "Izinkan yang terdaftar saja"
+      },
+      "allowFetch": "Izinkan rekan jarak jauh mengambil file dari saya",
+      "chooseFetchJailAria": "Pilih folder tempat rekan jarak jauh dapat mengambil",
+      "chooseFetchJail": "Pilih ambil folder…",
+      "noFetchJail": "Tidak ada folder pengambilan yang dipilih",
+      "overwrite": "Timpa file yang ada pada tanda terima",
+      "maxSizeInfo": "Ukuran file masuk maksimum: {{size}}",
+      "allowBlockListTitle": "Izinkan/blokir daftar",
+      "allowBlockListEmpty": "Belum ada keputusan izinkan/blokir yang tersimpan. Gunakan \"Selalu izinkan\" atau \"Selalu blokir\" pada tawaran file masuk.",
+      "decision": {
+        "allow": "Diizinkan",
+        "block": "Diblokir"
+      },
+      "removePolicyAria": "Hapus keputusan tersimpan untuk {{label}}",
+      "reliabilityTitle": "Keandalan",
+      "autoReconnectShell": "Sambungkan kembali shell jarak jauh secara otomatis setelah pemutusan sambungan yang tidak terduga",
+      "autoRetryTransfer": "Secara otomatis mencoba lagi transfer yang gagal",
+      "identityTitle": "Identitas saya"
+    }
   }
 }

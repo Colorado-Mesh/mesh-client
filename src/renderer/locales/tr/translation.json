@@ -565,7 +565,23 @@
     "floodScopeOverrideLabel": "Bu mesajın Flood kapsamı",
     "floodScopeOverrideAria": "İleti başına taşma kapsamını geçersiz kılma",
     "floodScopeOverrideDefault": "Varsayılan kapsam",
-    "floodScopeOverrideUnscoped": "Kapsam dışı"
+    "floodScopeOverrideUnscoped": "Kapsam dışı",
+    "rncp": {
+      "sendFile": "Dosyayı gönder",
+      "sendFileAria": "Dosyayı rncp aracılığıyla {{name}} adresine gönder",
+      "pendingOffersBadgeAria_one": "{{count}} bu eşten gelen dosya teklifi bekleniyor",
+      "pendingOffersBadgeAria_other": "{{count}} bu eşten gelen dosya teklifleri bekleniyor",
+      "destinationLabel": "rncp hedef karması",
+      "rememberAddress": "Bu adresi hatırla",
+      "rememberAddressAria": "Bu eş için bu rncp hedefini hatırla",
+      "chooseAndSend": "Dosya seç ve gönder…",
+      "sending": "Gönderiliyor…",
+      "sendStarted": "{{file}} gönderiliyor…",
+      "sendFailed": "Gönderilemedi: {{error}}",
+      "newOfferToast": "{{peer}} size bir dosya göndermek istiyor: {{file}}",
+      "requestEnable": "Etkinleştirme isteği",
+      "requestEnableAria": "Bu eşten dosya almayı etkinleştirmesini isteyin"
+    }
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -612,7 +628,9 @@
     "colorAmber": "Sarı",
     "colorRed": "Kırmızı",
     "colorPurple": "Mor",
-    "delete": "Silmek"
+    "delete": "Silmek",
+    "copy": "Kopyala",
+    "copied": "Kopyalandı"
   },
   "configApplyNotice": {
     "persistNote": "Uygulanan ayarlar cihazın flash belleğine kaydedilir ve yeniden başlatmalarda devam eder.",
@@ -4167,7 +4185,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "Ağ topolojisi",
     "network": "Ağ",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "Uzak"
   },
   "takServerPanel": {
     "title": "TAK Sunucusu",
@@ -4463,5 +4482,198 @@
     "confirmContactImportTitle": "Kişi içe aktarılsın mı?",
     "confirmContactImportBody": "{{name}} harici bir bağlantıdan Reticulum kişilerinize eklensin mi?",
     "confirmContactImportAction": "Kişiyi içe aktar"
+  },
+  "reticulumRemote": {
+    "navAria": "Uzak bölümler",
+    "sidecarNotRunning": "Uzak kabuğu ve dosya aktarımını kullanmak için Reticulum yığınını başlatın.",
+    "sections": {
+      "shell": "Kabuk",
+      "transfer": "Aktarım",
+      "saved": "Kaydedildi",
+      "settings": "Ayarlar"
+    },
+    "errors": {
+      "invalidAddress": "32 karakterlik geçerli bir onaltılık hedef karması girin."
+    },
+    "reasons": {
+      "pathConstrained": "Yol kısıtlı (düşük bant genişliği)",
+      "pathUnknown": "Yol hızı bilinmiyor",
+      "notAnnounced": "Hedef açıklanmadı",
+      "timeout": "İstek zaman aşımına uğradı",
+      "notAllowed": "İzin verilmiyor",
+      "versionMismatch": "Uzak sürüm uyuşmazlığı",
+      "stagingFailed": "Gelen dosya hazırlanamadı",
+      "cancelled": "İptal edildi",
+      "rejected": "Reddedilmiş",
+      "error": "Hata"
+    },
+    "pathCapability": {
+      "checking": "Yol kontrol ediliyor…",
+      "hops_one": "{{count}} atlama",
+      "hops_other": "{{count}} atlama",
+      "speed": {
+        "high": "Hızlı yol",
+        "constrained": "Kısıtlı yol",
+        "mixed": "Karışık yol",
+        "unknown": "Bilinmeyen yol"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "Hedef karması (32 onaltılık karakter)",
+      "addressAria": "rnsh hedef karması",
+      "selectSavedAddress": "{{label}} kayıtlı adresini kullan",
+      "connectAria": "Uzak kabuğu bağlayın",
+      "connect": "Bağlamak",
+      "connecting": "Bağlanıyor…",
+      "connectFailed": "Bağlantı başarısız oldu: {{error}}",
+      "maxSessions": "Maksimum {{count}} kabuk oturumuna ulaşıldı.",
+      "focusSession": "{{address}} oturumuna geç",
+      "closeSession": "Oturumu kapat {{address}}",
+      "emptyState": "Etkin uzak kabuk oturumu yok. Bağlanmak için yukarıya bir hedef karması girin.",
+      "status": {
+        "connecting": "Bağlanıyor…",
+        "active": "Bağlı",
+        "closed": "Kapalı",
+        "error": "Hata"
+      },
+      "reconnectAria": "Bu oturumu yeniden bağla",
+      "reconnect": "Yeniden bağlan",
+      "disconnectAria": "Bu oturumun bağlantısını kes",
+      "disconnect": "Bağlantıyı kes",
+      "reconnectExhausted": "Yeniden deneme sınırına ulaşıldıktan sonra otomatik yeniden bağlanma kesildi. Uzak oturum durumu kaybedildi.",
+      "reconnectingBanner": "Otomatik yeniden bağlanma ({{attempt}} / {{max}} girişimi). Uzak oturum durumu kaybedildi.",
+      "fingerprintTitle": "Uzak kimliği onaylayın",
+      "fingerprintMessage": "{{address}}'a bağlanılıyor. Bildirilen kimlik: {{identity}}. Parmak izi: {{fingerprint}}. Devam etmeden önce bunun beklediğiniz kimlik olduğunu doğrulayın.",
+      "unknownIdentity": "bilinmeyen kimlik",
+      "unknownFingerprint": "bilinmeyen parmak izi",
+      "fingerprintConfirm": "Bağlamak"
+    },
+    "transfer": {
+      "myIdentity": "Kimliğim:",
+      "copyIdentityAria": "Kimlik karmamı kopyala",
+      "myReceiveDest": "Rncp alma hedefim:",
+      "copyReceiveDestAria": "Rncp alma hedefimi kopyala",
+      "pendingOffersTitle": "Bekleyen gelen dosyalar",
+      "pendingOffersBadgeAria_one": "{{count}} gelen dosya teklifi bekleniyor",
+      "pendingOffersBadgeAria_other": "{{count}} gelen dosya teklifleri bekleniyor",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "{{file}} kabul et",
+      "accept": "Kabul etmek",
+      "rejectAria": "{{file}}'ı reddet",
+      "reject": "Reddetmek",
+      "alwaysAllowAria": "Bu gönderene {{file}} için her zaman izin ver",
+      "alwaysAllow": "Her zaman izin ver",
+      "alwaysBlockAria": "Bu göndereni {{file}} için her zaman engelle",
+      "alwaysBlock": "Her zaman engelle",
+      "alwaysAllowSaved": "Gönderen izin verilenler listesine eklendi.",
+      "alwaysBlockSaved": "Gönderen engelleme listesine eklendi.",
+      "modeSendAria": "Gönderme moduna geç",
+      "modeSend": "Göndermek",
+      "modeFetchAria": "Getirme moduna geç",
+      "modeFetch": "Gidip getirmek",
+      "destinationPlaceholder": "Hedef karması (32 onaltılık karakter)",
+      "destinationAria": "rncp hedef karması",
+      "notAllowedHint": "Bu yolda transfer yapılamıyor: {{reason}}",
+      "chooseFileAria": "Gönderilecek yerel bir dosya seçin",
+      "chooseFile": "Dosya seç…",
+      "noFileChosen": "Dosya seçilmedi",
+      "sendAria": "Dosyayı gönder",
+      "send": "Göndermek",
+      "sendFailed": "Gönderilemedi: {{error}}",
+      "remotePathPlaceholder": "Uzak dosya yolu",
+      "remotePathAria": "Alınacak uzak dosya yolu",
+      "chooseSaveDirAria": "Kaydetmek için yerel bir klasör seçin",
+      "chooseSaveDir": "Klasörü kaydetmeyi seçin…",
+      "defaultSaveDir": "Varsayılan indirme klasörü",
+      "fetchAria": "Dosyayı getir",
+      "fetch": "Gidip getirmek",
+      "fetchFailed": "Getirilemedi: {{error}}",
+      "acceptFailed": "Dosya kabul edilemedi: {{error}}",
+      "listTitle": "Transferler",
+      "listEmpty": "Henüz transfer yok.",
+      "kind": {
+        "send": "Göndermek",
+        "fetch": "Gidip getirmek"
+      },
+      "status": {
+        "active": "Devam etmekte",
+        "completed": "Tamamlanmış",
+        "failed": "Arızalı",
+        "cancelled": "İptal edildi"
+      },
+      "cancelAria": "{{file}} aktarımını iptal et",
+      "cancel": "İptal etmek",
+      "retryAria": "{{file}} aktarımını yeniden deneyin",
+      "retry": "Yeniden dene",
+      "revealAria": "Klasördeki {{file}}'yi göster",
+      "reveal": "Klasörde göster",
+      "requestEnableAria": "Bu eşin dosya alımını etkinleştirmesini isteyin",
+      "requestEnable": "Etkinleştirme isteği",
+      "requestEnableSent": "Eşten dosya almayı etkinleştirmesi istendi.",
+      "requestEnableRateLimited": "Yakın zamanda bir istek gönderdiniz. Daha sonra tekrar deneyin.",
+      "requestEnableFailed": "Etkinleştirme isteği gönderilemedi: {{error}}",
+      "offerToast": "Gelen dosya teklifi: {{file}}",
+      "copyInstructionsAria": "Dosya almayı etkinleştirmek için talimatları kopyalama",
+      "copyInstructions": "Talimatları kopyala",
+      "instructionsCopied": "Talimatlar kopyalandı."
+    },
+    "enableRequest": {
+      "title": "Dosya alımı etkinleştirilsin mi?",
+      "body": "{{peer}}, size bir dosya gönderebilmeleri için rncp dosya alımını açmanızı istedi.",
+      "enableAsk": "Etkinleştir (Her seferinde sor)",
+      "enableAskAria": "Gelen dosya tekliflerini etkinleştirin ve kabul etmeden önce sorun",
+      "enableAllow": "Bu kimliği etkinleştirin ve izin verin",
+      "enableAllowAria": "Gelen dosya tekliflerini etkinleştirin ve bu gönderene izin verin",
+      "notNow": "Şimdi değil",
+      "notNowAria": "Etkinleştirme isteğini reddet",
+      "dontAsk": "Bu meslektaşımdan bir daha soru sorma",
+      "dontAskAria": "Bu eşten gelen etkinleştirme isteklerini kalıcı olarak reddet",
+      "enabled": "Dosya alma etkinleştirildi.",
+      "enableFailed": "Dosya alımı etkinleştirilemedi: {{error}}",
+      "saveDirRequired": "Alımı etkinleştirmek için bir kaydetme klasörü seçin.",
+      "lxmfBody": "Mesh-client kullanıyorsanız lütfen dosya almayı (rncp) etkinleştirin: Uzak → Ayarlar → Gelen dosya teklifleri. Veya rncp/rncp-rs'yi dinleme modunda çalıştırın."
+    },
+    "saved": {
+      "labelPlaceholder": "Etiket",
+      "labelAria": "Kayıtlı adres etiketi",
+      "labelRequired": "Bu adres için bir etiket girin.",
+      "hashPlaceholder": "Hedef karması (32 onaltılık karakter)",
+      "hashAria": "Adres hedefi karması kaydedildi",
+      "serviceAria": "Kayıtlı adres hizmeti",
+      "serviceRnsh": "Kabuk (rnsh)",
+      "serviceRncp": "Aktarım (rncp)",
+      "saveAria": "Adresi kaydet",
+      "add": "Eklemek",
+      "saveFailed": "Adres kaydedilemedi: {{error}}",
+      "empty": "Henüz kayıtlı adres yok.",
+      "editAria": "Kayıtlı adresi düzenle {{label}}",
+      "deleteAria": "Kayıtlı adresi sil {{label}}"
+    },
+    "settings": {
+      "applyFailed": "Ayar uygulanamadı: {{error}}",
+      "inboundTitle": "Gelen dosya aktarımları",
+      "inboundMode": {
+        "off": "Kapalı",
+        "ask": "Sormak",
+        "allow_all_listed": "Yalnızca listelenenlere izin ver"
+      },
+      "allowFetch": "Uzaktaki eşlerin benden dosya almasına izin ver",
+      "chooseFetchJailAria": "Uzak eşlerin getirebileceği klasörü seçin",
+      "chooseFetchJail": "Getirme klasörünü seçin…",
+      "noFetchJail": "Getirme klasörü seçilmedi",
+      "overwrite": "Alındığında mevcut dosyaların üzerine yaz",
+      "maxSizeInfo": "Maksimum gelen dosya boyutu: {{size}}",
+      "allowBlockListTitle": "İzin ver / engelle listesi",
+      "allowBlockListEmpty": "Henüz kaydedilmiş izin verme/engelleme kararı yok. Gelen bir dosya teklifinde \"Her zaman izin ver\" veya \"Her zaman engelle\" seçeneğini kullanın.",
+      "decision": {
+        "allow": "İzin verilmiş",
+        "block": "Engellendi"
+      },
+      "removePolicyAria": "{{label}} için kayıtlı kararı kaldır",
+      "reliabilityTitle": "Güvenilirlik",
+      "autoReconnectShell": "Beklenmeyen bir bağlantı kesilmesinin ardından uzak kabuğu otomatik olarak yeniden bağlayın",
+      "autoRetryTransfer": "Başarısız aktarımları otomatik olarak yeniden dene",
+      "identityTitle": "Kimliğim"
+    }
   }
 }

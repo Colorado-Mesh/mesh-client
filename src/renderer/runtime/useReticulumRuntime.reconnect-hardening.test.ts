@@ -103,8 +103,12 @@ describe('useReticulumRuntime manual disconnect must not auto-reconnect', () => 
 describe('useReticulumRuntime resume-generation cancel (H7)', () => {
   it('onPowerSuspend bumps resumeGenerationRef instead of being a no-op', () => {
     expect(SOURCE).toMatch(
-      /const onPowerSuspend = useCallback\(\(\) => \{\s*resumeGenerationRef\.current \+= 1;\s*\}, \[\]\);/,
+      /const onPowerSuspend = useCallback\(\(\) => \{\s*resumeGenerationRef\.current \+= 1;[\s\S]*?\}, \[\]\);/,
     );
+    expect(SOURCE).toMatch(/resumeGenerationRef\.current \+= 1;/);
+    // Pause Remote shell/transfer retry storms while asleep.
+    expect(SOURCE).toMatch(/useRnshSessionStore\.getState\(\)\.clearAll\(\)/);
+    expect(SOURCE).toMatch(/useRncpTransferStore\.getState\(\)\.clearAll\(\)/);
     // Regression: the runtime object used to return a literal no-op for onPowerSuspend.
     expect(SOURCE).not.toMatch(/onPowerSuspend: \(\) => \{\},/);
   });

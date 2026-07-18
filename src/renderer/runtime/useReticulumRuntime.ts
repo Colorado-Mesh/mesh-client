@@ -88,6 +88,7 @@ import {
   useReticulumIdentityStore,
 } from '@/renderer/stores/reticulumIdentityStore';
 import type { ReticulumSidecarEvent, ReticulumWirePacketRow } from '@/shared/reticulum-types';
+import { lxmfBodyContainsRncpRequestEnable } from '@/shared/rncpRequestEnable';
 
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
@@ -128,6 +129,9 @@ import {
   reticulumSelfIdentityToNodeRecord,
   useReticulumPeerStore,
 } from '../stores/reticulumPeerStore';
+import { useRncpEnableRequestStore } from '../stores/rncpEnableRequestStore';
+import { useRncpTransferStore } from '../stores/rncpTransferStore';
+import { useRnshSessionStore } from '../stores/rnshSessionStore';
 import { useRrcHubStore } from '../stores/rrcHubStore';
 import {
   RRC_HUB_STREAM_ROOM,
@@ -465,6 +469,17 @@ export function useReticulumRuntime(): ProtocolRuntime {
           selfLxmfHash: selfLxmfHash ?? undefined,
           attachmentPath,
         });
+        if (
+          p.direction !== 'outbound' &&
+          p.sender_hash &&
+          lxmfBodyContainsRncpRequestEnable(p.text)
+        ) {
+          useRncpEnableRequestStore.getState().enqueue({
+            peerHash: p.sender_hash,
+            peerLabel: p.sender_name ?? null,
+            receivedAt: Date.now(),
+          });
+        }
       })();
     },
     [identityId, selfLxmfHash],
@@ -806,6 +821,118 @@ export function useReticulumRuntime(): ProtocolRuntime {
               },
               { hubDestHash },
             );
+          }
+        }
+      }
+      if (evt.type === 'rnsh.stdout' || evt.type === 'rnsh.stderr') {
+        const p = evt.payload as { session_id?: string; data?: string } | undefined;
+        if (p?.session_id && typeof p.data === 'string') {
+          useRnshSessionStore
+            .getState()
+            .applyOutput(p.session_id, evt.type === 'rnsh.stdout' ? 'stdout' : 'stderr', p.data);
+        }
+      }
+      if (evt.type === 'rnsh.status' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          session_id?: string;
+          status?: 'connecting' | 'active' | 'closed' | 'error';
+          destination_hash?: string;
+        };
+        if (p.session_id && p.status) {
+          useRnshSessionStore.getState().applyStatus(p.session_id, p.status, p.destination_hash);
+          if (p.status === 'active') {
+            useRnshSessionStore.getState().resetReconnectAttempts(p.session_id);
+          }
+        }
+      }
+      if (evt.type === 'rnsh.closed' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          session_id?: string;
+          return_code?: number | null;
+          reason_key?: string | null;
+        };
+        if (p.session_id) {
+          useRnshSessionStore.getState().applyClosed(p.session_id, p.return_code, p.reason_key);
+        }
+      }
+      if (evt.type === 'rnsh.error' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as { session_id?: string; reason_key?: string; message?: string };
+        if (p.session_id) {
+          useRnshSessionStore
+            .getState()
+            .applyError(p.session_id, p.reason_key ?? 'error', p.message ?? '');
+        }
+      }
+      if (evt.type === 'rncp.progress' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as { transfer_id?: string; progress?: number };
+        if (p.transfer_id && typeof p.progress === 'number') {
+          useRncpTransferStore.getState().applyProgress(p.transfer_id, p.progress);
+        }
+      }
+      if (evt.type === 'rncp.completed' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          transfer_id?: string;
+          file_name?: string;
+          bytes?: number;
+          path?: string;
+          destination_hash?: string;
+          identity_hash?: string | null;
+        };
+        if (typeof p.file_name === 'string' && typeof p.bytes === 'number') {
+          useRncpTransferStore.getState().applyCompleted({
+            transfer_id: p.transfer_id,
+            file_name: p.file_name,
+            bytes: p.bytes,
+            path: p.path,
+            destination_hash: p.destination_hash,
+            identity_hash: p.identity_hash,
+          });
+        }
+      }
+      if (evt.type === 'rncp.failed' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          transfer_id?: string;
+          error?: string;
+          reason?: string;
+          file_name?: string;
+          destination_hash?: string;
+          identity_hash?: string | null;
+        };
+        useRncpTransferStore.getState().applyFailed(p);
+      }
+      if (evt.type === 'rncp.cancelled' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as { transfer_id?: string; reason?: string };
+        if (p.transfer_id) {
+          useRncpTransferStore.getState().applyCancelled({
+            transfer_id: p.transfer_id,
+            reason: p.reason,
+          });
+        }
+      }
+      if (evt.type === 'rncp.offer' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          transfer_id?: string;
+          file_name?: string;
+          bytes?: number;
+          identity_hash?: string | null;
+        };
+        if (p.transfer_id && typeof p.file_name === 'string' && typeof p.bytes === 'number') {
+          useRncpTransferStore.getState().applyOffer({
+            transfer_id: p.transfer_id,
+            file_name: p.file_name,
+            bytes: p.bytes,
+            identity_hash: p.identity_hash,
+          });
+          // Toast so offers are visible even when the user is not on Remote/Chat DM.
+          console.debug(`[useReticulumRuntime] rncp.offer ${p.file_name}`);
+          try {
+            window.dispatchEvent(
+              new CustomEvent('mesh-client:rncp-offer', {
+                detail: { transfer_id: p.transfer_id, file_name: p.file_name },
+              }),
+            );
+          } catch {
+            // catch-no-log-ok CustomEvent may fail in non-DOM test envs
           }
         }
       }
@@ -1386,6 +1513,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
   const onPowerSuspend = useCallback(() => {
     resumeGenerationRef.current += 1;
+    // Pause shell auto-reconnect / transfer retry storms while the machine sleeps.
+    useRnshSessionStore.getState().clearAll();
+    useRncpTransferStore.getState().clearAll();
   }, []);
 
   const onPowerResume = useCallback(() => {

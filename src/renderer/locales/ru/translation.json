@@ -565,7 +565,23 @@
     "floodScopeOverrideLabel": "Область действия флуда для этого сообщения",
     "floodScopeOverrideAria": "Переопределение области флуда для каждого сообщения",
     "floodScopeOverrideDefault": "Область действия по умолчанию",
-    "floodScopeOverrideUnscoped": "Без области действия"
+    "floodScopeOverrideUnscoped": "Без области действия",
+    "rncp": {
+      "sendFile": "Отправить файл",
+      "sendFileAria": "Отправить файл в {{name}} через rncp",
+      "pendingOffersBadgeAria_one": "{{count}} ожидает предложения по входящим файлам от этого участника",
+      "pendingOffersBadgeAria_other": "{{count}} в ожидании предложений по входящим файлам от этого участника",
+      "destinationLabel": "хэш назначения rncp",
+      "rememberAddress": "Запомнить этот адрес",
+      "rememberAddressAria": "Запомнить это назначение rncp для этого однорангового узла",
+      "chooseAndSend": "Выберите файл и отправьте...",
+      "sending": "отправка…",
+      "sendStarted": "Отправка {{file}}…",
+      "sendFailed": "Не удалось отправить: {{error}}",
+      "newOfferToast": "{{peer}} хочет отправить вам файл: {{file}}",
+      "requestEnable": "Включить запрос",
+      "requestEnableAria": "Попросите этого однорангового узла включить получение файлов"
+    }
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -612,7 +628,9 @@
     "colorAmber": "Желтый",
     "colorRed": "Красный",
     "colorPurple": "Пурпурный",
-    "delete": "Удалить"
+    "delete": "Удалить",
+    "copy": "Скопировать",
+    "copied": "Скопировано"
   },
   "configApplyNotice": {
     "persistNote": "Примененные настройки сохраняются во флэш-памяти устройства и сохраняются при перезагрузке.",
@@ -4167,7 +4185,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "Топология сети",
     "network": "Сеть",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "Дистанционный режим"
   },
   "takServerPanel": {
     "title": "TAK Сервер",
@@ -4463,5 +4482,198 @@
     "confirmContactImportTitle": "Импортировать контакт?",
     "confirmContactImportBody": "Добавить {{name}} по внешней ссылке в контакты Reticulum?",
     "confirmContactImportAction": "Импортировать контакт"
+  },
+  "reticulumRemote": {
+    "navAria": "Удаленные секции",
+    "sidecarNotRunning": "Запустите стек Reticulum, чтобы использовать удалённую оболочку и передачу файлов.",
+    "sections": {
+      "shell": "Обечайка",
+      "transfer": "Трансфер",
+      "saved": "Сохранено",
+      "settings": "Настройки"
+    },
+    "errors": {
+      "invalidAddress": "Введите допустимый 32-символьный шестнадцатеричный хэш назначения."
+    },
+    "reasons": {
+      "pathConstrained": "Путь ограничен (низкая пропускная способность)",
+      "pathUnknown": "Скорость пути неизвестна",
+      "notAnnounced": "Пункт назначения не объявлен",
+      "timeout": "Тайм-аут запроса",
+      "notAllowed": "не разрешено",
+      "versionMismatch": "Несоответствие удаленной версии",
+      "stagingFailed": "Не удалось выполнить этап входящего файла",
+      "cancelled": "Отменён",
+      "rejected": "Отклонен",
+      "error": "Ошибка"
+    },
+    "pathCapability": {
+      "checking": "Проверка пути",
+      "hops_one": "{{count}} Hop",
+      "hops_other": "{{count}} хопов",
+      "speed": {
+        "high": "быстрый путь",
+        "constrained": "Ограниченный путь",
+        "mixed": "Смешанный путь",
+        "unknown": "Неизвестный путь к файлу"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "Хеш назначения (32 шестнадцатеричных символа)",
+      "addressAria": "хэш назначения rnsh",
+      "selectSavedAddress": "Использовать сохраненный адрес {{label}}",
+      "connectAria": "Подключить удаленную оболочку",
+      "connect": "Подключить",
+      "connecting": "Подключение…",
+      "connectFailed": "Не удалось подключиться: {{error}}",
+      "maxSessions": "Достигнуто максимум {{count}} сеансов оболочки.",
+      "focusSession": "Перейти к сеансу {{address}}",
+      "closeSession": "Закрыть сеанс {{address}}",
+      "emptyState": "Нет активных сеансов удаленной оболочки. Введите хэш пункта назначения выше, чтобы подключиться.",
+      "status": {
+        "connecting": "Подключение…",
+        "active": "Подключено",
+        "closed": "Закрыто",
+        "error": "Ошибка"
+      },
+      "reconnectAria": "Повторно подключить этот сеанс",
+      "reconnect": "Перепідключення",
+      "disconnectAria": "Отключить этот сеанс",
+      "disconnect": "Разъединить",
+      "reconnectExhausted": "Автоматическое повторное подключение прекратилось после достижения предела повторных попыток. Состояние удаленного сеанса потеряно.",
+      "reconnectingBanner": "Автоматическое повторное подключение (попытка {{attempt}} из {{max}}). Состояние удаленного сеанса потеряно.",
+      "fingerprintTitle": "Подтвердить удаленную личность",
+      "fingerprintMessage": "Подключение к {{address}}. Сообщение о личности: {{identity}}. Отпечаток пальца: {{fingerprint}}. Подтвердите личность, прежде чем продолжить.",
+      "unknownIdentity": "Неизвестный центр сертификации",
+      "unknownFingerprint": "неизвестный отпечаток пальца",
+      "fingerprintConfirm": "Подключить"
+    },
+    "transfer": {
+      "myIdentity": "Моя личность:",
+      "copyIdentityAria": "Скопировать хэш моего удостоверения личности",
+      "myReceiveDest": "My rncp receive destination:",
+      "copyReceiveDestAria": "Скопируйте мое место назначения получения rncp",
+      "pendingOffersTitle": "Входящие файлы в ожидании",
+      "pendingOffersBadgeAria_one": "{{count}} ожидает предложения по входящим файлам",
+      "pendingOffersBadgeAria_other": "{{count}}: ожидаются предложения по входящим файлам",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "Принять {{file}}",
+      "accept": "Принять",
+      "rejectAria": "Отклонить {{file}}",
+      "reject": "Отклонить",
+      "alwaysAllowAria": "Всегда разрешать этому отправителю для {{file}}",
+      "alwaysAllow": "Разрешать всегда",
+      "alwaysBlockAria": "Всегда блокировать этого отправителя на {{file}}",
+      "alwaysBlock": "Всегда блокировать",
+      "alwaysAllowSaved": "Отправитель добавлен в список разрешенных.",
+      "alwaysBlockSaved": "Отправитель добавлен в список блокировки.",
+      "modeSendAria": "Переход в режим",
+      "modeSend": "Отправить",
+      "modeFetchAria": "Перейти в режим выборки",
+      "modeFetch": "Апорт",
+      "destinationPlaceholder": "Хеш назначения (32 шестнадцатеричных символа)",
+      "destinationAria": "хэш назначения rncp",
+      "notAllowedHint": "Переводы недоступны по следующему пути: {{reason}}",
+      "chooseFileAria": "Выберите локальный файл для отправки",
+      "chooseFile": "Выберите файл",
+      "noFileChosen": "Файл не выбран",
+      "sendAria": "Отправить файл",
+      "send": "Отправить",
+      "sendFailed": "Не удалось отправить: {{error}}",
+      "remotePathPlaceholder": "Удалить файл",
+      "remotePathAria": "Удаленный путь к файлу для извлечения",
+      "chooseSaveDirAria": "Выберите локальную папку для сохранения",
+      "chooseSaveDir": "Выберите папку для сохранения...",
+      "defaultSaveDir": "Папка загрузки по умолчанию",
+      "fetchAria": "Получить файл",
+      "fetch": "Апорт",
+      "fetchFailed": "Не удалось получить: {{error}}",
+      "acceptFailed": "Не удалось принять файл: {{error}}",
+      "listTitle": "Трансферы",
+      "listEmpty": "Трансферов пока нет.",
+      "kind": {
+        "send": "Отправить",
+        "fetch": "Апорт"
+      },
+      "status": {
+        "active": "В процессe",
+        "completed": "Завершено",
+        "failed": "Не удалось",
+        "cancelled": "Отменён"
+      },
+      "cancelAria": "Отменить перевод {{file}}",
+      "cancel": "Отмена",
+      "retryAria": "Повторите попытку передачи {{file}}",
+      "retry": "Повторить попытку",
+      "revealAria": "Показать {{file}} в папке",
+      "reveal": "Показать в папке",
+      "requestEnableAria": "Запросить, чтобы этот одноранговый узел включил получение файлов",
+      "requestEnable": "Включить запрос",
+      "requestEnableSent": "Попросил однорангового узла включить получение файлов.",
+      "requestEnableRateLimited": "Вы уже отправляли запрос недавно. Повторите попытку позже.",
+      "requestEnableFailed": "Не удалось отправить запрос на включение: {{error}}",
+      "offerToast": "Предложение по входящим файлам: {{file}}",
+      "copyInstructionsAria": "Копировать инструкции для включения получения файла",
+      "copyInstructions": "Копировать инструкции",
+      "instructionsCopied": "Инструкции скопированы."
+    },
+    "enableRequest": {
+      "title": "Включить получение файлов?",
+      "body": "{{peer}} попросил Вас включить прием rncp-файлов, чтобы они могли отправить Вам файл.",
+      "enableAsk": "Включить (спрашивать каждый раз)",
+      "enableAskAria": "Включите предложения по входящим файлам и спросите перед принятием",
+      "enableAllow": "Включить и разрешить эту идентификацию",
+      "enableAllowAria": "Включить предложения по входящим файлам и разрешить этому отправителю",
+      "notNow": "Не сейчас",
+      "notNowAria": "Отклонить запрос на включение",
+      "dontAsk": "Больше не спрашивать у этого партнера",
+      "dontAskAria": "Окончательно отклонить запросы на включение от этого однорангового узла",
+      "enabled": "Получение файлов включено.",
+      "enableFailed": "Не удалось включить получение файлов: {{error}}",
+      "saveDirRequired": "Выберите папку сохранения, чтобы включить получение.",
+      "lxmfBody": "Включите получение файлов (rncp), если вы используете mesh-client: Remote → Settings → Inbound file offers. Или запустите rncp/rncp-rs в режиме прослушивания."
+    },
+    "saved": {
+      "labelPlaceholder": "Ярлык",
+      "labelAria": "Метка сохраненного адреса",
+      "labelRequired": "Введите метку для этого адреса.",
+      "hashPlaceholder": "Хеш назначения (32 шестнадцатеричных символа)",
+      "hashAria": "Хеш адреса назначения сохранен",
+      "serviceAria": "Служба сохраненных адресов",
+      "serviceRnsh": "Оболочка (rnsh)",
+      "serviceRncp": "Передача (rncp)",
+      "saveAria": "Сохранить адрес",
+      "add": "Добавить",
+      "saveFailed": "Не удалось сохранить адрес: {{error}}",
+      "empty": "Пока нет сохраненных адресов.",
+      "editAria": "Изменить сохраненный адрес {{label}}",
+      "deleteAria": "Удалить сохраненный адрес {{label}}"
+    },
+    "settings": {
+      "applyFailed": "Не удалось применить настройку: {{error}}",
+      "inboundTitle": "Входящая передача файлов",
+      "inboundMode": {
+        "off": "Выкл.",
+        "ask": "Спросить",
+        "allow_all_listed": "Разрешить только перечисленные"
+      },
+      "allowFetch": "Разрешить удаленным одноранговым узлам получать от меня файлы",
+      "chooseFetchJailAria": "Выберите папку, из которой могут извлекать удаленные одноранговые узлы",
+      "chooseFetchJail": "Выберите папку выборки...",
+      "noFetchJail": "Папка выборки не выбрана",
+      "overwrite": "Перезаписать существующие файлы при получении",
+      "maxSizeInfo": "Максимальный размер входящего файла: {{size}}",
+      "allowBlockListTitle": "Список разрешений / блокировок",
+      "allowBlockListEmpty": "Пока нет сохраненных решений о разрешении/блокировке. Используйте «Всегда разрешать» или «Всегда блокировать» во входящем файловом предложении.",
+      "decision": {
+        "allow": "Разрешено",
+        "block": "Заблокирован"
+      },
+      "removePolicyAria": "Удалить сохраненное решение для {{label}}",
+      "reliabilityTitle": "Надежность",
+      "autoReconnectShell": "Автоматическое повторное подключение удаленной оболочки после непредвиденного отключения",
+      "autoRetryTransfer": "Автоматически перезапускать неудавшиеся передачи",
+      "identityTitle": "Моя личность"
+    }
   }
 }

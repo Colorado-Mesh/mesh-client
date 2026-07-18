@@ -565,7 +565,23 @@
     "floodScopeOverrideLabel": "Обсяг повені для цього повідомлення",
     "floodScopeOverrideAria": "Перевизначення обсягу повені для кожного повідомлення",
     "floodScopeOverrideDefault": "Область застосування за замовчуванням",
-    "floodScopeOverrideUnscoped": "Без діапазону"
+    "floodScopeOverrideUnscoped": "Без діапазону",
+    "rncp": {
+      "sendFile": "Надіслати файл",
+      "sendFileAria": "Надіслати файл на {{name}} через rncp",
+      "pendingOffersBadgeAria_one": "{{count}} очікує пропозиції щодо вхідного файлу від цього вузла",
+      "pendingOffersBadgeAria_other": "{{count}} очікують пропозиції щодо вхідних файлів від цього вузла",
+      "destinationLabel": "хеш призначення rncp",
+      "rememberAddress": "Запам'ятати цю адресу",
+      "rememberAddressAria": "Запам'ятати цю адресу rncp для цього співрозмовника",
+      "chooseAndSend": "Виберіть файл і надішліть…",
+      "sending": "Заклад,",
+      "sendStarted": "Надсилання {{file}}…",
+      "sendFailed": "Не вдалося надіслати: {{error}}",
+      "newOfferToast": "{{peer}} хоче надіслати вам файл: {{file}}",
+      "requestEnable": "Увімкнути запит",
+      "requestEnableAria": "Попросіть цього вузла увімкнути отримання файлів"
+    }
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -612,7 +628,9 @@
     "colorAmber": "Жовтий",
     "colorRed": "Червоний",
     "colorPurple": "Фіолетовий",
-    "delete": "Видалити"
+    "delete": "Видалити",
+    "copy": "Копіювати",
+    "copied": "Скопійовано"
   },
   "configApplyNotice": {
     "persistNote": "Застосовані налаштування зберігаються у флеш-пам'яті пристрою та зберігаються під час перезавантаження.",
@@ -4167,7 +4185,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "Топологія мережі",
     "network": "Мережа",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "Віддалений"
   },
   "takServerPanel": {
     "title": "Сервер TAK",
@@ -4463,5 +4482,198 @@
     "confirmContactImportTitle": "Імпортувати контакт?",
     "confirmContactImportBody": "Додати {{name}} із зовнішнього посилання до ваших контактів Reticulum?",
     "confirmContactImportAction": "Імпортувати контакт"
+  },
+  "reticulumRemote": {
+    "navAria": "Віддалені ділянки",
+    "sidecarNotRunning": "Запустіть стек Reticulum, щоб використовувати віддалену оболонку та передачу файлів.",
+    "sections": {
+      "shell": "Контур",
+      "transfer": "Переказати кошти",
+      "saved": "Збережено",
+      "settings": "Налаштування"
+    },
+    "errors": {
+      "invalidAddress": "Введіть дійсний 32-символьний шістнадцятковий хеш призначення."
+    },
+    "reasons": {
+      "pathConstrained": "Шлях обмежений (низька пропускна здатність)",
+      "pathUnknown": "Швидкість шляху невідома",
+      "notAnnounced": "Місце призначення не оголошено",
+      "timeout": "Ваш запит вичерпано",
+      "notAllowed": "Не дозволено",
+      "versionMismatch": "Віддалена невідповідність версії",
+      "stagingFailed": "Не вдалося інсценізувати вхідний файл",
+      "cancelled": "Скасовано",
+      "rejected": "Відхилено",
+      "error": "Помилка"
+    },
+    "pathCapability": {
+      "checking": "Перевірка шляху…",
+      "hops_one": "{{count}} Hop",
+      "hops_other": "{{count}} хопів",
+      "speed": {
+        "high": "Швидкий шлях",
+        "constrained": "Обмежений шлях",
+        "mixed": "Змішаний шлях",
+        "unknown": "Невідомий шлях"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "Хеш призначення (32 шістнадцяткові символи)",
+      "addressAria": "хеш призначення rnsh",
+      "selectSavedAddress": "Використовувати збережену адресу {{label}}",
+      "connectAria": "Підключити віддалену оболонку",
+      "connect": "Connect (Підключення)",
+      "connecting": "Підключення…",
+      "connectFailed": "Не вдалося підключитися: {{error}}",
+      "maxSessions": "Досягнуто максимум {{count}} сеансів оболонки.",
+      "focusSession": "Перейти до сеансу {{address}}",
+      "closeSession": "Закрити сеанс {{address}}",
+      "emptyState": "Немає активних сеансів віддаленої оболонки. Введіть хеш пункту призначення вище, щоб підключитися.",
+      "status": {
+        "connecting": "Підключення…",
+        "active": "У Грі",
+        "closed": "Закрито",
+        "error": "Помилка"
+      },
+      "reconnectAria": "Повторно підключити цей сеанс",
+      "reconnect": "Повторно під’єднати",
+      "disconnectAria": "Відключити цей сеанс",
+      "disconnect": "Від'єднати",
+      "reconnectExhausted": "Автоматичне повторне підключення припинилося після досягнення ліміту повторних спроб. Стан віддаленого сеансу втрачено.",
+      "reconnectingBanner": "Автоматичне підключення (спроба {{attempt}} з {{max}}). Стан віддаленого сеансу втрачено.",
+      "fingerprintTitle": "Підтвердити віддалену особу",
+      "fingerprintMessage": "Підключення до {{address}}. Повідомлена особа: {{identity}}. Відбиток пальця: {{fingerprint}}. Перш ніж продовжити, підтвердьте, що це та особистість, яку ви очікуєте.",
+      "unknownIdentity": "невідома особа",
+      "unknownFingerprint": "невідомий відбиток пальця",
+      "fingerprintConfirm": "Connect (Підключення)"
+    },
+    "transfer": {
+      "myIdentity": "Моя особа:",
+      "copyIdentityAria": "Скопіювати хеш моєї особи",
+      "myReceiveDest": "Мій пункт призначення для отримання rncp:",
+      "copyReceiveDestAria": "Скопіювати мій пункт призначення отримання rncp",
+      "pendingOffersTitle": "Вхідні файли в очікуванні",
+      "pendingOffersBadgeAria_one": "{{count}} в очікуванні пропозиції щодо вхідного файлу",
+      "pendingOffersBadgeAria_other": "{{count}} в очікуванні пропозицій щодо вхідних файлів",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "Прийняти {{file}}",
+      "accept": "Прийняти",
+      "rejectAria": "Відхилити {{file}}",
+      "reject": "Відхилити",
+      "alwaysAllowAria": "Завжди дозволяти цього відправника для {{file}}",
+      "alwaysAllow": "Завжди дозволяти",
+      "alwaysBlockAria": "Завжди блокувати цього відправника для {{file}}",
+      "alwaysBlock": "Завжди блокувати",
+      "alwaysAllowSaved": "Відправника додано до списку дозволених.",
+      "alwaysBlockSaved": "Відправника додано до списку блокування.",
+      "modeSendAria": "Перемкнутися в режим надсилання",
+      "modeSend": "Надіслати",
+      "modeFetchAria": "Перейти до режиму отримання",
+      "modeFetch": "Отримати",
+      "destinationPlaceholder": "Хеш призначення (32 шістнадцяткові символи)",
+      "destinationAria": "хеш призначення rncp",
+      "notAllowedHint": "Перекази недоступні на цьому шляху: {{reason}}",
+      "chooseFileAria": "Виберіть локальний файл для надсилання",
+      "chooseFile": "Оберіть файл",
+      "noFileChosen": "Не вибрано жодного файлу",
+      "sendAria": "Надіслати файл",
+      "send": "Надіслати",
+      "sendFailed": "Не вдалося надіслати: {{error}}",
+      "remotePathPlaceholder": "Віддалений файл",
+      "remotePathAria": "Віддалений шлях до файлу для отримання",
+      "chooseSaveDirAria": "Виберіть локальну папку для збереження",
+      "chooseSaveDir": "Виберіть папку збереження…",
+      "defaultSaveDir": "Типова папка завантаження",
+      "fetchAria": "Отримати файл",
+      "fetch": "Отримати",
+      "fetchFailed": "Не вдалося отримати: {{error}}",
+      "acceptFailed": "Не вдалося прийняти файл: {{error}}",
+      "listTitle": "Перекази",
+      "listEmpty": "Ще немає переказів.",
+      "kind": {
+        "send": "Надіслати",
+        "fetch": "Отримати"
+      },
+      "status": {
+        "active": "В процесі",
+        "completed": "Завершено",
+        "failed": "Помилка",
+        "cancelled": "Скасовано"
+      },
+      "cancelAria": "Скасувати передачу {{file}}",
+      "cancel": "Скасувати",
+      "retryAria": "Повторіть спробу передачі {{file}}",
+      "retry": "Повторити спробу",
+      "revealAria": "Показати {{file}} в папці",
+      "reveal": "Показати в папці",
+      "requestEnableAria": "Запит на те, щоб цей вузол увімкнув прийом фай",
+      "requestEnable": "Увімкнути запит",
+      "requestEnableSent": "Попросив вузол увімкнути прийом файлів.",
+      "requestEnableRateLimited": "Нещодавно ви вже надіслали запит. Повторіть спробу пізніше.",
+      "requestEnableFailed": "Не вдалося надіслати запит на ввімкнення: {{error}}",
+      "offerToast": "Пропозиція щодо вхідного файлу: {{file}}",
+      "copyInstructionsAria": "Скопіювати інструкції для ввімкнення отримання файлів",
+      "copyInstructions": "Копіювати інструкції",
+      "instructionsCopied": "Інструкції скопійовано."
+    },
+    "enableRequest": {
+      "title": "Увімкнути прийом файлів?",
+      "body": "{{peer}} попросив вас увімкнути отримання файлів rncp, щоб вони могли надіслати вам файл.",
+      "enableAsk": "Увімкнути (запитувати щоразу)",
+      "enableAskAria": "Увімкнути пропозиції щодо вхідних файлів і запитати перед прийняттям",
+      "enableAllow": "Увімкнути та дозволити цю ідентифікацію",
+      "enableAllowAria": "Увімкнути пропозиції щодо вхідних файлів і дозволити цьому відправнику",
+      "notNow": "Не зараз",
+      "notNowAria": "Відхилити запит на ввімкнення",
+      "dontAsk": "Більше не запитувати у цього колеги",
+      "dontAskAria": "Назавжди відхилити запити на включення від цього вузла",
+      "enabled": "Отримання файлів увімкнено.",
+      "enableFailed": "Не вдалося увімкнути отримання файлу: {{error}}",
+      "saveDirRequired": "Виберіть папку збереження, щоб увімкнути отримання.",
+      "lxmfBody": "Увімкніть отримання файлів (rncp), якщо ви використовуєте mesh-client: Remote → Settings → Inbound file offers. Або запустіть rncp/rncp-rs у режимі прослуховування."
+    },
+    "saved": {
+      "labelPlaceholder": "Мітка",
+      "labelAria": "Мітка збереженої адреси",
+      "labelRequired": "Введіть мітку для цієї адреси.",
+      "hashPlaceholder": "Хеш призначення (32 шістнадцяткові символи)",
+      "hashAria": "Хеш місця призначення збереженої адреси",
+      "serviceAria": "Служба збереженої адреси",
+      "serviceRnsh": "Оболонка (rnsh)",
+      "serviceRncp": "Передача (rncp)",
+      "saveAria": "Зберегти адресу",
+      "add": "Додати",
+      "saveFailed": "Не вдалося зберегти адресу: {{error}}",
+      "empty": "Адреси ще не збережено.",
+      "editAria": "Редагувати збережену адресу {{label}}",
+      "deleteAria": "Видалити збережену адресу {{label}}"
+    },
+    "settings": {
+      "applyFailed": "Не вдалося застосувати налаштування: {{error}}",
+      "inboundTitle": "Вхідні передачі файлів",
+      "inboundMode": {
+        "off": "Вимк.",
+        "ask": "Запитати",
+        "allow_all_listed": "Дозволити лише перераховані"
+      },
+      "allowFetch": "Дозволити віддаленим вузлам отримувати файли від мене",
+      "chooseFetchJailAria": "Виберіть папку, з якої віддалені вузли можуть отримувати дані",
+      "chooseFetchJail": "Виберіть папку для отримання…",
+      "noFetchJail": "Не вибрано папку отримання",
+      "overwrite": "Перезаписати наявні файли в квитанції",
+      "maxSizeInfo": "Максимальний розмір вхідного файлу: {{size}}",
+      "allowBlockListTitle": "Дозволити / заблокувати список",
+      "allowBlockListEmpty": "Ще немає збережених дозволених/заблокованих рішень. Використовуйте \"Завжди дозволяти\" або \"Завжди блокувати\" для вхідної пропозиції щодо файлів.",
+      "decision": {
+        "allow": "Дозволено",
+        "block": "Блоковано"
+      },
+      "removePolicyAria": "Видалити збережене рішення для {{label}}",
+      "reliabilityTitle": "Надійність",
+      "autoReconnectShell": "Автоматичне повторне підключення віддаленої оболонки після несподіваного відключення",
+      "autoRetryTransfer": "Автоматично повторювати спроби перенесення",
+      "identityTitle": "Моя особа"
+    }
   }
 }

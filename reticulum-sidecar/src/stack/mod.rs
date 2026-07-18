@@ -14,6 +14,7 @@ mod nomad_link_errors;
 mod nomad_request_payload;
 mod nomad_timeouts;
 mod packet_log;
+mod path_speed;
 mod persistence;
 pub mod rf_profiles;
 mod rmap_discovery;
@@ -24,6 +25,8 @@ mod types;
 mod via;
 
 #[cfg(feature = "rns-stack")]
+mod link_task;
+#[cfg(feature = "rns-stack")]
 mod live;
 #[cfg(feature = "rns-stack")]
 mod lxmf_delivery;
@@ -31,6 +34,10 @@ mod lxmf_delivery;
 mod nomad_server;
 #[cfg(feature = "rns-stack")]
 mod propagation_bridge;
+#[cfg(feature = "rns-stack")]
+mod rncp_transfer;
+#[cfg(feature = "rns-stack")]
+mod rnsh_session;
 #[cfg(feature = "rns-stack")]
 mod rrc_link;
 #[cfg(feature = "rns-stack")]
@@ -1650,6 +1657,214 @@ impl StackHandle {
         }
         let _ = hub_dest_hash;
         serde_json::json!({ "rooms": [] })
+    }
+
+    pub async fn rnsh_connect(&self, destination_hash: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rnsh_connect(destination_hash).await;
+        }
+        let _ = destination_hash;
+        serde_json::json!({ "ok": false, "error": "rnsh requires live rns-stack sidecar" })
+    }
+
+    pub async fn rnsh_input(&self, session_id: &str, data: Vec<u8>) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rnsh_input(session_id, data).await;
+        }
+        let _ = (session_id, data);
+        serde_json::json!({ "ok": false, "error": "rnsh requires live rns-stack sidecar" })
+    }
+
+    pub async fn rnsh_resize(
+        &self,
+        session_id: &str,
+        rows: Option<u32>,
+        cols: Option<u32>,
+    ) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rnsh_resize(session_id, rows, cols).await;
+        }
+        let _ = (session_id, rows, cols);
+        serde_json::json!({ "ok": false, "error": "rnsh requires live rns-stack sidecar" })
+    }
+
+    pub async fn rnsh_disconnect(&self, session_id: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rnsh_disconnect(session_id).await;
+        }
+        let _ = session_id;
+        serde_json::json!({ "ok": false, "error": "rnsh requires live rns-stack sidecar" })
+    }
+
+    pub async fn rnsh_status(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rnsh_status().await;
+        }
+        serde_json::json!({ "sessions": [] })
+    }
+
+    pub async fn rncp_send(&self, destination_hash: &str, path: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rncp_send(destination_hash, path).await;
+        }
+        let _ = (destination_hash, path);
+        serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
+    }
+
+    pub async fn rncp_fetch(
+        &self,
+        destination_hash: &str,
+        remote_path: &str,
+        save_path: Option<String>,
+    ) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            let save_dir = save_path
+                .map(PathBuf::from)
+                .unwrap_or_else(|| self.storage_dir.join("rncp_fetched"));
+            return live
+                .rncp_fetch(destination_hash, remote_path, save_dir)
+                .await;
+        }
+        let _ = (destination_hash, remote_path, save_path);
+        serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
+    }
+
+    pub async fn rncp_cancel(&self, transfer_id: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rncp_cancel(transfer_id).await;
+        }
+        let _ = transfer_id;
+        serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
+    }
+
+    pub async fn rncp_accept(&self, transfer_id: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rncp_accept(transfer_id).await;
+        }
+        let _ = transfer_id;
+        serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
+    }
+
+    pub async fn rncp_reject(&self, transfer_id: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rncp_reject(transfer_id).await;
+        }
+        let _ = transfer_id;
+        serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
+    }
+
+    pub async fn rncp_status(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rncp_status().await;
+        }
+        serde_json::json!({ "transfers": [], "pending_offers": [] })
+    }
+
+    /// `enabled: false` tears down the listener and sets policy to `off`.
+    /// `enabled: true` with a non-empty `allowed` list uses `allow_all_listed`
+    /// policy (only those identities can complete a transfer); an empty
+    /// `allowed` list uses `ask` policy (any sender's file lands as a
+    /// pending offer unless separately allow-listed).
+    #[allow(clippy::too_many_arguments)]
+    pub async fn rncp_set_listener(
+        &self,
+        enabled: bool,
+        save_dir: Option<String>,
+        allow_fetch: bool,
+        fetch_jail: Option<String>,
+        overwrite: bool,
+        allowed: Vec<String>,
+        blocked: Vec<String>,
+    ) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            if !enabled {
+                live.rncp_stop_listener().await;
+                let _ = live
+                    .rncp_configure_policy("off", Vec::new(), Vec::new())
+                    .await;
+                return live.rncp_listener_status().await;
+            }
+            let mode = if allowed.is_empty() {
+                "ask"
+            } else {
+                "allow_all_listed"
+            };
+            if let Err(e) = live.rncp_configure_policy(mode, allowed, blocked).await {
+                return serde_json::json!({ "ok": false, "error": e });
+            }
+            let save_dir = save_dir
+                .map(PathBuf::from)
+                .unwrap_or_else(|| self.storage_dir.join("rncp_inbox"));
+            let fetch_jail = fetch_jail.map(PathBuf::from);
+            return live
+                .rncp_start_listener(save_dir, allow_fetch, fetch_jail, overwrite)
+                .await;
+        }
+        let _ = (
+            enabled,
+            save_dir,
+            allow_fetch,
+            fetch_jail,
+            overwrite,
+            allowed,
+            blocked,
+        );
+        serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
+    }
+
+    pub async fn rncp_listener_status(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rncp_listener_status().await;
+        }
+        serde_json::json!({
+            "enabled": false,
+            "destination_hash": null,
+            "inbound_mode": "off",
+            "allowed": [],
+            "blocked": [],
+        })
+    }
+
+    pub fn path_capability(&self, destination_hash: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.path_capability(destination_hash);
+        }
+        let clean = destination_hash.trim().to_lowercase();
+        let cap = path_speed::path_capability_from_atoms(&clean, &[], None);
+        serde_json::json!({
+            "destination_hash": cap.destination_hash,
+            "speed": cap.speed.as_str(),
+            "via_atoms": cap.via_atoms,
+            "hops": cap.hops,
+            "transfer_allowed": cap.transfer_allowed,
+            "shell_allowed": cap.shell_allowed,
+            "reason_key": cap.reason_key,
+        })
+    }
+
+    pub async fn remote_identity(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return serde_json::json!({
+                "identity_hash": live.identity_hash_hex(),
+                "rncp_receive_hash": live.rncp_receive_destination_hash().await,
+            });
+        }
+        serde_json::json!({ "identity_hash": null, "rncp_receive_hash": null })
     }
 
     #[cfg(feature = "rns-stack")]

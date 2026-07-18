@@ -17,6 +17,7 @@ import {
   Radio,
   Settings,
   Shield,
+  Terminal,
   Users,
   Wifi,
   Wrench,
@@ -39,6 +40,8 @@ export function TabIcon({ name }: { name: string }) {
       return <MessageCircle {...p} />;
     case 'RRC':
       return <Hash {...p} />;
+    case 'Remote':
+      return <Terminal {...p} />;
     case 'NomadNetwork':
       return <Globe {...p} />;
     case 'Nodes':

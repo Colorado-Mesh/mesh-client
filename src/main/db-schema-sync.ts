@@ -18,7 +18,7 @@ import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 44;
+export const CURRENT_SCHEMA_VERSION = 45;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -242,6 +242,28 @@ export const CANONICAL_TABLES_DDL = `
         updated_at INTEGER
       );
 
+      CREATE TABLE IF NOT EXISTS reticulum_remote_addresses (
+        id                TEXT PRIMARY KEY,
+        label             TEXT NOT NULL,
+        service           TEXT NOT NULL CHECK(service IN ('rnsh','rncp')),
+        destination_hash  TEXT NOT NULL,
+        identity_hash     TEXT,
+        lxmf_peer_hash    TEXT,
+        created_at        INTEGER NOT NULL,
+        updated_at        INTEGER NOT NULL,
+        last_used_at      INTEGER,
+        UNIQUE(service, destination_hash)
+      );
+
+      CREATE TABLE IF NOT EXISTS reticulum_inbound_policy (
+        identity_hash   TEXT PRIMARY KEY,
+        decision        TEXT NOT NULL CHECK(decision IN ('allow','block')),
+        label           TEXT,
+        auto_save_dir   TEXT,
+        created_at      INTEGER NOT NULL,
+        updated_at      INTEGER NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS chat_outbox (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         protocol TEXT NOT NULL CHECK(protocol IN (${meshProtocolSqlInList()})),
@@ -297,6 +319,9 @@ export const INDEX_DDLS: readonly string[] = [
   'CREATE INDEX IF NOT EXISTS idx_meshcore_path_history_node ON meshcore_path_history(node_id)',
   'CREATE INDEX IF NOT EXISTS idx_chat_outbox_drain ON chat_outbox(protocol, status, next_retry_at)',
   'CREATE INDEX IF NOT EXISTS idx_chat_outbox_view ON chat_outbox(protocol, view_key, created_at)',
+  'CREATE INDEX IF NOT EXISTS idx_reticulum_remote_addresses_service ON reticulum_remote_addresses(service, destination_hash)',
+  'CREATE INDEX IF NOT EXISTS idx_reticulum_remote_addresses_last_used ON reticulum_remote_addresses(last_used_at)',
+  'CREATE INDEX IF NOT EXISTS idx_reticulum_inbound_policy_decision ON reticulum_inbound_policy(decision)',
 ];
 
 /** Tables + indexes for empty new databases (createBaseTables). */

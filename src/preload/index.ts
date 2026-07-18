@@ -191,6 +191,27 @@ contextBridge.exposeInMainWorld('electronAPI', {
         hops?: number | null;
       }[],
     ) => ipcRenderer.invoke('db:upsertReticulumIdentityActivityBatch', rows),
+    listReticulumRemoteAddresses: () => ipcRenderer.invoke('db:listReticulumRemoteAddresses'),
+    upsertReticulumRemoteAddress: (row: {
+      id?: string;
+      label: string;
+      service: 'rnsh' | 'rncp';
+      destination_hash: string;
+      identity_hash?: string | null;
+      lxmf_peer_hash?: string | null;
+      last_used_at?: number | null;
+    }) => ipcRenderer.invoke('db:upsertReticulumRemoteAddress', row),
+    deleteReticulumRemoteAddress: (id: string) =>
+      ipcRenderer.invoke('db:deleteReticulumRemoteAddress', id),
+    listReticulumInboundPolicy: () => ipcRenderer.invoke('db:listReticulumInboundPolicy'),
+    upsertReticulumInboundPolicy: (row: {
+      identity_hash: string;
+      decision: 'allow' | 'block';
+      label?: string | null;
+      auto_save_dir?: string | null;
+    }) => ipcRenderer.invoke('db:upsertReticulumInboundPolicy', row),
+    deleteReticulumInboundPolicy: (identityHash: string) =>
+      ipcRenderer.invoke('db:deleteReticulumInboundPolicy', identityHash),
     saveMeshcoreContact: (contact: {
       node_id: number;
       public_key: string;
@@ -1070,6 +1091,51 @@ contextBridge.exposeInMainWorld('electronAPI', {
           : '';
         return ipcRenderer.invoke('reticulum:proxyGet', `/api/v1/rrc/rooms${q}`);
       },
+    },
+    rnsh: {
+      connect: (opts: { destination_hash: string }) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rnsh/connect', opts),
+      input: (opts: { session_id: string; data: string; encoding?: 'base64' }) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rnsh/input', opts),
+      resize: (opts: { session_id: string; rows?: number; cols?: number }) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rnsh/resize', opts),
+      disconnect: (opts: { session_id: string }) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rnsh/disconnect', opts),
+      getStatus: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rnsh/status'),
+    },
+    rncp: {
+      send: (opts: { destination_hash: string; path: string }) =>
+        ipcRenderer.invoke('reticulum:rncpSend', opts),
+      fetch: (opts: { destination_hash: string; remote_path: string; save_path?: string }) =>
+        ipcRenderer.invoke('reticulum:rncpFetch', opts),
+      cancel: (opts: { transfer_id: string }) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rncp/cancel', opts),
+      accept: (opts: { transfer_id: string }) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rncp/accept', opts),
+      reject: (opts: { transfer_id: string }) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/rncp/reject', opts),
+      getStatus: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rncp/status'),
+      getListener: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/rncp/listener'),
+      setListener: (opts: {
+        enabled: boolean;
+        save_dir?: string;
+        allow_fetch?: boolean;
+        fetch_jail?: string;
+        overwrite?: boolean;
+        allowed?: string[];
+        blocked?: string[];
+      }) => ipcRenderer.invoke('reticulum:setRncpListener', opts),
+      showOpenFileDialog: (): Promise<{ canceled: boolean; path: string | null }> =>
+        ipcRenderer.invoke('reticulum:showRncpOpenFileDialog'),
+      showSaveDirectoryDialog: (): Promise<{ canceled: boolean; path: string | null }> =>
+        ipcRenderer.invoke('reticulum:showRncpSaveDirectoryDialog'),
+      revealInFolder: (path: string): Promise<{ ok: boolean; error?: string }> =>
+        ipcRenderer.invoke('reticulum:revealInFolder', path),
+    },
+    remote: {
+      pathCapability: (opts: { destination_hash: string }) =>
+        ipcRenderer.invoke('reticulum:proxyPost', '/api/v1/remote/path-capability', opts),
+      getIdentity: () => ipcRenderer.invoke('reticulum:proxyGet', '/api/v1/remote/identity'),
     },
   },
 

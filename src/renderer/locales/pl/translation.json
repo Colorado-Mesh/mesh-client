@@ -565,7 +565,23 @@
     "floodScopeOverrideLabel": "Zakres powodzi dla tej wiadomości",
     "floodScopeOverrideAria": "Nadpisanie zakresu zalania dla każdej wiadomości",
     "floodScopeOverrideDefault": "Zakres domyślny",
-    "floodScopeOverrideUnscoped": "Nieobjęte zakresem"
+    "floodScopeOverrideUnscoped": "Nieobjęte zakresem",
+    "rncp": {
+      "sendFile": "Wyślij plik",
+      "sendFileAria": "Wyślij plik do {{name}} przez rncp",
+      "pendingOffersBadgeAria_one": "{{count}} oczekuje na ofertę pliku przychodzącego od tego partnera",
+      "pendingOffersBadgeAria_other": "{{count}} oczekujące oferty plików przychodzących od tego partnera",
+      "destinationLabel": "hasz docelowy rncp",
+      "rememberAddress": "Zapamiętaj ten adres",
+      "rememberAddressAria": "Zapamiętaj to miejsce docelowe rncp dla tego partnera",
+      "chooseAndSend": "Wybierz plik i wyślij...",
+      "sending": "Wysyłanie…",
+      "sendStarted": "Wysyłanie: {{file}}…",
+      "sendFailed": "Nie udało się wysłać: {{error}}",
+      "newOfferToast": "{{peer}} chce wysłać Ci plik: {{file}}",
+      "requestEnable": "Włącz żądanie",
+      "requestEnableAria": "Poproś tego partnera, aby włączył odbieranie plików"
+    }
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -612,7 +628,9 @@
     "colorAmber": "Bursztynowy",
     "colorRed": "Czerwony",
     "colorPurple": "Fioletowy/a/e",
-    "delete": "Usuwać"
+    "delete": "Usuwać",
+    "copy": "Kopiuj",
+    "copied": "Skopiowano"
   },
   "configApplyNotice": {
     "persistNote": "Zastosowane ustawienia są zapisywane w pamięci flash urządzenia i utrzymują się po ponownym uruchomieniu.",
@@ -4167,7 +4185,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "Topologia sieci",
     "network": "Sieć",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "Pilot"
   },
   "takServerPanel": {
     "title": "Serwer TAK",
@@ -4463,5 +4482,198 @@
     "confirmContactImportTitle": "Zaimportować kontakt?",
     "confirmContactImportBody": "Dodać {{name}} z zewnętrznego łącza do kontaktów Reticulum?",
     "confirmContactImportAction": "Importuj kontakt"
+  },
+  "reticulumRemote": {
+    "navAria": "Sekcje zdalne",
+    "sidecarNotRunning": "Uruchom stos Reticulum, aby użyć zdalnej powłoki i transferu plików.",
+    "sections": {
+      "shell": "Muszla",
+      "transfer": "Transfer",
+      "saved": "Zapisane",
+      "settings": "Ustawienia"
+    },
+    "errors": {
+      "invalidAddress": "Wprowadź prawidłowy 32-znakowy kod szesnastkowy miejsca docelowego."
+    },
+    "reasons": {
+      "pathConstrained": "Ścieżka jest ograniczona (niska przepustowość)",
+      "pathUnknown": "Prędkość ścieżki jest nieznana",
+      "notAnnounced": "Miejsce docelowe nie zostało ogłoszone",
+      "timeout": "Upłynął limit czasu żądania.",
+      "notAllowed": "Niedozwolone",
+      "versionMismatch": "Niezgodność wersji zdalnej",
+      "stagingFailed": "Nie udało się przygotować pliku przychodzącego",
+      "cancelled": "Anulowane",
+      "rejected": "Odrzucone",
+      "error": "Błąd"
+    },
+    "pathCapability": {
+      "checking": "Sprawdzam ścieżkę…",
+      "hops_one": "{{count}} hop",
+      "hops_other": "{{count}} hops",
+      "speed": {
+        "high": "Szybka ścieżka",
+        "constrained": "Ograniczona ścieżka",
+        "mixed": "Ścieżka mieszana",
+        "unknown": "Nieznana ścieżka"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "Skrót miejsca docelowego (32 znaki szesnastkowe)",
+      "addressAria": "rnsh docelowy hasz",
+      "selectSavedAddress": "Użyj zapisanego adresu {{label}}",
+      "connectAria": "Podłącz zdalną obudowę",
+      "connect": "Połącz",
+      "connecting": "Łączenie…",
+      "connectFailed": "Nie udało się połączyć: {{error}}",
+      "maxSessions": "Osiągnięto maksymalną liczbę sesji powłoki {{count}}.",
+      "focusSession": "Przełącz na sesję {{address}}",
+      "closeSession": "Zamknij sesję {{address}}",
+      "emptyState": "Brak aktywnych zdalnych sesji powłoki. Wpisz powyżej skrót miejsca docelowego, aby się połączyć.",
+      "status": {
+        "connecting": "Łączenie…",
+        "active": "Połączono",
+        "closed": "Zamknięte",
+        "error": "Błąd"
+      },
+      "reconnectAria": "Połącz ponownie tę sesję",
+      "reconnect": "Połącz ponownie",
+      "disconnectAria": "Odłącz tę sesję",
+      "disconnect": "Rozłącz",
+      "reconnectExhausted": "Automatyczne ponowne połączenie ustąpiło po osiągnięciu limitu ponownych prób. Stan sesji zdalnej został utracony.",
+      "reconnectingBanner": "Automatyczne ponowne łączenie (próba {{attempt}} z {{max}}). Stan sesji zdalnej został utracony.",
+      "fingerprintTitle": "Potwierdź tożsamość zdalną",
+      "fingerprintMessage": "Łączenie z {{address}}. Zgłoszona tożsamość: {{identity}}. Odcisk palca: {{fingerprint}}. Potwierdź tożsamość, której oczekujesz, zanim przejdziesz dalej.",
+      "unknownIdentity": "nieznana tożsamość",
+      "unknownFingerprint": "Nieznany odcisk palca OTR",
+      "fingerprintConfirm": "Połącz"
+    },
+    "transfer": {
+      "myIdentity": "Moja tożsamość:",
+      "copyIdentityAria": "Skopiuj mój hash tożsamości",
+      "myReceiveDest": "Miejsce docelowe odbioru mojego rncp:",
+      "copyReceiveDestAria": "Skopiuj miejsce docelowe odbioru rncp",
+      "pendingOffersTitle": "Pliki przychodzące oczekujące",
+      "pendingOffersBadgeAria_one": "Oczekująca oferta plików przychodzących: {{count}}",
+      "pendingOffersBadgeAria_other": "{{count}} oczekujące oferty plików przychodzących",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "Zaakceptuj {{file}}",
+      "accept": "Zaakceptuj",
+      "rejectAria": "Odrzuć {{file}}",
+      "reject": "Odrzuć",
+      "alwaysAllowAria": "Zawsze zezwalaj temu nadawcy na {{file}}",
+      "alwaysAllow": "Zawsze zezwalaj",
+      "alwaysBlockAria": "Zawsze blokuj tego nadawcę dla {{file}}",
+      "alwaysBlock": "Zawsze blokuj",
+      "alwaysAllowSaved": "Nadawca został dodany do listy dozwolonych.",
+      "alwaysBlockSaved": "Nadawca został dodany do listy blokad.",
+      "modeSendAria": "Zmień na tryb:",
+      "modeSend": "Wyślij",
+      "modeFetchAria": "Przełącz na tryb pobierania",
+      "modeFetch": "Pobierz",
+      "destinationPlaceholder": "Skrót miejsca docelowego (32 znaki szesnastkowe)",
+      "destinationAria": "hasz docelowy rncp",
+      "notAllowedHint": "Przelewy nie są dostępne na tej ścieżce: {{reason}}",
+      "chooseFileAria": "Wybierz plik lokalny do wysłania",
+      "chooseFile": "Wybierz plik",
+      "noFileChosen": "Nie wybrano pliku",
+      "sendAria": "Wyślij plik",
+      "send": "Wyślij",
+      "sendFailed": "Nie udało się wysłać: {{error}}",
+      "remotePathPlaceholder": "Plik wirtualny",
+      "remotePathAria": "Zdalna ścieżka pliku do pobrania",
+      "chooseSaveDirAria": "Wybierz lokalny folder, w którym chcesz zapisać",
+      "chooseSaveDir": "Wybierz zapisz folder…",
+      "defaultSaveDir": "Domyślny folder pobierania",
+      "fetchAria": "Pobierz plik",
+      "fetch": "Pobierz",
+      "fetchFailed": "Nie udało się pobrać: {{error}}",
+      "acceptFailed": "Nie można zaakceptować pliku: {{error}}",
+      "listTitle": "Przekazy",
+      "listEmpty": "Nie ma jeszcze żadnych transferów.",
+      "kind": {
+        "send": "Wyślij",
+        "fetch": "Pobierz"
+      },
+      "status": {
+        "active": "Weryfikacja w toku",
+        "completed": "Projekt zakończony",
+        "failed": "Zakończone niepowodzeniem",
+        "cancelled": "Anulowane"
+      },
+      "cancelAria": "Anuluj transfer {{file}}",
+      "cancel": "Anuluj",
+      "retryAria": "Ponów transfer {{file}}",
+      "retry": "Jeszcze raz",
+      "revealAria": "Odkryj {{file}} w folderze",
+      "reveal": "Odsłoń w folderze",
+      "requestEnableAria": "Poproś, aby ten plik równorzędny umożliwiał odbieranie",
+      "requestEnable": "Włącz żądanie",
+      "requestEnableSent": "Poprosił rówieśnika o umożliwienie odbioru plików.",
+      "requestEnableRateLimited": "Niedawno wysłano prośbę. Spróbuj ponownie później.",
+      "requestEnableFailed": "Nie można wysłać prośby o włączenie: {{error}}",
+      "offerToast": "Oferta plików przychodzących: {{file}}",
+      "copyInstructionsAria": "Kopiuj instrukcje dotyczące włączania odbierania plików",
+      "copyInstructions": "Kopiuj instrukcje",
+      "instructionsCopied": "Skopiowano instrukcje."
+    },
+    "enableRequest": {
+      "title": "Włączyć odbiór plików?",
+      "body": "Użytkownik {{peer}} poprosił Cię o włączenie odbierania plików rncp, aby mógł wysłać Ci plik.",
+      "enableAsk": "Włącz (pytaj za każdym razem)",
+      "enableAskAria": "Włącz oferty plików przychodzących i zapytaj przed zaakceptowaniem",
+      "enableAllow": "Włącz i zezwól na tę tożsamość",
+      "enableAllowAria": "Włącz oferty plików przychodzących i zezwól temu nadawcy",
+      "notNow": "Nie teraz",
+      "notNowAria": "Odrzuć prośbę o włączenie",
+      "dontAsk": "Nie pytaj ponownie od tego współpracownika",
+      "dontAskAria": "Trwale odrzuć prośby o włączenie od tego partnera",
+      "enabled": "Odbiór plików jest włączony.",
+      "enableFailed": "Nie można włączyć odbierania plików: {{error}}",
+      "saveDirRequired": "Wybierz folder zapisu, aby włączyć odbiór.",
+      "lxmfBody": "Włącz odbieranie plików (rncp), jeśli używasz funkcji mesh-client: Remote → Settings → Inbound file offers. Lub uruchom rncp/rncp-rs w trybie słuchania."
+    },
+    "saved": {
+      "labelPlaceholder": "Oznaczenie",
+      "labelAria": "Zapisana etykieta adresowa",
+      "labelRequired": "Wprowadź etykietę dla tego adresu.",
+      "hashPlaceholder": "Skrót miejsca docelowego (32 znaki szesnastkowe)",
+      "hashAria": "Zapisano adres docelowy hasz",
+      "serviceAria": "Usługa zapisanego adresu",
+      "serviceRnsh": "Shell (rnsh)",
+      "serviceRncp": "Transfer (rncp)",
+      "saveAria": "Zapisz adres",
+      "add": "Dodaj",
+      "saveFailed": "Nie udało się zapisać adresu: {{error}}",
+      "empty": "Brak zapisanych adresów",
+      "editAria": "Edytuj zapisany adres {{label}}",
+      "deleteAria": "Usuń zapisany adres {{label}}"
+    },
+    "settings": {
+      "applyFailed": "Nie udało się zastosować ustawienia: {{error}}",
+      "inboundTitle": "Przesyłanie plików przychodzących",
+      "inboundMode": {
+        "off": "Wył.",
+        "ask": "Zapytaj",
+        "allow_all_listed": "Zezwalaj tylko na listę"
+      },
+      "allowFetch": "Zezwalaj zdalnym rówieśnikom na pobieranie ode mnie plików",
+      "chooseFetchJailAria": "Wybierz folder, z którego mogą pobierać zdalni partnerzy",
+      "chooseFetchJail": "Wybierz folder pobierania…",
+      "noFetchJail": "Nie wybrano folderu pobierania",
+      "overwrite": "Zastąp istniejące pliki na paragonie",
+      "maxSizeInfo": "Maksymalny rozmiar pliku przychodzącego: {{size}}",
+      "allowBlockListTitle": "Lista dozwolonych / zablokowanych",
+      "allowBlockListEmpty": "Nie zapisano jeszcze decyzji zezwalających/blokujących. Użyj opcji „Zawsze zezwalaj” lub „Zawsze blokuj” w ofercie plików przychodzących.",
+      "decision": {
+        "allow": "Dozwolone",
+        "block": "Zablokowane"
+      },
+      "removePolicyAria": "Usuń zapisaną decyzję dla {{label}}",
+      "reliabilityTitle": "Rzetelność",
+      "autoReconnectShell": "Automatycznie ponownie podłącz zdalną obudowę po nieoczekiwanym rozłączeniu",
+      "autoRetryTransfer": "Wznawiaj automatycznie gdy zawiodło pobieranie",
+      "identityTitle": "Moja tożsamość"
+    }
   }
 }

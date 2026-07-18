@@ -1,0 +1,95 @@
+import { create } from 'zustand';
+
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import type { RemoteAddressBookRow, UpsertRemoteAddressRequest } from '@/shared/remote-types';
+
+interface ReticulumRemoteAddressStoreState {
+  addresses: Map<string, RemoteAddressBookRow>;
+  hydrated: boolean;
+  loading: boolean;
+  hydrate: () => Promise<void>;
+  upsert: (row: UpsertRemoteAddressRequest) => Promise<RemoteAddressBookRow | null>;
+  remove: (id: string) => Promise<void>;
+  findByDestination: (
+    destinationHash: string,
+    service?: RemoteAddressBookRow['service'],
+  ) => RemoteAddressBookRow | undefined;
+  findByLxmfPeer: (lxmfPeerHash: string) => RemoteAddressBookRow | undefined;
+  clear: () => void;
+}
+
+export const useReticulumRemoteAddressStore = create<ReticulumRemoteAddressStoreState>(
+  (set, get) => ({
+    addresses: new Map(),
+    hydrated: false,
+    loading: false,
+
+    hydrate: async () => {
+      if (get().loading) return;
+      set({ loading: true });
+      try {
+        const rows = await window.electronAPI.db.listReticulumRemoteAddresses();
+        const map = new Map<string, RemoteAddressBookRow>();
+        for (const row of rows) {
+          map.set(row.id, row);
+        }
+        set({ addresses: map, hydrated: true, loading: false });
+      } catch (e) {
+        console.warn('[reticulumRemoteAddressStore] hydrate ' + errLikeToLogString(e));
+        set({ loading: false });
+      }
+    },
+
+    upsert: async (row) => {
+      try {
+        await window.electronAPI.db.upsertReticulumRemoteAddress(row);
+        // Server generates the id/timestamps on insert — refresh from DB rather than guess them.
+        await get().hydrate();
+        const key = row.destination_hash.toLowerCase();
+        return (
+          [...get().addresses.values()].find(
+            (a) => a.destination_hash === key && a.service === row.service,
+          ) ?? null
+        );
+      } catch (e) {
+        console.warn('[reticulumRemoteAddressStore] upsert ' + errLikeToLogString(e));
+        return null;
+      }
+    },
+
+    remove: async (id) => {
+      try {
+        await window.electronAPI.db.deleteReticulumRemoteAddress(id);
+        set((s) => {
+          const addresses = new Map(s.addresses);
+          addresses.delete(id);
+          return { addresses };
+        });
+      } catch (e) {
+        console.warn('[reticulumRemoteAddressStore] remove ' + errLikeToLogString(e));
+      }
+    },
+
+    findByDestination: (destinationHash, service) => {
+      const key = destinationHash.trim().toLowerCase();
+      for (const row of get().addresses.values()) {
+        if (row.destination_hash.toLowerCase() !== key) continue;
+        if (service && row.service !== service) continue;
+        return row;
+      }
+      return undefined;
+    },
+
+    findByLxmfPeer: (lxmfPeerHash) => {
+      const key = lxmfPeerHash.trim().toLowerCase();
+      for (const row of get().addresses.values()) {
+        if (row.lxmf_peer_hash?.toLowerCase() === key) return row;
+      }
+      return undefined;
+    },
+
+    clear: () => {
+      set({ addresses: new Map(), hydrated: false, loading: false });
+    },
+  }),
+);

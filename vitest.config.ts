@@ -122,6 +122,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/mqttSettingsStorage.test.ts',
   'src/renderer/lib/protocols/meshcore/MeshCoreTransport.serial-writable.test.ts',
   'src/renderer/lib/reduceMotionPreference.test.ts',
+  'src/renderer/lib/remoteSettingsStorage.test.ts',
   'src/renderer/lib/rfReconnectHelper.test.ts',
   'src/renderer/lib/reticulum/useReticulumSidecarApi.test.ts',
   'src/renderer/lib/reticulum/useReticulumInterfaceSnapshot.test.ts',
