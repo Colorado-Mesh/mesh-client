@@ -595,7 +595,12 @@
     "shareLocationUnavailable": "Ubicación no disponible: verifique la configuración del GPS",
     "floodScopeOverrideHint": "Alcance de inundación regional solo para este mensaje. El alcance predeterminado utiliza la configuración guardada de la radio; un hashtag limita este envío a esa región; Envíos sin alcance sin filtro de región. Su alcance guardado se restaura después del envío.",
     "floodScopeOverrideMenuButton": "Cambiar el alcance de la inundación para este mensaje",
-    "shareLocationWaypointFailed": "No se reconoció el pin del mapa (Waypoint); es posible que aún se haya enviado el texto de la ubicación."
+    "shareLocationWaypointFailed": "No se reconoció el pin del mapa (Waypoint); es posible que aún se haya enviado el texto de la ubicación.",
+    "floodScopeOverrideCustom": "Alcance personalizado...",
+    "floodScopeOverrideCustomLabel": "Hashtag personalizado del alcance de la inundación",
+    "floodScopeOverrideCustomPlaceholder": "#miregión",
+    "floodScopeOverrideCustomApply": "Usar alcance",
+    "floodScopeOverrideCustomInvalid": "Ingrese un hashtag de región válido (por ejemplo, #miregión)."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -3401,8 +3406,6 @@
     "floodScopeTitle": "Alcance regional de inundaciones",
     "floodScopeHelp": "Limite el tráfico de inundación a una región de hashtag (firmware v8+). Requiere meshcore.js setFloodScope; reconectar vuelve a aplicar el ámbito guardado.",
     "floodScopeNone": "Ninguno (alcance claro)",
-    "floodScopePreset": "Hashtag preestablecido",
-    "floodScopePresetSelect": "Hashtag de región preestablecido",
     "floodScopeCustom": "Hashtag personalizado",
     "floodScopeCustomPlaceholder": "#myregion",
     "floodScopeApply": "Aplicar alcance de inundación",
@@ -3512,7 +3515,13 @@
       "6": {
         "label": "Medio lento"
       }
-    }
+    },
+    "floodScopeSaved": "Alcance guardado",
+    "floodScopeSavedSelect": "Hashtag de región guardada",
+    "floodScopeSavedEmpty": "Aún no hay ámbitos guardados. Aplique un hashtag personalizado o use el alcance personalizado del chat para agregar uno.",
+    "floodScopeRemoveSaved": "Eliminar de ámbitos guardados",
+    "floodScopeRemoveSavedAria": "Eliminar {{hashtag}} de los ámbitos guardados",
+    "floodScopeInvalidHashtag": "Ingrese un hashtag de región válido (por ejemplo, #miregión)."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar paquetes",

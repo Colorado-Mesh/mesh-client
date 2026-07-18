@@ -29,6 +29,11 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   autoFloodAdvertType: 'flood' as 'flood' | 'zeroHop',
   /** Persisted MeshCore regional flood scope hashtag (empty = none). */
   meshcoreFloodScopeHashtag: '',
+  /**
+   * User-managed MeshCore flood-scope quick-picks for Radio/Chat.
+   * Empty by default; first load may seed from `meshcoreFloodScopeHashtag`.
+   */
+  meshcoreFloodScopePresets: [] as string[],
   locale: 'en' as string,
   chatCompactMode: false,
   /** When true, disables non-essential UI motion (animated icons, decorative pulses). */

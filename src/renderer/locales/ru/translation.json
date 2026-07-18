@@ -595,7 +595,12 @@
     "shareLocationUnavailable": "Местоположение недоступно — проверьте настройки GPS.",
     "floodScopeOverrideHint": "Региональная область флуда только для этого сообщения. Область по умолчанию использует сохраненные настройки радиостанции; хэштег ограничивает отправку этим регионом; Отправка без ограничения области без фильтра региона. Сохраненная область действия восстанавливается после отправки.",
     "floodScopeOverrideMenuButton": "Изменить область флуда для этого сообщения",
-    "shareLocationWaypointFailed": "Отметка на карте (путевая точка) не была подтверждена — возможно, текст местоположения все еще был отправлен."
+    "shareLocationWaypointFailed": "Отметка на карте (путевая точка) не была подтверждена — возможно, текст местоположения все еще был отправлен.",
+    "floodScopeOverrideCustom": "Пользовательский объем…",
+    "floodScopeOverrideCustomLabel": "Пользовательский хэштег области флуда",
+    "floodScopeOverrideCustomPlaceholder": "#мойрегион",
+    "floodScopeOverrideCustomApply": "Использовать область действия",
+    "floodScopeOverrideCustomInvalid": "Введите действительный хэштег региона (например, #myregion)."
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -3401,8 +3406,6 @@
     "floodScopeTitle": "Область регионального наводнения",
     "floodScopeHelp": "Ограничьте флуд-трафик регионом хэштегов (прошивка v8+). Требуется meshcore.js setFloodScope; переподключение повторно применяет сохраненную область.",
     "floodScopeNone": "Нет (очистить область применения)",
-    "floodScopePreset": "Предустановленный хэштег",
-    "floodScopePresetSelect": "Предустановленный хэштег региона",
     "floodScopeCustom": "Пользовательский хэштег",
     "floodScopeCustomPlaceholder": "#myregion",
     "floodScopeApply": "Применить объем наводнения",
@@ -3512,7 +3515,13 @@
       "6": {
         "label": "Средне Медленный"
       }
-    }
+    },
+    "floodScopeSaved": "Сохраненная область действия",
+    "floodScopeSavedSelect": "Хэштег сохраненного региона",
+    "floodScopeSavedEmpty": "Сохраненных областей пока нет. Примените собственный хэштег или используйте «Пользовательскую область действия» из чата, чтобы добавить его.",
+    "floodScopeRemoveSaved": "Удалить из сохраненных областей",
+    "floodScopeRemoveSavedAria": "Удалить {{hashtag}} из сохраненных областей.",
+    "floodScopeInvalidHashtag": "Введите действительный хэштег региона (например, #myregion)."
   },
   "rawPacketLog": {
     "filterPackets": "Фильтровать пакеты",

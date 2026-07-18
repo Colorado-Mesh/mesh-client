@@ -155,6 +155,8 @@ interface Props {
   onApplyMeshcoreFloodScopeHashtag?: (hashtag: string) => Promise<void>;
   meshcoreFloodScopeHashtag?: string;
   onMeshcoreFloodScopeHashtagChange?: (hashtag: string) => void;
+  meshcoreFloodScopePresets?: string[];
+  onMeshcoreFloodScopePresetsChange?: (presets: string[]) => void;
   onXmodemUpload?: () => Promise<void>;
   onXmodemDownload?: (filename: string) => Promise<void>;
   onSyncClock?: () => Promise<void>;
@@ -667,6 +669,8 @@ export default function RadioPanel({
   onApplyMeshcoreFloodScopeHashtag,
   meshcoreFloodScopeHashtag = '',
   onMeshcoreFloodScopeHashtagChange,
+  meshcoreFloodScopePresets = [],
+  onMeshcoreFloodScopePresetsChange,
   onXmodemUpload,
   onXmodemDownload,
   onSyncClock,
@@ -1587,6 +1591,8 @@ export default function RadioPanel({
                 disabled={disabled}
                 isConnected={isConnected}
                 savedHashtag={meshcoreFloodScopeHashtag}
+                savedPresets={meshcoreFloodScopePresets}
+                onSavedPresetsChange={onMeshcoreFloodScopePresetsChange ?? (() => {})}
                 onApplyFloodScope={onApplyMeshcoreFloodScopeHashtag}
                 onSavedHashtagChange={onMeshcoreFloodScopeHashtagChange}
               />

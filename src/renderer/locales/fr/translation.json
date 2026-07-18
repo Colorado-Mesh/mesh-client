@@ -595,7 +595,12 @@
     "shareLocationUnavailable": "Localisation indisponible : vérifiez les paramètres GPS",
     "floodScopeOverrideHint": "Portée des inondations régionales pour ce message uniquement. La portée par défaut utilise les paramètres enregistrés de la radio ; un hashtag limite cet envoi à cette région ; Envois non ciblés sans filtre de région. Votre portée enregistrée est restaurée après l'envoi.",
     "floodScopeOverrideMenuButton": "Modifier la portée de l'inondation pour ce message",
-    "shareLocationWaypointFailed": "Le repère de la carte (Waypoint) n'a pas été reconnu — le texte de localisation a peut-être encore été envoyé."
+    "shareLocationWaypointFailed": "Le repère de la carte (Waypoint) n'a pas été reconnu — le texte de localisation a peut-être encore été envoyé.",
+    "floodScopeOverrideCustom": "Portée personnalisée…",
+    "floodScopeOverrideCustomLabel": "Hashtag de portée d'inondation personnalisé",
+    "floodScopeOverrideCustomPlaceholder": "#marégion",
+    "floodScopeOverrideCustomApply": "Utiliser la portée",
+    "floodScopeOverrideCustomInvalid": "Saisissez un hashtag de région valide (par exemple #myregion)."
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -3401,8 +3406,6 @@
     "floodScopeTitle": "Champ d'application régional des inondations",
     "floodScopeHelp": "Limitez le trafic d'inondation à une région de hashtag (firmware v8+). Nécessite meshcore.js setFloodScope ; la reconnexion réapplique l'étendue enregistrée.",
     "floodScopeNone": "Aucun (champ d'application clair)",
-    "floodScopePreset": "Hashtag prédéfini",
-    "floodScopePresetSelect": "Hashtag de région prédéfini",
     "floodScopeCustom": "Hashtag personnalisé",
     "floodScopeCustomPlaceholder": "#myregion",
     "floodScopeApply": "Appliquer la portée de l'inond",
@@ -3512,7 +3515,13 @@
       "6": {
         "label": "Moyen lent"
       }
-    }
+    },
+    "floodScopeSaved": "Portée enregistrée",
+    "floodScopeSavedSelect": "Hashtag de la région enregistrée",
+    "floodScopeSavedEmpty": "Aucune étendue enregistrée pour le moment. Appliquez un hashtag personnalisé ou utilisez la portée personnalisée de Chat pour en ajouter un.",
+    "floodScopeRemoveSaved": "Supprimer des étendues enregistrées",
+    "floodScopeRemoveSavedAria": "Supprimer {{hashtag}} des étendues enregistrées",
+    "floodScopeInvalidHashtag": "Saisissez un hashtag de région valide (par exemple #myregion)."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrer les paquets",

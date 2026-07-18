@@ -595,7 +595,12 @@
     "shareLocationUnavailable": "Lokalizacja niedostępna — sprawdź ustawienia GPS",
     "floodScopeOverrideHint": "Regionalny zakres powodzi tylko dla tej wiadomości. Domyślny zakres wykorzystuje zapisane ustawienia radia; hashtag ogranicza tę wysyłkę do tego regionu; Wysyłanie bez zakresu bez filtru regionu. Zapisany zakres zostanie przywrócony po wysłaniu.",
     "floodScopeOverrideMenuButton": "Zmień zakres zalewu tej wiadomości",
-    "shareLocationWaypointFailed": "Pin mapy (punkt orientacyjny) nie został potwierdzony — tekst lokalizacji mógł mimo to zostać wysłany."
+    "shareLocationWaypointFailed": "Pin mapy (punkt orientacyjny) nie został potwierdzony — tekst lokalizacji mógł mimo to zostać wysłany.",
+    "floodScopeOverrideCustom": "Niestandardowy zakres…",
+    "floodScopeOverrideCustomLabel": "Niestandardowy hashtag zakresu powodzi",
+    "floodScopeOverrideCustomPlaceholder": "#mójregion",
+    "floodScopeOverrideCustomApply": "Użyj zakresu",
+    "floodScopeOverrideCustomInvalid": "Wprowadź prawidłowy hashtag regionu (na przykład #myregion)."
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -3401,8 +3406,6 @@
     "floodScopeTitle": "Regionalny zasięg powodzi",
     "floodScopeHelp": "Ogranicz ruch powodziowy do regionu z hashtagiem (firmware v8+). Wymaga meshcore.js setFloodScope; ponowne połączenie powoduje zapisanie endoskopu.",
     "floodScopeNone": "Brak (jasny zakres)",
-    "floodScopePreset": "Wstępnie ustawiony hashtag",
-    "floodScopePresetSelect": "Hashtag regionu ustawień wstępnych",
     "floodScopeCustom": "Niestandardowy hasztag",
     "floodScopeCustomPlaceholder": "#myregion",
     "floodScopeApply": "Zastosuj zakres zalewania",
@@ -3512,7 +3515,13 @@
       "6": {
         "label": "Średnio powolny"
       }
-    }
+    },
+    "floodScopeSaved": "Zapisany zakres",
+    "floodScopeSavedSelect": "Hashtag zapisanego regionu",
+    "floodScopeSavedEmpty": "Nie ma jeszcze zapisanych zakresów. Zastosuj niestandardowy hashtag lub użyj zakresu niestandardowego z poziomu czatu, aby go dodać.",
+    "floodScopeRemoveSaved": "Usuń z zapisanych zakresów",
+    "floodScopeRemoveSavedAria": "Usuń {{hashtag}} z zapisanych zakresów",
+    "floodScopeInvalidHashtag": "Wprowadź prawidłowy hashtag regionu (na przykład #myregion)."
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",

@@ -25,7 +25,11 @@ import {
 } from '../lib/chatComposerLimits';
 import { formatLocationMessage } from '../lib/chatLocationUtils';
 import { clearDraft, loadDraftsInitial, saveDraft } from '../lib/chatPanelProtocolStorage';
-import { MESHCORE_FLOOD_SCOPE_PRESETS } from '../lib/meshcoreFloodScope';
+import { normalizeMeshcoreFloodScopeHashtag } from '../lib/meshcoreFloodScope';
+import {
+  isValidMeshcoreFloodScopeHashtag,
+  rememberMeshcoreFloodScopePreset,
+} from '../lib/meshcoreFloodScopePresetsStorage';
 import {
   formatMeshcoreGifWire,
   meshcoreGiphyMediaUrl,
@@ -90,6 +94,13 @@ export interface ChatComposerProps {
   lxmfReplyHashReplies?: boolean;
   /** MeshCore: show per-message flood-scope override control. */
   showFloodScopeOverride?: boolean;
+  /** MeshCore: user-managed flood-scope quick-picks. */
+  floodScopePresets?: string[];
+  /**
+   * MeshCore: remember a hashtag after a successful scoped send.
+   * When omitted, Composer persists via the storage helper directly.
+   */
+  onRememberFloodScopePreset?: (hashtag: string) => void;
   /**
    * Resolve GPS/static position for one-click location share.
    * Sourced from runtime `refreshOurPosition` (Composer has no nodesRef access).
@@ -129,6 +140,8 @@ export function ChatComposer({
   onSendSuccess,
   lxmfReplyHashReplies = false,
   showFloodScopeOverride = false,
+  floodScopePresets = [],
+  onRememberFloodScopePreset,
   resolveShareLocation,
   onSendLocationWaypoint,
   textareaRef,
@@ -141,10 +154,14 @@ export function ChatComposer({
   const limitHintId = useId();
   const counterLiveId = useId();
   const floodScopeListboxId = useId();
+  const floodScopeCustomInputId = useId();
 
   const [input, setInput] = useState('');
   const [floodScopeOverride, setFloodScopeOverride] = useState('');
   const [floodScopeMenuOpen, setFloodScopeMenuOpen] = useState(false);
+  const [floodScopeCustomEditing, setFloodScopeCustomEditing] = useState(false);
+  const [floodScopeCustomDraft, setFloodScopeCustomDraft] = useState('');
+  const [floodScopeCustomError, setFloodScopeCustomError] = useState<string | null>(null);
   const [floodScopeMenuPos, setFloodScopeMenuPos] = useState<{
     bottom: number;
     right: number;
@@ -165,8 +182,9 @@ export function ChatComposer({
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const emojiPickerRef = useRef<HTMLElement | null>(null);
   const floodScopeMenuButtonRef = useRef<HTMLButtonElement | null>(null);
-  const floodScopeMenuRef = useRef<HTMLUListElement | null>(null);
+  const floodScopeMenuRef = useRef<HTMLDivElement | null>(null);
   const floodScopeSplitRef = useRef<HTMLDivElement | null>(null);
+  const floodScopeCustomInputRef = useRef<HTMLInputElement | null>(null);
   const inputValueRef = useRef(input);
   inputValueRef.current = input;
   const prevViewKeyRef = useRef<string | null>(null);
@@ -174,7 +192,24 @@ export function ChatComposer({
   const closeFloodScopeMenu = useCallback(() => {
     setFloodScopeMenuOpen(false);
     setFloodScopeMenuPos(null);
+    setFloodScopeCustomEditing(false);
+    setFloodScopeCustomDraft('');
+    setFloodScopeCustomError(null);
   }, []);
+
+  const rememberFloodScopeIfNeeded = useCallback(
+    (override: string) => {
+      // Default (`''`) and Unscoped (`__unscoped__`) must not enter the quick-pick list.
+      if (!override || override === '__unscoped__') return;
+      if (!isValidMeshcoreFloodScopeHashtag(override)) return;
+      if (onRememberFloodScopePreset) {
+        onRememberFloodScopePreset(override);
+        return;
+      }
+      rememberMeshcoreFloodScopePreset(floodScopePresets, override);
+    },
+    [floodScopePresets, onRememberFloodScopePreset],
+  );
 
   // Close flood-scope menu on outside click (split button + portaled menu).
   useEffect(() => {
@@ -208,6 +243,11 @@ export function ChatComposer({
       window.removeEventListener('resize', handleDismiss);
     };
   }, [closeFloodScopeMenu, floodScopeMenuOpen]);
+
+  useEffect(() => {
+    if (!floodScopeCustomEditing) return;
+    floodScopeCustomInputRef.current?.focus();
+  }, [floodScopeCustomEditing]);
 
   const replyToSenderName = replyTo?.sender_name;
   const meshcoreOpenWireCompat =
@@ -418,6 +458,7 @@ export function ChatComposer({
                 : undefined,
         });
       }
+      rememberFloodScopeIfNeeded(floodScopeOverride);
       clearSentDraft(draftSnapshot);
       setMentionQuery(null);
       onReplyClear?.();
@@ -469,6 +510,7 @@ export function ChatComposer({
     onReplyClear,
     onSendChunk,
     onSendSuccess,
+    rememberFloodScopeIfNeeded,
     outboxChannel,
     outboxDestination,
     protocol,
@@ -1116,56 +1158,160 @@ export function ChatComposer({
             </button>
             {floodScopeMenuOpen && floodScopeMenuPos
               ? createPortal(
-                  <ul
+                  <div
                     ref={floodScopeMenuRef}
-                    id={floodScopeListboxId}
-                    role="listbox"
-                    aria-label={t('chatPanel.floodScopeOverrideAria')}
                     style={{
                       position: 'fixed',
                       bottom: floodScopeMenuPos.bottom,
                       right: floodScopeMenuPos.right,
                     }}
-                    className="bg-deep-black z-50 max-h-72 min-w-[10rem] overflow-y-auto rounded-lg border border-gray-700 py-1 shadow-xl"
+                    className="bg-deep-black z-50 max-h-72 min-w-[12rem] overflow-y-auto rounded-lg border border-gray-700 py-1 shadow-xl"
                   >
-                    {(
-                      [
-                        { value: '', label: t('chatPanel.floodScopeOverrideDefault') },
-                        ...MESHCORE_FLOOD_SCOPE_PRESETS.map((tag) => ({
-                          value: tag,
-                          label: tag,
-                        })),
-                        {
-                          value: '__unscoped__',
-                          label: t('chatPanel.floodScopeOverrideUnscoped'),
-                        },
-                      ] as const
-                    ).map((option) => {
-                      const selected = floodScopeOverride === option.value;
-                      return (
-                        <li
-                          key={option.value || '__default__'}
-                          role="option"
-                          aria-selected={selected}
+                    {floodScopeCustomEditing ? (
+                      <div className="space-y-2 px-2 py-1.5">
+                        <label
+                          className="text-muted block text-[10px]"
+                          htmlFor={floodScopeCustomInputId}
                         >
+                          {t('chatPanel.floodScopeOverrideCustomLabel')}
+                        </label>
+                        <input
+                          id={floodScopeCustomInputId}
+                          type="text"
+                          value={floodScopeCustomDraft}
+                          onChange={(e) => {
+                            setFloodScopeCustomDraft(e.target.value);
+                            setFloodScopeCustomError(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') {
+                              e.preventDefault();
+                              setFloodScopeCustomEditing(false);
+                              setFloodScopeCustomDraft('');
+                              setFloodScopeCustomError(null);
+                              return;
+                            }
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const normalized =
+                                normalizeMeshcoreFloodScopeHashtag(floodScopeCustomDraft);
+                              if (!isValidMeshcoreFloodScopeHashtag(normalized)) {
+                                setFloodScopeCustomError(
+                                  t('chatPanel.floodScopeOverrideCustomInvalid'),
+                                );
+                                return;
+                              }
+                              setFloodScopeOverride(normalized);
+                              closeFloodScopeMenu();
+                            }
+                          }}
+                          ref={floodScopeCustomInputRef}
+                          placeholder={t('chatPanel.floodScopeOverrideCustomPlaceholder')}
+                          aria-label={t('chatPanel.floodScopeOverrideCustomLabel')}
+                          className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 focus:outline-none"
+                        />
+                        {floodScopeCustomError ? (
+                          <p role="alert" className="text-[10px] text-red-400">
+                            {floodScopeCustomError}
+                          </p>
+                        ) : null}
+                        <div className="flex justify-end gap-1">
                           <button
                             type="button"
                             onClick={() => {
-                              setFloodScopeOverride(option.value);
+                              setFloodScopeCustomEditing(false);
+                              setFloodScopeCustomDraft('');
+                              setFloodScopeCustomError(null);
+                            }}
+                            className="text-muted rounded px-2 py-1 text-[10px] hover:text-gray-200"
+                          >
+                            {t('common.cancel')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const normalized =
+                                normalizeMeshcoreFloodScopeHashtag(floodScopeCustomDraft);
+                              if (!isValidMeshcoreFloodScopeHashtag(normalized)) {
+                                setFloodScopeCustomError(
+                                  t('chatPanel.floodScopeOverrideCustomInvalid'),
+                                );
+                                return;
+                              }
+                              setFloodScopeOverride(normalized);
                               closeFloodScopeMenu();
                             }}
-                            className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
-                              selected
-                                ? 'text-brand-green bg-gray-800'
-                                : 'text-gray-300 hover:bg-gray-800 hover:text-gray-100'
-                            }`}
+                            className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 rounded px-2 py-1 text-[10px] font-medium"
                           >
-                            {option.label}
+                            {t('chatPanel.floodScopeOverrideCustomApply')}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <ul
+                        id={floodScopeListboxId}
+                        role="listbox"
+                        aria-label={t('chatPanel.floodScopeOverrideAria')}
+                      >
+                        {(
+                          [
+                            { value: '', label: t('chatPanel.floodScopeOverrideDefault') },
+                            ...floodScopePresets.map((tag) => ({
+                              value: tag,
+                              label: tag,
+                            })),
+                            {
+                              value: '__unscoped__',
+                              label: t('chatPanel.floodScopeOverrideUnscoped'),
+                            },
+                          ] as const
+                        ).map((option) => {
+                          const selected = floodScopeOverride === option.value;
+                          return (
+                            <li
+                              key={option.value || '__default__'}
+                              role="option"
+                              aria-selected={selected}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFloodScopeOverride(option.value);
+                                  closeFloodScopeMenu();
+                                }}
+                                className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
+                                  selected
+                                    ? 'text-brand-green bg-gray-800'
+                                    : 'text-gray-300 hover:bg-gray-800 hover:text-gray-100'
+                                }`}
+                              >
+                                {option.label}
+                              </button>
+                            </li>
+                          );
+                        })}
+                        <li role="presentation" className="mt-1 border-t border-gray-700 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFloodScopeCustomEditing(true);
+                              setFloodScopeCustomDraft(
+                                floodScopeOverride &&
+                                  floodScopeOverride !== '__unscoped__' &&
+                                  !floodScopePresets.includes(floodScopeOverride)
+                                  ? floodScopeOverride
+                                  : '',
+                              );
+                              setFloodScopeCustomError(null);
+                            }}
+                            className="w-full px-3 py-1.5 text-left text-xs text-cyan-300 transition-colors hover:bg-gray-800 hover:text-cyan-200"
+                          >
+                            {t('chatPanel.floodScopeOverrideCustom')}
                           </button>
                         </li>
-                      );
-                    })}
-                  </ul>,
+                      </ul>
+                    )}
+                  </div>,
                   document.body,
                 )
               : null}

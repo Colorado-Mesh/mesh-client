@@ -595,7 +595,12 @@
     "shareLocationUnavailable": "Konum kullanılamıyor — GPS ayarlarını kontrol edin",
     "floodScopeOverrideHint": "Yalnızca bu ileti için bölgesel sel kapsamı. Varsayılan kapsam radyonun kayıtlı ayarını kullanır; bir hashtag bu gönderimi o bölgeye sınırlandırır; Kapsam dışı gönderimler, bölge filtresi olmadan yapılır. Kaydedilen kapsamınız gönderildikten sonra geri yüklenir.",
     "floodScopeOverrideMenuButton": "Bu mesajın Flood kapsamını değiştirin",
-    "shareLocationWaypointFailed": "Harita işaretçisi (Yol noktası) onaylanmadı; konum metni hâlâ gönderilmiş olabilir."
+    "shareLocationWaypointFailed": "Harita işaretçisi (Yol noktası) onaylanmadı; konum metni hâlâ gönderilmiş olabilir.",
+    "floodScopeOverrideCustom": "Özel kapsam…",
+    "floodScopeOverrideCustomLabel": "Özel sel kapsamı hashtag'i",
+    "floodScopeOverrideCustomPlaceholder": "#bölgem",
+    "floodScopeOverrideCustomApply": "Kapsamı kullan",
+    "floodScopeOverrideCustomInvalid": "Geçerli bir bölge hashtag'i girin (örneğin #myregion)."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -3401,8 +3406,6 @@
     "floodScopeTitle": "Bölgesel sel kapsamı",
     "floodScopeHelp": "Taşkın trafiğini bir hashtag bölgesiyle sınırlayın (ürün yazılımı v8+). meshcore.js setFloodScope gerektirir; yeniden bağlanma kaydedilen kapsamı yeniden uygular.",
     "floodScopeNone": "Yok (net kapsam)",
-    "floodScopePreset": "Önceden ayarlanmış hashtag",
-    "floodScopePresetSelect": "Önceden ayarlanmış bölge etiketi",
     "floodScopeCustom": "Özel hashtag",
     "floodScopeCustomPlaceholder": "#bölgem",
     "floodScopeApply": "Taşkın kapsamını uygula",
@@ -3512,7 +3515,13 @@
       "6": {
         "label": "Orta Yavaş"
       }
-    }
+    },
+    "floodScopeSaved": "Kaydedilen kapsam",
+    "floodScopeSavedSelect": "Kaydedilen bölge hashtag'i",
+    "floodScopeSavedEmpty": "Henüz kayıtlı kapsam yok. Özel bir etiket uygulayın veya eklemek için Sohbet'teki Özel kapsamı kullanın.",
+    "floodScopeRemoveSaved": "Kaydedilen kapsamlardan kaldır",
+    "floodScopeRemoveSavedAria": "{{hashtag}} öğesini kayıtlı kapsamlardan kaldırın",
+    "floodScopeInvalidHashtag": "Geçerli bir bölge hashtag'i girin (örneğin #myregion)."
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",

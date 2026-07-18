@@ -595,7 +595,12 @@
     "shareLocationUnavailable": "Standort nicht verfügbar – überprüfen Sie die GPS-Einstellungen",
     "floodScopeOverrideHint": "Nur regionaler Überschwemmungsbereich für diese Nachricht. Der Standardbereich verwendet die gespeicherte Einstellung des Radios. ein Hashtag begrenzt diesen Versand auf diese Region; Versendungen ohne Bereichseinschränkung ohne Regionsfilter. Ihr gespeicherter Umfang wird nach dem Absenden wiederhergestellt.",
     "floodScopeOverrideMenuButton": "Ändern Sie den Flood-Bereich für diese Nachricht",
-    "shareLocationWaypointFailed": "Karten-Pin (Wegpunkt) wurde nicht bestätigt – der Standorttext wurde möglicherweise noch gesendet."
+    "shareLocationWaypointFailed": "Karten-Pin (Wegpunkt) wurde nicht bestätigt – der Standorttext wurde möglicherweise noch gesendet.",
+    "floodScopeOverrideCustom": "Benutzerdefinierter Umfang…",
+    "floodScopeOverrideCustomLabel": "Benutzerdefinierter Flood-Scope-Hashtag",
+    "floodScopeOverrideCustomPlaceholder": "#meineregion",
+    "floodScopeOverrideCustomApply": "Nutzen Sie den Geltungsbereich",
+    "floodScopeOverrideCustomInvalid": "Geben Sie einen gültigen Regions-Hashtag ein (zum Beispiel #myregion)."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -3401,8 +3406,6 @@
     "floodScopeTitle": "Regionaler Überschwemmungsbereich",
     "floodScopeHelp": "Beschränken Sie den Hochwasserverkehr auf eine Hashtag-Region (Firmware v8+). Benötigt meshcore.js setFloodScope; Wiederverbinden wendet den gespeicherten Bereich wieder an.",
     "floodScopeNone": "Keine (klarer Umfang)",
-    "floodScopePreset": "Voreingestellter Hashtag",
-    "floodScopePresetSelect": "Voreingestellter Region-Hashtag",
     "floodScopeCustom": "Benutzerdefinierter Hashtag",
     "floodScopeCustomPlaceholder": "#myregion",
     "floodScopeApply": "Überschwemmungsumfang anwenden",
@@ -3512,7 +3515,13 @@
       "6": {
         "label": "Mittellangsam"
       }
-    }
+    },
+    "floodScopeSaved": "Gespeicherter Umfang",
+    "floodScopeSavedSelect": "Gespeicherter Region-Hashtag",
+    "floodScopeSavedEmpty": "Noch keine gespeicherten Bereiche. Wenden Sie einen benutzerdefinierten Hashtag an oder verwenden Sie den benutzerdefinierten Bereich aus dem Chat, um einen hinzuzufügen.",
+    "floodScopeRemoveSaved": "Aus gespeicherten Bereichen entfernen",
+    "floodScopeRemoveSavedAria": "Entfernen Sie {{hashtag}} aus gespeicherten Bereichen",
+    "floodScopeInvalidHashtag": "Geben Sie einen gültigen Regions-Hashtag ein (zum Beispiel #myregion)."
   },
   "rawPacketLog": {
     "filterPackets": "Filterpakete",

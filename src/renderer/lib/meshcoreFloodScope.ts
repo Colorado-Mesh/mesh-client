@@ -30,5 +30,3 @@ export async function applyMeshcoreFloodScope(
   }
   await conn.setFloodScope(key);
 }
-
-export const MESHCORE_FLOOD_SCOPE_PRESETS = ['#colorado', '#denver'] as const;

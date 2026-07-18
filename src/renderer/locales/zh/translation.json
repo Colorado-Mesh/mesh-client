@@ -595,7 +595,12 @@
     "shareLocationUnavailable": "位置不可用 — 检查 GPS 设置",
     "floodScopeOverrideHint": "仅此消息的区域洪水范围。默认范围使用无线电的已保存设置；主题标签限制此发送到该区域；不带区域过滤器的无范围发送。发送后将恢复您保存的范围。",
     "floodScopeOverrideMenuButton": "更改此消息的泛洪范围",
-    "shareLocationWaypointFailed": "地图图钉（航点）未得到确认 - 位置文本可能仍已发送。"
+    "shareLocationWaypointFailed": "地图图钉（航点）未得到确认 - 位置文本可能仍已发送。",
+    "floodScopeOverrideCustom": "自定义范围...",
+    "floodScopeOverrideCustomLabel": "自定义洪水范围标签",
+    "floodScopeOverrideCustomPlaceholder": "#我的地区",
+    "floodScopeOverrideCustomApply": "使用范围",
+    "floodScopeOverrideCustomInvalid": "输入有效的区域标签（例如#myregion）。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -3401,8 +3406,6 @@
     "floodScopeTitle": "区域防洪范围",
     "floodScopeHelp": "将泛洪流量限制在主题标签区域（固件v8 + ）。需要meshcore.js setFloodScope ；重新连接会重新应用保存的范围。",
     "floodScopeNone": "无（明确范围）",
-    "floodScopePreset": "预设主题标签",
-    "floodScopePresetSelect": "预设区域主题标签",
     "floodScopeCustom": "自定义主题标签",
     "floodScopeCustomPlaceholder": "# myregion",
     "floodScopeApply": "应用泛洪范围",
@@ -3512,7 +3515,13 @@
       "6": {
         "label": "中慢速"
       }
-    }
+    },
+    "floodScopeSaved": "已保存范围",
+    "floodScopeSavedSelect": "已保存区域标签",
+    "floodScopeSavedEmpty": "尚未保存范围。应用自定义主题标签或使用聊天中的自定义范围来添加标签。",
+    "floodScopeRemoveSaved": "从保存的范围中删除",
+    "floodScopeRemoveSavedAria": "从保存的范围中删除 {{hashtag}}",
+    "floodScopeInvalidHashtag": "输入有效的区域标签（例如#myregion）。"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",

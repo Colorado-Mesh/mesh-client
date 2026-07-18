@@ -595,7 +595,12 @@
     "shareLocationUnavailable": "位置情報が利用できません - GPS 設定を確認してください",
     "floodScopeOverrideHint": "このメッセージのみの地域的なフラッドの範囲。デフォルトのスコープは、無線の保存された設定を使用します。ハッシュタグは、この送信をその地域に制限します。地域フィルターを使用しない範囲外の送信。保存したスコープは送信後に復元されます。",
     "floodScopeOverrideMenuButton": "このメッセージのフラッド範囲を変更する",
-    "shareLocationWaypointFailed": "マップ ピン (ウェイポイント) が認識されませんでした。位置テキストがまだ送信されている可能性があります。"
+    "shareLocationWaypointFailed": "マップ ピン (ウェイポイント) が認識されませんでした。位置テキストがまだ送信されている可能性があります。",
+    "floodScopeOverrideCustom": "カスタムスコープ…",
+    "floodScopeOverrideCustomLabel": "カスタムフラッドスコープハッシュタグ",
+    "floodScopeOverrideCustomPlaceholder": "#私の地域",
+    "floodScopeOverrideCustomApply": "使用範囲",
+    "floodScopeOverrideCustomInvalid": "有効な地域ハッシュタグ (#myregion など) を入力します。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -3401,8 +3406,6 @@
     "floodScopeTitle": "地域の洪水スコープ",
     "floodScopeHelp": "ハッシュタグリージョン（ファームウェアv 8 +）へのフラッドトラフィックを制限します。meshcore.js setFloodScopeが必要です。再接続すると、保存されたスコープが再適用されます。",
     "floodScopeNone": "なし（範囲を明確にする）",
-    "floodScopePreset": "プリセットハッシュタグ",
-    "floodScopePresetSelect": "プリセットされた地域のハッシュタグ",
     "floodScopeCustom": "カスタムハッシュタグ",
     "floodScopeCustomPlaceholder": "# myregion",
     "floodScopeApply": "フラッドスコープを適用する",
@@ -3512,7 +3515,13 @@
       "6": {
         "label": "中低速"
       }
-    }
+    },
+    "floodScopeSaved": "保存されたスコープ",
+    "floodScopeSavedSelect": "保存された地域のハッシュタグ",
+    "floodScopeSavedEmpty": "保存されたスコープはまだありません。カスタム ハッシュタグを適用するか、チャットからカスタム スコープを使用してハッシュタグを追加します。",
+    "floodScopeRemoveSaved": "保存されたスコープから削除する",
+    "floodScopeRemoveSavedAria": "保存されたスコープから {{hashtag}} を削除します",
+    "floodScopeInvalidHashtag": "有効な地域ハッシュタグ (#myregion など) を入力します。"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",

@@ -595,7 +595,12 @@
     "shareLocationUnavailable": "Lokasi tidak tersedia — periksa pengaturan GPS",
     "floodScopeOverrideHint": "Cakupan banjir regional hanya untuk pesan ini. Cakupan default menggunakan pengaturan radio yang disimpan; hashtag membatasi pengiriman ini ke wilayah tersebut; Pengiriman tanpa cakupan tanpa filter wilayah. Cakupan tersimpan Anda dipulihkan setelah pengiriman.",
     "floodScopeOverrideMenuButton": "Ubah cakupan banjir untuk pesan ini",
-    "shareLocationWaypointFailed": "Pin peta (Waypoint) tidak diakui — teks lokasi mungkin masih terkirim."
+    "shareLocationWaypointFailed": "Pin peta (Waypoint) tidak diakui — teks lokasi mungkin masih terkirim.",
+    "floodScopeOverrideCustom": "Cakupan khusus…",
+    "floodScopeOverrideCustomLabel": "Hashtag cakupan banjir khusus",
+    "floodScopeOverrideCustomPlaceholder": "#wilayahku",
+    "floodScopeOverrideCustomApply": "Gunakan ruang lingkup",
+    "floodScopeOverrideCustomInvalid": "Masukkan hashtag wilayah yang valid (misalnya #wilayahsaya)."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -3401,8 +3406,6 @@
     "floodScopeTitle": "Lingkup banjir regional",
     "floodScopeHelp": "Batasi lalu lintas banjir ke wilayah tagar (firmware v8+). Membutuhkan meshcore.js setFloodScope; sambungkan kembali penerapan ruang lingkup yang disimpan.",
     "floodScopeNone": "Tidak ada (lingkup yang jelas)",
-    "floodScopePreset": "Hashtag prasetel",
-    "floodScopePresetSelect": "Hashtag wilayah prasetel",
     "floodScopeCustom": "Tagar kustom",
     "floodScopeCustomPlaceholder": "#wilayahku",
     "floodScopeApply": "Terapkan cakupan banjir",
@@ -3512,7 +3515,13 @@
       "6": {
         "label": "Sedang Lambat"
       }
-    }
+    },
+    "floodScopeSaved": "Cakupan yang disimpan",
+    "floodScopeSavedSelect": "Hashtag wilayah yang disimpan",
+    "floodScopeSavedEmpty": "Belum ada cakupan yang disimpan. Terapkan hashtag khusus atau gunakan Cakupan khusus dari Obrolan untuk menambahkannya.",
+    "floodScopeRemoveSaved": "Hapus dari cakupan yang disimpan",
+    "floodScopeRemoveSavedAria": "Hapus {{hashtag}} dari cakupan yang disimpan",
+    "floodScopeInvalidHashtag": "Masukkan hashtag wilayah yang valid (misalnya #wilayahsaya)."
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",

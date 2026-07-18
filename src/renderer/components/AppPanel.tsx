@@ -211,6 +211,7 @@ interface AppSettings {
   autoFloodAdvertIntervalHours: number;
   autoFloodAdvertType: 'flood' | 'zeroHop';
   meshcoreFloodScopeHashtag: string;
+  meshcoreFloodScopePresets: string[];
   chatCompactMode: boolean;
   storeForwardAutoFetchHistory: boolean;
   storeForwardHistoryProfile: 'conservative' | 'aggressive';

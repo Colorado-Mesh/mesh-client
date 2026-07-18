@@ -595,7 +595,12 @@
     "shareLocationUnavailable": "Locatie niet beschikbaar: controleer de GPS-instellingen",
     "floodScopeOverrideHint": "Regionaal overstromingsbereik alleen voor dit bericht. Standaard bereik gebruikt de opgeslagen instelling van de radio; een hashtag beperkt deze verzending tot die regio; Unscoped verzendt zonder regiofilter. Uw opgeslagen scope wordt na verzending hersteld.",
     "floodScopeOverrideMenuButton": "Wijzig het overstromingsbereik voor dit bericht",
-    "shareLocationWaypointFailed": "Kaartpin (Waypoint) is niet bevestigd: de locatietekst is mogelijk nog verzonden."
+    "shareLocationWaypointFailed": "Kaartpin (Waypoint) is niet bevestigd: de locatietekst is mogelijk nog verzonden.",
+    "floodScopeOverrideCustom": "Aangepast bereik...",
+    "floodScopeOverrideCustomLabel": "Aangepaste overstromingsbereik-hashtag",
+    "floodScopeOverrideCustomPlaceholder": "#mijnregio",
+    "floodScopeOverrideCustomApply": "Gebruik bereik",
+    "floodScopeOverrideCustomInvalid": "Voer een geldige regio-hashtag in (bijvoorbeeld #mijnregio)."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -3401,8 +3406,6 @@
     "floodScopeTitle": "Regionale overstromingsomvang",
     "floodScopeHelp": "Beperk het overstromingsverkeer tot een hashtagregio (firmware v8+). Vereist meshcore.js setFloodScope; reconnect past opgeslagen scope opnieuw toe.",
     "floodScopeNone": "Geen (duidelijke scope)",
-    "floodScopePreset": "Vooraf ingestelde hashtag",
-    "floodScopePresetSelect": "Vooraf ingestelde hashtag voor regio",
     "floodScopeCustom": "Aangepaste hashtag",
     "floodScopeCustomPlaceholder": "#myregion",
     "floodScopeApply": "Overstromingsbereik toepassen",
@@ -3512,7 +3515,13 @@
       "6": {
         "label": "Gemiddeld langzaam"
       }
-    }
+    },
+    "floodScopeSaved": "Opgeslagen bereik",
+    "floodScopeSavedSelect": "Opgeslagen regio-hashtag",
+    "floodScopeSavedEmpty": "Er zijn nog geen opgeslagen bereiken. Pas een aangepaste hashtag toe of gebruik Aangepast bereik uit Chat om er een toe te voegen.",
+    "floodScopeRemoveSaved": "Verwijderen uit opgeslagen bereiken",
+    "floodScopeRemoveSavedAria": "Verwijder {{hashtag}} uit opgeslagen bereiken",
+    "floodScopeInvalidHashtag": "Voer een geldige regio-hashtag in (bijvoorbeeld #mijnregio)."
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",

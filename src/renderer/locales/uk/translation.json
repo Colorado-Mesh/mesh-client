@@ -595,7 +595,12 @@
     "shareLocationUnavailable": "Місцезнаходження недоступне — перевірте налаштування GPS",
     "floodScopeOverrideHint": "Лише для цього повідомлення регіональні повені. Область за замовчуванням використовує збережене налаштування радіо; хештег обмежує це надсилання до цього регіону; Надсилання без регіону без фільтра. Ваш збережений обсяг буде відновлено після надсилання.",
     "floodScopeOverrideMenuButton": "Змінити обсяг потоку для цього повідомлення",
-    "shareLocationWaypointFailed": "Пін на карті (маршрутна точка) не було підтверджено — можливо, текст розташування все ще було надіслано."
+    "shareLocationWaypointFailed": "Пін на карті (маршрутна точка) не було підтверджено — можливо, текст розташування все ще було надіслано.",
+    "floodScopeOverrideCustom": "Спеціальний обсяг…",
+    "floodScopeOverrideCustomLabel": "Спеціальний хештег області повені",
+    "floodScopeOverrideCustomPlaceholder": "#мояобласть",
+    "floodScopeOverrideCustomApply": "Сфера використання",
+    "floodScopeOverrideCustomInvalid": "Введіть дійсний хештег регіону (наприклад, #myregion)."
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -3401,8 +3406,6 @@
     "floodScopeTitle": "Регіональний масштаб повені",
     "floodScopeHelp": "Обмежте трафік повені до регіону хештегів (прошивка v8+). Потрібен meshcore.js setFloodScope; повторне підключення повторно застосовує збережену область.",
     "floodScopeNone": "Немає (чітка сфера застосування)",
-    "floodScopePreset": "Попередньо встановлений хештег",
-    "floodScopePresetSelect": "Попередньо встановлений хештег регіону",
     "floodScopeCustom": "Користувацький хештег",
     "floodScopeCustomPlaceholder": "#myregion",
     "floodScopeApply": "Застосувати обсяг повені",
@@ -3512,7 +3515,13 @@
       "6": {
         "label": "Середній повільний"
       }
-    }
+    },
+    "floodScopeSaved": "Збережений обсяг",
+    "floodScopeSavedSelect": "Збережений хештег регіону",
+    "floodScopeSavedEmpty": "Ще немає збережених областей. Застосуйте спеціальний хештег або скористайтеся спеціальним діапазоном із Chat, щоб додати його.",
+    "floodScopeRemoveSaved": "Видалити зі збережених областей",
+    "floodScopeRemoveSavedAria": "Видалити {{hashtag}} зі збережених областей",
+    "floodScopeInvalidHashtag": "Введіть дійсний хештег регіону (наприклад, #myregion)."
   },
   "rawPacketLog": {
     "filterPackets": "Фільтрувати пакети",

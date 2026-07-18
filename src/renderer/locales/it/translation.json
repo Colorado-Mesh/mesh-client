@@ -595,7 +595,12 @@
     "shareLocationUnavailable": "Posizione non disponibile: controlla le impostazioni GPS",
     "floodScopeOverrideHint": "Ambito di inondazione regionale solo per questo messaggio. L'ambito predefinito utilizza l'impostazione salvata della radio; un hashtag limita l'invio a quella regione; Invii senza ambito senza filtro regionale. L'ambito salvato viene ripristinato dopo l'invio.",
     "floodScopeOverrideMenuButton": "Modifica l'ambito dell'inondazione per questo messaggio",
-    "shareLocationWaypointFailed": "Il segnaposto sulla mappa (waypoint) non è stato riconosciuto: il testo della posizione potrebbe essere stato comunque inviato."
+    "shareLocationWaypointFailed": "Il segnaposto sulla mappa (waypoint) non è stato riconosciuto: il testo della posizione potrebbe essere stato comunque inviato.",
+    "floodScopeOverrideCustom": "Ambito personalizzato...",
+    "floodScopeOverrideCustomLabel": "Hashtag personalizzato per l'ambito delle inondazioni",
+    "floodScopeOverrideCustomPlaceholder": "#lamiaregione",
+    "floodScopeOverrideCustomApply": "Usa l'ambito",
+    "floodScopeOverrideCustomInvalid": "Inserisci un hashtag regionale valido (ad esempio #myregion)."
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -3401,8 +3406,6 @@
     "floodScopeTitle": "Portata delle inondazioni regionali",
     "floodScopeHelp": "Limita il traffico flood a una regione hashtag (firmware v8+). Richiede meshcore.js setFloodScope; la riconnessione riapplica l'ambito salvato.",
     "floodScopeNone": "Nessuno (campo di applicazione chiaro)",
-    "floodScopePreset": "Hashtag preimpostato",
-    "floodScopePresetSelect": "Hashtag regione preimpostato",
     "floodScopeCustom": "Hashtag personalizzato",
     "floodScopeCustomPlaceholder": "#myregion",
     "floodScopeApply": "Applica ambito di inondazione",
@@ -3512,7 +3515,13 @@
       "6": {
         "label": "Medio lento"
       }
-    }
+    },
+    "floodScopeSaved": "Ambito salvato",
+    "floodScopeSavedSelect": "Hashtag della regione salvato",
+    "floodScopeSavedEmpty": "Nessun ambito ancora salvato. Applica un hashtag personalizzato o utilizza l'ambito personalizzato dalla chat per aggiungerne uno.",
+    "floodScopeRemoveSaved": "Rimuovi dagli ambiti salvati",
+    "floodScopeRemoveSavedAria": "Rimuovi {{hashtag}} dagli ambiti salvati",
+    "floodScopeInvalidHashtag": "Inserisci un hashtag regionale valido (ad esempio #myregion)."
   },
   "rawPacketLog": {
     "filterPackets": "Filtra i pacchetti",

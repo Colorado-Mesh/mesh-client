@@ -595,7 +595,12 @@
     "shareLocationUnavailable": "위치를 확인할 수 없음 - GPS 설정을 확인하세요",
     "floodScopeOverrideHint": "이 메시지에만 해당하는 지역 플러드 범위입니다. 기본 범위는 라디오의 저장된 설정을 사용합니다. 해시태그는 해당 지역으로의 전송을 제한합니다. 범위가 지정되지 않은 전송은 지역 필터 없이 전송됩니다. 전송 후 저장된 범위가 복원됩니다.",
     "floodScopeOverrideMenuButton": "이 메시지의 플러드 범위 변경",
-    "shareLocationWaypointFailed": "지도 핀(웨이포인트)이 인식되지 않았습니다. 위치 텍스트가 아직 전송되었을 수 있습니다."
+    "shareLocationWaypointFailed": "지도 핀(웨이포인트)이 인식되지 않았습니다. 위치 텍스트가 아직 전송되었을 수 있습니다.",
+    "floodScopeOverrideCustom": "맞춤 범위…",
+    "floodScopeOverrideCustomLabel": "맞춤 홍수 범위 해시태그",
+    "floodScopeOverrideCustomPlaceholder": "#나의 지역",
+    "floodScopeOverrideCustomApply": "사용 범위",
+    "floodScopeOverrideCustomInvalid": "유효한 지역 해시태그(예: #myregion)를 입력하세요."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -3401,8 +3406,6 @@
     "floodScopeTitle": "지역 홍수 범위",
     "floodScopeHelp": "홍수 트래픽을 해시태그 지역 (펌웨어 v8 +) 으로 제한합니다. meshcore.js setFloodScope가 필요합니다. 다시 연결하면 저장된 범위가 다시 적용됩니다.",
     "floodScopeNone": "없음 (명확한 범위)",
-    "floodScopePreset": "사전 설정 해시태그",
-    "floodScopePresetSelect": "사전 설정 지역 해시태그",
     "floodScopeCustom": "사용자 정의 해시태그",
     "floodScopeCustomPlaceholder": "# myregion",
     "floodScopeApply": "홍수 범위 적용",
@@ -3512,7 +3515,13 @@
       "6": {
         "label": "중간 느림"
       }
-    }
+    },
+    "floodScopeSaved": "저장된 범위",
+    "floodScopeSavedSelect": "저장된 지역 해시태그",
+    "floodScopeSavedEmpty": "아직 저장된 범위가 없습니다. 사용자 정의 해시태그를 적용하거나 Chat의 사용자 정의 범위를 사용하여 추가하세요.",
+    "floodScopeRemoveSaved": "저장된 범위에서 제거",
+    "floodScopeRemoveSavedAria": "저장된 범위에서 {{hashtag}} 제거",
+    "floodScopeInvalidHashtag": "유효한 지역 해시태그(예: #myregion)를 입력하세요."
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",

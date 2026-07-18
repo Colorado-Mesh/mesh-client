@@ -195,6 +195,11 @@ import {
   repairMeshcoreHydratedMessages,
 } from './lib/meshcoreDbCacheHydration';
 import { initNobleBleDualRadioStartup } from './lib/meshcoreDualNobleBleInit';
+import {
+  loadMeshcoreFloodScopePresets,
+  rememberMeshcoreFloodScopePreset,
+  saveMeshcoreFloodScopePresets,
+} from './lib/meshcoreFloodScopePresetsStorage';
 import { syncMeshcoreDisplayReplyRepairs } from './lib/meshcoreStoreDedup';
 import { pubkeyToNodeId } from './lib/meshcoreUtils';
 import { meshNodeStubForDetailModal } from './lib/meshNodeStubForDetail';
@@ -698,6 +703,12 @@ function AppContent() {
       ? parsed.meshcoreFloodScopeHashtag
       : DEFAULT_APP_SETTINGS_SHARED.meshcoreFloodScopeHashtag;
   });
+  const [meshcoreFloodScopePresets, setMeshcoreFloodScopePresets] = useState(() =>
+    loadMeshcoreFloodScopePresets(),
+  );
+  const handleMeshcoreFloodScopePresetsChange = useCallback((presets: string[]) => {
+    setMeshcoreFloodScopePresets(saveMeshcoreFloodScopePresets(presets));
+  }, []);
 
   // ─── Theme colors (localStorage overrides for @theme tokens) ─────
   useLayoutEffect(() => {
@@ -2985,6 +2996,20 @@ function AppContent() {
                                 ? meshcoreFloodScopeHashtag
                                 : undefined
                             }
+                            meshcoreFloodScopePresets={
+                              capabilities.modulesTabUsesRepeatersLabel
+                                ? meshcoreFloodScopePresets
+                                : undefined
+                            }
+                            onRememberMeshcoreFloodScopePreset={
+                              capabilities.modulesTabUsesRepeatersLabel
+                                ? (hashtag: string) => {
+                                    setMeshcoreFloodScopePresets((prev) =>
+                                      rememberMeshcoreFloodScopePreset(prev, hashtag),
+                                    );
+                                  }
+                                : undefined
+                            }
                             applyMeshcoreFloodScopeHashtag={
                               capabilities.modulesTabUsesRepeatersLabel
                                 ? meshcorePanelActions.applyMeshcoreFloodScopeHashtag
@@ -3480,6 +3505,16 @@ function AppContent() {
                                       : ''
                                   }
                                   onMeshcoreFloodScopeHashtagChange={setMeshcoreFloodScopeHashtag}
+                                  meshcoreFloodScopePresets={
+                                    capabilities.hasContactImportExport
+                                      ? meshcoreFloodScopePresets
+                                      : []
+                                  }
+                                  onMeshcoreFloodScopePresetsChange={
+                                    capabilities.hasContactImportExport
+                                      ? handleMeshcoreFloodScopePresetsChange
+                                      : undefined
+                                  }
                                   onXmodemUpload={
                                     capabilities.hasXmodem &&
                                     isOperational &&

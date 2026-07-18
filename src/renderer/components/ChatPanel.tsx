@@ -496,6 +496,10 @@ export interface ChatPanelProps {
   hasRncpTransfer?: boolean;
   /** MeshCore: radio-wide flood scope to restore after a per-message override. */
   meshcoreFloodScopeHashtag?: string;
+  /** MeshCore: user-managed flood-scope quick-picks for the composer menu. */
+  meshcoreFloodScopePresets?: string[];
+  /** MeshCore: remember a hashtag after a successful scoped send. */
+  onRememberMeshcoreFloodScopePreset?: (hashtag: string) => void;
   /** MeshCore: apply flood scope on the connected radio. */
   applyMeshcoreFloodScopeHashtag?: (hashtag: string) => Promise<void>;
   /** Resolve GPS/static position for one-click location share. */
@@ -537,6 +541,8 @@ function ChatPanel({
   composerPayloadLimit,
   lxmfReplyHashReplies = false,
   meshcoreFloodScopeHashtag = '',
+  meshcoreFloodScopePresets = [],
+  onRememberMeshcoreFloodScopePreset,
   applyMeshcoreFloodScopeHashtag,
   onOpenPropagationSettings,
   reticulumStackLive = false,
@@ -3011,6 +3017,8 @@ function ChatPanel({
         payloadLimit={composerPayloadLimit}
         lxmfReplyHashReplies={lxmfReplyHashReplies}
         showFloodScopeOverride={typeof applyMeshcoreFloodScopeHashtag === 'function'}
+        floodScopePresets={meshcoreFloodScopePresets}
+        onRememberFloodScopePreset={onRememberMeshcoreFloodScopePreset}
         resolveShareLocation={resolveShareLocation}
         onSendLocationWaypoint={
           onSendLocationWaypoint

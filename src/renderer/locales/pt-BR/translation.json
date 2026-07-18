@@ -595,7 +595,12 @@
     "shareLocationUnavailable": "Localização indisponível – verifique as configurações de GPS",
     "floodScopeOverrideHint": "Escopo de inundação regional apenas para esta mensagem. O escopo padrão usa a configuração salva do rádio; uma hashtag limita esse envio para aquela região; Envios sem escopo sem filtro de região. Seu escopo salvo é restaurado após o envio.",
     "floodScopeOverrideMenuButton": "Alterar o escopo de inundação desta mensagem",
-    "shareLocationWaypointFailed": "O pin do mapa (Waypoint) não foi reconhecido — o texto do local ainda pode ter sido enviado."
+    "shareLocationWaypointFailed": "O pin do mapa (Waypoint) não foi reconhecido — o texto do local ainda pode ter sido enviado.",
+    "floodScopeOverrideCustom": "Escopo personalizado…",
+    "floodScopeOverrideCustomLabel": "Hashtag de escopo de inundação personalizada",
+    "floodScopeOverrideCustomPlaceholder": "#minharegião",
+    "floodScopeOverrideCustomApply": "Usar escopo",
+    "floodScopeOverrideCustomInvalid": "Insira uma hashtag de região válida (por exemplo #myregion)."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -3401,8 +3406,6 @@
     "floodScopeTitle": "Âmbito de inundação regional",
     "floodScopeHelp": "Limite o tráfego de inundação a uma região de hashtag (firmware v8+). Requer meshcore.js setFloodScope; reconnect reaplica o escopo salvo.",
     "floodScopeNone": "Nenhum (escopo claro)",
-    "floodScopePreset": "Hashtag predefinida",
-    "floodScopePresetSelect": "Hashtag de região predefinida",
     "floodScopeCustom": "Hashtag de URL Personalizada",
     "floodScopeCustomPlaceholder": "#myregion",
     "floodScopeApply": "Aplicar escopo de inundação",
@@ -3512,7 +3515,13 @@
       "6": {
         "label": "Médio lento"
       }
-    }
+    },
+    "floodScopeSaved": "Escopo salvo",
+    "floodScopeSavedSelect": "Hashtag da região salva",
+    "floodScopeSavedEmpty": "Ainda não há escopos salvos. Aplique uma hashtag personalizada ou use o escopo personalizado do Chat para adicionar uma.",
+    "floodScopeRemoveSaved": "Remover dos escopos salvos",
+    "floodScopeRemoveSavedAria": "Remover {{hashtag}} dos escopos salvos",
+    "floodScopeInvalidHashtag": "Insira uma hashtag de região válida (por exemplo #myregion)."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrar pacotes",

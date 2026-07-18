@@ -595,7 +595,12 @@
     "shareLocationUnavailable": "Poloha není k dispozici – zkontrolujte nastavení GPS",
     "floodScopeOverrideHint": "Oblast regionální povodně pouze pro tuto zprávu. Výchozí rozsah používá uložené nastavení rádia; hashtag omezuje toto odeslání do této oblasti; Odeslání bez rozsahu bez regionálního filtru. Váš uložený rozsah se po odeslání obnoví.",
     "floodScopeOverrideMenuButton": "Změnit rozsah záplavy pro tuto zprávu",
-    "shareLocationWaypointFailed": "Připínáček na mapě (bod na trase) nebyl potvrzen – text polohy mohl být stále odeslán."
+    "shareLocationWaypointFailed": "Připínáček na mapě (bod na trase) nebyl potvrzen – text polohy mohl být stále odeslán.",
+    "floodScopeOverrideCustom": "Vlastní rozsah…",
+    "floodScopeOverrideCustomLabel": "Vlastní hashtag záplavového rozsahu",
+    "floodScopeOverrideCustomPlaceholder": "#myregion",
+    "floodScopeOverrideCustomApply": "Použijte rozsah",
+    "floodScopeOverrideCustomInvalid": "Zadejte platný hashtag regionu (například #myregion)."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -3401,8 +3406,6 @@
     "floodScopeTitle": "Regionální rozsah povodní",
     "floodScopeHelp": "Omezte povodňový provoz na oblast s hashtagy (firmware v8+). Vyžaduje meshcore.js setFloodScope; znovu připojí znovu uložený rozsah.",
     "floodScopeNone": "Žádné (jasný rozsah)",
-    "floodScopePreset": "Přednastavený hashtag",
-    "floodScopePresetSelect": "Hashtag přednastavené oblasti",
     "floodScopeCustom": "Vlastní hashtag",
     "floodScopeCustomPlaceholder": "#myregion",
     "floodScopeApply": "Použít rozsah povodně",
@@ -3512,7 +3515,13 @@
       "6": {
         "label": "Středně pomalý"
       }
-    }
+    },
+    "floodScopeSaved": "Uložený rozsah",
+    "floodScopeSavedSelect": "Hashtag uložené oblasti",
+    "floodScopeSavedEmpty": "Zatím žádné uložené obory. Použijte vlastní hashtag nebo použijte vlastní rozsah z chatu a přidejte jej.",
+    "floodScopeRemoveSaved": "Odebrat z uložených oborů",
+    "floodScopeRemoveSavedAria": "Odebrat {{hashtag}} z uložených rozsahů",
+    "floodScopeInvalidHashtag": "Zadejte platný hashtag regionu (například #myregion)."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",
