@@ -55,3 +55,47 @@ where
         })?;
     Ok((thread, cancel_tx))
 }
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use super::*;
+
+    #[test]
+    fn runs_future_to_completion() {
+        let (done_tx, done_rx) = std::sync::mpsc::channel::<u32>();
+        let (thread, cancel_tx) = spawn_link_task("lt-complete".to_string(), move || async move {
+            done_tx.send(42).expect("send completion marker");
+        })
+        .expect("spawn link task");
+        assert_eq!(
+            done_rx
+                .recv_timeout(Duration::from_secs(10))
+                .expect("future ran"),
+            42
+        );
+        thread.join().expect("thread joined cleanly");
+        drop(cancel_tx);
+    }
+
+    #[test]
+    fn cancel_drops_pending_future() {
+        let (thread, cancel_tx) =
+            spawn_link_task("lt-cancel".to_string(), std::future::pending::<()>)
+                .expect("spawn link task");
+        cancel_tx.send(()).expect("cancel signal accepted");
+        thread.join().expect("thread joined after cancel");
+    }
+
+    #[test]
+    fn dropping_cancel_sender_also_unblocks_pending_future() {
+        // Handle teardown without an explicit cancel (e.g. prune) drops the
+        // sender; the select arm must complete on the closed channel too.
+        let (thread, cancel_tx) =
+            spawn_link_task("lt-drop".to_string(), std::future::pending::<()>)
+                .expect("spawn link task");
+        drop(cancel_tx);
+        thread.join().expect("thread joined after sender drop");
+    }
+}

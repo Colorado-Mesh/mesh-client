@@ -389,3 +389,169 @@ fn emit(event_tx: &broadcast::Sender<String>, event_type: &str, payload: serde_j
     let frame = json!({ "type": event_type, "payload": payload });
     let _ = event_tx.send(frame.to_string());
 }
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use super::*;
+
+    const TEST_DEST: &str = "aabbccddeeff00112233445566778899";
+
+    fn test_manager() -> (RnshSessionManager, broadcast::Receiver<String>) {
+        // Dropping the transport receiver makes rnsh_client_execute fail fast
+        // with TransportUnavailable on its first send.
+        let (transport_tx, transport_rx) = mpsc::channel::<TransportMessage>(8);
+        drop(transport_rx);
+        let (event_tx, event_rx) = broadcast::channel::<String>(64);
+        (
+            RnshSessionManager::spawn(transport_tx, Identity::new(), event_tx),
+            event_rx,
+        )
+    }
+
+    async fn recv_event_of_type(
+        rx: &mut broadcast::Receiver<String>,
+        event_type: &str,
+    ) -> serde_json::Value {
+        loop {
+            let frame = tokio::time::timeout(Duration::from_secs(10), rx.recv())
+                .await
+                .expect("event before timeout")
+                .expect("event channel open");
+            let parsed: serde_json::Value = serde_json::from_str(&frame).expect("valid frame");
+            if parsed["type"] == event_type {
+                return parsed["payload"].clone();
+            }
+        }
+    }
+
+    #[test]
+    fn status_as_str_covers_all_variants() {
+        assert_eq!(RnshSessionStatus::Connecting.as_str(), "connecting");
+        assert_eq!(RnshSessionStatus::Active.as_str(), "active");
+        assert_eq!(RnshSessionStatus::Closed.as_str(), "closed");
+        assert_eq!(RnshSessionStatus::Error.as_str(), "error");
+    }
+
+    #[test]
+    fn map_rnsh_error_reason_keys() {
+        assert_eq!(map_rnsh_error(&RnshError::NoIdentity).0, "not_announced");
+        assert_eq!(map_rnsh_error(&RnshError::PathTimeout).0, "timeout");
+        assert_eq!(map_rnsh_error(&RnshError::Timeout("link")).0, "timeout");
+        assert_eq!(map_rnsh_error(&RnshError::Denied).0, "not_allowed");
+        assert_eq!(
+            map_rnsh_error(&RnshError::Remote("Incompatible protocol version".into())).0,
+            "version_mismatch"
+        );
+        let (key, message) = map_rnsh_error(&RnshError::Remote("boom".into()));
+        assert_eq!(key, "error");
+        assert!(message.contains("boom"));
+        assert_eq!(map_rnsh_error(&RnshError::TransportUnavailable).0, "error");
+    }
+
+    #[tokio::test]
+    async fn connect_rejects_invalid_destination_hash() {
+        let (manager, _rx) = test_manager();
+        assert!(manager.connect("nope").await.is_err());
+        assert!(manager.connect("aabb").await.is_err());
+    }
+
+    #[tokio::test]
+    async fn connect_tracks_session_and_reports_error_on_dead_transport() {
+        let (manager, mut rx) = test_manager();
+        let result = manager.connect(TEST_DEST).await.expect("session starts");
+        let session_id = result["session_id"].as_str().expect("id").to_string();
+        assert_eq!(result["identity_hash"], TEST_DEST);
+
+        let status = recv_event_of_type(&mut rx, "rnsh.status").await;
+        assert_eq!(status["status"], "active");
+        assert_eq!(status["destination_hash"], TEST_DEST);
+
+        // Transport receiver is dropped, so the driving thread fails fast.
+        let error = recv_event_of_type(&mut rx, "rnsh.error").await;
+        assert_eq!(error["session_id"], session_id);
+        assert_eq!(error["reason_key"], "error");
+
+        let snapshot = manager.status_snapshot().await;
+        let rows = snapshot["sessions"].as_array().expect("rows");
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0]["session_id"], session_id);
+    }
+
+    #[tokio::test]
+    async fn input_and_resize_reject_unknown_session() {
+        let (manager, _rx) = test_manager();
+        assert!(manager.input("missing", vec![1, 2, 3]).await.is_err());
+        assert!(manager.resize("missing", Some(30), Some(90)).await.is_err());
+        assert!(manager.disconnect("missing").await.is_err());
+    }
+
+    #[tokio::test]
+    async fn disconnect_emits_closed_and_removes_session() {
+        let (manager, mut rx) = test_manager();
+        let result = manager.connect(TEST_DEST).await.expect("session starts");
+        let session_id = result["session_id"].as_str().expect("id").to_string();
+
+        manager.disconnect(&session_id).await.expect("disconnect");
+        let closed = recv_event_of_type(&mut rx, "rnsh.closed").await;
+        assert_eq!(closed["session_id"], session_id);
+        assert_eq!(closed["reason_key"], "cancelled");
+
+        let snapshot = manager.status_snapshot().await;
+        assert_eq!(snapshot["sessions"].as_array().expect("rows").len(), 0);
+        assert!(manager.input(&session_id, vec![0]).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn prune_finished_sessions_drops_only_finished_threads() {
+        let inner = || {
+            Arc::new(Mutex::new(RnshSessionInner {
+                status: RnshSessionStatus::Active,
+                destination_hash: TEST_DEST.to_string(),
+                last_error: None,
+                return_code: None,
+            }))
+        };
+        let (release_tx, release_rx) = std::sync::mpsc::channel::<()>();
+        let running_thread = std::thread::spawn(move || {
+            let _ = release_rx.recv_timeout(Duration::from_secs(10));
+        });
+        let finished_thread = std::thread::spawn(|| {});
+        while !finished_thread.is_finished() {
+            std::thread::sleep(Duration::from_millis(5));
+        }
+
+        let make_handle = |thread: std::thread::JoinHandle<()>| RnshSessionHandle {
+            inner: inner(),
+            stdin_tx: Some(mpsc::channel::<Vec<u8>>(1).0),
+            window_tx: mpsc::channel::<RnshWindowSize>(1).0,
+            cancel_tx: Some(oneshot::channel::<()>().0),
+            thread,
+        };
+        let mut sessions = HashMap::new();
+        sessions.insert("finished".to_string(), make_handle(finished_thread));
+        sessions.insert("running".to_string(), make_handle(running_thread));
+
+        prune_finished_sessions(&mut sessions);
+        assert!(!sessions.contains_key("finished"));
+        assert!(sessions.contains_key("running"));
+        release_tx.send(()).expect("release running thread");
+    }
+
+    #[tokio::test]
+    async fn stream_forwarder_encodes_chunks_and_skips_empty() {
+        let (event_tx, mut event_rx) = broadcast::channel::<String>(16);
+        let (chunk_tx, chunk_rx) = mpsc::channel::<Vec<u8>>(8);
+        spawn_stream_forwarder(event_tx, "sess-1".to_string(), "rnsh.stdout", chunk_rx);
+
+        chunk_tx.send(Vec::new()).await.expect("empty chunk");
+        chunk_tx.send(vec![104, 105]).await.expect("hi chunk");
+        let payload = recv_event_of_type(&mut event_rx, "rnsh.stdout").await;
+        assert_eq!(payload["session_id"], "sess-1");
+        assert_eq!(
+            payload["data"],
+            base64::engine::general_purpose::STANDARD.encode("hi")
+        );
+    }
+}

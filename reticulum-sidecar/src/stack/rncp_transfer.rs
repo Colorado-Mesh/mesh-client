@@ -954,4 +954,509 @@ mod tests {
     fn pending_offer_cap_is_bounded() {
         assert_eq!(MAX_PENDING_RNCP_OFFERS, 16);
     }
+
+    #[test]
+    fn transfer_kind_as_str() {
+        assert_eq!(TransferKind::Send.as_str(), "send");
+        assert_eq!(TransferKind::Fetch.as_str(), "fetch");
+    }
+
+    #[test]
+    fn local_filename_falls_back_to_input() {
+        assert_eq!(local_filename("/a/b/c.txt"), "c.txt");
+        assert_eq!(local_filename("plain.bin"), "plain.bin");
+    }
+
+    #[tokio::test]
+    async fn dedupe_path_appends_counter_when_taken() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        assert_eq!(
+            dedupe_path(dir.path(), "f.txt").await,
+            dir.path().join("f.txt")
+        );
+        tokio::fs::write(dir.path().join("f.txt"), b"x")
+            .await
+            .expect("write");
+        assert_eq!(
+            dedupe_path(dir.path(), "f.txt").await,
+            dir.path().join("f.txt.1")
+        );
+        tokio::fs::write(dir.path().join("f.txt.1"), b"x")
+            .await
+            .expect("write");
+        assert_eq!(
+            dedupe_path(dir.path(), "f.txt").await,
+            dir.path().join("f.txt.2")
+        );
+    }
+
+    // ── manager-level tests (dead transport fails link tasks fast) ──
+
+    const TEST_DEST: &str = "aabbccddeeff00112233445566778899";
+
+    fn test_manager(storage_dir: &Path) -> (RncpTransferManager, broadcast::Receiver<String>) {
+        let (transport_tx, transport_rx) = mpsc::channel::<TransportMessage>(8);
+        drop(transport_rx);
+        let (event_tx, event_rx) = broadcast::channel::<String>(64);
+        (
+            RncpTransferManager::spawn(
+                transport_tx,
+                Identity::new(),
+                event_tx,
+                storage_dir.to_path_buf(),
+            ),
+            event_rx,
+        )
+    }
+
+    async fn recv_event_of_type(
+        rx: &mut broadcast::Receiver<String>,
+        event_type: &str,
+    ) -> serde_json::Value {
+        loop {
+            let frame = tokio::time::timeout(Duration::from_secs(10), rx.recv())
+                .await
+                .expect("event before timeout")
+                .expect("event channel open");
+            let parsed: serde_json::Value = serde_json::from_str(&frame).expect("valid frame");
+            if parsed["type"] == event_type {
+                return parsed["payload"].clone();
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn send_rejects_missing_oversize_and_non_files() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (manager, _rx) = test_manager(dir.path());
+
+        let missing = dir.path().join("missing.bin");
+        assert!(
+            manager
+                .send(TEST_DEST, missing.to_str().expect("utf8"))
+                .await
+                .is_err()
+        );
+        assert!(
+            manager
+                .send(TEST_DEST, dir.path().to_str().expect("utf8"))
+                .await
+                .expect_err("dir rejected")
+                .contains("not a regular file")
+        );
+        assert!(manager.send("nope", "/tmp/x").await.is_err());
+    }
+
+    #[tokio::test]
+    async fn send_tracks_transfer_and_fails_on_dead_transport() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let local = dir.path().join("hello.txt");
+        tokio::fs::write(&local, b"hello").await.expect("write");
+        let (manager, mut rx) = test_manager(dir.path());
+
+        let transfer_id = manager
+            .send(TEST_DEST, local.to_str().expect("utf8"))
+            .await
+            .expect("send starts");
+        let failed = recv_event_of_type(&mut rx, "rncp.failed").await;
+        assert_eq!(failed["transfer_id"], transfer_id);
+        assert_eq!(failed["destination_hash"], TEST_DEST);
+    }
+
+    #[tokio::test]
+    async fn fetch_tracks_transfer_and_fails_on_dead_transport() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (manager, mut rx) = test_manager(dir.path());
+
+        assert!(
+            manager
+                .fetch("bad", "remote.txt", dir.path().join("dl"))
+                .await
+                .is_err()
+        );
+        let transfer_id = manager
+            .fetch(TEST_DEST, "remote.txt", dir.path().join("dl"))
+            .await
+            .expect("fetch starts");
+        let status = manager.status().await;
+        let transfers = status["transfers"].as_array().expect("transfers");
+        assert!(
+            transfers
+                .iter()
+                .any(|t| t["transfer_id"] == transfer_id.as_str() && t["kind"] == "fetch")
+        );
+        let failed = recv_event_of_type(&mut rx, "rncp.failed").await;
+        assert_eq!(failed["transfer_id"], transfer_id);
+    }
+
+    #[tokio::test]
+    async fn cancel_active_transfer_emits_cancelled() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let local = dir.path().join("hello.txt");
+        tokio::fs::write(&local, b"hello").await.expect("write");
+        let (manager, mut rx) = test_manager(dir.path());
+
+        let transfer_id = manager
+            .send(TEST_DEST, local.to_str().expect("utf8"))
+            .await
+            .expect("send starts");
+        manager.cancel(&transfer_id).await.expect("cancel");
+        let cancelled = recv_event_of_type(&mut rx, "rncp.cancelled").await;
+        assert_eq!(cancelled["transfer_id"], transfer_id);
+        // Unknown id: neither active nor a pending offer.
+        assert!(manager.cancel("unknown").await.is_err());
+    }
+
+    /// Writes `name` as a staged file and returns its `PendingOffer` row.
+    async fn stage_offer(staging: &Path, save_dir: &Path, name: &str) -> PendingOffer {
+        let staged_path = staging.join(name);
+        tokio::fs::write(&staged_path, name.as_bytes())
+            .await
+            .expect("stage");
+        PendingOffer {
+            staged_path,
+            original_save_dir: save_dir.to_path_buf(),
+            file_name: name.to_string(),
+            bytes: name.len(),
+            identity_hash: Some("aa".repeat(16)),
+        }
+    }
+
+    #[tokio::test]
+    async fn accept_moves_staged_offer_and_reject_deletes() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (manager, mut rx) = test_manager(dir.path());
+        let staging = dir.path().join(STAGING_DIR_NAME);
+        tokio::fs::create_dir_all(&staging).await.expect("staging");
+
+        let offer = stage_offer(&staging, dir.path(), "keep.txt").await;
+        manager
+            .pending_offers
+            .lock()
+            .await
+            .insert("offer-1".to_string(), offer);
+        let payload = manager.accept("offer-1").await.expect("accept");
+        assert_eq!(payload["file_name"], "keep.txt");
+        let completed = recv_event_of_type(&mut rx, "rncp.completed").await;
+        assert_eq!(completed["transfer_id"], "offer-1");
+        let final_path = dir.path().join("keep.txt");
+        assert_eq!(
+            tokio::fs::read(&final_path).await.expect("accepted file"),
+            b"keep.txt"
+        );
+        assert!(manager.accept("offer-1").await.is_err());
+
+        let offer = stage_offer(&staging, dir.path(), "drop.txt").await;
+        let staged_path = offer.staged_path.clone();
+        manager
+            .pending_offers
+            .lock()
+            .await
+            .insert("offer-2".to_string(), offer);
+        manager.reject("offer-2").await.expect("reject");
+        let cancelled = recv_event_of_type(&mut rx, "rncp.cancelled").await;
+        assert_eq!(cancelled["reason"], "rejected");
+        assert!(tokio::fs::metadata(&staged_path).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn configure_policy_normalizes_and_listener_status_reports() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (manager, _rx) = test_manager(dir.path());
+
+        assert!(
+            manager
+                .configure_policy("bogus", vec![], vec![])
+                .await
+                .is_err()
+        );
+        manager
+            .configure_policy(
+                "ask",
+                vec!["  AA11  ".to_string(), String::new()],
+                vec!["BB22".to_string()],
+            )
+            .await
+            .expect("policy set");
+        let status = manager.listener_status().await;
+        assert_eq!(status["enabled"], false);
+        assert_eq!(status["inbound_mode"], "ask");
+        assert_eq!(status["allowed"].as_array().expect("allowed").len(), 1);
+        assert_eq!(status["allowed"][0], "aa11");
+        assert_eq!(status["blocked"][0], "bb22");
+        assert_eq!(manager.receive_destination_hash().await, None);
+    }
+
+    #[tokio::test]
+    async fn start_listener_rejects_off_policy_and_missing_fetch_jail() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (manager, _rx) = test_manager(dir.path());
+
+        let err = manager
+            .start_listener(dir.path().join("inbox"), true, None, false)
+            .await
+            .expect_err("missing jail rejected");
+        assert!(err.contains("fetch_jail"));
+
+        let err = manager
+            .start_listener(dir.path().join("inbox"), false, None, false)
+            .await
+            .expect_err("off policy rejected");
+        assert!(err.contains("policy=off"));
+    }
+
+    // ── listener event-loop tests ──
+
+    struct EventLoopFixture {
+        event_tx: broadcast::Sender<String>,
+        event_rx: broadcast::Receiver<String>,
+        policy: PolicyState,
+        link_identities: HashMap<[u8; 16], [u8; 16]>,
+        staging_dir: PathBuf,
+        pending_offers: Arc<Mutex<HashMap<String, PendingOffer>>>,
+        dir: tempfile::TempDir,
+    }
+
+    fn event_loop_fixture(policy: PolicyState) -> EventLoopFixture {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (event_tx, event_rx) = broadcast::channel::<String>(64);
+        EventLoopFixture {
+            event_tx,
+            event_rx,
+            policy,
+            link_identities: HashMap::new(),
+            staging_dir: dir.path().join(STAGING_DIR_NAME),
+            pending_offers: Arc::new(Mutex::new(HashMap::new())),
+            dir,
+        }
+    }
+
+    impl EventLoopFixture {
+        async fn dispatch(&mut self, evt: RncpEvent) {
+            handle_rncp_event(
+                &self.event_tx,
+                &self.policy,
+                &mut self.link_identities,
+                &self.staging_dir,
+                &self.pending_offers,
+                evt,
+            )
+            .await;
+        }
+
+        async fn write_inbound(&self, name: &str, contents: &[u8]) -> PathBuf {
+            let path = self.dir.path().join(name);
+            tokio::fs::write(&path, contents).await.expect("inbound");
+            path
+        }
+    }
+
+    fn ask_policy(allowed: &[&str], blocked: &[&str]) -> PolicyState {
+        PolicyState {
+            mode: InboundMode::Ask,
+            allowed: allowed.iter().map(|s| (*s).to_string()).collect(),
+            blocked: blocked.iter().map(|s| (*s).to_string()).collect(),
+        }
+    }
+
+    #[tokio::test]
+    async fn completed_from_allowed_sender_passes_straight_through() {
+        let sender = [0xAA; 16];
+        let mut fx = event_loop_fixture(ask_policy(&[&hex::encode(sender)], &[]));
+        let saved = fx.write_inbound("direct.txt", b"direct").await;
+
+        fx.dispatch(RncpEvent::SenderIdentified {
+            link_id: [1; 16],
+            identity_hash: sender,
+        })
+        .await;
+        fx.dispatch(RncpEvent::Completed {
+            link_id: [1; 16],
+            file_name: "direct.txt".to_string(),
+            saved_path: saved.clone(),
+            bytes: 6,
+        })
+        .await;
+
+        let completed = recv_event_of_type(&mut fx.event_rx, "rncp.completed").await;
+        assert_eq!(completed["file_name"], "direct.txt");
+        assert!(tokio::fs::metadata(&saved).await.is_ok());
+        assert!(fx.pending_offers.lock().await.is_empty());
+    }
+
+    #[tokio::test]
+    async fn completed_from_blocked_sender_deletes_file() {
+        let sender = [0xBB; 16];
+        let mut fx = event_loop_fixture(ask_policy(&[], &[&hex::encode(sender)]));
+        let saved = fx.write_inbound("blocked.txt", b"blocked").await;
+
+        fx.dispatch(RncpEvent::SenderIdentified {
+            link_id: [2; 16],
+            identity_hash: sender,
+        })
+        .await;
+        fx.dispatch(RncpEvent::Completed {
+            link_id: [2; 16],
+            file_name: "blocked.txt".to_string(),
+            saved_path: saved.clone(),
+            bytes: 7,
+        })
+        .await;
+
+        let failed = recv_event_of_type(&mut fx.event_rx, "rncp.failed").await;
+        assert_eq!(failed["reason"], "not_allowed");
+        assert!(tokio::fs::metadata(&saved).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn completed_oversize_is_deleted_and_reported() {
+        let mut fx = event_loop_fixture(ask_policy(&[], &[]));
+        let saved = fx.write_inbound("big.bin", b"stub").await;
+
+        fx.dispatch(RncpEvent::Completed {
+            link_id: [3; 16],
+            file_name: "big.bin".to_string(),
+            saved_path: saved.clone(),
+            bytes: (MAX_RNCP_FILE_BYTES + 1) as usize,
+        })
+        .await;
+
+        let failed = recv_event_of_type(&mut fx.event_rx, "rncp.failed").await;
+        assert_eq!(failed["reason"], "file_too_large");
+        assert!(tokio::fs::metadata(&saved).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn ask_mode_unlisted_sender_is_staged_as_offer() {
+        let mut fx = event_loop_fixture(ask_policy(&[], &[]));
+        let saved = fx.write_inbound("ask.txt", b"ask").await;
+
+        fx.dispatch(RncpEvent::SenderIdentified {
+            link_id: [4; 16],
+            identity_hash: [0xCC; 16],
+        })
+        .await;
+        fx.dispatch(RncpEvent::Completed {
+            link_id: [4; 16],
+            file_name: "ask.txt".to_string(),
+            saved_path: saved.clone(),
+            bytes: 3,
+        })
+        .await;
+
+        let offer = recv_event_of_type(&mut fx.event_rx, "rncp.offer").await;
+        assert_eq!(offer["file_name"], "ask.txt");
+        assert_eq!(offer["identity_hash"], hex::encode([0xCC; 16]));
+        // Original inbox path is gone; the staged copy holds the bytes.
+        assert!(tokio::fs::metadata(&saved).await.is_err());
+        let offers = fx.pending_offers.lock().await;
+        assert_eq!(offers.len(), 1);
+        let staged = offers.values().next().expect("offer");
+        assert!(staged.staged_path.starts_with(&fx.staging_dir));
+        assert_eq!(
+            std::fs::read(&staged.staged_path).expect("staged bytes"),
+            b"ask"
+        );
+    }
+
+    #[tokio::test]
+    async fn ask_mode_over_cap_offer_is_dropped() {
+        let mut fx = event_loop_fixture(ask_policy(&[], &[]));
+        {
+            let mut offers = fx.pending_offers.lock().await;
+            for i in 0..MAX_PENDING_RNCP_OFFERS {
+                offers.insert(
+                    format!("prefill-{i}"),
+                    PendingOffer {
+                        staged_path: fx.staging_dir.join(format!("p{i}")),
+                        original_save_dir: fx.dir.path().to_path_buf(),
+                        file_name: format!("p{i}"),
+                        bytes: 1,
+                        identity_hash: None,
+                    },
+                );
+            }
+        }
+        let saved = fx.write_inbound("overflow.txt", b"x").await;
+        fx.dispatch(RncpEvent::Completed {
+            link_id: [5; 16],
+            file_name: "overflow.txt".to_string(),
+            saved_path: saved.clone(),
+            bytes: 1,
+        })
+        .await;
+
+        let failed = recv_event_of_type(&mut fx.event_rx, "rncp.failed").await;
+        assert_eq!(failed["reason"], "too_many_pending");
+        assert!(tokio::fs::metadata(&saved).await.is_err());
+        assert_eq!(
+            fx.pending_offers.lock().await.len(),
+            MAX_PENDING_RNCP_OFFERS
+        );
+    }
+
+    #[tokio::test]
+    async fn denied_and_write_failed_events_report_failures() {
+        let mut fx = event_loop_fixture(ask_policy(&[], &[]));
+
+        fx.dispatch(RncpEvent::SenderDenied {
+            link_id: [6; 16],
+            identity_hash: [0xDD; 16],
+        })
+        .await;
+        let denied = recv_event_of_type(&mut fx.event_rx, "rncp.failed").await;
+        assert_eq!(denied["reason"], "not_allowed");
+
+        fx.dispatch(RncpEvent::WriteFailed {
+            link_id: [7; 16],
+            file_name: "w.txt".to_string(),
+            reason: "disk full".to_string(),
+        })
+        .await;
+        let write_failed = recv_event_of_type(&mut fx.event_rx, "rncp.failed").await;
+        assert_eq!(write_failed["reason"], "disk full");
+
+        // No-op informational events must not panic or emit failures.
+        fx.dispatch(RncpEvent::LinkEstablished { link_id: [8; 16] })
+            .await;
+        fx.dispatch(RncpEvent::FetchServing {
+            link_id: [8; 16],
+            file_name: "s.txt".to_string(),
+            bytes: 1,
+        })
+        .await;
+        fx.dispatch(RncpEvent::FetchDenied {
+            link_id: [8; 16],
+            reason: "jail".to_string(),
+        })
+        .await;
+    }
+
+    #[test]
+    fn prune_finished_transfers_drops_only_finished_threads() {
+        let (release_tx, release_rx) = std::sync::mpsc::channel::<()>();
+        let running_thread = std::thread::spawn(move || {
+            let _ = release_rx.recv_timeout(Duration::from_secs(10));
+        });
+        let finished_thread = std::thread::spawn(|| {});
+        while !finished_thread.is_finished() {
+            std::thread::sleep(Duration::from_millis(5));
+        }
+
+        let make_transfer = |thread: std::thread::JoinHandle<()>| ActiveTransfer {
+            kind: TransferKind::Send,
+            destination_hash: TEST_DEST.to_string(),
+            file_name: None,
+            cancel_tx: Some(oneshot::channel::<()>().0),
+            thread,
+        };
+        let mut active = HashMap::new();
+        active.insert("finished".to_string(), make_transfer(finished_thread));
+        active.insert("running".to_string(), make_transfer(running_thread));
+
+        prune_finished_transfers(&mut active);
+        assert!(!active.contains_key("finished"));
+        assert!(active.contains_key("running"));
+        release_tx.send(()).expect("release running thread");
+    }
 }
