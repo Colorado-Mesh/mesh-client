@@ -168,6 +168,8 @@ WS event types (in addition to the list below): `rnsh.stdout`, `rnsh.stderr`, `r
 
 Caps (local policy): max **8** shells, max **3** concurrent transfers, default **25 MiB** file size; LoRa/BLE-only destinations refuse transfers (`path_constrained`) before opening a link.
 
+Listener persistence: a successful `POST /api/v1/rncp/listener` stores the config (`rncp_listener_*` keys in `mesh_client_stack.json`); the live stack restores the listener on start, so the inbound mode survives sidecar/app restarts. `enabled: false` persists only the flag and keeps the last dir/policy fields.
+
 ### System
 
 | Method | Path                           | Body / notes        | Response                                                                                                                                                                                                                               |

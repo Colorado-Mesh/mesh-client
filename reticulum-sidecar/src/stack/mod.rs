@@ -1794,6 +1794,15 @@ impl StackHandle {
                 let _ = live
                     .rncp_configure_policy("off", Vec::new(), Vec::new())
                     .await;
+                // Keep the last dir/policy fields so a later re-enable (or a
+                // legacy state file) does not lose the user's chosen folders.
+                {
+                    let mut inner = self.inner.write().await;
+                    inner.rncp_listener_enabled = false;
+                    if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                        tracing::warn!("rncp listener persist failed: {e}");
+                    }
+                }
                 return live.rncp_listener_status().await;
             }
             let mode = if allowed.is_empty() {
@@ -1801,16 +1810,36 @@ impl StackHandle {
             } else {
                 "allow_all_listed"
             };
-            if let Err(e) = live.rncp_configure_policy(mode, allowed, blocked).await {
+            if let Err(e) = live
+                .rncp_configure_policy(mode, allowed.clone(), blocked.clone())
+                .await
+            {
                 return serde_json::json!({ "ok": false, "error": e });
             }
-            let save_dir = save_dir
+            let save_dir_path = save_dir
+                .clone()
                 .map(PathBuf::from)
                 .unwrap_or_else(|| self.storage_dir.join("rncp_inbox"));
-            let fetch_jail = fetch_jail.map(PathBuf::from);
-            return live
-                .rncp_start_listener(save_dir, allow_fetch, fetch_jail, overwrite)
+            let fetch_jail_path = fetch_jail.clone().map(PathBuf::from);
+            let result = live
+                .rncp_start_listener(save_dir_path, allow_fetch, fetch_jail_path, overwrite)
                 .await;
+            // Persist only after a successful start so a restart does not
+            // resurrect a config that never worked.
+            if result.get("ok").and_then(serde_json::Value::as_bool) == Some(true) {
+                let mut inner = self.inner.write().await;
+                inner.rncp_listener_enabled = true;
+                inner.rncp_listener_save_dir = save_dir;
+                inner.rncp_listener_allow_fetch = allow_fetch;
+                inner.rncp_listener_fetch_jail = fetch_jail;
+                inner.rncp_listener_overwrite = overwrite;
+                inner.rncp_listener_allowed = allowed;
+                inner.rncp_listener_blocked = blocked;
+                if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                    tracing::warn!("rncp listener persist failed: {e}");
+                }
+            }
+            return result;
         }
         let _ = (
             enabled,

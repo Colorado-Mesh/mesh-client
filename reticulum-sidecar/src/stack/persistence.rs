@@ -14,6 +14,7 @@ use super::via::resolve_outbound_sent_via;
 
 const STATE_FILE: &str = "mesh_client_stack.json";
 
+#[allow(clippy::struct_excessive_bools)] // persisted flags mirror independent user prefs
 pub struct PersistedState {
     pub identity: StackIdentity,
     pub interfaces: Vec<InterfaceRow>,
@@ -35,6 +36,16 @@ pub struct PersistedState {
     pub nomad_serving_display_name: Option<String>,
     /// Absolute path to an external Nomad content folder (site root or pages dir).
     pub nomad_serving_content_source: Option<String>,
+    /// User preference: restart the inbound rncp listener when the live stack is up.
+    pub rncp_listener_enabled: bool,
+    /// Inbound rncp save directory; `None` falls back to `<storage>/rncp_inbox`.
+    pub rncp_listener_save_dir: Option<String>,
+    pub rncp_listener_allow_fetch: bool,
+    pub rncp_listener_fetch_jail: Option<String>,
+    pub rncp_listener_overwrite: bool,
+    /// Identity hashes for `allow_all_listed` policy; empty means `ask` mode.
+    pub rncp_listener_allowed: Vec<String>,
+    pub rncp_listener_blocked: Vec<String>,
 }
 
 impl PersistedState {
@@ -71,6 +82,13 @@ impl PersistedState {
             nomad_serving_enabled: false,
             nomad_serving_display_name: None,
             nomad_serving_content_source: None,
+            rncp_listener_enabled: false,
+            rncp_listener_save_dir: None,
+            rncp_listener_allow_fetch: false,
+            rncp_listener_fetch_jail: None,
+            rncp_listener_overwrite: false,
+            rncp_listener_allowed: Vec::new(),
+            rncp_listener_blocked: Vec::new(),
         }
     }
 
@@ -745,7 +763,7 @@ impl serde::Serialize for PersistedState {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut s = serializer.serialize_struct("PersistedState", 17)?;
+        let mut s = serializer.serialize_struct("PersistedState", 24)?;
         s.serialize_field("identity", &self.identity)?;
         s.serialize_field("interfaces", &self.interfaces)?;
         s.serialize_field("contacts", &self.contacts)?;
@@ -772,6 +790,13 @@ impl serde::Serialize for PersistedState {
             "nomad_serving_content_source",
             &self.nomad_serving_content_source,
         )?;
+        s.serialize_field("rncp_listener_enabled", &self.rncp_listener_enabled)?;
+        s.serialize_field("rncp_listener_save_dir", &self.rncp_listener_save_dir)?;
+        s.serialize_field("rncp_listener_allow_fetch", &self.rncp_listener_allow_fetch)?;
+        s.serialize_field("rncp_listener_fetch_jail", &self.rncp_listener_fetch_jail)?;
+        s.serialize_field("rncp_listener_overwrite", &self.rncp_listener_overwrite)?;
+        s.serialize_field("rncp_listener_allowed", &self.rncp_listener_allowed)?;
+        s.serialize_field("rncp_listener_blocked", &self.rncp_listener_blocked)?;
         s.end()
     }
 }
@@ -782,6 +807,7 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
         D: serde::Deserializer<'de>,
     {
         #[derive(Deserialize)]
+        #[allow(clippy::struct_excessive_bools)] // mirrors PersistedState field-for-field
         struct Raw {
             identity: StackIdentity,
             interfaces: Vec<InterfaceRow>,
@@ -809,6 +835,20 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             nomad_serving_display_name: Option<String>,
             #[serde(default)]
             nomad_serving_content_source: Option<String>,
+            #[serde(default)]
+            rncp_listener_enabled: bool,
+            #[serde(default)]
+            rncp_listener_save_dir: Option<String>,
+            #[serde(default)]
+            rncp_listener_allow_fetch: bool,
+            #[serde(default)]
+            rncp_listener_fetch_jail: Option<String>,
+            #[serde(default)]
+            rncp_listener_overwrite: bool,
+            #[serde(default)]
+            rncp_listener_allowed: Vec<String>,
+            #[serde(default)]
+            rncp_listener_blocked: Vec<String>,
         }
         let raw = Raw::deserialize(deserializer)?;
         Ok(Self {
@@ -833,6 +873,13 @@ impl<'de> serde::Deserialize<'de> for PersistedState {
             nomad_serving_enabled: raw.nomad_serving_enabled,
             nomad_serving_display_name: raw.nomad_serving_display_name,
             nomad_serving_content_source: raw.nomad_serving_content_source,
+            rncp_listener_enabled: raw.rncp_listener_enabled,
+            rncp_listener_save_dir: raw.rncp_listener_save_dir,
+            rncp_listener_allow_fetch: raw.rncp_listener_allow_fetch,
+            rncp_listener_fetch_jail: raw.rncp_listener_fetch_jail,
+            rncp_listener_overwrite: raw.rncp_listener_overwrite,
+            rncp_listener_allowed: raw.rncp_listener_allowed,
+            rncp_listener_blocked: raw.rncp_listener_blocked,
         })
     }
 }
@@ -1001,5 +1048,52 @@ mod tests {
         assert!(!legacy_state.nomad_serving_enabled);
         assert!(legacy_state.nomad_serving_display_name.is_none());
         assert!(legacy_state.nomad_serving_content_source.is_none());
+    }
+
+    #[test]
+    fn rncp_listener_fields_round_trip_and_default_when_absent() {
+        let mut state = PersistedState::default_empty();
+        state.rncp_listener_enabled = true;
+        state.rncp_listener_save_dir = Some("/tmp/rncp-inbox".into());
+        state.rncp_listener_allow_fetch = true;
+        state.rncp_listener_fetch_jail = Some("/tmp/rncp-jail".into());
+        state.rncp_listener_overwrite = true;
+        state.rncp_listener_allowed = vec!["aa".repeat(16)];
+        state.rncp_listener_blocked = vec!["bb".repeat(16)];
+        let json = serde_json::to_string(&state).expect("serialize");
+        let loaded: PersistedState = serde_json::from_str(&json).expect("deserialize");
+        assert!(loaded.rncp_listener_enabled);
+        assert_eq!(
+            loaded.rncp_listener_save_dir.as_deref(),
+            Some("/tmp/rncp-inbox")
+        );
+        assert!(loaded.rncp_listener_allow_fetch);
+        assert_eq!(
+            loaded.rncp_listener_fetch_jail.as_deref(),
+            Some("/tmp/rncp-jail")
+        );
+        assert!(loaded.rncp_listener_overwrite);
+        assert_eq!(loaded.rncp_listener_allowed, vec!["aa".repeat(16)]);
+        assert_eq!(loaded.rncp_listener_blocked, vec!["bb".repeat(16)]);
+
+        // Strip the new keys from a valid serialized document (older clients).
+        let mut value: serde_json::Value = serde_json::from_str(&json).expect("value");
+        let obj = value.as_object_mut().expect("object");
+        for key in [
+            "rncp_listener_enabled",
+            "rncp_listener_save_dir",
+            "rncp_listener_allow_fetch",
+            "rncp_listener_fetch_jail",
+            "rncp_listener_overwrite",
+            "rncp_listener_allowed",
+            "rncp_listener_blocked",
+        ] {
+            obj.remove(key);
+        }
+        let legacy_state: PersistedState =
+            serde_json::from_value(value).expect("legacy without rncp listener keys");
+        assert!(!legacy_state.rncp_listener_enabled);
+        assert!(legacy_state.rncp_listener_save_dir.is_none());
+        assert!(legacy_state.rncp_listener_allowed.is_empty());
     }
 }

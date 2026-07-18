@@ -518,6 +518,50 @@ impl LiveBridge {
             }
         }
 
+        // Restore the inbound rncp listener the user enabled in a previous
+        // session (Remote → Settings → Inbound file offers). Failure point:
+        // save dir missing or listener spawn error — log and stay disabled;
+        // the UI shows Off and the user can re-enable manually.
+        let rncp_restore = {
+            let state = inner.read().await;
+            state.rncp_listener_enabled.then(|| {
+                (
+                    state.rncp_listener_save_dir.clone(),
+                    state.rncp_listener_allow_fetch,
+                    state.rncp_listener_fetch_jail.clone(),
+                    state.rncp_listener_overwrite,
+                    state.rncp_listener_allowed.clone(),
+                    state.rncp_listener_blocked.clone(),
+                )
+            })
+        };
+        if let Some((save_dir, allow_fetch, fetch_jail, overwrite, allowed, blocked)) = rncp_restore
+        {
+            let mode = if allowed.is_empty() {
+                "ask"
+            } else {
+                "allow_all_listed"
+            };
+            if let Err(e) = bridge.rncp_configure_policy(mode, allowed, blocked).await {
+                tracing::warn!("[rncp] failed to restore inbound policy: {e}");
+            } else {
+                let save_dir = save_dir
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| storage_dir.join("rncp_inbox"));
+                let result = bridge
+                    .rncp_start_listener(
+                        save_dir,
+                        allow_fetch,
+                        fetch_jail.map(PathBuf::from),
+                        overwrite,
+                    )
+                    .await;
+                if result.get("ok").and_then(serde_json::Value::as_bool) != Some(true) {
+                    tracing::warn!("[rncp] failed to restore inbound listener: {result}");
+                }
+            }
+        }
+
         Ok(bridge)
     }
 
