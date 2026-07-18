@@ -5,8 +5,6 @@ import { MESHCORE_PUBLIC_KEY_LENGTH } from './letsMeshJwt';
 export const MESHCORE_KEY_BACKUP_PREFIX = 'mesh-client:meshcore-key-backup:';
 export const MESHCORE_KEY_BACKUP_INDEX_KEY = 'mesh-client:meshcore-key-backup-index';
 
-const MESHCORE_PRIVATE_LENS = new Set([MESHCORE_PUBLIC_KEY_LENGTH, MESHCORE_PUBLIC_KEY_LENGTH * 2]);
-
 export interface MeshcoreKeyBackupPayload {
   protocol: 'meshcore';
   nodeId: number;
@@ -23,15 +21,14 @@ export interface MeshcoreKeyBackupIndexEntry {
   backedUpAt: number;
 }
 
-function isValidMeshcorePrivateKeyLength(len: number): boolean {
-  return MESHCORE_PRIVATE_LENS.has(len);
-}
-
 function validateMeshcoreKeyPair(publicKey: Uint8Array, privateKey: Uint8Array): void {
   if (publicKey.length !== MESHCORE_PUBLIC_KEY_LENGTH) {
     throw new Error('MeshCore backup: public key must be 32 bytes');
   }
-  if (!isValidMeshcorePrivateKeyLength(privateKey.length)) {
+  if (
+    privateKey.length !== MESHCORE_PUBLIC_KEY_LENGTH &&
+    privateKey.length !== MESHCORE_PUBLIC_KEY_LENGTH * 2
+  ) {
     throw new Error('MeshCore backup: private key must be 32 or 64 bytes');
   }
 }

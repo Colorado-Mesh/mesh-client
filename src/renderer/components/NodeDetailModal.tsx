@@ -49,7 +49,7 @@ import { getNodeStatus } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
 import type { MeshCoreLocalStats, MeshNode, MeshProtocol, NeighborInfoRecord } from '../lib/types';
-import { blockHashForNodeNum, useBlockStore } from '../stores/blockStore';
+import { useBlockStore } from '../stores/blockStore';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useNodeStore } from '../stores/nodeStore';
@@ -152,7 +152,7 @@ function NodeBlockButton({
     protocol === 'meshcore' && publicKeyHex
       ? publicKeyHex
       : protocol && protocol !== 'reticulum'
-        ? blockHashForNodeNum(node.node_id)
+        ? String(node.node_id)
         : '';
   const isBlocked = useBlockStore((s) => (blockedHash ? s.isBlocked(blockedHash) : false));
   const block = useBlockStore((s) => s.block);
