@@ -48,6 +48,7 @@ export function RrcNickList({
               type="button"
               className="rounded p-1 text-amber-200/70 hover:bg-amber-950/50"
               aria-label={t('rrc.refreshWho')}
+              title={t('rrc.refreshWho')}
               disabled={busy}
               onClick={onRefreshWho}
             >
@@ -58,6 +59,7 @@ export function RrcNickList({
             type="button"
             className="rounded p-1 text-amber-200/80 hover:bg-amber-950/50"
             aria-label={collapsed ? t('rrc.expandMembers') : t('rrc.collapseMembers')}
+            title={collapsed ? t('rrc.expandMembers') : t('rrc.collapseMembers')}
             aria-expanded={!collapsed}
             onClick={onToggleCollapsed}
           >
@@ -78,6 +80,7 @@ export function RrcNickList({
             type="button"
             className="rounded p-1 text-amber-200/70 hover:bg-amber-950/50"
             aria-label={t('rrc.refreshWho')}
+            title={t('rrc.refreshWho')}
             disabled={busy}
             onClick={onRefreshWho}
           >
@@ -94,6 +97,7 @@ export function RrcNickList({
                   type="button"
                   className="w-full truncate rounded px-1.5 py-1 text-left text-amber-100/90 hover:bg-amber-950/40"
                   aria-label={t('rrc.msgNick', { name: label })}
+                  title={t('rrc.msgNick', { name: label })}
                   onClick={() => {
                     onNickClick(m);
                   }}

@@ -880,6 +880,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
                 type="button"
                 className={`rounded p-1.5 hover:bg-amber-950/50 ${showTimestamps ? 'text-amber-400' : 'text-amber-200/60'}`}
                 aria-label={t('rrc.toggleTimestamps')}
+                title={t('rrc.toggleTimestamps')}
                 onClick={() => {
                   setShowTimestamps(!showTimestamps);
                 }}
@@ -890,6 +891,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
                 type="button"
                 className={`rounded p-1.5 hover:bg-amber-950/50 ${isMuted ? 'text-amber-400' : 'text-amber-200/60'}`}
                 aria-label={isMuted ? t('rrc.unmuteRoom') : t('rrc.muteRoom')}
+                title={isMuted ? t('rrc.unmuteRoom') : t('rrc.muteRoom')}
                 disabled={!muteKey}
                 onClick={toggleMute}
               >
@@ -900,6 +902,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
                   type="button"
                   className="rounded p-1.5 text-amber-200/60 hover:bg-amber-950/50"
                   aria-label={t('rrc.clearHistory')}
+                  title={t('rrc.clearHistory')}
                   disabled={actionBusy}
                   onClick={() => {
                     setConfirmClearHistory(true);
@@ -913,6 +916,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
                   type="button"
                   className="rounded p-1.5 text-amber-200/60 hover:bg-amber-950/50"
                   aria-label={t('rrc.leaveRoom')}
+                  title={t('rrc.leaveRoom')}
                   disabled={actionBusy}
                   onClick={() => void handlePart()}
                 >
@@ -926,6 +930,7 @@ export default function RrcPanel({ isActive }: RrcPanelProps) {
               type="button"
               className="rounded bg-amber-900/60 px-2 py-1 text-xs text-amber-100"
               aria-label={cancelSessionLabel ? t('rrc.cancelConnect') : t('rrc.disconnect')}
+              title={cancelSessionLabel ? t('rrc.cancelConnect') : t('rrc.disconnect')}
               disabled={actionBusy}
               onClick={() => void handleDisconnect()}
             >

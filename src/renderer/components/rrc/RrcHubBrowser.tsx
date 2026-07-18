@@ -134,6 +134,7 @@ function HubRow({
           type="button"
           className="shrink-0 p-1 text-amber-400"
           aria-label={hub.favorited ? t('rrc.unfavoriteHub') : t('rrc.favoriteHub')}
+          title={hub.favorited ? t('rrc.unfavoriteHub') : t('rrc.favoriteHub')}
           onClick={() => {
             onToggleFavorite(hub.destination_hash, !hub.favorited);
           }}
@@ -237,6 +238,7 @@ export function RrcHubBrowser({
             type="button"
             className="rounded p-1 text-amber-200/80 hover:bg-amber-950/50"
             aria-label={t('rrc.refreshHubs')}
+            title={t('rrc.refreshHubs')}
             disabled={!sidecarRunning}
             onClick={onRefresh}
           >
@@ -246,6 +248,7 @@ export function RrcHubBrowser({
             type="button"
             className="rounded p-1 text-amber-200/80 hover:bg-amber-950/50"
             aria-label={collapsed ? t('rrc.expandSidebar') : t('rrc.collapseSidebar')}
+            title={collapsed ? t('rrc.expandSidebar') : t('rrc.collapseSidebar')}
             onClick={onToggleCollapsed}
           >
             {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}

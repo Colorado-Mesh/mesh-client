@@ -170,6 +170,7 @@ export function RrcRoomSidebar({
             type="button"
             className={`shrink-0 p-1 ${isFav ? 'text-amber-400' : 'text-amber-200/30'}`}
             aria-label={isFav ? t('rrc.unfavoriteRoom') : t('rrc.favoriteRoom')}
+            title={isFav ? t('rrc.unfavoriteRoom') : t('rrc.favoriteRoom')}
             onClick={() => {
               onToggleFavourite(name);
             }}
@@ -235,6 +236,7 @@ export function RrcRoomSidebar({
           type="button"
           className="rounded p-1 text-amber-200/80 hover:bg-amber-950/50"
           aria-label={collapsed ? t('rrc.expandRooms') : t('rrc.collapseRooms')}
+          title={collapsed ? t('rrc.expandRooms') : t('rrc.collapseRooms')}
           aria-expanded={!collapsed}
           onClick={onToggleCollapsed}
         >

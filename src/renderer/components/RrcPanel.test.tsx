@@ -167,7 +167,9 @@ describe('RrcPanel', () => {
       timestamp: Date.now(),
     });
     render(<RrcPanel isActive />);
-    await user.click(screen.getByRole('button', { name: 'Clear history' }));
+    const clearBtn = screen.getByRole('button', { name: 'Clear history' });
+    expect(clearBtn).toHaveAttribute('title', 'Clear history');
+    await user.click(clearBtn);
     expect(screen.getByRole('alertdialog', { name: 'Clear room history' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Delete history' }));
     await waitFor(() => {
