@@ -487,8 +487,6 @@ export interface ChatPanelProps {
   composerPayloadLimit?: number;
   /** Use LXMF message hash for threaded replies (ratspeak.chat.v2). */
   lxmfReplyHashReplies?: boolean;
-  /** Optional LXMF file/voice send (unused while hasLxmfAttachments is false). */
-  onSendAttachment?: (file: File, destination: number) => Promise<void>;
   /** Reticulum: open Network tab propagation settings. */
   onOpenPropagationSettings?: () => void;
   /** Reticulum: stack is configured and sidecar is live. */
@@ -530,7 +528,6 @@ function ChatPanel({
   lxmfReplyHashReplies = false,
   meshcoreFloodScopeHashtag = '',
   applyMeshcoreFloodScopeHashtag,
-  onSendAttachment,
   onOpenPropagationSettings,
   reticulumStackLive = false,
 }: ChatPanelProps) {
@@ -2988,7 +2985,6 @@ function ChatPanel({
         outboxDestination={viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined}
         queueOutbox={queueOutbox}
         onSendChunk={handleSendChunk}
-        onSendAttachment={onSendAttachment}
         payloadLimit={composerPayloadLimit}
         lxmfReplyHashReplies={lxmfReplyHashReplies}
         showFloodScopeOverride={typeof applyMeshcoreFloodScopeHashtag === 'function'}

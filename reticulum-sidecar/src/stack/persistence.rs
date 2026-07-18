@@ -7,8 +7,8 @@ use uuid::Uuid;
 use serde::Deserialize;
 
 use super::types::{
-    AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfResourceRequest,
-    LxmfSendRequest, NomadNodeRow, PeerRow, PropagationRow, RrcHubRow, StackIdentity,
+    AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfSendRequest,
+    NomadNodeRow, PeerRow, PropagationRow, RrcHubRow, StackIdentity,
 };
 use super::via::resolve_outbound_sent_via;
 
@@ -719,52 +719,6 @@ impl PersistedState {
         self.interfaces = interfaces;
         self.ensure_defaults();
         Ok(())
-    }
-
-    pub fn send_resource_local(
-        &mut self,
-        req: &LxmfResourceRequest,
-    ) -> Result<serde_json::Value, String> {
-        if !self.identity.configured {
-            return Err("identity not configured".into());
-        }
-        let ts = Self::now_secs();
-        let peer_names = super::topology::build_topology_name_map(
-            &self.peers,
-            &self.contacts,
-            &self.nomad_nodes,
-        );
-        self.upsert_contact_with_name_cache(&req.destination_hash, None, &peer_names);
-        let text = format!("[file:{}:{}]", req.file_name, req.mime_type);
-        let mut payload = serde_json::json!({
-            "sender_hash": self.identity.lxmf_hash,
-            "sender_name": self.identity.display_name.clone().unwrap_or_else(|| "Self".into()),
-            "text": text,
-            "timestamp": ts * 1000,
-            "to_hash": req.destination_hash,
-            "reply_to_hash": req.reply_to_hash,
-            "reply_preview_text": req.reply_preview_text,
-            "direction": "outbound",
-            "attachment": {
-                "file_name": req.file_name,
-                "mime_type": req.mime_type,
-                "size_bytes": req.data_base64.len(),
-            }
-        });
-        let hash_input = format!(
-            "{}:{}:{}",
-            payload["sender_hash"].as_str().unwrap_or_default(),
-            payload["timestamp"].as_i64().unwrap_or(0),
-            payload["text"].as_str().unwrap_or_default()
-        );
-        if let Some(obj) = payload.as_object_mut() {
-            obj.insert(
-                "message_hash".into(),
-                serde_json::Value::String(format!("{:032x}", stable_hash(&hash_input))),
-            );
-        }
-        self.messages.push(payload.clone());
-        Ok(payload)
     }
 
     #[allow(clippy::unnecessary_wraps)] // Result matches delete_message_by_hash callers that use ?

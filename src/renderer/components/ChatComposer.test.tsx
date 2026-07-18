@@ -25,10 +25,6 @@ vi.mock('react-i18next', () => ({
         'chatPanel.meshcoreGifButton': 'Insert Giphy GIF',
         'chatPanel.meshcoreGifPlaceholder': 'Giphy URL or id',
         'chatPanel.meshcoreGifSend': 'Send GIF',
-        'chatPanel.attachFile': 'Attach file',
-        'chatPanel.attachFileHint': 'Send an LXMF file attachment (DM only)',
-        'chatPanel.recordVoice': 'Record voice message',
-        'chatPanel.recordVoiceHint': 'Record a voice clip',
         'common.cancel': 'Cancel',
       };
       if (key === 'chatPanel.composeLimit.approaching') {
@@ -326,37 +322,6 @@ describe('ChatComposer', () => {
       />,
     );
     expect(screen.queryByRole('button', { name: 'Insert Giphy GIF' })).toBeNull();
-  });
-
-  it('hides attach and voice controls when onSendAttachment is omitted', () => {
-    render(
-      <ChatComposer
-        protocol="reticulum"
-        viewKey="dm:1"
-        isConnected
-        allowOutbox={false}
-        outboxDestination={1}
-        onSendChunk={vi.fn()}
-      />,
-    );
-    expect(screen.queryByRole('button', { name: 'Attach file' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Record voice message' })).toBeNull();
-  });
-
-  it('shows attach and voice controls when onSendAttachment is provided', () => {
-    render(
-      <ChatComposer
-        protocol="reticulum"
-        viewKey="dm:1"
-        isConnected
-        allowOutbox={false}
-        outboxDestination={1}
-        onSendChunk={vi.fn()}
-        onSendAttachment={vi.fn()}
-      />,
-    );
-    expect(screen.getByRole('button', { name: 'Attach file' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Record voice message' })).toBeInTheDocument();
   });
 
   it('sends g: wire from GIF modal when Open wire compat is enabled', async () => {

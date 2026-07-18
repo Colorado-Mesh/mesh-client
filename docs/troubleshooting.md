@@ -208,9 +208,9 @@ pnpm run trace-deprecation
 
 ### Permission messages in the console
 
-The session allowlist grants **serial**, **geolocation**, and **media** (Reticulum Chat voice clips via `getUserMedia`). Other permissions such as `web-app-installation` remain denied and may appear as `[permissions] … → denied` in the log.
+The session allowlist grants **serial**, **geolocation**, and **media** (camera for QR ingest; microphone reserved for future live audio). Other permissions such as `web-app-installation` remain denied and may appear as `[permissions] … → denied` in the log.
 
-If Reticulum voice recording still fails with microphone permission denied after media is granted:
+If microphone permission is denied when a future live-audio feature requests it:
 
 - **macOS:** System Settings → Privacy & Security → Microphone — allow Mesh-client (or Electron when running `pnpm run dev`). Packaged builds include `NSMicrophoneUsageDescription`.
 - **Windows:** Settings → Privacy & security → Microphone — allow desktop apps / Mesh-client. The app opens this page when OS status is `denied`.

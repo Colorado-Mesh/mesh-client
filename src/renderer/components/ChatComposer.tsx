@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/refs */
 import 'emoji-picker-element';
 
-import { CornerUpLeft, Mic } from 'lucide-react-motion';
+import { CornerUpLeft } from 'lucide-react-motion';
 import { type RefObject, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -78,8 +78,6 @@ export interface ChatComposerProps {
   /** When provided, used instead of an internal outbox hook (ChatPanel shares one instance for message list). */
   queueOutbox?: (entry: OutboxEntryInput) => Promise<OutboxEntry>;
   onSendChunk: (text: string, opts?: ChatComposerSendOpts) => Promise<void>;
-  /** Reticulum LXMF file/image attachment send (requires DM destination). */
-  onSendAttachment?: (file: File, destination: number) => Promise<void>;
   /** Called after a successful send (e.g. clear unread divider). */
   onSendSuccess?: () => void;
   /** Use LXMF message hash for reply threading (Reticulum). */
@@ -112,7 +110,6 @@ export function ChatComposer({
   outboxDestination,
   queueOutbox: queueOutboxProp,
   onSendChunk,
-  onSendAttachment,
   onSendSuccess,
   lxmfReplyHashReplies = false,
   showFloodScopeOverride = false,
@@ -122,20 +119,13 @@ export function ChatComposer({
   const { t } = useTranslation();
   const iconTrigger = useIconTrigger();
   const isLinux = useMemo(() => window.electronAPI.getPlatform() === 'linux', []);
-  const maxVoiceRecordMs = 60_000;
   const limitHintId = useId();
   const counterLiveId = useId();
   const floodScopeSelectId = useId();
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const recordChunksRef = useRef<Blob[]>([]);
-  const recordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [input, setInput] = useState('');
   const [floodScopeOverride, setFloodScopeOverride] = useState('');
   const [sending, setSending] = useState(false);
-  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [chatActionError, setChatActionError] = useState<{
     message: string;
     viewKey: string;
@@ -153,137 +143,6 @@ export function ChatComposer({
   const inputValueRef = useRef(input);
   inputValueRef.current = input;
   const prevViewKeyRef = useRef<string | null>(null);
-
-  const stopMediaStreamTracks = useCallback(() => {
-    const stream = mediaStreamRef.current;
-    if (!stream) return;
-    stream.getTracks().forEach((track) => {
-      track.stop();
-    });
-    mediaStreamRef.current = null;
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (recordTimerRef.current) clearTimeout(recordTimerRef.current);
-      mediaRecorderRef.current?.stop();
-      stopMediaStreamTracks();
-    };
-  }, [stopMediaStreamTracks]);
-
-  const stopVoiceRecording = useCallback(
-    (send: boolean) => {
-      if (recordTimerRef.current) {
-        clearTimeout(recordTimerRef.current);
-        recordTimerRef.current = null;
-      }
-      const recorder = mediaRecorderRef.current;
-      if (!recorder) return;
-      recorder.onstop = () => {
-        const blob = new Blob(recordChunksRef.current, {
-          type: recorder.mimeType || 'audio/webm',
-        });
-        recordChunksRef.current = [];
-        mediaRecorderRef.current = null;
-        stopMediaStreamTracks();
-        setIsRecordingVoice(false);
-        if (!send || !onSendAttachment || outboxDestination == null) return;
-        const ext = blob.type.includes('ogg') ? 'ogg' : 'webm';
-        const file = new File([blob], `voice-${Date.now()}.${ext}`, {
-          type: blob.type || 'audio/webm',
-        });
-        void (async () => {
-          setSending(true);
-          try {
-            await onSendAttachment(file, outboxDestination);
-            onSendSuccess?.();
-          } catch (err) {
-            console.error(
-              '[ChatComposer] Voice attachment send failed: ' + errLikeToLogString(err),
-            );
-            setChatActionError({
-              message: errLikeToLogString(err),
-              viewKey,
-            });
-          } finally {
-            setSending(false);
-          }
-        })();
-      };
-      if (recorder.state !== 'inactive') recorder.stop();
-      else {
-        stopMediaStreamTracks();
-        setIsRecordingVoice(false);
-      }
-    },
-    [onSendAttachment, onSendSuccess, outboxDestination, stopMediaStreamTracks, viewKey],
-  );
-
-  const startVoiceRecording = useCallback(async () => {
-    if (!onSendAttachment || outboxDestination == null || disabled || !isConnected) return;
-    try {
-      const access = await window.electronAPI.media.ensureMicrophoneAccess();
-      if (!access.granted) {
-        setChatActionError({
-          message: t('chatPanel.microphonePermissionDenied'),
-          viewKey,
-        });
-        return;
-      }
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaStreamRef.current = stream;
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
-          ? 'audio/ogg;codecs=opus'
-          : '';
-      const recorder = mimeType
-        ? new MediaRecorder(stream, { mimeType })
-        : new MediaRecorder(stream);
-      recordChunksRef.current = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) recordChunksRef.current.push(e.data);
-      };
-      recorder.onerror = () => {
-        stopMediaStreamTracks();
-        setIsRecordingVoice(false);
-      };
-      recorder.start();
-      mediaRecorderRef.current = recorder;
-      setIsRecordingVoice(true);
-      recordTimerRef.current = setTimeout(() => {
-        setChatActionError({
-          message: t('chatPanel.voiceRecordingTooLong'),
-          viewKey,
-        });
-        stopVoiceRecording(true);
-      }, maxVoiceRecordMs);
-    } catch (err) {
-      stopMediaStreamTracks();
-      const permissionDenied =
-        (typeof DOMException !== 'undefined' &&
-          err instanceof DOMException &&
-          err.name === 'NotAllowedError') ||
-        (err instanceof Error && /permission denied/i.test(err.message));
-      console.error('[ChatComposer] Voice recording failed: ' + errLikeToLogString(err));
-      setChatActionError({
-        message: permissionDenied
-          ? t('chatPanel.microphonePermissionDenied')
-          : errLikeToLogString(err),
-        viewKey,
-      });
-    }
-  }, [
-    disabled,
-    isConnected,
-    maxVoiceRecordMs,
-    onSendAttachment,
-    outboxDestination,
-    stopMediaStreamTracks,
-    stopVoiceRecording,
-    t,
-    viewKey,
-  ]);
 
   const replyToSenderName = replyTo?.sender_name;
   const meshcoreOpenWireCompat =
@@ -953,74 +812,6 @@ export function ChatComposer({
             😊
           </button>
         </HelpTooltip>
-        {onSendAttachment ? (
-          <>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              aria-hidden
-              tabIndex={-1}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                e.target.value = '';
-                if (!file || disabled || !isConnected) return;
-                if (outboxDestination == null) {
-                  setChatActionError({
-                    message: t('chatPanel.attachDmOnly'),
-                    viewKey,
-                  });
-                  return;
-                }
-                void (async () => {
-                  setSending(true);
-                  try {
-                    await onSendAttachment(file, outboxDestination);
-                    onSendSuccess?.();
-                  } catch (err) {
-                    // catch-no-log-ok: attachment failure shown inline in composer
-                    setChatActionError({
-                      message: errLikeToLogString(err),
-                      viewKey,
-                    });
-                  } finally {
-                    setSending(false);
-                  }
-                })();
-              }}
-            />
-            <HelpTooltip text={t('chatPanel.attachFileHint')}>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={disabled || !isConnected || sending || isRecordingVoice}
-                aria-label={t('chatPanel.attachFile')}
-                className={emojiButtonClass}
-              >
-                📎
-              </button>
-            </HelpTooltip>
-            <HelpTooltip text={t('chatPanel.recordVoiceHint')}>
-              <button
-                type="button"
-                onClick={() => {
-                  if (isRecordingVoice) {
-                    stopVoiceRecording(true);
-                  } else {
-                    void startVoiceRecording();
-                  }
-                }}
-                disabled={disabled || !isConnected || sending || outboxDestination == null}
-                aria-label={
-                  isRecordingVoice ? t('chatPanel.stopVoiceRecording') : t('chatPanel.recordVoice')
-                }
-                className={`${emojiButtonClass}${isRecordingVoice ? 'text-red-400' : ''}`}
-              >
-                <Mic className="h-4 w-4" aria-hidden />
-              </button>
-            </HelpTooltip>
-          </>
-        ) : null}
         {showMeshcoreGifButton && (
           <HelpTooltip text={t('chatPanel.meshcoreGifButtonHint')}>
             <button

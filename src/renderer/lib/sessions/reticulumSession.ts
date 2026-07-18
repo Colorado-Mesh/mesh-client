@@ -10,7 +10,6 @@ export interface ReticulumSessionApi {
   selfNodeId: string | number | null;
   getFullNodeLabel: (nodeId: number) => string;
   sendMessage: ReticulumSendMessageFn;
-  sendAttachment?: (file: File, to: number | string) => Promise<void>;
   sendReaction?: (glyph: string, replyId: number, channel: number) => Promise<void>;
   handleSidecarEvent?: (event: ReticulumSidecarEvent) => void;
   resolveOutboundVia?: (destinationHash: string) => MessageTransport;
@@ -64,7 +63,6 @@ export function bindReticulumSession(runtime: {
   connectAutomatic: () => Promise<void>;
   disconnect: () => Promise<void>;
   finalizeDriverDisconnect?: () => Promise<void>;
-  sendAttachment?: (file: File, to: number | string) => Promise<void>;
   sendReaction?: (glyph: string, replyId: number, channel: number) => Promise<void>;
   handleSidecarEvent?: ReticulumSessionApi['handleSidecarEvent'];
   resolveOutboundVia?: (destinationHash: string) => MessageTransport;

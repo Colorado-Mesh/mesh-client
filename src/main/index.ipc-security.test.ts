@@ -263,7 +263,7 @@ describe('session permission whitelist (source contract)', () => {
     expect(body).not.toContain('return true'); // Must be conditional, not blanket true
   });
 
-  it('grants media via setPermissionRequestHandler for voice clips', () => {
+  it('grants media via setPermissionRequestHandler for camera/audio', () => {
     const reqIdx = INDEX_SOURCE.indexOf('.setPermissionRequestHandler(');
     expect(reqIdx).toBeGreaterThan(-1);
     const body = INDEX_SOURCE.slice(reqIdx, reqIdx + 450);

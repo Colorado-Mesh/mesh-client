@@ -45,8 +45,8 @@ use packet_log::{MAX_WIRE_PACKET_LOG, PacketLogBuffer, WirePacketRow};
 use persistence::PersistedState;
 use tokio::sync::{Mutex, RwLock, broadcast};
 pub use types::{
-    AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfResourceRequest,
-    LxmfSendRequest, NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, StackIdentity,
+    AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfSendRequest,
+    NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, StackIdentity,
 };
 
 #[cfg(not(feature = "rns-stack"))]
@@ -1769,30 +1769,6 @@ impl StackHandle {
         mode: &str,
     ) -> Result<serde_json::Value, String> {
         ble::ble_scan(timeout_secs, mode).await
-    }
-
-    pub async fn lxmf_send_resource(
-        &self,
-        req: LxmfResourceRequest,
-    ) -> Result<serde_json::Value, String> {
-        #[cfg(feature = "rns-stack")]
-        if let Some(live) = &self.live {
-            let res = live.send_lxmf_resource(&req).await?;
-            if res.get("ok").and_then(serde_json::Value::as_bool) == Some(true) {
-                let payload = res.get("message").cloned().unwrap_or(res.clone());
-                self.emit_event("resource.received", payload.clone());
-                self.emit_event("lxmf_message", payload);
-            }
-            return Ok(res);
-        }
-        let mut inner = self.inner.write().await;
-        let res = inner.send_resource_local(&req)?;
-        inner.save(&self.config_dir, &self.storage_dir)?;
-        let payload = res.clone();
-        drop(inner);
-        self.emit_event("resource.received", payload.clone());
-        self.emit_event("lxmf_message", payload.clone());
-        Ok(payload)
     }
 
     pub async fn lxmf_delete_message(&self, message_hash: &str) -> Result<bool, String> {

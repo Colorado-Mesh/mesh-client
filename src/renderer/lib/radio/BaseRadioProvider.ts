@@ -124,8 +124,6 @@ export interface ProtocolCapabilities {
   hasReticulumInterfaceConfig: boolean;
   /** Reticulum: Network tab (identity, stack config, propagation) */
   hasReticulumNetworkPanel: boolean;
-  /** Reticulum: LXMF file/voice attach UI (currently false — redesign deferred). */
-  hasLxmfAttachments: boolean;
   /** Reticulum: RNode firmware flasher on Admin tab (ReticulumAdminPanel) */
   hasRNodeFlasher: boolean;
   /** Reticulum: dedicated Peers list panel on tab 2 */
@@ -208,7 +206,6 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
-  hasLxmfAttachments: false,
   hasRNodeFlasher: false,
   hasReticulumPeersList: false,
   hasReticulumNativeDiagnostics: false,
@@ -281,7 +278,6 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
-  hasLxmfAttachments: false,
   hasRNodeFlasher: false,
   hasReticulumPeersList: false,
   hasReticulumNativeDiagnostics: false,
@@ -353,8 +349,6 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: true,
   hasReticulumNetworkPanel: true,
-  /** Deferred: LXMF file/voice attach UI disabled until a redesign. */
-  hasLxmfAttachments: false,
   hasRNodeFlasher: true,
   hasReticulumPeersList: true,
   hasReticulumNativeDiagnostics: true,

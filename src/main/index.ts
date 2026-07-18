@@ -1827,7 +1827,7 @@ function createWindow() {
     }
   });
 
-  // Allow serial, geolocation, and media (Reticulum voice clips). Deny web-app-installation etc.
+  // Allow serial, geolocation, and media (camera / future live audio). Deny web-app-installation etc.
   mainWindow.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
     const granted =
       permission === 'serial' || permission === 'geolocation' || permission === 'media';
@@ -1837,7 +1837,7 @@ function createWindow() {
     return granted;
   });
 
-  // Grant geolocation (browser GPS fallback) and media (microphone for voice clips)
+  // Grant geolocation (browser GPS fallback) and media (camera QR; microphone reserved for future LXST)
   mainWindow.webContents.session.setPermissionRequestHandler(
     (_webContents, permission, callback) => {
       const grant = permission === 'geolocation' || permission === 'media';

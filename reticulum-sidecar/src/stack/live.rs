@@ -50,9 +50,7 @@ use super::propagation_bridge::PropagationBridge;
 use super::rrc_defaults::RRC_HUB_ASPECT;
 use super::rrc_session::RrcSessionManager;
 use super::types::NomadServingStatus;
-use super::types::{
-    ContactRow, InterfaceRow, LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, PeerRow,
-};
+use super::types::{ContactRow, InterfaceRow, LxmfReactionRequest, LxmfSendRequest, PeerRow};
 use super::via::{
     classify_path_interface_name, merge_live_interfaces_with_config, merge_observed_egress_vias,
     resolve_lxmf_sent_via,
@@ -1849,156 +1847,6 @@ impl LiveBridge {
         }))
     }
 
-    pub async fn send_lxmf_resource(
-        &self,
-        req: &LxmfResourceRequest,
-    ) -> Result<serde_json::Value, String> {
-        use base64::Engine as _;
-
-        let file_bytes = base64::engine::general_purpose::STANDARD
-            .decode(req.data_base64.as_bytes())
-            .map_err(|e| format!("invalid attachment base64: {e}"))?;
-        if file_bytes.is_empty() {
-            return Err("attachment data is empty".into());
-        }
-        if file_bytes.len() > 4 * 1024 * 1024 {
-            return Err("attachment exceeds 4 MiB limit".into());
-        }
-
-        let dest = parse_hash16(&req.destination_hash)?;
-        let has_path = self
-            .outbound
-            .lock()
-            .map(|d| d.has_path_to(&req.destination_hash))
-            .unwrap_or(false);
-
-        let preferred_pn_hash = {
-            let router = self.router.lock().await;
-            router.outbound_propagation_node.map(hex::encode)
-        };
-        let delivery_method = if has_path {
-            DeliveryMethod::Direct
-        } else if preferred_pn_hash.is_some() {
-            DeliveryMethod::Propagated
-        } else {
-            return Ok(serde_json::json!({
-                "ok": false,
-                "error": "no_propagation_node",
-                "destination_hash": req.destination_hash,
-            }));
-        };
-        let delivery_method_str = match delivery_method {
-            DeliveryMethod::Direct => "direct",
-            DeliveryMethod::Propagated => "propagated",
-            DeliveryMethod::Opportunistic => "opportunistic",
-            DeliveryMethod::Paper => "paper",
-        };
-
-        let ifaces = self.fetch_interfaces().await.unwrap_or_default();
-        let egress_via = self.resolve_lxmf_egress_via(
-            &ifaces,
-            &req.destination_hash,
-            delivery_method,
-            preferred_pn_hash.as_deref(),
-        );
-        let send_started_ms = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as u64;
-
-        let text = format!("[file:{}:{}]", req.file_name, req.mime_type);
-        let attachment_msgpack = build_file_attachment_msgpack(&req.file_name, &file_bytes)?;
-
-        let reply_to = parse_optional_reply_to_hash(req.reply_to_hash.as_deref());
-        let reply_quote = req.reply_preview_text.as_deref();
-
-        let mut msg = LxMessage::new(
-            dest,
-            parse_hash16(&self.lxmf_hash_hex)?,
-            &req.file_name,
-            &text,
-            delivery_method,
-        );
-        apply_reply_fields(&mut msg, reply_to, reply_quote);
-        msg.set_msgpack_field(FIELD_FILE_ATTACHMENTS, attachment_msgpack)
-            .map_err(|e| format!("attachment field: {e:?}"))?;
-        let signing_key = self
-            .identity
-            .get_signing_key()
-            .ok_or_else(|| "lxmf attachment sign: identity has no signing key".to_string())?;
-        msg.sign(&signing_key)
-            .map_err(|e| format!("lxmf attachment sign: {e:?}"))?;
-        let message_hash_hex = msg
-            .hash
-            .map(hex::encode)
-            .ok_or_else(|| "lxmf hash missing after attachment sign".to_string())?;
-
-        let mut router = self.router.lock().await;
-        router
-            .try_send(msg)
-            .map_err(|e| format!("lxmf resource send: {e:?}"))?;
-
-        let ts_ms = (std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs()
-            * 1000) as i64;
-        let attachment_b64 = base64::engine::general_purpose::STANDARD.encode(&file_bytes);
-        let reply_to_hash_echo = reply_to
-            .map(hex::encode)
-            .or_else(|| req.reply_to_hash.clone());
-        let mut payload = serde_json::json!({
-            "sender_hash": self.lxmf_hash_hex,
-            "sender_name": self.display_name,
-            "text": text,
-            "timestamp": ts_ms,
-            "to_hash": req.destination_hash,
-            "reply_to_hash": reply_to_hash_echo,
-            "direction": "outbound",
-            "delivery_method": delivery_method_str,
-            "sent_via": egress_via,
-            "received_via": egress_via,
-            "delivery_status": "sending",
-            "message_hash": message_hash_hex.clone(),
-            "attachment": {
-                "file_name": req.file_name,
-                "mime_type": req.mime_type,
-                "size_bytes": file_bytes.len(),
-                "data_base64": attachment_b64,
-            }
-        });
-        if let Some(quote) = reply_quote {
-            if let Some(obj) = payload.as_object_mut() {
-                obj.insert(
-                    "reply_preview_text".into(),
-                    serde_json::Value::String(quote.to_string()),
-                );
-            }
-        }
-
-        if let Ok(mut driver) = self.outbound.lock() {
-            driver.process_tick(&mut router, &self.event_tx);
-        }
-
-        self.schedule_egress_tap_upgrade(
-            message_hash_hex,
-            req.destination_hash.clone(),
-            preferred_pn_hash,
-            egress_via.clone(),
-            ifaces,
-            send_started_ms,
-        );
-
-        Ok(serde_json::json!({
-            "ok": true,
-            "destination_hash": req.destination_hash,
-            "delivery_method": delivery_method_str,
-            "sent_via": egress_via,
-            "delivery_status": "sending",
-            "message": payload
-        }))
-    }
-
     pub async fn apply_interfaces(&self, stack: &StackHandle) -> Result<(), String> {
         let interfaces = stack.list_interfaces().await;
         tracing::info!(
@@ -2236,17 +2084,6 @@ fn reply_fields_from_message(msg: &LxMessage) -> Option<LxmfReplyFields> {
         reply_to_hash,
         reply_preview_text,
     })
-}
-
-fn build_file_attachment_msgpack(file_name: &str, data: &[u8]) -> Result<Vec<u8>, String> {
-    let attachment_value = rmpv::Value::Array(vec![rmpv::Value::Array(vec![
-        rmpv::Value::String(file_name.into()),
-        rmpv::Value::Binary(data.to_vec()),
-    ])]);
-    let mut attachment_bytes = Vec::new();
-    rmpv::encode::write_value(&mut attachment_bytes, &attachment_value)
-        .map_err(|e| format!("encode attachment msgpack: {e}"))?;
-    Ok(attachment_bytes)
 }
 
 fn mime_from_file_name(file_name: &str) -> String {

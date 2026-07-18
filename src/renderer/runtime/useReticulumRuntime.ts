@@ -167,17 +167,6 @@ function resolveRrcHubView(hubHash: string | undefined): {
   };
 }
 
-const UINT8_BASE64_CHUNK_SIZE = 0x8000;
-
-function uint8ArrayToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += UINT8_BASE64_CHUNK_SIZE) {
-    const chunk = bytes.subarray(i, i + UINT8_BASE64_CHUNK_SIZE);
-    binary += String.fromCharCode(...chunk);
-  }
-  return btoa(binary);
-}
-
 export type ReticulumRuntime = ReturnType<typeof useReticulumRuntime>;
 
 export function useReticulumRuntime(): ProtocolRuntime {
@@ -1302,40 +1291,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
     [identityId, ingestLxmfPayload],
   );
 
-  const sendAttachment = useCallback(
-    async (file: File, to: number | string) => {
-      if (!identityId) {
-        throw new Error(i18n.t('chatPanel.reticulumSendAttachmentNoIdentity'));
-      }
-      const destination =
-        typeof to === 'string'
-          ? to
-          : (reticulumHashForNodeId(to) ?? resolveReticulumDestinationHash(to) ?? String(to));
-      const bytes = new Uint8Array(await file.arrayBuffer());
-      try {
-        const res = (await window.electronAPI.reticulum.proxyPost('/api/v1/lxmf/resource', {
-          destination_hash: destination,
-          file_name: file.name,
-          mime_type: file.type || 'application/octet-stream',
-          data_base64: uint8ArrayToBase64(bytes),
-        })) as { ok?: boolean; error?: string; message?: ReticulumLxmfPayload };
-        if (res?.ok === false) {
-          throw new Error(res.error ?? i18n.t('chatPanel.reticulumSendAttachmentFailed'));
-        }
-        if (res?.message) {
-          const payload = extractLxmfPayloadFromSendResponse(res) ?? res.message;
-          if (payload) ingestLxmfPayload(payload);
-        }
-      } catch (e) {
-        console.warn('[useReticulumRuntime] send attachment failed ' + errLikeToLogString(e));
-        throw e instanceof Error && e.message
-          ? e
-          : new Error(i18n.t('chatPanel.reticulumSendAttachmentFailed'));
-      }
-    },
-    [identityId, ingestLxmfPayload],
-  );
-
   const sendReaction = useCallback(
     async (glyph: string, replyId: number, channel: number) => {
       void channel;
@@ -1482,7 +1437,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
       },
       sendMessage,
       sendReaction,
-      sendAttachment,
       resolveOutboundVia,
       setNodeFavorited,
       refreshNodesFromDb,
@@ -1509,7 +1463,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
       rawPackets,
       sendMessage,
       sendReaction,
-      sendAttachment,
       resolveOutboundVia,
       setNodeFavorited,
       refreshNodesFromDb,
@@ -1538,7 +1491,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
       selfNodeId,
       getFullNodeLabel,
       sendMessage,
-      sendAttachment,
       sendReaction,
       handleSidecarEvent,
       resolveOutboundVia,
@@ -1554,7 +1506,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
     selfNodeId,
     getFullNodeLabel,
     sendMessage,
-    sendAttachment,
     sendReaction,
     handleSidecarEvent,
     resolveOutboundVia,
