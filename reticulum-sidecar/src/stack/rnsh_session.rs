@@ -426,6 +426,30 @@ mod tests {
         }
     }
 
+    /// Collects the first payload of each requested type, in any arrival
+    /// order — the link-task thread races connect()'s own status emit, so
+    /// `rnsh.error` may land before `rnsh.status`.
+    async fn recv_events_of_types(
+        rx: &mut broadcast::Receiver<String>,
+        event_types: &[&str],
+    ) -> HashMap<String, serde_json::Value> {
+        let mut found: HashMap<String, serde_json::Value> = HashMap::new();
+        while found.len() < event_types.len() {
+            let frame = tokio::time::timeout(Duration::from_secs(10), rx.recv())
+                .await
+                .expect("events before timeout")
+                .expect("event channel open");
+            let parsed: serde_json::Value = serde_json::from_str(&frame).expect("valid frame");
+            let frame_type = parsed["type"].as_str().unwrap_or_default().to_string();
+            if event_types.contains(&frame_type.as_str()) {
+                found
+                    .entry(frame_type)
+                    .or_insert_with(|| parsed["payload"].clone());
+            }
+        }
+        found
+    }
+
     #[test]
     fn status_as_str_covers_all_variants() {
         assert_eq!(RnshSessionStatus::Connecting.as_str(), "connecting");
@@ -464,12 +488,13 @@ mod tests {
         let session_id = result["session_id"].as_str().expect("id").to_string();
         assert_eq!(result["identity_hash"], TEST_DEST);
 
-        let status = recv_event_of_type(&mut rx, "rnsh.status").await;
+        // Transport receiver is dropped, so the driving thread fails fast —
+        // possibly before connect() emits rnsh.status. Accept either order.
+        let events = recv_events_of_types(&mut rx, &["rnsh.status", "rnsh.error"]).await;
+        let status = &events["rnsh.status"];
         assert_eq!(status["status"], "active");
         assert_eq!(status["destination_hash"], TEST_DEST);
-
-        // Transport receiver is dropped, so the driving thread fails fast.
-        let error = recv_event_of_type(&mut rx, "rnsh.error").await;
+        let error = &events["rnsh.error"];
         assert_eq!(error["session_id"], session_id);
         assert_eq!(error["reason_key"], "error");
 
