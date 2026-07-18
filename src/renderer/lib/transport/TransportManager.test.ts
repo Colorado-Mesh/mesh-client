@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/renderer/lib/i18n', () => ({
+  default: { t: (key: string) => key },
+}));
+
 import { MESHTASTIC_CHANNEL_ROLE } from '@/shared/meshtasticUrlEncoder';
 import { MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG } from '@/shared/reactionEmoji';
 
@@ -202,7 +206,80 @@ describe('TransportManager', () => {
       expect.objectContaining({
         status: 'failed',
         finalPacketId: 644211103,
-        error: '3',
+        error: 'chatPanel.routingErrors.timeout',
+      }),
+    );
+    warnSpy.mockRestore();
+  });
+
+  it('humanizes SDK queue rejections with id + numeric routing error (PKI missing key)', async () => {
+    window.electronAPI = {
+      mqtt: { publish: vi.fn() },
+    } as unknown as typeof window.electronAPI;
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const status = vi.fn();
+    // Real-world shape from @meshtastic/core queue.js: { id, error: 39 }
+    const sdkErr = { id: 327029706, error: 39 };
+    const manager = new TransportManager({
+      deviceRef: {
+        current: {
+          sendText: vi.fn().mockRejectedValue(sdkErr),
+        },
+      } as never,
+      myNodeNumRef: { current: 0x11111111 },
+      mqttStatusRef: { current: 'disconnected' },
+      channelConfigsRef: { current: [] },
+      isDuplicate: vi.fn(),
+      onStatusUpdateRef: { current: status },
+    });
+
+    manager.sendMessage('📍 location', 0, 0x22222222, undefined, 1, 0x11111111);
+    await vi.waitFor(() => {
+      expect(status).toHaveBeenCalled();
+    });
+
+    expect(status).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'failed',
+        finalPacketId: 327029706,
+        error: 'chatPanel.routingErrors.pkiMissingRecipientKey',
+      }),
+    );
+    warnSpy.mockRestore();
+  });
+
+  it('falls back to routing error name for unmapped numeric codes', async () => {
+    window.electronAPI = {
+      mqtt: { publish: vi.fn() },
+    } as unknown as typeof window.electronAPI;
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const status = vi.fn();
+    const sdkErr = { id: 42, error: 38 }; // RATE_LIMIT_EXCEEDED — no chat i18n mapping
+    const manager = new TransportManager({
+      deviceRef: {
+        current: {
+          sendText: vi.fn().mockRejectedValue(sdkErr),
+        },
+      } as never,
+      myNodeNumRef: { current: 0x11111111 },
+      mqttStatusRef: { current: 'disconnected' },
+      channelConfigsRef: { current: [] },
+      isDuplicate: vi.fn(),
+      onStatusUpdateRef: { current: status },
+    });
+
+    manager.sendMessage('hello', 0, undefined, undefined, 1, 0x11111111);
+    await vi.waitFor(() => {
+      expect(status).toHaveBeenCalled();
+    });
+
+    expect(status).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'failed',
+        finalPacketId: 42,
+        error: 'RATE_LIMIT_EXCEEDED',
       }),
     );
     warnSpy.mockRestore();

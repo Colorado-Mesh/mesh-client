@@ -2,6 +2,7 @@ import type { MeshDevice } from '@meshtastic/core';
 import type { RefObject } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { humanizeMeshtasticSdkQueueRejectionError } from '@/renderer/lib/meshtastic/meshtasticSdkRoutingErrorLog';
 import {
   loadMeshtasticMqttManualChannelPsks,
   resolveMeshtasticMqttPublishFieldsForChannel,
@@ -112,14 +113,22 @@ export class TransportManager {
           });
         })
         .catch((err: unknown) => {
-          const pe = err as { packetId?: number; error?: unknown };
-          const packetId = typeof pe.packetId === 'number' ? pe.packetId : undefined;
+          const pe = err as { id?: number; packetId?: number; error?: unknown };
+          const packetId =
+            typeof pe.packetId === 'number'
+              ? pe.packetId
+              : typeof pe.id === 'number'
+                ? pe.id
+                : undefined;
+          // SDK queue rejections carry a numeric Routing.Error — surface readable
+          // text (e.g. "recipient public key is missing") instead of a bare code.
           const error =
-            typeof pe.error === 'string'
+            humanizeMeshtasticSdkQueueRejectionError(err) ??
+            (typeof pe.error === 'string'
               ? pe.error
               : pe.error != null
                 ? errLikeToLogString(pe.error)
-                : errLikeToLogString(err);
+                : errLikeToLogString(err));
           console.warn('[useMeshtasticRuntime] sendText failed ' + errLikeToLogString(err));
           onStatusUpdateRef.current({
             tempId,

@@ -592,7 +592,8 @@
     "shareLocation": "Compartilhar localização",
     "shareLocationLabel": "📍 Localização compartilhada",
     "shareLocationHint": "Envie seu GPS atual ou posição estática como uma mensagem de bate-papo",
-    "shareLocationUnavailable": "Localização indisponível – verifique as configurações de GPS"
+    "shareLocationUnavailable": "Localização indisponível – verifique as configurações de GPS",
+    "floodScopeOverrideHint": "Escopo de inundação regional apenas para esta mensagem. O escopo padrão usa a configuração salva do rádio; uma hashtag limita esse envio para aquela região; Envios sem escopo sem filtro de região. Seu escopo salvo é restaurado após o envio."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

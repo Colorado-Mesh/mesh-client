@@ -592,7 +592,8 @@
     "shareLocation": "Partager l'emplacement",
     "shareLocationLabel": "📍 Emplacement partagé",
     "shareLocationHint": "Envoyez votre GPS actuel ou votre position statique sous forme de message de discussion",
-    "shareLocationUnavailable": "Localisation indisponible : vérifiez les paramètres GPS"
+    "shareLocationUnavailable": "Localisation indisponible : vérifiez les paramètres GPS",
+    "floodScopeOverrideHint": "Portée des inondations régionales pour ce message uniquement. La portée par défaut utilise les paramètres enregistrés de la radio ; un hashtag limite cet envoi à cette région ; Envois non ciblés sans filtre de région. Votre portée enregistrée est restaurée après l'envoi."
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

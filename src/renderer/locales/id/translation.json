@@ -592,7 +592,8 @@
     "shareLocation": "Bagikan lokasi",
     "shareLocationLabel": "📍 Lokasi bersama",
     "shareLocationHint": "Kirim GPS atau posisi statis Anda saat ini sebagai pesan obrolan",
-    "shareLocationUnavailable": "Lokasi tidak tersedia — periksa pengaturan GPS"
+    "shareLocationUnavailable": "Lokasi tidak tersedia — periksa pengaturan GPS",
+    "floodScopeOverrideHint": "Cakupan banjir regional hanya untuk pesan ini. Cakupan default menggunakan pengaturan radio yang disimpan; hashtag membatasi pengiriman ini ke wilayah tersebut; Pengiriman tanpa cakupan tanpa filter wilayah. Cakupan tersimpan Anda dipulihkan setelah pengiriman."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

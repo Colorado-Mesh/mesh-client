@@ -973,30 +973,32 @@ export function ChatComposer({
           </HelpTooltip>
         )}
         {showFloodScopeOverride ? (
-          <label
-            className="text-muted flex items-center gap-1 text-[10px]"
-            htmlFor={floodScopeSelectId}
-          >
-            <span className="sr-only">{t('chatPanel.floodScopeOverrideLabel')}</span>
-            <select
-              id={floodScopeSelectId}
-              value={floodScopeOverride}
-              onChange={(e) => {
-                setFloodScopeOverride(e.target.value);
-              }}
-              disabled={disabled || sending}
-              aria-label={t('chatPanel.floodScopeOverrideAria')}
-              className="bg-secondary-dark max-w-[7rem] rounded border border-slate-600 px-1 py-0.5 text-[10px] text-gray-200"
+          <HelpTooltip text={t('chatPanel.floodScopeOverrideHint')} nonFocusableWrapper>
+            <label
+              className="text-muted flex items-center gap-1 text-[10px]"
+              htmlFor={floodScopeSelectId}
             >
-              <option value="">{t('chatPanel.floodScopeOverrideDefault')}</option>
-              {MESHCORE_FLOOD_SCOPE_PRESETS.map((tag) => (
-                <option key={tag} value={tag}>
-                  {tag}
-                </option>
-              ))}
-              <option value="__unscoped__">{t('chatPanel.floodScopeOverrideUnscoped')}</option>
-            </select>
-          </label>
+              <span className="sr-only">{t('chatPanel.floodScopeOverrideLabel')}</span>
+              <select
+                id={floodScopeSelectId}
+                value={floodScopeOverride}
+                onChange={(e) => {
+                  setFloodScopeOverride(e.target.value);
+                }}
+                disabled={disabled || sending}
+                aria-label={t('chatPanel.floodScopeOverrideAria')}
+                className="bg-secondary-dark max-w-[7rem] rounded border border-slate-600 px-1 py-0.5 text-[10px] text-gray-200"
+              >
+                <option value="">{t('chatPanel.floodScopeOverrideDefault')}</option>
+                {MESHCORE_FLOOD_SCOPE_PRESETS.map((tag) => (
+                  <option key={tag} value={tag}>
+                    {tag}
+                  </option>
+                ))}
+                <option value="__unscoped__">{t('chatPanel.floodScopeOverrideUnscoped')}</option>
+              </select>
+            </label>
+          </HelpTooltip>
         ) : null}
         <button
           type="button"

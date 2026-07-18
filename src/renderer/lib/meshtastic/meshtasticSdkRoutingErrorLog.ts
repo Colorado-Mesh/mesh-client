@@ -54,6 +54,18 @@ export function parseMeshtasticSdkQueueRejection(
   };
 }
 
+/**
+ * Human-readable text for an SDK queue rejection (`{ id|packetId, error: number }`).
+ * Falls back to the routing error name (e.g. `RATE_LIMIT_EXCEEDED`) when no chat
+ * i18n mapping exists; returns null when `reason` is not a queue rejection.
+ */
+export function humanizeMeshtasticSdkQueueRejectionError(reason: unknown): string | null {
+  const parsed = parseMeshtasticSdkQueueRejection(reason);
+  if (!parsed) return null;
+  const i18nKey = chatRoutingErrorKeyForSdkErrorName(parsed.errorName);
+  return i18nKey ? i18n.t(i18nKey) : parsed.errorName;
+}
+
 export function chatRoutingErrorKeyForSdkErrorName(errorName: string): string | null {
   switch (errorName) {
     case 'PKI_SEND_FAIL_PUBLIC_KEY':
@@ -186,8 +198,12 @@ export function applyMeshtasticOutboundRoutingError(
   if (identityId) {
     updateMessageStatus(identityId, storeMessageId, 'failed', errorText);
   }
+  // The DB row may still hold the optimistic temp packet id (device never acked,
+  // so updateMessagePacketId never ran) — key the update on the row's own id,
+  // not the wire id from the radio NAK, or the UPDATE matches zero rows.
+  const dbPacketId = target.packetId ?? parsed.packetId;
   void window.electronAPI.db
-    .updateMessageStatus(parsed.packetId, 'failed', errorText)
+    .updateMessageStatus(dbPacketId, 'failed', errorText)
     .catch((err: unknown) => {
       console.debug(
         '[meshtasticSdkRoutingErrorLog] DB update failed',

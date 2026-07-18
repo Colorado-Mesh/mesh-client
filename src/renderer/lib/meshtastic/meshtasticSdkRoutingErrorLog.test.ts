@@ -21,6 +21,7 @@ import {
   applyMeshtasticOutboundRoutingErrorFromLog,
   applyMeshtasticOutboundRoutingErrorFromRejection,
   chatRoutingErrorKeyForSdkErrorName,
+  humanizeMeshtasticSdkQueueRejectionError,
   parseMeshtasticSdkQueueRejection,
   parseMeshtasticSdkRoutingErrorLog,
 } from './meshtasticSdkRoutingErrorLog';
@@ -183,6 +184,28 @@ describe('meshtasticSdkRoutingErrorLog', () => {
     );
     expect(applied).toBe(true);
     expect(setMessages).toHaveBeenCalledTimes(1);
+    // DB row still holds the optimistic temp packet id (999) — the update must
+    // target it, not the wire id from the NAK (669520633).
+    expect(window.electronAPI.db.updateMessageStatus).toHaveBeenCalledWith(
+      999,
+      'failed',
+      'chatPanel.routingErrors.pkiMissingRecipientKey',
+    );
+  });
+
+  it('humanizes queue rejections to chat i18n text or routing error name', () => {
+    expect(humanizeMeshtasticSdkQueueRejectionError({ id: 327029706, error: 39 })).toBe(
+      'chatPanel.routingErrors.pkiMissingRecipientKey',
+    );
+    expect(humanizeMeshtasticSdkQueueRejectionError({ packetId: 1, error: 3 })).toBe(
+      'chatPanel.routingErrors.timeout',
+    );
+    // No chat mapping — fall back to the enum name.
+    expect(humanizeMeshtasticSdkQueueRejectionError({ id: 1, error: 38 })).toBe(
+      'RATE_LIMIT_EXCEEDED',
+    );
+    expect(humanizeMeshtasticSdkQueueRejectionError(new Error('boom'))).toBeNull();
+    expect(humanizeMeshtasticSdkQueueRejectionError('nope')).toBeNull();
   });
 
   it('returns false for unknown SDK routing error names', () => {

@@ -592,7 +592,8 @@
     "shareLocation": "위치 공유",
     "shareLocationLabel": "📍 공유 위치",
     "shareLocationHint": "현재 GPS 또는 정적 위치를 채팅 메시지로 보내기",
-    "shareLocationUnavailable": "위치를 확인할 수 없음 - GPS 설정을 확인하세요"
+    "shareLocationUnavailable": "위치를 확인할 수 없음 - GPS 설정을 확인하세요",
+    "floodScopeOverrideHint": "이 메시지에만 해당하는 지역 플러드 범위입니다. 기본 범위는 라디오의 저장된 설정을 사용합니다. 해시태그는 해당 지역으로의 전송을 제한합니다. 범위가 지정되지 않은 전송은 지역 필터 없이 전송됩니다. 전송 후 저장된 범위가 복원됩니다."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

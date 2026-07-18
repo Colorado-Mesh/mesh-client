@@ -592,7 +592,8 @@
     "shareLocation": "Compartir ubicación",
     "shareLocationLabel": "📍 Ubicación compartida",
     "shareLocationHint": "Envía tu GPS actual o posición estática como mensaje de chat",
-    "shareLocationUnavailable": "Ubicación no disponible: verifique la configuración del GPS"
+    "shareLocationUnavailable": "Ubicación no disponible: verifique la configuración del GPS",
+    "floodScopeOverrideHint": "Alcance de inundación regional solo para este mensaje. El alcance predeterminado utiliza la configuración guardada de la radio; un hashtag limita este envío a esa región; Envíos sin alcance sin filtro de región. Su alcance guardado se restaura después del envío."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
