@@ -354,7 +354,17 @@
     "reticulumCapDestinationsLabel": "Ogranicz miejsca docelowe / peery w pamięci i SQLite, zachowaj ostatnio słyszane",
     "reticulumCapDestinationsCountAria": "Ogranicz miejsca docelowe, zachowaj {{count}} ostatnio słyszanych",
     "reticulumDestinationsUnit_one": "miejsce docelowe",
-    "reticulumDestinationsUnit_other": "miejsca docelowego"
+    "reticulumDestinationsUnit_other": "miejsca docelowego",
+    "storeForwardHistoryProfileLabel": "Zachowaj i przekaż profil nadrabiania zaległości",
+    "storeForwardHistoryProfileAria": "Agresywność nadrabiania zaległości w historii przechowywania i przesyłania dalej",
+    "storeForwardHistoryProfileConservative": "Konserwatywny (przyjazny dla zajętych sieci)",
+    "storeForwardHistoryProfileAggressive": "Agresywny (nierówne pokrycie)",
+    "storeForwardHistoryProfileHint": "Konserwatywny używa dłuższej bramy offline i czasu odnowienia. Agresywne pobieranie następuje wcześniej po krótkich rozłączeniach i żąda większej liczby wiadomości — używaj tylko wtedy, gdy pozwala na to czas antenowy.",
+    "shareLocationSendWaypoint": "Podczas udostępniania lokalizacji wyślij także pinezkę do mapy (Waypoint).",
+    "shareLocationSendWaypointHint": "Po włączeniu udostępnianie lokalizacji Meshtastic wysyła zarówno wiadomość tekstową, jak i pakiet Waypoint, dzięki czemu oficjalne aplikacje pokazują pinezkę na mapie. Wyłącz w przypadku zajętych sieci, aby wysyłać tylko tekst.",
+    "capStoredRrcMessages": "Ogranicz zapisaną historię pokoi RRC, zachowaj najnowsze",
+    "capStoredRrcMessagesLabel": "Ogranicz zapisaną historię pokoi RRC, zachowaj najnowsze",
+    "capStoredRrcMessagesCountAria": "Ogranicz zapisaną historię pokoju RRC, zachowaj najnowsze wiadomości {{count}}"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -369,7 +379,10 @@
     "switchToMeshCore": "Przełącz na MeshCore",
     "backToTop": "Powrót do góry",
     "switchToReticulum": "Przełącz na Reticulum",
-    "languageSelectorHint": "Kliknij, aby wybrać język"
+    "languageSelectorHint": "Kliknij, aby wybrać język",
+    "switchToMeshtasticWithUnread": "Przełącz na Meshtastic, {{count}} nieprzeczytane",
+    "switchToMeshCoreWithUnread": "Przełącz na MeshCore, {{count}} nieprzeczytane",
+    "switchToReticulumWithUnread": "Przełącz na Reticulum, {{count}} nieprzeczytane"
   },
   "battery": {
     "percentCharging": "Bateria {{percent}} procent, ładowanie",
@@ -503,9 +516,6 @@
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… lub g:ID",
     "meshcoreGifSend": "Wyślij GIF",
     "meshcoreGifInvalid": "Wprowadź prawidłowy adres URL Giphy lub identyfikator GIF.",
-    "attachFile": "Załącz plik",
-    "attachFileHint": "Wyślij załącznik do pliku LXMF (tylko DM)",
-    "attachDmOnly": "Otwórz bezpośrednią wiadomość przed dołączeniem pliku.",
     "composePlaceholderSelectDm": "Wybierz kontakt powyżej, aby uruchomić DM…",
     "selectDmFirst": "Wybierz odbiorcę wiadomości DM przed wysłaniem.",
     "emptySelectDm": "Czat Reticulum służy wyłącznie do wiadomości bezpośrednich. Wybierz kontakt powyżej lub otwórz go w zakładce Węzły.",
@@ -526,12 +536,6 @@
     "reticulumNoPropagationNode": "Nie skonfigurowano węzła propagacji. Ustaw preferowany węzeł propagacji na karcie Reticulum Radio.",
     "sentViaPropagation": "Węzeł propagacji",
     "reticulumAudioAttachment": "Głos: {{name}}",
-    "recordVoice": "Nagraj wiadomość głosową",
-    "recordVoiceHint": "Nagraj klip głosowy i wyślij jako załącznik LXMF (tylko DM)",
-    "stopVoiceRecording": "Zatrzymaj nagrywanie i wyślij",
-    "voiceRecordingTooLong": "Klip głosowy osiągnął limit 60 sekund i został wysłany.",
-    "reticulumSendAttachmentFailed": "Nie udało się wysłać załącznika.",
-    "reticulumSendAttachmentNoIdentity": "Tożsamość Reticulum nie jest gotowa — najpierw połącz i skonfiguruj tożsamość",
     "dmPeerInfoAria": "Informacje o partnerze DM",
     "clearDateAria": "Wyczyść datę",
     "readOnlyDisconnected": "Brak połączenia — wiadomości są tylko do odczytu",
@@ -567,20 +571,51 @@
     "dmPathUnreachableTooltip": "Nie ma jeszcze ścieżki Reticulum do tego miejsca docelowego. Komunikaty mogą być nadal dostarczane później za pośrednictwem skonfigurowanego węzła propagacji.",
     "dmPathRequestPathAria": "Poproś o ścieżkę Reticulum do tego miejsca docelowego",
     "dmPathProbeAria": "Sprawdź osiągalność ścieżki Reticulum dla tego miejsca docelowego",
-    "microphonePermissionDenied": "Odmowa dostępu do mikrofonu. Włącz uprawnienia mikrofonu dla Mesh-client w ustawieniach prywatności systemu, a następnie spróbuj ponownie.",
     "receivedViaBle": "Odebrano przez Bluetooth",
     "receivedViaMultiple": "Otrzymano za pośrednictwem {{vias}}",
     "sentViaBle": "Wysłane przez Bluetooth",
     "sentViaMultiple": "Wysłano przez {{vias}}",
-    "floodScopeOverrideLabel": "Zakres powodzi dla tej wiadomości",
-    "floodScopeOverrideAria": "Nadpisanie zakresu zalania dla każdej wiadomości",
+    "floodScopeOverrideLabel": "Zakres Flood dla tej wiadomości",
+    "floodScopeOverrideAria": "Nadpisanie zakresu Flood dla każdej wiadomości",
     "floodScopeOverrideDefault": "Zakres domyślny",
-    "floodScopeOverrideUnscoped": "Nieobjęte zakresem"
+    "floodScopeOverrideUnscoped": "Nieobjęte zakresem",
+    "rncp": {
+      "sendFile": "Wyślij plik",
+      "sendFileAria": "Wyślij plik do {{name}} przez rncp",
+      "pendingOffersBadgeAria_one": "{{count}} oczekuje na ofertę pliku przychodzącego od tego partnera",
+      "pendingOffersBadgeAria_other": "{{count}} oczekujące oferty plików przychodzących od tego partnera",
+      "destinationLabel": "hasz docelowy rncp",
+      "rememberAddress": "Zapamiętaj ten adres",
+      "rememberAddressAria": "Zapamiętaj to miejsce docelowe rncp dla tego partnera",
+      "chooseAndSend": "Wybierz plik i wyślij...",
+      "sending": "Wysyłanie…",
+      "sendStarted": "Wysyłanie: {{file}}…",
+      "sendFailed": "Nie udało się wysłać: {{error}}",
+      "newOfferToast": "{{peer}} chce wysłać Ci plik: {{file}}",
+      "requestEnable": "Włącz żądanie",
+      "requestEnableAria": "Poproś tego partnera, aby włączył odbieranie plików"
+    },
+    "shareLocation": "Udostępnij lokalizację",
+    "shareLocationLabel": "📍 Udostępniona lokalizacja",
+    "shareLocationHint": "Wyślij swoją aktualną pozycję GPS lub pozycję statyczną jako wiadomość na czacie",
+    "shareLocationUnavailable": "Lokalizacja niedostępna — sprawdź ustawienia GPS",
+    "floodScopeOverrideHint": "Regionalny zakres Flood tylko dla tej wiadomości. Domyślny zakres wykorzystuje zapisane ustawienia radia; hashtag ogranicza tę wysyłkę do tego regionu; wysyłanie bez zakresu bez filtru regionu. Zapisany zakres zostanie przywrócony po wysłaniu.",
+    "floodScopeOverrideMenuButton": "Zmień zakres Flood tej wiadomości",
+    "shareLocationWaypointFailed": "Pin mapy (punkt orientacyjny) nie został potwierdzony — tekst lokalizacji mógł mimo to zostać wysłany.",
+    "floodScopeOverrideCustom": "Niestandardowy zakres…",
+    "floodScopeOverrideCustomLabel": "Niestandardowy hashtag zakresu Flood",
+    "floodScopeOverrideCustomPlaceholder": "#mójregion",
+    "floodScopeOverrideCustomApply": "Użyj zakresu",
+    "floodScopeOverrideCustomInvalid": "Wprowadź prawidłowy hashtag regionu (na przykład #myregion)."
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Otwórz na Giphy"
+    "meshcoreGifOpen": "Otwórz na Giphy",
+    "locationCard": {
+      "alt": "Udostępniony kafelek mapy lokalizacji",
+      "openMaps": "Otwórz w Mapach"
+    }
   },
   "common": {
     "close": "Zamknij",
@@ -622,7 +657,9 @@
     "colorAmber": "Bursztynowy",
     "colorRed": "Czerwony",
     "colorPurple": "Fioletowy/a/e",
-    "delete": "Usuwać"
+    "delete": "Usuwać",
+    "copy": "Kopiuj",
+    "copied": "Skopiowano"
   },
   "configApplyNotice": {
     "persistNote": "Zastosowane ustawienia są zapisywane w pamięci flash urządzenia i utrzymują się po ponownym uruchomieniu.",
@@ -1163,7 +1200,8 @@
       "meshcore": "Ponownie połącz próby przed rezygnacją (1–{{max}}). Zapisano z ustawieniami; naciśnij ponownie Połącz po zmianie, aby główny proces go podniósł.",
       "meshtastic": "Oba protokoły umożliwiają 1–{{max}}. Zapisano z ustawieniami; odłącz i połącz ponownie, aby uruchomiona sesja używała nowej wartości."
     },
-    "reticulumStackRunningAs": "Uruchamianie — {{name}}"
+    "reticulumStackRunningAs": "Działa — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Stos Reticulum nie odpowiada — uruchamiam ponownie…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",
@@ -1492,7 +1530,10 @@
     "senderLabel": "Nadawca",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "SNR {{snr}} dB"
+    "snrDb": "SNR {{snr}} dB",
+    "distanceOffsetKm": "Przesunięcie odległości",
+    "km": "km",
+    "distanceOffsetHelp": "Dodaje płaski kilometr do progów odległości hop-goblina i złej trasy (0–50)."
   },
   "diagnosticsPing": {
     "title": "Ciągły ping",
@@ -2568,7 +2609,9 @@
       "lossRate": "Szacowana strata",
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Dziennik pakietów testowych zakresu"
-    }
+    },
+    "currentRouteHeading": "Aktualna trasa",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "Długie imię",
@@ -3371,16 +3414,14 @@
     "xmodemFailed": "XMODEM nie powiódł się: {{message}}",
     "zeroHopAdvertButton": "Zero-hop Advert",
     "zeroHopAdvertSent": "Wysłano ogłoszenie zero-hop",
-    "floodScopeTitle": "Regionalny zasięg powodzi",
-    "floodScopeHelp": "Ogranicz ruch powodziowy do regionu z hashtagiem (firmware v8+). Wymaga meshcore.js setFloodScope; ponowne połączenie powoduje zapisanie endoskopu.",
+    "floodScopeTitle": "Regionalny zasięg Flood",
+    "floodScopeHelp": "Ogranicz ruch Floodowy do regionu z hashtagiem (firmware v8+). Wymaga meshcore.js setFloodScope; ponowne połączenie powoduje zapisanie endoskopu.",
     "floodScopeNone": "Brak (jasny zakres)",
-    "floodScopePreset": "Wstępnie ustawiony hashtag",
-    "floodScopePresetSelect": "Hashtag regionu ustawień wstępnych",
     "floodScopeCustom": "Niestandardowy hasztag",
     "floodScopeCustomPlaceholder": "#myregion",
     "floodScopeApply": "Zastosuj zakres zalewania",
-    "floodScopeApplySuccess": "Zastosowano zakres powodzi",
-    "floodScopeApplyFailed": "Zakres powodzi nie powiódł się: {{message}}",
+    "floodScopeApplySuccess": "Zastosowano zakres Flood",
+    "floodScopeApplyFailed": "zakres Flood nie powiódł się: {{message}}",
     "advertisedPositionLabel": "Ogłoszenie: {{lat}}, {{lon}}",
     "txPowerMax": "Moc nadawania (maks. {{max}} dBm na radio)",
     "txPowerMaxUnknown": "Moc nadawania (ograniczona do {{max}} dBm, dopóki oprogramowanie sprzętowe nie zgłosi maks. sygnału radiowego)",
@@ -3485,7 +3526,13 @@
       "6": {
         "label": "Średnio powolny"
       }
-    }
+    },
+    "floodScopeSaved": "Zapisany zakres",
+    "floodScopeSavedSelect": "Hashtag zapisanego regionu",
+    "floodScopeSavedEmpty": "Nie ma jeszcze zapisanych zakresów. Zastosuj niestandardowy hashtag lub użyj zakresu niestandardowego z poziomu czatu, aby go dodać.",
+    "floodScopeRemoveSaved": "Usuń z zapisanych zakresów",
+    "floodScopeRemoveSavedAria": "Usuń {{hashtag}} z zapisanych zakresów",
+    "floodScopeInvalidHashtag": "Wprowadź prawidłowy hashtag regionu (na przykład #myregion)."
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",
@@ -3687,7 +3734,6 @@
     "pathHashCliSet2": "Ustaw tryb skrótu ścieżki 3-bajtowy",
     "pathLabel": "Ścieżka:",
     "hopMe": "● Ja",
-    "hopN": "● Przeskocz {{n}}",
     "noNeighborsReported": "Nie zgłoszono żadnych sąsiadów",
     "fetchingTelemetry": "Pobieram dane telemetryczne…",
     "telemetryBattery": "Bateria: {{voltage}}V",
@@ -3733,7 +3779,8 @@
     "cliDangerConfirmAction": "Uruchom polecenie",
     "cliAutoPingToast": "Ustalanie trasy za pomocą polecenia ping przed CLI…",
     "cliAutoPingFailed": "Ping nie powiódł się; uruchom Ping ręcznie przed ponowną próbą CLI na repeaterach wielokrotnych przeskoków.",
-    "cliCommandTooLong": "Polecenie CLI jest zbyt długie (maks. {{max}} znaków)."
+    "cliCommandTooLong": "Polecenie CLI jest zbyt długie (maks. {{max}} znaków).",
+    "currentRouteLabel": "Aktualna trasa:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",
@@ -4177,7 +4224,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "Topologia sieci",
     "network": "Sieć",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "Zdalny"
   },
   "takServerPanel": {
     "title": "Serwer TAK",
@@ -4246,7 +4294,13 @@
     "footerMax": "(maks. 50 każdy)",
     "sectionTemperatureHumidity": "Temperatura: Wilgotność:",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "nie dotyczy",
+    "chartAriaBattery": "Wykres baterii i napięcia: najnowsza bateria {{battery}} procent, napięcie {{voltage}} V, {{count}} punktów",
+    "chartAriaSignal": "Wykres jakości sygnału: najnowszy SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} punktów",
+    "chartAriaTempHumidity": "Wykres temperatury i wilgotności: ostatnia temperatura {{temperature}}, wilgotność {{humidity}} procent, {{count}} punktów",
+    "chartAriaPressure": "Wykres ciśnienia barometrycznego: najnowszy {{pressure}} hPa, {{count}} punktów",
+    "chartAriaIaq": "Wykres jakości powietrza: najnowsze IAQ {{iaq}}, {{count}} punktów"
   },
   "toasts": {
     "firmwareAvailable": "Dostępna aktualizacja oprogramowania sprzętowego: v{{version}}",
@@ -4431,7 +4485,11 @@
     "roomLegend": "★ ulubione · Automatyczne łączenie przełączników",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Wyczyść historię",
+    "clearHistoryTitle": "Wyczyść historię pokoju",
+    "clearHistoryConfirm": "Usunąć całą zapisaną historię wiadomości dla {{room}}? Tego nie można cofnąć.",
+    "clearHistoryConfirmAction": "Usuń historię"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -4473,5 +4531,210 @@
     "confirmContactImportTitle": "Zaimportować kontakt?",
     "confirmContactImportBody": "Dodać {{name}} z zewnętrznego łącza do kontaktów Reticulum?",
     "confirmContactImportAction": "Importuj kontakt"
+  },
+  "reticulumRemote": {
+    "navAria": "Sekcje zdalne",
+    "sidecarNotRunning": "Uruchom stos Reticulum, aby użyć zdalnej powłoki i transferu plików.",
+    "sections": {
+      "shell": "Powłoka",
+      "transfer": "Transfer",
+      "saved": "Zapisane",
+      "settings": "Ustawienia"
+    },
+    "errors": {
+      "invalidAddress": "Wprowadź prawidłowy 32-znakowy kod szesnastkowy miejsca docelowego."
+    },
+    "reasons": {
+      "pathConstrained": "Ścieżka jest ograniczona (niska przepustowość)",
+      "pathUnknown": "Prędkość ścieżki jest nieznana",
+      "notAnnounced": "Miejsce docelowe nie zostało ogłoszone",
+      "timeout": "Upłynął limit czasu żądania.",
+      "notAllowed": "Niedozwolone",
+      "versionMismatch": "Niezgodność wersji zdalnej",
+      "stagingFailed": "Nie udało się przygotować pliku przychodzącego",
+      "cancelled": "Anulowane",
+      "rejected": "Odrzucone",
+      "error": "Błąd"
+    },
+    "pathCapability": {
+      "checking": "Sprawdzam ścieżkę…",
+      "hops_one": "{{count}} hop",
+      "hops_other": "{{count}} hops",
+      "speed": {
+        "high": "Szybka ścieżka",
+        "constrained": "Ograniczona ścieżka",
+        "mixed": "Ścieżka mieszana",
+        "unknown": "Nieznana ścieżka"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "Skrót miejsca docelowego (32 znaki szesnastkowe)",
+      "addressAria": "rnsh docelowy hasz",
+      "selectSavedAddress": "Użyj zapisanego adresu {{label}}",
+      "connectAria": "Podłącz zdalną obudowę",
+      "connect": "Połącz",
+      "connecting": "Łączenie…",
+      "connectFailed": "Nie udało się połączyć: {{error}}",
+      "maxSessions": "Osiągnięto maksymalną liczbę sesji powłoki {{count}}.",
+      "focusSession": "Przełącz na sesję {{address}}",
+      "closeSession": "Zamknij sesję {{address}}",
+      "emptyState": "Brak aktywnych zdalnych sesji powłoki. Wpisz powyżej skrót miejsca docelowego, aby się połączyć.",
+      "status": {
+        "connecting": "Łączenie…",
+        "active": "Połączono",
+        "closed": "Zamknięte",
+        "error": "Błąd"
+      },
+      "reconnectAria": "Połącz ponownie tę sesję",
+      "reconnect": "Połącz ponownie",
+      "disconnectAria": "Odłącz tę sesję",
+      "disconnect": "Rozłącz",
+      "reconnectExhausted": "Automatyczne ponowne połączenie ustąpiło po osiągnięciu limitu ponownych prób. Stan sesji zdalnej został utracony.",
+      "reconnectingBanner": "Automatyczne ponowne łączenie (próba {{attempt}} z {{max}}). Stan sesji zdalnej został utracony.",
+      "fingerprintTitle": "Potwierdź tożsamość zdalną",
+      "fingerprintMessage": "Łączenie z {{address}}. Zgłoszona tożsamość: {{identity}}. Odcisk palca: {{fingerprint}}. Potwierdź tożsamość, której oczekujesz, zanim przejdziesz dalej.",
+      "unknownIdentity": "nieznana tożsamość",
+      "unknownFingerprint": "Nieznany odcisk palca OTR",
+      "fingerprintConfirm": "Połącz"
+    },
+    "transfer": {
+      "myIdentity": "Moja tożsamość:",
+      "copyIdentityAria": "Skopiuj mój hash tożsamości",
+      "myReceiveDest": "Miejsce docelowe odbioru mojego rncp:",
+      "copyReceiveDestAria": "Skopiuj miejsce docelowe odbioru rncp",
+      "pendingOffersTitle": "Pliki przychodzące oczekujące",
+      "pendingOffersBadgeAria_one": "Oczekująca oferta plików przychodzących: {{count}}",
+      "pendingOffersBadgeAria_other": "{{count}} oczekujące oferty plików przychodzących",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "Zaakceptuj {{file}}",
+      "accept": "Zaakceptuj",
+      "rejectAria": "Odrzuć {{file}}",
+      "reject": "Odrzuć",
+      "alwaysAllowAria": "Zawsze zezwalaj temu nadawcy na {{file}}",
+      "alwaysAllow": "Zawsze zezwalaj",
+      "alwaysBlockAria": "Zawsze blokuj tego nadawcę dla {{file}}",
+      "alwaysBlock": "Zawsze blokuj",
+      "alwaysAllowSaved": "Nadawca został dodany do listy dozwolonych.",
+      "alwaysBlockSaved": "Nadawca został dodany do listy blokad.",
+      "modeSendAria": "Zmień na tryb:",
+      "modeSend": "Wyślij",
+      "modeFetchAria": "Przełącz na tryb pobierania",
+      "modeFetch": "Pobierz",
+      "destinationPlaceholder": "Skrót miejsca docelowego (32 znaki szesnastkowe)",
+      "destinationAria": "hasz docelowy rncp",
+      "notAllowedHint": "Transfery nie są dostępne na tej ścieżce: {{reason}}",
+      "chooseFileAria": "Wybierz plik lokalny do wysłania",
+      "chooseFile": "Wybierz plik",
+      "noFileChosen": "Nie wybrano pliku",
+      "sendAria": "Wyślij plik",
+      "send": "Wyślij",
+      "sendFailed": "Nie udało się wysłać: {{error}}",
+      "remotePathPlaceholder": "Zdalna ścieżka pliku",
+      "remotePathAria": "Zdalna ścieżka pliku do pobrania",
+      "chooseSaveDirAria": "Wybierz lokalny folder, w którym chcesz zapisać",
+      "chooseSaveDir": "Wybierz zapisz folder…",
+      "defaultSaveDir": "Domyślny folder pobierania",
+      "fetchAria": "Pobierz plik",
+      "fetch": "Pobierz",
+      "fetchFailed": "Nie udało się pobrać: {{error}}",
+      "acceptFailed": "Nie można zaakceptować pliku: {{error}}",
+      "listTitle": "Transfery",
+      "listEmpty": "Nie ma jeszcze żadnych transferów.",
+      "kind": {
+        "send": "Wyślij",
+        "fetch": "Pobierz"
+      },
+      "status": {
+        "active": "W toku",
+        "completed": "Projekt zakończony",
+        "failed": "Zakończone niepowodzeniem",
+        "cancelled": "Anulowane"
+      },
+      "cancelAria": "Anuluj transfer {{file}}",
+      "cancel": "Anuluj",
+      "retryAria": "Ponów transfer {{file}}",
+      "retry": "Jeszcze raz",
+      "revealAria": "Odkryj {{file}} w folderze",
+      "reveal": "Odsłoń w folderze",
+      "requestEnableAria": "Poproś, aby ten plik równorzędny umożliwiał odbieranie",
+      "requestEnable": "Włącz żądanie",
+      "requestEnableSent": "Poprosił rówieśnika o umożliwienie odbioru plików.",
+      "requestEnableRateLimited": "Niedawno wysłano prośbę. Spróbuj ponownie później.",
+      "requestEnableFailed": "Nie można wysłać prośby o włączenie: {{error}}",
+      "offerToast": "Oferta plików przychodzących: {{file}}",
+      "copyInstructionsAria": "Kopiuj instrukcje dotyczące włączania odbierania plików",
+      "copyInstructions": "Kopiuj instrukcje",
+      "instructionsCopied": "Skopiowano instrukcje."
+    },
+    "enableRequest": {
+      "title": "Włączyć odbiór plików?",
+      "body": "Użytkownik {{peer}} poprosił Cię o włączenie odbierania plików rncp, aby mógł wysłać Ci plik.",
+      "enableAsk": "Włącz (pytaj za każdym razem)",
+      "enableAskAria": "Włącz oferty plików przychodzących i zapytaj przed zaakceptowaniem",
+      "enableAllow": "Włącz i zezwól na tę tożsamość",
+      "enableAllowAria": "Włącz oferty plików przychodzących i zezwól temu nadawcy",
+      "notNow": "Nie teraz",
+      "notNowAria": "Odrzuć prośbę o włączenie",
+      "dontAsk": "Nie pytaj ponownie od tego współpracownika",
+      "dontAskAria": "Trwale odrzuć prośby o włączenie od tego partnera",
+      "enabled": "Odbiór plików jest włączony.",
+      "enableFailed": "Nie można włączyć odbierania plików: {{error}}",
+      "saveDirRequired": "Wybierz folder zapisu, aby włączyć odbiór.",
+      "identityUnknown": "Nie udało się jeszcze ustalić skrótu tożsamości tego peera — tryb pytania jest włączony, ale nie dodano go do listy dozwolonych. Spróbuj ponownie, gdy nadejdzie ścieżka lub ogłoszenie.",
+      "lxmfBody": "Włącz odbieranie plików (rncp), jeśli używasz funkcji mesh-client: Remote → Settings → Inbound file offers. Lub uruchom rncp/rncp-rs w trybie słuchania."
+    },
+    "saved": {
+      "labelPlaceholder": "Oznaczenie",
+      "labelAria": "Zapisana etykieta adresowa",
+      "labelRequired": "Wprowadź etykietę dla tego adresu.",
+      "hashPlaceholder": "Skrót miejsca docelowego (32 znaki szesnastkowe)",
+      "hashAria": "Zapisano adres docelowy hasz",
+      "serviceAria": "Usługa zapisanego adresu",
+      "serviceRnsh": "Shell (rnsh)",
+      "serviceRncp": "Transfer (rncp)",
+      "saveAria": "Zapisz adres",
+      "add": "Dodaj",
+      "saveFailed": "Nie udało się zapisać adresu: {{error}}",
+      "empty": "Brak zapisanych adresów",
+      "editAria": "Edytuj zapisany adres {{label}}",
+      "deleteAria": "Usuń zapisany adres {{label}}"
+    },
+    "settings": {
+      "applyFailed": "Nie udało się zastosować ustawienia: {{error}}",
+      "inboundTitle": "Przesyłanie plików przychodzących",
+      "inboundMode": {
+        "off": "Wył.",
+        "ask": "Zapytaj",
+        "allow_all_listed": "Zezwalaj tylko na listę"
+      },
+      "allowFetch": "Zezwalaj zdalnym rówieśnikom na pobieranie ode mnie plików",
+      "chooseSaveDirAria": "Wybierz folder dla przychodzących transferów plików",
+      "chooseSaveDir": "Wybierz folder zapisu…",
+      "noSaveDir": "Nie wybrano folderu zapisu",
+      "fetchJailRequired": "Wybierz folder pobierania, zanim włączysz zdalne pobieranie.",
+      "chooseFetchJailAria": "Wybierz folder, z którego mogą pobierać zdalni partnerzy",
+      "chooseFetchJail": "Wybierz folder pobierania…",
+      "noFetchJail": "Nie wybrano folderu pobierania",
+      "overwrite": "Zastąp istniejące pliki na paragonie",
+      "maxSizeInfo": "Maksymalny rozmiar pliku przychodzącego: {{size}}",
+      "allowBlockListTitle": "Lista dozwolonych / zablokowanych",
+      "allowBlockListEmpty": "Nie zapisano jeszcze decyzji zezwalających/blokujących. Użyj opcji „Zawsze zezwalaj” lub „Zawsze blokuj” w ofercie plików przychodzących.",
+      "decision": {
+        "allow": "Dozwolone",
+        "block": "Zablokowane"
+      },
+      "removePolicyAria": "Usuń zapisaną decyzję dla {{label}}",
+      "reliabilityTitle": "Rzetelność",
+      "autoReconnectShell": "Automatycznie ponownie podłącz zdalną obudowę po nieoczekiwanym rozłączeniu",
+      "autoRetryTransfer": "Wznawiaj automatycznie gdy zawiodło pobieranie",
+      "identityTitle": "Moja tożsamość",
+      "myIdentity": "Moja tożsamość:"
+    }
+  },
+  "meshcoreRoute": {
+    "me": "● Ja",
+    "direct": "Bezpośredni",
+    "segmentTooltip": "Hash ścieżki {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

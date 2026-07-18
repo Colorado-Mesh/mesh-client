@@ -33,6 +33,7 @@ import {
   logReticulumSidecarStderrLine,
   ReticulumSidecarStderrDedupe,
 } from './reticulumSidecarStderrLog';
+import { startSidecarWatchdog } from './reticulumSidecarWatchdog';
 
 const HEALTH_POLL_INTERVAL_MS = 250;
 const HEALTH_POLL_TIMEOUT_MS = 30 * MS_PER_SECOND;
@@ -163,10 +164,12 @@ export class ReticulumSidecarManager extends EventEmitter {
   private readonly autoBeaconTracker = new ReticulumSidecarAutoBeaconTracker();
   private readonly interfaceIssueTracker = new ReticulumSidecarInterfaceIssueTracker();
   private lastIssueStatusEmitAt = 0;
+  private watchdogStop: (() => void) | null = null;
   private _status: ReticulumSidecarStatus = {
     running: false,
     port: 0,
     pid: null,
+    healthy: true,
   };
 
   resolveBinaryPath(): string {
@@ -227,8 +230,9 @@ export class ReticulumSidecarManager extends EventEmitter {
   }
 
   private finalizeStopped(): void {
+    this.stopWatchdog();
     this.clearSidecarTrackers();
-    this._status = { running: false, port: 0, pid: null };
+    this._status = { running: false, port: 0, pid: null, healthy: true, unhealthySince: undefined };
     this.emit('status', this.getStatus());
   }
 
@@ -379,10 +383,42 @@ export class ReticulumSidecarManager extends EventEmitter {
       running: true,
       port,
       pid: proc.pid ?? null,
+      healthy: true,
+      unhealthySince: undefined,
     };
     this.connectWs(port);
+    this.startWatchdog();
     this.emit('status', this.getStatus());
     return this.getStatus();
+  }
+
+  private startWatchdog(): void {
+    this.stopWatchdog();
+    this.watchdogStop = startSidecarWatchdog({
+      getPort: () => (this._status.running ? this._status.port : undefined),
+      isProcessAlive: () => this.proc != null,
+      onHealthChange: (healthy) => {
+        const wasHealthy = this._status.healthy !== false;
+        if (healthy === wasHealthy) return;
+        this._status = {
+          ...this._status,
+          healthy,
+          unhealthySince: healthy ? undefined : Date.now(),
+        };
+        this.emit('status', this.getStatus());
+      },
+      restartFn: async () => {
+        // Hung-only: process still alive but HTTP dead. Renderer owns exit/crash reconnect.
+        this.stopWatchdog();
+        await this.stopProc();
+        await this.start();
+      },
+    });
+  }
+
+  private stopWatchdog(): void {
+    this.watchdogStop?.();
+    this.watchdogStop = null;
   }
 
   async stop(): Promise<void> {
@@ -395,6 +431,7 @@ export class ReticulumSidecarManager extends EventEmitter {
   }
 
   private async stopProc(): Promise<void> {
+    this.stopWatchdog();
     this.teardownWs();
     if (bleCoexistenceCoordinator.getState().scanOwner === 'reticulum') {
       bleCoexistenceCoordinator.releaseScan('reticulum');

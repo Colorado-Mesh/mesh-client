@@ -3,7 +3,7 @@ import { MS_PER_DAY } from '@/shared/timeConstants';
 import { getAppSettingsRaw } from './appSettingsStorage';
 import { DEFAULT_APP_SETTINGS_SHARED } from './defaultAppSettings';
 import { errLikeToLogString } from './errLikeToLogString';
-import { fetchMessageRetention } from './messageRetention';
+import { fetchMessageRetention, RRC_MESSAGE_RETENTION_DEFAULT_AGE_DAYS } from './messageRetention';
 import { parseStoredJson } from './parseStoredJson';
 import { MAX_MESH_ENTITY_CAP, SESSION_DB_PRUNE_INTERVAL_MS } from './sessionMemoryCaps';
 import { getStoredMeshProtocol } from './storedMeshProtocol';
@@ -250,6 +250,22 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
               .catch((e: unknown) => {
                 console.warn(
                   `[App] ${label} pruneReticulumMessagesByCount failed ` + errLikeToLogString(e),
+                );
+              }),
+          );
+        }
+        if (r.rrcEnabled) {
+          innerOps.push(
+            window.electronAPI.db.pruneRrcMessagesByCount(r.rrcCount).catch((e: unknown) => {
+              console.warn(
+                `[App] ${label} pruneRrcMessagesByCount failed ` + errLikeToLogString(e),
+              );
+            }),
+            window.electronAPI.db
+              .pruneRrcMessagesByAge(RRC_MESSAGE_RETENTION_DEFAULT_AGE_DAYS)
+              .catch((e: unknown) => {
+                console.warn(
+                  `[App] ${label} pruneRrcMessagesByAge failed ` + errLikeToLogString(e),
                 );
               }),
           );

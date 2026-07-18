@@ -1,5 +1,5 @@
 import type { BrowserWindow } from 'electron';
-import { ipcMain } from 'electron';
+import { ipcMain, shell } from 'electron';
 
 import type { ReticulumSidecarStatus } from '../../shared/reticulum-types';
 import { sanitizeLogMessage } from '../log-service';
@@ -13,6 +13,14 @@ import {
 } from '../reticulum-config-paths';
 import { validateReticulumUserConfig } from '../reticulum-config-validate';
 import { showReticulumIdentityImportDialog } from '../reticulum-identity-import';
+import {
+  isAllowedRncpRevealPath,
+  isAllowedRncpSaveDirectoryPath,
+  isAllowedRncpSendFilePath,
+  isRncpPickerGatedApiPath,
+  showRncpOpenFileDialog,
+  showRncpSaveDirectoryDialog,
+} from '../reticulum-remote-paths';
 import type { ReticulumSidecarManager } from '../reticulum-sidecar-manager';
 import { parseEnabledInterfaceNames } from '../reticulumInterfaceIssueScope';
 import { assertIpcSender } from '../validate-ipc-sender';
@@ -47,6 +55,44 @@ function assertProxyApiPath(apiPath: unknown): string {
     throw new Error('Reticulum proxy path must be a string');
   }
   return apiPath;
+}
+
+/**
+ * Requirement + picker-allowlist checks for `reticulum:setRncpListener` dirs.
+ * Returns the rejection error code, or null when the config is acceptable.
+ */
+function validateRncpListenerDirs(opts: {
+  enabled: boolean;
+  allowFetch: boolean;
+  saveDir?: string;
+  fetchJail?: string;
+}): string | null {
+  const { enabled, allowFetch, saveDir, fetchJail } = opts;
+  if (enabled && saveDir == null) {
+    console.warn('[ReticulumIPC] setRncpListener rejected: save_dir required when enabled');
+    return 'save_dir_required';
+  }
+  if (allowFetch && fetchJail == null) {
+    console.warn(
+      '[ReticulumIPC] setRncpListener rejected: fetch_jail required when allow_fetch is true',
+    );
+    return 'fetch_jail_required';
+  }
+  if (saveDir != null && !isAllowedRncpSaveDirectoryPath(saveDir)) {
+    console.warn(
+      '[ReticulumIPC] setRncpListener rejected save_dir not from picker:',
+      sanitizeLogMessage(saveDir),
+    );
+    return 'save_dir_not_from_picker';
+  }
+  if (fetchJail != null && !isAllowedRncpSaveDirectoryPath(fetchJail)) {
+    console.warn(
+      '[ReticulumIPC] setRncpListener rejected fetch_jail not from picker:',
+      sanitizeLogMessage(fetchJail),
+    );
+    return 'fetch_jail_not_from_picker';
+  }
+  return null;
 }
 
 /** Register Reticulum sidecar IPC handlers (`reticulum:*`). */
@@ -102,6 +148,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   ipcMain.handle('reticulum:proxyPost', async (event, apiPath: unknown, body: unknown) => {
     assertIpcSender(event, 'reticulum:proxyPost');
     const pathArg = assertProxyApiPath(apiPath);
+    if (isRncpPickerGatedApiPath(pathArg)) {
+      throw new Error(
+        'rncp send/fetch/listener changes require reticulum:rncpSend/rncpFetch/setRncpListener (picker-backed)',
+      );
+    }
     try {
       const m = ensureManager();
       return await m.proxyPost(pathArg, body);
@@ -210,6 +261,144 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       const message = err instanceof Error ? err.message : String(err);
       console.error('[ReticulumIPC] validateConfig failed:', sanitizeLogMessage(message));
       return { ok: false, issues: [], error: sanitizeLogMessage(message) };
+    }
+  });
+
+  // ─── rncp file dialogs (Nomad-style picker allowlist) ───────────────────
+
+  ipcMain.handle('reticulum:showRncpOpenFileDialog', async (event) => {
+    assertIpcSender(event, 'reticulum:showRncpOpenFileDialog');
+    return showRncpOpenFileDialog();
+  });
+
+  ipcMain.handle('reticulum:showRncpSaveDirectoryDialog', async (event) => {
+    assertIpcSender(event, 'reticulum:showRncpSaveDirectoryDialog');
+    return showRncpSaveDirectoryDialog();
+  });
+
+  ipcMain.handle('reticulum:revealInFolder', (event, pathArg: unknown) => {
+    assertIpcSender(event, 'reticulum:revealInFolder');
+    if (typeof pathArg !== 'string' || !pathArg.trim()) {
+      return { ok: false, error: 'path_required' };
+    }
+    if (!isAllowedRncpRevealPath(pathArg)) {
+      console.warn(
+        '[ReticulumIPC] revealInFolder rejected path not from picker:',
+        sanitizeLogMessage(pathArg),
+      );
+      return { ok: false, error: 'path_not_from_picker' };
+    }
+    shell.showItemInFolder(pathArg);
+    return { ok: true };
+  });
+
+  /**
+   * Picker-gated rncp send: `path` must exactly match the last
+   * {@link showRncpOpenFileDialog} result so a compromised renderer cannot
+   * exfiltrate arbitrary local files via rncp.
+   */
+  ipcMain.handle('reticulum:rncpSend', async (event, opts: unknown) => {
+    assertIpcSender(event, 'reticulum:rncpSend');
+    if (!opts || typeof opts !== 'object') {
+      throw new TypeError('rncpSend: opts must be an object');
+    }
+    const o = opts as Record<string, unknown>;
+    const destinationHash = typeof o.destination_hash === 'string' ? o.destination_hash : '';
+    const filePath = typeof o.path === 'string' ? o.path : '';
+    if (!isAllowedRncpSendFilePath(filePath)) {
+      console.warn(
+        '[ReticulumIPC] rncpSend rejected path not from picker:',
+        sanitizeLogMessage(filePath),
+      );
+      return { ok: false, error: 'path_not_from_picker' };
+    }
+    try {
+      const m = ensureManager();
+      return await m.proxyPost('/api/v1/rncp/send', {
+        destination_hash: destinationHash,
+        path: filePath,
+      });
+    } catch (err) {
+      logReticulumProxyFailure('rncpSend', err, '/api/v1/rncp/send');
+      throw err;
+    }
+  });
+
+  /**
+   * Picker-gated rncp fetch: when `save_path` is provided, it must fall
+   * under the last {@link showRncpSaveDirectoryDialog} result so a
+   * compromised renderer cannot direct the sidecar to write an arbitrary
+   * local path. Omitting `save_path` lets the sidecar pick its own default.
+   */
+  ipcMain.handle('reticulum:rncpFetch', async (event, opts: unknown) => {
+    assertIpcSender(event, 'reticulum:rncpFetch');
+    if (!opts || typeof opts !== 'object') {
+      throw new TypeError('rncpFetch: opts must be an object');
+    }
+    const o = opts as Record<string, unknown>;
+    const destinationHash = typeof o.destination_hash === 'string' ? o.destination_hash : '';
+    const remotePath = typeof o.remote_path === 'string' ? o.remote_path : '';
+    const savePath =
+      typeof o.save_path === 'string' && o.save_path.trim() ? o.save_path : undefined;
+    if (savePath != null && !isAllowedRncpSaveDirectoryPath(savePath)) {
+      console.warn(
+        '[ReticulumIPC] rncpFetch rejected save_path not from picker:',
+        sanitizeLogMessage(savePath),
+      );
+      return { ok: false, error: 'save_path_not_from_picker' };
+    }
+    try {
+      const m = ensureManager();
+      return await m.proxyPost('/api/v1/rncp/fetch', {
+        destination_hash: destinationHash,
+        remote_path: remotePath,
+        save_path: savePath,
+      });
+    } catch (err) {
+      logReticulumProxyFailure('rncpFetch', err, '/api/v1/rncp/fetch');
+      throw err;
+    }
+  });
+
+  /**
+   * Picker-gated rncp listener config: when enabling, `save_dir` is required and
+   * must fall under the last {@link showRncpSaveDirectoryDialog} result.
+   * `fetch_jail` is required whenever `allow_fetch` is true (remote peers may
+   * otherwise read arbitrary absolute paths) and is gated the same way.
+   */
+  ipcMain.handle('reticulum:setRncpListener', async (event, opts: unknown) => {
+    assertIpcSender(event, 'reticulum:setRncpListener');
+    if (!opts || typeof opts !== 'object') {
+      throw new TypeError('setRncpListener: opts must be an object');
+    }
+    const o = opts as Record<string, unknown>;
+    const enabled = o.enabled === true;
+    const allowFetch = o.allow_fetch === true;
+    const saveDir = typeof o.save_dir === 'string' && o.save_dir.trim() ? o.save_dir : undefined;
+    const fetchJail =
+      typeof o.fetch_jail === 'string' && o.fetch_jail.trim() ? o.fetch_jail : undefined;
+    const dirError = validateRncpListenerDirs({ enabled, allowFetch, saveDir, fetchJail });
+    if (dirError) return { ok: false, error: dirError };
+    const allowed = Array.isArray(o.allowed)
+      ? o.allowed.filter((v): v is string => typeof v === 'string')
+      : [];
+    const blocked = Array.isArray(o.blocked)
+      ? o.blocked.filter((v): v is string => typeof v === 'string')
+      : [];
+    try {
+      const m = ensureManager();
+      return await m.proxyPost('/api/v1/rncp/listener', {
+        enabled,
+        save_dir: saveDir,
+        allow_fetch: allowFetch,
+        fetch_jail: fetchJail,
+        overwrite: o.overwrite === true,
+        allowed,
+        blocked,
+      });
+    } catch (err) {
+      logReticulumProxyFailure('setRncpListener', err, '/api/v1/rncp/listener');
+      throw err;
     }
   });
 }

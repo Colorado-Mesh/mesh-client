@@ -8,6 +8,10 @@ import type { ChatMessage } from '@/renderer/lib/types';
 import { updateMessageStatus, useMessageStore } from '@/renderer/stores/messageStore';
 
 import { meshtasticRoutingErrorName } from './meshtasticApplyErrorMessage';
+import {
+  hasMeshtasticNonChatOutboundInFlight,
+  isMeshtasticNonChatWirePacketId,
+} from './meshtasticOutboundCoordination';
 
 const SDK_ROUTING_ERROR_RE = /Error received for packet (\d+): ([A-Z0-9_]+)/;
 const SDK_PACKET_TIMEOUT_RE = /Packet (\d+) of type \w+ timed out/;
@@ -52,6 +56,18 @@ export function parseMeshtasticSdkQueueRejection(
     packetId: wireId,
     errorName: meshtasticRoutingErrorName(r.error),
   };
+}
+
+/**
+ * Human-readable text for an SDK queue rejection (`{ id|packetId, error: number }`).
+ * Falls back to the routing error name (e.g. `RATE_LIMIT_EXCEEDED`) when no chat
+ * i18n mapping exists; returns null when `reason` is not a queue rejection.
+ */
+export function humanizeMeshtasticSdkQueueRejectionError(reason: unknown): string | null {
+  const parsed = parseMeshtasticSdkQueueRejection(reason);
+  if (!parsed) return null;
+  const i18nKey = chatRoutingErrorKeyForSdkErrorName(parsed.errorName);
+  return i18nKey ? i18n.t(i18nKey) : parsed.errorName;
 }
 
 export function chatRoutingErrorKeyForSdkErrorName(errorName: string): string | null {
@@ -137,6 +153,10 @@ function findOutboundTargetForWirePacketId(
     if (fromStore) return fromStore;
   }
 
+  // An unmatched wire id may belong to a non-chat wantAck packet (e.g. the
+  // share-location Waypoint) — do not misattribute its NAK to a pending chat row.
+  if (hasMeshtasticNonChatOutboundInFlight()) return undefined;
+
   return findFallbackSendingOutbound(messagesRef.current, myNodeNum);
 }
 
@@ -168,6 +188,12 @@ export function applyMeshtasticOutboundRoutingError(
   }
   const errorText = i18n.t(i18nKey);
   const { myNodeNum, identityId, setMessages, tempIdToWirePacketId } = ctx;
+  // Known non-chat packet (e.g. share-location Waypoint): its NAK must never be
+  // applied to a chat row — the same log line is re-applied asynchronously via
+  // the main-process log echo after the in-flight window closes.
+  if (isMeshtasticNonChatWirePacketId(parsed.packetId)) {
+    return false;
+  }
   const target = findOutboundTargetForWirePacketId(parsed.packetId, ctx);
   if (!target) {
     return false;
@@ -186,8 +212,12 @@ export function applyMeshtasticOutboundRoutingError(
   if (identityId) {
     updateMessageStatus(identityId, storeMessageId, 'failed', errorText);
   }
+  // The DB row may still hold the optimistic temp packet id (device never acked,
+  // so updateMessagePacketId never ran) — key the update on the row's own id,
+  // not the wire id from the radio NAK, or the UPDATE matches zero rows.
+  const dbPacketId = target.packetId ?? parsed.packetId;
   void window.electronAPI.db
-    .updateMessageStatus(parsed.packetId, 'failed', errorText)
+    .updateMessageStatus(dbPacketId, 'failed', errorText)
     .catch((err: unknown) => {
       console.debug(
         '[meshtasticSdkRoutingErrorLog] DB update failed',

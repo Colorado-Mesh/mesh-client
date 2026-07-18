@@ -5,7 +5,7 @@ import { errLikeToLogString } from './errLikeToLogString';
 import { isBleScanBusyErrorMessage } from './reticulum/reticulumBleAdapterLease';
 import type { MeshProtocol } from './types';
 
-export const BLE_RECONNECT_SCAN_TIMEOUT_MS = 30_000;
+export const BLE_RECONNECT_SCAN_TIMEOUT_MS = 60_000;
 
 /** Poll interval while waiting for Reticulum/external BLE scan to release the adapter. */
 export const BLE_SCAN_BUSY_RETRY_INTERVAL_MS = 250;
@@ -14,8 +14,9 @@ export const BLE_SCAN_BUSY_RETRY_INTERVAL_MS = 250;
  * Max wait for scan mutex before failing Noble reconnect / connect retry.
  * Keep >= Reticulum BLE RNode connect grace (30s in reticulumLocalInterfaceRefresh)
  * so Meshtastic primary auto-connect can wait out a start yield.
+ * 60s also covers longer multi-protocol scan-mutex holds under spotty BLE.
  */
-export const BLE_SCAN_BUSY_MAX_WAIT_MS = 30_000;
+export const BLE_SCAN_BUSY_MAX_WAIT_MS = 60_000;
 
 /** Noble wait-for-peripheral + scan fallback; ConnectionPanel must not use a shorter UI timeout. */
 export const BLE_NOBLE_AUTO_CONNECT_MAX_MS = 30_000 + BLE_RECONNECT_SCAN_TIMEOUT_MS + 15_000;

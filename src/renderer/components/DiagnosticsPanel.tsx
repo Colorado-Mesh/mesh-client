@@ -224,6 +224,8 @@ export default function DiagnosticsPanel({
   const setEnvMode = useDiagnosticsStore((s) => s.setEnvMode);
   const diagnosticRowsMaxAgeHours = useDiagnosticsStore((s) => s.diagnosticRowsMaxAgeHours);
   const setDiagnosticRowsMaxAgeHours = useDiagnosticsStore((s) => s.setDiagnosticRowsMaxAgeHours);
+  const distanceOffsetKm = useDiagnosticsStore((s) => s.distanceOffsetKm);
+  const setDistanceOffsetKm = useDiagnosticsStore((s) => s.setDistanceOffsetKm);
   const foreignLoraDetections = useDiagnosticsStore((s) => s.foreignLoraDetections);
   const foreignLoraBySender = useMemo(
     () => foreignLoraDetections.get(meshtasticListenerNodeId),
@@ -1256,6 +1258,29 @@ export default function DiagnosticsPanel({
                   {envMode === 'standard' && t('diagnosticsPanel.environmentStandardHint')}
                   {envMode === 'city' && t('diagnosticsPanel.environmentCityHint')}
                   {envMode === 'canyon' && t('diagnosticsPanel.environmentCanyonHint')}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <label htmlFor="distanceOffsetKm" className="text-sm text-gray-400">
+                  {t('diagnosticsPanel.distanceOffsetKm')}
+                </label>
+                <input
+                  id="distanceOffsetKm"
+                  type="number"
+                  min={0}
+                  max={50}
+                  step={0.5}
+                  value={distanceOffsetKm}
+                  onChange={(e) => {
+                    const v = Number.parseFloat(e.target.value);
+                    if (Number.isFinite(v)) setDistanceOffsetKm(v);
+                  }}
+                  aria-label={t('diagnosticsPanel.distanceOffsetKm')}
+                  className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none"
+                />
+                <span className="text-sm text-gray-400">{t('diagnosticsPanel.km')}</span>
+                <span className="text-muted text-xs">
+                  {t('diagnosticsPanel.distanceOffsetHelp')}
                 </span>
               </div>
               <div className="flex flex-col gap-1.5 border-t border-gray-700/50 pt-2">

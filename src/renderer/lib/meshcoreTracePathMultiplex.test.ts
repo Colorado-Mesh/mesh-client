@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { meshcorePathHashSizeFromTraceFlags } from '../../shared/meshcorePathHash';
+import { meshcoreTraceHopDisplayRows } from './meshcorePathChainDisplay';
 import {
   meshcoreTracePendingRouteCount,
   meshcoreTraceResponsesInFlightCount,
@@ -66,6 +68,44 @@ describe('meshcoreTracePathMultiplex multibyte', () => {
     expect(result.pathHashes).toHaveLength(10);
     expect(result.pathSnrs).toHaveLength(5);
     expect(result.lastSnr).toBe(11.25);
+  });
+
+  it('aligns hop display rows with decoded segments and hash size from flags', () => {
+    // 1-byte hashes: 3 segments [relay, relay2, dest], 3 SNR hop bytes + lastSnr
+    // node_ids chosen so meshcoreNodeHash(id) === path hash byte
+    const relayId = 0xaa;
+    const relay2Id = 0xbb;
+    const destId = 0xcc;
+    const result = traceDataPayloadToResult({
+      pathLen: 3,
+      flags: 0,
+      pathHashes: [0xaa, 0xbb, 0xcc],
+      pathSnrs: [40, 41, 42],
+      lastSnr: 8.5,
+      tag: 1,
+    });
+    expect(result.pathLen).toBe(3);
+    expect(result.pathSnrs).toHaveLength(3);
+    const hashSizeBytes = meshcorePathHashSizeFromTraceFlags(result.flags);
+    expect(hashSizeBytes).toBe(1);
+
+    const rows = meshcoreTraceHopDisplayRows({
+      pathHashes: result.pathHashes,
+      pathSnrs: result.pathSnrs,
+      hashSizeBytes,
+      destNodeId: destId,
+      getNodeLabel: (id) =>
+        id === relayId ? 'R1' : id === relay2Id ? 'R2' : id === destId ? 'Dest' : '?',
+      candidates: [
+        { node_id: relayId, last_heard: 1 },
+        { node_id: relay2Id, last_heard: 1 },
+        { node_id: destId, last_heard: 1 },
+      ],
+    });
+    // Dest segment suppressed; two intermediate hops remain
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.label)).toEqual(['R1', 'R2']);
+    expect(rows.map((r) => r.snr)).toEqual(result.pathSnrs.slice(0, 2));
   });
 });
 

@@ -103,6 +103,7 @@ import { registerGpsIpcHandlers } from './ipc/gps-handlers';
 import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
 import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './ipc/reticulum-handlers';
 import { registerReticulumIdentityIpcHandlers } from './ipc/reticulum-identity-handlers';
+import { registerRrcDbIpcHandlers } from './ipc/rrc-db-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
 import {
   clearLogFile,
@@ -1827,7 +1828,7 @@ function createWindow() {
     }
   });
 
-  // Allow serial, geolocation, and media (Reticulum voice clips). Deny web-app-installation etc.
+  // Allow serial, geolocation, and media (camera / future live audio). Deny web-app-installation etc.
   mainWindow.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
     const granted =
       permission === 'serial' || permission === 'geolocation' || permission === 'media';
@@ -1837,7 +1838,7 @@ function createWindow() {
     return granted;
   });
 
-  // Grant geolocation (browser GPS fallback) and media (microphone for voice clips)
+  // Grant geolocation (browser GPS fallback) and media (camera QR; microphone reserved for future LXST)
   mainWindow.webContents.session.setPermissionRequestHandler(
     (_webContents, permission, callback) => {
       const grant = permission === 'geolocation' || permission === 'media';
@@ -3420,6 +3421,8 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshcoreMessageRetentionCount',
   'reticulumMessageRetentionEnabled',
   'reticulumMessageRetentionCount',
+  'rrcMessageRetentionEnabled',
+  'rrcMessageRetentionCount',
   'locale',
   'mapBasemapId',
   'meshtasticMqttClientId',
@@ -6276,6 +6279,7 @@ registerReticulumIpcHandlers({
   getMainWindow: () => mainWindow,
 });
 registerReticulumDbIpcHandlers({ ipcMain });
+registerRrcDbIpcHandlers({ ipcMain });
 registerReticulumIdentityIpcHandlers({ ipcMain });
 
 // ─── App lifecycle ─────────────────────────────────────────────────

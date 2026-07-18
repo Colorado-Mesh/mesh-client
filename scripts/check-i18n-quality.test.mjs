@@ -727,6 +727,78 @@ describe('localeStringQualityIssues', () => {
     });
     expectIssue(issues, 'parenthesis-only MT garbage');
   });
+
+  it('flags physical-shell false friend on reticulumRemote.sections.shell', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'reticulumRemote.sections.shell',
+      val: 'Gehäuse',
+      enVal: 'Shell',
+    });
+    expectIssue(issues, 'reticulumRemote shell false friend');
+  });
+
+  it('flags seashell false friend on reticulumRemote.sections.shell (ja)', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ja',
+      flatKey: 'reticulumRemote.sections.shell',
+      val: '貝殻',
+      enVal: 'Shell',
+    });
+    expectIssue(issues, 'reticulumRemote shell false friend');
+  });
+
+  it('passes command-shell wording on reticulumRemote.sections.shell', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'uk',
+        flatKey: 'reticulumRemote.sections.shell',
+        val: 'Оболонка',
+        enVal: 'Shell',
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags dropped rncp utility name in reticulumRemote copy', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ru',
+      flatKey: 'reticulumRemote.transfer.myReceiveDest',
+      val: 'Моё назначение для приёма:',
+      enVal: 'My rncp receive destination:',
+    });
+    expectIssue(issues, 'must preserve Reticulum utility name "rncp"');
+  });
+
+  it('flags dropped rncp utility name in chatPanel.rncp copy', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'chatPanel.rncp.destinationLabel',
+      val: 'hash de destino',
+      enVal: 'rncp destination hash',
+    });
+    expectIssue(issues, 'must preserve Reticulum utility name "rncp"');
+  });
+
+  it('passes when rncp token survives with sentence-initial capitalization', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'tr',
+        flatKey: 'reticulumRemote.transfer.myReceiveDest',
+        val: 'Rncp alma hedefim:',
+        enVal: 'My rncp receive destination:',
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags dropped rnsh utility name in reticulumRemote copy', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'reticulumRemote.shell.addressAria',
+      val: 'Zielhash',
+      enVal: 'rnsh destination hash',
+    });
+    expectIssue(issues, 'must preserve Reticulum utility name "rnsh"');
+  });
 });
 
 describe('interpolationPlaceholderIssues', () => {
@@ -1934,5 +2006,35 @@ describe('sniffer tab and MQTT channel PSK i18n quality', () => {
       val: 'Hochwasser-geroutete Pakete anzeigen (FLOOD / T_FLOOD)',
     });
     expectIssue(issues, 'flood-routing false friend');
+  });
+
+  it('flags water-flood wording on chatPanel floodScope keys', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'chatPanel.floodScopeOverrideHint',
+      enVal: 'Regional flood scope for this message only.',
+      val: 'Alcance de inundación regional solo para este mensaje.',
+    });
+    expectIssue(issues, 'flood-routing false friend');
+  });
+
+  it('flags Cap=hat mistranslation on appPanel.capStoredRrcMessages', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ru',
+      flatKey: 'appPanel.capStoredRrcMessages',
+      enVal: 'Cap stored RRC room history, keep newest',
+      val: 'Кепка хранит историю комнат RRC, сохраняет самые новые',
+    });
+    expectIssue(issues, 'Cap false friend');
+  });
+
+  it('flags French pièce as RRC room false friend', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'rrc.clearHistoryTitle',
+      enVal: 'Clear room history',
+      val: "Effacer l'historique de la pièce",
+    });
+    expectIssue(issues, 'rrc false friend');
   });
 });

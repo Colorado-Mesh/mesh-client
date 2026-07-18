@@ -4,6 +4,7 @@ import type { MeshDevice } from '@meshtastic/core';
 import { Admin, Channel as ProtobufChannel, Config, Mesh, Portnums } from '@meshtastic/protobufs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { getStoreForwardHistoryProfile } from '@/renderer/lib/appSettingsStorage';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
@@ -15,10 +16,8 @@ import {
   releaseStoreForwardHistoryRequest,
   reserveStoreForwardHistoryRequest,
   resolveAutoStoreForwardHistoryWindowMinutes,
+  resolveStoreForwardHistoryTuning,
   resolveStoreForwardServerFromObservedPackets,
-  SF_AUTO_HISTORY_COOLDOWN_MS,
-  SF_AUTO_HISTORY_MESSAGE_CAP,
-  SF_AUTO_HISTORY_OFFLINE_MIN_MS,
   SF_MANUAL_HISTORY_MESSAGE_CAP,
   shouldAutoRequestStoreForwardHistoryOnHeartbeat,
   writeToRadioWithoutQueue,
@@ -111,6 +110,11 @@ import {
   overlayMeshtasticMqttTopicPrefixForRadio,
 } from '../lib/meshtastic/meshtasticMqttTopicPrefixOverlay';
 import {
+  beginMeshtasticNonChatOutbound,
+  endMeshtasticNonChatOutbound,
+  registerMeshtasticNonChatWirePacketId,
+} from '../lib/meshtastic/meshtasticOutboundCoordination';
+import {
   meshtasticXmodemDownload,
   meshtasticXmodemUpload,
 } from '../lib/meshtastic/meshtasticXmodemTransfer';
@@ -162,9 +166,17 @@ import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 import { reactionGlyphFromPicker } from '../lib/reactions';
 import { enrichMeshtasticReplyPreviews, resolveMeshtasticWireReplyId } from '../lib/replyPreview';
 import { rfConnectionTransportOpts } from '../lib/rfConnectionTypes';
+import { rfMaxReconnectAttemptsForTransport } from '../lib/rfReconnectShared';
 import { registerMeshtasticSerialDisconnectTarget } from '../lib/serialDisconnectRouter';
-import { escalateSerialReconnectExhaustion } from '../lib/serialPortRecovery';
-import { loadLastSerialPortId } from '../lib/serialPortSignature';
+import {
+  captureSerialIdentityForRediscovery,
+  startSerialRediscovery,
+} from '../lib/serialPortAutoRediscovery';
+import {
+  escalateSerialReconnectExhaustion,
+  forgetGrantedSerialPortBestEffort,
+} from '../lib/serialPortRecovery';
+import { loadLastSerialPortId, persistSerialPortIdentity } from '../lib/serialPortSignature';
 import {
   clearMeshtasticOutboundTempId,
   registerMeshtasticSession,
@@ -238,7 +250,6 @@ const SERIAL_DEAD_THRESHOLD_MS = 180_000; // 3min — align with BLE/HTTP
 const HTTP_STALE_THRESHOLD_MS = 90_000; // 90s — show warning
 const HTTP_DEAD_THRESHOLD_MS = 180_000; // 3min — trigger reconnect
 const WATCHDOG_INTERVAL_MS = 15_000; // Check every 15s
-const MAX_RECONNECT_ATTEMPTS = 5;
 
 function getOrCreateVirtualNodeId(): number {
   const key = 'mesh-client:mqttVirtualNodeId';
@@ -325,6 +336,8 @@ export function useMeshtasticRuntime() {
   /** Disconnect during connect — run handleConnectionLost after connect settles. */
   const meshtasticDeferredReconnectRef = useRef(false);
   const reconnectGenerationRef = useRef<number>(0);
+  /** Cleanup for post-exhaustion serial port rediscovery poll. */
+  const serialRediscoveryStopRef = useRef<(() => void) | null>(null);
   const postRebootRecoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const postRebootRecoveryScheduledRef = useRef(false);
   const transportManagerRef = useRef<TransportManager | null>(null);
@@ -1486,6 +1499,8 @@ export function useMeshtasticRuntime() {
   // Cleanup on unmount — stop all intervals and subscriptions
   useEffect(() => {
     return () => {
+      serialRediscoveryStopRef.current?.();
+      serialRediscoveryStopRef.current = null;
       cleanupSubscriptions();
       clearConfigureTimeout();
       stopWatchdog();
@@ -1586,6 +1601,8 @@ export function useMeshtasticRuntime() {
       const now = Date.now();
       const channel = lastSfHeartbeatChannelRef.current;
 
+      const historyTuning = resolveStoreForwardHistoryTuning(getStoreForwardHistoryProfile());
+
       if (!manual) {
         const alreadyRequested = sfHistoryRequestedServersRef.current.has(serverNodeId);
         const settings = parseStoredJson<Record<string, unknown>>(
@@ -1604,20 +1621,20 @@ export function useMeshtasticRuntime() {
             now,
             lastFetchMs: getLastSfHistoryFetchMs(serverNodeId),
             lastDisconnectMs: lastRfDisconnectAtRef.current,
+            cooldownMs: historyTuning.cooldownMs,
+            offlineMinMs: historyTuning.offlineMinMs,
           })
         ) {
           if (!autoFetchEnabled) {
             return { ok: false, code: 'no_server' };
           }
-          const cooldownMs = SF_AUTO_HISTORY_COOLDOWN_MS;
-          const offlineMinMs = SF_AUTO_HISTORY_OFFLINE_MIN_MS;
           const lastFetchMs = getLastSfHistoryFetchMs(serverNodeId);
-          if (lastFetchMs != null && now - lastFetchMs < cooldownMs) {
+          if (lastFetchMs != null && now - lastFetchMs < historyTuning.cooldownMs) {
             return { ok: false, code: 'cooldown' };
           }
           if (
             lastRfDisconnectAtRef.current != null &&
-            now - lastRfDisconnectAtRef.current < offlineMinMs
+            now - lastRfDisconnectAtRef.current < historyTuning.offlineMinMs
           ) {
             return { ok: false, code: 'offline_gate' };
           }
@@ -1637,7 +1654,7 @@ export function useMeshtasticRuntime() {
         channel,
         packetId,
         windowMinutes: resolveAutoStoreForwardHistoryWindowMinutes(heartbeatPeriod),
-        messageCap: manual ? SF_MANUAL_HISTORY_MESSAGE_CAP : SF_AUTO_HISTORY_MESSAGE_CAP,
+        messageCap: manual ? SF_MANUAL_HISTORY_MESSAGE_CAP : historyTuning.messageCap,
       });
 
       try {
@@ -1915,7 +1932,8 @@ export function useMeshtasticRuntime() {
       return;
     }
 
-    if (reconnectAttemptRef.current >= MAX_RECONNECT_ATTEMPTS) {
+    const maxReconnectAttempts = rfMaxReconnectAttemptsForTransport(params.type);
+    if (reconnectAttemptRef.current >= maxReconnectAttempts) {
       isReconnectingRef.current = false;
       reconnectAttemptRef.current = 0;
       cleanupSubscriptions();
@@ -1925,7 +1943,34 @@ export function useMeshtasticRuntime() {
       const exhaustedSerialPort =
         exhaustedParams?.type === 'serial' ? (exhaustedParams.serialPort ?? null) : null;
       if (exhaustedParams?.type === 'serial') {
-        await escalateSerialReconnectExhaustion(exhaustedSerialPort);
+        const captured = captureSerialIdentityForRediscovery(exhaustedSerialPort);
+        await escalateSerialReconnectExhaustion(exhaustedSerialPort, { forgetPort: false });
+        serialRediscoveryStopRef.current?.();
+        serialRediscoveryStopRef.current = startSerialRediscovery({
+          signature: captured.signature,
+          portId: captured.portId,
+          onFound: (port) => {
+            persistSerialPortIdentity(port);
+            if (connectionParamsRef.current?.type === 'serial') {
+              connectionParamsRef.current.serialPort = port;
+              connectionParamsRef.current.lastSerialPortId =
+                (port as SerialPort & { portId?: string }).portId ??
+                connectionParamsRef.current.lastSerialPortId;
+            }
+            setState((s) => ({
+              ...s,
+              serialNeedsReselect: false,
+              connectionLoss: true,
+              status: 'reconnecting',
+            }));
+            isReconnectingRef.current = true;
+            reconnectAttemptRef.current = 0;
+            void attemptReconnectRef.current();
+          },
+          onTimeout: () => {
+            void forgetGrantedSerialPortBestEffort(exhaustedSerialPort);
+          },
+        });
       }
       deviceRef.current = null;
       meshtasticDriverConnectedRef.current = false;
@@ -1955,7 +2000,7 @@ export function useMeshtasticRuntime() {
 
     const delay = Math.min(2000 * Math.pow(2, reconnectAttemptRef.current - 1), 32000);
     console.debug(
-      `[useMeshtasticRuntime] reconnect: waiting ${delay}ms before attempt ${reconnectAttemptRef.current}/${MAX_RECONNECT_ATTEMPTS}`,
+      `[useMeshtasticRuntime] reconnect: waiting ${delay}ms before attempt ${reconnectAttemptRef.current}/${maxReconnectAttempts}`,
     );
     const delayResult = await delayUnlessSuspended(delay, () =>
       !isReconnectingRef.current ? true : reconnectGenerationRef.current !== generation,
@@ -2012,6 +2057,7 @@ export function useMeshtasticRuntime() {
         serialNeedsReselect: false,
         connectionLoss: false,
       }));
+      requestChatOutboxDrain('meshtastic');
     } catch (err) {
       const failedDriverIdentity =
         opened?.driverIdentityId ??
@@ -2167,6 +2213,9 @@ export function useMeshtasticRuntime() {
       }
       const resolvedSerialPortId =
         type === 'serial' ? (lastSerialPortId ?? loadLastSerialPortId()) : undefined;
+      // Manual / new connect cancels background serial rediscovery.
+      serialRediscoveryStopRef.current?.();
+      serialRediscoveryStopRef.current = null;
       connectionParamsRef.current = {
         type,
         httpAddress,
@@ -3363,7 +3412,21 @@ export function useMeshtasticRuntime() {
         lockedTo: wp.lockedTo ?? 0,
         expire: wp.expire ?? 0,
       }) as WaypointType;
-      await deviceRef.current.sendWaypoint(waypoint, dest, channel);
+      beginMeshtasticNonChatOutbound();
+      try {
+        const wpWireId = await deviceRef.current.sendWaypoint(waypoint, dest, channel);
+        registerMeshtasticNonChatWirePacketId(wpWireId);
+      } catch (wpErr) {
+        // Routing NAK rejections carry the waypoint's wire id — register it so the
+        // chat routing-error fallback never attributes this NAK to a chat row.
+        const wpRej = wpErr as { id?: number; packetId?: number };
+        registerMeshtasticNonChatWirePacketId(
+          typeof wpRej.id === 'number' ? wpRej.id : wpRej.packetId,
+        );
+        throw wpErr;
+      } finally {
+        endMeshtasticNonChatOutbound();
+      }
 
       const chCfg = channelConfigsRef.current.find((c) => c.index === channel);
       const fromNum = resolveMeshtasticOutboundFromNodeId({

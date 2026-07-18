@@ -354,7 +354,17 @@
     "reticulumCapDestinationsLabel": "Limita destinazioni / peer in memoria e SQLite, conserva quelli sentiti più di recente",
     "reticulumCapDestinationsCountAria": "Limita le destinazioni, conserva le {{count}} sentite più di recente",
     "reticulumDestinationsUnit_one": "destinazione",
-    "reticulumDestinationsUnit_other": "destinazioni"
+    "reticulumDestinationsUnit_other": "destinazioni",
+    "storeForwardHistoryProfileLabel": "Memorizza e inoltra il profilo di recupero",
+    "storeForwardHistoryProfileAria": "Store & Forward recupera l'aggressività della cronologia",
+    "storeForwardHistoryProfileConservative": "Conservativo (adatto alla mesh occupata)",
+    "storeForwardHistoryProfileAggressive": "Aggressivo (copertura irregolare)",
+    "storeForwardHistoryProfileHint": "Conservativo utilizza un gate offline e un tempo di recupero più lunghi. Recuperi aggressivi subito dopo brevi disconnessioni e richieste di più messaggi: da utilizzare solo quando il tempo di trasmissione lo consente.",
+    "shareLocationSendWaypoint": "Invia anche un segnaposto sulla mappa (Waypoint) quando condividi la posizione",
+    "shareLocationSendWaypointHint": "Se abilitate, le condivisioni di posizione Meshtastic inviano sia un messaggio di testo che un pacchetto Waypoint in modo che le app ufficiali mostrino un segnaposto sulla mappa. Disabilita su mesh occupate per inviare solo testo.",
+    "capStoredRrcMessages": "Limita la cronologia delle stanze RRC memorizzata e mantieni le più recenti",
+    "capStoredRrcMessagesLabel": "Limita la cronologia delle stanze RRC memorizzata e mantieni le più recenti",
+    "capStoredRrcMessagesCountAria": "Limita la cronologia delle stanze RRC memorizzata e conserva i messaggi {{count}} più recenti"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -369,7 +379,10 @@
     "switchToMeshCore": "Passa a MeshCore",
     "backToTop": "Torna all'inizio",
     "switchToReticulum": "Passa a Reticulum",
-    "languageSelectorHint": "Clicca per selezionare la lingua"
+    "languageSelectorHint": "Clicca per selezionare la lingua",
+    "switchToMeshtasticWithUnread": "Passa a Meshtastic, {{count}} non letto",
+    "switchToMeshCoreWithUnread": "Passa a MeshCore, {{count}} non letto",
+    "switchToReticulumWithUnread": "Passa a Reticulum, {{count}} non letto"
   },
   "battery": {
     "percentCharging": "Batteria {{percent}} percento, in carica",
@@ -503,9 +516,6 @@
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/... o g:ID",
     "meshcoreGifSend": "Invia GIF",
     "meshcoreGifInvalid": "Inserisci un URL Giphy o un ID GIF valido.",
-    "attachFile": "Allega file",
-    "attachFileHint": "Inviare un file allegato LXMF (solo DM)",
-    "attachDmOnly": "Aprire un messaggio diretto prima di allegare un file.",
     "composePlaceholderSelectDm": "Seleziona un contatto sopra per avviare un DM...",
     "selectDmFirst": "Selezionare un destinatario DM prima dell'invio.",
     "emptySelectDm": "La chat di Reticulum è solo un messaggio diretto. Scegli un contatto sopra o aprilo dalla scheda Nodi.",
@@ -526,12 +536,6 @@
     "reticulumNoPropagationNode": "Nessun nodo di propagazione configurato. Imposta un nodo di propagazione preferito nella scheda Reticulum Radio.",
     "sentViaPropagation": "Nodo di propagazione",
     "reticulumAudioAttachment": "Voce: {{name}}",
-    "recordVoice": "Registra un messaggio vocale",
-    "recordVoiceHint": "Registra un clip vocale e invialo come allegato LXMF (solo DM)",
-    "stopVoiceRecording": "Interrompi la registrazione e invia",
-    "voiceRecordingTooLong": "La clip vocale ha raggiunto il limite di 60 secondi ed è stata inviata.",
-    "reticulumSendAttachmentFailed": "Impossibile inviare l'allegato",
-    "reticulumSendAttachmentNoIdentity": "Identità Reticulum non pronta — connetti e configura prima l'identità",
     "dmPeerInfoAria": "Informazioni sui colleghi DM",
     "clearDateAria": "Data chiara",
     "readOnlyDisconnected": "Non connesso: i messaggi sono di sola lettura",
@@ -567,20 +571,51 @@
     "dmPathUnreachableTooltip": "Ancora nessun percorso Reticulum per questa destinazione. I messaggi possono ancora essere consegnati in seguito tramite un nodo di propagazione configurato.",
     "dmPathRequestPathAria": "Richiedi percorso Reticulum per questa destinazione",
     "dmPathProbeAria": "Verifica raggiungibilità del percorso Reticulum per questa destinazione",
-    "microphonePermissionDenied": "Accesso al microfono negato. Abilita l'autorizzazione del microfono per Mesh-client nelle impostazioni di privacy del sistema, quindi riprova.",
     "receivedViaBle": "Ricevuto via Bluetooth",
     "receivedViaMultiple": "Ricevuto tramite {{vias}}",
     "sentViaBle": "Inviato via Bluetooth",
     "sentViaMultiple": "Inviato tramite {{vias}}",
-    "floodScopeOverrideLabel": "Campo di inondazione per questo messaggio",
-    "floodScopeOverrideAria": "Override ambito flood per messaggio",
+    "floodScopeOverrideLabel": "Ambito Flood per questo messaggio",
+    "floodScopeOverrideAria": "Override ambito Flood per messaggio",
     "floodScopeOverrideDefault": "Ambito predefinito",
-    "floodScopeOverrideUnscoped": "Senza ambito"
+    "floodScopeOverrideUnscoped": "Senza ambito",
+    "rncp": {
+      "sendFile": "Inviare file",
+      "sendFileAria": "Invia file a {{name}} tramite rncp",
+      "pendingOffersBadgeAria_one": "{{count}} in attesa di offerta di file in entrata da questo collega",
+      "pendingOffersBadgeAria_other": "{{count}} in attesa di offerte di file in entrata da questo collega",
+      "destinationLabel": "hash di destinazione rncp",
+      "rememberAddress": "Ricorda questo indirizzo",
+      "rememberAddressAria": "Ricorda questa destinazione rncp per questo peer",
+      "chooseAndSend": "Scegli file e invia...",
+      "sending": "Invio in corso…",
+      "sendStarted": "Invio di {{file}} in corso...",
+      "sendFailed": "Invio non riuscito: {{error}}",
+      "newOfferToast": "{{peer}} vuole inviarle un file: {{file}}",
+      "requestEnable": "Richiesta abilitazione",
+      "requestEnableAria": "Chiedi a questo peer di abilitare la ricezione dei file"
+    },
+    "shareLocation": "Condividi posizione",
+    "shareLocationLabel": "📍Posizione condivisa",
+    "shareLocationHint": "Invia la tua attuale posizione GPS o statica come messaggio di chat",
+    "shareLocationUnavailable": "Posizione non disponibile: controlla le impostazioni GPS",
+    "floodScopeOverrideHint": "Ambito Flood regionale solo per questo messaggio. L’ambito predefinito utilizza l’impostazione salvata della radio; un hashtag limita l’invio a quella regione; invii senza ambito senza filtro regionale. L’ambito salvato viene ripristinato dopo l’invio.",
+    "floodScopeOverrideMenuButton": "Modifica l’ambito Flood per questo messaggio",
+    "shareLocationWaypointFailed": "Il segnaposto sulla mappa (waypoint) non è stato riconosciuto: il testo della posizione potrebbe essere stato comunque inviato.",
+    "floodScopeOverrideCustom": "Ambito personalizzato...",
+    "floodScopeOverrideCustomLabel": "Hashtag personalizzato per l’ambito Flood",
+    "floodScopeOverrideCustomPlaceholder": "#lamiaregione",
+    "floodScopeOverrideCustomApply": "Usa l'ambito",
+    "floodScopeOverrideCustomInvalid": "Inserisci un hashtag regionale valido (ad esempio #myregion)."
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Apri su Giphy"
+    "meshcoreGifOpen": "Apri su Giphy",
+    "locationCard": {
+      "alt": "Riquadro della mappa della posizione condivisa",
+      "openMaps": "Apri in Mappe"
+    }
   },
   "common": {
     "close": "Chiudi",
@@ -622,7 +657,9 @@
     "colorAmber": "Ambra",
     "colorRed": "Rosso",
     "colorPurple": "Viola",
-    "delete": "Eliminare"
+    "delete": "Eliminare",
+    "copy": "Copia",
+    "copied": "Copiati"
   },
   "configApplyNotice": {
     "persistNote": "Le impostazioni applicate vengono salvate nella memoria flash del dispositivo e persistono durante i riavvii.",
@@ -1163,7 +1200,8 @@
       "meshcore": "Riconnetti i tentativi prima di rinunciare (1–{{max}}). Salvato con le impostazioni; premere nuovamente Connetti dopo aver modificato in modo che il processo principale lo raccolga.",
       "meshtastic": "Entrambi i protocolli consentono 1–{{max}}. Salvato con le impostazioni; disconnettersi e connettersi di nuovo in modo che la sessione in esecuzione utilizzi il nuovo valore."
     },
-    "reticulumStackRunningAs": "Corsa — {{name}}"
+    "reticulumStackRunningAs": "In esecuzione — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Lo stack Reticulum non risponde: riavvio in corso…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",
@@ -1492,7 +1530,10 @@
     "senderLabel": "Mittente",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "SNR {{snr}} dB"
+    "snrDb": "SNR {{snr}} dB",
+    "distanceOffsetKm": "Compensazione della distanza",
+    "km": "km",
+    "distanceOffsetHelp": "Aggiunge un limite di km piatto alle soglie di distanza hop-goblin e percorso errato (0–50)."
   },
   "diagnosticsPing": {
     "title": "Ping continuo",
@@ -2568,7 +2609,9 @@
       "lossRate": "Perdita stimata",
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Registro dei pacchetti di test di intervallo"
-    }
+    },
+    "currentRouteHeading": "Percorso attuale",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "Nome lungo",
@@ -3371,16 +3414,14 @@
     "xmodemFailed": "XMODEM non riuscito: {{message}}",
     "zeroHopAdvertButton": "Annuncio zero-hop",
     "zeroHopAdvertSent": "Annuncio zero-hop inviato",
-    "floodScopeTitle": "Portata delle inondazioni regionali",
+    "floodScopeTitle": "Portata delle Flood regionali",
     "floodScopeHelp": "Limita il traffico flood a una regione hashtag (firmware v8+). Richiede meshcore.js setFloodScope; la riconnessione riapplica l'ambito salvato.",
     "floodScopeNone": "Nessuno (campo di applicazione chiaro)",
-    "floodScopePreset": "Hashtag preimpostato",
-    "floodScopePresetSelect": "Hashtag regione preimpostato",
     "floodScopeCustom": "Hashtag personalizzato",
     "floodScopeCustomPlaceholder": "#myregion",
-    "floodScopeApply": "Applica ambito di inondazione",
+    "floodScopeApply": "Applica ambito Flood",
     "floodScopeApplySuccess": "Portata dell'alluvione applicata",
-    "floodScopeApplyFailed": "Campo di inondazione non riuscito: {{message}}",
+    "floodScopeApplyFailed": "ambito Flood non riuscito: {{message}}",
     "advertisedPositionLabel": "Posizione pubblicizzata: {{lat}}, {{lon}}",
     "txPowerMax": "Potenza di trasmissione (max {{max}} dBm per radio)",
     "txPowerMaxUnknown": "Potenza di trasmissione (limitata a {{max}} dBm fino a quando il firmware non segnala il max radio)",
@@ -3485,7 +3526,13 @@
       "6": {
         "label": "Medio lento"
       }
-    }
+    },
+    "floodScopeSaved": "Ambito salvato",
+    "floodScopeSavedSelect": "Hashtag della regione salvato",
+    "floodScopeSavedEmpty": "Nessun ambito ancora salvato. Applica un hashtag personalizzato o utilizza l'ambito personalizzato dalla chat per aggiungerne uno.",
+    "floodScopeRemoveSaved": "Rimuovi dagli ambiti salvati",
+    "floodScopeRemoveSavedAria": "Rimuovi {{hashtag}} dagli ambiti salvati",
+    "floodScopeInvalidHashtag": "Inserisci un hashtag regionale valido (ad esempio #myregion)."
   },
   "rawPacketLog": {
     "filterPackets": "Filtra i pacchetti",
@@ -3687,7 +3734,6 @@
     "pathHashCliSet2": "Imposta la modalità hash del percorso a 3 byte",
     "pathLabel": "Sentiero:",
     "hopMe": "● Io",
-    "hopN": "● Salta {{n}}",
     "noNeighborsReported": "Nessun vicino segnalato",
     "fetchingTelemetry": "Recupero telemetria…",
     "telemetryBattery": "Batteria: {{voltage}}V",
@@ -3733,7 +3779,8 @@
     "cliDangerConfirmAction": "Esegui comando",
     "cliAutoPingToast": "Stabilire il percorso con Ping prima di CLI...",
     "cliAutoPingFailed": "Ping non riuscito; eseguire Ping manualmente prima di riprovare CLI su ripetitori multi-hop.",
-    "cliCommandTooLong": "Il comando CLI è troppo lungo (max {{max}} caratteri)."
+    "cliCommandTooLong": "Il comando CLI è troppo lungo (max {{max}} caratteri).",
+    "currentRouteLabel": "Itinerario attuale:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervallo annunci (secondi)",
@@ -4177,7 +4224,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "Topologia di rete.",
     "network": "Rete",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "Remoto"
   },
   "takServerPanel": {
     "title": "TAK Server",
@@ -4246,7 +4294,13 @@
     "footerMax": "(max 50 cad.)",
     "sectionTemperatureHumidity": "Temperatura/umidità",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "n / a",
+    "chartAriaBattery": "Grafico batteria e voltaggio: batteria più recente {{battery}} percentuale, voltaggio {{voltage}} V, {{count}} punti",
+    "chartAriaSignal": "Grafico della qualità del segnale: ultimo SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} punti",
+    "chartAriaTempHumidity": "Grafico della temperatura e dell'umidità: ultima temperatura {{temperature}}, umidità {{humidity}} percentuale, {{count}} punti",
+    "chartAriaPressure": "Grafico della pressione barometrica: ultimi {{pressure}} hPa, {{count}} punti",
+    "chartAriaIaq": "Grafico della qualità dell'aria: ultima IAQ {{iaq}}, {{count}} punti"
   },
   "toasts": {
     "firmwareAvailable": "Aggiornamento firmware disponibile: v{{version}}",
@@ -4431,7 +4485,11 @@
     "roomLegend": "★ preferito · A attiva/disattiva l'auto-join",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Cancella cronologia",
+    "clearHistoryTitle": "Cancella la cronologia della stanza",
+    "clearHistoryConfirm": "Eliminare tutta la cronologia dei messaggi salvati per {{room}}? Questa operazione non può essere annullata.",
+    "clearHistoryConfirmAction": "Elimina la cronologia"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -4473,5 +4531,210 @@
     "confirmContactImportTitle": "Importare il contatto?",
     "confirmContactImportBody": "Aggiungere {{name}} da un link esterno ai tuoi contatti Reticulum?",
     "confirmContactImportAction": "Importa contatto"
+  },
+  "reticulumRemote": {
+    "navAria": "Sezioni remote",
+    "sidecarNotRunning": "Avviare lo stack Reticulum per utilizzare la shell remota e il trasferimento dei file.",
+    "sections": {
+      "shell": "Shell",
+      "transfer": "Trasferimento",
+      "saved": "Salvato",
+      "settings": "Impostazioni"
+    },
+    "errors": {
+      "invalidAddress": "Inserisci un hash di destinazione esadecimale valido di 32 caratteri."
+    },
+    "reasons": {
+      "pathConstrained": "Il percorso è vincolato (larghezza di banda bassa)",
+      "pathUnknown": "La velocità del percorso è sconosciuta",
+      "notAnnounced": "La destinazione non è stata annunciata",
+      "timeout": "Richiesta scaduta.",
+      "notAllowed": "Non consentito",
+      "versionMismatch": "Mancata corrispondenza della versione remota",
+      "stagingFailed": "Impossibile posizionare il file in entrata nell'area intermedia",
+      "cancelled": "Cancellati",
+      "rejected": "Rifiutato",
+      "error": "Errore"
+    },
+    "pathCapability": {
+      "checking": "Verifica percorso in corso...",
+      "hops_one": "{{count}} hop",
+      "hops_other": "{{count}} hops",
+      "speed": {
+        "high": "Percorso veloce",
+        "constrained": "Percorso vincolato",
+        "mixed": "imballaggi compositi",
+        "unknown": "Percorso sconosciuto"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "Hash di destinazione (32 caratteri esadecimali)",
+      "addressAria": "hash di destinazione rnsh",
+      "selectSavedAddress": "Usa indirizzo salvato {{label}}",
+      "connectAria": "Connetti shell remota",
+      "connect": "Connettiti",
+      "connecting": "Collegamento in corso…",
+      "connectFailed": "Connessione non riuscita: {{error}}",
+      "maxSessions": "Raggiunto un massimo di {{count}} sessioni shell.",
+      "focusSession": "Passa alla sessione {{address}}",
+      "closeSession": "Chiudi sessione {{address}}",
+      "emptyState": "Nessuna sessione di shell remota attiva. Inserisci un hash di destinazione sopra per connetterti.",
+      "status": {
+        "connecting": "Collegamento in corso…",
+        "active": "Connesso",
+        "closed": "Chiuso",
+        "error": "Errore"
+      },
+      "reconnectAria": "Riconnetti questa sessione",
+      "reconnect": "Riconnetti",
+      "disconnectAria": "Disconnetti questa sessione",
+      "disconnect": "Disconnetti",
+      "reconnectExhausted": "La riconnessione automatica si è interrotta dopo aver raggiunto il limite di tentativi. Lo stato della sessione remota è stato perso.",
+      "reconnectingBanner": "Connessione automatica (prova {{attempt}} di {{max}}). Lo stato della sessione remota è stato perso.",
+      "fingerprintTitle": "Conferma identità remota",
+      "fingerprintMessage": "Connessione a {{address}}. Identità segnalata: {{identity}}. Impronta digitale: {{fingerprint}}. Prima di continuare, confermi che si tratta dell'identità che si aspetta.",
+      "unknownIdentity": "identità sconosciuta",
+      "unknownFingerprint": "Fingerprint OTR sconosciuta",
+      "fingerprintConfirm": "Connettiti"
+    },
+    "transfer": {
+      "myIdentity": "La mia identità:",
+      "copyIdentityAria": "Copia hash della mia identità",
+      "myReceiveDest": "La mia destinazione di ricezione rncp:",
+      "copyReceiveDestAria": "Copia la mia destinazione di ricezione rncp",
+      "pendingOffersTitle": "File in entrata in sospeso",
+      "pendingOffersBadgeAria_one": "{{count}} in attesa di offerta di file in entrata",
+      "pendingOffersBadgeAria_other": "{{count}} in attesa di offerte di file in entrata",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "Accetta {{file}}",
+      "accept": "Accetta",
+      "rejectAria": "Rifiuta {{file}}",
+      "reject": "Rifiuta",
+      "alwaysAllowAria": "Consenti sempre questo mittente per {{file}}",
+      "alwaysAllow": "Consenti sempre",
+      "alwaysBlockAria": "Blocca sempre questo mittente per {{file}}",
+      "alwaysBlock": "sempre Bloccato",
+      "alwaysAllowSaved": "Mittente aggiunto all'elenco dei mittenti consentiti.",
+      "alwaysBlockSaved": "Mittente aggiunto all'elenco di blocco.",
+      "modeSendAria": "Passa alla modalità di invio",
+      "modeSend": "Invia",
+      "modeFetchAria": "Passa alla modalità di recupero",
+      "modeFetch": "Recupera",
+      "destinationPlaceholder": "Hash di destinazione (32 caratteri esadecimali)",
+      "destinationAria": "hash di destinazione rncp",
+      "notAllowedHint": "I trasferimenti non sono disponibili su questo percorso: {{reason}}",
+      "chooseFileAria": "Scegli un file locale da inviare",
+      "chooseFile": "Scegli file...",
+      "noFileChosen": "Nessun file selezionato",
+      "sendAria": "Inviare file",
+      "send": "Invia",
+      "sendFailed": "Invio non riuscito: {{error}}",
+      "remotePathPlaceholder": "Percorso file remoto",
+      "remotePathAria": "Percorso file remoto da recuperare",
+      "chooseSaveDirAria": "Scegli una cartella locale in cui salvare",
+      "chooseSaveDir": "Scegli la cartella di salvataggio...",
+      "defaultSaveDir": "Cartella di download predefinita",
+      "fetchAria": "Recupera file",
+      "fetch": "Recupera",
+      "fetchFailed": "Impossibile recuperare: {{error}}",
+      "acceptFailed": "Impossibile accettare il file: {{error}}",
+      "listTitle": "Trasferimenti",
+      "listEmpty": "Ancora nessun trasferimento.",
+      "kind": {
+        "send": "Invia",
+        "fetch": "Recupera"
+      },
+      "status": {
+        "active": "In corso",
+        "completed": "Completato",
+        "failed": "Non riuscito",
+        "cancelled": "Cancellati"
+      },
+      "cancelAria": "Annulla il trasferimento di {{file}}",
+      "cancel": "Annulla",
+      "retryAria": "Riprova il trasferimento di {{file}}",
+      "retry": "Riprova",
+      "revealAria": "Rivela {{file}} nella cartella",
+      "reveal": "Mostra nella cartella",
+      "requestEnableAria": "Richiedi che questo peer abiliti la ricezione del file",
+      "requestEnable": "Richiesta abilitazione",
+      "requestEnableSent": "Ha chiesto al peer di abilitare la ricezione dei file.",
+      "requestEnableRateLimited": "Hai già inviato una richiesta di recente. Riprova più tardi.",
+      "requestEnableFailed": "Impossibile inviare la richiesta di abilitazione: {{error}}",
+      "offerToast": "Offerta file in arrivo: {{file}}",
+      "copyInstructionsAria": "Copia le istruzioni per abilitare la ricezione del file",
+      "copyInstructions": "Copia istruzioni",
+      "instructionsCopied": "Istruzioni copiate."
+    },
+    "enableRequest": {
+      "title": "Abilitare la ricezione dei file?",
+      "body": "{{peer}} le ha chiesto di attivare la ricezione di file rncp in modo che possano inviarle un file.",
+      "enableAsk": "Abilita (chiedi ogni volta)",
+      "enableAskAria": "Abilita le offerte di file in entrata e chiedi prima di accettare",
+      "enableAllow": "Abilita e consenti questa identità",
+      "enableAllowAria": "Abilita le offerte di file in entrata e consenti a questo mittente",
+      "notNow": "Non ora",
+      "notNowAria": "Ignora la richiesta di abilitazione",
+      "dontAsk": "Non chiedere più a questo collega",
+      "dontAskAria": "Respingi definitivamente le richieste di abilitazione da questo collega",
+      "enabled": "La ricezione dei file è abilitata.",
+      "enableFailed": "Impossibile abilitare la ricezione dei file: {{error}}",
+      "saveDirRequired": "Scegli una cartella di salvataggio per abilitare la ricezione.",
+      "identityUnknown": "Non è stato ancora possibile risolvere l'hash di identità di questo peer — la modalità Chiedi è attiva, ma il peer non è stato aggiunto alla lista dei consentiti. Riprova dopo l'arrivo di un percorso o di un annuncio.",
+      "lxmfBody": "Abilitare la ricezione dei file (rncp) se si utilizzano le offerte di file mesh-client: Remote → Settings → Inbound. Oppure esegui rncp/rncp-rs in modalità di ascolto."
+    },
+    "saved": {
+      "labelPlaceholder": "Label",
+      "labelAria": "Etichetta indirizzo salvata",
+      "labelRequired": "Inserisci un'etichetta per questo indirizzo.",
+      "hashPlaceholder": "Hash di destinazione (32 caratteri esadecimali)",
+      "hashAria": "Hash di destinazione dell'indirizzo salvato",
+      "serviceAria": "Servizio di indirizzo salvato",
+      "serviceRnsh": "Shell (rnsh)",
+      "serviceRncp": "Transfer (rncp)",
+      "saveAria": "Salvare indirizzo",
+      "add": "Aggiungi",
+      "saveFailed": "Impossibile salvare l'indirizzo: {{error}}",
+      "empty": "Ancora nessun indirizzo salvato.",
+      "editAria": "Modifica indirizzo salvato {{label}}",
+      "deleteAria": "Elimina indirizzo salvato {{label}}"
+    },
+    "settings": {
+      "applyFailed": "Impossibile applicare l'impostazione: {{error}}",
+      "inboundTitle": "Trasferimenti di file in entrata",
+      "inboundMode": {
+        "off": "Disattivato",
+        "ask": "Chiedi",
+        "allow_all_listed": "Consenti solo in elenco"
+      },
+      "allowFetch": "Consenti ai peer remoti di recuperare i file da me",
+      "chooseSaveDirAria": "Scegli la cartella per i trasferimenti di file in arrivo",
+      "chooseSaveDir": "Scegli cartella di salvataggio…",
+      "noSaveDir": "Nessuna cartella di salvataggio scelta",
+      "fetchJailRequired": "Scegli una cartella di recupero prima di attivare il recupero remoto.",
+      "chooseFetchJailAria": "Scegli la cartella da cui i peer remoti possono prelevare",
+      "chooseFetchJail": "Scegli la cartella di recupero...",
+      "noFetchJail": "Nessuna cartella di recupero scelta",
+      "overwrite": "Sovrascrivi i file esistenti al ricevimento",
+      "maxSizeInfo": "Dimensione massima del file in entrata: {{size}}",
+      "allowBlockListTitle": "• Elenco blocchi/autorizzazioni",
+      "allowBlockListEmpty": "Ancora nessuna decisione consentita/bloccata salvata. Usa \"Consenti sempre\" o \"Blocca sempre\" su un'offerta di file in entrata.",
+      "decision": {
+        "allow": "Consentito",
+        "block": "Bloccati"
+      },
+      "removePolicyAria": "Rimuovi la decisione salvata per {{label}}",
+      "reliabilityTitle": "Affidabilità",
+      "autoReconnectShell": "Ricollega automaticamente la shell remota dopo una disconnessione imprevista",
+      "autoRetryTransfer": "Riprova automaticamente i trasferimenti non riusciti",
+      "identityTitle": "La mia identità",
+      "myIdentity": "La mia identità:"
+    }
+  },
+  "meshcoreRoute": {
+    "me": "● Io",
+    "direct": "Diretto",
+    "segmentTooltip": "Hash del percorso {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

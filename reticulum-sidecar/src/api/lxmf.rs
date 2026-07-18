@@ -4,7 +4,7 @@ use axum::Json;
 use axum::extract::{Path, Query, State};
 use serde::Deserialize;
 
-use crate::stack::{LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, StackHandle};
+use crate::stack::{LxmfReactionRequest, LxmfSendRequest, StackHandle};
 
 pub async fn lxmf_send(
     State(stack): State<Arc<StackHandle>>,
@@ -112,16 +112,6 @@ pub async fn peer_probe(
 ) -> Json<serde_json::Value> {
     match stack.probe_peer(&hash).await {
         Ok(res) => Json(res),
-        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
-    }
-}
-
-pub async fn lxmf_send_resource(
-    State(stack): State<Arc<StackHandle>>,
-    Json(body): Json<LxmfResourceRequest>,
-) -> Json<serde_json::Value> {
-    match stack.lxmf_send_resource(body).await {
-        Ok(payload) => Json(serde_json::json!({ "ok": true, "message": payload })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
 }

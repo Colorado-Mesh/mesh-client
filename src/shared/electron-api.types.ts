@@ -2,6 +2,30 @@
 import type { MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
 import type { MeshProtocol } from './meshProtocol';
 import type {
+  PathCapability,
+  RemoteAddressBookRow,
+  RemoteFileDialogResult,
+  RemoteIdentityResponse,
+  RemoteInboundPolicyRow,
+  RemoteOkResponse,
+  RemotePathCapabilityRequest,
+  RncpFetchRequest,
+  RncpListenerRequest,
+  RncpListenerStatus,
+  RncpSendRequest,
+  RncpSendResponse,
+  RncpStatusResponse,
+  RncpTransferIdRequest,
+  RnshConnectRequest,
+  RnshConnectResponse,
+  RnshDisconnectRequest,
+  RnshInputRequest,
+  RnshResizeRequest,
+  RnshStatusResponse,
+  UpsertRemoteAddressRequest,
+  UpsertRemoteInboundPolicyRequest,
+} from './remote-types';
+import type {
   ReticulumConfigValidateResult,
   ReticulumSidecarEvent,
   ReticulumSidecarStartOptions,
@@ -241,6 +265,35 @@ export interface ElectronAPI {
     pruneMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
     pruneMeshcoreMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
     pruneReticulumMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
+    listRrcMessages: (
+      hubHash: string,
+      room: string,
+      limit?: number,
+    ) => Promise<
+      {
+        message_id: string;
+        hub_hash: string;
+        room: string;
+        sender_hash: string | null;
+        nickname: string | null;
+        kind: string;
+        body: string;
+        timestamp: number;
+      }[]
+    >;
+    insertRrcMessage: (message: {
+      message_id: string;
+      hub_hash: string;
+      room: string;
+      sender_hash?: string | null;
+      nickname?: string | null;
+      kind: string;
+      body: string;
+      timestamp: number;
+    }) => Promise<{ changes: number }>;
+    deleteRrcMessagesByRoom: (hubHash: string, room: string) => Promise<{ changes: number }>;
+    pruneRrcMessagesByCount: (maxCount: number) => Promise<DbPruneResult>;
+    pruneRrcMessagesByAge: (maxAgeDays: number) => Promise<DbPruneResult>;
     pruneReticulumDestinationsByCount: (maxCount: number) => Promise<DbPruneResult>;
     deleteReticulumDestinationsByAge: (days: number) => Promise<DbPruneResult>;
     pruneReticulumIdentityActivityByAge: (days: number) => Promise<DbPruneResult>;
@@ -361,6 +414,14 @@ export interface ElectronAPI {
         hops?: number | null;
       }[],
     ) => Promise<{ changes: number }>;
+    listReticulumRemoteAddresses: () => Promise<RemoteAddressBookRow[]>;
+    upsertReticulumRemoteAddress: (row: UpsertRemoteAddressRequest) => Promise<{ changes: number }>;
+    deleteReticulumRemoteAddress: (id: string) => Promise<{ changes: number }>;
+    listReticulumInboundPolicy: () => Promise<RemoteInboundPolicyRow[]>;
+    upsertReticulumInboundPolicy: (
+      row: UpsertRemoteInboundPolicyRequest,
+    ) => Promise<{ changes: number }>;
+    deleteReticulumInboundPolicy: (identityHash: string) => Promise<{ changes: number }>;
     saveMeshcoreMessage: (message: {
       sender_id?: number | null;
       sender_name?: string | null;
@@ -978,6 +1039,40 @@ export interface ElectronAPI {
       send: (opts: RrcSendRequest) => Promise<{ ok: boolean; error?: string }>;
       setNickname: (opts: RrcSetNicknameRequest) => Promise<{ ok: boolean; error?: string }>;
       getRooms: (hubDestHash?: string) => Promise<{ rooms: RrcSessionSnapshot['rooms'] }>;
+    };
+    /** Thin typed wrappers over proxyGet/proxyPost for rnsh (remote shell). */
+    rnsh: {
+      connect: (opts: RnshConnectRequest) => Promise<RnshConnectResponse>;
+      input: (opts: RnshInputRequest) => Promise<RemoteOkResponse>;
+      resize: (opts: RnshResizeRequest) => Promise<RemoteOkResponse>;
+      disconnect: (opts: RnshDisconnectRequest) => Promise<RemoteOkResponse>;
+      getStatus: () => Promise<RnshStatusResponse>;
+    };
+    /**
+     * rncp (file transfer). `send` / `fetch` / `setListener` are picker-backed
+     * (path must match the last `showOpenFileDialog` / `showSaveDirectoryDialog`
+     * result) — see `reticulum-remote-paths.ts`.
+     */
+    rncp: {
+      send: (opts: RncpSendRequest) => Promise<RncpSendResponse>;
+      fetch: (opts: RncpFetchRequest) => Promise<RncpSendResponse>;
+      cancel: (opts: RncpTransferIdRequest) => Promise<RemoteOkResponse>;
+      accept: (opts: RncpTransferIdRequest) => Promise<unknown>;
+      reject: (opts: RncpTransferIdRequest) => Promise<RemoteOkResponse>;
+      getStatus: () => Promise<RncpStatusResponse>;
+      getListener: () => Promise<RncpListenerStatus>;
+      setListener: (opts: RncpListenerRequest) => Promise<RemoteOkResponse>;
+      /** Pick a local file to send. */
+      showOpenFileDialog: () => Promise<RemoteFileDialogResult>;
+      /** Pick a local directory for listener save_dir / fetch_jail or fetch save_path. */
+      showSaveDirectoryDialog: () => Promise<RemoteFileDialogResult>;
+      /** Reveal a path in the OS file manager; must match a prior picker result. */
+      revealInFolder: (path: string) => Promise<RemoteOkResponse>;
+    };
+    /** Remote identity + rnsh/rncp path-capability gating. */
+    remote: {
+      pathCapability: (opts: RemotePathCapabilityRequest) => Promise<PathCapability>;
+      getIdentity: () => Promise<RemoteIdentityResponse>;
     };
   };
 

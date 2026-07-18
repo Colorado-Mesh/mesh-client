@@ -53,6 +53,28 @@ export function isMeshcoreOpenWireCompatEnabled(): boolean {
   );
 }
 
+export type StoreForwardHistoryProfile = 'conservative' | 'aggressive';
+
+/** Store & Forward auto-history aggressiveness profile. */
+export function getStoreForwardHistoryProfile(): StoreForwardHistoryProfile {
+  const parsed = parseStoredJson<{ storeForwardHistoryProfile?: StoreForwardHistoryProfile }>(
+    getAppSettingsRaw(),
+    'getStoreForwardHistoryProfile',
+  );
+  const profile = parsed?.storeForwardHistoryProfile;
+  if (profile === 'aggressive' || profile === 'conservative') return profile;
+  return DEFAULT_APP_SETTINGS_SHARED.storeForwardHistoryProfile;
+}
+
+/** Whether chat location share also sends a Meshtastic Waypoint packet. */
+export function isShareLocationSendWaypointEnabled(): boolean {
+  const parsed = parseStoredJson<{ shareLocationSendWaypoint?: boolean }>(
+    getAppSettingsRaw(),
+    'isShareLocationSendWaypointEnabled',
+  );
+  return parsed?.shareLocationSendWaypoint ?? DEFAULT_APP_SETTINGS_SHARED.shareLocationSendWaypoint;
+}
+
 /** Whether the Reticulum sidecar should start when the Reticulum connection panel mounts. */
 export function isReticulumAutostartEnabled(): boolean {
   const parsed = parseStoredJson<{ reticulumAutostart?: boolean }>(

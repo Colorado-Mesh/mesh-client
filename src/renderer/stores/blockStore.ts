@@ -69,6 +69,3 @@ export const useBlockStore = create<BlockStoreState>((set, get) => ({
     return get().blockedHashes.has(normalizeBlockedHash(blockedHash));
   },
 }));
-
-/** Node id string for Meshtastic/MeshCore block rows. */
-export const blockHashForNodeNum: (nodeNum: number) => string = String;

@@ -115,7 +115,7 @@ export function stepForceSimulation(
     if (si == null || ti == null) continue;
     const dx = nodes[ti].x - nodes[si].x;
     const dy = nodes[ti].y - nodes[si].y;
-    const dist = Math.hypot(dx, dy) || 1;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
     const targetLen = springLengthForEdge(edge);
     const force = FORCE_GRAPH_DEFAULTS.springK * (dist - targetLen);
     fx[si] += (force * dx) / dist;

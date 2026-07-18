@@ -354,7 +354,17 @@
     "reticulumCapDestinationsLabel": "Batasi destinasi / peer di memori dan SQLite, pertahankan yang terakhir terdengar",
     "reticulumCapDestinationsCountAria": "Batasi destinasi, pertahankan {{count}} yang terakhir terdengar",
     "reticulumDestinationsUnit_one": "destinasi",
-    "reticulumDestinationsUnit_other": "destinasi"
+    "reticulumDestinationsUnit_other": "destinasi",
+    "storeForwardHistoryProfileLabel": "Profil pengejar Simpan & Teruskan",
+    "storeForwardHistoryProfileAria": "Simpan & Teruskan sejarah mengejar keagresifan",
+    "storeForwardHistoryProfileConservative": "Konservatif (ramah bagi orang-orang yang sibuk)",
+    "storeForwardHistoryProfileAggressive": "Agresif (cakupan jerawatan)",
+    "storeForwardHistoryProfileHint": "Konservatif menggunakan gerbang offline dan cooldown yang lebih lama. Pengambilan agresif terjadi lebih cepat setelah pemutusan hubungan singkat dan meminta lebih banyak pesan — gunakan hanya jika waktu tayang memungkinkan.",
+    "shareLocationSendWaypoint": "Kirimkan juga pin peta (Waypoint) saat berbagi lokasi",
+    "shareLocationSendWaypointHint": "Saat diaktifkan, pembagian lokasi Meshtastic mengirimkan pesan teks dan paket Waypoint sehingga aplikasi resmi menampilkan pin peta. Nonaktifkan pada jerat sibuk untuk mengirim teks saja.",
+    "capStoredRrcMessages": "Batasi riwayat ruang RRC yang disimpan, simpan yang terbaru",
+    "capStoredRrcMessagesLabel": "Batasi riwayat ruang RRC yang disimpan, simpan yang terbaru",
+    "capStoredRrcMessagesCountAria": "Batasi riwayat ruang RRC yang disimpan, simpan pesan {{count}} terbaru"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -369,7 +379,10 @@
     "switchToMeshCore": "Beralih ke MeshCore",
     "backToTop": "Kembali ke atas",
     "switchToReticulum": "Beralih ke Reticulum",
-    "languageSelectorHint": "Klik untuk memilih bahasa"
+    "languageSelectorHint": "Klik untuk memilih bahasa",
+    "switchToMeshtasticWithUnread": "Beralih ke Meshtastic, {{count}} belum dibaca",
+    "switchToMeshCoreWithUnread": "Beralih ke MeshCore, {{count}} belum dibaca",
+    "switchToReticulumWithUnread": "Beralih ke Reticulum, {{count}} belum dibaca"
   },
   "battery": {
     "percentCharging": "Baterai {{percent}} persen, sedang diisi",
@@ -503,9 +516,6 @@
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… atau g:ID",
     "meshcoreGifSend": "Kirim GIF",
     "meshcoreGifInvalid": "Masukkan URL Giphy atau id GIF yang valid.",
-    "attachFile": "Lampirkan file",
-    "attachFileHint": "Kirim lampiran file LXMF (khusus DM)",
-    "attachDmOnly": "Buka pesan langsung sebelum melampirkan file.",
     "composePlaceholderSelectDm": "Pilih kontak di atas untuk memulai DM…",
     "selectDmFirst": "Pilih penerima DM sebelum mengirim.",
     "emptySelectDm": "Obrolan Reticulum hanya untuk pesan langsung. Pilih kontak di atas atau buka kontak dari tab Node.",
@@ -526,12 +536,6 @@
     "reticulumNoPropagationNode": "Tidak ada node propagasi yang dikonfigurasi. Tetapkan node propagasi pilihan pada tab Reticulum Radio.",
     "sentViaPropagation": "Node propagasi",
     "reticulumAudioAttachment": "Suara: {{name}}",
-    "recordVoice": "Rekam pesan suara",
-    "recordVoiceHint": "Rekam klip suara dan kirim sebagai lampiran LXMF (khusus DM)",
-    "stopVoiceRecording": "Berhenti merekam dan kirim",
-    "voiceRecordingTooLong": "Klip suara mencapai batas 60 detik dan telah dikirim.",
-    "reticulumSendAttachmentFailed": "Gagal mengirim lampiran",
-    "reticulumSendAttachmentNoIdentity": "Identitas Reticulum belum siap — hubungkan dan konfigurasikan identitas terlebih dahulu",
     "dmPeerInfoAria": "Info rekan DM",
     "clearDateAria": "Hapus tanggal",
     "readOnlyDisconnected": "Tidak tersambung — pesan hanya dapat dibaca",
@@ -567,20 +571,51 @@
     "dmPathUnreachableTooltip": "Belum ada jalur Reticulum ke tujuan ini. Pesan mungkin masih dikirimkan nanti melalui simpul propagasi yang dikonfigurasi.",
     "dmPathRequestPathAria": "Minta jalur Reticulum ke tujuan ini",
     "dmPathProbeAria": "Periksa keterjangkauan jalur Reticulum untuk tujuan ini",
-    "microphonePermissionDenied": "Akses mikrofon ditolak. Aktifkan izin mikrofon untuk Mesh-client di pengaturan privasi sistem Anda, lalu coba lagi.",
     "receivedViaBle": "Diterima melalui Bluetooth",
     "receivedViaMultiple": "Diterima melalui {{vias}}",
     "sentViaBle": "Dikirim melalui Bluetooth",
     "sentViaMultiple": "Dikirim melalui {{vias}}",
-    "floodScopeOverrideLabel": "Cakupan banjir untuk pesan ini",
-    "floodScopeOverrideAria": "Penggantian cakupan banjir per pesan",
+    "floodScopeOverrideLabel": "Cakupan Flood untuk pesan ini",
+    "floodScopeOverrideAria": "Penggantian cakupan Flood per pesan",
     "floodScopeOverrideDefault": "Cakupan bawaan",
-    "floodScopeOverrideUnscoped": "Tidak tercakup"
+    "floodScopeOverrideUnscoped": "Tidak tercakup",
+    "rncp": {
+      "sendFile": "Kirim berkas",
+      "sendFileAria": "Kirim file ke {{name}} melalui rncp",
+      "pendingOffersBadgeAria_one": "{{count}} menunggu tawaran file masuk dari rekan ini",
+      "pendingOffersBadgeAria_other": "{{count}} menunggu penawaran file masuk dari rekan ini",
+      "destinationLabel": "hash tujuan rncp",
+      "rememberAddress": "Ingat alamat ini",
+      "rememberAddressAria": "Ingat tujuan rncp untuk rekan ini",
+      "chooseAndSend": "Pilih file & kirim…",
+      "sending": "Mengirim…",
+      "sendStarted": "Mengirim {{file}}…",
+      "sendFailed": "Gagal mengirim: {{error}}",
+      "newOfferToast": "{{peer}} ingin mengirimi Anda file: {{file}}",
+      "requestEnable": "Minta pengaktifan",
+      "requestEnableAria": "Minta rekan ini untuk mengaktifkan penerimaan file"
+    },
+    "shareLocation": "Bagikan lokasi",
+    "shareLocationLabel": "📍 Lokasi bersama",
+    "shareLocationHint": "Kirim GPS atau posisi statis Anda saat ini sebagai pesan obrolan",
+    "shareLocationUnavailable": "Lokasi tidak tersedia — periksa pengaturan GPS",
+    "floodScopeOverrideHint": "Cakupan Flood regional hanya untuk pesan ini. Cakupan default menggunakan pengaturan radio yang disimpan; hashtag membatasi pengiriman ini ke wilayah tersebut; pengiriman tanpa cakupan tanpa filter wilayah. Cakupan tersimpan Anda dipulihkan setelah pengiriman.",
+    "floodScopeOverrideMenuButton": "Ubah cakupan Flood untuk pesan ini",
+    "shareLocationWaypointFailed": "Pin peta (Waypoint) tidak diakui — teks lokasi mungkin masih terkirim.",
+    "floodScopeOverrideCustom": "Cakupan khusus…",
+    "floodScopeOverrideCustomLabel": "Hashtag cakupan Flood khusus",
+    "floodScopeOverrideCustomPlaceholder": "#wilayahku",
+    "floodScopeOverrideCustomApply": "Gunakan ruang lingkup",
+    "floodScopeOverrideCustomInvalid": "Masukkan hashtag wilayah yang valid (misalnya #wilayahsaya)."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Buka di Giphy"
+    "meshcoreGifOpen": "Buka di Giphy",
+    "locationCard": {
+      "alt": "Ubin peta lokasi bersama",
+      "openMaps": "Buka di Peta"
+    }
   },
   "common": {
     "close": "Menutup",
@@ -622,7 +657,9 @@
     "colorAmber": "Kuning sawo",
     "colorRed": "Merah",
     "colorPurple": "Ungu",
-    "delete": "Menghapus"
+    "delete": "Menghapus",
+    "copy": "Menyalin",
+    "copied": "Disalin"
   },
   "configApplyNotice": {
     "persistNote": "Pengaturan yang diterapkan disimpan ke memori flash perangkat dan bertahan selama reboot.",
@@ -1163,7 +1200,8 @@
       "meshcore": "Sambungkan kembali percobaan sebelum menyerah (1 -{{max}}). Disimpan dengan pengaturan; tekan Hubungkan lagi setelah berubah sehingga proses utama mengambilnya.",
       "meshtastic": "Kedua protokol mengizinkan 1 -{{max}}. Disimpan dengan pengaturan; putuskan dan Hubungkan lagi sehingga sesi yang sedang berjalan menggunakan nilai baru."
     },
-    "reticulumStackRunningAs": "Berjalan — {{name}}"
+    "reticulumStackRunningAs": "Berjalan — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Stack Reticulum tidak responsif — memulai ulang…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -1492,7 +1530,10 @@
     "senderLabel": "Pengirim",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "SNR {{snr}} dB"
+    "snrDb": "SNR {{snr}} dB",
+    "distanceOffsetKm": "Pengimbangan jarak",
+    "km": "km",
+    "distanceOffsetHelp": "Menambahkan lantai km datar ke ambang batas jarak hop-goblin dan rute buruk (0–50)."
   },
   "diagnosticsPing": {
     "title": "Ping berkelanjutan",
@@ -1874,7 +1915,7 @@
       "repeaterRpcInProgress": "Permintaan untuk repeater ini sedang dalam proses",
       "cliDangerNotConfirmed": "Perintah CLI yang merusak memerlukan konfirmasi di panel Repeater.",
       "pingFailed": "Ping gagal",
-      "floodScopeBusy": "Penggantian cakupan banjir tidak tersedia saat admin pengulang atau traceroute sedang berlangsung. Coba lagi saat menganggur."
+      "floodScopeBusy": "Penggantian cakupan Flood tidak tersedia saat admin pengulang atau traceroute sedang berlangsung. Coba lagi saat menganggur."
     },
     "mqttHints": {
       "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker; lihat dokumen/letsmesh-mqtt-auth.md. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",
@@ -2568,7 +2609,9 @@
       "lossRate": "Perkiraan Kerugian",
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Log paket uji jangkauan"
-    }
+    },
+    "currentRouteHeading": "Rute saat ini",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",
@@ -3371,16 +3414,14 @@
     "xmodemFailed": "XMODEM gagal: {{message}}",
     "zeroHopAdvertButton": "Zero-hop Advert",
     "zeroHopAdvertSent": "Zero-hop advert terkirim",
-    "floodScopeTitle": "Lingkup banjir regional",
-    "floodScopeHelp": "Batasi lalu lintas banjir ke wilayah tagar (firmware v8+). Membutuhkan meshcore.js setFloodScope; sambungkan kembali penerapan ruang lingkup yang disimpan.",
+    "floodScopeTitle": "Lingkup Flood regional",
+    "floodScopeHelp": "Batasi lalu lintas Flood ke wilayah tagar (firmware v8+). Membutuhkan meshcore.js setFloodScope; sambungkan kembali penerapan ruang lingkup yang disimpan.",
     "floodScopeNone": "Tidak ada (lingkup yang jelas)",
-    "floodScopePreset": "Hashtag prasetel",
-    "floodScopePresetSelect": "Hashtag wilayah prasetel",
     "floodScopeCustom": "Tagar kustom",
     "floodScopeCustomPlaceholder": "#wilayahku",
-    "floodScopeApply": "Terapkan cakupan banjir",
-    "floodScopeApplySuccess": "Ruang lingkup banjir diterapkan",
-    "floodScopeApplyFailed": "Ruang lingkup banjir gagal: {{message}}",
+    "floodScopeApply": "Terapkan cakupan Flood",
+    "floodScopeApplySuccess": "Ruang lingkup Flood diterapkan",
+    "floodScopeApplyFailed": "Ruang lingkup Flood gagal: {{message}}",
     "advertisedPositionLabel": "Posisi yang diiklankan: {{lat}}, {{lon}}",
     "txPowerMax": "Mengirimkan daya (maks {{max}} dBm per radio)",
     "txPowerMaxUnknown": "Memancarkan daya (dibatasi pada {{max}} dBm hingga firmware melaporkan maksimum radio)",
@@ -3485,7 +3526,13 @@
       "6": {
         "label": "Sedang Lambat"
       }
-    }
+    },
+    "floodScopeSaved": "Cakupan yang disimpan",
+    "floodScopeSavedSelect": "Hashtag wilayah yang disimpan",
+    "floodScopeSavedEmpty": "Belum ada cakupan yang disimpan. Terapkan hashtag khusus atau gunakan Cakupan khusus dari Obrolan untuk menambahkannya.",
+    "floodScopeRemoveSaved": "Hapus dari cakupan yang disimpan",
+    "floodScopeRemoveSavedAria": "Hapus {{hashtag}} dari cakupan yang disimpan",
+    "floodScopeInvalidHashtag": "Masukkan hashtag wilayah yang valid (misalnya #wilayahsaya)."
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",
@@ -3687,7 +3734,6 @@
     "pathHashCliSet2": "Atur mode hash jalur 3 - byte",
     "pathLabel": "Jalur:",
     "hopMe": "● Saya",
-    "hopN": "● Lompat {{n}}",
     "noNeighborsReported": "Tidak ada tetangga yang melaporkan",
     "fetchingTelemetry": "Mengambil telemetri…",
     "telemetryBattery": "Baterai: {{voltage}}V",
@@ -3733,7 +3779,8 @@
     "cliDangerConfirmAction": "Jalankan perintah",
     "cliAutoPingToast": "Menetapkan rute dengan Ping sebelum CLI…",
     "cliAutoPingFailed": "Ping gagal; jalankan Ping secara manual sebelum mencoba kembali CLI pada repeater multi - hop.",
-    "cliCommandTooLong": "Perintah CLI terlalu panjang (maks {{max}} karakter)."
+    "cliCommandTooLong": "Perintah CLI terlalu panjang (maks {{max}} karakter).",
+    "currentRouteLabel": "Rute saat ini:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",
@@ -4177,7 +4224,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "Topologi jaringan",
     "network": "Jaringan",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "Jarak jauh"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -4246,7 +4294,13 @@
     "footerMax": "(maks 50 masing-masing)",
     "sectionTemperatureHumidity": "Suhu & Kelembaban",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "tidak ada",
+    "chartAriaBattery": "Bagan baterai dan voltase: baterai terbaru {{battery}} persen, voltase {{voltage}} V, {{count}} poin",
+    "chartAriaSignal": "Grafik kualitas sinyal: SNR terbaru {{snr}} dB, RSSI {{rssi}} dBm, {{count}} poin",
+    "chartAriaTempHumidity": "Grafik suhu dan kelembapan: suhu terkini {{temperature}}, kelembapan {{humidity}} persen, {{count}} poin",
+    "chartAriaPressure": "Grafik tekanan barometrik: {{pressure}} hPa terbaru, {{count}} poin",
+    "chartAriaIaq": "Grafik kualitas udara: IAQ {{iaq}}, {{count}} poin terbaru"
   },
   "toasts": {
     "firmwareAvailable": "Pembaruan firmware tersedia: v{{version}}",
@@ -4431,7 +4485,11 @@
     "roomLegend": "★ favorit · A toggles auto - join",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Hapus riwayat",
+    "clearHistoryTitle": "Hapus riwayat ruangan",
+    "clearHistoryConfirm": "Hapus semua riwayat pesan tersimpan untuk {{room}}? Hal ini tidak dapat dibatalkan.",
+    "clearHistoryConfirmAction": "Hapus riwayat"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -4473,5 +4531,210 @@
     "confirmContactImportTitle": "Impor kontak?",
     "confirmContactImportBody": "Tambahkan {{name}} dari tautan eksternal ke kontak Reticulum Anda?",
     "confirmContactImportAction": "Impor kontak"
+  },
+  "reticulumRemote": {
+    "navAria": "Bagian terpencil",
+    "sidecarNotRunning": "Mulai tumpukan Reticulum untuk menggunakan shell jarak jauh dan transfer file.",
+    "sections": {
+      "shell": "Shell",
+      "transfer": "Transfer",
+      "saved": "Disimpan",
+      "settings": "Pengaturan"
+    },
+    "errors": {
+      "invalidAddress": "Masukkan hash tujuan hex 32 karakter yang valid."
+    },
+    "reasons": {
+      "pathConstrained": "Jalur dibatasi (bandwidth rendah)",
+      "pathUnknown": "Kecepatan jalur tidak diketahui",
+      "notAnnounced": "Tujuan belum diumumkan",
+      "timeout": "Waktu permintaan habis",
+      "notAllowed": "Tidak diperbolehkan",
+      "versionMismatch": "Ketidakcocokan versi jarak jauh",
+      "stagingFailed": "Gagal menampilkan file masuk",
+      "cancelled": "Dibatalkan",
+      "rejected": "Ditolak",
+      "error": "Kesalahan"
+    },
+    "pathCapability": {
+      "checking": "Memeriksa jalur…",
+      "hops_one": "{{count}} melompat",
+      "hops_other": "{{count}} melompat",
+      "speed": {
+        "high": "Jalur cepat",
+        "constrained": "Jalur yang dibatasi",
+        "mixed": "Jalur campuran",
+        "unknown": "Jalur tidak diketahui"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "Hash tujuan (32 karakter hex)",
+      "addressAria": "hash tujuan rnsh",
+      "selectSavedAddress": "Gunakan alamat tersimpan {{label}}",
+      "connectAria": "Hubungkan shell jarak jauh",
+      "connect": "Menghubungkan",
+      "connecting": "Menghubungkan…",
+      "connectFailed": "Gagal terhubung: {{error}}",
+      "maxSessions": "Maksimal {{count}} sesi shell tercapai.",
+      "focusSession": "Beralih ke sesi {{address}}",
+      "closeSession": "Tutup sesi {{address}}",
+      "emptyState": "Tidak ada sesi shell jarak jauh yang aktif. Masukkan hash tujuan di atas untuk terhubung.",
+      "status": {
+        "connecting": "Menghubungkan…",
+        "active": "Terhubung",
+        "closed": "Tertutup",
+        "error": "Kesalahan"
+      },
+      "reconnectAria": "Hubungkan kembali sesi ini",
+      "reconnect": "Hubungkan kembali",
+      "disconnectAria": "Putuskan sambungan sesi ini",
+      "disconnect": "Memutuskan",
+      "reconnectExhausted": "Sambungan ulang otomatis menyerah setelah mencapai batas coba lagi. Status sesi jarak jauh telah hilang.",
+      "reconnectingBanner": "Menyambungkan kembali secara otomatis (percobaan {{attempt}} dari {{max}}). Status sesi jarak jauh telah hilang.",
+      "fingerprintTitle": "Konfirmasikan identitas jarak jauh",
+      "fingerprintMessage": "Menghubungkan ke {{address}}. Identitas yang dilaporkan: {{identity}}. Sidik jari: {{fingerprint}}. Konfirmasikan ini adalah identitas yang Anda harapkan sebelum melanjutkan.",
+      "unknownIdentity": "identitas yang tidak diketahui",
+      "unknownFingerprint": "sidik jari yang tidak diketahui",
+      "fingerprintConfirm": "Menghubungkan"
+    },
+    "transfer": {
+      "myIdentity": "Identitas saya:",
+      "copyIdentityAria": "Salin hash identitas saya",
+      "myReceiveDest": "Tujuan penerimaan rncp saya:",
+      "copyReceiveDestAria": "Salin tujuan penerimaan rncp saya",
+      "pendingOffersTitle": "File masuk yang tertunda",
+      "pendingOffersBadgeAria_one": "{{count}} menunggu tawaran file masuk",
+      "pendingOffersBadgeAria_other": "{{count}} penawaran file masuk yang tertunda",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "Terima {{file}}",
+      "accept": "Menerima",
+      "rejectAria": "Tolak {{file}}",
+      "reject": "Menolak",
+      "alwaysAllowAria": "Selalu izinkan pengirim ini untuk {{file}}",
+      "alwaysAllow": "Selalu izinkan",
+      "alwaysBlockAria": "Selalu blokir pengirim ini untuk {{file}}",
+      "alwaysBlock": "Selalu blokir",
+      "alwaysAllowSaved": "Pengirim ditambahkan ke daftar izin.",
+      "alwaysBlockSaved": "Pengirim ditambahkan ke daftar blokir.",
+      "modeSendAria": "Beralih ke mode kirim",
+      "modeSend": "Mengirim",
+      "modeFetchAria": "Beralih ke mode pengambilan",
+      "modeFetch": "Mengambil",
+      "destinationPlaceholder": "Hash tujuan (32 karakter hex)",
+      "destinationAria": "hash tujuan rncp",
+      "notAllowedHint": "Transfer tidak tersedia di jalur ini: {{reason}}",
+      "chooseFileAria": "Pilih file lokal untuk dikirim",
+      "chooseFile": "Pilih berkas…",
+      "noFileChosen": "Tidak ada file yang dipilih",
+      "sendAria": "Kirim berkas",
+      "send": "Mengirim",
+      "sendFailed": "Gagal mengirim: {{error}}",
+      "remotePathPlaceholder": "Jalur file jarak jauh",
+      "remotePathAria": "Jalur file jarak jauh untuk diambil",
+      "chooseSaveDirAria": "Pilih folder lokal untuk menyimpan",
+      "chooseSaveDir": "Pilih simpan folder…",
+      "defaultSaveDir": "Folder unduhan bawaan",
+      "fetchAria": "Ambil berkas",
+      "fetch": "Mengambil",
+      "fetchFailed": "Gagal mengambil: {{error}}",
+      "acceptFailed": "Gagal menerima file: {{error}}",
+      "listTitle": "Transfer",
+      "listEmpty": "Belum ada transfer.",
+      "kind": {
+        "send": "Mengirim",
+        "fetch": "Mengambil"
+      },
+      "status": {
+        "active": "Sedang berlangsung",
+        "completed": "Selesai",
+        "failed": "Gagal",
+        "cancelled": "Dibatalkan"
+      },
+      "cancelAria": "Batalkan transfer {{file}}",
+      "cancel": "Membatalkan",
+      "retryAria": "Coba lagi transfer {{file}}",
+      "retry": "Mencoba kembali",
+      "revealAria": "Buka {{file}} di folder",
+      "reveal": "Buka di folder",
+      "requestEnableAria": "Minta rekan ini mengaktifkan penerimaan file",
+      "requestEnable": "Minta pengaktifan",
+      "requestEnableSent": "Meminta rekan untuk mengaktifkan penerimaan file.",
+      "requestEnableRateLimited": "Anda sudah mengirimkan permintaan baru-baru ini. Coba lagi nanti.",
+      "requestEnableFailed": "Tidak dapat mengirim permintaan pengaktifan: {{error}}",
+      "offerToast": "Penawaran file masuk: {{file}}",
+      "copyInstructionsAria": "Salin instruksi untuk mengaktifkan penerimaan file",
+      "copyInstructions": "Salin instruksi",
+      "instructionsCopied": "Instruksi disalin."
+    },
+    "enableRequest": {
+      "title": "Aktifkan penerimaan file?",
+      "body": "{{peer}} meminta Anda untuk mengaktifkan penerimaan file rncp sehingga mereka dapat mengirimi Anda file.",
+      "enableAsk": "Aktifkan (Tanyakan setiap kali)",
+      "enableAskAria": "Aktifkan penawaran file masuk dan tanyakan sebelum menerima",
+      "enableAllow": "Aktifkan dan izinkan identitas ini",
+      "enableAllowAria": "Aktifkan penawaran file masuk dan izinkan pengirim ini",
+      "notNow": "Tidak sekarang",
+      "notNowAria": "Tolak permintaan pengaktifan",
+      "dontAsk": "Jangan tanya lagi pada rekan ini",
+      "dontAskAria": "Tutup secara permanen permintaan pengaktifan dari rekan ini",
+      "enabled": "Penerimaan file diaktifkan.",
+      "enableFailed": "Tidak dapat mengaktifkan penerimaan file: {{error}}",
+      "saveDirRequired": "Pilih folder penyimpanan untuk mengaktifkan penerimaan.",
+      "identityUnknown": "Hash identitas peer ini belum dapat ditentukan — mode Tanya untuk file masuk sudah aktif, tetapi peer belum ditambahkan ke daftar izin. Coba lagi setelah jalur atau pengumuman diterima.",
+      "lxmfBody": "Harap aktifkan penerimaan file (rncp) jika Anda menggunakan mesh-client: Remote → Settings → Inbound file offers. Atau jalankan rncp/rncp-rs dalam mode mendengarkan."
+    },
+    "saved": {
+      "labelPlaceholder": "Label",
+      "labelAria": "Label alamat tersimpan",
+      "labelRequired": "Masukkan label untuk alamat ini.",
+      "hashPlaceholder": "Hash tujuan (32 karakter hex)",
+      "hashAria": "Hash tujuan alamat yang disimpan",
+      "serviceAria": "Layanan alamat tersimpan",
+      "serviceRnsh": "cangkang (rnsh)",
+      "serviceRncp": "Pemindahan (rncp)",
+      "saveAria": "Simpan alamat",
+      "add": "Menambahkan",
+      "saveFailed": "Gagal menyimpan alamat: {{error}}",
+      "empty": "Belum ada alamat yang disimpan.",
+      "editAria": "Edit alamat tersimpan {{label}}",
+      "deleteAria": "Hapus alamat tersimpan {{label}}"
+    },
+    "settings": {
+      "applyFailed": "Gagal menerapkan pengaturan: {{error}}",
+      "inboundTitle": "Transfer file masuk",
+      "inboundMode": {
+        "off": "Mati",
+        "ask": "Bertanya",
+        "allow_all_listed": "Izinkan yang terdaftar saja"
+      },
+      "allowFetch": "Izinkan rekan jarak jauh mengambil file dari saya",
+      "chooseSaveDirAria": "Pilih folder untuk transfer file masuk",
+      "chooseSaveDir": "Pilih folder penyimpanan…",
+      "noSaveDir": "Belum ada folder penyimpanan yang dipilih",
+      "fetchJailRequired": "Pilih folder pengambilan sebelum mengaktifkan pengambilan jarak jauh.",
+      "chooseFetchJailAria": "Pilih folder tempat rekan jarak jauh dapat mengambil",
+      "chooseFetchJail": "Pilih ambil folder…",
+      "noFetchJail": "Tidak ada folder pengambilan yang dipilih",
+      "overwrite": "Timpa file yang ada pada tanda terima",
+      "maxSizeInfo": "Ukuran file masuk maksimum: {{size}}",
+      "allowBlockListTitle": "Izinkan/blokir daftar",
+      "allowBlockListEmpty": "Belum ada keputusan izinkan/blokir yang tersimpan. Gunakan \"Selalu izinkan\" atau \"Selalu blokir\" pada tawaran file masuk.",
+      "decision": {
+        "allow": "Diizinkan",
+        "block": "Diblokir"
+      },
+      "removePolicyAria": "Hapus keputusan tersimpan untuk {{label}}",
+      "reliabilityTitle": "Keandalan",
+      "autoReconnectShell": "Sambungkan kembali shell jarak jauh secara otomatis setelah pemutusan sambungan yang tidak terduga",
+      "autoRetryTransfer": "Secara otomatis mencoba lagi transfer yang gagal",
+      "identityTitle": "Identitas saya",
+      "myIdentity": "Identitas saya:"
+    }
+  },
+  "meshcoreRoute": {
+    "me": "● Saya",
+    "direct": "Langsung",
+    "segmentTooltip": "Hash jalur {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

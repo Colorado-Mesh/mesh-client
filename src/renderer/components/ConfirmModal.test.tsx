@@ -1,11 +1,14 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
+
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 
 import { ConfirmModal } from './ConfirmModal';
 
 describe('ConfirmModal', () => {
-  it('exposes dialog semantics and labelled title', () => {
+  it('exposes alertdialog semantics with labelled title and described message', () => {
     render(
       <ConfirmModal
         title="Reboot Device"
@@ -16,9 +19,49 @@ describe('ConfirmModal', () => {
       />,
     );
 
-    const dialog = screen.getByRole('dialog', { name: 'Reboot Device' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Reboot Device' });
     expect(dialog).toHaveAttribute('aria-modal', 'true');
-    expect(screen.getByText('This will reboot the device.')).toBeInTheDocument();
+    const message = screen.getByText('This will reboot the device.');
+    expect(dialog).toHaveAttribute('aria-describedby', message.id);
+  });
+
+  it('has no axe violations', async () => {
+    const { container } = render(
+      <ConfirmModal
+        title="Delete history"
+        message="This cannot be undone."
+        confirmLabel="Delete"
+        danger
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('returns focus to the previously focused element on close', () => {
+    const trigger = document.createElement('button');
+    trigger.textContent = 'Open';
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    const { unmount } = render(
+      <ConfirmModal
+        title="Confirm"
+        message="Are you sure?"
+        confirmLabel="Yes"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    // Steal focus into the modal (jsdom often skips auto-focus when offsetParent is null).
+    screen.getByRole('button', { name: 'Yes' }).focus();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Yes' }));
+    unmount();
+    expect(document.activeElement).toBe(trigger);
+    trigger.remove();
   });
 
   it('calls onCancel when Escape is pressed', async () => {

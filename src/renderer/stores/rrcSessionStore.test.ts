@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useRrcSessionStore } from './rrcSessionStore';
 
@@ -8,6 +8,7 @@ describe('rrcSessionStore', () => {
     useRrcSessionStore.getState().clearSession();
     useRrcSessionStore.getState().setNickname('tester');
     useRrcSessionStore.getState().setLocalIdentityHash('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+    vi.mocked(window.electronAPI.db.insertRrcMessage).mockClear();
   });
 
   it('appends messages and bumps unread for inactive rooms', () => {
@@ -410,5 +411,31 @@ describe('rrcSessionStore', () => {
     expect(state.sessionsByHub.get(hubB)?.rooms.has('#beta')).toBe(true);
     expect(state.unreadForHub(hubB)).toBe(1);
     expect(state.unreadForHub(hubA)).toBe(0);
+  });
+
+  it('persists new messages via IPC and merges history without duplicating ids', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('#lobby');
+    store.setActiveRoom('#lobby');
+    store.addMessage({
+      id: 'live-1',
+      room: '#lobby',
+      kind: 'msg',
+      body: 'live',
+      timestamp: 200,
+    });
+    expect(window.electronAPI.db.insertRrcMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ message_id: 'live-1', hub_hash: hub, room: 'lobby' }),
+    );
+
+    store.mergeHistoryMessages(hub, 'lobby', [
+      { id: 'hist-1', room: 'lobby', kind: 'msg', body: 'old', timestamp: 100 },
+      { id: 'live-1', room: 'lobby', kind: 'msg', body: 'live-dup', timestamp: 200 },
+    ]);
+    const list = useRrcSessionStore.getState().messages.get(`${hub}::lobby`)!;
+    expect(list.map((m) => m.id)).toEqual(['hist-1', 'live-1']);
+    expect(list[1]?.body).toBe('live');
   });
 });

@@ -45,14 +45,15 @@ use super::packet_log::{
     PacketLogBuffer, collect_tx_interface_names_for_egress, emit_wire_packet_event,
     wire_packet_from_tap,
 };
+use super::path_speed;
 use super::persistence::PersistedState;
 use super::propagation_bridge::PropagationBridge;
+use super::rncp_transfer::RncpTransferManager;
+use super::rnsh_session::RnshSessionManager;
 use super::rrc_defaults::RRC_HUB_ASPECT;
 use super::rrc_session::RrcSessionManager;
 use super::types::NomadServingStatus;
-use super::types::{
-    ContactRow, InterfaceRow, LxmfReactionRequest, LxmfResourceRequest, LxmfSendRequest, PeerRow,
-};
+use super::types::{ContactRow, InterfaceRow, LxmfReactionRequest, LxmfSendRequest, PeerRow};
 use super::via::{
     classify_path_interface_name, merge_live_interfaces_with_config, merge_observed_egress_vias,
     resolve_lxmf_sent_via,
@@ -98,6 +99,8 @@ pub struct LiveBridge {
     /// overlapping page/file fetches contend with path/pubkey discovery.
     nomad_link_lock: Arc<tokio::sync::Mutex<()>>,
     rrc_session: Arc<RrcSessionManager>,
+    rnsh_session: Arc<RnshSessionManager>,
+    rncp_transfer: Arc<RncpTransferManager>,
     /// Local Nomad page/file host (rsNomad / nomad-core).
     nomad_server: Arc<NomadServerHandle>,
     /// Shared persisted stack state (Nomad node list, prefs).
@@ -401,6 +404,17 @@ impl LiveBridge {
                 identity.clone(),
                 event_tx.clone(),
             )),
+            rnsh_session: Arc::new(RnshSessionManager::spawn(
+                handle.transport_tx.clone(),
+                identity.clone(),
+                event_tx.clone(),
+            )),
+            rncp_transfer: Arc::new(RncpTransferManager::spawn(
+                handle.transport_tx.clone(),
+                identity.clone(),
+                event_tx.clone(),
+                storage_dir.clone(),
+            )),
             nomad_server: Arc::new(NomadServerHandle::new()),
             persisted: inner.clone(),
             #[cfg(feature = "rns-ble")]
@@ -501,6 +515,50 @@ impl LiveBridge {
             if let Err(e) = bridge.start_nomad_serving(nomad_name).await {
                 tracing::warn!("[nomad-serving] failed to restore Nomad serving: {e}");
                 bridge.nomad_server.set_last_error(Some(e.clone())).await;
+            }
+        }
+
+        // Restore the inbound rncp listener the user enabled in a previous
+        // session (Remote → Settings → Inbound file offers). Failure point:
+        // save dir missing or listener spawn error — log and stay disabled;
+        // the UI shows Off and the user can re-enable manually.
+        let rncp_restore = {
+            let state = inner.read().await;
+            state.rncp_listener_enabled.then(|| {
+                (
+                    state.rncp_listener_save_dir.clone(),
+                    state.rncp_listener_allow_fetch,
+                    state.rncp_listener_fetch_jail.clone(),
+                    state.rncp_listener_overwrite,
+                    state.rncp_listener_allowed.clone(),
+                    state.rncp_listener_blocked.clone(),
+                )
+            })
+        };
+        if let Some((save_dir, allow_fetch, fetch_jail, overwrite, allowed, blocked)) = rncp_restore
+        {
+            let mode = if allowed.is_empty() {
+                "ask"
+            } else {
+                "allow_all_listed"
+            };
+            if let Err(e) = bridge.rncp_configure_policy(mode, allowed, blocked).await {
+                tracing::warn!("[rncp] failed to restore inbound policy: {e}");
+            } else {
+                let save_dir = save_dir
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| storage_dir.join("rncp_inbox"));
+                let result = bridge
+                    .rncp_start_listener(
+                        save_dir,
+                        allow_fetch,
+                        fetch_jail.map(PathBuf::from),
+                        overwrite,
+                    )
+                    .await;
+                if result.get("ok").and_then(serde_json::Value::as_bool) != Some(true) {
+                    tracing::warn!("[rncp] failed to restore inbound listener: {result}");
+                }
             }
         }
 
@@ -963,6 +1021,181 @@ impl LiveBridge {
 
     pub async fn rrc_rooms(&self, hub_dest_hash: Option<&str>) -> serde_json::Value {
         self.rrc_session.rooms_snapshot(hub_dest_hash).await
+    }
+
+    pub async fn rnsh_connect(&self, destination_hash_hex: &str) -> serde_json::Value {
+        match self.rnsh_session.connect(destination_hash_hex).await {
+            Ok(mut payload) => {
+                if let Some(map) = payload.as_object_mut() {
+                    map.insert("ok".into(), serde_json::Value::Bool(true));
+                }
+                payload
+            }
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rnsh_input(&self, session_id: &str, data: Vec<u8>) -> serde_json::Value {
+        match self.rnsh_session.input(session_id, data).await {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rnsh_resize(
+        &self,
+        session_id: &str,
+        rows: Option<u32>,
+        cols: Option<u32>,
+    ) -> serde_json::Value {
+        match self.rnsh_session.resize(session_id, rows, cols).await {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rnsh_disconnect(&self, session_id: &str) -> serde_json::Value {
+        match self.rnsh_session.disconnect(session_id).await {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rnsh_status(&self) -> serde_json::Value {
+        self.rnsh_session.status_snapshot().await
+    }
+
+    pub async fn rncp_send(&self, destination_hash_hex: &str, path: &str) -> serde_json::Value {
+        match self.rncp_transfer.send(destination_hash_hex, path).await {
+            Ok(transfer_id) => serde_json::json!({ "ok": true, "transfer_id": transfer_id }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rncp_fetch(
+        &self,
+        destination_hash_hex: &str,
+        remote_path: &str,
+        save_dir: PathBuf,
+    ) -> serde_json::Value {
+        match self
+            .rncp_transfer
+            .fetch(destination_hash_hex, remote_path, save_dir)
+            .await
+        {
+            Ok(transfer_id) => serde_json::json!({ "ok": true, "transfer_id": transfer_id }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rncp_cancel(&self, transfer_id: &str) -> serde_json::Value {
+        match self.rncp_transfer.cancel(transfer_id).await {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rncp_accept(&self, transfer_id: &str) -> serde_json::Value {
+        match self.rncp_transfer.accept(transfer_id).await {
+            Ok(mut payload) => {
+                if let Some(map) = payload.as_object_mut() {
+                    map.insert("ok".into(), serde_json::Value::Bool(true));
+                }
+                payload
+            }
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rncp_reject(&self, transfer_id: &str) -> serde_json::Value {
+        match self.rncp_transfer.reject(transfer_id).await {
+            Ok(()) => serde_json::json!({ "ok": true }),
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rncp_status(&self) -> serde_json::Value {
+        self.rncp_transfer.status().await
+    }
+
+    pub async fn rncp_configure_policy(
+        &self,
+        mode: &str,
+        allowed: Vec<String>,
+        blocked: Vec<String>,
+    ) -> Result<(), String> {
+        self.rncp_transfer
+            .configure_policy(mode, allowed, blocked)
+            .await
+    }
+
+    pub async fn rncp_start_listener(
+        &self,
+        save_dir: PathBuf,
+        allow_fetch: bool,
+        fetch_jail: Option<PathBuf>,
+        overwrite: bool,
+    ) -> serde_json::Value {
+        match self
+            .rncp_transfer
+            .start_listener(save_dir, allow_fetch, fetch_jail, overwrite)
+            .await
+        {
+            Ok(mut payload) => {
+                if let Some(map) = payload.as_object_mut() {
+                    map.insert("ok".into(), serde_json::Value::Bool(true));
+                }
+                payload
+            }
+            Err(e) => serde_json::json!({ "ok": false, "error": e }),
+        }
+    }
+
+    pub async fn rncp_stop_listener(&self) {
+        self.rncp_transfer.stop_listener().await;
+    }
+
+    pub async fn rncp_listener_status(&self) -> serde_json::Value {
+        self.rncp_transfer.listener_status().await
+    }
+
+    pub async fn rncp_receive_destination_hash(&self) -> Option<String> {
+        self.rncp_transfer.receive_destination_hash().await
+    }
+
+    pub fn identity_hash_hex(&self) -> String {
+        hex::encode(self.identity.hash)
+    }
+
+    /// rnsh/rncp gating decision for `destination_hash_hex`: resolves the
+    /// path-table egress interface (if known) to a transport atom via
+    /// [`super::via::classify_path_interface_name`] and buckets it with
+    /// [`path_speed::path_capability_from_atoms`]. Uses config interface
+    /// rows (cheap, no transport round-trip) rather than [`Self::fetch_interfaces`].
+    pub fn path_capability(&self, destination_hash_hex: &str) -> serde_json::Value {
+        let clean = destination_hash_hex.trim().to_lowercase();
+        let peer = self
+            .path_peer_cache
+            .lock()
+            .ok()
+            .and_then(|cache| cache.iter().find(|p| p.destination_hash == clean).cloned());
+        let config_rows = config::interfaces_from_config_dir(&self.config_dir).unwrap_or_default();
+        let atoms: Vec<&'static str> = peer
+            .as_ref()
+            .and_then(|p| p.interface.as_deref())
+            .map(|name| vec![classify_path_interface_name(name, &config_rows)])
+            .unwrap_or_default();
+        let hops = peer.as_ref().and_then(|p| p.hops).map(u32::from);
+        let cap = path_speed::path_capability_from_atoms(&clean, &atoms, hops);
+        serde_json::json!({
+            "destination_hash": cap.destination_hash,
+            "speed": cap.speed.as_str(),
+            "via_atoms": cap.via_atoms,
+            "hops": cap.hops,
+            "transfer_allowed": cap.transfer_allowed,
+            "shell_allowed": cap.shell_allowed,
+            "reason_key": cap.reason_key,
+        })
     }
 
     fn spawn_maintenance(&self, _event_tx: broadcast::Sender<String>) {
@@ -1849,156 +2082,6 @@ impl LiveBridge {
         }))
     }
 
-    pub async fn send_lxmf_resource(
-        &self,
-        req: &LxmfResourceRequest,
-    ) -> Result<serde_json::Value, String> {
-        use base64::Engine as _;
-
-        let file_bytes = base64::engine::general_purpose::STANDARD
-            .decode(req.data_base64.as_bytes())
-            .map_err(|e| format!("invalid attachment base64: {e}"))?;
-        if file_bytes.is_empty() {
-            return Err("attachment data is empty".into());
-        }
-        if file_bytes.len() > 4 * 1024 * 1024 {
-            return Err("attachment exceeds 4 MiB limit".into());
-        }
-
-        let dest = parse_hash16(&req.destination_hash)?;
-        let has_path = self
-            .outbound
-            .lock()
-            .map(|d| d.has_path_to(&req.destination_hash))
-            .unwrap_or(false);
-
-        let preferred_pn_hash = {
-            let router = self.router.lock().await;
-            router.outbound_propagation_node.map(hex::encode)
-        };
-        let delivery_method = if has_path {
-            DeliveryMethod::Direct
-        } else if preferred_pn_hash.is_some() {
-            DeliveryMethod::Propagated
-        } else {
-            return Ok(serde_json::json!({
-                "ok": false,
-                "error": "no_propagation_node",
-                "destination_hash": req.destination_hash,
-            }));
-        };
-        let delivery_method_str = match delivery_method {
-            DeliveryMethod::Direct => "direct",
-            DeliveryMethod::Propagated => "propagated",
-            DeliveryMethod::Opportunistic => "opportunistic",
-            DeliveryMethod::Paper => "paper",
-        };
-
-        let ifaces = self.fetch_interfaces().await.unwrap_or_default();
-        let egress_via = self.resolve_lxmf_egress_via(
-            &ifaces,
-            &req.destination_hash,
-            delivery_method,
-            preferred_pn_hash.as_deref(),
-        );
-        let send_started_ms = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as u64;
-
-        let text = format!("[file:{}:{}]", req.file_name, req.mime_type);
-        let attachment_msgpack = build_file_attachment_msgpack(&req.file_name, &file_bytes)?;
-
-        let reply_to = parse_optional_reply_to_hash(req.reply_to_hash.as_deref());
-        let reply_quote = req.reply_preview_text.as_deref();
-
-        let mut msg = LxMessage::new(
-            dest,
-            parse_hash16(&self.lxmf_hash_hex)?,
-            &req.file_name,
-            &text,
-            delivery_method,
-        );
-        apply_reply_fields(&mut msg, reply_to, reply_quote);
-        msg.set_msgpack_field(FIELD_FILE_ATTACHMENTS, attachment_msgpack)
-            .map_err(|e| format!("attachment field: {e:?}"))?;
-        let signing_key = self
-            .identity
-            .get_signing_key()
-            .ok_or_else(|| "lxmf attachment sign: identity has no signing key".to_string())?;
-        msg.sign(&signing_key)
-            .map_err(|e| format!("lxmf attachment sign: {e:?}"))?;
-        let message_hash_hex = msg
-            .hash
-            .map(hex::encode)
-            .ok_or_else(|| "lxmf hash missing after attachment sign".to_string())?;
-
-        let mut router = self.router.lock().await;
-        router
-            .try_send(msg)
-            .map_err(|e| format!("lxmf resource send: {e:?}"))?;
-
-        let ts_ms = (std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs()
-            * 1000) as i64;
-        let attachment_b64 = base64::engine::general_purpose::STANDARD.encode(&file_bytes);
-        let reply_to_hash_echo = reply_to
-            .map(hex::encode)
-            .or_else(|| req.reply_to_hash.clone());
-        let mut payload = serde_json::json!({
-            "sender_hash": self.lxmf_hash_hex,
-            "sender_name": self.display_name,
-            "text": text,
-            "timestamp": ts_ms,
-            "to_hash": req.destination_hash,
-            "reply_to_hash": reply_to_hash_echo,
-            "direction": "outbound",
-            "delivery_method": delivery_method_str,
-            "sent_via": egress_via,
-            "received_via": egress_via,
-            "delivery_status": "sending",
-            "message_hash": message_hash_hex.clone(),
-            "attachment": {
-                "file_name": req.file_name,
-                "mime_type": req.mime_type,
-                "size_bytes": file_bytes.len(),
-                "data_base64": attachment_b64,
-            }
-        });
-        if let Some(quote) = reply_quote {
-            if let Some(obj) = payload.as_object_mut() {
-                obj.insert(
-                    "reply_preview_text".into(),
-                    serde_json::Value::String(quote.to_string()),
-                );
-            }
-        }
-
-        if let Ok(mut driver) = self.outbound.lock() {
-            driver.process_tick(&mut router, &self.event_tx);
-        }
-
-        self.schedule_egress_tap_upgrade(
-            message_hash_hex,
-            req.destination_hash.clone(),
-            preferred_pn_hash,
-            egress_via.clone(),
-            ifaces,
-            send_started_ms,
-        );
-
-        Ok(serde_json::json!({
-            "ok": true,
-            "destination_hash": req.destination_hash,
-            "delivery_method": delivery_method_str,
-            "sent_via": egress_via,
-            "delivery_status": "sending",
-            "message": payload
-        }))
-    }
-
     pub async fn apply_interfaces(&self, stack: &StackHandle) -> Result<(), String> {
         let interfaces = stack.list_interfaces().await;
         tracing::info!(
@@ -2236,17 +2319,6 @@ fn reply_fields_from_message(msg: &LxMessage) -> Option<LxmfReplyFields> {
         reply_to_hash,
         reply_preview_text,
     })
-}
-
-fn build_file_attachment_msgpack(file_name: &str, data: &[u8]) -> Result<Vec<u8>, String> {
-    let attachment_value = rmpv::Value::Array(vec![rmpv::Value::Array(vec![
-        rmpv::Value::String(file_name.into()),
-        rmpv::Value::Binary(data.to_vec()),
-    ])]);
-    let mut attachment_bytes = Vec::new();
-    rmpv::encode::write_value(&mut attachment_bytes, &attachment_value)
-        .map_err(|e| format!("encode attachment msgpack: {e}"))?;
-    Ok(attachment_bytes)
 }
 
 fn mime_from_file_name(file_name: &str) -> String {

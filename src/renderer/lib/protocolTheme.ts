@@ -3,6 +3,8 @@ import type { MeshProtocol } from '@/shared/meshProtocol';
 export interface ProtocolTheme {
   displayName: string;
   ariaSwitchKey: string;
+  /** When inactive protocol has unread chat messages. Interpolates `{{count}}`. */
+  ariaSwitchWithUnreadKey: string;
   headerBorderConfigured: string;
   pillActiveClass: string;
   pillInactiveClass: string;
@@ -13,6 +15,7 @@ export const PROTOCOL_THEME: Record<MeshProtocol, ProtocolTheme> = {
   meshtastic: {
     displayName: 'Meshtastic',
     ariaSwitchKey: 'aria.switchToMeshtastic',
+    ariaSwitchWithUnreadKey: 'aria.switchToMeshtasticWithUnread',
     headerBorderConfigured: 'border-brand-green/20',
     pillActiveClass: 'bg-brand-green/20 text-brand-green',
     pillInactiveClass: 'text-gray-400 hover:bg-gray-800 hover:text-gray-300',
@@ -21,6 +24,7 @@ export const PROTOCOL_THEME: Record<MeshProtocol, ProtocolTheme> = {
   meshcore: {
     displayName: 'MeshCore',
     ariaSwitchKey: 'aria.switchToMeshCore',
+    ariaSwitchWithUnreadKey: 'aria.switchToMeshCoreWithUnread',
     headerBorderConfigured: 'border-cyan-500/20',
     pillActiveClass: 'bg-cyan-600/20 text-cyan-400',
     pillInactiveClass: 'text-gray-400 hover:bg-gray-800 hover:text-gray-300',
@@ -29,6 +33,7 @@ export const PROTOCOL_THEME: Record<MeshProtocol, ProtocolTheme> = {
   reticulum: {
     displayName: 'Reticulum',
     ariaSwitchKey: 'aria.switchToReticulum',
+    ariaSwitchWithUnreadKey: 'aria.switchToReticulumWithUnread',
     headerBorderConfigured: 'border-amber-500/20',
     pillActiveClass: 'bg-amber-600/20 text-amber-400',
     pillInactiveClass: 'text-gray-400 hover:bg-gray-800 hover:text-gray-300',

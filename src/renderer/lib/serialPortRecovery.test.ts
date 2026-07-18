@@ -76,6 +76,26 @@ describe('serialPortRecovery', () => {
     expect(forget).toHaveBeenCalledTimes(1);
   });
 
+  it('escalateSerialReconnectExhaustion skips forget when forgetPort is false', async () => {
+    const { escalateSerialReconnectExhaustion } = await import('./serialPortRecovery');
+    localStorage.setItem(LAST_SERIAL_PORT_KEY, 'port-a');
+    localStorage.setItem(LAST_SERIAL_PORT_SIGNATURE_KEY, '{"usbVendorId":1}');
+    const forget = vi.fn().mockResolvedValue(undefined);
+    await escalateSerialReconnectExhaustion({ forget } as unknown as SerialPort, {
+      forgetPort: false,
+    });
+    expect(forget).not.toHaveBeenCalled();
+    expect(localStorage.getItem(LAST_SERIAL_PORT_KEY)).toBeNull();
+    expect(localStorage.getItem(LAST_SERIAL_PORT_SIGNATURE_KEY)).toBeNull();
+  });
+
+  it('escalateSerialReconnectExhaustion forgets the port by default', async () => {
+    const { escalateSerialReconnectExhaustion } = await import('./serialPortRecovery');
+    const forget = vi.fn().mockResolvedValue(undefined);
+    await escalateSerialReconnectExhaustion({ forget } as unknown as SerialPort);
+    expect(forget).toHaveBeenCalledTimes(1);
+  });
+
   it('attachSerialServiceDisconnectListener invokes handler on disconnect', () => {
     const port = { close: vi.fn() } as unknown as SerialPort;
     const handler = vi.fn();

@@ -41,9 +41,10 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
   });
 
   it('cleans up device and watchdog when reconnect budget is exhausted', () => {
+    expect(SOURCE).toContain('rfMaxReconnectAttemptsForTransport');
     const exhaustionBlock = extractIfBlockBody(
       SOURCE,
-      'reconnectAttemptRef.current >= MAX_RECONNECT_ATTEMPTS',
+      'reconnectAttemptRef.current >= maxReconnectAttempts',
     );
     expect(exhaustionBlock.length).toBeGreaterThan(0);
     expect(exhaustionBlock).toContain('cleanupSubscriptions()');
@@ -52,6 +53,8 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     expect(SOURCE).toContain('escalateSerialReconnectExhaustion');
     expect(SOURCE).toContain('serialNeedsReselect');
     expect(SOURCE).toContain('registerMeshtasticSerialDisconnectTarget');
+    expect(SOURCE).toContain('startSerialRediscovery');
+    expect(SOURCE).toContain('captureSerialIdentityForRediscovery');
   });
 
   it('clears reconnect refs in handleRfConnectFailure', () => {

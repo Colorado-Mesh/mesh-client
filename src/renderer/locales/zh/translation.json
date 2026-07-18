@@ -354,7 +354,17 @@
     "reticulumCapDestinationsLabel": "限制内存和 SQLite 中的目的地 / 对等节点总数，保留最近收到的项目",
     "reticulumCapDestinationsCountAria": "限制目的地总数，保留最近收到的 {{count}} 个",
     "reticulumDestinationsUnit_one": "目的地",
-    "reticulumDestinationsUnit_other": "目的地"
+    "reticulumDestinationsUnit_other": "目的地",
+    "storeForwardHistoryProfileLabel": "存储并转发追赶配置文件",
+    "storeForwardHistoryProfileAria": "存储并转发历史追赶攻击性",
+    "storeForwardHistoryProfileConservative": "保守（繁忙网络友好）",
+    "storeForwardHistoryProfileAggressive": "攻击性（覆盖范围参差不齐）",
+    "storeForwardHistoryProfileHint": "保守派使用更长的离线门和冷却时间。短暂断开连接后，主动获取会更快并请求更多消息 - 仅在通话时间允许时使用。",
+    "shareLocationSendWaypoint": "共享位置时还发送地图图钉（航点）",
+    "shareLocationSendWaypointHint": "启用后，Meshtastic 位置共享会发送短信和航点数据包，以便官方应用程序显示地图图钉。在繁忙的网格上禁用以仅发送文本。",
+    "capStoredRrcMessages": "存储RRC房间历史上限，保持最新",
+    "capStoredRrcMessagesLabel": "存储RRC房间历史上限，保持最新",
+    "capStoredRrcMessagesCountAria": "限制存储的 RRC 房间历史记录，保留最新的 {{count}} 消息"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -369,7 +379,10 @@
     "switchToMeshCore": "切换到MeshCore",
     "backToTop": "返回顶部",
     "switchToReticulum": "切换到 Reticulum",
-    "languageSelectorHint": "单击以选择语言"
+    "languageSelectorHint": "单击以选择语言",
+    "switchToMeshtasticWithUnread": "切换到 Meshtastic，{{count}} 未读",
+    "switchToMeshCoreWithUnread": "切换到MeshCore，{{count}}未读",
+    "switchToReticulumWithUnread": "切换到 Reticulum，{{count}} 未读"
   },
   "battery": {
     "percentCharging": "电池{{percent}}百分比，正在充电",
@@ -503,9 +516,6 @@
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… 或 g:ID",
     "meshcoreGifSend": "发送GIF",
     "meshcoreGifInvalid": "请输入有效的Giphy URL或GIF ID。",
-    "attachFile": "附加文件",
-    "attachFileHint": "发送LXMF文件附件（仅限DM ）",
-    "attachDmOnly": "在附加文件之前打开直接消息。",
     "composePlaceholderSelectDm": "选择上面的联系人以开始DM…",
     "selectDmFirst": "发送前选择DM收件人。",
     "emptySelectDm": "Reticulum聊天仅为直接消息。选择上面的联系人或从“节点”选项卡中打开一个联系人。",
@@ -526,12 +536,6 @@
     "reticulumNoPropagationNode": "未配置传播节点。请在 Reticulum Radio 选项卡上设置首选传播节点。",
     "sentViaPropagation": "传播节点",
     "reticulumAudioAttachment": "声音：{{name}}",
-    "recordVoice": "录制语音留言",
-    "recordVoiceHint": "录制语音剪辑并作为 LXMF 附件发送（仅限 DM）",
-    "stopVoiceRecording": "停止录制并发送",
-    "voiceRecordingTooLong": "语音片段达到 60 秒限制并已发送。",
-    "reticulumSendAttachmentFailed": "发送附件失败",
-    "reticulumSendAttachmentNoIdentity": "Reticulum 身份未就绪 — 请先连接并配置身份",
     "dmPeerInfoAria": "DM 对等信息",
     "clearDateAria": "清除日期",
     "readOnlyDisconnected": "未连接 — 消息是只读的",
@@ -567,20 +571,51 @@
     "dmPathUnreachableTooltip": "尚无到此目的地的 Reticulum 路径。消息仍可能稍后通过已配置的传播节点送达。",
     "dmPathRequestPathAria": "请求到此目的地的 Reticulum 路径",
     "dmPathProbeAria": "探测此目的地的 Reticulum 路径可达性",
-    "microphonePermissionDenied": "麦克风访问被拒绝。在系统隐私设置中为 Mesh-client 启用麦克风权限，然后重试。",
     "receivedViaBle": "通过蓝牙接收",
     "receivedViaMultiple": "通过{{vias}}接收",
     "sentViaBle": "通过蓝牙发送",
     "sentViaMultiple": "已通过{{vias}}发送",
-    "floodScopeOverrideLabel": "此消息的泛滥范围",
+    "floodScopeOverrideLabel": "此消息的泛洪范围",
     "floodScopeOverrideAria": "按消息泛洪作用域覆盖",
     "floodScopeOverrideDefault": "默认范围",
-    "floodScopeOverrideUnscoped": "未限定范围"
+    "floodScopeOverrideUnscoped": "未限定范围",
+    "rncp": {
+      "sendFile": "发送文件",
+      "sendFileAria": "通过rncp将文件发送到{{name}}",
+      "pendingOffersBadgeAria_one": "{{count}}等待来自此同行的入站文件报价",
+      "pendingOffersBadgeAria_other": "{{count}}来自此同行的待处理入站文件报价",
+      "destinationLabel": "rncp目的地哈希",
+      "rememberAddress": "记住此地址",
+      "rememberAddressAria": "记住此节点的此rncp目标",
+      "chooseAndSend": "选择文件并发送…",
+      "sending": "发送中…",
+      "sendStarted": "正在发送{{file}} …",
+      "sendFailed": "发送失败： {{error}}",
+      "newOfferToast": "{{peer}}想向您发送文件： {{file}}",
+      "requestEnable": "请求启用",
+      "requestEnableAria": "要求此同行启用文件接收"
+    },
+    "shareLocation": "分享位置",
+    "shareLocationLabel": "📍 共享位置",
+    "shareLocationHint": "将您当前的 GPS 或静态位置作为聊天消息发送",
+    "shareLocationUnavailable": "位置不可用 — 检查 GPS 设置",
+    "floodScopeOverrideHint": "仅此消息的区域泛洪范围。默认范围使用无线电的已保存设置；主题标签限制此发送到该区域；不带区域过滤器的无范围发送。发送后将恢复您保存的范围。",
+    "floodScopeOverrideMenuButton": "更改此消息的泛洪范围",
+    "shareLocationWaypointFailed": "地图图钉（航点）未得到确认 - 位置文本可能仍已发送。",
+    "floodScopeOverrideCustom": "自定义范围...",
+    "floodScopeOverrideCustomLabel": "自定义泛洪范围标签",
+    "floodScopeOverrideCustomPlaceholder": "#我的地区",
+    "floodScopeOverrideCustomApply": "使用范围",
+    "floodScopeOverrideCustomInvalid": "输入有效的区域标签（例如#myregion）。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "在Giphy上打开"
+    "meshcoreGifOpen": "在Giphy上打开",
+    "locationCard": {
+      "alt": "共享位置地图图块",
+      "openMaps": "在地图中打开"
+    }
   },
   "common": {
     "close": "关闭",
@@ -622,7 +657,9 @@
     "colorAmber": "琥珀色",
     "colorRed": "红色",
     "colorPurple": "紫色",
-    "delete": "删除"
+    "delete": "删除",
+    "copy": "复制",
+    "copied": "已复制"
   },
   "configApplyNotice": {
     "persistNote": "应用的设置将保存到设备的闪存中，并在重新启动后保持不变。",
@@ -1163,7 +1200,8 @@
       "meshcore": "在放弃前尝试重新连接（ 1– {{max}} ）。已保存设置；更改后再次按“连接” ，以便主进程将其拾取。",
       "meshtastic": "两种方案均允许1– {{max}}。已使用设置保存；断开连接并再次连接，以便正在运行的会话使用新值。"
     },
-    "reticulumStackRunningAs": "跑步— {{name}}"
+    "reticulumStackRunningAs": "运行中 — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Reticulum 堆栈无响应 — 正在重新启动..."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -1492,7 +1530,10 @@
     "senderLabel": "发件人",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "信噪比{{snr}}分贝"
+    "snrDb": "信噪比{{snr}}分贝",
+    "distanceOffsetKm": "距离偏移",
+    "km": "公里",
+    "distanceOffsetHelp": "为跳妖精和不良路线距离阈值添加平坦的公里下限 (0–50)。"
   },
   "diagnosticsPing": {
     "title": "持续ping",
@@ -2568,7 +2609,9 @@
       "lossRate": "估计损失",
       "lossRatePercent": "{{percent}} %",
       "packetLogAria": "测距测试数据包日志"
-    }
+    },
+    "currentRouteHeading": "当前路线",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "长名称",
@@ -3374,12 +3417,10 @@
     "floodScopeTitle": "区域防洪范围",
     "floodScopeHelp": "将泛洪流量限制在主题标签区域（固件v8 + ）。需要meshcore.js setFloodScope ；重新连接会重新应用保存的范围。",
     "floodScopeNone": "无（明确范围）",
-    "floodScopePreset": "预设主题标签",
-    "floodScopePresetSelect": "预设区域主题标签",
     "floodScopeCustom": "自定义主题标签",
     "floodScopeCustomPlaceholder": "# myregion",
     "floodScopeApply": "应用泛洪范围",
-    "floodScopeApplySuccess": "已应用洪水范围",
+    "floodScopeApplySuccess": "已应用泛洪范围",
     "floodScopeApplyFailed": "泛洪范围失败： {{message}}",
     "advertisedPositionLabel": "广告位置： {{lat}} ， {{lon}}",
     "txPowerMax": "发射功率（每个无线电最大{{max}} dBm ）",
@@ -3485,7 +3526,13 @@
       "6": {
         "label": "中慢速"
       }
-    }
+    },
+    "floodScopeSaved": "已保存范围",
+    "floodScopeSavedSelect": "已保存区域标签",
+    "floodScopeSavedEmpty": "尚未保存范围。应用自定义主题标签或使用聊天中的自定义范围来添加标签。",
+    "floodScopeRemoveSaved": "从保存的范围中删除",
+    "floodScopeRemoveSavedAria": "从保存的范围中删除 {{hashtag}}",
+    "floodScopeInvalidHashtag": "输入有效的区域标签（例如#myregion）。"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",
@@ -3687,7 +3734,6 @@
     "pathHashCliSet2": "设置路径哈希模式3字节",
     "pathLabel": "小路：",
     "hopMe": "● 我",
-    "hopN": "● 跳{{n}}",
     "noNeighborsReported": "没有邻居报告",
     "fetchingTelemetry": "正在获取遥测数据...",
     "telemetryBattery": "电池：{{voltage}}V",
@@ -3733,7 +3779,8 @@
     "cliDangerConfirmAction": "运行命令",
     "cliAutoPingToast": "在CLI之前使用Ping建立路由…",
     "cliAutoPingFailed": "Ping失败；在多跳中继器上重试CLI之前手动运行Ping。",
-    "cliCommandTooLong": "CLI命令太长（最多{{max}}个字符）。"
+    "cliCommandTooLong": "CLI命令太长（最多{{max}}个字符）。",
+    "currentRouteLabel": "当前路线："
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",
@@ -4177,7 +4224,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "网络拓扑图",
     "network": "网络",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "远程"
   },
   "takServerPanel": {
     "title": "TAK服务器",
@@ -4246,7 +4294,13 @@
     "footerMax": "（每个最多50个）",
     "sectionTemperatureHumidity": "温度、湿度",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "不适用",
+    "chartAriaBattery": "电池及电压图表：最新电池{{battery}}百分比，电压{{voltage}} V，{{count}}点",
+    "chartAriaSignal": "信号质量图表：最新SNR {{snr}} dB、RSSI {{rssi}} dBm、{{count}}点",
+    "chartAriaTempHumidity": "温湿度图：最新温度{{temperature}}、湿度{{humidity}}%、{{count}}点",
+    "chartAriaPressure": "气压图：最新{{pressure}} hPa、{{count}}点",
+    "chartAriaIaq": "空气质量图表：最新IAQ {{iaq}}、{{count}}点"
   },
   "toasts": {
     "firmwareAvailable": "固件更新可用： v {{version}}",
@@ -4431,7 +4485,11 @@
     "roomLegend": "★ 收藏夹· A切换自动联接",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "清除历史记录",
+    "clearHistoryTitle": "清除房间历史记录",
+    "clearHistoryConfirm": "删除 {{room}} 的所有已保存消息历史记录？此操作无法撤消。",
+    "clearHistoryConfirmAction": "删除历史记录"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -4473,5 +4531,210 @@
     "confirmContactImportTitle": "导入联系人？",
     "confirmContactImportBody": "将外部链接中的 {{name}} 添加到您的 Reticulum 联系人中？",
     "confirmContactImportAction": "导入联系人"
+  },
+  "reticulumRemote": {
+    "navAria": "远程部分",
+    "sidecarNotRunning": "启动Reticulum堆栈以使用远程shell和文件传输。",
+    "sections": {
+      "shell": "Shell",
+      "transfer": "传输",
+      "saved": "已保存",
+      "settings": "设置"
+    },
+    "errors": {
+      "invalidAddress": "输入有效的32个字符的十六进制目标哈希。"
+    },
+    "reasons": {
+      "pathConstrained": "路径受限（低带宽）",
+      "pathUnknown": "路径速度未知",
+      "notAnnounced": "目的地尚未公布",
+      "timeout": "请求超时",
+      "notAllowed": "不允许",
+      "versionMismatch": "远程版本不匹配",
+      "stagingFailed": "暂存入站文件失败",
+      "cancelled": "已取消",
+      "rejected": "已拒绝",
+      "error": "错误"
+    },
+    "pathCapability": {
+      "checking": "正在检查路径…",
+      "hops_one": "{{count}}跳",
+      "hops_other": "{{count}}跳",
+      "speed": {
+        "high": "快速路径",
+        "constrained": "受限路径",
+        "mixed": "混合路径",
+        "unknown": "未知路径"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "目标哈希（ 32个十六进制字符）",
+      "addressAria": "rnsh目的地哈希",
+      "selectSavedAddress": "使用已保存的地址{{label}}",
+      "connectAria": "连接远程外壳",
+      "connect": "连接",
+      "connecting": "正在连接...",
+      "connectFailed": "连接失败： {{error}}",
+      "maxSessions": "已达到最大{{count}} shell会话数。",
+      "focusSession": "切换到会话{{address}}",
+      "closeSession": "关闭会话{{address}}",
+      "emptyState": "没有活动的远程shell会话。在上面输入目标哈希以进行连接。",
+      "status": {
+        "connecting": "正在连接...",
+        "active": "已连接",
+        "closed": "已关闭",
+        "error": "错误"
+      },
+      "reconnectAria": "重新连接此会话",
+      "reconnect": "重新连接",
+      "disconnectAria": "断开此会话的连接",
+      "disconnect": "断开连接",
+      "reconnectExhausted": "达到重试限制后，自动重新连接放弃。远程会话状态已丢失。",
+      "reconnectingBanner": "自动重新连接（尝试{{attempt}}/{{max}} ）。远程会话状态已丢失。",
+      "fingerprintTitle": "确认远程身份",
+      "fingerprintMessage": "正在连接至{{address}}。对方报告的身份：{{identity}}。指纹：{{fingerprint}}。请确认这是您期望的身份，然后再继续操作。",
+      "unknownIdentity": "未知身份",
+      "unknownFingerprint": "未知指纹",
+      "fingerprintConfirm": "连接"
+    },
+    "transfer": {
+      "myIdentity": "我的身份：",
+      "copyIdentityAria": "复制我的身份信息哈希",
+      "myReceiveDest": "我的rncp接收目的地：",
+      "copyReceiveDestAria": "复制我的rncp接收目的地",
+      "pendingOffersTitle": "待处理的入站文件",
+      "pendingOffersBadgeAria_one": "{{count}}待处理入站文件报价",
+      "pendingOffersBadgeAria_other": "{{count}}待处理入站文件报价",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "接受{{file}}",
+      "accept": "接受",
+      "rejectAria": "拒绝{{file}}",
+      "reject": "拒绝",
+      "alwaysAllowAria": "始终允许此发件人进入{{file}}",
+      "alwaysAllow": "始终允许",
+      "alwaysBlockAria": "始终屏蔽此发件人{{file}}",
+      "alwaysBlock": "总是阻止",
+      "alwaysAllowSaved": "发件人已添加到允许列表。",
+      "alwaysBlockSaved": "发件人已添加到阻止列表。",
+      "modeSendAria": "切换到发送模式",
+      "modeSend": "发送",
+      "modeFetchAria": "切换到获取模式",
+      "modeFetch": "获取",
+      "destinationPlaceholder": "目标哈希（ 32个十六进制字符）",
+      "destinationAria": "rncp目的地哈希",
+      "notAllowedHint": "此路径不支持文件传输：{{reason}}",
+      "chooseFileAria": "选择要发送的本地文件",
+      "chooseFile": "选择文件",
+      "noFileChosen": "未选择文件",
+      "sendAria": "发送文件",
+      "send": "发送",
+      "sendFailed": "发送失败： {{error}}",
+      "remotePathPlaceholder": "远程文件",
+      "remotePathAria": "要获取的远程文件路径",
+      "chooseSaveDirAria": "选择要保存到的本地文件夹",
+      "chooseSaveDir": "选择保存文件夹…",
+      "defaultSaveDir": "默认下载文件夹",
+      "fetchAria": "提取文件",
+      "fetch": "获取",
+      "fetchFailed": "获取失败： {{error}}",
+      "acceptFailed": "无法接受文件： {{error}}",
+      "listTitle": "传输",
+      "listEmpty": "还没有转账。",
+      "kind": {
+        "send": "发送",
+        "fetch": "获取"
+      },
+      "status": {
+        "active": "正在进行",
+        "completed": "已完成",
+        "failed": "失败",
+        "cancelled": "已取消"
+      },
+      "cancelAria": "取消转账{{file}}",
+      "cancel": "取消",
+      "retryAria": "重试转账{{file}}",
+      "retry": "重试",
+      "revealAria": "在文件夹中显示 {{file}}",
+      "reveal": "在文件夹中显示",
+      "requestEnableAria": "请求此对等体启用文件接收",
+      "requestEnable": "请求启用",
+      "requestEnableSent": "要求对等端启用文件接收。",
+      "requestEnableRateLimited": "您最近已经发送了申请。请稍后重试。",
+      "requestEnableFailed": "无法发送启用请求： {{error}}",
+      "offerToast": "传入文件报价： {{file}}",
+      "copyInstructionsAria": "复制启用文件接收的说明",
+      "copyInstructions": "复制说明",
+      "instructionsCopied": "说明已复制。"
+    },
+    "enableRequest": {
+      "title": "启用文件接收？",
+      "body": "{{peer}}要求您开启rncp文件接收功能，以便他们向您发送文件。",
+      "enableAsk": "启用（每次询问）",
+      "enableAskAria": "启用入站文件报价并在接受前询问",
+      "enableAllow": "启用和允许此标识",
+      "enableAllowAria": "启用入站文件优惠并允许此发件人",
+      "notNow": "暂不",
+      "notNowAria": "关闭启用请求",
+      "dontAsk": "不再询问此同行",
+      "dontAskAria": "永久驳回来自此同行的启用请求",
+      "enabled": "文件接收已启用。",
+      "enableFailed": "无法启用文件接收： {{error}}",
+      "saveDirRequired": "选择一个保存文件夹以启用接收。",
+      "identityUnknown": "暂时无法解析此对等节点的身份哈希 — 已启用来件询问，但未将其加入允许列表。等路径或公告到达后再试一次。",
+      "lxmfBody": "如果您使用mesh-client ：远程→设置→入站文件提供，请启用文件接收（ rncp ）。或者在监听模式下运行rncp/rncp-rs。"
+    },
+    "saved": {
+      "labelPlaceholder": "标号",
+      "labelAria": "已保存的地址标签",
+      "labelRequired": "输入此地址的标签。",
+      "hashPlaceholder": "目标哈希（ 32个十六进制字符）",
+      "hashAria": "已保存的地址目标哈希",
+      "serviceAria": "已保存的地址服务",
+      "serviceRnsh": "Shell (rnsh)",
+      "serviceRncp": "传输(rncp)",
+      "saveAria": "保存地址",
+      "add": "新增",
+      "saveFailed": "保存地址失败： {{error}}",
+      "empty": "尚未保存地址。",
+      "editAria": "编辑已保存的地址{{label}}",
+      "deleteAria": "删除保存的地址{{label}}"
+    },
+    "settings": {
+      "applyFailed": "应用设置失败： {{error}}",
+      "inboundTitle": "入站文件传输",
+      "inboundMode": {
+        "off": "关闭",
+        "ask": "询问",
+        "allow_all_listed": "仅允许列出"
+      },
+      "allowFetch": "允许远程同行从我这里获取文件",
+      "chooseSaveDirAria": "选择接收文件传输的保存文件夹",
+      "chooseSaveDir": "选择保存文件夹…",
+      "noSaveDir": "未选择保存文件夹",
+      "fetchJailRequired": "启用远程获取前，请先选择获取文件夹。",
+      "chooseFetchJailAria": "选择远程对等体可以从中获取的文件夹",
+      "chooseFetchJail": "选择提取文件夹…",
+      "noFetchJail": "未选择提取文件夹",
+      "overwrite": "在收据上覆盖现有文件",
+      "maxSizeInfo": "最大入站文件大小： {{size}}",
+      "allowBlockListTitle": "允许/阻止列表",
+      "allowBlockListEmpty": "尚未保存允许/阻止决策。在入站文件报价上使用“始终允许”或“始终阻止”。",
+      "decision": {
+        "allow": "已允许",
+        "block": "封锁"
+      },
+      "removePolicyAria": "移除{{label}}的已保存决定",
+      "reliabilityTitle": "可靠性",
+      "autoReconnectShell": "意外断开连接后自动重新连接远程shell",
+      "autoRetryTransfer": "自动重试失败的传输",
+      "identityTitle": "我的身份",
+      "myIdentity": "我的身份："
+    }
+  },
+  "meshcoreRoute": {
+    "me": "● 我",
+    "direct": "直接的",
+    "segmentTooltip": "路径哈希 {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

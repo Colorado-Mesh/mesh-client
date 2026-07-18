@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -9,6 +10,7 @@ import {
   resetRrcHubDisconnectSuppressForTests,
 } from '@/renderer/lib/rrcHubDisconnectSuppress';
 import { saveRrcHubAutoJoin } from '@/renderer/lib/rrcHubPrefs';
+import { resetRrcMessagePersistForTests } from '@/renderer/lib/rrcMessagePersist';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
 import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 
@@ -26,12 +28,15 @@ describe('RrcPanel', () => {
     useRrcSessionStore.getState().clearSession();
     useRrcHubStore.setState({ hubs: new Map() });
     resetRrcHubDisconnectSuppressForTests();
+    resetRrcMessagePersistForTests();
     hydrateAxeThemeColors(document.documentElement);
     vi.mocked(isReticulumSidecarRunning).mockResolvedValue(false);
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockClear();
     vi.mocked(window.electronAPI.reticulum.rrc.connect).mockResolvedValue({ ok: true });
     vi.mocked(window.electronAPI.reticulum.rrc.disconnect).mockReset();
     vi.mocked(window.electronAPI.reticulum.rrc.disconnect).mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.db.deleteRrcMessagesByRoom).mockClear();
+    vi.mocked(window.electronAPI.db.deleteRrcMessagesByRoom).mockResolvedValue({ changes: 1 });
     localStorage.removeItem('mesh-client:rrc:hubAutoJoin');
   });
 
@@ -147,6 +152,30 @@ describe('RrcPanel', () => {
     expect(useRrcSessionStore.getState().sessionsByHub.get(hubA)?.disconnectIntent).toBe(false);
     expect(useRrcSessionStore.getState().sessionsByHub.has(hubA)).toBe(true);
     expect(isRrcHubDisconnectSuppressed(hubA)).toBe(false);
+  });
+
+  it('shows clear-history confirmation and deletes on confirm', async () => {
+    const user = userEvent.setup();
+    useRrcSessionStore.getState().applyStatus('active', hubA, 'Hub A');
+    useRrcSessionStore.getState().roomJoined('#lobby');
+    useRrcSessionStore.getState().setActiveRoom('#lobby');
+    useRrcSessionStore.getState().addMessage({
+      id: 'm1',
+      room: '#lobby',
+      kind: 'msg',
+      body: 'hello',
+      timestamp: Date.now(),
+    });
+    render(<RrcPanel isActive />);
+    const clearBtn = screen.getByRole('button', { name: 'Clear history' });
+    expect(clearBtn).toHaveAttribute('title', 'Clear history');
+    await user.click(clearBtn);
+    expect(screen.getByRole('alertdialog', { name: 'Clear room history' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Delete history' }));
+    await waitFor(() => {
+      expect(window.electronAPI.db.deleteRrcMessagesByRoom).toHaveBeenCalledWith(hubA, 'lobby');
+    });
+    expect(useRrcSessionStore.getState().messages.get(`${hubA}::lobby`)).toBeUndefined();
   });
 
   it('Disconnect with hub auto-join does not reconnect via rrc.connect', async () => {

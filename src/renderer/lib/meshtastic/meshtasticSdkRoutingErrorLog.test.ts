@@ -14,6 +14,12 @@ vi.mock('@/renderer/stores/messageStore', () => ({
 import { updateMessageStatus } from '@/renderer/stores/messageStore';
 
 import {
+  beginMeshtasticNonChatOutbound,
+  endMeshtasticNonChatOutbound,
+  registerMeshtasticNonChatWirePacketId,
+  resetMeshtasticOutboundCoordinationForTests,
+} from './meshtasticOutboundCoordination';
+import {
   installMeshtasticSdkRoutingErrorConsoleHook,
   installMeshtasticSdkRoutingErrorUnhandledRejectionHandler,
 } from './meshtasticSdkRoutingErrorConsoleHook';
@@ -21,17 +27,23 @@ import {
   applyMeshtasticOutboundRoutingErrorFromLog,
   applyMeshtasticOutboundRoutingErrorFromRejection,
   chatRoutingErrorKeyForSdkErrorName,
+  humanizeMeshtasticSdkQueueRejectionError,
   parseMeshtasticSdkQueueRejection,
   parseMeshtasticSdkRoutingErrorLog,
 } from './meshtasticSdkRoutingErrorLog';
 
 describe('meshtasticSdkRoutingErrorLog', () => {
   beforeEach(() => {
+    resetMeshtasticOutboundCoordinationForTests();
     vi.stubGlobal('window', {
       electronAPI: {
         db: { updateMessageStatus: vi.fn().mockResolvedValue(undefined) },
       },
     });
+  });
+
+  afterEach(() => {
+    resetMeshtasticOutboundCoordinationForTests();
   });
 
   it('parses SDK packet timeout log lines', () => {
@@ -183,6 +195,89 @@ describe('meshtasticSdkRoutingErrorLog', () => {
     );
     expect(applied).toBe(true);
     expect(setMessages).toHaveBeenCalledTimes(1);
+    // DB row still holds the optimistic temp packet id (999) — the update must
+    // target it, not the wire id from the NAK (669520633).
+    expect(window.electronAPI.db.updateMessageStatus).toHaveBeenCalledWith(
+      999,
+      'failed',
+      'chatPanel.routingErrors.pkiMissingRecipientKey',
+    );
+  });
+
+  it('does not misattribute a registered non-chat wire id to a sending chat row', () => {
+    registerMeshtasticNonChatWirePacketId(883268679);
+    const messagesRef = {
+      current: [
+        {
+          id: 1,
+          sender_id: 42,
+          sender_name: 'Me',
+          packetId: 1979522383,
+          payload: '📍 Shared location: 40.1, -105.0',
+          status: 'sending' as const,
+          channel: 1,
+          timestamp: Date.now(),
+        },
+      ],
+    };
+    const setMessages = vi.fn();
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      'Error received for packet 883268679: MAX_RETRANSMIT',
+      {
+        myNodeNum: 42,
+        identityId: null,
+        messagesRef,
+        setMessages,
+      },
+    );
+    expect(applied).toBe(false);
+    expect(setMessages).not.toHaveBeenCalled();
+  });
+
+  it('skips the single-sending fallback while a non-chat outbound is in flight', () => {
+    beginMeshtasticNonChatOutbound();
+    const messagesRef = {
+      current: [
+        {
+          id: 1,
+          sender_id: 42,
+          sender_name: 'Me',
+          packetId: 1979522383,
+          payload: '📍 Shared location: 40.1, -105.0',
+          status: 'sending' as const,
+          channel: 1,
+          timestamp: Date.now(),
+        },
+      ],
+    };
+    const setMessages = vi.fn();
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      'Error received for packet 883268679: MAX_RETRANSMIT',
+      {
+        myNodeNum: 42,
+        identityId: null,
+        messagesRef,
+        setMessages,
+      },
+    );
+    expect(applied).toBe(false);
+    expect(setMessages).not.toHaveBeenCalled();
+    endMeshtasticNonChatOutbound();
+  });
+
+  it('humanizes queue rejections to chat i18n text or routing error name', () => {
+    expect(humanizeMeshtasticSdkQueueRejectionError({ id: 327029706, error: 39 })).toBe(
+      'chatPanel.routingErrors.pkiMissingRecipientKey',
+    );
+    expect(humanizeMeshtasticSdkQueueRejectionError({ packetId: 1, error: 3 })).toBe(
+      'chatPanel.routingErrors.timeout',
+    );
+    // No chat mapping — fall back to the enum name.
+    expect(humanizeMeshtasticSdkQueueRejectionError({ id: 1, error: 38 })).toBe(
+      'RATE_LIMIT_EXCEEDED',
+    );
+    expect(humanizeMeshtasticSdkQueueRejectionError(new Error('boom'))).toBeNull();
+    expect(humanizeMeshtasticSdkQueueRejectionError('nope')).toBeNull();
   });
 
   it('returns false for unknown SDK routing error names', () => {

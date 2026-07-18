@@ -124,8 +124,6 @@ export interface ProtocolCapabilities {
   hasReticulumInterfaceConfig: boolean;
   /** Reticulum: Network tab (identity, stack config, propagation) */
   hasReticulumNetworkPanel: boolean;
-  /** Reticulum: LXMF file/voice attach UI (currently false — redesign deferred). */
-  hasLxmfAttachments: boolean;
   /** Reticulum: RNode firmware flasher on Admin tab (ReticulumAdminPanel) */
   hasRNodeFlasher: boolean;
   /** Reticulum: dedicated Peers list panel on tab 2 */
@@ -145,6 +143,10 @@ export interface ProtocolCapabilities {
   hasRrcPanel: boolean;
   /** Reticulum: Administration tab (flasher, factory reset) */
   hasReticulumAdminPanel: boolean;
+  /** Reticulum: Remote tab (rnsh remote shell + rncp file transfer) */
+  hasReticulumRemotePanel: boolean;
+  /** Reticulum: rncp file transfer available from Chat DM header */
+  hasRncpTransfer: boolean;
   /** DM composer payload limit (Reticulum LXMF only) */
   lxmfPayloadLimit?: number;
 }
@@ -208,7 +210,6 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
-  hasLxmfAttachments: false,
   hasRNodeFlasher: false,
   hasReticulumPeersList: false,
   hasReticulumNativeDiagnostics: false,
@@ -219,6 +220,8 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasNomadNetworkPanel: false,
   hasRrcPanel: false,
   hasReticulumAdminPanel: false,
+  hasReticulumRemotePanel: false,
+  hasRncpTransfer: false,
 };
 
 export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
@@ -281,7 +284,6 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
-  hasLxmfAttachments: false,
   hasRNodeFlasher: false,
   hasReticulumPeersList: false,
   hasReticulumNativeDiagnostics: false,
@@ -292,6 +294,8 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasNomadNetworkPanel: false,
   hasRrcPanel: false,
   hasReticulumAdminPanel: false,
+  hasReticulumRemotePanel: false,
+  hasRncpTransfer: false,
 };
 
 export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
@@ -353,8 +357,6 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasDiagnosticsPanel: true,
   hasReticulumInterfaceConfig: true,
   hasReticulumNetworkPanel: true,
-  /** Deferred: LXMF file/voice attach UI disabled until a redesign. */
-  hasLxmfAttachments: false,
   hasRNodeFlasher: true,
   hasReticulumPeersList: true,
   hasReticulumNativeDiagnostics: true,
@@ -365,5 +367,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasNomadNetworkPanel: true,
   hasRrcPanel: true,
   hasReticulumAdminPanel: true,
+  hasReticulumRemotePanel: true,
+  hasRncpTransfer: true,
   lxmfPayloadLimit: RETICULUM_LXMF_PAYLOAD_LIMIT,
 };

@@ -4,9 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
 import {
   applyMeshcoreFloodScope,
-  MESHCORE_FLOOD_SCOPE_PRESETS,
   normalizeMeshcoreFloodScopeHashtag,
 } from '@/renderer/lib/meshcoreFloodScope';
+import {
+  isValidMeshcoreFloodScopeHashtag,
+  rememberMeshcoreFloodScopePreset,
+  removeMeshcoreFloodScopePreset,
+} from '@/renderer/lib/meshcoreFloodScopePresetsStorage';
 
 export interface MeshcoreFloodScopeHandle {
   apply: () => Promise<void>;
@@ -16,6 +20,9 @@ interface Props {
   disabled: boolean;
   isConnected: boolean;
   savedHashtag: string;
+  /** User-managed quick-pick hashtags (normalized). */
+  savedPresets: string[];
+  onSavedPresetsChange: (presets: string[]) => void;
   onApplyFloodScope: (hashtag: string) => Promise<void>;
   onSavedHashtagChange?: (hashtag: string) => void;
   /** When true, omit card chrome and inline Apply (parent ConfigSection owns apply). */
@@ -28,6 +35,8 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
       disabled,
       isConnected,
       savedHashtag,
+      savedPresets,
+      onSavedPresetsChange,
       onApplyFloodScope,
       onSavedHashtagChange,
       embedded = false,
@@ -35,22 +44,15 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
     ref,
   ) {
     const { t } = useTranslation();
-    const [mode, setMode] = useState<'none' | 'preset' | 'custom'>(
-      savedHashtag
-        ? MESHCORE_FLOOD_SCOPE_PRESETS.includes(savedHashtag as never)
-          ? 'preset'
-          : 'custom'
-        : 'none',
-    );
-    const [preset, setPreset] = useState(
-      MESHCORE_FLOOD_SCOPE_PRESETS.includes(savedHashtag as never)
-        ? savedHashtag
-        : MESHCORE_FLOOD_SCOPE_PRESETS[0],
+    const [mode, setMode] = useState<'none' | 'saved' | 'custom'>(() => {
+      if (!savedHashtag) return 'none';
+      return savedPresets.includes(savedHashtag) ? 'saved' : 'custom';
+    });
+    const [selectedSaved, setSelectedSaved] = useState(
+      savedPresets.includes(savedHashtag) ? savedHashtag : (savedPresets[0] ?? ''),
     );
     const [customHashtag, setCustomHashtag] = useState(
-      savedHashtag && !MESHCORE_FLOOD_SCOPE_PRESETS.includes(savedHashtag as never)
-        ? savedHashtag
-        : '',
+      savedHashtag && !savedPresets.includes(savedHashtag) ? savedHashtag : '',
     );
     const [applying, setApplying] = useState(false);
     const [status, setStatus] = useState<string | null>(null);
@@ -60,20 +62,33 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
         setMode('none');
         return;
       }
-      if (MESHCORE_FLOOD_SCOPE_PRESETS.includes(savedHashtag as never)) {
-        setMode('preset');
-        setPreset(savedHashtag);
+      if (savedPresets.includes(savedHashtag)) {
+        setMode('saved');
+        setSelectedSaved(savedHashtag);
       } else {
         setMode('custom');
         setCustomHashtag(savedHashtag);
       }
-    }, [savedHashtag]);
+    }, [savedHashtag, savedPresets]);
+
+    // If the selected saved entry disappears, fall back without mutating radio state.
+    useEffect(() => {
+      if (mode !== 'saved') return;
+      if (savedPresets.length === 0) {
+        setMode('none');
+        setSelectedSaved('');
+        return;
+      }
+      if (!savedPresets.includes(selectedSaved)) {
+        setSelectedSaved(savedPresets[0] ?? '');
+      }
+    }, [mode, savedPresets, selectedSaved]);
 
     const resolveHashtag = useCallback((): string => {
       if (mode === 'none') return '';
-      if (mode === 'preset') return preset;
+      if (mode === 'saved') return selectedSaved;
       return normalizeMeshcoreFloodScopeHashtag(customHashtag);
-    }, [mode, preset, customHashtag]);
+    }, [mode, selectedSaved, customHashtag]);
 
     const handleApply = useCallback(async () => {
       if (!isConnected || applying) return;
@@ -81,9 +96,16 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
       setStatus(null);
       try {
         const hashtag = resolveHashtag();
+        if (mode === 'custom' && hashtag && !isValidMeshcoreFloodScopeHashtag(hashtag)) {
+          setStatus(t('radioPanel.floodScopeInvalidHashtag'));
+          return;
+        }
         await onApplyFloodScope(hashtag);
         mergeAppSetting('meshcoreFloodScopeHashtag', hashtag, 'meshcore flood scope');
         onSavedHashtagChange?.(hashtag);
+        if (mode === 'custom' && isValidMeshcoreFloodScopeHashtag(hashtag)) {
+          onSavedPresetsChange(rememberMeshcoreFloodScopePreset(savedPresets, hashtag));
+        }
         setStatus(t('radioPanel.floodScopeApplySuccess'));
       } catch (e: unknown) {
         console.warn(
@@ -98,9 +120,26 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
       } finally {
         setApplying(false);
       }
-    }, [applying, isConnected, onApplyFloodScope, onSavedHashtagChange, resolveHashtag, t]);
+    }, [
+      applying,
+      isConnected,
+      mode,
+      onApplyFloodScope,
+      onSavedHashtagChange,
+      onSavedPresetsChange,
+      resolveHashtag,
+      savedPresets,
+      t,
+    ]);
 
     useImperativeHandle(ref, () => ({ apply: handleApply }), [handleApply]);
+
+    const handleRemoveSaved = useCallback(
+      (tag: string) => {
+        onSavedPresetsChange(removeMeshcoreFloodScopePreset(savedPresets, tag));
+      },
+      [onSavedPresetsChange, savedPresets],
+    );
 
     const fields = (
       <>
@@ -123,30 +162,56 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
             <input
               type="radio"
               name="flood-scope-mode"
-              checked={mode === 'preset'}
+              checked={mode === 'saved'}
               onChange={() => {
-                setMode('preset');
+                setMode('saved');
+                if (!selectedSaved && savedPresets[0]) {
+                  setSelectedSaved(savedPresets[0]);
+                }
               }}
-              disabled={disabled || applying}
+              disabled={disabled || applying || savedPresets.length === 0}
             />
-            {t('radioPanel.floodScopePreset')}
+            {t('radioPanel.floodScopeSaved')}
           </label>
-          {mode === 'preset' && (
-            <select
-              value={preset}
-              onChange={(e) => {
-                setPreset(e.target.value);
-              }}
-              disabled={disabled || applying}
-              className="bg-deep-black focus:border-brand-green ml-6 w-full max-w-xs rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
-              aria-label={t('radioPanel.floodScopePresetSelect')}
-            >
-              {MESHCORE_FLOOD_SCOPE_PRESETS.map((tag) => (
-                <option key={tag} value={tag}>
-                  {tag}
-                </option>
-              ))}
-            </select>
+          {mode === 'saved' && (
+            <div className="ml-6 space-y-2">
+              {savedPresets.length === 0 ? (
+                <p className="text-muted text-xs">{t('radioPanel.floodScopeSavedEmpty')}</p>
+              ) : (
+                <>
+                  <select
+                    value={selectedSaved}
+                    onChange={(e) => {
+                      setSelectedSaved(e.target.value);
+                    }}
+                    disabled={disabled || applying}
+                    className="bg-deep-black focus:border-brand-green w-full max-w-xs rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+                    aria-label={t('radioPanel.floodScopeSavedSelect')}
+                  >
+                    {savedPresets.map((tag) => (
+                      <option key={tag} value={tag}>
+                        {tag}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedSaved ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleRemoveSaved(selectedSaved);
+                      }}
+                      disabled={disabled || applying}
+                      className="text-muted text-xs underline hover:text-red-300 disabled:opacity-40"
+                      aria-label={t('radioPanel.floodScopeRemoveSavedAria', {
+                        hashtag: selectedSaved,
+                      })}
+                    >
+                      {t('radioPanel.floodScopeRemoveSaved')}
+                    </button>
+                  ) : null}
+                </>
+              )}
+            </div>
           )}
           <label className="flex items-center gap-2 text-sm text-gray-300">
             <input

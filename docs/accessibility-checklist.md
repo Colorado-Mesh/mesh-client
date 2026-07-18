@@ -8,13 +8,13 @@ This is a living document. Check items against VoiceOver (macOS), NVDA (Windows)
 
 - [ ] App title announced on launch
 - [ ] Tab labels (Chat, Nodes, Config…) read correctly
-- [ ] Connection status changes announced (`aria-live="polite"`)
+- [x] Connection status changes announced (`aria-live="polite"`) — device status in `App.tsx` header (`role="status" aria-live="polite"`); MQTT/TAK indicators still optional follow-up
 - [ ] Modal open/close announced as "dialog"
-- [ ] Confirmation dialogs announced as "alert dialog"
+- [x] Confirmation dialogs announced as "alert dialog" — `ConfirmModal` uses `role="alertdialog"` + `aria-describedby`
 - [ ] Form validation errors announced immediately (`role="alert"`)
 - [ ] Message send status (Sending/Sent/Failed) announced
 - [ ] Node list sort order announced via `aria-sort`
-- [ ] Unread message counts announced on channel tabs
+- [x] Unread message counts announced on channel tabs — protocol switcher button `aria-label` includes unread count (`ProtocolSwitcher` / `aria.switchTo*WithUnread`); channel-tab unread announcement still open
 - [ ] Favorite toggle state announced (pressed/not pressed)
 - [ ] Toast/notification messages announced
 
@@ -25,7 +25,7 @@ This is a living document. Check items against VoiceOver (macOS), NVDA (Windows)
 - [ ] All text passes 4.5:1 contrast ratio (use Colour Contrast Analyser)
 - [ ] Icon-only UI elements pass 3:1 against adjacent colors
 - [ ] Status dots have text alternative (not color-only)
-- [ ] Charts (Recharts) have accessible text summary or table toggle
+- [x] Charts (Recharts) have accessible text summary or table toggle — `TelemetryPanel` charts use `role="img"` + summarized `aria-label` (table toggle still optional)
 - [ ] No content lost when system font size set to 200%
 - [ ] No content lost in portrait vs landscape (window resize to 320px wide)
 - [ ] Decorative elements (dividers, spacers) marked `aria-hidden="true"`
@@ -45,7 +45,7 @@ This is a living document. Check items against VoiceOver (macOS), NVDA (Windows)
   - [ ] **Setting on**: Non-essential motion disabled — animated Lucide icons render static (no hover draw); decorative motion suppressed via `html[data-reduce-motion="true"]` (logo watermark keyframes, map anomaly pulse).
   - [ ] **Setting on — still allowed (essential feedback)**: Loading spinners (`animate-spin`, `Loader`), connection header status pulses (`animate-pulse` on MQTT/device labels and status dots).
   - [ ] Toggle persists across restart (SQLite + localStorage reconcile on mount, same pattern as `locale` / `chatCompactMode`).
-  - [ ] Optional first-run: if `reduceMotion` key is absent, initializer may default from `matchMedia('(prefers-reduced-motion: reduce)')` once; thereafter only the App toggle applies (not live-synced to OS changes).
+  - [x] Optional first-run: if `reduceMotion` key is absent, initializer may default from `matchMedia('(prefers-reduced-motion: reduce)')` once; thereafter only the App toggle applies (not live-synced to OS changes). Implemented by `initReduceMotionDefaultIfAbsent()` in `reduceMotionPreference.ts` (called from `main.tsx` before React mount).
 
 ---
 

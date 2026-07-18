@@ -20,6 +20,7 @@ import {
   reserveStoreForwardHistoryRequest,
   resolveAutoStoreForwardHistoryWindowMinutes,
   resolveMeshtasticTextMessagePayload,
+  resolveStoreForwardHistoryTuning,
   resolveStoreForwardServerFromObservedPackets,
   setRemoteAdminReadsActive,
   SF_AUTO_HISTORY_COOLDOWN_MS,
@@ -232,6 +233,15 @@ describe('meshtasticBacklogUtils', () => {
 
   it('uses higher cap constant for manual fetch', () => {
     expect(SF_MANUAL_HISTORY_MESSAGE_CAP).toBeGreaterThan(SF_AUTO_HISTORY_MESSAGE_CAP);
+  });
+
+  it('resolves conservative vs aggressive S&F history tuning', () => {
+    const conservative = resolveStoreForwardHistoryTuning('conservative');
+    const aggressive = resolveStoreForwardHistoryTuning('aggressive');
+    expect(conservative.messageCap).toBe(SF_AUTO_HISTORY_MESSAGE_CAP);
+    expect(aggressive.messageCap).toBeGreaterThan(conservative.messageCap);
+    expect(aggressive.cooldownMs).toBeLessThan(conservative.cooldownMs);
+    expect(aggressive.offlineMinMs).toBeLessThan(conservative.offlineMinMs);
   });
 
   it('builds CLIENT_HISTORY request bytes with defaults and custom window', () => {

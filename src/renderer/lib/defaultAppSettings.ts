@@ -29,12 +29,25 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   autoFloodAdvertType: 'flood' as 'flood' | 'zeroHop',
   /** Persisted MeshCore regional flood scope hashtag (empty = none). */
   meshcoreFloodScopeHashtag: '',
+  /**
+   * User-managed MeshCore flood-scope quick-picks for Radio/Chat.
+   * Empty by default; first load may seed from `meshcoreFloodScopeHashtag`.
+   */
+  meshcoreFloodScopePresets: [] as string[],
   locale: 'en' as string,
   chatCompactMode: false,
   /** When true, disables non-essential UI motion (animated icons, decorative pulses). */
   reduceMotion: false,
   /** Auto-request Store & Forward chat history on RF connect (with cap/cooldown). */
   storeForwardAutoFetchHistory: true,
+  /**
+   * Store & Forward auto-history aggressiveness.
+   * - conservative: longer offline gate / cooldown (default; busy-mesh friendly)
+   * - aggressive: shorter gates / higher cap for spotty coverage catch-up
+   */
+  storeForwardHistoryProfile: 'conservative' as 'conservative' | 'aggressive',
+  /** When sharing location in chat, also send a Meshtastic Waypoint packet (map pin). */
+  shareLocationSendWaypoint: true,
   /** MeshCore Open wire: keyed replies, r: reactions, g: GIF send (experimental). */
   meshcoreOpenWireCompatEnabled: false,
   /** MeshCore companion path hash mode: 0 = 1-byte, 1 = 2-byte, 2 = 3-byte (firmware v1.14+). */

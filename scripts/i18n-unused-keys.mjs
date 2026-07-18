@@ -43,6 +43,13 @@ export const DYNAMIC_T_PREFIXES = [
   { prefix: 'reticulumMap.empty.', leafKeys: true },
   { prefix: 'rrc.status.', leafKeys: true },
   { prefix: 'rrc.slash.', leafKeys: true },
+  { prefix: 'reticulumRemote.sections.', leafKeys: true },
+  { prefix: 'reticulumRemote.pathCapability.speed.', leafKeys: true },
+  { prefix: 'reticulumRemote.shell.status.', leafKeys: true },
+  { prefix: 'reticulumRemote.transfer.kind.', leafKeys: true },
+  { prefix: 'reticulumRemote.transfer.status.', leafKeys: true },
+  { prefix: 'reticulumRemote.settings.inboundMode.', leafKeys: true },
+  { prefix: 'reticulumRemote.settings.decision.', leafKeys: true },
 ];
 
 export function flatten(obj, prefix = '') {

@@ -234,16 +234,3 @@ pub struct LxmfReactionRequest {
     pub target_hash: String,
     pub emoji: String,
 }
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct LxmfResourceRequest {
-    pub destination_hash: String,
-    pub file_name: String,
-    pub mime_type: String,
-    pub data_base64: String,
-    #[serde(default)]
-    pub reply_to_hash: Option<String>,
-    /// Optional UTF-8 quote snippet for LXMF `FIELD_REPLY_QUOTE` (0x31).
-    #[serde(default)]
-    pub reply_preview_text: Option<String>,
-}

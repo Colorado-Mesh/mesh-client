@@ -129,6 +129,8 @@ export interface NeighborResult {
 export interface PingResult {
   pathLen: number;
   pathHashes: number[];
+  /** Present on MeshCore TraceData results; defaults to 1-byte when omitted. */
+  hashSizeBytes?: 1 | 2 | 3;
   pathSnrs: number[];
   lastSnr: number;
   tag: number;

@@ -16,7 +16,7 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
   it('implements exponential backoff reconnect with max attempts', () => {
     expect(RUNTIME_SOURCE).toContain('attemptMeshcoreReconnect');
     expect(RUNTIME_SOURCE).toContain('handleMeshcoreConnectionLost');
-    expect(RUNTIME_SOURCE).toContain('MESHCORE_MAX_RECONNECT_ATTEMPTS');
+    expect(RUNTIME_SOURCE).toContain('rfMaxReconnectAttemptsForTransport');
     expect(RUNTIME_SOURCE).toContain('delayUnlessSuspended');
   });
 
@@ -127,18 +127,20 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
       /attemptMeshcoreReconnect[\s\S]{0,4000}finally \{[\s\S]*?bleConnectInProgressRef\.current = false/,
     );
     expect(RUNTIME_SOURCE).toMatch(
-      /meshcoreReconnectAttemptRef\.current >= MESHCORE_MAX_RECONNECT_ATTEMPTS[\s\S]{0,400}bleConnectInProgressRef\.current = false/,
+      /meshcoreReconnectAttemptRef\.current >= maxReconnectAttempts[\s\S]{0,400}bleConnectInProgressRef\.current = false/,
     );
   });
 
   it('escalates serial reconnect exhaustion with forget and re-select UI flag', () => {
     expect(RUNTIME_SOURCE).toMatch(
-      /meshcoreReconnectAttemptRef\.current >= MESHCORE_MAX_RECONNECT_ATTEMPTS[\s\S]{0,500}escalateSerialReconnectExhaustion/,
+      /meshcoreReconnectAttemptRef\.current >= maxReconnectAttempts[\s\S]{0,500}escalateSerialReconnectExhaustion/,
     );
     expect(RUNTIME_SOURCE).toContain('serialNeedsReselect');
     expect(RUNTIME_SOURCE).toContain('attachMeshcoreSerialTransportLossWatch');
     expect(RUNTIME_SOURCE).toContain('startMeshcoreSerialWatchdog');
     expect(RUNTIME_SOURCE).toContain('registerMeshcoreSerialDisconnectTarget');
+    expect(RUNTIME_SOURCE).toContain('startSerialRediscovery');
+    expect(RUNTIME_SOURCE).toContain('captureSerialIdentityForRediscovery');
   });
 });
 

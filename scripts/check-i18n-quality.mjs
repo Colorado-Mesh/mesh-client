@@ -293,21 +293,83 @@ export const RAW_PACKET_LOG_FLOOD_ROUTING_LEAF_KEYS = new Set([
   'filterChipFloodTooltip',
 ]);
 
-const RAW_PACKET_LOG_FLOOD_ROUTING_FALSE_FRIENDS = {
-  de: [{ re: /\bHochwasser\b/i, hint: 'use flood-routing "Flood", not water "Hochwasser"' }],
+/** Shared water-disaster false friends for FLOOD routing (protocol term, not natural flood). */
+export const FLOOD_ROUTING_FALSE_FRIENDS = {
+  de: [
+    { re: /\bHochwasser\b/i, hint: 'use flood-routing "Flood", not water "Hochwasser"' },
+    { re: /Überschwemmung/i, hint: 'use flood-routing "Flood", not water "Überschwemmung"' },
+  ],
   nl: [
     { re: /\bOPSTAL\b/i, hint: 'preserve FLOOD protocol token, not barn "OPSTAL"' },
-    { re: /\bOVERSTROMING\b/i, hint: 'use flood-routing FLOOD, not disaster "overstroming"' },
+    { re: /\boverstroming/i, hint: 'use flood-routing Flood, not disaster "overstroming"' },
   ],
-  zh: [{ re: /洪水/, hint: 'preserve FLOOD protocol token, not natural flood 洪水' }],
+  zh: [{ re: /洪水/, hint: 'use flood-routing 泛洪, not natural flood 洪水' }],
   ja: [{ re: /洪水/, hint: 'preserve FLOOD protocol token, not natural flood 洪水' }],
   ko: [{ re: /홍수/, hint: 'preserve FLOOD protocol token, not natural flood 홍수' }],
   ru: [{ re: /ПОГРУЖЕНИЕ/i, hint: 'preserve FLOOD protocol token, not diving "погружение"' }],
-  id: [{ re: /T_FROID/i, hint: 'preserve T_FLOOD token, not French "T_FROID"' }],
-  pl: [{ re: /\bPowódź\b/i, hint: 'preserve FLOOD protocol token, not disaster "powódź"' }],
-  uk: [{ re: /\bПовінь\b/i, hint: 'preserve FLOOD protocol token, not disaster "повінь"' }],
-  tr: [{ re: /\bTAŞKIN\b/i, hint: 'preserve FLOOD protocol token, not disaster "taşkın"' }],
-  'pt-BR': [{ re: /\bINUNDAÇÃO\b/i, hint: 'preserve FLOOD protocol token, not disaster' }],
+  id: [
+    { re: /T_FROID/i, hint: 'preserve T_FLOOD token, not French "T_FROID"' },
+    { re: /\bbanjir\b/i, hint: 'use flood-routing Flood, not disaster "banjir"' },
+  ],
+  pl: [
+    { re: /\bPowódź\b/i, hint: 'preserve FLOOD protocol token, not disaster "powódź"' },
+    { re: /\bpowodzi/i, hint: 'use flood-routing Flood, not disaster "powodzi"' },
+  ],
+  uk: [
+    { re: /\bПовінь\b/i, hint: 'preserve FLOOD protocol token, not disaster "повінь"' },
+    { re: /\bповені/i, hint: 'use flood-routing Flood, not disaster "повені"' },
+  ],
+  tr: [
+    { re: /\bTAŞKIN\b/i, hint: 'preserve FLOOD protocol token, not disaster "taşkın"' },
+    { re: /\bsel\b/i, hint: 'use flood-routing Flood, not disaster "sel"' },
+  ],
+  'pt-BR': [
+    { re: /\bINUNDAÇÃO\b/i, hint: 'preserve FLOOD protocol token, not disaster' },
+    { re: /\binunda/i, hint: 'use flood-routing Flood, not disaster "inundação"' },
+  ],
+  es: [{ re: /\binunda/i, hint: 'use flood-routing Flood, not disaster "inundación"' }],
+  fr: [{ re: /\binonda/i, hint: 'use flood-routing Flood, not disaster "inondation"' }],
+  it: [{ re: /\binonda/i, hint: 'use flood-routing Flood, not disaster "inondazione"' }],
+  cs: [{ re: /povod/i, hint: 'use flood-routing Flood, not disaster "povodně"' }],
+};
+
+/** @deprecated Prefer {@link FLOOD_ROUTING_FALSE_FRIENDS} — kept as alias for existing imports/tests. */
+export const RAW_PACKET_LOG_FLOOD_ROUTING_FALSE_FRIENDS = FLOOD_ROUTING_FALSE_FRIENDS;
+
+/** Keys / prefixes where flood-routing false friends apply (beyond rawPacketLog chips). */
+export function isFloodRoutingUiKey(flatKey) {
+  if (
+    flatKey.startsWith('rawPacketLog.') &&
+    RAW_PACKET_LOG_FLOOD_ROUTING_LEAF_KEYS.has(flatKey.split('.').pop() ?? '')
+  ) {
+    return true;
+  }
+  if (flatKey.startsWith('chatPanel.floodScope') || flatKey.startsWith('radioPanel.floodScope')) {
+    return true;
+  }
+  if (flatKey.endsWith('.floodScopeBusy') || flatKey.includes('.floodScope')) {
+    // meshcoreBusy.floodScopeBusy and similar
+    const leaf = flatKey.split('.').pop() ?? '';
+    return leaf.startsWith('floodScope');
+  }
+  return false;
+}
+
+/** Cap = impose a limit — not a physical hat/cover. */
+export const CAP_STORED_RRC_FALSE_FRIENDS = {
+  ru: [{ re: /Кепк/i, hint: 'use "Ограничить" for Cap=limit, not hat "Кепка"' }],
+  es: [{ re: /^Tapar\b/i, hint: 'use "Limitar" for Cap=limit, not cover "Tapar"' }],
+  de: [
+    {
+      re: /auf dem neuesten Stand halten/i,
+      hint: 'use "die neuesten behalten" for keep-newest, not "keep up to date"',
+    },
+  ],
+  pl: [{ re: /^Cap\b/, hint: 'translate Cap=limit (e.g. Ogranicz), do not leave English Cap' }],
+  nl: [{ re: /^Cap\b/, hint: 'translate Cap=limit (e.g. Beperk), do not leave English Cap' }],
+  uk: [{ re: /^Cap\b/, hint: 'translate Cap=limit (e.g. Обмежити), do not leave English Cap' }],
+  id: [{ re: /^Tutup\b/i, hint: 'use "Batasi" for Cap=limit, not close "Tutup"' }],
+  cs: [{ re: /^Uzavř/i, hint: 'use "Omezit" for Cap=limit, not close "Uzavřete"' }],
 };
 
 /**
@@ -801,6 +863,37 @@ export const RETICULUM_PROBE_FALSE_FRIEND_RES = [
   },
 ];
 
+/** Remote-panel Shell section is a command shell (rnsh), not a physical casing/seashell. */
+export const RETICULUM_REMOTE_SHELL_SECTION_KEY = 'reticulumRemote.sections.shell';
+
+export const RETICULUM_REMOTE_SHELL_FALSE_FRIENDS = {
+  de: [
+    { re: /Gehäuse/i, hint: 'use command shell "Shell"/"Konsole", not device casing "Gehäuse"' },
+  ],
+  es: [{ re: /Cascar[óo]n/i, hint: 'use command shell "Shell", not eggshell "Cascarón"' }],
+  it: [{ re: /Guscio/i, hint: 'use command shell "Shell", not seashell "Guscio"' }],
+  pl: [{ re: /Muszla/i, hint: 'use command shell "Powłoka"/"Shell", not seashell "Muszla"' }],
+  ja: [{ re: /貝殻/, hint: 'use command shell シェル, not seashell 貝殻' }],
+  zh: [{ re: /壳体|貝殼/, hint: 'use command shell "Shell", not physical casing 壳体' }],
+  ko: [{ re: /껍데기|조개/, hint: 'use command shell 셸, not seashell 껍데기' }],
+  ru: [
+    { re: /Обечайк/i, hint: 'use command shell "Shell"/"Оболочка", not vessel shell "Обечайка"' },
+  ],
+  uk: [{ re: /Контур/i, hint: 'use command shell "Оболонка"/"Shell", not contour "Контур"' }],
+  nl: [{ re: /Schelp/i, hint: 'use command shell "Shell", not seashell "Schelp"' }],
+  id: [{ re: /Kerang/i, hint: 'use command shell "Shell", not seashell "Kerang"' }],
+};
+
+/** Reticulum utility names (rnsh remote shell, rncp file copy) must survive translation verbatim. */
+export const RETICULUM_REMOTE_WIRE_TOKENS = [
+  // Sentence-initial capitalization is fine; translating or dropping the token is not.
+  { token: 'rncp', re: /\brncp\b/i },
+  { token: 'rnsh', re: /\brnsh\b/i },
+];
+
+/** Keys carrying rncp/rnsh literals: Remote panel + Chat DM send-file control. */
+export const RETICULUM_REMOTE_WIRE_TOKEN_KEY_RE = /^(reticulumRemote\.|chatPanel\.rncp\.)/;
+
 /** MT turns "other peers" into office colleagues on stack transport toggle. */
 export const RETICULUM_OTHER_PEERS_COLLEAGUE_RES = [
   { re: /\bKollegen\b/i, hint: 'use networking "Peers", not German office colleague "Kollegen"' },
@@ -821,6 +914,8 @@ export function isReticulumUiFlatKey(flatKey) {
   if (flatKey.startsWith('connectionPanel.reticulum')) return true;
   if (flatKey.startsWith('networkPanel.reticulum')) return true;
   if (flatKey.startsWith('adminPanel.reticulum')) return true;
+  if (flatKey.startsWith('reticulumRemote.')) return true;
+  if (flatKey.startsWith('chatPanel.rncp.')) return true;
   return false;
 }
 
@@ -957,7 +1052,9 @@ function checkReticulumConnectionPanelIssues(ctx) {
   const isNestedReticulum =
     flatKey.startsWith('connectionPanel.reticulum') ||
     flatKey.startsWith('networkPanel.reticulum') ||
-    flatKey.startsWith('adminPanel.reticulum');
+    flatKey.startsWith('adminPanel.reticulum') ||
+    flatKey.startsWith('reticulumRemote.') ||
+    flatKey.startsWith('chatPanel.rncp.');
 
   if (
     !isConnectionTopLevel &&
@@ -1113,6 +1210,38 @@ function checkReticulumConnectionPanelIssues(ctx) {
 
   if (leafKey === 'reticulumSidecarStartFailed' && locale === 'ja' && /網膜/.test(val)) {
     issues.push('reticulumSidecarStartFailed uses 網膜 (retina) — use Reticulum stack wording');
+  }
+
+  return issues;
+}
+
+/**
+ * Remote panel (rnsh shell + rncp transfer) and Chat DM rncp control quality checks.
+ *
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkReticulumRemoteIssues(ctx) {
+  const { locale, flatKey, val, enVal } = ctx;
+  const issues = [];
+  if (locale === 'en') return issues;
+
+  if (flatKey === RETICULUM_REMOTE_SHELL_SECTION_KEY) {
+    for (const { re, hint } of RETICULUM_REMOTE_SHELL_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`reticulumRemote shell false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (RETICULUM_REMOTE_WIRE_TOKEN_KEY_RE.test(flatKey)) {
+    for (const { token, re } of RETICULUM_REMOTE_WIRE_TOKENS) {
+      if (re.test(enVal) && !re.test(val)) {
+        issues.push(
+          `must preserve Reticulum utility name "${token}" from English (do not translate it)`,
+        );
+      }
+    }
   }
 
   return issues;
@@ -2393,7 +2522,7 @@ function checkMeshAdvertAndRawPacketLogIssues(ctx) {
       }
     }
     if (RAW_PACKET_LOG_FLOOD_ROUTING_LEAF_KEYS.has(packetLeaf)) {
-      for (const { re, hint } of RAW_PACKET_LOG_FLOOD_ROUTING_FALSE_FRIENDS[locale] ?? []) {
+      for (const { re, hint } of FLOOD_ROUTING_FALSE_FRIENDS[locale] ?? []) {
         if (re.test(val)) {
           issues.push(`rawPacketLog flood-routing false friend: ${hint}`);
         }
@@ -3515,6 +3644,10 @@ export const RRC_ROOM_FALSE_FRIENDS = {
     ...(ROOMS_PANEL_FALSE_FRIENDS.ja ?? []),
     { re: /客室/, hint: 'use "ルーム" for RRC room, not guest-room 客室' },
   ],
+  fr: [
+    ...(ROOMS_PANEL_FALSE_FRIENDS.fr ?? []),
+    { re: /\bpièce\b/i, hint: 'use "salle" for RRC room, not hotel "pièce"' },
+  ],
 };
 
 /** Known MT garbage for specific RRC leaves. */
@@ -3588,13 +3721,25 @@ export function localeContainsSlashToken(haystack, token) {
 function checkRrcPanelQualityIssues(ctx) {
   const { locale, flatKey, val, enVal } = ctx;
   const issues = [];
-  if (!flatKey.startsWith(RRC_PREFIX) || locale === 'en') return issues;
+  const isRrcRoomRelated =
+    flatKey.startsWith(RRC_PREFIX) || flatKey.startsWith('appPanel.capStoredRrc');
+  if (!isRrcRoomRelated || locale === 'en') return issues;
 
   for (const { re, hint } of RRC_ROOM_FALSE_FRIENDS[locale] ?? []) {
     if (re.test(val)) {
       issues.push(`rrc false friend: ${hint}`);
     }
   }
+
+  if (flatKey.startsWith('appPanel.capStoredRrc')) {
+    for (const { re, hint } of CAP_STORED_RRC_FALSE_FRIENDS[locale] ?? []) {
+      if (re.test(val)) {
+        issues.push(`appPanel Cap false friend: ${hint}`);
+      }
+    }
+  }
+
+  if (!flatKey.startsWith(RRC_PREFIX)) return issues;
 
   for (const { re, hint } of RRC_LEAF_FORBIDDEN[flatKey] ?? []) {
     if (re.test(val)) {
@@ -3614,6 +3759,26 @@ function checkRrcPanelQualityIssues(ctx) {
   return issues;
 }
 
+/**
+ * Flood-routing UI (chat/radio floodScope + rawPacketLog chips) — not natural-disaster flood.
+ * @param {LocaleQualityCtx} ctx
+ * @returns {string[]}
+ */
+function checkFloodRoutingUiIssues(ctx) {
+  const { locale, flatKey, val } = ctx;
+  const issues = [];
+  if (locale === 'en' || !isFloodRoutingUiKey(flatKey)) return issues;
+  // rawPacketLog chips already emit a prefixed message from checkRadioPanelChannelIssues path;
+  // skip double-report for those leaves here when under rawPacketLog.
+  if (flatKey.startsWith('rawPacketLog.')) return issues;
+  for (const { re, hint } of FLOOD_ROUTING_FALSE_FRIENDS[locale] ?? []) {
+    if (re.test(val)) {
+      issues.push(`flood-routing false friend: ${hint}`);
+    }
+  }
+  return issues;
+}
+
 const LOCALE_STRING_QUALITY_CHECKS = [
   checkCatEncodingAndMeshtasticIssues,
   checkMustTranslateAndFormFieldIssues,
@@ -3629,6 +3794,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkAppPanelReduceMotionAndBrandIssues,
   checkMeshcoreOpenWireIssues,
   checkReticulumConnectionPanelIssues,
+  checkReticulumRemoteIssues,
   checkReticulumPeerAndPingIssues,
   checkUkrainianApostropheIssues,
   checkMeshcoreReactionAndConnectionIssues,
@@ -3643,6 +3809,7 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkWireTokenLiteralPreservedIssues,
   checkNomadHostingLiteralIssues,
   checkRrcPanelQualityIssues,
+  checkFloodRoutingUiIssues,
 ];
 
 /**

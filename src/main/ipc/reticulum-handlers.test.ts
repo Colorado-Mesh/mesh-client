@@ -6,8 +6,13 @@ const { ipcMainHandleMock } = vi.hoisted(() => ({
   ipcMainHandleMock: vi.fn(),
 }));
 
+const { showItemInFolderMock } = vi.hoisted(() => ({
+  showItemInFolderMock: vi.fn(),
+}));
+
 vi.mock('electron', () => ({
   ipcMain: { handle: ipcMainHandleMock },
+  shell: { showItemInFolder: showItemInFolderMock },
 }));
 
 vi.mock('../validate-ipc-sender', () => ({
@@ -39,6 +44,20 @@ vi.mock('../reticulum-identity-import', () => ({
   showReticulumIdentityImportDialog: vi.fn(),
 }));
 
+vi.mock('../reticulum-remote-paths', () => ({
+  showRncpOpenFileDialog: vi.fn(),
+  showRncpSaveDirectoryDialog: vi.fn(),
+  isAllowedRncpSendFilePath: vi.fn(() => false),
+  isAllowedRncpSaveDirectoryPath: vi.fn(() => false),
+  isAllowedRncpRevealPath: vi.fn(() => false),
+  isRncpPickerGatedApiPath: vi.fn(
+    (apiPath: string) =>
+      apiPath === '/api/v1/rncp/send' ||
+      apiPath === '/api/v1/rncp/fetch' ||
+      apiPath === '/api/v1/rncp/listener',
+  ),
+}));
+
 import {
   isAllowedNomadContentSourcePath,
   readFirstExistingConfig,
@@ -47,6 +66,13 @@ import {
 } from '../reticulum-config-paths';
 import { validateReticulumUserConfig } from '../reticulum-config-validate';
 import { showReticulumIdentityImportDialog } from '../reticulum-identity-import';
+import {
+  isAllowedRncpRevealPath,
+  isAllowedRncpSaveDirectoryPath,
+  isAllowedRncpSendFilePath,
+  showRncpOpenFileDialog,
+  showRncpSaveDirectoryDialog,
+} from '../reticulum-remote-paths';
 import { assertIpcSender } from '../validate-ipc-sender';
 import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './reticulum-handlers';
 
@@ -59,6 +85,11 @@ const showNomadContentSourceDialogMock = vi.mocked(showNomadContentSourceDialog)
 const isAllowedNomadContentSourcePathMock = vi.mocked(isAllowedNomadContentSourcePath);
 const validateReticulumUserConfigMock = vi.mocked(validateReticulumUserConfig);
 const showReticulumIdentityImportDialogMock = vi.mocked(showReticulumIdentityImportDialog);
+const showRncpOpenFileDialogMock = vi.mocked(showRncpOpenFileDialog);
+const showRncpSaveDirectoryDialogMock = vi.mocked(showRncpSaveDirectoryDialog);
+const isAllowedRncpSendFilePathMock = vi.mocked(isAllowedRncpSendFilePath);
+const isAllowedRncpSaveDirectoryPathMock = vi.mocked(isAllowedRncpSaveDirectoryPath);
+const isAllowedRncpRevealPathMock = vi.mocked(isAllowedRncpRevealPath);
 
 const IDLE_STATUS = { running: false, port: 0, pid: null };
 
@@ -91,6 +122,12 @@ describe('registerReticulumIpcHandlers', () => {
     isAllowedNomadContentSourcePathMock
       .mockReset()
       .mockImplementation((path: string | null) => Boolean(path?.trim()));
+    showRncpOpenFileDialogMock.mockReset();
+    showRncpSaveDirectoryDialogMock.mockReset();
+    isAllowedRncpSendFilePathMock.mockReset().mockReturnValue(false);
+    isAllowedRncpSaveDirectoryPathMock.mockReset().mockReturnValue(false);
+    isAllowedRncpRevealPathMock.mockReset().mockReturnValue(false);
+    showItemInFolderMock.mockReset();
     manager = createManagerStub();
     getManagerResult = manager;
 
@@ -119,6 +156,12 @@ describe('registerReticulumIpcHandlers', () => {
         'reticulum:showNomadContentSourceDialog',
         'reticulum:setNomadContentSource',
         'reticulum:validateConfig',
+        'reticulum:showRncpOpenFileDialog',
+        'reticulum:showRncpSaveDirectoryDialog',
+        'reticulum:revealInFolder',
+        'reticulum:rncpSend',
+        'reticulum:rncpFetch',
+        'reticulum:setRncpListener',
       ]),
     );
   });
@@ -363,6 +406,148 @@ describe('registerReticulumIpcHandlers', () => {
       validateReticulumUserConfigMock.mockRejectedValue(new Error('config unreadable'));
       const result = await handlers.get('reticulum:validateConfig')?.(event);
       expect(result).toEqual({ ok: false, issues: [], error: 'config unreadable' });
+    });
+  });
+
+  describe('rncp file dialogs + picker-gated send/fetch/listener', () => {
+    it('showRncpOpenFileDialog delegates to showRncpOpenFileDialog', async () => {
+      showRncpOpenFileDialogMock.mockResolvedValue({ canceled: false, path: '/tmp/send.txt' });
+      const result = await handlers.get('reticulum:showRncpOpenFileDialog')?.(event);
+      expect(result).toEqual({ canceled: false, path: '/tmp/send.txt' });
+    });
+
+    it('showRncpSaveDirectoryDialog delegates to showRncpSaveDirectoryDialog', async () => {
+      showRncpSaveDirectoryDialogMock.mockResolvedValue({ canceled: false, path: '/tmp/recv' });
+      const result = await handlers.get('reticulum:showRncpSaveDirectoryDialog')?.(event);
+      expect(result).toEqual({ canceled: false, path: '/tmp/recv' });
+    });
+
+    it('revealInFolder rejects paths not from a prior picker result', () => {
+      isAllowedRncpRevealPathMock.mockReturnValue(false);
+      const result = handlers.get('reticulum:revealInFolder')?.(event, '/etc/passwd');
+      expect(result).toEqual({ ok: false, error: 'path_not_from_picker' });
+      expect(showItemInFolderMock).not.toHaveBeenCalled();
+    });
+
+    it('revealInFolder shows picker-backed paths', () => {
+      isAllowedRncpRevealPathMock.mockReturnValue(true);
+      const result = handlers.get('reticulum:revealInFolder')?.(event, '/tmp/send.txt');
+      expect(result).toEqual({ ok: true });
+      expect(showItemInFolderMock).toHaveBeenCalledWith('/tmp/send.txt');
+    });
+
+    it('rncpSend rejects a path not from the file picker', async () => {
+      isAllowedRncpSendFilePathMock.mockReturnValue(false);
+      const result = await handlers.get('reticulum:rncpSend')?.(event, {
+        destination_hash: 'aa'.repeat(16),
+        path: '/etc/passwd',
+      });
+      expect(result).toEqual({ ok: false, error: 'path_not_from_picker' });
+      expect(manager.proxyPost).not.toHaveBeenCalled();
+    });
+
+    it('rncpSend forwards picker-backed paths to the sidecar', async () => {
+      isAllowedRncpSendFilePathMock.mockReturnValue(true);
+      await handlers.get('reticulum:rncpSend')?.(event, {
+        destination_hash: 'aa'.repeat(16),
+        path: '/tmp/send.txt',
+      });
+      expect(manager.proxyPost).toHaveBeenCalledWith('/api/v1/rncp/send', {
+        destination_hash: 'aa'.repeat(16),
+        path: '/tmp/send.txt',
+      });
+    });
+
+    it('rncpFetch allows an omitted save_path (sidecar default)', async () => {
+      await handlers.get('reticulum:rncpFetch')?.(event, {
+        destination_hash: 'aa'.repeat(16),
+        remote_path: '/remote/file.txt',
+      });
+      expect(manager.proxyPost).toHaveBeenCalledWith('/api/v1/rncp/fetch', {
+        destination_hash: 'aa'.repeat(16),
+        remote_path: '/remote/file.txt',
+        save_path: undefined,
+      });
+    });
+
+    it('rncpFetch rejects a save_path not under the picked save directory', async () => {
+      isAllowedRncpSaveDirectoryPathMock.mockReturnValue(false);
+      const result = await handlers.get('reticulum:rncpFetch')?.(event, {
+        destination_hash: 'aa'.repeat(16),
+        remote_path: '/remote/file.txt',
+        save_path: '/etc/evil.txt',
+      });
+      expect(result).toEqual({ ok: false, error: 'save_path_not_from_picker' });
+      expect(manager.proxyPost).not.toHaveBeenCalled();
+    });
+
+    it('setRncpListener rejects enabled without save_dir', async () => {
+      const result = await handlers.get('reticulum:setRncpListener')?.(event, {
+        enabled: true,
+      });
+      expect(result).toEqual({ ok: false, error: 'save_dir_required' });
+      expect(manager.proxyPost).not.toHaveBeenCalled();
+    });
+
+    it('setRncpListener rejects allow_fetch without fetch_jail', async () => {
+      isAllowedRncpSaveDirectoryPathMock.mockReturnValue(true);
+      const result = await handlers.get('reticulum:setRncpListener')?.(event, {
+        enabled: true,
+        save_dir: '/tmp/recv',
+        allow_fetch: true,
+      });
+      expect(result).toEqual({ ok: false, error: 'fetch_jail_required' });
+      expect(manager.proxyPost).not.toHaveBeenCalled();
+    });
+
+    it('setRncpListener rejects a save_dir not from the folder picker', async () => {
+      isAllowedRncpSaveDirectoryPathMock.mockReturnValue(false);
+      const result = await handlers.get('reticulum:setRncpListener')?.(event, {
+        enabled: true,
+        save_dir: '/etc',
+      });
+      expect(result).toEqual({ ok: false, error: 'save_dir_not_from_picker' });
+      expect(manager.proxyPost).not.toHaveBeenCalled();
+    });
+
+    it('setRncpListener rejects a fetch_jail not from the folder picker', async () => {
+      isAllowedRncpSaveDirectoryPathMock.mockImplementation((p) => p === '/tmp/recv');
+      const result = await handlers.get('reticulum:setRncpListener')?.(event, {
+        enabled: true,
+        save_dir: '/tmp/recv',
+        fetch_jail: '/etc',
+      });
+      expect(result).toEqual({ ok: false, error: 'fetch_jail_not_from_picker' });
+      expect(manager.proxyPost).not.toHaveBeenCalled();
+    });
+
+    it('setRncpListener forwards picker-backed dirs and policy lists to the sidecar', async () => {
+      isAllowedRncpSaveDirectoryPathMock.mockReturnValue(true);
+      await handlers.get('reticulum:setRncpListener')?.(event, {
+        enabled: true,
+        save_dir: '/tmp/recv',
+        allow_fetch: true,
+        fetch_jail: '/tmp/recv',
+        overwrite: true,
+        allowed: ['aa'.repeat(16)],
+        blocked: ['bb'.repeat(16)],
+      });
+      expect(manager.proxyPost).toHaveBeenCalledWith('/api/v1/rncp/listener', {
+        enabled: true,
+        save_dir: '/tmp/recv',
+        allow_fetch: true,
+        fetch_jail: '/tmp/recv',
+        overwrite: true,
+        allowed: ['aa'.repeat(16)],
+        blocked: ['bb'.repeat(16)],
+      });
+    });
+
+    it('proxyPost rejects picker-gated rncp mutation paths', async () => {
+      await expect(
+        handlers.get('reticulum:proxyPost')?.(event, '/api/v1/rncp/send', { path: '/tmp/x' }),
+      ).rejects.toThrow(/rncpSend\/rncpFetch\/setRncpListener/);
+      expect(manager.proxyPost).not.toHaveBeenCalled();
     });
   });
 });

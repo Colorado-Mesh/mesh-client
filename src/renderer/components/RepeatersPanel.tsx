@@ -14,11 +14,20 @@ import type {
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
+  MeshcoreTraceResultEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
 import {
   meshcoreRepeaterAdminErrorMessage,
   translateMeshcoreUserMessage,
 } from '../lib/meshcore/meshcoreMessageI18n';
+import {
+  buildMeshcorePathChainSegments,
+  buildMeshcorePathResolutionFromNodes,
+  meshcoreDisplayRouteFromPathSelection,
+  meshcoreHopSegmentTooltip,
+  meshcorePathBytesEqual,
+  meshcoreTraceHopDisplayRows,
+} from '../lib/meshcorePathChainDisplay';
 import type { MeshcoreRepeaterRpcPendingMap } from '../lib/meshcoreRepeaterAdminPending';
 import { isRepeaterAdminRpcPending } from '../lib/meshcoreRepeaterAdminPending';
 import { isMeshcoreRepeaterCliDangerCommand } from '../lib/meshcoreRepeaterCliDanger';
@@ -40,6 +49,7 @@ import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import { MeshcoreRepeaterSavedPasswordIndicator } from './MeshcoreRepeaterPasswordControls';
+import { MeshcoreRouteChain } from './MeshcoreRouteChain';
 import { formatSecondsAgo } from './NodeInfoBody';
 import SnrIndicator from './SnrIndicator';
 import { useToast } from './Toast';
@@ -48,10 +58,7 @@ interface Props {
   nodes: Map<number, MeshNode>;
   meshcoreNodeStatus: Map<number, MeshCoreRepeaterStatus>;
   meshcoreStatusErrors?: Map<number, string>;
-  meshcoreTraceResults: Map<
-    number,
-    { pathLen: number; pathHashes: number[]; pathSnrs: number[]; lastSnr: number; tag: number }
-  >;
+  meshcoreTraceResults: Map<number, MeshcoreTraceResultEntry>;
   meshcorePingErrors?: Map<number, string>;
   /** Survives panel unmount — in-flight status/ping/neighbors/telemetry/CLI RPCs. */
   meshcoreRepeaterRpcPending?: MeshcoreRepeaterRpcPendingMap;
@@ -283,6 +290,7 @@ export default function RepeatersPanel({
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
   const signalHistory = useRepeaterSignalStore((s) => s.history);
   const pathHistory = usePathHistoryStore((s) => s.records);
+  const pathResolution = useMemo(() => buildMeshcorePathResolutionFromNodes(nodes), [nodes]);
   const [deleteLoadingSet, setDeleteLoadingSet] = useState<Set<number>>(new Set());
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [expandedNeighbors, setExpandedNeighbors] = useState<Set<number>>(new Set());
@@ -762,6 +770,37 @@ export default function RepeatersPanel({
                   );
                   const history = signalHistory.get(node.node_id) ?? [];
                   const paths = pathHistory.get(node.node_id) ?? [];
+                  const currentRoute = meshcoreDisplayRouteFromPathSelection(
+                    paths.length > 0
+                      ? usePathHistoryStore.getState().selectBestPath(node.node_id)
+                      : null,
+                  );
+                  const currentRouteSegments = currentRoute
+                    ? buildMeshcorePathChainSegments({
+                        pathBytes: currentRoute.pathBytes,
+                        hashSizeBytes: currentRoute.hashSizeBytes,
+                        getNodeLabel: pathResolution.getNodeLabel,
+                        pubKeyByNodeId: pathResolution.pubKeyByNodeId,
+                        candidates: pathResolution.candidates,
+                      })
+                    : [];
+                  const traceMatchesCurrentRoute =
+                    traceResult != null &&
+                    currentRoute != null &&
+                    meshcorePathBytesEqual(traceResult.pathHashes, currentRoute.pathBytes);
+                  const canExpandPath = traceResult != null || currentRoute != null;
+                  const traceHopRows =
+                    traceResult != null
+                      ? meshcoreTraceHopDisplayRows({
+                          pathHashes: traceResult.pathHashes ?? [],
+                          pathSnrs: Array.isArray(traceResult.pathSnrs) ? traceResult.pathSnrs : [],
+                          hashSizeBytes: traceResult.hashSizeBytes ?? 1,
+                          destNodeId: node.node_id,
+                          getNodeLabel: pathResolution.getNodeLabel,
+                          pubKeyByNodeId: pathResolution.pubKeyByNodeId,
+                          candidates: pathResolution.candidates,
+                        })
+                      : [];
                   const reliabilityText = displayReliability(paths);
                   const airPct =
                     status?.totalAirTimeSecs && status?.totalUpTimeSecs
@@ -937,7 +976,7 @@ export default function RepeatersPanel({
                           {displayRepeaterRssi(node, status, meshcoreContactsDb)}
                         </td>
                         <td className="py-2 pr-4">
-                          {traceResult ? (
+                          {canExpandPath ? (
                             <button
                               type="button"
                               onClick={() => {
@@ -945,8 +984,11 @@ export default function RepeatersPanel({
                               }}
                               className="text-left text-blue-400 underline decoration-dotted hover:text-blue-300"
                               title={t('repeatersPanel.hopCountTooltip')}
+                              aria-label={t('repeatersPanel.hopCountTooltip')}
                             >
-                              {meshcoreTracePathLenToHops(traceResult.pathLen)}
+                              {traceResult
+                                ? meshcoreTracePathLenToHops(traceResult.pathLen)
+                                : (currentRoute?.hopCount ?? node.hops_away ?? '—')}
                             </button>
                           ) : node.hops_away != null ? (
                             <span className="text-gray-300">{node.hops_away}</span>
@@ -1222,36 +1264,54 @@ export default function RepeatersPanel({
                         </td>
                       </tr>
 
-                      {/* Path SNR detail row */}
-                      {isPathExpanded && traceResult && (
+                      {/* Path / current-route detail row */}
+                      {isPathExpanded && canExpandPath && (
                         <tr className="bg-gray-900/60">
                           <td colSpan={10} className="px-4 py-2">
-                            <div className="flex flex-wrap items-center gap-1 text-xs">
-                              <span className="mr-1 text-gray-400">
-                                {t('repeatersPanel.pathLabel')}
-                              </span>
-                              <span className="text-brand-green">{t('repeatersPanel.hopMe')}</span>
-                              {(Array.isArray(traceResult.pathSnrs)
-                                ? traceResult.pathSnrs
-                                : []
-                              ).map((hop, i) => (
-                                <span key={i} className="flex items-center gap-1">
+                            <div className="flex flex-col gap-2">
+                              {traceResult ? (
+                                <div className="flex flex-wrap items-center gap-1 text-xs">
+                                  <span className="mr-1 text-gray-400">
+                                    {t('repeatersPanel.pathLabel')}
+                                  </span>
+                                  <span className="text-brand-green">
+                                    {t('repeatersPanel.hopMe')}
+                                  </span>
+                                  {traceHopRows.map((hop, i) => (
+                                    <span key={i} className="flex items-center gap-1">
+                                      <span className="text-gray-600">→</span>
+                                      <span
+                                        className="rounded bg-blue-900/40 px-1.5 py-0.5 font-mono text-blue-300"
+                                        title={meshcoreHopSegmentTooltip(t, hop)}
+                                      >
+                                        {hop.label ||
+                                          `${hop.snr > 0 ? '+' : ''}${hop.snr.toFixed(2)} dB`}
+                                      </span>
+                                      <span className="text-gray-500">
+                                        {hop.snr > 0 ? '+' : ''}
+                                        {hop.snr.toFixed(2)} dB
+                                      </span>
+                                    </span>
+                                  ))}
                                   <span className="text-gray-600">→</span>
-                                  <span className="rounded bg-blue-900/40 px-1.5 py-0.5 font-mono text-blue-300">
-                                    {hop > 0 ? '+' : ''}
-                                    {hop.toFixed(2)} dB
+                                  <span className="bg-brand-green/20 text-brand-green rounded px-1.5 py-0.5 font-mono">
+                                    {traceResult.lastSnr > 0 ? '+' : ''}
+                                    {traceResult.lastSnr.toFixed(2)} dB
                                   </span>
-                                  <span className="text-gray-500">
-                                    {t('repeatersPanel.hopN', { n: i + 1 })}
+                                  <span className="text-white">▣ {node.long_name}</span>
+                                </div>
+                              ) : null}
+                              {currentRoute && !traceMatchesCurrentRoute ? (
+                                <div className="flex flex-wrap items-center gap-1 text-xs">
+                                  <span className="mr-1 text-gray-400">
+                                    {t('repeatersPanel.currentRouteLabel')}
                                   </span>
-                                </span>
-                              ))}
-                              <span className="text-gray-600">→</span>
-                              <span className="bg-brand-green/20 text-brand-green rounded px-1.5 py-0.5 font-mono">
-                                {traceResult.lastSnr > 0 ? '+' : ''}
-                                {traceResult.lastSnr.toFixed(2)} dB
-                              </span>
-                              <span className="text-white">▣ {node.long_name}</span>
+                                  <MeshcoreRouteChain
+                                    segments={currentRouteSegments}
+                                    destLabel={node.long_name}
+                                  />
+                                </div>
+                              ) : null}
                             </div>
                           </td>
                         </tr>

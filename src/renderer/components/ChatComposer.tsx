@@ -1,8 +1,9 @@
 /* eslint-disable react-hooks/refs */
 import 'emoji-picker-element';
 
-import { CornerUpLeft, Mic } from 'lucide-react-motion';
+import { ChevronDown, ChevronUp, CornerUpLeft, MapPin } from 'lucide-react-motion';
 import { type RefObject, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -11,7 +12,10 @@ import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
 import type { ChatMessage, MeshNode, MeshProtocol } from '@/renderer/lib/types';
 import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types';
 
-import { isMeshcoreOpenWireCompatEnabled } from '../lib/appSettingsStorage';
+import {
+  isMeshcoreOpenWireCompatEnabled,
+  isShareLocationSendWaypointEnabled,
+} from '../lib/appSettingsStorage';
 import {
   type ComposerWireContext,
   computeComposerLimitStatus,
@@ -19,8 +23,13 @@ import {
   MAX_CHUNKS,
   splitChatMessage,
 } from '../lib/chatComposerLimits';
+import { formatLocationMessage } from '../lib/chatLocationUtils';
 import { clearDraft, loadDraftsInitial, saveDraft } from '../lib/chatPanelProtocolStorage';
-import { MESHCORE_FLOOD_SCOPE_PRESETS } from '../lib/meshcoreFloodScope';
+import { normalizeMeshcoreFloodScopeHashtag } from '../lib/meshcoreFloodScope';
+import {
+  isValidMeshcoreFloodScopeHashtag,
+  rememberMeshcoreFloodScopePreset,
+} from '../lib/meshcoreFloodScopePresetsStorage';
 import {
   formatMeshcoreGifWire,
   meshcoreGiphyMediaUrl,
@@ -29,6 +38,7 @@ import {
 } from '../lib/meshcoreGifWire';
 import { HelpTooltip } from './HelpTooltip';
 import MentionAutocomplete, { buildMentionCandidates } from './MentionAutocomplete';
+import { useToast } from './Toast';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -78,14 +88,29 @@ export interface ChatComposerProps {
   /** When provided, used instead of an internal outbox hook (ChatPanel shares one instance for message list). */
   queueOutbox?: (entry: OutboxEntryInput) => Promise<OutboxEntry>;
   onSendChunk: (text: string, opts?: ChatComposerSendOpts) => Promise<void>;
-  /** Reticulum LXMF file/image attachment send (requires DM destination). */
-  onSendAttachment?: (file: File, destination: number) => Promise<void>;
   /** Called after a successful send (e.g. clear unread divider). */
   onSendSuccess?: () => void;
   /** Use LXMF message hash for reply threading (Reticulum). */
   lxmfReplyHashReplies?: boolean;
   /** MeshCore: show per-message flood-scope override control. */
   showFloodScopeOverride?: boolean;
+  /** MeshCore: user-managed flood-scope quick-picks. */
+  floodScopePresets?: string[];
+  /**
+   * MeshCore: remember a hashtag after a successful scoped send.
+   * When omitted, Composer persists via the storage helper directly.
+   */
+  onRememberFloodScopePreset?: (hashtag: string) => void;
+  /**
+   * Resolve GPS/static position for one-click location share.
+   * Sourced from runtime `refreshOurPosition` (Composer has no nodesRef access).
+   */
+  resolveShareLocation?: () => Promise<{ lat: number; lon: number } | null>;
+  /**
+   * Meshtastic dual-send: after the text location message, send a Waypoint packet.
+   * Omitted / no-op for MeshCore and Reticulum. Channel is closed over by ChatPanel.
+   */
+  onSendLocationWaypoint?: (lat: number, lon: number) => Promise<void>;
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
   className?: string;
 }
@@ -112,30 +137,36 @@ export function ChatComposer({
   outboxDestination,
   queueOutbox: queueOutboxProp,
   onSendChunk,
-  onSendAttachment,
   onSendSuccess,
   lxmfReplyHashReplies = false,
   showFloodScopeOverride = false,
+  floodScopePresets = [],
+  onRememberFloodScopePreset,
+  resolveShareLocation,
+  onSendLocationWaypoint,
   textareaRef,
   className,
 }: ChatComposerProps) {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const iconTrigger = useIconTrigger();
   const isLinux = useMemo(() => window.electronAPI.getPlatform() === 'linux', []);
-  const maxVoiceRecordMs = 60_000;
   const limitHintId = useId();
   const counterLiveId = useId();
-  const floodScopeSelectId = useId();
+  const floodScopeListboxId = useId();
+  const floodScopeCustomInputId = useId();
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const recordChunksRef = useRef<Blob[]>([]);
-  const recordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [input, setInput] = useState('');
   const [floodScopeOverride, setFloodScopeOverride] = useState('');
+  const [floodScopeMenuOpen, setFloodScopeMenuOpen] = useState(false);
+  const [floodScopeCustomEditing, setFloodScopeCustomEditing] = useState(false);
+  const [floodScopeCustomDraft, setFloodScopeCustomDraft] = useState('');
+  const [floodScopeCustomError, setFloodScopeCustomError] = useState<string | null>(null);
+  const [floodScopeMenuPos, setFloodScopeMenuPos] = useState<{
+    bottom: number;
+    right: number;
+  } | null>(null);
   const [sending, setSending] = useState(false);
-  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [chatActionError, setChatActionError] = useState<{
     message: string;
     viewKey: string;
@@ -150,140 +181,73 @@ export function ChatComposer({
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const emojiPickerRef = useRef<HTMLElement | null>(null);
+  const floodScopeMenuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const floodScopeMenuRef = useRef<HTMLDivElement | null>(null);
+  const floodScopeSplitRef = useRef<HTMLDivElement | null>(null);
+  const floodScopeCustomInputRef = useRef<HTMLInputElement | null>(null);
   const inputValueRef = useRef(input);
   inputValueRef.current = input;
   const prevViewKeyRef = useRef<string | null>(null);
 
-  const stopMediaStreamTracks = useCallback(() => {
-    const stream = mediaStreamRef.current;
-    if (!stream) return;
-    stream.getTracks().forEach((track) => {
-      track.stop();
-    });
-    mediaStreamRef.current = null;
+  const closeFloodScopeMenu = useCallback(() => {
+    setFloodScopeMenuOpen(false);
+    setFloodScopeMenuPos(null);
+    setFloodScopeCustomEditing(false);
+    setFloodScopeCustomDraft('');
+    setFloodScopeCustomError(null);
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (recordTimerRef.current) clearTimeout(recordTimerRef.current);
-      mediaRecorderRef.current?.stop();
-      stopMediaStreamTracks();
-    };
-  }, [stopMediaStreamTracks]);
-
-  const stopVoiceRecording = useCallback(
-    (send: boolean) => {
-      if (recordTimerRef.current) {
-        clearTimeout(recordTimerRef.current);
-        recordTimerRef.current = null;
-      }
-      const recorder = mediaRecorderRef.current;
-      if (!recorder) return;
-      recorder.onstop = () => {
-        const blob = new Blob(recordChunksRef.current, {
-          type: recorder.mimeType || 'audio/webm',
-        });
-        recordChunksRef.current = [];
-        mediaRecorderRef.current = null;
-        stopMediaStreamTracks();
-        setIsRecordingVoice(false);
-        if (!send || !onSendAttachment || outboxDestination == null) return;
-        const ext = blob.type.includes('ogg') ? 'ogg' : 'webm';
-        const file = new File([blob], `voice-${Date.now()}.${ext}`, {
-          type: blob.type || 'audio/webm',
-        });
-        void (async () => {
-          setSending(true);
-          try {
-            await onSendAttachment(file, outboxDestination);
-            onSendSuccess?.();
-          } catch (err) {
-            console.error(
-              '[ChatComposer] Voice attachment send failed: ' + errLikeToLogString(err),
-            );
-            setChatActionError({
-              message: errLikeToLogString(err),
-              viewKey,
-            });
-          } finally {
-            setSending(false);
-          }
-        })();
-      };
-      if (recorder.state !== 'inactive') recorder.stop();
-      else {
-        stopMediaStreamTracks();
-        setIsRecordingVoice(false);
-      }
-    },
-    [onSendAttachment, onSendSuccess, outboxDestination, stopMediaStreamTracks, viewKey],
-  );
-
-  const startVoiceRecording = useCallback(async () => {
-    if (!onSendAttachment || outboxDestination == null || disabled || !isConnected) return;
-    try {
-      const access = await window.electronAPI.media.ensureMicrophoneAccess();
-      if (!access.granted) {
-        setChatActionError({
-          message: t('chatPanel.microphonePermissionDenied'),
-          viewKey,
-        });
+  const rememberFloodScopeIfNeeded = useCallback(
+    (override: string) => {
+      // Default (`''`) and Unscoped (`__unscoped__`) must not enter the quick-pick list.
+      if (!override || override === '__unscoped__') return;
+      if (!isValidMeshcoreFloodScopeHashtag(override)) return;
+      if (onRememberFloodScopePreset) {
+        onRememberFloodScopePreset(override);
         return;
       }
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaStreamRef.current = stream;
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
-          ? 'audio/ogg;codecs=opus'
-          : '';
-      const recorder = mimeType
-        ? new MediaRecorder(stream, { mimeType })
-        : new MediaRecorder(stream);
-      recordChunksRef.current = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) recordChunksRef.current.push(e.data);
-      };
-      recorder.onerror = () => {
-        stopMediaStreamTracks();
-        setIsRecordingVoice(false);
-      };
-      recorder.start();
-      mediaRecorderRef.current = recorder;
-      setIsRecordingVoice(true);
-      recordTimerRef.current = setTimeout(() => {
-        setChatActionError({
-          message: t('chatPanel.voiceRecordingTooLong'),
-          viewKey,
-        });
-        stopVoiceRecording(true);
-      }, maxVoiceRecordMs);
-    } catch (err) {
-      stopMediaStreamTracks();
-      const permissionDenied =
-        (typeof DOMException !== 'undefined' &&
-          err instanceof DOMException &&
-          err.name === 'NotAllowedError') ||
-        (err instanceof Error && /permission denied/i.test(err.message));
-      console.error('[ChatComposer] Voice recording failed: ' + errLikeToLogString(err));
-      setChatActionError({
-        message: permissionDenied
-          ? t('chatPanel.microphonePermissionDenied')
-          : errLikeToLogString(err),
-        viewKey,
-      });
-    }
-  }, [
-    disabled,
-    isConnected,
-    maxVoiceRecordMs,
-    onSendAttachment,
-    outboxDestination,
-    stopMediaStreamTracks,
-    stopVoiceRecording,
-    t,
-    viewKey,
-  ]);
+      rememberMeshcoreFloodScopePreset(floodScopePresets, override);
+    },
+    [floodScopePresets, onRememberFloodScopePreset],
+  );
+
+  // Close flood-scope menu on outside click (split button + portaled menu).
+  useEffect(() => {
+    if (!floodScopeMenuOpen) return;
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        floodScopeSplitRef.current?.contains(target) ||
+        floodScopeMenuRef.current?.contains(target)
+      ) {
+        return;
+      }
+      closeFloodScopeMenu();
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+    };
+  }, [closeFloodScopeMenu, floodScopeMenuOpen]);
+
+  // Close on scroll/resize so fixed menu does not drift from the trigger.
+  useEffect(() => {
+    if (!floodScopeMenuOpen) return;
+    const handleDismiss = () => {
+      closeFloodScopeMenu();
+    };
+    window.addEventListener('scroll', handleDismiss, true);
+    window.addEventListener('resize', handleDismiss);
+    return () => {
+      window.removeEventListener('scroll', handleDismiss, true);
+      window.removeEventListener('resize', handleDismiss);
+    };
+  }, [closeFloodScopeMenu, floodScopeMenuOpen]);
+
+  useEffect(() => {
+    if (!floodScopeCustomEditing) return;
+    floodScopeCustomInputRef.current?.focus();
+  }, [floodScopeCustomEditing]);
 
   const replyToSenderName = replyTo?.sender_name;
   const meshcoreOpenWireCompat =
@@ -494,6 +458,7 @@ export function ChatComposer({
                 : undefined,
         });
       }
+      rememberFloodScopeIfNeeded(floodScopeOverride);
       clearSentDraft(draftSnapshot);
       setMentionQuery(null);
       onReplyClear?.();
@@ -545,6 +510,7 @@ export function ChatComposer({
     onReplyClear,
     onSendChunk,
     onSendSuccess,
+    rememberFloodScopeIfNeeded,
     outboxChannel,
     outboxDestination,
     protocol,
@@ -602,6 +568,107 @@ export function ChatComposer({
     }
     void sendGifWire(formatMeshcoreGifWire(gifId));
   }, [gifInput, sendGifWire, t, viewKey]);
+
+  /** Enqueue shared-location text into the chat outbox; false when no enqueue fn is wired. */
+  const enqueueLocationText = useCallback(
+    async (text: string): Promise<boolean> => {
+      const enqueue = queueOutboxProp ?? queueOutbox;
+      if (!enqueue) return false;
+      await enqueue({
+        protocol,
+        viewKey,
+        channel: outboxChannel,
+        toNode: outboxDestination ?? null,
+        payload: text,
+        replyId: null,
+        status: 'queued',
+        error: null,
+        nextRetryAt: null,
+        groupId: null,
+        groupIndex: null,
+        groupTotal: null,
+      });
+      return true;
+    },
+    [outboxChannel, outboxDestination, protocol, queueOutbox, queueOutboxProp, viewKey],
+  );
+
+  const handleShareLocation = useCallback(async () => {
+    if (sending || disabled || !resolveShareLocation) return;
+    if (!isConnected && !allowOutbox) {
+      setChatActionError({
+        message: t('chatPanel.composePlaceholderConnectFirst'),
+        viewKey,
+      });
+      return;
+    }
+    setSending(true);
+    setChatActionError(null);
+    let text = '';
+    try {
+      const pos = await resolveShareLocation();
+      if (pos == null) {
+        addToast(t('chatPanel.shareLocationUnavailable'), 'warning');
+        return;
+      }
+      text = formatLocationMessage(pos.lat, pos.lon, t('chatPanel.shareLocationLabel'));
+      const shouldQueue = allowOutbox && (!isConnected || (isMqttOnly && protocol === 'meshcore'));
+      if (shouldQueue) {
+        if (await enqueueLocationText(text)) onSendSuccess?.();
+        return;
+      }
+      await onSendChunk(text);
+      if (
+        protocol === 'meshtastic' &&
+        isShareLocationSendWaypointEnabled() &&
+        onSendLocationWaypoint &&
+        isConnected
+      ) {
+        // Fire-and-forget: the waypoint wantAck promise can take up to 60s to
+        // settle — do not hold the composer. Failure point: waypoint NAK/timeout;
+        // fallback: text already sent, surface a warning toast only.
+        void onSendLocationWaypoint(pos.lat, pos.lon).catch((wpErr: unknown) => {
+          console.warn('[ChatComposer] location waypoint send failed ' + errLikeToLogString(wpErr));
+          addToast(t('chatPanel.shareLocationWaypointFailed'), 'warning');
+        });
+      }
+      onSendSuccess?.();
+    } catch (err) {
+      console.error('[ChatComposer] Share location failed: ' + errLikeToLogString(err));
+      // Failure point: live send failed; fallback: enqueue text for later drain.
+      try {
+        if (allowOutbox && text && (await enqueueLocationText(text))) {
+          onSendSuccess?.();
+          return;
+        }
+      } catch (queueErr) {
+        console.warn(
+          '[ChatComposer] location outbox enqueue failed ' + errLikeToLogString(queueErr),
+        );
+      }
+      setChatActionError({
+        message: err instanceof Error ? err.message : t('chatPanel.sendFailed'),
+        viewKey,
+      });
+    } finally {
+      setSending(false);
+    }
+  }, [
+    addToast,
+    allowOutbox,
+    disabled,
+    enqueueLocationText,
+    isConnected,
+    isMqttOnly,
+    onSendChunk,
+    onSendLocationWaypoint,
+    onSendSuccess,
+    protocol,
+    resolveShareLocation,
+    sending,
+    t,
+    viewKey,
+  ]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -734,16 +801,40 @@ export function ChatComposer({
             : 'bg-secondary-dark/80 focus:border-brand-green/50 focus:ring-brand-green/30 border-gray-600/50 focus:ring-1'
         }`;
 
-  const sendButtonClass =
+  const floodScopeOverrideActive = floodScopeOverride !== '';
+  const floodScopeOverrideIndicator =
+    floodScopeOverride === '__unscoped__'
+      ? t('chatPanel.floodScopeOverrideUnscoped')
+      : floodScopeOverride || null;
+
+  const sendButtonToneClass =
     variant === 'room'
-      ? 'bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 rounded border px-4 py-2 text-sm font-medium disabled:opacity-40'
-      : `rounded-xl px-5 py-2.5 font-medium transition-colors ${
+      ? 'bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 border text-sm font-medium disabled:opacity-40'
+      : `font-medium transition-colors ${
           showQueueButton
             ? 'disabled:text-muted bg-slate-600 text-white hover:bg-slate-500 disabled:bg-gray-600'
             : isDmMode
               ? 'disabled:text-muted bg-purple-600 text-white hover:bg-purple-500 disabled:bg-gray-600'
               : 'disabled:text-muted bg-green-500 text-white hover:bg-green-400 disabled:bg-gray-600'
         }`;
+
+  const sendButtonClass =
+    variant === 'room'
+      ? `${sendButtonToneClass} rounded px-4 py-2`
+      : `${sendButtonToneClass} rounded-xl px-5 py-2.5`;
+
+  const sendButtonSplitMainClass =
+    variant === 'room'
+      ? `${sendButtonToneClass} rounded-l border-r-0 px-4 py-2`
+      : `${sendButtonToneClass} rounded-l-xl px-5 py-2.5`;
+
+  const sendButtonSplitChevronClass =
+    variant === 'room'
+      ? `${sendButtonToneClass} rounded-r border-l border-l-black/20 px-1.5 py-2`
+      : `${sendButtonToneClass} rounded-r-xl border-l border-l-black/20 px-1.5 py-2.5`;
+
+  // Suppress the hover tooltip while the scope menu is open so it cannot cover the options.
+  const floodScopeChevronTooltipProps = floodScopeMenuOpen ? { 'data-no-instant-tooltip': '' } : {};
 
   const emojiButtonClass =
     variant === 'room'
@@ -760,6 +851,7 @@ export function ChatComposer({
 
   const showMeshcoreGifButton =
     protocol === 'meshcore' && meshcoreOpenWireCompat && variant === 'chat';
+  const showShareLocationButton = variant === 'chat' && typeof resolveShareLocation === 'function';
 
   return (
     <div className={className}>
@@ -953,74 +1045,6 @@ export function ChatComposer({
             😊
           </button>
         </HelpTooltip>
-        {onSendAttachment ? (
-          <>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              aria-hidden
-              tabIndex={-1}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                e.target.value = '';
-                if (!file || disabled || !isConnected) return;
-                if (outboxDestination == null) {
-                  setChatActionError({
-                    message: t('chatPanel.attachDmOnly'),
-                    viewKey,
-                  });
-                  return;
-                }
-                void (async () => {
-                  setSending(true);
-                  try {
-                    await onSendAttachment(file, outboxDestination);
-                    onSendSuccess?.();
-                  } catch (err) {
-                    // catch-no-log-ok: attachment failure shown inline in composer
-                    setChatActionError({
-                      message: errLikeToLogString(err),
-                      viewKey,
-                    });
-                  } finally {
-                    setSending(false);
-                  }
-                })();
-              }}
-            />
-            <HelpTooltip text={t('chatPanel.attachFileHint')}>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={disabled || !isConnected || sending || isRecordingVoice}
-                aria-label={t('chatPanel.attachFile')}
-                className={emojiButtonClass}
-              >
-                📎
-              </button>
-            </HelpTooltip>
-            <HelpTooltip text={t('chatPanel.recordVoiceHint')}>
-              <button
-                type="button"
-                onClick={() => {
-                  if (isRecordingVoice) {
-                    stopVoiceRecording(true);
-                  } else {
-                    void startVoiceRecording();
-                  }
-                }}
-                disabled={disabled || !isConnected || sending || outboxDestination == null}
-                aria-label={
-                  isRecordingVoice ? t('chatPanel.stopVoiceRecording') : t('chatPanel.recordVoice')
-                }
-                className={`${emojiButtonClass}${isRecordingVoice ? 'text-red-400' : ''}`}
-              >
-                <Mic className="h-4 w-4" aria-hidden />
-              </button>
-            </HelpTooltip>
-          </>
-        ) : null}
         {showMeshcoreGifButton && (
           <HelpTooltip text={t('chatPanel.meshcoreGifButtonHint')}>
             <button
@@ -1038,46 +1062,269 @@ export function ChatComposer({
             </button>
           </HelpTooltip>
         )}
+        {showShareLocationButton && (
+          <HelpTooltip text={t('chatPanel.shareLocationHint')}>
+            <button
+              type="button"
+              onClick={() => {
+                void handleShareLocation();
+              }}
+              disabled={disabled || (!isConnected && !allowOutbox) || sending}
+              aria-label={t('chatPanel.shareLocation')}
+              className={emojiButtonClass}
+            >
+              <MapPin aria-hidden className="h-4 w-4" trigger={iconTrigger} size={16} />
+            </button>
+          </HelpTooltip>
+        )}
         {showFloodScopeOverride ? (
-          <label
-            className="text-muted flex items-center gap-1 text-[10px]"
-            htmlFor={floodScopeSelectId}
-          >
+          <div ref={floodScopeSplitRef} className="inline-flex shrink-0 items-stretch">
             <span className="sr-only">{t('chatPanel.floodScopeOverrideLabel')}</span>
-            <select
-              id={floodScopeSelectId}
-              value={floodScopeOverride}
-              onChange={(e) => {
-                setFloodScopeOverride(e.target.value);
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+              }}
+              onClick={() => {
+                void handleSend();
+              }}
+              disabled={!input.trim() || sending || inputChunks === null || disabled}
+              aria-label={sendLabel}
+              className={sendButtonSplitMainClass}
+            >
+              {sendLabel}
+            </button>
+            <button
+              ref={floodScopeMenuButtonRef}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+              }}
+              onClick={() => {
+                if (floodScopeMenuOpen) {
+                  closeFloodScopeMenu();
+                  return;
+                }
+                const button = floodScopeMenuButtonRef.current;
+                if (button) {
+                  const rect = button.getBoundingClientRect();
+                  setFloodScopeMenuPos({
+                    bottom: window.innerHeight - rect.top + 4,
+                    right: window.innerWidth - rect.right,
+                  });
+                }
+                setFloodScopeMenuOpen(true);
               }}
               disabled={disabled || sending}
-              aria-label={t('chatPanel.floodScopeOverrideAria')}
-              className="bg-secondary-dark max-w-[7rem] rounded border border-slate-600 px-1 py-0.5 text-[10px] text-gray-200"
+              aria-label={
+                floodScopeOverrideIndicator
+                  ? `${t('chatPanel.floodScopeOverrideMenuButton')}: ${floodScopeOverrideIndicator}`
+                  : t('chatPanel.floodScopeOverrideMenuButton')
+              }
+              aria-haspopup="listbox"
+              aria-expanded={floodScopeMenuOpen}
+              aria-controls={floodScopeMenuOpen ? floodScopeListboxId : undefined}
+              title={floodScopeMenuOpen ? undefined : t('chatPanel.floodScopeOverrideHint')}
+              {...floodScopeChevronTooltipProps}
+              className={`${sendButtonSplitChevronClass} inline-flex max-w-[5.5rem] items-center gap-0.5`}
             >
-              <option value="">{t('chatPanel.floodScopeOverrideDefault')}</option>
-              {MESHCORE_FLOOD_SCOPE_PRESETS.map((tag) => (
-                <option key={tag} value={tag}>
-                  {tag}
-                </option>
-              ))}
-              <option value="__unscoped__">{t('chatPanel.floodScopeOverrideUnscoped')}</option>
-            </select>
-          </label>
-        ) : null}
-        <button
-          type="button"
-          onMouseDown={(e) => {
-            e.preventDefault();
-          }}
-          onClick={() => {
-            void handleSend();
-          }}
-          disabled={!input.trim() || sending || inputChunks === null || disabled}
-          aria-label={sendLabel}
-          className={sendButtonClass}
-        >
-          {sendLabel}
-        </button>
+              {floodScopeOverrideActive && floodScopeOverrideIndicator ? (
+                <span className="truncate text-[10px] leading-none font-normal">
+                  {floodScopeOverrideIndicator}
+                </span>
+              ) : null}
+              {floodScopeMenuOpen ? (
+                <ChevronUp
+                  aria-hidden
+                  className="h-3.5 w-3.5 shrink-0"
+                  trigger={iconTrigger}
+                  size={14}
+                />
+              ) : (
+                <ChevronDown
+                  aria-hidden
+                  className="h-3.5 w-3.5 shrink-0"
+                  trigger={iconTrigger}
+                  size={14}
+                />
+              )}
+            </button>
+            {floodScopeMenuOpen && floodScopeMenuPos
+              ? createPortal(
+                  <div
+                    ref={floodScopeMenuRef}
+                    style={{
+                      position: 'fixed',
+                      bottom: floodScopeMenuPos.bottom,
+                      right: floodScopeMenuPos.right,
+                    }}
+                    className="bg-deep-black z-50 max-h-72 min-w-[12rem] overflow-y-auto rounded-lg border border-gray-700 py-1 shadow-xl"
+                  >
+                    {floodScopeCustomEditing ? (
+                      <div className="space-y-2 px-2 py-1.5">
+                        <label
+                          className="text-muted block text-[10px]"
+                          htmlFor={floodScopeCustomInputId}
+                        >
+                          {t('chatPanel.floodScopeOverrideCustomLabel')}
+                        </label>
+                        <input
+                          id={floodScopeCustomInputId}
+                          type="text"
+                          value={floodScopeCustomDraft}
+                          onChange={(e) => {
+                            setFloodScopeCustomDraft(e.target.value);
+                            setFloodScopeCustomError(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') {
+                              e.preventDefault();
+                              setFloodScopeCustomEditing(false);
+                              setFloodScopeCustomDraft('');
+                              setFloodScopeCustomError(null);
+                              return;
+                            }
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const normalized =
+                                normalizeMeshcoreFloodScopeHashtag(floodScopeCustomDraft);
+                              if (!isValidMeshcoreFloodScopeHashtag(normalized)) {
+                                setFloodScopeCustomError(
+                                  t('chatPanel.floodScopeOverrideCustomInvalid'),
+                                );
+                                return;
+                              }
+                              setFloodScopeOverride(normalized);
+                              closeFloodScopeMenu();
+                            }
+                          }}
+                          ref={floodScopeCustomInputRef}
+                          placeholder={t('chatPanel.floodScopeOverrideCustomPlaceholder')}
+                          aria-label={t('chatPanel.floodScopeOverrideCustomLabel')}
+                          className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 focus:outline-none"
+                        />
+                        {floodScopeCustomError ? (
+                          <p role="alert" className="text-[10px] text-red-400">
+                            {floodScopeCustomError}
+                          </p>
+                        ) : null}
+                        <div className="flex justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFloodScopeCustomEditing(false);
+                              setFloodScopeCustomDraft('');
+                              setFloodScopeCustomError(null);
+                            }}
+                            className="text-muted rounded px-2 py-1 text-[10px] hover:text-gray-200"
+                          >
+                            {t('common.cancel')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const normalized =
+                                normalizeMeshcoreFloodScopeHashtag(floodScopeCustomDraft);
+                              if (!isValidMeshcoreFloodScopeHashtag(normalized)) {
+                                setFloodScopeCustomError(
+                                  t('chatPanel.floodScopeOverrideCustomInvalid'),
+                                );
+                                return;
+                              }
+                              setFloodScopeOverride(normalized);
+                              closeFloodScopeMenu();
+                            }}
+                            className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 rounded px-2 py-1 text-[10px] font-medium"
+                          >
+                            {t('chatPanel.floodScopeOverrideCustomApply')}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <ul
+                        id={floodScopeListboxId}
+                        role="listbox"
+                        aria-label={t('chatPanel.floodScopeOverrideAria')}
+                      >
+                        {(
+                          [
+                            { value: '', label: t('chatPanel.floodScopeOverrideDefault') },
+                            ...floodScopePresets.map((tag) => ({
+                              value: tag,
+                              label: tag,
+                            })),
+                            {
+                              value: '__unscoped__',
+                              label: t('chatPanel.floodScopeOverrideUnscoped'),
+                            },
+                          ] as const
+                        ).map((option) => {
+                          const selected = floodScopeOverride === option.value;
+                          return (
+                            <li
+                              key={option.value || '__default__'}
+                              role="option"
+                              aria-selected={selected}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFloodScopeOverride(option.value);
+                                  closeFloodScopeMenu();
+                                }}
+                                className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
+                                  selected
+                                    ? 'text-brand-green bg-gray-800'
+                                    : 'text-gray-300 hover:bg-gray-800 hover:text-gray-100'
+                                }`}
+                              >
+                                {option.label}
+                              </button>
+                            </li>
+                          );
+                        })}
+                        <li role="presentation" className="mt-1 border-t border-gray-700 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFloodScopeCustomEditing(true);
+                              setFloodScopeCustomDraft(
+                                floodScopeOverride &&
+                                  floodScopeOverride !== '__unscoped__' &&
+                                  !floodScopePresets.includes(floodScopeOverride)
+                                  ? floodScopeOverride
+                                  : '',
+                              );
+                              setFloodScopeCustomError(null);
+                            }}
+                            className="w-full px-3 py-1.5 text-left text-xs text-cyan-300 transition-colors hover:bg-gray-800 hover:text-cyan-200"
+                          >
+                            {t('chatPanel.floodScopeOverrideCustom')}
+                          </button>
+                        </li>
+                      </ul>
+                    )}
+                  </div>,
+                  document.body,
+                )
+              : null}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+            }}
+            onClick={() => {
+              void handleSend();
+            }}
+            disabled={!input.trim() || sending || inputChunks === null || disabled}
+            aria-label={sendLabel}
+            className={sendButtonClass}
+          >
+            {sendLabel}
+          </button>
+        )}
       </div>
 
       {showCounter && (

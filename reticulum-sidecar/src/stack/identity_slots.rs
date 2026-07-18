@@ -432,12 +432,18 @@ mod tests {
     }
 
     fn temp_config() -> (TempConfig, PathBuf) {
+        // A timestamp alone is not unique: concurrently starting tests can
+        // observe the same nanos and share (then mutually delete) one root.
+        static SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let seq = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let nanos = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_nanos())
             .unwrap_or(0);
-        let root =
-            std::env::temp_dir().join(format!("mesh-id-slots-{}-{}", std::process::id(), nanos));
+        let root = std::env::temp_dir().join(format!(
+            "mesh-id-slots-{}-{nanos}-{seq}",
+            std::process::id()
+        ));
         let config_dir = root.join("config");
         fs::create_dir_all(&config_dir).unwrap();
         (TempConfig { root }, config_dir)

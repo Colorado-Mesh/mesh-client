@@ -6,16 +6,20 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
  *   - meshtasticMessageRetentionEnabled / meshtasticMessageRetentionCount
  *   - meshcoreMessageRetentionEnabled  / meshcoreMessageRetentionCount
  *   - reticulumMessageRetentionEnabled / reticulumMessageRetentionCount
+ *   - rrcMessageRetentionEnabled / rrcMessageRetentionCount
  *
- * Defaults: enabled with a cap of 4000 messages per table. Pruning is invoked
- * from the renderer at app startup (see `App.tsx`) and applies the cap by
- * keeping the newest N rows by `timestamp`.
+ * Defaults: enabled with a cap of 4000 messages per LoRa/LXMF table (RRC default
+ * 10000). Pruning is invoked from the renderer at app startup (see `App.tsx`)
+ * and applies the cap by keeping the newest N rows by `timestamp`.
  *
  * Failure mode: if IPC throws (DB locked / preload unavailable), callers fall
  * back to defaults so the UI stays responsive; the next startup will retry.
  */
 
 export const MESSAGE_RETENTION_DEFAULT_COUNT = 4000;
+export const RRC_MESSAGE_RETENTION_DEFAULT_COUNT = 10_000;
+/** Age prune for RRC history when retention is enabled (startup). */
+export const RRC_MESSAGE_RETENTION_DEFAULT_AGE_DAYS = 30;
 export const MESSAGE_RETENTION_MIN_COUNT = 100;
 export const MESSAGE_RETENTION_MAX_COUNT = 100_000;
 
@@ -26,6 +30,8 @@ export interface MessageRetentionSettings {
   meshcoreCount: number;
   reticulumEnabled: boolean;
   reticulumCount: number;
+  rrcEnabled: boolean;
+  rrcCount: number;
 }
 
 export const DEFAULT_MESSAGE_RETENTION: MessageRetentionSettings = {
@@ -35,6 +41,8 @@ export const DEFAULT_MESSAGE_RETENTION: MessageRetentionSettings = {
   meshcoreCount: MESSAGE_RETENTION_DEFAULT_COUNT,
   reticulumEnabled: true,
   reticulumCount: MESSAGE_RETENTION_DEFAULT_COUNT,
+  rrcEnabled: true,
+  rrcCount: RRC_MESSAGE_RETENTION_DEFAULT_COUNT,
 };
 
 export const MESSAGE_RETENTION_KEYS = {
@@ -44,6 +52,8 @@ export const MESSAGE_RETENTION_KEYS = {
   meshcoreCount: 'meshcoreMessageRetentionCount',
   reticulumEnabled: 'reticulumMessageRetentionEnabled',
   reticulumCount: 'reticulumMessageRetentionCount',
+  rrcEnabled: 'rrcMessageRetentionEnabled',
+  rrcCount: 'rrcMessageRetentionCount',
 } as const;
 
 function parseBool(v: string | undefined, fallback: boolean): boolean {
@@ -88,6 +98,11 @@ export function parseMessageRetention(
       r[MESSAGE_RETENTION_KEYS.reticulumCount],
       DEFAULT_MESSAGE_RETENTION.reticulumCount,
     ),
+    rrcEnabled: parseBool(
+      r[MESSAGE_RETENTION_KEYS.rrcEnabled],
+      DEFAULT_MESSAGE_RETENTION.rrcEnabled,
+    ),
+    rrcCount: parseCount(r[MESSAGE_RETENTION_KEYS.rrcCount], DEFAULT_MESSAGE_RETENTION.rrcCount),
   };
 }
 

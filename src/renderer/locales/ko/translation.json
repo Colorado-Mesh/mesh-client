@@ -354,7 +354,17 @@
     "reticulumCapDestinationsLabel": "메모리와 SQLite의 목적지 / 피어 수를 제한하고 가장 최근에 수신한 항목 유지",
     "reticulumCapDestinationsCountAria": "목적지 수를 제한하고 가장 최근에 수신한 {{count}}개 유지",
     "reticulumDestinationsUnit_one": "목적지",
-    "reticulumDestinationsUnit_other": "목적지"
+    "reticulumDestinationsUnit_other": "목적지",
+    "storeForwardHistoryProfileLabel": "저장 및 전달 캐치업 프로필",
+    "storeForwardHistoryProfileAria": "Store & Forward 이력 캐치업 공격성",
+    "storeForwardHistoryProfileConservative": "보수적(바쁜 메시 친화적)",
+    "storeForwardHistoryProfileAggressive": "공격적(얼룩이 있는 적용 범위)",
+    "storeForwardHistoryProfileHint": "Conservative는 더 긴 오프라인 게이트와 쿨다운을 사용합니다. 짧은 연결 끊김 후 더 빨리 공격적인 가져오기를 수행하고 더 많은 메시지를 요청합니다. 방송 시간이 허용되는 경우에만 사용하세요.",
+    "shareLocationSendWaypoint": "위치를 공유할 때 지도 핀(Waypoint)도 보냅니다.",
+    "shareLocationSendWaypointHint": "활성화되면 Meshtastic 위치 공유는 문자 메시지와 Waypoint 패킷을 모두 보내 공식 앱에 지도 핀이 표시됩니다. 바쁜 메시를 비활성화하면 텍스트만 보낼 수 있습니다.",
+    "capStoredRrcMessages": "RRC 방 기록을 저장하고 최신 상태로 유지합니다.",
+    "capStoredRrcMessagesLabel": "RRC 방 기록을 저장하고 최신 상태로 유지합니다.",
+    "capStoredRrcMessagesCountAria": "저장된 RRC 방 기록을 제한하고 최신 {{count}} 메시지를 유지합니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -369,7 +379,10 @@
     "switchToMeshCore": "MeshCore로 전환",
     "backToTop": "맨 위로 돌아가기",
     "switchToReticulum": "Reticulum으로 전환",
-    "languageSelectorHint": "언어를 선택하려면 클릭하세요."
+    "languageSelectorHint": "언어를 선택하려면 클릭하세요.",
+    "switchToMeshtasticWithUnread": "Meshtastic으로 전환하세요. {{count}} 읽지 않았습니다.",
+    "switchToMeshCoreWithUnread": "MeshCore로 전환, {{count}} 읽지 않음",
+    "switchToReticulumWithUnread": "Reticulum으로 전환, {{count}} 읽지 않음"
   },
   "battery": {
     "percentCharging": "배터리 {{percent}} 퍼센트, 충전 중",
@@ -503,9 +516,6 @@
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… 또는 g:ID",
     "meshcoreGifSend": "GIF 보내기",
     "meshcoreGifInvalid": "유효한 Giphy URL 또는 GIF ID를 입력하세요.",
-    "attachFile": "파일 첨부",
-    "attachFileHint": "LXMF 파일 첨부 파일 전송 (DM만 해당)",
-    "attachDmOnly": "파일을 첨부하기 전에 다이렉트 메시지를 엽니다.",
     "composePlaceholderSelectDm": "DM을 시작하려면 위의 연락처를 선택하십시오...",
     "selectDmFirst": "전송하기 전에 DM 수신자를 선택하십시오.",
     "emptySelectDm": "Reticulum 채팅은 DM 전용입니다. 위에서 연락처를 선택하거나 노드 탭에서 연락처를 여세요.",
@@ -526,12 +536,6 @@
     "reticulumNoPropagationNode": "전파 노드가 구성되지 않았습니다. Reticulum Radio 탭에서 기본 전파 노드를 설정합니다.",
     "sentViaPropagation": "전파 노드",
     "reticulumAudioAttachment": "음성: {{name}}",
-    "recordVoice": "음성 메시지 녹음",
-    "recordVoiceHint": "음성 클립을 녹음하여 LXMF 첨부 파일로 보내기(DM만 해당)",
-    "stopVoiceRecording": "녹음을 중지하고 보내기",
-    "voiceRecordingTooLong": "음성 클립이 60초 제한에 도달하여 전송되었습니다.",
-    "reticulumSendAttachmentFailed": "첨부 파일 전송 실패",
-    "reticulumSendAttachmentNoIdentity": "Reticulum ID가 준비되지 않았습니다 — 먼저 연결하고 ID를 구성하세요",
     "dmPeerInfoAria": "DM 동료 정보",
     "clearDateAria": "날짜 지우기",
     "readOnlyDisconnected": "연결되지 않음 — 메시지는 읽기 전용입니다.",
@@ -567,20 +571,51 @@
     "dmPathUnreachableTooltip": "이 목적지로 가는 Reticulum 경로가 아직 없습니다. 메시지는 구성된 전파 노드를 통해 나중에 전달될 수 있습니다.",
     "dmPathRequestPathAria": "이 목적지로의 Reticulum 경로 요청",
     "dmPathProbeAria": "이 대상에 대한 Reticulum 경로 도달 가능성 프로브",
-    "microphonePermissionDenied": "마이크 접근이 거부되었습니다. 시스템 개인 정보 설정에서 Mesh-client에 대한 마이크 권한을 활성화한 다음 다시 시도하십시오.",
     "receivedViaBle": "블루투스를 통해 수신됨",
     "receivedViaMultiple": "{{vias}} 을 (를) 통해 수신됨",
     "sentViaBle": "블루투스를 통해 전송됨",
     "sentViaMultiple": "{{vias}} 을 (를) 통해 전송됨",
-    "floodScopeOverrideLabel": "이 메시지의 플러드 범위",
-    "floodScopeOverrideAria": "메시지별 플러드 범위 재정의",
+    "floodScopeOverrideLabel": "이 메시지의 Flood 범위",
+    "floodScopeOverrideAria": "메시지별 Flood 범위 재정의",
     "floodScopeOverrideDefault": "기본 범위",
-    "floodScopeOverrideUnscoped": "범위가 지정되지 않음"
+    "floodScopeOverrideUnscoped": "범위가 지정되지 않음",
+    "rncp": {
+      "sendFile": "파일 보내기",
+      "sendFileAria": "rncp를 통해 {{name}}에 파일 보내기",
+      "pendingOffersBadgeAria_one": "{{count}} 이 피어로부터 인바운드 파일 제공을 보류 중입니다.",
+      "pendingOffersBadgeAria_other": "{{count}} 이 피어로부터 보류 중인 인바운드 파일 제안",
+      "destinationLabel": "rncp 대상 해시",
+      "rememberAddress": "이 주소를 기억하세요",
+      "rememberAddressAria": "이 피어에 대한 이 rncp 대상을 기억하십시오.",
+      "chooseAndSend": "파일을 선택하고 보내세요...",
+      "sending": "배상…",
+      "sendStarted": "{{file}} 보내는 중…",
+      "sendFailed": "전송 실패: {{error}}",
+      "newOfferToast": "{{peer}}이(가) 당신에게 파일을 보내려고 합니다: {{file}}",
+      "requestEnable": "활성화 요청",
+      "requestEnableAria": "이 피어에게 파일 수신을 활성화하도록 요청"
+    },
+    "shareLocation": "위치 공유",
+    "shareLocationLabel": "📍 공유 위치",
+    "shareLocationHint": "현재 GPS 또는 정적 위치를 채팅 메시지로 보내기",
+    "shareLocationUnavailable": "위치를 확인할 수 없음 - GPS 설정을 확인하세요",
+    "floodScopeOverrideHint": "이 메시지에만 해당하는 지역 Flood 범위입니다. 기본 범위는 라디오의 저장된 설정을 사용합니다. 해시태그는 해당 지역으로의 전송을 제한합니다. 범위가 지정되지 않은 전송은 지역 필터 없이 전송됩니다. 전송 후 저장된 범위가 복원됩니다.",
+    "floodScopeOverrideMenuButton": "이 메시지의 Flood 범위 변경",
+    "shareLocationWaypointFailed": "지도 핀(웨이포인트)이 인식되지 않았습니다. 위치 텍스트가 아직 전송되었을 수 있습니다.",
+    "floodScopeOverrideCustom": "맞춤 범위…",
+    "floodScopeOverrideCustomLabel": "맞춤 Flood 범위 해시태그",
+    "floodScopeOverrideCustomPlaceholder": "#나의 지역",
+    "floodScopeOverrideCustomApply": "사용 범위",
+    "floodScopeOverrideCustomInvalid": "유효한 지역 해시태그(예: #myregion)를 입력하세요."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
     "meshcoreGif": "Gif",
-    "meshcoreGifOpen": "Giphy에서 열기"
+    "meshcoreGifOpen": "Giphy에서 열기",
+    "locationCard": {
+      "alt": "공유 위치 지도 타일",
+      "openMaps": "지도에서 열기"
+    }
   },
   "common": {
     "close": "닫다",
@@ -622,7 +657,9 @@
     "colorAmber": "애쉬틴",
     "colorRed": "빨간색",
     "colorPurple": "자색",
-    "delete": "삭제"
+    "delete": "삭제",
+    "copy": "복사",
+    "copied": "복사됨"
   },
   "configApplyNotice": {
     "persistNote": "적용된 설정은 장치의 플래시 메모리에 저장되며 재부팅 시에도 지속됩니다.",
@@ -1163,7 +1200,8 @@
       "meshcore": "포기하기 전에 다시 연결해 보세요 (1– {{max}}). 설정으로 저장되었습니다. 변경 후 Connect (연결) 을 다시 눌러 메인 프로세스가 픽업할 수 있도록 합니다.",
       "meshtastic": "두 프로토콜 모두 1– {{max}} 을 허용합니다. 설정과 함께 저장되었습니다. 연결을 끊고 다시 연결하여 실행 중인 세션이 새 값을 사용하도록 합니다."
     },
-    "reticulumStackRunningAs": "달리기 — {{name}}"
+    "reticulumStackRunningAs": "실행 중 — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Reticulum 스택이 응답하지 않음 — 다시 시작 중…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -1492,7 +1530,10 @@
     "senderLabel": "보내는 사람",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}}dBm",
-    "snrDb": "SNR {{snr}}dB"
+    "snrDb": "SNR {{snr}}dB",
+    "distanceOffsetKm": "거리 오프셋",
+    "km": "km",
+    "distanceOffsetHelp": "홉-고블린 및 잘못된 경로 거리 임계값(0-50)에 평평한 km 층을 추가합니다."
   },
   "diagnosticsPing": {
     "title": "연속 핑",
@@ -2568,7 +2609,9 @@
       "lossRate": "예상 손실",
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "범위 테스트 패킷 로그"
-    }
+    },
+    "currentRouteHeading": "현재 경로",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "긴 이름",
@@ -3371,15 +3414,13 @@
     "xmodemFailed": "XMODEM 실패: {{message}}",
     "zeroHopAdvertButton": "Zero-hop Advert",
     "zeroHopAdvertSent": "Zero-hop advert 전송 완료",
-    "floodScopeTitle": "지역 홍수 범위",
-    "floodScopeHelp": "홍수 트래픽을 해시태그 지역 (펌웨어 v8 +) 으로 제한합니다. meshcore.js setFloodScope가 필요합니다. 다시 연결하면 저장된 범위가 다시 적용됩니다.",
+    "floodScopeTitle": "지역 Flood 범위",
+    "floodScopeHelp": "Flood 트래픽을 해시태그 지역 (펌웨어 v8 +) 으로 제한합니다. meshcore.js setFloodScope가 필요합니다. 다시 연결하면 저장된 범위가 다시 적용됩니다.",
     "floodScopeNone": "없음 (명확한 범위)",
-    "floodScopePreset": "사전 설정 해시태그",
-    "floodScopePresetSelect": "사전 설정 지역 해시태그",
     "floodScopeCustom": "사용자 정의 해시태그",
     "floodScopeCustomPlaceholder": "# myregion",
-    "floodScopeApply": "홍수 범위 적용",
-    "floodScopeApplySuccess": "홍수 범위 적용됨",
+    "floodScopeApply": "Flood 범위 적용",
+    "floodScopeApplySuccess": "Flood 범위 적용됨",
     "floodScopeApplyFailed": "범람 범위 실패: {{message}}",
     "advertisedPositionLabel": "광고 게재순위: {{lat}}, {{lon}}",
     "txPowerMax": "송신 전력 (라디오당 최대 {{max}} dBm)",
@@ -3485,7 +3526,13 @@
       "6": {
         "label": "중간 느림"
       }
-    }
+    },
+    "floodScopeSaved": "저장된 범위",
+    "floodScopeSavedSelect": "저장된 지역 해시태그",
+    "floodScopeSavedEmpty": "아직 저장된 범위가 없습니다. 사용자 정의 해시태그를 적용하거나 Chat의 사용자 정의 범위를 사용하여 추가하세요.",
+    "floodScopeRemoveSaved": "저장된 범위에서 제거",
+    "floodScopeRemoveSavedAria": "저장된 범위에서 {{hashtag}} 제거",
+    "floodScopeInvalidHashtag": "유효한 지역 해시태그(예: #myregion)를 입력하세요."
   },
   "rawPacketLog": {
     "filterPackets": "패킷 필터링",
@@ -3687,7 +3734,6 @@
     "pathHashCliSet2": "경로 해시 모드 3바이트 설정",
     "pathLabel": "길:",
     "hopMe": "● 나",
-    "hopN": "● 홉 {{n}}",
     "noNeighborsReported": "신고된 이웃 없음",
     "fetchingTelemetry": "원격 분석을 가져오는 중…",
     "telemetryBattery": "배터리: {{voltage}}V",
@@ -3733,7 +3779,8 @@
     "cliDangerConfirmAction": "실행 명령",
     "cliAutoPingToast": "CLI 전에 Ping으로 경로 설정 중...",
     "cliAutoPingFailed": "핑 실패. 멀티 홉 리피터에서 CLI를 다시 시도하기 전에 수동으로 핑을 실행하십시오.",
-    "cliCommandTooLong": "CLI 명령이 너무 깁니다(최대 {{max}}자)."
+    "cliCommandTooLong": "CLI 명령이 너무 깁니다(최대 {{max}}자).",
+    "currentRouteLabel": "현재 경로:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",
@@ -4177,7 +4224,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "네트워크 토폴로지",
     "network": "회로망",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "원격"
   },
   "takServerPanel": {
     "title": "TAK 서버",
@@ -4246,7 +4294,13 @@
     "footerMax": "(각각 최대 50개)",
     "sectionTemperatureHumidity": "온도 및 습도",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU ℃"
+    "seriesMcuTempC": "MCU ℃",
+    "chartValueUnavailable": "해당사항 없음",
+    "chartAriaBattery": "배터리 및 전압 차트: 최신 배터리 {{battery}} 퍼센트, 전압 {{voltage}} V, {{count}} 포인트",
+    "chartAriaSignal": "신호 품질 차트: 최신 SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} 포인트",
+    "chartAriaTempHumidity": "온도 및 습도 차트: 최신 온도 {{temperature}}, 습도 {{humidity}} 퍼센트, {{count}} 포인트",
+    "chartAriaPressure": "기압 차트: 최신 {{pressure}} hPa, {{count}} 포인트",
+    "chartAriaIaq": "대기질 차트: 최신 IAQ {{iaq}}, {{count}} 포인트"
   },
   "toasts": {
     "firmwareAvailable": "사용 가능한 펌웨어 업데이트: v{{version}}",
@@ -4431,7 +4485,11 @@
     "roomLegend": "★ 즐겨찾기 · A 토글 자동 참여",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "기록 지우기",
+    "clearHistoryTitle": "룸 기록 지우기",
+    "clearHistoryConfirm": "{{room}}에 대해 저장된 메시지 기록을 모두 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
+    "clearHistoryConfirmAction": "기록 삭제"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -4473,5 +4531,210 @@
     "confirmContactImportTitle": "연락처를 가져오시겠습니까?",
     "confirmContactImportBody": "외부 링크의 {{name}}을(를) Reticulum 연락처에 추가하시겠습니까?",
     "confirmContactImportAction": "연락처 가져오기"
+  },
+  "reticulumRemote": {
+    "navAria": "원격 섹션",
+    "sidecarNotRunning": "원격 셸 및 파일 전송을 사용하려면 Reticulum 스택을 시작합니다.",
+    "sections": {
+      "shell": "셸",
+      "transfer": "전송",
+      "saved": "저장됨",
+      "settings": "설정"
+    },
+    "errors": {
+      "invalidAddress": "유효한 32자의 16진수 대상 해시를 입력하세요."
+    },
+    "reasons": {
+      "pathConstrained": "경로가 제한됨(낮은 대역폭)",
+      "pathUnknown": "경로 속도를 알 수 없습니다.",
+      "notAnnounced": "목적지는 발표되지 않았습니다",
+      "timeout": "요청 시간이 초과되었습니다.",
+      "notAllowed": "허용되지 않음",
+      "versionMismatch": "원격 버전 불일치",
+      "stagingFailed": "인바운드 파일을 준비하지 못했습니다.",
+      "cancelled": "취소",
+      "rejected": "거부됨",
+      "error": "오류"
+    },
+    "pathCapability": {
+      "checking": "경로 확인 중…",
+      "hops_one": "{{count}} 홉",
+      "hops_other": "{{count}} 홉",
+      "speed": {
+        "high": "빠른 경로",
+        "constrained": "제한된 경로",
+        "mixed": "혼합 경로",
+        "unknown": "알 수 없는 경로"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "대상 해시(16진수 32자)",
+      "addressAria": "rnsh 대상 해시",
+      "selectSavedAddress": "저장된 주소 사용 {{label}}",
+      "connectAria": "원격 셸 연결",
+      "connect": "연결",
+      "connecting": "연결 중…",
+      "connectFailed": "연결 실패: {{error}}",
+      "maxSessions": "최대 {{count}} 셸 세션에 도달했습니다.",
+      "focusSession": "{{address}} 세션으로 전환",
+      "closeSession": "세션 닫기 {{address}}",
+      "emptyState": "활성 원격 셸 세션이 없습니다. 연결하려면 위에 대상 해시를 입력하세요.",
+      "status": {
+        "connecting": "연결 중…",
+        "active": "연결됨",
+        "closed": "닫은",
+        "error": "오류"
+      },
+      "reconnectAria": "이 세션을 다시 연결하세요",
+      "reconnect": "다시 연결",
+      "disconnectAria": "이 세션 연결 끊기",
+      "disconnect": "연결 끊기",
+      "reconnectExhausted": "재시도 제한에 도달한 후 자동 재연결이 중단되었습니다. 원격 세션 상태가 손실되었습니다.",
+      "reconnectingBanner": "자동 재연결 중({{max}} 중 {{attempt}} 시도) 원격 세션 상태가 손실되었습니다.",
+      "fingerprintTitle": "원격 신원 확인",
+      "fingerprintMessage": "{{address}}에 연결 중입니다. 신고된 신원: {{identity}}. 지문: {{fingerprint}}. 계속하기 전에 예상한 ID가 맞는지 확인하세요.",
+      "unknownIdentity": "알 수 없는 신원",
+      "unknownFingerprint": "알 수 없는 지문",
+      "fingerprintConfirm": "연결하다"
+    },
+    "transfer": {
+      "myIdentity": "내 신분:",
+      "copyIdentityAria": "내 신원 해시 복사",
+      "myReceiveDest": "내 rncp 수신 대상:",
+      "copyReceiveDestAria": "내 rncp 수신 대상 복사",
+      "pendingOffersTitle": "보류 중인 인바운드 파일",
+      "pendingOffersBadgeAria_one": "{{count}} 인바운드 파일 제공 보류 중",
+      "pendingOffersBadgeAria_other": "{{count}} 보류 중인 인바운드 파일 제안",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "{{file}} 수락",
+      "accept": "수용하다",
+      "rejectAria": "거부 {{file}}",
+      "reject": "거부하다",
+      "alwaysAllowAria": "{{file}}에 대해 이 발신자를 항상 허용합니다.",
+      "alwaysAllow": "항상 허용",
+      "alwaysBlockAria": "{{file}}에 대해 이 발신자를 항상 차단합니다.",
+      "alwaysBlock": "항상 차단",
+      "alwaysAllowSaved": "보낸 사람이 허용 목록에 추가되었습니다.",
+      "alwaysBlockSaved": "보낸 사람이 차단 목록에 추가되었습니다.",
+      "modeSendAria": "전송 모드로 전환",
+      "modeSend": "보내다",
+      "modeFetchAria": "가져오기 모드로 전환",
+      "modeFetch": "가져오기",
+      "destinationPlaceholder": "대상 해시(16진수 32자)",
+      "destinationAria": "rncp 대상 해시",
+      "notAllowedHint": "이 경로에서는 파일 전송을 사용할 수 없습니다: {{reason}}",
+      "chooseFileAria": "보낼 로컬 파일을 선택하세요",
+      "chooseFile": "파일 선택…",
+      "noFileChosen": "선택한 파일이 없습니다.",
+      "sendAria": "파일 보내기",
+      "send": "보내기",
+      "sendFailed": "전송 실패: {{error}}",
+      "remotePathPlaceholder": "원격 파일 경로",
+      "remotePathAria": "가져올 원격 파일 경로",
+      "chooseSaveDirAria": "저장할 로컬 폴더를 선택하세요.",
+      "chooseSaveDir": "저장 폴더 선택…",
+      "defaultSaveDir": "기본 다운로드 폴더",
+      "fetchAria": "파일 가져오기",
+      "fetch": "가져오기",
+      "fetchFailed": "가져오지 못했습니다: {{error}}",
+      "acceptFailed": "파일을 수락하지 못했습니다: {{error}}",
+      "listTitle": "전송",
+      "listEmpty": "아직 전송이 없습니다.",
+      "kind": {
+        "send": "보내기",
+        "fetch": "가져오기"
+      },
+      "status": {
+        "active": "진행 중",
+        "completed": "완전한",
+        "failed": "실패한",
+        "cancelled": "취소"
+      },
+      "cancelAria": "{{file}} 이전 취소",
+      "cancel": "취소",
+      "retryAria": "{{file}} 전송 재시도",
+      "retry": "다시 시도",
+      "revealAria": "폴더에 {{file}} 표시",
+      "reveal": "폴더에 공개",
+      "requestEnableAria": "이 피어가 파일 수신을 활성화하도록 요청",
+      "requestEnable": "활성화 요청",
+      "requestEnableSent": "피어에게 파일 수신을 활성화하도록 요청했습니다.",
+      "requestEnableRateLimited": "최근에 이미 요청을 보냈습니다. 나중에 다시 시도하세요.",
+      "requestEnableFailed": "활성화 요청을 보낼 수 없습니다: {{error}}",
+      "offerToast": "수신 파일 제공: {{file}}",
+      "copyInstructionsAria": "파일 수신 활성화를 위한 지침 복사",
+      "copyInstructions": "지침 복사",
+      "instructionsCopied": "지침이 복사되었습니다."
+    },
+    "enableRequest": {
+      "title": "파일 수신을 활성화하시겠습니까?",
+      "body": "{{peer}}이(가) 파일을 보낼 수 있도록 rncp 파일 수신을 켜달라고 요청했습니다.",
+      "enableAsk": "활성화(매번 확인)",
+      "enableAskAria": "인바운드 파일 제안을 활성화하고 수락하기 전에 물어보십시오.",
+      "enableAllow": "이 ID 활성화 및 허용",
+      "enableAllowAria": "인바운드 파일 제공을 활성화하고 이 발신자를 허용합니다.",
+      "notNow": "지금은 아님",
+      "notNowAria": "활성화 요청 닫기",
+      "dontAsk": "이 피어에게 다시 묻지 않음",
+      "dontAskAria": "이 피어의 활성화 요청을 영구적으로 무시합니다.",
+      "enabled": "파일 수신이 활성화되었습니다.",
+      "enableFailed": "파일 수신을 활성화할 수 없습니다: {{error}}",
+      "saveDirRequired": "수신을 활성화하려면 저장 폴더를 선택하세요.",
+      "identityUnknown": "이 피어의 신원 해시를 아직 확인할 수 없습니다 — 수신 확인은 활성화되었지만 허용 목록에는 추가되지 않았습니다. 경로나 알림이 도착한 후 다시 시도하세요.",
+      "lxmfBody": "mesh-client를 사용하는 경우 파일 수신(rncp)을 활성화하십시오: 원격 → 설정 → 인바운드 파일 제공. 또는 청취 모드에서 rncp/rncp-rs를 실행하십시오."
+    },
+    "saved": {
+      "labelPlaceholder": "상표",
+      "labelAria": "저장된 주소 라벨",
+      "labelRequired": "이 주소에 대한 라벨을 입력하세요.",
+      "hashPlaceholder": "대상 해시(16진수 32자)",
+      "hashAria": "저장된 주소 대상 해시",
+      "serviceAria": "저장된 주소 서비스",
+      "serviceRnsh": "쉘(rnsh)",
+      "serviceRncp": "전송(rncp)",
+      "saveAria": "주소 저장",
+      "add": "추가하다",
+      "saveFailed": "주소 저장 실패: {{error}}",
+      "empty": "아직 저장된 주소가 없습니다.",
+      "editAria": "저장된 주소 수정 {{label}}",
+      "deleteAria": "저장된 주소 삭제 {{label}}"
+    },
+    "settings": {
+      "applyFailed": "설정을 적용하지 못했습니다: {{error}}",
+      "inboundTitle": "인바운드 파일 전송",
+      "inboundMode": {
+        "off": "끄다",
+        "ask": "묻기",
+        "allow_all_listed": "나열된 것만 허용"
+      },
+      "allowFetch": "원격 피어가 나에게서 파일을 가져오도록 허용",
+      "chooseSaveDirAria": "수신 파일 전송을 저장할 폴더 선택",
+      "chooseSaveDir": "저장 폴더 선택…",
+      "noSaveDir": "저장 폴더가 선택되지 않았습니다",
+      "fetchJailRequired": "원격 가져오기를 활성화하기 전에 가져오기 폴더를 선택하세요.",
+      "chooseFetchJailAria": "원격 피어가 가져올 수 있는 폴더를 선택하세요.",
+      "chooseFetchJail": "가져오기 폴더 선택…",
+      "noFetchJail": "선택한 가져오기 폴더가 없습니다.",
+      "overwrite": "수신 시 기존 파일 덮어쓰기",
+      "maxSizeInfo": "최대 인바운드 파일 크기: {{size}}",
+      "allowBlockListTitle": "허용/차단 목록",
+      "allowBlockListEmpty": "아직 저장된 허용/차단 결정이 없습니다. 인바운드 파일 제안에 대해 \"항상 허용\" 또는 \"항상 차단\"을 사용하십시오.",
+      "decision": {
+        "allow": "허용된",
+        "block": "막힌"
+      },
+      "removePolicyAria": "{{label}}에 대해 저장된 결정 삭제",
+      "reliabilityTitle": "신뢰할 수 있음",
+      "autoReconnectShell": "예기치 않은 연결 끊김 후 원격 셸을 자동으로 다시 연결",
+      "autoRetryTransfer": "실패한 전송을 자동으로 재시도",
+      "identityTitle": "나의 정체성",
+      "myIdentity": "내 신원:"
+    }
+  },
+  "meshcoreRoute": {
+    "me": "● 나",
+    "direct": "직접",
+    "segmentTooltip": "경로 해시 {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

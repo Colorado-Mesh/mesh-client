@@ -354,7 +354,17 @@
     "reticulumCapDestinationsLabel": "メモリと SQLite の宛先 / ピア数を制限し、最後に受信したものを保持",
     "reticulumCapDestinationsCountAria": "宛先数を制限し、最後に受信した {{count}} 件を保持",
     "reticulumDestinationsUnit_one": "宛先",
-    "reticulumDestinationsUnit_other": "宛先"
+    "reticulumDestinationsUnit_other": "宛先",
+    "storeForwardHistoryProfileLabel": "ストア＆フォワードのキャッチアッププロファイル",
+    "storeForwardHistoryProfileAria": "ストア＆フォワード履歴のキャッチアップの積極性",
+    "storeForwardHistoryProfileConservative": "保守的 (ビジーメッシュに優しい)",
+    "storeForwardHistoryProfileAggressive": "アグレッシブ（むらのあるカバレッジ）",
+    "storeForwardHistoryProfileHint": "保守的な場合は、より長いオフライン ゲートとクールダウンを使用します。短時間の切断後すぐに積極的にフェッチし、より多くのメッセージを要求します。通信時間が許す場合にのみ使用してください。",
+    "shareLocationSendWaypoint": "位置情報を共有するときにマップピン（ウェイポイント）も送信します",
+    "shareLocationSendWaypointHint": "有効にすると、Meshtastic 位置情報共有はテキスト メッセージとウェイポイント パケットの両方を送信するため、公式アプリにマップ ピンが表示されます。ビジーメッシュでテキストのみを送信するには無効にします。",
+    "capStoredRrcMessages": "保存される RRC ルーム履歴に上限を設け、最新の状態に保つ",
+    "capStoredRrcMessagesLabel": "保存される RRC ルーム履歴に上限を設け、最新の状態に保つ",
+    "capStoredRrcMessagesCountAria": "保存されている RRC ルーム履歴を制限し、最新の {{count}} メッセージを保持します"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -369,7 +379,10 @@
     "switchToMeshCore": "MeshCore に切り替える",
     "backToTop": "トップに戻る",
     "switchToReticulum": "Reticulumに切り替える",
-    "languageSelectorHint": "クリックして言語を選択"
+    "languageSelectorHint": "クリックして言語を選択",
+    "switchToMeshtasticWithUnread": "Meshtastic に切り替え、{{count}} は未読",
+    "switchToMeshCoreWithUnread": "MeshCore に切り替え、{{count}} 未読",
+    "switchToReticulumWithUnread": "Reticulum に切り替え、{{count}} 未読"
   },
   "battery": {
     "percentCharging": "バッテリー {{percent}} パーセント、充電中",
@@ -503,9 +516,6 @@
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… または g:ID",
     "meshcoreGifSend": "GIFを送信",
     "meshcoreGifInvalid": "有効なGiphy URLまたはGIF IDを入力してください。",
-    "attachFile": "ファイルの添付",
-    "attachFileHint": "LXMFファイルの添付ファイルを送信する（ DMのみ）",
-    "attachDmOnly": "ファイルを添付する前にダイレクトメッセージを開きます。",
     "composePlaceholderSelectDm": "上記の連絡先を選択してDMを開始してください…",
     "selectDmFirst": "送信する前にDM受信者を選択してください。",
     "emptySelectDm": "Reticulumチャットはダイレクトメッセージのみです。上記の連絡先を選択するか、[ノード]タブから連絡先を開きます。",
@@ -526,12 +536,6 @@
     "reticulumNoPropagationNode": "伝播ノードが構成されていません。 Reticulum Radio タブで優先伝播ノードを設定します。",
     "sentViaPropagation": "伝播ノード",
     "reticulumAudioAttachment": "音声: {{name}}",
-    "recordVoice": "音声メッセージを録音する",
-    "recordVoiceHint": "音声クリップを録音し、LXMF 添付ファイルとして送信します (DM のみ)",
-    "stopVoiceRecording": "録音を停止して送信する",
-    "voiceRecordingTooLong": "音声クリップが 60 秒の制限に達したため、送信されました。",
-    "reticulumSendAttachmentFailed": "添付ファイルの送信に失敗しました",
-    "reticulumSendAttachmentNoIdentity": "Reticulum IDが準備できていません — 先に接続してIDを設定してください",
     "dmPeerInfoAria": "DMピア情報",
     "clearDateAria": "クリア日付",
     "readOnlyDisconnected": "接続されていません - メッセージは読み取り専用です",
@@ -567,7 +571,6 @@
     "dmPathUnreachableTooltip": "この宛先への Reticulum パスはまだありません。設定済みの伝播ノード経由で後から配信されることがあります。",
     "dmPathRequestPathAria": "この宛先への Reticulum パスをリクエスト",
     "dmPathProbeAria": "この宛先の Reticulum パス到達可能性をプローブ",
-    "microphonePermissionDenied": "マイクへのアクセスが拒否されました。システムのプライバシー設定で Mesh-client のマイクアクセス許可を有効にしてから、もう一度お試しください。",
     "receivedViaBle": "Bluetooth経由で受信",
     "receivedViaMultiple": "{{vias}}経由で受け取りました",
     "sentViaBle": "Bluetooth経由で送信",
@@ -575,12 +578,44 @@
     "floodScopeOverrideLabel": "このメッセージのFloodスコープ",
     "floodScopeOverrideAria": "メッセージごとのフラッドスコープのオーバーライド",
     "floodScopeOverrideDefault": "既定のスコープ",
-    "floodScopeOverrideUnscoped": "非スコープ"
+    "floodScopeOverrideUnscoped": "非スコープ",
+    "rncp": {
+      "sendFile": "ファイルの送信",
+      "sendFileAria": "ファイルをrncp経由で{{name}}に送信する",
+      "pendingOffersBadgeAria_one": "このピアからの{{count}}保留中のインバウンドファイルオファー",
+      "pendingOffersBadgeAria_other": "このピアからの{{count}}保留中のインバウンドファイルのオファー",
+      "destinationLabel": "rncp宛先ハッシュ",
+      "rememberAddress": "この住所を記憶する",
+      "rememberAddressAria": "このピアのこのrncp宛先を覚えておいてください",
+      "chooseAndSend": "ファイルを選択して送信…",
+      "sending": "送信中・・・",
+      "sendStarted": "{{file}}を送信中…",
+      "sendFailed": "次の送信に失敗しました： {{error}}",
+      "newOfferToast": "{{peer}}様からファイルのお送りをご希望です: {{file}}",
+      "requestEnable": "リクエストの有効化",
+      "requestEnableAria": "このピアにファイル受信を有効にするように依頼します"
+    },
+    "shareLocation": "位置情報を共有する",
+    "shareLocationLabel": "📍 共有場所",
+    "shareLocationHint": "現在の GPS または静的位置をチャット メッセージとして送信します",
+    "shareLocationUnavailable": "位置情報が利用できません - GPS 設定を確認してください",
+    "floodScopeOverrideHint": "このメッセージのみの地域的なフラッドの範囲。デフォルトのスコープは、無線の保存された設定を使用します。ハッシュタグは、この送信をその地域に制限します。地域フィルターを使用しない範囲外の送信。保存したスコープは送信後に復元されます。",
+    "floodScopeOverrideMenuButton": "このメッセージのフラッド範囲を変更する",
+    "shareLocationWaypointFailed": "マップ ピン (ウェイポイント) が認識されませんでした。位置テキストがまだ送信されている可能性があります。",
+    "floodScopeOverrideCustom": "カスタムスコープ…",
+    "floodScopeOverrideCustomLabel": "カスタムフラッドスコープハッシュタグ",
+    "floodScopeOverrideCustomPlaceholder": "#私の地域",
+    "floodScopeOverrideCustomApply": "使用範囲",
+    "floodScopeOverrideCustomInvalid": "有効な地域ハッシュタグ (#myregion など) を入力します。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Giphyで開く"
+    "meshcoreGifOpen": "Giphyで開く",
+    "locationCard": {
+      "alt": "共有ロケーションマップタイル",
+      "openMaps": "マップで開く"
+    }
   },
   "common": {
     "close": "近い",
@@ -622,7 +657,9 @@
     "colorAmber": "アンバー",
     "colorRed": "レッド",
     "colorPurple": "紫",
-    "delete": "消去"
+    "delete": "消去",
+    "copy": "コピー",
+    "copied": "コピーしました"
   },
   "configApplyNotice": {
     "persistNote": "適用された設定はデバイスのフラッシュメモリに保存され、再起動後も保持されます。",
@@ -1163,7 +1200,8 @@
       "meshcore": "諦める前に再接続を試みます（ 1 - {{max}} ）。設定が保存されました。変更後にもう一度接続を押して、メインプロセスがそれをピックアップします。",
       "meshtastic": "どちらのプロトコルも1 - {{max}}を許可します。設定とともに保存されました。接続を解除してもう一度接続すると、実行中のセッションが新しい値を使用します。"
     },
-    "reticulumStackRunningAs": "実行中— {{name}}"
+    "reticulumStackRunningAs": "実行中— {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Reticulum スタックが応答なし — 再起動中…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -1492,7 +1530,10 @@
     "senderLabel": "送信者",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "SNR {{snr}} dB"
+    "snrDb": "SNR {{snr}} dB",
+    "distanceOffsetKm": "距離オフセット",
+    "km": "km",
+    "distanceOffsetHelp": "ホップゴブリンおよび不良ルートの距離しきい値 (0 ～ 50) にフラット km フロアを追加します。"
   },
   "diagnosticsPing": {
     "title": "連続ping",
@@ -2568,7 +2609,9 @@
       "lossRate": "推定損失",
       "lossRatePercent": "{{percent}} %",
       "packetLogAria": "範囲テストパケットログ"
-    }
+    },
+    "currentRouteHeading": "現在のルート",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "長い名前",
@@ -3371,15 +3414,13 @@
     "xmodemFailed": "XMODEMに失敗しました： {{message}}",
     "zeroHopAdvertButton": "Zero-hop Advert",
     "zeroHopAdvertSent": "Zero-hop advertを送信しました",
-    "floodScopeTitle": "地域の洪水スコープ",
+    "floodScopeTitle": "地域のフラッドスコープ",
     "floodScopeHelp": "ハッシュタグリージョン（ファームウェアv 8 +）へのフラッドトラフィックを制限します。meshcore.js setFloodScopeが必要です。再接続すると、保存されたスコープが再適用されます。",
     "floodScopeNone": "なし（範囲を明確にする）",
-    "floodScopePreset": "プリセットハッシュタグ",
-    "floodScopePresetSelect": "プリセットされた地域のハッシュタグ",
     "floodScopeCustom": "カスタムハッシュタグ",
     "floodScopeCustomPlaceholder": "# myregion",
     "floodScopeApply": "フラッドスコープを適用する",
-    "floodScopeApplySuccess": "洪水スコープが適用されました",
+    "floodScopeApplySuccess": "フラッドスコープが適用されました",
     "floodScopeApplyFailed": "フラッドスコープに失敗しました： {{message}}",
     "advertisedPositionLabel": "掲載ポジション： {{lat}}、{{lon}}",
     "txPowerMax": "送信電力（ラジオあたり最大{{max}} dBm ）",
@@ -3485,7 +3526,13 @@
       "6": {
         "label": "中低速"
       }
-    }
+    },
+    "floodScopeSaved": "保存されたスコープ",
+    "floodScopeSavedSelect": "保存された地域のハッシュタグ",
+    "floodScopeSavedEmpty": "保存されたスコープはまだありません。カスタム ハッシュタグを適用するか、チャットからカスタム スコープを使用してハッシュタグを追加します。",
+    "floodScopeRemoveSaved": "保存されたスコープから削除する",
+    "floodScopeRemoveSavedAria": "保存されたスコープから {{hashtag}} を削除します",
+    "floodScopeInvalidHashtag": "有効な地域ハッシュタグ (#myregion など) を入力します。"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",
@@ -3687,7 +3734,6 @@
     "pathHashCliSet2": "パスハッシュモード3バイトを設定",
     "pathLabel": "パス：",
     "hopMe": "●私",
-    "hopN": "● ホップ {{n}}",
     "noNeighborsReported": "近隣住民は報告されていません",
     "fetchingTelemetry": "テレメトリを取得中…",
     "telemetryBattery": "バッテリー: {{voltage}}V",
@@ -3733,7 +3779,8 @@
     "cliDangerConfirmAction": "コマンドを実行",
     "cliAutoPingToast": "CLIの前にPingでルートを確立しています...",
     "cliAutoPingFailed": "Pingに失敗しました。マルチホップリピーターでCLIを再試行する前に、手動でPingを実行してください。",
-    "cliCommandTooLong": "CLIコマンドが長すぎます（最大{{max}}文字）。"
+    "cliCommandTooLong": "CLIコマンドが長すぎます（最大{{max}}文字）。",
+    "currentRouteLabel": "現在のルート:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",
@@ -4177,7 +4224,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "ネットワーク・トポロジー",
     "network": "ネットワーク",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "リモート"
   },
   "takServerPanel": {
     "title": "TAKサーバー",
@@ -4246,7 +4294,13 @@
     "footerMax": "(それぞれ最大50個)",
     "sectionTemperatureHumidity": "温度/湿度",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "該当なし",
+    "chartAriaBattery": "バッテリーと電圧のグラフ: 最新のバッテリー {{battery}} パーセント、電圧 {{voltage}} V、{{count}} ポイント",
+    "chartAriaSignal": "信号品質チャート: 最新の SNR {{snr}} dB、RSSI {{rssi}} dBm、{{count}} ポイント",
+    "chartAriaTempHumidity": "温度と湿度のグラフ: 最新の温度 {{temperature}}、湿度 {{humidity}} パーセント、{{count}} ポイント",
+    "chartAriaPressure": "気圧グラフ: 最新の{{pressure}} hPa、{{count}} ポイント",
+    "chartAriaIaq": "大気質チャート: 最新の IAQ {{iaq}}、{{count}} ポイント"
   },
   "toasts": {
     "firmwareAvailable": "利用可能なファームウェアアップデート: v{{version}}",
@@ -4431,7 +4485,11 @@
     "roomLegend": "★ お気に入り·自動結合を切り替える",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "履歴をクリアする",
+    "clearHistoryTitle": "ルームの履歴をクリアする",
+    "clearHistoryConfirm": "{{room}} の保存されているメッセージ履歴をすべて削除しますか?これを元に戻すことはできません。",
+    "clearHistoryConfirmAction": "履歴の削除"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -4473,5 +4531,210 @@
     "confirmContactImportTitle": "連絡先をインポートしますか?",
     "confirmContactImportBody": "外部リンクから {{name}} を Reticulum の連絡先に追加しますか?",
     "confirmContactImportAction": "連絡先をインポートする"
+  },
+  "reticulumRemote": {
+    "navAria": "リモートセクション",
+    "sidecarNotRunning": "リモートシェルとファイル転送を使用するには、Reticulumスタックを起動します。",
+    "sections": {
+      "shell": "シェル",
+      "transfer": "転送",
+      "saved": "セーブ",
+      "settings": "設定"
+    },
+    "errors": {
+      "invalidAddress": "有効な32文字の16進ハッシュを入力してください。"
+    },
+    "reasons": {
+      "pathConstrained": "パスが制約されています（低帯域幅）",
+      "pathUnknown": "パス速度が不明です",
+      "notAnnounced": "行き先はまだ発表されていません",
+      "timeout": "リクエストのタイムアウト",
+      "notAllowed": "許可されていません",
+      "versionMismatch": "リモートバージョンの不一致",
+      "stagingFailed": "受信ファイルのステージングに失敗しました",
+      "cancelled": "キャンセルされました",
+      "rejected": "拒否されました",
+      "error": "エラー"
+    },
+    "pathCapability": {
+      "checking": "パスを確認しています…",
+      "hops_one": "{{count}}ホップ",
+      "hops_other": "{{count}}ホップ",
+      "speed": {
+        "high": "ファストパス",
+        "constrained": "制約されたパス",
+        "mixed": "混合パス",
+        "unknown": "不明なパス"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "宛先ハッシュ（ 32文字の16進数）",
+      "addressAria": "rnsh宛先ハッシュ",
+      "selectSavedAddress": "保存された住所{{label}}を使用する",
+      "connectAria": "リモートシェルを接続",
+      "connect": "接続",
+      "connecting": "連携中…",
+      "connectFailed": "接続に失敗しました： {{error}}",
+      "maxSessions": "最大{{count}}シェルセッションに達しました。",
+      "focusSession": "セッション{{address}}に切り替える",
+      "closeSession": "セッション{{address}}を閉じる",
+      "emptyState": "アクティブなリモートシェルセッションはありません。接続するには、上記の宛先ハッシュを入力してください。",
+      "status": {
+        "connecting": "連携中…",
+        "active": "接続済み",
+        "closed": "クローズ",
+        "error": "エラー"
+      },
+      "reconnectAria": "このセッションを再接続する",
+      "reconnect": "再接続",
+      "disconnectAria": "このセッションを切断する",
+      "disconnect": "接続を解除",
+      "reconnectExhausted": "自動再接続は、再試行制限に達した後に終了しました。リモートセッションの状態が失われました。",
+      "reconnectingBanner": "自動再接続しています（ {{max}}の{{attempt}}をお試しください）。リモートセッションの状態が失われました。",
+      "fingerprintTitle": "リモートIDを確認する",
+      "fingerprintMessage": "{{address}}に接続しています。報告された身元： {{identity}}。フィンガープリント： {{fingerprint}}。続行する前に、これが予想されるIDであることを確認してください。",
+      "unknownIdentity": "不明なID",
+      "unknownFingerprint": "不明なフィンガープリント",
+      "fingerprintConfirm": "接続"
+    },
+    "transfer": {
+      "myIdentity": "私のアイデンティティ：",
+      "copyIdentityAria": "IDハッシュをコピーする",
+      "myReceiveDest": "自分のrncp受信宛先:",
+      "copyReceiveDestAria": "私のrncp受信先をコピー",
+      "pendingOffersTitle": "保留中の受信ファイル",
+      "pendingOffersBadgeAria_one": "{{count}}保留中のインバウンドファイルオファー",
+      "pendingOffersBadgeAria_other": "{{count}}保留中のインバウンドファイルのオファー",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "ACCEPT {{file}}",
+      "accept": "承諾",
+      "rejectAria": "REJECT {{file}}",
+      "reject": "拒否",
+      "alwaysAllowAria": "この送信者に{{file}}を常に許可する",
+      "alwaysAllow": "常に許可",
+      "alwaysBlockAria": "{{file}}の間、この送信者を常にブロックしてください",
+      "alwaysBlock": "常にブロック",
+      "alwaysAllowSaved": "送信者が許可リストに追加されました。",
+      "alwaysBlockSaved": "送信者がブロックリストに追加されました。",
+      "modeSendAria": "送信モードに切り替える",
+      "modeSend": "送信",
+      "modeFetchAria": "フェッチモードに切り替える",
+      "modeFetch": "取得",
+      "destinationPlaceholder": "宛先ハッシュ（ 32文字の16進数）",
+      "destinationAria": "rncp宛先ハッシュ",
+      "notAllowedHint": "このパスではファイル転送を利用できません: {{reason}}",
+      "chooseFileAria": "送信するローカルファイルを選択してください",
+      "chooseFile": "ファイルを選択",
+      "noFileChosen": "ファイルが選択されていません",
+      "sendAria": "ファイルの送信",
+      "send": "送信",
+      "sendFailed": "次の送信に失敗しました： {{error}}",
+      "remotePathPlaceholder": "リモートファイルのパス",
+      "remotePathAria": "フェッチするリモートファイルのパス",
+      "chooseSaveDirAria": "保存先のローカルフォルダを選択してください",
+      "chooseSaveDir": "フォルダの保存を選択…",
+      "defaultSaveDir": "既定のダウンロードフォルダ",
+      "fetchAria": "ファイルをフェッチ",
+      "fetch": "取得",
+      "fetchFailed": "取得に失敗しました: {{error}}",
+      "acceptFailed": "ファイルの受け入れに失敗しました： {{error}}",
+      "listTitle": "転送",
+      "listEmpty": "まだ送金はありません。",
+      "kind": {
+        "send": "送信",
+        "fetch": "取得"
+      },
+      "status": {
+        "active": "進行中",
+        "completed": "完了",
+        "failed": "失敗しました",
+        "cancelled": "キャンセルされました"
+      },
+      "cancelAria": "{{file}}の送金をキャンセルする",
+      "cancel": "取り消す",
+      "retryAria": "{{file}}の転送を再試行",
+      "retry": "再試行",
+      "revealAria": "フォルダー内の{{file}}を表示",
+      "reveal": "フォルダーで表示",
+      "requestEnableAria": "このピアがファイル受信を有効にするように要求する",
+      "requestEnable": "リクエストの有効化",
+      "requestEnableSent": "ピアにファイル受信を有効にするように依頼しました。",
+      "requestEnableRateLimited": "最近すでにリクエストを送信しています。しばらくしてからもう一度お試しください。",
+      "requestEnableFailed": "有効化リクエストを送信できませんでした： {{error}}",
+      "offerToast": "受信ファイルオファー： {{file}}",
+      "copyInstructionsAria": "ファイル受信を有効にするための手順をコピーする",
+      "copyInstructions": "手順をコピー",
+      "instructionsCopied": "手順をコピーしました。"
+    },
+    "enableRequest": {
+      "title": "ファイル受信を有効にしますか？",
+      "body": "{{peer}}さんから、ファイルを送信できるようにrncpファイル受信をオンにするよう依頼されました。",
+      "enableAsk": "有効にする（毎回尋ねる）",
+      "enableAskAria": "インバウンドファイルのオファーを有効にし、承認する前に尋ねる",
+      "enableAllow": "このIDを有効にして許可する",
+      "enableAllowAria": "受信ファイルのオファーを有効にし、この送信者を許可する",
+      "notNow": "後で",
+      "notNowAria": "有効化リクエストを閉じる",
+      "dontAsk": "この同僚に次回から確認しない",
+      "dontAskAria": "このピアからの有効化リクエストを完全に却下する",
+      "enabled": "ファイル受信が有効になっています。",
+      "enableFailed": "ファイル受信を有効にできませんでした： {{error}}",
+      "saveDirRequired": "受信を有効にする保存フォルダを選択します。",
+      "identityUnknown": "このピアのIDハッシュをまだ解決できませんでした。受信時の確認は有効になりましたが、許可リストには追加されていません。パスまたはアナウンスの到着後にもう一度お試しください。",
+      "lxmfBody": "mesh-clientをご利用の場合はファイル受信（rncp）を有効にしてください: Remote → Settings → Inbound file offers。またはリッスンモードで rncp/rncp-rs を実行してください。"
+    },
+    "saved": {
+      "labelPlaceholder": "ラベル",
+      "labelAria": "保存された住所ラベル",
+      "labelRequired": "この住所のラベルを入力してください。",
+      "hashPlaceholder": "宛先ハッシュ（ 32文字の16進数）",
+      "hashAria": "保存された住所の宛先ハッシュ",
+      "serviceAria": "保存された住所サービス",
+      "serviceRnsh": "シェル(rnsh)",
+      "serviceRncp": "転送(rncp)",
+      "saveAria": "住所を保存",
+      "add": "追加",
+      "saveFailed": "住所の保存に失敗しました： {{error}}",
+      "empty": "保存された住所はまだありません。",
+      "editAria": "保存済み住所{{label}}を編集",
+      "deleteAria": "保存済み住所{{label}}を削除"
+    },
+    "settings": {
+      "applyFailed": "設定の適用に失敗しました： {{error}}",
+      "inboundTitle": "インバウンドファイル転送",
+      "inboundMode": {
+        "off": "OFF",
+        "ask": "確認",
+        "allow_all_listed": "一覧表示のみ許可する"
+      },
+      "allowFetch": "リモートピアが自分からファイルをフェッチできるようにする",
+      "chooseSaveDirAria": "受信ファイル転送の保存先フォルダーを選択",
+      "chooseSaveDir": "保存フォルダーを選択…",
+      "noSaveDir": "保存フォルダーが選択されていません",
+      "fetchJailRequired": "リモート取得を有効にする前に取得フォルダーを選択してください。",
+      "chooseFetchJailAria": "リモートピアが取得する可能性のあるフォルダを選択します",
+      "chooseFetchJail": "フェッチフォルダを選択…",
+      "noFetchJail": "フェッチフォルダが選択されていません",
+      "overwrite": "領収書の既存のファイルを上書きする",
+      "maxSizeInfo": "最大受信ファイルサイズ： {{size}}",
+      "allowBlockListTitle": "許可/ブロックリスト",
+      "allowBlockListEmpty": "保存された許可/ブロックの決定はまだありません。インバウンドファイルオファーで「常に許可」または「常にブロック」を使用します。",
+      "decision": {
+        "allow": "許可",
+        "block": "ブロック済"
+      },
+      "removePolicyAria": "{{label}}のために保存された意思決定を削除",
+      "reliabilityTitle": "信頼性",
+      "autoReconnectShell": "予期しない切断後にリモートシェルを自動的に再接続する",
+      "autoRetryTransfer": "失敗した転送を自動的に再試行する",
+      "identityTitle": "私のアイデンティティ",
+      "myIdentity": "私のアイデンティティ："
+    }
+  },
+  "meshcoreRoute": {
+    "me": "●私",
+    "direct": "直接",
+    "segmentTooltip": "パスハッシュ {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

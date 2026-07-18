@@ -34,6 +34,8 @@ describe('runStartupDbPrune', () => {
     vi.mocked(window.electronAPI.db.pruneReticulumMessagesByCount).mockResolvedValue({
       changes: 0,
     });
+    vi.mocked(window.electronAPI.db.pruneRrcMessagesByCount).mockResolvedValue({ changes: 0 });
+    vi.mocked(window.electronAPI.db.pruneRrcMessagesByAge).mockResolvedValue({ changes: 0 });
     vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValue({});
   });
 
@@ -47,6 +49,8 @@ describe('runStartupDbPrune', () => {
     vi.mocked(window.electronAPI.db.pruneMessagesByCount).mockClear();
     vi.mocked(window.electronAPI.db.pruneMeshcoreMessagesByCount).mockClear();
     vi.mocked(window.electronAPI.db.pruneReticulumMessagesByCount).mockClear();
+    vi.mocked(window.electronAPI.db.pruneRrcMessagesByCount).mockClear();
+    vi.mocked(window.electronAPI.db.pruneRrcMessagesByAge).mockClear();
   });
 
   it('runs meshtastic startup prune IPC once per session', async () => {
@@ -60,6 +64,8 @@ describe('runStartupDbPrune', () => {
     expect(window.electronAPI.db.pruneMessagesByCount).toHaveBeenCalledTimes(1);
     expect(window.electronAPI.db.pruneMeshcoreMessagesByCount).toHaveBeenCalledTimes(1);
     expect(window.electronAPI.db.pruneReticulumMessagesByCount).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI.db.pruneRrcMessagesByCount).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI.db.pruneRrcMessagesByAge).toHaveBeenCalledTimes(1);
   });
 
   it('runSessionDbPrune repeats after prior run settles (single-flight only while in-flight)', async () => {

@@ -354,7 +354,17 @@
     "reticulumCapDestinationsLabel": "Omezit cíle / peery v paměti a SQLite, zachovat naposledy slyšené",
     "reticulumCapDestinationsCountAria": "Omezit cíle, zachovat {{count}} naposledy slyšených",
     "reticulumDestinationsUnit_one": "cíl",
-    "reticulumDestinationsUnit_other": "cílů"
+    "reticulumDestinationsUnit_other": "cílů",
+    "storeForwardHistoryProfileLabel": "Store & Forward catch-up profile",
+    "storeForwardHistoryProfileAria": "Agresivita dohánění historie Store & Forward",
+    "storeForwardHistoryProfileConservative": "Konzervativní (přátelské k rušné síti)",
+    "storeForwardHistoryProfileAggressive": "Agresivní (flekaté pokrytí)",
+    "storeForwardHistoryProfileHint": "Konzervativní používá delší offline bránu a cooldown. Agresivní načítání po krátkých odpojeních a žádostech o další zprávy dříve — používejte pouze tehdy, když to umožňuje vysílací čas.",
+    "shareLocationSendWaypoint": "Při sdílení polohy také odešlete špendlík na mapě (bod na trase).",
+    "shareLocationSendWaypointHint": "Pokud je povoleno, sdílení polohy Meshtastic posílá textovou zprávu i paket navigačních bodů, takže oficiální aplikace zobrazují špendlík na mapě. Chcete-li odesílat pouze text, vypněte u zaneprázdněných sítí.",
+    "capStoredRrcMessages": "Omezit uloženou historii místností RRC, uchovat nejnovější",
+    "capStoredRrcMessagesLabel": "Omezit uloženou historii místností RRC, uchovat nejnovější",
+    "capStoredRrcMessagesCountAria": "Omezit uloženou historii místností RRC, ponechat nejnovější zprávy {{count}}"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -369,7 +379,10 @@
     "switchToMeshCore": "Přepněte na MeshCore",
     "backToTop": "Zpět nahoru",
     "switchToReticulum": "Přepnout na Reticulum",
-    "languageSelectorHint": "Kliknutím vyberte jazyk"
+    "languageSelectorHint": "Kliknutím vyberte jazyk",
+    "switchToMeshtasticWithUnread": "Přepnout na Meshtastic, {{count}} nepřečteno",
+    "switchToMeshCoreWithUnread": "Přepnout na MeshCore, {{count}} nepřečteno",
+    "switchToReticulumWithUnread": "Přepnout na Reticulum, {{count}} nepřečteno"
   },
   "battery": {
     "percentCharging": "Baterie {{percent}} procent, nabíjí se",
@@ -503,9 +516,6 @@
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… nebo g:ID",
     "meshcoreGifSend": "Odeslat gif",
     "meshcoreGifInvalid": "Zadejte platnou Giphy URL nebo ID GIFu.",
-    "attachFile": "Přiložte přílohu",
-    "attachFileHint": "Odeslat přílohu souboru LXMF (pouze DM)",
-    "attachDmOnly": "Před připojením souboru otevřete přímou zprávu.",
     "composePlaceholderSelectDm": "Vyberte kontakt výše a spusťte DM...",
     "selectDmFirst": "Před odesláním vyberte příjemce DM.",
     "emptySelectDm": "Reticulum chat je pouze přímá zpráva. Vyberte kontakt výše nebo jej otevřete na kartě Uzly.",
@@ -526,12 +536,6 @@
     "reticulumNoPropagationNode": "Není nakonfigurován žádný uzel šíření. Nastavte preferovaný uzel šíření na kartě Reticulum Radio.",
     "sentViaPropagation": "Uzel šíření",
     "reticulumAudioAttachment": "Hlas: {{name}}",
-    "recordVoice": "Nahrajte hlasovou zprávu",
-    "recordVoiceHint": "Nahrajte hlasový klip a odešlete jej jako přílohu LXMF (pouze DM)",
-    "stopVoiceRecording": "Zastavte nahrávání a odešlete",
-    "voiceRecordingTooLong": "Hlasový záznam dosáhl limitu 60 sekund a byl odeslán.",
-    "reticulumSendAttachmentFailed": "Nepodařilo se odeslat přílohu",
-    "reticulumSendAttachmentNoIdentity": "Identita Reticulum není připravena — nejprve připojte a nakonfigurujte identitu",
     "dmPeerInfoAria": "Informace o vrstevníkovi DM",
     "clearDateAria": "Vymazat datum",
     "readOnlyDisconnected": "Nepřipojeno — zprávy jsou pouze pro čtení",
@@ -567,20 +571,51 @@
     "dmPathUnreachableTooltip": "K tomuto cíli zatím nevede žádná cesta Reticulum. Zprávy mohou být doručeny později prostřednictvím nakonfigurovaného propagačního uzlu.",
     "dmPathRequestPathAria": "Požádat o cestu Reticulum k tomuto cíli",
     "dmPathProbeAria": "Zjistit dosažitelnost cesty Reticulum pro tento cíl",
-    "microphonePermissionDenied": "Přístup k mikrofonu byl odepřen. Povolte oprávnění mikrofonu pro Mesh-client v nastavení ochrany osobních údajů systému a zkuste to znovu.",
     "receivedViaBle": "Přijato přes Bluetooth",
     "receivedViaMultiple": "Přijato prostřednictvím {{vias}}",
     "sentViaBle": "Odesláno přes Bluetooth",
     "sentViaMultiple": "Odesláno prostřednictvím {{vias}}",
-    "floodScopeOverrideLabel": "Rozsah povodně pro tuto zprávu",
-    "floodScopeOverrideAria": "Přepsání rozsahu povodně podle zprávy",
+    "floodScopeOverrideLabel": "Rozsah Flood pro tuto zprávu",
+    "floodScopeOverrideAria": "Přepsání rozsahu Flood podle zprávy",
     "floodScopeOverrideDefault": "Výchozí rozsah",
-    "floodScopeOverrideUnscoped": "Unscoped"
+    "floodScopeOverrideUnscoped": "Unscoped",
+    "rncp": {
+      "sendFile": "Odeslat soubor",
+      "sendFileAria": "Odeslat soubor na {{name}} pomocí rncp",
+      "pendingOffersBadgeAria_one": "{{count}} čeká na nabídku příchozího souboru od tohoto kolegy",
+      "pendingOffersBadgeAria_other": "{{count}} čekající nabídky příchozích souborů od tohoto kolegy",
+      "destinationLabel": "rncp cílový hash",
+      "rememberAddress": "Zapamatovat si tuto adresu",
+      "rememberAddressAria": "Zapamatovat si tento cíl RNCP pro tohoto kolegu",
+      "chooseAndSend": "Vyberte soubor a odešlete...",
+      "sending": "Odesílání...",
+      "sendStarted": "Odesílání {{file}}…",
+      "sendFailed": "Odeslání se nezdařilo: {{error}}",
+      "newOfferToast": "{{peer}} ti chce poslat soubor: {{file}}",
+      "requestEnable": "Požádat o povolení",
+      "requestEnableAria": "Požádejte tohoto kolegu, aby povolil příjem souboru"
+    },
+    "shareLocation": "Sdílejte polohu",
+    "shareLocationLabel": "📍 Sdílená poloha",
+    "shareLocationHint": "Odešlete svou aktuální GPS nebo statickou polohu jako zprávu chatu",
+    "shareLocationUnavailable": "Poloha není k dispozici – zkontrolujte nastavení GPS",
+    "floodScopeOverrideHint": "Oblast regionálního Flood pouze pro tuto zprávu. Výchozí rozsah používá uložené nastavení rádia; hashtag omezuje toto odeslání do této oblasti; odeslání bez rozsahu bez regionálního filtru. Váš uložený rozsah se po odeslání obnoví.",
+    "floodScopeOverrideMenuButton": "Změnit rozsah Flood pro tuto zprávu",
+    "shareLocationWaypointFailed": "Připínáček na mapě (bod na trase) nebyl potvrzen – text polohy mohl být stále odeslán.",
+    "floodScopeOverrideCustom": "Vlastní rozsah…",
+    "floodScopeOverrideCustomLabel": "Vlastní hashtag Flood rozsahu",
+    "floodScopeOverrideCustomPlaceholder": "#myregion",
+    "floodScopeOverrideCustomApply": "Použijte rozsah",
+    "floodScopeOverrideCustomInvalid": "Zadejte platný hashtag regionu (například #myregion)."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Otevřít na Giphy"
+    "meshcoreGifOpen": "Otevřít na Giphy",
+    "locationCard": {
+      "alt": "Dlaždice mapy sdílené polohy",
+      "openMaps": "Otevřít v Mapách"
+    }
   },
   "common": {
     "close": "Blízko",
@@ -622,7 +657,9 @@
     "colorAmber": "Žlutá",
     "colorRed": "Červené",
     "colorPurple": "Fialová",
-    "delete": "Vymazat"
+    "delete": "Vymazat",
+    "copy": "Kopírovat",
+    "copied": "Zkopírováno"
   },
   "configApplyNotice": {
     "persistNote": "Použitá nastavení jsou uložena do flash paměti zařízení a přetrvávají při restartu.",
@@ -1163,7 +1200,8 @@
       "meshcore": "Pokus o opětovné připojení před vzdáním se (1–{{max}}). Uloženo s nastavením; po změně znovu stiskněte tlačítko Připojit, aby jej hlavní proces zvedl.",
       "meshtastic": "Oba protokoly umožňují 1–{{max}}. Uloženo s nastavením; odpojte a znovu připojte, aby běžící relace používala novou hodnotu."
     },
-    "reticulumStackRunningAs": "Běží — {{name}}"
+    "reticulumStackRunningAs": "Běží — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Zásobník Reticulum nereaguje – restartování…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -1492,7 +1530,10 @@
     "senderLabel": "Odesílatel",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "SNR {{snr}} dB"
+    "snrDb": "SNR {{snr}} dB",
+    "distanceOffsetKm": "Posun vzdálenosti",
+    "km": "km",
+    "distanceOffsetHelp": "Přidá rovnou podlahu km k prahovým hodnotám vzdálenosti hop-goblin a špatným trasám (0–50)."
   },
   "diagnosticsPing": {
     "title": "Kontinuální ping",
@@ -2568,7 +2609,9 @@
       "lossRate": "Odhadovaná ztráta",
       "lossRatePercent": "{{percent}} %",
       "packetLogAria": "Protokol testovacího paketu rozsahu"
-    }
+    },
+    "currentRouteHeading": "Aktuální trasa",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",
@@ -3371,16 +3414,14 @@
     "xmodemFailed": "XMODEM selhal: {{message}}",
     "zeroHopAdvertButton": "Zero-hop Advert",
     "zeroHopAdvertSent": "Zero-hop advert odeslán",
-    "floodScopeTitle": "Regionální rozsah povodní",
-    "floodScopeHelp": "Omezte povodňový provoz na oblast s hashtagy (firmware v8+). Vyžaduje meshcore.js setFloodScope; znovu připojí znovu uložený rozsah.",
+    "floodScopeTitle": "Regionální rozsah Flood",
+    "floodScopeHelp": "Omezte Flood provoz na oblast s hashtagy (firmware v8+). Vyžaduje meshcore.js setFloodScope; znovu připojí znovu uložený rozsah.",
     "floodScopeNone": "Žádné (jasný rozsah)",
-    "floodScopePreset": "Přednastavený hashtag",
-    "floodScopePresetSelect": "Hashtag přednastavené oblasti",
     "floodScopeCustom": "Vlastní hashtag",
     "floodScopeCustomPlaceholder": "#myregion",
-    "floodScopeApply": "Použít rozsah povodně",
-    "floodScopeApplySuccess": "Byl použit rozsah povodně",
-    "floodScopeApplyFailed": "Rozsah povodně se nezdařil: {{message}}",
+    "floodScopeApply": "Použít rozsah Flood",
+    "floodScopeApplySuccess": "Byl použit rozsah Flood",
+    "floodScopeApplyFailed": "rozsah Flood se nezdařil: {{message}}",
     "advertisedPositionLabel": "Inzerovaná pozice: {{lat}}, {{lon}}",
     "txPowerMax": "Vysílací výkon (max {{max}} dBm na rádio)",
     "txPowerMaxUnknown": "Vysílací výkon (omezen na {{max}} dBm, dokud firmware nenahlásí rádio max)",
@@ -3485,7 +3526,13 @@
       "6": {
         "label": "Středně pomalý"
       }
-    }
+    },
+    "floodScopeSaved": "Uložený rozsah",
+    "floodScopeSavedSelect": "Hashtag uložené oblasti",
+    "floodScopeSavedEmpty": "Zatím žádné uložené obory. Použijte vlastní hashtag nebo použijte vlastní rozsah z chatu a přidejte jej.",
+    "floodScopeRemoveSaved": "Odebrat z uložených oborů",
+    "floodScopeRemoveSavedAria": "Odebrat {{hashtag}} z uložených rozsahů",
+    "floodScopeInvalidHashtag": "Zadejte platný hashtag regionu (například #myregion)."
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",
@@ -3687,7 +3734,6 @@
     "pathHashCliSet2": "Nastavte režim cesty hash 3-bajt",
     "pathLabel": "Cesta:",
     "hopMe": "● Já",
-    "hopN": "● Hop {{n}}",
     "noNeighborsReported": "Nehlásili se žádní sousedé",
     "fetchingTelemetry": "Načítání telemetrie…",
     "telemetryBattery": "Baterie: {{voltage}}V",
@@ -3733,7 +3779,8 @@
     "cliDangerConfirmAction": "Spustit příkaz",
     "cliAutoPingToast": "Vytvoření trasy s Ping před CLI...",
     "cliAutoPingFailed": "Ping se nezdařil; spusťte Ping ručně před opakováním CLI na opakovačích multi-hop.",
-    "cliCommandTooLong": "Příkaz CLI je příliš dlouhý (max {{max}} znaků)."
+    "cliCommandTooLong": "Příkaz CLI je příliš dlouhý (max {{max}} znaků).",
+    "currentRouteLabel": "Aktuální trasa:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",
@@ -4177,7 +4224,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "topologie sítě",
     "network": "Síť",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "Vzdálený přístup"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -4246,7 +4294,13 @@
     "footerMax": "(každý max 50)",
     "sectionTemperatureHumidity": "Teplota, vlhkost",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "n/a",
+    "chartAriaBattery": "Tabulka baterie a napětí: nejnovější baterie {{battery}} procent, napětí {{voltage}} V, {{count}} bodů",
+    "chartAriaSignal": "Tabulka kvality signálu: nejnovější SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} bodů",
+    "chartAriaTempHumidity": "Tabulka teploty a vlhkosti: nejnovější teplota {{temperature}}, vlhkost {{humidity}} procent, {{count}} bodů",
+    "chartAriaPressure": "Graf barometrického tlaku: nejnovější {{pressure}} hPa, {{count}} bodů",
+    "chartAriaIaq": "Tabulka kvality vzduchu: nejnovější IAQ {{iaq}}, {{count}} bodů"
   },
   "toasts": {
     "firmwareAvailable": "Dostupná aktualizace firmwaru: v{{version}}",
@@ -4431,7 +4485,11 @@
     "roomLegend": "★ oblíbené · Přepíná automatické připojení",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Vymazat historii",
+    "clearHistoryTitle": "Vymazat historii místnosti",
+    "clearHistoryConfirm": "Smazat veškerou uloženou historii zpráv pro {{room}}? Toto nelze vrátit zpět.",
+    "clearHistoryConfirmAction": "Smazat historii"
   },
   "signalMeter": {
     "rssi": "\"RSSI\"",
@@ -4473,5 +4531,210 @@
     "confirmContactImportTitle": "Importovat kontakt?",
     "confirmContactImportBody": "Přidat {{name}} z externího odkazu do vašich kontaktů Reticulum?",
     "confirmContactImportAction": "Import kontaktu"
+  },
+  "reticulumRemote": {
+    "navAria": "Vzdálené úseky",
+    "sidecarNotRunning": "Spusťte zásobník Reticulum pro použití vzdáleného shellu a přenosu souborů.",
+    "sections": {
+      "shell": "Shell",
+      "transfer": "Přenos",
+      "saved": "Uloženo",
+      "settings": "Nastavení"
+    },
+    "errors": {
+      "invalidAddress": "Zadejte platný 32místný hexadecimální cílový hash."
+    },
+    "reasons": {
+      "pathConstrained": "Cesta je omezena (nízká šířka pásma)",
+      "pathUnknown": "Rychlost cesty není známa",
+      "notAnnounced": "Cíl nebyl oznámen",
+      "timeout": "Žádost vypršela.",
+      "notAllowed": "Není povoleno",
+      "versionMismatch": "Vzdálená verze se neshoduje",
+      "stagingFailed": "Fáze příchozího souboru se nezdařila",
+      "cancelled": "Zrušeno",
+      "rejected": "Zamítnuté",
+      "error": "Chyba"
+    },
+    "pathCapability": {
+      "checking": "Kontroluje se cesta...",
+      "hops_one": "{{count}} hop",
+      "hops_other": "{{count}} hops",
+      "speed": {
+        "high": "Rychlá cesta",
+        "constrained": "Omezená cesta",
+        "mixed": "Smíšená cesta",
+        "unknown": "Neznámá cesta"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "Cílový hash (32 hexadecimálních znaků)",
+      "addressAria": "rnsh cílový hash",
+      "selectSavedAddress": "Použít uloženou adresu {{label}}",
+      "connectAria": "Připojit vzdálený shell",
+      "connect": "Připojit",
+      "connecting": "Připojování…",
+      "connectFailed": "Připojení se nezdařilo: {{error}}",
+      "maxSessions": "Bylo dosaženo maximálního počtu relací shellu {{count}}.",
+      "focusSession": "Přepnout na relaci {{address}}",
+      "closeSession": "Ukončit relaci {{address}}",
+      "emptyState": "Žádné aktivní relace vzdáleného shellu. Pro připojení zadejte výše uvedený cílový hash.",
+      "status": {
+        "connecting": "Připojování…",
+        "active": "Připojeno",
+        "closed": "Zavřeno",
+        "error": "Chyba"
+      },
+      "reconnectAria": "Znovu připojit tuto relaci",
+      "reconnect": "Znovu připojit",
+      "disconnectAria": "Odpojit tuto relaci",
+      "disconnect": "Odpojení",
+      "reconnectExhausted": "Automatické připojení se vzdalo po dosažení limitu opakování. Stav vzdálené relace byl ztracen.",
+      "reconnectingBanner": "Automatické připojení (pokus {{attempt}} z {{max}}). Stav vzdálené relace byl ztracen.",
+      "fingerprintTitle": "Potvrdit vzdálenou identitu",
+      "fingerprintMessage": "Připojení k {{address}}. Nahlášená identita: {{identity}}. Otisk prstu: {{fingerprint}}. Před pokračováním potvrď, že se jedná o totožnost, kterou očekáváš.",
+      "unknownIdentity": "neznámá totožnost",
+      "unknownFingerprint": "neznámý otisk prstu",
+      "fingerprintConfirm": "Připojení"
+    },
+    "transfer": {
+      "myIdentity": "Moje totožnost:",
+      "copyIdentityAria": "Zkopírovat hash mé totožnosti",
+      "myReceiveDest": "Cíl příjmu rncp:",
+      "copyReceiveDestAria": "Zkopírujte můj cíl příjmu rncp",
+      "pendingOffersTitle": "Čekající příchozí soubory",
+      "pendingOffersBadgeAria_one": "{{count}} čekající nabídka příchozího souboru",
+      "pendingOffersBadgeAria_other": "{{count}} čekající nabídky příchozích souborů",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "Přijmout {{file}}",
+      "accept": "Přijmout",
+      "rejectAria": "Odmítnout {{file}}",
+      "reject": "Zamítnout",
+      "alwaysAllowAria": "Vždy povolit tomuto odesílateli {{file}}",
+      "alwaysAllow": "Vždy povolit",
+      "alwaysBlockAria": "Vždy blokovat tohoto odesílatele pro {{file}}",
+      "alwaysBlock": "Vždy blokovat",
+      "alwaysAllowSaved": "Odesílatel byl přidán do seznamu povolených.",
+      "alwaysBlockSaved": "Odesílatel přidán do seznamu bloků.",
+      "modeSendAria": "Přepnout do režimu odesílání",
+      "modeSend": "Odeslat",
+      "modeFetchAria": "Přepnout do režimu načítání",
+      "modeFetch": "Stáhnout",
+      "destinationPlaceholder": "Cílový hash (32 hexadecimálních znaků)",
+      "destinationAria": "rncp cílový hash",
+      "notAllowedHint": "Přenosy nejsou na této cestě k dispozici: {{reason}}",
+      "chooseFileAria": "Vyberte místní soubor k odeslání",
+      "chooseFile": "Vyberte soubor…",
+      "noFileChosen": "Není vybraný žádný soubor",
+      "sendAria": "Odeslat soubor",
+      "send": "Odeslat",
+      "sendFailed": "Odeslání se nezdařilo: {{error}}",
+      "remotePathPlaceholder": "Vzdálená cesta k souboru",
+      "remotePathAria": "Vzdálená cesta k načtení souboru",
+      "chooseSaveDirAria": "Vyberte místní složku, do které chcete uložit",
+      "chooseSaveDir": "Zvolte uložit složku...",
+      "defaultSaveDir": "Výchozí adresář pro stahování",
+      "fetchAria": "Načíst soubor",
+      "fetch": "Stáhnout",
+      "fetchFailed": "Nepodařilo se načíst: {{error}}",
+      "acceptFailed": "Nepodařilo se přijmout soubor: {{error}}",
+      "listTitle": "Přenosy",
+      "listEmpty": "Zatím žádné převody.",
+      "kind": {
+        "send": "Odeslat",
+        "fetch": "Stáhnout"
+      },
+      "status": {
+        "active": "Probíhající",
+        "completed": "Dokončeno",
+        "failed": "Nezdařilo se",
+        "cancelled": "Zrušeno"
+      },
+      "cancelAria": "Zrušit převod {{file}}",
+      "cancel": "Zrušit",
+      "retryAria": "Zkusit převod {{file}}",
+      "retry": "Zkusit znovu",
+      "revealAria": "Odhalit {{file}} ve složce",
+      "reveal": "Odhalit ve složce",
+      "requestEnableAria": "Požádat, aby tento partner umožnil příjem souboru",
+      "requestEnable": "Požádat o povolení",
+      "requestEnableSent": "Požádal kolegu, aby povolil příjem souboru.",
+      "requestEnableRateLimited": "Nedávno jsi již odeslal/a žádost. Zkuste to znovu později.",
+      "requestEnableFailed": "Žádost o povolení se nepodařilo odeslat: {{error}}",
+      "offerToast": "Příchozí nabídka souboru: {{file}}",
+      "copyInstructionsAria": "Kopírovat pokyny pro povolení příjmu souboru",
+      "copyInstructions": "Kopírovat pokyny",
+      "instructionsCopied": "Pokyny zkopírovány."
+    },
+    "enableRequest": {
+      "title": "Povolit příjem souborů?",
+      "body": "{{peer}} tě požádal/a o zapnutí příjmu souboru rncp, aby ti mohl/a poslat soubor.",
+      "enableAsk": "Povolit (pokaždé se zeptat)",
+      "enableAskAria": "Povolit nabídky příchozích souborů a požádat před přijetím",
+      "enableAllow": "Povolit a povolit tuto identitu",
+      "enableAllowAria": "Povolit nabídky příchozích souborů a povolit tomuto odesílateli",
+      "notNow": "Nyní ne",
+      "notNowAria": "Zamítnout žádost o povolení",
+      "dontAsk": "Neptat se znovu od tohoto kolegy",
+      "dontAskAria": "Trvale zamítnout žádosti o povolení od tohoto kolegy",
+      "enabled": "Příjem souboru je povolen.",
+      "enableFailed": "Nelze povolit příjem souboru: {{error}}",
+      "saveDirRequired": "Chcete-li povolit příjem, vyberte složku pro uložení.",
+      "identityUnknown": "Hash identity tohoto peera se zatím nepodařilo zjistit — příchozí dotazování je povoleno, ale peer nebyl přidán na seznam povolených. Zkuste to znovu, až dorazí cesta nebo oznámení.",
+      "lxmfBody": "Povolte příjem souborů (rncp), pokud používáte mesh-client: Remote → Settings → Inbound file offers. Nebo spusťte rncp/rncp-rs v režimu poslechu."
+    },
+    "saved": {
+      "labelPlaceholder": "Označení",
+      "labelAria": "Uložený adresní štítek",
+      "labelRequired": "Zadejte štítek pro tuto adresu.",
+      "hashPlaceholder": "Cílový hash (32 hexadecimálních znaků)",
+      "hashAria": "Uložený hash cílové adresy",
+      "serviceAria": "Uložená adresní služba",
+      "serviceRnsh": "Shell (rnsh)",
+      "serviceRncp": "Převod (rncp)",
+      "saveAria": "Uložit adresu",
+      "add": "Přidat",
+      "saveFailed": "Nepodařilo se uložit adresu: {{error}}",
+      "empty": "Zatím nejsou uloženy žádné adresy.",
+      "editAria": "Upravit uloženou adresu {{label}}",
+      "deleteAria": "Smazat uloženou adresu {{label}}"
+    },
+    "settings": {
+      "applyFailed": "Nepodařilo se použít nastavení: {{error}}",
+      "inboundTitle": "Příchozí přenosy souborů",
+      "inboundMode": {
+        "off": "Vypnuto",
+        "ask": "Dotázat",
+        "allow_all_listed": "Povolit pouze uvedené"
+      },
+      "allowFetch": "Povolit vzdáleným kolegům načítat soubory ode mě",
+      "chooseSaveDirAria": "Vyberte složku pro příchozí přenosy souborů",
+      "chooseSaveDir": "Vybrat složku pro ukládání…",
+      "noSaveDir": "Není vybrána složka pro ukládání",
+      "fetchJailRequired": "Před povolením vzdáleného stahování vyberte složku pro stahování.",
+      "chooseFetchJailAria": "Vyberte složku, kterou mohou vzdálení vrstevníci načíst z",
+      "chooseFetchJail": "Vyberte složku pro načtení...",
+      "noFetchJail": "Nebyla vybrána žádná složka pro načt",
+      "overwrite": "Přepsat existující soubory při přijetí",
+      "maxSizeInfo": "Maximální velikost příchozího souboru: {{size}}",
+      "allowBlockListTitle": "Povolit / blokovat seznam",
+      "allowBlockListEmpty": "Zatím nejsou uložena žádná rozhodnutí o povolení/blokování. U nabídky příchozího souboru použijte „Vždy povolit“ nebo „Vždy blokovat“.",
+      "decision": {
+        "allow": "Povoleno",
+        "block": "Blokován"
+      },
+      "removePolicyAria": "Odstranit uložené rozhodnutí pro {{label}}",
+      "reliabilityTitle": "Spolehlivost",
+      "autoReconnectShell": "Automaticky znovu připojte vzdálený shell po neočekávaném odpojení",
+      "autoRetryTransfer": "Automaticky opakovat neúspěšné přenosy",
+      "identityTitle": "Moje totožnost",
+      "myIdentity": "Moje totožnost:"
+    }
+  },
+  "meshcoreRoute": {
+    "me": "● Já",
+    "direct": "Řídit",
+    "segmentTooltip": "Hash cesty {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

@@ -18,7 +18,7 @@ import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 44;
+export const CURRENT_SCHEMA_VERSION = 46;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -214,6 +214,19 @@ export const CANONICAL_TABLES_DDL = `
         received_via TEXT
       );
 
+      CREATE TABLE IF NOT EXISTS rrc_messages (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        message_id      TEXT NOT NULL,
+        hub_hash        TEXT NOT NULL,
+        room            TEXT NOT NULL,
+        sender_hash     TEXT,
+        nickname        TEXT,
+        kind            TEXT NOT NULL,
+        body            TEXT NOT NULL,
+        timestamp       INTEGER NOT NULL,
+        UNIQUE(hub_hash, room, message_id)
+      );
+
       CREATE TABLE IF NOT EXISTS blocked_contacts (
         protocol      TEXT NOT NULL,
         identity_id   TEXT NOT NULL,
@@ -240,6 +253,28 @@ export const CANONICAL_TABLES_DDL = `
         node_id INTEGER PRIMARY KEY,
         notes TEXT NOT NULL DEFAULT '',
         updated_at INTEGER
+      );
+
+      CREATE TABLE IF NOT EXISTS reticulum_remote_addresses (
+        id                TEXT PRIMARY KEY,
+        label             TEXT NOT NULL,
+        service           TEXT NOT NULL CHECK(service IN ('rnsh','rncp')),
+        destination_hash  TEXT NOT NULL,
+        identity_hash     TEXT,
+        lxmf_peer_hash    TEXT,
+        created_at        INTEGER NOT NULL,
+        updated_at        INTEGER NOT NULL,
+        last_used_at      INTEGER,
+        UNIQUE(service, destination_hash)
+      );
+
+      CREATE TABLE IF NOT EXISTS reticulum_inbound_policy (
+        identity_hash   TEXT PRIMARY KEY,
+        decision        TEXT NOT NULL CHECK(decision IN ('allow','block')),
+        label           TEXT,
+        auto_save_dir   TEXT,
+        created_at      INTEGER NOT NULL,
+        updated_at      INTEGER NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS chat_outbox (
@@ -279,6 +314,7 @@ export const INDEX_DDLS: readonly string[] = [
         WHERE packet_id IS NOT NULL`,
   'CREATE INDEX IF NOT EXISTS idx_reticulum_msgs_ts ON reticulum_messages(timestamp)',
   'CREATE INDEX IF NOT EXISTS idx_reticulum_msgs_identity ON reticulum_messages(identity_id, timestamp DESC)',
+  'CREATE INDEX IF NOT EXISTS idx_rrc_messages_hub_room ON rrc_messages(hub_hash, room, timestamp)',
   'CREATE INDEX IF NOT EXISTS idx_blocked_contacts_lookup ON blocked_contacts(protocol, identity_id)',
   'CREATE INDEX IF NOT EXISTS idx_reticulum_activity_dest ON reticulum_identity_activity(destination_hash)',
   'CREATE INDEX IF NOT EXISTS idx_reticulum_dest_last_heard ON reticulum_destinations(last_heard)',
@@ -297,6 +333,9 @@ export const INDEX_DDLS: readonly string[] = [
   'CREATE INDEX IF NOT EXISTS idx_meshcore_path_history_node ON meshcore_path_history(node_id)',
   'CREATE INDEX IF NOT EXISTS idx_chat_outbox_drain ON chat_outbox(protocol, status, next_retry_at)',
   'CREATE INDEX IF NOT EXISTS idx_chat_outbox_view ON chat_outbox(protocol, view_key, created_at)',
+  'CREATE INDEX IF NOT EXISTS idx_reticulum_remote_addresses_service ON reticulum_remote_addresses(service, destination_hash)',
+  'CREATE INDEX IF NOT EXISTS idx_reticulum_remote_addresses_last_used ON reticulum_remote_addresses(last_used_at)',
+  'CREATE INDEX IF NOT EXISTS idx_reticulum_inbound_policy_decision ON reticulum_inbound_policy(decision)',
 ];
 
 /** Tables + indexes for empty new databases (createBaseTables). */
@@ -402,6 +441,16 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     delivery_attempts: 'INTEGER DEFAULT 0',
     next_delivery_attempt_at: 'INTEGER',
     attachment_path: 'TEXT',
+  },
+  rrc_messages: {
+    message_id: 'TEXT NOT NULL',
+    hub_hash: 'TEXT NOT NULL',
+    room: 'TEXT NOT NULL',
+    sender_hash: 'TEXT',
+    nickname: 'TEXT',
+    kind: 'TEXT NOT NULL',
+    body: 'TEXT NOT NULL',
+    timestamp: 'INTEGER NOT NULL',
   },
   position_history: {
     node_id: 'INTEGER NOT NULL',
@@ -874,6 +923,8 @@ function seedAppSettings(db: NodeSqliteDB): void {
   seed.run('meshcoreMessageRetentionCount', '4000');
   seed.run('reticulumMessageRetentionEnabled', '1');
   seed.run('reticulumMessageRetentionCount', '4000');
+  seed.run('rrcMessageRetentionEnabled', '1');
+  seed.run('rrcMessageRetentionCount', '10000');
 }
 
 /**

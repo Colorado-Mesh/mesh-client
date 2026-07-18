@@ -1,4 +1,10 @@
+import { rfMaxReconnectAttemptsForTransport } from './rfReconnectShared';
 import type { DeviceState, MQTTStatus } from './types';
+
+/** Max reconnect attempts shown in the connection banner for the active transport. */
+export function reconnectBannerMaxAttempts(connectionType: string | null | undefined): number {
+  return rfMaxReconnectAttemptsForTransport(connectionType);
+}
 
 /** Text stays fully opaque; pulse animation is on the status dot/icon only (contrast). */
 export const CONNECTION_HEADER_PULSE_RED_TEXT = 'text-red-400';

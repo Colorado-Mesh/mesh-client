@@ -11,6 +11,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { BLE_TO_RADIO_PAYLOAD_CAP } from '@/shared/bleAttWriteLimit';
 import { markPairingRelatedError } from '@/shared/blePairingError';
 
+import { isWebBluetoothPairingError } from './bleConnectErrors';
 import type { NobleBleSessionId } from './types';
 
 // Error types for Web Bluetooth GATT operations on Linux
@@ -20,10 +21,6 @@ export type WebBluetoothErrorType =
   | 'characteristic_not_found'
   | 'notification_setup_failed'
   | 'pairing_failed';
-
-// BlueZ error patterns that indicate pairing/authentication issues on Linux
-const BLUEZ_PAIRING_ERROR_RE =
-  /le-connection-abort-by-local|auth failed|connection rejected|pin failed|authentication failed/i;
 
 // Timeout constants for GATT operations (BlueZ is slower than macOS)
 const GATT_CONNECT_TIMEOUT_MS = 30_000;
@@ -77,9 +74,6 @@ function withGattTimeout<T>(promise: Promise<T>, ms: number, context: string): P
   ]);
 }
 
-// Chrome DOMException names that often indicate pairing issues on Linux
-const CHROME_PAIRING_ERROR_NAMES = new Set(['SecurityError', 'NetworkError']);
-
 /**
  * Chromium exposes `maximumWriteValueLength` on some builds; Web Bluetooth has no standard negotiated-MTU API.
  * @see https://github.com/WebBluetoothCG/web-bluetooth/issues/383
@@ -94,26 +88,6 @@ export function probeWebBluetoothToRadioChunkLimitBytes(
     return Math.min(c.maximumWriteValueLength, BLE_TO_RADIO_PAYLOAD_CAP);
   }
   return null;
-}
-
-export function isWebBluetoothPairingError(err: unknown): boolean {
-  if (err instanceof DOMException) {
-    if (CHROME_PAIRING_ERROR_NAMES.has(err.name)) {
-      return true;
-    }
-    if (BLUEZ_PAIRING_ERROR_RE.test(err.message)) {
-      return true;
-    }
-  }
-  if (err instanceof Error) {
-    if (err.message.includes('GATT Error: Not supported')) {
-      return true;
-    }
-    if (BLUEZ_PAIRING_ERROR_RE.test(err.message)) {
-      return true;
-    }
-  }
-  return false;
 }
 
 export class WebBluetoothManager {

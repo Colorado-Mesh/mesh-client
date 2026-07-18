@@ -148,6 +148,7 @@ import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { HelpTooltip } from './HelpTooltip';
 import { MessageStatusBadge } from './MessageStatusBadge';
+import { ChatDmRncpControl } from './remote/ChatDmRncpControl';
 import { ReticulumAttachmentLine } from './ReticulumAttachmentLine';
 import {
   ReticulumDmPathActions,
@@ -487,16 +488,27 @@ export interface ChatPanelProps {
   composerPayloadLimit?: number;
   /** Use LXMF message hash for threaded replies (ratspeak.chat.v2). */
   lxmfReplyHashReplies?: boolean;
-  /** Optional LXMF file/voice send (unused while hasLxmfAttachments is false). */
-  onSendAttachment?: (file: File, destination: number) => Promise<void>;
   /** Reticulum: open Network tab propagation settings. */
   onOpenPropagationSettings?: () => void;
   /** Reticulum: stack is configured and sidecar is live. */
   reticulumStackLive?: boolean;
+  /** Reticulum: rncp file transfer available — shows the DM header "Send file" control. */
+  hasRncpTransfer?: boolean;
   /** MeshCore: radio-wide flood scope to restore after a per-message override. */
   meshcoreFloodScopeHashtag?: string;
+  /** MeshCore: user-managed flood-scope quick-picks for the composer menu. */
+  meshcoreFloodScopePresets?: string[];
+  /** MeshCore: remember a hashtag after a successful scoped send. */
+  onRememberMeshcoreFloodScopePreset?: (hashtag: string) => void;
   /** MeshCore: apply flood scope on the connected radio. */
   applyMeshcoreFloodScopeHashtag?: (hashtag: string) => Promise<void>;
+  /** Resolve GPS/static position for one-click location share. */
+  resolveShareLocation?: () => Promise<{ lat: number; lon: number } | null>;
+  /**
+   * Meshtastic: dual-send Waypoint after location text (gated by app setting).
+   * Channel index is passed so the pin matches the chat view.
+   */
+  onSendLocationWaypoint?: (lat: number, lon: number, channel: number) => Promise<void>;
 }
 
 function ChatPanel({
@@ -529,10 +541,14 @@ function ChatPanel({
   composerPayloadLimit,
   lxmfReplyHashReplies = false,
   meshcoreFloodScopeHashtag = '',
+  meshcoreFloodScopePresets = [],
+  onRememberMeshcoreFloodScopePreset,
   applyMeshcoreFloodScopeHashtag,
-  onSendAttachment,
   onOpenPropagationSettings,
   reticulumStackLive = false,
+  hasRncpTransfer = false,
+  resolveShareLocation,
+  onSendLocationWaypoint,
 }: ChatPanelProps) {
   const { t } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
@@ -2208,19 +2224,29 @@ function ChatPanel({
           const pathActions =
             showPathUi && reticulumDmDestinationHash ? (
               <ReticulumDmPathActions
-                key={reticulumDmDestinationHash}
+                key={`dm-path-${reticulumDmDestinationHash}`}
                 destinationHash={reticulumDmDestinationHash}
                 status={reticulumDmPathProbe.status}
                 onReprobe={reticulumDmPathProbe.reprobe}
                 onProbeSettled={reticulumDmPathProbe.applyProbeResult}
               />
             ) : null;
-          if (!pathBadge && !dmNode) return null;
+          const rncpControl =
+            protocol === 'reticulum' && hasRncpTransfer && reticulumDmDestinationHash != null ? (
+              <ChatDmRncpControl
+                key={`dm-rncp-${reticulumDmDestinationHash}`}
+                lxmfPeerHash={reticulumDmDestinationHash}
+                peerLabel={dmNodeName}
+                sidecarRunning={reticulumStackLive}
+              />
+            ) : null;
+          if (!pathBadge && !dmNode && !rncpControl) return null;
           return (
             <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
               {pathBadge}
               {pathActions}
               {dmNode ? <DmPeerInfoBar dmNode={dmNode} nowMs={nowMs} t={t} /> : null}
+              {rncpControl}
             </div>
           );
         })()}
@@ -2988,10 +3014,19 @@ function ChatPanel({
         outboxDestination={viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined}
         queueOutbox={queueOutbox}
         onSendChunk={handleSendChunk}
-        onSendAttachment={onSendAttachment}
         payloadLimit={composerPayloadLimit}
         lxmfReplyHashReplies={lxmfReplyHashReplies}
         showFloodScopeOverride={typeof applyMeshcoreFloodScopeHashtag === 'function'}
+        floodScopePresets={meshcoreFloodScopePresets}
+        onRememberFloodScopePreset={onRememberMeshcoreFloodScopePreset}
+        resolveShareLocation={resolveShareLocation}
+        onSendLocationWaypoint={
+          onSendLocationWaypoint
+            ? async (lat, lon) => {
+                await onSendLocationWaypoint(lat, lon, channel === -1 ? 0 : channel);
+              }
+            : undefined
+        }
         onSendSuccess={() => {
           setUnreadDividerTimestamp(0);
         }}

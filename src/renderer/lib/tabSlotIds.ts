@@ -4,6 +4,7 @@ export const TAB_SLOT_IDS = [
   'Chat',
   'RRC',
   'NomadNetwork',
+  'Remote',
   'Nodes',
   'Map',
   'Radio',

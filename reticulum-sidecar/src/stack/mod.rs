@@ -14,6 +14,7 @@ mod nomad_link_errors;
 mod nomad_request_payload;
 mod nomad_timeouts;
 mod packet_log;
+mod path_speed;
 mod persistence;
 pub mod rf_profiles;
 mod rmap_discovery;
@@ -24,6 +25,8 @@ mod types;
 mod via;
 
 #[cfg(feature = "rns-stack")]
+mod link_task;
+#[cfg(feature = "rns-stack")]
 mod live;
 #[cfg(feature = "rns-stack")]
 mod lxmf_delivery;
@@ -31,6 +34,10 @@ mod lxmf_delivery;
 mod nomad_server;
 #[cfg(feature = "rns-stack")]
 mod propagation_bridge;
+#[cfg(feature = "rns-stack")]
+mod rncp_transfer;
+#[cfg(feature = "rns-stack")]
+mod rnsh_session;
 #[cfg(feature = "rns-stack")]
 mod rrc_link;
 #[cfg(feature = "rns-stack")]
@@ -45,8 +52,8 @@ use packet_log::{MAX_WIRE_PACKET_LOG, PacketLogBuffer, WirePacketRow};
 use persistence::PersistedState;
 use tokio::sync::{Mutex, RwLock, broadcast};
 pub use types::{
-    AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfResourceRequest,
-    LxmfSendRequest, NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, StackIdentity,
+    AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfSendRequest,
+    NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, StackIdentity,
 };
 
 #[cfg(not(feature = "rns-stack"))]
@@ -1652,6 +1659,246 @@ impl StackHandle {
         serde_json::json!({ "rooms": [] })
     }
 
+    pub async fn rnsh_connect(&self, destination_hash: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rnsh_connect(destination_hash).await;
+        }
+        let _ = destination_hash;
+        serde_json::json!({ "ok": false, "error": "rnsh requires live rns-stack sidecar" })
+    }
+
+    pub async fn rnsh_input(&self, session_id: &str, data: Vec<u8>) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rnsh_input(session_id, data).await;
+        }
+        let _ = (session_id, data);
+        serde_json::json!({ "ok": false, "error": "rnsh requires live rns-stack sidecar" })
+    }
+
+    pub async fn rnsh_resize(
+        &self,
+        session_id: &str,
+        rows: Option<u32>,
+        cols: Option<u32>,
+    ) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rnsh_resize(session_id, rows, cols).await;
+        }
+        let _ = (session_id, rows, cols);
+        serde_json::json!({ "ok": false, "error": "rnsh requires live rns-stack sidecar" })
+    }
+
+    pub async fn rnsh_disconnect(&self, session_id: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rnsh_disconnect(session_id).await;
+        }
+        let _ = session_id;
+        serde_json::json!({ "ok": false, "error": "rnsh requires live rns-stack sidecar" })
+    }
+
+    pub async fn rnsh_status(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rnsh_status().await;
+        }
+        serde_json::json!({ "sessions": [] })
+    }
+
+    pub async fn rncp_send(&self, destination_hash: &str, path: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rncp_send(destination_hash, path).await;
+        }
+        let _ = (destination_hash, path);
+        serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
+    }
+
+    pub async fn rncp_fetch(
+        &self,
+        destination_hash: &str,
+        remote_path: &str,
+        save_path: Option<String>,
+    ) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            let save_dir = save_path
+                .map(PathBuf::from)
+                .unwrap_or_else(|| self.storage_dir.join("rncp_fetched"));
+            return live
+                .rncp_fetch(destination_hash, remote_path, save_dir)
+                .await;
+        }
+        let _ = (destination_hash, remote_path, save_path);
+        serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
+    }
+
+    pub async fn rncp_cancel(&self, transfer_id: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rncp_cancel(transfer_id).await;
+        }
+        let _ = transfer_id;
+        serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
+    }
+
+    pub async fn rncp_accept(&self, transfer_id: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rncp_accept(transfer_id).await;
+        }
+        let _ = transfer_id;
+        serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
+    }
+
+    pub async fn rncp_reject(&self, transfer_id: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rncp_reject(transfer_id).await;
+        }
+        let _ = transfer_id;
+        serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
+    }
+
+    pub async fn rncp_status(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rncp_status().await;
+        }
+        serde_json::json!({ "transfers": [], "pending_offers": [] })
+    }
+
+    /// `enabled: false` tears down the listener and sets policy to `off`.
+    /// `enabled: true` with a non-empty `allowed` list uses `allow_all_listed`
+    /// policy (only those identities can complete a transfer); an empty
+    /// `allowed` list uses `ask` policy (any sender's file lands as a
+    /// pending offer unless separately allow-listed).
+    #[allow(clippy::too_many_arguments)]
+    pub async fn rncp_set_listener(
+        &self,
+        enabled: bool,
+        save_dir: Option<String>,
+        allow_fetch: bool,
+        fetch_jail: Option<String>,
+        overwrite: bool,
+        allowed: Vec<String>,
+        blocked: Vec<String>,
+    ) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            if !enabled {
+                live.rncp_stop_listener().await;
+                let _ = live
+                    .rncp_configure_policy("off", Vec::new(), Vec::new())
+                    .await;
+                // Keep the last dir/policy fields so a later re-enable (or a
+                // legacy state file) does not lose the user's chosen folders.
+                {
+                    let mut inner = self.inner.write().await;
+                    inner.rncp_listener_enabled = false;
+                    if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                        tracing::warn!("rncp listener persist failed: {e}");
+                    }
+                }
+                return live.rncp_listener_status().await;
+            }
+            let mode = if allowed.is_empty() {
+                "ask"
+            } else {
+                "allow_all_listed"
+            };
+            if let Err(e) = live
+                .rncp_configure_policy(mode, allowed.clone(), blocked.clone())
+                .await
+            {
+                return serde_json::json!({ "ok": false, "error": e });
+            }
+            let Some(save_dir_str) = save_dir.clone() else {
+                return serde_json::json!({ "ok": false, "error": "save_dir_required" });
+            };
+            let save_dir_path = PathBuf::from(save_dir_str);
+            if allow_fetch && fetch_jail.is_none() {
+                return serde_json::json!({ "ok": false, "error": "fetch_jail_required" });
+            }
+            let fetch_jail_path = fetch_jail.clone().map(PathBuf::from);
+            let result = live
+                .rncp_start_listener(save_dir_path, allow_fetch, fetch_jail_path, overwrite)
+                .await;
+            // Persist only after a successful start so a restart does not
+            // resurrect a config that never worked.
+            if result.get("ok").and_then(serde_json::Value::as_bool) == Some(true) {
+                let mut inner = self.inner.write().await;
+                inner.rncp_listener_enabled = true;
+                inner.rncp_listener_save_dir = save_dir;
+                inner.rncp_listener_allow_fetch = allow_fetch;
+                inner.rncp_listener_fetch_jail = fetch_jail;
+                inner.rncp_listener_overwrite = overwrite;
+                inner.rncp_listener_allowed = allowed;
+                inner.rncp_listener_blocked = blocked;
+                if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                    tracing::warn!("rncp listener persist failed: {e}");
+                }
+            }
+            return result;
+        }
+        let _ = (
+            enabled,
+            save_dir,
+            allow_fetch,
+            fetch_jail,
+            overwrite,
+            allowed,
+            blocked,
+        );
+        serde_json::json!({ "ok": false, "error": "rncp requires live rns-stack sidecar" })
+    }
+
+    pub async fn rncp_listener_status(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.rncp_listener_status().await;
+        }
+        serde_json::json!({
+            "enabled": false,
+            "destination_hash": null,
+            "inbound_mode": "off",
+            "allowed": [],
+            "blocked": [],
+        })
+    }
+
+    pub fn path_capability(&self, destination_hash: &str) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.path_capability(destination_hash);
+        }
+        let clean = destination_hash.trim().to_lowercase();
+        let cap = path_speed::path_capability_from_atoms(&clean, &[], None);
+        serde_json::json!({
+            "destination_hash": cap.destination_hash,
+            "speed": cap.speed.as_str(),
+            "via_atoms": cap.via_atoms,
+            "hops": cap.hops,
+            "transfer_allowed": cap.transfer_allowed,
+            "shell_allowed": cap.shell_allowed,
+            "reason_key": cap.reason_key,
+        })
+    }
+
+    pub async fn remote_identity(&self) -> serde_json::Value {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return serde_json::json!({
+                "identity_hash": live.identity_hash_hex(),
+                "rncp_receive_hash": live.rncp_receive_destination_hash().await,
+            });
+        }
+        serde_json::json!({ "identity_hash": null, "rncp_receive_hash": null })
+    }
+
     #[cfg(feature = "rns-stack")]
     async fn nomad_identity_hash_for(&self, hash: &str) -> Option<String> {
         let key = hash.to_lowercase();
@@ -1769,30 +2016,6 @@ impl StackHandle {
         mode: &str,
     ) -> Result<serde_json::Value, String> {
         ble::ble_scan(timeout_secs, mode).await
-    }
-
-    pub async fn lxmf_send_resource(
-        &self,
-        req: LxmfResourceRequest,
-    ) -> Result<serde_json::Value, String> {
-        #[cfg(feature = "rns-stack")]
-        if let Some(live) = &self.live {
-            let res = live.send_lxmf_resource(&req).await?;
-            if res.get("ok").and_then(serde_json::Value::as_bool) == Some(true) {
-                let payload = res.get("message").cloned().unwrap_or(res.clone());
-                self.emit_event("resource.received", payload.clone());
-                self.emit_event("lxmf_message", payload);
-            }
-            return Ok(res);
-        }
-        let mut inner = self.inner.write().await;
-        let res = inner.send_resource_local(&req)?;
-        inner.save(&self.config_dir, &self.storage_dir)?;
-        let payload = res.clone();
-        drop(inner);
-        self.emit_event("resource.received", payload.clone());
-        self.emit_event("lxmf_message", payload.clone());
-        Ok(payload)
     }
 
     pub async fn lxmf_delete_message(&self, message_hash: &str) -> Result<bool, String> {

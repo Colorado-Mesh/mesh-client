@@ -211,8 +211,11 @@ interface AppSettings {
   autoFloodAdvertIntervalHours: number;
   autoFloodAdvertType: 'flood' | 'zeroHop';
   meshcoreFloodScopeHashtag: string;
+  meshcoreFloodScopePresets: string[];
   chatCompactMode: boolean;
   storeForwardAutoFetchHistory: boolean;
+  storeForwardHistoryProfile: 'conservative' | 'aggressive';
+  shareLocationSendWaypoint: boolean;
   reduceMotion: boolean;
   meshcoreOpenWireCompatEnabled: boolean;
   meshcorePathHashMode: 0 | 1 | 2;
@@ -482,23 +485,17 @@ export default function AppPanel({
   );
 
   const updateRetentionEnabled = useCallback(
-    (which: 'meshtastic' | 'meshcore' | 'reticulum', enabled: boolean) => {
+    (which: 'meshtastic' | 'meshcore' | 'reticulum' | 'rrc', enabled: boolean) => {
       const previous = retention;
       const next = { ...previous, [`${which}Enabled`]: enabled };
       setRetention(next);
-      const debouncedKey =
-        which === 'meshtastic'
-          ? 'meshtasticEnabled'
-          : which === 'meshcore'
-            ? 'meshcoreEnabled'
-            : 'reticulumEnabled';
-      persistRetention(debouncedKey, enabled ? '1' : '0', previous);
+      persistRetention(`${which}Enabled` as const, enabled ? '1' : '0', previous);
     },
     [retention, persistRetention],
   );
 
   const updateRetentionCount = useCallback(
-    (which: 'meshtastic' | 'meshcore' | 'reticulum', count: number) => {
+    (which: 'meshtastic' | 'meshcore' | 'reticulum' | 'rrc', count: number) => {
       const clamped = Math.max(
         MESSAGE_RETENTION_MIN_COUNT,
         Math.min(MESSAGE_RETENTION_MAX_COUNT, Math.floor(count) || MESSAGE_RETENTION_MIN_COUNT),
@@ -506,12 +503,7 @@ export default function AppPanel({
       const previous = retention;
       const next = { ...previous, [`${which}Count`]: clamped };
       setRetention(next);
-      const stateKey =
-        which === 'meshtastic'
-          ? 'meshtasticCount'
-          : which === 'meshcore'
-            ? 'meshcoreCount'
-            : 'reticulumCount';
+      const stateKey = `${which}Count` as const;
 
       if (retentionSaveTimerRef.current) clearTimeout(retentionSaveTimerRef.current);
       retentionSaveTimerRef.current = setTimeout(() => {
@@ -1578,45 +1570,86 @@ export default function AppPanel({
               <span className="text-sm text-gray-300">{t('common.messages')}</span>
             </div>
           ) : protocol === 'reticulum' ? (
-            <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
-              <input
-                type="checkbox"
-                id="messageRetentionReticulum"
-                checked={retention.reticulumEnabled}
-                onChange={(e) => {
-                  updateRetentionEnabled('reticulum', e.target.checked);
-                }}
-                aria-label={t('appPanel.capStoredMessages')}
-                className="accent-brand-green"
-              />
-              <label
-                id="apppanel-message-retention-reticulum-label"
-                htmlFor="messageRetentionReticulum"
-                className="flex-1 cursor-pointer text-sm text-gray-300"
-              >
-                {t('appPanel.capStoredMessagesLabel')}
-              </label>
-              <input
-                id="apppanel-message-retention-reticulum-count"
-                type="number"
-                min={MESSAGE_RETENTION_MIN_COUNT}
-                max={MESSAGE_RETENTION_MAX_COUNT}
-                value={retention.reticulumCount}
-                onChange={(e) => {
-                  updateRetentionCount(
-                    'reticulum',
-                    parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
-                  );
-                }}
-                disabled={!retention.reticulumEnabled}
-                aria-labelledby="apppanel-message-retention-reticulum-label"
-                aria-label={t('appPanel.capStoredMessagesCountAria', {
-                  count: retention.reticulumCount,
-                })}
-                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
-              />
-              <span className="text-sm text-gray-300">{t('common.messages')}</span>
-            </div>
+            <>
+              <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
+                <input
+                  type="checkbox"
+                  id="messageRetentionReticulum"
+                  checked={retention.reticulumEnabled}
+                  onChange={(e) => {
+                    updateRetentionEnabled('reticulum', e.target.checked);
+                  }}
+                  aria-label={t('appPanel.capStoredMessages')}
+                  className="accent-brand-green"
+                />
+                <label
+                  id="apppanel-message-retention-reticulum-label"
+                  htmlFor="messageRetentionReticulum"
+                  className="flex-1 cursor-pointer text-sm text-gray-300"
+                >
+                  {t('appPanel.capStoredMessagesLabel')}
+                </label>
+                <input
+                  id="apppanel-message-retention-reticulum-count"
+                  type="number"
+                  min={MESSAGE_RETENTION_MIN_COUNT}
+                  max={MESSAGE_RETENTION_MAX_COUNT}
+                  value={retention.reticulumCount}
+                  onChange={(e) => {
+                    updateRetentionCount(
+                      'reticulum',
+                      parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
+                    );
+                  }}
+                  disabled={!retention.reticulumEnabled}
+                  aria-labelledby="apppanel-message-retention-reticulum-label"
+                  aria-label={t('appPanel.capStoredMessagesCountAria', {
+                    count: retention.reticulumCount,
+                  })}
+                  className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                />
+                <span className="text-sm text-gray-300">{t('common.messages')}</span>
+              </div>
+              <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
+                <input
+                  type="checkbox"
+                  id="messageRetentionRrc"
+                  checked={retention.rrcEnabled}
+                  onChange={(e) => {
+                    updateRetentionEnabled('rrc', e.target.checked);
+                  }}
+                  aria-label={t('appPanel.capStoredRrcMessages')}
+                  className="accent-brand-green"
+                />
+                <label
+                  id="apppanel-message-retention-rrc-label"
+                  htmlFor="messageRetentionRrc"
+                  className="flex-1 cursor-pointer text-sm text-gray-300"
+                >
+                  {t('appPanel.capStoredRrcMessagesLabel')}
+                </label>
+                <input
+                  id="apppanel-message-retention-rrc-count"
+                  type="number"
+                  min={MESSAGE_RETENTION_MIN_COUNT}
+                  max={MESSAGE_RETENTION_MAX_COUNT}
+                  value={retention.rrcCount}
+                  onChange={(e) => {
+                    updateRetentionCount(
+                      'rrc',
+                      Number.parseInt(e.target.value, 10) || MESSAGE_RETENTION_MIN_COUNT,
+                    );
+                  }}
+                  disabled={!retention.rrcEnabled}
+                  aria-labelledby="apppanel-message-retention-rrc-label"
+                  aria-label={t('appPanel.capStoredRrcMessagesCountAria', {
+                    count: retention.rrcCount,
+                  })}
+                  className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                />
+                <span className="text-sm text-gray-300">{t('common.messages')}</span>
+              </div>
+            </>
           ) : (
             <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
               <input
@@ -1674,34 +1707,88 @@ export default function AppPanel({
             </label>
           </div>
           {protocol === 'meshtastic' && (
-            <div className="flex items-center gap-2 pt-2">
-              <input
-                type="checkbox"
-                id="storeForwardAutoFetchHistory"
-                checked={settings.storeForwardAutoFetchHistory}
-                onChange={(e) => {
-                  const enabled = e.target.checked;
-                  updateSetting('storeForwardAutoFetchHistory', enabled);
-                  void window.electronAPI.appSettings
-                    .set('storeForwardAutoFetchHistory', enabled ? 'true' : 'false')
-                    .catch((err: unknown) => {
-                      console.warn(
-                        '[AppPanel] storeForwardAutoFetchHistory persist failed ' +
-                          errLikeToLogString(err),
-                      );
-                    });
-                }}
-                aria-label={t('appPanel.storeForwardAutoFetchHistory')}
-                className="accent-brand-green"
-              />
-              <label
-                htmlFor="storeForwardAutoFetchHistory"
-                className="cursor-pointer text-sm text-gray-300"
-              >
-                {t('appPanel.storeForwardAutoFetchHistory')}
-              </label>
-              <HelpTooltip text={t('appPanel.storeForwardAutoFetchHistoryHint')} />
-            </div>
+            <>
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="storeForwardAutoFetchHistory"
+                  checked={settings.storeForwardAutoFetchHistory}
+                  onChange={(e) => {
+                    const enabled = e.target.checked;
+                    updateSetting('storeForwardAutoFetchHistory', enabled);
+                    void window.electronAPI.appSettings
+                      .set('storeForwardAutoFetchHistory', enabled ? 'true' : 'false')
+                      .catch((err: unknown) => {
+                        console.warn(
+                          '[AppPanel] storeForwardAutoFetchHistory persist failed ' +
+                            errLikeToLogString(err),
+                        );
+                      });
+                  }}
+                  aria-label={t('appPanel.storeForwardAutoFetchHistory')}
+                  className="accent-brand-green"
+                />
+                <label
+                  htmlFor="storeForwardAutoFetchHistory"
+                  className="cursor-pointer text-sm text-gray-300"
+                >
+                  {t('appPanel.storeForwardAutoFetchHistory')}
+                </label>
+                <HelpTooltip text={t('appPanel.storeForwardAutoFetchHistoryHint')} />
+              </div>
+              {settings.storeForwardAutoFetchHistory && (
+                <div className="flex flex-wrap items-center gap-2 pl-6">
+                  <label htmlFor="storeForwardHistoryProfile" className="text-sm text-gray-300">
+                    {t('appPanel.storeForwardHistoryProfileLabel')}
+                  </label>
+                  <select
+                    id="storeForwardHistoryProfile"
+                    value={settings.storeForwardHistoryProfile}
+                    onChange={(e) => {
+                      const value = e.target.value === 'aggressive' ? 'aggressive' : 'conservative';
+                      updateSetting('storeForwardHistoryProfile', value);
+                      void window.electronAPI.appSettings
+                        .set('storeForwardHistoryProfile', value)
+                        .catch((err: unknown) => {
+                          console.warn(
+                            '[AppPanel] storeForwardHistoryProfile persist failed ' +
+                              errLikeToLogString(err),
+                          );
+                        });
+                    }}
+                    aria-label={t('appPanel.storeForwardHistoryProfileAria')}
+                    className="bg-secondary-dark rounded border border-slate-600 px-2 py-1 text-sm text-gray-200"
+                  >
+                    <option value="conservative">
+                      {t('appPanel.storeForwardHistoryProfileConservative')}
+                    </option>
+                    <option value="aggressive">
+                      {t('appPanel.storeForwardHistoryProfileAggressive')}
+                    </option>
+                  </select>
+                  <HelpTooltip text={t('appPanel.storeForwardHistoryProfileHint')} />
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="shareLocationSendWaypoint"
+                  checked={settings.shareLocationSendWaypoint}
+                  onChange={(e) => {
+                    updateSetting('shareLocationSendWaypoint', e.target.checked);
+                  }}
+                  aria-label={t('appPanel.shareLocationSendWaypoint')}
+                  className="accent-brand-green"
+                />
+                <label
+                  htmlFor="shareLocationSendWaypoint"
+                  className="cursor-pointer text-sm text-gray-300"
+                >
+                  {t('appPanel.shareLocationSendWaypoint')}
+                </label>
+                <HelpTooltip text={t('appPanel.shareLocationSendWaypointHint')} />
+              </div>
+            </>
           )}
         </div>
       </div>

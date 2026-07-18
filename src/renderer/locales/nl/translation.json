@@ -354,7 +354,17 @@
     "reticulumCapDestinationsLabel": "Bestemmingen / peers in geheugen en SQLite begrenzen, de meest recent gehoorde behouden",
     "reticulumCapDestinationsCountAria": "Bestemmingen begrenzen, de {{count}} meest recent gehoorde behouden",
     "reticulumDestinationsUnit_one": "bestemming",
-    "reticulumDestinationsUnit_other": "bestemmingen"
+    "reticulumDestinationsUnit_other": "bestemmingen",
+    "storeForwardHistoryProfileLabel": "Store & Forward inhaalprofiel",
+    "storeForwardHistoryProfileAria": "Store & Forward-geschiedenis inhaal-agressiviteit",
+    "storeForwardHistoryProfileConservative": "Conservatief (druk-mesh-vriendelijk)",
+    "storeForwardHistoryProfileAggressive": "Agressief (vlekkerige dekking)",
+    "storeForwardHistoryProfileHint": "Conservatief gebruikt een langere offline poort en cooldown. Agressief haalt sneller op na korte verbroken verbindingen en vraagt ​​om meer berichten - gebruik dit alleen als de zendtijd dit toelaat.",
+    "shareLocationSendWaypoint": "Stuur ook een kaartpin (Waypoint) wanneer u uw locatie deelt",
+    "shareLocationSendWaypointHint": "Indien ingeschakeld, verzenden Meshtastic-locatieshares zowel een sms-bericht als een Waypoint-pakket, zodat officiële apps een kaartspeld tonen. Schakel uit bij drukke meshes om alleen tekst te verzenden.",
+    "capStoredRrcMessages": "Beperk opgeslagen RRC-ruimtegeschiedenis, bewaar de nieuwste",
+    "capStoredRrcMessagesLabel": "Beperk opgeslagen RRC-ruimtegeschiedenis, bewaar de nieuwste",
+    "capStoredRrcMessagesCountAria": "Beperk de opgeslagen RRC-ruimtegeschiedenis, bewaar de nieuwste {{count}}-berichten"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -369,7 +379,10 @@
     "switchToMeshCore": "Schakel over naar MeshCore",
     "backToTop": "Terug naar boven",
     "switchToReticulum": "Overschakelen naar Reticulum",
-    "languageSelectorHint": "Klik om de taal te selecteren"
+    "languageSelectorHint": "Klik om de taal te selecteren",
+    "switchToMeshtasticWithUnread": "Schakel over naar Meshtastic, {{count}} ongelezen",
+    "switchToMeshCoreWithUnread": "Schakel over naar MeshCore, {{count}} ongelezen",
+    "switchToReticulumWithUnread": "Schakel over naar Reticulum, {{count}} ongelezen"
   },
   "battery": {
     "percentCharging": "Batterij {{percent}} procent, bezig met opladen",
@@ -503,9 +516,6 @@
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… of g:ID",
     "meshcoreGifSend": "Verstuur gif",
     "meshcoreGifInvalid": "Voer een geldige Giphy-URL of GIF-id in.",
-    "attachFile": "Bestand bijvoegen",
-    "attachFileHint": "Een LXMF-bestandsbijlage verzenden (alleen DM)",
-    "attachDmOnly": "Open een direct bericht voordat u een bestand toevoegt.",
     "composePlaceholderSelectDm": "Selecteer hierboven een contactpersoon om een DM te starten...",
     "selectDmFirst": "Selecteer een DM-ontvanger voordat u deze verzendt.",
     "emptySelectDm": "Reticulum-chat is alleen een direct bericht. Kies hierboven een contact of open er een op het tabblad Knooppunten.",
@@ -526,12 +536,6 @@
     "reticulumNoPropagationNode": "Er is geen propagatieknooppunt geconfigureerd. Stel een voorkeurspropagatieknooppunt in op het tabblad Reticulum Radio.",
     "sentViaPropagation": "Voortplantingsknooppunt",
     "reticulumAudioAttachment": "Stem: {{name}}",
-    "recordVoice": "Spraakbericht opnemen",
-    "recordVoiceHint": "Neem een ​​spraakfragment op en verzend het als LXMF-bijlage (alleen DM)",
-    "stopVoiceRecording": "Stop met opnemen en verzend",
-    "voiceRecordingTooLong": "Het spraakfragment bereikte de limiet van 60 seconden en werd verzonden.",
-    "reticulumSendAttachmentFailed": "Kan bijlage niet verzenden",
-    "reticulumSendAttachmentNoIdentity": "Reticulum-identiteit niet gereed — verbind en configureer eerst de identiteit",
     "dmPeerInfoAria": "DM peer-info",
     "clearDateAria": "Duidelijke datum",
     "readOnlyDisconnected": "Niet verbonden: berichten zijn alleen-lezen",
@@ -567,20 +571,51 @@
     "dmPathUnreachableTooltip": "Nog geen Reticulum-pad naar deze bestemming. Berichten kunnen later nog steeds worden afgeleverd via een geconfigureerd propagatieknooppunt.",
     "dmPathRequestPathAria": "Reticulum-pad naar deze bestemming aanvragen",
     "dmPathProbeAria": "Reticulum-padbereikbaarheid voor deze bestemming controleren",
-    "microphonePermissionDenied": "Microfoontoegang is geweigerd. Schakel microfoontoestemming in voor Mesh-client in uw systeemprivacyinstellingen en probeer het opnieuw.",
     "receivedViaBle": "Ontvangen via Bluetooth",
     "receivedViaMultiple": "Ontvangen via {{vias}}",
     "sentViaBle": "Verzonden via Bluetooth",
     "sentViaMultiple": "Verzonden via {{vias}}",
-    "floodScopeOverrideLabel": "Overstromingsbereik voor dit bericht",
-    "floodScopeOverrideAria": "Overschrijving van overstromingsbereik per bericht",
+    "floodScopeOverrideLabel": "Flood-bereik voor dit bericht",
+    "floodScopeOverrideAria": "Overschrijving van Flood-bereik per bericht",
     "floodScopeOverrideDefault": "Standaardbereik",
-    "floodScopeOverrideUnscoped": "Niet-bereikt"
+    "floodScopeOverrideUnscoped": "Niet-bereikt",
+    "rncp": {
+      "sendFile": "Bestand sturen",
+      "sendFileAria": "Bestand verzenden naar {{name}} via rncp",
+      "pendingOffersBadgeAria_one": "{{count}} in afwachting van aanbieding voor inkomende bestanden van deze collega",
+      "pendingOffersBadgeAria_other": "{{count}} lopende aanbiedingen voor inkomende bestanden van deze collega",
+      "destinationLabel": "rncp destination hash",
+      "rememberAddress": "Dit adres onthouden",
+      "rememberAddressAria": "Onthoud deze rncp-bestemming voor deze collega",
+      "chooseAndSend": "Bestand kiezen en verzenden...",
+      "sending": "Versturen...",
+      "sendStarted": "{{file}} verzenden…",
+      "sendFailed": "Verzenden mislukt: {{error}}",
+      "newOfferToast": "{{peer}} wil je een bestand sturen: {{file}}",
+      "requestEnable": "Aanvraag inschakelen",
+      "requestEnableAria": "Vraag deze collega om bestandsontvangst in te schakelen"
+    },
+    "shareLocation": "Deel locatie",
+    "shareLocationLabel": "📍 Gedeelde locatie",
+    "shareLocationHint": "Stuur uw huidige GPS- of statische positie als chatbericht",
+    "shareLocationUnavailable": "Locatie niet beschikbaar: controleer de GPS-instellingen",
+    "floodScopeOverrideHint": "Regionaal Flood-bereik alleen voor dit bericht. Standaard bereik gebruikt de opgeslagen instelling van de radio; een hashtag beperkt deze verzending tot die regio; unscoped verzendt zonder regiofilter. Uw opgeslagen scope wordt na verzending hersteld.",
+    "floodScopeOverrideMenuButton": "Wijzig het Flood-bereik voor dit bericht",
+    "shareLocationWaypointFailed": "Kaartpin (Waypoint) is niet bevestigd: de locatietekst is mogelijk nog verzonden.",
+    "floodScopeOverrideCustom": "Aangepast bereik...",
+    "floodScopeOverrideCustomLabel": "Aangepaste Flood-bereik-hashtag",
+    "floodScopeOverrideCustomPlaceholder": "#mijnregio",
+    "floodScopeOverrideCustomApply": "Gebruik bereik",
+    "floodScopeOverrideCustomInvalid": "Voer een geldige regio-hashtag in (bijvoorbeeld #mijnregio)."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Openen op Giphy"
+    "meshcoreGifOpen": "Openen op Giphy",
+    "locationCard": {
+      "alt": "Tegel met gedeelde locatiekaart",
+      "openMaps": "Openen in Kaarten"
+    }
   },
   "common": {
     "close": "Dichtbij",
@@ -622,7 +657,9 @@
     "colorAmber": "Amber",
     "colorRed": "Rood",
     "colorPurple": "Paars",
-    "delete": "Verwijderen"
+    "delete": "Verwijderen",
+    "copy": "Kopiëren",
+    "copied": "Gekopieerd"
   },
   "configApplyNotice": {
     "persistNote": "Toegepaste instellingen worden opgeslagen in het flashgeheugen van het apparaat en blijven bestaan tijdens het opnieuw opstarten.",
@@ -1163,7 +1200,8 @@
       "meshcore": "Probeer het opnieuw voordat je het opgeeft (1–{{max}}). Opgeslagen met instellingen; druk opnieuw op Verbinden na het wijzigen, zodat het hoofdproces het oppikt.",
       "meshtastic": "Beide protocollen staan 1–{{max}} toe. Opgeslagen met instellingen; verbreek de verbinding en maak opnieuw verbinding, zodat de lopende sessie de nieuwe waarde gebruikt."
     },
-    "reticulumStackRunningAs": "Hardlopen — {{name}}"
+    "reticulumStackRunningAs": "Actief — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Reticulum-stack reageert niet — opnieuw opstarten…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -1492,7 +1530,10 @@
     "senderLabel": "Afzender",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "SNR {{snr}} dB"
+    "snrDb": "SNR {{snr}} dB",
+    "distanceOffsetKm": "Afstandsverschuiving",
+    "km": "km",
+    "distanceOffsetHelp": "Voegt een vlakke km-vloer toe aan de afstandsdrempels voor hop-goblin en slechte route (0-50)."
   },
   "diagnosticsPing": {
     "title": "Continue ping",
@@ -1874,7 +1915,7 @@
       "repeaterRpcInProgress": "Er is al een aanvraag voor deze repeater in behandeling",
       "cliDangerNotConfirmed": "Destructieve CLI-opdrachten moeten worden bevestigd in het paneel Herhalers.",
       "pingFailed": "Ping mislukt",
-      "floodScopeBusy": "Het overschrijven van de overstromingsscope is niet beschikbaar terwijl repeaterbeheer of traceroute bezig is. Probeer het opnieuw wanneer het apparaat inactief is."
+      "floodScopeBusy": "Het overschrijven van de Floodsscope is niet beschikbaar terwijl repeaterbeheer of traceroute bezig is. Probeer het opnieuw wanneer het apparaat inactief is."
     },
     "mqttHints": {
       "notAuthorized": "Controleer v1_ gebruikersnaam, tokenhandtekening en JWT-doelgroep versus makelaar; zie docs/letsmesh-mqtt-auth.md. Gebruik Aangepast om indien nodig een door de operator uitgegeven token te plakken.",
@@ -2568,7 +2609,9 @@
       "lossRate": "Geschat verlies",
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Pakketlogboek voor bereiktest"
-    }
+    },
+    "currentRouteHeading": "Huidige route",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "Lange naam",
@@ -3371,16 +3414,14 @@
     "xmodemFailed": "XMODEM mislukt: {{message}}",
     "zeroHopAdvertButton": "Zero-hop-advert",
     "zeroHopAdvertSent": "Zero-hop advert verzonden",
-    "floodScopeTitle": "Regionale overstromingsomvang",
-    "floodScopeHelp": "Beperk het overstromingsverkeer tot een hashtagregio (firmware v8+). Vereist meshcore.js setFloodScope; reconnect past opgeslagen scope opnieuw toe.",
+    "floodScopeTitle": "Regionale Floodsomvang",
+    "floodScopeHelp": "Beperk het Floodsverkeer tot een hashtagregio (firmware v8+). Vereist meshcore.js setFloodScope; reconnect past opgeslagen scope opnieuw toe.",
     "floodScopeNone": "Geen (duidelijke scope)",
-    "floodScopePreset": "Vooraf ingestelde hashtag",
-    "floodScopePresetSelect": "Vooraf ingestelde hashtag voor regio",
     "floodScopeCustom": "Aangepaste hashtag",
     "floodScopeCustomPlaceholder": "#myregion",
-    "floodScopeApply": "Overstromingsbereik toepassen",
-    "floodScopeApplySuccess": "Overstromingsbereik toegepast",
-    "floodScopeApplyFailed": "Overstromingsbereik mislukt: {{message}}",
+    "floodScopeApply": "Flood-bereik toepassen",
+    "floodScopeApplySuccess": "Flood-bereik toegepast",
+    "floodScopeApplyFailed": "Flood-bereik mislukt: {{message}}",
     "advertisedPositionLabel": "Geadverteerde functie: {{lat}}, {{lon}}",
     "txPowerMax": "Zendvermogen (max {{max}} dBm per radio)",
     "txPowerMaxUnknown": "Zendvermogen (afgetopt op {{max}} dBm totdat de firmware radio Max meldt)",
@@ -3485,7 +3526,13 @@
       "6": {
         "label": "Gemiddeld langzaam"
       }
-    }
+    },
+    "floodScopeSaved": "Opgeslagen bereik",
+    "floodScopeSavedSelect": "Opgeslagen regio-hashtag",
+    "floodScopeSavedEmpty": "Er zijn nog geen opgeslagen bereiken. Pas een aangepaste hashtag toe of gebruik Aangepast bereik uit Chat om er een toe te voegen.",
+    "floodScopeRemoveSaved": "Verwijderen uit opgeslagen bereiken",
+    "floodScopeRemoveSavedAria": "Verwijder {{hashtag}} uit opgeslagen bereiken",
+    "floodScopeInvalidHashtag": "Voer een geldige regio-hashtag in (bijvoorbeeld #mijnregio)."
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",
@@ -3687,7 +3734,6 @@
     "pathHashCliSet2": "Stel pad hash-modus in op 3 bytes",
     "pathLabel": "Pad:",
     "hopMe": "● Ik",
-    "hopN": "● Hop {{n}}",
     "noNeighborsReported": "Geen buren gemeld",
     "fetchingTelemetry": "Telemetrie ophalen…",
     "telemetryBattery": "Batterij: {{voltage}}V",
@@ -3733,7 +3779,8 @@
     "cliDangerConfirmAction": "Opdracht uitvoeren",
     "cliAutoPingToast": "Route vaststellen met Ping vóór CLI...",
     "cliAutoPingFailed": "Ping mislukt; voer Ping handmatig uit voordat u CLI opnieuw probeert op multi-hop repeaters.",
-    "cliCommandTooLong": "CLI-opdracht is te lang (max {{max}} tekens)."
+    "cliCommandTooLong": "CLI-opdracht is te lang (max {{max}} tekens).",
+    "currentRouteLabel": "Huidig ​​traject:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",
@@ -4177,7 +4224,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "Netwerktopologie",
     "network": "Netwerk",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "Op afstand"
   },
   "takServerPanel": {
     "title": "TAK-server",
@@ -4246,7 +4294,13 @@
     "footerMax": "(max. 50 per stuk)",
     "sectionTemperatureHumidity": "Temperatuur en vochtigheid",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "n.v.t",
+    "chartAriaBattery": "Batterij- en spanningstabel: nieuwste batterij {{battery}} procent, spanning {{voltage}} V, {{count}} punten",
+    "chartAriaSignal": "Signaalkwaliteitsgrafiek: nieuwste SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} punten",
+    "chartAriaTempHumidity": "Temperatuur- en vochtigheidsgrafiek: laatste temperatuur {{temperature}}, vochtigheid {{humidity}} procent, {{count}} punten",
+    "chartAriaPressure": "Luchtdrukgrafiek: laatste {{pressure}} hPa, {{count}} punten",
+    "chartAriaIaq": "Luchtkwaliteitsgrafiek: laatste IAQ {{iaq}}, {{count}} punten"
   },
   "toasts": {
     "firmwareAvailable": "Firmware-update beschikbaar: v{{version}}",
@@ -4431,7 +4485,11 @@
     "roomLegend": "★ favoriet · A schakelt automatisch inloggen in",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Geschiedenis wissen",
+    "clearHistoryTitle": "Kamergeschiedenis wissen",
+    "clearHistoryConfirm": "Alle opgeslagen berichtgeschiedenis voor {{room}} verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    "clearHistoryConfirmAction": "Geschiedenis verwijderen"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -4473,5 +4531,210 @@
     "confirmContactImportTitle": "Contactpersoon importeren?",
     "confirmContactImportBody": "{{name}} van een externe link toevoegen aan uw Reticulum-contacten?",
     "confirmContactImportAction": "Contactpersoon importeren"
+  },
+  "reticulumRemote": {
+    "navAria": "Secties op afstand",
+    "sidecarNotRunning": "Start de Reticulum-stack om de externe shell en bestandsoverdracht te gebruiken.",
+    "sections": {
+      "shell": "Shell",
+      "transfer": "Overdracht",
+      "saved": "Opgeslagen",
+      "settings": "Instellingen"
+    },
+    "errors": {
+      "invalidAddress": "Voer een geldige hex-bestemmingshash van 32 tekens in."
+    },
+    "reasons": {
+      "pathConstrained": "Pad is beperkt (lage bandbreedte)",
+      "pathUnknown": "Padsnelheid is onbekend",
+      "notAnnounced": "Bestemming is niet aangekondigd",
+      "timeout": "Er is een time-out van aanvraag",
+      "notAllowed": "Niet-toegestaan",
+      "versionMismatch": "Versie op afstand komt niet overeen",
+      "stagingFailed": "Kan inkomend bestand niet faseren",
+      "cancelled": "Geannuleerd",
+      "rejected": "Rejected",
+      "error": "Fout"
+    },
+    "pathCapability": {
+      "checking": "Pad controleren...",
+      "hops_one": "{{count}} hop",
+      "hops_other": "{{count}} hop",
+      "speed": {
+        "high": "Snel pad",
+        "constrained": "Beperkt pad",
+        "mixed": "gemengd pad",
+        "unknown": "Onbekend pad"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "Bestemmingshash (32 hex-tekens)",
+      "addressAria": "rnsh bestemming hash",
+      "selectSavedAddress": "Gebruik opgeslagen adres {{label}}",
+      "connectAria": "Sluit de externe behuizing aan",
+      "connect": "Verbinden",
+      "connecting": "Verbinden…",
+      "connectFailed": "Kan geen verbinding maken: {{error}}",
+      "maxSessions": "Maximaal {{count}} shell-sessies bereikt.",
+      "focusSession": "Overschakelen naar sessie {{address}}",
+      "closeSession": "Sessie {{address}} sluiten",
+      "emptyState": "Geen actieve externe shell-sessies. Voer hierboven een bestemmingshash in om verbinding te maken.",
+      "status": {
+        "connecting": "Verbinden…",
+        "active": "Verbonden",
+        "closed": "Gesloten",
+        "error": "Fout"
+      },
+      "reconnectAria": "Sluit deze sessie opnieuw aan",
+      "reconnect": "Opnieuw verbinding maken",
+      "disconnectAria": "Verbreek deze sessie",
+      "disconnect": "Verbinding verbreken",
+      "reconnectExhausted": "Automatisch opnieuw verbinden opgegeven na het bereiken van de limiet voor opnieuw proberen. Externe sessiestatus is verloren gegaan.",
+      "reconnectingBanner": "Automatisch opnieuw verbinden (poging {{attempt}} van {{max}}). Externe sessiestatus is verloren gegaan.",
+      "fingerprintTitle": "Identiteit op afstand bevestigen",
+      "fingerprintMessage": "Verbinding maken met {{address}}. Gemelde identiteit: {{identity}}. Vingerafdruk: {{fingerprint}}. Controleer of dit de identiteit is die je verwacht voordat je doorgaat.",
+      "unknownIdentity": "onbekende identiteit",
+      "unknownFingerprint": "onbekende vingerafdruk",
+      "fingerprintConfirm": "Verbinden"
+    },
+    "transfer": {
+      "myIdentity": "Mijn identiteit:",
+      "copyIdentityAria": "Kopieer mijn identiteitshash",
+      "myReceiveDest": "Mijn rncp-ontvangstbestemming:",
+      "copyReceiveDestAria": "Kopieer mijn rncp-ontvangstbestemming",
+      "pendingOffersTitle": "In afwachting van inkomende bestanden",
+      "pendingOffersBadgeAria_one": "{{count}} aanbieding voor inkomend bestand in behandeling",
+      "pendingOffersBadgeAria_other": "{{count}} in afwachting van aanbiedingen voor inkomende bestanden",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "{{file}} accepteren",
+      "accept": "Aanvaarden",
+      "rejectAria": "Afwijzen {{file}}",
+      "reject": "Afwijzen",
+      "alwaysAllowAria": "Sta deze afzender altijd toe voor {{file}}",
+      "alwaysAllow": "Altijd toestaan",
+      "alwaysBlockAria": "Blokkeer deze afzender altijd voor {{file}}",
+      "alwaysBlock": "Altijd blokkeren",
+      "alwaysAllowSaved": "Afzender toegevoegd aan de toestemmingslijst.",
+      "alwaysBlockSaved": "Afzender toegevoegd aan de blokkeerlijst.",
+      "modeSendAria": "Wisselen naar modus:",
+      "modeSend": "Verzenden",
+      "modeFetchAria": "Overschakelen naar ophaalmodus",
+      "modeFetch": "Ophalen",
+      "destinationPlaceholder": "Bestemmingshash (32 hex-tekens)",
+      "destinationAria": "rncp destination hash",
+      "notAllowedHint": "Overdrachten zijn niet beschikbaar op dit pad: {{reason}}",
+      "chooseFileAria": "Kies een lokaal bestand om te verzenden",
+      "chooseFile": "Kies bestand…",
+      "noFileChosen": "Geen bestand gekozen",
+      "sendAria": "Bestand verzenden",
+      "send": "Versturen",
+      "sendFailed": "Kan niet verzenden: {{error}}",
+      "remotePathPlaceholder": "Bestandspad op afstand",
+      "remotePathAria": "Extern bestandspad dat moet worden opgehaald",
+      "chooseSaveDirAria": "Kies een lokale map waarin u wilt opslaan",
+      "chooseSaveDir": "Kies map voor opslaan...",
+      "defaultSaveDir": "Standaard downloadmap",
+      "fetchAria": "Bestand ophalen",
+      "fetch": "Ophalen",
+      "fetchFailed": "Kan niet worden opgehaald: {{error}}",
+      "acceptFailed": "Kan bestand niet accepteren: {{error}}",
+      "listTitle": "Overdrachten",
+      "listEmpty": "Nog geen overdrachten.",
+      "kind": {
+        "send": "Versturen",
+        "fetch": "Ophalen"
+      },
+      "status": {
+        "active": "In uitvoering",
+        "completed": "Voltooid",
+        "failed": "Mislukt",
+        "cancelled": "Geannuleerd"
+      },
+      "cancelAria": "Overdracht van {{file}} annuleren",
+      "cancel": "Annuleren",
+      "retryAria": "Probeer de overdracht van {{file}} opnieuw",
+      "retry": "Opnieuw proberen",
+      "revealAria": "Onthul {{file}} in de map",
+      "reveal": "Onthullen in map",
+      "requestEnableAria": "Verzoek dat deze peer het ontvangen van bestanden inschakelt",
+      "requestEnable": "Vraag inschakeling aan",
+      "requestEnableSent": "De peer gevraagd om het ontvangen van bestanden in te schakelen.",
+      "requestEnableRateLimited": "U heeft onlangs al een verzoek verzonden. Probeer het later opnieuw.",
+      "requestEnableFailed": "Kon het inschakelverzoek niet verzenden: {{error}}",
+      "offerToast": "Inkomende bestandsaanbieding: {{file}}",
+      "copyInstructionsAria": "Kopieer instructies voor het inschakelen van bestandsontvangst",
+      "copyInstructions": "Kopieer instructies",
+      "instructionsCopied": "Instructies gekopieerd."
+    },
+    "enableRequest": {
+      "title": "Bestandsontvangst inschakelen?",
+      "body": "{{peer}} heeft je gevraagd om de ontvangst van rncp-bestanden in te schakelen, zodat ze je een bestand kunnen sturen.",
+      "enableAsk": "Inschakelen (elke keer vragen)",
+      "enableAskAria": "Schakel aanbiedingen voor inkomende bestanden in en vraag ernaar voordat u deze accepteert",
+      "enableAllow": "Schakel deze identiteit in en sta deze toe",
+      "enableAllowAria": "Schakel aanbiedingen voor inkomende bestanden in en sta deze afzender toe",
+      "notNow": "Niet nu",
+      "notNowAria": "Inschakelverzoek afwijzen",
+      "dontAsk": "Vraag het niet opnieuw aan deze collega",
+      "dontAskAria": "Wijs inschakelverzoeken van deze peer definitief af",
+      "enabled": "Bestandsontvangst is ingeschakeld.",
+      "enableFailed": "Kon het ontvangen van bestanden niet inschakelen: {{error}}",
+      "saveDirRequired": "Kies een opslagmap om ontvangst in te schakelen.",
+      "identityUnknown": "De identiteitshash van deze peer kon nog niet worden bepaald — inkomend vragen is ingeschakeld, maar de peer is niet aan de toestaanlijst toegevoegd. Probeer het opnieuw nadat een pad of aankondiging is ontvangen.",
+      "lxmfBody": "Schakel bestandsontvangst (rncp) in als u mesh-client gebruikt: Extern → Instellingen → Inkomende bestandsaanbiedingen. Of voer rncp/rncp-rs uit in de luistermodus."
+    },
+    "saved": {
+      "labelPlaceholder": "Label",
+      "labelAria": "Opgeslagen adreslabel",
+      "labelRequired": "Voer een label in voor dit adres.",
+      "hashPlaceholder": "Bestemmingshash (32 hexadecimale tekens)",
+      "hashAria": "Opgeslagen adresbestemmingshash",
+      "serviceAria": "Opgeslagen adresservice",
+      "serviceRnsh": "Shell (rnsh)",
+      "serviceRncp": "Overdracht (rncp)",
+      "saveAria": "Adres opslaan",
+      "add": "Toevoegen",
+      "saveFailed": "Kan adres niet opslaan: {{error}}",
+      "empty": "Nog geen opgeslagen adressen.",
+      "editAria": "Bewerk opgeslagen adres {{label}}",
+      "deleteAria": "Verwijder opgeslagen adres {{label}}"
+    },
+    "settings": {
+      "applyFailed": "Kan instelling niet toepassen: {{error}}",
+      "inboundTitle": "Inkomende bestandsoverdrachten",
+      "inboundMode": {
+        "off": "Uit",
+        "ask": "Vragen",
+        "allow_all_listed": "Alleen vermeld toestaan"
+      },
+      "allowFetch": "Sta externe collega's toe bestanden van mij op te halen",
+      "chooseSaveDirAria": "Kies de map voor inkomende bestandsoverdrachten",
+      "chooseSaveDir": "Kies opslagmap…",
+      "noSaveDir": "Geen opslagmap gekozen",
+      "fetchJailRequired": "Kies een ophaalmap voordat je extern ophalen inschakelt.",
+      "chooseFetchJailAria": "Kies de map waaruit externe peers mogen ophalen",
+      "chooseFetchJail": "Kies map ophalen...",
+      "noFetchJail": "Geen ophaalmap gekozen",
+      "overwrite": "Bestaande bestanden bij ontvangst overschrijven",
+      "maxSizeInfo": "Maximale bestandsgrootte voor inkomend verkeer: {{size}}",
+      "allowBlockListTitle": "Lijst toestaan/blokkeren",
+      "allowBlockListEmpty": "Er zijn nog geen opgeslagen beslissingen over toestaan/blokkeren. Gebruik 'Altijd toestaan' of 'Altijd blokkeren' bij een aanbieding voor inkomende bestanden.",
+      "decision": {
+        "allow": "Toegestaan",
+        "block": "Geblokkeerd"
+      },
+      "removePolicyAria": "Opgeslagen beslissing voor {{label}} verwijderen",
+      "reliabilityTitle": "Betrouwbaarheid",
+      "autoReconnectShell": "Maak automatisch opnieuw verbinding met de externe shell na een onverwachte verbinding",
+      "autoRetryTransfer": "Probeer mislukte overdrachten automatisch opnieuw",
+      "identityTitle": "Mijn identiteit",
+      "myIdentity": "Mijn identiteit:"
+    }
+  },
+  "meshcoreRoute": {
+    "me": "● Ik",
+    "direct": "Direct",
+    "segmentTooltip": "Pad-hash {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

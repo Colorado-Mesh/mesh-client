@@ -354,7 +354,17 @@
     "reticulumCapDestinationsLabel": "Bellekteki ve SQLite'daki hedef noktaları / eşleri sınırlayın, en son duyulanları saklayın",
     "reticulumCapDestinationsCountAria": "Varış noktalarını sınırlayın, en son duyulanları tutun {{count}}",
     "reticulumDestinationsUnit_one": "hedef",
-    "reticulumDestinationsUnit_other": "hedef"
+    "reticulumDestinationsUnit_other": "hedef",
+    "storeForwardHistoryProfileLabel": "Sakla ve İlet yakalama profili",
+    "storeForwardHistoryProfileAria": "Sakla ve İlet geçmişini yakalama agresifliği",
+    "storeForwardHistoryProfileConservative": "Muhafazakar (meşgul ağ dostu)",
+    "storeForwardHistoryProfileAggressive": "Agresif (sivilceli kapsama)",
+    "storeForwardHistoryProfileHint": "Muhafazakar, daha uzun bir çevrimdışı geçit ve bekleme süresi kullanır. Agresif, kısa süreli bağlantı kesintilerinden sonra daha kısa sürede getirilir ve daha fazla mesaj ister; yalnızca yayın süresi izin verdiğinde kullanın.",
+    "shareLocationSendWaypoint": "Konumu paylaşırken ayrıca bir harita işaretçisi (Yol noktası) gönderin",
+    "shareLocationSendWaypointHint": "Etkinleştirildiğinde, Meshtastic konum paylaşımları hem kısa mesaj hem de Yol Noktası paketi göndererek resmi uygulamaların bir harita işaretçisi göstermesini sağlar. Yalnızca metin göndermek için meşgul ağlarda devre dışı bırakın.",
+    "capStoredRrcMessages": "Saklanan RRC oda geçmişini sınırlayın, en yeniyi koruyun",
+    "capStoredRrcMessagesLabel": "Saklanan RRC oda geçmişini sınırlayın, en yeniyi koruyun",
+    "capStoredRrcMessagesCountAria": "Saklanan RRC oda geçmişini sınırlayın, en yeni {{count}} mesajlarını saklayın"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -369,7 +379,10 @@
     "switchToMeshCore": "MeshCore'a geç",
     "backToTop": "Başa dön",
     "switchToReticulum": "Reticulum'a geç",
-    "languageSelectorHint": "Dili seçmek için tıklayın"
+    "languageSelectorHint": "Dili seçmek için tıklayın",
+    "switchToMeshtasticWithUnread": "Meshtastic'e geç, {{count}} okunmadı",
+    "switchToMeshCoreWithUnread": "MeshCore'a geç, {{count}} okunmadı",
+    "switchToReticulumWithUnread": "Reticulum'a geç, {{count}} okunmadı"
   },
   "battery": {
     "percentCharging": "Pil yüzde {{percent}}, şarj oluyor",
@@ -503,9 +516,6 @@
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… veya g:ID",
     "meshcoreGifSend": "GIF gönder",
     "meshcoreGifInvalid": "Geçerli bir Giphy URL'si veya GIF kimliği girin.",
-    "attachFile": "Dosya eki",
-    "attachFileHint": "Bir LXMF dosya eki gönderin (yalnızca DM)",
-    "attachDmOnly": "Bir dosya eklemeden önce doğrudan bir mesaj açın.",
     "composePlaceholderSelectDm": "DM başlatmak için yukarıdan bir kişi seçin…",
     "selectDmFirst": "Göndermeden önce bir DM alıcısı seçin.",
     "emptySelectDm": "Reticulum sohbeti yalnızca doğrudan mesajdır. Yukarıdan bir kişi seçin veya Düğümler sekmesinden bir kişi açın.",
@@ -526,12 +536,6 @@
     "reticulumNoPropagationNode": "Hiçbir yayılma düğümü yapılandırılmadı. Reticulum Radio sekmesinde tercih edilen bir yayılma düğümü ayarlayın.",
     "sentViaPropagation": "Yayılma düğümü",
     "reticulumAudioAttachment": "Ses: {{name}}",
-    "recordVoice": "Sesli mesajı kaydet",
-    "recordVoiceHint": "Bir ses klibi kaydedin ve LXMF eki olarak gönderin (yalnızca DM)",
-    "stopVoiceRecording": "Kaydı durdur ve gönder",
-    "voiceRecordingTooLong": "Ses klibi 60 saniye sınırına ulaştı ve gönderildi.",
-    "reticulumSendAttachmentFailed": "Ek gönderilemedi",
-    "reticulumSendAttachmentNoIdentity": "Reticulum kimliği hazır değil — önce bağlanın ve kimliği yapılandırın",
     "dmPeerInfoAria": "DM akran bilgisi",
     "clearDateAria": "Tarihi temizle",
     "readOnlyDisconnected": "Bağlı değil — mesajlar salt okunurdur",
@@ -567,20 +571,51 @@
     "dmPathUnreachableTooltip": "Bu hedefe henüz Reticulum yolu yok. Mesajlar daha sonra yapılandırılmış bir yayılma düğümü aracılığıyla iletilebilir.",
     "dmPathRequestPathAria": "Bu hedefe Reticulum yolu iste",
     "dmPathProbeAria": "Bu hedef için Reticulum yolu erişilebilirliğini yokla",
-    "microphonePermissionDenied": "Mikrofon erişimi engellendi. Sistem gizlilik ayarlarınızda Mesh-client için mikrofon iznini etkinleştirin, ardından tekrar deneyin.",
     "receivedViaBle": "Bluetooth ile alındı",
     "receivedViaMultiple": "{{vias}} ile alındı",
     "sentViaBle": "Bluetooth ile gönderilir",
     "sentViaMultiple": "{{vias}} ile gönderildi",
     "floodScopeOverrideLabel": "Bu mesajın Flood kapsamı",
-    "floodScopeOverrideAria": "İleti başına taşma kapsamını geçersiz kılma",
+    "floodScopeOverrideAria": "İleti başına Flood kapsamını geçersiz kılma",
     "floodScopeOverrideDefault": "Varsayılan kapsam",
-    "floodScopeOverrideUnscoped": "Kapsam dışı"
+    "floodScopeOverrideUnscoped": "Kapsam dışı",
+    "rncp": {
+      "sendFile": "Dosyayı gönder",
+      "sendFileAria": "Dosyayı rncp aracılığıyla {{name}} adresine gönder",
+      "pendingOffersBadgeAria_one": "{{count}} bu eşten gelen dosya teklifi bekleniyor",
+      "pendingOffersBadgeAria_other": "{{count}} bu eşten gelen dosya teklifleri bekleniyor",
+      "destinationLabel": "rncp hedef karması",
+      "rememberAddress": "Bu adresi hatırla",
+      "rememberAddressAria": "Bu eş için bu rncp hedefini hatırla",
+      "chooseAndSend": "Dosya seç ve gönder…",
+      "sending": "Gönderiliyor…",
+      "sendStarted": "{{file}} gönderiliyor…",
+      "sendFailed": "Gönderilemedi: {{error}}",
+      "newOfferToast": "{{peer}} size bir dosya göndermek istiyor: {{file}}",
+      "requestEnable": "Etkinleştirme isteği",
+      "requestEnableAria": "Bu eşten dosya almayı etkinleştirmesini isteyin"
+    },
+    "shareLocation": "Konumu paylaş",
+    "shareLocationLabel": "📍 Paylaşılan konum",
+    "shareLocationHint": "Mevcut GPS'inizi veya statik konumunuzu sohbet mesajı olarak gönderin",
+    "shareLocationUnavailable": "Konum kullanılamıyor — GPS ayarlarını kontrol edin",
+    "floodScopeOverrideHint": "Yalnızca bu ileti için bölgesel Flood kapsamı. Varsayılan kapsam radyonun kayıtlı ayarını kullanır; bir hashtag bu gönderimi o bölgeye sınırlandırır; kapsam dışı gönderimler bölge filtresi olmadan yapılır. Kaydedilen kapsamınız gönderildikten sonra geri yüklenir.",
+    "floodScopeOverrideMenuButton": "Bu mesajın Flood kapsamını değiştirin",
+    "shareLocationWaypointFailed": "Harita işaretçisi (Yol noktası) onaylanmadı; konum metni hâlâ gönderilmiş olabilir.",
+    "floodScopeOverrideCustom": "Özel kapsam…",
+    "floodScopeOverrideCustomLabel": "Özel Flood kapsamı hashtag’i",
+    "floodScopeOverrideCustomPlaceholder": "#bölgem",
+    "floodScopeOverrideCustomApply": "Kapsamı kullan",
+    "floodScopeOverrideCustomInvalid": "Geçerli bir bölge hashtag'i girin (örneğin #myregion)."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Giphy'de aç"
+    "meshcoreGifOpen": "Giphy'de aç",
+    "locationCard": {
+      "alt": "Paylaşılan konum haritası döşemesi",
+      "openMaps": "Haritalar'da aç"
+    }
   },
   "common": {
     "close": "Kapalı",
@@ -622,7 +657,9 @@
     "colorAmber": "Sarı",
     "colorRed": "Kırmızı",
     "colorPurple": "Mor",
-    "delete": "Silmek"
+    "delete": "Silmek",
+    "copy": "Kopyala",
+    "copied": "Kopyalandı"
   },
   "configApplyNotice": {
     "persistNote": "Uygulanan ayarlar cihazın flash belleğine kaydedilir ve yeniden başlatmalarda devam eder.",
@@ -1163,7 +1200,8 @@
       "meshcore": "Vazgeçmeden önce denemeleri yeniden bağlayın (1 -{{max}}). Ayarlar ile kaydedildi; değiştirdikten sonra Bağlan'a tekrar basın, böylece ana işlem onu alır.",
       "meshtastic": "Her iki protokol de 1 -{{max}} 'a izin verir. Ayarlar ile kaydedildi; bağlantıyı kesin ve tekrar bağlanın, böylece çalışan oturum yeni değeri kullanır."
     },
-    "reticulumStackRunningAs": "Çalışıyor — {{name}}"
+    "reticulumStackRunningAs": "Çalışıyor — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Reticulum yığını yanıt vermiyor — yeniden başlatılıyor…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -1492,7 +1530,10 @@
     "senderLabel": "Gönderen",
     "rssiShort": "RSSI {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} dBm",
-    "snrDb": "SNR {{snr}} dB"
+    "snrDb": "SNR {{snr}} dB",
+    "distanceOffsetKm": "Mesafe ofseti",
+    "km": "kilometre",
+    "distanceOffsetHelp": "Hop-goblin ve kötü rota mesafe eşiklerine (0-50) düz bir kilometre tabanı ekler."
   },
   "diagnosticsPing": {
     "title": "Sürekli ping",
@@ -2568,7 +2609,9 @@
       "lossRate": "Tahmini Kayıp",
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Aralık testi paket günlüğü"
-    }
+    },
+    "currentRouteHeading": "Mevcut rota",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",
@@ -3371,11 +3414,9 @@
     "xmodemFailed": "XMODEM başarısız oldu: {{message}}",
     "zeroHopAdvertButton": "Zero-hop Advert",
     "zeroHopAdvertSent": "Zero-hop advert gönderildi",
-    "floodScopeTitle": "Bölgesel sel kapsamı",
+    "floodScopeTitle": "Bölgesel Flood kapsamı",
     "floodScopeHelp": "Taşkın trafiğini bir hashtag bölgesiyle sınırlayın (ürün yazılımı v8+). meshcore.js setFloodScope gerektirir; yeniden bağlanma kaydedilen kapsamı yeniden uygular.",
     "floodScopeNone": "Yok (net kapsam)",
-    "floodScopePreset": "Önceden ayarlanmış hashtag",
-    "floodScopePresetSelect": "Önceden ayarlanmış bölge etiketi",
     "floodScopeCustom": "Özel hashtag",
     "floodScopeCustomPlaceholder": "#bölgem",
     "floodScopeApply": "Taşkın kapsamını uygula",
@@ -3485,7 +3526,13 @@
       "6": {
         "label": "Orta Yavaş"
       }
-    }
+    },
+    "floodScopeSaved": "Kaydedilen kapsam",
+    "floodScopeSavedSelect": "Kaydedilen bölge hashtag'i",
+    "floodScopeSavedEmpty": "Henüz kayıtlı kapsam yok. Özel bir etiket uygulayın veya eklemek için Sohbet'teki Özel kapsamı kullanın.",
+    "floodScopeRemoveSaved": "Kaydedilen kapsamlardan kaldır",
+    "floodScopeRemoveSavedAria": "{{hashtag}} öğesini kayıtlı kapsamlardan kaldırın",
+    "floodScopeInvalidHashtag": "Geçerli bir bölge hashtag'i girin (örneğin #myregion)."
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",
@@ -3687,7 +3734,6 @@
     "pathHashCliSet2": "Yol karma modunu ayarla 3 bayt",
     "pathLabel": "Yol:",
     "hopMe": "● Ben",
-    "hopN": "● Atla {{n}}",
     "noNeighborsReported": "Hiçbir komşu bildirilmedi",
     "fetchingTelemetry": "Telemetri getiriliyor…",
     "telemetryBattery": "Pil: {{voltage}}V",
@@ -3733,7 +3779,8 @@
     "cliDangerConfirmAction": "Komut çalıştır",
     "cliAutoPingToast": "CLI öncesi Ping ile rota oluşturuluyor…",
     "cliAutoPingFailed": "Ping başarısız oldu; çok atlama tekrarlayıcılarda CLI'yi yeniden denemeden önce Ping'i manuel olarak çalıştırın.",
-    "cliCommandTooLong": "CLI komutu çok uzun (en fazla {{max}} karakter)."
+    "cliCommandTooLong": "CLI komutu çok uzun (en fazla {{max}} karakter).",
+    "currentRouteLabel": "Mevcut rota:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Anons aralığı (saniye)",
@@ -4177,7 +4224,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "Ağ topolojisi",
     "network": "Ağ",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "Uzak"
   },
   "takServerPanel": {
     "title": "TAK Sunucusu",
@@ -4246,7 +4294,13 @@
     "footerMax": "(her biri en fazla 50)",
     "sectionTemperatureHumidity": "Sıcaklık ve Nem",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "MCU °C"
+    "seriesMcuTempC": "MCU °C",
+    "chartValueUnavailable": "yok",
+    "chartAriaBattery": "Pil ve voltaj tablosu: en son pil yüzde {{battery}}, voltaj {{voltage}} V, {{count}} puan",
+    "chartAriaSignal": "Sinyal kalitesi tablosu: en son SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} noktaları",
+    "chartAriaTempHumidity": "Sıcaklık ve nem tablosu: en son sıcaklık {{temperature}}, nem {{humidity}} yüzde, {{count}} puan",
+    "chartAriaPressure": "Barometrik basınç tablosu: en son {{pressure}} hPa, {{count}} noktaları",
+    "chartAriaIaq": "Hava kalitesi tablosu: en son IAQ {{iaq}}, {{count}} noktaları"
   },
   "toasts": {
     "firmwareAvailable": "Ürün yazılımı güncellemesi mevcut: v{{version}}",
@@ -4431,7 +4485,11 @@
     "roomLegend": "★ favori · A geçişleri otomatik katılma",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Geçmişi temizle",
+    "clearHistoryTitle": "Oda geçmişini temizle",
+    "clearHistoryConfirm": "{{room}} için kayıtlı tüm mesaj geçmişi silinsin mi? Bu geri alınamaz.",
+    "clearHistoryConfirmAction": "Geçmişi sil"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -4473,5 +4531,210 @@
     "confirmContactImportTitle": "Kişi içe aktarılsın mı?",
     "confirmContactImportBody": "{{name}} harici bir bağlantıdan Reticulum kişilerinize eklensin mi?",
     "confirmContactImportAction": "Kişiyi içe aktar"
+  },
+  "reticulumRemote": {
+    "navAria": "Uzak bölümler",
+    "sidecarNotRunning": "Uzak kabuğu ve dosya aktarımını kullanmak için Reticulum yığınını başlatın.",
+    "sections": {
+      "shell": "Kabuk",
+      "transfer": "Aktarım",
+      "saved": "Kaydedildi",
+      "settings": "Ayarlar"
+    },
+    "errors": {
+      "invalidAddress": "32 karakterlik geçerli bir onaltılık hedef karması girin."
+    },
+    "reasons": {
+      "pathConstrained": "Yol kısıtlı (düşük bant genişliği)",
+      "pathUnknown": "Yol hızı bilinmiyor",
+      "notAnnounced": "Hedef açıklanmadı",
+      "timeout": "İstek zaman aşımına uğradı",
+      "notAllowed": "İzin verilmiyor",
+      "versionMismatch": "Uzak sürüm uyuşmazlığı",
+      "stagingFailed": "Gelen dosya hazırlanamadı",
+      "cancelled": "İptal edildi",
+      "rejected": "Reddedilmiş",
+      "error": "Hata"
+    },
+    "pathCapability": {
+      "checking": "Yol kontrol ediliyor…",
+      "hops_one": "{{count}} atlama",
+      "hops_other": "{{count}} atlama",
+      "speed": {
+        "high": "Hızlı yol",
+        "constrained": "Kısıtlı yol",
+        "mixed": "Karışık yol",
+        "unknown": "Bilinmeyen yol"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "Hedef karması (32 onaltılık karakter)",
+      "addressAria": "rnsh hedef karması",
+      "selectSavedAddress": "{{label}} kayıtlı adresini kullan",
+      "connectAria": "Uzak kabuğu bağlayın",
+      "connect": "Bağlan",
+      "connecting": "Bağlanıyor…",
+      "connectFailed": "Bağlantı başarısız oldu: {{error}}",
+      "maxSessions": "Maksimum {{count}} kabuk oturumuna ulaşıldı.",
+      "focusSession": "{{address}} oturumuna geç",
+      "closeSession": "Oturumu kapat {{address}}",
+      "emptyState": "Etkin uzak kabuk oturumu yok. Bağlanmak için yukarıya bir hedef karması girin.",
+      "status": {
+        "connecting": "Bağlanıyor…",
+        "active": "Bağlı",
+        "closed": "Kapalı",
+        "error": "Hata"
+      },
+      "reconnectAria": "Bu oturumu yeniden bağla",
+      "reconnect": "Yeniden bağlan",
+      "disconnectAria": "Bu oturumun bağlantısını kes",
+      "disconnect": "Bağlantıyı kes",
+      "reconnectExhausted": "Yeniden deneme sınırına ulaşıldıktan sonra otomatik yeniden bağlanma kesildi. Uzak oturum durumu kaybedildi.",
+      "reconnectingBanner": "Otomatik yeniden bağlanma ({{attempt}} / {{max}} girişimi). Uzak oturum durumu kaybedildi.",
+      "fingerprintTitle": "Uzak kimliği onaylayın",
+      "fingerprintMessage": "{{address}}'a bağlanılıyor. Bildirilen kimlik: {{identity}}. Parmak izi: {{fingerprint}}. Devam etmeden önce bunun beklediğiniz kimlik olduğunu doğrulayın.",
+      "unknownIdentity": "bilinmeyen kimlik",
+      "unknownFingerprint": "bilinmeyen parmak izi",
+      "fingerprintConfirm": "Bağlamak"
+    },
+    "transfer": {
+      "myIdentity": "Kimliğim:",
+      "copyIdentityAria": "Kimlik karmamı kopyala",
+      "myReceiveDest": "rncp alma hedefim:",
+      "copyReceiveDestAria": "Rncp alma hedefimi kopyala",
+      "pendingOffersTitle": "Bekleyen gelen dosyalar",
+      "pendingOffersBadgeAria_one": "{{count}} gelen dosya teklifi bekleniyor",
+      "pendingOffersBadgeAria_other": "{{count}} gelen dosya teklifleri bekleniyor",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "{{file}} kabul et",
+      "accept": "Kabul etmek",
+      "rejectAria": "{{file}}'ı reddet",
+      "reject": "Reddetmek",
+      "alwaysAllowAria": "Bu gönderene {{file}} için her zaman izin ver",
+      "alwaysAllow": "Her zaman izin ver",
+      "alwaysBlockAria": "Bu göndereni {{file}} için her zaman engelle",
+      "alwaysBlock": "Her zaman engelle",
+      "alwaysAllowSaved": "Gönderen izin verilenler listesine eklendi.",
+      "alwaysBlockSaved": "Gönderen engelleme listesine eklendi.",
+      "modeSendAria": "Gönderme moduna geç",
+      "modeSend": "Göndermek",
+      "modeFetchAria": "Getirme moduna geç",
+      "modeFetch": "Getir",
+      "destinationPlaceholder": "Hedef karması (32 onaltılık karakter)",
+      "destinationAria": "rncp hedef karması",
+      "notAllowedHint": "Bu yolda transfer yapılamıyor: {{reason}}",
+      "chooseFileAria": "Gönderilecek yerel bir dosya seçin",
+      "chooseFile": "Dosya seç…",
+      "noFileChosen": "Dosya seçilmedi",
+      "sendAria": "Dosyayı gönder",
+      "send": "Göndermek",
+      "sendFailed": "Gönderilemedi: {{error}}",
+      "remotePathPlaceholder": "Uzak dosya yolu",
+      "remotePathAria": "Alınacak uzak dosya yolu",
+      "chooseSaveDirAria": "Kaydetmek için yerel bir klasör seçin",
+      "chooseSaveDir": "Klasörü kaydetmeyi seçin…",
+      "defaultSaveDir": "Varsayılan indirme klasörü",
+      "fetchAria": "Dosyayı getir",
+      "fetch": "Getir",
+      "fetchFailed": "Getirilemedi: {{error}}",
+      "acceptFailed": "Dosya kabul edilemedi: {{error}}",
+      "listTitle": "Transferler",
+      "listEmpty": "Henüz transfer yok.",
+      "kind": {
+        "send": "Göndermek",
+        "fetch": "Getir"
+      },
+      "status": {
+        "active": "Devam etmekte",
+        "completed": "Tamamlanmış",
+        "failed": "Arızalı",
+        "cancelled": "İptal edildi"
+      },
+      "cancelAria": "{{file}} aktarımını iptal et",
+      "cancel": "İptal",
+      "retryAria": "{{file}} aktarımını yeniden deneyin",
+      "retry": "Yeniden dene",
+      "revealAria": "Klasördeki {{file}}'yi göster",
+      "reveal": "Klasörde göster",
+      "requestEnableAria": "Bu eşin dosya alımını etkinleştirmesini isteyin",
+      "requestEnable": "Etkinleştirme isteği",
+      "requestEnableSent": "Eşten dosya almayı etkinleştirmesi istendi.",
+      "requestEnableRateLimited": "Yakın zamanda bir istek gönderdiniz. Daha sonra tekrar deneyin.",
+      "requestEnableFailed": "Etkinleştirme isteği gönderilemedi: {{error}}",
+      "offerToast": "Gelen dosya teklifi: {{file}}",
+      "copyInstructionsAria": "Dosya almayı etkinleştirmek için talimatları kopyalama",
+      "copyInstructions": "Talimatları kopyala",
+      "instructionsCopied": "Talimatlar kopyalandı."
+    },
+    "enableRequest": {
+      "title": "Dosya alımı etkinleştirilsin mi?",
+      "body": "{{peer}}, size bir dosya gönderebilmeleri için rncp dosya alımını açmanızı istedi.",
+      "enableAsk": "Etkinleştir (Her seferinde sor)",
+      "enableAskAria": "Gelen dosya tekliflerini etkinleştirin ve kabul etmeden önce sorun",
+      "enableAllow": "Bu kimliği etkinleştirin ve izin verin",
+      "enableAllowAria": "Gelen dosya tekliflerini etkinleştirin ve bu gönderene izin verin",
+      "notNow": "Şimdi değil",
+      "notNowAria": "Etkinleştirme isteğini reddet",
+      "dontAsk": "Bu meslektaşımdan bir daha soru sorma",
+      "dontAskAria": "Bu eşten gelen etkinleştirme isteklerini kalıcı olarak reddet",
+      "enabled": "Dosya alma etkinleştirildi.",
+      "enableFailed": "Dosya alımı etkinleştirilemedi: {{error}}",
+      "saveDirRequired": "Alımı etkinleştirmek için bir kaydetme klasörü seçin.",
+      "identityUnknown": "Bu eşin kimlik karması henüz çözülemedi — gelen Sor modu etkinleştirildi ancak eş izin listesine eklenmedi. Bir yol veya duyuru geldikten sonra tekrar deneyin.",
+      "lxmfBody": "Mesh-client kullanıyorsanız lütfen dosya almayı (rncp) etkinleştirin: Uzak → Ayarlar → Gelen dosya teklifleri. Veya rncp/rncp-rs'yi dinleme modunda çalıştırın."
+    },
+    "saved": {
+      "labelPlaceholder": "Etiket",
+      "labelAria": "Kayıtlı adres etiketi",
+      "labelRequired": "Bu adres için bir etiket girin.",
+      "hashPlaceholder": "Hedef karması (32 onaltılık karakter)",
+      "hashAria": "Adres hedefi karması kaydedildi",
+      "serviceAria": "Kayıtlı adres hizmeti",
+      "serviceRnsh": "Kabuk (rnsh)",
+      "serviceRncp": "Aktarım (rncp)",
+      "saveAria": "Adresi kaydet",
+      "add": "Eklemek",
+      "saveFailed": "Adres kaydedilemedi: {{error}}",
+      "empty": "Henüz kayıtlı adres yok.",
+      "editAria": "Kayıtlı adresi düzenle {{label}}",
+      "deleteAria": "Kayıtlı adresi sil {{label}}"
+    },
+    "settings": {
+      "applyFailed": "Ayar uygulanamadı: {{error}}",
+      "inboundTitle": "Gelen dosya aktarımları",
+      "inboundMode": {
+        "off": "Kapalı",
+        "ask": "Sor",
+        "allow_all_listed": "Yalnızca listelenenlere izin ver"
+      },
+      "allowFetch": "Uzaktaki eşlerin benden dosya almasına izin ver",
+      "chooseSaveDirAria": "Gelen dosya aktarımları için klasörü seçin",
+      "chooseSaveDir": "Kayıt klasörünü seç…",
+      "noSaveDir": "Kayıt klasörü seçilmedi",
+      "fetchJailRequired": "Uzaktan almayı etkinleştirmeden önce bir alma klasörü seçin.",
+      "chooseFetchJailAria": "Uzak eşlerin getirebileceği klasörü seçin",
+      "chooseFetchJail": "Getirme klasörünü seçin…",
+      "noFetchJail": "Getirme klasörü seçilmedi",
+      "overwrite": "Alındığında mevcut dosyaların üzerine yaz",
+      "maxSizeInfo": "Maksimum gelen dosya boyutu: {{size}}",
+      "allowBlockListTitle": "İzin ver / engelle listesi",
+      "allowBlockListEmpty": "Henüz kaydedilmiş izin verme/engelleme kararı yok. Gelen bir dosya teklifinde \"Her zaman izin ver\" veya \"Her zaman engelle\" seçeneğini kullanın.",
+      "decision": {
+        "allow": "İzin verilmiş",
+        "block": "Engellendi"
+      },
+      "removePolicyAria": "{{label}} için kayıtlı kararı kaldır",
+      "reliabilityTitle": "Güvenilirlik",
+      "autoReconnectShell": "Beklenmeyen bir bağlantı kesilmesinin ardından uzak kabuğu otomatik olarak yeniden bağlayın",
+      "autoRetryTransfer": "Başarısız aktarımları otomatik olarak yeniden dene",
+      "identityTitle": "Kimliğim",
+      "myIdentity": "Kimliğim:"
+    }
+  },
+  "meshcoreRoute": {
+    "me": "● Ben",
+    "direct": "Doğrudan",
+    "segmentTooltip": "Yol karması {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

@@ -354,7 +354,17 @@
     "reticulumCapDestinationsLabel": "Ограничить пункты назначения / одноранговые узлы в памяти и SQLite, сохранять последние полученные",
     "reticulumCapDestinationsCountAria": "Ограничить пункты назначения, сохранять последние полученные {{count}}",
     "reticulumDestinationsUnit_one": "пункт назначения",
-    "reticulumDestinationsUnit_other": "пункта назначения"
+    "reticulumDestinationsUnit_other": "пункта назначения",
+    "storeForwardHistoryProfileLabel": "Дополнительный профиль Store & Forward",
+    "storeForwardHistoryProfileAria": "Догоняющая агрессивность истории Store & Forward",
+    "storeForwardHistoryProfileConservative": "Консервативный (дружественный к загруженной сети)",
+    "storeForwardHistoryProfileAggressive": "Агрессивный (пятнистый охват)",
+    "storeForwardHistoryProfileHint": "Консерватор использует более длительные автономные ворота и время восстановления. Агрессивная выборка выполняется раньше после коротких отключений и запрашивает больше сообщений — используйте только тогда, когда позволяет эфирное время.",
+    "shareLocationSendWaypoint": "Также отправьте метку на карте (путевую точку), когда делитесь местоположением.",
+    "shareLocationSendWaypointHint": "Если эта функция включена, Meshtastic отправляет как текстовое сообщение, так и пакет путевых точек, поэтому официальные приложения показывают отметку на карте. Отключите на занятых сетках, чтобы отправлять только текст.",
+    "capStoredRrcMessages": "Ограничить сохранённую историю комнат RRC, хранить новейшие",
+    "capStoredRrcMessagesLabel": "Ограничить сохранённую историю комнат RRC, хранить новейшие",
+    "capStoredRrcMessagesCountAria": "Ограничить сохраненную историю комнат RRC, сохранять новейшие сообщения {{count}}"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -369,7 +379,10 @@
     "switchToMeshCore": "Переключиться на MeshCore",
     "backToTop": "Вернуться наверх",
     "switchToReticulum": "Переключиться на Reticulum",
-    "languageSelectorHint": "Нажмите здесь, чтобы выбрать набор"
+    "languageSelectorHint": "Нажмите здесь, чтобы выбрать набор",
+    "switchToMeshtasticWithUnread": "Переключиться на Meshtastic, {{count}} непрочитано",
+    "switchToMeshCoreWithUnread": "Переключиться на MeshCore, {{count}} непрочитано",
+    "switchToReticulumWithUnread": "Переключиться на Reticulum, {{count}} непрочитано"
   },
   "battery": {
     "percentCharging": "Аккумулятор {{percent}} процентов, зарядка",
@@ -503,9 +516,6 @@
     "meshcoreGifPlaceholder": "https://giphy.com/gifs/… или g:ID",
     "meshcoreGifSend": "Отправить GIF",
     "meshcoreGifInvalid": "Введите действительный URL-адрес Giphy или идентификатор GIF.",
-    "attachFile": "Прикрепить файл",
-    "attachFileHint": "Отправка вложения файла LXMF (только DM)",
-    "attachDmOnly": "Откройте прямое сообщение перед прикреплением файла.",
     "composePlaceholderSelectDm": "Выберите контакт выше, чтобы начать DM...",
     "selectDmFirst": "Перед отправкой выберите получателя DM.",
     "emptySelectDm": "Чат Reticulum предназначен только для личных сообщений. Выберите контакт выше или откройте его на вкладке Узлы.",
@@ -526,12 +536,6 @@
     "reticulumNoPropagationNode": "Не настроен узел распространения. Установите предпочтительный узел распространения на вкладке Reticulum Radio.",
     "sentViaPropagation": "Узел распространения",
     "reticulumAudioAttachment": "Голос: {{name}}",
-    "recordVoice": "Записать голосовое сообщение",
-    "recordVoiceHint": "Запишите голосовой клип и отправьте его как вложение LXMF (только в DM)",
-    "stopVoiceRecording": "Остановить запись и отправить",
-    "voiceRecordingTooLong": "Голосовой клип достиг лимита в 60 секунд и был отправлен.",
-    "reticulumSendAttachmentFailed": "Не удалось отправить вложение",
-    "reticulumSendAttachmentNoIdentity": "Идентичность Reticulum не готова — сначала подключите и настройте идентичность",
     "dmPeerInfoAria": "Информация об одноранговом DM",
     "clearDateAria": "Очистить дату",
     "readOnlyDisconnected": "Не подключено — сообщения доступны только для чтения.",
@@ -567,7 +571,6 @@
     "dmPathUnreachableTooltip": "Ещё нет пути Reticulum к этому пункту назначения. Сообщения всё ещё могут быть доставлены позже через настроенный узел распространения.",
     "dmPathRequestPathAria": "Запросить путь Reticulum к этому назначению",
     "dmPathProbeAria": "Проверить достижимость пути Reticulum для этого назначения",
-    "microphonePermissionDenied": "Доступ к микрофону запрещен. Включите разрешение микрофона для Mesh-client в настройках конфиденциальности системы, а затем повторите попытку.",
     "receivedViaBle": "Получено через Bluetooth",
     "receivedViaMultiple": "Получено через {{vias}}",
     "sentViaBle": "По Bluetooth",
@@ -575,12 +578,44 @@
     "floodScopeOverrideLabel": "Область действия флуда для этого сообщения",
     "floodScopeOverrideAria": "Переопределение области флуда для каждого сообщения",
     "floodScopeOverrideDefault": "Область действия по умолчанию",
-    "floodScopeOverrideUnscoped": "Без области действия"
+    "floodScopeOverrideUnscoped": "Без области действия",
+    "rncp": {
+      "sendFile": "Отправить файл",
+      "sendFileAria": "Отправить файл в {{name}} через rncp",
+      "pendingOffersBadgeAria_one": "{{count}} ожидает предложения по входящим файлам от этого участника",
+      "pendingOffersBadgeAria_other": "{{count}} в ожидании предложений по входящим файлам от этого участника",
+      "destinationLabel": "хэш назначения rncp",
+      "rememberAddress": "Запомнить этот адрес",
+      "rememberAddressAria": "Запомнить это назначение rncp для этого однорангового узла",
+      "chooseAndSend": "Выберите файл и отправьте...",
+      "sending": "отправка…",
+      "sendStarted": "Отправка {{file}}…",
+      "sendFailed": "Не удалось отправить: {{error}}",
+      "newOfferToast": "{{peer}} хочет отправить вам файл: {{file}}",
+      "requestEnable": "Включить запрос",
+      "requestEnableAria": "Попросите этого однорангового узла включить получение файлов"
+    },
+    "shareLocation": "Поделиться местоположением",
+    "shareLocationLabel": "📍 Общая локация",
+    "shareLocationHint": "Отправьте свое текущее местоположение GPS или статическое местоположение в виде сообщения в чате.",
+    "shareLocationUnavailable": "Местоположение недоступно — проверьте настройки GPS.",
+    "floodScopeOverrideHint": "Региональная область флуда только для этого сообщения. Область по умолчанию использует сохраненные настройки радиостанции; хэштег ограничивает отправку этим регионом; Отправка без ограничения области без фильтра региона. Сохраненная область действия восстанавливается после отправки.",
+    "floodScopeOverrideMenuButton": "Изменить область флуда для этого сообщения",
+    "shareLocationWaypointFailed": "Отметка на карте (путевая точка) не была подтверждена — возможно, текст местоположения все еще был отправлен.",
+    "floodScopeOverrideCustom": "Пользовательский объем…",
+    "floodScopeOverrideCustomLabel": "Пользовательский хэштег области флуда",
+    "floodScopeOverrideCustomPlaceholder": "#мойрегион",
+    "floodScopeOverrideCustomApply": "Использовать область действия",
+    "floodScopeOverrideCustomInvalid": "Введите действительный хэштег региона (например, #myregion)."
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
     "meshcoreGif": "GIF",
-    "meshcoreGifOpen": "Открыть на Giphy"
+    "meshcoreGifOpen": "Открыть на Giphy",
+    "locationCard": {
+      "alt": "Общий фрагмент карты местоположений",
+      "openMaps": "Открыть в Картах"
+    }
   },
   "common": {
     "close": "Закрывать",
@@ -622,7 +657,9 @@
     "colorAmber": "Желтый",
     "colorRed": "Красный",
     "colorPurple": "Пурпурный",
-    "delete": "Удалить"
+    "delete": "Удалить",
+    "copy": "Скопировать",
+    "copied": "Скопировано"
   },
   "configApplyNotice": {
     "persistNote": "Примененные настройки сохраняются во флэш-памяти устройства и сохраняются при перезагрузке.",
@@ -1163,7 +1200,8 @@
       "meshcore": "Повторно подключитесь, прежде чем сдаваться (1–{{max}}). Сохранено с настройками; нажмите «Подключиться» еще раз после изменения, чтобы основной процесс забрал его.",
       "meshtastic": "Оба протокола допускают 1–{{max}}. Сохранено с настройками; отключите и снова подключитесь, чтобы сеанс работы использовал новое значение."
     },
-    "reticulumStackRunningAs": "Работает — {{name}}"
+    "reticulumStackRunningAs": "Работает — {{name}}",
+    "reticulumSidecarUnhealthyRestarting": "Стек Reticulum не отвечает — перезапуск…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",
@@ -1492,7 +1530,10 @@
     "senderLabel": "Отправитель",
     "rssiShort": "РССИ {{rssi}}",
     "rssiDbm": "RSSI {{rssi}} дБм",
-    "snrDb": "Отношение сигнал/шум {{snr}} дБ"
+    "snrDb": "Отношение сигнал/шум {{snr}} дБ",
+    "distanceOffsetKm": "Смещение расстояния",
+    "km": "км",
+    "distanceOffsetHelp": "Добавляет плоский километраж к порогам расстояния прыжка-гоблина и плохого маршрута (0–50)."
   },
   "diagnosticsPing": {
     "title": "Непрерывный пинг",
@@ -2568,7 +2609,9 @@
       "lossRate": "Предполагаемая потеря",
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Журнал пакетов проверки дальности"
-    }
+    },
+    "currentRouteHeading": "Текущий маршрут",
+    "hopNameLabel": "{{name}}"
   },
   "nodeInfoBody": {
     "longName": "Длинное имя",
@@ -3371,16 +3414,14 @@
     "xmodemFailed": "Ошибка XMODEM: {{message}}",
     "zeroHopAdvertButton": "Zero-hop Advert",
     "zeroHopAdvertSent": "Zero-hop advert отправлен",
-    "floodScopeTitle": "Область регионального наводнения",
+    "floodScopeTitle": "Область регионального флуда",
     "floodScopeHelp": "Ограничьте флуд-трафик регионом хэштегов (прошивка v8+). Требуется meshcore.js setFloodScope; переподключение повторно применяет сохраненную область.",
     "floodScopeNone": "Нет (очистить область применения)",
-    "floodScopePreset": "Предустановленный хэштег",
-    "floodScopePresetSelect": "Предустановленный хэштег региона",
     "floodScopeCustom": "Пользовательский хэштег",
     "floodScopeCustomPlaceholder": "#myregion",
-    "floodScopeApply": "Применить объем наводнения",
-    "floodScopeApplySuccess": "Применяемый объем наводнения",
-    "floodScopeApplyFailed": "Сбой объема наводнения: {{message}}",
+    "floodScopeApply": "Применить объем флуда",
+    "floodScopeApplySuccess": "Применяемый объем флуда",
+    "floodScopeApplyFailed": "Сбой объема флуда: {{message}}",
     "advertisedPositionLabel": "Рекламная позиция: {{lat}}, {{lon}}",
     "txPowerMax": "Мощность передачи (макс. {{max}} дБм на радиостанцию)",
     "txPowerMaxUnknown": "Мощность передачи (ограничена {{max}} дБм до тех пор, пока прошивка не сообщит о радио макс.)",
@@ -3485,7 +3526,13 @@
       "6": {
         "label": "Средне Медленный"
       }
-    }
+    },
+    "floodScopeSaved": "Сохраненная область действия",
+    "floodScopeSavedSelect": "Хэштег сохраненного региона",
+    "floodScopeSavedEmpty": "Сохраненных областей пока нет. Примените собственный хэштег или используйте «Пользовательскую область действия» из чата, чтобы добавить его.",
+    "floodScopeRemoveSaved": "Удалить из сохраненных областей",
+    "floodScopeRemoveSavedAria": "Удалить {{hashtag}} из сохраненных областей.",
+    "floodScopeInvalidHashtag": "Введите действительный хэштег региона (например, #myregion)."
   },
   "rawPacketLog": {
     "filterPackets": "Фильтровать пакеты",
@@ -3687,7 +3734,6 @@
     "pathHashCliSet2": "Установить режим хеширования пути 3 байта",
     "pathLabel": "Путь:",
     "hopMe": "● Я",
-    "hopN": "● Переход {{n}}",
     "noNeighborsReported": "Соседи не сообщили",
     "fetchingTelemetry": "Получение телеметрии…",
     "telemetryBattery": "Батарея: {{voltage}}V",
@@ -3733,7 +3779,8 @@
     "cliDangerConfirmAction": "Выполнить команду",
     "cliAutoPingToast": "Создание маршрута с помощью Ping перед CLI...",
     "cliAutoPingFailed": "Не удалось выполнить Ping; запустите Ping вручную, прежде чем повторить попытку CLI на многоузловых повторителях.",
-    "cliCommandTooLong": "Слишком длинная команда CLI (максимум {{max}} символов)."
+    "cliCommandTooLong": "Слишком длинная команда CLI (максимум {{max}} символов).",
+    "currentRouteLabel": "Текущий маршрут:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Интервал объявления (секунды)",
@@ -4177,7 +4224,8 @@
     "nomadnetwork": "Nomad Network",
     "topology": "Топология сети",
     "network": "Сеть",
-    "rrc": "RRC"
+    "rrc": "RRC",
+    "remote": "Удалённый"
   },
   "takServerPanel": {
     "title": "TAK Сервер",
@@ -4246,7 +4294,13 @@
     "footerMax": "(максимум 50 каждый)",
     "sectionTemperatureHumidity": "Температура и влажность",
     "seriesMcuTempF": "MCU °F",
-    "seriesMcuTempC": "МК °С"
+    "seriesMcuTempC": "МК °С",
+    "chartValueUnavailable": "н/д",
+    "chartAriaBattery": "Диаграмма батареи и напряжения: последняя батарея {{battery}} процентов, напряжение {{voltage}} В, {{count}} точек",
+    "chartAriaSignal": "Диаграмма качества сигнала: последнее соотношение сигнал/шум {{snr}} дБ, RSSI {{rssi}} дБм, {{count}} баллов",
+    "chartAriaTempHumidity": "График температуры и влажности: последняя температура {{temperature}}, влажность {{humidity}} процентов, {{count}} баллов.",
+    "chartAriaPressure": "График атмосферного давления: последние {{pressure}} гПа, {{count}} пунктов.",
+    "chartAriaIaq": "Диаграмма качества воздуха: последний показатель IAQ {{iaq}}, {{count}} баллов."
   },
   "toasts": {
     "firmwareAvailable": "Доступно обновление прошивки: v{{version}}",
@@ -4431,7 +4485,11 @@
     "roomLegend": "★ избранное · A переключает автоматическое присоединение",
     "disconnectFailed": "Could not disconnect from RRC hub.",
     "partFailed": "Could not leave room.",
-    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread"
+    "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
+    "clearHistory": "Очистить историю",
+    "clearHistoryTitle": "Очистить историю комнаты",
+    "clearHistoryConfirm": "Удалить всю сохраненную историю сообщений для {{room}}? Это невозможно отменить.",
+    "clearHistoryConfirmAction": "Удалить историю"
   },
   "signalMeter": {
     "rssi": "РССИ",
@@ -4473,5 +4531,210 @@
     "confirmContactImportTitle": "Импортировать контакт?",
     "confirmContactImportBody": "Добавить {{name}} по внешней ссылке в контакты Reticulum?",
     "confirmContactImportAction": "Импортировать контакт"
+  },
+  "reticulumRemote": {
+    "navAria": "Удаленные секции",
+    "sidecarNotRunning": "Запустите стек Reticulum, чтобы использовать удалённую оболочку и передачу файлов.",
+    "sections": {
+      "shell": "Shell",
+      "transfer": "Передача",
+      "saved": "Сохранено",
+      "settings": "Настройки"
+    },
+    "errors": {
+      "invalidAddress": "Введите допустимый 32-символьный шестнадцатеричный хэш назначения."
+    },
+    "reasons": {
+      "pathConstrained": "Путь ограничен (низкая пропускная способность)",
+      "pathUnknown": "Скорость пути неизвестна",
+      "notAnnounced": "Пункт назначения не объявлен",
+      "timeout": "Тайм-аут запроса",
+      "notAllowed": "не разрешено",
+      "versionMismatch": "Несоответствие удаленной версии",
+      "stagingFailed": "Не удалось выполнить этап входящего файла",
+      "cancelled": "Отменён",
+      "rejected": "Отклонен",
+      "error": "Ошибка"
+    },
+    "pathCapability": {
+      "checking": "Проверка пути",
+      "hops_one": "{{count}} Hop",
+      "hops_other": "{{count}} хопов",
+      "speed": {
+        "high": "быстрый путь",
+        "constrained": "Ограниченный путь",
+        "mixed": "Смешанный путь",
+        "unknown": "Неизвестный путь"
+      }
+    },
+    "shell": {
+      "addressPlaceholder": "Хеш назначения (32 шестнадцатеричных символа)",
+      "addressAria": "хэш назначения rnsh",
+      "selectSavedAddress": "Использовать сохраненный адрес {{label}}",
+      "connectAria": "Подключить удаленную оболочку",
+      "connect": "Подключить",
+      "connecting": "Подключение…",
+      "connectFailed": "Не удалось подключиться: {{error}}",
+      "maxSessions": "Достигнуто максимум {{count}} сеансов оболочки.",
+      "focusSession": "Перейти к сеансу {{address}}",
+      "closeSession": "Закрыть сеанс {{address}}",
+      "emptyState": "Нет активных сеансов удаленной оболочки. Введите хэш пункта назначения выше, чтобы подключиться.",
+      "status": {
+        "connecting": "Подключение…",
+        "active": "Подключено",
+        "closed": "Закрыто",
+        "error": "Ошибка"
+      },
+      "reconnectAria": "Повторно подключить этот сеанс",
+      "reconnect": "Переподключить",
+      "disconnectAria": "Отключить этот сеанс",
+      "disconnect": "Разъединить",
+      "reconnectExhausted": "Автоматическое повторное подключение прекратилось после достижения предела повторных попыток. Состояние удаленного сеанса потеряно.",
+      "reconnectingBanner": "Автоматическое повторное подключение (попытка {{attempt}} из {{max}}). Состояние удаленного сеанса потеряно.",
+      "fingerprintTitle": "Подтвердить удаленную личность",
+      "fingerprintMessage": "Подключение к {{address}}. Сообщение о личности: {{identity}}. Отпечаток пальца: {{fingerprint}}. Подтвердите личность, прежде чем продолжить.",
+      "unknownIdentity": "неизвестная личность",
+      "unknownFingerprint": "неизвестный отпечаток пальца",
+      "fingerprintConfirm": "Подключить"
+    },
+    "transfer": {
+      "myIdentity": "Моя личность:",
+      "copyIdentityAria": "Скопировать хэш моего удостоверения личности",
+      "myReceiveDest": "Моё rncp-назначение для приёма:",
+      "copyReceiveDestAria": "Скопируйте мое место назначения получения rncp",
+      "pendingOffersTitle": "Входящие файлы в ожидании",
+      "pendingOffersBadgeAria_one": "{{count}} ожидает предложения по входящим файлам",
+      "pendingOffersBadgeAria_other": "{{count}}: ожидаются предложения по входящим файлам",
+      "offerLabel": "{{file}} ({{bytes}})",
+      "acceptAria": "Принять {{file}}",
+      "accept": "Принять",
+      "rejectAria": "Отклонить {{file}}",
+      "reject": "Отклонить",
+      "alwaysAllowAria": "Всегда разрешать этому отправителю для {{file}}",
+      "alwaysAllow": "Разрешать всегда",
+      "alwaysBlockAria": "Всегда блокировать этого отправителя на {{file}}",
+      "alwaysBlock": "Всегда блокировать",
+      "alwaysAllowSaved": "Отправитель добавлен в список разрешенных.",
+      "alwaysBlockSaved": "Отправитель добавлен в список блокировки.",
+      "modeSendAria": "Переход в режим",
+      "modeSend": "Отправить",
+      "modeFetchAria": "Перейти в режим выборки",
+      "modeFetch": "Получить",
+      "destinationPlaceholder": "Хеш назначения (32 шестнадцатеричных символа)",
+      "destinationAria": "хэш назначения rncp",
+      "notAllowedHint": "Передача файлов недоступна на этом пути: {{reason}}",
+      "chooseFileAria": "Выберите локальный файл для отправки",
+      "chooseFile": "Выберите файл",
+      "noFileChosen": "Файл не выбран",
+      "sendAria": "Отправить файл",
+      "send": "Отправить",
+      "sendFailed": "Не удалось отправить: {{error}}",
+      "remotePathPlaceholder": "Удалённый путь к файлу",
+      "remotePathAria": "Удаленный путь к файлу для извлечения",
+      "chooseSaveDirAria": "Выберите локальную папку для сохранения",
+      "chooseSaveDir": "Выберите папку для сохранения...",
+      "defaultSaveDir": "Папка загрузки по умолчанию",
+      "fetchAria": "Получить файл",
+      "fetch": "Получить",
+      "fetchFailed": "Не удалось получить: {{error}}",
+      "acceptFailed": "Не удалось принять файл: {{error}}",
+      "listTitle": "Передачи",
+      "listEmpty": "Трансферов пока нет.",
+      "kind": {
+        "send": "Отправить",
+        "fetch": "Получить"
+      },
+      "status": {
+        "active": "В процессе",
+        "completed": "Завершено",
+        "failed": "Не удалось",
+        "cancelled": "Отменён"
+      },
+      "cancelAria": "Отменить перевод {{file}}",
+      "cancel": "Отмена",
+      "retryAria": "Повторите попытку передачи {{file}}",
+      "retry": "Повторить попытку",
+      "revealAria": "Показать {{file}} в папке",
+      "reveal": "Показать в папке",
+      "requestEnableAria": "Запросить, чтобы этот одноранговый узел включил получение файлов",
+      "requestEnable": "Включить запрос",
+      "requestEnableSent": "Попросил однорангового узла включить получение файлов.",
+      "requestEnableRateLimited": "Вы уже отправляли запрос недавно. Повторите попытку позже.",
+      "requestEnableFailed": "Не удалось отправить запрос на включение: {{error}}",
+      "offerToast": "Предложение по входящим файлам: {{file}}",
+      "copyInstructionsAria": "Копировать инструкции для включения получения файла",
+      "copyInstructions": "Копировать инструкции",
+      "instructionsCopied": "Инструкции скопированы."
+    },
+    "enableRequest": {
+      "title": "Включить получение файлов?",
+      "body": "{{peer}} попросил Вас включить прием rncp-файлов, чтобы они могли отправить Вам файл.",
+      "enableAsk": "Включить (спрашивать каждый раз)",
+      "enableAskAria": "Включите предложения по входящим файлам и спросите перед принятием",
+      "enableAllow": "Включить и разрешить эту идентификацию",
+      "enableAllowAria": "Включить предложения по входящим файлам и разрешить этому отправителю",
+      "notNow": "Не сейчас",
+      "notNowAria": "Отклонить запрос на включение",
+      "dontAsk": "Больше не спрашивать у этого партнера",
+      "dontAskAria": "Окончательно отклонить запросы на включение от этого однорангового узла",
+      "enabled": "Получение файлов включено.",
+      "enableFailed": "Не удалось включить получение файлов: {{error}}",
+      "saveDirRequired": "Выберите папку сохранения, чтобы включить получение.",
+      "identityUnknown": "Пока не удалось определить хеш личности этого пира — режим «Спрашивать» включён, но пир не добавлен в список разрешённых. Повторите попытку после получения пути или анонса.",
+      "lxmfBody": "Включите получение файлов (rncp), если вы используете mesh-client: Remote → Settings → Inbound file offers. Или запустите rncp/rncp-rs в режиме прослушивания."
+    },
+    "saved": {
+      "labelPlaceholder": "Ярлык",
+      "labelAria": "Метка сохраненного адреса",
+      "labelRequired": "Введите метку для этого адреса.",
+      "hashPlaceholder": "Хеш назначения (32 шестнадцатеричных символа)",
+      "hashAria": "Хеш адреса назначения сохранен",
+      "serviceAria": "Служба сохраненных адресов",
+      "serviceRnsh": "Оболочка (rnsh)",
+      "serviceRncp": "Передача (rncp)",
+      "saveAria": "Сохранить адрес",
+      "add": "Добавить",
+      "saveFailed": "Не удалось сохранить адрес: {{error}}",
+      "empty": "Пока нет сохраненных адресов.",
+      "editAria": "Изменить сохраненный адрес {{label}}",
+      "deleteAria": "Удалить сохраненный адрес {{label}}"
+    },
+    "settings": {
+      "applyFailed": "Не удалось применить настройку: {{error}}",
+      "inboundTitle": "Входящая передача файлов",
+      "inboundMode": {
+        "off": "Выкл.",
+        "ask": "Спросить",
+        "allow_all_listed": "Разрешить только перечисленные"
+      },
+      "allowFetch": "Разрешить удаленным одноранговым узлам получать от меня файлы",
+      "chooseSaveDirAria": "Выберите папку для входящих передач файлов",
+      "chooseSaveDir": "Выбрать папку для сохранения…",
+      "noSaveDir": "Папка для сохранения не выбрана",
+      "fetchJailRequired": "Выберите папку выдачи, прежде чем включать удалённое получение.",
+      "chooseFetchJailAria": "Выберите папку, из которой могут извлекать удаленные одноранговые узлы",
+      "chooseFetchJail": "Выберите папку выборки...",
+      "noFetchJail": "Папка выборки не выбрана",
+      "overwrite": "Перезаписать существующие файлы при получении",
+      "maxSizeInfo": "Максимальный размер входящего файла: {{size}}",
+      "allowBlockListTitle": "Список разрешений / блокировок",
+      "allowBlockListEmpty": "Пока нет сохраненных решений о разрешении/блокировке. Используйте «Всегда разрешать» или «Всегда блокировать» во входящем файловом предложении.",
+      "decision": {
+        "allow": "Разрешено",
+        "block": "Заблокирован"
+      },
+      "removePolicyAria": "Удалить сохраненное решение для {{label}}",
+      "reliabilityTitle": "Надежность",
+      "autoReconnectShell": "Автоматическое повторное подключение удаленной оболочки после непредвиденного отключения",
+      "autoRetryTransfer": "Автоматически перезапускать неудавшиеся передачи",
+      "identityTitle": "Моя личность",
+      "myIdentity": "Моя личность:"
+    }
+  },
+  "meshcoreRoute": {
+    "me": "● Я",
+    "direct": "Прямой",
+    "segmentTooltip": "Хэш пути {{hex}}",
+    "segmentResolvedTooltip": "{{hex}} → {{name}}"
   }
 }

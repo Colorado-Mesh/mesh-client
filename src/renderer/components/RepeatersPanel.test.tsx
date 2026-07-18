@@ -287,7 +287,7 @@ describe('RepeatersPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: /Send/i }));
 
     expect(onSendCliCommand).not.toHaveBeenCalled();
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Run command' }));
     expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'reboot', {
@@ -346,7 +346,17 @@ describe('RepeatersPanel', () => {
     const onPing = vi.fn().mockResolvedValue(undefined);
     const onSendCliCommand = vi.fn().mockResolvedValue('ok');
     const meshcoreTraceResults = new Map([
-      [multiHop.node_id, { pathLen: 2, pathHashes: [0xaa], pathSnrs: [1], lastSnr: 1, tag: 0 }],
+      [
+        multiHop.node_id,
+        {
+          pathLen: 2,
+          pathHashes: [0xaa, 0xbb],
+          hashSizeBytes: 1 as const,
+          pathSnrs: [1, 2],
+          lastSnr: 1,
+          tag: 0,
+        },
+      ],
     ]);
     render(
       <RepeatersPanel
@@ -543,6 +553,89 @@ describe('RepeatersPanel', () => {
       .getAllByRole('button')
       .filter((b) => b.className.includes('underline'));
     expect(nameLinks.length).toBe(VIRTUALIZER_VISIBLE_CAP);
+  });
+
+  it('shows resolved repeater names in expanded path trace row', async () => {
+    const user = userEvent.setup();
+    const destId = 0xcc;
+    const relayId = 0xaa;
+    const dest = {
+      ...mockRepeaterNode(destId),
+      long_name: 'Dest Repeater',
+      hops_away: 1,
+    };
+    const relay = {
+      ...mockRepeaterNode(relayId),
+      long_name: 'Relay Alpha',
+    };
+    const meshcoreTraceResults = new Map([
+      [
+        destId,
+        {
+          pathLen: 2,
+          pathHashes: [0xaa, 0xcc],
+          hashSizeBytes: 1 as const,
+          pathSnrs: [4.5, 3],
+          lastSnr: 2.5,
+          tag: 1,
+        },
+      ],
+    ]);
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={
+          new Map([
+            [destId, dest],
+            [relayId, relay],
+          ])
+        }
+        meshcoreTraceResults={meshcoreTraceResults}
+      />,
+    );
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Hop count from last Ping trace (repeaters between you and this node)',
+      }),
+    );
+    expect(screen.getByTitle('AA → Relay Alpha')).toHaveTextContent('Relay Alpha');
+    expect(screen.getByText('Path:')).toBeInTheDocument();
+    expect(screen.getByText(/▣\s*Dest Repeater/)).toBeInTheDocument();
+  });
+
+  it('shows current route names when no trace result exists', async () => {
+    const user = userEvent.setup();
+    const destId = 0xdd;
+    const relayId = 0xee;
+    const dest = {
+      ...mockRepeaterNode(destId),
+      long_name: 'Dest Node',
+      hops_away: 1,
+    };
+    const relay = {
+      ...mockRepeaterNode(relayId),
+      long_name: 'Via Relay',
+    };
+    usePathHistoryStore.getState().recordPathUpdated(destId, [0xee, 0xdd], 1, false);
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        nodes={
+          new Map([
+            [destId, dest],
+            [relayId, relay],
+          ])
+        }
+      />,
+    );
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Hop count from last Ping trace (repeaters between you and this node)',
+      }),
+    );
+    expect(screen.getByText('Current route:')).toBeInTheDocument();
+    expect(screen.getByTitle('EE → Via Relay')).toHaveTextContent('Via Relay');
+    expect(screen.getByText(/▣\s*Dest Node/)).toBeInTheDocument();
   });
 
   it('disables neighbors for repeaters at or beyond hop threshold', () => {

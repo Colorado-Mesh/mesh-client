@@ -52,6 +52,12 @@ describe('reticulum-db-handlers validation', () => {
     expect(handlers.has('db:pruneReticulumDestinationsByCount')).toBe(true);
     expect(handlers.has('db:pruneReticulumIdentityActivityByAge')).toBe(true);
     expect(handlers.has('db:upsertReticulumIdentityActivityBatch')).toBe(true);
+    expect(handlers.has('db:listReticulumRemoteAddresses')).toBe(true);
+    expect(handlers.has('db:upsertReticulumRemoteAddress')).toBe(true);
+    expect(handlers.has('db:deleteReticulumRemoteAddress')).toBe(true);
+    expect(handlers.has('db:listReticulumInboundPolicy')).toBe(true);
+    expect(handlers.has('db:upsertReticulumInboundPolicy')).toBe(true);
+    expect(handlers.has('db:deleteReticulumInboundPolicy')).toBe(true);
   });
 
   it('db:getReticulumMessages rejects oversized identityId', () => {
@@ -355,5 +361,129 @@ describe('reticulum destination / activity prune IPC', () => {
       .get(hash) as Record<string, unknown>;
     expect(row.favorited).toBe(0);
     expect(row.display_name).toBe('Bob');
+  });
+});
+
+describe('reticulum remote address book + inbound policy IPC', () => {
+  const handlers = new Map<string, IpcHandler>();
+  const event = {} as IpcMainInvokeEvent;
+  let dir: string | undefined;
+  let db: NodeSqliteDB | undefined;
+
+  beforeAll(() => {
+    registerReticulumDbIpcHandlers({
+      ipcMain: {
+        handle(channel: string, fn: IpcHandler) {
+          handlers.set(channel, fn);
+        },
+      } as unknown as IpcMain,
+    });
+  });
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-rns-remote-'));
+    db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.pragma('journal_mode = WAL');
+    runSchemaUpgrade(db);
+    getDbForIpcMock.mockReturnValue(db);
+  });
+
+  afterEach(() => {
+    db?.close();
+    db = undefined;
+    if (dir) {
+      rmSync(dir, { recursive: true, force: true });
+      dir = undefined;
+    }
+    getDbForIpcMock.mockReturnValue(null);
+  });
+
+  const HASH_A = 'aa'.repeat(16);
+  const HASH_B = 'bb'.repeat(16);
+
+  it('upsertReticulumRemoteAddress inserts then updates by (service, destination_hash)', () => {
+    const upsert = handlers.get('db:upsertReticulumRemoteAddress');
+    upsert?.(event, { label: 'Shell box', service: 'rnsh', destination_hash: HASH_A });
+    upsert?.(event, { label: 'Shell box (renamed)', service: 'rnsh', destination_hash: HASH_A });
+
+    const rows = handlers.get('db:listReticulumRemoteAddresses')?.(event) as Record<
+      string,
+      unknown
+    >[];
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.label).toBe('Shell box (renamed)');
+    expect(rows[0]?.service).toBe('rnsh');
+    expect(rows[0]?.destination_hash).toBe(HASH_A);
+  });
+
+  it('upsertReticulumRemoteAddress rejects invalid hash, service, or missing label', () => {
+    const upsert = handlers.get('db:upsertReticulumRemoteAddress');
+    expect(() =>
+      upsert?.(event, { label: 'x', service: 'rnsh', destination_hash: 'not-hex' }),
+    ).toThrow(/destination_hash invalid/);
+    expect(() =>
+      upsert?.(event, { label: 'x', service: 'bogus', destination_hash: HASH_A }),
+    ).toThrow(/service invalid/);
+    expect(() => upsert?.(event, { label: '', service: 'rncp', destination_hash: HASH_A })).toThrow(
+      /label required/,
+    );
+  });
+
+  it('allows the same destination_hash under different services', () => {
+    const upsert = handlers.get('db:upsertReticulumRemoteAddress');
+    upsert?.(event, { label: 'Shell', service: 'rnsh', destination_hash: HASH_A });
+    upsert?.(event, { label: 'Files', service: 'rncp', destination_hash: HASH_A });
+    const rows = handlers.get('db:listReticulumRemoteAddresses')?.(event) as Record<
+      string,
+      unknown
+    >[];
+    expect(rows).toHaveLength(2);
+  });
+
+  it('deleteReticulumRemoteAddress removes by id', () => {
+    const upsert = handlers.get('db:upsertReticulumRemoteAddress');
+    upsert?.(event, { id: 'fixed-id', label: 'Shell', service: 'rnsh', destination_hash: HASH_A });
+    const result = handlers.get('db:deleteReticulumRemoteAddress')?.(event, 'fixed-id') as {
+      changes: number;
+    };
+    expect(result.changes).toBe(1);
+    const rows = handlers.get('db:listReticulumRemoteAddresses')?.(event) as unknown[];
+    expect(rows).toHaveLength(0);
+  });
+
+  it('upsertReticulumInboundPolicy inserts then updates decision by identity_hash', () => {
+    const upsert = handlers.get('db:upsertReticulumInboundPolicy');
+    upsert?.(event, { identity_hash: HASH_B, decision: 'allow', label: 'Trusted peer' });
+    upsert?.(event, { identity_hash: HASH_B, decision: 'block' });
+
+    const rows = handlers.get('db:listReticulumInboundPolicy')?.(event) as Record<
+      string,
+      unknown
+    >[];
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.decision).toBe('block');
+    // label preserved via COALESCE when the update omits it.
+    expect(rows[0]?.label).toBe('Trusted peer');
+  });
+
+  it('upsertReticulumInboundPolicy rejects invalid hash or decision', () => {
+    const upsert = handlers.get('db:upsertReticulumInboundPolicy');
+    expect(() => upsert?.(event, { identity_hash: 'zz', decision: 'allow' })).toThrow(
+      /identity_hash invalid/,
+    );
+    expect(() => upsert?.(event, { identity_hash: HASH_B, decision: 'maybe' })).toThrow(
+      /decision invalid/,
+    );
+  });
+
+  it('deleteReticulumInboundPolicy removes by identity_hash', () => {
+    const upsert = handlers.get('db:upsertReticulumInboundPolicy');
+    upsert?.(event, { identity_hash: HASH_A, decision: 'allow' });
+    const result = handlers.get('db:deleteReticulumInboundPolicy')?.(event, HASH_A) as {
+      changes: number;
+    };
+    expect(result.changes).toBe(1);
+    const rows = handlers.get('db:listReticulumInboundPolicy')?.(event) as unknown[];
+    expect(rows).toHaveLength(0);
   });
 });
