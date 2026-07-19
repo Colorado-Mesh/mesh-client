@@ -175,9 +175,9 @@ check_ratspeak_patches() {
   # Format: "patch-basename|github-owner/repo|pr-number-or-empty|display-label|review-url"
   local RATSPEAK_PATCH_ENTRIES=(
     'rsReticulum-packet-tap.patch|ratspeak/rsReticulum|10|rsReticulum packet-tap|https://github.com/ratspeak/rsReticulum/pull/10'
-    'rsReticulum-auto-beacon-utun.patch|ratspeak/rsReticulum||rsReticulum auto-beacon utun|https://github.com/ratspeak/rsReticulum'
+    'rsReticulum-auto-beacon-utun.patch|ratspeak/rsReticulum|11|rsReticulum auto-beacon utun|https://github.com/ratspeak/rsReticulum/pull/11'
     'rsReticulum-link-client-nomad.patch|ratspeak/rsReticulum|14|rsReticulum LinkClient Nomad|https://github.com/ratspeak/rsReticulum/pull/14'
-    'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF||rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF'
+    'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF|4|rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF/pull/4'
   )
   local patches_dir='reticulum-sidecar/patches'
   local has_ratspeak_warning=0

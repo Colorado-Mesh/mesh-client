@@ -52,7 +52,7 @@ Skip macOS/iOS VPN tunnel interfaces (`utun*`, `ipsec*`, `ppp*`) for AutoInterfa
 | Field | Value |
 | ----- | ----- |
 | **Base commit** | `6d2b28475321bc15c8f60796513d8878b47ed3ab` |
-| **Upstream PR** | _(open against [ratspeak/rsReticulum](https://github.com/ratspeak/rsReticulum))_ |
+| **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/11 |
 
 **Modifies (1 file):**
 
@@ -86,7 +86,7 @@ git -C /tmp/rsReticulum-patch-test apply --check ../mesh-client/reticulum-sideca
 
 ### Sunset
 
-When the upstream PR merges, remove this patch and drop the CI apply step (same as packet-tap).
+When [ratspeak/rsReticulum#11](https://github.com/ratspeak/rsReticulum/pull/11) merges, remove this patch and drop the CI apply step (same as packet-tap).
 
 ## rsReticulum-link-client-nomad.patch
 
@@ -144,7 +144,7 @@ LinkIdentify + peering stamp before LXMF `/offer`, plus `set_local_identity` / `
 | Field | Value |
 | ----- | ----- |
 | **Base commit** | `68ad7c835187c052c763bb28c41b04a655f35c64` |
-| **Upstream** | local patch until merged to [ratspeak/rsLXMF](https://github.com/ratspeak/rsLXMF) |
+| **Upstream PR** | https://github.com/ratspeak/rsLXMF/pull/4 |
 
 **Modifies (1 file):**
 
@@ -171,4 +171,4 @@ git diff 68ad7c835187c052c763bb28c41b04a655f35c64 -- crates/lxmf-core/src/propag
 
 ### Sunset
 
-When the peering/identity APIs land on `ratspeak/rsLXMF` `main`, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
+When [ratspeak/rsLXMF#4](https://github.com/ratspeak/rsLXMF/pull/4) merges, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.

@@ -1,5 +1,5 @@
 diff --git a/src/meshDevice.js b/src/meshDevice.js
-index 8c58dc7d43f91d1a7c0759f2172950f1c987dd95..4a5825db35031f37e23c208b372c49f090320c25 100755
+index 8c58dc7d43f91d1a7c0759f2172950f1c987dd95..31017c3425231e3c31f39c85e1c19343504d56c6 100755
 --- a/src/meshDevice.js
 +++ b/src/meshDevice.js
 @@ -20,6 +20,8 @@ export class MeshDevice {
@@ -11,7 +11,7 @@ index 8c58dc7d43f91d1a7c0759f2172950f1c987dd95..4a5825db35031f37e23c208b372c49f0
    constructor(transport, configId){
      this.log = new Logger({
        name: "iMeshDevice",
-@@ -48,7 +50,11 @@ export class MeshDevice {
+@@ -48,7 +50,15 @@ export class MeshDevice {
      this.events.onPendingSettingsChange.subscribe((state)=>{
        this.pendingSettingsChanges = state;
      });
@@ -20,16 +20,28 @@ index 8c58dc7d43f91d1a7c0759f2172950f1c987dd95..4a5825db35031f37e23c208b372c49f0
 +    this._fromDevicePipe = this.transport.fromDevice.pipeTo(decodePacket(this), {
 +      signal: this._fromDeviceAc.signal
 +    });
-+    void this._fromDevicePipe.catch(()=>{});
++    void this._fromDevicePipe.catch((err)=>{
++      if (err instanceof Error && err.name !== "AbortError") {
++        this.log.error(Emitter[Emitter.ReadFromRadio], `Device decoding pipe failed: ${err.message}`);
++      }
++    });
    }
    /** Abstract method that connects to the radio */ // protected abstract connect(
    //   parameters: Types.ConnectionParameters,
-@@ -448,6 +454,16 @@ export class MeshDevice {
+@@ -447,7 +457,23 @@ export class MeshDevice {
+       clearInterval(this._heartbeatIntervalId);
      }
      this.complete();
-     await this.transport.toDevice.close();
+-    await this.transport.toDevice.close();
 +    if (this._fromDeviceAc) {
 +      this._fromDeviceAc.abort();
++    }
++    try {
++      await this.transport.toDevice.close();
++    } catch  {
++      this.log.debug(Emitter[Emitter.Disconnect], "Writable stream already closed or errored");
++    }
++    if (this._fromDevicePipe) {
 +      try {
 +        await this._fromDevicePipe;
 +      } catch  {
@@ -42,7 +54,7 @@ index 8c58dc7d43f91d1a7c0759f2172950f1c987dd95..4a5825db35031f37e23c208b372c49f0
    }
    /**
 diff --git a/src/meshDevice.ts b/src/meshDevice.ts
-index ddca80fc9134fa56ac273b17387e62af087c95c6..11539785db789bfb261cd3b8d084fc71bf38d095 100755
+index ddca80fc9134fa56ac273b17387e62af087c95c6..5e2d3b953c14fe439b1f5555c4a177e02ff1e140 100755
 --- a/src/meshDevice.ts
 +++ b/src/meshDevice.ts
 @@ -41,6 +41,10 @@ export class MeshDevice {
@@ -56,7 +68,7 @@ index ddca80fc9134fa56ac273b17387e62af087c95c6..11539785db789bfb261cd3b8d084fc71
    constructor(transport: Transport, configId?: number) {
      this.log = new Logger({
        name: "iMeshDevice",
-@@ -75,7 +79,11 @@ export class MeshDevice {
+@@ -75,7 +79,20 @@ export class MeshDevice {
        this.pendingSettingsChanges = state;
      });
  
@@ -65,16 +77,39 @@ index ddca80fc9134fa56ac273b17387e62af087c95c6..11539785db789bfb261cd3b8d084fc71
 +    this._fromDevicePipe = this.transport.fromDevice.pipeTo(decodePacket(this), {
 +      signal: this._fromDeviceAc.signal,
 +    });
-+    void this._fromDevicePipe.catch(() => {});
++    // Swallow abort/cancel rejection so an unhandled rejection does not
++    // surface, but log unexpected transport/stream failures.
++    void this._fromDevicePipe.catch((err) => {
++      if (err instanceof Error && err.name !== "AbortError") {
++        this.log.error(
++          Emitter[Emitter.ReadFromRadio],
++          `Device decoding pipe failed: ${err.message}`,
++        );
++      }
++    });
    }
  
    /** Abstract method that connects to the radio */
-@@ -818,6 +826,17 @@ export class MeshDevice {
+@@ -817,7 +834,30 @@ export class MeshDevice {
+     }
  
      this.complete();
-     await this.transport.toDevice.close();
-+    if (this._fromDeviceAc) {
-+      this._fromDeviceAc.abort();
+-    await this.transport.toDevice.close();
++
++    // Signal the inbound pipe abort before blocking on IO so teardown still
++    // completes when the transport is already gone (e.g. unplugged serial).
++    this._fromDeviceAc?.abort();
++
++    try {
++      await this.transport.toDevice.close();
++    } catch {
++      this.log.debug(
++        Emitter[Emitter.Disconnect],
++        "Writable stream already closed or errored",
++      );
++    }
++
++    if (this._fromDevicePipe) {
 +      try {
 +        await this._fromDevicePipe;
 +      } catch {
