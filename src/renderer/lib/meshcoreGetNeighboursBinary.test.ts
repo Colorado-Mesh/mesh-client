@@ -69,6 +69,7 @@ describe('meshcoreGetNeighboursBinary', () => {
     expect(parsed.neighbours).toHaveLength(1);
     expect(Array.from(parsed.neighbours[0].publicKeyPrefix)).toEqual([1, 2, 3, 4, 5, 6]);
     expect(parsed.neighbours[0].heardSecondsAgo).toBe(0x1234);
+    // Already dB (wire int8 / 4). Callers must not multiply by MESHCORE_RPC_SNR_RAW_TO_DB again.
     expect(parsed.neighbours[0].snr).toBe(2);
   });
 

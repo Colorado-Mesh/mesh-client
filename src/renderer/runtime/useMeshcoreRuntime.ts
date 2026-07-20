@@ -4643,7 +4643,8 @@ export function useMeshcoreRuntime() {
                   prefixHex,
                   resolvedNodeId,
                   heardSecondsAgo: nb.heardSecondsAgo,
-                  snr: nb.snr * MESHCORE_RPC_SNR_RAW_TO_DB,
+                  // parseMeshcoreGetNeighboursResponse already returns dB (int8/4).
+                  snr: nb.snr,
                 };
               });
               const page: MeshCoreNeighborResult = {

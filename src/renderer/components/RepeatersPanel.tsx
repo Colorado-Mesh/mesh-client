@@ -1382,8 +1382,17 @@ export default function RepeatersPanel({
                                     <button
                                       type="button"
                                       onClick={() => void handleNeighborsLoadMore(node.node_id)}
-                                      disabled={!isConnected || isNeighborsLoading}
+                                      disabled={
+                                        !isConnected || isNeighborsLoading || neighborHopBlocked
+                                      }
                                       aria-busy={isNeighborsLoading}
+                                      title={
+                                        neighborHopBlocked
+                                          ? t('repeatersPanel.neighborsHopTooFar', {
+                                              hops: MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS,
+                                            })
+                                          : undefined
+                                      }
                                       aria-label={
                                         isNeighborsLoading
                                           ? t('repeatersPanel.neighborsLoadingMore')

@@ -687,7 +687,8 @@ export {
  * Raw SNR quarter-dB to dB scale factor.
  *
  * Multiply raw quarter-dB integers from contact payloads (e.g. `contact.pathSnrs[i]` from `getContacts` / refresh)
- * to get dB. **Do not** apply to `tracePath.lastSnr` — the library already converts that (`readInt8() / 4`).
+ * to get dB. **Do not** apply to `tracePath.lastSnr` or GetNeighbours parser output — both already convert
+ * (`readInt8() / 4` / `parseMeshcoreGetNeighboursResponse`).
  */
 export const MESHCORE_RPC_SNR_RAW_TO_DB = 0.25;
 

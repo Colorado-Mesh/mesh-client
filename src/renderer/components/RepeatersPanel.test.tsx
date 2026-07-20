@@ -298,6 +298,51 @@ describe('RepeatersPanel', () => {
     expect(loadMore).toBeDisabled();
   });
 
+  it('disables Load more when neighbors hop limit is exceeded', async () => {
+    const onRequestNeighbors = vi.fn().mockResolvedValue(undefined);
+    const meshcoreNeighbors = new Map([
+      [
+        repeater.node_id,
+        {
+          totalNeighboursCount: 60,
+          neighbours: Array.from({ length: 50 }, (_, i) => ({
+            publicKeyPrefix: new Uint8Array(6),
+            prefixHex: i.toString(16).padStart(12, '0'),
+            resolvedNodeId: 0,
+            heardSecondsAgo: 1,
+            snr: 2,
+          })),
+          fetchedAt: Date.now(),
+        },
+      ],
+    ]);
+    const nearNode = { ...repeater, hops_away: 1 };
+    const base = {
+      ...makeBaseProps(),
+      nodes: new Map([[nearNode.node_id, nearNode]]),
+      onRequestNeighbors,
+      meshcoreNeighbors,
+    };
+
+    const { rerender } = render(<RepeatersPanel {...base} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Repeater neighbors' }));
+    const loadMore = await screen.findByRole('button', {
+      name: 'Load more neighbors (50 of 60 loaded)',
+    });
+    expect(loadMore).toBeEnabled();
+
+    const farNode = { ...repeater, hops_away: 8 };
+    rerender(<RepeatersPanel {...base} nodes={new Map([[farNode.node_id, farNode]])} />);
+
+    expect(
+      await screen.findByRole('button', {
+        name: 'Load more neighbors (50 of 60 loaded)',
+      }),
+    ).toBeDisabled();
+    expect(onRequestNeighbors).toHaveBeenCalledTimes(1);
+  });
+
   it('shows error toast when ping fails', async () => {
     const props = makeBaseProps();
     props.onPing = vi.fn().mockRejectedValue(new Error('ping timeout'));
