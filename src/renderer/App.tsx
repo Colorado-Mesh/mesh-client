@@ -4284,12 +4284,17 @@ function AppContent() {
             }
             traceRouteHops={traceRouteHops}
             onDeleteNode={
-              detailModalCapabilities.hasCompanionContactManagementConfig
+              detailModalProtocol === 'meshcore'
                 ? async (nodeNum) => {
                     await meshcorePanelActions.deleteNode(nodeNum);
                     setSelectedNodeId(null);
                   }
-                : undefined
+                : detailModalProtocol === 'meshtastic'
+                  ? async (nodeNum) => {
+                      await meshtasticPanelActions.deleteNode(nodeNum);
+                      setSelectedNodeId(null);
+                    }
+                  : undefined
             }
             onMessageNode={
               selectedNode?.node_id !== detailMyNodeNum && selectedNode?.hw_model !== 'Room'

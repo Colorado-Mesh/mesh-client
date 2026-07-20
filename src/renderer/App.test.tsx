@@ -894,6 +894,33 @@ describe('App accessibility', () => {
     expect(meshtasticRuntime.getRemoteAdminKeyForNode).not.toHaveBeenCalled();
   });
 
+  it('wires Meshtastic node detail delete to the runtime deleteNode', async () => {
+    const meshtasticRuntime = createDeviceMock();
+    useDeviceMock.mockReturnValue(meshtasticRuntime);
+
+    renderApp();
+    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
+
+    await waitFor(() => {
+      expect(lastChatPanelProps.current).not.toBeNull();
+    });
+    const onNodeClick = lastChatPanelProps.current?.onNodeClick as
+      ((nodeId: number) => void) | null;
+    expect(onNodeClick).toBeTruthy();
+    onNodeClick?.(0x23456789);
+
+    await waitFor(() => {
+      expect(lastNodeDetailModalProps.current).not.toBeNull();
+      expect(lastNodeDetailModalProps.current?.protocol).toBe('meshtastic');
+    });
+
+    const onDeleteNode = lastNodeDetailModalProps.current?.onDeleteNode as
+      ((nodeId: number) => Promise<void>) | undefined;
+    expect(onDeleteNode).toBeTruthy();
+    await onDeleteNode?.(0x23456789);
+    expect(meshtasticRuntime.deleteNode).toHaveBeenCalledWith(0x23456789);
+  });
+
   it('keeps MeshCore node detail connection props when Meshtastic tab is active', async () => {
     const peerNodeId = 0x23456789;
     const meshcoreSelfNodeId = 0x12345678;
