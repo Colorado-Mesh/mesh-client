@@ -252,7 +252,7 @@ export function buildReticulumDiagnosticRows(
         id: rfRowId(homeNodeId, `reticulum/ble-pairing-timed-out/${name}`),
         nodeId: homeNodeId,
         condition: 'reticulum/ble-pairing-timed-out',
-        cause: `BLE RNode "${name}" pairing timed out (passkey not entered)`,
+        cause: `BLE RNode "${name}" passkey exchange timed out`,
         causeI18n: runtimeCauseI18n('blePairingTimedOut', { name }),
         severity: 'warning',
         detectedAt: now,

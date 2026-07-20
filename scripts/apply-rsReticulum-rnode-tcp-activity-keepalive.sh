@@ -42,11 +42,6 @@ if apply_patch 2> /dev/null; then
   exit 0
 fi
 
-if git -C "${RNS_DIR}" apply --check "${PATCH_FILE}" 2>&1 | grep -q 'patch does not apply'; then
-  echo "rnode TCP activity-keepalive overlay not needed (already upstream or incompatible with current rsReticulum HEAD)"
-  exit 0
-fi
-
 echo "rnode TCP activity-keepalive patch did not apply on current HEAD; checking out pinned ref ${RS_RETICULUM_REF:0:12}"
 current_head="$(git -C "${RNS_DIR}" rev-parse HEAD)"
 if [[ "${current_head}" != "${RS_RETICULUM_REF}" ]]; then
@@ -54,10 +49,11 @@ if [[ "${current_head}" != "${RS_RETICULUM_REF}" ]]; then
   git -C "${RNS_DIR}" checkout "${RS_RETICULUM_REF}"
 fi
 
-if apply_patch 2> /dev/null; then
-  echo "applied ${PATCH_FILE} on rsReticulum @ ${RS_RETICULUM_REF:0:12}"
+# Upstream PR: https://github.com/ratspeak/rsReticulum/pull/15
+if [[ -f "${RNODE_RS}" ]] && grep -q 'RNODE_TCP_ACTIVITY_KEEPALIVE_MS' "${RNODE_RS}"; then
+  echo "rnode TCP activity-keepalive overlay already present on rsReticulum @ ${RS_RETICULUM_REF:0:12}"
   exit 0
 fi
 
-echo "rnode TCP activity-keepalive overlay not needed (already upstream or incompatible with pinned rsReticulum ref)"
-exit 0
+apply_patch
+echo "applied ${PATCH_FILE} on rsReticulum @ ${RS_RETICULUM_REF:0:12}"

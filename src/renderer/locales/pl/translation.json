@@ -1088,7 +1088,7 @@
       "tcpUnreachableHint": "Zdalna instancja Reticulum może być offline lub blokować połączenia. Wyłącz ten interfejs lub sprawdź host i port.",
       "offlineHintBleBondStale": "macOS nadal wyświetla ten RNode jako sparowany, ale klucze Bluetooth nie są już zgodne (informacje o parowaniu usunięte z urządzenia równorzędnego). Zapomnij urządzenie w Ustawieniach systemowych → Bluetooth, przełącz RNode w tryb parowania (Admin → Bluetooth → Rozpocznij parowanie lub przytrzymaj przycisk ~7 s), następnie uruchom ponownie stos i po wyświetleniu monitu wprowadź nowy 6-cyfrowy PIN.",
       "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
-      "connectingHintBle": "BLE RNode links can take up to 60 seconds after the stack starts (OS passkey window). Enter the current RNode PIN if prompted — never 123456. This is normal, not an error. The device may not appear in System Settings until after a successful bond."
+      "connectingHintBle": "Łączenie węzła BLE RNode może zająć do 60 sekund po uruchomieniu stosu (okno hasła systemu operacyjnego). Wprowadź bieżący kod PIN RNode, jeśli zostaniesz o to poproszony — nigdy 123456. Jest to normalne, a nie błąd. Urządzenie może pojawić się w Ustawieniach systemu dopiero po pomyślnym nawiązaniu połączenia."
     },
     "autoConnectingTo": "Automatyczne łączenie z {{deviceName}}…",
     "autoReconnectInProgress": "Automatyczne ponowne łączenie w toku…",
@@ -1160,8 +1160,8 @@
       "shareInstanceHint": "Instancja udostępniania jest włączona — całkowicie zamknij inne aplikacje Reticulum (MeshChatX, Ratspeak, standalone rnsd) i uruchom ponownie ten stos przed ponowną próbą wysłania wiadomości SMS.",
       "bleBondRemoved": "{{name}}: Połączenie Bluetooth jest nieaktualne (system operacyjny nadal wyświetla komunikat Sparowano)",
       "bleBondRemovedHint": "Zapomnij o tym RNode w Ustawieniach systemowych → Bluetooth, rozpocznij parowanie w radiu (Admin → Bluetooth lub przytrzymanie przycisku ~7 s), zrestartuj stos i wprowadź nowy 6-cyfrowy PIN.",
-      "blePairingTimedOut": "{{name}}: Bluetooth pairing timed out (passkey not entered)",
-      "blePairingTimedOutHint": "Stop the stack, start pairing again (Admin → Bluetooth shows the PIN in the panel — the radio display may stay blank — or ~7 s button hold for an on-screen PIN), restart the stack once, and enter that PIN in the OS dialog within ~60 seconds. Never use 123456 (Meshtastic default)."
+      "blePairingTimedOut": "{{name}}: Upłynął limit czasu wymiany hasła Bluetooth",
+      "blePairingTimedOutHint": "Zatrzymaj stos, rozpocznij parowanie ponownie (Administrator → Bluetooth wyświetli PIN na panelu — wyświetlacz radia może pozostać pusty — lub przytrzymanie przycisku przez ~7 s, aby wprowadzić PIN na ekranie), ponownie uruchom stos i wprowadź ten kod PIN w oknie dialogowym systemu operacyjnego w ciągu ~60 sekund. Nigdy nie używaj numeru 123456 (domyślny Meshtastic)."
     },
     "reticulumSidecarBundledMissing": "W tej instalacji brakuje dołączonego sidecar Reticulum. Uaktualnij do nowszej wersji lub zgłoś problem — budowanie ze źródła nie jest możliwe w przypadku instalacji pakietowych.",
     "radioMqttRootDivergesWarning": "Główny temat radia MQTT to {{radioRoot}}, ale ten panel subskrybuje {{appPrefix}}. Dopasuj radio, aby ograniczyć ogólnokrajowy ruch w węzłach — zaktualizuj prefiks tematu i ponownie połącz MQTT.",
@@ -1514,7 +1514,7 @@
         "transportSaturatedShareInstance": "Transport RNS nasycony (krople z żądaniem ścieżki {{count}}). Udostępnij instancję jest włączona — zamknij inne aplikacje Reticulum (MeshChatX, Ratspeak, rnsd) i uruchom ponownie stos.",
         "slowTransportQuery": "Powolne lub nieudane zapytania transportowe RNS ({{count}}×)",
         "bleBondRemoved": "Wiązanie BLE RNode „{{name}}” jest nieaktualne — usuń urządzenie w ustawieniach Bluetooth systemu i sparuj ponownie",
-        "blePairingTimedOut": "BLE RNode \"{{name}}\" pairing timed out — enter the current PIN (not 123456) and re-pair"
+        "blePairingTimedOut": "Upłynął limit czasu wymiany hasła BLE RNode „{{name}}” — wprowadź bieżący kod PIN (nie 123456) i sparuj ponownie"
       }
     },
     "routingPort": {
@@ -1680,10 +1680,10 @@
     "wifiStationSuccess": "Tryb stacji zapisany. Uruchom ponownie płytę, a następnie znajdź jej adres IP (wyświetlacz, router DHCP lub Read config) i dodaj tcp://… na → interfejsach połączeń.",
     "wifiConfigEmpty": "Nie zwrócono danych konfiguracyjnych.",
     "wifiNetmaskPlaceholder": "255.255.255.0",
-    "pairingWaiting": "Waiting for pairing PIN from the radio over USB…",
-    "pairingPinLabel": "Bluetooth pairing PIN",
-    "pairingPinEnterHint": "Enter this code in the OS Bluetooth dialog when the stack connects. Do not use 123456.",
-    "bluetoothHint": "Enable Bluetooth on the device, then use Start pairing. The 6-digit PIN appears in this panel over USB — the radio display often stays blank. Enter that PIN in your OS Bluetooth dialog when Reticulum connects over BLE. RNode has no default PIN (do not use 123456 — that is Meshtastic). On display boards, a ~7 s button hold can also show a PIN on screen. The RNode may not appear in System Settings → Bluetooth until after a successful bond."
+    "pairingWaiting": "Oczekiwanie na PIN parowania z radia przez USB…",
+    "pairingPinLabel": "Kod PIN parowania Bluetooth",
+    "pairingPinEnterHint": "Wprowadź ten kod w oknie dialogowym Bluetooth systemu operacyjnego, gdy stos się łączy. Nie używaj 123456.",
+    "bluetoothHint": "Włącz Bluetooth na urządzeniu, a następnie użyj opcji Rozpocznij parowanie. 6-cyfrowy PIN pojawia się w tym panelu przez USB – wyświetlacz radia często pozostaje pusty. Wprowadź ten kod PIN w oknie dialogowym Bluetooth systemu operacyjnego, gdy Reticulum połączy się przez BLE. RNode nie ma domyślnego PIN-u (nie używaj 123456 — czyli Meshtastic). Na wyświetlaczach przytrzymanie przycisku przez ~7 s może również spowodować wyświetlenie kodu PIN na ekranie. RNode może nie pojawić się w Ustawieniach systemu → Bluetooth do czasu pomyślnego nawiązania połączenia."
   },
   "identityVault": {
     "title": "Skarbiec tożsamości",

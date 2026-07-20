@@ -31,6 +31,7 @@ Apply overlays (required for `rns-stack` until upstream merges):
 ./scripts/apply-rsReticulum-auto-beacon-utun.sh
 ./scripts/apply-rsReticulum-link-client-nomad.sh
 ./scripts/apply-rsReticulum-rnode-tcp-activity-keepalive.sh
+./scripts/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
 ./scripts/apply-rsLXMF-propagation-sync-peering.sh
 ```
 

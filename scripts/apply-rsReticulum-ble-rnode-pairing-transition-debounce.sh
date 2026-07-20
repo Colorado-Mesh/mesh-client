@@ -41,11 +41,6 @@ if apply_patch 2> /dev/null; then
   exit 0
 fi
 
-if git -C "${RNS_DIR}" apply --check "${PATCH_FILE}" 2>&1 | grep -q 'patch does not apply'; then
-  echo "ble_rnode pairing-transition debounce overlay not needed (already upstream or incompatible with current rsReticulum HEAD)"
-  exit 0
-fi
-
 echo "ble_rnode pairing-transition debounce patch did not apply on current HEAD; checking out pinned ref ${RS_RETICULUM_REF:0:12}"
 current_head="$(git -C "${RNS_DIR}" rev-parse HEAD)"
 if [[ "${current_head}" != "${RS_RETICULUM_REF}" ]]; then
@@ -53,10 +48,10 @@ if [[ "${current_head}" != "${RS_RETICULUM_REF}" ]]; then
   git -C "${RNS_DIR}" checkout "${RS_RETICULUM_REF}"
 fi
 
-if apply_patch 2> /dev/null; then
-  echo "applied ${PATCH_FILE} on rsReticulum @ ${RS_RETICULUM_REF:0:12}"
+if [[ -f "${BLE_RNODE_RS}" ]] && grep -q 'PAIRING_TRANSITION_RETRY_WAIT' "${BLE_RNODE_RS}"; then
+  echo "ble_rnode pairing-transition debounce overlay already present on rsReticulum @ ${RS_RETICULUM_REF:0:12}"
   exit 0
 fi
 
-echo "ble_rnode pairing-transition debounce overlay not needed (already upstream or incompatible with pinned rsReticulum ref)"
-exit 0
+apply_patch
+echo "applied ${PATCH_FILE} on rsReticulum @ ${RS_RETICULUM_REF:0:12}"

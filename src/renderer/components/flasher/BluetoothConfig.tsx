@@ -55,14 +55,11 @@ export function BluetoothConfig({
         </button>
       </div>
       {pairingPending && pairingPin === null ? (
-        <p className="text-xs text-amber-200/90" role="status">
-          {t('flasher.pairingWaiting')}
-        </p>
+        <output className="block text-xs text-amber-200/90">{t('flasher.pairingWaiting')}</output>
       ) : null}
       {pinLabel !== null ? (
-        <div
-          className="rounded border border-amber-500/40 bg-amber-950/40 px-3 py-2"
-          role="status"
+        <output
+          className="block rounded border border-amber-500/40 bg-amber-950/40 px-3 py-2"
           aria-label={t('flasher.pairingPin', { pin: pinLabel })}
         >
           <p className="text-[11px] font-medium tracking-wide text-amber-200/80 uppercase">
@@ -70,7 +67,7 @@ export function BluetoothConfig({
           </p>
           <p className="mt-1 font-mono text-2xl tracking-widest text-amber-300">{pinLabel}</p>
           <p className="mt-1 text-[11px] text-amber-100/70">{t('flasher.pairingPinEnterHint')}</p>
-        </div>
+        </output>
       ) : null}
     </div>
   );

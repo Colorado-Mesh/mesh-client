@@ -1,3 +1,5 @@
+import { MS_PER_SECOND } from '@/shared/timeConstants';
+
 import {
   collectReticulumInterfaceAlerts,
   collectReticulumLocalInterfaceConnecting,
@@ -6,21 +8,27 @@ import {
 } from './reticulumLocalInterfaceHealth';
 
 /** Steady poll when all local interfaces are healthy. */
-export const RETICULUM_LOCAL_HEALTH_POLL_MS = 30_000;
+export const RETICULUM_LOCAL_HEALTH_POLL_MS = 30 * MS_PER_SECOND;
 
 /** Poll while any enabled local USB/BLE interface is offline or stale. */
-export const RETICULUM_LOCAL_HEALTH_FAST_POLL_MS = 5_000;
+export const RETICULUM_LOCAL_HEALTH_FAST_POLL_MS = 5 * MS_PER_SECOND;
 
 /** One-shot refreshes after stack start/restart while BLE RNode links settle. */
 export const RETICULUM_LOCAL_HEALTH_BURST_DELAYS_MS = [
-  2_000, 5_000, 10_000, 15_000, 25_000, 40_000, 55_000,
+  2 * MS_PER_SECOND,
+  5 * MS_PER_SECOND,
+  10 * MS_PER_SECOND,
+  15 * MS_PER_SECOND,
+  25 * MS_PER_SECOND,
+  40 * MS_PER_SECOND,
+  55 * MS_PER_SECOND,
 ] as const;
 
 /**
  * BLE RNode may take up to the OS passkey window (~60s TX-read) after stack start;
  * show "connecting" not "offline" until then.
  */
-export const RETICULUM_BLE_CONNECT_GRACE_MS = 60_000;
+export const RETICULUM_BLE_CONNECT_GRACE_MS = 60 * MS_PER_SECOND;
 
 export function reticulumLocalHealthNeedsFastPoll(
   interfaces: readonly ReticulumLocalInterfaceInput[],
