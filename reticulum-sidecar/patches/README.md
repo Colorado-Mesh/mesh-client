@@ -137,6 +137,49 @@ git -C /tmp/rsReticulum-patch-test diff \
 
 When [ratspeak/rsReticulum#14](https://github.com/ratspeak/rsReticulum/pull/14) merges, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
 
+## rsReticulum-rnode-tcp-activity-keepalive.patch
+
+Port Python `RNodeInterface` / `TCPConnection.ACTIVITY_KEEPALIVE` (3.5s idle → `detect()`): Wi‑Fi/TCP RNodes otherwise close the socket at ~`ACTIVITY_TIMEOUT` (6s), causing mesh-client / rnsd-rs up/down flaps.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | `4095022` (`ratspeak/rsReticulum` `main` tip when generated; also applies on pin `6d2b28475321bc15c8f60796513d8878b47ed3ab`) |
+| **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/15 |
+
+**Modifies (1 file):**
+
+- `crates/rns-interface/src/rnode.rs` — TCP activity keepalive constants + write-loop `detect()` on idle
+
+### Apply locally
+
+From mesh-client repo root (sibling `../rsReticulum` required):
+
+```bash
+./scripts/apply-rsReticulum-rnode-tcp-activity-keepalive.sh
+```
+
+Apply after the other rsReticulum overlays when rebuilding a pinned checkout:
+
+```bash
+./scripts/apply-rsReticulum-packet-tap.sh
+./scripts/apply-rsReticulum-auto-beacon-utun.sh
+./scripts/apply-rsReticulum-link-client-nomad.sh
+./scripts/apply-rsReticulum-rnode-tcp-activity-keepalive.sh
+```
+
+### Regenerate
+
+```bash
+cd ../rsReticulum
+git fetch origin
+git diff origin/main...HEAD -- crates/rns-interface/src/rnode.rs \
+  > ../mesh-client/reticulum-sidecar/patches/rsReticulum-rnode-tcp-activity-keepalive.patch
+```
+
+### Sunset
+
+When [ratspeak/rsReticulum#15](https://github.com/ratspeak/rsReticulum/pull/15) merges, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
+
 ## rsLXMF-propagation-sync-peering.patch
 
 LinkIdentify + peering stamp before LXMF `/offer`, plus `set_local_identity` / `configure_peering` / `last_offer_error` / `last_finished_ok` on `PropagationSyncTask` so mesh-client can complete remote PN sync and distinguish HaveAll success from Failed after Complete→Idle cleanup.
