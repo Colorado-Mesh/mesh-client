@@ -180,6 +180,124 @@ describe('RepeatersPanel', () => {
     expect(onRequestNeighbors).toHaveBeenCalledWith(repeater.node_id, { offset: 50 });
   });
 
+  it('hides Load more when all neighbors are already loaded', async () => {
+    const onRequestNeighbors = vi.fn().mockResolvedValue(undefined);
+    const meshcoreNeighbors = new Map([
+      [
+        repeater.node_id,
+        {
+          totalNeighboursCount: 3,
+          neighbours: Array.from({ length: 3 }, (_, i) => ({
+            publicKeyPrefix: new Uint8Array(6),
+            prefixHex: i.toString(16).padStart(12, '0'),
+            resolvedNodeId: 0,
+            heardSecondsAgo: 1,
+            snr: 2,
+          })),
+          fetchedAt: Date.now(),
+        },
+      ],
+    ]);
+
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        onRequestNeighbors={onRequestNeighbors}
+        meshcoreNeighbors={meshcoreNeighbors}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Repeater neighbors' }));
+    expect(screen.queryByRole('button', { name: /Load more neighbors/i })).not.toBeInTheDocument();
+  });
+
+  it('shows error toast when Load more neighbors fails', async () => {
+    const onRequestNeighbors = vi
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('neighbors timeout'));
+    const meshcoreNeighbors = new Map([
+      [
+        repeater.node_id,
+        {
+          totalNeighboursCount: 60,
+          neighbours: Array.from({ length: 50 }, (_, i) => ({
+            publicKeyPrefix: new Uint8Array(6),
+            prefixHex: i.toString(16).padStart(12, '0'),
+            resolvedNodeId: 0,
+            heardSecondsAgo: 1,
+            snr: 2,
+          })),
+          fetchedAt: Date.now(),
+        },
+      ],
+    ]);
+
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        onRequestNeighbors={onRequestNeighbors}
+        meshcoreNeighbors={meshcoreNeighbors}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Repeater neighbors' }));
+    const loadMore = await screen.findByRole('button', {
+      name: 'Load more neighbors (50 of 60 loaded)',
+    });
+    await userEvent.click(loadMore);
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith(
+        expect.stringContaining('neighbors timeout'),
+        'error',
+      );
+    });
+  });
+
+  it('disables Load more while neighbors RPC is pending', async () => {
+    const onRequestNeighbors = vi.fn().mockResolvedValue(undefined);
+    const meshcoreNeighbors = new Map([
+      [
+        repeater.node_id,
+        {
+          totalNeighboursCount: 60,
+          neighbours: Array.from({ length: 50 }, (_, i) => ({
+            publicKeyPrefix: new Uint8Array(6),
+            prefixHex: i.toString(16).padStart(12, '0'),
+            resolvedNodeId: 0,
+            heardSecondsAgo: 1,
+            snr: 2,
+          })),
+          fetchedAt: Date.now(),
+        },
+      ],
+    ]);
+    const base = {
+      ...makeBaseProps(),
+      onRequestNeighbors,
+      meshcoreNeighbors,
+    };
+
+    const { rerender } = render(<RepeatersPanel {...base} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Repeater neighbors' }));
+    expect(
+      await screen.findByRole('button', {
+        name: 'Load more neighbors (50 of 60 loaded)',
+      }),
+    ).toBeEnabled();
+
+    rerender(
+      <RepeatersPanel
+        {...base}
+        meshcoreRepeaterRpcPending={new Map([[repeater.node_id, new Set(['neighbors' as const])]])}
+      />,
+    );
+
+    const loadMore = await screen.findByRole('button', { name: 'Loading…' });
+    expect(loadMore).toBeDisabled();
+  });
+
   it('shows error toast when ping fails', async () => {
     const props = makeBaseProps();
     props.onPing = vi.fn().mockRejectedValue(new Error('ping timeout'));

@@ -3781,8 +3781,8 @@
     "cliAutoPingFailed": "Ping失败；在多跳中继器上重试CLI之前手动运行Ping。",
     "cliCommandTooLong": "CLI命令太长（最多{{max}}个字符）。",
     "currentRouteLabel": "当前路线：",
-    "neighborsLoadMore": "加载更多（ {{loaded}}/{{total}} ）",
-    "neighborsLoadMoreAria": "加载更多邻居（已加载{{loaded}}/{{total}} ）",
+    "neighborsLoadMore": "加载更多（{{loaded}}/{{total}}）",
+    "neighborsLoadMoreAria": "加载更多邻居（已加载{{loaded}}/{{total}}）",
     "neighborsLoadingMore": "加载中…"
   },
   "reticulumIdentity": {

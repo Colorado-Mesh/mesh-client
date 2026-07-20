@@ -3899,7 +3899,7 @@
     "cliLastFailedTooltip": "Last CLI command failed: {{error}}",
     "telemetryError": "Sensor error: {{error}}",
     "neighborsHeading": "Neighbors ({{count}} total):",
-    "neighborsLoadMore": "Load more ({{loaded}} of {{total}})",
+    "neighborsLoadMore": "Load more ({{loaded}} of {{total}} loaded)",
     "neighborsLoadMoreAria": "Load more neighbors ({{loaded}} of {{total}} loaded)",
     "neighborsLoadingMore": "Loading…",
     "pathLabel": "Path:",

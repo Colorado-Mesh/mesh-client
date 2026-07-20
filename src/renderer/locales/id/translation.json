@@ -3727,7 +3727,7 @@
     "rssiFromStatusTooltip": "RSSI dari status pengulang",
     "rssiContactTooltip": "Hubungi RSSI — gunakan Status untuk membaca langsung",
     "pingLastFailedTooltip": "Ping terakhir gagal: {{error}}",
-    "neighborsHeading": "Tetangga (total{{count}}):",
+    "neighborsHeading": "Tetangga (total {{count}}):",
     "pathHashCliGet": "Dapatkan mode hash jalur",
     "pathHashCliSet0": "Atur mode hash jalur 1 - byte",
     "pathHashCliSet1": "Atur mode hash jalur 2 - byte",

@@ -34,6 +34,48 @@ describe('runMeshcoreRepeaterRpcOnce', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
+  it('coalesces neighbors with the same coalesceKey', async () => {
+    resetMeshcoreRepeaterRpcInFlightForTests();
+    const fn = vi.fn(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+      return 'page-0';
+    });
+    const first = runMeshcoreRepeaterRpcOnce('neighbors', 42, fn, { coalesceKey: '0' });
+    const second = runMeshcoreRepeaterRpcOnce('neighbors', 42, fn, { coalesceKey: '0' });
+    expect(second).toBe(first);
+    await expect(first).resolves.toBe('page-0');
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('queues neighbors with different coalesceKeys so both fns run', async () => {
+    resetMeshcoreRepeaterRpcInFlightForTests();
+    const order: string[] = [];
+    let releaseFirst!: () => void;
+    const firstGate = new Promise<void>((r) => {
+      releaseFirst = r;
+    });
+    const fn0 = vi.fn(async () => {
+      order.push('0');
+      await firstGate;
+      return 'page-0';
+    });
+    const fn50 = vi.fn(() => {
+      order.push('50');
+      return Promise.resolve('page-50');
+    });
+    const first = runMeshcoreRepeaterRpcOnce('neighbors', 42, fn0, { coalesceKey: '0' });
+    const second = runMeshcoreRepeaterRpcOnce('neighbors', 42, fn50, { coalesceKey: '50' });
+    expect(second).not.toBe(first);
+    await Promise.resolve();
+    expect(fn0).toHaveBeenCalledTimes(1);
+    expect(fn50).not.toHaveBeenCalled();
+    releaseFirst();
+    await expect(first).resolves.toBe('page-0');
+    await expect(second).resolves.toBe('page-50');
+    expect(fn50).toHaveBeenCalledTimes(1);
+    expect(order).toEqual(['0', '50']);
+  });
+
   it('allows parallel admin requests for different nodes', async () => {
     resetMeshcoreRepeaterRpcInFlightForTests();
     const fnA = vi.fn(() => Promise.resolve('a'));

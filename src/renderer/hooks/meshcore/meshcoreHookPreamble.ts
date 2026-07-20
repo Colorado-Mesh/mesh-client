@@ -307,7 +307,7 @@ export const MESHCORE_NEIGHBORS_TIMEOUT_MS = MESHCORE_REPEATER_RPC_TIMEOUT_MS;
 export const MESHCORE_TRACE_TIMEOUT_MS = MESHCORE_REPEATER_RPC_TIMEOUT_MS;
 /** Neighbors RPC is unlikely to succeed beyond this hop count on USB serial; UI disables the action. */
 export const MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS = 8;
-/** Page size for GetNeighbours binary requests (firmware supports offset/count). */
+/** Request page size for GetNeighbours; firmware reply buffers often return fewer rows (~11 at 6-byte prefixes). */
 export const MESHCORE_NEIGHBORS_PAGE_SIZE = 50;
 export const MAX_TELEMETRY_POINTS = 50;
 

@@ -3781,9 +3781,9 @@
     "cliAutoPingFailed": "Ping non riuscito; eseguire Ping manualmente prima di riprovare CLI su ripetitori multi-hop.",
     "cliCommandTooLong": "Il comando CLI è troppo lungo (max {{max}} caratteri).",
     "currentRouteLabel": "Itinerario attuale:",
-    "neighborsLoadMore": "Carica altro ({{loaded}} di {{total}})",
+    "neighborsLoadMore": "Carica altro ({{loaded}} di {{total}} caricati)",
     "neighborsLoadMoreAria": "Carica altri vicini ({{loaded}} di {{total}} caricati)",
-    "neighborsLoadingMore": "Caricamento in corso..."
+    "neighborsLoadingMore": "Caricamento in corso…"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervallo annunci (secondi)",

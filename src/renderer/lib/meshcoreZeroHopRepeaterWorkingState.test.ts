@@ -105,7 +105,8 @@ describe(`meshcore 0-hop repeater working state (${AI_GUARD})`, () => {
     const statusBody = extractUseCallbackBody(RUNTIME_SOURCE, 'requestRepeaterStatus');
     const neighborsBody = extractUseCallbackBody(RUNTIME_SOURCE, 'requestNeighbors');
     expect(statusBody).toContain("runMeshcoreRepeaterRpcOnce('status'");
-    expect(neighborsBody).toContain("runMeshcoreRepeaterRpcOnce('neighbors'");
+    expect(neighborsBody).toContain('runMeshcoreRepeaterRpcOnce');
+    expect(neighborsBody).toContain("'neighbors'");
   });
 
   it('0-hop ping seeds 1-byte path and may direct-retry with full pubkey after cancel settles', () => {
@@ -147,7 +148,8 @@ describe(`meshcore 0-hop repeater working state (${AI_GUARD})`, () => {
     const neighborsBody = extractUseCallbackBody(RUNTIME_SOURCE, 'requestNeighbors');
     expect(neighborsBody).toContain('MESHCORE_NEIGHBORS_PAGE_SIZE');
     expect(neighborsBody).toContain('opts?.offset');
-    expect(neighborsBody).toContain('offset > 0');
+    expect(neighborsBody).toContain('mergeMeshcoreNeighborPage');
+    expect(neighborsBody).toContain('coalesceKey');
     expect(neighborsBody).not.toMatch(/count:\s*10\b/);
   });
 });
