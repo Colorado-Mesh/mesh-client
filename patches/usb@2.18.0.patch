@@ -20,3 +20,12 @@ index 9f30d6b96d5f7b29399ca34016c77d58c93c054c..8baa506a490543ea45e6cbbea3c8855d
                  '-stdlib=libc++',
                  '-arch x86_64',
                  '-arch arm64'
+@@ -110,7 +110,7 @@
+             },
+             'msvs_settings': {
+               'VCCLCompilerTool': {
+-                'AdditionalOptions': [ '/EHsc' ]
++                'AdditionalOptions': [ '/EHsc', '/std:c++17' ]
+               }
+             }
+           }
