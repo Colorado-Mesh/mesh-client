@@ -14,6 +14,7 @@ import type {
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
+  MeshcoreRequestNeighborsOpts,
   MeshcoreTraceResultEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
 import {
@@ -66,7 +67,7 @@ interface Props {
   onPing: (nodeId: number) => Promise<boolean | undefined>;
   onDeleteRepeater: (nodeId: number) => Promise<void>;
   isConnected: boolean;
-  onRequestNeighbors?: (nodeId: number) => Promise<void>;
+  onRequestNeighbors?: (nodeId: number, opts?: MeshcoreRequestNeighborsOpts) => Promise<void>;
   meshcoreNeighbors?: Map<number, MeshCoreNeighborResult>;
   meshcoreNeighborErrors?: Map<number, string>;
   onRequestTelemetry?: (nodeId: number) => Promise<void>;
@@ -516,6 +517,26 @@ export default function RepeatersPanel({
       },
       'repeatersPanel.neighborsFailedToast',
       'requestNeighbors error',
+      addToast,
+    );
+  };
+
+  const handleNeighborsLoadMore = async (nodeId: number) => {
+    const node = nodes.get(nodeId);
+    if (node && isMeshcoreNeighborsHopBlocked(node)) return;
+    const loaded = meshcoreNeighbors?.get(nodeId)?.neighbours.length ?? 0;
+    await runRepeaterAdminAction(
+      t,
+      nodeId,
+      nodes,
+      (id) => t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: id.toString(16) }),
+      ensureRepeaterAuth,
+      refreshStoredRepeaters,
+      async () => {
+        await onRequestNeighbors?.(nodeId, { offset: loaded });
+      },
+      'repeatersPanel.neighborsFailedToast',
+      'requestNeighbors load more error',
       addToast,
     );
   };
@@ -1350,6 +1371,26 @@ export default function RepeatersPanel({
                                     </div>
                                   );
                                 })}
+                                {neighborData.totalNeighboursCount >
+                                  neighborData.neighbours.length && (
+                                  <button
+                                    type="button"
+                                    onClick={() => void handleNeighborsLoadMore(node.node_id)}
+                                    disabled={!isConnected || isNeighborsLoading}
+                                    aria-label={t('repeatersPanel.neighborsLoadMoreAria', {
+                                      loaded: neighborData.neighbours.length,
+                                      total: neighborData.totalNeighboursCount,
+                                    })}
+                                    className="mt-1 self-start rounded border border-purple-700 bg-purple-900/40 px-2 py-0.5 text-xs font-medium text-purple-300 transition-colors hover:bg-purple-800/60 disabled:opacity-40"
+                                  >
+                                    {isNeighborsLoading
+                                      ? t('repeatersPanel.neighborsLoadingMore')
+                                      : t('repeatersPanel.neighborsLoadMore', {
+                                          loaded: neighborData.neighbours.length,
+                                          total: neighborData.totalNeighboursCount,
+                                        })}
+                                  </button>
+                                )}
                               </div>
                             )}
                           </td>
@@ -1510,6 +1551,11 @@ export default function RepeatersPanel({
                                   'status',
                                   'config',
                                   'help',
+                                  'clock',
+                                  'clock sync',
+                                  'clear stats',
+                                  'advert',
+                                  'board',
                                   'get path.hash.mode',
                                   'set path.hash.mode 0',
                                   'set path.hash.mode 1',

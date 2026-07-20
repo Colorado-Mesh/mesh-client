@@ -3780,7 +3780,10 @@
     "cliAutoPingToast": "Menetapkan rute dengan Ping sebelum CLI…",
     "cliAutoPingFailed": "Ping gagal; jalankan Ping secara manual sebelum mencoba kembali CLI pada repeater multi - hop.",
     "cliCommandTooLong": "Perintah CLI terlalu panjang (maks {{max}} karakter).",
-    "currentRouteLabel": "Rute saat ini:"
+    "currentRouteLabel": "Rute saat ini:",
+    "neighborsLoadMore": "Muat lebih banyak ({{loaded}} dari {{total}})",
+    "neighborsLoadMoreAria": "Muat lebih banyak tetangga ({{loaded}} dari {{total}} dimuat)",
+    "neighborsLoadingMore": "Memuat…"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",

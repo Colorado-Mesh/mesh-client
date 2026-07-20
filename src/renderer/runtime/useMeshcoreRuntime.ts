@@ -38,6 +38,7 @@ import {
   MESHCORE_DEVICE_QUERY_APP_VER,
   MESHCORE_DM_ACK_TIMEOUT_MIN_MS,
   MESHCORE_INIT_TIMEOUT_MS,
+  MESHCORE_NEIGHBORS_PAGE_SIZE,
   MESHCORE_NEIGHBORS_TIMEOUT_MS,
   MESHCORE_PING_NO_ROUTE_ERROR_MSG,
   MESHCORE_RESPONSE_DEVICE_INFO,
@@ -117,6 +118,7 @@ import type {
   MeshCorePacketStatsData,
   MeshCoreRadioStatsData,
   MeshCoreRepeaterStatus,
+  MeshcoreRequestNeighborsOpts,
   MeshCoreSelfInfo,
   MeshCoreStatsResponse,
   MeshcoreTraceResultEntry,
@@ -4324,7 +4326,7 @@ export function useMeshcoreRuntime() {
               next.set(nodeId, MESHCORE_ERR_NOT_CONNECTED);
               return next;
             });
-            return;
+            throw new Error(MESHCORE_ERR_NOT_CONNECTED);
           }
           const timeoutMs = MESHCORE_STATUS_TIMEOUT_MS;
           setMeshcoreStatusErrors((prev) => {
@@ -4445,7 +4447,7 @@ export function useMeshcoreRuntime() {
               next.set(nodeId, MESHCORE_ERR_NOT_CONNECTED);
               return next;
             });
-            return;
+            throw new Error(MESHCORE_ERR_NOT_CONNECTED);
           }
           const timeoutMs = MESHCORE_TELEMETRY_TIMEOUT_MS;
           try {
@@ -4573,7 +4575,8 @@ export function useMeshcoreRuntime() {
   requestTelemetryMeshCoreRef.current = requestTelemetry;
 
   const requestNeighbors = useCallback(
-    async (nodeId: number) => {
+    async (nodeId: number, opts?: MeshcoreRequestNeighborsOpts) => {
+      const offset = Math.max(0, Math.floor(opts?.offset ?? 0));
       setMeshcoreRepeaterRpcPending((prev) =>
         setRepeaterAdminRpcPending(prev, nodeId, 'neighbors', true),
       );
@@ -4612,8 +4615,8 @@ export function useMeshcoreRuntime() {
             await awaitMeshcoreRepeaterPingSettleForNode(nodeId);
             const neighbourPrefixLen = 6;
             const reqBytes = buildMeshcoreGetNeighboursRequest({
-              count: 10,
-              offset: 0,
+              count: MESHCORE_NEIGHBORS_PAGE_SIZE,
+              offset,
               orderBy: 0,
               pubKeyPrefixLength: neighbourPrefixLen,
             });
@@ -4639,14 +4642,28 @@ export function useMeshcoreRuntime() {
                 snr: nb.snr * MESHCORE_RPC_SNR_RAW_TO_DB,
               };
             });
-            const result: MeshCoreNeighborResult = {
+            const page: MeshCoreNeighborResult = {
               totalNeighboursCount: raw.totalNeighboursCount,
               neighbours,
               fetchedAt: Date.now(),
             };
             setMeshcoreNeighbors((prev) => {
               const next = new Map(prev);
-              next.set(nodeId, result);
+              if (offset > 0) {
+                const existing = prev.get(nodeId);
+                next.set(
+                  nodeId,
+                  existing
+                    ? {
+                        totalNeighboursCount: raw.totalNeighboursCount,
+                        neighbours: [...existing.neighbours, ...neighbours],
+                        fetchedAt: page.fetchedAt,
+                      }
+                    : page,
+                );
+              } else {
+                next.set(nodeId, page);
+              }
               return next;
             });
             setMeshcoreNeighborErrors((prev) => {

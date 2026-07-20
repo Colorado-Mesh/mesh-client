@@ -54,6 +54,11 @@ export interface MeshCoreNeighborResult {
   fetchedAt: number;
 }
 
+/** Options for GetNeighbours; offset > 0 appends to the cached page for that node. */
+export interface MeshcoreRequestNeighborsOpts {
+  offset?: number;
+}
+
 export type { CliHistoryEntry } from '../repeaterCommandService';
 
 export interface MeshCoreConnection {

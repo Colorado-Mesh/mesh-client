@@ -25,6 +25,7 @@ import type {
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
+  MeshcoreRequestNeighborsOpts,
   MeshcoreTraceResultEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
@@ -108,7 +109,7 @@ interface NodeDetailModalProps {
   meshcoreTelemetryError?: string;
   onRequestTelemetry?: (nodeId: number) => Promise<void>;
   meshcoreNeighbors?: MeshCoreNeighborResult;
-  onRequestNeighbors?: (nodeId: number) => Promise<void>;
+  onRequestNeighbors?: (nodeId: number, opts?: MeshcoreRequestNeighborsOpts) => Promise<void>;
   meshcoreNeighborError?: string;
   /** PaxCounter history from Meshtastic (capped session series per node) */
   paxCounterData?: Map<number, PaxCounterPoint[]>;

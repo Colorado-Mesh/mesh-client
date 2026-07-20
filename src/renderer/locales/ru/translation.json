@@ -3780,7 +3780,10 @@
     "cliAutoPingToast": "Создание маршрута с помощью Ping перед CLI...",
     "cliAutoPingFailed": "Не удалось выполнить Ping; запустите Ping вручную, прежде чем повторить попытку CLI на многоузловых повторителях.",
     "cliCommandTooLong": "Слишком длинная команда CLI (максимум {{max}} символов).",
-    "currentRouteLabel": "Текущий маршрут:"
+    "currentRouteLabel": "Текущий маршрут:",
+    "neighborsLoadMore": "Загрузить больше ({{loaded}} из {{total}})",
+    "neighborsLoadMoreAria": "Загрузить больше соседей ({{loaded}} из {{total}} загружено)",
+    "neighborsLoadingMore": "Загрузка…"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Интервал объявления (секунды)",

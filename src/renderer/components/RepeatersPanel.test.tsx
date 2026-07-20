@@ -143,6 +143,43 @@ describe('RepeatersPanel', () => {
     );
   });
 
+  it('requests next neighbors page with offset on Load more', async () => {
+    const onRequestNeighbors = vi.fn().mockResolvedValue(undefined);
+    const meshcoreNeighbors = new Map([
+      [
+        repeater.node_id,
+        {
+          totalNeighboursCount: 60,
+          neighbours: Array.from({ length: 50 }, (_, i) => ({
+            publicKeyPrefix: new Uint8Array(6),
+            prefixHex: i.toString(16).padStart(12, '0'),
+            resolvedNodeId: 0,
+            heardSecondsAgo: 1,
+            snr: 2,
+          })),
+          fetchedAt: Date.now(),
+        },
+      ],
+    ]);
+
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        onRequestNeighbors={onRequestNeighbors}
+        meshcoreNeighbors={meshcoreNeighbors}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Repeater neighbors' }));
+    expect(onRequestNeighbors).toHaveBeenCalledWith(repeater.node_id);
+
+    const loadMore = await screen.findByRole('button', {
+      name: 'Load more neighbors (50 of 60 loaded)',
+    });
+    await userEvent.click(loadMore);
+    expect(onRequestNeighbors).toHaveBeenCalledWith(repeater.node_id, { offset: 50 });
+  });
+
   it('shows error toast when ping fails', async () => {
     const props = makeBaseProps();
     props.onPing = vi.fn().mockRejectedValue(new Error('ping timeout'));
@@ -275,6 +312,21 @@ describe('RepeatersPanel', () => {
       'set path.hash.mode 1',
       undefined,
     );
+  });
+
+  it('exposes clock sync and related safe CLI quick pills', async () => {
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(<RepeatersPanel {...makeBaseProps()} onSendCliCommand={onSendCliCommand} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    expect(screen.getByRole('button', { name: 'clock sync' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'clear stats' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'advert' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'board' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'clock' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'clock sync' }));
+    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'clock sync', undefined);
   });
 
   it('requires confirmation before sending destructive CLI commands', async () => {

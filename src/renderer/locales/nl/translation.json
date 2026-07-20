@@ -3780,7 +3780,10 @@
     "cliAutoPingToast": "Route vaststellen met Ping vóór CLI...",
     "cliAutoPingFailed": "Ping mislukt; voer Ping handmatig uit voordat u CLI opnieuw probeert op multi-hop repeaters.",
     "cliCommandTooLong": "CLI-opdracht is te lang (max {{max}} tekens).",
-    "currentRouteLabel": "Huidig ​​traject:"
+    "currentRouteLabel": "Huidig ​​traject:",
+    "neighborsLoadMore": "Laad meer ({{loaded}} van {{total}})",
+    "neighborsLoadMoreAria": "Laad meer buren ({{loaded}} van {{total}} geladen)",
+    "neighborsLoadingMore": "Aan het laden…"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",

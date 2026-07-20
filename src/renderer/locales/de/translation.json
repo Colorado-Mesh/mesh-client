@@ -3780,7 +3780,10 @@
     "cliAutoPingToast": "Route mit Ping vor CLI wird festgelegt...",
     "cliAutoPingFailed": "Ping fehlgeschlagen; führen Sie Ping manuell aus, bevor Sie CLI bei Multi-Hop-Repeatern erneut versuchen.",
     "cliCommandTooLong": "Der CLI-Befehl ist zu lang (max. {{max}} Zeichen).",
-    "currentRouteLabel": "Aktuelle Route:"
+    "currentRouteLabel": "Aktuelle Route:",
+    "neighborsLoadMore": "Mehr laden ({{loaded}} von {{total}})",
+    "neighborsLoadMoreAria": "Weitere Nachbarn laden ({{loaded}} von {{total}} geladen)",
+    "neighborsLoadingMore": "Wird geladen ..."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Ankündigungsintervall (Sekunden)",

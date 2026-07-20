@@ -3780,7 +3780,10 @@
     "cliAutoPingToast": "Stabilire il percorso con Ping prima di CLI...",
     "cliAutoPingFailed": "Ping non riuscito; eseguire Ping manualmente prima di riprovare CLI su ripetitori multi-hop.",
     "cliCommandTooLong": "Il comando CLI è troppo lungo (max {{max}} caratteri).",
-    "currentRouteLabel": "Itinerario attuale:"
+    "currentRouteLabel": "Itinerario attuale:",
+    "neighborsLoadMore": "Carica altro ({{loaded}} di {{total}})",
+    "neighborsLoadMoreAria": "Carica altri vicini ({{loaded}} di {{total}} caricati)",
+    "neighborsLoadingMore": "Caricamento in corso..."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervallo annunci (secondi)",

@@ -3780,7 +3780,10 @@
     "cliAutoPingToast": "Estabelecendo a rota com o Ping antes da CLI...",
     "cliAutoPingFailed": "Falha no ping; execute o ping manualmente antes de tentar novamente a CLI em repetidores multi-hop.",
     "cliCommandTooLong": "O comando CLI é muito longo (máx. {{max}} caracteres).",
-    "currentRouteLabel": "Rota atual:"
+    "currentRouteLabel": "Rota atual:",
+    "neighborsLoadMore": "Carregar mais ({{loaded}} de {{total}})",
+    "neighborsLoadMoreAria": "Carregar mais vizinhos ({{loaded}} de {{total}} carregado)",
+    "neighborsLoadingMore": "Carregando..."
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anúncio (segundos)",

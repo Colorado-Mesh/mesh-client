@@ -24,6 +24,18 @@ describe('meshcoreGetNeighboursBinary', () => {
     expect(req[6]).toBe(6);
   });
 
+  it('buildMeshcoreGetNeighboursRequest encodes count and offset little-endian', () => {
+    const req = buildMeshcoreGetNeighboursRequest({
+      count: 50,
+      offset: 50,
+      orderBy: 0,
+      pubKeyPrefixLength: 6,
+    });
+    expect(req[2]).toBe(50);
+    expect(req[3]).toBe(50);
+    expect(req[4]).toBe(0);
+  });
+
   it('parseMeshcoreGetNeighboursResponse reads one neighbour with 6-byte prefix', () => {
     const prefix = new Uint8Array([1, 2, 3, 4, 5, 6]);
     const heard = new Uint8Array([0x34, 0x12, 0, 0]); // 0x1234 LE
