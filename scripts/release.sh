@@ -258,6 +258,12 @@ fi
 # 9. PRE-FLIGHT VALIDATION - Run all checks before making any changes
 print_header "Running pre-flight validation..."
 
+echo "Checking development environment..."
+if ! pnpm run check:environment; then
+  print_error "Environment check failed. Fix required failures from 'pnpm run check:environment'."
+  exit 1
+fi
+
 # Check formatting
 echo "Checking code formatting..."
 if ! pnpm run format:check; then

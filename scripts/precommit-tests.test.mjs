@@ -101,8 +101,11 @@ describe('precommit-tests runPrecommitTests', () => {
     });
     expect(code).toBe(0);
     expect(spawnSyncFn).toHaveBeenCalledTimes(1);
-    const args = spawnSyncFn.mock.calls[0][1];
-    expect(args).toEqual(['exec', 'vitest', 'run', '--bail', '1']);
+    const [cmd, args, opts] = spawnSyncFn.mock.calls[0];
+    expect(cmd).toBe(process.execPath);
+    expect(args[0]).toMatch(/vitest\.mjs$/);
+    expect(args.slice(1)).toEqual(['run', '--bail', '1']);
+    expect(opts.shell).toBe(false);
   });
 
   it('spawns vitest related with main project for shared file', () => {
@@ -112,16 +115,33 @@ describe('precommit-tests runPrecommitTests', () => {
       log: () => {},
     });
     expect(code).toBe(0);
-    const args = spawnSyncFn.mock.calls[0][1];
-    expect(args[0]).toBe('exec');
-    expect(args[1]).toBe('vitest');
-    expect(args[2]).toBe('related');
+    const [cmd, args, opts] = spawnSyncFn.mock.calls[0];
+    expect(cmd).toBe(process.execPath);
+    expect(args[0]).toMatch(/vitest\.mjs$/);
+    expect(args[1]).toBe('related');
     expect(args).toContain('--project');
     expect(args).toContain('main');
     expect(args).toContain('src/shared/appTagline.ts');
+    expect(opts.shell).toBe(false);
     // Should not use `--` before related paths (breaks Vitest related).
     const relatedIdx = args.indexOf('src/shared/appTagline.ts');
     expect(args[relatedIdx - 1]).not.toBe('--');
+  });
+
+  it('passes spaced/metacharacter paths as literal argv without a shell', () => {
+    const nasty = 'src/main/foo & bar|baz%.ts';
+    const spawnSyncFn = vi.fn(() => ({ status: 0 }));
+    const code = runPrecommitTests([nasty], {
+      spawnSyncFn,
+      log: () => {},
+    });
+    expect(code).toBe(0);
+    const [cmd, args, opts] = spawnSyncFn.mock.calls[0];
+    expect(cmd).toBe(process.execPath);
+    expect(args).toContain(nasty);
+    expect(opts.shell).toBe(false);
+    // Ensure the path is one argv entry, not split/shell-interpreted.
+    expect(args.filter((a) => a === nasty)).toHaveLength(1);
   });
 });
 

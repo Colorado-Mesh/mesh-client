@@ -10,6 +10,7 @@ const PACKAGE_JSON = path.join(ROOT, 'package.json');
 
 /** Checks that must always run in release pre-flight (not path-gated like pre-commit). */
 const REQUIRED_PNPM_CHECKS = [
+  'check:environment',
   'check:electron-security',
   'check:log-injection',
   'check:log-service-sinks',
@@ -42,7 +43,7 @@ describe('release.sh full-suite gate', () => {
   });
 
   it('runs pnpm run test:run for the full Vitest suite', () => {
-    expect(script).toMatch(/pnpm run test:run/);
+    expect(script).toMatch(/^\s*if ! pnpm run test:run; then\s*$/m);
   });
 
   it('never invokes staged/related/changed Vitest bypasses', () => {

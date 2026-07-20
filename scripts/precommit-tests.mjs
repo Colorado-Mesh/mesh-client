@@ -180,17 +180,36 @@ export function planPrecommitTests(stagedPaths) {
 }
 
 /**
+ * Resolve the local Vitest CLI entry so we can spawn without a shell.
+ * @param {string} [root]
+ * @returns {string}
+ */
+export function resolveVitestCli(root = ROOT) {
+  return path.join(root, 'node_modules', 'vitest', 'vitest.mjs');
+}
+
+/**
  * @param {string[]} args
- * @param {{ cwd?: string, env?: NodeJS.ProcessEnv, spawnSyncFn?: typeof spawnSync }} [opts]
+ * @param {{
+ *   cwd?: string,
+ *   env?: NodeJS.ProcessEnv,
+ *   spawnSyncFn?: typeof spawnSync,
+ *   vitestCli?: string,
+ *   execPath?: string,
+ * }} [opts]
  * @returns {number}
  */
 export function runVitestArgv(args, opts = {}) {
   const spawnSyncFn = opts.spawnSyncFn ?? spawnSync;
-  const result = spawnSyncFn('pnpm', ['exec', 'vitest', ...args], {
-    cwd: opts.cwd ?? ROOT,
+  const cwd = opts.cwd ?? ROOT;
+  const vitestCli = opts.vitestCli ?? resolveVitestCli(cwd);
+  const execPath = opts.execPath ?? process.execPath;
+  // Shell-free: staged paths must stay literal argv (Windows cmd metacharacters).
+  const result = spawnSyncFn(execPath, [vitestCli, ...args], {
+    cwd,
     env: opts.env ?? process.env,
     stdio: 'inherit',
-    shell: process.platform === 'win32',
+    shell: false,
   });
   if (result.error) {
     console.error('precommit-tests: failed to spawn vitest:', result.error.message);
