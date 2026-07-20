@@ -84,6 +84,7 @@ describe('ReticulumDiagnosticEngine', () => {
           txQueueDrops: [{ name: 'RNS HAM RADIO', dropCount: 128 }],
           linkDeliveryTimeouts: [],
           bleBondRemoved: [],
+          blePairingTimedOut: [],
           transportSaturatedCount: 0,
           slowTransportQueryCount: 0,
           suppressedCount: 0,
@@ -122,6 +123,7 @@ describe('ReticulumDiagnosticEngine', () => {
           txQueueDrops: [],
           linkDeliveryTimeouts: [],
           bleBondRemoved: ['RNode BLE'],
+          blePairingTimedOut: [],
           transportSaturatedCount: 0,
           slowTransportQueryCount: 0,
           suppressedCount: 0,
@@ -137,6 +139,44 @@ describe('ReticulumDiagnosticEngine', () => {
     expect(bondRow?.causeI18n?.params).toEqual({ name: 'RNode BLE' });
   });
 
+  it('adds blePairingTimedOut runtime rows from sidecar alerts', () => {
+    const rows = buildReticulumDiagnosticRows(
+      { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 0 },
+      {
+        interfaces: [
+          {
+            id: 'ble1',
+            name: 'RNode D5E7',
+            type: 'rnode',
+            enabled: true,
+            status: 'down',
+            serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+          },
+        ],
+        interfaceIssueAlert: {
+          tcpConnectFailed: [],
+          txQueueDrops: [],
+          linkDeliveryTimeouts: [],
+          bleBondRemoved: [],
+          blePairingTimedOut: ['RNode D5E7'],
+          transportSaturatedCount: 0,
+          slowTransportQueryCount: 0,
+          suppressedCount: 0,
+          lastAtMs: Date.now(),
+        },
+      },
+    );
+    const timeoutRow = rows.find(
+      (r): r is RfDiagnosticRow =>
+        r.kind === 'rf' && r.condition === 'reticulum/ble-pairing-timed-out',
+    );
+    expect(timeoutRow).toBeDefined();
+    expect(timeoutRow?.causeI18n?.key).toBe(
+      'diagnosticsPanel.reticulum.runtime.blePairingTimedOut',
+    );
+    expect(timeoutRow?.causeI18n?.params).toEqual({ name: 'RNode D5E7' });
+  });
+
   it('adds link timeout and transport saturation rows from sidecar alerts', () => {
     const rows = buildReticulumDiagnosticRows(
       { rns_ready: true, lxmf_ready: true, interface_count: 1, peer_count: 1 },
@@ -146,6 +186,7 @@ describe('ReticulumDiagnosticEngine', () => {
           txQueueDrops: [],
           linkDeliveryTimeouts: [{ destinationHash: '5526a65d0b4d23448206fd3485b76f5b', count: 3 }],
           bleBondRemoved: [],
+          blePairingTimedOut: [],
           transportSaturatedCount: 42,
           slowTransportQueryCount: 2,
           suppressedCount: 0,

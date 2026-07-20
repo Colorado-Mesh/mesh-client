@@ -9,6 +9,7 @@ const LINK_DELIVERY_TIMEOUT_MARKER = 'link delivery timed out';
 const LXMF_PATH_REQUEST_SATURATED_MARKER = 'failed to queue path request for LXMF delivery';
 const SLOW_TRANSPORT_QUERY_MARKER = 'transport query slow or failed';
 const BLE_BOND_REMOVED_MARKER = 'Peer removed pairing information';
+const BLE_PAIRING_TIMED_OUT_MARKER = 'BLE pairing timed out';
 
 const TCP_CONNECT_IFACE_RE = /TCP connect failed.*?name\s*=\s*(.+?)(?:\s+error\s*=|$)/;
 const TX_DROP_IFACE_RE =
@@ -17,7 +18,7 @@ const TX_DROP_COUNT_RE = /tx_drops\s*=\s*(\d+)/;
 const LINK_TIMEOUT_DEST_RE =
   /link delivery timed out.*?dest\s*=\s*([0-9a-fA-F]{32}|[0-9a-fA-F]{16})/;
 const SLOW_TRANSPORT_QUERY_RE = /transport query slow or failed.*?query\s*=\s*(\S+)/;
-const BLE_BOND_REMOVED_IFACE_RE = /BLE RNode connect failed.*?name\s*=\s*(.+?)(?:\s+error\s*=|$)/i;
+const BLE_RNODE_CONNECT_FAILED_PREFIX = 'BLE RNode connect failed';
 
 function stripAnsi(text: string): string {
   return text.replace(/\x1b\[[0-9;]*m/g, '').replace(/\[[0-9;]*m/g, ''); // eslint-disable-line no-control-regex
@@ -25,6 +26,19 @@ function stripAnsi(text: string): string {
 
 function normalizeSidecarLogLine(text: string): string {
   return stripAnsi(text).replace(/\s+/g, ' ').trim();
+}
+
+/** Deterministic parse — avoids super-linear regex backtracking on long sidecar lines. */
+function parseBleRNodeConnectFailedIfaceName(plain: string): string | null {
+  const failedIdx = plain.toLowerCase().indexOf(BLE_RNODE_CONNECT_FAILED_PREFIX.toLowerCase());
+  if (failedIdx < 0) return null;
+  const afterFailed = plain.slice(failedIdx + BLE_RNODE_CONNECT_FAILED_PREFIX.length);
+  const nameKey = /\bname[ \t]{0,16}=[ \t]{0,16}/i.exec(afterFailed);
+  if (nameKey?.index == null) return null;
+  const rest = afterFailed.slice(nameKey.index + nameKey[0].length);
+  const errorMatch = /[ \t]+error[ \t]{0,16}=/i.exec(rest);
+  const name = (errorMatch?.index != null ? rest.slice(0, errorMatch.index) : rest).trim();
+  return name.length > 0 ? name : null;
 }
 
 function parseTcpConnectFailedIface(line: string): string | null {
@@ -63,8 +77,15 @@ function parseBleBondRemovedIface(line: string): string | null {
   if (!plain.includes(BLE_BOND_REMOVED_MARKER)) {
     return null;
   }
-  const match = BLE_BOND_REMOVED_IFACE_RE.exec(plain);
-  return match?.[1]?.trim() ?? null;
+  return parseBleRNodeConnectFailedIfaceName(plain);
+}
+
+function parseBlePairingTimedOutIface(line: string): string | null {
+  const plain = normalizeSidecarLogLine(line);
+  if (!plain.includes(BLE_PAIRING_TIMED_OUT_MARKER)) {
+    return null;
+  }
+  return parseBleRNodeConnectFailedIfaceName(plain);
 }
 
 function pruneStaleMap<T>(map: Map<string, T>, nowMs: number, getAtMs: (value: T) => number): void {
@@ -97,6 +118,8 @@ export class ReticulumSidecarInterfaceIssueTracker {
   private linkDeliveryTimeouts = new Map<string, CountedAt>();
   /** BLE RNode display name → last-seen ms (stale OS bond / peer removed pairing). */
   private bleBondRemoved = new Map<string, number>();
+  /** BLE RNode display name → last-seen ms (OS passkey / TX-read timed out). */
+  private blePairingTimedOut = new Map<string, number>();
   private transportSaturatedCount = 0;
   private transportSaturatedAtMs: number | null = null;
   private slowTransportQueryCount = 0;
@@ -157,6 +180,11 @@ export class ReticulumSidecarInterfaceIssueTracker {
     const bleBondIface = parseBleBondRemovedIface(line);
     if (bleBondIface && this.allowsInterface(bleBondIface)) {
       this.bleBondRemoved.set(bleBondIface, nowMs);
+      return;
+    }
+    const blePairingTimedOutIface = parseBlePairingTimedOutIface(line);
+    if (blePairingTimedOutIface && this.allowsInterface(blePairingTimedOutIface)) {
+      this.blePairingTimedOut.set(blePairingTimedOutIface, nowMs);
     }
   }
 
@@ -166,8 +194,9 @@ export class ReticulumSidecarInterfaceIssueTracker {
   }
 
   /**
-   * Drop TCP/TX issues for interfaces that are disabled or removed, and remember
-   * the enabled set so later log lines cannot re-latch those names.
+   * Drop TCP/TX and BLE latch issues for interfaces that are disabled or removed,
+   * and remember the enabled set so later log lines cannot re-latch those names
+   * (tcpConnectFailed, txQueueDrops, bleBondRemoved, blePairingTimedOut).
    * Stack-wide transport counters are left alone.
    */
   retainInterfaces(enabledNames: ReadonlySet<string>): void {
@@ -175,6 +204,7 @@ export class ReticulumSidecarInterfaceIssueTracker {
     retainMapKeys(this.tcpConnectFailed, enabledNames);
     retainMapKeys(this.txQueueDrops, enabledNames);
     retainMapKeys(this.bleBondRemoved, enabledNames);
+    retainMapKeys(this.blePairingTimedOut, enabledNames);
   }
 
   clear(): void {
@@ -182,6 +212,7 @@ export class ReticulumSidecarInterfaceIssueTracker {
     this.txQueueDrops.clear();
     this.linkDeliveryTimeouts.clear();
     this.bleBondRemoved.clear();
+    this.blePairingTimedOut.clear();
     this.transportSaturatedCount = 0;
     this.transportSaturatedAtMs = null;
     this.slowTransportQueryCount = 0;
@@ -200,6 +231,7 @@ export class ReticulumSidecarInterfaceIssueTracker {
     pruneStaleMap(this.txQueueDrops, nowMs, (entry) => entry.atMs);
     pruneStaleMap(this.linkDeliveryTimeouts, nowMs, (entry) => entry.atMs);
     pruneStaleMap(this.bleBondRemoved, nowMs, (atMs) => atMs);
+    pruneStaleMap(this.blePairingTimedOut, nowMs, (atMs) => atMs);
 
     if (
       this.transportSaturatedAtMs != null &&
@@ -224,6 +256,7 @@ export class ReticulumSidecarInterfaceIssueTracker {
       ...[...this.txQueueDrops.values()].map((e) => e.atMs),
       ...[...this.linkDeliveryTimeouts.values()].map((e) => e.atMs),
       ...this.bleBondRemoved.values(),
+      ...this.blePairingTimedOut.values(),
     ];
     if (this.transportSaturatedAtMs != null) timestamps.push(this.transportSaturatedAtMs);
     if (this.slowTransportQueryAtMs != null) timestamps.push(this.slowTransportQueryAtMs);
@@ -242,12 +275,16 @@ export class ReticulumSidecarInterfaceIssueTracker {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([destinationHash, entry]) => ({ destinationHash, count: entry.count }));
     const bleBondRemoved = [...this.bleBondRemoved.keys()].sort((a, b) => a.localeCompare(b));
+    const blePairingTimedOut = [...this.blePairingTimedOut.keys()].sort((a, b) =>
+      a.localeCompare(b),
+    );
 
     if (
       tcpConnectFailed.length === 0 &&
       txQueueDrops.length === 0 &&
       linkDeliveryTimeouts.length === 0 &&
       bleBondRemoved.length === 0 &&
+      blePairingTimedOut.length === 0 &&
       this.transportSaturatedCount === 0 &&
       this.slowTransportQueryCount === 0
     ) {
@@ -260,6 +297,7 @@ export class ReticulumSidecarInterfaceIssueTracker {
       txQueueDrops,
       linkDeliveryTimeouts,
       bleBondRemoved,
+      blePairingTimedOut,
       transportSaturatedCount: this.transportSaturatedCount,
       slowTransportQueryCount: this.slowTransportQueryCount,
       suppressedCount: this.suppressedCount,
@@ -287,4 +325,8 @@ export function parseLinkDeliveryTimeoutDestForTests(line: string): string | nul
 
 export function parseBleBondRemovedIfaceForTests(line: string): string | null {
   return parseBleBondRemovedIface(line);
+}
+
+export function parseBlePairingTimedOutIfaceForTests(line: string): string | null {
+  return parseBlePairingTimedOutIface(line);
 }

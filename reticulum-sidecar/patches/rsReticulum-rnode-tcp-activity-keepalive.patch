@@ -1,0 +1,180 @@
+diff --git a/crates/rns-interface/src/rnode.rs b/crates/rns-interface/src/rnode.rs
+index 41e232d..fe8a5b1 100644
+--- a/crates/rns-interface/src/rnode.rs
++++ b/crates/rns-interface/src/rnode.rs
+@@ -124,6 +124,28 @@ const RNODE_TCP_KEEPCNT: u32 = 12;
+ const RNODE_TCP_USER_TIMEOUT_SECS: u64 = 24;
+ #[cfg(any(feature = "serial", feature = "rnode-tcp"))]
+ const RNODE_TCP_BUFFER_BYTES: usize = 131_072;
++/// Python `TCPConnection.ACTIVITY_TIMEOUT` — firmware closes idle Wi‑Fi/TCP
++/// sessions around this many seconds without host KISS writes.
++#[cfg(any(feature = "serial", feature = "rnode-tcp"))]
++pub const RNODE_TCP_ACTIVITY_TIMEOUT_SECS: u64 = 6;
++/// Python `TCPConnection.ACTIVITY_KEEPALIVE` (`ACTIVITY_TIMEOUT - 2.5`):
++/// idle longer than this → send `detect()` so the RNode keeps the TCP socket.
++#[cfg(any(feature = "serial", feature = "rnode-tcp"))]
++pub const RNODE_TCP_ACTIVITY_KEEPALIVE_MS: u64 =
++    (RNODE_TCP_ACTIVITY_TIMEOUT_SECS * 1_000).saturating_sub(2_500);
++
++#[cfg(any(feature = "serial", feature = "rnode-tcp"))]
++fn tcp_activity_keepalive() -> Duration {
++    #[cfg(test)]
++    {
++        // Keep unit tests fast; production uses the Python-parity interval.
++        Duration::from_millis(100)
++    }
++    #[cfg(not(test))]
++    {
++        Duration::from_millis(RNODE_TCP_ACTIVITY_KEEPALIVE_MS)
++    }
++}
+ 
+ #[cfg(any(feature = "serial", feature = "rnode-tcp"))]
+ type RNodeStopRegistry = Mutex<HashMap<InterfaceId, mpsc::Sender<()>>>;
+@@ -935,22 +957,49 @@ pub async fn spawn_rnode_interface(
+             let ready_w = ready.clone();
+             let txb_w = txb_r.clone();
+             let beacon_w = beacon.clone();
++            // Python RNodeInterface.py:1144-1147 — Wi‑Fi/TCP RNodes need
++            // periodic detect() writes or firmware closes the socket (~6s).
++            let tcp_activity = port_write.is_tcp();
+             let write_handle = tokio::spawn(async move {
+                 let mut port_w = port_write;
+                 // Python first_tx semantics: armed by data TX, cleared when
+                 // the callsign beacon goes out (RNodeInterface.py:712-718, 1142-1146).
+                 let mut first_tx: Option<tokio::time::Instant> = None;
++                // open_configured_rnode_stream already wrote detect+init.
++                let mut last_write = tokio::time::Instant::now();
++                let activity_keepalive = tcp_activity_keepalive();
+                 loop {
+-                    let request = if let Some((interval, ref callsign)) = beacon_w {
++                    // Wake periodically for TCP activity keepalive and/or beacon.
++                    let need_periodic = tcp_activity || beacon_w.is_some();
++                    let request = if need_periodic {
+                         match tokio::time::timeout(Duration::from_secs(1), conn_rx.recv()).await {
+                             Ok(Some(request)) => request,
+                             Ok(None) => break,
+                             Err(_) => {
+-                                if first_tx.is_none_or(|t| t.elapsed() < interval) {
++                                if let Some((interval, ref callsign)) = beacon_w {
++                                    if first_tx.is_some_and(|t| t.elapsed() >= interval) {
++                                        tracing::debug!("RNode transmitting station-ID beacon");
++                                        RNodeWriteRequest::Packet(callsign.clone())
++                                    } else if tcp_activity
++                                        && last_write.elapsed() >= activity_keepalive
++                                    {
++                                        tracing::debug!(
++                                            "RNode TCP activity keepalive (detect)"
++                                        );
++                                        let (done_tx, _done_rx) = oneshot::channel();
++                                        RNodeWriteRequest::Raw(build_detect_sequence(), done_tx)
++                                    } else {
++                                        continue;
++                                    }
++                                } else if tcp_activity
++                                    && last_write.elapsed() >= activity_keepalive
++                                {
++                                    tracing::debug!("RNode TCP activity keepalive (detect)");
++                                    let (done_tx, _done_rx) = oneshot::channel();
++                                    RNodeWriteRequest::Raw(build_detect_sequence(), done_tx)
++                                } else {
+                                     continue;
+                                 }
+-                                tracing::debug!("RNode transmitting station-ID beacon");
+-                                RNodeWriteRequest::Packet(callsign.clone())
+                             }
+                         }
+                     } else {
+@@ -1001,6 +1050,8 @@ pub async fn spawn_rnode_interface(
+                     }
+                     match result {
+                         Ok(p) => {
++                            // Any successful write resets Python last_write.
++                            last_write = tokio::time::Instant::now();
+                             if is_packet {
+                                 tracing::debug!(id, framed_len, "RNode packet write complete");
+                             }
+@@ -1555,4 +1606,83 @@ mod tests {
+         drop(handle.tx);
+         server.join().unwrap();
+     }
++
++    #[cfg(any(feature = "serial", feature = "rnode-tcp"))]
++    #[test]
++    fn test_tcp_activity_keepalive_matches_python_parity() {
++        assert_eq!(RNODE_TCP_ACTIVITY_TIMEOUT_SECS, 6);
++        assert_eq!(RNODE_TCP_ACTIVITY_KEEPALIVE_MS, 3_500);
++        // Production interval (not the cfg(test) short value).
++        assert_eq!(
++            Duration::from_millis(RNODE_TCP_ACTIVITY_KEEPALIVE_MS),
++            Duration::from_millis(3_500)
++        );
++    }
++
++    #[cfg(any(feature = "serial", feature = "rnode-tcp"))]
++    #[tokio::test]
++    async fn test_rnode_tcp_sends_activity_keepalive_detect() {
++        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
++        let addr = listener.local_addr().unwrap();
++        let config = RNodeConfig::new("rnode-tcp-keepalive", &format!("tcp://{addr}"));
++        let detect = build_detect_sequence();
++        let init_len = detect.len() + build_init_sequence(&config).len();
++        let (saw_keepalive_tx, mut saw_keepalive_rx) = tokio::sync::mpsc::unbounded_channel();
++
++        let server = std::thread::spawn(move || {
++            let (mut stream, _) = listener.accept().unwrap();
++            stream
++                .set_read_timeout(Some(Duration::from_secs(5)))
++                .unwrap();
++
++            // Drain detect+init from open_configured_rnode_stream.
++            let mut buf = [0u8; 1024];
++            let mut total = 0usize;
++            while total < init_len {
++                match std::io::Read::read(&mut stream, &mut buf) {
++                    Ok(0) => return,
++                    Ok(n) => total += n,
++                    Err(_) => return,
++                }
++            }
++
++            // Wait for activity keepalive detect() after idle (test keepalive = 100ms).
++            let mut extra = Vec::new();
++            let deadline = std::time::Instant::now() + Duration::from_secs(3);
++            while std::time::Instant::now() < deadline {
++                match std::io::Read::read(&mut stream, &mut buf) {
++                    Ok(0) => break,
++                    Ok(n) => {
++                        extra.extend_from_slice(&buf[..n]);
++                        if extra.windows(detect.len()).any(|w| w == detect.as_slice()) {
++                            let _ = saw_keepalive_tx.send(());
++                            return;
++                        }
++                    }
++                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock
++                        || e.kind() == std::io::ErrorKind::TimedOut =>
++                    {
++                        continue;
++                    }
++                    Err(_) => break,
++                }
++            }
++        });
++
++        let (transport_tx, _transport_rx) = mpsc::channel::<TransportMessage>(8);
++        let handle = spawn_rnode_interface(config, 78, transport_tx)
++            .await
++            .unwrap();
++
++        tokio::time::timeout(Duration::from_secs(4), saw_keepalive_rx.recv())
++            .await
++            .expect("timed out waiting for TCP activity keepalive detect")
++            .expect("keepalive channel closed");
++
++        assert!(handle.online.load(Ordering::SeqCst));
++
++        handle.read_task.abort();
++        drop(handle.tx);
++        server.join().unwrap();
++    }
+ }

@@ -186,6 +186,8 @@ When multiple enabled local RNode interfaces are connected, the interface list s
 
 **Stale BLE bond:** Sidecar may latch `bleBondRemoved` when the peer dropped pairing information while the OS still shows Paired. Connection / Diagnostics surface Forget-and-re-pair copy — forget the RNode in System Settings → Bluetooth, start pairing on the radio, restart the stack, enter the new PIN.
 
+**Pairing timeout:** Sidecar may latch `blePairingTimedOut` when the OS passkey was not entered within ~60s. Admin **Start pairing** shows the PIN in the Admin panel over USB (radio display may stay blank); do not use Meshtastic’s `123456` default. The RNode need not appear in System Settings before mesh-client connects.
+
 **Bulk migration:** **Network → Config import** (merge or replace), or import from standard system paths (see [Config import paths](#config-import-paths-system)).
 
 ### Config audit and repair

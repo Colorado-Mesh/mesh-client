@@ -1083,12 +1083,12 @@
       "restartStackAria": "Mulai ulang tumpukan Reticulum untuk menerapkan perubahan antarmuka",
       "connectingHeading": "Menghubungkan antarmuka lokal…",
       "connectingRow": "{{name}}: menghubungkan melalui Bluetooth",
-      "connectingHintBle": "Tautan BLE RNode dapat memakan waktu hingga 30 detik setelah tumpukan dimulai. Masukkan PIN penyandingan jika OS Anda meminta — ini normal, bukan kesalahan.",
-      "offlineHintBle": "OS Anda mungkin meminta PIN Bluetooth 6 digit (macOS, Windows, atau Linux). RNode menghasilkan kode baru setiap pemasangan — tidak ada PIN default. Radio tanpa kepala: sambungkan USB → Reticulum Admin → Bluetooth → Mulai memasangkan → masukkan PIN yang ditampilkan ke dalam dialog OS. Radio dengan tampilan: tahan tombol ~7 detik pada perangkat Heltec (waktu bervariasi; ~10 detik di banyak papan mengaktifkan Wi-Fi AP), baca PIN di layar, lalu masukkan dalam dialog OS. Hapus ikatan yang gagal di pengaturan Bluetooth OS Anda sebelum mencoba lagi.",
       "offlineHintWifi": "Periksa apakah RNode ada di Lan Anda, dinyalakan, dan dapat dijangkau pada IP yang dikonfigurasi (port TCP default 7633, bukan 4242). Perbarui host di bawah ini jika DHCP menetapkan alamat baru, atau menyediakan kembali Wi-Fi di → Admin Reticulum.",
       "tcpUnreachable": "{{name}}: Hub TCP tidak dapat dijangkau ({{host}}:{{port}})",
       "tcpUnreachableHint": "Instansi Reticulum jarak jauh mungkin offline atau memblokir koneksi. Nonaktifkan antarmuka ini atau verifikasi host dan port.",
-      "offlineHintBleBondStale": "macOS masih menampilkan RNode ini sebagai Dipasangkan, tetapi kunci Bluetooth tidak lagi cocok (Rekan menghapus informasi pemasangan). Lupakan perangkat di Pengaturan Sistem → Bluetooth, letakkan RNode dalam mode berpasangan (Admin → Bluetooth → Mulai memasangkan, atau tahan tombol ~7 detik), lalu mulai ulang tumpukan dan masukkan PIN 6 digit baru saat diminta."
+      "offlineHintBleBondStale": "macOS masih menampilkan RNode ini sebagai Dipasangkan, tetapi kunci Bluetooth tidak lagi cocok (Rekan menghapus informasi pemasangan). Lupakan perangkat di Pengaturan Sistem → Bluetooth, letakkan RNode dalam mode berpasangan (Admin → Bluetooth → Mulai memasangkan, atau tahan tombol ~7 detik), lalu mulai ulang tumpukan dan masukkan PIN 6 digit baru saat diminta.",
+      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
+      "connectingHintBle": "Tautan BLE RNode dapat memakan waktu hingga 60 detik setelah tumpukan dimulai (jendela kunci sandi OS). Masukkan PIN RNode saat ini jika diminta — jangan pernah 123456. Ini normal, bukan kesalahan. Perangkat mungkin tidak muncul di Pengaturan Sistem sampai ikatan berhasil."
     },
     "autoConnectingTo": "Menghubungkan otomatis ke {{deviceName}}…",
     "autoReconnectInProgress": "Sambungan ulang otomatis sedang berlangsung…",
@@ -1159,7 +1159,9 @@
       "slowTransportQueryHint": "Aktor transportasi sidecar dapat terjepit — nyalakan kembali tumpukan Reticulum.",
       "shareInstanceHint": "Contoh berbagi diaktifkan — sepenuhnya keluar dari aplikasi Reticulum lainnya (MeshChatX, Ratspeak, rnsd mandiri) dan mulai ulang tumpukan ini sebelum mencoba DM lagi.",
       "bleBondRemoved": "{{name}}: Ikatan Bluetooth sudah basi (OS masih menunjukkan Dipasangkan)",
-      "bleBondRemovedHint": "Lupakan RNode ini di Pengaturan Sistem → Bluetooth, mulai memasangkan di radio (Admin → Bluetooth atau tombol tahan ~7 detik), mulai ulang tumpukan, dan masukkan PIN 6 digit baru."
+      "bleBondRemovedHint": "Lupakan RNode ini di Pengaturan Sistem → Bluetooth, mulai memasangkan di radio (Admin → Bluetooth atau tombol tahan ~7 detik), mulai ulang tumpukan, dan masukkan PIN 6 digit baru.",
+      "blePairingTimedOut": "{{name}}: Waktu pertukaran kunci sandi Bluetooth habis",
+      "blePairingTimedOutHint": "Hentikan tumpukan, mulai memasangkan lagi (Admin → Bluetooth menampilkan PIN di panel — tampilan radio mungkin tetap kosong — atau tombol ~7 detik ditahan untuk PIN di layar), mulai ulang tumpukan satu kali, dan masukkan PIN tersebut dalam dialog OS dalam waktu ~60 detik. Jangan pernah menggunakan 123456 (default Meshtastic)."
     },
     "reticulumSidecarBundledMissing": "Instalasi ini tidak memiliki sespan Reticulum yang dibundel. Tingkatkan versi ke rilis yang lebih baru atau laporkan masalahnya — pembuatan dari sumber tidak tersedia dalam paket instalasi.",
     "radioMqttRootDivergesWarning": "Topik utama Radio MQTT adalah {{radioRoot}} tetapi panel ini berlangganan {{appPrefix}}. Cocokkan radio untuk membatasi lalu lintas simpul nasional — perbarui Prefiks Topik dan sambungkan kembali MQTT.",
@@ -1511,7 +1513,8 @@
         "transportSaturated": "Transportasi RNS jenuh ({{count}} permintaan jalur LXMF turun)",
         "transportSaturatedShareInstance": "Transportasi RNS jenuh ({{count}} permintaan jalur turun). Bagikan instance aktif — keluar dari aplikasi Reticulum lainnya (MeshChatX, Ratspeak, rnsd) dan mulai ulang tumpukan.",
         "slowTransportQuery": "Kueri transportasi RNS lambat atau gagal ({{count}}×)",
-        "bleBondRemoved": "Ikatan BLE RNode \"{{name}}\" sudah basi — Lupakan pengaturan OS Bluetooth dan pasangkan kembali"
+        "bleBondRemoved": "Ikatan BLE RNode \"{{name}}\" sudah basi — Lupakan pengaturan OS Bluetooth dan pasangkan kembali",
+        "blePairingTimedOut": "Waktu pertukaran kunci sandi BLE RNode \"{{name}}\" habis — masukkan PIN saat ini (bukan 123456) dan pasangkan kembali"
       }
     },
     "routingPort": {
@@ -1657,7 +1660,6 @@
     "firmwareHashRequiresProvision": "Sediakan EEPROM sebelum mengatur hash firmware.",
     "firmwareHashDone": "Kumpulan hash firmware",
     "flashDone": "Firmware di-flash",
-    "bluetoothHint": "Aktifkan Bluetooth di perangkat, lalu gunakan Mulai memasangkan. PIN 6 digit muncul di sini melalui serial USB — masukkan PIN yang sama dalam dialog Bluetooth OS Anda (macOS, Windows, atau Linux) ketika Reticulum terhubung melalui BLE. Perangkat tanpa kepala tanpa USB tidak dapat menampilkan PIN di layar.",
     "wifiTitle": "Wi-Fi",
     "wifiHint": "Wi-Fi dinonaktifkan setelah berkedip. Konfigurasikan mode stasiun di sini (serial USB), lalu tambahkan antarmuka Wi-Fi RNode pada Koneksi dengan tcp :// host (port 7633). Membutuhkan firmware berkemampuan Wi-Fi ESP32 - S3. Reboot papan setelah menerapkan perubahan.",
     "wifiSsidLabel": "SSID Wi-Fi",
@@ -1677,7 +1679,11 @@
     "wifiApSuccess": "Mode titik akses diaktifkan. Bergabunglah dengan RNode AP dari komputer Anda (gateway default 10.0.0.1), lalu konfigurasikan kredensial stasiun atau gunakan konsol bootstrap.",
     "wifiStationSuccess": "Mode stasiun disimpan. Reboot papan, lalu temukan IP - nya (display, router DHCP, atau Read config) dan tambahkan tcp ://… pada Connection → Interfaces.",
     "wifiConfigEmpty": "Tidak ada data konfigurasi yang dikembalikan.",
-    "wifiNetmaskPlaceholder": "255.255.255.0"
+    "wifiNetmaskPlaceholder": "255.255.255.0",
+    "pairingWaiting": "Menunggu penyandingan PIN dari radio melalui USB…",
+    "pairingPinLabel": "PIN penyandingan Bluetooth",
+    "pairingPinEnterHint": "Masukkan kode ini dalam dialog OS Bluetooth ketika tumpukan terhubung. Jangan gunakan 123456.",
+    "bluetoothHint": "Aktifkan Bluetooth di perangkat, lalu gunakan Mulai memasangkan. PIN 6 digit muncul di panel ini melalui USB — tampilan radio sering kali tetap kosong. Masukkan PIN tersebut dalam dialog Bluetooth OS Anda saat Reticulum terhubung melalui BLE. RNode tidak memiliki PIN default (jangan gunakan 123456 — yaitu Meshtastic). Pada papan tampilan, tombol yang ditahan ~7 detik juga dapat menampilkan PIN di layar. RNode mungkin tidak muncul di Pengaturan Sistem → Bluetooth sampai ikatan berhasil."
   },
   "identityVault": {
     "title": "Kubah identitas",

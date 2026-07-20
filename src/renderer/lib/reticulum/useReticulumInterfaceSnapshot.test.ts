@@ -18,7 +18,7 @@ vi.mock('@/renderer/lib/reticulum/reticulumLocalInterfaceLogging', () => ({
 }));
 
 vi.mock('@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh', () => ({
-  RETICULUM_BLE_CONNECT_GRACE_MS: 30_000,
+  RETICULUM_BLE_CONNECT_GRACE_MS: 60_000,
   pickReticulumLocalHealthPollMs: vi.fn().mockReturnValue(60_000),
   scheduleReticulumLocalInterfaceBurst: vi.fn().mockReturnValue(() => {}),
 }));

@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -12,6 +13,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import type { ReticulumInterfaceIssueAlert } from '@/shared/reticulum-types';
 
 import { ReticulumSidecarIssueAlertsBlock } from './ReticulumSidecarIssueAlertsBlock';
@@ -24,6 +26,7 @@ function baseAlert(
     txQueueDrops: [],
     linkDeliveryTimeouts: [],
     bleBondRemoved: [],
+    blePairingTimedOut: [],
     transportSaturatedCount: 0,
     slowTransportQueryCount: 0,
     suppressedCount: 0,
@@ -111,5 +114,23 @@ describe('ReticulumSidecarIssueAlertsBlock', () => {
     expect(
       screen.getByText('connectionPanel.reticulumSidecarIssues.bleBondRemoved:RNode 41F4'),
     ).toBeInTheDocument();
+  });
+
+  it('shows BLE pairing-timed-out issue from sidecar alert', async () => {
+    const { container } = render(
+      <ReticulumSidecarIssueAlertsBlock
+        alert={baseAlert({
+          blePairingTimedOut: ['RNode D5E7'],
+        })}
+      />,
+    );
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.heading:1'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.blePairingTimedOut:RNode D5E7'),
+    ).toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

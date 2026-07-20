@@ -1083,12 +1083,12 @@
       "restartStackAria": "Start de Reticulum-stapel opnieuw om interfacewijzigingen toe te passen",
       "connectingHeading": "Lokale interface(s) aansluiten…",
       "connectingRow": "{{name}}: verbinden via Bluetooth",
-      "connectingHintBle": "BLE RNode-koppelingen kunnen tot 30 seconden duren nadat de stapel is gestart. Voer een koppelingspincode in als uw besturingssysteem daarom vraagt. Dit is normaal en geen fout.",
-      "offlineHintBle": "Uw besturingssysteem vraagt ​​mogelijk om een ​​6-cijferige Bluetooth-pincode (macOS, Windows of Linux). RNode genereert bij elke koppeling een nieuwe code - er is geen standaardpincode. Headless radio's: sluit USB aan → Reticulum Admin → Bluetooth → Start het koppelen → voer de weergegeven pincode in het OS-dialoogvenster in. Radio's met een display: houd de knop ~7 s ingedrukt op Heltec-apparaten (de timing varieert; ~10 s op veel kaarten maakt in plaats daarvan Wi-Fi AP mogelijk), lees de pincode op het scherm en voer deze vervolgens in het OS-dialoogvenster in. Wis mislukte verbindingen in de Bluetooth-instellingen van uw besturingssysteem voordat u het opnieuw probeert.",
       "offlineHintWifi": "Controleer of de RNode op uw LAN staat, is ingeschakeld en bereikbaar is via het geconfigureerde IP (standaard TCP-poort 7633, niet 4242). Werk de onderstaande host bij als DHCP een nieuw adres heeft toegewezen, of voorzie wifi opnieuw in Reticulum → Admin.",
       "tcpUnreachable": "{{name}}: TCP-hub onbereikbaar ({{host}}:{{port}})",
       "tcpUnreachableHint": "De externe Reticulum-instantie kan offline zijn of verbindingen blokkeren. Schakel deze interface uit of verifieer de host en poort.",
-      "offlineHintBleBondStale": "macOS geeft deze RNode nog steeds weer als gekoppeld, maar de Bluetooth-sleutels komen niet meer overeen (Peer heeft de koppelingsinformatie verwijderd). Vergeet het apparaat in Systeeminstellingen → Bluetooth, zet de RNode in de koppelingsmodus (Beheerder → Bluetooth → Begin met koppelen, of houd de knop ~7 s ingedrukt), start vervolgens de stapel opnieuw op en voer de nieuwe 6-cijferige pincode in wanneer daarom wordt gevraagd."
+      "offlineHintBleBondStale": "macOS geeft deze RNode nog steeds weer als gekoppeld, maar de Bluetooth-sleutels komen niet meer overeen (Peer heeft de koppelingsinformatie verwijderd). Vergeet het apparaat in Systeeminstellingen → Bluetooth, zet de RNode in de koppelingsmodus (Beheerder → Bluetooth → Begin met koppelen, of houd de knop ~7 s ingedrukt), start vervolgens de stapel opnieuw op en voer de nieuwe 6-cijferige pincode in wanneer daarom wordt gevraagd.",
+      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
+      "connectingHintBle": "BLE RNode-koppelingen kunnen tot 60 seconden duren nadat de stapel is gestart (OS-wachtwoordvenster). Voer de huidige RNode-pincode in als daarom wordt gevraagd; nooit 123456. Dit is normaal en geen fout. Het apparaat verschijnt mogelijk pas in Systeeminstellingen na een succesvolle verbinding."
     },
     "autoConnectingTo": "Automatisch verbinden met {{deviceName}}…",
     "autoReconnectInProgress": "Automatisch opnieuw verbinden bezig…",
@@ -1159,7 +1159,9 @@
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
       "shareInstanceHint": "Deel instantie is ingeschakeld — sluit andere Reticulum-apps (MeshChatX, Ratspeak, standalone rnsd) volledig af en start deze stapel opnieuw voordat u DM's opnieuw probeert.",
       "bleBondRemoved": "{{name}}: Bluetooth-verbinding is verouderd (OS toont nog steeds Gekoppeld)",
-      "bleBondRemovedHint": "Vergeet deze RNode in Systeeminstellingen → Bluetooth, begin met koppelen op de radio (Admin → Bluetooth of ~7 s knop ingedrukt houden), start de stapel opnieuw op en voer de nieuwe 6-cijferige pincode in."
+      "bleBondRemovedHint": "Vergeet deze RNode in Systeeminstellingen → Bluetooth, begin met koppelen op de radio (Admin → Bluetooth of ~7 s knop ingedrukt houden), start de stapel opnieuw op en voer de nieuwe 6-cijferige pincode in.",
+      "blePairingTimedOut": "{{name}}: Time-out voor uitwisseling van Bluetooth-wachtwoord",
+      "blePairingTimedOutHint": "Stop de stapel, begin opnieuw met koppelen (Beheer → Bluetooth toont de pincode in het paneel - het radiodisplay kan leeg blijven - of houd de knop ~7 seconden ingedrukt voor een pincode op het scherm), start de stapel opnieuw op en voer die pincode binnen ~60 seconden in het dialoogvenster van het besturingssysteem in. Gebruik nooit 123456 (standaard Meshtastic)."
     },
     "reticulumSidecarBundledMissing": "Bij deze installatie ontbreekt het gebundelde Reticulum sidecar. Upgrade naar een nieuwere release of rapporteer het probleem: bouwen vanaf de broncode is niet beschikbaar in pakketinstallaties.",
     "radioMqttRootDivergesWarning": "Radio MQTT-hoofdonderwerp is {{radioRoot}}, maar dit paneel is geabonneerd op {{appPrefix}}. Koppel de radio om landelijk knooppuntverkeer te beperken — werk het onderwerpvoorvoegsel bij en sluit MQTT opnieuw aan.",
@@ -1511,7 +1513,8 @@
         "transportSaturated": "RNS-transport verzadigd ({{count}} LXMF-pad-aanvraagdruppels)",
         "transportSaturatedShareInstance": "RNS-transport verzadigd ({{count}} pad-aanvraagdruppels). Deel instantie is ingeschakeld — sluit andere Reticulum-apps (MeshChatX, Ratspeak, rnsd) en start de stapel opnieuw.",
         "slowTransportQuery": "RNS-transportvragen traag of mislukt ({{count}}×)",
-        "bleBondRemoved": "BLE RNode \"{{name}}\"-verbinding is verouderd: vergeet de Bluetooth-instellingen van het besturingssysteem en koppel opnieuw"
+        "bleBondRemoved": "BLE RNode \"{{name}}\"-verbinding is verouderd: vergeet de Bluetooth-instellingen van het besturingssysteem en koppel opnieuw",
+        "blePairingTimedOut": "Er is een time-out opgetreden bij het uitwisselen van de BLE RNode \"{{name}}\"-wachtwoord: voer de huidige pincode in (niet 123456) en koppel opnieuw"
       }
     },
     "routingPort": {
@@ -1657,7 +1660,6 @@
     "firmwareHashRequiresProvision": "Bepaal de EEPROM voordat u de firmware-hash instelt.",
     "firmwareHashDone": "Firmware-hashset",
     "flashDone": "Firmware geflasht",
-    "bluetoothHint": "Schakel Bluetooth in op het apparaat en gebruik vervolgens Koppelen starten. De zescijferige pincode verschijnt hier via USB-serieel. Voer dezelfde pincode in in het Bluetooth-dialoogvenster van uw besturingssysteem (macOS, Windows of Linux) wanneer Reticulum verbinding maakt via BLE. Headless-apparaten zonder USB kunnen geen pincode op het scherm weergeven.",
     "wifiTitle": "Wifi",
     "wifiHint": "Wi-Fi is uitgeschakeld na het knipperen. Configureer hier de stationmodus (USB-serieel) en voeg vervolgens een Wi-Fi RNode-interface toe op Verbinding met tcp://host (poort 7633). Vereist ESP32-S3 Wi-Fi-compatibele firmware. Start het bord opnieuw op na het toepassen van wijzigingen.",
     "wifiSsidLabel": "Wifi SSID",
@@ -1677,7 +1679,11 @@
     "wifiApSuccess": "Toegangspuntmodus ingeschakeld. Sluit de RNode AP aan vanaf uw computer (standaard gateway 10.0.0.1) en configureer vervolgens de inloggegevens van het station of gebruik de bootstrapconsole.",
     "wifiStationSuccess": "Stationmodus opgeslagen. Start het bord opnieuw op, zoek vervolgens het IP-adres (display, router DHCP of Read config) en voeg tcp://… toe aan de → verbindingsinterfaces.",
     "wifiConfigEmpty": "Geen configuratiegegevens geretourneerd.",
-    "wifiNetmaskPlaceholder": "255.255.255.0"
+    "wifiNetmaskPlaceholder": "255.255.255.0",
+    "pairingWaiting": "Wachten op koppelingspincode van de radio via USB...",
+    "pairingPinLabel": "Bluetooth-koppelingspincode",
+    "pairingPinEnterHint": "Voer deze code in het OS Bluetooth-dialoogvenster in wanneer de stapel verbinding maakt. Gebruik 123456 niet.",
+    "bluetoothHint": "Schakel Bluetooth in op het apparaat en gebruik vervolgens Koppeling starten. De 6-cijferige pincode verschijnt in dit paneel via USB - het radiodisplay blijft vaak leeg. Voer die pincode in het Bluetooth-dialoogvenster van uw besturingssysteem in wanneer Reticulum verbinding maakt via BLE. RNode heeft geen standaardpincode (gebruik niet 123456 – dat is Meshtastic). Op displayborden kan het ingedrukt houden van de knop ~7 seconden ook een pincode op het scherm weergeven. De RNode verschijnt mogelijk pas in Systeeminstellingen → Bluetooth na een succesvolle verbinding."
   },
   "identityVault": {
     "title": "Identiteitskluis",

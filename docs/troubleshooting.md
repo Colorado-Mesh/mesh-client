@@ -1065,10 +1065,24 @@ Unrecognized codes pass through unchanged.
 
 **Fix**:
 
-1. Wait up to ~30s after stack start for the BLE RNode to connect (Connection tab interface status **up** / **online**).
+1. Wait up to ~**60s** after stack start for the BLE RNode to connect (Connection tab interface status **up** / **online**) — that matches the OS passkey window.
 2. Stop the Reticulum stack if you need immediate Meshtastic/MeshCore BLE access.
 3. Ensure you are on a current build with paired yield/release (`reticulumNobleBleYield.ts`, `useReticulumNobleBleYieldWatcher`, `ble-coexistence-coordinator.assertCanConnect`).
 4. Check Device logs for `[BleCoexistence]` and `[useReticulumNobleBleYieldWatcher]`.
+
+### Reticulum BLE RNode pairing fails (wrong PIN / no PIN on display / not in macOS list)
+
+**Symptoms**: BLE RNode stays offline; logs show `peripheral.connect() ok` then `[pair] TX read err` / `BLE pairing in progress` / `BLE pairing timed out`; Connection may show a pairing-timed-out sidecar alert. The RNode does not appear under System Settings → Bluetooth. Admin **Start pairing** does not put a code on the radio display.
+
+**Cause**: RNode generates a **new** 6-digit PIN each pairing — there is **no** default. Users sometimes enter **123456** (Meshtastic’s fixed default). Admin **Start pairing** shows the PIN in the **Admin Bluetooth panel over USB** (radio display often stays blank). Discovery uses the sidecar BLE scan (`ble://…`), not the macOS Settings device list. The OS passkey dialog appears when the stack triggers SMP (TX-char read).
+
+**Fix**:
+
+1. Stop the stack (or disable the BLE RNode) so reconnect does not thrash while you prepare.
+2. Forget any half-paired RNode in System Settings → Bluetooth.
+3. Get a real PIN: USB → Admin → Bluetooth → **Start pairing** (watch the **Admin panel**, not the radio screen), **or** ~7 s button hold on display boards for an on-screen PIN.
+4. Start the stack **once**, enter that PIN in the OS dialog within ~60 seconds — never `123456`.
+5. The device may only show as Paired in System Settings **after** a successful bond.
 
 ### Reticulum BLE RNode bond is stale (OS still shows Paired)
 

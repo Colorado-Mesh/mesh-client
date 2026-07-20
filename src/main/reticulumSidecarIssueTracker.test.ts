@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS } from '../shared/reticulum-types';
 import {
   parseBleBondRemovedIfaceForTests,
+  parseBlePairingTimedOutIfaceForTests,
   parseLinkDeliveryTimeoutDestForTests,
   parseTcpConnectFailedIfaceForTests,
   parseTxDropIfaceForTests,
@@ -33,6 +34,12 @@ const BLE_BOND_REMOVED_LINE =
 const BLE_BOND_ATTEMPT_LINE =
   'BLE RNode connect attempt failed attempt = 1 error = Runtime Error: Peer removed pairing information';
 
+const BLE_PAIRING_TIMED_OUT_LINE =
+  'BLE RNode connect failed name = RNode D5E7 error = send failed: BLE pairing timed out. Did you enter the 6-digit passkey shown on the RNode when the system prompted?';
+
+const BLE_PAIRING_IN_PROGRESS_LINE =
+  'BLE RNode connect failed name = RNode D5E7 error = send failed: BLE pairing in progress: Runtime Error: Device disconnected';
+
 describe('ReticulumSidecarInterfaceIssueTracker', () => {
   let tracker: ReticulumSidecarInterfaceIssueTracker;
 
@@ -59,11 +66,25 @@ describe('ReticulumSidecarInterfaceIssueTracker', () => {
     expect(parseBleBondRemovedIfaceForTests(BLE_BOND_ATTEMPT_LINE)).toBeNull();
   });
 
+  it('parses BLE pairing-timed-out interface names only from named connect-failed lines', () => {
+    expect(parseBlePairingTimedOutIfaceForTests(BLE_PAIRING_TIMED_OUT_LINE)).toBe('RNode D5E7');
+    expect(parseBlePairingTimedOutIfaceForTests(BLE_PAIRING_IN_PROGRESS_LINE)).toBeNull();
+  });
+
   it('builds alert with BLE bond-removed issues', () => {
     tracker.recordLine(BLE_BOND_ATTEMPT_LINE, 500);
     tracker.recordLine(BLE_BOND_REMOVED_LINE, 1_000);
     const alert = tracker.getAlert(1_500);
     expect(alert?.bleBondRemoved).toEqual(['RNode 41F4']);
+    expect(alert?.lastAtMs).toBe(1_000);
+  });
+
+  it('builds alert with BLE pairing-timed-out issues', () => {
+    tracker.recordLine(BLE_PAIRING_IN_PROGRESS_LINE, 500);
+    tracker.recordLine(BLE_PAIRING_TIMED_OUT_LINE, 1_000);
+    const alert = tracker.getAlert(1_500);
+    expect(alert?.blePairingTimedOut).toEqual(['RNode D5E7']);
+    expect(alert?.bleBondRemoved).toEqual([]);
     expect(alert?.lastAtMs).toBe(1_000);
   });
 
@@ -76,6 +97,7 @@ describe('ReticulumSidecarInterfaceIssueTracker', () => {
       txQueueDrops: [{ name: 'RNS HAM RADIO', dropCount: 8192 }],
       linkDeliveryTimeouts: [],
       bleBondRemoved: [],
+      blePairingTimedOut: [],
       transportSaturatedCount: 0,
       slowTransportQueryCount: 0,
       suppressedCount: 0,

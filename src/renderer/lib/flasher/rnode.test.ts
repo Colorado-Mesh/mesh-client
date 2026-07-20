@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RNode, RNODE_BT_PAIRING_TIMEOUT_MS, RNODE_COMMAND_TIMEOUT_MS } from './rnode';
 
@@ -25,5 +25,102 @@ describe('RNode WiFi payloads', () => {
   it('ipv4Payload parses dotted quads', () => {
     expect(RNode.ipv4Payload('192.168.1.10')).toEqual([192, 168, 1, 10]);
     expect(() => RNode.ipv4Payload('bad')).toThrow('invalid IPv4 address');
+  });
+});
+
+describe('RNode.startBluetoothPairing', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function createMockSerialPort(): {
+    port: SerialPort;
+    pushFromDevice: (bytes: Uint8Array) => void;
+    written: Uint8Array[];
+  } {
+    const written: Uint8Array[] = [];
+    let readableController: ReadableStreamDefaultController<Uint8Array> | null = null;
+    const readable = new ReadableStream<Uint8Array>({
+      start(controller) {
+        readableController = controller;
+      },
+    });
+    const writable = new WritableStream<Uint8Array>({
+      write(chunk) {
+        written.push(chunk);
+      },
+    });
+    const port = {
+      open: () => Promise.resolve(),
+      close: () => {
+        readableController?.close();
+        return Promise.resolve();
+      },
+      get readable() {
+        return readable;
+      },
+      get writable() {
+        return writable;
+      },
+    } as unknown as SerialPort;
+    return {
+      port,
+      written,
+      pushFromDevice: (bytes) => {
+        readableController?.enqueue(bytes);
+      },
+    };
+  }
+
+  it('keeps the session open until CMD_BT_PIN arrives (not just the KISS write)', async () => {
+    const { port, pushFromDevice, written } = createMockSerialPort();
+    const rnode = await RNode.fromSerialPort(port);
+    const onPin = vi.fn();
+
+    const pairingPromise = rnode.startBluetoothPairing(onPin);
+
+    // Allow the pairing KISS write to flush.
+    await vi.advanceTimersByTimeAsync(0);
+    expect(written.length).toBeGreaterThan(0);
+
+    // PIN arrives later — promise must still be pending until then.
+    let settled = false;
+    void pairingPromise.then(() => {
+      settled = true;
+    });
+    await vi.advanceTimersByTimeAsync(50);
+    expect(settled).toBe(false);
+    expect(onPin).not.toHaveBeenCalled();
+
+    const pin = 123456;
+    const pinBytes = [
+      RNode.CMD_BT_PIN,
+      (pin >>> 24) & 0xff,
+      (pin >>> 16) & 0xff,
+      (pin >>> 8) & 0xff,
+      pin & 0xff,
+    ];
+    pushFromDevice(RNode.createKissFrame(pinBytes));
+    await vi.advanceTimersByTimeAsync(0);
+    await pairingPromise;
+
+    expect(settled).toBe(true);
+    expect(onPin).toHaveBeenCalledWith(pin);
+    await rnode.close();
+  });
+
+  it('rejects when the pairing timeout elapses before CMD_BT_PIN', async () => {
+    const { port } = createMockSerialPort();
+    const rnode = await RNode.fromSerialPort(port);
+    const pairingPromise = rnode.startBluetoothPairing(() => {});
+    // Attach rejection handler before advancing timers (avoids unhandled rejection).
+    const expectation = expect(pairingPromise).rejects.toThrow('RNODE_COMMAND_TIMEOUT');
+    await vi.advanceTimersByTimeAsync(RNODE_BT_PAIRING_TIMEOUT_MS);
+    await expectation;
+    await rnode.close();
   });
 });

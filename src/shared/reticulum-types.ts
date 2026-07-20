@@ -51,6 +51,11 @@ export interface ReticulumInterfaceIssueAlert {
    * "Peer removed pairing information" (OS still shows Paired; bond keys are stale).
    */
   bleBondRemoved: string[];
+  /**
+   * BLE RNode interface names where the sidecar timed out waiting for the OS
+   * passkey (TX-char read / SMP) after connect.
+   */
+  blePairingTimedOut: string[];
   /** Incremented when LXMF path requests fail with transport channel full. */
   transportSaturatedCount: number;
   slowTransportQueryCount: number;

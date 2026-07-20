@@ -431,25 +431,42 @@ export class RNode {
   }
 
   async startBluetoothPairing(pinCallback: (pin: number) => void): Promise<void> {
-    await Promise.race([
-      (async () => {
-        this.callbacks.set(RNode.CMD_BT_PIN, (response) => {
-          const pin =
-            ((response[0] ?? 0) << 24) |
-            ((response[1] ?? 0) << 16) |
-            ((response[2] ?? 0) << 8) |
-            (response[3] ?? 0);
-          pinCallback(pin);
-        });
-        await this.sendKissCommand([RNode.CMD_BT_CTRL, 0x02]);
-      })(),
-      new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          this.callbacks.delete(RNode.CMD_BT_PIN);
+    // Wait for CMD_BT_PIN (or timeout) — not merely the KISS write — so callers that
+    // close the port after this promise settles still receive the PIN over USB.
+    await new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const finish = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        this.callbacks.delete(RNode.CMD_BT_PIN);
+        fn();
+      };
+
+      const timeoutId = setTimeout(() => {
+        finish(() => {
           reject(new Error('RNODE_COMMAND_TIMEOUT'));
-        }, RNODE_BT_PAIRING_TIMEOUT_MS);
-      }),
-    ]);
+        });
+      }, RNODE_BT_PAIRING_TIMEOUT_MS);
+
+      this.callbacks.set(RNode.CMD_BT_PIN, (response) => {
+        const pin =
+          ((response[0] ?? 0) << 24) |
+          ((response[1] ?? 0) << 16) |
+          ((response[2] ?? 0) << 8) |
+          (response[3] ?? 0);
+        finish(() => {
+          pinCallback(pin);
+          resolve();
+        });
+      });
+
+      void this.sendKissCommand([RNode.CMD_BT_CTRL, 0x02]).catch((err: unknown) => {
+        finish(() => {
+          reject(err instanceof Error ? err : new Error(String(err)));
+        });
+      });
+    });
   }
 
   async setWifiMode(mode: 'off' | 'station' | 'ap'): Promise<void> {

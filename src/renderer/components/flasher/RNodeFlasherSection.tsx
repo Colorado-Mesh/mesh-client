@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
@@ -23,7 +23,11 @@ import {
 } from '@/renderer/lib/flasher/flasherSessionPort';
 import { Nrf52DfuFlasher } from '@/renderer/lib/flasher/nrf52DfuFlasher';
 import { provisionEeprom, setFirmwareHashFromDevice } from '@/renderer/lib/flasher/provision';
-import { RNODE_POST_EEPROM_SETTLE_MS } from '@/renderer/lib/flasher/rnode';
+import {
+  RNODE_BT_PAIRING_TIMEOUT_MS,
+  RNODE_POST_EEPROM_SETTLE_MS,
+} from '@/renderer/lib/flasher/rnode';
+import { RNodeBluetoothPairingSession } from '@/renderer/lib/flasher/rnodeBluetoothPairingSession';
 import { ROM } from '@/renderer/lib/flasher/rom';
 import type { RNodeModel, RNodeProduct } from '@/renderer/lib/flasher/types';
 import { persistSerialPortIdentity } from '@/renderer/lib/serialPortSignature';
@@ -72,6 +76,10 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
   const [provisioning, setProvisioning] = useState(false);
   const [settingHash, setSettingHash] = useState(false);
   const [pairingPin, setPairingPin] = useState<number | null>(null);
+  const [pairingPending, setPairingPending] = useState(false);
+  const pairingSessionRef = useRef(
+    new RNodeBluetoothPairingSession({ timeoutMs: RNODE_BT_PAIRING_TIMEOUT_MS }),
+  );
   const [wifiConfigSummary, setWifiConfigSummary] = useState<string | null>(null);
   const [displayImage, setDisplayImage] = useState<string | null>(null);
   const [showWipeConfirm, setShowWipeConfirm] = useState(false);
@@ -87,6 +95,13 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
   const clearStatus = useCallback(() => {
     setStatusMessage(null);
     setStatusIsError(false);
+  }, []);
+
+  useEffect(() => {
+    const pairingSession = pairingSessionRef.current;
+    return () => {
+      pairingSession.invalidate();
+    };
   }, []);
 
   const actionsDisabled = portBlocked || busy || flashing || provisioning || settingHash;
@@ -472,6 +487,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
         <BluetoothConfig
           disabled={actionsDisabled}
           pairingPin={pairingPin}
+          pairingPending={pairingPending}
           onEnable={() => {
             void runWithRNode(async (rnode) => {
               await rnode.enableBluetooth();
@@ -480,14 +496,35 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
           onDisable={() => {
             void runWithRNode(async (rnode) => {
               await rnode.disableBluetooth();
+              pairingSessionRef.current.invalidate();
               setPairingPin(null);
+              setPairingPending(false);
             });
           }}
           onStartPairing={() => {
             void runWithRNode(async (rnode) => {
-              await rnode.startBluetoothPairing((pin) => {
-                setPairingPin(pin);
+              setPairingPin(null);
+              setPairingPending(true);
+              // Keeps the USB session open until CMD_BT_PIN or pairing timeout.
+              const attempt = pairingSessionRef.current.begin(() => {
+                setPairingPending(false);
               });
+              try {
+                await rnode.startBluetoothPairing((pin) => {
+                  if (!attempt.isCurrent()) return;
+                  attempt.clearTimer();
+                  const pinLabel = String(pin).padStart(6, '0');
+                  setPairingPin(pin);
+                  setPairingPending(false);
+                  showStatus(t('flasher.pairingPin', { pin: pinLabel }));
+                });
+              } catch (err) {
+                if (attempt.isCurrent()) {
+                  attempt.clearTimer();
+                  setPairingPending(false);
+                }
+                throw err;
+              }
             });
           }}
         />

@@ -55,6 +55,7 @@ export const RETICULUM_RUNTIME_CAUSE_I18N_KEYS = [
   'diagnosticsPanel.reticulum.runtime.tcpConnectFailed',
   'diagnosticsPanel.reticulum.runtime.txQueueDrops',
   'diagnosticsPanel.reticulum.runtime.bleBondRemoved',
+  'diagnosticsPanel.reticulum.runtime.blePairingTimedOut',
   'diagnosticsPanel.reticulum.runtime.noPeers',
   'diagnosticsPanel.reticulum.runtime.autoBeaconTunnelOnly',
   'diagnosticsPanel.reticulum.runtime.autoBeaconPhysicalFailures',
@@ -238,6 +239,21 @@ export function buildReticulumDiagnosticRows(
         condition: 'reticulum/ble-bond-removed',
         cause: `BLE RNode "${name}" bond is stale (Peer removed pairing information)`,
         causeI18n: runtimeCauseI18n('bleBondRemoved', { name }),
+        severity: 'warning',
+        detectedAt: now,
+        reticulumInterfaceId: iface?.id,
+        reticulumRepairKind: 'edit',
+      });
+    }
+    for (const name of interfaceIssueAlert.blePairingTimedOut ?? []) {
+      const iface = ifaceByName.get(name);
+      rows.push({
+        kind: 'rf',
+        id: rfRowId(homeNodeId, `reticulum/ble-pairing-timed-out/${name}`),
+        nodeId: homeNodeId,
+        condition: 'reticulum/ble-pairing-timed-out',
+        cause: `BLE RNode "${name}" passkey exchange timed out`,
+        causeI18n: runtimeCauseI18n('blePairingTimedOut', { name }),
         severity: 'warning',
         detectedAt: now,
         reticulumInterfaceId: iface?.id,
