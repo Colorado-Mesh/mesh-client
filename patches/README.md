@@ -68,7 +68,7 @@ When the PR merges and a release includes it, remove the patch and bump `@stopro
 
 ## usb@2.18.0
 
-Bump native build flags from C++14 / `c++1y` to C++17 for current Xcode/Clang/Electron toolchains.
+Bump native build flags from C++14 / `c++1y` to C++17 (`cflags_cc`, macOS `OTHER_CFLAGS`, Windows `/std:c++17`) for current Clang/MSVC/Electron toolchains.
 
 | Field | Value |
 | ----- | ----- |
