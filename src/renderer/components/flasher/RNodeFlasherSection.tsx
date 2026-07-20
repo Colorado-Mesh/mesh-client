@@ -23,7 +23,10 @@ import {
 } from '@/renderer/lib/flasher/flasherSessionPort';
 import { Nrf52DfuFlasher } from '@/renderer/lib/flasher/nrf52DfuFlasher';
 import { provisionEeprom, setFirmwareHashFromDevice } from '@/renderer/lib/flasher/provision';
-import { RNODE_POST_EEPROM_SETTLE_MS } from '@/renderer/lib/flasher/rnode';
+import {
+  RNODE_BT_PAIRING_TIMEOUT_MS,
+  RNODE_POST_EEPROM_SETTLE_MS,
+} from '@/renderer/lib/flasher/rnode';
 import { ROM } from '@/renderer/lib/flasher/rom';
 import type { RNodeModel, RNodeProduct } from '@/renderer/lib/flasher/types';
 import { persistSerialPortIdentity } from '@/renderer/lib/serialPortSignature';
@@ -72,6 +75,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
   const [provisioning, setProvisioning] = useState(false);
   const [settingHash, setSettingHash] = useState(false);
   const [pairingPin, setPairingPin] = useState<number | null>(null);
+  const [pairingPending, setPairingPending] = useState(false);
   const [wifiConfigSummary, setWifiConfigSummary] = useState<string | null>(null);
   const [displayImage, setDisplayImage] = useState<string | null>(null);
   const [showWipeConfirm, setShowWipeConfirm] = useState(false);
@@ -472,6 +476,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
         <BluetoothConfig
           disabled={actionsDisabled}
           pairingPin={pairingPin}
+          pairingPending={pairingPending}
           onEnable={() => {
             void runWithRNode(async (rnode) => {
               await rnode.enableBluetooth();
@@ -481,13 +486,30 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
             void runWithRNode(async (rnode) => {
               await rnode.disableBluetooth();
               setPairingPin(null);
+              setPairingPending(false);
             });
           }}
           onStartPairing={() => {
             void runWithRNode(async (rnode) => {
-              await rnode.startBluetoothPairing((pin) => {
-                setPairingPin(pin);
-              });
+              setPairingPin(null);
+              setPairingPending(true);
+              // startBluetoothPairing resolves after the KISS command, not after CMD_BT_PIN.
+              const pendingTimer = window.setTimeout(() => {
+                setPairingPending(false);
+              }, RNODE_BT_PAIRING_TIMEOUT_MS);
+              try {
+                await rnode.startBluetoothPairing((pin) => {
+                  window.clearTimeout(pendingTimer);
+                  const pinLabel = String(pin).padStart(6, '0');
+                  setPairingPin(pin);
+                  setPairingPending(false);
+                  showStatus(t('flasher.pairingPin', { pin: pinLabel }));
+                });
+              } catch (err) {
+                window.clearTimeout(pendingTimer);
+                setPairingPending(false);
+                throw err;
+              }
             });
           }}
         />

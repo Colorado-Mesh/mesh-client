@@ -178,6 +178,7 @@ check_ratspeak_patches() {
     'rsReticulum-auto-beacon-utun.patch|ratspeak/rsReticulum|11|rsReticulum auto-beacon utun|https://github.com/ratspeak/rsReticulum/pull/11'
     'rsReticulum-link-client-nomad.patch|ratspeak/rsReticulum|14|rsReticulum LinkClient Nomad|https://github.com/ratspeak/rsReticulum/pull/14'
     'rsReticulum-rnode-tcp-activity-keepalive.patch|ratspeak/rsReticulum|15|rsReticulum RNode TCP activity keepalive|https://github.com/ratspeak/rsReticulum/pull/15'
+    'rsReticulum-ble-rnode-pairing-transition-debounce.patch|ratspeak/rsReticulum||rsReticulum BLE RNode pairing-transition debounce|'
     'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF|4|rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF/pull/4'
   )
   local patches_dir='reticulum-sidecar/patches'

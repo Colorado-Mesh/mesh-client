@@ -1,0 +1,28 @@
+diff --git a/crates/rns-interface/src/ble_rnode.rs b/crates/rns-interface/src/ble_rnode.rs
+index 3bbc7c5..e742172 100644
+--- a/crates/rns-interface/src/ble_rnode.rs
++++ b/crates/rns-interface/src/ble_rnode.rs
+@@ -43,6 +43,10 @@ pub const NUS_TX_CHAR_UUID: Uuid = Uuid::from_u128(0x6E400003_B5A3_F393_E0A9_E50
+ const RECONNECT_WAIT: u64 = 5;
+ /// Capped below TCP's 300s — a BLE radio is either in range or not.
+ const RECONNECT_WAIT_MAX: u64 = 120;
++/// After a mid-SMP disconnect (`BLE pairing in progress`), wait before
++/// reconnecting so the OS passkey dialog is not re-fired every second while
++/// the user is typing the PIN (mesh-client macOS pairing UX).
++const PAIRING_TRANSITION_RETRY_WAIT: u64 = 30;
+ /// `None` retries forever; teardown goes via `stop_ble_rnode_interface`.
+ const MAX_RECONNECT_TRIES: Option<usize> = None;
+ const SCAN_TIMEOUT: u64 = 3;
+@@ -1272,7 +1276,11 @@ pub async fn spawn_ble_rnode_interface(
+                 Ok(c) => c,
+                 Err(e) => {
+                     let pairing_transition = is_pairing_transition_error(&e);
+-                    let retry_wait = if pairing_transition { 1 } else { backoff };
++                    let retry_wait = if pairing_transition {
++                        PAIRING_TRANSITION_RETRY_WAIT
++                    } else {
++                        backoff
++                    };
+                     tracing::warn!(name = %log_name, error = %e, "BLE RNode connect failed");
+                     ble_diag(format!(
+                         "[ble] connect_rnode err: {e} — retrying in {retry_wait}s (attempt {})",

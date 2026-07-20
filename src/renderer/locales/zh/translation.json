@@ -1083,12 +1083,12 @@
       "restartStackAria": "重新启动 Reticulum 堆栈以应用接口更改",
       "connectingHeading": "连接本地接口...",
       "connectingRow": "{{name}}：通过蓝牙连接",
-      "connectingHintBle": "堆栈启动后，BLE RNode 链接最多可能需要 30 秒。如果操作系统出现提示，请输入配对 PIN — 这是正常现象，不是错误。",
-      "offlineHintBle": "您的操作系统可能会提示输入 6 位蓝牙 PIN（macOS、Windows 或 Linux）。 RNode 每次配对都会生成一个新代码 - 没有默认 PIN。无头无线电：连接 USB → Reticulum Admin → 蓝牙 → 开始配对 → 输入操作系统对话框中显示的 PIN。带显示屏的无线电：在 Heltec 设备上按住按钮约 7 秒（时间各不相同；许多板上约 10 秒启用 Wi-Fi AP），读取屏幕上的 PIN，然后将其输入到操作系统对话框中。重试之前，请清除操作系统蓝牙设置中失败的绑定。",
       "offlineHintWifi": "检查RNode是否在您的LAN上，已通电，并且可以在配置的IP上访问（默认TCP端口7633 ，而不是4242 ）。如果DHCP分配了新地址，请在下方更新主机，或在Reticulum → Admin中重新配置Wi-Fi。",
       "tcpUnreachable": "{{name}} ：无法访问TCP集线器（ {{host}} ： {{port}} ）",
       "tcpUnreachableHint": "远程Reticulum实例可能处于离线状态或阻塞连接。禁用此接口或验证主机和端口。",
-      "offlineHintBleBondStale": "macOS 仍显示此 RNode 为已配对，但蓝牙密钥不再匹配（对等点删除了配对信息）。在系统设置 → 蓝牙中忘记设备，将 RNode 置于配对模式（管理 → 蓝牙 → 开始配对，或按住按钮约 7 秒），然后重新启动堆栈并在出现提示时输入新的 6 位 PIN。"
+      "offlineHintBleBondStale": "macOS 仍显示此 RNode 为已配对，但蓝牙密钥不再匹配（对等点删除了配对信息）。在系统设置 → 蓝牙中忘记设备，将 RNode 置于配对模式（管理 → 蓝牙 → 开始配对，或按住按钮约 7 秒），然后重新启动堆栈并在出现提示时输入新的 6 位 PIN。",
+      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
+      "connectingHintBle": "BLE RNode links can take up to 60 seconds after the stack starts (OS passkey window). Enter the current RNode PIN if prompted — never 123456. This is normal, not an error. The device may not appear in System Settings until after a successful bond."
     },
     "autoConnectingTo": "正在自动连接到 {{deviceName}}…",
     "autoReconnectInProgress": "正在自动重新连接…",
@@ -1159,7 +1159,9 @@
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
       "shareInstanceHint": "共享实例已启用—在重试DM之前，完全退出其他Reticulum应用程序（ MeshChatX、Ratspeak、独立rnsd ）并重新启动此堆栈。",
       "bleBondRemoved": "{{name}}：蓝牙绑定已过时（操作系统仍显示已配对）",
-      "bleBondRemovedHint": "在“系统设置”→“蓝牙”中忘记此 RNode，开始在无线电上进行配对（管理→蓝牙或按住约 7 秒按钮），重新启动堆栈，然后输入新的 6 位 PIN。"
+      "bleBondRemovedHint": "在“系统设置”→“蓝牙”中忘记此 RNode，开始在无线电上进行配对（管理→蓝牙或按住约 7 秒按钮），重新启动堆栈，然后输入新的 6 位 PIN。",
+      "blePairingTimedOut": "{{name}}: Bluetooth pairing timed out (passkey not entered)",
+      "blePairingTimedOutHint": "Stop the stack, start pairing again (Admin → Bluetooth shows the PIN in the panel — the radio display may stay blank — or ~7 s button hold for an on-screen PIN), restart the stack once, and enter that PIN in the OS dialog within ~60 seconds. Never use 123456 (Meshtastic default)."
     },
     "reticulumSidecarBundledMissing": "此安装缺少捆绑的 Reticulum sidecar。升级到较新的版本或报告问题 - 在打包安装中无法从源代码构建。",
     "radioMqttRootDivergesWarning": "无线电MQTT根主题为{{radioRoot}} ，但此面板订阅了{{appPrefix}}。匹配无线电以限制全国节点流量—更新主题前缀并重新连接MQTT。",
@@ -1511,7 +1513,8 @@
         "transportSaturated": "RNS传输饱和（ {{count}} LXMF路径请求丢弃）",
         "transportSaturatedShareInstance": "RNS传输饱和（ {{count}}路径请求丢弃）。共享实例已打开—退出其他Reticulum应用程序（ MeshChatX、Ratspeak、rnsd ）并重新启动堆栈。",
         "slowTransportQuery": "RNS传输查询缓慢或失败({{count}} ×)",
-        "bleBondRemoved": "BLE RNode「{{name}}」绑定已过时 — 在操作系统蓝牙设置中忽略该设备并重新配对"
+        "bleBondRemoved": "BLE RNode「{{name}}」绑定已过时 — 在操作系统蓝牙设置中忽略该设备并重新配对",
+        "blePairingTimedOut": "BLE RNode \"{{name}}\" pairing timed out — enter the current PIN (not 123456) and re-pair"
       }
     },
     "routingPort": {
@@ -1657,7 +1660,6 @@
     "firmwareHashRequiresProvision": "在设置固件哈希之前预配EEPROM。",
     "firmwareHashDone": "固件哈希集",
     "flashDone": "固件刷写",
-    "bluetoothHint": "启用设备上的蓝牙，然后使用开始配对。 6 位 PIN 码通过 USB 串行显示在此处 — 当 Reticulum 通过 BLE 连接时，在操作系统蓝牙对话框（macOS、Windows 或 Linux）中输入相同的 PIN 码。没有 USB 的无头设备无法在屏幕上显示 PIN。",
     "wifiTitle": "Wi-Fi",
     "wifiHint": "闪烁后禁用无线网络。在此处配置站点模式（ USB串行） ，然后使用tcp://host （端口7633 ）在Connection上添加Wi-Fi RNode接口。需要ESP32-S3支持Wi-Fi的固件。应用更改后重新启动电路板。",
     "wifiSsidLabel": "Wi-Fi SSID",
@@ -1677,7 +1679,11 @@
     "wifiApSuccess": "接入点模式已启用。从您的计算机（默认网关10.0.0.1 ）加入RNode AP ，然后配置站点凭据或使用引导控制台。",
     "wifiStationSuccess": "工作站模式已保存。重新启动主板，然后查找其IP （显示器、路由器DHCP或读取配置） ，并在连接→接口上添加tcp://…。",
     "wifiConfigEmpty": "未返回配置数据。",
-    "wifiNetmaskPlaceholder": "255.255.255.0"
+    "wifiNetmaskPlaceholder": "255.255.255.0",
+    "pairingWaiting": "Waiting for pairing PIN from the radio over USB…",
+    "pairingPinLabel": "Bluetooth pairing PIN",
+    "pairingPinEnterHint": "Enter this code in the OS Bluetooth dialog when the stack connects. Do not use 123456.",
+    "bluetoothHint": "Enable Bluetooth on the device, then use Start pairing. The 6-digit PIN appears in this panel over USB — the radio display often stays blank. Enter that PIN in your OS Bluetooth dialog when Reticulum connects over BLE. RNode has no default PIN (do not use 123456 — that is Meshtastic). On display boards, a ~7 s button hold can also show a PIN on screen. The RNode may not appear in System Settings → Bluetooth until after a successful bond."
   },
   "identityVault": {
     "title": "身份保管库",

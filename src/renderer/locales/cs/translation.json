@@ -1083,12 +1083,12 @@
       "restartStackAria": "Chcete-li použít změny rozhraní, restartujte zásobník Reticulum",
       "connectingHeading": "Připojování místního rozhraní…",
       "connectingRow": "{{name}}: připojení přes Bluetooth",
-      "connectingHintBle": "Odkazy BLE RNode mohou po spuštění zásobníku trvat až 30 sekund. Pokud vás váš operační systém vyzve, zadejte kód PIN pro párování – je to normální, nejedná se o chybu.",
-      "offlineHintBle": "Váš operační systém může vyžadovat zadání 6místného kódu PIN Bluetooth (macOS, Windows nebo Linux). RNode generuje nový kód při každém párování – neexistuje žádný výchozí PIN. Bezhlavá rádia: připojte USB → Reticulum Admin → Bluetooth → Zahájit párování → zadejte PIN zobrazený v dialogovém okně OS. Rádia s displejem: na zařízeních Heltec podržte tlačítko ~7 s (časování se liší; ~10 s na mnoha deskách místo toho umožňuje Wi-Fi AP), přečtěte si PIN na obrazovce a poté jej zadejte do dialogového okna OS. Než to zkusíte znovu, vymažte neúspěšná spojení v nastavení Bluetooth operačního systému.",
       "offlineHintWifi": "Zkontrolujte, zda je RNode v síti LAN, zapnutý a dosažitelný na nakonfigurované IP (výchozí port TCP 7633, nikoli 4242). Aktualizuj hostitele níže, pokud mu služba DHCP přidělila novou adresu nebo znovu poskytl Wi-Fi v → administraci Reticulum.",
       "tcpUnreachable": "{{name}}: Nedosažitelné centrum TCP ({{host}}:{{port}})",
       "tcpUnreachableHint": "Vzdálená instance Reticulum může být offline nebo blokovat připojení. Zakažte toto rozhraní nebo ověřte hostitele a port.",
-      "offlineHintBleBondStale": "macOS stále zobrazuje tento RNode jako Spárovaný, ale klíče Bluetooth se již neshodují (Peer odstranil informace o párování). Zapomeňte zařízení v Nastavení systému → Bluetooth, uveďte RNode do režimu párování (Admin → Bluetooth → Zahájit párování nebo podržte tlačítko ~7 s), poté restartujte zásobník a po zobrazení výzvy zadejte nový 6místný PIN."
+      "offlineHintBleBondStale": "macOS stále zobrazuje tento RNode jako Spárovaný, ale klíče Bluetooth se již neshodují (Peer odstranil informace o párování). Zapomeňte zařízení v Nastavení systému → Bluetooth, uveďte RNode do režimu párování (Admin → Bluetooth → Zahájit párování nebo podržte tlačítko ~7 s), poté restartujte zásobník a po zobrazení výzvy zadejte nový 6místný PIN.",
+      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
+      "connectingHintBle": "BLE RNode links can take up to 60 seconds after the stack starts (OS passkey window). Enter the current RNode PIN if prompted — never 123456. This is normal, not an error. The device may not appear in System Settings until after a successful bond."
     },
     "autoConnectingTo": "Automatické připojení k {{deviceName}}…",
     "autoReconnectInProgress": "Probíhá automatické opětovné připojení…",
@@ -1159,7 +1159,9 @@
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
       "shareInstanceHint": "Sdílená instance je povolena — zcela ukončete ostatní aplikace Reticulum (MeshChatX, Ratspeak, samostatný rnsd) a restartujte tento zásobník před opakováním DM.",
       "bleBondRemoved": "{{name}}: Připojení Bluetooth je zastaralé (OS stále zobrazuje Spárováno)",
-      "bleBondRemovedHint": "Zapomeňte na tento RNode v Nastavení systému → Bluetooth, zahajte párování na rádiu (Admin → Bluetooth nebo podržení tlačítka ~7 s), restartujte zásobník a zadejte nový 6místný PIN."
+      "bleBondRemovedHint": "Zapomeňte na tento RNode v Nastavení systému → Bluetooth, zahajte párování na rádiu (Admin → Bluetooth nebo podržení tlačítka ~7 s), restartujte zásobník a zadejte nový 6místný PIN.",
+      "blePairingTimedOut": "{{name}}: Bluetooth pairing timed out (passkey not entered)",
+      "blePairingTimedOutHint": "Stop the stack, start pairing again (Admin → Bluetooth shows the PIN in the panel — the radio display may stay blank — or ~7 s button hold for an on-screen PIN), restart the stack once, and enter that PIN in the OS dialog within ~60 seconds. Never use 123456 (Meshtastic default)."
     },
     "reticulumSidecarBundledMissing": "V této instalaci chybí přibalený Reticulum sidecar. Upgradujte na novější verzi nebo nahlaste problém – sestavení ze zdroje není v balených instalacích k dispozici.",
     "radioMqttRootDivergesWarning": "Kořenové téma rádia MQTT je {{radioRoot}}, ale tento panel odebírá {{appPrefix}}. Přizpůsobením rádia omezíte celostátní provoz uzlů — aktualizujte předponu tématu a znovu připojte MQTT.",
@@ -1511,7 +1513,8 @@
         "transportSaturated": "Nasycený transport RNS ({{count}} LXMF kapek vyžadujících cestu)",
         "transportSaturatedShareInstance": "Nasycený transport RNS ({{count}} kapek s požadavkem na cestu). Sdílená instance je zapnutá — ukončete ostatní aplikace Reticulum (MeshChatX, Ratspeak, rnsd) a restartujte zásobník.",
         "slowTransportQuery": "Transportní dotazy RNS pomalé nebo selhávající ({{count}}×)",
-        "bleBondRemoved": "Vazba BLE RNode „{{name}}“ je zastaralá – zapomeňte v nastavení Bluetooth v operačním systému a znovu spárujte"
+        "bleBondRemoved": "Vazba BLE RNode „{{name}}“ je zastaralá – zapomeňte v nastavení Bluetooth v operačním systému a znovu spárujte",
+        "blePairingTimedOut": "BLE RNode \"{{name}}\" pairing timed out — enter the current PIN (not 123456) and re-pair"
       }
     },
     "routingPort": {
@@ -1657,7 +1660,6 @@
     "firmwareHashRequiresProvision": "Před nastavením hash firmwaru zajistěte EEPROM.",
     "firmwareHashDone": "Sada hash firmwaru",
     "flashDone": "Firmware blikal",
-    "bluetoothHint": "Povolte na zařízení Bluetooth a poté použijte Spustit párování. Šestimístný kód PIN se zde zobrazuje přes sériové rozhraní USB – zadejte stejný kód PIN v dialogovém okně OS Bluetooth (macOS, Windows nebo Linux), když se Reticulum připojí přes BLE. Bezhlavá zařízení bez USB nemohou zobrazit PIN na obrazovce.",
     "wifiTitle": "Wi-Fi",
     "wifiHint": "Po blikání je Wi-Fi vypnuto. Zde nakonfigurujte režim stanice (sériový port USB) a poté přidejte rozhraní Wi-Fi RNode na Připojení pomocí tcp://host (port 7633). Vyžaduje firmware s podporou Wi-Fi ESP32-S3. Po provedení změn restartujte desku.",
     "wifiSsidLabel": "Wi-Fi SSID",
@@ -1677,7 +1679,11 @@
     "wifiApSuccess": "Režim přístupového bodu povolen. Připojte se k přístupovému bodu RNode z počítače (výchozí brána 10.0.0.1), poté nakonfigurujte pověření stanice nebo použijte konzolu bootstrap.",
     "wifiStationSuccess": "Režim stanice uložen. Restartujte desku, najděte její IP (displej, směrovač DHCP nebo Read config) a přidejte tcp://… na Připojovací → rozhraní.",
     "wifiConfigEmpty": "Nebyla vrácena žádná konfigurační data.",
-    "wifiNetmaskPlaceholder": "255.255.255.0"
+    "wifiNetmaskPlaceholder": "255.255.255.0",
+    "pairingWaiting": "Waiting for pairing PIN from the radio over USB…",
+    "pairingPinLabel": "Bluetooth pairing PIN",
+    "pairingPinEnterHint": "Enter this code in the OS Bluetooth dialog when the stack connects. Do not use 123456.",
+    "bluetoothHint": "Enable Bluetooth on the device, then use Start pairing. The 6-digit PIN appears in this panel over USB — the radio display often stays blank. Enter that PIN in your OS Bluetooth dialog when Reticulum connects over BLE. RNode has no default PIN (do not use 123456 — that is Meshtastic). On display boards, a ~7 s button hold can also show a PIN on screen. The RNode may not appear in System Settings → Bluetooth until after a successful bond."
   },
   "identityVault": {
     "title": "Trezor identity",

@@ -13,11 +13,14 @@ export const RETICULUM_LOCAL_HEALTH_FAST_POLL_MS = 5_000;
 
 /** One-shot refreshes after stack start/restart while BLE RNode links settle. */
 export const RETICULUM_LOCAL_HEALTH_BURST_DELAYS_MS = [
-  2_000, 5_000, 10_000, 15_000, 25_000,
+  2_000, 5_000, 10_000, 15_000, 25_000, 40_000, 55_000,
 ] as const;
 
-/** BLE RNode may take ~25s to connect after stack start; show "connecting" not "offline" until then. */
-export const RETICULUM_BLE_CONNECT_GRACE_MS = 30_000;
+/**
+ * BLE RNode may take up to the OS passkey window (~60s TX-read) after stack start;
+ * show "connecting" not "offline" until then.
+ */
+export const RETICULUM_BLE_CONNECT_GRACE_MS = 60_000;
 
 export function reticulumLocalHealthNeedsFastPoll(
   interfaces: readonly ReticulumLocalInterfaceInput[],

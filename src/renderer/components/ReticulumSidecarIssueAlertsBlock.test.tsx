@@ -24,6 +24,7 @@ function baseAlert(
     txQueueDrops: [],
     linkDeliveryTimeouts: [],
     bleBondRemoved: [],
+    blePairingTimedOut: [],
     transportSaturatedCount: 0,
     slowTransportQueryCount: 0,
     suppressedCount: 0,
@@ -110,6 +111,22 @@ describe('ReticulumSidecarIssueAlertsBlock', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText('connectionPanel.reticulumSidecarIssues.bleBondRemoved:RNode 41F4'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows BLE pairing-timed-out issue from sidecar alert', () => {
+    render(
+      <ReticulumSidecarIssueAlertsBlock
+        alert={baseAlert({
+          blePairingTimedOut: ['RNode D5E7'],
+        })}
+      />,
+    );
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.heading:1'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('connectionPanel.reticulumSidecarIssues.blePairingTimedOut:RNode D5E7'),
     ).toBeInTheDocument();
   });
 });

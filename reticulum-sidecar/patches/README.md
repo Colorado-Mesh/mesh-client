@@ -180,6 +180,49 @@ git diff origin/main...HEAD -- crates/rns-interface/src/rnode.rs \
 
 When [ratspeak/rsReticulum#15](https://github.com/ratspeak/rsReticulum/pull/15) merges, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
 
+## rsReticulum-ble-rnode-pairing-transition-debounce.patch
+
+Debounce BLE RNode reconnect after mid-SMP disconnect (`BLE pairing in progress`): wait **30s** instead of **1s** so macOS/Windows OS passkey dialogs are not re-fired while the user enters the PIN.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | applies on current `rsReticulum` tip used for mesh-client overlays (also intended for pin `6d2b28475321bc15c8f60796513d8878b47ed3ab`) |
+| **Upstream PR** | none yet (mesh-client overlay) |
+
+**Modifies (1 file):**
+
+- `crates/rns-interface/src/ble_rnode.rs` — `PAIRING_TRANSITION_RETRY_WAIT = 30`
+
+### Apply locally
+
+From mesh-client repo root (sibling `../rsReticulum` required):
+
+```bash
+./scripts/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
+```
+
+Apply after the other rsReticulum overlays when rebuilding a pinned checkout:
+
+```bash
+./scripts/apply-rsReticulum-packet-tap.sh
+./scripts/apply-rsReticulum-auto-beacon-utun.sh
+./scripts/apply-rsReticulum-link-client-nomad.sh
+./scripts/apply-rsReticulum-rnode-tcp-activity-keepalive.sh
+./scripts/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
+```
+
+### Regenerate
+
+```bash
+cd ../rsReticulum
+git diff -- crates/rns-interface/src/ble_rnode.rs \
+  > ../mesh-client/reticulum-sidecar/patches/rsReticulum-ble-rnode-pairing-transition-debounce.patch
+```
+
+### Sunset
+
+When upstream ships an equivalent debounce (or a passkey-window pause), remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
+
 ## rsLXMF-propagation-sync-peering.patch
 
 LinkIdentify + peering stamp before LXMF `/offer`, plus `set_local_identity` / `configure_peering` / `last_offer_error` / `last_finished_ok` on `PropagationSyncTask` so mesh-client can complete remote PN sync and distinguish HaveAll success from Failed after Complete→Idle cleanup.

@@ -1083,12 +1083,12 @@
       "restartStackAria": "Arayüz değişikliklerini uygulamak için Reticulum yığınını yeniden başlatın",
       "connectingHeading": "Yerel arayüz(ler) bağlanıyor…",
       "connectingRow": "{{name}}: Bluetooth üzerinden bağlanılıyor",
-      "connectingHintBle": "BLE RNode bağlantıları, yığın başladıktan sonra 30 saniye kadar sürebilir. İşletim sisteminiz isterse bir eşleştirme PIN'i girin; bu normaldir, bir hata değil.",
-      "offlineHintBle": "İşletim sisteminiz 6 haneli bir Bluetooth PIN'i (macOS, Windows veya Linux) isteyebilir. RNode her eşleştirmede yeni bir kod oluşturur; varsayılan bir PIN yoktur. Başsız telsizler: USB'yi bağlayın → Reticulum Admin → Bluetooth → Eşleştirmeyi başlat → İşletim Sistemi iletişim kutusunda gösterilen PIN'i girin. Ekranlı radyolar: Heltec cihazlarında düğmeyi ~7 saniye basılı tutun (zamanlama değişir; birçok kartta ~10 saniye bunun yerine Wi-Fi AP'yi etkinleştirir), ekrandaki PIN'i okuyun ve ardından işletim sistemi iletişim kutusuna girin. Yeniden denemeden önce işletim sisteminizin Bluetooth ayarlarındaki başarısız bağlantıları temizleyin.",
       "offlineHintWifi": "RNode'un LAN'ınızda olduğunu, açık olduğunu ve yapılandırılmış IP'de erişilebilir olduğunu kontrol edin (varsayılan TCP bağlantı noktası 7633, 4242 değil). DHCP yeni bir adres atadıysa aşağıdaki ana bilgisayarı güncelleyin veya Reticulum Admin'de Wi-Fi'yi yeniden → sağlayın.",
       "tcpUnreachable": "{{name}}: TCP göbeğine ulaşılamıyor ({{host}}:{{port}})",
       "tcpUnreachableHint": "Uzak Reticulum örneği çevrimdışı olabilir veya bağlantıları engelleyebilir. Bu arayüzü devre dışı bırakın veya ana bilgisayarı ve bağlantı noktasını doğrulayın.",
-      "offlineHintBleBondStale": "macOS bu RNode'u hâlâ Eşlenmiş olarak gösteriyor ancak Bluetooth anahtarları artık eşleşmiyor (Eş tarafından kaldırılan eşleştirme bilgileri). Sistem Ayarları → Bluetooth'ta cihazı unutun, RNode'u eşleştirme moduna getirin (Yönetici → Bluetooth → Eşleştirmeyi başlat veya düğmeyi ~7 saniye basılı tutun), ardından yığını yeniden başlatın ve istendiğinde yeni 6 haneli PIN'i girin."
+      "offlineHintBleBondStale": "macOS bu RNode'u hâlâ Eşlenmiş olarak gösteriyor ancak Bluetooth anahtarları artık eşleşmiyor (Eş tarafından kaldırılan eşleştirme bilgileri). Sistem Ayarları → Bluetooth'ta cihazı unutun, RNode'u eşleştirme moduna getirin (Yönetici → Bluetooth → Eşleştirmeyi başlat veya düğmeyi ~7 saniye basılı tutun), ardından yığını yeniden başlatın ve istendiğinde yeni 6 haneli PIN'i girin.",
+      "offlineHintBle": "Your OS may prompt for a 6-digit Bluetooth PIN (macOS, Windows, or Linux). RNode generates a new code each pairing — never use 123456 (that is Meshtastic’s default, not RNode). The RNode need not appear in System Settings → Bluetooth before mesh-client connects; the OS dialog appears when the stack pairs. Headless radios: connect USB → Reticulum Admin → Bluetooth → Start pairing → enter the PIN shown in the Admin panel (not on the radio display) into the OS dialog. Radios with a display: hold the button ~7 s on Heltec devices (timing varies; ~10 s on many boards enables Wi-Fi AP instead), read the PIN on screen, then enter it in the OS dialog. Clear failed bonds in your OS Bluetooth settings before retrying.",
+      "connectingHintBle": "BLE RNode links can take up to 60 seconds after the stack starts (OS passkey window). Enter the current RNode PIN if prompted — never 123456. This is normal, not an error. The device may not appear in System Settings until after a successful bond."
     },
     "autoConnectingTo": "{{deviceName}}'a otomatik bağlanılıyor…",
     "autoReconnectInProgress": "Otomatik yeniden bağlanma işlemi devam ediyor…",
@@ -1159,7 +1159,9 @@
       "slowTransportQueryHint": "Sepet taşıma aktörü sıkışmış olabilir — Reticulum yığınını yeniden başlatın.",
       "shareInstanceHint": "Paylaşım örneği etkinleştirildi — diğer Reticulum uygulamalarından (MeshChatX, Ratspeak, standalone rnsd) tamamen çıkın ve DM'leri yeniden denemeden önce bu yığını yeniden başlatın.",
       "bleBondRemoved": "{{name}}: Bluetooth bağlantısı eski (İşletim sistemi hâlâ Eşlendi gösteriyor)",
-      "bleBondRemovedHint": "Sistem Ayarları → Bluetooth'ta bu RNode'u unutun, radyoda eşleştirmeyi başlatın (Yönetici → Bluetooth veya ~7 saniye düğmeyi basılı tutun), yığını yeniden başlatın ve yeni 6 haneli PIN'i girin."
+      "bleBondRemovedHint": "Sistem Ayarları → Bluetooth'ta bu RNode'u unutun, radyoda eşleştirmeyi başlatın (Yönetici → Bluetooth veya ~7 saniye düğmeyi basılı tutun), yığını yeniden başlatın ve yeni 6 haneli PIN'i girin.",
+      "blePairingTimedOut": "{{name}}: Bluetooth pairing timed out (passkey not entered)",
+      "blePairingTimedOutHint": "Stop the stack, start pairing again (Admin → Bluetooth shows the PIN in the panel — the radio display may stay blank — or ~7 s button hold for an on-screen PIN), restart the stack once, and enter that PIN in the OS dialog within ~60 seconds. Never use 123456 (Meshtastic default)."
     },
     "reticulumSidecarBundledMissing": "Bu kurulumda birlikte verilen Reticulum sidecar eksik. Daha yeni bir sürüme yükseltin veya sorunu bildirin; kaynaktan derleme, paketli kurulumlarda mevcut değildir.",
     "radioMqttRootDivergesWarning": "Radyo MQTT kök konusu {{radioRoot}} 'dır, ancak bu panel {{appPrefix}}' e abone olur. Ülke çapındaki düğüm trafiğini sınırlamak için radyoyu eşleştirin — Konu Önekini güncelleyin ve MQTT'yi yeniden bağlayın.",
@@ -1511,7 +1513,8 @@
         "transportSaturated": "RNS transport saturated ({{count}} LXMF path - request drops)",
         "transportSaturatedShareInstance": "RNS nakli doymuş ({{count}} yol talebi düşer). Paylaşım örneği açık — diğer Reticulum uygulamalarından (MeshChatX, Ratspeak, rnsd) çıkın ve yığını yeniden başlatın.",
         "slowTransportQuery": "RNS taşıma sorguları yavaş veya başarısız ({{count}}×)",
-        "bleBondRemoved": "BLE RNode \"{{name}}\" bağı eski — İşletim Sistemi Bluetooth ayarlarını unutun ve yeniden eşleştirin"
+        "bleBondRemoved": "BLE RNode \"{{name}}\" bağı eski — İşletim Sistemi Bluetooth ayarlarını unutun ve yeniden eşleştirin",
+        "blePairingTimedOut": "BLE RNode \"{{name}}\" pairing timed out — enter the current PIN (not 123456) and re-pair"
       }
     },
     "routingPort": {
@@ -1657,7 +1660,6 @@
     "firmwareHashRequiresProvision": "Ürün yazılımı karmasını ayarlamadan önce EEPROM'u sağlayın.",
     "firmwareHashDone": "Aygıt yazılımı karma kümesi",
     "flashDone": "Aygıt yazılımı yanıp söndü",
-    "bluetoothHint": "Cihazda Bluetooth'u etkinleştirin ve ardından Eşleştirmeyi başlat seçeneğini kullanın. 6 basamaklı PIN burada USB seri üzerinden görünür; Reticulum BLE üzerinden bağlandığında aynı PIN'i işletim sisteminizin Bluetooth iletişim kutusuna (macOS, Windows veya Linux) girin. USB'si olmayan başsız cihazlar ekranda PIN gösteremez.",
     "wifiTitle": "Wifi",
     "wifiHint": "Wi-Fi yanıp söndükten sonra devre dışı bırakılır. İstasyon modunu buradan yapılandırın (USB seri numarası), ardından tcp :// ana bilgisayar ile bağlantı (bağlantı noktası 7633) üzerine bir Wi-Fi RNode arayüzü ekleyin. ESP32 - S3 Wi-Fi özellikli ürün yazılımı gerektirir. Değişiklikleri uyguladıktan sonra kartı yeniden başlatın.",
     "wifiSsidLabel": "Wi-Fi SSID'si",
@@ -1677,7 +1679,11 @@
     "wifiApSuccess": "Erişim noktası modu etkin. Bilgisayarınızdan RNode AP'ye katılın (varsayılan ağ geçidi 10.0.0.1), ardından istasyon kimlik bilgilerini yapılandırın veya önyükleme konsolunu kullanın.",
     "wifiStationSuccess": "İstasyon modu kaydedildi. Kartı yeniden başlatın, ardından IP'sini (ekran, yönlendirici DHCP veya Read config) bulun ve → Bağlantı Arabirimlerine tcp ://… ekleyin.",
     "wifiConfigEmpty": "Yapılandırma verisi döndürülmedi.",
-    "wifiNetmaskPlaceholder": "255.255.255.0"
+    "wifiNetmaskPlaceholder": "255.255.255.0",
+    "pairingWaiting": "Waiting for pairing PIN from the radio over USB…",
+    "pairingPinLabel": "Bluetooth pairing PIN",
+    "pairingPinEnterHint": "Enter this code in the OS Bluetooth dialog when the stack connects. Do not use 123456.",
+    "bluetoothHint": "Enable Bluetooth on the device, then use Start pairing. The 6-digit PIN appears in this panel over USB — the radio display often stays blank. Enter that PIN in your OS Bluetooth dialog when Reticulum connects over BLE. RNode has no default PIN (do not use 123456 — that is Meshtastic). On display boards, a ~7 s button hold can also show a PIN on screen. The RNode may not appear in System Settings → Bluetooth until after a successful bond."
   },
   "identityVault": {
     "title": "Kimlik kasası",
