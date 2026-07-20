@@ -7,7 +7,7 @@ This file is self-contained. ARCHITECTURE.md and CONTRIBUTING.md are human refer
 - Only change what was asked. No drive-by refactors, reformatting, or types/comments outside scope.
 - **Testing:** Ship a passing test for behavioral changes; do not call the task done without it.
 - **Stateful/I/O code:** Preserve integrity on failure; document failure point, fallback, and logging where it matters.
-- **Pre-commit patience:** This repo has a very long pre-commit hook chain (lint, typecheck, thousands of tests, audit, actionlint, yamllint, many check:\* scripts). Commits can take 2+ minutes. Be patient and let them finish — do not interrupt or force-skip hooks.
+- **Pre-commit patience:** Pre-commit runs staged-related Vitest (`pnpm run test:staged`), staged ESLint, full typecheck, and path-gated `check:*` scripts. Typical small commits are much faster than a full suite; vitest infra / lockfile changes still force a full Vitest run. Be patient and let hooks finish — do not interrupt or force-skip. **PR CI** ([`tests.yaml`](.github/workflows/tests.yaml)) always runs the full suite with coverage; green pre-commit ≠ green CI.
 - **Fresh clone:** Before other setup work, run `node scripts/check-environment.mjs` (works before pnpm is installed). After `pnpm install`, re-run `pnpm run check:environment`. Fix required failures using the printed hints and `setup:*` scripts; optional warnings can wait.
 
 ### Platform parity
@@ -90,7 +90,7 @@ Adding a cross-boundary feature:
 ## 5. Testing
 
 - Renderer: jsdom (`src/renderer/**/*.test.{ts,tsx}`). Main: node (`src/main/**/*.test.ts`).
-- **Reticulum sidecar (Rust):** Clippy + rustfmt via `pnpm run check:reticulum-sidecar` (stub build in pre-commit when `cargo` is on `PATH`) and full-feature lint in `reticulum-sidecar.yaml`. Coverage threshold (`cargo llvm-cov --fail-under-lines`) is enforced only in `tests.yaml` when sidecar paths change — not in pre-commit.
+- **Reticulum sidecar (Rust):** Clippy + rustfmt via `pnpm run check:reticulum-sidecar` (stub build in pre-commit when `cargo` is on `PATH` **and** sidecar-related paths are staged) and full-feature lint in `reticulum-sidecar.yaml`. Coverage threshold (`cargo llvm-cov --fail-under-lines`) is enforced only in `tests.yaml` when sidecar paths change — not in pre-commit.
 - **Temp dirs in tests:** Use `mkdtempSync(path.join(os.tmpdir(), 'prefix-'))` — never write to a fixed name under `os.tmpdir()` (CodeQL + `check:insecure-temp-files`).
 - Vitest worker pool sizes and shared Vite dep inline lists live in `vitest.harness.ts` — update when adding deps that need inlining.
 - Prefer `mockConsoleWarn` / `withMockedConsoleWarn` from `src/renderer/lib/vitestConsoleMock.ts` over ad-hoc `vi.spyOn(console, 'warn')` in renderer tests.
@@ -124,12 +124,12 @@ Adding a cross-boundary feature:
 3. markdownlint on **staged** `.md` files only
 4. When dependency manifests staged: `pnpm dedupe`, re-stage lockfile and originally staged paths
 5. When `en/translation.json` is staged: `pnpm run i18n:auto-translate` and re-stage `src/renderer/locales/`
-6. `pnpm run lint`, `pnpm run typecheck`, full `check:*` chain (`check:reticulum-sidecar` when `cargo` is on `PATH`; `check:i18n` when English locale staged, else `check:i18n:branch`)
-7. `pnpm audit --audit-level=high`
-8. `actionlint` when workflows staged; `yamllint` when YAML staged
-9. `pnpm run test:run -- --changed HEAD --bail 1` (full suite when vitest/shared/preload/setup mocks or deps change)
+6. ESLint on **staged** JS/TS with `--cache` (CI still runs full `pnpm run lint`); full `typecheck`
+7. Always-on cheap `check:*` scanners; path-gated checks for flatpak / DB migrations / IPC / reticulum interface modes / decommissioned hubs / `check:reticulum-sidecar` (when `cargo` on `PATH` and sidecar paths staged); `check:i18n` when English locale staged else `check:i18n:branch`; `check:licenses`
+8. `pnpm audit` only when dependency manifests staged; `actionlint` / `yamllint` when workflows / YAML staged
+9. `pnpm run test:staged` → `scripts/precommit-tests.mjs` (staged-only `vitest related`; full suite for vitest config/setup/deps; skip when no source/test staged)
 
-Before PR: `pnpm run lint`, `typecheck`, `test:run`, plus any relevant `check:*`.
+Before PR: `pnpm run lint`, `typecheck`, `test:run` (full suite), plus any relevant `check:*`.
 
 ## 7. Git & PR Workflow
 

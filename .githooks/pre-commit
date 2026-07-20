@@ -1,6 +1,9 @@
 #!/bin/sh
 # Run format check, lint, and tests before every commit.
 # To skip in an emergency: git commit --no-verify
+#
+# Tests: staged-only related Vitest via scripts/precommit-tests.mjs.
+# Full Vitest suite runs on PRs (tests.yaml). Green pre-commit ≠ green CI.
 
 # Ensure locally installed tooling (e.g. `actionlint`) is on PATH.
 REPO_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -18,6 +21,10 @@ fail() {
 STAGED_LIST=$(mktemp)
 trap 'rm -f "$STAGED_LIST"' EXIT
 git diff --cached --name-only --diff-filter=ACM > "$STAGED_LIST" || fail 'git diff --cached (staged file list)'
+
+staged_match() {
+  grep -qE "$1" "$STAGED_LIST" 2> /dev/null
+}
 
 # If dependency manifests changed, ensure local node_modules matches lockfile
 # so lint/typecheck run with the same toolchain CI/release will use.
@@ -45,7 +52,7 @@ if [ -s "$STAGED_LIST" ]; then
 
   # Lint only staged .md files
   MARKDOWN_LIST=$(mktemp)
-  trap 'rm -f "$MARKDOWN_LIST"' EXIT
+  trap 'rm -f "$STAGED_LIST" "$MARKDOWN_LIST"' EXIT
   while IFS= read -r f || [ -n "$f" ]; do
     case "$f" in
       *.md) printf '%s\n' "$f" >> "$MARKDOWN_LIST" ;;
@@ -72,53 +79,110 @@ if [ -s "$STAGED_LIST" ]; then
   done < "$STAGED_LIST"
 fi
 
-if grep -q 'src/renderer/locales/en/translation.json' "$STAGED_LIST" 2> /dev/null; then
+if staged_match 'src/renderer/locales/en/translation\.json'; then
   pnpm run i18n:auto-translate || fail 'pnpm run i18n:auto-translate'
   git add src/renderer/locales/ || fail 'git add (i18n locales)'
 fi
 
-pnpm run lint || fail 'pnpm run lint'
+# ESLint: staged JS/TS only with cache (CI still runs full `pnpm run lint`).
+ESLINT_LIST=$(mktemp)
+trap 'rm -f "$STAGED_LIST" "$MARKDOWN_LIST" "$ESLINT_LIST"' EXIT
+: > "$ESLINT_LIST"
+if [ -s "$STAGED_LIST" ]; then
+  while IFS= read -r f || [ -n "$f" ]; do
+    case "$f" in
+      *.js | *.jsx | *.mjs | *.cjs | *.ts | *.tsx | *.mts | *.cts)
+        [ -e "$f" ] || continue
+        printf '%s\n' "$f" >> "$ESLINT_LIST"
+        ;;
+    esac
+  done < "$STAGED_LIST"
+fi
+if [ -s "$ESLINT_LIST" ]; then
+  # xargs avoids ARG_MAX issues on large staged sets; -n batches keep argv reasonable.
+  xargs -n 50 pnpm exec eslint --cache --max-warnings 0 < "$ESLINT_LIST" || fail 'eslint (staged)'
+else
+  printf 'pre-commit: skip eslint (no staged JS/TS)\n' >&2
+fi
+
 pnpm run typecheck || fail 'pnpm run typecheck'
 pnpm run check:electron-security || fail 'pnpm run check:electron-security'
-pnpm run check:flatpak || fail 'pnpm run check:flatpak'
+
+if staged_match '^(flatpak/|org\.coloradomesh\.MeshClient\.yml|package\.json|scripts/check-flatpak\.mjs|scripts/sync-flatpak-electron)'; then
+  pnpm run check:flatpak || fail 'pnpm run check:flatpak'
+else
+  printf 'pre-commit: skip check:flatpak (no flatpak-related paths staged)\n' >&2
+fi
+
 pnpm run check:log-injection || fail 'pnpm run check:log-injection'
 pnpm run check:log-service-sinks || fail 'pnpm run check:log-service-sinks'
 pnpm run check:codeql-extensions || fail 'pnpm run check:codeql-extensions'
 pnpm run check:insecure-temp-files || fail 'pnpm run check:insecure-temp-files'
-pnpm run check:db-migrations || fail 'pnpm run check:db-migrations'
-pnpm run check:ipc-contract || fail 'pnpm run check:ipc-contract'
-pnpm run check:reticulum-interface-modes || fail 'pnpm run check:reticulum-interface-modes'
-pnpm run check:reticulum-decommissioned-hubs || fail 'pnpm run check:reticulum-decommissioned-hubs'
+
+if staged_match '^(src/main/database\.ts|src/main/db-schema-sync\.ts|src/main/db-compat\.ts|scripts/check-db-migrations\.mjs)'; then
+  pnpm run check:db-migrations || fail 'pnpm run check:db-migrations'
+else
+  printf 'pre-commit: skip check:db-migrations (no DB schema paths staged)\n' >&2
+fi
+
+if staged_match '^(src/shared/electron-api\.types\.ts|src/preload/|src/main/index\.ts|src/main/ipc/|src/main/updater\.ts|src/main/database\.ts|src/main/mqtt-manager\.ts|src/main/meshcore-mqtt-adapter\.ts|src/main/log-service\.ts|scripts/check-ipc-contract\.mjs)'; then
+  pnpm run check:ipc-contract || fail 'pnpm run check:ipc-contract'
+else
+  printf 'pre-commit: skip check:ipc-contract (no IPC contract paths staged)\n' >&2
+fi
+
+if staged_match '^(reticulum-sidecar/src/stack/config\.rs|src/renderer/lib/reticulum/reticulumInterfaceMode\.ts|scripts/check-reticulum-interface-modes\.mjs)'; then
+  pnpm run check:reticulum-interface-modes || fail 'pnpm run check:reticulum-interface-modes'
+else
+  printf 'pre-commit: skip check:reticulum-interface-modes (no interface-mode paths staged)\n' >&2
+fi
+
+if staged_match '^(reticulum-sidecar/src/stack/config\.rs|src/shared/reticulumDecommissionedHubs\.ts|scripts/check-reticulum-decommissioned-hubs\.mjs)'; then
+  pnpm run check:reticulum-decommissioned-hubs || fail 'pnpm run check:reticulum-decommissioned-hubs'
+else
+  printf 'pre-commit: skip check:reticulum-decommissioned-hubs (no decommissioned-hub paths staged)\n' >&2
+fi
+
 if command -v cargo > /dev/null 2>&1; then
-  pnpm run check:reticulum-sidecar || fail 'pnpm run check:reticulum-sidecar'
+  if staged_match '^(reticulum-sidecar/|scripts/check-reticulum-sidecar\.sh|scripts/clone-ratspeak-stack\.sh|scripts/check-rsnomad\.sh)'; then
+    pnpm run check:reticulum-sidecar || fail 'pnpm run check:reticulum-sidecar'
+  else
+    printf 'pre-commit: skip check:reticulum-sidecar (no sidecar paths staged)\n' >&2
+  fi
 else
   printf 'pre-commit: skip Rust checks (cargo not on PATH)\n' >&2
 fi
+
 pnpm run check:console-log || fail 'pnpm run check:console-log'
 pnpm run check:silent-catches || fail 'pnpm run check:silent-catches'
 pnpm run check:url-hostname-sanitization || fail 'pnpm run check:url-hostname-sanitization'
 pnpm run check:xss-patterns || fail 'pnpm run check:xss-patterns'
 pnpm run check:protocol-string-gates || fail 'pnpm run check:protocol-string-gates'
 pnpm run check:log-panel-filter || fail 'pnpm run check:log-panel-filter'
-if grep -q 'src/renderer/locales/en/translation.json' "$STAGED_LIST" 2> /dev/null; then
+if staged_match 'src/renderer/locales/en/translation\.json'; then
   pnpm run check:i18n || fail 'pnpm run check:i18n'
 else
   pnpm run check:i18n:branch || fail 'pnpm run check:i18n:branch'
 fi
 pnpm run check:licenses || fail 'pnpm run check:licenses'
-# npm retired legacy audit APIs (HTTP 410); pnpm 10.x still calls them. Use pnpm 11+ audit
-# via dlx until packageManager is bumped (pnpm.io migration / issue #11265).
-pnpm dlx --config.minimumReleaseAge=0 pnpm@11.13.0 --config.manage-package-manager-versions=false --config.pm-on-fail=ignore audit --audit-level=high \
-  || fail 'pnpm audit --audit-level=high'
-if grep -qE '^\.github/workflows/' "$STAGED_LIST" 2> /dev/null; then
+
+# Audit only when dependency manifests change (CI / release still audit as configured).
+if [ "$deps_changed" -eq 1 ]; then
+  # npm retired legacy audit APIs (HTTP 410); pnpm 10.x still calls them. Use pnpm 11+ audit
+  # via dlx until packageManager is bumped (pnpm.io migration / issue #11265).
+  pnpm dlx --config.minimumReleaseAge=0 pnpm@11.13.0 --config.manage-package-manager-versions=false --config.pm-on-fail=ignore audit --audit-level=high \
+    || fail 'pnpm audit --audit-level=high'
+else
+  printf 'pre-commit: skip pnpm audit (no package.json / lockfile staged)\n' >&2
+fi
+
+if staged_match '^\.github/workflows/'; then
   actionlint || fail 'actionlint'
 fi
-if grep -qE '\.(ya?ml)$' "$STAGED_LIST" 2> /dev/null; then
+if staged_match '\.(ya?ml)$'; then
   yamllint -f github -s . || fail 'yamllint'
 fi
-# Run affected tests; full suite when test infra or shared contracts change
-if grep -qE '^(vitest\.(config|harness)|src/shared/|src/preload/|src/renderer/vitest\.(setup|electronApiMock)|package\.json|pnpm-lock\.yaml)' "$STAGED_LIST" 2> /dev/null; then
-  pnpm run test:run -- --bail 1 || fail 'pnpm run test:run'
-else
-  pnpm run test:run -- --changed HEAD --bail 1 || fail 'pnpm run test:run'
-fi
+
+# Staged-only related Vitest (full suite on vitest infra / deps; skip docs-only).
+node "$REPO_ROOT/scripts/precommit-tests.mjs" --staged-list "$STAGED_LIST" \
+  || fail 'precommit-tests (vitest)'

@@ -22,6 +22,7 @@ release/
 test-results/
 coverage/
 .vitest-reports/
+.eslintcache
 .context-os
 .rtk
 .githooks/bin/

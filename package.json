@@ -119,6 +119,7 @@
     "test:logic": "vitest run --project renderer-logic",
     "test:main": "vitest run --project main",
     "test:run": "vitest run",
+    "test:staged": "node scripts/precommit-tests.mjs",
     "test:ui": "vitest run --project renderer-ui",
     "test:verbose": "vitest run --reporter=verbose",
     "trace-deprecation": "pnpm run build && NODE_OPTIONS='--trace-deprecation' node scripts/start-electron.mjs",
