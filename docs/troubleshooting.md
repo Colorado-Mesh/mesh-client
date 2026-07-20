@@ -719,13 +719,13 @@ Startup maintenance can delete stale MeshCore contacts by age. Important details
 
 - **Large contact/repeater lists (1,000+)** — list tabs virtualize rows, but USB serial still serializes companion RPCs; prefer **Nodes → search** for one repeater instead of scrolling the full Repeaters table.
 - **Queued public messages (Sync now)** — MsgWaiting backlog is drained **incrementally in the background** after connect and when the radio pushes event 131 (including after you send). The **header status indicator** (queued backlog and active sync on any protocol tab; **paused/deferred** state only on the MeshCore tab) shows silent auto-drain or deferred drain behind repeater admin/trace work. The determinate progress state appears when you click **Sync now** and the radio confirms a non-empty queue. Large backlogs may take a minute on manual sync; wait for the indicator to finish before switching tabs during heavy sync.
-- **Multi-hop repeater RPCs** (Neighbors, Status, telemetry) share one serialized USB serial queue. Retrying rapidly or querying distant repeaters (8+ hops) can block the link for up to **120 seconds** per request; queued pings up to **180s** each.
+- **Multi-hop repeater RPCs** (Neighbors, Status, telemetry) share one serialized USB serial queue. Retrying rapidly or querying distant repeaters (8+ hops) can block the link for up to **120 seconds** per request; queued pings up to **180s** each. **Load more** on a neighbor list is another full Neighbors RPC (~120s) — prefer it over re-clicking **Neighbors** (which replaces the first page). Page request size is 50, but firmware reply buffers often return fewer rows.
 - **Concurrent Ping + Status** — MeshCore allows only **one traceroute at a time** on the RF link; multiple pings are queued serially. Status/Neighbors/Sensors wait for an in-progress ping to finish before using the companion queue (see [Serialized traceroutes](meshcore-meshtastic-parity.md#serialized-traceroutes-protocol-requirement)).
 
 **Fix**:
 
 1. Stay on **Nodes** or **Chat** for day-to-day use; open **Repeaters** only when you need bulk repeater admin.
-2. Avoid repeated **Neighbors** / **Status** clicks on the same repeater while a request is in progress.
+2. Avoid repeated **Neighbors** / **Status** clicks on the same repeater while a request is in progress; use **Load more** when the heading total exceeds the listed rows.
 3. After **sleep or hibernate**, if MeshCore does not reconnect automatically, use **Disconnect → Connect** on the Connection panel.
 4. If the UI freezes completely on USB serial, **quit mesh-client** (not only Disconnect), unplug/replug USB if needed, reopen, and **Select serial port**. See also [USB serial frozen](#meshcore--meshtastic-usb-serial-app-frozen-or-stuck-on-reconnecting).
 
@@ -749,7 +749,13 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **Cause**: The button is only shown for **Repeater**-type contacts (contact type 2). Chat and Room contacts do not support the neighbor query command.
 
-**Fix**: Open the node detail modal for a Repeater node (shown as "Repeater" in the hardware model field).
+**Fix**: Open the node detail modal for a Repeater node (shown as "Repeater" in the hardware model field). If the heading total is larger than the listed rows, use **Load more** (Repeaters panel or node detail) instead of re-querying from scratch.
+
+### MeshCore: Status / Sensors / Neighbors toast when disconnected
+
+**Cause**: Status, Telemetry, and Neighbors throw when there is no active MeshCore connection so the Repeaters panel and node detail can show an error toast (previously Status/Telemetry could fail silently).
+
+**Fix**: Reconnect the radio on the Connection panel, then retry the admin action.
 
 ### MeshCore: Cannot connect via Bluetooth, USB, or HTTP
 

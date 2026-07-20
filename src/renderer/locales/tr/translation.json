@@ -3780,7 +3780,10 @@
     "cliAutoPingToast": "CLI öncesi Ping ile rota oluşturuluyor…",
     "cliAutoPingFailed": "Ping başarısız oldu; çok atlama tekrarlayıcılarda CLI'yi yeniden denemeden önce Ping'i manuel olarak çalıştırın.",
     "cliCommandTooLong": "CLI komutu çok uzun (en fazla {{max}} karakter).",
-    "currentRouteLabel": "Mevcut rota:"
+    "currentRouteLabel": "Mevcut rota:",
+    "neighborsLoadMore": "Daha fazla yükle ({{loaded}}/{{total}})",
+    "neighborsLoadMoreAria": "Daha fazla komşu yükleyin ({{loaded}}/{{total}} yüklü)",
+    "neighborsLoadingMore": "Yükleniyor…"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Anons aralığı (saniye)",

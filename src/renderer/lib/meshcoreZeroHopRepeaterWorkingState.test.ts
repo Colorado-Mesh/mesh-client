@@ -105,7 +105,8 @@ describe(`meshcore 0-hop repeater working state (${AI_GUARD})`, () => {
     const statusBody = extractUseCallbackBody(RUNTIME_SOURCE, 'requestRepeaterStatus');
     const neighborsBody = extractUseCallbackBody(RUNTIME_SOURCE, 'requestNeighbors');
     expect(statusBody).toContain("runMeshcoreRepeaterRpcOnce('status'");
-    expect(neighborsBody).toContain("runMeshcoreRepeaterRpcOnce('neighbors'");
+    expect(neighborsBody).toContain('runMeshcoreRepeaterRpcOnce');
+    expect(neighborsBody).toContain("'neighbors'");
   });
 
   it('0-hop ping seeds 1-byte path and may direct-retry with full pubkey after cancel settles', () => {
@@ -126,5 +127,29 @@ describe(`meshcore 0-hop repeater working state (${AI_GUARD})`, () => {
     expect(statusBody).toContain('awaitMeshcoreRepeaterAdminRfIdle');
     expect(telemetryBody).toContain('awaitMeshcoreRepeaterAdminRfIdle');
     expect(neighborsBody).toContain('awaitMeshcoreRepeaterAdminRfIdle');
+  });
+
+  it('status and telemetry throw when disconnected (toast path), same as neighbors', () => {
+    // Early resolveMeshcoreConn() null must throw — bare return skips RepeatersPanel toast.
+    const statusBody = extractUseCallbackBody(RUNTIME_SOURCE, 'requestRepeaterStatus');
+    const telemetryBody = extractUseCallbackBody(RUNTIME_SOURCE, 'requestTelemetry');
+    const neighborsBody = extractUseCallbackBody(RUNTIME_SOURCE, 'requestNeighbors');
+    for (const body of [statusBody, telemetryBody, neighborsBody]) {
+      expect(body).toMatch(
+        /if \(!resolveMeshcoreConn\(\)\) \{[\s\S]*?throw new Error\(MESHCORE_ERR_NOT_CONNECTED\);/,
+      );
+      expect(body).not.toMatch(
+        /if \(!resolveMeshcoreConn\(\)\) \{[\s\S]*?next\.set\(nodeId, MESHCORE_ERR_NOT_CONNECTED\);[\s\S]*?return;\s*\}/,
+      );
+    }
+  });
+
+  it('neighbors fetch uses paged GetNeighbours count and optional offset', () => {
+    const neighborsBody = extractUseCallbackBody(RUNTIME_SOURCE, 'requestNeighbors');
+    expect(neighborsBody).toContain('MESHCORE_NEIGHBORS_PAGE_SIZE');
+    expect(neighborsBody).toContain('opts?.offset');
+    expect(neighborsBody).toContain('mergeMeshcoreNeighborPage');
+    expect(neighborsBody).toContain('coalesceKey');
+    expect(neighborsBody).not.toMatch(/count:\s*10\b/);
   });
 });

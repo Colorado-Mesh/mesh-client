@@ -25,6 +25,7 @@ import type {
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
+  MeshcoreRequestNeighborsOpts,
   MeshcoreTraceResultEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
 import { translateMeshcoreUserMessage } from '../lib/meshcore/meshcoreMessageI18n';
@@ -108,7 +109,7 @@ interface NodeDetailModalProps {
   meshcoreTelemetryError?: string;
   onRequestTelemetry?: (nodeId: number) => Promise<void>;
   meshcoreNeighbors?: MeshCoreNeighborResult;
-  onRequestNeighbors?: (nodeId: number) => Promise<void>;
+  onRequestNeighbors?: (nodeId: number, opts?: MeshcoreRequestNeighborsOpts) => Promise<void>;
   meshcoreNeighborError?: string;
   /** PaxCounter history from Meshtastic (capped session series per node) */
   paxCounterData?: Map<number, PaxCounterPoint[]>;
@@ -322,6 +323,8 @@ export default function NodeDetailModal({
   const [showTelemetry, setShowTelemetry] = useState(false);
   const [neighborsPending, setNeighborsPending] = useState(false);
   const [showMeshcoreNeighbors, setShowMeshcoreNeighbors] = useState(false);
+  const meshcoreNeighborsRef = useRef(meshcoreNeighbors);
+  meshcoreNeighborsRef.current = meshcoreNeighbors;
   const [exportContactPending, setExportContactPending] = useState(false);
   const [shareContactPending, setShareContactPending] = useState(false);
   const [radioContactCount, setRadioContactCount] = useState<number | null>(null);
@@ -1055,6 +1058,84 @@ export default function NodeDetailModal({
                           {t('nodeDetailModal.noNeighborsReported')}
                         </div>
                       )}
+                      {meshcoreNeighbors.totalNeighboursCount >
+                        meshcoreNeighbors.neighbours.length &&
+                        meshcoreNeighbors.neighbours.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void (async () => {
+                                if (
+                                  node.hops_away != null &&
+                                  node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS
+                                ) {
+                                  return;
+                                }
+                                setNeighborsPending(true);
+                                setActionStatus(t('nodeDetailModal.requestingNeighbors'));
+                                try {
+                                  if (
+                                    !(await ensureRemoteRpcAccess(
+                                      node.node_id,
+                                      node.hw_model,
+                                      'admin',
+                                    ))
+                                  ) {
+                                    setActionStatus(null);
+                                    return;
+                                  }
+                                  const requestOffset =
+                                    meshcoreNeighborsRef.current?.neighbours.length ?? 0;
+                                  if (requestOffset <= 0) {
+                                    setActionStatus(null);
+                                    return;
+                                  }
+                                  await onRequestNeighbors?.(node.node_id, {
+                                    offset: requestOffset,
+                                  });
+                                  setActionStatus(null);
+                                } catch (e) {
+                                  console.warn(
+                                    '[NodeDetailModal] requestNeighbors load more failed ' +
+                                      errLikeToLogString(e),
+                                  );
+                                  setActionStatus(
+                                    e instanceof Error
+                                      ? e.message
+                                      : t('nodeDetailModal.neighborsFailed', {
+                                          message: String(e),
+                                        }),
+                                  );
+                                } finally {
+                                  setNeighborsPending(false);
+                                }
+                              })();
+                            }}
+                            disabled={
+                              !isConnected ||
+                              neighborsPending ||
+                              (node.hops_away != null &&
+                                node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS)
+                            }
+                            aria-busy={neighborsPending}
+                            aria-label={
+                              neighborsPending
+                                ? t('repeatersPanel.neighborsLoadingMore')
+                                : t('repeatersPanel.neighborsLoadMoreAria', {
+                                    loaded: meshcoreNeighbors.neighbours.length,
+                                    total: meshcoreNeighbors.totalNeighboursCount,
+                                  })
+                            }
+                            className="mt-1 rounded border border-purple-700 bg-purple-900/40 px-2 py-0.5 text-xs font-medium text-purple-300 transition-colors hover:bg-purple-800/60 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            {neighborsPending
+                              ? t('repeatersPanel.neighborsLoadingMore')
+                              : t('repeatersPanel.neighborsLoadMore', {
+                                  loaded: meshcoreNeighbors.neighbours.length,
+                                  total: meshcoreNeighbors.totalNeighboursCount,
+                                })}
+                          </button>
+                        )}
                     </div>
                   </div>
                 )}

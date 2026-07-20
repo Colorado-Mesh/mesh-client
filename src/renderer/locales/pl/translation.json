@@ -3780,7 +3780,10 @@
     "cliAutoPingToast": "Ustalanie trasy za pomocą polecenia ping przed CLI…",
     "cliAutoPingFailed": "Ping nie powiódł się; uruchom Ping ręcznie przed ponowną próbą CLI na repeaterach wielokrotnych przeskoków.",
     "cliCommandTooLong": "Polecenie CLI jest zbyt długie (maks. {{max}} znaków).",
-    "currentRouteLabel": "Aktualna trasa:"
+    "currentRouteLabel": "Aktualna trasa:",
+    "neighborsLoadMore": "Załaduj więcej ({{loaded}} z {{total}} załadowanych)",
+    "neighborsLoadMoreAria": "Załaduj więcej sąsiadów ({{loaded}} z {{total}} załadowanych)",
+    "neighborsLoadingMore": "Wczytywanie…"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",

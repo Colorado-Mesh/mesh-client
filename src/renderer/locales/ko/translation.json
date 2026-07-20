@@ -3780,7 +3780,10 @@
     "cliAutoPingToast": "CLI 전에 Ping으로 경로 설정 중...",
     "cliAutoPingFailed": "핑 실패. 멀티 홉 리피터에서 CLI를 다시 시도하기 전에 수동으로 핑을 실행하십시오.",
     "cliCommandTooLong": "CLI 명령이 너무 깁니다(최대 {{max}}자).",
-    "currentRouteLabel": "현재 경로:"
+    "currentRouteLabel": "현재 경로:",
+    "neighborsLoadMore": "더 보기 ({{loaded}}/{{total}} 로드됨)",
+    "neighborsLoadMoreAria": "더 많은 이웃 로드 ({{loaded}}/{{total}} 로드됨)",
+    "neighborsLoadingMore": "로드 중…"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",

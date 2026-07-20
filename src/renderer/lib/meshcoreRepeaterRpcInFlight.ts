@@ -11,8 +11,10 @@ const traceInFlightByNode = new Map<number, Promise<unknown>>();
 /** Chains status/telemetry/neighbors on the same node (firmware handles one admin RPC at a time). */
 const adminQueueTailByNode = new Map<number, Promise<unknown>>();
 
-function rpcKey(kind: MeshcoreRepeaterRpcKind, nodeId: number): string {
-  return `${kind}:${nodeId}`;
+function rpcKey(kind: MeshcoreRepeaterRpcKind, nodeId: number, coalesceKey?: string): string {
+  return coalesceKey != null && coalesceKey !== ''
+    ? `${kind}:${nodeId}:${coalesceKey}`
+    : `${kind}:${nodeId}`;
 }
 
 function runMeshcoreTraceRpcOnce<T>(nodeId: number, fn: () => Promise<T>): Promise<T> {
@@ -37,8 +39,9 @@ function runMeshcoreAdminRpcOnce<T>(
   kind: MeshcoreRepeaterRpcKind,
   nodeId: number,
   fn: () => Promise<T>,
+  coalesceKey?: string,
 ): Promise<T> {
-  const key = rpcKey(kind, nodeId);
+  const key = rpcKey(kind, nodeId, coalesceKey);
   const existing = inFlightByKey.get(key);
   if (existing) {
     return existing as Promise<T>;
@@ -62,16 +65,26 @@ function runMeshcoreAdminRpcOnce<T>(
   return tracked;
 }
 
+export interface MeshcoreRepeaterRpcOnceOpts {
+  /**
+   * Disambiguates in-flight coalesce. Same kind+node+coalesceKey returns the existing promise;
+   * different keys still serialize on the per-node admin queue (both `fn`s run).
+   * Use for neighbors paging so offset 0 and offset N do not share one closed-over fetch.
+   */
+  coalesceKey?: string;
+}
+
 /** Serialize duplicate repeater RPC clicks for the same node — returns the in-flight promise. */
 export function runMeshcoreRepeaterRpcOnce<T>(
   kind: MeshcoreRepeaterRpcKind,
   nodeId: number,
   fn: () => Promise<T>,
+  opts?: MeshcoreRepeaterRpcOnceOpts,
 ): Promise<T> {
   if (kind === 'trace') {
     return runMeshcoreTraceRpcOnce(nodeId, fn);
   }
-  return runMeshcoreAdminRpcOnce(kind, nodeId, fn);
+  return runMeshcoreAdminRpcOnce(kind, nodeId, fn, opts?.coalesceKey);
 }
 
 /** Test-only reset. */

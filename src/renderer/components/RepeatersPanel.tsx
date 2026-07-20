@@ -14,6 +14,7 @@ import type {
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
+  MeshcoreRequestNeighborsOpts,
   MeshcoreTraceResultEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
 import {
@@ -66,7 +67,7 @@ interface Props {
   onPing: (nodeId: number) => Promise<boolean | undefined>;
   onDeleteRepeater: (nodeId: number) => Promise<void>;
   isConnected: boolean;
-  onRequestNeighbors?: (nodeId: number) => Promise<void>;
+  onRequestNeighbors?: (nodeId: number, opts?: MeshcoreRequestNeighborsOpts) => Promise<void>;
   meshcoreNeighbors?: Map<number, MeshCoreNeighborResult>;
   meshcoreNeighborErrors?: Map<number, string>;
   onRequestTelemetry?: (nodeId: number) => Promise<void>;
@@ -294,6 +295,9 @@ export default function RepeatersPanel({
   const [deleteLoadingSet, setDeleteLoadingSet] = useState<Set<number>>(new Set());
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [expandedNeighbors, setExpandedNeighbors] = useState<Set<number>>(new Set());
+  const [neighborsUiPending, setNeighborsUiPending] = useState<Set<number>>(new Set());
+  const meshcoreNeighborsRef = useRef(meshcoreNeighbors);
+  meshcoreNeighborsRef.current = meshcoreNeighbors;
   const [expandedTelemetry, setExpandedTelemetry] = useState<Set<number>>(new Set());
   const [expandedPath, setExpandedPath] = useState<Set<number>>(new Set());
   const [expandedCli, setExpandedCli] = useState<Set<number>>(new Set());
@@ -492,10 +496,11 @@ export default function RepeatersPanel({
     }
   };
 
-  const handleNeighbors = async (nodeId: number) => {
+  const handleNeighbors = async (nodeId: number, opts?: { loadMore?: boolean }) => {
     const node = nodes.get(nodeId);
     if (node && isMeshcoreNeighborsHopBlocked(node)) return;
-    if (expandedNeighbors.has(nodeId)) {
+    const isLoadMore = opts?.loadMore === true;
+    if (!isLoadMore && expandedNeighbors.has(nodeId)) {
       setExpandedNeighbors((prev) => {
         const n = new Set(prev);
         n.delete(nodeId);
@@ -503,21 +508,41 @@ export default function RepeatersPanel({
       });
       return;
     }
-    await runRepeaterAdminAction(
-      t,
-      nodeId,
-      nodes,
-      (id) => t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: id.toString(16) }),
-      ensureRepeaterAuth,
-      refreshStoredRepeaters,
-      async () => {
-        await onRequestNeighbors?.(nodeId);
-        setExpandedNeighbors((prev) => new Set([...prev, nodeId]));
-      },
-      'repeatersPanel.neighborsFailedToast',
-      'requestNeighbors error',
-      addToast,
-    );
+    setNeighborsUiPending((prev) => new Set(prev).add(nodeId));
+    try {
+      await runRepeaterAdminAction(
+        t,
+        nodeId,
+        nodes,
+        (id) => t('repeatersPanel.savedPasswordOrphanLabel', { nodeId: id.toString(16) }),
+        ensureRepeaterAuth,
+        refreshStoredRepeaters,
+        async () => {
+          // Re-read length after auth so concurrent refresh / double-submit do not reuse a stale offset.
+          if (isLoadMore) {
+            const requestOffset = meshcoreNeighborsRef.current?.get(nodeId)?.neighbours.length ?? 0;
+            if (requestOffset <= 0) return;
+            await onRequestNeighbors?.(nodeId, { offset: requestOffset });
+            return;
+          }
+          await onRequestNeighbors?.(nodeId);
+          setExpandedNeighbors((prev) => new Set([...prev, nodeId]));
+        },
+        'repeatersPanel.neighborsFailedToast',
+        isLoadMore ? 'requestNeighbors load more error' : 'requestNeighbors error',
+        addToast,
+      );
+    } finally {
+      setNeighborsUiPending((prev) => {
+        const next = new Set(prev);
+        next.delete(nodeId);
+        return next;
+      });
+    }
+  };
+
+  const handleNeighborsLoadMore = async (nodeId: number) => {
+    await handleNeighbors(nodeId, { loadMore: true });
   };
 
   const handleTelemetry = async (nodeId: number) => {
@@ -820,11 +845,12 @@ export default function RepeatersPanel({
                   const pingErrorRaw = meshcorePingErrors?.get(node.node_id);
                   const isDeleteLoading = deleteLoadingSet.has(node.node_id);
                   const isDeleteConfirm = deleteConfirmId === node.node_id;
-                  const isNeighborsLoading = isRepeaterAdminRpcPending(
-                    meshcoreRepeaterRpcPending,
-                    node.node_id,
-                    'neighbors',
-                  );
+                  const isNeighborsLoading =
+                    isRepeaterAdminRpcPending(
+                      meshcoreRepeaterRpcPending,
+                      node.node_id,
+                      'neighbors',
+                    ) || neighborsUiPending.has(node.node_id);
                   const isTelemetryLoading = isRepeaterAdminRpcPending(
                     meshcoreRepeaterRpcPending,
                     node.node_id,
@@ -1350,6 +1376,41 @@ export default function RepeatersPanel({
                                     </div>
                                   );
                                 })}
+                                {neighborData.totalNeighboursCount >
+                                  neighborData.neighbours.length &&
+                                  neighborData.neighbours.length > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleNeighborsLoadMore(node.node_id)}
+                                      disabled={
+                                        !isConnected || isNeighborsLoading || neighborHopBlocked
+                                      }
+                                      aria-busy={isNeighborsLoading}
+                                      title={
+                                        neighborHopBlocked
+                                          ? t('repeatersPanel.neighborsHopTooFar', {
+                                              hops: MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS,
+                                            })
+                                          : undefined
+                                      }
+                                      aria-label={
+                                        isNeighborsLoading
+                                          ? t('repeatersPanel.neighborsLoadingMore')
+                                          : t('repeatersPanel.neighborsLoadMoreAria', {
+                                              loaded: neighborData.neighbours.length,
+                                              total: neighborData.totalNeighboursCount,
+                                            })
+                                      }
+                                      className="mt-1 self-start rounded border border-purple-700 bg-purple-900/40 px-2 py-0.5 text-xs font-medium text-purple-300 transition-colors hover:bg-purple-800/60 disabled:opacity-40"
+                                    >
+                                      {isNeighborsLoading
+                                        ? t('repeatersPanel.neighborsLoadingMore')
+                                        : t('repeatersPanel.neighborsLoadMore', {
+                                            loaded: neighborData.neighbours.length,
+                                            total: neighborData.totalNeighboursCount,
+                                          })}
+                                    </button>
+                                  )}
                               </div>
                             )}
                           </td>
@@ -1510,6 +1571,11 @@ export default function RepeatersPanel({
                                   'status',
                                   'config',
                                   'help',
+                                  'clock',
+                                  'clock sync',
+                                  'clear stats',
+                                  'advert',
+                                  'board',
                                   'get path.hash.mode',
                                   'set path.hash.mode 0',
                                   'set path.hash.mode 1',
