@@ -604,6 +604,8 @@ Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-comm
 10. `pnpm audit --audit-level=high` only when dependency manifests staged; `actionlint` when `.github/workflows/*` staged; `yamllint` when any `*.yaml` / `*.yml` staged
 11. `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)
 
+**Release / CI full suite:** `pnpm run release` (`scripts/release.sh`) and PR [`tests.yaml`](../.github/workflows/tests.yaml) always run `pnpm run test:run` (full Vitest) — never `test:staged`. Release also runs the ungated `check:*` set and requires actionlint + yamllint.
+
 Install hook dependencies via [Helper scripts](#8-helper-scripts-auto-install-where-possible) (`setup:actionlint`, yamllint via pip/brew/apt).
 
 Emergency bypass (temporary only):

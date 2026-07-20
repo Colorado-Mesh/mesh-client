@@ -7,7 +7,7 @@ This file is self-contained. ARCHITECTURE.md and CONTRIBUTING.md are human refer
 - Only change what was asked. No drive-by refactors, reformatting, or types/comments outside scope.
 - **Testing:** Ship a passing test for behavioral changes; do not call the task done without it.
 - **Stateful/I/O code:** Preserve integrity on failure; document failure point, fallback, and logging where it matters.
-- **Pre-commit patience:** Pre-commit runs staged-related Vitest (`pnpm run test:staged`), staged ESLint, full typecheck, and path-gated `check:*` scripts. Typical small commits are much faster than a full suite; vitest infra / lockfile changes still force a full Vitest run. Be patient and let hooks finish — do not interrupt or force-skip. **PR CI** ([`tests.yaml`](.github/workflows/tests.yaml)) always runs the full suite with coverage; green pre-commit ≠ green CI.
+- **Pre-commit patience:** Pre-commit runs staged-related Vitest (`pnpm run test:staged`), staged ESLint, full typecheck, and path-gated `check:*` scripts. Typical small commits are much faster than a full suite; vitest infra / lockfile changes still force a full Vitest run. Be patient and let hooks finish — do not interrupt or force-skip. **PR CI** ([`tests.yaml`](.github/workflows/tests.yaml)) and **`pnpm run release`** (`scripts/release.sh`) always run the **full** Vitest suite (`pnpm run test:run`) plus ungated `check:*` scanners — never `test:staged` / `test:changed` / `vitest related`. Green pre-commit ≠ green CI or release.
 - **Fresh clone:** Before other setup work, run `node scripts/check-environment.mjs` (works before pnpm is installed). After `pnpm install`, re-run `pnpm run check:environment`. Fix required failures using the printed hints and `setup:*` scripts; optional warnings can wait.
 
 ### Platform parity
@@ -129,7 +129,7 @@ Adding a cross-boundary feature:
 8. `pnpm audit` only when dependency manifests staged; `actionlint` / `yamllint` when workflows / YAML staged
 9. `pnpm run test:staged` → `scripts/precommit-tests.mjs` (staged-only `vitest related`; full suite for vitest config/setup/deps; skip when no source/test staged)
 
-Before PR: `pnpm run lint`, `typecheck`, `test:run` (full suite), plus any relevant `check:*`.
+Before PR: `pnpm run lint`, `typecheck`, `test:run` (full suite), plus any relevant `check:*`. Release pre-flight (`pnpm run release`) always uses `test:run` + full `check:*` (no path-gating / soft-skips).
 
 ## 7. Git & PR Workflow
 

@@ -238,7 +238,7 @@ The pre-commit hook (`.githooks/pre-commit`) runs checks beyond what GitHub Acti
 - `pnpm audit` only when dependency manifests staged; `actionlint` / `yamllint` only when relevant files are staged
 - `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)
 
-**PR CI** ([`tests.yaml`](../.github/workflows/tests.yaml)) always runs the **full** Vitest suite with coverage. Green pre-commit does not replace that gate.
+**PR CI** ([`tests.yaml`](../.github/workflows/tests.yaml)) and **`pnpm run release`** always run the **full** Vitest suite (`pnpm run test:run`). Green pre-commit does not replace those gates.
 
 CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage tests. i18n quality is enforced locally via pre-commit and indirectly in CI through Vitest (`locale-quality.test.ts`).
 
