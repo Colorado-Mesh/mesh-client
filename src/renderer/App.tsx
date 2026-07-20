@@ -2449,6 +2449,18 @@ function AppContent() {
     setActiveTab(1); // Switch to Chat tab
   }, []);
 
+  const handleDeleteNode = useCallback(
+    async (nodeNum: number) => {
+      if (detailModalProtocol === 'meshcore') {
+        await meshcorePanelActions.deleteNode(nodeNum);
+      } else {
+        await meshtasticPanelActions.deleteNode(nodeNum);
+      }
+      setSelectedNodeId(null);
+    },
+    [detailModalProtocol, meshcorePanelActions, meshtasticPanelActions],
+  );
+
   const handleOpenReticulumDmByHash = useCallback(
     (hash: string) => {
       const nodeId = openReticulumDmFromHash(hash);
@@ -4284,17 +4296,9 @@ function AppContent() {
             }
             traceRouteHops={traceRouteHops}
             onDeleteNode={
-              detailModalProtocol === 'meshcore'
-                ? async (nodeNum) => {
-                    await meshcorePanelActions.deleteNode(nodeNum);
-                    setSelectedNodeId(null);
-                  }
-                : detailModalProtocol === 'meshtastic'
-                  ? async (nodeNum) => {
-                      await meshtasticPanelActions.deleteNode(nodeNum);
-                      setSelectedNodeId(null);
-                    }
-                  : undefined
+              detailModalProtocol === 'meshcore' || detailModalProtocol === 'meshtastic'
+                ? handleDeleteNode
+                : undefined
             }
             onMessageNode={
               selectedNode?.node_id !== detailMyNodeNum && selectedNode?.hw_model !== 'Room'

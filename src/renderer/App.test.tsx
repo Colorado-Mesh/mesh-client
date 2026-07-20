@@ -907,7 +907,9 @@ describe('App accessibility', () => {
     const onNodeClick = lastChatPanelProps.current?.onNodeClick as
       ((nodeId: number) => void) | null;
     expect(onNodeClick).toBeTruthy();
-    onNodeClick?.(0x23456789);
+    act(() => {
+      onNodeClick?.(0x23456789);
+    });
 
     await waitFor(() => {
       expect(lastNodeDetailModalProps.current).not.toBeNull();
@@ -917,7 +919,9 @@ describe('App accessibility', () => {
     const onDeleteNode = lastNodeDetailModalProps.current?.onDeleteNode as
       ((nodeId: number) => Promise<void>) | undefined;
     expect(onDeleteNode).toBeTruthy();
-    await onDeleteNode?.(0x23456789);
+    await act(async () => {
+      await onDeleteNode?.(0x23456789);
+    });
     expect(meshtasticRuntime.deleteNode).toHaveBeenCalledWith(0x23456789);
   });
 
