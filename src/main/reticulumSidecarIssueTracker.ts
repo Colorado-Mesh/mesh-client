@@ -33,11 +33,11 @@ function parseBleRNodeConnectFailedIfaceName(plain: string): string | null {
   const failedIdx = plain.toLowerCase().indexOf(BLE_RNODE_CONNECT_FAILED_PREFIX.toLowerCase());
   if (failedIdx < 0) return null;
   const afterFailed = plain.slice(failedIdx + BLE_RNODE_CONNECT_FAILED_PREFIX.length);
-  const nameEq = /\bname\s*=\s*/i.exec(afterFailed);
-  if (nameEq?.index == null) return null;
-  const rest = afterFailed.slice(nameEq.index + nameEq[0].length);
-  const errorIdx = rest.search(/\s+error\s*=/i);
-  const name = (errorIdx >= 0 ? rest.slice(0, errorIdx) : rest).trim();
+  const nameKey = /\bname[ \t]{0,16}=[ \t]{0,16}/i.exec(afterFailed);
+  if (nameKey?.index == null) return null;
+  const rest = afterFailed.slice(nameKey.index + nameKey[0].length);
+  const errorMatch = /[ \t]+error[ \t]{0,16}=/i.exec(rest);
+  const name = (errorMatch?.index != null ? rest.slice(0, errorMatch.index) : rest).trim();
   return name.length > 0 ? name : null;
 }
 

@@ -505,7 +505,7 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
             void runWithRNode(async (rnode) => {
               setPairingPin(null);
               setPairingPending(true);
-              // startBluetoothPairing resolves after the KISS command, not after CMD_BT_PIN.
+              // Keeps the USB session open until CMD_BT_PIN or pairing timeout.
               const attempt = pairingSessionRef.current.begin(() => {
                 setPairingPending(false);
               });

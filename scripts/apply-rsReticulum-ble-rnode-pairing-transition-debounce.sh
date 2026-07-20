@@ -22,7 +22,15 @@ if [[ ! -f "${PATCH_FILE}" ]]; then
   exit 1
 fi
 
-if [[ -f "${BLE_RNODE_RS}" ]] && grep -q 'PAIRING_TRANSITION_RETRY_WAIT' "${BLE_RNODE_RS}"; then
+overlay_already_present() {
+  [[ -f "${BLE_RNODE_RS}" ]] || return 1
+  # Require the const declaration and its reconnect use site (not a bare identifier mention).
+  grep -qE '^[[:space:]]*const PAIRING_TRANSITION_RETRY_WAIT: u64 = 30;' "${BLE_RNODE_RS}" \
+    && grep -qE 'PAIRING_TRANSITION_RETRY_WAIT' "${BLE_RNODE_RS}" \
+    && grep -qE 'if pairing_transition \{' "${BLE_RNODE_RS}"
+}
+
+if overlay_already_present; then
   echo "ble_rnode pairing-transition debounce overlay already present on rsReticulum @ $(git -C "${RNS_DIR}" rev-parse --short HEAD)"
   exit 0
 fi
@@ -48,7 +56,7 @@ if [[ "${current_head}" != "${RS_RETICULUM_REF}" ]]; then
   git -C "${RNS_DIR}" checkout "${RS_RETICULUM_REF}"
 fi
 
-if [[ -f "${BLE_RNODE_RS}" ]] && grep -q 'PAIRING_TRANSITION_RETRY_WAIT' "${BLE_RNODE_RS}"; then
+if overlay_already_present; then
   echo "ble_rnode pairing-transition debounce overlay already present on rsReticulum @ ${RS_RETICULUM_REF:0:12}"
   exit 0
 fi

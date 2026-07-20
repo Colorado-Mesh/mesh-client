@@ -23,7 +23,14 @@ if [[ ! -f "${PATCH_FILE}" ]]; then
 fi
 
 # Upstream PR: https://github.com/ratspeak/rsReticulum/pull/15
-if [[ -f "${RNODE_RS}" ]] && grep -q 'RNODE_TCP_ACTIVITY_KEEPALIVE_MS' "${RNODE_RS}"; then
+overlay_already_present() {
+  [[ -f "${RNODE_RS}" ]] || return 1
+  # Require the pub const and its Duration::from_millis use (not a bare identifier mention).
+  grep -qE '^[[:space:]]*pub const RNODE_TCP_ACTIVITY_KEEPALIVE_MS: u64 =' "${RNODE_RS}" \
+    && grep -qE 'from_millis\(RNODE_TCP_ACTIVITY_KEEPALIVE_MS\)' "${RNODE_RS}"
+}
+
+if overlay_already_present; then
   echo "rnode TCP activity-keepalive overlay already present on rsReticulum @ $(git -C "${RNS_DIR}" rev-parse --short HEAD)"
   exit 0
 fi
@@ -50,7 +57,7 @@ if [[ "${current_head}" != "${RS_RETICULUM_REF}" ]]; then
 fi
 
 # Upstream PR: https://github.com/ratspeak/rsReticulum/pull/15
-if [[ -f "${RNODE_RS}" ]] && grep -q 'RNODE_TCP_ACTIVITY_KEEPALIVE_MS' "${RNODE_RS}"; then
+if overlay_already_present; then
   echo "rnode TCP activity-keepalive overlay already present on rsReticulum @ ${RS_RETICULUM_REF:0:12}"
   exit 0
 fi
