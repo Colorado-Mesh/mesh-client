@@ -38,7 +38,7 @@ The release script (`scripts/release.sh`) is the supported maintainer path. It:
 2. Runs **`pnpm update`** and **`pnpm dedupe`** (updates lockfile before the bump)
 3. Syncs **`org.coloradomesh.MeshClient.yml`** Electron vendored archives to match `package.json` (`node scripts/sync-flatpak-electron.mjs`)
 4. Auto-detects **patch / minor / major** from [Conventional Commits](https://www.conventionalcommits.org/) since the last tag (or accept an explicit bump — see below)
-5. Runs **pre-flight validation** (format, lint, typecheck, security `check:*`, **`check:flatpak`**, dedupe check, audit, actionlint, yamllint, tests)
+5. Runs **pre-flight validation** (`check:environment`, format, lint, typecheck, **all** `check:*` scanners including path-gated pre-commit ones, **`check:flatpak`**, **`check:i18n`**, dedupe check, audit, **required** actionlint + yamllint, **full** Vitest via `pnpm run test:run`, Reticulum sidecar `cargo test`)
 6. Prints **copy-paste release notes** grouped by feat/fix/other/breaking
 7. Bumps `package.json` via `pnpm version`
 8. Prepends a `<release>` entry to `flatpak/org.coloradomesh.MeshClient.metainfo.xml`
@@ -54,6 +54,8 @@ pnpm run release --auto # explicit auto-detect
 ```
 
 The script prompts twice (start pre-flight, then confirm after checks pass). **Expect several minutes** for the full validation chain.
+
+**Full suite only:** Release must never use `test:staged`, `test:changed`, or `vitest related`. Pre-commit may run a staged subset for speed; release matches PR CI by running the unrestricted `pnpm run test:run` (`vitest run`) and does not soft-skip actionlint/yamllint when those tools are missing.
 
 If pre-flight fails, fix the issue on `main` and run `pnpm run release` again — do not tag manually until checks pass.
 

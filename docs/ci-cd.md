@@ -234,9 +234,11 @@ The pre-commit hook (`.githooks/pre-commit`) runs checks beyond what GitHub Acti
 - **Staged-file** Prettier + markdownlint (not a full-tree `pnpm run format` / `lint:md`)
 - `pnpm dedupe` when dependency manifests are staged
 - `pnpm run i18n:auto-translate` when `en/translation.json` is staged (fills new English keys vs `HEAD`) + re-stages locales
-- `pnpm run lint`, `typecheck`, and the full `check:*` chain (`check:i18n` when English locale staged, else `check:i18n:branch`)
-- `pnpm audit --audit-level=high`; `actionlint` / `yamllint` only when relevant files are staged
-- `pnpm run test:run -- --changed HEAD --bail 1` (full suite when vitest config, shared/preload, vitest setup mocks, or dependency manifests change)
+- Staged ESLint (`--cache`) + full `typecheck`; always-on cheap `check:*` scanners; path-gated flatpak / DB / IPC / reticulum catalog / sidecar stub checks (sidecar stub also requires `cargo` on `PATH` when sidecar paths are staged; `check:i18n` when English locale staged, else `check:i18n:branch`)
+- `pnpm audit` only when dependency manifests staged; `actionlint` / `yamllint` only when relevant files are staged
+- `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)
+
+**PR CI** ([`tests.yaml`](../.github/workflows/tests.yaml)) and **`pnpm run release`** always run the **full** Vitest suite (`pnpm run test:run`). Green pre-commit does not replace those gates.
 
 CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage tests. i18n quality is enforced locally via pre-commit and indirectly in CI through Vitest (`locale-quality.test.ts`).
 

@@ -107,7 +107,7 @@ If you use Homebrew only, `pnpm run update` will try `brew upgrade rust` when ru
 
 Linux and Windows: use rustup; on Windows you may also need [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the C++ workload (same as native Node modules).
 
-[`reticulum-sidecar/rust-toolchain.toml`](../reticulum-sidecar/rust-toolchain.toml) pins **`stable`** and installs `clippy`, `rustfmt`, and `llvm-tools-preview` on the first `cargo` command run inside `reticulum-sidecar/` (rustup auto-install). When `cargo` is on your `PATH`, pre-commit runs `pnpm run check:reticulum-sidecar` (stub fmt + Clippy + test — no coverage).
+[`reticulum-sidecar/rust-toolchain.toml`](../reticulum-sidecar/rust-toolchain.toml) pins **`stable`** and installs `clippy`, `rustfmt`, and `llvm-tools-preview` on the first `cargo` command run inside `reticulum-sidecar/` (rustup auto-install). When `cargo` is on your `PATH` **and** sidecar-related paths are staged, pre-commit runs `pnpm run check:reticulum-sidecar` (stub fmt + Clippy + test — no coverage).
 
 #### Build the sidecar
 
@@ -529,7 +529,8 @@ pnpm run reticulum:sidecar:test
 Other useful commands:
 
 - `pnpm test` (watch mode — reruns only changed test files)
-- `pnpm run test:changed` (one-shot tests affected by edits vs `HEAD`)
+- `pnpm run test:staged` (pre-commit helper: Vitest related to **staged** files only)
+- `pnpm run test:changed` (one-shot tests for working-tree edits vs `HEAD`, including unstaged WIP)
 - `pnpm run test:ui` / `test:logic` / `test:main` (single Vitest project)
 - `pnpm run test:coverage` (CI coverage report; used by `act:tests:native`)
 - `pnpm run test:coverage:merge` (merge sharded CI blob reports locally)
@@ -539,7 +540,7 @@ Other useful commands:
 - `pnpm run i18n:auto-translate` (fill missing keys)
 - `pnpm run i18n:prune-unused -- --write` (drop orphaned locale keys)
 
-The pre-commit hook runs the full `check:*` suite — see [Git hooks](#6-git-hooks-and-pre-commit-behavior).
+The pre-commit hook runs path-gated `check:*` steps plus staged-related Vitest — see [Git hooks](#6-git-hooks-and-pre-commit-behavior).
 
 ### 5) Building a distributable
 
@@ -585,7 +586,9 @@ This generates `dist-electron/main/meta.json`. Upload this file to [esbuild's on
 
 ### 6) Git hooks and pre-commit behavior
 
-After `pnpm install`, repo hooks are enabled via `core.hooksPath` (see the `prepare` script in `package.json`). The pre-commit hook runs on every commit. Typical commits (without English locale or infra changes) run **affected tests only** (`vitest run --changed HEAD`); lint and typecheck still run on the full tree.
+After `pnpm install`, repo hooks are enabled via `core.hooksPath` (see the `prepare` script in `package.json`). The pre-commit hook runs on every commit. Typical commits run **staged-related Vitest only** (`pnpm run test:staged` → `vitest related` on staged source/test files, optionally narrowed to matching Vitest projects). Unstaged WIP is ignored. Full typecheck still runs every commit; ESLint runs on staged JS/TS with `--cache` (CI still runs full-tree lint). Several expensive `check:*` steps and `pnpm audit` / sidecar stub builds are **path-gated**.
+
+Green pre-commit does **not** replace PR CI: [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml) always runs the full Vitest suite with coverage.
 
 Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-commit)):
 
@@ -594,12 +597,14 @@ Hook order (authoritative source: [`.githooks/pre-commit`](../.githooks/pre-comm
 3. markdownlint-cli2 on staged `.md` files only (not full `pnpm run lint:md` unless you run it manually)
 4. When `package.json` or `pnpm-lock.yaml` is staged: `pnpm dedupe`, re-stage `pnpm-lock.yaml`, then re-stage the originally staged paths
 5. When `src/renderer/locales/en/translation.json` is staged: `pnpm run i18n:auto-translate` (incremental vs `HEAD` English, not `--all`) and re-stage `src/renderer/locales/` — see [Internationalization](#9-internationalization-i18n)
-6. `pnpm run lint`
-7. `pnpm run typecheck`
-8. `check:electron-security`, `check:flatpak`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:insecure-temp-files`, `check:db-migrations`, `check:ipc-contract`, `check:reticulum-interface-modes`, `check:reticulum-decommissioned-hubs`, `check:reticulum-sidecar` when `cargo` is on `PATH`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:i18n` when English locale is staged else `check:i18n:branch`, `check:licenses`
-9. `pnpm audit --audit-level=high`
-10. `actionlint` when `.github/workflows/*` is staged; `yamllint` when any `*.yaml` / `*.yml` is staged
-11. `pnpm run test:run -- --changed HEAD --bail 1` (full suite when vitest config, shared/preload, vitest setup mocks, or dependency manifests change)
+6. ESLint on **staged** JS/TS with `--cache` (skip when none staged)
+7. `pnpm run typecheck` (full tree)
+8. Always-on: `check:electron-security`, `check:log-injection`, `check:log-service-sinks`, `check:codeql-extensions`, `check:insecure-temp-files`, `check:console-log`, `check:silent-catches`, `check:url-hostname-sanitization`, `check:xss-patterns`, `check:protocol-string-gates`, `check:log-panel-filter`, `check:licenses`; `check:i18n` when English locale staged else `check:i18n:branch`
+9. Path-gated: `check:flatpak`, `check:db-migrations`, `check:ipc-contract`, `check:reticulum-interface-modes`, `check:reticulum-decommissioned-hubs`, `check:reticulum-sidecar` (when `cargo` on `PATH` and sidecar paths staged)
+10. `pnpm audit --audit-level=high` only when dependency manifests staged; `actionlint` when `.github/workflows/*` staged; `yamllint` when any `*.yaml` / `*.yml` staged
+11. `pnpm run test:staged` (`scripts/precommit-tests.mjs`: staged-only `vitest related`; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)
+
+**Release / CI full suite:** `pnpm run release` (`scripts/release.sh`) and PR [`tests.yaml`](../.github/workflows/tests.yaml) always run `pnpm run test:run` (full Vitest) — never `test:staged`. Release also runs the ungated `check:*` set and requires actionlint + yamllint.
 
 Install hook dependencies via [Helper scripts](#8-helper-scripts-auto-install-where-possible) (`setup:actionlint`, yamllint via pip/brew/apt).
 

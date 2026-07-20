@@ -258,6 +258,12 @@ fi
 # 9. PRE-FLIGHT VALIDATION - Run all checks before making any changes
 print_header "Running pre-flight validation..."
 
+echo "Checking development environment..."
+if ! pnpm run check:environment; then
+  print_error "Environment check failed. Fix required failures from 'pnpm run check:environment'."
+  exit 1
+fi
+
 # Check formatting
 echo "Checking code formatting..."
 if ! pnpm run format:check; then
@@ -286,8 +292,14 @@ if ! pnpm run typecheck; then
   exit 1
 fi
 
-# Security checks
-echo "Running security checks..."
+# Security / policy scanners — always run the full set on release (pre-commit may
+# path-gate some of these; never skip them here).
+echo "Running security and policy checks..."
+if ! pnpm run check:electron-security; then
+  print_error "Electron security check failed."
+  exit 1
+fi
+
 if ! pnpm run check:log-injection; then
   print_error "Log injection check failed."
   exit 1
@@ -300,6 +312,11 @@ fi
 
 if ! pnpm run check:codeql-extensions; then
   print_error "CodeQL extensions layout check failed."
+  exit 1
+fi
+
+if ! pnpm run check:insecure-temp-files; then
+  print_error "Insecure temporary file check failed."
   exit 1
 fi
 
@@ -320,6 +337,41 @@ fi
 
 if ! pnpm run check:reticulum-decommissioned-hubs; then
   print_error "Reticulum decommissioned hub catalog check failed."
+  exit 1
+fi
+
+if ! pnpm run check:console-log; then
+  print_error "console.log policy check failed."
+  exit 1
+fi
+
+if ! pnpm run check:silent-catches; then
+  print_error "Silent catch policy check failed."
+  exit 1
+fi
+
+if ! pnpm run check:url-hostname-sanitization; then
+  print_error "URL hostname sanitization check failed."
+  exit 1
+fi
+
+if ! pnpm run check:xss-patterns; then
+  print_error "XSS pattern check failed."
+  exit 1
+fi
+
+if ! pnpm run check:protocol-string-gates; then
+  print_error "Protocol string gate check failed."
+  exit 1
+fi
+
+if ! pnpm run check:log-panel-filter; then
+  print_error "Log panel filter check failed."
+  exit 1
+fi
+
+if ! pnpm run check:i18n; then
+  print_error "i18n key check failed."
   exit 1
 fi
 
@@ -360,30 +412,31 @@ if echo "$DEPRECATION_OUTPUT" | grep -q "DEP0187"; then
   exit 1
 fi
 
-# GitHub Actions validation
+# GitHub Actions validation (required — do not soft-skip)
 echo "Validating GitHub Actions..."
 if ! command -v actionlint > /dev/null 2>&1; then
-  print_warning "actionlint not found, skipping GitHub Actions validation"
-else
-  if ! actionlint; then
-    print_error "GitHub Actions validation failed."
-    exit 1
-  fi
+  print_error "actionlint not found. Install via 'pnpm run setup:actionlint' — release does not skip workflow validation."
+  exit 1
+fi
+if ! actionlint; then
+  print_error "GitHub Actions validation failed."
+  exit 1
 fi
 
-# YAML validation
+# YAML validation (required — do not soft-skip)
 echo "Validating YAML files..."
 if ! command -v yamllint > /dev/null 2>&1; then
-  print_warning "yamllint not found, skipping YAML validation"
-else
-  if ! yamllint -f github -s .; then
-    print_error "YAML validation failed."
-    exit 1
-  fi
+  print_error "yamllint not found. Install via pip/brew/apt — release does not skip YAML validation."
+  exit 1
+fi
+if ! yamllint -f github -s .; then
+  print_error "YAML validation failed."
+  exit 1
 fi
 
-# Tests
-echo "Running tests..."
+# Full Vitest suite — never use the pre-commit staged subset or --changed filters here.
+# Pre-commit may run a staged subset; release must match PR CI coverage of all tests.
+echo "Running full Vitest suite (pnpm run test:run)..."
 if ! pnpm run test:run; then
   print_error "Tests failed."
   exit 1
