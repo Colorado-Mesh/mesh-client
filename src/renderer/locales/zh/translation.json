@@ -3304,11 +3304,11 @@
     "disableTripleClickDesc": "Disable the triple-click action on the user button.",
     "ledHeartbeatDisabledLabel": "Disable LED Heartbeat",
     "ledHeartbeatDisabledDesc": "停止 LED 闪烁以指示节点在线。",
-    "buttonGpioLabel": "Button GPIO",
+    "buttonGpioLabel": "按钮 GPIO",
     "buttonGpioDesc": "用户按钮的 GPIO 引脚（0 = 硬件默认）。",
-    "buzzerGpioLabel": "Buzzer GPIO",
+    "buzzerGpioLabel": "蜂鸣器 GPIO",
     "buzzerGpioDesc": "蜂鸣器的 GPIO 引脚（0 = 硬件默认）。",
-    "tzdefLabel": "Timezone (POSIX)",
+    "tzdefLabel": "时区 (POSIX)",
     "tzdefDesc": "POSIX 时区字符串，例如 EST5EDT,M3.2.0,M11.1.0。参考列表见 https://github.com/nayarsystems/posix_tz_db。",
     "rebroadcastModes": {
       "0": {
@@ -3320,15 +3320,15 @@
         "description": "Rebroadcast all without decoding. Reduces CPU on dedicated routers."
       },
       "2": {
-        "label": "Local Only",
+        "label": "仅本地",
         "description": "仅重播直接通过 RF 听到的节点发出的数据包。"
       },
       "3": {
-        "label": "Known Only",
+        "label": "仅已知",
         "description": "仅重播本地节点数据库中的节点发出的数据包。"
       },
       "4": {
-        "label": "None",
+        "label": "无",
         "description": "不重播任何数据包。"
       },
       "5": {
@@ -3339,16 +3339,16 @@
     "autoScreenCarouselSecsLabel": "Screen Carousel Interval",
     "autoScreenCarouselSecsDesc": "Seconds between automatic screen page changes. 0 to disable.",
     "oledTypeLabel": "OLED Type",
-    "flipScreenLabel": "Flip Screen",
+    "flipScreenLabel": "翻转屏幕",
     "flipScreenDesc": "将显示屏旋转 180 度。",
-    "displayModeLabel": "Display Mode",
-    "headingBoldLabel": "Bold Heading",
+    "displayModeLabel": "显示模式",
+    "headingBoldLabel": "粗体标题",
     "wakeOnTapOrMotionLabel": "轻触或移动时唤醒",
     "wakeOnTapOrMotionDesc": "当设备被轻触或移动时唤醒屏幕。",
     "use12hClockLabel": "12-Hour Clock",
     "useLongNodeNameLabel": "Use Long Node Name",
     "useLongNodeNameDesc": "Show full node name instead of short name on screen.",
-    "enableMessageBubblesLabel": "Message Bubbles",
+    "enableMessageBubblesLabel": "消息气泡",
     "enableMessageBubblesDesc": "在显示屏上以气泡形式显示收到的消息。",
     "oledTypes": {
       "0": {
@@ -4388,10 +4388,10 @@
     "connectFailed": "无法连接到 RRC 枢纽。",
     "joinFailed": "无法加入房间。",
     "sendFailed": "无法发送消息。",
-    "selectHub": "Select hub {{name}}",
-    "selectHubPrompt": "Select an RRC hub to connect.",
-    "favoriteHub": "Favourite hub",
-    "unfavoriteHub": "Remove hub favourite",
+    "selectHub": "选择枢纽 {{name}}",
+    "selectHubPrompt": "选择要连接的 RRC 枢纽。",
+    "favoriteHub": "收藏枢纽",
+    "unfavoriteHub": "取消收藏枢纽",
     "hopsAway_one": "{{count}} 跳之外",
     "hopsAway_other": "{{count}} 跳之外",
     "noDiscoveredHubs": "尚未发现在线的 RRC 枢纽。请保持协议栈运行以监听通告。",
@@ -4408,15 +4408,15 @@
     "unmuteRoom": "Unmute room",
     "members": "Members",
     "noMembers": "枢纽未提供成员列表。",
-    "copyMessage": "Copy message",
-    "messagePlaceholder": "Type a message…",
-    "send": "Send",
+    "copyMessage": "复制消息",
+    "messagePlaceholder": "输入消息…",
+    "send": "发送",
     "status": {
-      "disconnected": "Disconnected",
-      "connecting": "Connecting…",
+      "disconnected": "已断开",
+      "connecting": "正在连接…",
       "awaiting_welcome": "正在等待枢纽…",
-      "active": "Connected",
-      "reconnecting": "Reconnecting…"
+      "active": "已连接",
+      "reconnecting": "正在重新连接…"
     },
     "expandRooms": "展开房间列表",
     "collapseRooms": "折叠房间列表",

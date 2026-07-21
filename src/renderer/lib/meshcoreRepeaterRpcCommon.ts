@@ -86,22 +86,24 @@ export function requireContactPubKeyPrefix(contactPublicKey: Uint8Array): Uint8A
 }
 
 export function normalizePubKeyPrefix(prefix: unknown): Uint8Array | null {
-  if (prefix instanceof Uint8Array && prefix.length === 6) {
+  if (prefix instanceof Uint8Array && prefix.length === MESHCORE_PUBKEY_PREFIX_LEN) {
     return prefix;
   }
-  if (ArrayBuffer.isView(prefix) && prefix.byteLength === 6) {
-    return new Uint8Array(prefix.buffer, prefix.byteOffset, 6);
+  if (ArrayBuffer.isView(prefix) && prefix.byteLength === MESHCORE_PUBKEY_PREFIX_LEN) {
+    return new Uint8Array(prefix.buffer, prefix.byteOffset, MESHCORE_PUBKEY_PREFIX_LEN);
   }
-  if (Array.isArray(prefix) && prefix.length === 6) {
+  if (Array.isArray(prefix) && prefix.length === MESHCORE_PUBKEY_PREFIX_LEN) {
     return Uint8Array.from(prefix);
   }
   return null;
 }
 
 export function pubKeyPrefixesEqual(a: Uint8Array, b: Uint8Array): boolean {
-  if (a.length !== 6 || b.length !== 6) return false;
+  if (a.length !== MESHCORE_PUBKEY_PREFIX_LEN || b.length !== MESHCORE_PUBKEY_PREFIX_LEN) {
+    return false;
+  }
   let diff = 0;
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < MESHCORE_PUBKEY_PREFIX_LEN; i++) {
     diff |= a[i] ^ b[i];
   }
   return diff === 0;
