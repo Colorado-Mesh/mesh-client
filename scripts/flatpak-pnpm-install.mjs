@@ -19,6 +19,10 @@ import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { cleanJsrTempDirs } from './clean-jsr-temp-dirs.mjs';
+import {
+  stripNpmrcStoreDirLines,
+  stripPnpmWorkspaceStoreDirLines,
+} from './flatpakPnpmStoreVersion.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -36,6 +40,46 @@ export const FLATPAK_PNPM_INSTALL_ARGS = [
   STORE_DIR,
 ];
 
+/**
+ * Remove generator-appended storeDir / store-dir lines so pnpm can parse the
+ * workspace and `--store-dir` (sandbox path) wins over a host-cache path.
+ *
+ * @param {string} [root]
+ * @returns {{ workspaceRemoved: number, npmrcRemoved: number }}
+ */
+export function sanitizeFlatpakPnpmStoreDirConfig(root = projectRoot) {
+  const workspacePath = path.join(root, 'pnpm-workspace.yaml');
+  const npmrcPath = path.join(root, '.npmrc');
+  let workspaceRemoved = 0;
+  let npmrcRemoved = 0;
+
+  if (fs.existsSync(workspacePath)) {
+    const before = fs.readFileSync(workspacePath, 'utf8');
+    const { yaml, removed } = stripPnpmWorkspaceStoreDirLines(before);
+    workspaceRemoved = removed;
+    if (removed > 0) {
+      fs.writeFileSync(workspacePath, yaml, 'utf8');
+      console.warn(
+        `[flatpak-pnpm] stripped ${removed} storeDir line(s) from pnpm-workspace.yaml (using --store-dir ${STORE_DIR})`,
+      );
+    }
+  }
+
+  if (fs.existsSync(npmrcPath)) {
+    const before = fs.readFileSync(npmrcPath, 'utf8');
+    const { text, removed } = stripNpmrcStoreDirLines(before);
+    npmrcRemoved = removed;
+    if (removed > 0) {
+      fs.writeFileSync(npmrcPath, text, 'utf8');
+      console.warn(
+        `[flatpak-pnpm] stripped ${removed} store-dir line(s) from .npmrc (using --store-dir ${STORE_DIR})`,
+      );
+    }
+  }
+
+  return { workspaceRemoved, npmrcRemoved };
+}
+
 export function runFlatpakPnpmInstall() {
   if (!fs.existsSync(STORE_DIR)) {
     console.error(
@@ -43,6 +87,8 @@ export function runFlatpakPnpmInstall() {
     );
     process.exit(1);
   }
+
+  sanitizeFlatpakPnpmStoreDirConfig(projectRoot);
 
   let lastStatus = 1;
 

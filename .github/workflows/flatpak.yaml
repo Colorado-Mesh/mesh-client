@@ -90,13 +90,28 @@ jobs:
         run: |
           FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
           # ac5a296a+: YAML storeDir: for pnpm v11 (storeDir= breaks pnpm-workspace.yaml).
-          pip3 install "${FBTOOLS}@ac5a296ac6111aa2319daf532f609a067b88d8a9#subdirectory=node"
+          # --force-reinstall: image may preinstall flatpak_node_generator==0.1.0; same
+          # version makes plain pip install a no-op (leaves storeDir= generator).
+          pip3 install --force-reinstall --no-cache-dir \
+            "${FBTOOLS}@ac5a296ac6111aa2319daf532f609a067b88d8a9#subdirectory=node"
           # pnpm 11+ uses store v11; flatpak-node-generator defaults to v10 for lockfile 9.
           PNPM_MAJOR="$(node -p "require('./package.json').packageManager.match(/^pnpm@(\\d+)/)[1]")"
           STORE_VERSION="v${PNPM_MAJOR}"
           flatpak-node-generator pnpm pnpm-lock.yaml \
             --pnpm-store-version "$STORE_VERSION" \
             -o flatpak/generated-sources.json
+          # Fail fast if a stale generator still emitted npmrc-style storeDir=.
+          node --input-type=module <<'EOF'
+          import fs from 'node:fs';
+          import { generatedSourcesStoreDirYamlViolations } from './scripts/flatpakPnpmStoreVersion.mjs';
+          const sources = JSON.parse(fs.readFileSync('flatpak/generated-sources.json', 'utf8'));
+          const violations = generatedSourcesStoreDirYamlViolations(sources);
+          if (violations.length) {
+            for (const v of violations) console.error(v.message);
+            process.exit(1);
+          }
+          console.log('generated-sources storeDir YAML: ok');
+          EOF
 
       # flatpak/flatpak-github-actions v6 appends -${arch} to the artifact name on upload;
       # keep bundle arch-agnostic here to avoid org.coloradomesh.MeshClient-aarch64-aarch64.flatpak.

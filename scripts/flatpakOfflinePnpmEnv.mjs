@@ -2,8 +2,12 @@
  * Shared Flatpak manifest contract for offline pnpm 11 install.
  *
  * Failure point: loose YAML regex can match commented or quoted keys outside the
- * mesh-client module env map. Fallback: parse only that scoped env block and
- * require exact unquoted YAML booleans.
+ * mesh-client module env map. Fallback: parse only that scoped env block.
+ *
+ * Failure point: flatpak-builder deserializes `env` as GStrv (string values only).
+ * Unquoted YAML `true`/`false` become JSON booleans → entire env map is dropped
+ * (`Failed to deserialize "env" property of type "GStrv"`). Fallback: require
+ * quoted `'true'` / `'false'` strings.
  */
 
 /**
@@ -47,7 +51,6 @@ export function parseMeshClientModuleBuildEnv(yaml) {
       (raw.startsWith("'") && raw.endsWith("'")) ||
       (raw.startsWith('"') && raw.endsWith('"'))
     ) {
-      // Quoted values are strings, not YAML booleans — reject for required keys.
       env[key] = raw.slice(1, -1);
     } else {
       env[key] = raw;
@@ -78,19 +81,22 @@ export function offlinePnpmEnvContractViolations(
     return violations;
   }
 
-  if (env.PNPM_CONFIG_TRUST_LOCKFILE !== true) {
+  // GStrv requires string values — quoted 'true'/'false', not YAML booleans.
+  if (env.PNPM_CONFIG_TRUST_LOCKFILE !== 'true') {
     violations.push({
       file: fileRel,
       message:
-        'manifest mesh-client build-options.env must set PNPM_CONFIG_TRUST_LOCKFILE: true (unquoted boolean; skip registry supply-chain re-verify offline)',
+        "manifest mesh-client build-options.env must set PNPM_CONFIG_TRUST_LOCKFILE: 'true' " +
+        '(quoted string for flatpak-builder GStrv; unquoted true drops the whole env map)',
     });
   }
 
-  if (env.PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN !== false) {
+  if (env.PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN !== 'false') {
     violations.push({
       file: fileRel,
       message:
-        'manifest mesh-client build-options.env must set PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: false (unquoted boolean; pnpm run must not auto-install offline)',
+        "manifest mesh-client build-options.env must set PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: 'false' " +
+        '(quoted string for flatpak-builder GStrv; unquoted false drops the whole env map)',
     });
   }
 

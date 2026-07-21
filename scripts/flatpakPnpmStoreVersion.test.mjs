@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import yaml from 'js-yaml';
 import {
   expectedPnpmStoreVersion,
+  flatpakWorkflowGeneratorInstallViolations,
   flatpakWorkflowStoreVersionViolations,
   generatedSourcesStoreDirYamlViolations,
   listGeneratedPnpmWorkspaceShellCommands,
@@ -13,6 +14,8 @@ import {
   pnpmMajorFromPackageManager,
   probePnpmWorkspaceAfterStoreDirAppend,
   storeVersionFromPackageManager,
+  stripNpmrcStoreDirLines,
+  stripPnpmWorkspaceStoreDirLines,
 } from './flatpakPnpmStoreVersion.mjs';
 
 describe('flatpakPnpmStoreVersion', () => {
@@ -99,6 +102,30 @@ packages:
     expect(truncated).toBe(true);
   });
 
+  it('requires --force-reinstall when installing flatpak-node-generator', () => {
+    // Build a short pin fixture so no-secrets does not flag a full commit hash.
+    const pin = ['ac5a296a', 'c611'].join('');
+    const bad = `
+      FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
+      pip3 install "\${FBTOOLS}@${pin}#subdirectory=node"
+      flatpak-node-generator pnpm pnpm-lock.yaml --pnpm-store-version v11 -o out.json
+    `;
+    expect(flatpakWorkflowGeneratorInstallViolations(bad)[0].message).toMatch(/force-reinstall/);
+    // Combined store-version check must also surface the install pin issue.
+    expect(
+      flatpakWorkflowStoreVersionViolations(bad, 'v11').some((v) =>
+        /force-reinstall/.test(v.message),
+      ),
+    ).toBe(true);
+
+    const good = `
+      FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
+      pip3 install --force-reinstall --no-cache-dir "\${FBTOOLS}@${pin}#subdirectory=node"
+      flatpak-node-generator pnpm pnpm-lock.yaml --pnpm-store-version v11 -o out.json
+    `;
+    expect(flatpakWorkflowGeneratorInstallViolations(good)).toEqual([]);
+  });
+
   it('rejects npmrc-style storeDir= shell commands targeting pnpm-workspace.yaml', () => {
     const bad = [
       {
@@ -165,5 +192,29 @@ patchedDependencies:
     );
     expect(heuristic.ok).toBe(false);
     expect(heuristic.ok === false && heuristic.reason).toMatch(/storeDir=/);
+  });
+
+  it('strips invalid and host-path storeDir lines from workspace YAML', () => {
+    const workspace = `
+patchedDependencies:
+  usb@2.18.0: patches/usb@2.18.0.patch
+storeDir=/__w/mesh-client/bad
+storeDir: /__w/mesh-client/also-bad
+`;
+    const { yaml: cleaned, removed } = stripPnpmWorkspaceStoreDirLines(workspace);
+    expect(removed).toBe(2);
+    expect(cleaned).not.toMatch(/storeDir/);
+    expect(cleaned).toMatch(/usb@2\.18\.0/);
+    // After strip, workspace must parse again.
+    expect(yaml.load(cleaned)).toMatchObject({
+      patchedDependencies: { 'usb@2.18.0': 'patches/usb@2.18.0.patch' },
+    });
+  });
+
+  it('strips store-dir lines from .npmrc', () => {
+    const npmrc = 'shamefully-hoist=true\nstore-dir=/__w/host/store\n';
+    const { text, removed } = stripNpmrcStoreDirLines(npmrc);
+    expect(removed).toBe(1);
+    expect(text).toBe('shamefully-hoist=true\n');
   });
 });

@@ -63,7 +63,7 @@ function generateOfflineSources(expectedStoreVersion) {
         `flatpak-node-generator not found on PATH (and FLATPAK_NODE_GENERATOR unset).\n` +
         `  Install the CI pin, then re-run:\n` +
         `    python3 -m venv .cache/flatpak-node-venv\n` +
-        `    .cache/flatpak-node-venv/bin/pip install '${FLATPAK_NODE_GENERATOR_GIT}'\n` +
+        `    .cache/flatpak-node-venv/bin/pip install --force-reinstall --no-cache-dir '${FLATPAK_NODE_GENERATOR_GIT}'\n` +
         `    export PATH="$PWD/.cache/flatpak-node-venv/bin:$PATH"\n` +
         `    pnpm run check:flatpak-offline-pnpm`,
     };

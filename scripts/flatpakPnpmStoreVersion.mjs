@@ -13,6 +13,24 @@ export const FLATPAK_NODE_GENERATOR_COMMIT = 'ac5a296ac6111aa2319daf532f609a067b
 export const FLATPAK_NODE_GENERATOR_GIT = `git+https://github.com/flatpak/flatpak-builder-tools@${FLATPAK_NODE_GENERATOR_COMMIT}#subdirectory=node`;
 
 /**
+ * pip install args for the pinned generator.
+ *
+ * Failure point: flathub-infra Flatpak containers (and some CI images) preinstall
+ * `flatpak_node_generator==0.1.0`. Upstream keeps that version pinned across commits, so
+ * plain `pip install git+…@ac5a296` is a no-op and leaves the older `storeDir=` generator.
+ * Fallback: `--force-reinstall` (and `--no-cache-dir` so a stale wheel cannot win).
+ */
+export const FLATPAK_NODE_GENERATOR_PIP_INSTALL_ARGS = [
+  'install',
+  '--force-reinstall',
+  '--no-cache-dir',
+  FLATPAK_NODE_GENERATOR_GIT,
+];
+
+/** Shell one-liner for workflows / docs (keep in sync with PIP_INSTALL_ARGS). */
+export const FLATPAK_NODE_GENERATOR_PIP_INSTALL_CMD = `pip3 ${FLATPAK_NODE_GENERATOR_PIP_INSTALL_ARGS.map((a) => (/\s/.test(a) ? `'${a}'` : a)).join(' ')}`;
+
+/**
  * @param {string | null | undefined} packageManager
  * @returns {number | null}
  */
@@ -45,6 +63,40 @@ export function storeVersionFromPackageManager(packageManager) {
 }
 
 /**
+ * Ensure CI/Flatpak workflows force-reinstall the pinned generator (same 0.1.0 version
+ * across commits — plain pip install is a no-op on preinstalled images).
+ *
+ * @param {string} workflowYaml
+ * @param {string} [fileRel]
+ * @returns {{ file: string, message: string }[]}
+ */
+export function flatpakWorkflowGeneratorInstallViolations(
+  workflowYaml,
+  fileRel = '.github/workflows/flatpak.yaml',
+) {
+  /** @type {{ file: string, message: string }[]} */
+  const violations = [];
+  // Match either a direct git+ URL or pip install of ${FBTOOLS} when FBTOOLS points at
+  // flatpak-builder-tools (CI uses the variable form).
+  const installsGenerator =
+    /pip3?\s+install\b[\s\S]{0,300}?flatpak-builder-tools/.test(workflowYaml) ||
+    (/flatpak-builder-tools/.test(workflowYaml) &&
+      /pip3?\s+install\b[\s\S]{0,200}?\$\{?FBTOOLS\}?/.test(workflowYaml));
+  if (!installsGenerator) {
+    return violations;
+  }
+  if (!/--force-reinstall\b/.test(workflowYaml)) {
+    violations.push({
+      file: fileRel,
+      message:
+        'pip install of flatpak-node-generator must use --force-reinstall ' +
+        '(image may preinstall flatpak_node_generator==0.1.0; same version skips upgrade and leaves storeDir=)',
+    });
+  }
+  return violations;
+}
+
+/**
  * @param {string} workflowYaml
  * @param {string} expectedStoreVersion e.g. v11
  * @param {string} [fileRel]
@@ -65,6 +117,8 @@ export function flatpakWorkflowStoreVersionViolations(
     });
     return violations;
   }
+
+  violations.push(...flatpakWorkflowGeneratorInstallViolations(workflowYaml, fileRel));
 
   // Accept an explicit --pnpm-store-version vN, or a shell var set from packageManager.
   // Flag may be on a continued line after `flatpak-node-generator pnpm … \`.
@@ -272,6 +326,53 @@ export function probePnpmWorkspaceAfterStoreDirAppend(
     const detail = e instanceof Error ? e.message : String(e);
     return { ok: false, reason: detail };
   }
+}
+
+/**
+ * Strip generator-appended `storeDir` keys from pnpm-workspace.yaml.
+ *
+ * Failure point: flatpak-node-generator shell sources append either invalid
+ * `storeDir=` (pre-ac5a296a) or a host-cache `storeDir: $PWD/…` path that is
+ * unreachable inside the Flatpak sandbox. Fallback: remove those lines and rely
+ * on `pnpm install --store-dir` (sandbox-absolute) from flatpak-pnpm-install.mjs.
+ *
+ * @param {string} workspaceYaml
+ * @returns {{ yaml: string, removed: number }}
+ */
+export function stripPnpmWorkspaceStoreDirLines(workspaceYaml) {
+  let removed = 0;
+  const yaml = workspaceYaml
+    .split('\n')
+    .filter((line) => {
+      if (/^\s*storeDir\s*[:=]/.test(line)) {
+        removed += 1;
+        return false;
+      }
+      return true;
+    })
+    .join('\n');
+  return { yaml, removed };
+}
+
+/**
+ * Strip `store-dir=` lines from .npmrc (v10 generator path).
+ *
+ * @param {string} npmrc
+ * @returns {{ text: string, removed: number }}
+ */
+export function stripNpmrcStoreDirLines(npmrc) {
+  let removed = 0;
+  const text = npmrc
+    .split('\n')
+    .filter((line) => {
+      if (/^\s*store-dir\s*=/.test(line)) {
+        removed += 1;
+        return false;
+      }
+      return true;
+    })
+    .join('\n');
+  return { text, removed };
 }
 
 /**
