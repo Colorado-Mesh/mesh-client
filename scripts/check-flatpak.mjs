@@ -2,6 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { offlinePnpmEnvContractViolations } from './flatpakOfflinePnpmEnv.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -131,6 +132,9 @@ function checkManifestPnpmVersion(pkg) {
   const yaml = fs.readFileSync(MANIFEST, 'utf8');
   const rel = path.relative(ROOT, MANIFEST);
   const pnpmVersion = pnpmVersionFromPackage(pkg);
+
+  // Offline Flatpak builds cannot re-verify minimumReleaseAge / trustPolicy against npm.
+  violations.push(...offlinePnpmEnvContractViolations(yaml, rel));
 
   if (!pnpmVersion) return violations;
 
