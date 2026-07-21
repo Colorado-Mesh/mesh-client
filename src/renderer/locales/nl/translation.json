@@ -189,7 +189,7 @@
     "storeForwardAutoFetchHistoryHint": "Vraag op RF Connect maximaal 50 berichten aan (15 minuten afkoelen tussen ophalingen). Schakel uit als uw gateway MQTT-brug overbelast is.",
     "reduceMotion": "Beweging verminderen",
     "reduceMotionDesc": "Schakelt geanimeerde pictogrammen en decoratieve effecten uit. Laadspinners en verbindingsstatusindicatoren blijven geanimeerd.",
-    "roomMessages": "Berichten in de kamer",
+    "roomMessages": "Berichten in de ruimte",
     "importSchemaTooNew": "Dit databasebestand vereist een nieuwere Mesh-Client (schema {{dbVersion}}). Deze build ondersteunt schema {{appVersion}} of ouder. Installeer de nieuwste versie en probeer het opnieuw.",
     "floodAdvertTypeLabel": "Advert-type",
     "floodAdvertTypeFlood": "Overstroming (multi-hop)",

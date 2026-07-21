@@ -8,6 +8,7 @@ import {
   normalizePubKeyPrefix,
   prefixToHex,
   pubKeyPrefixesEqual,
+  requireContactPubKeyPrefix,
 } from './meshcoreRepeaterRpcCommon';
 import type { MeshcoreRepeaterRunSerialized } from './meshcoreRepeaterRpcQueuedSend';
 
@@ -28,7 +29,7 @@ export function runMeshcoreRepeaterLogin(
   runSerialized?: MeshcoreRepeaterRunSerialized,
   beforeSend?: () => Promise<void>,
 ): Promise<MeshcoreRepeaterLoginResponse> {
-  const expectedPrefix = contactPublicKey.subarray(0, 6);
+  const expectedPrefix = requireContactPubKeyPrefix(contactPublicKey);
 
   return runMeshcoreRepeaterPrefixPushRequest<MeshcoreRepeaterLoginResponse>({
     conn,

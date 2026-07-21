@@ -174,6 +174,26 @@ export interface StarredMessage {
   starredAt: number;
 }
 
+function isStarredMessage(value: unknown): value is StarredMessage {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.starId === 'string' &&
+    typeof v.timestamp === 'number' &&
+    Number.isFinite(v.timestamp) &&
+    typeof v.payload === 'string' &&
+    typeof v.sender_name === 'string' &&
+    typeof v.sender_id === 'number' &&
+    Number.isFinite(v.sender_id) &&
+    typeof v.viewKey === 'string' &&
+    typeof v.channel === 'number' &&
+    Number.isFinite(v.channel) &&
+    (v.to === null || (typeof v.to === 'number' && Number.isFinite(v.to))) &&
+    typeof v.starredAt === 'number' &&
+    Number.isFinite(v.starredAt)
+  );
+}
+
 const STARRED_LIMIT = 200;
 
 /** Load starred messages for this protocol. */
@@ -182,7 +202,7 @@ export function loadStarred(protocol: MeshProtocol): StarredMessage[] {
     const raw = localStorage.getItem(`mesh-client:starred:${protocol}`);
     if (!raw) return [];
     const parsed = parseStoredJson<unknown>(raw, 'ChatPanel starred');
-    if (Array.isArray(parsed)) return parsed as StarredMessage[];
+    if (Array.isArray(parsed)) return parsed.filter(isStarredMessage);
   } catch (e) {
     console.debug('[chatPanelProtocolStorage] loadStarred failed ' + errLikeToLogString(e));
   }

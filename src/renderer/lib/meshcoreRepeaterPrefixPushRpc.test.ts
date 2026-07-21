@@ -218,4 +218,21 @@ describe('runMeshcoreRepeaterPrefixPushRequest', () => {
     vi.advanceTimersByTime(10_000);
     expect(vi.getTimerCount()).toBe(0);
   });
+
+  it('rejects contact public keys shorter than 6 bytes before listening', () => {
+    const conn = createMockMeshcoreConn();
+    expect(() =>
+      runMeshcoreRepeaterPrefixPushRequest({
+        conn,
+        contactPublicKey: new Uint8Array(5),
+        extraTimeoutMs: 1000,
+        pushEvent: MC_PUSH_STATUS_RESPONSE,
+        logTag: 'testPrefixPush',
+        buildFrame: () => new Uint8Array([0]),
+        parseMatchedPush: (response) => response,
+        rejectSentMessage: 'send failed',
+        rejectFailureMessage: 'rpc failed',
+      }),
+    ).toThrow(/public key too short/);
+  });
 });
