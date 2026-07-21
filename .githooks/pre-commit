@@ -178,10 +178,7 @@ pnpm run check:licenses || fail 'pnpm run check:licenses'
 
 # Audit only when dependency manifests change (CI / release still audit as configured).
 if [ "$deps_changed" -eq 1 ]; then
-  # npm retired legacy audit APIs (HTTP 410); pnpm 10.x still calls them. Use pnpm 11+ audit
-  # via dlx until packageManager is bumped (pnpm.io migration / issue #11265).
-  pnpm dlx --config.minimumReleaseAge=0 pnpm@11.13.0 --config.manage-package-manager-versions=false --config.pm-on-fail=ignore audit --audit-level=high \
-    || fail 'pnpm audit --audit-level=high'
+  pnpm audit --audit-level=high || fail 'pnpm audit --audit-level=high'
 else
   printf 'pre-commit: skip pnpm audit (no package.json / lockfile staged)\n' >&2
 fi

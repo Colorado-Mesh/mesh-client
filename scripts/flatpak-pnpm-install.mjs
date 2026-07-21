@@ -4,7 +4,12 @@
  *
  * Failure point: pnpm install races renaming @jsr/_tmp_* during hoisted offline
  * install inside flatpak-builder sandbox. Fallback: clean stale temps and retry.
+ *
+ * Failure point: host/CI runs without the Flatpak-vendored store at STORE_DIR.
+ * pnpm 11+ may report "Already up to date" from an existing node_modules even when
+ * --store-dir is missing; refuse to proceed so Flatpak always uses the offline store.
  */
+import fs from 'fs';
 import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -14,6 +19,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
 const STORE_DIR = '/run/build/mesh-client/flatpak-node/pnpm-store';
 const maxAttempts = 3;
+
+if (!fs.existsSync(STORE_DIR)) {
+  console.error(
+    `[flatpak-pnpm] offline store missing: ${STORE_DIR} (Flatpak sandbox path required)`,
+  );
+  process.exit(1);
+}
 
 let lastStatus = 1;
 

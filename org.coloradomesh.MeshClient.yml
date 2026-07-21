@@ -37,10 +37,11 @@ modules:
       prepend-path: /run/build/mesh-client/.pnpm-bin
       env:
         PNPM_HOME: /run/build/mesh-client/.pnpm
-        npm_config_cache: /run/build/mesh-client/.npm
+        pnpm_config_cache: /run/build/mesh-client/.npm
     build-commands:
-      # Install pnpm standalone binary (no network needed)
-      - install -Dm755 pnpm-standalone /run/build/mesh-client/.pnpm-bin/pnpm
+      # Install pnpm standalone binary from archived release (no network needed).
+      # Archive extracts to pnpm-vendor/ so the bundled dist/ does not collide with app dist/.
+      - install -Dm755 pnpm-vendor/pnpm /run/build/mesh-client/.pnpm-bin/pnpm
       # Offline install using generated-sources.json (retries @jsr temp-dir races).
       # --store-dir must use the sandbox-absolute path because the type:shell
       # source that writes .npmrc runs outside the sandbox, so $PWD there is
@@ -76,15 +77,15 @@ modules:
       - type: dir
         path: .
       - flatpak/generated-sources.json
-      - type: file
-        url: https://github.com/pnpm/pnpm/releases/download/v10.34.3/pnpm-linux-x64
-        sha256: d2529ffa064e08237a6d8344a3c54e12800a663d9976d481b2c441c10e914fc9
-        dest-filename: pnpm-standalone
+      - type: archive
+        url: https://github.com/pnpm/pnpm/releases/download/v11.15.1/pnpm-linux-x64.tar.gz
+        sha256: 0c1373b6390f6b89ff8b896d3647c9826577ddc49173a2f732da69b36569f9e0
+        dest: pnpm-vendor
         only-arches: [x86_64]
-      - type: file
-        url: https://github.com/pnpm/pnpm/releases/download/v10.34.3/pnpm-linux-arm64
-        sha256: ca4a85a4eb830713f1c37297d1a2b9fb9953719442bdb26daa8c64fadcc6c0b8
-        dest-filename: pnpm-standalone
+      - type: archive
+        url: https://github.com/pnpm/pnpm/releases/download/v11.15.1/pnpm-linux-arm64.tar.gz
+        sha256: 361e385867146972d0635a41a1871cb44c9c23f65acce78a5f1ca1d44ac0afcd
+        dest: pnpm-vendor
         only-arches: [aarch64]
       - type: archive
         url: https://github.com/electron/electron/releases/download/v41.10.2/electron-v41.10.2-linux-x64.zip

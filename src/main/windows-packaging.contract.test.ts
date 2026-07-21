@@ -41,8 +41,8 @@ describe('Windows packaging (contract)', () => {
   it('declares readable-stream as a direct production dep with pnpm patch for asar packaging', () => {
     const packageJson = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf-8')) as {
       dependencies?: Record<string, string>;
-      pnpm?: { patchedDependencies?: Record<string, string> };
     };
+    const workspaceYaml = readFileSync(join(REPO_ROOT, 'pnpm-workspace.yaml'), 'utf-8');
     const lockfile = readFileSync(join(REPO_ROOT, 'pnpm-lock.yaml'), 'utf-8');
     expect(packageJson.dependencies?.['readable-stream']).toMatch(/^[~^]?4\.\d+\.\d+$/);
 
@@ -50,16 +50,15 @@ describe('Windows packaging (contract)', () => {
     const resolvedMatch = readableStreamLockRe.exec(lockfile);
     expect(resolvedMatch).not.toBeNull();
     const resolvedVersion = resolvedMatch![1];
-    expect(packageJson.pnpm?.patchedDependencies?.[`readable-stream@${resolvedVersion}`]).toBe(
-      `patches/readable-stream@${resolvedVersion}.patch`,
+    expect(workspaceYaml).toContain(
+      `readable-stream@${resolvedVersion}: patches/readable-stream@${resolvedVersion}.patch`,
     );
   });
 
   it('keeps the @electron/asar pnpm override on v4 or newer for Windows packaging', () => {
-    const packageJson = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf-8')) as {
-      pnpm?: { overrides?: Record<string, string> };
-    };
-    const override = packageJson.pnpm?.overrides?.['@electron/asar'];
+    const workspaceYaml = readFileSync(join(REPO_ROOT, 'pnpm-workspace.yaml'), 'utf-8');
+    const overrideMatch = /^ {2}'@electron\/asar':\s*(.+)$/m.exec(workspaceYaml);
+    const override = overrideMatch?.[1]?.trim();
     const [major] = expectSemverParts(override, '@electron/asar override');
     expect(major).toBeGreaterThanOrEqual(4);
 

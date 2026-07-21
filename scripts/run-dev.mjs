@@ -9,6 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { mainEsbuildExternalArgs } from './esbuild-main-externals.mjs';
+import { assertPnpmMeetsRepoRequirement } from './check-package-manager.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -40,14 +41,25 @@ export function buildDevConcurrentlyArgs() {
   ];
 }
 
-export function runDev(argv = process.argv.slice(2)) {
+export function runDev(argv = process.argv.slice(2), options = {}) {
+  const assertPm = options.assertPnpmMeetsRepoRequirement ?? assertPnpmMeetsRepoRequirement;
+  const spawnFn = options.spawn ?? spawn;
+  const exitFn = options.exit ?? ((code) => process.exit(code));
+
   if (argv.length > 0) {
     console.error('[run-dev] Unexpected arguments:', argv.join(' '));
-    process.exit(1);
+    exitFn(1);
+    return;
+  }
+
+  const pmExit = assertPm({ repoRoot: projectRoot });
+  if (pmExit !== 0) {
+    exitFn(pmExit);
+    return;
   }
 
   const concurrentlyBin = path.join(projectRoot, 'node_modules', '.bin', 'concurrently');
-  const child = spawn(concurrentlyBin, buildDevConcurrentlyArgs(), {
+  const child = spawnFn(concurrentlyBin, buildDevConcurrentlyArgs(), {
     cwd: projectRoot,
     stdio: 'inherit',
     env: process.env,
@@ -55,11 +67,11 @@ export function runDev(argv = process.argv.slice(2)) {
 
   child.on('error', (err) => {
     console.error('[run-dev] Failed to start concurrently:', err);
-    process.exit(1);
+    exitFn(1);
   });
 
   child.on('exit', (code, signal) => {
-    process.exit(resolveDevExitCode(code, signal));
+    exitFn(resolveDevExitCode(code, signal));
   });
 }
 

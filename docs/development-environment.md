@@ -9,7 +9,7 @@ These requirements apply to all platforms.
 ### 1) Required software
 
 - Git
-- Node.js **22.13.0+** and pnpm **10+** (`package.json` `engines`; the repo pins **`packageManager`** to a specific pnpm release — use [Corepack](https://nodejs.org/api/corepack.html) or install a matching pnpm 10.x). `pnpm install` fails on engine mismatch.
+- Node.js **22.13.0+** and pnpm **11+** (`package.json` `engines`; the repo pins **`packageManager`** to a specific pnpm release — use [Corepack](https://nodejs.org/api/corepack.html) when available, or `npm install -g corepack@latest` / `npm install -g pnpm@<pin>` on Node 25+ where Corepack is not bundled). `pnpm install` fails on engine mismatch. After pulling a pnpm major bump, `preinstall` and `pnpm run dev` print an upgrade banner with the exact install command if your local pnpm is too old or the wrong major.
 - [CI](https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/ci.yaml) uses Node 22
 - Python 3 + `pip` (needed for MkDocs documentation build and yamllint)
 
@@ -441,14 +441,14 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 #### Lifecycle (automatic)
 
-| Script        | Description                                                   |
-| ------------- | ------------------------------------------------------------- |
-| `preinstall`  | Enforce pnpm as package manager (`only-allow pnpm`)           |
-| `postinstall` | Rebuild native Node modules for Electron + apply pnpm patches |
-| `prepare`     | Enable git hooks (`core.hooksPath = .githooks`)               |
-| `predist`     | Run `dedupe:dist` before `dist` packaging                     |
+| Script        | Description                                                           |
+| ------------- | --------------------------------------------------------------------- |
+| `preinstall`  | Require pnpm 11+ (`check-package-manager.mjs`) then `only-allow pnpm` |
+| `postinstall` | Rebuild native Node modules for Electron + apply pnpm patches         |
+| `prepare`     | Enable git hooks (`core.hooksPath = .githooks`)                       |
+| `predist`     | Run `dedupe:dist` before `dist` packaging                             |
 
-`postinstall` runs `scripts/rebuild-native.mjs` for Electron native addons and applies `pnpm.patchedDependencies` (Meshtastic JSR transports, MeshCore, Noble, `readable-stream`, `usb`, etc.). When bumping patched packages, update hashes under `patches/` and keep `WATCH_ENTRIES` in `scripts/update.sh` in sync — see [AGENTS.md](../AGENTS.md#6-commands--ci-checks).
+`postinstall` runs `scripts/rebuild-native.mjs` for Electron native addons and applies `patchedDependencies` from `pnpm-workspace.yaml` (Meshtastic JSR transports, MeshCore, Noble, `readable-stream`, `usb`, etc.). When bumping patched packages, update hashes under `patches/` and keep `WATCH_ENTRIES` in `scripts/update.sh` in sync — see [AGENTS.md](../AGENTS.md#6-commands--ci-checks).
 
 ### Dependabot dependency updates
 

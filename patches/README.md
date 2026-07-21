@@ -1,6 +1,6 @@
 # pnpm patchedDependencies
 
-Local overlays applied via `package.json` → `pnpm.patchedDependencies`. When bumping a patched package version, regenerate the patch hash under `patches/` and keep `WATCH_ENTRIES` in `scripts/update.sh` in sync.
+Local overlays applied via `pnpm-workspace.yaml` → `patchedDependencies`. When bumping a patched package version, regenerate the patch hash under `patches/` and keep `WATCH_ENTRIES` in `scripts/update.sh` in sync.
 
 | Patch | Upstream | Upstream PR / status |
 | ----- | -------- | -------------------- |

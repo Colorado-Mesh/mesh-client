@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { buildDevConcurrentlyArgs, resolveDevExitCode } from './run-dev.mjs';
+import { buildDevConcurrentlyArgs, resolveDevExitCode, runDev } from './run-dev.mjs';
 
 describe('run-dev', () => {
   it('buildDevConcurrentlyArgs kills siblings when electron exits and uses direct esbuild', () => {
@@ -19,5 +19,17 @@ describe('run-dev', () => {
     expect(resolveDevExitCode(null, 'SIGTERM')).toBe(0);
     expect(resolveDevExitCode(0, null)).toBe(0);
     expect(resolveDevExitCode(1, null)).toBe(1);
+  });
+
+  it('runDev exits on pnpm preflight failure without spawning concurrently', () => {
+    const exitFn = vi.fn();
+    const spawnFn = vi.fn();
+    runDev([], {
+      assertPnpmMeetsRepoRequirement: () => 1,
+      spawn: spawnFn,
+      exit: exitFn,
+    });
+    expect(exitFn).toHaveBeenCalledWith(1);
+    expect(spawnFn).not.toHaveBeenCalled();
   });
 });
