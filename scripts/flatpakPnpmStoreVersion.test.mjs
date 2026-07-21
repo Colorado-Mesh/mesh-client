@@ -102,7 +102,7 @@ packages:
     expect(truncated).toBe(true);
   });
 
-  it('requires --force-reinstall when installing flatpak-node-generator', () => {
+  it('requires --force-reinstall and --no-cache-dir on the generator pip install command', () => {
     // Build a short pin fixture so no-secrets does not flag a full commit hash.
     const pin = ['ac5a296a', 'c611'].join('');
     const bad = `
@@ -120,10 +120,36 @@ packages:
 
     const good = `
       FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
-      pip3 install --force-reinstall --no-cache-dir "\${FBTOOLS}@${pin}#subdirectory=node"
+      pip3 install --force-reinstall --no-cache-dir \\
+        "\${FBTOOLS}@${pin}#subdirectory=node"
       flatpak-node-generator pnpm pnpm-lock.yaml --pnpm-store-version v11 -o out.json
     `;
     expect(flatpakWorkflowGeneratorInstallViolations(good)).toEqual([]);
+  });
+
+  it('rejects flags present only in comments or on an unrelated pip install', () => {
+    const pin = ['ac5a296a', 'c611'].join('');
+    const flagsInComment = `
+      FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
+      # --force-reinstall --no-cache-dir required for storeDir=
+      pip3 install "\${FBTOOLS}@${pin}#subdirectory=node"
+    `;
+    expect(flatpakWorkflowGeneratorInstallViolations(flagsInComment).length).toBe(1);
+
+    const flagsOnUnrelatedPip = `
+      pip3 install --force-reinstall --no-cache-dir yamllint
+      FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
+      pip3 install "\${FBTOOLS}@${pin}#subdirectory=node"
+    `;
+    expect(flatpakWorkflowGeneratorInstallViolations(flagsOnUnrelatedPip).length).toBe(1);
+
+    const missingNoCacheDir = `
+      FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
+      pip3 install --force-reinstall "\${FBTOOLS}@${pin}#subdirectory=node"
+    `;
+    expect(flatpakWorkflowGeneratorInstallViolations(missingNoCacheDir)[0].message).toMatch(
+      /no-cache-dir/,
+    );
   });
 
   it('rejects npmrc-style storeDir= shell commands targeting pnpm-workspace.yaml', () => {

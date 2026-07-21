@@ -59,4 +59,13 @@ describe('flatpak-pnpm-install.mjs', () => {
     );
     expect(fs.readFileSync(path.join(root, '.npmrc'), 'utf8')).toBe('');
   });
+
+  it('tolerates missing workspace/.npmrc without existsSync TOCTOU', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-flatpak-sanitize-missing-'));
+    tempRoots.push(root);
+    expect(sanitizeFlatpakPnpmStoreDirConfig(root)).toEqual({
+      workspaceRemoved: 0,
+      npmrcRemoved: 0,
+    });
+  });
 });

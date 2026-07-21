@@ -63,8 +63,60 @@ export function storeVersionFromPackageManager(packageManager) {
 }
 
 /**
+ * Collect non-comment shell command text from a GitHub Actions workflow YAML.
+ * Joins lines continued with a trailing `\`. Skips `#` comments and empty lines.
+ *
+ * @param {string} workflowYaml
+ * @returns {string[]}
+ */
+export function listWorkflowNonCommentShellCommands(workflowYaml) {
+  /** @type {string[]} */
+  const commands = [];
+  /** @type {string[]} */
+  let current = [];
+
+  const flush = () => {
+    if (current.length === 0) return;
+    commands.push(current.join(' ').replace(/\s+/g, ' ').trim());
+    current = [];
+  };
+
+  for (const rawLine of workflowYaml.split('\n')) {
+    const trimmed = rawLine.trim();
+    if (!trimmed || trimmed.startsWith('#')) {
+      flush();
+      continue;
+    }
+
+    const continued = /\\$/.test(trimmed);
+    const piece = continued ? trimmed.slice(0, -1).trimEnd() : trimmed;
+    current.push(piece);
+    if (!continued) flush();
+  }
+  flush();
+  return commands;
+}
+
+/**
+ * True when a shell command installs flatpak-builder-tools / the node generator pin.
+ * @param {string} command
+ * @returns {boolean}
+ */
+export function isFlatpakNodeGeneratorPipInstallCommand(command) {
+  if (!/\bpip3?\s+install\b/.test(command)) return false;
+  return (
+    /flatpak-builder-tools/.test(command) ||
+    /\$\{?FBTOOLS\}?/.test(command) ||
+    /FLATPAK_NODE_GENERATOR_GIT/.test(command)
+  );
+}
+
+/**
  * Ensure CI/Flatpak workflows force-reinstall the pinned generator (same 0.1.0 version
  * across commits — plain pip install is a no-op on preinstalled images).
+ *
+ * Flags must appear on the generator's own non-comment `pip install` command — not
+ * only in a nearby comment or an unrelated pip install.
  *
  * @param {string} workflowYaml
  * @param {string} [fileRel]
@@ -76,21 +128,24 @@ export function flatpakWorkflowGeneratorInstallViolations(
 ) {
   /** @type {{ file: string, message: string }[]} */
   const violations = [];
-  // Match either a direct git+ URL or pip install of ${FBTOOLS} when FBTOOLS points at
-  // flatpak-builder-tools (CI uses the variable form).
-  const installsGenerator =
-    /pip3?\s+install\b[\s\S]{0,300}?flatpak-builder-tools/.test(workflowYaml) ||
-    (/flatpak-builder-tools/.test(workflowYaml) &&
-      /pip3?\s+install\b[\s\S]{0,200}?\$\{?FBTOOLS\}?/.test(workflowYaml));
-  if (!installsGenerator) {
+  const generatorInstalls = listWorkflowNonCommentShellCommands(workflowYaml).filter(
+    isFlatpakNodeGeneratorPipInstallCommand,
+  );
+  if (generatorInstalls.length === 0) {
     return violations;
   }
-  if (!/--force-reinstall\b/.test(workflowYaml)) {
+
+  for (const cmd of generatorInstalls) {
+    const missing = [];
+    if (!/--force-reinstall\b/.test(cmd)) missing.push('--force-reinstall');
+    if (!/--no-cache-dir\b/.test(cmd)) missing.push('--no-cache-dir');
+    if (missing.length === 0) continue;
     violations.push({
       file: fileRel,
       message:
-        'pip install of flatpak-node-generator must use --force-reinstall ' +
-        '(image may preinstall flatpak_node_generator==0.1.0; same version skips upgrade and leaves storeDir=)',
+        `pip install of flatpak-node-generator must include ${missing.join(' and ')} on the ` +
+        'install command itself (not only in comments). Image may preinstall ' +
+        'flatpak_node_generator==0.1.0; same version skips upgrade and leaves storeDir=.',
     });
   }
   return violations;
