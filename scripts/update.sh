@@ -307,6 +307,9 @@ fi
 # --- Run updates ---
 echo ''
 echo 'Running pnpm update...'
+echo 'Note: with minimumReleaseAge (pnpm-workspace.yaml), pnpm may WARN that a newer'
+echo 'version was not selected. That is usually the age gate (not a broken override).'
+echo 'Packages published within that window stay held until they mature; re-run later.'
 pnpm update
 
 echo ''
