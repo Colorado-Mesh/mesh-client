@@ -39,10 +39,12 @@ modules:
         PNPM_HOME: /run/build/mesh-client/.pnpm
         pnpm_config_cache: /run/build/mesh-client/.npm
     build-commands:
-      # Install pnpm standalone binary from archived release (no network needed).
+      # Install pnpm standalone from archived release (no network needed).
       # Archive extracts to pnpm-vendor/ (strip-components: 0) so the root `pnpm` binary is
-      # kept and the bundled dist/ does not collide with app dist/.
+      # kept and the bundled dist/ does not collide with app dist/. pnpm 11+ requires
+      # dist/pnpm.mjs next to the wrapper binary (install alone is not enough).
       - install -Dm755 pnpm-vendor/pnpm /run/build/mesh-client/.pnpm-bin/pnpm
+      - cp -a pnpm-vendor/dist /run/build/mesh-client/.pnpm-bin/dist
       # Offline install using generated-sources.json (retries @jsr temp-dir races).
       # --store-dir must use the sandbox-absolute path because the type:shell
       # source that writes .npmrc runs outside the sandbox, so $PWD there is
