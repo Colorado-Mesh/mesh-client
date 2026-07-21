@@ -91,6 +91,11 @@ export const NATIVE_TARGETS = {
     { name: 'Build', command: 'pnpm', args: ['run', 'build'] },
     { name: 'Check Flatpak', command: 'pnpm', args: ['run', 'check:flatpak'] },
     {
+      name: 'Check Flatpak offline pnpm',
+      command: 'pnpm',
+      args: ['run', 'check:flatpak-offline-pnpm'],
+    },
+    {
       name: 'Validate desktop file',
       command: 'desktop-file-validate',
       args: ['flatpak/org.coloradomesh.MeshClient.desktop'],

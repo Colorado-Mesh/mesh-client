@@ -275,10 +275,17 @@ flatpak install --user -y flathub org.electronjs.Electron2.BaseApp//24.08
 
 ```bash
 pip install flatpak-node-generator
-flatpak-node-generator pnpm pnpm-lock.yaml -o flatpak/generated-sources.json
+# Must match package.json packageManager major (pnpm 11 → v11). Generator defaults to v10.
+PNPM_MAJOR="$(node -p "require('./package.json').packageManager.match(/^pnpm@(\\d+)/)[1]")"
+STORE_VERSION="v${PNPM_MAJOR}"
+flatpak-node-generator pnpm pnpm-lock.yaml \
+  --pnpm-store-version "$STORE_VERSION" \
+  -o flatpak/generated-sources.json
 ```
 
 `flatpak/generated-sources.json` is generated automatically in the `flatpak.yaml` CI workflow and does not need to be committed. For local builds you generate it manually as shown above; the file is only required locally and in a Flathub submission repo.
+
+**PR-cycle offline check** (not pre-commit): after installing `flatpak-node-generator`, run `pnpm run check:flatpak-offline-pnpm` to assert the workflow passes the correct `--pnpm-store-version` and that generated sources cover lockfile tarballs (catches `ERR_PNPM_NO_OFFLINE_TARBALL`). CI / `act:pr` / `release.sh` run this automatically.
 
 Offline install inside the Flatpak sandbox uses `scripts/flatpak-pnpm-install.mjs`, which retries transient `@jsr/_tmp_*` rename races (same root cause as Windows `dist:win` hoisted installs).
 
@@ -373,6 +380,7 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `check:electron-security`             | Verify Electron security settings (CSP, sandbox, etc.)                 |
 | `check:environment`                   | Verify local dev prerequisites (run after clone)                       |
 | `check:flatpak`                       | Lint Flatpak manifest and wrapper scripts                              |
+| `check:flatpak-offline-pnpm`          | PR/release offline Flatpak pnpm store vN + lockfile coverage           |
 | `check:i18n`                          | Verify English keys, unused keys, and locale quality rules             |
 | `check:i18n:branch`                   | Run i18n quality checks on keys new/changed vs `HEAD` only             |
 | `check:insecure-temp-files`           | Predictable `os.tmpdir()` writes (CodeQL `js/insecure-temporary-file`) |

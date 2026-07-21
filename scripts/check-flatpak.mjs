@@ -3,6 +3,10 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { offlinePnpmEnvContractViolations } from './flatpakOfflinePnpmEnv.mjs';
+import {
+  flatpakWorkflowStoreVersionViolations,
+  storeVersionFromPackageManager,
+} from './flatpakPnpmStoreVersion.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -10,6 +14,7 @@ const ROOT = path.resolve(__dirname, '..');
 const METAINFO = path.join(ROOT, 'flatpak', 'org.coloradomesh.MeshClient.metainfo.xml');
 const DESKTOP = path.join(ROOT, 'flatpak', 'org.coloradomesh.MeshClient.desktop');
 const MANIFEST = path.join(ROOT, 'org.coloradomesh.MeshClient.yml');
+const FLATPAK_WORKFLOW = path.join(ROOT, '.github/workflows/flatpak.yaml');
 const WRAPPER = path.join(ROOT, 'flatpak', 'mesh-client-wrapper.sh');
 const PKG = path.join(ROOT, 'package.json');
 const EXPECTED_APP_ID = 'org.coloradomesh.MeshClient';
@@ -174,6 +179,17 @@ function checkManifestPnpmVersion(pkg) {
   }
 
   return violations;
+}
+
+function checkFlatpakWorkflowStoreVersion(pkg) {
+  const violations = [];
+  if (!fs.existsSync(FLATPAK_WORKFLOW) || !pkg) return violations;
+
+  const expected = storeVersionFromPackageManager(pkg.packageManager);
+  if (!expected) return violations;
+
+  const yaml = fs.readFileSync(FLATPAK_WORKFLOW, 'utf8');
+  return flatpakWorkflowStoreVersionViolations(yaml, expected);
 }
 
 function checkManifestBranchAndElectronPayload(pkg) {
@@ -417,6 +433,7 @@ function main() {
     ...checkMetainfoAppId(),
     ...checkManifestAppId(),
     ...checkManifestPnpmVersion(PKG_JSON),
+    ...checkFlatpakWorkflowStoreVersion(PKG_JSON),
     ...checkManifestBranchAndElectronPayload(PKG_JSON),
     ...checkManifestReticulumSidecarPayload(),
     ...checkWrapperLaunchPaths(),

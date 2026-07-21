@@ -30,7 +30,7 @@ Runs on every push and pull request to `main`:
 6. Run typecheck (`pnpm run typecheck`)
 7. Run build (`pnpm run build`)
 8. Run `yamllint` on workflow/config YAML
-9. Run `check:flatpak`, `desktop-file-validate`, and `appstreamcli validate` on Flatpak metadata
+9. Run `check:flatpak`, `check:flatpak-offline-pnpm` (needs `flatpak-node-generator`), `desktop-file-validate`, and `appstreamcli validate` on Flatpak metadata
 
 All steps must pass before a PR can be merged.
 
