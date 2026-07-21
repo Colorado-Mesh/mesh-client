@@ -94,7 +94,6 @@ export const NATIVE_TARGETS = {
       name: 'Check Flatpak offline pnpm',
       command: 'pnpm',
       args: ['run', 'check:flatpak-offline-pnpm'],
-      optionalTool: 'flatpak-node-generator',
     },
     {
       name: 'Validate desktop file',

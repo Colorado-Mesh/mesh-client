@@ -177,17 +177,21 @@ export function parseGeneratedPnpmManifest(generatedSources) {
  * @param {string[]} lockfilePackageIds
  * @param {Set<string>} tarballNames
  * @param {number} [sampleLimit]
- * @returns {string[]}
+ * @returns {{ missing: string[], truncated: boolean }}
  */
 export function missingOfflineTarballs(lockfilePackageIds, tarballNames, sampleLimit = 20) {
   const missing = [];
+  let truncated = false;
   for (const id of lockfilePackageIds) {
     const tarball = lockfilePackageIdToTarballName(id);
     if (!tarball) continue;
     if (!tarballNames.has(tarball)) {
       missing.push(tarball);
-      if (missing.length >= sampleLimit) break;
+      if (missing.length >= sampleLimit) {
+        truncated = true;
+        break;
+      }
     }
   }
-  return missing;
+  return { missing, truncated };
 }

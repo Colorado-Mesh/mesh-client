@@ -79,6 +79,19 @@ packages:
     expect(storeVersion).toBe('v11');
     expect(
       missingOfflineTarballs(['@bufbuild/protobuf@2.12.1', 'lodash@4.17.21'], tarballNames),
-    ).toEqual(['@bufbuild__protobuf-2.12.1.tgz']);
+    ).toEqual({
+      missing: ['@bufbuild__protobuf-2.12.1.tgz'],
+      truncated: false,
+    });
+  });
+
+  it('signals truncation when missing samples hit the limit', () => {
+    const { missing, truncated } = missingOfflineTarballs(
+      ['a@1.0.0', 'b@1.0.0', 'c@1.0.0'],
+      new Set(),
+      2,
+    );
+    expect(missing).toEqual(['a-1.0.0.tgz', 'b-1.0.0.tgz']);
+    expect(truncated).toBe(true);
   });
 });

@@ -18,6 +18,7 @@ import {
   FLATPAK_NODE_GENERATOR_COMMIT,
   FLATPAK_NODE_GENERATOR_GIT,
   flatpakWorkflowStoreVersionViolations,
+  lockfilePackageIdToTarballName,
   missingOfflineTarballs,
   parseGeneratedPnpmManifest,
   listLockfilePackageIds,
@@ -29,6 +30,9 @@ const ROOT = path.resolve(__dirname, '..');
 const PKG = path.join(ROOT, 'package.json');
 const LOCKFILE = path.join(ROOT, 'pnpm-lock.yaml');
 const WORKFLOW = path.join(ROOT, '.github/workflows/flatpak.yaml');
+
+/** Cap generator hangs (registry metadata) so CI fails with a clear message. */
+const GENERATOR_TIMEOUT_MS = 5 * 60 * 1000;
 
 /**
  * @returns {string | null}
@@ -69,10 +73,27 @@ function generateOfflineSources(expectedStoreVersion) {
   const result = spawnSync(
     bin,
     ['pnpm', LOCKFILE, '--pnpm-store-version', expectedStoreVersion, '-o', outPath],
-    { cwd: ROOT, encoding: 'utf8' },
+    {
+      cwd: ROOT,
+      encoding: 'utf8',
+      timeout: GENERATOR_TIMEOUT_MS,
+      killSignal: 'SIGKILL',
+    },
   );
 
+  if (result.error) {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    const timedOut = /** @type {{ code?: string }} */ (result.error).code === 'ETIMEDOUT';
+    return {
+      ok: false,
+      message: timedOut
+        ? `flatpak-node-generator timed out after ${GENERATOR_TIMEOUT_MS}ms`
+        : `flatpak-node-generator failed to start: ${result.error.message}`,
+    };
+  }
+
   if (result.status !== 0) {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
     return {
       ok: false,
       message:
@@ -81,6 +102,7 @@ function generateOfflineSources(expectedStoreVersion) {
     };
   }
   if (!fs.existsSync(outPath)) {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
     return { ok: false, message: `generator did not write ${outPath}` };
   }
   return { ok: true, generatedPath: outPath };
@@ -130,12 +152,13 @@ function main() {
         }
 
         const lockIds = listLockfilePackageIds(fs.readFileSync(LOCKFILE, 'utf8'));
-        const missing = missingOfflineTarballs(lockIds, tarballNames);
+        const { missing, truncated } = missingOfflineTarballs(lockIds, tarballNames);
         if (missing.length > 0) {
+          const countLabel = truncated ? `${missing.length}+` : String(missing.length);
           violations.push({
             file: 'flatpak/generated-sources.json',
             message:
-              `offline store missing ${missing.length}+ lockfile tarball(s); sample: ${missing.slice(0, 5).join(', ')} ` +
+              `offline store missing ${countLabel} lockfile tarball(s); sample: ${missing.slice(0, 5).join(', ')} ` +
               `(pnpm install --offline would fail with ERR_PNPM_NO_OFFLINE_TARBALL)`,
           });
         }
@@ -143,8 +166,8 @@ function main() {
         // Explicit regression probe for scoped packages that failed Flatpak CI first.
         const bufbuildId = lockIds.find((id) => id.startsWith('@bufbuild/protobuf@'));
         if (bufbuildId) {
-          const bufTarball = `${bufbuildId.slice(0, bufbuildId.lastIndexOf('@')).replace('/', '__')}-${bufbuildId.slice(bufbuildId.lastIndexOf('@') + 1)}.tgz`;
-          if (!tarballNames.has(bufTarball)) {
+          const bufTarball = lockfilePackageIdToTarballName(bufbuildId);
+          if (bufTarball && !tarballNames.has(bufTarball)) {
             violations.push({
               file: 'flatpak/generated-sources.json',
               message: `missing ${bufTarball} (Flatpak CI offline install regression)`,

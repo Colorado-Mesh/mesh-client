@@ -27,6 +27,7 @@ Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) ru
 - On branch **`main`**, up to date with `origin/main`
 - Clean working directory (no uncommitted changes)
 - For `pnpm run release` pre-flight: **actionlint** and **yamllint** installed (or run `pnpm run setup:actionlint` and install yamllint via pip/brew — see [Development Guide](development-environment.md#8-helper-scripts-auto-install-where-possible))
+- For `pnpm run release` pre-flight: **flatpak-node-generator** on `PATH` (same pin as Flatpak CI — see [Building a Flatpak](development-environment.md#building-a-flatpak-linux) / `pnpm run check:flatpak-offline-pnpm` install hint)
 
 ---
 
