@@ -9,6 +9,7 @@ import {
   parseEngineFloor,
   parsePackageManagerField,
   parseSemver,
+  pnpmVersionFromUserAgent,
 } from './check-package-manager.mjs';
 
 describe('check-package-manager parseSemver', () => {
@@ -35,6 +36,14 @@ describe('check-package-manager parsePackageManagerField', () => {
 describe('check-package-manager parseEngineFloor', () => {
   it('parses >= floors', () => {
     expect(parseEngineFloor('>=11.0.0')).toEqual({ major: 11, minor: 0, patch: 0 });
+  });
+});
+
+describe('check-package-manager pnpmVersionFromUserAgent', () => {
+  it('reads pnpm version from lifecycle user-agent', () => {
+    expect(pnpmVersionFromUserAgent('pnpm/11.15.1 npm/? node/v22.23.1 win32 x64')).toBe('11.15.1');
+    expect(pnpmVersionFromUserAgent('npm/10.9.0 node/v22.23.1')).toBeNull();
+    expect(pnpmVersionFromUserAgent(undefined)).toBeNull();
   });
 });
 

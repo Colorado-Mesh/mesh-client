@@ -142,6 +142,24 @@ function checkManifestPnpmVersion(pkg) {
     });
   }
 
+  // pnpm 11+ ships tar.gz with root-level `pnpm` + `dist/`. flatpak-builder defaults to
+  // strip-components:1, which discards the binary (only dist/ contents remain under dest).
+  if (yaml.includes('pnpm-linux-') && yaml.includes('.tar.gz')) {
+    const pnpmArchiveBlocks = yaml
+      .split(/^\s*- type: archive\s*$/m)
+      .filter((block) => /pnpm-linux-.*\.tar\.gz/.test(block));
+    for (const block of pnpmArchiveBlocks) {
+      if (!/strip-components:\s*0\b/.test(block)) {
+        violations.push({
+          file: rel,
+          message:
+            'pnpm linux tar.gz archive sources must set strip-components: 0 (default 1 drops root-level pnpm binary)',
+        });
+        break;
+      }
+    }
+  }
+
   return violations;
 }
 

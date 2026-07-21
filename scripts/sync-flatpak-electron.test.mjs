@@ -20,6 +20,7 @@ const SAMPLE_MANIFEST = `      - type: archive
         url: https://github.com/pnpm/pnpm/releases/download/v11.15.1/pnpm-linux-arm64.tar.gz
         sha256: 361e385867146972d0635a41a1871cb44c9c23f65acce78a5f1ca1d44ac0afcd
         dest: pnpm-vendor
+        strip-components: 0
         only-arches: [aarch64]
       - type: archive
         url: https://github.com/electron/electron/releases/download/v41.10.0/electron-v41.10.0-linux-x64.zip
