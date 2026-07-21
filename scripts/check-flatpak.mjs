@@ -2,6 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { offlinePnpmEnvContractViolations } from './flatpakOfflinePnpmEnv.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -132,6 +133,9 @@ function checkManifestPnpmVersion(pkg) {
   const rel = path.relative(ROOT, MANIFEST);
   const pnpmVersion = pnpmVersionFromPackage(pkg);
 
+  // Offline Flatpak builds cannot re-verify minimumReleaseAge / trustPolicy against npm.
+  violations.push(...offlinePnpmEnvContractViolations(yaml, rel));
+
   if (!pnpmVersion) return violations;
 
   const releaseUrlPrefix = `pnpm/pnpm/releases/download/v${pnpmVersion}/`;
@@ -166,22 +170,6 @@ function checkManifestPnpmVersion(pkg) {
       file: rel,
       message:
         'manifest must copy pnpm-vendor/dist into .pnpm-bin/dist (pnpm 11+ wrapper needs dist/pnpm.mjs)',
-    });
-  }
-
-  // Offline Flatpak builds cannot re-verify minimumReleaseAge / trustPolicy against npm.
-  if (!/PNPM_CONFIG_TRUST_LOCKFILE:\s*['"]?true['"]?/.test(yaml)) {
-    violations.push({
-      file: rel,
-      message:
-        'manifest build-options.env must set PNPM_CONFIG_TRUST_LOCKFILE: true (skip registry supply-chain re-verify offline)',
-    });
-  }
-  if (!/PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN:\s*['"]?false['"]?/.test(yaml)) {
-    violations.push({
-      file: rel,
-      message:
-        'manifest build-options.env must set PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: false (pnpm run must not auto-install offline)',
     });
   }
 

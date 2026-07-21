@@ -1,9 +1,9 @@
 // @vitest-environment node
-import fs from 'fs';
 import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
+import { FLATPAK_PNPM_INSTALL_ARGS } from './flatpak-pnpm-install.mjs';
 
 const scriptPath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -21,8 +21,9 @@ describe('flatpak-pnpm-install.mjs', () => {
   });
 
   it('passes trust-lockfile so offline install skips registry supply-chain re-verify', () => {
-    const source = fs.readFileSync(scriptPath, 'utf8');
-    expect(source).toContain('--config.trust-lockfile=true');
-    expect(source).toContain('--offline');
+    expect(FLATPAK_PNPM_INSTALL_ARGS).toContain('--config.trust-lockfile=true');
+    expect(FLATPAK_PNPM_INSTALL_ARGS).toContain('--offline');
+    expect(FLATPAK_PNPM_INSTALL_ARGS).toContain('--frozen-lockfile');
+    expect(FLATPAK_PNPM_INSTALL_ARGS).toContain('--ignore-scripts');
   });
 });

@@ -3,6 +3,10 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { describe, expect, it } from 'vitest';
+import {
+  offlinePnpmEnvContractViolations,
+  parseMeshClientModuleBuildEnv,
+} from './flatpakOfflinePnpmEnv.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MANIFEST = path.join(ROOT, 'org.coloradomesh.MeshClient.yml');
@@ -16,9 +20,35 @@ describe('Flatpak pnpm standalone install', () => {
     expect(yaml).toMatch(/cp -a pnpm-vendor\/dist \/run\/build\/mesh-client\/\.pnpm-bin\/dist/);
   });
 
-  it('disables registry supply-chain re-verify and verifyDepsBeforeRun for offline builds', () => {
+  it('requires unquoted offline pnpm booleans in mesh-client build-options.env', () => {
     const yaml = fs.readFileSync(MANIFEST, 'utf8');
-    expect(yaml).toMatch(/PNPM_CONFIG_TRUST_LOCKFILE:\s*['"]?true['"]?/);
-    expect(yaml).toMatch(/PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN:\s*['"]?false['"]?/);
+    const env = parseMeshClientModuleBuildEnv(yaml);
+    expect(env).not.toBeNull();
+    expect(env?.PNPM_CONFIG_TRUST_LOCKFILE).toBe(true);
+    expect(env?.PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN).toBe(false);
+    expect(offlinePnpmEnvContractViolations(yaml)).toEqual([]);
+  });
+
+  it('rejects quoted or commented offline pnpm env values', () => {
+    const quoted = `
+modules:
+  - name: mesh-client
+    build-options:
+      env:
+        PNPM_CONFIG_TRUST_LOCKFILE: 'true'
+        PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: 'false'
+`;
+    expect(offlinePnpmEnvContractViolations(quoted).length).toBe(2);
+
+    const commentedOnly = `
+modules:
+  - name: mesh-client
+    build-options:
+      env:
+        # PNPM_CONFIG_TRUST_LOCKFILE: true
+        # PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: false
+        PNPM_HOME: /run/build/mesh-client/.pnpm
+`;
+    expect(offlinePnpmEnvContractViolations(commentedOnly).length).toBe(2);
   });
 });
