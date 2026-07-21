@@ -49,9 +49,26 @@ export function parsePackageManagerField(packageManager) {
   return { name: 'pnpm', version: raw, ...parsed };
 }
 
+/**
+ * Prefer lifecycle user-agent (set while pnpm runs preinstall/dev) over PATH lookup.
+ * Windows `spawnSync('pnpm')` without `shell: true` cannot resolve `.cmd` shims.
+ * @param {string | undefined} userAgent
+ * @returns {string | null}
+ */
+export function pnpmVersionFromUserAgent(userAgent) {
+  if (typeof userAgent !== 'string' || !userAgent) return null;
+  const match = userAgent.match(/(?:^|\s)pnpm\/(\d+\.\d+\.\d+)/);
+  return match?.[1] ?? null;
+}
+
 /** @returns {boolean} */
 export function hasCorepack() {
-  const res = spawnSync('corepack', ['--version'], { encoding: 'utf8', stdio: 'pipe' });
+  const res = spawnSync('corepack', ['--version'], {
+    encoding: 'utf8',
+    stdio: 'pipe',
+    // Windows: corepack is a .cmd shim; spawn without shell cannot resolve it.
+    shell: process.platform === 'win32',
+  });
   return res.status === 0 && !res.error;
 }
 
@@ -192,7 +209,16 @@ function readPackageJson(root = repoRoot) {
 }
 
 function currentPnpmVersion() {
-  const res = spawnSync('pnpm', ['--version'], { encoding: 'utf8', stdio: 'pipe' });
+  const fromUa = pnpmVersionFromUserAgent(process.env.npm_config_user_agent);
+  if (fromUa) return fromUa;
+
+  const res = spawnSync('pnpm', ['--version'], {
+    encoding: 'utf8',
+    stdio: 'pipe',
+    // Windows: pnpm/action-setup and Corepack install .cmd shims; without shell,
+    // spawnSync cannot find them and preinstall reports "You have: not found".
+    shell: process.platform === 'win32',
+  });
   if (res.error || res.status !== 0) return null;
   return String(res.stdout || '').trim() || null;
 }
