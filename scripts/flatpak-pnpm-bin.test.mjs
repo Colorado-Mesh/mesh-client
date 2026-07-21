@@ -20,33 +20,36 @@ describe('Flatpak pnpm standalone install', () => {
     expect(yaml).toMatch(/cp -a pnpm-vendor\/dist \/run\/build\/mesh-client\/\.pnpm-bin\/dist/);
   });
 
-  it('requires unquoted offline pnpm booleans in mesh-client build-options.env', () => {
+  it('requires quoted offline pnpm env strings for flatpak-builder GStrv', () => {
     const yaml = fs.readFileSync(MANIFEST, 'utf8');
     const env = parseMeshClientModuleBuildEnv(yaml);
     expect(env).not.toBeNull();
-    expect(env?.PNPM_CONFIG_TRUST_LOCKFILE).toBe(true);
-    expect(env?.PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN).toBe(false);
+    expect(env?.PNPM_CONFIG_TRUST_LOCKFILE).toBe('true');
+    expect(env?.PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN).toBe('false');
     expect(offlinePnpmEnvContractViolations(yaml)).toEqual([]);
   });
 
-  it('rejects quoted or commented offline pnpm env values', () => {
-    const quoted = `
+  it('rejects unquoted YAML booleans (GStrv drops the whole env map)', () => {
+    const unquoted = `
 modules:
   - name: mesh-client
     build-options:
       env:
-        PNPM_CONFIG_TRUST_LOCKFILE: 'true'
-        PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: 'false'
+        PNPM_CONFIG_TRUST_LOCKFILE: true
+        PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: false
 `;
-    expect(offlinePnpmEnvContractViolations(quoted).length).toBe(2);
+    expect(offlinePnpmEnvContractViolations(unquoted).length).toBe(2);
+    expect(offlinePnpmEnvContractViolations(unquoted)[0].message).toMatch(/GStrv|quoted/);
+  });
 
+  it('rejects missing or commented offline pnpm env values', () => {
     const commentedOnly = `
 modules:
   - name: mesh-client
     build-options:
       env:
-        # PNPM_CONFIG_TRUST_LOCKFILE: true
-        # PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: false
+        # PNPM_CONFIG_TRUST_LOCKFILE: 'true'
+        # PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: 'false'
         PNPM_HOME: /run/build/mesh-client/.pnpm
 `;
     expect(offlinePnpmEnvContractViolations(commentedOnly).length).toBe(2);

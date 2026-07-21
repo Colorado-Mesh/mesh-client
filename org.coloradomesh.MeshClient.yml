@@ -38,9 +38,11 @@ modules:
       env:
         PNPM_HOME: /run/build/mesh-client/.pnpm
         pnpm_config_cache: /run/build/mesh-client/.npm
+        # Values must be YAML strings (quoted). Unquoted true/false become JSON
+        # booleans and flatpak-builder drops the entire env map (GStrv warning).
         # pnpm 11 supply-chain / verifyDepsBeforeRun must not hit the registry offline.
-        PNPM_CONFIG_TRUST_LOCKFILE: true
-        PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: false
+        PNPM_CONFIG_TRUST_LOCKFILE: 'true'
+        PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: 'false'
     build-commands:
       # Install pnpm standalone from archived release (no network needed).
       # Archive extracts to pnpm-vendor/ (strip-components: 0) so the root `pnpm` binary is

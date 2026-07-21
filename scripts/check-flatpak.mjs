@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { offlinePnpmEnvContractViolations } from './flatpakOfflinePnpmEnv.mjs';
 import {
+  flatpakWorkflowGeneratorInstallViolations,
   flatpakWorkflowStoreVersionViolations,
   storeVersionFromPackageManager,
 } from './flatpakPnpmStoreVersion.mjs';
@@ -15,6 +16,7 @@ const METAINFO = path.join(ROOT, 'flatpak', 'org.coloradomesh.MeshClient.metainf
 const DESKTOP = path.join(ROOT, 'flatpak', 'org.coloradomesh.MeshClient.desktop');
 const MANIFEST = path.join(ROOT, 'org.coloradomesh.MeshClient.yml');
 const FLATPAK_WORKFLOW = path.join(ROOT, '.github/workflows/flatpak.yaml');
+const CI_WORKFLOW = path.join(ROOT, '.github/workflows/ci.yaml');
 const WRAPPER = path.join(ROOT, 'flatpak', 'mesh-client-wrapper.sh');
 const PKG = path.join(ROOT, 'package.json');
 const EXPECTED_APP_ID = 'org.coloradomesh.MeshClient';
@@ -189,7 +191,17 @@ function checkFlatpakWorkflowStoreVersion(pkg) {
   if (!expected) return violations;
 
   const yaml = fs.readFileSync(FLATPAK_WORKFLOW, 'utf8');
-  return flatpakWorkflowStoreVersionViolations(yaml, expected);
+  violations.push(...flatpakWorkflowStoreVersionViolations(yaml, expected));
+
+  // CI installs the same pin for check:flatpak-offline-pnpm — must also force-reinstall.
+  if (fs.existsSync(CI_WORKFLOW)) {
+    const ciYaml = fs.readFileSync(CI_WORKFLOW, 'utf8');
+    violations.push(
+      ...flatpakWorkflowGeneratorInstallViolations(ciYaml, '.github/workflows/ci.yaml'),
+    );
+  }
+
+  return violations;
 }
 
 function checkManifestBranchAndElectronPayload(pkg) {

@@ -55,7 +55,10 @@ jobs:
         run: |
           FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
           # Keep in sync with scripts/flatpakPnpmStoreVersion.mjs FLATPAK_NODE_GENERATOR_COMMIT.
-          pip3 install "${FBTOOLS}@ac5a296ac6111aa2319daf532f609a067b88d8a9#subdirectory=node"
+          # --force-reinstall: same 0.1.0 version across commits; plain pip is a no-op on
+          # preinstalled images and leaves the storeDir= generator.
+          pip3 install --force-reinstall --no-cache-dir \
+            "${FBTOOLS}@ac5a296ac6111aa2319daf532f609a067b88d8a9#subdirectory=node"
 
       - name: Check Flatpak offline pnpm sources
         run: pnpm run check:flatpak-offline-pnpm

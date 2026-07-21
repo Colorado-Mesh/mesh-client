@@ -274,7 +274,10 @@ flatpak install --user -y flathub org.electronjs.Electron2.BaseApp//24.08
 **3. Generate offline pnpm sources** (re-run whenever `pnpm-lock.yaml` changes)
 
 ```bash
-pip install flatpak-node-generator
+# Prefer the CI pin with --force-reinstall (images may preinstall an older 0.1.0).
+# See scripts/flatpakPnpmStoreVersion.mjs FLATPAK_NODE_GENERATOR_GIT.
+pip install --force-reinstall --no-cache-dir \
+  "git+https://github.com/flatpak/flatpak-builder-tools@ac5a296ac6111aa2319daf532f609a067b88d8a9#subdirectory=node"
 # Must match package.json packageManager major (pnpm 11 → v11). Generator defaults to v10.
 PNPM_MAJOR="$(node -p "require('./package.json').packageManager.match(/^pnpm@(\\d+)/)[1]")"
 STORE_VERSION="v${PNPM_MAJOR}"
