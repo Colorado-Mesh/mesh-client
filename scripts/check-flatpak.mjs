@@ -169,6 +169,22 @@ function checkManifestPnpmVersion(pkg) {
     });
   }
 
+  // Offline Flatpak builds cannot re-verify minimumReleaseAge / trustPolicy against npm.
+  if (!/PNPM_CONFIG_TRUST_LOCKFILE:\s*['"]?true['"]?/.test(yaml)) {
+    violations.push({
+      file: rel,
+      message:
+        'manifest build-options.env must set PNPM_CONFIG_TRUST_LOCKFILE: true (skip registry supply-chain re-verify offline)',
+    });
+  }
+  if (!/PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN:\s*['"]?false['"]?/.test(yaml)) {
+    violations.push({
+      file: rel,
+      message:
+        'manifest build-options.env must set PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: false (pnpm run must not auto-install offline)',
+    });
+  }
+
   return violations;
 }
 

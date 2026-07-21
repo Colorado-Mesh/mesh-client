@@ -38,6 +38,9 @@ modules:
       env:
         PNPM_HOME: /run/build/mesh-client/.pnpm
         pnpm_config_cache: /run/build/mesh-client/.npm
+        # pnpm 11 supply-chain / verifyDepsBeforeRun must not hit the registry offline.
+        PNPM_CONFIG_TRUST_LOCKFILE: 'true'
+        PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: 'false'
     build-commands:
       # Install pnpm standalone from archived release (no network needed).
       # Archive extracts to pnpm-vendor/ (strip-components: 0) so the root `pnpm` binary is

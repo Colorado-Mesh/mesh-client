@@ -8,6 +8,11 @@
  * Failure point: host/CI runs without the Flatpak-vendored store at STORE_DIR.
  * pnpm 11+ may report "Already up to date" from an existing node_modules even when
  * --store-dir is missing; refuse to proceed so Flatpak always uses the offline store.
+ *
+ * Failure point: pnpm 11 re-verifies minimumReleaseAge / trustPolicy against the
+ * registry for every lockfile entry ("Verifying lockfile against supply-chain
+ * policies"). Flatpak build has no usable DNS, so those GETs hang on EAI_AGAIN.
+ * Fallback: --config.trust-lockfile=true (CI already resolved the lockfile online).
  */
 import fs from 'fs';
 import { spawnSync } from 'child_process';
@@ -36,7 +41,15 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
 
   const result = spawnSync(
     'pnpm',
-    ['install', '--frozen-lockfile', '--offline', '--ignore-scripts', '--store-dir', STORE_DIR],
+    [
+      'install',
+      '--frozen-lockfile',
+      '--offline',
+      '--ignore-scripts',
+      '--config.trust-lockfile=true',
+      '--store-dir',
+      STORE_DIR,
+    ],
     {
       cwd: projectRoot,
       stdio: 'inherit',
