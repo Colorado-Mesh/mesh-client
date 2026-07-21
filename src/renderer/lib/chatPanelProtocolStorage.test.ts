@@ -232,6 +232,15 @@ describe('loadStarred / saveStarred', () => {
     expect(loadStarred('meshtastic')).toEqual([]);
   });
 
+  it('filters malformed starred entries', () => {
+    const ok = makeStarred({ starId: 'ok', starredAt: 1_700_000_000_000 });
+    localStorage.setItem(
+      'mesh-client:starred:meshtastic',
+      JSON.stringify([ok, { starId: 1, payload: 'bad' }, null, 'nope']),
+    );
+    expect(loadStarred('meshtastic')).toEqual([ok]);
+  });
+
   it('caps at STARRED_LIMIT (200) by dropping oldest starredAt', () => {
     const now = Date.now();
     const items: StarredMessage[] = Array.from({ length: 205 }, (_, i) =>

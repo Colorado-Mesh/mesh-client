@@ -130,6 +130,27 @@ describe('readReticulumDeveloperArtifacts', () => {
     };
     expect(stack.identity.mnemonic).toBeUndefined();
   });
+
+  it('logs and skips unreadable config / stack without throwing', async () => {
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const configPath = path.join(userDataDir, 'reticulum', 'config', 'config');
+    const stackPath = path.join(userDataDir, 'reticulum', 'storage', 'mesh_client_stack.json');
+    await fs.promises.mkdir(path.dirname(configPath), { recursive: true });
+    await fs.promises.mkdir(path.dirname(stackPath), { recursive: true });
+    // Directory where a file is expected → EISDIR / read failure
+    await fs.promises.rm(configPath, { force: true });
+    await fs.promises.mkdir(configPath, { recursive: true });
+    await fs.promises.rm(stackPath, { force: true });
+    await fs.promises.mkdir(stackPath, { recursive: true });
+
+    const artifacts = readReticulumDeveloperArtifacts();
+
+    expect(artifacts.config).toBeUndefined();
+    expect(artifacts.stackJson).toBeUndefined();
+    expect(debugSpy.mock.calls.some((c) => String(c[0]).includes('skip rnsd config'))).toBe(true);
+    expect(debugSpy.mock.calls.some((c) => String(c[0]).includes('skip stack state'))).toBe(true);
+    debugSpy.mockRestore();
+  });
 });
 
 describe('buildSupportBundleZip', () => {

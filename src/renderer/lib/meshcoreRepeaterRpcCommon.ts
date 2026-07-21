@@ -68,6 +68,23 @@ export interface MeshcoreRepeaterStats {
   n_flood_dups: number;
 }
 
+/** MeshCore companion login/status pushes match on the first 6 pubkey bytes. */
+export const MESHCORE_PUBKEY_PREFIX_LEN = 6;
+
+/**
+ * Return the 6-byte pubkey prefix used for push-event matching.
+ * Throws early when the key is too short so callers fail with a clear error
+ * instead of silently mismatching prefixes and timing out.
+ */
+export function requireContactPubKeyPrefix(contactPublicKey: Uint8Array): Uint8Array {
+  if (contactPublicKey.length < MESHCORE_PUBKEY_PREFIX_LEN) {
+    throw new Error(
+      `public key too short for prefix match (need >= ${MESHCORE_PUBKEY_PREFIX_LEN} bytes, got ${contactPublicKey.length})`,
+    );
+  }
+  return contactPublicKey.subarray(0, MESHCORE_PUBKEY_PREFIX_LEN);
+}
+
 export function normalizePubKeyPrefix(prefix: unknown): Uint8Array | null {
   if (prefix instanceof Uint8Array && prefix.length === 6) {
     return prefix;

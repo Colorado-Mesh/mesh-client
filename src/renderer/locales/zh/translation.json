@@ -3303,13 +3303,13 @@
     "disableTripleClickLabel": "Disable Triple-click",
     "disableTripleClickDesc": "Disable the triple-click action on the user button.",
     "ledHeartbeatDisabledLabel": "Disable LED Heartbeat",
-    "ledHeartbeatDisabledDesc": "Stop the LED from blinking to indicate the node is alive.",
+    "ledHeartbeatDisabledDesc": "停止 LED 闪烁以指示节点在线。",
     "buttonGpioLabel": "Button GPIO",
-    "buttonGpioDesc": "GPIO pin for the user button (0 = hardware default).",
+    "buttonGpioDesc": "用户按钮的 GPIO 引脚（0 = 硬件默认）。",
     "buzzerGpioLabel": "Buzzer GPIO",
-    "buzzerGpioDesc": "GPIO pin for the buzzer (0 = hardware default).",
+    "buzzerGpioDesc": "蜂鸣器的 GPIO 引脚（0 = 硬件默认）。",
     "tzdefLabel": "Timezone (POSIX)",
-    "tzdefDesc": "POSIX timezone string e.g. EST5EDT,M3.2.0,M11.1.0. See https://github.com/nayarsystems/posix_tz_db for a reference list.",
+    "tzdefDesc": "POSIX 时区字符串，例如 EST5EDT,M3.2.0,M11.1.0。参考列表见 https://github.com/nayarsystems/posix_tz_db。",
     "rebroadcastModes": {
       "0": {
         "label": "All",
@@ -3321,15 +3321,15 @@
       },
       "2": {
         "label": "Local Only",
-        "description": "Only rebroadcast packets from nodes heard directly on RF."
+        "description": "仅重播直接通过 RF 听到的节点发出的数据包。"
       },
       "3": {
         "label": "Known Only",
-        "description": "Only rebroadcast from nodes in the local node database."
+        "description": "仅重播本地节点数据库中的节点发出的数据包。"
       },
       "4": {
         "label": "None",
-        "description": "Do not rebroadcast any packets."
+        "description": "不重播任何数据包。"
       },
       "5": {
         "label": "Core Portnums Only",
@@ -3340,16 +3340,16 @@
     "autoScreenCarouselSecsDesc": "Seconds between automatic screen page changes. 0 to disable.",
     "oledTypeLabel": "OLED Type",
     "flipScreenLabel": "Flip Screen",
-    "flipScreenDesc": "Rotate the display 180 degrees.",
+    "flipScreenDesc": "将显示屏旋转 180 度。",
     "displayModeLabel": "Display Mode",
     "headingBoldLabel": "Bold Heading",
-    "wakeOnTapOrMotionLabel": "Wake on Tap or Motion",
-    "wakeOnTapOrMotionDesc": "Wake the screen when the device is tapped or moved.",
+    "wakeOnTapOrMotionLabel": "轻触或移动时唤醒",
+    "wakeOnTapOrMotionDesc": "当设备被轻触或移动时唤醒屏幕。",
     "use12hClockLabel": "12-Hour Clock",
     "useLongNodeNameLabel": "Use Long Node Name",
     "useLongNodeNameDesc": "Show full node name instead of short name on screen.",
     "enableMessageBubblesLabel": "Message Bubbles",
-    "enableMessageBubblesDesc": "Show incoming messages in a bubble on the display.",
+    "enableMessageBubblesDesc": "在显示屏上以气泡形式显示收到的消息。",
     "oledTypes": {
       "0": {
         "label": "Auto"
@@ -4385,16 +4385,16 @@
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "Connect to hash",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
-    "connectFailed": "Could not connect to RRC hub.",
-    "joinFailed": "Could not join room.",
-    "sendFailed": "Could not send message.",
+    "connectFailed": "无法连接到 RRC 枢纽。",
+    "joinFailed": "无法加入房间。",
+    "sendFailed": "无法发送消息。",
     "selectHub": "Select hub {{name}}",
     "selectHubPrompt": "Select an RRC hub to connect.",
     "favoriteHub": "Favourite hub",
     "unfavoriteHub": "Remove hub favourite",
     "hopsAway_one": "{{count}} 跳之外",
     "hopsAway_other": "{{count}} 跳之外",
-    "noDiscoveredHubs": "No live RRC hubs discovered yet. Keep the stack running to listen for announces.",
+    "noDiscoveredHubs": "尚未发现在线的 RRC 枢纽。请保持协议栈运行以监听通告。",
     "rooms": "Rooms",
     "joinRoom": "Room name",
     "join": "Join room",
@@ -4407,14 +4407,14 @@
     "muteRoom": "Mute room",
     "unmuteRoom": "Unmute room",
     "members": "Members",
-    "noMembers": "No member list from hub.",
+    "noMembers": "枢纽未提供成员列表。",
     "copyMessage": "Copy message",
     "messagePlaceholder": "Type a message…",
     "send": "Send",
     "status": {
       "disconnected": "Disconnected",
       "connecting": "Connecting…",
-      "awaiting_welcome": "Waiting for hub…",
+      "awaiting_welcome": "正在等待枢纽…",
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
@@ -4492,8 +4492,8 @@
     "roomAutoJoinOnHint": "自动加入开启—点击关闭",
     "roomAutoJoinOffHint": "自动加入关闭—当集线器连接时，单击以加入此房间",
     "roomLegend": "★ 收藏夹· A切换自动联接",
-    "disconnectFailed": "Could not disconnect from RRC hub.",
-    "partFailed": "Could not leave room.",
+    "disconnectFailed": "无法从 RRC 枢纽断开。",
+    "partFailed": "无法离开房间。",
     "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
     "clearHistory": "清除历史记录",
     "clearHistoryTitle": "清除房间历史记录",

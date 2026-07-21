@@ -4,6 +4,7 @@ import {
   normalizePubKeyPrefix,
   prefixToHex,
   pubKeyPrefixesEqual,
+  requireContactPubKeyPrefix,
   unknownToError,
 } from './meshcoreRepeaterRpcCommon';
 import {
@@ -43,7 +44,7 @@ export function runMeshcoreRoomLogin(
     companionTransport?: MeshcoreCompanionTransport;
   },
 ): Promise<MeshcoreRoomLoginResponse> {
-  const expectedPrefix = contactPublicKey.subarray(0, 6);
+  const expectedPrefix = requireContactPubKeyPrefix(contactPublicKey);
   const extraTimeoutMs = computeRoomLoginExtraTimeoutMs(opts?.hopsAway);
   const sentWaitMs = computeRoomLoginSentWaitMs(opts?.companionTransport);
   const signal = opts?.signal;

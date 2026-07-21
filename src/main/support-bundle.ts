@@ -7,6 +7,7 @@ import type { SupportBundleMode } from '../shared/support-bundle.types';
 import { exportDatabase } from './database';
 import { flushLogBeforeQuit, getLogPath } from './log-service';
 import { readUtf8FileBounded } from './reticulum-config-read';
+import { sanitizeLogMessage } from './sanitize-log-message';
 
 export type { SupportBundleMode };
 
@@ -51,8 +52,10 @@ export function readReticulumDeveloperArtifacts(): ReticulumDeveloperArtifacts {
   if (fs.existsSync(configPath)) {
     try {
       artifacts.config = Buffer.from(readUtf8FileBounded(configPath), 'utf8');
-    } catch {
-      // catch-no-log-ok skip oversized or unreadable rnsd config
+    } catch (e) {
+      // catch-no-log-ok skip oversized or unreadable rnsd config — debug for triage
+      const detail = e instanceof Error ? e.message : String(e);
+      console.debug(`[support-bundle] skip rnsd config: ${sanitizeLogMessage(detail)}`);
     }
   }
 
@@ -61,8 +64,10 @@ export function readReticulumDeveloperArtifacts(): ReticulumDeveloperArtifacts {
     try {
       const redacted = redactMnemonicFromStackJson(readUtf8FileBounded(stackPath));
       artifacts.stackJson = Buffer.from(redacted, 'utf8');
-    } catch {
-      // catch-no-log-ok skip oversized or unreadable stack state
+    } catch (e) {
+      // catch-no-log-ok skip oversized or unreadable stack state — debug for triage
+      const detail = e instanceof Error ? e.message : String(e);
+      console.debug(`[support-bundle] skip stack state: ${sanitizeLogMessage(detail)}`);
     }
   }
 

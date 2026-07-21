@@ -24,6 +24,7 @@ coverage/
 .vitest-reports/
 .eslintcache
 .context-os
+.hermes/
 .rtk
 .githooks/bin/
 flatpak/generated-sources.json

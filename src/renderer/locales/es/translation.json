@@ -189,7 +189,7 @@
     "storeForwardAutoFetchHistoryHint": "En la conexión de RF, solicite hasta 50 mensajes (15 minutos de tiempo de reutilización entre tomas). Apague si el puente MQTT de su puerta de enlace está sobrecargado.",
     "reduceMotion": "Reducir movimiento",
     "reduceMotionDesc": "Desactiva los iconos animados y los efectos decorativos. Los indicadores de carga y de estado de conexión siguen animándose.",
-    "roomMessages": "Mensajes de la habitación",
+    "roomMessages": "Mensajes de la sala",
     "importSchemaTooNew": "Este archivo de base de datos requiere una versión más nueva de mesh-client (esquema {{dbVersion}}). Esta compilación es compatible con el esquema {{appVersion}} o anterior. Instale la última versión e inténtelo de nuevo.",
     "floodAdvertTypeLabel": "Tipo de advert",
     "floodAdvertTypeFlood": "Inundación (multi-salto)",

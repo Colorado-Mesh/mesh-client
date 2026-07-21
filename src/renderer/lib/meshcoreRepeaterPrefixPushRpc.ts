@@ -5,6 +5,7 @@ import {
   normalizePubKeyPrefix,
   prefixToHex,
   pubKeyPrefixesEqual,
+  requireContactPubKeyPrefix,
   unknownToError,
 } from './meshcoreRepeaterRpcCommon';
 import {
@@ -37,7 +38,7 @@ export interface MeshcoreRepeaterPrefixPushRequestOpts<T> {
 export function runMeshcoreRepeaterPrefixPushRequest<T>(
   opts: MeshcoreRepeaterPrefixPushRequestOpts<T>,
 ): Promise<T> {
-  const expectedPrefix = opts.contactPublicKey.subarray(0, 6);
+  const expectedPrefix = requireContactPubKeyPrefix(opts.contactPublicKey);
 
   return new Promise((resolve, reject) => {
     let settled = false;
