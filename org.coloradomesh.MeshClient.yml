@@ -50,8 +50,9 @@ modules:
       - cp -a pnpm-vendor/dist /run/build/mesh-client/.pnpm-bin/dist
       # Offline install using generated-sources.json (retries @jsr temp-dir races).
       # --store-dir must use the sandbox-absolute path because the type:shell
-      # source that writes .npmrc runs outside the sandbox, so $PWD there is
-      # the host cache path, not the in-sandbox /run/build/mesh-client path.
+      # source that writes storeDir into pnpm-workspace.yaml (pnpm store v11) or
+      # .npmrc (older) runs outside the sandbox, so $PWD there is the host cache
+      # path, not the in-sandbox /run/build/mesh-client path.
       - node scripts/flatpak-pnpm-install.mjs
       # Build renderer, main, and preload
       - pnpm run build

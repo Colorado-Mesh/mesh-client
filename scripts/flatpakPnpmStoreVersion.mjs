@@ -3,8 +3,12 @@
  * (pnpm 11 → store v11). flatpak-node-generator defaults to v10 for lockfile 9.
  */
 
-/** Pinned flatpak-builder-tools commit used by Flatpak CI + PR offline checks. */
-export const FLATPAK_NODE_GENERATOR_COMMIT = '6f3f08759ac9859492b728f57f5163bf584c47ff';
+/**
+ * Pinned flatpak-builder-tools commit used by Flatpak CI + PR offline checks.
+ * Must include ac5a296a (YAML `storeDir: ` for pnpm store v11 — npmrc `storeDir=`
+ * appended to pnpm-workspace.yaml breaks Flatpak `pnpm install`).
+ */
+export const FLATPAK_NODE_GENERATOR_COMMIT = 'ac5a296ac6111aa2319daf532f609a067b88d8a9';
 
 export const FLATPAK_NODE_GENERATOR_GIT = `git+https://github.com/flatpak/flatpak-builder-tools@${FLATPAK_NODE_GENERATOR_COMMIT}#subdirectory=node`;
 
@@ -171,6 +175,103 @@ export function parseGeneratedPnpmManifest(generatedSources) {
     }
   }
   return { storeVersion: null, tarballNames: new Set() };
+}
+
+/**
+ * Shell commands from flatpak-node-generator that touch pnpm-workspace.yaml.
+ * @param {unknown} generatedSources
+ * @returns {string[]}
+ */
+export function listGeneratedPnpmWorkspaceShellCommands(generatedSources) {
+  /** @type {string[]} */
+  const commands = [];
+  if (!Array.isArray(generatedSources)) return commands;
+  for (const item of generatedSources) {
+    if (!item || typeof item !== 'object') continue;
+    const type = /** @type {{ type?: unknown }} */ (item).type;
+    const cmds = /** @type {{ commands?: unknown }} */ (item).commands;
+    if (type !== 'shell' || !Array.isArray(cmds)) continue;
+    for (const cmd of cmds) {
+      if (typeof cmd !== 'string') continue;
+      if (!cmd.includes('pnpm-workspace.yaml')) continue;
+      commands.push(cmd);
+    }
+  }
+  return commands;
+}
+
+/**
+ * flatpak-builder-tools before ac5a296a echoed npmrc `storeDir=` into
+ * pnpm-workspace.yaml, which is invalid YAML and fails Flatpak pnpm install.
+ *
+ * @param {unknown} generatedSources
+ * @param {string} [fileRel]
+ * @returns {{ file: string, message: string }[]}
+ */
+export function generatedSourcesStoreDirYamlViolations(
+  generatedSources,
+  fileRel = 'flatpak/generated-sources.json',
+) {
+  /** @type {{ file: string, message: string }[]} */
+  const violations = [];
+  const commands = listGeneratedPnpmWorkspaceShellCommands(generatedSources);
+
+  for (const cmd of commands) {
+    // npmrc-style key=value is not valid in pnpm-workspace.yaml.
+    if (/storeDir\s*=/.test(cmd) && !/storeDir\s*:\s*/.test(cmd)) {
+      violations.push({
+        file: fileRel,
+        message:
+          'shell command appends npmrc-style storeDir= to pnpm-workspace.yaml ' +
+          '(invalid YAML; Flatpak pnpm install fails). Bump flatpak-node-generator ' +
+          'to ac5a296a+ so it echoes "storeDir: $PWD/…".',
+      });
+    }
+  }
+
+  return violations;
+}
+
+/**
+ * Apply a generator-style storeDir append to workspace YAML and return whether
+ * the result still parses (same failure class as Flatpak `pnpm install`).
+ *
+ * @param {string} workspaceYaml
+ * @param {string} storeDirLine e.g. 'storeDir=/tmp/store' or 'storeDir: /tmp/store'
+ * @param {{ load?: (input: string) => unknown }} [yaml]
+ * @returns {{ ok: true, storeDir?: unknown } | { ok: false, reason: string }}
+ */
+export function probePnpmWorkspaceAfterStoreDirAppend(
+  workspaceYaml,
+  storeDirLine,
+  yaml = undefined,
+) {
+  const combined = `${workspaceYaml.replace(/\s*$/, '')}\n${storeDirLine}\n`;
+  try {
+    // Prefer real YAML parse when provided (vitest / check script); else heuristic.
+    if (yaml && typeof yaml.load === 'function') {
+      const doc = yaml.load(combined);
+      if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
+        return { ok: false, reason: 'parsed workspace is not a mapping' };
+      }
+      return { ok: true, storeDir: /** @type {Record<string, unknown>} */ (doc).storeDir };
+    }
+    // Validate the appended line itself — an existing `storeDir:` in the
+    // workspace must not mask a newly appended npmrc-style `storeDir=`.
+    if (/^\s*storeDir\s*=/.test(storeDirLine)) {
+      return {
+        ok: false,
+        reason: 'storeDir= npmrc line is not valid YAML in pnpm-workspace.yaml',
+      };
+    }
+    if (/^\s*storeDir\s*:/.test(storeDirLine)) {
+      return { ok: true };
+    }
+    return { ok: false, reason: 'missing storeDir YAML key after append' };
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    return { ok: false, reason: detail };
+  }
 }
 
 /**
