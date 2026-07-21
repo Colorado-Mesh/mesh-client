@@ -93,7 +93,8 @@ function readEngines() {
   const pkg = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
   return {
     node: pkg.engines?.node ?? '>=22.13.0',
-    pnpm: pkg.engines?.pnpm ?? '>=10.0.0',
+    pnpm: pkg.engines?.pnpm ?? '>=11.0.0',
+    packageManager: typeof pkg.packageManager === 'string' ? pkg.packageManager : undefined,
   };
 }
 
@@ -135,7 +136,14 @@ function checkNode(nodeEngine) {
   };
 }
 
-function checkPnpm(pnpmEngine) {
+function checkPnpm(pnpmEngine, packageManager) {
+  const pinMatch =
+    typeof packageManager === 'string' ? packageManager.match(/^pnpm@([^+]+)/) : null;
+  const pinVersion = pinMatch?.[1] ?? null;
+  const prepareHint = pinVersion
+    ? `corepack enable && corepack prepare pnpm@${pinVersion} --activate`
+    : 'corepack enable && corepack prepare pnpm@11 --activate';
+
   const out = commandOutput('pnpm', ['--version']);
   if (!out) {
     return {
@@ -143,7 +151,7 @@ function checkPnpm(pnpmEngine) {
       severity: 'required',
       label: `pnpm ${pnpmEngine.replace('>=', '')}+ required`,
       detail: 'not found',
-      hint: 'corepack enable && corepack prepare pnpm@11 --activate',
+      hint: prepareHint,
     };
   }
   if (!versionGte(out, pnpmEngine)) {
@@ -152,9 +160,22 @@ function checkPnpm(pnpmEngine) {
       severity: 'required',
       label: `pnpm ${pnpmEngine.replace('>=', '')}+ required`,
       detail: `found v${out}`,
-      hint: 'corepack enable && corepack prepare pnpm@11 --activate',
+      hint: prepareHint,
     };
   }
+
+  const found = parseVersion(out);
+  const pin = pinVersion ? parseVersion(pinVersion) : null;
+  if (found && pin && found.major !== pin.major) {
+    return {
+      status: 'fail',
+      severity: 'required',
+      label: `pnpm ${pin.major}.x required (packageManager)`,
+      detail: `found v${out}`,
+      hint: prepareHint,
+    };
+  }
+
   return {
     status: 'pass',
     severity: 'required',
@@ -541,7 +562,7 @@ export function runChecks(options = {}) {
   const checks = [
     checkGit(),
     checkNode(engines.node),
-    checkPnpm(engines.pnpm),
+    checkPnpm(engines.pnpm, engines.packageManager),
     options.skipNodeModules ? null : checkNodeModules(root),
     checkPlatformBuildDeps(),
     checkPython(),

@@ -1,0 +1,177 @@
+#!/usr/bin/env node
+/**
+ * Fail fast when the local pnpm is below engines.pnpm or the wrong major vs
+ * package.json#packageManager. Used from preinstall and pnpm run dev so
+ * contributors get an upgrade prompt instead of opaque install/runtime errors.
+ *
+ * Zero dependencies — safe to run before node_modules exists.
+ */
+import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const repoRoot = resolve(__dirname, '..');
+
+/**
+ * @param {string} output
+ * @returns {{ major: number, minor: number, patch: number } | null}
+ */
+export function parseSemver(output) {
+  const match = String(output).match(/(\d+)\.(\d+)\.(\d+)/);
+  if (!match) return null;
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2]),
+    patch: Number(match[3]),
+  };
+}
+
+/**
+ * @param {string | undefined} engine
+ * @returns {{ major: number, minor: number, patch: number } | null}
+ */
+export function parseEngineFloor(engine) {
+  if (typeof engine !== 'string' || !engine.trim()) return null;
+  return parseSemver(engine.replace(/^>=\s*/, ''));
+}
+
+/**
+ * @param {string | undefined} packageManager
+ * @returns {{ name: string, version: string, major: number, minor: number, patch: number } | null}
+ */
+export function parsePackageManagerField(packageManager) {
+  if (typeof packageManager !== 'string' || !packageManager.startsWith('pnpm@')) return null;
+  const raw = packageManager.slice('pnpm@'.length).split('+', 1)[0];
+  const parsed = parseSemver(raw);
+  if (!parsed) return null;
+  return { name: 'pnpm', version: raw, ...parsed };
+}
+
+/**
+ * @param {string | null | undefined} foundVersion
+ * @param {{ enginesPnpm?: string, packageManager?: string }} spec
+ * @returns {{ ok: true, found: string } | { ok: false, found: string | null, requiredLabel: string, pinnedVersion: string | null, hintLines: string[] }}
+ */
+export function evaluatePnpmRequirement(foundVersion, spec) {
+  const pin = parsePackageManagerField(spec.packageManager);
+  const floor = parseEngineFloor(spec.enginesPnpm) ?? (pin ? { ...pin } : null);
+  const pinnedVersion = pin?.version ?? null;
+  const requiredLabel = pin
+    ? `pnpm ${pin.version} (engines ${spec.enginesPnpm ?? `>=${pin.major}.0.0`})`
+    : spec.enginesPnpm
+      ? `pnpm ${spec.enginesPnpm}`
+      : 'pnpm (see package.json engines / packageManager)';
+
+  const hintTarget =
+    pinnedVersion ?? (floor ? `${floor.major}.${floor.minor}.${floor.patch}` : '11');
+  const hintLines = [
+    'corepack enable',
+    `corepack prepare pnpm@${hintTarget} --activate`,
+    'Then re-run your command (e.g. pnpm install or pnpm run dev).',
+  ];
+
+  if (!foundVersion) {
+    return {
+      ok: false,
+      found: null,
+      requiredLabel,
+      pinnedVersion,
+      hintLines,
+    };
+  }
+
+  const found = parseSemver(foundVersion);
+  if (!found) {
+    return {
+      ok: false,
+      found: String(foundVersion),
+      requiredLabel,
+      pinnedVersion,
+      hintLines,
+    };
+  }
+
+  if (floor) {
+    const belowFloor =
+      found.major < floor.major ||
+      (found.major === floor.major && found.minor < floor.minor) ||
+      (found.major === floor.major && found.minor === floor.minor && found.patch < floor.patch);
+    if (belowFloor) {
+      return {
+        ok: false,
+        found: `${found.major}.${found.minor}.${found.patch}`,
+        requiredLabel,
+        pinnedVersion,
+        hintLines,
+      };
+    }
+  }
+
+  if (pin && found.major !== pin.major) {
+    return {
+      ok: false,
+      found: `${found.major}.${found.minor}.${found.patch}`,
+      requiredLabel,
+      pinnedVersion,
+      hintLines,
+    };
+  }
+
+  return { ok: true, found: `${found.major}.${found.minor}.${found.patch}` };
+}
+
+/**
+ * @param {{ ok: boolean, found?: string | null, requiredLabel?: string, hintLines?: string[] }} result
+ * @returns {string}
+ */
+export function formatPnpmUpgradeMessage(result) {
+  if (result.ok) return '';
+  const lines = [
+    '',
+    '════════════════════════════════════════════════════════',
+    '  pnpm upgrade required',
+    '',
+    `  This repo requires ${result.requiredLabel}.`,
+    `  You have: ${result.found ?? 'not found'}`,
+    '',
+    '  Run:',
+    ...(result.hintLines ?? []).map((line) => `    ${line}`),
+    '════════════════════════════════════════════════════════',
+    '',
+  ];
+  return lines.join('\n');
+}
+
+function readPackageJson(root = repoRoot) {
+  return JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
+}
+
+function currentPnpmVersion() {
+  const res = spawnSync('pnpm', ['--version'], { encoding: 'utf8', stdio: 'pipe' });
+  if (res.error || res.status !== 0) return null;
+  return String(res.stdout || '').trim() || null;
+}
+
+/**
+ * @param {{ repoRoot?: string, foundVersion?: string | null }} [options]
+ * @returns {number} process exit code
+ */
+export function assertPnpmMeetsRepoRequirement(options = {}) {
+  const root = options.repoRoot ?? repoRoot;
+  const pkg = readPackageJson(root);
+  const foundVersion =
+    options.foundVersion !== undefined ? options.foundVersion : currentPnpmVersion();
+  const result = evaluatePnpmRequirement(foundVersion, {
+    enginesPnpm: pkg.engines?.pnpm,
+    packageManager: pkg.packageManager,
+  });
+  if (result.ok) return 0;
+  process.stderr.write(formatPnpmUpgradeMessage(result));
+  return 1;
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exit(assertPnpmMeetsRepoRequirement());
+}

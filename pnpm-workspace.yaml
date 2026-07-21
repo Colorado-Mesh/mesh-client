@@ -13,6 +13,9 @@ verifyStoreIntegrity: true
 # Enforce pnpm
 engineStrict: true
 
+# When local pnpm ≠ package.json#packageManager, download the pinned version
+pmOnFail: download
+
 allowBuilds:
   '@meshtastic/core': true
   '@meshtastic/transport-http': true

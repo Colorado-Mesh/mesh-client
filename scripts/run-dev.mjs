@@ -9,6 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { mainEsbuildExternalArgs } from './esbuild-main-externals.mjs';
+import { assertPnpmMeetsRepoRequirement } from './check-package-manager.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -44,6 +45,11 @@ export function runDev(argv = process.argv.slice(2)) {
   if (argv.length > 0) {
     console.error('[run-dev] Unexpected arguments:', argv.join(' '));
     process.exit(1);
+  }
+
+  const pmExit = assertPnpmMeetsRepoRequirement({ repoRoot: projectRoot });
+  if (pmExit !== 0) {
+    process.exit(pmExit);
   }
 
   const concurrentlyBin = path.join(projectRoot, 'node_modules', '.bin', 'concurrently');
