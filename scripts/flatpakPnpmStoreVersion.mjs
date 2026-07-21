@@ -256,13 +256,15 @@ export function probePnpmWorkspaceAfterStoreDirAppend(
       }
       return { ok: true, storeDir: /** @type {Record<string, unknown>} */ (doc).storeDir };
     }
-    if (/^storeDir\s*=/m.test(combined) && !/^storeDir\s*:/m.test(combined)) {
+    // Validate the appended line itself — an existing `storeDir:` in the
+    // workspace must not mask a newly appended npmrc-style `storeDir=`.
+    if (/^\s*storeDir\s*=/.test(storeDirLine)) {
       return {
         ok: false,
         reason: 'storeDir= npmrc line is not valid YAML in pnpm-workspace.yaml',
       };
     }
-    if (/^storeDir\s*:/m.test(combined)) {
+    if (/^\s*storeDir\s*:/.test(storeDirLine)) {
       return { ok: true };
     }
     return { ok: false, reason: 'missing storeDir YAML key after append' };

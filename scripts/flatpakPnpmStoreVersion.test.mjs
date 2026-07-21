@@ -144,4 +144,26 @@ patchedDependencies:
       '/run/build/mesh-client/flatpak-node/pnpm-store',
     );
   });
+
+  it('rejects appended storeDir= even when workspace already has storeDir:', () => {
+    const workspace = `
+storeDir: /already/set
+patchedDependencies:
+  usb@2.18.0: patches/usb@2.18.0.patch
+`;
+    const withLoader = probePnpmWorkspaceAfterStoreDirAppend(
+      workspace,
+      'storeDir=/__w/mesh-client/bad-store',
+      yaml,
+    );
+    expect(withLoader.ok).toBe(false);
+
+    // No-loader fallback must inspect the appended line, not the existing key.
+    const heuristic = probePnpmWorkspaceAfterStoreDirAppend(
+      workspace,
+      'storeDir=/__w/mesh-client/bad-store',
+    );
+    expect(heuristic.ok).toBe(false);
+    expect(heuristic.ok === false && heuristic.reason).toMatch(/storeDir=/);
+  });
 });
