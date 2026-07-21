@@ -409,7 +409,7 @@ See [Troubleshooting; macOS: File is damaged…](docs/troubleshooting.md#macos-f
 
 ## Run Locally
 
-**Prerequisites:** [Node.js 22.13.0+](https://nodejs.org/) and [pnpm 10+](https://pnpm.io/installation).
+**Prerequisites:** [Node.js 22.13.0+](https://nodejs.org/) and [pnpm 11+](https://pnpm.io/installation).
 
 ```bash
 git clone https://github.com/Colorado-Mesh/mesh-client

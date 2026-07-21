@@ -62,11 +62,11 @@ describe('check-environment formatCheckResult', () => {
       formatCheckResult({
         status: 'fail',
         severity: 'required',
-        label: 'pnpm 10+ required',
+        label: 'pnpm 11+ required',
         detail: 'not found',
         hint: 'corepack enable',
       }),
-    ).toEqual(['❌ pnpm 10+ required — not found', '   → corepack enable']);
+    ).toEqual(['❌ pnpm 11+ required — not found', '   → corepack enable']);
   });
 
   it('formats warn results with hints', () => {

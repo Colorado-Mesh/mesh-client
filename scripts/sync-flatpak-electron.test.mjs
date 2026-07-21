@@ -16,10 +16,10 @@ import {
 const FIXTURE_SHASUMS = `512f4e0574dc5800c612ea904e854f602f36ac57cade971a0a2b239bfaa19e52 *electron-v41.10.1-linux-x64.zip
 2420f82a84ef47fd495b57f0b2b2f9a79edec7b2fed396600380ac006dadecef *electron-v41.10.1-linux-arm64.zip`;
 
-const SAMPLE_MANIFEST = `      - type: file
-        url: https://github.com/pnpm/pnpm/releases/download/v10.34.3/pnpm-linux-arm64
-        sha256: ca4a85a4eb830713f1c37297d1a2b9fb9953719442bdb26daa8c64fadcc6c0b8
-        dest-filename: pnpm-standalone
+const SAMPLE_MANIFEST = `      - type: archive
+        url: https://github.com/pnpm/pnpm/releases/download/v11.15.1/pnpm-linux-arm64.tar.gz
+        sha256: 361e385867146972d0635a41a1871cb44c9c23f65acce78a5f1ca1d44ac0afcd
+        dest: pnpm-vendor
         only-arches: [aarch64]
       - type: archive
         url: https://github.com/electron/electron/releases/download/v41.10.0/electron-v41.10.0-linux-x64.zip

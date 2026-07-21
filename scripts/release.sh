@@ -392,9 +392,7 @@ if ! pnpm dedupe --check; then
   exit 1
 fi
 
-# npm retired legacy audit APIs (HTTP 410); pnpm 10.x still calls them. Use pnpm 11+ via dlx
-# until packageManager is bumped (pnpm.io migration / issue #11265).
-if ! pnpm dlx --config.minimumReleaseAge=0 pnpm@11.13.0 --config.manage-package-manager-versions=false --config.pm-on-fail=ignore audit --audit-level=high; then
+if ! pnpm audit --audit-level=high; then
   print_error "Security audit failed. Address high-severity vulnerabilities."
   exit 1
 fi

@@ -143,7 +143,7 @@ function checkPnpm(pnpmEngine) {
       severity: 'required',
       label: `pnpm ${pnpmEngine.replace('>=', '')}+ required`,
       detail: 'not found',
-      hint: 'corepack enable && corepack prepare pnpm@10 --activate',
+      hint: 'corepack enable && corepack prepare pnpm@11 --activate',
     };
   }
   if (!versionGte(out, pnpmEngine)) {
@@ -152,7 +152,7 @@ function checkPnpm(pnpmEngine) {
       severity: 'required',
       label: `pnpm ${pnpmEngine.replace('>=', '')}+ required`,
       detail: `found v${out}`,
-      hint: 'corepack enable && corepack prepare pnpm@10 --activate',
+      hint: 'corepack enable && corepack prepare pnpm@11 --activate',
     };
   }
   return {
