@@ -50,6 +50,15 @@ jobs:
       - name: Check Flatpak
         run: pnpm run check:flatpak
 
+      # PR-cycle only (not pre-commit): needs flatpak-node-generator to verify offline store vN.
+      - name: Install flatpak-node-generator
+        run: |
+          FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
+          pip3 install "${FBTOOLS}@6f3f08759ac9859492b728f57f5163bf584c47ff#subdirectory=node"
+
+      - name: Check Flatpak offline pnpm sources
+        run: pnpm run check:flatpak-offline-pnpm
+
       - name: Install Flatpak validation tools
         run: sudo apt-get install -y desktop-file-utils appstream
 

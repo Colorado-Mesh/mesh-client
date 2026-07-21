@@ -385,6 +385,11 @@ if ! pnpm run check:flatpak; then
   exit 1
 fi
 
+if ! pnpm run check:flatpak-offline-pnpm; then
+  print_error "Flatpak offline pnpm sources check failed (needs flatpak-node-generator; see script output)."
+  exit 1
+fi
+
 # Dependency checks
 echo "Checking dependencies..."
 if ! pnpm dedupe --check; then

@@ -90,7 +90,12 @@ jobs:
         run: |
           FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
           pip3 install "${FBTOOLS}@6f3f08759ac9859492b728f57f5163bf584c47ff#subdirectory=node"
-          flatpak-node-generator pnpm pnpm-lock.yaml -o flatpak/generated-sources.json
+          # pnpm 11+ uses store v11; flatpak-node-generator defaults to v10 for lockfile 9.
+          PNPM_MAJOR="$(node -p "require('./package.json').packageManager.match(/^pnpm@(\\d+)/)[1]")"
+          STORE_VERSION="v${PNPM_MAJOR}"
+          flatpak-node-generator pnpm pnpm-lock.yaml \
+            --pnpm-store-version "$STORE_VERSION" \
+            -o flatpak/generated-sources.json
 
       # flatpak/flatpak-github-actions v6 appends -${arch} to the artifact name on upload;
       # keep bundle arch-agnostic here to avoid org.coloradomesh.MeshClient-aarch64-aarch64.flatpak.

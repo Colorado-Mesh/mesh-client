@@ -38,7 +38,7 @@ The release script (`scripts/release.sh`) is the supported maintainer path. It:
 2. Runs **`pnpm update`** and **`pnpm dedupe`** (updates lockfile before the bump)
 3. Syncs **`org.coloradomesh.MeshClient.yml`** Electron vendored archives to match `package.json` (`node scripts/sync-flatpak-electron.mjs`)
 4. Auto-detects **patch / minor / major** from [Conventional Commits](https://www.conventionalcommits.org/) since the last tag (or accept an explicit bump — see below)
-5. Runs **pre-flight validation** (`check:environment`, format, lint, typecheck, **all** `check:*` scanners including path-gated pre-commit ones, **`check:flatpak`**, **`check:i18n`**, dedupe check, audit, **required** actionlint + yamllint, **full** Vitest via `pnpm run test:run`, Reticulum sidecar `cargo test`)
+5. Runs **pre-flight validation** (`check:environment`, format, lint, typecheck, **all** `check:*` scanners including path-gated pre-commit ones, **`check:flatpak`**, **`check:flatpak-offline-pnpm`**, **`check:i18n`**, dedupe check, audit, **required** actionlint + yamllint, **full** Vitest via `pnpm run test:run`, Reticulum sidecar `cargo test`)
 6. Prints **copy-paste release notes** grouped by feat/fix/other/breaking
 7. Bumps `package.json` via `pnpm version`
 8. Prepends a `<release>` entry to `flatpak/org.coloradomesh.MeshClient.metainfo.xml`

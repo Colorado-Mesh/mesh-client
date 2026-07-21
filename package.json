@@ -53,6 +53,7 @@
     "check:electron-security": "node scripts/check-electron-security.mjs",
     "check:environment": "node scripts/check-environment.mjs",
     "check:flatpak": "node scripts/check-flatpak.mjs",
+    "check:flatpak-offline-pnpm": "node scripts/check-flatpak-offline-pnpm.mjs",
     "check:i18n": "node scripts/check-i18n.mjs",
     "check:i18n:branch": "node scripts/check-i18n.mjs --branch",
     "check:insecure-temp-files": "node scripts/check-insecure-temp-files.mjs",

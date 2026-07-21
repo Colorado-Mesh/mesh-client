@@ -29,6 +29,7 @@ const REQUIRED_PNPM_CHECKS = [
   'check:i18n',
   'check:licenses',
   'check:flatpak',
+  'check:flatpak-offline-pnpm',
   'test:run',
   'reticulum:sidecar:test',
 ];
