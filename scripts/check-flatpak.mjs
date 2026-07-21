@@ -160,6 +160,15 @@ function checkManifestPnpmVersion(pkg) {
     }
   }
 
+  // The standalone wrapper requires dist/pnpm.mjs beside .pnpm-bin/pnpm.
+  if (!/cp\s+-a\s+pnpm-vendor\/dist\s+\/run\/build\/mesh-client\/\.pnpm-bin\/dist\b/.test(yaml)) {
+    violations.push({
+      file: rel,
+      message:
+        'manifest must copy pnpm-vendor/dist into .pnpm-bin/dist (pnpm 11+ wrapper needs dist/pnpm.mjs)',
+    });
+  }
+
   return violations;
 }
 
