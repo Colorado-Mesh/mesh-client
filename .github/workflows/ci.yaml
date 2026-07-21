@@ -54,7 +54,8 @@ jobs:
       - name: Install flatpak-node-generator
         run: |
           FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
-          pip3 install "${FBTOOLS}@6f3f08759ac9859492b728f57f5163bf584c47ff#subdirectory=node"
+          # Keep in sync with scripts/flatpakPnpmStoreVersion.mjs FLATPAK_NODE_GENERATOR_COMMIT.
+          pip3 install "${FBTOOLS}@ac5a296ac6111aa2319daf532f609a067b88d8a9#subdirectory=node"
 
       - name: Check Flatpak offline pnpm sources
         run: pnpm run check:flatpak-offline-pnpm

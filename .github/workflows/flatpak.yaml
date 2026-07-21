@@ -89,7 +89,8 @@ jobs:
       - name: Generate offline pnpm sources
         run: |
           FBTOOLS=git+https://github.com/flatpak/flatpak-builder-tools
-          pip3 install "${FBTOOLS}@6f3f08759ac9859492b728f57f5163bf584c47ff#subdirectory=node"
+          # ac5a296a+: YAML storeDir: for pnpm v11 (storeDir= breaks pnpm-workspace.yaml).
+          pip3 install "${FBTOOLS}@ac5a296ac6111aa2319daf532f609a067b88d8a9#subdirectory=node"
           # pnpm 11+ uses store v11; flatpak-node-generator defaults to v10 for lockfile 9.
           PNPM_MAJOR="$(node -p "require('./package.json').packageManager.match(/^pnpm@(\\d+)/)[1]")"
           STORE_VERSION="v${PNPM_MAJOR}"

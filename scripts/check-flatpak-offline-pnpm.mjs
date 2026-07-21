@@ -18,6 +18,7 @@ import {
   FLATPAK_NODE_GENERATOR_COMMIT,
   FLATPAK_NODE_GENERATOR_GIT,
   flatpakWorkflowStoreVersionViolations,
+  generatedSourcesStoreDirYamlViolations,
   lockfilePackageIdToTarballName,
   missingOfflineTarballs,
   parseGeneratedPnpmManifest,
@@ -137,6 +138,7 @@ function main() {
     } else {
       try {
         const sources = JSON.parse(fs.readFileSync(gen.generatedPath, 'utf8'));
+        violations.push(...generatedSourcesStoreDirYamlViolations(sources));
         const { storeVersion, tarballNames } = parseGeneratedPnpmManifest(sources);
         if (storeVersion !== expectedStoreVersion) {
           violations.push({
