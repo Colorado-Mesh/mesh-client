@@ -64,9 +64,12 @@ describe('check-environment formatCheckResult', () => {
         severity: 'required',
         label: 'pnpm 11+ required',
         detail: 'not found',
-        hint: 'corepack enable',
+        hint: 'corepack enable && corepack prepare pnpm@11 --activate',
       }),
-    ).toEqual(['❌ pnpm 11+ required — not found', '   → corepack enable']);
+    ).toEqual([
+      '❌ pnpm 11+ required — not found',
+      '   → corepack enable && corepack prepare pnpm@11 --activate',
+    ]);
   });
 
   it('formats warn results with hints', () => {

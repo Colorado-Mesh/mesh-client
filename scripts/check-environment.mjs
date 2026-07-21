@@ -11,6 +11,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { resolveDockerSocket } from './run-act.mjs';
+import { formatPnpmPrepareHint } from './check-package-manager.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '..');
@@ -140,9 +141,7 @@ function checkPnpm(pnpmEngine, packageManager) {
   const pinMatch =
     typeof packageManager === 'string' ? packageManager.match(/^pnpm@([^+]+)/) : null;
   const pinVersion = pinMatch?.[1] ?? null;
-  const prepareHint = pinVersion
-    ? `corepack enable && corepack prepare pnpm@${pinVersion} --activate`
-    : 'corepack enable && corepack prepare pnpm@11 --activate';
+  const prepareHint = formatPnpmPrepareHint(pinVersion ?? '11');
 
   const out = commandOutput('pnpm', ['--version']);
   if (!out) {

@@ -49,9 +49,54 @@ export function parsePackageManagerField(packageManager) {
   return { name: 'pnpm', version: raw, ...parsed };
 }
 
+/** @returns {boolean} */
+export function hasCorepack() {
+  const res = spawnSync('corepack', ['--version'], { encoding: 'utf8', stdio: 'pipe' });
+  return res.status === 0 && !res.error;
+}
+
+/**
+ * Upgrade steps for wrong/missing pnpm. Node 25+ no longer ships Corepack.
+ * @param {string} hintTarget
+ * @param {{ corepackAvailable?: boolean }} [options]
+ * @returns {string[]}
+ */
+export function buildPnpmUpgradeHintLines(hintTarget, options = {}) {
+  const corepackAvailable =
+    options.corepackAvailable !== undefined ? options.corepackAvailable : hasCorepack();
+  if (corepackAvailable) {
+    return [
+      'corepack enable',
+      `corepack prepare pnpm@${hintTarget} --activate`,
+      'Then re-run your command (e.g. pnpm install or pnpm run dev).',
+    ];
+  }
+  return [
+    'npm install -g corepack@latest && corepack enable',
+    `corepack prepare pnpm@${hintTarget} --activate`,
+    `Or without Corepack: npm install -g pnpm@${hintTarget}`,
+    'Then re-run your command (e.g. pnpm install or pnpm run dev).',
+  ];
+}
+
+/**
+ * One-line hint for check-environment (and similar).
+ * @param {string} hintTarget
+ * @param {{ corepackAvailable?: boolean }} [options]
+ * @returns {string}
+ */
+export function formatPnpmPrepareHint(hintTarget, options = {}) {
+  const corepackAvailable =
+    options.corepackAvailable !== undefined ? options.corepackAvailable : hasCorepack();
+  if (corepackAvailable) {
+    return `corepack enable && corepack prepare pnpm@${hintTarget} --activate`;
+  }
+  return `npm install -g corepack@latest && corepack enable && corepack prepare pnpm@${hintTarget} --activate (or: npm install -g pnpm@${hintTarget})`;
+}
+
 /**
  * @param {string | null | undefined} foundVersion
- * @param {{ enginesPnpm?: string, packageManager?: string }} spec
+ * @param {{ enginesPnpm?: string, packageManager?: string, corepackAvailable?: boolean }} spec
  * @returns {{ ok: true, found: string } | { ok: false, found: string | null, requiredLabel: string, pinnedVersion: string | null, hintLines: string[] }}
  */
 export function evaluatePnpmRequirement(foundVersion, spec) {
@@ -66,11 +111,9 @@ export function evaluatePnpmRequirement(foundVersion, spec) {
 
   const hintTarget =
     pinnedVersion ?? (floor ? `${floor.major}.${floor.minor}.${floor.patch}` : '11');
-  const hintLines = [
-    'corepack enable',
-    `corepack prepare pnpm@${hintTarget} --activate`,
-    'Then re-run your command (e.g. pnpm install or pnpm run dev).',
-  ];
+  const hintLines = buildPnpmUpgradeHintLines(hintTarget, {
+    corepackAvailable: spec.corepackAvailable,
+  });
 
   if (!foundVersion) {
     return {

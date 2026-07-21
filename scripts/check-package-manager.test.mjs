@@ -2,7 +2,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildPnpmUpgradeHintLines,
   evaluatePnpmRequirement,
+  formatPnpmPrepareHint,
   formatPnpmUpgradeMessage,
   parseEngineFloor,
   parsePackageManagerField,
@@ -36,10 +38,31 @@ describe('check-package-manager parseEngineFloor', () => {
   });
 });
 
+describe('check-package-manager upgrade hints', () => {
+  it('uses corepack when available', () => {
+    expect(buildPnpmUpgradeHintLines('11.15.1', { corepackAvailable: true })[0]).toBe(
+      'corepack enable',
+    );
+    expect(formatPnpmPrepareHint('11.15.1', { corepackAvailable: true })).toBe(
+      'corepack enable && corepack prepare pnpm@11.15.1 --activate',
+    );
+  });
+
+  it('falls back when Corepack is missing (Node 25+)', () => {
+    const lines = buildPnpmUpgradeHintLines('11.15.1', { corepackAvailable: false });
+    expect(lines[0]).toContain('npm install -g corepack@latest');
+    expect(lines.some((line) => line.includes('npm install -g pnpm@11.15.1'))).toBe(true);
+    expect(formatPnpmPrepareHint('11.15.1', { corepackAvailable: false })).toContain(
+      'npm install -g corepack@latest',
+    );
+  });
+});
+
 describe('check-package-manager evaluatePnpmRequirement', () => {
   const spec = {
     enginesPnpm: '>=11.0.0',
     packageManager: 'pnpm@11.15.1+sha512.abc',
+    corepackAvailable: true,
   };
 
   it('accepts matching major at or above engines floor', () => {
@@ -62,6 +85,7 @@ describe('check-package-manager evaluatePnpmRequirement', () => {
     const result = evaluatePnpmRequirement('12.0.0', {
       enginesPnpm: '>=11.0.0',
       packageManager: 'pnpm@11.15.1',
+      corepackAvailable: true,
     });
     expect(result.ok).toBe(false);
   });
