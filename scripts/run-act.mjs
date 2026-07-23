@@ -19,10 +19,29 @@ const repoRoot = resolve(__dirname, '..');
 
 export const ACT_MODE_ENV = 'MESH_CLIENT_ACT_MODE';
 
+function commandOk(command, args) {
+  const res = spawnSync(command, args, { stdio: 'ignore' });
+  return res.status === 0;
+}
+
+/**
+ * Prefer a ready Podman daemon for act container CI; fall back to Docker when
+ * Podman is missing or its machine/daemon is not ready (`podman info` fails).
+ * @param {{ commandOk?: (command: string, args: string[]) => boolean }} [options]
+ * @returns {'podman' | 'docker'}
+ */
+export function resolveContainerEngine(options = {}) {
+  const ok = options.commandOk ?? commandOk;
+  if (ok('podman', ['info'])) return 'podman';
+  if (ok('docker', ['info'])) return 'docker';
+  // Neither daemon ready: keep Podman for preflight messaging when its CLI exists.
+  return ok('podman', ['--version']) ? 'podman' : 'docker';
+}
+
 /**
  * Prefer Podman for act container CI; fall back to Docker only if Podman is unavailable.
  */
-export const CONTAINER_ENGINE = commandOk('podman', ['--version']) ? 'podman' : 'docker';
+export const CONTAINER_ENGINE = resolveContainerEngine();
 export const ACT_PLATFORM_IMAGE = 'ghcr.io/catthehacker/ubuntu:full-latest';
 export const FLATPAK_CONTAINER_IMAGE =
   'ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08';
@@ -259,11 +278,6 @@ export function buildActArgs(invocation, options = {}) {
   }
   args.push(invocation.event ?? 'workflow_dispatch');
   return args;
-}
-
-function commandOk(command, args) {
-  const res = spawnSync(command, args, { stdio: 'ignore' });
-  return res.status === 0;
 }
 
 function toolAvailable(tool) {

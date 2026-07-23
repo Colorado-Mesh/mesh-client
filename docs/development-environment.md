@@ -631,10 +631,10 @@ Run any skipped checks manually as soon as possible.
 
 Local CI has two modes:
 
-| Mode              | Scripts                                         | Requires                                          |
-| ----------------- | ----------------------------------------------- | ------------------------------------------------- |
-| **Container**     | `pnpm run act:ci`, `act:tests`, …               | Docker-compatible engine + act (Podman preferred) |
-| **Host / native** | `pnpm run act:ci:native`, `act:tests:native`, … | Node/pnpm only                                    |
+| Mode              | Scripts                                                  | Requires                                          |
+| ----------------- | -------------------------------------------------------- | ------------------------------------------------- |
+| **Container**     | `pnpm run act:ci`, `pnpm run act:tests`, …               | Docker-compatible engine + act (Podman preferred) |
+| **Host / native** | `pnpm run act:ci:native`, `pnpm run act:tests:native`, … | Node/pnpm only                                    |
 
 Container mode runs GitHub Actions jobs inside containers using a Docker-compatible engine (Podman Desktop preferred). Host mode runs the same pnpm/cargo steps directly — use this when no container engine is available or act cannot reach the daemon.
 
@@ -644,7 +644,7 @@ Install (container mode):
 | ------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | macOS   | [Podman Desktop](https://podman.io/) with Docker compatibility enabled | `brew install act`                                                            |
 | Linux   | Podman or Docker engine                                                | [act releases](https://github.com/nektos/act/releases)                        |
-| Windows | [Podman Desktop](https://podman.io/)                                   | `choco install act-cli` or [releases](https://github.com/nektos/act/releases) |
+| Windows | [Podman Desktop](https://podman.io/) with Docker compatibility enabled | `choco install act-cli` or [releases](https://github.com/nektos/act/releases) |
 
 ```bash
 pnpm run act:pull-images # container mode only

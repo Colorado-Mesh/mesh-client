@@ -140,10 +140,10 @@ Do not use `npm install`; it will create a `package-lock.json` and may not respe
 
 **Optional tooling:** You can run local CI in two ways:
 
-| Mode                    | Command prefix                                  | Requires                                                        | What it does                                                                  |
-| ----------------------- | ----------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **Container** (default) | `pnpm run act:ci`, `act:tests`, …               | Docker-compatible engine + [act](https://github.com/nektos/act) | Runs GitHub Actions jobs inside Linux containers (closest to CI)              |
-| **Host / native**       | `pnpm run act:ci:native`, `act:tests:native`, … | Node/pnpm only                                                  | Runs the same pnpm/cargo steps directly on your machine (no container engine) |
+| Mode                    | Command prefix                                           | Requires                                                        | What it does                                                                  |
+| ----------------------- | -------------------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Container** (default) | `pnpm run act:ci`, `pnpm run act:tests`, …               | Docker-compatible engine + [act](https://github.com/nektos/act) | Runs GitHub Actions jobs inside Linux containers (closest to CI)              |
+| **Host / native**       | `pnpm run act:ci:native`, `pnpm run act:tests:native`, … | Node/pnpm only                                                  | Runs the same pnpm/cargo steps directly on your machine (no container engine) |
 
 Container mode runs GitHub Actions jobs inside Linux containers using a Docker-compatible engine (Podman preferred). Host mode runs the same pnpm/cargo steps directly — use this when no container engine is available or act cannot reach the daemon. `pnpm run check:environment` warns if no container engine or act is missing but does not block commits. Use **native** scripts when no Docker-compatible engine is available or act cannot reach the daemon.
 

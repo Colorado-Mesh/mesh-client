@@ -435,7 +435,8 @@ function checkYamllint() {
 
 /**
  * Evaluate optional container-engine readiness for act.
- * Prefers Podman when both engines report healthy (matches run-act CONTAINER_ENGINE).
+ * Prefers Podman when its daemon is ready (`podmanOk`); otherwise Docker when ready.
+ * Matches `resolveContainerEngine()` in scripts/run-act.mjs.
  *
  * @param {{
  *   dockerPath: string | null,
@@ -463,7 +464,7 @@ export function evaluateContainerEngineCheck(input) {
     socket,
   } = input;
 
-  // Prefer Podman when both ready (same policy as scripts/run-act.mjs CONTAINER_ENGINE).
+  // Prefer Podman when its daemon is ready; else Docker when ready (daemon-gated).
   const preferred = podmanOk ? 'podman' : dockerOk ? 'docker' : null;
   if (preferred) {
     const versionOut = preferred === 'podman' ? podmanVersion : dockerVersion;

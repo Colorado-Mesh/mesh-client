@@ -9,8 +9,35 @@ import {
   parseActMode,
   parseArgv,
   resolveContainerArch,
+  resolveContainerEngine,
   resolveDockerSocket,
 } from './run-act.mjs';
+
+describe('run-act resolveContainerEngine', () => {
+  it('prefers Podman when podman info succeeds', () => {
+    const commandOk = (command, args) => command === 'podman' && args[0] === 'info';
+    expect(resolveContainerEngine({ commandOk })).toBe('podman');
+  });
+
+  it('falls back to Docker when Podman CLI exists but info fails and Docker is ready', () => {
+    const commandOk = (command, args) => {
+      if (command === 'podman' && args[0] === '--version') return true;
+      if (command === 'docker' && args[0] === 'info') return true;
+      return false;
+    };
+    expect(resolveContainerEngine({ commandOk })).toBe('docker');
+  });
+
+  it('keeps Podman when neither daemon is ready but Podman CLI exists', () => {
+    const commandOk = (command, args) => command === 'podman' && args[0] === '--version';
+    expect(resolveContainerEngine({ commandOk })).toBe('podman');
+  });
+
+  it('uses Docker when Podman is absent', () => {
+    const commandOk = () => false;
+    expect(resolveContainerEngine({ commandOk })).toBe('docker');
+  });
+});
 
 describe('run-act parseActMode', () => {
   it('defaults to docker', () => {
