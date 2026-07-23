@@ -1010,29 +1010,40 @@ function ReticulumInterfaceModeSelect({
     | 'connectionPanel.reticulumInterfaces.modeDefaultEdit';
 }) {
   const { t } = useTranslation();
+  const selectedMode = normalizeReticulumInterfaceMode(value);
+  // Template `t()` keeps modeDescriptions.* registered for unused-key scan.
+  const selectedDescription = selectedMode
+    ? t(`connectionPanel.reticulumInterfaces.modeDescriptions.${selectedMode}`)
+    : null;
+  const selectTitle = selectedDescription ?? t('connectionPanel.reticulumInterfaces.modeHint');
   return (
-    <label className="text-xs text-gray-400" htmlFor={id}>
-      {t('connectionPanel.reticulumInterfaces.mode')}
-      <select
-        id={id}
-        value={value}
-        disabled={disabled}
-        onChange={(e) => {
-          onChange(e.target.value);
-        }}
-        className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
-        aria-label={t('connectionPanel.reticulumInterfaces.modeAria')}
-        title={t('connectionPanel.reticulumInterfaces.modeHint')}
-      >
-        <option value="">{t(emptyOptionKey)}</option>
-        {RETICULUM_INTERFACE_MODES.map((mode) => (
-          <option key={mode} value={mode}>
-            {/* Template `t()` keeps modeOption.* registered for unused-key scan. */}
-            {t(`connectionPanel.reticulumInterfaces.modeOption.${mode}`)}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div>
+      <label className="text-xs text-gray-400" htmlFor={id}>
+        {t('connectionPanel.reticulumInterfaces.mode')}
+        <select
+          id={id}
+          value={value}
+          disabled={disabled}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
+          className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+          aria-label={t('connectionPanel.reticulumInterfaces.modeAria')}
+          title={selectTitle}
+        >
+          <option value="">{t(emptyOptionKey)}</option>
+          {RETICULUM_INTERFACE_MODES.map((mode) => (
+            <option key={mode} value={mode}>
+              {/* Template `t()` keeps modeOption.* registered for unused-key scan. */}
+              {t(`connectionPanel.reticulumInterfaces.modeOption.${mode}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+      {selectedDescription ? (
+        <p className="mt-1 text-[10px] text-gray-500">{selectedDescription}</p>
+      ) : null}
+    </div>
   );
 }
 

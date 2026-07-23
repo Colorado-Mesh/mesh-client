@@ -1058,7 +1058,15 @@
       "backboneDirectoryHint": "Další páteřní centra komunity naleznete na adrese directory.rns.recipes. Huby Yggdrasil (například Yggdrasil_Ashburn_VA) potřebují spuštěný místní tunel Yggdrasil — příručka Reticulum doporučuje vazbu na rozhraní vašeho tunelu (často tun0).",
       "localOfflineRowBleBondStale": "Vazba Bluetooth je zastaralá – zapomeňte na tento RNode v Nastavení systému → Bluetooth a poté znovu spárujte s novým kódem PIN (OS může stále zobrazovat Spárováno).",
       "addDefaultHubsAria": "Synchronizovat výchozí páteřní uzly Reticulum (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); zakázat vyřazené koncové body testnetu",
-      "addDefaultHubsAllPresent": "Výchozí páteřní rozbočovače jsou již nakonfigurovány; nejsou povoleny žádné vyřazené rozbočovače testnet."
+      "addDefaultHubsAllPresent": "Výchozí páteřní rozbočovače jsou již nakonfigurovány; nejsou povoleny žádné vyřazené rozbočovače testnet.",
+      "modeDescriptions": {
+        "full": "Účast na plné síti. Oznamuje trasy a automatické propagace. Používá se pro primární uzly a opakovače.",
+        "access_point": "Ticho, dokud nebudete dotázáni. Krátká cesta vyprší. Ideální pro širokopásmová rádia sloužící občasným uživatelům.",
+        "roaming": "Mobilní rozhraní. Krátké časové limity cesty a aktivní zjišťování. Použijte pro ruční nebo vozidlové RNode.",
+        "boundary": "Hranice sítě. Překlenuje odlišné segmenty a zároveň izoluje místní provoz. Použijte pro internetové/LoRa odkazy.",
+        "gateway": "Hledání cesty pro klienty. Řeší neznámé cíle jménem připojených uzlů.",
+        "point_to_point": "Přímé spojení mezi dvěma uzly. Žádné směrování ani oznamování šíření."
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

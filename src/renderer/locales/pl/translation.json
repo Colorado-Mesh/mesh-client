@@ -1058,7 +1058,15 @@
       "backboneDirectoryHint": "Więcej centrów szkieletowych społeczności znajdziesz na stronie directory.rns.recipes. Koncentratory Yggdrasil (na przykład Yggdrasil_Ashburn_VA) wymagają działającego lokalnego tunelu Yggdrasil — podręcznik Reticulum zaleca powiązanie z interfejsem tunelu (często tun0).",
       "localOfflineRowBleBondStale": "Połączenie Bluetooth jest nieaktualne — Zapomnij o tym węźle RNode w Ustawieniach systemu → Bluetooth, a następnie sparuj ponownie, używając nowego kodu PIN (system operacyjny może nadal wyświetlać komunikat Sparowano).",
       "addDefaultHubsAria": "Synchronizuj domyślne huby szkieletowe Reticulum (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); wyłącz wycofane punkty końcowe sieci testowej",
-      "addDefaultHubsAllPresent": "Domyślne huby szkieletowe są już skonfigurowane; nie włączono żadnych wycofanych z eksploatacji hubów sieci testowej."
+      "addDefaultHubsAllPresent": "Domyślne huby szkieletowe są już skonfigurowane; nie włączono żadnych wycofanych z eksploatacji hubów sieci testowej.",
+      "modeDescriptions": {
+        "full": "Pełne uczestnictwo w siatce. Trasuje ruch i automatycznie rozgłasza ogłoszenia. Użyj dla głównych węzłów i repeaterów.",
+        "access_point": "Cisza do zapytania. Wygaśnięcie krótkiej ścieżki. Idealny do radiotelefonów wielkopowierzchniowych obsługujących użytkowników nieregularnych.",
+        "roaming": "Interfejsy mobilne. Krótkie limity czasu ścieżki i aktywne odkrywanie. Używaj do przenośnych lub samochodowych RNodów.",
+        "boundary": "Granica sieci. Łączy różne segmenty, izolując ruch lokalny. Użyj dla łączy internetowych/LoRa.",
+        "gateway": "Poszukiwanie ścieżki dla klientów. Rozwiązuje nieznane miejsca docelowe w imieniu połączonych węzłów.",
+        "point_to_point": "Bezpośrednie połączenie między dwoma węzłami. Brak trasowania lub ogłaszania propagacji."
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

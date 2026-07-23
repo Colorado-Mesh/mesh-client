@@ -958,6 +958,14 @@
         "boundary": "Boundary",
         "gateway": "Gateway"
       },
+      "modeDescriptions": {
+        "full": "Full mesh participation. Routes traffic and auto-propagates announces. Use for primary nodes and repeaters.",
+        "access_point": "Quiet until queried. Short path expiry. Ideal for wide-area radios serving intermittent users.",
+        "roaming": "Mobile interfaces. Short path timeouts and active discovery. Use for handheld or vehicular RNodes.",
+        "boundary": "Network boundary. Bridges distinct segments while isolating local traffic. Use for Internet/LoRa links.",
+        "gateway": "Path-seeking for clients. Resolves unknown destinations on behalf of connected nodes.",
+        "point_to_point": "Direct link between two nodes. No routing or announce propagation."
+      },
       "status": {
         "up": "up",
         "down": "down"

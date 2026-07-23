@@ -1058,7 +1058,15 @@
       "backboneDirectoryHint": "Temukan lebih banyak hub tulang punggung komunitas di directory.rns.recipes. Hub Yggdrasil (misalnya Yggdrasil_Ashburn_VA) memerlukan terowongan Yggdrasil lokal yang berjalan — manual Reticulum merekomendasikan pengikatan ke antarmuka terowongan Anda (seringkali tun0).",
       "localOfflineRowBleBondStale": "Ikatan Bluetooth sudah basi — Lupakan RNode ini di Pengaturan Sistem → Bluetooth, lalu pasangkan kembali dengan PIN baru (OS mungkin masih menampilkan Dipasangkan).",
       "addDefaultHubsAria": "Sinkronkan hub tulang punggung Reticulum default (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); nonaktifkan titik akhir testnet yang dinonaktifkan",
-      "addDefaultHubsAllPresent": "Hub tulang punggung default sudah dikonfigurasi; tidak ada hub testnet yang dinonaktifkan yang diaktifkan."
+      "addDefaultHubsAllPresent": "Hub tulang punggung default sudah dikonfigurasi; tidak ada hub testnet yang dinonaktifkan yang diaktifkan.",
+      "modeDescriptions": {
+        "full": "Partisipasi mesh penuh. Lalu lintas rute dan penyebaran otomatis diumumkan. Gunakan untuk node dan repeater utama.",
+        "access_point": "Tenang sampai ada pertanyaan. Kedaluwarsa jalur pendek. Ideal untuk radio area luas yang melayani pengguna intermiten.",
+        "roaming": "Antarmuka seluler. Batas waktu jalur pendek dan penemuan aktif. Gunakan untuk RNode genggam atau kendaraan.",
+        "boundary": "Batas jaringan. Menjembatani segmen yang berbeda sambil mengisolasi lalu lintas lokal. Gunakan untuk tautan Internet/LoRa.",
+        "gateway": "Pencarian jalur untuk klien. Menyelesaikan tujuan yang tidak diketahui atas nama node yang terhubung.",
+        "point_to_point": "Hubungan langsung antara dua node. Tidak ada perutean atau propagasi pengumuman."
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

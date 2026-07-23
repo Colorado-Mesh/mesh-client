@@ -1058,7 +1058,15 @@
       "backboneDirectoryHint": "directory.rns.recipes에서 더 많은 커뮤니티 백본 허브를 찾아보세요. Yggdrasil 허브(예: Yggdrasil_Ashburn_VA)에는 실행 중인 로컬 Yggdrasil 터널이 필요합니다. Reticulum 매뉴얼에서는 터널 인터페이스(종종 tun0)에 바인딩할 것을 권장합니다.",
       "localOfflineRowBleBondStale": "Bluetooth 결합이 오래되었습니다. 시스템 설정 → Bluetooth에서 이 RNode를 삭제한 다음 새 PIN으로 다시 페어링하세요(OS에서는 여전히 페어링됨으로 표시될 수 있음).",
       "addDefaultHubsAria": "기본 Reticulum 백본 허브(US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World) 동기화 폐기된 테스트넷 엔드포인트 비활성화",
-      "addDefaultHubsAllPresent": "기본 백본 허브가 이미 구성되어 있습니다. 폐기된 테스트넷 허브가 활성화되어 있지 않습니다."
+      "addDefaultHubsAllPresent": "기본 백본 허브가 이미 구성되어 있습니다. 폐기된 테스트넷 허브가 활성화되어 있지 않습니다.",
+      "modeDescriptions": {
+        "full": "전체 메시 참여. 트래픽을 라우팅하고 아나운스를 자동으로 전파합니다. 기본 노드 및 리피터에 사용하십시오.",
+        "access_point": "쿼리될 때까지 조용히 하십시오. 짧은 경로가 만료됩니다. 간헐적인 사용자에게 서비스를 제공하는 광역 라디오에 이상적입니다.",
+        "roaming": "모바일 인터페이스. 짧은 경로 시간 초과 및 활성 검색. 핸드헬드 또는 차량 RNode에 사용합니다.",
+        "boundary": "네트워크 경계. 로컬 트래픽을 격리하면서 별개의 세그먼트를 연결합니다. 인터넷/LoRa 링크에 사용합니다.",
+        "gateway": "클라이언트의 경로 탐색. 연결된 노드를 대신하여 알 수 없는 대상을 해결합니다.",
+        "point_to_point": "두 노드 사이의 직접 링크. 라우팅과 아나운스 전파가 없습니다."
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -392,6 +392,9 @@ describe('ReticulumInterfacesPanel', () => {
     expect(screen.getByLabelText('connectionPanel.reticulumInterfaces.modeAria')).toHaveValue(
       'boundary',
     );
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.modeDescriptions.boundary'),
+    ).toBeInTheDocument();
     await user.selectOptions(
       screen.getByLabelText('connectionPanel.reticulumInterfaces.type'),
       'rnode',
@@ -399,6 +402,9 @@ describe('ReticulumInterfacesPanel', () => {
     expect(screen.getByLabelText('connectionPanel.reticulumInterfaces.modeAria')).toHaveValue(
       'access_point',
     );
+    expect(
+      screen.getByText('connectionPanel.reticulumInterfaces.modeDescriptions.access_point'),
+    ).toBeInTheDocument();
   });
 
   it('clears mode on edit save when empty option selected', async () => {

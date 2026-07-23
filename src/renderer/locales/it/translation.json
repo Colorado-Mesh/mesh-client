@@ -1058,7 +1058,15 @@
       "backboneDirectoryHint": "Trova altri hub backbone della comunità su directory.rns.recipes. Gli hub Yggdrasil (ad esempio Yggdrasil_Ashburn_VA) necessitano di un tunnel Yggdrasil locale in esecuzione: il manuale di Reticulum consiglia di collegarsi all'interfaccia del tunnel (spesso tun0).",
       "localOfflineRowBleBondStale": "Il legame Bluetooth è obsoleto: dimentica questo RNode in Impostazioni di sistema → Bluetooth, quindi associalo nuovamente con un nuovo PIN (il sistema operativo potrebbe ancora mostrare Accoppiato).",
       "addDefaultHubsAria": "Sincronizzare gli hub backbone Reticulum predefiniti (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); disabilitare gli endpoint testnet disattivati",
-      "addDefaultHubsAllPresent": "Gli hub backbone predefiniti sono già configurati; nessun hub testnet disattivato abilitato."
+      "addDefaultHubsAllPresent": "Gli hub backbone predefiniti sono già configurati; nessun hub testnet disattivato abilitato.",
+      "modeDescriptions": {
+        "full": "Partecipazione mesh completa. Annuncia il traffico dei percorsi e la propagazione automatica. Utilizzare per nodi primari e ripetitori.",
+        "access_point": "Silenzioso fino a quando non viene interrogato. Scadenza del percorso breve. Ideale per radio ad ampio raggio che servono utenti intermittenti.",
+        "roaming": "Interfacce mobili. Timeout di percorsi brevi e rilevamento attivo. Utilizzare per RNode portatili o veicolari.",
+        "boundary": "Confine di rete. Collega segmenti distinti isolando il traffico locale. Utilizzare per i collegamenti Internet/LoRa.",
+        "gateway": "Ricerca di percorsi per i clienti. Risolve destinazioni sconosciute per conto dei nodi connessi.",
+        "point_to_point": "Collegamento diretto tra due nodi. Nessun routing o propagazione degli annunci."
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

@@ -166,6 +166,23 @@ Config lives under `userData/reticulum/config/` (rnsd INI). The Connection tab s
 - **BLE Peer mesh:** optional seed peer addresses
 - **Auto:** name only (link-local discovery)
 
+### Interface modes
+
+rnsd **mode** applies to every interface type (TCP, I2P, RNode, …), not only radios. It controls path expiry, path seeking, and announce propagation between segments.
+
+| Mode             | Path Expiry | Path Seeking | When to use on an RNode                                                                                     |
+| ---------------- | ----------- | ------------ | ----------------------------------------------------------------------------------------------------------- |
+| `full`           | 7 days      | No           | Primary nodes, repeaters, fixed infrastructure — full mesh participation, auto-announces, routes traffic    |
+| `access_point`   | 24 hours    | Yes          | High-elevation or wide-area radios serving intermittent users — stays quiet until queried, fast path expiry |
+| `roaming`        | 6 hours     | Yes          | Mobile/handheld or vehicular RNodes moving between coverage areas — short path timeouts, active discovery   |
+| `boundary`       | 7 days      | No           | Linking a LoRa segment to an Internet/TCP backbone — isolates local traffic, selective announce bridging    |
+| `gateway`        | 7 days      | Yes          | Client-facing interface that resolves unknown paths on behalf of connected nodes                            |
+| `point_to_point` | 7 days      | No           | Dedicated direct link between exactly two nodes — no routing, no announce propagation                       |
+
+> When adding an RNode, the type default is **Access point** — a good starting point for most radio deployments. Switch to **Roaming** if the radio moves, or **Full** for a fixed high-participation LoRa node. For Internet/LoRa bridging, keep the RNode on Access point (or Roaming) and set the TCP/I2P hub interface to **Boundary** (mesh-client’s hub default).
+
+`point_to_point` is omitted from the official Reticulum manual’s interface-modes section but is defined in RNS (`MODE_POINT_TO_POINT`) and included in mesh-client’s mode catalog.
+
 Inbound “other apps / nodes connect to me” on this machine uses **Share instance** under **Network → stack settings** (runtime `SharedInstanceServer`), not a separate TCP server interface type. See also [diagnostics.md](diagnostics.md) SharedInstance notes.
 
 Defaults for new/incomplete configs: `share_instance = No` and `instance_name = mesh-client` (avoids attaching as a client on system `\0rns/default`, which would skip spawning local TCP hubs). Existing installs that already have `share_instance = Yes` / `instance_name = default` are **not** auto-migrated — use the Connection banner, Network → **Share Reticulum instance**, or Diagnostics **Turn off Share instance** repair, then restart. **Network → Check config** runs an offline parse/audit of `userData/reticulum/config` via the bundled sidecar (`validate-config`) on macOS, Windows, and Linux. Maintainers can run the same lint from the CLI: `pnpm run reticulum:config:check` (optional `MESH_CLIENT_RETICULUM_CONFIG_DIR`).
