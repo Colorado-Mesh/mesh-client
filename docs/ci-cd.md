@@ -140,12 +140,14 @@ Do not use `npm install`; it will create a `package-lock.json` and may not respe
 
 **Optional tooling:** You can run local CI in two ways:
 
-| Mode                    | Command prefix                                  | Requires                                      | What it does                                                        |
-| ----------------------- | ----------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------- |
-| **Container** (default) | `pnpm run act:ci`, `act:tests`, …               | Docker + [act](https://github.com/nektos/act) | Runs GitHub Actions jobs inside Linux containers (closest to CI)    |
-| **Host / native**       | `pnpm run act:ci:native`, `act:tests:native`, … | Node/pnpm only                                | Runs the same pnpm/cargo steps directly on your machine (no Docker) |
+| Mode                    | Command prefix                                  | Requires                                                        | What it does                                                                  |
+| ----------------------- | ----------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Container** (default) | `pnpm run act:ci`, `act:tests`, …               | Docker-compatible engine + [act](https://github.com/nektos/act) | Runs GitHub Actions jobs inside Linux containers (closest to CI)              |
+| **Host / native**       | `pnpm run act:ci:native`, `act:tests:native`, … | Node/pnpm only                                                  | Runs the same pnpm/cargo steps directly on your machine (no container engine) |
 
-`pnpm run check:environment` warns if Docker or act is missing but does not block commits. Use **native** scripts when Docker Desktop is unavailable or act cannot reach the daemon.
+Container mode runs GitHub Actions jobs inside Linux containers using a Docker-compatible engine (Podman preferred). Host mode runs the same pnpm/cargo steps directly — use this when no container engine is available or act cannot reach the daemon. `pnpm run check:environment` warns if no container engine or act is missing but does not block commits. Use **native** scripts when no Docker-compatible engine is available or act cannot reach the daemon.
+
+**macOS note:** [Podman Desktop](https://podman.io/) is the preferred Docker-compatible engine for local CI. When Docker compatibility is enabled, Podman exposes a Docker-compatible socket at `/var/run/docker.sock`; pass that path to `act` via `ACT_DOCKER_SOCKET`, or let `act` detect it automatically if Podman created the symlink. If you use Docker Desktop instead, its socket is typically under `~/.docker/run/docker.sock`.
 
 Install act (container mode only):
 
@@ -157,9 +159,9 @@ brew install act
 # https://github.com/nektos/act/releases
 ```
 
-On Windows, use Docker Desktop with the WSL2 backend. On Apple Silicon, act uses `--container-architecture linux/amd64` automatically for x86_64 CI parity.
+On Windows, Podman Desktop with Docker compatibility is preferred. If you use Docker Desktop instead, use the WSL2 backend. On Apple Silicon, `act` uses `--container-architecture linux/amd64` automatically for x86_64 CI parity.
 
-**Docker Desktop:** `scripts/run-act.mjs` passes `--container-daemon-socket` to act (auto-detects `~/.docker/run/docker.sock` on macOS). If act still cannot connect, set `ACT_DOCKER_SOCKET` to your socket path or use native mode.
+**Podman:** `scripts/run-act.mjs` passes `--container-daemon-socket` to `act` (auto-detects `/var/run/docker.sock` on macOS). If `act` still cannot connect, set `ACT_DOCKER_SOCKET` to your socket path or use native mode. If you use Docker Desktop instead, its socket is typically under `~/.docker/run/docker.sock`.
 
 ### Package scripts
 
@@ -170,12 +172,12 @@ pnpm run act:pull-images
 # List targets
 pnpm run act:list
 
-# PR parity — container (act + Docker)
+# PR parity — container (act + Podman/Docker)
 pnpm run act:ci
 pnpm run act:tests
 pnpm run act:pr
 
-# PR parity — host (no Docker)
+# PR parity — host (no container engine)
 pnpm run act:ci:native
 pnpm run act:tests:native
 pnpm run act:pr:native

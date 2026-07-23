@@ -156,14 +156,13 @@ describe('run-act buildActArgs', () => {
     ]);
   });
 
-  it('includes matrix and privileged container options for flatpak', () => {
+  it('includes privileged container options for flatpak', () => {
     expect(
       buildActArgs(
         {
           event: 'workflow_dispatch',
           workflow: '.github/workflows/flatpak.yaml',
           job: 'flatpak',
-          matrix: ['arch=x86_64'],
           containerOptions: '--privileged',
         },
         { hostArch: 'arm64', dockerSocket: '/var/run/docker.sock' },
@@ -179,8 +178,6 @@ describe('run-act buildActArgs', () => {
       '.github/workflows/flatpak.yaml',
       '-j',
       'flatpak',
-      '--matrix',
-      'arch=x86_64',
       '--container-options',
       '--privileged',
       'workflow_dispatch',
