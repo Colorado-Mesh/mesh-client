@@ -1060,9 +1060,9 @@
       "addDefaultHubsAria": "Synchronizuj domyślne huby szkieletowe Reticulum (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); wyłącz wycofane punkty końcowe sieci testowej",
       "addDefaultHubsAllPresent": "Domyślne huby szkieletowe są już skonfigurowane; nie włączono żadnych wycofanych z eksploatacji hubów sieci testowej.",
       "modeDescriptions": {
-        "full": "Pełne uczestnictwo w siatce. Ogłasza ruch na trasach i autopropagacje. Użyj dla głównych węzłów chłonnych i wtórników.",
+        "full": "Pełne uczestnictwo w siatce. Trasuje ruch i automatycznie rozgłasza ogłoszenia. Użyj dla głównych węzłów i repeaterów.",
         "access_point": "Cisza do zapytania. Wygaśnięcie krótkiej ścieżki. Idealny do radiotelefonów wielkopowierzchniowych obsługujących użytkowników nieregularnych.",
-        "roaming": "Interfejsy mobilne. Krótkie limity czasu ścieżki i aktywne odkrywanie. Używaj do ręcznych lub kołowych RNodów.",
+        "roaming": "Interfejsy mobilne. Krótkie limity czasu ścieżki i aktywne odkrywanie. Używaj do przenośnych lub samochodowych RNodów.",
         "boundary": "Granica sieci. Łączy różne segmenty, izolując ruch lokalny. Użyj dla łączy internetowych/LoRa.",
         "gateway": "Poszukiwanie ścieżki dla klientów. Rozwiązuje nieznane miejsca docelowe w imieniu połączonych węzłów.",
         "point_to_point": "Bezpośrednie połączenie między dwoma węzłami. Brak trasowania lub ogłaszania propagacji."

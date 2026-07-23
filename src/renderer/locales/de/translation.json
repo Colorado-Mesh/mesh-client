@@ -1060,12 +1060,12 @@
       "addDefaultHubsAria": "Standardmäßige Reticulum-Backbone-Hubs synchronisieren (US-Ost, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); Deaktivieren Sie stillgelegte Testnet-Endpunkte",
       "addDefaultHubsAllPresent": "Standard-Backbone-Hubs sind bereits konfiguriert; Keine stillgelegten Testnet-Hubs aktiviert.",
       "modeDescriptions": {
-        "full": "Volle Mesh-Teilnahme. Routenverkehr und Auto-Propagates kündigen an. Verwendung für primäre Knoten und Repeater.",
+        "full": "Volle Mesh-Teilnahme. Leitet Daten weiter und verbreitet Ankündigungen automatisch. Für primäre Knoten und Repeater.",
         "access_point": "Ruhig bis zur Abfrage. Kurzwegablauf. Ideal für großflächige Radios, die intermittierende Benutzer bedienen.",
         "roaming": "Mobile Schnittstellen. Kurze Weg-Timeouts und aktive Entdeckung. Verwendung für Handheld- oder Fahrzeug-RNodes.",
         "boundary": "Netzwerkgrenze. Überbrückt verschiedene Segmente und isoliert gleichzeitig den lokalen Datenverkehr. Verwendung für Internet-/LoRa-Links.",
         "gateway": "Pfadsuche für Kunden. Löst unbekannte Ziele im Auftrag verbundener Knoten auf.",
-        "point_to_point": "Direkte Verbindung zwischen zwei Knoten. Kein Routing oder Announce Propagation."
+        "point_to_point": "Direkte Verbindung zwischen zwei Knoten. Kein Routing und keine Ankündigungsverbreitung."
       }
     },
     "reticulumPeers": {

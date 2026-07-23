@@ -1060,7 +1060,7 @@
       "addDefaultHubsAria": "Sincronizar hubs troncales de Reticulum predeterminados (EE. UU. Este, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); deshabilitar los puntos finales de testnet fuera de servicio",
       "addDefaultHubsAllPresent": "Los hubs troncales predeterminados ya están configurados; no se habilitan hubs de testnet desmantelados.",
       "modeDescriptions": {
-        "full": "Participación total en malla. Se anuncia tráfico de rutas y autopropagaciones. Uso para nodos primarios y repetidores.",
+        "full": "Participación total en malla. Enruta el tráfico y propaga anuncios automáticamente. Uso para nodos primarios y repetidores.",
         "access_point": "Silencio hasta consulta. Caducidad de la ruta corta. Ideal para radios de área amplia que sirven a usuarios intermitentes.",
         "roaming": "Interfaces móviles. Tiempos de espera cortos y descubrimiento activo. Uso para RNodes portátiles o vehiculares.",
         "boundary": "Límite de la red. Une segmentos distintos mientras aísla el tráfico local. Uso para enlaces de Internet/LoRa.",

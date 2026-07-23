@@ -1060,7 +1060,7 @@
       "addDefaultHubsAria": "Sincronizar hubs de backbone Reticulum padrão (Leste dos EUA, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); desabilitar endpoints testnet desativados",
       "addDefaultHubsAllPresent": "Os hubs de backbone padrão já estão configurados; nenhum hub testnet desativado habilitado.",
       "modeDescriptions": {
-        "full": "Participação total na mesh. Tráfego de rotas e propaga automaticamente anúncios. Use para nós primários e repetidores.",
+        "full": "Participação total na mesh. Roteia o tráfego e propaga anúncios automaticamente. Use para nós primários e repetidores.",
         "access_point": "Silencioso até ser consultado. Expiração de caminho curto. Ideal para rádios de área ampla que atendem usuários intermitentes.",
         "roaming": "Interfaces móveis. Tempos limite de caminho curto e descoberta ativa. Use para RNodes portáteis ou veiculares.",
         "boundary": "Limite da rede. Faz a ponte entre segmentos distintos enquanto isola o tráfego local. Use para links de Internet/LoRa.",

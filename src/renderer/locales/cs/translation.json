@@ -1062,7 +1062,7 @@
       "modeDescriptions": {
         "full": "Účast na plné síti. Oznamuje trasy a automatické propagace. Používá se pro primární uzly a opakovače.",
         "access_point": "Ticho, dokud nebudete dotázáni. Krátká cesta vyprší. Ideální pro širokopásmová rádia sloužící občasným uživatelům.",
-        "roaming": "Mobilní rozhraní. Krátké časové limity cesty a aktivní zjišťování. Použijte pro ruční nebo automobilové RN kódy.",
+        "roaming": "Mobilní rozhraní. Krátké časové limity cesty a aktivní zjišťování. Použijte pro ruční nebo vozidlové RNode.",
         "boundary": "Hranice sítě. Překlenuje odlišné segmenty a zároveň izoluje místní provoz. Použijte pro internetové/LoRa odkazy.",
         "gateway": "Hledání cesty pro klienty. Řeší neznámé cíle jménem připojených uzlů.",
         "point_to_point": "Přímé spojení mezi dvěma uzly. Žádné směrování ani oznamování šíření."
