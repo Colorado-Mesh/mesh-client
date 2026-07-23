@@ -1058,7 +1058,15 @@
       "backboneDirectoryHint": "directory.rns.recipes adresinde daha fazla topluluk omurgası merkezi bulabilirsiniz. Yggdrasil hub'ları (örneğin Yggdrasil_Ashburn_VA) çalışan bir yerel Yggdrasil tüneline ihtiyaç duyar; Reticulum kılavuzu, tünel arayüzünüze bağlanmanızı önerir (genellikle tun0).",
       "localOfflineRowBleBondStale": "Bluetooth bağı eski — Sistem Ayarları → Bluetooth'ta bu RNode'u unutun, ardından yeni bir PIN ile yeniden eşleştirin (İşletim Sistemi hâlâ Eşlendi gösterebilir).",
       "addDefaultHubsAria": "Varsayılan Reticulum omurga merkezlerini senkronize edin (ABD-Doğu, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); hizmet dışı bırakılan test ağı uç noktalarını devre dışı bırak",
-      "addDefaultHubsAllPresent": "Varsayılan omurga hub'ları zaten yapılandırılmıştır; hizmet dışı bırakılmış test ağı hub'ları etkin değil."
+      "addDefaultHubsAllPresent": "Varsayılan omurga hub'ları zaten yapılandırılmıştır; hizmet dışı bırakılmış test ağı hub'ları etkin değil.",
+      "modeDescriptions": {
+        "full": "Tam mesh katılımı. Trafiği yönlendirir ve otomatik olarak yayılır. Birincil düğümler ve tekrarlayıcılar için kullanın.",
+        "access_point": "Sorgulanana kadar sessiz. Kısa yol süresi doldu. Aralıklı kullanıcılara hizmet veren geniş alan radyoları için idealdir.",
+        "roaming": "Mobil arayüzler. Kısa yol zaman aşımları ve aktif keşif. El veya araç RNodları için kullanın.",
+        "boundary": "Ağ sınırı. Yerel trafiği izole ederken farklı segmentleri birbirine bağlar. İnternet/LoRa bağlantıları için kullanın.",
+        "gateway": "İstemciler için yol arama. Bağlı düğümler adına bilinmeyen hedefleri çözer.",
+        "point_to_point": "İki düğüm arasında doğrudan bağlantı. Yönlendirme veya duyuru yayılımı yok."
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

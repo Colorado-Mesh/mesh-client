@@ -1058,7 +1058,15 @@
       "backboneDirectoryHint": "Vind meer community-backbone-hubs op directory.rns.recipes. Yggdrasil-hubs (bijvoorbeeld Yggdrasil_Ashburn_VA) hebben een actieve lokale Yggdrasil-tunnel nodig - de Reticulum-handleiding beveelt aan om te binden aan uw tunnelinterface (vaak tun0).",
       "localOfflineRowBleBondStale": "Bluetooth-verbinding is verouderd: vergeet deze RNode in Systeeminstellingen → Bluetooth en koppel opnieuw met een nieuwe pincode (het besturingssysteem kan nog steeds Gekoppeld weergeven).",
       "addDefaultHubsAria": "Synchroniseer standaard Reticulum-backbone-hubs (US-Oost, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World); buiten gebruik gestelde testnet-eindpunten uitschakelen",
-      "addDefaultHubsAllPresent": "Standaard backbone-hubs zijn al geconfigureerd; geen buiten gebruik gestelde testnet-hubs ingeschakeld."
+      "addDefaultHubsAllPresent": "Standaard backbone-hubs zijn al geconfigureerd; geen buiten gebruik gestelde testnet-hubs ingeschakeld.",
+      "modeDescriptions": {
+        "full": "Volledige mesh-deelname. Routes verkeer en auto-propagates kondigt aan. Gebruik voor primaire knooppunten en repeaters.",
+        "access_point": "Stil tot bevraagd. Kort pad vervalt. Ideaal voor radio's met een groot bereik die intermitterende gebruikers bedienen.",
+        "roaming": "Mobiele interfaces. Korte pad time-outs en actieve detectie. Gebruik voor handheld of voertuig-RNodes.",
+        "boundary": "Netwerkgrens. Overbrugt verschillende segmenten en isoleert het lokale verkeer. Gebruik voor internet/LoRa-koppelingen.",
+        "gateway": "Padzoeken voor klanten. Lost onbekende bestemmingen op namens verbonden knooppunten.",
+        "point_to_point": "Directe link tussen twee knooppunten. Geen routering of aankondigen van propagatie."
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

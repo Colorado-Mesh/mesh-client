@@ -1058,7 +1058,15 @@
       "backboneDirectoryHint": "在directory.rns.recipes 中查找更多社区骨干中心。 Yggdrasil 集线器（例如 Yggdrasil_Ashburn_VA）需要一个正在运行的本地 Yggdrasil 隧道 - Reticulum 手册建议绑定到您的隧道接口（通常是 tun0）。",
       "localOfflineRowBleBondStale": "蓝牙绑定已过时 - 在“系统设置”→“蓝牙”中忘记此 RNode，然后使用新的 PIN 重新配对（操作系统可能仍显示“已配对”）。",
       "addDefaultHubsAria": "同步默认的 Reticulum 主干集线器（US-East、I2P、Yggdrasil Ashburn VA、Ratspeak、RMAP World）；禁用已停用的测试网端点",
-      "addDefaultHubsAllPresent": "默认骨干集线器已配置；未启用已停用的测试网集线器。"
+      "addDefaultHubsAllPresent": "默认骨干集线器已配置；未启用已停用的测试网集线器。",
+      "modeDescriptions": {
+        "full": "全网格参与。路由流量和自动传播公告。用于主节点和中继器。",
+        "access_point": "安静，直到被查询。短路径到期。非常适合为间歇性用户提供服务的广域无线电。",
+        "roaming": "移动接口。短路径超时和主动发现。用于手持或车辆RNode。",
+        "boundary": "网络边界。桥接不同的段，同时隔离本地流量。用于互联网/LoRa链接。",
+        "gateway": "为客户端寻找路径。代表连接的节点解决未知目标。",
+        "point_to_point": "两个节点之间的直接链接。无路由或通告传播。"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

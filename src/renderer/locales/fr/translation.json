@@ -1058,7 +1058,15 @@
       "backboneDirectoryHint": "Trouvez d’autres hubs communautaires sur directory.rns.recipes. Les hubs Yggdrasil (par exemple Yggdrasil_Ashburn_VA) nécessitent un tunnel Yggdrasil local en cours d'exécution — le manuel Reticulum recommande de se lier à l'interface de votre tunnel (souvent tun0).",
       "localOfflineRowBleBondStale": "La liaison Bluetooth est obsolète — Oubliez ce RNode dans Paramètres système → Bluetooth, puis ré-appairez avec un nouveau code PIN (le système d'exploitation peut toujours afficher Jumelé).",
       "addDefaultHubsAria": "Synchroniser les hubs de base Reticulum par défaut (US-East, I2P, Yggdrasil Ashburn VA, Ratspeak, RMAP World) ; désactiver les points de terminaison testnet mis hors service",
-      "addDefaultHubsAllPresent": "Les hubs de base par défaut sont déjà configurés ; aucun hub testnet mis hors service n'est activé."
+      "addDefaultHubsAllPresent": "Les hubs de base par défaut sont déjà configurés ; aucun hub testnet mis hors service n'est activé.",
+      "modeDescriptions": {
+        "full": "Participation complète au maillage. Annonce les itinéraires de circulation et les auto-propagations. À utiliser pour les nœuds principaux et les répéteurs.",
+        "access_point": "Silencieux jusqu'à ce qu'il soit interrogé. Expiration du chemin court. Idéal pour les radios étendues desservant des utilisateurs intermittents.",
+        "roaming": "Interfaces mobiles. Délais d'attente courts et découverte active. Utiliser pour les RNodes portatifs ou véhiculaires.",
+        "boundary": "Limite du réseau. Permet de relier des segments distincts tout en isolant le trafic local. Utiliser pour les liens Internet/LoRa.",
+        "gateway": "Recherche de chemins pour les clients. Résout les destinations inconnues pour le compte des nœuds connectés.",
+        "point_to_point": "Lien direct entre deux nœuds. Pas de routage ni d'annonce de propagation."
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",

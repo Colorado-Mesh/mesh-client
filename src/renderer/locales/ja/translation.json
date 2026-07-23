@@ -1058,7 +1058,15 @@
       "backboneDirectoryHint": "他のコミュニティ バックボーン ハブについては、directory.rns.recipes で見つけてください。 Yggdrasil ハブ (Yggdrasil_Ashburn_VA など) には、実行中のローカル Yggdrasil トンネルが必要です。Reticulum マニュアルでは、トンネル インターフェイス (多くの場合 tun0) にバインドすることを推奨しています。",
       "localOfflineRowBleBondStale": "Bluetooth ボンディングが古い — [システム設定] → [Bluetooth] でこの RNode を忘れてから、新しい PIN で再ペアリングします (OS にはまだペアリング済みと表示される場合があります)。",
       "addDefaultHubsAria": "デフォルトの Reticulum バックボーン ハブ (米国東部、I2P、Yggdrasil Ashburn VA、Ratspeak、RMAP World) を同期します。廃止されたテストネットエンドポイントを無効にする",
-      "addDefaultHubsAllPresent": "デフォルトのバックボーン ハブはすでに構成されています。廃止されたテストネット ハブは有効になっていません。"
+      "addDefaultHubsAllPresent": "デフォルトのバックボーン ハブはすでに構成されています。廃止されたテストネット ハブは有効になっていません。",
+      "modeDescriptions": {
+        "full": "完全なメッシュ参加。トラフィックをルーティングし、アナウンスを自動伝播します。プライマリノードとリピーターに使用します。",
+        "access_point": "照会されるまで静かです。ショートパスの有効期限が切れています。断続的なユーザーに対応する広域無線に最適です。",
+        "roaming": "モバイルインターフェイス。短いパスタイムアウトとアクティブディスカバリ。ハンドヘルドまたは車両のRNodeに使用します。",
+        "boundary": "ネットワーク境界。ローカルトラフィックを分離しながら、異なるセグメントをブリッジします。インターネット/LoRaリンクに使用します。",
+        "gateway": "クライアントのパスシーク。接続されたノードの代わりに不明な宛先を解決します。",
+        "point_to_point": "2つのノード間の直接リンク。ルーティングやアナウンスの伝播はありません。"
+      }
     },
     "reticulumPeers": {
       "hops": "Hops",
