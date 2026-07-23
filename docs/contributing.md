@@ -23,7 +23,7 @@ pnpm run typecheck
 pnpm run format:check
 ```
 
-To approximate **Linux CI** from any host, use container mode (`pnpm run act:ci`) or host mode without Docker (`pnpm run act:ci:native`). See [CI/CD — Running locally with act](ci-cd.md#running-ci-locally-with-act).
+To approximate **Linux CI** from any host, use container mode (`pnpm run act:ci`) or host mode without a container engine (`pnpm run act:ci:native`). See [CI/CD — Running locally with act](ci-cd.md#running-ci-locally-with-act).
 
 ## Documentation Workflow
 

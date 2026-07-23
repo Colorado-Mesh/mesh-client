@@ -34,7 +34,7 @@ pnpm run dev
 
 **Required** checks (must pass): Git, Node.js, pnpm, `node_modules`, and platform-native build tools (Xcode CLT on macOS, `g++`/`make` on Linux, MSVC `cl` on Windows).
 
-**Optional** checks (warnings only): Python/pip, Rust, actionlint, yamllint, Docker, act, and Linux `dialout` group membership. For local CI you can use **container mode** (`pnpm run act:ci` — act + Docker) or **host mode** (`pnpm run act:ci:native` — no Docker). Fix optional items when you need docs builds, pre-commit hooks, Reticulum sidecar work, local CI parity, or USB serial on Linux.
+**Optional** checks (warnings only): Python/pip, Rust, actionlint, yamllint, a Docker-compatible container engine (Podman preferred), act, and Linux `dialout` group membership. For local CI you can use **container mode** (`pnpm run act:ci` — act + Podman/Docker) or **host mode** (`pnpm run act:ci:native` — no container engine). Fix optional items when you need docs builds, pre-commit hooks, Reticulum sidecar work, local CI parity, or USB serial on Linux.
 
 Use the printed `→` hints and `setup:*` scripts (`setup:build-deps`, `setup:actionlint`, `setup:dialout`) to fix failures. See [Helper scripts (auto-install where possible)](#8-helper-scripts-auto-install-where-possible) below.
 
@@ -410,21 +410,21 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 #### CI (act)
 
-| Script                   | Description                                             |
-| ------------------------ | ------------------------------------------------------- |
-| `act:ci`                 | Run Linux CI workflow via act + Docker (container mode) |
-| `act:ci:native`          | Run CI checks on the host (no Docker)                   |
-| `act:tests`              | Run tests workflow via act + Docker                     |
-| `act:tests:native`       | Run `test:coverage` on the host                         |
-| `act:pr`                 | Run `act:ci` then `act:tests` (container)               |
-| `act:pr:native`          | Run native CI + tests on the host                       |
-| `act:build:linux`        | Run `build.yaml` ubuntu leg via act + Docker            |
-| `act:build:linux:native` | Run `dist:linux` on the host                            |
-| `act:reticulum`          | Reticulum sidecar Linux jobs via act                    |
-| `act:reticulum:native`   | Reticulum sidecar stub `cargo test` / build on the host |
-| `act:flatpak`            | Flatpak x86_64 workflow via act (slow; privileged)      |
-| `act:pull-images`        | Pre-pull Docker images for act (container mode)         |
-| `act:list`               | List container and native act targets                   |
+| Script                   | Description                                                   |
+| ------------------------ | ------------------------------------------------------------- |
+| `act:ci`                 | Run Linux CI workflow via act + containers (Podman preferred) |
+| `act:ci:native`          | Run CI checks on the host (no container engine)               |
+| `act:tests`              | Run tests workflow via act + containers                       |
+| `act:tests:native`       | Run `test:coverage` on the host                               |
+| `act:pr`                 | Run `act:ci` then `act:tests` (container)                     |
+| `act:pr:native`          | Run native CI + tests on the host                             |
+| `act:build:linux`        | Run `build.yaml` ubuntu leg via act + containers              |
+| `act:build:linux:native` | Run `dist:linux` on the host                                  |
+| `act:reticulum`          | Reticulum sidecar Linux jobs via act                          |
+| `act:reticulum:native`   | Reticulum sidecar stub `cargo test` / build on the host       |
+| `act:flatpak`            | Flatpak x86_64 workflow via act (slow; privileged)            |
+| `act:pull-images`        | Pre-pull Docker images for act (container mode)               |
+| `act:list`               | List container and native act targets                         |
 
 #### Setup / helpers
 
@@ -498,7 +498,7 @@ Not installed by pnpm (install separately when needed):
 - `actionlint` (recommended for workflow linting; run `pnpm run setup:actionlint` or install system-wide)
 - `yamllint` (required for YAML linting; install via `pip install yamllint` or `brew install yamllint` on macOS)
 - **Rust / `cargo`** (optional; Reticulum sidecar — see [Reticulum sidecar](#reticulum-sidecar-optional); prefer [rustup](https://rustup.rs/)). `rust-toolchain.toml` installs clippy/rustfmt/llvm-tools-preview on first build in `reticulum-sidecar/`. Optional: `cargo install cargo-llvm-cov` for `pnpm run reticulum:sidecar:coverage`.
-- `docker` and `act` (optional for container CI — `act:*`; host CI uses `act:*:native` without Docker)
+- Podman or Docker (Docker-compatible engine) and `act` (optional for container CI — `act:*`; host CI uses `act:*:native` without a container engine)
 - Python 3 + `venv` + MkDocs Python deps (for docs checks/builds)
 
 #### Vitest projects and worker allocation
@@ -631,20 +631,20 @@ Run any skipped checks manually as soon as possible.
 
 Local CI has two modes:
 
-| Mode              | Scripts                                         | Requires       |
-| ----------------- | ----------------------------------------------- | -------------- |
-| **Container**     | `pnpm run act:ci`, `act:tests`, …               | Docker + act   |
-| **Host / native** | `pnpm run act:ci:native`, `act:tests:native`, … | Node/pnpm only |
+| Mode              | Scripts                                                  | Requires                                          |
+| ----------------- | -------------------------------------------------------- | ------------------------------------------------- |
+| **Container**     | `pnpm run act:ci`, `pnpm run act:tests`, …               | Docker-compatible engine + act (Podman preferred) |
+| **Host / native** | `pnpm run act:ci:native`, `pnpm run act:tests:native`, … | Node/pnpm only                                    |
 
-Container mode runs GitHub Actions jobs inside Docker (closest to CI). Host mode runs the same pnpm/cargo steps directly — use this when Docker Desktop is off or act cannot reach the daemon.
+Container mode runs GitHub Actions jobs inside containers using a Docker-compatible engine (Podman Desktop preferred). Host mode runs the same pnpm/cargo steps directly — use this when no container engine is available or act cannot reach the daemon.
 
 Install (container mode):
 
-| OS      | Docker                                                            | act                                                                           |
-| ------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| macOS   | [Docker Desktop](https://www.docker.com/products/docker-desktop/) | `brew install act`                                                            |
-| Linux   | Docker engine                                                     | [act releases](https://github.com/nektos/act/releases)                        |
-| Windows | Docker Desktop (WSL2 backend)                                     | `choco install act-cli` or [releases](https://github.com/nektos/act/releases) |
+| OS      | Container engine                                                       | act                                                                           |
+| ------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| macOS   | [Podman Desktop](https://podman.io/) with Docker compatibility enabled | `brew install act`                                                            |
+| Linux   | Podman or Docker engine                                                | [act releases](https://github.com/nektos/act/releases)                        |
+| Windows | [Podman Desktop](https://podman.io/) with Docker compatibility enabled | `choco install act-cli` or [releases](https://github.com/nektos/act/releases) |
 
 ```bash
 pnpm run act:pull-images # container mode only
@@ -653,7 +653,7 @@ pnpm run act:ci    # or act:ci:native
 pnpm run act:tests # or act:tests:native
 ```
 
-Docker Desktop on macOS: act auto-uses `~/.docker/run/docker.sock`. Set `ACT_DOCKER_SOCKET` if act still fails.
+On macOS, podman exposes a Docker-compatible socket at `/var/run/docker.sock`; pass that path to `act` via `ACT_DOCKER_SOCKET`, or let it auto-detect if Podman created the socket symlink. If you use Docker Desktop instead of Podman, its socket is typically under `~/.docker/run/docker.sock`.
 
 macOS and Windows **installer** builds still require native `pnpm run dist:mac` / `pnpm run dist:win`. See [ci-cd.md](ci-cd.md#running-ci-locally-with-act).
 
@@ -731,6 +731,10 @@ cd mesh-client
 pnpm install
 pnpm run dev
 ```
+
+### Local CI container engine
+
+[Podman Desktop](https://podman.io/) is the preferred cross-platform Docker-compatible engine for local CI. When Docker compatibility is enabled, Podman exposes a Docker-compatible socket at `/var/run/docker.sock`; pass that path to `act` via `ACT_DOCKER_SOCKET`, or let it auto-detect if Podman Desktop created the socket symlink. If you use Docker Desktop instead, see the socket note above.
 
 ### Bluetooth permissions
 

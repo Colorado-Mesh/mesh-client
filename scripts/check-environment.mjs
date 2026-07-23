@@ -433,38 +433,100 @@ function checkYamllint() {
   };
 }
 
-function checkDocker() {
-  const out = commandOutput('docker', ['--version']);
-  if (!out) {
+/**
+ * Evaluate optional container-engine readiness for act.
+ * Prefers Podman when its daemon is ready (`podmanOk`); otherwise Docker when ready.
+ * Matches `resolveContainerEngine()` in scripts/run-act.mjs.
+ *
+ * @param {{
+ *   dockerPath: string | null,
+ *   podmanPath: string | null,
+ *   dockerOk: boolean,
+ *   podmanOk: boolean,
+ *   dockerVersion: string | null,
+ *   podmanVersion: string | null,
+ *   hasPodmanApp?: boolean,
+ *   hasDockerApp?: boolean,
+ *   socket?: string | undefined,
+ * }} input
+ * @returns {CheckResult}
+ */
+export function evaluateContainerEngineCheck(input) {
+  const {
+    dockerPath,
+    podmanPath,
+    dockerOk,
+    podmanOk,
+    dockerVersion,
+    podmanVersion,
+    hasPodmanApp = false,
+    hasDockerApp = false,
+    socket,
+  } = input;
+
+  // Prefer Podman when its daemon is ready; else Docker when ready (daemon-gated).
+  const preferred = podmanOk ? 'podman' : dockerOk ? 'docker' : null;
+  if (preferred) {
+    const versionOut = preferred === 'podman' ? podmanVersion : dockerVersion;
+    const versionLine = (versionOut ?? preferred).split('\n')[0];
+    const socketNote = socket
+      ? `; act socket ${socket}`
+      : '; act socket not detected (set ACT_DOCKER_SOCKET if act fails)';
     return {
-      status: 'warn',
+      status: 'pass',
       severity: 'optional',
-      label: 'Docker not found (optional)',
-      hint: 'For container CI (act): install Docker Desktop or engine. Or use host CI: pnpm run act:ci:native — see docs/ci-cd.md',
+      label: 'Container engine',
+      detail: `${versionLine}${socketNote}`,
     };
   }
 
-  if (!commandOk('docker', ['info'])) {
+  // CLI on PATH but daemon/info failed — do not report as "not found".
+  const presentCli = podmanPath ? 'podman' : dockerPath ? 'docker' : null;
+  if (presentCli) {
+    const versionOut = presentCli === 'podman' ? podmanVersion : dockerVersion;
     return {
       status: 'warn',
       severity: 'optional',
-      label: 'Docker daemon not running (optional)',
-      detail: out.split('\n')[0],
-      hint: 'Start Docker Desktop for pnpm run act:* (container mode), or use pnpm run act:ci:native on the host',
+      label: 'Container engine not running (optional)',
+      detail: versionOut ? versionOut.split('\n')[0] : presentCli,
+      hint: 'Start Podman Desktop (preferred) or Docker Desktop for pnpm run act:* (container mode), or use pnpm run act:ci:native on the host',
     };
   }
 
-  const socket = resolveDockerSocket();
-  const socketNote = socket
-    ? `; act socket ${socket}`
-    : '; act socket not detected (set ACT_DOCKER_SOCKET if act fails with Docker Desktop)';
-
+  let hint =
+    'For container CI (act): install Podman Desktop (preferred) or Docker Desktop. Or use host CI: pnpm run act:ci:native — see docs/ci-cd.md';
+  if (hasPodmanApp) {
+    hint +=
+      '\n   → Podman Desktop is installed but not on PATH. Add /opt/podman/bin to your shell rc, then source it or restart your shell.';
+  } else if (hasDockerApp) {
+    hint +=
+      '\n   → Docker Desktop is installed but not on PATH. Add its CLI to PATH or restart your shell.';
+  }
   return {
-    status: 'pass',
+    status: 'warn',
     severity: 'optional',
-    label: 'Docker',
-    detail: `${out.split('\n')[0]}${socketNote}`,
+    label: 'Container engine not found (optional)',
+    hint,
   };
+}
+
+function checkDocker() {
+  const dockerPath = commandOutput('which', ['docker']);
+  const podmanPath = commandOutput('which', ['podman']);
+  const dockerOk = Boolean(dockerPath && commandOk('docker', ['info']));
+  const podmanOk = Boolean(podmanPath && commandOk('podman', ['info']));
+
+  return evaluateContainerEngineCheck({
+    dockerPath,
+    podmanPath,
+    dockerOk,
+    podmanOk,
+    dockerVersion: dockerPath ? commandOutput('docker', ['--version']) : null,
+    podmanVersion: podmanPath ? commandOutput('podman', ['--version']) : null,
+    hasPodmanApp: existsSync('/opt/podman/bin/podman'),
+    hasDockerApp: existsSync('/Applications/Docker.app'),
+    socket: resolveDockerSocket(),
+  });
 }
 
 function checkAct() {
@@ -474,7 +536,7 @@ function checkAct() {
       status: 'warn',
       severity: 'optional',
       label: 'act not found (optional)',
-      hint: 'For container CI: install act + Docker, then pnpm run act:pull-images. Or use host CI: pnpm run act:ci:native',
+      hint: 'For container CI: install act + Podman/Docker, then pnpm run act:pull-images. Or use host CI: pnpm run act:ci:native',
     };
   }
   return {
@@ -490,29 +552,31 @@ function checkAct() {
  * @returns {string | null}
  */
 export function formatLocalActDockerNote(checks) {
-  const docker = checks.find((c) => c.label.startsWith('Docker'));
+  const containerEngine = checks.find(
+    (c) => c.label.startsWith('Container engine') || c.label.startsWith('Docker'),
+  );
   const actCheck = checks.find((c) => c.label === 'act' || c.label.startsWith('act not found'));
 
-  if (!docker && !actCheck) {
+  if (!containerEngine && !actCheck) {
     return null;
   }
 
-  const dockerReady = docker?.status === 'pass';
+  const containerReady = containerEngine?.status === 'pass';
   const actReady = actCheck?.status === 'pass';
 
-  if (dockerReady && actReady) {
-    return 'ℹ️  Container CI: pnpm run act:ci (act + Docker). Host CI (no Docker): pnpm run act:ci:native. See docs/ci-cd.md.';
+  if (containerReady && actReady) {
+    return 'ℹ️  Container CI: pnpm run act:ci (act + Podman/Docker). Host CI (no containers): pnpm run act:ci:native. See docs/ci-cd.md.';
   }
 
-  if (actReady && !dockerReady) {
-    return 'ℹ️  act is installed but Docker is not ready — start Docker Desktop for act:* or use pnpm run act:ci:native on the host.';
+  if (actReady && !containerReady) {
+    return 'ℹ️  act is installed but the container engine is not ready — start Podman Desktop (preferred) or Docker Desktop for act:* or use pnpm run act:ci:native on the host.';
   }
 
-  if (dockerReady && !actReady) {
-    return 'ℹ️  Docker is ready; install act for container workflows (pnpm run act:ci) or use pnpm run act:ci:native on the host.';
+  if (containerReady && !actReady) {
+    return 'ℹ️  Container engine is ready; install act for container workflows (pnpm run act:ci) or use pnpm run act:ci:native on the host.';
   }
 
-  return 'ℹ️  Local CI: pnpm run act:ci:native (host) or install act + Docker for container workflows. See docs/ci-cd.md.';
+  return 'ℹ️  Local CI: pnpm run act:ci:native (host) or install act + Docker/Podman for container workflows. See docs/ci-cd.md.';
 }
 
 function checkLinuxDialout() {

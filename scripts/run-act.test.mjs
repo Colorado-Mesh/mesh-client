@@ -9,8 +9,35 @@ import {
   parseActMode,
   parseArgv,
   resolveContainerArch,
+  resolveContainerEngine,
   resolveDockerSocket,
 } from './run-act.mjs';
+
+describe('run-act resolveContainerEngine', () => {
+  it('prefers Podman when podman info succeeds', () => {
+    const commandOk = (command, args) => command === 'podman' && args[0] === 'info';
+    expect(resolveContainerEngine({ commandOk })).toBe('podman');
+  });
+
+  it('falls back to Docker when Podman CLI exists but info fails and Docker is ready', () => {
+    const commandOk = (command, args) => {
+      if (command === 'podman' && args[0] === '--version') return true;
+      if (command === 'docker' && args[0] === 'info') return true;
+      return false;
+    };
+    expect(resolveContainerEngine({ commandOk })).toBe('docker');
+  });
+
+  it('keeps Podman when neither daemon is ready but Podman CLI exists', () => {
+    const commandOk = (command, args) => command === 'podman' && args[0] === '--version';
+    expect(resolveContainerEngine({ commandOk })).toBe('podman');
+  });
+
+  it('uses Docker when Podman is absent', () => {
+    const commandOk = () => false;
+    expect(resolveContainerEngine({ commandOk })).toBe('docker');
+  });
+});
 
 describe('run-act parseActMode', () => {
   it('defaults to docker', () => {
@@ -156,14 +183,13 @@ describe('run-act buildActArgs', () => {
     ]);
   });
 
-  it('includes matrix and privileged container options for flatpak', () => {
+  it('includes privileged container options for flatpak', () => {
     expect(
       buildActArgs(
         {
           event: 'workflow_dispatch',
           workflow: '.github/workflows/flatpak.yaml',
           job: 'flatpak',
-          matrix: ['arch=x86_64'],
           containerOptions: '--privileged',
         },
         { hostArch: 'arm64', dockerSocket: '/var/run/docker.sock' },
@@ -179,8 +205,6 @@ describe('run-act buildActArgs', () => {
       '.github/workflows/flatpak.yaml',
       '-j',
       'flatpak',
-      '--matrix',
-      'arch=x86_64',
       '--container-options',
       '--privileged',
       'workflow_dispatch',

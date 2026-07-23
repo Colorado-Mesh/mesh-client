@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   formatCheckResult,
   formatLocalActDockerNote,
+  evaluateContainerEngineCheck,
   parseVersion,
   resolveExitCode,
   versionGte,
@@ -77,10 +78,10 @@ describe('check-environment formatCheckResult', () => {
       formatCheckResult({
         status: 'warn',
         severity: 'optional',
-        label: 'Docker not found (optional)',
-        hint: 'Install Docker',
+        label: 'Container engine not found (optional)',
+        hint: 'Install Docker or Podman',
       }),
-    ).toEqual(['⚠️ Docker not found (optional)', '   → Install Docker']);
+    ).toEqual(['⚠️ Container engine not found (optional)', '   → Install Docker or Podman']);
   });
 });
 
@@ -114,40 +115,122 @@ describe('check-environment resolveExitCode', () => {
 });
 
 describe('check-environment formatLocalActDockerNote', () => {
-  it('returns null when neither docker nor act checks are present', () => {
+  it('returns null when neither container engine nor act checks are present', () => {
     expect(
       formatLocalActDockerNote([{ status: 'pass', severity: 'required', label: 'Git' }]),
     ).toBeNull();
   });
 
-  it('returns paired missing note when docker or act warns', () => {
+  it('returns paired missing note when container engine or act warns', () => {
     expect(
       formatLocalActDockerNote([
-        { status: 'warn', severity: 'optional', label: 'Docker not found (optional)' },
+        { status: 'warn', severity: 'optional', label: 'Container engine not found (optional)' },
         { status: 'pass', severity: 'optional', label: 'act', detail: '0.2.0' },
       ]),
     ).toContain('act:ci:native');
   });
 
-  it('returns ready note when both docker and act pass', () => {
+  it('returns ready note when both container engine and act pass', () => {
     expect(
       formatLocalActDockerNote([
-        { status: 'pass', severity: 'optional', label: 'Docker', detail: 'Docker 27' },
+        { status: 'pass', severity: 'optional', label: 'Container engine', detail: 'Podman 5.8.5' },
         { status: 'pass', severity: 'optional', label: 'act', detail: 'act version 0.2.76' },
       ]),
     ).toContain('act:ci:native');
   });
 
-  it('suggests native mode when act is ready but docker is not', () => {
+  it('suggests native mode when act is ready but container engine is not', () => {
     expect(
       formatLocalActDockerNote([
         {
           status: 'warn',
           severity: 'optional',
-          label: 'Docker daemon not running (optional)',
+          label: 'Container engine not running (optional)',
         },
         { status: 'pass', severity: 'optional', label: 'act', detail: 'act version 0.2.76' },
       ]),
     ).toContain('act:ci:native');
+  });
+});
+
+describe('check-environment evaluateContainerEngineCheck', () => {
+  it('prefers Podman when both engines are ready', () => {
+    const result = evaluateContainerEngineCheck({
+      dockerPath: '/usr/local/bin/docker',
+      podmanPath: '/opt/podman/bin/podman',
+      dockerOk: true,
+      podmanOk: true,
+      dockerVersion: 'Docker version 28.0.0',
+      podmanVersion: 'podman version 5.8.5',
+      socket: '/var/run/docker.sock',
+    });
+    expect(result).toMatchObject({
+      status: 'pass',
+      label: 'Container engine',
+    });
+    expect(result.detail).toContain('podman version 5.8.5');
+    expect(result.detail).toContain('/var/run/docker.sock');
+    expect(result.detail).not.toContain('Docker version');
+  });
+
+  it('falls back to Docker when only Docker is ready', () => {
+    const result = evaluateContainerEngineCheck({
+      dockerPath: '/usr/local/bin/docker',
+      podmanPath: null,
+      dockerOk: true,
+      podmanOk: false,
+      dockerVersion: 'Docker version 28.0.0',
+      podmanVersion: null,
+      socket: '/Users/test/.docker/run/docker.sock',
+    });
+    expect(result.status).toBe('pass');
+    expect(result.detail).toContain('Docker version 28.0.0');
+  });
+
+  it('reports not running when a CLI is present but info fails', () => {
+    const result = evaluateContainerEngineCheck({
+      dockerPath: '/usr/local/bin/docker',
+      podmanPath: null,
+      dockerOk: false,
+      podmanOk: false,
+      dockerVersion: 'Docker version 28.0.0',
+      podmanVersion: null,
+    });
+    expect(result).toMatchObject({
+      status: 'warn',
+      label: 'Container engine not running (optional)',
+      detail: 'Docker version 28.0.0',
+    });
+    expect(result.hint).toContain('Podman Desktop');
+  });
+
+  it('prefers Podman detail when both CLIs are present but neither info succeeds', () => {
+    const result = evaluateContainerEngineCheck({
+      dockerPath: '/usr/local/bin/docker',
+      podmanPath: '/opt/podman/bin/podman',
+      dockerOk: false,
+      podmanOk: false,
+      dockerVersion: 'Docker version 28.0.0',
+      podmanVersion: 'podman version 5.8.5',
+    });
+    expect(result.label).toBe('Container engine not running (optional)');
+    expect(result.detail).toBe('podman version 5.8.5');
+  });
+
+  it('reports not found when no CLI is on PATH', () => {
+    const result = evaluateContainerEngineCheck({
+      dockerPath: null,
+      podmanPath: null,
+      dockerOk: false,
+      podmanOk: false,
+      dockerVersion: null,
+      podmanVersion: null,
+      hasPodmanApp: true,
+    });
+    expect(result).toMatchObject({
+      status: 'warn',
+      label: 'Container engine not found (optional)',
+    });
+    expect(result.hint).toContain('/opt/podman/bin');
   });
 });

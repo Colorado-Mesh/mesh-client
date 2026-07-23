@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Run GitHub Actions workflows locally via nektos/act + Docker, or run equivalent
- * checks natively on the host (no Docker). Linux runner jobs only for act mode.
+ * Run GitHub Actions workflows locally via nektos/act + a Docker-compatible
+ * container engine (Podman preferred), or run equivalent checks natively on the
+ * host (no container engine). Linux runner jobs only for act mode.
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -18,6 +19,29 @@ const repoRoot = resolve(__dirname, '..');
 
 export const ACT_MODE_ENV = 'MESH_CLIENT_ACT_MODE';
 
+function commandOk(command, args) {
+  const res = spawnSync(command, args, { stdio: 'ignore' });
+  return res.status === 0;
+}
+
+/**
+ * Prefer a ready Podman daemon for act container CI; fall back to Docker when
+ * Podman is missing or its machine/daemon is not ready (`podman info` fails).
+ * @param {{ commandOk?: (command: string, args: string[]) => boolean }} [options]
+ * @returns {'podman' | 'docker'}
+ */
+export function resolveContainerEngine(options = {}) {
+  const ok = options.commandOk ?? commandOk;
+  if (ok('podman', ['info'])) return 'podman';
+  if (ok('docker', ['info'])) return 'docker';
+  // Neither daemon ready: keep Podman for preflight messaging when its CLI exists.
+  return ok('podman', ['--version']) ? 'podman' : 'docker';
+}
+
+/**
+ * Prefer Podman for act container CI; fall back to Docker only if Podman is unavailable.
+ */
+export const CONTAINER_ENGINE = resolveContainerEngine();
 export const ACT_PLATFORM_IMAGE = 'ghcr.io/catthehacker/ubuntu:full-latest';
 export const FLATPAK_CONTAINER_IMAGE =
   'ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08';
@@ -40,20 +64,17 @@ export const ACT_TARGETS = {
     event: 'workflow_dispatch',
     workflow: '.github/workflows/build.yaml',
     job: 'build',
-    matrix: ['os=ubuntu-latest'],
   },
   'reticulum-sidecar': [
     {
       event: 'workflow_dispatch',
       workflow: '.github/workflows/reticulum-sidecar.yaml',
       job: 'build',
-      matrix: ['os=ubuntu-latest'],
     },
     {
       event: 'workflow_dispatch',
       workflow: '.github/workflows/reticulum-sidecar.yaml',
       job: 'build-rns-stack',
-      matrix: ['os=ubuntu-latest'],
     },
   ],
   flatpak: [
@@ -61,13 +82,11 @@ export const ACT_TARGETS = {
       event: 'workflow_dispatch',
       workflow: '.github/workflows/flatpak.yaml',
       job: 'reticulum-sidecar',
-      matrix: ['arch=x86_64'],
     },
     {
       event: 'workflow_dispatch',
       workflow: '.github/workflows/flatpak.yaml',
       job: 'flatpak',
-      matrix: ['arch=x86_64'],
       containerOptions: '--privileged',
     },
   ],
@@ -165,7 +184,9 @@ export function parseArgv(argv, envValue = process.env[ACT_MODE_ENV]) {
 }
 
 /**
- * Resolve Docker socket path for act (Docker Desktop often uses ~/.docker/run/docker.sock).
+ * Resolve container-engine socket path for act.
+ * Preferred engine: Podman Desktop, typically at /var/run/docker.sock.
+ * Fallback engine: Docker Desktop, often at ~/.docker/run/docker.sock.
  * @param {{ homeDir?: string, platform?: string, env?: NodeJS.ProcessEnv }} [options]
  * @returns {string | undefined}
  */
@@ -259,11 +280,6 @@ export function buildActArgs(invocation, options = {}) {
   return args;
 }
 
-function commandOk(command, args) {
-  const res = spawnSync(command, args, { stdio: 'ignore' });
-  return res.status === 0;
-}
-
 function toolAvailable(tool) {
   const checker = process.platform === 'win32' ? 'where' : 'which';
   return commandOk(checker, [tool]);
@@ -276,29 +292,33 @@ function commandOutput(command, args) {
 }
 
 function printInstallHints() {
-  console.error('Install act + Docker to run GitHub Actions in containers:');
-  console.error('  macOS:   brew install act && Docker Desktop');
-  console.error('  Linux:   https://github.com/nektos/act/releases + Docker engine');
-  console.error('  Windows: choco install act-cli && Docker Desktop (WSL2 backend)');
+  console.error(
+    'Install act + a Docker-compatible container engine to run GitHub Actions in containers:',
+  );
+  console.error('  macOS:   brew install act && Podman Desktop');
+  console.error('  Linux:   https://github.com/nektos/act/releases + Podman or Docker engine');
+  console.error('  Windows: choco install act-cli && Podman Desktop');
   console.error('');
-  console.error('Or run on the host without Docker: pnpm run act:ci:native');
-  console.error('Then (docker mode): pnpm run act:pull-images');
+  console.error('Or run on the host without a container engine: pnpm run act:ci:native');
+  console.error('Then (container mode): pnpm run act:pull-images');
   console.error('Docs: docs/ci-cd.md');
 }
 
-function preflightActAndDocker() {
-  const dockerVersion = commandOutput('docker', ['--version']);
-  if (!dockerVersion) {
-    console.error('❌ Docker not found or not on PATH.');
+function preflightActAndContainerEngine() {
+  const containerVersion = commandOutput(CONTAINER_ENGINE, ['--version']);
+  if (!containerVersion) {
+    console.error(
+      '❌ No container engine found (need a Docker-compatible engine, e.g. Podman Desktop or Docker Desktop).',
+    );
     printInstallHints();
     process.exit(1);
   }
 
-  if (!commandOk('docker', ['info'])) {
-    console.error('❌ Docker daemon is not running.');
-    console.error(`   (${dockerVersion})`);
-    console.error('Start Docker Desktop or the Docker engine, then retry.');
-    console.error('Or use native mode: pnpm run act:ci:native');
+  if (!commandOk(CONTAINER_ENGINE, ['info'])) {
+    console.error(`❌ Container engine is not running (${containerVersion.split('\n')[0]}).`);
+    console.error(
+      `   Start Podman Desktop (preferred) / Docker Desktop, or use native mode: pnpm run act:ci:native`,
+    );
     process.exit(1);
   }
 
@@ -314,19 +334,19 @@ function preflightActAndDocker() {
     console.log(`Using Docker socket for act: ${dockerSocket}`);
   } else {
     console.warn('⚠️  Could not detect Docker socket; act will use its default.');
-    console.warn('   Set ACT_DOCKER_SOCKET if act cannot reach Docker Desktop.');
+    console.warn('   Set ACT_DOCKER_SOCKET if act cannot reach the container engine.');
   }
 
-  return { dockerVersion, actVersion, dockerSocket };
+  return { containerVersion, actVersion, dockerSocket };
 }
 
 /**
  * @param {string[]} dockerArgs
  * @returns {number}
  */
-function runDocker(dockerArgs) {
-  console.log(`$ docker ${dockerArgs.join(' ')}`);
-  const res = spawnSync('docker', dockerArgs, { cwd: repoRoot, stdio: 'inherit' });
+function runContainerEngine(containerArgs) {
+  console.log(`$ ${CONTAINER_ENGINE} ${containerArgs.join(' ')}`);
+  const res = spawnSync(CONTAINER_ENGINE, containerArgs, { cwd: repoRoot, stdio: 'inherit' });
   return res.status ?? 1;
 }
 
@@ -402,7 +422,7 @@ export function runNativeTarget(target) {
     return 1;
   }
 
-  console.log(`Running native CI steps for "${target}" (host, no Docker)…`);
+  console.log(`Running native CI steps for "${target}" (host, no container engine)…`);
   for (const step of steps) {
     const code = runNativeStep(step);
     if (code !== 0) {
@@ -413,9 +433,9 @@ export function runNativeTarget(target) {
 }
 
 function pullImages() {
-  preflightActAndDocker();
+  preflightActAndContainerEngine();
   for (const image of ACT_PULL_IMAGES) {
-    const code = runDocker(['pull', image]);
+    const code = runContainerEngine(['pull', image]);
     if (code !== 0) {
       process.exit(code);
     }
@@ -454,7 +474,7 @@ export function runActTarget(target, options = {}) {
     return 0;
   }
 
-  const { dockerSocket } = preflightActAndDocker();
+  const { dockerSocket } = preflightActAndContainerEngine();
 
   const config = ACT_TARGETS[target];
   if (!config) {
@@ -489,8 +509,8 @@ function printUsage() {
   console.log(`Usage: node scripts/run-act.mjs <target> [--native|--docker] [-- extra act args]
 
 Modes (default: docker / act in containers):
-  --docker           Run workflow jobs via act + Docker (Docker Desktop supported)
-  --native           Run equivalent pnpm/cargo commands on the host (no Docker)
+  --docker           Run workflow jobs via act + containers (any Docker-compatible engine, e.g. Podman Desktop or Docker Desktop)
+  --native           Run equivalent pnpm/cargo commands on the host (no container engine)
   MESH_CLIENT_ACT_MODE=native|docker
 
 Targets:
