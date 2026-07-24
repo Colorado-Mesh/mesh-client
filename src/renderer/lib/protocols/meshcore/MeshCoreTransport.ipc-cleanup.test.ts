@@ -53,6 +53,11 @@ vi.mock('../../meshcoreDualNobleBleInit', () => ({
 }));
 
 vi.mock('../../meshcoreCompanionTxEchoFilter', () => ({
+  MeshcoreCompanionTxEchoFilter: class {
+    noteOutbound(): void {
+      return undefined;
+    }
+  },
   patchMeshcoreCompanionTxEchoFilter: vi.fn(),
 }));
 
@@ -70,6 +75,7 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
       configurable: true,
       value: originalPlatform,
     });
+    vi.unstubAllGlobals();
   });
 
   describe('TCP', () => {
@@ -126,9 +132,15 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
 
   describe('Noble BLE', () => {
     beforeEach(() => {
+      // Force Noble path: process.platform alone is insufficient on Linux CI jsdom,
+      // where navigator.userAgent / platform still match rendererLikelyLinux().
       Object.defineProperty(process, 'platform', {
         configurable: true,
         value: 'darwin',
+      });
+      vi.stubGlobal('navigator', {
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+        platform: 'MacIntel',
       });
     });
 

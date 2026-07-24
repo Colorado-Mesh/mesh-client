@@ -78,6 +78,10 @@ function nomadSortAriaLabelKey(key: NomadNodeSortKey, dir: NomadNodeSortDir): st
   return dir === 'asc' ? 'nomadNetwork.sortByNameAsc' : 'nomadNetwork.sortByNameDesc';
 }
 
+function nomadSortDirGlyph(dir: NomadNodeSortDir): string {
+  return dir === 'asc' ? ' ▲' : ' ▼';
+}
+
 function nomadCollapsedLabel(displayName: string | null | undefined, hash: string): string {
   const name = displayName?.trim();
   if (name) {
@@ -744,7 +748,7 @@ export default function NomadNetworkPanel({
                           }}
                         >
                           {t(nomadSortLabelKey(key))}
-                          {active ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                          {active ? nomadSortDirGlyph(sortDir) : ''}
                         </button>
                       );
                     })}

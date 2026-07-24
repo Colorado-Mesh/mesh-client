@@ -30,6 +30,12 @@ export type MeshCoreTransportParams =
   | { transport: 'tcp'; host: string }
   | { transport: 'serial' };
 
+/** Drain and invoke IPC unsubscribe fns (idempotent). Shared by TCP/Noble wrappers. */
+function releaseIpcCleanupFns(cleanupFns: (() => void)[]): void {
+  const fns = cleanupFns.splice(0, cleanupFns.length);
+  for (const fn of fns) fn();
+}
+
 // ─── Public entry point ───────────────────────────────────────────────────────
 
 /**
@@ -125,9 +131,7 @@ class IpcTcpConnection {
 
   /** Unsubscribe preload IPC listeners (idempotent). Does not disconnect the TCP socket. */
   private releaseIpcListeners(): void {
-    const fns = this.cleanupFns;
-    this.cleanupFns = [];
-    for (const fn of fns) fn();
+    releaseIpcCleanupFns(this.cleanupFns);
   }
 
   async connect(): Promise<void> {
@@ -256,9 +260,7 @@ class IpcNobleConnection {
 
   /** Unsubscribe preload IPC listeners (idempotent). Does not disconnect GATT. */
   private releaseIpcListeners(): void {
-    const fns = this.cleanupFns;
-    this.cleanupFns = [];
-    for (const fn of fns) fn();
+    releaseIpcCleanupFns(this.cleanupFns);
   }
 
   async connect(): Promise<void> {
