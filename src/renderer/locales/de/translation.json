@@ -2866,7 +2866,17 @@
       "contentSourceNotFromPicker": "Wählen Sie den Ordner mit Ordner auswählen aus, bevor Sie ihn anwenden.",
       "contentSourceNone": "Kein Ordner ausgewählt",
       "contentSourceRequired": "Wählen Sie einen Seitenordner aus, bevor Sie mit dem Nomad-Hosting beginnen."
-    }
+    },
+    "sortLastHeard": "Zuletzt gehört:",
+    "sortHops": "Hops",
+    "sortName": "Name",
+    "sortToolbar": "Knotenliste sortieren",
+    "sortByLastHeardAsc": "Sortieren nach Last Heard, älteste zuerst",
+    "sortByLastHeardDesc": "Sortieren nach Last Heard, neueste zuerst",
+    "sortByHopsAsc": "Sortieren nach Hops, nächstgelegener zuerst",
+    "sortByHopsDesc": "Nach Hops sortieren, am weitesten vorne",
+    "sortByNameAsc": "Nach Name sortieren: A bis Z",
+    "sortByNameDesc": "Nach Name sortieren: Z bis A"
   },
   "packetDistribution": {
     "overallDistribution": "Gesamtverteilung",

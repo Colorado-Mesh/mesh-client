@@ -2866,7 +2866,17 @@
       "contentSourceNotFromPicker": "在应用文件夹之前，选择带有“选择文件夹”的文件夹。",
       "contentSourceNone": "没有选择文件夹",
       "contentSourceRequired": "在开始Nomad托管之前，请选择一个页面文件夹。"
-    }
+    },
+    "sortLastHeard": "上次听到",
+    "sortHops": "跳数",
+    "sortName": "姓名",
+    "sortToolbar": "排序节点列表",
+    "sortByLastHeardAsc": "按上次听到排序，最早在前",
+    "sortByLastHeardDesc": "按上次听到排序，最新在前",
+    "sortByHopsAsc": "按跃点排序，最近的在前",
+    "sortByHopsDesc": "按跃点排序，最远的在前",
+    "sortByNameAsc": "按名称排序 - A 到 Z",
+    "sortByNameDesc": "按名称排序 - Z 到 A"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",

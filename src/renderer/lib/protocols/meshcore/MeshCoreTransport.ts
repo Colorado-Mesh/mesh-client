@@ -30,6 +30,12 @@ export type MeshCoreTransportParams =
   | { transport: 'tcp'; host: string }
   | { transport: 'serial' };
 
+/** Drain and invoke IPC unsubscribe fns (idempotent). Shared by TCP/Noble wrappers. */
+function releaseIpcCleanupFns(cleanupFns: (() => void)[]): void {
+  const fns = cleanupFns.splice(0, cleanupFns.length);
+  for (const fn of fns) fn();
+}
+
 // ─── Public entry point ───────────────────────────────────────────────────────
 
 /**
@@ -123,7 +129,15 @@ class IpcTcpConnection {
     this.port = port;
   }
 
+  /** Unsubscribe preload IPC listeners (idempotent). Does not disconnect the TCP socket. */
+  private releaseIpcListeners(): void {
+    releaseIpcCleanupFns(this.cleanupFns);
+  }
+
   async connect(): Promise<void> {
+    const releaseListeners = (): void => {
+      this.releaseIpcListeners();
+    };
     class TcpOverIpc extends (SerialConnection as unknown as new () => SerialConnectionInstance) {
       async write(bytes: Uint8Array) {
         try {
@@ -134,6 +148,7 @@ class IpcTcpConnection {
         }
       }
       async close() {
+        releaseListeners();
         await window.electronAPI.meshcore.tcp.disconnect();
       }
     }
@@ -145,6 +160,7 @@ class IpcTcpConnection {
         void instance.onDataReceived(bytes);
       });
       const offDisc = window.electronAPI.meshcore.tcp.onDisconnected(() => {
+        releaseListeners();
         instance.onDisconnected();
       });
       this.cleanupFns = [offData, offDisc];
@@ -152,7 +168,7 @@ class IpcTcpConnection {
       await instance.onConnected();
     } catch (e) {
       console.error('[IpcTcpConnection] connect/onConnected error', e);
-      this.cleanup();
+      this.releaseIpcListeners();
       throw e;
     }
   }
@@ -163,10 +179,7 @@ class IpcTcpConnection {
   }
 
   cleanup(): void {
-    this.cleanupFns.forEach((fn) => {
-      fn();
-    });
-    this.cleanupFns = [];
+    this.releaseIpcListeners();
   }
 }
 
@@ -245,9 +258,17 @@ class IpcNobleConnection {
     this.sessionId = sessionId;
   }
 
+  /** Unsubscribe preload IPC listeners (idempotent). Does not disconnect GATT. */
+  private releaseIpcListeners(): void {
+    releaseIpcCleanupFns(this.cleanupFns);
+  }
+
   async connect(): Promise<void> {
     const runConnect = async () => {
       const { sessionId } = this;
+      const releaseListeners = (): void => {
+        this.releaseIpcListeners();
+      };
 
       class NobleOverIpc extends MeshcoreConnectionBase {
         constructor(private readonly session: NobleBleSessionId) {
@@ -271,6 +292,7 @@ class IpcNobleConnection {
           await window.electronAPI.nobleBleToRadio(this.session, bytes);
         }
         async close() {
+          releaseListeners();
           await window.electronAPI.disconnectNobleBle(this.session);
         }
       }
@@ -293,6 +315,7 @@ class IpcNobleConnection {
       const offDisc = window.electronAPI.onNobleBleDisconnected((sid) => {
         if (sid !== sessionId) return;
         console.warn(`[IpcNobleConnection:${sessionId}] peripheral disconnected`);
+        releaseListeners();
         instance.onDisconnected();
         const r = rejectHandshakeOnDisconnect;
         rejectHandshakeOnDisconnect = undefined;
@@ -306,6 +329,7 @@ class IpcNobleConnection {
         ({ sessionId: sid, message }) => {
           if (sid !== sessionId) return;
           console.warn(`[IpcNobleConnection:${sessionId}] connect aborted by main: ${message}`);
+          releaseListeners();
           const r = rejectHandshakeOnDisconnect;
           rejectHandshakeOnDisconnect = undefined;
           r?.(new Error(message));
@@ -349,7 +373,7 @@ class IpcNobleConnection {
         } catch {
           // catch-no-log-ok best-effort disconnect after connect failure
         }
-        this.cleanup();
+        this.releaseIpcListeners();
         this.inner = null;
         throw err;
       }
@@ -379,10 +403,7 @@ class IpcNobleConnection {
   }
 
   cleanup(): void {
-    this.cleanupFns.forEach((fn) => {
-      fn();
-    });
-    this.cleanupFns = [];
+    this.releaseIpcListeners();
     void window.electronAPI.disconnectNobleBle(this.sessionId).catch((e: unknown) => {
       console.debug('[MeshCoreTransport] Noble cleanup disconnect ' + String(e));
     });

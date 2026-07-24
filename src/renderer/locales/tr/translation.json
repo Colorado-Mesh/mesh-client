@@ -2866,7 +2866,17 @@
       "contentSourceNotFromPicker": "Uygulamadan önce Klasör seç ile klasörü seçin.",
       "contentSourceNone": "Klasör seçilmedi",
       "contentSourceRequired": "Nomad ev sahipliğine başlamadan önce bir sayfa klasörü seçin."
-    }
+    },
+    "sortLastHeard": "Son Duyma",
+    "sortHops": "Hop",
+    "sortName": "Ad",
+    "sortToolbar": "Düğüm listesini sırala",
+    "sortByLastHeardAsc": "Son Duyulana göre sırala, önce en eski",
+    "sortByLastHeardDesc": "Son Duyulana göre sırala, önce en yenisi",
+    "sortByHopsAsc": "Atlamaya göre sırala, önce en yakın",
+    "sortByHopsDesc": "Atlamaya göre sırala, önce en uzak",
+    "sortByNameAsc": "Alfabetik sırala (A'dan Z'ye)",
+    "sortByNameDesc": "Alfabetik sırala (Z'den A'ya)"
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",

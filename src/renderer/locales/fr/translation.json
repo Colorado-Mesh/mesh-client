@@ -2866,7 +2866,17 @@
       "contentSourceNotFromPicker": "Choisissez le dossier avec Choisir un dossier avant de l'appliquer.",
       "contentSourceNone": "Aucun dossier choisi",
       "contentSourceRequired": "Choisissez un dossier de pages avant de commencer l'hébergement Nomad."
-    }
+    },
+    "sortLastHeard": "Dernière écoute",
+    "sortHops": "Sauts",
+    "sortName": "Nom",
+    "sortToolbar": "Liste des nœuds de tri",
+    "sortByLastHeardAsc": "Trier par Last Heard, le plus ancien en premier",
+    "sortByLastHeardDesc": "Trier par Last Heard, le plus récent en premier",
+    "sortByHopsAsc": "Trier par sauts, le plus proche en premier",
+    "sortByHopsDesc": "Trier par sauts, le plus éloigné en premier",
+    "sortByNameAsc": "Tri par nom : A à Z",
+    "sortByNameDesc": "Tri par nom : Z à A"
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",

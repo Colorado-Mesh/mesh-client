@@ -2866,7 +2866,17 @@
       "contentSourceNotFromPicker": "Przed zastosowaniem wybierz folder z opcją Wybierz folder.",
       "contentSourceNone": "Nie wybrano folderu",
       "contentSourceRequired": "Wybierz folder stron przed uruchomieniem hostingu Nomad."
-    }
+    },
+    "sortLastHeard": "Ostatnio słyszane",
+    "sortHops": "Skoki",
+    "sortName": "Nazwa",
+    "sortToolbar": "Lista węzłów sortowania",
+    "sortByLastHeardAsc": "Sortuj według ostatnio słyszanych, najpierw najstarsze",
+    "sortByLastHeardDesc": "Sortuj według ostatnio słyszanych, najpierw najnowsze",
+    "sortByHopsAsc": "Sortuj według przeskoków, najpierw najbliższe",
+    "sortByHopsDesc": "Sortuj według przeskoków, najpierw najdalej",
+    "sortByNameAsc": "Sortuj wg nazwy: od A do Z",
+    "sortByNameDesc": "Sortuj wg nazwy: od Z do A"
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",

@@ -2866,7 +2866,17 @@
       "contentSourceNotFromPicker": "適用する前に、[フォルダーの選択]でフォルダーを選択します。",
       "contentSourceNone": "フォルダーが選択されていません",
       "contentSourceRequired": "Nomadホスティングを開始する前に、ページフォルダを選択します。"
-    }
+    },
+    "sortLastHeard": "最後に聞いた",
+    "sortHops": "ホップ",
+    "sortName": "名前",
+    "sortToolbar": "ノードリストの並べ替え",
+    "sortByLastHeardAsc": "最後のヒアリングで並べ替え、古い順",
+    "sortByLastHeardDesc": "最後のヒアリングで並べ替え、新しい順",
+    "sortByHopsAsc": "ホップで並べ替え、最も近い順",
+    "sortByHopsDesc": "ホップで並べ替え、最も遠い順",
+    "sortByNameAsc": "名前で並べ替え、AからZ",
+    "sortByNameDesc": "名前で並べ替え、ZからA"
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",

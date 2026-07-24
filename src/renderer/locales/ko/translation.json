@@ -2866,7 +2866,17 @@
       "contentSourceNotFromPicker": "적용하기 전에 Choose 폴더가 있는 폴더를 선택하십시오.",
       "contentSourceNone": "선택된 폴더 없음",
       "contentSourceRequired": "Nomad 호스팅을 시작하기 전에 페이지 폴더를 선택하세요."
-    }
+    },
+    "sortLastHeard": "마지막으로 들은 시간",
+    "sortHops": "홉",
+    "sortName": "이름",
+    "sortToolbar": "노드 목록 정렬",
+    "sortByLastHeardAsc": "마지막으로 들은 시간 기준 정렬, 오래된 순",
+    "sortByLastHeardDesc": "마지막으로 들은 시간 기준 정렬, 최신순",
+    "sortByHopsAsc": "홉으로 정렬, 가장 가까운 우선순위",
+    "sortByHopsDesc": "홉 순으로 정렬, 가장 먼 순",
+    "sortByNameAsc": "이름 A-Z",
+    "sortByNameDesc": "이름 Z-A"
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",

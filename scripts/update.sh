@@ -3,6 +3,29 @@ set -e
 
 LOCKFILE='pnpm-lock.yaml'
 
+# Opt-in: reclaim reticulum-sidecar/target after a successful rebuild.
+# Prefer CLEAN_SIDECAR_TARGET=1; --clean-target also works via
+# `pnpm run update -- --clean-target`.
+CLEAN_SIDECAR_TARGET="${CLEAN_SIDECAR_TARGET:-0}"
+for arg in "$@"; do
+  case "${arg}" in
+    --clean-target)
+      CLEAN_SIDECAR_TARGET=1
+      ;;
+    *)
+      echo "Error: unknown argument: ${arg}" >&2
+      echo 'Usage: scripts/update.sh [--clean-target]' >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Test hook: exercise arg parsing without running the rest of the update.
+if [ "${UPDATE_SH_TEST_HOOK:-}" = 'parse-only' ]; then
+  printf 'CLEAN_SIDECAR_TARGET=%s\n' "${CLEAN_SIDECAR_TARGET}"
+  exit 0
+fi
+
 # Terminal colors
 if [ -t 1 ]; then
   RED='\033[0;31m'
@@ -104,7 +127,17 @@ rebuild_reticulum_sidecar() {
   fi
   echo 'Checking rsReticulum, rsLXMF, and rsNomad via full-feature sidecar build...'
   (cd "${sidecar_dir}" && cargo build --features rns-stack,rns-ble,rns-rnode-tcp)
+  if [ "${CLEAN_SIDECAR_TARGET}" = '1' ]; then
+    echo 'CLEAN_SIDECAR_TARGET=1: removing reticulum-sidecar/target (next sidecar build will be cold)...'
+    (cd "${sidecar_dir}" && cargo clean)
+  fi
 }
+
+# Test hook: exercise rebuild_reticulum_sidecar with PATH stubs (no pnpm update).
+if [ "${UPDATE_SH_TEST_HOOK:-}" = 'rebuild-only' ]; then
+  rebuild_reticulum_sidecar
+  exit $?
+fi
 
 # Print a highlighted warning box for an updated package
 warn_box() {
@@ -273,7 +306,6 @@ WATCH_ENTRIES=(
   '@jsr/meshtastic__core|@meshtastic/core|https://www.npmjs.com/package/@meshtastic/core|Custom patch (clean BLE disconnect) + upstream may introduce breaking changes'
   '@jsr/meshtastic__transport-web-serial|@jsr/meshtastic__transport-web-serial|https://www.npmjs.com/package/@jsr/meshtastic__transport-web-serial|Custom patch (USB serial clean disconnect)'
   '@liamcottle/meshcore.js|@liamcottle/meshcore.js|https://www.npmjs.com/package/@liamcottle/meshcore.js|Custom patch (protocol fixes) + upstream may introduce breaking changes'
-  '@stoprocent/noble|@stoprocent/noble|https://www.npmjs.com/package/@stoprocent/noble|Custom patch (Windows C++ coroutine compat)'
   'usb|usb|https://www.npmjs.com/package/usb|Custom patch (macOS C++17 std compat)'
   'readable-stream|readable-stream|https://www.npmjs.com/package/readable-stream|Custom patch (bundler process/ path compat)'
   'debug|debug|https://www.npmjs.com/package/debug|Custom patch (inlined ms/humanize for bundler compat)'
