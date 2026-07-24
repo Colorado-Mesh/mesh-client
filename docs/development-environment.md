@@ -145,6 +145,21 @@ In Electron dev: open the **Reticulum** protocol pill (amber) → **Connection**
 
 **Scope:** `pnpm update` / `pnpm-lock.yaml` changes are **repo-local** (commit the lockfile on your branch). The sidecar rebuild writes only to gitignored `reticulum-sidecar/target/`. **Rust toolchain updates are not repo-scoped** — `rustup update` refreshes the toolchain in your user profile (`~/.rustup`, `~/.cargo/bin`), shared by any Rust project on the machine. The committed [`rust-toolchain.toml`](../reticulum-sidecar/rust-toolchain.toml) selects `stable` and required components for this crate; rustup applies it when you build or lint inside `reticulum-sidecar/`.
 
+By default, `pnpm run update` keeps `reticulum-sidecar/target/` so the next Electron **Start stack** or `reticulum:sidecar:build` stays warm. After a verify-and-walk-away run (or when reclaiming disk — often ~2–3G), opt in to a full `cargo clean` after a successful rebuild:
+
+```bash
+# Preferred
+CLEAN_SIDECAR_TARGET=1 pnpm run update
+
+# Equivalent flag (pnpm forwards args after --)
+pnpm run update -- --clean-target
+
+# Ad hoc anytime (does not run update)
+pnpm run reticulum:sidecar:clean
+```
+
+Skip cleanup while iterating on sidecar Rust or Reticulum in Electron — the next build will be cold (several minutes).
+
 #### Lint and coverage (sidecar)
 
 | Command                                  | When                                                         |

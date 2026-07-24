@@ -3,6 +3,23 @@ set -e
 
 LOCKFILE='pnpm-lock.yaml'
 
+# Opt-in: reclaim reticulum-sidecar/target after a successful rebuild.
+# Prefer CLEAN_SIDECAR_TARGET=1; --clean-target also works via
+# `pnpm run update -- --clean-target`.
+CLEAN_SIDECAR_TARGET="${CLEAN_SIDECAR_TARGET:-0}"
+for arg in "$@"; do
+  case "${arg}" in
+    --clean-target)
+      CLEAN_SIDECAR_TARGET=1
+      ;;
+    *)
+      echo "Error: unknown argument: ${arg}" >&2
+      echo 'Usage: scripts/update.sh [--clean-target]' >&2
+      exit 1
+      ;;
+  esac
+done
+
 # Terminal colors
 if [ -t 1 ]; then
   RED='\033[0;31m'
@@ -104,6 +121,10 @@ rebuild_reticulum_sidecar() {
   fi
   echo 'Checking rsReticulum, rsLXMF, and rsNomad via full-feature sidecar build...'
   (cd "${sidecar_dir}" && cargo build --features rns-stack,rns-ble,rns-rnode-tcp)
+  if [ "${CLEAN_SIDECAR_TARGET}" = '1' ]; then
+    echo 'CLEAN_SIDECAR_TARGET=1: removing reticulum-sidecar/target (next sidecar build will be cold)...'
+    (cd "${sidecar_dir}" && cargo clean)
+  fi
 }
 
 # Print a highlighted warning box for an updated package

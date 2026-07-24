@@ -100,6 +100,7 @@
     "reticulum:rsnomad:clippy": "bash scripts/clone-ratspeak-stack.sh && bash scripts/check-rsnomad.sh",
     "reticulum:rsnomad:fmt:check": "bash scripts/clone-ratspeak-stack.sh && bash scripts/check-rsnomad-fmt.sh",
     "reticulum:sidecar:build": "bash scripts/ensure-rsReticulum-patches.sh && cd reticulum-sidecar && cargo build --features rns-stack,rns-ble,rns-rnode-tcp",
+    "reticulum:sidecar:clean": "cd reticulum-sidecar && cargo clean",
     "reticulum:sidecar:clippy": "bash scripts/clone-ratspeak-stack.sh && cd reticulum-sidecar && cargo clippy --all-targets -- -D warnings",
     "reticulum:sidecar:clippy:full": "bash scripts/clone-ratspeak-stack.sh && cd reticulum-sidecar && cargo clippy --all-targets --features rns-stack,rns-ble,rns-rnode-tcp -- -D warnings",
     "reticulum:sidecar:coverage": "bash scripts/clone-ratspeak-stack.sh && cd reticulum-sidecar && cargo llvm-cov --features rns-stack,rns-ble,rns-rnode-tcp --html --ignore-filename-regex 'rsReticulum|rsLXMF|rsNomad'",

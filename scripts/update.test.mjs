@@ -17,5 +17,22 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(rebuildFunction).toContain('cargo build --features rns-stack,rns-ble,rns-rnode-tcp');
     expect(rebuildFunction).not.toMatch(/['"]\.\.\/rs(?:Reticulum|LXMF|Nomad)\//);
     expect(rebuildFunction).not.toContain('cargo build)');
+    expect(rebuildFunction).toContain('CLEAN_SIDECAR_TARGET');
+    expect(rebuildFunction).toContain('cargo clean');
+    // Clean only after a successful build, and only when opted in.
+    const buildIdx = rebuildFunction.indexOf(
+      'cargo build --features rns-stack,rns-ble,rns-rnode-tcp',
+    );
+    const cleanIdx = rebuildFunction.indexOf('cargo clean');
+    expect(buildIdx).toBeGreaterThanOrEqual(0);
+    expect(cleanIdx).toBeGreaterThan(buildIdx);
+    expect(rebuildFunction).toMatch(
+      /if \[ "\$\{CLEAN_SIDECAR_TARGET\}" = '1' \]; then[\s\S]*cargo clean/,
+    );
+  });
+
+  it('accepts CLEAN_SIDECAR_TARGET env and --clean-target for post-build cleanup', () => {
+    expect(updateScript).toContain('CLEAN_SIDECAR_TARGET="${CLEAN_SIDECAR_TARGET:-0}"');
+    expect(updateScript).toContain('--clean-target');
   });
 });
