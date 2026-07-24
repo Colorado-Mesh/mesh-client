@@ -2866,7 +2866,17 @@
       "contentSourceNotFromPicker": "Escolha a pasta com Escolher pasta antes de aplicá-la.",
       "contentSourceNone": "Nenhuma pasta escolhida",
       "contentSourceRequired": "Escolha uma pasta de páginas antes de iniciar a hospedagem Nomad."
-    }
+    },
+    "sortLastHeard": "Último Ouvido",
+    "sortHops": "Saltos",
+    "sortName": "Nome",
+    "sortToolbar": "Classificar lista de nós",
+    "sortByLastHeardAsc": "Ordenar por Último Ouvido, mais antigo primeiro",
+    "sortByLastHeardDesc": "Ordenar por Último Ouvido, mais recentes primeiro",
+    "sortByHopsAsc": "Ordenar por saltos, o mais próximo primeiro",
+    "sortByHopsDesc": "Ordenar por saltos, o mais distante primeiro",
+    "sortByNameAsc": "Ordenar por nome de A a Z",
+    "sortByNameDesc": "Ordenar por nome: z à a"
   },
   "packetDistribution": {
     "overallDistribution": "Distribuição Geral",

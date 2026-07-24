@@ -2866,7 +2866,17 @@
       "contentSourceNotFromPicker": "Před použitím vyberte složku pomocí tlačítka Vybrat složku.",
       "contentSourceNone": "Nebyla vybrána žádná složka",
       "contentSourceRequired": "Před zahájením hostování Nomad vyberte složku stránek."
-    }
+    },
+    "sortLastHeard": "Poslední slyšení",
+    "sortHops": "Skoky",
+    "sortName": "Název",
+    "sortToolbar": "Seznam uzlů třídění",
+    "sortByLastHeardAsc": "Seřadit podle posledního slyšeného, nejstarší jako první",
+    "sortByLastHeardDesc": "Seřadit podle posledního slyšeného, nejnovější jako první",
+    "sortByHopsAsc": "Třídit podle skoků, nejdříve nejblíže",
+    "sortByHopsDesc": "Třídit podle skoků, nejdále",
+    "sortByNameAsc": "Seřadit podle názvu: A až Z",
+    "sortByNameDesc": "Řadit podle názvu (Z až A)"
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",

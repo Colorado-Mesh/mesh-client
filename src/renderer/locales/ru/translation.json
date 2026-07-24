@@ -2866,7 +2866,17 @@
       "contentSourceNotFromPicker": "Выберите папку с папкой Choose (Выбрать) перед ее применением.",
       "contentSourceNone": "Папка не выбрана",
       "contentSourceRequired": "Перед началом приема гостей Nomad выберите папку со страницами."
-    }
+    },
+    "sortLastHeard": "В последний раз слышали:",
+    "sortHops": "Хопы",
+    "sortName": "Имя",
+    "sortToolbar": "Список узлов сортировки",
+    "sortByLastHeardAsc": "Сортировать по последним услышанным, сначала по самым старым",
+    "sortByLastHeardDesc": "Сортировать по последним услышанным, сначала новые",
+    "sortByHopsAsc": "Сортировать по хопам, сначала по ближайшим",
+    "sortByHopsDesc": "Сортировать по хопам, сначала самые дальние",
+    "sortByNameAsc": "Сортировать по имени А - Я",
+    "sortByNameDesc": "Сортировать по имени Я - А"
   },
   "packetDistribution": {
     "overallDistribution": "Общее распределение",

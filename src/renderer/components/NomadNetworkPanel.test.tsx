@@ -54,6 +54,7 @@ describe('NomadNetworkPanel', () => {
     clearNomadPageCache();
     localStorage.removeItem('mesh-client:nomadPageFitWidth');
     localStorage.removeItem('mesh-client:nomadNodeListCollapsed');
+    localStorage.removeItem('mesh-client:nomadNodeSort');
     isReticulumSidecarRunning.mockResolvedValue(false);
     onReticulumStatus.mockReturnValue(() => {});
     window.electronAPI.reticulum.onStatus = onReticulumStatus;
@@ -107,6 +108,52 @@ describe('NomadNetworkPanel', () => {
     await user.type(search, 'topics');
     expect(screen.getByText('TOPICS! The Nomad Forum')).toBeInTheDocument();
     expect(screen.queryByText('Announce only')).not.toBeInTheDocument();
+  });
+
+  it('sorts announces by last heard by default and by hops when selected', async () => {
+    const user = userEvent.setup();
+    useNomadNetworkStore.setState({
+      nodes: new Map([
+        [
+          'old',
+          {
+            destination_hash: 'oldhash0001',
+            display_name: 'Older Node',
+            favorited: false,
+            last_seen: 100,
+            hops: 1,
+          },
+        ],
+        [
+          'new',
+          {
+            destination_hash: 'newhash0001',
+            display_name: 'Newer Node',
+            favorited: false,
+            last_seen: 300,
+            hops: 5,
+          },
+        ],
+      ]),
+    });
+    render(<NomadNetworkPanel />);
+
+    await user.click(screen.getByRole('tab', { name: 'nomadNetwork.announces' }));
+
+    const openButtons = screen.getAllByRole('button', { name: 'nomadNetwork.openNode' });
+    // Default sort: last heard desc → newest first
+    expect(openButtons[0]).toHaveTextContent('Newer Node');
+    expect(openButtons[1]).toHaveTextContent('Older Node');
+
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.sortByHopsAsc' }));
+
+    const afterHops = screen.getAllByRole('button', { name: 'nomadNetwork.openNode' });
+    // Hops asc → closest first (Older has 1 hop)
+    expect(afterHops[0]).toHaveTextContent('Older Node');
+    expect(afterHops[1]).toHaveTextContent('Newer Node');
+    expect(localStorage.getItem('mesh-client:nomadNodeSort')).toBe(
+      JSON.stringify({ key: 'hops', dir: 'asc' }),
+    );
   });
 
   it('shows My Pages hosting panel and hides search when selected', async () => {

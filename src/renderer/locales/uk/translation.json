@@ -2866,7 +2866,17 @@
       "contentSourceNotFromPicker": "Перш ніж застосувати папку, виберіть її за допомогою пункту Вибрати.",
       "contentSourceNone": "Не вибрано жодної папки",
       "contentSourceRequired": "Виберіть папку сторінок, перш ніж розпочати прийом гостей Nomad."
-    }
+    },
+    "sortLastHeard": "Останнє прослуховування",
+    "sortHops": "Хопи",
+    "sortName": "Назва",
+    "sortToolbar": "Сортувати список вузлів",
+    "sortByLastHeardAsc": "Сортувати за останнім почутим, спочатку найстарішим",
+    "sortByLastHeardDesc": "Сортувати за останніми почутими, спочатку найновішими",
+    "sortByHopsAsc": "Сортувати за хопами, спочатку найближчими",
+    "sortByHopsDesc": "Сортувати за хопами, спочатку найдалі",
+    "sortByNameAsc": "Сортувати за назвою, від А до Я",
+    "sortByNameDesc": "Сортувати за назвою, від Я до А"
   },
   "packetDistribution": {
     "overallDistribution": "Загальний розподіл",

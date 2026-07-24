@@ -2866,7 +2866,17 @@
       "contentSourceNotFromPicker": "Pilih folder dengan Pilih folder sebelum menerapkannya.",
       "contentSourceNone": "Tidak ada folder yang dipilih",
       "contentSourceRequired": "Pilih folder halaman sebelum memulai Nomad hosting."
-    }
+    },
+    "sortLastHeard": "Terakhir Didengar",
+    "sortHops": "Hop",
+    "sortName": "Nama",
+    "sortToolbar": "Urutkan daftar simpul",
+    "sortByLastHeardAsc": "Urutkan berdasarkan Last Heard, tertua lebih dulu",
+    "sortByLastHeardDesc": "Urutkan berdasarkan Last Heard, terbaru dulu",
+    "sortByHopsAsc": "Urutkan berdasarkan Hop, paling dekat dulu",
+    "sortByHopsDesc": "Urutkan berdasarkan Hop, terjauh dulu",
+    "sortByNameAsc": "Menurut Nama - A ke Z",
+    "sortByNameDesc": "Menurut Nama - Z ke A"
   },
   "packetDistribution": {
     "overallDistribution": "Distribusi Keseluruhan",

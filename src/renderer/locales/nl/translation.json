@@ -2866,7 +2866,17 @@
       "contentSourceNotFromPicker": "Kies de map met Map kiezen voordat u deze toepast.",
       "contentSourceNone": "Geen map gekozen",
       "contentSourceRequired": "Kies een paginamap voordat je Nomad-hosting start."
-    }
+    },
+    "sortLastHeard": "Laatst gehoord",
+    "sortHops": "Hop",
+    "sortName": "Naam",
+    "sortToolbar": "Knooppuntenlijst sorteren",
+    "sortByLastHeardAsc": "Sorteren op Laatst gehoord, oudste eerst",
+    "sortByLastHeardDesc": "Sorteren op Laatst gehoord, nieuwste eerst",
+    "sortByHopsAsc": "Sorteer op Hop, dichtstbijzijnde eerst",
+    "sortByHopsDesc": "Sorteer op Hop, verste eerst",
+    "sortByNameAsc": "Sorteer op naam: A tot Z",
+    "sortByNameDesc": "Sorteer op Naam, Z tot A"
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",

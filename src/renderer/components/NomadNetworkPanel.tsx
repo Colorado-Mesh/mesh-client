@@ -21,6 +21,15 @@ import {
   nomadNetworkSearchPlaceholderKey,
 } from '@/renderer/lib/nomad/nomadNetworkTabHelpers';
 import {
+  defaultNomadNodeSortDir,
+  type NomadNodeSortDir,
+  type NomadNodeSortKey,
+  prepareNomadNodeRows,
+  readNomadNodeSortPreference,
+  sortPreparedNomadNodeRows,
+  writeNomadNodeSortPreference,
+} from '@/renderer/lib/nomad/nomadNodeSort';
+import {
   clearNomadPageCache,
   getNomadPageCache,
   MAX_NOMAD_PAGE_CACHE_CHARS,
@@ -50,6 +59,24 @@ const MAX_NOMAD_PAGE_DISPLAY_CHARS = MAX_NOMAD_PAGE_CACHE_CHARS;
 
 const NOMAD_NODE_LIST_COLLAPSED_STORAGE_KEY = 'mesh-client:nomadNodeListCollapsed';
 const NOMAD_PAGE_FIT_WIDTH_STORAGE_KEY = 'mesh-client:nomadPageFitWidth';
+
+const NOMAD_SORT_KEYS: readonly NomadNodeSortKey[] = ['lastSeen', 'hops', 'name'];
+
+function nomadSortLabelKey(key: NomadNodeSortKey): string {
+  if (key === 'lastSeen') return 'nomadNetwork.sortLastHeard';
+  if (key === 'hops') return 'nomadNetwork.sortHops';
+  return 'nomadNetwork.sortName';
+}
+
+function nomadSortAriaLabelKey(key: NomadNodeSortKey, dir: NomadNodeSortDir): string {
+  if (key === 'lastSeen') {
+    return dir === 'asc' ? 'nomadNetwork.sortByLastHeardAsc' : 'nomadNetwork.sortByLastHeardDesc';
+  }
+  if (key === 'hops') {
+    return dir === 'asc' ? 'nomadNetwork.sortByHopsAsc' : 'nomadNetwork.sortByHopsDesc';
+  }
+  return dir === 'asc' ? 'nomadNetwork.sortByNameAsc' : 'nomadNetwork.sortByNameDesc';
+}
 
 function nomadCollapsedLabel(displayName: string | null | undefined, hash: string): string {
   const name = displayName?.trim();
@@ -237,6 +264,9 @@ export default function NomadNetworkPanel({
   const [pageFitWidth, setPageFitWidth] = useState(
     () => localStorage.getItem(NOMAD_PAGE_FIT_WIDTH_STORAGE_KEY) !== 'false',
   );
+  const [sortPref, setSortPref] = useState(readNomadNodeSortPreference);
+  const sortKey = sortPref.key;
+  const sortDir = sortPref.dir;
   const pageRequestSeqRef = useRef(0);
   const fileDownloadInFlightRef = useRef(false);
   const mountedRef = useRef(true);
@@ -307,6 +337,11 @@ export default function NomadNetworkPanel({
     () => tabRows.filter((node) => matchesSearch(node, searchQuery)),
     [tabRows, searchQuery],
   );
+
+  const sortedRows = useMemo(() => {
+    const prepared = prepareNomadNodeRows(filteredRows);
+    return sortPreparedNomadNodeRows(prepared, sortKey, sortDir).map((row) => row.node);
+  }, [filteredRows, sortDir, sortKey]);
 
   const favouritesCount = useMemo(() => allRows.filter((node) => node.favorited).length, [allRows]);
 
@@ -469,6 +504,16 @@ export default function NomadNetworkPanel({
     });
   }, []);
 
+  const toggleSort = useCallback((key: NomadNodeSortKey) => {
+    setSortPref((prev) => {
+      const nextDir: NomadNodeSortDir = prev.dir === 'asc' ? 'desc' : 'asc';
+      const next =
+        prev.key === key ? { key, dir: nextDir } : { key, dir: defaultNomadNodeSortDir(key) };
+      writeNomadNodeSortPreference(next);
+      return next;
+    });
+  }, []);
+
   const handleOpenNode = useCallback(
     (hash: string) => {
       void loadNodePage(hash, DEFAULT_NOMAD_NODE_PAGE_PATH);
@@ -532,7 +577,7 @@ export default function NomadNetworkPanel({
     if (!nodeListCollapsed && filteredRows.length === 0) {
       return <p className="text-muted px-3 pb-3 text-sm">{t(emptyKey)}</p>;
     }
-    return filteredRows.map((node) => {
+    return sortedRows.map((node) => {
       const isSelected = selectedHash?.toLowerCase() === node.destination_hash.toLowerCase();
       const label = node.display_name ?? node.destination_hash.slice(0, 16);
       const openNodeLabel = t('nomadNetwork.openNode', { name: label });
@@ -675,8 +720,35 @@ export default function NomadNetworkPanel({
                     }}
                     placeholder={searchPlaceholder}
                     aria-label={searchPlaceholder}
-                    className="mb-3 w-full rounded border border-gray-600 bg-slate-900 px-3 py-2 text-sm text-gray-200"
+                    className="mb-2 w-full rounded border border-gray-600 bg-slate-900 px-3 py-2 text-sm text-gray-200"
                   />
+                  <div
+                    role="toolbar"
+                    aria-label={t('nomadNetwork.sortToolbar')}
+                    className="mb-3 flex items-center gap-1 text-xs"
+                  >
+                    {NOMAD_SORT_KEYS.map((key) => {
+                      const active = sortKey === key;
+                      const dirForAria = active ? sortDir : defaultNomadNodeSortDir(key);
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          aria-pressed={active}
+                          aria-label={t(nomadSortAriaLabelKey(key, dirForAria))}
+                          className={`rounded px-2 py-1 transition-colors ${
+                            active ? 'bg-slate-700 text-gray-100' : 'text-muted hover:text-gray-200'
+                          }`}
+                          onClick={() => {
+                            toggleSort(key);
+                          }}
+                        >
+                          {t(nomadSortLabelKey(key))}
+                          {active ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : null}
             </>
