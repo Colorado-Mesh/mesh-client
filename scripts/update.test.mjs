@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -154,15 +154,15 @@ describe('update.sh Reticulum stack functionality check', () => {
  * @param {{ buildExit: number }} opts
  */
 function prepareRebuildFixture(opts) {
-  const root = mkdtempSync(join(tmpdir(), 'mesh-update-root-'));
+  const root = mkdtempSync(path.join(os.tmpdir(), 'mesh-update-root-'));
   tempDirs.push(root);
-  const work = join(root, 'mesh-client');
-  const binDir = mkdtempSync(join(tmpdir(), 'mesh-update-bin-'));
+  const work = path.join(root, 'mesh-client');
+  const binDir = mkdtempSync(path.join(os.tmpdir(), 'mesh-update-bin-'));
   tempDirs.push(binDir);
-  const cargoLog = join(binDir, 'cargo.log');
+  const cargoLog = path.join(binDir, 'cargo.log');
 
   writeFileSync(
-    join(binDir, 'cargo'),
+    path.join(binDir, 'cargo'),
     `#!/usr/bin/env bash
 echo "$*" >> ${JSON.stringify(cargoLog)}
 if [[ "$*" == build* ]]; then
@@ -172,18 +172,21 @@ exit 0
 `,
     { encoding: 'utf8' },
   );
-  chmodSync(join(binDir, 'cargo'), 0o755);
+  chmodSync(path.join(binDir, 'cargo'), 0o755);
 
-  mkdirSync(join(work, 'scripts'), { recursive: true });
-  writeFileSync(join(work, 'scripts', 'clone-ratspeak-stack.sh'), '#!/usr/bin/env bash\nexit 0\n');
-  chmodSync(join(work, 'scripts', 'clone-ratspeak-stack.sh'), 0o755);
-  const scriptPath = join(work, 'scripts', 'update.sh');
+  mkdirSync(path.join(work, 'scripts'), { recursive: true });
+  writeFileSync(
+    path.join(work, 'scripts', 'clone-ratspeak-stack.sh'),
+    '#!/usr/bin/env bash\nexit 0\n',
+  );
+  chmodSync(path.join(work, 'scripts', 'clone-ratspeak-stack.sh'), 0o755);
+  const scriptPath = path.join(work, 'scripts', 'update.sh');
   writeFileSync(scriptPath, updateScript);
   chmodSync(scriptPath, 0o755);
 
-  mkdirSync(join(work, 'reticulum-sidecar'), { recursive: true });
+  mkdirSync(path.join(work, 'reticulum-sidecar'), { recursive: true });
   writeFileSync(
-    join(work, 'reticulum-sidecar', 'Cargo.toml'),
+    path.join(work, 'reticulum-sidecar', 'Cargo.toml'),
     '[package]\nname = "mesh-client-reticulum"\n',
   );
   // Path deps are ../../rs* from reticulum-sidecar → siblings of mesh-client.
@@ -192,8 +195,8 @@ exit 0
     'rsLXMF/crates/lxmf-core/Cargo.toml',
     'rsNomad/crates/nomad-core/Cargo.toml',
   ]) {
-    const abs = join(root, rel);
-    mkdirSync(dirname(abs), { recursive: true });
+    const abs = path.join(root, rel);
+    mkdirSync(path.dirname(abs), { recursive: true });
     writeFileSync(abs, '[package]\nname = "stub"\n');
   }
 
