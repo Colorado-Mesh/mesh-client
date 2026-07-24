@@ -123,7 +123,17 @@ class IpcTcpConnection {
     this.port = port;
   }
 
+  /** Unsubscribe preload IPC listeners (idempotent). Does not disconnect the TCP socket. */
+  private releaseIpcListeners(): void {
+    const fns = this.cleanupFns;
+    this.cleanupFns = [];
+    for (const fn of fns) fn();
+  }
+
   async connect(): Promise<void> {
+    const releaseListeners = (): void => {
+      this.releaseIpcListeners();
+    };
     class TcpOverIpc extends (SerialConnection as unknown as new () => SerialConnectionInstance) {
       async write(bytes: Uint8Array) {
         try {
@@ -134,6 +144,7 @@ class IpcTcpConnection {
         }
       }
       async close() {
+        releaseListeners();
         await window.electronAPI.meshcore.tcp.disconnect();
       }
     }
@@ -145,6 +156,7 @@ class IpcTcpConnection {
         void instance.onDataReceived(bytes);
       });
       const offDisc = window.electronAPI.meshcore.tcp.onDisconnected(() => {
+        releaseListeners();
         instance.onDisconnected();
       });
       this.cleanupFns = [offData, offDisc];
@@ -152,7 +164,7 @@ class IpcTcpConnection {
       await instance.onConnected();
     } catch (e) {
       console.error('[IpcTcpConnection] connect/onConnected error', e);
-      this.cleanup();
+      this.releaseIpcListeners();
       throw e;
     }
   }
@@ -163,10 +175,7 @@ class IpcTcpConnection {
   }
 
   cleanup(): void {
-    this.cleanupFns.forEach((fn) => {
-      fn();
-    });
-    this.cleanupFns = [];
+    this.releaseIpcListeners();
   }
 }
 
@@ -245,9 +254,19 @@ class IpcNobleConnection {
     this.sessionId = sessionId;
   }
 
+  /** Unsubscribe preload IPC listeners (idempotent). Does not disconnect GATT. */
+  private releaseIpcListeners(): void {
+    const fns = this.cleanupFns;
+    this.cleanupFns = [];
+    for (const fn of fns) fn();
+  }
+
   async connect(): Promise<void> {
     const runConnect = async () => {
       const { sessionId } = this;
+      const releaseListeners = (): void => {
+        this.releaseIpcListeners();
+      };
 
       class NobleOverIpc extends MeshcoreConnectionBase {
         constructor(private readonly session: NobleBleSessionId) {
@@ -271,6 +290,7 @@ class IpcNobleConnection {
           await window.electronAPI.nobleBleToRadio(this.session, bytes);
         }
         async close() {
+          releaseListeners();
           await window.electronAPI.disconnectNobleBle(this.session);
         }
       }
@@ -293,6 +313,7 @@ class IpcNobleConnection {
       const offDisc = window.electronAPI.onNobleBleDisconnected((sid) => {
         if (sid !== sessionId) return;
         console.warn(`[IpcNobleConnection:${sessionId}] peripheral disconnected`);
+        releaseListeners();
         instance.onDisconnected();
         const r = rejectHandshakeOnDisconnect;
         rejectHandshakeOnDisconnect = undefined;
@@ -349,7 +370,7 @@ class IpcNobleConnection {
         } catch {
           // catch-no-log-ok best-effort disconnect after connect failure
         }
-        this.cleanup();
+        this.releaseIpcListeners();
         this.inner = null;
         throw err;
       }
@@ -379,10 +400,7 @@ class IpcNobleConnection {
   }
 
   cleanup(): void {
-    this.cleanupFns.forEach((fn) => {
-      fn();
-    });
-    this.cleanupFns = [];
+    this.releaseIpcListeners();
     void window.electronAPI.disconnectNobleBle(this.sessionId).catch((e: unknown) => {
       console.debug('[MeshCoreTransport] Noble cleanup disconnect ' + String(e));
     });

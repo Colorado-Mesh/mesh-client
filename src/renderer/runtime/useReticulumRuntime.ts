@@ -376,7 +376,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
           return [];
         }),
         window.electronAPI.reticulum.getStatus(),
-        window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings').catch(() => null),
+        window.electronAPI.reticulum.proxyGet('/api/v1/stack/settings').catch(() => {
+          // catch-no-log-ok optional stack settings
+          return null;
+        }),
       ]);
       const { interfaces, osSerialPorts } = health;
       const selfNodeId = selfLxmfHash ? reticulumHashToNodeId(selfLxmfHash) : 0;
