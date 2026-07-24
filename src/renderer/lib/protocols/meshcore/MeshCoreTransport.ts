@@ -329,6 +329,7 @@ class IpcNobleConnection {
         ({ sessionId: sid, message }) => {
           if (sid !== sessionId) return;
           console.warn(`[IpcNobleConnection:${sessionId}] connect aborted by main: ${message}`);
+          releaseListeners();
           const r = rejectHandshakeOnDisconnect;
           rejectHandshakeOnDisconnect = undefined;
           r?.(new Error(message));

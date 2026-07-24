@@ -61,7 +61,10 @@ vi.mock('../../meshcoreCompanionTxEchoFilter', () => ({
   patchMeshcoreCompanionTxEchoFilter: vi.fn(),
 }));
 
+import { connectNobleBleWithScanBusyRetry } from '../../bleReconnectHelper';
 import { createMeshCoreConnection } from './MeshCoreTransport';
+
+const connectNobleBleWithScanBusyRetryMock = vi.mocked(connectNobleBleWithScanBusyRetry);
 
 describe('MeshCoreTransport IPC listener cleanup', () => {
   const originalPlatform = process.platform;
@@ -142,6 +145,7 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
         userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
         platform: 'MacIntel',
       });
+      connectNobleBleWithScanBusyRetryMock.mockResolvedValue(undefined);
     });
 
     it('unsubscribes IPC listeners on connection.close()', async () => {
@@ -185,6 +189,71 @@ describe('MeshCoreTransport IPC listener cleanup', () => {
       });
       expect(onDiscCb).toBeTypeOf('function');
       onDiscCb!('meshcore');
+
+      expect(offData).toHaveBeenCalledTimes(1);
+      expect(offDisc).toHaveBeenCalledTimes(1);
+      expect(offAbort).toHaveBeenCalledTimes(1);
+    });
+
+    it('unsubscribes IPC listeners when connect fails after listeners are registered', async () => {
+      const offData = vi.fn();
+      const offDisc = vi.fn();
+      const offAbort = vi.fn();
+      window.electronAPI.onNobleBleFromRadio = vi.fn().mockReturnValue(offData);
+      window.electronAPI.onNobleBleDisconnected = vi.fn().mockReturnValue(offDisc);
+      window.electronAPI.onNobleBleConnectAborted = vi.fn().mockReturnValue(offAbort);
+      window.electronAPI.disconnectNobleBle = vi.fn().mockResolvedValue(undefined);
+      connectNobleBleWithScanBusyRetryMock.mockRejectedValue(new Error('adapter busy'));
+
+      await expect(
+        createMeshCoreConnection({
+          transport: 'ble',
+          blePeripheralId: 'aa:bb:cc:dd:ee:ff',
+        }),
+      ).rejects.toThrow('adapter busy');
+
+      expect(offData).toHaveBeenCalledTimes(1);
+      expect(offDisc).toHaveBeenCalledTimes(1);
+      expect(offAbort).toHaveBeenCalledTimes(1);
+      expect(window.electronAPI.disconnectNobleBle).toHaveBeenCalledWith('meshcore');
+    });
+
+    it('unsubscribes IPC listeners when main signals connect aborted during handshake', async () => {
+      const offData = vi.fn();
+      const offDisc = vi.fn();
+      const offAbort = vi.fn();
+      let onAbortCb:
+        | ((payload: {
+            sessionId: 'meshtastic' | 'meshcore' | 'reticulum';
+            message: string;
+          }) => void)
+        | undefined;
+      window.electronAPI.onNobleBleFromRadio = vi.fn().mockReturnValue(offData);
+      window.electronAPI.onNobleBleDisconnected = vi.fn().mockReturnValue(offDisc);
+      window.electronAPI.onNobleBleConnectAborted = vi.fn(
+        (
+          cb: (payload: {
+            sessionId: 'meshtastic' | 'meshcore' | 'reticulum';
+            message: string;
+          }) => void,
+        ) => {
+          onAbortCb = cb;
+          return offAbort;
+        },
+      );
+      window.electronAPI.disconnectNobleBle = vi.fn().mockResolvedValue(undefined);
+      connectNobleBleWithScanBusyRetryMock.mockImplementation(() => {
+        expect(onAbortCb).toBeTypeOf('function');
+        onAbortCb!({ sessionId: 'meshcore', message: 'pairing cancelled' });
+        return Promise.resolve();
+      });
+
+      await expect(
+        createMeshCoreConnection({
+          transport: 'ble',
+          blePeripheralId: 'aa:bb:cc:dd:ee:ff',
+        }),
+      ).rejects.toThrow('pairing cancelled');
 
       expect(offData).toHaveBeenCalledTimes(1);
       expect(offDisc).toHaveBeenCalledTimes(1);

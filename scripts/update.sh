@@ -20,6 +20,12 @@ for arg in "$@"; do
   esac
 done
 
+# Test hook: exercise arg parsing without running the rest of the update.
+if [ "${UPDATE_SH_TEST_HOOK:-}" = 'parse-only' ]; then
+  printf 'CLEAN_SIDECAR_TARGET=%s\n' "${CLEAN_SIDECAR_TARGET}"
+  exit 0
+fi
+
 # Terminal colors
 if [ -t 1 ]; then
   RED='\033[0;31m'
@@ -126,6 +132,12 @@ rebuild_reticulum_sidecar() {
     (cd "${sidecar_dir}" && cargo clean)
   fi
 }
+
+# Test hook: exercise rebuild_reticulum_sidecar with PATH stubs (no pnpm update).
+if [ "${UPDATE_SH_TEST_HOOK:-}" = 'rebuild-only' ]; then
+  rebuild_reticulum_sidecar
+  exit $?
+fi
 
 # Print a highlighted warning box for an updated package
 warn_box() {

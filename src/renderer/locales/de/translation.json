@@ -2875,7 +2875,7 @@
     "sortByLastHeardDesc": "Sortieren nach Last Heard, neueste zuerst",
     "sortByHopsAsc": "Sortieren nach Hops, nächstgelegener zuerst",
     "sortByHopsDesc": "Nach Hops sortieren, am weitesten vorne",
-    "sortByNameAsc": "Name des Empfängers: *",
+    "sortByNameAsc": "Nach Name sortieren: A bis Z",
     "sortByNameDesc": "Nach Name sortieren: Z bis A"
   },
   "packetDistribution": {

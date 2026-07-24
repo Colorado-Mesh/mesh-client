@@ -2867,7 +2867,7 @@
       "contentSourceNone": "Aucun dossier choisi",
       "contentSourceRequired": "Choisissez un dossier de pages avant de commencer l'hébergement Nomad."
     },
-    "sortLastHeard": "Dernière entendu:",
+    "sortLastHeard": "Dernière écoute",
     "sortHops": "Sauts",
     "sortName": "Nom",
     "sortToolbar": "Liste des nœuds de tri",

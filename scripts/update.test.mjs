@@ -1,7 +1,41 @@
-import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { spawnSync } from 'node:child_process';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const updateScript = readFileSync(new URL('./update.sh', import.meta.url), 'utf8');
+import { afterEach, describe, expect, it } from 'vitest';
+
+const updateScriptPath = fileURLToPath(new URL('./update.sh', import.meta.url));
+const updateScript = readFileSync(updateScriptPath, 'utf8');
+const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+
+/** @type {string[]} */
+const tempDirs = [];
+
+afterEach(() => {
+  for (const dir of tempDirs.splice(0)) {
+    try {
+      rmSync(dir, { recursive: true, force: true });
+    } catch {
+      // catch-no-log-ok best-effort temp cleanup
+    }
+  }
+});
+
+/**
+ * @param {string[]} args
+ * @param {NodeJS.ProcessEnv} [env]
+ * @param {string} [cwd]
+ * @param {string} [scriptPath]
+ */
+function runUpdate(args, env = {}, cwd = repoRoot, scriptPath = updateScriptPath) {
+  return spawnSync('bash', [scriptPath, ...args], {
+    cwd,
+    encoding: 'utf8',
+    env: { ...process.env, ...env },
+  });
+}
 
 describe('update.sh Reticulum stack functionality check', () => {
   it('prepares and requires every rs path dependency before the full-feature build', () => {
@@ -31,8 +65,137 @@ describe('update.sh Reticulum stack functionality check', () => {
     );
   });
 
-  it('accepts CLEAN_SIDECAR_TARGET env and --clean-target for post-build cleanup', () => {
-    expect(updateScript).toContain('CLEAN_SIDECAR_TARGET="${CLEAN_SIDECAR_TARGET:-0}"');
-    expect(updateScript).toContain('--clean-target');
+  it('defaults CLEAN_SIDECAR_TARGET to 0 (parse-only)', () => {
+    const result = runUpdate([], { UPDATE_SH_TEST_HOOK: 'parse-only' });
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe('CLEAN_SIDECAR_TARGET=0');
+  });
+
+  it('opts in via CLEAN_SIDECAR_TARGET=1 (parse-only)', () => {
+    const result = runUpdate([], {
+      UPDATE_SH_TEST_HOOK: 'parse-only',
+      CLEAN_SIDECAR_TARGET: '1',
+    });
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe('CLEAN_SIDECAR_TARGET=1');
+  });
+
+  it('opts in via --clean-target (parse-only)', () => {
+    const result = runUpdate(['--clean-target'], { UPDATE_SH_TEST_HOOK: 'parse-only' });
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe('CLEAN_SIDECAR_TARGET=1');
+  });
+
+  it('rejects unknown arguments', () => {
+    const result = runUpdate(['--nope']);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('unknown argument: --nope');
+    expect(result.stderr).toContain('Usage: scripts/update.sh [--clean-target]');
+  });
+
+  it('runs cargo clean after a successful rebuild when CLEAN_SIDECAR_TARGET=1', () => {
+    const fixture = prepareRebuildFixture({ buildExit: 0 });
+    const result = runUpdate(
+      [],
+      {
+        UPDATE_SH_TEST_HOOK: 'rebuild-only',
+        CLEAN_SIDECAR_TARGET: '1',
+        PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
+      },
+      fixture.work,
+      fixture.scriptPath,
+    );
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    const log = readFileSync(fixture.cargoLog, 'utf8');
+    expect(log).toContain('build --features rns-stack,rns-ble,rns-rnode-tcp');
+    expect(log).toContain('clean');
+    expect(log.indexOf('build')).toBeLessThan(log.indexOf('clean'));
+  });
+
+  it('skips cargo clean by default after a successful rebuild', () => {
+    const fixture = prepareRebuildFixture({ buildExit: 0 });
+    const result = runUpdate(
+      [],
+      {
+        UPDATE_SH_TEST_HOOK: 'rebuild-only',
+        CLEAN_SIDECAR_TARGET: '0',
+        PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
+      },
+      fixture.work,
+      fixture.scriptPath,
+    );
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    const log = readFileSync(fixture.cargoLog, 'utf8');
+    expect(log).toContain('build --features rns-stack,rns-ble,rns-rnode-tcp');
+    expect(log).not.toContain('clean');
+  });
+
+  it('does not run cargo clean when the rebuild fails', () => {
+    const fixture = prepareRebuildFixture({ buildExit: 1 });
+    const result = runUpdate(
+      [],
+      {
+        UPDATE_SH_TEST_HOOK: 'rebuild-only',
+        CLEAN_SIDECAR_TARGET: '1',
+        PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
+      },
+      fixture.work,
+      fixture.scriptPath,
+    );
+    expect(result.status).not.toBe(0);
+    const log = readFileSync(fixture.cargoLog, 'utf8');
+    expect(log).toContain('build --features rns-stack,rns-ble,rns-rnode-tcp');
+    expect(log).not.toContain('clean');
   });
 });
+
+/**
+ * Temp layout matching Ratspeak siblings: mesh-client/reticulum-sidecar + ../../rs*.
+ * @param {{ buildExit: number }} opts
+ */
+function prepareRebuildFixture(opts) {
+  const root = mkdtempSync(join(tmpdir(), 'mesh-update-root-'));
+  tempDirs.push(root);
+  const work = join(root, 'mesh-client');
+  const binDir = mkdtempSync(join(tmpdir(), 'mesh-update-bin-'));
+  tempDirs.push(binDir);
+  const cargoLog = join(binDir, 'cargo.log');
+
+  writeFileSync(
+    join(binDir, 'cargo'),
+    `#!/usr/bin/env bash
+echo "$*" >> ${JSON.stringify(cargoLog)}
+if [[ "$*" == build* ]]; then
+  exit ${opts.buildExit}
+fi
+exit 0
+`,
+    { encoding: 'utf8' },
+  );
+  chmodSync(join(binDir, 'cargo'), 0o755);
+
+  mkdirSync(join(work, 'scripts'), { recursive: true });
+  writeFileSync(join(work, 'scripts', 'clone-ratspeak-stack.sh'), '#!/usr/bin/env bash\nexit 0\n');
+  chmodSync(join(work, 'scripts', 'clone-ratspeak-stack.sh'), 0o755);
+  const scriptPath = join(work, 'scripts', 'update.sh');
+  writeFileSync(scriptPath, updateScript);
+  chmodSync(scriptPath, 0o755);
+
+  mkdirSync(join(work, 'reticulum-sidecar'), { recursive: true });
+  writeFileSync(
+    join(work, 'reticulum-sidecar', 'Cargo.toml'),
+    '[package]\nname = "mesh-client-reticulum"\n',
+  );
+  // Path deps are ../../rs* from reticulum-sidecar → siblings of mesh-client.
+  for (const rel of [
+    'rsReticulum/crates/rns-runtime/Cargo.toml',
+    'rsLXMF/crates/lxmf-core/Cargo.toml',
+    'rsNomad/crates/nomad-core/Cargo.toml',
+  ]) {
+    const abs = join(root, rel);
+    mkdirSync(dirname(abs), { recursive: true });
+    writeFileSync(abs, '[package]\nname = "stub"\n');
+  }
+
+  return { work, binDir, cargoLog, scriptPath };
+}

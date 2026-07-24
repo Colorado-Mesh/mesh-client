@@ -2,6 +2,9 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
+
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -154,6 +157,10 @@ describe('NomadNetworkPanel', () => {
     expect(localStorage.getItem('mesh-client:nomadNodeSort')).toBe(
       JSON.stringify({ key: 'hops', dir: 'asc' }),
     );
+
+    hydrateAxeThemeColors(document.documentElement);
+    const sortToolbar = screen.getByRole('toolbar', { name: 'nomadNetwork.sortToolbar' });
+    expect(await axe(sortToolbar)).toHaveNoViolations();
   });
 
   it('shows My Pages hosting panel and hides search when selected', async () => {
