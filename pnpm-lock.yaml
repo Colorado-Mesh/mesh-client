@@ -26,7 +26,6 @@ patchedDependencies:
   '@jsr/meshtastic__core@2.6.6': de16755c559d2387594c6bdcd76c7e643f15af1b8398fc1fd3e067fa93f7be6a
   '@jsr/meshtastic__transport-web-serial@0.2.5': 27a2418bae8605e0e5ab6f1fcfd391abd9dc3110433da5754e934f38475dab74
   '@liamcottle/meshcore.js@1.13.0': 1f95835871af6026efa9def5d5bed54749cdb34ff0ff013a9d52005db9db3220
-  '@stoprocent/noble@2.5.7': df0ff44bd608a879ac16e7fc8965eb3ba8cade13f8d4b64c330d475bd722dcca
   debug@4.4.3: cf37fa96f5df733456b16c82c9e1c9054a92f6216692aa33d5e2e1e208888e37
   readable-stream@4.7.0: 96023d9278085d7490d08bce1a5079dd202f7782a0daa66fa81c6b1424ef8ab1
   usb@2.18.0: 6b746e2d49b9b006a88aec5bed7a13c629d7f5ba7b40e9f1e039136754c32533
@@ -42,8 +41,8 @@ importers:
         specifier: npm:@jsr/meshtastic__protobufs@^2.7.23
         version: '@jsr/meshtastic__protobufs@2.7.23'
       '@stoprocent/noble':
-        specifier: ^2.5.7
-        version: 2.5.7(patch_hash=df0ff44bd608a879ac16e7fc8965eb3ba8cade13f8d4b64c330d475bd722dcca)(supports-color@8.1.1)
+        specifier: ^2.5.9
+        version: 2.5.9(supports-color@8.1.1)
       '@xterm/addon-fit':
         specifier: ^0.11.0
         version: 0.11.0
@@ -1105,8 +1104,8 @@ packages:
     resolution: {integrity: sha512-elKIsQe78EnxXzxfA/iuqGufD02d6t3S95eNhFaPvTJs7S3IHq2CdIHwTg3BLwae7Jw14mwK0VhWVtNtzrLyoA==}
     os: [linux, android, freebsd, win32, darwin]
 
-  '@stoprocent/noble@2.5.7':
-    resolution: {integrity: sha512-Ou1eqUgP5IM4x2KMdKfs6sPrQ91YGcZQivmahAiOIb8uEEr6mEwwPtNnZKuAaHSp3H+39o71ZNiesStXLOt6Zg==}
+  '@stoprocent/noble@2.5.9':
+    resolution: {integrity: sha512-w0arOJHuyorlrPwll43Va2vDmW6jJiWWwjXysvp8NR4y9hjGADaMHN/v2mKkM7Nr/lmcjwphXik5P/IkUXJ8uw==}
     engines: {node: '>=14'}
     peerDependencies:
       dbus-next: ^0.10.0
@@ -5564,7 +5563,7 @@ snapshots:
       - supports-color
     optional: true
 
-  '@stoprocent/noble@2.5.7(patch_hash=df0ff44bd608a879ac16e7fc8965eb3ba8cade13f8d4b64c330d475bd722dcca)(supports-color@8.1.1)':
+  '@stoprocent/noble@2.5.9(supports-color@8.1.1)':
     dependencies:
       debug: 4.4.3(patch_hash=cf37fa96f5df733456b16c82c9e1c9054a92f6216692aa33d5e2e1e208888e37)(supports-color@8.1.1)
       node-addon-api: 8.9.0

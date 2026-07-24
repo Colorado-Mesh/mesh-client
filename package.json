@@ -131,7 +131,7 @@
   "dependencies": {
     "@bufbuild/protobuf": "^2.12.1",
     "@meshtastic/protobufs": "npm:@jsr/meshtastic__protobufs@^2.7.23",
-    "@stoprocent/noble": "^2.5.7",
+    "@stoprocent/noble": "^2.5.9",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "@zip.js/zip.js": "^2.8.31",

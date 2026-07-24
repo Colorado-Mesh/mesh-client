@@ -44,7 +44,7 @@ Exact semver ranges live in [`package.json`](https://github.com/Colorado-Mesh/me
 | --------------------- | ---------------------------------------- | ----------------------- | ----------------------------------------- |
 | @bufbuild/protobuf    | ^2.12.1                                  | Apache-2.0              | Protocol Buffers implementation           |
 | @meshtastic/protobufs | npm:@jsr/meshtastic\_\_protobufs@^2.7.23 | Apache-2.0              | Meshtastic protocol definitions           |
-| @stoprocent/noble     | ^2.5.5                                   | MIT                     | BLE (Bluetooth) interface                 |
+| @stoprocent/noble     | ^2.5.9                                   | MIT                     | BLE (Bluetooth) interface                 |
 | @zip.js/zip.js        | ^2.8.26                                  | BSD-3-Clause            | ZIP streaming and extraction              |
 | builder-util-runtime  | 9.7.0                                    | MIT                     | Electron builder runtime utilities        |
 | dompurify             | ^3.4.11                                  | MPL-2.0 OR Apache-2.0   | HTML sanitization                         |

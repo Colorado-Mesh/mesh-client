@@ -459,7 +459,7 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `prepare`     | Enable git hooks (`core.hooksPath = .githooks`)                       |
 | `predist`     | Run `dedupe:dist` before `dist` packaging                             |
 
-`postinstall` runs `scripts/rebuild-native.mjs` for Electron native addons and applies `patchedDependencies` from `pnpm-workspace.yaml` (Meshtastic JSR transports, MeshCore, Noble, `readable-stream`, `usb`, etc.). When bumping patched packages, update hashes under `patches/` and keep `WATCH_ENTRIES` in `scripts/update.sh` in sync — see [AGENTS.md](../AGENTS.md#6-commands--ci-checks).
+`postinstall` runs `scripts/rebuild-native.mjs` for Electron native addons and applies `patchedDependencies` from `pnpm-workspace.yaml` (Meshtastic JSR transports, MeshCore, `readable-stream`, `usb`, etc.). When bumping patched packages, update hashes under `patches/` and keep `WATCH_ENTRIES` in `scripts/update.sh` in sync — see [AGENTS.md](../AGENTS.md#6-commands--ci-checks).
 
 ### Dependabot dependency updates
 
