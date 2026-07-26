@@ -178,7 +178,7 @@ export class ConnectionDriver {
         info = await protocol.discoverSelf(handle);
       } catch (err) {
         await protocol.destroyDevice(handle).catch((e: unknown) => {
-          console.debug('[ConnectionDriver] destroy after discoverSelf failure ' + String(e));
+          console.warn('[ConnectionDriver] destroy after discoverSelf failure ' + String(e));
         });
         if (createdProvisional) removeIdentityFromStore(identityId);
         throw err;
@@ -258,7 +258,7 @@ export class ConnectionDriver {
         console.warn('[ConnectionDriver] teardown error ' + errLikeToLogString(e));
       }
       await slot.protocol.destroyDevice(slot.handle).catch((e: unknown) => {
-        console.debug('[ConnectionDriver] destroy error ' + errLikeToLogString(e));
+        console.warn('[ConnectionDriver] destroy error ' + errLikeToLogString(e));
       });
       this.slots.delete(slot.transportId);
       removeTransport(identityId, slot.transportId);

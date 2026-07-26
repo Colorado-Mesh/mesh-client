@@ -53,7 +53,6 @@ function makeDeps(overrides?: Partial<MeshcoreRfRxDeps>): {
     selfInfoRef: ref<MeshCoreSelfInfo | null>(null),
     rawPacketsRef: ref(rawPackets),
     mqttStatusRef: ref('disconnected' as const),
-    lastPacketLogAtRef: ref(0),
     lastPacketLogPublishFailureLogAtRef: ref(0),
     mqttPacketLogBucket: createMeshcoreMqttPacketLogBucket(),
     setDeviceLogs: (updater) => {

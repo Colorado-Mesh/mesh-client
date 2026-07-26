@@ -448,7 +448,7 @@ describe('processMeshcoreWaitingMessageItem', () => {
       dispatchSpy.mockRestore();
     });
 
-    it('forwards pathLen into PacketRouter room dispatch as hopCount', () => {
+    it('maps pathLen 0xff to direct 0-hop room dispatch hopCount', () => {
       const dispatchSpy = vi.spyOn(packetRouter, 'dispatch').mockImplementation(() => {});
       const { deps, roomPrefixBytes } = roomDeps(makePubKey(53));
       const result = processMeshcoreWaitingMessageItem(

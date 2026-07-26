@@ -48,7 +48,6 @@ interface SeedRow {
 
 function clearStoreMessages(): void {
   for (const key of Object.keys(storeMessages)) {
-    storeMessages[key] = undefined as unknown as Record<string, unknown>;
     Reflect.deleteProperty(storeMessages, key);
   }
 }

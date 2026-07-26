@@ -239,6 +239,17 @@ describe('nodeStore Meshtastic packet operations', () => {
       longitude: 2,
       timestamp: 1,
     });
+    addTraceRoute(ID, {
+      from: NODE,
+      to: 43,
+      route: [7, 8],
+      timestamp: 1000,
+    });
+    upsertNeighborInfo(ID, {
+      nodeId: NODE,
+      neighbors: [{ nodeId: 43, snr: 4, lastRxTime: 99 }],
+      timestamp: 1000,
+    });
     clearNodeIdentity(ID);
 
     const state = useNodeStore.getState();

@@ -14,6 +14,10 @@
  * payloads feed display-only panels.
  */
 export function toPacketPayloadBytes(value: unknown): Uint8Array {
+  return toPacketPayloadBytesInner(value, new Set<object>());
+}
+
+function toPacketPayloadBytesInner(value: unknown, visited: Set<object>): Uint8Array {
   if (value instanceof Uint8Array) return value;
   if (value instanceof ArrayBuffer) return new Uint8Array(value);
   if (ArrayBuffer.isView(value)) {
@@ -23,10 +27,12 @@ export function toPacketPayloadBytes(value: unknown): Uint8Array {
     return Uint8Array.from(value);
   }
   if (value && typeof value === 'object') {
+    if (visited.has(value)) return new Uint8Array();
+    visited.add(value);
     const wrapper = value as { raw?: unknown; data?: unknown; payload?: unknown };
     for (const nested of [wrapper.raw, wrapper.data, wrapper.payload]) {
-      if (nested === undefined || nested === value) continue;
-      const bytes = toPacketPayloadBytes(nested);
+      if (nested === undefined) continue;
+      const bytes = toPacketPayloadBytesInner(nested, visited);
       if (bytes.length > 0) return bytes;
     }
   }

@@ -139,6 +139,12 @@ export const MESHCORE_DM_RF_DEDUP_WINDOW_MS = 2 * MS_PER_MINUTE;
  * Wider than room post dedup (1 min) because client Date.now vs radio rxTime can skew several minutes. */
 export const MESHTASTIC_TAPBACK_OPTIMISTIC_DEDUP_WINDOW_MS = 10 * MS_PER_MINUTE;
 
+/** RF/MQTT packet-id dedup TTL (MQTT-only fallback map and ingest session). */
+export const MESHTASTIC_PACKET_DEDUP_TTL_MS = 10 * MS_PER_MINUTE;
+
+/** Hard cap for the MQTT-only packet dedup fallback map after TTL sweep. */
+export const MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES = 5_000;
+
 /** Room post dedup window: optimistic client timestamp vs firmware echo / replay overlap. */
 export const MESHCORE_ROOM_POST_DEDUP_WINDOW_MS = MS_PER_MINUTE;
 
@@ -200,6 +206,9 @@ export const MESHCORE_ROOM_SYNC_ROUTE_RESOLVE_FAST_MS = 15_000;
 
 /** Delay before one retry of getMetadata after configure (NodeDB flood can starve BLE). */
 export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS = 8_000;
+
+/** BLE configure stall watchdog — force disconnect if DeviceConfigured never arrives. */
+export const MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS = 30 * MS_PER_SECOND;
 
 /**
  * Raw packet log: startup (and similar) can deliver two distinct LOG_RX frames for the same node's

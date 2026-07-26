@@ -202,6 +202,8 @@ import {
 } from '../lib/storeRecordAdapters';
 import { delayUnlessSuspended } from '../lib/systemPowerState';
 import {
+  MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES,
+  MESHTASTIC_PACKET_DEDUP_TTL_MS,
   MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS,
   RF_SERIAL_OPEN_RETRY_DELAY_MS,
 } from '../lib/timeConstants';
@@ -671,32 +673,56 @@ export function useMeshtasticRuntime() {
   }, [moduleConfigs, state.status]);
 
   // ─── Packet dedup helper (shared by RF and MQTT handlers) ──────
-  const isDuplicate = useCallback((senderId: number, packetId: number): boolean => {
-    const session = meshtasticIngestSessionRef.current;
-    if (session) return session.isDuplicatePacket(senderId, packetId);
-    const now = Date.now();
-    const key = meshtasticPacketDedupKey(senderId, packetId);
-    const expiry = mqttOnlySeenPacketIdsRef.current.get(key);
-    mqttOnlySeenPacketIdsRef.current.set(key, now + 10 * 60 * 1000);
-    if (mqttOnlySeenPacketIdsRef.current.size > 5_000) {
-      for (const [id, expiresAt] of mqttOnlySeenPacketIdsRef.current) {
-        if (expiresAt <= now) mqttOnlySeenPacketIdsRef.current.delete(id);
-      }
+  const pruneMqttOnlySeenPacketIds = useCallback((now: number): void => {
+    const map = mqttOnlySeenPacketIdsRef.current;
+    for (const [id, expiresAt] of map) {
+      if (expiresAt <= now) map.delete(id);
     }
-    return expiry !== undefined && expiry > now;
+    if (map.size <= MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES) return;
+    // Drop oldest expiries until under the hard cap (Map insertion order).
+    const overflow = map.size - MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES;
+    let removed = 0;
+    for (const id of map.keys()) {
+      map.delete(id);
+      removed += 1;
+      if (removed >= overflow) break;
+    }
   }, []);
 
-  const markPacketSeen = useCallback((senderId: number, packetId: number): void => {
-    const session = meshtasticIngestSessionRef.current;
-    if (session) {
-      session.markPacketSeen(senderId, packetId);
-      return;
-    }
-    mqttOnlySeenPacketIdsRef.current.set(
-      meshtasticPacketDedupKey(senderId, packetId),
-      Date.now() + 10 * 60 * 1000,
-    );
-  }, []);
+  const isDuplicate = useCallback(
+    (senderId: number, packetId: number): boolean => {
+      const session = meshtasticIngestSessionRef.current;
+      if (session) return session.isDuplicatePacket(senderId, packetId);
+      const now = Date.now();
+      const key = meshtasticPacketDedupKey(senderId, packetId);
+      const expiry = mqttOnlySeenPacketIdsRef.current.get(key);
+      mqttOnlySeenPacketIdsRef.current.set(key, now + MESHTASTIC_PACKET_DEDUP_TTL_MS);
+      if (mqttOnlySeenPacketIdsRef.current.size > MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES) {
+        pruneMqttOnlySeenPacketIds(now);
+      }
+      return expiry !== undefined && expiry > now;
+    },
+    [pruneMqttOnlySeenPacketIds],
+  );
+
+  const markPacketSeen = useCallback(
+    (senderId: number, packetId: number): void => {
+      const session = meshtasticIngestSessionRef.current;
+      if (session) {
+        session.markPacketSeen(senderId, packetId);
+        return;
+      }
+      const now = Date.now();
+      mqttOnlySeenPacketIdsRef.current.set(
+        meshtasticPacketDedupKey(senderId, packetId),
+        now + MESHTASTIC_PACKET_DEDUP_TTL_MS,
+      );
+      if (mqttOnlySeenPacketIdsRef.current.size > MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES) {
+        pruneMqttOnlySeenPacketIds(now);
+      }
+    },
+    [pruneMqttOnlySeenPacketIds],
+  );
 
   // Compact display name: short_name, truncated long_name, or hex ID
   const getNodeName = useCallback((nodeNum: number): string => {
@@ -2606,10 +2632,8 @@ export function useMeshtasticRuntime() {
             trackMeshtasticOutboundTempId(tempId, resolvedIdStr);
             updateMessageStatus(identityId, resolvedIdStr, 'acked');
           }
+          const ackSenderId = outboundSendByTempIdRef.current.get(tempId)?.sender_id;
           outboundSendByTempIdRef.current.delete(tempId);
-          const ackSenderId = readIdentityMessages().find((m) =>
-            meshtasticOutboundSendMatchesTempId(m, tempId),
-          )?.sender_id;
           void (
             resolvedPid !== tempId
               ? window.electronAPI.db.updateMessagePacketId(tempId, resolvedPid, ackSenderId)
@@ -2665,7 +2689,7 @@ export function useMeshtasticRuntime() {
         }
       }
     },
-    [isDuplicate, meshtasticOutboundSendMatchesTempId, readIdentityMessages],
+    [isDuplicate, meshtasticOutboundSendMatchesTempId],
   );
 
   // Keep the ref in sync so TransportManager always invokes the latest handler
@@ -3899,13 +3923,7 @@ export function useMeshtasticRuntime() {
           replyTo: String(wireReplyId),
         });
         trackMeshtasticOutboundTempId(reactionTempId, String(reactionTempId));
-        void window.electronAPI.db
-          .saveMessage({ ...msg, packetId: reactionTempId })
-          .catch((e: unknown) => {
-            console.debug(
-              '[useMeshtasticRuntime] sendReaction saveMessage failed ' + errLikeToLogString(e),
-            );
-          });
+        persistMeshtasticMessage({ ...msg, packetId: reactionTempId });
       } else {
         // No identity bound yet — fall back to the hook-local message state.
         setMessages((prev) => {

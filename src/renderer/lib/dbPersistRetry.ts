@@ -39,6 +39,7 @@ async function flushRetries(): Promise<void> {
               errLikeToLogString(error),
           );
         } else {
+          // catch-no-log-ok intermediate failures are retried; only the final attempt warns
           pending.attempt++;
           pendingWrites.push(pending);
         }
@@ -64,6 +65,7 @@ export function persistDbWrite(label: string, write: () => Promise<unknown>): vo
       );
       return;
     }
+    // catch-no-log-ok first failure is queued for bounded retry; final attempt warns in flush
     pendingWrites.push({ label, attempt: 0, write });
     scheduleRetry();
   });

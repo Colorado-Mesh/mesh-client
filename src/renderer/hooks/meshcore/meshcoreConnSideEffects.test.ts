@@ -69,7 +69,6 @@ function makeHarness(overrides?: { handleResponseResult?: boolean }): Harness {
     meshcoreIdentityIdRef: ref<string | null>(ID),
     meshcoreDriverConnectedRef: ref(true),
     connRef: ref<MeshCoreConnection | null>(conn),
-    lastPacketLogAtRef: ref(0),
     lastPacketLogPublishFailureLogAtRef: ref(0),
     meshcoreContactsRefreshTimerRef: ref<ReturnType<typeof setTimeout> | null>(null),
     meshcoreHookMountedRef: ref(true),

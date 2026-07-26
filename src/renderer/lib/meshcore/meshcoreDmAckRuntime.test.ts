@@ -27,18 +27,22 @@ describe('meshcoreDmAckRuntime', () => {
 
   it('applyMeshcoreDmAckToPending clears matching pending entry', () => {
     const timeoutId = setTimeout(() => {}, 60_000);
+    // Signed CRC and its u32 form are distinct Map keys — exercises multi-alias cleanup.
+    const signedCrc = -42;
+    const u32Crc = signedCrc >>> 0;
     const entry: PendingDmAckEntry = {
       timeoutId,
-      mapKeys: [42, 42 >>> 0],
-      canonicalPacketIdU32: 42,
+      mapKeys: [signedCrc, u32Crc],
+      canonicalPacketIdU32: u32Crc,
       destNodeId: 7,
       pathHash: 'ab',
     };
     const pending = new Map<number, PendingDmAckEntry>([
-      [42, entry],
-      [42 >>> 0, entry],
+      [signedCrc, entry],
+      [u32Crc, entry],
     ]);
-    const resolution = applyMeshcoreDmAckToPending(42, pending);
+    expect(pending.size).toBe(2);
+    const resolution = applyMeshcoreDmAckToPending(signedCrc, pending);
     expect(resolution.pending).toBe(entry);
     expect(resolution.newStatus).toBe('acked');
     expect(pending.size).toBe(0);

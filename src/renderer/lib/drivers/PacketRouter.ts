@@ -68,6 +68,9 @@ function upsertByIndex<T extends { index: number }>(arr: T[], item: T): T[] {
  *    already updated for the event it is handling.
  * 2. Listeners then run in registration order. A throwing listener is logged
  *    and skipped; later listeners and the store write still happen.
+ * 3. When a Meshtastic local-config write is suppressed (`shouldSuppressMeshtasticLocalConfigWrite`),
+ *    both the store mutation and listener notification are skipped — listeners must not observe a
+ *    "store first" update that never happened.
  *
  * Prefer `attachTypedPacketListener` over registering raw listeners so the
  * identity filter and payload narrowing stay in one place.
@@ -179,6 +182,8 @@ class PacketRouter {
 
   /** Applies the store mutation for `event`, then notifies listeners in order. */
   dispatch(event: DomainEvent, identityId: IdentityId): void {
+    // When a suppress branch skips the store write, skip listeners too (contract §3).
+    let skipListeners = false;
     switch (event.type) {
       case 'text_message': {
         const isMeshtastic = getIdentity(identityId)?.protocol.type === 'meshtastic';
@@ -286,7 +291,10 @@ class PacketRouter {
         upsertWaypoint(identityId, event.payload);
         break;
       case 'channel': {
-        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) break;
+        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
+          skipListeners = true;
+          break;
+        }
         const e = event.payload;
         const existing = getDevice(identityId);
         const name = e.name || (e.index === 0 ? 'Primary' : `Channel ${e.index}`);
@@ -308,15 +316,24 @@ class PacketRouter {
         break;
       }
       case 'device_gps_state':
-        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) break;
+        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
+          skipListeners = true;
+          break;
+        }
         setDeviceGpsState(identityId, event.payload.gpsMode, event.payload.fixedPosition);
         break;
       case 'security_config':
-        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) break;
+        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
+          skipListeners = true;
+          break;
+        }
         setSecurityConfig(identityId, event.payload);
         break;
       case 'module_config': {
-        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) break;
+        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
+          skipListeners = true;
+          break;
+        }
         const current = getDevice(identityId).moduleConfigs;
         setModuleConfigs(identityId, {
           ...current,
@@ -325,11 +342,17 @@ class PacketRouter {
         break;
       }
       case 'telemetry_interval':
-        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) break;
+        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
+          skipListeners = true;
+          break;
+        }
         setTelemetryDeviceUpdateInterval(identityId, event.payload.interval);
         break;
       case 'meshtastic_config_slice':
-        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) break;
+        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
+          skipListeners = true;
+          break;
+        }
         setMeshtasticConfigSlice(identityId, event.payload.configCase, event.payload.value);
         break;
       case 'queue_status': {
@@ -375,6 +398,7 @@ class PacketRouter {
         upsertMeshcoreChannel(identityId, event.payload);
         break;
     }
+    if (skipListeners) return;
     const listeners = [...this.listeners, ...(this.typedListeners.get(event.type) ?? [])].sort(
       (a, b) => a.id - b.id,
     );

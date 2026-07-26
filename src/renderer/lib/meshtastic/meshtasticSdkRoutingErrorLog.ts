@@ -136,10 +136,11 @@ function findFallbackSendingOutbound(
   return candidates.length === 1 ? candidates[0] : undefined;
 }
 
-function storeMessagesAsChat(identityId: string): ChatMessage[] {
-  return messageRecordsToChatMessages(
-    Object.values(useMessageStore.getState().messages[identityId] ?? {}),
+function storeOutboundMessagesAsChat(identityId: string, myNodeNum: number): ChatMessage[] {
+  const records = Object.values(useMessageStore.getState().messages[identityId] ?? {}).filter(
+    (r) => r.from === myNodeNum,
   );
+  return messageRecordsToChatMessages(records);
 }
 
 function findOutboundTargetForWirePacketId(
@@ -149,7 +150,7 @@ function findOutboundTargetForWirePacketId(
   const { myNodeNum, identityId, tempIdToWirePacketId } = ctx;
   if (!identityId) return undefined;
 
-  const messages = storeMessagesAsChat(identityId);
+  const messages = storeOutboundMessagesAsChat(identityId, myNodeNum);
   const matched = messages.find((m) =>
     outboundMatchesWirePacketId(m, myNodeNum, wirePacketId, tempIdToWirePacketId),
   );

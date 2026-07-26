@@ -629,8 +629,6 @@ export function useMeshcoreRuntime() {
   );
   /** Post-connect self telemetry (altitude); assigned to {@link requestTelemetry} below. */
   const requestTelemetryMeshCoreRef = useRef<(nodeId: number) => Promise<void>>(async () => {});
-  /** Throttle LetsMesh packet-logger publishes (event 136 can be very frequent). */
-  const lastPacketLogAtRef = useRef(0);
   /** Rate-limit debug logs when optional packet-logger IPC publish fails. */
   const lastPacketLogPublishFailureLogAtRef = useRef(0);
   const meshcoreHookMountedRef = useRef(true);
@@ -1758,7 +1756,6 @@ export function useMeshcoreRuntime() {
       meshcoreIdentityIdRef,
       meshcoreDriverConnectedRef,
       connRef,
-      lastPacketLogAtRef,
       lastPacketLogPublishFailureLogAtRef,
       meshcoreContactsRefreshTimerRef,
       meshcoreHookMountedRef,
@@ -6018,20 +6015,22 @@ export function useMeshcoreRuntime() {
         getIdentityIdForProtocol('meshcore') ??
         resolveMeshcoreStoreIdentityId();
       const storeRecord = storeId ? useNodeStore.getState().nodes[storeId]?.[nodeId] : undefined;
-      if (!storeRecord) return;
+      // Local nodes map can lead the identity store briefly after commit; don't no-op favoriting.
+      const localNode = nodes.get(nodeId);
+      if (!storeRecord && !localNode) return;
 
-      const prevFav = storeRecord.favorited ?? false;
+      const prevFav = storeRecord?.favorited ?? localNode?.favorited ?? false;
       if (storeId) {
         patchNodeFavorited(storeId, nodeId, favorited);
       }
       setNodes((prev) => {
-        const n = prev.get(nodeId);
+        const n = prev.get(nodeId) ?? localNode;
         if (!n) return prev;
         const next = new Map(prev);
         next.set(nodeId, { ...n, favorited });
         return next;
       });
-      const pk = pubKeyMapRef.current.get(nodeId) ?? storeRecord.publicKey;
+      const pk = pubKeyMapRef.current.get(nodeId) ?? storeRecord?.publicKey;
       const hex =
         pk != null
           ? Array.from(pk)
@@ -6048,7 +6047,7 @@ export function useMeshcoreRuntime() {
           patchNodeFavorited(storeId, nodeId, prevFav);
         }
         setNodes((prev) => {
-          const n = prev.get(nodeId);
+          const n = prev.get(nodeId) ?? localNode;
           if (!n) return prev;
           const next = new Map(prev);
           next.set(nodeId, { ...n, favorited: prevFav });
@@ -6056,7 +6055,7 @@ export function useMeshcoreRuntime() {
         });
       }
     },
-    [resolveMeshcoreStoreIdentityId],
+    [nodes, resolveMeshcoreStoreIdentityId],
   );
 
   const sendReaction = useCallback(

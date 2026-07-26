@@ -356,6 +356,24 @@ describe('PacketRouter', () => {
     expect(getDevice(ID).meshtasticConfigSlices.lora).toBeUndefined();
   });
 
+  it('skips listeners when a local config write is suppressed', () => {
+    const listener = vi.fn();
+    const detach = attachTypedPacketListener(ID, 'module_config', listener);
+    setMeshtasticRemoteConfigTarget(ID, 0x1234);
+
+    packetRouter.dispatch(
+      {
+        type: 'module_config',
+        payload: { configType: 'mqtt', value: { enabled: true } },
+      },
+      ID,
+    );
+
+    expect(listener).not.toHaveBeenCalled();
+    expect(getDevice(ID).moduleConfigs.mqtt).toBeUndefined();
+    detach();
+  });
+
   it('dispatches general and typed listeners in registration order', () => {
     const calls: string[] = [];
     const detachGeneral = packetRouter.addListener(() => calls.push('general'));

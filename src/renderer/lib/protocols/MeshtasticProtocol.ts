@@ -520,7 +520,7 @@ export class MeshtasticProtocol implements Protocol {
   }
 
   async sendWaypoint(handle: unknown, opts: SendWaypointOptions): Promise<void> {
-    const device = handle as MeshDevice;
+    const device = requireHandle<MeshDevice>(handle, 'meshtastic sendWaypoint');
     assertFiniteCoordinates('meshtastic sendWaypoint', opts.latitude, opts.longitude);
     const id = normalizedNodeNum(opts.id);
     if (id === undefined) {
@@ -542,7 +542,7 @@ export class MeshtasticProtocol implements Protocol {
   }
 
   async deleteWaypoint(handle: unknown, id: number): Promise<void> {
-    const device = handle as MeshDevice;
+    const device = requireHandle<MeshDevice>(handle, 'meshtastic deleteWaypoint');
     const waypointId = normalizedNodeNum(id);
     if (waypointId === undefined) {
       throw new TypeError('meshtastic deleteWaypoint: id must be a valid unsigned integer');

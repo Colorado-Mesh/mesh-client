@@ -25,6 +25,7 @@ import type { MeshtasticRemoteAdminClient } from '../meshtasticRemoteAdmin';
 import type { MeshtasticRawPacketEntry } from '../rawPacketLogConstants';
 import { getStoredMeshProtocol } from '../storedMeshProtocol';
 import {
+  MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS,
   MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS,
   MESHTASTIC_LOCAL_LORA_CONFIG_DELAY_MS,
 } from '../timeConstants';
@@ -65,7 +66,12 @@ const REQUEST_NODEINFO_MIN_INTERVAL_MS = 120_000;
 const { DeviceStatusEnum } = Types;
 
 /** After configure, request NodeDB metadata once; retry once if the first call fails. */
-function requestMetadataAfterConfigure(device: MeshDevice, myNode: number, attempt: 1 | 2): void {
+function requestMetadataAfterConfigure(
+  device: MeshDevice,
+  myNode: number,
+  attempt: 1 | 2,
+  retryTimerRef: { current: ReturnType<typeof setTimeout> | null },
+): void {
   void device.getMetadata(myNode).catch((e: unknown) => {
     console.debug(
       '[useMeshtasticRuntime] getMetadata after configure failed ' +
@@ -73,8 +79,10 @@ function requestMetadataAfterConfigure(device: MeshDevice, myNode: number, attem
         (attempt === 2 ? ' (retry)' : ''),
     );
     if (attempt === 1) {
-      setTimeout(() => {
-        requestMetadataAfterConfigure(device, myNode, 2);
+      if (retryTimerRef.current != null) clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = setTimeout(() => {
+        retryTimerRef.current = null;
+        requestMetadataAfterConfigure(device, myNode, 2, retryTimerRef);
       }, MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS);
     }
   });
@@ -250,6 +258,16 @@ export function attachMeshtasticRuntimeWireEffects(
   opts: { driverIdentityId?: string } | undefined,
   deps: MeshtasticRuntimeWireEffectsDeps,
 ): void {
+  const metadataRetryTimerRef: { current: ReturnType<typeof setTimeout> | null } = {
+    current: null,
+  };
+  deps.unsubscribesRef.current.push(() => {
+    if (metadataRetryTimerRef.current != null) {
+      clearTimeout(metadataRetryTimerRef.current);
+      metadataRetryTimerRef.current = null;
+    }
+  });
+
   const {
     channelConfigsRef,
     configureTargetNodeNumRef,
@@ -430,7 +448,7 @@ export function attachMeshtasticRuntimeWireEffects(
             batteryCharging: undefined,
           });
           clearConfigureTimeout();
-        }, 30000);
+        }, MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS);
       }
     }
 
@@ -454,7 +472,7 @@ export function attachMeshtasticRuntimeWireEffects(
       mqttClientProxyBridgeRef.current?.flushPendingToDevice();
       const myNode = myNodeNumRef.current;
       if (myNode > 0) {
-        requestMetadataAfterConfigure(device, myNode, 1);
+        requestMetadataAfterConfigure(device, myNode, 1, metadataRetryTimerRef);
       }
       if (localLoraConfigTimerRef.current != null) {
         clearTimeout(localLoraConfigTimerRef.current);

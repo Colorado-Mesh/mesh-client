@@ -59,11 +59,10 @@ export function processMeshcoreWaitingMessageItem(
       }
     } else {
       const sender = deps.workingNodes.get(senderId);
-      const existing = deps.workingNodes.get(senderId);
-      if (existing) {
+      if (sender) {
         deps.workingNodes.set(senderId, {
-          ...existing,
-          last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
+          ...sender,
+          last_heard: Math.max(sender.last_heard ?? 0, d.senderTimestamp),
         });
         nodesDirty = true;
         updatedNodeIds.push(senderId);

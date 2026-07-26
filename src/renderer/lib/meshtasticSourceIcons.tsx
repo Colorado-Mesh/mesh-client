@@ -46,7 +46,7 @@ export function resolveMeshtasticPathBadge({
   return 'none';
 }
 
-/** Shared hybrid-path tooltip / aria strings for list + detail (requires caller `t`). */
+/** Hybrid-path tooltip / aria strings for NodeListPanel (requires caller `t`). */
 export function meshtasticHybridPathLabels(
   t: TFunction,
   isSelfHybrid: boolean,

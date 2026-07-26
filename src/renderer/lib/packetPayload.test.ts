@@ -31,6 +31,14 @@ describe('toPacketPayloadBytes', () => {
     wrapper.data = wrapper;
     expect(toPacketPayloadBytes(wrapper)).toEqual(new Uint8Array());
   });
+
+  it('does not recurse infinitely on a multi-level object cycle', () => {
+    const a: { payload?: unknown } = {};
+    const b: { raw?: unknown } = {};
+    a.payload = b;
+    b.raw = a;
+    expect(toPacketPayloadBytes(a)).toEqual(new Uint8Array());
+  });
 });
 
 describe('truncatePacketText', () => {

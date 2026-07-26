@@ -1,6 +1,6 @@
 import type { MeshDevice } from '@meshtastic/core';
 import { Portnums } from '@meshtastic/protobufs';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter } from '../drivers/PacketRouter';
@@ -156,12 +156,22 @@ function makeDeps() {
 }
 
 describe('meshtasticRuntimeWireEffects telemetry NodeInfo', () => {
+  let unsubscribes: (() => void)[] = [];
+
   beforeEach(() => {
     useNodeStore.setState({ nodes: {} });
+    unsubscribes = [];
+  });
+
+  afterEach(() => {
+    for (const unsub of unsubscribes.splice(0)) {
+      unsub();
+    }
   });
 
   it('creates stub and requests NodeInfo on first telemetry from unknown node', async () => {
     const { deps, ensureNodeExists } = makeDeps();
+    unsubscribes = deps.unsubscribesRef.current;
     const sendPacket = vi.fn().mockResolvedValue(undefined);
     const noopSub = { subscribe: () => () => {} };
     const device = {

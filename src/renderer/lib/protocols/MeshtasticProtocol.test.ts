@@ -356,7 +356,7 @@ describe('MeshtasticProtocol outbound guards', () => {
   });
 });
 
-describe('MeshtasticProtocol outbound guards', () => {
+describe('MeshtasticProtocol position outbound guards', () => {
   function positionDevice() {
     const calls: unknown[] = [];
     return {

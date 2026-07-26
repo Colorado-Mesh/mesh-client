@@ -32,7 +32,6 @@ export interface MeshcoreConnSideEffectsCtx {
   meshcoreIdentityIdRef: RefObject<string | null>;
   meshcoreDriverConnectedRef: RefObject<boolean>;
   connRef: RefObject<MeshCoreConnection | null>;
-  lastPacketLogAtRef: RefObject<number>;
   lastPacketLogPublishFailureLogAtRef: RefObject<number>;
   meshcoreContactsRefreshTimerRef: RefObject<ReturnType<typeof setTimeout> | null>;
   meshcoreHookMountedRef: RefObject<boolean>;
