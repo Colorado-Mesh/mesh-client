@@ -180,7 +180,9 @@ describe('handleMeshcoreRfRx', () => {
   });
 
   it('clears MQTT-only flags on RF hear even when hops/snr/rssi/last_heard are unchanged', () => {
-    const nowSec = Math.floor(Date.now() / 1000);
+    const nowMs = 1_700_000_000_000;
+    const nowSec = Math.floor(nowMs / 1000);
+    vi.spyOn(Date, 'now').mockReturnValue(nowMs);
     const node = makeNode(7, {
       last_heard: nowSec,
       snr: 4,
@@ -197,7 +199,7 @@ describe('handleMeshcoreRfRx', () => {
       readNodes: () => nodes,
     });
 
-    applyMeshcoreRfHopsAwayUpdate(7, 1, Date.now(), 4, -70, deps);
+    applyMeshcoreRfHopsAwayUpdate(7, 1, nowMs, 4, -70, deps);
 
     expect(useNodeStore.getState().nodes[ID]?.[7]).toMatchObject({
       source: 'rf',
@@ -206,11 +208,14 @@ describe('handleMeshcoreRfRx', () => {
       hopsAway: 1,
       snr: 4,
       rssi: -70,
+      lastHeardAt: nowSec,
     });
   });
 
   it('skips Meshtastic-sender store writes when last_heard/snr/rssi are unchanged', () => {
-    const nowSec = Math.floor(Date.now() / 1000);
+    const nowMs = 1_700_000_000_000;
+    const nowSec = Math.floor(nowMs / 1000);
+    vi.spyOn(Date, 'now').mockReturnValue(nowMs);
     const nodes = new Map<number, MeshNode>([
       [2, makeNode(2, { last_heard: nowSec, snr: 5.5, rssi: -55 })],
     ]);
