@@ -1,6 +1,10 @@
+// @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { logRendererUnhandledRejection } from './rendererUnhandledRejection';
+import {
+  installRendererUnhandledRejectionLogger,
+  logRendererUnhandledRejection,
+} from './rendererUnhandledRejection';
 
 describe('logRendererUnhandledRejection', () => {
   afterEach(() => {
@@ -23,5 +27,37 @@ describe('logRendererUnhandledRejection', () => {
     logRendererUnhandledRejection({ code: 42 });
 
     expect(spy).toHaveBeenCalledWith('[renderer] Unhandled rejection:', '[object Object]');
+  });
+});
+
+function dispatchUnhandledRejection(reason: unknown): void {
+  const event = new Event('unhandledrejection');
+  Object.assign(event, { reason });
+  window.dispatchEvent(event);
+}
+
+describe('installRendererUnhandledRejectionLogger', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('logs rejections dispatched on the window', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const uninstall = installRendererUnhandledRejectionLogger();
+
+    dispatchUnhandledRejection('boom');
+    uninstall();
+
+    expect(spy).toHaveBeenCalledWith('[renderer] Unhandled rejection:', 'boom');
+  });
+
+  it('stops logging after the returned cleanup runs', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const uninstall = installRendererUnhandledRejectionLogger();
+    uninstall();
+
+    dispatchUnhandledRejection('boom');
+
+    expect(spy).not.toHaveBeenCalled();
   });
 });
