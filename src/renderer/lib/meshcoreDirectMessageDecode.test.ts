@@ -6,7 +6,7 @@ import { useNodeStore } from '../stores/nodeStore';
 import { packetRouter } from './drivers/PacketRouter';
 import { attachMeshcoreIngest } from './ingest/meshcoreIngest';
 import { registerMeshcorePubKey } from './meshcore/meshcorePubKeyRegistry';
-import { MESHCORE_TXT_TYPE_SIGNED_PLAIN } from './meshcoreChannelText';
+import { MESHCORE_TXT_TYPE_CLI_DATA, MESHCORE_TXT_TYPE_SIGNED_PLAIN } from './meshcoreChannelText';
 import {
   decodeMeshcoreDirectMessageEvents,
   dispatchMeshcoreWaitingContactMessage,
@@ -18,6 +18,35 @@ import { meshcoreProtocol } from './protocols/MeshCoreProtocol';
 const ID = 'meshcore-waiting-decode-test';
 
 describe('decodeMeshcoreDirectMessageEvents', () => {
+  it('emits meshcore_cli_response for txtType CLI data', () => {
+    const pubKey = Uint8Array.from({ length: 32 }, (_, i) => i + 7);
+    const nodeId = pubkeyToNodeId(pubKey);
+    registerMeshcorePubKey(nodeId, pubKey);
+    const prefixHex = Array.from(pubKey.slice(0, 6))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    const prefixMap = new Map<string, number>([[prefixHex, nodeId]]);
+    const events = decodeMeshcoreDirectMessageEvents(
+      {
+        pubKeyPrefix: pubKey.slice(0, 6),
+        text: 'clock sync ok',
+        senderTimestamp: 1_700_000_050,
+        txtType: MESHCORE_TXT_TYPE_CLI_DATA,
+      },
+      prefixMap,
+      new Set(),
+    );
+    expect(events).toHaveLength(1);
+    expect(events[0]).toEqual({
+      type: 'meshcore_cli_response',
+      payload: {
+        text: 'clock sync ok',
+        senderNodeId: nodeId,
+        pubKeyPrefixHex: prefixHex,
+      },
+    });
+  });
+
   it('includes author in room message id for SignedPlain posts', () => {
     const roomPubKey = Uint8Array.from({ length: 32 }, (_, i) => i + 10);
     const authorPubKey = Uint8Array.from({ length: 32 }, (_, i) => i + 20);

@@ -309,7 +309,7 @@ export const MESHCORE_TRACE_TIMEOUT_MS = MESHCORE_REPEATER_RPC_TIMEOUT_MS;
 export const MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS = 8;
 /** Request page size for GetNeighbours; firmware reply buffers often return fewer rows (~11 at 6-byte prefixes). */
 export const MESHCORE_NEIGHBORS_PAGE_SIZE = 50;
-export const MAX_TELEMETRY_POINTS = 50;
+export { MAX_TELEMETRY_POINTS } from '../../lib/sessionMemoryCaps';
 
 export const MAX_ENV_TELEMETRY_POINTS = 50;
 

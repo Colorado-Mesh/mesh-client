@@ -150,6 +150,7 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
     last_heard: record.lastHeardAt ?? 0,
     latitude: record.latitude ?? null,
     longitude: record.longitude ?? null,
+    altitude: record.altitude,
     role: record.role,
     hops_away: record.hopsAway,
     via_mqtt: record.viaMqtt,
@@ -163,7 +164,21 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
     voltage: record.voltage,
     channel_utilization: record.channelUtilization,
     air_util_tx: record.airUtilTx,
+    env_temperature: record.temperature,
+    env_humidity: record.relativeHumidity,
+    env_pressure: record.barometricPressure,
+    env_iaq: record.iaq,
+    env_gas_resistance: record.gasResistance,
+    env_lux: record.lux,
+    env_wind_speed: record.windSpeed,
+    env_wind_direction: record.windDirection,
+    lastPositionWarning: record.lastPositionWarning,
+    num_packets_rx_bad: record.numPacketsRxBad,
+    num_rx_dupe: record.numRxDupe,
+    num_packets_rx: record.numPacketsRx,
+    num_packets_tx: record.numPacketsTx,
     meshcore_local_stats: record.meshcoreLocalStats,
+    ...(record.publicKeyHex ? { public_key_hex: record.publicKeyHex } : {}),
     ...(record.reticulumDestinationHash
       ? { reticulum_destination_hash: record.reticulumDestinationHash }
       : {}),
@@ -186,6 +201,7 @@ function nodeRecordsShallowEqual(a: NodeRecord, b: NodeRecord): boolean {
     a.lastHeardAt === b.lastHeardAt &&
     a.latitude === b.latitude &&
     a.longitude === b.longitude &&
+    a.altitude === b.altitude &&
     a.role === b.role &&
     a.hopsAway === b.hopsAway &&
     a.viaMqtt === b.viaMqtt &&
@@ -199,7 +215,21 @@ function nodeRecordsShallowEqual(a: NodeRecord, b: NodeRecord): boolean {
     a.voltage === b.voltage &&
     a.channelUtilization === b.channelUtilization &&
     a.airUtilTx === b.airUtilTx &&
+    a.temperature === b.temperature &&
+    a.relativeHumidity === b.relativeHumidity &&
+    a.barometricPressure === b.barometricPressure &&
+    a.iaq === b.iaq &&
+    a.gasResistance === b.gasResistance &&
+    a.lux === b.lux &&
+    a.windSpeed === b.windSpeed &&
+    a.windDirection === b.windDirection &&
+    a.lastPositionWarning === b.lastPositionWarning &&
+    a.numPacketsRxBad === b.numPacketsRxBad &&
+    a.numRxDupe === b.numRxDupe &&
+    a.numPacketsRx === b.numPacketsRx &&
+    a.numPacketsTx === b.numPacketsTx &&
     a.meshcoreLocalStats === b.meshcoreLocalStats &&
+    a.publicKeyHex === b.publicKeyHex &&
     a.reticulumDestinationHash === b.reticulumDestinationHash
   );
 }
@@ -260,6 +290,7 @@ export function meshNodeToNodeRecord(node: MeshNode): NodeRecord {
     lastHeardAt: node.last_heard,
     latitude: node.latitude ?? undefined,
     longitude: node.longitude ?? undefined,
+    altitude: node.altitude,
     role: role != null && Number.isFinite(role) ? role : undefined,
     hopsAway: node.hops_away,
     viaMqtt: node.via_mqtt,
@@ -273,7 +304,21 @@ export function meshNodeToNodeRecord(node: MeshNode): NodeRecord {
     voltage: node.voltage,
     channelUtilization: node.channel_utilization,
     airUtilTx: node.air_util_tx,
+    temperature: node.env_temperature,
+    relativeHumidity: node.env_humidity,
+    barometricPressure: node.env_pressure,
+    iaq: node.env_iaq,
+    gasResistance: node.env_gas_resistance,
+    lux: node.env_lux,
+    windSpeed: node.env_wind_speed,
+    windDirection: node.env_wind_direction,
+    lastPositionWarning: node.lastPositionWarning,
+    numPacketsRxBad: node.num_packets_rx_bad,
+    numRxDupe: node.num_rx_dupe,
+    numPacketsRx: node.num_packets_rx,
+    numPacketsTx: node.num_packets_tx,
     meshcoreLocalStats: node.meshcore_local_stats,
+    publicKeyHex: node.public_key_hex,
     reticulumDestinationHash: node.reticulum_destination_hash,
   };
 }

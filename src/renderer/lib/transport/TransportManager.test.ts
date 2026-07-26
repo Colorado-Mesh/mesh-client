@@ -249,14 +249,14 @@ describe('TransportManager', () => {
     warnSpy.mockRestore();
   });
 
-  it('falls back to routing error name for unmapped numeric codes', async () => {
+  it('uses the chat routing error key for rate-limited sends', async () => {
     window.electronAPI = {
       mqtt: { publish: vi.fn() },
     } as unknown as typeof window.electronAPI;
 
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const status = vi.fn();
-    const sdkErr = { id: 42, error: 38 }; // RATE_LIMIT_EXCEEDED — no chat i18n mapping
+    const sdkErr = { id: 42, error: 38 }; // RATE_LIMIT_EXCEEDED
     const manager = new TransportManager({
       deviceRef: {
         current: {
@@ -279,7 +279,7 @@ describe('TransportManager', () => {
       expect.objectContaining({
         status: 'failed',
         finalPacketId: 42,
-        error: 'RATE_LIMIT_EXCEEDED',
+        error: 'chatPanel.routingErrors.rateLimited',
       }),
     );
     warnSpy.mockRestore();

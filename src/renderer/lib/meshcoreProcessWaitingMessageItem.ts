@@ -1,12 +1,11 @@
 import { packetRouter } from '@/renderer/lib/drivers/PacketRouter';
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
-  buildMeshcoreRoomIncomingMessage,
   parseMeshcoreChannelIncomingFromThread,
   parseMeshcoreDmIncomingFromThread,
   resolveMeshcoreChannelMessageSender,
 } from '@/renderer/lib/meshcoreChannelText';
 import { dispatchMeshcoreWaitingContactMessage } from '@/renderer/lib/meshcoreDirectMessageDecode';
-import { meshcoreRoomPostBodyFromWire } from '@/renderer/lib/meshcoreRoomMessageRouting';
 import { setMeshcoreRoomLastPostAt } from '@/renderer/lib/meshcoreRoomSyncStorage';
 import {
   isMeshcoreTransportStatusChatLine,
@@ -21,6 +20,7 @@ import type { MeshcoreWaitingMessageItem } from './meshcoreWaitingMessageItem';
 
 export interface ProcessWaitingMessageItemResult {
   nodesDirty: boolean;
+  updatedNodeIds: number[];
   pendingMessages: ChatMessage[];
   roomDispatched: boolean;
 }
@@ -30,7 +30,6 @@ export interface ProcessWaitingMessageItemDeps {
   pubKeyPrefixMap: Map<string, number>;
   myNodeNum: number;
   meshcoreIdentityId: string | null;
-  legacyOwnsRoomPosts: () => boolean;
   storePriorForBatch: () => ChatMessage[];
   logTransportLineAsDevice: (text: string) => void;
 }
@@ -40,6 +39,7 @@ export function processMeshcoreWaitingMessageItem(
   deps: ProcessWaitingMessageItemDeps,
 ): ProcessWaitingMessageItemResult {
   const pendingMessages: ChatMessage[] = [];
+  const updatedNodeIds: number[] = [];
   let nodesDirty = false;
   let roomDispatched = false;
 
@@ -51,26 +51,27 @@ export function processMeshcoreWaitingMessageItem(
     const senderId = deps.pubKeyPrefixMap.get(prefix) ?? 0;
     if (senderId === 0) {
       console.warn(
-        '[useMeshcoreRuntime] event 131: unknown pubKeyPrefix in queued DM, sender will be 0',
+        '[meshcoreProcessWaitingMessageItem] unknown pubKeyPrefix in queued DM, skipping ingest',
         prefix,
       );
-    }
-    const sender = deps.workingNodes.get(senderId);
-    if (senderId !== 0) {
-      const existing = deps.workingNodes.get(senderId);
-      if (existing) {
+      if (isMeshcoreTransportStatusChatLine(d.text)) {
+        deps.logTransportLineAsDevice(d.text);
+      }
+    } else {
+      const sender = deps.workingNodes.get(senderId);
+      if (sender) {
         deps.workingNodes.set(senderId, {
-          ...existing,
-          last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
+          ...sender,
+          last_heard: Math.max(sender.last_heard ?? 0, d.senderTimestamp),
         });
         nodesDirty = true;
+        updatedNodeIds.push(senderId);
       }
-    }
-    if (isMeshcoreTransportStatusChatLine(d.text)) {
-      deps.logTransportLineAsDevice(d.text);
-    } else if (sender?.hw_model === 'Room') {
-      const postTs = effectiveMessageTimestampMs(d.senderTimestamp * 1000);
-      if (!deps.legacyOwnsRoomPosts()) {
+      if (isMeshcoreTransportStatusChatLine(d.text)) {
+        deps.logTransportLineAsDevice(d.text);
+      } else if (sender?.hw_model === 'Room') {
+        // Room posts route through PacketRouter → meshcoreIngest, matching live event-7 posts.
+        const postTs = effectiveMessageTimestampMs(d.senderTimestamp * 1000);
         const identityId = deps.meshcoreIdentityId;
         if (identityId) {
           const roomNodeIds = new Set<number>();
@@ -94,53 +95,35 @@ export function processMeshcoreWaitingMessageItem(
             deps.logTransportLineAsDevice,
           );
           roomDispatched = true;
-          void setMeshcoreRoomLastPostAt(senderId, postTs);
+          void setMeshcoreRoomLastPostAt(senderId, postTs).catch((e: unknown) => {
+            console.warn(
+              '[meshcoreProcessWaitingMessageItem] setMeshcoreRoomLastPostAt failed ' +
+                errLikeToLogString(e),
+            );
+          });
         } else {
           console.warn(
-            '[useMeshcoreRuntime] event 131: room post skipped (no identityId)',
+            '[meshcoreProcessWaitingMessageItem] room post skipped (no identityId)',
             senderId,
           );
         }
       } else {
-        const { authorId, payload } = meshcoreRoomPostBodyFromWire(
-          d.text,
-          d.txtType,
-          deps.pubKeyPrefixMap,
-          { isKnownRoomNode: true },
-        );
-        const authorNode = authorId !== 0 ? deps.workingNodes.get(authorId) : undefined;
-        const authorName =
-          authorNode?.long_name ??
-          (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
-        const roomRxHops = meshcoreCompanionRxPathLenToHopCount(d.pathLen);
-        pendingMessages.push(
-          buildMeshcoreRoomIncomingMessage({
-            rawText: payload,
-            roomServerId: senderId,
-            authorId: authorId !== 0 ? authorId : deps.myNodeNum || 0,
-            authorName,
+        const dmRxHops = meshcoreCompanionRxPathLenToHopCount(d.pathLen);
+        pendingMessages.push({
+          ...parseMeshcoreDmIncomingFromThread(deps.storePriorForBatch(), {
+            rawText: d.text,
+            senderId,
+            displayName: sender?.long_name ?? `Node-${senderId.toString(16).toUpperCase()}`,
             timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
             receivedVia: 'rf',
-            ...(roomRxHops != null ? { rxHops: roomRxHops } : {}),
+            peerNodeId: senderId,
+            myNodeId: deps.myNodeNum || 0,
+            to: deps.myNodeNum || undefined,
+            ...(dmRxHops != null ? { rxHops: dmRxHops } : {}),
           }),
-        );
+          isHistory: true,
+        });
       }
-    } else {
-      const dmRxHops = meshcoreCompanionRxPathLenToHopCount(d.pathLen);
-      pendingMessages.push({
-        ...parseMeshcoreDmIncomingFromThread(deps.storePriorForBatch(), {
-          rawText: d.text,
-          senderId,
-          displayName: sender?.long_name ?? `Node-${senderId.toString(16).toUpperCase()}`,
-          timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
-          receivedVia: 'rf',
-          peerNodeId: senderId,
-          myNodeId: deps.myNodeNum || 0,
-          to: deps.myNodeNum || undefined,
-          ...(dmRxHops != null ? { rxHops: dmRxHops } : {}),
-        }),
-        isHistory: true,
-      });
     }
   }
 
@@ -173,6 +156,7 @@ export function processMeshcoreWaitingMessageItem(
               ),
         );
         nodesDirty = true;
+        updatedNodeIds.push(resolved.senderId);
       }
       const channelRxHops = meshcoreCompanionRxPathLenToHopCount(d.pathLen);
       pendingMessages.push({
@@ -190,5 +174,5 @@ export function processMeshcoreWaitingMessageItem(
     }
   }
 
-  return { nodesDirty, pendingMessages, roomDispatched };
+  return { nodesDirty, updatedNodeIds, pendingMessages, roomDispatched };
 }

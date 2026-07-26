@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import type { MeshNode } from '../lib/types';
 import NodeInfoBody from './NodeInfoBody';
 
@@ -51,6 +53,14 @@ vi.mock('../stores/positionHistoryStore', () => ({
 }));
 
 describe('NodeInfoBody', () => {
+  it('has no axe violations for a basic node card', async () => {
+    const { container } = render(
+      <NodeInfoBody node={makeNode({ node_id: 7, long_name: 'Alpha' })} protocol="meshcore" />,
+    );
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it('shows last tracked position when live position is missing', () => {
     positionHistoryStoreState.history = new Map([
       [

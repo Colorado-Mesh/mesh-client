@@ -11,6 +11,7 @@ export const MAX_MESH_ENTITY_CAP = 100_000;
 export const MAX_TRACE_ROUTES_PER_IDENTITY = 100;
 export const MAX_MESHCORE_CLI_HISTORY_ENTRIES = 50;
 export const MAX_MESHTASTIC_TRACE_ROUTE_RESULTS = 100;
+export const MAX_TELEMETRY_POINTS = 50;
 export const MAX_DIAGNOSTICS_TRACKED_NODES = MAX_MESH_ENTITY_CAP;
 export const MAX_RETICULUM_IDENTITY_DESTINATIONS = MAX_MESH_ENTITY_CAP;
 /** In-memory cap for RMAP discovery rows mirrored from the sidecar DiscoveryStore. */
@@ -26,6 +27,21 @@ export const SESSION_DB_PRUNE_INTERVAL_MS = 6 * MS_PER_HOUR;
 export function trimArrayTail<T>(items: readonly T[], max: number): T[] {
   if (items.length <= max) return [...items];
   return items.slice(items.length - max);
+}
+
+/**
+ * Append `entry` to the per-key ring at `key`, keeping at most `max` entries.
+ * Returns a new Map so it can be used directly as a React state updater.
+ */
+export function appendToRingMap<K, V>(
+  prev: Map<K, V[]>,
+  key: K,
+  entry: V,
+  max: number,
+): Map<K, V[]> {
+  const updated = new Map(prev);
+  updated.set(key, trimArrayTail([...(prev.get(key) ?? []), entry], max));
+  return updated;
 }
 
 /** Evict oldest Map keys when size exceeds max ( insertion order ). */

@@ -85,6 +85,11 @@ import {
   syncNodesMapToIdentityStore,
 } from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
+import {
+  getIdentityChatMessages,
+  getIdentityNode,
+  getIdentityNodeMap,
+} from '../lib/identityStoreReads';
 import type { MeshtasticIngestSession } from '../lib/ingest/meshtasticIngest';
 import { rehydrateMeshtasticConnectionParamsFromStorage } from '../lib/lastConnectionStorage';
 import {
@@ -92,11 +97,8 @@ import {
   withNobleBleConnectMutex,
 } from '../lib/meshcoreDualNobleBleInit';
 import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
+import { setMeshtasticRemoteConfigTarget } from '../lib/meshtastic/meshtasticConfigIngressGuard';
 import { configureMeshtasticDeviceWithRetry } from '../lib/meshtastic/meshtasticConfigureRetry';
-import {
-  attachMeshtasticLegacyWireSubscriptions,
-  type MeshtasticLegacyWireSubscriptionDeps,
-} from '../lib/meshtastic/meshtasticLegacyWireSubscriptions';
 import type { ModulePortEvent, PaxCounterPoint } from '../lib/meshtastic/meshtasticModuleEvents';
 import { normalizeMeshtasticMqttChatMessage } from '../lib/meshtastic/meshtasticMqttChatNormalize';
 import { MeshtasticMqttClientProxyBridge } from '../lib/meshtastic/meshtasticMqttClientProxy';
@@ -114,6 +116,10 @@ import {
   endMeshtasticNonChatOutbound,
   registerMeshtasticNonChatWirePacketId,
 } from '../lib/meshtastic/meshtasticOutboundCoordination';
+import {
+  attachMeshtasticRuntimeWireEffects,
+  type MeshtasticRuntimeWireEffectsDeps,
+} from '../lib/meshtastic/meshtasticRuntimeWireEffects';
 import {
   meshtasticXmodemDownload,
   meshtasticXmodemUpload,
@@ -186,6 +192,7 @@ import {
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import {
   chatMessageToMessageRecord,
+  meshNodeToNodeRecord,
   messageRecordsToChatMessages,
   messageRecordToChatMessage,
   neighborInfoEventsToRecordMap,
@@ -195,6 +202,8 @@ import {
 } from '../lib/storeRecordAdapters';
 import { delayUnlessSuspended } from '../lib/systemPowerState';
 import {
+  MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES,
+  MESHTASTIC_PACKET_DEDUP_TTL_MS,
   MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS,
   RF_SERIAL_OPEN_RETRY_DELAY_MS,
 } from '../lib/timeConstants';
@@ -230,7 +239,12 @@ import {
   upsertMessage,
   useMessageStore,
 } from '../stores/messageStore';
-import { patchNodeFavorited, useNodeStore } from '../stores/nodeStore';
+import {
+  patchNodeFavorited,
+  removeNode,
+  upsertNodeRecord,
+  useNodeStore,
+} from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 
 type ChannelType = Parameters<MeshDevice['setChannel']>[0];
@@ -250,6 +264,18 @@ const SERIAL_DEAD_THRESHOLD_MS = 180_000; // 3min — align with BLE/HTTP
 const HTTP_STALE_THRESHOLD_MS = 90_000; // 90s — show warning
 const HTTP_DEAD_THRESHOLD_MS = 180_000; // 3min — trigger reconnect
 const WATCHDOG_INTERVAL_MS = 15_000; // Check every 15s
+
+function persistMeshtasticNode(node: MeshNode): void {
+  void window.electronAPI.db.saveNode(node).catch((e: unknown) => {
+    console.debug('[useMeshtasticRuntime] saveNode failed ' + errLikeToLogString(e));
+  });
+}
+
+function persistMeshtasticMessage(message: ChatMessage): void {
+  void window.electronAPI.db.saveMessage(message).catch((e: unknown) => {
+    console.warn('[useMeshtasticRuntime] saveMessage failed ' + errLikeToLogString(e));
+  });
+}
 
 function getOrCreateVirtualNodeId(): number {
   const key = 'mesh-client:mqttVirtualNodeId';
@@ -303,8 +329,6 @@ export function useMeshtasticRuntime() {
   // Track own node number in a ref so event callbacks can access it
   // without relying on the private device.myNodeInfo property
   const myNodeNumRef = useRef<number>(0);
-  // Use a ref for nodes so event callbacks always see the latest value
-  const nodesRef = useRef<Map<number, MeshNode>>(new Map());
   // Track event unsubscribe functions for cleanup
   const unsubscribesRef = useRef<(() => void)[]>([]);
   /** Protocol ingress + ConnectionDriver handle registration (issues #375 / #377). */
@@ -388,8 +412,8 @@ export function useMeshtasticRuntime() {
   const rfHeardNodeIds = useRef<Set<number>>(new Set());
   const lastRfSelfNodeIdRef = useRef<number>(loadPersistedLastRfSelfNodeId());
   const virtualNodeIdRef = useRef<number>(getOrCreateVirtualNodeId());
-  // Dedup map shared between RF and MQTT handlers
-  const seenPacketIds = useRef<Map<string, number>>(new Map());
+  // MQTT-only fallback; RF sessions use the ingest session's shared RF/MQTT registry.
+  const mqttOnlySeenPacketIdsRef = useRef<Map<string, number>>(new Map());
   /** Last time we sent a proactive NODEINFO_APP request for each node (debounce). */
   const lastNodeInfoRequestAtRef = useRef<Map<number, number>>(new Map());
 
@@ -414,10 +438,6 @@ export function useMeshtasticRuntime() {
     isLicensed: boolean;
   } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const messagesRef = useRef<ChatMessage[]>([]);
-  useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
   const [nodes, setNodes] = useState<Map<number, MeshNode>>(new Map());
   const [telemetry, setTelemetry] = useState<TelemetryPoint[]>([]);
   const [signalTelemetry, setSignalTelemetry] = useState<TelemetryPoint[]>([]);
@@ -542,7 +562,7 @@ export function useMeshtasticRuntime() {
   const ensureNonConflictingVirtualNodeId = useCallback((): number => {
     let virtualId = virtualNodeIdRef.current;
     const conflictsWithKnownRfNode = (id: number): boolean => {
-      const existing = nodesRef.current.get(id);
+      const existing = getIdentityNode(meshtasticIdentityIdRef.current, id);
       return !!existing && existing.source === 'rf' && id !== myNodeNumRef.current;
     };
     if (conflictsWithKnownRfNode(virtualId)) {
@@ -555,44 +575,50 @@ export function useMeshtasticRuntime() {
     return virtualId;
   }, []);
 
-  // Keep nodesRef in sync with state and identity-scoped nodeStore (App reads via useNodeStore).
   const updateNodes = useCallback(
     (updater: (prev: Map<number, MeshNode>) => Map<number, MeshNode>) => {
-      setNodes((prev) => {
-        const next = updater(prev);
-        nodesRef.current = next;
-        return next;
-      });
+      // Identity-scoped nodeStore is canonical once an identity exists. Hook-local
+      // `nodes` is only a pre-identity snapshot (MQTT-only before hydrate / no RF id).
+      const identityId =
+        meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
+      if (identityId) {
+        const base = getIdentityNodeMap(identityId);
+        const next = updater(base);
+        for (const nodeId of base.keys()) {
+          if (!next.has(nodeId)) removeNode(identityId, nodeId);
+        }
+        syncNodesMapToIdentityStore(identityId, next);
+        return;
+      }
+      setNodes((prev) => updater(prev));
     },
     [],
   );
 
-  // Push runtime node map into identity-scoped Zustand after commit — never inside setState updaters.
-  useEffect(() => {
-    const storeId = meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
-    if (!storeId) return;
-    syncNodesMapToIdentityStore(storeId, nodes);
-  }, [nodes, meshtasticIdentityId]);
-
-  const ensureNodeExists = useCallback(
-    (nodeNum: number, source: 'rf' | 'mqtt') => {
-      if (nodesRef.current.has(nodeNum) || nodeNum === 0) return;
-      updateNodes((prev) => {
-        if (prev.has(nodeNum)) return prev;
-        const created = createChatStubNode(nodeNum, source);
-        const next = new Map(prev);
-        next.set(nodeNum, created);
-        void window.electronAPI.db.saveNode(created);
-        return next;
-      });
-    },
-    [updateNodes],
+  // `nodeStore` / `messageStore` see both ingress paths (Protocol → PacketRouter
+  // and this runtime), so they are the only read source for send/dedup/RPC.
+  const readIdentityNodes = useCallback(
+    (): Map<number, MeshNode> => getIdentityNodeMap(meshtasticIdentityIdRef.current),
+    [],
   );
 
-  // Keep channelConfigsRef in sync so MQTT callbacks always see current config
-  useEffect(() => {
-    channelConfigsRef.current = channelConfigs;
-  }, [channelConfigs]);
+  const readIdentityMessages = useCallback(
+    (): ChatMessage[] => getIdentityChatMessages(meshtasticIdentityIdRef.current),
+    [],
+  );
+
+  const ensureNodeExists = useCallback((nodeNum: number, source: 'rf' | 'mqtt') => {
+    // Mirror updateNodes' identity fallback so inbound senders still get a stub during the
+    // attach window (pending driver identity set, bound identity not yet assigned).
+    const identityId =
+      meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
+    if (!identityId || nodeNum === 0 || getIdentityNode(identityId, nodeNum) != null) {
+      return;
+    }
+    const created = createChatStubNode(nodeNum, source);
+    upsertNodeRecord(identityId, meshNodeToNodeRecord(created));
+    persistMeshtasticNode(created);
+  }, []);
 
   const pushMqttChannelKeys = useCallback(() => {
     if (mqttStatusRef.current !== 'connected') return;
@@ -647,24 +673,60 @@ export function useMeshtasticRuntime() {
   }, [moduleConfigs, state.status]);
 
   // ─── Packet dedup helper (shared by RF and MQTT handlers) ──────
-  const isDuplicate = useCallback((senderId: number, packetId: number): boolean => {
-    const now = Date.now();
-    const key = meshtasticPacketDedupKey(senderId, packetId);
-    const expiry = seenPacketIds.current.get(key);
-    if (expiry !== undefined && expiry > now) return true;
-    seenPacketIds.current.set(key, now + 10 * 60 * 1000);
-    // Periodic cleanup to prevent unbounded growth
-    if (seenPacketIds.current.size > 5_000) {
-      for (const [id, exp] of seenPacketIds.current) {
-        if (exp < now) seenPacketIds.current.delete(id);
-      }
+  const pruneMqttOnlySeenPacketIds = useCallback((now: number): void => {
+    const map = mqttOnlySeenPacketIdsRef.current;
+    for (const [id, expiresAt] of map) {
+      if (expiresAt <= now) map.delete(id);
     }
-    return false;
+    if (map.size <= MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES) return;
+    // Drop oldest expiries until under the hard cap (Map insertion order).
+    const overflow = map.size - MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES;
+    let removed = 0;
+    for (const id of map.keys()) {
+      map.delete(id);
+      removed += 1;
+      if (removed >= overflow) break;
+    }
   }, []);
+
+  const isDuplicate = useCallback(
+    (senderId: number, packetId: number): boolean => {
+      const session = meshtasticIngestSessionRef.current;
+      if (session) return session.isDuplicatePacket(senderId, packetId);
+      const now = Date.now();
+      const key = meshtasticPacketDedupKey(senderId, packetId);
+      const expiry = mqttOnlySeenPacketIdsRef.current.get(key);
+      mqttOnlySeenPacketIdsRef.current.set(key, now + MESHTASTIC_PACKET_DEDUP_TTL_MS);
+      if (mqttOnlySeenPacketIdsRef.current.size > MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES) {
+        pruneMqttOnlySeenPacketIds(now);
+      }
+      return expiry !== undefined && expiry > now;
+    },
+    [pruneMqttOnlySeenPacketIds],
+  );
+
+  const markPacketSeen = useCallback(
+    (senderId: number, packetId: number): void => {
+      const session = meshtasticIngestSessionRef.current;
+      if (session) {
+        session.markPacketSeen(senderId, packetId);
+        return;
+      }
+      const now = Date.now();
+      mqttOnlySeenPacketIdsRef.current.set(
+        meshtasticPacketDedupKey(senderId, packetId),
+        now + MESHTASTIC_PACKET_DEDUP_TTL_MS,
+      );
+      if (mqttOnlySeenPacketIdsRef.current.size > MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES) {
+        pruneMqttOnlySeenPacketIds(now);
+      }
+    },
+    [pruneMqttOnlySeenPacketIds],
+  );
 
   // Compact display name: short_name, truncated long_name, or hex ID
   const getNodeName = useCallback((nodeNum: number): string => {
-    const node = nodesRef.current.get(nodeNum);
+    const node = getIdentityNode(meshtasticIdentityIdRef.current, nodeNum);
     if (node?.short_name) return node.short_name;
     if (node?.long_name)
       return node.long_name.length > 7 ? node.long_name.slice(0, 7) : node.long_name;
@@ -674,7 +736,7 @@ export function useMeshtasticRuntime() {
   // Picker-style label: "icon_XXXX" (same format as BLE picker). If short_name
   // already ends with _ + 4 hex digits, use it; else append _ + last 4 hex of node ID.
   const getPickerStyleNodeLabel = useCallback((nodeNum: number): string => {
-    const node = nodesRef.current.get(nodeNum);
+    const node = getIdentityNode(meshtasticIdentityIdRef.current, nodeNum);
     const fourHex = nodeNum.toString(16).slice(-4);
     if (node?.short_name) {
       if (/_[0-9a-fA-F]{4}$/.test(node.short_name)) return node.short_name;
@@ -690,7 +752,7 @@ export function useMeshtasticRuntime() {
   // Extended label: short_name + hex suffix, long_name, or hex fallback.
   // Used in the header for the connected node display.
   const getFullNodeLabel = useCallback((nodeNum: number): string => {
-    const node = nodesRef.current.get(nodeNum);
+    const node = getIdentityNode(meshtasticIdentityIdRef.current, nodeNum);
     const hexId = formatMeshtasticNodeId(nodeNum);
     if (node?.short_name) {
       // Avoid double-appending hex if short_name already contains it
@@ -931,6 +993,12 @@ export function useMeshtasticRuntime() {
   }, [configureTargetNodeNum]);
 
   useEffect(() => {
+    if (!meshtasticIdentityId) return;
+    setMeshtasticRemoteConfigTarget(meshtasticIdentityId, configureTargetNodeNum);
+    return () => setMeshtasticRemoteConfigTarget(meshtasticIdentityId, null);
+  }, [configureTargetNodeNum, meshtasticIdentityId]);
+
+  useEffect(() => {
     remoteAdminStatusRef.current = remoteAdminStatus;
   }, [remoteAdminStatus]);
 
@@ -979,7 +1047,7 @@ export function useMeshtasticRuntime() {
       () => myNodeNumRef.current,
       (nodeNum) =>
         resolveMeshtasticDestPublicKeyBytes({
-          publicKeyHex: nodesRef.current.get(nodeNum)?.public_key_hex,
+          publicKeyHex: getIdentityNode(meshtasticIdentityIdRef.current, nodeNum)?.public_key_hex,
           adminKeyBase64: remoteAdminKeysByNodeRef.current[String(nodeNum)],
         }),
     );
@@ -1062,6 +1130,7 @@ export function useMeshtasticRuntime() {
         console.debug(
           `[useMeshtasticRuntime] MQTT-only identity: from=!${mqttOnlyId.toString(16).padStart(8, '0')} source=${mqttOnlyIdentitySource(lastRfSelfNodeIdRef.current)}`,
         );
+        let mqttSelfNodeToPersist: MeshNode | undefined;
         updateNodes((prev) => {
           const updated = new Map(prev);
           if (lastRfSelfNodeIdRef.current > 0 && mqttOnlyId === lastRfSelfNodeIdRef.current) {
@@ -1085,7 +1154,7 @@ export function useMeshtasticRuntime() {
               heard_via_mqtt_only: true,
             };
             updated.set(mqttOnlyId, rfNode);
-            void window.electronAPI.db.saveNode(rfNode);
+            mqttSelfNodeToPersist = rfNode;
             return updated;
           }
           const existing = updated.get(virtualId) ?? emptyNode(virtualId);
@@ -1101,9 +1170,10 @@ export function useMeshtasticRuntime() {
             heard_via_mqtt_only: true,
           };
           updated.set(virtualId, virtualNode);
-          void window.electronAPI.db.saveNode(virtualNode);
+          mqttSelfNodeToPersist = virtualNode;
           return updated;
         });
+        if (mqttSelfNodeToPersist) persistMeshtasticNode(mqttSelfNodeToPersist);
         // Periodic NodeInfo broadcast so other nodes see this client (every 5 min)
         if (mqttPresenceIntervalRef.current) clearInterval(mqttPresenceIntervalRef.current);
         const sendPresence = () => {
@@ -1118,7 +1188,7 @@ export function useMeshtasticRuntime() {
             lastRfSelfNodeIdRef.current,
             virtualNodeIdRef.current,
           );
-          const selfNode = nodesRef.current.get(presenceFrom);
+          const selfNode = getIdentityNode(meshtasticIdentityIdRef.current, presenceFrom);
           const useRealIdentity =
             lastRfSelfNodeIdRef.current > 0 && presenceFrom === lastRfSelfNodeIdRef.current;
           const presenceMqtt = resolveMeshtasticMqttPublishFieldsForChannel(
@@ -1206,6 +1276,7 @@ export function useMeshtasticRuntime() {
         });
       }
 
+      let mqttNodeToPersist: MeshNode | undefined;
       updateNodes((prev) => {
         const existing = prev.get(nodeUpdate.node_id) ?? emptyNode(nodeUpdate.node_id);
         const heardViaRF = rfHeardNodeIds.current.has(nodeUpdate.node_id);
@@ -1263,16 +1334,17 @@ export function useMeshtasticRuntime() {
           node.node_id,
         );
         updated.set(nodeUpdate.node_id, node);
-        void window.electronAPI.db.saveNode(node);
+        mqttNodeToPersist = node;
         return updated;
       });
-      const updatedMqttNode = nodesRef.current.get(nodeUpdate.node_id);
+      if (mqttNodeToPersist) persistMeshtasticNode(mqttNodeToPersist);
+      const updatedMqttNode = getIdentityNode(meshtasticIdentityIdRef.current, nodeUpdate.node_id);
       if (updatedMqttNode && getStoredMeshProtocol() === 'meshtastic') {
         useDiagnosticsStore
           .getState()
           .processNodeUpdate(
             updatedMqttNode,
-            nodesRef.current.get(myNodeNumRef.current) ?? null,
+            getIdentityNode(meshtasticIdentityIdRef.current, myNodeNumRef.current) ?? null,
             myNodeNumRef.current,
             MESHTASTIC_CAPABILITIES,
           );
@@ -1354,19 +1426,9 @@ export function useMeshtasticRuntime() {
         receivedVia: 'mqtt',
         isHistory: mqttTreatAsBacklog || undefined,
       };
-      const mqttWithPreviews = enrichMeshtasticReplyPreviews(
-        mqttMsg,
-        messagesRef.current,
-        getNodeName,
-      );
-
       const storeId = meshtasticIdentityIdRef.current;
-      const storeMsgs = storeId
-        ? messageRecordsToChatMessages(
-            Object.values(useMessageStore.getState().messages[storeId] ?? {}),
-          )
-        : [];
-      const dedupSource = storeMsgs.length > 0 ? storeMsgs : messagesRef.current;
+      const dedupSource = getIdentityChatMessages(storeId);
+      const mqttWithPreviews = enrichMeshtasticReplyPreviews(mqttMsg, dedupSource, getNodeName);
 
       const crossDup = findMeshtasticCrossTransportDuplicate(dedupSource, mqttWithPreviews);
       if (crossDup) {
@@ -1380,7 +1442,7 @@ export function useMeshtasticRuntime() {
         });
         if (storeId) {
           const { messages: storeNext, matched } = mapMeshtasticCrossTransportUpgrade(
-            storeMsgs,
+            dedupSource,
             mqttWithPreviews,
           );
           if (matched) {
@@ -1444,7 +1506,7 @@ export function useMeshtasticRuntime() {
       if (storeId) {
         upsertMessage(storeId, chatMessageToMessageRecord(mqttWithPreviews));
       }
-      void window.electronAPI.db.saveMessage(mqttWithPreviews);
+      persistMeshtasticMessage(mqttWithPreviews);
     });
 
     const unsubBrokerRaw = window.electronAPI.mqtt.onBrokerRaw((payload) => {
@@ -1516,33 +1578,35 @@ export function useMeshtasticRuntime() {
     };
   }, [cleanupSubscriptions, clearConfigureTimeout, stopWatchdog, stopGpsInterval]);
 
-  const applyMeshtasticForeignLoraFromLog = useCallback((message: string) => {
-    if (myNodeNumRef.current === 0) return;
-    const match = matchForeignLoraFromMeshtasticLog(message);
-    if (!match) return;
-    const meshcoreSelfId = getMeshcoreDiagnosticsSelfNodeId();
-    const senderId = match.packetClass === 'meshcore' ? match.senderId : undefined;
-    let displayName: string | undefined;
-    if (match.packetClass === 'meshcore' && meshcoreSelfId > 0 && senderId === meshcoreSelfId) {
-      const selfNode = getMergedNodesForForeignLoraDiagnostics(nodesRef.current).get(
-        meshcoreSelfId,
-      );
-      displayName = selfNode?.long_name ?? selfNode?.short_name;
-    }
-    useDiagnosticsStore
-      .getState()
-      .recordForeignLora(
-        myNodeNumRef.current,
-        match.packetClass,
-        match.rssi,
-        match.snr,
-        senderId,
-        () => getMergedNodesForForeignLoraDiagnostics(nodesRef.current),
-        'meshtastic-rf',
-        undefined,
-        displayName,
-      );
-  }, []);
+  const applyMeshtasticForeignLoraFromLog = useCallback(
+    (message: string) => {
+      if (myNodeNumRef.current === 0) return;
+      const match = matchForeignLoraFromMeshtasticLog(message);
+      if (!match) return;
+      const meshcoreSelfId = getMeshcoreDiagnosticsSelfNodeId();
+      const senderId = match.packetClass === 'meshcore' ? match.senderId : undefined;
+      let displayName: string | undefined;
+      if (match.packetClass === 'meshcore' && meshcoreSelfId > 0 && senderId === meshcoreSelfId) {
+        const selfNode =
+          getMergedNodesForForeignLoraDiagnostics(readIdentityNodes()).get(meshcoreSelfId);
+        displayName = selfNode?.long_name ?? selfNode?.short_name;
+      }
+      useDiagnosticsStore
+        .getState()
+        .recordForeignLora(
+          myNodeNumRef.current,
+          match.packetClass,
+          match.rssi,
+          match.snr,
+          senderId,
+          () => getMergedNodesForForeignLoraDiagnostics(readIdentityNodes()),
+          'meshtastic-rf',
+          undefined,
+          displayName,
+        );
+    },
+    [readIdentityNodes],
+  );
 
   const requestStoreForwardHistoryRef = useRef<
     (options?: {
@@ -1681,7 +1745,7 @@ export function useMeshtasticRuntime() {
     requestStoreForwardHistoryRef.current = requestStoreForwardHistory;
   }, [requestStoreForwardHistory]);
 
-  /** All transports use `ConnectionDriver.connect`; legacy handlers stay in `wireSubscriptions`. */
+  /** All transports use `ConnectionDriver.connect`; SDK handlers stay in `wireSubscriptions`. */
   const openMeshtasticTransport = useCallback(
     async (
       type: ConnectionType,
@@ -1721,7 +1785,7 @@ export function useMeshtasticRuntime() {
   );
 
   // ─── Wire up all event subscriptions for a device ─────────────
-  const meshtasticLegacyWireSubscriptionDeps = useMemo<MeshtasticLegacyWireSubscriptionDeps>(
+  const meshtasticRuntimeWireEffectsDeps = useMemo<MeshtasticRuntimeWireEffectsDeps>(
     () => ({
       channelConfigsRef,
       configureTargetNodeNumRef,
@@ -1746,11 +1810,8 @@ export function useMeshtasticRuntime() {
       meshtasticIdentityIdRef,
       meshtasticIngestSessionRef,
       meshtasticIngressDetachRef,
-      messagesRef,
       mqttStatusRef,
       myNodeNumRef,
-      nodesRef,
-      pendingTempIdRef,
       ackMeshPacketIdByTempIdRef,
       pendingTracePacketIdToTargetRef,
       pendingTraceRequestsRef,
@@ -1792,13 +1853,10 @@ export function useMeshtasticRuntime() {
       setRemoteConfigSnapshot,
       setRemoteAdminStatus,
       setRemoteAdminError,
-      setMessages,
       setTelemetry,
       setSignalTelemetry,
       setEnvironmentTelemetry,
       setDeviceOwner,
-      setChannels,
-      setChannelConfigs,
       setDeviceGpsMode,
       setDeviceFixedPosition,
       setTelemetryDeviceUpdateInterval,
@@ -1838,14 +1896,9 @@ export function useMeshtasticRuntime() {
 
   const wireSubscriptions = useCallback(
     (device: MeshDevice, type: ConnectionType, opts?: { driverIdentityId?: string }) => {
-      attachMeshtasticLegacyWireSubscriptions(
-        device,
-        type,
-        opts,
-        meshtasticLegacyWireSubscriptionDeps,
-      );
+      attachMeshtasticRuntimeWireEffects(device, type, opts, meshtasticRuntimeWireEffectsDeps);
     },
-    [meshtasticLegacyWireSubscriptionDeps],
+    [meshtasticRuntimeWireEffectsDeps],
   );
 
   // ─── Connection lost handler ──────────────────────────────────
@@ -2246,8 +2299,6 @@ export function useMeshtasticRuntime() {
 
   const applyMeshtasticNodesToUi = useCallback(
     (driverIdentityId: string, nodeMap: Map<number, MeshNode>) => {
-      nodesRef.current = nodeMap;
-      setNodes(nodeMap);
       syncNodesMapToIdentityStore(driverIdentityId, nodeMap);
     },
     [],
@@ -2297,10 +2348,7 @@ export function useMeshtasticRuntime() {
           const fromDb = await loadMeshtasticMessagesFromDb();
           for (const m of fromDb) {
             if (m.packetId && m.sender_id) {
-              seenPacketIds.current.set(
-                meshtasticPacketDedupKey(m.sender_id, m.packetId),
-                Date.now() + 10 * 60 * 1000,
-              );
+              markPacketSeen(m.sender_id, m.packetId);
             }
           }
           setMessages((prev) => mergeMeshtasticDbHydrationWithLive(prev, fromDb));
@@ -2321,7 +2369,7 @@ export function useMeshtasticRuntime() {
         throw new Error('Attach superseded during configure');
       }
     },
-    [applyMeshtasticNodesToUi, wireSubscriptions],
+    [applyMeshtasticNodesToUi, markPacketSeen, wireSubscriptions],
   );
 
   const handleRfConnectFailure = useCallback(
@@ -2588,10 +2636,8 @@ export function useMeshtasticRuntime() {
             trackMeshtasticOutboundTempId(tempId, resolvedIdStr);
             updateMessageStatus(identityId, resolvedIdStr, 'acked');
           }
+          const ackSenderId = outboundSendByTempIdRef.current.get(tempId)?.sender_id;
           outboundSendByTempIdRef.current.delete(tempId);
-          const ackSenderId = messagesRef.current.find((m) =>
-            meshtasticOutboundSendMatchesTempId(m, tempId),
-          )?.sender_id;
           void (
             resolvedPid !== tempId
               ? window.electronAPI.db.updateMessagePacketId(tempId, resolvedPid, ackSenderId)
@@ -2672,13 +2718,7 @@ export function useMeshtasticRuntime() {
 
       let wireReplyId: number | undefined;
       if (replyId != null) {
-        const identityIdForReply = meshtasticIdentityIdRef.current;
-        const storeMsgsForReply = identityIdForReply
-          ? messageRecordsToChatMessages(
-              Object.values(useMessageStore.getState().messages[identityIdForReply] ?? {}),
-            )
-          : messagesRef.current;
-        wireReplyId = resolveMeshtasticWireReplyId(storeMsgsForReply, replyId);
+        wireReplyId = resolveMeshtasticWireReplyId(readIdentityMessages(), replyId);
         if (wireReplyId == null || wireReplyId === 0) {
           throw new Error(
             'Reply requires the message RF packet id (wait for send ack or refresh chat).',
@@ -2706,7 +2746,7 @@ export function useMeshtasticRuntime() {
           to: destination != null && destination >>> 0 !== BROADCAST_ADDR ? destination : undefined,
           replyId: wireReplyId,
         },
-        messagesRef.current,
+        readIdentityMessages(),
         getNodeName,
       );
       outboundSendByTempIdRef.current.set(tempId, {
@@ -2716,7 +2756,7 @@ export function useMeshtasticRuntime() {
         channel,
       });
       setMessages((prev) => trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES));
-      void window.electronAPI.db.saveMessage(msg);
+      persistMeshtasticMessage(msg);
       const identityId = meshtasticIdentityIdRef.current;
       if (identityId) {
         trackMeshtasticOutboundTempId(tempId, String(tempId));
@@ -2746,7 +2786,7 @@ export function useMeshtasticRuntime() {
         from,
       );
     },
-    [getNodeName, isDuplicate],
+    [getNodeName, isDuplicate, readIdentityMessages],
   );
 
   const clearRemoteAdminLoadingIfNoForegroundInflight = (): void => {
@@ -2798,7 +2838,7 @@ export function useMeshtasticRuntime() {
         setRemoteAdminError('remoteAdmin.errors.noLocalRadio');
         return;
       }
-      const destNode = nodesRef.current.get(destNodeNum);
+      const destNode = getIdentityNode(meshtasticIdentityIdRef.current, destNodeNum);
       const configuredAdminKey = getRemoteAdminKeyForNode(destNodeNum);
       if (!configuredAdminKey || !isValidMeshtasticAdminKeyBase64(configuredAdminKey)) {
         setRemoteAdminStatus('error');
@@ -3594,90 +3634,95 @@ export function useMeshtasticRuntime() {
     pendingTracePacketIdToTargetRef.current.set(packetId >>> 0, nodeNum);
   }, []);
 
-  const deleteNode = useCallback(
-    async (nodeId: number) => {
-      const activeVirtualNodeId = virtualNodeIdRef.current;
-      if (nodeId === activeVirtualNodeId && mqttStatusRef.current === 'connected') {
-        throw markDeleteActiveMqttIdentityError(
-          'Cannot delete active MQTT identity while MQTT is connected',
-        );
-      }
-      if (nodeId === activeVirtualNodeId) {
-        clearVirtualNodeId();
-        virtualNodeIdRef.current = getOrCreateVirtualNodeId();
-      }
-      await window.electronAPI.db.deleteNode(nodeId);
-      console.debug(
-        `[useMeshtasticRuntime] deleteNode: removed 0x${nodeId.toString(16).toUpperCase()} from memory`,
+  const deleteNode = useCallback(async (nodeId: number) => {
+    const activeVirtualNodeId = virtualNodeIdRef.current;
+    if (nodeId === activeVirtualNodeId && mqttStatusRef.current === 'connected') {
+      throw markDeleteActiveMqttIdentityError(
+        'Cannot delete active MQTT identity while MQTT is connected',
       );
-      updateNodes((prev) => {
+    }
+    if (nodeId === activeVirtualNodeId) {
+      clearVirtualNodeId();
+      virtualNodeIdRef.current = getOrCreateVirtualNodeId();
+    }
+    await window.electronAPI.db.deleteNode(nodeId);
+    console.debug(
+      `[useMeshtasticRuntime] deleteNode: removed 0x${nodeId.toString(16).toUpperCase()} from memory`,
+    );
+    const storeId = meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
+    if (storeId) {
+      removeNode(storeId, nodeId);
+    } else {
+      setNodes((prev) => {
         const updated = new Map(prev);
         updated.delete(nodeId);
         return updated;
       });
-    },
-    [updateNodes],
-  );
+    }
+  }, []);
 
   const refreshNodesFromDb = useCallback(() => {
     void loadMeshtasticNodeMapFromDb()
       .then((nodeMap) => {
         console.debug(`[useMeshtasticRuntime] refreshNodesFromDb: loaded ${nodeMap.size} nodes`);
-        nodesRef.current = nodeMap;
-        setNodes(nodeMap);
         const storeId =
           meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
-        if (storeId) syncNodesMapToIdentityStore(storeId, nodeMap);
+        if (storeId) {
+          syncNodesMapToIdentityStore(storeId, nodeMap);
+        } else {
+          setNodes(nodeMap);
+        }
       })
       .catch((err: unknown) => {
         console.error('[useMeshtasticRuntime] Failed to refresh nodes: ' + errLikeToLogString(err));
       });
   }, []);
 
-  const refreshMessagesFromDb = useCallback((opts?: { replaceFromDb?: boolean }) => {
-    void loadMeshtasticMessagesFromDb()
-      .then((fromDb) => {
-        console.debug(
-          `[useMeshtasticRuntime] refreshMessagesFromDb: loaded ${fromDb.length} messages`,
-        );
-        for (const m of fromDb) {
-          if (m.packetId && m.sender_id) {
-            seenPacketIds.current.set(
-              meshtasticPacketDedupKey(m.sender_id, m.packetId),
-              Date.now() + 10 * 60 * 1000,
+  const refreshMessagesFromDb = useCallback(
+    (opts?: { replaceFromDb?: boolean }) => {
+      void loadMeshtasticMessagesFromDb()
+        .then((fromDb) => {
+          console.debug(
+            `[useMeshtasticRuntime] refreshMessagesFromDb: loaded ${fromDb.length} messages`,
+          );
+          for (const m of fromDb) {
+            if (m.packetId && m.sender_id) {
+              markPacketSeen(m.sender_id, m.packetId);
+            }
+          }
+          setMessages((prev) => mergeMeshtasticDbHydrationWithLive(prev, fromDb, opts));
+          const storeId =
+            meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
+          if (storeId) {
+            void hydrateMeshtasticMessagesFromDb(
+              storeId,
+              opts?.replaceFromDb ? 'replace' : 'upsert',
             );
           }
-        }
-        setMessages((prev) => mergeMeshtasticDbHydrationWithLive(prev, fromDb, opts));
-        const storeId =
-          meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
-        if (storeId) {
-          void hydrateMeshtasticMessagesFromDb(storeId, opts?.replaceFromDb ? 'replace' : 'upsert');
-        }
-      })
-      .catch((err: unknown) => {
-        console.error(
-          '[useMeshtasticRuntime] Failed to refresh messages: ' + errLikeToLogString(err),
-        );
-      });
-  }, []);
-
-  const setNodeFavorited = useCallback(
-    async (nodeId: number, favorited: boolean) => {
-      await window.electronAPI.db.setNodeFavorited(nodeId, favorited);
-      const storeId = getIdentityIdForProtocol('meshtastic');
-      if (storeId) {
-        patchNodeFavorited(storeId, nodeId, favorited);
-      }
-      updateNodes((prev) => {
-        const updated = new Map(prev);
-        const existing = updated.get(nodeId);
-        if (existing) updated.set(nodeId, { ...existing, favorited });
-        return updated;
-      });
+        })
+        .catch((err: unknown) => {
+          console.error(
+            '[useMeshtasticRuntime] Failed to refresh messages: ' + errLikeToLogString(err),
+          );
+        });
     },
-    [updateNodes],
+    [markPacketSeen],
   );
+
+  const setNodeFavorited = useCallback(async (nodeId: number, favorited: boolean) => {
+    await window.electronAPI.db.setNodeFavorited(nodeId, favorited);
+    const storeId = getIdentityIdForProtocol('meshtastic');
+    if (storeId) {
+      patchNodeFavorited(storeId, nodeId, favorited);
+      return;
+    }
+    setNodes((prev) => {
+      const updated = new Map(prev);
+      const existing = updated.get(nodeId);
+      if (existing) updated.set(nodeId, { ...existing, favorited });
+      return updated;
+    });
+  }, []);
 
   const refreshOurPosition = useCallback(async (): Promise<OurPosition | null> => {
     // Dual-protocol: Meshtastic hook stays mounted when user switches to MeshCore; skip GPS work
@@ -3687,7 +3732,7 @@ export function useMeshtasticRuntime() {
     }
     setGpsLoading(true);
     try {
-      const myNode = nodesRef.current.get(myNodeNumRef.current);
+      const myNode = getIdentityNode(meshtasticIdentityIdRef.current, myNodeNumRef.current);
       const storedStatic = readStoredStaticGps();
       const staticLat = storedStatic?.lat;
       const staticLon = storedStatic?.lon;
@@ -3711,6 +3756,7 @@ export function useMeshtasticRuntime() {
               : 0;
         if (selfNodeId > 0) {
           const isVirtualNode = !hasDevice && selfNodeId === virtualNodeIdRef.current;
+          let selfNodeToPersist: MeshNode | undefined;
           updateNodes((prev) => {
             const updated = new Map(prev);
             const existing = updated.get(selfNodeId) ?? emptyNode(selfNodeId);
@@ -3726,12 +3772,15 @@ export function useMeshtasticRuntime() {
                 : {}),
             };
             updated.set(selfNodeId, node);
-            if (!isVirtualNode) void window.electronAPI.db.saveNode(node);
+            if (!isVirtualNode) selfNodeToPersist = node;
             return updated;
           });
+          if (selfNodeToPersist) persistMeshtasticNode(selfNodeToPersist);
         }
 
-        const isClientMute = nodesRef.current.get(myNodeNumRef.current)?.role === ROLE_CLIENT_MUTE;
+        const isClientMute =
+          getIdentityNode(meshtasticIdentityIdRef.current, myNodeNumRef.current)?.role ===
+          ROLE_CLIENT_MUTE;
         const wouldSendWithoutMute =
           deviceRef.current &&
           (pos.source === 'static' || (pos.source === 'browser' && deviceGpsModeRef.current === 2));
@@ -3764,12 +3813,20 @@ export function useMeshtasticRuntime() {
 
   // Resolve position on app startup regardless of device connection
   useEffect(() => {
-    void refreshOurPositionRef.current();
+    void refreshOurPositionRef.current().catch((e: unknown) => {
+      console.debug(
+        '[useMeshtasticRuntime] initial refreshOurPosition failed ' + errLikeToLogString(e),
+      );
+    });
   }, []);
 
   const sendPositionToDevice = useCallback(async (lat: number, lon: number, alt?: number) => {
     if (!deviceRef.current) return;
-    if (nodesRef.current.get(myNodeNumRef.current)?.role === ROLE_CLIENT_MUTE) return;
+    if (
+      getIdentityNode(meshtasticIdentityIdRef.current, myNodeNumRef.current)?.role ===
+      ROLE_CLIENT_MUTE
+    )
+      return;
     await deviceRef.current.setPosition(
       create(Mesh.PositionSchema, {
         latitudeI: Math.round(lat * 1e7),
@@ -3816,11 +3873,7 @@ export function useMeshtasticRuntime() {
         setState((prev) => ({ ...prev, myNodeNum: from }));
       }
       const identityId = meshtasticIdentityIdRef.current;
-      const storeMsgs = identityId
-        ? messageRecordsToChatMessages(
-            Object.values(useMessageStore.getState().messages[identityId] ?? {}),
-          )
-        : messagesRef.current;
+      const storeMsgs = readIdentityMessages();
       const repliedMsg =
         storeMsgs.find((m) => m.packetId === replyId) ??
         storeMsgs.find((m) => m.timestamp === replyId) ??
@@ -3876,15 +3929,9 @@ export function useMeshtasticRuntime() {
           replyTo: String(wireReplyId),
         });
         trackMeshtasticOutboundTempId(reactionTempId, String(reactionTempId));
-        void window.electronAPI.db
-          .saveMessage({ ...msg, packetId: reactionTempId })
-          .catch((e: unknown) => {
-            console.debug(
-              '[useMeshtasticRuntime] sendReaction saveMessage failed ' + errLikeToLogString(e),
-            );
-          });
+        persistMeshtasticMessage({ ...msg, packetId: reactionTempId });
       } else {
-        // Legacy runtime-only path (no identity store yet)
+        // No identity bound yet — fall back to the hook-local message state.
         setMessages((prev) => {
           const isDup = prev.some(
             (m) =>
@@ -3896,7 +3943,7 @@ export function useMeshtasticRuntime() {
           if (isDup) return prev;
           return trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
         });
-        void window.electronAPI.db.saveMessage(msg);
+        persistMeshtasticMessage(msg);
       }
 
       // Device transport — mesh.proto: `emoji` is a boolean flag; the glyph is UTF-8 in `payload`.
@@ -3945,7 +3992,7 @@ export function useMeshtasticRuntime() {
 
       return Promise.resolve();
     },
-    [getNodeName, isDuplicate],
+    [getNodeName, isDuplicate, readIdentityMessages],
   );
 
   const sendStatusEvents = useCallback(() => {
@@ -3978,14 +4025,14 @@ export function useMeshtasticRuntime() {
         : 0;
   const virtualNodeId = virtualNodeIdRef.current;
 
-  const getNodes = useCallback(() => nodesRef.current, []);
+  const getNodes = useCallback(() => readIdentityNodes(), [readIdentityNodes]);
 
   const clearRawPackets = useCallback(() => {
     setRawPackets([]);
   }, []);
 
   // Read identity-scoped store slices synchronously (no zustand subscribe here — App
-  // subscribes via useMessages/useNodes; legacy setState still triggers re-renders).
+  // subscribes via useMessages/useNodes; hook setState still triggers re-renders).
   const meshtasticDeviceRecord = useDeviceStore((s) =>
     meshtasticIdentityId ? s.devices[meshtasticIdentityId] : undefined,
   );
@@ -4018,8 +4065,8 @@ export function useMeshtasticRuntime() {
   const resolvedNodes = useMemo(() => {
     if (!meshtasticIdentityId) return nodes;
     if (!meshtasticNodesFromStore) return nodes;
-    const fromStore = nodeRecordsToMeshNodeMap(Object.values(meshtasticNodesFromStore));
-    return fromStore.size > 0 ? fromStore : nodes;
+    // Empty store is valid (e.g. after delete); do not fall back to stale hook-local Map.
+    return nodeRecordsToMeshNodeMap(Object.values(meshtasticNodesFromStore));
   }, [meshtasticIdentityId, nodes, meshtasticNodesFromStore]);
 
   const resolvedTraceRouteResults = useMemo(() => {
@@ -4063,6 +4110,13 @@ export function useMeshtasticRuntime() {
     if (meshtasticDeviceRecord?.channelConfigs.length) return meshtasticDeviceRecord.channelConfigs;
     return channelConfigs;
   }, [meshtasticIdentityId, channelConfigs, meshtasticDeviceRecord]);
+
+  // Channel configs now arrive through MeshtasticProtocol → deviceStore, so the
+  // ref MQTT uplink reads must follow the resolved list (store first, hook state
+  // for MQTT-only presets) rather than the hook state alone.
+  useEffect(() => {
+    channelConfigsRef.current = resolvedChannelConfigs;
+  }, [resolvedChannelConfigs]);
 
   const resolvedModuleConfigs = useMemo(() => {
     if (!meshtasticIdentityId) return moduleConfigs;

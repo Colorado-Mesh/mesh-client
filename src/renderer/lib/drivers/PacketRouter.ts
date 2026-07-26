@@ -33,8 +33,9 @@ import {
 } from '../../stores/nodeStore';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { ensureMeshtasticChatSenderInNodeStore } from '../meshtastic/meshtasticChatSenderNode';
+import { shouldSuppressMeshtasticLocalConfigWrite } from '../meshtastic/meshtasticConfigIngressGuard';
 import { meshtasticTracerouteLastHeardNodeIds } from '../meshtasticLastHeard';
-import type { DomainEvent } from '../protocols/Protocol';
+import type { DomainEvent, DomainEventType } from '../protocols/Protocol';
 import { retargetMeshtasticOutboundTempId } from '../sessions/meshtasticSession';
 import {
   MESHCORE_ROOM_POST_DEDUP_WINDOW_MS,
@@ -58,7 +59,30 @@ function upsertByIndex<T extends { index: number }>(arr: T[], item: T): T[] {
   return next.sort((a, b) => a.index - b.index);
 }
 
+/**
+ * Post-store hook invoked for every dispatched event.
+ *
+ * Ordering contract, relied on by ingest and the `attach*SideEffects` modules:
+ * 1. `dispatch` applies the store mutation for the event type first, so a
+ *    listener always observes `messageStore` / `nodeStore` / `deviceStore`
+ *    already updated for the event it is handling.
+ * 2. Listeners then run in registration order. A throwing listener is logged
+ *    and skipped; later listeners and the store write still happen.
+ * 3. When a Meshtastic local-config write is suppressed (`shouldSuppressMeshtasticLocalConfigWrite`),
+ *    both the store mutation and listener notification are skipped — listeners must not observe a
+ *    "store first" update that never happened.
+ *
+ * Prefer `attachTypedPacketListener` over registering raw listeners so the
+ * identity filter and payload narrowing stay in one place.
+ */
 export type PacketRouterListener = (event: DomainEvent, identityId: IdentityId) => void;
+
+interface PacketRouterListenerEntry {
+  id: number;
+  listener: PacketRouterListener;
+}
+
+const MAX_PACKET_ROUTER_LISTENERS = 256;
 
 function roomPostWireBody(payload: string): string {
   return payload.length > 4 ? payload.slice(4) : payload;
@@ -95,16 +119,71 @@ function findRoomPostOptimistic(
 }
 
 class PacketRouter {
-  private listeners: PacketRouterListener[] = [];
+  private readonly listeners: PacketRouterListenerEntry[] = [];
+  private readonly typedListeners = new Map<DomainEventType, PacketRouterListenerEntry[]>();
+  private nextListenerId = 1;
 
+  /** Registers a listener at the end of the dispatch order. Returns a detach fn. */
   addListener(listener: PacketRouterListener): () => void {
-    this.listeners.push(listener);
+    const entry = { id: this.nextListenerId++, listener };
+    this.listeners.push(entry);
+    this.enforceListenerLimit();
     return () => {
-      this.listeners = this.listeners.filter((l) => l !== listener);
+      this.removeListener(entry.id);
     };
   }
 
+  addTypedListener(type: DomainEventType, listener: PacketRouterListener): () => void {
+    return this.addTypedListeners([type], listener);
+  }
+
+  addTypedListeners(types: readonly DomainEventType[], listener: PacketRouterListener): () => void {
+    const entry = { id: this.nextListenerId++, listener };
+    for (const type of new Set(types)) {
+      const entries = this.typedListeners.get(type) ?? [];
+      entries.push(entry);
+      this.typedListeners.set(type, entries);
+    }
+    this.enforceListenerLimit();
+    return () => {
+      this.removeListener(entry.id);
+    };
+  }
+
+  private removeListener(id: number): void {
+    const remaining = this.listeners.filter((entry) => entry.id !== id);
+    this.listeners.length = 0;
+    this.listeners.push(...remaining);
+    for (const [type, entries] of this.typedListeners) {
+      const next = entries.filter((entry) => entry.id !== id);
+      if (next.length === 0) this.typedListeners.delete(type);
+      else this.typedListeners.set(type, next);
+    }
+  }
+
+  private enforceListenerLimit(): void {
+    const ids = new Set<number>(this.listeners.map((entry) => entry.id));
+    for (const entries of this.typedListeners.values()) {
+      for (const entry of entries) ids.add(entry.id);
+    }
+    if (ids.size <= MAX_PACKET_ROUTER_LISTENERS) return;
+    this.removeListener(Math.min(...ids));
+    console.warn('[PacketRouter] evicted oldest listener after reaching session cap');
+  }
+
+  /** Live listener count. Exported for leak assertions in tests. */
+  listenerCount(): number {
+    const ids = new Set<number>(this.listeners.map((entry) => entry.id));
+    for (const entries of this.typedListeners.values()) {
+      for (const entry of entries) ids.add(entry.id);
+    }
+    return ids.size;
+  }
+
+  /** Applies the store mutation for `event`, then notifies listeners in order. */
   dispatch(event: DomainEvent, identityId: IdentityId): void {
+    // When a suppress branch skips the store write, skip listeners too (contract §3).
+    let skipListeners = false;
     switch (event.type) {
       case 'text_message': {
         const isMeshtastic = getIdentity(identityId)?.protocol.type === 'meshtastic';
@@ -212,6 +291,10 @@ class PacketRouter {
         upsertWaypoint(identityId, event.payload);
         break;
       case 'channel': {
+        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
+          skipListeners = true;
+          break;
+        }
         const e = event.payload;
         const existing = getDevice(identityId);
         const name = e.name || (e.index === 0 ? 'Primary' : `Channel ${e.index}`);
@@ -233,12 +316,24 @@ class PacketRouter {
         break;
       }
       case 'device_gps_state':
+        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
+          skipListeners = true;
+          break;
+        }
         setDeviceGpsState(identityId, event.payload.gpsMode, event.payload.fixedPosition);
         break;
       case 'security_config':
+        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
+          skipListeners = true;
+          break;
+        }
         setSecurityConfig(identityId, event.payload);
         break;
       case 'module_config': {
+        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
+          skipListeners = true;
+          break;
+        }
         const current = getDevice(identityId).moduleConfigs;
         setModuleConfigs(identityId, {
           ...current,
@@ -247,9 +342,17 @@ class PacketRouter {
         break;
       }
       case 'telemetry_interval':
+        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
+          skipListeners = true;
+          break;
+        }
         setTelemetryDeviceUpdateInterval(identityId, event.payload.interval);
         break;
       case 'meshtastic_config_slice':
+        if (shouldSuppressMeshtasticLocalConfigWrite(identityId)) {
+          skipListeners = true;
+          break;
+        }
         setMeshtasticConfigSlice(identityId, event.payload.configCase, event.payload.value);
         break;
       case 'queue_status': {
@@ -295,7 +398,12 @@ class PacketRouter {
         upsertMeshcoreChannel(identityId, event.payload);
         break;
     }
-    for (const listener of this.listeners) {
+    if (skipListeners) return;
+    const listeners = [...this.listeners, ...(this.typedListeners.get(event.type) ?? [])].sort(
+      (a, b) => a.id - b.id,
+    );
+    // Snapshot before invoking: listeners may detach themselves during dispatch.
+    for (const { listener } of listeners) {
       try {
         listener(event, identityId);
       } catch (e) {

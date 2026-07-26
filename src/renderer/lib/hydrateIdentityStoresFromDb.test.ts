@@ -21,6 +21,7 @@ import { messageRecordsToChatMessages } from './storeRecordAdapters';
 
 const ID_MT = 'id-hydrate-mt';
 const ID_MC = 'id-hydrate-mc';
+const ID_RT = 'id-hydrate-rt';
 
 describe('hydrateIdentityStoresFromDb', () => {
   beforeEach(() => {
@@ -336,6 +337,38 @@ describe('hydrateIdentityStoresFromDb', () => {
     }));
     upsertMessageRecordsForIdentity(ID_MT, records);
     expect(Object.keys(useMessageStore.getState().messages[ID_MT] ?? {})).toHaveLength(200);
+  });
+
+  it('skips Reticulum destination rows with an unusable hash and keeps the valid ones', async () => {
+    const validHash = 'a'.repeat(32);
+    vi.spyOn(window.electronAPI.db, 'getReticulumDestinations').mockResolvedValue([
+      { destination_hash: validHash, display_name: 'Peer', last_heard: 1000 },
+      { destination_hash: null },
+      { destination_hash: 'not-a-hash' },
+      { destination_hash: 42 as unknown as string },
+    ]);
+    vi.spyOn(window.electronAPI.db, 'getReticulumMessages').mockResolvedValue([]);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await hydrateIdentityStoresFromDb('reticulum', ID_RT);
+
+    const nodes = Object.values(useNodeStore.getState().nodes[ID_RT] ?? {});
+    expect(nodes).toHaveLength(1);
+    expect(nodes[0]?.reticulumDestinationHash).toBe(validHash);
+    expect(warn).toHaveBeenCalledTimes(3);
+  });
+
+  it('normalizes uppercase Reticulum destination hashes', async () => {
+    const upper = 'B'.repeat(32);
+    vi.spyOn(window.electronAPI.db, 'getReticulumDestinations').mockResolvedValue([
+      { destination_hash: upper },
+    ]);
+    vi.spyOn(window.electronAPI.db, 'getReticulumMessages').mockResolvedValue([]);
+
+    await hydrateIdentityStoresFromDb('reticulum', ID_RT);
+
+    const nodes = Object.values(useNodeStore.getState().nodes[ID_RT] ?? {});
+    expect(nodes[0]?.reticulumDestinationHash).toBe(upper.toLowerCase());
   });
 
   it('upsertNodeRecordsForIdentity merges large batches in one store update', () => {

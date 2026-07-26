@@ -103,7 +103,7 @@ export interface ChatComposerProps {
   onRememberFloodScopePreset?: (hashtag: string) => void;
   /**
    * Resolve GPS/static position for one-click location share.
-   * Sourced from runtime `refreshOurPosition` (Composer has no nodesRef access).
+   * Sourced from runtime `refreshOurPosition` (Composer reads position via runtime, not nodeStore).
    */
   resolveShareLocation?: () => Promise<{ lat: number; lon: number } | null>;
   /**

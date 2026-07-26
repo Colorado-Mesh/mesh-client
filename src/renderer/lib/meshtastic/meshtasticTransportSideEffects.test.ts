@@ -2,8 +2,8 @@
 import type { MeshDevice } from '@meshtastic/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { pushMeshtasticTransportSideEffectUnsubs } from './meshtasticLegacyDeviceEvents';
 import { attachMeshtasticTransportLossWatch } from './meshtasticTransportLossDetection';
+import { pushMeshtasticTransportSideEffectUnsubs } from './meshtasticTransportSideEffects';
 
 vi.mock('./meshtasticTransportLossDetection', () => ({
   attachMeshtasticTransportLossWatch: vi.fn(() => () => {}),

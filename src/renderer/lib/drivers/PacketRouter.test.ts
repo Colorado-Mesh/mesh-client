@@ -1,11 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useConnectionStore } from '../../stores/connectionStore';
+import { getDevice, useDeviceStore } from '../../stores/deviceStore';
 import { addIdentity, useIdentityStore } from '../../stores/identityStore';
 import { useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
+import {
+  clearMeshtasticConfigIngressGuardsForTests,
+  setMeshtasticRemoteConfigTarget,
+} from '../meshtastic/meshtasticConfigIngressGuard';
 import { meshtasticProtocol } from '../protocols/MeshtasticProtocol';
 import type { DomainEvent } from '../protocols/Protocol';
+import { attachTypedPacketListener } from './attachTypedPacketListener';
 import { packetRouter } from './PacketRouter';
 
 const ID = 'packet-router-test';
@@ -21,6 +27,8 @@ describe('PacketRouter', () => {
     useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
     useConnectionStore.setState({ connections: {} });
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });
+    useDeviceStore.setState({ devices: {} });
+    clearMeshtasticConfigIngressGuardsForTests();
   });
 
   const cases: { event: DomainEvent; assert: () => void }[] = [
@@ -316,6 +324,82 @@ describe('PacketRouter', () => {
     const byId = useMessageStore.getState().messages[ID] ?? {};
     expect(Object.keys(byId)).toHaveLength(1);
     expect(byId[realId]).toBeDefined();
+  });
+
+  it('does not write local config events while remote admin targets another node', () => {
+    packetRouter.dispatch(
+      {
+        type: 'module_config',
+        payload: { configType: 'mqtt', value: { enabled: false } },
+      },
+      ID,
+    );
+    expect(getDevice(ID).moduleConfigs.mqtt).toEqual({ enabled: false });
+
+    setMeshtasticRemoteConfigTarget(ID, 0x1234);
+    packetRouter.dispatch(
+      {
+        type: 'module_config',
+        payload: { configType: 'mqtt', value: { enabled: true } },
+      },
+      ID,
+    );
+    packetRouter.dispatch(
+      {
+        type: 'meshtastic_config_slice',
+        payload: { configCase: 'lora', value: { region: 1 } },
+      },
+      ID,
+    );
+
+    expect(getDevice(ID).moduleConfigs.mqtt).toEqual({ enabled: false });
+    expect(getDevice(ID).meshtasticConfigSlices.lora).toBeUndefined();
+  });
+
+  it('skips listeners when a local config write is suppressed', () => {
+    const listener = vi.fn();
+    const detach = attachTypedPacketListener(ID, 'module_config', listener);
+    setMeshtasticRemoteConfigTarget(ID, 0x1234);
+
+    packetRouter.dispatch(
+      {
+        type: 'module_config',
+        payload: { configType: 'mqtt', value: { enabled: true } },
+      },
+      ID,
+    );
+
+    expect(listener).not.toHaveBeenCalled();
+    expect(getDevice(ID).moduleConfigs.mqtt).toBeUndefined();
+    detach();
+  });
+
+  it('dispatches general and typed listeners in registration order', () => {
+    const calls: string[] = [];
+    const detachGeneral = packetRouter.addListener(() => calls.push('general'));
+    const detachTyped = attachTypedPacketListener(ID, 'queue_status', () => calls.push('typed'));
+
+    packetRouter.dispatch({ type: 'queue_status', payload: { free: 1, maxlen: 2 } }, ID);
+
+    expect(calls).toEqual(['general', 'typed']);
+    detachGeneral();
+    detachTyped();
+  });
+
+  it('uses a listener snapshot when a callback detaches another listener', () => {
+    const calls: string[] = [];
+    let detachSecond: () => void = () => undefined;
+    const detachFirst = packetRouter.addListener(() => {
+      calls.push('first');
+      detachSecond();
+    });
+    detachSecond = packetRouter.addListener(() => calls.push('second'));
+
+    packetRouter.dispatch({ type: 'queue_status', payload: { free: 1, maxlen: 2 } }, ID);
+    packetRouter.dispatch({ type: 'queue_status', payload: { free: 1, maxlen: 2 } }, ID);
+
+    expect(calls).toEqual(['first', 'second', 'first']);
+    detachFirst();
   });
 
   it('ignores unknown event types without throwing', () => {

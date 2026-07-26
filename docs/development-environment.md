@@ -532,7 +532,7 @@ By default all three Vitest projects run in **parallel** (`groupOrder: 0`). On m
 
 CI runs coverage in three parallel jobs (`renderer-ui`, `renderer-logic`, `main`) and merges blob reports via `pnpm run test:coverage:merge` (see [`.github/workflows/tests.yaml`](../.github/workflows/tests.yaml)).
 
-Monolithic protocol runtimes (`useMeshtasticRuntime`, `useMeshcoreRuntime`) also use **source contract tests** (read `.ts` files and assert wiring strings) where full `renderHook` integration would require heavy BLE/MQTT mocking; see `*.reconnect*.test.ts` beside those runtimes.
+Monolithic protocol runtimes (`useMeshtasticRuntime`, `useMeshcoreRuntime`) also use **source contract tests** (read `.ts` files and assert wiring strings) where full `renderHook` integration would require heavy BLE/MQTT mocking; see `*.reconnect*.test.ts` beside those runtimes. Another example: [`meshtasticRuntimeWireEffects.diagnostics.contract.test.ts`](../src/renderer/lib/meshtastic/meshtasticRuntimeWireEffects.diagnostics.contract.test.ts) asserts LocalStats / RF hop-SNR still call `processNodeUpdate` from `meshtasticNodeSideEffects` / `meshtasticRawPacketSideEffects`.
 
 #### Browser dev without Electron
 

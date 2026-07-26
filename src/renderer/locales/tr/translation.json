@@ -548,7 +548,9 @@
       "pkiMissingRecipientKey": "Şifrelenmiş mesaj gönderilemedi — NodeDB'de alıcı genel anahtarı eksik.",
       "pkiFailed": "Bu mesaj için PKI şifrelemesi başarısız oldu.",
       "noChannel": "Bu mesajı yönlendirmek için kullanılabilir kanal yok.",
-      "timeout": "Mesaj radyoda zaman aşımına uğradı."
+      "timeout": "Mesaj radyoda zaman aşımına uğradı.",
+      "rateLimited": "Radyo hız sınırlayıcı mesajlardır. Kısa süre içinde yeniden deneyin.",
+      "noInterface": "Bu mesajı göndermek için radyo arayüzü mevcut değil."
     },
     "waitingMessagesQueued": "{{count}} radyoda kuyrukta bekleyen mesaj(lar)",
     "waitingMessagesSyncProgress": "{{processed}} / {{total}} radyodan senkronize ediliyor…",
@@ -606,7 +608,9 @@
     "floodScopeOverrideCustomApply": "Kapsamı kullan",
     "floodScopeOverrideCustomInvalid": "Geçerli bir bölge hashtag'i girin (örneğin #myregion).",
     "dmNodeHops_one": "{{count}} atlama",
-    "dmNodeHops_other": "{{count}} atlama"
+    "dmNodeHops_other": "{{count}} atlama",
+    "notificationDmTitle": "{{sender}} 'dan DM",
+    "notificationMessageTitle": "{{sender}} adlı kişiden mesaj"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -1198,20 +1202,20 @@
     "coloradoRegionGateStay": "Colorado'dayım",
     "coloradoRegionGateSwitch": "LetsMesh'e geç",
     "topicPrefixInvalidIata": "Konu ön eki meshcore/test veya meshcore/{IATA} (3 harf), ör. meshcore/DEN olmalıdır.",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "Vazgeçmeden önce denemeleri yeniden bağlayın (1 -{{max}}). Ayarlar ile kaydedildi; değiştirdikten sonra Bağlan'a tekrar basın, böylece ana işlem onu alır.",
       "meshtastic": "Her iki protokol de 1 -{{max}} 'a izin verir. Ayarlar ile kaydedildi; bağlantıyı kesin ve tekrar bağlanın, böylece çalışan oturum yeni değeri kullanır."
     },
     "reticulumStackRunningAs": "Çalışıyor — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Reticulum yığını yanıt vermiyor — yeniden başlatılıyor…"
+    "reticulumSidecarUnhealthyRestarting": "Reticulum yığını yanıt vermiyor — yeniden başlatılıyor…",
+    "reticulumSharedInstance": {
+      "title": "Başka bir uygulamanın paylaşılan örneğini kullanma",
+      "body": "Bu uygulama, başka bir uygulamanın paylaşılan Reticulum örneğinin istemcisi olarak eklenmiştir. Bu uygulamanın yapılandırmasındaki yerel TCP hub'ları bu modda başlatılmaz; trafik yalnızca diğer uygulamanın yığınını kullanabilir.",
+      "networkHint": "Veya → Paylaşımı manuel olarak kapatmak için Ağ Paylaşımı Reticulum örneğini açın, ardından yığını yeniden başlatın. Ayrıca MeshChat, Ratspeak veya bağımsız rnsd'den tamamen çıkıp yeniden başlatabilirsiniz.",
+      "disableShare": "Paylaşım örneğini kapatın ve yeniden başlatın",
+      "disableShareAria": "Paylaşım örneğini kapat ve yığını yeniden başlat",
+      "disableFailed": "Paylaşım örneği kapatılamadı."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -2698,7 +2702,11 @@
     "moderateStability": "Ilıman",
     "unstableStability": "Dengesiz",
     "unknownStability": "Bilinmiyor",
-    "flagged": "{{flagged}}/{{total}} işaretlendi"
+    "flagged": "{{flagged}}/{{total}} işaretlendi",
+    "hybridMqttPathTooltip": "RF aracılığıyla alınır; bazı paketler bir MQTT röle yolu kullanır",
+    "hybridMqttPathAria": "RF ve MQTT yolu",
+    "connectedViaRfAndMqttTooltip": "RF ve MQTT ile bağlanır",
+    "connectedViaRfAndMqttAria": "RF ve MQTT ile bağlanır"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kişiler yenilendi.",
@@ -2786,7 +2794,8 @@
     "hybridMqttPathTooltip": "RF aracılığıyla alınır; bazı paketler bir MQTT röle yolu kullanır",
     "hybridMqttPathAria": "RF ve MQTT yolu",
     "connectedViaRfAndMqttTooltip": "RF ve MQTT aracılığıyla bağlanıldı",
-    "connectedViaRfAndMqttAria": "RF ve MQTT aracılığıyla bağlanıldı"
+    "connectedViaRfAndMqttAria": "RF ve MQTT aracılığıyla bağlanıldı",
+    "echoesConnectionHealthTooltip": "{{score}}% bağlantı sağlığı"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

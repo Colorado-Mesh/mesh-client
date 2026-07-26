@@ -529,6 +529,8 @@
       "pkiMissingRecipientKey": "Could not send encrypted message — recipient public key is missing from NodeDB.",
       "pkiFailed": "PKI encryption failed for this message.",
       "noChannel": "No channel available to route this message.",
+      "rateLimited": "The radio is rate-limiting messages. Try again shortly.",
+      "noInterface": "No radio interface is available to send this message.",
       "timeout": "Message timed out on the radio."
     },
     "queueButton": "Queue",
@@ -568,6 +570,8 @@
     "dmNodeSignal": "SNR {{snr}} dB",
     "dmNodeHops_one": "{{count}} hop",
     "dmNodeHops_other": "{{count}} hops",
+    "notificationDmTitle": "DM from {{sender}}",
+    "notificationMessageTitle": "Message from {{sender}}",
     "muteConversation": "Mute this conversation",
     "unmuteConversation": "Unmute this conversation",
     "starMessage": "Star message",
@@ -2704,7 +2708,11 @@
     "stableStability": "Stable",
     "moderateStability": "Moderate",
     "unstableStability": "Unstable",
-    "unknownStability": "Unknown"
+    "unknownStability": "Unknown",
+    "hybridMqttPathTooltip": "Received via RF; some packets use an MQTT relay path",
+    "hybridMqttPathAria": "RF and MQTT path",
+    "connectedViaRfAndMqttTooltip": "Connected via RF and MQTT",
+    "connectedViaRfAndMqttAria": "Connected via RF and MQTT"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contacts refreshed.",
@@ -2792,7 +2800,8 @@
     "removeFromFavorites": "Remove from favorites",
     "addToFavorites": "Add to favorites",
     "healthTooltip": "Health score: {{total}}/100 (signal {{signal}}, recency {{recency}}, load {{load}}, battery {{battery}})",
-    "healthAriaLabel": "Node health score {{total}} out of 100"
+    "healthAriaLabel": "Node health score {{total}} out of 100",
+    "echoesConnectionHealthTooltip": "{{score}}% connection health"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

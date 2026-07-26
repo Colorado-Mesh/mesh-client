@@ -548,7 +548,9 @@
       "pkiMissingRecipientKey": "Не вдалося надіслати зашифроване повідомлення — у NodeDB відсутній відкритий ключ одержувача.",
       "pkiFailed": "Не вдалося зашифрувати PKI для цього повідомлення.",
       "noChannel": "Немає каналу для маршрутизації цього повідомлення.",
-      "timeout": "Час очікування повідомлення на радіо закінчився."
+      "timeout": "Час очікування повідомлення на радіо закінчився.",
+      "rateLimited": "Радіоприймач обмежує швидкість передачі повідомлень. Повторіть спробу найближчим часом.",
+      "noInterface": "Немає радіоінтерфейсу для надсилання цього повідомлення."
     },
     "waitingMessagesQueued": "{{count}} повідомлення в черзі на радіо",
     "waitingMessagesSyncProgress": "Синхронізація {{processed}} / {{total}} з радіо…",
@@ -608,7 +610,9 @@
     "dmNodeHops_one": "{{count}} перехід",
     "dmNodeHops_few": "{{count}} переходи",
     "dmNodeHops_many": "{{count}} переходів",
-    "dmNodeHops_other": "{{count}} переходу"
+    "dmNodeHops_other": "{{count}} переходу",
+    "notificationDmTitle": "ДМ від {{sender}}",
+    "notificationMessageTitle": "Повідомлення від {{sender}}"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -1200,20 +1204,20 @@
     "coloradoRegionGateStay": "Я в Колорадо",
     "coloradoRegionGateSwitch": "Перемкнутися на LetsMesh",
     "topicPrefixInvalidIata": "Префікс теми повинен бути meshcore/test або meshcore/{IATA} (3 літери), наприклад meshcore/DEN.",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "Перш ніж відмовитися, повторіть спробу підключення (1–{{max}}). Збережено з налаштуваннями; натисніть Connect ще раз після зміни, щоб основний процес забрав його.",
       "meshtastic": "Обидва протоколи дозволяють 1–{{max}}. Збережено з налаштуваннями; від'єднайтеся та підключіться знову, щоб сеанс роботи використовував нове значення."
     },
     "reticulumStackRunningAs": "Триває — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Стек Reticulum не відповідає — перезапуск…"
+    "reticulumSidecarUnhealthyRestarting": "Стек Reticulum не відповідає — перезапуск…",
+    "reticulumSharedInstance": {
+      "title": "Використання спільного екземпляра іншої програми",
+      "body": "Ця програма прикріплена як клієнт спільного екземпляра Reticulum іншої програми. Локальні концентратори TCP з конфігурації цієї програми не запускаються в цьому режимі — трафік може використовувати лише стек іншої програми.",
+      "networkHint": "Або відкрийте екземпляр Network → Share Reticulum, щоб вимкнути спільний доступ вручну, а потім перезапустіть стек. Ви також можете повністю вийти з MeshChat, Ratspeak або автономного rnsd і перезапустити.",
+      "disableShare": "Вимкнути спільний екземпляр і перезапустити",
+      "disableShareAria": "Вимкніть функцію Поділитися екземпляром і перезапустіть стек",
+      "disableFailed": "Не вдалося вимкнути екземпляр спільного доступу."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",
@@ -2700,7 +2704,11 @@
     "stableStability": "Стабільний",
     "moderateStability": "Помірний",
     "unstableStability": "Нестабільний",
-    "unknownStability": "Невідомий"
+    "unknownStability": "Невідомий",
+    "hybridMqttPathTooltip": "Отримано через RF; деякі пакети використовують шлях ретрансляції MQTT",
+    "hybridMqttPathAria": "Шлях RF та MQTT",
+    "connectedViaRfAndMqttTooltip": "Підключено через RF та MQTT",
+    "connectedViaRfAndMqttAria": "Підключено через RF та MQTT"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Контакти оновлено.",
@@ -2788,7 +2796,8 @@
     "hybridMqttPathTooltip": "Отримано через RF; деякі пакети використовують шлях ретрансляції MQTT",
     "hybridMqttPathAria": "Шлях RF та MQTT",
     "connectedViaRfAndMqttTooltip": "Підключено через RF та MQTT",
-    "connectedViaRfAndMqttAria": "Підключено через RF та MQTT"
+    "connectedViaRfAndMqttAria": "Підключено через RF та MQTT",
+    "echoesConnectionHealthTooltip": "{{score}}% здоров'я з'єднання"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

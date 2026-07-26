@@ -53,7 +53,9 @@ import {
   meshtasticContactGroupMatchesBuiltinRouter,
 } from '../lib/meshtasticContactGroupUtils';
 import {
+  isMeshtasticSelfHybridPath,
   MeshtasticHybridPathIcons,
+  meshtasticHybridPathLabels,
   MeshtasticMqttOnlyPathIcons,
   resolveMeshtasticPathBadge,
 } from '../lib/meshtasticSourceIcons';
@@ -1389,19 +1391,14 @@ export default function NodeListPanel({
                                 );
                               }
                               if (pathBadge === 'hybrid') {
-                                const isSelfHybrid = isSelf && mqttConnected && radioConnected;
+                                const labels = meshtasticHybridPathLabels(
+                                  t,
+                                  isMeshtasticSelfHybridPath(isSelf, mqttConnected, radioConnected),
+                                );
                                 return (
                                   <MeshtasticHybridPathIcons
-                                    title={
-                                      isSelfHybrid
-                                        ? t('nodeListPanel.connectedViaRfAndMqttTooltip')
-                                        : t('nodeListPanel.hybridMqttPathTooltip')
-                                    }
-                                    ariaLabel={
-                                      isSelfHybrid
-                                        ? t('nodeListPanel.connectedViaRfAndMqttAria')
-                                        : t('nodeListPanel.hybridMqttPathAria')
-                                    }
+                                    title={labels.title}
+                                    ariaLabel={labels.ariaLabel}
                                   />
                                 );
                               }
@@ -1540,7 +1537,13 @@ export default function NodeListPanel({
                                       ? 'text-gray-300'
                                       : 'text-muted'
                                 }`}
-                                title={red ? `${red.score}% connection health` : undefined}
+                                title={
+                                  red
+                                    ? t('nodeListPanel.echoesConnectionHealthTooltip', {
+                                        score: red.score,
+                                      })
+                                    : undefined
+                                }
                               >
                                 {echoes > 0 ? `+${echoes}` : '-'}
                               </td>

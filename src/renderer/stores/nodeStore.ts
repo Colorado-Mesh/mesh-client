@@ -57,6 +57,10 @@ export interface NodeRecord {
   relativeHumidity?: number;
   barometricPressure?: number;
   iaq?: number;
+  gasResistance?: number;
+  lux?: number;
+  windSpeed?: number;
+  windDirection?: number;
   telemetryTimestamp?: number;
   snr?: number;
   rssi?: number;
@@ -76,14 +80,13 @@ export interface NodeRecord {
   numRxDupe?: number;
   numPacketsRx?: number;
   numPacketsTx?: number;
-  lux?: number;
-  windSpeed?: number;
-  windDirection?: number;
   paxCount?: number;
   detectionText?: string;
   neighbors?: MeshNeighbor[];
   meshcoreLocalStats?: MeshCoreLocalStats;
   publicKey?: Uint8Array;
+  /** Meshtastic PKC public key hex from NodeInfo/User (remote admin destination key). */
+  publicKeyHex?: string;
   // MeshCore per-node op state (results of on-demand requests for repeaters /
   // remote nodes). Optional fields; non-MeshCore nodes leave them undefined.
   meshcoreNodeStatus?: StatusResult;
@@ -521,4 +524,24 @@ export function clearNodeIdentity(identityId: IdentityId): void {
     waypoints: omitRecordKey(s.waypoints, identityId),
     neighborInfo: omitRecordKey(s.neighborInfo, identityId),
   }));
+}
+
+/** Remove a single node from an identity bucket (deleteNode UI / MQTT identity cleanup). */
+export function removeNode(identityId: IdentityId, nodeId: number): void {
+  useNodeStore.setState((s) => {
+    const byId = s.nodes[identityId];
+    if (!byId || !(nodeId in byId)) return s;
+    const nextById: Record<number, NodeRecord> = {};
+    for (const [key, value] of Object.entries(byId)) {
+      if (Number(key) !== nodeId) {
+        nextById[Number(key)] = value;
+      }
+    }
+    return {
+      nodes: {
+        ...s.nodes,
+        [identityId]: nextById,
+      },
+    };
+  });
 }

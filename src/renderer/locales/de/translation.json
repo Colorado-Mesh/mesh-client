@@ -428,7 +428,6 @@
     "jumpToQuotedMessage": "Zur zitierten Nachricht von {{sender}} springen",
     "replyToMessage": "Nachricht beantworten",
     "addReaction": "Reaktion hinzufügen",
-    "emojiButton": "Emojis",
     "sendButton": "Senden",
     "sendButtonDm": "DM",
     "sendButtonSending": "...",
@@ -548,7 +547,9 @@
       "pkiMissingRecipientKey": "Verschlüsselte Nachricht konnte nicht gesendet werden — öffentlicher Schlüssel des Empfängers fehlt in NodeDB.",
       "pkiFailed": "PKI-Verschlüsselung für diese Nachricht fehlgeschlagen.",
       "noChannel": "Kein Kanal verfügbar, um diese Nachricht weiterzuleiten.",
-      "timeout": "Zeitüberschreitung der Nachricht im Funkgerät."
+      "timeout": "Zeitüberschreitung der Nachricht im Funkgerät.",
+      "rateLimited": "Das Funkgerät begrenzt die Nachrichtenrate. Bitte versuche es in Kürze erneut.",
+      "noInterface": "Es ist keine Funkschnittstelle zum Senden dieser Nachricht verfügbar."
     },
     "waitingMessagesQueued": "{{count}} in der Warteschlange stehende Nachricht(en) im Funk",
     "waitingMessagesSyncProgress": "{{processed}}/{{total}} wird vom Funkgerät synchronisiert...",
@@ -606,7 +607,10 @@
     "floodScopeOverrideCustomApply": "Nutzen Sie den Geltungsbereich",
     "floodScopeOverrideCustomInvalid": "Geben Sie einen gültigen Regions-Hashtag ein (zum Beispiel #myregion).",
     "dmNodeHops_one": "{{count}} Hop",
-    "dmNodeHops_other": "{{count}} Hops"
+    "dmNodeHops_other": "{{count}} Hops",
+    "notificationDmTitle": "DM von {{sender}}",
+    "notificationMessageTitle": "Nachricht von {{sender}}",
+    "emojiButton": "Emojis"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -706,14 +710,12 @@
     "submit": "Einreichen",
     "rePairDevice": "Gerät entfernen und erneut koppeln",
     "mqttConnection": "MQTT-Verbindung",
-    "server": "Server",
     "from": "Aus",
     "topic": "Thema",
     "disconnectMqtt": "Trennen",
     "disconnectAndQuit": "Trennen und beenden",
     "quit": "Aufhören",
     "networkPreset": "Netzwerkvoreinstellung",
-    "region": "Region",
     "port": "Hafen",
     "useWebSocket": "Verwenden Sie den WebSocket-Transport",
     "wsRequired": "(erforderlich für Port 443)",
@@ -1198,20 +1200,22 @@
     "coloradoRegionGateStay": "Ich bin in Colorado",
     "coloradoRegionGateSwitch": "Zu LetsMesh wechseln",
     "topicPrefixInvalidIata": "Das Themenpräfix muss meshcore/test oder meshcore/{IATA} (3 Buchstaben) sein, z. B. meshcore/DEN.",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "Versuche erneut verbinden, bevor du aufgibst (1–{{max}}). Mit Einstellungen gespeichert; drücken Sie nach dem Ändern erneut auf Verbinden, damit der Hauptprozess ihn aufnimmt.",
       "meshtastic": "Beide Protokolle erlauben 1–{{max}}. Mit Einstellungen gespeichert; trennen und erneut verbinden, damit die laufende Sitzung den neuen Wert verwendet."
     },
     "reticulumStackRunningAs": "Läuft — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Reticulum-Stack reagiert nicht – Neustart…"
+    "reticulumSidecarUnhealthyRestarting": "Reticulum-Stack reagiert nicht – Neustart…",
+    "server": "Server",
+    "region": "Bundesland",
+    "reticulumSharedInstance": {
+      "title": "Verwenden der gemeinsam genutzten Instanz einer anderen App",
+      "body": "Diese App wurde als Client der gemeinsam genutzten Reticulum-Instanz einer anderen App angehängt. Lokale TCP-Hubs aus der Konfiguration dieser App werden in diesem Modus nicht gestartet — der Datenverkehr darf nur den Stack der anderen App verwenden.",
+      "networkHint": "Oder öffnen Sie die Network → Share Reticulum-Instanz, um die Freigabe manuell zu deaktivieren, und starten Sie dann den Stack neu. Sie können auch MeshChat, Ratspeak oder eigenständiges RNSD vollständig beenden und neu starten.",
+      "disableShare": "Share-Instanz deaktivieren und neu starten",
+      "disableShareAria": "Deaktivieren Sie die Share-Instanz und starten Sie den Stack neu",
+      "disableFailed": "Fehler beim Deaktivieren der Share-Instanz."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",
@@ -2698,7 +2702,11 @@
     "stableStability": "Stabil",
     "moderateStability": "Mäßig",
     "unstableStability": "Instabil",
-    "unknownStability": "Unbekannt"
+    "unknownStability": "Unbekannt",
+    "hybridMqttPathTooltip": "Über RF empfangen; einige Pakete verwenden einen MQTT-Relay-Pfad",
+    "hybridMqttPathAria": "RF- und MQTT-Pfad",
+    "connectedViaRfAndMqttTooltip": "Anbindung über RF und MQTT",
+    "connectedViaRfAndMqttAria": "Anbindung über RF und MQTT"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontakte aktualisiert.",
@@ -2786,7 +2794,8 @@
     "hybridMqttPathTooltip": "Über RF empfangen; einige Pakete verwenden einen MQTT-Relay-Pfad",
     "hybridMqttPathAria": "RF- und MQTT-Pfad",
     "connectedViaRfAndMqttTooltip": "Verbunden über RF und MQTT",
-    "connectedViaRfAndMqttAria": "Verbunden über RF und MQTT"
+    "connectedViaRfAndMqttAria": "Verbunden über RF und MQTT",
+    "echoesConnectionHealthTooltip": "{{score}}% Verbindungszustand"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

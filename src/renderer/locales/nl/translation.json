@@ -428,7 +428,6 @@
     "jumpToQuotedMessage": "Ga naar het geciteerde bericht van {{sender}}",
     "replyToMessage": "Beantwoord bericht",
     "addReaction": "Reactie toevoegen",
-    "emojiButton": "Emoji",
     "sendButton": "Versturen",
     "sendButtonDm": "DM",
     "sendButtonSending": "...",
@@ -540,7 +539,6 @@
     "starredDm": "DM: {{name}}",
     "starredChannel": "ch{{channel}}",
     "mentionSuggestionsAria": "Noem suggesties",
-    "openDmByAddress": "Open",
     "dmAddressPlaceholder": "Bestemmingshash of lxmf://…",
     "dmAddressAria": "Bestemmingsadres van Reticulum",
     "dmAddressInvalid": "Voer een geldig bestemmingshash- of lxmf://-adres van 32 tekens in.",
@@ -548,7 +546,9 @@
       "pkiMissingRecipientKey": "Kan gecodeerd bericht niet verzenden — de openbare sleutel van de ontvanger ontbreekt in NodeDB.",
       "pkiFailed": "PKI-codering mislukt voor dit bericht.",
       "noChannel": "Geen kanaal beschikbaar om dit bericht te routeren.",
-      "timeout": "Er is een time-out opgetreden op de radio."
+      "timeout": "Er is een time-out opgetreden op de radio.",
+      "rateLimited": "De radio is tariefbeperkende berichten. Probeer het binnenkort opnieuw.",
+      "noInterface": "Er is geen radio-interface beschikbaar om dit bericht te verzenden."
     },
     "waitingMessagesQueued": "{{count}} bericht(en) in de wachtrij op de radio",
     "waitingMessagesSyncProgress": "{{processed}} / {{total}} synchroniseren vanaf radio...",
@@ -582,7 +582,6 @@
       "sendFileAria": "Bestand verzenden naar {{name}} via rncp",
       "pendingOffersBadgeAria_one": "{{count}} in afwachting van aanbieding voor inkomende bestanden van deze collega",
       "pendingOffersBadgeAria_other": "{{count}} lopende aanbiedingen voor inkomende bestanden van deze collega",
-      "destinationLabel": "rncp destination hash",
       "rememberAddress": "Dit adres onthouden",
       "rememberAddressAria": "Onthoud deze rncp-bestemming voor deze collega",
       "chooseAndSend": "Bestand kiezen en verzenden...",
@@ -591,7 +590,8 @@
       "sendFailed": "Verzenden mislukt: {{error}}",
       "newOfferToast": "{{peer}} wil je een bestand sturen: {{file}}",
       "requestEnable": "Aanvraag inschakelen",
-      "requestEnableAria": "Vraag deze collega om bestandsontvangst in te schakelen"
+      "requestEnableAria": "Vraag deze collega om bestandsontvangst in te schakelen",
+      "destinationLabel": "RNCP-bestemmingshash"
     },
     "shareLocation": "Deel locatie",
     "shareLocationLabel": "📍 Gedeelde locatie",
@@ -606,7 +606,11 @@
     "floodScopeOverrideCustomApply": "Gebruik bereik",
     "floodScopeOverrideCustomInvalid": "Voer een geldige regio-hashtag in (bijvoorbeeld #mijnregio).",
     "dmNodeHops_one": "{{count}} hop",
-    "dmNodeHops_other": "{{count}} hops"
+    "dmNodeHops_other": "{{count}} hops",
+    "notificationDmTitle": "DM vanaf {{sender}}",
+    "notificationMessageTitle": "Bericht van {{sender}}",
+    "emojiButton": "Emoji",
+    "openDmByAddress": "Open"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -706,7 +710,6 @@
     "submit": "Indienen",
     "rePairDevice": "Apparaat verwijderen en opnieuw koppelen",
     "mqttConnection": "MQTT-verbinding",
-    "server": "Server",
     "from": "Van",
     "topic": "Onderwerp",
     "disconnectMqtt": "Verbreek de verbinding",
@@ -1198,20 +1201,21 @@
     "coloradoRegionGateStay": "Ik ben in Colorado",
     "coloradoRegionGateSwitch": "Overschakelen naar LetsMesh",
     "topicPrefixInvalidIata": "Onderwerpvoorvoegsel moet meshcore/test of meshcore/{IATA} zijn (3 letters), bijv. meshcore/DEN.",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "Probeer het opnieuw voordat je het opgeeft (1–{{max}}). Opgeslagen met instellingen; druk opnieuw op Verbinden na het wijzigen, zodat het hoofdproces het oppikt.",
       "meshtastic": "Beide protocollen staan 1–{{max}} toe. Opgeslagen met instellingen; verbreek de verbinding en maak opnieuw verbinding, zodat de lopende sessie de nieuwe waarde gebruikt."
     },
     "reticulumStackRunningAs": "Actief — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Reticulum-stack reageert niet — opnieuw opstarten…"
+    "reticulumSidecarUnhealthyRestarting": "Reticulum-stack reageert niet — opnieuw opstarten…",
+    "server": "Server",
+    "reticulumSharedInstance": {
+      "title": "Gedeelde instantie van een andere app gebruiken",
+      "body": "Deze app is bijgevoegd als een client van het gedeelde Reticulum-exemplaar van een andere app. Lokale TCP-hubs van de configuratie van deze app worden niet gestart in deze modus — verkeer mag alleen de stack van de andere app gebruiken.",
+      "networkHint": "Of open Network → Share Reticulum-instantie om delen handmatig uit te schakelen en start vervolgens de stapel opnieuw. Je kunt MeshChat, Ratspeak of standalone rnsd ook volledig afsluiten en opnieuw starten.",
+      "disableShare": "Deel instantie uitschakelen en opnieuw opstarten",
+      "disableShareAria": "Schakel de instantie Delen uit en start de stapel opnieuw",
+      "disableFailed": "Kan de instantie Delen niet uitschakelen."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -2698,7 +2702,11 @@
     "stableStability": "Stabiel",
     "moderateStability": "Gematigd",
     "unstableStability": "Onstabiel",
-    "unknownStability": "Onbekend"
+    "unknownStability": "Onbekend",
+    "hybridMqttPathTooltip": "Ontvangen via RF; sommige pakketten gebruiken een MQTT-relaispad",
+    "hybridMqttPathAria": "RF- en MQTT-pad",
+    "connectedViaRfAndMqttTooltip": "Verbonden via RF en MQTT",
+    "connectedViaRfAndMqttAria": "Verbonden via RF en MQTT"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contacten vernieuwd.",
@@ -2786,7 +2794,8 @@
     "hybridMqttPathTooltip": "Ontvangen via RF; sommige pakketten gebruiken een MQTT-relaispad",
     "hybridMqttPathAria": "RF- en MQTT-pad",
     "connectedViaRfAndMqttTooltip": "Verbonden via RF en MQTT",
-    "connectedViaRfAndMqttAria": "Verbonden via RF en MQTT"
+    "connectedViaRfAndMqttAria": "Verbonden via RF en MQTT",
+    "echoesConnectionHealthTooltip": "{{score}}% verbindingsstatus"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -4666,7 +4675,7 @@
       "modeFetchAria": "Overschakelen naar ophaalmodus",
       "modeFetch": "Ophalen",
       "destinationPlaceholder": "Bestemmingshash (32 hex-tekens)",
-      "destinationAria": "rncp destination hash",
+      "destinationAria": "RNCP-bestemmingshash",
       "notAllowedHint": "Overdrachten zijn niet beschikbaar op dit pad: {{reason}}",
       "chooseFileAria": "Kies een lokaal bestand om te verzenden",
       "chooseFile": "Kies bestand…",

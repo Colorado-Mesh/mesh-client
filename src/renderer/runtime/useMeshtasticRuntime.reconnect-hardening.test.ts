@@ -110,6 +110,15 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
       /attachRfSession[\s\S]{0,3500}reconnectGenerationRef\.current !== generation[\s\S]{0,200}Attach superseded during configure/,
     );
   });
+
+  it('uses nodeStore as the merge base and synchronizes runtime patches immediately', () => {
+    const updateNodesBody = extractUseCallbackBody(SOURCE, 'updateNodes');
+    expect(updateNodesBody).toContain('getIdentityNodeMap(identityId)');
+    expect(updateNodesBody).toContain('syncNodesMapToIdentityStore(identityId, next)');
+    expect(SOURCE).not.toMatch(
+      /useEffect\(\(\) => \{[\s\S]{0,250}syncNodesMapToIdentityStore\(storeId, nodes\)/,
+    );
+  });
 });
 
 describe('useMeshtasticRuntime manual disconnect must not auto-reconnect', () => {

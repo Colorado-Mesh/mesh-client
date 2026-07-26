@@ -74,6 +74,7 @@ describe('i18n', () => {
 
   it.each([
     ['cs', 2, '2 skoky'],
+    ['cs', 5, '5 skoků'],
     ['pl', 2, '2 przeskoki'],
     ['pl', 5, '5 przeskoków'],
     ['ru', 2, '2 перехода'],

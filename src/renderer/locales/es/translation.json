@@ -428,7 +428,6 @@
     "jumpToQuotedMessage": "Ir al mensaje cotizado de {{sender}}",
     "replyToMessage": "Responder al mensaje",
     "addReaction": "Añadir reacción:",
-    "emojiButton": "Emoji",
     "sendButton": "Enviar",
     "sendButtonDm": "DM",
     "sendButtonSending": "...",
@@ -548,7 +547,9 @@
       "pkiMissingRecipientKey": "No se ha podido enviar el mensaje cifrado: falta la clave pública del destinatario de NodeDB.",
       "pkiFailed": "El cifrado PKI ha fallado para este mensaje.",
       "noChannel": "No hay ningún canal disponible para enrutar este mensaje.",
-      "timeout": "El mensaje ha caducado en la radio."
+      "timeout": "El mensaje ha caducado en la radio.",
+      "rateLimited": "La radio está limitando la velocidad de los mensajes. Inténtalo de nuevo en breve.",
+      "noInterface": "No hay ninguna interfaz de radio disponible para enviar este mensaje."
     },
     "waitingMessagesQueued": "{{count}} mensajes en cola en la radio",
     "waitingMessagesSyncProgress": "Sincronizando {{processed}} / {{total}} desde la radio...",
@@ -606,7 +607,10 @@
     "floodScopeOverrideCustomApply": "Usar alcance",
     "floodScopeOverrideCustomInvalid": "Ingrese un hashtag de región válido (por ejemplo, #miregión).",
     "dmNodeHops_one": "{{count}} salto",
-    "dmNodeHops_other": "{{count}} saltos"
+    "dmNodeHops_other": "{{count}} saltos",
+    "notificationDmTitle": "DM desde {{sender}}",
+    "notificationMessageTitle": "Mensaje de {{sender}}",
+    "emojiButton": "Emoji"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -1198,20 +1202,20 @@
     "coloradoRegionGateStay": "Estoy en Colorado",
     "coloradoRegionGateSwitch": "Cambiar a LetsMesh",
     "topicPrefixInvalidIata": "El prefijo del tema debe ser meshcore/test o meshcore/{IATA} (3 letras), por ejemplo, meshcore/DEN.",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "Vuelve a conectar los intentos antes de darte por vencido (1–{{max}}). Guardado con la configuración; pulse Conectar de nuevo después de cambiar para que el proceso principal lo recoja.",
       "meshtastic": "Ambos protocolos permiten 1–{{max}}. Guardado con la configuración; desconéctese y conéctese de nuevo para que la sesión en ejecución use el nuevo valor."
     },
     "reticulumStackRunningAs": "En ejecución — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "La pila de Reticulum no responde: se reinicia…"
+    "reticulumSidecarUnhealthyRestarting": "La pila de Reticulum no responde: se reinicia…",
+    "reticulumSharedInstance": {
+      "title": "Usar la instancia compartida de otra aplicación",
+      "body": "Esta aplicación se adjuntó como cliente de la instancia de Reticulum compartida de otra aplicación. Los concentradores TCP locales de la configuración de esta aplicación no se inician en este modo; el tráfico solo puede usar la pila de la otra aplicación.",
+      "networkHint": "O abra la instancia de Network → Share Reticulum para desactivar Compartir manualmente y, a continuación, reinicie la pila. También puedes salir completamente de MeshChat, Ratspeak o RNSD independiente y reiniciar.",
+      "disableShare": "Desactivar la instancia Compartir y reiniciar",
+      "disableShareAria": "Desactivar la instancia Compartir y reiniciar la pila",
+      "disableFailed": "No se ha podido desactivar la instancia Compartir."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "No se han podido cargar los miembros: {{message}}",
@@ -2698,7 +2702,11 @@
     "stableStability": "Estable",
     "moderateStability": "Moderado",
     "unstableStability": "Inestable",
-    "unknownStability": "Desconocido"
+    "unknownStability": "Desconocido",
+    "hybridMqttPathTooltip": "Recibido a través de RF; algunos paquetes utilizan una ruta de retransmisión MQTT",
+    "hybridMqttPathAria": "Ruta RF y MQTT",
+    "connectedViaRfAndMqttTooltip": "Conectado a través de RF y MQTT",
+    "connectedViaRfAndMqttAria": "Conectado a través de RF y MQTT"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contactos actualizados.",
@@ -2786,7 +2794,8 @@
     "hybridMqttPathTooltip": "Recibido a través de RF; algunos paquetes utilizan una ruta de retransmisión MQTT",
     "hybridMqttPathAria": "Ruta RF y MQTT",
     "connectedViaRfAndMqttTooltip": "Conectado a través de RF y MQTT",
-    "connectedViaRfAndMqttAria": "Conectado a través de RF y MQTT"
+    "connectedViaRfAndMqttAria": "Conectado a través de RF y MQTT",
+    "echoesConnectionHealthTooltip": "{{score}}% estado de la conexión"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

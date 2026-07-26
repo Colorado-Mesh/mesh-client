@@ -1,8 +1,12 @@
 import type { Dispatch, SetStateAction } from 'react';
 
+import { MESHCORE_WAITING_MESSAGES_SILENT_FOLLOW_UP_CHAIN_MAX } from '../../lib/timeConstants';
+
 let processWaitingMessagesInFlight: Promise<void> | null = null;
 let processWaitingMessagesFollowUpRequested = false;
 let processWaitingMessagesManualFollowUpRequested = false;
+/** Silent follow-ups taken in the current 131 drain chain (reset when chain settles). */
+let silentFollowUpChainCount = 0;
 
 export function getMeshcoreProcessWaitingMessagesInFlight(): Promise<void> | null {
   return processWaitingMessagesInFlight;
@@ -14,14 +18,22 @@ export function setMeshcoreProcessWaitingMessagesInFlight(inFlight: Promise<void
 
 /** Request one follow-up silent drain after the current in-flight drain settles. */
 export function requestMeshcoreWaitingMessagesFollowUp(): void {
-  if (processWaitingMessagesInFlight) {
-    processWaitingMessagesFollowUpRequested = true;
+  if (!processWaitingMessagesInFlight) return;
+  if (silentFollowUpChainCount >= MESHCORE_WAITING_MESSAGES_SILENT_FOLLOW_UP_CHAIN_MAX) {
+    console.warn(
+      `[meshcoreWaitingMessagesSyncState] silent follow-up chain capped at ${MESHCORE_WAITING_MESSAGES_SILENT_FOLLOW_UP_CHAIN_MAX}`,
+    );
+    return;
   }
+  processWaitingMessagesFollowUpRequested = true;
 }
 
 export function takeMeshcoreWaitingMessagesFollowUp(): boolean {
   const requested = processWaitingMessagesFollowUpRequested;
   processWaitingMessagesFollowUpRequested = false;
+  if (requested) {
+    silentFollowUpChainCount += 1;
+  }
   return requested;
 }
 
@@ -43,6 +55,16 @@ export function clearMeshcoreWaitingMessagesFollowUp(): void {
   processWaitingMessagesManualFollowUpRequested = false;
 }
 
+/** Reset the silent follow-up chain counter when a drain settles with no further work. */
+export function resetMeshcoreWaitingMessagesSilentFollowUpChain(): void {
+  silentFollowUpChainCount = 0;
+}
+
+/** Test hook — current silent follow-up chain depth. */
+export function getMeshcoreWaitingMessagesSilentFollowUpChainCount(): number {
+  return silentFollowUpChainCount;
+}
+
 /** Clear module in-flight guard and Chat waiting-message UI (disconnect / listener teardown). */
 export function resetMeshcoreProcessWaitingMessagesSync(
   setWaitingMessagesCount: Dispatch<SetStateAction<number>>,
@@ -56,6 +78,7 @@ export function resetMeshcoreProcessWaitingMessagesSync(
   processWaitingMessagesInFlight = null;
   processWaitingMessagesFollowUpRequested = false;
   processWaitingMessagesManualFollowUpRequested = false;
+  silentFollowUpChainCount = 0;
   setWaitingMessagesCount(0);
   setWaitingMessagesSyncActive(false);
   setWaitingMessagesSyncProgress(null);

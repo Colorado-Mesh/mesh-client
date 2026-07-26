@@ -548,7 +548,9 @@
       "pkiMissingRecipientKey": "暗号化されたメッセージを送信できませんでした— NodeDBに受信者の公開鍵がありません。",
       "pkiFailed": "このメッセージのPKI暗号化に失敗しました。",
       "noChannel": "このメッセージをルーティングするチャンネルはありません。",
-      "timeout": "ラジオでメッセージがタイムアウトしました。"
+      "timeout": "ラジオでメッセージがタイムアウトしました。",
+      "rateLimited": "無線はレート制限メッセージです。しばらくしてから再度お試しください。",
+      "noInterface": "このメッセージを送信するための無線インターフェースはありません。"
     },
     "waitingMessagesQueued": "{{count}}は無線でメッセージをキューに入れました",
     "waitingMessagesSyncProgress": "ラジオから{{processed}}/{{total}}を同期しています…",
@@ -606,7 +608,9 @@
     "floodScopeOverrideCustomApply": "使用範囲",
     "floodScopeOverrideCustomInvalid": "有効な地域ハッシュタグ (#myregion など) を入力します。",
     "dmNodeHops_one": "{{count}} ホップ",
-    "dmNodeHops_other": "{{count}} ホップ"
+    "dmNodeHops_other": "{{count}} ホップ",
+    "notificationDmTitle": "{{sender}}からのDM",
+    "notificationMessageTitle": "{{sender}}からのメッセージ"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -1198,20 +1202,20 @@
     "coloradoRegionGateStay": "私はコロラド州にいます",
     "coloradoRegionGateSwitch": "LetsMeshに切り替える",
     "topicPrefixInvalidIata": "トピックの接頭辞は、meshcore/testまたはmeshcore/{IATA}（3文字）でなければなりません（例：meshcore/DEN）。",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "諦める前に再接続を試みます（ 1 - {{max}} ）。設定が保存されました。変更後にもう一度接続を押して、メインプロセスがそれをピックアップします。",
       "meshtastic": "どちらのプロトコルも1 - {{max}}を許可します。設定とともに保存されました。接続を解除してもう一度接続すると、実行中のセッションが新しい値を使用します。"
     },
     "reticulumStackRunningAs": "実行中— {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Reticulum スタックが応答なし — 再起動中…"
+    "reticulumSidecarUnhealthyRestarting": "Reticulum スタックが応答なし — 再起動中…",
+    "reticulumSharedInstance": {
+      "title": "別のアプリの共有インスタンスを使用する",
+      "body": "このアプリは、別のアプリの共有Reticulumインスタンスのクライアントとして接続されています。このアプリの設定からのローカルTCPハブは、このモードでは開始されません。トラフィックは、他のアプリのスタックのみを使用できます。",
+      "networkHint": "または、Network → Share Reticulumインスタンスを開いて手動で共有をオフにし、スタックを再起動します。MeshChat、Ratspeak、またはスタンドアロンRNSDを完全に終了して再起動することもできます。",
+      "disableShare": "インスタンスの共有をオフにして再起動する",
+      "disableShareAria": "共有インスタンスをオフにして、スタックを再起動します",
+      "disableFailed": "共有インスタンスをオフにできませんでした。"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -2698,7 +2702,11 @@
     "stableStability": "安定した",
     "moderateStability": "適度",
     "unstableStability": "不安定",
-    "unknownStability": "未知"
+    "unknownStability": "未知",
+    "hybridMqttPathTooltip": "RFを介して受信。一部のパケットはMQTTリレーパスを使用",
+    "hybridMqttPathAria": "RFおよびMQTTパス",
+    "connectedViaRfAndMqttTooltip": "RFおよびMQTT経由で接続",
+    "connectedViaRfAndMqttAria": "RFおよびMQTT経由で接続"
   },
   "nodeListPanel": {
     "contactsRefreshed": "連絡先が更新されました。",
@@ -2786,7 +2794,8 @@
     "hybridMqttPathTooltip": "RFを介して受信。一部のパケットはMQTTリレーパスを使用",
     "hybridMqttPathAria": "RFおよびMQTTパス",
     "connectedViaRfAndMqttTooltip": "RFおよびMQTT経由で接続",
-    "connectedViaRfAndMqttAria": "RFおよびMQTT経由で接続"
+    "connectedViaRfAndMqttAria": "RFおよびMQTT経由で接続",
+    "echoesConnectionHealthTooltip": "{{score}} %接続状態"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

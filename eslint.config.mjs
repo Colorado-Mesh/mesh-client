@@ -17,6 +17,7 @@ export default tseslint.config(
       '**/build/**',
       '**/out/**',
       '**/node_modules/**',
+      '.cache/**',
       'src/renderer/lib/nomad/vendor/**',
       'eslint.config.mjs',
       '**/*.d.ts',

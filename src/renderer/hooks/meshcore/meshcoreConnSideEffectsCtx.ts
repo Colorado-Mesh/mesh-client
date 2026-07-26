@@ -3,11 +3,9 @@ import type { Dispatch, RefObject, SetStateAction } from 'react';
 import type {
   DeviceLogEntry,
   MeshCoreConnection,
-  MeshCoreContactRaw,
   MeshCoreSelfInfo,
   RxPacketEntry,
 } from '../../lib/meshcore/meshcoreHookTypes';
-import type { MeshcoreAutoaddWireState } from '../../lib/meshcoreContactAutoAdd';
 import type { CliHistoryEntry, RepeaterCommandService } from '../../lib/repeaterCommandService';
 import type {
   ChatMessage,
@@ -23,24 +21,28 @@ export interface ProcessWaitingMessagesOptions {
   showSyncBanner?: boolean;
 }
 
-export interface MeshcoreLegacyConnEventsCtx {
+/**
+ * Runtime state needed by the MeshCore `DomainEvent` side-effect listener
+ * ({@link attachMeshcoreConnSideEffects}). Everything here is owned by
+ * `useMeshcoreRuntime`; the listener only reads refs and calls setters.
+ */
+export interface MeshcoreConnSideEffectsCtx {
+  /** Identity the listener accepts events for (pending driver identity before configure). */
+  resolveIdentityId: () => string | null;
   meshcoreIdentityIdRef: RefObject<string | null>;
   meshcoreDriverConnectedRef: RefObject<boolean>;
   connRef: RefObject<MeshCoreConnection | null>;
-  lastPacketLogAtRef: RefObject<number>;
   lastPacketLogPublishFailureLogAtRef: RefObject<number>;
   meshcoreContactsRefreshTimerRef: RefObject<ReturnType<typeof setTimeout> | null>;
   meshcoreHookMountedRef: RefObject<boolean>;
-  meshcorePathUpdatePendingRef: RefObject<Set<number>>;
   meshcoreSessionPathUpdatedNodeIdsRef: RefObject<Set<number>>;
   meshcoreWaitingMessagesPollRef: RefObject<ReturnType<typeof setInterval> | null>;
   meshcoreConnectTypeRef: RefObject<'ble' | 'serial' | 'tcp'>;
-  messagesRef: RefObject<ChatMessage[]>;
   mqttStatusRef: RefObject<MQTTStatus>;
   myNodeNumRef: RefObject<number>;
   nicknameMapRef: RefObject<Map<number, string>>;
-  nodesRef: RefObject<Map<number, MeshNode>>;
-  outPathMapRef: RefObject<Map<number, Uint8Array>>;
+  /** Identity-scoped `nodeStore` snapshot — the runtime no longer keeps a node mirror. */
+  readNodes: () => Map<number, MeshNode>;
   pendingAcksRef: RefObject<Map<number, PendingDmAckEntry>>;
   processWaitingMessagesRef: RefObject<
     ((options?: ProcessWaitingMessagesOptions) => Promise<void>) | null
@@ -50,23 +52,9 @@ export interface MeshcoreLegacyConnEventsCtx {
   rawPacketsRef: RefObject<RxPacketEntry[]>;
   repeaterCommandServiceRef: RefObject<RepeaterCommandService | null>;
   selfInfoRef: RefObject<MeshCoreSelfInfo | null>;
-  buildNodesFromContactsRef: RefObject<
-    | ((
-        contacts: MeshCoreContactRaw[],
-        opts?: {
-          self?: MeshCoreSelfInfo | null;
-          myNodeId?: number;
-          previousNodes?: Map<number, MeshNode>;
-        },
-      ) => Promise<Map<number, MeshNode>>)
-    | null
-  >;
   setDeviceLogs: Dispatch<SetStateAction<DeviceLogEntry[]>>;
-  setMeshcoreAutoadd: Dispatch<SetStateAction<MeshcoreAutoaddWireState | null>>;
-  setMeshcoreContactsForTelemetry: Dispatch<SetStateAction<MeshCoreContactRaw[]>>;
   setMeshcorePingRouteReadyEpoch: Dispatch<SetStateAction<number>>;
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
-  setNodes: Dispatch<SetStateAction<Map<number, MeshNode>>>;
   setQueueStatus: Dispatch<SetStateAction<{ free: number; maxlen: number; res: number } | null>>;
   setRawPackets: Dispatch<SetStateAction<RxPacketEntry[]>>;
   setSignalTelemetry: Dispatch<SetStateAction<TelemetryPoint[]>>;
@@ -79,10 +67,8 @@ export interface MeshcoreLegacyConnEventsCtx {
   setWaitingMessagesSilentDrainActive: Dispatch<SetStateAction<boolean>>;
   setWaitingMessagesDrainDeferred: Dispatch<SetStateAction<boolean>>;
   addMessagesBatch: (msgs: ChatMessage[]) => void;
-  addMessage: (msg: ChatMessage) => void;
   addCliHistoryEntry: (nodeId: number, entry: CliHistoryEntry) => void;
   teardownMeshcoreConnEventListeners: (opts?: { driverDisconnect?: boolean }) => void;
-  meshcorePreviousNodesBaselineForBuild: () => Map<number, MeshNode>;
   handleConnectionLostRef: RefObject<() => void>;
   meshcoreExplicitDisconnectRef: RefObject<boolean>;
   bumpLastDataReceived?: () => void;

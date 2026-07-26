@@ -38,6 +38,7 @@ import { formatRelativeOrIsoDateTime } from '../lib/formatRelativeOrIsoDate';
 import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
 import { meshcoreTracePathLenToHops } from '../lib/meshcoreUtils';
 import {
+  isMeshtasticSelfHybridPath,
   MeshtasticHybridPathIcons,
   MeshtasticMqttOnlyPathIcons,
   MeshtasticRfPathIcon,
@@ -121,21 +122,17 @@ function NodeSourceBadge({
   const displayBadge = pathBadge === 'none' ? 'rfOnly' : pathBadge;
 
   if (displayBadge === 'hybrid') {
-    const isSelfHybrid = isSelf && mqttConnected && radioConnected;
-    return (
-      <MeshtasticHybridPathIcons
-        title={
-          isSelfHybrid
-            ? t('nodeListPanel.connectedViaRfAndMqttTooltip')
-            : t('nodeListPanel.hybridMqttPathTooltip')
+    const selfHybrid = isMeshtasticSelfHybridPath(isSelf, mqttConnected, radioConnected);
+    const labels = selfHybrid
+      ? {
+          title: t('nodeInfoBody.connectedViaRfAndMqttTooltip'),
+          ariaLabel: t('nodeInfoBody.connectedViaRfAndMqttAria'),
         }
-        ariaLabel={
-          isSelfHybrid
-            ? t('nodeListPanel.connectedViaRfAndMqttAria')
-            : t('nodeListPanel.hybridMqttPathAria')
-        }
-      />
-    );
+      : {
+          title: t('nodeInfoBody.hybridMqttPathTooltip'),
+          ariaLabel: t('nodeInfoBody.hybridMqttPathAria'),
+        };
+    return <MeshtasticHybridPathIcons title={labels.title} ariaLabel={labels.ariaLabel} />;
   }
   if (displayBadge === 'mqttOnly') {
     const title = node.heard_via_mqtt_only

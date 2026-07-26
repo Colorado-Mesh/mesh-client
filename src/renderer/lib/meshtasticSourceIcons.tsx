@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { Globe, Wifi } from 'lucide-react-motion';
 
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
@@ -21,6 +22,15 @@ export interface ResolveMeshtasticPathBadgeInput {
   radioConnected?: boolean;
 }
 
+/** Self-node session shortcut: radio + MQTT both up (list/detail hybrid tooltip). */
+export function isMeshtasticSelfHybridPath(
+  isSelf: boolean,
+  mqttConnected: boolean,
+  radioConnected: boolean,
+): boolean {
+  return isSelf && mqttConnected && radioConnected;
+}
+
 /** Resolves RF/MQTT path badge for list column and node detail (Meshtastic only). */
 export function resolveMeshtasticPathBadge({
   node,
@@ -29,19 +39,29 @@ export function resolveMeshtasticPathBadge({
   radioConnected = false,
 }: ResolveMeshtasticPathBadgeInput): MeshtasticPathBadgeKind {
   if (node.heard_via_mqtt_only) return 'mqttOnly';
-  if (isSelf && mqttConnected && radioConnected) return 'hybrid';
+  if (isMeshtasticSelfHybridPath(isSelf, mqttConnected, radioConnected)) return 'hybrid';
   if (isSelf && mqttConnected) return 'mqttOnly';
   if (meshtasticNodeShowsHybridMqttPath(node)) return 'hybrid';
   if (isSelf && radioConnected) return 'rfOnly';
   return 'none';
 }
 
-/** Tooltip for hybrid RF + MQTT path (list column + node detail). */
-export const MESHTASTIC_HYBRID_MQTT_PATH_TITLE =
-  'Received via RF; some packets use an MQTT relay path';
-
-/** Accessible name for the hybrid icon group in dense tables. */
-export const MESHTASTIC_HYBRID_MQTT_PATH_ARIA_LABEL = 'RF and MQTT path';
+/** Hybrid-path tooltip / aria strings for NodeListPanel (requires caller `t`). */
+export function meshtasticHybridPathLabels(
+  t: TFunction,
+  isSelfHybrid: boolean,
+): { title: string; ariaLabel: string } {
+  if (isSelfHybrid) {
+    return {
+      title: t('nodeListPanel.connectedViaRfAndMqttTooltip'),
+      ariaLabel: t('nodeListPanel.connectedViaRfAndMqttAria'),
+    };
+  }
+  return {
+    title: t('nodeListPanel.hybridMqttPathTooltip'),
+    ariaLabel: t('nodeListPanel.hybridMqttPathAria'),
+  };
+}
 
 export function MeshtasticRfPathIcon({ className }: { className?: string }) {
   const trigger = useIconTrigger();
@@ -71,12 +91,12 @@ export function MeshtasticMqttPathIcon({ className }: { className?: string }) {
 }
 
 export function MeshtasticHybridPathIcons({
-  title = MESHTASTIC_HYBRID_MQTT_PATH_TITLE,
-  ariaLabel = MESHTASTIC_HYBRID_MQTT_PATH_ARIA_LABEL,
+  title,
+  ariaLabel,
   className,
 }: {
-  title?: string;
-  ariaLabel?: string;
+  title: string;
+  ariaLabel: string;
   /** Optional wrapper class (e.g. justify-center for table cells). */
   className?: string;
 }) {

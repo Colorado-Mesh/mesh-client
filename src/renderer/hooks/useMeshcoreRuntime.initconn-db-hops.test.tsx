@@ -1,11 +1,19 @@
 /**
- * Regression: first connect after app start must merge hops from SQLite even when
- * nodesRef has not flushed yet (mount hydration vs initConn race).
+ * Regression: first connect after app start must merge hops from SQLite even when the
+ * identity-scoped node store has not been populated yet (mount hydration vs initConn race).
  */
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { pubkeyToNodeId } from '../lib/meshcoreUtils';
+import { useMessageStore } from '../stores/messageStore';
+import { useNodeStore } from '../stores/nodeStore';
+
+/** Node/message stores are module-global; a fresh app start is an empty store. */
+function resetIdentityStores(): void {
+  useNodeStore.setState({ nodes: {} });
+  useMessageStore.setState({ messages: {} });
+}
 
 const getSelfInfoMock = vi.fn();
 
@@ -210,6 +218,7 @@ function makeMockSerialPort() {
 describe('useMeshcoreRuntime initConn merges DB hops at first connect', () => {
   beforeEach(() => {
     capturedConn = null;
+    resetIdentityStores();
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([
       {
@@ -316,6 +325,7 @@ describe('useMeshcoreRuntime initConn merges DB hops at first connect', () => {
 describe('useMeshcoreRuntime buildNodesFromContacts merges nodes-table hops when meshcore_contacts is empty', () => {
   beforeEach(() => {
     capturedConn = null;
+    resetIdentityStores();
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getNodes).mockResolvedValue([
