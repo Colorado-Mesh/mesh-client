@@ -456,8 +456,6 @@
     "dmNodeLastHeard": "Escuchado por última vez {{time}}",
     "dmNodeBattery": "Batería {{pct}}%",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}} hop",
-    "dmNodeHopsPlural": "{{count}} saltos",
     "muteConversation": "Silenciar esta conversación",
     "unmuteConversation": "Activar esta conversación",
     "starMessage": "Marcar mensaje",
@@ -606,7 +604,9 @@
     "floodScopeOverrideCustomLabel": "Hashtag personalizado del alcance Flood",
     "floodScopeOverrideCustomPlaceholder": "#miregión",
     "floodScopeOverrideCustomApply": "Usar alcance",
-    "floodScopeOverrideCustomInvalid": "Ingrese un hashtag de región válido (por ejemplo, #miregión)."
+    "floodScopeOverrideCustomInvalid": "Ingrese un hashtag de región válido (por ejemplo, #miregión).",
+    "dmNodeHops_one": "{{count}} salto",
+    "dmNodeHops_other": "{{count}} saltos"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -1544,7 +1544,9 @@
     "snrDb": "SNR {{snr}} dB",
     "distanceOffsetKm": "Compensación de distancia",
     "km": "kilómetros",
-    "distanceOffsetHelp": "Agrega un piso de kilómetros plano a los umbrales de distancia de salto-duende y mala ruta (0-50)."
+    "distanceOffsetHelp": "Agrega un piso de kilómetros plano a los umbrales de distancia de salto-duende y mala ruta (0-50).",
+    "ignoreMqttToggle": "Ignorar MQTT",
+    "ignoreMqttHelp": "Atenuar los nodos que solo usan MQTT y excluirlos de los diagnósticos"
   },
   "diagnosticsPing": {
     "title": "Ping continuo",
@@ -3661,7 +3663,18 @@
     "byteLengthTooltip": "{{bytes}} bytes sin procesar",
     "routeBarFloodTooltip": "Paquete enrutado por inundación",
     "routeBarDirectTooltip": "Paquete de enrutamiento directo",
-    "routeBarUnknownTooltip": "ruta desconocida"
+    "routeBarUnknownTooltip": "ruta desconocida",
+    "crc32Fingerprint": "CRC32 fp:",
+    "innerFirstU32Debug": "Primer u32 interno (depuración):",
+    "destHash": "Hash de destino:",
+    "srcHash": "Hash Src:",
+    "channelHash": "Hash del canal:",
+    "mac": "MAC:",
+    "ciphertextBytes": "Bytes de texto cifrado:",
+    "senderKeyPrefix": "Clave del remitente (prefijo):",
+    "control": "Unidad de control:",
+    "advertTs": "ANUNCIO ts:",
+    "advertLatLon": "ANUNCIO lat/lon:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4327,7 +4340,12 @@
     "chartAriaSignal": "Tabla de calidad de la señal: última SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} puntos",
     "chartAriaTempHumidity": "Tabla de temperatura y humedad: última temperatura {{temperature}}, humedad {{humidity}} por ciento, {{count}} puntos",
     "chartAriaPressure": "Tabla de presión barométrica: últimos {{pressure}} hPa, {{count}} puntos",
-    "chartAriaIaq": "Gráfico de calidad del aire: últimos puntos IAQ {{iaq}}, {{count}}"
+    "chartAriaIaq": "Gráfico de calidad del aire: últimos puntos IAQ {{iaq}}, {{count}}",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "Exportar CSV",
+    "emptyWaitingConnected": "Aún no hay datos de telemetría. Esperando datos del dispositivo...",
+    "emptyWaitingDisconnected": "Aún no hay datos de telemetría. Conéctate a un dispositivo para ver las métricas en tiempo real."
   },
   "toasts": {
     "firmwareAvailable": "Actualización de firmware disponible: v{{version}}",

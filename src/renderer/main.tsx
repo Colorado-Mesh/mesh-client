@@ -15,6 +15,7 @@ import {
   initReduceMotionDefaultIfAbsent,
   syncReduceMotionDatasetFromStorage,
 } from './lib/reduceMotionPreference';
+import { installRendererUnhandledRejectionLogger } from './lib/rendererUnhandledRejection';
 
 /** Shell-first: paint splash while App + protocol runtimes chunk loads in parallel. */
 const App = lazy(() => import('./App'));
@@ -37,6 +38,8 @@ if (import.meta.env.DEV) {
     ),
   );
 }
+
+installRendererUnhandledRejectionLogger();
 
 void (async () => {
   await ensureLocaleLoaded(i18n, i18n.language);

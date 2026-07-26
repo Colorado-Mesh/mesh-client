@@ -80,7 +80,7 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 
 - **Meshtastic:** `runtime/useMeshtasticRuntime.ts`, `lib/protocols/MeshtasticProtocol.ts`, `lib/connection.ts` (`createConnection`).
 - **MeshCore:** `runtime/useMeshcoreRuntime.ts`, `lib/protocols/MeshCoreProtocol.ts`, `@liamcottle/meshcore.js`.
-- **Reticulum:** `runtime/useReticulumRuntime.ts`, `lib/reticulum/reticulumSession.ts`, `components/ReticulumMapPanel.tsx`, `components/RrcPanel.tsx`, `stores/reticulumDiscoveryMapStore.ts`, `stores/rrcHubStore.ts`, `stores/rrcSessionStore.ts`, `reticulum-sidecar/` (AGPL `mesh-client-reticulum` including `rrc_*` modules); IPC `reticulum:*` in main with typed `electronAPI.reticulum.rrc`; RMAP map data: sidecar `DiscoveryStore` → REST/WS → store → join `reticulumPeerStore` for reachability; docs [docs/reticulum.md](docs/reticulum.md), [docs/reticulum-sidecar-ipc.md](docs/reticulum-sidecar-ipc.md).
+- **Reticulum:** `runtime/useReticulumRuntime.ts`, `lib/sessions/reticulumSession.ts`, `components/ReticulumMapPanel.tsx`, `components/RrcPanel.tsx`, `stores/reticulumDiscoveryMapStore.ts`, `stores/rrcHubStore.ts`, `stores/rrcSessionStore.ts`, `reticulum-sidecar/` (AGPL `mesh-client-reticulum` including `rrc_*` modules); IPC `reticulum:*` in main with typed `electronAPI.reticulum.rrc`; RMAP map data: sidecar `DiscoveryStore` → REST/WS → store → join `reticulumPeerStore` for reachability; docs [docs/reticulum.md](docs/reticulum.md), [docs/reticulum-sidecar-ipc.md](docs/reticulum-sidecar-ipc.md).
 
 ### Database
 

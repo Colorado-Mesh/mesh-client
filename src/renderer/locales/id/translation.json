@@ -456,8 +456,6 @@
     "dmNodeLastHeard": "Terakhir didengar {{time}}",
     "dmNodeBattery": "{{pct}}% baterai",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}} hop",
-    "dmNodeHopsPlural": "{{count}} hop",
     "muteConversation": "Bisukan percakapan ini",
     "unmuteConversation": "Batalkan percakapan ini",
     "starMessage": "Bintang untuk Pesan",
@@ -606,7 +604,9 @@
     "floodScopeOverrideCustomLabel": "Hashtag cakupan Flood khusus",
     "floodScopeOverrideCustomPlaceholder": "#wilayahku",
     "floodScopeOverrideCustomApply": "Gunakan ruang lingkup",
-    "floodScopeOverrideCustomInvalid": "Masukkan hashtag wilayah yang valid (misalnya #wilayahsaya)."
+    "floodScopeOverrideCustomInvalid": "Masukkan hashtag wilayah yang valid (misalnya #wilayahsaya).",
+    "dmNodeHops_one": "{{count}} hop",
+    "dmNodeHops_other": "{{count}} hop"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -1544,7 +1544,9 @@
     "snrDb": "SNR {{snr}} dB",
     "distanceOffsetKm": "Pengimbangan jarak",
     "km": "km",
-    "distanceOffsetHelp": "Menambahkan lantai km datar ke ambang batas jarak hop-goblin dan rute buruk (0–50)."
+    "distanceOffsetHelp": "Menambahkan lantai km datar ke ambang batas jarak hop-goblin dan rute buruk (0–50).",
+    "ignoreMqttToggle": "Abaikan MQTT",
+    "ignoreMqttHelp": "Redupkan node yang hanya menggunakan MQTT dan kecualikan dari diagnostik"
   },
   "diagnosticsPing": {
     "title": "Ping berkelanjutan",
@@ -3661,7 +3663,18 @@
     "byteLengthTooltip": "{{bytes}} byte mentah",
     "routeBarFloodTooltip": "Paket yang dialiri banjir",
     "routeBarDirectTooltip": "Paket rute langsung",
-    "routeBarUnknownTooltip": "Jenis rute tidak diketahui"
+    "routeBarUnknownTooltip": "Jenis rute tidak diketahui",
+    "crc32Fingerprint": "Sidik jari CRC32:",
+    "innerFirstU32Debug": "u32 internal pertama (debug):",
+    "destHash": "Hash tujuan:",
+    "srcHash": "Hash sumber:",
+    "channelHash": "Hash kanal:",
+    "mac": "MAC:",
+    "ciphertextBytes": "Byte teks tersandi:",
+    "senderKeyPrefix": "Kunci pengirim (awalan):",
+    "control": "Kontrol:",
+    "advertTs": "Waktu ADVERT:",
+    "advertLatLon": "Lintang/bujur ADVERT:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4327,7 +4340,12 @@
     "chartAriaSignal": "Grafik kualitas sinyal: SNR terbaru {{snr}} dB, RSSI {{rssi}} dBm, {{count}} poin",
     "chartAriaTempHumidity": "Grafik suhu dan kelembapan: suhu terkini {{temperature}}, kelembapan {{humidity}} persen, {{count}} poin",
     "chartAriaPressure": "Grafik tekanan barometrik: {{pressure}} hPa terbaru, {{count}} poin",
-    "chartAriaIaq": "Grafik kualitas udara: IAQ {{iaq}}, {{count}} poin terbaru"
+    "chartAriaIaq": "Grafik kualitas udara: IAQ {{iaq}}, {{count}} poin terbaru",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "Ekspor CSV",
+    "emptyWaitingConnected": "Belum ada data telemetri. Menunggu data dari perangkat…",
+    "emptyWaitingDisconnected": "Belum ada data telemetri. Hubungkan ke perangkat untuk melihat metrik waktu nyata."
   },
   "toasts": {
     "firmwareAvailable": "Pembaruan firmware tersedia: v{{version}}",

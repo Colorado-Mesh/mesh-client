@@ -1,3 +1,4 @@
+import { LAST_HEARD_MS_THRESHOLD } from '../../shared/lastHeardUnits';
 import {
   findMeshcoreChannelRfDuplicate,
   findMeshcoreCrossTransportDuplicate,
@@ -56,7 +57,7 @@ export function meshcoreRoomMessageStoreId(
 
 /** MeshCore wire timestamps are Unix seconds; mesh-client UI/DB rows use ms when above 1e12. */
 function meshcoreTimestampSec(timestamp: number): number {
-  return timestamp >= 1_000_000_000_000 ? Math.floor(timestamp / 1000) : timestamp;
+  return timestamp >= LAST_HEARD_MS_THRESHOLD ? Math.floor(timestamp / 1000) : timestamp;
 }
 
 /** Canonical Zustand key for MeshCore chat rows (aligns RF PacketRouter ids with hook-local state). */

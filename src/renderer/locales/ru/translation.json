@@ -456,8 +456,6 @@
     "dmNodeLastHeard": "Последнее прослушивание: {{time}}",
     "dmNodeBattery": "{{pct}}% батареи",
     "dmNodeSignal": "SNR {{snr}} дБ",
-    "dmNodeHops": "{{count}} Hop",
-    "dmNodeHopsPlural": "{{count}} хопов",
     "muteConversation": "Отключить этот разговор",
     "unmuteConversation": "Включить звук этой беседы",
     "starMessage": "Избранное сообщение",
@@ -606,7 +604,11 @@
     "floodScopeOverrideCustomLabel": "Пользовательский хэштег области флуда",
     "floodScopeOverrideCustomPlaceholder": "#мойрегион",
     "floodScopeOverrideCustomApply": "Использовать область действия",
-    "floodScopeOverrideCustomInvalid": "Введите действительный хэштег региона (например, #myregion)."
+    "floodScopeOverrideCustomInvalid": "Введите действительный хэштег региона (например, #myregion).",
+    "dmNodeHops_one": "{{count}} переход",
+    "dmNodeHops_few": "{{count}} перехода",
+    "dmNodeHops_many": "{{count}} переходов",
+    "dmNodeHops_other": "{{count}} перехода"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -1544,7 +1546,9 @@
     "snrDb": "Отношение сигнал/шум {{snr}} дБ",
     "distanceOffsetKm": "Смещение расстояния",
     "km": "км",
-    "distanceOffsetHelp": "Добавляет плоский километраж к порогам расстояния прыжка-гоблина и плохого маршрута (0–50)."
+    "distanceOffsetHelp": "Добавляет плоский километраж к порогам расстояния прыжка-гоблина и плохого маршрута (0–50).",
+    "ignoreMqttToggle": "Игнорировать MQTT",
+    "ignoreMqttHelp": "Отображать узлы только с MQTT серым цветом и исключать их из диагностики"
   },
   "diagnosticsPing": {
     "title": "Непрерывный пинг",
@@ -3661,7 +3665,18 @@
     "byteLengthTooltip": "{{bytes}} байт RAW",
     "routeBarFloodTooltip": "Пакет с флуд-маршрутизацией",
     "routeBarDirectTooltip": "Пакет с прямой маршрутизацией",
-    "routeBarUnknownTooltip": "неизвестный маршрут"
+    "routeBarUnknownTooltip": "неизвестный маршрут",
+    "crc32Fingerprint": "Отпечаток CRC32:",
+    "innerFirstU32Debug": "Первое внутреннее u32 (отладка):",
+    "destHash": "Хеш назначения:",
+    "srcHash": "Хеш источника:",
+    "channelHash": "Хеш канала:",
+    "mac": "MAC:",
+    "ciphertextBytes": "Байты шифротекста:",
+    "senderKeyPrefix": "Ключ отправителя (префикс):",
+    "control": "Управление:",
+    "advertTs": "Время ADVERT:",
+    "advertLatLon": "Широта/долгота ADVERT:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4327,7 +4342,12 @@
     "chartAriaSignal": "Диаграмма качества сигнала: последнее соотношение сигнал/шум {{snr}} дБ, RSSI {{rssi}} дБм, {{count}} баллов",
     "chartAriaTempHumidity": "График температуры и влажности: последняя температура {{temperature}}, влажность {{humidity}} процентов, {{count}} баллов.",
     "chartAriaPressure": "График атмосферного давления: последние {{pressure}} гПа, {{count}} пунктов.",
-    "chartAriaIaq": "Диаграмма качества воздуха: последний показатель IAQ {{iaq}}, {{count}} баллов."
+    "chartAriaIaq": "Диаграмма качества воздуха: последний показатель IAQ {{iaq}}, {{count}} баллов.",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "Экспорт CSV",
+    "emptyWaitingConnected": "Данных телеметрии пока нет. Ожидание данных от устройства…",
+    "emptyWaitingDisconnected": "Данных телеметрии пока нет. Подключите устройство для просмотра показателей в реальном времени."
   },
   "toasts": {
     "firmwareAvailable": "Доступно обновление прошивки: v{{version}}",

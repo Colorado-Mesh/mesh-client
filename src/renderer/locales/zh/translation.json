@@ -456,8 +456,6 @@
     "dmNodeLastHeard": "最后一次听到{{time}}",
     "dmNodeBattery": "{{pct}}%电量",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}}跳",
-    "dmNodeHopsPlural": "{{count}}跳",
     "muteConversation": "将此对话设为静音",
     "unmuteConversation": "取消此对话的静音",
     "starMessage": "星级消息",
@@ -606,7 +604,9 @@
     "floodScopeOverrideCustomLabel": "自定义泛洪范围标签",
     "floodScopeOverrideCustomPlaceholder": "#我的地区",
     "floodScopeOverrideCustomApply": "使用范围",
-    "floodScopeOverrideCustomInvalid": "输入有效的区域标签（例如#myregion）。"
+    "floodScopeOverrideCustomInvalid": "输入有效的区域标签（例如#myregion）。",
+    "dmNodeHops_one": "{{count}}跳",
+    "dmNodeHops_other": "{{count}}跳"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -1544,7 +1544,9 @@
     "snrDb": "信噪比{{snr}}分贝",
     "distanceOffsetKm": "距离偏移",
     "km": "公里",
-    "distanceOffsetHelp": "为跳妖精和不良路线距离阈值添加平坦的公里下限 (0–50)。"
+    "distanceOffsetHelp": "为跳妖精和不良路线距离阈值添加平坦的公里下限 (0–50)。",
+    "ignoreMqttToggle": "忽略MQTT",
+    "ignoreMqttHelp": "灰显仅限MQTT的节点，并将其排除在诊断之外"
   },
   "diagnosticsPing": {
     "title": "持续ping",
@@ -3661,7 +3663,18 @@
     "byteLengthTooltip": "{{bytes}}字节原始",
     "routeBarFloodTooltip": "泛洪路由数据包",
     "routeBarDirectTooltip": "直接路由的数据包",
-    "routeBarUnknownTooltip": "未知路由"
+    "routeBarUnknownTooltip": "未知路由",
+    "crc32Fingerprint": "CRC32 fp ：",
+    "innerFirstU32Debug": "内部第一个u32 （调试） ：",
+    "destHash": "目标哈希：",
+    "srcHash": "来源哈希：",
+    "channelHash": "通道哈希：",
+    "mac": "MAC：",
+    "ciphertextBytes": "密文字节：",
+    "senderKeyPrefix": "发件人密钥（前缀） ：",
+    "control": "控制：",
+    "advertTs": "ADVERT ts:",
+    "advertLatLon": "广告纬度/经度："
   },
   "remoteAdmin": {
     "errors": {
@@ -4327,7 +4340,12 @@
     "chartAriaSignal": "信号质量图表：最新SNR {{snr}} dB、RSSI {{rssi}} dBm、{{count}}点",
     "chartAriaTempHumidity": "温湿度图：最新温度{{temperature}}、湿度{{humidity}}%、{{count}}点",
     "chartAriaPressure": "气压图：最新{{pressure}} hPa、{{count}}点",
-    "chartAriaIaq": "空气质量图表：最新IAQ {{iaq}}、{{count}}点"
+    "chartAriaIaq": "空气质量图表：最新IAQ {{iaq}}、{{count}}点",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "导出 CSV",
+    "emptyWaitingConnected": "尚无遥测数据。正在等待来自设备的数据……",
+    "emptyWaitingDisconnected": "尚无遥测数据。连接到设备以查看实时指标。"
   },
   "toasts": {
     "firmwareAvailable": "固件更新可用： v {{version}}",

@@ -456,8 +456,6 @@
     "dmNodeLastHeard": "Zuletzt gehört {{time}}",
     "dmNodeBattery": "{{pct}}% Akku",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}} Hop",
-    "dmNodeHopsPlural": "{{count}} Hops",
     "muteConversation": "Dieses Gespräch stummschalten",
     "unmuteConversation": "Stummschaltung dieser Konversation aufheben",
     "starMessage": "Nachrichten markieren",
@@ -606,7 +604,9 @@
     "floodScopeOverrideCustomLabel": "Benutzerdefinierter Flood-Scope-Hashtag",
     "floodScopeOverrideCustomPlaceholder": "#meineregion",
     "floodScopeOverrideCustomApply": "Nutzen Sie den Geltungsbereich",
-    "floodScopeOverrideCustomInvalid": "Geben Sie einen gültigen Regions-Hashtag ein (zum Beispiel #myregion)."
+    "floodScopeOverrideCustomInvalid": "Geben Sie einen gültigen Regions-Hashtag ein (zum Beispiel #myregion).",
+    "dmNodeHops_one": "{{count}} Hop",
+    "dmNodeHops_other": "{{count}} Hops"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -1544,7 +1544,9 @@
     "snrDb": "SNR {{snr}} dB",
     "distanceOffsetKm": "Distanzversatz",
     "km": "km",
-    "distanceOffsetHelp": "Fügt den Schwellenwerten für die Hop-Goblin- und Bad-Route-Entfernung (0–50) eine flache km-Untergrenze hinzu."
+    "distanceOffsetHelp": "Fügt den Schwellenwerten für die Hop-Goblin- und Bad-Route-Entfernung (0–50) eine flache km-Untergrenze hinzu.",
+    "ignoreMqttToggle": "MQTT ignorieren",
+    "ignoreMqttHelp": "Nur MQTT-Knoten ausgrauen und von der Diagnose ausschließen"
   },
   "diagnosticsPing": {
     "title": "Kontinuierlicher Ping",
@@ -3661,7 +3663,18 @@
     "byteLengthTooltip": "{{bytes}} Bytes RAW",
     "routeBarFloodTooltip": "Flood-Routing-Paket",
     "routeBarDirectTooltip": "Direct-Routing-Paket",
-    "routeBarUnknownTooltip": "unbekannte Route"
+    "routeBarUnknownTooltip": "unbekannte Route",
+    "crc32Fingerprint": "CRC32 fp:",
+    "innerFirstU32Debug": "Innerer erster u32 (Debug):",
+    "destHash": "Dest Hash:",
+    "srcHash": "Src-Hash:",
+    "channelHash": "Kanal-Hash:",
+    "mac": "MAC:",
+    "ciphertextBytes": "Chiffriertextbytes:",
+    "senderKeyPrefix": "Absenderschlüssel (Präfix):",
+    "control": "Bedienung:",
+    "advertTs": "WERBUNG ts:",
+    "advertLatLon": "ANZEIGE lat/lon:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4327,7 +4340,12 @@
     "chartAriaSignal": "Signalqualitätsdiagramm: aktuelle SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} Punkte",
     "chartAriaTempHumidity": "Temperatur- und Luftfeuchtigkeitsdiagramm: aktuelle Temperatur {{temperature}}, Luftfeuchtigkeit {{humidity}} Prozent, {{count}} Punkte",
     "chartAriaPressure": "Luftdruckdiagramm: aktuelle {{pressure}} hPa, {{count}} Punkte",
-    "chartAriaIaq": "Luftqualitätsdiagramm: neueste IAQ-Punkte {{iaq}}, {{count}}"
+    "chartAriaIaq": "Luftqualitätsdiagramm: neueste IAQ-Punkte {{iaq}}, {{count}}",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "CSV exportieren",
+    "emptyWaitingConnected": "Noch keine Telemetriedaten. Warten auf Daten vom Gerät...",
+    "emptyWaitingDisconnected": "Noch keine Telemetriedaten. Stellen Sie eine Verbindung zu einem Gerät her, um Echtzeitmetriken anzuzeigen."
   },
   "toasts": {
     "firmwareAvailable": "Firmware-Update verfügbar: v{{version}}",

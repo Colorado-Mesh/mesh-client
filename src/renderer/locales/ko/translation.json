@@ -456,8 +456,6 @@
     "dmNodeLastHeard": "마지막 확인: {{time}}",
     "dmNodeBattery": "{{pct}}% 배터리",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}} 홉",
-    "dmNodeHopsPlural": "{{count}} 홉",
     "muteConversation": "이 대화 음소거",
     "unmuteConversation": "이 대화 음소거 해제",
     "starMessage": "메시지 별표처리",
@@ -606,7 +604,9 @@
     "floodScopeOverrideCustomLabel": "맞춤 Flood 범위 해시태그",
     "floodScopeOverrideCustomPlaceholder": "#나의 지역",
     "floodScopeOverrideCustomApply": "사용 범위",
-    "floodScopeOverrideCustomInvalid": "유효한 지역 해시태그(예: #myregion)를 입력하세요."
+    "floodScopeOverrideCustomInvalid": "유효한 지역 해시태그(예: #myregion)를 입력하세요.",
+    "dmNodeHops_one": "{{count}} 홉",
+    "dmNodeHops_other": "{{count}} 홉"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -1544,7 +1544,9 @@
     "snrDb": "SNR {{snr}}dB",
     "distanceOffsetKm": "거리 오프셋",
     "km": "km",
-    "distanceOffsetHelp": "홉-고블린 및 잘못된 경로 거리 임계값(0-50)에 평평한 km 층을 추가합니다."
+    "distanceOffsetHelp": "홉-고블린 및 잘못된 경로 거리 임계값(0-50)에 평평한 km 층을 추가합니다.",
+    "ignoreMqttToggle": "MQTT 무시",
+    "ignoreMqttHelp": "MQTT 전용 노드를 흐리게 표시하고 진단에서 제외합니다"
   },
   "diagnosticsPing": {
     "title": "연속 핑",
@@ -3661,7 +3663,18 @@
     "byteLengthTooltip": "{{bytes}} 바이트 RAW",
     "routeBarFloodTooltip": "Flood-routed packet",
     "routeBarDirectTooltip": "직접 라우팅된 패킷",
-    "routeBarUnknownTooltip": "알 수 없는 경로 유형"
+    "routeBarUnknownTooltip": "알 수 없는 경로 유형",
+    "crc32Fingerprint": "CRC32 지문:",
+    "innerFirstU32Debug": "내부 첫 u32(디버그):",
+    "destHash": "대상 해시:",
+    "srcHash": "소스 해시:",
+    "channelHash": "채널 해시:",
+    "mac": "MAC:",
+    "ciphertextBytes": "암호문 바이트:",
+    "senderKeyPrefix": "발신자 키(접두사):",
+    "control": "제어:",
+    "advertTs": "ADVERT 타임스탬프:",
+    "advertLatLon": "ADVERT 위도/경도:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4327,7 +4340,12 @@
     "chartAriaSignal": "신호 품질 차트: 최신 SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} 포인트",
     "chartAriaTempHumidity": "온도 및 습도 차트: 최신 온도 {{temperature}}, 습도 {{humidity}} 퍼센트, {{count}} 포인트",
     "chartAriaPressure": "기압 차트: 최신 {{pressure}} hPa, {{count}} 포인트",
-    "chartAriaIaq": "대기질 차트: 최신 IAQ {{iaq}}, {{count}} 포인트"
+    "chartAriaIaq": "대기질 차트: 최신 IAQ {{iaq}}, {{count}} 포인트",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "CSV 내보내기",
+    "emptyWaitingConnected": "아직 텔레메트리 데이터가 없습니다. 장치의 데이터를 기다리는 중입니다…",
+    "emptyWaitingDisconnected": "아직 텔레메트리 데이터가 없습니다. 실시간 측정값을 보려면 장치에 연결하세요."
   },
   "toasts": {
     "firmwareAvailable": "사용 가능한 펌웨어 업데이트: v{{version}}",

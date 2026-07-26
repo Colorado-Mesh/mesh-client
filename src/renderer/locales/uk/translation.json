@@ -456,8 +456,6 @@
     "dmNodeLastHeard": "Востаннє чули {{time}}",
     "dmNodeBattery": "{{pct}}% заряду акумулятора",
     "dmNodeSignal": "SNR {{snr}} дБ",
-    "dmNodeHops": "{{count}} Hop",
-    "dmNodeHopsPlural": "{{count}} хопів",
     "muteConversation": "Вимкнути цю розмову",
     "unmuteConversation": "Увімкнути звук цієї розмови",
     "starMessage": "Зоряне повідомлення",
@@ -606,7 +604,11 @@
     "floodScopeOverrideCustomLabel": "Користувацький хештег обсягу Flood",
     "floodScopeOverrideCustomPlaceholder": "#мояобласть",
     "floodScopeOverrideCustomApply": "Сфера використання",
-    "floodScopeOverrideCustomInvalid": "Введіть дійсний хештег регіону (наприклад, #myregion)."
+    "floodScopeOverrideCustomInvalid": "Введіть дійсний хештег регіону (наприклад, #myregion).",
+    "dmNodeHops_one": "{{count}} перехід",
+    "dmNodeHops_few": "{{count}} переходи",
+    "dmNodeHops_many": "{{count}} переходів",
+    "dmNodeHops_other": "{{count}} переходу"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -1544,7 +1546,9 @@
     "snrDb": "SNR {{snr}} дБ",
     "distanceOffsetKm": "Зміщення відстані",
     "km": "км",
-    "distanceOffsetHelp": "Додає рівні кілометри до порогових значень дистанції стрибка-гобліна та поганого маршруту (0–50)."
+    "distanceOffsetHelp": "Додає рівні кілометри до порогових значень дистанції стрибка-гобліна та поганого маршруту (0–50).",
+    "ignoreMqttToggle": "Ігнорувати MQTT",
+    "ignoreMqttHelp": "Засікайте вузли лише MQTT та виключайте їх з діагностики"
   },
   "diagnosticsPing": {
     "title": "Безперервний пінг",
@@ -3661,7 +3665,18 @@
     "byteLengthTooltip": "{{bytes}} байт RAW",
     "routeBarFloodTooltip": "Пакет із маршрутизацією по затопленню",
     "routeBarDirectTooltip": "Пакет із прямим маршрутом",
-    "routeBarUnknownTooltip": "Невідомий тип маршруту"
+    "routeBarUnknownTooltip": "Невідомий тип маршруту",
+    "crc32Fingerprint": "CRC32 fp:",
+    "innerFirstU32Debug": "Внутрішній перший u32 (налагодження):",
+    "destHash": "Dest hash:",
+    "srcHash": "Хеш Src:",
+    "channelHash": "Хеш каналу:",
+    "mac": "MAC:",
+    "ciphertextBytes": "Байти шифротексту:",
+    "senderKeyPrefix": "Ключ відправника (префікс):",
+    "control": "Контроль:",
+    "advertTs": "ADVERT ts:",
+    "advertLatLon": "ADVERT lat/lon:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4327,7 +4342,12 @@
     "chartAriaSignal": "Графік якості сигналу: останній SNR {{snr}} дБ, RSSI {{rssi}} дБм, {{count}} балів",
     "chartAriaTempHumidity": "Графік температури та вологості: остання температура {{temperature}}, вологість {{humidity}} відсотків, {{count}} балів",
     "chartAriaPressure": "Графік барометричного тиску: останні {{pressure}} гПа, {{count}} балів",
-    "chartAriaIaq": "Таблиця якості повітря: останній IAQ {{iaq}}, {{count}} балів"
+    "chartAriaIaq": "Таблиця якості повітря: останній IAQ {{iaq}}, {{count}} балів",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "Експорт у CSV",
+    "emptyWaitingConnected": "Даних телеметрії поки немає. Очікування даних від пристрою…",
+    "emptyWaitingDisconnected": "Даних телеметрії поки немає. Підключіться до пристрою, щоб переглядати показники в реальному часі."
   },
   "toasts": {
     "firmwareAvailable": "Доступне оновлення прошивки: v{{version}}",

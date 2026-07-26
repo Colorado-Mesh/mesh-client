@@ -1,4 +1,5 @@
 import { LAST_HEARD_MAX_FUTURE_SKEW_SEC } from '@/renderer/lib/nodeStatus';
+import { LAST_HEARD_MS_THRESHOLD } from '@/shared/lastHeardUnits';
 
 /** Normalize Meshtastic packet rxTime (Date, Unix seconds, or ms) to epoch ms. */
 export function meshtasticPacketRxTimeMs(rxTime: unknown): number {
@@ -7,7 +8,7 @@ export function meshtasticPacketRxTimeMs(rxTime: unknown): number {
     return Number.isFinite(ms) && ms > 0 ? ms : 0;
   }
   if (typeof rxTime === 'number' && Number.isFinite(rxTime) && rxTime > 0) {
-    return rxTime < 1_000_000_000_000 ? rxTime * 1000 : rxTime;
+    return rxTime < LAST_HEARD_MS_THRESHOLD ? rxTime * 1000 : rxTime;
   }
   return 0;
 }

@@ -456,8 +456,6 @@
     "dmNodeLastHeard": "Laatst gehoord {{time}}",
     "dmNodeBattery": "{{pct}}% accu",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}} hop",
-    "dmNodeHopsPlural": "{{count}} hop",
     "muteConversation": "Dit gesprek dempen",
     "unmuteConversation": "Dempen van dit gesprek opheffen",
     "starMessage": "Bericht favoriet maken",
@@ -606,7 +604,9 @@
     "floodScopeOverrideCustomLabel": "Aangepaste Flood-bereik-hashtag",
     "floodScopeOverrideCustomPlaceholder": "#mijnregio",
     "floodScopeOverrideCustomApply": "Gebruik bereik",
-    "floodScopeOverrideCustomInvalid": "Voer een geldige regio-hashtag in (bijvoorbeeld #mijnregio)."
+    "floodScopeOverrideCustomInvalid": "Voer een geldige regio-hashtag in (bijvoorbeeld #mijnregio).",
+    "dmNodeHops_one": "{{count}} hop",
+    "dmNodeHops_other": "{{count}} hops"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -1544,7 +1544,9 @@
     "snrDb": "SNR {{snr}} dB",
     "distanceOffsetKm": "Afstandsverschuiving",
     "km": "km",
-    "distanceOffsetHelp": "Voegt een vlakke km-vloer toe aan de afstandsdrempels voor hop-goblin en slechte route (0-50)."
+    "distanceOffsetHelp": "Voegt een vlakke km-vloer toe aan de afstandsdrempels voor hop-goblin en slechte route (0-50).",
+    "ignoreMqttToggle": "MQTT negeren",
+    "ignoreMqttHelp": "Maak nodes die alleen MQTT gebruiken grijs en sluit ze uit van diagnostiek"
   },
   "diagnosticsPing": {
     "title": "Continue ping",
@@ -3661,7 +3663,18 @@
     "byteLengthTooltip": "{{bytes}} bytes RAW",
     "routeBarFloodTooltip": "Overstroming-gerouteerd pakket",
     "routeBarDirectTooltip": "Rechtstreeks omgeleid pakket",
-    "routeBarUnknownTooltip": "onbekende route"
+    "routeBarUnknownTooltip": "onbekende route",
+    "crc32Fingerprint": "CRC32-vingerafdruk:",
+    "innerFirstU32Debug": "Eerste interne u32 (debug):",
+    "destHash": "Bestemmingshash:",
+    "srcHash": "Bronhash:",
+    "channelHash": "Kanaalhash:",
+    "mac": "MAC:",
+    "ciphertextBytes": "Bytes versleutelde tekst:",
+    "senderKeyPrefix": "Afzendersleutel (voorvoegsel):",
+    "control": "Besturing:",
+    "advertTs": "ADVERT-tijdstempel:",
+    "advertLatLon": "ADVERT-breedte-/lengtegraad:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4327,7 +4340,12 @@
     "chartAriaSignal": "Signaalkwaliteitsgrafiek: nieuwste SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} punten",
     "chartAriaTempHumidity": "Temperatuur- en vochtigheidsgrafiek: laatste temperatuur {{temperature}}, vochtigheid {{humidity}} procent, {{count}} punten",
     "chartAriaPressure": "Luchtdrukgrafiek: laatste {{pressure}} hPa, {{count}} punten",
-    "chartAriaIaq": "Luchtkwaliteitsgrafiek: laatste IAQ {{iaq}}, {{count}} punten"
+    "chartAriaIaq": "Luchtkwaliteitsgrafiek: laatste IAQ {{iaq}}, {{count}} punten",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "CSV exporteren",
+    "emptyWaitingConnected": "Nog geen telemetriegegevens. Wachten op gegevens van het apparaat…",
+    "emptyWaitingDisconnected": "Nog geen telemetriegegevens. Maak verbinding met een apparaat om realtime metingen te bekijken."
   },
   "toasts": {
     "firmwareAvailable": "Firmware-update beschikbaar: v{{version}}",

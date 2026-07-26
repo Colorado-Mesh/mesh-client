@@ -456,8 +456,6 @@
     "dmNodeLastHeard": "Naposledy slyšeno {{time}}",
     "dmNodeBattery": "{{pct}}% baterie",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}} hop",
-    "dmNodeHopsPlural": "{{count}} skoků",
     "muteConversation": "Ztlumit tuto konverzaci",
     "unmuteConversation": "Zrušit ztlumení této konverzace",
     "starMessage": "Označit zprávu",
@@ -606,7 +604,10 @@
     "floodScopeOverrideCustomLabel": "Vlastní hashtag Flood rozsahu",
     "floodScopeOverrideCustomPlaceholder": "#myregion",
     "floodScopeOverrideCustomApply": "Použijte rozsah",
-    "floodScopeOverrideCustomInvalid": "Zadejte platný hashtag regionu (například #myregion)."
+    "floodScopeOverrideCustomInvalid": "Zadejte platný hashtag regionu (například #myregion).",
+    "dmNodeHops_one": "{{count}} skok",
+    "dmNodeHops_few": "{{count}} skoky",
+    "dmNodeHops_other": "{{count}} skoků"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -1544,7 +1545,9 @@
     "snrDb": "SNR {{snr}} dB",
     "distanceOffsetKm": "Posun vzdálenosti",
     "km": "km",
-    "distanceOffsetHelp": "Přidá rovnou podlahu km k prahovým hodnotám vzdálenosti hop-goblin a špatným trasám (0–50)."
+    "distanceOffsetHelp": "Přidá rovnou podlahu km k prahovým hodnotám vzdálenosti hop-goblin a špatným trasám (0–50).",
+    "ignoreMqttToggle": "Ignorovat MQTT",
+    "ignoreMqttHelp": "Zobrazit uzly pouze přes MQTT šedě a vyloučit je z diagnostiky"
   },
   "diagnosticsPing": {
     "title": "Kontinuální ping",
@@ -3661,7 +3664,18 @@
     "byteLengthTooltip": "{{bytes}} bajtů RAW",
     "routeBarFloodTooltip": "Paket směrovaný povodněmi",
     "routeBarDirectTooltip": "Přímo směrovaný paket",
-    "routeBarUnknownTooltip": "Neznámý typ trasy"
+    "routeBarUnknownTooltip": "Neznámý typ trasy",
+    "crc32Fingerprint": "Otisk CRC32:",
+    "innerFirstU32Debug": "První interní u32 (ladění):",
+    "destHash": "Cílový hash:",
+    "srcHash": "Zdrojový hash:",
+    "channelHash": "Hash kanálu:",
+    "mac": "MAC:",
+    "ciphertextBytes": "Bajty šifrovaného textu:",
+    "senderKeyPrefix": "Klíč odesílatele (prefix):",
+    "control": "Řízení:",
+    "advertTs": "Čas ADVERT:",
+    "advertLatLon": "Zem. šířka/délka ADVERT:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4327,7 +4341,12 @@
     "chartAriaSignal": "Tabulka kvality signálu: nejnovější SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} bodů",
     "chartAriaTempHumidity": "Tabulka teploty a vlhkosti: nejnovější teplota {{temperature}}, vlhkost {{humidity}} procent, {{count}} bodů",
     "chartAriaPressure": "Graf barometrického tlaku: nejnovější {{pressure}} hPa, {{count}} bodů",
-    "chartAriaIaq": "Tabulka kvality vzduchu: nejnovější IAQ {{iaq}}, {{count}} bodů"
+    "chartAriaIaq": "Tabulka kvality vzduchu: nejnovější IAQ {{iaq}}, {{count}} bodů",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "Exportovat CSV",
+    "emptyWaitingConnected": "Zatím nejsou žádná telemetrická data. Čeká se na data ze zařízení…",
+    "emptyWaitingDisconnected": "Zatím nejsou žádná telemetrická data. Připojte zařízení pro zobrazení metrik v reálném čase."
   },
   "toasts": {
     "firmwareAvailable": "Dostupná aktualizace firmwaru: v{{version}}",

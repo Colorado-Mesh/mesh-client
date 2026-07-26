@@ -1,8 +1,10 @@
+import { MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC } from './messageTimestampSkew';
+
 /** Minimum Unix-second `last_advert` we treat as a real epoch timestamp (not repeater uptime). */
 export const MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC = 1_000_000_000;
 
 /** Max device clock lead we accept before clamping `last_advert` to receive-time estimate. */
-export const MESHCORE_LAST_ADVERT_MAX_FUTURE_SKEW_SEC = 300;
+export const MESHCORE_LAST_ADVERT_MAX_FUTURE_SKEW_SEC = MESSAGE_TIMESTAMP_MAX_FUTURE_SKEW_SEC;
 
 /** True when `lastAdvertSec` looks like Unix epoch seconds (MeshCore contact freshness). */
 export function isPlausibleMeshcoreLastAdvertSec(

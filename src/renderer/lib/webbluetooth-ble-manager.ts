@@ -652,7 +652,13 @@ export class WebBluetoothManager {
 
   private cleanup(): void {
     if (this.registeredDeviceId) {
-      void unregisterWebBtDevice(this.sessionId, this.registeredDeviceId);
+      void unregisterWebBtDevice(this.sessionId, this.registeredDeviceId).catch((err: unknown) => {
+        // catch-no-log-ok cleanup path — coexistence unregister must not surface as unhandled rejection
+        console.debug(
+          '[WebBluetoothManager] unregisterWebBtDevice during cleanup failed: ' +
+            errLikeToLogString(err),
+        );
+      });
       this.registeredDeviceId = null;
     }
     this.clearPostWriteSafetyReads();

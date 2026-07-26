@@ -1201,11 +1201,9 @@ export default function DiagnosticsPanel({
                     className="accent-brand-green"
                   />
                   <label htmlFor="ignoreMqtt" className="cursor-pointer text-sm text-gray-300">
-                    Ignore MQTT
+                    {t('diagnosticsPanel.ignoreMqttToggle')}
                   </label>
-                  <span className="text-muted text-xs">
-                    Gray out MQTT-only nodes and exclude them from diagnostics
-                  </span>
+                  <span className="text-muted text-xs">{t('diagnosticsPanel.ignoreMqttHelp')}</span>
                 </div>
               )}
               <div className="flex items-center gap-2">

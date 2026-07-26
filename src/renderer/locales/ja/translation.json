@@ -456,8 +456,6 @@
     "dmNodeLastHeard": "最後に聞いたのは{{time}}",
     "dmNodeBattery": "{{pct}}%バッテリー",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}}ホップ",
-    "dmNodeHopsPlural": "{{count}}ホップ",
     "muteConversation": "この会話をミュートする",
     "unmuteConversation": "この会話のミュートを解除する",
     "starMessage": "スターメッセージ",
@@ -606,7 +604,9 @@
     "floodScopeOverrideCustomLabel": "カスタムフラッドスコープハッシュタグ",
     "floodScopeOverrideCustomPlaceholder": "#私の地域",
     "floodScopeOverrideCustomApply": "使用範囲",
-    "floodScopeOverrideCustomInvalid": "有効な地域ハッシュタグ (#myregion など) を入力します。"
+    "floodScopeOverrideCustomInvalid": "有効な地域ハッシュタグ (#myregion など) を入力します。",
+    "dmNodeHops_one": "{{count}} ホップ",
+    "dmNodeHops_other": "{{count}} ホップ"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -1544,7 +1544,9 @@
     "snrDb": "SNR {{snr}} dB",
     "distanceOffsetKm": "距離オフセット",
     "km": "km",
-    "distanceOffsetHelp": "ホップゴブリンおよび不良ルートの距離しきい値 (0 ～ 50) にフラット km フロアを追加します。"
+    "distanceOffsetHelp": "ホップゴブリンおよび不良ルートの距離しきい値 (0 ～ 50) にフラット km フロアを追加します。",
+    "ignoreMqttToggle": "MQTT を無視",
+    "ignoreMqttHelp": "MQTT のみのノードをグレー表示し、診断から除外します"
   },
   "diagnosticsPing": {
     "title": "連続ping",
@@ -3661,7 +3663,18 @@
     "byteLengthTooltip": "{{bytes}}バイトRAW",
     "routeBarFloodTooltip": "フラッドルートされたパケット",
     "routeBarDirectTooltip": "ダイレクトルーティングパケット",
-    "routeBarUnknownTooltip": "不明なルートタイプ"
+    "routeBarUnknownTooltip": "不明なルートタイプ",
+    "crc32Fingerprint": "CRC32 フィンガープリント:",
+    "innerFirstU32Debug": "内部先頭 u32（デバッグ）:",
+    "destHash": "宛先ハッシュ:",
+    "srcHash": "送信元ハッシュ:",
+    "channelHash": "チャンネルハッシュ:",
+    "mac": "MAC:",
+    "ciphertextBytes": "暗号文バイト数:",
+    "senderKeyPrefix": "送信者キー（プレフィックス）:",
+    "control": "制御:",
+    "advertTs": "ADVERT タイムスタンプ:",
+    "advertLatLon": "ADVERT 緯度/経度:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4327,7 +4340,12 @@
     "chartAriaSignal": "信号品質チャート: 最新の SNR {{snr}} dB、RSSI {{rssi}} dBm、{{count}} ポイント",
     "chartAriaTempHumidity": "温度と湿度のグラフ: 最新の温度 {{temperature}}、湿度 {{humidity}} パーセント、{{count}} ポイント",
     "chartAriaPressure": "気圧グラフ: 最新の{{pressure}} hPa、{{count}} ポイント",
-    "chartAriaIaq": "大気質チャート: 最新の IAQ {{iaq}}、{{count}} ポイント"
+    "chartAriaIaq": "大気質チャート: 最新の IAQ {{iaq}}、{{count}} ポイント",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "CSV をエクスポート",
+    "emptyWaitingConnected": "テレメトリデータはまだありません。デバイスからのデータを待っています…",
+    "emptyWaitingDisconnected": "テレメトリデータはまだありません。リアルタイムのメトリクスを表示するにはデバイスに接続してください。"
   },
   "toasts": {
     "firmwareAvailable": "利用可能なファームウェアアップデート: v{{version}}",
