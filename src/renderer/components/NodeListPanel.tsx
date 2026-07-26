@@ -53,6 +53,7 @@ import {
   meshtasticContactGroupMatchesBuiltinRouter,
 } from '../lib/meshtasticContactGroupUtils';
 import {
+  isMeshtasticSelfHybridPath,
   MeshtasticHybridPathIcons,
   MeshtasticMqttOnlyPathIcons,
   resolveMeshtasticPathBadge,
@@ -1389,7 +1390,11 @@ export default function NodeListPanel({
                                 );
                               }
                               if (pathBadge === 'hybrid') {
-                                const isSelfHybrid = isSelf && mqttConnected && radioConnected;
+                                const isSelfHybrid = isMeshtasticSelfHybridPath(
+                                  isSelf,
+                                  mqttConnected,
+                                  radioConnected,
+                                );
                                 return (
                                   <MeshtasticHybridPathIcons
                                     title={

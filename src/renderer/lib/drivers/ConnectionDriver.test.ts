@@ -20,18 +20,18 @@ describe('ConnectionDriver', () => {
     useConnectionStore.setState({ connections: {} });
   });
 
-  it('registerLegacyTransport exposes handle to getHandle', () => {
+  it('registerExternalTransport exposes handle to getHandle', () => {
     const identityId = `test-${Date.now()}`;
     addIdentity({
       id: identityId,
       protocol: meshtasticProtocol,
-      signature: 'meshtastic:test:legacy',
+      signature: 'meshtastic:test:external',
       transports: [],
       createdAt: Date.now(),
       lastSeenAt: Date.now(),
     });
     const fakeHandle = { kind: 'test-device' };
-    const detach = connectionDriver.registerLegacyTransport(
+    const detach = connectionDriver.registerExternalTransport(
       identityId,
       meshtasticProtocol,
       fakeHandle,

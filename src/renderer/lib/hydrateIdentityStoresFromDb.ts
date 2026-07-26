@@ -72,7 +72,8 @@ export async function loadMeshcoreMessagesForHydration(): Promise<MeshcoreMessag
   );
 }
 
-function meshcoreHydratedMessageRecords(
+/** MeshCore chat rows → `messageStore` records (room BBS rows get their composite store id). */
+export function meshcoreHydratedMessageRecords(
   messages: ReturnType<typeof mapMeshcoreDbRowsToChatMessages>,
 ) {
   return messages.map((msg) => {

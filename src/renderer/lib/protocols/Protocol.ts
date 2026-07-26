@@ -31,12 +31,48 @@ export interface NodeInfoEvent {
   role?: number;
   lastHeardAt?: number;
   publicKey?: Uint8Array;
+  /** True when decoded from UserPacket (live identity), not NodeDB NodeInfo. */
+  fromUserPacket?: boolean;
+  snr?: number;
+  rssi?: number;
+  hopsAway?: number;
+  viaMqtt?: boolean;
+  latitude?: number;
+  longitude?: number;
+  altitude?: number;
+  batteryLevel?: number;
+  voltage?: number;
+  channelUtilization?: number;
+  airUtilTx?: number;
 }
 
 /** MeshCore path-updated push (event 129). */
 export interface MeshcorePathUpdatedEvent {
   nodeId: number;
   publicKey: Uint8Array;
+}
+
+/** MeshCore hop-ACK push (event 130): 0x80 = ACK, 0x81 = NACK. */
+export interface MeshcoreDmAckEvent {
+  ackCode: number;
+  roundTrip?: number;
+}
+
+/** MeshCore message-waiting push (event 131) — signal only; the drain is an RPC. */
+export type MeshcoreWaitingMessagesEvent = Record<string, never>;
+
+/** MeshCore CLI data response (direct message with `txtType === 1`). */
+export interface MeshcoreCliResponseEvent {
+  text: string;
+  senderNodeId: number;
+  pubKeyPrefixHex: string;
+}
+
+/** MeshCore radio RF RX push (event 136). */
+export interface MeshcoreRfRxEvent {
+  lastSnr: number;
+  lastRssi: number;
+  raw: Uint8Array | null;
 }
 
 // --- Contact / self-info events (populated by protocol implementations) ---
@@ -161,6 +197,8 @@ export interface PositionEvent {
 export interface TelemetryEvent {
   nodeId: number;
   timestamp: number;
+  /** Meshtastic `Telemetry.variant` case: deviceMetrics / environmentMetrics / localStats. */
+  variantCase?: string;
   batteryLevel?: number;
   voltage?: number;
   channelUtilization?: number;
@@ -170,6 +208,19 @@ export interface TelemetryEvent {
   relativeHumidity?: number;
   barometricPressure?: number;
   iaq?: number;
+  gasResistance?: number;
+  lux?: number;
+  windSpeed?: number;
+  windDirection?: number;
+  windGust?: number;
+  windLull?: number;
+  weight?: number;
+  rainfall1h?: number;
+  rainfall24h?: number;
+  numPacketsRxBad?: number;
+  numRxDupe?: number;
+  numPacketsRx?: number;
+  numPacketsTx?: number;
 }
 
 export interface TraceRouteEvent {
@@ -178,6 +229,12 @@ export interface TraceRouteEvent {
   route: number[];
   routeBack?: number[];
   timestamp: number;
+  /** `meshtastic.Data.dest` on the decoded wrapper (traceroute correlation). */
+  dataLayerDest?: number;
+  /** `meshtastic.Data.source` on the decoded wrapper. */
+  dataLayerSource?: number;
+  replyId?: number;
+  requestId?: number;
 }
 
 export interface WaypointEvent {
@@ -186,9 +243,15 @@ export interface WaypointEvent {
   description?: string;
   latitude: number;
   longitude: number;
+  /** Raw protobuf integers for MQTT gateway uplink. */
+  latitudeI?: number;
+  longitudeI?: number;
+  icon?: number;
   lockedTo?: number;
   expire?: number;
   from: number;
+  to?: number;
+  channelIndex?: number;
   timestamp: number;
 }
 
@@ -261,6 +324,23 @@ export interface MeshtasticConfigSliceEvent {
   value: unknown;
 }
 
+/** Typed Meshtastic module-port payloads (audio, pax, serial, …) for hook Maps. */
+export interface MeshtasticModulePortEvent {
+  portLabel: string;
+  from: number;
+  data: unknown;
+  channel?: number;
+  timestamp: number;
+}
+
+/** Store & Forward module packet (heartbeat / history / text replay). */
+export interface MeshtasticStoreForwardEvent {
+  from: number;
+  channel: number;
+  raw: unknown;
+  timestamp: number;
+}
+
 export type DomainEvent =
   | { type: 'text_message'; payload: TextMessageEvent }
   | { type: 'node_info'; payload: NodeInfoEvent }
@@ -274,6 +354,8 @@ export type DomainEvent =
   | { type: 'module_config'; payload: ModuleConfigEvent }
   | { type: 'telemetry_interval'; payload: TelemetryIntervalEvent }
   | { type: 'meshtastic_config_slice'; payload: MeshtasticConfigSliceEvent }
+  | { type: 'meshtastic_module_port'; payload: MeshtasticModulePortEvent }
+  | { type: 'meshtastic_store_forward'; payload: MeshtasticStoreForwardEvent }
   | { type: 'queue_status'; payload: QueueStatusEvent }
   | { type: 'device_log'; payload: DeviceLogEvent }
   | { type: 'raw_packet'; payload: RawPacketEntry }
@@ -284,7 +366,11 @@ export type DomainEvent =
   | { type: 'device_contacts'; payload: { contacts: ContactRecord[] } }
   | { type: 'device_autoadd'; payload: AutoaddConfigEvent }
   | { type: 'meshcore_channel'; payload: MeshcoreChannelEvent }
-  | { type: 'meshcore_path_updated'; payload: MeshcorePathUpdatedEvent };
+  | { type: 'meshcore_path_updated'; payload: MeshcorePathUpdatedEvent }
+  | { type: 'meshcore_dm_ack'; payload: MeshcoreDmAckEvent }
+  | { type: 'meshcore_waiting_messages'; payload: MeshcoreWaitingMessagesEvent }
+  | { type: 'meshcore_cli_response'; payload: MeshcoreCliResponseEvent }
+  | { type: 'meshcore_rf_rx'; payload: MeshcoreRfRxEvent };
 
 // --- Raw packet log ---
 
@@ -297,6 +383,11 @@ export interface RawPacketEntry {
   portLabel: string;
   viaMqtt: boolean;
   isLocal?: boolean;
+  hopsAway?: number;
+  packetId?: number;
+  hopLimit?: number;
+  hopStart?: number;
+  portnum?: number;
 }
 
 // --- Outbound send options ---

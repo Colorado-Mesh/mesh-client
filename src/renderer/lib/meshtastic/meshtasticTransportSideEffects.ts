@@ -26,7 +26,7 @@ export function pushMeshtasticTransportSideEffectUnsubs(
       device.setHeartbeatInterval(60_000);
     } catch (e) {
       console.warn(
-        `[meshtasticLegacyDeviceEvents] ${type}: setHeartbeatInterval failed ` +
+        `[meshtasticTransportSideEffects] ${type}: setHeartbeatInterval failed ` +
           errLikeToLogString(e),
       );
     }

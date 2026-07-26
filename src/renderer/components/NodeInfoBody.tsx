@@ -38,6 +38,7 @@ import { formatRelativeOrIsoDateTime } from '../lib/formatRelativeOrIsoDate';
 import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
 import { meshcoreTracePathLenToHops } from '../lib/meshcoreUtils';
 import {
+  isMeshtasticSelfHybridPath,
   MeshtasticHybridPathIcons,
   MeshtasticMqttOnlyPathIcons,
   MeshtasticRfPathIcon,
@@ -121,7 +122,7 @@ function NodeSourceBadge({
   const displayBadge = pathBadge === 'none' ? 'rfOnly' : pathBadge;
 
   if (displayBadge === 'hybrid') {
-    const isSelfHybrid = isSelf && mqttConnected && radioConnected;
+    const isSelfHybrid = isMeshtasticSelfHybridPath(isSelf, mqttConnected, radioConnected);
     return (
       <MeshtasticHybridPathIcons
         title={

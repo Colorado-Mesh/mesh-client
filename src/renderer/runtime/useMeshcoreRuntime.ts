@@ -21,6 +21,11 @@ import {
   meshcorePathHashSizeFromTraceFlags,
 } from '../../shared/meshcorePathHash';
 import { withTimeout } from '../../shared/withTimeout';
+import { attachMeshcoreConnSideEffects } from '../hooks/meshcore/meshcoreConnSideEffects';
+import type {
+  MeshcoreConnSideEffectsCtx,
+  ProcessWaitingMessagesOptions,
+} from '../hooks/meshcore/meshcoreConnSideEffectsCtx';
 import {
   buildMeshcoreNodeMapFromDb,
   contactToDbRow,
@@ -62,14 +67,6 @@ import {
   serializeErrorLike,
   upgradeMeshcoreCrossTransportMessage,
 } from '../hooks/meshcore/meshcoreHookPreamble';
-import {
-  attachMeshcoreLegacyConnEvents,
-  syncMeshcoreDmAckToMessageStore,
-} from '../hooks/meshcore/meshcoreLegacyConnEvents';
-import type {
-  MeshcoreLegacyConnEventsCtx,
-  ProcessWaitingMessagesOptions,
-} from '../hooks/meshcore/meshcoreLegacyConnEventsCtx';
 import { openMeshCoreTransport } from '../hooks/openMeshCoreTransport';
 import {
   getAppSettingsRaw,
@@ -90,9 +87,15 @@ import { hasStoredStaticGps, readStoredStaticGps, resolveOurPosition } from '../
 import {
   loadMeshcoreMessagesForHydration,
   loadMeshcoreSavedHopRowsForHydration,
+  meshcoreHydratedMessageRecords,
   syncNodesMapToIdentityStore,
 } from '../lib/hydrateIdentityStoresFromDb';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
+import {
+  getIdentityChatMessages,
+  getIdentityNode,
+  getIdentityNodeMap,
+} from '../lib/identityStoreReads';
 import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
 import { repairMeshcoreChannelSenderIdsInStore } from '../lib/ingest/meshcoreSenderRepair';
 import {
@@ -105,6 +108,7 @@ import {
 } from '../lib/letsMeshJwt';
 import { assignCayenneTemperatureFields } from '../lib/meshcore/meshcoreCayenneTemperature';
 import { ensureMeshcoreChatSenderInNodeStore } from '../lib/meshcore/meshcoreChatSenderNode';
+import { syncMeshcoreDmAckToMessageStore } from '../lib/meshcore/meshcoreDmAckRuntime';
 import type {
   CayenneLppEntry,
   DeviceLogEntry,
@@ -135,7 +139,11 @@ import {
   meshcoreUserMessageKey,
   serializeMeshcoreUserMessage,
 } from '../lib/meshcore/meshcoreMessageI18n';
-import { refreshMeshcoreOutPathAfterPathUpdated } from '../lib/meshcore/meshcorePathUpdatedRuntime';
+import {
+  MESHCORE_PATH_UPDATED_CONTACTS_REBUILD_DEBOUNCE_MS,
+  rebuildMeshcoreContactsAfterPathUpdated,
+  refreshMeshcoreOutPathAfterPathUpdated,
+} from '../lib/meshcore/meshcorePathUpdatedRuntime';
 import {
   clearMeshcorePubKeyRegistry,
   copyMeshcorePubKeyRegistryToRefs,
@@ -325,7 +333,7 @@ import {
   shouldRunMeshcoreWaitingMessagesPeriodicPoll,
 } from '../lib/meshcoreWaitingMessagesDrain';
 import {
-  bindMeshcoreIngress,
+  attachMeshcoreProtocolIngress,
   finalizeMeshcoreDriverIdentity,
   meshcoreTransportParams,
 } from '../lib/meshIdentityBridge';
@@ -394,7 +402,11 @@ import type {
 } from '../lib/types';
 import { mirrorMqttStatusForProtocol, setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
-import { updateMessageStatus, useMessageStore } from '../stores/messageStore';
+import {
+  updateMessageStatus,
+  upsertMessageRecordsForIdentity,
+  useMessageStore,
+} from '../stores/messageStore';
 import {
   patchMeshcoreNodeLastHeardAt,
   patchNodeFavorited,
@@ -562,19 +574,41 @@ export function useMeshcoreRuntime() {
   const outPathMapRef = useRef<Map<number, Uint8Array>>(new Map());
   // nodeId → nickname (from JSON import or DB)
   const nicknameMapRef = useRef<Map<number, string>>(new Map());
-  // Stable ref to current nodes so event listeners don't form stale closures
-  const nodesRef = useRef<Map<number, MeshNode>>(new Map());
   /** Skip mount DB hydration commit when live ingest/import ran before async reload finishes. */
   const skipMountDbHydrationCommitRef = useRef(false);
-  /** SQLite hydration snapshot set synchronously before `setNodes` so initConn can merge hops when `nodesRef` has not flushed yet. */
+  /** SQLite hydration snapshot set synchronously before `setNodes` so initConn can merge hops before the store catches up. */
   const meshcoreLastPersistedNodesRef = useRef<Map<number, MeshNode>>(new Map());
-  /** Mount DB load — initConn awaits this so an immediate connect does not skip persisted hop counts. */
-  /** Same baseline as initConn: avoid empty `nodesRef` during contact rebuilds (debounced 129 / refresh). */
-  const meshcorePreviousNodesBaselineForBuild = useCallback(
-    () => (nodesRef.current.size > 0 ? nodesRef.current : meshcoreLastPersistedNodesRef.current),
-    [],
+  /**
+   * True once this runtime applied a node map (initConn cache or radio contacts). The mount DB
+   * load is per-instance, so it cannot use store emptiness — App hydration fills the same bucket.
+   */
+  const meshcoreNodesAppliedRef = useRef(false);
+  /** Store bucket for this tab: live identity, pending driver identity, else the offline slot. */
+  const resolveMeshcoreStoreIdentityId = useCallback((): string | null => {
+    return (
+      meshcoreIdentityIdRef.current ??
+      meshcorePendingDriverIdentityRef.current ??
+      getOfflineIdentityIdForProtocol('meshcore')
+    );
+  }, []);
+  /**
+   * Canonical node map for this identity. `nodeStore` sees both ingress paths
+   * (Protocol → PacketRouter and this runtime), so send/RPC/dedup read it directly.
+   */
+  const readMeshcoreNodes = useCallback(
+    (): Map<number, MeshNode> => getIdentityNodeMap(resolveMeshcoreStoreIdentityId()),
+    [resolveMeshcoreStoreIdentityId],
   );
-  const messagesRef = useRef<ChatMessage[]>([]);
+  const readMeshcoreMessages = useCallback(
+    (): ChatMessage[] => getIdentityChatMessages(resolveMeshcoreStoreIdentityId()),
+    [resolveMeshcoreStoreIdentityId],
+  );
+  /** Mount DB load — initConn awaits this so an immediate connect does not skip persisted hop counts. */
+  /** Same baseline as initConn: avoid an empty store map during contact rebuilds (debounced 129 / refresh). */
+  const meshcorePreviousNodesBaselineForBuild = useCallback(() => {
+    const fromStore = readMeshcoreNodes();
+    return fromStore.size > 0 ? fromStore : meshcoreLastPersistedNodesRef.current;
+  }, [readMeshcoreNodes]);
   const mqttPlaceholderSavedRef = useRef<Set<number>>(new Set());
   const rawPacketsRef = useRef<RxPacketEntry[]>([]);
   // Stable ref to own node ID so event listeners don't form stale closures
@@ -825,7 +859,6 @@ export function useMeshcoreRuntime() {
   }, [selfInfo]);
 
   useEffect(() => {
-    nodesRef.current = nodes;
     setMeshcoreDiagnosticsNodes(nodes, myNodeNumRef.current);
   }, [nodes, state.myNodeNum]);
 
@@ -840,10 +873,6 @@ export function useMeshcoreRuntime() {
   useEffect(() => {
     meshcoreTraceResultsRef.current = meshcoreTraceResults;
   }, [meshcoreTraceResults]);
-
-  useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
 
   useEffect(() => {
     waitingMessagesCountRef.current = waitingMessagesCount;
@@ -991,6 +1020,7 @@ export function useMeshcoreRuntime() {
       meshcoreLastPersistedNodesRef.current = new Map(mergedInitial);
 
       setNodes(mergedInitial);
+      if (mergedInitial.size > 0) meshcoreNodesAppliedRef.current = true;
       const storeId =
         meshcoreIdentityIdRef.current ??
         meshcorePendingDriverIdentityRef.current ??
@@ -1000,6 +1030,10 @@ export function useMeshcoreRuntime() {
       }
       if (opts?.hydrateMessages && mapped.length > 0) {
         setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
+        // Send/reply/dedup read `messageStore`, so mount hydration has to land there too.
+        if (storeId) {
+          upsertMessageRecordsForIdentity(storeId, meshcoreHydratedMessageRecords(mapped));
+        }
       }
     },
     [],
@@ -1009,7 +1043,8 @@ export function useMeshcoreRuntime() {
     queueMicrotask(() => {
       void reloadMeshcoreNodesFromDb({
         hydrateMessages: true,
-        beforeCommit: () => !skipMountDbHydrationCommitRef.current && nodesRef.current.size === 0,
+        beforeCommit: () =>
+          !skipMountDbHydrationCommitRef.current && !meshcoreNodesAppliedRef.current,
       }).catch((e: unknown) => {
         console.warn('[useMeshcoreRuntime] initial db reload failed ' + errLikeToLogString(e));
       });
@@ -1214,7 +1249,7 @@ export function useMeshcoreRuntime() {
         rawText: m.text,
         fromNodeId,
         recordSenderName: m.senderName,
-        nodes: nodesRef.current,
+        nodes: readMeshcoreNodes(),
       });
       const resolvedId = resolved.senderId;
       const displayName = resolved.displayName;
@@ -1270,7 +1305,7 @@ export function useMeshcoreRuntime() {
       }
       const normProbe = normalizeMeshcoreIncomingText(m.text);
       const rawForBuild = normProbe.senderName ? m.text : `${displayName}: ${m.text}`;
-      const prior = storeId ? meshcoreSortedStorePrior(storeId) : messagesRef.current;
+      const prior = storeId ? meshcoreSortedStorePrior(storeId) : [];
       addMessage(
         parseMeshcoreChannelIncomingFromThread(prior, {
           rawText: rawForBuild,
@@ -1282,7 +1317,7 @@ export function useMeshcoreRuntime() {
         }),
       );
     });
-  }, [addMessage]);
+  }, [addMessage, readMeshcoreNodes]);
 
   const buildNodesFromContacts = useCallback(
     async (
@@ -1490,24 +1525,16 @@ export function useMeshcoreRuntime() {
     buildNodesFromContactsRef.current = buildNodesFromContacts;
   }, [buildNodesFromContacts]);
 
-  const resolveMeshcoreStoreIdentityId = useCallback((): string | null => {
-    return (
-      meshcoreIdentityIdRef.current ??
-      meshcorePendingDriverIdentityRef.current ??
-      getOfflineIdentityIdForProtocol('meshcore')
-    );
-  }, []);
-
   const applyMeshcoreNodesToUi = useCallback(
     (nodeMap: Map<number, MeshNode>) => {
-      const mergedForStore = mergeMeshcoreChatStubNodes(nodesRef.current, nodeMap);
-      // Keep ref in sync before connect-time side effects (room auto-login filters on hw_model).
-      nodesRef.current = mergedForStore;
+      const mergedForStore = mergeMeshcoreChatStubNodes(readMeshcoreNodes(), nodeMap);
       setNodes(mergedForStore);
+      if (mergedForStore.size > 0) meshcoreNodesAppliedRef.current = true;
+      // Publish before React commits — connect-time side effects (room auto-login) filter on hw_model.
       const storeId = resolveMeshcoreStoreIdentityId();
       if (storeId) syncNodesMapToIdentityStore(storeId, mergedForStore);
     },
-    [resolveMeshcoreStoreIdentityId],
+    [resolveMeshcoreStoreIdentityId, readMeshcoreNodes],
   );
 
   const deferMeshcoreDbContactMerge = useCallback(
@@ -1575,9 +1602,33 @@ export function useMeshcoreRuntime() {
           meshcorePathUpdatePendingRef.current,
         );
       }
+      // Path updates change hop counts; debounce a full contacts rebuild for updated outPathLen.
+      if (meshcoreContactsRefreshTimerRef.current) {
+        clearTimeout(meshcoreContactsRefreshTimerRef.current);
+      }
+      meshcoreContactsRefreshTimerRef.current = setTimeout(() => {
+        meshcoreContactsRefreshTimerRef.current = null;
+        const liveConn = connRef.current;
+        const buildFn = buildNodesFromContactsRef.current;
+        if (!liveConn || !buildFn) return;
+        const pendingIds = meshcorePathUpdatePendingRef.current;
+        meshcorePathUpdatePendingRef.current = new Set();
+        void rebuildMeshcoreContactsAfterPathUpdated({
+          conn: liveConn,
+          buildNodesFromContacts: buildFn,
+          self: selfInfoRef.current,
+          myNodeId: myNodeNumRef.current,
+          previousNodes: meshcorePreviousNodesBaselineForBuild(),
+          pendingPathUpdateNodeIds: pendingIds,
+          onContacts: setMeshcoreContactsForTelemetry,
+          onNodes: (newNodes) => {
+            setNodes((prev) => mergeMeshcoreChatStubNodes(prev, newNodes));
+          },
+        });
+      }, MESHCORE_PATH_UPDATED_CONTACTS_REBUILD_DEBOUNCE_MS);
       requestChatOutboxDrain('meshcore');
     },
-    [],
+    [meshcorePreviousNodesBaselineForBuild],
   );
 
   /** Returned by {@link setupEventListeners}; run before `conn.close()` or replacing the connection. */
@@ -1690,8 +1741,10 @@ export function useMeshcoreRuntime() {
     [stopMeshcoreSerialWatchdog],
   );
 
-  const meshcoreLegacyConnEventsCtx = useMemo<MeshcoreLegacyConnEventsCtx>(
+  const meshcoreConnSideEffectsCtx = useMemo<MeshcoreConnSideEffectsCtx>(
     () => ({
+      resolveIdentityId: () =>
+        meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current,
       meshcoreIdentityIdRef,
       meshcoreDriverConnectedRef,
       connRef,
@@ -1699,16 +1752,13 @@ export function useMeshcoreRuntime() {
       lastPacketLogPublishFailureLogAtRef,
       meshcoreContactsRefreshTimerRef,
       meshcoreHookMountedRef,
-      meshcorePathUpdatePendingRef,
       meshcoreSessionPathUpdatedNodeIdsRef,
       meshcoreWaitingMessagesPollRef,
       meshcoreConnectTypeRef,
-      messagesRef,
       mqttStatusRef,
       myNodeNumRef,
       nicknameMapRef,
-      nodesRef,
-      outPathMapRef,
+      readNodes: readMeshcoreNodes,
       pendingAcksRef,
       processWaitingMessagesRef,
       pubKeyMapRef,
@@ -1716,10 +1766,7 @@ export function useMeshcoreRuntime() {
       rawPacketsRef,
       repeaterCommandServiceRef,
       selfInfoRef,
-      buildNodesFromContactsRef,
       setDeviceLogs,
-      setMeshcoreAutoadd,
-      setMeshcoreContactsForTelemetry,
       setMeshcorePingRouteReadyEpoch,
       setMessages,
       setNodes,
@@ -1732,21 +1779,18 @@ export function useMeshcoreRuntime() {
       setWaitingMessagesSyncProgress,
       setWaitingMessagesSilentDrainActive,
       setWaitingMessagesDrainDeferred,
-      addMessage,
       addMessagesBatch,
       addCliHistoryEntry,
       teardownMeshcoreConnEventListeners,
-      meshcorePreviousNodesBaselineForBuild,
       handleConnectionLostRef: handleMeshcoreConnectionLostRef,
       meshcoreExplicitDisconnectRef,
       bumpLastDataReceived: bumpMeshcoreLastDataReceived,
     }),
     [
-      addMessage,
+      readMeshcoreNodes,
       addMessagesBatch,
       addCliHistoryEntry,
       teardownMeshcoreConnEventListeners,
-      meshcorePreviousNodesBaselineForBuild,
       bumpMeshcoreLastDataReceived,
     ],
   );
@@ -1843,8 +1887,8 @@ export function useMeshcoreRuntime() {
   }, []);
 
   const setupEventListeners = useCallback(
-    (conn: MeshCoreConnection) => attachMeshcoreLegacyConnEvents(conn, meshcoreLegacyConnEventsCtx),
-    [meshcoreLegacyConnEventsCtx],
+    (conn: MeshCoreConnection) => attachMeshcoreConnSideEffects(conn, meshcoreConnSideEffectsCtx),
+    [meshcoreConnSideEffectsCtx],
   );
 
   /** Reject promptly when `disconnect()` bumps `meshcoreSetupGenerationRef` (avoids hanging on getChannels, etc.). */
@@ -2081,9 +2125,9 @@ export function useMeshcoreRuntime() {
         if (meshcoreIngressDetachRef.current) {
           meshcoreIngressDetachRef.current();
         }
-        // MeshCore protocol ingress covers advert/DM/channel only; waiting messages,
-        // stats, MQTT, and repeater RPCs stay in this hook until fully protocol-scoped (#375 / #377).
-        const ingress = bindMeshcoreIngress(
+        // MeshCore protocol ingress owns every inbound push; companion RPCs
+        // (stats, repeater admin) remain hook-owned request/response paths.
+        const ingress = attachMeshcoreProtocolIngress(
           conn as unknown as Connection,
           transportType,
           {},
@@ -2178,7 +2222,7 @@ export function useMeshcoreRuntime() {
         }
       }
 
-      // Re-resolve map/App GPS after nodesRef picks up getSelfInfo advert coords (same tick as setNodes is too early).
+      // Re-resolve map/App GPS after the node store picks up getSelfInfo advert coords (same tick as setNodes is too early).
       requestAnimationFrame(() => {
         queueMicrotask(() => {
           void refreshOurPositionMeshCoreRef.current().catch((e: unknown) => {
@@ -3138,7 +3182,7 @@ export function useMeshcoreRuntime() {
           channelIndex: channelIdx,
           destination: destNodeId,
           myNodeNum: myNodeNumRef.current,
-          messages: messagesRef.current,
+          messages: readMeshcoreMessages(),
           openWireCompat,
         });
         const replyField: number | undefined =
@@ -3161,7 +3205,7 @@ export function useMeshcoreRuntime() {
         );
 
         // Calculate dynamic timeout based on hop count for multi-hop paths
-        const destNode = nodesRef.current.get(destNodeId);
+        const destNode = getIdentityNode(meshcoreIdentityIdRef.current, destNodeId);
         const hopsAway = destNode?.hops_away ?? 0;
         const hopBasedTimeoutMs =
           MESHCORE_ROOM_LOGIN_HOP_BASE_MS + hopsAway * MESHCORE_ROOM_LOGIN_HOP_INCREMENT_MS;
@@ -3305,7 +3349,7 @@ export function useMeshcoreRuntime() {
           replyTo: replyId != null ? String(replyId) : undefined,
           channelIndex: channelIdx,
           myNodeNum: myNodeNumRef.current,
-          messages: messagesRef.current,
+          messages: readMeshcoreMessages(),
           openWireCompat,
         });
         const replyField: number | undefined =
@@ -3377,7 +3421,7 @@ export function useMeshcoreRuntime() {
         }
       }
     },
-    [addMessage, selfInfo, fetchAndUpdateLocalStats],
+    [addMessage, readMeshcoreMessages, selfInfo, fetchAndUpdateLocalStats],
   );
 
   const refreshContacts = useCallback(async () => {
@@ -3632,7 +3676,7 @@ export function useMeshcoreRuntime() {
       for (const contact of contacts) {
         const id = pubkeyToNodeId(contact.publicKey);
         if (id === myId) continue;
-        const prevHops = nodesRef.current.get(id)?.hops_away;
+        const prevHops = getIdentityNode(meshcoreIdentityIdRef.current, id)?.hops_away;
         const base = meshcoreContactToMeshNode(contact);
         const mergedHops = meshcoreMergeContactHopsAwayFromPrevious(base.hops_away, prevHops, 0);
         pendingDbRows.push(
@@ -3812,7 +3856,7 @@ export function useMeshcoreRuntime() {
   /** Successful Status/Ping prove reachability; sync `last_heard` when firmware `lastAdvert` is stale. */
   const bumpMeshcoreNodeLastHeardFromRpc = useCallback(
     (nodeId: number) => {
-      const existing = nodesRef.current.get(nodeId);
+      const existing = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
       if (!existing) return;
       const nowSec = Math.floor(Date.now() / 1000);
       const lat = existing.latitude ?? null;
@@ -3963,7 +4007,7 @@ export function useMeshcoreRuntime() {
             const setupGen = meshcoreSetupGenerationRef.current;
             const isTraceAborted = (): boolean =>
               meshcoreSetupGenerationRef.current !== setupGen || resolveMeshcoreConn() !== conn;
-            const hopsAway = nodesRef.current.get(nodeId)?.hops_away;
+            const hopsAway = getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away;
             let storedPath = outPathMapRef.current.get(nodeId);
             if (storedPath && !meshcoreIsUsableTraceStoredPath(storedPath, hopsAway, pubKey)) {
               outPathMapRef.current.delete(nodeId);
@@ -4000,7 +4044,7 @@ export function useMeshcoreRuntime() {
               outPathMapRef.current.set(nodeId, routeStoredPath);
             }
             const relayKeysForSynth = meshcoreDirectRepeaterRelayPubKeys(
-              nodesRef.current,
+              readMeshcoreNodes(),
               pubKeyMapRef.current,
               nodeId,
             );
@@ -4086,7 +4130,7 @@ export function useMeshcoreRuntime() {
               pubKey,
               hopsAway,
               nodeId,
-              nodes: nodesRef.current,
+              nodes: readMeshcoreNodes(),
               pubKeyByNodeId: pubKeyMapRef.current,
               pathByNodeId: outPathMapRef.current,
             });
@@ -4222,7 +4266,7 @@ export function useMeshcoreRuntime() {
                 convertedLastSnr,
                 result.tag,
               );
-            const existingForRf = nodesRef.current.get(nodeId);
+            const existingForRf = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
             setNodes((prev) => {
               const existing = prev.get(nodeId);
               if (!existing) return prev;
@@ -4261,7 +4305,7 @@ export function useMeshcoreRuntime() {
             });
             return true;
           } catch (e: unknown) {
-            const failedHops = nodesRef.current.get(nodeId)?.hops_away;
+            const failedHops = getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away;
             if ((failedHops ?? 0) >= 1) {
               outPathMapRef.current.delete(nodeId);
             }
@@ -4299,6 +4343,7 @@ export function useMeshcoreRuntime() {
       bumpMeshcoreNodeLastHeardFromRpc,
       clearMeshcorePingNoRouteExpiryTimer,
       ensureNodePubKey,
+      readMeshcoreNodes,
       refreshRepeaterContactPathFromRadio,
       resolveMeshcoreConn,
     ],
@@ -4461,7 +4506,7 @@ export function useMeshcoreRuntime() {
               conn,
               nodeId,
               pubKey,
-              nodesRef.current.get(nodeId)?.hw_model,
+              getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hw_model,
               repeaterRemoteRpcRef.current,
             );
             const raw = await runMeshcoreRepeaterTelemetryRequest(
@@ -4767,11 +4812,11 @@ export function useMeshcoreRuntime() {
               conn,
               nodeId,
               pubKey,
-              nodesRef.current.get(nodeId)?.hw_model,
+              getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hw_model,
               repeaterRemoteRpcRef.current,
             );
 
-            const node = nodesRef.current.get(nodeId);
+            const node = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
             const trace = meshcoreTraceResults.get(nodeId);
             const hopCount = computeRepeaterCliHopCount(
               node?.hops_away,
@@ -4848,7 +4893,7 @@ export function useMeshcoreRuntime() {
 
   const resolveRoomLoginHopsForNode = useCallback((nodeId: number): number => {
     return resolveMeshcoreRoomLoginHopsAway(
-      nodesRef.current.get(nodeId),
+      getIdentityNode(meshcoreIdentityIdRef.current, nodeId),
       outPathMapRef.current.get(nodeId),
     );
   }, []);
@@ -4957,7 +5002,7 @@ export function useMeshcoreRuntime() {
       const guestPassword = opts?.guestPassword ?? password;
       const adminPassword = opts?.adminPassword ?? '';
       const hopsAway = resolveRoomLoginHopsForNode(nodeId);
-      const uiHops = nodesRef.current.get(nodeId)?.hops_away;
+      const uiHops = getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away;
       const outPathLen = outPathMapRef.current.get(nodeId)?.length ?? 0;
       console.debug(
         `[useMeshcoreRuntime] loginRoom node=0x${nodeId.toString(16)} hopsAway=${hopsAway} uiHops=${String(uiHops ?? 'n/a')} outPathLen=${outPathLen}`,
@@ -4979,7 +5024,7 @@ export function useMeshcoreRuntime() {
               activeConn,
               nodeId,
               pubKey,
-              nodesRef.current.get(nodeId),
+              getIdentityNode(meshcoreIdentityIdRef.current, nodeId),
               storedPath,
               hopsAway,
               (fn) => repeaterRemoteRpcRef.current(fn),
@@ -5119,7 +5164,9 @@ export function useMeshcoreRuntime() {
       const candidateIds =
         fromUi.length > 0
           ? fromUi
-          : [...savedIds].filter((id) => nodesRef.current.get(id)?.hw_model === 'Room');
+          : [...savedIds].filter(
+              (id) => getIdentityNode(meshcoreIdentityIdRef.current, id)?.hw_model === 'Room',
+            );
       const nodeIds = candidateIds.filter((id) => !meshcoreIsRoomLoggedIn(id));
       for (const nodeId of nodeIds) {
         const cred = getMeshcoreRoomCredential(nodeId);
@@ -5157,7 +5204,7 @@ export function useMeshcoreRuntime() {
     }
 
     const roomNodes: RoomSyncSchedulerNode[] = listMeshcoreRoomSyncEnabledNodeIds()
-      .filter((id) => nodesRef.current.get(id)?.hw_model === 'Room')
+      .filter((id) => getIdentityNode(meshcoreIdentityIdRef.current, id)?.hw_model === 'Room')
       .map((id) => {
         const cfg = getMeshcoreRoomSyncConfig(id);
         return {
@@ -5200,7 +5247,7 @@ export function useMeshcoreRuntime() {
         activeConn,
         target.nodeId,
         pubKey,
-        nodesRef.current.get(target.nodeId),
+        getIdentityNode(meshcoreIdentityIdRef.current, target.nodeId),
         storedPath,
         syncHops,
         (fn) => repeaterRemoteRpcRef.current(fn),
@@ -5273,7 +5320,9 @@ export function useMeshcoreRuntime() {
       return;
     }
     const configuredIds = listMeshcoreRoomAutoLoginOnConnectNodeIds();
-    const nodeIds = configuredIds.filter((id) => nodesRef.current.get(id)?.hw_model === 'Room');
+    const nodeIds = configuredIds.filter(
+      (id) => getIdentityNode(meshcoreIdentityIdRef.current, id)?.hw_model === 'Room',
+    );
     const targets = nodeIds.filter((nodeId) => {
       if (meshcoreIsRoomLoggedIn(nodeId)) return false;
       if (!getMeshcoreRoomCredential(nodeId)) return false;
@@ -5312,7 +5361,7 @@ export function useMeshcoreRuntime() {
     }
     const now = Date.now();
     const roomNodes: RoomSyncSchedulerNode[] = listMeshcoreRoomSyncEnabledNodeIds()
-      .filter((id) => nodesRef.current.get(id)?.hw_model === 'Room')
+      .filter((id) => getIdentityNode(meshcoreIdentityIdRef.current, id)?.hw_model === 'Room')
       .map((id) => {
         const cfg = getMeshcoreRoomSyncConfig(id);
         return {
@@ -5341,7 +5390,7 @@ export function useMeshcoreRuntime() {
         activeConn,
         target.nodeId,
         pubKey,
-        nodesRef.current.get(target.nodeId),
+        getIdentityNode(meshcoreIdentityIdRef.current, target.nodeId),
         storedPath,
         syncHops,
         (fn) => repeaterRemoteRpcRef.current(fn),
@@ -5438,7 +5487,7 @@ export function useMeshcoreRuntime() {
       const storeId = meshcoreIdentityIdRef.current;
       const canonicalId = addMessage(tempMsg);
       try {
-        const hopsAway = nodesRef.current.get(nodeId)?.hops_away ?? 0;
+        const hopsAway = getIdentityNode(meshcoreIdentityIdRef.current, nodeId)?.hops_away ?? 0;
         console.debug(
           `[useMeshcoreRuntime] sendRoomPost mode=post txtType=${MESHCORE_TXT_TYPE_PLAIN} bodyLen=${new TextEncoder().encode(text).length} room=0x${nodeId.toString(16)} hops=${hopsAway} transport=${meshcoreConnectTypeRef.current ?? 'unknown'}`,
         );
@@ -5558,7 +5607,7 @@ export function useMeshcoreRuntime() {
 
   const sendRoomAdminCliCommand = useCallback(
     async (nodeId: number, command: string): Promise<string> => {
-      const node = nodesRef.current.get(nodeId);
+      const node = getIdentityNode(meshcoreIdentityIdRef.current, nodeId);
       if (node?.hw_model !== 'Room') {
         return sendRepeaterCliCommand(nodeId, command);
       }
@@ -5860,7 +5909,7 @@ export function useMeshcoreRuntime() {
       }
       const dbLastAdvertById = new Map(dbRows.map((r) => [r.node_id, r.last_advert]));
       const dbHopsById = new Map(dbRows.map((r) => [r.node_id, r.hops_away]));
-      /** Built inside `setNodes` so we read merged `last_heard` before `nodesRef` catches up. */
+      /** Built inside `setNodes` so we read merged `last_heard` before the store catches up. */
       const lastAdvertForDbByNodeId = new Map<number, number>();
 
       setNodes((prev) => {
@@ -5947,48 +5996,53 @@ export function useMeshcoreRuntime() {
     return { imported: validEntries.length, skipped, errors };
   }, []);
 
-  const setNodeFavorited = useCallback(async (nodeId: number, favorited: boolean) => {
-    const storeId = meshcoreIdentityIdRef.current ?? getIdentityIdForProtocol('meshcore') ?? null;
-    const storeRecord = storeId ? useNodeStore.getState().nodes[storeId]?.[nodeId] : undefined;
-    const runtimeNode = nodesRef.current.get(nodeId);
-    if (!runtimeNode && !storeRecord) return;
+  const setNodeFavorited = useCallback(
+    async (nodeId: number, favorited: boolean) => {
+      const storeId =
+        meshcoreIdentityIdRef.current ??
+        getIdentityIdForProtocol('meshcore') ??
+        resolveMeshcoreStoreIdentityId();
+      const storeRecord = storeId ? useNodeStore.getState().nodes[storeId]?.[nodeId] : undefined;
+      if (!storeRecord) return;
 
-    const prevFav = runtimeNode?.favorited ?? storeRecord?.favorited ?? false;
-    if (storeId) {
-      patchNodeFavorited(storeId, nodeId, favorited);
-    }
-    setNodes((prev) => {
-      const n = prev.get(nodeId);
-      if (!n) return prev;
-      const next = new Map(prev);
-      next.set(nodeId, { ...n, favorited });
-      return next;
-    });
-    const pk = pubKeyMapRef.current.get(nodeId) ?? storeRecord?.publicKey;
-    const hex =
-      pk != null
-        ? Array.from(pk)
-            .map((b) => b.toString(16).padStart(2, '0'))
-            .join('')
-        : meshcoreSyntheticPlaceholderPubKeyHex(nodeId);
-    try {
-      await window.electronAPI.db.updateMeshcoreContactFavorited(nodeId, favorited, hex);
-    } catch (e) {
-      console.warn(
-        '[useMeshcoreRuntime] updateMeshcoreContactFavorited error ' + errLikeToLogString(e),
-      );
+      const prevFav = storeRecord.favorited ?? false;
       if (storeId) {
-        patchNodeFavorited(storeId, nodeId, prevFav);
+        patchNodeFavorited(storeId, nodeId, favorited);
       }
       setNodes((prev) => {
         const n = prev.get(nodeId);
         if (!n) return prev;
         const next = new Map(prev);
-        next.set(nodeId, { ...n, favorited: prevFav });
+        next.set(nodeId, { ...n, favorited });
         return next;
       });
-    }
-  }, []);
+      const pk = pubKeyMapRef.current.get(nodeId) ?? storeRecord.publicKey;
+      const hex =
+        pk != null
+          ? Array.from(pk)
+              .map((b) => b.toString(16).padStart(2, '0'))
+              .join('')
+          : meshcoreSyntheticPlaceholderPubKeyHex(nodeId);
+      try {
+        await window.electronAPI.db.updateMeshcoreContactFavorited(nodeId, favorited, hex);
+      } catch (e) {
+        console.warn(
+          '[useMeshcoreRuntime] updateMeshcoreContactFavorited error ' + errLikeToLogString(e),
+        );
+        if (storeId) {
+          patchNodeFavorited(storeId, nodeId, prevFav);
+        }
+        setNodes((prev) => {
+          const n = prev.get(nodeId);
+          if (!n) return prev;
+          const next = new Map(prev);
+          next.set(nodeId, { ...n, favorited: prevFav });
+          return next;
+        });
+      }
+    },
+    [resolveMeshcoreStoreIdentityId],
+  );
 
   const sendReaction = useCallback(
     async (glyph: string, replyId: number, channel: number) => {
@@ -5999,16 +6053,9 @@ export function useMeshcoreRuntime() {
       if (!parsed) {
         throw new Error('Invalid reaction emoji');
       }
-      const storeId = meshcoreIdentityIdRef.current;
-      const storeMessages =
-        storeId != null
-          ? messageRecordsToChatMessages(
-              Object.values(useMessageStore.getState().messages[storeId] ?? {}),
-            )
-          : [];
-      const reactedTo =
-        storeMessages.find((m) => m.packetId === replyId || m.timestamp === replyId) ??
-        messagesRef.current.find((m) => m.packetId === replyId || m.timestamp === replyId);
+      const reactedTo = readMeshcoreMessages().find(
+        (m) => m.packetId === replyId || m.timestamp === replyId,
+      );
       if (reactedTo == null) {
         throw new Error('Reaction target message not found');
       }
@@ -6075,7 +6122,7 @@ export function useMeshcoreRuntime() {
         });
       }
     },
-    [addMessage, selfInfo?.name],
+    [addMessage, readMeshcoreMessages, selfInfo?.name],
   );
 
   // ─── MeshCore Device Time ────────────────────────────────────────
@@ -6192,14 +6239,14 @@ export function useMeshcoreRuntime() {
     }
     try {
       const hops = resolveMeshcoreRoomLoginHopsAway(
-        nodesRef.current.get(nodeId),
+        getIdentityNode(meshcoreIdentityIdRef.current, nodeId),
         outPathMapRef.current.get(nodeId),
       );
       const result = await syncMeshcoreRoomContactPathBeforeLogin(
         conn,
         nodeId,
         pubKey,
-        nodesRef.current.get(nodeId),
+        getIdentityNode(meshcoreIdentityIdRef.current, nodeId),
         Uint8Array.from(path),
         hops,
       );
@@ -6374,7 +6421,7 @@ export function useMeshcoreRuntime() {
   }, [fetchAndUpdateLocalStats]);
 
   const refreshOurPositionNoop = useCallback(async () => {
-    const myNode = nodesRef.current.get(myNodeNumRef.current);
+    const myNode = getIdentityNode(meshcoreIdentityIdRef.current, myNodeNumRef.current);
     const storedStatic = readStoredStaticGps();
     const staticLat = storedStatic?.lat;
     const staticLon = storedStatic?.lon;
@@ -6523,24 +6570,27 @@ export function useMeshcoreRuntime() {
       console.warn('[useMeshcoreRuntime] refreshNodesFromDb error ' + errLikeToLogString(e));
     }
   }, [resolveMeshcoreStoreIdentityId]);
-  const refreshMessagesFromDb = useCallback(async (opts?: { replaceFromDb?: boolean }) => {
-    try {
-      const dbMsgs = (await window.electronAPI.db.getMeshcoreMessages(
-        undefined,
-        500,
-      )) as MeshcoreMessageDbRow[];
-      const mapped = repairMeshcoreHydratedMessages(
-        mapMeshcoreDbRowsToChatMessages(dbMsgs),
-        meshcoreRoomServerIdsFromNodes(nodesRef.current.values()),
-        myNodeNumRef.current,
-      );
-      void persistMeshcoreMessageSenderRepairs(dbMsgs, mapped);
-      setNodes((prev) => mergeStubNodesFromMeshcoreMessages(prev, mapped));
-      setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped, opts));
-    } catch (e) {
-      console.warn('[useMeshcoreRuntime] refreshMessagesFromDb error ' + errLikeToLogString(e));
-    }
-  }, []);
+  const refreshMessagesFromDb = useCallback(
+    async (opts?: { replaceFromDb?: boolean }) => {
+      try {
+        const dbMsgs = (await window.electronAPI.db.getMeshcoreMessages(
+          undefined,
+          500,
+        )) as MeshcoreMessageDbRow[];
+        const mapped = repairMeshcoreHydratedMessages(
+          mapMeshcoreDbRowsToChatMessages(dbMsgs),
+          meshcoreRoomServerIdsFromNodes(readMeshcoreNodes().values()),
+          myNodeNumRef.current,
+        );
+        void persistMeshcoreMessageSenderRepairs(dbMsgs, mapped);
+        setNodes((prev) => mergeStubNodesFromMeshcoreMessages(prev, mapped));
+        setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped, opts));
+      } catch (e) {
+        console.warn('[useMeshcoreRuntime] refreshMessagesFromDb error ' + errLikeToLogString(e));
+      }
+    },
+    [readMeshcoreNodes],
+  );
 
   const meshcoreMessagesFromStore = useMessageStore((s) =>
     meshcoreIdentityId ? s.messages[meshcoreIdentityId] : undefined,
@@ -6599,7 +6649,10 @@ export function useMeshcoreRuntime() {
       const outPathRaw = destNodeId != null ? outPathMapRef.current.get(destNodeId) : undefined;
       const sendPathBytes = outPathRaw && outPathRaw.length > 0 ? Array.from(outPathRaw) : [];
       const sendPathHash = sendPathBytes.length > 0 ? computePathHash(sendPathBytes) : '';
-      const hopsAway = destNodeId != null ? (nodesRef.current.get(destNodeId)?.hops_away ?? 0) : 0;
+      const hopsAway =
+        destNodeId != null
+          ? (getIdentityNode(meshcoreIdentityIdRef.current, destNodeId)?.hops_away ?? 0)
+          : 0;
       if (sendPathBytes.length > 0 && destNodeId != null) {
         usePathHistoryStore
           .getState()
@@ -6681,7 +6734,9 @@ export function useMeshcoreRuntime() {
       messages: resolvedMessages,
       channels,
       selfInfo,
-      meshcoreLocalStats: nodesRef.current.get(myNodeNumRef.current)?.meshcore_local_stats ?? null,
+      meshcoreLocalStats:
+        getIdentityNode(meshcoreIdentityIdRef.current, myNodeNumRef.current)
+          ?.meshcore_local_stats ?? null,
       connect,
       disconnect,
       onPowerSuspend,

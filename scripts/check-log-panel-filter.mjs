@@ -9,9 +9,9 @@
  *
  * Files checked:
  *   Meshtastic main:  noble-ble-manager.ts, mqtt-manager.ts
- *   Meshtastic renderer: useMeshtasticRuntime.ts, meshtasticLegacyWireSubscriptions.ts
+ *   Meshtastic renderer: useMeshtasticRuntime.ts, meshtasticRuntimeWireEffects.ts
  *   MeshCore main:    meshcore-mqtt-adapter.ts
- *   MeshCore renderer: useMeshcoreRuntime.ts, meshcoreLegacyConnEvents.ts
+ *   MeshCore renderer: useMeshcoreRuntime.ts, meshcoreConnSideEffects.ts
  *
  * Filter source: src/renderer/components/LogPanel.tsx
  *
@@ -36,12 +36,12 @@ const DEVICE_FILES = {
     path.join(ROOT, 'src', 'main', 'noble-ble-manager.ts'),
     path.join(ROOT, 'src', 'main', 'mqtt-manager.ts'),
     path.join(ROOT, 'src', 'renderer', 'runtime', 'useMeshtasticRuntime.ts'),
-    path.join(ROOT, 'src', 'renderer', 'lib', 'meshtastic', 'meshtasticLegacyWireSubscriptions.ts'),
+    path.join(ROOT, 'src', 'renderer', 'lib', 'meshtastic', 'meshtasticRuntimeWireEffects.ts'),
   ],
   meshcore: [
     path.join(ROOT, 'src', 'main', 'meshcore-mqtt-adapter.ts'),
     path.join(ROOT, 'src', 'renderer', 'runtime', 'useMeshcoreRuntime.ts'),
-    path.join(ROOT, 'src', 'renderer', 'hooks', 'meshcore', 'meshcoreLegacyConnEvents.ts'),
+    path.join(ROOT, 'src', 'renderer', 'hooks', 'meshcore', 'meshcoreConnSideEffects.ts'),
   ],
   reticulum: [
     path.join(ROOT, 'src', 'main', 'reticulum-sidecar-manager.ts'),

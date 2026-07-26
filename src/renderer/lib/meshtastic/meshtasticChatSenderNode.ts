@@ -1,7 +1,7 @@
 import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
 import type { IdentityId } from '../types';
 
-/** Ensure a chat sender exists in identity-scoped node store (mirrors legacy ensureNodeExists). */
+/** Ensure a chat sender exists in the identity-scoped node store (store-side `ensureNodeExists`). */
 export function ensureMeshtasticChatSenderInNodeStore(
   identityId: IdentityId,
   nodeId: number,

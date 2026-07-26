@@ -1,42 +1,35 @@
+/**
+ * Runtime side effects for MeshCore pushes that `MeshCoreProtocol` decodes into `DomainEvent`s
+ * (hop ACK 130, message-waiting 131, RF RX 136, CLI data responses, disconnect).
+ *
+ * Every handler runs off `PacketRouter` — this module never subscribes to the SDK event bus.
+ *
+ * Failure point: DB / MQTT IPC rejections are logged; Zustand stores and hook state stay
+ * authoritative for the UI.
+ */
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
+import { getIdentityChatMessages } from '@/renderer/lib/identityStoreReads';
 import { withTimeout } from '@/shared/withTimeout';
 
 import { parseMeshCoreRfPacket } from '../../../shared/meshcoreRfPacketParse';
+import { packetRouter } from '../../lib/drivers/PacketRouter';
 import {
   classifyPayload,
   classifyProximity,
   extractMeshtasticSenderId,
   meshtasticSenderIdForRawLogFallback,
 } from '../../lib/foreignLoraDetection';
+import { syncNodesMapToIdentityStore } from '../../lib/hydrateIdentityStoresFromDb';
 import {
-  applyMeshcoreAdvertEvent128,
-  applyMeshcorePathUpdated129,
-  updateMeshcorePubKeyPrefixMaps,
-} from '../../lib/meshcore/meshcoreAdvertEventApply';
+  applyMeshcoreDmAckToPending,
+  syncMeshcoreDmAckToMessageStore,
+} from '../../lib/meshcore/meshcoreDmAckRuntime';
 import type {
   DeviceLogEntry,
   MeshCoreConnection,
-  MeshCoreContactRaw,
   RxPacketEntry,
 } from '../../lib/meshcore/meshcoreHookTypes';
-import {
-  buildMeshcoreRoomIncomingMessage,
-  parseMeshcoreChannelIncomingFromThread,
-  parseMeshcoreDmIncomingFromThread,
-  resolveMeshcoreChannelMessageSender,
-} from '../../lib/meshcoreChannelText';
-import {
-  meshcoreCoerceRadioRxFrame,
-  parseAutoaddConfigResponse,
-} from '../../lib/meshcoreContactAutoAdd';
 import { processMeshcoreWaitingMessageItem } from '../../lib/meshcoreProcessWaitingMessageItem';
-import { meshcoreContactOutPathBytesForTrace } from '../../lib/meshcoreRadioContactPath';
-import {
-  MESHCORE_CHAT_CORRELATE_WINDOW_MS,
-  meshcoreCorrelateOrSynthesizeChatEntry,
-  meshcoreFindRecentGrpTxtRawPacket,
-} from '../../lib/meshcoreRawPacketCorrelate';
 import {
   meshcoreRawPacketLogFromBytesFallback,
   meshcoreRawPacketResolveFromParsed,
@@ -45,22 +38,8 @@ import {
   meshcoreRfResolvePathSender,
 } from '../../lib/meshcoreRawPacketSender';
 import { shouldCoalesceSelfFloodAdvert } from '../../lib/meshcoreRawSelfFloodAdvertCoalesce';
-import { meshcoreRoomPostBodyFromWire } from '../../lib/meshcoreRoomMessageRouting';
-import { setMeshcoreRoomLastPostAt } from '../../lib/meshcoreRoomSyncStorage';
 import { meshcoreSortedStorePrior } from '../../lib/meshcoreStoreDedup';
-import {
-  isMeshcoreTransportStatusChatLine,
-  mergeHwModelOnContactUpdate,
-  mergeMeshcoreChatStubNodes,
-  MESHCORE_COORD_SCALE,
-  meshcoreContactToMeshNode,
-  meshcoreInferHopsFromOutPath,
-  meshcoreMergeChannelDisplayNameOntoNode,
-  meshcoreMergeContactHopsAwayFromPrevious,
-  meshcoreSyntheticPlaceholderPubKeyHex,
-  minimalMeshcoreChatNode,
-  pubkeyToNodeId,
-} from '../../lib/meshcoreUtils';
+import { meshcoreMergeContactHopsAwayFromPrevious, pubkeyToNodeId } from '../../lib/meshcoreUtils';
 import {
   normalizeMeshcoreWaitingMessageBatch,
   normalizeMeshcoreWaitingMessageItem,
@@ -76,10 +55,7 @@ import {
   waitingMessagesDrainTimeoutMs,
 } from '../../lib/meshcoreWaitingMessagesDrain';
 import { getMeshtasticConnectedMyNodeNum } from '../../lib/meshtasticConnectedNodeRef';
-import {
-  effectiveMessageTimestampMs,
-  mergeMeshcoreLastHeardFromAdvert,
-} from '../../lib/nodeStatus';
+import type { DomainEvent } from '../../lib/protocols/Protocol';
 import { MAX_RAW_PACKET_LOG_ENTRIES } from '../../lib/rawPacketLogConstants';
 import { getStoredMeshProtocol } from '../../lib/storedMeshProtocol';
 import {
@@ -88,24 +64,14 @@ import {
   MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_BATCH_YIELD,
 } from '../../lib/timeConstants';
-import type { ChatMessage, IdentityId, MeshNode, TelemetryPoint } from '../../lib/types';
+import type { ChatMessage, MeshNode, TelemetryPoint } from '../../lib/types';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
-import { renameMessageId, updateMessageStatus, useMessageStore } from '../../stores/messageStore';
 import { usePathHistoryStore } from '../../stores/pathHistoryStore';
-import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
-import {
-  contactToDbRow,
-  MAX_DEVICE_LOGS,
-  MAX_TELEMETRY_POINTS,
-  meshcoreContactRawFromDevice,
-  meshcoreDeviceAckLookupKeys,
-  meshcoreDmAckKeyU32,
-  type PendingDmAckEntry,
-} from './meshcoreHookPreamble';
 import type {
-  MeshcoreLegacyConnEventsCtx,
+  MeshcoreConnSideEffectsCtx,
   ProcessWaitingMessagesOptions,
-} from './meshcoreLegacyConnEventsCtx';
+} from './meshcoreConnSideEffectsCtx';
+import { MAX_DEVICE_LOGS, MAX_TELEMETRY_POINTS, meshcoreDmAckKeyU32 } from './meshcoreHookPreamble';
 import {
   getMeshcoreProcessWaitingMessagesInFlight,
   requestMeshcoreWaitingMessagesFollowUp,
@@ -116,60 +82,18 @@ import {
   takeMeshcoreWaitingMessagesManualFollowUp,
 } from './meshcoreWaitingMessagesSyncState';
 
-export type { ProcessWaitingMessagesOptions } from './meshcoreLegacyConnEventsCtx';
-export { resetMeshcoreProcessWaitingMessagesSync } from './meshcoreWaitingMessagesSyncState';
-
 function yieldToEventLoop(): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, 0);
   });
 }
 
-function isOutboundMeshcoreDmRecord(rec: { from: number; to: number; status?: string }): boolean {
-  return rec.to !== 0xffffffff && !isMeshtasticBroadcastNodeNum(rec.to) && rec.to > 0;
-}
-
-/** Identity-scoped chat rows from {@link useSendMessage} use numeric ids after rename. */
-export function syncMeshcoreDmAckToMessageStore(
-  identityId: IdentityId,
-  ackKeyU32: number,
-  selfId: number,
-  newStatus: 'acked' | 'failed',
-): boolean {
-  const byId = useMessageStore.getState().messages[identityId] ?? {};
-  let matched = false;
-  for (const [id, rec] of Object.entries(byId)) {
-    if (rec.from !== selfId) continue;
-    if (rec.status !== 'sending' && rec.status !== 'failed') continue;
-    if (!/^\d+$/.test(id)) continue;
-    if (meshcoreDmAckKeyU32(Number(id)) !== ackKeyU32) continue;
-    updateMessageStatus(identityId, id, newStatus);
-    matched = true;
-  }
-  if (matched) return true;
-
-  const inflight = Object.entries(byId).filter(
-    ([, rec]) => rec.status === 'sending' && rec.from === selfId && isOutboundMeshcoreDmRecord(rec),
-  );
-  if (inflight.length !== 1) return false;
-
-  const [id] = inflight[0];
-  const ackId = String(ackKeyU32);
-  if (id !== ackId) {
-    renameMessageId(identityId, id, ackId);
-  }
-  updateMessageStatus(identityId, ackId, newStatus);
-  return true;
-}
-
-export function attachMeshcoreLegacyConnEvents(
+export function attachMeshcoreConnSideEffects(
   conn: MeshCoreConnection,
-  ctx: MeshcoreLegacyConnEventsCtx,
+  ctx: MeshcoreConnSideEffectsCtx,
 ): () => void {
-  // Driver + MeshCoreProtocol own 128/7/8/129/138/rx when identity ingest is active; handlers
-  // below for those codes are legacy fallbacks (e.g. pre-driver connect). Event 130 stays here.
-  const protocolOwnedEvents = new Set<string | number>([128, 7, 8, 129, 138, 'rx']);
   const {
+    resolveIdentityId,
     meshcoreIdentityIdRef,
     meshcoreDriverConnectedRef,
     connRef,
@@ -177,16 +101,13 @@ export function attachMeshcoreLegacyConnEvents(
     lastPacketLogPublishFailureLogAtRef,
     meshcoreContactsRefreshTimerRef,
     meshcoreHookMountedRef,
-    meshcorePathUpdatePendingRef,
     meshcoreSessionPathUpdatedNodeIdsRef,
     meshcoreWaitingMessagesPollRef,
     meshcoreConnectTypeRef,
-    messagesRef,
     mqttStatusRef,
     myNodeNumRef,
     nicknameMapRef,
-    nodesRef,
-    outPathMapRef,
+    readNodes,
     pendingAcksRef,
     processWaitingMessagesRef,
     pubKeyMapRef,
@@ -194,10 +115,7 @@ export function attachMeshcoreLegacyConnEvents(
     rawPacketsRef,
     repeaterCommandServiceRef,
     selfInfoRef,
-    buildNodesFromContactsRef,
     setDeviceLogs,
-    setMeshcoreAutoadd,
-    setMeshcoreContactsForTelemetry,
     setMeshcorePingRouteReadyEpoch,
     setMessages,
     setNodes,
@@ -210,37 +128,17 @@ export function attachMeshcoreLegacyConnEvents(
     setWaitingMessagesSyncProgress,
     setWaitingMessagesSilentDrainActive,
     setWaitingMessagesDrainDeferred,
-    addMessage,
     addMessagesBatch,
     addCliHistoryEntry,
     teardownMeshcoreConnEventListeners,
-    meshcorePreviousNodesBaselineForBuild,
     handleConnectionLostRef,
     meshcoreExplicitDisconnectRef,
     bumpLastDataReceived,
   } = ctx;
 
-  /** PacketRouter + meshcoreIngest own parsed room posts when identity is bound. */
-  const legacyOwnsRoomPosts = (): boolean => meshcoreIdentityIdRef.current == null;
-
   const storePriorForIngest = (): ChatMessage[] => {
     const storeId = meshcoreIdentityIdRef.current;
-    if (storeId) return meshcoreSortedStorePrior(storeId);
-    return [...messagesRef.current].sort((a, b) => a.timestamp - b.timestamp);
-  };
-
-  const meshcorePersistentListenerRegs: {
-    event: string | number;
-    handler: (...args: unknown[]) => void;
-  }[] = [];
-  const onMeshcoreConn = (event: string | number, handler: (...args: unknown[]) => void) => {
-    if (protocolOwnedEvents.has(event)) return;
-    const wrapped = (...args: unknown[]) => {
-      bumpLastDataReceived?.();
-      handler(...args);
-    };
-    conn.on(event, wrapped);
-    meshcorePersistentListenerRegs.push({ event, handler: wrapped });
+    return storeId ? meshcoreSortedStorePrior(storeId) : [];
   };
 
   const logTransportLineAsDevice = (line: string) => {
@@ -257,251 +155,23 @@ export function attachMeshcoreLegacyConnEvents(
     });
   };
 
-  // Push: periodic advert — event 0x80 = 128 (meshcore.js emits publicKey only; lat/lastAdvert may be absent)
-  onMeshcoreConn(128, (data: unknown) => {
-    const d = data as {
-      publicKey: Uint8Array;
-      advLat?: number;
-      advLon?: number;
-      lastAdvert?: number;
-      type?: number;
-      advName?: string;
-    };
-    if (d.publicKey?.length !== 32) {
-      return;
-    }
-    const nodeId = pubkeyToNodeId(d.publicKey);
-    if (nodeId === 0) return;
-    const nowSec = Math.floor(Date.now() / 1000);
-    const nick = nicknameMapRef.current.get(nodeId);
-    let persistOut!: ReturnType<typeof applyMeshcoreAdvertEvent128>['persist'];
-    setNodes((prev) => {
-      const result = applyMeshcoreAdvertEvent128(prev, d, {
-        nodeId,
-        nowSec,
-        nick,
-        myNodeNum: myNodeNumRef.current,
-      });
-      persistOut = result.persist;
-      return result.next;
-    });
-    if (persistOut.updatePubKeyMaps) {
-      updateMeshcorePubKeyPrefixMaps(
-        nodeId,
-        d.publicKey,
-        pubKeyMapRef.current,
-        pubKeyPrefixMapRef.current,
-      );
-    }
-    if (persistOut.contactTypeUpdate) {
-      void window.electronAPI.db
-        .updateMeshcoreContactType(
-          persistOut.contactTypeUpdate.nodeId,
-          persistOut.contactTypeUpdate.contactType,
-        )
-        .catch((e: unknown) => {
-          console.warn(
-            '[useMeshcoreRuntime] updateMeshcoreContactType error ' + errLikeToLogString(e),
-          );
-        });
-    }
-    if (
-      typeof d.advLat === 'number' &&
-      Number.isFinite(d.advLat) &&
-      d.advLat !== 0 &&
-      typeof d.advLon === 'number' &&
-      Number.isFinite(d.advLon) &&
-      d.advLon !== 0
-    ) {
-      usePositionHistoryStore
-        .getState()
-        .recordPosition(nodeId, d.advLat / MESHCORE_COORD_SCALE, d.advLon / MESHCORE_COORD_SCALE);
-    }
-    if (persistOut.kind === 'insert') {
-      void window.electronAPI.db
-        .saveMeshcoreContact({
-          node_id: nodeId,
-          public_key: Array.from(d.publicKey)
-            .map((b) => b.toString(16).padStart(2, '0'))
-            .join(''),
-          adv_name: persistOut.insertAdvName,
-          contact_type: persistOut.insertContactType,
-          last_advert: persistOut.persistLastAdvert,
-          adv_lat: persistOut.persistLat,
-          adv_lon: persistOut.persistLon,
-          nickname: null,
-          on_radio: 1,
-        })
-        .catch((e: unknown) => {
-          console.warn(
-            '[useMeshcoreRuntime] saveMeshcoreContact (event 128 new) error ' +
-              errLikeToLogString(e),
-          );
-        });
-    } else if (persistOut.kind === 'update') {
-      void window.electronAPI.db
-        .updateMeshcoreContactAdvert(
-          nodeId,
-          persistOut.persistLastAdvert,
-          persistOut.persistLat,
-          persistOut.persistLon,
-          persistOut.persistAdvName,
-        )
-        .catch((e: unknown) => {
-          console.warn(
-            '[useMeshcoreRuntime] updateMeshcoreContactAdvert error ' + errLikeToLogString(e),
-          );
-        });
-    }
-    // Foreign LoRa for MeshCore overhear is recorded from RF RX (event 136), not advert sync (128).
-  });
+  // --- Hop ACK (event 130) ---
 
-  // Push: path updated — event 0x81 = 129; update last_heard for that contact
-  onMeshcoreConn(129, (data: unknown) => {
-    const d = data as { publicKey: Uint8Array };
-    if (d.publicKey?.length !== 32) {
-      return;
-    }
-    const nodeId = pubkeyToNodeId(d.publicKey);
-    if (nodeId === 0) return;
-    if (!meshcoreSessionPathUpdatedNodeIdsRef.current.has(nodeId)) {
-      meshcoreSessionPathUpdatedNodeIdsRef.current.add(nodeId);
-      setMeshcorePingRouteReadyEpoch((e) => e + 1);
-    }
-    useDiagnosticsStore.getState().recordPathUpdated(nodeId);
-    const nowSec = Math.floor(Date.now() / 1000);
-    const nick129 = nicknameMapRef.current.get(nodeId);
-    let persist129!: ReturnType<typeof applyMeshcorePathUpdated129>['persist'];
-    setNodes((prev) => {
-      const result = applyMeshcorePathUpdated129(prev, d.publicKey, {
-        nodeId,
-        nowSec,
-        nick: nick129,
-      });
-      persist129 = result.persist;
-      return result.next;
-    });
-    if (persist129.updatePubKeyMaps) {
-      updateMeshcorePubKeyPrefixMaps(
-        nodeId,
-        d.publicKey,
-        pubKeyMapRef.current,
-        pubKeyPrefixMapRef.current,
-      );
-    }
-    if (persist129.kind === 'insert') {
-      void window.electronAPI.db
-        .saveMeshcoreContact({
-          node_id: nodeId,
-          public_key: Array.from(d.publicKey)
-            .map((b) => b.toString(16).padStart(2, '0'))
-            .join(''),
-          adv_name: null,
-          contact_type: 0,
-          last_advert: persist129.persistLastAdvert,
-          adv_lat: null,
-          adv_lon: null,
-          nickname: null,
-          on_radio: 1,
-        })
-        .catch((e: unknown) => {
-          console.warn(
-            '[useMeshcoreRuntime] saveMeshcoreContact (event 129 new) error ' +
-              errLikeToLogString(e),
-          );
-        });
-    }
-    // Accumulate nodeIds for path history recording after the debounced refresh
-    meshcorePathUpdatePendingRef.current.add(nodeId);
-    // Refresh route bytes quickly so trace/ping can use outPath before the debounced full rebuild.
-    void (async () => {
-      if (!connRef.current) return;
-      try {
-        const contactsRaw = await connRef.current.getContacts();
-        const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
-        for (const contact of contacts) {
-          const cNodeId = pubkeyToNodeId(contact.publicKey);
-          if (cNodeId !== nodeId) continue;
-          const sliced = meshcoreContactOutPathBytesForTrace(contact);
-          if (sliced.length > 0) {
-            outPathMapRef.current.set(cNodeId, sliced);
-            const pathBytes = Array.from(sliced);
-            const hops = meshcoreInferHopsFromOutPath(contact) ?? Math.max(0, pathBytes.length - 1);
-            usePathHistoryStore.getState().recordPathUpdated(cNodeId, pathBytes, hops, false);
-            meshcorePathUpdatePendingRef.current.delete(cNodeId);
-          }
-          break;
-        }
-      } catch (e: unknown) {
-        console.warn(
-          '[useMeshcoreRuntime] immediate path refresh after 129 error ' + errLikeToLogString(e),
-        );
-      }
-    })();
-    // Path updates may change hop counts; debounced contacts refresh to fetch updated outPathLen
-    if (meshcoreContactsRefreshTimerRef.current) {
-      clearTimeout(meshcoreContactsRefreshTimerRef.current);
-    }
-    meshcoreContactsRefreshTimerRef.current = setTimeout(() => {
-      void (async () => {
-        if (!connRef.current) return;
-        const buildFn = buildNodesFromContactsRef.current;
-        if (!buildFn) return;
-        try {
-          const contactsRaw = await connRef.current.getContacts();
-          const contacts = contactsRaw.map(meshcoreContactRawFromDevice);
-          setMeshcoreContactsForTelemetry(contacts);
-          const newNodes = await buildFn(contacts, {
-            self: selfInfoRef.current,
-            myNodeId: myNodeNumRef.current,
-            previousNodes: meshcorePreviousNodesBaselineForBuild(),
-          });
-          setNodes((prev) => mergeMeshcoreChatStubNodes(prev, newNodes));
-          // Record path history for any nodeIds that triggered event 129
-          const pendingIds = meshcorePathUpdatePendingRef.current;
-          meshcorePathUpdatePendingRef.current = new Set();
-          for (const contact of contacts) {
-            const cNodeId = pubkeyToNodeId(contact.publicKey);
-            if (!pendingIds.has(cNodeId)) continue;
-            const sliced = meshcoreContactOutPathBytesForTrace(contact);
-            const pathBytes = sliced.length > 0 ? Array.from(sliced) : [];
-            if (pathBytes.length > 0) {
-              const hops = newNodes.get(cNodeId)?.hops_away ?? 0;
-              usePathHistoryStore.getState().recordPathUpdated(cNodeId, pathBytes, hops, false);
-            }
-          }
-        } catch (e) {
-          console.warn(
-            '[useMeshcoreRuntime] debounced contacts refresh error ' + errLikeToLogString(e),
-          );
-        }
-      })();
-    }, 2000);
-  });
+  const handleDmAck = (
+    identityId: string,
+    payload: Extract<DomainEvent, { type: 'meshcore_dm_ack' }>['payload'],
+  ) => {
+    const { pending, isNack, newStatus, ackKeyU32 } = applyMeshcoreDmAckToPending(
+      payload.ackCode,
+      pendingAcksRef.current,
+    );
+    const selfId = myNodeNumRef.current;
 
-  // Push: send confirmed — event 0x82 = 130; resolve pending DM delivery
-  // ackCode: 0x80 = RESP_CODE_ACK (success), 0x81 = RESP_CODE_NACK (failure)
-  onMeshcoreConn(130, (data: unknown) => {
-    const d = data as { ackCode: number; roundTrip?: number };
-    if (typeof d.ackCode !== 'number' || !Number.isFinite(d.ackCode)) {
-      console.warn('[useMeshcoreRuntime] event 130: non-numeric ackCode', d.ackCode);
-      return;
-    }
-    const isNack = d.ackCode === 0x81 || d.ackCode === 129; // 0x81 or signed representation
-    let pending: PendingDmAckEntry | undefined;
-    for (const lk of meshcoreDeviceAckLookupKeys(d.ackCode)) {
-      pending = pendingAcksRef.current.get(lk);
-      if (pending) break;
-    }
     if (!pending) {
-      const lateKey = meshcoreDmAckKeyU32(d.ackCode);
-      const selfId = myNodeNumRef.current;
-      const newStatus = isNack ? 'failed' : 'acked';
-      const storeId = meshcoreIdentityIdRef.current;
-      const hadLateOutbound = messagesRef.current.some(
+      const hadLateOutbound = getIdentityChatMessages(identityId).some(
         (m) =>
           m.packetId != null &&
-          meshcoreDmAckKeyU32(m.packetId) === lateKey &&
+          meshcoreDmAckKeyU32(m.packetId) === ackKeyU32 &&
           m.sender_id === selfId &&
           m.to != null &&
           (m.status === 'sending' || m.status === 'failed'),
@@ -510,7 +180,7 @@ export function attachMeshcoreLegacyConnEvents(
         setMessages((prev) =>
           prev.map((m) =>
             m.packetId != null &&
-            meshcoreDmAckKeyU32(m.packetId) === lateKey &&
+            meshcoreDmAckKeyU32(m.packetId) === ackKeyU32 &&
             m.sender_id === selfId &&
             m.to != null &&
             (m.status === 'sending' || m.status === 'failed')
@@ -519,23 +189,18 @@ export function attachMeshcoreLegacyConnEvents(
           ),
         );
       }
-      if (storeId) {
-        syncMeshcoreDmAckToMessageStore(storeId, lateKey, selfId, newStatus);
-      }
+      syncMeshcoreDmAckToMessageStore(identityId, ackKeyU32, selfId, newStatus);
       void window.electronAPI.db
-        .updateMeshcoreMessageStatus(lateKey, newStatus)
+        .updateMeshcoreMessageStatus(ackKeyU32, newStatus)
         .catch((e: unknown) => {
           console.warn(
-            '[useMeshcoreRuntime] updateMeshcoreMessageStatus (late 130) error ' +
+            '[meshcoreConnSideEffects] updateMeshcoreMessageStatus (late 130) error ' +
               errLikeToLogString(e),
           );
         });
       return;
     }
-    clearTimeout(pending.timeoutId);
-    for (const k of pending.mapKeys) {
-      pendingAcksRef.current.delete(k);
-    }
+
     if (pending.destNodeId != null && pending.pathHash != null) {
       usePathHistoryStore
         .getState()
@@ -543,70 +208,27 @@ export function attachMeshcoreLegacyConnEvents(
           pending.destNodeId,
           pending.pathHash,
           !isNack,
-          !isNack && typeof d.roundTrip === 'number' ? d.roundTrip : undefined,
+          !isNack && typeof payload.roundTrip === 'number' ? payload.roundTrip : undefined,
         );
     }
-    const canon = pending.canonicalPacketIdU32;
-    const newStatus = isNack ? 'failed' : 'acked';
     setMessages((prev) =>
       prev.map((m) =>
-        m.packetId != null && meshcoreDmAckKeyU32(m.packetId) === canon
+        m.packetId != null && meshcoreDmAckKeyU32(m.packetId) === ackKeyU32
           ? { ...m, status: newStatus }
           : m,
       ),
     );
-    const storeId = meshcoreIdentityIdRef.current;
-    if (storeId) {
-      syncMeshcoreDmAckToMessageStore(storeId, canon, myNodeNumRef.current, newStatus);
-    }
-    void window.electronAPI.db.updateMeshcoreMessageStatus(canon, newStatus).catch((e: unknown) => {
-      console.warn(
-        '[useMeshcoreRuntime] updateMeshcoreMessageStatus error ' + errLikeToLogString(e),
-      );
-    });
-  });
-
-  // Push: new contact discovered — event 0x8A = 138
-  onMeshcoreConn(138, (data: unknown) => {
-    const d = meshcoreContactRawFromDevice(data as MeshCoreContactRaw);
-    const node = meshcoreContactToMeshNode(d);
-    pubKeyMapRef.current.set(node.node_id, d.publicKey);
-    outPathMapRef.current.set(node.node_id, meshcoreContactOutPathBytesForTrace(d));
-    const prefix = Array.from(d.publicKey.slice(0, 6))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-    pubKeyPrefixMapRef.current.set(prefix, node.node_id);
-    const nick = nicknameMapRef.current.get(node.node_id);
-    const nodeWithNick = nick ? { ...node, long_name: nick, short_name: '' } : node;
-    const prevHopsForDb = nodesRef.current.get(nodeWithNick.node_id)?.hops_away;
-    const mergedHopsForDb = meshcoreMergeContactHopsAwayFromPrevious(
-      nodeWithNick.hops_away,
-      prevHopsForDb,
-      0,
-    );
-    setNodes((prev) => {
-      const next = new Map(prev);
-      const existing = prev.get(nodeWithNick.node_id);
-      next.set(nodeWithNick.node_id, {
-        ...existing,
-        ...nodeWithNick,
-        hw_model: mergeHwModelOnContactUpdate(existing?.hw_model, nodeWithNick.hw_model),
-        hops_away: meshcoreMergeContactHopsAwayFromPrevious(
-          nodeWithNick.hops_away,
-          existing?.hops_away,
-          0,
-        ),
-      });
-      return next;
-    });
+    syncMeshcoreDmAckToMessageStore(identityId, ackKeyU32, selfId, newStatus);
     void window.electronAPI.db
-      .saveMeshcoreContact(contactToDbRow(d, nick ?? null, 1, undefined, mergedHopsForDb))
+      .updateMeshcoreMessageStatus(ackKeyU32, newStatus)
       .catch((e: unknown) => {
         console.warn(
-          '[useMeshcoreRuntime] saveMeshcoreContact (event 138) error ' + errLikeToLogString(e),
+          '[meshcoreConnSideEffects] updateMeshcoreMessageStatus error ' + errLikeToLogString(e),
         );
       });
-  });
+  };
+
+  // --- Waiting messages (event 131) ---
 
   const waitingMessageDrainScheduleOptions = {
     isMounted: () => meshcoreHookMountedRef.current,
@@ -637,12 +259,10 @@ export function attachMeshcoreLegacyConnEvents(
     pubKeyPrefixMap: pubKeyPrefixMapRef.current,
     myNodeNum: myNodeNumRef.current || 0,
     meshcoreIdentityId: meshcoreIdentityIdRef.current,
-    legacyOwnsRoomPosts,
     storePriorForBatch: storePriorForIngest,
     logTransportLineAsDevice,
   });
 
-  // Push: message waiting — event 0x83 = 131; fetch all queued messages
   const processWaitingMessages = async (options?: ProcessWaitingMessagesOptions) => {
     if (getMeshcoreProcessWaitingMessagesInFlight()) {
       if (options?.showSyncBanner !== false) {
@@ -650,7 +270,7 @@ export function attachMeshcoreLegacyConnEvents(
       } else {
         requestMeshcoreWaitingMessagesFollowUp();
       }
-      console.debug('[useMeshcoreRuntime] processWaitingMessages skipped (in flight)');
+      console.debug('[meshcoreConnSideEffects] processWaitingMessages skipped (in flight)');
       return getMeshcoreProcessWaitingMessagesInFlight()!;
     }
     const showSyncBanner = options?.showSyncBanner !== false;
@@ -668,7 +288,7 @@ export function attachMeshcoreLegacyConnEvents(
       let bannerActive = false;
       let processed = 0;
       let pendingMessages: ChatMessage[] = [];
-      const workingNodes = new Map(nodesRef.current);
+      const workingNodes = new Map(readNodes());
       let nodesDirty = false;
 
       const flushBatch = () => {
@@ -677,8 +297,10 @@ export function attachMeshcoreLegacyConnEvents(
           pendingMessages = [];
         }
         if (nodesDirty) {
-          nodesRef.current = workingNodes;
           setNodes(workingNodes);
+          // Publish before React commits so the next drain iteration reads merged rows.
+          const storeId = meshcoreIdentityIdRef.current;
+          if (storeId) syncNodesMapToIdentityStore(storeId, workingNodes);
           nodesDirty = false;
         }
       };
@@ -704,7 +326,8 @@ export function attachMeshcoreLegacyConnEvents(
           }
         } catch (e: unknown) {
           console.warn(
-            '[useMeshcoreRuntime] processWaitingMessages ingest error ' + errLikeToLogString(e),
+            '[meshcoreConnSideEffects] processWaitingMessages ingest error ' +
+              errLikeToLogString(e),
           );
         }
         await yieldToEventLoop();
@@ -732,10 +355,12 @@ export function attachMeshcoreLegacyConnEvents(
             setWaitingMessagesCount(total);
             setWaitingMessagesSyncProgress({ processed: 0, total });
           } else if (total === 0) {
-            console.debug('[useMeshcoreRuntime] processWaitingMessages empty queue (manual sync)');
+            console.debug(
+              '[meshcoreConnSideEffects] processWaitingMessages empty queue (manual sync)',
+            );
             return;
           }
-          console.debug('[useMeshcoreRuntime] processWaitingMessages start', {
+          console.debug('[meshcoreConnSideEffects] processWaitingMessages start', {
             count: total,
             showSyncBanner,
           });
@@ -751,7 +376,7 @@ export function attachMeshcoreLegacyConnEvents(
           }
           flushBatch();
         } else {
-          console.debug('[useMeshcoreRuntime] processWaitingMessages start (incremental)', {
+          console.debug('[meshcoreConnSideEffects] processWaitingMessages start (incremental)', {
             showSyncBanner,
           });
           let silentDrainExhaustedCap = false;
@@ -782,7 +407,7 @@ export function attachMeshcoreLegacyConnEvents(
           }
           flushBatch();
         }
-        console.debug('[useMeshcoreRuntime] processWaitingMessages done', {
+        console.debug('[meshcoreConnSideEffects] processWaitingMessages done', {
           count: processed,
           durationMs: Date.now() - startedAt,
           showSyncBanner,
@@ -804,7 +429,8 @@ export function attachMeshcoreLegacyConnEvents(
     return inFlight;
   };
   processWaitingMessagesRef.current = processWaitingMessages;
-  onMeshcoreConn(131, () => {
+
+  const handleWaitingMessages = () => {
     markMeshcoreMsgWaitingEvent();
     scheduleMeshcoreWaitingMessagesDrain(
       async () => {
@@ -835,269 +461,42 @@ export function attachMeshcoreLegacyConnEvents(
         onDeferredChange: setWaitingMessagesDrainDeferred,
       },
     );
-  });
+  };
 
-  // Incoming DM — event 7
-  onMeshcoreConn(7, (data: unknown) => {
-    const now = Date.now();
-    const d = data as {
-      pubKeyPrefix: Uint8Array;
-      text: string;
-      senderTimestamp: number;
-      txtType?: number;
-    };
-    const prefix = Array.from(d.pubKeyPrefix)
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-    const senderId = pubKeyPrefixMapRef.current.get(prefix) ?? 0;
-    if (senderId === 0) {
-      console.warn('[useMeshcoreRuntime] event 7: unknown pubKeyPrefix, sender will be 0', prefix);
-    }
-    const sender = nodesRef.current.get(senderId);
-    // CLI data response (txtType === 1)
-    if (d.txtType === 1) {
-      const service = repeaterCommandServiceRef.current;
-      if (service) {
-        const handled = service.handleResponse(d.text, senderId);
-        if (handled) {
-          return;
-        }
-      } else {
-        console.warn(
-          '[useMeshcoreRuntime] event 7: CLI response received but no command service active (sender:',
-          senderId.toString(16).toUpperCase(),
-          ')',
-        );
-      }
-      // CLI response without matching pending command - add to history
-      if (senderId !== 0) {
-        const { body } = service ? service.parseResponseToken(d.text) : { body: d.text };
-        addCliHistoryEntry(senderId, {
-          type: 'received',
-          text: body,
-          timestamp: Date.now(),
-        });
-      }
-      return;
-    }
+  // --- CLI data response (direct message, txtType 1) ---
 
-    // Room server BBS post (SignedPlain or PLAIN system lines) — not a personal DM.
-    if (sender?.hw_model === 'Room') {
-      const postTs = effectiveMessageTimestampMs(d.senderTimestamp * 1000);
-      if (!legacyOwnsRoomPosts()) {
-        void setMeshcoreRoomLastPostAt(senderId, postTs);
-        return;
-      }
-      const { authorId, payload } = meshcoreRoomPostBodyFromWire(
-        d.text,
-        d.txtType,
-        pubKeyPrefixMapRef.current,
-        { isKnownRoomNode: true },
+  const handleCliResponse = (
+    payload: Extract<DomainEvent, { type: 'meshcore_cli_response' }>['payload'],
+  ) => {
+    const senderId = payload.senderNodeId;
+    const service = repeaterCommandServiceRef.current;
+    if (service) {
+      if (service.handleResponse(payload.text, senderId)) return;
+    } else {
+      console.warn(
+        '[meshcoreConnSideEffects] CLI response received but no command service active (sender:',
+        senderId.toString(16).toUpperCase(),
+        ')',
       );
-      const authorNode = authorId !== 0 ? nodesRef.current.get(authorId) : undefined;
-      const authorName =
-        authorNode?.long_name ??
-        (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
-      addMessage(
-        buildMeshcoreRoomIncomingMessage({
-          rawText: payload,
-          roomServerId: senderId,
-          authorId: authorId !== 0 ? authorId : myNodeNumRef.current || 0,
-          authorName,
-          timestamp: postTs,
-          receivedVia: 'rf',
-        }),
-      );
-      void setMeshcoreRoomLastPostAt(senderId, postTs);
-      return;
     }
-
+    // CLI response without matching pending command — surface it in the panel history.
     if (senderId !== 0) {
-      setNodes((prev) => {
-        const node = prev.get(senderId);
-        if (!node) return prev;
-        const next = new Map(prev);
-        next.set(senderId, {
-          ...node,
-          last_heard: Math.max(node.last_heard ?? 0, d.senderTimestamp),
-        });
-        return next;
+      const { body } = service ? service.parseResponseToken(payload.text) : { body: payload.text };
+      addCliHistoryEntry(senderId, {
+        type: 'received',
+        text: body,
+        timestamp: Date.now(),
       });
     }
-    if (isMeshcoreTransportStatusChatLine(d.text)) {
-      logTransportLineAsDevice(d.text);
-      return;
-    }
-    const dmRfMatch = rawPacketsRef.current
-      .slice()
-      .reverse()
-      .find(
-        (e) =>
-          e.payloadTypeString === 'TXT_MSG' &&
-          e.fromNodeId === null &&
-          now - e.ts <= MESHCORE_CHAT_CORRELATE_WINDOW_MS,
-      );
-    addMessage(
-      parseMeshcoreDmIncomingFromThread(storePriorForIngest(), {
-        rawText: d.text,
-        senderId,
-        displayName: sender?.long_name ?? `Node-${senderId.toString(16).toUpperCase()}`,
-        timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
-        receivedVia: 'rf',
-        rxHops: dmRfMatch != null ? dmRfMatch.hopCount : undefined,
-        peerNodeId: senderId,
-        myNodeId: myNodeNumRef.current || 0,
-        to: myNodeNumRef.current || undefined,
-      }),
-    );
-    const resolvedSenderId = senderId !== 0 ? senderId : null;
-    setRawPackets((prev) =>
-      meshcoreCorrelateOrSynthesizeChatEntry(prev, 'TXT_MSG', resolvedSenderId, {
-        ts: now,
-        snr: 0,
-        rssi: 0,
-        raw: new Uint8Array(0),
-        routeTypeString: null,
-        payloadTypeString: 'TXT_MSG',
-        hopCount: 0,
-        pathBytes: [],
-        pathHashSizeBytes: 1,
-        fromNodeId: resolvedSenderId,
-        messageFingerprintHex: null,
-        transportScopeCode: null,
-        transportReturnCode: null,
-        advertName: null,
-        advertLat: null,
-        advertLon: null,
-        advertTimestampSec: null,
-        parseOk: false,
-      }),
-    );
-  });
+  };
 
-  // Incoming channel message — event 8
-  onMeshcoreConn(8, (data: unknown) => {
-    const now = Date.now();
-    const d = data as { channelIdx: number; text: string; senderTimestamp: number };
-    if (isMeshcoreTransportStatusChatLine(d.text)) {
-      logTransportLineAsDevice(d.text);
-      return;
-    }
-    const rfMatch = meshcoreFindRecentGrpTxtRawPacket(rawPacketsRef.current, now);
-    const hopsAway = rfMatch?.hopCount;
-    const resolved = resolveMeshcoreChannelMessageSender({
-      rawText: d.text,
-      rfFromNodeId: rfMatch?.fromNodeId ?? null,
-      rfAdvertName: rfMatch?.advertName ?? null,
-      nodes: nodesRef.current,
-    });
-    if (resolved.senderId !== 0) {
-      setNodes((prev) => {
-        const next = new Map(prev);
-        const existing = next.get(resolved.senderId);
-        const updated: MeshNode = existing
-          ? meshcoreMergeChannelDisplayNameOntoNode(
-              {
-                ...existing,
-                last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
-                ...(hopsAway != null ? { hops_away: hopsAway } : {}),
-                source: 'rf',
-                heard_via_mqtt_only: false,
-                via_mqtt: false,
-              },
-              resolved.displayName,
-            )
-          : {
-              ...minimalMeshcoreChatNode(
-                resolved.senderId,
-                resolved.displayName,
-                d.senderTimestamp,
-                'rf',
-              ),
-              ...(hopsAway != null ? { hops_away: hopsAway } : {}),
-              source: 'rf',
-              heard_via_mqtt_only: false,
-              via_mqtt: false,
-            };
-        next.set(resolved.senderId, updated);
-        if (hopsAway != null) {
-          const nowSec = Math.floor(Date.now() / 1000);
-          const lastAdvert = mergeMeshcoreLastHeardFromAdvert(
-            d.senderTimestamp,
-            next.get(resolved.senderId)?.last_heard,
-            nowSec,
-          );
-          void window.electronAPI.db.saveMeshcoreContact({
-            node_id: resolved.senderId,
-            public_key: meshcoreSyntheticPlaceholderPubKeyHex(resolved.senderId),
-            adv_name: resolved.displayName,
-            contact_type: 1,
-            last_advert: lastAdvert > 0 ? lastAdvert : nowSec,
-            nickname: null,
-            hops_away: hopsAway,
-            on_radio: 1,
-          });
-        }
-        return next;
-      });
-    }
-    addMessage(
-      parseMeshcoreChannelIncomingFromThread(storePriorForIngest(), {
-        rawText: d.text,
-        senderId: resolved.senderId,
-        displayName: resolved.displayName,
-        channel: d.channelIdx,
-        timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
-        receivedVia: 'rf',
-        rxHops: rfMatch != null ? rfMatch.hopCount : undefined,
-      }),
-    );
-    if (mqttStatusRef.current === 'connected') {
-      void window.electronAPI.mqtt
-        .publishMeshcorePacketLog({
-          origin: selfInfoRef.current?.name ?? 'mesh-client',
-          snr: rfMatch?.snr ?? 0,
-          rssi: rfMatch?.rssi ?? 0,
-        })
-        .catch((e: unknown) => {
-          console.warn(
-            '[useMeshcoreRuntime] publishMeshcorePacketLog (heard RF) error ' +
-              errLikeToLogString(e),
-          );
-        });
-    }
-    setRawPackets((prev) =>
-      meshcoreCorrelateOrSynthesizeChatEntry(prev, 'GRP_TXT', resolved.senderId || null, {
-        ts: now,
-        snr: 0,
-        rssi: 0,
-        raw: new Uint8Array(0),
-        routeTypeString: null,
-        payloadTypeString: 'GRP_TXT',
-        hopCount: 0,
-        pathBytes: [],
-        pathHashSizeBytes: 1,
-        fromNodeId: resolved.senderId || null,
-        messageFingerprintHex: null,
-        transportScopeCode: null,
-        transportReturnCode: null,
-        advertName: null,
-        advertLat: null,
-        advertLon: null,
-        advertTimestampSec: null,
-        parseOk: false,
-      }),
-    );
-  });
+  // --- RF RX (event 136) ---
 
-  // Push: RF packet received — event 0x88 = 136; feed into device logs + signal telemetry.
-  // Foreign LoRa fingerprinting requires d.raw (Uint8Array) from meshcore.js/device.
-  onMeshcoreConn(136, (data: unknown) => {
-    const d = data as { lastSnr?: number; lastRssi?: number; raw?: unknown };
-    const snr = d.lastSnr ?? 0;
-    const rssi = d.lastRssi ?? 0;
+  const handleRfRx = (payload: Extract<DomainEvent, { type: 'meshcore_rf_rx' }>['payload']) => {
+    const snr = payload.lastSnr;
+    const rssi = payload.lastRssi;
     const now = Date.now();
-    const rawU8 = d.raw instanceof Uint8Array && d.raw.length > 0 ? d.raw : null;
+    const rawU8 = payload.raw;
     const loraPacketClass = rawU8 ? classifyPayload(rawU8) : null;
 
     // Extract sender ID and update known node's last_heard + signal metrics
@@ -1108,7 +507,7 @@ export function attachMeshcoreLegacyConnEvents(
         if (senderId !== null) {
           senderInfo = ` from=0x${senderId.toString(16)}`;
           // If we know this node (and it's not ourselves), update last_heard + SNR/RSSI
-          if (senderId !== myNodeNumRef.current && nodesRef.current.has(senderId)) {
+          if (senderId !== myNodeNumRef.current && readNodes().has(senderId)) {
             const nowSec = Math.floor(now / 1000);
             setNodes((prev) => {
               const existing = prev.get(senderId);
@@ -1199,7 +598,7 @@ export function attachMeshcoreLegacyConnEvents(
               )
               .catch((e: unknown) => {
                 console.warn(
-                  '[useMeshcoreRuntime] updateMeshcoreContactRfTransport error ' +
+                  '[meshcoreConnSideEffects] updateMeshcoreContactRfTransport error ' +
                     errLikeToLogString(e),
                 );
               });
@@ -1220,9 +619,10 @@ export function attachMeshcoreLegacyConnEvents(
       // Update hops_away on known MeshCore nodes from RF packet hop count.
       // Only use fromNodeId resolved by MeshCore parsing (before the Meshtastic fallback).
       if (fromNodeId !== null && fromNodeId !== myNodeNumRef.current) {
+        const resolvedFromNodeId = fromNodeId;
         const nowSec = Math.floor(now / 1000);
         setNodes((prev) => {
-          const existing = prev.get(fromNodeId!);
+          const existing = prev.get(resolvedFromNodeId);
           if (!existing) return prev;
           const mergedHopsAway = meshcoreMergeContactHopsAwayFromPrevious(
             hopCount,
@@ -1251,21 +651,28 @@ export function attachMeshcoreLegacyConnEvents(
           }
 
           const next = new Map(prev);
-          next.set(fromNodeId!, updated);
+          next.set(resolvedFromNodeId, updated);
 
           void window.electronAPI.db
-            .updateMeshcoreContactLastRf(fromNodeId!, snr, rssi, mergedHopsAway ?? hopCount, nowSec)
+            .updateMeshcoreContactLastRf(
+              resolvedFromNodeId,
+              snr,
+              rssi,
+              mergedHopsAway ?? hopCount,
+              nowSec,
+            )
             .catch((e: unknown) => {
               console.warn(
-                '[useMeshcoreRuntime] updateMeshcoreContactLastRf error ' + errLikeToLogString(e),
+                '[meshcoreConnSideEffects] updateMeshcoreContactLastRf error ' +
+                  errLikeToLogString(e),
               );
             });
           void useDiagnosticsStore
             .getState()
-            .saveMeshcoreHopHistory(fromNodeId!, now, mergedHopsAway ?? hopCount, snr, rssi)
+            .saveMeshcoreHopHistory(resolvedFromNodeId, now, mergedHopsAway ?? hopCount, snr, rssi)
             .catch((e: unknown) => {
               console.warn(
-                '[useMeshcoreRuntime] saveMeshcoreHopHistory error ' + errLikeToLogString(e),
+                '[meshcoreConnSideEffects] saveMeshcoreHopHistory error ' + errLikeToLogString(e),
               );
             });
 
@@ -1314,7 +721,7 @@ export function attachMeshcoreLegacyConnEvents(
             next.length > MAX_RAW_PACKET_LOG_ENTRIES
               ? next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES)
               : next;
-          // Sync before React commit so same-tick event 7/8 ingest sees this row.
+          // Sync before React commit so same-tick chat ingest sees this row.
           rawPacketsRef.current = trimmed;
           return trimmed;
         }
@@ -1323,7 +730,7 @@ export function attachMeshcoreLegacyConnEvents(
           next.length > MAX_RAW_PACKET_LOG_ENTRIES
             ? next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES)
             : next;
-        // Sync before React commit so same-tick event 7/8 ingest sees this row.
+        // Sync before React commit so same-tick chat ingest sees this row.
         rawPacketsRef.current = trimmed;
         return trimmed;
       });
@@ -1362,7 +769,7 @@ export function attachMeshcoreLegacyConnEvents(
         if (mtNode > 0) {
           let rfSenderId = fromNodeId ?? undefined;
           let rfDisplayName: string | undefined;
-          const meshcoreNodes = nodesRef.current;
+          const meshcoreNodes = readNodes();
           if (parsed.ok) {
             if (rfSenderId == null && parsed.advert) {
               const advertId = pubkeyToNodeId(parsed.advert.publicKey);
@@ -1421,7 +828,7 @@ export function attachMeshcoreLegacyConnEvents(
               rssi || undefined,
               snr || undefined,
               rfSenderId,
-              () => nodesRef.current,
+              readNodes,
               'meshcore-radio-rf',
               rfFingerprint,
               rfDisplayName,
@@ -1447,7 +854,7 @@ export function attachMeshcoreLegacyConnEvents(
             rssi || undefined,
             snr || undefined,
             senderId ?? undefined,
-            () => nodesRef.current,
+            readNodes,
           );
       }
     }
@@ -1473,16 +880,17 @@ export function attachMeshcoreLegacyConnEvents(
             if (t - lastPacketLogPublishFailureLogAtRef.current >= 30_000) {
               lastPacketLogPublishFailureLogAtRef.current = t;
               console.warn(
-                '[meshcoreLegacyConnEvents] MQTT packet-log publish failed ' +
-                  errLikeToLogString(e),
+                '[meshcoreConnSideEffects] MQTT packet-log publish failed ' + errLikeToLogString(e),
               );
             }
           });
       }
     }
-  });
+  };
 
-  onMeshcoreConn('disconnected', () => {
+  // --- Disconnect ---
+
+  const handleDisconnected = () => {
     let shouldReconnect = false;
     setState((prev) => {
       const wasOperational =
@@ -1520,25 +928,43 @@ export function attachMeshcoreLegacyConnEvents(
       resetMeshcoreWaitingMessagesDrainSchedule();
       if (staleConn && !usedDriverConnect) {
         void staleConn.close().catch((e: unknown) => {
-          console.debug('[meshcoreLegacyConnEvents] stale conn close ' + errLikeToLogString(e));
+          console.debug('[meshcoreConnSideEffects] stale conn close ' + errLikeToLogString(e));
         });
       }
       if (shouldReconnect && !meshcoreExplicitDisconnectRef.current) {
         handleConnectionLostRef.current();
       }
     });
-  });
+  };
 
-  onMeshcoreConn('rx', (data: unknown) => {
-    const frame = meshcoreCoerceRadioRxFrame(data);
-    const parsed = frame && parseAutoaddConfigResponse(frame);
-    if (parsed) setMeshcoreAutoadd(parsed);
+  const detachListener = packetRouter.addListener((event, routedIdentityId) => {
+    if (routedIdentityId !== resolveIdentityId()) return;
+    bumpLastDataReceived?.();
+    switch (event.type) {
+      case 'meshcore_dm_ack':
+        handleDmAck(routedIdentityId, event.payload);
+        break;
+      case 'meshcore_waiting_messages':
+        handleWaitingMessages();
+        break;
+      case 'meshcore_cli_response':
+        handleCliResponse(event.payload);
+        break;
+      case 'meshcore_rf_rx':
+        handleRfRx(event.payload);
+        break;
+      case 'device_status':
+        if (event.payload.status === 'disconnected') {
+          handleDisconnected();
+        }
+        break;
+      default:
+        break;
+    }
   });
 
   return () => {
-    for (const { event, handler } of meshcorePersistentListenerRegs) {
-      conn.off(event, handler);
-    }
+    detachListener();
     resetMeshcoreProcessWaitingMessagesSync(
       setWaitingMessagesCount,
       setWaitingMessagesSyncActive,

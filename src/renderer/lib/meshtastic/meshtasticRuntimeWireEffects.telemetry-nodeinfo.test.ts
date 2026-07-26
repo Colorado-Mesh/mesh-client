@@ -1,17 +1,26 @@
 import type { MeshDevice } from '@meshtastic/core';
 import { Portnums } from '@meshtastic/protobufs';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { useNodeStore } from '../../stores/nodeStore';
+import { packetRouter } from '../drivers/PacketRouter';
+import { syncNodesMapToIdentityStore } from '../hydrateIdentityStoresFromDb';
 import type { ConnectionType, MeshNode } from '../types';
-import { attachMeshtasticLegacyWireSubscriptions } from './meshtasticLegacyWireSubscriptions';
+import { attachMeshtasticRuntimeWireEffects } from './meshtasticRuntimeWireEffects';
 
 const UNKNOWN_NODE = 0xabcd1234;
+const IDENTITY = 'id-1';
+
+/** Wire effects read nodes from `nodeStore`, so the mocks publish there too. */
+function publishNodes(nodes: Map<number, MeshNode>): void {
+  syncNodesMapToIdentityStore(IDENTITY, nodes);
+}
 
 function makeDeps() {
-  const nodesRef = { current: new Map<number, MeshNode>() };
+  const nodeMirror = new Map<number, MeshNode>();
   const ensureNodeExists = vi.fn((nodeNum: number, source: 'rf' | 'mqtt') => {
-    if (!nodesRef.current.has(nodeNum)) {
-      nodesRef.current.set(nodeNum, {
+    if (!nodeMirror.has(nodeNum)) {
+      nodeMirror.set(nodeNum, {
         node_id: nodeNum,
         long_name: '',
         short_name: '',
@@ -25,13 +34,14 @@ function makeDeps() {
         source,
         heard_via_mqtt_only: false,
       });
+      publishNodes(nodeMirror);
     }
   });
   const noopRef = { current: null };
   const noopMapRef = { current: new Map() };
 
   return {
-    nodesRef,
+    nodeMirror,
     ensureNodeExists,
     deps: {
       channelConfigsRef: { current: [] },
@@ -56,15 +66,13 @@ function makeDeps() {
       lastSfHeartbeatPeriodRef: { current: 0 },
       lastSfHeartbeatServerRef: { current: null },
       localLoraConfigTimerRef: { current: undefined },
-      meshtasticIdentityIdRef: { current: 'id-1' },
+      meshtasticIdentityIdRef: { current: IDENTITY },
       meshtasticIngestSessionRef: {
         current: { setConfiguring: vi.fn(), detach: vi.fn(), markPacketSeen: vi.fn() },
       },
       meshtasticIngressDetachRef: { current: null },
-      messagesRef: { current: [] },
       mqttStatusRef: { current: 'disconnected' as const },
       myNodeNumRef: { current: 0 },
-      nodesRef,
       pendingTempIdRef: { current: undefined },
       ackMeshPacketIdByTempIdRef: { current: new Map() },
       pendingTracePacketIdToTargetRef: noopMapRef,
@@ -83,7 +91,10 @@ function makeDeps() {
       applyOwnNodeBatteryFromDeviceMetrics: vi.fn(),
       getNodeName: vi.fn(),
       updateNodes: vi.fn((fn: (prev: Map<number, MeshNode>) => Map<number, MeshNode>) => {
-        nodesRef.current = fn(nodesRef.current);
+        const next = fn(new Map(nodeMirror));
+        nodeMirror.clear();
+        for (const [id, node] of next) nodeMirror.set(id, node);
+        publishNodes(nodeMirror);
       }),
       startWatchdog: vi.fn(),
       stopWatchdog: vi.fn(),
@@ -139,39 +150,38 @@ function makeDeps() {
   };
 }
 
-describe('meshtasticLegacyWireSubscriptions telemetry NodeInfo', () => {
+describe('meshtasticRuntimeWireEffects telemetry NodeInfo', () => {
+  beforeEach(() => {
+    useNodeStore.setState({ nodes: {} });
+  });
+
   it('creates stub and requests NodeInfo on first telemetry from unknown node', async () => {
     const { deps, ensureNodeExists } = makeDeps();
-    const telemetrySubscribers = new Set<(packet: unknown) => void>();
     const sendPacket = vi.fn().mockResolvedValue(undefined);
     const noopSub = { subscribe: () => () => {} };
     const device = {
       sendPacket,
       events: new Proxy({} as MeshDevice['events'], {
-        get: (_target, prop) => {
-          if (prop === 'onTelemetryPacket') {
-            return {
-              subscribe: (cb: (packet: unknown) => void) => {
-                telemetrySubscribers.add(cb);
-                return () => telemetrySubscribers.delete(cb);
-              },
-            };
-          }
-          return noopSub;
-        },
+        get: () => noopSub,
       }),
       setHeartbeatInterval: vi.fn(),
     } as unknown as MeshDevice;
 
-    attachMeshtasticLegacyWireSubscriptions(device, 'ble', { driverIdentityId: 'id-1' }, deps);
+    attachMeshtasticRuntimeWireEffects(device, 'ble', { driverIdentityId: IDENTITY }, deps);
 
-    for (const cb of telemetrySubscribers) {
-      cb({
-        from: UNKNOWN_NODE,
-        rxTime: Math.floor(Date.now() / 1000),
-        data: { deviceMetrics: { batteryLevel: 85, voltage: 4.1 } },
-      });
-    }
+    packetRouter.dispatch(
+      {
+        type: 'telemetry',
+        payload: {
+          nodeId: UNKNOWN_NODE,
+          timestamp: Date.now(),
+          batteryLevel: 85,
+          voltage: 4.1,
+          variantCase: 'deviceMetrics',
+        },
+      },
+      IDENTITY,
+    );
 
     await vi.waitFor(() => {
       expect(sendPacket).toHaveBeenCalled();

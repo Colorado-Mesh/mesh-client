@@ -1,0 +1,322 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { packetRouter } from '@/renderer/lib/drivers/PacketRouter';
+import { getIdentityNodeMap } from '@/renderer/lib/identityStoreReads';
+import type {
+  DeviceLogEntry,
+  MeshCoreConnection,
+  RxPacketEntry,
+} from '@/renderer/lib/meshcore/meshcoreHookTypes';
+import { resetMeshcoreWaitingMessagesDrainState } from '@/renderer/lib/meshcoreWaitingMessagesDrain';
+import type { DomainEvent } from '@/renderer/lib/protocols/Protocol';
+import { MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS } from '@/renderer/lib/timeConstants';
+import type { ChatMessage, DeviceState, TelemetryPoint } from '@/renderer/lib/types';
+import { useMessageStore } from '@/renderer/stores/messageStore';
+import { useNodeStore } from '@/renderer/stores/nodeStore';
+
+import { attachMeshcoreConnSideEffects } from './meshcoreConnSideEffects';
+import type { MeshcoreConnSideEffectsCtx } from './meshcoreConnSideEffectsCtx';
+import type { PendingDmAckEntry } from './meshcoreHookPreamble';
+
+const ID = 'meshcore-conn-side-effects-test';
+
+function ref<T>(current: T) {
+  return { current };
+}
+
+interface Harness {
+  ctx: MeshcoreConnSideEffectsCtx;
+  conn: MeshCoreConnection;
+  deviceLogs: DeviceLogEntry[];
+  rawPackets: RxPacketEntry[];
+  signal: TelemetryPoint[];
+  state: DeviceState;
+  cliHistory: { nodeId: number; text: string }[];
+  handleResponse: ReturnType<typeof vi.fn>;
+  teardownConn: ReturnType<typeof vi.fn>;
+  handleConnectionLost: ReturnType<typeof vi.fn>;
+  syncNextMessage: ReturnType<typeof vi.fn>;
+  pendingAcks: Map<number, PendingDmAckEntry>;
+  messages: ChatMessage[];
+}
+
+function makeHarness(overrides?: { handleResponseResult?: boolean }): Harness {
+  const deviceLogs: DeviceLogEntry[] = [];
+  const rawPackets: RxPacketEntry[] = [];
+  const signal: TelemetryPoint[] = [];
+  const cliHistory: { nodeId: number; text: string }[] = [];
+  const pendingAcks = new Map<number, PendingDmAckEntry>();
+  const messages: ChatMessage[] = [];
+  let state: DeviceState = {
+    status: 'configured',
+    myNodeNum: 1,
+    connectionType: 'ble',
+  };
+
+  const syncNextMessage = vi.fn().mockResolvedValue(null);
+  const conn = {
+    getWaitingMessages: vi.fn().mockResolvedValue([]),
+    syncNextMessage,
+    close: vi.fn().mockResolvedValue(undefined),
+  } as unknown as MeshCoreConnection;
+
+  const handleResponse = vi.fn().mockReturnValue(overrides?.handleResponseResult ?? false);
+  const teardownConn = vi.fn();
+  const handleConnectionLost = vi.fn();
+
+  const ctx: MeshcoreConnSideEffectsCtx = {
+    resolveIdentityId: () => ID,
+    meshcoreIdentityIdRef: ref<string | null>(ID),
+    meshcoreDriverConnectedRef: ref(true),
+    connRef: ref<MeshCoreConnection | null>(conn),
+    lastPacketLogAtRef: ref(0),
+    lastPacketLogPublishFailureLogAtRef: ref(0),
+    meshcoreContactsRefreshTimerRef: ref<ReturnType<typeof setTimeout> | null>(null),
+    meshcoreHookMountedRef: ref(true),
+    meshcoreSessionPathUpdatedNodeIdsRef: ref(new Set<number>()),
+    meshcoreWaitingMessagesPollRef: ref<ReturnType<typeof setInterval> | null>(null),
+    meshcoreConnectTypeRef: ref<'ble' | 'serial' | 'tcp'>('ble'),
+    mqttStatusRef: ref('disconnected' as const),
+    myNodeNumRef: ref(1),
+    nicknameMapRef: ref(new Map<number, string>()),
+    readNodes: () => getIdentityNodeMap(ID),
+    pendingAcksRef: ref(pendingAcks),
+    processWaitingMessagesRef: ref<
+      ((options?: { showSyncBanner?: boolean }) => Promise<void>) | null
+    >(null),
+    pubKeyMapRef: ref(new Map<number, Uint8Array>()),
+    pubKeyPrefixMapRef: ref(new Map<string, number>()),
+    rawPacketsRef: ref(rawPackets),
+    repeaterCommandServiceRef: ref({
+      handleResponse,
+      parseResponseToken: (text: string) => ({ token: null, body: text }),
+    } as never),
+    selfInfoRef: ref(null),
+    setDeviceLogs: (updater) => {
+      const next = typeof updater === 'function' ? updater(deviceLogs) : updater;
+      deviceLogs.splice(0, deviceLogs.length, ...next);
+    },
+    setMeshcorePingRouteReadyEpoch: vi.fn(),
+    setMessages: vi.fn(),
+    setNodes: vi.fn(),
+    setQueueStatus: vi.fn(),
+    setRawPackets: (updater) => {
+      const next = typeof updater === 'function' ? updater(rawPackets) : updater;
+      rawPackets.splice(0, rawPackets.length, ...next);
+    },
+    setSignalTelemetry: (updater) => {
+      const next = typeof updater === 'function' ? updater(signal) : updater;
+      signal.splice(0, signal.length, ...next);
+    },
+    setState: (updater) => {
+      state = typeof updater === 'function' ? updater(state) : updater;
+    },
+    setWaitingMessagesCount: vi.fn(),
+    setWaitingMessagesSyncActive: vi.fn(),
+    setWaitingMessagesSyncProgress: vi.fn(),
+    setWaitingMessagesSilentDrainActive: vi.fn(),
+    setWaitingMessagesDrainDeferred: vi.fn(),
+    addMessagesBatch: vi.fn(),
+    addCliHistoryEntry: (nodeId, entry) => {
+      cliHistory.push({ nodeId, text: entry.text });
+    },
+    teardownMeshcoreConnEventListeners: teardownConn,
+    handleConnectionLostRef: ref(handleConnectionLost),
+    meshcoreExplicitDisconnectRef: ref(false),
+  };
+
+  return {
+    ctx,
+    conn,
+    deviceLogs,
+    rawPackets,
+    signal,
+    get state() {
+      return state;
+    },
+    cliHistory,
+    handleResponse,
+    teardownConn,
+    handleConnectionLost,
+    syncNextMessage,
+    pendingAcks,
+    messages,
+  };
+}
+
+function dispatch(event: DomainEvent, identityId = ID): void {
+  packetRouter.dispatch(event, identityId);
+}
+
+describe('attachMeshcoreConnSideEffects', () => {
+  let detach: (() => void) | null = null;
+
+  beforeEach(() => {
+    resetMeshcoreWaitingMessagesDrainState(0);
+    useNodeStore.setState({ nodes: {} });
+    useMessageStore.setState({ messages: {} });
+  });
+
+  afterEach(() => {
+    detach?.();
+    detach = null;
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('routes CLI data responses to the repeater command service', () => {
+    const h = makeHarness({ handleResponseResult: true });
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    dispatch({
+      type: 'meshcore_cli_response',
+      payload: { text: 'A1|uptime 42', senderNodeId: 0x1234, pubKeyPrefixHex: 'aabbcc' },
+    });
+
+    expect(h.handleResponse).toHaveBeenCalledWith('A1|uptime 42', 0x1234);
+    expect(h.cliHistory).toHaveLength(0);
+  });
+
+  it('appends unmatched CLI responses to panel history', () => {
+    const h = makeHarness({ handleResponseResult: false });
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    dispatch({
+      type: 'meshcore_cli_response',
+      payload: { text: 'stray output', senderNodeId: 0x99, pubKeyPrefixHex: 'aabbcc' },
+    });
+
+    expect(h.cliHistory).toEqual([{ nodeId: 0x99, text: 'stray output' }]);
+  });
+
+  it('ignores events routed to a different identity', () => {
+    const h = makeHarness({ handleResponseResult: true });
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    dispatch(
+      {
+        type: 'meshcore_cli_response',
+        payload: { text: 'other', senderNodeId: 1, pubKeyPrefixHex: 'aabbcc' },
+      },
+      'some-other-identity',
+    );
+
+    expect(h.handleResponse).not.toHaveBeenCalled();
+  });
+
+  it('records RF RX into device logs, signal telemetry, and the raw packet log', () => {
+    const h = makeHarness();
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    dispatch({
+      type: 'meshcore_rf_rx',
+      payload: { lastSnr: 7.5, lastRssi: -60, raw: Uint8Array.from([0x11, 0x22, 0x33, 0x44]) },
+    });
+
+    expect(h.deviceLogs.at(-1)?.message).toContain('SNR=7.50dB RSSI=-60dBm');
+    expect(h.signal.at(-1)).toMatchObject({ snr: 7.5, rssi: -60 });
+    expect(h.rawPackets).toHaveLength(1);
+    expect(h.ctx.rawPacketsRef.current).toHaveLength(1);
+  });
+
+  it('logs RF RX without raw bytes and skips the raw packet log', () => {
+    const h = makeHarness();
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    dispatch({ type: 'meshcore_rf_rx', payload: { lastSnr: 0, lastRssi: 0, raw: null } });
+
+    expect(h.deviceLogs).toHaveLength(1);
+    expect(h.rawPackets).toHaveLength(0);
+  });
+
+  it('resolves a pending DM ack and persists the new status', () => {
+    const h = makeHarness();
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+    const timeoutId = setTimeout(() => {}, 60_000);
+    h.pendingAcks.set(0x80, {
+      timeoutId,
+      mapKeys: [0x80],
+      canonicalPacketIdU32: 0x80,
+    });
+
+    dispatch({ type: 'meshcore_dm_ack', payload: { ackCode: 0x80 } });
+
+    expect(h.pendingAcks.size).toBe(0);
+    expect(window.electronAPI.db.updateMeshcoreMessageStatus).toHaveBeenCalledWith(0x80, 'acked');
+    clearTimeout(timeoutId);
+  });
+
+  it('resolves a late DM ack against messageStore rows instead of a runtime mirror', () => {
+    const h = makeHarness();
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+    useMessageStore.setState({
+      messages: {
+        [ID]: {
+          '128': {
+            id: '128',
+            from: 1,
+            to: 42,
+            payload: 'late dm',
+            channelIndex: -1,
+            timestamp: 1_700_000_000_000,
+            status: 'sending',
+          },
+        },
+      },
+    });
+
+    dispatch({ type: 'meshcore_dm_ack', payload: { ackCode: 0x80 } });
+
+    expect(h.ctx.setMessages).toHaveBeenCalled();
+    expect(window.electronAPI.db.updateMeshcoreMessageStatus).toHaveBeenCalledWith(0x80, 'acked');
+  });
+
+  it('marks a NACK ack code as failed', () => {
+    const h = makeHarness();
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    dispatch({ type: 'meshcore_dm_ack', payload: { ackCode: 0x81 } });
+
+    expect(window.electronAPI.db.updateMeshcoreMessageStatus).toHaveBeenCalledWith(0x81, 'failed');
+  });
+
+  it('schedules a silent drain on the message-waiting signal', async () => {
+    vi.useFakeTimers();
+    const h = makeHarness();
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+    expect(h.ctx.processWaitingMessagesRef.current).toBeTypeOf('function');
+
+    dispatch({ type: 'meshcore_waiting_messages', payload: {} });
+    await vi.advanceTimersByTimeAsync(MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS + 50);
+
+    expect(h.syncNextMessage).toHaveBeenCalled();
+    expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
+  });
+
+  it('tears down the session and requests reconnect on disconnect', async () => {
+    const h = makeHarness();
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    dispatch({ type: 'device_status', payload: { status: 'disconnected' } });
+
+    expect(h.state.status).toBe('disconnected');
+    expect(h.teardownConn).toHaveBeenCalledWith({ driverDisconnect: true });
+    expect(h.ctx.connRef.current).toBeNull();
+    await Promise.resolve();
+    expect(h.handleConnectionLost).toHaveBeenCalled();
+  });
+
+  it('stops handling events after detach', () => {
+    const h = makeHarness({ handleResponseResult: true });
+    const stop = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+    stop();
+
+    dispatch({
+      type: 'meshcore_cli_response',
+      payload: { text: 'after detach', senderNodeId: 5, pubKeyPrefixHex: 'aabbcc' },
+    });
+
+    expect(h.handleResponse).not.toHaveBeenCalled();
+    expect(h.ctx.processWaitingMessagesRef.current).toBeNull();
+  });
+});

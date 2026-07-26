@@ -2,7 +2,7 @@ import type { MeshDevice } from '@meshtastic/core';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { ConnectionType, DeviceState } from '../types';
-import { attachMeshtasticLegacyWireSubscriptions } from './meshtasticLegacyWireSubscriptions';
+import { attachMeshtasticRuntimeWireEffects } from './meshtasticRuntimeWireEffects';
 
 function makeDeps() {
   const touchLastData = vi.fn();
@@ -56,10 +56,8 @@ function makeDeps() {
     meshtasticIdentityIdRef: { current: 'id-1' },
     meshtasticIngestSessionRef,
     meshtasticIngressDetachRef: { current: null },
-    messagesRef: { current: [] },
     mqttStatusRef: { current: 'disconnected' as const },
     myNodeNumRef: { current: 0 },
-    nodesRef: { current: new Map() },
     pendingTempIdRef: { current: undefined },
     ackMeshPacketIdByTempIdRef: { current: new Map() },
     pendingTracePacketIdToTargetRef: noopMapRef,
@@ -141,7 +139,7 @@ function makeDeps() {
   };
 }
 
-describe('meshtasticLegacyWireSubscriptions DeviceRestarting', () => {
+describe('meshtasticRuntimeWireEffects DeviceRestarting', () => {
   it('skips touchLastData and schedules post-reboot recovery on status 1', () => {
     const {
       deps,
@@ -171,7 +169,7 @@ describe('meshtasticLegacyWireSubscriptions DeviceRestarting', () => {
       setHeartbeatInterval: vi.fn(),
     } as unknown as MeshDevice;
 
-    attachMeshtasticLegacyWireSubscriptions(device, 'ble', { driverIdentityId: 'id-1' }, deps);
+    attachMeshtasticRuntimeWireEffects(device, 'ble', { driverIdentityId: 'id-1' }, deps);
 
     for (const cb of statusSubscribers) cb(1);
 
@@ -208,7 +206,7 @@ describe('meshtasticLegacyWireSubscriptions DeviceRestarting', () => {
       setHeartbeatInterval: vi.fn(),
     } as unknown as MeshDevice;
 
-    attachMeshtasticLegacyWireSubscriptions(device, 'ble', { driverIdentityId: 'id-1' }, deps);
+    attachMeshtasticRuntimeWireEffects(device, 'ble', { driverIdentityId: 'id-1' }, deps);
 
     for (const cb of statusSubscribers) cb(7);
 

@@ -683,7 +683,7 @@ Meshtastic short/full header rules (unchanged):
 
 #### Connected-node telemetry ingest (Meshtastic)
 
-`meshtasticLegacyWireSubscriptions` calls `processNodeUpdate` on **LocalStats** telemetry and on RF mesh packets that update `hops_away`/SNR so `cuHistory`, hop history, and incremental RF analysis stay live (previously only device-metrics / NodeInfo paths fed the store).
+`meshtasticRuntimeWireEffects` calls `processNodeUpdate` on **LocalStats** telemetry and on RF mesh packets that update `hops_away`/SNR so `cuHistory`, hop history, and incremental RF analysis stay live (previously only device-metrics / NodeInfo paths fed the store).
 
 #### Proximity classification (`classifyProximity()`)
 

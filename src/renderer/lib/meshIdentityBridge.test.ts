@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getIdentity } from '../stores/identityStore';
 import { addMessage } from '../stores/messageStore';
 import { connectionDriver } from './drivers/ConnectionDriver';
-import { bindMeshtasticIngress, meshtasticTransportParams } from './meshIdentityBridge';
+import { attachMeshtasticProtocolIngress, meshtasticTransportParams } from './meshIdentityBridge';
 import { meshtasticProtocol } from './protocols/MeshtasticProtocol';
 
 function mockMeshDevice(): MeshDevice {
@@ -20,7 +20,7 @@ describe('meshIdentityBridge', () => {
     const peripheralId = `ble-${Date.now()}`;
     const device = mockMeshDevice();
 
-    const first = bindMeshtasticIngress(device, 'ble', { peripheralId });
+    const first = attachMeshtasticProtocolIngress(device, 'ble', { peripheralId });
     addMessage(first.identityId, {
       id: 'msg-1',
       from: 1,
@@ -37,7 +37,7 @@ describe('meshIdentityBridge', () => {
     );
     first.detach();
 
-    const second = bindMeshtasticIngress(device, 'ble', { peripheralId });
+    const second = attachMeshtasticProtocolIngress(device, 'ble', { peripheralId });
     expect(second.identityId).toBe(first.identityId);
     expect(getIdentity(second.identityId)?.signature).toBe('meshtastic:node:424242');
     second.detach();

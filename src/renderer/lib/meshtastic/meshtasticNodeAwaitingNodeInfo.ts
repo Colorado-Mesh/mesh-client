@@ -4,7 +4,7 @@ import { MS_PER_MINUTE } from '@/shared/timeConstants';
 import { effectiveLastHeardMs } from '../nodeStatus';
 import type { MeshNode } from '../types';
 
-/** Match legacy NODEINFO debounce window in meshtasticLegacyWireSubscriptions. */
+/** Match the NODEINFO request debounce window in meshtasticRuntimeWireEffects. */
 export const MESHTASTIC_NODEINFO_AWAIT_MS = 5 * MS_PER_MINUTE;
 
 /**

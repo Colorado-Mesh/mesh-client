@@ -40,6 +40,9 @@ const EVENT_DIRECT_MESSAGE = 7;
 const EVENT_CHANNEL_MESSAGE = 8;
 const EVENT_NEW_CONTACT = 138;
 const EVENT_PATH_UPDATED = 129;
+const EVENT_DM_ACK = 130;
+const EVENT_WAITING_MESSAGES = 131;
+const EVENT_RF_RX = 136;
 const EVENT_RX = 'rx';
 const EVENT_DISCONNECTED = 'disconnected';
 
@@ -207,6 +210,15 @@ export class MeshCoreProtocol implements Protocol {
     const onRx = (data: unknown) => {
       this.decodeRx(data).forEach(emit);
     };
+    const onDmAck = (data: unknown) => {
+      this.decodeDmAck(data).forEach(emit);
+    };
+    const onWaitingMessages = () => {
+      emit({ type: 'meshcore_waiting_messages', payload: {} });
+    };
+    const onRfRx = (data: unknown) => {
+      this.decodeRfRx(data).forEach(emit);
+    };
     const onDisconnected = () => {
       emit({ type: 'device_status', payload: { status: 'disconnected' } });
     };
@@ -216,6 +228,9 @@ export class MeshCoreProtocol implements Protocol {
     bus.on(EVENT_CHANNEL_MESSAGE, onChannel);
     bus.on(EVENT_NEW_CONTACT, onContact);
     bus.on(EVENT_PATH_UPDATED, onPathUpdated);
+    bus.on(EVENT_DM_ACK, onDmAck);
+    bus.on(EVENT_WAITING_MESSAGES, onWaitingMessages);
+    bus.on(EVENT_RF_RX, onRfRx);
     bus.on(EVENT_RX, onRx);
     bus.on(EVENT_DISCONNECTED, onDisconnected);
 
@@ -225,6 +240,9 @@ export class MeshCoreProtocol implements Protocol {
       bus.off(EVENT_CHANNEL_MESSAGE, onChannel);
       bus.off(EVENT_NEW_CONTACT, onContact);
       bus.off(EVENT_PATH_UPDATED, onPathUpdated);
+      bus.off(EVENT_DM_ACK, onDmAck);
+      bus.off(EVENT_WAITING_MESSAGES, onWaitingMessages);
+      bus.off(EVENT_RF_RX, onRfRx);
       bus.off(EVENT_RX, onRx);
       bus.off(EVENT_DISCONNECTED, onDisconnected);
       pubKeyByNodeId.clear();
@@ -521,7 +539,7 @@ export class MeshCoreProtocol implements Protocol {
     return events;
   }
 
-  /** MeshCore hop ACK / path-hash summaries — device log only, not chat (see legacy event 7/8). */
+  /** MeshCore hop ACK / path-hash summaries — device log only, not chat. */
   private decodeTransportStatusChatLine(text: string): DomainEvent[] {
     const line = text.length > 220 ? `${text.slice(0, 220)}…` : text;
     return [
@@ -597,6 +615,37 @@ export class MeshCoreProtocol implements Protocol {
       pubKeyByNodeId,
       nodeIdByPrefix,
     );
+  }
+
+  private decodeDmAck(raw: unknown): DomainEvent[] {
+    const d = raw as { ackCode?: number; roundTrip?: number };
+    if (typeof d.ackCode !== 'number' || !Number.isFinite(d.ackCode)) {
+      console.warn('[MeshCoreProtocol] event 130: non-numeric ackCode', d.ackCode);
+      return [];
+    }
+    return [
+      {
+        type: 'meshcore_dm_ack',
+        payload: {
+          ackCode: d.ackCode,
+          ...(typeof d.roundTrip === 'number' ? { roundTrip: d.roundTrip } : {}),
+        },
+      },
+    ];
+  }
+
+  private decodeRfRx(raw: unknown): DomainEvent[] {
+    const d = raw as { lastSnr?: number; lastRssi?: number; raw?: unknown };
+    return [
+      {
+        type: 'meshcore_rf_rx',
+        payload: {
+          lastSnr: d.lastSnr ?? 0,
+          lastRssi: d.lastRssi ?? 0,
+          raw: d.raw instanceof Uint8Array && d.raw.length > 0 ? d.raw : null,
+        },
+      },
+    ];
   }
 
   private decodeRx(raw: unknown): DomainEvent[] {

@@ -76,7 +76,7 @@ function resolveOrCreateIdentity(
   return identityId;
 }
 
-export interface MeshtasticIngressBind {
+export interface MeshtasticProtocolIngressAttach {
   identityId: IdentityId;
   detach: () => void;
 }
@@ -107,12 +107,12 @@ export function meshtasticTransportParams(
  * Registers a Meshtastic identity, wires protocol ingress into PacketRouter,
  * and exposes the SDK handle to ConnectionDriver action hooks.
  */
-export function bindMeshtasticIngress(
+export function attachMeshtasticProtocolIngress(
   device: MeshDevice,
   type: ConnectionType,
   opts: { peripheralId?: string; portSignature?: string; host?: string },
   discovery?: DiscoveryInfo,
-): MeshtasticIngressBind {
+): MeshtasticProtocolIngressAttach {
   const params = meshtasticTransportParams(type, opts);
   const identityId = resolveOrCreateIdentity(meshtasticProtocol, params, discovery);
   if (discovery?.myNodeNum != null && discovery.myNodeNum > 0) {
@@ -134,7 +134,7 @@ export function bindMeshtasticIngress(
       );
     }
   });
-  const detachDriver = connectionDriver.registerLegacyTransport(
+  const detachDriver = connectionDriver.registerExternalTransport(
     identityId,
     meshtasticProtocol,
     device,
@@ -158,7 +158,7 @@ export function finalizeMeshcoreDriverIdentity(
   connectionDriver.registerTransportKeys(identityId, provisionalKey, resolvedKey);
 }
 
-export interface MeshcoreIngressBind {
+export interface MeshcoreProtocolIngressAttach {
   identityId: IdentityId;
   detach: () => void;
 }
@@ -181,12 +181,12 @@ export function meshcoreTransportParams(
   }
 }
 
-export function bindMeshcoreIngress(
+export function attachMeshcoreProtocolIngress(
   conn: Connection,
   type: 'ble' | 'serial' | 'tcp',
   opts: { peripheralId?: string; portSignature?: string; host?: string },
   discovery?: DiscoveryInfo,
-): MeshcoreIngressBind {
+): MeshcoreProtocolIngressAttach {
   const params = meshcoreTransportParams(type, opts);
   const identityId = resolveOrCreateIdentity(meshcoreProtocol, params, discovery);
   const connectionType = type === 'tcp' ? 'http' : type;
@@ -203,7 +203,7 @@ export function bindMeshcoreIngress(
       );
     }
   });
-  const detachDriver = connectionDriver.registerLegacyTransport(
+  const detachDriver = connectionDriver.registerExternalTransport(
     identityId,
     meshcoreProtocol,
     conn,

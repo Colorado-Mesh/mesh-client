@@ -14,23 +14,15 @@ function mockMeshDevice() {
   });
   return {
     device: {
-      events: {
-        onDeviceStatus: subscribe('onDeviceStatus'),
-        onMeshPacket: subscribe('onMeshPacket'),
-        onNodeInfoPacket: subscribe('onNodeInfoPacket'),
-        onPositionPacket: subscribe('onPositionPacket'),
-        onTelemetryPacket: subscribe('onTelemetryPacket'),
-        onWaypointPacket: subscribe('onWaypointPacket'),
-        onTraceRoutePacket: subscribe('onTraceRoutePacket'),
-        onChannelPacket: subscribe('onChannelPacket'),
-        onConfigPacket: subscribe('onConfigPacket'),
-        onModuleConfigPacket: subscribe('onModuleConfigPacket'),
-        onQueueStatus: subscribe('onQueueStatus'),
-        onLogRecord: subscribe('onLogRecord'),
-        onDeviceMetadataPacket: subscribe('onDeviceMetadataPacket'),
-        onNeighborInfoPacket: subscribe('onNeighborInfoPacket'),
-        onMyNodeInfo: subscribe('onMyNodeInfo'),
-      },
+      events: new Proxy(
+        {},
+        {
+          get: (_target, prop) => {
+            if (typeof prop !== 'string') return undefined;
+            return subscribe(prop);
+          },
+        },
+      ),
     },
     emit: (name: string, payload: unknown) => subs.get(name)?.(payload),
   };

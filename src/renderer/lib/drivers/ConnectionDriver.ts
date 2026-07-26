@@ -253,11 +253,11 @@ export class ConnectionDriver {
   }
 
   /**
-   * Attach a transport opened by legacy hooks (`useMeshtasticRuntime` / `useMeshcoreRuntime`) so
-   * action hooks can resolve the live SDK handle. Caller supplies teardown from
-   * `protocol.subscribe` (ingress is already wired before this call).
+   * Attach a transport opened outside {@link ConnectionDriver.connect} so action hooks can
+   * resolve the live SDK handle. Caller supplies teardown from `protocol.subscribe`
+   * (ingress is already wired before this call).
    */
-  registerLegacyTransport(
+  registerExternalTransport(
     identityId: IdentityId,
     protocol: Protocol,
     handle: unknown,
@@ -289,7 +289,7 @@ export class ConnectionDriver {
       try {
         teardown();
       } catch (e) {
-        console.debug('[ConnectionDriver] legacy teardown error ' + errLikeToLogString(e));
+        console.debug('[ConnectionDriver] external teardown error ' + errLikeToLogString(e));
       }
       this.slots.delete(transportId);
       removeTransport(identityId, transportId);

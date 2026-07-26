@@ -8,7 +8,7 @@ import { extractUseCallbackBody } from '../lib/sourceContractTestHelpers';
 
 const RUNTIME_SOURCE = readFileSync(join(__dirname, '../runtime/useMeshcoreRuntime.ts'), 'utf-8');
 const CONN_EVENTS_SOURCE = readFileSync(
-  join(__dirname, '../hooks/meshcore/meshcoreLegacyConnEvents.ts'),
+  join(__dirname, '../hooks/meshcore/meshcoreConnSideEffects.ts'),
   'utf-8',
 );
 
@@ -209,10 +209,11 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
   });
 });
 
-describe('meshcoreLegacyConnEvents disconnected handler (regression)', () => {
+describe('meshcoreConnSideEffects disconnected handler (regression)', () => {
   it('triggers handleConnectionLost when an operational session drops', () => {
+    expect(CONN_EVENTS_SOURCE).toMatch(/case 'device_status':[\s\S]{0,400}handleDisconnected\(\)/);
     expect(CONN_EVENTS_SOURCE).toMatch(
-      /onMeshcoreConn\('disconnected'[\s\S]{0,2000}handleConnectionLostRef\.current\(\)/,
+      /handleDisconnected[\s\S]{0,2000}handleConnectionLostRef\.current\(\)/,
     );
   });
 

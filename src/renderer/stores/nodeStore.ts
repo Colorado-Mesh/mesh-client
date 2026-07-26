@@ -84,6 +84,8 @@ export interface NodeRecord {
   neighbors?: MeshNeighbor[];
   meshcoreLocalStats?: MeshCoreLocalStats;
   publicKey?: Uint8Array;
+  /** Meshtastic PKC public key hex from NodeInfo/User (remote admin destination key). */
+  publicKeyHex?: string;
   // MeshCore per-node op state (results of on-demand requests for repeaters /
   // remote nodes). Optional fields; non-MeshCore nodes leave them undefined.
   meshcoreNodeStatus?: StatusResult;

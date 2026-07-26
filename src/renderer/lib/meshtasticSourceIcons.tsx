@@ -21,6 +21,15 @@ export interface ResolveMeshtasticPathBadgeInput {
   radioConnected?: boolean;
 }
 
+/** Self-node session shortcut: radio + MQTT both up (list/detail hybrid tooltip). */
+export function isMeshtasticSelfHybridPath(
+  isSelf: boolean,
+  mqttConnected: boolean,
+  radioConnected: boolean,
+): boolean {
+  return isSelf && mqttConnected && radioConnected;
+}
+
 /** Resolves RF/MQTT path badge for list column and node detail (Meshtastic only). */
 export function resolveMeshtasticPathBadge({
   node,
@@ -29,7 +38,7 @@ export function resolveMeshtasticPathBadge({
   radioConnected = false,
 }: ResolveMeshtasticPathBadgeInput): MeshtasticPathBadgeKind {
   if (node.heard_via_mqtt_only) return 'mqttOnly';
-  if (isSelf && mqttConnected && radioConnected) return 'hybrid';
+  if (isMeshtasticSelfHybridPath(isSelf, mqttConnected, radioConnected)) return 'hybrid';
   if (isSelf && mqttConnected) return 'mqttOnly';
   if (meshtasticNodeShowsHybridMqttPath(node)) return 'hybrid';
   if (isSelf && radioConnected) return 'rfOnly';

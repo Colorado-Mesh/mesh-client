@@ -1,12 +1,10 @@
 import { packetRouter } from '@/renderer/lib/drivers/PacketRouter';
 import {
-  buildMeshcoreRoomIncomingMessage,
   parseMeshcoreChannelIncomingFromThread,
   parseMeshcoreDmIncomingFromThread,
   resolveMeshcoreChannelMessageSender,
 } from '@/renderer/lib/meshcoreChannelText';
 import { dispatchMeshcoreWaitingContactMessage } from '@/renderer/lib/meshcoreDirectMessageDecode';
-import { meshcoreRoomPostBodyFromWire } from '@/renderer/lib/meshcoreRoomMessageRouting';
 import { setMeshcoreRoomLastPostAt } from '@/renderer/lib/meshcoreRoomSyncStorage';
 import {
   isMeshcoreTransportStatusChatLine,
@@ -30,7 +28,6 @@ export interface ProcessWaitingMessageItemDeps {
   pubKeyPrefixMap: Map<string, number>;
   myNodeNum: number;
   meshcoreIdentityId: string | null;
-  legacyOwnsRoomPosts: () => boolean;
   storePriorForBatch: () => ChatMessage[];
   logTransportLineAsDevice: (text: string) => void;
 }
@@ -51,7 +48,7 @@ export function processMeshcoreWaitingMessageItem(
     const senderId = deps.pubKeyPrefixMap.get(prefix) ?? 0;
     if (senderId === 0) {
       console.warn(
-        '[useMeshcoreRuntime] event 131: unknown pubKeyPrefix in queued DM, sender will be 0',
+        '[meshcoreProcessWaitingMessageItem] unknown pubKeyPrefix in queued DM, sender will be 0',
         prefix,
       );
     }
@@ -69,60 +66,36 @@ export function processMeshcoreWaitingMessageItem(
     if (isMeshcoreTransportStatusChatLine(d.text)) {
       deps.logTransportLineAsDevice(d.text);
     } else if (sender?.hw_model === 'Room') {
+      // Room posts route through PacketRouter → meshcoreIngest, matching live event-7 posts.
       const postTs = effectiveMessageTimestampMs(d.senderTimestamp * 1000);
-      if (!deps.legacyOwnsRoomPosts()) {
-        const identityId = deps.meshcoreIdentityId;
-        if (identityId) {
-          const roomNodeIds = new Set<number>();
-          for (const [nodeId, node] of deps.workingNodes) {
-            if (node.hw_model === 'Room') roomNodeIds.add(nodeId);
-          }
-          dispatchMeshcoreWaitingContactMessage(
-            identityId,
-            {
-              pubKeyPrefix: d.pubKeyPrefix,
-              text: d.text,
-              senderTimestamp: d.senderTimestamp,
-              ...(d.txtType != null ? { txtType: d.txtType } : {}),
-              ...(d.pathLen != null ? { pathLen: d.pathLen } : {}),
-            },
-            deps.pubKeyPrefixMap,
-            roomNodeIds,
-            (event, id) => {
-              packetRouter.dispatch(event, id);
-            },
-            deps.logTransportLineAsDevice,
-          );
-          roomDispatched = true;
-          void setMeshcoreRoomLastPostAt(senderId, postTs);
-        } else {
-          console.warn(
-            '[useMeshcoreRuntime] event 131: room post skipped (no identityId)',
-            senderId,
-          );
+      const identityId = deps.meshcoreIdentityId;
+      if (identityId) {
+        const roomNodeIds = new Set<number>();
+        for (const [nodeId, node] of deps.workingNodes) {
+          if (node.hw_model === 'Room') roomNodeIds.add(nodeId);
         }
-      } else {
-        const { authorId, payload } = meshcoreRoomPostBodyFromWire(
-          d.text,
-          d.txtType,
+        dispatchMeshcoreWaitingContactMessage(
+          identityId,
+          {
+            pubKeyPrefix: d.pubKeyPrefix,
+            text: d.text,
+            senderTimestamp: d.senderTimestamp,
+            ...(d.txtType != null ? { txtType: d.txtType } : {}),
+            ...(d.pathLen != null ? { pathLen: d.pathLen } : {}),
+          },
           deps.pubKeyPrefixMap,
-          { isKnownRoomNode: true },
+          roomNodeIds,
+          (event, id) => {
+            packetRouter.dispatch(event, id);
+          },
+          deps.logTransportLineAsDevice,
         );
-        const authorNode = authorId !== 0 ? deps.workingNodes.get(authorId) : undefined;
-        const authorName =
-          authorNode?.long_name ??
-          (authorId !== 0 ? `Node-${authorId.toString(16).toUpperCase()}` : 'Unknown');
-        const roomRxHops = meshcoreCompanionRxPathLenToHopCount(d.pathLen);
-        pendingMessages.push(
-          buildMeshcoreRoomIncomingMessage({
-            rawText: payload,
-            roomServerId: senderId,
-            authorId: authorId !== 0 ? authorId : deps.myNodeNum || 0,
-            authorName,
-            timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
-            receivedVia: 'rf',
-            ...(roomRxHops != null ? { rxHops: roomRxHops } : {}),
-          }),
+        roomDispatched = true;
+        void setMeshcoreRoomLastPostAt(senderId, postTs);
+      } else {
+        console.warn(
+          '[meshcoreProcessWaitingMessageItem] room post skipped (no identityId)',
+          senderId,
         );
       }
     } else {

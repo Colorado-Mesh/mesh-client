@@ -1,4 +1,4 @@
-import { create, toBinary } from '@bufbuild/protobuf';
+import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import { type MeshDevice, Types } from '@meshtastic/core';
 import { Admin, Channel as ProtobufChannel, Mesh, Portnums } from '@meshtastic/protobufs';
 
@@ -195,6 +195,109 @@ export class MeshtasticProtocol implements Protocol {
         if (info.myNodeNum > 0) {
           emit({ type: 'node_info', payload: { nodeId: info.myNodeNum } });
         }
+      }),
+    );
+    push(
+      device.events.onUserPacket.subscribe((p) => {
+        fire(this.decodeUserPacket(p));
+      }),
+    );
+    push(
+      device.events.onStoreForwardPacket.subscribe((p) => {
+        const packet = p as { from?: number; channel?: number };
+        emit({
+          type: 'meshtastic_store_forward',
+          payload: {
+            from: packet.from ?? 0,
+            channel: packet.channel ?? 0,
+            raw: p,
+            timestamp: Date.now(),
+          },
+        });
+      }),
+    );
+
+    const emitModulePort = (portLabel: string, packet: unknown) => {
+      const p = packet as { from?: number; channel?: number; data?: unknown };
+      emit({
+        type: 'meshtastic_module_port',
+        payload: {
+          portLabel,
+          from: p.from ?? 0,
+          data: p.data ?? packet,
+          channel: p.channel,
+          timestamp: Date.now(),
+        },
+      });
+    };
+    push(
+      device.events.onRemoteHardwarePacket.subscribe((p) => {
+        emitModulePort('remoteHardware', p);
+      }),
+    );
+    push(
+      device.events.onAudioPacket.subscribe((p) => {
+        emitModulePort('audio', p);
+      }),
+    );
+    push(
+      device.events.onDetectionSensorPacket.subscribe((p) => {
+        emitModulePort('detectionSensor', p);
+      }),
+    );
+    push(
+      device.events.onPingPacket.subscribe((p) => {
+        emitModulePort('ping', p);
+      }),
+    );
+    push(
+      device.events.onIpTunnelPacket.subscribe((p) => {
+        emitModulePort('ipTunnel', p);
+      }),
+    );
+    push(
+      device.events.onPaxcounterPacket.subscribe((p) => {
+        emitModulePort('paxcounter', p);
+      }),
+    );
+    push(
+      device.events.onSerialPacket.subscribe((p) => {
+        emitModulePort('serial', p);
+      }),
+    );
+    push(
+      device.events.onRangeTestPacket.subscribe((p) => {
+        emitModulePort('rangeTest', p);
+      }),
+    );
+    push(
+      device.events.onZpsPacket.subscribe((p) => {
+        emitModulePort('zps', p);
+      }),
+    );
+    push(
+      device.events.onSimulatorPacket.subscribe((p) => {
+        emitModulePort('simulator', p);
+      }),
+    );
+    push(
+      device.events.onAtakPluginPacket.subscribe((p) => {
+        emitModulePort('atakPlugin', p);
+      }),
+    );
+    push(
+      device.events.onMapReportPacket.subscribe((p) => {
+        emitModulePort('mapReport', p);
+      }),
+    );
+    push(
+      device.events.onPrivatePacket.subscribe((p) => {
+        emitModulePort('private', p);
+      }),
+    );
+    push(
+      device.events.onAtakForwarderPacket.subscribe((p) => {
+        emitModulePort('atakForwarder', p);
       }),
     );
 
@@ -464,11 +567,60 @@ export class MeshtasticProtocol implements Protocol {
     ];
   }
 
+  private decodeUserPacket(raw: unknown): DomainEvent[] {
+    const p = raw as {
+      from: number;
+      rxTime?: number;
+      data?: {
+        longName?: string;
+        shortName?: string;
+        hwModel?: number;
+        role?: number;
+        publicKey?: Uint8Array;
+        isLicensed?: boolean;
+      };
+    };
+    if (!p.from) return [];
+    const user = p.data ?? {};
+    return [
+      {
+        type: 'node_info',
+        payload: {
+          nodeId: p.from,
+          longName: user.longName,
+          shortName: user.shortName,
+          hwModel: user.hwModel != null ? meshtasticHwModelName(user.hwModel) : undefined,
+          role: user.role,
+          publicKey: user.publicKey,
+          isLicensed: user.isLicensed,
+          lastHeardAt: p.rxTime ? p.rxTime * 1000 : Date.now(),
+          fromUserPacket: true,
+        },
+      },
+    ];
+  }
+
   private decodeNodeInfo(raw: unknown): DomainEvent[] {
     const p = raw as {
       num?: number;
-      user?: { longName?: string; shortName?: string; hwModel?: number; role?: number };
+      user?: {
+        longName?: string;
+        shortName?: string;
+        hwModel?: number;
+        role?: number;
+        publicKey?: Uint8Array;
+      };
       lastHeard?: number;
+      snr?: number;
+      hopsAway?: number;
+      viaMqtt?: boolean;
+      position?: { latitudeI?: number; longitudeI?: number; altitude?: number };
+      deviceMetrics?: {
+        batteryLevel?: number;
+        voltage?: number;
+        channelUtilization?: number;
+        airUtilTx?: number;
+      };
     };
     if (!p.num) return [];
     return [
@@ -480,7 +632,18 @@ export class MeshtasticProtocol implements Protocol {
           shortName: p.user?.shortName,
           hwModel: p.user?.hwModel != null ? meshtasticHwModelName(p.user.hwModel) : undefined,
           role: p.user?.role,
+          publicKey: p.user?.publicKey,
           lastHeardAt: p.lastHeard,
+          snr: p.snr,
+          hopsAway: p.hopsAway,
+          viaMqtt: p.viaMqtt,
+          latitude: p.position?.latitudeI != null ? p.position.latitudeI / 1e7 : undefined,
+          longitude: p.position?.longitudeI != null ? p.position.longitudeI / 1e7 : undefined,
+          altitude: p.position?.altitude,
+          batteryLevel: p.deviceMetrics?.batteryLevel,
+          voltage: p.deviceMetrics?.voltage,
+          channelUtilization: p.deviceMetrics?.channelUtilization,
+          airUtilTx: p.deviceMetrics?.airUtilTx,
         },
       },
     ];
@@ -511,25 +674,41 @@ export class MeshtasticProtocol implements Protocol {
       from: number;
       rxTime?: number;
       data: {
-        variant?: { value?: Record<string, unknown> };
+        variant?: { case?: string; value?: Record<string, unknown> };
         deviceMetrics?: Record<string, unknown>;
       };
     };
     const m: Record<string, unknown> = p.data?.variant?.value ?? p.data?.deviceMetrics ?? {};
+    const num = (key: string): number | undefined => m[key] as number | undefined;
     return [
       {
         type: 'telemetry',
         payload: {
           nodeId: p.from,
           timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
-          batteryLevel: m.batteryLevel as number | undefined,
-          voltage: m.voltage as number | undefined,
-          channelUtilization: m.channelUtilization as number | undefined,
-          airUtilTx: m.airUtilTx as number | undefined,
-          temperature: m.temperature as number | undefined,
-          relativeHumidity: m.relativeHumidity as number | undefined,
-          barometricPressure: m.barometricPressure as number | undefined,
-          iaq: m.iaq as number | undefined,
+          variantCase:
+            p.data?.variant?.case ?? (p.data?.deviceMetrics ? 'deviceMetrics' : undefined),
+          batteryLevel: num('batteryLevel'),
+          voltage: num('voltage'),
+          channelUtilization: num('channelUtilization'),
+          airUtilTx: num('airUtilTx'),
+          temperature: num('temperature'),
+          relativeHumidity: num('relativeHumidity'),
+          barometricPressure: num('barometricPressure'),
+          iaq: num('iaq'),
+          gasResistance: num('gasResistance'),
+          lux: num('lux'),
+          windSpeed: num('windSpeed'),
+          windDirection: num('windDirection'),
+          windGust: num('windGust'),
+          windLull: num('windLull'),
+          weight: num('weight'),
+          rainfall1h: num('rainfall1h'),
+          rainfall24h: num('rainfall24h'),
+          numPacketsRxBad: num('numPacketsRxBad'),
+          numRxDupe: num('numRxDupe'),
+          numPacketsRx: num('numPacketsRx'),
+          numPacketsTx: num('numPacketsTx'),
         },
       },
     ];
@@ -538,6 +717,8 @@ export class MeshtasticProtocol implements Protocol {
   private decodeWaypoint(raw: unknown): DomainEvent[] {
     const p = raw as {
       from: number;
+      to?: number;
+      channel?: number;
       rxTime?: number;
       data: {
         id?: number;
@@ -545,11 +726,14 @@ export class MeshtasticProtocol implements Protocol {
         latitudeI?: number;
         longitudeI?: number;
         description?: string;
+        icon?: number;
         lockedTo?: number;
         expire?: number;
       };
     };
     if (!p.data?.id) return [];
+    const latitudeI = p.data.latitudeI ?? 0;
+    const longitudeI = p.data.longitudeI ?? 0;
     return [
       {
         type: 'waypoint',
@@ -557,11 +741,16 @@ export class MeshtasticProtocol implements Protocol {
           id: p.data.id,
           name: p.data.name ?? '',
           description: p.data.description,
-          latitude: (p.data.latitudeI ?? 0) / 1e7,
-          longitude: (p.data.longitudeI ?? 0) / 1e7,
+          latitude: latitudeI / 1e7,
+          longitude: longitudeI / 1e7,
+          latitudeI,
+          longitudeI,
+          icon: p.data.icon,
           lockedTo: p.data.lockedTo,
           expire: p.data.expire,
           from: p.from,
+          to: p.to,
+          channelIndex: p.channel,
           timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
         },
       },
@@ -573,17 +762,72 @@ export class MeshtasticProtocol implements Protocol {
       from: number;
       to?: number;
       rxTime?: number;
-      data: { route?: readonly number[]; routeBack?: readonly number[] };
+      data?: { route?: readonly number[]; routeBack?: readonly number[] };
+      payloadVariant?: {
+        case?: string;
+        value?: {
+          portnum?: number;
+          payload?: Uint8Array;
+          dest?: number;
+          source?: number;
+          replyId?: number;
+          requestId?: number;
+        };
+      };
     };
+
+    let route: number[];
+    let routeBack: number[] | undefined;
+    let dataLayerDest: number | undefined;
+    let dataLayerSource: number | undefined;
+    let replyId: number | undefined;
+    let requestId: number | undefined;
+
+    if (p.payloadVariant?.case === 'decoded' && p.payloadVariant.value?.payload) {
+      try {
+        const rd = fromBinary(
+          Mesh.RouteDiscoverySchema,
+          p.payloadVariant.value.payload,
+        ) as unknown as {
+          route: readonly number[];
+          routeBack: readonly number[];
+        };
+        route = Array.from(rd.route ?? []);
+        routeBack = rd.routeBack ? Array.from(rd.routeBack) : undefined;
+      } catch {
+        // catch-no-log-ok non-traceroute payload on TRACEROUTE_APP
+        return [];
+      }
+      const dp = p.payloadVariant.value;
+      const rawDest = dp.dest;
+      dataLayerDest = typeof rawDest === 'number' && Number.isFinite(rawDest) ? rawDest : undefined;
+      const rawSource = dp.source;
+      dataLayerSource =
+        typeof rawSource === 'number' && Number.isFinite(rawSource) ? rawSource : undefined;
+      const rawReply = dp.replyId;
+      replyId = typeof rawReply === 'number' && Number.isFinite(rawReply) ? rawReply : undefined;
+      const rawReq = dp.requestId;
+      requestId = typeof rawReq === 'number' && Number.isFinite(rawReq) ? rawReq : undefined;
+    } else if (p.data) {
+      route = Array.from(p.data.route ?? []);
+      routeBack = p.data.routeBack ? Array.from(p.data.routeBack) : undefined;
+    } else {
+      return [];
+    }
+
     return [
       {
         type: 'trace_route',
         payload: {
           from: p.from,
-          to: p.to ?? 0,
-          route: Array.from(p.data?.route ?? []),
-          routeBack: p.data?.routeBack ? Array.from(p.data.routeBack) : undefined,
+          to: p.to ?? dataLayerDest ?? 0,
+          route,
+          routeBack,
           timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
+          dataLayerDest,
+          dataLayerSource,
+          replyId,
+          requestId,
         },
       },
     ];
@@ -709,12 +953,21 @@ export class MeshtasticProtocol implements Protocol {
       rxSnr?: number;
       rxRssi?: number;
       from?: number;
+      hopLimit?: number;
+      hopStart?: number;
       viaMqtt?: boolean;
+      payloadVariant?: { case?: string; value?: { portnum?: number } };
     };
     if (!mp.from) return [];
     try {
       const serialized = toBinary(Mesh.MeshPacketSchema, raw as never);
       const portLabel = this.rawPacketPortLabel(raw);
+      const portnum =
+        mp.payloadVariant?.case === 'decoded' &&
+        typeof mp.payloadVariant.value?.portnum === 'number'
+          ? mp.payloadVariant.value.portnum
+          : undefined;
+      const hopsAway = meshtasticComputedRfHopsAway(mp);
       const payload: RawPacketEntry = {
         ts: Date.now(),
         snr: mp.rxSnr ?? 0,
@@ -723,6 +976,12 @@ export class MeshtasticProtocol implements Protocol {
         fromNodeId: mp.from,
         portLabel,
         viaMqtt: mp.viaMqtt === true,
+        isLocal: false,
+        hopsAway,
+        packetId: typeof mp.id === 'number' ? mp.id >>> 0 : undefined,
+        hopLimit: mp.hopLimit,
+        hopStart: mp.hopStart,
+        portnum,
       };
       return [{ type: 'raw_packet', payload }];
     } catch {
