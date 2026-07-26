@@ -110,6 +110,8 @@ describe('processMeshcoreWaitingMessageItem', () => {
     expect(result.pendingMessages[0]?.payload).toBe('hello dm');
     expect(result.pendingMessages[0]?.isHistory).toBe(true);
     expect(result.nodesDirty).toBe(true);
+    expect(result.updatedNodeIds).toEqual([senderId]);
+    expect(deps.workingNodes.get(senderId)?.last_heard).toBe(1_700_000_100);
   });
 
   it('warns and skips ingest for unknown pubKeyPrefix (senderId 0)', () => {
@@ -131,6 +133,7 @@ describe('processMeshcoreWaitingMessageItem', () => {
     expect(warnSpy).toHaveBeenCalled();
     expect(result.pendingMessages).toHaveLength(0);
     expect(result.nodesDirty).toBe(false);
+    expect(result.updatedNodeIds).toEqual([]);
     warnSpy.mockRestore();
   });
 

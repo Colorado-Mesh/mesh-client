@@ -255,7 +255,7 @@ export class ConnectionDriver {
       try {
         slot.teardown();
       } catch (e) {
-        console.debug('[ConnectionDriver] teardown error ' + errLikeToLogString(e));
+        console.warn('[ConnectionDriver] teardown error ' + errLikeToLogString(e));
       }
       await slot.protocol.destroyDevice(slot.handle).catch((e: unknown) => {
         console.debug('[ConnectionDriver] destroy error ' + errLikeToLogString(e));
@@ -316,7 +316,7 @@ export class ConnectionDriver {
       try {
         teardown();
       } catch (e) {
-        console.debug('[ConnectionDriver] external teardown error ' + errLikeToLogString(e));
+        console.warn('[ConnectionDriver] external teardown error ' + errLikeToLogString(e));
       }
       this.slots.delete(transportId);
       removeTransport(identityId, transportId);

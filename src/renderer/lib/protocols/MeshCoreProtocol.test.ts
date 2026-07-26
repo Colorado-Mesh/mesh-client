@@ -325,6 +325,42 @@ describe('MeshCoreProtocol.subscribe', () => {
 });
 
 describe('MeshCoreProtocol capability-gated operations', () => {
+  it('rejects null or empty outbound text before calling the connection', async () => {
+    const conn = {
+      sendTextMessage: vi.fn(),
+      sendChannelTextMessage: vi.fn(),
+    } as unknown as Connection;
+
+    await expect(
+      meshcoreProtocol.sendMessage(null, { text: 'hello', channelIndex: 0 }),
+    ).rejects.toThrow(/handle is required/);
+    await expect(
+      meshcoreProtocol.sendMessage(conn, { text: null as unknown as string, channelIndex: 0 }),
+    ).rejects.toThrow(/contain text/);
+    await expect(meshcoreProtocol.sendMessage(conn, { text: '', channelIndex: 0 })).rejects.toThrow(
+      /contain text/,
+    );
+    expect(
+      (conn as unknown as { sendChannelTextMessage: ReturnType<typeof vi.fn> })
+        .sendChannelTextMessage,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('rejects an empty direct-message public key', async () => {
+    const conn = { sendTextMessage: vi.fn() } as unknown as Connection;
+
+    await expect(
+      meshcoreProtocol.sendMessage(conn, {
+        text: 'hello',
+        destination: 1,
+        destinationPubKey: new Uint8Array(),
+      }),
+    ).rejects.toThrow(/destinationPubKey/);
+    expect(
+      (conn as unknown as { sendTextMessage: ReturnType<typeof vi.fn> }).sendTextMessage,
+    ).not.toHaveBeenCalled();
+  });
+
   it('setConfig remains on legacy companion until Protocol JSON config lands', async () => {
     await expect(meshcoreProtocol.setConfig({}, {})).rejects.toThrow(/setConfig/);
   });

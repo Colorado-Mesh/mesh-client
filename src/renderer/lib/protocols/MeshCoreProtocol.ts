@@ -223,9 +223,18 @@ export class MeshCoreProtocol implements Protocol {
   // --- Outbound ---
 
   async sendMessage(handle: unknown, opts: SendMessageOptions): Promise<SendResult> {
+    if (handle == null) {
+      throw new TypeError('meshcore sendMessage: connection handle is required');
+    }
     const conn = handle as Connection;
+    if (typeof opts.text !== 'string' || opts.text.length === 0) {
+      throw new TypeError('MeshCore messages must contain text.');
+    }
     if (opts.destination != null) {
-      if (!opts.destinationPubKey) {
+      if (
+        !(opts.destinationPubKey instanceof Uint8Array) ||
+        opts.destinationPubKey.byteLength === 0
+      ) {
         throw new Error(
           'MeshCore direct messages require destinationPubKey to be provided in SendMessageOptions.',
         );

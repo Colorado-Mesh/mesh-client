@@ -548,7 +548,9 @@
       "pkiMissingRecipientKey": "Не вдалося надіслати зашифроване повідомлення — у NodeDB відсутній відкритий ключ одержувача.",
       "pkiFailed": "Не вдалося зашифрувати PKI для цього повідомлення.",
       "noChannel": "Немає каналу для маршрутизації цього повідомлення.",
-      "timeout": "Час очікування повідомлення на радіо закінчився."
+      "timeout": "Час очікування повідомлення на радіо закінчився.",
+      "rateLimited": "Радіоприймач обмежує швидкість передачі повідомлень. Повторіть спробу найближчим часом.",
+      "noInterface": "Немає радіоінтерфейсу для надсилання цього повідомлення."
     },
     "waitingMessagesQueued": "{{count}} повідомлення в черзі на радіо",
     "waitingMessagesSyncProgress": "Синхронізація {{processed}} / {{total}} з радіо…",
@@ -2702,7 +2704,11 @@
     "stableStability": "Стабільний",
     "moderateStability": "Помірний",
     "unstableStability": "Нестабільний",
-    "unknownStability": "Невідомий"
+    "unknownStability": "Невідомий",
+    "hybridMqttPathTooltip": "Отримано через RF; деякі пакети використовують шлях ретрансляції MQTT",
+    "hybridMqttPathAria": "Шлях RF та MQTT",
+    "connectedViaRfAndMqttTooltip": "Підключено через RF та MQTT",
+    "connectedViaRfAndMqttAria": "Підключено через RF та MQTT"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Контакти оновлено.",

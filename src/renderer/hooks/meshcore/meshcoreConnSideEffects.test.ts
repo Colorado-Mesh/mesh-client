@@ -98,7 +98,6 @@ function makeHarness(overrides?: { handleResponseResult?: boolean }): Harness {
     },
     setMeshcorePingRouteReadyEpoch: vi.fn(),
     setMessages: vi.fn(),
-    setNodes: vi.fn(),
     setQueueStatus: vi.fn(),
     setRawPackets: (updater) => {
       const next = typeof updater === 'function' ? updater(rawPackets) : updater;
@@ -350,6 +349,27 @@ describe('attachMeshcoreConnSideEffects', () => {
 
     expect(h.syncNextMessage).toHaveBeenCalled();
     expect(h.conn.getWaitingMessages).not.toHaveBeenCalled();
+  });
+
+  it('flushes waiting-message node changes to nodeStore without updating the runtime node mirror', async () => {
+    const h = makeHarness();
+    vi.mocked(h.conn.getWaitingMessages).mockResolvedValue([
+      {
+        channelMessage: {
+          channelIdx: 0,
+          text: 'QueuePeer: queued channel message',
+          senderTimestamp: 1_700_000_000,
+        },
+      },
+    ]);
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    await h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: true });
+
+    const records = useNodeStore.getState().nodes[ID];
+    const node = Object.values(records ?? {})[0];
+    expect(node).toMatchObject({ lastHeardAt: 1_700_000_000, source: 'rf' });
+    expect(h.ctx.addMessagesBatch).toHaveBeenCalledTimes(1);
   });
 
   it('tears down the session and requests reconnect on disconnect', async () => {

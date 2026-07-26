@@ -13,6 +13,7 @@ import type { Dispatch, SetStateAction } from 'react';
 
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { upsertNodeRecord } from '../../stores/nodeStore';
+import { persistDbWrite } from '../dbPersistRetry';
 import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { getIdentityNode } from '../identityStoreReads';
@@ -106,9 +107,7 @@ function applySignalAndHops(
     via_mqtt: payload.viaMqtt,
   };
   upsertNodeRecord(identityId, meshNodeToNodeRecord(node));
-  void window.electronAPI.db.saveNode(node).catch((e: unknown) => {
-    console.debug('[meshtasticRawPacketSideEffects] saveNode failed ' + errLikeToLogString(e));
-  });
+  persistDbWrite('meshtastic raw packet node', () => window.electronAPI.db.saveNode(node));
   processMeshtasticNodeDiagnostics(node, myNodeNum, getIdentityNode(identityId, myNodeNum) ?? null);
 }
 

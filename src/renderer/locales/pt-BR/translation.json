@@ -548,7 +548,9 @@
       "pkiMissingRecipientKey": "Não foi possível enviar a mensagem criptografada — a chave pública do destinatário está ausente do NodeDB.",
       "pkiFailed": "A criptografia PKI falhou para esta mensagem.",
       "noChannel": "Nenhum canal disponível para encaminhar esta mensagem.",
-      "timeout": "Mensagem expirou no rádio."
+      "timeout": "Mensagem expirou no rádio.",
+      "rateLimited": "O rádio é mensagens de limitação de taxa. Tente novamente em breve.",
+      "noInterface": "Nenhuma interface de rádio está disponível para enviar esta mensagem."
     },
     "waitingMessagesQueued": "{{count}} mensagem(ões) na fila no rádio",
     "waitingMessagesSyncProgress": "Sincronizando {{processed}} / {{total}} do rádio...",
@@ -2700,7 +2702,11 @@
     "stableStability": "Estável",
     "moderateStability": "Moderado",
     "unstableStability": "Instável",
-    "unknownStability": "Desconhecido"
+    "unknownStability": "Desconhecido",
+    "hybridMqttPathTooltip": "Recebido via RF; alguns pacotes usam um caminho de retransmissão MQTT",
+    "hybridMqttPathAria": "Caminho de RF e MQTT",
+    "connectedViaRfAndMqttTooltip": "Conectado via RF e MQTT",
+    "connectedViaRfAndMqttAria": "Conectado via RF e MQTT"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contatos atualizados.",

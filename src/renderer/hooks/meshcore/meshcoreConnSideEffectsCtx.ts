@@ -56,7 +56,6 @@ export interface MeshcoreConnSideEffectsCtx {
   setDeviceLogs: Dispatch<SetStateAction<DeviceLogEntry[]>>;
   setMeshcorePingRouteReadyEpoch: Dispatch<SetStateAction<number>>;
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
-  setNodes: Dispatch<SetStateAction<Map<number, MeshNode>>>;
   setQueueStatus: Dispatch<SetStateAction<{ free: number; maxlen: number; res: number } | null>>;
   setRawPackets: Dispatch<SetStateAction<RxPacketEntry[]>>;
   setSignalTelemetry: Dispatch<SetStateAction<TelemetryPoint[]>>;

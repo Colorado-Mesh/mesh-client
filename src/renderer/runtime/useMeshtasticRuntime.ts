@@ -237,7 +237,12 @@ import {
   upsertMessage,
   useMessageStore,
 } from '../stores/messageStore';
-import { patchNodeFavorited, upsertNodeRecord, useNodeStore } from '../stores/nodeStore';
+import {
+  patchNodeFavorited,
+  removeNode,
+  upsertNodeRecord,
+  useNodeStore,
+} from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 
 type ChannelType = Parameters<MeshDevice['setChannel']>[0];
@@ -570,14 +575,20 @@ export function useMeshtasticRuntime() {
 
   const updateNodes = useCallback(
     (updater: (prev: Map<number, MeshNode>) => Map<number, MeshNode>) => {
-      // The identity-scoped store is the merge base and is updated immediately;
-      // `nodes` remains only a pre-identity/fallback render snapshot.
+      // Identity-scoped nodeStore is canonical once an identity exists. Hook-local
+      // `nodes` is only a pre-identity snapshot (MQTT-only before hydrate / no RF id).
       const identityId =
         meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
-      const base = identityId ? getIdentityNodeMap(identityId) : new Map<number, MeshNode>();
-      const next = updater(base);
-      setNodes(next);
-      if (identityId) syncNodesMapToIdentityStore(identityId, next);
+      if (identityId) {
+        const base = getIdentityNodeMap(identityId);
+        const next = updater(base);
+        for (const nodeId of base.keys()) {
+          if (!next.has(nodeId)) removeNode(identityId, nodeId);
+        }
+        syncNodesMapToIdentityStore(identityId, next);
+        return;
+      }
+      setNodes((prev) => updater(prev));
     },
     [],
   );
@@ -2255,7 +2266,6 @@ export function useMeshtasticRuntime() {
 
   const applyMeshtasticNodesToUi = useCallback(
     (driverIdentityId: string, nodeMap: Map<number, MeshNode>) => {
-      setNodes(nodeMap);
       syncNodesMapToIdentityStore(driverIdentityId, nodeMap);
     },
     [],
@@ -3593,39 +3603,44 @@ export function useMeshtasticRuntime() {
     pendingTracePacketIdToTargetRef.current.set(packetId >>> 0, nodeNum);
   }, []);
 
-  const deleteNode = useCallback(
-    async (nodeId: number) => {
-      const activeVirtualNodeId = virtualNodeIdRef.current;
-      if (nodeId === activeVirtualNodeId && mqttStatusRef.current === 'connected') {
-        throw markDeleteActiveMqttIdentityError(
-          'Cannot delete active MQTT identity while MQTT is connected',
-        );
-      }
-      if (nodeId === activeVirtualNodeId) {
-        clearVirtualNodeId();
-        virtualNodeIdRef.current = getOrCreateVirtualNodeId();
-      }
-      await window.electronAPI.db.deleteNode(nodeId);
-      console.debug(
-        `[useMeshtasticRuntime] deleteNode: removed 0x${nodeId.toString(16).toUpperCase()} from memory`,
+  const deleteNode = useCallback(async (nodeId: number) => {
+    const activeVirtualNodeId = virtualNodeIdRef.current;
+    if (nodeId === activeVirtualNodeId && mqttStatusRef.current === 'connected') {
+      throw markDeleteActiveMqttIdentityError(
+        'Cannot delete active MQTT identity while MQTT is connected',
       );
-      updateNodes((prev) => {
+    }
+    if (nodeId === activeVirtualNodeId) {
+      clearVirtualNodeId();
+      virtualNodeIdRef.current = getOrCreateVirtualNodeId();
+    }
+    await window.electronAPI.db.deleteNode(nodeId);
+    console.debug(
+      `[useMeshtasticRuntime] deleteNode: removed 0x${nodeId.toString(16).toUpperCase()} from memory`,
+    );
+    const storeId = meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
+    if (storeId) {
+      removeNode(storeId, nodeId);
+    } else {
+      setNodes((prev) => {
         const updated = new Map(prev);
         updated.delete(nodeId);
         return updated;
       });
-    },
-    [updateNodes],
-  );
+    }
+  }, []);
 
   const refreshNodesFromDb = useCallback(() => {
     void loadMeshtasticNodeMapFromDb()
       .then((nodeMap) => {
         console.debug(`[useMeshtasticRuntime] refreshNodesFromDb: loaded ${nodeMap.size} nodes`);
-        setNodes(nodeMap);
         const storeId =
           meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
-        if (storeId) syncNodesMapToIdentityStore(storeId, nodeMap);
+        if (storeId) {
+          syncNodesMapToIdentityStore(storeId, nodeMap);
+        } else {
+          setNodes(nodeMap);
+        }
       })
       .catch((err: unknown) => {
         console.error('[useMeshtasticRuntime] Failed to refresh nodes: ' + errLikeToLogString(err));
@@ -3663,22 +3678,20 @@ export function useMeshtasticRuntime() {
     [markPacketSeen],
   );
 
-  const setNodeFavorited = useCallback(
-    async (nodeId: number, favorited: boolean) => {
-      await window.electronAPI.db.setNodeFavorited(nodeId, favorited);
-      const storeId = getIdentityIdForProtocol('meshtastic');
-      if (storeId) {
-        patchNodeFavorited(storeId, nodeId, favorited);
-      }
-      updateNodes((prev) => {
-        const updated = new Map(prev);
-        const existing = updated.get(nodeId);
-        if (existing) updated.set(nodeId, { ...existing, favorited });
-        return updated;
-      });
-    },
-    [updateNodes],
-  );
+  const setNodeFavorited = useCallback(async (nodeId: number, favorited: boolean) => {
+    await window.electronAPI.db.setNodeFavorited(nodeId, favorited);
+    const storeId = getIdentityIdForProtocol('meshtastic');
+    if (storeId) {
+      patchNodeFavorited(storeId, nodeId, favorited);
+      return;
+    }
+    setNodes((prev) => {
+      const updated = new Map(prev);
+      const existing = updated.get(nodeId);
+      if (existing) updated.set(nodeId, { ...existing, favorited });
+      return updated;
+    });
+  }, []);
 
   const refreshOurPosition = useCallback(async (): Promise<OurPosition | null> => {
     // Dual-protocol: Meshtastic hook stays mounted when user switches to MeshCore; skip GPS work
@@ -4025,8 +4038,8 @@ export function useMeshtasticRuntime() {
   const resolvedNodes = useMemo(() => {
     if (!meshtasticIdentityId) return nodes;
     if (!meshtasticNodesFromStore) return nodes;
-    const fromStore = nodeRecordsToMeshNodeMap(Object.values(meshtasticNodesFromStore));
-    return fromStore.size > 0 ? fromStore : nodes;
+    // Empty store is valid (e.g. after delete); do not fall back to stale hook-local Map.
+    return nodeRecordsToMeshNodeMap(Object.values(meshtasticNodesFromStore));
   }, [meshtasticIdentityId, nodes, meshtasticNodesFromStore]);
 
   const resolvedTraceRouteResults = useMemo(() => {

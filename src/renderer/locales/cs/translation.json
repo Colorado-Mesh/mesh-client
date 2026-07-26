@@ -547,7 +547,9 @@
       "pkiMissingRecipientKey": "Nelze odeslat šifrovanou zprávu — v NodeDB chybí veřejný klíč příjemce.",
       "pkiFailed": "Šifrování PKI pro tuto zprávu selhalo.",
       "noChannel": "Pro směrování této zprávy není k dispozici žádný kanál.",
-      "timeout": "Časový limit zprávy v rádiu vypršel."
+      "timeout": "Časový limit zprávy v rádiu vypršel.",
+      "rateLimited": "Rádio posílá zprávy omezující frekvenci. Zkus to znovu za chvíli.",
+      "noInterface": "Pro odeslání této zprávy není k dispozici žádné rádiové rozhraní."
     },
     "waitingMessagesQueued": "{{count}} zprávy ve frontě v rádiu",
     "waitingMessagesSyncProgress": "Synchronizace {{processed}} / {{total}} z rádia…",
@@ -2702,7 +2704,11 @@
     "stableStability": "Stabilní",
     "moderateStability": "Mírný",
     "unstableStability": "Nestabilní",
-    "unknownStability": "Neznámý"
+    "unknownStability": "Neznámý",
+    "hybridMqttPathTooltip": "Přijato prostřednictvím RF; některé pakety používají reléovou cestu MQTT",
+    "hybridMqttPathAria": "Cesta RF a MQTT",
+    "connectedViaRfAndMqttTooltip": "Připojeno přes RF a MQTT",
+    "connectedViaRfAndMqttAria": "Připojeno přes RF a MQTT"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontakty byly obnoveny.",

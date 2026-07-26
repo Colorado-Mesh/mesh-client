@@ -548,7 +548,9 @@
       "pkiMissingRecipientKey": "Şifrelenmiş mesaj gönderilemedi — NodeDB'de alıcı genel anahtarı eksik.",
       "pkiFailed": "Bu mesaj için PKI şifrelemesi başarısız oldu.",
       "noChannel": "Bu mesajı yönlendirmek için kullanılabilir kanal yok.",
-      "timeout": "Mesaj radyoda zaman aşımına uğradı."
+      "timeout": "Mesaj radyoda zaman aşımına uğradı.",
+      "rateLimited": "Radyo hız sınırlayıcı mesajlardır. Kısa süre içinde yeniden deneyin.",
+      "noInterface": "Bu mesajı göndermek için radyo arayüzü mevcut değil."
     },
     "waitingMessagesQueued": "{{count}} radyoda kuyrukta bekleyen mesaj(lar)",
     "waitingMessagesSyncProgress": "{{processed}} / {{total}} radyodan senkronize ediliyor…",
@@ -2700,7 +2702,11 @@
     "moderateStability": "Ilıman",
     "unstableStability": "Dengesiz",
     "unknownStability": "Bilinmiyor",
-    "flagged": "{{flagged}}/{{total}} işaretlendi"
+    "flagged": "{{flagged}}/{{total}} işaretlendi",
+    "hybridMqttPathTooltip": "RF aracılığıyla alınır; bazı paketler bir MQTT röle yolu kullanır",
+    "hybridMqttPathAria": "RF ve MQTT yolu",
+    "connectedViaRfAndMqttTooltip": "RF ve MQTT ile bağlanır",
+    "connectedViaRfAndMqttAria": "RF ve MQTT ile bağlanır"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kişiler yenilendi.",

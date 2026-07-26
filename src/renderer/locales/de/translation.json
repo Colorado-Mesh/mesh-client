@@ -547,7 +547,9 @@
       "pkiMissingRecipientKey": "Verschlüsselte Nachricht konnte nicht gesendet werden — öffentlicher Schlüssel des Empfängers fehlt in NodeDB.",
       "pkiFailed": "PKI-Verschlüsselung für diese Nachricht fehlgeschlagen.",
       "noChannel": "Kein Kanal verfügbar, um diese Nachricht weiterzuleiten.",
-      "timeout": "Zeitüberschreitung der Nachricht im Funkgerät."
+      "timeout": "Zeitüberschreitung der Nachricht im Funkgerät.",
+      "rateLimited": "Das Radio ist geschwindigkeitsbegrenzende Nachrichten. Versuchen Sie es in Kürze erneut.",
+      "noInterface": "Es ist keine Funkschnittstelle zum Senden dieser Nachricht verfügbar."
     },
     "waitingMessagesQueued": "{{count}} in der Warteschlange stehende Nachricht(en) im Funk",
     "waitingMessagesSyncProgress": "{{processed}}/{{total}} wird vom Funkgerät synchronisiert...",
@@ -2700,7 +2702,11 @@
     "stableStability": "Stabil",
     "moderateStability": "Mäßig",
     "unstableStability": "Instabil",
-    "unknownStability": "Unbekannt"
+    "unknownStability": "Unbekannt",
+    "hybridMqttPathTooltip": "Über RF empfangen; einige Pakete verwenden einen MQTT-Relay-Pfad",
+    "hybridMqttPathAria": "RF- und MQTT-Pfad",
+    "connectedViaRfAndMqttTooltip": "Anbindung über RF und MQTT",
+    "connectedViaRfAndMqttAria": "Anbindung über RF und MQTT"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontakte aktualisiert.",

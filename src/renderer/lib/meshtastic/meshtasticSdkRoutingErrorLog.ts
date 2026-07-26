@@ -14,6 +14,7 @@ import {
 const SDK_ROUTING_ERROR_RE = /Error received for packet (\d+): ([A-Z0-9_]+)/;
 const SDK_PACKET_TIMEOUT_RE = /Packet (\d+) of type \w+ timed out/;
 const FALLBACK_SENDING_WINDOW_MS = 90_000;
+const routingErrorScansInFlight = new Set<string>();
 
 export interface MeshtasticSdkRoutingErrorLog {
   packetId: number;
@@ -77,6 +78,11 @@ export function chatRoutingErrorKeyForSdkErrorName(errorName: string): string | 
       return 'chatPanel.routingErrors.pkiFailed';
     case 'NO_CHANNEL':
       return 'chatPanel.routingErrors.noChannel';
+    case 'RATE_LIMIT_EXCEEDED':
+      return 'chatPanel.routingErrors.rateLimited';
+    case 'NO_INTERFACE':
+    case 'NO_INTERFACE_AVAILABLE':
+      return 'chatPanel.routingErrors.noInterface';
     case 'TIMEOUT':
     case 'NO_RESPONSE':
     case 'MAX_RETRANSMIT':
@@ -208,6 +214,12 @@ export function applyMeshtasticOutboundRoutingErrorFromLog(
   if (!parsed) {
     return false;
   }
+  const key = `${ctx.identityId ?? 'none'}:${parsed.packetId}:${parsed.errorName}`;
+  if (routingErrorScansInFlight.has(key)) {
+    return false;
+  }
+  routingErrorScansInFlight.add(key);
+  queueMicrotask(() => routingErrorScansInFlight.delete(key));
   return applyMeshtasticOutboundRoutingError(parsed, ctx);
 }
 

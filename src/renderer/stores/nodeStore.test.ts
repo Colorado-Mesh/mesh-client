@@ -6,6 +6,7 @@ import {
   clearMeshcoreCliHistory,
   clearNodeIdentity,
   patchNodeFavorited,
+  removeNode,
   updateMeshcoreOp,
   updatePosition,
   updateTelemetry,
@@ -103,6 +104,26 @@ describe('patchNodeFavorited', () => {
     const rec = useNodeStore.getState().nodes[ID][NODE];
     expect(rec.nodeId).toBe(NODE);
     expect(rec.favorited).toBe(true);
+  });
+});
+
+describe('removeNode', () => {
+  afterEach(() => {
+    useNodeStore.setState({ nodes: {}, traceRoutes: {}, waypoints: {}, neighborInfo: {} });
+  });
+
+  it('removes a single node without clearing sibling nodes', () => {
+    upsertNode(ID, { nodeId: NODE, longName: 'Alpha' });
+    upsertNode(ID, { nodeId: NODE + 1, longName: 'Beta' });
+    removeNode(ID, NODE);
+    expect(useNodeStore.getState().nodes[ID]?.[NODE]).toBeUndefined();
+    expect(useNodeStore.getState().nodes[ID]?.[NODE + 1]?.longName).toBe('Beta');
+  });
+
+  it('is a no-op when the node is absent', () => {
+    upsertNode(ID, { nodeId: NODE, longName: 'Alpha' });
+    removeNode(ID, 999);
+    expect(useNodeStore.getState().nodes[ID]?.[NODE]?.longName).toBe('Alpha');
   });
 });
 

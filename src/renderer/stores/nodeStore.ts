@@ -525,3 +525,23 @@ export function clearNodeIdentity(identityId: IdentityId): void {
     neighborInfo: omitRecordKey(s.neighborInfo, identityId),
   }));
 }
+
+/** Remove a single node from an identity bucket (deleteNode UI / MQTT identity cleanup). */
+export function removeNode(identityId: IdentityId, nodeId: number): void {
+  useNodeStore.setState((s) => {
+    const byId = s.nodes[identityId];
+    if (!byId || !(nodeId in byId)) return s;
+    const nextById: Record<number, NodeRecord> = {};
+    for (const [key, value] of Object.entries(byId)) {
+      if (Number(key) !== nodeId) {
+        nextById[Number(key)] = value;
+      }
+    }
+    return {
+      nodes: {
+        ...s.nodes,
+        [identityId]: nextById,
+      },
+    };
+  });
+}

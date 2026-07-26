@@ -13,6 +13,7 @@ import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { updateIdentity } from '../../stores/identityStore';
 import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
 import { safeDisconnect } from '../connection';
+import { persistDbWrite } from '../dbPersistRetry';
 import { connectionDriver } from '../drivers/ConnectionDriver';
 import { isForeignLoraLogCandidate } from '../foreignLoraDetection';
 import type { OurPosition } from '../gpsSource';
@@ -40,6 +41,7 @@ import type {
   TelemetryPoint,
 } from '../types';
 import { recordMeshtasticClientNotification } from './meshtasticClientNotification';
+import { meshtasticDeviceStatusForCode } from './meshtasticDeviceStatus';
 import { shouldFetchLocalLoraConfigAfterConfigure } from './meshtasticLocalLoraConfig';
 import type { ModulePortEvent, PaxCounterPoint } from './meshtasticModuleEvents';
 import { attachMeshtasticModulePortSideEffects } from './meshtasticModulePortSideEffects';
@@ -363,16 +365,7 @@ export function attachMeshtasticRuntimeWireEffects(
     if (status !== DeviceStatusEnum.DeviceRestarting) {
       touchLastData();
     }
-    const statusMap: Record<number, DeviceState['status']> = {
-      [DeviceStatusEnum.DeviceRestarting]: 'connecting',
-      [DeviceStatusEnum.DeviceDisconnected]: 'disconnected',
-      [DeviceStatusEnum.DeviceConnecting]: 'connecting',
-      [DeviceStatusEnum.DeviceReconnecting]: 'connecting',
-      [DeviceStatusEnum.DeviceConnected]: 'connected',
-      [DeviceStatusEnum.DeviceConfiguring]: 'connecting',
-      [DeviceStatusEnum.DeviceConfigured]: 'configured',
-    };
-    const mapped = statusMap[status] ?? 'connected';
+    const mapped: DeviceState['status'] = meshtasticDeviceStatusForCode(status);
     setState((s) => ({
       ...s,
       status: mapped,
@@ -594,11 +587,9 @@ export function attachMeshtasticRuntimeWireEffects(
           heard_via_mqtt_only: false,
         };
         updated.set(info.myNodeNum, selfNode);
-        void window.electronAPI.db.saveNode(selfNode).catch((e: unknown) => {
-          console.debug(
-            '[meshtasticRuntimeWireEffects] saveNode self failed ' + errLikeToLogString(e),
-          );
-        });
+        persistDbWrite('meshtastic runtime self node', () =>
+          window.electronAPI.db.saveNode(selfNode),
+        );
       }
       return updated;
     });

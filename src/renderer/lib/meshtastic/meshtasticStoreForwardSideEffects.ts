@@ -14,6 +14,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 
 import { addMessage } from '../../stores/messageStore';
+import { persistDbWrite } from '../dbPersistRetry';
 import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener';
 import { createPacketDedupeRegistry } from '../drivers/packetDedupeRegistry';
 import { errLikeToLogString } from '../errLikeToLogString';
@@ -89,10 +90,15 @@ function shouldRequestAutoHistory(gate: AutoHistoryGate, serverNodeId: number, n
 function appendReplayedHistoryText(identityId: IdentityId, chat: ChatMessage): void {
   if (isDuplicateHistoryMessage(getIdentityChatMessages(identityId), chat)) return;
   addMessage(identityId, chatMessageToMessageRecord(chat));
-  void window.electronAPI.db.saveMessage(chat).catch((e: unknown) => {
-    console.debug(
-      '[meshtasticStoreForwardSideEffects] saveMessage failed ' + errLikeToLogString(e),
-    );
+  persistDbWrite('Meshtastic Store & Forward message', async () => {
+    try {
+      await window.electronAPI.db.saveMessage(chat);
+    } catch (error) {
+      console.warn(
+        '[meshtasticStoreForwardSideEffects] saveMessage failed ' + errLikeToLogString(error),
+      );
+      throw error;
+    }
   });
 }
 

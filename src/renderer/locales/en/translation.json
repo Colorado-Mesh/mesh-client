@@ -529,6 +529,8 @@
       "pkiMissingRecipientKey": "Could not send encrypted message — recipient public key is missing from NodeDB.",
       "pkiFailed": "PKI encryption failed for this message.",
       "noChannel": "No channel available to route this message.",
+      "rateLimited": "The radio is rate-limiting messages. Try again shortly.",
+      "noInterface": "No radio interface is available to send this message.",
       "timeout": "Message timed out on the radio."
     },
     "queueButton": "Queue",
@@ -2706,7 +2708,11 @@
     "stableStability": "Stable",
     "moderateStability": "Moderate",
     "unstableStability": "Unstable",
-    "unknownStability": "Unknown"
+    "unknownStability": "Unknown",
+    "hybridMqttPathTooltip": "Received via RF; some packets use an MQTT relay path",
+    "hybridMqttPathAria": "RF and MQTT path",
+    "connectedViaRfAndMqttTooltip": "Connected via RF and MQTT",
+    "connectedViaRfAndMqttAria": "Connected via RF and MQTT"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contacts refreshed.",

@@ -548,7 +548,9 @@
       "pkiMissingRecipientKey": "暗号化されたメッセージを送信できませんでした— NodeDBに受信者の公開鍵がありません。",
       "pkiFailed": "このメッセージのPKI暗号化に失敗しました。",
       "noChannel": "このメッセージをルーティングするチャンネルはありません。",
-      "timeout": "ラジオでメッセージがタイムアウトしました。"
+      "timeout": "ラジオでメッセージがタイムアウトしました。",
+      "rateLimited": "無線はレート制限メッセージです。しばらくしてから再度お試しください。",
+      "noInterface": "このメッセージを送信するための無線インターフェースはありません。"
     },
     "waitingMessagesQueued": "{{count}}は無線でメッセージをキューに入れました",
     "waitingMessagesSyncProgress": "ラジオから{{processed}}/{{total}}を同期しています…",
@@ -2700,7 +2702,11 @@
     "stableStability": "安定した",
     "moderateStability": "適度",
     "unstableStability": "不安定",
-    "unknownStability": "未知"
+    "unknownStability": "未知",
+    "hybridMqttPathTooltip": "RFを介して受信。一部のパケットはMQTTリレーパスを使用",
+    "hybridMqttPathAria": "RFおよびMQTTパス",
+    "connectedViaRfAndMqttTooltip": "RFおよびMQTT経由で接続",
+    "connectedViaRfAndMqttAria": "RFおよびMQTT経由で接続"
   },
   "nodeListPanel": {
     "contactsRefreshed": "連絡先が更新されました。",

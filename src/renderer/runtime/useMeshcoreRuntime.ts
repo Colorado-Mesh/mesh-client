@@ -1769,7 +1769,6 @@ export function useMeshcoreRuntime() {
       setDeviceLogs,
       setMeshcorePingRouteReadyEpoch,
       setMessages,
-      setNodes,
       setQueueStatus,
       setRawPackets,
       setSignalTelemetry,

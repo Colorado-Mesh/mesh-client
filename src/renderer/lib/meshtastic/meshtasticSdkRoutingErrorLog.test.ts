@@ -119,6 +119,14 @@ describe('meshtasticSdkRoutingErrorLog', () => {
     );
   });
 
+  it.each([
+    ['RATE_LIMIT_EXCEEDED', 'chatPanel.routingErrors.rateLimited'],
+    ['NO_INTERFACE', 'chatPanel.routingErrors.noInterface'],
+    ['NO_INTERFACE_AVAILABLE', 'chatPanel.routingErrors.noInterface'],
+  ])('maps %s to a chat routing i18n key', (errorName, key) => {
+    expect(chatRoutingErrorKeyForSdkErrorName(errorName)).toBe(key);
+  });
+
   it('marks matching outbound message failed', () => {
     seedOutbound([{ packetId: 669520633 }]);
     const applied = applyMeshtasticOutboundRoutingErrorFromLog(

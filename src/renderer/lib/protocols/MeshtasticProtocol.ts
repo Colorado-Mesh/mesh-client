@@ -1,5 +1,5 @@
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
-import { type MeshDevice, Types } from '@meshtastic/core';
+import { type MeshDevice } from '@meshtastic/core';
 import { Admin, Channel as ProtobufChannel, Mesh, Portnums } from '@meshtastic/protobufs';
 
 import {
@@ -14,6 +14,7 @@ import {
 } from '../connection';
 import { createPacketDedupeRegistry } from '../drivers/packetDedupeRegistry';
 import { meshtasticHwModelName } from '../hardwareModels';
+import { meshtasticDeviceStatusForCode } from '../meshtastic/meshtasticDeviceStatus';
 import { meshtasticComputedRfHopsAway } from '../meshtasticRfHops';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
 import { MESHTASTIC_CAPABILITIES } from '../radio/BaseRadioProvider';
@@ -41,19 +42,7 @@ import type {
 } from './Protocol';
 import { UnsupportedOperation } from './Protocol';
 
-const { DeviceStatusEnum } = Types;
 const { PortNum } = Portnums;
-
-const STATUS_CODE_MAP: Record<number, string> = {
-  [DeviceStatusEnum.DeviceRestarting]: 'connecting',
-  [DeviceStatusEnum.DeviceDisconnected]: 'disconnected',
-  [DeviceStatusEnum.DeviceConnecting]: 'connecting',
-  [DeviceStatusEnum.DeviceReconnecting]: 'connecting',
-  [DeviceStatusEnum.DeviceConnected]: 'connected',
-  [DeviceStatusEnum.DeviceConfiguring]: 'connecting',
-  [DeviceStatusEnum.DeviceConfigured]: 'configured',
-  8: 'stale',
-};
 
 /**
  * The SDK dispatches `onMeshPacket` for every packet and then a second typed
@@ -1150,7 +1139,7 @@ export class MeshtasticProtocol implements Protocol {
   }
 
   private decodeDeviceStatus(raw: unknown): DomainEvent[] {
-    const status = STATUS_CODE_MAP[raw as number] ?? 'connected';
+    const status = meshtasticDeviceStatusForCode(raw as number);
     return [{ type: 'device_status', payload: { status } }];
   }
 

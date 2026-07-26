@@ -7,6 +7,7 @@
 import { getConnection } from '../../stores/connectionStore';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
+import { persistDbWrite } from '../dbPersistRetry';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { meshcoreHwModelIsContactTypeLabel } from '../meshcoreUtils';
@@ -70,9 +71,7 @@ function persistNode(identityId: IdentityId, nodeId: number): void {
   if (!record) return;
   const meshNode = nodeRecordToMeshNode(record);
   if (meshcoreHwModelIsContactTypeLabel(meshNode.hw_model)) return;
-  void window.electronAPI.db.saveNode(meshNode).catch((e: unknown) => {
-    console.debug('[meshtasticIngest] saveNode failed ' + errLikeToLogString(e));
-  });
+  persistDbWrite('meshtastic ingest node', () => window.electronAPI.db.saveNode(meshNode));
 }
 
 function handleTextMessage(
@@ -102,9 +101,9 @@ function handleTextMessage(
     if (record.status === 'sending') {
       return;
     }
-    void window.electronAPI.db.saveMessage(incoming).catch((e: unknown) => {
-      console.debug('[meshtasticIngest] saveMessage echo failed ' + errLikeToLogString(e));
-    });
+    persistDbWrite('meshtastic ingest echo message', () =>
+      window.electronAPI.db.saveMessage(incoming),
+    );
     return;
   }
 
@@ -170,9 +169,7 @@ function handleTextMessage(
     }
   }
 
-  void window.electronAPI.db.saveMessage(incoming).catch((e: unknown) => {
-    console.debug('[meshtasticIngest] saveMessage failed ' + errLikeToLogString(e));
-  });
+  persistDbWrite('meshtastic ingest message', () => window.electronAPI.db.saveMessage(incoming));
 }
 
 function createListener(

@@ -25,8 +25,8 @@ import {
 import { upsertNodeRecord } from '../../stores/nodeStore';
 import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
 import { validateCoords } from '../coordUtils';
+import { persistDbWrite } from '../dbPersistRetry';
 import { attachTypedPacketListeners } from '../drivers/attachTypedPacketListener';
-import { errLikeToLogString } from '../errLikeToLogString';
 import { shouldPreserveStaticGpsForSelfNode } from '../gpsSource';
 import { getIdentityNode } from '../identityStoreReads';
 import {
@@ -34,7 +34,6 @@ import {
   mergeMeshtasticLivePacketLastHeard,
   mergeMeshtasticUserPacketLastHeard,
 } from '../meshtasticLastHeard';
-import { parseStoredJson } from '../parseStoredJson';
 import type { NodeInfoEvent, PositionEvent, TelemetryEvent } from '../protocols/Protocol';
 import { MESHTASTIC_CAPABILITIES } from '../radio/BaseRadioProvider';
 import { LAST_SERIAL_PORT_KEY } from '../serialPortSignature';
@@ -48,9 +47,9 @@ import type {
   TelemetryPoint,
 } from '../types';
 import { processMeshtasticNodeDiagnostics } from './meshtasticProcessNodeDiagnostics';
+import { cacheTransportDisplayName } from './transportDisplayNameCache';
 
 const ROLE_CLIENT_MUTE = 1;
-const MAX_TRANSPORT_DISPLAY_NAME_CACHE_ENTRIES = 64;
 const BLE_DEVICE_NAMES_KEY = 'mesh-client:bleDeviceNames';
 const SERIAL_PORT_NODE_NAMES_KEY = 'mesh-client:serialPortNodeNames';
 
@@ -86,25 +85,7 @@ function meshtasticPublicKeyHex(bytes: Uint8Array | undefined): string | undefin
 
 function saveNode(identityId: IdentityId, node: MeshNode): void {
   upsertNodeRecord(identityId, meshNodeToNodeRecord(node));
-  void window.electronAPI.db.saveNode(node).catch((e: unknown) => {
-    console.debug('[meshtasticNodeSideEffects] saveNode failed ' + errLikeToLogString(e));
-  });
-}
-
-function cacheShortNameByKey(storageKey: string, cacheKey: string, shortName: string): void {
-  try {
-    const cache =
-      parseStoredJson<Record<string, string>>(
-        localStorage.getItem(storageKey),
-        `meshtasticNodeSideEffects ${storageKey}`,
-      ) ?? {};
-    const entries = Object.entries(cache).filter(([key]) => key !== cacheKey);
-    entries.push([cacheKey, shortName]);
-    const bounded = Object.fromEntries(entries.slice(-MAX_TRANSPORT_DISPLAY_NAME_CACHE_ENTRIES));
-    localStorage.setItem(storageKey, JSON.stringify(bounded));
-  } catch {
-    // catch-no-log-ok localStorage write for transport display-name cache — non-critical
-  }
+  persistDbWrite('meshtastic node', () => window.electronAPI.db.saveNode(node));
 }
 
 /** UserPacket identity: live long/short name, hardware, role, and public key. */
@@ -162,7 +143,7 @@ function cacheSelfNodeTransportName(
     const deviceId = deps.getBluetoothDeviceId();
     const shortName = preferNonEmptyTrimmedString(info.shortName, '') || null;
     if (deviceId && shortName) {
-      cacheShortNameByKey(BLE_DEVICE_NAMES_KEY, deviceId, shortName);
+      cacheTransportDisplayName(BLE_DEVICE_NAMES_KEY, deviceId, shortName);
     }
     return;
   }
@@ -172,7 +153,7 @@ function cacheSelfNodeTransportName(
       preferNonEmptyTrimmedString(info.shortName, preferNonEmptyTrimmedString(info.longName, '')) ||
       null;
     if (portId && shortName) {
-      cacheShortNameByKey(SERIAL_PORT_NODE_NAMES_KEY, portId, shortName);
+      cacheTransportDisplayName(SERIAL_PORT_NODE_NAMES_KEY, portId, shortName);
     }
   }
 }

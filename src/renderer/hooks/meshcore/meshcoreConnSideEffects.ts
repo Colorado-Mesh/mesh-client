@@ -19,7 +19,6 @@ import {
   extractMeshtasticSenderId,
   meshtasticSenderIdForRawLogFallback,
 } from '../../lib/foreignLoraDetection';
-import { syncNodesMapToIdentityStore } from '../../lib/hydrateIdentityStoresFromDb';
 import {
   applyMeshcoreDmAckToPending,
   syncMeshcoreDmAckToMessageStore,
@@ -62,6 +61,7 @@ import { getMeshtasticConnectedMyNodeNum } from '../../lib/meshtasticConnectedNo
 import type { DomainEvent } from '../../lib/protocols/Protocol';
 import { MAX_RAW_PACKET_LOG_ENTRIES } from '../../lib/rawPacketLogConstants';
 import { getStoredMeshProtocol } from '../../lib/storedMeshProtocol';
+import { meshNodeToNodeRecord } from '../../lib/storeRecordAdapters';
 import {
   MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS,
   MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN,
@@ -70,6 +70,7 @@ import {
 } from '../../lib/timeConstants';
 import type { ChatMessage, MeshNode, TelemetryPoint } from '../../lib/types';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
+import { upsertNodeRecord, upsertNodeRecordsForIdentity } from '../../stores/nodeStore';
 import { usePathHistoryStore } from '../../stores/pathHistoryStore';
 import type {
   MeshcoreConnSideEffectsCtx,
@@ -123,7 +124,6 @@ export function attachMeshcoreConnSideEffects(
     setDeviceLogs,
     setMeshcorePingRouteReadyEpoch,
     setMessages,
-    setNodes,
     setQueueStatus,
     setRawPackets,
     setSignalTelemetry,
@@ -301,19 +301,25 @@ export function attachMeshcoreConnSideEffects(
       let processed = 0;
       let pendingMessages: ChatMessage[] = [];
       const workingNodes = new Map(readNodes());
-      let nodesDirty = false;
+      const dirtyNodeIds = new Set<number>();
 
       const flushBatch = () => {
         if (pendingMessages.length > 0) {
           addMessagesBatch(pendingMessages);
           pendingMessages = [];
         }
-        if (nodesDirty) {
-          setNodes(workingNodes);
-          // Publish before React commits so the next drain iteration reads merged rows.
+        if (dirtyNodeIds.size > 0) {
           const storeId = meshcoreIdentityIdRef.current;
-          if (storeId) syncNodesMapToIdentityStore(storeId, workingNodes);
-          nodesDirty = false;
+          if (storeId) {
+            const dirtyRecords = Array.from(dirtyNodeIds)
+              .map((nodeId) => workingNodes.get(nodeId))
+              .filter((node): node is MeshNode => node != null)
+              .map((node) => meshNodeToNodeRecord(node));
+            if (dirtyRecords.length > 0) {
+              upsertNodeRecordsForIdentity(storeId, dirtyRecords);
+            }
+          }
+          dirtyNodeIds.clear();
         }
       };
 
@@ -327,12 +333,13 @@ export function attachMeshcoreConnSideEffects(
             item,
             buildWaitingMessageItemDeps(workingNodes),
           );
-          if (result.nodesDirty) nodesDirty = true;
+          if (result.nodesDirty) {
+            for (const nodeId of result.updatedNodeIds) dirtyNodeIds.add(nodeId);
+          }
           if (result.pendingMessages.length > 0) {
             pendingMessages.push(...result.pendingMessages);
           }
           processed += 1;
-          flushBatch();
           if (bannerActive) {
             setWaitingMessagesSyncProgress({ processed, total: syncTotal });
           }
@@ -521,18 +528,19 @@ export function attachMeshcoreConnSideEffects(
           // If we know this node (and it's not ourselves), update last_heard + SNR/RSSI
           if (senderId !== myNodeNumRef.current && readNodes().has(senderId)) {
             const nowSec = Math.floor(now / 1000);
-            setNodes((prev) => {
-              const existing = prev.get(senderId);
-              if (!existing) return prev;
-              const next = new Map(prev);
-              next.set(senderId, {
-                ...existing,
-                last_heard: Math.max(existing.last_heard ?? 0, nowSec),
-                snr: snr,
-                rssi: rssi,
-              });
-              return next;
-            });
+            const existing = readNodes().get(senderId);
+            const storeId = meshcoreIdentityIdRef.current;
+            if (existing && storeId) {
+              upsertNodeRecord(
+                storeId,
+                meshNodeToNodeRecord({
+                  ...existing,
+                  last_heard: Math.max(existing.last_heard ?? 0, nowSec),
+                  snr,
+                  rssi,
+                }),
+              );
+            }
           }
         }
       } else if (loraPacketClass === 'meshcore') {
@@ -633,9 +641,9 @@ export function attachMeshcoreConnSideEffects(
       if (fromNodeId !== null && fromNodeId !== myNodeNumRef.current) {
         const resolvedFromNodeId = fromNodeId;
         const nowSec = Math.floor(now / 1000);
-        setNodes((prev) => {
-          const existing = prev.get(resolvedFromNodeId);
-          if (!existing) return prev;
+        const existing = readNodes().get(resolvedFromNodeId);
+        const storeId = meshcoreIdentityIdRef.current;
+        if (existing && storeId) {
           const mergedHopsAway = meshcoreMergeContactHopsAwayFromPrevious(
             hopCount,
             existing.hops_away,
@@ -652,44 +660,45 @@ export function attachMeshcoreConnSideEffects(
             via_mqtt: false,
           };
 
-          // Optimization: skip identical updates
+          // Skip store/DB writes when metrics and liveness have not changed.
           if (
-            existing.hops_away === updated.hops_away &&
-            existing.snr === snr &&
-            existing.rssi === rssi &&
-            existing.last_heard === updated.last_heard
+            existing.hops_away !== updated.hops_away ||
+            existing.snr !== snr ||
+            existing.rssi !== rssi ||
+            existing.last_heard !== updated.last_heard
           ) {
-            return prev;
+            upsertNodeRecord(storeId, meshNodeToNodeRecord(updated));
+
+            void window.electronAPI.db
+              .updateMeshcoreContactLastRf(
+                resolvedFromNodeId,
+                snr,
+                rssi,
+                mergedHopsAway ?? hopCount,
+                nowSec,
+              )
+              .catch((e: unknown) => {
+                console.warn(
+                  '[meshcoreConnSideEffects] updateMeshcoreContactLastRf error ' +
+                    errLikeToLogString(e),
+                );
+              });
+            void useDiagnosticsStore
+              .getState()
+              .saveMeshcoreHopHistory(
+                resolvedFromNodeId,
+                now,
+                mergedHopsAway ?? hopCount,
+                snr,
+                rssi,
+              )
+              .catch((e: unknown) => {
+                console.warn(
+                  '[meshcoreConnSideEffects] saveMeshcoreHopHistory error ' + errLikeToLogString(e),
+                );
+              });
           }
-
-          const next = new Map(prev);
-          next.set(resolvedFromNodeId, updated);
-
-          void window.electronAPI.db
-            .updateMeshcoreContactLastRf(
-              resolvedFromNodeId,
-              snr,
-              rssi,
-              mergedHopsAway ?? hopCount,
-              nowSec,
-            )
-            .catch((e: unknown) => {
-              console.warn(
-                '[meshcoreConnSideEffects] updateMeshcoreContactLastRf error ' +
-                  errLikeToLogString(e),
-              );
-            });
-          void useDiagnosticsStore
-            .getState()
-            .saveMeshcoreHopHistory(resolvedFromNodeId, now, mergedHopsAway ?? hopCount, snr, rssi)
-            .catch((e: unknown) => {
-              console.warn(
-                '[meshcoreConnSideEffects] saveMeshcoreHopHistory error ' + errLikeToLogString(e),
-              );
-            });
-
-          return next;
-        });
+        }
       }
 
       if (fromNodeId == null) {

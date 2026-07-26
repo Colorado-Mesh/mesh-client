@@ -20,6 +20,7 @@ import type { MeshcoreWaitingMessageItem } from './meshcoreWaitingMessageItem';
 
 export interface ProcessWaitingMessageItemResult {
   nodesDirty: boolean;
+  updatedNodeIds: number[];
   pendingMessages: ChatMessage[];
   roomDispatched: boolean;
 }
@@ -38,6 +39,7 @@ export function processMeshcoreWaitingMessageItem(
   deps: ProcessWaitingMessageItemDeps,
 ): ProcessWaitingMessageItemResult {
   const pendingMessages: ChatMessage[] = [];
+  const updatedNodeIds: number[] = [];
   let nodesDirty = false;
   let roomDispatched = false;
 
@@ -64,6 +66,7 @@ export function processMeshcoreWaitingMessageItem(
           last_heard: Math.max(existing.last_heard ?? 0, d.senderTimestamp),
         });
         nodesDirty = true;
+        updatedNodeIds.push(senderId);
       }
       if (isMeshcoreTransportStatusChatLine(d.text)) {
         deps.logTransportLineAsDevice(d.text);
@@ -154,6 +157,7 @@ export function processMeshcoreWaitingMessageItem(
               ),
         );
         nodesDirty = true;
+        updatedNodeIds.push(resolved.senderId);
       }
       const channelRxHops = meshcoreCompanionRxPathLenToHopCount(d.pathLen);
       pendingMessages.push({
@@ -171,5 +175,5 @@ export function processMeshcoreWaitingMessageItem(
     }
   }
 
-  return { nodesDirty, pendingMessages, roomDispatched };
+  return { nodesDirty, updatedNodeIds, pendingMessages, roomDispatched };
 }

@@ -30,6 +30,19 @@ interface RawModuleMessage {
 }
 
 type RawMessageMapSetter = Dispatch<SetStateAction<Map<number, RawModuleMessage[]>>>;
+const MAX_SINGLE_ENTRY_MAP_NODES = 128;
+
+function setBoundedMapEntry<T>(previous: Map<number, T>, key: number, value: T): Map<number, T> {
+  const updated = new Map(previous);
+  updated.delete(key);
+  updated.set(key, value);
+  while (updated.size > MAX_SINGLE_ENTRY_MAP_NODES) {
+    const oldestKey = updated.keys().next().value;
+    if (oldestKey === undefined) break;
+    updated.delete(oldestKey);
+  }
+  return updated;
+}
 
 export interface MeshtasticModulePortSideEffectsDeps {
   touchLastData: () => void;
@@ -97,11 +110,7 @@ function handleModulePort(
       deps.setDetectionSensorEvents((prev) => appendModulePortEvent(prev, entry));
       break;
     case 'ping':
-      deps.setPingResponses((prev) => {
-        const updated = new Map(prev);
-        updated.set(from, entry);
-        return updated;
-      });
+      deps.setPingResponses((prev) => setBoundedMapEntry(prev, from, entry));
       break;
     case 'ipTunnel':
       appendRawMessage(deps.setIpTunnelMessages, entry, 100);
@@ -128,11 +137,9 @@ function handleModulePort(
       appendRawMessage(deps.setAtakMessages, entry, 100);
       break;
     case 'mapReport':
-      deps.setMapReports((prev) => {
-        const updated = new Map(prev);
-        updated.set(from, { from, data: payload.data, timestamp });
-        return updated;
-      });
+      deps.setMapReports((prev) =>
+        setBoundedMapEntry(prev, from, { from, data: payload.data, timestamp }),
+      );
       break;
     case 'private':
       appendRawMessage(deps.setPrivateMessages, entry, 50);

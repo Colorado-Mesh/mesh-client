@@ -97,8 +97,11 @@ describe('attachMeshtasticRawPacketSideEffects', () => {
     detach();
   });
 
-  it('patches SNR and hops onto an existing store node', () => {
+  it('patches SNR/hops and invokes processNodeUpdate for RF mesh packets', () => {
     const { deps } = makeDeps();
+    const processNodeUpdate = vi
+      .spyOn(useDiagnosticsStore.getState(), 'processNodeUpdate')
+      .mockImplementation(() => {});
     const detach = attachMeshtasticRawPacketSideEffects(IDENTITY, deps);
     packetRouter.dispatch(
       {
@@ -122,6 +125,12 @@ describe('attachMeshtasticRawPacketSideEffects', () => {
     expect(node?.rssi).toBe(-80);
     expect(node?.hops_away).toBe(1);
     expect(window.electronAPI.db.saveNode).toHaveBeenCalled();
+    expect(processNodeUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ node_id: PEER, snr: 9.25, hops_away: 1 }),
+      null,
+      MY_NODE,
+      expect.anything(),
+    );
     detach();
   });
 

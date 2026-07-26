@@ -548,7 +548,9 @@
       "pkiMissingRecipientKey": "암호화된 메시지를 보낼 수 없습니다 — 수신자 공개 키가 NodeDB에서 누락되었습니다.",
       "pkiFailed": "이 메시지에 대한 PKI 암호화에 실패했습니다.",
       "noChannel": "이 메시지를 라우팅할 수 있는 채널이 없습니다.",
-      "timeout": "라디오에서 메시지가 시간 초과되었습니다."
+      "timeout": "라디오에서 메시지가 시간 초과되었습니다.",
+      "rateLimited": "라디오는 속도 제한 메시지입니다. 잠시 후 다시 시도하세요.",
+      "noInterface": "이 메시지를 보낼 수 있는 라디오 인터페이스가 없습니다."
     },
     "waitingMessagesQueued": "{{count}} 라디오에서 대기 중인 메시지",
     "waitingMessagesSyncProgress": "라디오에서 {{processed}}/{{total}} 동기화 중…",
@@ -2700,7 +2702,11 @@
     "stableStability": "안정적인",
     "moderateStability": "보통의",
     "unstableStability": "불안정한",
-    "unknownStability": "알려지지 않은"
+    "unknownStability": "알려지지 않은",
+    "hybridMqttPathTooltip": "RF를 통해 수신; 일부 패킷은 MQTT 릴레이 경로를 사용합니다",
+    "hybridMqttPathAria": "RF 및 MQTT 경로",
+    "connectedViaRfAndMqttTooltip": "RF 및 MQTT를 통해 연결됨",
+    "connectedViaRfAndMqttAria": "RF 및 MQTT를 통해 연결됨"
   },
   "nodeListPanel": {
     "contactsRefreshed": "연락처가 새로 고쳐졌습니다.",

@@ -548,7 +548,9 @@
       "pkiMissingRecipientKey": "Tidak dapat mengirim pesan terenkripsi — kunci publik penerima hilang dari NodeDB.",
       "pkiFailed": "Enkripsi PKI gagal untuk pesan ini.",
       "noChannel": "Tidak ada saluran yang tersedia untuk merutekan pesan ini.",
-      "timeout": "Waktu pesan habis di radio."
+      "timeout": "Waktu pesan habis di radio.",
+      "rateLimited": "Radio adalah pesan yang membatasi tingkat. Coba lagi sebentar lagi.",
+      "noInterface": "Tidak ada antarmuka radio yang tersedia untuk mengirim pesan ini."
     },
     "waitingMessagesQueued": "{{count}} antrean pesan di radio",
     "waitingMessagesSyncProgress": "Menyinkronkan {{processed}} / {{total}} dari radio…",
@@ -2700,7 +2702,11 @@
     "stableStability": "Stabil",
     "moderateStability": "Sedang",
     "unstableStability": "Tidak stabil",
-    "unknownStability": "Tidak dikenal"
+    "unknownStability": "Tidak dikenal",
+    "hybridMqttPathTooltip": "Diterima melalui RF; beberapa paket menggunakan jalur relai MQTT",
+    "hybridMqttPathAria": "Jalur RF dan MQTT",
+    "connectedViaRfAndMqttTooltip": "Terhubung melalui RF dan MQTT",
+    "connectedViaRfAndMqttAria": "Terhubung melalui RF dan MQTT"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Kontak disegarkan.",

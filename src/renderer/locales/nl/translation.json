@@ -546,7 +546,9 @@
       "pkiMissingRecipientKey": "Kan gecodeerd bericht niet verzenden — de openbare sleutel van de ontvanger ontbreekt in NodeDB.",
       "pkiFailed": "PKI-codering mislukt voor dit bericht.",
       "noChannel": "Geen kanaal beschikbaar om dit bericht te routeren.",
-      "timeout": "Er is een time-out opgetreden op de radio."
+      "timeout": "Er is een time-out opgetreden op de radio.",
+      "rateLimited": "De radio is tariefbeperkende berichten. Probeer het binnenkort opnieuw.",
+      "noInterface": "Er is geen radio-interface beschikbaar om dit bericht te verzenden."
     },
     "waitingMessagesQueued": "{{count}} bericht(en) in de wachtrij op de radio",
     "waitingMessagesSyncProgress": "{{processed}} / {{total}} synchroniseren vanaf radio...",
@@ -2700,7 +2702,11 @@
     "stableStability": "Stabiel",
     "moderateStability": "Gematigd",
     "unstableStability": "Onstabiel",
-    "unknownStability": "Onbekend"
+    "unknownStability": "Onbekend",
+    "hybridMqttPathTooltip": "Ontvangen via RF; sommige pakketten gebruiken een MQTT-relaispad",
+    "hybridMqttPathAria": "RF- en MQTT-pad",
+    "connectedViaRfAndMqttTooltip": "Verbonden via RF en MQTT",
+    "connectedViaRfAndMqttAria": "Verbonden via RF en MQTT"
   },
   "nodeListPanel": {
     "contactsRefreshed": "Contacten vernieuwd.",

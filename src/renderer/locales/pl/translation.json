@@ -547,7 +547,9 @@
       "pkiMissingRecipientKey": "Nie można wysłać zaszyfrowanej wiadomości — brak klucza publicznego odbiorcy w NodeDB.",
       "pkiFailed": "Szyfrowanie PKI dla tej wiadomości nie powiodło się.",
       "noChannel": "Brak dostępnego kanału do przekierowania tej wiadomości.",
-      "timeout": "Upłynął limit czasu wiadomości w radiu."
+      "timeout": "Upłynął limit czasu wiadomości w radiu.",
+      "rateLimited": "Radio jest komunikatem ograniczającym szybkość. Spróbuj ponownie za chwilę.",
+      "noInterface": "Brak dostępnego interfejsu radiowego do wysłania tej wiadomości."
     },
     "waitingMessagesQueued": "{{count}} wiadomościw kolejce w radiu",
     "waitingMessagesSyncProgress": "Synchronizowanie {{processed}} / {{total}} z radiem…",
@@ -2702,7 +2704,11 @@
     "stableStability": "Stabilny",
     "moderateStability": "Umiarkowany",
     "unstableStability": "Nietrwały",
-    "unknownStability": "Nieznany"
+    "unknownStability": "Nieznany",
+    "hybridMqttPathTooltip": "Odebrane przez RF; niektóre pakiety używają ścieżki przekaźnika MQTT",
+    "hybridMqttPathAria": "Ścieżka RF i MQTT",
+    "connectedViaRfAndMqttTooltip": "Połączony przez RF i MQTT",
+    "connectedViaRfAndMqttAria": "Połączony przez RF i MQTT"
   },
   "nodeListPanel": {
     "refreshFailed": "Odświeżanie nie powiodło się: {{message}}",
