@@ -16,15 +16,30 @@ function isEslintInvocation(line) {
   return trimmed.startsWith('pnpm exec eslint') || trimmed.startsWith('pnpm  exec eslint');
 }
 
+/** Options that consume the following argument as their value. */
+const OPTIONS_TAKING_VALUE = new Set(['--max-warnings']);
+
 /**
- * Safe form: `pnpm exec eslint --cache --max-warnings 0 -- "$@"` (+ optional `|| exit 1`).
+ * Safe form: `pnpm exec eslint <options> -- "$@"` (+ optional `|| exit 1`), where every
+ * argument before `--` is an option so staged paths reach eslint literally.
  * @param {string} line
  * @returns {boolean}
  */
 function isSafeEslintInvocation(line) {
-  const trimmed = line.trim();
-  const base = 'pnpm exec eslint --cache --max-warnings 0 -- "$@"';
-  return trimmed === base || trimmed === `${base} || exit 1`;
+  const PREFIX = 'pnpm exec eslint ';
+  const SUFFIX = ' -- "$@"';
+  const trimmed = line.trim().replace(/ \|\| exit 1$/, '');
+  if (!trimmed.startsWith(PREFIX) || !trimmed.endsWith(SUFFIX)) return false;
+
+  const args = trimmed.slice(PREFIX.length, -SUFFIX.length).split(' ').filter(Boolean);
+  let sawMaxWarnings = false;
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (!arg.startsWith('-')) return false;
+    if (arg === '--max-warnings' || arg.startsWith('--max-warnings=')) sawMaxWarnings = true;
+    if (OPTIONS_TAKING_VALUE.has(arg)) i += 1;
+  }
+  return sawMaxWarnings;
 }
 
 describe('pre-commit eslint batching', () => {
