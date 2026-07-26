@@ -1,12 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
-import { useNodeStore } from '../../stores/nodeStore';
+import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
 import { setMeshtasticConnectedMyNodeNum } from '../meshtasticConnectedNodeRef';
+import { meshNodeToNodeRecord } from '../storeRecordAdapters';
 import type { MeshNode, TelemetryPoint } from '../types';
 import type { DeviceLogEntry, MeshCoreSelfInfo, RxPacketEntry } from './meshcoreHookTypes';
 import { createMeshcoreMqttPacketLogBucket } from './meshcoreMqttPacketLogThrottle';
-import { handleMeshcoreRfRx, type MeshcoreRfRxDeps } from './meshcoreRfRxRuntime';
+import {
+  applyMeshcoreRfHopsAwayUpdate,
+  handleMeshcoreRfRx,
+  type MeshcoreRfRxDeps,
+} from './meshcoreRfRxRuntime';
 
 const ID = 'meshcore-rf-rx-runtime-test';
 
@@ -173,5 +178,53 @@ describe('handleMeshcoreRfRx', () => {
     handleMeshcoreRfRx({ lastSnr: 3, lastRssi: -70, raw: null }, deps);
 
     expect(publish).not.toHaveBeenCalled();
+  });
+
+  it('clears MQTT-only flags on RF hear even when hops/snr/rssi/last_heard are unchanged', () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const node = makeNode(7, {
+      last_heard: nowSec,
+      snr: 4,
+      rssi: -70,
+      hops_away: 1,
+      source: 'mqtt',
+      heard_via_mqtt_only: true,
+      via_mqtt: true,
+    });
+    upsertNodeRecord(ID, meshNodeToNodeRecord(node));
+    const nodes = new Map<number, MeshNode>([[7, node]]);
+    const { deps } = makeDeps({
+      myNodeNumRef: ref(1),
+      readNodes: () => nodes,
+    });
+
+    applyMeshcoreRfHopsAwayUpdate(7, 1, Date.now(), 4, -70, deps);
+
+    expect(useNodeStore.getState().nodes[ID]?.[7]).toMatchObject({
+      source: 'rf',
+      heardViaMqttOnly: false,
+      viaMqtt: false,
+      hopsAway: 1,
+      snr: 4,
+      rssi: -70,
+    });
+  });
+
+  it('skips Meshtastic-sender store writes when last_heard/snr/rssi are unchanged', () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const nodes = new Map<number, MeshNode>([
+      [2, makeNode(2, { last_heard: nowSec, snr: 5.5, rssi: -55 })],
+    ]);
+    upsertNodeRecord(ID, meshNodeToNodeRecord(nodes.get(2)!));
+    const { deps } = makeDeps({
+      myNodeNumRef: ref(1),
+      readNodes: () => nodes,
+    });
+    const setStateSpy = vi.spyOn(useNodeStore, 'setState');
+    const raw = Uint8Array.from([1, 0x3f, 0, 0, 2, 0, 0, 0]);
+
+    handleMeshcoreRfRx({ lastSnr: 5.5, lastRssi: -55, raw }, deps);
+
+    expect(setStateSpy).not.toHaveBeenCalled();
   });
 });

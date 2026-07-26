@@ -372,6 +372,57 @@ describe('attachMeshcoreConnSideEffects', () => {
     expect(h.ctx.addMessagesBatch).toHaveBeenCalledTimes(1);
   });
 
+  it('preserves concurrent RF snr/rssi when flushing waiting-drain last_heard', async () => {
+    const prefix = new Uint8Array([0xaa, 0xbb]);
+    useNodeStore.setState({
+      nodes: {
+        [ID]: {
+          42: {
+            nodeId: 42,
+            longName: 'Peer',
+            shortName: 'P',
+            snr: 5,
+            rssi: -80,
+            lastHeardAt: 100,
+            source: 'rf',
+          },
+        },
+      },
+    });
+    const h = makeHarness();
+    h.ctx.pubKeyPrefixMapRef.current.set('aabb', 42);
+    vi.mocked(h.conn.getWaitingMessages).mockImplementation(() => {
+      // Concurrent RF RX while the drain still holds the start-of-drain workingNodes snapshot.
+      useNodeStore.setState((s) => ({
+        nodes: {
+          ...s.nodes,
+          [ID]: {
+            ...s.nodes[ID],
+            42: { ...s.nodes[ID]?.[42], nodeId: 42, snr: 9, rssi: -40 },
+          },
+        },
+      }));
+      return Promise.resolve([
+        {
+          contactMessage: {
+            pubKeyPrefix: prefix,
+            text: 'hello from queue',
+            senderTimestamp: 1_700_000_100,
+          },
+        },
+      ]);
+    });
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+
+    await h.ctx.processWaitingMessagesRef.current?.({ showSyncBanner: true });
+
+    expect(useNodeStore.getState().nodes[ID]?.[42]).toMatchObject({
+      snr: 9,
+      rssi: -40,
+      lastHeardAt: 1_700_000_100,
+    });
+  });
+
   it('tears down the session and requests reconnect on disconnect', async () => {
     const h = makeHarness();
     detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);

@@ -46,7 +46,7 @@ import {
 } from '../../lib/timeConstants';
 import type { ChatMessage, MeshNode } from '../../lib/types';
 import type { NodeRecord } from '../../stores/nodeStore';
-import { upsertNodeRecordsForIdentity } from '../../stores/nodeStore';
+import { upsertNodeRecordsForIdentity, useNodeStore } from '../../stores/nodeStore';
 import { usePathHistoryStore } from '../../stores/pathHistoryStore';
 import type {
   MeshcoreConnSideEffectsCtx,
@@ -100,14 +100,46 @@ interface MeshcoreWaitingMessagesDrainState {
   workingNodes: Map<number, MeshNode>;
 }
 
+/**
+ * Waiting-drain mutations are last_heard (+ optional channel display-name). Rebuild patches
+ * against the live store row so concurrent RF SNR/RSSI writes aren't overwritten by the
+ * start-of-drain `workingNodes` snapshot.
+ */
 function collectDirtyWaitingNodeRecords(
+  identityId: string,
   dirtyNodeIds: Set<number>,
   workingNodes: Map<number, MeshNode>,
 ): NodeRecord[] {
-  return Array.from(dirtyNodeIds)
-    .map((nodeId) => workingNodes.get(nodeId))
-    .filter((node): node is MeshNode => node != null)
-    .map((node) => meshNodeToNodeRecord(node));
+  const liveById = useNodeStore.getState().nodes[identityId] ?? {};
+  const out: NodeRecord[] = [];
+  for (const nodeId of dirtyNodeIds) {
+    const working = workingNodes.get(nodeId);
+    if (!working) continue;
+    const live = liveById[nodeId];
+    if (!live) {
+      out.push(meshNodeToNodeRecord(working));
+      continue;
+    }
+    const nextLastHeard = Math.max(live.lastHeardAt ?? 0, working.last_heard ?? 0);
+    const patch: NodeRecord = { nodeId, lastHeardAt: nextLastHeard };
+    const workingLong = working.long_name?.trim();
+    const workingShort = working.short_name?.trim();
+    if (workingLong && workingLong !== (live.longName ?? '').trim()) {
+      patch.longName = workingLong;
+    }
+    if (workingShort && workingShort !== (live.shortName ?? '').trim()) {
+      patch.shortName = workingShort;
+    }
+    if (
+      nextLastHeard === (live.lastHeardAt ?? 0) &&
+      patch.longName === undefined &&
+      patch.shortName === undefined
+    ) {
+      continue;
+    }
+    out.push(patch);
+  }
+  return out;
 }
 
 interface FlushMeshcoreWaitingBatchOptions {
@@ -124,11 +156,15 @@ function flushMeshcoreWaitingBatch(opts: FlushMeshcoreWaitingBatchOptions): void
     opts.pendingMessages.length = 0;
   }
   if (opts.dirtyNodeIds.size === 0) return;
-  if (opts.identityId) {
-    const dirtyRecords = collectDirtyWaitingNodeRecords(opts.dirtyNodeIds, opts.workingNodes);
-    if (dirtyRecords.length > 0) {
-      upsertNodeRecordsForIdentity(opts.identityId, dirtyRecords);
-    }
+  // Retain dirty ids when identity isn't bound yet so the next flush can retry.
+  if (!opts.identityId) return;
+  const dirtyRecords = collectDirtyWaitingNodeRecords(
+    opts.identityId,
+    opts.dirtyNodeIds,
+    opts.workingNodes,
+  );
+  if (dirtyRecords.length > 0) {
+    upsertNodeRecordsForIdentity(opts.identityId, dirtyRecords);
   }
   opts.dirtyNodeIds.clear();
 }
@@ -234,7 +270,10 @@ async function drainWaitingMessagesSilent(
         'MeshCore syncNextMessage',
       );
     } catch (e: unknown) {
-      if (isMeshcoreSyncNextMessageTimeoutError(e)) break;
+      if (isMeshcoreSyncNextMessageTimeoutError(e)) {
+        // catch-no-log-ok syncNextMessage timeout means empty queue / end of silent drain
+        break;
+      }
       throw e;
     }
     const item = normalizeMeshcoreWaitingMessageItem(raw);

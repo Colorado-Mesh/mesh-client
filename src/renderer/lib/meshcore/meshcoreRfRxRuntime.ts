@@ -91,13 +91,23 @@ interface MeshcoreRfMqttPacketLogFields {
   hash?: string;
 }
 
+/** Last successfully queued RF transport codes per node — skip redundant IPC on stable codes. */
+const lastPersistedRfTransportByNodeId = new Map<number, string>();
+
 function persistMeshcoreContactRfTransport(
   nodeId: number,
   transportCodes: readonly [number, number],
 ): void {
+  const key = `${transportCodes[0]}:${transportCodes[1]}`;
+  if (lastPersistedRfTransportByNodeId.get(nodeId) === key) return;
+  lastPersistedRfTransportByNodeId.set(nodeId, key);
   void window.electronAPI.db
     .updateMeshcoreContactRfTransport(nodeId, transportCodes[0], transportCodes[1])
     .catch((e: unknown) => {
+      // Allow a later packet to retry after a failed write.
+      if (lastPersistedRfTransportByNodeId.get(nodeId) === key) {
+        lastPersistedRfTransportByNodeId.delete(nodeId);
+      }
       console.warn(
         '[meshcoreRfRxRuntime] updateMeshcoreContactRfTransport error ' + errLikeToLogString(e),
       );
@@ -147,11 +157,15 @@ function updateKnownMeshtasticSenderNode(
   const storeId = deps.meshcoreIdentityIdRef.current;
   if (!existing || !storeId) return;
   const nowSec = Math.floor(now / 1000);
+  const nextLastHeard = Math.max(existing.last_heard ?? 0, nowSec);
+  if (existing.last_heard === nextLastHeard && existing.snr === snr && existing.rssi === rssi) {
+    return;
+  }
   upsertNodeRecord(
     storeId,
     meshNodeToNodeRecord({
       ...existing,
-      last_heard: Math.max(existing.last_heard ?? 0, nowSec),
+      last_heard: nextLastHeard,
       snr,
       rssi,
     }),
@@ -260,7 +274,7 @@ function buildMeshcoreRfParseContext(
 }
 
 /** Update hops_away/SNR/RSSI on a known MeshCore node from the RF packet's own hop count. */
-function applyMeshcoreRfHopsAwayUpdate(
+export function applyMeshcoreRfHopsAwayUpdate(
   fromNodeId: number | null,
   hopCount: number,
   now: number,
@@ -290,7 +304,10 @@ function applyMeshcoreRfHopsAwayUpdate(
     existing.hops_away === updated.hops_away &&
     existing.snr === snr &&
     existing.rssi === rssi &&
-    existing.last_heard === updated.last_heard;
+    existing.last_heard === updated.last_heard &&
+    existing.source === updated.source &&
+    existing.heard_via_mqtt_only === updated.heard_via_mqtt_only &&
+    existing.via_mqtt === updated.via_mqtt;
   if (unchanged) return;
 
   upsertNodeRecord(storeId, meshNodeToNodeRecord(updated));
