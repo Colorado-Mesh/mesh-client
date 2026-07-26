@@ -88,6 +88,51 @@ function saveNode(identityId: IdentityId, node: MeshNode): void {
   persistDbWrite('meshtastic node', () => window.electronAPI.db.saveNode(node));
 }
 
+/** Self stays at hopsAway (default 0); stale peers clear hops; live peers keep packet or prior. */
+function resolveNodeDbHopsAway(
+  isSelf: boolean,
+  lastHeardStale: boolean,
+  hopsAway: number | undefined,
+  previousHopsAway: number | undefined,
+): number | undefined {
+  if (isSelf) return hopsAway ?? 0;
+  if (lastHeardStale) return undefined;
+  return hopsAway ?? previousHopsAway;
+}
+
+interface NodeDbPositionPatch {
+  latitude: number | null;
+  longitude: number | null;
+  lastPositionWarning: string | undefined;
+}
+
+function applyNodeDbPositionCoords(
+  positionCoords: { latitude: number; longitude: number } | null,
+  nodeNum: number,
+  myNodeNum: number,
+  isSelf: boolean,
+  storeExisting: MeshNode,
+): NodeDbPositionPatch {
+  const latitude = storeExisting.latitude;
+  const longitude = storeExisting.longitude;
+  let lastPositionWarning: string | undefined = storeExisting.lastPositionWarning;
+  if (!positionCoords || shouldPreserveStaticGpsForSelfNode(nodeNum, myNodeNum)) {
+    return { latitude, longitude, lastPositionWarning };
+  }
+  const r = validateCoords(positionCoords.latitude, positionCoords.longitude);
+  if (r.valid) {
+    return {
+      latitude: positionCoords.latitude,
+      longitude: positionCoords.longitude,
+      lastPositionWarning: undefined,
+    };
+  }
+  if (!isSelf || (storeExisting.latitude === 0 && storeExisting.longitude === 0)) {
+    lastPositionWarning = r.warning;
+  }
+  return { latitude, longitude, lastPositionWarning };
+}
+
 /** UserPacket identity: live long/short name, hardware, role, and public key. */
 function handleUserPacketNodeInfo(
   identityId: IdentityId,
@@ -174,21 +219,14 @@ function handleNodeDbNodeInfo(
     info.latitude != null && info.longitude != null
       ? { latitude: info.latitude, longitude: info.longitude }
       : null;
-  let newLat = storeExisting.latitude;
-  let newLon = storeExisting.longitude;
+  const positionPatch = applyNodeDbPositionCoords(
+    positionCoords,
+    nodeNum,
+    myNodeNum,
+    isSelf,
+    storeExisting,
+  );
   const newAlt = info.altitude ?? storeExisting.altitude;
-  let posWarn: string | undefined = storeExisting.lastPositionWarning;
-  if (positionCoords && !shouldPreserveStaticGpsForSelfNode(nodeNum, myNodeNum)) {
-    const { latitude, longitude } = positionCoords;
-    const r = validateCoords(latitude, longitude);
-    if (r.valid) {
-      newLat = latitude;
-      newLon = longitude;
-      posWarn = undefined;
-    } else if (!isSelf || (storeExisting.latitude === 0 && storeExisting.longitude === 0)) {
-      posWarn = r.warning;
-    }
-  }
   const lastHeardMs = computeNodeInfoLastHeardMs(
     info.lastHeardAt,
     storeExisting.last_heard,
@@ -204,6 +242,12 @@ function handleNodeDbNodeInfo(
     preferNonEmptyTrimmedString(info.shortName, storeExisting.short_name),
     nodeNum,
   );
+  const hops_away = resolveNodeDbHopsAway(
+    isSelf,
+    lastHeardStale,
+    info.hopsAway,
+    storeExisting.hops_away,
+  );
   const node: MeshNode = {
     ...storeExisting,
     node_id: nodeNum,
@@ -213,14 +257,10 @@ function handleNodeDbNodeInfo(
     snr: info.snr ?? storeExisting.snr,
     battery: info.batteryLevel ?? storeExisting.battery,
     last_heard: lastHeardMs,
-    latitude: newLat,
-    longitude: newLon,
+    latitude: positionPatch.latitude,
+    longitude: positionPatch.longitude,
     role: info.role ?? storeExisting.role,
-    hops_away: isSelf
-      ? (info.hopsAway ?? 0)
-      : lastHeardStale
-        ? undefined
-        : (info.hopsAway ?? storeExisting.hops_away),
+    hops_away,
     via_mqtt: info.viaMqtt ?? false,
     voltage: info.voltage ?? storeExisting.voltage,
     channel_utilization: info.channelUtilization ?? storeExisting.channel_utilization,
@@ -228,7 +268,7 @@ function handleNodeDbNodeInfo(
     altitude: newAlt,
     heard_via_mqtt_only: false,
     source: 'rf',
-    lastPositionWarning: posWarn,
+    lastPositionWarning: positionPatch.lastPositionWarning,
   };
   saveNode(identityId, node);
 

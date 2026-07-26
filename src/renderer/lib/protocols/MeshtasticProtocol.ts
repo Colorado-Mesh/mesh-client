@@ -108,6 +108,84 @@ function boundedRoute(route: readonly unknown[] | undefined): number[] {
   return hops;
 }
 
+/** Finite number or undefined — used for optional MeshPacket data-layer fields. */
+function finiteOptionalNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+interface TraceRouteMeshPacket {
+  from: number;
+  to?: number;
+  rxTime?: number;
+  data?: { route?: readonly number[]; routeBack?: readonly number[] };
+  payloadVariant?: {
+    case?: string;
+    value?: {
+      portnum?: number;
+      payload?: Uint8Array;
+      dest?: number;
+      source?: number;
+      replyId?: number;
+      requestId?: number;
+    };
+  };
+}
+
+interface DecodedTraceRouteFields {
+  route: number[];
+  routeBack: number[] | undefined;
+  dataLayerDest: number | undefined;
+  dataLayerSource: number | undefined;
+  replyId: number | undefined;
+  requestId: number | undefined;
+}
+
+function decodeTraceRouteFromDecodedPayload(
+  value: NonNullable<NonNullable<TraceRouteMeshPacket['payloadVariant']>['value']>,
+): DecodedTraceRouteFields | null {
+  if (!value.payload) return null;
+  try {
+    const rd = fromBinary(Mesh.RouteDiscoverySchema, value.payload) as unknown as {
+      route: readonly number[];
+      routeBack: readonly number[];
+    };
+    return {
+      route: boundedRoute(rd.route),
+      routeBack: rd.routeBack ? boundedRoute(rd.routeBack) : undefined,
+      dataLayerDest: finiteOptionalNumber(value.dest),
+      dataLayerSource: finiteOptionalNumber(value.source),
+      replyId: finiteOptionalNumber(value.replyId),
+      requestId: finiteOptionalNumber(value.requestId),
+    };
+  } catch {
+    // catch-no-log-ok non-traceroute payload on TRACEROUTE_APP
+    return null;
+  }
+}
+
+function decodeTraceRouteFromDataLayer(
+  data: NonNullable<TraceRouteMeshPacket['data']>,
+): DecodedTraceRouteFields {
+  return {
+    route: boundedRoute(data.route),
+    routeBack: data.routeBack ? boundedRoute(data.routeBack) : undefined,
+    dataLayerDest: undefined,
+    dataLayerSource: undefined,
+    replyId: undefined,
+    requestId: undefined,
+  };
+}
+
+function resolveTraceRouteFields(p: TraceRouteMeshPacket): DecodedTraceRouteFields | null {
+  if (p.payloadVariant?.case === 'decoded' && p.payloadVariant.value) {
+    return decodeTraceRouteFromDecodedPayload(p.payloadVariant.value);
+  }
+  if (p.data) {
+    return decodeTraceRouteFromDataLayer(p.data);
+  }
+  return null;
+}
+
 /**
  * Meshtastic codec + SDK adapter. Stateless: every method that needs the SDK
  * takes the handle as a parameter. Lifecycle (watchdog, reconnect) lives in
@@ -885,62 +963,9 @@ export class MeshtasticProtocol implements Protocol {
   }
 
   private decodeTraceRoute(raw: unknown): DomainEvent[] {
-    const p = raw as {
-      from: number;
-      to?: number;
-      rxTime?: number;
-      data?: { route?: readonly number[]; routeBack?: readonly number[] };
-      payloadVariant?: {
-        case?: string;
-        value?: {
-          portnum?: number;
-          payload?: Uint8Array;
-          dest?: number;
-          source?: number;
-          replyId?: number;
-          requestId?: number;
-        };
-      };
-    };
-
-    let route: number[];
-    let routeBack: number[] | undefined;
-    let dataLayerDest: number | undefined;
-    let dataLayerSource: number | undefined;
-    let replyId: number | undefined;
-    let requestId: number | undefined;
-
-    if (p.payloadVariant?.case === 'decoded' && p.payloadVariant.value?.payload) {
-      try {
-        const rd = fromBinary(
-          Mesh.RouteDiscoverySchema,
-          p.payloadVariant.value.payload,
-        ) as unknown as {
-          route: readonly number[];
-          routeBack: readonly number[];
-        };
-        route = boundedRoute(rd.route);
-        routeBack = rd.routeBack ? boundedRoute(rd.routeBack) : undefined;
-      } catch {
-        // catch-no-log-ok non-traceroute payload on TRACEROUTE_APP
-        return [];
-      }
-      const dp = p.payloadVariant.value;
-      const rawDest = dp.dest;
-      dataLayerDest = typeof rawDest === 'number' && Number.isFinite(rawDest) ? rawDest : undefined;
-      const rawSource = dp.source;
-      dataLayerSource =
-        typeof rawSource === 'number' && Number.isFinite(rawSource) ? rawSource : undefined;
-      const rawReply = dp.replyId;
-      replyId = typeof rawReply === 'number' && Number.isFinite(rawReply) ? rawReply : undefined;
-      const rawReq = dp.requestId;
-      requestId = typeof rawReq === 'number' && Number.isFinite(rawReq) ? rawReq : undefined;
-    } else if (p.data) {
-      route = boundedRoute(p.data.route);
-      routeBack = p.data.routeBack ? boundedRoute(p.data.routeBack) : undefined;
-    } else {
-      return [];
-    }
+    const p = raw as TraceRouteMeshPacket;
+    const fields = resolveTraceRouteFields(p);
+    if (!fields) return [];
 
     const from = normalizedNodeNum(p.from);
     if (from === undefined) return [];
@@ -950,14 +975,14 @@ export class MeshtasticProtocol implements Protocol {
         type: 'trace_route',
         payload: {
           from,
-          to: normalizedNodeNum(p.to) ?? dataLayerDest ?? 0,
-          route,
-          routeBack,
+          to: normalizedNodeNum(p.to) ?? fields.dataLayerDest ?? 0,
+          route: fields.route,
+          routeBack: fields.routeBack,
           timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
-          dataLayerDest,
-          dataLayerSource,
-          replyId,
-          requestId,
+          dataLayerDest: fields.dataLayerDest,
+          dataLayerSource: fields.dataLayerSource,
+          replyId: fields.replyId,
+          requestId: fields.requestId,
         },
       },
     ];

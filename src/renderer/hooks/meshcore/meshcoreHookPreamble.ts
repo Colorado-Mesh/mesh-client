@@ -37,7 +37,6 @@ import {
   mergeMeshcoreLastHeardFromAdvert,
 } from '../../lib/nodeStatus';
 import { normalizeReactionEmoji } from '../../lib/reactions';
-import { MAX_TELEMETRY_POINTS as SHARED_MAX_TELEMETRY_POINTS } from '../../lib/sessionMemoryCaps';
 import {
   MESHCORE_CHANNEL_RF_DEDUP_WINDOW_MS,
   MESHCORE_CROSS_TRANSPORT_DEDUP_WINDOW_MS,
@@ -310,7 +309,7 @@ export const MESHCORE_TRACE_TIMEOUT_MS = MESHCORE_REPEATER_RPC_TIMEOUT_MS;
 export const MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS = 8;
 /** Request page size for GetNeighbours; firmware reply buffers often return fewer rows (~11 at 6-byte prefixes). */
 export const MESHCORE_NEIGHBORS_PAGE_SIZE = 50;
-export const MAX_TELEMETRY_POINTS = SHARED_MAX_TELEMETRY_POINTS;
+export { MAX_TELEMETRY_POINTS } from '../../lib/sessionMemoryCaps';
 
 export const MAX_ENV_TELEMETRY_POINTS = 50;
 

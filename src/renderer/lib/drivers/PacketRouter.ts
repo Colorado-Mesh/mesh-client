@@ -116,8 +116,8 @@ function findRoomPostOptimistic(
 }
 
 class PacketRouter {
-  private listeners: PacketRouterListenerEntry[] = [];
-  private typedListeners = new Map<DomainEventType, PacketRouterListenerEntry[]>();
+  private readonly listeners: PacketRouterListenerEntry[] = [];
+  private readonly typedListeners = new Map<DomainEventType, PacketRouterListenerEntry[]>();
   private nextListenerId = 1;
 
   /** Registers a listener at the end of the dispatch order. Returns a detach fn. */
@@ -148,7 +148,9 @@ class PacketRouter {
   }
 
   private removeListener(id: number): void {
-    this.listeners = this.listeners.filter((entry) => entry.id !== id);
+    const remaining = this.listeners.filter((entry) => entry.id !== id);
+    this.listeners.length = 0;
+    this.listeners.push(...remaining);
     for (const [type, entries] of this.typedListeners) {
       const next = entries.filter((entry) => entry.id !== id);
       if (next.length === 0) this.typedListeners.delete(type);

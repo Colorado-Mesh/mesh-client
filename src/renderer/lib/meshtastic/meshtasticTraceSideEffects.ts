@@ -64,11 +64,11 @@ export function prunePendingTraceState(
   }
   if (requests.size > MAX_PENDING_TRACE_ENTRIES) {
     const kept = trimMapToMaxSize(requests, MAX_PENDING_TRACE_ENTRIES);
-    for (const target of [...requests.keys()]) {
+    for (const target of requests.keys()) {
       if (!kept.has(target)) requests.delete(target);
     }
   }
-  for (const [packetId, dest] of [...packetIds.entries()]) {
+  for (const [packetId, dest] of packetIds) {
     if (!requests.has(dest)) packetIds.delete(packetId);
   }
 }

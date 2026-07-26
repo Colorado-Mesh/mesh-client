@@ -460,6 +460,13 @@ async function awaitMeshcoreCompanionConfigAck(
   });
 }
 
+/** Path-updated rebuild merges chat stubs without nesting a setState updater in the debounce. */
+function meshcorePathUpdatedNodesMergeUpdater(
+  newNodes: Map<number, MeshNode>,
+): (prev: Map<number, MeshNode>) => Map<number, MeshNode> {
+  return (prev) => mergeMeshcoreChatStubNodes(prev, newNodes);
+}
+
 export function useMeshcoreRuntime() {
   const [state, setState] = useState<DeviceState>(INITIAL_STATE);
   const [queueStatus, setQueueStatus] = useState<{
@@ -1622,7 +1629,7 @@ export function useMeshcoreRuntime() {
           pendingPathUpdateNodeIds: pendingIds,
           onContacts: setMeshcoreContactsForTelemetry,
           onNodes: (newNodes) => {
-            setNodes((prev) => mergeMeshcoreChatStubNodes(prev, newNodes));
+            setNodes(meshcorePathUpdatedNodesMergeUpdater(newNodes));
           },
         });
       }, MESHCORE_PATH_UPDATED_CONTACTS_REBUILD_DEBOUNCE_MS);

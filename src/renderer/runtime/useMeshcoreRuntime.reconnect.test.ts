@@ -11,6 +11,10 @@ const CONN_EVENTS_SOURCE = readFileSync(
   join(__dirname, '../hooks/meshcore/meshcoreConnSideEffects.ts'),
   'utf-8',
 );
+const RF_RX_RUNTIME_SOURCE = readFileSync(
+  join(__dirname, '../lib/meshcore/meshcoreRfRxRuntime.ts'),
+  'utf-8',
+);
 
 describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
   it('implements exponential backoff reconnect with max attempts', () => {
@@ -232,7 +236,7 @@ describe('meshcoreConnSideEffects disconnected handler (regression)', () => {
   });
 
   it('logs rate-limited MQTT packet-log publish failures', () => {
-    expect(CONN_EVENTS_SOURCE).toMatch(
+    expect(RF_RX_RUNTIME_SOURCE).toMatch(
       /publishMeshcorePacketLog[\s\S]{0,800}MQTT packet-log publish failed/,
     );
   });
@@ -243,7 +247,7 @@ describe('meshcoreConnSideEffects disconnected handler (regression)', () => {
   });
 
   it('syncs rawPacketsRef inside event 136 setRawPackets updater (same-tick hop correlation)', () => {
-    expect(CONN_EVENTS_SOURCE).toMatch(
+    expect(RF_RX_RUNTIME_SOURCE).toMatch(
       /setRawPackets\(\(prev\) => \{[\s\S]*?rawPacketsRef\.current = trimmed;[\s\S]*?return trimmed;/,
     );
   });

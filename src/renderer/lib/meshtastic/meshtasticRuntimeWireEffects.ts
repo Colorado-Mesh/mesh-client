@@ -64,6 +64,22 @@ import { pushMeshtasticTransportSideEffectUnsubs } from './meshtasticTransportSi
 const REQUEST_NODEINFO_MIN_INTERVAL_MS = 120_000;
 const { DeviceStatusEnum } = Types;
 
+/** After configure, request NodeDB metadata once; retry once if the first call fails. */
+function requestMetadataAfterConfigure(device: MeshDevice, myNode: number, attempt: 1 | 2): void {
+  void device.getMetadata(myNode).catch((e: unknown) => {
+    console.debug(
+      '[useMeshtasticRuntime] getMetadata after configure failed ' +
+        errLikeToLogString(e) +
+        (attempt === 2 ? ' (retry)' : ''),
+    );
+    if (attempt === 1) {
+      setTimeout(() => {
+        requestMetadataAfterConfigure(device, myNode, 2);
+      }, MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS);
+    }
+  });
+}
+
 export type RequestStoreForwardHistoryResult =
   | { ok: true }
   | {
@@ -438,21 +454,7 @@ export function attachMeshtasticRuntimeWireEffects(
       mqttClientProxyBridgeRef.current?.flushPendingToDevice();
       const myNode = myNodeNumRef.current;
       if (myNode > 0) {
-        const requestMetadataAfterConfigure = (attempt: 1 | 2): void => {
-          void device.getMetadata(myNode).catch((e: unknown) => {
-            console.debug(
-              '[useMeshtasticRuntime] getMetadata after configure failed ' +
-                errLikeToLogString(e) +
-                (attempt === 2 ? ' (retry)' : ''),
-            );
-            if (attempt === 1) {
-              setTimeout(() => {
-                requestMetadataAfterConfigure(2);
-              }, MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS);
-            }
-          });
-        };
-        requestMetadataAfterConfigure(1);
+        requestMetadataAfterConfigure(device, myNode, 1);
       }
       if (localLoraConfigTimerRef.current != null) {
         clearTimeout(localLoraConfigTimerRef.current);
@@ -828,9 +830,8 @@ export function attachMeshtasticRuntimeWireEffects(
     }
     applySdkRoutingErrorFromLog(entry.message);
   });
-  unsubscribesRef.current.push(unsubForeignLoraLogLine);
-
   unsubscribesRef.current.push(
+    unsubForeignLoraLogLine,
     installMeshtasticSdkRoutingErrorConsoleHook(applySdkRoutingErrorFromLog),
     installMeshtasticSdkRoutingErrorUnhandledRejectionHandler(applySdkRoutingErrorFromRejection),
   );

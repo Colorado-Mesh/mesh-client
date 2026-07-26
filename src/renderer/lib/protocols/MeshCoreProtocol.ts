@@ -2,15 +2,7 @@
 import type { Connection } from '@liamcottle/meshcore.js';
 
 import { meshcoreDmAckKeyU32 } from '../../hooks/meshcore/meshcoreHookPreamble';
-import type {
-  CayenneLppEntry,
-  MeshCoreContactRaw,
-  MeshCoreNeighborEntry,
-  MeshCoreNeighborResult,
-  MeshCoreNodeTelemetry,
-  MeshCoreRepeaterStatus,
-  RxPacketEntry,
-} from '../meshcore/meshcoreHookTypes';
+import type { MeshCoreContactRaw } from '../meshcore/meshcoreHookTypes';
 import { seedMeshcorePrefixLookupMaps } from '../meshcore/meshcorePubKeyRegistry';
 import { meshcoreCoerceRadioRxFrame, parseAutoaddConfigResponse } from '../meshcoreContactAutoAdd';
 import { decodeMeshcoreDirectMessageEvents } from '../meshcoreDirectMessageDecode';
@@ -65,7 +57,7 @@ export type {
   MeshCoreNodeTelemetry,
   MeshCoreRepeaterStatus,
   RxPacketEntry,
-};
+} from '../meshcore/meshcoreHookTypes';
 
 interface MeshCoreEventBus {
   on(event: string | number, cb: (...args: unknown[]) => void): void;

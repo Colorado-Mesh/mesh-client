@@ -7,42 +7,22 @@
  * Failure point: DB / MQTT IPC rejections are logged; Zustand stores and hook state stay
  * authoritative for the UI.
  */
+import type { Dispatch, RefObject, SetStateAction } from 'react';
+
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { getIdentityChatMessages } from '@/renderer/lib/identityStoreReads';
 import { withTimeout } from '@/shared/withTimeout';
 
-import { parseMeshCoreRfPacket } from '../../../shared/meshcoreRfPacketParse';
 import { packetRouter } from '../../lib/drivers/PacketRouter';
-import {
-  classifyPayload,
-  classifyProximity,
-  extractMeshtasticSenderId,
-  meshtasticSenderIdForRawLogFallback,
-} from '../../lib/foreignLoraDetection';
 import {
   applyMeshcoreDmAckToPending,
   syncMeshcoreDmAckToMessageStore,
 } from '../../lib/meshcore/meshcoreDmAckRuntime';
-import type {
-  DeviceLogEntry,
-  MeshCoreConnection,
-  RxPacketEntry,
-} from '../../lib/meshcore/meshcoreHookTypes';
-import {
-  createMeshcoreMqttPacketLogBucket,
-  tryTakeMeshcoreMqttPacketLogToken,
-} from '../../lib/meshcore/meshcoreMqttPacketLogThrottle';
+import type { DeviceLogEntry, MeshCoreConnection } from '../../lib/meshcore/meshcoreHookTypes';
+import { createMeshcoreMqttPacketLogBucket } from '../../lib/meshcore/meshcoreMqttPacketLogThrottle';
+import { handleMeshcoreRfRx, type MeshcoreRfRxDeps } from '../../lib/meshcore/meshcoreRfRxRuntime';
 import { processMeshcoreWaitingMessageItem } from '../../lib/meshcoreProcessWaitingMessageItem';
-import {
-  meshcoreRawPacketLogFromBytesFallback,
-  meshcoreRawPacketResolveFromParsed,
-  meshcoreRfIsSelfOriginated,
-  meshcoreRfNodeHashCandidates,
-  meshcoreRfResolvePathSender,
-} from '../../lib/meshcoreRawPacketSender';
-import { shouldCoalesceSelfFloodAdvert } from '../../lib/meshcoreRawSelfFloodAdvertCoalesce';
 import { meshcoreSortedStorePrior } from '../../lib/meshcoreStoreDedup';
-import { meshcoreMergeContactHopsAwayFromPrevious, pubkeyToNodeId } from '../../lib/meshcoreUtils';
 import {
   normalizeMeshcoreWaitingMessageBatch,
   normalizeMeshcoreWaitingMessageItem,
@@ -57,26 +37,22 @@ import {
   shouldActivateWaitingMessagesBanner,
   waitingMessagesDrainTimeoutMs,
 } from '../../lib/meshcoreWaitingMessagesDrain';
-import { getMeshtasticConnectedMyNodeNum } from '../../lib/meshtasticConnectedNodeRef';
 import type { DomainEvent } from '../../lib/protocols/Protocol';
-import { MAX_RAW_PACKET_LOG_ENTRIES } from '../../lib/rawPacketLogConstants';
-import { getStoredMeshProtocol } from '../../lib/storedMeshProtocol';
 import { meshNodeToNodeRecord } from '../../lib/storeRecordAdapters';
 import {
-  MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS,
   MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN,
   MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS,
   MESHCORE_WAITING_MESSAGES_BATCH_YIELD,
 } from '../../lib/timeConstants';
-import type { ChatMessage, MeshNode, TelemetryPoint } from '../../lib/types';
-import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
-import { upsertNodeRecord, upsertNodeRecordsForIdentity } from '../../stores/nodeStore';
+import type { ChatMessage, MeshNode } from '../../lib/types';
+import type { NodeRecord } from '../../stores/nodeStore';
+import { upsertNodeRecordsForIdentity } from '../../stores/nodeStore';
 import { usePathHistoryStore } from '../../stores/pathHistoryStore';
 import type {
   MeshcoreConnSideEffectsCtx,
   ProcessWaitingMessagesOptions,
 } from './meshcoreConnSideEffectsCtx';
-import { MAX_DEVICE_LOGS, MAX_TELEMETRY_POINTS, meshcoreDmAckKeyU32 } from './meshcoreHookPreamble';
+import { MAX_DEVICE_LOGS, meshcoreDmAckKeyU32 } from './meshcoreHookPreamble';
 import {
   getMeshcoreProcessWaitingMessagesInFlight,
   requestMeshcoreWaitingMessagesFollowUp,
@@ -92,6 +68,233 @@ function yieldToEventLoop(): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, 0);
   });
+}
+
+// --- Waiting messages (event 131) drain — module-level so the flush/ingest steps stay
+// shallow closures instead of nesting inside attach → processWaitingMessages → async IIFE. ---
+
+type WaitingMessageItemDeps = Parameters<typeof processMeshcoreWaitingMessageItem>[1];
+
+interface MeshcoreWaitingMessagesDrainDeps {
+  meshcoreHookMountedRef: RefObject<boolean>;
+  meshcoreIdentityIdRef: RefObject<string | null>;
+  connectionType: 'ble' | 'serial' | 'tcp';
+  readNodes: () => Map<number, MeshNode>;
+  addMessagesBatch: (msgs: ChatMessage[]) => void;
+  buildItemDeps: (workingNodes: Map<number, MeshNode>) => WaitingMessageItemDeps;
+  setWaitingMessagesSyncActive: Dispatch<SetStateAction<boolean>>;
+  setWaitingMessagesSyncProgress: Dispatch<
+    SetStateAction<{ processed: number; total: number } | null>
+  >;
+  setWaitingMessagesCount: Dispatch<SetStateAction<number>>;
+  setWaitingMessagesSilentDrainActive: Dispatch<SetStateAction<boolean>>;
+}
+
+interface MeshcoreWaitingMessagesDrainState {
+  processed: number;
+  bannerActive: boolean;
+  syncTotal: number;
+  /** Mutated in place (pushed/cleared) rather than reassigned so helpers can share the reference. */
+  pendingMessages: ChatMessage[];
+  dirtyNodeIds: Set<number>;
+  workingNodes: Map<number, MeshNode>;
+}
+
+function collectDirtyWaitingNodeRecords(
+  dirtyNodeIds: Set<number>,
+  workingNodes: Map<number, MeshNode>,
+): NodeRecord[] {
+  return Array.from(dirtyNodeIds)
+    .map((nodeId) => workingNodes.get(nodeId))
+    .filter((node): node is MeshNode => node != null)
+    .map((node) => meshNodeToNodeRecord(node));
+}
+
+interface FlushMeshcoreWaitingBatchOptions {
+  pendingMessages: ChatMessage[];
+  dirtyNodeIds: Set<number>;
+  workingNodes: Map<number, MeshNode>;
+  identityId: string | null;
+  addMessagesBatch: (msgs: ChatMessage[]) => void;
+}
+
+function flushMeshcoreWaitingBatch(opts: FlushMeshcoreWaitingBatchOptions): void {
+  if (opts.pendingMessages.length > 0) {
+    opts.addMessagesBatch(opts.pendingMessages);
+    opts.pendingMessages.length = 0;
+  }
+  if (opts.dirtyNodeIds.size === 0) return;
+  if (opts.identityId) {
+    const dirtyRecords = collectDirtyWaitingNodeRecords(opts.dirtyNodeIds, opts.workingNodes);
+    if (dirtyRecords.length > 0) {
+      upsertNodeRecordsForIdentity(opts.identityId, dirtyRecords);
+    }
+  }
+  opts.dirtyNodeIds.clear();
+}
+
+function flushMeshcoreWaitingState(
+  state: MeshcoreWaitingMessagesDrainState,
+  deps: Pick<MeshcoreWaitingMessagesDrainDeps, 'meshcoreIdentityIdRef' | 'addMessagesBatch'>,
+): void {
+  flushMeshcoreWaitingBatch({
+    pendingMessages: state.pendingMessages,
+    dirtyNodeIds: state.dirtyNodeIds,
+    workingNodes: state.workingNodes,
+    identityId: deps.meshcoreIdentityIdRef.current,
+    addMessagesBatch: deps.addMessagesBatch,
+  });
+}
+
+async function ingestMeshcoreWaitingMessageItem(
+  item: ReturnType<typeof normalizeMeshcoreWaitingMessageItem>,
+  state: MeshcoreWaitingMessagesDrainState,
+  deps: Pick<MeshcoreWaitingMessagesDrainDeps, 'buildItemDeps' | 'setWaitingMessagesSyncProgress'>,
+): Promise<void> {
+  if (!item) return;
+  try {
+    const result = processMeshcoreWaitingMessageItem(item, deps.buildItemDeps(state.workingNodes));
+    if (result.nodesDirty) {
+      for (const nodeId of result.updatedNodeIds) state.dirtyNodeIds.add(nodeId);
+    }
+    if (result.pendingMessages.length > 0) {
+      state.pendingMessages.push(...result.pendingMessages);
+    }
+    state.processed += 1;
+    if (state.bannerActive) {
+      deps.setWaitingMessagesSyncProgress({ processed: state.processed, total: state.syncTotal });
+    }
+  } catch (e: unknown) {
+    console.warn(
+      '[meshcoreConnSideEffects] processWaitingMessages ingest error ' + errLikeToLogString(e),
+    );
+  }
+  await yieldToEventLoop();
+}
+
+/** Manual sync (Chat "Sync now") — fetches the full queue and shows the sync-progress banner. */
+async function drainWaitingMessagesManual(
+  conn: MeshCoreConnection,
+  state: MeshcoreWaitingMessagesDrainState,
+  deps: MeshcoreWaitingMessagesDrainDeps,
+): Promise<void> {
+  const msgs = await withTimeout(
+    conn.getWaitingMessages(),
+    waitingMessagesDrainTimeoutMs(true, deps.connectionType),
+    'MeshCore getWaitingMessages',
+  );
+  if (!deps.meshcoreHookMountedRef.current) return;
+  const arr = normalizeMeshcoreWaitingMessageBatch(msgs);
+  const total = arr.length;
+  state.syncTotal = total;
+  if (shouldActivateWaitingMessagesBanner(true, total)) {
+    state.bannerActive = true;
+    deps.setWaitingMessagesSyncActive(true);
+    deps.setWaitingMessagesSyncProgress(null);
+    deps.setWaitingMessagesCount(total);
+    deps.setWaitingMessagesSyncProgress({ processed: 0, total });
+  } else if (total === 0) {
+    console.debug('[meshcoreConnSideEffects] processWaitingMessages empty queue (manual sync)');
+    return;
+  }
+  console.debug('[meshcoreConnSideEffects] processWaitingMessages start', {
+    count: total,
+    showSyncBanner: true,
+  });
+  for (const m of arr) {
+    if (!deps.meshcoreHookMountedRef.current) break;
+    await ingestMeshcoreWaitingMessageItem(m, state, deps);
+    if (
+      state.processed % MESHCORE_WAITING_MESSAGES_BATCH_YIELD === 0 ||
+      state.pendingMessages.length >= MESHCORE_WAITING_MESSAGES_BATCH_YIELD
+    ) {
+      flushMeshcoreWaitingState(state, deps);
+    }
+  }
+  flushMeshcoreWaitingState(state, deps);
+}
+
+/** Silent/incremental drain (message-waiting push 131) — no banner, capped per-drain. */
+async function drainWaitingMessagesSilent(
+  conn: MeshCoreConnection,
+  state: MeshcoreWaitingMessagesDrainState,
+  deps: MeshcoreWaitingMessagesDrainDeps,
+): Promise<void> {
+  console.debug('[meshcoreConnSideEffects] processWaitingMessages start (incremental)', {
+    showSyncBanner: false,
+  });
+  let silentDrainExhaustedCap = false;
+  for (let i = 0; i < MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN; i += 1) {
+    if (!deps.meshcoreHookMountedRef.current) break;
+    let raw: unknown;
+    try {
+      raw = await withTimeout(
+        conn.syncNextMessage(),
+        MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS,
+        'MeshCore syncNextMessage',
+      );
+    } catch (e: unknown) {
+      if (isMeshcoreSyncNextMessageTimeoutError(e)) break;
+      throw e;
+    }
+    const item = normalizeMeshcoreWaitingMessageItem(raw);
+    if (!item) break;
+    await ingestMeshcoreWaitingMessageItem(item, state, deps);
+    if (i === MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN - 1) {
+      silentDrainExhaustedCap = true;
+    }
+  }
+  if (silentDrainExhaustedCap) {
+    requestMeshcoreWaitingMessagesFollowUp();
+  }
+  flushMeshcoreWaitingState(state, deps);
+}
+
+/**
+ * Runs one waiting-messages drain (manual full sync or silent incremental) and manages the
+ * sync-progress banner / silent-drain UI flag around it. Mirrors the original inline async IIFE
+ * inside `processWaitingMessages`, minus the in-flight bookkeeping (owned by the caller).
+ */
+async function runMeshcoreWaitingMessagesDrain(
+  conn: MeshCoreConnection,
+  options: { showSyncBanner: boolean },
+  deps: MeshcoreWaitingMessagesDrainDeps,
+): Promise<void> {
+  const startedAt = Date.now();
+  const state: MeshcoreWaitingMessagesDrainState = {
+    processed: 0,
+    bannerActive: false,
+    syncTotal: 0,
+    pendingMessages: [],
+    dirtyNodeIds: new Set<number>(),
+    workingNodes: new Map(deps.readNodes()),
+  };
+  let silentDrainUiActive = false;
+  if (!options.showSyncBanner) {
+    deps.setWaitingMessagesSilentDrainActive(true);
+    silentDrainUiActive = true;
+  }
+  try {
+    if (options.showSyncBanner) {
+      await drainWaitingMessagesManual(conn, state, deps);
+    } else {
+      await drainWaitingMessagesSilent(conn, state, deps);
+    }
+    console.debug('[meshcoreConnSideEffects] processWaitingMessages done', {
+      count: state.processed,
+      durationMs: Date.now() - startedAt,
+      showSyncBanner: options.showSyncBanner,
+    });
+  } finally {
+    if (silentDrainUiActive) {
+      deps.setWaitingMessagesSilentDrainActive(false);
+    }
+    if (state.bannerActive) {
+      deps.setWaitingMessagesCount(0);
+      deps.setWaitingMessagesSyncActive(false);
+      deps.setWaitingMessagesSyncProgress(null);
+    }
+  }
 }
 
 export function attachMeshcoreConnSideEffects(
@@ -275,7 +478,7 @@ export function attachMeshcoreConnSideEffects(
     logTransportLineAsDevice,
   });
 
-  const processWaitingMessages = async (options?: ProcessWaitingMessagesOptions) => {
+  const processWaitingMessages = async (options?: ProcessWaitingMessagesOptions): Promise<void> => {
     if (getMeshcoreProcessWaitingMessagesInFlight()) {
       if (options?.showSyncBanner !== false) {
         requestMeshcoreWaitingMessagesManualFollowUp();
@@ -292,158 +495,26 @@ export function attachMeshcoreConnSideEffects(
           logMeshcoreWaitingMessagesDrainError('getWaitingMessages error', e, false);
         }),
       );
-      return Promise.resolve();
+      return;
     }
-    const connectionType = meshcoreConnectTypeRef.current;
-    const inFlight = (async () => {
-      const startedAt = Date.now();
-      let bannerActive = false;
-      let processed = 0;
-      let pendingMessages: ChatMessage[] = [];
-      const workingNodes = new Map(readNodes());
-      const dirtyNodeIds = new Set<number>();
-
-      const flushBatch = () => {
-        if (pendingMessages.length > 0) {
-          addMessagesBatch(pendingMessages);
-          pendingMessages = [];
-        }
-        if (dirtyNodeIds.size > 0) {
-          const storeId = meshcoreIdentityIdRef.current;
-          if (storeId) {
-            const dirtyRecords = Array.from(dirtyNodeIds)
-              .map((nodeId) => workingNodes.get(nodeId))
-              .filter((node): node is MeshNode => node != null)
-              .map((node) => meshNodeToNodeRecord(node));
-            if (dirtyRecords.length > 0) {
-              upsertNodeRecordsForIdentity(storeId, dirtyRecords);
-            }
-          }
-          dirtyNodeIds.clear();
-        }
-      };
-
-      let syncTotal = 0;
-      let silentDrainUiActive = false;
-
-      const ingestItem = async (item: ReturnType<typeof normalizeMeshcoreWaitingMessageItem>) => {
-        if (!item) return;
-        try {
-          const result = processMeshcoreWaitingMessageItem(
-            item,
-            buildWaitingMessageItemDeps(workingNodes),
-          );
-          if (result.nodesDirty) {
-            for (const nodeId of result.updatedNodeIds) dirtyNodeIds.add(nodeId);
-          }
-          if (result.pendingMessages.length > 0) {
-            pendingMessages.push(...result.pendingMessages);
-          }
-          processed += 1;
-          if (bannerActive) {
-            setWaitingMessagesSyncProgress({ processed, total: syncTotal });
-          }
-        } catch (e: unknown) {
-          console.warn(
-            '[meshcoreConnSideEffects] processWaitingMessages ingest error ' +
-              errLikeToLogString(e),
-          );
-        }
-        await yieldToEventLoop();
-      };
-
-      if (!showSyncBanner) {
-        setWaitingMessagesSilentDrainActive(true);
-        silentDrainUiActive = true;
-      }
-      try {
-        if (showSyncBanner) {
-          const msgs = await withTimeout(
-            conn.getWaitingMessages(),
-            waitingMessagesDrainTimeoutMs(true, connectionType),
-            'MeshCore getWaitingMessages',
-          );
-          if (!meshcoreHookMountedRef.current) return;
-          const arr = normalizeMeshcoreWaitingMessageBatch(msgs);
-          const total = arr.length;
-          syncTotal = total;
-          if (shouldActivateWaitingMessagesBanner(showSyncBanner, total)) {
-            bannerActive = true;
-            setWaitingMessagesSyncActive(true);
-            setWaitingMessagesSyncProgress(null);
-            setWaitingMessagesCount(total);
-            setWaitingMessagesSyncProgress({ processed: 0, total });
-          } else if (total === 0) {
-            console.debug(
-              '[meshcoreConnSideEffects] processWaitingMessages empty queue (manual sync)',
-            );
-            return;
-          }
-          console.debug('[meshcoreConnSideEffects] processWaitingMessages start', {
-            count: total,
-            showSyncBanner,
-          });
-          for (const m of arr) {
-            if (!meshcoreHookMountedRef.current) break;
-            await ingestItem(m);
-            if (
-              processed % MESHCORE_WAITING_MESSAGES_BATCH_YIELD === 0 ||
-              pendingMessages.length >= MESHCORE_WAITING_MESSAGES_BATCH_YIELD
-            ) {
-              flushBatch();
-            }
-          }
-          flushBatch();
-        } else {
-          console.debug('[meshcoreConnSideEffects] processWaitingMessages start (incremental)', {
-            showSyncBanner,
-          });
-          let silentDrainExhaustedCap = false;
-          for (let i = 0; i < MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN; i += 1) {
-            if (!meshcoreHookMountedRef.current) break;
-            let raw: unknown;
-            try {
-              raw = await withTimeout(
-                conn.syncNextMessage(),
-                MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS,
-                'MeshCore syncNextMessage',
-              );
-            } catch (e: unknown) {
-              if (isMeshcoreSyncNextMessageTimeoutError(e)) {
-                break;
-              }
-              throw e;
-            }
-            const item = normalizeMeshcoreWaitingMessageItem(raw);
-            if (!item) break;
-            await ingestItem(item);
-            if (i === MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN - 1) {
-              silentDrainExhaustedCap = true;
-            }
-          }
-          if (silentDrainExhaustedCap) {
-            requestMeshcoreWaitingMessagesFollowUp();
-          }
-          flushBatch();
-        }
-        console.debug('[meshcoreConnSideEffects] processWaitingMessages done', {
-          count: processed,
-          durationMs: Date.now() - startedAt,
-          showSyncBanner,
-        });
-      } finally {
-        if (silentDrainUiActive) {
-          setWaitingMessagesSilentDrainActive(false);
-        }
-        if (bannerActive) {
-          setWaitingMessagesCount(0);
-          setWaitingMessagesSyncActive(false);
-          setWaitingMessagesSyncProgress(null);
-        }
+    const drainDeps: MeshcoreWaitingMessagesDrainDeps = {
+      meshcoreHookMountedRef,
+      meshcoreIdentityIdRef,
+      connectionType: meshcoreConnectTypeRef.current,
+      readNodes,
+      addMessagesBatch,
+      buildItemDeps: buildWaitingMessageItemDeps,
+      setWaitingMessagesSyncActive,
+      setWaitingMessagesSyncProgress,
+      setWaitingMessagesCount,
+      setWaitingMessagesSilentDrainActive,
+    };
+    const inFlight = runMeshcoreWaitingMessagesDrain(conn, { showSyncBanner }, drainDeps).finally(
+      () => {
         setMeshcoreProcessWaitingMessagesInFlight(null);
         maybeChainWaitingMessageFollowUp();
-      }
-    })();
+      },
+    );
     setMeshcoreProcessWaitingMessagesInFlight(inFlight);
     return inFlight;
   };
@@ -512,401 +583,24 @@ export function attachMeshcoreConnSideEffects(
   // --- RF RX (event 136) ---
 
   const handleRfRx = (payload: Extract<DomainEvent, { type: 'meshcore_rf_rx' }>['payload']) => {
-    const snr = payload.lastSnr;
-    const rssi = payload.lastRssi;
-    const now = Date.now();
-    const rawU8 = payload.raw;
-    const loraPacketClass = rawU8 ? classifyPayload(rawU8) : null;
-
-    // Extract sender ID and update known node's last_heard + signal metrics
-    let senderInfo = '';
-    if (rawU8 && rawU8.length >= 8 && loraPacketClass != null) {
-      if (loraPacketClass === 'meshtastic') {
-        const senderId = extractMeshtasticSenderId(rawU8);
-        if (senderId !== null) {
-          senderInfo = ` from=0x${senderId.toString(16)}`;
-          // If we know this node (and it's not ourselves), update last_heard + SNR/RSSI
-          if (senderId !== myNodeNumRef.current && readNodes().has(senderId)) {
-            const nowSec = Math.floor(now / 1000);
-            const existing = readNodes().get(senderId);
-            const storeId = meshcoreIdentityIdRef.current;
-            if (existing && storeId) {
-              upsertNodeRecord(
-                storeId,
-                meshNodeToNodeRecord({
-                  ...existing,
-                  last_heard: Math.max(existing.last_heard ?? 0, nowSec),
-                  snr,
-                  rssi,
-                }),
-              );
-            }
-          }
-        }
-      } else if (loraPacketClass === 'meshcore') {
-        senderInfo = ' [meshcore]';
-      }
-    }
-
-    const entry: DeviceLogEntry = {
-      ts: now,
-      level: 'debug',
-      source: 'meshcore',
-      message: `RX${senderInfo} SNR=${snr.toFixed(2)}dB RSSI=${rssi}dBm`,
+    const deps: MeshcoreRfRxDeps = {
+      myNodeNumRef,
+      meshcoreIdentityIdRef,
+      readNodes,
+      pubKeyMapRef,
+      pubKeyPrefixMapRef,
+      nicknameMapRef,
+      selfInfoRef,
+      rawPacketsRef,
+      mqttStatusRef,
+      lastPacketLogAtRef,
+      lastPacketLogPublishFailureLogAtRef,
+      mqttPacketLogBucket,
+      setDeviceLogs,
+      setSignalTelemetry,
+      setRawPackets,
     };
-    setDeviceLogs((prev) => {
-      const next = [...prev, entry];
-      return next.length > MAX_DEVICE_LOGS ? next.slice(next.length - MAX_DEVICE_LOGS) : next;
-    });
-    const sigPoint: TelemetryPoint = { timestamp: now, snr, rssi };
-    setSignalTelemetry((prev) => [...prev, sigPoint].slice(-MAX_TELEMETRY_POINTS));
-
-    // Packet-log metadata hoisted for the MQTT publish below (set inside the rawU8 block).
-    let mqttRawHex: string | undefined;
-    let mqttLen: number | undefined;
-    let mqttPacketType: number | undefined;
-    let mqttRoute: string | undefined;
-    let mqttPayloadLen: number | undefined;
-    let mqttHash: string | undefined;
-
-    // Raw packet log: always run MeshCore in-house parse on this path (LOG_RX is MeshCore RF only).
-    // Do not gate on classifyPayload — Meshtastic-shaped heuristics can mis-label MeshCore frames.
-    if (rawU8) {
-      let routeTypeString: string | null = null;
-      let payloadTypeString: string | null = null;
-      let hopCount = 0;
-      let pathBytes: number[] = [];
-      let pathHashSizeBytes: 1 | 2 | 3 = 1;
-      let fromNodeId: number | null = null;
-      let messageFingerprintHex: string | null = null;
-      let transportScopeCode: number | null = null;
-      let transportReturnCode: number | null = null;
-      let advertName: string | null = null;
-      let advertLat: number | null = null;
-      let advertLon: number | null = null;
-      let advertTimestampSec: number | null = null;
-      let parseOk = false;
-
-      const parsed = parseMeshCoreRfPacket(rawU8);
-      if (parsed.ok) {
-        parseOk = true;
-        routeTypeString = parsed.routeTypeString;
-        payloadTypeString = parsed.payloadTypeString;
-        hopCount = parsed.hopCount;
-        pathBytes = parsed.pathBytes;
-        pathHashSizeBytes = parsed.pathHashSizeBytes;
-        messageFingerprintHex = parsed.messageFingerprintHex;
-        if (parsed.transportCodes) {
-          transportScopeCode = parsed.transportCodes[0];
-          transportReturnCode = parsed.transportCodes[1];
-        }
-        if (parsed.advert) {
-          advertName = parsed.advert.name.length > 0 ? parsed.advert.name : null;
-          advertLat = parsed.advert.latitudeDeg;
-          advertLon = parsed.advert.longitudeDeg;
-          advertTimestampSec = parsed.advert.timestampSec;
-        }
-        const id = meshcoreRawPacketResolveFromParsed(parsed, pubKeyPrefixMapRef.current);
-        if (id != null) {
-          fromNodeId = id;
-          if (parsed.transportCodes) {
-            void window.electronAPI.db
-              .updateMeshcoreContactRfTransport(
-                id,
-                parsed.transportCodes[0],
-                parsed.transportCodes[1],
-              )
-              .catch((e: unknown) => {
-                console.warn(
-                  '[meshcoreConnSideEffects] updateMeshcoreContactRfTransport error ' +
-                    errLikeToLogString(e),
-                );
-              });
-          }
-        }
-      } else {
-        const fb = meshcoreRawPacketLogFromBytesFallback(rawU8, pubKeyPrefixMapRef.current);
-        if (fb) {
-          routeTypeString = fb.routeTypeString;
-          payloadTypeString = fb.payloadTypeString;
-          hopCount = fb.hopCount;
-          pathBytes = fb.pathBytes;
-          pathHashSizeBytes = fb.pathHashSizeBytes;
-          if (fb.fromNodeId != null) fromNodeId = fb.fromNodeId;
-        }
-      }
-
-      // Update hops_away on known MeshCore nodes from RF packet hop count.
-      // Only use fromNodeId resolved by MeshCore parsing (before the Meshtastic fallback).
-      if (fromNodeId !== null && fromNodeId !== myNodeNumRef.current) {
-        const resolvedFromNodeId = fromNodeId;
-        const nowSec = Math.floor(now / 1000);
-        const existing = readNodes().get(resolvedFromNodeId);
-        const storeId = meshcoreIdentityIdRef.current;
-        if (existing && storeId) {
-          const mergedHopsAway = meshcoreMergeContactHopsAwayFromPrevious(
-            hopCount,
-            existing.hops_away,
-            0,
-          );
-          const updated: MeshNode = {
-            ...existing,
-            hops_away: mergedHopsAway ?? hopCount,
-            snr: snr,
-            rssi: rssi,
-            last_heard: Math.max(existing.last_heard ?? 0, nowSec),
-            source: 'rf',
-            heard_via_mqtt_only: false,
-            via_mqtt: false,
-          };
-
-          // Skip store/DB writes when metrics and liveness have not changed.
-          if (
-            existing.hops_away !== updated.hops_away ||
-            existing.snr !== snr ||
-            existing.rssi !== rssi ||
-            existing.last_heard !== updated.last_heard
-          ) {
-            upsertNodeRecord(storeId, meshNodeToNodeRecord(updated));
-
-            void window.electronAPI.db
-              .updateMeshcoreContactLastRf(
-                resolvedFromNodeId,
-                snr,
-                rssi,
-                mergedHopsAway ?? hopCount,
-                nowSec,
-              )
-              .catch((e: unknown) => {
-                console.warn(
-                  '[meshcoreConnSideEffects] updateMeshcoreContactLastRf error ' +
-                    errLikeToLogString(e),
-                );
-              });
-            void useDiagnosticsStore
-              .getState()
-              .saveMeshcoreHopHistory(
-                resolvedFromNodeId,
-                now,
-                mergedHopsAway ?? hopCount,
-                snr,
-                rssi,
-              )
-              .catch((e: unknown) => {
-                console.warn(
-                  '[meshcoreConnSideEffects] saveMeshcoreHopHistory error ' + errLikeToLogString(e),
-                );
-              });
-          }
-        }
-      }
-
-      if (fromNodeId == null) {
-        const mtId = meshtasticSenderIdForRawLogFallback(parseOk, rawU8);
-        if (mtId != null) fromNodeId = mtId;
-      }
-      const rxEntry: RxPacketEntry = {
-        ts: now,
-        snr,
-        rssi,
-        raw: rawU8,
-        routeTypeString,
-        payloadTypeString,
-        hopCount,
-        pathBytes,
-        pathHashSizeBytes,
-        fromNodeId,
-        messageFingerprintHex,
-        transportScopeCode,
-        transportReturnCode,
-        advertName,
-        advertLat,
-        advertLon,
-        advertTimestampSec,
-        parseOk,
-      };
-      setRawPackets((prev) => {
-        const myId = myNodeNumRef.current;
-        const last = prev[prev.length - 1];
-        if (
-          myId !== 0 &&
-          shouldCoalesceSelfFloodAdvert(
-            last,
-            rxEntry,
-            myId,
-            MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS,
-          )
-        ) {
-          const next = [...prev.slice(0, -1), rxEntry];
-          const trimmed =
-            next.length > MAX_RAW_PACKET_LOG_ENTRIES
-              ? next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES)
-              : next;
-          // Sync before React commit so same-tick chat ingest sees this row.
-          rawPacketsRef.current = trimmed;
-          return trimmed;
-        }
-        const next = [...prev, rxEntry];
-        const trimmed =
-          next.length > MAX_RAW_PACKET_LOG_ENTRIES
-            ? next.slice(next.length - MAX_RAW_PACKET_LOG_ENTRIES)
-            : next;
-        // Sync before React commit so same-tick chat ingest sees this row.
-        rawPacketsRef.current = trimmed;
-        return trimmed;
-      });
-
-      // Populate hoisted MQTT packet-log fields from the parsed result.
-      mqttRawHex = Array.from(rawU8, (b) => b.toString(16).padStart(2, '0')).join('');
-      mqttLen = rawU8.length;
-      mqttPayloadLen = rawU8.length;
-      if (parsed.ok) {
-        mqttPacketType = parsed.payloadTypeNibble;
-      }
-      mqttRoute = routeTypeString ?? undefined;
-      mqttHash = messageFingerprintHex ?? undefined;
-
-      // Record noisy payload types for MeshCore
-      // FLOOD (1001): Discovery Floods indicate routing loops or lost paths
-      // FLOOD + ADVERT (1002): Flood-routed advertisements (room or device)
-      if (fromNodeId != null && routeTypeString === 'FLOOD') {
-        if (parsed.ok && parsed.advert != null) {
-          useDiagnosticsStore.getState().recordNoisePort(fromNodeId, 1002);
-        } else {
-          useDiagnosticsStore.getState().recordNoisePort(fromNodeId, 1001);
-        }
-      }
-
-      // MeshCore radio RF RX → Meshtastic Foreign LoRa (local overhear, not contact-list sync).
-      const selfPubKey =
-        myNodeNumRef.current !== 0
-          ? (pubKeyMapRef.current.get(myNodeNumRef.current) ?? selfInfoRef.current?.publicKey)
-          : undefined;
-      const isSelfRf =
-        myNodeNumRef.current !== 0 &&
-        meshcoreRfIsSelfOriginated(rawU8, selfPubKey, myNodeNumRef.current);
-      if (loraPacketClass === 'meshcore') {
-        const mtNode = getMeshtasticConnectedMyNodeNum();
-        if (mtNode > 0) {
-          let rfSenderId = fromNodeId ?? undefined;
-          let rfDisplayName: string | undefined;
-          const meshcoreNodes = readNodes();
-          if (parsed.ok) {
-            if (rfSenderId == null && parsed.advert) {
-              const advertId = pubkeyToNodeId(parsed.advert.publicKey);
-              if (advertId !== 0) rfSenderId = advertId;
-              if (parsed.advert.name.length > 0) rfDisplayName = parsed.advert.name;
-            } else if (advertName) {
-              rfDisplayName = advertName;
-            }
-            if (rfSenderId == null && parsed.pathBytes.length > 0) {
-              const useAllContacts = hopCount <= 2 && rssi > -80 && parsed.pathBytes.length > 0;
-              const pathCandidates = meshcoreRfNodeHashCandidates(
-                meshcoreNodes,
-                myNodeNumRef.current,
-                useAllContacts ? { rssi: undefined } : { rssi },
-              );
-              const pathId = meshcoreRfResolvePathSender(parsed.pathBytes, pathCandidates);
-              if (pathId != null) rfSenderId = pathId;
-            }
-          }
-          const isOwnMeshcoreTx =
-            isSelfRf ||
-            (rfSenderId != null && rfSenderId === myNodeNumRef.current) ||
-            (fromNodeId != null && fromNodeId === myNodeNumRef.current);
-          if (isOwnMeshcoreTx && myNodeNumRef.current !== 0) {
-            rfSenderId = myNodeNumRef.current;
-            rfDisplayName =
-              rfDisplayName ??
-              selfInfoRef.current?.name?.trim() ??
-              meshcoreNodes.get(myNodeNumRef.current)?.long_name ??
-              meshcoreNodes.get(myNodeNumRef.current)?.short_name ??
-              nicknameMapRef.current.get(myNodeNumRef.current);
-          }
-          if (rfSenderId != null && rfDisplayName == null) {
-            const known = meshcoreNodes.get(rfSenderId);
-            rfDisplayName =
-              known?.long_name ?? known?.short_name ?? nicknameMapRef.current.get(rfSenderId);
-          }
-          const proximity = classifyProximity(rssi || undefined, snr || undefined);
-          let rfFingerprint =
-            rfSenderId == null && messageFingerprintHex ? messageFingerprintHex : undefined;
-          if (isOwnMeshcoreTx) {
-            rfFingerprint = undefined;
-          }
-          // Local RF only — skip distant mesh floods (identified or not).
-          if (proximity !== 'very-close' && proximity !== 'nearby') {
-            return;
-          }
-          if (rfSenderId == null && rfFingerprint == null) {
-            return;
-          }
-          useDiagnosticsStore
-            .getState()
-            .recordForeignLora(
-              mtNode,
-              'meshcore',
-              rssi || undefined,
-              snr || undefined,
-              rfSenderId,
-              readNodes,
-              'meshcore-radio-rf',
-              rfFingerprint,
-              rfDisplayName,
-            );
-        }
-      }
-    }
-
-    // Foreign LoRa fingerprinting: only flag non-MeshCore packets as foreign (requires known self node ID)
-    if (
-      getStoredMeshProtocol() === 'meshcore' &&
-      myNodeNumRef.current !== 0 &&
-      rawU8 &&
-      loraPacketClass != null
-    ) {
-      if (loraPacketClass !== 'meshcore') {
-        const senderId = loraPacketClass === 'meshtastic' ? extractMeshtasticSenderId(rawU8) : null;
-        useDiagnosticsStore
-          .getState()
-          .recordForeignLora(
-            myNodeNumRef.current,
-            loraPacketClass,
-            rssi || undefined,
-            snr || undefined,
-            senderId ?? undefined,
-            readNodes,
-          );
-      }
-    }
-
-    if (mqttStatusRef.current === 'connected') {
-      const nowMs = Date.now();
-      if (tryTakeMeshcoreMqttPacketLogToken(mqttPacketLogBucket, nowMs)) {
-        lastPacketLogAtRef.current = nowMs;
-        void window.electronAPI.mqtt
-          .publishMeshcorePacketLog({
-            origin: selfInfoRef.current?.name ?? 'mesh-client',
-            snr,
-            rssi,
-            rawHex: mqttRawHex,
-            len: mqttLen,
-            packetType: mqttPacketType,
-            route: mqttRoute,
-            payloadLen: mqttPayloadLen,
-            hash: mqttHash,
-          })
-          .catch((e: unknown) => {
-            const t = Date.now();
-            if (t - lastPacketLogPublishFailureLogAtRef.current >= 30_000) {
-              lastPacketLogPublishFailureLogAtRef.current = t;
-              console.warn(
-                '[meshcoreConnSideEffects] MQTT packet-log publish failed ' + errLikeToLogString(e),
-              );
-            }
-          });
-      }
-    }
+    handleMeshcoreRfRx(payload, deps);
   };
 
   // --- Disconnect ---
