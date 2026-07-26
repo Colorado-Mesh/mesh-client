@@ -606,6 +606,7 @@
     "floodScopeOverrideCustomApply": "Použijte rozsah",
     "floodScopeOverrideCustomInvalid": "Zadejte platný hashtag regionu (například #myregion).",
     "dmNodeHops_one": "{{count}} skok",
+    "dmNodeHops_few": "{{count}} skoky",
     "dmNodeHops_other": "{{count}} skoků"
   },
   "chatPayload": {
@@ -1545,8 +1546,8 @@
     "distanceOffsetKm": "Posun vzdálenosti",
     "km": "km",
     "distanceOffsetHelp": "Přidá rovnou podlahu km k prahovým hodnotám vzdálenosti hop-goblin a špatným trasám (0–50).",
-    "ignoreMqttToggle": "Ignore MQTT",
-    "ignoreMqttHelp": "Gray out MQTT-only nodes and exclude them from diagnostics"
+    "ignoreMqttToggle": "Ignorovat MQTT",
+    "ignoreMqttHelp": "Zobrazit uzly pouze přes MQTT šedě a vyloučit je z diagnostiky"
   },
   "diagnosticsPing": {
     "title": "Kontinuální ping",
@@ -3664,17 +3665,17 @@
     "routeBarFloodTooltip": "Paket směrovaný povodněmi",
     "routeBarDirectTooltip": "Přímo směrovaný paket",
     "routeBarUnknownTooltip": "Neznámý typ trasy",
-    "crc32Fingerprint": "CRC32 fp:",
-    "innerFirstU32Debug": "Inner first u32 (debug):",
-    "destHash": "Dest hash:",
-    "srcHash": "Src hash:",
-    "channelHash": "Channel hash:",
+    "crc32Fingerprint": "Otisk CRC32:",
+    "innerFirstU32Debug": "První interní u32 (ladění):",
+    "destHash": "Cílový hash:",
+    "srcHash": "Zdrojový hash:",
+    "channelHash": "Hash kanálu:",
     "mac": "MAC:",
-    "ciphertextBytes": "Ciphertext bytes:",
-    "senderKeyPrefix": "Sender key (prefix):",
-    "control": "Control:",
-    "advertTs": "ADVERT ts:",
-    "advertLatLon": "ADVERT lat/lon:"
+    "ciphertextBytes": "Bajty šifrovaného textu:",
+    "senderKeyPrefix": "Klíč odesílatele (prefix):",
+    "control": "Řízení:",
+    "advertTs": "Čas ADVERT:",
+    "advertLatLon": "Zem. šířka/délka ADVERT:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4343,9 +4344,9 @@
     "chartAriaIaq": "Tabulka kvality vzduchu: nejnovější IAQ {{iaq}}, {{count}} bodů",
     "tempUnitF": "°F",
     "tempUnitC": "°C",
-    "exportCsvButton": "Export CSV",
-    "emptyWaitingConnected": "No telemetry data yet. Waiting for data from device…",
-    "emptyWaitingDisconnected": "No telemetry data yet. Connect to a device to see real-time metrics."
+    "exportCsvButton": "Exportovat CSV",
+    "emptyWaitingConnected": "Zatím nejsou žádná telemetrická data. Čeká se na data ze zařízení…",
+    "emptyWaitingDisconnected": "Zatím nejsou žádná telemetrická data. Připojte zařízení pro zobrazení metrik v reálném čase."
   },
   "toasts": {
     "firmwareAvailable": "Dostupná aktualizace firmwaru: v{{version}}",

@@ -280,6 +280,11 @@ function keyExists(key) {
   ].some((k) => enKeys.has(k));
 }
 
+function isLocaleSpecificPluralKey(key) {
+  const base = key.replace(/_(?:zero|one|two|few|many|other)$/, '');
+  return base !== key && keyExists(base);
+}
+
 // ── 1. Check call sites ──────────────────────────────────────────────────────
 const files = collectFiles(SRC_DIR);
 for (const file of files) {
@@ -403,7 +408,9 @@ for (const dir of localeDirs) {
     );
     warnings++;
   }
-  const extra = [...existing].filter((k) => !enKeys.has(k));
+  // Languages may require plural categories English does not use (for example
+  // Polish `_few` / `_many`). Allow those when English defines the same plural family.
+  const extra = [...existing].filter((k) => !enKeys.has(k) && !isLocaleSpecificPluralKey(k));
   if (extra.length > 0) {
     console.error(`Orphan key(s) in "${dir}": ${extra.join(', ')}`);
     errors++;

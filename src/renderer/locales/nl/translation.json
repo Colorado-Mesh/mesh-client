@@ -1545,8 +1545,8 @@
     "distanceOffsetKm": "Afstandsverschuiving",
     "km": "km",
     "distanceOffsetHelp": "Voegt een vlakke km-vloer toe aan de afstandsdrempels voor hop-goblin en slechte route (0-50).",
-    "ignoreMqttToggle": "Ignore MQTT",
-    "ignoreMqttHelp": "Gray out MQTT-only nodes and exclude them from diagnostics"
+    "ignoreMqttToggle": "MQTT negeren",
+    "ignoreMqttHelp": "Maak nodes die alleen MQTT gebruiken grijs en sluit ze uit van diagnostiek"
   },
   "diagnosticsPing": {
     "title": "Continue ping",
@@ -3664,17 +3664,17 @@
     "routeBarFloodTooltip": "Overstroming-gerouteerd pakket",
     "routeBarDirectTooltip": "Rechtstreeks omgeleid pakket",
     "routeBarUnknownTooltip": "onbekende route",
-    "crc32Fingerprint": "CRC32 fp:",
-    "innerFirstU32Debug": "Inner first u32 (debug):",
-    "destHash": "Dest hash:",
-    "srcHash": "Src hash:",
-    "channelHash": "Channel hash:",
+    "crc32Fingerprint": "CRC32-vingerafdruk:",
+    "innerFirstU32Debug": "Eerste interne u32 (debug):",
+    "destHash": "Bestemmingshash:",
+    "srcHash": "Bronhash:",
+    "channelHash": "Kanaalhash:",
     "mac": "MAC:",
-    "ciphertextBytes": "Ciphertext bytes:",
-    "senderKeyPrefix": "Sender key (prefix):",
-    "control": "Control:",
-    "advertTs": "ADVERT ts:",
-    "advertLatLon": "ADVERT lat/lon:"
+    "ciphertextBytes": "Bytes versleutelde tekst:",
+    "senderKeyPrefix": "Afzendersleutel (voorvoegsel):",
+    "control": "Besturing:",
+    "advertTs": "ADVERT-tijdstempel:",
+    "advertLatLon": "ADVERT-breedte-/lengtegraad:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4343,9 +4343,9 @@
     "chartAriaIaq": "Luchtkwaliteitsgrafiek: laatste IAQ {{iaq}}, {{count}} punten",
     "tempUnitF": "°F",
     "tempUnitC": "°C",
-    "exportCsvButton": "Export CSV",
-    "emptyWaitingConnected": "No telemetry data yet. Waiting for data from device…",
-    "emptyWaitingDisconnected": "No telemetry data yet. Connect to a device to see real-time metrics."
+    "exportCsvButton": "CSV exporteren",
+    "emptyWaitingConnected": "Nog geen telemetriegegevens. Wachten op gegevens van het apparaat…",
+    "emptyWaitingDisconnected": "Nog geen telemetriegegevens. Maak verbinding met een apparaat om realtime metingen te bekijken."
   },
   "toasts": {
     "firmwareAvailable": "Firmware-update beschikbaar: v{{version}}",

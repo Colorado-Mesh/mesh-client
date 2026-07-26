@@ -1545,8 +1545,8 @@
     "distanceOffsetKm": "Mesafe ofseti",
     "km": "kilometre",
     "distanceOffsetHelp": "Hop-goblin ve kötü rota mesafe eşiklerine (0-50) düz bir kilometre tabanı ekler.",
-    "ignoreMqttToggle": "Ignore MQTT",
-    "ignoreMqttHelp": "Gray out MQTT-only nodes and exclude them from diagnostics"
+    "ignoreMqttToggle": "MQTT'yi yok say",
+    "ignoreMqttHelp": "Yalnızca MQTT kullanan düğümleri soluk göster ve tanılamadan hariç tut"
   },
   "diagnosticsPing": {
     "title": "Sürekli ping",
@@ -3664,17 +3664,17 @@
     "routeBarFloodTooltip": "Taşkın yönlendirmeli paket",
     "routeBarDirectTooltip": "Doğrudan yönlendirilmiş paket",
     "routeBarUnknownTooltip": "bilinmeyen rota",
-    "crc32Fingerprint": "CRC32 fp:",
-    "innerFirstU32Debug": "Inner first u32 (debug):",
-    "destHash": "Dest hash:",
-    "srcHash": "Src hash:",
-    "channelHash": "Channel hash:",
+    "crc32Fingerprint": "CRC32 parmak izi:",
+    "innerFirstU32Debug": "İlk dahili u32 (hata ayıklama):",
+    "destHash": "Hedef karması:",
+    "srcHash": "Kaynak karması:",
+    "channelHash": "Kanal karması:",
     "mac": "MAC:",
-    "ciphertextBytes": "Ciphertext bytes:",
-    "senderKeyPrefix": "Sender key (prefix):",
-    "control": "Control:",
-    "advertTs": "ADVERT ts:",
-    "advertLatLon": "ADVERT lat/lon:"
+    "ciphertextBytes": "Şifreli metin baytları:",
+    "senderKeyPrefix": "Gönderen anahtarı (ön ek):",
+    "control": "Denetim:",
+    "advertTs": "ADVERT zaman damgası:",
+    "advertLatLon": "ADVERT enlem/boylam:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4343,9 +4343,9 @@
     "chartAriaIaq": "Hava kalitesi tablosu: en son IAQ {{iaq}}, {{count}} noktaları",
     "tempUnitF": "°F",
     "tempUnitC": "°C",
-    "exportCsvButton": "Export CSV",
-    "emptyWaitingConnected": "No telemetry data yet. Waiting for data from device…",
-    "emptyWaitingDisconnected": "No telemetry data yet. Connect to a device to see real-time metrics."
+    "exportCsvButton": "CSV'yi dışa aktar",
+    "emptyWaitingConnected": "Henüz telemetri verisi yok. Cihazdan veri bekleniyor…",
+    "emptyWaitingDisconnected": "Henüz telemetri verisi yok. Gerçek zamanlı ölçümleri görmek için bir cihaza bağlanın."
   },
   "toasts": {
     "firmwareAvailable": "Ürün yazılımı güncellemesi mevcut: v{{version}}",

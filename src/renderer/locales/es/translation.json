@@ -605,7 +605,7 @@
     "floodScopeOverrideCustomPlaceholder": "#miregión",
     "floodScopeOverrideCustomApply": "Usar alcance",
     "floodScopeOverrideCustomInvalid": "Ingrese un hashtag de región válido (por ejemplo, #miregión).",
-    "dmNodeHops_one": "{{count}} hop",
+    "dmNodeHops_one": "{{count}} salto",
     "dmNodeHops_other": "{{count}} saltos"
   },
   "chatPayload": {
@@ -1546,7 +1546,7 @@
     "km": "kilómetros",
     "distanceOffsetHelp": "Agrega un piso de kilómetros plano a los umbrales de distancia de salto-duende y mala ruta (0-50).",
     "ignoreMqttToggle": "Ignorar MQTT",
-    "ignoreMqttHelp": "Engrasar los nodos de solo MQTT y excluirlos de los diagnósticos"
+    "ignoreMqttHelp": "Atenuar los nodos que solo usan MQTT y excluirlos de los diagnósticos"
   },
   "diagnosticsPing": {
     "title": "Ping continuo",

@@ -1545,8 +1545,8 @@
     "distanceOffsetKm": "Compensazione della distanza",
     "km": "km",
     "distanceOffsetHelp": "Aggiunge un limite di km piatto alle soglie di distanza hop-goblin e percorso errato (0–50).",
-    "ignoreMqttToggle": "Ignore MQTT",
-    "ignoreMqttHelp": "Gray out MQTT-only nodes and exclude them from diagnostics"
+    "ignoreMqttToggle": "Ignora MQTT",
+    "ignoreMqttHelp": "Disattiva visivamente i nodi solo MQTT ed escludili dalla diagnostica"
   },
   "diagnosticsPing": {
     "title": "Ping continuo",
@@ -3664,17 +3664,17 @@
     "routeBarFloodTooltip": "Pacchetto Flood-routed",
     "routeBarDirectTooltip": "Pacchetto instradato direttamente",
     "routeBarUnknownTooltip": "percorso sconosciuto",
-    "crc32Fingerprint": "CRC32 fp:",
-    "innerFirstU32Debug": "Inner first u32 (debug):",
-    "destHash": "Dest hash:",
-    "srcHash": "Src hash:",
-    "channelHash": "Channel hash:",
+    "crc32Fingerprint": "Impronta CRC32:",
+    "innerFirstU32Debug": "Primo u32 interno (debug):",
+    "destHash": "Hash destinazione:",
+    "srcHash": "Hash sorgente:",
+    "channelHash": "Hash canale:",
     "mac": "MAC:",
-    "ciphertextBytes": "Ciphertext bytes:",
-    "senderKeyPrefix": "Sender key (prefix):",
-    "control": "Control:",
-    "advertTs": "ADVERT ts:",
-    "advertLatLon": "ADVERT lat/lon:"
+    "ciphertextBytes": "Byte del testo cifrato:",
+    "senderKeyPrefix": "Chiave mittente (prefisso):",
+    "control": "Controllo:",
+    "advertTs": "Data/ora ADVERT:",
+    "advertLatLon": "Lat/lon ADVERT:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4343,9 +4343,9 @@
     "chartAriaIaq": "Grafico della qualità dell'aria: ultima IAQ {{iaq}}, {{count}} punti",
     "tempUnitF": "°F",
     "tempUnitC": "°C",
-    "exportCsvButton": "Export CSV",
-    "emptyWaitingConnected": "No telemetry data yet. Waiting for data from device…",
-    "emptyWaitingDisconnected": "No telemetry data yet. Connect to a device to see real-time metrics."
+    "exportCsvButton": "Esporta CSV",
+    "emptyWaitingConnected": "Nessun dato telemetrico disponibile. In attesa dei dati dal dispositivo…",
+    "emptyWaitingDisconnected": "Nessun dato telemetrico disponibile. Connetti un dispositivo per visualizzare le metriche in tempo reale."
   },
   "toasts": {
     "firmwareAvailable": "Aggiornamento firmware disponibile: v{{version}}",

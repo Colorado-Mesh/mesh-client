@@ -606,7 +606,9 @@
     "floodScopeOverrideCustomApply": "Użyj zakresu",
     "floodScopeOverrideCustomInvalid": "Wprowadź prawidłowy hashtag regionu (na przykład #myregion).",
     "dmNodeHops_one": "{{count}} przeskok",
-    "dmNodeHops_other": "{{count}} przeskoków"
+    "dmNodeHops_few": "{{count}} przeskoki",
+    "dmNodeHops_many": "{{count}} przeskoków",
+    "dmNodeHops_other": "{{count}} przeskoku"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -1545,8 +1547,8 @@
     "distanceOffsetKm": "Przesunięcie odległości",
     "km": "km",
     "distanceOffsetHelp": "Dodaje płaski kilometr do progów odległości hop-goblina i złej trasy (0–50).",
-    "ignoreMqttToggle": "Ignore MQTT",
-    "ignoreMqttHelp": "Gray out MQTT-only nodes and exclude them from diagnostics"
+    "ignoreMqttToggle": "Ignoruj MQTT",
+    "ignoreMqttHelp": "Wyszarz węzły działające tylko przez MQTT i wyklucz je z diagnostyki"
   },
   "diagnosticsPing": {
     "title": "Ciągły ping",
@@ -3664,17 +3666,17 @@
     "routeBarFloodTooltip": "Pakiet przekierowywany przez powódź",
     "routeBarDirectTooltip": "Pakiet z trasą bezpośrednią",
     "routeBarUnknownTooltip": "nieznana trasa",
-    "crc32Fingerprint": "CRC32 fp:",
-    "innerFirstU32Debug": "Inner first u32 (debug):",
-    "destHash": "Dest hash:",
-    "srcHash": "Src hash:",
-    "channelHash": "Channel hash:",
+    "crc32Fingerprint": "Odcisk CRC32:",
+    "innerFirstU32Debug": "Pierwsze wewnętrzne u32 (debugowanie):",
+    "destHash": "Hash celu:",
+    "srcHash": "Hash źródła:",
+    "channelHash": "Hash kanału:",
     "mac": "MAC:",
-    "ciphertextBytes": "Ciphertext bytes:",
-    "senderKeyPrefix": "Sender key (prefix):",
-    "control": "Control:",
-    "advertTs": "ADVERT ts:",
-    "advertLatLon": "ADVERT lat/lon:"
+    "ciphertextBytes": "Bajty szyfrogramu:",
+    "senderKeyPrefix": "Klucz nadawcy (prefiks):",
+    "control": "Sterowanie:",
+    "advertTs": "Znacznik czasu ADVERT:",
+    "advertLatLon": "Szer./dł. geogr. ADVERT:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4343,9 +4345,9 @@
     "chartAriaIaq": "Wykres jakości powietrza: najnowsze IAQ {{iaq}}, {{count}} punktów",
     "tempUnitF": "°F",
     "tempUnitC": "°C",
-    "exportCsvButton": "Export CSV",
-    "emptyWaitingConnected": "No telemetry data yet. Waiting for data from device…",
-    "emptyWaitingDisconnected": "No telemetry data yet. Connect to a device to see real-time metrics."
+    "exportCsvButton": "Eksportuj CSV",
+    "emptyWaitingConnected": "Brak danych telemetrycznych. Oczekiwanie na dane z urządzenia…",
+    "emptyWaitingDisconnected": "Brak danych telemetrycznych. Połącz z urządzeniem, aby zobaczyć pomiary w czasie rzeczywistym."
   },
   "toasts": {
     "firmwareAvailable": "Dostępna aktualizacja oprogramowania sprzętowego: v{{version}}",

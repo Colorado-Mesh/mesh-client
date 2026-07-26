@@ -15,6 +15,7 @@ import {
   initReduceMotionDefaultIfAbsent,
   syncReduceMotionDatasetFromStorage,
 } from './lib/reduceMotionPreference';
+import { logRendererUnhandledRejection } from './lib/rendererUnhandledRejection';
 
 /** Shell-first: paint splash while App + protocol runtimes chunk loads in parallel. */
 const App = lazy(() => import('./App'));
@@ -39,11 +40,7 @@ if (import.meta.env.DEV) {
 }
 
 window.addEventListener('unhandledrejection', (event) => {
-  const reason = event.reason;
-  console.error(
-    '[renderer] Unhandled rejection:',
-    reason instanceof Error ? (reason.stack ?? reason.message) : String(reason),
-  );
+  logRendererUnhandledRejection(event.reason);
 });
 
 void (async () => {

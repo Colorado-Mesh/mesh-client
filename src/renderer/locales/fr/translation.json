@@ -3672,7 +3672,7 @@
     "mac": "MAC:",
     "ciphertextBytes": "Octets de texte chiffré :",
     "senderKeyPrefix": "Clé de l'expéditeur (préfixe) :",
-    "control": "Commande&#xA0;:",
+    "control": "Commande :",
     "advertTs": "ANNONCE ts :",
     "advertLatLon": "ANNONCE lat/lon :"
   },
@@ -4343,7 +4343,7 @@
     "chartAriaIaq": "Charte de la qualité de l'air : derniers points QAI {{iaq}}, {{count}}",
     "tempUnitF": "°F",
     "tempUnitC": "°C",
-    "exportCsvButton": "Export CSV",
+    "exportCsvButton": "Exporter CSV",
     "emptyWaitingConnected": "Pas encore de données de télémétrie. En attente des données de l'appareil…",
     "emptyWaitingDisconnected": "Pas encore de données de télémétrie. Connectez-vous à un appareil pour voir les mesures en temps réel."
   },

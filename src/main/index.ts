@@ -126,6 +126,7 @@ import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { MQTTManager, parsePsk } from './mqtt-manager';
 import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
+import { readFileUpTo } from './readFileUpTo';
 import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
 import { assertReticulumAttachmentPathJailed } from './reticulum-attachment-path';
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
@@ -4712,13 +4713,17 @@ ipcMain.handle('meshtastic:xmodemPickUpload', async (event) => {
     });
     if (result.canceled || result.filePaths.length === 0) return null;
     const filePath = result.filePaths[0];
-    const st = await fs.promises.stat(filePath);
-    if (st.size > MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES) {
-      throw new Error(
-        `File too large (max ${MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES / (1024 * 1024)} MB)`,
-      );
+    let data: Buffer;
+    try {
+      data = await readFileUpTo(filePath, MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES);
+    } catch (err) {
+      if (err instanceof Error && err.message === 'File too large') {
+        throw new Error(
+          `File too large (max ${MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES / (1024 * 1024)} MB)`,
+        );
+      }
+      throw err;
     }
-    const data = await fs.promises.readFile(filePath);
     const filename = path.basename(filePath);
     return { filename, data: new Uint8Array(data) };
   } catch (err) {

@@ -201,17 +201,15 @@ describe('bluetooth IPC sender validation (source contract, H1)', () => {
     expect(body).toContain('validateIpcSender(event)');
   });
 
-  it('meshtastic:xmodemPickUpload caps upload size before readFile', () => {
+  it('meshtastic:xmodemPickUpload uses a bounded descriptor read', () => {
     expect(INDEX_SOURCE).toContain('MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES');
     const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:xmodemPickUpload'");
     expect(handlerIdx).toBeGreaterThan(-1);
     const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 900);
     expect(body).toContain('MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES');
-    expect(body).toContain('fs.promises.stat(filePath)');
-    const statIdx = body.indexOf('fs.promises.stat(filePath)');
-    const readIdx = body.indexOf('fs.promises.readFile(filePath)');
-    expect(statIdx).toBeGreaterThan(-1);
-    expect(readIdx).toBeGreaterThan(statIdx);
+    expect(body).toContain('readFileUpTo(filePath, MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES)');
+    expect(body).toContain("err.message === 'File too large'");
+    expect(body).not.toContain('fs.promises.readFile(filePath)');
   });
 });
 
@@ -596,25 +594,15 @@ describe('db mutator IPC sender validation (source contract, H3)', () => {
     expect(handlerBody).toContain('validateIpcSender(event)');
   });
 
-  it('app:setLoginItem calls assertIpcSender', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('app:setLoginItem'");
+  it.each([
+    ['app:setLoginItem', "assertIpcSender(event, 'app:setLoginItem')"],
+    ['app:getLoginItem', "assertIpcSender(event, 'app:getLoginItem')"],
+    ['log:device-connection', 'validateIpcSender(event)'],
+  ] as const)('%s validates the IPC sender', (channel, expectedCheck) => {
+    const handlerIdx = INDEX_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
     expect(handlerIdx).toBeGreaterThan(-1);
     const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
-    expect(body).toContain("assertIpcSender(event, 'app:setLoginItem')");
-  });
-
-  it('app:getLoginItem calls assertIpcSender', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('app:getLoginItem'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
-    expect(body).toContain("assertIpcSender(event, 'app:getLoginItem')");
-  });
-
-  it('log:device-connection validates IPC sender', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('log:device-connection'");
-    expect(handlerIdx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
-    expect(body).toContain('validateIpcSender(event)');
+    expect(body).toContain(expectedCheck);
   });
 
   it('regression: no db:* mutator (non-get/search) is missing a sender check', () => {

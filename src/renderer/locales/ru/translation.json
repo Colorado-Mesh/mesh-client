@@ -605,8 +605,10 @@
     "floodScopeOverrideCustomPlaceholder": "#мойрегион",
     "floodScopeOverrideCustomApply": "Использовать область действия",
     "floodScopeOverrideCustomInvalid": "Введите действительный хэштег региона (например, #myregion).",
-    "dmNodeHops_one": "{{count}} хоп",
-    "dmNodeHops_other": "{{count}} прыжков"
+    "dmNodeHops_one": "{{count}} переход",
+    "dmNodeHops_few": "{{count}} перехода",
+    "dmNodeHops_many": "{{count}} переходов",
+    "dmNodeHops_other": "{{count}} перехода"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -1545,8 +1547,8 @@
     "distanceOffsetKm": "Смещение расстояния",
     "km": "км",
     "distanceOffsetHelp": "Добавляет плоский километраж к порогам расстояния прыжка-гоблина и плохого маршрута (0–50).",
-    "ignoreMqttToggle": "Ignore MQTT",
-    "ignoreMqttHelp": "Gray out MQTT-only nodes and exclude them from diagnostics"
+    "ignoreMqttToggle": "Игнорировать MQTT",
+    "ignoreMqttHelp": "Отображать узлы только с MQTT серым цветом и исключать их из диагностики"
   },
   "diagnosticsPing": {
     "title": "Непрерывный пинг",
@@ -3664,17 +3666,17 @@
     "routeBarFloodTooltip": "Пакет с флуд-маршрутизацией",
     "routeBarDirectTooltip": "Пакет с прямой маршрутизацией",
     "routeBarUnknownTooltip": "неизвестный маршрут",
-    "crc32Fingerprint": "CRC32 fp:",
-    "innerFirstU32Debug": "Inner first u32 (debug):",
-    "destHash": "Dest hash:",
-    "srcHash": "Src hash:",
-    "channelHash": "Channel hash:",
+    "crc32Fingerprint": "Отпечаток CRC32:",
+    "innerFirstU32Debug": "Первое внутреннее u32 (отладка):",
+    "destHash": "Хеш назначения:",
+    "srcHash": "Хеш источника:",
+    "channelHash": "Хеш канала:",
     "mac": "MAC:",
-    "ciphertextBytes": "Ciphertext bytes:",
-    "senderKeyPrefix": "Sender key (prefix):",
-    "control": "Control:",
-    "advertTs": "ADVERT ts:",
-    "advertLatLon": "ADVERT lat/lon:"
+    "ciphertextBytes": "Байты шифротекста:",
+    "senderKeyPrefix": "Ключ отправителя (префикс):",
+    "control": "Управление:",
+    "advertTs": "Время ADVERT:",
+    "advertLatLon": "Широта/долгота ADVERT:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4343,9 +4345,9 @@
     "chartAriaIaq": "Диаграмма качества воздуха: последний показатель IAQ {{iaq}}, {{count}} баллов.",
     "tempUnitF": "°F",
     "tempUnitC": "°C",
-    "exportCsvButton": "Export CSV",
-    "emptyWaitingConnected": "No telemetry data yet. Waiting for data from device…",
-    "emptyWaitingDisconnected": "No telemetry data yet. Connect to a device to see real-time metrics."
+    "exportCsvButton": "Экспорт CSV",
+    "emptyWaitingConnected": "Данных телеметрии пока нет. Ожидание данных от устройства…",
+    "emptyWaitingDisconnected": "Данных телеметрии пока нет. Подключите устройство для просмотра показателей в реальном времени."
   },
   "toasts": {
     "firmwareAvailable": "Доступно обновление прошивки: v{{version}}",

@@ -605,8 +605,10 @@
     "floodScopeOverrideCustomPlaceholder": "#мояобласть",
     "floodScopeOverrideCustomApply": "Сфера використання",
     "floodScopeOverrideCustomInvalid": "Введіть дійсний хештег регіону (наприклад, #myregion).",
-    "dmNodeHops_one": "{{count}} Hop",
-    "dmNodeHops_other": "{{count}} хопи"
+    "dmNodeHops_one": "{{count}} перехід",
+    "dmNodeHops_few": "{{count}} переходи",
+    "dmNodeHops_many": "{{count}} переходів",
+    "dmNodeHops_other": "{{count}} переходу"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

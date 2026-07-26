@@ -1545,8 +1545,8 @@
     "distanceOffsetKm": "Pengimbangan jarak",
     "km": "km",
     "distanceOffsetHelp": "Menambahkan lantai km datar ke ambang batas jarak hop-goblin dan rute buruk (0–50).",
-    "ignoreMqttToggle": "Ignore MQTT",
-    "ignoreMqttHelp": "Gray out MQTT-only nodes and exclude them from diagnostics"
+    "ignoreMqttToggle": "Abaikan MQTT",
+    "ignoreMqttHelp": "Redupkan node yang hanya menggunakan MQTT dan kecualikan dari diagnostik"
   },
   "diagnosticsPing": {
     "title": "Ping berkelanjutan",
@@ -3664,17 +3664,17 @@
     "routeBarFloodTooltip": "Paket yang dialiri banjir",
     "routeBarDirectTooltip": "Paket rute langsung",
     "routeBarUnknownTooltip": "Jenis rute tidak diketahui",
-    "crc32Fingerprint": "CRC32 fp:",
-    "innerFirstU32Debug": "Inner first u32 (debug):",
-    "destHash": "Dest hash:",
-    "srcHash": "Src hash:",
-    "channelHash": "Channel hash:",
+    "crc32Fingerprint": "Sidik jari CRC32:",
+    "innerFirstU32Debug": "u32 internal pertama (debug):",
+    "destHash": "Hash tujuan:",
+    "srcHash": "Hash sumber:",
+    "channelHash": "Hash kanal:",
     "mac": "MAC:",
-    "ciphertextBytes": "Ciphertext bytes:",
-    "senderKeyPrefix": "Sender key (prefix):",
-    "control": "Control:",
-    "advertTs": "ADVERT ts:",
-    "advertLatLon": "ADVERT lat/lon:"
+    "ciphertextBytes": "Byte teks tersandi:",
+    "senderKeyPrefix": "Kunci pengirim (awalan):",
+    "control": "Kontrol:",
+    "advertTs": "Waktu ADVERT:",
+    "advertLatLon": "Lintang/bujur ADVERT:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4343,9 +4343,9 @@
     "chartAriaIaq": "Grafik kualitas udara: IAQ {{iaq}}, {{count}} poin terbaru",
     "tempUnitF": "°F",
     "tempUnitC": "°C",
-    "exportCsvButton": "Export CSV",
-    "emptyWaitingConnected": "No telemetry data yet. Waiting for data from device…",
-    "emptyWaitingDisconnected": "No telemetry data yet. Connect to a device to see real-time metrics."
+    "exportCsvButton": "Ekspor CSV",
+    "emptyWaitingConnected": "Belum ada data telemetri. Menunggu data dari perangkat…",
+    "emptyWaitingDisconnected": "Belum ada data telemetri. Hubungkan ke perangkat untuk melihat metrik waktu nyata."
   },
   "toasts": {
     "firmwareAvailable": "Pembaruan firmware tersedia: v{{version}}",
