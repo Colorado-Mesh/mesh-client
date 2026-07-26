@@ -64,6 +64,12 @@ export interface MeshcoreRfRxDeps {
   setRawPackets: Dispatch<SetStateAction<RxPacketEntry[]>>;
 }
 
+/** Node lookup + identity refs shared by Meshtastic-sender and hops-away RF updates. */
+type MeshcoreRfRxNodeLookupDeps = Pick<
+  MeshcoreRfRxDeps,
+  'myNodeNumRef' | 'meshcoreIdentityIdRef' | 'readNodes'
+>;
+
 interface MeshcoreRfParseContext {
   parsed: ReturnType<typeof parseMeshCoreRfPacket>;
   routeTypeString: string | null;
@@ -150,7 +156,7 @@ function updateKnownMeshtasticSenderNode(
   now: number,
   snr: number,
   rssi: number,
-  deps: Pick<MeshcoreRfRxDeps, 'myNodeNumRef' | 'meshcoreIdentityIdRef' | 'readNodes'>,
+  deps: MeshcoreRfRxNodeLookupDeps,
 ): void {
   if (senderId === deps.myNodeNumRef.current) return;
   const existing = deps.readNodes().get(senderId);
@@ -179,7 +185,7 @@ export function resolveMeshcoreRfSenderInfo(
   now: number,
   snr: number,
   rssi: number,
-  deps: Pick<MeshcoreRfRxDeps, 'myNodeNumRef' | 'meshcoreIdentityIdRef' | 'readNodes'>,
+  deps: MeshcoreRfRxNodeLookupDeps,
 ): string {
   if (!rawU8 || rawU8.length < 8 || loraPacketClass == null) return '';
   if (loraPacketClass === 'meshcore') return ' [meshcore]';
@@ -280,7 +286,7 @@ export function applyMeshcoreRfHopsAwayUpdate(
   now: number,
   snr: number,
   rssi: number,
-  deps: Pick<MeshcoreRfRxDeps, 'myNodeNumRef' | 'meshcoreIdentityIdRef' | 'readNodes'>,
+  deps: MeshcoreRfRxNodeLookupDeps,
 ): void {
   if (fromNodeId === null || fromNodeId === deps.myNodeNumRef.current) return;
   const existing = deps.readNodes().get(fromNodeId);
@@ -350,7 +356,7 @@ function computeNextRawPacketLog(
   rxEntry: RxPacketEntry,
   myId: number,
 ): RxPacketEntry[] {
-  const last = prev[prev.length - 1];
+  const last = prev.at(-1);
   const shouldCoalesce =
     myId !== 0 &&
     shouldCoalesceSelfFloodAdvert(last, rxEntry, myId, MESHCORE_RAW_SELF_FLOOD_ADVERT_COALESCE_MS);
