@@ -129,16 +129,48 @@ describe('store record adapters (merge precedence)', () => {
     expect(messageRecordToChatMessage(record).rxHops).toBe(3);
   });
 
-  it('round-trips channel utilization and air util between NodeRecord and MeshNode', () => {
+  it('round-trips Meshtastic node metrics between NodeRecord and MeshNode', () => {
     const record: NodeRecord = {
       nodeId: 1,
       longName: 'Alpha',
       channelUtilization: 42.5,
       airUtilTx: 3.1,
+      altitude: 1600,
+      lastPositionWarning: 'bad fix',
+      numPacketsRxBad: 4,
+      numRxDupe: 5,
+      numPacketsRx: 6,
+      numPacketsTx: 7,
+      publicKeyHex: 'ab'.repeat(32),
+      temperature: 20,
+      relativeHumidity: 40,
+      barometricPressure: 850,
+      iaq: 12,
+      lux: 30,
+      windSpeed: 5,
+      windDirection: 180,
     };
     const node = nodeRecordToMeshNode(record);
     expect(node.channel_utilization).toBe(42.5);
     expect(node.air_util_tx).toBe(3.1);
+    expect(node).toEqual(
+      expect.objectContaining({
+        altitude: 1600,
+        lastPositionWarning: 'bad fix',
+        num_packets_rx_bad: 4,
+        num_rx_dupe: 5,
+        num_packets_rx: 6,
+        num_packets_tx: 7,
+        public_key_hex: 'ab'.repeat(32),
+        env_temperature: 20,
+        env_humidity: 40,
+        env_pressure: 850,
+        env_iaq: 12,
+        env_lux: 30,
+        env_wind_speed: 5,
+        env_wind_direction: 180,
+      }),
+    );
     const back = meshNodeToNodeRecord({
       ...node,
       node_id: 1,
@@ -154,6 +186,24 @@ describe('store record adapters (merge precedence)', () => {
     });
     expect(back.channelUtilization).toBe(42.5);
     expect(back.airUtilTx).toBe(3.1);
+    expect(back).toEqual(
+      expect.objectContaining({
+        altitude: 1600,
+        lastPositionWarning: 'bad fix',
+        numPacketsRxBad: 4,
+        numRxDupe: 5,
+        numPacketsRx: 6,
+        numPacketsTx: 7,
+        publicKeyHex: 'ab'.repeat(32),
+        temperature: 20,
+        relativeHumidity: 40,
+        barometricPressure: 850,
+        iaq: 12,
+        lux: 30,
+        windSpeed: 5,
+        windDirection: 180,
+      }),
+    );
   });
 
   it('nodeRecordsToMeshNodeMap merges legacy fields when spread under hook merge pattern', () => {

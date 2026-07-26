@@ -11,8 +11,10 @@
  */
 import type { Dispatch, SetStateAction } from 'react';
 
-import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
-import type { DomainEvent, MeshtasticModulePortEvent } from '../protocols/Protocol';
+import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener';
+import { toPacketPayloadBytes } from '../packetPayload';
+import type { MeshtasticModulePortEvent } from '../protocols/Protocol';
+import { appendToRingMap } from '../sessionMemoryCaps';
 import type { IdentityId } from '../types';
 import {
   appendModulePortEvent,
@@ -48,25 +50,27 @@ export interface MeshtasticModulePortSideEffectsDeps {
   setPrivateMessages: RawMessageMapSetter;
 }
 
-function toBytes(data: unknown): Uint8Array {
-  if (data instanceof Uint8Array) return data;
-  const raw = (data as { raw?: unknown } | null | undefined)?.raw;
-  if (raw instanceof Uint8Array) return raw;
-  return new Uint8Array();
-}
-
 /** Append to a per-node ring of raw module payloads (`keep` is the retained tail length). */
 function appendRawMessage(
   setter: RawMessageMapSetter,
   entry: RawModuleMessage,
   keep: number,
 ): void {
-  setter((prev) => {
-    const updated = new Map(prev);
-    const existing = updated.get(entry.from) ?? [];
-    updated.set(entry.from, [...existing.slice(-keep), entry]);
-    return updated;
-  });
+  setter((prev) => appendToRingMap(prev, entry.from, entry, keep));
+}
+
+/**
+ * Meshtastic `Paxcount` reports Wi-Fi and BLE device counts separately; the
+ * panel plots a single total. JSON/MQTT mirrors may already carry `count`.
+ */
+function paxCount(data: unknown): number {
+  const pax = data as { count?: unknown; wifi?: unknown; ble?: unknown } | null | undefined;
+  if (typeof pax?.count === 'number' && Number.isFinite(pax.count)) {
+    return Math.max(0, Math.trunc(pax.count));
+  }
+  const wifi = typeof pax?.wifi === 'number' && Number.isFinite(pax.wifi) ? pax.wifi : 0;
+  const ble = typeof pax?.ble === 'number' && Number.isFinite(pax.ble) ? pax.ble : 0;
+  return Math.max(0, Math.trunc(wifi) + Math.trunc(ble));
 }
 
 function handleModulePort(
@@ -76,7 +80,11 @@ function handleModulePort(
   deps.touchLastData();
   const from = payload.from;
   const timestamp = payload.timestamp;
-  const entry: RawModuleMessage = { from, data: toBytes(payload.data), timestamp };
+  const entry: RawModuleMessage = {
+    from,
+    data: toPacketPayloadBytes(payload.data),
+    timestamp,
+  };
 
   switch (payload.portLabel) {
     case 'remoteHardware':
@@ -98,13 +106,11 @@ function handleModulePort(
     case 'ipTunnel':
       appendRawMessage(deps.setIpTunnelMessages, entry, 100);
       break;
-    case 'paxcounter': {
-      const pax = payload.data as { count?: number } | undefined;
+    case 'paxcounter':
       deps.setPaxCounterData((prev) =>
-        appendPaxHistory(prev, { from, count: pax?.count ?? 0, timestamp }),
+        appendPaxHistory(prev, { from, count: paxCount(payload.data), timestamp }),
       );
       break;
-    }
     case 'serial':
       appendRawMessage(deps.setSerialMessages, entry, 100);
       break;
@@ -141,9 +147,7 @@ export function attachMeshtasticModulePortSideEffects(
   identityId: IdentityId,
   deps: MeshtasticModulePortSideEffectsDeps,
 ): () => void {
-  const listener: PacketRouterListener = (event: DomainEvent, routedIdentityId) => {
-    if (routedIdentityId !== identityId || event.type !== 'meshtastic_module_port') return;
-    handleModulePort(event.payload, deps);
-  };
-  return packetRouter.addListener(listener);
+  return attachTypedPacketListener(identityId, 'meshtastic_module_port', (payload) => {
+    handleModulePort(payload, deps);
+  });
 }

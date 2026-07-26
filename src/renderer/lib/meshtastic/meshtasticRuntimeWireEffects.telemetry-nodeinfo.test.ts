@@ -68,7 +68,12 @@ function makeDeps() {
       localLoraConfigTimerRef: { current: undefined },
       meshtasticIdentityIdRef: { current: IDENTITY },
       meshtasticIngestSessionRef: {
-        current: { setConfiguring: vi.fn(), detach: vi.fn(), markPacketSeen: vi.fn() },
+        current: {
+          setConfiguring: vi.fn(),
+          detach: vi.fn(),
+          markPacketSeen: vi.fn(),
+          isDuplicatePacket: vi.fn(),
+        },
       },
       meshtasticIngressDetachRef: { current: null },
       mqttStatusRef: { current: 'disconnected' as const },

@@ -81,9 +81,22 @@ export interface MeshtasticProtocolIngressAttach {
   detach: () => void;
 }
 
-export function meshtasticTransportParams(
+/** Connect inputs collected by ConnectionPanel, before protocol-specific shaping. */
+export interface MeshTransportParamOptions {
+  peripheralId?: string;
+  portSignature?: string;
+  host?: string;
+}
+
+/**
+ * Shared transport-params builder. Meshtastic and MeshCore accept different
+ * transport subsets but must shape the shared ones identically, otherwise the
+ * same physical device yields two different identity signatures.
+ */
+function buildMeshTransportParams(
+  caller: string,
   type: ConnectionType,
-  opts: { peripheralId?: string; portSignature?: string; host?: string },
+  opts: MeshTransportParamOptions,
 ): TransportParams {
   switch (type) {
     case 'ble':
@@ -96,11 +109,16 @@ export function meshtasticTransportParams(
       return { type: 'tcp', host: opts.host ?? '' };
     default: {
       const _exhaustive: never = type;
-      throw new Error(
-        `meshtasticTransportParams: unsupported connection type ${String(_exhaustive)}`,
-      );
+      throw new Error(`${caller}: unsupported connection type ${String(_exhaustive)}`);
     }
   }
+}
+
+export function meshtasticTransportParams(
+  type: ConnectionType,
+  opts: MeshTransportParamOptions,
+): TransportParams {
+  return buildMeshTransportParams('meshtasticTransportParams', type, opts);
 }
 
 /**
@@ -165,20 +183,9 @@ export interface MeshcoreProtocolIngressAttach {
 
 export function meshcoreTransportParams(
   type: 'ble' | 'serial' | 'tcp',
-  opts: { peripheralId?: string; portSignature?: string; host?: string },
+  opts: MeshTransportParamOptions,
 ): TransportParams {
-  switch (type) {
-    case 'ble':
-      return { type: 'ble', peripheralId: opts.peripheralId };
-    case 'serial':
-      return { type: 'serial', portSignature: opts.portSignature };
-    case 'tcp':
-      return { type: 'tcp', host: opts.host ?? '' };
-    default: {
-      const _exhaustive: never = type;
-      throw new Error(`meshcoreTransportParams: unsupported transport type ${String(_exhaustive)}`);
-    }
-  }
+  return buildMeshTransportParams('meshcoreTransportParams', type, opts);
 }
 
 export function attachMeshcoreProtocolIngress(

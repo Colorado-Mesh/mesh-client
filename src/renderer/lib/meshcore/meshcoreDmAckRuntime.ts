@@ -11,7 +11,7 @@ import {
   meshcoreDmAckKeyU32,
   type PendingDmAckEntry,
 } from '../../hooks/meshcore/meshcoreHookPreamble';
-import { renameMessageId, updateMessageStatus, useMessageStore } from '../../stores/messageStore';
+import { updateMessageStatus, useMessageStore } from '../../stores/messageStore';
 import type { IdentityId } from '../types';
 
 /** MeshCore firmware RESP codes: 0x80 = ACK, 0x81 = NACK (may arrive signed). */
@@ -89,16 +89,15 @@ export function syncMeshcoreDmAckToMessageStore(
   }
   if (matched) return true;
 
+  // Do not apply ambiguous single-inflight fallback: a late/mis-keyed ACK 130 must
+  // not rename/ack the sole outbound DM when packet ids do not match.
   const inflight = Object.entries(byId).filter(
     ([, rec]) => rec.status === 'sending' && rec.from === selfId && isOutboundMeshcoreDmRecord(rec),
   );
-  if (inflight.length !== 1) return false;
-
-  const [id] = inflight[0];
-  const ackId = String(ackKeyU32);
-  if (id !== ackId) {
-    renameMessageId(identityId, id, ackId);
+  if (inflight.length > 0) {
+    console.debug(
+      `[meshcoreDmAckRuntime] dropping unmatched DM ack ${ackKeyU32} (${inflight.length} inflight outbound)`,
+    );
   }
-  updateMessageStatus(identityId, ackId, newStatus);
-  return true;
+  return false;
 }

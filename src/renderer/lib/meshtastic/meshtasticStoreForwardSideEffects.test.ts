@@ -158,6 +158,68 @@ describe('attachMeshtasticStoreForwardSideEffects', () => {
     detach();
   });
 
+  it('appends a retransmitted frame to the ring buffer only once', () => {
+    const deps = makeDeps();
+    const detach = attachMeshtasticStoreForwardSideEffects(IDENTITY, deps);
+    const data = sfPacket(StoreForward.StoreAndForward_RequestResponse.ROUTER_TEXT_BROADCAST, {
+      case: 'text',
+      value: new TextEncoder().encode('retransmit me'),
+    });
+    const event = {
+      type: 'meshtastic_store_forward' as const,
+      payload: { from: SERVER, channel: 0, timestamp: Date.now(), raw: { data } },
+    };
+    packetRouter.dispatch(event, IDENTITY);
+    packetRouter.dispatch(event, IDENTITY);
+    expect(deps.setStoreForwardMessages).toHaveBeenCalledTimes(1);
+    detach();
+  });
+
+  it('keeps recording heartbeats but rate-limits repeated auto history requests', () => {
+    const deps = makeDeps();
+    const detach = attachMeshtasticStoreForwardSideEffects(IDENTITY, deps);
+    const data = sfPacket(StoreForward.StoreAndForward_RequestResponse.ROUTER_HEARTBEAT, {
+      case: 'heartbeat',
+      value: create(StoreForward.StoreAndForward_HeartbeatSchema, { period: 120, secondary: 0 }),
+    });
+    const event = {
+      type: 'meshtastic_store_forward' as const,
+      payload: { from: SERVER, channel: 0, timestamp: Date.now(), raw: { data } },
+    };
+    packetRouter.dispatch(event, IDENTITY);
+    packetRouter.dispatch(event, IDENTITY);
+    packetRouter.dispatch(event, IDENTITY);
+    expect(deps.recordHeartbeat).toHaveBeenCalledTimes(3);
+    expect(deps.requestStoreForwardHistory).toHaveBeenCalledTimes(1);
+    detach();
+  });
+
+  it('keeps distinct frames from the same router', () => {
+    const deps = makeDeps();
+    const detach = attachMeshtasticStoreForwardSideEffects(IDENTITY, deps);
+    for (const text of ['first', 'second']) {
+      packetRouter.dispatch(
+        {
+          type: 'meshtastic_store_forward',
+          payload: {
+            from: SERVER,
+            channel: 0,
+            timestamp: Date.now(),
+            raw: {
+              data: sfPacket(StoreForward.StoreAndForward_RequestResponse.ROUTER_TEXT_BROADCAST, {
+                case: 'text',
+                value: new TextEncoder().encode(text),
+              }),
+            },
+          },
+        },
+        IDENTITY,
+      );
+    }
+    expect(deps.setStoreForwardMessages).toHaveBeenCalledTimes(2);
+    detach();
+  });
+
   it('ignores events routed for a different identity', () => {
     const deps = makeDeps();
     const detach = attachMeshtasticStoreForwardSideEffects(IDENTITY, deps);

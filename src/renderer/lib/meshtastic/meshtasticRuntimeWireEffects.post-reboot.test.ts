@@ -25,7 +25,12 @@ function makeDeps() {
   };
   const configureTimeoutRef = { current: null as ReturnType<typeof setTimeout> | null };
   const meshtasticIngestSessionRef = {
-    current: { setConfiguring: vi.fn(), detach: vi.fn(), markPacketSeen: vi.fn() },
+    current: {
+      setConfiguring: vi.fn(),
+      detach: vi.fn(),
+      markPacketSeen: vi.fn(),
+      isDuplicatePacket: vi.fn(),
+    },
   };
 
   const noopRef = { current: null };

@@ -568,6 +568,8 @@
     "dmNodeSignal": "SNR {{snr}} dB",
     "dmNodeHops_one": "{{count}} hop",
     "dmNodeHops_other": "{{count}} hops",
+    "notificationDmTitle": "DM from {{sender}}",
+    "notificationMessageTitle": "Message from {{sender}}",
     "muteConversation": "Mute this conversation",
     "unmuteConversation": "Unmute this conversation",
     "starMessage": "Star message",
@@ -2792,7 +2794,8 @@
     "removeFromFavorites": "Remove from favorites",
     "addToFavorites": "Add to favorites",
     "healthTooltip": "Health score: {{total}}/100 (signal {{signal}}, recency {{recency}}, load {{load}}, battery {{battery}})",
-    "healthAriaLabel": "Node health score {{total}} out of 100"
+    "healthAriaLabel": "Node health score {{total}} out of 100",
+    "echoesConnectionHealthTooltip": "{{score}}% connection health"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",

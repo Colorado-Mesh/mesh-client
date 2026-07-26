@@ -112,7 +112,7 @@ describe('processMeshcoreWaitingMessageItem', () => {
     expect(result.nodesDirty).toBe(true);
   });
 
-  it('warns and uses senderId 0 for unknown pubKeyPrefix', () => {
+  it('warns and skips ingest for unknown pubKeyPrefix (senderId 0)', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const pubKey = makePubKey(99);
     const prefixBytes = pubKey.slice(0, 6);
@@ -129,7 +129,30 @@ describe('processMeshcoreWaitingMessageItem', () => {
     );
 
     expect(warnSpy).toHaveBeenCalled();
-    expect(result.pendingMessages[0]?.sender_id).toBe(0);
+    expect(result.pendingMessages).toHaveLength(0);
+    expect(result.nodesDirty).toBe(false);
+    warnSpy.mockRestore();
+  });
+
+  it('still logs transport status lines when senderId is 0', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const logTransportLineAsDevice = vi.fn();
+    const pubKey = makePubKey(98);
+    const prefixBytes = pubKey.slice(0, 6);
+
+    const result = processMeshcoreWaitingMessageItem(
+      {
+        contactMessage: {
+          pubKeyPrefix: prefixBytes,
+          text: 'ack @peer',
+          senderTimestamp: 1_700_000_201,
+        },
+      },
+      baseDeps({ logTransportLineAsDevice }),
+    );
+
+    expect(result.pendingMessages).toHaveLength(0);
+    expect(logTransportLineAsDevice).toHaveBeenCalledWith('ack @peer');
     warnSpy.mockRestore();
   });
 

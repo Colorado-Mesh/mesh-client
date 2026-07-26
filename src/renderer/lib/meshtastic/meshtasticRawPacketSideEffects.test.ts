@@ -37,22 +37,15 @@ function emptyNode(nodeId: number): MeshNode {
 function makeDeps(overrides: Partial<MeshtasticRawPacketSideEffectsDeps> = {}) {
   const nodeMirror = new Map<number, MeshNode>([[PEER, emptyNode(PEER)]]);
   syncNodesMapToIdentityStore(IDENTITY, nodeMirror);
-  const updateNodes = vi.fn((fn: (prev: Map<number, MeshNode>) => Map<number, MeshNode>) => {
-    const next = fn(new Map(nodeMirror));
-    nodeMirror.clear();
-    for (const [id, node] of next) nodeMirror.set(id, node);
-    syncNodesMapToIdentityStore(IDENTITY, nodeMirror);
-  });
   const deps: MeshtasticRawPacketSideEffectsDeps = {
     getMyNodeNum: () => MY_NODE,
     getIsConfiguring: () => false,
-    updateNodes,
     setRawPackets: vi.fn(),
     setSignalTelemetry: vi.fn(),
     touchLastData: vi.fn(),
     ...overrides,
   };
-  return { deps, nodeMirror };
+  return { deps };
 }
 
 describe('attachMeshtasticRawPacketSideEffects', () => {

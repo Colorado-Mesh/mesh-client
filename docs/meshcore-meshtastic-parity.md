@@ -64,7 +64,7 @@ Room servers (`hw_model === 'Room'`, contact type 3) are BBS nodes on the mesh. 
 
 ## MeshCore: identity-scoped UI stores
 
-Live Chat and Nodes read **identity-scoped** `nodeStore` / `messageStore` (keyed by `identityId`). Hook-local refs in `useMeshcoreRuntime` (`nodesRef`, pubkeys) remain for send/RPC until contact rebuild syncs. Hydration: [`hydrateIdentityStoresFromDb.ts`](../src/renderer/lib/hydrateIdentityStoresFromDb.ts). **Chat-driven `last_heard`** (`meshcoreIngest`, `ensureMeshcoreChatSenderInNodeStore`) updates node freshness on text traffic, not only adverts.
+Live Chat and Nodes read **identity-scoped** `nodeStore` / `messageStore` (keyed by `identityId`) via `identityStoreReads` (`getIdentityNode` / `getIdentityChatMessages`). DM/trace pubkeys live in `meshcorePubKeyRegistry` (mirrored into runtime maps for send/RPC). Hydration: [`hydrateIdentityStoresFromDb.ts`](../src/renderer/lib/hydrateIdentityStoresFromDb.ts). **Chat-driven `last_heard`** (`meshcoreIngest`, `ensureMeshcoreChatSenderInNodeStore`) updates node freshness on text traffic, not only adverts.
 
 ## MeshCore: Rooms scroll UX
 

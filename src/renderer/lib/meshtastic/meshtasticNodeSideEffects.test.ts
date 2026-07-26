@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import { useNodeStore } from '../../stores/nodeStore';
 import { packetRouter } from '../drivers/PacketRouter';
-import { syncNodesMapToIdentityStore } from '../hydrateIdentityStoresFromDb';
 import { getIdentityNode } from '../identityStoreReads';
 import { MESH_PROTOCOL_STORAGE_KEY } from '../storedMeshProtocol';
 import type { MeshNode } from '../types';
@@ -34,27 +34,14 @@ function emptyNode(nodeId: number): MeshNode {
 }
 
 function makeDeps(overrides: Partial<MeshtasticNodeSideEffectsDeps> = {}) {
-  const nodeMirror = new Map<number, MeshNode>();
-  const updateNodes = vi.fn((fn: (prev: Map<number, MeshNode>) => Map<number, MeshNode>) => {
-    const next = fn(new Map(nodeMirror));
-    nodeMirror.clear();
-    for (const [id, node] of next) nodeMirror.set(id, node);
-    syncNodesMapToIdentityStore(IDENTITY, nodeMirror);
-  });
   const deps: MeshtasticNodeSideEffectsDeps = {
     connectionType: 'ble',
     getMyNodeNum: () => MY_NODE,
     getIsConfiguring: () => false,
     getBluetoothDeviceId: () => 'ble-1',
     touchLastData: vi.fn(),
-    updateNodes,
     emptyNode,
-    ensureNodeExists: vi.fn((nodeNum: number) => {
-      if (!nodeMirror.has(nodeNum)) {
-        nodeMirror.set(nodeNum, emptyNode(nodeNum));
-        syncNodesMapToIdentityStore(IDENTITY, nodeMirror);
-      }
-    }),
+    ensureNodeExists: vi.fn(),
     maybeRequestNodeInfoForNode: vi.fn(),
     applyOwnNodeBatteryFromDeviceMetrics: vi.fn(),
     rfHeardNodeIds: { current: new Set<number>() },
@@ -63,7 +50,7 @@ function makeDeps(overrides: Partial<MeshtasticNodeSideEffectsDeps> = {}) {
     setEnvironmentTelemetry: vi.fn(),
     ...overrides,
   };
-  return { deps, nodeMirror };
+  return { deps };
 }
 
 describe('attachMeshtasticNodeSideEffects', () => {
@@ -81,7 +68,7 @@ describe('attachMeshtasticNodeSideEffects', () => {
   });
 
   it('applies UserPacket node_info into the hook map and marks RF-heard', () => {
-    const { deps, nodeMirror } = makeDeps();
+    const { deps } = makeDeps();
     const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);
     packetRouter.dispatch(
       {
@@ -99,16 +86,14 @@ describe('attachMeshtasticNodeSideEffects', () => {
     );
     expect(deps.touchLastData).toHaveBeenCalled();
     expect(deps.rfHeardNodeIds.current.has(PEER)).toBe(true);
-    expect(nodeMirror.get(PEER)?.long_name).toBe('Peer Node');
-    expect(nodeMirror.get(PEER)?.short_name).toBe('PEER');
+    expect(getIdentityNode(IDENTITY, PEER)?.long_name).toBe('Peer Node');
+    expect(getIdentityNode(IDENTITY, PEER)?.short_name).toBe('PEER');
     expect(window.electronAPI.db.saveNode).toHaveBeenCalled();
     detach();
   });
 
   it('patches valid position and requests NodeInfo for the sender', () => {
-    const { deps, nodeMirror } = makeDeps();
-    nodeMirror.set(PEER, emptyNode(PEER));
-    syncNodesMapToIdentityStore(IDENTITY, nodeMirror);
+    const { deps } = makeDeps();
     const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);
     packetRouter.dispatch(
       {
@@ -123,16 +108,14 @@ describe('attachMeshtasticNodeSideEffects', () => {
       },
       IDENTITY,
     );
-    expect(nodeMirror.get(PEER)?.latitude).toBeCloseTo(39.7392);
-    expect(nodeMirror.get(PEER)?.longitude).toBeCloseTo(-104.9903);
+    expect(getIdentityNode(IDENTITY, PEER)?.latitude).toBeCloseTo(39.7392);
+    expect(getIdentityNode(IDENTITY, PEER)?.longitude).toBeCloseTo(-104.9903);
     expect(deps.maybeRequestNodeInfoForNode).toHaveBeenCalledWith(PEER);
     detach();
   });
 
   it('charts deviceMetrics telemetry and updates battery on an existing node', () => {
-    const { deps, nodeMirror } = makeDeps();
-    nodeMirror.set(PEER, emptyNode(PEER));
-    syncNodesMapToIdentityStore(IDENTITY, nodeMirror);
+    const { deps } = makeDeps();
     const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);
     packetRouter.dispatch(
       {
@@ -150,6 +133,69 @@ describe('attachMeshtasticNodeSideEffects', () => {
     expect(deps.setTelemetry).toHaveBeenCalled();
     expect(getIdentityNode(IDENTITY, PEER)?.battery).toBe(77);
     expect(deps.maybeRequestNodeInfoForNode).toHaveBeenCalledWith(PEER);
+    detach();
+  });
+
+  it('passes the fully merged NodeDB row to diagnostics', () => {
+    const processNodeUpdate = vi
+      .spyOn(useDiagnosticsStore.getState(), 'processNodeUpdate')
+      .mockImplementation(() => undefined);
+    const { deps } = makeDeps();
+    const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);
+    packetRouter.dispatch(
+      {
+        type: 'node_info',
+        payload: {
+          nodeId: PEER,
+          longName: 'Peer Node',
+          shortName: 'PEER',
+          snr: 7.5,
+          hopsAway: 2,
+          latitude: 39.7,
+          longitude: -105,
+          lastHeardAt: Date.now(),
+          fromUserPacket: false,
+        },
+      },
+      IDENTITY,
+    );
+    expect(processNodeUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        node_id: PEER,
+        snr: 7.5,
+        hops_away: 2,
+        latitude: 39.7,
+        longitude: -105,
+      }),
+      null,
+      MY_NODE,
+      expect.anything(),
+    );
+    detach();
+  });
+
+  it('creates an environment telemetry row from canonical nodeStore state', () => {
+    const { deps } = makeDeps();
+    const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);
+    packetRouter.dispatch(
+      {
+        type: 'telemetry',
+        payload: {
+          nodeId: PEER,
+          timestamp: Date.now(),
+          variantCase: 'environmentMetrics',
+          temperature: 21.5,
+          relativeHumidity: 45,
+        },
+      },
+      IDENTITY,
+    );
+    expect(getIdentityNode(IDENTITY, PEER)).toEqual(
+      expect.objectContaining({
+        env_temperature: 21.5,
+        env_humidity: 45,
+      }),
+    );
     detach();
   });
 

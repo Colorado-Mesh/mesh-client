@@ -428,7 +428,6 @@
     "jumpToQuotedMessage": "Przejdź do cytowanej wiadomości od {{sender}}",
     "replyToMessage": "Odpowiedz na wiadomość",
     "addReaction": "Dodaj reakcję",
-    "emojiButton": "Emoji",
     "sendButton": "Wysłać",
     "sendButtonDm": "DM",
     "sendButtonSending": "...",
@@ -608,7 +607,10 @@
     "dmNodeHops_one": "{{count}} przeskok",
     "dmNodeHops_few": "{{count}} przeskoki",
     "dmNodeHops_many": "{{count}} przeskoków",
-    "dmNodeHops_other": "{{count}} przeskoku"
+    "dmNodeHops_other": "{{count}} przeskoku",
+    "notificationDmTitle": "DM from {{sender}}",
+    "notificationMessageTitle": "Wiadomość od {{sender}}",
+    "emojiButton": "Emoji"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -715,8 +717,6 @@
     "disconnectAndQuit": "Rozłącz i zakończ",
     "quit": "Zrezygnować",
     "networkPreset": "Ustawienia sieciowe",
-    "region": "Region",
-    "port": "Port",
     "useWebSocket": "Użyj transportu WebSocket",
     "wsRequired": "(wymagane dla portu 443)",
     "username": "Nazwa użytkownika",
@@ -1200,20 +1200,22 @@
     "coloradoRegionGateStay": "Jestem w Kolorado",
     "coloradoRegionGateSwitch": "Przełącz na LetsMesh",
     "topicPrefixInvalidIata": "Prefiks tematu musi być meshcore/test lub meshcore/{IATA} (3 litery), np. meshcore/DEN.",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "Ponownie połącz próby przed rezygnacją (1–{{max}}). Zapisano z ustawieniami; naciśnij ponownie Połącz po zmianie, aby główny proces go podniósł.",
       "meshtastic": "Oba protokoły umożliwiają 1–{{max}}. Zapisano z ustawieniami; odłącz i połącz ponownie, aby uruchomiona sesja używała nowej wartości."
     },
     "reticulumStackRunningAs": "Działa — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Stos Reticulum nie odpowiada — uruchamiam ponownie…"
+    "reticulumSidecarUnhealthyRestarting": "Stos Reticulum nie odpowiada — uruchamiam ponownie…",
+    "region": "Region",
+    "port": "Port",
+    "reticulumSharedInstance": {
+      "title": "Korzystanie z udostępnionej instancji innej aplikacji",
+      "body": "Ta aplikacja została dołączona jako klient udostępnionej instancji Reticulum innej aplikacji. W tym trybie nie są uruchamiane lokalne koncentratory TCP z konfiguracji tej aplikacji — ruch może korzystać tylko ze stosu innej aplikacji.",
+      "networkHint": "Lub otwórz instancję Network → Share Reticulum, aby ręcznie wyłączyć Udostępnianie, a następnie ponownie uruchom stos. Możesz również całkowicie wyjść z MeshChat, Ratspeak lub samodzielnego rnsd i uruchomić ponownie.",
+      "disableShare": "Wyłącz udostępnianie instancji i uruchom ponownie",
+      "disableShareAria": "Wyłącz opcję Udostępnij instancję i uruchom ponownie stos",
+      "disableFailed": "Nie udało się wyłączyć instancji udostępniania."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",
@@ -2788,7 +2790,8 @@
     "hybridMqttPathTooltip": "Odebrane przez RF; niektóre pakiety używają ścieżki przekaźnika MQTT",
     "hybridMqttPathAria": "Ścieżka RF i MQTT",
     "connectedViaRfAndMqttTooltip": "Połączono przez RF i MQTT",
-    "connectedViaRfAndMqttAria": "Połączono przez RF i MQTT"
+    "connectedViaRfAndMqttAria": "Połączono przez RF i MQTT",
+    "echoesConnectionHealthTooltip": "{{score}}% stan połączenia"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

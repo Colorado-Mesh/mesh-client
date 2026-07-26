@@ -606,7 +606,9 @@
     "floodScopeOverrideCustomApply": "Usar escopo",
     "floodScopeOverrideCustomInvalid": "Insira uma hashtag de região válida (por exemplo #myregion).",
     "dmNodeHops_one": "{{count}} hop",
-    "dmNodeHops_other": "{{count}} saltos"
+    "dmNodeHops_other": "{{count}} saltos",
+    "notificationDmTitle": "DM de {{sender}}",
+    "notificationMessageTitle": "Mensagem de {{sender}}"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -1198,20 +1200,20 @@
     "coloradoRegionGateStay": "Estou no Colorado",
     "coloradoRegionGateSwitch": "Mudar para LetsMesh",
     "topicPrefixInvalidIata": "O prefixo do tópico deve ser meshcore/test ou meshcore/{IATA} (3 letras), por exemplo, meshcore/DEN.",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "Reconecte as tentativas antes de desistir (1–{{max}}). Salvo com as configurações; pressione Conectar novamente depois de alterar para que o processo principal o pegue.",
       "meshtastic": "Ambos os protocolos permitem 1–{{max}}. Salvo com configurações; desconecte e conecte novamente para que a sessão em execução use o novo valor."
     },
     "reticulumStackRunningAs": "Em execução — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Pilha Reticulum sem resposta – reiniciando…"
+    "reticulumSidecarUnhealthyRestarting": "Pilha Reticulum sem resposta – reiniciando…",
+    "reticulumSharedInstance": {
+      "title": "Usar a instância compartilhada de outro aplicativo",
+      "body": "Este aplicativo é anexado como um cliente da instância Reticulum compartilhada de outro aplicativo. Os hubs TCP locais da configuração deste aplicativo não são iniciados neste modo — o tráfego só pode usar a pilha do outro aplicativo.",
+      "networkHint": "Ou abra Network → Share Reticulum instance para desativar o Share manualmente e reinicie a pilha. Você também pode sair totalmente do MeshChat, Ratspeak ou rnsd autônomo e reiniciar.",
+      "disableShare": "Desativar a instância Compartilhar e reiniciar",
+      "disableShareAria": "Desativar a instância Compartilhar e reiniciar a pilha",
+      "disableFailed": "Falha ao desativar a instância Compartilhar."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",
@@ -2786,7 +2788,8 @@
     "hybridMqttPathTooltip": "Recebido via RF; alguns pacotes usam um caminho de retransmissão MQTT",
     "hybridMqttPathAria": "Caminho de RF e MQTT",
     "connectedViaRfAndMqttTooltip": "Conectado via RF e MQTT",
-    "connectedViaRfAndMqttAria": "Conectado via RF e MQTT"
+    "connectedViaRfAndMqttAria": "Conectado via RF e MQTT",
+    "echoesConnectionHealthTooltip": "{{score}}% integridade da ligação"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

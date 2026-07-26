@@ -164,6 +164,13 @@ export function nodeRecordToMeshNode(record: NodeRecord): MeshNode {
     voltage: record.voltage,
     channel_utilization: record.channelUtilization,
     air_util_tx: record.airUtilTx,
+    env_temperature: record.temperature,
+    env_humidity: record.relativeHumidity,
+    env_pressure: record.barometricPressure,
+    env_iaq: record.iaq,
+    env_lux: record.lux,
+    env_wind_speed: record.windSpeed,
+    env_wind_direction: record.windDirection,
     lastPositionWarning: record.lastPositionWarning,
     num_packets_rx_bad: record.numPacketsRxBad,
     num_rx_dupe: record.numRxDupe,
@@ -207,6 +214,14 @@ function nodeRecordsShallowEqual(a: NodeRecord, b: NodeRecord): boolean {
     a.voltage === b.voltage &&
     a.channelUtilization === b.channelUtilization &&
     a.airUtilTx === b.airUtilTx &&
+    a.temperature === b.temperature &&
+    a.relativeHumidity === b.relativeHumidity &&
+    a.barometricPressure === b.barometricPressure &&
+    a.iaq === b.iaq &&
+    a.gasResistance === b.gasResistance &&
+    a.lux === b.lux &&
+    a.windSpeed === b.windSpeed &&
+    a.windDirection === b.windDirection &&
     a.lastPositionWarning === b.lastPositionWarning &&
     a.numPacketsRxBad === b.numPacketsRxBad &&
     a.numRxDupe === b.numRxDupe &&
@@ -288,6 +303,13 @@ export function meshNodeToNodeRecord(node: MeshNode): NodeRecord {
     voltage: node.voltage,
     channelUtilization: node.channel_utilization,
     airUtilTx: node.air_util_tx,
+    temperature: node.env_temperature,
+    relativeHumidity: node.env_humidity,
+    barometricPressure: node.env_pressure,
+    iaq: node.env_iaq,
+    lux: node.env_lux,
+    windSpeed: node.env_wind_speed,
+    windDirection: node.env_wind_direction,
     lastPositionWarning: node.lastPositionWarning,
     numPacketsRxBad: node.num_packets_rx_bad,
     numRxDupe: node.num_rx_dupe,

@@ -1932,7 +1932,9 @@ export function useMeshcoreRuntime() {
   const observeMeshcoreSetupAbort = useCallback((promise: Promise<unknown>): void => {
     void promise.catch((e: unknown) => {
       if (isMeshcoreSetupAbortError(e)) return;
-      throw e;
+      console.warn(
+        '[useMeshcoreRuntime] observed parallel setup rejection ' + errLikeToLogString(e),
+      );
     });
   }, []);
 
@@ -5584,7 +5586,11 @@ export function useMeshcoreRuntime() {
               );
             });
         }
-        void setMeshcoreRoomLastPostAt(nodeId, sentAt);
+        void setMeshcoreRoomLastPostAt(nodeId, sentAt).catch((e: unknown) => {
+          console.warn(
+            '[useMeshcoreRuntime] setMeshcoreRoomLastPostAt failed ' + errLikeToLogString(e),
+          );
+        });
       } catch (e: unknown) {
         const errMsg = meshcoreRoomPostSendErrorStored(e);
         const failed: ChatMessage = { ...tempMsg, status: 'failed', error: errMsg };

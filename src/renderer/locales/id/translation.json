@@ -606,7 +606,9 @@
     "floodScopeOverrideCustomApply": "Gunakan ruang lingkup",
     "floodScopeOverrideCustomInvalid": "Masukkan hashtag wilayah yang valid (misalnya #wilayahsaya).",
     "dmNodeHops_one": "{{count}} hop",
-    "dmNodeHops_other": "{{count}} hop"
+    "dmNodeHops_other": "{{count}} hop",
+    "notificationDmTitle": "DM dari {{sender}}",
+    "notificationMessageTitle": "Pesan dari {{sender}}"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -1198,20 +1200,20 @@
     "coloradoRegionGateStay": "Saya di Colorado",
     "coloradoRegionGateSwitch": "Beralih ke LetsMesh",
     "topicPrefixInvalidIata": "Awalan topik harus berupa meshcore/test atau meshcore/{IATA} (3 huruf), misalnya meshcore/DEN.",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "Sambungkan kembali percobaan sebelum menyerah (1 -{{max}}). Disimpan dengan pengaturan; tekan Hubungkan lagi setelah berubah sehingga proses utama mengambilnya.",
       "meshtastic": "Kedua protokol mengizinkan 1 -{{max}}. Disimpan dengan pengaturan; putuskan dan Hubungkan lagi sehingga sesi yang sedang berjalan menggunakan nilai baru."
     },
     "reticulumStackRunningAs": "Berjalan — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Stack Reticulum tidak responsif — memulai ulang…"
+    "reticulumSidecarUnhealthyRestarting": "Stack Reticulum tidak responsif — memulai ulang…",
+    "reticulumSharedInstance": {
+      "title": "Menggunakan sesi berbagi aplikasi lain",
+      "body": "Aplikasi ini dilampirkan sebagai klien dari instance Reticulum bersama aplikasi lain. Hub TCP lokal dari konfigurasi aplikasi ini tidak dimulai dalam mode ini — lalu lintas hanya dapat menggunakan tumpukan aplikasi lain.",
+      "networkHint": "Atau buka contoh Network → Share Reticulum untuk menonaktifkan Share secara manual, lalu mulai ulang tumpukan. Anda juga dapat sepenuhnya keluar dari MeshChat, Ratspeak, atau rnsd mandiri dan memulai kembali.",
+      "disableShare": "Nonaktifkan Bagikan sesi dan mulai ulang",
+      "disableShareAria": "Nonaktifkan Bagikan instance dan mulai ulang tumpukan",
+      "disableFailed": "Gagal menonaktifkan Bagikan instance."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -2786,7 +2788,8 @@
     "hybridMqttPathTooltip": "Diterima melalui RF; beberapa paket menggunakan jalur relai MQTT",
     "hybridMqttPathAria": "Jalur RF dan MQTT",
     "connectedViaRfAndMqttTooltip": "Terhubung melalui RF dan MQTT",
-    "connectedViaRfAndMqttAria": "Terhubung melalui RF dan MQTT"
+    "connectedViaRfAndMqttAria": "Terhubung melalui RF dan MQTT",
+    "echoesConnectionHealthTooltip": "{{score}}% kesehatan koneksi"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

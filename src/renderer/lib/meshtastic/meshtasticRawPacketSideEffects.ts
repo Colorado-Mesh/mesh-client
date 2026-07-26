@@ -12,25 +12,26 @@
 import type { Dispatch, SetStateAction } from 'react';
 
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
-import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
+import { upsertNodeRecord } from '../../stores/nodeStore';
+import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { getIdentityNode } from '../identityStoreReads';
 import { mergeMeshtasticLivePacketLastHeard } from '../meshtasticLastHeard';
-import type { DomainEvent, RawPacketEntry } from '../protocols/Protocol';
+import type { RawPacketEntry } from '../protocols/Protocol';
 import { MESHTASTIC_CAPABILITIES } from '../radio/BaseRadioProvider';
 import {
   MAX_RAW_PACKET_LOG_ENTRIES,
   type MeshtasticRawPacketEntry,
 } from '../rawPacketLogConstants';
+import { MAX_TELEMETRY_POINTS } from '../sessionMemoryCaps';
 import { getStoredMeshProtocol } from '../storedMeshProtocol';
+import { meshNodeToNodeRecord } from '../storeRecordAdapters';
 import type { IdentityId, MeshNode, TelemetryPoint } from '../types';
-
-const MAX_TELEMETRY_POINTS = 50;
+import { processMeshtasticNodeDiagnostics } from './meshtasticProcessNodeDiagnostics';
 
 export interface MeshtasticRawPacketSideEffectsDeps {
   getMyNodeNum: () => number;
   getIsConfiguring: () => boolean;
-  updateNodes: (updater: (prev: Map<number, MeshNode>) => Map<number, MeshNode>) => void;
   setRawPackets: Dispatch<SetStateAction<MeshtasticRawPacketEntry[]>>;
   setSignalTelemetry: Dispatch<SetStateAction<TelemetryPoint[]>>;
   touchLastData: () => void;
@@ -104,22 +105,11 @@ function applySignalAndHops(
     heard_via_mqtt_only: false,
     via_mqtt: payload.viaMqtt,
   };
-  deps.updateNodes((prev) => {
-    const updated = new Map(prev);
-    updated.set(from, node);
-    void window.electronAPI.db.saveNode(node);
-    return updated;
+  upsertNodeRecord(identityId, meshNodeToNodeRecord(node));
+  void window.electronAPI.db.saveNode(node).catch((e: unknown) => {
+    console.debug('[meshtasticRawPacketSideEffects] saveNode failed ' + errLikeToLogString(e));
   });
-  if (getStoredMeshProtocol() === 'meshtastic') {
-    useDiagnosticsStore
-      .getState()
-      .processNodeUpdate(
-        node,
-        getIdentityNode(identityId, myNodeNum) ?? null,
-        myNodeNum,
-        MESHTASTIC_CAPABILITIES,
-      );
-  }
+  processMeshtasticNodeDiagnostics(node, myNodeNum, getIdentityNode(identityId, myNodeNum) ?? null);
 }
 
 function handleRawPacket(
@@ -131,8 +121,7 @@ function handleRawPacket(
   const from = payload.fromNodeId;
   if (!from) return;
 
-  const isMeshtasticTab = getStoredMeshProtocol() === 'meshtastic';
-  if (isMeshtasticTab) {
+  if (getStoredMeshProtocol() === 'meshtastic') {
     appendRawPacketLog(payload, deps);
     if (typeof payload.portnum === 'number') {
       useDiagnosticsStore.getState().recordNoisePort(from, payload.portnum);
@@ -164,9 +153,7 @@ export function attachMeshtasticRawPacketSideEffects(
   identityId: IdentityId,
   deps: MeshtasticRawPacketSideEffectsDeps,
 ): () => void {
-  const listener: PacketRouterListener = (event: DomainEvent, routedIdentityId) => {
-    if (routedIdentityId !== identityId || event.type !== 'raw_packet') return;
-    handleRawPacket(identityId, event.payload, deps);
-  };
-  return packetRouter.addListener(listener);
+  return attachTypedPacketListener(identityId, 'raw_packet', (payload) => {
+    handleRawPacket(identityId, payload, deps);
+  });
 }

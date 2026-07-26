@@ -2,6 +2,15 @@
 import type { Connection } from '@liamcottle/meshcore.js';
 
 import { meshcoreDmAckKeyU32 } from '../../hooks/meshcore/meshcoreHookPreamble';
+import type {
+  CayenneLppEntry,
+  MeshCoreContactRaw,
+  MeshCoreNeighborEntry,
+  MeshCoreNeighborResult,
+  MeshCoreNodeTelemetry,
+  MeshCoreRepeaterStatus,
+  RxPacketEntry,
+} from '../meshcore/meshcoreHookTypes';
 import { seedMeshcorePrefixLookupMaps } from '../meshcore/meshcorePubKeyRegistry';
 import { meshcoreCoerceRadioRxFrame, parseAutoaddConfigResponse } from '../meshcoreContactAutoAdd';
 import { decodeMeshcoreDirectMessageEvents } from '../meshcoreDirectMessageDecode';
@@ -46,89 +55,17 @@ const EVENT_RF_RX = 136;
 const EVENT_RX = 'rx';
 const EVENT_DISCONNECTED = 'disconnected';
 
-// --- Re-exported types for components that previously imported from this module ---
+// --- Canonical MeshCore types live in meshcoreHookTypes; re-export for legacy imports ---
 
-export interface RxPacketEntry {
-  ts: number;
-  snr: number;
-  rssi: number;
-  raw: Uint8Array;
-  fromNodeId: number | null;
-  routeTypeString: string | null;
-  payloadTypeString: string | null;
-  hopCount: number;
-  /** CRC-32 fingerprint (8 hex chars) — matches optional DB `rx_packet_fingerprint` on messages. */
-  messageFingerprintHex: string | null;
-  transportScopeCode: number | null;
-  transportReturnCode: number | null;
-  advertName: string | null;
-  advertLat: number | null;
-  advertLon: number | null;
-  advertTimestampSec: number | null;
-  parseOk: boolean;
-}
-
-export interface MeshCoreContactRaw {
-  publicKey: Uint8Array;
-  type: number;
-  advName: string;
-  lastAdvert: number;
-  advLat: number;
-  advLon: number;
-  flags: number;
-  outPathLen?: number;
-  outPath?: Uint8Array;
-}
-
-export interface MeshCoreRepeaterStatus {
-  battMilliVolts: number;
-  noiseFloor: number;
-  lastRssi: number;
-  lastSnr: number;
-  nPacketsRecv: number;
-  nPacketsSent: number;
-  totalAirTimeSecs: number;
-  totalUpTimeSecs: number;
-  nSentFlood: number;
-  nSentDirect: number;
-  nRecvFlood: number;
-  nRecvDirect: number;
-  errEvents: number;
-  nDirectDups: number;
-  nFloodDups: number;
-  currTxQueueLen: number;
-}
-
-export interface CayenneLppEntry {
-  channel: number;
-  type: number;
-  value: number | { latitude: number; longitude: number; altitude: number };
-}
-
-export interface MeshCoreNodeTelemetry {
-  fetchedAt: number;
-  entries: CayenneLppEntry[];
-  temperature?: number;
-  mcuTemperature?: number;
-  relativeHumidity?: number;
-  barometricPressure?: number;
-  voltage?: number;
-  gps?: { latitude: number; longitude: number; altitude: number };
-}
-
-export interface MeshCoreNeighborEntry {
-  publicKeyPrefix: Uint8Array;
-  prefixHex: string;
-  resolvedNodeId: number;
-  heardSecondsAgo: number;
-  snr: number;
-}
-
-export interface MeshCoreNeighborResult {
-  totalNeighboursCount: number;
-  neighbours: MeshCoreNeighborEntry[];
-  fetchedAt: number;
-}
+export type {
+  CayenneLppEntry,
+  MeshCoreContactRaw,
+  MeshCoreNeighborEntry,
+  MeshCoreNeighborResult,
+  MeshCoreNodeTelemetry,
+  MeshCoreRepeaterStatus,
+  RxPacketEntry,
+};
 
 interface MeshCoreEventBus {
   on(event: string | number, cb: (...args: unknown[]) => void): void;

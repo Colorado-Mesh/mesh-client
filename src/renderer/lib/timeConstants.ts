@@ -172,6 +172,11 @@ export const MESHCORE_WAITING_MESSAGES_SERIAL_SILENT_TIMEOUT_MS = 15 * MS_PER_SE
 export const MESHCORE_SYNC_NEXT_MESSAGE_TIMEOUT_MS = 12 * MS_PER_SECOND;
 /** Cap silent incremental drains per event-131 trigger (safety valve). */
 export const MESHCORE_SYNC_NEXT_MESSAGE_MAX_PER_DRAIN = 200;
+/**
+ * Cap silent follow-up drains chained after an in-flight 131 drain (safety valve).
+ * Manual Sync now is not counted against this limit.
+ */
+export const MESHCORE_WAITING_MESSAGES_SILENT_FOLLOW_UP_CHAIN_MAX = 40;
 /** Coalesce rapid MsgWaiting (131) pushes into one drain. */
 export const MESHCORE_WAITING_MESSAGES_DRAIN_DEBOUNCE_MS = 1_500;
 /** Defer auto-drain after companion TX so syncNextMessage is not issued mid-send. */

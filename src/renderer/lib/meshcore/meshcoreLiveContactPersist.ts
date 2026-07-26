@@ -5,6 +5,8 @@
  * Failure point: DB IPC — logged; Zustand store remains authoritative for UI.
  * Fallback: skip DB write; reconnect refreshContacts repairs rows.
  */
+import { bytesToHex } from '@/shared/hexBytes';
+
 import { useNodeStore } from '../../stores/nodeStore';
 import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
 import { errLikeToLogString } from '../errLikeToLogString';
@@ -27,12 +29,6 @@ export interface PersistMeshcoreNodeInfoOpts {
   contactType?: number;
   latitudeDeg?: number | null;
   longitudeDeg?: number | null;
-}
-
-function publicKeyHex(publicKey: Uint8Array): string {
-  return Array.from(publicKey)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
 }
 
 /**
@@ -97,7 +93,7 @@ export function persistMeshcoreNodeInfoAfterAdvert(
     void window.electronAPI.db
       .saveMeshcoreContact({
         node_id: nodeId,
-        public_key: publicKeyHex(publicKey),
+        public_key: bytesToHex(publicKey),
         adv_name:
           typeof event.longName === 'string' && event.longName.trim()
             ? event.longName.trim()
@@ -161,7 +157,7 @@ export function persistMeshcorePathUpdatedNewContact(
   void window.electronAPI.db
     .saveMeshcoreContact({
       node_id: nodeId,
-      public_key: publicKeyHex(publicKey),
+      public_key: bytesToHex(publicKey),
       adv_name: null,
       contact_type: 0,
       last_advert: lastAdvertSec,

@@ -606,7 +606,9 @@
     "floodScopeOverrideCustomApply": "사용 범위",
     "floodScopeOverrideCustomInvalid": "유효한 지역 해시태그(예: #myregion)를 입력하세요.",
     "dmNodeHops_one": "{{count}} 홉",
-    "dmNodeHops_other": "{{count}} 홉"
+    "dmNodeHops_other": "{{count}} 홉",
+    "notificationDmTitle": "{{sender}} 님의 DM",
+    "notificationMessageTitle": "{{sender}} 님의 메시지"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -1198,20 +1200,20 @@
     "coloradoRegionGateStay": "콜로라도에 있습니다",
     "coloradoRegionGateSwitch": "LetsMesh로 전환",
     "topicPrefixInvalidIata": "주제 접두사는 meshcore/test 또는 meshcore/{IATA}(3글자)여야 합니다(예: meshcore/DEN).",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "포기하기 전에 다시 연결해 보세요 (1– {{max}}). 설정으로 저장되었습니다. 변경 후 Connect (연결) 을 다시 눌러 메인 프로세스가 픽업할 수 있도록 합니다.",
       "meshtastic": "두 프로토콜 모두 1– {{max}} 을 허용합니다. 설정과 함께 저장되었습니다. 연결을 끊고 다시 연결하여 실행 중인 세션이 새 값을 사용하도록 합니다."
     },
     "reticulumStackRunningAs": "실행 중 — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Reticulum 스택이 응답하지 않음 — 다시 시작 중…"
+    "reticulumSidecarUnhealthyRestarting": "Reticulum 스택이 응답하지 않음 — 다시 시작 중…",
+    "reticulumSharedInstance": {
+      "title": "다른 앱의 공유 인스턴스 사용",
+      "body": "이 앱은 다른 앱의 공유 Reticulum 인스턴스의 클라이언트로 연결되었습니다. 이 앱의 구성에서 로컬 TCP 허브는 이 모드에서 시작되지 않습니다. 트래픽은 다른 앱의 스택만 사용할 수 있습니다.",
+      "networkHint": "또는 Network → Share Reticulum 인스턴스를 열어 Share를 수동으로 끄고 스택을 다시 시작합니다. MeshChat, Ratspeak 또는 독립 실행형 rnsd를 완전히 종료하고 다시 시작할 수도 있습니다.",
+      "disableShare": "인스턴스 공유 끄고 다시 시작",
+      "disableShareAria": "인스턴스 공유 끄고 스택 다시 시작",
+      "disableFailed": "회차 공유 기능을 끄지 못했습니다."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -2786,7 +2788,8 @@
     "hybridMqttPathTooltip": "RF를 통해 수신; 일부 패킷은 MQTT 릴레이 경로를 사용합니다",
     "hybridMqttPathAria": "RF 및 MQTT 경로",
     "connectedViaRfAndMqttTooltip": "RF 및 MQTT를 통해 연결됨",
-    "connectedViaRfAndMqttAria": "RF 및 MQTT를 통해 연결됨"
+    "connectedViaRfAndMqttAria": "RF 및 MQTT를 통해 연결됨",
+    "echoesConnectionHealthTooltip": "{{score}} % 연결 상태"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

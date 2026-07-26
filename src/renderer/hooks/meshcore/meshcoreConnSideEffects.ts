@@ -29,6 +29,10 @@ import type {
   MeshCoreConnection,
   RxPacketEntry,
 } from '../../lib/meshcore/meshcoreHookTypes';
+import {
+  createMeshcoreMqttPacketLogBucket,
+  tryTakeMeshcoreMqttPacketLogToken,
+} from '../../lib/meshcore/meshcoreMqttPacketLogThrottle';
 import { processMeshcoreWaitingMessageItem } from '../../lib/meshcoreProcessWaitingMessageItem';
 import {
   meshcoreRawPacketLogFromBytesFallback,
@@ -77,6 +81,7 @@ import {
   requestMeshcoreWaitingMessagesFollowUp,
   requestMeshcoreWaitingMessagesManualFollowUp,
   resetMeshcoreProcessWaitingMessagesSync,
+  resetMeshcoreWaitingMessagesSilentFollowUpChain,
   setMeshcoreProcessWaitingMessagesInFlight,
   takeMeshcoreWaitingMessagesFollowUp,
   takeMeshcoreWaitingMessagesManualFollowUp,
@@ -135,6 +140,10 @@ export function attachMeshcoreConnSideEffects(
     meshcoreExplicitDisconnectRef,
     bumpLastDataReceived,
   } = ctx;
+
+  // Capture identity at attach; prefer finalized identity once configure completes.
+  const identityIdAtAttach = resolveIdentityId();
+  const mqttPacketLogBucket = createMeshcoreMqttPacketLogBucket();
 
   const storePriorForIngest = (): ChatMessage[] => {
     const storeId = meshcoreIdentityIdRef.current;
@@ -243,7 +252,10 @@ export function attachMeshcoreConnSideEffects(
     if (!meshcoreHookMountedRef.current) return;
     const manual = takeMeshcoreWaitingMessagesManualFollowUp();
     const silent = takeMeshcoreWaitingMessagesFollowUp();
-    if (!manual && !silent) return;
+    if (!manual && !silent) {
+      resetMeshcoreWaitingMessagesSilentFollowUpChain();
+      return;
+    }
     const showSyncBanner = manual;
     scheduleSilentWaitingMessageDrain(() =>
       processWaitingMessages({ showSyncBanner }).catch((e: unknown) => {
@@ -861,7 +873,7 @@ export function attachMeshcoreConnSideEffects(
 
     if (mqttStatusRef.current === 'connected') {
       const nowMs = Date.now();
-      if (nowMs - lastPacketLogAtRef.current >= 100) {
+      if (tryTakeMeshcoreMqttPacketLogToken(mqttPacketLogBucket, nowMs)) {
         lastPacketLogAtRef.current = nowMs;
         void window.electronAPI.mqtt
           .publishMeshcorePacketLog({
@@ -938,7 +950,8 @@ export function attachMeshcoreConnSideEffects(
   };
 
   const detachListener = packetRouter.addListener((event, routedIdentityId) => {
-    if (routedIdentityId !== resolveIdentityId()) return;
+    const expectedIdentityId = meshcoreIdentityIdRef.current ?? identityIdAtAttach;
+    if (!expectedIdentityId || routedIdentityId !== expectedIdentityId) return;
     bumpLastDataReceived?.();
     switch (event.type) {
       case 'meshcore_dm_ack':

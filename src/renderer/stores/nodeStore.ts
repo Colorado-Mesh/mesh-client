@@ -57,6 +57,10 @@ export interface NodeRecord {
   relativeHumidity?: number;
   barometricPressure?: number;
   iaq?: number;
+  gasResistance?: number;
+  lux?: number;
+  windSpeed?: number;
+  windDirection?: number;
   telemetryTimestamp?: number;
   snr?: number;
   rssi?: number;
@@ -76,9 +80,6 @@ export interface NodeRecord {
   numRxDupe?: number;
   numPacketsRx?: number;
   numPacketsTx?: number;
-  lux?: number;
-  windSpeed?: number;
-  windDirection?: number;
   paxCount?: number;
   detectionText?: string;
   neighbors?: MeshNeighbor[];

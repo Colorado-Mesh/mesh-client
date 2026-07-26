@@ -39,6 +39,8 @@ export interface MeshtasticIngestSession {
   setConfiguring: (value: boolean) => void;
   /** Register a packet id as seen (e.g. after MQTT ingest) to suppress duplicate RF rows. */
   markPacketSeen: (senderId: number, packetId: number) => void;
+  /** Shared RF/MQTT duplicate check and mark for this identity. */
+  isDuplicatePacket: (senderId: number, packetId: number) => boolean;
 }
 
 function pruneSeenPackets(seen: Map<string, number>, now: number): void {
@@ -218,5 +220,7 @@ export function attachMeshtasticIngest(
     markPacketSeen: (senderId: number, packetId: number) => {
       if (packetId !== 0) isPacketSeen(seenPacketIds, senderId, packetId);
     },
+    isDuplicatePacket: (senderId: number, packetId: number) =>
+      packetId !== 0 && isPacketSeen(seenPacketIds, senderId, packetId),
   };
 }

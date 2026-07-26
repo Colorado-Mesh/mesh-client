@@ -433,7 +433,12 @@ export function attachMeshtasticRuntimeWireEffects(
       meshtasticIngestSessionRef.current?.setConfiguring(false);
       lastDataReceivedRef.current = Date.now();
       startWatchdog();
-      void refreshOurPositionRef.current();
+      void refreshOurPositionRef.current().catch((e: unknown) => {
+        console.debug(
+          '[meshtasticRuntimeWireEffects] refreshOurPosition after configure failed ' +
+            errLikeToLogString(e),
+        );
+      });
       startGpsInterval();
       setQueueStatus({ free: 16, maxlen: 16, res: 0 });
       deviceConfiguredRef.current = true;
@@ -589,7 +594,11 @@ export function attachMeshtasticRuntimeWireEffects(
           heard_via_mqtt_only: false,
         };
         updated.set(info.myNodeNum, selfNode);
-        void window.electronAPI.db.saveNode(selfNode);
+        void window.electronAPI.db.saveNode(selfNode).catch((e: unknown) => {
+          console.debug(
+            '[meshtasticRuntimeWireEffects] saveNode self failed ' + errLikeToLogString(e),
+          );
+        });
       }
       return updated;
     });
@@ -648,7 +657,6 @@ export function attachMeshtasticRuntimeWireEffects(
       attachMeshtasticRawPacketSideEffects(identityId, {
         getMyNodeNum: () => myNodeNumRef.current,
         getIsConfiguring: () => isConfiguringRef.current,
-        updateNodes,
         setRawPackets,
         setSignalTelemetry,
         touchLastData,
@@ -679,7 +687,12 @@ export function attachMeshtasticRuntimeWireEffects(
           lastSfHeartbeatPeriodRef.current = period;
         },
         requestStoreForwardHistory: (options) => {
-          void requestStoreForwardHistoryRef.current(options);
+          void requestStoreForwardHistoryRef.current(options).catch((e: unknown) => {
+            console.debug(
+              '[meshtasticRuntimeWireEffects] Store & Forward history request failed ' +
+                errLikeToLogString(e),
+            );
+          });
         },
         setStoreForwardMessages,
       }),
@@ -690,7 +703,6 @@ export function attachMeshtasticRuntimeWireEffects(
         getBluetoothDeviceId: () =>
           (device.transport as { __bluetoothDevice?: { id?: string } })?.__bluetoothDevice?.id,
         touchLastData,
-        updateNodes,
         emptyNode,
         ensureNodeExists,
         maybeRequestNodeInfoForNode,

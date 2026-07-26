@@ -10,17 +10,24 @@
  * logged and never block chat ingest, which has already been persisted by
  * `PacketRouter` + `meshtasticIngest`.
  */
-import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
+import i18n from '@/renderer/lib/i18n';
+
+import { attachTypedPacketListeners } from '../drivers/attachTypedPacketListener';
 import { errLikeToLogString } from '../errLikeToLogString';
 import {
   loadMeshtasticMqttManualChannelPsks,
   resolveMeshtasticMqttPublishFieldsForChannel,
 } from '../meshtasticMqttPublish';
+import { truncatePacketText } from '../packetPayload';
 import type { DomainEvent } from '../protocols/Protocol';
 import { stripControlCharacters } from '../stripControlCharacters';
 import type { IdentityId, MQTTStatus } from '../types';
 
 const BROADCAST_ADDR = 0xffffffff;
+
+/** OS notification field caps (sender line / body preview). */
+const NOTIFICATION_SENDER_MAX_CHARS = 120;
+const NOTIFICATION_BODY_MAX_CHARS = 100;
 
 export interface MeshtasticRouterChannelConfig {
   index: number;
@@ -49,28 +56,40 @@ export interface MeshtasticRouterSideEffectsDeps {
   setFirmwareVersion: (firmwareVersion: string) => void;
 }
 
-type TextMessageEvent = Extract<DomainEvent, { type: 'text_message' }>;
-type WaypointDomainEvent = Extract<DomainEvent, { type: 'waypoint' }>;
+type TextMessagePayload = Extract<DomainEvent, { type: 'text_message' }>['payload'];
+type WaypointPayload = Extract<DomainEvent, { type: 'waypoint' }>['payload'];
 
-/** Gateway uplink: forward inbound RF broadcasts to MQTT when the channel allows it. */
-function uplinkTextToMqtt(event: TextMessageEvent, deps: MeshtasticRouterSideEffectsDeps): void {
-  if (deps.getMqttStatus() !== 'connected') return;
-  const channelIndex = event.payload.channelIndex;
+function resolveMqttUplink(
+  channelIndex: number,
+  deps: MeshtasticRouterSideEffectsDeps,
+): ReturnType<typeof resolveMeshtasticMqttPublishFieldsForChannel> | undefined {
+  if (deps.getMqttStatus() !== 'connected') return undefined;
   const channelConfigs = deps.getChannelConfigs();
-  if (!channelConfigs.find((c) => c.index === channelIndex)?.uplinkEnabled) return;
-
+  if (!channelConfigs.find((config) => config.index === channelIndex)?.uplinkEnabled) {
+    return undefined;
+  }
   const uplink = resolveMeshtasticMqttPublishFieldsForChannel(
     channelIndex,
     channelConfigs,
     loadMeshtasticMqttManualChannelPsks(),
     deps.hasRfDevice() ? undefined : { preferManualOverRadio: true },
   );
-  if (!uplink.channelName) return;
+  return uplink.channelName ? uplink : undefined;
+}
+
+/** Gateway uplink: forward inbound RF broadcasts to MQTT when the channel allows it. */
+function uplinkTextToMqtt(
+  message: TextMessagePayload,
+  deps: MeshtasticRouterSideEffectsDeps,
+): void {
+  const channelIndex = message.channelIndex;
+  const uplink = resolveMqttUplink(channelIndex, deps);
+  if (!uplink) return;
 
   window.electronAPI.mqtt
     .publish({
-      text: event.payload.payload,
-      from: event.payload.from,
+      text: message.payload,
+      from: message.from,
       channel: channelIndex,
       destination: BROADCAST_ADDR,
       channelName: uplink.channelName,
@@ -78,7 +97,7 @@ function uplinkTextToMqtt(event: TextMessageEvent, deps: MeshtasticRouterSideEff
       publishJsonMirror: uplink.publishJsonMirror,
     })
     .then((packetId) => {
-      deps.registerMqttEchoPacketId(event.payload.from, packetId);
+      deps.registerMqttEchoPacketId(message.from, packetId);
     })
     .catch((e: unknown) => {
       console.debug(
@@ -92,13 +111,25 @@ function uplinkTextToMqtt(event: TextMessageEvent, deps: MeshtasticRouterSideEff
  * OS toast when the window is hidden. Silent on purpose: App.tsx owns typed Web
  * Audio via chatNotifications.ts, so sounding here would double-notify.
  */
-function notifyHiddenWindow(event: TextMessageEvent, deps: MeshtasticRouterSideEffectsDeps): void {
+function notifyHiddenWindow(
+  message: TextMessagePayload,
+  deps: MeshtasticRouterSideEffectsDeps,
+): void {
   if (!document.hidden) return;
   try {
-    const safeSender = stripControlCharacters(deps.getNodeName(event.payload.from)).slice(0, 120);
-    const isDirect = event.payload.to !== 0 && event.payload.to !== BROADCAST_ADDR;
-    new Notification(isDirect ? `DM from ${safeSender}` : `Message from ${safeSender}`, {
-      body: stripControlCharacters(event.payload.payload).slice(0, 100),
+    const safeSender = truncatePacketText(
+      stripControlCharacters(deps.getNodeName(message.from)),
+      NOTIFICATION_SENDER_MAX_CHARS,
+    );
+    const isDirect = message.to !== 0 && message.to !== BROADCAST_ADDR;
+    const title = isDirect
+      ? i18n.t('chatPanel.notificationDmTitle', { sender: safeSender })
+      : i18n.t('chatPanel.notificationMessageTitle', { sender: safeSender });
+    new Notification(title, {
+      body: truncatePacketText(
+        stripControlCharacters(message.payload),
+        NOTIFICATION_BODY_MAX_CHARS,
+      ),
       silent: true,
     });
   } catch (e) {
@@ -108,17 +139,20 @@ function notifyHiddenWindow(event: TextMessageEvent, deps: MeshtasticRouterSideE
   }
 }
 
-function handleTextMessage(event: TextMessageEvent, deps: MeshtasticRouterSideEffectsDeps): void {
-  const isEcho = event.payload.from === deps.getMyNodeNum();
+function handleTextMessage(
+  message: TextMessagePayload,
+  deps: MeshtasticRouterSideEffectsDeps,
+): void {
+  const isEcho = message.from === deps.getMyNodeNum();
   if (isEcho) return;
 
-  deps.requestNodeInfoForNode(event.payload.from);
-  if (event.payload.tapback) return;
+  deps.requestNodeInfoForNode(message.from);
+  if (message.tapback) return;
 
-  const isDirect = event.payload.to !== 0 && event.payload.to !== BROADCAST_ADDR;
+  const isDirect = message.to !== 0 && message.to !== BROADCAST_ADDR;
   // DMs are never uplinked (privacy); reactions would duplicate the parent row.
-  if (!isDirect) uplinkTextToMqtt(event, deps);
-  notifyHiddenWindow(event, deps);
+  if (!isDirect) uplinkTextToMqtt(message, deps);
+  notifyHiddenWindow(message, deps);
 }
 
 /**
@@ -126,28 +160,18 @@ function handleTextMessage(event: TextMessageEvent, deps: MeshtasticRouterSideEf
  * stored by `PacketRouter`; only the MQTT relay lives here.
  */
 function uplinkWaypointToMqtt(
-  event: WaypointDomainEvent,
+  waypoint: WaypointPayload,
   deps: MeshtasticRouterSideEffectsDeps,
 ): void {
-  const waypoint = event.payload;
   if (!waypoint.id) return;
-  if (deps.getMqttStatus() !== 'connected') return;
   const from = waypoint.from;
   if (!from || from === deps.getMyNodeNum()) return;
   const to = (waypoint.to ?? BROADCAST_ADDR) >>> 0;
   if (to !== BROADCAST_ADDR) return;
 
   const channelIndex = waypoint.channelIndex ?? 0;
-  const channelConfigs = deps.getChannelConfigs();
-  if (!channelConfigs.find((c) => c.index === channelIndex)?.uplinkEnabled) return;
-
-  const uplink = resolveMeshtasticMqttPublishFieldsForChannel(
-    channelIndex,
-    channelConfigs,
-    loadMeshtasticMqttManualChannelPsks(),
-    deps.hasRfDevice() ? undefined : { preferManualOverRadio: true },
-  );
-  if (!uplink.channelName) return;
+  const uplink = resolveMqttUplink(channelIndex, deps);
+  if (!uplink) return;
 
   void window.electronAPI.mqtt
     .publishWaypoint({
@@ -183,30 +207,20 @@ export function attachMeshtasticRouterSideEffects(
   identityId: IdentityId,
   deps: MeshtasticRouterSideEffectsDeps,
 ): () => void {
-  const listener: PacketRouterListener = (event, routedIdentityId) => {
-    if (routedIdentityId !== identityId) return;
-    switch (event.type) {
-      case 'text_message':
-        handleTextMessage(event, deps);
-        break;
-      case 'device_log': {
-        const message = event.payload.message;
-        if (!message) break;
-        deps.applyForeignLoraFromLog(message);
-        deps.applyRoutingErrorFromLog(message);
-        break;
-      }
-      case 'waypoint':
-        uplinkWaypointToMqtt(event, deps);
-        break;
-      case 'device_metadata': {
-        const firmwareVersion = event.payload.firmwareVersion;
-        if (firmwareVersion) deps.setFirmwareVersion(firmwareVersion);
-        break;
-      }
-      default:
-        break;
-    }
-  };
-  return packetRouter.addListener(listener);
+  return attachTypedPacketListeners(identityId, {
+    text_message: (payload) => {
+      handleTextMessage(payload, deps);
+    },
+    device_log: (payload) => {
+      if (!payload.message) return;
+      deps.applyForeignLoraFromLog(payload.message);
+      deps.applyRoutingErrorFromLog(payload.message);
+    },
+    waypoint: (payload) => {
+      uplinkWaypointToMqtt(payload, deps);
+    },
+    device_metadata: (payload) => {
+      if (payload.firmwareVersion) deps.setFirmwareVersion(payload.firmwareVersion);
+    },
+  });
 }

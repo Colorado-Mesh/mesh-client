@@ -1,3 +1,5 @@
+import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
+
 import {
   buildMeshcoreNodeMapFromDb,
   isMeshcoreRoomChatMessage,
@@ -217,7 +219,11 @@ export async function hydrateMeshcoreMessagesFromDb(
     roomServerIds,
     loadPersistedMeshcoreSelfNodeId(),
   );
-  void persistMeshcoreMessageSenderRepairs(rows, mapped);
+  void Promise.resolve(persistMeshcoreMessageSenderRepairs(rows, mapped)).catch((e: unknown) => {
+    console.warn(
+      '[hydrateMeshcoreMessagesFromDb] sender repair persist failed ' + errLikeToLogString(e),
+    );
+  });
   const trimmed = trimChatMessagesToMax(mapped, MAX_IN_MEMORY_CHAT_MESSAGES);
   const records = meshcoreHydratedMessageRecords(trimmed);
   if (messagesMode === 'replace') {
@@ -291,17 +297,25 @@ function hydrateReticulumIdentity(
         }[];
         const { reticulumHashToNodeId, registerReticulumDestinationHash } =
           await import('./reticulum/destHash');
-        const records: NodeRecord[] = rows.map((row) => {
-          const nodeId = reticulumHashToNodeId(row.destination_hash);
-          registerReticulumDestinationHash(nodeId, row.destination_hash);
-          return {
+        const records: NodeRecord[] = [];
+        for (const row of rows) {
+          // A row without a canonical hash cannot be keyed or displayed; skipping it
+          // keeps one bad SQLite row from failing the whole hydration pass.
+          const destinationHash = canonicalizeReticulumDestinationHash(row.destination_hash);
+          if (!destinationHash) {
+            console.warn('[hydrateReticulumIdentity] skipped destination row with invalid hash');
+            continue;
+          }
+          const nodeId = reticulumHashToNodeId(destinationHash);
+          registerReticulumDestinationHash(nodeId, destinationHash);
+          records.push({
             nodeId,
-            longName: row.display_name ?? row.destination_hash.slice(0, 16),
+            longName: row.display_name ?? destinationHash.slice(0, 16),
             shortName: row.display_name?.slice(0, 4) ?? 'RT',
             lastHeardAt: row.last_heard ?? undefined,
-            reticulumDestinationHash: row.destination_hash,
-          };
-        });
+            reticulumDestinationHash: destinationHash,
+          });
+        }
         upsertNodeRecordsForIdentity(identityId, records);
       } catch (e) {
         console.warn('[hydrateReticulumIdentity] destinations ' + errLikeToLogString(e));

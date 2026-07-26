@@ -10,16 +10,24 @@
  */
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 
-import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
+import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener';
 import {
   mergeMeshtasticTraceRouteIntoResultsMap,
   type MeshtasticTraceRouteEntry,
   meshtasticTraceRouteLookupKeys,
 } from '../meshtasticTraceRouteLookupKeys';
 import type { DomainEvent } from '../protocols/Protocol';
+import { trimMapToMaxSize } from '../sessionMemoryCaps';
 import type { IdentityId } from '../types';
 
 const PENDING_TRACE_TTL_MS = 2 * 60_000;
+
+/**
+ * Ceiling on outstanding trace correlations. Replies prune their own entries,
+ * but a session that fires traces at unreachable nodes never gets a reply, so
+ * the maps also need a hard bound.
+ */
+const MAX_PENDING_TRACE_ENTRIES = 128;
 
 export interface MeshtasticTraceSideEffectsDeps {
   /** Outbound traceroute packet id → traced node, filled by the send path. */
@@ -33,9 +41,36 @@ export interface MeshtasticTraceSideEffectsDeps {
 type TraceRouteEvent = Extract<DomainEvent, { type: 'trace_route' }>;
 
 function normalizedPacketId(value: number | undefined): number | undefined {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
-  const id = value >>> 0;
-  return id === 0 ? undefined : id;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0 || value > 0xffffffff) {
+    return undefined;
+  }
+  return Math.trunc(value);
+}
+
+/** Drop expired trace requests, orphaned packet-id mappings, and overflow entries. */
+export function prunePendingTraceState(
+  deps: Pick<
+    MeshtasticTraceSideEffectsDeps,
+    'pendingTraceRequestsRef' | 'pendingTracePacketIdToTargetRef'
+  >,
+  now: number = Date.now(),
+): void {
+  const requests = deps.pendingTraceRequestsRef.current;
+  const packetIds = deps.pendingTracePacketIdToTargetRef.current;
+
+  const cutoff = now - PENDING_TRACE_TTL_MS;
+  for (const [target, startedAt] of requests) {
+    if (startedAt < cutoff) requests.delete(target);
+  }
+  if (requests.size > MAX_PENDING_TRACE_ENTRIES) {
+    const kept = trimMapToMaxSize(requests, MAX_PENDING_TRACE_ENTRIES);
+    for (const target of [...requests.keys()]) {
+      if (!kept.has(target)) requests.delete(target);
+    }
+  }
+  for (const [packetId, dest] of [...packetIds.entries()]) {
+    if (!requests.has(dest)) packetIds.delete(packetId);
+  }
 }
 
 /**
@@ -70,15 +105,7 @@ export function applyMeshtasticTracerouteReply(
     deps.pendingTraceRequestsRef.current.delete(key);
   }
 
-  const cutoff = Date.now() - PENDING_TRACE_TTL_MS;
-  for (const [target, startedAt] of deps.pendingTraceRequestsRef.current) {
-    if (startedAt < cutoff) deps.pendingTraceRequestsRef.current.delete(target);
-  }
-  for (const [packetId, dest] of [...deps.pendingTracePacketIdToTargetRef.current.entries()]) {
-    if (!deps.pendingTraceRequestsRef.current.has(dest)) {
-      deps.pendingTracePacketIdToTargetRef.current.delete(packetId);
-    }
-  }
+  prunePendingTraceState(deps);
 
   deps.setTraceRouteResults((prev) =>
     mergeMeshtasticTraceRouteIntoResultsMap(
@@ -100,10 +127,8 @@ export function attachMeshtasticTraceSideEffects(
   identityId: IdentityId,
   deps: MeshtasticTraceSideEffectsDeps,
 ): () => void {
-  const listener: PacketRouterListener = (event, routedIdentityId) => {
-    if (routedIdentityId !== identityId || event.type !== 'trace_route') return;
+  return attachTypedPacketListener(identityId, 'trace_route', (payload) => {
     deps.touchLastData();
-    applyMeshtasticTracerouteReply(event.payload, deps);
-  };
-  return packetRouter.addListener(listener);
+    applyMeshtasticTracerouteReply(payload, deps);
+  });
 }

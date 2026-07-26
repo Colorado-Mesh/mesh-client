@@ -12,6 +12,7 @@ import {
   reconnectSerial,
   safeDisconnect,
 } from '../connection';
+import { createPacketDedupeRegistry } from '../drivers/packetDedupeRegistry';
 import { meshtasticHwModelName } from '../hardwareModels';
 import { meshtasticComputedRfHopsAway } from '../meshtasticRfHops';
 import type { ProtocolCapabilities } from '../radio/BaseRadioProvider';
@@ -40,19 +41,6 @@ import type {
 } from './Protocol';
 import { UnsupportedOperation } from './Protocol';
 
-// --- Re-exported types for callers that previously imported from this module ---
-
-export interface MeshtasticRawPacketEntry {
-  ts: number;
-  snr: number;
-  rssi: number;
-  raw: Uint8Array;
-  fromNodeId: number | null;
-  portLabel: string;
-  viaMqtt: boolean;
-  isLocal?: boolean;
-}
-
 const { DeviceStatusEnum } = Types;
 const { PortNum } = Portnums;
 
@@ -66,6 +54,70 @@ const STATUS_CODE_MAP: Record<number, string> = {
   [DeviceStatusEnum.DeviceConfigured]: 'configured',
   8: 'stale',
 };
+
+/**
+ * The SDK dispatches `onMeshPacket` for every packet and then a second typed
+ * event for the same payload, so a TRACEROUTE_APP packet reaches `subscribe`
+ * twice. Correlation state in `meshtasticTraceSideEffects` is consumed on the
+ * first reply, so the duplicate would land as an uncorrelated row.
+ */
+const TRACE_ROUTE_DEDUPE_TTL_MS = 60_000;
+const TRACE_ROUTE_DEDUPE_MAX_ENTRIES = 256;
+
+/** Guard against a malformed RouteDiscovery advertising an implausible hop list. */
+const MAX_TRACE_ROUTE_HOPS = 32;
+
+/** NeighborInfo lists are firmware-capped well below this; bound the UI cost anyway. */
+const MAX_NEIGHBOR_ENTRIES = 256;
+
+/** Meshtastic text payloads are limited to ~237 bytes; allow slack for MQTT replays. */
+const MAX_TEXT_MESSAGE_CHARS = 1024;
+const MAX_RAW_PACKET_BYTES = 64 * 1024;
+
+const MAX_LATITUDE = 90;
+const MAX_LONGITUDE = 180;
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+/** Node numbers are unsigned 32-bit; reject NaN / negative / out-of-range values. */
+function normalizedNodeNum(value: unknown): number | undefined {
+  if (!isFiniteNumber(value)) return undefined;
+  const num = Math.trunc(value);
+  if (num < 0 || num > 0xffffffff) return undefined;
+  return num >>> 0;
+}
+
+// The type parameter is an explicit call-site assertion of the SDK surface the
+// caller needs; the runtime check is the same for every handle shape.
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+function requireHandle<T extends object>(handle: unknown, operation: string): T {
+  if (handle == null || (typeof handle !== 'object' && typeof handle !== 'function')) {
+    throw new TypeError(`${operation}: device handle is unavailable`);
+  }
+  return handle as T;
+}
+
+function assertFiniteCoordinates(operation: string, latitude: number, longitude: number): void {
+  if (!isFiniteNumber(latitude) || !isFiniteNumber(longitude)) {
+    throw new TypeError(`${operation}: latitude/longitude must be finite numbers`);
+  }
+  if (Math.abs(latitude) > MAX_LATITUDE || Math.abs(longitude) > MAX_LONGITUDE) {
+    throw new RangeError(`${operation}: latitude/longitude out of range`);
+  }
+}
+
+function boundedRoute(route: readonly unknown[] | undefined): number[] {
+  if (!route) return [];
+  const hops: number[] = [];
+  for (const hop of route) {
+    if (hops.length >= MAX_TRACE_ROUTE_HOPS) break;
+    const num = normalizedNodeNum(hop);
+    if (num !== undefined) hops.push(num);
+  }
+  return hops;
+}
 
 /**
  * Meshtastic codec + SDK adapter. Stateless: every method that needs the SDK
@@ -111,6 +163,18 @@ export class MeshtasticProtocol implements Protocol {
     const fire = (events: DomainEvent[]) => {
       for (const e of events) emit(e);
     };
+    const seenTraceRoutes = createPacketDedupeRegistry({
+      ttlMs: TRACE_ROUTE_DEDUPE_TTL_MS,
+      maxEntries: TRACE_ROUTE_DEDUPE_MAX_ENTRIES,
+    });
+    /** Emits a traceroute at most once per wire packet id (id 0 is not unique). */
+    const fireTraceRoute = (packet: unknown) => {
+      const events = this.decodeTraceRoute(packet);
+      if (events.length === 0) return;
+      const packetId = normalizedNodeNum((packet as { id?: unknown }).id);
+      if (packetId && seenTraceRoutes.markSeen(packetId)) return;
+      fire(events);
+    };
 
     push(
       device.events.onDeviceStatus.subscribe((status) => {
@@ -124,7 +188,7 @@ export class MeshtasticProtocol implements Protocol {
           if (portnum === PortNum.TEXT_MESSAGE_APP) {
             fire(this.decodeTextMessage(packet));
           } else if (portnum === PortNum.TRACEROUTE_APP) {
-            fire(this.decodeTraceRoute(packet));
+            fireTraceRoute(packet);
           }
         }
         fire(this.decodeRawPacket(packet));
@@ -152,7 +216,7 @@ export class MeshtasticProtocol implements Protocol {
     );
     push(
       device.events.onTraceRoutePacket.subscribe((p) => {
-        fire(this.decodeTraceRoute(p));
+        fireTraceRoute(p);
       }),
     );
     push(
@@ -192,8 +256,9 @@ export class MeshtasticProtocol implements Protocol {
     );
     push(
       device.events.onMyNodeInfo.subscribe((info) => {
-        if (info.myNodeNum > 0) {
-          emit({ type: 'node_info', payload: { nodeId: info.myNodeNum } });
+        const nodeId = normalizedNodeNum(info.myNodeNum);
+        if (nodeId) {
+          emit({ type: 'node_info', payload: { nodeId } });
         }
       }),
     );
@@ -208,8 +273,8 @@ export class MeshtasticProtocol implements Protocol {
         emit({
           type: 'meshtastic_store_forward',
           payload: {
-            from: packet.from ?? 0,
-            channel: packet.channel ?? 0,
+            from: normalizedNodeNum(packet.from) ?? 0,
+            channel: isFiniteNumber(packet.channel) ? Math.trunc(packet.channel) : 0,
             raw: p,
             timestamp: Date.now(),
           },
@@ -223,9 +288,9 @@ export class MeshtasticProtocol implements Protocol {
         type: 'meshtastic_module_port',
         payload: {
           portLabel,
-          from: p.from ?? 0,
+          from: normalizedNodeNum(p.from) ?? 0,
           data: p.data ?? packet,
-          channel: p.channel,
+          channel: isFiniteNumber(p.channel) ? Math.trunc(p.channel) : undefined,
           timestamp: Date.now(),
         },
       });
@@ -333,35 +398,54 @@ export class MeshtasticProtocol implements Protocol {
   // --- Outbound ---
 
   async sendMessage(handle: unknown, opts: SendMessageOptions): Promise<SendResult> {
-    const device = handle as MeshDevice;
-    const dest: number | 'broadcast' = opts.destination ?? 'broadcast';
-    const result = await device.sendText(opts.text, dest, true, opts.channelIndex ?? 0);
+    const device = requireHandle<MeshDevice>(handle, 'meshtastic sendMessage');
+    const text = typeof opts.text === 'string' ? opts.text : '';
+    if (!text || text.length > MAX_TEXT_MESSAGE_CHARS) {
+      throw new TypeError(
+        `meshtastic sendMessage: text must be 1-${MAX_TEXT_MESSAGE_CHARS} characters`,
+      );
+    }
+    const destination =
+      opts.destination === undefined ? undefined : normalizedNodeNum(opts.destination);
+    if (opts.destination !== undefined && destination === undefined) {
+      throw new TypeError('meshtastic sendMessage: destination must be a valid node number');
+    }
+    const dest: number | 'broadcast' = destination ?? 'broadcast';
+    const channelIndex = isFiniteNumber(opts.channelIndex) ? Math.trunc(opts.channelIndex) : 0;
+    const result = await device.sendText(text, dest, true, channelIndex);
     const packetId = typeof result === 'number' ? result : undefined;
     return { packetId };
   }
 
   async sendPosition(handle: unknown, opts: SendPositionOptions): Promise<void> {
-    const device = handle as MeshDevice;
-    await device.setPosition(
-      create(Mesh.PositionSchema, {
-        latitudeI: Math.round(opts.latitude * 1e7),
-        longitudeI: Math.round(opts.longitude * 1e7),
-        altitude: opts.altitude ?? 0,
-        time: Math.floor(Date.now() / 1000),
-      }) as Parameters<MeshDevice['setPosition']>[0],
+    await this.setDevicePosition(
+      handle,
+      'meshtastic sendPosition',
+      opts.latitude,
+      opts.longitude,
+      opts.altitude,
     );
   }
 
   async sendTraceRoute(handle: unknown, nodeId: number): Promise<void> {
-    const device = handle as MeshDevice;
-    await device.traceRoute(nodeId);
+    const device = requireHandle<MeshDevice>(handle, 'meshtastic sendTraceRoute');
+    const target = normalizedNodeNum(nodeId);
+    if (target === undefined || target === 0) {
+      throw new TypeError('meshtastic sendTraceRoute: nodeId must be a valid node number');
+    }
+    await device.traceRoute(target);
   }
 
   async sendWaypoint(handle: unknown, opts: SendWaypointOptions): Promise<void> {
     const device = handle as MeshDevice;
+    assertFiniteCoordinates('meshtastic sendWaypoint', opts.latitude, opts.longitude);
+    const id = normalizedNodeNum(opts.id);
+    if (id === undefined) {
+      throw new TypeError('meshtastic sendWaypoint: id must be a valid unsigned integer');
+    }
     await device.sendWaypoint(
       create(Mesh.WaypointSchema, {
-        id: opts.id,
+        id,
         name: opts.name,
         description: opts.description ?? '',
         latitudeI: Math.round(opts.latitude * 1e7),
@@ -376,8 +460,14 @@ export class MeshtasticProtocol implements Protocol {
 
   async deleteWaypoint(handle: unknown, id: number): Promise<void> {
     const device = handle as MeshDevice;
+    const waypointId = normalizedNodeNum(id);
+    if (waypointId === undefined) {
+      throw new TypeError('meshtastic deleteWaypoint: id must be a valid unsigned integer');
+    }
     await device.sendWaypoint(
-      create(Mesh.WaypointSchema, { id, expire: 1 }) as Parameters<MeshDevice['sendWaypoint']>[0],
+      create(Mesh.WaypointSchema, { id: waypointId, expire: 1 }) as Parameters<
+        MeshDevice['sendWaypoint']
+      >[0],
       0xffffffff,
       0,
     );
@@ -393,12 +483,16 @@ export class MeshtasticProtocol implements Protocol {
     const device = handle as MeshDevice;
     const safeScalar = sanitizeUnicodeReactionScalar(emoji);
     if (safeScalar === undefined) return;
+    const parentId = normalizedNodeNum(replyId);
+    if (!parentId) {
+      throw new TypeError('meshtastic sendReaction: replyId must be a valid packet id');
+    }
     await device.sendText(
       String.fromCodePoint(safeScalar),
       'broadcast',
       true,
-      channelIndex,
-      replyId,
+      isFiniteNumber(channelIndex) ? Math.trunc(channelIndex) : 0,
+      parentId,
       MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG,
     );
   }
@@ -440,7 +534,7 @@ export class MeshtasticProtocol implements Protocol {
   // --- Config ---
 
   async setConfig(handle: unknown, config: unknown): Promise<void> {
-    await (handle as MeshDevice).setConfig(config as never);
+    await requireHandle<MeshDevice>(handle, 'meshtastic setConfig').setConfig(config as never);
   }
 
   async commitConfig(handle: unknown): Promise<void> {
@@ -478,7 +572,10 @@ export class MeshtasticProtocol implements Protocol {
   }
 
   async setModuleConfig(handle: unknown, config: unknown): Promise<void> {
-    await (handle as { setModuleConfig: (c: unknown) => Promise<void> }).setModuleConfig(config);
+    await requireHandle<{ setModuleConfig: (c: unknown) => Promise<void> }>(
+      handle,
+      'meshtastic setModuleConfig',
+    ).setModuleConfig(config);
   }
 
   async setCannedMessages(handle: unknown, messages: string[]): Promise<void> {
@@ -488,17 +585,41 @@ export class MeshtasticProtocol implements Protocol {
   }
 
   async setRingtone(handle: unknown, ringtone: string): Promise<void> {
+    if (typeof ringtone !== 'string' || ringtone.length > 1024) {
+      throw new TypeError('meshtastic setRingtone: ringtone must be at most 1024 characters');
+    }
     const msg = create(Admin.AdminMessageSchema, {
       payloadVariant: { case: 'setRingtoneMessage', value: ringtone },
     });
-    await (
-      handle as {
-        sendPacket: (b: Uint8Array, p: number, t: string) => Promise<void>;
-      }
-    ).sendPacket(toBinary(Admin.AdminMessageSchema, msg), Portnums.PortNum.ADMIN_APP, 'self');
+    await requireHandle<{
+      sendPacket: (b: Uint8Array, p: number, t: string) => Promise<void>;
+    }>(handle, 'meshtastic setRingtone').sendPacket(
+      toBinary(Admin.AdminMessageSchema, msg),
+      Portnums.PortNum.ADMIN_APP,
+      'self',
+    );
   }
 
   // --- GPS / position ---
+
+  /** Shared body for `sendPosition` and `sendPositionToDevice` (same firmware call). */
+  private async setDevicePosition(
+    handle: unknown,
+    operation: string,
+    latitude: number,
+    longitude: number,
+    altitude?: number,
+  ): Promise<void> {
+    assertFiniteCoordinates(operation, latitude, longitude);
+    await requireHandle<MeshDevice>(handle, operation).setPosition(
+      create(Mesh.PositionSchema, {
+        latitudeI: Math.round(latitude * 1e7),
+        longitudeI: Math.round(longitude * 1e7),
+        altitude: isFiniteNumber(altitude) ? Math.round(altitude) : 0,
+        time: Math.floor(Date.now() / 1000),
+      }) as Parameters<MeshDevice['setPosition']>[0],
+    );
+  }
 
   async sendPositionToDevice(
     handle: unknown,
@@ -506,18 +627,15 @@ export class MeshtasticProtocol implements Protocol {
     lon: number,
     alt?: number,
   ): Promise<void> {
-    await (handle as MeshDevice).setPosition(
-      create(Mesh.PositionSchema, {
-        latitudeI: Math.round(lat * 1e7),
-        longitudeI: Math.round(lon * 1e7),
-        altitude: alt ?? 0,
-        time: Math.floor(Date.now() / 1000),
-      }) as Parameters<MeshDevice['setPosition']>[0],
-    );
+    await this.setDevicePosition(handle, 'meshtastic sendPositionToDevice', lat, lon, alt);
   }
 
   async requestPosition(handle: unknown, nodeId: number): Promise<void> {
-    await (handle as MeshDevice).requestPosition(nodeId);
+    const target = normalizedNodeNum(nodeId);
+    if (target === undefined || target === 0) {
+      throw new TypeError('meshtastic requestPosition: nodeId must be a valid node number');
+    }
+    await (handle as MeshDevice).requestPosition(target);
   }
 
   deleteNode(): Promise<void> {
@@ -545,17 +663,29 @@ export class MeshtasticProtocol implements Protocol {
     };
     if (p.payloadVariant?.case !== 'decoded') return [];
     const data = p.payloadVariant.value;
+    if (!(data?.payload instanceof Uint8Array)) return [];
+    const from = normalizedNodeNum(p.from);
+    const to = normalizedNodeNum(p.to);
+    if (from === undefined || to === undefined) return [];
     const hopCount = meshtasticComputedRfHopsAway(p);
     const rawReplyId = data.replyId ?? data.reply_id;
+    let text: string;
+    try {
+      text = new TextDecoder('utf-8', { fatal: true }).decode(data.payload);
+    } catch {
+      // catch-no-log-ok malformed inbound text is dropped before reaching UI or persistence
+      return [];
+    }
     return [
       {
         type: 'text_message',
         payload: {
-          id: String(p.id ?? 0),
-          from: p.from,
-          to: p.to,
-          payload: new TextDecoder().decode(data.payload),
-          channelIndex: p.channel ?? 0,
+          id: String(normalizedNodeNum(p.id) ?? 0),
+          from,
+          to,
+          payload:
+            text.length > MAX_TEXT_MESSAGE_CHARS ? text.slice(0, MAX_TEXT_MESSAGE_CHARS) : text,
+          channelIndex: isFiniteNumber(p.channel) ? Math.trunc(p.channel) : 0,
           timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
           rxSnr: p.rxSnr,
           rxRssi: p.rxRssi,
@@ -580,13 +710,14 @@ export class MeshtasticProtocol implements Protocol {
         isLicensed?: boolean;
       };
     };
-    if (!p.from) return [];
+    const nodeId = normalizedNodeNum(p.from);
+    if (!nodeId) return [];
     const user = p.data ?? {};
     return [
       {
         type: 'node_info',
         payload: {
-          nodeId: p.from,
+          nodeId,
           longName: user.longName,
           shortName: user.shortName,
           hwModel: user.hwModel != null ? meshtasticHwModelName(user.hwModel) : undefined,
@@ -622,12 +753,13 @@ export class MeshtasticProtocol implements Protocol {
         airUtilTx?: number;
       };
     };
-    if (!p.num) return [];
+    const nodeId = normalizedNodeNum(p.num);
+    if (!nodeId) return [];
     return [
       {
         type: 'node_info',
         payload: {
-          nodeId: p.num,
+          nodeId,
           longName: p.user?.longName,
           shortName: p.user?.shortName,
           hwModel: p.user?.hwModel != null ? meshtasticHwModelName(p.user.hwModel) : undefined,
@@ -655,14 +787,19 @@ export class MeshtasticProtocol implements Protocol {
       rxTime?: number;
       data: { latitudeI?: number; longitudeI?: number; altitude?: number };
     };
+    const nodeId = normalizedNodeNum(p.from);
+    if (nodeId === undefined) return [];
+    const latitude = (isFiniteNumber(p.data?.latitudeI) ? p.data.latitudeI : 0) / 1e7;
+    const longitude = (isFiniteNumber(p.data?.longitudeI) ? p.data.longitudeI : 0) / 1e7;
+    if (Math.abs(latitude) > MAX_LATITUDE || Math.abs(longitude) > MAX_LONGITUDE) return [];
     return [
       {
         type: 'position',
         payload: {
-          nodeId: p.from,
-          latitude: (p.data?.latitudeI ?? 0) / 1e7,
-          longitude: (p.data?.longitudeI ?? 0) / 1e7,
-          altitude: p.data?.altitude,
+          nodeId,
+          latitude,
+          longitude,
+          altitude: isFiniteNumber(p.data?.altitude) ? p.data.altitude : undefined,
           timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
         },
       },
@@ -731,14 +868,15 @@ export class MeshtasticProtocol implements Protocol {
         expire?: number;
       };
     };
-    if (!p.data?.id) return [];
-    const latitudeI = p.data.latitudeI ?? 0;
-    const longitudeI = p.data.longitudeI ?? 0;
+    const waypointId = normalizedNodeNum(p.data?.id);
+    if (!waypointId) return [];
+    const latitudeI = isFiniteNumber(p.data.latitudeI) ? p.data.latitudeI : 0;
+    const longitudeI = isFiniteNumber(p.data.longitudeI) ? p.data.longitudeI : 0;
     return [
       {
         type: 'waypoint',
         payload: {
-          id: p.data.id,
+          id: waypointId,
           name: p.data.name ?? '',
           description: p.data.description,
           latitude: latitudeI / 1e7,
@@ -748,9 +886,9 @@ export class MeshtasticProtocol implements Protocol {
           icon: p.data.icon,
           lockedTo: p.data.lockedTo,
           expire: p.data.expire,
-          from: p.from,
-          to: p.to,
-          channelIndex: p.channel,
+          from: normalizedNodeNum(p.from) ?? 0,
+          to: normalizedNodeNum(p.to),
+          channelIndex: isFiniteNumber(p.channel) ? Math.trunc(p.channel) : undefined,
           timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
         },
       },
@@ -792,8 +930,8 @@ export class MeshtasticProtocol implements Protocol {
           route: readonly number[];
           routeBack: readonly number[];
         };
-        route = Array.from(rd.route ?? []);
-        routeBack = rd.routeBack ? Array.from(rd.routeBack) : undefined;
+        route = boundedRoute(rd.route);
+        routeBack = rd.routeBack ? boundedRoute(rd.routeBack) : undefined;
       } catch {
         // catch-no-log-ok non-traceroute payload on TRACEROUTE_APP
         return [];
@@ -809,18 +947,21 @@ export class MeshtasticProtocol implements Protocol {
       const rawReq = dp.requestId;
       requestId = typeof rawReq === 'number' && Number.isFinite(rawReq) ? rawReq : undefined;
     } else if (p.data) {
-      route = Array.from(p.data.route ?? []);
-      routeBack = p.data.routeBack ? Array.from(p.data.routeBack) : undefined;
+      route = boundedRoute(p.data.route);
+      routeBack = p.data.routeBack ? boundedRoute(p.data.routeBack) : undefined;
     } else {
       return [];
     }
+
+    const from = normalizedNodeNum(p.from);
+    if (from === undefined) return [];
 
     return [
       {
         type: 'trace_route',
         payload: {
-          from: p.from,
-          to: p.to ?? dataLayerDest ?? 0,
+          from,
+          to: normalizedNodeNum(p.to) ?? dataLayerDest ?? 0,
           route,
           routeBack,
           timestamp: p.rxTime ? p.rxTime * 1000 : Date.now(),
@@ -845,9 +986,10 @@ export class MeshtasticProtocol implements Protocol {
       };
       role?: number;
     };
-    if (ch.index === undefined) return [];
+    const index = ch.index;
+    if (!isFiniteNumber(index) || index < 0 || !Number.isInteger(index)) return [];
     const payload: ChannelEvent = {
-      index: ch.index,
+      index,
       role: ch.role ?? 0,
       name: ch.settings?.name ?? '',
       psk: ch.settings?.psk ?? new Uint8Array([1]),
@@ -958,9 +1100,11 @@ export class MeshtasticProtocol implements Protocol {
       viaMqtt?: boolean;
       payloadVariant?: { case?: string; value?: { portnum?: number } };
     };
-    if (!mp.from) return [];
+    const from = normalizedNodeNum(mp.from);
+    if (!from) return [];
     try {
       const serialized = toBinary(Mesh.MeshPacketSchema, raw as never);
+      if (serialized.byteLength > MAX_RAW_PACKET_BYTES) return [];
       const portLabel = this.rawPacketPortLabel(raw);
       const portnum =
         mp.payloadVariant?.case === 'decoded' &&
@@ -973,12 +1117,12 @@ export class MeshtasticProtocol implements Protocol {
         snr: mp.rxSnr ?? 0,
         rssi: mp.rxRssi ?? 0,
         raw: serialized,
-        fromNodeId: mp.from,
+        fromNodeId: from,
         portLabel,
         viaMqtt: mp.viaMqtt === true,
         isLocal: false,
         hopsAway,
-        packetId: typeof mp.id === 'number' ? mp.id >>> 0 : undefined,
+        packetId: normalizedNodeNum(mp.id),
         hopLimit: mp.hopLimit,
         hopStart: mp.hopStart,
         portnum,
@@ -1031,13 +1175,14 @@ export class MeshtasticProtocol implements Protocol {
       };
     };
     const data = packet.data;
-    if (!data?.nodeId) return [];
+    const nodeId = normalizedNodeNum(data?.nodeId);
+    if (!nodeId) return [];
     const payload: NeighborInfoEvent = {
-      nodeId: data.nodeId,
-      neighbors: (data.neighbors ?? []).map((n) => ({
-        nodeId: n.nodeId ?? 0,
-        snr: n.snr ?? 0,
-        lastRxTime: n.lastRxTime ?? 0,
+      nodeId,
+      neighbors: (data?.neighbors ?? []).slice(0, MAX_NEIGHBOR_ENTRIES).map((n) => ({
+        nodeId: normalizedNodeNum(n.nodeId) ?? 0,
+        snr: isFiniteNumber(n.snr) ? n.snr : 0,
+        lastRxTime: isFiniteNumber(n.lastRxTime) ? n.lastRxTime : 0,
       })),
       timestamp: Date.now(),
     };

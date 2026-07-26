@@ -428,7 +428,6 @@
     "jumpToQuotedMessage": "Vai al messaggio citato da {{sender}}",
     "replyToMessage": "Rispondi al messaggio",
     "addReaction": "Aggiungi reazione",
-    "emojiButton": "Emoji",
     "sendButton": "Inviare",
     "sendButtonDm": "DM",
     "sendButtonSending": "...",
@@ -606,7 +605,10 @@
     "floodScopeOverrideCustomApply": "Usa l'ambito",
     "floodScopeOverrideCustomInvalid": "Inserisci un hashtag regionale valido (ad esempio #myregion).",
     "dmNodeHops_one": "{{count}} salto",
-    "dmNodeHops_other": "{{count}} salti"
+    "dmNodeHops_other": "{{count}} salti",
+    "notificationDmTitle": "DM da {{sender}}",
+    "notificationMessageTitle": "Messaggio da {{sender}}",
+    "emojiButton": "Emoji"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -706,7 +708,6 @@
     "submit": "Invia",
     "rePairDevice": "Rimuovere e riassociare il dispositivo",
     "mqttConnection": "Connessione MQTT",
-    "server": "Server",
     "from": "Da",
     "topic": "Argomento",
     "disconnectMqtt": "Disconnetti",
@@ -718,7 +719,6 @@
     "useWebSocket": "Utilizzare il trasporto WebSocket",
     "wsRequired": "(richiesto per la porta 443)",
     "username": "Nome utente",
-    "password": "Password",
     "topicPrefix": "Prefisso argomento",
     "maxRetries": "Numero massimo di tentativi",
     "channelPsks": "PSK del canale",
@@ -1198,20 +1198,22 @@
     "coloradoRegionGateStay": "Sono in Colorado",
     "coloradoRegionGateSwitch": "Passa a LetsMesh",
     "topicPrefixInvalidIata": "Il prefisso dell'argomento deve essere meshcore/test o meshcore/{IATA} (3 lettere), ad esempio meshcore/DEN.",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "Riconnetti i tentativi prima di rinunciare (1–{{max}}). Salvato con le impostazioni; premere nuovamente Connetti dopo aver modificato in modo che il processo principale lo raccolga.",
       "meshtastic": "Entrambi i protocolli consentono 1–{{max}}. Salvato con le impostazioni; disconnettersi e connettersi di nuovo in modo che la sessione in esecuzione utilizzi il nuovo valore."
     },
     "reticulumStackRunningAs": "In esecuzione — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Lo stack Reticulum non risponde: riavvio in corso…"
+    "reticulumSidecarUnhealthyRestarting": "Lo stack Reticulum non risponde: riavvio in corso…",
+    "server": "Server",
+    "password": "Password",
+    "reticulumSharedInstance": {
+      "title": "Utilizzo dell'istanza condivisa di un'altra app",
+      "body": "Questa app è allegata come client dell'istanza Reticulum condivisa di un'altra app. Gli hub TCP locali dalla configurazione di questa app non vengono avviati in questa modalità: il traffico può utilizzare solo lo stack dell'altra app.",
+      "networkHint": "Oppure aprire l'istanza Network → Share Reticulum per disattivare manualmente Share, quindi riavviare lo stack. Puoi anche uscire completamente da MeshChat, Ratspeak o rnsd autonomo e riavviare.",
+      "disableShare": "Disattiva istanza di condivisione e riavvia",
+      "disableShareAria": "Disattiva l'istanza di condivisione e riavvia lo stack",
+      "disableFailed": "Impossibile disattivare l'istanza di condivisione."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",
@@ -2786,7 +2788,8 @@
     "hybridMqttPathTooltip": "Ricevuti via RF; alcuni pacchetti utilizzano un percorso di inoltro MQTT",
     "hybridMqttPathAria": "Percorso RF e MQTT",
     "connectedViaRfAndMqttTooltip": "Connesso via RF e MQTT",
-    "connectedViaRfAndMqttAria": "Connesso via RF e MQTT"
+    "connectedViaRfAndMqttAria": "Connesso via RF e MQTT",
+    "echoesConnectionHealthTooltip": "{{score}}% integrità della connessione"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

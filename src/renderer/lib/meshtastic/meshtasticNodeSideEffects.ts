@@ -6,14 +6,15 @@
  * TelemetryPacket already, so the runtime no longer keeps a second
  * `device.events.on*` subscription for each of them. `PacketRouter` writes the
  * canonical `nodeStore` record before listeners run; everything here is the
- * extra runtime work that record does not cover — hook-local node map patches,
+ * extra runtime work that record does not cover — enriched node patches,
  * diagnostics, position history, telemetry charts, and the BLE/serial display
- * name caches.
+ * name caches. Enriched patches write back to `nodeStore` directly so React
+ * state never acts as a second node authority.
  *
  * Failure point: every branch is additive. A missing node row skips the patch,
  * localStorage name-cache writes are swallowed (non-critical), and SQLite
- * `saveNode` is fire-and-forget — chat and node ingest have already been
- * persisted by `PacketRouter`.
+ * `saveNode` is fire-and-forget with a rejection handler — chat and node
+ * ingest have already updated the canonical store before persistence begins.
  */
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 
@@ -21,10 +22,11 @@ import {
   meshtasticShortNameAfterClearingDefault,
   preferNonEmptyTrimmedString,
 } from '../../../shared/nodeNameUtils';
-import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
+import { upsertNodeRecord } from '../../stores/nodeStore';
 import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
 import { validateCoords } from '../coordUtils';
-import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
+import { attachTypedPacketListeners } from '../drivers/attachTypedPacketListener';
+import { errLikeToLogString } from '../errLikeToLogString';
 import { shouldPreserveStaticGpsForSelfNode } from '../gpsSource';
 import { getIdentityNode } from '../identityStoreReads';
 import {
@@ -33,15 +35,11 @@ import {
   mergeMeshtasticUserPacketLastHeard,
 } from '../meshtasticLastHeard';
 import { parseStoredJson } from '../parseStoredJson';
-import type {
-  DomainEvent,
-  NodeInfoEvent,
-  PositionEvent,
-  TelemetryEvent,
-} from '../protocols/Protocol';
+import type { NodeInfoEvent, PositionEvent, TelemetryEvent } from '../protocols/Protocol';
 import { MESHTASTIC_CAPABILITIES } from '../radio/BaseRadioProvider';
 import { LAST_SERIAL_PORT_KEY } from '../serialPortSignature';
-import { getStoredMeshProtocol } from '../storedMeshProtocol';
+import { MAX_TELEMETRY_POINTS } from '../sessionMemoryCaps';
+import { meshNodeToNodeRecord } from '../storeRecordAdapters';
 import type {
   ConnectionType,
   EnvironmentTelemetryPoint,
@@ -49,9 +47,10 @@ import type {
   MeshNode,
   TelemetryPoint,
 } from '../types';
+import { processMeshtasticNodeDiagnostics } from './meshtasticProcessNodeDiagnostics';
 
-const MAX_TELEMETRY_POINTS = 50;
 const ROLE_CLIENT_MUTE = 1;
+const MAX_TRANSPORT_DISPLAY_NAME_CACHE_ENTRIES = 64;
 const BLE_DEVICE_NAMES_KEY = 'mesh-client:bleDeviceNames';
 const SERIAL_PORT_NODE_NAMES_KEY = 'mesh-client:serialPortNodeNames';
 
@@ -64,7 +63,6 @@ export interface MeshtasticNodeSideEffectsDeps {
   /** Web Bluetooth device id of the active BLE link, for the short-name cache. */
   getBluetoothDeviceId: () => string | undefined;
   touchLastData: () => void;
-  updateNodes: (updater: (prev: Map<number, MeshNode>) => Map<number, MeshNode>) => void;
   emptyNode: (nodeId: number) => MeshNode;
   ensureNodeExists: (nodeNum: number, source: 'rf' | 'mqtt') => void;
   /** Ask an unknown sender for its NodeInfo (throttled by the caller). */
@@ -86,16 +84,11 @@ function meshtasticPublicKeyHex(bytes: Uint8Array | undefined): string | undefin
     .join('');
 }
 
-function processNodeDiagnostics(
-  identityId: IdentityId,
-  node: MeshNode,
-  myNodeNum: number,
-  homeNode: MeshNode | null,
-): void {
-  if (getStoredMeshProtocol() !== 'meshtastic') return;
-  useDiagnosticsStore
-    .getState()
-    .processNodeUpdate(node, homeNode, myNodeNum, MESHTASTIC_CAPABILITIES);
+function saveNode(identityId: IdentityId, node: MeshNode): void {
+  upsertNodeRecord(identityId, meshNodeToNodeRecord(node));
+  void window.electronAPI.db.saveNode(node).catch((e: unknown) => {
+    console.debug('[meshtasticNodeSideEffects] saveNode failed ' + errLikeToLogString(e));
+  });
 }
 
 function cacheShortNameByKey(storageKey: string, cacheKey: string, shortName: string): void {
@@ -105,50 +98,51 @@ function cacheShortNameByKey(storageKey: string, cacheKey: string, shortName: st
         localStorage.getItem(storageKey),
         `meshtasticNodeSideEffects ${storageKey}`,
       ) ?? {};
-    cache[cacheKey] = shortName;
-    localStorage.setItem(storageKey, JSON.stringify(cache));
+    const entries = Object.entries(cache).filter(([key]) => key !== cacheKey);
+    entries.push([cacheKey, shortName]);
+    const bounded = Object.fromEntries(entries.slice(-MAX_TRANSPORT_DISPLAY_NAME_CACHE_ENTRIES));
+    localStorage.setItem(storageKey, JSON.stringify(bounded));
   } catch {
     // catch-no-log-ok localStorage write for transport display-name cache — non-critical
   }
 }
 
 /** UserPacket identity: live long/short name, hardware, role, and public key. */
-function handleUserPacketNodeInfo(info: NodeInfoEvent, deps: MeshtasticNodeSideEffectsDeps): void {
+function handleUserPacketNodeInfo(
+  identityId: IdentityId,
+  info: NodeInfoEvent,
+  deps: MeshtasticNodeSideEffectsDeps,
+): void {
   const nodeNum = info.nodeId;
   deps.rfHeardNodeIds.current.add(nodeNum);
-  deps.updateNodes((prev) => {
-    const updated = new Map(prev);
-    const existing = updated.get(nodeNum) ?? deps.emptyNode(nodeNum);
-    const long_name = preferNonEmptyTrimmedString(info.longName, existing.long_name, {
-      nodeId: nodeNum,
-    });
-    const short_name = meshtasticShortNameAfterClearingDefault(
-      long_name,
-      preferNonEmptyTrimmedString(info.shortName, existing.short_name),
-      nodeNum,
-    );
-    const node: MeshNode = {
-      ...existing,
-      node_id: nodeNum,
-      long_name,
-      short_name,
-      hw_model: info.hwModel ?? existing.hw_model,
-      role: info.role ?? existing.role,
-      public_key_hex: meshtasticPublicKeyHex(info.publicKey) ?? existing.public_key_hex,
-      // During configure, skip rxTime bumps (NodeDB replay). After configure, use mesh rxTime.
-      last_heard: mergeMeshtasticUserPacketLastHeard(
-        existing.last_heard || 0,
-        info.lastHeardAt ?? 0,
-        deps.getIsConfiguring(),
-      ),
-      heard_via_mqtt_only: false,
-      via_mqtt: false,
-      source: 'rf',
-    };
-    updated.set(nodeNum, node);
-    void window.electronAPI.db.saveNode(node);
-    return updated;
+  const existing = getIdentityNode(identityId, nodeNum) ?? deps.emptyNode(nodeNum);
+  const long_name = preferNonEmptyTrimmedString(info.longName, existing.long_name, {
+    nodeId: nodeNum,
   });
+  const short_name = meshtasticShortNameAfterClearingDefault(
+    long_name,
+    preferNonEmptyTrimmedString(info.shortName, existing.short_name),
+    nodeNum,
+  );
+  const node: MeshNode = {
+    ...existing,
+    node_id: nodeNum,
+    long_name,
+    short_name,
+    hw_model: info.hwModel ?? existing.hw_model,
+    role: info.role ?? existing.role,
+    public_key_hex: meshtasticPublicKeyHex(info.publicKey) ?? existing.public_key_hex,
+    // During configure, skip rxTime bumps (NodeDB replay). After configure, use mesh rxTime.
+    last_heard: mergeMeshtasticUserPacketLastHeard(
+      existing.last_heard || 0,
+      info.lastHeardAt ?? 0,
+      deps.getIsConfiguring(),
+    ),
+    heard_via_mqtt_only: false,
+    via_mqtt: false,
+    source: 'rf',
+  };
+  saveNode(identityId, node);
   if (nodeNum === deps.getMyNodeNum()) {
     deps.setDeviceOwner({
       longName: preferNonEmptyTrimmedString(info.longName, ''),
@@ -193,96 +187,87 @@ function handleNodeDbNodeInfo(
   const myNodeNum = deps.getMyNodeNum();
   const isSelf = nodeNum === myNodeNum;
   deps.rfHeardNodeIds.current.add(nodeNum);
-  const prevOwnRole = isSelf ? getIdentityNode(identityId, nodeNum)?.role : undefined;
-  const hasPosition = info.latitude != null && info.longitude != null;
-
-  deps.updateNodes((prev) => {
-    const updated = new Map(prev);
-    const existing = updated.get(nodeNum) ?? deps.emptyNode(nodeNum);
-
-    let newLat = existing.latitude;
-    let newLon = existing.longitude;
-    const newAlt = info.altitude ?? existing.altitude;
-    let posWarn: string | undefined = existing.lastPositionWarning;
-
-    if (hasPosition && !shouldPreserveStaticGpsForSelfNode(nodeNum, myNodeNum)) {
-      const r = validateCoords(info.latitude!, info.longitude!);
-      if (r.valid) {
-        newLat = info.latitude!;
-        newLon = info.longitude!;
-        posWarn = undefined;
-      } else if (!isSelf || (existing.latitude === 0 && existing.longitude === 0)) {
-        posWarn = r.warning;
-      }
+  const storeExisting = getIdentityNode(identityId, nodeNum) ?? deps.emptyNode(nodeNum);
+  const prevOwnRole = isSelf ? storeExisting.role : undefined;
+  const positionCoords =
+    info.latitude != null && info.longitude != null
+      ? { latitude: info.latitude, longitude: info.longitude }
+      : null;
+  let newLat = storeExisting.latitude;
+  let newLon = storeExisting.longitude;
+  const newAlt = info.altitude ?? storeExisting.altitude;
+  let posWarn: string | undefined = storeExisting.lastPositionWarning;
+  if (positionCoords && !shouldPreserveStaticGpsForSelfNode(nodeNum, myNodeNum)) {
+    const { latitude, longitude } = positionCoords;
+    const r = validateCoords(latitude, longitude);
+    if (r.valid) {
+      newLat = latitude;
+      newLon = longitude;
+      posWarn = undefined;
+    } else if (!isSelf || (storeExisting.latitude === 0 && storeExisting.longitude === 0)) {
+      posWarn = r.warning;
     }
-
-    const lastHeardMs = computeNodeInfoLastHeardMs(info.lastHeardAt, existing.last_heard, isSelf);
-    const lastHeardStale =
-      lastHeardMs > 0 && Date.now() - lastHeardMs > MESHTASTIC_CAPABILITIES.nodeStaleThresholdMs;
-
-    const long_name = preferNonEmptyTrimmedString(info.longName, existing.long_name, {
-      nodeId: nodeNum,
-    });
-    const short_name = meshtasticShortNameAfterClearingDefault(
-      long_name,
-      preferNonEmptyTrimmedString(info.shortName, existing.short_name),
-      nodeNum,
-    );
-    const node: MeshNode = {
-      ...existing,
-      node_id: nodeNum,
-      long_name,
-      short_name,
-      hw_model: info.hwModel ?? existing.hw_model,
-      snr: info.snr ?? existing.snr,
-      battery: info.batteryLevel ?? existing.battery,
-      last_heard: lastHeardMs,
-      latitude: newLat,
-      longitude: newLon,
-      role: info.role ?? existing.role,
-      // Stale NodeInfo still carries cached hops; don't show hop count for ghosts.
-      hops_away: isSelf
-        ? (info.hopsAway ?? 0)
-        : lastHeardStale
-          ? undefined
-          : (info.hopsAway ?? existing.hops_away),
-      via_mqtt: info.viaMqtt ?? false,
-      voltage: info.voltage ?? existing.voltage,
-      channel_utilization: info.channelUtilization ?? existing.channel_utilization,
-      air_util_tx: info.airUtilTx ?? existing.air_util_tx,
-      altitude: newAlt,
-      heard_via_mqtt_only: false,
-      source: 'rf',
-      lastPositionWarning: posWarn,
-    };
-    updated.set(nodeNum, node);
-    void window.electronAPI.db.saveNode(node);
-    return updated;
+  }
+  const lastHeardMs = computeNodeInfoLastHeardMs(
+    info.lastHeardAt,
+    storeExisting.last_heard,
+    isSelf,
+  );
+  const lastHeardStale =
+    lastHeardMs > 0 && Date.now() - lastHeardMs > MESHTASTIC_CAPABILITIES.nodeStaleThresholdMs;
+  const long_name = preferNonEmptyTrimmedString(info.longName, storeExisting.long_name, {
+    nodeId: nodeNum,
   });
+  const short_name = meshtasticShortNameAfterClearingDefault(
+    long_name,
+    preferNonEmptyTrimmedString(info.shortName, storeExisting.short_name),
+    nodeNum,
+  );
+  const node: MeshNode = {
+    ...storeExisting,
+    node_id: nodeNum,
+    long_name,
+    short_name,
+    hw_model: info.hwModel ?? storeExisting.hw_model,
+    snr: info.snr ?? storeExisting.snr,
+    battery: info.batteryLevel ?? storeExisting.battery,
+    last_heard: lastHeardMs,
+    latitude: newLat,
+    longitude: newLon,
+    role: info.role ?? storeExisting.role,
+    hops_away: isSelf
+      ? (info.hopsAway ?? 0)
+      : lastHeardStale
+        ? undefined
+        : (info.hopsAway ?? storeExisting.hops_away),
+    via_mqtt: info.viaMqtt ?? false,
+    voltage: info.voltage ?? storeExisting.voltage,
+    channel_utilization: info.channelUtilization ?? storeExisting.channel_utilization,
+    air_util_tx: info.airUtilTx ?? storeExisting.air_util_tx,
+    altitude: newAlt,
+    heard_via_mqtt_only: false,
+    source: 'rf',
+    lastPositionWarning: posWarn,
+  };
+  saveNode(identityId, node);
 
   if (isSelf && info.batteryLevel !== undefined) {
     deps.applyOwnNodeBatteryFromDeviceMetrics(info.batteryLevel);
   }
-  if (
-    isSelf &&
-    getIdentityNode(identityId, nodeNum)?.role === ROLE_CLIENT_MUTE &&
-    prevOwnRole !== ROLE_CLIENT_MUTE
-  ) {
+  if (isSelf && node.role === ROLE_CLIENT_MUTE && prevOwnRole !== ROLE_CLIENT_MUTE) {
     console.info(
       '[meshtasticNodeSideEffects] Device role is Client Mute — position reports to device suppressed',
     );
   }
-  const updatedRfNode = getIdentityNode(identityId, nodeNum);
-  if (updatedRfNode) {
-    processNodeDiagnostics(
-      identityId,
-      updatedRfNode,
-      myNodeNum,
-      getIdentityNode(identityId, myNodeNum) ?? null,
-    );
-  }
-  if (hasPosition && validateCoords(info.latitude!, info.longitude!).valid) {
-    usePositionHistoryStore.getState().recordPosition(nodeNum, info.latitude!, info.longitude!);
+  processMeshtasticNodeDiagnostics(
+    node,
+    myNodeNum,
+    isSelf ? node : (getIdentityNode(identityId, myNodeNum) ?? null),
+  );
+  if (positionCoords && validateCoords(positionCoords.latitude, positionCoords.longitude).valid) {
+    usePositionHistoryStore
+      .getState()
+      .recordPosition(nodeNum, positionCoords.latitude, positionCoords.longitude);
   }
   cacheSelfNodeTransportName(info, deps);
 }
@@ -295,7 +280,7 @@ function handleNodeInfo(
   deps.touchLastData();
   if (!info.nodeId) return;
   if (info.fromUserPacket) {
-    handleUserPacketNodeInfo(info, deps);
+    handleUserPacketNodeInfo(identityId, info, deps);
     return;
   }
   handleNodeDbNodeInfo(identityId, info, deps);
@@ -308,6 +293,7 @@ function handlePosition(
 ): void {
   deps.touchLastData();
   const nodeNum = position.nodeId;
+  if (position.latitude == null || position.longitude == null) return;
   const myNodeNum = deps.getMyNodeNum();
   if (nodeNum !== 0) {
     deps.rfHeardNodeIds.current.add(nodeNum);
@@ -315,23 +301,16 @@ function handlePosition(
 
   const r = validateCoords(position.latitude, position.longitude);
   if (!r.valid) {
-    deps.updateNodes((prev) => {
-      const updated = new Map(prev);
-      const existing = updated.get(nodeNum) ?? deps.emptyNode(nodeNum);
-      // Don't flag our own node if we have valid fallback coords
-      if (nodeNum === myNodeNum && (existing.latitude != null || existing.longitude != null)) {
-        return prev;
-      }
-      updated.set(nodeNum, {
-        ...existing,
-        lastPositionWarning: r.warning,
-        last_heard: mergeMeshtasticLivePacketLastHeard(
-          existing.last_heard || 0,
-          Date.now(),
-          deps.getIsConfiguring(),
-        ),
-      });
-      return updated;
+    const existing = getIdentityNode(identityId, nodeNum) ?? deps.emptyNode(nodeNum);
+    if (nodeNum === myNodeNum && (existing.latitude != null || existing.longitude != null)) return;
+    saveNode(identityId, {
+      ...existing,
+      lastPositionWarning: r.warning,
+      last_heard: mergeMeshtasticLivePacketLastHeard(
+        existing.last_heard || 0,
+        Date.now(),
+        deps.getIsConfiguring(),
+      ),
     });
     return;
   }
@@ -356,19 +335,15 @@ function handlePosition(
     heard_via_mqtt_only: false,
     via_mqtt: false,
   };
-  deps.updateNodes((prev) => {
-    const updated = new Map(prev);
-    updated.set(nodeNum, node);
-    void window.electronAPI.db.saveNode(node);
-    return updated;
-  });
-  processNodeDiagnostics(identityId, node, myNodeNum, homeNode);
+  saveNode(identityId, node);
+  processMeshtasticNodeDiagnostics(node, myNodeNum, homeNode);
   usePositionHistoryStore.getState().recordPosition(nodeNum, position.latitude, position.longitude);
   deps.maybeRequestNodeInfoForNode(nodeNum);
 }
 
 /** Environment sensor variant: chart point plus the node row's `env_*` columns. */
 function handleEnvironmentTelemetry(
+  identityId: IdentityId,
   telemetry: TelemetryEvent,
   deps: MeshtasticNodeSideEffectsDeps,
 ): void {
@@ -391,29 +366,24 @@ function handleEnvironmentTelemetry(
     rainfall24h: telemetry.rainfall24h,
   };
   deps.setEnvironmentTelemetry((prev) => [...prev, point].slice(-MAX_TELEMETRY_POINTS));
-  deps.updateNodes((prev) => {
-    const existing = prev.get(nodeNum);
-    if (!existing) return prev;
-    const updated = new Map(prev);
-    updated.set(nodeNum, {
-      ...existing,
-      env_temperature: telemetry.temperature ?? existing.env_temperature,
-      env_humidity: telemetry.relativeHumidity ?? existing.env_humidity,
-      env_pressure: telemetry.barometricPressure ?? existing.env_pressure,
-      env_iaq: telemetry.iaq ?? existing.env_iaq,
-      env_lux: telemetry.lux ?? existing.env_lux,
-      env_wind_speed: telemetry.windSpeed ?? existing.env_wind_speed,
-      env_wind_direction: telemetry.windDirection ?? existing.env_wind_direction,
-      last_heard: mergeMeshtasticLivePacketLastHeard(
-        existing.last_heard || 0,
-        telemetry.timestamp,
-        deps.getIsConfiguring(),
-      ),
-      source: 'rf',
-      heard_via_mqtt_only: false,
-      via_mqtt: false,
-    });
-    return updated;
+  const existing = getIdentityNode(identityId, nodeNum) ?? deps.emptyNode(nodeNum);
+  saveNode(identityId, {
+    ...existing,
+    env_temperature: telemetry.temperature ?? existing.env_temperature,
+    env_humidity: telemetry.relativeHumidity ?? existing.env_humidity,
+    env_pressure: telemetry.barometricPressure ?? existing.env_pressure,
+    env_iaq: telemetry.iaq ?? existing.env_iaq,
+    env_lux: telemetry.lux ?? existing.env_lux,
+    env_wind_speed: telemetry.windSpeed ?? existing.env_wind_speed,
+    env_wind_direction: telemetry.windDirection ?? existing.env_wind_direction,
+    last_heard: mergeMeshtasticLivePacketLastHeard(
+      existing.last_heard || 0,
+      telemetry.timestamp,
+      deps.getIsConfiguring(),
+    ),
+    source: 'rf',
+    heard_via_mqtt_only: false,
+    via_mqtt: false,
   });
 }
 
@@ -438,13 +408,8 @@ function handleLocalStatsTelemetry(
     heard_via_mqtt_only: false,
     via_mqtt: false,
   };
-  deps.updateNodes((prev) => {
-    const updated = new Map(prev);
-    updated.set(myNodeNum, node);
-    void window.electronAPI.db.saveNode(node);
-    return updated;
-  });
-  processNodeDiagnostics(identityId, node, myNodeNum, node);
+  saveNode(identityId, node);
+  processMeshtasticNodeDiagnostics(node, myNodeNum, node);
 }
 
 /** Device metrics (and any other variant): battery chart point plus node battery. */
@@ -464,32 +429,25 @@ function handleDeviceMetricsTelemetry(
 
   if (telemetry.batteryLevel == null || !nodeNum) return;
   deps.ensureNodeExists(nodeNum, 'rf');
-  const existing = getIdentityNode(identityId, nodeNum);
-  if (existing) {
-    const node: MeshNode = {
-      ...existing,
-      battery: telemetry.batteryLevel,
-      last_heard: mergeMeshtasticLivePacketLastHeard(
-        existing.last_heard || 0,
-        telemetry.timestamp,
-        deps.getIsConfiguring(),
-      ),
-      source: 'rf',
-      heard_via_mqtt_only: false,
-      via_mqtt: false,
-    };
-    deps.updateNodes((prev) => {
-      const updated = new Map(prev);
-      updated.set(nodeNum, node);
-      return updated;
-    });
-    processNodeDiagnostics(
-      identityId,
-      node,
-      myNodeNum,
-      getIdentityNode(identityId, myNodeNum) ?? null,
-    );
-  }
+  const existing = getIdentityNode(identityId, nodeNum) ?? deps.emptyNode(nodeNum);
+  const node: MeshNode = {
+    ...existing,
+    battery: telemetry.batteryLevel,
+    last_heard: mergeMeshtasticLivePacketLastHeard(
+      existing.last_heard || 0,
+      telemetry.timestamp,
+      deps.getIsConfiguring(),
+    ),
+    source: 'rf',
+    heard_via_mqtt_only: false,
+    via_mqtt: false,
+  };
+  saveNode(identityId, node);
+  processMeshtasticNodeDiagnostics(
+    node,
+    myNodeNum,
+    nodeNum === myNodeNum ? node : (getIdentityNode(identityId, myNodeNum) ?? null),
+  );
   deps.maybeRequestNodeInfoForNode(nodeNum);
   if (nodeNum === myNodeNum) {
     deps.applyOwnNodeBatteryFromDeviceMetrics(telemetry.batteryLevel);
@@ -506,7 +464,7 @@ function handleTelemetry(
   // `deviceMetrics`, so there is nothing to chart or patch.
   if (!telemetry.variantCase) return;
   if (telemetry.variantCase === 'environmentMetrics') {
-    handleEnvironmentTelemetry(telemetry, deps);
+    handleEnvironmentTelemetry(identityId, telemetry, deps);
     return;
   }
   if (telemetry.variantCase === 'localStats' && telemetry.nodeId === deps.getMyNodeNum()) {
@@ -521,21 +479,15 @@ export function attachMeshtasticNodeSideEffects(
   identityId: IdentityId,
   deps: MeshtasticNodeSideEffectsDeps,
 ): () => void {
-  const listener: PacketRouterListener = (event: DomainEvent, routedIdentityId) => {
-    if (routedIdentityId !== identityId) return;
-    switch (event.type) {
-      case 'node_info':
-        handleNodeInfo(identityId, event.payload, deps);
-        break;
-      case 'position':
-        handlePosition(identityId, event.payload, deps);
-        break;
-      case 'telemetry':
-        handleTelemetry(identityId, event.payload, deps);
-        break;
-      default:
-        break;
-    }
-  };
-  return packetRouter.addListener(listener);
+  return attachTypedPacketListeners(identityId, {
+    node_info: (payload) => {
+      handleNodeInfo(identityId, payload, deps);
+    },
+    position: (payload) => {
+      handlePosition(identityId, payload, deps);
+    },
+    telemetry: (payload) => {
+      handleTelemetry(identityId, payload, deps);
+    },
+  });
 }

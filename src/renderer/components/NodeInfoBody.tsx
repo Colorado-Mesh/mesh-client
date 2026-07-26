@@ -40,6 +40,7 @@ import { meshcoreTracePathLenToHops } from '../lib/meshcoreUtils';
 import {
   isMeshtasticSelfHybridPath,
   MeshtasticHybridPathIcons,
+  meshtasticHybridPathLabels,
   MeshtasticMqttOnlyPathIcons,
   MeshtasticRfPathIcon,
   resolveMeshtasticPathBadge,
@@ -122,21 +123,11 @@ function NodeSourceBadge({
   const displayBadge = pathBadge === 'none' ? 'rfOnly' : pathBadge;
 
   if (displayBadge === 'hybrid') {
-    const isSelfHybrid = isMeshtasticSelfHybridPath(isSelf, mqttConnected, radioConnected);
-    return (
-      <MeshtasticHybridPathIcons
-        title={
-          isSelfHybrid
-            ? t('nodeListPanel.connectedViaRfAndMqttTooltip')
-            : t('nodeListPanel.hybridMqttPathTooltip')
-        }
-        ariaLabel={
-          isSelfHybrid
-            ? t('nodeListPanel.connectedViaRfAndMqttAria')
-            : t('nodeListPanel.hybridMqttPathAria')
-        }
-      />
+    const labels = meshtasticHybridPathLabels(
+      t,
+      isMeshtasticSelfHybridPath(isSelf, mqttConnected, radioConnected),
     );
+    return <MeshtasticHybridPathIcons title={labels.title} ariaLabel={labels.ariaLabel} />;
   }
   if (displayBadge === 'mqttOnly') {
     const title = node.heard_via_mqtt_only

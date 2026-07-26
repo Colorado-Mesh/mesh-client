@@ -1,4 +1,14 @@
 // @vitest-environment jsdom
+vi.mock('@/renderer/lib/i18n', () => ({
+  default: {
+    t: (key: string, opts?: { sender?: string }) => {
+      if (key === 'chatPanel.notificationDmTitle') return `DM from ${opts?.sender ?? ''}`;
+      if (key === 'chatPanel.notificationMessageTitle') return `Message from ${opts?.sender ?? ''}`;
+      return key;
+    },
+  },
+}));
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { packetRouter } from '../drivers/PacketRouter';
@@ -102,6 +112,65 @@ describe('attachMeshtasticRouterSideEffects', () => {
     );
     expect(applyRoutingErrorFromLog).toHaveBeenCalled();
     expect(applyForeignLoraFromLog).toHaveBeenCalled();
+    detach();
+  });
+
+  it('uses i18n for hidden-window notification titles', () => {
+    const NotificationMock = vi.fn();
+    vi.stubGlobal('Notification', NotificationMock);
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+
+    const deps: MeshtasticRouterSideEffectsDeps = {
+      getMyNodeNum: () => 1,
+      getMqttStatus: () => 'disconnected',
+      getChannelConfigs: () => [],
+      hasRfDevice: () => true,
+      getNodeName: () => 'Alpha',
+      registerMqttEchoPacketId: vi.fn(),
+      requestNodeInfoForNode: vi.fn(),
+      applyForeignLoraFromLog: vi.fn(),
+      applyRoutingErrorFromLog: vi.fn(),
+      setFirmwareVersion: vi.fn(),
+    };
+    const detach = attachMeshtasticRouterSideEffects('mesh-id', deps);
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: '7:2',
+          from: 7,
+          to: 1,
+          payload: 'secret dm',
+          channelIndex: 0,
+          timestamp: Date.now(),
+        },
+      },
+      'mesh-id',
+    );
+    expect(NotificationMock).toHaveBeenCalledWith('DM from Alpha', {
+      body: 'secret dm',
+      silent: true,
+    });
+
+    NotificationMock.mockClear();
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: {
+          id: '7:3',
+          from: 7,
+          to: 0xffffffff,
+          payload: 'hello channel',
+          channelIndex: 0,
+          timestamp: Date.now(),
+        },
+      },
+      'mesh-id',
+    );
+    expect(NotificationMock).toHaveBeenCalledWith('Message from Alpha', {
+      body: 'hello channel',
+      silent: true,
+    });
     detach();
   });
 });

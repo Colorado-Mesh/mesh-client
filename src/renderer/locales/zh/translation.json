@@ -606,7 +606,9 @@
     "floodScopeOverrideCustomApply": "使用范围",
     "floodScopeOverrideCustomInvalid": "输入有效的区域标签（例如#myregion）。",
     "dmNodeHops_one": "{{count}}跳",
-    "dmNodeHops_other": "{{count}}跳"
+    "dmNodeHops_other": "{{count}}跳",
+    "notificationDmTitle": "来自{{sender}}的DM",
+    "notificationMessageTitle": "来自{{sender}}的消息"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -1198,20 +1200,20 @@
     "coloradoRegionGateStay": "我在科罗拉多州",
     "coloradoRegionGateSwitch": "切换到LetsMesh",
     "topicPrefixInvalidIata": "主题前缀必须是meshcore/test或meshcore/{IATA} （ 3个字母） ，例如meshcore/DEN。",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "在放弃前尝试重新连接（ 1– {{max}} ）。已保存设置；更改后再次按“连接” ，以便主进程将其拾取。",
       "meshtastic": "两种方案均允许1– {{max}}。已使用设置保存；断开连接并再次连接，以便正在运行的会话使用新值。"
     },
     "reticulumStackRunningAs": "运行中 — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Reticulum 堆栈无响应 — 正在重新启动..."
+    "reticulumSidecarUnhealthyRestarting": "Reticulum 堆栈无响应 — 正在重新启动...",
+    "reticulumSharedInstance": {
+      "title": "使用其他应用的共享实例",
+      "body": "此应用程序附加为另一个应用程序的共享Reticulum实例的客户端。来自此应用程序配置的本地TCP集线器未在此模式下启动—流量只能使用其他应用程序的堆栈。",
+      "networkHint": "或者打开Network → Share Reticulum实例手动关闭Share ，然后重新启动堆栈。您还可以完全退出MeshChat、Ratspeak或独立RNSD并重新启动。",
+      "disableShare": "关闭共享实例并重新启动",
+      "disableShareAria": "关闭共享实例并重新启动堆栈",
+      "disableFailed": "无法关闭共享实例。"
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -2786,7 +2788,8 @@
     "hybridMqttPathTooltip": "通过射频接收；某些数据包使用MQTT中继路径",
     "hybridMqttPathAria": "射频和MQTT路径",
     "connectedViaRfAndMqttTooltip": "通过射频和MQTT连接",
-    "connectedViaRfAndMqttAria": "通过射频和MQTT连接"
+    "connectedViaRfAndMqttAria": "通过射频和MQTT连接",
+    "echoesConnectionHealthTooltip": "{{score}} %连接健康"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

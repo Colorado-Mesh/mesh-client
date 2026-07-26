@@ -428,7 +428,6 @@
     "jumpToQuotedMessage": "Přejít na citovanou zprávu od {{sender}}",
     "replyToMessage": "Odpovědět na zprávu",
     "addReaction": "Přidejte reakci",
-    "emojiButton": "Emoji",
     "sendButton": "Poslat",
     "sendButtonDm": "DM",
     "sendButtonSending": "...",
@@ -576,7 +575,6 @@
     "floodScopeOverrideLabel": "Rozsah Flood pro tuto zprávu",
     "floodScopeOverrideAria": "Přepsání rozsahu Flood podle zprávy",
     "floodScopeOverrideDefault": "Výchozí rozsah",
-    "floodScopeOverrideUnscoped": "Unscoped",
     "rncp": {
       "sendFile": "Odeslat soubor",
       "sendFileAria": "Odeslat soubor na {{name}} pomocí rncp",
@@ -607,7 +605,12 @@
     "floodScopeOverrideCustomInvalid": "Zadejte platný hashtag regionu (například #myregion).",
     "dmNodeHops_one": "{{count}} skok",
     "dmNodeHops_few": "{{count}} skoky",
-    "dmNodeHops_other": "{{count}} skoků"
+    "dmNodeHops_many": "{{count}} skoků",
+    "dmNodeHops_other": "{{count}} skoků",
+    "notificationDmTitle": "DM od {{sender}}",
+    "notificationMessageTitle": "Zpráva od {{sender}}",
+    "floodScopeOverrideUnscoped": "Unscoped",
+    "emojiButton": "Emoji"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -707,7 +710,6 @@
     "submit": "Předložit",
     "rePairDevice": "Odebrat a znovu spárovat zařízení",
     "mqttConnection": "Připojení MQTT",
-    "server": "Server",
     "from": "Z",
     "topic": "Téma",
     "disconnectMqtt": "Odpojit",
@@ -1199,20 +1201,21 @@
     "coloradoRegionGateStay": "Jsem v Coloradu",
     "coloradoRegionGateSwitch": "Přepnout na LetsMesh",
     "topicPrefixInvalidIata": "Předpona tématu musí být meshcore/test nebo meshcore/{IATA} (3 písmena), např. meshcore/DEN.",
-    "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
-      "disableShare": "Turn off Share instance and restart",
-      "disableShareAria": "Turn off Share instance and restart the stack",
-      "disableFailed": "Failed to turn off Share instance."
-    },
     "maxRetriesHelpConnected": {
       "meshcore": "Pokus o opětovné připojení před vzdáním se (1–{{max}}). Uloženo s nastavením; po změně znovu stiskněte tlačítko Připojit, aby jej hlavní proces zvedl.",
       "meshtastic": "Oba protokoly umožňují 1–{{max}}. Uloženo s nastavením; odpojte a znovu připojte, aby běžící relace používala novou hodnotu."
     },
     "reticulumStackRunningAs": "Běží — {{name}}",
-    "reticulumSidecarUnhealthyRestarting": "Zásobník Reticulum nereaguje – restartování…"
+    "reticulumSidecarUnhealthyRestarting": "Zásobník Reticulum nereaguje – restartování…",
+    "server": "Server",
+    "reticulumSharedInstance": {
+      "title": "Používání sdílené instance jiné aplikace",
+      "body": "Tato aplikace je připojena jako klient sdílené instance Reticulum jiné aplikace. Místní TCP rozbočovače z konfigurace této aplikace nejsou v tomto režimu spuštěny — provoz může používat pouze zásobník druhé aplikace.",
+      "networkHint": "Nebo otevřete instanci Network → Share Reticulum a vypněte Sdílení ručně a poté restartujte zásobník. Můžete také zcela ukončit MeshChat, Ratspeak nebo samostatný rnsd a restartovat.",
+      "disableShare": "Vypnout sdílení instance a restartovat",
+      "disableShareAria": "Vypněte možnost Sdílet instanci a restartujte zásobník",
+      "disableFailed": "Sdílení instance se nezdařilo vypnout."
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -2787,7 +2790,8 @@
     "hybridMqttPathTooltip": "Přijato prostřednictvím RF; některé pakety používají reléovou cestu MQTT",
     "hybridMqttPathAria": "Cesta RF a MQTT",
     "connectedViaRfAndMqttTooltip": "Připojeno přes RF a MQTT",
-    "connectedViaRfAndMqttAria": "Připojeno přes RF a MQTT"
+    "connectedViaRfAndMqttAria": "Připojeno přes RF a MQTT",
+    "echoesConnectionHealthTooltip": "{{score}}% zdraví připojení"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

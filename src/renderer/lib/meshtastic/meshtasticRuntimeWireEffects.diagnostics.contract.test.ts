@@ -8,6 +8,10 @@ import { describe, expect, it } from 'vitest';
 
 const NODE_SOURCE = readFileSync(join(__dirname, 'meshtasticNodeSideEffects.ts'), 'utf-8');
 const RAW_SOURCE = readFileSync(join(__dirname, 'meshtasticRawPacketSideEffects.ts'), 'utf-8');
+const DIAGNOSTICS_SOURCE = readFileSync(
+  join(__dirname, 'meshtasticProcessNodeDiagnostics.ts'),
+  'utf-8',
+);
 
 function sliceFromMarker(source: string, marker: string, length = 1400): string {
   const index = source.indexOf(marker);
@@ -19,15 +23,16 @@ describe('meshtastic diagnostics ingest contract', () => {
   it('localStats handler calls processNodeUpdate when protocol is meshtastic', () => {
     const body = sliceFromMarker(NODE_SOURCE, 'handleLocalStatsTelemetry');
     expect(body.length).toBeGreaterThan(0);
-    expect(body).toContain('processNodeDiagnostics');
-    expect(NODE_SOURCE).toContain('processNodeUpdate');
-    expect(NODE_SOURCE).toContain("getStoredMeshProtocol() !== 'meshtastic'");
+    expect(body).toContain('processMeshtasticNodeDiagnostics');
+    expect(DIAGNOSTICS_SOURCE).toContain('processNodeUpdate');
+    expect(DIAGNOSTICS_SOURCE).toContain("getStoredMeshProtocol() !== 'meshtastic'");
   });
 
   it('RF mesh packet hop/signal handler calls processNodeUpdate when protocol is meshtastic', () => {
     const body = sliceFromMarker(RAW_SOURCE, 'if (!hasSignal && !hasHopUpdate)');
     expect(body.length).toBeGreaterThan(0);
-    expect(body).toContain('processNodeUpdate');
-    expect(body).toContain("getStoredMeshProtocol() === 'meshtastic'");
+    expect(body).toContain('processMeshtasticNodeDiagnostics');
+    expect(DIAGNOSTICS_SOURCE).toContain('processNodeUpdate');
+    expect(DIAGNOSTICS_SOURCE).toContain("getStoredMeshProtocol() !== 'meshtastic'");
   });
 });

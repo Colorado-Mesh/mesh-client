@@ -280,6 +280,65 @@ describe('attachMeshcoreConnSideEffects', () => {
     expect(window.electronAPI.db.updateMeshcoreMessageStatus).toHaveBeenCalledWith(0x81, 'failed');
   });
 
+  it('keeps accepting events for identity captured at attach when resolveIdentityId later returns null', () => {
+    const h = makeHarness({ handleResponseResult: true });
+    h.ctx.resolveIdentityId = () => ID;
+    h.ctx.meshcoreIdentityIdRef.current = null;
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+    h.ctx.resolveIdentityId = () => null;
+    h.ctx.meshcoreIdentityIdRef.current = null;
+
+    dispatch({
+      type: 'meshcore_cli_response',
+      payload: { text: 'A1|frozen', senderNodeId: 0x55, pubKeyPrefixHex: 'aabbcc' },
+    });
+    expect(h.handleResponse).toHaveBeenCalledWith('A1|frozen', 0x55);
+  });
+
+  it('prefers finalized meshcoreIdentityIdRef over pending attach identity', () => {
+    const h = makeHarness({ handleResponseResult: true });
+    h.ctx.resolveIdentityId = () => 'pending-driver-id';
+    h.ctx.meshcoreIdentityIdRef.current = null;
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+    h.ctx.meshcoreIdentityIdRef.current = ID;
+
+    dispatch(
+      {
+        type: 'meshcore_cli_response',
+        payload: { text: 'A1|final', senderNodeId: 1, pubKeyPrefixHex: 'aabbcc' },
+      },
+      ID,
+    );
+    expect(h.handleResponse).toHaveBeenCalledWith('A1|final', 1);
+
+    h.handleResponse.mockClear();
+    dispatch(
+      {
+        type: 'meshcore_cli_response',
+        payload: { text: 'A1|stale-pending', senderNodeId: 1, pubKeyPrefixHex: 'aabbcc' },
+      },
+      'pending-driver-id',
+    );
+    expect(h.handleResponse).not.toHaveBeenCalled();
+  });
+
+  it('rate-limits MQTT packet-log publishes with a token bucket', () => {
+    const h = makeHarness();
+    h.ctx.mqttStatusRef.current = 'connected';
+    detach = attachMeshcoreConnSideEffects(h.conn, h.ctx);
+    const publish = vi.mocked(window.electronAPI.mqtt.publishMeshcorePacketLog);
+
+    for (let i = 0; i < 20; i += 1) {
+      dispatch({
+        type: 'meshcore_rf_rx',
+        payload: { lastSnr: 1, lastRssi: -70, raw: Uint8Array.from([i, 0x22, 0x33, 0x44]) },
+      });
+    }
+
+    expect(publish.mock.calls.length).toBeLessThan(20);
+    expect(publish.mock.calls.length).toBeGreaterThan(0);
+  });
+
   it('schedules a silent drain on the message-waiting signal', async () => {
     vi.useFakeTimers();
     const h = makeHarness();

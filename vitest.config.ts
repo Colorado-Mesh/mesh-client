@@ -1,7 +1,7 @@
-import os from 'node:os';
 import { readdirSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'path';
-import { fileURLToPath } from 'url';
+import os from 'node:os';
+import { dirname, join, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
@@ -80,6 +80,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/controlledEditableValue.test.ts',
   'src/renderer/lib/debugSnapshot.test.ts',
   'src/renderer/lib/devElectronApiStub.test.ts',
+  'src/renderer/lib/drivers/attachTypedPacketListener.test.ts',
   'src/renderer/lib/drivers/PacketRouter.test.ts',
   'src/renderer/lib/encryptedKeyBackupStorage.test.ts',
   'src/renderer/lib/gpsSource.test.ts',

@@ -372,6 +372,17 @@ export type DomainEvent =
   | { type: 'meshcore_cli_response'; payload: MeshcoreCliResponseEvent }
   | { type: 'meshcore_rf_rx'; payload: MeshcoreRfRxEvent };
 
+export type DomainEventType = DomainEvent['type'];
+
+/**
+ * Typed registry of `DomainEvent.type` → payload, so PacketRouter consumers can
+ * subscribe to one event kind without re-deriving the discriminated union at
+ * every call site (see `attachTypedPacketListener`).
+ */
+export type DomainEventPayloadMap = {
+  [E in DomainEvent as E['type']]: E['payload'];
+};
+
 // --- Raw packet log ---
 
 export interface RawPacketEntry {

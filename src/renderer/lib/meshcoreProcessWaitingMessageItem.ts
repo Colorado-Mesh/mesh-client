@@ -1,4 +1,5 @@
 import { packetRouter } from '@/renderer/lib/drivers/PacketRouter';
+import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   parseMeshcoreChannelIncomingFromThread,
   parseMeshcoreDmIncomingFromThread,
@@ -48,12 +49,14 @@ export function processMeshcoreWaitingMessageItem(
     const senderId = deps.pubKeyPrefixMap.get(prefix) ?? 0;
     if (senderId === 0) {
       console.warn(
-        '[meshcoreProcessWaitingMessageItem] unknown pubKeyPrefix in queued DM, sender will be 0',
+        '[meshcoreProcessWaitingMessageItem] unknown pubKeyPrefix in queued DM, skipping ingest',
         prefix,
       );
-    }
-    const sender = deps.workingNodes.get(senderId);
-    if (senderId !== 0) {
+      if (isMeshcoreTransportStatusChatLine(d.text)) {
+        deps.logTransportLineAsDevice(d.text);
+      }
+    } else {
+      const sender = deps.workingNodes.get(senderId);
       const existing = deps.workingNodes.get(senderId);
       if (existing) {
         deps.workingNodes.set(senderId, {
@@ -62,58 +65,63 @@ export function processMeshcoreWaitingMessageItem(
         });
         nodesDirty = true;
       }
-    }
-    if (isMeshcoreTransportStatusChatLine(d.text)) {
-      deps.logTransportLineAsDevice(d.text);
-    } else if (sender?.hw_model === 'Room') {
-      // Room posts route through PacketRouter → meshcoreIngest, matching live event-7 posts.
-      const postTs = effectiveMessageTimestampMs(d.senderTimestamp * 1000);
-      const identityId = deps.meshcoreIdentityId;
-      if (identityId) {
-        const roomNodeIds = new Set<number>();
-        for (const [nodeId, node] of deps.workingNodes) {
-          if (node.hw_model === 'Room') roomNodeIds.add(nodeId);
+      if (isMeshcoreTransportStatusChatLine(d.text)) {
+        deps.logTransportLineAsDevice(d.text);
+      } else if (sender?.hw_model === 'Room') {
+        // Room posts route through PacketRouter → meshcoreIngest, matching live event-7 posts.
+        const postTs = effectiveMessageTimestampMs(d.senderTimestamp * 1000);
+        const identityId = deps.meshcoreIdentityId;
+        if (identityId) {
+          const roomNodeIds = new Set<number>();
+          for (const [nodeId, node] of deps.workingNodes) {
+            if (node.hw_model === 'Room') roomNodeIds.add(nodeId);
+          }
+          dispatchMeshcoreWaitingContactMessage(
+            identityId,
+            {
+              pubKeyPrefix: d.pubKeyPrefix,
+              text: d.text,
+              senderTimestamp: d.senderTimestamp,
+              ...(d.txtType != null ? { txtType: d.txtType } : {}),
+              ...(d.pathLen != null ? { pathLen: d.pathLen } : {}),
+            },
+            deps.pubKeyPrefixMap,
+            roomNodeIds,
+            (event, id) => {
+              packetRouter.dispatch(event, id);
+            },
+            deps.logTransportLineAsDevice,
+          );
+          roomDispatched = true;
+          void setMeshcoreRoomLastPostAt(senderId, postTs).catch((e: unknown) => {
+            console.warn(
+              '[meshcoreProcessWaitingMessageItem] setMeshcoreRoomLastPostAt failed ' +
+                errLikeToLogString(e),
+            );
+          });
+        } else {
+          console.warn(
+            '[meshcoreProcessWaitingMessageItem] room post skipped (no identityId)',
+            senderId,
+          );
         }
-        dispatchMeshcoreWaitingContactMessage(
-          identityId,
-          {
-            pubKeyPrefix: d.pubKeyPrefix,
-            text: d.text,
-            senderTimestamp: d.senderTimestamp,
-            ...(d.txtType != null ? { txtType: d.txtType } : {}),
-            ...(d.pathLen != null ? { pathLen: d.pathLen } : {}),
-          },
-          deps.pubKeyPrefixMap,
-          roomNodeIds,
-          (event, id) => {
-            packetRouter.dispatch(event, id);
-          },
-          deps.logTransportLineAsDevice,
-        );
-        roomDispatched = true;
-        void setMeshcoreRoomLastPostAt(senderId, postTs);
       } else {
-        console.warn(
-          '[meshcoreProcessWaitingMessageItem] room post skipped (no identityId)',
-          senderId,
-        );
+        const dmRxHops = meshcoreCompanionRxPathLenToHopCount(d.pathLen);
+        pendingMessages.push({
+          ...parseMeshcoreDmIncomingFromThread(deps.storePriorForBatch(), {
+            rawText: d.text,
+            senderId,
+            displayName: sender?.long_name ?? `Node-${senderId.toString(16).toUpperCase()}`,
+            timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
+            receivedVia: 'rf',
+            peerNodeId: senderId,
+            myNodeId: deps.myNodeNum || 0,
+            to: deps.myNodeNum || undefined,
+            ...(dmRxHops != null ? { rxHops: dmRxHops } : {}),
+          }),
+          isHistory: true,
+        });
       }
-    } else {
-      const dmRxHops = meshcoreCompanionRxPathLenToHopCount(d.pathLen);
-      pendingMessages.push({
-        ...parseMeshcoreDmIncomingFromThread(deps.storePriorForBatch(), {
-          rawText: d.text,
-          senderId,
-          displayName: sender?.long_name ?? `Node-${senderId.toString(16).toUpperCase()}`,
-          timestamp: effectiveMessageTimestampMs(d.senderTimestamp * 1000),
-          receivedVia: 'rf',
-          peerNodeId: senderId,
-          myNodeId: deps.myNodeNum || 0,
-          to: deps.myNodeNum || undefined,
-          ...(dmRxHops != null ? { rxHops: dmRxHops } : {}),
-        }),
-        isHistory: true,
-      });
     }
   }
 

@@ -97,6 +97,7 @@ import {
   withNobleBleConnectMutex,
 } from '../lib/meshcoreDualNobleBleInit';
 import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
+import { setMeshtasticRemoteConfigTarget } from '../lib/meshtastic/meshtasticConfigIngressGuard';
 import { configureMeshtasticDeviceWithRetry } from '../lib/meshtastic/meshtasticConfigureRetry';
 import type { ModulePortEvent, PaxCounterPoint } from '../lib/meshtastic/meshtasticModuleEvents';
 import { normalizeMeshtasticMqttChatMessage } from '../lib/meshtastic/meshtasticMqttChatNormalize';
@@ -191,6 +192,7 @@ import {
 import { getStoredMeshProtocol } from '../lib/storedMeshProtocol';
 import {
   chatMessageToMessageRecord,
+  meshNodeToNodeRecord,
   messageRecordsToChatMessages,
   messageRecordToChatMessage,
   neighborInfoEventsToRecordMap,
@@ -235,7 +237,7 @@ import {
   upsertMessage,
   useMessageStore,
 } from '../stores/messageStore';
-import { patchNodeFavorited, useNodeStore } from '../stores/nodeStore';
+import { patchNodeFavorited, upsertNodeRecord, useNodeStore } from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 
 type ChannelType = Parameters<MeshDevice['setChannel']>[0];
@@ -255,6 +257,18 @@ const SERIAL_DEAD_THRESHOLD_MS = 180_000; // 3min — align with BLE/HTTP
 const HTTP_STALE_THRESHOLD_MS = 90_000; // 90s — show warning
 const HTTP_DEAD_THRESHOLD_MS = 180_000; // 3min — trigger reconnect
 const WATCHDOG_INTERVAL_MS = 15_000; // Check every 15s
+
+function persistMeshtasticNode(node: MeshNode): void {
+  void window.electronAPI.db.saveNode(node).catch((e: unknown) => {
+    console.debug('[useMeshtasticRuntime] saveNode failed ' + errLikeToLogString(e));
+  });
+}
+
+function persistMeshtasticMessage(message: ChatMessage): void {
+  void window.electronAPI.db.saveMessage(message).catch((e: unknown) => {
+    console.warn('[useMeshtasticRuntime] saveMessage failed ' + errLikeToLogString(e));
+  });
+}
 
 function getOrCreateVirtualNodeId(): number {
   const key = 'mesh-client:mqttVirtualNodeId';
@@ -391,8 +405,8 @@ export function useMeshtasticRuntime() {
   const rfHeardNodeIds = useRef<Set<number>>(new Set());
   const lastRfSelfNodeIdRef = useRef<number>(loadPersistedLastRfSelfNodeId());
   const virtualNodeIdRef = useRef<number>(getOrCreateVirtualNodeId());
-  // Dedup map shared between RF and MQTT handlers
-  const seenPacketIds = useRef<Map<string, number>>(new Map());
+  // MQTT-only fallback; RF sessions use the ingest session's shared RF/MQTT registry.
+  const mqttOnlySeenPacketIdsRef = useRef<Map<string, number>>(new Map());
   /** Last time we sent a proactive NODEINFO_APP request for each node (debounce). */
   const lastNodeInfoRequestAtRef = useRef<Map<number, number>>(new Map());
 
@@ -556,7 +570,14 @@ export function useMeshtasticRuntime() {
 
   const updateNodes = useCallback(
     (updater: (prev: Map<number, MeshNode>) => Map<number, MeshNode>) => {
-      setNodes((prev) => updater(prev));
+      // The identity-scoped store is the merge base and is updated immediately;
+      // `nodes` remains only a pre-identity/fallback render snapshot.
+      const identityId =
+        meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
+      const base = identityId ? getIdentityNodeMap(identityId) : new Map<number, MeshNode>();
+      const next = updater(base);
+      setNodes(next);
+      if (identityId) syncNodesMapToIdentityStore(identityId, next);
     },
     [],
   );
@@ -573,29 +594,15 @@ export function useMeshtasticRuntime() {
     [],
   );
 
-  // Push runtime node map into identity-scoped Zustand after commit — never inside setState updaters.
-  useEffect(() => {
-    const storeId = meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
-    if (!storeId) return;
-    syncNodesMapToIdentityStore(storeId, nodes);
-  }, [nodes, meshtasticIdentityId]);
-
-  const ensureNodeExists = useCallback(
-    (nodeNum: number, source: 'rf' | 'mqtt') => {
-      if (nodeNum === 0 || getIdentityNode(meshtasticIdentityIdRef.current, nodeNum) != null) {
-        return;
-      }
-      updateNodes((prev) => {
-        if (prev.has(nodeNum)) return prev;
-        const created = createChatStubNode(nodeNum, source);
-        const next = new Map(prev);
-        next.set(nodeNum, created);
-        void window.electronAPI.db.saveNode(created);
-        return next;
-      });
-    },
-    [updateNodes],
-  );
+  const ensureNodeExists = useCallback((nodeNum: number, source: 'rf' | 'mqtt') => {
+    const identityId = meshtasticIdentityIdRef.current;
+    if (!identityId || nodeNum === 0 || getIdentityNode(identityId, nodeNum) != null) {
+      return;
+    }
+    const created = createChatStubNode(nodeNum, source);
+    upsertNodeRecord(identityId, meshNodeToNodeRecord(created));
+    persistMeshtasticNode(created);
+  }, []);
 
   const pushMqttChannelKeys = useCallback(() => {
     if (mqttStatusRef.current !== 'connected') return;
@@ -651,18 +658,30 @@ export function useMeshtasticRuntime() {
 
   // ─── Packet dedup helper (shared by RF and MQTT handlers) ──────
   const isDuplicate = useCallback((senderId: number, packetId: number): boolean => {
+    const session = meshtasticIngestSessionRef.current;
+    if (session) return session.isDuplicatePacket(senderId, packetId);
     const now = Date.now();
     const key = meshtasticPacketDedupKey(senderId, packetId);
-    const expiry = seenPacketIds.current.get(key);
-    if (expiry !== undefined && expiry > now) return true;
-    seenPacketIds.current.set(key, now + 10 * 60 * 1000);
-    // Periodic cleanup to prevent unbounded growth
-    if (seenPacketIds.current.size > 5_000) {
-      for (const [id, exp] of seenPacketIds.current) {
-        if (exp < now) seenPacketIds.current.delete(id);
+    const expiry = mqttOnlySeenPacketIdsRef.current.get(key);
+    mqttOnlySeenPacketIdsRef.current.set(key, now + 10 * 60 * 1000);
+    if (mqttOnlySeenPacketIdsRef.current.size > 5_000) {
+      for (const [id, expiresAt] of mqttOnlySeenPacketIdsRef.current) {
+        if (expiresAt <= now) mqttOnlySeenPacketIdsRef.current.delete(id);
       }
     }
-    return false;
+    return expiry !== undefined && expiry > now;
+  }, []);
+
+  const markPacketSeen = useCallback((senderId: number, packetId: number): void => {
+    const session = meshtasticIngestSessionRef.current;
+    if (session) {
+      session.markPacketSeen(senderId, packetId);
+      return;
+    }
+    mqttOnlySeenPacketIdsRef.current.set(
+      meshtasticPacketDedupKey(senderId, packetId),
+      Date.now() + 10 * 60 * 1000,
+    );
   }, []);
 
   // Compact display name: short_name, truncated long_name, or hex ID
@@ -934,6 +953,12 @@ export function useMeshtasticRuntime() {
   }, [configureTargetNodeNum]);
 
   useEffect(() => {
+    if (!meshtasticIdentityId) return;
+    setMeshtasticRemoteConfigTarget(meshtasticIdentityId, configureTargetNodeNum);
+    return () => setMeshtasticRemoteConfigTarget(meshtasticIdentityId, null);
+  }, [configureTargetNodeNum, meshtasticIdentityId]);
+
+  useEffect(() => {
     remoteAdminStatusRef.current = remoteAdminStatus;
   }, [remoteAdminStatus]);
 
@@ -1088,7 +1113,7 @@ export function useMeshtasticRuntime() {
               heard_via_mqtt_only: true,
             };
             updated.set(mqttOnlyId, rfNode);
-            void window.electronAPI.db.saveNode(rfNode);
+            persistMeshtasticNode(rfNode);
             return updated;
           }
           const existing = updated.get(virtualId) ?? emptyNode(virtualId);
@@ -1104,7 +1129,7 @@ export function useMeshtasticRuntime() {
             heard_via_mqtt_only: true,
           };
           updated.set(virtualId, virtualNode);
-          void window.electronAPI.db.saveNode(virtualNode);
+          persistMeshtasticNode(virtualNode);
           return updated;
         });
         // Periodic NodeInfo broadcast so other nodes see this client (every 5 min)
@@ -1266,7 +1291,7 @@ export function useMeshtasticRuntime() {
           node.node_id,
         );
         updated.set(nodeUpdate.node_id, node);
-        void window.electronAPI.db.saveNode(node);
+        persistMeshtasticNode(node);
         return updated;
       });
       const updatedMqttNode = getIdentityNode(meshtasticIdentityIdRef.current, nodeUpdate.node_id);
@@ -1437,7 +1462,7 @@ export function useMeshtasticRuntime() {
       if (storeId) {
         upsertMessage(storeId, chatMessageToMessageRecord(mqttWithPreviews));
       }
-      void window.electronAPI.db.saveMessage(mqttWithPreviews);
+      persistMeshtasticMessage(mqttWithPreviews);
     });
 
     const unsubBrokerRaw = window.electronAPI.mqtt.onBrokerRaw((payload) => {
@@ -2280,10 +2305,7 @@ export function useMeshtasticRuntime() {
           const fromDb = await loadMeshtasticMessagesFromDb();
           for (const m of fromDb) {
             if (m.packetId && m.sender_id) {
-              seenPacketIds.current.set(
-                meshtasticPacketDedupKey(m.sender_id, m.packetId),
-                Date.now() + 10 * 60 * 1000,
-              );
+              markPacketSeen(m.sender_id, m.packetId);
             }
           }
           setMessages((prev) => mergeMeshtasticDbHydrationWithLive(prev, fromDb));
@@ -2304,7 +2326,7 @@ export function useMeshtasticRuntime() {
         throw new Error('Attach superseded during configure');
       }
     },
-    [applyMeshtasticNodesToUi, wireSubscriptions],
+    [applyMeshtasticNodesToUi, markPacketSeen, wireSubscriptions],
   );
 
   const handleRfConnectFailure = useCallback(
@@ -2693,7 +2715,7 @@ export function useMeshtasticRuntime() {
         channel,
       });
       setMessages((prev) => trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES));
-      void window.electronAPI.db.saveMessage(msg);
+      persistMeshtasticMessage(msg);
       const identityId = meshtasticIdentityIdRef.current;
       if (identityId) {
         trackMeshtasticOutboundTempId(tempId, String(tempId));
@@ -3610,33 +3632,36 @@ export function useMeshtasticRuntime() {
       });
   }, []);
 
-  const refreshMessagesFromDb = useCallback((opts?: { replaceFromDb?: boolean }) => {
-    void loadMeshtasticMessagesFromDb()
-      .then((fromDb) => {
-        console.debug(
-          `[useMeshtasticRuntime] refreshMessagesFromDb: loaded ${fromDb.length} messages`,
-        );
-        for (const m of fromDb) {
-          if (m.packetId && m.sender_id) {
-            seenPacketIds.current.set(
-              meshtasticPacketDedupKey(m.sender_id, m.packetId),
-              Date.now() + 10 * 60 * 1000,
+  const refreshMessagesFromDb = useCallback(
+    (opts?: { replaceFromDb?: boolean }) => {
+      void loadMeshtasticMessagesFromDb()
+        .then((fromDb) => {
+          console.debug(
+            `[useMeshtasticRuntime] refreshMessagesFromDb: loaded ${fromDb.length} messages`,
+          );
+          for (const m of fromDb) {
+            if (m.packetId && m.sender_id) {
+              markPacketSeen(m.sender_id, m.packetId);
+            }
+          }
+          setMessages((prev) => mergeMeshtasticDbHydrationWithLive(prev, fromDb, opts));
+          const storeId =
+            meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
+          if (storeId) {
+            void hydrateMeshtasticMessagesFromDb(
+              storeId,
+              opts?.replaceFromDb ? 'replace' : 'upsert',
             );
           }
-        }
-        setMessages((prev) => mergeMeshtasticDbHydrationWithLive(prev, fromDb, opts));
-        const storeId =
-          meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
-        if (storeId) {
-          void hydrateMeshtasticMessagesFromDb(storeId, opts?.replaceFromDb ? 'replace' : 'upsert');
-        }
-      })
-      .catch((err: unknown) => {
-        console.error(
-          '[useMeshtasticRuntime] Failed to refresh messages: ' + errLikeToLogString(err),
-        );
-      });
-  }, []);
+        })
+        .catch((err: unknown) => {
+          console.error(
+            '[useMeshtasticRuntime] Failed to refresh messages: ' + errLikeToLogString(err),
+          );
+        });
+    },
+    [markPacketSeen],
+  );
 
   const setNodeFavorited = useCallback(
     async (nodeId: number, favorited: boolean) => {
@@ -3702,7 +3727,7 @@ export function useMeshtasticRuntime() {
                 : {}),
             };
             updated.set(selfNodeId, node);
-            if (!isVirtualNode) void window.electronAPI.db.saveNode(node);
+            if (!isVirtualNode) persistMeshtasticNode(node);
             return updated;
           });
         }
@@ -3742,7 +3767,11 @@ export function useMeshtasticRuntime() {
 
   // Resolve position on app startup regardless of device connection
   useEffect(() => {
-    void refreshOurPositionRef.current();
+    void refreshOurPositionRef.current().catch((e: unknown) => {
+      console.debug(
+        '[useMeshtasticRuntime] initial refreshOurPosition failed ' + errLikeToLogString(e),
+      );
+    });
   }, []);
 
   const sendPositionToDevice = useCallback(async (lat: number, lon: number, alt?: number) => {
@@ -3874,7 +3903,7 @@ export function useMeshtasticRuntime() {
           if (isDup) return prev;
           return trimChatMessagesToMax([...prev, msg], MAX_IN_MEMORY_CHAT_MESSAGES);
         });
-        void window.electronAPI.db.saveMessage(msg);
+        persistMeshtasticMessage(msg);
       }
 
       // Device transport — mesh.proto: `emoji` is a boolean flag; the glyph is UTF-8 in `payload`.

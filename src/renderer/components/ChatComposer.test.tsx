@@ -1,7 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { MESHTASTIC_PAYLOAD_LIMIT } from '@/renderer/lib/chatComposerLimits';
 import { draftsStorageKey } from '@/renderer/lib/chatPanelProtocolStorage';
 
@@ -57,6 +59,20 @@ vi.mock('react-i18next', () => ({
 describe('ChatComposer', () => {
   beforeEach(() => {
     localStorage.clear();
+  });
+
+  it('has no axe violations when connected', async () => {
+    const { container } = render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('clears input after successful send', async () => {
