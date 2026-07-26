@@ -105,11 +105,11 @@ if [ -s "$ESLINT_LIST" ]; then
     while IFS= read -r f || [ -n "$f" ]; do
       set -- "$@" "$f"
       if [ "$#" -eq 50 ]; then
-        pnpm exec eslint --cache --max-warnings 0 -- "$@" || exit 1
+        pnpm exec eslint --cache --max-warnings 0 --no-warn-ignored -- "$@" || exit 1
         set --
       fi
     done < "$ESLINT_LIST"
-    [ "$#" -eq 0 ] || pnpm exec eslint --cache --max-warnings 0 -- "$@"
+    [ "$#" -eq 0 ] || pnpm exec eslint --cache --max-warnings 0 --no-warn-ignored -- "$@"
   ) || fail 'eslint (staged)'
 else
   printf 'pre-commit: skip eslint (no staged JS/TS)\n' >&2
