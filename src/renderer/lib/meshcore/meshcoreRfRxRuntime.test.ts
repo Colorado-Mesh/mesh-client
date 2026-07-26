@@ -136,17 +136,22 @@ describe('handleMeshcoreRfRx', () => {
 
     // rfSenderId (arg 5) resolves from the packet's path/pubkey hash; rfFingerprint and
     // rfDisplayName (args 8-9) stay undefined once a concrete sender id is resolved.
+    // arg 6 is the per-packet cached node reader (snapshot of deps.readNodes), not the raw ref.
     expect(recordSpy).toHaveBeenCalledWith(
       99,
       'meshcore',
       -60,
       5,
       expect.anything(),
-      deps.readNodes,
+      expect.any(Function),
       'meshcore-radio-rf',
       undefined,
       undefined,
     );
+    const cachedReader = recordSpy.mock.calls[0][5] as () => Map<number, MeshNode>;
+    expect(cachedReader()).toBeInstanceOf(Map);
+    // Stable per-packet snapshot: repeated reads return the same Map, not a fresh materialization.
+    expect(cachedReader()).toBe(cachedReader());
   });
 
   it('publishes an MQTT packet log when MQTT is connected and the throttle allows it', () => {

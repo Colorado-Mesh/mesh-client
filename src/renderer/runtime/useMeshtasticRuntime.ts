@@ -606,7 +606,10 @@ export function useMeshtasticRuntime() {
   );
 
   const ensureNodeExists = useCallback((nodeNum: number, source: 'rf' | 'mqtt') => {
-    const identityId = meshtasticIdentityIdRef.current;
+    // Mirror updateNodes' identity fallback so inbound senders still get a stub during the
+    // attach window (pending driver identity set, bound identity not yet assigned).
+    const identityId =
+      meshtasticIdentityIdRef.current ?? meshtasticPendingDriverIdentityRef.current;
     if (!identityId || nodeNum === 0 || getIdentityNode(identityId, nodeNum) != null) {
       return;
     }

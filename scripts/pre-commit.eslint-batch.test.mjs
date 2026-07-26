@@ -37,7 +37,11 @@ function isSafeEslintInvocation(line) {
     const arg = args[i];
     if (!arg.startsWith('-')) return false;
     if (arg === '--max-warnings' || arg.startsWith('--max-warnings=')) sawMaxWarnings = true;
-    if (OPTIONS_TAKING_VALUE.has(arg)) i += 1;
+    if (OPTIONS_TAKING_VALUE.has(arg)) {
+      // A value-taking option with no following token is a malformed invocation.
+      if (i + 1 >= args.length) return false;
+      i += 1;
+    }
   }
   return sawMaxWarnings;
 }

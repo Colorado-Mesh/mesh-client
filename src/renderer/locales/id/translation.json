@@ -549,7 +549,7 @@
       "pkiFailed": "Enkripsi PKI gagal untuk pesan ini.",
       "noChannel": "Tidak ada saluran yang tersedia untuk merutekan pesan ini.",
       "timeout": "Waktu pesan habis di radio.",
-      "rateLimited": "Radio adalah pesan yang membatasi tingkat. Coba lagi sebentar lagi.",
+      "rateLimited": "Radio sedang membatasi laju pengiriman pesan. Coba lagi sebentar lagi.",
       "noInterface": "Tidak ada antarmuka radio yang tersedia untuk mengirim pesan ini."
     },
     "waitingMessagesQueued": "{{count}} antrean pesan di radio",

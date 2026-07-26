@@ -65,6 +65,8 @@ export interface MeshcoreContactsRebuildDeps {
   pendingPathUpdateNodeIds: Set<number>;
   onContacts: (contacts: MeshCoreContactRaw[]) => void;
   onNodes: (nodes: Map<number, MeshNode>) => void;
+  /** Re-queue pending ids when the rebuild throws so their path history isn't lost until the next 129. */
+  onPendingRetained?: (nodeIds: Set<number>) => void;
 }
 
 /**
@@ -100,5 +102,10 @@ export async function rebuildMeshcoreContactsAfterPathUpdated(
     console.warn(
       '[meshcorePathUpdatedRuntime] debounced contacts refresh error ' + errLikeToLogString(e),
     );
+    // The caller already drained these ids into a fresh set, so a rejection here would otherwise
+    // discard them until another 129 arrives; hand them back so path history can retry.
+    if (deps.pendingPathUpdateNodeIds.size > 0) {
+      deps.onPendingRetained?.(deps.pendingPathUpdateNodeIds);
+    }
   }
 }

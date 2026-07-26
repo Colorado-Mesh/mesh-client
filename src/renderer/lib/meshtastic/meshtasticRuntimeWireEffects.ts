@@ -581,6 +581,9 @@ export function attachMeshtasticRuntimeWireEffects(
           heard_via_mqtt_only: false,
         };
         updated.set(info.myNodeNum, selfNode);
+        persistDbWrite('meshtastic runtime self node', () =>
+          window.electronAPI.db.saveNode(selfNode),
+        );
       } else {
         const selfNode: MeshNode = {
           ...existing,

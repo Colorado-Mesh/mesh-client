@@ -113,6 +113,22 @@ function finiteOptionalNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
+/** Scaled 1e-7 lat/lon: finite + range-checked, else undefined (mirrors decodePosition). */
+function boundedLatLonFromScaledI(
+  latitudeI: number | undefined,
+  longitudeI: number | undefined,
+): { latitude: number | undefined; longitude: number | undefined } {
+  if (!isFiniteNumber(latitudeI) || !isFiniteNumber(longitudeI)) {
+    return { latitude: undefined, longitude: undefined };
+  }
+  const latitude = latitudeI / 1e7;
+  const longitude = longitudeI / 1e7;
+  if (Math.abs(latitude) > MAX_LATITUDE || Math.abs(longitude) > MAX_LONGITUDE) {
+    return { latitude: undefined, longitude: undefined };
+  }
+  return { latitude, longitude };
+}
+
 interface TraceRouteMeshPacket {
   from: number;
   to?: number;
@@ -822,6 +838,10 @@ export class MeshtasticProtocol implements Protocol {
     };
     const nodeId = normalizedNodeNum(p.num);
     if (!nodeId) return [];
+    const { latitude, longitude } = boundedLatLonFromScaledI(
+      p.position?.latitudeI,
+      p.position?.longitudeI,
+    );
     return [
       {
         type: 'node_info',
@@ -836,8 +856,8 @@ export class MeshtasticProtocol implements Protocol {
           snr: p.snr,
           hopsAway: p.hopsAway,
           viaMqtt: p.viaMqtt,
-          latitude: p.position?.latitudeI != null ? p.position.latitudeI / 1e7 : undefined,
-          longitude: p.position?.longitudeI != null ? p.position.longitudeI / 1e7 : undefined,
+          latitude,
+          longitude,
           altitude: p.position?.altitude,
           batteryLevel: p.deviceMetrics?.batteryLevel,
           voltage: p.deviceMetrics?.voltage,
@@ -1115,7 +1135,7 @@ export class MeshtasticProtocol implements Protocol {
       payloadVariant?: { case?: string; value?: { portnum?: number } };
     };
     const from = normalizedNodeNum(mp.from);
-    if (!from) return [];
+    if (from === undefined) return [];
     try {
       const serialized = toBinary(Mesh.MeshPacketSchema, raw as never);
       if (serialized.byteLength > MAX_RAW_PACKET_BYTES) return [];

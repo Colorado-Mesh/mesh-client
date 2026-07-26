@@ -1631,6 +1631,9 @@ export function useMeshcoreRuntime() {
           onNodes: (newNodes) => {
             setNodes(meshcorePathUpdatedNodesMergeUpdater(newNodes));
           },
+          onPendingRetained: (retainedIds) => {
+            for (const id of retainedIds) meshcorePathUpdatePendingRef.current.add(id);
+          },
         });
       }, MESHCORE_PATH_UPDATED_CONTACTS_REBUILD_DEBOUNCE_MS);
       requestChatOutboxDrain('meshcore');

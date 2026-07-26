@@ -610,7 +610,7 @@
     "dmNodeHops_few": "{{count}} przeskoki",
     "dmNodeHops_many": "{{count}} przeskoków",
     "dmNodeHops_other": "{{count}} przeskoku",
-    "notificationDmTitle": "DM from {{sender}}",
+    "notificationDmTitle": "Wiadomość prywatna od {{sender}}",
     "notificationMessageTitle": "Wiadomość od {{sender}}",
     "emojiButton": "Emoji"
   },

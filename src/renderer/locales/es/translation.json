@@ -2795,7 +2795,7 @@
     "hybridMqttPathAria": "Ruta RF y MQTT",
     "connectedViaRfAndMqttTooltip": "Conectado a través de RF y MQTT",
     "connectedViaRfAndMqttAria": "Conectado a través de RF y MQTT",
-    "echoesConnectionHealthTooltip": "{{score}}% estado DE conexión"
+    "echoesConnectionHealthTooltip": "{{score}}% estado de la conexión"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

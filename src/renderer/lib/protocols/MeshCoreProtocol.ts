@@ -574,12 +574,14 @@ export class MeshCoreProtocol implements Protocol {
 
   private decodeRfRx(raw: unknown): DomainEvent[] {
     const d = raw as { lastSnr?: number; lastRssi?: number; raw?: unknown };
+    const finiteOrZero = (v: unknown): number =>
+      typeof v === 'number' && Number.isFinite(v) ? v : 0;
     return [
       {
         type: 'meshcore_rf_rx',
         payload: {
-          lastSnr: d.lastSnr ?? 0,
-          lastRssi: d.lastRssi ?? 0,
+          lastSnr: finiteOrZero(d.lastSnr),
+          lastRssi: finiteOrZero(d.lastRssi),
           raw: d.raw instanceof Uint8Array && d.raw.length > 0 ? d.raw : null,
         },
       },

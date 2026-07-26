@@ -598,7 +598,19 @@ export function handleMeshcoreRfRx(payload: MeshcoreRfRxPayload, deps: MeshcoreR
   const now = Date.now();
   const loraPacketClass = rawU8 ? classifyPayload(rawU8) : null;
 
-  const senderInfo = resolveMeshcoreRfSenderInfo(rawU8, loraPacketClass, now, snr, rssi, deps);
+  // `readNodes()` materializes a fresh Map from identity records; snapshot once per RF packet
+  // so the several has/get lookups (and the recordForeignLora callback) share one O(n) rebuild.
+  const nodesSnapshot = deps.readNodes();
+  const cachedDeps: MeshcoreRfRxDeps = { ...deps, readNodes: () => nodesSnapshot };
+
+  const senderInfo = resolveMeshcoreRfSenderInfo(
+    rawU8,
+    loraPacketClass,
+    now,
+    snr,
+    rssi,
+    cachedDeps,
+  );
   appendMeshcoreRfDeviceLog(deps, now, senderInfo, snr, rssi);
   appendMeshcoreRfSignalTelemetry(deps, now, snr, rssi);
 
@@ -606,7 +618,7 @@ export function handleMeshcoreRfRx(payload: MeshcoreRfRxPayload, deps: MeshcoreR
 
   if (rawU8) {
     const ctx = buildMeshcoreRfParseContext(rawU8, deps.pubKeyPrefixMapRef.current);
-    applyMeshcoreRfHopsAwayUpdate(ctx.fromNodeId, ctx.hopCount, now, snr, rssi, deps);
+    applyMeshcoreRfHopsAwayUpdate(ctx.fromNodeId, ctx.hopCount, now, snr, rssi, cachedDeps);
 
     const effectiveFromNodeId =
       ctx.fromNodeId ?? meshtasticSenderIdForRawLogFallback(ctx.parseOk, rawU8);
@@ -623,11 +635,11 @@ export function handleMeshcoreRfRx(payload: MeshcoreRfRxPayload, deps: MeshcoreR
       rawU8,
       snr,
       rssi,
-      deps,
+      cachedDeps,
     );
     if (bridgeResult.skip) return;
   }
 
-  recordMeshcoreForeignLoraFingerprint(rawU8, loraPacketClass, snr, rssi, deps);
+  recordMeshcoreForeignLoraFingerprint(rawU8, loraPacketClass, snr, rssi, cachedDeps);
   publishMeshcoreRfMqttPacketLog(mqttFields, snr, rssi, deps);
 }

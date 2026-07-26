@@ -548,7 +548,7 @@
       "pkiFailed": "Crittografia PKI non riuscita per questo messaggio.",
       "noChannel": "Nessun canale disponibile per instradare questo messaggio.",
       "timeout": "Messaggio scaduto alla radio.",
-      "rateLimited": "La radio è messaggi limitanti la velocità. Riprova a breve.",
+      "rateLimited": "La radio sta limitando la frequenza dei messaggi. Riprova a breve.",
       "noInterface": "Nessuna interfaccia radio è disponibile per inviare questo messaggio."
     },
     "waitingMessagesQueued": "{{count}} messaggio/i in coda alla radio",
