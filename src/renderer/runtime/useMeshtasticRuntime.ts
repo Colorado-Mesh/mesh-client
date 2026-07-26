@@ -1130,6 +1130,7 @@ export function useMeshtasticRuntime() {
         console.debug(
           `[useMeshtasticRuntime] MQTT-only identity: from=!${mqttOnlyId.toString(16).padStart(8, '0')} source=${mqttOnlyIdentitySource(lastRfSelfNodeIdRef.current)}`,
         );
+        let mqttSelfNodeToPersist: MeshNode | undefined;
         updateNodes((prev) => {
           const updated = new Map(prev);
           if (lastRfSelfNodeIdRef.current > 0 && mqttOnlyId === lastRfSelfNodeIdRef.current) {
@@ -1153,7 +1154,7 @@ export function useMeshtasticRuntime() {
               heard_via_mqtt_only: true,
             };
             updated.set(mqttOnlyId, rfNode);
-            persistMeshtasticNode(rfNode);
+            mqttSelfNodeToPersist = rfNode;
             return updated;
           }
           const existing = updated.get(virtualId) ?? emptyNode(virtualId);
@@ -1169,9 +1170,10 @@ export function useMeshtasticRuntime() {
             heard_via_mqtt_only: true,
           };
           updated.set(virtualId, virtualNode);
-          persistMeshtasticNode(virtualNode);
+          mqttSelfNodeToPersist = virtualNode;
           return updated;
         });
+        if (mqttSelfNodeToPersist) persistMeshtasticNode(mqttSelfNodeToPersist);
         // Periodic NodeInfo broadcast so other nodes see this client (every 5 min)
         if (mqttPresenceIntervalRef.current) clearInterval(mqttPresenceIntervalRef.current);
         const sendPresence = () => {
@@ -1274,6 +1276,7 @@ export function useMeshtasticRuntime() {
         });
       }
 
+      let mqttNodeToPersist: MeshNode | undefined;
       updateNodes((prev) => {
         const existing = prev.get(nodeUpdate.node_id) ?? emptyNode(nodeUpdate.node_id);
         const heardViaRF = rfHeardNodeIds.current.has(nodeUpdate.node_id);
@@ -1331,9 +1334,10 @@ export function useMeshtasticRuntime() {
           node.node_id,
         );
         updated.set(nodeUpdate.node_id, node);
-        persistMeshtasticNode(node);
+        mqttNodeToPersist = node;
         return updated;
       });
+      if (mqttNodeToPersist) persistMeshtasticNode(mqttNodeToPersist);
       const updatedMqttNode = getIdentityNode(meshtasticIdentityIdRef.current, nodeUpdate.node_id);
       if (updatedMqttNode && getStoredMeshProtocol() === 'meshtastic') {
         useDiagnosticsStore
@@ -3752,6 +3756,7 @@ export function useMeshtasticRuntime() {
               : 0;
         if (selfNodeId > 0) {
           const isVirtualNode = !hasDevice && selfNodeId === virtualNodeIdRef.current;
+          let selfNodeToPersist: MeshNode | undefined;
           updateNodes((prev) => {
             const updated = new Map(prev);
             const existing = updated.get(selfNodeId) ?? emptyNode(selfNodeId);
@@ -3767,9 +3772,10 @@ export function useMeshtasticRuntime() {
                 : {}),
             };
             updated.set(selfNodeId, node);
-            if (!isVirtualNode) persistMeshtasticNode(node);
+            if (!isVirtualNode) selfNodeToPersist = node;
             return updated;
           });
+          if (selfNodeToPersist) persistMeshtasticNode(selfNodeToPersist);
         }
 
         const isClientMute =

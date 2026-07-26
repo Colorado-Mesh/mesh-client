@@ -394,6 +394,7 @@ function handleEnvironmentTelemetry(
     env_humidity: telemetry.relativeHumidity ?? existing.env_humidity,
     env_pressure: telemetry.barometricPressure ?? existing.env_pressure,
     env_iaq: telemetry.iaq ?? existing.env_iaq,
+    env_gas_resistance: telemetry.gasResistance ?? existing.env_gas_resistance,
     env_lux: telemetry.lux ?? existing.env_lux,
     env_wind_speed: telemetry.windSpeed ?? existing.env_wind_speed,
     env_wind_direction: telemetry.windDirection ?? existing.env_wind_direction,

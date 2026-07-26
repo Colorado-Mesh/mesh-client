@@ -203,6 +203,7 @@ export interface MeshNode {
   env_humidity?: number;
   env_pressure?: number;
   env_iaq?: number;
+  env_gas_resistance?: number;
   env_lux?: number;
   env_wind_speed?: number;
   env_wind_direction?: number;

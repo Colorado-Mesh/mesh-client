@@ -7,6 +7,22 @@
  * same `instanceof` ladder.
  */
 
+function isNumberByteArray(value: unknown): value is number[] {
+  return Array.isArray(value) && value.every((b) => typeof b === 'number');
+}
+
+function bytesFromObjectWrapper(value: object, visited: Set<object>): Uint8Array | null {
+  if (visited.has(value)) return new Uint8Array();
+  visited.add(value);
+  const wrapper = value as { raw?: unknown; data?: unknown; payload?: unknown };
+  for (const nested of [wrapper.raw, wrapper.data, wrapper.payload]) {
+    if (nested === undefined) continue;
+    const bytes = toPacketPayloadBytesInner(nested, visited);
+    if (bytes.length > 0) return bytes;
+  }
+  return null;
+}
+
 /**
  * Coerce a decoded module payload into bytes. Accepts a `Uint8Array`, a wrapper
  * carrying one under `raw` / `data` / `payload`, an `ArrayBuffer`, or a byte
@@ -23,18 +39,9 @@ function toPacketPayloadBytesInner(value: unknown, visited: Set<object>): Uint8A
   if (ArrayBuffer.isView(value)) {
     return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
   }
-  if (Array.isArray(value) && value.every((b) => typeof b === 'number')) {
-    return Uint8Array.from(value);
-  }
+  if (isNumberByteArray(value)) return Uint8Array.from(value);
   if (value && typeof value === 'object') {
-    if (visited.has(value)) return new Uint8Array();
-    visited.add(value);
-    const wrapper = value as { raw?: unknown; data?: unknown; payload?: unknown };
-    for (const nested of [wrapper.raw, wrapper.data, wrapper.payload]) {
-      if (nested === undefined) continue;
-      const bytes = toPacketPayloadBytesInner(nested, visited);
-      if (bytes.length > 0) return bytes;
-    }
+    return bytesFromObjectWrapper(value, visited) ?? new Uint8Array();
   }
   return new Uint8Array();
 }
