@@ -1760,19 +1760,39 @@ export default function ConnectionPanel({
 
   const handleExitApp = useCallback(
     async (variant: 'connected' | 'idle' | 'connecting') => {
-      if (variant === 'connecting') {
-        await handleCancelConnection();
-      } else if (isConnected) {
-        await Promise.race([
-          onDisconnect(),
-          new Promise<void>((resolve) => setTimeout(resolve, 10_000)),
-        ]);
+      try {
+        if (variant === 'connecting') {
+          await handleCancelConnection();
+        } else if (isConnected) {
+          await Promise.race([
+            onDisconnect(),
+            new Promise<void>((resolve) => setTimeout(resolve, 10_000)),
+          ]);
+        }
+        if (isConnected || variant === 'connecting' || mqttStatus === 'connected') {
+          markMqttUserDisconnect();
+          void window.electronAPI.mqtt.disconnect().catch((err: unknown) => {
+            // catch-no-log-ok quit path — disconnect failure must not block quitApp
+            console.warn(
+              '[ConnectionPanel] mqtt.disconnect before quit failed:',
+              err instanceof Error ? err.message : String(err),
+            );
+          });
+        }
+      } catch (err) {
+        console.warn(
+          '[ConnectionPanel] handleExitApp disconnect failed:',
+          err instanceof Error ? err.message : String(err),
+        );
       }
-      if (isConnected || variant === 'connecting' || mqttStatus === 'connected') {
-        markMqttUserDisconnect();
-        void window.electronAPI.mqtt.disconnect();
+      try {
+        await window.electronAPI.quitApp();
+      } catch (err) {
+        console.error(
+          '[ConnectionPanel] quitApp failed:',
+          err instanceof Error ? err.message : String(err),
+        );
       }
-      await window.electronAPI.quitApp();
     },
     [handleCancelConnection, isConnected, mqttStatus, onDisconnect],
   );
@@ -2057,7 +2077,7 @@ export default function ConnectionPanel({
           onClick={handleCancelConnection}
           className="bg-secondary-dark rounded-lg px-6 py-2.5 font-medium text-gray-300 transition-colors hover:bg-gray-600"
         >
-          Cancel
+          {t('common.cancel')}
         </button>
       </div>
     );

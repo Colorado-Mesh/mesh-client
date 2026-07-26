@@ -408,41 +408,44 @@ function MeshcoreExpandedDetails({
       )}
       {p.messageFingerprintHex != null && (
         <p>
-          <span className="text-muted">CRC32 fp:</span> {p.messageFingerprintHex}
+          <span className="text-muted">{t('rawPacketLog.crc32Fingerprint')}</span>{' '}
+          {p.messageFingerprintHex}
         </p>
       )}
       {innerWords != null && (
         <p title={t('rawPacketLog.hashColumnTooltip')}>
-          <span className="text-muted">Inner first u32 (debug):</span>{' '}
+          <span className="text-muted">{t('rawPacketLog.innerFirstU32Debug')}</span>{' '}
           {`BE 0x${innerWords.be} · LE 0x${innerWords.le}`}
         </p>
       )}
       {reqRespHashes != null && (
         <p>
-          <span className="text-muted">Dest hash:</span> {reqRespHashes.dest}{' '}
-          <span className="text-muted">Src hash:</span> {reqRespHashes.src}
+          <span className="text-muted">{t('rawPacketLog.destHash')}</span> {reqRespHashes.dest}{' '}
+          <span className="text-muted">{t('rawPacketLog.srcHash')}</span> {reqRespHashes.src}
         </p>
       )}
       {grpTxtChannelHash != null && (
         <p>
-          <span className="text-muted">Channel hash:</span> {grpTxtChannelHash}
+          <span className="text-muted">{t('rawPacketLog.channelHash')}</span> {grpTxtChannelHash}
         </p>
       )}
       {grpTxtMac != null && (
         <p>
-          <span className="text-muted">MAC:</span> {grpTxtMac}{' '}
-          <span className="text-muted">Ciphertext bytes:</span> {grpTxtCiphertextLen}
+          <span className="text-muted">{t('rawPacketLog.mac')}</span> {grpTxtMac}{' '}
+          <span className="text-muted">{t('rawPacketLog.ciphertextBytes')}</span>{' '}
+          {grpTxtCiphertextLen}
         </p>
       )}
       {anonReqFields != null && (
         <p>
-          <span className="text-muted">Dest hash:</span> {anonReqFields.dest}{' '}
-          <span className="text-muted">Sender key (prefix):</span> {anonReqFields.senderKeyPrefix}
+          <span className="text-muted">{t('rawPacketLog.destHash')}</span> {anonReqFields.dest}{' '}
+          <span className="text-muted">{t('rawPacketLog.senderKeyPrefix')}</span>{' '}
+          {anonReqFields.senderKeyPrefix}
         </p>
       )}
       {controlFields != null && (
         <p>
-          <span className="text-muted">Control:</span>{' '}
+          <span className="text-muted">{t('rawPacketLog.control')}</span>{' '}
           {`flags=0x${hexByte(controlFields.flags)} subtype=0x${controlFields.subtype.toString(16)}${controlFields.subtypeName != null ? `(${controlFields.subtypeName})` : ''}`}
           {controlFields.typeFilter != null
             ? ` type_filter=0x${hexByte(controlFields.typeFilter)}`
@@ -462,12 +465,12 @@ function MeshcoreExpandedDetails({
       )}
       {p.advertTimestampSec != null && p.advertTimestampSec > 0 && (
         <p>
-          <span className="text-muted">ADVERT ts:</span> {p.advertTimestampSec}
+          <span className="text-muted">{t('rawPacketLog.advertTs')}</span> {p.advertTimestampSec}
         </p>
       )}
       {(p.advertLat != null || p.advertLon != null) && (
         <p>
-          <span className="text-muted">ADVERT lat/lon:</span>{' '}
+          <span className="text-muted">{t('rawPacketLog.advertLatLon')}</span>{' '}
           {p.advertLat != null ? p.advertLat.toFixed(5) : '?'},{' '}
           {p.advertLon != null ? p.advertLon.toFixed(5) : '?'}
         </p>

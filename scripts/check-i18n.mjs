@@ -175,12 +175,19 @@ function collectFiles(dir) {
 // Match t('some.key') / i18n.t('some.key') — only static string literals.
 const T_STATIC_RE = /\b(?:t|i18n\.t)\(\s*['"]([^'"]+)['"]\s*[),]/g;
 
-// Hardcoded English in aria-label/title JSX attributes — these must always go through t().
+// Hardcoded English in aria-label/title/placeholder/label JSX attributes — these must always go through t().
 // Plain-string form: aria-label="Some text" (excludes aria-label="" and empty/whitespace-only).
-const HARDCODED_ARIA_TITLE_STRING_RE = /\b(?:aria-label|title)="([A-Za-z][^"]*)"/g;
+const HARDCODED_ARIA_TITLE_STRING_RE =
+  /\b(?:aria-label|title|placeholder|label)="([A-Za-z][^"]*)"/g;
 // Template-literal form starting with literal English prose rather than an interpolation or
 // a lowercase/data token, e.g. aria-label={`Manage members of ${name}`} (see ContactGroupsModal).
-const HARDCODED_ARIA_TITLE_TEMPLATE_RE = /\b(?:aria-label|title)=\{`([A-Z][a-zA-Z][^`]*)`\}/g;
+const HARDCODED_ARIA_TITLE_TEMPLATE_RE =
+  /\b(?:aria-label|title|placeholder|label)=\{`([A-Z][a-zA-Z][^`]*)`\}/g;
+
+// Own-line JSX text nodes that look like English prose (e.g. button/label children).
+// Catches: previous line ends with `>` or `}`, this line is capitalized prose, next line starts with `<`.
+const OWN_LINE_JSX_ENGLISH_RE =
+  /^\s{2,}([A-Z][A-Za-z](?:[A-Za-z0-9 .,'…:—\-!?()/°]|\u00b0){2,})\s*$/;
 
 // Match t(`prefix.${expr}`) or i18n.t(`prefix.${expr}`) — dynamic keys with registered prefixes.
 const T_TEMPLATE_RE = /\b(?:t|i18n\.t)\(\s*`([^`]*)\$\{[^}]+\}([^`]*)`\s*[),]/g;
@@ -310,15 +317,31 @@ for (const file of files) {
     if (!file.includes('.test.')) {
       for (const m of line.matchAll(HARDCODED_ARIA_TITLE_STRING_RE)) {
         console.error(
-          `Hardcoded English in aria-label/title at ${relative(join(__dirname, '..'), file)}:${idx + 1} — use t() (found: "${m[1]}")`,
+          `Hardcoded English in aria-label/title/placeholder/label at ${relative(join(__dirname, '..'), file)}:${idx + 1} — use t() (found: "${m[1]}")`,
         );
         errors++;
       }
       for (const m of line.matchAll(HARDCODED_ARIA_TITLE_TEMPLATE_RE)) {
         console.error(
-          `Hardcoded English in aria-label/title template literal at ${relative(join(__dirname, '..'), file)}:${idx + 1} — use t() with interpolation (found: "${m[1]}")`,
+          `Hardcoded English in aria-label/title/placeholder/label template literal at ${relative(join(__dirname, '..'), file)}:${idx + 1} — use t() with interpolation (found: "${m[1]}")`,
         );
         errors++;
+      }
+      // Own-line JSX English prose (button/label children not wrapped in t()).
+      if (file.endsWith('.tsx')) {
+        const ownLineMatch = line.match(OWN_LINE_JSX_ENGLISH_RE);
+        if (ownLineMatch) {
+          const prev = lines[idx - 1] ?? '';
+          const next = lines[idx + 1] ?? '';
+          const prevEndsJsx = />\s*$/.test(prev.trimEnd()) || /}\s*$/.test(prev.trimEnd());
+          const nextStartsTag = /^\s*</.test(next);
+          if (prevEndsJsx && nextStartsTag) {
+            console.error(
+              `Hardcoded English JSX text at ${relative(join(__dirname, '..'), file)}:${idx + 1} — use t() (found: "${ownLineMatch[1]}")`,
+            );
+            errors++;
+          }
+        }
       }
     }
   });

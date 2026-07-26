@@ -261,7 +261,7 @@ export default function TelemetryPanel({
               title={t('telemetryPanel.toggleTempUnit')}
               className="rounded bg-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-600"
             >
-              {useFahrenheit ? '°F' : '°C'}
+              {useFahrenheit ? t('telemetryPanel.tempUnitF') : t('telemetryPanel.tempUnitC')}
             </button>
           )}
           {(telemetry.length > 0 ||
@@ -275,7 +275,7 @@ export default function TelemetryPanel({
               title={t('telemetryPanel.exportCsv')}
             >
               <Download aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
-              Export CSV
+              {t('telemetryPanel.exportCsvButton')}
             </button>
           )}
           <RefreshButton onRefresh={onRefresh} disabled={!isConnected} minimumAnimationMs={3000} />
@@ -288,8 +288,8 @@ export default function TelemetryPanel({
       !showPacketStats ? (
         <div className="text-muted py-12 text-center">
           {isConnected
-            ? 'No telemetry data yet. Waiting for data from device…'
-            : 'No telemetry data yet. Connect to a device to see real-time metrics.'}
+            ? t('telemetryPanel.emptyWaitingConnected')
+            : t('telemetryPanel.emptyWaitingDisconnected')}
         </div>
       ) : (
         <>

@@ -297,6 +297,8 @@ const MESHCORE_CHAT_STUB_ID_MIN = 0xa0000000 >>> 0;
 const MESHCORE_CHAT_STUB_ID_MAX = 0xafffffff >>> 0;
 /** Max bytes per BLE write IPC (DoS guard). */
 const NOBLE_BLE_TO_RADIO_MAX_BYTES = 512;
+/** Max bytes for Meshtastic Xmodem file upload (DoS guard; matches meshcore:openJsonFile). */
+const MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
 
 function isAnyMqttConnected(): boolean {
   return mqttManager.getStatus() === 'connected' || meshcoreMqttAdapter.getStatus() === 'connected';
@@ -2532,7 +2534,11 @@ ipcMain.handle('bluetooth-get-info', async (event, macAddress: unknown) => {
 });
 
 // ─── IPC: Provide Bluetooth PIN (Linux) ───────────────────────────────
-ipcMain.on('bluetooth-provide-pin', (_event, pin: unknown) => {
+ipcMain.on('bluetooth-provide-pin', (event, pin: unknown) => {
+  if (!validateIpcSender(event)) {
+    console.warn('[IPC] bluetooth-provide-pin: unauthorized sender');
+    return;
+  }
   if (!pendingPairingCallback) {
     console.warn('[IPC] bluetooth-provide-pin: no pending pairing callback');
     return;
@@ -3384,7 +3390,8 @@ ipcMain.handle('storage:decrypt', (event, ciphertext: unknown) => {
 // ─── IPC: Login item (launch at startup) ───────────────────────────
 ipcMain.handle('app:getProcessUptimeSec', () => Math.floor(process.uptime()));
 
-ipcMain.handle('app:getLoginItem', () => {
+ipcMain.handle('app:getLoginItem', (event) => {
+  assertIpcSender(event, 'app:getLoginItem');
   try {
     const settings = app.getLoginItemSettings();
     return { openAtLogin: settings.openAtLogin };
@@ -4705,6 +4712,12 @@ ipcMain.handle('meshtastic:xmodemPickUpload', async (event) => {
     });
     if (result.canceled || result.filePaths.length === 0) return null;
     const filePath = result.filePaths[0];
+    const st = await fs.promises.stat(filePath);
+    if (st.size > MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES) {
+      throw new Error(
+        `File too large (max ${MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES / (1024 * 1024)} MB)`,
+      );
+    }
     const data = await fs.promises.readFile(filePath);
     const filename = path.basename(filePath);
     return { filename, data: new Uint8Array(data) };

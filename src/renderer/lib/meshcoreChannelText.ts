@@ -1,3 +1,4 @@
+import { LAST_HEARD_MS_THRESHOLD } from '../../shared/lastHeardUnits';
 import { normalizeMeshcoreGifOutboundWire } from './meshcoreGifWire';
 import {
   buildMeshcoreOpenReactionIncomingMessage,
@@ -347,7 +348,7 @@ function meshcoreThreadMatchesForReply(
   return true;
 }
 
-const MESHCORE_REPLY_KEY_MS_THRESHOLD = 1_000_000_000_000;
+const MESHCORE_REPLY_KEY_MS_THRESHOLD = LAST_HEARD_MS_THRESHOLD;
 
 /** Canonical parent key for replyId storage and quote jump (`packetId` preferred). */
 export function meshcoreCanonicalReplyKey(msg: ChatMessage): number {

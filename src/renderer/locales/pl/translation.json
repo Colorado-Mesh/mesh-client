@@ -456,8 +456,6 @@
     "dmNodeLastHeard": "Ostatnio słyszane: {{time}}",
     "dmNodeBattery": "Akumulator {{pct}}%",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}} hop",
-    "dmNodeHopsPlural": "{{count}} hopów",
     "muteConversation": "Wycisz tę konwersację",
     "unmuteConversation": "Wyłącz wyciszenie tej konwersacji",
     "starMessage": "Komunikat gwiazdki",
@@ -606,7 +604,9 @@
     "floodScopeOverrideCustomLabel": "Niestandardowy hashtag zakresu Flood",
     "floodScopeOverrideCustomPlaceholder": "#mójregion",
     "floodScopeOverrideCustomApply": "Użyj zakresu",
-    "floodScopeOverrideCustomInvalid": "Wprowadź prawidłowy hashtag regionu (na przykład #myregion)."
+    "floodScopeOverrideCustomInvalid": "Wprowadź prawidłowy hashtag regionu (na przykład #myregion).",
+    "dmNodeHops_one": "{{count}} przeskok",
+    "dmNodeHops_other": "{{count}} przeskoków"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -1544,7 +1544,9 @@
     "snrDb": "SNR {{snr}} dB",
     "distanceOffsetKm": "Przesunięcie odległości",
     "km": "km",
-    "distanceOffsetHelp": "Dodaje płaski kilometr do progów odległości hop-goblina i złej trasy (0–50)."
+    "distanceOffsetHelp": "Dodaje płaski kilometr do progów odległości hop-goblina i złej trasy (0–50).",
+    "ignoreMqttToggle": "Ignore MQTT",
+    "ignoreMqttHelp": "Gray out MQTT-only nodes and exclude them from diagnostics"
   },
   "diagnosticsPing": {
     "title": "Ciągły ping",
@@ -3661,7 +3663,18 @@
     "byteLengthTooltip": "{{bytes}} bajty surowe",
     "routeBarFloodTooltip": "Pakiet przekierowywany przez powódź",
     "routeBarDirectTooltip": "Pakiet z trasą bezpośrednią",
-    "routeBarUnknownTooltip": "nieznana trasa"
+    "routeBarUnknownTooltip": "nieznana trasa",
+    "crc32Fingerprint": "CRC32 fp:",
+    "innerFirstU32Debug": "Inner first u32 (debug):",
+    "destHash": "Dest hash:",
+    "srcHash": "Src hash:",
+    "channelHash": "Channel hash:",
+    "mac": "MAC:",
+    "ciphertextBytes": "Ciphertext bytes:",
+    "senderKeyPrefix": "Sender key (prefix):",
+    "control": "Control:",
+    "advertTs": "ADVERT ts:",
+    "advertLatLon": "ADVERT lat/lon:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4327,7 +4340,12 @@
     "chartAriaSignal": "Wykres jakości sygnału: najnowszy SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} punktów",
     "chartAriaTempHumidity": "Wykres temperatury i wilgotności: ostatnia temperatura {{temperature}}, wilgotność {{humidity}} procent, {{count}} punktów",
     "chartAriaPressure": "Wykres ciśnienia barometrycznego: najnowszy {{pressure}} hPa, {{count}} punktów",
-    "chartAriaIaq": "Wykres jakości powietrza: najnowsze IAQ {{iaq}}, {{count}} punktów"
+    "chartAriaIaq": "Wykres jakości powietrza: najnowsze IAQ {{iaq}}, {{count}} punktów",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "Export CSV",
+    "emptyWaitingConnected": "No telemetry data yet. Waiting for data from device…",
+    "emptyWaitingDisconnected": "No telemetry data yet. Connect to a device to see real-time metrics."
   },
   "toasts": {
     "firmwareAvailable": "Dostępna aktualizacja oprogramowania sprzętowego: v{{version}}",

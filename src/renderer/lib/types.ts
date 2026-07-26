@@ -13,6 +13,9 @@ export type { TAKClientInfo, TAKServerStatus, TAKSettings };
 
 export type ConnectionType = 'ble' | 'serial' | 'http' | 'tcp';
 
+export type ConnectionStatus =
+  'disconnected' | 'connecting' | 'connected' | 'configured' | 'stale' | 'reconnecting';
+
 /** All transports the ConnectionDriver can manage. Superset of `ConnectionType`. */
 export type TransportType = 'ble' | 'serial' | 'http' | 'tcp' | 'mqtt';
 
@@ -447,7 +450,7 @@ export interface EnvironmentTelemetryPoint {
 }
 
 export interface DeviceState {
-  status: 'disconnected' | 'connecting' | 'connected' | 'configured' | 'stale' | 'reconnecting';
+  status: ConnectionStatus;
   /** True when the last drop was unexpected (not manual disconnect). */
   connectionLoss?: boolean;
   /** Serial auto-reconnect exhausted; user must re-select the USB serial port. */

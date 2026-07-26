@@ -4,12 +4,17 @@ import {
   resolveIdentityIdForProtocol,
   resolvePrimaryIdentityIdForProtocol,
 } from '../lib/identityByProtocol';
-import type { ConnectionType, IdentityId, MeshProtocol, MQTTStatus } from '../lib/types';
+import type {
+  ConnectionStatus,
+  ConnectionType,
+  IdentityId,
+  MeshProtocol,
+  MQTTStatus,
+} from '../lib/types';
 import { useIdentityStore } from './identityStore';
 import { omitRecordKey } from './storeUtils';
 
-export type ConnectionStatus =
-  'disconnected' | 'connecting' | 'connected' | 'configured' | 'stale' | 'reconnecting';
+export type { ConnectionStatus };
 
 export interface ConnectionRecord {
   identityId: IdentityId;

@@ -456,8 +456,6 @@
     "dmNodeLastHeard": "마지막 확인: {{time}}",
     "dmNodeBattery": "{{pct}}% 배터리",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}} 홉",
-    "dmNodeHopsPlural": "{{count}} 홉",
     "muteConversation": "이 대화 음소거",
     "unmuteConversation": "이 대화 음소거 해제",
     "starMessage": "메시지 별표처리",
@@ -606,7 +604,9 @@
     "floodScopeOverrideCustomLabel": "맞춤 Flood 범위 해시태그",
     "floodScopeOverrideCustomPlaceholder": "#나의 지역",
     "floodScopeOverrideCustomApply": "사용 범위",
-    "floodScopeOverrideCustomInvalid": "유효한 지역 해시태그(예: #myregion)를 입력하세요."
+    "floodScopeOverrideCustomInvalid": "유효한 지역 해시태그(예: #myregion)를 입력하세요.",
+    "dmNodeHops_one": "{{count}} 홉",
+    "dmNodeHops_other": "{{count}} 홉"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -1544,7 +1544,9 @@
     "snrDb": "SNR {{snr}}dB",
     "distanceOffsetKm": "거리 오프셋",
     "km": "km",
-    "distanceOffsetHelp": "홉-고블린 및 잘못된 경로 거리 임계값(0-50)에 평평한 km 층을 추가합니다."
+    "distanceOffsetHelp": "홉-고블린 및 잘못된 경로 거리 임계값(0-50)에 평평한 km 층을 추가합니다.",
+    "ignoreMqttToggle": "Ignore MQTT",
+    "ignoreMqttHelp": "Gray out MQTT-only nodes and exclude them from diagnostics"
   },
   "diagnosticsPing": {
     "title": "연속 핑",
@@ -3661,7 +3663,18 @@
     "byteLengthTooltip": "{{bytes}} 바이트 RAW",
     "routeBarFloodTooltip": "Flood-routed packet",
     "routeBarDirectTooltip": "직접 라우팅된 패킷",
-    "routeBarUnknownTooltip": "알 수 없는 경로 유형"
+    "routeBarUnknownTooltip": "알 수 없는 경로 유형",
+    "crc32Fingerprint": "CRC32 fp:",
+    "innerFirstU32Debug": "Inner first u32 (debug):",
+    "destHash": "Dest hash:",
+    "srcHash": "Src hash:",
+    "channelHash": "Channel hash:",
+    "mac": "MAC:",
+    "ciphertextBytes": "Ciphertext bytes:",
+    "senderKeyPrefix": "Sender key (prefix):",
+    "control": "Control:",
+    "advertTs": "ADVERT ts:",
+    "advertLatLon": "ADVERT lat/lon:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4327,7 +4340,12 @@
     "chartAriaSignal": "신호 품질 차트: 최신 SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} 포인트",
     "chartAriaTempHumidity": "온도 및 습도 차트: 최신 온도 {{temperature}}, 습도 {{humidity}} 퍼센트, {{count}} 포인트",
     "chartAriaPressure": "기압 차트: 최신 {{pressure}} hPa, {{count}} 포인트",
-    "chartAriaIaq": "대기질 차트: 최신 IAQ {{iaq}}, {{count}} 포인트"
+    "chartAriaIaq": "대기질 차트: 최신 IAQ {{iaq}}, {{count}} 포인트",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "Export CSV",
+    "emptyWaitingConnected": "No telemetry data yet. Waiting for data from device…",
+    "emptyWaitingDisconnected": "No telemetry data yet. Connect to a device to see real-time metrics."
   },
   "toasts": {
     "firmwareAvailable": "사용 가능한 펌웨어 업데이트: v{{version}}",

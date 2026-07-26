@@ -1,7 +1,7 @@
-import { app, type IpcMainInvokeEvent } from 'electron';
+import { app, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
 
 /** Validate IPC sender origin to prevent untrusted renderers from invoking privileged handlers. */
-export function validateIpcSender(event: IpcMainInvokeEvent): boolean {
+export function validateIpcSender(event: IpcMainInvokeEvent | IpcMainEvent): boolean {
   const frame = event.senderFrame;
   if (!frame) return false;
   try {
@@ -26,7 +26,7 @@ export function validateIpcSender(event: IpcMainInvokeEvent): boolean {
   }
 }
 
-export function assertIpcSender(event: IpcMainInvokeEvent, channel: string): void {
+export function assertIpcSender(event: IpcMainInvokeEvent | IpcMainEvent, channel: string): void {
   if (!validateIpcSender(event)) {
     throw new Error(`${channel}: unauthorized sender`);
   }

@@ -193,6 +193,26 @@ describe('bluetooth IPC sender validation (source contract, H1)', () => {
     const handlerBody = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
     expect(handlerBody).toContain(`assertIpcSender(event, '${channel}')`);
   });
+
+  it('bluetooth-provide-pin validates IPC sender', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.on('bluetooth-provide-pin'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
+    expect(body).toContain('validateIpcSender(event)');
+  });
+
+  it('meshtastic:xmodemPickUpload caps upload size before readFile', () => {
+    expect(INDEX_SOURCE).toContain('MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES');
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('meshtastic:xmodemPickUpload'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 900);
+    expect(body).toContain('MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES');
+    expect(body).toContain('fs.promises.stat(filePath)');
+    const statIdx = body.indexOf('fs.promises.stat(filePath)');
+    const readIdx = body.indexOf('fs.promises.readFile(filePath)');
+    expect(statIdx).toBeGreaterThan(-1);
+    expect(readIdx).toBeGreaterThan(statIdx);
+  });
 });
 
 // ─── H4: bluetoothctl stop-scan / get-info hang guards ──────────────
@@ -581,6 +601,13 @@ describe('db mutator IPC sender validation (source contract, H3)', () => {
     expect(handlerIdx).toBeGreaterThan(-1);
     const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
     expect(body).toContain("assertIpcSender(event, 'app:setLoginItem')");
+  });
+
+  it('app:getLoginItem calls assertIpcSender', () => {
+    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('app:getLoginItem'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 300);
+    expect(body).toContain("assertIpcSender(event, 'app:getLoginItem')");
   });
 
   it('log:device-connection validates IPC sender', () => {

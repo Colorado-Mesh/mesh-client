@@ -38,6 +38,14 @@ if (import.meta.env.DEV) {
   );
 }
 
+window.addEventListener('unhandledrejection', (event) => {
+  const reason = event.reason;
+  console.error(
+    '[renderer] Unhandled rejection:',
+    reason instanceof Error ? (reason.stack ?? reason.message) : String(reason),
+  );
+});
+
 void (async () => {
   await ensureLocaleLoaded(i18n, i18n.language);
 

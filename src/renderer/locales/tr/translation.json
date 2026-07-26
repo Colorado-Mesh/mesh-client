@@ -456,8 +456,6 @@
     "dmNodeLastHeard": "Son duyma {{time}}",
     "dmNodeBattery": "{{pct}}% pil",
     "dmNodeSignal": "SNR {{snr}} dB",
-    "dmNodeHops": "{{count}} hop",
-    "dmNodeHopsPlural": "{{count}} atlama",
     "muteConversation": "Bu konuşmayı sessize al",
     "unmuteConversation": "Bu konuşmanın sesini aç",
     "starMessage": "Mesajı Yıldızla",
@@ -606,7 +604,9 @@
     "floodScopeOverrideCustomLabel": "Özel Flood kapsamı hashtag’i",
     "floodScopeOverrideCustomPlaceholder": "#bölgem",
     "floodScopeOverrideCustomApply": "Kapsamı kullan",
-    "floodScopeOverrideCustomInvalid": "Geçerli bir bölge hashtag'i girin (örneğin #myregion)."
+    "floodScopeOverrideCustomInvalid": "Geçerli bir bölge hashtag'i girin (örneğin #myregion).",
+    "dmNodeHops_one": "{{count}} atlama",
+    "dmNodeHops_other": "{{count}} atlama"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -1544,7 +1544,9 @@
     "snrDb": "SNR {{snr}} dB",
     "distanceOffsetKm": "Mesafe ofseti",
     "km": "kilometre",
-    "distanceOffsetHelp": "Hop-goblin ve kötü rota mesafe eşiklerine (0-50) düz bir kilometre tabanı ekler."
+    "distanceOffsetHelp": "Hop-goblin ve kötü rota mesafe eşiklerine (0-50) düz bir kilometre tabanı ekler.",
+    "ignoreMqttToggle": "Ignore MQTT",
+    "ignoreMqttHelp": "Gray out MQTT-only nodes and exclude them from diagnostics"
   },
   "diagnosticsPing": {
     "title": "Sürekli ping",
@@ -3661,7 +3663,18 @@
     "byteLengthTooltip": "{{bytes}} bayt RAW",
     "routeBarFloodTooltip": "Taşkın yönlendirmeli paket",
     "routeBarDirectTooltip": "Doğrudan yönlendirilmiş paket",
-    "routeBarUnknownTooltip": "bilinmeyen rota"
+    "routeBarUnknownTooltip": "bilinmeyen rota",
+    "crc32Fingerprint": "CRC32 fp:",
+    "innerFirstU32Debug": "Inner first u32 (debug):",
+    "destHash": "Dest hash:",
+    "srcHash": "Src hash:",
+    "channelHash": "Channel hash:",
+    "mac": "MAC:",
+    "ciphertextBytes": "Ciphertext bytes:",
+    "senderKeyPrefix": "Sender key (prefix):",
+    "control": "Control:",
+    "advertTs": "ADVERT ts:",
+    "advertLatLon": "ADVERT lat/lon:"
   },
   "remoteAdmin": {
     "errors": {
@@ -4327,7 +4340,12 @@
     "chartAriaSignal": "Sinyal kalitesi tablosu: en son SNR {{snr}} dB, RSSI {{rssi}} dBm, {{count}} noktaları",
     "chartAriaTempHumidity": "Sıcaklık ve nem tablosu: en son sıcaklık {{temperature}}, nem {{humidity}} yüzde, {{count}} puan",
     "chartAriaPressure": "Barometrik basınç tablosu: en son {{pressure}} hPa, {{count}} noktaları",
-    "chartAriaIaq": "Hava kalitesi tablosu: en son IAQ {{iaq}}, {{count}} noktaları"
+    "chartAriaIaq": "Hava kalitesi tablosu: en son IAQ {{iaq}}, {{count}} noktaları",
+    "tempUnitF": "°F",
+    "tempUnitC": "°C",
+    "exportCsvButton": "Export CSV",
+    "emptyWaitingConnected": "No telemetry data yet. Waiting for data from device…",
+    "emptyWaitingDisconnected": "No telemetry data yet. Connect to a device to see real-time metrics."
   },
   "toasts": {
     "firmwareAvailable": "Ürün yazılımı güncellemesi mevcut: v{{version}}",

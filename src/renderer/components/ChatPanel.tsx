@@ -208,11 +208,7 @@ function DmPeerInfoBar({ dmNode, nowMs, t }: { dmNode: MeshNode; nowMs: number; 
   if (rel) parts.push(t('chatPanel.dmNodeLastHeard', { time: rel }));
   if (dmNode.snr !== 0) parts.push(t('chatPanel.dmNodeSignal', { snr: dmNode.snr }));
   if (dmNode.hops_away != null && dmNode.hops_away > 0) {
-    parts.push(
-      dmNode.hops_away === 1
-        ? t('chatPanel.dmNodeHops', { count: dmNode.hops_away })
-        : t('chatPanel.dmNodeHopsPlural', { count: dmNode.hops_away }),
-    );
+    parts.push(t('chatPanel.dmNodeHops', { count: dmNode.hops_away }));
   }
   if (parts.length === 0) return null;
   return (
