@@ -13,6 +13,112 @@ const MAX_ATTEMPTS = 5;
 /** Drop outbox rows older than this from automatic drain (manual retry still allowed). */
 export const OUTBOX_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
+function isEncryptionBlockedError(errMsg: string): boolean {
+  return /no.?encr|no.?key|encryption/i.test(errMsg);
+}
+
+function errMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+/** Reset interrupted `sending` rows to `queued` (crash / failed status persist). */
+async function recoverStuckSendingRows(listed: OutboxEntry[]): Promise<OutboxEntry[]> {
+  const stuckSending = listed.filter((r) => r.status === 'sending');
+  if (stuckSending.length === 0) return listed;
+  await Promise.all(
+    stuckSending.map((r) => window.electronAPI.chat.outbox.updateStatus(r.id, 'queued')),
+  );
+  return listed.map((r) => (r.status === 'sending' ? { ...r, status: 'queued' as const } : r));
+}
+
+function isEligibleForDrain(row: OutboxEntry, now: number): boolean {
+  return (
+    (row.status === 'queued' || row.status === 'failed') &&
+    (row.nextRetryAt == null || row.nextRetryAt <= now) &&
+    now - row.createdAt <= OUTBOX_MAX_AGE_MS
+  );
+}
+
+async function finalizeSuccessfulOutboxSend(
+  row: OutboxEntry,
+  removeRow: (id: number) => void,
+  updateRow: (id: number, patch: Partial<OutboxEntry>) => void,
+): Promise<void> {
+  try {
+    await window.electronAPI.chat.outbox.remove(row.id);
+    removeRow(row.id);
+  } catch (removeErr: unknown) {
+    console.warn('[useChatOutbox] remove after send failed', row.id, removeErr);
+    const removeMsg = errMessage(removeErr);
+    const error = `delivered; outbox remove failed: ${removeMsg}`;
+    const attemptCount = row.attemptCount + 1;
+    try {
+      await window.electronAPI.chat.outbox.updateStatus(
+        row.id,
+        'blocked',
+        error,
+        undefined,
+        attemptCount,
+      );
+    } catch (persistErr: unknown) {
+      console.warn('[useChatOutbox] block after remove failure failed', row.id, persistErr);
+    }
+    updateRow(row.id, { status: 'blocked', error, attemptCount });
+  }
+}
+
+async function recordOutboxSendFailure(
+  row: OutboxEntry,
+  err: unknown,
+  updateRow: (id: number, patch: Partial<OutboxEntry>) => void,
+): Promise<void> {
+  const errMsg = errMessage(err);
+  const isBlocked = isEncryptionBlockedError(errMsg);
+  const nextAttemptCount = row.attemptCount + 1;
+  const newStatus: OutboxStatus = isBlocked ? 'blocked' : 'failed';
+  const nextRetryAt =
+    !isBlocked && nextAttemptCount < MAX_ATTEMPTS
+      ? Date.now() + RETRY_DELAYS_MS[Math.min(nextAttemptCount - 1, RETRY_DELAYS_MS.length - 1)]
+      : undefined;
+  try {
+    await window.electronAPI.chat.outbox.updateStatus(
+      row.id,
+      newStatus,
+      errMsg,
+      nextRetryAt,
+      nextAttemptCount,
+    );
+  } catch (persistErr: unknown) {
+    // Failure point: status may remain 'sending' in SQLite; mount + drain reset
+    // sending→queued so the row is not stuck forever.
+    console.warn('[useChatOutbox] persist failure status failed', row.id, persistErr);
+  }
+  updateRow(row.id, {
+    status: newStatus,
+    error: errMsg,
+    attemptCount: nextAttemptCount,
+    ...(nextRetryAt != null ? { nextRetryAt } : { nextRetryAt: null }),
+  });
+  console.warn('[useChatOutbox] send failed for outbox row', row.id, errMsg);
+}
+
+async function sendOneOutboxRow(
+  row: OutboxEntry,
+  sendFn: UseChatOutboxOptions['sendFn'],
+  updateRow: (id: number, patch: Partial<OutboxEntry>) => void,
+  removeRow: (id: number) => void,
+): Promise<void> {
+  await window.electronAPI.chat.outbox.updateStatus(row.id, 'sending');
+  updateRow(row.id, { status: 'sending' });
+  try {
+    await sendFn(row.payload, row.channel, row.toNode ?? undefined, row.replyId ?? undefined);
+    await finalizeSuccessfulOutboxSend(row, removeRow, updateRow);
+  } catch (err: unknown) {
+    // catch-no-log-ok recordOutboxSendFailure logs the send failure
+    await recordOutboxSendFailure(row, err, updateRow);
+  }
+}
+
 export interface UseChatOutboxOptions {
   protocol: MeshProtocol;
   isSendAvailable: boolean;
@@ -80,95 +186,13 @@ export function useChatOutbox({
     if (drainingRef.current || !isSendAvailable) return;
     drainingRef.current = true;
     try {
-      // Re-fetch fresh rows so we always drain the canonical state
       const listed = await window.electronAPI.chat.outbox.list(protocol);
-      const stuckSending = listed.filter((r) => r.status === 'sending');
-      if (stuckSending.length > 0) {
-        // Recover interrupted transitions (crash / failed status persist after mark-sending).
-        await Promise.all(
-          stuckSending.map((r) => window.electronAPI.chat.outbox.updateStatus(r.id, 'queued')),
-        );
-      }
-      const freshRows: OutboxEntry[] =
-        stuckSending.length > 0
-          ? listed.map((r) => (r.status === 'sending' ? { ...r, status: 'queued' as const } : r))
-          : listed;
+      const freshRows = await recoverStuckSendingRows(listed);
       setRows(freshRows);
       const now = Date.now();
-      const eligible = freshRows.filter(
-        (r) =>
-          (r.status === 'queued' || r.status === 'failed') &&
-          (r.nextRetryAt == null || r.nextRetryAt <= now) &&
-          now - r.createdAt <= OUTBOX_MAX_AGE_MS,
-      );
-      for (const row of eligible) {
+      for (const row of freshRows.filter((r) => isEligibleForDrain(r, now))) {
         if (!isSendAvailableRef.current) break;
-        // Mark as sending optimistically
-        await window.electronAPI.chat.outbox.updateStatus(row.id, 'sending');
-        updateRow(row.id, { status: 'sending' });
-        try {
-          await sendFnRef.current(
-            row.payload,
-            row.channel,
-            row.toNode ?? undefined,
-            row.replyId ?? undefined,
-          );
-          // Success — remove from outbox; if remove fails, block the row so remount
-          // cannot reset sending→queued and resend an already-delivered message.
-          try {
-            await window.electronAPI.chat.outbox.remove(row.id);
-            removeRow(row.id);
-          } catch (removeErr: unknown) {
-            console.warn('[useChatOutbox] remove after send failed', row.id, removeErr);
-            const removeMsg = removeErr instanceof Error ? removeErr.message : String(removeErr);
-            try {
-              await window.electronAPI.chat.outbox.updateStatus(
-                row.id,
-                'blocked',
-                `delivered; outbox remove failed: ${removeMsg}`,
-                undefined,
-                row.attemptCount + 1,
-              );
-            } catch (persistErr: unknown) {
-              console.warn('[useChatOutbox] block after remove failure failed', row.id, persistErr);
-            }
-            updateRow(row.id, {
-              status: 'blocked',
-              error: `delivered; outbox remove failed: ${removeMsg}`,
-              attemptCount: row.attemptCount + 1,
-            });
-          }
-        } catch (err: unknown) {
-          const errMsg = err instanceof Error ? err.message : String(err);
-          const isBlocked = /no.?encr|no.?key|encryption/i.test(errMsg);
-          const nextAttemptCount = row.attemptCount + 1;
-          const newStatus: OutboxStatus = isBlocked ? 'blocked' : 'failed';
-          const nextRetryAt =
-            !isBlocked && nextAttemptCount < MAX_ATTEMPTS
-              ? Date.now() +
-                RETRY_DELAYS_MS[Math.min(nextAttemptCount - 1, RETRY_DELAYS_MS.length - 1)]
-              : undefined;
-          try {
-            await window.electronAPI.chat.outbox.updateStatus(
-              row.id,
-              newStatus,
-              errMsg,
-              nextRetryAt,
-              nextAttemptCount,
-            );
-          } catch (persistErr: unknown) {
-            // Failure point: status may remain 'sending' in SQLite; mount + drain reset
-            // sending→queued so the row is not stuck forever.
-            console.warn('[useChatOutbox] persist failure status failed', row.id, persistErr);
-          }
-          updateRow(row.id, {
-            status: newStatus,
-            error: errMsg,
-            attemptCount: nextAttemptCount,
-            ...(nextRetryAt != null ? { nextRetryAt } : { nextRetryAt: null }),
-          });
-          console.warn('[useChatOutbox] send failed for outbox row', row.id, errMsg);
-        }
+        await sendOneOutboxRow(row, sendFnRef.current, updateRow, removeRow);
       }
     } catch (err: unknown) {
       console.warn('[useChatOutbox] drainOnce failed', err);
