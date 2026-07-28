@@ -1071,7 +1071,19 @@
         "boundary": "Límite de la red. Une segmentos distintos mientras aísla el tráfico local. Uso para enlaces de Internet/LoRa.",
         "gateway": "Búsqueda de ruta para clientes. Resuelve destinos desconocidos en nombre de nodos conectados.",
         "point_to_point": "Enlace directo entre dos nodos. Sin enrutamiento ni anuncio de propagación."
-      }
+      },
+      "networkName": "Nombre de la red",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "Nombre de la Red",
+      "passphrase": "Frase de contraseña",
+      "passphrasePlaceholder": "Autenticación IFAC",
+      "passphraseAria": "Frase de contraseña IFAC",
+      "showPassphrase": "Mostrar frase de contraseña",
+      "hidePassphrase": "Ocultar frase de contraseña",
+      "advanced": "Avanzado",
+      "advancedHint": "Pares adicionales de clave=valor para esta interfaz, uno por línea. Los campos conocidos (host, modo, nombre de red,...) permanecen en el formulario anterior.",
+      "advancedAria": "Opciones avanzadas de interfaz clave-valor",
+      "advancedKeyReserved": "La clave «{{key}}» es un campo conocido y se ignoró. Utilice el formulario anterior."
     },
     "reticulumPeers": {
       "hops": "Hops",

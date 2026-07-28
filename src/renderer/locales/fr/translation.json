@@ -1070,7 +1070,19 @@
         "boundary": "Limite du réseau. Permet de relier des segments distincts tout en isolant le trafic local. Utiliser pour les liens Internet/LoRa.",
         "gateway": "Recherche de chemins pour les clients. Résout les destinations inconnues pour le compte des nœuds connectés.",
         "point_to_point": "Lien direct entre deux nœuds. Pas de routage ni d'annonce de propagation."
-      }
+      },
+      "networkName": "Nom du réseau",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "Nom du réseau",
+      "passphrase": "Phrase secrète",
+      "passphrasePlaceholder": "Authentification IFAC",
+      "passphraseAria": "Phrase de passe IFAC",
+      "showPassphrase": "Afficher la phrase secrète",
+      "hidePassphrase": "Masquer la phrase de passe",
+      "advanced": "Avancé",
+      "advancedHint": "Touche supplémentaire = paires de valeurs pour cette interface, une par ligne. Les champs connus (hôte, mode, nom de réseau, …) restent dans le formulaire ci-dessus.",
+      "advancedAria": "Options avancées de valeur de clé d'interface",
+      "advancedKeyReserved": "La clé « {{key}} » est un champ connu et a été ignoré — utilisez le formulaire ci-dessus."
     },
     "reticulumPeers": {
       "hops": "Hops",

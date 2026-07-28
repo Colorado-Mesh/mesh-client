@@ -160,6 +160,8 @@ Config lives under `userData/reticulum/config/` (rnsd INI). The Connection tab s
 **Fields by type**
 
 - **All:** display name; optional rnsd **mode** (`full`, `gateway`, `access_point`, `roaming`, `boundary`, `point_to_point` — shorthands `gw` / `ap` accepted). Defaults when omitted on add: TCP/UDP/I2P → `boundary`; RNode / RNode Multi → `access_point`; **Auto, BLE Peer, KISS, Pipe** leave mode unset (RNS default `full`). Hubs usually use **Boundary**; RNodes usually use **Access point**. On edit, clearing mode omits it from config (RNS `full`).
+- **IFAC (all types):** optional `network_name` and `passphrase` for private/authenticated network segments ([common interface options](https://reticulum.network/manual/interfaces.html#common-interface-options)). Shown on add and edit; passphrase uses a masked input with show/hide.
+- **Advanced (edit only):** free-form `key = value` lines for other common options (e.g. `forward_interval`, `ifac_size`). Keys that duplicate typed form fields are ignored. Unknown INI keys are preserved across enable/edit/repair via sidecar `extra_config` (no longer silently dropped).
 - **TCP client:** host, port (mesh hub — default port **4242**); IPv6 literals use brackets: `[2001:db8::1]:4242`
 - **I2P:** comma-separated peer hostnames (`.b32.i2p` addresses, e.g. `{52-base32-chars}.b32.i2p`); max **512** characters total; validated in UI and sidecar before write
 - **RNode:** USB serial, **Bluetooth** (`ble://…`), or **Wi‑Fi** (`tcp://host[:7633]`, default **7633**), LoRa preset, callsign

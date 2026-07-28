@@ -288,6 +288,9 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            extra_config: std::collections::HashMap::new(),
         }
     }
 
@@ -410,6 +413,9 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            extra_config: std::collections::HashMap::new(),
         }];
         assert_eq!(resolve_stub_sent_via(&ifaces), "rf");
         assert_eq!(resolve_outbound_sent_via(&ifaces), "rf");
@@ -444,6 +450,9 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            extra_config: std::collections::HashMap::new(),
         }];
         let live = vec![InterfaceRow {
             id: "rns-0".into(),
@@ -472,6 +481,9 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            extra_config: std::collections::HashMap::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
         assert_eq!(resolve_outbound_sent_via(&merged), "rf");
@@ -513,6 +525,9 @@ mod tests {
                 announce_interval_min: None,
                 connectable: None,
                 reachable_on: None,
+                network_name: None,
+                passphrase: None,
+                extra_config: std::collections::HashMap::new(),
             },
             InterfaceRow {
                 id: "rns-1".into(),
@@ -541,6 +556,9 @@ mod tests {
                 announce_interval_min: None,
                 connectable: None,
                 reachable_on: None,
+                network_name: None,
+                passphrase: None,
+                extra_config: std::collections::HashMap::new(),
             },
         ];
         let merged = merge_live_interfaces_with_config(&config, live);
@@ -580,6 +598,9 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            extra_config: std::collections::HashMap::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
         assert_eq!(merged.len(), 1);

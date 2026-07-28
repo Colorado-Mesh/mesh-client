@@ -1069,7 +1069,19 @@
         "boundary": "Netzwerkgrenze. Überbrückt verschiedene Segmente und isoliert gleichzeitig den lokalen Datenverkehr. Verwendung für Internet-/LoRa-Links.",
         "gateway": "Pfadsuche für Kunden. Löst unbekannte Ziele im Auftrag verbundener Knoten auf.",
         "point_to_point": "Direkte Verbindung zwischen zwei Knoten. Kein Routing und keine Ankündigungsverbreitung."
-      }
+      },
+      "networkName": "Name des Netzwerks",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "Netzwerkname",
+      "passphrase": "Passphrase",
+      "passphrasePlaceholder": "IFAC-Authentifizierung",
+      "passphraseAria": "IFAC-Passphrase",
+      "showPassphrase": "Passphrase anzeigen",
+      "hidePassphrase": "Passphrase ausblenden",
+      "advanced": "Fortgeschrittene",
+      "advancedHint": "Zusätzlicher Schlüssel=Wertepaare für diese Schnittstelle, eines pro Zeile. Bekannte Felder (Host, Modus, Netzwerkname, …) bleiben im obigen Formular.",
+      "advancedAria": "Erweiterte Schnittstellen-Key-Value-Optionen",
+      "advancedKeyReserved": "Der Schlüssel „{{key}}“ ist ein bekanntes Feld und wurde ignoriert — verwende das obige Formular."
     },
     "reticulumPeers": {
       "hops": "Hops",

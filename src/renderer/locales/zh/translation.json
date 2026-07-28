@@ -1071,7 +1071,19 @@
         "boundary": "网络边界。桥接不同的段，同时隔离本地流量。用于互联网/LoRa链接。",
         "gateway": "为客户端寻找路径。代表连接的节点解决未知目标。",
         "point_to_point": "两个节点之间的直接链接。无路由或通告传播。"
-      }
+      },
+      "networkName": "网络名称",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "网络名称",
+      "passphrase": "密码短语",
+      "passphrasePlaceholder": "IFAC认证",
+      "passphraseAria": "IFAC密码",
+      "showPassphrase": "显示密码短语",
+      "hidePassphrase": "隐藏密码",
+      "advanced": "高级",
+      "advancedHint": "附加键=此接口的值对，每行一个。已知字段（主机、模式、网络名称等）保持在上面的表单中。",
+      "advancedAria": "高级界面键值选项",
+      "advancedKeyReserved": "键“{{key}}”是已知字段，已被忽略—请使用上面的表单。"
     },
     "reticulumPeers": {
       "hops": "Hops",

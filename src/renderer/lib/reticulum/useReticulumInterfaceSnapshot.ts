@@ -42,6 +42,12 @@ export interface ReticulumInterfaceRow {
   announce_interval_min?: number | null;
   connectable?: boolean | null;
   reachable_on?: string | null;
+  /** IFAC virtual network name. */
+  network_name?: string | null;
+  /** IFAC authentication passphrase. */
+  passphrase?: string | null;
+  /** Unknown INI keys preserved by the sidecar across CRUD. */
+  extra_config?: Record<string, string> | null;
 }
 
 export interface ReticulumSerialPortOption {
