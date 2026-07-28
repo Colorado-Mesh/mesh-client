@@ -37,6 +37,15 @@ function entryNodeKey(entry: BackupIndexEntry, protocol: 'meshtastic' | 'meshcor
     : (entry as MeshcoreKeyBackupIndexEntry).nodeId;
 }
 
+/** Map internal error codes (and Error.message) to localized key-backup toast copy. */
+function keyBackupFailureMessage(err: unknown, t: TFunction): string {
+  const code = err instanceof Error ? err.message : '';
+  if (code === 'NO_BACKUP') return t('securityPanel.noBackupFound');
+  if (code === 'MISSING_KEYS') return t('securityPanel.missingKeyMaterial');
+  if (code) return code;
+  return t('securityPanel.unknownError');
+}
+
 function formatEntryLabel(
   entry: BackupIndexEntry,
   protocol: 'meshtastic' | 'meshcore',
@@ -155,16 +164,10 @@ export function KeyBackupRestoreSection({
         }
       } catch (err) {
         console.warn('[KeyBackupRestoreSection] restore ' + errLikeToLogString(err));
-        const code = err instanceof Error ? err.message : '';
-        const message =
-          code === 'NO_BACKUP'
-            ? t('securityPanel.noBackupFound')
-            : code === 'MISSING_KEYS'
-              ? t('securityPanel.missingKeyMaterial')
-              : err instanceof Error && err.message
-                ? err.message
-                : t('securityPanel.unknownError');
-        addToast(t('securityPanel.restoreFailed', { message }), 'error');
+        addToast(
+          t('securityPanel.restoreFailed', { message: keyBackupFailureMessage(err, t) }),
+          'error',
+        );
       } finally {
         setBackupInProgress(false);
         setShowPicker(false);
@@ -200,14 +203,10 @@ export function KeyBackupRestoreSection({
       refreshStatus();
     } catch (err) {
       console.warn('[KeyBackupRestoreSection] backup ' + errLikeToLogString(err));
-      const code = err instanceof Error ? err.message : '';
-      const message =
-        code === 'MISSING_KEYS'
-          ? t('securityPanel.missingKeyMaterial')
-          : err instanceof Error && err.message
-            ? err.message
-            : t('securityPanel.unknownError');
-      addToast(t('securityPanel.backupFailed', { message }), 'error');
+      addToast(
+        t('securityPanel.backupFailed', { message: keyBackupFailureMessage(err, t) }),
+        'error',
+      );
     } finally {
       setBackupInProgress(false);
     }
