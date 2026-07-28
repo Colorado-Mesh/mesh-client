@@ -908,7 +908,7 @@ impl StackHandle {
         })
     }
 
-    pub async fn list_discovered_propagation(&self) -> Vec<DiscoveredPropagationRow> {
+    pub fn list_discovered_propagation(&self) -> Vec<DiscoveredPropagationRow> {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = &self.live {
             return live.list_discovered_propagation();

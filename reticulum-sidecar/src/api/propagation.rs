@@ -69,7 +69,7 @@ pub async fn list_discovered_propagation(
     State(stack): State<Arc<StackHandle>>,
 ) -> Json<serde_json::Value> {
     Json(serde_json::json!({
-        "discovered": stack.list_discovered_propagation().await,
+        "discovered": stack.list_discovered_propagation(),
     }))
 }
 

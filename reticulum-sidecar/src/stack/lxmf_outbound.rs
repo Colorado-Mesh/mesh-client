@@ -800,7 +800,7 @@ mod tests {
         let pn_key = [0x42u8; 64];
         driver.pin_identity_for_propagation(&pn_hex, pn_key);
         for i in 0..(MAX_KNOWN_IDENTITIES + 64) {
-            let hex = format!("{:032x}", i);
+            let hex = format!("{i:032x}");
             driver.register_identity_key(&hex, [((i % 250) + 1) as u8; 64]);
         }
         assert!(driver.identity_known_for(&pn_hex));
