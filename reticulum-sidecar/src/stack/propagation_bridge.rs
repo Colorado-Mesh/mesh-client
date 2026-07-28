@@ -194,7 +194,12 @@ impl PropagationBridge {
                     bridge.cancel_sync();
                     let message = establish_error
                         .map(|e| format!("propagation establish failed: {e}"))
-                        .unwrap_or_else(|| "propagation node unreachable".to_string());
+                        .unwrap_or_else(|| "propagation establish failed: NoLinkProof".to_string());
+                    tracing::warn!(
+                        target: "propagation-sync",
+                        message = %message,
+                        "propagation sync stalled while establishing"
+                    );
                     let payload = serde_json::json!({
                         "active": false,
                         "progress": 0.0,

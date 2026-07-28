@@ -3938,7 +3938,10 @@
     "discoveredAddAria": "Bulunan yayılma düğümünü ekleyin {{name}}",
     "discoveredAddPrefer": "Ekle ve tercih et",
     "discoveredAddPreferAria": "Bulunan yayılma düğümünü {{name}} ekleyin ve tercih edilen olarak ayarlayın",
-    "discoveredHash": "{{hash}}"
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "Yayılma senkronizasyonunun düğümden bağlantı kanıtı yok. Kimliğinizin yeni bir duyuruya ihtiyacı olabilir veya geri dönüş yolu eksik olabilir. Ağ Duyurusunu şimdi deneyin→, ardından tekrar Senkronize edin.",
+    "syncOfferUnknown": "Yayılma düğümü bilinmeyen bir senkronizasyon teklifi hatası verdi — birazdan tekrar deneyin.",
+    "syncPathHint": "Uzaktan senkronizasyonun her iki yönde de bir yola ihtiyacı vardır. SYNC, düğümün yanıt verebilmesi için önce kısa bir LXMF duyurusu gönderir."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Yayılma modu",

@@ -99,6 +99,12 @@ pub struct PropagationRow {
     pub status: String,
     #[serde(default)]
     pub destination_hash: Option<String>,
+    /// 64-byte X25519+Ed25519 public key as 128 hex chars (from PN announce).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub public_key: Option<String>,
+    /// Identity hash recovered from the PN announce (32 hex chars).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub identity_hash: Option<String>,
 }
 
 /// Heard `lxmf.propagation` announce (not auto-added to configured list).

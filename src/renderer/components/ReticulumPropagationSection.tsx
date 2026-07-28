@@ -139,6 +139,7 @@ export default function ReticulumPropagationSection({
   const autoSyncIntervalSec = useReticulumPropagationStore((s) => s.autoSyncIntervalSec);
   const lastPropagationSyncAt = useReticulumPropagationStore((s) => s.lastPropagationSyncAt);
   const sync = useReticulumPropagationStore((s) => s.sync);
+  const lastSyncError = useReticulumPropagationStore((s) => s.lastSyncError);
   const refreshFromSidecar = useReticulumPropagationStore((s) => s.refreshFromSidecar);
   const setPreferredOnSidecar = useReticulumPropagationStore((s) => s.setPreferredOnSidecar);
   const setAutoSyncIntervalOnSidecar = useReticulumPropagationStore(
@@ -406,6 +407,12 @@ export default function ReticulumPropagationSection({
           {t('reticulumPropagation.syncNow')}
         </button>
       </div>
+      <p className="text-muted mt-1 text-xs">{t('reticulumPropagation.syncPathHint')}</p>
+      {lastSyncError === 'reticulumPropagation.syncEstablishNoLinkProof' ? (
+        <p className="mt-1 text-xs text-amber-300/90" role="status">
+          {t('reticulumPropagation.syncEstablishNoLinkProof')}
+        </p>
+      ) : null}
       <DiscoveredPropagationList
         discovered={discovered}
         configuredHashes={configuredHashes}

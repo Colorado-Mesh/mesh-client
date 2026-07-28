@@ -3938,7 +3938,10 @@
     "discoveredAddAria": "Adicionar nó de propagação descoberto {{name}}",
     "discoveredAddPrefer": "Adicionar e preferir",
     "discoveredAddPreferAria": "Adicione o nó de propagação descoberto {{name}} e defina como preferido",
-    "discoveredHash": "{{hash}}"
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "A sincronização de propagação não obteve nenhuma prova de link do nó — sua identidade pode precisar de um novo anúncio ou o caminho de volta está faltando. Experimente o → Anúncio de Rede agora e, em seguida, sincronize novamente.",
+    "syncOfferUnknown": "O nó de propagação retornou um erro de oferta de sincronização desconhecido — tente novamente em um momento.",
+    "syncPathHint": "A sincronização remota precisa de um caminho nos dois sentidos. A sincronização envia um breve anúncio LXMF primeiro para que o nó possa responder."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modo de propagação",

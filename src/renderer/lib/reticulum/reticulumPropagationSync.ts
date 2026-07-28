@@ -20,12 +20,14 @@ const SYNC_TARGET_NOT_PN_KEY = 'reticulumPropagation.syncTargetNotPropagationNod
 const SYNC_PEERAGE_STAMP_FAILED_KEY = 'reticulumPropagation.syncPeeringStampFailed';
 const SYNC_ESTABLISH_IDENTITY_KEY = 'reticulumPropagation.syncEstablishIdentityMissing';
 const SYNC_ESTABLISH_INVALID_KEY = 'reticulumPropagation.syncEstablishInvalidProof';
+const SYNC_ESTABLISH_NO_PROOF_KEY = 'reticulumPropagation.syncEstablishNoLinkProof';
 const SYNC_OFFER_NO_IDENTITY_KEY = 'reticulumPropagation.syncOfferNoIdentity';
 const SYNC_OFFER_NO_ACCESS_KEY = 'reticulumPropagation.syncOfferNoAccess';
 const SYNC_OFFER_INVALID_KEY_KEY = 'reticulumPropagation.syncOfferInvalidKey';
 const SYNC_OFFER_THROTTLED_KEY = 'reticulumPropagation.syncOfferThrottled';
 const SYNC_OFFER_INVALID_DATA_KEY = 'reticulumPropagation.syncOfferInvalidData';
 const SYNC_OFFER_INVALID_STAMP_KEY = 'reticulumPropagation.syncOfferInvalidStamp';
+const SYNC_OFFER_UNKNOWN_KEY = 'reticulumPropagation.syncOfferUnknown';
 
 /** Idle sync blob shared by cancel / complete / failure paths. */
 export const RETICULUM_PROPAGATION_SYNC_IDLE = {
@@ -41,12 +43,14 @@ const OFFER_ERROR_KEYS: Record<string, string> = {
   ErrorThrottled: SYNC_OFFER_THROTTLED_KEY,
   ErrorInvalidData: SYNC_OFFER_INVALID_DATA_KEY,
   ErrorInvalidStamp: SYNC_OFFER_INVALID_STAMP_KEY,
+  Unknown: SYNC_OFFER_UNKNOWN_KEY,
 };
 
 const ESTABLISH_ERROR_KEYS: Record<string, string> = {
   LrproofIdentityMissing: SYNC_ESTABLISH_IDENTITY_KEY,
   LrproofInvalid: SYNC_ESTABLISH_INVALID_KEY,
   LrproofInvalidKey: SYNC_ESTABLISH_INVALID_KEY,
+  NoLinkProof: SYNC_ESTABLISH_NO_PROOF_KEY,
 };
 
 /** Map sidecar/API sync error codes or WS failure messages to i18n keys. */
@@ -78,6 +82,7 @@ export function mapPropagationSyncError(error: string | null | undefined): strin
   }
   if (error.includes('LrproofIdentityMissing')) return SYNC_ESTABLISH_IDENTITY_KEY;
   if (error.includes('LrproofInvalid')) return SYNC_ESTABLISH_INVALID_KEY;
+  if (error.includes('NoLinkProof')) return SYNC_ESTABLISH_NO_PROOF_KEY;
 
   if (/propagation node unreachable/i.test(error)) return SYNC_FAILED_KEY;
 
@@ -109,18 +114,14 @@ export function schedulePropagationSyncStallWatchdog(): void {
     if (sync.progress >= RETICULUM_PROPAGATION_SYNC_ESTABLISHING_MAX_PROGRESS) {
       return;
     }
-    void useReticulumPropagationStore.getState().cancelSync();
-    useReticulumPropagationStore.getState().setLastSyncError(SYNC_TIMED_OUT_KEY);
-    useReticulumPropagationStore.getState().setSyncState({ ...RETICULUM_PROPAGATION_SYNC_IDLE });
+    void useReticulumPropagationStore.getState().cancelSync({ reasonKey: SYNC_TIMED_OUT_KEY });
   }, RETICULUM_PROPAGATION_SYNC_STALL_MS);
 
   syncCeilingTimer = setTimeout(() => {
     syncCeilingTimer = null;
     const { sync } = useReticulumPropagationStore.getState();
     if (!sync.active) return;
-    void useReticulumPropagationStore.getState().cancelSync();
-    useReticulumPropagationStore.getState().setLastSyncError(SYNC_TIMED_OUT_KEY);
-    useReticulumPropagationStore.getState().setSyncState({ ...RETICULUM_PROPAGATION_SYNC_IDLE });
+    void useReticulumPropagationStore.getState().cancelSync({ reasonKey: SYNC_TIMED_OUT_KEY });
   }, RETICULUM_PROPAGATION_SYNC_CEILING_MS);
 }
 

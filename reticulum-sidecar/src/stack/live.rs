@@ -34,7 +34,8 @@ use super::StackHandle;
 use super::config;
 use super::local_rnode_primary;
 use super::lxmf_delivery::{
-    LXMF_APP, send_lxmf_delivery_announce, spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver,
+    LXMF_ANNOUNCE_DEBOUNCE, LXMF_APP, send_lxmf_delivery_announce, should_send_debounced_announce,
+    spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver,
 };
 use super::nomad_file::nomad_file_name_from_path;
 use super::nomad_link_errors::map_nomad_link_error;
@@ -95,6 +96,8 @@ pub struct LiveBridge {
     sync_cancel: Arc<std::sync::atomic::AtomicBool>,
     /// In-memory heard `lxmf.propagation` announces (not auto-configured).
     discovered_propagation: Arc<Mutex<HashMap<String, super::DiscoveredPropagationRow>>>,
+    /// Last successful LXMF delivery announce (startup / periodic / manual / sync debounce).
+    last_lxmf_announce_at: Arc<Mutex<Option<Instant>>>,
     event_tx: broadcast::Sender<String>,
     packet_log: Arc<PacketLogBuffer>,
     /// Serialize Nomad Link queries — transport actor is single-threaded and
@@ -348,12 +351,14 @@ impl LiveBridge {
             lxmf_dest_hash,
             router.clone(),
         );
+        let last_lxmf_announce_at = Arc::new(Mutex::new(None));
         spawn_lxmf_announce_loop(
             handle.transport_tx.clone(),
             identity.clone(),
             lxmf_dest_hash,
             config_dir.clone(),
             inner.clone(),
+            Arc::clone(&last_lxmf_announce_at),
         );
 
         #[cfg(feature = "rns-ble")]
@@ -399,6 +404,7 @@ impl LiveBridge {
             )?),
             sync_cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             discovered_propagation: Arc::new(Mutex::new(HashMap::new())),
+            last_lxmf_announce_at,
             event_tx: event_tx.clone(),
             packet_log,
             nomad_link_lock: Arc::new(tokio::sync::Mutex::new(())),
@@ -452,6 +458,7 @@ impl LiveBridge {
         if local_prop_enabled {
             bridge.set_local_propagation_serving(true).await;
         }
+        bridge.rehydrate_propagation_identities_from_persisted();
         // Keep persisted local-prop hash on lxmf.propagation (legacy rows stored delivery).
         {
             let mut state = inner.write().await;
@@ -649,7 +656,107 @@ impl LiveBridge {
             dest,
             display_name.as_deref(),
         )
-        .await
+        .await?;
+        if let Ok(mut slot) = self.last_lxmf_announce_at.lock() {
+            *slot = Some(Instant::now());
+        }
+        Ok(())
+    }
+
+    /// Debounced LXMF delivery announce so remote PNs have a reverse path for LRPROOF.
+    async fn ensure_lxmf_announce_for_propagation_sync(&self, dest_hex: &str) {
+        let last = self.last_lxmf_announce_at.lock().ok().and_then(|g| *g);
+        let now = Instant::now();
+        if !should_send_debounced_announce(last, now, LXMF_ANNOUNCE_DEBOUNCE) {
+            tracing::info!(
+                target: "propagation-sync",
+                dest = %dest_hex,
+                "skipping LXMF announce before sync (debounced)"
+            );
+            return;
+        }
+        match self.announce_lxmf_now().await {
+            Ok(()) => tracing::info!(
+                target: "propagation-sync",
+                dest = %dest_hex,
+                "LXMF delivery announce sent before propagation sync"
+            ),
+            Err(e) => tracing::warn!(
+                target: "propagation-sync",
+                dest = %dest_hex,
+                error = %e,
+                "LXMF announce before propagation sync failed"
+            ),
+        }
+    }
+
+    /// Rehydrate persisted PN public keys into known_identities (survives announce-flood eviction).
+    pub fn rehydrate_propagation_identities_from_persisted(&self) {
+        let state = PersistedState::load(&self.config_dir, &self.storage_dir);
+        let Ok(mut driver) = self.outbound.lock() else {
+            return;
+        };
+        for row in &state.propagation {
+            let Some(dest) = row.destination_hash.as_deref() else {
+                continue;
+            };
+            let Some(pk_hex) = row.public_key.as_deref() else {
+                continue;
+            };
+            let Ok(bytes) = hex::decode(pk_hex) else {
+                continue;
+            };
+            if bytes.len() != 64 {
+                continue;
+            }
+            let mut key = [0u8; 64];
+            key.copy_from_slice(&bytes);
+            driver.register_identity_key(dest, key);
+            tracing::debug!(
+                target: "propagation-sync",
+                dest = %dest.to_lowercase(),
+                "rehydrated persisted PN public key"
+            );
+        }
+    }
+
+    /// Register (and optionally pin) a PN pubkey from outbound / recent announces / discovery.
+    pub fn register_propagation_node_identity(
+        &self,
+        destination_hash: &str,
+        public_key_hex: Option<&str>,
+        identity_hash: Option<&str>,
+        pin: bool,
+    ) -> Option<[u8; 64]> {
+        let dest = destination_hash.to_lowercase();
+        let mut key = public_key_hex.and_then(|hex_str| {
+            let bytes = hex::decode(hex_str).ok()?;
+            if bytes.len() != 64 {
+                return None;
+            }
+            let mut arr = [0u8; 64];
+            arr.copy_from_slice(&bytes);
+            Some(arr)
+        });
+        if key.is_none() {
+            key = self
+                .outbound
+                .lock()
+                .ok()
+                .and_then(|d| d.public_key_for(&dest));
+        }
+        let Some(pub_key) = key else {
+            let _ = identity_hash;
+            return None;
+        };
+        if let Ok(mut driver) = self.outbound.lock() {
+            if pin {
+                driver.pin_identity_for_propagation(&dest, pub_key);
+            } else {
+                driver.register_identity_key(&dest, pub_key);
+            }
+        }
+        Some(pub_key)
     }
 
     /// `hash_hex` is the announced Nomad node destination hash (used for the
@@ -1807,6 +1914,8 @@ impl LiveBridge {
         let dest_hex = destination_hash.to_lowercase();
         // Cancel any in-flight sync/emitter before starting a new one.
         self.cancel_propagation_sync().await;
+        // Re-apply persisted PN pubkey before identity wait (announce flood may have evicted it).
+        self.rehydrate_propagation_identities_from_persisted();
         // Link proofs are ignored unless the destination pubkey is in known_identities.
         // Resolve identity (+ path when possible) before Establishing, same as LXMF delivery.
         let identity_ok = self.ensure_identity_for_direct(&dest_hex).await;
@@ -1825,13 +1934,29 @@ impl LiveBridge {
             return Err("PROPAGATION_TARGET_NOT_PN".into());
         }
         let peering = self.resolve_propagation_peering(&dest_hex).await?;
+        // Fresh LXMF delivery announce so the PN can return LRPROOF (reverse path).
+        self.ensure_lxmf_announce_for_propagation_sync(&dest_hex)
+            .await;
+        let hops = self.hops_to_destination(&dest_hex).await;
         // Pin PN pubkey for the duration of Establishing so announce-flood eviction
         // cannot drop it before LRPROOF validation (see known_identities cap).
-        if let Ok(mut driver) = self.outbound.lock() {
+        let pinned = if let Ok(mut driver) = self.outbound.lock() {
             if let Some(pub_key) = driver.public_key_for(&dest_hex) {
                 driver.pin_identity_for_propagation(&dest_hex, pub_key);
+                true
+            } else {
+                false
             }
-        }
+        } else {
+            false
+        };
+        tracing::info!(
+            target: "propagation-sync",
+            dest = %dest_hex,
+            hops = ?hops,
+            pinned,
+            "starting remote propagation sync"
+        );
         self.sync_cancel
             .store(false, std::sync::atomic::Ordering::SeqCst);
         if !self.propagation.start_sync(hash, Some(peering)) {

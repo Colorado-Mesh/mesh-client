@@ -3940,7 +3940,10 @@
     "discoveredAddAria": "Přidat objevený propagační uzel {{name}}",
     "discoveredAddPrefer": "Přidat a preferovat",
     "discoveredAddPreferAria": "Přidat objevený propagační uzel {{name}} a nastavit jako preferovaný",
-    "discoveredHash": "{{hash}}"
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "Synchronizace propagace nezískala žádný důkaz odkazu z uzlu — vaše identita může potřebovat nové oznámení nebo chybí cesta zpět. Zkuste Network → Announce nyní a poté Sync znovu.",
+    "syncOfferUnknown": "Propagační uzel vrátil neznámou chybu nabídky synchronizace — zkuste to znovu za chvíli.",
+    "syncPathHint": "Vzdálená synchronizace vyžaduje cestu oběma směry. Synchronizace nejprve odešle krátké oznámení LXMF, aby mohl uzel odpovědět."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Režim propagace",

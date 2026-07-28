@@ -3938,7 +3938,10 @@
     "discoveredAddAria": "Aggiungi nodo di propagazione scoperto {{name}}",
     "discoveredAddPrefer": "Aggiungi e preferisci",
     "discoveredAddPreferAria": "Aggiungi il nodo di propagazione scoperto {{name}} e impostalo come preferito",
-    "discoveredHash": "{{hash}}"
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "La sincronizzazione della propagazione non ha ricevuto alcuna prova di collegamento dal nodo: la tua identità potrebbe aver bisogno di un nuovo annuncio o manca il percorso di ritorno. Prova Network → Announce ora, quindi sincronizza di nuovo.",
+    "syncOfferUnknown": "Il nodo di propagazione ha restituito un errore di offerta di sincronizzazione sconosciuto — riprova tra un momento.",
+    "syncPathHint": "La sincronizzazione remota richiede un percorso in entrambe le direzioni. Sync invia prima un breve annuncio LXMF in modo che il nodo possa rispondere."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modalità di propagazione",
