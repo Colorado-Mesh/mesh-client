@@ -481,6 +481,37 @@ describe('ReticulumInterfacesPanel', () => {
     });
   });
 
+  it('prefills IFAC and advanced fields when opening edit', async () => {
+    const user = userEvent.setup();
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'ttp-tcp',
+            name: 'TTP_TCP',
+            type: 'tcp',
+            enabled: true,
+            status: 'up',
+            host: 'rns.thetechprepper.com',
+            port: 11312,
+            mode: 'boundary',
+            network_name: 'ttp_internal',
+            passphrase: 'resistance202606',
+            extra_config: { forward_interval: '300' },
+          },
+        ]}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumInterfaces.edit' }),
+    );
+    expect(document.getElementById('edit-ifac-ttp-tcp-network-name')).toHaveValue('ttp_internal');
+    expect(document.getElementById('edit-ifac-ttp-tcp-passphrase')).toHaveValue('resistance202606');
+    expect(document.getElementById('edit-advanced-ttp-tcp')).toHaveValue('forward_interval = 300');
+  });
+
   it('includes IFAC and extra_config in edit save patch', async () => {
     const user = userEvent.setup();
     const proxyPut = vi.fn().mockResolvedValue({ ok: true });
