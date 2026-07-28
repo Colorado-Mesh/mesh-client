@@ -13,6 +13,7 @@ import {
 } from '../shared/meshcoreContactHwLabels';
 import { MESHCORE_LAST_ADVERT_MAX_FUTURE_SKEW_SEC } from '../shared/meshcoreLastAdvertPlausible';
 import { meshProtocolSqlInList } from '../shared/meshProtocol';
+import { MESHTASTIC_ORPHAN_SENDING_WINDOW_MS } from '../shared/meshtasticOrphanSendingWindow';
 import type { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
@@ -734,7 +735,6 @@ function rebuildMeshcoreTraceHistoryIfNeeded(db: NodeSqliteDB): void {
 }
 
 const MESHCORE_LAST_ADVERT_MIN_PLAUSIBLE_SEC = 1_000_000_000;
-const MESHTASTIC_ORPHAN_SENDING_WINDOW_MS = 120_000;
 const MESHTASTIC_STALE_SENDING_MS = 24 * 3_600_000;
 
 /**

@@ -5,6 +5,7 @@ import {
   buildLxmIdentityUri,
   classifyMeshClientDeepLink,
   findLxmUrlInArgv,
+  isForwardableMeshClientOpenUrl,
 } from './meshClientDeepLink';
 
 describe('meshClientDeepLink', () => {
@@ -48,4 +49,16 @@ describe('meshClientDeepLink', () => {
       expect(findLxmUrlInArgv(['/app/mesh-client'])).toBeUndefined();
     },
   );
+
+  it('classifies bare Meshtastic channel payloads as forwardable', () => {
+    const bare = `${'A'.repeat(40)}_-`;
+    const parsed = classifyMeshClientDeepLink(bare);
+    expect(parsed).toEqual({ kind: 'meshtasticChannel', url: bare });
+    expect(isForwardableMeshClientOpenUrl(bare)).toBe(true);
+  });
+
+  it('forwards Meshtastic channel URLs and drops unrelated schemes', () => {
+    expect(isForwardableMeshClientOpenUrl('https://meshtastic.org/e/#abc')).toBe(true);
+    expect(isForwardableMeshClientOpenUrl('https://example.com')).toBe(false);
+  });
 });

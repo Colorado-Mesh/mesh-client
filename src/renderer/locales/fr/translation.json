@@ -382,7 +382,8 @@
     "languageSelectorHint": "Cliquez pour sélectionner la langue",
     "switchToMeshtasticWithUnread": "Passer à Meshtastic, {{count}} non lu",
     "switchToMeshCoreWithUnread": "Passer à MeshCore, {{count}} non lu",
-    "switchToReticulumWithUnread": "Passer à Reticulum, {{count}} non lu"
+    "switchToReticulumWithUnread": "Passer à Reticulum, {{count}} non lu",
+    "tabWithUnread": "{{label}}, {{count}} non lus"
   },
   "battery": {
     "percentCharging": "Batterie {{percent}} pour cent, en charge",
@@ -4161,7 +4162,8 @@
     "pathHashCliGet": "Obtenir le mode de hachage du chemin",
     "pathHashCliSet0": "Définir le mode de hachage du chemin 1 octet",
     "pathHashCliSet1": "Définir le mode de hachage du chemin sur 2 octets",
-    "pathHashCliSet2": "Définir le mode de hachage du chemin sur 3 octets"
+    "pathHashCliSet2": "Définir le mode de hachage du chemin sur 3 octets",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} non lus"
   },
   "searchModal": {
     "closeSearch": "Fermer recherche",
@@ -4253,7 +4255,10 @@
     "backupRemoved": "Les jeux de sauvegarde ont été supprimés :",
     "meshcorePrivateKeyHint": "Utilisez la clé privée d'exportation ci-dessous pour afficher le matériel clé. La sauvegarde stocke la paire de clés complète sur cet ordinateur.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "Aucune sauvegarde trouvée",
+    "missingKeyMaterial": "Matériel clé manquant",
+    "unknownError": "Erreur inconnue"
   },
   "sidebar": {
     "disabledTabTooltip": "Non disponible dans ce mode"

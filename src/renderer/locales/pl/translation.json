@@ -382,7 +382,8 @@
     "languageSelectorHint": "Kliknij, aby wybrać język",
     "switchToMeshtasticWithUnread": "Przełącz na Meshtastic, {{count}} nieprzeczytane",
     "switchToMeshCoreWithUnread": "Przełącz na MeshCore, {{count}} nieprzeczytane",
-    "switchToReticulumWithUnread": "Przełącz na Reticulum, {{count}} nieprzeczytane"
+    "switchToReticulumWithUnread": "Przełącz na Reticulum, {{count}} nieprzeczytane",
+    "tabWithUnread": "{{label}}, {{count}} nieprzeczytane"
   },
   "battery": {
     "percentCharging": "Bateria {{percent}} procent, ładowanie",
@@ -4163,7 +4164,8 @@
     "pathHashCliGet": "Uzyskaj tryb skrótu ścieżki",
     "pathHashCliSet0": "Ustaw tryb skrótu ścieżki 1 bajt",
     "pathHashCliSet1": "Ustaw tryb skrótu ścieżki 2-bajtowy",
-    "pathHashCliSet2": "Ustaw tryb skrótu ścieżki 3-bajtowy"
+    "pathHashCliSet2": "Ustaw tryb skrótu ścieżki 3-bajtowy",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} nieprzeczytane"
   },
   "searchModal": {
     "closeSearch": "Zamknij wyszukiwanie",
@@ -4255,7 +4257,10 @@
     "backupRemoved": "Usunięto zestawy kopii:",
     "meshcorePrivateKeyHint": "Użyj Eksportuj klucz prywatny poniżej, aby wyświetlić kluczowy materiał. Kopia zapasowa przechowuje pełną parę kluczy na tym komputerze.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "Nie znaleziono kopii zapasowej",
+    "missingKeyMaterial": "Brakujący materiał klucza",
+    "unknownError": "Nieznany błąd"
   },
   "sidebar": {
     "disabledTabTooltip": "Niedostępne w tym trybie"

@@ -216,12 +216,15 @@ export async function buildSupportBundleZip(
   zip.file('README.txt', buildReadme(mode));
 
   if (mode === 'developer') {
-    const tempDbPath = path.join(app.getPath('temp'), `mesh-client-support-db-${Date.now()}.db`);
+    const tempRoot = app.getPath('temp');
+    await fs.promises.mkdir(tempRoot, { recursive: true });
+    const tempDbDir = await fs.promises.mkdtemp(path.join(tempRoot, 'mesh-support-db-'));
+    const tempDbPath = path.join(tempDbDir, 'mesh-client.db');
     try {
       exportDatabase(tempDbPath);
       zip.file('mesh-client.db', await fs.promises.readFile(tempDbPath));
     } finally {
-      await fs.promises.rm(tempDbPath, { force: true });
+      await fs.promises.rm(tempDbDir, { recursive: true, force: true });
     }
 
     const reticulumArtifacts = readReticulumDeveloperArtifacts();

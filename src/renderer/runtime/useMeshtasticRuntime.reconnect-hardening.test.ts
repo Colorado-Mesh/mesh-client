@@ -12,7 +12,11 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { extractIfBlockBody, extractUseCallbackBody } from '../lib/sourceContractTestHelpers';
+import {
+  assertPowerResumeSkipsOnExplicitDisconnect,
+  extractIfBlockBody,
+  extractUseCallbackBody,
+} from '../lib/sourceContractTestHelpers';
 
 const TEST_DIR = import.meta.dirname ?? __dirname;
 const SOURCE = readFileSync(join(TEST_DIR, 'useMeshtasticRuntime.ts'), 'utf-8');
@@ -150,9 +154,6 @@ describe('useMeshtasticRuntime manual disconnect must not auto-reconnect', () =>
   });
 
   it('onPowerResume skips reconnect after explicit user disconnect', () => {
-    const resumeBody = extractUseCallbackBody(SOURCE, 'onPowerResume');
-    expect(resumeBody).toMatch(
-      /meshtasticExplicitDisconnectRef\.current[\s\S]*?skip reconnect \(user disconnect\)/,
-    );
+    assertPowerResumeSkipsOnExplicitDisconnect(SOURCE, 'meshtasticExplicitDisconnectRef.current');
   });
 });

@@ -2,6 +2,7 @@ import type { BrowserWindow } from 'electron';
 import { ipcMain, shell } from 'electron';
 
 import type { ReticulumSidecarStatus } from '../../shared/reticulum-types';
+import { canonicalizeReticulumDestinationHash } from '../../shared/reticulumDestinationHash';
 import { sanitizeLogMessage } from '../log-service';
 import {
   isAllowedNomadContentSourcePath,
@@ -303,8 +304,13 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       throw new TypeError('rncpSend: opts must be an object');
     }
     const o = opts as Record<string, unknown>;
-    const destinationHash = typeof o.destination_hash === 'string' ? o.destination_hash : '';
+    const destinationHash = canonicalizeReticulumDestinationHash(
+      typeof o.destination_hash === 'string' ? o.destination_hash : '',
+    );
     const filePath = typeof o.path === 'string' ? o.path : '';
+    if (!destinationHash) {
+      return { ok: false, error: 'invalid_destination_hash' };
+    }
     if (!isAllowedRncpSendFilePath(filePath)) {
       console.warn(
         '[ReticulumIPC] rncpSend rejected path not from picker:',
@@ -336,10 +342,18 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
       throw new TypeError('rncpFetch: opts must be an object');
     }
     const o = opts as Record<string, unknown>;
-    const destinationHash = typeof o.destination_hash === 'string' ? o.destination_hash : '';
+    const destinationHash = canonicalizeReticulumDestinationHash(
+      typeof o.destination_hash === 'string' ? o.destination_hash : '',
+    );
     const remotePath = typeof o.remote_path === 'string' ? o.remote_path : '';
     const savePath =
       typeof o.save_path === 'string' && o.save_path.trim() ? o.save_path : undefined;
+    if (!destinationHash) {
+      return { ok: false, error: 'invalid_destination_hash' };
+    }
+    if (remotePath.length === 0 || remotePath.length > 1024 || remotePath.includes('\0')) {
+      return { ok: false, error: 'invalid_remote_path' };
+    }
     if (savePath != null && !isAllowedRncpSaveDirectoryPath(savePath)) {
       console.warn(
         '[ReticulumIPC] rncpFetch rejected save_path not from picker:',

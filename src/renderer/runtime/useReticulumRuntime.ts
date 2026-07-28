@@ -1073,7 +1073,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
       unsubEventRef.current = null;
       // Dev HMR remounts App without an explicit disconnect — keep the sidecar alive.
       if (!import.meta.env.DEV) {
-        void window.electronAPI.reticulum.stop();
+        void window.electronAPI.reticulum.stop().catch((e: unknown) => {
+          console.warn('[useReticulumRuntime] unmount stop failed ' + errLikeToLogString(e));
+        });
       }
     };
   }, []);
@@ -1549,7 +1551,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
       console.debug('[useReticulumRuntime] power resume — skip reconnect (user disconnect)');
       return;
     }
-    void connect();
+    void connect().catch((e: unknown) => {
+      console.warn('[useReticulumRuntime] power resume reconnect failed ' + errLikeToLogString(e));
+    });
   }, [connect]);
 
   const runtime = useMemo(

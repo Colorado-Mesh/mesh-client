@@ -382,6 +382,7 @@
     "switchToMeshtasticWithUnread": "Switch to Meshtastic, {{count}} unread",
     "switchToMeshCoreWithUnread": "Switch to MeshCore, {{count}} unread",
     "switchToReticulumWithUnread": "Switch to Reticulum, {{count}} unread",
+    "tabWithUnread": "{{label}}, {{count}} unread",
     "backToTop": "Back to top"
   },
   "battery": {
@@ -4224,6 +4225,7 @@
     "loginHelp": "Enter the guest password to join and post. Default is often \"hello\". For servers with no guest password, use Continue read-only (Login sends \"hello\" when the field is empty).",
     "emptyGuestLoginHint": "Empty guest field: use Continue read-only for blank-password servers. Login requires a password and sends \"hello\" when the field is empty.",
     "unreadPosts": "{{count}} new",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} unread",
     "adminLoginHelp": "Enter the room admin password to manage settings and ACLs. Default is often \"hello\".",
     "guestPasswordLabel": "Guest password",
     "guestPasswordPlaceholder": "hello",
@@ -4346,6 +4348,9 @@
     "adminSettingsApplied": "Administration settings applied.",
     "backupFailed": "Backup failed: {{message}}",
     "restoreFailed": "Restore failed: {{message}}",
+    "noBackupFound": "No backup found",
+    "missingKeyMaterial": "Missing key material",
+    "unknownError": "Unknown error",
     "dataSigned": "Data signed successfully.",
     "signNoResult": "Sign operation returned no result.",
     "signFailed": "Sign failed: {{message}}",

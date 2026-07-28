@@ -382,7 +382,8 @@
     "languageSelectorHint": "Нажмите здесь, чтобы выбрать набор",
     "switchToMeshtasticWithUnread": "Переключиться на Meshtastic, {{count}} непрочитано",
     "switchToMeshCoreWithUnread": "Переключиться на MeshCore, {{count}} непрочитано",
-    "switchToReticulumWithUnread": "Переключиться на Reticulum, {{count}} непрочитано"
+    "switchToReticulumWithUnread": "Переключиться на Reticulum, {{count}} непрочитано",
+    "tabWithUnread": "{{label}}, {{count}} НЕ прочитано"
   },
   "battery": {
     "percentCharging": "Аккумулятор {{percent}} процентов, зарядка",
@@ -4163,7 +4164,8 @@
     "pathHashCliGet": "Получить режим хеширования пути",
     "pathHashCliSet0": "Установить режим хеширования пути 1 байт",
     "pathHashCliSet1": "Установить хеш-режим пути 2 байта",
-    "pathHashCliSet2": "Установить режим хеширования пути 3 байта"
+    "pathHashCliSet2": "Установить режим хеширования пути 3 байта",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} НЕ прочитано"
   },
   "searchModal": {
     "closeSearch": "Закрыть поиск",
@@ -4255,7 +4257,10 @@
     "backupRemoved": "Резервные наборы данных удалены:",
     "meshcorePrivateKeyHint": "Используйте Экспортировать закрытый ключ ниже, чтобы просмотреть ключевой материал. Резервное копирование сохраняет полную пару ключей на этом компьютере.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "Резервные копии не найдены",
+    "missingKeyMaterial": "Отсутствует ключевой материал",
+    "unknownError": "Неизвестная ошибка"
   },
   "sidebar": {
     "disabledTabTooltip": "Недоступно в этом режиме"

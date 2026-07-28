@@ -382,7 +382,8 @@
     "languageSelectorHint": "언어를 선택하려면 클릭하세요.",
     "switchToMeshtasticWithUnread": "Meshtastic으로 전환하세요. {{count}} 읽지 않았습니다.",
     "switchToMeshCoreWithUnread": "MeshCore로 전환, {{count}} 읽지 않음",
-    "switchToReticulumWithUnread": "Reticulum으로 전환, {{count}} 읽지 않음"
+    "switchToReticulumWithUnread": "Reticulum으로 전환, {{count}} 읽지 않음",
+    "tabWithUnread": "{{label}}, {{count}} 읽지 않음"
   },
   "battery": {
     "percentCharging": "배터리 {{percent}} 퍼센트, 충전 중",
@@ -4161,7 +4162,8 @@
     "pathHashCliGet": "경로 해시 모드 가져오기",
     "pathHashCliSet0": "경로 해시 모드 1바이트 설정",
     "pathHashCliSet1": "경로 해시 모드 2바이트 설정",
-    "pathHashCliSet2": "경로 해시 모드 3바이트 설정"
+    "pathHashCliSet2": "경로 해시 모드 3바이트 설정",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} 읽지 않음"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",
@@ -4253,7 +4255,10 @@
     "backupRemoved": "백업 세트가 제거됨:",
     "meshcorePrivateKeyHint": "주요 자료를 보려면 아래 개인 키 내보내기를 사용하십시오. 백업은 이 컴퓨터에 전체 키 쌍을 저장합니다.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "백업을 찾을 수 없습니다",
+    "missingKeyMaterial": "핵심 자료 누락",
+    "unknownError": "알 수 없는 오류"
   },
   "sidebar": {
     "disabledTabTooltip": "이 모드에서는 사용할 수 없습니다."

@@ -4,7 +4,10 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { extractUseCallbackBody } from '../lib/sourceContractTestHelpers';
+import {
+  assertPowerResumeSkipsOnExplicitDisconnect,
+  extractUseCallbackBody,
+} from '../lib/sourceContractTestHelpers';
 
 const RUNTIME_SOURCE = readFileSync(join(__dirname, '../runtime/useMeshcoreRuntime.ts'), 'utf-8');
 const CONN_EVENTS_SOURCE = readFileSync(
@@ -209,6 +212,13 @@ describe('useMeshcoreRuntime manual disconnect must not auto-reconnect', () => {
     expect(RUNTIME_SOURCE).toContain('shouldRunMeshcoreWaitingMessagesPeriodicPoll');
     expect(RUNTIME_SOURCE).toMatch(
       /shouldRunMeshcoreWaitingMessagesPeriodicPoll\(waitingMessagesCountRef\.current\)/,
+    );
+  });
+
+  it('onPowerResume skips reconnect after explicit user disconnect', () => {
+    assertPowerResumeSkipsOnExplicitDisconnect(
+      RUNTIME_SOURCE,
+      'meshcoreExplicitDisconnectRef.current',
     );
   });
 });

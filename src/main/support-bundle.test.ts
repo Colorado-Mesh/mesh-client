@@ -3,7 +3,7 @@ import fs from 'fs';
 import JSZip from 'jszip';
 import os from 'os';
 import path from 'path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { flushLogBeforeQuit, getLogPath, exportDatabase } = vi.hoisted(() => ({
   flushLogBeforeQuit: vi.fn().mockResolvedValue(undefined),
@@ -11,12 +11,17 @@ const { flushLogBeforeQuit, getLogPath, exportDatabase } = vi.hoisted(() => ({
   exportDatabase: vi.fn(),
 }));
 
+/** Unique default temp/userData roots for Electron path mocks (no fixed tmpdir names). */
+let defaultPathsRoot = '';
+
 vi.mock('electron', () => ({
   app: {
     getPath: vi.fn((key: string) => {
-      if (key === 'temp') return path.join(os.tmpdir(), 'mesh-client-support-test-temp');
-      if (key === 'userData') return path.join(os.tmpdir(), 'mesh-client-support-test-userdata');
-      return path.join(os.tmpdir(), 'mesh-client-support-test-userdata');
+      // beforeAll may not have run yet during module init — fall back to process tmpdir.
+      const root = defaultPathsRoot || os.tmpdir();
+      if (key === 'temp') return path.join(root, 'temp');
+      if (key === 'userData') return path.join(root, 'userdata');
+      return path.join(root, 'userdata');
     }),
     getVersion: vi.fn(() => '9.9.9-test'),
     isPackaged: false,
@@ -42,6 +47,27 @@ import {
   redactMnemonicFromStackJson,
   validateDebugSnapshotJson,
 } from './support-bundle';
+
+function mockDefaultAppPaths(): void {
+  vi.mocked(app.getPath).mockImplementation((key: string) => {
+    if (key === 'temp') return path.join(defaultPathsRoot, 'temp');
+    if (key === 'userData') return path.join(defaultPathsRoot, 'userdata');
+    return path.join(defaultPathsRoot, 'userdata');
+  });
+}
+
+beforeAll(() => {
+  defaultPathsRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-client-support-default-'));
+  fs.mkdirSync(path.join(defaultPathsRoot, 'temp'), { recursive: true });
+  fs.mkdirSync(path.join(defaultPathsRoot, 'userdata'), { recursive: true });
+  mockDefaultAppPaths();
+});
+
+afterAll(() => {
+  if (defaultPathsRoot) {
+    fs.rmSync(defaultPathsRoot, { recursive: true, force: true });
+  }
+});
 
 describe('validateDebugSnapshotJson', () => {
   it('accepts a JSON object', () => {
@@ -108,6 +134,7 @@ describe('readReticulumDeveloperArtifacts', () => {
 
   afterEach(async () => {
     await fs.promises.rm(userDataDir, { recursive: true, force: true });
+    mockDefaultAppPaths();
   });
 
   it('reads config and redacted stack state when present', async () => {
@@ -167,10 +194,12 @@ describe('buildSupportBundleZip', () => {
     flushLogBeforeQuit.mockClear();
     exportDatabase.mockReset();
     await fs.promises.writeFile(logPath, 'line-one\n', 'utf8');
+    mockDefaultAppPaths();
   });
 
   afterEach(async () => {
     await fs.promises.rm(workDir, { recursive: true, force: true });
+    mockDefaultAppPaths();
   });
 
   async function zipEntryNames(zipPath: string): Promise<string[]> {

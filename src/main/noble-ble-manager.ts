@@ -1098,24 +1098,20 @@ export class NobleBleManager extends EventEmitter {
       try {
         await withTimeout(peripheral.connectAsync(), BLE_CONNECT_TIMEOUT_MS, 'BLE connectAsync');
       } catch (err) {
-        if (err instanceof Error && /BLE connectAsync timed out/i.test(err.message)) {
-          this.knownPeripherals.delete(peripheralId);
-          try {
-            await withTimeout(
-              peripheral.disconnectAsync(),
-              5000,
-              'BLE post-timeout disconnectAsync',
-            );
-          } catch (disconnectErr) {
-            console.debug(
-              `[BLE:${sessionId}] post-timeout disconnect error (ignored):`,
-              sanitizeLogMessage(
-                disconnectErr instanceof Error ? disconnectErr.message : String(disconnectErr),
-              ),
-            );
-          }
-          // UI hints are applied in renderer via connectionPanelErrorHumanize (i18n).
-          throw err;
+        this.knownPeripherals.delete(peripheralId);
+        try {
+          await withTimeout(
+            peripheral.disconnectAsync(),
+            5000,
+            'BLE post-connect-failure disconnectAsync',
+          );
+        } catch (disconnectErr) {
+          console.debug(
+            `[BLE:${sessionId}] post-connect-failure disconnect error (ignored):`,
+            sanitizeLogMessage(
+              disconnectErr instanceof Error ? disconnectErr.message : String(disconnectErr),
+            ),
+          );
         }
         throw err;
       }

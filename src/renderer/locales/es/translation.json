@@ -382,7 +382,8 @@
     "languageSelectorHint": "Haga clic aquí para seleccionar",
     "switchToMeshtasticWithUnread": "Cambiar a Meshtastic, {{count}} no leído",
     "switchToMeshCoreWithUnread": "Cambiar a MeshCore, {{count}} no leído",
-    "switchToReticulumWithUnread": "Cambiar a Reticulum, {{count}} sin leer"
+    "switchToReticulumWithUnread": "Cambiar a Reticulum, {{count}} sin leer",
+    "tabWithUnread": "{{label}}, {{count}} sin leer"
   },
   "battery": {
     "percentCharging": "Batería {{percent}} por ciento, cargando",
@@ -4161,7 +4162,8 @@
     "pathHashCliGet": "Obtener modo hash de ruta",
     "pathHashCliSet0": "Establecer modo hash de ruta de 1 byte",
     "pathHashCliSet1": "Establecer modo hash de ruta de 2 bytes",
-    "pathHashCliSet2": "Establecer modo hash de ruta de 3 bytes"
+    "pathHashCliSet2": "Establecer modo hash de ruta de 3 bytes",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} sin leer"
   },
   "searchModal": {
     "closeSearch": "Cerrar búsqueda",
@@ -4253,7 +4255,10 @@
     "backupRemoved": "Copia de seguridad eliminada.",
     "meshcorePrivateKeyHint": "Utilice la clave privada de exportación a continuación para ver el material de la clave. La copia de seguridad almacena el par de claves completo en este ordenador.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "¡Ningún conjunto de copia de seguridad encontrado!",
+    "missingKeyMaterial": "Falta material clave",
+    "unknownError": "Error desconocido"
   },
   "sidebar": {
     "disabledTabTooltip": "No disponible en este modo"

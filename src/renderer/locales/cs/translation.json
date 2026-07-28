@@ -382,7 +382,8 @@
     "languageSelectorHint": "Kliknutím vyberte jazyk",
     "switchToMeshtasticWithUnread": "Přepnout na Meshtastic, {{count}} nepřečteno",
     "switchToMeshCoreWithUnread": "Přepnout na MeshCore, {{count}} nepřečteno",
-    "switchToReticulumWithUnread": "Přepnout na Reticulum, {{count}} nepřečteno"
+    "switchToReticulumWithUnread": "Přepnout na Reticulum, {{count}} nepřečteno",
+    "tabWithUnread": "{{label}}, {{count}} nepřečteno"
   },
   "battery": {
     "percentCharging": "Baterie {{percent}} procent, nabíjí se",
@@ -4163,7 +4164,8 @@
     "pathHashCliGet": "Získat režim hash cesty",
     "pathHashCliSet0": "Nastavit režim hash cesty 1 bajt",
     "pathHashCliSet1": "Nastavit režim hash cesty 2bajtový",
-    "pathHashCliSet2": "Nastavte režim cesty hash 3-bajt"
+    "pathHashCliSet2": "Nastavte režim cesty hash 3-bajt",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} nepřečteno"
   },
   "searchModal": {
     "closeSearch": "Zavřít vyhledávání",
@@ -4255,7 +4257,10 @@
     "backupRemoved": "Záloha odstraněna.",
     "meshcorePrivateKeyHint": "Pro zobrazení klíčového materiálu použijte Exportovat soukromý klíč níže. Zálohování ukládá celý pár klíčů do tohoto počítače.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "Nebyla nalezena žádná záloha",
+    "missingKeyMaterial": "Chybějící klíčový materiál",
+    "unknownError": "Neznámá chyba"
   },
   "sidebar": {
     "disabledTabTooltip": "Není k dispozici v tomto režimu"

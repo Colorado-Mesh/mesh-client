@@ -382,7 +382,8 @@
     "languageSelectorHint": "Dili seçmek için tıklayın",
     "switchToMeshtasticWithUnread": "Meshtastic'e geç, {{count}} okunmadı",
     "switchToMeshCoreWithUnread": "MeshCore'a geç, {{count}} okunmadı",
-    "switchToReticulumWithUnread": "Reticulum'a geç, {{count}} okunmadı"
+    "switchToReticulumWithUnread": "Reticulum'a geç, {{count}} okunmadı",
+    "tabWithUnread": "{{label}}, {{count}} okunmamış"
   },
   "battery": {
     "percentCharging": "Pil yüzde {{percent}}, şarj oluyor",
@@ -4161,7 +4162,8 @@
     "pathHashCliGet": "Yol karma modunu al",
     "pathHashCliSet0": "Yol karma modunu 1 bayt olarak ayarla",
     "pathHashCliSet1": "Yol karma modunu 2 bayt olarak ayarla",
-    "pathHashCliSet2": "Yol karma modunu ayarla 3 bayt"
+    "pathHashCliSet2": "Yol karma modunu ayarla 3 bayt",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} okunmamış"
   },
   "searchModal": {
     "closeSearch": "Aramayı kapat",
@@ -4253,7 +4255,10 @@
     "backupRemoved": "Yedek kaldırıldı.",
     "meshcorePrivateKeyHint": "Önemli materyali görüntülemek için aşağıdaki Özel Anahtarı Dışa Aktar'ı kullanın. Yedekleme, tam anahtar çiftini bu bilgisayarda saklar.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "Herhangi bir yedek listesi bulunamadı.",
+    "missingKeyMaterial": "Eksik anahtar materyali",
+    "unknownError": "Bilinmeyen hata"
   },
   "sidebar": {
     "disabledTabTooltip": "Bu modda kullanılamaz"

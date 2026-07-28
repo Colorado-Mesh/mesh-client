@@ -451,6 +451,13 @@ describe('privileged IPC sender validation (source contract)', () => {
     'app:rendererHeartbeat',
     'db:saveNode',
     'db:saveNodePath',
+    'db:getNodes',
+    'db:getMessageChannels',
+    'log:getPath',
+    'log:getRecentLines',
+    'mqtt:getCachedNodes',
+    'mqtt:getClientId',
+    'storage:isAvailable',
     'support:exportBundle',
   ] as const;
 

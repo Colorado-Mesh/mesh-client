@@ -382,7 +382,8 @@
     "languageSelectorHint": "クリックして言語を選択",
     "switchToMeshtasticWithUnread": "Meshtastic に切り替え、{{count}} は未読",
     "switchToMeshCoreWithUnread": "MeshCore に切り替え、{{count}} 未読",
-    "switchToReticulumWithUnread": "Reticulum に切り替え、{{count}} 未読"
+    "switchToReticulumWithUnread": "Reticulum に切り替え、{{count}} 未読",
+    "tabWithUnread": "{{label}}、{{count}}未読"
   },
   "battery": {
     "percentCharging": "バッテリー {{percent}} パーセント、充電中",
@@ -4161,7 +4162,8 @@
     "pathHashCliGet": "パスハッシュモードの取得",
     "pathHashCliSet0": "パスハッシュモード1バイトを設定",
     "pathHashCliSet1": "パスハッシュモード2バイトを設定",
-    "pathHashCliSet2": "パスハッシュモード3バイトを設定"
+    "pathHashCliSet2": "パスハッシュモード3バイトを設定",
+    "collapsedRoomWithUnread": "{{label}}、{{count}}未読"
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",
@@ -4253,7 +4255,10 @@
     "backupRemoved": "バックアップセットの削除:",
     "meshcorePrivateKeyHint": "以下のエクスポート秘密鍵を使用して、キー素材を表示します。バックアップは、このコンピューターに完全なキーペアを保存します。",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "バックアップが見つかりません",
+    "missingKeyMaterial": "キー素材がありません",
+    "unknownError": "不明なエラー"
   },
   "sidebar": {
     "disabledTabTooltip": "このモードでは使用できません"

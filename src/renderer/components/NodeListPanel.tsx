@@ -34,6 +34,7 @@ import {
   filterDiagnosticRowsForProtocol,
   getRoutingRowForNode,
 } from '../lib/diagnostics/diagnosticRows';
+import { translateRoutingRowDescription } from '../lib/diagnostics/diagnosticsLabels';
 import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
 import { downloadBlob } from '../lib/downloadBlob';
 import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
@@ -1284,12 +1285,9 @@ export default function NodeListPanel({
                                   node.node_id,
                                 );
                                 if (!routingRow) return null;
+                                const routingDesc = translateRoutingRowDescription(t, routingRow);
                                 return (
-                                  <span
-                                    role="img"
-                                    title={routingRow.description}
-                                    aria-label={routingRow.description}
-                                  >
+                                  <span role="img" title={routingDesc} aria-label={routingDesc}>
                                     <TriangleAlert
                                       aria-hidden
                                       className={`h-4 w-4 shrink-0 ${
