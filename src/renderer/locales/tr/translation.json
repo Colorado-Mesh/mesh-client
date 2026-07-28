@@ -4257,7 +4257,7 @@
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
     "backupLabelMeshcore": "MeshCore · {{detail}}",
     "noBackupFound": "Herhangi bir yedek listesi bulunamadı.",
-    "missingKeyMaterial": "Eksik temel malzeme",
+    "missingKeyMaterial": "Eksik anahtar materyali",
     "unknownError": "Bilinmeyen hata"
   },
   "sidebar": {

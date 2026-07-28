@@ -86,7 +86,8 @@ export function clearNomadContentSourcePick(): void {
 /**
  * True when `candidate` matches the last native folder-picker result.
  * Blocks arbitrary filesystem paths and rejects null/empty (watch folder required).
- * Uses realpath so a symlink under a picked dir cannot escape the allowlist.
+ * Uses realpath so a spoofed symlink cannot be mistaken for the picked directory
+ * (exact-path match only — nested paths are not authorized).
  */
 export function isAllowedNomadContentSourcePath(candidate: string | null): boolean {
   return isSameCanonicalPath(candidate, lastPickedNomadContentSource);

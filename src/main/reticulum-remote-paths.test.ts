@@ -55,6 +55,16 @@ describe('reticulum-remote-paths picker allowlist', () => {
     expect(isAllowedRncpSendFilePath(path.join(tempRoot, 'bar.txt'))).toBe(false);
   });
 
+  it('clearRncpPickerAllowlist revokes previously allowed paths', async () => {
+    const filePath = path.join(tempRoot, 'revoke.txt');
+    fs.writeFileSync(filePath, 'x');
+    showOpenDialogMock.mockResolvedValue({ canceled: false, filePaths: [filePath] });
+    await showRncpOpenFileDialog();
+    expect(isAllowedRncpSendFilePath(filePath)).toBe(true);
+    clearRncpPickerAllowlist();
+    expect(isAllowedRncpSendFilePath(filePath)).toBe(false);
+  });
+
   it('showRncpSaveDirectoryDialog allows the exact directory and nested paths under it', async () => {
     const saveDir = path.join(tempRoot, 'rncp-save');
     fs.mkdirSync(saveDir);

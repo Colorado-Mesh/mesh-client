@@ -2,7 +2,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { APP_SETTINGS_STORAGE_KEY } from './appSettingsStorage';
-import { createMeshcorePerNodeCredentialStorage } from './meshcorePerNodeCredentialStorage';
+import {
+  createMeshcorePerNodeCredentialStorage,
+  parseLegacyCredentialRaw,
+} from './meshcorePerNodeCredentialStorage';
 
 const PREFIX = 'meshcoreTestCredential:';
 
@@ -75,5 +78,32 @@ describe('createMeshcorePerNodeCredentialStorage', () => {
     const storage = createTestStorage();
     await expect(storage.set(0x30, { secret: 'x' })).rejects.toThrow('ipc fail');
     expect(localStorage.getItem(APP_SETTINGS_STORAGE_KEY)).toContain(`${PREFIX}48`);
+  });
+});
+
+describe('parseLegacyCredentialRaw', () => {
+  it('parses plain strings and JSON objects', () => {
+    const mappers = {
+      fromPlainString: (value: string) => ({ secret: value }),
+      fromObject: (o: Record<string, unknown>) =>
+        typeof o.secret === 'string' ? { secret: o.secret } : undefined,
+    };
+    expect(parseLegacyCredentialRaw('plain', mappers)).toEqual({ secret: 'plain' });
+    expect(parseLegacyCredentialRaw(JSON.stringify({ secret: 'json' }), mappers)).toEqual({
+      secret: 'json',
+    });
+    expect(parseLegacyCredentialRaw({ secret: 'obj' }, mappers)).toEqual({ secret: 'obj' });
+  });
+
+  it('propagates mapper failures instead of treating them as plain strings', () => {
+    const mappers = {
+      fromPlainString: (value: string) => ({ secret: value }),
+      fromObject: (): never => {
+        throw new Error('mapper boom');
+      },
+    };
+    expect(() => parseLegacyCredentialRaw(JSON.stringify({ secret: 'x' }), mappers)).toThrow(
+      'mapper boom',
+    );
   });
 });

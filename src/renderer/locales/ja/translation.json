@@ -4256,7 +4256,7 @@
     "meshcorePrivateKeyHint": "以下のエクスポート秘密鍵を使用して、キー素材を表示します。バックアップは、このコンピューターに完全なキーペアを保存します。",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
     "backupLabelMeshcore": "MeshCore · {{detail}}",
-    "noBackupFound": "バックアップが見つかりました",
+    "noBackupFound": "バックアップが見つかりません",
     "missingKeyMaterial": "キー素材がありません",
     "unknownError": "不明なエラー"
   },

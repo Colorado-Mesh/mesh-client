@@ -32,12 +32,14 @@ export function parseLegacyCredentialRaw<T>(
   if (raw == null) return undefined;
   if (typeof raw === 'string') {
     if (!raw.trim()) return undefined;
+    let parsed: unknown;
     try {
-      return parseLegacyCredentialRaw(JSON.parse(raw) as unknown, mappers);
+      parsed = JSON.parse(raw) as unknown;
     } catch {
       // catch-no-log-ok legacy plain-string credential is not JSON
       return mappers.fromPlainString(raw);
     }
+    return parseLegacyCredentialRaw(parsed, mappers);
   }
   if (typeof raw !== 'object' || Array.isArray(raw)) return undefined;
   return mappers.fromObject(raw as Record<string, unknown>);

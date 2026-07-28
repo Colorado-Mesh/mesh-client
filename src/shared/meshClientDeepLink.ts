@@ -42,9 +42,7 @@ export function classifyMeshClientDeepLink(raw: string): MeshClientDeepLink {
 
   if (MESHTASTIC_URL_RE.test(trimmed) || /^[A-Za-z0-9_-]{20,}={0,2}$/.test(trimmed)) {
     // Bare base64url channel payloads are handled by meshtasticUrlEncoder consumers.
-    if (MESHTASTIC_URL_RE.test(trimmed) || trimmed.includes('meshtastic')) {
-      return { kind: 'meshtasticChannel', url: trimmed };
-    }
+    return { kind: 'meshtasticChannel', url: trimmed };
   }
 
   if (/^lxm:\/\//i.test(trimmed)) {

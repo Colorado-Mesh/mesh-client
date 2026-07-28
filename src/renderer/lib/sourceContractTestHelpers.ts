@@ -45,8 +45,11 @@ export function assertPowerResumeSkipsOnExplicitDisconnect(
 ): void {
   const resumeBody = extractUseCallbackBody(source, callbackName);
   expect(resumeBody.length).toBeGreaterThan(0);
-  const refIdx = resumeBody.indexOf(explicitDisconnectRef);
-  const skipIdx = resumeBody.indexOf('skip reconnect (user disconnect)');
-  expect(refIdx).toBeGreaterThanOrEqual(0);
-  expect(skipIdx).toBeGreaterThan(refIdx);
+  const guardBody = extractIfBlockBody(resumeBody, explicitDisconnectRef);
+  expect(guardBody.length).toBeGreaterThan(0);
+  expect(guardBody).toContain('skip reconnect (user disconnect)');
+  expect(guardBody).toMatch(/\breturn\b/);
+  // Guard must not start reconnect work before returning.
+  expect(guardBody).not.toMatch(/\bconnect\s*\(/);
+  expect(guardBody).not.toMatch(/handle(?:Meshcore)?ConnectionLost/);
 }

@@ -4256,8 +4256,8 @@
     "meshcorePrivateKeyHint": "使用下面的导出私钥查看密钥材料。Backup将完整密钥对存储在此计算机上。",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
     "backupLabelMeshcore": "MeshCore · {{detail}}",
-    "noBackupFound": "没有备份设置发现!",
-    "missingKeyMaterial": "缺少关键材料",
+    "noBackupFound": "未找到备份",
+    "missingKeyMaterial": "缺少密钥材料",
     "unknownError": "未知错误"
   },
   "sidebar": {

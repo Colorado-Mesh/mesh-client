@@ -34,6 +34,7 @@ import {
   fetchLinkPreview,
   isBlockedHostname,
   isBlockedHostnameResolved,
+  LINK_PREVIEW_RATE_LIMIT_MAX,
   shouldProxyPreviewImageUrl,
 } from './fetchLinkPreview';
 
@@ -471,6 +472,52 @@ describe('fetchLinkPreview', () => {
     await fetchLinkPreview('https://example.com/cached');
     await fetchLinkPreview('https://example.com/cached');
     expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not charge cache hits against the uncached rate limit', async () => {
+    const html = `<meta property="og:title" content="Cached">`;
+    mockFetch.mockResolvedValue(makeStreamResponse(html));
+    await fetchLinkPreview('https://example.com/rate-cache');
+    for (let i = 0; i < LINK_PREVIEW_RATE_LIMIT_MAX + 5; i++) {
+      expect(await fetchLinkPreview('https://example.com/rate-cache')).toEqual({
+        title: 'Cached',
+        description: undefined,
+        image: undefined,
+      });
+    }
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not charge joined in-flight requests against the uncached rate limit', async () => {
+    let resolveFetch!: (value: UndiciFetchResponse) => void;
+    const pending = new Promise<UndiciFetchResponse>((resolve) => {
+      resolveFetch = resolve;
+    });
+    mockFetch.mockReturnValueOnce(pending);
+    const p1 = fetchLinkPreview('https://example.com/dedup-rate');
+    const p2 = fetchLinkPreview('https://example.com/dedup-rate');
+    resolveFetch(makeStreamResponse(`<meta property="og:title" content="Dedup">`));
+    await expect(Promise.all([p1, p2])).resolves.toEqual([
+      { title: 'Dedup', description: undefined, image: undefined },
+      { title: 'Dedup', description: undefined, image: undefined },
+    ]);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('rate-limits new uncached preview fetches', async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(makeStreamResponse(`<meta property="og:title" content="T">`)),
+    );
+    for (let i = 0; i < LINK_PREVIEW_RATE_LIMIT_MAX; i++) {
+      expect(await fetchLinkPreview(`https://example.com/rate-${i}`)).not.toBeNull();
+    }
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    try {
+      expect(await fetchLinkPreview('https://example.com/rate-overflow')).toBeNull();
+      expect(debugSpy.mock.calls.some((c) => String(c[0]).includes('rate limited'))).toBe(true);
+    } finally {
+      debugSpy.mockRestore();
+    }
   });
 
   it('rejects http:// og:image (must be https)', async () => {

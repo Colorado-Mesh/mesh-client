@@ -16,10 +16,9 @@ function parseCredentialValue(raw: unknown): MeshcoreRoomStoredCredential | unde
   return parseLegacyCredentialRaw(raw, {
     fromPlainString: (value) => ({ guestPassword: value }),
     fromObject: (o) => {
-      const guestPassword = typeof o.guestPassword === 'string' ? o.guestPassword : '';
-      if (!guestPassword && typeof o.password === 'string') {
-        return { guestPassword: o.password };
-      }
+      const storedGuestPassword = typeof o.guestPassword === 'string' ? o.guestPassword : '';
+      const legacyGuestPassword = typeof o.password === 'string' ? o.password : '';
+      const guestPassword = storedGuestPassword || legacyGuestPassword;
       if (!guestPassword) return undefined;
       const adminPassword = typeof o.adminPassword === 'string' ? o.adminPassword : undefined;
       return { guestPassword, adminPassword };

@@ -96,7 +96,7 @@ import {
 } from './database';
 import { finishDbIpcHandler, finishDbIpcReadHandler, getDbForIpc } from './db-ipc-lifecycle';
 import { formatDatabaseSchemaTooNewMessage, showFatalStartupError } from './fatal-startup-dialog';
-import { fetchLinkPreview, takeLinkPreviewRateToken } from './fetchLinkPreview';
+import { fetchLinkPreview } from './fetchLinkPreview';
 import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
@@ -4780,10 +4780,6 @@ ipcMain.handle('meshtastic:xmodemSaveDownload', async (event, filename: unknown,
 ipcMain.handle('chat:fetchLinkPreview', async (event, url: unknown) => {
   if (!validateIpcSender(event)) throw new Error('chat:fetchLinkPreview: unauthorized sender');
   if (typeof url !== 'string' || url.length === 0 || url.length > 2048) return null;
-  if (!takeLinkPreviewRateToken()) {
-    console.debug('[IPC] chat:fetchLinkPreview rate limited');
-    return null;
-  }
   return await fetchLinkPreview(url);
 });
 

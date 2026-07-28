@@ -16,7 +16,6 @@ ensure_repo() {
   local dir="$1" expected_origin="$2" pinned_ref="$3" label="$4"
   if [[ ! -d "${dir}/.git" ]]; then
     git clone "${expected_origin}" "${dir}"
-    return 0
   fi
   local actual_origin
   actual_origin="$(git -C "${dir}" remote get-url origin 2> /dev/null || true)"

@@ -32,4 +32,30 @@ describe('meshcoreRoomCredentialStorage', () => {
     await setMeshcoreRoomCredential(0x1002, null);
     expect(getMeshcoreRoomCredential(0x1002)).toBeUndefined();
   });
+
+  it('rejects legacy empty password objects', () => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        [meshcoreRoomCredentialSettingForNode(0x2001)]: JSON.stringify({ password: '' }),
+      }),
+    );
+    expect(getMeshcoreRoomCredential(0x2001)).toBeUndefined();
+  });
+
+  it('preserves adminPassword when falling back to legacy password field', () => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        [meshcoreRoomCredentialSettingForNode(0x2002)]: JSON.stringify({
+          password: 'guest',
+          adminPassword: 'admin',
+        }),
+      }),
+    );
+    expect(getMeshcoreRoomCredential(0x2002)).toEqual({
+      guestPassword: 'guest',
+      adminPassword: 'admin',
+    });
+  });
 });
