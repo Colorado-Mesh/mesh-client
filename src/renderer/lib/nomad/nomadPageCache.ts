@@ -1,4 +1,6 @@
-import { normalizeNomadPagePath } from './micronParser';
+import type { NomadPageRequestData } from '@/shared/nomad-types';
+
+import { normalizeNomadPagePath, serializeNomadPageRequestDataKey } from './micronParser';
 
 /** Cap cached page size — aligned with NomadNetworkPanel display limit. */
 export const MAX_NOMAD_PAGE_CACHE_CHARS = 256 * 1024;
@@ -14,13 +16,16 @@ export interface NomadPageCacheEntry {
 export interface NomadPageCacheKeyInput {
   hash: string;
   path: string;
+  /** NomadNet link request vars (`var_*` / `field_*`); part of cache identity. */
+  requestData?: NomadPageRequestData;
 }
 
 const cache = new Map<string, NomadPageCacheEntry>();
 
-function cacheKey({ hash, path }: NomadPageCacheKeyInput): string {
+function cacheKey({ hash, path, requestData }: NomadPageCacheKeyInput): string {
   const cleanHash = hash.replace(/[^a-fA-F0-9]/g, '').toLowerCase();
-  return `${cleanHash}:${normalizeNomadPagePath(path)}`;
+  const dataKey = serializeNomadPageRequestDataKey(requestData);
+  return `${cleanHash}:${normalizeNomadPagePath(path)}:${dataKey}`;
 }
 
 export function getNomadPageCache(input: NomadPageCacheKeyInput): NomadPageCacheEntry | undefined {

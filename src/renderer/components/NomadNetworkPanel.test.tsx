@@ -366,6 +366,92 @@ describe('NomadNetworkPanel', () => {
     expect(fetchNomadPage).toHaveBeenCalledTimes(2);
   });
 
+  it('fetches distinct content for same path with different requestData', async () => {
+    const user = userEvent.setup();
+    const fetchNomadPage = vi
+      .fn()
+      .mockImplementation((_hash: string, path: string, requestData?: Record<string, string>) => {
+        if (path === '/page/index.mu') {
+          return {
+            ok: true,
+            content:
+              '`[Thread A`:/page/forum/thread.mu`thread_id=aaa]`\n`[Thread B`:/page/forum/thread.mu`thread_id=bbb]`',
+            content_type: 'micron',
+          };
+        }
+        if (path === '/page/forum/thread.mu' && requestData?.var_thread_id === 'aaa') {
+          return { ok: true, content: '`!Thread A body:`!', content_type: 'micron' };
+        }
+        if (path === '/page/forum/thread.mu' && requestData?.var_thread_id === 'bbb') {
+          return { ok: true, content: '`!Thread B body:`!', content_type: 'micron' };
+        }
+        return { ok: false, error: 'Invalid thread.' };
+      });
+    useNomadNetworkStore.setState({
+      fetchNomadPage,
+      nodes: new Map([
+        [
+          'abc1234567890',
+          {
+            destination_hash: 'abc1234567890',
+            display_name: 'Forum Node',
+            favorited: false,
+          },
+        ],
+      ]),
+    });
+
+    render(<NomadNetworkPanel />);
+    await openAnnouncesNode(user);
+    await waitFor(() => {
+      expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Thread A');
+    });
+
+    const links = () =>
+      Array.from(document.querySelectorAll('.nomad-micron-page [data-action="openNode"]'));
+
+    await user.click(links().find((el) => el.textContent?.includes('Thread A'))!);
+    await waitFor(() => {
+      expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Thread A body');
+    });
+    expect(screen.getByLabelText('nomadNetwork.urlBarAria')).toHaveValue(
+      'abc1234567890:/page/forum/thread.mu`thread_id=aaa',
+    );
+    expect(fetchNomadPage).toHaveBeenCalledWith('abc1234567890', '/page/forum/thread.mu', {
+      var_thread_id: 'aaa',
+    });
+
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.homePage' }));
+    await waitFor(() => {
+      expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Thread B');
+    });
+
+    await user.click(links().find((el) => el.textContent?.includes('Thread B'))!);
+    await waitFor(() => {
+      expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Thread B body');
+    });
+    expect(screen.getByLabelText('nomadNetwork.urlBarAria')).toHaveValue(
+      'abc1234567890:/page/forum/thread.mu`thread_id=bbb',
+    );
+    expect(fetchNomadPage).toHaveBeenCalledWith('abc1234567890', '/page/forum/thread.mu', {
+      var_thread_id: 'bbb',
+    });
+
+    const threadFetches = fetchNomadPage.mock.calls.filter(
+      (call) => call[1] === '/page/forum/thread.mu',
+    );
+    expect(threadFetches).toHaveLength(2);
+
+    await user.click(screen.getByRole('button', { name: 'nomadNetwork.reloadPage' }));
+    await waitFor(() => {
+      expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('Thread B body');
+    });
+    const reloadCalls = fetchNomadPage.mock.calls.filter(
+      (call) => call[1] === '/page/forum/thread.mu' && call[2]?.var_thread_id === 'bbb',
+    );
+    expect(reloadCalls.length).toBeGreaterThanOrEqual(2);
+  });
+
   it('navigates back without refetching when page is cached', async () => {
     const user = userEvent.setup();
     const fetchNomadPage = vi
