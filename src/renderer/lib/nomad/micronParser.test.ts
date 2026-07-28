@@ -5,13 +5,17 @@ import {
   bindNomadMicronPartials,
   buildNomadLinkRequest,
   collectNomadFormFieldValues,
+  formatNomadRequestDataForUrlBar,
   isNomadFilePath,
   isNomadMicronPage,
   loadNomadMicronPartial,
   mountNomadMicronHtml,
+  nomadPageRequestDataEquals,
+  normalizeNomadPageRequestData,
   parseNomadLinkFieldsSpec,
   parseNomadNetworkLinkUrl,
   renderNomadMicronPage,
+  serializeNomadPageRequestDataKey,
   splitNomadLinkDestination,
 } from './micronParser';
 
@@ -268,5 +272,37 @@ describe('buildNomadLinkRequest', () => {
       baseDestination: ':/page/foo.mu',
       embeddedFieldsSpec: 'a=1|b=2',
     });
+  });
+});
+
+describe('nomad page requestData helpers', () => {
+  it('serializes request data with sorted keys for stable cache identity', () => {
+    expect(serializeNomadPageRequestDataKey(undefined)).toBe('');
+    expect(serializeNomadPageRequestDataKey({})).toBe('');
+    expect(serializeNomadPageRequestDataKey({ var_b: '2', var_a: '1', field_q: 'x' })).toBe(
+      'field_q=x|var_a=1|var_b=2',
+    );
+    expect(serializeNomadPageRequestDataKey({ var_a: '1', var_b: '2' })).toBe(
+      serializeNomadPageRequestDataKey({ var_b: '2', var_a: '1' }),
+    );
+  });
+
+  it('formats only var_* keys for the URL bar', () => {
+    expect(formatNomadRequestDataForUrlBar(undefined)).toBe('');
+    expect(
+      formatNomadRequestDataForUrlBar({
+        var_thread_id: 'abc',
+        field_q: 'ignored',
+        var_mode: 'live',
+      }),
+    ).toBe('mode=live|thread_id=abc');
+  });
+
+  it('normalizes empty maps and compares by serialized key', () => {
+    expect(normalizeNomadPageRequestData({})).toBeUndefined();
+    expect(normalizeNomadPageRequestData({ var_id: '1' })).toEqual({ var_id: '1' });
+    expect(nomadPageRequestDataEquals({ var_a: '1' }, { var_a: '1' })).toBe(true);
+    expect(nomadPageRequestDataEquals({ var_a: '1' }, { var_a: '2' })).toBe(false);
+    expect(nomadPageRequestDataEquals(undefined, {})).toBe(true);
   });
 });

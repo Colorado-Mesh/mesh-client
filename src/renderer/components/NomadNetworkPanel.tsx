@@ -7,9 +7,13 @@ import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate'
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import {
+  buildNomadLinkRequest,
   DEFAULT_NOMAD_NODE_PAGE_PATH,
+  formatNomadRequestDataForUrlBar,
   isNomadMicronPage,
+  nomadPageRequestDataEquals,
   normalizeNomadPagePath,
+  normalizeNomadPageRequestData,
   parseNomadNetworkLinkUrl,
 } from '@/renderer/lib/nomad/micronParser';
 import { downloadNomadFileFromBase64 } from '@/renderer/lib/nomad/nomadFileDownload';
@@ -46,6 +50,7 @@ import NomadPageServerPanel from './NomadPageServerPanel';
 interface NomadHistoryEntry {
   hash: string;
   path: string;
+  requestData?: NomadPageRequestData;
 }
 
 interface LoadNodePageOptions {
@@ -92,8 +97,10 @@ function nomadCollapsedLabel(displayName: string | null | undefined, hash: strin
   return hash.slice(0, 2).toUpperCase();
 }
 
-function formatNomadUrlBar(hash: string, path: string): string {
-  return `${hash}:${path}`;
+function formatNomadUrlBar(hash: string, path: string, requestData?: NomadPageRequestData): string {
+  const base = `${hash}:${path}`;
+  const varSuffix = formatNomadRequestDataForUrlBar(requestData);
+  return varSuffix ? `${base}\`${varSuffix}` : base;
 }
 
 function truncateNomadPageContent(content: string): { text: string; truncated: boolean } {
@@ -251,6 +258,9 @@ export default function NomadNetworkPanel({
   const [sidecarRunning, setSidecarRunning] = useState(false);
   const [selectedHash, setSelectedHash] = useState<string | null>(null);
   const [pagePath, setPagePath] = useState(DEFAULT_NOMAD_NODE_PAGE_PATH);
+  const [pageRequestData, setPageRequestData] = useState<NomadPageRequestData | undefined>(
+    undefined,
+  );
   const [urlBarValue, setUrlBarValue] = useState('');
   const [historyStack, setHistoryStack] = useState<NomadHistoryEntry[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -288,22 +298,30 @@ export default function NomadNetworkPanel({
     }
   }, [isActive, selectedHash]);
 
-  const pushHistoryEntry = useCallback((hash: string, path: string) => {
-    const normalizedPath = normalizeNomadPagePath(path);
-    setHistoryStack((prev) => {
-      const idx = historyIndexRef.current;
-      const last = prev[idx];
-      if (last?.hash.toLowerCase() === hash.toLowerCase() && last.path === normalizedPath) {
-        return prev;
-      }
-      const truncated = prev.slice(0, idx + 1);
-      const next = [...truncated, { hash, path: normalizedPath }];
-      const nextIndex = next.length - 1;
-      historyIndexRef.current = nextIndex;
-      setHistoryIndex(nextIndex);
-      return next;
-    });
-  }, []);
+  const pushHistoryEntry = useCallback(
+    (hash: string, path: string, requestData?: NomadPageRequestData) => {
+      const normalizedPath = normalizeNomadPagePath(path);
+      const normalizedRequest = normalizeNomadPageRequestData(requestData);
+      setHistoryStack((prev) => {
+        const idx = historyIndexRef.current;
+        const last = prev[idx];
+        if (
+          last?.hash.toLowerCase() === hash.toLowerCase() &&
+          last.path === normalizedPath &&
+          nomadPageRequestDataEquals(last.requestData, normalizedRequest)
+        ) {
+          return prev;
+        }
+        const truncated = prev.slice(0, idx + 1);
+        const next = [...truncated, { hash, path: normalizedPath, requestData: normalizedRequest }];
+        const nextIndex = next.length - 1;
+        historyIndexRef.current = nextIndex;
+        setHistoryIndex(nextIndex);
+        return next;
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     mountedRef.current = true;
@@ -358,10 +376,11 @@ export default function NomadNetworkPanel({
       content: string,
       contentType: string | undefined,
       truncated: boolean,
+      requestData?: NomadPageRequestData,
     ) => {
       setPageContent(truncated ? `${content}\n\n[${t('nomadNetwork.pageTruncated')}]` : content);
       setPageContentType(contentType);
-      setUrlBarValue(formatNomadUrlBar(hash, normalizedPath));
+      setUrlBarValue(formatNomadUrlBar(hash, normalizedPath, requestData));
     },
     [t],
   );
@@ -369,21 +388,34 @@ export default function NomadNetworkPanel({
   const loadNodePage = useCallback(
     async (hash: string, path: string, options: LoadNodePageOptions = {}) => {
       const normalizedPath = normalizeNomadPagePath(path);
+      const normalizedRequest = normalizeNomadPageRequestData(options.requestData);
       const requestSeq = ++pageRequestSeqRef.current;
       setSelectedHash(hash);
       setPagePath(normalizedPath);
+      setPageRequestData(normalizedRequest);
       setPageLoading(true);
       setPageError(null);
       setShowPageSource(false);
 
       if (!options.forceReload) {
-        const cached = getNomadPageCache({ hash, path: normalizedPath });
+        const cached = getNomadPageCache({
+          hash,
+          path: normalizedPath,
+          requestData: normalizedRequest,
+        });
         if (cached) {
           if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
           setPageLoading(false);
-          applyPageResult(hash, normalizedPath, cached.content, cached.content_type, false);
+          applyPageResult(
+            hash,
+            normalizedPath,
+            cached.content,
+            cached.content_type,
+            false,
+            normalizedRequest,
+          );
           if (!options.fromHistory) {
-            pushHistoryEntry(hash, normalizedPath);
+            pushHistoryEntry(hash, normalizedPath, normalizedRequest);
           }
           return;
         }
@@ -391,7 +423,7 @@ export default function NomadNetworkPanel({
 
       setPageContent(null);
       setPageContentType(undefined);
-      const res = await fetchNomadPage(hash, normalizedPath, options.requestData);
+      const res = await fetchNomadPage(hash, normalizedPath, normalizedRequest);
       if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
       setPageLoading(false);
       if (!res.ok || !res.content) {
@@ -399,11 +431,12 @@ export default function NomadNetworkPanel({
         return;
       }
       const { text, truncated } = truncateNomadPageContent(res.content);
-      applyPageResult(hash, normalizedPath, text, res.content_type, truncated);
+      applyPageResult(hash, normalizedPath, text, res.content_type, truncated, normalizedRequest);
       setNomadPageCache(
         {
           hash,
           path: normalizedPath,
+          requestData: normalizedRequest,
         },
         {
           content: truncated ? text : res.content,
@@ -411,7 +444,7 @@ export default function NomadNetworkPanel({
         },
       );
       if (!options.fromHistory) {
-        pushHistoryEntry(hash, normalizedPath);
+        pushHistoryEntry(hash, normalizedPath, normalizedRequest);
       }
     },
     [applyPageResult, fetchNomadPage, pushHistoryEntry, t],
@@ -463,7 +496,10 @@ export default function NomadNetworkPanel({
       if (!entry) return;
       historyIndexRef.current = targetIndex;
       setHistoryIndex(targetIndex);
-      void loadNodePage(entry.hash, entry.path, { fromHistory: true });
+      void loadNodePage(entry.hash, entry.path, {
+        fromHistory: true,
+        requestData: entry.requestData,
+      });
     },
     [historyIndex, historyStack, loadNodePage],
   );
@@ -478,20 +514,25 @@ export default function NomadNetworkPanel({
       target = `${selectedNode.destination_hash}${target}`;
     }
 
-    const parsed = parseNomadNetworkLinkUrl(target, DEFAULT_NOMAD_NODE_PAGE_PATH);
+    const { destination: baseDestination, requestData } = buildNomadLinkRequest(target, null, null);
+    const parsed = parseNomadNetworkLinkUrl(baseDestination, DEFAULT_NOMAD_NODE_PAGE_PATH);
     if (!parsed) {
       setPageError(t('nomadNetwork.invalidUrl'));
       return;
     }
 
     const hash = parsed.destination_hash ?? selectedNode.destination_hash;
-    void loadNodePage(hash, parsed.path);
+    const normalizedRequest = normalizeNomadPageRequestData(requestData);
+    void loadNodePage(hash, parsed.path, {
+      requestData: normalizedRequest,
+    });
   }, [loadNodePage, selectedNode, t, urlBarValue]);
 
   const closeViewer = useCallback(() => {
     setSelectedHash(null);
     setPageContent(null);
     setPageError(null);
+    setPageRequestData(undefined);
     setUrlBarValue('');
     setHistoryStack([]);
     historyIndexRef.current = -1;
@@ -913,6 +954,7 @@ export default function NomadNetworkPanel({
                     onClick={() => {
                       void loadNodePage(selectedNode.destination_hash, pagePath, {
                         forceReload: true,
+                        requestData: pageRequestData,
                       });
                     }}
                   >
