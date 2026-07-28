@@ -114,7 +114,12 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   },
 
   setLastPropagationSyncAt: (atMs) => {
-    set({ lastPropagationSyncAt: atMs });
+    // Success clears the failure-attempt stamp so cooldown cannot delay the next interval.
+    set(
+      atMs != null
+        ? { lastPropagationSyncAt: atMs, lastPropagationSyncAttemptAt: null }
+        : { lastPropagationSyncAt: atMs },
+    );
   },
 
   setLastPropagationSyncAttemptAt: (atMs) => {
@@ -230,8 +235,8 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         set({
           sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
           lastSyncError: null,
-          lastPropagationSyncAt: Date.now(),
         });
+        get().setLastPropagationSyncAt(Date.now());
       }
       return true;
     } catch (e) {

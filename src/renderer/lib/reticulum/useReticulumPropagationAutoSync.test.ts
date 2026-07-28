@@ -148,4 +148,31 @@ describe('shouldRunPropagationAutoSync', () => {
       }),
     ).toBe(true);
   });
+
+  it('ignores attempt stamp from the successful sync when interval has elapsed', () => {
+    // Short interval (API may allow < cooldown): attempt from the successful run must not block.
+    expect(
+      shouldRunPropagationAutoSync({
+        autoSyncIntervalSec: 60,
+        preferredId: 'pn-test',
+        syncActive: false,
+        lastPropagationSyncAt: 60_000,
+        lastPropagationSyncAttemptAt: 55_000,
+        nowMs: 60_000 + 60_000,
+      }),
+    ).toBe(true);
+  });
+
+  it('ignores attempt when cleared after success (null)', () => {
+    expect(
+      shouldRunPropagationAutoSync({
+        autoSyncIntervalSec: 60,
+        preferredId: 'pn-test',
+        syncActive: false,
+        lastPropagationSyncAt: 0,
+        lastPropagationSyncAttemptAt: null,
+        nowMs: 60_000,
+      }),
+    ).toBe(true);
+  });
 });

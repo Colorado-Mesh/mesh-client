@@ -35,9 +35,11 @@ export function shouldRunPropagationAutoSync(args: {
     return false;
   }
 
-  // Short failure gate so a dead PN is not hammered every 30s check tick.
+  // Failure cooldown only when the latest attempt is after the last success (or never
+  // succeeded). A retained attempt stamp from a successful sync must not delay the interval.
   if (
     lastPropagationSyncAttemptAt != null &&
+    (lastPropagationSyncAt == null || lastPropagationSyncAttemptAt > lastPropagationSyncAt) &&
     nowMs - lastPropagationSyncAttemptAt < PROPAGATION_AUTO_SYNC_FAILURE_COOLDOWN_MS
   ) {
     return false;
