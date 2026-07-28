@@ -3884,7 +3884,10 @@
     "notice": {
       "body": "Er is geen propagatieknooppunt geconfigureerd. Offline of onbereikbare collega's hebben een propagatieknooppunt nodig voor store-and-forward LXMF-levering.",
       "openSettings": "Propagatie instellen",
-      "openSettingsAria": "Open Reticulum Network propagatie-instellingen"
+      "openSettingsAria": "Open Reticulum Network propagatie-instellingen",
+      "bodyWithDiscoveries": "Er is geen propagatieknooppunt geconfigureerd. {{count}} ontdekt op het netwerk. Voeg er hieronder een toe of open Netwerkinstellingen.",
+      "addClosest": "Dichtstbijzijnde toevoegen ontdekt",
+      "addClosestAria": "Voeg het dichtstbijzijnde ontdekte propagatieknooppunt toe en stel dit in als voorkeur"
     },
     "rename": "Hernoemen",
     "renameLabel": "Naam van het voortplantingsknooppunt",
@@ -3916,7 +3919,25 @@
     "renameFailed": "Kan de naam van het voortplantingsknooppunt niet wijzigen.",
     "deleteFailed": "Kan het voortplantingsknooppunt niet verwijderen.",
     "addFailed": "Kan het voortplantingsknooppunt niet toevoegen.",
-    "addNodePlaceholder": "Bestemmingshash van lxmf.propagation van 32 tekens"
+    "addNodePlaceholder": "Bestemmingshash van lxmf.propagation van 32 tekens",
+    "syncEstablishIdentityMissing": "Propagatiesynchronisatie kon het linkbewijs niet verifiëren — de node-identiteit ontbrak. Wacht op een aankondiging en probeer het opnieuw.",
+    "syncEstablishInvalidProof": "Propagation Sync heeft een ongeldig linkbewijs ontvangen van het knooppunt — probeer het zo meteen opnieuw.",
+    "syncOfferNoIdentity": "Het propagatieknooppunt heeft het synchronisatieaanbod afgewezen — identificatie mislukt. Wacht op een aankondiging en probeer het opnieuw.",
+    "syncOfferNoAccess": "Doorgifteknooppunt heeft synchronisatietoegang geweigerd.",
+    "syncOfferInvalidKey": "Het propagatieknooppunt heeft de peering-toets afgewezen — controleer de peering-kosten en probeer het opnieuw.",
+    "syncOfferThrottled": "Het doorgifteknooppunt heeft het synchronisatieverzoek beperkt — probeer het later opnieuw.",
+    "syncOfferInvalidData": "Het propagatieknooppunt heeft de synchronisatie-aanbiedingsgegevens afgewezen.",
+    "syncOfferInvalidStamp": "Het propagatieknooppunt heeft de peering-stempel afgewezen — probeer het zo meteen opnieuw.",
+    "discoveredTitle": "Ontdekt op netwerk",
+    "discoveredEmpty": "Er wordt nog geen lxmf.propagation aangekondigd. Houd de stapel verbonden of voeg een knooppunt toe via hash.",
+    "discoveredInactive": "Inactiviteitsdag",
+    "discoveredHops": "{{hops}} hops",
+    "discoveredPeeringCost": "peeringkosten {{cost}}",
+    "discoveredAdd": "Toevoegen",
+    "discoveredAddAria": "Voeg ontdekte propagatieknooppunt {{name}} toe",
+    "discoveredAddPrefer": "Toevoegen en verkiezen",
+    "discoveredAddPreferAria": "Voeg ontdekte propagatieknooppunt {{name}} toe en stel in als voorkeur",
+    "discoveredHash": "{{hash}}"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "voortplantingsmodus",

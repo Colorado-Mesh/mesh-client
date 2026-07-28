@@ -31,6 +31,7 @@ describe('reticulumPropagationStore', () => {
     proxyDelete.mockReset();
     useReticulumPropagationStore.setState({
       nodes: [],
+      discovered: [],
       preferredId: null,
       autoSyncIntervalSec: RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC,
       sync: { active: false, progress: 0, message: null },
@@ -43,11 +44,23 @@ describe('reticulumPropagationStore', () => {
 
   it('refreshFromSidecar sets nodes and preferred id', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
-    proxyGet.mockResolvedValue({
-      propagation: [{ id: 'p1', name: 'Node', enabled: true, status: 'ok' }],
-      preferred_id: 'p1',
-      auto_sync_interval_sec: 120,
-    });
+    proxyGet
+      .mockResolvedValueOnce({
+        propagation: [{ id: 'p1', name: 'Node', enabled: true, status: 'ok' }],
+        preferred_id: 'p1',
+        auto_sync_interval_sec: 120,
+      })
+      .mockResolvedValueOnce({
+        discovered: [
+          {
+            destination_hash: 'deadbeefbadfceeae39c1aceb911e205',
+            display_name: 'Ratspeak',
+            hops: 2,
+            node_state: true,
+            peering_cost: 18,
+          },
+        ],
+      });
 
     await useReticulumPropagationStore.getState().refreshFromSidecar();
 
@@ -55,6 +68,47 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().preferredId).toBe('p1');
     expect(useReticulumPropagationStore.getState().autoSyncIntervalSec).toBe(120);
     expect(useReticulumPropagationStore.getState().lastRefreshedAt).toBeTypeOf('number');
+    expect(useReticulumPropagationStore.getState().discovered).toHaveLength(1);
+  });
+
+  it('addFromDiscovered promotes and optionally prefers', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    useReticulumPropagationStore.setState({
+      discovered: [
+        {
+          destination_hash: 'aabbccddeeff00112233445566778899',
+          display_name: 'Heard PN',
+          hops: 1,
+          node_state: true,
+          peering_cost: 0,
+        },
+      ],
+    });
+    proxyPost.mockResolvedValue({ ok: true });
+    proxyGet.mockResolvedValue({
+      propagation: [
+        {
+          id: 'pn-aabbccdd',
+          name: 'Heard PN',
+          enabled: true,
+          status: 'known',
+          destination_hash: 'aabbccddeeff00112233445566778899',
+        },
+      ],
+      preferred_id: 'pn-aabbccdd',
+    });
+
+    await expect(
+      useReticulumPropagationStore
+        .getState()
+        .addFromDiscovered('aabbccddeeff00112233445566778899', { prefer: true }),
+    ).resolves.toBe(true);
+
+    expect(proxyPost).toHaveBeenCalledWith('/api/v1/propagation/add', {
+      destination_hash: 'aabbccddeeff00112233445566778899',
+      name: 'Heard PN',
+    });
+    expect(proxyPost).toHaveBeenCalledWith('/api/v1/propagation/pn-aabbccdd/preferred', {});
   });
 
   it('refreshFromSidecar skips when sidecar is down', async () => {

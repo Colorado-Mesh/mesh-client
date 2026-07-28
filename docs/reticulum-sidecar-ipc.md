@@ -92,6 +92,7 @@ The Connection tab UI edits a subset: **name** and **mode** for all types; **hos
 | GET | `/api/v1/packets` | `?limit=500` (1–2500) | `{ packets: [] }` — recent wire tap ring buffer |
 | DELETE | `/api/v1/packets` | | `{ ok }` — clear wire tap buffer |
 | GET | `/api/v1/propagation` | | `{ propagation, preferred_id, auto_sync_interval_sec }` — `local-prop` rows include `message_count`, `storage_bytes` when live |
+| GET | `/api/v1/propagation/discovered` | | `{ discovered: DiscoveredPropagationRow[] }` — heard `lxmf.propagation` announces (not auto-configured) |
 | POST | `/api/v1/propagation/add` | `{ destination_hash, name? }` | `{ ok, node }` — add a remote propagation node by hash |
 | PUT | `/api/v1/propagation/{id}` | `{ name }` | `{ ok }` — rename a remote node (`local-prop` rejected) |
 | DELETE | `/api/v1/propagation/{id}` | | `{ ok }` — remove a remote node (`local-prop` rejected; clears preferred if that id) |
@@ -191,7 +192,7 @@ Listener persistence: a successful `POST /api/v1/rncp/listener` stores the confi
 { "type": "lxmf_message", "payload": { ... } }
 ```
 
-Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `resource.received`, `wire_packet`, `rmap.discovery` (payload `{ discovered: RmapDiscoveredWireRow[] }`), `nomadnetwork.node` (Nomad peer announce heard), `nomad.serving_start` / `nomad.serving_stop` (local hosting lifecycle; payload includes `destination_hash` / `display_name` on start — renderer currently polls serving status via HTTP), RRC: `rrc.hub`, `rrc.connected`, `rrc.disconnected`, `rrc.room.joined`, `rrc.room.parted`, `rrc.message`, `rrc.error`, plus Remote: `rnsh.stdout` / `rnsh.stderr` / `rnsh.status` / `rnsh.closed` / `rnsh.error`, `rncp.offer` / `rncp.progress` / `rncp.completed` / `rncp.failed` / `rncp.cancelled`.
+Event types: `lxmf_message`, `lxmf_outbound_status`, `announce.received`, `peers_updated`, `stats_update`, `interface.state`, `stack_restart_requested`, `propagation_sync`, `propagation.discovered` (heard `lxmf.propagation` announce), `resource.received`, `wire_packet`, `rmap.discovery` (payload `{ discovered: RmapDiscoveredWireRow[] }`), `nomadnetwork.node` (Nomad peer announce heard), `nomad.serving_start` / `nomad.serving_stop` (local hosting lifecycle; payload includes `destination_hash` / `display_name` on start — renderer currently polls serving status via HTTP), RRC: `rrc.hub`, `rrc.connected`, `rrc.disconnected`, `rrc.room.joined`, `rrc.room.parted`, `rrc.message`, `rrc.error`, plus Remote: `rnsh.stdout` / `rnsh.stderr` / `rnsh.status` / `rnsh.closed` / `rnsh.error`, `rncp.offer` / `rncp.progress` / `rncp.completed` / `rncp.failed` / `rncp.cancelled`.
 
 - **`rrc.disconnected`:** payload `{ hub_dest_hash, reason, will_reconnect? }`. When `will_reconnect` is `false` (or `reason` is `local_disconnect`), the renderer drops that hub session. When `true` (or omitted on older sidecars), the UI shows reconnecting and keeps volatile rooms until WELCOME.
 

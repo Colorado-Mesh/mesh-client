@@ -101,6 +101,20 @@ pub struct PropagationRow {
     pub destination_hash: Option<String>,
 }
 
+/// Heard `lxmf.propagation` announce (not auto-added to configured list).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DiscoveredPropagationRow {
+    pub destination_hash: String,
+    #[serde(default)]
+    pub identity_hash: Option<String>,
+    pub display_name: Option<String>,
+    pub hops: Option<u8>,
+    pub last_seen: Option<u64>,
+    /// Actively serving when true (from PN announce `node_state`).
+    pub node_state: bool,
+    pub peering_cost: u8,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NomadNodeRow {
     pub destination_hash: String,

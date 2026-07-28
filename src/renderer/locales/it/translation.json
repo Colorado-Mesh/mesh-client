@@ -3884,7 +3884,10 @@
     "notice": {
       "body": "Non è configurato alcun nodo di propagazione. I peer offline o non raggiungibili hanno bisogno di un nodo di propagazione per la consegna LXMF store-and-forward.",
       "openSettings": "Imposta la propagazione",
-      "openSettingsAria": "Open Reticulum Network propagation settings"
+      "openSettingsAria": "Open Reticulum Network propagation settings",
+      "bodyWithDiscoveries": "Non è configurato alcun nodo di propagazione. {{count}} rilevato sulla rete: aggiungine uno qui sotto o apri Impostazioni di rete.",
+      "addClosest": "Aggiungi il più vicino scoperto",
+      "addClosestAria": "Aggiungi il nodo di propagazione scoperto più vicino e impostalo come preferito"
     },
     "rename": "Rinomina",
     "renameLabel": "Nome del nodo di propagazione",
@@ -3916,7 +3919,25 @@
     "renameFailed": "Impossibile rinominare il nodo di propagazione.",
     "deleteFailed": "Impossibile eliminare il nodo di propagazione.",
     "addFailed": "Impossibile aggiungere il nodo di propagazione.",
-    "addNodePlaceholder": "Hash di destinazione lxmf.propagation di 32 caratteri"
+    "addNodePlaceholder": "Hash di destinazione lxmf.propagation di 32 caratteri",
+    "syncEstablishIdentityMissing": "La sincronizzazione di propagazione non è riuscita a verificare la prova del collegamento — l'identità del nodo mancava. Attendi un annuncio e riprova.",
+    "syncEstablishInvalidProof": "La sincronizzazione di propagazione ha ricevuto una prova di collegamento non valida dal nodo — riprova tra un momento.",
+    "syncOfferNoIdentity": "Il nodo di propagazione ha rifiutato l'offerta di sincronizzazione — identificazione non riuscita. Attendi un annuncio e riprova.",
+    "syncOfferNoAccess": "Il nodo di propagazione ha negato l'accesso alla sincronizzazione.",
+    "syncOfferInvalidKey": "Il nodo di propagazione ha rifiutato la chiave di peering — controlla il costo di peering e riprova.",
+    "syncOfferThrottled": "Il nodo di propagazione ha limitato la richiesta di sincronizzazione — riprova più tardi.",
+    "syncOfferInvalidData": "Il nodo di propagazione ha rifiutato i dati dell'offerta di sincronizzazione.",
+    "syncOfferInvalidStamp": "Il nodo di propagazione ha rifiutato il timbro di peering — riprova tra un momento.",
+    "discoveredTitle": "Scoperto in rete",
+    "discoveredEmpty": "Nessun annuncio lxmf.propagation ancora sentito. Mantieni lo stack connesso o aggiungi un nodo tramite hash.",
+    "discoveredInactive": "inattiva",
+    "discoveredHops": "{{hops}} salti",
+    "discoveredPeeringCost": "costo peering {{cost}}",
+    "discoveredAdd": "Aggiungi",
+    "discoveredAddAria": "Aggiungi nodo di propagazione scoperto {{name}}",
+    "discoveredAddPrefer": "Aggiungi e preferisci",
+    "discoveredAddPreferAria": "Aggiungi il nodo di propagazione scoperto {{name}} e impostalo come preferito",
+    "discoveredHash": "{{hash}}"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modalità di propagazione",

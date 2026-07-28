@@ -3884,7 +3884,10 @@
     "notice": {
       "body": "Aucun nœud de propagation n'est configuré. Les pairs hors ligne ou inaccessibles ont besoin d'un nœud de propagation pour la livraison LXMF de stockage et de transfert.",
       "openSettings": "Configurer la propagation",
-      "openSettingsAria": "Open Reticulum Network propagation settings"
+      "openSettingsAria": "Open Reticulum Network propagation settings",
+      "bodyWithDiscoveries": "Aucun nœud de propagation n'est configuré. {{count}} découvert sur le réseau — ajoutez-en un ci-dessous ou ouvrez les paramètres réseau.",
+      "addClosest": "Ajouter le plus proche découvert",
+      "addClosestAria": "Ajoutez le nœud de propagation découvert le plus proche et définissez-le comme préféré"
     },
     "rename": "Renommer",
     "renameLabel": "Nom du nœud de propagation",
@@ -3916,7 +3919,25 @@
     "renameFailed": "Impossible de renommer le nœud de propagation.",
     "deleteFailed": "Impossible de supprimer le nœud de propagation.",
     "addFailed": "Impossible d'ajouter le nœud de propagation.",
-    "addNodePlaceholder": "Hachage de destination lxmf.propagation de 32 caractères"
+    "addNodePlaceholder": "Hachage de destination lxmf.propagation de 32 caractères",
+    "syncEstablishIdentityMissing": "La synchronisation de la propagation n'a pas pu vérifier la preuve du lien — l'identité du nœud était manquante. Attendez une annonce et réessayez.",
+    "syncEstablishInvalidProof": "La synchronisation de la propagation a reçu une preuve de lien non valide du nœud — réessayez dans un instant.",
+    "syncOfferNoIdentity": "Le nœud de propagation a rejeté l'offre de synchronisation — l'identification a échoué. Attendez une annonce et réessayez.",
+    "syncOfferNoAccess": "Le nœud de propagation a refusé l'accès à la synchronisation.",
+    "syncOfferInvalidKey": "Le nœud de propagation a rejeté la clé d'appairage — vérifiez le coût de l'appairage et réessayez.",
+    "syncOfferThrottled": "Le nœud de propagation a étranglé la demande de synchronisation — réessayez plus tard.",
+    "syncOfferInvalidData": "Le nœud de propagation a rejeté les données de l'offre de synchronisation.",
+    "syncOfferInvalidStamp": "Le nœud de propagation a rejeté le tampon de peering — réessayez dans un instant.",
+    "discoveredTitle": "Découvert sur le réseau",
+    "discoveredEmpty": "Aucune annonce lxmf.propagation n'a encore été entendue. Gardez la pile connectée ou ajoutez un nœud par hachage.",
+    "discoveredInactive": "inactive",
+    "discoveredHops": "{{hops}} sauts",
+    "discoveredPeeringCost": "coût de peering {{cost}}",
+    "discoveredAdd": "Ajouter",
+    "discoveredAddAria": "Ajouter le nœud de propagation découvert {{name}}",
+    "discoveredAddPrefer": "Ajouter et préférer",
+    "discoveredAddPreferAria": "Ajouter le nœud de propagation découvert {{name}} et définir comme préféré",
+    "discoveredHash": "{{hash}}"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "mode de propagation",

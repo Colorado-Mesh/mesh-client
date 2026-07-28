@@ -3884,7 +3884,10 @@
     "notice": {
       "body": "Tidak ada simpul propagasi yang dikonfigurasi. Peer offline atau tidak terjangkau membutuhkan simpul propagasi untuk pengiriman LXMF store - and - forward.",
       "openSettings": "Atur propagasi",
-      "openSettingsAria": "Open Reticulum Network propagation settings"
+      "openSettingsAria": "Open Reticulum Network propagation settings",
+      "bodyWithDiscoveries": "Tidak ada simpul propagasi yang dikonfigurasi. {{count}} ditemukan di jaringan — tambahkan satu di bawah ini atau buka pengaturan Jaringan.",
+      "addClosest": "Tambahkan yang terdekat ditemukan",
+      "addClosestAria": "Tambahkan simpul propagasi terdekat yang ditemukan dan atur sesuai keinginan"
     },
     "rename": "Ganti nama",
     "renameLabel": "Nama node propagasi",
@@ -3916,7 +3919,25 @@
     "renameFailed": "Tidak dapat mengganti nama node propagasi.",
     "deleteFailed": "Tidak dapat menghapus node propagasi.",
     "addFailed": "Tidak dapat menambahkan node propagasi.",
-    "addNodePlaceholder": "Hash tujuan lxmf.propagation 32 karakter"
+    "addNodePlaceholder": "Hash tujuan lxmf.propagation 32 karakter",
+    "syncEstablishIdentityMissing": "Sinkronisasi propagasi tidak dapat memverifikasi bukti tautan — identitas simpul hilang. Tunggu pengumuman dan coba lagi.",
+    "syncEstablishInvalidProof": "Sinkronisasi propagasi menerima bukti tautan yang tidak valid dari simpul — coba lagi sebentar lagi.",
+    "syncOfferNoIdentity": "Simpul propagasi menolak tawaran sinkronisasi — identifikasi gagal. Tunggu pengumuman dan coba lagi.",
+    "syncOfferNoAccess": "Simpul propagasi menolak akses sinkronisasi.",
+    "syncOfferInvalidKey": "Simpul propagasi menolak kunci mengintip — periksa biaya mengintip dan coba lagi.",
+    "syncOfferThrottled": "Simpul propagasi mencekik permintaan sinkronisasi — coba lagi nanti.",
+    "syncOfferInvalidData": "Simpul propagasi menolak data penawaran sinkronisasi.",
+    "syncOfferInvalidStamp": "Simpul propagasi menolak cap mengintip — coba lagi sebentar lagi.",
+    "discoveredTitle": "Ditemukan di jaringan",
+    "discoveredEmpty": "Belum ada pengumuman lxmf.propagation yang terdengar. Jaga agar tumpukan tetap terhubung atau tambahkan simpul dengan hash.",
+    "discoveredInactive": "tidak aktif",
+    "discoveredHops": "{{hops}} hop",
+    "discoveredPeeringCost": "biaya peering {{cost}}",
+    "discoveredAdd": "Tambahkan",
+    "discoveredAddAria": "Tambahkan simpul propagasi yang ditemukan {{name}}",
+    "discoveredAddPrefer": "Tambah & lebih suka",
+    "discoveredAddPreferAria": "Tambahkan simpul propagasi yang ditemukan {{name}} dan atur sesuai keinginan",
+    "discoveredHash": "{{hash}}"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Mode propagasi",

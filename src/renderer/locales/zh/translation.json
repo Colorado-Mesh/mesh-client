@@ -3884,7 +3884,10 @@
     "notice": {
       "body": "未配置传播节点。离线或无法访问的对等节点需要一个传播节点来存储和转发LXMF交付。",
       "openSettings": "设置传播",
-      "openSettingsAria": "Open Reticulum Network propagation settings"
+      "openSettingsAria": "Open Reticulum Network propagation settings",
+      "bodyWithDiscoveries": "未配置传播节点。在网络上发现{{count}} —在下面添加一个或打开网络设置。",
+      "addClosest": "添加最近发现的",
+      "addClosestAria": "添加最近发现的传播节点并将其设置为首选"
     },
     "rename": "重命名",
     "renameLabel": "传播节点名称",
@@ -3916,7 +3919,25 @@
     "renameFailed": "无法重命名传播节点。",
     "deleteFailed": "无法删除传播节点。",
     "addFailed": "无法添加传播节点。",
-    "addNodePlaceholder": "32 字符 lxmf.propagation 目标哈希"
+    "addNodePlaceholder": "32 字符 lxmf.propagation 目标哈希",
+    "syncEstablishIdentityMissing": "传播同步无法验证链接证明—缺少节点标识。请等待公告，然后重试。",
+    "syncEstablishInvalidProof": "传播同步从节点接收到无效的链接证明—请稍后重试。",
+    "syncOfferNoIdentity": "传播节点拒绝了同步报价—标识失败。请等待公告，然后重试。",
+    "syncOfferNoAccess": "传播节点拒绝同步访问。",
+    "syncOfferInvalidKey": "传播节点拒绝了对等密钥—请检查对等成本并重试。",
+    "syncOfferThrottled": "传播节点限制了同步请求—请稍后重试。",
+    "syncOfferInvalidData": "传播节点拒绝了同步报价数据。",
+    "syncOfferInvalidStamp": "传播节点拒绝了对等戳—请稍后重试。",
+    "discoveredTitle": "在网络上发现",
+    "discoveredEmpty": "尚未听到lxmf.propagation公告。保持堆栈连接或通过哈希添加节点。",
+    "discoveredInactive": "不活跃",
+    "discoveredHops": "{{hops}} 跳",
+    "discoveredPeeringCost": "对等互连成本{{cost}}",
+    "discoveredAdd": "新增",
+    "discoveredAddAria": "添加发现的传播节点{{name}}",
+    "discoveredAddPrefer": "添加偏好(& P)",
+    "discoveredAddPreferAria": "添加发现的传播节点{{name}}并设置为首选",
+    "discoveredHash": "{{hash}}"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "传播模式",

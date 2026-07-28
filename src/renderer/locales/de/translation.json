@@ -3884,7 +3884,10 @@
     "notice": {
       "body": "Es ist kein Ausbreitungsknoten konfiguriert. Offline- oder nicht erreichbare Peers benötigen einen Ausbreitungsknoten für die Store-and-Forward-LXMF-Bereitstellung.",
       "openSettings": "Ausbreitung einrichten",
-      "openSettingsAria": "Open Reticulum Network propagation settings"
+      "openSettingsAria": "Open Reticulum Network propagation settings",
+      "bodyWithDiscoveries": "Es ist kein Ausbreitungsknoten konfiguriert. {{count}} im Netzwerk entdeckt — füge unten eine hinzu oder öffne die Netzwerkeinstellungen.",
+      "addClosest": "Am nächsten entdeckte hinzufügen",
+      "addClosestAria": "Fügen Sie den nächstgelegenen entdeckten Ausbreitungsknoten hinzu und legen Sie ihn als bevorzugt"
     },
     "rename": "Umbenennen",
     "renameLabel": "Name des Ausbreitungsknotens",
@@ -3916,7 +3919,25 @@
     "renameFailed": "Der Weitergabeknoten konnte nicht umbenannt werden.",
     "deleteFailed": "Der Ausbreitungsknoten konnte nicht gelöscht werden.",
     "addFailed": "Der Ausbreitungsknoten konnte nicht hinzugefügt werden.",
-    "addNodePlaceholder": "32-stelliger lxmf.propagation-Ziel-Hash"
+    "addNodePlaceholder": "32-stelliger lxmf.propagation-Ziel-Hash",
+    "syncEstablishIdentityMissing": "Propagation Sync konnte den Link-Proof nicht verifizieren — die Knotenidentität fehlte. Warten Sie auf eine Ankündigung und versuchen Sie es erneut.",
+    "syncEstablishInvalidProof": "Propagation Sync hat einen ungültigen Link-Beweis vom Knoten erhalten — versuchen Sie es gleich noch einmal.",
+    "syncOfferNoIdentity": "Der Ausbreitungsknoten hat das SYNC-Angebot abgelehnt — Identifizierung fehlgeschlagen. Warten Sie auf eine Ankündigung und versuchen Sie es erneut.",
+    "syncOfferNoAccess": "Der Ausbreitungsknoten hat den Synchronisationszugriff verweigert.",
+    "syncOfferInvalidKey": "Der Ausbreitungsknoten hat den Peering-Schlüssel abgelehnt — überprüfen Sie die Peering-Kosten und versuchen Sie es erneut.",
+    "syncOfferThrottled": "Der Ausbreitungsknoten drosselte die Synchronisierungsanforderung — versuchen Sie es später erneut.",
+    "syncOfferInvalidData": "Der Ausbreitungsknoten hat die SYNC-Angebotsdaten abgelehnt.",
+    "syncOfferInvalidStamp": "Der Ausbreitungsknoten hat den Peering-Stempel abgelehnt — versuchen Sie es gleich noch einmal.",
+    "discoveredTitle": "Im Netzwerk entdeckt",
+    "discoveredEmpty": "Noch keine lxmf.propagation angekündigt. Halten Sie den Stack verbunden oder fügen Sie einen Knoten per Hash hinzu.",
+    "discoveredInactive": "inaktiv",
+    "discoveredHops": "{{hops}} Hops",
+    "discoveredPeeringCost": "peering-Kosten {{cost}}",
+    "discoveredAdd": "Hinzufügen",
+    "discoveredAddAria": "Entdeckten Ausbreitungsknoten {{name}} hinzufügen",
+    "discoveredAddPrefer": "Hinzufügen & bevorzugen",
+    "discoveredAddPreferAria": "Fügen Sie den entdeckten Ausbreitungsknoten {{name}} hinzu und legen Sie ihn als bevorzugt fest",
+    "discoveredHash": "{{hash}}"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Ausbreitungsmodus",
