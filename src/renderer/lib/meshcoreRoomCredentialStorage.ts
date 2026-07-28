@@ -1,6 +1,7 @@
 import {
   createMeshcorePerNodeCredentialStorage,
   type MeshcorePerNodeCredentialStorage,
+  parseLegacyCredentialRaw,
 } from './meshcorePerNodeCredentialStorage';
 
 /** Per-room guest/admin passwords in app_settings (local SQLite via IPC). */
@@ -12,25 +13,18 @@ export interface MeshcoreRoomStoredCredential {
 }
 
 function parseCredentialValue(raw: unknown): MeshcoreRoomStoredCredential | undefined {
-  if (raw == null) return undefined;
-  if (typeof raw === 'string') {
-    if (!raw.trim()) return undefined;
-    try {
-      return parseCredentialValue(JSON.parse(raw) as unknown);
-    } catch {
-      // catch-no-log-ok legacy plain-string credential is not JSON
-      return { guestPassword: raw };
-    }
-  }
-  if (typeof raw !== 'object' || Array.isArray(raw)) return undefined;
-  const o = raw as Record<string, unknown>;
-  const guestPassword = typeof o.guestPassword === 'string' ? o.guestPassword : '';
-  if (!guestPassword && typeof o.password === 'string') {
-    return { guestPassword: o.password };
-  }
-  if (!guestPassword) return undefined;
-  const adminPassword = typeof o.adminPassword === 'string' ? o.adminPassword : undefined;
-  return { guestPassword, adminPassword };
+  return parseLegacyCredentialRaw(raw, {
+    fromPlainString: (value) => ({ guestPassword: value }),
+    fromObject: (o) => {
+      const guestPassword = typeof o.guestPassword === 'string' ? o.guestPassword : '';
+      if (!guestPassword && typeof o.password === 'string') {
+        return { guestPassword: o.password };
+      }
+      if (!guestPassword) return undefined;
+      const adminPassword = typeof o.adminPassword === 'string' ? o.adminPassword : undefined;
+      return { guestPassword, adminPassword };
+    },
+  });
 }
 
 const roomCredentialStorage: MeshcorePerNodeCredentialStorage<MeshcoreRoomStoredCredential> =

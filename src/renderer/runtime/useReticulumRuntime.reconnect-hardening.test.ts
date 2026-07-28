@@ -7,7 +7,10 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { extractUseCallbackBody } from '../lib/sourceContractTestHelpers';
+import {
+  assertPowerResumeSkipsOnExplicitDisconnect,
+  extractUseCallbackBody,
+} from '../lib/sourceContractTestHelpers';
 
 const TEST_DIR = import.meta.dirname ?? __dirname;
 const SOURCE = readFileSync(join(TEST_DIR, 'useReticulumRuntime.ts'), 'utf-8');
@@ -91,12 +94,7 @@ describe('useReticulumRuntime manual disconnect must not auto-reconnect', () => 
   });
 
   it('onPowerResume skips reconnect after explicit user disconnect', () => {
-    const resumeRe = /const onPowerResume = useCallback\([\s\S]*?\}, \[connect\]\);/;
-    const resumeBody = resumeRe.exec(SOURCE)?.[0];
-    expect(resumeBody).toBeDefined();
-    expect(resumeBody).toMatch(
-      /suppressReconnectRef\.current[\s\S]*?skip reconnect \(user disconnect\)/,
-    );
+    assertPowerResumeSkipsOnExplicitDisconnect(SOURCE, 'suppressReconnectRef.current');
   });
 });
 

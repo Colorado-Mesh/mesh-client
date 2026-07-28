@@ -3,6 +3,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
+import { canonicalizePath, isSameCanonicalPath } from './pathCanonical';
 import { readUtf8FileBounded } from './reticulum-config-read';
 
 /** Platform-default rnsd config file paths (first existing wins). */
@@ -64,7 +65,7 @@ export async function showNomadContentSourceDialog(): Promise<{
   if (result.canceled || result.filePaths.length === 0) {
     return { canceled: true, path: null };
   }
-  const picked = path.resolve(result.filePaths[0]);
+  const picked = canonicalizePath(result.filePaths[0]) ?? path.resolve(result.filePaths[0]);
   rememberNomadContentSourcePick(picked);
   return { canceled: false, path: picked };
 }
@@ -74,7 +75,7 @@ let lastPickedNomadContentSource: string | null = null;
 
 /** Record a picker result so {@link isAllowedNomadContentSourcePath} can authorize apply. */
 export function rememberNomadContentSourcePick(pickedPath: string): void {
-  lastPickedNomadContentSource = path.resolve(pickedPath);
+  lastPickedNomadContentSource = canonicalizePath(pickedPath) ?? path.resolve(pickedPath);
 }
 
 /** Clear the picker allowlist (tests / logout). */
@@ -85,15 +86,10 @@ export function clearNomadContentSourcePick(): void {
 /**
  * True when `candidate` matches the last native folder-picker result.
  * Blocks arbitrary filesystem paths and rejects null/empty (watch folder required).
+ * Uses realpath so a symlink under a picked dir cannot escape the allowlist.
  */
 export function isAllowedNomadContentSourcePath(candidate: string | null): boolean {
-  if (candidate == null || candidate.trim() === '') {
-    return false;
-  }
-  if (lastPickedNomadContentSource == null) {
-    return false;
-  }
-  return path.resolve(candidate) === lastPickedNomadContentSource;
+  return isSameCanonicalPath(candidate, lastPickedNomadContentSource);
 }
 
 /** Sidecar HTTP path for Nomad content-source mutations (must not go through generic proxyPut). */

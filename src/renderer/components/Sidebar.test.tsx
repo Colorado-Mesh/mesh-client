@@ -215,7 +215,7 @@ describe('Sidebar', () => {
       />,
     );
     expect(screen.getByText('3')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Rooms 3 unread' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Rooms, 3 unread' })).toBeInTheDocument();
   });
 
   it('shows RRC unread badge when rrcUnread > 0', () => {
@@ -232,7 +232,7 @@ describe('Sidebar', () => {
       />,
     );
     expect(screen.getByText('7')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'RRC 7 unread' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'RRC, 7 unread' })).toBeInTheDocument();
   });
 
   it('hides RRC unread badge when rrcUnread is 0', () => {
@@ -283,7 +283,7 @@ describe('Sidebar', () => {
       />,
     );
     expect(screen.getByText('99+')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Rooms 99+ unread' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Rooms, 99+ unread' })).toBeInTheDocument();
   });
 
   it('has no axe violations when Rooms unread badge shows', async () => {
@@ -332,8 +332,8 @@ describe('Sidebar', () => {
         onToggle={vi.fn()}
       />,
     );
-    expect(screen.getByRole('tab', { name: 'Chat 2 unread' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Rooms 4 unread' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Chat, 2 unread' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Rooms, 4 unread' })).toBeInTheDocument();
   });
 
   it('does not invoke onChange for disabled tabs', () => {

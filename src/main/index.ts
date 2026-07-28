@@ -30,7 +30,7 @@ import type { MQTTSettings } from '../renderer/lib/types';
 import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
 import { formatHostForSocket, parseConnectHostPort } from '../shared/connectHost';
 import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
-import { findLxmUrlInArgv } from '../shared/meshClientDeepLink';
+import { findLxmUrlInArgv, isForwardableMeshClientOpenUrl } from '../shared/meshClientDeepLink';
 import {
   sanitizeMeshcoreAdvLatLonForDb,
   sanitizeMeshcoreLastAdvertForDb,
@@ -96,7 +96,7 @@ import {
 } from './database';
 import { finishDbIpcHandler, finishDbIpcReadHandler, getDbForIpc } from './db-ipc-lifecycle';
 import { formatDatabaseSchemaTooNewMessage, showFatalStartupError } from './fatal-startup-dialog';
-import { fetchLinkPreview } from './fetchLinkPreview';
+import { fetchLinkPreview, takeLinkPreviewRateToken } from './fetchLinkPreview';
 import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
@@ -331,7 +331,7 @@ async function shutdownAppResources(): Promise<void> {
     ); // log-injection-ok internal cleanup
   }
   try {
-    void reticulumSidecarManager?.stop();
+    await reticulumSidecarManager?.stop();
   } catch (err) {
     console.debug(
       '[main] Reticulum sidecar stop during shutdown (ignored):',
@@ -2132,11 +2132,11 @@ ipcMain.handle('bluetooth-unpair', async (event, macAddress: unknown) => {
       settled = true;
       clearTimeout(timer);
       if (code !== 0) {
-        console.error('[IPC] bluetooth-unpair failed:', stderr);
-        reject(new Error(stderr || 'Failed to unpair device'));
+        console.error('[IPC] bluetooth-unpair failed:', sanitizeLogMessage(stderr));
+        reject(new Error(sanitizeLogMessage(stderr) || 'Failed to unpair device'));
         return;
       }
-      console.debug('[IPC] bluetooth-unpair success:', stdout.trim());
+      console.debug('[IPC] bluetooth-unpair success:', sanitizeLogMessage(stdout.trim()));
       resolve();
     });
     proc.on('error', (err) => {
@@ -2395,12 +2395,17 @@ ipcMain.handle('bluetooth-pair', async (event, macAddress: unknown, pin: unknown
           finishResolve();
         });
       } else {
-        console.warn('[IPC] bluetooth-pair failed:', stderr.trim() || `code ${code}`);
+        console.warn(
+          '[IPC] bluetooth-pair failed:',
+          sanitizeLogMessage(stderr.trim() || `code ${code}`),
+        );
         finishReject(
           new Error(
-            stderr.trim() ||
-              (pairingFailedByOutput ? 'pair failed (bluetoothctl reported failure)' : '') ||
-              `pair failed with code ${code}`,
+            sanitizeLogMessage(
+              stderr.trim() ||
+                (pairingFailedByOutput ? 'pair failed (bluetoothctl reported failure)' : '') ||
+                `pair failed with code ${code}`,
+            ),
           ),
         );
       }
@@ -2437,8 +2442,11 @@ ipcMain.handle('bluetooth-connect', async (event, macAddress: unknown) => {
         console.debug('[IPC] bluetooth-connect success');
         resolve();
       } else {
-        console.warn('[IPC] bluetooth-connect failed:', stderr.trim() || `code ${code}`);
-        reject(new Error(stderr.trim() || `connect failed with code ${code}`));
+        console.warn(
+          '[IPC] bluetooth-connect failed:',
+          sanitizeLogMessage(stderr.trim() || `code ${code}`),
+        );
+        reject(new Error(sanitizeLogMessage(stderr.trim() || `connect failed with code ${code}`)));
       }
     });
     proc.on('error', (err) => {
@@ -2967,7 +2975,8 @@ ipcMain.handle('mqtt:powerSuspend', (event) => {
     throw err;
   }
 });
-ipcMain.handle('mqtt:getClientId', (_event, protocol?: MeshProtocol) => {
+ipcMain.handle('mqtt:getClientId', (event, protocol?: MeshProtocol) => {
+  assertIpcSender(event, 'mqtt:getClientId');
   try {
     console.debug('[IPC] mqtt:getClientId', protocol);
     if (protocol === 'meshcore') return meshcoreMqttAdapter.getClientId();
@@ -3182,7 +3191,8 @@ ipcMain.handle('mqtt:publishMeshcorePacketLog', (event, args) => {
   }
 });
 
-ipcMain.handle('mqtt:getCachedNodes', () => {
+ipcMain.handle('mqtt:getCachedNodes', (event) => {
+  assertIpcSender(event, 'mqtt:getCachedNodes');
   try {
     return mqttManager.getCachedNodes();
   } catch (err) {
@@ -3344,7 +3354,8 @@ ipcMain.handle('notify:message', (event, title: unknown, body: unknown) => {
 });
 
 // ─── IPC: Safe storage (OS-keychain-backed encryption) ─────────────
-ipcMain.handle('storage:isAvailable', () => {
+ipcMain.handle('storage:isAvailable', (event) => {
+  assertIpcSender(event, 'storage:isAvailable');
   try {
     return safeStorage.isEncryptionAvailable();
   } catch (e) {
@@ -3902,8 +3913,9 @@ ipcMain.handle('db:setNodeNote', (event, nodeId: number, note: string) => {
   }
 });
 
-ipcMain.handle('db:getNodes', () => {
+ipcMain.handle('db:getNodes', (event) => {
   try {
+    assertIpcSender(event, 'db:getNodes');
     const db = getDbForIpc('db:getNodes');
     if (!db) return [];
     return db.prepareOnce('SELECT * FROM nodes ORDER BY last_heard DESC').all();
@@ -4150,8 +4162,9 @@ ipcMain.handle('db:clearMessagesByChannel', (event, channel: number) => {
   }
 });
 
-ipcMain.handle('db:getMessageChannels', () => {
+ipcMain.handle('db:getMessageChannels', (event) => {
   try {
+    assertIpcSender(event, 'db:getMessageChannels');
     const db = getDbForIpc('db:getMessageChannels');
     if (!db) return [];
     return db.prepareOnce('SELECT DISTINCT channel FROM messages ORDER BY channel').all();
@@ -4458,7 +4471,8 @@ ipcMain.handle('session:clearData', async (event) => {
 });
 
 // ─── IPC: Log panel ─────────────────────────────────────────────────
-ipcMain.handle('log:getPath', () => {
+ipcMain.handle('log:getPath', (event) => {
+  assertIpcSender(event, 'log:getPath');
   try {
     return getLogPath();
   } catch (err) {
@@ -4470,7 +4484,8 @@ ipcMain.handle('log:getPath', () => {
   }
 });
 
-ipcMain.handle('log:getRecentLines', () => {
+ipcMain.handle('log:getRecentLines', (event) => {
+  assertIpcSender(event, 'log:getRecentLines');
   try {
     return getRecentLines();
   } catch (err) {
@@ -4765,6 +4780,10 @@ ipcMain.handle('meshtastic:xmodemSaveDownload', async (event, filename: unknown,
 ipcMain.handle('chat:fetchLinkPreview', async (event, url: unknown) => {
   if (!validateIpcSender(event)) throw new Error('chat:fetchLinkPreview: unauthorized sender');
   if (typeof url !== 'string' || url.length === 0 || url.length > 2048) return null;
+  if (!takeLinkPreviewRateToken()) {
+    console.debug('[IPC] chat:fetchLinkPreview rate limited');
+    return null;
+  }
   return await fetchLinkPreview(url);
 });
 
@@ -4773,56 +4792,66 @@ const OUTBOX_VALID_PROTOCOLS = MESH_PROTOCOL_SET;
 const OUTBOX_VALID_STATUSES = new Set(['queued', 'sending', 'blocked', 'failed']);
 
 ipcMain.handle('chat:outbox:list', (event, protocol: unknown) => {
-  assertIpcSender(event, 'chat:outbox:list');
-  if (typeof protocol !== 'string' || !OUTBOX_VALID_PROTOCOLS.has(protocol)) {
-    throw new Error('chat:outbox:list: invalid protocol');
+  try {
+    assertIpcSender(event, 'chat:outbox:list');
+    if (typeof protocol !== 'string' || !OUTBOX_VALID_PROTOCOLS.has(protocol)) {
+      throw new Error('chat:outbox:list: invalid protocol');
+    }
+    const db = getDbForIpc('chat:outbox:list');
+    if (!db) return [];
+    const rows = db
+      .prepareOnce('SELECT * FROM chat_outbox WHERE protocol = ? ORDER BY created_at ASC')
+      .all(protocol) as Record<string, unknown>[];
+    return rows.map(rowToOutboxEntry);
+  } catch (err) {
+    return finishDbIpcReadHandler('chat:outbox:list', err, []);
   }
-  const db = getDatabase();
-  const rows = db
-    .prepareOnce('SELECT * FROM chat_outbox WHERE protocol = ? ORDER BY created_at ASC')
-    .all(protocol) as Record<string, unknown>[];
-  return rows.map(rowToOutboxEntry);
 });
 
 ipcMain.handle('chat:outbox:add', (event, entry: unknown) => {
-  assertIpcSender(event, 'chat:outbox:add');
-  if (!entry || typeof entry !== 'object') throw new Error('chat:outbox:add: invalid entry');
-  const e = entry as Record<string, unknown>;
-  if (typeof e.protocol !== 'string' || !OUTBOX_VALID_PROTOCOLS.has(e.protocol))
-    throw new Error('chat:outbox:add: invalid protocol');
-  if (typeof e.viewKey !== 'string') throw new Error('chat:outbox:add: invalid viewKey');
-  if (typeof e.channel !== 'number') throw new Error('chat:outbox:add: invalid channel');
-  if (typeof e.payload !== 'string' || e.payload.length === 0 || e.payload.length > 2048)
-    throw new Error('chat:outbox:add: invalid payload');
-  const now = Date.now();
-  const db = getDatabase();
-  const result = db
-    .prepareOnce(
-      `INSERT INTO chat_outbox
+  try {
+    assertIpcSender(event, 'chat:outbox:add');
+    if (!entry || typeof entry !== 'object') throw new Error('chat:outbox:add: invalid entry');
+    const e = entry as Record<string, unknown>;
+    if (typeof e.protocol !== 'string' || !OUTBOX_VALID_PROTOCOLS.has(e.protocol))
+      throw new Error('chat:outbox:add: invalid protocol');
+    if (typeof e.viewKey !== 'string') throw new Error('chat:outbox:add: invalid viewKey');
+    if (typeof e.channel !== 'number') throw new Error('chat:outbox:add: invalid channel');
+    if (typeof e.payload !== 'string' || e.payload.length === 0 || e.payload.length > 2048)
+      throw new Error('chat:outbox:add: invalid payload');
+    const now = Date.now();
+    const db = getDbForIpc('chat:outbox:add');
+    if (!db) throw new Error('chat:outbox:add: database closed');
+    const result = db
+      .prepareOnce(
+        `INSERT INTO chat_outbox
         (protocol, view_key, channel, to_node, payload, reply_id, status, error,
          attempt_count, next_retry_at, created_at, updated_at, group_id, group_index, group_total)
        VALUES (?,?,?,?,?,?,?,?,0,?,?,?,?,?,?)`,
-    )
-    .run(
-      e.protocol,
-      e.viewKey,
-      e.channel,
-      e.toNode ?? null,
-      e.payload,
-      e.replyId ?? null,
-      typeof e.status === 'string' && OUTBOX_VALID_STATUSES.has(e.status) ? e.status : 'queued',
-      e.error ?? null,
-      e.nextRetryAt ?? null,
-      e.createdAt ?? now,
-      now,
-      e.groupId ?? null,
-      e.groupIndex ?? null,
-      e.groupTotal ?? null,
-    );
-  const row = db
-    .prepareOnce('SELECT * FROM chat_outbox WHERE id = ?')
-    .get(result.lastInsertRowid) as Record<string, unknown>;
-  return rowToOutboxEntry(row);
+      )
+      .run(
+        e.protocol,
+        e.viewKey,
+        e.channel,
+        e.toNode ?? null,
+        e.payload,
+        e.replyId ?? null,
+        typeof e.status === 'string' && OUTBOX_VALID_STATUSES.has(e.status) ? e.status : 'queued',
+        e.error ?? null,
+        e.nextRetryAt ?? null,
+        e.createdAt ?? now,
+        now,
+        e.groupId ?? null,
+        e.groupIndex ?? null,
+        e.groupTotal ?? null,
+      );
+    const row = db
+      .prepareOnce('SELECT * FROM chat_outbox WHERE id = ?')
+      .get(result.lastInsertRowid) as Record<string, unknown>;
+    return rowToOutboxEntry(row);
+  } catch (err) {
+    finishDbIpcHandler('chat:outbox:add', err);
+  }
 });
 
 ipcMain.handle(
@@ -4835,42 +4864,53 @@ ipcMain.handle(
     nextRetryAt?: unknown,
     attemptCount?: unknown,
   ) => {
-    assertIpcSender(event, 'chat:outbox:updateStatus');
-    if (typeof id !== 'number' || !Number.isInteger(id))
-      throw new Error('chat:outbox:updateStatus: invalid id');
-    if (typeof status !== 'string' || !OUTBOX_VALID_STATUSES.has(status))
-      throw new Error('chat:outbox:updateStatus: invalid status');
-    const db = getDatabase();
-    if (typeof attemptCount === 'number' && Number.isInteger(attemptCount)) {
-      db.prepareOnce(
-        'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, attempt_count = ?, updated_at = ? WHERE id = ?',
-      ).run(
-        status,
-        typeof error === 'string' ? error : null,
-        typeof nextRetryAt === 'number' ? nextRetryAt : null,
-        attemptCount,
-        Date.now(),
-        id,
-      );
-    } else {
-      db.prepareOnce(
-        'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, updated_at = ? WHERE id = ?',
-      ).run(
-        status,
-        typeof error === 'string' ? error : null,
-        typeof nextRetryAt === 'number' ? nextRetryAt : null,
-        Date.now(),
-        id,
-      );
+    try {
+      assertIpcSender(event, 'chat:outbox:updateStatus');
+      if (typeof id !== 'number' || !Number.isInteger(id))
+        throw new Error('chat:outbox:updateStatus: invalid id');
+      if (typeof status !== 'string' || !OUTBOX_VALID_STATUSES.has(status))
+        throw new Error('chat:outbox:updateStatus: invalid status');
+      const db = getDbForIpc('chat:outbox:updateStatus');
+      if (!db) return;
+      if (typeof attemptCount === 'number' && Number.isInteger(attemptCount)) {
+        db.prepareOnce(
+          'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, attempt_count = ?, updated_at = ? WHERE id = ?',
+        ).run(
+          status,
+          typeof error === 'string' ? error : null,
+          typeof nextRetryAt === 'number' ? nextRetryAt : null,
+          attemptCount,
+          Date.now(),
+          id,
+        );
+      } else {
+        db.prepareOnce(
+          'UPDATE chat_outbox SET status = ?, error = ?, next_retry_at = ?, updated_at = ? WHERE id = ?',
+        ).run(
+          status,
+          typeof error === 'string' ? error : null,
+          typeof nextRetryAt === 'number' ? nextRetryAt : null,
+          Date.now(),
+          id,
+        );
+      }
+    } catch (err) {
+      finishDbIpcHandler('chat:outbox:updateStatus', err);
     }
   },
 );
 
 ipcMain.handle('chat:outbox:remove', (event, id: unknown) => {
-  assertIpcSender(event, 'chat:outbox:remove');
-  if (typeof id !== 'number' || !Number.isInteger(id))
-    throw new Error('chat:outbox:remove: invalid id');
-  getDatabase().prepareOnce('DELETE FROM chat_outbox WHERE id = ?').run(id);
+  try {
+    assertIpcSender(event, 'chat:outbox:remove');
+    if (typeof id !== 'number' || !Number.isInteger(id))
+      throw new Error('chat:outbox:remove: invalid id');
+    const db = getDbForIpc('chat:outbox:remove');
+    if (!db) return;
+    db.prepareOnce('DELETE FROM chat_outbox WHERE id = ?').run(id);
+  } catch (err) {
+    finishDbIpcHandler('chat:outbox:remove', err);
+  }
 });
 
 function rowToOutboxEntry(row: Record<string, unknown>) {
@@ -6307,6 +6347,10 @@ let pendingOpenUrl: string | null = null;
 function forwardOpenUrlToRenderer(url: string): void {
   const trimmed = url.trim();
   if (!trimmed) return;
+  if (!isForwardableMeshClientOpenUrl(trimmed)) {
+    console.debug('[main] ignoring non-mesh open URL:', sanitizeLogMessage(trimmed.slice(0, 120)));
+    return;
+  }
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('mesh-client:openUrl', trimmed);
     return;
@@ -6511,9 +6555,17 @@ app.on('before-quit', (event) => {
   }
 
   event.preventDefault();
-  void shutdownAppResources().then(() => {
-    app.quit();
-  });
+  void shutdownAppResources()
+    .then(() => {
+      app.quit();
+    })
+    .catch((err: unknown) => {
+      console.error(
+        '[main] shutdownAppResources failed before quit:',
+        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+      );
+      app.quit();
+    });
 });
 
 app.on('will-quit', (event) => {
@@ -6537,7 +6589,7 @@ app.on('will-quit', (event) => {
       ); // log-injection-ok internal cleanup
     }
     try {
-      void reticulumSidecarManager?.stop();
+      await reticulumSidecarManager?.stop();
     } catch (err) {
       console.debug(
         '[main] Reticulum sidecar stop during will-quit (ignored):',

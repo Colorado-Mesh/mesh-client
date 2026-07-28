@@ -108,6 +108,12 @@ describe('readReticulumDeveloperArtifacts', () => {
 
   afterEach(async () => {
     await fs.promises.rm(userDataDir, { recursive: true, force: true });
+    vi.mocked(app.getPath).mockReset();
+    vi.mocked(app.getPath).mockImplementation((key: string) => {
+      if (key === 'temp') return path.join(os.tmpdir(), 'mesh-client-support-test-temp');
+      if (key === 'userData') return path.join(os.tmpdir(), 'mesh-client-support-test-userdata');
+      return path.join(os.tmpdir(), 'mesh-client-support-test-userdata');
+    });
   });
 
   it('reads config and redacted stack state when present', async () => {
@@ -171,6 +177,12 @@ describe('buildSupportBundleZip', () => {
 
   afterEach(async () => {
     await fs.promises.rm(workDir, { recursive: true, force: true });
+    vi.mocked(app.getPath).mockReset();
+    vi.mocked(app.getPath).mockImplementation((key: string) => {
+      if (key === 'temp') return path.join(os.tmpdir(), 'mesh-client-support-test-temp');
+      if (key === 'userData') return path.join(os.tmpdir(), 'mesh-client-support-test-userdata');
+      return path.join(os.tmpdir(), 'mesh-client-support-test-userdata');
+    });
   });
 
   async function zipEntryNames(zipPath: string): Promise<string[]> {

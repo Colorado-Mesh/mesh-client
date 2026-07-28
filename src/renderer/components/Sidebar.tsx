@@ -73,7 +73,10 @@ export default function Sidebar({
                 : 0;
           const showBadge = showChatBadge || showRoomsBadge || showRrcBadge;
           const tabAriaLabel = showBadge
-            ? `${displayLabel} ${badgeCount > 99 ? '99+' : badgeCount} unread`
+            ? t('aria.tabWithUnread', {
+                label: displayLabel,
+                count: badgeCount > 99 ? '99+' : badgeCount,
+              })
             : displayLabel;
 
           return (

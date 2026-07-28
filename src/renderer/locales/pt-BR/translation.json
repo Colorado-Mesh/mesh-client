@@ -382,7 +382,8 @@
     "languageSelectorHint": "Clique para selecionar o idioma",
     "switchToMeshtasticWithUnread": "Mudar para Meshtastic, {{count}} não lido",
     "switchToMeshCoreWithUnread": "Mudar para MeshCore, {{count}} não lido",
-    "switchToReticulumWithUnread": "Mudar para Reticulum, {{count}} não lido"
+    "switchToReticulumWithUnread": "Mudar para Reticulum, {{count}} não lido",
+    "tabWithUnread": "{{label}}, {{count}} não lida"
   },
   "battery": {
     "percentCharging": "Bateria {{percent}} por cento, carregando",
@@ -4161,7 +4162,8 @@
     "pathHashCliGet": "Obter modo hash do caminho",
     "pathHashCliSet0": "Definir o modo de hash do caminho de 1 byte",
     "pathHashCliSet1": "Definir o modo de hash do caminho de 2 bytes",
-    "pathHashCliSet2": "Definir o modo de hash do caminho de 3 bytes"
+    "pathHashCliSet2": "Definir o modo de hash do caminho de 3 bytes",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} não lida"
   },
   "searchModal": {
     "closeSearch": "Fechar pesquisa",
@@ -4253,7 +4255,10 @@
     "backupRemoved": "Conjuntos de backup removidos:",
     "meshcorePrivateKeyHint": "Use Exportar chave privada abaixo para visualizar o material principal. O backup armazena o par de chaves completo neste computador.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "Nenhum backup encontrado",
+    "missingKeyMaterial": "Material-chave ausente",
+    "unknownError": "Erro desconhecido"
   },
   "sidebar": {
     "disabledTabTooltip": "Não disponível neste modo"

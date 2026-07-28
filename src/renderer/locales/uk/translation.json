@@ -382,7 +382,8 @@
     "languageSelectorHint": "Натисніть, щоб вибрати мову",
     "switchToMeshtasticWithUnread": "Перейти на Meshtastic, {{count}} непрочитано",
     "switchToMeshCoreWithUnread": "Перейти на MeshCore, {{count}} непрочитано",
-    "switchToReticulumWithUnread": "Переключитися на Reticulum, {{count}} непрочитано"
+    "switchToReticulumWithUnread": "Переключитися на Reticulum, {{count}} непрочитано",
+    "tabWithUnread": "{{label}}, {{count}} непрочитано"
   },
   "battery": {
     "percentCharging": "Акумулятор {{percent}} відсотків, заряджання",
@@ -4163,7 +4164,8 @@
     "pathHashCliGet": "Отримати хеш-режим шляху",
     "pathHashCliSet0": "Встановити хеш-режим шляху 1 байт",
     "pathHashCliSet1": "Встановити 2-байтовий режим хешування шляху",
-    "pathHashCliSet2": "Встановити 3-байтовий режим хешування шляху"
+    "pathHashCliSet2": "Встановити 3-байтовий режим хешування шляху",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} непрочитано"
   },
   "searchModal": {
     "closeSearch": "Закрити розклад пошуку",
@@ -4255,7 +4257,10 @@
     "backupRemoved": "Резервну копію видалено.",
     "meshcorePrivateKeyHint": "Використовуйте експорт приватного ключа нижче, щоб переглянути ключовий матеріал. Резервне копіювання зберігає повну пару ключів на цьому комп'ютері.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "Резервну копію не знайдено",
+    "missingKeyMaterial": "Відсутній ключовий матеріал",
+    "unknownError": "Невідома помилка"
   },
   "sidebar": {
     "disabledTabTooltip": "Недоступно в цьому режимі"

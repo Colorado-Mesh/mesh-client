@@ -1,3 +1,5 @@
+import { expect } from 'vitest';
+
 /** Returns the inner text of a `{ ... }` block starting at `openBraceIndex`. */
 export function extractBalancedBlock(source: string, openBraceIndex: number): string {
   let depth = 0;
@@ -30,4 +32,21 @@ export function extractUseCallbackBody(source: string, name: string): string {
   const braceIndex = source.indexOf('{', arrowIndex);
   if (braceIndex === -1) return '';
   return extractBalancedBlock(source, braceIndex);
+}
+
+/**
+ * Asserts `onPowerResume` (or a named callback) skips reconnect when the
+ * explicit-disconnect / suppress ref is set — shared across protocol runtimes.
+ */
+export function assertPowerResumeSkipsOnExplicitDisconnect(
+  source: string,
+  explicitDisconnectRef: string,
+  callbackName = 'onPowerResume',
+): void {
+  const resumeBody = extractUseCallbackBody(source, callbackName);
+  expect(resumeBody.length).toBeGreaterThan(0);
+  const refIdx = resumeBody.indexOf(explicitDisconnectRef);
+  const skipIdx = resumeBody.indexOf('skip reconnect (user disconnect)');
+  expect(refIdx).toBeGreaterThanOrEqual(0);
+  expect(skipIdx).toBeGreaterThan(refIdx);
 }

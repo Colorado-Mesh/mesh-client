@@ -225,7 +225,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 
 ### MeshCore Features
 
-MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher in the header to bring MeshCore into view; the other sessions stay connected in the background. **Meshtastic** shows **16** sidebar tabs (including **Administration**, **Security**, **TAK**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **16** tabs (**TAK** is hidden; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** shows **13** tabs (Connection, Nomad Network, Peers, Network, Admin, Chat, **RRC**, **Map**, Topology, Diagnostics, **Stats**, **Sniffer**, App, etc.). **Stats** and **Sniffer** are available in all three protocols; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
+MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher in the header to bring MeshCore into view; the other sessions stay connected in the background. **Meshtastic** shows **16** sidebar tabs (including **Administration**, **Security**, **TAK**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **16** tabs (**TAK** is hidden; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** shows **14** tabs (Connection, Chat, **RRC**, Nomad Network, **Remote**, Peers, **Map**, Network, Admin, App, Diagnostics, **Stats**, **Sniffer**, Topology). **Stats** and **Sniffer** are available in all three protocols; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
 
 - **Transmit queue**: header badge (with tooltip) when the connected radio reports outbound queue depth (STATS).
 
@@ -268,7 +268,7 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 **Repeaters**
 
 - **Repeaters panel** (MeshCore-only tab): list repeaters with on-demand status (noise floor, RSSI/SNR, packet counts, air time, uptime, TX queue); **Path** column shows a per-hop SNR sparkline from the last trace (last trace/path hop data is also stored in local SQLite so sparklines can survive app restarts); per-row **Neighbors** expands an inline neighbor list (same query as node detail, including **Load more**)
-- **Per-repeater admin passwords**: optional **Remember** saves credentials per repeater in SQLite (`meshcoreRepeaterCredential:<nodeId>`); collapsible **Saved repeater passwords** sidebar section with per-repeater Forget
+- **Per-repeater admin passwords**: optional **Remember** saves credentials per repeater in SQLite `app_settings` (`meshcoreRepeaterCredential:<nodeId>`); collapsible **Saved repeater passwords** sidebar section with per-repeater Forget
 - **Waiting-message drain**: header status indicator (queued backlog and active sync on any protocol tab; **paused/deferred** state only on the MeshCore tab) during serial companion backlog drain; **Sync now** for manual catch-up
 - **Repeater CLI**: per-repeater expandable **CLI** interface; command input with Enter to send, scrollable command/response history, Up/Down arrow history navigation, quick-command bar (get name, get radio, neighbors, version, clock, clock sync, clear stats, advert, board, …), flood vs. auto (saved path) routing toggle; responses are correlated to commands via 2-character hex prefix tokens; configurable retries with dynamic timeout; **auto Ping** before the first multi-hop CLI command when no trace exists this session (info toast while establishing route); **destructive-command confirm** modal for reboot/erase/factory-reset patterns
 - **Remote session authentication (optional)**: Password may be required for **CLI** and some **telemetry** paths when firmware ACL demands it. **Status** and **Neighbors** use pubkey-framed companion commands and typically work without login on direct (0-hop) repeaters; the auth modal offers “Continue without password.” Saved passwords persist when **Remember** is checked. Admin RPCs share a serialized companion queue — expect up to ~2 minutes blocked while a ping or multi-hop request runs. Status/Telemetry/Neighbors toast when the radio is disconnected.
@@ -453,7 +453,7 @@ All three protocols can run at the same time. Use the **Meshtastic / MeshCore / 
 2. Open the **Connection** tab and click **Start stack** (enable **Auto-start** to skip this on future launches)
 3. On **Network**, generate or import your LXMF identity (the sidecar must be running)
 4. On **Connection → Interfaces**, add transports (TCP hub, Auto, or RNode over USB/BLE/Wi‑Fi) and enable them; restart the stack after interface changes when using the full `rns-stack` build
-5. Use **Chat** for LXMF DMs; **RRC** for hub rooms; **Peers** and **Topology** for path-table visibility; optional **Nomad Network** for announce favourites
+5. Use **Chat** for LXMF DMs; **Remote** for rnsh/rncp; **RRC** for hub rooms; **Peers** and **Topology** for path-table visibility; **Nomad Network** for browse + **My Pages** watched-folder hosting
 
 Dev builds need the sidecar binary once: `pnpm run reticulum:sidecar:build`. Packaged releases include it automatically. See [docs/reticulum.md](docs/reticulum.md) and [Troubleshooting — Reticulum](docs/troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out).
 
@@ -467,6 +467,8 @@ After a successful connection, Mesh-Client remembers your last device per protoc
 - **WiFi / TCP**: a one-click reconnect card appears; click **Reconnect**
 - **MQTT**: auto-reconnects using saved broker settings (Meshtastic protobuf pipeline; MeshCore JSON v1 adapter; select transport when connecting)
 - **Reticulum**: with **Auto-start** enabled, the sidecar starts on launch; otherwise click **Start stack** on the Connection tab after opening the app
+
+When both Meshtastic and MeshCore have different saved BLE peripherals, dual-radio Noble startup serializes auto-connect (active protocol first via `mesh-client:protocol`). Sleep/wake reconnect staggers Meshtastic (~4s) then MeshCore (~8s), with up to ~30s dual-Noble settle — see [Troubleshooting — macOS sleep / wake](docs/troubleshooting.md#macos-sleep--wake-and-auto-reconnect).
 
 ### MQTT
 

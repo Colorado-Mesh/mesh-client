@@ -382,7 +382,8 @@
     "languageSelectorHint": "Klik om de taal te selecteren",
     "switchToMeshtasticWithUnread": "Schakel over naar Meshtastic, {{count}} ongelezen",
     "switchToMeshCoreWithUnread": "Schakel over naar MeshCore, {{count}} ongelezen",
-    "switchToReticulumWithUnread": "Schakel over naar Reticulum, {{count}} ongelezen"
+    "switchToReticulumWithUnread": "Schakel over naar Reticulum, {{count}} ongelezen",
+    "tabWithUnread": "{{label}}, {{count}} ongelezen"
   },
   "battery": {
     "percentCharging": "Batterij {{percent}} procent, bezig met opladen",
@@ -4161,7 +4162,8 @@
     "pathHashCliGet": "Hash-modus voor pad ophalen",
     "pathHashCliSet0": "Stel pad hash-modus 1-byte in",
     "pathHashCliSet1": "Stel pad hash-modus 2-byte in",
-    "pathHashCliSet2": "Stel pad hash-modus in op 3 bytes"
+    "pathHashCliSet2": "Stel pad hash-modus in op 3 bytes",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} ongelezen"
   },
   "searchModal": {
     "closeSearch": "Zoekopdracht sluiten",
@@ -4253,7 +4255,10 @@
     "backupRemoved": "Back-up sets verwijderd:",
     "meshcorePrivateKeyHint": "Gebruik Export Private Key hieronder om sleutelmateriaal te bekijken. Back-up slaat het volledige sleutelpaar op deze computer op.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "Geen back-up gevonden",
+    "missingKeyMaterial": "Ontbrekend belangrijk materiaal",
+    "unknownError": "Onbekende fout"
   },
   "sidebar": {
     "disabledTabTooltip": "Niet beschikbaar in deze modus"

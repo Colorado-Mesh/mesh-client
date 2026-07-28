@@ -181,6 +181,8 @@ import {
 import {
   escalateSerialReconnectExhaustion,
   forgetGrantedSerialPortBestEffort,
+  SERIAL_DEAD_THRESHOLD_MS,
+  SERIAL_STALE_THRESHOLD_MS,
 } from '../lib/serialPortRecovery';
 import { loadLastSerialPortId, persistSerialPortIdentity } from '../lib/serialPortSignature';
 import {
@@ -258,8 +260,7 @@ const BROADCAST_ADDR = 0xffffffff;
 // ─── Connection watchdog thresholds (per transport) ────────────────
 const BLE_STALE_THRESHOLD_MS = 90_000; // 90s — show warning
 const BLE_DEAD_THRESHOLD_MS = 180_000; // 3min — trigger reconnect
-const SERIAL_STALE_THRESHOLD_MS = 120_000; // 2min
-const SERIAL_DEAD_THRESHOLD_MS = 180_000; // 3min — align with BLE/HTTP
+// SERIAL_STALE_THRESHOLD_MS / SERIAL_DEAD_THRESHOLD_MS imported from serialPortRecovery
 // HTTP: align closer to BLE thresholds so WiFi behaves similarly for staleness/reconnect.
 const HTTP_STALE_THRESHOLD_MS = 90_000; // 90s — show warning
 const HTTP_DEAD_THRESHOLD_MS = 180_000; // 3min — trigger reconnect

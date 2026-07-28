@@ -14,6 +14,8 @@ import path from 'node:path';
 
 import { dialog } from 'electron';
 
+import { canonicalizePath, isSameCanonicalPath, isUnderCanonicalRoot } from './pathCanonical';
+
 /** Last file returned by {@link showRncpOpenFileDialog} (rncp send allowlist). */
 let lastPickedRncpSendFile: string | null = null;
 /**
@@ -35,7 +37,7 @@ export async function showRncpOpenFileDialog(): Promise<{
   if (result.canceled || result.filePaths.length === 0) {
     return { canceled: true, path: null };
   }
-  const picked = path.resolve(result.filePaths[0]);
+  const picked = canonicalizePath(result.filePaths[0]) ?? path.resolve(result.filePaths[0]);
   lastPickedRncpSendFile = picked;
   return { canceled: false, path: picked };
 }
@@ -52,7 +54,7 @@ export async function showRncpSaveDirectoryDialog(): Promise<{
   if (result.canceled || result.filePaths.length === 0) {
     return { canceled: true, path: null };
   }
-  const picked = path.resolve(result.filePaths[0]);
+  const picked = canonicalizePath(result.filePaths[0]) ?? path.resolve(result.filePaths[0]);
   lastPickedRncpSaveDirectories.add(picked);
   return { canceled: false, path: picked };
 }
@@ -65,9 +67,7 @@ export function clearRncpPickerAllowlist(): void {
 
 /** True when `candidate` is exactly the last file returned by {@link showRncpOpenFileDialog}. */
 export function isAllowedRncpSendFilePath(candidate: string | null | undefined): boolean {
-  if (candidate == null || candidate.trim() === '') return false;
-  if (lastPickedRncpSendFile == null) return false;
-  return path.resolve(candidate) === lastPickedRncpSendFile;
+  return isSameCanonicalPath(candidate, lastPickedRncpSendFile);
 }
 
 /**
@@ -78,9 +78,8 @@ export function isAllowedRncpSendFilePath(candidate: string | null | undefined):
 export function isAllowedRncpSaveDirectoryPath(candidate: string | null | undefined): boolean {
   if (candidate == null || candidate.trim() === '') return false;
   if (lastPickedRncpSaveDirectories.size === 0) return false;
-  const resolved = path.resolve(candidate);
   for (const dir of lastPickedRncpSaveDirectories) {
-    if (resolved === dir || resolved.startsWith(`${dir}${path.sep}`)) {
+    if (isUnderCanonicalRoot(candidate, dir)) {
       return true;
     }
   }

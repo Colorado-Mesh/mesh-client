@@ -188,22 +188,6 @@ export function syncNodesMapToIdentityStore(
   );
 }
 
-/** @deprecated Use {@link syncNodesMapToIdentityStore} */
-export function syncMeshcoreNodesMapToIdentityStore(
-  identityId: IdentityId,
-  nodes: Map<number, MeshNode>,
-): void {
-  syncNodesMapToIdentityStore(identityId, nodes);
-}
-
-/** @deprecated Use {@link syncNodesMapToIdentityStore} */
-export function syncMeshtasticNodesMapToIdentityStore(
-  identityId: IdentityId,
-  nodes: Map<number, MeshNode>,
-): void {
-  syncNodesMapToIdentityStore(identityId, nodes);
-}
-
 export async function hydrateMeshcoreMessagesFromDb(
   identityId: IdentityId,
   messagesMode: 'upsert' | 'replace' = 'upsert',

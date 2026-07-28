@@ -20,6 +20,9 @@ export const LINK_PREVIEW_IMAGE_MAX_BYTES = 262_144;
 export const LINK_PREVIEW_IMAGE_FETCH_TIMEOUT_MS = 10_000;
 /** After a failed image fetch (e.g. 429), do not retry until this elapses. */
 export const LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS = 5 * 60 * 1000;
+/** Max IPC link-preview fetches per rolling window (DoS / resource guard). */
+export const LINK_PREVIEW_RATE_LIMIT_MAX = 20;
+export const LINK_PREVIEW_RATE_LIMIT_WINDOW_MS = 60_000;
 const LINK_PREVIEW_IMAGE_MAX_REDIRECTS = 5;
 const LINK_PREVIEW_MAX_CACHE_ENTRIES = 256;
 const LINK_PREVIEW_MAX_IMAGE_CACHE_ENTRIES = 128;
@@ -397,4 +400,27 @@ export async function fetchLinkPreview(urlString: string): Promise<LinkPreviewMe
       return value;
     },
   );
+}
+
+/** Timestamps of recent uncached IPC preview attempts (sliding window). */
+const linkPreviewRateTimestamps: number[] = [];
+
+/** Returns true when a new uncached preview is allowed under the IPC rate limit. */
+export function takeLinkPreviewRateToken(now = Date.now()): boolean {
+  const cutoff = now - LINK_PREVIEW_RATE_LIMIT_WINDOW_MS;
+  while (linkPreviewRateTimestamps.length > 0) {
+    const oldest = linkPreviewRateTimestamps[0];
+    if (oldest === undefined || oldest >= cutoff) break;
+    linkPreviewRateTimestamps.shift();
+  }
+  if (linkPreviewRateTimestamps.length >= LINK_PREVIEW_RATE_LIMIT_MAX) {
+    return false;
+  }
+  linkPreviewRateTimestamps.push(now);
+  return true;
+}
+
+/** Test helper — clears the IPC rate-limit window. */
+export function resetLinkPreviewRateLimitForTests(): void {
+  linkPreviewRateTimestamps.length = 0;
 }

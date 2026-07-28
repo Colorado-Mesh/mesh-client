@@ -151,6 +151,8 @@ export function useChatOutbox({
           console.warn('[useChatOutbox] send failed for outbox row', row.id, errMsg);
         }
       }
+    } catch (err: unknown) {
+      console.warn('[useChatOutbox] drainOnce failed', err);
     } finally {
       drainingRef.current = false;
     }
@@ -159,6 +161,8 @@ export function useChatOutbox({
   // Drain when send becomes available, or when protocol changes while already connected
   useEffect(() => {
     if (isSendAvailable) {
+      // Fire-and-forget drain; setState happens asynchronously inside drainOnce.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- availability-driven outbox drain
       void drainOnce();
     }
     // drainOnce intentionally omitted: only trigger on availability/protocol change

@@ -1582,11 +1582,12 @@ export default function RoomsPanel({
                     title={roomListCollapsed ? (room.long_name ?? String(room.node_id)) : undefined}
                     aria-label={
                       roomListCollapsed
-                        ? `${room.long_name ?? String(room.node_id)}${
-                            unread > 0 && selectedRoomId !== room.node_id
-                              ? `, ${unread > 99 ? '99+' : unread} unread`
-                              : ''
-                          }`
+                        ? unread > 0 && selectedRoomId !== room.node_id
+                          ? t('roomsPanel.collapsedRoomWithUnread', {
+                              label: room.long_name ?? String(room.node_id),
+                              count: unread > 99 ? '99+' : unread,
+                            })
+                          : (room.long_name ?? String(room.node_id))
                         : undefined
                     }
                   >

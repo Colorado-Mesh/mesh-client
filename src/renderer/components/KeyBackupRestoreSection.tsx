@@ -142,7 +142,7 @@ export function KeyBackupRestoreSection({
           protocol === 'meshtastic'
             ? await loadMeshtasticDmKeyBackup(nodeKey)
             : await loadMeshcoreKeyBackup(nodeKey);
-        if (!loaded) throw new Error('No backup found');
+        if (!loaded) throw new Error('NO_BACKUP');
         const ok =
           protocol === 'meshtastic'
             ? await onMeshtasticRestore(loaded.publicKey, loaded.privateKey)
@@ -155,12 +155,16 @@ export function KeyBackupRestoreSection({
         }
       } catch (err) {
         console.warn('[KeyBackupRestoreSection] restore ' + errLikeToLogString(err));
-        addToast(
-          t('securityPanel.restoreFailed', {
-            message: err instanceof Error ? err.message : 'Unknown error',
-          }),
-          'error',
-        );
+        const code = err instanceof Error ? err.message : '';
+        const message =
+          code === 'NO_BACKUP'
+            ? t('securityPanel.noBackupFound')
+            : code === 'MISSING_KEYS'
+              ? t('securityPanel.missingKeyMaterial')
+              : err instanceof Error && err.message
+                ? err.message
+                : t('securityPanel.unknownError');
+        addToast(t('securityPanel.restoreFailed', { message }), 'error');
       } finally {
         setBackupInProgress(false);
         setShowPicker(false);
@@ -176,7 +180,7 @@ export function KeyBackupRestoreSection({
     try {
       const keys =
         protocol === 'meshtastic' ? await onMeshtasticBackup() : await onMeshcoreBackup();
-      if (!keys) throw new Error('Missing key material');
+      if (!keys) throw new Error('MISSING_KEYS');
       if (protocol === 'meshtastic') {
         await saveMeshtasticDmKeyBackup({
           nodeNum: localNodeKey,
@@ -196,12 +200,14 @@ export function KeyBackupRestoreSection({
       refreshStatus();
     } catch (err) {
       console.warn('[KeyBackupRestoreSection] backup ' + errLikeToLogString(err));
-      addToast(
-        t('securityPanel.backupFailed', {
-          message: err instanceof Error ? err.message : 'Unknown error',
-        }),
-        'error',
-      );
+      const code = err instanceof Error ? err.message : '';
+      const message =
+        code === 'MISSING_KEYS'
+          ? t('securityPanel.missingKeyMaterial')
+          : err instanceof Error && err.message
+            ? err.message
+            : t('securityPanel.unknownError');
+      addToast(t('securityPanel.backupFailed', { message }), 'error');
     } finally {
       setBackupInProgress(false);
     }

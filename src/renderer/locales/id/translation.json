@@ -382,7 +382,8 @@
     "languageSelectorHint": "Klik untuk memilih bahasa",
     "switchToMeshtasticWithUnread": "Beralih ke Meshtastic, {{count}} belum dibaca",
     "switchToMeshCoreWithUnread": "Beralih ke MeshCore, {{count}} belum dibaca",
-    "switchToReticulumWithUnread": "Beralih ke Reticulum, {{count}} belum dibaca"
+    "switchToReticulumWithUnread": "Beralih ke Reticulum, {{count}} belum dibaca",
+    "tabWithUnread": "{{label}}, {{count}} belum dibaca"
   },
   "battery": {
     "percentCharging": "Baterai {{percent}} persen, sedang diisi",
@@ -4161,7 +4162,8 @@
     "pathHashCliGet": "Dapatkan mode hash jalur",
     "pathHashCliSet0": "Atur mode hash jalur 1 - byte",
     "pathHashCliSet1": "Atur mode hash jalur 2 - byte",
-    "pathHashCliSet2": "Atur mode hash jalur 3 - byte"
+    "pathHashCliSet2": "Atur mode hash jalur 3 - byte",
+    "collapsedRoomWithUnread": "{{label}}, {{count}} belum dibaca"
   },
   "searchModal": {
     "closeSearch": "Tutup pencarian",
@@ -4253,7 +4255,10 @@
     "backupRemoved": "Cadangan dihapus.",
     "meshcorePrivateKeyHint": "Gunakan Kunci Pribadi Ekspor di bawah ini untuk melihat materi utama. Cadangan menyimpan pasangan kunci lengkap di komputer ini.",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "Tidak ada cadangan yang ditemukan",
+    "missingKeyMaterial": "Bahan utama tidak ada",
+    "unknownError": "Kesalahan tidak dikenal"
   },
   "sidebar": {
     "disabledTabTooltip": "Tidak tersedia dalam mode ini"

@@ -92,3 +92,13 @@ export function findLxmUrlInArgv(argv: readonly string[]): string | undefined {
   }
   return undefined;
 }
+
+/**
+ * True when main should forward an OS open-url / argv string to the renderer.
+ * Allows `lxm://` (including paper-unsupported forms) and Meshtastic channel URLs;
+ * drops unrelated schemes.
+ */
+export function isForwardableMeshClientOpenUrl(raw: string): boolean {
+  const kind = classifyMeshClientDeepLink(raw).kind;
+  return kind !== 'unknown';
+}

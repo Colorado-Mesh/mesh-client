@@ -382,7 +382,8 @@
     "languageSelectorHint": "单击以选择语言",
     "switchToMeshtasticWithUnread": "切换到 Meshtastic，{{count}} 未读",
     "switchToMeshCoreWithUnread": "切换到MeshCore，{{count}}未读",
-    "switchToReticulumWithUnread": "切换到 Reticulum，{{count}} 未读"
+    "switchToReticulumWithUnread": "切换到 Reticulum，{{count}} 未读",
+    "tabWithUnread": "{{label}}, {{count}}未读"
   },
   "battery": {
     "percentCharging": "电池{{percent}}百分比，正在充电",
@@ -4161,7 +4162,8 @@
     "pathHashCliGet": "获取路径哈希模式",
     "pathHashCliSet0": "设置路径哈希模式1字节",
     "pathHashCliSet1": "设置路径哈希模式2字节",
-    "pathHashCliSet2": "设置路径哈希模式3字节"
+    "pathHashCliSet2": "设置路径哈希模式3字节",
+    "collapsedRoomWithUnread": "{{label}}, {{count}}未读"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",
@@ -4253,7 +4255,10 @@
     "backupRemoved": "备份集已删除：",
     "meshcorePrivateKeyHint": "使用下面的导出私钥查看密钥材料。Backup将完整密钥对存储在此计算机上。",
     "backupLabelMeshtastic": "Meshtastic · {{detail}}",
-    "backupLabelMeshcore": "MeshCore · {{detail}}"
+    "backupLabelMeshcore": "MeshCore · {{detail}}",
+    "noBackupFound": "没有备份设置发现!",
+    "missingKeyMaterial": "缺少关键材料",
+    "unknownError": "未知错误"
   },
   "sidebar": {
     "disabledTabTooltip": "在此模式下不可用"

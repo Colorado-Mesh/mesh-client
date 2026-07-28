@@ -43,7 +43,7 @@ export default function Tabs({ tabs, active, onChange, chatUnread = 0, disabledT
             onClick={() => {
               if (!isDisabled) onChange(i);
             }}
-            title={isDisabled ? 'Not available in MeshCore mode' : undefined}
+            title={isDisabled ? t('sidebar.disabledTabTooltip') : undefined}
             className={`relative flex items-center gap-1.5 rounded-t-md px-3 py-2.5 text-sm font-medium transition-colors ${
               isDisabled
                 ? 'cursor-not-allowed text-gray-600 opacity-50'
