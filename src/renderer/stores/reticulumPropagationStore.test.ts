@@ -39,6 +39,7 @@ describe('reticulumPropagationStore', () => {
       lastRefreshedAt: null,
       lastPropagationSyncAt: null,
       lastPropagationSyncAttemptAt: null,
+      activePropagationSyncAttemptAt: null,
     });
   });
 
@@ -192,6 +193,38 @@ describe('reticulumPropagationStore', () => {
     expect(useReticulumPropagationStore.getState().lastSyncError).toBeNull();
     expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
     expect(useReticulumPropagationStore.getState().lastPropagationSyncAt).toBeTypeOf('number');
+    expect(useReticulumPropagationStore.getState().lastPropagationSyncAttemptAt).toBeNull();
+    expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBeNull();
+  });
+
+  it('older success completion does not clear a newer failed attempt stamp', () => {
+    const olderAttempt = 1_000;
+    const newerAttempt = 2_000;
+    useReticulumPropagationStore.setState({
+      lastPropagationSyncAttemptAt: newerAttempt,
+      activePropagationSyncAttemptAt: null,
+      lastPropagationSyncAt: null,
+    });
+
+    useReticulumPropagationStore.getState().setLastPropagationSyncAt(3_000, olderAttempt);
+
+    expect(useReticulumPropagationStore.getState().lastPropagationSyncAt).toBe(3_000);
+    expect(useReticulumPropagationStore.getState().lastPropagationSyncAttemptAt).toBe(newerAttempt);
+  });
+
+  it('matching success completion clears its own attempt stamp', () => {
+    const attemptAt = 5_000;
+    useReticulumPropagationStore.setState({
+      lastPropagationSyncAttemptAt: attemptAt,
+      activePropagationSyncAttemptAt: attemptAt,
+      lastPropagationSyncAt: null,
+    });
+
+    useReticulumPropagationStore.getState().setLastPropagationSyncAt(6_000, attemptAt);
+
+    expect(useReticulumPropagationStore.getState().lastPropagationSyncAt).toBe(6_000);
+    expect(useReticulumPropagationStore.getState().lastPropagationSyncAttemptAt).toBeNull();
+    expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBeNull();
   });
 
   it('startSync maps sidecar identity errors to i18n keys', async () => {

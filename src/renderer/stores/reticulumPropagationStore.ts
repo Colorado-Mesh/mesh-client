@@ -52,15 +52,24 @@ interface ReticulumPropagationStoreState {
   lastSyncError: string | null;
   lastRefreshedAt: number | null;
   lastPropagationSyncAt: number | null;
-  /** When the most recent sync attempt began (success or failure). Used for auto-sync backoff. */
+  /**
+   * When the most recent sync attempt began. Kept after failures for auto-sync cooldown;
+   * cleared on success only when that completion still owns this stamp.
+   */
   lastPropagationSyncAttemptAt: number | null;
+  /** Attempt timestamp for the in-flight sync run (WS complete scopes clear to this). */
+  activePropagationSyncAttemptAt: number | null;
   replaceNodes: (nodes: PropagationNodeRow[]) => void;
   upsertDiscovered: (row: DiscoveredPropagationRow) => void;
   replaceDiscovered: (rows: DiscoveredPropagationRow[]) => void;
   setPreferredId: (id: string | null) => void;
   setSyncState: (patch: Partial<PropagationSyncState>) => void;
   setLastSyncError: (message: string | null) => void;
-  setLastPropagationSyncAt: (atMs: number | null) => void;
+  /**
+   * Record last successful sync time. When `forAttemptAt` matches the current attempt stamp,
+   * clear it (and the active run stamp); a mismatched/older completion leaves a newer attempt alone.
+   */
+  setLastPropagationSyncAt: (atMs: number | null, forAttemptAt?: number | null) => void;
   setLastPropagationSyncAttemptAt: (atMs: number | null) => void;
   refreshFromSidecar: () => Promise<void>;
   refreshDiscoveredFromSidecar: () => Promise<void>;
@@ -84,6 +93,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   lastRefreshedAt: null,
   lastPropagationSyncAt: null,
   lastPropagationSyncAttemptAt: null,
+  activePropagationSyncAttemptAt: null,
 
   replaceNodes: (nodes) => {
     set({ nodes });
@@ -113,8 +123,19 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
     set({ lastSyncError: message });
   },
 
-  setLastPropagationSyncAt: (atMs) => {
-    set({ lastPropagationSyncAt: atMs });
+  setLastPropagationSyncAt: (atMs, forAttemptAt) => {
+    set((s) => {
+      if (atMs == null) {
+        return { lastPropagationSyncAt: null };
+      }
+      const clearAttempt = forAttemptAt != null && s.lastPropagationSyncAttemptAt === forAttemptAt;
+      const clearActive = forAttemptAt != null && s.activePropagationSyncAttemptAt === forAttemptAt;
+      return {
+        lastPropagationSyncAt: atMs,
+        ...(clearAttempt ? { lastPropagationSyncAttemptAt: null } : {}),
+        ...(clearActive ? { activePropagationSyncAttemptAt: null } : {}),
+      };
+    });
   },
 
   setLastPropagationSyncAttemptAt: (atMs) => {
@@ -203,11 +224,17 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
   startSync: async (id) => {
     const propId = id ?? get().preferredId;
     if (!propId) return false;
+    // Avoid overlapping renderer starts so a late success cannot clear a newer attempt.
+    if (get().sync.active) {
+      await get().cancelSync();
+    }
+    const attemptAt = Date.now();
     clearPropagationSyncStallWatchdog();
     set({
       sync: { active: true, progress: 0, message: null },
       lastSyncError: null,
-      lastPropagationSyncAttemptAt: Date.now(),
+      lastPropagationSyncAttemptAt: attemptAt,
+      activePropagationSyncAttemptAt: attemptAt,
     });
     // Local inbox settles in-process (no Establishing stall); remotes need the watchdog.
     if (propId !== 'local-prop') {
@@ -222,6 +249,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         set({
           sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
           lastSyncError: mapPropagationSyncError(res.error),
+          activePropagationSyncAttemptAt: null,
         });
         return false;
       }
@@ -230,8 +258,8 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         set({
           sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
           lastSyncError: null,
-          lastPropagationSyncAt: Date.now(),
         });
+        get().setLastPropagationSyncAt(Date.now(), attemptAt);
       }
       return true;
     } catch (e) {
@@ -240,6 +268,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       set({
         sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
         lastSyncError: mapPropagationSyncError(null),
+        activePropagationSyncAttemptAt: null,
       });
       return false;
     }
@@ -261,6 +290,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         return {
           sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
           lastSyncError: keepSidecar ? existing : fallback,
+          activePropagationSyncAttemptAt: null,
         };
       });
       return true;
@@ -277,6 +307,7 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
         return {
           sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
           lastSyncError: keepSidecar ? existing : fallback,
+          activePropagationSyncAttemptAt: null,
         };
       });
       return false;

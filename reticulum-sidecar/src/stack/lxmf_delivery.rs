@@ -22,20 +22,9 @@ use super::persistence::PersistedState;
 
 pub const LXMF_APP: &str = "lxmf.delivery";
 
-/// Skip re-announce before propagation sync when a delivery announce was sent this recently.
-pub const LXMF_ANNOUNCE_DEBOUNCE: Duration = Duration::from_secs(30);
-
-/// Whether a fresh LXMF delivery announce should be sent given the last send time.
-pub fn should_send_debounced_announce(
-    last: Option<Instant>,
-    now: Instant,
-    window: Duration,
-) -> bool {
-    match last {
-        None => true,
-        Some(t) => now.saturating_duration_since(t) >= window,
-    }
-}
+/// Brief pause after a successful pre-sync LXMF announce so hubs can flood the reverse path
+/// before LinkRequest (matches the effective delay of “Announce now, then Sync”).
+pub const PROPAGATION_SYNC_ANNOUNCE_SETTLE: Duration = Duration::from_secs(2);
 
 fn mark_announce_sent(last_at: &Arc<Mutex<Option<Instant>>>) {
     if let Ok(mut slot) = last_at.lock() {
@@ -273,22 +262,7 @@ mod tests {
     }
 
     #[test]
-    fn debounced_announce_skips_within_window() {
-        let now = Instant::now();
-        assert!(should_send_debounced_announce(
-            None,
-            now,
-            LXMF_ANNOUNCE_DEBOUNCE
-        ));
-        assert!(!should_send_debounced_announce(
-            Some(now),
-            now + Duration::from_secs(10),
-            LXMF_ANNOUNCE_DEBOUNCE
-        ));
-        assert!(should_send_debounced_announce(
-            Some(now),
-            now + Duration::from_secs(31),
-            LXMF_ANNOUNCE_DEBOUNCE
-        ));
+    fn propagation_sync_announce_settle_is_two_seconds() {
+        assert_eq!(PROPAGATION_SYNC_ANNOUNCE_SETTLE, Duration::from_secs(2));
     }
 }
