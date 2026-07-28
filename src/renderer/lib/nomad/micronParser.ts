@@ -353,7 +353,7 @@ export function serializeNomadPageRequestDataKey(data?: NomadPageRequestData | n
   const normalized = normalizeNomadPageRequestData(data);
   if (!normalized) return '';
   return Object.keys(normalized)
-    .sort()
+    .sort((a, b) => a.localeCompare(b))
     .map((key) => `${key}=${normalized[key]}`)
     .join('|');
 }
@@ -367,7 +367,7 @@ export function formatNomadRequestDataForUrlBar(data?: NomadPageRequestData | nu
   const normalized = normalizeNomadPageRequestData(data);
   if (!normalized) return '';
   const parts: string[] = [];
-  for (const key of Object.keys(normalized).sort()) {
+  for (const key of Object.keys(normalized).sort((a, b) => a.localeCompare(b))) {
     if (!key.startsWith('var_')) continue;
     const name = key.slice('var_'.length);
     if (!name) continue;
