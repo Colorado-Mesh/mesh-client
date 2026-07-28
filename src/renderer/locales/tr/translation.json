@@ -3884,7 +3884,10 @@
     "notice": {
       "body": "Hiçbir yayılma düğümü yapılandırılmamış. Çevrimdışı veya erişilemeyen eşler, LXMF teslimatı için bir yayılma düğümüne ihtiyaç duyar.",
       "openSettings": "Yayılımı ayarla",
-      "openSettingsAria": "Reticulum Ağı yayılım ayarlarını aç"
+      "openSettingsAria": "Reticulum Ağı yayılım ayarlarını aç",
+      "bodyWithDiscoveries": "Hiçbir yayılma düğümü yapılandırılmamış. {{count}} ağda keşfedildi — aşağıya bir tane ekleyin veya Ağ ayarlarını açın.",
+      "addClosest": "En yakın bulunanları ekle",
+      "addClosestAria": "En yakın keşfedilen yayılma düğümünü ekleyin ve tercih edilen olarak ayarlayın"
     },
     "rename": "Yeniden adlandır",
     "renameLabel": "Yayılma düğümü adı",
@@ -3916,7 +3919,25 @@
     "renameFailed": "Yayılma düğümü yeniden adlandırılamadı.",
     "deleteFailed": "Yayılma düğümü silinemedi.",
     "addFailed": "Yayılma düğümü eklenemedi.",
-    "addNodePlaceholder": "32 karakterli lxmf.propagation hedef karması"
+    "addNodePlaceholder": "32 karakterli lxmf.propagation hedef karması",
+    "syncEstablishIdentityMissing": "Yayılım senkronizasyonu bağlantı kanıtını doğrulayamadı — düğüm kimliği eksikti. Bir duyuru bekleyin ve tekrar deneyin.",
+    "syncEstablishInvalidProof": "Yayılım senkronizasyonu, düğümden geçersiz bir bağlantı kanıtı aldı. Birazdan tekrar deneyin.",
+    "syncOfferNoIdentity": "Yayılma düğümü senkronizasyon teklifini reddetti — tanımlama başarısız oldu. Bir duyuru bekleyin ve tekrar deneyin.",
+    "syncOfferNoAccess": "Yayılma düğümü senkronizasyon erişimini engelledi.",
+    "syncOfferInvalidKey": "Yayılma düğümü eşleştirme anahtarını reddetti — eşleştirme maliyetini kontrol edin ve tekrar deneyin.",
+    "syncOfferThrottled": "Yayılma düğümü senkronizasyon isteğini azalttı — daha sonra tekrar deneyin.",
+    "syncOfferInvalidData": "Yayılma düğümü senkronizasyon teklifi verilerini reddetti.",
+    "syncOfferInvalidStamp": "Yayılma düğümü eşleştirme damgasını reddetti — birazdan tekrar deneyin.",
+    "discoveredTitle": "Ağda keşfedildi",
+    "discoveredEmpty": "Henüz lxmf.propagation duyurusu duyulmadı. Yığını bağlı tutun veya karma ile bir düğüm ekleyin.",
+    "discoveredInactive": "Pasif",
+    "discoveredHops": "{{hops}} atlama",
+    "discoveredPeeringCost": "eşleştirme maliyeti {{cost}}",
+    "discoveredAdd": "Ekle",
+    "discoveredAddAria": "Bulunan yayılma düğümünü ekleyin {{name}}",
+    "discoveredAddPrefer": "Ekle ve tercih et",
+    "discoveredAddPreferAria": "Bulunan yayılma düğümünü {{name}} ekleyin ve tercih edilen olarak ayarlayın",
+    "discoveredHash": "{{hash}}"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Yayılma modu",

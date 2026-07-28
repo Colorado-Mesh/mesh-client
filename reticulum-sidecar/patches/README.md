@@ -225,7 +225,7 @@ When upstream ships an equivalent debounce (or a passkey-window pause), remove t
 
 ## rsLXMF-propagation-sync-peering.patch
 
-LinkIdentify + peering stamp before LXMF `/offer`, plus `set_local_identity` / `configure_peering` / `last_offer_error` / `last_finished_ok` on `PropagationSyncTask` so mesh-client can complete remote PN sync and distinguish HaveAll success from Failed after Complete→Idle cleanup.
+LinkIdentify + peering stamp before LXMF `/offer`, sticky offer/finish fields, plus Establishing diagnostics (`last_establish_error` + warn when LRPROOF is ignored for missing identity or invalid proof) so mesh-client can complete remote PN sync and surface non-generic failures.
 
 | Field | Value |
 | ----- | ----- |

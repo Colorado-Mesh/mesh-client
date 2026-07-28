@@ -25,6 +25,16 @@ export interface PropagationNodeRow {
   storage_bytes?: number;
 }
 
+export interface DiscoveredPropagationRow {
+  destination_hash: string;
+  identity_hash?: string | null;
+  display_name?: string | null;
+  hops?: number | null;
+  last_seen?: number | null;
+  node_state: boolean;
+  peering_cost: number;
+}
+
 interface PropagationSyncState {
   active: boolean;
   progress: number;
@@ -33,6 +43,7 @@ interface PropagationSyncState {
 
 interface ReticulumPropagationStoreState {
   nodes: PropagationNodeRow[];
+  discovered: DiscoveredPropagationRow[];
   preferredId: string | null;
   autoSyncIntervalSec: number;
   sync: PropagationSyncState;
@@ -42,23 +53,28 @@ interface ReticulumPropagationStoreState {
   /** When the most recent sync attempt began (success or failure). Used for auto-sync backoff. */
   lastPropagationSyncAttemptAt: number | null;
   replaceNodes: (nodes: PropagationNodeRow[]) => void;
+  upsertDiscovered: (row: DiscoveredPropagationRow) => void;
+  replaceDiscovered: (rows: DiscoveredPropagationRow[]) => void;
   setPreferredId: (id: string | null) => void;
   setSyncState: (patch: Partial<PropagationSyncState>) => void;
   setLastSyncError: (message: string | null) => void;
   setLastPropagationSyncAt: (atMs: number | null) => void;
   setLastPropagationSyncAttemptAt: (atMs: number | null) => void;
   refreshFromSidecar: () => Promise<void>;
+  refreshDiscoveredFromSidecar: () => Promise<void>;
   setPreferredOnSidecar: (id: string) => Promise<boolean>;
   setAutoSyncIntervalOnSidecar: (sec: number) => Promise<boolean>;
   startSync: (id?: string) => Promise<boolean>;
   cancelSync: () => Promise<boolean>;
   addPropagationNode: (destinationHash: string, name?: string) => Promise<boolean>;
+  addFromDiscovered: (destinationHash: string, opts?: { prefer?: boolean }) => Promise<boolean>;
   removePropagationNode: (id: string) => Promise<boolean>;
   renamePropagationNode: (id: string, name: string) => Promise<boolean>;
 }
 
 export const useReticulumPropagationStore = create<ReticulumPropagationStoreState>((set, get) => ({
   nodes: [],
+  discovered: [],
   preferredId: null,
   autoSyncIntervalSec: RETICULUM_PROPAGATION_AUTO_SYNC_DEFAULT_SEC,
   sync: { active: false, progress: 0, message: null },
@@ -69,6 +85,18 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
 
   replaceNodes: (nodes) => {
     set({ nodes });
+  },
+
+  upsertDiscovered: (row) => {
+    set((s) => {
+      const key = row.destination_hash.toLowerCase();
+      const without = s.discovered.filter((d) => d.destination_hash.toLowerCase() !== key);
+      return { discovered: [...without, row] };
+    });
+  },
+
+  replaceDiscovered: (rows) => {
+    set({ discovered: rows });
   },
 
   setPreferredId: (id) => {
@@ -113,9 +141,27 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
             ? body.last_propagation_sync_at * 1000
             : get().lastPropagationSyncAt,
       });
+      await get().refreshDiscoveredFromSidecar();
     } catch (e) {
       if (!isReticulumSidecarExpectedProxyError(e)) {
         console.warn('[reticulumPropagationStore] refresh ' + errLikeToLogString(e));
+      }
+    }
+  },
+
+  refreshDiscoveredFromSidecar: async () => {
+    const sidecarRunning = await isReticulumSidecarRunning();
+    if (!sidecarRunning) return;
+    try {
+      const body = (await window.electronAPI.reticulum.proxyGet(
+        '/api/v1/propagation/discovered',
+      )) as {
+        discovered?: DiscoveredPropagationRow[];
+      };
+      set({ discovered: body.discovered ?? [] });
+    } catch (e) {
+      if (!isReticulumSidecarExpectedProxyError(e)) {
+        console.warn('[reticulumPropagationStore] discovered ' + errLikeToLogString(e));
       }
     }
   },
@@ -227,6 +273,21 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
       console.warn('[reticulumPropagationStore] add node ' + errLikeToLogString(e));
     }
     return false;
+  },
+
+  addFromDiscovered: async (destinationHash, opts) => {
+    const row = get().discovered.find(
+      (d) => d.destination_hash.toLowerCase() === destinationHash.toLowerCase(),
+    );
+    const name = row?.display_name?.trim() || undefined;
+    const ok = await get().addPropagationNode(destinationHash, name);
+    if (!ok) return false;
+    if (opts?.prefer) {
+      const id = `pn-${destinationHash.toLowerCase().slice(0, 8)}`;
+      await get().setPreferredOnSidecar(id);
+      await get().refreshFromSidecar();
+    }
+    return true;
   },
 
   removePropagationNode: async (id) => {

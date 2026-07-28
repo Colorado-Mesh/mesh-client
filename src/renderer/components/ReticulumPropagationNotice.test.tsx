@@ -12,14 +12,17 @@ describe('ReticulumPropagationNotice', () => {
   beforeEach(() => {
     useReticulumPropagationStore.setState({
       nodes: [],
+      discovered: [],
       preferredId: null,
       refreshFromSidecar: vi.fn().mockResolvedValue(undefined),
+      addFromDiscovered: vi.fn().mockResolvedValue(true),
     });
   });
 
   afterEach(() => {
     useReticulumPropagationStore.setState({
       nodes: [],
+      discovered: [],
       preferredId: null,
       refreshFromSidecar: originalRefresh,
     });

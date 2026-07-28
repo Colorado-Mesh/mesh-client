@@ -3886,7 +3886,10 @@
     "notice": {
       "body": "Není nakonfigurován žádný propagační uzel. Offline nebo nedosažitelné protějšky potřebují propagační uzel pro doručování LXMF v obchodě a dopředu.",
       "openSettings": "Nastavit propagaci",
-      "openSettingsAria": "Otevřít nastavení propagace sítě Reticulum"
+      "openSettingsAria": "Otevřít nastavení propagace sítě Reticulum",
+      "bodyWithDiscoveries": "Není nakonfigurován žádný propagační uzel. {{count}} objeveno v síti — přidej ho níže nebo otevři Nastavení sítě.",
+      "addClosest": "Přidat nejblíže objevené",
+      "addClosestAria": "Přidejte nejbližší objevený propagační uzel a nastavte jej jako preferovaný"
     },
     "rename": "Přejmenovat",
     "renameLabel": "Název uzlu šíření",
@@ -3918,7 +3921,25 @@
     "renameFailed": "Nelze přejmenovat uzel šíření.",
     "deleteFailed": "Nelze odstranit uzel šíření.",
     "addFailed": "Nelze přidat uzel šíření.",
-    "addNodePlaceholder": "32znakový cílový hash lxmf.propagation"
+    "addNodePlaceholder": "32znakový cílový hash lxmf.propagation",
+    "syncEstablishIdentityMissing": "Synchronizace propagace nemohla ověřit důkaz odkazu — identita uzlu chyběla. Počkejte na oznámení a zkuste to znovu.",
+    "syncEstablishInvalidProof": "Synchronizace propagace obdržela neplatný důkaz odkazu z uzlu — zkuste to znovu za chvíli.",
+    "syncOfferNoIdentity": "Propagační uzel odmítl nabídku synchronizace — identifikace se nezdařila. Počkejte na oznámení a zkuste to znovu.",
+    "syncOfferNoAccess": "Uzel propagace byl odepřen přístup k synchronizaci.",
+    "syncOfferInvalidKey": "Propagační uzel odmítl peeringový klíč — zkontrolujte náklady peeringu a zkuste to znovu.",
+    "syncOfferThrottled": "Propagační uzel omezil požadavek na synchronizaci — zkuste to znovu později.",
+    "syncOfferInvalidData": "Propagační uzel odmítl data nabídky synchronizace.",
+    "syncOfferInvalidStamp": "Propagační uzel odmítl peeringové razítko — zkuste to znovu za chvíli.",
+    "discoveredTitle": "Nalezeno v síti",
+    "discoveredEmpty": "Dosud nebylo vyslechnuto žádné oznámení lxmf.propagation. Udržujte zásobník připojený nebo přidejte uzel pomocí hash.",
+    "discoveredInactive": "neaktivní",
+    "discoveredHops": "{{hops}} skoků",
+    "discoveredPeeringCost": "náklady na peering {{cost}}",
+    "discoveredAdd": "Přidat",
+    "discoveredAddAria": "Přidat objevený propagační uzel {{name}}",
+    "discoveredAddPrefer": "Přidat a preferovat",
+    "discoveredAddPreferAria": "Přidat objevený propagační uzel {{name}} a nastavit jako preferovaný",
+    "discoveredHash": "{{hash}}"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Režim propagace",

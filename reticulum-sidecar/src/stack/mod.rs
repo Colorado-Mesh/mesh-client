@@ -52,8 +52,8 @@ use packet_log::{MAX_WIRE_PACKET_LOG, PacketLogBuffer, WirePacketRow};
 use persistence::PersistedState;
 use tokio::sync::{Mutex, RwLock, broadcast};
 pub use types::{
-    AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfSendRequest,
-    NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, StackIdentity,
+    AddInterfaceRequest, ContactRow, DiscoveredPropagationRow, InterfaceRow, LxmfReactionRequest,
+    LxmfSendRequest, NomadNodeRow, NomadServingStatus, PeerRow, RrcHubRow, StackIdentity,
 };
 
 #[cfg(not(feature = "rns-stack"))]
@@ -224,6 +224,7 @@ impl StackHandle {
                 handle.config_dir.clone(),
                 handle.storage_dir.clone(),
             );
+            live.register_propagation_announce_handler();
             live.register_lxmf_identity_announce_handler();
             live.register_rmap_discovery_watcher(event_tx.clone());
         }
@@ -905,6 +906,14 @@ impl StackHandle {
             "preferred_id": preferred_id,
             "auto_sync_interval_sec": auto_sync_interval_sec,
         })
+    }
+
+    pub async fn list_discovered_propagation(&self) -> Vec<DiscoveredPropagationRow> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = &self.live {
+            return live.list_discovered_propagation();
+        }
+        Vec::new()
     }
 
     pub async fn set_preferred_propagation(&self, id: &str) -> Result<(), String> {

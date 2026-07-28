@@ -70,7 +70,29 @@ describe('reticulumPropagationSync', () => {
     expect(mapPropagationSyncError('PROPAGATION_PEERING_STAMP_FAILED')).toBe(
       'reticulumPropagation.syncPeeringStampFailed',
     );
+    expect(mapPropagationSyncError('propagation offer rejected: ErrorInvalidKey')).toBe(
+      'reticulumPropagation.syncOfferInvalidKey',
+    );
+    expect(mapPropagationSyncError('propagation establish failed: LrproofIdentityMissing')).toBe(
+      'reticulumPropagation.syncEstablishIdentityMissing',
+    );
     expect(mapPropagationSyncError('other')).toBe('reticulumPropagation.syncFailed');
+  });
+
+  it('maps WS failure message when sync ends with zero progress', () => {
+    useReticulumPropagationStore.setState({
+      sync: { active: true, progress: 10, message: null },
+    });
+
+    applyPropagationSyncEvent({
+      active: false,
+      progress: 0,
+      message: 'propagation establish failed: LrproofIdentityMissing',
+    });
+
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      'reticulumPropagation.syncEstablishIdentityMissing',
+    );
   });
 
   it('ignores late complete after cancel marked an error', () => {

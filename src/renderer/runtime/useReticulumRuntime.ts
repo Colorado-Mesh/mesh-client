@@ -87,6 +87,7 @@ import {
   type ReticulumIdentityStatus,
   useReticulumIdentityStore,
 } from '@/renderer/stores/reticulumIdentityStore';
+import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
 import type { ReticulumSidecarEvent, ReticulumWirePacketRow } from '@/shared/reticulum-types';
 import { lxmfBodyContainsRncpRequestEnable } from '@/shared/rncpRequestEnable';
 
@@ -563,6 +564,28 @@ export function useReticulumRuntime(): ProtocolRuntime {
       ) {
         const p = evt.payload as { progress?: number; active?: boolean; message?: string | null };
         applyPropagationSyncEvent(p);
+      }
+      if (evt.type === 'propagation.discovered' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          destination_hash?: string;
+          identity_hash?: string | null;
+          display_name?: string | null;
+          hops?: number | null;
+          last_seen?: number | null;
+          node_state?: boolean;
+          peering_cost?: number;
+        };
+        if (typeof p.destination_hash === 'string') {
+          useReticulumPropagationStore.getState().upsertDiscovered({
+            destination_hash: p.destination_hash,
+            identity_hash: p.identity_hash,
+            display_name: p.display_name,
+            hops: p.hops,
+            last_seen: p.last_seen,
+            node_state: p.node_state !== false,
+            peering_cost: typeof p.peering_cost === 'number' ? p.peering_cost : 0,
+          });
+        }
       }
       if (evt.type === 'rmap.discovery' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { discovered?: unknown };

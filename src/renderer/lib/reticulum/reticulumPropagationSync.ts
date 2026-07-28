@@ -18,6 +18,14 @@ const SYNC_LOCAL_UNSUPPORTED_KEY = 'reticulumPropagation.syncLocalNotSupported';
 const SYNC_IDENTITY_UNKNOWN_KEY = 'reticulumPropagation.syncIdentityUnknown';
 const SYNC_TARGET_NOT_PN_KEY = 'reticulumPropagation.syncTargetNotPropagationNode';
 const SYNC_PEERAGE_STAMP_FAILED_KEY = 'reticulumPropagation.syncPeeringStampFailed';
+const SYNC_ESTABLISH_IDENTITY_KEY = 'reticulumPropagation.syncEstablishIdentityMissing';
+const SYNC_ESTABLISH_INVALID_KEY = 'reticulumPropagation.syncEstablishInvalidProof';
+const SYNC_OFFER_NO_IDENTITY_KEY = 'reticulumPropagation.syncOfferNoIdentity';
+const SYNC_OFFER_NO_ACCESS_KEY = 'reticulumPropagation.syncOfferNoAccess';
+const SYNC_OFFER_INVALID_KEY_KEY = 'reticulumPropagation.syncOfferInvalidKey';
+const SYNC_OFFER_THROTTLED_KEY = 'reticulumPropagation.syncOfferThrottled';
+const SYNC_OFFER_INVALID_DATA_KEY = 'reticulumPropagation.syncOfferInvalidData';
+const SYNC_OFFER_INVALID_STAMP_KEY = 'reticulumPropagation.syncOfferInvalidStamp';
 
 /** Idle sync blob shared by cancel / complete / failure paths. */
 export const RETICULUM_PROPAGATION_SYNC_IDLE = {
@@ -26,7 +34,22 @@ export const RETICULUM_PROPAGATION_SYNC_IDLE = {
   message: null,
 } as const;
 
-/** Map sidecar/API sync error codes to i18n keys. */
+const OFFER_ERROR_KEYS: Record<string, string> = {
+  ErrorNoIdentity: SYNC_OFFER_NO_IDENTITY_KEY,
+  ErrorNoAccess: SYNC_OFFER_NO_ACCESS_KEY,
+  ErrorInvalidKey: SYNC_OFFER_INVALID_KEY_KEY,
+  ErrorThrottled: SYNC_OFFER_THROTTLED_KEY,
+  ErrorInvalidData: SYNC_OFFER_INVALID_DATA_KEY,
+  ErrorInvalidStamp: SYNC_OFFER_INVALID_STAMP_KEY,
+};
+
+const ESTABLISH_ERROR_KEYS: Record<string, string> = {
+  LrproofIdentityMissing: SYNC_ESTABLISH_IDENTITY_KEY,
+  LrproofInvalid: SYNC_ESTABLISH_INVALID_KEY,
+  LrproofInvalidKey: SYNC_ESTABLISH_INVALID_KEY,
+};
+
+/** Map sidecar/API sync error codes or WS failure messages to i18n keys. */
 export function mapPropagationSyncError(error: string | null | undefined): string {
   if (!error) return SYNC_FAILED_KEY;
   if (error === 'LOCAL_PROPAGATION_SYNC_UNSUPPORTED') return SYNC_LOCAL_UNSUPPORTED_KEY;
@@ -43,6 +66,21 @@ export function mapPropagationSyncError(error: string | null | undefined): strin
   ) {
     return SYNC_PEERAGE_STAMP_FAILED_KEY;
   }
+
+  const offerMatch = /^propagation offer rejected:\s*(\S+)/i.exec(error);
+  if (offerMatch?.[1] && OFFER_ERROR_KEYS[offerMatch[1]]) {
+    return OFFER_ERROR_KEYS[offerMatch[1]];
+  }
+
+  const establishMatch = /^propagation establish failed:\s*(\S+)/i.exec(error);
+  if (establishMatch?.[1] && ESTABLISH_ERROR_KEYS[establishMatch[1]]) {
+    return ESTABLISH_ERROR_KEYS[establishMatch[1]];
+  }
+  if (error.includes('LrproofIdentityMissing')) return SYNC_ESTABLISH_IDENTITY_KEY;
+  if (error.includes('LrproofInvalid')) return SYNC_ESTABLISH_INVALID_KEY;
+
+  if (/propagation node unreachable/i.test(error)) return SYNC_FAILED_KEY;
+
   return SYNC_FAILED_KEY;
 }
 
@@ -110,7 +148,9 @@ export function applyPropagationSyncEvent(payload: {
   if (payload.active === false && normalizedProgress === 0 && wasActive) {
     clearPropagationSyncStallWatchdog();
     useReticulumPropagationStore.getState().setSyncState({ ...RETICULUM_PROPAGATION_SYNC_IDLE });
-    useReticulumPropagationStore.getState().setLastSyncError(SYNC_FAILED_KEY);
+    useReticulumPropagationStore
+      .getState()
+      .setLastSyncError(mapPropagationSyncError(payload.message));
     return;
   }
 

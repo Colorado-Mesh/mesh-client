@@ -3884,7 +3884,10 @@
     "notice": {
       "body": "伝播ノードが設定されていません。オフラインまたは到達不能なピアには、ストアアンドフォワードLXMF配信用の伝播ノードが必要です。",
       "openSettings": "伝播の設定",
-      "openSettingsAria": "Reticulumネットワーク伝播設定を開く"
+      "openSettingsAria": "Reticulumネットワーク伝播設定を開く",
+      "bodyWithDiscoveries": "伝播ノードが設定されていません。{{count}}がネットワーク上で検出されました—以下に1つ追加するか、ネットワーク設定を開きます。",
+      "addClosest": "見つかった最も近いものを追加",
+      "addClosestAria": "最も近い検出された伝播ノードを追加し、優先として設定します"
     },
     "rename": "名前の変更",
     "renameLabel": "伝播ノード名",
@@ -3916,7 +3919,25 @@
     "renameFailed": "伝播ノードの名前を変更できませんでした。",
     "deleteFailed": "伝播ノードを削除できませんでした。",
     "addFailed": "伝播ノードを追加できませんでした。",
-    "addNodePlaceholder": "32 文字の lxmf.propagation 宛先ハッシュ"
+    "addNodePlaceholder": "32 文字の lxmf.propagation 宛先ハッシュ",
+    "syncEstablishIdentityMissing": "伝播同期はリンク証明を検証できませんでした—ノードIDが見つかりませんでした。お知らせを待ってから、もう一度お試しください。",
+    "syncEstablishInvalidProof": "伝播同期がノードから無効なリンク証明を受信しました。しばらくしてからもう一度お試しください。",
+    "syncOfferNoIdentity": "伝播ノードが同期オファーを拒否しました—識別に失敗しました。お知らせを待ってから、もう一度お試しください。",
+    "syncOfferNoAccess": "伝播ノードが同期アクセスを拒否しました。",
+    "syncOfferInvalidKey": "伝播ノードがピアリングキーを拒否しました—ピアリングコストを確認して再試行してください。",
+    "syncOfferThrottled": "伝播ノードが同期要求を制限しました。しばらくしてからもう一度お試しください。",
+    "syncOfferInvalidData": "伝播ノードが同期オファーデータを拒否しました。",
+    "syncOfferInvalidStamp": "伝播ノードがピアリングスタンプを拒否しました。しばらくしてからもう一度お試しください。",
+    "discoveredTitle": "ネットワーク上で発見されました",
+    "discoveredEmpty": "Lxmf.propagationはまだアナウンスされていません。スタックを接続したままにするか、ハッシュでノードを追加します。",
+    "discoveredInactive": "停止中",
+    "discoveredHops": "{{hops}} ホップ",
+    "discoveredPeeringCost": "ピアリングコスト{{cost}}",
+    "discoveredAdd": "追加",
+    "discoveredAddAria": "検出された伝播ノード{{name}}を追加",
+    "discoveredAddPrefer": "追加して優先する",
+    "discoveredAddPreferAria": "検出された伝播ノード{{name}}を追加し、優先として設定します",
+    "discoveredHash": "{{hash}}"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "伝播モード",

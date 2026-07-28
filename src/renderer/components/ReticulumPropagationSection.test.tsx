@@ -81,6 +81,7 @@ describe('ReticulumPropagationSection', () => {
         },
       ],
       preferredId: null,
+      discovered: [],
       sync: { active: false, progress: 0, message: null },
       refreshFromSidecar: vi.fn().mockResolvedValue(undefined),
       removePropagationNode: vi.fn().mockResolvedValue(true),
@@ -89,6 +90,7 @@ describe('ReticulumPropagationSection', () => {
       setAutoSyncIntervalOnSidecar: vi.fn().mockResolvedValue(true),
       startSync: vi.fn().mockResolvedValue(true),
       addPropagationNode: vi.fn().mockResolvedValue(true),
+      addFromDiscovered: vi.fn().mockResolvedValue(true),
     });
   });
 

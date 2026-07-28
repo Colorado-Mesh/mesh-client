@@ -3886,7 +3886,10 @@
     "notice": {
       "body": "Brak skonfigurowanego węzła propagacji. Partnerzy offline lub nieosiągalni potrzebują węzła propagacji do przechowywania i przekazywania LXMF.",
       "openSettings": "Skonfiguruj propagację",
-      "openSettingsAria": "Open Reticulum Network propagation settings"
+      "openSettingsAria": "Open Reticulum Network propagation settings",
+      "bodyWithDiscoveries": "Brak skonfigurowanego węzła propagacji. {{count}} wykryte w sieci — dodaj poniżej lub otwórz ustawienia sieci.",
+      "addClosest": "Dodaj najbliższe odkryte",
+      "addClosestAria": "Dodaj najbliższy odkryty węzeł propagacji i ustaw go jako preferowany"
     },
     "rename": "Zmień nazwę",
     "renameLabel": "Nazwa węzła propagacji",
@@ -3918,7 +3921,25 @@
     "renameFailed": "Nie można zmienić nazwy węzła propagacji.",
     "deleteFailed": "Nie można usunąć węzła propagacji.",
     "addFailed": "Nie można dodać węzła propagacji.",
-    "addNodePlaceholder": "32-znakowy skrót docelowy lxmf.propagation"
+    "addNodePlaceholder": "32-znakowy skrót docelowy lxmf.propagation",
+    "syncEstablishIdentityMissing": "Synchronizacja propagacji nie mogła zweryfikować dowodu linku — brakowało tożsamości węzła. Poczekaj na ogłoszenie i spróbuj ponownie.",
+    "syncEstablishInvalidProof": "Synchronizacja propagacji otrzymała nieprawidłową próbkę linku z węzła — spróbuj ponownie za chwilę.",
+    "syncOfferNoIdentity": "Węzeł propagacji odrzucił ofertę synchronizacji — identyfikacja nie powiodła się. Poczekaj na ogłoszenie i spróbuj ponownie.",
+    "syncOfferNoAccess": "Odmowa dostępu do synchronizacji węzła propagacji.",
+    "syncOfferInvalidKey": "Węzeł propagacji odrzucił klucz peeringu — sprawdź koszt peeringu i spróbuj ponownie.",
+    "syncOfferThrottled": "Węzeł propagacji zdławił żądanie synchronizacji — spróbuj ponownie później.",
+    "syncOfferInvalidData": "Węzeł propagacji odrzucił dane oferty SYNC.",
+    "syncOfferInvalidStamp": "Węzeł propagacji odrzucił pieczątkę — spróbuj ponownie za chwilę.",
+    "discoveredTitle": "Odkryte w sieci",
+    "discoveredEmpty": "Nie słychać jeszcze żadnych ogłoszeń lxmf.propagation. Utrzymuj stos połączony lub dodaj węzeł za pomocą skrótu.",
+    "discoveredInactive": "nieaktywna",
+    "discoveredHops": "{{hops}} skoków",
+    "discoveredPeeringCost": "koszt peeringu {{cost}}",
+    "discoveredAdd": "Dodaj",
+    "discoveredAddAria": "Dodaj odkryty węzeł propagacji {{name}}",
+    "discoveredAddPrefer": "Dodaj i preferuj",
+    "discoveredAddPreferAria": "Dodaj odkryty węzeł propagacji {{name}} i ustaw zgodnie z preferencjami",
+    "discoveredHash": "{{hash}}"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Tryb propagacji:",

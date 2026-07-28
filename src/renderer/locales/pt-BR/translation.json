@@ -3884,7 +3884,10 @@
     "notice": {
       "body": "Nenhum nó de propagação está configurado. Os pares offline ou inacessíveis precisam de um nó de propagação para a entrega de LXMF de armazenamento e encaminhamento.",
       "openSettings": "Configurar propagação",
-      "openSettingsAria": "Open Reticulum Network propagation settings"
+      "openSettingsAria": "Open Reticulum Network propagation settings",
+      "bodyWithDiscoveries": "Nenhum nó de propagação está configurado. {{count}} descoberto na rede — adicione um abaixo ou abra as configurações de rede.",
+      "addClosest": "Adicionar descoberto mais próximo",
+      "addClosestAria": "Adicione o nó de propagação descoberto mais próximo e defina-o como preferido"
     },
     "rename": "Renomear",
     "renameLabel": "Nome do nó de propagação",
@@ -3916,7 +3919,25 @@
     "renameFailed": "Não foi possível renomear o nó de propagação.",
     "deleteFailed": "Não foi possível excluir o nó de propagação.",
     "addFailed": "Não foi possível adicionar o nó de propagação.",
-    "addNodePlaceholder": "Hash de destino lxmf.propagation de 32 caracteres"
+    "addNodePlaceholder": "Hash de destino lxmf.propagation de 32 caracteres",
+    "syncEstablishIdentityMissing": "A sincronização de propagação não pôde verificar a prova do link — a identidade do nó estava ausente. Aguarde um anúncio e tente novamente.",
+    "syncEstablishInvalidProof": "A sincronização de propagação recebeu uma prova de link inválida do nó — tente novamente em um momento.",
+    "syncOfferNoIdentity": "O nó de propagação rejeitou a oferta de sincronização — a identificação falhou. Aguarde um anúncio e tente novamente.",
+    "syncOfferNoAccess": "Nó de propagação negado acesso de sincronização.",
+    "syncOfferInvalidKey": "O nó de propagação rejeitou a chave de emparelhamento — verifique o custo de emparelhamento e tente novamente.",
+    "syncOfferThrottled": "O nó de propagação limitou a solicitação de sincronização — tente novamente mais tarde.",
+    "syncOfferInvalidData": "O nó de propagação rejeitou os dados da oferta de sincronização.",
+    "syncOfferInvalidStamp": "O nó de propagação rejeitou o carimbo de peering — tente novamente em um momento.",
+    "discoveredTitle": "Descoberto na rede",
+    "discoveredEmpty": "Nenhuma lxmf.propagação anunciada ouvida ainda. Mantenha a pilha conectada ou adicione um nó por hash.",
+    "discoveredInactive": "inativo",
+    "discoveredHops": "{{hops}} saltos",
+    "discoveredPeeringCost": "custo de emparelhamento {{cost}}",
+    "discoveredAdd": "Adicionar",
+    "discoveredAddAria": "Adicionar nó de propagação descoberto {{name}}",
+    "discoveredAddPrefer": "Adicionar e preferir",
+    "discoveredAddPreferAria": "Adicione o nó de propagação descoberto {{name}} e defina como preferido",
+    "discoveredHash": "{{hash}}"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Modo de propagação",

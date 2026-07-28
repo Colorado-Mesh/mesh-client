@@ -93,6 +93,8 @@ pub struct LiveBridge {
     outbound: Arc<Mutex<LxmfOutboundDriver>>,
     propagation: Arc<PropagationBridge>,
     sync_cancel: Arc<std::sync::atomic::AtomicBool>,
+    /// In-memory heard `lxmf.propagation` announces (not auto-configured).
+    discovered_propagation: Arc<Mutex<HashMap<String, super::DiscoveredPropagationRow>>>,
     event_tx: broadcast::Sender<String>,
     packet_log: Arc<PacketLogBuffer>,
     /// Serialize Nomad Link queries — transport actor is single-threaded and
@@ -396,6 +398,7 @@ impl LiveBridge {
                 &identity,
             )?),
             sync_cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            discovered_propagation: Arc::new(Mutex::new(HashMap::new())),
             event_tx: event_tx.clone(),
             packet_log,
             nomad_link_lock: Arc::new(tokio::sync::Mutex::new(())),
@@ -935,6 +938,113 @@ impl LiveBridge {
         });
     }
 
+    /// Register handler for LXMF propagation-node announces (`lxmf.propagation`).
+    ///
+    /// Upserts an in-memory discovered list (not auto-added to configured PNs).
+    pub fn register_propagation_announce_handler(&self) {
+        const LXMF_PROPAGATION_ASPECT: &str = "lxmf.propagation";
+        const MAX_DISCOVERED_PROPAGATION: usize = 200;
+        let transport_tx = self.handle.transport_tx.clone();
+        let event_tx = self.event_tx.clone();
+        let discovered = Arc::clone(&self.discovered_propagation);
+        let outbound = Arc::clone(&self.outbound);
+        tokio::spawn(async move {
+            let (callback_tx, mut callback_rx) =
+                tokio::sync::mpsc::channel::<AnnounceHandlerEvent>(64);
+            if transport_tx
+                .send(TransportMessage::RegisterAnnounceHandler {
+                    aspect_filter: Some(LXMF_PROPAGATION_ASPECT.to_string()),
+                    receive_path_responses: false,
+                    callback_tx,
+                })
+                .await
+                .is_err()
+            {
+                tracing::warn!(
+                    "propagation announce handler registration failed: transport closed"
+                );
+                return;
+            }
+
+            while let Some(evt) = callback_rx.recv().await {
+                let Some(app_data) = evt.app_data.as_deref() else {
+                    continue;
+                };
+                let Some(parsed) = lxmf_core::handlers::parse_pn_announce_data(app_data) else {
+                    continue;
+                };
+                let hash_hex = hex::encode(evt.destination_hash);
+                let identity_hash_hex = evt.identity_hash.map(hex::encode);
+                let display_name = lxmf_core::handlers::pn_name_from_app_data(app_data);
+                let last_seen = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs();
+                if let Some(pub_key) = evt.public_key {
+                    if let Ok(mut driver) = outbound.lock() {
+                        driver.register_identity_key(&hash_hex, pub_key);
+                    }
+                }
+                let row = super::DiscoveredPropagationRow {
+                    destination_hash: hash_hex.clone(),
+                    identity_hash: identity_hash_hex.clone(),
+                    display_name: display_name.clone(),
+                    hops: Some(evt.hops),
+                    last_seen: Some(last_seen),
+                    node_state: parsed.node_state,
+                    peering_cost: parsed.peering_cost,
+                };
+                let payload = {
+                    let Ok(mut cache) = discovered.lock() else {
+                        continue;
+                    };
+                    cache.insert(hash_hex.clone(), row.clone());
+                    while cache.len() > MAX_DISCOVERED_PROPAGATION {
+                        // Evict oldest last_seen.
+                        let oldest = cache
+                            .iter()
+                            .min_by_key(|(_, r)| r.last_seen.unwrap_or(0))
+                            .map(|(k, _)| k.clone());
+                        if let Some(k) = oldest {
+                            cache.remove(&k);
+                        } else {
+                            break;
+                        }
+                    }
+                    serde_json::json!({
+                        "destination_hash": hash_hex,
+                        "identity_hash": identity_hash_hex,
+                        "display_name": display_name,
+                        "hops": evt.hops,
+                        "last_seen": last_seen,
+                        "node_state": parsed.node_state,
+                        "peering_cost": parsed.peering_cost,
+                    })
+                };
+                let frame =
+                    serde_json::json!({ "type": "propagation.discovered", "payload": payload });
+                let _ = event_tx.send(frame.to_string());
+            }
+        });
+    }
+
+    pub fn list_discovered_propagation(&self) -> Vec<super::DiscoveredPropagationRow> {
+        self.discovered_propagation
+            .lock()
+            .map(|cache| {
+                let mut rows: Vec<_> = cache.values().cloned().collect();
+                rows.sort_by(|a, b| {
+                    let hops_a = a.hops.unwrap_or(u8::MAX);
+                    let hops_b = b.hops.unwrap_or(u8::MAX);
+                    hops_a
+                        .cmp(&hops_b)
+                        .then_with(|| b.last_seen.unwrap_or(0).cmp(&a.last_seen.unwrap_or(0)))
+                });
+                rows
+            })
+            .unwrap_or_default()
+    }
+
     pub async fn rrc_connect(
         &self,
         dest_hash: [u8; 16],
@@ -1331,9 +1441,8 @@ impl LiveBridge {
                     driver.process_tick(&mut router, &event_tx);
                     let known_identities = driver.known_identities_for_propagation();
                     propagation.tick(&known_identities);
-                } else {
-                    propagation.tick(&HashMap::new());
                 }
+                // Skip tick when outbound is locked — never drain LRPROOF against an empty map.
             }
         });
     }
@@ -1716,13 +1825,32 @@ impl LiveBridge {
             return Err("PROPAGATION_TARGET_NOT_PN".into());
         }
         let peering = self.resolve_propagation_peering(&dest_hex).await?;
+        // Pin PN pubkey for the duration of Establishing so announce-flood eviction
+        // cannot drop it before LRPROOF validation (see known_identities cap).
+        if let Ok(mut driver) = self.outbound.lock() {
+            if let Some(pub_key) = driver.public_key_for(&dest_hex) {
+                driver.pin_identity_for_propagation(&dest_hex, pub_key);
+            }
+        }
         self.sync_cancel
             .store(false, std::sync::atomic::Ordering::SeqCst);
         if !self.propagation.start_sync(hash, Some(peering)) {
+            if let Ok(mut driver) = self.outbound.lock() {
+                driver.clear_propagation_identity_pins();
+            }
             return Err("propagation sync unavailable".into());
         }
-        self.propagation
-            .spawn_sync_progress_emitter(self.event_tx.clone(), Arc::clone(&self.sync_cancel));
+        let outbound = Arc::clone(&self.outbound);
+        let on_terminal: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
+            if let Ok(mut driver) = outbound.lock() {
+                driver.clear_propagation_identity_pins();
+            }
+        });
+        self.propagation.spawn_sync_progress_emitter(
+            self.event_tx.clone(),
+            Arc::clone(&self.sync_cancel),
+            Some(on_terminal),
+        );
         Ok(())
     }
 
@@ -1800,6 +1928,9 @@ impl LiveBridge {
         self.sync_cancel
             .store(true, std::sync::atomic::Ordering::SeqCst);
         self.propagation.cancel_sync();
+        if let Ok(mut driver) = self.outbound.lock() {
+            driver.clear_propagation_identity_pins();
+        }
     }
 
     pub async fn set_outbound_propagation_node(&self, destination_hash: Option<&str>) {

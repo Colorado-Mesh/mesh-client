@@ -65,6 +65,14 @@ pub async fn list_propagation(State(stack): State<Arc<StackHandle>>) -> Json<ser
     Json(stack.list_propagation().await)
 }
 
+pub async fn list_discovered_propagation(
+    State(stack): State<Arc<StackHandle>>,
+) -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "discovered": stack.list_discovered_propagation().await,
+    }))
+}
+
 pub async fn set_preferred_propagation(
     State(stack): State<Arc<StackHandle>>,
     Path(id): Path<String>,

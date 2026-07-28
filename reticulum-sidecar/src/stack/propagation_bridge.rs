@@ -131,6 +131,13 @@ impl PropagationBridge {
             .and_then(|task| task.last_offer_error)
     }
 
+    pub fn last_establish_error(&self) -> Option<&'static str> {
+        self.sync_task
+            .lock()
+            .ok()
+            .and_then(|task| task.last_establish_error)
+    }
+
     /// Sticky success/failure after Complete/Failed collapses to Idle.
     pub fn last_finished_ok(&self) -> Option<bool> {
         self.sync_task
@@ -150,12 +157,18 @@ impl PropagationBridge {
         self: &Arc<Self>,
         event_tx: broadcast::Sender<String>,
         cancel: Arc<AtomicBool>,
+        on_terminal: Option<Arc<dyn Fn() + Send + Sync>>,
     ) {
         let bridge = Arc::clone(self);
         tokio::spawn(async move {
             const SYNC_STALL_TIMEOUT: Duration = Duration::from_secs(60);
             let mut interval = tokio::time::interval(Duration::from_millis(500));
             let started = Instant::now();
+            let clear_pins = || {
+                if let Some(ref cb) = on_terminal {
+                    cb();
+                }
+            };
             loop {
                 interval.tick().await;
                 if cancel.load(Ordering::SeqCst) {
@@ -165,6 +178,7 @@ impl PropagationBridge {
                 let active = bridge.sync_active();
                 let finished_ok = bridge.last_finished_ok();
                 let offer_error = bridge.last_offer_error();
+                let establish_error = bridge.last_establish_error();
                 // Complete/Failed immediately collapse to Idle (progress 0). Use sticky
                 // last_finished_ok so success (e.g. HaveAll) is not reported as failure.
                 let progress = if active {
@@ -178,10 +192,13 @@ impl PropagationBridge {
                 };
                 if active && progress <= 10.0 && started.elapsed() > SYNC_STALL_TIMEOUT {
                     bridge.cancel_sync();
+                    let message = establish_error
+                        .map(|e| format!("propagation establish failed: {e}"))
+                        .unwrap_or_else(|| "propagation node unreachable".to_string());
                     let payload = serde_json::json!({
                         "active": false,
                         "progress": 0.0,
-                        "message": "propagation node unreachable",
+                        "message": message,
                     });
                     let frame = serde_json::json!({
                         "type": "propagation_sync",
@@ -191,7 +208,11 @@ impl PropagationBridge {
                     break;
                 }
                 let fail_message = if !active && progress == 0.0 {
-                    offer_error.map(|e| format!("propagation offer rejected: {e}"))
+                    offer_error
+                        .map(|e| format!("propagation offer rejected: {e}"))
+                        .or_else(|| {
+                            establish_error.map(|e| format!("propagation establish failed: {e}"))
+                        })
                 } else {
                     None
                 };
@@ -209,6 +230,7 @@ impl PropagationBridge {
                     break;
                 }
             }
+            clear_pins();
             // Do not emit a blanket progress=100 after a real failure/cancel terminal.
             if Self::should_emit_terminal_success(bridge.last_finished_ok()) {
                 let payload = serde_json::json!({

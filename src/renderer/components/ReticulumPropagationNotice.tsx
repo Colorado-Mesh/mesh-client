@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { hasEffectiveReticulumPropagationTarget } from '@/renderer/lib/reticulum/reticulumPropagationEffective';
@@ -17,35 +17,78 @@ export function ReticulumPropagationNotice({
 }: ReticulumPropagationNoticeProps) {
   const { t } = useTranslation();
   const nodes = useReticulumPropagationStore((s) => s.nodes);
+  const discovered = useReticulumPropagationStore((s) => s.discovered);
   const preferredId = useReticulumPropagationStore((s) => s.preferredId);
   const refreshFromSidecar = useReticulumPropagationStore((s) => s.refreshFromSidecar);
+  const addFromDiscovered = useReticulumPropagationStore((s) => s.addFromDiscovered);
 
   useEffect(() => {
     if (!stackLive) return;
     void refreshFromSidecar();
   }, [stackLive, refreshFromSidecar]);
 
+  const configuredHashes = useMemo(
+    () =>
+      new Set(
+        nodes
+          .map((n) => n.destination_hash?.toLowerCase())
+          .filter((h): h is string => typeof h === 'string' && h.length > 0),
+      ),
+    [nodes],
+  );
+
+  const unconfiguredDiscovered = useMemo(
+    () =>
+      discovered
+        .filter((d) => !configuredHashes.has(d.destination_hash.toLowerCase()))
+        .filter((d) => d.node_state)
+        .slice()
+        .sort((a, b) => (a.hops ?? 255) - (b.hops ?? 255)),
+    [discovered, configuredHashes],
+  );
+
   if (!stackLive) return null;
   if (hasEffectiveReticulumPropagationTarget(nodes, preferredId, readReticulumPropagationMode())) {
     return null;
   }
+
+  const discoveryCount = unconfiguredDiscovered.length;
+  const closest = unconfiguredDiscovered[0];
 
   return (
     <div
       role="alert"
       className="mb-2 rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-xs text-amber-100"
     >
-      <p>{t('reticulumPropagation.notice.body')}</p>
-      {onOpenPropagationSettings ? (
-        <button
-          type="button"
-          className="mt-1.5 font-medium text-amber-200 underline hover:text-amber-100"
-          aria-label={t('reticulumPropagation.notice.openSettingsAria')}
-          onClick={onOpenPropagationSettings}
-        >
-          {t('reticulumPropagation.notice.openSettings')}
-        </button>
-      ) : null}
+      <p>
+        {discoveryCount > 0
+          ? t('reticulumPropagation.notice.bodyWithDiscoveries', { count: discoveryCount })
+          : t('reticulumPropagation.notice.body')}
+      </p>
+      <div className="mt-1.5 flex flex-wrap gap-3">
+        {closest ? (
+          <button
+            type="button"
+            className="font-medium text-amber-200 underline hover:text-amber-100"
+            aria-label={t('reticulumPropagation.notice.addClosestAria')}
+            onClick={() => {
+              void addFromDiscovered(closest.destination_hash, { prefer: true });
+            }}
+          >
+            {t('reticulumPropagation.notice.addClosest')}
+          </button>
+        ) : null}
+        {onOpenPropagationSettings ? (
+          <button
+            type="button"
+            className="font-medium text-amber-200 underline hover:text-amber-100"
+            aria-label={t('reticulumPropagation.notice.openSettingsAria')}
+            onClick={onOpenPropagationSettings}
+          >
+            {t('reticulumPropagation.notice.openSettings')}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

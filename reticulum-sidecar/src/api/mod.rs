@@ -112,6 +112,10 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
         )
         .route("/api/v1/propagation", get(propagation::list_propagation))
         .route(
+            "/api/v1/propagation/discovered",
+            get(propagation::list_discovered_propagation),
+        )
+        .route(
             "/api/v1/propagation/add",
             post(propagation::add_propagation_node),
         )

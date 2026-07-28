@@ -88,6 +88,9 @@ pub struct LxmfOutboundDriver {
     link_delivery: LinkDeliveryManager,
     route_hops: HashMap<[u8; 16], u8>,
     known_identities: HashMap<String, [u8; 64]>,
+    /// Dest hashes pinned for in-flight propagation sync (LRPROOF needs pubkey).
+    /// Eviction must not remove these while Establishing.
+    pinned_identities: HashMap<String, [u8; 64]>,
     path_table_hashes: HashSet<String>,
     path_request_gate: PathRequestGate,
     self_lxmf_hash: String,
@@ -111,6 +114,7 @@ impl LxmfOutboundDriver {
             ),
             route_hops: HashMap::new(),
             known_identities: HashMap::new(),
+            pinned_identities: HashMap::new(),
             path_table_hashes: HashSet::new(),
             path_request_gate: PathRequestGate::new(),
             self_lxmf_hash: self_lxmf_hash.clone(),
@@ -125,16 +129,40 @@ impl LxmfOutboundDriver {
         if !self.known_identities.contains_key(&key)
             && self.known_identities.len() >= MAX_KNOWN_IDENTITIES
         {
-            // Evict an arbitrary entry to bound memory under announce floods.
-            if let Some(oldest) = self.known_identities.keys().next().cloned() {
+            // Evict an arbitrary unpinned entry to bound memory under announce floods.
+            let evict = self
+                .known_identities
+                .keys()
+                .find(|k| !self.pinned_identities.contains_key(k.as_str()))
+                .cloned();
+            if let Some(oldest) = evict {
                 self.known_identities.remove(&oldest);
             }
         }
-        self.known_identities.insert(key, public_key);
+        self.known_identities.insert(key.clone(), public_key);
+        if self.pinned_identities.contains_key(&key) {
+            self.pinned_identities.insert(key, public_key);
+        }
+    }
+
+    /// Pin a destination pubkey for the active propagation sync so announce-flood
+    /// eviction cannot drop it before LRPROOF validation.
+    pub fn pin_identity_for_propagation(&mut self, dest_hash_hex: &str, public_key: [u8; 64]) {
+        let key = dest_hash_hex.to_lowercase();
+        self.known_identities.insert(key.clone(), public_key);
+        self.pinned_identities.insert(key, public_key);
+    }
+
+    pub fn clear_propagation_identity_pins(&mut self) {
+        self.pinned_identities.clear();
     }
 
     pub fn known_identities_for_propagation(&self) -> HashMap<String, [u8; 64]> {
-        self.known_identities.clone()
+        let mut out = self.known_identities.clone();
+        for (k, v) in &self.pinned_identities {
+            out.insert(k.clone(), *v);
+        }
+        out
     }
 
     #[allow(clippy::unused_self)] // method slot mirrors other LxmfOutboundDriver mutators
@@ -158,14 +186,16 @@ impl LxmfOutboundDriver {
     }
 
     pub fn identity_known_for(&self, destination_hex: &str) -> bool {
-        self.known_identities
-            .contains_key(&destination_hex.to_lowercase())
+        let key = destination_hex.to_lowercase();
+        self.pinned_identities.contains_key(&key) || self.known_identities.contains_key(&key)
     }
 
     pub fn public_key_for(&self, destination_hex: &str) -> Option<[u8; 64]> {
-        self.known_identities
-            .get(&destination_hex.to_lowercase())
+        let key = destination_hex.to_lowercase();
+        self.pinned_identities
+            .get(&key)
             .copied()
+            .or_else(|| self.known_identities.get(&key).copied())
     }
 
     pub fn process_tick(&mut self, router: &mut LxmRouter, event_tx: &broadcast::Sender<String>) {
@@ -759,6 +789,27 @@ mod tests {
         assert!(gate.should_warn(dest(4), 100.0));
         assert!(!gate.should_warn(dest(4), 110.0));
         assert!(gate.should_warn(dest(4), 121.0));
+    }
+
+    #[test]
+    fn pin_identity_survives_eviction_flood() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(8);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, "aabb".repeat(8), "me".into());
+        let pn_hex = "deadbeef".to_string() + &"ab".repeat(12);
+        let pn_key = [0x42u8; 64];
+        driver.pin_identity_for_propagation(&pn_hex, pn_key);
+        for i in 0..(MAX_KNOWN_IDENTITIES + 64) {
+            let hex = format!("{:032x}", i);
+            driver.register_identity_key(&hex, [((i % 250) + 1) as u8; 64]);
+        }
+        assert!(driver.identity_known_for(&pn_hex));
+        assert_eq!(driver.public_key_for(&pn_hex), Some(pn_key));
+        let for_prop = driver.known_identities_for_propagation();
+        assert_eq!(for_prop.get(&pn_hex.to_lowercase()), Some(&pn_key));
+        driver.clear_propagation_identity_pins();
+        // Pin cleared — known_identities may still hold the key until capacity pressure.
+        assert!(driver.identity_known_for(&pn_hex));
     }
 
     #[test]

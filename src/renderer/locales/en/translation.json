@@ -4025,6 +4025,9 @@
   "reticulumPropagation": {
     "notice": {
       "body": "No propagation node is configured. Offline or unreachable peers need a propagation node for store-and-forward LXMF delivery.",
+      "bodyWithDiscoveries": "No propagation node is configured. {{count}} discovered on the network — add one below or open Network settings.",
+      "addClosest": "Add closest discovered",
+      "addClosestAria": "Add the closest discovered propagation node and set it as preferred",
       "openSettings": "Set up propagation",
       "openSettingsAria": "Open Reticulum Network propagation settings"
     },
@@ -4082,10 +4085,28 @@
     "syncIdentityUnknown": "Propagation node identity is unknown — wait for an announce or path response, then try again.",
     "syncTargetNotPropagationNode": "That destination is reachable on Reticulum but is not an LXMF propagation node (TCP hubs are transport paths only). Add a destination that announces as lxmf.propagation to sync offline messages.",
     "syncPeeringStampFailed": "Could not create a peering stamp for this propagation node — try again in a moment.",
+    "syncEstablishIdentityMissing": "Propagation sync could not verify the link proof — the node identity was missing. Wait for an announce and try again.",
+    "syncEstablishInvalidProof": "Propagation sync received an invalid link proof from the node — try again in a moment.",
+    "syncOfferNoIdentity": "Propagation node rejected the sync offer — identify failed. Wait for an announce and try again.",
+    "syncOfferNoAccess": "Propagation node denied sync access.",
+    "syncOfferInvalidKey": "Propagation node rejected the peering key — check peering cost and try again.",
+    "syncOfferThrottled": "Propagation node throttled the sync request — try again later.",
+    "syncOfferInvalidData": "Propagation node rejected the sync offer data.",
+    "syncOfferInvalidStamp": "Propagation node rejected the peering stamp — try again in a moment.",
     "syncCancelled": "Propagation sync cancelled.",
     "renameFailed": "Could not rename the propagation node.",
     "deleteFailed": "Could not delete the propagation node.",
-    "addFailed": "Could not add the propagation node."
+    "addFailed": "Could not add the propagation node.",
+    "discoveredTitle": "Discovered on network",
+    "discoveredEmpty": "No lxmf.propagation announces heard yet. Keep the stack connected or add a node by hash.",
+    "discoveredInactive": "inactive",
+    "discoveredHops": "{{hops}} hops",
+    "discoveredPeeringCost": "peering cost {{cost}}",
+    "discoveredAdd": "Add",
+    "discoveredAddAria": "Add discovered propagation node {{name}}",
+    "discoveredAddPrefer": "Add & prefer",
+    "discoveredAddPreferAria": "Add discovered propagation node {{name}} and set as preferred",
+    "discoveredHash": "{{hash}}"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Propagation mode",
