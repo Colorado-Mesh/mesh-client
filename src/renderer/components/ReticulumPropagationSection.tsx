@@ -46,7 +46,7 @@ function DiscoveredPropagationList({
   discovered,
   configuredHashes,
   onAdd,
-}: DiscoveredPropagationListProps) {
+}: Readonly<DiscoveredPropagationListProps>) {
   const { t } = useTranslation();
   const visibleDiscovered = discovered.filter(
     (d) => !configuredHashes.has(d.destination_hash.toLowerCase()),
