@@ -148,10 +148,11 @@ export function applyPropagationSyncEvent(payload: {
 
   if (payload.active === false && normalizedProgress === 0 && wasActive) {
     clearPropagationSyncStallWatchdog();
-    useReticulumPropagationStore.getState().setSyncState({ ...RETICULUM_PROPAGATION_SYNC_IDLE });
-    useReticulumPropagationStore
-      .getState()
-      .setLastSyncError(mapPropagationSyncError(payload.message));
+    useReticulumPropagationStore.setState({
+      sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
+      lastSyncError: mapPropagationSyncError(payload.message),
+      activePropagationSyncAttemptAt: null,
+    });
     return;
   }
 
@@ -159,13 +160,16 @@ export function applyPropagationSyncEvent(payload: {
     clearPropagationSyncStallWatchdog();
     const state = useReticulumPropagationStore.getState();
     const hadError = state.lastSyncError;
+    const forAttemptAt = state.activePropagationSyncAttemptAt;
     // Ignore late "complete" frames after user cancel / failure already cleared active.
     if (!wasActive && hadError) {
       return;
     }
     useReticulumPropagationStore.getState().setSyncState({ ...RETICULUM_PROPAGATION_SYNC_IDLE });
     if (!hadError) {
-      useReticulumPropagationStore.getState().setLastPropagationSyncAt(Date.now());
+      useReticulumPropagationStore.getState().setLastPropagationSyncAt(Date.now(), forAttemptAt);
+    } else {
+      useReticulumPropagationStore.setState({ activePropagationSyncAttemptAt: null });
     }
     return;
   }

@@ -45,9 +45,12 @@ describe('reticulumPropagationSync', () => {
   });
 
   it('clears active sync on completion event', () => {
+    const attemptAt = 42_000;
     useReticulumPropagationStore.setState({
       sync: { active: true, progress: 70, message: null },
       lastPropagationSyncAt: null,
+      lastPropagationSyncAttemptAt: attemptAt,
+      activePropagationSyncAttemptAt: attemptAt,
     });
 
     applyPropagationSyncEvent({ active: false, progress: 100 });
@@ -55,6 +58,26 @@ describe('reticulumPropagationSync', () => {
     expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
     expect(useReticulumPropagationStore.getState().sync.progress).toBe(0);
     expect(useReticulumPropagationStore.getState().lastPropagationSyncAt).toBeTypeOf('number');
+    expect(useReticulumPropagationStore.getState().lastPropagationSyncAttemptAt).toBeNull();
+  });
+
+  it('late complete for an older attempt leaves a newer failed attempt stamp', () => {
+    const olderAttempt = 1_000;
+    const newerAttempt = 2_000;
+    useReticulumPropagationStore.setState({
+      sync: { active: false, progress: 0, message: null },
+      lastSyncError: null,
+      lastPropagationSyncAt: null,
+      lastPropagationSyncAttemptAt: newerAttempt,
+      // Stale complete still carrying the older run's active stamp.
+      activePropagationSyncAttemptAt: olderAttempt,
+    });
+
+    applyPropagationSyncEvent({ active: false, progress: 100 });
+
+    expect(useReticulumPropagationStore.getState().lastPropagationSyncAt).toBeTypeOf('number');
+    expect(useReticulumPropagationStore.getState().lastPropagationSyncAttemptAt).toBe(newerAttempt);
+    expect(useReticulumPropagationStore.getState().activePropagationSyncAttemptAt).toBeNull();
   });
 
   it('maps sidecar sync error codes to i18n keys', () => {
