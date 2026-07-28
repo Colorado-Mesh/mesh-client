@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
 import { RETICULUM_PROPAGATION_REFRESH_MIN_VISIBLE_MS } from '@/renderer/lib/reticulum/reticulumPropagationSync';
-import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
+import {
+  type DiscoveredPropagationRow,
+  useReticulumPropagationStore,
+} from '@/renderer/stores/reticulumPropagationStore';
 import {
   RETICULUM_PROPAGATION_AUTO_SYNC_INTERVALS_SEC,
   reticulumPropagationAutoSyncOptionKey,
@@ -32,6 +35,93 @@ function formatPropagationNodeStatus(status: string, t: (key: string) => string)
   }
   return status;
 }
+
+interface DiscoveredPropagationListProps {
+  discovered: DiscoveredPropagationRow[];
+  configuredHashes: ReadonlySet<string>;
+  onAdd: (destinationHash: string, prefer?: boolean) => void;
+}
+
+function DiscoveredPropagationList({
+  discovered,
+  configuredHashes,
+  onAdd,
+}: DiscoveredPropagationListProps) {
+  const { t } = useTranslation();
+  const visibleDiscovered = discovered.filter(
+    (d) => !configuredHashes.has(d.destination_hash.toLowerCase()),
+  );
+
+  return (
+    <div className="mt-4 border-t border-gray-800 pt-3">
+      <h4 className="text-xs font-medium text-gray-300">
+        {t('reticulumPropagation.discoveredTitle')}
+      </h4>
+      {visibleDiscovered.length === 0 ? (
+        <p className="text-muted mt-1 text-xs">{t('reticulumPropagation.discoveredEmpty')}</p>
+      ) : (
+        <ul className="mt-2 space-y-2 text-sm">
+          {visibleDiscovered.map((row) => {
+            const label = row.display_name?.trim() || row.destination_hash.slice(0, 8);
+            return (
+              <li
+                key={row.destination_hash}
+                className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-800 bg-slate-900/40 px-2 py-1.5"
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-gray-200">{label}</div>
+                  <div className="text-muted flex flex-wrap gap-x-2 text-[11px]">
+                    <span className="font-mono">
+                      {t('reticulumPropagation.discoveredHash', {
+                        hash: row.destination_hash.slice(0, 12),
+                      })}
+                    </span>
+                    {row.hops != null ? (
+                      <span>{t('reticulumPropagation.discoveredHops', { hops: row.hops })}</span>
+                    ) : null}
+                    <span>
+                      {t('reticulumPropagation.discoveredPeeringCost', {
+                        cost: row.peering_cost,
+                      })}
+                    </span>
+                    {!row.node_state ? (
+                      <span>{t('reticulumPropagation.discoveredInactive')}</span>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  <button
+                    type="button"
+                    className="rounded border border-amber-600 px-2 py-0.5 text-xs text-amber-300"
+                    aria-label={t('reticulumPropagation.discoveredAddAria', { name: label })}
+                    onClick={() => {
+                      onAdd(row.destination_hash);
+                    }}
+                  >
+                    {t('reticulumPropagation.discoveredAdd')}
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded border border-amber-500 bg-amber-900/30 px-2 py-0.5 text-xs text-amber-200"
+                    aria-label={t('reticulumPropagation.discoveredAddPreferAria', {
+                      name: label,
+                    })}
+                    onClick={() => {
+                      onAdd(row.destination_hash, true);
+                    }}
+                  >
+                    {t('reticulumPropagation.discoveredAddPrefer')}
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export interface ReticulumPropagationSectionProps {
   onRefresh?: () => void;
   embedded?: boolean;
@@ -87,6 +177,18 @@ export default function ReticulumPropagationSection({
       setRefreshing(false);
     }
   };
+
+  const handleAddFromDiscovered = (destinationHash: string, prefer = false) => {
+    void addFromDiscovered(destinationHash, prefer ? { prefer: true } : undefined).then((ok) => {
+      if (!ok) addToast(t('reticulumPropagation.addFailed'), 'error');
+    });
+  };
+
+  const configuredHashes = new Set(
+    nodes
+      .map((n) => n.destination_hash?.toLowerCase())
+      .filter((h): h is string => typeof h === 'string' && h.length > 0),
+  );
 
   const body = (
     <>
@@ -304,92 +406,11 @@ export default function ReticulumPropagationSection({
           {t('reticulumPropagation.syncNow')}
         </button>
       </div>
-      {(() => {
-        const configuredHashes = new Set(
-          nodes
-            .map((n) => n.destination_hash?.toLowerCase())
-            .filter((h): h is string => typeof h === 'string' && h.length > 0),
-        );
-        const visibleDiscovered = discovered.filter(
-          (d) => !configuredHashes.has(d.destination_hash.toLowerCase()),
-        );
-        return (
-          <div className="mt-4 border-t border-gray-800 pt-3">
-            <h4 className="text-xs font-medium text-gray-300">
-              {t('reticulumPropagation.discoveredTitle')}
-            </h4>
-            {visibleDiscovered.length === 0 ? (
-              <p className="text-muted mt-1 text-xs">{t('reticulumPropagation.discoveredEmpty')}</p>
-            ) : (
-              <ul className="mt-2 space-y-2 text-sm">
-                {visibleDiscovered.map((row) => {
-                  const label = row.display_name?.trim() || row.destination_hash.slice(0, 8);
-                  return (
-                    <li
-                      key={row.destination_hash}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-800 bg-slate-900/40 px-2 py-1.5"
-                    >
-                      <div className="min-w-0">
-                        <div className="truncate text-gray-200">{label}</div>
-                        <div className="text-muted flex flex-wrap gap-x-2 text-[11px]">
-                          <span className="font-mono">
-                            {t('reticulumPropagation.discoveredHash', {
-                              hash: row.destination_hash.slice(0, 12),
-                            })}
-                          </span>
-                          {row.hops != null ? (
-                            <span>
-                              {t('reticulumPropagation.discoveredHops', { hops: row.hops })}
-                            </span>
-                          ) : null}
-                          <span>
-                            {t('reticulumPropagation.discoveredPeeringCost', {
-                              cost: row.peering_cost,
-                            })}
-                          </span>
-                          {!row.node_state ? (
-                            <span>{t('reticulumPropagation.discoveredInactive')}</span>
-                          ) : null}
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        <button
-                          type="button"
-                          className="rounded border border-amber-600 px-2 py-0.5 text-xs text-amber-300"
-                          aria-label={t('reticulumPropagation.discoveredAddAria', { name: label })}
-                          onClick={() => {
-                            void addFromDiscovered(row.destination_hash).then((ok) => {
-                              if (!ok) addToast(t('reticulumPropagation.addFailed'), 'error');
-                            });
-                          }}
-                        >
-                          {t('reticulumPropagation.discoveredAdd')}
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded border border-amber-500 bg-amber-900/30 px-2 py-0.5 text-xs text-amber-200"
-                          aria-label={t('reticulumPropagation.discoveredAddPreferAria', {
-                            name: label,
-                          })}
-                          onClick={() => {
-                            void addFromDiscovered(row.destination_hash, { prefer: true }).then(
-                              (ok) => {
-                                if (!ok) addToast(t('reticulumPropagation.addFailed'), 'error');
-                              },
-                            );
-                          }}
-                        >
-                          {t('reticulumPropagation.discoveredAddPrefer')}
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        );
-      })()}
+      <DiscoveredPropagationList
+        discovered={discovered}
+        configuredHashes={configuredHashes}
+        onAdd={handleAddFromDiscovered}
+      />
       <div className="mt-3 flex flex-wrap items-end gap-2">
         <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-xs">
           <span className="text-muted">{t('reticulumPropagation.addNodeLabel')}</span>
