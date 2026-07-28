@@ -1072,7 +1072,19 @@
         "boundary": "Hranice sítě. Překlenuje odlišné segmenty a zároveň izoluje místní provoz. Použijte pro internetové/LoRa odkazy.",
         "gateway": "Hledání cesty pro klienty. Řeší neznámé cíle jménem připojených uzlů.",
         "point_to_point": "Přímé spojení mezi dvěma uzly. Žádné směrování ani oznamování šíření."
-      }
+      },
+      "networkName": "Název sítě",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "Název sítě",
+      "passphrase": "Přístupová fráze",
+      "passphrasePlaceholder": "Autentizace IFAC",
+      "passphraseAria": "Heslo IFAC",
+      "showPassphrase": "Zobrazit přístupovou frázi",
+      "hidePassphrase": "Skrýt přístupovou frázi",
+      "advanced": "Advanced",
+      "advancedHint": "Další klíč= páry hodnot pro toto rozhraní, jeden na řádek. Známá pole (hostitel, režim, název sítě, …) zůstávají ve formuláři výše.",
+      "advancedAria": "Pokročilé možnosti klíč-hodnota rozhraní",
+      "advancedKeyReserved": "Klíč „{{key}}“ je známé pole a byl ignorován — použijte výše uvedený formulář."
     },
     "reticulumPeers": {
       "hops": "Hops",

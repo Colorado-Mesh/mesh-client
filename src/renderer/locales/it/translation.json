@@ -1069,7 +1069,19 @@
         "boundary": "Confine di rete. Collega segmenti distinti isolando il traffico locale. Utilizzare per i collegamenti Internet/LoRa.",
         "gateway": "Ricerca di percorsi per i clienti. Risolve destinazioni sconosciute per conto dei nodi connessi.",
         "point_to_point": "Collegamento diretto tra due nodi. Nessun routing o propagazione degli annunci."
-      }
+      },
+      "networkName": "Nome rete",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "Nome della rete",
+      "passphrase": "Passphrase",
+      "passphrasePlaceholder": "Autenticazione IFAC",
+      "passphraseAria": "Passphrase IFAC",
+      "showPassphrase": "Mostra passphrase",
+      "hidePassphrase": "Nascondi passphrase",
+      "advanced": "Avanzato",
+      "advancedHint": "Chiave aggiuntiva = coppie di valori per questa interfaccia, una per riga. I campi noti (host, modalità, nome della rete,...) rimangono nel modulo sopra.",
+      "advancedAria": "Opzioni chiave-valore interfaccia avanzata",
+      "advancedKeyReserved": "Il tasto \"{{key}}\" è un campo noto ed è stato ignorato. Utilizza il modulo qui sopra."
     },
     "reticulumPeers": {
       "hops": "Hops",

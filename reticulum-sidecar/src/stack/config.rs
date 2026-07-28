@@ -25,6 +25,56 @@ const SUPPORTED_TYPES: &[&str] = &[
 
 const SERIAL_PORT_IFACE_TYPES: &[&str] = &["rnode", "rnode_multi", "kiss"];
 
+/// INI keys modeled on `InterfaceRow` / typed CRUD. Unknown keys go into
+/// `extra_config` so enable/edit/repair do not silently drop them.
+/// Do not list pipe `command` here unless it is also a typed field — leaving it
+/// unknown lets it survive via `extra_config`.
+const KNOWN_IFACE_CONFIG_KEYS: &[&str] = &[
+    "type",
+    "enabled",
+    "interface_enabled",
+    "target_host",
+    "target_port",
+    "name",
+    "peers",
+    "port",
+    "frequency",
+    "bandwidth",
+    "txpower",
+    "spreadingfactor",
+    "spreading_factor",
+    "codingrate",
+    "coding_rate",
+    "callsign",
+    "id_interval",
+    "mode",
+    "preset",
+    "seed_addresses",
+    "discoverable",
+    "latitude",
+    "longitude",
+    "height",
+    "discovery_name",
+    "announce_interval",
+    "connectable",
+    "reachable_on",
+    "network_name",
+    "passphrase",
+];
+
+fn is_known_iface_config_key(key: &str) -> bool {
+    KNOWN_IFACE_CONFIG_KEYS
+        .iter()
+        .any(|k| k.eq_ignore_ascii_case(key))
+}
+
+/// Normalize optional IFAC / free-text fields: whitespace-only → None.
+fn nonempty_opt_string(raw: Option<&str>) -> Option<String> {
+    raw.map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+}
+
 /// Canonical rnsd interface modes (see Reticulum / rsReticulum `InterfaceMode`).
 /// Keep in sync with `RETICULUM_INTERFACE_MODES` /
 /// `normalizeReticulumInterfaceMode` / `defaultModeForIfaceType` in
@@ -359,7 +409,10 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
             .get("spreadingfactor")
             .or_else(|| block.get("spreading_factor"))
             .and_then(|v| v.parse().ok()),
-        coding_rate: block.get("codingrate").and_then(|v| v.parse().ok()),
+        coding_rate: block
+            .get("codingrate")
+            .or_else(|| block.get("coding_rate"))
+            .and_then(|v| v.parse().ok()),
         callsign: block.get("callsign").map(str::to_string),
         id_interval: block.get("id_interval").and_then(|v| v.parse().ok()),
         mode: block.get("mode").and_then(|m| {
@@ -390,6 +443,26 @@ fn interface_block_to_row(block: &IniBlock) -> Option<InterfaceRow> {
         announce_interval_min: block.get("announce_interval").and_then(|v| v.parse().ok()),
         connectable: block.get_bool("connectable"),
         reachable_on: block.get("reachable_on").map(str::to_string),
+        network_name: nonempty_opt_string(block.get("network_name")),
+        passphrase: nonempty_opt_string(block.get("passphrase")),
+        extra_config: {
+            let mut extras = HashMap::new();
+            for key in &block.order {
+                if is_known_iface_config_key(key) {
+                    continue;
+                }
+                if let Some(value) = block.values.get(key) {
+                    extras.insert(key.clone(), value.clone());
+                }
+            }
+            for (key, value) in &block.values {
+                if is_known_iface_config_key(key) || extras.contains_key(key) {
+                    continue;
+                }
+                extras.insert(key.clone(), value.clone());
+            }
+            extras
+        },
     })
 }
 
@@ -442,6 +515,25 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
     }
 
     write_discovery_fields(&mut block, row);
+
+    if let Some(v) = &row.network_name {
+        if !v.trim().is_empty() {
+            block.set("network_name", v);
+        }
+    }
+    if let Some(v) = &row.passphrase {
+        if !v.trim().is_empty() {
+            block.set("passphrase", v);
+        }
+    }
+
+    // Preserve unknown keys; typed fields take priority on key collision.
+    for (key, value) in &row.extra_config {
+        if is_known_iface_config_key(key) || block.values.contains_key(key) {
+            continue;
+        }
+        block.set(key, value);
+    }
 
     block
 }
@@ -666,6 +758,9 @@ pub fn add_interface_to_config(
         announce_interval_min: req.announce_interval_min,
         connectable: req.connectable,
         reachable_on: req.reachable_on.clone(),
+        network_name: nonempty_opt_string(req.network_name.as_deref()),
+        passphrase: nonempty_opt_string(req.passphrase.as_deref()),
+        extra_config: req.extra_config.clone(),
     };
 
     apply_preset_defaults(&mut row);
@@ -759,6 +854,16 @@ pub fn update_interface_in_config(
     }
 
     apply_discovery_patch(&mut row, patch)?;
+
+    if let Some(ref network_name) = patch.network_name {
+        row.network_name = nonempty_opt_string(Some(network_name.as_str()));
+    }
+    if let Some(ref passphrase) = patch.passphrase {
+        row.passphrase = nonempty_opt_string(Some(passphrase.as_str()));
+    }
+    if let Some(ref extra) = patch.extra_config {
+        row.extra_config = extra.clone();
+    }
 
     let preset_changed = patch.preset.is_some() && patch.preset != preset_before;
     if preset_changed {
@@ -861,6 +966,12 @@ pub struct UpdateInterfacePatch {
     pub announce_interval_min: Option<u32>,
     pub connectable: Option<bool>,
     pub reachable_on: Option<String>,
+    pub network_name: Option<String>,
+    pub passphrase: Option<String>,
+    /// When `Some`, replaces the interface's preserved unknown keys.
+    /// When `None` (omitted), existing `extra_config` is kept.
+    #[serde(default)]
+    pub extra_config: Option<HashMap<String, String>>,
 }
 
 /// Expand `preset` into concrete radio fields on disk when INI rows are incomplete.
@@ -2126,6 +2237,173 @@ longitude = -105.0
         let content = read_config(&dir).unwrap();
         assert!(content.contains("discoverable = Yes"));
         assert!(content.contains("latitude = 40"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn update_interface_preserves_unknown_extra_config_keys() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"
+[interfaces]
+[[Private Hub]]
+type = TCPClientInterface
+interface_enabled = Yes
+name = Private Hub
+target_host = 10.0.0.5
+target_port = 4242
+forward_interval = 300
+max_distance = 50
+"#,
+        )
+        .unwrap();
+
+        let iface_id = interface_id_from_name("Private Hub");
+        let row = interfaces_from_config_dir(&dir).unwrap();
+        let before = row.iter().find(|r| r.id == iface_id).unwrap();
+        assert_eq!(
+            before
+                .extra_config
+                .get("forward_interval")
+                .map(String::as_str),
+            Some("300")
+        );
+        assert_eq!(
+            before.extra_config.get("max_distance").map(String::as_str),
+            Some("50")
+        );
+
+        update_interface_in_config(
+            &dir,
+            &iface_id,
+            &UpdateInterfacePatch {
+                enabled: Some(false),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("forward_interval = 300"));
+        assert!(content.contains("max_distance = 50"));
+        assert!(content.contains("interface_enabled = No"));
+        let after = interfaces_from_config_dir(&dir).unwrap();
+        let hub = after.iter().find(|r| r.id == iface_id).unwrap();
+        assert_eq!(
+            hub.extra_config.get("forward_interval").map(String::as_str),
+            Some("300")
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn ifac_fields_round_trip_tcp_and_rnode() {
+        let content = r#"
+[interfaces]
+[[Private TCP]]
+type = TCPClientInterface
+interface_enabled = Yes
+name = Private TCP
+target_host = 192.168.1.10
+target_port = 4242
+network_name = private_ret
+passphrase = secret-phrase
+
+[[Private RNode]]
+type = RNodeInterface
+enabled = Yes
+port = /dev/ttyUSB0
+network_name = lora_private
+passphrase = radio-secret
+"#;
+        let parsed = parse_config(content).unwrap();
+        let rows = interfaces_from_parsed(&parsed);
+        let tcp = rows.iter().find(|r| r.iface_type == "tcp").unwrap();
+        assert_eq!(tcp.network_name.as_deref(), Some("private_ret"));
+        assert_eq!(tcp.passphrase.as_deref(), Some("secret-phrase"));
+        let rnode = rows.iter().find(|r| r.iface_type == "rnode").unwrap();
+        assert_eq!(rnode.network_name.as_deref(), Some("lora_private"));
+        assert_eq!(rnode.passphrase.as_deref(), Some("radio-secret"));
+
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(&dir, content).unwrap();
+
+        let tcp_id = interface_id_from_name("Private TCP");
+        update_interface_in_config(
+            &dir,
+            &tcp_id,
+            &UpdateInterfacePatch {
+                enabled: Some(true),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let after = read_config(&dir).unwrap();
+        assert!(after.contains("network_name = private_ret"));
+        assert!(after.contains("passphrase = secret-phrase"));
+
+        update_interface_in_config(
+            &dir,
+            &tcp_id,
+            &UpdateInterfacePatch {
+                network_name: Some(String::new()),
+                passphrase: Some(String::new()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let cleared_rows = interfaces_from_config_dir(&dir).unwrap();
+        let cleared_tcp = cleared_rows.iter().find(|r| r.id == tcp_id).unwrap();
+        assert!(cleared_tcp.network_name.is_none());
+        assert!(cleared_tcp.passphrase.is_none());
+        let cleared = read_config(&dir).unwrap();
+        // RNode IFAC must still be present after clearing TCP only.
+        assert!(cleared.contains("network_name = lora_private"));
+        assert!(cleared.contains("passphrase = radio-secret"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn add_interface_writes_ifac_and_extra_config() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"
+[reticulum]
+enable_transport = No
+[logging]
+loglevel = 4
+[interfaces]
+"#,
+        )
+        .unwrap();
+
+        let mut extra = HashMap::new();
+        extra.insert("forward_interval".into(), "120".into());
+        let row = add_interface_to_config(
+            &dir,
+            &AddInterfaceRequest {
+                iface_type: "tcp".into(),
+                name: Some("IFAC Hub".into()),
+                host: Some("10.0.0.1".into()),
+                port: Some(4242),
+                network_name: Some("my_net".into()),
+                passphrase: Some("my_pass".into()),
+                extra_config: extra,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(row.network_name.as_deref(), Some("my_net"));
+        assert_eq!(row.passphrase.as_deref(), Some("my_pass"));
+        let content = read_config(&dir).unwrap();
+        assert!(content.contains("network_name = my_net"));
+        assert!(content.contains("passphrase = my_pass"));
+        assert!(content.contains("forward_interval = 120"));
         let _ = fs::remove_dir_all(&dir);
     }
 

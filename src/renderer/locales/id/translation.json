@@ -1071,7 +1071,19 @@
         "boundary": "Batas jaringan. Menjembatani segmen yang berbeda sambil mengisolasi lalu lintas lokal. Gunakan untuk tautan Internet/LoRa.",
         "gateway": "Pencarian jalur untuk klien. Menyelesaikan tujuan yang tidak diketahui atas nama node yang terhubung.",
         "point_to_point": "Hubungan langsung antara dua node. Tidak ada perutean atau propagasi pengumuman."
-      }
+      },
+      "networkName": "Network Name",
+      "networkNamePlaceholder": "my_privat_network",
+      "networkNameAria": "Network Name",
+      "passphrase": "Frasa sandi",
+      "passphrasePlaceholder": "Autentikasi IFAC",
+      "passphraseAria": "Frasa sandi IFAC",
+      "showPassphrase": "Tampilkan frasa sandi",
+      "hidePassphrase": "Sembunyikan frasa sandi",
+      "advanced": "Meningkat",
+      "advancedHint": "Pasangan kunci=nilai tambahan untuk antarmuka ini, satu per baris. Bidang yang diketahui (host, mode, nama jaringan,...) tetap dalam formulir di atas.",
+      "advancedAria": "Opsi nilai kunci antarmuka tingkat lanjut",
+      "advancedKeyReserved": "Kunci \"{{key}}\" adalah bidang yang diketahui dan diabaikan — gunakan formulir di atas."
     },
     "reticulumPeers": {
       "hops": "Hops",

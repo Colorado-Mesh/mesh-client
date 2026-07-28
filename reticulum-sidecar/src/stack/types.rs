@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -47,6 +49,15 @@ pub struct InterfaceRow {
     pub connectable: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reachable_on: Option<String>,
+    /// IFAC virtual network name (common interface option).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub network_name: Option<String>,
+    /// IFAC authentication passphrase (common interface option).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub passphrase: Option<String>,
+    /// Unknown INI keys preserved across CRUD so typed writes do not drop them.
+    #[serde(default)]
+    pub extra_config: HashMap<String, String>,
 }
 
 /// Discovery-related defaults for `InterfaceRow` struct literals outside config parse.
@@ -236,6 +247,12 @@ pub struct AddInterfaceRequest {
     pub connectable: Option<bool>,
     #[serde(default)]
     pub reachable_on: Option<String>,
+    #[serde(default)]
+    pub network_name: Option<String>,
+    #[serde(default)]
+    pub passphrase: Option<String>,
+    #[serde(default)]
+    pub extra_config: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

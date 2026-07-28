@@ -1071,7 +1071,19 @@
         "boundary": "네트워크 경계. 로컬 트래픽을 격리하면서 별개의 세그먼트를 연결합니다. 인터넷/LoRa 링크에 사용합니다.",
         "gateway": "클라이언트의 경로 탐색. 연결된 노드를 대신하여 알 수 없는 대상을 해결합니다.",
         "point_to_point": "두 노드 사이의 직접 링크. 라우팅과 아나운스 전파가 없습니다."
-      }
+      },
+      "networkName": "네트워크 이름",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "네트워크 이름",
+      "passphrase": "Passphrase",
+      "passphrasePlaceholder": "IFAC 인증",
+      "passphraseAria": "IFAC 암호",
+      "showPassphrase": "암호 표시",
+      "hidePassphrase": "암호 숨기기",
+      "advanced": "Advanced",
+      "advancedHint": "추가 키 = 이 인터페이스에 대한 값 쌍, 한 줄에 하나씩. 알려진 필드 (호스트, 모드, 네트워크 이름 등) 는 위의 형태로 유지됩니다.",
+      "advancedAria": "고급 인터페이스 키-값 옵션",
+      "advancedKeyReserved": "키 \"{{key}}\" 은 (는) 알려진 필드이며 무시되었습니다. 위의 양식을 사용하십시오."
     },
     "reticulumPeers": {
       "hops": "Hops",

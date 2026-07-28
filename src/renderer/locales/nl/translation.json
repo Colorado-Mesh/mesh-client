@@ -1070,7 +1070,19 @@
         "boundary": "Netwerkgrens. Overbrugt verschillende segmenten en isoleert het lokale verkeer. Gebruik voor internet/LoRa-koppelingen.",
         "gateway": "Padzoeken voor klanten. Lost onbekende bestemmingen op namens verbonden knooppunten.",
         "point_to_point": "Directe link tussen twee knooppunten. Geen routering of aankondigingsverspreiding."
-      }
+      },
+      "networkName": "Naam netwerk",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "netwerknaam",
+      "passphrase": "Wachtwoordzin",
+      "passphrasePlaceholder": "IFAC-authenticatie",
+      "passphraseAria": "IFAC-wachtwoordzin",
+      "showPassphrase": "Wachtwoordzin tonen",
+      "hidePassphrase": "Wachtwoordzin verbergen",
+      "advanced": "Geavanceerd",
+      "advancedHint": "Extra sleutel=waardeparen voor deze interface, één per regel. Bekende velden (host, modus, netwerknaam,...) blijven in het bovenstaande formulier staan.",
+      "advancedAria": "Geavanceerde interface key-value opties",
+      "advancedKeyReserved": "Sleutel \"{{key}}\" is een bekend veld en werd genegeerd — gebruik het bovenstaande formulier."
     },
     "reticulumPeers": {
       "hops": "Hops",

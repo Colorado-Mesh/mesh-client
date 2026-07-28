@@ -1071,7 +1071,19 @@
         "boundary": "Granica sieci. Łączy różne segmenty, izolując ruch lokalny. Użyj dla łączy internetowych/LoRa.",
         "gateway": "Poszukiwanie ścieżki dla klientów. Rozwiązuje nieznane miejsca docelowe w imieniu połączonych węzłów.",
         "point_to_point": "Bezpośrednie połączenie między dwoma węzłami. Brak trasowania lub ogłaszania propagacji."
-      }
+      },
+      "networkName": "Nazwa sieci",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "Nazwa sieci",
+      "passphrase": "Hasło",
+      "passphrasePlaceholder": "Uwierzytelnianie IFAC",
+      "passphraseAria": "Hasło IFAC",
+      "showPassphrase": "Pokaż hasło",
+      "hidePassphrase": "Ukryj hasło",
+      "advanced": "Zaawansowane",
+      "advancedHint": "Dodatkowy klucz= pary wartości dla tego interfejsu, jedna na wiersz. Znane pola (host, tryb, nazwa sieci,...) pozostają w powyższym formularzu.",
+      "advancedAria": "Zaawansowane opcje wartości klawiszy interfejsu",
+      "advancedKeyReserved": "Klucz „{{key}}” jest znanym polem i został zignorowany — użyj powyższego formularza."
     },
     "reticulumPeers": {
       "hops": "Hops",

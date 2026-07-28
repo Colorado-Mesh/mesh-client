@@ -1071,7 +1071,19 @@
         "boundary": "Ağ sınırı. Yerel trafiği izole ederken farklı segmentleri birbirine bağlar. İnternet/LoRa bağlantıları için kullanın.",
         "gateway": "İstemciler için yol arama. Bağlı düğümler adına bilinmeyen hedefleri çözer.",
         "point_to_point": "İki düğüm arasında doğrudan bağlantı. Yönlendirme veya duyuru yayılımı yok."
-      }
+      },
+      "networkName": "Ağ adı",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "Ağ adı",
+      "passphrase": "Parola",
+      "passphrasePlaceholder": "IFAC kimlik doğrulaması",
+      "passphraseAria": "IFAC parolası",
+      "showPassphrase": "Parolayı göster",
+      "hidePassphrase": "Parolayı gizle",
+      "advanced": "Gelişmiş",
+      "advancedHint": "Ek anahtar= bu arayüz için değer çiftleri, satır başına bir tane. Bilinen alanlar (ana bilgisayar, mod, ağ adı,...) yukarıdaki formda kalır.",
+      "advancedAria": "Gelişmiş arayüz anahtar - değer seçenekleri",
+      "advancedKeyReserved": "\"{{key}}\" tuşu bilinen bir alandır ve yok sayılmıştır — yukarıdaki formu kullanın."
     },
     "reticulumPeers": {
       "hops": "Hops",

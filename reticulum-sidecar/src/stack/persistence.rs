@@ -326,6 +326,9 @@ impl PersistedState {
             announce_interval_min: req.announce_interval_min,
             connectable: req.connectable,
             reachable_on: req.reachable_on,
+            network_name: req.network_name,
+            passphrase: req.passphrase,
+            extra_config: req.extra_config,
         };
         self.interfaces.push(row.clone());
         self.rns_ready = true;

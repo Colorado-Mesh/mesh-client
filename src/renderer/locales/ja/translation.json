@@ -1071,7 +1071,19 @@
         "boundary": "ネットワーク境界。ローカルトラフィックを分離しながら、異なるセグメントをブリッジします。インターネット/LoRaリンクに使用します。",
         "gateway": "クライアントのパスシーク。接続されたノードの代わりに不明な宛先を解決します。",
         "point_to_point": "2つのノード間の直接リンク。ルーティングやアナウンスの伝播はありません。"
-      }
+      },
+      "networkName": "ネットワーク名",
+      "networkNamePlaceholder": "my_private_network",
+      "networkNameAria": "ネットワーク名",
+      "passphrase": "パスフレーズ",
+      "passphrasePlaceholder": "IFAC認証",
+      "passphraseAria": "IFACパスフレーズ",
+      "showPassphrase": "パスフレーズを表示",
+      "hidePassphrase": "パスフレーズを非表示にする",
+      "advanced": "高度",
+      "advancedHint": "追加のキー=このインターフェイスの値ペア、1行に1つ。既知のフィールド（ホスト、モード、ネットワーク名など）は上記のフォームのままです。",
+      "advancedAria": "高度なインターフェースキーバリューオプション",
+      "advancedKeyReserved": "キー「{{key}}」は既知のフィールドであり、無視されました。上記のフォームを使用してください。"
     },
     "reticulumPeers": {
       "hops": "Hops",
