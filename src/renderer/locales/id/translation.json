@@ -1073,7 +1073,7 @@
         "point_to_point": "Hubungan langsung antara dua node. Tidak ada perutean atau propagasi pengumuman."
       },
       "networkName": "Network Name",
-      "networkNamePlaceholder": "my_privat_network",
+      "networkNamePlaceholder": "my_private_network",
       "networkNameAria": "Network Name",
       "passphrase": "Frasa sandi",
       "passphrasePlaceholder": "Autentikasi IFAC",

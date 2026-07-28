@@ -528,8 +528,19 @@ fn interface_row_to_block(row: &InterfaceRow) -> IniBlock {
     }
 
     // Preserve unknown keys; typed fields take priority on key collision.
+    // Skip keys/values with line breaks so API/disk corruption cannot inject INI sections.
     for (key, value) in &row.extra_config {
         if is_known_iface_config_key(key) || block.values.contains_key(key) {
+            continue;
+        }
+        if key.trim().is_empty()
+            || ini_scalar_has_control_chars(key)
+            || ini_scalar_has_control_chars(value)
+        {
+            tracing::warn!(
+                key = %key,
+                "skipping extra_config entry with control characters"
+            );
             continue;
         }
         block.set(key, value);
@@ -619,6 +630,30 @@ pub fn validate_reachable_on(value: &str) -> Result<(), String> {
     }
     if trimmed.contains('\n') || trimmed.contains('\r') || trimmed.contains('\0') {
         return Err("invalid reachable_on".into());
+    }
+    Ok(())
+}
+
+fn ini_scalar_has_control_chars(value: &str) -> bool {
+    value.contains('\n') || value.contains('\r') || value.contains('\0')
+}
+
+/// Reject CR/LF/NUL in IFAC / free-text scalars so they cannot inject INI lines.
+fn validate_ini_scalar(field: &str, value: &str) -> Result<(), String> {
+    if ini_scalar_has_control_chars(value) {
+        return Err(format!("invalid {field}"));
+    }
+    Ok(())
+}
+
+fn validate_extra_config(extra: &HashMap<String, String>) -> Result<(), String> {
+    for (key, value) in extra {
+        if key.trim().is_empty() || ini_scalar_has_control_chars(key) {
+            return Err("invalid extra_config key".into());
+        }
+        if ini_scalar_has_control_chars(value) {
+            return Err(format!("invalid extra_config value for {key}"));
+        }
     }
     Ok(())
 }
@@ -715,6 +750,13 @@ pub fn add_interface_to_config(
             return Err("i2p peers required".into());
         }
     }
+    if let Some(ref network_name) = req.network_name {
+        validate_ini_scalar("network_name", network_name)?;
+    }
+    if let Some(ref passphrase) = req.passphrase {
+        validate_ini_scalar("passphrase", passphrase)?;
+    }
+    validate_extra_config(&req.extra_config)?;
     let id = Uuid::new_v4().to_string();
     let name = req
         .name
@@ -856,12 +898,15 @@ pub fn update_interface_in_config(
     apply_discovery_patch(&mut row, patch)?;
 
     if let Some(ref network_name) = patch.network_name {
+        validate_ini_scalar("network_name", network_name)?;
         row.network_name = nonempty_opt_string(Some(network_name.as_str()));
     }
     if let Some(ref passphrase) = patch.passphrase {
+        validate_ini_scalar("passphrase", passphrase)?;
         row.passphrase = nonempty_opt_string(Some(passphrase.as_str()));
     }
     if let Some(ref extra) = patch.extra_config {
+        validate_extra_config(extra)?;
         row.extra_config = extra.clone();
     }
 
@@ -2412,6 +2457,87 @@ loglevel = 4
         assert!(validate_reachable_on("host.example.com").is_ok());
         assert!(validate_reachable_on("/usr/local/bin/my-ip.sh").is_ok());
         assert!(validate_reachable_on("bad\nhost").is_err());
+    }
+
+    #[test]
+    fn extra_config_rejects_newline_injection_on_update() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_config(
+            &dir,
+            r#"
+[interfaces]
+[[Hub]]
+type = TCPClientInterface
+interface_enabled = Yes
+name = Hub
+target_host = 10.0.0.1
+target_port = 4242
+"#,
+        )
+        .unwrap();
+        let iface_id = interface_id_from_name("Hub");
+        let mut evil = HashMap::new();
+        evil.insert(
+            "forward_interval".into(),
+            "120\n[logging]\nloglevel = 0".into(),
+        );
+        let err = update_interface_in_config(
+            &dir,
+            &iface_id,
+            &UpdateInterfacePatch {
+                extra_config: Some(evil),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(err.contains("extra_config"), "{err}");
+        let content = read_config(&dir).unwrap();
+        assert!(!content.contains("[logging]"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn interface_row_to_block_skips_extra_config_with_newlines() {
+        let row = InterfaceRow {
+            id: "hub".into(),
+            name: "Hub".into(),
+            iface_type: "tcp".into(),
+            enabled: true,
+            status: "up".into(),
+            host: Some("10.0.0.1".into()),
+            port: Some(4242),
+            preset: None,
+            serial_port: None,
+            frequency: None,
+            bandwidth: None,
+            txpower: None,
+            spreading_factor: None,
+            coding_rate: None,
+            callsign: None,
+            id_interval: None,
+            mode: None,
+            seed_addresses: Vec::new(),
+            discoverable: None,
+            latitude: None,
+            longitude: None,
+            height: None,
+            discovery_name: None,
+            announce_interval_min: None,
+            connectable: None,
+            reachable_on: None,
+            network_name: None,
+            passphrase: None,
+            extra_config: {
+                let mut m = HashMap::new();
+                m.insert("ok".into(), "1".into());
+                m.insert("bad".into(), "1\n[logging]".into());
+                m
+            },
+        };
+        let block = interface_row_to_block(&row);
+        assert_eq!(block.get("ok"), Some("1"));
+        assert!(block.get("bad").is_none());
     }
 
     #[test]

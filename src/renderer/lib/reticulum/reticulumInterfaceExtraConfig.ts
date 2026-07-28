@@ -75,6 +75,8 @@ export function parseInterfaceExtraConfig(text: string): ParseInterfaceExtraConf
     const key = line.slice(0, eq).trim();
     const value = line.slice(eq + 1).trim();
     if (!key) continue;
+    // Defense in depth: reject injected CR/LF/NUL even if a line somehow embeds them.
+    if (/[\n\r\0]/.test(key) || /[\n\r\0]/.test(value)) continue;
     if (isKnownIfaceUiKey(key)) {
       const lower = key.toLowerCase();
       if (!seenReserved.has(lower)) {

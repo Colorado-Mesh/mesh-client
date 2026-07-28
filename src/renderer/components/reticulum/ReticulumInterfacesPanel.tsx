@@ -1031,7 +1031,7 @@ function ReticulumIfacFields({
   onNetworkNameChange,
   onPassphraseChange,
   onToggleShowPassphrase,
-}: {
+}: Readonly<{
   idPrefix: string;
   networkName: string;
   passphrase: string;
@@ -1040,7 +1040,7 @@ function ReticulumIfacFields({
   onNetworkNameChange: (value: string) => void;
   onPassphraseChange: (value: string) => void;
   onToggleShowPassphrase: () => void;
-}) {
+}>) {
   const { t } = useTranslation();
   return (
     <>
@@ -1059,8 +1059,10 @@ function ReticulumIfacFields({
           autoComplete="off"
         />
       </label>
-      <label className="text-xs text-gray-400" htmlFor={`${idPrefix}-passphrase`}>
-        {t('connectionPanel.reticulumInterfaces.passphrase')}
+      <div className="text-xs text-gray-400">
+        <label className="block" htmlFor={`${idPrefix}-passphrase`}>
+          {t('connectionPanel.reticulumInterfaces.passphrase')}
+        </label>
         <span className="mt-1 flex items-center gap-1">
           <input
             id={`${idPrefix}-passphrase`}
@@ -1091,7 +1093,7 @@ function ReticulumIfacFields({
               : t('connectionPanel.reticulumInterfaces.showPassphrase')}
           </button>
         </span>
-      </label>
+      </div>
     </>
   );
 }

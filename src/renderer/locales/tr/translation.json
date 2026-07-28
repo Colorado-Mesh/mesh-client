@@ -1083,7 +1083,7 @@
       "advanced": "Gelişmiş",
       "advancedHint": "Ek anahtar= bu arayüz için değer çiftleri, satır başına bir tane. Bilinen alanlar (ana bilgisayar, mod, ağ adı,...) yukarıdaki formda kalır.",
       "advancedAria": "Gelişmiş arayüz anahtar - değer seçenekleri",
-      "advancedKeyReserved": "\"{{key}}\" tuşu bilinen bir alandır ve yok sayılmıştır — yukarıdaki formu kullanın."
+      "advancedKeyReserved": "\"{{key}}\" anahtarı bilinen bir alandır ve yok sayılmıştır — yukarıdaki formu kullanın."
     },
     "reticulumPeers": {
       "hops": "Hops",
