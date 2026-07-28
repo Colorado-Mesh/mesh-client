@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { shouldRunPropagationAutoSync } from './useReticulumPropagationAutoSync';
+import {
+  PROPAGATION_AUTO_SYNC_FAILURE_COOLDOWN_MS,
+  shouldRunPropagationAutoSync,
+} from './useReticulumPropagationAutoSync';
 
 describe('shouldRunPropagationAutoSync', () => {
   it('returns false when disabled or sync is active', () => {
@@ -79,7 +82,7 @@ describe('shouldRunPropagationAutoSync', () => {
     ).toBe(true);
   });
 
-  it('returns false when a failed attempt is still within the interval', () => {
+  it('returns false when a failed attempt is still within the interval (never succeeded)', () => {
     expect(
       shouldRunPropagationAutoSync({
         autoSyncIntervalSec: 3600,
@@ -92,7 +95,7 @@ describe('shouldRunPropagationAutoSync', () => {
     ).toBe(false);
   });
 
-  it('returns true when interval elapsed since last attempt', () => {
+  it('returns true when interval elapsed since last attempt (never succeeded)', () => {
     expect(
       shouldRunPropagationAutoSync({
         autoSyncIntervalSec: 3600,
@@ -105,16 +108,44 @@ describe('shouldRunPropagationAutoSync', () => {
     ).toBe(true);
   });
 
-  it('prefers last attempt over older success for backoff', () => {
+  it('does not let a recent failed attempt postpone the success interval forever', () => {
+    // Success at t=0; failed retry well after interval; now past failure cooldown.
+    const attemptAt = 3_600_000;
     expect(
       shouldRunPropagationAutoSync({
         autoSyncIntervalSec: 3600,
         preferredId: 'pn-test',
         syncActive: false,
         lastPropagationSyncAt: 0,
-        lastPropagationSyncAttemptAt: 3_000_000,
-        nowMs: 3_000_000 + 30_000,
+        lastPropagationSyncAttemptAt: attemptAt,
+        nowMs: attemptAt + PROPAGATION_AUTO_SYNC_FAILURE_COOLDOWN_MS,
+      }),
+    ).toBe(true);
+  });
+
+  it('applies failure cooldown even when success interval has elapsed', () => {
+    expect(
+      shouldRunPropagationAutoSync({
+        autoSyncIntervalSec: 3600,
+        preferredId: 'pn-test',
+        syncActive: false,
+        lastPropagationSyncAt: 0,
+        lastPropagationSyncAttemptAt: 3_550_000,
+        nowMs: 3_600_000,
       }),
     ).toBe(false);
+  });
+
+  it('allows auto-sync after failure cooldown when success interval elapsed', () => {
+    expect(
+      shouldRunPropagationAutoSync({
+        autoSyncIntervalSec: 900,
+        preferredId: 'pn-test',
+        syncActive: false,
+        lastPropagationSyncAt: 0,
+        lastPropagationSyncAttemptAt: 900_000,
+        nowMs: 900_000 + PROPAGATION_AUTO_SYNC_FAILURE_COOLDOWN_MS,
+      }),
+    ).toBe(true);
   });
 });

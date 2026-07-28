@@ -4,7 +4,7 @@ import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropaga
 export const RETICULUM_PROPAGATION_REFRESH_MIN_VISIBLE_MS = 500;
 
 /** Cancel sync when stuck establishing connection to an unreachable node. */
-export const RETICULUM_PROPAGATION_SYNC_STALL_MS = 60_000;
+export const RETICULUM_PROPAGATION_SYNC_STALL_MS = 45_000;
 
 /** Hard ceiling for any in-flight propagation sync (includes transfer). */
 export const RETICULUM_PROPAGATION_SYNC_CEILING_MS = 180_000;

@@ -22,8 +22,13 @@ use super::persistence::PersistedState;
 
 pub const LXMF_APP: &str = "lxmf.delivery";
 
-/// Skip re-announce before propagation sync when a delivery announce was sent this recently.
+/// Skip re-announce for periodic/manual paths when a delivery announce was sent this recently.
+/// Remote propagation Sync always announces (no debounce); see `LiveStack::ensure_lxmf_announce_for_propagation_sync`.
 pub const LXMF_ANNOUNCE_DEBOUNCE: Duration = Duration::from_secs(30);
+
+/// Brief pause after a successful pre-sync LXMF announce so hubs can flood the reverse path
+/// before LinkRequest (matches the effective delay of “Announce now, then Sync”).
+pub const PROPAGATION_SYNC_ANNOUNCE_SETTLE: Duration = Duration::from_secs(2);
 
 /// Whether a fresh LXMF delivery announce should be sent given the last send time.
 pub fn should_send_debounced_announce(
@@ -290,5 +295,10 @@ mod tests {
             now + Duration::from_secs(31),
             LXMF_ANNOUNCE_DEBOUNCE
         ));
+    }
+
+    #[test]
+    fn propagation_sync_announce_settle_is_two_seconds() {
+        assert_eq!(PROPAGATION_SYNC_ANNOUNCE_SETTLE, Duration::from_secs(2));
     }
 }

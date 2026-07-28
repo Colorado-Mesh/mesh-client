@@ -129,7 +129,7 @@ describe('reticulumPropagationSync', () => {
     });
 
     schedulePropagationSyncStallWatchdog();
-    await vi.advanceTimersByTimeAsync(60_000);
+    await vi.advanceTimersByTimeAsync(45_000);
 
     expect(cancelSync).not.toHaveBeenCalled();
     expect(useReticulumPropagationStore.getState().sync.active).toBe(true);
@@ -139,7 +139,7 @@ describe('reticulumPropagationSync', () => {
       sync: { active: true, progress: 10, message: null },
     });
     schedulePropagationSyncStallWatchdog();
-    await vi.advanceTimersByTimeAsync(60_000);
+    await vi.advanceTimersByTimeAsync(45_000);
 
     expect(cancelSync).toHaveBeenCalledWith({
       reasonKey: 'reticulumPropagation.syncTimedOut',

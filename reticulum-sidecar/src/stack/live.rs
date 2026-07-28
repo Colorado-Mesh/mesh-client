@@ -34,7 +34,7 @@ use super::StackHandle;
 use super::config;
 use super::local_rnode_primary;
 use super::lxmf_delivery::{
-    LXMF_ANNOUNCE_DEBOUNCE, LXMF_APP, send_lxmf_delivery_announce, should_send_debounced_announce,
+    LXMF_APP, PROPAGATION_SYNC_ANNOUNCE_SETTLE, send_lxmf_delivery_announce,
     spawn_lxmf_announce_loop, spawn_lxmf_inbound_receiver,
 };
 use super::nomad_file::nomad_file_name_from_path;
@@ -667,30 +667,27 @@ impl LiveBridge {
         Ok(())
     }
 
-    /// Debounced LXMF delivery announce so remote PNs have a reverse path for LRPROOF.
-    async fn ensure_lxmf_announce_for_propagation_sync(&self, dest_hex: &str) {
-        let last = self.last_lxmf_announce_at.lock().ok().and_then(|g| *g);
-        let now = Instant::now();
-        if !should_send_debounced_announce(last, now, LXMF_ANNOUNCE_DEBOUNCE) {
-            tracing::info!(
-                target: "propagation-sync",
-                dest = %dest_hex,
-                "skipping LXMF announce before sync (debounced)"
-            );
-            return;
-        }
+    /// Always send an LXMF delivery announce so remote PNs have a reverse path for LRPROOF.
+    /// Returns true when the announce was sent successfully (caller may settle before Linking).
+    async fn ensure_lxmf_announce_for_propagation_sync(&self, dest_hex: &str) -> bool {
         match self.announce_lxmf_now().await {
-            Ok(()) => tracing::info!(
-                target: "propagation-sync",
-                dest = %dest_hex,
-                "LXMF delivery announce sent before propagation sync"
-            ),
-            Err(e) => tracing::warn!(
-                target: "propagation-sync",
-                dest = %dest_hex,
-                error = %e,
-                "LXMF announce before propagation sync failed"
-            ),
+            Ok(()) => {
+                tracing::info!(
+                    target: "propagation-sync",
+                    dest = %dest_hex,
+                    "LXMF delivery announce sent before propagation sync"
+                );
+                true
+            }
+            Err(e) => {
+                tracing::warn!(
+                    target: "propagation-sync",
+                    dest = %dest_hex,
+                    error = %e,
+                    "LXMF announce before propagation sync failed"
+                );
+                false
+            }
         }
     }
 
@@ -1687,15 +1684,17 @@ impl LiveBridge {
     }
 
     /// Discover a path to the destination before falling back to the propagation node.
-    async fn ensure_path_for_direct(&self, destination_hex: &str) -> bool {
+    /// When `force` is true, always RequestPath even if a path already exists (stale hop refresh).
+    async fn ensure_path_for_direct(&self, destination_hex: &str, force: bool) -> bool {
         let already = self
             .outbound
             .lock()
             .map(|d| d.has_path_to(destination_hex))
             .unwrap_or(false);
-        if already {
+        if already && !force {
             return true;
         }
+        let hops_before = self.hops_to_destination(destination_hex).await;
         let Ok(dest) = parse_hash16(destination_hex) else {
             return false;
         };
@@ -1715,9 +1714,29 @@ impl LiveBridge {
                 .map(|d| d.has_path_to(destination_hex))
                 .unwrap_or(false)
             {
+                let hops_after = self.hops_to_destination(destination_hex).await;
+                if force && hops_before != hops_after {
+                    tracing::info!(
+                        target: "propagation-sync",
+                        dest = %destination_hex,
+                        hops_before = ?hops_before,
+                        hops_after = ?hops_after,
+                        "refreshed path hops before propagation sync"
+                    );
+                }
                 return true;
             }
             tokio::time::sleep(Duration::from_millis(200)).await;
+        }
+        // Forced refresh may leave the prior path intact if RequestPath timed out.
+        if force && already {
+            tracing::info!(
+                target: "propagation-sync",
+                dest = %destination_hex,
+                hops = ?hops_before,
+                "path refresh timed out; keeping existing path for propagation sync"
+            );
+            return true;
         }
         false
     }
@@ -1938,7 +1957,7 @@ impl LiveBridge {
         // Link proofs are ignored unless the destination pubkey is in known_identities.
         // Resolve identity (+ path when possible) before Establishing, same as LXMF delivery.
         let identity_ok = self.ensure_identity_for_direct(&dest_hex).await;
-        let _path_ok = self.ensure_path_for_direct(&dest_hex).await;
+        let _path_ok = self.ensure_path_for_direct(&dest_hex, true).await;
         let identity_known_after = self
             .outbound
             .lock()
@@ -1954,8 +1973,18 @@ impl LiveBridge {
         }
         let peering = self.resolve_propagation_peering(&dest_hex).await?;
         // Fresh LXMF delivery announce so the PN can return LRPROOF (reverse path).
-        self.ensure_lxmf_announce_for_propagation_sync(&dest_hex)
+        let announced = self
+            .ensure_lxmf_announce_for_propagation_sync(&dest_hex)
             .await;
+        if announced {
+            tracing::info!(
+                target: "propagation-sync",
+                dest = %dest_hex,
+                settle_ms = PROPAGATION_SYNC_ANNOUNCE_SETTLE.as_millis(),
+                "settling after LXMF announce before propagation sync"
+            );
+            tokio::time::sleep(PROPAGATION_SYNC_ANNOUNCE_SETTLE).await;
+        }
         let hops = self.hops_to_destination(&dest_hex).await;
         // Pin PN pubkey for the duration of Establishing so announce-flood eviction
         // cannot drop it before LRPROOF validation (see known_identities cap).
@@ -2262,7 +2291,9 @@ impl LiveBridge {
         // Prefer Direct when a path can be discovered — do not immediately park on
         // the preferred PN just because the local path table was empty at click time.
         if !has_path {
-            has_path = self.ensure_path_for_direct(&req.destination_hash).await;
+            has_path = self
+                .ensure_path_for_direct(&req.destination_hash, false)
+                .await;
         }
         // Path alone is not enough for Direct (LRPROOF needs pubkey). Learn it from
         // recent announces / path responses before deciding Propagated.

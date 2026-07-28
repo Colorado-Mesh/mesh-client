@@ -195,7 +195,7 @@ impl PropagationBridge {
     ) {
         let bridge = Arc::clone(self);
         tokio::spawn(async move {
-            const SYNC_STALL_TIMEOUT: Duration = Duration::from_secs(60);
+            const SYNC_STALL_TIMEOUT: Duration = Duration::from_secs(45);
             let mut interval = tokio::time::interval(Duration::from_millis(500));
             let started = Instant::now();
             let clear_pins = || {
@@ -210,6 +210,12 @@ impl PropagationBridge {
                 if cancel.load(Ordering::SeqCst) {
                     bridge.run_if_current(&active_run_id, run_id, || {
                         bridge.cancel_sync();
+                        tracing::info!(
+                            target: "propagation-sync",
+                            progress = bridge.sync_progress(),
+                            establish_error = ?bridge.last_establish_error(),
+                            "propagation sync cancelled"
+                        );
                     });
                     break;
                 }
@@ -236,9 +242,10 @@ impl PropagationBridge {
                             .unwrap_or_else(|| {
                                 "propagation establish failed: NoLinkProof".to_string()
                             });
-                        tracing::warn!(
+                        tracing::info!(
                             target: "propagation-sync",
                             message = %message,
+                            progress,
                             "propagation sync stalled while establishing"
                         );
                         let payload = serde_json::json!({
@@ -279,6 +286,20 @@ impl PropagationBridge {
                     break;
                 }
                 if !active && (progress >= 99.0 || finished_ok.is_some()) {
+                    if finished_ok == Some(true) {
+                        tracing::info!(
+                            target: "propagation-sync",
+                            progress,
+                            "propagation sync completed successfully"
+                        );
+                    } else if let Some(ref msg) = fail_message {
+                        tracing::info!(
+                            target: "propagation-sync",
+                            message = %msg,
+                            progress,
+                            "propagation sync terminal failure"
+                        );
+                    }
                     break;
                 }
             }

@@ -3,6 +3,9 @@ import { useEffect } from 'react';
 import { useReticulumPropagationStore } from '@/renderer/stores/reticulumPropagationStore';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
+/** After a failed attempt, wait this long before auto-sync may fire again. */
+export const PROPAGATION_AUTO_SYNC_FAILURE_COOLDOWN_MS = 120_000;
+
 export function shouldRunPropagationAutoSync(args: {
   autoSyncIntervalSec: number;
   preferredId: string | null;
@@ -24,13 +27,23 @@ export function shouldRunPropagationAutoSync(args: {
     return false;
   }
 
-  // Prefer last attempt so failures still honor the full interval (not every 30s check).
-  // Fall back to last success for sessions that have synced before attempts were tracked.
-  // Both null → allow one first sync.
-  const lastMs = lastPropagationSyncAttemptAt ?? lastPropagationSyncAt ?? Number.NEGATIVE_INFINITY;
-  if (lastMs === Number.NEGATIVE_INFINITY) return true;
+  // Interval is measured from last *success*. Never-succeeded sessions fall back to last
+  // attempt so the first failure still honors the configured interval once.
+  const intervalAnchorMs = lastPropagationSyncAt ?? lastPropagationSyncAttemptAt;
+  if (intervalAnchorMs == null) return true;
+  if (nowMs - intervalAnchorMs < autoSyncIntervalSec * MS_PER_SECOND) {
+    return false;
+  }
 
-  return nowMs - lastMs >= autoSyncIntervalSec * MS_PER_SECOND;
+  // Short failure gate so a dead PN is not hammered every 30s check tick.
+  if (
+    lastPropagationSyncAttemptAt != null &&
+    nowMs - lastPropagationSyncAttemptAt < PROPAGATION_AUTO_SYNC_FAILURE_COOLDOWN_MS
+  ) {
+    return false;
+  }
+
+  return true;
 }
 
 const AUTO_SYNC_CHECK_MS = 30 * MS_PER_SECOND;
