@@ -23,6 +23,10 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          # Full history: paths-filter on push fetches github.event.before then
+          # the base ref with --depth=1; concurrent shallow fetches fail with
+          # "shallow file has changed since we read it" (CI run 30406976369).
+          fetch-depth: 0
       # dorny/paths-filter v4.0.0
       - uses: dorny/paths-filter@9d7afb8d214ad99e78fbd4247752c4caed2b6e4c
         id: filter
