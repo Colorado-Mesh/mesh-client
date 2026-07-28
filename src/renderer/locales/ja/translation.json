@@ -3938,7 +3938,10 @@
     "discoveredAddAria": "検出された伝播ノード{{name}}を追加",
     "discoveredAddPrefer": "追加して優先する",
     "discoveredAddPreferAria": "検出された伝播ノード{{name}}を追加し、優先として設定します",
-    "discoveredHash": "{{hash}}"
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "伝播同期では、ノードからリンクの証明が得られませんでした。IDには新しいアナウンスが必要な場合や、戻るパスが見つからない場合があります。今すぐネットワーク→アナウンスを試してから、再度同期してください。",
+    "syncOfferUnknown": "伝搬ノードが不明な同期オファーエラーを返しました。しばらくしてからもう一度お試しください。",
+    "syncPathHint": "リモート同期には、両方向のパスが必要です。同期は、ノードが応答できるように、短いLXMFアナウンスを最初に送信します。"
   },
   "reticulumPropagationHeader": {
     "modeLabel": "伝播モード",

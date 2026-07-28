@@ -569,6 +569,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
         const p = evt.payload as {
           destination_hash?: string;
           identity_hash?: string | null;
+          public_key?: string | null;
           display_name?: string | null;
           hops?: number | null;
           last_seen?: number | null;
@@ -579,6 +580,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
           useReticulumPropagationStore.getState().upsertDiscovered({
             destination_hash: p.destination_hash,
             identity_hash: p.identity_hash,
+            public_key: p.public_key,
             display_name: p.display_name,
             hops: p.hops,
             last_seen: p.last_seen,

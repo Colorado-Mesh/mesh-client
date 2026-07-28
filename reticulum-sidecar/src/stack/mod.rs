@@ -1033,8 +1033,46 @@ impl StackHandle {
         destination_hash: &str,
         name: Option<String>,
     ) -> Result<serde_json::Value, String> {
+        let hash = destination_hash.trim().to_lowercase();
+        // Prefer live known key / discovered announce metadata before persist.
+        let (pub_hex, id_hex) = {
+            #[cfg(feature = "rns-stack")]
+            if let Some(live) = &self.live {
+                let discovered = live
+                    .list_discovered_propagation()
+                    .into_iter()
+                    .find(|d| d.destination_hash.to_lowercase() == hash);
+                let id_hex = discovered.as_ref().and_then(|d| d.identity_hash.clone());
+                let discovered_pub = discovered.as_ref().and_then(|d| d.public_key.clone());
+                let pub_key = live.register_propagation_node_identity(
+                    &hash,
+                    discovered_pub.as_deref(),
+                    id_hex.as_deref(),
+                    false,
+                );
+                let pub_hex = pub_key.map(hex::encode).or(discovered_pub);
+                (pub_hex, id_hex)
+            } else {
+                (None, None)
+            }
+            #[cfg(not(feature = "rns-stack"))]
+            {
+                (None, None)
+            }
+        };
         let mut inner = self.inner.write().await;
-        let row = inner.add_propagation_node(destination_hash, name)?;
+        let mut row = inner.add_propagation_node(destination_hash, name)?;
+        if pub_hex.is_some() || id_hex.is_some() {
+            if let Some(node) = inner.propagation.iter_mut().find(|p| p.id == row.id) {
+                if pub_hex.is_some() {
+                    node.public_key = pub_hex.clone();
+                }
+                if id_hex.is_some() {
+                    node.identity_hash = id_hex.clone();
+                }
+                row = node.clone();
+            }
+        }
         inner.save(&self.config_dir, &self.storage_dir)?;
         Ok(serde_json::json!({ "ok": true, "node": row }))
     }

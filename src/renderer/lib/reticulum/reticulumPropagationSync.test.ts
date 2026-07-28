@@ -76,6 +76,12 @@ describe('reticulumPropagationSync', () => {
     expect(mapPropagationSyncError('propagation establish failed: LrproofIdentityMissing')).toBe(
       'reticulumPropagation.syncEstablishIdentityMissing',
     );
+    expect(mapPropagationSyncError('propagation establish failed: NoLinkProof')).toBe(
+      'reticulumPropagation.syncEstablishNoLinkProof',
+    );
+    expect(mapPropagationSyncError('propagation offer rejected: Unknown')).toBe(
+      'reticulumPropagation.syncOfferUnknown',
+    );
     expect(mapPropagationSyncError('other')).toBe('reticulumPropagation.syncFailed');
   });
 
@@ -109,15 +115,23 @@ describe('reticulumPropagationSync', () => {
 
   it('stall watchdog only cancels while still establishing', async () => {
     vi.useFakeTimers();
+    const cancelSync = vi.fn((opts?: { reasonKey?: string }) => {
+      useReticulumPropagationStore.setState({
+        sync: { active: false, progress: 0, message: null },
+        lastSyncError: opts?.reasonKey ?? 'reticulumPropagation.syncCancelled',
+      });
+      return Promise.resolve(true);
+    });
     useReticulumPropagationStore.setState({
       sync: { active: true, progress: 40, message: null },
       lastSyncError: null,
-      cancelSync: vi.fn().mockResolvedValue(true),
+      cancelSync,
     });
 
     schedulePropagationSyncStallWatchdog();
     await vi.advanceTimersByTimeAsync(60_000);
 
+    expect(cancelSync).not.toHaveBeenCalled();
     expect(useReticulumPropagationStore.getState().sync.active).toBe(true);
     expect(useReticulumPropagationStore.getState().lastSyncError).toBeNull();
 
@@ -127,6 +141,9 @@ describe('reticulumPropagationSync', () => {
     schedulePropagationSyncStallWatchdog();
     await vi.advanceTimersByTimeAsync(60_000);
 
+    expect(cancelSync).toHaveBeenCalledWith({
+      reasonKey: 'reticulumPropagation.syncTimedOut',
+    });
     expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
     expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
       'reticulumPropagation.syncTimedOut',

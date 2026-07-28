@@ -149,6 +149,37 @@ describe('reticulumPropagationStore', () => {
     );
   });
 
+  it('cancelSync keeps a prior sidecar establish failure over timeout reason', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockResolvedValueOnce({});
+    useReticulumPropagationStore.setState({
+      sync: { active: true, progress: 10, message: null },
+      lastSyncError: 'reticulumPropagation.syncEstablishNoLinkProof',
+    });
+    await expect(
+      useReticulumPropagationStore
+        .getState()
+        .cancelSync({ reasonKey: 'reticulumPropagation.syncTimedOut' }),
+    ).resolves.toBe(true);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      'reticulumPropagation.syncEstablishNoLinkProof',
+    );
+  });
+
+  it('cancelSync clears active sync when proxyPost fails', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockRejectedValueOnce(new Error('proxy down'));
+    useReticulumPropagationStore.setState({
+      sync: { active: true, progress: 25, message: null },
+      lastSyncError: null,
+    });
+    await expect(useReticulumPropagationStore.getState().cancelSync()).resolves.toBe(false);
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      'reticulumPropagation.syncCancelled',
+    );
+  });
+
   it('startSync settles local-prop in-process without a stall watchdog error', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     proxyPost.mockResolvedValueOnce({ ok: true });

@@ -3938,7 +3938,10 @@
     "discoveredAddAria": "Entdeckten Ausbreitungsknoten {{name}} hinzufügen",
     "discoveredAddPrefer": "Hinzufügen & bevorzugen",
     "discoveredAddPreferAria": "Fügen Sie den entdeckten Ausbreitungsknoten {{name}} hinzu und legen Sie ihn als bevorzugt fest",
-    "discoveredHash": "{{hash}}"
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "Propagation Sync hat keinen Link-Beweis vom Knoten erhalten — Ihre Identität benötigt möglicherweise eine neue Ankündigung, oder der Pfad zurück fehlt. Versuchen Sie es jetzt mit Network → Announce und dann erneut mit Sync.",
+    "syncOfferUnknown": "Der Ausbreitungsknoten hat einen unbekannten Sync-Angebotsfehler zurückgegeben — versuchen Sie es gleich noch einmal.",
+    "syncPathHint": "Die Fernsynchronisierung erfordert einen Pfad in beide Richtungen. Sync sendet zuerst eine kurze LXMF-Ankündigung, damit der Knoten antworten kann."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Ausbreitungsmodus",

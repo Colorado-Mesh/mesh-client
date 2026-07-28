@@ -28,6 +28,8 @@ export interface PropagationNodeRow {
 export interface DiscoveredPropagationRow {
   destination_hash: string;
   identity_hash?: string | null;
+  /** 128-char hex PN announce public key when known. */
+  public_key?: string | null;
   display_name?: string | null;
   hops?: number | null;
   last_seen?: number | null;
@@ -65,7 +67,7 @@ interface ReticulumPropagationStoreState {
   setPreferredOnSidecar: (id: string) => Promise<boolean>;
   setAutoSyncIntervalOnSidecar: (sec: number) => Promise<boolean>;
   startSync: (id?: string) => Promise<boolean>;
-  cancelSync: () => Promise<boolean>;
+  cancelSync: (opts?: { reasonKey?: string }) => Promise<boolean>;
   addPropagationNode: (destinationHash: string, name?: string) => Promise<boolean>;
   addFromDiscovered: (destinationHash: string, opts?: { prefer?: boolean }) => Promise<boolean>;
   removePropagationNode: (id: string) => Promise<boolean>;
@@ -243,18 +245,40 @@ export const useReticulumPropagationStore = create<ReticulumPropagationStoreStat
     }
   },
 
-  cancelSync: async () => {
+  cancelSync: async (opts) => {
     try {
       clearPropagationSyncStallWatchdog();
       await window.electronAPI.reticulum.proxyPost('/api/v1/propagation/sync/cancel', {});
-      // Mark cancelled so a late progress=100 frame cannot advance lastPropagationSyncAt.
-      set({
-        sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
-        lastSyncError: 'reticulumPropagation.syncCancelled',
+      // Prefer a sidecar WS failure already applied while cancel awaited; do not let
+      // a generic cancel overwrite establish/offer keys (dual 60s watchdog race).
+      set((state) => {
+        const fallback = opts?.reasonKey ?? 'reticulumPropagation.syncCancelled';
+        const existing = state.lastSyncError;
+        const keepSidecar =
+          existing != null &&
+          existing !== 'reticulumPropagation.syncCancelled' &&
+          existing !== 'reticulumPropagation.syncTimedOut';
+        return {
+          sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
+          lastSyncError: keepSidecar ? existing : fallback,
+        };
       });
       return true;
     } catch (e) {
       console.warn('[reticulumPropagationStore] cancel ' + errLikeToLogString(e));
+      // Proxy failure must not leave sync.active stuck true.
+      set((state) => {
+        const fallback = opts?.reasonKey ?? 'reticulumPropagation.syncCancelled';
+        const existing = state.lastSyncError;
+        const keepSidecar =
+          existing != null &&
+          existing !== 'reticulumPropagation.syncCancelled' &&
+          existing !== 'reticulumPropagation.syncTimedOut';
+        return {
+          sync: { ...RETICULUM_PROPAGATION_SYNC_IDLE },
+          lastSyncError: keepSidecar ? existing : fallback,
+        };
+      });
       return false;
     }
   },

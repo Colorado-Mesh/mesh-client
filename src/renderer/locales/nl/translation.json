@@ -3938,7 +3938,10 @@
     "discoveredAddAria": "Voeg ontdekte propagatieknooppunt {{name}} toe",
     "discoveredAddPrefer": "Toevoegen en verkiezen",
     "discoveredAddPreferAria": "Voeg ontdekte propagatieknooppunt {{name}} toe en stel in als voorkeur",
-    "discoveredHash": "{{hash}}"
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "Voortplantingssynchronisatie heeft geen linkbewijs van het knooppunt gekregen — uw identiteit heeft mogelijk een nieuwe aankondiging nodig of het pad terug ontbreekt. Probeer Network → Announce nu en vervolgens Sync opnieuw.",
+    "syncOfferUnknown": "Het propagatieknooppunt heeft een onbekende synchronisatiefout geretourneerd — probeer het zo meteen opnieuw.",
+    "syncPathHint": "Synchronisatie op afstand vereist een pad in beide richtingen. Sync stuurt eerst een korte LXMF-aankondiging zodat het knooppunt kan antwoorden."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "voortplantingsmodus",

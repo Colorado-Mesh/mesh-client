@@ -1098,16 +1098,17 @@ Unrecognized codes pass through unchanged.
 
 ### Reticulum remote propagation sync fails or never completes
 
-**Symptoms**: **Sync messages** stays Establishing, fails with “not an LXMF propagation node”, or marks Complete incorrectly after cancel.
+**Symptoms**: **Sync messages** stays Establishing, fails with “not an LXMF propagation node”, “no link proof”, or marks Complete incorrectly after cancel.
 
 **Cause / behavior**:
 
 - Remote sync needs a known identity (and prefers a path). Missing identity → `PROPAGATION_IDENTITY_UNKNOWN`.
 - Destinations that announce as delivery/other (including TCP hubs) → `PROPAGATION_TARGET_NOT_PN`. Add a destination that announces `lxmf.propagation`.
+- Establishing with **no LRPROOF** often means the PN lacks a reverse path to your LXMF identity. Sync auto-sends a debounced LXMF delivery announce first; if that still stalls, use Network → **Announce now** and retry.
 - HaveAll / Complete is success (not failure). Cancel or Establishing stall (~60s) must not advance “last synced”.
 - Transfer-phase hangs use a renderer hard ceiling (~180s) plus lxmf-core’s own timeouts.
 
-**Fix**: Wait for an announce/path, confirm the hash is a propagation node (not a hub), retry Sync, or Cancel and check Device logs for `propagation_sync` / offer errors.
+**Fix**: Prefer a discovered `lxmf.propagation` node, wait for an announce/path, retry **Sync** (or **Announce now** then Sync), and check Device logs for `[propagation-sync]` / offer errors.
 
 ### MeshCore Colorado Mesh / LetsMesh won't connect after upgrade
 

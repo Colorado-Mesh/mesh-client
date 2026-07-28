@@ -3940,7 +3940,10 @@
     "discoveredAddAria": "Dodaj odkryty węzeł propagacji {{name}}",
     "discoveredAddPrefer": "Dodaj i preferuj",
     "discoveredAddPreferAria": "Dodaj odkryty węzeł propagacji {{name}} i ustaw zgodnie z preferencjami",
-    "discoveredHash": "{{hash}}"
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "Synchronizacja propagacji nie uzyskała żadnego dowodu linku z węzła — Twoja tożsamość może wymagać nowego ogłoszenia lub brakuje ścieżki powrotnej. Wypróbuj Network → Announce teraz, a następnie ponownie Sync.",
+    "syncOfferUnknown": "Węzeł propagacji zwrócił nieznany błąd oferty synchronizacji — spróbuj ponownie za chwilę.",
+    "syncPathHint": "Zdalna synchronizacja wymaga ścieżki w obie strony. SYNC najpierw wysyła krótkie ogłoszenie LXMF, aby węzeł mógł odpowiedzieć."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "Tryb propagacji:",

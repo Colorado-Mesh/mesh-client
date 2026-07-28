@@ -3938,7 +3938,10 @@
     "discoveredAddAria": "Ajouter le nœud de propagation découvert {{name}}",
     "discoveredAddPrefer": "Ajouter et préférer",
     "discoveredAddPreferAria": "Ajouter le nœud de propagation découvert {{name}} et définir comme préféré",
-    "discoveredHash": "{{hash}}"
+    "discoveredHash": "{{hash}}",
+    "syncEstablishNoLinkProof": "La synchronisation de la propagation n'a reçu aucune preuve de lien du nœud — votre identité peut avoir besoin d'une nouvelle annonce ou le chemin de retour est manquant. Essayez Network → Announce maintenant, puis Sync à nouveau.",
+    "syncOfferUnknown": "Le nœud de propagation a renvoyé une erreur d'offre de synchronisation inconnue — réessayez dans un instant.",
+    "syncPathHint": "La synchronisation à distance a besoin d'un chemin dans les deux sens. Sync envoie d'abord une courte annonce LXMF afin que le nœud puisse répondre."
   },
   "reticulumPropagationHeader": {
     "modeLabel": "mode de propagation",

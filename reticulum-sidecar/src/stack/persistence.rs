@@ -101,6 +101,8 @@ impl PersistedState {
                 enabled: false,
                 status: "unknown".into(),
                 destination_hash: None,
+                public_key: None,
+                identity_hash: None,
             });
         }
         self.sync_local_propagation_hash();
@@ -147,6 +149,8 @@ impl PersistedState {
             enabled: true,
             status: "known".into(),
             destination_hash: Some(hash),
+            public_key: None,
+            identity_hash: None,
         };
         self.propagation.push(row.clone());
         Ok(row)
@@ -953,6 +957,36 @@ mod tests {
         assert_eq!(state.contacts.len(), 1);
         assert_eq!(state.contacts[0].destination_hash, lower);
         assert_eq!(state.contacts[0].display_name.as_deref(), Some("Named"));
+    }
+
+    #[test]
+    fn add_propagation_node_preserves_optional_identity_fields_on_mutate() {
+        let mut state = PersistedState::default_empty();
+        state.ensure_defaults();
+        let mut row = state
+            .add_propagation_node("aabbccddeeff00112233445566778899", Some("Remote".into()))
+            .expect("add");
+        row.public_key = Some("ab".repeat(64));
+        row.identity_hash = Some("cd".repeat(16));
+        if let Some(node) = state.propagation.iter_mut().find(|p| p.id == row.id) {
+            node.public_key = row.public_key.clone();
+            node.identity_hash = row.identity_hash.clone();
+        }
+        let json = serde_json::to_value(&state).expect("serialize");
+        let restored: PersistedState = serde_json::from_value(json).expect("deserialize");
+        let node = restored
+            .propagation
+            .iter()
+            .find(|p| p.id == row.id)
+            .expect("row");
+        assert_eq!(
+            node.public_key.as_deref(),
+            Some(row.public_key.as_deref().unwrap())
+        );
+        assert_eq!(
+            node.identity_hash.as_deref(),
+            Some(row.identity_hash.as_deref().unwrap())
+        );
     }
 
     #[test]
