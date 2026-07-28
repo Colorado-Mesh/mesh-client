@@ -6,7 +6,7 @@ mod lxmf_outbound;
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
 use std::path::PathBuf;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -93,7 +93,10 @@ pub struct LiveBridge {
     display_name_cache: Arc<Mutex<HashMap<String, String>>>,
     outbound: Arc<Mutex<LxmfOutboundDriver>>,
     propagation: Arc<PropagationBridge>,
-    sync_cancel: Arc<std::sync::atomic::AtomicBool>,
+    /// Per-run cancel token; replaced on each new sync so stale emitters cannot reset it.
+    sync_cancel: Mutex<Arc<AtomicBool>>,
+    /// Generation for the active sync emitter; stale emitters must not cancel/clear pins.
+    sync_run_id: Arc<AtomicU64>,
     /// In-memory heard `lxmf.propagation` announces (not auto-configured).
     discovered_propagation: Arc<Mutex<HashMap<String, super::DiscoveredPropagationRow>>>,
     /// Last successful LXMF delivery announce (startup / periodic / manual / sync debounce).
@@ -402,7 +405,8 @@ impl LiveBridge {
                 storage_dir.join("propagation"),
                 &identity,
             )?),
-            sync_cancel: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            sync_cancel: Mutex::new(Arc::new(AtomicBool::new(false))),
+            sync_run_id: Arc::new(AtomicU64::new(0)),
             discovered_propagation: Arc::new(Mutex::new(HashMap::new())),
             last_lxmf_announce_at,
             event_tx: event_tx.clone(),
@@ -744,6 +748,18 @@ impl LiveBridge {
                 .lock()
                 .ok()
                 .and_then(|d| d.public_key_for(&dest));
+        }
+        if key.is_none() {
+            key = self.discovered_propagation.lock().ok().and_then(|cache| {
+                let hex_str = cache.get(&dest)?.public_key.as_deref()?;
+                let bytes = hex::decode(hex_str).ok()?;
+                if bytes.len() != 64 {
+                    return None;
+                }
+                let mut arr = [0u8; 64];
+                arr.copy_from_slice(&bytes);
+                Some(arr)
+            });
         }
         let Some(pub_key) = key else {
             let _ = identity_hash;
@@ -1087,14 +1103,16 @@ impl LiveBridge {
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap_or_default()
                     .as_secs();
-                if let Some(pub_key) = evt.public_key {
+                let public_key_hex = evt.public_key.map(|pub_key| {
                     if let Ok(mut driver) = outbound.lock() {
                         driver.register_identity_key(&hash_hex, pub_key);
                     }
-                }
+                    hex::encode(pub_key)
+                });
                 let row = super::DiscoveredPropagationRow {
                     destination_hash: hash_hex.clone(),
                     identity_hash: identity_hash_hex.clone(),
+                    public_key: public_key_hex.clone(),
                     display_name: display_name.clone(),
                     hops: Some(evt.hops),
                     last_seen: Some(last_seen),
@@ -1121,6 +1139,7 @@ impl LiveBridge {
                     serde_json::json!({
                         "destination_hash": hash_hex,
                         "identity_hash": identity_hash_hex,
+                        "public_key": public_key_hex,
                         "display_name": display_name,
                         "hops": evt.hops,
                         "last_seen": last_seen,
@@ -1957,8 +1976,16 @@ impl LiveBridge {
             pinned,
             "starting remote propagation sync"
         );
-        self.sync_cancel
-            .store(false, std::sync::atomic::Ordering::SeqCst);
+        // Fresh cancel token + generation so a prior emitter cannot cancel/clear this run.
+        let (cancel, run_id) = {
+            let Ok(mut slot) = self.sync_cancel.lock() else {
+                return Err("propagation sync unavailable".into());
+            };
+            let cancel = Arc::new(AtomicBool::new(false));
+            *slot = Arc::clone(&cancel);
+            let run_id = self.sync_run_id.fetch_add(1, Ordering::SeqCst) + 1;
+            (cancel, run_id)
+        };
         if !self.propagation.start_sync(hash, Some(peering)) {
             if let Ok(mut driver) = self.outbound.lock() {
                 driver.clear_propagation_identity_pins();
@@ -1973,7 +2000,9 @@ impl LiveBridge {
         });
         self.propagation.spawn_sync_progress_emitter(
             self.event_tx.clone(),
-            Arc::clone(&self.sync_cancel),
+            cancel,
+            run_id,
+            Arc::clone(&self.sync_run_id),
             Some(on_terminal),
         );
         Ok(())
@@ -2050,8 +2079,11 @@ impl LiveBridge {
 
     #[allow(clippy::unused_async)] // async matches StackHandle propagation cancel API
     pub async fn cancel_propagation_sync(&self) {
-        self.sync_cancel
-            .store(true, std::sync::atomic::Ordering::SeqCst);
+        // Invalidate in-flight emitters before flipping cancel / clearing pins.
+        self.sync_run_id.fetch_add(1, Ordering::SeqCst);
+        if let Ok(slot) = self.sync_cancel.lock() {
+            slot.store(true, Ordering::SeqCst);
+        }
         self.propagation.cancel_sync();
         if let Ok(mut driver) = self.outbound.lock() {
             driver.clear_propagation_identity_pins();

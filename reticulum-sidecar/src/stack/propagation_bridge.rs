@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -98,6 +98,11 @@ impl PropagationBridge {
         last_finished_ok != Some(false)
     }
 
+    /// Whether this emitter still owns the active sync run (generation match).
+    pub fn is_current_sync_run(active_run_id: u64, run_id: u64) -> bool {
+        active_run_id == run_id
+    }
+
     pub fn sync_active(&self) -> bool {
         self.sync_task
             .lock()
@@ -157,6 +162,8 @@ impl PropagationBridge {
         self: &Arc<Self>,
         event_tx: broadcast::Sender<String>,
         cancel: Arc<AtomicBool>,
+        run_id: u64,
+        active_run_id: Arc<AtomicU64>,
         on_terminal: Option<Arc<dyn Fn() + Send + Sync>>,
     ) {
         let bridge = Arc::clone(self);
@@ -164,7 +171,12 @@ impl PropagationBridge {
             const SYNC_STALL_TIMEOUT: Duration = Duration::from_secs(60);
             let mut interval = tokio::time::interval(Duration::from_millis(500));
             let started = Instant::now();
+            let is_current =
+                || Self::is_current_sync_run(active_run_id.load(Ordering::SeqCst), run_id);
             let clear_pins = || {
+                if !is_current() {
+                    return;
+                }
                 if let Some(ref cb) = on_terminal {
                     cb();
                 }
@@ -172,7 +184,9 @@ impl PropagationBridge {
             loop {
                 interval.tick().await;
                 if cancel.load(Ordering::SeqCst) {
-                    bridge.cancel_sync();
+                    if is_current() {
+                        bridge.cancel_sync();
+                    }
                     break;
                 }
                 let active = bridge.sync_active();
@@ -191,25 +205,32 @@ impl PropagationBridge {
                     }
                 };
                 if active && progress <= 10.0 && started.elapsed() > SYNC_STALL_TIMEOUT {
-                    bridge.cancel_sync();
-                    let message = establish_error
-                        .map(|e| format!("propagation establish failed: {e}"))
-                        .unwrap_or_else(|| "propagation establish failed: NoLinkProof".to_string());
-                    tracing::warn!(
-                        target: "propagation-sync",
-                        message = %message,
-                        "propagation sync stalled while establishing"
-                    );
-                    let payload = serde_json::json!({
-                        "active": false,
-                        "progress": 0.0,
-                        "message": message,
-                    });
-                    let frame = serde_json::json!({
-                        "type": "propagation_sync",
-                        "payload": payload,
-                    });
-                    let _ = event_tx.send(frame.to_string());
+                    if is_current() {
+                        bridge.cancel_sync();
+                        let message = establish_error
+                            .map(|e| format!("propagation establish failed: {e}"))
+                            .unwrap_or_else(|| {
+                                "propagation establish failed: NoLinkProof".to_string()
+                            });
+                        tracing::warn!(
+                            target: "propagation-sync",
+                            message = %message,
+                            "propagation sync stalled while establishing"
+                        );
+                        let payload = serde_json::json!({
+                            "active": false,
+                            "progress": 0.0,
+                            "message": message,
+                        });
+                        let frame = serde_json::json!({
+                            "type": "propagation_sync",
+                            "payload": payload,
+                        });
+                        let _ = event_tx.send(frame.to_string());
+                    }
+                    break;
+                }
+                if !is_current() {
                     break;
                 }
                 let fail_message = if !active && progress == 0.0 {
@@ -237,7 +258,7 @@ impl PropagationBridge {
             }
             clear_pins();
             // Do not emit a blanket progress=100 after a real failure/cancel terminal.
-            if Self::should_emit_terminal_success(bridge.last_finished_ok()) {
+            if is_current() && Self::should_emit_terminal_success(bridge.last_finished_ok()) {
                 let payload = serde_json::json!({
                     "active": false,
                     "progress": 100.0,
@@ -264,6 +285,12 @@ mod tests {
         )));
         assert!(PropagationBridge::should_emit_terminal_success(Some(true)));
         assert!(PropagationBridge::should_emit_terminal_success(None));
+    }
+
+    #[test]
+    fn current_sync_run_gate_rejects_stale_emitter() {
+        assert!(PropagationBridge::is_current_sync_run(2, 2));
+        assert!(!PropagationBridge::is_current_sync_run(2, 1));
     }
 
     #[test]

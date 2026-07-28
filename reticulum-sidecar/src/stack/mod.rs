@@ -1043,9 +1043,14 @@ impl StackHandle {
                     .into_iter()
                     .find(|d| d.destination_hash.to_lowercase() == hash);
                 let id_hex = discovered.as_ref().and_then(|d| d.identity_hash.clone());
-                let pub_key =
-                    live.register_propagation_node_identity(&hash, None, id_hex.as_deref(), false);
-                let pub_hex = pub_key.map(hex::encode);
+                let discovered_pub = discovered.as_ref().and_then(|d| d.public_key.clone());
+                let pub_key = live.register_propagation_node_identity(
+                    &hash,
+                    discovered_pub.as_deref(),
+                    id_hex.as_deref(),
+                    false,
+                );
+                let pub_hex = pub_key.map(hex::encode).or(discovered_pub);
                 (pub_hex, id_hex)
             } else {
                 (None, None)

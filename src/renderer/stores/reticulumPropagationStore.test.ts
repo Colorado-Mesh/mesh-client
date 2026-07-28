@@ -166,6 +166,20 @@ describe('reticulumPropagationStore', () => {
     );
   });
 
+  it('cancelSync clears active sync when proxyPost fails', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockRejectedValueOnce(new Error('proxy down'));
+    useReticulumPropagationStore.setState({
+      sync: { active: true, progress: 25, message: null },
+      lastSyncError: null,
+    });
+    await expect(useReticulumPropagationStore.getState().cancelSync()).resolves.toBe(false);
+    expect(useReticulumPropagationStore.getState().sync.active).toBe(false);
+    expect(useReticulumPropagationStore.getState().lastSyncError).toBe(
+      'reticulumPropagation.syncCancelled',
+    );
+  });
+
   it('startSync settles local-prop in-process without a stall watchdog error', async () => {
     getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
     proxyPost.mockResolvedValueOnce({ ok: true });

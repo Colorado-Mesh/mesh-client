@@ -409,9 +409,9 @@ export default function ReticulumPropagationSection({
       </div>
       <p className="text-muted mt-1 text-xs">{t('reticulumPropagation.syncPathHint')}</p>
       {lastSyncError === 'reticulumPropagation.syncEstablishNoLinkProof' ? (
-        <p className="mt-1 text-xs text-amber-300/90" role="status">
+        <output className="mt-1 block text-xs text-amber-300/90">
           {t('reticulumPropagation.syncEstablishNoLinkProof')}
-        </p>
+        </output>
       ) : null}
       <DiscoveredPropagationList
         discovered={discovered}
