@@ -1978,6 +1978,9 @@ impl LiveBridge {
         );
         // Fresh cancel token + generation so a prior emitter cannot cancel/clear this run.
         let (cancel, run_id) = {
+            let Ok(_lifecycle) = self.propagation.lock_sync_lifecycle() else {
+                return Err("propagation sync unavailable".into());
+            };
             let Ok(mut slot) = self.sync_cancel.lock() else {
                 return Err("propagation sync unavailable".into());
             };
@@ -2080,6 +2083,8 @@ impl LiveBridge {
     #[allow(clippy::unused_async)] // async matches StackHandle propagation cancel API
     pub async fn cancel_propagation_sync(&self) {
         // Invalidate in-flight emitters before flipping cancel / clearing pins.
+        // Hold lifecycle so emitter check+effect cannot race this generation bump.
+        let _lifecycle = self.propagation.lock_sync_lifecycle().ok();
         self.sync_run_id.fetch_add(1, Ordering::SeqCst);
         if let Ok(slot) = self.sync_cancel.lock() {
             slot.store(true, Ordering::SeqCst);

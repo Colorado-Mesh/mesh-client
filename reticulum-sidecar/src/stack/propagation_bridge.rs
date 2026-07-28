@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, Instant};
 
 use lxmf_core::propagation_node::{PropagationNode, PropagationNodeConfig};
@@ -18,6 +18,8 @@ pub struct PropagationBridge {
     local_node: Arc<Mutex<PropagationNode>>,
     sync_task: Mutex<PropagationSyncTask>,
     local_serving: AtomicBool,
+    /// Serializes sync-run generation changes with emitter cancel / pin / event side effects.
+    sync_lifecycle: Mutex<()>,
 }
 
 impl PropagationBridge {
@@ -46,6 +48,7 @@ impl PropagationBridge {
             local_node,
             sync_task: Mutex::new(sync_task),
             local_serving: AtomicBool::new(false),
+            sync_lifecycle: Mutex::new(()),
         })
     }
 
@@ -101,6 +104,30 @@ impl PropagationBridge {
     /// Whether this emitter still owns the active sync run (generation match).
     pub fn is_current_sync_run(active_run_id: u64, run_id: u64) -> bool {
         active_run_id == run_id
+    }
+
+    /// Hold while replacing the active sync generation / cancel token.
+    pub fn lock_sync_lifecycle(
+        &self,
+    ) -> Result<MutexGuard<'_, ()>, PoisonError<MutexGuard<'_, ()>>> {
+        self.sync_lifecycle.lock()
+    }
+
+    /// Run `action` only if `run_id` is still current, under the lifecycle lock.
+    pub fn run_if_current(
+        &self,
+        active_run_id: &AtomicU64,
+        run_id: u64,
+        action: impl FnOnce(),
+    ) -> bool {
+        let Ok(_guard) = self.sync_lifecycle.lock() else {
+            return false;
+        };
+        if !Self::is_current_sync_run(active_run_id.load(Ordering::SeqCst), run_id) {
+            return false;
+        }
+        action();
+        true
     }
 
     pub fn sync_active(&self) -> bool {
@@ -171,22 +198,19 @@ impl PropagationBridge {
             const SYNC_STALL_TIMEOUT: Duration = Duration::from_secs(60);
             let mut interval = tokio::time::interval(Duration::from_millis(500));
             let started = Instant::now();
-            let is_current =
-                || Self::is_current_sync_run(active_run_id.load(Ordering::SeqCst), run_id);
             let clear_pins = || {
-                if !is_current() {
-                    return;
-                }
-                if let Some(ref cb) = on_terminal {
-                    cb();
-                }
+                bridge.run_if_current(&active_run_id, run_id, || {
+                    if let Some(ref cb) = on_terminal {
+                        cb();
+                    }
+                });
             };
             loop {
                 interval.tick().await;
                 if cancel.load(Ordering::SeqCst) {
-                    if is_current() {
+                    bridge.run_if_current(&active_run_id, run_id, || {
                         bridge.cancel_sync();
-                    }
+                    });
                     break;
                 }
                 let active = bridge.sync_active();
@@ -205,7 +229,7 @@ impl PropagationBridge {
                     }
                 };
                 if active && progress <= 10.0 && started.elapsed() > SYNC_STALL_TIMEOUT {
-                    if is_current() {
+                    bridge.run_if_current(&active_run_id, run_id, || {
                         bridge.cancel_sync();
                         let message = establish_error
                             .map(|e| format!("propagation establish failed: {e}"))
@@ -227,10 +251,7 @@ impl PropagationBridge {
                             "payload": payload,
                         });
                         let _ = event_tx.send(frame.to_string());
-                    }
-                    break;
-                }
-                if !is_current() {
+                    });
                     break;
                 }
                 let fail_message = if !active && progress == 0.0 {
@@ -251,14 +272,22 @@ impl PropagationBridge {
                     "type": "propagation_sync",
                     "payload": payload,
                 });
-                let _ = event_tx.send(frame.to_string());
+                // Drop stale progress frames when a newer sync run has taken ownership.
+                if !bridge.run_if_current(&active_run_id, run_id, || {
+                    let _ = event_tx.send(frame.to_string());
+                }) {
+                    break;
+                }
                 if !active && (progress >= 99.0 || finished_ok.is_some()) {
                     break;
                 }
             }
             clear_pins();
             // Do not emit a blanket progress=100 after a real failure/cancel terminal.
-            if is_current() && Self::should_emit_terminal_success(bridge.last_finished_ok()) {
+            bridge.run_if_current(&active_run_id, run_id, || {
+                if !Self::should_emit_terminal_success(bridge.last_finished_ok()) {
+                    return;
+                }
                 let payload = serde_json::json!({
                     "active": false,
                     "progress": 100.0,
@@ -269,7 +298,7 @@ impl PropagationBridge {
                     "payload": payload,
                 });
                 let _ = event_tx.send(frame.to_string());
-            }
+            });
         });
     }
 }
@@ -291,6 +320,31 @@ mod tests {
     fn current_sync_run_gate_rejects_stale_emitter() {
         assert!(PropagationBridge::is_current_sync_run(2, 2));
         assert!(!PropagationBridge::is_current_sync_run(2, 1));
+    }
+
+    #[test]
+    fn run_if_current_rejects_stale_side_effects() {
+        let dir =
+            std::env::temp_dir().join(format!("mesh-prop-bridge-lifecycle-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let identity = rns_identity::identity::Identity::new();
+        let bridge =
+            PropagationBridge::new(tx, [0xab; 16], dir.clone(), &identity).expect("bridge");
+        let active = AtomicU64::new(1);
+        let mut ran = false;
+        assert!(bridge.run_if_current(&active, 1, || {
+            ran = true;
+        }));
+        assert!(ran);
+        active.store(2, Ordering::SeqCst);
+        ran = false;
+        assert!(!bridge.run_if_current(&active, 1, || {
+            ran = true;
+        }));
+        assert!(!ran);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
