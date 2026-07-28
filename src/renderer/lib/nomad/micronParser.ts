@@ -354,7 +354,7 @@ export function serializeNomadPageRequestDataKey(data?: NomadPageRequestData | n
   if (!normalized) return '';
   return Object.keys(normalized)
     .sort((a, b) => a.localeCompare(b))
-    .map((key) => `${key}=${normalized[key]}`)
+    .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(normalized[key] ?? '')}`)
     .join('|');
 }
 

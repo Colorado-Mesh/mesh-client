@@ -287,6 +287,14 @@ describe('nomad page requestData helpers', () => {
     );
   });
 
+  it('escapes delimiter characters so requestData maps do not collide', () => {
+    const withPipeInValue = serializeNomadPageRequestDataKey({ var_a: '1|var_b=2' });
+    const twoEntries = serializeNomadPageRequestDataKey({ var_a: '1', var_b: '2' });
+    expect(withPipeInValue).not.toBe(twoEntries);
+    expect(withPipeInValue).toBe(`var_a=${encodeURIComponent('1|var_b=2')}`);
+    expect(twoEntries).toBe('var_a=1|var_b=2');
+  });
+
   it('formats only var_* keys for the URL bar', () => {
     expect(formatNomadRequestDataForUrlBar(undefined)).toBe('');
     expect(
