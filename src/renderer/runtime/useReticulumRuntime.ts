@@ -56,7 +56,10 @@ import {
   isReticulumManualStackStopSuppress,
   setReticulumManualStackStopSuppress,
 } from '@/renderer/lib/reticulum/reticulumManualStackStopSuppress';
-import { failReticulumSendingOutboundToDestHash } from '@/renderer/lib/reticulum/reticulumOutboundFailureBridge';
+import {
+  failReticulumSendingOutboundToDestHash,
+  shouldApplyLinkDeliveryTimeoutFailureBridge,
+} from '@/renderer/lib/reticulum/reticulumOutboundFailureBridge';
 import {
   applyPropagationSyncEvent,
   RETICULUM_PROPAGATION_SYNC_STALL_MS,
@@ -1104,10 +1107,17 @@ export function useReticulumRuntime(): ProtocolRuntime {
         void syncDiagnosticsFromSidecar();
         const timeouts = status.interfaceIssueAlert?.linkDeliveryTimeouts;
         if (identityId && timeouts?.length) {
+          const propState = useReticulumPropagationStore.getState();
+          const applyBridge = shouldApplyLinkDeliveryTimeoutFailureBridge(
+            propState.nodes,
+            propState.preferredId,
+          );
           for (const { destinationHash } of timeouts) {
             const norm = destinationHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
             if (!norm || processedLinkTimeoutDestsRef.current.has(norm)) continue;
             processedLinkTimeoutDestsRef.current.add(norm);
+            // Remote preferred PN: sidecar Direct→PN fallback owns the outcome via WS.
+            if (!applyBridge) continue;
             failReticulumSendingOutboundToDestHash(
               identityId,
               norm,

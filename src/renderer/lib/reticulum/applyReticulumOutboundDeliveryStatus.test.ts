@@ -326,6 +326,49 @@ describe('applyReticulumOutboundDeliveryStatus', () => {
     ).toBe('propagated');
   });
 
+  it('revives Failed to sending when Direct→PN fallback WS arrives after link-timeout bridge', () => {
+    const toNodeId = reticulumHashToNodeId(DEST);
+    const selfNodeId = reticulumHashToNodeId(SELF);
+    registerReticulumDestinationHash(toNodeId, DEST);
+    registerReticulumDestinationHash(selfNodeId, SELF);
+    useMessageStore.setState({
+      messages: {
+        [identityId]: {
+          [messageHash]: {
+            id: messageHash,
+            from: selfNodeId,
+            to: toNodeId,
+            senderName: 'Me',
+            payload: 'race',
+            channelIndex: 0,
+            timestamp: Date.now(),
+            status: 'failed',
+            error: 'Failed to send',
+            reticulumMessageHash: messageHash,
+            reticulumSenderHash: SELF,
+            reticulumDeliveryMethod: 'direct',
+          },
+        },
+      },
+    });
+
+    applyReticulumOutboundDeliveryStatus(identityId, messageHash, 'sending', {
+      deliveryMethod: 'propagated',
+    });
+
+    const row = useMessageStore.getState().messages[identityId]?.[messageHash];
+    expect(row?.status).toBe('sending');
+    expect(row?.reticulumDeliveryMethod).toBe('propagated');
+    expect(row?.error).toBeUndefined();
+    expect(window.electronAPI.db.saveReticulumMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message_hash: messageHash,
+        delivery_status: 'sending',
+        delivery_method: 'propagated',
+      }),
+    );
+  });
+
   it('drops invalid message_hash and unknown wire status', () => {
     useMessageStore.setState({
       messages: {

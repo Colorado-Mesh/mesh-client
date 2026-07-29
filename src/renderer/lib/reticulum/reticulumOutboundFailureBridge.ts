@@ -1,11 +1,29 @@
 import { persistReticulumOutboundMessageStatus } from '@/renderer/lib/reticulum/applyReticulumOutboundDeliveryStatus';
 import { resolveReticulumDestinationHash } from '@/renderer/lib/reticulum/destHash';
+import { hasEffectiveReticulumPropagationTarget } from '@/renderer/lib/reticulum/reticulumPropagationEffective';
+import {
+  readReticulumPropagationMode,
+  type ReticulumPropagationMode,
+} from '@/renderer/lib/reticulum/reticulumPropagationMode';
 import type { IdentityId } from '@/renderer/lib/types';
 import { useMessageStore } from '@/renderer/stores/messageStore';
 import { reticulumHashForNodeId } from '@/renderer/stores/reticulumPeerStore';
+import type { PropagationNodeRow } from '@/renderer/stores/reticulumPropagationStore';
 
 function normalizeDestHash(hash: string): string {
   return hash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+}
+
+/**
+ * When a remote preferred PN is available, sidecar owns Direct timeout via
+ * one-shot PN fallback + `lxmf_outbound_status`. Skip the premature Failed bridge.
+ */
+export function shouldApplyLinkDeliveryTimeoutFailureBridge(
+  nodes: PropagationNodeRow[],
+  preferredId: string | null,
+  mode: ReticulumPropagationMode = readReticulumPropagationMode(),
+): boolean {
+  return !hasEffectiveReticulumPropagationTarget(nodes, preferredId, mode);
 }
 
 function destHashMatchesPeer(storedHash: string, targetNorm: string): boolean {

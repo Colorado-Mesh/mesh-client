@@ -225,6 +225,14 @@ describe('useReticulumRuntime outbound delivery persistence', () => {
     expect(SOURCE).toMatch(/flushPendingReticulumOutboundDeliveryStatus\(identityId, hash\)/);
   });
 
+  it('skips link-timeout failure bridge when remote PN fallback is available', () => {
+    expect(SOURCE).toContain('shouldApplyLinkDeliveryTimeoutFailureBridge');
+    expect(SOURCE).toMatch(
+      /shouldApplyLinkDeliveryTimeoutFailureBridge\(\s*propState\.nodes,\s*propState\.preferredId,\s*\)/,
+    );
+    expect(SOURCE).toMatch(/if \(!applyBridge\) continue/);
+  });
+
   it('wires propagation store + sidecar health into Reticulum diagnostics', () => {
     expect(SOURCE).toMatch(/sidecarUnhealthySince:\s*sidecarStatus\.unhealthySince/);
     expect(SOURCE).toMatch(/useReticulumPropagationStore\.subscribe/);
