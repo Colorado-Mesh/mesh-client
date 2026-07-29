@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { resetReticulumBleConnectGraceForTests } from '@/renderer/lib/reticulum/reticulumBleConnectGrace';
 import { syncReticulumNobleBleYield } from '@/renderer/lib/reticulum/reticulumNobleBleYield';
 
 import { useReticulumInterfaceSnapshot } from './useReticulumInterfaceSnapshot';
@@ -29,6 +30,7 @@ vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
 
 describe('useReticulumInterfaceSnapshot', () => {
   beforeEach(() => {
+    resetReticulumBleConnectGraceForTests();
     vi.mocked(window.electronAPI.reticulum.proxyGet).mockReset();
     vi.mocked(window.electronAPI.reticulum.proxyGet).mockImplementation((path: string) => {
       if (path === '/api/v1/interfaces') {
@@ -130,6 +132,7 @@ const BLE_RNODE_ROW = {
 
 describe('useReticulumInterfaceSnapshot Noble BLE yield', () => {
   beforeEach(() => {
+    resetReticulumBleConnectGraceForTests();
     vi.mocked(syncReticulumNobleBleYield).mockClear();
     vi.mocked(window.electronAPI.reticulum.proxyGet).mockImplementation((path: string) => {
       if (path === '/api/v1/interfaces') {

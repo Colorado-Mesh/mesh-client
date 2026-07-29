@@ -128,7 +128,10 @@ import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
 import { readFileUpTo } from './readFileUpTo';
 import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
-import { readReticulumAttachmentAsDataUrl } from './reticulum-attachment-image';
+import {
+  readReticulumAttachmentAsDataUrl,
+  takeReticulumAttachmentImageRateToken,
+} from './reticulum-attachment-image';
 import { assertReticulumAttachmentPathJailed } from './reticulum-attachment-path';
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
 import {
@@ -4727,6 +4730,10 @@ ipcMain.handle('chat:readReticulumAttachmentAsDataUrl', async (event, opts: unkn
     throw new Error('filePath must be a non-empty string');
   }
   const mimeType = typeof o.mimeType === 'string' ? o.mimeType.slice(0, 128) : undefined;
+  if (!takeReticulumAttachmentImageRateToken()) {
+    console.debug('[IPC] chat:readReticulumAttachmentAsDataUrl rate limited');
+    return { dataUrl: null };
+  }
   try {
     const dataUrl = await readReticulumAttachmentAsDataUrl(o.filePath, mimeType);
     return { dataUrl };

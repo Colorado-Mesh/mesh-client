@@ -2,6 +2,7 @@
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { resetReticulumBleConnectGraceForTests } from '@/renderer/lib/reticulum/reticulumBleConnectGrace';
 import { RETICULUM_LOCAL_HEALTH_FAST_POLL_MS } from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
 import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 
@@ -21,6 +22,7 @@ vi.mock('@/renderer/lib/reticulum/reticulumNobleBleYield', () => ({
 describe('useReticulumNobleBleYieldWatcher lifecycle', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    resetReticulumBleConnectGraceForTests();
     fetchReticulumInterfacesMock.mockReset().mockResolvedValue([]);
     syncReticulumNobleBleYieldMock.mockReset().mockResolvedValue(undefined);
     Object.assign(window, {
@@ -34,6 +36,7 @@ describe('useReticulumNobleBleYieldWatcher lifecycle', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    resetReticulumBleConnectGraceForTests();
   });
 
   it('does not poll interfaces while the sidecar is inactive', async () => {
@@ -215,5 +218,44 @@ describe('useReticulumNobleBleYieldWatcher lifecycle', () => {
     const secondState = syncReticulumNobleBleYieldMock.mock.calls.at(-1)?.[1];
 
     expect(secondState).toBe(firstState);
+  });
+
+  it('aborts stale inactive sync when sidecar reactivates quickly', async () => {
+    let resolveInactive: (() => void) | undefined;
+    syncReticulumNobleBleYieldMock.mockImplementation(
+      (input: { sidecarActive?: boolean; signal?: AbortSignal }) => {
+        if (input.sidecarActive === false) {
+          return new Promise<void>((resolve) => {
+            resolveInactive = resolve;
+            input.signal?.addEventListener('abort', () => {
+              resolve();
+            });
+          });
+        }
+        return Promise.resolve();
+      },
+    );
+
+    const { rerender } = renderHook(
+      ({ active }: { active: boolean }) => {
+        useReticulumNobleBleYieldWatcher(active);
+      },
+      { initialProps: { active: true } },
+    );
+    await vi.advanceTimersByTimeAsync(0);
+
+    rerender({ active: false });
+    await vi.advanceTimersByTimeAsync(0);
+    const inactiveCall = syncReticulumNobleBleYieldMock.mock.calls.find(
+      (c) => (c[0] as { sidecarActive?: boolean })?.sidecarActive === false,
+    );
+    const inactiveInput = inactiveCall?.[0] as { signal?: AbortSignal } | undefined;
+    expect(inactiveInput?.signal).toBeInstanceOf(AbortSignal);
+    expect(inactiveInput?.signal?.aborted).toBe(false);
+
+    rerender({ active: true });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(inactiveInput?.signal?.aborted).toBe(true);
+    resolveInactive?.();
   });
 });

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ChatInlineImage } from '@/renderer/components/chat/ChatInlineImage';
 import { buildStaticTileUrl, parseLocationMessage } from '@/renderer/lib/chatLocationUtils';
 import { isSafeChatUrl, parseChatMentionSegments } from '@/renderer/lib/chatMentionSegments';
 import {
@@ -48,11 +49,17 @@ interface LinkPreviewData {
   kind?: 'image';
 }
 
+const LINK_PREVIEW_FETCH_DEDUP_MAX = 128;
 const linkPreviewFetchByUrl = new Map<string, Promise<LinkPreviewData | null>>();
 
 function fetchLinkPreviewDeduped(url: string): Promise<LinkPreviewData | null> {
   const existing = linkPreviewFetchByUrl.get(url);
   if (existing) return existing;
+  while (linkPreviewFetchByUrl.size >= LINK_PREVIEW_FETCH_DEDUP_MAX) {
+    const oldest = linkPreviewFetchByUrl.keys().next().value;
+    if (oldest === undefined) break;
+    linkPreviewFetchByUrl.delete(oldest);
+  }
   const pending = window.electronAPI.chat.linkPreview.fetch(url);
   linkPreviewFetchByUrl.set(url, pending);
   void pending.finally(() => {
@@ -75,30 +82,15 @@ function DirectImageEmbed({
   onContentResize?: () => void;
 }) {
   const { t } = useTranslation();
-  const [failed, setFailed] = useState(false);
-
-  if (failed) return null;
 
   return (
-    <a
+    <ChatInlineImage
+      src={imageSrc}
+      alt={t('chatPayload.directImage', { name: title })}
       href={url}
-      target="_blank"
-      rel="noreferrer"
-      className="mt-2 inline-block max-w-xs"
       title={t('chatPayload.directImageOpen')}
-    >
-      <img
-        src={imageSrc}
-        alt={t('chatPayload.directImage', { name: title })}
-        className="max-h-64 max-w-full rounded-md border border-cyan-500/20 object-contain"
-        onLoad={() => {
-          onContentResize?.();
-        }}
-        onError={() => {
-          setFailed(true);
-        }}
-      />
-    </a>
+      onContentResize={onContentResize}
+    />
   );
 }
 
@@ -178,39 +170,23 @@ function MeshcoreGifEmbed({
   onContentResize?: () => void;
 }) {
   const { t } = useTranslation();
-  const [failed, setFailed] = useState(false);
   const src = meshcoreGiphyMediaUrl(gifId);
   const pageUrl = meshcoreGiphyPageUrl(gifId);
   const wireText = `g:${gifId}`;
 
-  if (failed) {
-    return (
-      <span className="whitespace-pre-wrap text-gray-300">
-        {highlightCaseInsensitive(wireText, query)}
-      </span>
-    );
-  }
-
   return (
-    <a
+    <ChatInlineImage
+      src={src}
+      alt={t('chatPayload.meshcoreGif')}
       href={pageUrl}
-      target="_blank"
-      rel="noreferrer"
-      className="mt-1 inline-block max-w-xs"
       title={t('chatPayload.meshcoreGifOpen')}
-    >
-      <img
-        src={src}
-        alt={t('chatPayload.meshcoreGif')}
-        className="max-h-64 max-w-full rounded-md border border-cyan-500/20 object-contain"
-        onLoad={() => {
-          onContentResize?.();
-        }}
-        onError={() => {
-          setFailed(true);
-        }}
-      />
-    </a>
+      onContentResize={onContentResize}
+      fallback={
+        <span className="whitespace-pre-wrap text-gray-300">
+          {highlightCaseInsensitive(wireText, query)}
+        </span>
+      }
+    />
   );
 }
 

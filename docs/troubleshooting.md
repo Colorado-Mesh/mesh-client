@@ -1061,14 +1061,15 @@ Unrecognized codes pass through unchanged.
 
 **Symptoms**: Reticulum stack is running with an enabled BLE RNode; Meshtastic or MeshCore BLE scan/connect fails with “Bluetooth scan in progress (reticulum)” or Noble sessions stay disconnected.
 
-**Cause**: On macOS/Windows, sidecar start **yields Noble BLE** so btleplug can pair the RNode. While the yield holds `scanOwner === 'reticulum'`, Meshtastic/MeshCore Noble connect is rejected. After grace, yield stops re-contending so an offline RNode cannot thrash LoRa BLE. mesh-client releases the scan mutex when the RNode connects, the grace window expires, prepare fails closed after Noble disconnect timeout, or the stack stops.
+**Cause**: On macOS/Windows, sidecar start **yields Noble BLE** so btleplug can pair the RNode. While the yield holds `scanOwner === 'reticulum'`, Meshtastic/MeshCore Noble connect is rejected. After grace, yield stops re-contending so an offline RNode cannot thrash LoRa BLE. mesh-client releases the scan mutex when the RNode connects, the grace window expires, prepare fails closed after Noble disconnect timeout, or the stack stops. When Reticulum **Auto-start** is on, Meshtastic/MeshCore BLE autostart also waits `awaitReticulumBleCoexistenceClear` (default max ~**65 s**).
 
 **Fix**:
 
-1. Wait up to ~**60s** after stack start for the BLE RNode to connect (Connection tab interface status **up** / **online**) — that matches the OS passkey window.
+1. Wait up to ~**60s** after stack start for the BLE RNode to connect (Connection tab interface status **up** / **online**) — that matches the OS passkey window (~65 s including the RF autostart buffer).
 2. Stop the Reticulum stack if you need immediate Meshtastic/MeshCore BLE access.
-3. Ensure you are on a current build with paired yield/release (`reticulumNobleBleYield.ts`, `useReticulumNobleBleYieldWatcher`, `ble-coexistence-coordinator.assertCanConnect`).
+3. Ensure you are on a current build with watcher-only yield (`useReticulumNobleBleYieldWatcher` — not interface-snapshot release), `reticulumNobleBleYield.ts`, and `ble-coexistence-coordinator.assertCanConnect`.
 4. Check Device logs for `[BleCoexistence]` and `[useReticulumNobleBleYieldWatcher]`.
+5. If CoreBluetooth logs **“Event receiver died”**, Noble connect raced mid-pair — wait for coexistence clear or stop the Reticulum stack before retrying LoRa BLE.
 
 ### Reticulum BLE RNode pairing fails (wrong PIN / no PIN on display / not in macOS list)
 
@@ -1083,6 +1084,7 @@ Unrecognized codes pass through unchanged.
 3. Get a real PIN: USB → Admin → Bluetooth → **Start pairing** (watch the **Admin panel**, not the radio screen), **or** ~7 s button hold on display boards for an on-screen PIN.
 4. Start the stack **once**, enter that PIN in the OS dialog within ~60 seconds — never `123456`.
 5. The device may only show as Paired in System Settings **after** a successful bond.
+6. For repeated offline BLE interfaces, **remove the interface and add it back** (**Pick device**) to refresh the stored Bluetooth address before retrying pairing.
 
 ### Reticulum BLE RNode bond is stale (OS still shows Paired)
 
@@ -1094,7 +1096,16 @@ Unrecognized codes pass through unchanged.
 
 1. Forget the RNode in System Settings → Bluetooth.
 2. Start pairing on the radio (Admin → Bluetooth, or ~7 s button hold).
-3. Restart the Reticulum stack and enter the new 6-digit PIN when prompted.
+3. **Remove and re-add** the BLE interface (**Pick device**) so the saved `ble://` id refreshes.
+4. Restart the Reticulum stack and enter the new 6-digit PIN when prompted.
+
+### Reticulum attachment image not showing in Chat
+
+**Symptoms**: LXMF `[file:…:image/…]` bubble shows the filename label but no inline image.
+
+**Cause / checks**: File missing from `userData/reticulum/attachments/`, SVG/unsupported MIME, path outside the jail, magic-byte mismatch, IPC rate limit, or read failure (UI falls back to label only).
+
+**Fix**: Confirm the attachment was cached inbound, that the MIME is a supported raster type (not SVG), and retry after scrolling away and back. Check Device logs for `chat:readReticulumAttachmentAsDataUrl`.
 
 ### Reticulum remote propagation sync fails or never completes
 

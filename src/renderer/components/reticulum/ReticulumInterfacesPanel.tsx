@@ -1098,6 +1098,17 @@ function ReticulumIfacFields({
   );
 }
 
+function ReticulumInterfaceModeDescription({ mode }: { mode: string }) {
+  const { t } = useTranslation();
+  const normalized = normalizeReticulumInterfaceMode(mode);
+  if (!normalized) return null;
+  return (
+    <p className="mt-1 text-[10px] leading-snug text-gray-500">
+      {t(`connectionPanel.reticulumInterfaces.modeDescriptions.${normalized}`)}
+    </p>
+  );
+}
+
 function ReticulumInterfaceModeSelect({
   value,
   onChange,
@@ -1513,13 +1524,7 @@ function InterfaceEditPanel({
           }}
         />
       </div>
-      {normalizeReticulumInterfaceMode(mode) ? (
-        <p className="mt-1 text-[10px] leading-snug text-gray-500">
-          {t(
-            `connectionPanel.reticulumInterfaces.modeDescriptions.${normalizeReticulumInterfaceMode(mode)}`,
-          )}
-        </p>
-      ) : null}
+      <ReticulumInterfaceModeDescription mode={mode} />
       <details className="group mt-3 rounded border border-gray-700 bg-slate-950/40 p-2">
         <summary className="flex cursor-pointer list-none items-center gap-2 text-xs text-amber-200/90">
           <DetailsChevron className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180" />
@@ -2069,13 +2074,7 @@ function InterfacesSection({
             onToggleShowPassphrase={onToggleShowAddPassphrase}
           />
         </div>
-        {normalizeReticulumInterfaceMode(ifaceMode) ? (
-          <p className="mt-1 text-[10px] leading-snug text-gray-500">
-            {t(
-              `connectionPanel.reticulumInterfaces.modeDescriptions.${normalizeReticulumInterfaceMode(ifaceMode)}`,
-            )}
-          </p>
-        ) : null}
+        <ReticulumInterfaceModeDescription mode={ifaceMode} />
         <div className="mt-2">
           <button
             type="button"

@@ -11,13 +11,22 @@ import {
   isUniqueLocalIpv6,
   stripConnectHostBrackets,
 } from '../shared/connectHost';
+import {
+  baseMimeFromContentType,
+  bufferToRasterImageDataUrl,
+  CHAT_INLINE_IMAGE_MAX_BYTES,
+  LINK_PREVIEW_IMAGE_MIMES,
+  resolveSafeRasterImageMime,
+} from '../shared/safeRasterImageMime';
 import { sanitizeLogMessage } from './sanitize-log-message';
 
 export const LINK_PREVIEW_FETCH_TIMEOUT_MS = 10_000;
 export const LINK_PREVIEW_DNS_LOOKUP_TIMEOUT_MS = 3_000;
 export const LINK_PREVIEW_MAX_HTML_BYTES = 65_536;
 export const LINK_PREVIEW_CACHE_TTL_MS = 15 * 60 * 1000;
-export const LINK_PREVIEW_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
+export const LINK_PREVIEW_IMAGE_MAX_BYTES = CHAT_INLINE_IMAGE_MAX_BYTES;
+/** Cached data-URL payload cap (fetch may be larger; oversized bodies are not cached). */
+export const LINK_PREVIEW_IMAGE_CACHE_MAX_BYTES = 256 * 1024;
 export const LINK_PREVIEW_IMAGE_FETCH_TIMEOUT_MS = 10_000;
 /** After a failed image fetch (e.g. 429), do not retry until this elapses. */
 export const LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS = 5 * 60 * 1000;
@@ -27,24 +36,6 @@ export const LINK_PREVIEW_RATE_LIMIT_WINDOW_MS = 60_000;
 const LINK_PREVIEW_IMAGE_MAX_REDIRECTS = 5;
 const LINK_PREVIEW_MAX_CACHE_ENTRIES = 256;
 const LINK_PREVIEW_MAX_IMAGE_CACHE_ENTRIES = 128;
-/**
- * Raster-only allowlist for preview images rendered via `<img src={data:...}>`.
- * Excludes `image/svg+xml`: SVG is XML that can carry `<script>`/event-handler
- * payloads and unbounded nested references (XML "billion laughs"-style
- * amplification), which is unnecessary defense-in-depth risk for a chat link
- * preview thumbnail. Modern Chromium does not execute script for `<img>` SVGs,
- * but rejecting outright avoids relying on that renderer-specific behavior.
- */
-const LINK_PREVIEW_ALLOWED_IMAGE_MIME_TYPES: ReadonlySet<string> = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'image/avif',
-  'image/bmp',
-  'image/x-icon',
-  'image/vnd.microsoft.icon',
-]);
 
 const YOUTUBE_PREVIEW_HOSTNAMES = new Set([
   'youtube.com',
@@ -59,11 +50,20 @@ const YOUTUBE_VIDEO_ID = /^[\w-]{11}$/;
 
 /** Base MIME from a Content-Type header (strips `; charset=…`). */
 export function linkPreviewBaseMime(contentType: string): string {
-  return contentType.split(';')[0]?.trim().toLowerCase() ?? '';
+  return baseMimeFromContentType(contentType);
 }
 
 export function isLinkPreviewImageMime(contentType: string): boolean {
-  return LINK_PREVIEW_ALLOWED_IMAGE_MIME_TYPES.has(linkPreviewBaseMime(contentType));
+  return LINK_PREVIEW_IMAGE_MIMES.has(linkPreviewBaseMime(contentType));
+}
+
+/** Cancel an unused body so the undici Agent pinned to the stream can close. */
+export async function discardResponseBody(response: Response): Promise<void> {
+  try {
+    await response.body?.cancel();
+  } catch {
+    // catch-no-log-ok body may already be locked or aborted
+  }
 }
 
 export { isLikelyDirectImageUrl } from '../shared/chatDirectImageUrl';
@@ -401,14 +401,19 @@ async function fetchImageResponseWithRedirectGuard(
 
   if (response.status >= 300 && response.status < 400) {
     const location = response.headers.get('location');
-    if (!location) return null;
+    if (!location) {
+      await discardResponseBody(response);
+      return null;
+    }
     let nextUrl: string;
     try {
       nextUrl = new URL(location, imageUrl).href;
     } catch {
       // catch-no-log-ok malformed redirect Location header
+      await discardResponseBody(response);
       return null;
     }
+    await discardResponseBody(response);
     return fetchImageResponseWithRedirectGuard(nextUrl, redirectCount + 1);
   }
 
@@ -428,6 +433,7 @@ async function fetchPreviewImageAsDataUrl(imageUrl: string): Promise<string | un
     try {
       const response = await fetchImageResponseWithRedirectGuard(imageUrl);
       if (!response?.ok) {
+        if (response) await discardResponseBody(response);
         imageCache.set(imageUrl, {
           value: null,
           expires: now + LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS,
@@ -435,17 +441,25 @@ async function fetchPreviewImageAsDataUrl(imageUrl: string): Promise<string | un
         return undefined;
       }
       const contentType = response.headers.get('content-type') ?? '';
-      const mime = linkPreviewBaseMime(contentType);
-      if (!LINK_PREVIEW_ALLOWED_IMAGE_MIME_TYPES.has(mime)) return undefined;
+      if (!isLinkPreviewImageMime(contentType)) {
+        await discardResponseBody(response);
+        return undefined;
+      }
 
       const reader = response.body?.getReader();
       if (!reader) return undefined;
       const bytes = await readResponseBodyUpTo(reader, LINK_PREVIEW_IMAGE_MAX_BYTES);
       if (!bytes) return undefined;
 
-      const dataUrl = `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`;
-      evictOldestCacheEntry(imageCache, LINK_PREVIEW_MAX_IMAGE_CACHE_ENTRIES);
-      imageCache.set(imageUrl, { value: dataUrl, expires: now + LINK_PREVIEW_CACHE_TTL_MS });
+      const mime = resolveSafeRasterImageMime(bytes, LINK_PREVIEW_IMAGE_MIMES);
+      if (!mime) return undefined;
+
+      const dataUrl = bufferToRasterImageDataUrl(bytes, mime);
+      // Only cache payloads within the tighter cache ceiling to bound main-process memory.
+      if (bytes.length <= LINK_PREVIEW_IMAGE_CACHE_MAX_BYTES) {
+        evictOldestCacheEntry(imageCache, LINK_PREVIEW_MAX_IMAGE_CACHE_ENTRIES);
+        imageCache.set(imageUrl, { value: dataUrl, expires: now + LINK_PREVIEW_CACHE_TTL_MS });
+      }
       return dataUrl;
     } catch (err) {
       console.debug(
@@ -480,7 +494,10 @@ async function fetchYouTubeOEmbedPreview(pageUrl: URL): Promise<LinkPreviewMetad
     headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(LINK_PREVIEW_FETCH_TIMEOUT_MS),
   });
-  if (!response.ok) return null;
+  if (!response.ok) {
+    await discardResponseBody(response);
+    return null;
+  }
 
   const reader = response.body?.getReader();
   if (!reader) return null;
@@ -553,16 +570,16 @@ async function fetchHtmlLinkPreview(
 async function fetchDirectImagePreviewFromResponse(
   url: URL,
   response: Response,
-  mime: string,
 ): Promise<LinkPreviewMetadata | null> {
   const reader = response.body?.getReader();
   if (!reader) return null;
   const bytes = await readResponseBodyUpTo(reader, LINK_PREVIEW_IMAGE_MAX_BYTES);
   if (!bytes) return null;
-  const dataUrl = `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`;
+  const mime = resolveSafeRasterImageMime(bytes, LINK_PREVIEW_IMAGE_MIMES);
+  if (!mime) return null;
   return {
     title: titleFromImageUrl(url),
-    image: dataUrl,
+    image: bufferToRasterImageDataUrl(bytes, mime),
     kind: 'image',
   };
 }
@@ -602,15 +619,25 @@ async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewM
       headers: { Accept: 'text/html,image/*,*/*;q=0.8' },
       signal: AbortSignal.timeout(LINK_PREVIEW_FETCH_TIMEOUT_MS),
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      await discardResponseBody(response);
+      return null;
+    }
     const contentType = response.headers.get('content-type') ?? '';
-    const mime = linkPreviewBaseMime(contentType);
 
-    if (LINK_PREVIEW_ALLOWED_IMAGE_MIME_TYPES.has(mime)) {
-      return await fetchDirectImagePreviewFromResponse(url, response, mime);
+    // HTTPS-only for Content-Type image embeds (cleartext MITM risk).
+    if (isLinkPreviewImageMime(contentType)) {
+      if (url.protocol !== 'https:') {
+        await discardResponseBody(response);
+        return null;
+      }
+      return await fetchDirectImagePreviewFromResponse(url, response);
     }
 
-    if (!contentType.includes('text/html')) return null;
+    if (!contentType.includes('text/html')) {
+      await discardResponseBody(response);
+      return null;
+    }
     return await fetchHtmlLinkPreview(urlString, response);
   } catch (err) {
     console.debug(

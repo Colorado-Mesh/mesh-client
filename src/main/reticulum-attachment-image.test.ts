@@ -41,11 +41,9 @@ describe('reticulum-attachment-image', () => {
     expect(detectRasterImageMimeFromBytes(webp)).toBe('image/webp');
   });
 
-  it('falls back to allowlisted mime hint when magic is unknown', () => {
-    expect(resolveReticulumAttachmentImageMime(Buffer.from([1, 2, 3]), 'image/png')).toBe(
-      'image/png',
-    );
-    expect(resolveReticulumAttachmentImageMime(Buffer.from([1, 2, 3]), 'image/svg+xml')).toBeNull();
+  it('rejects unknown magic even with allowlisted mime hint', () => {
+    expect(resolveReticulumAttachmentImageMime(Buffer.from([1, 2, 3]))).toBeNull();
+    expect(resolveReticulumAttachmentImageMime(Buffer.from('<svg'))).toBeNull();
   });
 
   it('reads a jailed PNG as a data URL', async () => {
@@ -55,6 +53,36 @@ describe('reticulum-attachment-image', () => {
     fs.writeFileSync(filePath, png);
     const dataUrl = await readReticulumAttachmentAsDataUrl(filePath, 'image/png');
     expect(dataUrl).toMatch(/^data:image\/png;base64,/);
+  });
+
+  it('returns null for empty files', async () => {
+    fs.mkdirSync(attachmentsDir, { recursive: true });
+    const filePath = path.join(attachmentsDir, 'empty.png');
+    fs.writeFileSync(filePath, Buffer.alloc(0));
+    expect(await readReticulumAttachmentAsDataUrl(filePath, 'image/png')).toBeNull();
+  });
+
+  it('returns null when bytes are not raster despite png hint', async () => {
+    fs.mkdirSync(attachmentsDir, { recursive: true });
+    const filePath = path.join(attachmentsDir, 'fake.png');
+    fs.writeFileSync(filePath, Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"></svg>'));
+    expect(await readReticulumAttachmentAsDataUrl(filePath, 'image/png')).toBeNull();
+  });
+
+  it('throws when path is a directory', async () => {
+    fs.mkdirSync(attachmentsDir, { recursive: true });
+    await expect(readReticulumAttachmentAsDataUrl(attachmentsDir, 'image/png')).rejects.toThrow(
+      /not a file/,
+    );
+  });
+
+  it('detects BMP and AVIF magic', () => {
+    expect(detectRasterImageMimeFromBytes(Buffer.from([0x42, 0x4d, 0x00]))).toBe('image/bmp');
+    const avif = Buffer.alloc(12);
+    avif.write('....', 0);
+    avif.write('ftyp', 4);
+    avif.write('avif', 8);
+    expect(detectRasterImageMimeFromBytes(avif)).toBe('image/avif');
   });
 
   it('rejects paths outside the attachments jail', async () => {

@@ -265,7 +265,7 @@ describe('fetchLinkPreview', () => {
   });
 
   it('returns kind:image for direct https JPEG/PNG URLs', async () => {
-    const pngBytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]);
+    const pngBytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
     mockFetch.mockResolvedValue(
       mockUndiciResponse({
         ok: true,
@@ -285,6 +285,97 @@ describe('fetchLinkPreview', () => {
       image: expect.stringMatching(/^data:image\/png;base64,/),
       kind: 'image',
     });
+  });
+
+  it('rejects http Content-Type image embeds (HTTPS-only)', async () => {
+    const jpegBytes = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0]);
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'image/jpeg' }),
+        body: new ReadableStream<Uint8Array>({
+          start(c) {
+            c.enqueue(jpegBytes);
+            c.close();
+          },
+        }),
+      }),
+    );
+    expect(await fetchLinkPreview('http://cdn.example.com/media/abc123')).toBeNull();
+  });
+
+  it('rejects mislabeled image bodies that fail magic-byte sniff', async () => {
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'image/png' }),
+        body: new ReadableStream<Uint8Array>({
+          start(c) {
+            c.enqueue(new TextEncoder().encode('<html>not a png</html>'));
+            c.close();
+          },
+        }),
+      }),
+    );
+    expect(await fetchLinkPreview('https://cdn.example.com/media/abc123')).toBeNull();
+  });
+
+  it('cancels unused bodies on non-OK responses so Agents can close', async () => {
+    const cancel = vi.fn().mockResolvedValue(undefined);
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({
+        ok: false,
+        status: 404,
+        headers: new Headers({ 'content-type': 'text/html' }),
+        body: {
+          cancel,
+          getReader: () => ({
+            read: () => Promise.resolve({ done: true as const, value: undefined }),
+            cancel,
+          }),
+        },
+      }),
+    );
+    expect(await fetchLinkPreview('https://example.com/missing')).toBeNull();
+    expect(cancel).toHaveBeenCalled();
+  });
+
+  it('discards redirect bodies so Agents close on hop follow', async () => {
+    const pngBytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const cancel = vi.fn().mockResolvedValue(undefined);
+    mockFetch
+      .mockResolvedValueOnce(
+        mockUndiciResponse({
+          ok: false,
+          status: 302,
+          headers: new Headers({ location: 'https://cdn.example.com/final.png' }),
+          body: {
+            cancel,
+            getReader: () => ({
+              read: () => Promise.resolve({ done: true as const, value: undefined }),
+              cancel,
+            }),
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        mockUndiciResponse({
+          ok: true,
+          status: 200,
+          headers: new Headers({ 'content-type': 'image/png' }),
+          body: new ReadableStream<Uint8Array>({
+            start(c) {
+              c.enqueue(pngBytes);
+              c.close();
+            },
+          }),
+        }),
+      );
+    const result = await fetchLinkPreview('https://cdn.example.com/redir.png');
+    expect(result?.kind).toBe('image');
+    expect(cancel).toHaveBeenCalled();
   });
 
   it('returns kind:image for image/* Content-Type without path extension', async () => {
@@ -475,7 +566,7 @@ describe('fetchLinkPreview', () => {
       `<meta property="og:description" content="Desc text">`,
       `<meta property="og:image" content="https://example.com/img.png">`,
     ].join('\n');
-    const pngBytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47]);
+    const pngBytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
     mockFetch.mockImplementation(((input: string | URL | Request) => {
       const host = fetchRequestHostname(input);
       const href =
@@ -565,7 +656,7 @@ describe('fetchLinkPreview', () => {
             headers: new Headers({ 'content-type': 'image/png' }),
             body: new ReadableStream<Uint8Array>({
               start(c) {
-                c.enqueue(Uint8Array.from([0x89, 0x50, 0x4e, 0x47]));
+                c.enqueue(Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
                 c.close();
               },
             }),
@@ -616,7 +707,7 @@ describe('fetchLinkPreview', () => {
       `<meta property="og:title" content="mesh-client">`,
       `<meta property="og:image" content="https://opengraph.githubassets.com/abc/Colorado-Mesh/mesh-client">`,
     ].join('\n');
-    const pngBytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47]);
+    const pngBytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
     const imageStream = new ReadableStream<Uint8Array>({
       start(controller) {
         controller.enqueue(pngBytes);

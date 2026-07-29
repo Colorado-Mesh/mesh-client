@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ChatInlineImage } from '@/renderer/components/chat/ChatInlineImage';
 import {
   isReticulumAudioAttachment,
   isReticulumImageAttachment,
@@ -23,10 +24,7 @@ export function ReticulumAttachmentLine({ payload, attachmentPath }: ReticulumAt
 
   const mimeType = parsed?.mimeType;
   const canRenderImage =
-    Boolean(attachmentPath) &&
-    Boolean(mimeType) &&
-    isReticulumImageAttachment(mimeType!) &&
-    !mimeType!.toLowerCase().startsWith('image/svg');
+    Boolean(attachmentPath) && Boolean(mimeType) && isReticulumImageAttachment(mimeType!);
   const fetchKey =
     canRenderImage && attachmentPath && mimeType ? `${attachmentPath}\0${mimeType}` : null;
 
@@ -67,10 +65,9 @@ export function ReticulumAttachmentLine({ payload, attachmentPath }: ReticulumAt
   return (
     <div className="mt-1 flex flex-col gap-2 rounded border border-gray-700/80 bg-slate-900/60 px-2 py-1.5 text-xs text-gray-300">
       {showImage && imageDataUrl ? (
-        <img
+        <ChatInlineImage
           src={imageDataUrl}
           alt={t('chatPayload.reticulumAttachmentImage', { name: parsed.fileName })}
-          className="max-h-64 max-w-full rounded-md border border-cyan-500/20 object-contain"
           onError={() => {
             setImageFailed(true);
           }}

@@ -167,4 +167,25 @@ describe('ChatPayloadText', () => {
     });
     expect(onContentResize).toHaveBeenCalled();
   });
+
+  it('renders kind:image embeds without a path extension', async () => {
+    mockFetch.mockResolvedValue({
+      title: 'abc123',
+      image: 'data:image/jpeg;base64,abc',
+      kind: 'image',
+    });
+    render(<ChatPayloadText text="https://cdn.example.com/media/abc123" query="" />);
+    await waitFor(() => {
+      expect(screen.getByRole('img', { name: 'Image: abc123' })).toBeInTheDocument();
+    });
+    expect(screen.queryByText('cdn.example.com')).not.toBeInTheDocument();
+  });
+
+  it('skips link preview fetch when loadLinkPreviews is false', async () => {
+    render(<ChatPayloadText text="see https://example.com" query="" loadLinkPreviews={false} />);
+    await waitFor(() => {
+      expect(screen.getByRole('link')).toHaveAttribute('href', 'https://example.com');
+    });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
 });

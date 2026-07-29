@@ -192,7 +192,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 - **Copy message**: hover action copies message text to the clipboard
 - **Sender filter**: click any message sender to filter the view to that sender; Escape clears
 - **Jump to date**: scroll the chat to a specific calendar date
-- **Link previews**: `http`/`https` URLs in message text fetch Open Graph metadata (title, description, image) via main-process IPC; localhost and private IPs are blocked
+- **Link previews**: `http`/`https` URLs fetch metadata via main-process IPC — Open Graph for pages, **YouTube oEmbed** for watch/shorts/youtu.be links, and **inline image embeds** for direct raster URLs (`.jpg`, `.png`, etc.). Localhost and private IPs are blocked.
 - **Sound notifications**: audio ping for new messages in non-active channels/DMs; global mute in the toolbar; **per-conversation mute** (bell on channel/DM tabs) stored per protocol
 - **Message starring**: star messages from the hover row; **Starred** view lists bookmarks across conversations (newest first, cap 200)
 - **Timestamp tooltip**: hover the short time label for full date and time
@@ -319,7 +319,7 @@ Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGP
 
 **Messaging (Chat + RRC)**
 
-- **Chat tab:** **DM-only** LXMF text and reactions (peer file transfer via Remote rncp; historic LXMF attachment labels still render read-only)
+- **Chat tab:** **DM-only** LXMF text and reactions (peer file transfer via Remote rncp; historic LXMF attachment labels still render; **cached raster images** on disk under `reticulum/attachments/` also display inline)
 - **RRC tab:** multi-hub relay chat (rooms, nicklists, slash commands, favourites, auto-join, reconnect; up to 8 hubs)
 - **Remote tab:** **rnsh** interactive shell sessions and **rncp** file transfer (send / receive / fetch) over Reticulum, with saved addresses and inbound-policy controls; also available from Chat DMs as send-file (distinct from Meshtastic remote admin)
 - **Direct** delivery when the destination is in the path table (then **one-shot remote PN fallback** on Direct fail when a preferred remote PN is set); **propagated (PN)** when offline — Completes show **Stored at propagation node**, not recipient Delivered

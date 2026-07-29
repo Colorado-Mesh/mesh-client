@@ -1,79 +1,64 @@
 import fs from 'node:fs/promises';
 
+import {
+  bufferToRasterImageDataUrl,
+  CHAT_INLINE_IMAGE_MAX_BYTES,
+  detectRasterImageMimeFromBytes,
+  resolveSafeRasterImageMime,
+  SAFE_RASTER_IMAGE_MIMES,
+} from '../shared/safeRasterImageMime';
 import { readFileUpTo } from './readFileUpTo';
 import { assertReticulumAttachmentPathJailed } from './reticulum-attachment-path';
 
-/** Cap for in-chat attachment image data URLs (local disk; larger than remote link previews). */
-export const RETICULUM_ATTACHMENT_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
+/** Cap for in-chat attachment image data URLs (local disk). */
+export const RETICULUM_ATTACHMENT_IMAGE_MAX_BYTES = CHAT_INLINE_IMAGE_MAX_BYTES;
 
-const ALLOWED_ATTACHMENT_IMAGE_MIMES: ReadonlySet<string> = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'image/avif',
-  'image/bmp',
-]);
+/** Max attachment data-URL IPC reads per rolling window. */
+export const RETICULUM_ATTACHMENT_IMAGE_RATE_LIMIT_MAX = 30;
+export const RETICULUM_ATTACHMENT_IMAGE_RATE_LIMIT_WINDOW_MS = 60_000;
 
-function normalizeMime(mime: string | undefined): string {
-  return (mime ?? '').split(';')[0]?.trim().toLowerCase() ?? '';
+const attachmentImageRateTimestamps: number[] = [];
+
+/** Returns true when a new attachment image read is allowed under the IPC rate limit. */
+export function takeReticulumAttachmentImageRateToken(now = Date.now()): boolean {
+  const cutoff = now - RETICULUM_ATTACHMENT_IMAGE_RATE_LIMIT_WINDOW_MS;
+  while (attachmentImageRateTimestamps.length > 0) {
+    const oldest = attachmentImageRateTimestamps[0];
+    if (oldest === undefined || oldest >= cutoff) break;
+    attachmentImageRateTimestamps.shift();
+  }
+  if (attachmentImageRateTimestamps.length >= RETICULUM_ATTACHMENT_IMAGE_RATE_LIMIT_MAX) {
+    return false;
+  }
+  attachmentImageRateTimestamps.push(now);
+  return true;
 }
 
-/** Detect raster image MIME from magic bytes; returns null when unknown. */
-export function detectRasterImageMimeFromBytes(buf: Buffer): string | null {
-  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) {
-    return 'image/jpeg';
-  }
-  if (
-    buf.length >= 8 &&
-    buf[0] === 0x89 &&
-    buf[1] === 0x50 &&
-    buf[2] === 0x4e &&
-    buf[3] === 0x47 &&
-    buf[4] === 0x0d &&
-    buf[5] === 0x0a &&
-    buf[6] === 0x1a &&
-    buf[7] === 0x0a
-  ) {
-    return 'image/png';
-  }
-  if (buf.length >= 6) {
-    const head = buf.subarray(0, 6).toString('ascii');
-    if (head === 'GIF87a' || head === 'GIF89a') return 'image/gif';
-  }
-  if (
-    buf.length >= 12 &&
-    buf.subarray(0, 4).toString('ascii') === 'RIFF' &&
-    buf.subarray(8, 12).toString('ascii') === 'WEBP'
-  ) {
-    return 'image/webp';
-  }
-  if (buf.length >= 2 && buf[0] === 0x42 && buf[1] === 0x4d) {
-    return 'image/bmp';
-  }
-  if (buf.length >= 12 && buf.subarray(4, 8).toString('ascii') === 'ftyp') {
-    const brand = buf.subarray(8, 12).toString('ascii');
-    if (brand === 'avif' || brand === 'avis') return 'image/avif';
-  }
-  return null;
+/** Test helper — clears the IPC rate-limit window. */
+export function resetReticulumAttachmentImageRateLimitForTests(): void {
+  attachmentImageRateTimestamps.length = 0;
 }
 
-export function resolveReticulumAttachmentImageMime(buf: Buffer, mimeHint?: string): string | null {
-  const detected = detectRasterImageMimeFromBytes(buf);
-  if (detected) return detected;
-  const hinted = normalizeMime(mimeHint);
-  if (ALLOWED_ATTACHMENT_IMAGE_MIMES.has(hinted)) return hinted;
-  return null;
+export { detectRasterImageMimeFromBytes };
+
+/**
+ * Resolve MIME for an attachment embed. Requires magic-byte match — peer-supplied
+ * mime hints are not trusted for data-URL construction.
+ */
+export function resolveReticulumAttachmentImageMime(buf: Buffer): string | null {
+  return resolveSafeRasterImageMime(buf, SAFE_RASTER_IMAGE_MIMES);
 }
 
 /**
  * Read a jailed Reticulum attachment and return a data URL when it is a safe raster image.
- * Rejects SVG and paths outside the attachments directory.
+ * Rejects SVG and paths outside the attachments directory. Requires magic-byte MIME match.
  */
 export async function readReticulumAttachmentAsDataUrl(
   filePath: string,
   mimeHint?: string,
 ): Promise<string | null> {
+  // mimeHint retained for IPC/API compatibility; magic bytes alone decide embed MIME.
+  void mimeHint;
   const jailed = assertReticulumAttachmentPathJailed(filePath);
   // Ensure the path still exists and is a regular file before streaming.
   const stat = await fs.stat(jailed);
@@ -82,7 +67,7 @@ export async function readReticulumAttachmentAsDataUrl(
   }
   const buf = await readFileUpTo(jailed, RETICULUM_ATTACHMENT_IMAGE_MAX_BYTES);
   if (buf.length === 0) return null;
-  const mime = resolveReticulumAttachmentImageMime(buf, mimeHint);
+  const mime = resolveReticulumAttachmentImageMime(buf);
   if (!mime) return null;
-  return `data:${mime};base64,${buf.toString('base64')}`;
+  return bufferToRasterImageDataUrl(buf, mime);
 }

@@ -65,4 +65,31 @@ describe('ReticulumAttachmentLine', () => {
     const { container } = render(<ReticulumAttachmentLine payload="hello" />);
     expect(container).toBeEmptyDOMElement();
   });
+
+  it('does not fetch SVG attachments even with a path', () => {
+    render(
+      <ReticulumAttachmentLine
+        payload="[file:icon.svg:image/svg+xml]"
+        attachmentPath="/tmp/mesh/reticulum/attachments/icon.svg"
+      />,
+    );
+    expect(screen.getByText('File: icon.svg')).toBeInTheDocument();
+    expect(mockRead).not.toHaveBeenCalled();
+    expect(screen.queryByRole('img')).toBeNull();
+  });
+
+  it('falls back to label when IPC returns null dataUrl', async () => {
+    mockRead.mockResolvedValue({ dataUrl: null });
+    render(
+      <ReticulumAttachmentLine
+        payload="[file:Screenshot.png:image/png]"
+        attachmentPath="/tmp/mesh/reticulum/attachments/shot.png"
+      />,
+    );
+    await waitFor(() => {
+      expect(mockRead).toHaveBeenCalled();
+    });
+    expect(screen.getByText('Image: Screenshot.png')).toBeInTheDocument();
+    expect(screen.queryByRole('img')).toBeNull();
+  });
 });

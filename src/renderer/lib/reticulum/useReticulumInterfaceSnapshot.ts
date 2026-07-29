@@ -4,11 +4,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNowMs } from '@/renderer/hooks/useNowMs';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { syncReticulumBleRegistry } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
+import {
+  beginReticulumBleConnectGrace,
+  clearReticulumBleConnectGrace,
+  getReticulumBleConnectGraceExpiresAt,
+  subscribeReticulumBleConnectGrace,
+} from '@/renderer/lib/reticulum/reticulumBleConnectGrace';
 import type { ReticulumLocalInterfaceHealthOptions } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import { logReticulumLocalInterfaceHealthChanges } from '@/renderer/lib/reticulum/reticulumLocalInterfaceLogging';
 import {
   pickReticulumLocalHealthPollMs,
-  RETICULUM_BLE_CONNECT_GRACE_MS,
   scheduleReticulumLocalInterfaceBurst,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
 import { invalidateReticulumInterfacesCache } from '@/renderer/lib/reticulum/reticulumSidecarReads';
@@ -68,7 +73,9 @@ export function useReticulumInterfaceSnapshot({
   const [serialPorts, setSerialPorts] = useState<ReticulumSerialPortOption[]>([]);
   const [effectivePrimaryLocalSerialInterfaceId, setEffectivePrimaryLocalSerialInterfaceId] =
     useState<string | null>(null);
-  const [bleConnectGraceExpiresAt, setBleConnectGraceExpiresAt] = useState(0);
+  const [bleConnectGraceExpiresAt, setBleConnectGraceExpiresAt] = useState(() =>
+    getReticulumBleConnectGraceExpiresAt(),
+  );
   const [interfacesHydrated, setInterfacesHydrated] = useState(false);
   const refreshRef = useRef<
     (() => Promise<{ interfaces: ReticulumInterfaceRow[]; paths: string[] } | undefined>) | null
@@ -84,8 +91,14 @@ export function useReticulumInterfaceSnapshot({
 
   const serialPortPaths = useMemo(() => serialPorts.map((p) => p.path), [serialPorts]);
 
+  useEffect(() => {
+    return subscribeReticulumBleConnectGrace(() => {
+      setBleConnectGraceExpiresAt(getReticulumBleConnectGraceExpiresAt());
+    });
+  }, []);
+
   const beginBleConnectGrace = useCallback(() => {
-    setBleConnectGraceExpiresAt(Date.now() + RETICULUM_BLE_CONNECT_GRACE_MS);
+    setBleConnectGraceExpiresAt(beginReticulumBleConnectGrace());
   }, []);
 
   const refresh = useCallback(async () => {
@@ -145,6 +158,7 @@ export function useReticulumInterfaceSnapshot({
       setInterfaces([]);
       setSerialPorts([]);
       setEffectivePrimaryLocalSerialInterfaceId(null);
+      clearReticulumBleConnectGrace();
       setBleConnectGraceExpiresAt(0);
       setInterfacesHydrated(false);
       burstCancelRef.current?.();

@@ -4,27 +4,41 @@ import { useEffect, useRef, useState } from 'react';
 import { useNowMs } from '@/renderer/hooks/useNowMs';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
-  RETICULUM_BLE_CONNECT_GRACE_MS,
-  RETICULUM_LOCAL_HEALTH_FAST_POLL_MS,
-} from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
+  beginReticulumBleConnectGrace,
+  clearReticulumBleConnectGrace,
+  getReticulumBleConnectGraceExpiresAt,
+  subscribeReticulumBleConnectGrace,
+} from '@/renderer/lib/reticulum/reticulumBleConnectGrace';
+import { RETICULUM_LOCAL_HEALTH_FAST_POLL_MS } from '@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh';
 import { syncReticulumNobleBleYield } from '@/renderer/lib/reticulum/reticulumNobleBleYield';
 import { fetchReticulumInterfaces } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 
 /** Always-mounted Noble BLE yield lifecycle while the Reticulum sidecar is active. */
 export function useReticulumNobleBleYieldWatcher(sidecarActive: boolean): void {
-  const [bleConnectGraceExpiresAt, setBleConnectGraceExpiresAt] = useState(0);
+  const [bleConnectGraceExpiresAt, setBleConnectGraceExpiresAt] = useState(() =>
+    getReticulumBleConnectGraceExpiresAt(),
+  );
   /** Synchronous mirror — React state lags a frame and can release a fresh suspend. */
-  const graceExpiresAtRef = useRef(0);
+  const graceExpiresAtRef = useRef(getReticulumBleConnectGraceExpiresAt());
   const yieldStateRef = useRef({ yieldActive: false });
   const nowMs = useNowMs(bleConnectGraceExpiresAt > 0, bleConnectGraceExpiresAt > 0 ? 1_000 : 0);
 
   useEffect(() => {
+    return subscribeReticulumBleConnectGrace(() => {
+      const expires = getReticulumBleConnectGraceExpiresAt();
+      graceExpiresAtRef.current = expires;
+      setBleConnectGraceExpiresAt(expires);
+    });
+  }, []);
+
+  useEffect(() => {
     if (sidecarActive) {
-      const expires = Date.now() + RETICULUM_BLE_CONNECT_GRACE_MS;
+      const expires = beginReticulumBleConnectGrace();
       graceExpiresAtRef.current = expires;
       setBleConnectGraceExpiresAt(expires);
       return;
     }
+    clearReticulumBleConnectGrace();
     graceExpiresAtRef.current = 0;
     setBleConnectGraceExpiresAt(0);
     const abort = new AbortController();
@@ -37,7 +51,9 @@ export function useReticulumNobleBleYieldWatcher(sidecarActive: boolean): void {
         signal: abort.signal,
       },
       yieldStateRef.current,
-    );
+    ).catch((e: unknown) => {
+      console.debug('[useReticulumNobleBleYieldWatcher] inactive sync ' + errLikeToLogString(e));
+    });
     return () => {
       abort.abort();
     };
@@ -63,7 +79,7 @@ export function useReticulumNobleBleYieldWatcher(sidecarActive: boolean): void {
           !yieldStateRef.current.yieldActive &&
           (graceExpiresAt <= 0 || Date.now() >= graceExpiresAt)
         ) {
-          graceExpiresAt = Date.now() + RETICULUM_BLE_CONNECT_GRACE_MS;
+          graceExpiresAt = beginReticulumBleConnectGrace();
           graceExpiresAtRef.current = graceExpiresAt;
           setBleConnectGraceExpiresAt(graceExpiresAt);
         }
