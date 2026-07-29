@@ -2667,7 +2667,9 @@ function ChatPanel({
                                 <ChatPayloadText
                                   text={msg.payload}
                                   query={searchQuery}
-                                  loadLinkPreviews={!showScrollButton}
+                                  // Always fetch: gating on !showScrollButton hid image embeds
+                                  // while reading history (the usual place users look for them).
+                                  loadLinkPreviews
                                   onContentResize={() => {
                                     scheduleMessageRowRemeasure(i);
                                   }}

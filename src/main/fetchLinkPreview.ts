@@ -17,7 +17,7 @@ export const LINK_PREVIEW_FETCH_TIMEOUT_MS = 10_000;
 export const LINK_PREVIEW_DNS_LOOKUP_TIMEOUT_MS = 3_000;
 export const LINK_PREVIEW_MAX_HTML_BYTES = 65_536;
 export const LINK_PREVIEW_CACHE_TTL_MS = 15 * 60 * 1000;
-export const LINK_PREVIEW_IMAGE_MAX_BYTES = 262_144;
+export const LINK_PREVIEW_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 export const LINK_PREVIEW_IMAGE_FETCH_TIMEOUT_MS = 10_000;
 /** After a failed image fetch (e.g. 429), do not retry until this elapses. */
 export const LINK_PREVIEW_IMAGE_NEGATIVE_CACHE_MS = 5 * 60 * 1000;
@@ -200,13 +200,64 @@ async function fetchWithResolvedHost(urlString: string, init: RequestInit): Prom
     },
   });
   try {
-    const response = await undiciFetch(urlString, {
+    const response = (await undiciFetch(urlString, {
       ...init,
       dispatcher: agent,
-    } as Parameters<typeof undiciFetch>[1]);
-    return response as unknown as Response;
-  } finally {
+    } as Parameters<typeof undiciFetch>[1])) as unknown as Response;
+
+    const upstream = response.body;
+    // Closing the Agent before the body is consumed aborts streaming downloads
+    // (large direct images). Keep it open until the body ends or is cancelled.
+    if (!upstream) {
+      await agent.close();
+      return response;
+    }
+
+    let closed = false;
+    const closeAgent = (): void => {
+      if (closed) return;
+      closed = true;
+      void agent.close().catch(() => {
+        // catch-no-log-ok agent may already be closed after abort
+      });
+    };
+
+    const reader = upstream.getReader();
+    const stream = new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        try {
+          const { done, value } = await reader.read();
+          if (done) {
+            controller.close();
+            closeAgent();
+            return;
+          }
+          controller.enqueue(value);
+        } catch (err) {
+          // catch-no-log-ok forward stream failure to consumer via controller.error
+          closeAgent();
+          controller.error(err);
+        }
+      },
+      async cancel(reason) {
+        try {
+          await reader.cancel(reason);
+        } catch {
+          // catch-no-log-ok cancel may race with stream abort
+        } finally {
+          closeAgent();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
+  } catch (err) {
     await agent.close();
+    throw err;
   }
 }
 
