@@ -20,11 +20,28 @@ const NOMAD_ERROR_I18N_KEYS: Record<string, string> = {
   content_source_not_from_picker: 'nomadNetwork.serving.contentSourceNotFromPicker',
 };
 
+/** Transient path/link/identity errors worth one automatic page-fetch retry. */
+const RETRYABLE_NOMAD_PAGE_ERRORS = new Set([
+  'path_timeout',
+  'link_timeout',
+  'response_timeout',
+  'nomad_busy',
+  'pubkey_not_found',
+  'missing_identity_hash',
+]);
+
 export function nomadPageErrorI18nKey(error: string | null | undefined): string | null {
   if (error == null) return null;
   const trimmed = error.trim();
   if (!trimmed) return null;
   return NOMAD_ERROR_I18N_KEYS[trimmed] ?? null;
+}
+
+/** True when a Nomad page/file error code should trigger one-shot or announce reload. */
+export function isRetryableNomadPageError(error: string | null | undefined): boolean {
+  const trimmed = error?.trim();
+  if (!trimmed) return false;
+  return RETRYABLE_NOMAD_PAGE_ERRORS.has(trimmed);
 }
 
 /** Resolve a Nomad page/file error for display via i18n when known. */

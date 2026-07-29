@@ -266,3 +266,6 @@ export function meshcoreRepeaterRpcTimeoutMs(hopsAway?: number | null): number {
     MESHCORE_REPEATER_RPC_TIMEOUT_BASE_MS + hops * MESHCORE_REPEATER_RPC_TIMEOUT_PER_HOP_MS;
   return Math.min(MESHCORE_REPEATER_RPC_TIMEOUT_CAP_MS, scaled);
 }
+
+/** Brief settle before one-shot Nomad page re-fetch after a transient path/link error. */
+export const NOMAD_PAGE_FETCH_RETRY_SETTLE_MS = 750;

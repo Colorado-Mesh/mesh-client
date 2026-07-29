@@ -39,9 +39,13 @@ import {
   MAX_NOMAD_PAGE_CACHE_CHARS,
   setNomadPageCache,
 } from '@/renderer/lib/nomad/nomadPageCache';
-import { humanizeNomadPageError } from '@/renderer/lib/nomad/nomadPageErrorHumanize';
+import {
+  humanizeNomadPageError,
+  isRetryableNomadPageError,
+} from '@/renderer/lib/nomad/nomadPageErrorHumanize';
 import { isReticulumSidecarRunning } from '@/renderer/lib/reticulum/reticulumSidecarReads';
-import type { NomadNodeRow, NomadPageRequestData } from '@/shared/nomad-types';
+import { NOMAD_PAGE_FETCH_RETRY_SETTLE_MS } from '@/renderer/lib/timeConstants';
+import type { NomadNodeRow, NomadPageRequestData, NomadPageResponse } from '@/shared/nomad-types';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import NomadMicronPageView from './NomadMicronPageView';
@@ -121,6 +125,30 @@ function matchesSearch(node: NomadNodeRow, query: string): boolean {
   const name = (node.display_name ?? '').toLowerCase();
   const hash = node.destination_hash.toLowerCase();
   return name.includes(q) || hash.includes(q);
+}
+
+interface NomadPageErrorNodeSnapshot {
+  hash: string;
+  lastSeen: number | null;
+  hops: number | null;
+}
+
+function snapshotNomadNodeForPageError(
+  hash: string,
+  node: NomadNodeRow | undefined,
+): NomadPageErrorNodeSnapshot {
+  return {
+    hash: hash.toLowerCase(),
+    lastSeen: node?.last_seen ?? null,
+    hops: node?.hops ?? null,
+  };
+}
+
+function nomadNodeChangedSincePageError(
+  snap: NomadPageErrorNodeSnapshot,
+  node: NomadNodeRow,
+): boolean {
+  return (node.last_seen ?? null) !== snap.lastSeen || (node.hops ?? null) !== snap.hops;
 }
 
 function NomadCollapsedNodeItem({
@@ -269,6 +297,7 @@ export default function NomadNetworkPanel({
   const [showPageSource, setShowPageSource] = useState(false);
   const [pageLoading, setPageLoading] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
+  const [pageErrorCode, setPageErrorCode] = useState<string | null>(null);
   const [fileDownloading, setFileDownloading] = useState(false);
   const [fileDownloadError, setFileDownloadError] = useState<string | null>(null);
   const [nodeListCollapsed, setNodeListCollapsed] = useState(
@@ -285,6 +314,8 @@ export default function NomadNetworkPanel({
   const fileDownloadInFlightRef = useRef(false);
   const mountedRef = useRef(true);
   const historyIndexRef = useRef(-1);
+  const pageErrorNodeSnapshotRef = useRef<NomadPageErrorNodeSnapshot | null>(null);
+  const announceReloadDoneRef = useRef(false);
   const listCollapseTrigger = useParentIconTrigger();
 
   useEffect(() => {
@@ -395,6 +426,8 @@ export default function NomadNetworkPanel({
       setPageRequestData(normalizedRequest);
       setPageLoading(true);
       setPageError(null);
+      setPageErrorCode(null);
+      pageErrorNodeSnapshotRef.current = null;
       setShowPageSource(false);
 
       if (!options.forceReload) {
@@ -423,11 +456,39 @@ export default function NomadNetworkPanel({
 
       setPageContent(null);
       setPageContentType(undefined);
-      const res = await fetchNomadPage(hash, normalizedPath, normalizedRequest);
-      if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
+      let res: NomadPageResponse;
+      try {
+        res = await fetchNomadPage(hash, normalizedPath, normalizedRequest);
+        if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
+
+        if ((!res.ok || !res.content) && isRetryableNomadPageError(res.error)) {
+          const retryCode = res.error?.trim() || 'unknown';
+          console.warn(`[NomadNetwork] page fetch retry after ${retryCode}`);
+          await new Promise<void>((resolve) => {
+            window.setTimeout(resolve, NOMAD_PAGE_FETCH_RETRY_SETTLE_MS);
+          });
+          if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
+          res = await fetchNomadPage(hash, normalizedPath, normalizedRequest);
+          if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
+        }
+      } catch (e) {
+        // Failure point: unexpected fetchNomadPage reject. Fallback: clear loading + generic error.
+        console.warn('[NomadNetwork] page fetch ' + errLikeToLogString(e));
+        if (!mountedRef.current || requestSeq !== pageRequestSeqRef.current) return;
+        setPageLoading(false);
+        setPageErrorCode(null);
+        setPageError(humanizeNomadPageError(undefined, t));
+        return;
+      }
+
       setPageLoading(false);
       if (!res.ok || !res.content) {
+        const rawCode = res.error?.trim() || null;
+        setPageErrorCode(rawCode);
         setPageError(humanizeNomadPageError(res.error, t));
+        const node = useNomadNetworkStore.getState().nodes.get(hash.toLowerCase());
+        pageErrorNodeSnapshotRef.current = snapshotNomadNodeForPageError(hash, node);
+        announceReloadDoneRef.current = false;
         return;
       }
       const { text, truncated } = truncateNomadPageContent(res.content);
@@ -449,6 +510,40 @@ export default function NomadNetworkPanel({
     },
     [applyPageResult, fetchNomadPage, pushHistoryEntry, t],
   );
+
+  useEffect(() => {
+    if (
+      pageLoading ||
+      !pageErrorCode ||
+      !isRetryableNomadPageError(pageErrorCode) ||
+      !selectedHash ||
+      !selectedNode
+    ) {
+      return;
+    }
+    if (announceReloadDoneRef.current) return;
+    const snap = pageErrorNodeSnapshotRef.current;
+    if (snap == null) return;
+    if (snap.hash !== selectedHash.toLowerCase()) return;
+    if (!nomadNodeChangedSincePageError(snap, selectedNode)) return;
+
+    announceReloadDoneRef.current = true;
+    console.warn('[NomadNetwork] page reload after announce refresh');
+    void loadNodePage(selectedHash, pagePath, {
+      forceReload: true,
+      requestData: pageRequestData,
+    });
+  }, [
+    loadNodePage,
+    pageErrorCode,
+    pageLoading,
+    pagePath,
+    pageRequestData,
+    selectedHash,
+    selectedNode,
+    selectedNode?.hops,
+    selectedNode?.last_seen,
+  ]);
 
   const downloadNodeFile = useCallback(
     async (hash: string, path: string) => {
