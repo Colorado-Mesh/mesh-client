@@ -317,7 +317,7 @@ Live mutators for local PN hosting policy updates (`set_peering_cost`, `set_max_
 | Field | Value |
 | ----- | ----- |
 | **Base commit** | `68ad7c835187c052c763bb28c41b04a655f35c64` |
-| **Upstream PR** | _(none yet — propose upstream when convenient)_ |
+| **Upstream PR** | https://github.com/ratspeak/rsLXMF/pull/6 |
 
 **Modifies (1 file):**
 
@@ -344,4 +344,4 @@ git diff 68ad7c835187c052c763bb28c41b04a655f35c64 -- crates/lxmf-core/src/propag
 
 ### Sunset
 
-When upstream ships equivalent setters on a pin mesh-client adopts, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
+When [ratspeak/rsLXMF#6](https://github.com/ratspeak/rsLXMF/pull/6) merges and the clone pin includes it, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
