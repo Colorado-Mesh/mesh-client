@@ -28,6 +28,7 @@ use super::rrc_link::{RrcLinkError, RrcLinkEvent, RrcLinkHandle, open_rrc_link};
 
 const CLIENT_NAME: &str = "mesh-client";
 const CLIENT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 const WELCOME_TIMEOUT: Duration = Duration::from_secs(20);
 const RECONNECT_BASE_MS: u64 = 2_000;
 const RECONNECT_MAX_MS: u64 = 30_000;
@@ -71,6 +72,8 @@ struct RrcSessionInner {
     rooms: HashMap<String, RrcRoomState>,
     /// Normalized room name → optional join key retained for reconnect.
     desired_rooms: HashMap<String, Option<String>>,
+    /// Wire room + join key queued after involuntary hub PARTED while still desired.
+    pending_rejoins: Vec<(String, Option<String>)>,
     last_error: Option<String>,
     identity_hash: [u8; 16],
     capabilities: RrcWelcomeCapabilities,
@@ -84,6 +87,7 @@ impl RrcSessionInner {
             nickname: None,
             rooms: HashMap::new(),
             desired_rooms: HashMap::new(),
+            pending_rejoins: Vec::new(),
             last_error: None,
             identity_hash,
             capabilities: RrcWelcomeCapabilities::default(),
@@ -605,6 +609,7 @@ async fn session_loop(
                             g.hub_name = None;
                             g.rooms.clear();
                             g.desired_rooms.clear();
+                            g.pending_rejoins.clear();
                             g.last_error = None;
                             g.capabilities = RrcWelcomeCapabilities::default();
                         }
@@ -641,6 +646,7 @@ async fn session_loop(
                             g.status = RrcSessionStatus::Disconnected;
                             g.rooms.clear();
                             g.desired_rooms.clear();
+                            g.pending_rejoins.clear();
                             g.hub_name = None;
                         }
                         emit(
@@ -870,8 +876,47 @@ async fn session_loop(
                                             warn!("rrc PONG send failed: {e}");
                                         }
                                     }
-                                    Err(e) => warn!("rrc PONG encode failed: {e}"),
+                                    Err(e) => {
+                                        warn!("rrc PONG encode failed: {e}");
+                                    }
                                 }
+                            }
+                        }
+                        // True self-PARTED while room still desired (e.g. multi-link
+                        // edge case) — re-JOIN without emitting rrc.room.parted.
+                        let rejoins = {
+                            let mut g = inner.lock().await;
+                            std::mem::take(&mut g.pending_rejoins)
+                        };
+                        for (room, key) in rejoins {
+                            let rejoin = send_room_control(
+                                &mut link,
+                                &inner,
+                                Some(room.clone()),
+                                msg_type::JOIN,
+                                key,
+                            )
+                            .await;
+                            if let Err(e) = rejoin {
+                                warn!("rrc auto-rejoin {room} failed: {e}");
+                                {
+                                    let mut g = inner.lock().await;
+                                    g.desired_rooms.remove(&normalize_room(&room));
+                                    g.rooms.remove(&normalize_room(&room));
+                                }
+                                emit(
+                                    &event_tx,
+                                    "rrc.room.parted",
+                                    json!({ "hub_dest_hash": hex, "room": room }),
+                                );
+                                emit(
+                                    &event_tx,
+                                    "rrc.error",
+                                    json!({
+                                        "hub_dest_hash": hex,
+                                        "message": format!("rejoin {room} failed: {e}"),
+                                    }),
+                                );
                             }
                         }
                     }
@@ -1132,15 +1177,54 @@ async fn handle_inbound(
         msg_type::PARTED => {
             let room = env.room_name.clone().unwrap_or_default();
             let key = normalize_room(&room);
-            {
+            let parting_peers = parse_joined_members(env.body.as_ref());
+            let (about_self, auto_rejoin) = {
                 let mut g = inner.lock().await;
-                g.rooms.remove(&key);
+                let our_hash = hex::encode(g.identity_hash);
+                let about_self = parted_concerns_self(
+                    env.body.as_ref(),
+                    env.nickname.as_deref(),
+                    &our_hash,
+                    g.nickname.as_deref(),
+                );
+                if about_self {
+                    // We left (or hub says we did). Voluntary PART already cleared
+                    // desired_rooms; if still desired, queue silent re-JOIN.
+                    g.rooms.remove(&key);
+                    let auto_rejoin = match g.desired_rooms.get(&key).cloned() {
+                        Some(join_key) => {
+                            g.pending_rejoins.push((room.clone(), join_key));
+                            true
+                        }
+                        None => false,
+                    };
+                    (true, auto_rejoin)
+                } else {
+                    // Fanout: another member left — update roster only.
+                    if let Some(state) = g.rooms.get_mut(&key) {
+                        if !parting_peers.is_empty() {
+                            for (h, _) in &parting_peers {
+                                state.members.retain(|(mh, _)| !mh.eq_ignore_ascii_case(h));
+                            }
+                        } else if let Some(n) = env.nickname.as_deref() {
+                            let n = n.trim();
+                            state.members.retain(|(_, mn)| {
+                                mn.as_ref()
+                                    .map(|m| !m.trim().eq_ignore_ascii_case(n))
+                                    .unwrap_or(true)
+                            });
+                        }
+                    }
+                    (false, false)
+                }
+            };
+            if about_self && !auto_rejoin {
+                emit(
+                    event_tx,
+                    "rrc.room.parted",
+                    json!({ "hub_dest_hash": hub_dest_hash, "room": room }),
+                );
             }
-            emit(
-                event_tx,
-                "rrc.room.parted",
-                json!({ "hub_dest_hash": hub_dest_hash, "room": room }),
-            );
             None
         }
         msg_type::MSG | msg_type::NOTICE | msg_type::ACTION => {
@@ -1213,6 +1297,34 @@ fn normalize_room(room: &str) -> String {
     room.trim().to_lowercase()
 }
 
+/// Decide whether an inbound PARTED means *we* left the room.
+///
+/// Stock rrcd:
+/// - Actor-facing PART ack: no `K_NICK`; optional body `[our_hash]`.
+/// - Member fanout when someone else leaves: `K_NICK` = their nick; optional
+///   body `[their_hash]`.
+/// Treating fanout as self-leave made busy rooms look like constant hub kicks.
+fn parted_concerns_self(
+    body: Option<&ciborium::value::Value>,
+    nick: Option<&str>,
+    our_hash_hex: &str,
+    our_nick: Option<&str>,
+) -> bool {
+    let peers = parse_joined_members(body);
+    if !peers.is_empty() {
+        return peers
+            .iter()
+            .any(|(h, _)| h.eq_ignore_ascii_case(our_hash_hex));
+    }
+    match nick.map(str::trim).filter(|s| !s.is_empty()) {
+        Some(n) => our_nick
+            .map(|o| o.trim().eq_ignore_ascii_case(n))
+            .unwrap_or(false),
+        // No body hashes and no nick → actor-facing self PARTED.
+        None => true,
+    }
+}
+
 async fn resolve_reconnect_nickname(
     inner: &Arc<Mutex<RrcSessionInner>>,
     intent_nick: &str,
@@ -1283,5 +1395,85 @@ mod tests {
     #[test]
     fn normalize_room_trims_and_lowercases() {
         assert_eq!(normalize_room("  #General "), "#general");
+    }
+
+    #[test]
+    fn involuntary_parted_queues_rejoin_when_desired() {
+        let mut inner = RrcSessionInner::new([0u8; 16]);
+        inner.remember_desired_room("general", None);
+        inner.rooms.insert(
+            "general".into(),
+            RrcRoomState {
+                name: "general".into(),
+                members: vec![],
+            },
+        );
+        let key = normalize_room("general");
+        inner.rooms.remove(&key);
+        match inner.desired_rooms.get(&key) {
+            Some(join_key) => {
+                inner
+                    .pending_rejoins
+                    .push(("general".into(), join_key.clone()));
+            }
+            None => panic!("expected desired room"),
+        }
+        assert_eq!(inner.pending_rejoins.len(), 1);
+        assert!(inner.desired_rooms.contains_key("general"));
+        // Voluntary PART removes desired first — no rejoin queue.
+        inner.desired_rooms.remove("general");
+        inner.pending_rejoins.clear();
+        assert!(inner.desired_rooms.get("general").is_none());
+    }
+
+    #[test]
+    fn parted_fanout_other_nick_is_not_self() {
+        assert!(!parted_concerns_self(
+            None,
+            Some("pmow"),
+            "128eb883f0c94439bdb2069947319022",
+            Some("valerius"),
+        ));
+    }
+
+    #[test]
+    fn parted_actor_ack_without_nick_is_self() {
+        assert!(parted_concerns_self(
+            None,
+            None,
+            "128eb883f0c94439bdb2069947319022",
+            Some("me"),
+        ));
+    }
+
+    #[test]
+    fn parted_matching_nick_is_self() {
+        assert!(parted_concerns_self(
+            None,
+            Some("Me"),
+            "128eb883f0c94439bdb2069947319022",
+            Some("me"),
+        ));
+    }
+
+    #[test]
+    fn parted_body_hash_distinguishes_self() {
+        use ciborium::value::Value;
+        let our = hex::decode("128eb883f0c94439bdb2069947319022").unwrap();
+        let other = hex::decode("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").unwrap();
+        let self_body = Value::Array(vec![Value::Bytes(our)]);
+        let other_body = Value::Array(vec![Value::Bytes(other)]);
+        assert!(parted_concerns_self(
+            Some(&self_body),
+            Some("ignored-when-body"),
+            "128eb883f0c94439bdb2069947319022",
+            Some("me"),
+        ));
+        assert!(!parted_concerns_self(
+            Some(&other_body),
+            Some("pmow"),
+            "128eb883f0c94439bdb2069947319022",
+            Some("me"),
+        ));
     }
 }
