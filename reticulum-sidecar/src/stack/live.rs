@@ -1205,6 +1205,9 @@ impl LiveBridge {
                         .unwrap_or(true);
                     if autopeer_on && parsed.node_state {
                         let mut router = router.lock().await;
+                        // AutopeerCandidate uses f64; announce wire fields are i64/u64.
+                        // Precision loss is fine for timebase/limits (KB-scale / unix seconds).
+                        #[allow(clippy::cast_precision_loss)]
                         let _ = router.autopeer(lxmf_core::router::AutopeerCandidate {
                             destination_hash: evt.destination_hash,
                             timebase: parsed.timebase as f64,
@@ -2035,7 +2038,7 @@ impl LiveBridge {
                 .map(|p| p.clone())
                 .unwrap_or_default();
             if let Err(e) = self.prop_serve.start(
-                self.handle.transport_tx.clone(),
+                &self.handle.transport_tx,
                 &self.identity,
                 self.propagation.local_dest_hash_bytes(),
                 self.propagation.local_node(),

@@ -1,0 +1,23 @@
+diff --git a/crates/lxmf-core/src/propagation_node.rs b/crates/lxmf-core/src/propagation_node.rs
+index 5032269..33772f0 100644
+--- a/crates/lxmf-core/src/propagation_node.rs
++++ b/crates/lxmf-core/src/propagation_node.rs
+@@ -172,6 +172,18 @@ impl PropagationNode {
+         self.config.min_stamp_cost = cost;
+     }
+ 
++    pub fn set_peering_cost(&mut self, cost: u8) {
++        self.config.peering_cost = cost;
++    }
++
++    pub fn set_max_storage(&mut self, max: usize) {
++        self.config.max_storage = max;
++    }
++
++    pub fn set_max_message_size(&mut self, max: usize) {
++        self.config.max_message_size = max;
++    }
++
+     /// Disk-backed node. Loads existing messages from `storage_path` on startup.
+     pub fn with_storage(
+         config: PropagationNodeConfig,

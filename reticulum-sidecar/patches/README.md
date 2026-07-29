@@ -309,3 +309,39 @@ git diff 68ad7c835187c052c763bb28c41b04a655f35c64 -- crates/lxmf-core/src/propag
 ### Sunset
 
 When [ratspeak/rsLXMF#4](https://github.com/ratspeak/rsLXMF/pull/4) merges, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.
+
+## rsLXMF-propagation-node-policy-setters.patch
+
+Live mutators for local PN hosting policy updates (`set_peering_cost`, `set_max_storage`, `set_max_message_size`). Upstream pin only exposes `set_min_stamp_cost`; mesh-client `pn_hosting_apply` needs the others so policy edits apply without recreating the node.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | `68ad7c835187c052c763bb28c41b04a655f35c64` |
+| **Upstream PR** | _(none yet — propose upstream when convenient)_ |
+
+**Modifies (1 file):**
+
+- `crates/lxmf-core/src/propagation_node.rs` — three policy setters on `PropagationNode`
+
+### Apply locally
+
+From mesh-client repo root (sibling `../rsLXMF` required):
+
+```bash
+./scripts/apply-rsLXMF-propagation-node-policy-setters.sh
+```
+
+`clone-ratspeak-stack.sh` and `ensure-rsReticulum-patches.sh` invoke this automatically.
+
+### Regenerate
+
+```bash
+cd ../rsLXMF
+git fetch origin
+git diff 68ad7c835187c052c763bb28c41b04a655f35c64 -- crates/lxmf-core/src/propagation_node.rs \
+  > ../mesh-client/reticulum-sidecar/patches/rsLXMF-propagation-node-policy-setters.patch
+```
+
+### Sunset
+
+When upstream ships equivalent setters on a pin mesh-client adopts, remove this patch and drop the apply step from `clone-ratspeak-stack.sh` / `ensure-rsReticulum-patches.sh`.

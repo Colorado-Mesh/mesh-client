@@ -52,6 +52,7 @@ ensure_repo "${LXMF_DIR}" 'https://github.com/ratspeak/rsLXMF.git' \
   '68ad7c835187c052c763bb28c41b04a655f35c64' 'rsLXMF'
 
 "${SCRIPT_DIR}/apply-rsLXMF-propagation-sync-peering.sh"
+"${SCRIPT_DIR}/apply-rsLXMF-propagation-node-policy-setters.sh"
 
 # Pin rsNomad so CI/release do not float on an unreviewed main tip.
 # Override with RS_NOMAD_REF=... or skip with RS_NOMAD_SKIP_PIN=1 (local hardening work).

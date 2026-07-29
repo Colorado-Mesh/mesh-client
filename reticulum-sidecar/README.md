@@ -34,6 +34,7 @@ Apply overlays (required for `rns-stack` until upstream merges):
 ./scripts/apply-rsReticulum-ble-rnode-pairing-transition-debounce.sh
 ./scripts/apply-rsReticulum-discovery-announce-egress.sh
 ./scripts/apply-rsLXMF-propagation-sync-peering.sh
+./scripts/apply-rsLXMF-propagation-node-policy-setters.sh
 ```
 
 See [patches/README.md](patches/README.md) for base SHA and regen steps.

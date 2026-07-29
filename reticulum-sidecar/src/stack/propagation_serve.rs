@@ -39,7 +39,7 @@ impl PropagationServeHandle {
     /// Register `lxmf.propagation` and spawn LinkManager with `/offer` + `/get` handlers.
     pub fn start(
         &self,
-        transport_tx: mpsc::Sender<TransportMessage>,
+        transport_tx: &mpsc::Sender<TransportMessage>,
         identity: &Identity,
         propagation_dest_hash: [u8; 16],
         local_node: Arc<Mutex<PropagationNode>>,
@@ -47,7 +47,7 @@ impl PropagationServeHandle {
         self.stop();
 
         let delivery_rx =
-            register_destination(&transport_tx, propagation_dest_hash, LXMF_PROPAGATION_APP);
+            register_destination(transport_tx, propagation_dest_hash, LXMF_PROPAGATION_APP);
 
         let prop_signing_key = identity
             .get_signing_key()
@@ -117,7 +117,7 @@ impl PropagationServeHandle {
 
         tokio::spawn(async move {
             tokio::select! {
-                _ = prop_link_mgr.run() => {}
+                () = prop_link_mgr.run() => {}
                 _ = &mut stop_rx => {
                     tracing::info!(target: "propagation-serve", "LinkManager stop requested");
                 }

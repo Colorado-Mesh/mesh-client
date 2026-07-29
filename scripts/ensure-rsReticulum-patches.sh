@@ -25,3 +25,4 @@ if [[ ! -d "${LXMF_DIR}/.git" ]]; then
 fi
 
 "${SCRIPT_DIR}/apply-rsLXMF-propagation-sync-peering.sh"
+"${SCRIPT_DIR}/apply-rsLXMF-propagation-node-policy-setters.sh"

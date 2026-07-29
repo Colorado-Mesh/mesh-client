@@ -1303,6 +1303,7 @@ fn normalize_room(room: &str) -> String {
 /// - Actor-facing PART ack: no `K_NICK`; optional body `[our_hash]`.
 /// - Member fanout when someone else leaves: `K_NICK` = their nick; optional
 ///   body `[their_hash]`.
+///
 /// Treating fanout as self-leave made busy rooms look like constant hub kicks.
 fn parted_concerns_self(
     body: Option<&ciborium::value::Value>,
@@ -1423,7 +1424,7 @@ mod tests {
         // Voluntary PART removes desired first — no rejoin queue.
         inner.desired_rooms.remove("general");
         inner.pending_rejoins.clear();
-        assert!(inner.desired_rooms.get("general").is_none());
+        assert!(!inner.desired_rooms.contains_key("general"));
     }
 
     #[test]

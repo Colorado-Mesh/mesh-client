@@ -144,7 +144,7 @@ impl PropagationAnnounceLoop {
                     Duration::from_secs(u64::from(interval_sec))
                 };
                 tokio::select! {
-                    _ = tokio::time::sleep(wait) => {
+                    () = tokio::time::sleep(wait) => {
                         if interval_sec == 0 {
                             continue;
                         }

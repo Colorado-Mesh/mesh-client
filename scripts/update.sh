@@ -214,6 +214,7 @@ check_ratspeak_patches() {
     'rsReticulum-ble-rnode-pairing-transition-debounce.patch|ratspeak/rsReticulum||rsReticulum BLE RNode pairing-transition debounce|'
     'rsReticulum-discovery-announce-egress.patch|ratspeak/rsReticulum|19|rsReticulum discovery announce egress|https://github.com/ratspeak/rsReticulum/pull/19'
     'rsLXMF-propagation-sync-peering.patch|ratspeak/rsLXMF|4|rsLXMF propagation sync peering|https://github.com/ratspeak/rsLXMF/pull/4'
+    'rsLXMF-propagation-node-policy-setters.patch|ratspeak/rsLXMF||rsLXMF PropagationNode policy setters|'
   )
   local patches_dir='reticulum-sidecar/patches'
   local has_ratspeak_warning=0
