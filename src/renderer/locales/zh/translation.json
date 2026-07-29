@@ -622,7 +622,10 @@
     "locationCard": {
       "alt": "共享位置地图图块",
       "openMaps": "在地图中打开"
-    }
+    },
+    "directImage": "图片： {{name}}",
+    "directImageOpen": "打开图像",
+    "reticulumAttachmentImage": "附件图片： {{name}}"
   },
   "common": {
     "close": "关闭",

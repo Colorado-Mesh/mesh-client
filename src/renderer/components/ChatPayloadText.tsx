@@ -9,6 +9,7 @@ import {
   meshcoreGiphyPageUrl,
   parseMeshcoreGifId,
 } from '@/renderer/lib/meshcoreGifWire';
+import { isLikelyDirectImageUrl } from '@/shared/chatDirectImageUrl';
 
 function highlightCaseInsensitive(text: string, query: string): ReactNode {
   const q = query.trim();
@@ -43,6 +44,8 @@ interface LinkPreviewData {
   title: string;
   description?: string;
   image?: string;
+  /** Present when the URL itself is a raster image (not an HTML page with og:image). */
+  kind?: 'image';
 }
 
 const linkPreviewFetchByUrl = new Map<string, Promise<LinkPreviewData | null>>();
@@ -58,6 +61,45 @@ function fetchLinkPreviewDeduped(url: string): Promise<LinkPreviewData | null> {
     }
   });
   return pending;
+}
+
+function DirectImageEmbed({
+  url,
+  imageSrc,
+  title,
+  onContentResize,
+}: {
+  url: string;
+  imageSrc: string;
+  title: string;
+  onContentResize?: () => void;
+}) {
+  const { t } = useTranslation();
+  const [failed, setFailed] = useState(false);
+
+  if (failed) return null;
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="mt-2 inline-block max-w-xs"
+      title={t('chatPayload.directImageOpen')}
+    >
+      <img
+        src={imageSrc}
+        alt={t('chatPayload.directImage', { name: title })}
+        className="max-h-64 max-w-full rounded-md border border-cyan-500/20 object-contain"
+        onLoad={() => {
+          onContentResize?.();
+        }}
+        onError={() => {
+          setFailed(true);
+        }}
+      />
+    </a>
+  );
 }
 
 function LinkPreview({ url, onContentResize }: { url: string; onContentResize?: () => void }) {
@@ -82,6 +124,19 @@ function LinkPreview({ url, onContentResize }: { url: string; onContentResize?: 
   }, [preview, onContentResize]);
 
   if (!preview) return null;
+
+  const showAsDirectImage =
+    Boolean(preview.image) && (preview.kind === 'image' || isLikelyDirectImageUrl(url));
+  if (showAsDirectImage && preview.image) {
+    return (
+      <DirectImageEmbed
+        url={url}
+        imageSrc={preview.image}
+        title={preview.title}
+        onContentResize={onContentResize}
+      />
+    );
+  }
 
   let hostname = '';
   try {

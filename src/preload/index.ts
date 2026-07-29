@@ -1190,12 +1190,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }>,
     showItemInFolder: (filePath: string) =>
       ipcRenderer.invoke('chat:showItemInFolder', filePath) as Promise<{ ok: boolean }>,
+    readReticulumAttachmentAsDataUrl: (opts: { filePath: string; mimeType?: string }) =>
+      ipcRenderer.invoke('chat:readReticulumAttachmentAsDataUrl', opts) as Promise<{
+        dataUrl: string | null;
+      }>,
     linkPreview: {
       fetch: (url: string) =>
         ipcRenderer.invoke('chat:fetchLinkPreview', url) as Promise<{
           title: string;
           description?: string;
           image?: string;
+          kind?: 'image';
         } | null>,
     },
     outbox: {

@@ -624,7 +624,10 @@
     "locationCard": {
       "alt": "Udostępniony kafelek mapy lokalizacji",
       "openMaps": "Otwórz w Mapach"
-    }
+    },
+    "directImage": "Zdjęcie: {{name}}",
+    "directImageOpen": "Otwórz obraz",
+    "reticulumAttachmentImage": "Załączone zdjęcie: {{name}}"
   },
   "common": {
     "close": "Zamknij",

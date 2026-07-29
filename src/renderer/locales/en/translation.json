@@ -619,6 +619,9 @@
     "mention": "Mention {{label}}",
     "meshcoreGif": "GIF",
     "meshcoreGifOpen": "Open on Giphy",
+    "directImage": "Image: {{name}}",
+    "directImageOpen": "Open image",
+    "reticulumAttachmentImage": "Attached image: {{name}}",
     "locationCard": {
       "alt": "Shared location map tile",
       "openMaps": "Open in Maps"

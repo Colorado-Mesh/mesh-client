@@ -128,6 +128,7 @@ import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
 import { NobleBleManager, type NobleSessionId } from './noble-ble-manager';
 import { readFileUpTo } from './readFileUpTo';
 import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
+import { readReticulumAttachmentAsDataUrl } from './reticulum-attachment-image';
 import { assertReticulumAttachmentPathJailed } from './reticulum-attachment-path';
 import { ReticulumSidecarManager } from './reticulum-sidecar-manager';
 import {
@@ -4712,6 +4713,26 @@ ipcMain.handle('chat:showItemInFolder', (event, filePath: unknown) => {
   } catch (err) {
     console.error(
       '[IPC] chat:showItemInFolder failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
+ipcMain.handle('chat:readReticulumAttachmentAsDataUrl', async (event, opts: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  if (!opts || typeof opts !== 'object') throw new Error('opts must be an object');
+  const o = opts as Record<string, unknown>;
+  if (typeof o.filePath !== 'string' || !o.filePath.trim() || o.filePath.length > 512) {
+    throw new Error('filePath must be a non-empty string');
+  }
+  const mimeType = typeof o.mimeType === 'string' ? o.mimeType.slice(0, 128) : undefined;
+  try {
+    const dataUrl = await readReticulumAttachmentAsDataUrl(o.filePath, mimeType);
+    return { dataUrl };
+  } catch (err) {
+    console.error(
+      '[IPC] chat:readReticulumAttachmentAsDataUrl failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
     );
     throw err;

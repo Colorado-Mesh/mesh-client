@@ -90,6 +90,44 @@ describe('ChatPayloadText', () => {
     });
   });
 
+  it('renders direct image URLs as a large inline embed', async () => {
+    mockFetch.mockResolvedValue({
+      title: 'photo.jpg',
+      image: 'data:image/jpeg;base64,abc',
+      kind: 'image',
+    });
+    render(<ChatPayloadText text="https://cdn.example.com/photo.jpg" query="" />);
+    await waitFor(() => {
+      const img = screen.getByRole('img', { name: 'Image: photo.jpg' });
+      expect(img).toHaveAttribute('src', 'data:image/jpeg;base64,abc');
+      expect(img.className).toContain('max-h-64');
+    });
+    expect(screen.getByRole('link', { name: 'Image: photo.jpg' })).toHaveAttribute(
+      'href',
+      'https://cdn.example.com/photo.jpg',
+    );
+    expect(screen.queryByText('cdn.example.com')).not.toBeInTheDocument();
+  });
+
+  it('keeps YouTube-style page previews as the compact card', async () => {
+    mockFetch.mockResolvedValue({
+      title: 'Never Gonna Give You Up',
+      description: 'Rick Astley',
+      image: 'data:image/jpeg;base64,thumb',
+    });
+    const { container } = render(
+      <ChatPayloadText text="https://www.youtube.com/watch?v=dQw4w9WgXcQ" query="" />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Never Gonna Give You Up')).toBeInTheDocument();
+      expect(screen.getByText('Rick Astley')).toBeInTheDocument();
+      expect(screen.getByText('www.youtube.com')).toBeInTheDocument();
+    });
+    const thumb = container.querySelector('img');
+    expect(thumb).toHaveAttribute('src', 'data:image/jpeg;base64,thumb');
+    expect(thumb?.className).toContain('h-16');
+  });
+
   it('hides preview card when fetch returns null', async () => {
     mockFetch.mockResolvedValue(null);
     render(<ChatPayloadText text="see https://example.com" query="" />);

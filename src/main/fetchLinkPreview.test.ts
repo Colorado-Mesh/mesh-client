@@ -30,10 +30,14 @@ import dns from 'node:dns/promises';
 import { fetch as undiciFetch } from 'undici';
 
 import {
+  canonicalizeYouTubeWatchUrl,
   clearLinkPreviewCachesForTests,
   fetchLinkPreview,
   isBlockedHostname,
   isBlockedHostnameResolved,
+  isLikelyDirectImageUrl,
+  isLinkPreviewImageMime,
+  isYouTubePreviewHostname,
   LINK_PREVIEW_RATE_LIMIT_MAX,
   shouldProxyPreviewImageUrl,
 } from './fetchLinkPreview';
@@ -147,6 +151,49 @@ describe('shouldProxyPreviewImageUrl', () => {
   });
 });
 
+describe('isLinkPreviewImageMime / isLikelyDirectImageUrl', () => {
+  it('accepts raster MIME types and rejects svg/json', () => {
+    expect(isLinkPreviewImageMime('image/jpeg; charset=binary')).toBe(true);
+    expect(isLinkPreviewImageMime('image/png')).toBe(true);
+    expect(isLinkPreviewImageMime('image/webp')).toBe(true);
+    expect(isLinkPreviewImageMime('image/svg+xml')).toBe(false);
+    expect(isLinkPreviewImageMime('application/json')).toBe(false);
+  });
+
+  it('detects image path extensions ignoring query', () => {
+    expect(isLikelyDirectImageUrl('https://cdn.example.com/a/photo.JPG?w=800')).toBe(true);
+    expect(isLikelyDirectImageUrl('https://cdn.example.com/a/photo.png')).toBe(true);
+    expect(isLikelyDirectImageUrl('https://cdn.example.com/a/photo.webp')).toBe(true);
+    expect(isLikelyDirectImageUrl('https://example.com/page')).toBe(false);
+    expect(isLikelyDirectImageUrl('not a url')).toBe(false);
+  });
+});
+
+describe('YouTube URL helpers', () => {
+  it('recognizes YouTube hosts', () => {
+    expect(isYouTubePreviewHostname('www.youtube.com')).toBe(true);
+    expect(isYouTubePreviewHostname('youtu.be')).toBe(true);
+    expect(isYouTubePreviewHostname('m.youtube.com')).toBe(true);
+    expect(isYouTubePreviewHostname('example.com')).toBe(false);
+  });
+
+  it('canonicalizes watch, short, embed, and youtu.be URLs', () => {
+    expect(canonicalizeYouTubeWatchUrl(new URL('https://youtu.be/dQw4w9WgXcQ'))).toBe(
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    );
+    expect(
+      canonicalizeYouTubeWatchUrl(new URL('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=10')),
+    ).toBe('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    expect(canonicalizeYouTubeWatchUrl(new URL('https://www.youtube.com/shorts/dQw4w9WgXcQ'))).toBe(
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    );
+    expect(canonicalizeYouTubeWatchUrl(new URL('https://www.youtube.com/embed/dQw4w9WgXcQ'))).toBe(
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    );
+    expect(canonicalizeYouTubeWatchUrl(new URL('https://www.youtube.com/'))).toBeNull();
+  });
+});
+
 describe('fetchLinkPreview', () => {
   it('returns null for invalid URL', async () => {
     expect(await fetchLinkPreview('not a url')).toBeNull();
@@ -206,7 +253,7 @@ describe('fetchLinkPreview', () => {
     );
   });
 
-  it('returns null for non-HTML content-type', async () => {
+  it('returns null for non-HTML non-image content-type', async () => {
     mockFetch.mockResolvedValue(
       mockUndiciResponse({
         ok: true,
@@ -215,6 +262,156 @@ describe('fetchLinkPreview', () => {
       }),
     );
     expect(await fetchLinkPreview('https://example.com/api')).toBeNull();
+  });
+
+  it('returns kind:image for direct https JPEG/PNG URLs', async () => {
+    const pngBytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]);
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'image/png' }),
+        body: new ReadableStream<Uint8Array>({
+          start(c) {
+            c.enqueue(pngBytes);
+            c.close();
+          },
+        }),
+      }),
+    );
+    const result = await fetchLinkPreview('https://cdn.example.com/photos/shot.png');
+    expect(result).toEqual({
+      title: 'shot.png',
+      image: expect.stringMatching(/^data:image\/png;base64,/),
+      kind: 'image',
+    });
+  });
+
+  it('returns kind:image for image/* Content-Type without path extension', async () => {
+    const jpegBytes = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0]);
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'image/jpeg; charset=binary' }),
+        body: new ReadableStream<Uint8Array>({
+          start(c) {
+            c.enqueue(jpegBytes);
+            c.close();
+          },
+        }),
+      }),
+    );
+    const result = await fetchLinkPreview('https://cdn.example.com/media/abc123');
+    expect(result).toEqual({
+      title: 'abc123',
+      image: expect.stringMatching(/^data:image\/jpeg;base64,/),
+      kind: 'image',
+    });
+  });
+
+  it('rejects direct image/svg+xml URL bodies', async () => {
+    const svgBytes = new TextEncoder().encode('<svg onload="alert(1)"></svg>');
+    mockFetch.mockResolvedValue(
+      mockUndiciResponse({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'image/svg+xml' }),
+        body: new ReadableStream<Uint8Array>({
+          start(c) {
+            c.enqueue(svgBytes);
+            c.close();
+          },
+        }),
+      }),
+    );
+    expect(await fetchLinkPreview('https://cdn.example.com/x.svg')).toBeNull();
+  });
+
+  it('fetches YouTube watch URLs via oEmbed (title + thumbnail)', async () => {
+    const thumbBytes = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0]);
+    const oembed = {
+      title: 'Never Gonna Give You Up',
+      author_name: 'Rick Astley',
+      thumbnail_url: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+    };
+    mockFetch.mockImplementation(((input: string | URL | Request) => {
+      const href =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (href.includes('youtube.com/oembed')) {
+        const json = JSON.stringify(oembed);
+        return Promise.resolve(makeStreamResponse(json, 'application/json'));
+      }
+      if (fetchRequestHostname(input) === 'i.ytimg.com') {
+        return Promise.resolve(
+          mockUndiciResponse({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'image/jpeg' }),
+            body: new ReadableStream<Uint8Array>({
+              start(c) {
+                c.enqueue(thumbBytes);
+                c.close();
+              },
+            }),
+          }),
+        );
+      }
+      return Promise.resolve(
+        mockUndiciResponse({ ok: false, status: 404, headers: new Headers() }),
+      );
+    }) as typeof undiciFetch);
+
+    const result = await fetchLinkPreview('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    expect(result).toEqual({
+      title: 'Never Gonna Give You Up',
+      description: 'Rick Astley',
+      image: expect.stringMatching(/^data:image\/jpeg;base64,/),
+    });
+    expect(
+      mockFetch.mock.calls.some((c) => typeof c[0] === 'string' && c[0].includes('/oembed?')),
+    ).toBe(true);
+  });
+
+  it('fetches youtu.be and shorts URLs via oEmbed', async () => {
+    const oembed = {
+      title: 'Short clip',
+      author_name: 'Creator',
+      thumbnail_url: 'https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg',
+    };
+    mockFetch.mockImplementation(((input: string | URL | Request) => {
+      const href =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (href.includes('youtube.com/oembed')) {
+        expect(href).toContain(encodeURIComponent('https://www.youtube.com/watch?v=abcdefghijk'));
+        return Promise.resolve(makeStreamResponse(JSON.stringify(oembed), 'application/json'));
+      }
+      if (fetchRequestHostname(input) === 'i.ytimg.com') {
+        return Promise.resolve(
+          mockUndiciResponse({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'image/jpeg' }),
+            body: new ReadableStream<Uint8Array>({
+              start(c) {
+                c.enqueue(Uint8Array.from([0xff, 0xd8]));
+                c.close();
+              },
+            }),
+          }),
+        );
+      }
+      return Promise.resolve(
+        mockUndiciResponse({ ok: false, status: 404, headers: new Headers() }),
+      );
+    }) as typeof undiciFetch);
+
+    const short = await fetchLinkPreview('https://youtu.be/abcdefghijk');
+    expect(short?.title).toBe('Short clip');
+    clearLinkPreviewCachesForTests();
+
+    const shorts = await fetchLinkPreview('https://www.youtube.com/shorts/abcdefghijk');
+    expect(shorts?.title).toBe('Short clip');
   });
 
   it('returns null when body is null', async () => {

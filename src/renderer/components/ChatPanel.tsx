@@ -2659,7 +2659,10 @@ function ChatPanel({
                             <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
                               {showLxmfAttachmentLine &&
                               parseReticulumAttachmentPayload(msg.payload) ? (
-                                <ReticulumAttachmentLine payload={msg.payload} />
+                                <ReticulumAttachmentLine
+                                  payload={msg.payload}
+                                  attachmentPath={msg.reticulumAttachmentPath}
+                                />
                               ) : (
                                 <ChatPayloadText
                                   text={msg.payload}

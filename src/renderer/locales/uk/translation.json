@@ -624,7 +624,10 @@
     "locationCard": {
       "alt": "Плитка карти спільного розташування",
       "openMaps": "Відкрити в Картах"
-    }
+    },
+    "directImage": "Зображення: {{name}}",
+    "directImageOpen": "Відкрити зображення",
+    "reticulumAttachmentImage": "Додане зображення: {{name}}"
   },
   "common": {
     "close": "Закрити",

@@ -622,7 +622,10 @@
     "locationCard": {
       "alt": "共有ロケーションマップタイル",
       "openMaps": "マップで開く"
-    }
+    },
+    "directImage": "画像： {{name}}",
+    "directImageOpen": "画像を開く",
+    "reticulumAttachmentImage": "添付画像： {{name}}"
   },
   "common": {
     "close": "近い",

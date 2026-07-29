@@ -2,6 +2,7 @@ import dns from 'node:dns/promises';
 
 import { Agent, fetch as undiciFetch } from 'undici';
 
+import { isLikelyDirectImageUrl } from '../shared/chatDirectImageUrl';
 import {
   isLinkLocalIpv6,
   isLocalConnectHost,
@@ -44,6 +45,76 @@ const LINK_PREVIEW_ALLOWED_IMAGE_MIME_TYPES: ReadonlySet<string> = new Set([
   'image/x-icon',
   'image/vnd.microsoft.icon',
 ]);
+
+const YOUTUBE_PREVIEW_HOSTNAMES = new Set([
+  'youtube.com',
+  'www.youtube.com',
+  'm.youtube.com',
+  'music.youtube.com',
+  'youtu.be',
+  'www.youtu.be',
+]);
+
+const YOUTUBE_VIDEO_ID = /^[\w-]{11}$/;
+
+/** Base MIME from a Content-Type header (strips `; charset=…`). */
+export function linkPreviewBaseMime(contentType: string): string {
+  return contentType.split(';')[0]?.trim().toLowerCase() ?? '';
+}
+
+export function isLinkPreviewImageMime(contentType: string): boolean {
+  return LINK_PREVIEW_ALLOWED_IMAGE_MIME_TYPES.has(linkPreviewBaseMime(contentType));
+}
+
+export { isLikelyDirectImageUrl } from '../shared/chatDirectImageUrl';
+
+export function isYouTubePreviewHostname(hostname: string): boolean {
+  return YOUTUBE_PREVIEW_HOSTNAMES.has(hostname.toLowerCase());
+}
+
+/**
+ * Normalize watch / shorts / embed / youtu.be URLs to `https://www.youtube.com/watch?v=ID`
+ * for the oEmbed `url` query param. Returns null when no video id can be extracted.
+ */
+export function canonicalizeYouTubeWatchUrl(url: URL): string | null {
+  const host = url.hostname.toLowerCase();
+  if (!isYouTubePreviewHostname(host)) return null;
+
+  if (host === 'youtu.be' || host === 'www.youtu.be') {
+    const id = url.pathname.split('/').find((seg) => seg.length > 0);
+    if (id && YOUTUBE_VIDEO_ID.test(id)) {
+      return `https://www.youtube.com/watch?v=${id}`;
+    }
+    return null;
+  }
+
+  const fromQuery = url.searchParams.get('v');
+  if (fromQuery && YOUTUBE_VIDEO_ID.test(fromQuery)) {
+    return `https://www.youtube.com/watch?v=${fromQuery}`;
+  }
+
+  const parts = url.pathname.split('/').filter(Boolean);
+  const kind = parts[0];
+  const id = parts[1];
+  if (
+    id &&
+    YOUTUBE_VIDEO_ID.test(id) &&
+    (kind === 'shorts' || kind === 'embed' || kind === 'live' || kind === 'v')
+  ) {
+    return `https://www.youtube.com/watch?v=${id}`;
+  }
+  return null;
+}
+
+function titleFromImageUrl(url: URL): string {
+  const seg = url.pathname.split('/').filter(Boolean).pop() ?? '';
+  try {
+    return decodeURIComponent(seg) || url.hostname;
+  } catch {
+    // catch-no-log-ok malformed percent-encoding in path segment
+    return seg || url.hostname;
+  }
+}
 
 function evictOldestCacheEntry<K, V>(cache: Map<K, V>, maxEntries: number): void {
   while (cache.size >= maxEntries) {
@@ -313,7 +384,7 @@ async function fetchPreviewImageAsDataUrl(imageUrl: string): Promise<string | un
         return undefined;
       }
       const contentType = response.headers.get('content-type') ?? '';
-      const mime = contentType.split(';')[0]?.trim().toLowerCase() ?? '';
+      const mime = linkPreviewBaseMime(contentType);
       if (!LINK_PREVIEW_ALLOWED_IMAGE_MIME_TYPES.has(mime)) return undefined;
 
       const reader = response.body?.getReader();
@@ -343,6 +414,106 @@ export interface LinkPreviewMetadata {
   title: string;
   description?: string;
   image?: string;
+  /** Set when the URL itself is a raster image (not an HTML page with og:image). */
+  kind?: 'image';
+}
+
+async function fetchYouTubeOEmbedPreview(pageUrl: URL): Promise<LinkPreviewMetadata | null> {
+  const watchUrl = canonicalizeYouTubeWatchUrl(pageUrl);
+  if (!watchUrl) return null;
+
+  const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(watchUrl)}&format=json`;
+  const response = await fetchWithResolvedHost(oembedUrl, {
+    method: 'GET',
+    redirect: 'manual',
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(LINK_PREVIEW_FETCH_TIMEOUT_MS),
+  });
+  if (!response.ok) return null;
+
+  const reader = response.body?.getReader();
+  if (!reader) return null;
+  const merged = await readResponseBodyUpTo(reader, LINK_PREVIEW_MAX_HTML_BYTES);
+  if (!merged) return null;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(new TextDecoder().decode(merged)) as unknown;
+  } catch {
+    // catch-no-log-ok malformed oEmbed JSON
+    return null;
+  }
+  if (!parsed || typeof parsed !== 'object') return null;
+  const obj = parsed as Record<string, unknown>;
+  if (typeof obj.title !== 'string' || !obj.title.trim()) return null;
+
+  let image: string | undefined;
+  if (typeof obj.thumbnail_url === 'string' && obj.thumbnail_url.startsWith('https://')) {
+    image = await fetchPreviewImageAsDataUrl(obj.thumbnail_url);
+  }
+
+  return {
+    title: obj.title.trim(),
+    description:
+      typeof obj.author_name === 'string' && obj.author_name.trim()
+        ? obj.author_name.trim()
+        : undefined,
+    image,
+  };
+}
+
+async function fetchHtmlLinkPreview(
+  urlString: string,
+  response: Response,
+): Promise<LinkPreviewMetadata | null> {
+  const reader = response.body?.getReader();
+  if (!reader) return null;
+  const merged = await readResponseBodyUpTo(reader, LINK_PREVIEW_MAX_HTML_BYTES);
+  if (!merged) return null;
+
+  const html = new TextDecoder().decode(merged);
+
+  const ogTitle =
+    /<meta\s+property="og:title"\s+content="([^"]+)"/i.exec(html)?.[1] ??
+    /<meta\s+content="([^"]+)"\s+property="og:title"/i.exec(html)?.[1] ??
+    /<title[^>]*>([^<]+)<\/title>/i.exec(html)?.[1];
+  if (!ogTitle?.trim()) return null;
+
+  const title = ogTitle.trim();
+
+  const ogDesc =
+    /<meta\s+property="og:description"\s+content="([^"]+)"/i.exec(html)?.[1] ??
+    /<meta\s+content="([^"]+)"\s+property="og:description"/i.exec(html)?.[1] ??
+    /<meta\s+name="description"\s+content="([^"]+)"/i.exec(html)?.[1];
+  const description = ogDesc?.trim() || undefined;
+
+  const ogImage =
+    /<meta\s+property="og:image"\s+content="([^"]+)"/i.exec(html)?.[1] ??
+    /<meta\s+content="([^"]+)"\s+property="og:image"/i.exec(html)?.[1];
+  let image = ogImage?.trim().startsWith('https://') ? ogImage.trim() : undefined;
+
+  if (image) {
+    image = await fetchPreviewImageAsDataUrl(image);
+  }
+
+  return { title, description, image };
+}
+
+async function fetchDirectImagePreviewFromResponse(
+  url: URL,
+  response: Response,
+  mime: string,
+): Promise<LinkPreviewMetadata | null> {
+  const reader = response.body?.getReader();
+  if (!reader) return null;
+  const bytes = await readResponseBodyUpTo(reader, LINK_PREVIEW_IMAGE_MAX_BYTES);
+  if (!bytes) return null;
+  const dataUrl = `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`;
+  return {
+    title: titleFromImageUrl(url),
+    image: dataUrl,
+    kind: 'image',
+  };
 }
 
 async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewMetadata | null> {
@@ -357,47 +528,39 @@ async function fetchLinkPreviewUncached(urlString: string): Promise<LinkPreviewM
   if (await isBlockedHostnameResolved(url.hostname)) return null;
 
   try {
+    if (isYouTubePreviewHostname(url.hostname)) {
+      const yt = await fetchYouTubeOEmbedPreview(url);
+      if (yt) return yt;
+    }
+
+    // Extension-hinted HTTPS images: follow redirects via the dedicated image fetcher.
+    if (url.protocol === 'https:' && isLikelyDirectImageUrl(urlString)) {
+      const dataUrl = await fetchPreviewImageAsDataUrl(urlString);
+      if (dataUrl) {
+        return {
+          title: titleFromImageUrl(url),
+          image: dataUrl,
+          kind: 'image',
+        };
+      }
+    }
+
     const response = await fetchWithResolvedHost(urlString, {
       method: 'GET',
       redirect: 'manual',
-      headers: { Accept: 'text/html' },
+      headers: { Accept: 'text/html,image/*,*/*;q=0.8' },
       signal: AbortSignal.timeout(LINK_PREVIEW_FETCH_TIMEOUT_MS),
     });
     if (!response.ok) return null;
     const contentType = response.headers.get('content-type') ?? '';
-    if (!contentType.includes('text/html')) return null;
+    const mime = linkPreviewBaseMime(contentType);
 
-    const reader = response.body?.getReader();
-    if (!reader) return null;
-    const merged = await readResponseBodyUpTo(reader, LINK_PREVIEW_MAX_HTML_BYTES);
-    if (!merged) return null;
-
-    const html = new TextDecoder().decode(merged);
-
-    const ogTitle =
-      /<meta\s+property="og:title"\s+content="([^"]+)"/i.exec(html)?.[1] ??
-      /<meta\s+content="([^"]+)"\s+property="og:title"/i.exec(html)?.[1] ??
-      /<title[^>]*>([^<]+)<\/title>/i.exec(html)?.[1];
-    if (!ogTitle?.trim()) return null;
-
-    const title = ogTitle.trim();
-
-    const ogDesc =
-      /<meta\s+property="og:description"\s+content="([^"]+)"/i.exec(html)?.[1] ??
-      /<meta\s+content="([^"]+)"\s+property="og:description"/i.exec(html)?.[1] ??
-      /<meta\s+name="description"\s+content="([^"]+)"/i.exec(html)?.[1];
-    const description = ogDesc?.trim() || undefined;
-
-    const ogImage =
-      /<meta\s+property="og:image"\s+content="([^"]+)"/i.exec(html)?.[1] ??
-      /<meta\s+content="([^"]+)"\s+property="og:image"/i.exec(html)?.[1];
-    let image = ogImage?.trim().startsWith('https://') ? ogImage.trim() : undefined;
-
-    if (image) {
-      image = await fetchPreviewImageAsDataUrl(image);
+    if (LINK_PREVIEW_ALLOWED_IMAGE_MIME_TYPES.has(mime)) {
+      return await fetchDirectImagePreviewFromResponse(url, response, mime);
     }
 
-    return { title, description, image };
+    if (!contentType.includes('text/html')) return null;
+    return await fetchHtmlLinkPreview(urlString, response);
   } catch (err) {
     console.debug(
       '[chat] fetchLinkPreview error:',

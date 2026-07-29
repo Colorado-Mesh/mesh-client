@@ -624,7 +624,10 @@
     "locationCard": {
       "alt": "Dlaždice mapy sdílené polohy",
       "openMaps": "Otevřít v Mapách"
-    }
+    },
+    "directImage": "Obrázek: {{name}}",
+    "directImageOpen": "Otevřít obrázek",
+    "reticulumAttachmentImage": "Přiložený obrázek: {{name}}"
   },
   "common": {
     "close": "Blízko",

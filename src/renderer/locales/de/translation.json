@@ -622,7 +622,10 @@
     "locationCard": {
       "alt": "Geteilte Standortkartenkachel",
       "openMaps": "In Karten öffnen"
-    }
+    },
+    "directImage": "Bild: {{name}}",
+    "directImageOpen": "Bild öffnen",
+    "reticulumAttachmentImage": "Angehängtes Bild: {{name}}"
   },
   "common": {
     "close": "Schließen",

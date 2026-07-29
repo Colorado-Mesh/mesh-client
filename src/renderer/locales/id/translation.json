@@ -622,7 +622,10 @@
     "locationCard": {
       "alt": "Ubin peta lokasi bersama",
       "openMaps": "Buka di Peta"
-    }
+    },
+    "directImage": "Gambar: {{name}}",
+    "directImageOpen": "Buka Gambar",
+    "reticulumAttachmentImage": "Gambar terlampir: {{name}}"
   },
   "common": {
     "close": "Menutup",

@@ -622,7 +622,10 @@
     "locationCard": {
       "alt": "Tegel met gedeelde locatiekaart",
       "openMaps": "Openen in Kaarten"
-    }
+    },
+    "directImage": "Afbeelding: {{name}}",
+    "directImageOpen": "Afbeelding openen",
+    "reticulumAttachmentImage": "Bijgevoegde afbeelding: {{name}}"
   },
   "common": {
     "close": "Dichtbij",

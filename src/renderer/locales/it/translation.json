@@ -622,7 +622,10 @@
     "locationCard": {
       "alt": "Riquadro della mappa della posizione condivisa",
       "openMaps": "Apri in Mappe"
-    }
+    },
+    "directImage": "Immagine: {{name}}",
+    "directImageOpen": "Apre immagine",
+    "reticulumAttachmentImage": "Immagine allegata: {{name}}"
   },
   "common": {
     "close": "Chiudi",

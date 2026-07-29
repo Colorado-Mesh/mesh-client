@@ -413,6 +413,14 @@ describe('Native Electron call guards (source contract)', () => {
     );
   });
 
+  it('registers chat:readReticulumAttachmentAsDataUrl with sender validation and path jail', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('chat:readReticulumAttachmentAsDataUrl'");
+    expect(INDEX_SOURCE).toMatch(
+      /ipcMain\.handle\('chat:readReticulumAttachmentAsDataUrl'[\s\S]*?validateIpcSender\(event\)/,
+    );
+    expect(INDEX_SOURCE).toContain('readReticulumAttachmentAsDataUrl');
+  });
+
   it('registers chat:outbox handlers with protocol, status, and payload validation', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('chat:outbox:list'");
     expect(INDEX_SOURCE).toContain("ipcMain.handle('chat:outbox:add'");

@@ -963,10 +963,17 @@ export interface ElectronAPI {
       promptSave?: boolean;
     }) => Promise<{ success: boolean; path?: string }>;
     showItemInFolder: (filePath: string) => Promise<{ ok: boolean }>;
+    readReticulumAttachmentAsDataUrl: (opts: {
+      filePath: string;
+      mimeType?: string;
+    }) => Promise<{ dataUrl: string | null }>;
     linkPreview: {
-      fetch: (
-        url: string,
-      ) => Promise<{ title: string; description?: string; image?: string } | null>;
+      fetch: (url: string) => Promise<{
+        title: string;
+        description?: string;
+        image?: string;
+        kind?: 'image';
+      } | null>;
     };
     outbox: {
       list: (protocol: string) => Promise<OutboxEntry[]>;

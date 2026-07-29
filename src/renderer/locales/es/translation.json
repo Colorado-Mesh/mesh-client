@@ -622,7 +622,10 @@
     "locationCard": {
       "alt": "Mosaico de mapa de ubicación compartido",
       "openMaps": "Abrir en mapas"
-    }
+    },
+    "directImage": "Imagen: {{name}}",
+    "directImageOpen": "Abrir imagen",
+    "reticulumAttachmentImage": "Imagen adjunta: {{name}}"
   },
   "common": {
     "close": "Cerrar",
